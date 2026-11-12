@@ -9,7 +9,7 @@
 //   figures: [{ on, value }], dueOn, reachedOn }
 
 import { m0Round } from './m0.js';
-import { addDays, daysBetween, monthsBetween } from './dates.js';
+import { addDays, dayNumber, daysBetween, fromDayNumber, monthsBetween } from './dates.js';
 
 /** Pace shows only after 3 finished weeks since the objective was set (Claude, 26 Oct). */
 export const PACE_AFTER_WEEKS = 3;
@@ -55,7 +55,9 @@ function lastChangeDay(objective, asOf) {
 export function m9TimeLeft(asOf, dueOn) {
   // A date that can't be read (missing, or not a day like 2026-11-11) gives
   // no words, never "NaN weeks" and never an error on the page.
-  const isDay = (key) => typeof key === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(key);
+  // (Nor a day that isn't in the calendar: 31 June or month 13 would be
+  // rolled on to another day, and "2027-07-00" read as "due today".)
+  const isDay = (key) => typeof key === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(key) && fromDayNumber(dayNumber(key)) === key;
   const days = isDay(asOf) && isDay(dueOn) ? daysBetween(asOf, dueOn) : NaN;
   if (!Number.isFinite(days)) return { days: null, unit: null, count: null, text: '' };
   if (days === 0) return { days, unit: 'day', count: 0, text: 'due today' };

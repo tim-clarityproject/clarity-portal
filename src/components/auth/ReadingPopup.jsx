@@ -171,7 +171,8 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
           gap: 2px;
           margin: 12px 20px 0;
           padding: 3px;
-          border: 1px solid var(--line);
+          /* A segmented control's outer edge takes the edges colour (rule 8a; break-it, 12 Nov). */
+          border: 1px solid var(--field-line);
           border-radius: 999px;
           flex-shrink: 0;
         }

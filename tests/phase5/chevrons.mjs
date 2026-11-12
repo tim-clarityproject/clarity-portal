@@ -23,8 +23,11 @@
 // the words around it left undrawn, so a first letter close by is never
 // taken for part of it; and a chevron built to sit beside words that is
 // left on a row of its own, pushed off the side of the screen or not drawn
-// at all is listed by chevronsOff as a fault. Everything else it could not
-// measure is in the list's `skipped`, each with its reason.
+// at all is listed by chevronsOff as a fault; so is one that is hidden
+// while its words can be seen, one with no mask (a filled corner), and one
+// with nothing drawn that no open list lies over (break-it, 12 Nov).
+// Everything else it could not measure is in the list's `skipped`, each
+// with its reason.
 //
 // A chevron counts as "beside text" when it and one line of words share a
 // row inside the same control (a button, a link, a summary or a label), or
@@ -76,6 +79,10 @@ function collect(only = null) {
     // Its square as it stands before it is turned (a turned square's own box is wider than its strokes).
     const square = { x: cb.left + cb.width / 2 - chev.offsetWidth / 2, y: cb.top + cb.height / 2 - chev.offsetHeight / 2, width: chev.offsetWidth, height: chev.offsetHeight };
     const skip = (why, lines = 0) => out.push({ skip: why, label: name, beside, lines, box: square });
+    // Its shape is the mask: without one it is a filled corner, not a chevron,
+    // wherever its middle lands (break-it, 12 Nov).
+    const cst = getComputedStyle(chev);
+    if ((cst.maskImage || cst.webkitMaskImage || 'none') === 'none') { skip('no mask'); continue; }
     // Covered by something else (an open drop-down's list lying over the sort
     // link): its pixels are the list's, not the chevron's, so it isn't read.
     // (Its middle and its four corners: a list may lie over part of it.)
@@ -211,6 +218,35 @@ function collect(only = null) {
   return out;
 }
 
+/**
+ * Runs in the page: chevrons built to sit beside words whose own line is
+ * laid out inside a control that can be seen, but which are themselves
+ * hidden (display none, visibility hidden or no opacity on the chevron or
+ * its line). They are never tagged for measuring, so without this a chevron
+ * that had vanished was simply not counted (break-it, 12 Nov). A line that
+ * takes no room, or one inside something hidden, is hidden on purpose.
+ */
+function hiddenBeside() {
+  const shown = (el) => { const b = el.getBoundingClientRect(); const st = getComputedStyle(el); return b.width > 0 && b.height > 0 && st.visibility !== 'hidden' && st.display !== 'none' && Number(st.opacity) > 0.05 && !el.closest('[hidden],[inert]'); };
+  const out = [];
+  for (const chev of document.querySelectorAll('.ds-chevron-line .ds-chevron, .chev-line .chev')) {
+    const line = chev.closest('.ds-chevron-line, .chev-line');
+    const control = chev.closest('button, a, summary, label, [role=button], [role=combobox]') || line.parentElement;
+    if (!control || !shown(control) || !control.contains(line)) continue;
+    const lb = line.getBoundingClientRect();
+    if (!(lb.width > 0) || getComputedStyle(line).display === 'none') continue;
+    // Everything from the control down to the line can be seen; the chevron, or its line, cannot.
+    let outerHidden = false;
+    for (let p = line.parentElement; p && p !== control.parentElement; p = p.parentElement) { const st = getComputedStyle(p); if (st.display === 'none' || st.visibility === 'hidden' || Number(st.opacity) <= 0.05) outerHidden = true; }
+    if (outerHidden) continue;
+    let gone = false;
+    for (let p = chev; p && p !== line.parentElement; p = p.parentElement) { const st = getComputedStyle(p); if (st.display === 'none' || st.visibility === 'hidden' || Number(st.opacity) <= 0.05) gone = true; }
+    if (!gone) continue;
+    out.push(`${String(control.className?.baseVal ?? control.className ?? '').split(' ')[0] || control.tagName.toLowerCase()} "${(control.innerText || control.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim().slice(0, 34)}"`);
+  }
+  return out;
+}
+
 /** The visible strokes' top and bottom inside a box, in CSS pixels, from the screen's own pixels. */
 async function strokeMiddle(page, box, pad = 3, view = null) {
   const clip = { x: Math.max(0, Math.floor(box.x) - pad), y: Math.max(0, Math.floor(box.y) - pad), width: Math.ceil(box.width) + 2 * pad, height: Math.ceil(box.height) + 2 * pad };
@@ -271,12 +307,13 @@ export async function measureChevrons(page) {
   // fault, not something to pass over (chevronsOff lists those too).
   const skipped = [];
   const view = page.viewportSize();
+  for (const label of await page.evaluate(hiddenBeside)) skipped.push({ n: -1, label, why: 'hidden', fault: 'is hidden, beside words that can be seen' });
   for (let i = 0; i < count; i += 1) {
     const [c] = await page.evaluate(collect, i);
     if (!c) continue;
     if (c.skip) {
       // Beside one line of its own words, but not on that line.
-      skipped.push({ n: i, label: c.label, why: c.skip, fault: c.beside && c.skip === 'off its row' && c.lines === 1 ? 'is not on the row of its words' : '' });
+      skipped.push({ n: i, label: c.label, why: c.skip, fault: c.skip === 'no mask' ? 'has lost its shape: it has no mask' : c.beside && c.skip === 'off its row' && c.lines === 1 ? 'is not on the row of its words' : '' });
       continue;
     }
     // Off the side of the screen (its square as it stands, not the wider box of a turned square).
@@ -309,7 +346,8 @@ export async function measureChevrons(page) {
     await page.evaluate(() => { for (const el of document.querySelectorAll('[data-chev-quiet]')) el.removeAttribute('data-chev-quiet'); });
     if (middle == null) {
       // An open drop-down's list lies over whatever is under it, and a list that takes no taps isn't found by asking what is on top.
-      const listOpen = await page.evaluate(() => Boolean(document.querySelector('[role=listbox]')));
+      // (Only a list that lies over this chevron: an open list elsewhere on the page let any chevron that wasn't drawn through as "covered": break-it, 12 Nov.)
+      const listOpen = await page.evaluate((box) => [...document.querySelectorAll('[role=listbox]')].some((l) => { const r = l.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.left < box.x + box.width && r.right > box.x && r.top < box.y + box.height && r.bottom > box.y; }), c.box);
       skipped.push({ n: i, label: c.label, why: listOpen ? 'covered' : 'nothing drawn', fault: c.beside && !listOpen ? 'cannot be seen: nothing is drawn where it stands' : '' });
       continue;
     }

@@ -103,7 +103,9 @@ html:has(.ui-root) {
 
 .ui-root .ui-btn-ghost:hover,
 .ui-root .ui-btn-ghost:focus-visible {
-  border-color: var(--coral);
+  /* The deeper coral in light (--coral-text): the brand coral is 2.6 to 1
+     on a light page, fainter than the edge at rest (break-it, 12 Nov). */
+  border-color: var(--coral-text);
 }
 
 .ui-root .ui-btn-ghost:focus-visible {
@@ -304,7 +306,8 @@ html:has(.ui-root) {
 }
 
 .ui-root .auth-btn-ghost:hover {
-  border-color: var(--coral);
+  /* Never fainter than the edge at rest (see .ui-btn-ghost). */
+  border-color: var(--coral-text);
 }
 
 .ui-root .auth-btn-ghost:focus-visible {
@@ -455,11 +458,14 @@ html:has(.ui-root) {
 
 .ui-root .auth-input:focus {
   outline: none;
-  border-color: var(--coral);
+  /* Never fainter than the edge at rest (see .ui-btn-ghost). */
+  border-color: var(--coral-text);
 }
 
 .ui-root .auth-input.error {
-  border-color: var(--coral-soft);
+  /* The soft coral's own light value: the pale one is 1.6 to 1 on white,
+     so a field with a problem lost its edge in light (break-it, 12 Nov). */
+  border-color: var(--coral-soft-text);
 }
 
 .auth-field-error {
@@ -965,7 +971,9 @@ html:has(.ui-root) {
 .ui-root .auth-example-pill:hover,
 .ui-root .auth-example-pill:focus-visible {
   color: var(--text);
-  border-color: var(--btn-line);
+  /* A step stronger than the edge at rest (rule 8a): it was the fainter
+     line colour, so the edge faded on hover (break-it, 12 Nov). */
+  border-color: var(--text-2);
 }
 
 .auth-more-ideas-wrap {
@@ -1098,7 +1106,15 @@ html:has(.ui-root) {
 .ui-root .ui-back-link .ds-chevron-line {
   margin-left: calc(-1 * var(--chev-left-inset));
   margin-right: calc(-1 * var(--chev-right-inset));
-  /* Pointing left it sat a quarter of a pixel lower than the folds' arrows (measured without rounding, 12 Nov). */
+}
+
+/* Pointing left it sat a quarter of a pixel lower than the folds' arrows
+   (measured without rounding, 12 Nov). The rule names the capitals' line
+   too: on the line alone it lost to design.css's own rule for capitals
+   (0.38px), which comes later, so the 0.13px never applied and Back read
+   0.5px low at every text size, right on the allowance (break-it, 12 Nov).
+   With it applied it reads 0.00 at two and three pixels a point. */
+.ui-root .ui-back-link .ds-chevron-line.ds-chevron-line--caps {
   --chev-nudge: 0.13px;
 }
 
@@ -1195,7 +1211,8 @@ html:has(.ui-root) {
 
 .ui-root .dng:hover,
 .ui-root .dng:focus-visible {
-  border-color: var(--coral);
+  /* Never fainter than the edge at rest (see .ui-btn-ghost). */
+  border-color: var(--coral-text);
   background: var(--coral-soft-tint);
 }
 
@@ -1420,7 +1437,8 @@ html:has(.ui-root) {
 }
 
 .ui-root .plan-input:focus {
-  border-color: var(--coral);
+  /* Never fainter than the edge at rest (see .ui-btn-ghost). */
+  border-color: var(--coral-text);
 }
 
 /* A <textarea> does not vertically centre its text the way <input>

@@ -9,6 +9,7 @@ import {
   allSprintWeeks, dashboardView, moveSection, readDashboardPrefs, storedPrefs, toggleFold, toggleHidden, glance,
 } from '../../src/lib/performance/dashboard.js';
 import { addDays } from '../../src/lib/scores/dates.js';
+import { m9TimeLeft } from '../../src/lib/scores/m9.js';
 import {
   m0Round, m6SprintFigures, m8UsualRange, m10ImprovingAndHoldingBack, m11DebriefStreak, m12SleepHours,
 } from '../../src/lib/scores/index.js';
@@ -259,6 +260,29 @@ test('The milestone sentence in every case: alone, overdue, unreadable, reached,
   const two = [stone, { ...stone, id: 'o4', name: 'Second', due_on: '2026-12-31', sort_order: 3 }];
   assert.equal(summary(two), 'The milestone is due by 30 Jun 2027, 8 months to go.');
   for (const day of [TODAY, '2026-12-31', '2027-06-29', '2027-06-30', '2027-07-01', '2030-01-01']) { sound(summary(base, day)); sound(summary([stone], day)); sound(summary(two, day)); }
+});
+
+test('The milestone sentence across a month end, a year end, a leap day and a clock change; a day that is not in the calendar has no sentence (break-it, 12 Nov)', () => {
+  const stone = rows().planObjectives.find((o) => o.kind === 'milestone');
+  const summary = (due, today) => { const list = [{ ...stone, due_on: due }]; return dashboardView(rows({ planObjectives: list, objectives: [{ id: stone.id }] }), { today, target }).chain.objectives.summary; };
+  // Today, tomorrow and yesterday, each side of: a month end, the year end,
+  // a leap day, and the UK's clock changes (28 Mar and 31 Oct 2027).
+  for (const [before, day, after] of [['2027-06-29', '2027-06-30', '2027-07-01'], ['2027-12-30', '2027-12-31', '2028-01-01'], ['2028-02-28', '2028-02-29', '2028-03-01'], ['2027-02-27', '2027-02-28', '2027-03-01'], ['2027-03-27', '2027-03-28', '2027-03-29'], ['2027-10-30', '2027-10-31', '2027-11-01']]) {
+    assert.equal(summary(day, day), 'The milestone is due today.', day);
+    assert.match(summary(day, before), /^The milestone is due by \d{1,2} [A-Z][a-z]{2} \d{4}, 1 day to go\.$/, day);
+    assert.match(summary(day, after), /^The milestone is due by \d{1,2} [A-Z][a-z]{2} \d{4}, 1 day overdue\.$/, day);
+  }
+  // A day that is not in the calendar is never rolled on to another one
+  // ("due by 45 undefined 2027", or 2027-07-00 read as "due today" on 30 June).
+  for (const bad of ['2027-13-45', '2027-06-31', '2027-07-00', '2027-02-29', '0000-00-00', '2027-00-10']) {
+    assert.equal(summary(bad, '2027-06-30'), 'You haven’t set an Outcome Objective yet.', bad);
+    assert.equal(m9TimeLeft('2027-06-30', bad).text, '', bad);
+    assert.equal(m9TimeLeft(bad, '2027-06-30').text, '', bad);
+  }
+  // Today itself unreadable: no milestone words, and no error.
+  // (The countdown itself; the page's own "today" is always the device's day, `localToday`.)
+  for (const bad of ['', null, undefined, 'today', '2027-06-31', '2027-6-30']) assert.deepEqual(m9TimeLeft(bad, '2027-06-30'), { days: null, unit: null, count: null, text: '' }, String(bad));
+  for (const bad of ['', 'today', '2027-06-31']) assert.equal(summary('2027-06-30', bad), 'You haven’t set an Outcome Objective yet.', String(bad));
 });
 
 test('Strategies: the strip for the span, the latest figure, last week at the standard', () => {

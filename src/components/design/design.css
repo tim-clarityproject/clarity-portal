@@ -143,6 +143,29 @@
   .ui-root .ds-planstep--done .ds-planstep-mark svg {
     stroke: Canvas !important;
   }
+  /* A switch is two flat colours with no edge, so in this mode nothing of
+     it was left to see (break-it, 12 Nov). Off: an outlined track with the
+     knob in the system's text colour. On: the track filled with it and the
+     knob in the page's, so on and off differ by more than the knob's place.
+     The eye's "shared" dot is a flat colour too. */
+  .ui-root .ds-switch {
+    forced-color-adjust: none;
+    background: Canvas !important;
+    /* (!important: the switch's own rule, further down, unsets everything.) */
+    border: var(--line-w) solid CanvasText !important;
+  }
+  .ui-root .ds-switch::after {
+    forced-color-adjust: none;
+    background: CanvasText !important;
+    top: calc(var(--space-px3) - var(--line-w));
+    left: calc(var(--space-px3) - var(--line-w));
+  }
+  .ui-root .ds-switch[aria-checked='true'] { background: CanvasText !important; }
+  .ui-root .ds-switch[aria-checked='true']::after { background: Canvas !important; }
+  .ui-root .ds-who-eye--shared::after {
+    forced-color-adjust: none;
+    background: CanvasText !important;
+  }
 }
 
 /* A chevron beside one line of text is centred on that text (Tim, 11 Nov,
@@ -215,6 +238,10 @@
 @supports not (translate: 0 1px) {
   .ui-root .ds-chevron-base > .ds-chevron { bottom: calc(var(--chev-half) - var(--arrow-size) / 2 - var(--chev-nudge)); }
   .ui-root .ds-chevron-base > .ds-chevron.ds-chevron--sm { bottom: calc(var(--chev-half) - var(--who-icon) / 2 - var(--chev-nudge)); }
+  /* Beside a name with a line under it (.ds-chevron--block, below): the
+     same shift with top, or the chevron would sit on the middle of its row,
+     1 to 3px from the middle of its words (break-it, 12 Nov). */
+  .ui-root .ds-chevron--block { position: relative; top: calc(var(--chev-block-shift, 0px) + var(--chev-block-nudge, -0.15px)); }
 }
 
 /* Beside a name with a line under it (Tim, 12 Nov): the chevron is centred
@@ -2545,7 +2572,8 @@
 
 .ui-root .ds-breathe:hover,
 .ui-root .ds-breathe:focus-visible {
-  border-color: var(--coral);
+  /* The deeper coral in light: the brand coral is fainter there than the edge at rest (break-it, 12 Nov). */
+  border-color: var(--coral-text);
   --o-cross: var(--coral);
 }
 
@@ -4262,7 +4290,8 @@
 @media (hover: hover) {
   .ui-root .ds-chat:hover {
     color: var(--text);
-    border-color: var(--coral);
+    /* Never fainter than the edge at rest (see .ds-breathe). */
+    border-color: var(--coral-text);
   }
 }
 
@@ -6859,6 +6888,10 @@
      DM Sans, and 0.01 for the block's own middle): measured at 1.4 to
      1.7px low before this. */
   .ui-root .ds-expand-head--lined .ds-collapse-mark { translate: 0 calc(-0.105 * var(--fs-secondary)); }
+  /* (A browser without the translate property: the same with top.) */
+  @supports not (translate: 0 1px) {
+    .ui-root .ds-expand-head--lined .ds-collapse-mark { position: relative; top: calc(-0.105 * var(--fs-secondary)); }
+  }
 }
 
 /* A note, never a task. */

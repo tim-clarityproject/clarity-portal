@@ -158,7 +158,8 @@ try {
       await context.route(/supabase\.co\/rest\/v1\/day_reviews\?/, async (route) => {
         const url = decodeURIComponent(route.request().url());
         const day = /local_date=eq\.(\d{4}-\d{2}-\d{2})/.exec(url)?.[1];
-        if (!reviewedToday || route.request().method() !== 'GET' || !day || day !== londonToday() || !/select=[^&]*status/.test(url)) return route.fallback();
+        // (Either side of midnight: a page opened at 23:59 asks for the day it opened on, a moment after the day has turned here.)
+        if (!reviewedToday || route.request().method() !== 'GET' || !day || (day !== londonToday() && day !== reviewedToday) || !/select=[^&]*status/.test(url)) return route.fallback();
         const row = { id: '00000000-0000-4000-8000-00000000a003', local_date: day, status: 'finished', tomorrow: ['Call Evan about the proposal', 'Send the board paper', 'Book the venue'], updated_at: `${day}T18:05:00` };
         const one = /vnd\.pgrst\.object/.test(route.request().headers().accept || '');
         return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(one ? row : [row]) });
@@ -197,7 +198,12 @@ try {
       } catch (e) { pass(`outlined edges ${tag}: measured`, false, `${e.message.split('\n')[0]} at ${page.url().replace(APP, '')}: ${(await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 160)}`); }
 
       try {
-        reviewedToday = true;
+        reviewedToday = londonToday();
+        // From 21:00 to 03:00 Home's one card is Sleep wind down, not the
+        // finished day's, so this failed falsely every evening (break-it, 12
+        // Nov, 21:26). The page's clock reads early evening on the same day
+        // for this part (18:30 UTC is 18:30 or 19:30 in London).
+        await page.clock.setFixedTime(new Date(`${reviewedToday}T18:30:00Z`));
         await page.goto(`${APP}/welcome`);
         await settle();
         const link = page.getByRole('link', { name: 'Edit my review' }).or(page.getByRole('button', { name: 'Edit my review' }));
@@ -343,6 +349,15 @@ try {
           for (const [name, list] of Object.entries(ticks.on)) {
             pass(`high contrast, the gallery: ${name} is filled with the system's text colour, its tick in the page's (${list.length})`, list.length >= 1 && list.every((t) => t.fill === ticks.text && t.tick === ticks.canvas), list.length ? [...new Set(list.map((t) => `${t.fill}, tick ${t.tick}`))].join('; ') : 'none found');
           }
+          // A switch (break-it, 12 Nov): two flat colours with no edge, so nothing of it showed in this mode.
+          // (The gallery's switches start off: the first is turned on here. Nothing is saved; the gallery reaches no database.)
+          await gp.locator('.ds-switch').first().click({ timeout: 5000 }).catch(() => null);
+          await sleep(400);
+          const switches = await gp.evaluate(() => [...document.querySelectorAll('.ds-switch')].filter((el) => el.getBoundingClientRect().width > 0).map((el) => ({ on: el.getAttribute('aria-checked') === 'true', track: getComputedStyle(el).backgroundColor, edge: getComputedStyle(el).borderTopColor, edgeWidth: parseFloat(getComputedStyle(el).borderTopWidth), knob: getComputedStyle(el, '::after').backgroundColor })));
+          const offOnes = switches.filter((sw) => !sw.on);
+          const onOnes = switches.filter((sw) => sw.on);
+          pass(`high contrast, the gallery: a switch that is off shows its edge and its knob in the system's text colour (${offOnes.length})`, offOnes.length >= 1 && offOnes.every((sw) => sw.edgeWidth >= 1 && sw.edge === ticks.text && sw.knob === ticks.text && sw.track === ticks.canvas), offOnes.length ? JSON.stringify(offOnes[0]) : 'none found');
+          pass(`high contrast, the gallery: a switch that is on is filled with the system's text colour, its knob in the page's (${onOnes.length})`, onOnes.length >= 1 && onOnes.every((sw) => sw.track === ticks.text && sw.knob === ticks.canvas), onOnes.length ? JSON.stringify(onOnes[0]) : 'none found');
           for (const [name, list] of Object.entries(ticks.off)) {
             pass(`high contrast, the gallery: ${name} is not filled, so it differs from a ticked one (${list.length})`, list.length >= 1 && list.every((t) => t.fill !== ticks.text), list.length ? [...new Set(list.map((t) => t.fill))].join('; ') : 'none found');
           }
