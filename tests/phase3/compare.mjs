@@ -391,6 +391,9 @@ const ALLOWED = [
   { screen: /debrief, your days/, side: 'both', re: /^strateg(y|ies) that moved$/, why: 'M1’s “Strategy that moved”, plural when several moved that day' },
   { side: 'app', re: /^(on last night's list|to-do this week|habit, .*|rolled over from week #|rolls over from week #|highest priority|done)$/, why: 'the mock-up’s dotted line split into separate labels, the Strategy and the tag (26 Oct rule 5)' },
   // Tim, 10 Nov (part 5 and Phase 5 calm layout):
+  // Tim, 11 Nov (Phase 5 answers 2): "Edit", never "Change"; countdowns read "to go".
+  { side: 'app', re: /^(edit|save my edit|edit my review|edit my answers|edit my target range)$/, why: 'renamed (Tim, 11 Nov, 12:59): every "Change" link or button is "Edit", and "Save my change" is "Save my edit" (CLAUDE.md 29am)' },
+  { side: 'mock', re: /^(change|save my change|change my review|change my answers|change my target range)$/, why: 'renamed (Tim, 11 Nov, 12:59): every "Change" link or button is "Edit", and "Save my change" is "Save my edit" (CLAUDE.md 29am)' },
   // Tim, 10 Nov, 23:22 (Phase 5 answers): Sleep quality and the way of being are the five words.
   { side: 'mock', re: /^very poor$/, why: 'five words (Tim, 10 Nov, 23:22): sleep quality reads Poor, Fair, Good, Very good, Excellent; "Very poor" is gone (CLAUDE.md 26d)' },
   { side: 'app', re: /^excellent$/, why: 'five words (Tim, 10 Nov, 23:22): sleep quality and the way of being read Poor, Fair, Good, Very good, Excellent (CLAUDE.md 26d)' },
