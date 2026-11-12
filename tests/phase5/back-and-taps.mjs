@@ -84,7 +84,9 @@ async function open(who, width, mode, { scale = 1, motion = 'no-preference' } = 
 }
 
 // The visible strokes inside a box, from the screen's pixels: every pixel
-// unlike the box's top-left corner (its background) counts.
+// unlike the box's top-left corner (its background) counts. A pixel is coral
+// when it is the chevron's coral or a soft edge of it: a mix of coral and the
+// background, which a chevron shifted by part of a pixel has more of (12 Nov).
 async function strokes(page, box) {
   const clip = { x: Math.max(0, Math.floor(box.x)), y: Math.max(0, Math.floor(box.y)), width: Math.ceil(box.width), height: Math.ceil(box.height) };
   const png = (await page.screenshot({ clip })).toString('base64');
@@ -105,7 +107,13 @@ async function strokes(page, box) {
         const d = Math.abs(px[i] - bg[0]) + Math.abs(px[i + 1] - bg[1]) + Math.abs(px[i + 2] - bg[2]);
         if (d < 60) continue;
         seen += 1;
-        if (px[i] > px[i + 1] + 50 && px[i] > px[i + 2] + 50) coral += 1;
+        // The colour this pixel would be at full strength, if it is a mix with the background.
+        const v = [px[i] - bg[0], px[i + 1] - bg[1], px[i + 2] - bg[2]];
+        let most = 0;
+        for (let k = 0; k < 3; k += 1) most = Math.max(most, v[k] > 0 ? v[k] / (255 - bg[k] || 1) : v[k] < 0 ? -v[k] / (bg[k] || 1) : 0);
+        const full = v.map((d, k) => bg[k] + d / (most || 1));
+        const isCoral = (c) => c[0] > c[1] + 50 && c[0] > c[2] + 50;
+        if (isCoral([px[i], px[i + 1], px[i + 2]]) || (isCoral(full) && full[0] > 150)) coral += 1;
         left = left === null ? x : Math.min(left, x);
         right = right === null ? x + 1 : Math.max(right, x + 1);
       }
