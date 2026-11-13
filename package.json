@@ -18,6 +18,7 @@
     "test:convert": "node --test tests/convert/*.test.mjs",
     "convert:plans": "node scripts/convert-plans/run.mjs",
     "test:healthcheck": "node --test tests/healthcheck/*.test.mjs",
+    "test:signin": "node --test tests/signin/*.test.mjs",
     "test:performance": "node --import ./tests/scores/register.mjs --test tests/performance/*.test.mjs"
   },
   "dependencies": {

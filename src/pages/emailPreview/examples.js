@@ -5,7 +5,7 @@
 import {
   healthCheckFinishedForCoachEmail, healthCheckResultsEmail, healthCheckFinishedNoteEmail,
   sessionTomorrowEmail, sessionInOneHourEmail, leadingIdeasClientEmail, leadingIdeasPublicEmail,
-  confirmEmailEmail, resetPasswordEmail,
+  confirmEmailEmail, resetPasswordEmail, changeEmailEmail,
 } from '../../lib/email/emails.js';
 import { instantAt } from '../../lib/time/index.js';
 
@@ -103,7 +103,7 @@ export const EMAIL_EXAMPLES = [
     name: 'Confirm your email',
     from: 'From The Clarity Portal, to a new person',
     sends: 'Sent today by Supabase when someone signs up. Its template is saved in Supabase, not in the portal’s code.',
-    doc: () => confirmEmailEmail({ link: `${PORTAL}/auth/callback` }),
+    doc: () => confirmEmailEmail({ link: `${PORTAL}/auth/confirmed` }),
   },
   {
     key: 'reset-password',
@@ -111,5 +111,12 @@ export const EMAIL_EXAMPLES = [
     from: 'From The Clarity Portal, to Sam',
     sends: 'Sent today by Supabase when someone asks for a new password. Its template is saved in Supabase, not in the portal’s code.',
     doc: () => resetPasswordEmail({ link: `${PORTAL}/auth/reset-password` }),
+  },
+  {
+    key: 'change-email',
+    name: 'Confirm your new email',
+    from: 'From The Clarity Portal, to Sam’s new address',
+    sends: 'Sent by Supabase when someone saves a new email in My Account. Its template is saved in Supabase, not in the portal’s code.',
+    doc: () => changeEmailEmail({ link: `${PORTAL}/my-account/email` }),
   },
 ];

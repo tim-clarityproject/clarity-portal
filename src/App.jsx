@@ -56,8 +56,6 @@ import ToughConversationStep1Feedback from './pages/ToughConversationStep1Feedba
 import ToughConversationSummary from './pages/ToughConversationSummary';
 import ToughConversationStep2Coaching from './pages/ToughConversationStep2Coaching';
 import AuthCallback from './pages/AuthCallback';
-import EmailConfirmation from './pages/EmailConfirmation';
-import CheckEmailConfirmation from './pages/CheckEmailConfirmation';
 import EditPersonalDetails from './pages/EditPersonalDetails';
 import OnboardingMission from './pages/OnboardingMission';
 import PersonalOperatingPlan from './pages/PersonalOperatingPlan';
@@ -83,16 +81,13 @@ import Dashboard from './pages/performance/Dashboard';
 import PersonalOperatingPlanArchived from './pages/PersonalOperatingPlanArchived';
 import PersonalOperatingPlanArchivedOne from './pages/PersonalOperatingPlanArchivedOne';
 import MissionProgressReviewDetail from './pages/MissionProgressReviewDetail';
-import AuthLogIn from './pages/auth/LogIn';
-import AuthSignUpStep1 from './pages/auth/SignUpStep1';
-import AuthSignUpStep2 from './pages/auth/SignUpStep2';
-import AuthCheckYourEmail from './pages/auth/CheckYourEmail';
-import AuthMission from './pages/auth/Mission';
-import AuthFinished from './pages/auth/Finished';
-import AuthWelcomeBack from './pages/auth/WelcomeBack';
-import ForgotPassword from './pages/auth/ForgotPassword';
-import ForgotPasswordCheckEmail from './pages/auth/ForgotPasswordCheckEmail';
-import ResetPassword from './pages/auth/ResetPassword';
+import SignIn from './pages/signin/SignIn';
+import CreateAccount from './pages/signin/CreateAccount';
+import CheckEmail from './pages/signin/CheckEmail';
+import EmailConfirmed from './pages/signin/EmailConfirmed';
+import ForgotPassword from './pages/signin/ForgotPassword';
+import NewPassword from './pages/signin/NewPassword';
+import Invite from './pages/signin/Invite';
 import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 import ScrollToTop from './components/ScrollToTop';
 import HubPage from './pages/hubs/HubPage';
@@ -230,42 +225,14 @@ function AppContent() {
     if (location.pathname === '/' && location.search) {
       const params = new URLSearchParams(location.search);
       const code = params.get('code');
-      const type = params.get('type');
       const error = params.get('error');
 
       // If there's a code or error parameter, redirect to email-confirmation to handle it properly
       if (code || error) {
-        console.log('[App] Detected confirmation code/error on root, redirecting to /email-confirmation');
-        console.log('[App] Code:', code, 'Type:', type, 'Error:', error);
-        navigate(`/email-confirmation${location.search}${location.hash}`, { replace: true });
+        navigate(`/auth/confirmed${location.search}${location.hash}`, { replace: true });
       }
     }
   }, [location.pathname, location.search, location.hash, navigate]);
-
-  // Handle post-signup redirect to mission page. Retargeted from the old
-  // /onboarding-mission to /auth/mission (the new Welcome-flow mission
-  // step) - src/pages/auth/Mission.jsx sets the same justConfirmedEmail
-  // flag itself (so AuthContext's own profile-upsert logic, which reads
-  // this flag, is unaffected), and is also the direct emailRedirectTo
-  // target, so in the normal case this effect and Mission.jsx's own
-  // navigation agree on the same destination.
-  useEffect(() => {
-    if (isLoading || !user) return;
-
-    // Check if user just confirmed their email (new signup flow). Guards
-    // on the whole /auth/ namespace, not just /auth/mission: AuthContext's
-    // own onAuthStateChange listener (which reads this same flag to decide
-    // terms_accepted) can finish its async profile upsert well after
-    // Mission.jsx has already saved the mission and moved the user on to
-    // /auth/finished - a narrower guard let this effect fire late and
-    // yank the user back to the mission screen after they'd already left it.
-    const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
-    if (justConfirmedEmail && !location.pathname.startsWith('/auth/') && !location.pathname.startsWith('/health-check/')) {
-      console.log('[App] New signup confirmed, redirecting to mission page');
-      navigate('/auth/mission', { replace: true });
-      localStorage.removeItem('justConfirmedEmail');
-    }
-  }, [user, isLoading, location.pathname, navigate]);
 
   if (isLoading) {
     // The opening screen: the turning crosshair on the page colour, the
@@ -298,6 +265,13 @@ function AppContent() {
     '/auth/sign-up',
     '/auth/sign-up/account',
     '/auth/check-email',
+    '/auth/confirmed',
+    '/auth/invite',
+    '/auth/google',
+    '/auth/before-you-start',
+    '/coach/sign-in',
+    '/coach/sign-in/code',
+    '/coach/sign-in/help',
     '/auth/mission',
     '/auth/finished',
     '/auth/welcome-back',
@@ -321,42 +295,37 @@ function AppContent() {
       <ScrollToTop />
       <ErrorBoundary>
         <Routes>
-          {/* PUBLIC ROUTES - No auth required. "/" and "/login" used to
-              render the old Login page unconditionally. They now gate on
-              auth state instead: a logged-out visitor goes to the new
-              Welcome-flow log in screen, a logged-in visitor goes straight
-              to Home. The old Login page (src/pages/Login.jsx) is kept in
-              the codebase but is no longer routed to from here. */}
+          {/* PUBLIC ROUTES - no sign-in needed. The sign-in pages (mock-up
+              M26; Tim, 11 Nov) sit outside ProtectedLayout, so they never
+              show the header, the menu or the phone bar. Each address an
+              email link or an old bookmark may still hold keeps working. */}
           <Route path="/" element={user ? <Navigate to="/welcome" replace /> : <Navigate to="/auth/login" replace />} />
-        <Route path="/login" element={user ? <Navigate to="/welcome" replace /> : <Navigate to="/auth/login" replace />} />
+        <Route path="/login" element={<MovedTo to="/auth/login" />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/email-confirmation" element={<EmailConfirmation />} />
-        <Route path="/check-email-confirmation" element={<CheckEmailConfirmation />} />
         <Route path="/terms-of-service" element={<Navigate to="/legal/terms" replace />} />
         <Route path="/privacy-policy" element={<Navigate to="/legal/privacy" replace />} />
         <Route path="/data-storage-notice" element={<Navigate to="/legal/data-storage" replace />} />
 
-        {/* NEW WELCOME FLOW - public routes (log in, sign up, check email,
-            mission, finished, welcome back). Deliberately NOT nested under
-            ProtectedLayout even where a session exists (Mission, Finished,
-            Welcome back) - these screens must never show the header pill,
-            drawer or tab bar that ProtectedLayout always renders. Each
-            page that needs a session checks AuthContext itself. */}
-        <Route path="/auth/login" element={<AuthLogIn />} />
-        <Route path="/auth/sign-up" element={<AuthSignUpStep1 />} />
-        <Route path="/auth/sign-up/account" element={<AuthSignUpStep2 />} />
-        <Route path="/auth/check-email" element={<AuthCheckYourEmail />} />
-        <Route path="/auth/mission" element={<AuthMission />} />
-        <Route path="/auth/finished" element={<AuthFinished />} />
-        <Route path="/auth/welcome-back" element={<AuthWelcomeBack />} />
+        {/* Signing in and creating an account. */}
+        <Route path="/auth/login" element={<SignIn />} />
+        <Route path="/auth/sign-up" element={<CreateAccount />} />
+        <Route path="/auth/sign-up/account" element={<MovedTo to="/auth/sign-up" />} />
+        <Route path="/auth/check-email" element={<CheckEmail kind="confirm" />} />
+        <Route path="/check-email-confirmation" element={<MovedTo to="/auth/check-email" />} />
+        {/* Where a new account's email link lands. The two older addresses
+            are in emails already sent, so they show the same page. */}
+        <Route path="/auth/confirmed" element={<EmailConfirmed />} />
+        <Route path="/auth/mission" element={<EmailConfirmed />} />
+        <Route path="/email-confirmation" element={<EmailConfirmed />} />
+        <Route path="/auth/invite" element={<Invite />} />
+        {/* The old welcome screens: straight to Home now. */}
+        <Route path="/auth/finished" element={<Navigate to="/welcome" replace />} />
+        <Route path="/auth/welcome-back" element={<Navigate to="/welcome" replace />} />
 
-        {/* Password reset journey - also public, same reasoning as the
-            block above. /auth/reset-password is reached from the emailed
-            link and must work with no existing session, so it cannot be
-            nested under ProtectedLayout either. */}
+        {/* Passwords. /auth/reset-password is where a reset link lands. */}
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/forgot-password/check-email" element={<ForgotPasswordCheckEmail />} />
-        <Route path="/auth/reset-password" element={<ResetPassword />} />
+        <Route path="/forgot-password/check-email" element={<CheckEmail kind="reset" />} />
+        <Route path="/auth/reset-password" element={<NewPassword />} />
 
         {/* Standalone, publicly reachable versions of the same three
             documents the sign-up reading pop-up shows, linked from the

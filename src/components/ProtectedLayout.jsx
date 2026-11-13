@@ -45,8 +45,10 @@ export default function ProtectedLayout() {
     // If no valid user after auth check complete, redirect to login immediately
     if (!user) {
       console.log('[ProtectedLayout] No user, redirecting to login');
-      navigate('/login', {
-        state: { returnTo: window.location.pathname, fromDirect: true },
+      // Where they were heading goes with them, so signing in lands them
+      // there (Tim, 11 Nov): the path with its query and hash.
+      navigate('/auth/login', {
+        state: { returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`, fromDirect: true },
         replace: true
       });
     } else {

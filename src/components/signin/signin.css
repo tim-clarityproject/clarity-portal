@@ -1,0 +1,503 @@
+/* The sign-in pages (mock-up M26, version 4, approved by Tim on 11 Nov).
+   Every value is M26's own: the design reference's Sign in section and
+   its parts (boxes, labels, the Show link, the Google button, "or", the
+   one coral button, text links, messages, the Back chevron, loading).
+   One spacing rhythm on every page: 24px under the name, title or core
+   line, 12px between boxes, 18px above the button, 18px to the first
+   link, and stacked links 28px apart so each keeps its own 44px tap area.
+   Sizes follow the device's text size (--u); colours are tokens, so the
+   pages follow Light, Dark or the device like every other page. */
+
+.ui-root.si-root {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ui-root .si-frame {
+  box-sizing: border-box;
+  padding: var(--si-top) var(--space-4) var(--space-6);
+}
+
+@media (max-width: 700px) {
+  .ui-root .si-frame {
+    padding: var(--si-top-phone) var(--space-3) var(--space-px40);
+  }
+}
+
+.ui-root .si-col {
+  position: relative;
+  box-sizing: border-box;
+  max-width: var(--si-col);
+  margin-inline: auto;
+  padding: var(--space-px10) 0;
+  text-align: center;
+}
+
+/* ---------- The bold crosshair and the name, in the same place on every page ---------- */
+
+.ui-root .si-mark {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-px14);
+}
+
+.ui-root .si-brand {
+  margin: 0 !important;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-meta) !important;
+  line-height: var(--lh-text);
+  letter-spacing: var(--ls-si-brand);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text);
+  /* Spaced capitals carry their spacing after the last letter too: the
+     same space before the first keeps the name's middle on the
+     crosshair's middle. Nekst capitals sit high on their line, so the
+     name is nudged down without moving anything under it. */
+  padding-left: var(--ls-si-brand);
+  position: relative;
+  top: var(--si-brand-nudge);
+}
+
+.ui-root .si-core {
+  margin: var(--space-2) 0 var(--space-px22) !important;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .si-ttl {
+  margin: var(--space-px18) 0 var(--space-px20) !important;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-si-title) !important;
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-page-title);
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: var(--text);
+}
+
+/* ---------- Lines of words ---------- */
+
+.ui-root .si-p {
+  margin: var(--space-2) 0 0 !important;
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+
+.ui-root .si-p strong {
+  font-weight: var(--fw-regular);
+  color: var(--text);
+}
+
+.ui-root .si-ttl + .si-p { margin-top: calc(-1 * var(--space-px14)) !important; }
+
+.ui-root .si-nowrap { white-space: nowrap; }
+
+/* ---------- Continue with Google, and "or" ---------- */
+
+.ui-root .si-col .ds-google {
+  transition: border-color var(--dur) var(--ease);
+}
+
+@media (hover: hover) {
+  .ui-root .si-col .ds-google:hover { border-color: var(--text); }
+}
+
+.ui-root .si-col .ds-google:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .si-ttl + .ds-google { margin-top: 0; }
+.ui-root .si-p + .ds-google { margin-top: var(--space-px18); }
+
+.ui-root .si-or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-px12);
+  margin: var(--space-px18) 0;
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--placeholder);
+}
+
+.ui-root .si-or::before,
+.ui-root .si-or::after {
+  content: '';
+  flex: 1;
+  height: var(--line-w);
+  background: var(--line);
+}
+
+/* ---------- Boxes ---------- */
+
+.ui-root .si-field {
+  margin-top: var(--space-px12);
+  text-align: left;
+}
+
+.ui-root .si-ttl + .si-field { margin-top: 0; }
+.ui-root .si-p + .si-field { margin-top: var(--space-px15); }
+.ui-root .si-err + .si-field { margin-top: var(--space-px12); }
+
+.ui-root .si-field label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .si-inp {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-height: 0 !important;
+  padding: var(--box-pad-y) var(--box-pad-x) !important;
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-field);
+  background: var(--card);
+  font-family: var(--font-body);
+  font-size: var(--fs-text) !important;
+  line-height: var(--lh-box);
+  letter-spacing: normal;
+  text-align: left;
+  color: var(--text);
+  caret-color: var(--coral-text);
+  transition: border-color var(--dur) var(--ease);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.ui-root .si-inp::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
+
+.ui-root .si-inp:focus {
+  border-color: var(--coral-text);
+}
+
+/* The browser's own fill for a remembered email or password keeps the
+   box's colours. */
+.ui-root .si-inp:-webkit-autofill,
+.ui-root .si-inp:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  box-shadow: 0 0 0 100px var(--card) inset;
+  caret-color: var(--coral-text);
+}
+
+.ui-root .si-pw {
+  position: relative;
+}
+
+.ui-root .si-pw .si-inp {
+  padding-right: var(--si-show-room) !important;
+}
+
+/* Password boxes say "Show", never an eye (the eye only means who can see this). */
+.ui-root .si-show {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  position: absolute;
+  right: var(--space-px6);
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: var(--tap-min);
+  min-height: var(--tap-min) !important;
+  padding: 0 var(--space-px12) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: var(--fs-note) !important;
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  transition: color var(--dur-fast) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+  .ui-root .si-show:hover { color: var(--coral-text); }
+}
+
+.ui-root .si-show:focus-visible {
+  color: var(--coral-text);
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+  border-radius: var(--space-px6);
+}
+
+/* ---------- The one tick box (18px, a 1.5px edge, 5px corners, a 12px tick, in a 44px tap area) ---------- */
+
+.ui-root .si-terms {
+  display: grid;
+  grid-template-columns: var(--tap-min) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  /* The box itself, not its tap area, lines up with the boxes' left edge. */
+  margin-left: calc((var(--checkbox-box) - var(--tap-min)) / 2);
+  /* Said outright, because an older phone rule gives every part of a form
+     the form's own width. */
+  width: calc(100% + (var(--tap-min) - var(--checkbox-box)) / 2) !important;
+  text-align: left;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .si-p + .si-terms { margin-top: var(--space-px2); }
+
+.ui-root .si-terms-words { cursor: pointer; }
+
+@media (hover: hover) {
+  .ui-root .si-terms .ds-check-box:hover > span { border-color: var(--text); }
+  .ui-root .si-terms .ds-check-box[aria-checked='true']:hover > span { border-color: var(--good); }
+}
+
+.ui-root .si-terms .ds-check-box:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: calc((var(--checkbox-box) - var(--tap-min)) / 2 + var(--space-px2));
+  border-radius: var(--tap-min);
+}
+
+/* ---------- Text links: each keeps its own 44px tap area ---------- */
+
+.ui-root .si-link {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-block;
+  min-height: var(--tap-min) !important;
+  padding: var(--space-px12) var(--space-px2) !important;
+  margin: calc(-1 * var(--space-px12)) calc(-1 * var(--space-px2));
+  font-family: var(--font-body);
+  font-size: inherit !important;
+  line-height: inherit;
+  letter-spacing: normal;
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: var(--space-px3);
+  transition: color var(--dur-fast) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+  .ui-root .si-link:hover { color: var(--coral-text); }
+}
+
+.ui-root .si-link:focus-visible {
+  color: var(--coral-text);
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: calc(-1 * var(--space-px10));
+  border-radius: var(--space-px6);
+}
+
+.ui-root .si-alt {
+  margin-top: var(--space-px2);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .si-btn + .si-alt,
+.ui-root .si-p + .si-alt { margin-top: var(--space-px17); }
+
+.ui-root .si-alt + .si-alt { margin-top: var(--space-4); }
+
+/* ---------- The one coral button ---------- */
+
+.ui-root .si-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-px10);
+  width: 100%;
+  min-height: var(--btn-h) !important;
+  margin-top: var(--space-px18);
+  padding: 0 var(--space-4) !important;
+  border-radius: var(--radius-pill);
+  background: var(--coral);
+  color: var(--on-coral);
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-si-btn) !important;
+  line-height: var(--lh-text);
+  letter-spacing: var(--ls-si-btn);
+  text-transform: uppercase;
+  text-align: center;
+  transition: background-color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+  .ui-root .si-btn:hover { background: var(--coral-hover); }
+}
+
+.ui-root .si-btn:focus-visible {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px3);
+}
+
+.ui-root .si-terms + .si-btn { margin-top: var(--space-px6); }
+.ui-root .si-p + .si-btn { margin-top: var(--space-px15); }
+
+/* ---------- Messages: what happened, then what to do ---------- */
+
+.ui-root .si-err {
+  display: flex;
+  gap: var(--space-px10);
+  align-items: flex-start;
+  margin-top: var(--space-px14);
+  padding: var(--space-px12) var(--space-3);
+  border-radius: var(--radius-input);
+  background: var(--coral-soft-tint);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  text-align: left;
+  color: var(--text);
+}
+
+.ui-root .si-err b {
+  font-weight: var(--fw-medium);
+  color: var(--coral-soft-text);
+}
+
+.ui-root .si-err span > span { display: block; }
+
+/* ---------- Loading: the turning crosshair with one short line ---------- */
+
+.ui-root .si-wait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-px12);
+  margin-top: var(--space-px40);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--placeholder);
+}
+
+/* ---------- Back: the chevron's visible edge on the content's left edge, 14px before its label ---------- */
+
+.ui-root .si-back {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--back-gap) - var(--chev-right-inset));
+  width: max-content;
+  max-width: 100%;
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  margin: 0 0 var(--space-px10) calc(-1 * var(--chev-left-inset));
+  font-family: var(--font-body);
+  font-size: var(--fs-secondary) !important;
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text-2);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .si-col > .si-back {
+  position: absolute;
+  top: calc(-1 * var(--si-back-rise));
+  left: 0;
+  margin-bottom: 0;
+}
+
+.ui-root .si-back .ds-chevron {
+  color: var(--text-2);
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+/* On hover only the chevron turns coral, never a shape behind it. */
+@media (hover: hover) {
+  .ui-root .si-back:hover .ds-chevron { color: var(--coral-text); background-color: var(--coral-text); }
+}
+
+.ui-root .si-back:focus-visible .ds-chevron { color: var(--coral-text); background-color: var(--coral-text); }
+
+.ui-root .si-back:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+  border-radius: var(--space-1);
+}
+
+/* ---------- Inside My Account: Password and Email, in the portal's own frame ---------- */
+
+.ui-root .si-col.si-col--account {
+  max-width: var(--si-col-account);
+  margin-inline: 0;
+  text-align: left;
+}
+
+.ui-root .si-col--account > .si-back {
+  position: static;
+  margin-bottom: var(--space-px6);
+}
+
+.ui-root .si-account-title {
+  margin: var(--space-px6) 0 var(--space-px22) !important;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-page-title) !important;
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-page-title);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.ui-root .si-col--account .si-account-title + .si-field { margin-top: 0; }
+
+.ui-root .si-col--account .si-p {
+  margin: 0 0 var(--space-2) !important;
+}
+
+.ui-root .si-col--account .si-alt { margin-top: var(--space-px17); }
+
+.ui-root .si-bwrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-px22);
+}
+
+.ui-root .si-bwrap .si-btn {
+  width: auto;
+  margin-top: 0;
+}
+
+@media (max-width: 700px) {
+  .ui-root .si-bwrap {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ui-root .si-bwrap .si-btn { width: 100%; }
+  .ui-root .si-bwrap .ds-status { align-self: center; }
+}
+
+/* A reader's own larger text: the column never forces a sideways scroll. */
+.ui-root .si-col { min-width: 0; }

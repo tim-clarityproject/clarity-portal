@@ -1,4 +1,5 @@
 import { useState, useContext, useEffect } from 'react';
+import { returnAddress } from '../lib/signIn/addresses';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { IconButton, Button } from './design';
@@ -41,8 +42,12 @@ export default function EmailVerificationBanner() {
     setMessage('');
 
     try {
-      // Try the resendEnrollmentEmail API (Supabase v2+)
-      const { error } = await supabase.auth.resendEnrollmentEmail(user.email);
+      // The same link a new account's Check your email page sends.
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: user.email,
+        options: { emailRedirectTo: returnAddress('confirmed', window.location.origin) },
+      });
       if (error && !error.message?.includes('not found')) {
         throw error;
       }

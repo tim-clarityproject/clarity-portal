@@ -8,6 +8,7 @@
 //
 //   supabase-confirm-signup.html / .txt   Supabase, Authentication, Emails, "Confirm signup"
 //   supabase-reset-password.html / .txt   Supabase, Authentication, Emails, "Reset password"
+//   supabase-change-email.html / .txt     Supabase, Authentication, Emails, "Change email address"
 //       {{ .ConfirmationURL }} is Supabase's own placeholder for the link.
 //   kit-leading-ideas.html                Kit, Email Templates, New HTML template:
 //       {{ message_content }}, {{ unsubscribe_url }} and {{ address }} are
@@ -18,7 +19,7 @@
 // once this branch is live.
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { EMAIL_IMAGES, renderEmail } from '../src/lib/email/template.js';
-import { confirmEmailEmail, resetPasswordEmail, leadingIdeasPublicEmail } from '../src/lib/email/emails.js';
+import { confirmEmailEmail, resetPasswordEmail, changeEmailEmail, leadingIdeasPublicEmail } from '../src/lib/email/emails.js';
 
 const LIVE = 'https://portal.theclarityproject.co.uk';
 const image = (key) => `${LIVE}${EMAIL_IMAGES[key].path}`;
@@ -38,6 +39,7 @@ const add = (name, doc, { text = true } = {}) => {
 };
 add('supabase-confirm-signup', confirmEmailEmail({ link: '{{ .ConfirmationURL }}' }));
 add('supabase-reset-password', resetPasswordEmail({ link: '{{ .ConfirmationURL }}' }));
+add('supabase-change-email', changeEmailEmail({ link: '{{ .ConfirmationURL }}' }));
 add('kit-leading-ideas', kit, { text: false });
 delete files['kit-leading-ideas.subject.txt'];
 

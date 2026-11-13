@@ -171,6 +171,25 @@
   --space-px22: 22px;
   --space-px26: 26px;
   --space-px28: 28px;
+  /* The sign-in pages (mock-up M26, Tim, 11 Nov): one spacing rhythm on
+     every page. They measure 24px under the name, title or core line, 12px
+     between boxes, 18px above the button and 18px to the first link. */
+  --space-px13: 13px;
+  --space-px15: 15px;
+  --space-px17: 17px;
+  --space-px40: 40px;
+  --si-col: 360px;            /* the sign-in column */
+  --si-col-account: 520px;    /* My Account's Password and Email pages */
+  --si-top: 96px;             /* from the top of the page to the column */
+  --si-top-phone: 104px;      /* on a phone: clear of the notch, with Back above */
+  --si-back-rise: 52px;       /* "Back to sign in" sits this far above the column */
+  --si-mark: 32px;            /* the bold crosshair */
+  --si-show-room: 76px;       /* room in a password box for "Show" */
+  --fs-si-title: calc(22 * var(--u-big));
+  --fs-si-btn: calc(12 * var(--u));
+  --ls-si-brand: 0.22em;
+  --ls-si-btn: 0.14em;
+  --si-brand-nudge: 0.1em;    /* Nekst capitals sit high on their line */
 
   /* Radii (--radius-input 12px, --radius-card 16px and --radius-pill
      are defined above) */

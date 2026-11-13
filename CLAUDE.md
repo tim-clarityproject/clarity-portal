@@ -80,6 +80,27 @@
 
 30. **Lists are rows** (Tim, 26 Oct, 16:51): when someone lists several things, each gets its own box, with "Add another" (the `AddButton`) to add a row and the 45 degree crosshair (`IconButton`) to remove one, never one big box ("one per line" or similar). Tools that still ask for several things in one box change when each tool is rebuilt.
 
+## Sign-in pages (mock-up M26, version 4; Tim, 11 Nov)
+
+M26 wins over everything else for these pages. They are built only from `src/components/signin` (`SignInParts.jsx`, `signin.css`: M26's own values, each part from the design reference) with their rules in `src/lib/signIn`, and checked against M26 itself, part by part to half a pixel, by `tests/signin/compare.mjs` (all its screens, dark and light, 1280 and 390 by 844).
+
+1. **The bold crosshair and THE CLARITY PORTAL sit at the top of every sign-in page, in the same place on every page** (`SignInPage`). The name is in Nekst capitals, nudged down 0.1em, with its middle on the crosshair's middle (within 0.5px). New brand work uses the bold crosshair: never a Made Studios lockup, never a new logo.
+2. **Each page other than Sign in has one short title in capitals, as its h1**, word for word from M26 (Create your account, Check your email, Email confirmed, Reset your password, New password, Link not working). On Sign in the name is the h1, and "Clarity drives performance." shows there only.
+3. **One spacing rhythm:** 24px under the name, title or core line; 12px between boxes; 18px above the button; the first text link 18px under the button. No footer on these pages.
+4. **Text links stacked one above another never share a tap area:** each keeps its own 44px, so their lines are at least 28px apart.
+5. **One tick box:** "I’m 18 or over and I agree to the terms", where "terms" opens the one terms panel with all three legal documents (`TermsRow`). Its row lines up with the boxes' left edge. **Every tick box in the portal is the shared 18px one** (a 1.5px edge, 5px corners, a 12px tick, a 44px tap area: `.ds-check-box`); no page draws its own.
+6. **Buttons are never greyed out.** Pressing Create my account or Continue with Google without the tick shows "Tick the box to carry on." beside the box. A message sits where M26 draws it: under the box it is about.
+7. **Create my account asks for First name, above Email** (kept in the account's `first_name` and `profiles.first_name`, where the portal already reads it). An account set up from a coach's invite has no First name box.
+8. **Passwords are at least 8 characters and never a known leaked one**, checked in the page as well as by Supabase (`src/lib/signIn/password.js`: only the first 5 characters of the password's fingerprint leave the device). "Please use at least 8 characters." shows only after a password that's too short is tried.
+9. **Email sign-ups confirm their email before they get in.** Email confirmed ends with "Open my portal". **Reset links work for 1 hour**, and the page and the email both say so. A new password signs people straight in to Home, with "Saved".
+10. **People always stay signed in on their own devices:** no "Remember me". No "email me a sign-in link".
+11. **After signing in, people land where their link pointed, otherwise Home** (`safeNext`, `takeNext` in `src/lib/signIn/addresses.js`): only ever a place inside the portal.
+12. **A return address is worked out from the page's own origin, never written out** (`returnAddress`). Supabase only returns to addresses on its allowed list; a missing one is added there by Tim, never worked around.
+13. **Words, exactly as M26 has them** (`src/lib/signIn/words.js`): errors say what happened, then what to do, on two lines ("That email or password doesn’t match." then "Try again, or reset your password."); "Forgotten your password?", "Email my reset link", "Didn’t get it? Send it again", "Save my new password", "This link has run out or has already been used.", "Send a new link", "Set my password". Sign-in boxes stay labelled "Email" and "Password" (the agreed exception). Password boxes say "Show", never an eye.
+14. **Every box has the right autocomplete** (username for Email, current-password, new-password, given-name for First name, one-time-code for the code) **and every label is tied to its box.** Hover and keyboard focus show on the Google button, the tick box, Show and every text link.
+15. **The agreement to the terms is stored the same way however the account is made** (`src/lib/signIn/terms.js`): on the account itself (`terms_accepted`, `terms_accepted_at`, `terms_documents`, which migration 021 reads) and on `profiles.terms_accepted`, which `AuthContext` fills in from the account's own record on the next sign-in.
+16. **Tests never send a real email and never open Google's own page:** `tests/signin/shared.mjs` answers every call that would (sign-up, resend, reset, a change of email).
+
 ## Rules of 5 Nov (START-HERE section 5e)
 
 Tim's calm-pages and wording rules of 5 Nov win over anything older in this file where they differ (the eye alone with its words in a pop-up, no ⓘ beside page titles, and so on; START-HERE 5e). Each is shown with an example in the design gallery, under "Rules of 5 Nov".

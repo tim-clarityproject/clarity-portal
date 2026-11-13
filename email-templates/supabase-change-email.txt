@@ -1,0 +1,14 @@
+The Clarity Portal
+
+Confirm your new email address.
+
+Your email changes once you open this link.
+
+Confirm my new email:
+{{ .ConfirmationURL }}
+
+If you didn’t ask for this, you can ignore this email and your email stays as it is.
+
+----
+You get this because this email address was entered as a new one in The Clarity Portal.
+The Clarity Project LTD, founded by Dr. Tim Dutton

@@ -209,8 +209,29 @@ export function resetPasswordEmail({ link }) {
     blocks: [
       { type: 'heading', text: 'Choose a new password.' },
       { type: 'button', label: 'Choose my new password', href: link },
+      // Reset links work for 1 hour, and the email says so (Tim, 11 Nov).
+      { type: 'text', text: 'The link works for 1 hour.' },
       { type: 'text', text: 'If you didn’t ask for this, you can ignore this email and your password stays as it is.', quiet: true },
     ],
     footer: { lines: ['You get this because a new password was asked for with this email address.', EMAIL_SIGN_OFF] },
+  };
+}
+
+/**
+ * Confirm a new email address, asked for in My Account (M26: "Your email
+ * changes once you open it."). It goes to the new address. `link` is
+ * Supabase's own placeholder in the saved template.
+ */
+export function changeEmailEmail({ link }) {
+  return {
+    brand: 'portal',
+    subject: 'Confirm your new email for The Clarity Portal',
+    blocks: [
+      { type: 'heading', text: 'Confirm your new email address.' },
+      { type: 'text', text: 'Your email changes once you open this link.' },
+      { type: 'button', label: 'Confirm my new email', href: link },
+      { type: 'text', text: 'If you didn’t ask for this, you can ignore this email and your email stays as it is.', quiet: true },
+    ],
+    footer: { lines: ['You get this because this email address was entered as a new one in The Clarity Portal.', EMAIL_SIGN_OFF] },
   };
 }

@@ -1,5 +1,6 @@
 import { createContext, useEffect, useState } from 'react';
 import { supabase, auth } from '../lib/supabase';
+import { hasAgreed } from '../lib/signIn/terms';
 import { sessionManager } from '../lib/sessionManager';
 import { diag } from '../utils/diag';
 import { clearAppStorage } from '../lib/clearAppStorage';
@@ -132,10 +133,13 @@ export function AuthProvider({ children }) {
 
             // Fill in the profile only where it is still empty. A name the
             // person has changed in Edit profile is never put back to the
-            // sign-up name, and loading a page never changes whether the
-            // terms are accepted: terms_accepted is only ever set to true,
-            // and only straight after confirming a new sign-up.
-            const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
+            // sign-up name. The profile's terms_accepted is only ever set
+            // to true, and only from the account's own record of the tick
+            // box (src/lib/signIn/terms.js): an email sign-up sends it with
+            // the sign-up, a Google sign-up and an invite save it when the
+            // box is ticked. It no longer depends on a flag left on the
+            // device, which a link opened elsewhere never had.
+            const justConfirmedEmail = hasAgreed(session.user);
             const { data: existing, error: readError } = await supabase
               .from('profiles')
               .select('email, first_name, last_name, terms_accepted')

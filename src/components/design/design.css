@@ -1932,7 +1932,10 @@
   color: var(--on-text);
 }
 
-/* Checkbox: 22px square in a 44px target. */
+/* The one tick box, everywhere (Tim, 11 Nov, confirming 23 Oct): an 18px
+   square with a 1.5px edge, 5px corners and a 12px tick, inside a 44px tap
+   area (--checkbox-box, --line-w-strong, --radius-box, --tick-size). No
+   page draws its own. */
 .ui-root .ds-check {
   display: flex;
   flex-wrap: wrap;
