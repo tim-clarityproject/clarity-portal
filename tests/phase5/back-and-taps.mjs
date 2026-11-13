@@ -157,7 +157,9 @@ async function measureSwitches(page, tag) {
     for (const el of document.querySelectorAll('.ui-root .ui-switch, .ui-root .ds-switch')) {
       const r = el.getBoundingClientRect();
       if (r.width < 2 || getComputedStyle(el).visibility === 'hidden') continue;
-      el.scrollIntoView({ block: 'center' });
+      // At once: the page scrolls smoothly (src/index.css), and a reading taken
+      // mid-scroll finds a switch low on a long page still under the phone bar.
+      el.scrollIntoView({ block: 'center', behavior: 'instant' });
       const q = el.getBoundingClientRect();
       const cx = q.left + q.width / 2; const cy = q.top + q.height / 2;
       const misses = [];

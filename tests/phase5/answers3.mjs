@@ -198,12 +198,18 @@ try {
       } catch (e) { pass(`outlined edges ${tag}: measured`, false, `${e.message.split('\n')[0]} at ${page.url().replace(APP, '')}: ${(await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 160)}`); }
 
       try {
-        reviewedToday = londonToday();
         // From 21:00 to 03:00 Home's one card is Sleep wind down, not the
         // finished day's, so this failed falsely every evening (break-it, 12
-        // Nov, 21:26). The page's clock reads early evening on the same day
-        // for this part (18:30 UTC is 18:30 or 19:30 in London).
-        await page.clock.setFixedTime(new Date(`${reviewedToday}T18:30:00Z`));
+        // Nov, 21:26). The page's clock reads early evening for this part
+        // (18:30 UTC is 18:30 or 19:30 in London): the most recent one, so
+        // never a time still to come. A clock ahead of the real one makes
+        // the sign-in look run out, the page asks for a fresh one on every
+        // request, and Supabase signs it out after about 30 (13 Nov: this
+        // failed falsely on any run before 18:30).
+        let early = new Date(`${londonToday()}T18:30:00Z`);
+        if (early.getTime() > Date.now()) early = new Date(early.getTime() - 24 * 60 * 60 * 1000);
+        reviewedToday = early.toISOString().slice(0, 10);
+        await page.clock.setFixedTime(early);
         await page.goto(`${APP}/welcome`);
         await settle();
         const link = page.getByRole('link', { name: 'Edit my review' }).or(page.getByRole('button', { name: 'Edit my review' }));
