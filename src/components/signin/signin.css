@@ -289,7 +289,14 @@
 
 .ui-root .si-p + .si-terms { margin-top: var(--space-px2); }
 
-.ui-root .si-terms-words { cursor: pointer; }
+/* When the words wrap (a narrow phone, a reader's larger text), "terms"
+   can be on the first or last line: the row grows to hold its 44px tap
+   area, so it never reaches the box above or the button underneath. One
+   line at the standard text size is 44px as before. */
+.ui-root .si-terms-words {
+  cursor: pointer;
+  padding-block: max(calc((var(--tap-min) - 1lh) / 2), var(--space-2));
+}
 
 @media (hover: hover) {
   .ui-root .si-terms .ds-check-box:hover > span { border-color: var(--text); }
@@ -418,6 +425,13 @@
 }
 
 .ui-root .si-err span > span { display: block; }
+
+/* A long email address in a message wraps inside the box, at any text
+   size, and never runs out of its side. */
+.ui-root .si-err > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 
 /* ---------- Loading: the turning crosshair with one short line ---------- */
 

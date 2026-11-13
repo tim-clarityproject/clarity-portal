@@ -10,7 +10,7 @@ import { emailChangeLink, landingFor } from '../../lib/signIn/linkSession';
 import { codeWasSwapped } from '../../lib/signIn/linkRules';
 import { isLeaked, LEAKED, refusedAsLeaked, refusedAsLong, refusedAsShort, TOO_LONG, TOO_SHORT, tooLong, tooShort } from '../../lib/signIn/password';
 import { CURRENT_NO_MATCH, DIDNT_SAVE, DIDNT_SEND, EMAIL_LINK_OVER, EMAIL_NOT_RIGHT, looksLikeEmail, ONE_LINK_OPENED, refusedAsSame, SAME_EMAIL, SAME_PASSWORD, TOO_MANY } from '../../lib/signIn/words';
-import { Alt, BackTo, EmailField, MainButton, Message, PasswordField, TextLink } from '../../components/signin/SignInParts';
+import { Alt, BackTo, EmailField, MainButton, Message, Note, PasswordField, TextLink } from '../../components/signin/SignInParts';
 
 // Inside My Account (M26): Password and Email, in the portal's own frame
 // (the header, the Mission pill and the phone bar), with the same boxes,
@@ -240,7 +240,7 @@ export function AccountEmail() {
     return (
       <AccountPage title="Check your email">
         <p className="si-p">We’ve sent a link to your current email and to <strong>{sentTo}</strong>. Open both to finish.</p>
-        {oneOpened && !again ? <p className="si-p" role="status">{ONE_LINK_OPENED}</p> : null}
+        {oneOpened && !again ? <Note>{ONE_LINK_OPENED}</Note> : null}
         <Alt>Didn’t get it? <TextLink onClick={sendAgain}>Send it again</TextLink></Alt>
         {again ? (
           <div className="si-alt" role="status">

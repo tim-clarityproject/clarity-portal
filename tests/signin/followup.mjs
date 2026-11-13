@@ -15,6 +15,7 @@ import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
 import { APP, SAM, guard, makeChecks, sleep, testEnv } from './shared.mjs';
 import { invited, signedIn } from './screens.mjs';
+import { overlappingTaps } from '../phase5/taps.mjs';
 
 const env = testEnv();
 const { pass, done } = makeChecks();
@@ -240,6 +241,36 @@ const noToken = (page) => !/token_hash|type=/.test(new URL(page.url()).search);
   await page.waitForURL(/\/welcome$/, { timeout: 30000 }).catch(() => null);
   pass('and setting a password instead still works', path(page) === '/welcome' && 'password' in (state.saved[0] || {}), path(page));
   pass('a different Google account: no page error', v.errors.length === 0, v.errors[0]);
+  await v.ctx.close();
+}
+{
+  // A long email address in that message, on a narrow phone and at twice
+  // the text size (the UI tester, 13 Nov): its words wrap inside the box,
+  // nothing runs off the side, and "terms" on a wrapped line keeps its own
+  // tap area, clear of the button under it.
+  const long = 'alexandria.featherstonehaugh@harbourlaneconsultingpartners.co';
+  const v = await visit({ who: (u) => invited({ ...sam(u), email: long }), picked: SAM.gmail });
+  const { page } = v;
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto(`${APP}/auth/invite?token_hash=a-mock-token&type=invite`);
+  await heading(page, 'Welcome, Sam');
+  await page.getByRole('checkbox').click();
+  await press(page, 'Continue with Google');
+  await page.locator('.si-err').first().waitFor({ timeout: 30000 }).catch(() => null);
+  const inside = () => page.evaluate(() => {
+    const box = document.querySelector('.si-err').getBoundingClientRect();
+    const out = [...document.querySelectorAll('.si-err, .si-err *')].filter((el) => { const b = el.getBoundingClientRect(); return b.right > box.right + 0.5 || b.right > innerWidth + 0.5; }).length;
+    return { out, sideways: document.documentElement.scrollWidth - innerWidth };
+  });
+  let seen = await inside();
+  pass('a long email in the invite’s message wraps inside its box at 320 wide, with no sideways scroll', (await message(page)).includes(long) && seen.out === 0 && seen.sideways <= 0, JSON.stringify(seen));
+  let taps = await page.evaluate(overlappingTaps);
+  pass('and no two tap areas overlap there (“terms” on a wrapped line, above the button)', taps.length === 0, taps.join('; '));
+  await page.addStyleTag({ content: 'html{font-size:32px !important}' });
+  await sleep(300);
+  seen = await inside();
+  taps = await page.evaluate(overlappingTaps);
+  pass('the same at twice the text size', seen.out === 0 && seen.sideways <= 0 && taps.length === 0, `${JSON.stringify(seen)} ${taps.join('; ')}`);
   await v.ctx.close();
 }
 {
