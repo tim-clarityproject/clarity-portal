@@ -35,3 +35,15 @@ export function noteStands(raw, userId, now = Date.now()) {
   }
 }
 
+
+/**
+ * Whether the sign-in on this device is still the account the link
+ * brought. A page left open keeps showing its form, but the device's
+ * sign-in can change under it (someone else signs in, in another tab), and
+ * a save goes to whoever is signed in now. So a page that sets a password
+ * without asking for the old one asks this just before it saves (the
+ * break-it tester, 13 Nov).
+ */
+export function stillSignedInAs(session, userId) {
+  return Boolean(userId) && session?.user?.id === userId;
+}

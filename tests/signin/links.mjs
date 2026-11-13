@@ -231,5 +231,157 @@ async function askForReset(page) {
   await v.ctx.close();
 }
 
+// ---------------------------------------------------------------- 8. the break-it tester, 13 Nov
+// Every sign-in here is answered with the one session above (no more real
+// sign-ins), shown as whoever `state.user` is at the time.
+const answered = (v) => {
+  v.answers['POST /auth/v1/token'] = async ({ url }) => {
+    if (url.searchParams.get('grant_type') === 'refresh_token') return 'continue';
+    if (url.searchParams.get('grant_type') === 'pkce') v.state.swaps += 1;
+    return { status: 200, body: { ...session, user: v.state.user } };
+  };
+};
+const signInHere = async (page, land = /\/welcome$/) => {
+  await page.goto(`${APP}/auth/login`);
+  await page.locator('input[type=email]').fill(SAM.email);
+  await page.locator('.si-pw input').fill('harbourlane42');
+  await page.keyboard.press('Enter');
+  await page.waitForURL(land, { timeout: 30000 }).catch(() => null);
+};
+const says = (page) => page.locator('.si-err').first().innerText({ timeout: 1000 }).then((t) => t.replace(/\s+/g, ' ').trim()).catch(() => '');
+const someoneElse = (u) => ({ ...u, id: '00000000-0000-4000-8000-00000000000b', email: 'jo.reed@harbourlane.co', user_metadata: { first_name: 'Jo', terms_accepted: true } });
+
+// A New password page left open, then someone else signs in on the device
+// (another tab). A save goes to whoever is signed in now.
+{
+  const v = await visit();
+  const { page, state } = v;
+  answered(v);
+  await askForReset(page);
+  await page.goto(`${APP}/auth/reset-password?code=a-mock-code`);
+  await heading(page, 'New password');
+  // The device's sign-in is now someone else's.
+  const two = await v.ctx.newPage();
+  await two.goto(`${APP}/coach/sign-in/help`);
+  await two.evaluate((other) => {
+    const kept = JSON.parse(localStorage.getItem('clarity-portal-auth'));
+    localStorage.setItem('clarity-portal-auth', JSON.stringify({ ...kept, user: { ...kept.user, ...other } }));
+  }, { id: '00000000-0000-4000-8000-00000000000b', email: 'jo.reed@harbourlane.co' });
+  pass('the page left open still shows New password (it has heard nothing)', (await title(page)) === 'new password', await title(page));
+  // A password longer than Supabase keeps is said in the page first.
+  await page.locator('.si-pw input').fill('a'.repeat(73));
+  await press(page, 'Save my new password');
+  pass('73 characters: “Please use 72 characters or fewer.”, nothing sent', (await says(page)) === '! Please use 72 characters or fewer.' && state.saved.length === 0, await says(page));
+  await page.locator('.si-pw input').fill('lighthouse-keeper-77');
+  await press(page, 'Save my new password');
+  await heading(page, 'Link not working');
+  pass('a New password page left open never sets a password for whoever has signed in since', state.saved.length === 0 && (await title(page)) === 'link not working', `${state.saved.length} saved; ${await title(page)}`);
+  pass('and its note is gone, so a refresh opens nothing either', !(await kept(page)).includes('clarity-sign-in-reset'), (await kept(page)).join(','));
+  await v.ctx.close();
+}
+
+// The code box takes a code however it is typed or pasted.
+{
+  const coach = (u) => ({ ...sam(u), factors: [{ id: '00000000-0000-4000-8000-0000000000f1', factor_type: 'totp', status: 'verified', friendly_name: 'Authenticator' }] });
+  const v = await visit({ who: coach });
+  const { page } = v;
+  answered(v);
+  await v.ctx.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => null);
+  await signInHere(page, /\/coach\/sign-in\/code$/);
+  const box = page.getByLabel('Code');
+  await box.waitFor({ timeout: 20000 });
+  for (const copied of ['123 456', '123-456', ' 123456 ', '１２３ ４５６']) {
+    await box.fill('');
+    await page.evaluate((text) => navigator.clipboard.writeText(text), copied);
+    await box.focus();
+    await page.keyboard.press('ControlOrMeta+V');
+    await sleep(200);
+    pass(`a code pasted as “${copied}” reads as its six digits`, (await box.inputValue()) === '123456', await box.inputValue());
+  }
+  for (const put of ['123 456', '12-34-56']) {
+    await box.fill('');
+    await box.focus();
+    await page.keyboard.insertText(put);
+    pass(`a code put in at once as “${put}” (a keyboard’s suggestion) reads as its six digits`, (await box.inputValue()) === '123456', await box.inputValue());
+  }
+  await box.fill('');
+  await box.pressSequentially('12a3 4567');
+  pass('typed a key at a time: digits only, six at most', (await box.inputValue()) === '123456' && (await box.getAttribute('maxlength')) === '6', await box.inputValue());
+  await v.ctx.close();
+}
+
+// Sign in: only “doesn’t match” when that is what Supabase said.
+{
+  const v = await visit();
+  const { page, answers } = v;
+  answers['POST /auth/v1/token'] = () => ({ status: 400, body: { code: 400, error_code: 'user_banned', msg: 'User is banned' } });
+  await signInHere(page, /never/).catch(() => null);
+  await page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+  const banned = await says(page);
+  pass('an account that is switched off is never told its password doesn’t match (or anything raw)', banned.startsWith('! That didn’t sign you in.') && !/banned|match/i.test(banned), banned);
+  answers['POST /auth/v1/token'] = () => ({ status: 400, body: { code: 400, error_code: 'invalid_credentials', msg: 'Invalid login credentials' } });
+  await press(page, 'Sign in');
+  await page.getByText('That email or password doesn’t match.').waitFor({ timeout: 10000 }).catch(() => null);
+  pass('a wrong password still says “That email or password doesn’t match.”', (await says(page)).startsWith('! That email or password doesn’t match.'), await says(page));
+  await v.ctx.close();
+}
+
+// My Account's Password page: a check of the current password that never answers.
+{
+  const v = await visit();
+  const { page, state, answers } = v;
+  answered(v);
+  await signInHere(page);
+  await page.goto(`${APP}/my-account/password`);
+  await page.waitForSelector('.si-col--account');
+  let asked = 0;
+  answers['POST /auth/v1/token'] = ({ url }) => {
+    if (url.searchParams.get('grant_type') !== 'password') return 'continue';
+    asked += 1;
+    return new Promise(() => {});
+  };
+  await page.locator('.si-pw input').nth(0).fill('harbourlane42');
+  await page.locator('.si-pw input').nth(1).fill('lighthouse-keeper-77');
+  await press(page, 'Save my new password');
+  await press(page, 'Save my new password');
+  await page.waitForSelector('.si-err', { timeout: 25000 }).catch(() => null);
+  const line = await says(page);
+  pass('Password, an answer that never comes: asked once, then a calm line (never a dead button)', asked === 1 && /^! (That didn’t save\.|Saving a new password needs a connection)/.test(line) && state.saved.length === 0, `${asked} asked; ${line}`);
+
+  // Sign out in one tab: the person's other tab closes too, and keeps no page to land on.
+  answered(v);
+  const two = await v.ctx.newPage();
+  await two.goto(`${APP}/my-plans?area=personal`);
+  await two.waitForURL(/\/my-plans/, { timeout: 20000 });
+  await sleep(1500);
+  await page.goto(`${APP}/my-account`);
+  await page.getByRole('button', { name: 'Sign out' }).first().waitFor({ timeout: 20000 });
+  await page.getByRole('button', { name: 'Sign out' }).first().click();
+  await page.waitForURL(/\/auth\/login$/, { timeout: 30000 }).catch(() => null);
+  await two.bringToFront();
+  await two.waitForURL(/\/auth\/login$/, { timeout: 20000 }).catch(() => null);
+  await two.waitForSelector('.si-col').catch(() => null);
+  await sleep(500);
+  pass('Sign out in one tab closes the person’s other tab as well', path(two) === '/auth/login', path(two));
+  pass('and the other tab keeps no page for the next person to land on', !(await kept(two)).includes('clarity-sign-in-next'), (await kept(two)).join(','));
+  state.user = someoneElse(state.user);
+  await two.locator('input[type=email]').fill('jo.reed@harbourlane.co');
+  await two.locator('.si-pw input').fill('harbourlane42');
+  await two.keyboard.press('Enter');
+  await two.waitForURL(/\/(welcome|my-plans)/, { timeout: 30000 }).catch(() => null);
+  pass('the next person to sign in on that other tab starts at Home', path(two) === '/welcome', path(two));
+
+  // A page the browser brings back whole (Back, after another site) once
+  // the person has signed out: it starts again at Sign in.
+  await two.evaluate(() => {
+    localStorage.removeItem('clarity-portal-auth');
+    window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+  });
+  await two.waitForURL(/\/auth\/login$/, { timeout: 10000 }).catch(() => null);
+  pass('a page brought back whole after the person signed out goes to Sign in', path(two) === '/auth/login', path(two));
+  pass('the break-it checks: no page error', v.errors.length === 0, v.errors[0]);
+  await v.ctx.close();
+}
+
 await browser.close();
 done();

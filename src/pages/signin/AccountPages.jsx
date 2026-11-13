@@ -8,7 +8,7 @@ import { checkCurrentPassword, hasPassword } from '../../lib/signIn/account';
 import { returnAddress, SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import { landingFor } from '../../lib/signIn/linkSession';
 import { codeWasSwapped } from '../../lib/signIn/linkRules';
-import { isLeaked, LEAKED, refusedAsLeaked, refusedAsShort, TOO_SHORT, tooShort } from '../../lib/signIn/password';
+import { isLeaked, LEAKED, refusedAsLeaked, refusedAsLong, refusedAsShort, TOO_LONG, TOO_SHORT, tooLong, tooShort } from '../../lib/signIn/password';
 import { CURRENT_NO_MATCH, DIDNT_SAVE, DIDNT_SEND, EMAIL_NOT_RIGHT, looksLikeEmail, refusedAsSame, SAME_EMAIL, SAME_PASSWORD, TOO_MANY } from '../../lib/signIn/words';
 import { Alt, BackTo, EmailField, MainButton, Message, PasswordField, TextLink } from '../../components/signin/SignInParts';
 
@@ -66,6 +66,7 @@ export function AccountPassword() {
     setSaved(false);
     if (!current) return say('current', CURRENT_NO_MATCH);
     if (tooShort(next)) return say('next', TOO_SHORT);
+    if (tooLong(next)) return say('next', TOO_LONG);
     if (next === current) return say('next', SAME_PASSWORD);
     if (isOffline()) return say('next', needsConnection('Saving a new password'));
     busy.current = true;
@@ -79,6 +80,7 @@ export function AccountPassword() {
       if (error) {
         if (refusedAsLeaked(error)) return say('next', LEAKED);
         if (refusedAsShort(error)) return say('next', TOO_SHORT);
+        if (refusedAsLong(error)) return say('next', TOO_LONG);
         if (refusedAsSame(error)) return say('next', SAME_PASSWORD);
         return say('next', friendlyError(error, DIDNT_SAVE.join(' '), 'Saving a new password'));
       }

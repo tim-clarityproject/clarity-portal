@@ -21,15 +21,20 @@ export const YOU_SIGN_IN_WITH_GOOGLE = 'You sign in with Google.';
  * sign-in go at once.
  * @returns {Promise<'ok'|'no'|'busy'|'error'>} 'busy' when it was tried too many times
  */
-export async function checkCurrentPassword(supabase, email, password, fetchFn = globalThis.fetch) {
+export async function checkCurrentPassword(supabase, email, password, fetchFn = globalThis.fetch, timeoutMs = 15000) {
   const base = supabase?.supabaseUrl;
   const key = supabase?.supabaseKey;
   if (!base || !key || !email || !password) return 'no';
+  // An answer that never comes is given up on (as every other request to
+  // Supabase is, connection.js), so the page says so and works again.
+  const stop = typeof globalThis.AbortController === 'function' ? new globalThis.AbortController() : null;
+  const timer = stop ? setTimeout(() => stop.abort(), timeoutMs) : null;
   try {
     const answer = await fetchFn(`${base}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { apikey: key, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
+      signal: stop?.signal,
     });
     if (answer.status === 429) return 'busy';
     if (answer.status === 400 || answer.status === 401 || answer.status === 422) return 'no';
@@ -41,5 +46,7 @@ export async function checkCurrentPassword(supabase, email, password, fetchFn = 
     return 'ok';
   } catch {
     return 'error';
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }

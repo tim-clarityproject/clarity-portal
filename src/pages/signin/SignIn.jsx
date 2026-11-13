@@ -61,7 +61,11 @@ export default function SignIn({ coach = false }) {
       return navigate(SIGN_IN_PATHS.checkEmail, { state: { email: email.trim() } });
     }
     if (error?.status === 429) return setMessage(TOO_MANY);
-    if (error?.status === 400 || error?.code === 'invalid_credentials' || /invalid login credentials/i.test(error?.message || '')) return setMessage(NO_MATCH);
+    // "Doesn’t match" only when that is what Supabase said. Another refusal
+    // (the account is switched off, email sign-in is off) must not send
+    // someone round and round resetting a password that was right.
+    const said = error?.code || '';
+    if (said === 'invalid_credentials' || /invalid login credentials/i.test(error?.message || '') || (error?.status === 400 && !said)) return setMessage(NO_MATCH);
     return setMessage(friendlyError(error, DIDNT_SIGN_IN.join(' '), 'Signing in'));
   };
 

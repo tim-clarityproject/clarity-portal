@@ -161,7 +161,8 @@ export function Alt({ children }) {
  * @param {string|string[]} lines
  */
 export function Message({ lines }) {
-  const list = (Array.isArray(lines) ? lines : [lines]).filter(Boolean);
+  // Words only: anything else (a crafted history state, say) shows nothing.
+  const list = [...new Set((Array.isArray(lines) ? lines : [lines]).filter((line) => typeof line === 'string' && line))];
   if (!list.length) return null;
   return (
     <div className="si-err" role="alert">

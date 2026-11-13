@@ -71,6 +71,10 @@ export function safeNext(value) {
     return null;
   }
   if (url.origin !== 'https://portal.invalid') return null;
+  // Read as an address, "/.//other.site" loses its dot and becomes
+  // "//other.site", which a browser takes for another site (the break-it
+  // tester, 13 Nov): what comes out is held to the same rule as what went in.
+  if (url.pathname.startsWith('//')) return null;
   if (NOT_A_DESTINATION.test(url.pathname)) return null;
   return `${url.pathname}${url.search}${url.hash}`;
 }
@@ -91,14 +95,35 @@ const store = () => {
 // this device next. The portal's guard asks this before it passes the
 // page on to Sign in.
 let leftAt = 0;
+// The same, for this person's other tabs (the break-it tester, 13 Nov):
+// they are signed out with this one, a moment later, and would each keep
+// their own page as the place to land. Only the time is kept, on the
+// device, and it counts for half a minute.
+const LEFT_KEY = 'clarity-left-at';
+const OTHER_TABS_MS = 30000;
+
+/** Whether a kept sign-out time still counts at `now`. */
+export function leftJustNow(raw, now = Date.now()) {
+  const at = Number(raw);
+  return Number.isFinite(at) && at > 0 && now - at >= 0 && now - at < OTHER_TABS_MS;
+}
+
 export function noteSignedOut(now = Date.now()) {
   leftAt = now;
   try {
     store()?.removeItem(NEXT_KEY);
   } catch { /* nothing kept */ }
+  try {
+    window.localStorage.setItem(LEFT_KEY, String(now));
+  } catch { /* the other tabs keep their page */ }
 }
 export function justSignedOut(now = Date.now()) {
-  return leftAt > 0 && now - leftAt >= 0 && now - leftAt < 10000;
+  if (leftAt > 0 && now - leftAt >= 0 && now - leftAt < 10000) return true;
+  try {
+    return leftJustNow(window.localStorage.getItem(LEFT_KEY), now);
+  } catch {
+    return false;
+  }
 }
 
 export function rememberNext(value) {

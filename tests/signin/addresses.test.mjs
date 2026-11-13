@@ -81,3 +81,33 @@ test('after a deliberate Sign out, the page it was pressed on is not somewhere t
   assert.equal(justSignedOut(t0 + 60 * 1000), false);
   assert.equal(justSignedOut(t0 - 1000), false);
 });
+
+// The break-it tester, 13 Nov. Read as an address, "/.//other.site" loses
+// its dot and becomes "//other.site", which a browser takes for another site.
+test('a place to land that turns into another site once its dots are read is refused', () => {
+  for (const bad of ['/.//evil.example', '/..//evil.example', '/a/..//evil.example', '/%2e//evil.example', '/%2E%2e//evil.example/x', '/x/../..//evil.example', '/.%2e//evil.example', '/./..//evil.example?x=1#y']) {
+    assert.equal(safeNext(bad), null, bad);
+  }
+  // Nothing that comes out ever starts with two slashes, a backslash or a scheme.
+  const tries = ['/dashboard', '/a/../welcome', '/%2F%2Fevil.example', '/%5Cevil.example', '/@evil.example', '/;//evil.example', '/x?next=//evil.example', '/x#//evil.example', '/／／evil.example', '/javascript:alert(1)', `/${'a'.repeat(5000)}`];
+  for (const value of tries) {
+    const out = safeNext(value);
+    assert.ok(out === null || (/^\/(?![\/\\])/.test(out) && new URL(out, 'https://portal.example').origin === 'https://portal.example'), `${value} gave ${out}`);
+  }
+  // A walk back out of the sign-in pages is fine; a walk into them is not.
+  assert.equal(safeNext('/auth/../welcome'), '/welcome');
+  assert.equal(safeNext('/welcome/../auth/login'), null);
+  for (const bad of ['javascript:alert(1)', 'JaVaScRiPt:alert(1)', 'data:text/html,x', '/\tevil.example', '/\\evil.example', '\\\\evil.example', ' /welcome', {}, ['/welcome'], 7, true]) assert.equal(safeNext(bad), null, String(bad));
+});
+
+// The break-it tester, 13 Nov: Sign out in one tab signs the person's other
+// tabs out too, and none of them keeps its page for whoever signs in next.
+test('a sign-out counts for the other tabs for half a minute, and never from a made-up time', async () => {
+  const { leftJustNow } = await import('../../src/lib/signIn/addresses.js');
+  const now = Date.parse('2026-11-13T10:00:00Z');
+  assert.equal(leftJustNow(String(now - 2000), now), true);
+  assert.equal(leftJustNow(String(now - 29000), now), true);
+  assert.equal(leftJustNow(String(now - 31000), now), false);
+  assert.equal(leftJustNow(String(now + 5000), now), false);
+  for (const bad of [null, '', 'soon', '0', '-5', 'NaN', '{}']) assert.equal(leftJustNow(bad, now), false, String(bad));
+});

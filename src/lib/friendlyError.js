@@ -47,7 +47,8 @@ export function friendlyError(error, fallback, needs) {
   if (error?.status === 429 || /rate limit|too many/i.test(text)) {
     return 'That was tried too many times. Wait a minute and try again.';
   }
-  if (code === 'email_address_invalid' || /invalid.*email|email.*invalid/i.test(text)) {
+  // (Not "Email link is invalid or has expired": that is about a link.)
+  if (code === 'email_address_invalid' || (/invalid.*email|email.*invalid/i.test(text) && !/link/i.test(text))) {
     return 'That email address doesn’t look right. Check it and try again.';
   }
   return fallback;

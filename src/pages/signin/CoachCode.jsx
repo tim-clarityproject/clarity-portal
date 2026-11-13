@@ -18,6 +18,11 @@ import useEnter from '../../components/signin/useEnter';
 // page, which carries on itself once it is given. An account with an
 // authenticator can't save a new password before giving its code
 // (Supabase refuses it), so a reset link alone never gets a coach in.
+// The six digits out of whatever was typed or pasted: "123 456" and
+// "123-456" (as authenticator apps copy them) and full-width digits all
+// read as 123456.
+const digitsOf = (text) => String(text ?? '').normalize('NFKC').replace(/\D+/g, '').slice(0, 6);
+
 export default function CoachCode({ onDone }) {
   const { user, isLoading } = useContext(AuthContext);
   const goIn = useEnter();
@@ -103,7 +108,25 @@ export default function CoachCode({ onDone }) {
         pattern="[0-9]*"
         autoFocus
         value={code}
-        onChange={(e) => setCode(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+        onChange={(e) => setCode(digitsOf(e.target.value))}
+        // The box holds 6 characters, so a browser would cut "123 456" to
+        // "123 45" before the page saw it: a paste is read here instead.
+        onPaste={(e) => {
+          const pasted = e.clipboardData?.getData('text');
+          if (typeof pasted !== 'string') return;
+          e.preventDefault();
+          setCode(digitsOf(pasted));
+        }}
+        // The same for several characters put in at once another way (a
+        // keyboard's own suggestion, a password manager).
+        onBeforeInput={(e) => {
+          if (typeof e.data !== 'string' || e.data.length < 2) return;
+          e.preventDefault();
+          const box = e.target;
+          const from = box.selectionStart ?? box.value.length;
+          const to = box.selectionEnd ?? box.value.length;
+          setCode(digitsOf(`${box.value.slice(0, from)}${e.data}${box.value.slice(to)}`));
+        }}
       />
       <Message lines={message} />
       <MainButton>Sign in</MainButton>

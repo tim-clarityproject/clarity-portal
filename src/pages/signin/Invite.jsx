@@ -4,8 +4,9 @@ import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import { continueWithGoogle } from '../../lib/signIn/flow';
+import { stillSignedInAs } from '../../lib/signIn/linkRules';
 import { useLinkSession } from '../../lib/signIn/linkSession';
-import { isLeaked, LEAKED, refusedAsLeaked, refusedAsShort, TOO_SHORT, tooShort } from '../../lib/signIn/password';
+import { isLeaked, LEAKED, refusedAsLeaked, refusedAsLong, refusedAsShort, TOO_LONG, TOO_SHORT, tooLong, tooShort } from '../../lib/signIn/password';
 import { invitedNotSetUp, termsRecord, TICK_THE_BOX } from '../../lib/signIn/terms';
 import { DIDNT_SAVE, GOOGLE_DIDNT_WORK } from '../../lib/signIn/words';
 import { ContinueWithGoogle, EmailField, Line, MainButton, Message, OrLine, PasswordField, SignInPage, TermsRow, Wait } from '../../components/signin/SignInParts';
@@ -26,7 +27,10 @@ import LinkNotWorking from './LinkNotWorking';
 export default function Invite() {
   const enter = useEnter();
   const { status, user, fromLink, kind } = useLinkSession(SIGN_IN_PATHS.invite);
-  const mine = status === 'ready' && Boolean(user) && ((fromLink && kind === 'invite') || invitedNotSetUp(user));
+  // True once the device's sign-in is no longer the invited account's
+  // (someone else signed in, in another tab, while this page sat open).
+  const [over, setOver] = useState(false);
+  const mine = status === 'ready' && Boolean(user) && !over && ((fromLink && kind === 'invite') || invitedNotSetUp(user));
   const leaving = useRef(false);
   const [names, setNames] = useState({ first: '', coach: '' });
   const [password, setPassword] = useState('');
@@ -83,15 +87,21 @@ export default function Invite() {
     if (busy.current) return undefined;
     setMessage(null);
     if (tooShort(password)) return say('password', TOO_SHORT);
+    if (tooLong(password)) return say('password', TOO_LONG);
     if (!ticked) return say('terms', TICK_THE_BOX);
     if (isOffline()) return say('terms', needsConnection('Setting your password'));
     busy.current = true;
     try {
       if (await isLeaked(password)) return say('password', LEAKED);
+      // A save goes to whoever is signed in on this device now: only ever
+      // the account this page was opened for. Anyone else is passed on in.
+      const now = await supabase.auth.getSession().catch(() => null);
+      if (!stillSignedInAs(now?.data?.session, user.id)) return setOver(true);
       const { data, error } = await supabase.auth.updateUser({ password, data: termsRecord() }).catch((err) => ({ error: err }));
       if (error) {
         if (refusedAsLeaked(error)) return say('password', LEAKED);
         if (refusedAsShort(error)) return say('password', TOO_SHORT);
+        if (refusedAsLong(error)) return say('password', TOO_LONG);
         return say('terms', friendlyError(error, DIDNT_SAVE.join(' '), 'Setting your password'));
       }
       try {

@@ -5,7 +5,7 @@
 // device, and never for an address made to look like a link.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { codeWasSwapped, noteStands } from '../../src/lib/signIn/linkRules.js';
+import { codeWasSwapped, noteStands, stillSignedInAs } from '../../src/lib/signIn/linkRules.js';
 
 test('a code counts only once Supabase has taken it out of the address', () => {
   // Swapped for a session: Supabase tidies the address.
@@ -31,4 +31,16 @@ test('a link opened in this tab is remembered for its own account, for an hour',
   // The older note (a bare time, which anyone signed in could write) no longer counts.
   assert.equal(noteStands(String(now - 1000), 'u1', now), false);
   for (const bad of [null, '', 'yes', '{}', '{"at":"soon","id":"u1"}']) assert.equal(noteStands(bad, 'u1', now), false, String(bad));
+});
+
+// The break-it tester, 13 Nov: a New password page left open, then someone
+// else signs in on the device in another tab. A save goes to whoever is
+// signed in now, so it is only sent while that is still the link's account.
+test('a password is only ever set for the account the link brought', () => {
+  assert.equal(stillSignedInAs({ user: { id: 'u1' } }, 'u1'), true);
+  assert.equal(stillSignedInAs({ user: { id: 'u2' } }, 'u1'), false);
+  for (const gone of [null, undefined, {}, { user: null }, { user: {} }]) assert.equal(stillSignedInAs(gone, 'u1'), false, JSON.stringify(gone));
+  // No account to compare with is never a match.
+  assert.equal(stillSignedInAs({ user: { id: undefined } }, undefined), false);
+  assert.equal(stillSignedInAs({ user: { id: '' } }, ''), false);
 });

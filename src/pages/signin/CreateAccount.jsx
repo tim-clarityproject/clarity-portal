@@ -4,10 +4,10 @@ import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
 import { returnAddress, SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import { continueWithGoogle } from '../../lib/signIn/flow';
-import { isLeaked, LEAKED, refusedAsLeaked, refusedAsShort, TOO_SHORT, tooShort } from '../../lib/signIn/password';
+import { isLeaked, LEAKED, refusedAsLeaked, refusedAsLong, refusedAsShort, TOO_LONG, TOO_SHORT, tooLong, tooShort } from '../../lib/signIn/password';
 import { rememberEmail } from '../../lib/signIn/remembered';
 import { termsRecord, TICK_THE_BOX } from '../../lib/signIn/terms';
-import { ADD_FIRST_NAME, ALREADY_AN_ACCOUNT, EMAIL_NOT_RIGHT, GOOGLE_DIDNT_WORK, looksLikeEmail, TOO_MANY } from '../../lib/signIn/words';
+import { ADD_FIRST_NAME, ALREADY_AN_ACCOUNT, cleanName, EMAIL_NOT_RIGHT, GOOGLE_DIDNT_WORK, looksLikeEmail, TOO_MANY } from '../../lib/signIn/words';
 import { Alt, ContinueWithGoogle, EmailField, Field, MainButton, Message, OrLine, PasswordField, SignInPage, TermsRow, TextLink } from '../../components/signin/SignInParts';
 import useEnter, { useAlreadyIn } from '../../components/signin/useEnter';
 
@@ -48,9 +48,12 @@ export default function CreateAccount() {
     e.preventDefault();
     if (busy.current) return undefined;
     setMessage(null);
-    if (!firstName.trim()) return say('name', ADD_FIRST_NAME);
+    // A name of nothing but spaces, or of characters nobody can see, is no name.
+    const name = cleanName(firstName);
+    if (!name) return say('name', ADD_FIRST_NAME);
     if (!looksLikeEmail(email)) return say('email', EMAIL_NOT_RIGHT);
     if (tooShort(password)) return say('password', TOO_SHORT);
+    if (tooLong(password)) return say('password', TOO_LONG);
     if (!ticked) return say('terms', TICK_THE_BOX);
     if (isOffline()) return say('terms', needsConnection('Creating an account'));
     busy.current = true;
@@ -61,7 +64,7 @@ export default function CreateAccount() {
         password,
         options: {
           emailRedirectTo: returnAddress('confirmed', window.location.origin),
-          data: { first_name: firstName.trim(), ...termsRecord() },
+          data: { first_name: name, ...termsRecord() },
         },
       }).catch((err) => ({ error: err }));
       if (error) {
@@ -69,8 +72,9 @@ export default function CreateAccount() {
         if (error.code === 'user_already_exists' || error.code === 'email_exists') return say('email', ALREADY_AN_ACCOUNT);
         if (refusedAsLeaked(error)) return say('password', LEAKED);
         if (refusedAsShort(error)) return say('password', TOO_SHORT);
+        if (refusedAsLong(error)) return say('password', TOO_LONG);
         if (error.status === 429) return say('terms', TOO_MANY);
-        if (error.code === 'email_address_invalid') return say('email', EMAIL_NOT_RIGHT);
+        if (error.code === 'email_address_invalid' || (error.code === 'validation_failed' && /email/i.test(error.message || ''))) return say('email', EMAIL_NOT_RIGHT);
         return say('terms', friendlyError(error, 'That didn’t create your account. Check your connection and try again.', 'Creating an account'));
       }
       // An email that already has an account: Supabase answers as if it

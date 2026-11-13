@@ -4,8 +4,9 @@ import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyErr
 import { useToast } from '../../components/design';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import { hasAuthenticator } from '../../lib/signIn/flow';
+import { stillSignedInAs } from '../../lib/signIn/linkRules';
 import { forgetLinkOpened, linkOpenedJustNow, noteLinkOpened, useLinkSession } from '../../lib/signIn/linkSession';
-import { isLeaked, LEAKED, refusedAsLeaked, refusedAsShort, TOO_SHORT, tooShort } from '../../lib/signIn/password';
+import { isLeaked, LEAKED, refusedAsLeaked, refusedAsLong, refusedAsShort, TOO_LONG, TOO_SHORT, tooLong, tooShort } from '../../lib/signIn/password';
 import { DIDNT_SAVE, refusedAsSame, SAME_PASSWORD } from '../../lib/signIn/words';
 import { MainButton, Message, PasswordField, SignInPage, Wait } from '../../components/signin/SignInParts';
 import useEnter from '../../components/signin/useEnter';
@@ -73,14 +74,25 @@ export default function NewPassword() {
     if (busy.current) return undefined;
     setMessage(null);
     if (tooShort(password)) return setMessage(TOO_SHORT);
+    if (tooLong(password)) return setMessage(TOO_LONG);
     if (isOffline()) return setMessage(needsConnection('Saving a new password'));
     busy.current = true;
     try {
       if (await isLeaked(password)) return setMessage(LEAKED);
+      // This page may have sat open while the device's sign-in changed
+      // (someone else signed in, in another tab). A save goes to whoever
+      // is signed in now, so it is only sent while that is still the
+      // account the link brought.
+      const now = await supabase.auth.getSession().catch(() => null);
+      if (!stillSignedInAs(now?.data?.session, user.id)) {
+        forgetLinkOpened(KEY);
+        return setEnd('over');
+      }
       const { data, error } = await supabase.auth.updateUser({ password }).catch((err) => ({ error: err }));
       if (error) {
         if (refusedAsLeaked(error)) return setMessage(LEAKED);
         if (refusedAsShort(error)) return setMessage(TOO_SHORT);
+        if (refusedAsLong(error)) return setMessage(TOO_LONG);
         if (refusedAsSame(error)) return setMessage(SAME_PASSWORD);
         // The code hasn't been given after all: ask for it.
         if (error.code === 'insufficient_aal' && hasAuthenticator(user)) return setCodeGiven(false);

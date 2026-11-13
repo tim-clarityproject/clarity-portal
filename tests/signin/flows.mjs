@@ -62,7 +62,8 @@ const want = (list, expected) => JSON.stringify(list.map((b) => [b.label, b.auto
   await page.locator('input[type=email]').fill(env.TEST_CLIENT_EMAIL);
   await page.locator('.si-pw input').fill('not-the-password-7391');
   await press(page, 'Sign in');
-  await sleep(1500);
+  // The server's own answer: waited for, however long it takes (it was once slower than a fixed pause).
+  await page.waitForSelector('.si-err', { timeout: 20000 }).catch(() => null);
   pass('details that don’t match: “That email or password doesn’t match.” then “Try again, or reset your password.”', JSON.stringify(await lines(page)) === JSON.stringify(['That email or password doesn’t match.', 'Try again, or reset your password.']), (await lines(page)).join(' / '));
   const place = await page.evaluate(() => { const e = document.querySelector('.si-err').getBoundingClientRect(); const p = document.querySelector('.si-pw').getBoundingClientRect(); const bt = document.querySelector('.si-btn').getBoundingClientRect(); return e.top > p.bottom && e.bottom < bt.top; });
   pass('the message sits between the Password box and the button', place);

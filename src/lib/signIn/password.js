@@ -10,6 +10,21 @@ export function tooShort(password) {
   return String(password ?? '').length < MIN_PASSWORD;
 }
 
+// Supabase keeps at most 72 bytes of a password and refuses a longer one
+// (the break-it tester, 13 Nov): said in the page, in the same pattern as
+// too short. An accented letter or an emoji counts for more than one.
+export const MAX_PASSWORD_BYTES = 72;
+export const TOO_LONG = 'Please use 72 characters or fewer.';
+
+export function tooLong(password) {
+  return new globalThis.TextEncoder().encode(String(password ?? '')).length > MAX_PASSWORD_BYTES;
+}
+
+/** True when Supabase refused a password as too long. */
+export function refusedAsLong(error) {
+  return /longer than \d+ characters/i.test(error?.message || '');
+}
+
 const hex = (buffer) => [...new Uint8Array(buffer)].map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 
 /**

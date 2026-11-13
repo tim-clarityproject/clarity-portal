@@ -21,7 +21,18 @@ export const DIDNT_SIGN_IN = ['That didn’t sign you in.', 'Check your connecti
 export const SAME_PASSWORD = ['That’s your current password.', 'Choose a new one and try again.'];
 export const TOO_MANY = ['That was tried too many times.', 'Wait a minute and try again.'];
 
-export const looksLikeEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+// Characters nobody sees: control characters, zero-width spaces and the
+// marks that turn the reading direction round. (The joiners inside an
+// emoji or a Persian name are kept.)
+const UNSEEN = /[\u0000-\u001f\u007f-\u009f\u200b\u200e\u200f\u202a-\u202e\u2060-\u2069\ufeff]/g;
+
+/** A typed first name without what can't be seen, and without spaces round it. */
+export const cleanName = (value) => String(value ?? '').replace(UNSEEN, '').trim();
+
+export const looksLikeEmail = (value) => {
+  const text = String(value || '').trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text) && text.replace(UNSEEN, '') === text;
+};
 
 /** True when Supabase refused a new password because it is the one they have. */
 export const refusedAsSame = (error) => error?.code === 'same_password' || /different from the old password/i.test(error?.message || '');

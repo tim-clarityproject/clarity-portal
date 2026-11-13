@@ -223,6 +223,15 @@ export function AuthProvider({ children }) {
 
     const handlePageShow = (e) => {
       diag('PAGESHOW', { persisted: e.persisted });
+      // A page the browser brings back whole (Back, after leaving for
+      // another site) heard nothing while it was away. If the person signed
+      // out since, or someone else signed in, it must not go on showing
+      // what it showed before (the break-it tester, 13 Nov): it starts
+      // again, at Sign in or at the new person's Home.
+      if (e.persisted) {
+        const kept = storedSessionUser();
+        if ((kept?.id || null) !== user.id) window.location.replace(kept ? '/welcome' : '/auth/login');
+      }
     };
 
     const handleBeforeUnload = () => {
