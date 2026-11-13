@@ -17,10 +17,19 @@ export async function signedIn(page, { env, answers, SAM }, { email = SAM.email,
     const next = { ...user, email, user_metadata: { ...(user.user_metadata || {}), first_name: firstName } };
     return change ? change(next) : next;
   };
+  // The account as the page last saw it, so a save can be answered here
+  // (never sent) with the account as it would then stand.
+  let current = null;
+  answers['PUT /auth/v1/user'] = async ({ body }) => {
+    current = { ...(current || {}), user_metadata: { ...(current?.user_metadata || {}), ...(body?.data || {}) } };
+    if (body?.email) current.new_email = body.email;
+    return { status: 200, body: current };
+  };
   answers['POST /auth/v1/token'] = async ({ route }) => {
     const res = await route.fetch();
     let body = await res.json();
     if (body?.user) body = { ...body, user: patch(body.user) };
+    if (body?.user) current = body.user;
     await route.fulfill({ status: res.status(), contentType: 'application/json', body: JSON.stringify(body) });
     return 'handled';
   };
@@ -181,4 +190,63 @@ export const SCREENS = [
     },
   },
   { key: 'expired', name: 'Link expired or used', open: (page) => go(page, '/auth/reset-password?error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired') },
+  // ------------------------------------------------------------ Coaches
+  { key: 'coach', name: 'Coach sign in', open: (page) => go(page, '/coach/sign-in') },
+  {
+    key: 'coach-code',
+    name: 'Coach sign in, authenticator code',
+    // An account with an authenticator app set up, signed in but with its
+    // code still to give: it is held at Enter your code.
+    open: async (page, o) => {
+      await signedIn(page, o, {
+        land: /\/coach\/sign-in\/code$/,
+        change: (u) => ({ ...u, factors: [{ id: '00000000-0000-4000-8000-0000000000f1', factor_type: 'totp', status: 'verified', friendly_name: 'Authenticator' }] }),
+      });
+      await page.waitForSelector('.si-ttl');
+    },
+  },
+  // ------------------------------------------------------------ Inside My Account
+  {
+    key: 'acct-password',
+    name: 'My Account, password',
+    acct: true,
+    open: async (page, o) => { await signedIn(page, o); await go(page, '/my-account/password'); },
+  },
+  {
+    key: 'acct-password-saved',
+    name: 'My Account, password saved',
+    acct: true,
+    open: async (page, o) => {
+      await signedIn(page, o);
+      await go(page, '/my-account/password');
+      await page.waitForSelector('.si-col--account');
+      // The current password is checked and the new one saved, both answered here.
+      o.answers['POST /auth/v1/token'] = ({ url }) => (url.searchParams.get('grant_type') === 'password' ? { status: 200, body: {} } : 'continue');
+      await fillPassword(page, 'harbourlane42', 0);
+      await fillPassword(page, 'lighthouse-keeper-77', 1);
+      await press(page, 'Save my new password');
+      await page.waitForSelector('.ds-status--saved');
+    },
+  },
+  {
+    key: 'acct-email',
+    name: 'My Account, email',
+    acct: true,
+    // M26 gives this one box no autocomplete; the build gives every box one.
+    looseBox: true,
+    open: async (page, o) => { await signedIn(page, o); await go(page, '/my-account/email'); },
+  },
+  {
+    key: 'acct-email-sent',
+    name: 'My Account, email, check your email',
+    acct: true,
+    open: async (page, o) => {
+      await signedIn(page, o);
+      await go(page, '/my-account/email');
+      await page.waitForSelector('.si-col--account');
+      await fillEmail(page, o.SAM.newEmail);
+      await press(page, 'Save my new email');
+      await page.getByText('Your email changes once you open it.').waitFor();
+    },
+  },
 ];

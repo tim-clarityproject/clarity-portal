@@ -89,6 +89,9 @@ import NewPassword from './pages/signin/NewPassword';
 import Invite from './pages/signin/Invite';
 import GoogleReturn from './pages/signin/GoogleReturn';
 import BeforeYouStart from './pages/signin/BeforeYouStart';
+import CoachCode from './pages/signin/CoachCode';
+import CoachHelp from './pages/signin/CoachHelp';
+import { AccountEmail, AccountPassword } from './pages/signin/AccountPages';
 import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 import ScrollToTop from './components/ScrollToTop';
 import HubPage from './pages/hubs/HubPage';
@@ -328,6 +331,13 @@ function AppContent() {
         <Route path="/auth/finished" element={<Navigate to="/welcome" replace />} />
         <Route path="/auth/welcome-back" element={<Navigate to="/welcome" replace />} />
 
+        {/* Coaches have their own sign-in page at its own address, with no
+            Create my account link, then the code from their authenticator
+            app (Tim, 11 Nov). */}
+        <Route path="/coach/sign-in" element={<SignIn coach />} />
+        <Route path="/coach/sign-in/code" element={<CoachCode />} />
+        <Route path="/coach/sign-in/help" element={<CoachHelp />} />
+
         {/* Passwords. /auth/reset-password is where a reset link lands. */}
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/forgot-password/check-email" element={<CheckEmail kind="reset" />} />
@@ -406,6 +416,8 @@ function AppContent() {
           <Route path="/personal-operating-plan-archived/:missionId" element={<PersonalOperatingPlanArchivedOne />} />
           <Route path="/mission-progress-review" element={<MissionProgressReviewDetail />} />
           <Route path="/my-account" element={<MyAccount />} />
+          <Route path="/my-account/password" element={<AccountPassword />} />
+          <Route path="/my-account/email" element={<AccountEmail />} />
           <Route path="/goal-setting" element={<GoalSetting />} />
           <Route path="/risks-assessment" element={<RisksAssessment />} />
           <Route path="/strategies" element={<Strategies />} />

@@ -296,7 +296,7 @@ export default function EditPersonalDetails() {
                   value={user?.email || ''}
                   disabled
                 />
-                <div className="edit-profile-note">Email cannot be changed</div>
+                <div className="edit-profile-note">You can edit your email in My Account.</div>
               </div>
 
               <div className="edit-profile-field">

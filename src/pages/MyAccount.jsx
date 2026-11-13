@@ -1,4 +1,5 @@
 import { useEffect, useState, useContext } from 'react';
+import { signsInWithGoogle, YOU_SIGN_IN_WITH_GOOGLE } from '../lib/signIn/account';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
@@ -249,6 +250,31 @@ export default function MyAccount() {
             </div>
             <Button variant="text" onClick={() => navigate('/edit-profile')}>Edit my profile</Button>
           </div>
+          {/* How they sign in (M26; Tim, 11 Nov). Someone who signs in with
+              Google has no Password page, and is told so instead. */}
+          {signsInWithGoogle(user) ? (
+            <div className="account-row">
+              <div className="account-row-text">
+                <p className="account-row-title">{YOU_SIGN_IN_WITH_GOOGLE}</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="account-row">
+                <div className="account-row-text">
+                  <p className="account-row-title">Email</p>
+                  <p className="account-row-note">{user?.email}</p>
+                </div>
+                <Button variant="text" onClick={() => navigate('/my-account/email')}>Edit my email</Button>
+              </div>
+              <div className="account-row">
+                <div className="account-row-text">
+                  <p className="account-row-title">Password</p>
+                </div>
+                <Button variant="text" onClick={() => navigate('/my-account/password')}>Edit my password</Button>
+              </div>
+            </>
+          )}
         </Section>
 
         <Section id="mission-section" title="My Mission" className="ipp-section account-section">
