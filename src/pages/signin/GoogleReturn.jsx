@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
-import { googleMatches, googleStrangers, takeGoogleFrom } from '../../lib/signIn/flow';
+import { cameInByStranger, googleMatches, takeGoogleFrom, takeOffStrangers } from '../../lib/signIn/flow';
 import { cancelledAtGoogle, useLinkSession } from '../../lib/signIn/linkSession';
 import { recordAgreement, takeTick, tickAgreesFor } from '../../lib/signIn/terms';
 import { GOOGLE_DIDNT_WORK } from '../../lib/signIn/words';
@@ -53,12 +53,17 @@ export default function GoogleReturn() {
       if (from === SIGN_IN_PATHS.invite) {
         // Any Google account with another email is taken off again, one
         // left by an earlier try that couldn't be taken off included.
-        for (const stranger of googleStrangers(account)) {
-          try {
-            await supabase.auth.unlinkIdentity(stranger);
-          } catch { /* the invite's page still says whose invite it is */ }
-        }
+        await takeOffStrangers(supabase, account);
         if (!googleMatches(account)) return void navigate(from, { replace: true, state: { wrongGoogle: true } });
+      } else if (cameInByStranger(account)) {
+        // Signed in from any other page with a Google account that was
+        // left joined to an unfinished invite: it is taken off, and they
+        // are not let in as the person invited.
+        await takeOffStrangers(supabase, account);
+        try {
+          await supabase.auth.signOut({ scope: 'local' });
+        } catch { /* the portal stays shut either way: nothing is agreed */ }
+        return void navigate(from, { replace: true, state: { message: GOOGLE_DIDNT_WORK } });
       }
       if (tickAgreesFor(ticked, from, account)) {
         const saved = await recordAgreement(supabase, account.id, ticked);

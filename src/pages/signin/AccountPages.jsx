@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
 import { checkCurrentPassword, hasPassword } from '../../lib/signIn/account';
 import { returnAddress, SIGN_IN_PATHS } from '../../lib/signIn/addresses';
-import { emailChangeLink, landingFor } from '../../lib/signIn/linkSession';
+import { emailChangeLink, emailChangeToSay, emailChangeWasSaid, landingFor } from '../../lib/signIn/linkSession';
 import { codeWasSwapped } from '../../lib/signIn/linkRules';
 import { isLeaked, LEAKED, refusedAsLeaked, refusedAsLong, refusedAsShort, TOO_LONG, TOO_SHORT, tooLong, tooShort } from '../../lib/signIn/password';
 import { CURRENT_NO_MATCH, DIDNT_SAVE, DIDNT_SEND, EMAIL_LINK_OVER, EMAIL_NOT_RIGHT, looksLikeEmail, ONE_LINK_OPENED, refusedAsSame, SAME_EMAIL, SAME_PASSWORD, TOO_MANY } from '../../lib/signIn/words';
@@ -44,7 +44,20 @@ function Saved() {
   );
 }
 
+// What is typed or shown on these pages belongs to one account. If the
+// device's sign-in changes under an open page (someone else signs in, in
+// another tab), the page starts again for them: nothing typed, sent or
+// said for the account before is kept (the break-it tester, 13 Nov).
 export function AccountPassword() {
+  const { user } = useContext(AuthContext);
+  return <PasswordPage key={user?.id || 'nobody'} />;
+}
+export function AccountEmail() {
+  const { user } = useContext(AuthContext);
+  return <EmailPage key={user?.id || 'nobody'} />;
+}
+
+function PasswordPage() {
   const { user } = useContext(AuthContext);
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -124,7 +137,7 @@ function linkJustChangedIt() {
   return true;
 }
 
-export function AccountEmail() {
+function EmailPage() {
   const { user } = useContext(AuthContext);
   // The account as Supabase has it now. The copy on this device can be
   // behind: the link may have been opened on another device, or this very
@@ -161,7 +174,7 @@ export function AccountEmail() {
         // The box follows the account until they type in it (this device's
         // copy may itself have just taken the new email from a link).
         if (newer.email && !typed.current) setEmail(newer.email);
-        if (newer.email && newer.email.toLowerCase() !== userEmail.toLowerCase() && !acted.current) setChanged(true);
+        if (newer.email && newer.email.toLowerCase() !== userEmail.toLowerCase() && !acted.current && !typed.current) setChanged(true);
         if (!acted.current) setSentTo(newer.new_email || '');
       })
       .catch(() => null);
@@ -182,12 +195,16 @@ export function AccountEmail() {
     let live = true;
     emailChangeLink?.then((outcome) => {
       if (!live || acted.current) return;
-      if (outcome === 'done') setChanged(true);
-      if (outcome === 'half') setOneOpened(true);
-      if (outcome === 'failed') setMessage(EMAIL_LINK_OVER);
+      const say = emailChangeToSay(outcome, userId);
+      if (!say) return;
+      emailChangeWasSaid();
+      // "Saved" never sits beside something they have typed since.
+      if (say === 'done' && !typed.current) setChanged(true);
+      if (say === 'half') setOneOpened(true);
+      if (say === 'failed') setMessage(EMAIL_LINK_OVER);
     });
     return () => { live = false; };
-  }, []);
+  }, [userId]);
 
   if (user && !hasPassword(user)) return <Navigate to="/my-account" replace />;
 

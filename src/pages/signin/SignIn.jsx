@@ -45,7 +45,18 @@ export default function SignIn({ coach = false }) {
   // clock, say), so the line goes once the clock is right.
   useEffect(() => {
     let live = true;
-    const check = () => deviceClockLooksWrong().then((out) => { if (live) setClockOut(out); });
+    // One question at a time: coming back to the page tells it twice
+    // (shown, then in front), and a slow answer must never land after a
+    // newer one and put the line back (the break-it tester, 13 Nov).
+    let asking = false;
+    const check = () => {
+      if (asking) return;
+      asking = true;
+      deviceClockLooksWrong().then((out) => {
+        asking = false;
+        if (live) setClockOut(out);
+      });
+    };
     const back = () => { if (document.visibilityState === 'visible') check(); };
     check();
     document.addEventListener('visibilitychange', back);

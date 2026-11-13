@@ -60,14 +60,13 @@ export function AuthProvider({ children }) {
         const { data: { session }, error } = settled || { data: { session: null }, error: null };
         console.log('[AuthContext] - getSession() returned:', !!session, 'error:', error?.message || 'none');
         if (session) {
-          console.log('[AuthContext] - Session user email:', session.user?.email);
           console.log('[AuthContext] - Session token present?', !!session.access_token);
         }
 
         // Check session validity
         if (session?.user && !error) {
           // Session exists and is valid. The page shows straight away.
-          console.log('[AuthContext] - Session valid, setting user:', session.user.email);
+          console.log('[AuthContext] - Session valid, setting user.');
           setUser(session.user);
         } else if (storedSessionUser()) {
           // The refresh could not reach the server (offline, or a slow

@@ -6,7 +6,12 @@
 //   3. the coach's invite: the tick before Google, a Google account with
 //      another email never makes a second account, and a reset link on an
 //      invited account that hasn't agreed gets Before you start first;
-//   4. a device clock that's wrong says so on Sign in.
+//   4. a device clock that's wrong says so on Sign in;
+//   5. the break-it tester's holes (13 Nov): addresses made to look like
+//      links, a link opened while the database gives no answer, pages left
+//      open while someone else signs in, a wrong Google account left on an
+//      unfinished invite, the clock check asked many times at once, and
+//      what opens inside a panel.
 // No email is sent and Google's own page is never opened: every answer
 // that would do either is given here (shared.mjs).
 //
@@ -494,6 +499,219 @@ for (const [name, minutes] of [['right', 0], ['4 minutes fast', 4], ['4 minutes 
   await w.page.locator('.si-note').first().waitFor({ state: 'detached', timeout: 10000 }).catch(() => null);
   pass('once the clock is right and they come back to the page, the line goes', (await w.page.locator('.si-note').count()) === 0, await words(w.page, '.si-note'));
   await w.ctx.close();
+}
+
+// ---------------------------------------------------------------- 5. the break-it tester, 13 Nov
+{
+  // Addresses made to look like links: only a whole, known kind is ever handed in.
+  for (const [name, address] of [
+    ['a kind written in capitals', '/auth/reset-password?token_hash=a-mock-token&type=RECOVERY'],
+    ['a token after the # instead of the ?', '/auth/reset-password#token_hash=a-mock-token&type=recovery'],
+    ['a kind with something stuck on its end', '/auth/reset-password?token_hash=a-mock-token&type=recovery%26x'],
+    ['a made-up sign-in after the #', '/auth/reset-password#access_token=made-up&refresh_token=made-up&expires_in=3600&token_type=bearer&type=recovery'],
+  ]) {
+    const v = await visit();
+    await v.page.goto(`${APP}${address}`);
+    await heading(v.page, 'Link not working');
+    pass(`${name}: nothing is handed in, and nobody is signed in`, v.state.verifies.length === 0 && (await title(v.page)) === 'link not working' && !(await v.page.evaluate(() => localStorage.getItem('clarity-portal-auth'))), `${v.state.verifies} ${await title(v.page)}`);
+    await v.ctx.close();
+  }
+  // A link that names two kinds, on a page that looks like another site's:
+  // its first kind's own page, handed in once.
+  const v = await visit();
+  await v.page.goto(`${APP}//other.example/welcome?token_hash=${'a'.repeat(6000)}&type=recovery&type=invite&next=//other.example&returnTo=https://other.example`);
+  await heading(v.page, 'New password');
+  pass('a very long token with two kinds, on an address that reads like another site: its first kind’s own page on this site, handed in once', v.state.verifies.join() === 'recovery' && path(v.page) === '/auth/reset-password' && new URL(v.page.url()).origin === new URL(APP).origin && noToken(v.page), `${path(v.page)} ${v.state.verifies}`);
+  await v.page.locator('input[type=password]').fill('a long new password 2026');
+  await press(v.page, 'Save my new password');
+  await v.page.waitForURL(/\/welcome$/, { timeout: 30000 }).catch(() => null);
+  pass('and after it they land on Home, never where the address pointed', v.page.url() === `${APP}/welcome`, v.page.url().slice(0, 80));
+  await v.ctx.close();
+}
+{
+  // The database gives no answer for a moment: the link has not run out.
+  const v = await visit();
+  let asked = 0;
+  const answer = v.answers['POST /auth/v1/verify'];
+  v.answers['POST /auth/v1/verify'] = async (o) => {
+    asked += 1;
+    if (asked === 1) return { status: 504, body: { message: 'Gateway timeout' } };
+    return answer(o);
+  };
+  await v.page.goto(`${APP}/auth/reset-password?token_hash=a-mock-token&type=recovery`);
+  await heading(v.page, 'New password');
+  pass('a reset link opened while the database gives no answer is handed in once more, and opens', asked === 2 && (await title(v.page)) === 'new password', `${asked} asked, ${await title(v.page)}`);
+  await v.ctx.close();
+  const w = await visit({ verify: 403 });
+  await w.page.goto(`${APP}/auth/reset-password?token_hash=a-mock-token&type=recovery`);
+  await heading(w.page, 'Link not working');
+  pass('a link Supabase refuses is handed in once only', w.state.verifies.length === 1 && (await title(w.page)) === 'link not working', `${w.state.verifies.length}`);
+  await w.ctx.close();
+}
+{
+  // "Saved" is said once, for the link, and never again on a later visit to the page.
+  const v = await visit();
+  await signedIn(v.page, v.o);
+  v.state.user = { ...sam(session.user), email: SAM.newEmail };
+  v.answers['GET /auth/v1/user'] = async () => ({ status: 200, body: v.state.user });
+  await v.page.goto(`${APP}/my-account/email?token_hash=a-mock-token&type=email_change`);
+  await v.page.getByText('Saved', { exact: true }).first().waitFor({ timeout: 20000 }).catch(() => null);
+  const first = (await words(v.page, '.si-col--account')).includes('Saved');
+  await v.page.getByRole('link', { name: 'My Account' }).first().click().catch(() => null);
+  await v.page.waitForURL(/\/my-account$/, { timeout: 15000 }).catch(() => null);
+  // My Account itself, drawn: the Email page has really been left.
+  await v.page.locator('.account-page').getByText(SAM.newEmail).first().waitFor({ timeout: 10000 }).catch(() => null);
+  await v.page.locator('.si-col--account').waitFor({ state: 'detached', timeout: 10000 }).catch(() => null);
+  await v.page.goBack();
+  await heading(v.page, 'Email');
+  await sleep(2500);
+  pass('“Saved” is said once for the link: coming back to the Email page doesn’t say it again', first && path(v.page) === '/my-account/email' && !(await words(v.page, '.si-col--account')).includes('Saved'), await words(v.page, '.si-col--account'));
+  await v.ctx.close();
+}
+{
+  // The Email page left open, with a change waiting, while someone else
+  // signs in on this device (another tab): nothing of the first account's
+  // is shown to them, and nothing is sent for them.
+  const v = await visit();
+  await signedIn(v.page, v.o, { change: (u) => ({ ...u, new_email: SAM.newEmail }) });
+  await v.page.goto(`${APP}/my-account/email`);
+  await heading(v.page, 'Check your email');
+  const other = { ...session.user, id: '00000000-0000-4000-8000-0000000000b2', email: 'jo.other@harbourlane.co', new_email: undefined, user_metadata: { first_name: 'Jo', terms_accepted: true } };
+  v.answers['GET /auth/v1/user'] = async () => ({ status: 200, body: other });
+  const before = v.calls.filter((c) => c.method === 'PUT' && c.path.endsWith('/auth/v1/user')).length;
+  await v.page.evaluate((user) => {
+    const kept = JSON.parse(localStorage.getItem('clarity-portal-auth'));
+    localStorage.setItem('clarity-portal-auth', JSON.stringify({ ...kept, user }));
+    // As Supabase tells a person's other tabs of a sign-in.
+    new BroadcastChannel('clarity-portal-auth').postMessage({ event: 'SIGNED_IN', session: { ...kept, user } });
+  }, other);
+  await heading(v.page, 'Email');
+  await sleep(1500);
+  const text = await words(v.page, '.si-col--account');
+  const box = await v.page.locator('input[type=email]').inputValue().catch(() => '');
+  pass('someone else signs in under an open Email page: the first account’s new email is shown nowhere', (await title(v.page)) === 'email' && !text.includes(SAM.newEmail) && !text.includes('Send it again') && box === other.email, `${await title(v.page)}: ${text.slice(0, 80).replace(/[\w.]+@[\w.]+/g, '(email)')}`);
+  pass('and nothing was sent for them', v.calls.filter((c) => c.method === 'PUT' && c.path.endsWith('/auth/v1/user')).length === before);
+  await v.ctx.close();
+}
+{
+  // A Google account left joined to an unfinished invite (the tab was
+  // closed on the way back from Google, so it was never taken off), used
+  // later from Sign in: it is not let in as the person invited.
+  const v = await visit({ who: (u) => invited(sam(u)), picked: SAM.gmail });
+  const { page, state } = v;
+  let out = 0;
+  v.answers['POST /auth/v1/logout'] = async () => { out += 1; return { status: 200, body: {} }; };
+  await page.goto(`${APP}/auth/login`);
+  await page.waitForSelector('.si-col .ds-google');
+  await press(page, 'Continue with Google');
+  await page.locator('.si-err').first().waitFor({ timeout: 30000 }).catch(() => null);
+  pass('a wrong Google account left on an unfinished invite, used from Sign in: back on Sign in with “That didn’t work.”', path(page) === '/auth/login' && (await message(page)) === '! That didn’t work. Try again, or use your email and password.', `${path(page)} ${await message(page)}`);
+  pass('it is taken off the account, nothing is agreed, and nobody is left signed in', state.unlinked === 1 && state.saved.length === 0 && !(await page.evaluate(() => localStorage.getItem('clarity-portal-auth'))), `${state.unlinked} taken off, ${state.saved.length} saved, ${out} signed out`);
+  await page.goto(`${APP}/welcome`);
+  await page.waitForURL(/\/auth\/login/, { timeout: 20000 }).catch(() => null);
+  pass('and the portal stays shut', path(page) === '/auth/login', path(page));
+  await v.ctx.close();
+}
+{
+  // Coming back to Sign in tells the page twice over (shown, then in
+  // front), and people flick between windows: one question at a time.
+  const v = await visit();
+  let asked = 0;
+  await v.page.route('**/version.json*', async (route) => {
+    asked += 1;
+    await sleep(1500);
+    await route.fulfill({ status: 200, headers: { date: new Date().toUTCString(), 'content-type': 'application/json' }, body: '{}' }).catch(() => null);
+  });
+  await v.page.goto(`${APP}/auth/login`);
+  await v.page.waitForSelector('.si-col .ds-google');
+  // The page's own first question is answered first (a development build asks it twice).
+  await sleep(2500);
+  const first = asked;
+  await v.page.evaluate(() => {
+    for (let i = 0; i < 6; i += 1) {
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.dispatchEvent(new Event('focus'));
+    }
+  });
+  await sleep(1000);
+  pass('coming back to Sign in six times at once asks for the time once, not twelve times', asked - first === 1, `${asked - first} asked`);
+  await sleep(1200);
+  await v.page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await sleep(500);
+  pass('and asks again once that answer is in', asked - first === 2, `${asked - first} asked`);
+  await v.ctx.close();
+}
+{
+  // The invite's page and Before you start left open while someone else
+  // signs in on this device (another tab): Google is joined to nobody
+  // else, and nothing is agreed for anybody else.
+  const swap = (page) => page.evaluate(() => {
+    const kept = JSON.parse(localStorage.getItem('clarity-portal-auth'));
+    localStorage.setItem('clarity-portal-auth', JSON.stringify({ ...kept, user: { ...kept.user, id: '00000000-0000-4000-8000-0000000000b2', email: 'jo.other@harbourlane.co' } }));
+  });
+  const v = await visit({ who: (u) => invited(sam(u)) });
+  await v.page.goto(`${APP}/auth/invite?token_hash=a-mock-token&type=invite`);
+  await heading(v.page, 'Welcome, Sam');
+  await v.page.getByRole('checkbox').click();
+  await swap(v.page);
+  await press(v.page, 'Continue with Google');
+  await sleep(2500);
+  pass('the invite’s page left open while someone else signs in: Continue with Google joins Google to nobody', v.state.joins.length === 0 && v.state.authorize === 0 && v.state.saved.length === 0, `${v.state.joins.length} joined, ${v.state.authorize} on its own`);
+  await v.ctx.close();
+  const w = await visit({ who: (u) => invited(sam(u)) });
+  await w.page.goto(`${APP}/auth/reset-password?token_hash=a-mock-token&type=recovery`);
+  await heading(w.page, 'Before you start');
+  await w.page.getByRole('checkbox').click();
+  await swap(w.page);
+  await press(w.page, 'Create my account');
+  await heading(w.page, 'Link not working');
+  pass('Before you start left open on a reset link while someone else signs in: nothing is agreed for them, and the link’s page is over', w.state.saved.length === 0 && (await title(w.page)) === 'link not working', `${w.state.saved.length} saved, ${await title(w.page)}`);
+  await w.ctx.close();
+}
+{
+  // What opens inside a panel fixed to the screen, beside its own link
+  // ("See an example" in a guided tool), is kept in view by the panel's
+  // own scrolling; the page behind never moves (rule 29aq).
+  const v = await visit();
+  await v.page.setViewportSize({ width: 390, height: 700 });
+  await v.page.goto(`${APP}/design-reference`);
+  await v.page.waitForSelector('.ui-root');
+  await sleep(1500);
+  const got = await v.page.evaluate(async () => {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const root = document.querySelector('.ui-root');
+    window.scrollTo({ top: 600, behavior: 'instant' });
+    const panel = document.createElement('div');
+    panel.setAttribute('role', 'dialog');
+    panel.style.cssText = 'position:fixed;left:0;right:0;bottom:0;height:300px;overflow-y:auto;z-index:9999';
+    panel.innerHTML = '<div style="height:260px"></div><button type="button" aria-expanded="false" style="min-height:44px">See an example</button><div hidden style="height:200px">For example</div>';
+    root.appendChild(panel);
+    const link = panel.querySelector('button');
+    const opened = panel.lastElementChild;
+    link.addEventListener('click', () => { link.setAttribute('aria-expanded', 'true'); opened.hidden = false; });
+    const page = window.scrollY;
+    link.click();
+    await wait(1200);
+    const box = link.getBoundingClientRect();
+    const frame = panel.getBoundingClientRect();
+    const out = { page: Math.round(window.scrollY - page), seen: opened.getBoundingClientRect().bottom <= window.innerHeight + 1, link: box.top >= frame.top - 1 && box.bottom <= frame.bottom + 1 };
+    // A link on a layer that has no scrolling of its own: the page behind stays where it is.
+    panel.style.overflowY = 'visible';
+    panel.style.height = 'auto';
+    panel.scrollTop = 0;
+    opened.hidden = true;
+    link.setAttribute('aria-expanded', 'false');
+    await wait(50);
+    link.click();
+    await wait(1200);
+    out.behind = Math.round(window.scrollY - page);
+    panel.remove();
+    return out;
+  });
+  pass('what opens inside a panel, beside its own link, is brought into view by the panel’s own scrolling, with its link still in view', got.seen && got.link, JSON.stringify(got));
+  pass('and the page behind a panel never moves', got.page === 0 && got.behind === 0, JSON.stringify(got));
+  pass('no page error', v.errors.length === 0, v.errors[0]);
+  await v.ctx.close();
 }
 
 await browser.close();

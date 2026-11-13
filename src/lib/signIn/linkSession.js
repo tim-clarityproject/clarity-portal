@@ -5,6 +5,7 @@ import { codeWasSwapped, linkPage, noteStands } from './linkRules';
 
 // The kinds of email link a page may finish by itself (see verifyLanding).
 const LINK_TYPES = ['signup', 'invite', 'recovery', 'email_change', 'email'];
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // A link that carries its own token, landed somewhere other than the page
 // that finishes its kind: the site's root (Supabase sends a link there
@@ -76,12 +77,22 @@ try {
 // it). The page finishes it itself, once, then tidies the address so a
 // refresh never spends the token twice.
 let verifying = null;
+const noAnswer = (error) => error?.name === 'AuthRetryableFetchError' || [0, 502, 503, 504, 520, 521, 522, 523, 524].includes(error?.status);
 function verifyLanding() {
   if (!LANDING.tokenHash || !LANDING.type) return null;
   if (!verifying) {
     verifying = (async () => {
       try {
-        const { data, error } = await supabase.auth.verifyOtp({ token_hash: LANDING.tokenHash, type: LANDING.type });
+        const hand = () => supabase.auth.verifyOtp({ token_hash: LANDING.tokenHash, type: LANDING.type }).catch((error) => ({ data: null, error }));
+        let { data, error } = await hand();
+        // No answer (a dropped connection, or the database not answering
+        // for a moment) is not a link that has run out: the token is still
+        // good, so it is handed in once more before anything is said (the
+        // break-it tester, 13 Nov).
+        if (error && noAnswer(error)) {
+          await sleep(1500);
+          ({ data, error } = await hand());
+        }
         if (error) return { session: null };
         // A change of email with two links (Supabase's "Secure email
         // change"): the first one opened is taken, and gives no sign-in
@@ -114,11 +125,34 @@ function verifyLanding() {
  * shows. The link is therefore finished here, as soon as the app loads,
  * whoever is or isn't signed in (Tim, 13 Nov: links work on any device).
  */
+let changedFor = '';
 export const emailChangeLink = (LANDING.path === '/my-account/email' && LANDING.type === 'email_change' && LANDING.tokenHash)
-  ? verifyLanding().then((v) => { if (v?.session) return 'done'; return v?.half ? 'half' : 'failed'; })
+  ? verifyLanding().then((v) => {
+    if (v?.session) {
+      changedFor = v.session.user?.id || '';
+      return 'done';
+    }
+    return v?.half ? 'half' : 'failed';
+  })
   : null;
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+// How the link went is said once on the Email page, and "Saved" only to
+// the account whose email it changed: never again on a later visit to the
+// page, and never to someone else who signs in on this tab afterwards
+// (the break-it tester, 13 Nov).
+let emailChangeSaid = false;
+/**
+ * The outcome to say on the Email page for `userId`, or '' when it has
+ * been said already or isn't theirs. `emailChangeWasSaid()` once it is on the page.
+ */
+export function emailChangeToSay(outcome, userId) {
+  if (emailChangeSaid || !outcome) return '';
+  if (outcome === 'done' && changedFor !== userId) return '';
+  return outcome;
+}
+export function emailChangeWasSaid() {
+  emailChangeSaid = true;
+}
 
 /**
  * Waits for the session an email link or Google brings.

@@ -93,9 +93,17 @@ export function googleIdentity(user) {
   return (user?.identities || []).find((identity) => identity.provider === 'google') || null;
 }
 
+// The same address, letter for letter once trimmed and lower-cased (never
+// by leaving out dots or a "+tag", and never a look-alike letter), and
+// one Google hasn't said is unconfirmed.
 const sameEmail = (identity, user) => {
-  const email = (identity?.identity_data?.email || '').trim().toLowerCase();
-  return Boolean(email) && email === (user?.email || '').trim().toLowerCase();
+  const data = identity?.identity_data || {};
+  // Only A to Z is lower-cased: the Kelvin sign, say, lower-cases to a
+  // plain "k", and is not the same letter.
+  const plain = (value) => String(value || '').trim().replace(/[A-Z]/g, (letter) => letter.toLowerCase());
+  const email = plain(data.email);
+  if (data.email_verified === false || data.email_verified === 'false') return false;
+  return Boolean(email) && email === plain(user?.email);
 };
 const googleIdentities = (user) => (user?.identities || []).filter((identity) => identity.provider === 'google');
 
@@ -113,4 +121,28 @@ export function googleMatches(user) {
 /** Every Google sign-in joined to the account that isn't its own email's: these are taken off again. */
 export function googleStrangers(user) {
   return googleIdentities(user).filter((identity) => !sameEmail(identity, user));
+}
+
+/**
+ * Takes every Google sign-in with another email off the account signed in
+ * on this device. A miss is left: the next visit tries again.
+ */
+export async function takeOffStrangers(supabase, user) {
+  for (const stranger of googleStrangers(user)) {
+    try {
+      await supabase.auth.unlinkIdentity(stranger);
+    } catch { /* tried again next time */ }
+  }
+}
+
+/**
+ * Google has just signed someone in to an account a coach set up that
+ * isn't finished, and none of its Google sign-ins has the account's own
+ * email: the Google account used is one left joined by a try on the
+ * invite's page that was never undone (the tab was closed on the way
+ * back, or taking it off missed). Whoever holds that Google account is
+ * not the person invited (the break-it tester, 13 Nov).
+ */
+export function cameInByStranger(user) {
+  return Boolean(user?.invited_at) && user?.user_metadata?.terms_accepted !== true && googleStrangers(user).length > 0 && !googleMatches(user);
 }

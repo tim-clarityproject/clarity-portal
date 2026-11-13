@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
-import { continueWithGoogle } from '../../lib/signIn/flow';
+import { continueWithGoogle, takeOffStrangers } from '../../lib/signIn/flow';
 import { stillSignedInAs } from '../../lib/signIn/linkRules';
 import { useLinkSession } from '../../lib/signIn/linkSession';
 import { isLeaked, LEAKED, refusedAsLeaked, refusedAsLong, refusedAsShort, TOO_LONG, TOO_SHORT, tooLong, tooShort } from '../../lib/signIn/password';
@@ -103,6 +103,9 @@ export default function Invite() {
       // the account this page was opened for. Anyone else is passed on in.
       const now = await supabase.auth.getSession().catch(() => null);
       if (!stillSignedInAs(now?.data?.session, user.id)) return setOver(true);
+      // A Google account with another email, left joined by an earlier
+      // try, never stays on an account that is being finished.
+      await takeOffStrangers(supabase, user);
       const { data, error } = await supabase.auth.updateUser({ password, data: termsRecord() }).catch((err) => ({ error: err }));
       if (error) {
         if (refusedAsLeaked(error)) return say('password', LEAKED);
@@ -126,6 +129,13 @@ export default function Invite() {
     if (isOffline()) return say('terms', needsConnection('Signing in'));
     if (busy.current) return undefined;
     busy.current = true;
+    // Google is joined to whoever is signed in on this device now: only
+    // ever the account this page was opened for (as for a password).
+    const now = await supabase.auth.getSession().catch(() => null);
+    if (!stillSignedInAs(now?.data?.session, user.id)) {
+      busy.current = false;
+      return setOver(true);
+    }
     // Google is joined to the invited account, so no second account is made.
     const { error } = await continueWithGoogle(supabase, { from: SIGN_IN_PATHS.invite, ticked: true, joinTo: user.email }).catch((err) => ({ error: err }));
     if (error) {

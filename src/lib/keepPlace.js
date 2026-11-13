@@ -25,15 +25,21 @@ const shown = (el) => {
 };
 
 // Fixed to the screen, or a layer of its own (a pop-up, a menu, a panel):
-// these place themselves.
-const floats = (el) => {
-  for (let node = el; node && node !== document.body; node = node.parentElement) {
+// these place themselves. Read from `el` up to the part that also holds
+// `within` (the link that opened it), when one is given: something that
+// opens inside a panel or a guided tool, beside its own link ("See an
+// example"), is on the same layer as that link, not a layer of its own,
+// and is kept in view by that layer's own scrolling (the break-it tester,
+// 13 Nov).
+const onLayer = (el, within = null) => {
+  for (let node = el; node && node !== document.body && !(within && node.contains(within)); node = node.parentElement) {
     const position = getComputedStyle(node).position;
     if (position === 'fixed') return true;
     if (node.matches('[role=dialog], [role=menu], [role=listbox], [role=tooltip], [aria-modal=true]')) return true;
   }
-  return getComputedStyle(el).position === 'absolute';
+  return false;
 };
+const floats = (el, within = null) => onLayer(el, within) || getComputedStyle(el).position === 'absolute';
 
 // The box that scrolls round `el`: the nearest one of its own, else the page.
 function scrollerOf(el) {
@@ -82,8 +88,10 @@ export function scrollNeeded({ triggerTop, regionBottom, viewTop, viewBottom, ga
 }
 
 function keepInView(trigger, region) {
-  if (!shown(trigger) || !shown(region) || floats(region)) return;
+  if (!shown(trigger) || !shown(region) || floats(region, trigger)) return;
   const scroller = scrollerOf(trigger);
+  // Opened on a layer with no scrolling of its own: the page behind it never moves.
+  if (!scroller && onLayer(region)) return;
   const t = trigger.getBoundingClientRect();
   const view = viewOf(scroller, t.left + t.width / 2);
   const by = scrollNeeded({ triggerTop: t.top, regionBottom: region.getBoundingClientRect().bottom, viewTop: view.top, viewBottom: view.bottom });
@@ -98,7 +106,7 @@ function regionFor(trigger, appeared) {
   if (named) return named;
   // Not a pop-up or a toast that happened to show first: those place
   // themselves, and must not hide what really opened.
-  return appeared.find((el) => shown(el) && !el.contains(trigger) && !trigger.contains(el) && !floats(el)) || null;
+  return appeared.find((el) => shown(el) && !el.contains(trigger) && !trigger.contains(el) && !floats(el, trigger)) || null;
 }
 
 let installed = false;

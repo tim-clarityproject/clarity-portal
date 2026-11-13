@@ -4,7 +4,8 @@ import { AuthContext } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
-import { continueWithGoogle } from '../../lib/signIn/flow';
+import { continueWithGoogle, takeOffStrangers } from '../../lib/signIn/flow';
+import { stillSignedInAs } from '../../lib/signIn/linkRules';
 import { needsBeforeYouStart, recordAgreement, startedWithGoogle, TICK_THE_BOX } from '../../lib/signIn/terms';
 import { DIDNT_SAVE, GOOGLE_DIDNT_WORK } from '../../lib/signIn/words';
 import { Alt, Line, MainButton, Message, SignInPage, TermsRow, TextLink } from '../../components/signin/SignInParts';
@@ -25,7 +26,9 @@ export default function BeforeYouStart({ onDone, account = null }) {
   const auth = useContext(AuthContext);
   // `account`: the one a link has just signed in, for the moment before
   // the rest of the portal has heard of it.
-  const user = auth.user || account;
+  // It comes first: the portal's own copy can, for a moment, still be
+  // whoever was signed in here before the link was opened.
+  const user = account || auth.user;
   const isLoading = auth.isLoading && !user;
   const goIn = useEnter();
   const enter = onDone || goIn;
@@ -57,6 +60,14 @@ export default function BeforeYouStart({ onDone, account = null }) {
     if (isOffline()) return setMessage(needsConnection('Creating an account'));
     busy.current = true;
     try {
+      // The agreement is saved for whoever is signed in on this device
+      // now: only ever the account this page names. If that has changed
+      // under the open page (another tab), the page starts again.
+      const now = await supabase.auth.getSession().catch(() => null);
+      if (!stillSignedInAs(now?.data?.session, user.id)) return void window.location.reload();
+      // A Google account with another email, left joined by a try on the
+      // invite's page, never stays on an account that is being finished.
+      if (user.invited_at) await takeOffStrangers(supabase, user);
       const saved = await recordAgreement(supabase, user.id);
       if (saved.error || !saved.user) return setMessage(friendlyError(saved.error, DIDNT_SAVE.join(' '), 'Creating an account'));
       leaving.current = true;
