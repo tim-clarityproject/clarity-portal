@@ -187,7 +187,13 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
           background: transparent;
           font-family: var(--font-display);
           font-weight: 400;
-          font-size: calc(10 * var(--u, 1px)) !important;
+          /* Spaced capitals in a third of a phone's width: they grow by at
+             most a quarter with a reader's larger text (--u-big), and a
+             word is never split across lines. */
+          font-size: calc(10 * var(--u-big, 1px)) !important;
+          overflow-wrap: normal;
+          word-break: normal;
+          hyphens: none;
           letter-spacing: 0.12em;
           text-transform: uppercase;
           color: var(--text-2);
@@ -272,6 +278,10 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
 
         .reading-popup-footer {
           display: flex;
+          /* At a reader's larger text on a narrow phone the two buttons
+             no longer fit side by side: Close drops under I agree, never
+             off the side of the panel. */
+          flex-wrap: wrap;
           gap: 12px;
           padding: 16px 20px 20px;
           border-top: 1px solid var(--line);

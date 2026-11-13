@@ -19,6 +19,15 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* As a Home Screen app the page sits inside the phone's safe area (#root
+   in pwa-standalone.css adds it above and below), so a full screen's
+   height on top of that would scroll a page with nothing more to show. */
+@media (display-mode: standalone) and (pointer: coarse) {
+  .ui-root.si-root {
+    min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+}
+
 .ui-root .si-frame {
   box-sizing: border-box;
   padding: var(--si-top) var(--space-4) var(--space-6);
@@ -55,7 +64,10 @@
   line-height: var(--lh-text);
   letter-spacing: var(--ls-si-brand);
   text-transform: uppercase;
-  white-space: nowrap;
+  /* One line at the standard text size on every phone. At a reader's own
+     larger text it is wider than a phone, so it wraps between its words
+     (never inside one) instead of running off the side. */
+  text-wrap: balance;
   /* The name reads the same whether it is the page's h1 (Sign in) or not:
      an older rule gives every heading wider gaps between its words. */
   word-spacing: normal;
@@ -123,6 +135,14 @@
 .ui-root .si-col .ds-google:focus-visible {
   outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
+}
+
+/* At a reader's own larger text the words can take two lines: the button
+   grows to hold them (44px at the standard size, as M26 draws it). */
+.ui-root .si-col .ds-google {
+  height: auto;
+  padding-block: var(--space-1) !important;
+  text-align: center;
 }
 
 .ui-root .si-ttl + .ds-google { margin-top: 0; }
@@ -278,8 +298,9 @@
 
 .ui-root .si-terms .ds-check-box:focus-visible {
   outline: var(--focus-w) solid var(--coral-text);
-  outline-offset: calc((var(--checkbox-box) - var(--tap-min)) / 2 + var(--space-px2));
-  border-radius: var(--tap-min);
+  /* As M26 draws it: a rounded ring round the whole tap area. */
+  outline-offset: var(--space-px2);
+  border-radius: var(--space-px6);
 }
 
 /* ---------- Text links: each keeps its own 44px tap area ---------- */
@@ -307,11 +328,18 @@
   .ui-root .si-link:hover { color: var(--coral-text); }
 }
 
+/* The focus ring sits round the words, not round the 44px tap area (the
+   rings of stacked links would run into what is above and below). An
+   outline pulled in by 10px comes in from the sides too, where it cut
+   through the first and last letters: so while it shows, the link is 10px
+   wider each side, with the same taken off its margins, and nothing moves. */
 .ui-root .si-link:focus-visible {
   color: var(--coral-text);
   outline: var(--focus-w) solid var(--coral-text);
   outline-offset: calc(-1 * var(--space-px10));
   border-radius: var(--space-px6);
+  padding-inline: var(--space-px12) !important;
+  margin-inline: calc(-1 * var(--space-px12));
 }
 
 .ui-root .si-alt {
@@ -339,7 +367,9 @@
   width: 100%;
   min-height: var(--btn-h) !important;
   margin-top: var(--space-px18);
-  padding: 0 var(--space-4) !important;
+  /* The space above and below only shows when a reader's larger text puts
+     the words on two lines: at the standard size the button is 48px. */
+  padding: var(--space-2) var(--space-4) !important;
   border-radius: var(--radius-pill);
   background: var(--coral);
   color: var(--on-coral);
@@ -507,3 +537,23 @@
 
 /* A reader's own larger text: the column never forces a sideways scroll. */
 .ui-root .si-col { min-width: 0; }
+
+/* Windows high-contrast mode (forced colours; rule 8b). The coral button
+   is a flat fill with no edge, so there it was only words: it gets an
+   edge in the system's colour. A message keeps its box, and "or" its lines. */
+@media (forced-colors: active) {
+  .ui-root .si-btn {
+    border: var(--line-w) solid ButtonText;
+  }
+
+  .ui-root .si-err {
+    outline: var(--line-w) solid CanvasText;
+    outline-offset: calc(-1 * var(--line-w));
+  }
+
+  .ui-root .si-or::before,
+  .ui-root .si-or::after {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+}
