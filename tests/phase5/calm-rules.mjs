@@ -26,6 +26,8 @@
 //     (Tim, 12 Nov; CHEV_PARTS=pages,health-check,old-route runs a part);
 //   - every outlined edge reaches 3 to 1 against what it sits on (Tim, 12
 //     Nov; tests/phase5/edges.mjs);
+//   - no two tap areas overlap, so nothing that can be tapped shares its
+//     44px with a neighbour (Tim, 11 Nov; tests/phase5/taps.mjs);
 //   - no console errors.
 //
 //   - the outside Health Check follows the device, light or dark (Tim, 10
@@ -44,6 +46,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { chevronsOff, measureChevrons } from './chevrons.mjs';
 import { outlinedEdges } from './edges.mjs';
+import { overlappingTaps } from './taps.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
@@ -89,6 +92,8 @@ const PAGES_ALL = [
   ['my-plans', '/my-plans'],
   ['my-reviews', '/my-reviews'],
   ['my-account', '/my-account'],
+  ['my-account-password', '/my-account/password'],
+  ['my-account-email', '/my-account/email'],
   // The end-of-sprint review's two written questions and the first-time
   // builder's working days (Tim, 10 Nov): opened on their step, nothing saved.
   ['sprint-review-worked', '/performance-sprint/review', 'review:1'],
@@ -330,6 +335,8 @@ for (const width of [1280, 390]) {
         pass(`${tag}: no second line that repeats its answer`, r.repeats.length === 0, r.repeats.slice(0, 4).join('; '));
         const lowEdges = await page.evaluate(outlinedEdges);
         pass(`${tag}: every outlined edge reaches 3 to 1`, lowEdges.length === 0, lowEdges.slice(0, 6).join('; '));
+        const shared = await page.evaluate(overlappingTaps);
+        pass(`${tag}: no two tap areas overlap`, shared.length === 0, shared.slice(0, 6).join('; '));
         pass(`${tag}: no title in capitals over 3 words`, r.longTitles.length === 0, r.longTitles.join('; '));
         const old = /plan my day|review my day|hardware and software check-in|monthly check-in|first check-in|performance evidence/i.exec(r.text);
         pass(`${tag}: no old names`, !old, old?.[0]);

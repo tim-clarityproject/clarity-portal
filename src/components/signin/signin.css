@@ -56,6 +56,10 @@
   letter-spacing: var(--ls-si-brand);
   text-transform: uppercase;
   white-space: nowrap;
+  /* The name reads the same whether it is the page's h1 (Sign in) or not:
+     an older rule gives every heading wider gaps between its words. */
+  word-spacing: normal;
+  overflow-wrap: normal;
   color: var(--text);
   /* Spaced capitals carry their spacing after the last letter too: the
      same space before the first keeps the name's middle on the
@@ -81,6 +85,7 @@
   line-height: var(--lh-title);
   letter-spacing: var(--ls-page-title);
   text-transform: uppercase;
+  word-spacing: normal;
   text-wrap: balance;
   color: var(--text);
 }
@@ -466,6 +471,7 @@
   line-height: var(--lh-title);
   letter-spacing: var(--ls-page-title);
   text-transform: uppercase;
+  word-spacing: normal;
   color: var(--text);
 }
 
