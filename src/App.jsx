@@ -231,7 +231,7 @@ function AppContent() {
       const code = params.get('code');
       const error = params.get('error');
 
-      // If there's a code or error parameter, redirect to email-confirmation to handle it properly
+      // A code or an error on the root address: Email confirmed (/auth/confirmed) reads it
       if (code || error) {
         navigate(`/auth/confirmed${location.search}${location.hash}`, { replace: true });
       }

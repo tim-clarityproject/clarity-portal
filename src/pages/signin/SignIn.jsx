@@ -1,6 +1,5 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
 import { rememberNext, SIGN_IN_PATHS } from '../../lib/signIn/addresses';
@@ -8,7 +7,7 @@ import { continueWithGoogle } from '../../lib/signIn/flow';
 import { rememberEmail } from '../../lib/signIn/remembered';
 import { DIDNT_SIGN_IN, GOOGLE_DIDNT_WORK, NO_MATCH, TOO_MANY } from '../../lib/signIn/words';
 import { Alt, ContinueWithGoogle, EmailField, MainButton, Message, OrLine, PasswordField, SignInPage, TextLink } from '../../components/signin/SignInParts';
-import useEnter from '../../components/signin/useEnter';
+import useEnter, { useAlreadyIn } from '../../components/signin/useEnter';
 
 // Sign in (M26: "Sign in" and "Sign in, details don’t match"). Continue
 // with Google sits above email. People always stay signed in on their own
@@ -19,7 +18,6 @@ import useEnter from '../../components/signin/useEnter';
 // own address: the same boxes, its own title, and no Create my account
 // link. The authenticator code follows either way (signInStop).
 export default function SignIn({ coach = false }) {
-  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
   const enter = useEnter();
@@ -28,6 +26,7 @@ export default function SignIn({ coach = false }) {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState(location.state?.message || null);
   const leaving = useRef(false);
+  const busy = useRef(false);
 
   // Where they were heading when they were asked to sign in.
   useEffect(() => {
@@ -35,17 +34,16 @@ export default function SignIn({ coach = false }) {
   }, []);
 
   // Already signed in (another tab, or coming back to this address): on they go.
-  useEffect(() => {
-    if (!user || leaving.current) return;
-    leaving.current = true;
-    enter(user);
-  }, [user, enter]);
+  useAlreadyIn(leaving);
 
   const submit = async (e) => {
     e.preventDefault();
     setMessage(null);
     if (!email.trim() || !password) return setMessage(NO_MATCH);
     if (isOffline()) return setMessage(needsConnection('Signing in'));
+    // One sign-in at a time: Enter twice, or a double click, asks once.
+    if (busy.current) return undefined;
+    busy.current = true;
     leaving.current = true;
     let result;
     try {
@@ -55,6 +53,7 @@ export default function SignIn({ coach = false }) {
     }
     const { data, error } = result;
     if (!error && data?.user) return enter(data.user);
+    busy.current = false;
     leaving.current = false;
     // Supabase only says "not confirmed" when the password was right.
     if (error?.code === 'email_not_confirmed' || /email not confirmed/i.test(error?.message || '')) {
@@ -69,8 +68,16 @@ export default function SignIn({ coach = false }) {
   const google = async () => {
     setMessage(null);
     if (isOffline()) return setMessage(needsConnection('Signing in'));
+    if (busy.current) return undefined;
+    busy.current = true;
     const { error } = await continueWithGoogle(supabase, { from: here }).catch((err) => ({ error: err }));
-    if (error) setMessage(isOffline(error) ? needsConnection('Signing in') : GOOGLE_DIDNT_WORK);
+    if (error) {
+      busy.current = false;
+      setMessage(isOffline(error) ? needsConnection('Signing in') : GOOGLE_DIDNT_WORK);
+    }
+    // On its way to Google the page stays as it is. The buttons work
+    // again shortly, for someone who comes back with the browser's Back.
+    else setTimeout(() => { busy.current = false; }, 3000);
     return undefined;
   };
 

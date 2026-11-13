@@ -69,3 +69,15 @@ test('the coaches’ page has its own address, apart from the clients’', () =>
   assert.equal(SIGN_IN_PATHS.coach, '/coach/sign-in');
   assert.notEqual(SIGN_IN_PATHS.coach, SIGN_IN_PATHS.signIn);
 });
+
+// The functionality tester, 13 Nov.
+test('after a deliberate Sign out, the page it was pressed on is not somewhere to come back to', async () => {
+  const { justSignedOut, noteSignedOut } = await import('../../src/lib/signIn/addresses.js');
+  const t0 = Date.parse('2026-11-13T09:00:00Z');
+  assert.equal(justSignedOut(t0), false);
+  noteSignedOut(t0);
+  assert.equal(justSignedOut(t0 + 500), true);
+  // Long after, a signed-out visit to a page is a deep link again.
+  assert.equal(justSignedOut(t0 + 60 * 1000), false);
+  assert.equal(justSignedOut(t0 - 1000), false);
+});

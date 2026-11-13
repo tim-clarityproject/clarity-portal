@@ -1,5 +1,5 @@
 import { returnAddress, SIGN_IN_PATHS } from './addresses';
-import { needsBeforeYouStart } from './terms';
+import { forgetTick, needsBeforeYouStart, rememberTick } from './terms';
 
 // What happens between proving who you are and getting in (M26; Tim's
 // decisions of 11 Nov). One place decides it, and the sign-in pages,
@@ -50,6 +50,7 @@ export function rememberGoogleFrom(path) {
   } catch { /* falls back to Sign in */ }
 }
 
+/** The page to go back to after a cancel or a miss at Google. Clears it. */
 export function takeGoogleFrom() {
   let from = null;
   try {
@@ -64,10 +65,15 @@ export function takeGoogleFrom() {
  * Starts Continue with Google. The return address is this page's own
  * origin, never a fixed one.
  * @param {object} supabase
- * @param {{ from: string, chooseAccount?: boolean, origin?: string }} opts
+ * @param {{ from: string, ticked?: boolean, chooseAccount?: boolean, origin?: string }} opts
+ *   `ticked`: the box beside the button is ticked (Create my account, the
+ *   invite). The tick is kept for the round trip; from any other page an
+ *   older tick is cleared, so it can never agree for someone else.
  */
-export async function continueWithGoogle(supabase, { from, chooseAccount = false, origin = window.location.origin }) {
+export async function continueWithGoogle(supabase, { from, ticked = false, chooseAccount = false, origin = window.location.origin }) {
   rememberGoogleFrom(from);
+  if (ticked) rememberTick();
+  else forgetTick();
   const options = { redirectTo: returnAddress('google', origin) };
   if (chooseAccount) options.queryParams = { prompt: 'select_account' };
   return supabase.auth.signInWithOAuth({ provider: 'google', options });

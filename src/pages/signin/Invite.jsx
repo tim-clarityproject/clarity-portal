@@ -6,7 +6,7 @@ import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import { continueWithGoogle } from '../../lib/signIn/flow';
 import { useLinkSession } from '../../lib/signIn/linkSession';
 import { isLeaked, LEAKED, refusedAsLeaked, refusedAsShort, TOO_SHORT, tooShort } from '../../lib/signIn/password';
-import { rememberTick, termsRecord, TICK_THE_BOX } from '../../lib/signIn/terms';
+import { invitedNotSetUp, termsRecord, TICK_THE_BOX } from '../../lib/signIn/terms';
 import { DIDNT_SAVE, GOOGLE_DIDNT_WORK } from '../../lib/signIn/words';
 import { ContinueWithGoogle, EmailField, Line, MainButton, Message, OrLine, PasswordField, SignInPage, TermsRow, Wait } from '../../components/signin/SignInParts';
 import useEnter from '../../components/signin/useEnter';
@@ -17,9 +17,17 @@ import LinkNotWorking from './LinkNotWorking';
 // First name box: "Welcome, Sam", "Tim has set up your account." (the
 // client's own coach), Continue with Google or a password, the one tick
 // box, then Set my password and straight in to Home.
+//
+// The page sets a password without asking for the old one, so it is only
+// ever shown to the account an invite link has just brought, or to one a
+// coach set up that hasn't been finished yet. Anyone else who is signed
+// in and opens this address is passed on in (the functionality tester,
+// 13 Nov).
 export default function Invite() {
   const enter = useEnter();
-  const { status, user } = useLinkSession(SIGN_IN_PATHS.invite);
+  const { status, user, fromLink, kind } = useLinkSession(SIGN_IN_PATHS.invite);
+  const mine = status === 'ready' && Boolean(user) && ((fromLink && kind === 'invite') || invitedNotSetUp(user));
+  const leaving = useRef(false);
   const [names, setNames] = useState({ first: '', coach: '' });
   const [password, setPassword] = useState('');
   const [ticked, setTicked] = useState(false);
@@ -28,7 +36,13 @@ export default function Invite() {
   const busy = useRef(false);
 
   useEffect(() => {
-    if (status !== 'ready' || !user) return undefined;
+    if (status !== 'ready' || !user || mine || leaving.current) return;
+    leaving.current = true;
+    enter(user);
+  }, [status, user, mine, enter]);
+
+  useEffect(() => {
+    if (!mine) return undefined;
     let live = true;
     (async () => {
       let first = (user.user_metadata?.first_name || '').trim();
@@ -38,16 +52,16 @@ export default function Invite() {
           const { data } = await supabase.from('profiles').select('first_name').eq('id', user.id).maybeSingle();
           first = (data?.first_name || '').trim();
         }
-        const { data: mine } = await supabase.rpc('my_coach');
-        const row = Array.isArray(mine) ? mine[0] : mine;
+        const { data: coaches } = await supabase.rpc('my_coach');
+        const row = Array.isArray(coaches) ? coaches[0] : coaches;
         coach = (row?.display_first_name || row?.first_name || '').trim();
       } catch { /* the page reads well without them */ }
       if (live) setNames({ first, coach });
     })();
     return () => { live = false; };
-  }, [status, user]);
+  }, [mine, user]);
 
-  if (status === 'checking') {
+  if (status === 'checking' || (status === 'ready' && !mine)) {
     return <SignInPage><Wait>Signing you in</Wait></SignInPage>;
   }
   if (status !== 'ready') {
@@ -83,6 +97,7 @@ export default function Invite() {
       try {
         await supabase.from('profiles').update({ terms_accepted: true }).eq('id', user.id);
       } catch { /* filled in on the next sign-in */ }
+      leaving.current = true;
       return enter(data?.user || user);
     } finally {
       busy.current = false;
@@ -93,9 +108,16 @@ export default function Invite() {
     setMessage(null);
     if (!ticked) return say('terms', TICK_THE_BOX);
     if (isOffline()) return say('terms', needsConnection('Signing in'));
-    rememberTick();
-    const { error } = await continueWithGoogle(supabase, { from: SIGN_IN_PATHS.invite }).catch((err) => ({ error: err }));
-    if (error) say('terms', isOffline(error) ? needsConnection('Signing in') : GOOGLE_DIDNT_WORK);
+    if (busy.current) return undefined;
+    busy.current = true;
+    const { error } = await continueWithGoogle(supabase, { from: SIGN_IN_PATHS.invite, ticked: true }).catch((err) => ({ error: err }));
+    if (error) {
+      busy.current = false;
+      say('terms', isOffline(error) ? needsConnection('Signing in') : GOOGLE_DIDNT_WORK);
+    }
+    // On its way to Google the page stays as it is. The buttons work
+    // again shortly, for someone who comes back with the browser's Back.
+    else setTimeout(() => { busy.current = false; }, 3000);
     return undefined;
   };
 

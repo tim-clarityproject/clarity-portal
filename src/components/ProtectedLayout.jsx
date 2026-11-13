@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { rememberNext } from '../lib/signIn/addresses';
+import { justSignedOut, rememberNext } from '../lib/signIn/addresses';
 import { hasAuthenticator, signInStop, stopPath } from '../lib/signIn/flow';
 import { needsBeforeYouStart } from '../lib/signIn/terms';
 import { diag } from '../utils/diag';
@@ -55,8 +55,10 @@ export default function ProtectedLayout() {
       console.log('[ProtectedLayout] No user, redirecting to login');
       // Where they were heading goes with them, so signing in lands them
       // there (Tim, 11 Nov): the path with its query and hash.
+      // Not after a deliberate Sign out: the next person to sign in here
+      // starts at Home, not on the page the last one left from.
       navigate('/auth/login', {
-        state: { returnTo: asked, fromDirect: true },
+        state: justSignedOut() ? { fromDirect: true } : { returnTo: asked, fromDirect: true },
         replace: true
       });
     } else {
@@ -70,24 +72,24 @@ export default function ProtectedLayout() {
   // code. Whichever way they came in, no page opens until it's done.
   // Everyone else (no authenticator, already agreed) is never held up.
   const mayOwe = Boolean(user) && (hasAuthenticator(user) || needsBeforeYouStart(user));
-  const [stop, setStop] = useState(undefined);
+  // What was found, and who it was found for: an answer for one account
+  // never opens the portal for the next one to sign in on this tab.
+  const [checked, setChecked] = useState({ id: null, stop: undefined });
+  const userId = user?.id || null;
   useEffect(() => {
-    if (!mayOwe) {
-      setStop(null);
-      return undefined;
-    }
+    if (!mayOwe) return undefined;
     let live = true;
-    setStop(undefined);
     signInStop(supabase, user).then((owed) => {
       if (!live) return;
       if (owed) {
         rememberNext(asked);
         navigate(stopPath(owed), { replace: true });
       }
-      setStop(owed);
+      setChecked({ id: userId, stop: owed });
     });
     return () => { live = false; };
-  }, [mayOwe, user, navigate]);
+  }, [mayOwe, user, userId, navigate]);
+  const cleared = !mayOwe || (checked.id === userId && checked.stop === null);
 
   // During auth check, show loading screen (blocks rendering of child routes)
   if (isLoading) {
@@ -100,7 +102,7 @@ export default function ProtectedLayout() {
   }
 
   // Still checking what they owe, or on their way to it: nothing shows.
-  if (mayOwe && stop !== null) {
+  if (!cleared) {
     return <div className="ui-root" role="status" aria-label="Loading" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />;
   }
 

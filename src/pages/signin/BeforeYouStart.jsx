@@ -62,8 +62,16 @@ export default function BeforeYouStart() {
   const another = async () => {
     setMessage(null);
     if (isOffline()) return setMessage(needsConnection('Signing in'));
+    if (busy.current) return undefined;
+    busy.current = true;
     const { error } = await continueWithGoogle(supabase, { from: SIGN_IN_PATHS.beforeYouStart, chooseAccount: true }).catch((err) => ({ error: err }));
-    if (error) setMessage(GOOGLE_DIDNT_WORK);
+    if (error) {
+      busy.current = false;
+      setMessage(isOffline(error) ? needsConnection('Signing in') : GOOGLE_DIDNT_WORK);
+    }
+    // On its way to Google the page stays as it is. The buttons work
+    // again shortly, for someone who comes back with the browser's Back.
+    else setTimeout(() => { busy.current = false; }, 3000);
     return undefined;
   };
 

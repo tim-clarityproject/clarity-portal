@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -13,9 +13,17 @@ import useEnter from '../../components/signin/useEnter';
 // authenticator app (Supabase's own TOTP sign-in factor). Google never
 // skips it. The box has no example code in it, and "6-digit" never
 // splits across lines.
-export default function CoachCode() {
+//
+// `onDone` (New password): the code is asked for in the middle of another
+// page, which carries on itself once it is given. An account with an
+// authenticator can't save a new password before giving its code
+// (Supabase refuses it), so a reset link alone never gets a coach in.
+export default function CoachCode({ onDone }) {
   const { user, isLoading } = useContext(AuthContext);
-  const enter = useEnter();
+  const goIn = useEnter();
+  const done = useRef(onDone);
+  done.current = onDone;
+  const enter = useCallback((account) => (done.current ? done.current(account) : goIn(account)), [goIn]);
   const [factorId, setFactorId] = useState(null);
   const [code, setCode] = useState('');
   const [message, setMessage] = useState(null);

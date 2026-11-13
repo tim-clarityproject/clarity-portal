@@ -12,7 +12,7 @@ import LinkNotWorking from './LinkNotWorking';
 export default function EmailConfirmed() {
   const navigate = useNavigate();
   const enter = useEnter();
-  const { status, user } = useLinkSession(window.location.pathname);
+  const { status, user, landing, fromLink } = useLinkSession(window.location.pathname);
 
   if (status === 'checking') {
     return <SignInPage><Wait>Signing you in</Wait></SignInPage>;
@@ -27,7 +27,11 @@ export default function EmailConfirmed() {
     // Opened with no link at all: nothing to confirm.
     return <LinkNotWorking sendFrom={SIGN_IN_PATHS.signIn} />;
   }
-  const firstName = (user?.user_metadata?.first_name || '').trim();
+  // A link opened in a browser where someone else is already signed in
+  // confirms the email all the same, but it didn't sign its owner in
+  // here: the welcome is never by the other person's name.
+  const theirs = !landing.hadCode || fromLink;
+  const firstName = theirs ? (user?.user_metadata?.first_name || '').trim() : '';
   return (
     <SignInPage title="Email confirmed">
       <Line>{firstName ? `Welcome to The Clarity Portal, ${firstName}.` : 'Welcome to The Clarity Portal.'}</Line>

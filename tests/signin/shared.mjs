@@ -58,7 +58,15 @@ export async function guard(context, calls = [], answers = {}) {
       if (name === 'pwned') continue;
       const [m, p] = name.split(' ');
       if (m === method && path.endsWith(p)) {
-        const out = await answer({ url, body, route });
+        let out;
+        try {
+          out = await answer({ url, body, route });
+        } catch (error) {
+          // A request still on its way when a visit ends (the page asks for
+          // the account once more as it closes): nothing left to answer.
+          if (/disposed|closed/i.test(error?.message || '')) return undefined;
+          throw error;
+        }
         if (out === 'continue') return route.continue();
         if (out === 'handled') return undefined;
         if (out) return json(route, out.status || 200, out.body ?? {});

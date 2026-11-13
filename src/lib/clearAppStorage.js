@@ -31,6 +31,10 @@ export function isAppOwnedKey(key) {
   // Where a guided tool was left, and a change from its summary still
   // open (GuidedTool.jsx; the key holds the person's id and the day).
   if (key.startsWith('ds-guide:')) return true;
+  // What the sign-in pages keep for a tab (src/lib/signIn): where a link
+  // pointed, a tick carried to Google, the email just typed, a reset link
+  // just opened. None of it is for the next person to sign in here.
+  if (key.startsWith('clarity-sign-in-')) return true;
   // Not cleared: answers that wait on the device until their migration has
   // run (clarity-day-plan-local:, clarity-day-review-local:,
   // clarity-checkin-extras:; dayStore.js, answerExtras.js). They carry the

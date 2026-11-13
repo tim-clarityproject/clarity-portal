@@ -33,7 +33,8 @@ const browser = await chromium.launch();
 
 // One visit: a fresh device, with Google's return answered as `who`, or
 // as a cancel or a miss (`back`).
-async function visit({ who = 'fresh', back = 'code', phone = false, tokenStatus = 200 } = {}) {
+async function visit({ who = 'fresh', back = 'code', phone = false, tokenStatus: firstStatus = 200 } = {}) {
+  let tokenStatus = firstStatus;
   const calls = [];
   const state = { user: people[who](session.user), authorize: [], saved: [] };
   const answers = {
@@ -57,13 +58,17 @@ async function visit({ who = 'fresh', back = 'code', phone = false, tokenStatus 
       state.user = { ...state.user, user_metadata: { ...state.user.user_metadata, ...(body?.data || {}) } };
       return { status: 200, body: state.user };
     },
+    // Letting a half-finished sign-in go never ends the session the other visits stand on.
+    'POST /auth/v1/logout': async () => { state.letGo = (state.letGo || 0) + 1; return { status: 200, body: {} }; },
   };
   const ctx = await browser.newContext({ viewport: phone ? { width: 390, height: 844 } : { width: 1280, height: 900 }, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: 'dark', hasTouch: phone, isMobile: phone });
   await guard(ctx, calls, answers);
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  return { ctx, page, calls, state, errors };
+  // From now on the sign-in can't be finished.
+  const fail = () => { tokenStatus = 400; };
+  return { ctx, page, calls, state, errors, fail };
 }
 const path = (page) => new URL(page.url()).pathname;
 const google = (page) => page.getByRole('button', { name: 'Continue with Google' });
@@ -236,6 +241,54 @@ for (const [name, opts] of [['Google answers with an error', { back: 'miss' }], 
   pass('“Use a different Google account” asks Google to let them choose', second.prompt === 'select_account', JSON.stringify(second.prompt));
   pass('and comes back to this origin again', second.redirect_to === `${new URL(APP).origin}/auth/google`, second.redirect_to);
   pass('the account chosen goes on in', path(page) === '/welcome');
+  await v.ctx.close();
+}
+
+// ---------------------------------------------------------------- 9. a tick left behind never agrees for anyone (the functionality tester, 13 Nov)
+{
+  const v = await visit({ who: 'fresh' });
+  const { page, state } = v;
+  // Ticked on Create my account, then Google left with the browser's own
+  // Back, so the tick was never used. Minutes later, Sign in with Google.
+  await page.goto(`${APP}/auth/sign-up`);
+  await page.waitForSelector('.si-col .ds-google');
+  await page.evaluate(() => {
+    sessionStorage.setItem('clarity-sign-in-tick', new Date(Date.now() - 60 * 1000).toISOString());
+    sessionStorage.setItem('clarity-sign-in-google-from', '/auth/sign-up');
+  });
+  await page.goto(`${APP}/auth/login`);
+  await google(page).click();
+  await page.waitForURL(/\/auth\/before-you-start$/, { timeout: 20000 }).catch(() => null);
+  pass('a tick left behind on Create my account doesn’t agree for a Google sign-in from Sign in: Before you start', path(page) === '/auth/before-you-start', path(page));
+  pass('and nothing was saved for them', state.saved.length === 0, JSON.stringify(state.saved));
+  pass('the old tick is gone from the tab', !(await page.evaluate(() => sessionStorage.getItem('clarity-sign-in-tick'))));
+  // Held at Before you start, they go back to Sign in to use their email
+  // instead: the page works, and the half-finished sign-in is let go.
+  await page.goto(`${APP}/auth/login`);
+  await page.waitForSelector('.si-col .ds-google');
+  await sleep(1500);
+  pass('someone held at Before you start who opens Sign in stays on Sign in', path(page) === '/auth/login', path(page));
+  pass('the half-finished Google sign-in is let go on this device', state.letGo === 1 && !(await page.evaluate(() => Boolean(localStorage.getItem('clarity-portal-auth')))), String(state.letGo));
+  pass('with no message', (await page.locator('.si-err').count()) === 0, await message(page));
+  await page.goto(`${APP}/welcome`);
+  await page.waitForURL(/\/auth\/login$/, { timeout: 20000 }).catch(() => null);
+  pass('and the portal is shut to them, as to anyone signed out', path(page) === '/auth/login', path(page));
+  pass('no page error', v.errors.length === 0, v.errors[0]);
+  await v.ctx.close();
+}
+
+// ---------------------------------------------------------------- 10. "Use a different Google account" that can't be finished
+{
+  const v = await visit({ who: 'fresh' });
+  const { page, state } = v;
+  await page.goto(`${APP}/auth/login`);
+  await google(page).click();
+  await page.waitForURL(/\/auth\/before-you-start$/, { timeout: 20000 });
+  v.fail();
+  await page.getByRole('button', { name: 'Use a different Google account' }).click();
+  await page.waitForSelector('.si-err', { timeout: 25000 }).catch(() => null);
+  pass('the second sign-in can’t be finished: back on Sign in with “That didn’t work.”', path(page) === '/auth/login' && (await message(page)) === '! That didn’t work. Try again, or use your email and password.', `${path(page)} ${await message(page)}`);
+  pass('the account that was here is never passed off as the one just chosen (nothing saved, not let in)', state.saved.length === 0);
   await v.ctx.close();
 }
 

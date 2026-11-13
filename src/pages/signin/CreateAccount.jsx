@@ -1,16 +1,15 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
 import { returnAddress, SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import { continueWithGoogle } from '../../lib/signIn/flow';
 import { isLeaked, LEAKED, refusedAsLeaked, refusedAsShort, TOO_SHORT, tooShort } from '../../lib/signIn/password';
 import { rememberEmail } from '../../lib/signIn/remembered';
-import { rememberTick, termsRecord, TICK_THE_BOX } from '../../lib/signIn/terms';
+import { termsRecord, TICK_THE_BOX } from '../../lib/signIn/terms';
 import { ADD_FIRST_NAME, ALREADY_AN_ACCOUNT, EMAIL_NOT_RIGHT, GOOGLE_DIDNT_WORK, looksLikeEmail, TOO_MANY } from '../../lib/signIn/words';
 import { Alt, ContinueWithGoogle, EmailField, Field, MainButton, Message, OrLine, PasswordField, SignInPage, TermsRow, TextLink } from '../../components/signin/SignInParts';
-import useEnter from '../../components/signin/useEnter';
+import useEnter, { useAlreadyIn } from '../../components/signin/useEnter';
 
 // Create my account (M26: "Create my account" and its three messages).
 // One page: First name, Email, Password and the one tick box. Google
@@ -19,7 +18,6 @@ import useEnter from '../../components/signin/useEnter';
 // the tick says "Tick the box to carry on." beside the box. An email
 // sign-up confirms its email before it gets in.
 export default function CreateAccount() {
-  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const enter = useEnter();
@@ -34,11 +32,7 @@ export default function CreateAccount() {
   const busy = useRef(false);
   const leaving = useRef(false);
 
-  useEffect(() => {
-    if (!user || leaving.current) return;
-    leaving.current = true;
-    enter(user);
-  }, [user, enter]);
+  useAlreadyIn(leaving);
 
   const say = (at, lines) => {
     setMessage({ at, lines });
@@ -98,9 +92,16 @@ export default function CreateAccount() {
     setMessage(null);
     if (!ticked) return say('terms', TICK_THE_BOX);
     if (isOffline()) return say('terms', needsConnection('Signing in'));
-    rememberTick();
-    const { error } = await continueWithGoogle(supabase, { from: SIGN_IN_PATHS.create }).catch((err) => ({ error: err }));
-    if (error) say('terms', isOffline(error) ? needsConnection('Signing in') : GOOGLE_DIDNT_WORK);
+    if (busy.current) return undefined;
+    busy.current = true;
+    const { error } = await continueWithGoogle(supabase, { from: SIGN_IN_PATHS.create, ticked: true }).catch((err) => ({ error: err }));
+    if (error) {
+      busy.current = false;
+      say('terms', isOffline(error) ? needsConnection('Signing in') : GOOGLE_DIDNT_WORK);
+    }
+    // On its way to Google the page stays as it is. The buttons work
+    // again shortly, for someone who comes back with the browser's Back.
+    else setTimeout(() => { busy.current = false; }, 3000);
     return undefined;
   };
 

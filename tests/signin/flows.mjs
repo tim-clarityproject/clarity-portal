@@ -6,7 +6,7 @@
 //   node tests/signin/flows.mjs
 import { chromium } from 'playwright';
 import { APP, SAM, guard, makeChecks, sleep, testEnv } from './shared.mjs';
-import { signedIn } from './screens.mjs';
+import { openedResetLink, signedIn } from './screens.mjs';
 
 const env = testEnv();
 const { pass, done } = makeChecks();
@@ -274,7 +274,14 @@ for (const address of ['/auth/confirmed', '/auth/mission', '/email-confirmation'
   await press(page, 'Send a new link');
   await page.waitForURL(/\/forgot-password$/);
   pass('Send a new link goes to Reset your password', path(page) === '/forgot-password');
+  // The older note was a bare time, which anyone signed in could write in
+  // the address bar's own tools: it opens nothing now (the functionality
+  // tester, 13 Nov). The note is for the account whose link was opened.
   await page.evaluate(() => sessionStorage.setItem('clarity-sign-in-reset', String(Date.now())));
+  await page.goto(`${APP}/auth/reset-password`);
+  await page.getByRole('heading', { name: 'Link not working' }).waitFor({ timeout: 15000 }).catch(() => null);
+  pass('a bare time left in the tab is not a reset link: Link not working', (await text(page)).includes('LINK NOT WORKING'), await text(page));
+  await openedResetLink(page);
   await page.goto(`${APP}/auth/reset-password`);
   await page.getByRole('heading', { name: 'New password' }).waitFor({ timeout: 15000 }).catch(() => null);
   const b = await boxes(page);

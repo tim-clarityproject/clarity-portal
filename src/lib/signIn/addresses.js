@@ -86,6 +86,21 @@ const store = () => {
   }
 };
 
+// A deliberate Sign out (AuthContext.logout): the page they signed out on
+// is not somewhere to come back to, least of all for whoever signs in on
+// this device next. The portal's guard asks this before it passes the
+// page on to Sign in.
+let leftAt = 0;
+export function noteSignedOut(now = Date.now()) {
+  leftAt = now;
+  try {
+    store()?.removeItem(NEXT_KEY);
+  } catch { /* nothing kept */ }
+}
+export function justSignedOut(now = Date.now()) {
+  return leftAt > 0 && now - leftAt >= 0 && now - leftAt < 10000;
+}
+
 export function rememberNext(value) {
   const next = safeNext(value);
   try {

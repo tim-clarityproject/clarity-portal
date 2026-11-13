@@ -19,7 +19,7 @@ export const YOU_SIGN_IN_WITH_GOOGLE = 'You sign in with Google.';
  * is signed in with (so a coach who has given their code keeps it). It
  * asks Supabase the same question signing in does, then lets that extra
  * sign-in go at once.
- * @returns {Promise<'ok'|'no'|'error'>}
+ * @returns {Promise<'ok'|'no'|'busy'|'error'>} 'busy' when it was tried too many times
  */
 export async function checkCurrentPassword(supabase, email, password, fetchFn = globalThis.fetch) {
   const base = supabase?.supabaseUrl;
@@ -31,6 +31,7 @@ export async function checkCurrentPassword(supabase, email, password, fetchFn = 
       headers: { apikey: key, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
+    if (answer.status === 429) return 'busy';
     if (answer.status === 400 || answer.status === 401 || answer.status === 422) return 'no';
     if (!answer.ok) return 'error';
     const extra = await answer.json().catch(() => null);

@@ -46,6 +46,17 @@ export async function signedIn(page, { env, answers, SAM }, { email = SAM.email,
   await page.waitForURL(land, { timeout: 30000 });
 }
 
+// As if a reset link had just been opened in this tab by the account that
+// is signed in: the note New password keeps is for that account alone.
+export const openedResetLink = (page) => page.evaluate(() => {
+  const id = JSON.parse(localStorage.getItem('clarity-portal-auth')).user.id;
+  sessionStorage.setItem('clarity-sign-in-reset', JSON.stringify({ at: Date.now(), id }));
+});
+
+// An account a coach has set up that hasn't been finished: invited, and
+// not yet agreed. The invite's page is shown to no other account.
+export const invited = (u) => ({ ...u, invited_at: '2026-11-10T09:00:00.000Z', user_metadata: { first_name: u.user_metadata?.first_name || '' } });
+
 const fillCreate = async (page, SAM, password) => {
   await page.getByLabel('First name').fill(SAM.first);
   await fillEmail(page, SAM.email);
@@ -149,7 +160,7 @@ export const SCREENS = [
     name: 'Set up from your coach’s invite',
     open: async (page, o) => {
       o.answers['POST /rest/v1/rpc/my_coach'] = () => ({ status: 200, body: [{ coach_id: '00000000-0000-4000-8000-00000000000c', first_name: 'Tim', away_until: null, mobile: null, contact_ways: [] }] });
-      await signedIn(page, o);
+      await signedIn(page, o, { change: invited });
       await go(page, '/auth/invite');
       await page.waitForSelector('.si-ttl');
       await page.getByText('Tim has set up your account.').waitFor();
@@ -183,7 +194,7 @@ export const SCREENS = [
     open: async (page, o) => {
       await signedIn(page, o);
       // As if a reset link had just been opened in this tab.
-      await page.evaluate(() => sessionStorage.setItem('clarity-sign-in-reset', String(Date.now())));
+      await openedResetLink(page);
       await go(page, '/auth/reset-password');
       await page.waitForSelector('.si-ttl');
       await sleep(100);

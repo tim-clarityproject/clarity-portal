@@ -21,8 +21,10 @@
      not exist: the outside Health Check (health-check.html, /health-check/
      and everything its page asks for, even the font files it shares with
      the portal), /api/, the design
-     reference, the sign-in email links (/auth/callback,
-     /email-confirmation, /check-email-confirmation, /auth/reset-password),
+     reference, the addresses a sign-in email link or Google comes back to
+     (/auth/google, /auth/confirmed, /auth/invite, /auth/reset-password,
+     and the older /auth/callback, /auth/mission, /email-confirmation and
+     /check-email-confirmation),
      /version.json and this file.
    - A new version waits (no skipWaiting on install). It takes over on the
      next full open, or when the app asks it to: only while the page is

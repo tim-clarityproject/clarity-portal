@@ -26,3 +26,12 @@ test('Sign out leaves the device’s own settings alone', () => {
     assert.equal(isAppOwnedKey(key), false, key);
   }
 });
+
+// The functionality tester, 13 Nov: what the sign-in pages keep for a tab
+// (where a link pointed, a tick carried to Google, the email just typed, a
+// reset link just opened) is never left for the next person to sign in.
+test('Sign out clears what the sign-in pages kept for the tab', () => {
+  for (const key of ['clarity-sign-in-next', 'clarity-sign-in-tick', 'clarity-sign-in-google-from', 'clarity-sign-in-email', 'clarity-sign-in-reset']) {
+    assert.equal(isAppOwnedKey(key), true, key);
+  }
+});

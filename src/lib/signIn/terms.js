@@ -46,6 +46,31 @@ export function needsBeforeYouStart(user) {
   return Boolean(user) && startedWithGoogle(user) && !hasAgreed(user);
 }
 
+/**
+ * An account a coach set up that hasn't been finished yet: invited, and
+ * never agreed. Only such an account (or one whose invite link has just
+ * been opened) is shown the invite's page, which sets a password without
+ * asking for the old one.
+ */
+export function invitedNotSetUp(user) {
+  return Boolean(user?.invited_at) && !hasAgreed(user);
+}
+
+// The pages a ticked box can be carried from, through Google's round
+// trip: the two that show the box beside Continue with Google.
+const TICK_PAGES = ['/auth/sign-up', '/auth/invite'];
+
+/**
+ * Whether a tick kept for Google's round trip may be saved for the
+ * account that came back. Only when Google was started from a page that
+ * shows the box, and only for an account that hasn't agreed yet: a tick
+ * left behind (ticked on Create my account, then Google closed with the
+ * browser's own Back) never agrees for whoever signs in next from Sign in.
+ */
+export function tickAgreesFor(tickedAt, from, user) {
+  return Boolean(tickedAt) && TICK_PAGES.includes(from) && Boolean(user) && !hasAgreed(user);
+}
+
 // The box ticked on Create my account before pressing Continue with
 // Google: kept for this tab while Google does its round trip, and only
 // for a short while, so an old tick never agrees for anyone.
@@ -63,6 +88,12 @@ export function rememberTick(at = new Date()) {
   try {
     store()?.setItem(TICK_KEY, at.toISOString());
   } catch { /* they get Before you start instead */ }
+}
+
+export function forgetTick() {
+  try {
+    store()?.removeItem(TICK_KEY);
+  } catch { /* nothing kept */ }
 }
 
 /** Whether a kept tick still counts at `now`. */

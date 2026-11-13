@@ -1,4 +1,4 @@
-import { useContext, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
@@ -6,8 +6,10 @@ import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
 import { checkCurrentPassword, hasPassword } from '../../lib/signIn/account';
 import { returnAddress, SIGN_IN_PATHS } from '../../lib/signIn/addresses';
+import { landingFor } from '../../lib/signIn/linkSession';
+import { codeWasSwapped } from '../../lib/signIn/linkRules';
 import { isLeaked, LEAKED, refusedAsLeaked, refusedAsShort, TOO_SHORT, tooShort } from '../../lib/signIn/password';
-import { CURRENT_NO_MATCH, DIDNT_SAVE, DIDNT_SEND, EMAIL_NOT_RIGHT, looksLikeEmail, SAME_EMAIL, TOO_MANY } from '../../lib/signIn/words';
+import { CURRENT_NO_MATCH, DIDNT_SAVE, DIDNT_SEND, EMAIL_NOT_RIGHT, looksLikeEmail, refusedAsSame, SAME_EMAIL, SAME_PASSWORD, TOO_MANY } from '../../lib/signIn/words';
 import { Alt, BackTo, EmailField, MainButton, Message, PasswordField, TextLink } from '../../components/signin/SignInParts';
 
 // Inside My Account (M26): Password and Email, in the portal's own frame
@@ -64,17 +66,20 @@ export function AccountPassword() {
     setSaved(false);
     if (!current) return say('current', CURRENT_NO_MATCH);
     if (tooShort(next)) return say('next', TOO_SHORT);
+    if (next === current) return say('next', SAME_PASSWORD);
     if (isOffline()) return say('next', needsConnection('Saving a new password'));
     busy.current = true;
     try {
       const check = await checkCurrentPassword(supabase, user.email, current);
       if (check === 'no') return say('current', CURRENT_NO_MATCH);
+      if (check === 'busy') return say('current', TOO_MANY);
       if (check === 'error') return say('next', isOffline() ? needsConnection('Saving a new password') : DIDNT_SAVE);
       if (await isLeaked(next)) return say('next', LEAKED);
       const { error } = await supabase.auth.updateUser({ password: next }).catch((err) => ({ error: err }));
       if (error) {
         if (refusedAsLeaked(error)) return say('next', LEAKED);
         if (refusedAsShort(error)) return say('next', TOO_SHORT);
+        if (refusedAsSame(error)) return say('next', SAME_PASSWORD);
         return say('next', friendlyError(error, DIDNT_SAVE.join(' '), 'Saving a new password'));
       }
       // Saved: the boxes clear, so the page is ready as it began.
@@ -107,15 +112,56 @@ export function AccountPassword() {
   );
 }
 
+// The change-of-email link comes back to this page. When this visit is
+// that link, and its code was taken, the new email has just taken over:
+// said once, with "Saved".
+let saidChanged = false;
+function linkJustChangedIt() {
+  if (saidChanged || !codeWasSwapped(landingFor(SIGN_IN_PATHS.accountEmail))) return false;
+  saidChanged = true;
+  return true;
+}
+
 export function AccountEmail() {
   const { user } = useContext(AuthContext);
+  // The account as Supabase has it now. The copy on this device can be
+  // behind: the link may have been opened on another device, or this very
+  // visit may be the link coming back, so it is asked for once on opening.
+  const [fresh, setFresh] = useState(null);
+  const account = fresh && fresh.id === user?.id ? fresh : user;
   const [email, setEmail] = useState(() => user?.email || '');
   // The new address waiting for its link to be opened. Supabase keeps it
   // on the account until then, so the page still says so after a refresh.
   const [sentTo, setSentTo] = useState(() => user?.new_email || '');
   const [message, setMessage] = useState(null);
   const [again, setAgain] = useState(false);
+  // "Saved" once the new email has taken over (its link was opened).
+  const [changed, setChanged] = useState(() => linkJustChangedIt());
   const busy = useRef(false);
+  const typed = useRef(false);
+  // Once they have sent a link from this page, the page's own word stands.
+  const acted = useRef(false);
+
+  // When the newer copy differs, the page follows it: the new email in
+  // the box once it has taken over, or still waiting for its link.
+  const userId = user?.id;
+  const userEmail = user?.email || '';
+  useEffect(() => {
+    let live = true;
+    supabase.auth.getUser()
+      .then(({ data }) => {
+        const newer = data?.user;
+        if (!live || !newer || newer.id !== userId) return;
+        setFresh(newer);
+        if (newer.email && newer.email.toLowerCase() !== userEmail.toLowerCase()) {
+          if (!typed.current) setEmail(newer.email);
+          if (!acted.current) setChanged(true);
+        }
+        if (!acted.current) setSentTo(newer.new_email || '');
+      })
+      .catch(() => null);
+    return () => { live = false; };
+  }, [userId, userEmail]);
 
   if (user && !hasPassword(user)) return <Navigate to="/my-account" replace />;
 
@@ -138,9 +184,11 @@ export function AccountEmail() {
     setMessage(null);
     const address = email.trim();
     if (!looksLikeEmail(address)) return setMessage(EMAIL_NOT_RIGHT);
-    if (address.toLowerCase() === (user?.email || '').toLowerCase()) return setMessage(SAME_EMAIL);
+    if (address.toLowerCase() === (account?.email || '').toLowerCase()) return setMessage(SAME_EMAIL);
     if (isOffline()) return setMessage(needsConnection('Sending the link'));
     busy.current = true;
+    acted.current = true;
+    setChanged(false);
     try {
       const error = await send(address);
       if (error) return setMessage(refused(error));
@@ -165,7 +213,7 @@ export function AccountEmail() {
     }
   };
 
-  if (sentTo && sentTo.toLowerCase() !== (user?.email || '').toLowerCase()) {
+  if (sentTo && sentTo.toLowerCase() !== (account?.email || '').toLowerCase()) {
     return (
       <AccountPage title="Email">
         <p className="si-p">We’ve sent a link to <strong>{sentTo}</strong>.</p>
@@ -183,10 +231,11 @@ export function AccountEmail() {
 
   return (
     <AccountPage title="Email" onSubmit={submit}>
-      <EmailField autoComplete="email" placeholder={undefined} value={email} onChange={(e) => setEmail(e.target.value)} />
+      <EmailField autoComplete="email" placeholder={undefined} value={email} onChange={(e) => { typed.current = true; setChanged(false); setEmail(e.target.value); }} />
       <Message lines={message} />
       <div className="si-bwrap">
         <MainButton>Save my new email</MainButton>
+        {changed ? <Saved /> : null}
       </div>
     </AccountPage>
   );

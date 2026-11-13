@@ -1,11 +1,11 @@
 import { createContext, useEffect, useState } from 'react';
 import { supabase, auth } from '../lib/supabase';
 import { hasAgreed } from '../lib/signIn/terms';
+import { noteSignedOut } from '../lib/signIn/addresses';
 import { sessionManager } from '../lib/sessionManager';
 import { diag } from '../utils/diag';
 import { clearAppStorage } from '../lib/clearAppStorage';
 import { flush as flushQueue, queueState, retrySyncQueue, startSyncQueue, stopSyncQueue } from '../lib/syncQueue';
-import { friendlyError } from '../lib/friendlyError';
 
 // The session kept on this device (supabase.js storageKey), read directly
 // so that being offline, or a sign-in refresh that fails for want of a
@@ -248,86 +248,10 @@ export function AuthProvider({ children }) {
     };
   }, [user]);
 
-  const login = async (email, password) => {
-    setIsLoading(true);
-    try {
-      await auth.signIn(email, password);
-      // Get and save session metadata after successful login
-      const session = await sessionManager.getSession();
-      if (session?.user) {
-        sessionManager.saveSessionMetadata(session);
-      }
-      return { success: true };
-    } catch (err) {
-      console.error('Login error:', err);
-      // Provide user-facing error messages
-      if (err.status === 400 || err.message?.includes('Invalid login credentials')) {
-        return { success: false, error: 'That email and password didn’t match. Check them and try again.' };
-      } else if (err.status === 401) {
-        return { success: false, error: 'Your email address hasn’t been confirmed yet. Open the link we sent you, then sign in.' };
-      } else {
-        return { success: false, error: friendlyError(err, 'That didn’t sign you in. Check your connection and try again.', 'Signing in') };
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const signup = async (email, password, firstName = '', lastName = '') => {
-    setIsLoading(true);
-
-    try {
-      try {
-        // STEP 1: Create Auth user (sends confirmation email)
-        // Save firstName/lastName in user_metadata (server-side) instead of relying on localStorage
-        // This ensures names persist across browser closures, device switches, etc.
-        const redirectToUrl = `${window.location.origin}/email-confirmation`;
-        console.log('[AuthContext.signup] Setting redirectTo:', redirectToUrl);
-        const { data, error: signupError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            redirectTo: redirectToUrl,
-            data: {
-              first_name: firstName || '',
-              last_name: lastName || '',
-            },
-          },
-        });
-
-        if (signupError) throw signupError;
-        if (!data.user) throw new Error('No user returned from signup');
-
-        console.log('✓ Step 1: Auth user created with name, confirmation email sent to:', email);
-        console.log('[AuthContext.signup] Names saved to user_metadata:', { first_name: firstName, last_name: lastName });
-
-        // Note: User email is NOT confirmed yet - they must click the confirmation link
-        // Do NOT attempt to sign in here - that will fail until email is confirmed
-        // The confirmation page will handle post-confirmation logic
-        // Names are now safely stored server-side in user_metadata
-
-        return { success: true };
-      } catch (signupErr) {
-        console.error('Signup error:', signupErr);
-
-        // Provide user-facing error messages
-        if (signupErr.message?.includes('already registered') || signupErr.status === 422) {
-          return { success: false, error: 'An account with this email already exists. Try logging in instead.' };
-        } else if (signupErr.status === 400) {
-          return { success: false, error: 'That email and password didn’t match. Check them and try again.' };
-        } else if (signupErr.status === 429) {
-          return { success: false, error: 'That was tried too many times. Wait a moment and try again.' };
-        } else {
-          return { success: false, error: friendlyError(signupErr, 'Your account wasn’t created. Check your connection and try again.', 'Creating an account') };
-        }
-      }
-    } catch (err) {
-      console.error('Signup exception:', err);
-      return { success: false, error: friendlyError(err, 'That didn’t work. Check your connection and try again.') };
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Signing in and creating an account live in the sign-in pages
+  // (src/pages/signin, M26): they call Supabase themselves, so the terms
+  // record and the first name always go with a new account. The older
+  // login and signup helpers that sat here are gone (nothing used them).
 
   // Helper: clear everything the app keeps in the browser (drafts,
   // legacy tool autosaves, cached profile data) - see clearAppStorage.js.
@@ -348,6 +272,9 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     try {
       stopSyncQueue();
+      // A deliberate sign-out: the page it was pressed on is not kept as
+      // the place to land after the next sign-in (ProtectedLayout).
+      noteSignedOut();
       clearUserDrafts();
       await auth.signOut();
       // Again once signed out: a page still open can finish a read while
@@ -364,7 +291,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, logout }}>
       {children}
     </AuthContext.Provider>
   );

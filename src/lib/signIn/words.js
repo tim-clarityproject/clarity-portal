@@ -17,6 +17,11 @@ export const SAME_EMAIL = ['That’s already your email.', 'Enter a different on
 export const DIDNT_SEND = ['That email didn’t send.', 'Check your connection and try again.'];
 export const DIDNT_SAVE = ['That didn’t save.', 'Check your connection and try again.'];
 export const DIDNT_SIGN_IN = ['That didn’t sign you in.', 'Check your connection and try again.'];
+// The words friendlyError already gives for this, on two lines.
+export const SAME_PASSWORD = ['That’s your current password.', 'Choose a new one and try again.'];
 export const TOO_MANY = ['That was tried too many times.', 'Wait a minute and try again.'];
 
 export const looksLikeEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+
+/** True when Supabase refused a new password because it is the one they have. */
+export const refusedAsSame = (error) => error?.code === 'same_password' || /different from the old password/i.test(error?.message || '');

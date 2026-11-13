@@ -78,3 +78,29 @@ test('if the account can’t be saved, nothing claims it was', async () => {
   const thrown = await recordAgreement({ auth: { updateUser: async () => { throw new Error('offline'); } } }, 'u1', at);
   assert.equal(thrown.error.message, 'offline');
 });
+
+// The functionality tester, 13 Nov.
+test('a carried tick agrees only from a page that shows the box, and only for an account that hasn’t agreed', async () => {
+  const { tickAgreesFor, invitedNotSetUp } = await import('../../src/lib/signIn/terms.js');
+  const fresh = { id: 'u1', app_metadata: { provider: 'google' }, user_metadata: {} };
+  assert.equal(tickAgreesFor(at, '/auth/sign-up', fresh), true);
+  assert.equal(tickAgreesFor(at, '/auth/invite', fresh), true);
+  // Ticked on Create my account, Google left with the browser's Back, then
+  // someone signs in with Google from Sign in: the old tick agrees for nobody.
+  assert.equal(tickAgreesFor(at, '/auth/login', fresh), false);
+  assert.equal(tickAgreesFor(at, '/coach/sign-in', fresh), false);
+  assert.equal(tickAgreesFor(null, '/auth/sign-up', fresh), false);
+  assert.equal(tickAgreesFor(at, '/auth/sign-up', null), false);
+  // An account a coach set up that uses Google on its invite: it began
+  // with an email, and its tick is still saved.
+  const invited = { id: 'u4', invited_at: '2026-11-10T09:00:00Z', app_metadata: { provider: 'email', providers: ['email', 'google'] }, user_metadata: { first_name: 'Sam' } };
+  assert.equal(tickAgreesFor(at, '/auth/invite', invited), true);
+  assert.equal(invitedNotSetUp(invited), true);
+  // Already agreed: nothing is written again.
+  const agreed = { ...invited, user_metadata: { ...termsRecord(at) } };
+  assert.equal(tickAgreesFor(at, '/auth/invite', agreed), false);
+  assert.equal(invitedNotSetUp(agreed), false);
+  // Never invited: the invite's page is not theirs.
+  assert.equal(invitedNotSetUp({ id: 'u5', user_metadata: {} }), false);
+  assert.equal(invitedNotSetUp(null), false);
+});

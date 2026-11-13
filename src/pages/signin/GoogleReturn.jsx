@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import { takeGoogleFrom } from '../../lib/signIn/flow';
 import { cancelledAtGoogle, useLinkSession } from '../../lib/signIn/linkSession';
-import { needsBeforeYouStart, recordAgreement, takeTick } from '../../lib/signIn/terms';
+import { recordAgreement, takeTick, tickAgreesFor } from '../../lib/signIn/terms';
 import { GOOGLE_DIDNT_WORK } from '../../lib/signIn/words';
 import { SignInPage, Wait } from '../../components/signin/SignInParts';
 import useEnter from '../../components/signin/useEnter';
@@ -22,7 +22,7 @@ import useEnter from '../../components/signin/useEnter';
 export default function GoogleReturn() {
   const navigate = useNavigate();
   const enter = useEnter();
-  const { status, user, landing } = useLinkSession(window.location.pathname, { waitMs: 12000 });
+  const { status, user, landing, fromLink } = useLinkSession(window.location.pathname, { waitMs: 12000 });
   const handled = useRef(false);
 
   useEffect(() => {
@@ -30,7 +30,11 @@ export default function GoogleReturn() {
     handled.current = true;
     const from = takeGoogleFrom();
     const ticked = takeTick();
-    if (status !== 'ready') {
+    // Google came back with a code that gave no sign-in, while someone was
+    // already signed in here ("Use a different Google account"): it didn't
+    // work, and the account that was here is never passed off as the new one.
+    const missed = status === 'ready' && landing.hadCode && !fromLink;
+    if (status !== 'ready' || missed) {
       // Opened with nothing to sign in with: just the page they'd use.
       if (status === 'none') return void navigate(SIGN_IN_PATHS.signIn, { replace: true });
       const quiet = status === 'expired' && cancelledAtGoogle(landing);
@@ -38,14 +42,14 @@ export default function GoogleReturn() {
     }
     (async () => {
       let account = user;
-      if (ticked && needsBeforeYouStart(account)) {
+      if (tickAgreesFor(ticked, from, account)) {
         const saved = await recordAgreement(supabase, account.id, ticked);
         // If saving missed, Before you start asks again: nobody gets in unrecorded.
         if (!saved.error && saved.user) account = saved.user;
       }
       enter(account);
     })();
-  }, [status, user, landing, navigate, enter]);
+  }, [status, user, landing, fromLink, navigate, enter]);
 
   return (
     <SignInPage>
