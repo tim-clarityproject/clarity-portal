@@ -1,9 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
-import { codeWasSwapped, noteStands } from './linkRules';
+import { SIGN_IN_PATHS } from './addresses';
+import { codeWasSwapped, linkPage, noteStands } from './linkRules';
 
 // The kinds of email link a page may finish by itself (see verifyLanding).
 const LINK_TYPES = ['signup', 'invite', 'recovery', 'email_change', 'email'];
+
+// A link that carries its own token, landed somewhere other than the page
+// that finishes its kind: the site's root (Supabase sends a link there
+// when the page that asked isn't on its allowed list) or an address with
+// a doubled slash (a Site URL saved with a slash on its end). It is put
+// on its own page before the app reads the address, so it still opens.
+function toItsOwnPage() {
+  try {
+    const query = new URLSearchParams(window.location.search);
+    if (!query.get('token_hash')) return;
+    const page = linkPage(query.get('type'), SIGN_IN_PATHS);
+    if (!page || page === window.location.pathname) return;
+    window.history.replaceState(window.history.state, '', `${page}${window.location.search}${window.location.hash}`);
+  } catch { /* the address stays as it came */ }
+}
+toItsOwnPage();
 
 // What the address held when the page first loaded. Supabase swaps an
 // email link's or Google's one-time code for a session by itself and then

@@ -3,7 +3,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { CLOCK_ALLOWED_MS, clockIsOut, deviceClockLooksWrong, serverTimeFrom } from '../../src/lib/signIn/clock.js';
-import { continueWithGoogle, googleIdentity, googleMatches } from '../../src/lib/signIn/flow.js';
+import { SIGN_IN_PATHS } from '../../src/lib/signIn/addresses.js';
+import { continueWithGoogle, googleIdentity, googleMatches, googleStrangers } from '../../src/lib/signIn/flow.js';
+import { linkPage } from '../../src/lib/signIn/linkRules.js';
 import { invitedNotSetUp, needsBeforeYouStart, termsRecord } from '../../src/lib/signIn/terms.js';
 import { CLOCK_LOOKS_WRONG, inviteIsFor } from '../../src/lib/signIn/words.js';
 import { safeHref, tokenLink } from '../../src/lib/email/template.js';
@@ -64,19 +66,45 @@ test('a device clock more than 5 minutes out is said to look wrong', () => {
   assert.equal(clockIsOut(t, NaN), false);
 });
 
-test('the server’s time is its Date, plus its Age when a kept copy was served', () => {
-  assert.equal(serverTimeFrom(headers({ date: 'Fri, 13 Nov 2026 14:00:00 GMT' })), Date.parse('2026-11-13T14:00:00Z'));
-  assert.equal(serverTimeFrom(headers({ date: 'Fri, 13 Nov 2026 14:00:00 GMT', age: '90' })), Date.parse('2026-11-13T14:01:30Z'));
-  assert.equal(serverTimeFrom(headers({ date: 'Fri, 13 Nov 2026 14:00:00 GMT', age: 'soon' })), Date.parse('2026-11-13T14:00:00Z'));
-  assert.ok(Number.isNaN(serverTimeFrom(headers({}))));
-  assert.ok(Number.isNaN(serverTimeFrom(headers({ date: 'yesterday-ish' }))));
-  assert.ok(Number.isNaN(serverTimeFrom(null)));
+test('the server’s time lies between its Date and its Date plus Age', () => {
+  const at = Date.parse('2026-11-13T14:00:00Z');
+  assert.deepEqual(serverTimeFrom(headers({ date: 'Fri, 13 Nov 2026 14:00:00 GMT' })), { from: at, to: at });
+  assert.deepEqual(serverTimeFrom(headers({ date: 'Fri, 13 Nov 2026 14:00:00 GMT', age: '90' })), { from: at, to: at + 90000 });
+  assert.deepEqual(serverTimeFrom(headers({ date: 'Fri, 13 Nov 2026 14:00:00 GMT', age: 'soon' })), { from: at, to: at });
+  assert.equal(serverTimeFrom(headers({})), null);
+  assert.equal(serverTimeFrom(headers({ date: 'yesterday-ish' })), null);
+  assert.equal(serverTimeFrom(null), null);
+  assert.equal(clockIsOut(null, at), false);
+});
+
+test('a copy the edge has held for a while never makes a right clock look wrong', async () => {
+  // As Vercel answers (the functionality tester, 13 Nov): Date is the time
+  // now, and Age is how long its edge has held the file.
+  const server = Date.parse('2026-11-13T14:00:00Z');
+  const vercel = async () => ({ headers: headers({ date: new Date(server).toUTCString(), age: '667' }) });
+  assert.equal(await deviceClockLooksWrong(vercel, () => server + 1000), false);
+  assert.equal(await deviceClockLooksWrong(vercel, () => server + 2 * 60 * 60 * 1000), true);
+  assert.equal(await deviceClockLooksWrong(vercel, () => server - 2 * 60 * 60 * 1000), true);
+  // As the standard has it: Date is when the copy was made, 667 seconds ago.
+  const standard = async () => ({ headers: headers({ date: new Date(server - 667000).toUTCString(), age: '667' }) });
+  assert.equal(await deviceClockLooksWrong(standard, () => server + 1000), false);
+  assert.equal(await deviceClockLooksWrong(standard, () => server + 2 * 60 * 60 * 1000), true);
+  assert.equal(await deviceClockLooksWrong(standard, () => server - 2 * 60 * 60 * 1000), true);
+});
+
+test('each kind of link has the one page that finishes it', () => {
+  assert.equal(linkPage('email', SIGN_IN_PATHS), '/auth/confirmed');
+  assert.equal(linkPage('signup', SIGN_IN_PATHS), '/auth/confirmed');
+  assert.equal(linkPage('recovery', SIGN_IN_PATHS), '/auth/reset-password');
+  assert.equal(linkPage('invite', SIGN_IN_PATHS), '/auth/invite');
+  assert.equal(linkPage('email_change', SIGN_IN_PATHS), '/my-account/email');
+  for (const type of ['magiclink', '', null, undefined, 'recovery&x']) assert.equal(linkPage(type, SIGN_IN_PATHS), null);
 });
 
 test('the clock check reads a normal request, and says nothing when it can’t', async () => {
   const server = Date.parse('2026-11-13T14:00:00Z');
   const answer = async (url, options) => {
-    assert.equal(url, '/version.json');
+    assert.match(url, /^\/version\.json\?t=\d+$/);
     assert.equal(options.cache, 'no-store');
     return { headers: headers({ date: new Date(server).toUTCString() }) };
   };
@@ -133,4 +161,14 @@ test('the Google account that came back is the invited one only when the emails 
   assert.equal(googleMatches(null), false);
   assert.equal(googleIdentity(user('sam.carter@gmail.com')).identity_id, 'g1');
   assert.equal(googleIdentity(user(null)), null);
+});
+
+test('a wrong Google account left from an earlier try never hides the right one', () => {
+  const google = (id, email) => ({ provider: 'google', identity_id: id, identity_data: { email } });
+  const user = { email: 'sam.carter@harbourlane.co', identities: [{ provider: 'email', identity_data: { email: 'sam.carter@harbourlane.co' } }, google('g1', 'sam.carter@gmail.com'), google('g2', 'sam.carter@harbourlane.co')] };
+  assert.equal(googleMatches(user), true);
+  assert.deepEqual(googleStrangers(user).map((identity) => identity.identity_id), ['g1']);
+  assert.deepEqual(googleStrangers({ ...user, identities: user.identities.slice(0, 2) }).map((identity) => identity.identity_id), ['g1']);
+  assert.deepEqual(googleStrangers({ ...user, identities: [user.identities[0], user.identities[2]] }), []);
+  assert.deepEqual(googleStrangers(null), []);
 });

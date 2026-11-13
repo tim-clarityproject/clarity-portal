@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
-import { googleIdentity, googleMatches, takeGoogleFrom } from '../../lib/signIn/flow';
+import { googleMatches, googleStrangers, takeGoogleFrom } from '../../lib/signIn/flow';
 import { cancelledAtGoogle, useLinkSession } from '../../lib/signIn/linkSession';
 import { recordAgreement, takeTick, tickAgreesFor } from '../../lib/signIn/terms';
 import { GOOGLE_DIDNT_WORK } from '../../lib/signIn/words';
@@ -50,14 +50,15 @@ export default function GoogleReturn() {
     }
     (async () => {
       let account = user;
-      if (from === SIGN_IN_PATHS.invite && !googleMatches(account)) {
-        const joined = googleIdentity(account);
-        if (joined) {
+      if (from === SIGN_IN_PATHS.invite) {
+        // Any Google account with another email is taken off again, one
+        // left by an earlier try that couldn't be taken off included.
+        for (const stranger of googleStrangers(account)) {
           try {
-            await supabase.auth.unlinkIdentity(joined);
+            await supabase.auth.unlinkIdentity(stranger);
           } catch { /* the invite's page still says whose invite it is */ }
         }
-        return void navigate(from, { replace: true, state: { wrongGoogle: true } });
+        if (!googleMatches(account)) return void navigate(from, { replace: true, state: { wrongGoogle: true } });
       }
       if (tickAgreesFor(ticked, from, account)) {
         const saved = await recordAgreement(supabase, account.id, ticked);

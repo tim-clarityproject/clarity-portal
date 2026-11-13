@@ -14,6 +14,9 @@
 //   - the link that was pressed is no longer in view;
 //   - what opened is out of view (none of it shows; or it would fit and
 //     its end is cut off);
+//   - a part says it opened something (aria-expanded) but nothing
+//     appeared and it names nothing (no aria-controls): what opened can't
+//     be found, so it could not be checked or kept in view;
 //   - a part whose words say it opens something doesn't say so to a
 //     screen reader (no aria-expanded). A button that goes to another
 //     page is not a reveal, and ends the pressing on that page.
@@ -95,7 +98,8 @@ export async function checkReveals({ limit = 14 } = {}) {
     const appeared = [];
     const watch = new MutationObserver((changes) => {
       for (const c of changes) {
-        if (c.type === 'childList') for (const n of c.addedNodes) if (n.nodeType === 1) appeared.push(n);
+        // A part that redraws itself (the breathing orb) swaps old for new in one go: not a reveal.
+        if (c.type === 'childList' && c.removedNodes.length === 0) for (const n of c.addedNodes) if (n.nodeType === 1) appeared.push(n);
         if (c.type === 'attributes' && c.target !== el) appeared.push(c.target);
       }
     });
@@ -110,7 +114,18 @@ export async function checkReveals({ limit = 14 } = {}) {
     const named = (el.getAttribute('aria-controls') || '').split(/\s+/).map((id) => (id ? document.getElementById(id) : null)).find((n) => n && shown(n));
     const region = named || appeared.find((n) => n.isConnected && shown(n) && !n.contains(el) && !el.contains(n) && !fixed(n) && getComputedStyle(n).position !== 'absolute') || null;
     // Nothing opened in place (it opened a pop-up, or did something else): not a reveal.
-    if (!region || (says && !opened)) { if (opened) el.click(); await wait(120); continue; }
+    if (!region || (says && !opened)) {
+      // It says it opened something, yet nothing appeared anywhere and it
+      // names nothing: what opened was only un-hidden by a style, which
+      // neither this check nor keepPlace can see, so it would pass unread.
+      if (says && opened && !appeared.some((n) => n.isConnected && shown(n))) {
+        checked += 1;
+        problems.push(`"${name}" says it opened something, but what opened can't be found (name it with aria-controls)`);
+      }
+      if (opened) el.click();
+      await wait(120);
+      continue;
+    }
     checked += 1;
     if (!says) problems.push(`"${name}" opens something in place but has no aria-expanded`);
     const after = scrolled();

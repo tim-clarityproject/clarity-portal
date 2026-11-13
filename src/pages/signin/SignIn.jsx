@@ -41,10 +41,20 @@ export default function SignIn({ coach = false }) {
   // A device clock more than 5 minutes out can sign people out, so the
   // page says so, calmly, above Continue with Google (Tim, 13 Nov).
   const [clockOut, setClockOut] = useState(false);
+  // Checked again when they come back to the page (from setting the
+  // clock, say), so the line goes once the clock is right.
   useEffect(() => {
     let live = true;
-    deviceClockLooksWrong().then((out) => { if (live && out) setClockOut(true); });
-    return () => { live = false; };
+    const check = () => deviceClockLooksWrong().then((out) => { if (live) setClockOut(out); });
+    const back = () => { if (document.visibilityState === 'visible') check(); };
+    check();
+    document.addEventListener('visibilitychange', back);
+    window.addEventListener('focus', back);
+    return () => {
+      live = false;
+      document.removeEventListener('visibilitychange', back);
+      window.removeEventListener('focus', back);
+    };
   }, []);
 
   // A change-of-email link opened in a browser that isn't signed in ends

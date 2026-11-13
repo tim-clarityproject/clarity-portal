@@ -35,7 +35,10 @@ const browser = await chromium.launch();
 // `verify` is what Supabase answers when a link's own token is handed in
 // (200, 'half' for the first of two change-of-email links, or a refusal);
 // `picked` is the email of the Google account chosen at Google.
-async function visit({ who = sam, verify = 200, picked = SAM.email, taken = false } = {}) {
+// `google` is how Google's own page ended ('cancel': closed by the person;
+// 'error': it didn't work); `unlink` is Supabase's answer when a Google
+// account is taken off again.
+async function visit({ who = sam, verify = 200, picked = SAM.email, taken = false, google = 'code', unlink = 200 } = {}) {
   const calls = [];
   const state = { user: who(session.user), saved: [], verifies: [], joins: [], unlinked: 0, authorize: 0 };
   const answers = {
@@ -55,7 +58,10 @@ async function visit({ who = sam, verify = 200, picked = SAM.email, taken = fals
     'GET /identities/authorize': async ({ url }) => {
       state.joins.push(Object.fromEntries(url.searchParams));
       const to = new URL(`${APP}/auth/google`);
-      if (taken) { to.searchParams.set('error', 'server_error'); to.searchParams.set('error_code', 'identity_already_exists'); to.searchParams.set('error_description', 'Identity is already linked to another user'); } else to.searchParams.set('code', 'a-mock-code');
+      if (taken) { to.searchParams.set('error', 'server_error'); to.searchParams.set('error_code', 'identity_already_exists'); to.searchParams.set('error_description', 'Identity is already linked to another user'); }
+      else if (google === 'cancel') { to.searchParams.set('error', 'access_denied'); to.searchParams.set('error_description', 'User denied access'); }
+      else if (google === 'error') { to.searchParams.set('error', 'server_error'); to.searchParams.set('error_description', 'Unable to exchange external code'); }
+      else to.searchParams.set('code', 'a-mock-code');
       return { status: 200, body: { url: to.href } };
     },
     'POST /auth/v1/token': async ({ url }) => {
@@ -65,6 +71,7 @@ async function visit({ who = sam, verify = 200, picked = SAM.email, taken = fals
     },
     'DELETE /identities/00000000-0000-4000-8000-0000000000a1': async () => {
       state.unlinked += 1;
+      if (unlink !== 200) return { status: unlink, body: { code: unlink, msg: 'That could not be done' } };
       state.user = { ...state.user, identities: [EMAIL_ID] };
       return { status: 200, body: {} };
     },
@@ -170,6 +177,28 @@ const noToken = (page) => !/token_hash|type=/.test(new URL(page.url()).search);
   await v.ctx.close();
 }
 
+{
+  // A link that lands off its own page still opens (the functionality
+  // tester, 13 Nov): on the site's root, where Supabase sends a link when
+  // the page that asked isn't on its allowed list, and with a doubled
+  // slash, from a Site URL saved with a slash on its end.
+  const v = await visit();
+  await v.page.goto(`${APP}/?token_hash=a-mock-token&type=recovery`);
+  await heading(v.page, 'New password');
+  pass('a reset link that lands on the site’s root still opens New password, its token handed in once', (await title(v.page)) === 'new password' && path(v.page) === '/auth/reset-password' && v.state.verifies.join() === 'recovery' && noToken(v.page), `${path(v.page)} ${await title(v.page)} ${v.state.verifies}`);
+  await v.ctx.close();
+  const w = await visit({ who: (u) => invited(sam(u)) });
+  await w.page.goto(`${APP}//auth/invite?token_hash=a-mock-token&type=invite`).catch(() => null);
+  await heading(w.page, 'Welcome, Sam');
+  pass('an invite link with a doubled slash still opens the invite', (await title(w.page)) === 'welcome, sam' && path(w.page) === '/auth/invite' && w.state.verifies.join() === 'invite', `${path(w.page)} ${await title(w.page)} ${w.state.verifies}`);
+  await w.ctx.close();
+  const x = await visit();
+  await x.page.goto(`${APP}/?token_hash=a-mock-token&type=magiclink`);
+  await x.page.waitForURL(/\/auth\/login/, { timeout: 20000 }).catch(() => null);
+  pass('a kind of link no page finishes is handed in nowhere', x.state.verifies.length === 0 && path(x.page) === '/auth/login', `${path(x.page)} ${x.state.verifies}`);
+  await x.ctx.close();
+}
+
 // ---------------------------------------------------------------- 2. My Account's Email page, two links
 {
   const v = await visit();
@@ -185,6 +214,46 @@ const noToken = (page) => !/token_hash|type=/.test(new URL(page.url()).search);
   pass('the old line is gone', !text.includes('Your email changes once you open it.'));
   pass('“Didn’t get it? Send it again” is still there', text.includes('Didn’t get it? Send it again'));
   pass('Back still reads “My Account”', text.startsWith('My Account'), text.slice(0, 40));
+  await v.ctx.close();
+}
+{
+  // The functionality tester, 13 Nov. Signed in as the owner with a change
+  // waiting: "Send it again" pressed twice asks once; then the second link
+  // opened in this same browser, and My Account straight after.
+  const v = await visit();
+  await signedIn(v.page, v.o, { change: (u) => ({ ...u, new_email: SAM.newEmail }) });
+  await v.page.goto(`${APP}/my-account/email`);
+  await heading(v.page, 'Check your email');
+  const puts = () => v.calls.filter((c) => c.method === 'PUT' && c.path.endsWith('/auth/v1/user'));
+  const before = puts().length;
+  await v.page.getByRole('button', { name: 'Send it again' }).dblclick();
+  await v.page.getByText('Sent', { exact: true }).first().waitFor({ timeout: 15000 }).catch(() => null);
+  await sleep(800);
+  const sent = puts().slice(before);
+  pass('“Send it again” pressed twice asks once, for the same new email, to come back to this page', sent.length === 1 && sent[0].body?.email === SAM.newEmail && sent[0].query?.redirect_to === `${new URL(APP).origin}/my-account/email`, `${sent.length} asked`);
+  pass('and says “Sent”', (await words(v.page, '.si-col--account')).includes('Sent'));
+  v.state.user = { ...sam(session.user), email: SAM.newEmail };
+  v.answers['GET /auth/v1/user'] = async () => ({ status: 200, body: v.state.user });
+  await v.page.goto(`${APP}/my-account/email?token_hash=a-mock-token&type=email_change`);
+  await v.page.getByText('Saved', { exact: true }).first().waitFor({ timeout: 20000 }).catch(() => null);
+  pass('the second link, opened where its owner is signed in: “Saved”, with the new email in the box', (await title(v.page)) === 'email' && (await words(v.page, '.si-col--account')).includes('Saved') && (await v.page.locator('input[type=email]').inputValue().catch(() => '')) === SAM.newEmail, await title(v.page));
+  await v.page.getByRole('link', { name: 'My Account' }).first().click().catch(() => null);
+  await v.page.waitForURL(/\/my-account$/, { timeout: 15000 }).catch(() => null);
+  await v.page.locator('.account-page').getByText(SAM.newEmail).first().waitFor({ timeout: 10000 }).catch(() => null);
+  const account = await words(v.page, '.account-page');
+  pass('My Account then shows the new email, and the old one nowhere', account.includes(SAM.newEmail) && !account.includes(SAM.email), path(v.page));
+  await v.ctx.close();
+}
+{
+  // The first of two links, opened where someone else is signed in (with
+  // no change of their own waiting): the page still says how it went.
+  const v = await visit({ verify: 'half' });
+  await signedIn(v.page, v.o);
+  await v.page.goto(`${APP}/my-account/email?token_hash=a-mock-token&type=email_change`);
+  await heading(v.page, 'Email');
+  await v.page.locator('.si-note').first().waitFor({ timeout: 15000 }).catch(() => null);
+  pass('the first of two links, opened where someone else is signed in: the Email page says one is opened', (await words(v.page, '.si-note')) === 'That’s one link opened. Open the one sent to your other email to finish.' && noToken(v.page), await words(v.page, '.si-note'));
+  pass('and nobody was signed in or out by it', (await v.page.locator('input[type=email]').inputValue()) === SAM.email);
   await v.ctx.close();
 }
 
@@ -285,6 +354,40 @@ const noToken = (page) => !/token_hash|type=/.test(new URL(page.url()).search);
   pass('a Google account that is someone else’s portal account: the same line, on the invite’s page', path(page) === '/auth/invite' && (await message(page)) === `! This invite is for ${SAM.email}. Continue with that Google account, or set a password.` && state.saved.length === 0, `${path(page)} ${await message(page)}`);
   await v.ctx.close();
 }
+for (const how of ['cancel', 'error']) {
+  // Google closed by the person, or not working, from the invite's page
+  // (the functionality tester, 13 Nov): the invited account is still
+  // signed in on its own page, and a refresh keeps it.
+  const v = await visit({ who: (u) => invited(sam(u)), google: how });
+  const { page, state } = v;
+  await page.goto(`${APP}/auth/invite?token_hash=a-mock-token&type=invite`);
+  await heading(page, 'Welcome, Sam');
+  await page.getByRole('checkbox').click();
+  await press(page, 'Continue with Google');
+  await page.waitForURL(/\/auth\/google/, { timeout: 15000 }).catch(() => null);
+  await page.waitForURL(/\/auth\/invite$/, { timeout: 20000 }).catch(() => null);
+  await heading(page, 'Welcome, Sam');
+  if (how === 'error') await page.locator('.si-err').first().waitFor({ timeout: 10000 }).catch(() => null);
+  else await sleep(800);
+  const said = await message(page);
+  pass(how === 'cancel' ? 'Google closed by the person on an invite: back on the invite’s page, with no message' : 'Google not working on an invite: back on the invite’s page, with “That didn’t work.”', path(page) === '/auth/invite' && (await title(page)) === 'welcome, sam' && (how === 'cancel' ? said === '' : said === '! That didn’t work. Try again, or use your email and password.') && state.saved.length === 0 && state.unlinked === 0, `${path(page)} ${await title(page)} ${said}`);
+  await page.reload();
+  await heading(page, 'Welcome, Sam');
+  pass('and a refresh keeps the invite’s page', (await title(page)) === 'welcome, sam', await title(page));
+  await v.ctx.close();
+}
+{
+  // The wrong Google account, and Supabase can't take it off again.
+  const v = await visit({ who: (u) => invited(sam(u)), picked: SAM.gmail, unlink: 500 });
+  const { page, state } = v;
+  await page.goto(`${APP}/auth/invite?token_hash=a-mock-token&type=invite`);
+  await heading(page, 'Welcome, Sam');
+  await page.getByRole('checkbox').click();
+  await press(page, 'Continue with Google');
+  await page.locator('.si-err').first().waitFor({ timeout: 30000 }).catch(() => null);
+  pass('a wrong Google account that can’t be taken off: still the invite’s page and its line, nothing agreed', path(page) === '/auth/invite' && (await message(page)) === `! This invite is for ${SAM.email}. Continue with that Google account, or set a password.` && state.saved.length === 0 && state.unlinked >= 1, `${path(page)} ${state.unlinked}`);
+  await v.ctx.close();
+}
 {
   // A reset link on an invited account that hasn't agreed to the terms.
   const v = await visit({ who: (u) => invited(sam(u)) });
@@ -365,6 +468,32 @@ for (const [name, minutes] of [['right', 0], ['4 minutes fast', 4], ['4 minutes 
   await sleep(2500);
   pass('when the server’s time can’t be read, nothing is said', (await v.page.locator('.si-note').count()) === 0);
   await v.ctx.close();
+}
+
+{
+  // As Vercel answers (the functionality tester, 13 Nov): Date is the time
+  // now, and Age is how long its edge has held the file. A right clock
+  // must never be told it looks wrong.
+  const edge = (page) => page.route('**/version.json*', (route) => route.fulfill({ status: 200, headers: { date: new Date().toUTCString(), age: '667', 'content-type': 'application/json' }, body: '{}' }));
+  const v = await visit();
+  await edge(v.page);
+  await v.page.goto(`${APP}/auth/login`);
+  await v.page.waitForSelector('.si-col .ds-google');
+  await sleep(2500);
+  pass('a right clock and a version file the edge has held for 11 minutes: nothing is said', (await v.page.locator('.si-note').count()) === 0, await words(v.page, '.si-note'));
+  await v.ctx.close();
+  const w = await visit();
+  await edge(w.page);
+  await w.page.clock.setFixedTime(new Date(Date.now() - 120 * 60 * 1000));
+  await w.page.goto(`${APP}/auth/login`);
+  await w.page.locator('.si-note').first().waitFor({ timeout: 15000 }).catch(() => null);
+  pass('a clock 2 hours slow is still said then', (await words(w.page, '.si-note')) === CLOCK, await words(w.page, '.si-note'));
+  // The clock is put right and they come back to the page: the line goes.
+  await w.page.clock.setFixedTime(new Date());
+  await w.page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await w.page.locator('.si-note').first().waitFor({ state: 'detached', timeout: 10000 }).catch(() => null);
+  pass('once the clock is right and they come back to the page, the line goes', (await w.page.locator('.si-note').count()) === 0, await words(w.page, '.si-note'));
+  await w.ctx.close();
 }
 
 await browser.close();

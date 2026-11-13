@@ -150,15 +150,18 @@ export function AccountEmail() {
   const userEmail = user?.email || '';
   useEffect(() => {
     let live = true;
-    supabase.auth.getUser()
+    // A change-of-email link opened on this visit is finished first
+    // (linkSession.js), so the account is read as that link left it.
+    Promise.resolve(emailChangeLink)
+      .then(() => supabase.auth.getUser())
       .then(({ data }) => {
         const newer = data?.user;
         if (!live || !newer || newer.id !== userId) return;
         setFresh(newer);
-        if (newer.email && newer.email.toLowerCase() !== userEmail.toLowerCase()) {
-          if (!typed.current) setEmail(newer.email);
-          if (!acted.current) setChanged(true);
-        }
+        // The box follows the account until they type in it (this device's
+        // copy may itself have just taken the new email from a link).
+        if (newer.email && !typed.current) setEmail(newer.email);
+        if (newer.email && newer.email.toLowerCase() !== userEmail.toLowerCase() && !acted.current) setChanged(true);
         if (!acted.current) setSentTo(newer.new_email || '');
       })
       .catch(() => null);
@@ -255,6 +258,9 @@ export function AccountEmail() {
   return (
     <AccountPage title="Email" onSubmit={submit}>
       <EmailField autoComplete="email" placeholder={undefined} value={email} onChange={(e) => { typed.current = true; setChanged(false); setEmail(e.target.value); }} />
+      {/* One of two links opened here by someone who isn't the account
+          signed in on this device: it still says how the link went. */}
+      {oneOpened ? <Note>{ONE_LINK_OPENED}</Note> : null}
       <Message lines={message} />
       <div className="si-bwrap">
         <MainButton>Save my new email</MainButton>

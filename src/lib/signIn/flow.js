@@ -93,12 +93,24 @@ export function googleIdentity(user) {
   return (user?.identities || []).find((identity) => identity.provider === 'google') || null;
 }
 
+const sameEmail = (identity, user) => {
+  const email = (identity?.identity_data?.email || '').trim().toLowerCase();
+  return Boolean(email) && email === (user?.email || '').trim().toLowerCase();
+};
+const googleIdentities = (user) => (user?.identities || []).filter((identity) => identity.provider === 'google');
+
 /**
  * Whether the Google account that came back is the invited one: the same
  * email as the account's own. An account with no Google sign-in joined
- * is not a match either (nothing came back).
+ * is not a match either (nothing came back). Any one of them counts: a
+ * wrong one from an earlier try that couldn't be taken off never hides
+ * the right one (the functionality tester, 13 Nov).
  */
 export function googleMatches(user) {
-  const email = (googleIdentity(user)?.identity_data?.email || '').trim().toLowerCase();
-  return Boolean(email) && email === (user?.email || '').trim().toLowerCase();
+  return googleIdentities(user).some((identity) => sameEmail(identity, user));
+}
+
+/** Every Google sign-in joined to the account that isn't its own email's: these are taken off again. */
+export function googleStrangers(user) {
+  return googleIdentities(user).filter((identity) => !sameEmail(identity, user));
 }

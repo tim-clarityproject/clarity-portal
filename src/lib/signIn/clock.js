@@ -8,20 +8,35 @@
 export const CLOCK_ALLOWED_MS = 5 * 60 * 1000;
 
 /**
- * The server's time when it answered, from an answer's own headers: its
- * Date, plus its Age when a copy kept on the way was served (Date is then
- * when the copy was made). NaN when the answer carries no usable Date.
+ * The server's time when it answered, from an answer's own headers, as
+ * the earliest and the latest it can have been: { from, to }, or null
+ * when the answer carries no usable Date.
+ *
+ * An answer served from a copy kept on the way carries an Age (seconds),
+ * and servers differ on what Date then means (the functionality tester,
+ * 13 Nov): by the standard it is when the copy was made, so the time now
+ * is Date plus Age; Vercel, which serves the portal, writes the time now
+ * as Date and still sends an Age of minutes or hours. Adding the two
+ * there would call every right clock slow. So the time is taken to lie
+ * anywhere from Date to Date plus Age, and only a clock outside that
+ * says anything.
  */
 export function serverTimeFrom(headers) {
   const date = Date.parse(headers?.get?.('date') || '');
-  if (!Number.isFinite(date)) return NaN;
+  if (!Number.isFinite(date)) return null;
   const age = Number(headers.get('age') || 0);
-  return date + (Number.isFinite(age) && age > 0 ? age * 1000 : 0);
+  return { from: date, to: date + (Number.isFinite(age) && age > 0 ? age * 1000 : 0) };
 }
 
-/** True when the device's clock is more than 5 minutes from the server's. */
-export function clockIsOut(serverMs, deviceMs) {
-  return Number.isFinite(serverMs) && Number.isFinite(deviceMs) && Math.abs(deviceMs - serverMs) > CLOCK_ALLOWED_MS;
+/**
+ * True when the device's clock is more than 5 minutes from the server's.
+ * @param {number|{from: number, to: number}|null} server the server's time, or the span it lies in
+ */
+export function clockIsOut(server, deviceMs) {
+  const from = typeof server === 'number' ? server : server?.from;
+  const to = typeof server === 'number' ? server : server?.to;
+  if (!Number.isFinite(from) || !Number.isFinite(to) || !Number.isFinite(deviceMs)) return false;
+  return deviceMs < from - CLOCK_ALLOWED_MS || deviceMs > to + CLOCK_ALLOWED_MS;
 }
 
 /**
@@ -32,7 +47,10 @@ export function clockIsOut(serverMs, deviceMs) {
 export async function deviceClockLooksWrong(fetchFn = globalThis.fetch, now = Date.now) {
   try {
     const before = now();
-    const answer = await fetchFn('/version.json', { method: 'HEAD', cache: 'no-store' });
+    // Asked for afresh each time (its own query, as the update check
+    // does), so the answer is made now and not a copy kept on the way:
+    // a kept copy's Age widens the span, and a wide span hides a fast clock.
+    const answer = await fetchFn(`/version.json?t=${Math.round(before)}`, { method: 'HEAD', cache: 'no-store' });
     const after = now();
     return clockIsOut(serverTimeFrom(answer.headers), (before + after) / 2);
   } catch {

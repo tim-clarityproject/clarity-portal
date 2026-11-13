@@ -47,3 +47,18 @@ export function noteStands(raw, userId, now = Date.now()) {
 export function stillSignedInAs(session, userId) {
   return Boolean(userId) && session?.user?.id === userId;
 }
+
+/**
+ * The page that finishes each kind of email link that carries its own
+ * token (rule 42), or null for a kind no page finishes. A link that lands
+ * anywhere else is put on this page first (linkSession.js).
+ * @param {string} type the link's own "type"
+ * @param {object} paths SIGN_IN_PATHS
+ */
+export function linkPage(type, paths) {
+  if (type === 'email' || type === 'signup') return paths.confirmed;
+  if (type === 'recovery') return paths.newPassword;
+  if (type === 'invite') return paths.invite;
+  if (type === 'email_change') return paths.accountEmail;
+  return null;
+}

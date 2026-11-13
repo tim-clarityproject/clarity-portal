@@ -96,7 +96,9 @@ function keepInView(trigger, region) {
 function regionFor(trigger, appeared) {
   const named = (trigger.getAttribute('aria-controls') || '').split(/\s+/).map((id) => (id ? document.getElementById(id) : null)).find(shown);
   if (named) return named;
-  return appeared.find((el) => shown(el) && !el.contains(trigger) && !trigger.contains(el)) || null;
+  // Not a pop-up or a toast that happened to show first: those place
+  // themselves, and must not hide what really opened.
+  return appeared.find((el) => shown(el) && !el.contains(trigger) && !trigger.contains(el) && !floats(el)) || null;
 }
 
 let installed = false;
@@ -113,7 +115,11 @@ export function keepPlaceOnReveal() {
     try {
       watch = new MutationObserver((changes) => {
         for (const change of changes) {
-          if (change.type === 'childList') for (const node of change.addedNodes) if (node.nodeType === 1) appeared.push(node);
+          // A part that redraws itself (the breathing orb draws its art
+          // afresh many times a second) swaps old for new in one go: that
+          // is not something the press opened (the functionality tester,
+          // 13 Nov).
+          if (change.type === 'childList' && change.removedNodes.length === 0) for (const node of change.addedNodes) if (node.nodeType === 1) appeared.push(node);
           if (change.type === 'attributes' && change.target !== trigger) appeared.push(change.target);
         }
       });

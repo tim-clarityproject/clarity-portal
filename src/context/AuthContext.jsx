@@ -106,9 +106,13 @@ export function AuthProvider({ children }) {
 
         // For any event, if user ID is same and not a USER_UPDATED event, preserve reference
         // This prevents refetch chains in child components across all auth state transitions
+        // A new email is the exception (a change-of-email link has just
+        // been opened, here or on another device): My Account shows the
+        // account's email from this copy, so it takes the newer one.
         if (
           prevUser?.id === nextUser?.id &&
-          event !== 'USER_UPDATED'
+          event !== 'USER_UPDATED' &&
+          (prevUser?.email || '') === (nextUser?.email || '')
         ) {
           outcome = 'kept';
           diag('AUTH_EVENT', { event, userIdShort, outcome });
