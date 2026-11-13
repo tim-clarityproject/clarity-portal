@@ -20,7 +20,10 @@ import './design.css';
 // scoreLabel: what the score is ("Performance score this week so far").
 // scoreNote:  shown instead of a score when there is none (or null for nothing).
 // open:       the detail is open (aria-expanded, outlined).
-export default function StrategyTile({ strategy: s, onOpen, open = false, scoreLabel, scoreNote = null, controls }) {
+// panel:      the detail opens in a panel over the page (a phone), not in
+//             place under the tiles, so the tile says so (aria-haspopup):
+//             a panel places itself, and nothing on the page moves.
+export default function StrategyTile({ strategy: s, onOpen, open = false, scoreLabel, scoreNote = null, controls, panel = false }) {
   const numbers = s.serves.map((n, i) => ({ number: n, name: s.objectiveNames?.[i] || `Outcome Objective ${n}` }));
   return (
     <div className={`ds-stile${s.flagged ? ' ds-stile--flagged' : ''}${open ? ' ds-stile--open' : ''}`}>
@@ -34,6 +37,7 @@ export default function StrategyTile({ strategy: s, onOpen, open = false, scoreL
         className="ds-stile-btn"
         aria-expanded={open}
         aria-controls={controls}
+        aria-haspopup={panel ? 'dialog' : undefined}
         onClick={onOpen}
       >
         <span className="ds-stile-name">{keepWords(s.name)}</span>

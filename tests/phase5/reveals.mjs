@@ -112,6 +112,13 @@ export async function checkReveals({ limit = 14 } = {}) {
     if (!el.isConnected) continue;
     const opened = el.getAttribute('aria-expanded') === 'true' || el.parentElement?.open === true;
     const named = (el.getAttribute('aria-controls') || '').split(/\s+/).map((id) => (id ? document.getElementById(id) : null)).find((n) => n && shown(n));
+    // The part it names is a pop-up (the eye's or an ⓘ's words): it places
+    // itself over the page, as keepPlace leaves it to, so it is not a reveal.
+    if (named && (fixed(named) || ['absolute', 'fixed'].includes(getComputedStyle(named).position) || named.matches('[role=tooltip]'))) {
+      if (el.getAttribute('aria-expanded') === 'true') el.click();
+      await wait(120);
+      continue;
+    }
     const region = named || appeared.find((n) => n.isConnected && shown(n) && !n.contains(el) && !el.contains(n) && !fixed(n) && getComputedStyle(n).position !== 'absolute') || null;
     // Nothing opened in place (it opened a pop-up, or did something else): not a reveal.
     if (!region || (says && !opened)) {

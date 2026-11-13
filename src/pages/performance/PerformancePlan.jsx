@@ -287,6 +287,7 @@ export default function PerformancePlan() {
                       strategy={hideScores ? { ...s, score: null } : s}
                       open={openId === s.id}
                       controls={!isPhone && openId === s.id ? 'ipp-strategy-detail' : undefined}
+                      panel={isPhone}
                       onOpen={() => setOpenId((id) => (id === s.id ? null : s.id))}
                       scoreLabel={scoreLabel}
                       scoreNote={hideScores ? null : scoreNote(s)}

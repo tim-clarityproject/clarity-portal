@@ -400,7 +400,9 @@ try {
       for (const mode of ['dark', 'light']) {
         await runScreens(c.width, mode, { height: c.height, touch: true, inset: c.inset, label: `, Home Screen app on a ${c.name} (${c.inset.top}px)` }, async (s, tag, { page }) => {
           // The top of every scrolling part (the page and a guided tool's own scroller).
-          await page.evaluate(() => { window.scrollTo(0, 0); for (const el of document.querySelectorAll('*')) if (el.scrollTop > 0) el.scrollTop = 0; });
+          // Something just opened may still be scrolling gently into view (rule 29aq): let it finish first.
+          await sleep(700);
+          await page.evaluate(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); for (const el of document.querySelectorAll('*')) if (el.scrollTop > 0) el.scrollTop = 0; });
           await sleep(200);
           const r = await insideInsets(page, c.inset);
           pass(`${tag}: inside the insets`, r.bad.length === 0 && !r.sideways, `${r.bad.join('; ')}${r.sideways ? ' sideways' : ''}`);
