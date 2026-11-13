@@ -218,20 +218,42 @@ export function resetPasswordEmail({ link }) {
 }
 
 /**
- * Confirm a new email address, asked for in My Account (M26: "Your email
- * changes once you open it."). It goes to the new address. `link` is
- * Supabase's own placeholder in the saved template.
+ * Confirm a change of email, asked for in My Account. With Supabase's
+ * "Secure email change" on (Tim, 13 Nov) the same email goes to the
+ * current address and to the new one, each with its own link, and the
+ * email changes once both are opened: so the words fit either reader.
+ * `link` is Supabase's own placeholder in the saved template.
  */
 export function changeEmailEmail({ link }) {
   return {
     brand: 'portal',
-    subject: 'Confirm your new email for The Clarity Portal',
+    subject: 'Confirm your change of email for The Clarity Portal',
     blocks: [
-      { type: 'heading', text: 'Confirm your new email address.' },
-      { type: 'text', text: 'Your email changes once you open this link.' },
-      { type: 'button', label: 'Confirm my new email', href: link },
-      { type: 'text', text: 'If you didn’t ask for this, you can ignore this email and your email stays as it is.', quiet: true },
+      { type: 'heading', text: 'Confirm your change of email.' },
+      { type: 'text', text: 'We’ve sent a link to your current email and to your new one. Open both to finish.' },
+      { type: 'button', label: 'Confirm my change of email', href: link },
+      { type: 'text', text: 'If you didn’t ask for this, don’t open the link. Your email then stays as it is.', quiet: true },
     ],
-    footer: { lines: ['You get this because this email address was entered as a new one in The Clarity Portal.', EMAIL_SIGN_OFF] },
+    footer: { lines: ['You get this because a change of email was asked for in The Clarity Portal.', EMAIL_SIGN_OFF] },
+  };
+}
+
+/**
+ * A coach's invite: the link opens the invite's own page ("Welcome, Sam").
+ * Nothing sends this yet, and its words are a plain stand-in until the
+ * coach portal (M11) draws the invite email. `link` is Supabase's own
+ * placeholder in the saved template.
+ */
+export function inviteEmail({ link }) {
+  return {
+    brand: 'portal',
+    subject: 'Set up your account on The Clarity Portal',
+    blocks: [
+      { type: 'heading', text: 'Set up your account.' },
+      { type: 'text', text: 'Your coach has set up your account on The Clarity Portal.' },
+      { type: 'button', label: 'Set up my account', href: link },
+      { type: 'text', text: 'If you weren’t expecting this, you can ignore this email.', quiet: true },
+    ],
+    footer: { lines: ['You get this because your coach added this email address to The Clarity Portal.', EMAIL_SIGN_OFF] },
   };
 }

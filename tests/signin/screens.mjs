@@ -160,7 +160,9 @@ export const SCREENS = [
     name: 'Set up from your coach’s invite',
     open: async (page, o) => {
       o.answers['POST /rest/v1/rpc/my_coach'] = () => ({ status: 200, body: [{ coach_id: '00000000-0000-4000-8000-00000000000c', first_name: 'Tim', away_until: null, mobile: null, contact_ways: [] }] });
-      await signedIn(page, o, { change: invited });
+      // An invited account that hasn't agreed is held at Before you start
+      // whichever way it signs in (Tim, 13 Nov); its invite page still opens.
+      await signedIn(page, o, { change: invited, land: /\/auth\/before-you-start$/ });
       await go(page, '/auth/invite');
       await page.waitForSelector('.si-ttl');
       await page.getByText('Tim has set up your account.').waitFor();
@@ -257,7 +259,21 @@ export const SCREENS = [
       await page.waitForSelector('.si-col--account');
       await fillEmail(page, o.SAM.newEmail);
       await press(page, 'Save my new email');
-      await page.getByText('Your email changes once you open it.').waitFor();
+      await page.getByText('Open both to finish.').waitFor();
+    },
+    // Newer than M26 (Tim, 13 Nov, 14:05): with two links to open, the
+    // title reads "Check your email" and one line says where they went.
+    // M26's own screen is given the newer words before it is measured, so
+    // every part is still compared with how M26 draws them.
+    newer: (newEmail) => {
+      for (const root of document.querySelectorAll('#dk, #ph')) {
+        const lines = root.querySelectorAll('.p');
+        if (lines.length !== 2) continue;
+        root.querySelector('.ph3 h1').textContent = 'Check your email';
+        lines[0].innerHTML = 'We’ve sent a link to your current email and to <strong></strong>. Open both to finish.';
+        lines[0].querySelector('strong').textContent = newEmail;
+        lines[1].remove();
+      }
     },
   },
 ];

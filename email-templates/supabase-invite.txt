@@ -1,0 +1,14 @@
+The Clarity Portal
+
+Set up your account.
+
+Your coach has set up your account on The Clarity Portal.
+
+Set up my account:
+{{ .SiteURL }}/auth/invite?token_hash={{ .TokenHash }}&type=invite
+
+If you weren’t expecting this, you can ignore this email.
+
+----
+You get this because your coach added this email address to The Clarity Portal.
+The Clarity Project LTD, founded by Dr. Tim Dutton

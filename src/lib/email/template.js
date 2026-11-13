@@ -74,8 +74,27 @@ export const oneLine = (s) => String(s ?? '').replace(TURNS, '').replace(BREAKS,
 // data:, http:, an address with a name and password before the host, a line
 // break) is refused, so the email is not sent with it.
 const LINK_PLACEHOLDERS = ['{{ .ConfirmationURL }}', '{{ unsubscribe_url }}'];
+// Supabase's sign-in links in the form that opens in any browser (Tim,
+// 13 Nov): the page the link lands on, then the link's own one-time token
+// and its kind, which that page hands in itself (src/lib/signIn/linkSession.js).
+// The standard link ({{ .ConfirmationURL }}) only finishes in the browser
+// that asked for it. Only these exact shapes are allowed.
+const TOKEN_LINK = /^\{\{ \.(RedirectTo|SiteURL) \}\}(\/auth\/invite)?\?token_hash=\{\{ \.TokenHash \}\}&type=(recovery|email|invite|email_change)$/;
+/**
+ * A Supabase template's link in the any-browser form.
+ * @param {'recovery'|'email'|'invite'|'email_change'} type
+ *   An invite is sent by a coach, so no page of the person's asked for it:
+ *   it lands on the site's own invite page. The others land on the page
+ *   that asked ({{ .RedirectTo }}).
+ */
+export function tokenLink(type) {
+  const base = type === 'invite' ? '{{ .SiteURL }}/auth/invite' : '{{ .RedirectTo }}';
+  const link = `${base}?token_hash={{ .TokenHash }}&type=${type}`;
+  if (!TOKEN_LINK.test(link)) throw new Error('Not a sign-in link Supabase can fill in.');
+  return link;
+}
 export function safeHref(href) {
-  if (LINK_PLACEHOLDERS.includes(href)) return href;
+  if (LINK_PLACEHOLDERS.includes(href) || (typeof href === 'string' && TOKEN_LINK.test(href))) return href;
   // A developer's own machine (api/_portalOrigin.js gives this only off a deployment).
   // Its port must be a real one (1 to 65535).
   const local = typeof href === 'string' ? /^http:\/\/localhost:(\d{2,5})\/[A-Za-z0-9\-._~/]*$/.exec(href) : null;

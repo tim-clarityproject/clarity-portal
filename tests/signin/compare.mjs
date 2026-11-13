@@ -104,6 +104,7 @@ for (const mode of MODES) {
       if (ONLY && !ONLY.includes(screen.key)) continue;
       const tag = `${screen.name}, ${width}px ${mode}`;
       await mock.locator(`#scrs .pick button[data-s="${screen.key}"]`).click();
+      if (screen.newer) await mock.evaluate(screen.newer, SAM.newEmail);
       await sleep(80);
       const want = await mock.evaluate(readParts, { root: phone ? '#ph' : '#dk', map: MOCK_MAP, loose: Boolean(screen.looseBox) });
       const frameTop = await mock.evaluate((sel) => document.querySelector(sel).getBoundingClientRect().top, phone ? '.phone' : '.desk');

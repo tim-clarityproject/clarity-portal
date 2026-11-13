@@ -177,6 +177,7 @@ for (const mode of MODES) {
       if (ONLY && !ONLY.includes(screen.key)) continue;
       const tag = `${screen.name}, ${width}px ${mode}`;
       await mock.locator(`#scrs .pick button[data-s="${screen.key}"]`).click();
+      if (screen.newer) await mock.evaluate(screen.newer, SAM.newEmail);
       await sleep(60);
       const want = await mock.evaluate(rhythm, { root: phone ? '#ph' : '#dk', m: MOCK });
 

@@ -5,7 +5,7 @@ Confirm your email address.
 It’s the last step before you open The Clarity Portal.
 
 Confirm my email:
-{{ .ConfirmationURL }}
+{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email
 
 If you didn’t sign up, you can ignore this email.
 

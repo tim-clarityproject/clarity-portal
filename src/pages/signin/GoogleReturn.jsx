@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
-import { takeGoogleFrom } from '../../lib/signIn/flow';
+import { googleIdentity, googleMatches, takeGoogleFrom } from '../../lib/signIn/flow';
 import { cancelledAtGoogle, useLinkSession } from '../../lib/signIn/linkSession';
 import { recordAgreement, takeTick, tickAgreesFor } from '../../lib/signIn/terms';
 import { GOOGLE_DIDNT_WORK } from '../../lib/signIn/words';
@@ -19,6 +19,10 @@ import useEnter from '../../components/signin/useEnter';
 //   - cancelled by the person: back to the page they came from, with no
 //     message. Anything else that goes wrong: back there with "That
 //     didn’t work. Try again, or use your email and password."
+//   - from a coach's invite, Google is joined to the invited account, so
+//     no second account is ever made. If the Google account they picked
+//     has another email, it is taken off again and they go back to the
+//     invite's page, which says whose invite it is (Tim, 13 Nov).
 export default function GoogleReturn() {
   const navigate = useNavigate();
   const enter = useEnter();
@@ -38,10 +42,23 @@ export default function GoogleReturn() {
       // Opened with nothing to sign in with: just the page they'd use.
       if (status === 'none') return void navigate(SIGN_IN_PATHS.signIn, { replace: true });
       const quiet = status === 'expired' && cancelledAtGoogle(landing);
+      // The Google account they picked already belongs to someone else's
+      // portal account: for an invite, that is the wrong Google account.
+      const taken = from === SIGN_IN_PATHS.invite && /identity_already_exists/.test(`${landing.errorCode} ${landing.error}`);
+      if (taken) return void navigate(from, { replace: true, state: { wrongGoogle: true } });
       return void navigate(from, { replace: true, state: quiet ? undefined : { message: GOOGLE_DIDNT_WORK } });
     }
     (async () => {
       let account = user;
+      if (from === SIGN_IN_PATHS.invite && !googleMatches(account)) {
+        const joined = googleIdentity(account);
+        if (joined) {
+          try {
+            await supabase.auth.unlinkIdentity(joined);
+          } catch { /* the invite's page still says whose invite it is */ }
+        }
+        return void navigate(from, { replace: true, state: { wrongGoogle: true } });
+      }
       if (tickAgreesFor(ticked, from, account)) {
         const saved = await recordAgreement(supabase, account.id, ticked);
         // If saving missed, Before you start asks again: nobody gets in unrecorded.

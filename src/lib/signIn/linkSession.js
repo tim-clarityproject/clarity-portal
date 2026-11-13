@@ -65,14 +65,19 @@ function verifyLanding() {
     verifying = (async () => {
       try {
         const { data, error } = await supabase.auth.verifyOtp({ token_hash: LANDING.tokenHash, type: LANDING.type });
-        if (error || !data?.session?.user) return { session: null };
+        if (error) return { session: null };
+        // A change of email with two links (Supabase's "Secure email
+        // change"): the first one opened is taken, and gives no sign-in
+        // until the other is opened too.
+        const half = !data?.session?.user && LANDING.type === 'email_change';
+        if (!data?.session?.user && !half) return { session: null };
         try {
           const url = new URL(window.location.href);
           url.searchParams.delete('token_hash');
           url.searchParams.delete('type');
           window.history.replaceState(window.history.state, '', url.toString());
         } catch { /* the address keeps it; the token is spent either way */ }
-        return { session: data.session };
+        return half ? { session: null, half: true } : { session: data.session };
       } catch {
         return { session: null };
       }
@@ -80,6 +85,21 @@ function verifyLanding() {
   }
   return verifying;
 }
+
+/**
+ * A change-of-email link opened on this visit, and how it went: null when
+ * this visit had no such link, otherwise a promise of
+ *   'done'    the email has changed (and this device is signed in);
+ *   'half'    this link is taken, and the other address's link is still to open;
+ *   'failed'  the link has run out or was used.
+ * The Email page sits inside the portal, so someone who opens the link in
+ * a browser that isn't signed in is sent to Sign in before that page ever
+ * shows. The link is therefore finished here, as soon as the app loads,
+ * whoever is or isn't signed in (Tim, 13 Nov: links work on any device).
+ */
+export const emailChangeLink = (LANDING.path === '/my-account/email' && LANDING.type === 'email_change' && LANDING.tokenHash)
+  ? verifyLanding().then((v) => { if (v?.session) return 'done'; return v?.half ? 'half' : 'failed'; })
+  : null;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

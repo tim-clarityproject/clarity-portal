@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import { continueWithGoogle } from '../../lib/signIn/flow';
-import { needsBeforeYouStart, recordAgreement, TICK_THE_BOX } from '../../lib/signIn/terms';
+import { needsBeforeYouStart, recordAgreement, startedWithGoogle, TICK_THE_BOX } from '../../lib/signIn/terms';
 import { DIDNT_SAVE, GOOGLE_DIDNT_WORK } from '../../lib/signIn/words';
 import { Alt, Line, MainButton, Message, SignInPage, TermsRow, TextLink } from '../../components/signin/SignInParts';
 import useEnter from '../../components/signin/useEnter';
@@ -16,9 +16,19 @@ import useEnter from '../../components/signin/useEnter';
 // account, then Home. Their agreement is stored exactly as an email
 // sign-up's is. Until the box is ticked the portal stays shut
 // (ProtectedLayout sends them back here).
-export default function BeforeYouStart() {
-  const { user, isLoading } = useContext(AuthContext);
-  const enter = useEnter();
+//
+// An account a coach set up, whose owner came in another way than the
+// invite's own page, gets it too (Tim, 13 Nov). A reset link shows it
+// before New password: `onDone` then hands the agreed account back to
+// that page, which carries on, where otherwise they go on in.
+export default function BeforeYouStart({ onDone, account = null }) {
+  const auth = useContext(AuthContext);
+  // `account`: the one a link has just signed in, for the moment before
+  // the rest of the portal has heard of it.
+  const user = auth.user || account;
+  const isLoading = auth.isLoading && !user;
+  const goIn = useEnter();
+  const enter = onDone || goIn;
   const [ticked, setTicked] = useState(false);
   const [message, setMessage] = useState(null);
   const busy = useRef(false);
@@ -81,7 +91,7 @@ export default function BeforeYouStart() {
       <TermsRow checked={ticked} onChange={tick} />
       <Message lines={message} />
       <MainButton>Create my account</MainButton>
-      <Alt><TextLink onClick={another}>Use a different Google account</TextLink></Alt>
+      {startedWithGoogle(user) ? <Alt><TextLink onClick={another}>Use a different Google account</TextLink></Alt> : null}
     </SignInPage>
   );
 }

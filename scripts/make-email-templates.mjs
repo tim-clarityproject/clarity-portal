@@ -9,7 +9,11 @@
 //   supabase-confirm-signup.html / .txt   Supabase, Authentication, Emails, "Confirm signup"
 //   supabase-reset-password.html / .txt   Supabase, Authentication, Emails, "Reset password"
 //   supabase-change-email.html / .txt     Supabase, Authentication, Emails, "Change email address"
-//       {{ .ConfirmationURL }} is Supabase's own placeholder for the link.
+//   supabase-invite.html / .txt           Supabase, Authentication, Emails, "Invite user"
+//       Each link is in the form that opens in any browser (Tim, 13 Nov):
+//       the page it lands on ({{ .RedirectTo }}; the site's own invite page
+//       for an invite), then ?token_hash={{ .TokenHash }}&type=… . These are
+//       Supabase's own placeholders, and the page hands the token in itself.
 //   kit-leading-ideas.html                Kit, Email Templates, New HTML template:
 //       {{ message_content }}, {{ unsubscribe_url }} and {{ address }} are
 //       Kit's own placeholders (Kit requires the last two).
@@ -18,8 +22,8 @@
 // is a link to the live portal's own copy (public/brand), which is there
 // once this branch is live.
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { EMAIL_IMAGES, renderEmail } from '../src/lib/email/template.js';
-import { confirmEmailEmail, resetPasswordEmail, changeEmailEmail, leadingIdeasPublicEmail } from '../src/lib/email/emails.js';
+import { EMAIL_IMAGES, renderEmail, tokenLink } from '../src/lib/email/template.js';
+import { confirmEmailEmail, resetPasswordEmail, changeEmailEmail, inviteEmail, leadingIdeasPublicEmail } from '../src/lib/email/emails.js';
 
 const LIVE = 'https://portal.theclarityproject.co.uk';
 const image = (key) => `${LIVE}${EMAIL_IMAGES[key].path}`;
@@ -37,9 +41,10 @@ const add = (name, doc, { text = true } = {}) => {
   if (text) files[`${name}.txt`] = `${r.text}\n`;
   files[`${name}.subject.txt`] = `${r.subject}\n`;
 };
-add('supabase-confirm-signup', confirmEmailEmail({ link: '{{ .ConfirmationURL }}' }));
-add('supabase-reset-password', resetPasswordEmail({ link: '{{ .ConfirmationURL }}' }));
-add('supabase-change-email', changeEmailEmail({ link: '{{ .ConfirmationURL }}' }));
+add('supabase-confirm-signup', confirmEmailEmail({ link: tokenLink('email') }));
+add('supabase-reset-password', resetPasswordEmail({ link: tokenLink('recovery') }));
+add('supabase-change-email', changeEmailEmail({ link: tokenLink('email_change') }));
+add('supabase-invite', inviteEmail({ link: tokenLink('invite') }));
 add('kit-leading-ideas', kit, { text: false });
 delete files['kit-leading-ideas.subject.txt'];
 

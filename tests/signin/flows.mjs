@@ -349,11 +349,11 @@ for (const address of ['/auth/confirmed', '/auth/mission', '/email-confirmation'
   const before = sent(calls, '/auth/v1/user', 'PUT').length;
   await page.locator('input[type=email]').fill(SAM.newEmail);
   await press(page, 'Save my new email');
-  await page.getByText('Your email changes once you open it.').waitFor({ timeout: 10000 }).catch(() => null);
+  await page.getByText('Open both to finish.').waitFor({ timeout: 10000 }).catch(() => null);
   const change = sent(calls, '/auth/v1/user', 'PUT')[before] || {};
   pass('the new email is sent its link, back to this origin’s Email page', change.body?.email === SAM.newEmail && change.query?.redirect_to === `${ORIGIN}/my-account/email`, JSON.stringify({ to: change.query?.redirect_to }));
   const words = (await page.locator('.si-col--account').innerText()).replace(/\s+/g, ' ');
-  pass('“We’ve sent a link to …” and “Your email changes once you open it.”', words.includes(`We’ve sent a link to ${SAM.newEmail}.`) && words.includes('Your email changes once you open it.') && words.includes('Didn’t get it? Send it again'), words);
+  pass('“We’ve sent a link to your current email and to …. Open both to finish.”', words.includes(`We’ve sent a link to your current email and to ${SAM.newEmail}. Open both to finish.`) && words.includes('Didn’t get it? Send it again'), words);
   await page.getByRole('button', { name: 'Send it again' }).click();
   await page.getByText('Sent', { exact: true }).waitFor({ timeout: 8000 }).catch(() => null);
   pass('Send it again sends the link again', sent(calls, '/auth/v1/user', 'PUT').length === before + 2);

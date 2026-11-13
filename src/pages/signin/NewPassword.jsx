@@ -7,9 +7,11 @@ import { hasAuthenticator } from '../../lib/signIn/flow';
 import { stillSignedInAs } from '../../lib/signIn/linkRules';
 import { forgetLinkOpened, linkOpenedJustNow, noteLinkOpened, useLinkSession } from '../../lib/signIn/linkSession';
 import { isLeaked, LEAKED, refusedAsLeaked, refusedAsLong, refusedAsShort, TOO_LONG, TOO_SHORT, tooLong, tooShort } from '../../lib/signIn/password';
+import { invitedNotSetUp } from '../../lib/signIn/terms';
 import { DIDNT_SAVE, refusedAsSame, SAME_PASSWORD } from '../../lib/signIn/words';
 import { MainButton, Message, PasswordField, SignInPage, Wait } from '../../components/signin/SignInParts';
 import useEnter from '../../components/signin/useEnter';
+import BeforeYouStart from './BeforeYouStart';
 import CoachCode from './CoachCode';
 import LinkNotWorking from './LinkNotWorking';
 
@@ -36,6 +38,9 @@ export default function NewPassword() {
   const [codeGiven, setCodeGiven] = useState(null);
   // 'saved' once the password is in; 'over' when the link's sign-in has ended.
   const [end, setEnd] = useState(null);
+  // An account a coach set up that hasn't agreed to the terms yet agrees
+  // first, on Before you start, then sets its password (Tim, 13 Nov).
+  const [agreed, setAgreed] = useState(false);
   const busy = useRef(false);
   const noted = useRef(false);
 
@@ -61,6 +66,9 @@ export default function NewPassword() {
   }
   if (!allowed) {
     return <LinkNotWorking />;
+  }
+  if (invitedNotSetUp(user) && !agreed) {
+    return <BeforeYouStart account={user} onDone={() => setAgreed(true)} />;
   }
   if (asksCode && codeGiven === null) {
     return <SignInPage><Wait>Signing you in</Wait></SignInPage>;

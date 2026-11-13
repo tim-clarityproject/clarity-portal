@@ -5,7 +5,7 @@
 import {
   healthCheckFinishedForCoachEmail, healthCheckResultsEmail, healthCheckFinishedNoteEmail,
   sessionTomorrowEmail, sessionInOneHourEmail, leadingIdeasClientEmail, leadingIdeasPublicEmail,
-  confirmEmailEmail, resetPasswordEmail, changeEmailEmail,
+  confirmEmailEmail, resetPasswordEmail, changeEmailEmail, inviteEmail,
 } from '../../lib/email/emails.js';
 import { instantAt } from '../../lib/time/index.js';
 
@@ -114,9 +114,16 @@ export const EMAIL_EXAMPLES = [
   },
   {
     key: 'change-email',
-    name: 'Confirm your new email',
-    from: 'From The Clarity Portal, to Sam’s new address',
-    sends: 'Sent by Supabase when someone saves a new email in My Account. Its template is saved in Supabase, not in the portal’s code.',
+    name: 'Confirm your change of email',
+    from: 'From The Clarity Portal, to Sam’s current address and to the new one',
+    sends: 'Sent by Supabase when someone saves a new email in My Account: the same email to both addresses, each with its own link. Its template is saved in Supabase, not in the portal’s code.',
     doc: () => changeEmailEmail({ link: `${PORTAL}/my-account/email` }),
+  },
+  {
+    key: 'invite',
+    name: 'Set up your account',
+    from: 'From The Clarity Portal, to someone a coach has invited',
+    sends: 'Nothing sends this yet. Its words are a stand-in until the coach portal’s invite email is drawn. Its template is saved in Supabase, not in the portal’s code.',
+    doc: () => inviteEmail({ link: `${PORTAL}/auth/invite` }),
   },
 ];

@@ -5,6 +5,10 @@ import { loadWithReload } from '../lib/loadWithReload';
 import { diag } from '../utils/diag';
 import PageError from './PageError';
 import './hc.css';
+import { keepPlaceOnReveal } from '../lib/keepPlace';
+
+// Anything that opens on the same page keeps your place (Tim, 13 Nov).
+keepPlaceOnReveal();
 
 // The outside Strategic Alignment Health Check as its own small page
 // (health-check.html; vercel.json sends /health-check/* here). It renders only

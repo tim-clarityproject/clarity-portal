@@ -3,10 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
 import { rememberNext, SIGN_IN_PATHS } from '../../lib/signIn/addresses';
+import { deviceClockLooksWrong } from '../../lib/signIn/clock';
 import { continueWithGoogle } from '../../lib/signIn/flow';
+import { emailChangeLink } from '../../lib/signIn/linkSession';
 import { rememberEmail } from '../../lib/signIn/remembered';
-import { DIDNT_SIGN_IN, GOOGLE_DIDNT_WORK, NO_MATCH, TOO_MANY } from '../../lib/signIn/words';
-import { Alt, ContinueWithGoogle, EmailField, MainButton, Message, OrLine, PasswordField, SignInPage, TextLink } from '../../components/signin/SignInParts';
+import { CLOCK_LOOKS_WRONG, DIDNT_SIGN_IN, EMAIL_LINK_OVER_SIGNED_OUT, GOOGLE_DIDNT_WORK, NO_MATCH, ONE_LINK_OPENED, TOO_MANY } from '../../lib/signIn/words';
+import { Alt, ContinueWithGoogle, EmailField, MainButton, Message, Note, OrLine, PasswordField, SignInPage, TextLink } from '../../components/signin/SignInParts';
 import useEnter, { useAlreadyIn } from '../../components/signin/useEnter';
 
 // Sign in (M26: "Sign in" and "Sign in, details don’t match"). Continue
@@ -35,6 +37,28 @@ export default function SignIn({ coach = false }) {
 
   // Already signed in (another tab, or coming back to this address): on they go.
   useAlreadyIn(leaving);
+
+  // A device clock more than 5 minutes out can sign people out, so the
+  // page says so, calmly, above Continue with Google (Tim, 13 Nov).
+  const [clockOut, setClockOut] = useState(false);
+  useEffect(() => {
+    let live = true;
+    deviceClockLooksWrong().then((out) => { if (live && out) setClockOut(true); });
+    return () => { live = false; };
+  }, []);
+
+  // A change-of-email link opened in a browser that isn't signed in ends
+  // up here (its page is inside the portal). Say how the link went.
+  const [oneOpened, setOneOpened] = useState(false);
+  useEffect(() => {
+    let live = true;
+    emailChangeLink?.then((outcome) => {
+      if (!live || leaving.current) return;
+      if (outcome === 'half') setOneOpened(true);
+      if (outcome === 'failed') setMessage((now) => now || EMAIL_LINK_OVER_SIGNED_OUT);
+    });
+    return () => { live = false; };
+  }, []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -87,6 +111,8 @@ export default function SignIn({ coach = false }) {
 
   return (
     <SignInPage core={!coach} title={coach ? 'Coach sign in' : undefined} onSubmit={submit}>
+      {clockOut ? <Note>{CLOCK_LOOKS_WRONG}</Note> : null}
+      {oneOpened ? <Note>{ONE_LINK_OPENED}</Note> : null}
       <ContinueWithGoogle onClick={google} />
       <OrLine />
       <EmailField value={email} onChange={(e) => setEmail(e.target.value)} />

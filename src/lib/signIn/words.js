@@ -6,7 +6,14 @@ export const GOOGLE_DIDNT_WORK = ['That didn’t work.', 'Try again, or use your
 export const ALREADY_AN_ACCOUNT = ['There’s already an account with this email.', 'Sign in, or reset your password.'];
 export const LINK_RUN_OUT = 'This link has run out or has already been used.';
 
+// Tim's words of 13 Nov.
+export const CLOCK_LOOKS_WRONG = 'Your device’s clock looks wrong, which can sign you out. Set it to update automatically, then sign in again.';
+export const inviteIsFor = (email) => `This invite is for ${email}. Continue with that Google account, or set a password.`;
+
 // Not drawn in M26 (Claude's wording, in the same pattern).
+export const ONE_LINK_OPENED = 'That’s one link opened. Open the one sent to your other email to finish.';
+export const EMAIL_LINK_OVER = [LINK_RUN_OUT, 'Save your new email again to send new links.'];
+export const EMAIL_LINK_OVER_SIGNED_OUT = [LINK_RUN_OUT, 'Sign in, then save your new email again in My Account.'];
 export const ADD_FIRST_NAME = 'Add your first name to carry on.';
 export const ADD_EMAIL = 'Add your email to carry on.';
 export const EMAIL_NOT_RIGHT = ['That email address doesn’t look right.', 'Check it and try again.'];

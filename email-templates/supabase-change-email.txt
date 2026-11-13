@@ -1,14 +1,14 @@
 The Clarity Portal
 
-Confirm your new email address.
+Confirm your change of email.
 
-Your email changes once you open this link.
+We’ve sent a link to your current email and to your new one. Open both to finish.
 
-Confirm my new email:
-{{ .ConfirmationURL }}
+Confirm my change of email:
+{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email_change
 
-If you didn’t ask for this, you can ignore this email and your email stays as it is.
+If you didn’t ask for this, don’t open the link. Your email then stays as it is.
 
 ----
-You get this because this email address was entered as a new one in The Clarity Portal.
+You get this because a change of email was asked for in The Clarity Portal.
 The Clarity Project LTD, founded by Dr. Tim Dutton

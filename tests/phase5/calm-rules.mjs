@@ -47,6 +47,7 @@ import { join } from 'node:path';
 import { chevronsOff, measureChevrons } from './chevrons.mjs';
 import { outlinedEdges } from './edges.mjs';
 import { overlappingTaps } from './taps.mjs';
+import { checkReveals } from './reveals.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
@@ -56,6 +57,7 @@ if (out) mkdirSync(out, { recursive: true });
 const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
 let failures = 0;
 let passes = 0;
+let revealsChecked = 0;
 const fails = [];
 const pass = (name, ok, detail = '') => {
   if (ok) passes += 1;
@@ -344,6 +346,14 @@ for (const width of [1280, 390]) {
         pass(`${tag}: the menu button sits over nothing`, r.over.length === 0, r.over.slice(0, 3).join('; '));
         pass(`${tag}: no console errors`, errors.length === 0, errors.slice(0, 2).join(' | '));
         if (out && mode === 'light') await page.screenshot({ path: join(out, `${name}-${width === 1280 ? '1280' : '390x844'}.png`), fullPage: true });
+        // Anything that opens on the same page keeps your place (Tim, 13
+        // Nov): each reveal is pressed at the foot of the screen. Once per
+        // width is enough (the two modes lay out the same).
+        if (mode === 'dark' && act !== 'menu') {
+          const reveals = await page.evaluate(checkReveals);
+          revealsChecked += reveals.checked;
+          pass(`${tag}: what opens in place keeps your place and shows (${reveals.checked} pressed)`, reveals.problems.length === 0, reveals.problems.slice(0, 5).join('; '));
+        }
         if (act === 'menu') await page.keyboard.press('Escape');
         if (kind) await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.startsWith('ds-guide:performance-') || x.startsWith('clarity-cache:') || x.startsWith('clarity-draft:')) localStorage.removeItem(x); });
         emptyReads = false;

@@ -1,15 +1,15 @@
 import { useContext, useEffect, useRef, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
 import { checkCurrentPassword, hasPassword } from '../../lib/signIn/account';
 import { returnAddress, SIGN_IN_PATHS } from '../../lib/signIn/addresses';
-import { landingFor } from '../../lib/signIn/linkSession';
+import { emailChangeLink, landingFor } from '../../lib/signIn/linkSession';
 import { codeWasSwapped } from '../../lib/signIn/linkRules';
 import { isLeaked, LEAKED, refusedAsLeaked, refusedAsLong, refusedAsShort, TOO_LONG, TOO_SHORT, tooLong, tooShort } from '../../lib/signIn/password';
-import { CURRENT_NO_MATCH, DIDNT_SAVE, DIDNT_SEND, EMAIL_NOT_RIGHT, looksLikeEmail, refusedAsSame, SAME_EMAIL, SAME_PASSWORD, TOO_MANY } from '../../lib/signIn/words';
+import { CURRENT_NO_MATCH, DIDNT_SAVE, DIDNT_SEND, EMAIL_LINK_OVER, EMAIL_NOT_RIGHT, looksLikeEmail, ONE_LINK_OPENED, refusedAsSame, SAME_EMAIL, SAME_PASSWORD, TOO_MANY } from '../../lib/signIn/words';
 import { Alt, BackTo, EmailField, MainButton, Message, PasswordField, TextLink } from '../../components/signin/SignInParts';
 
 // Inside My Account (M26): Password and Email, in the portal's own frame
@@ -165,6 +165,27 @@ export function AccountEmail() {
     return () => { live = false; };
   }, [userId, userEmail]);
 
+  // A link in the form that opens in any browser was finished as the app
+  // loaded (linkSession.js). Its token is taken out of the address, and
+  // the page says how it went: the email has changed, one of the two
+  // links is opened and the other is still to open, or the link has run out.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [oneOpened, setOneOpened] = useState(false);
+  useEffect(() => {
+    if (/[?&]token_hash=/.test(location.search)) navigate(location.pathname, { replace: true });
+  }, [location.search, location.pathname, navigate]);
+  useEffect(() => {
+    let live = true;
+    emailChangeLink?.then((outcome) => {
+      if (!live || acted.current) return;
+      if (outcome === 'done') setChanged(true);
+      if (outcome === 'half') setOneOpened(true);
+      if (outcome === 'failed') setMessage(EMAIL_LINK_OVER);
+    });
+    return () => { live = false; };
+  }, []);
+
   if (user && !hasPassword(user)) return <Navigate to="/my-account" replace />;
 
   const send = async (address) => {
@@ -217,9 +238,9 @@ export function AccountEmail() {
 
   if (sentTo && sentTo.toLowerCase() !== (account?.email || '').toLowerCase()) {
     return (
-      <AccountPage title="Email">
-        <p className="si-p">We’ve sent a link to <strong>{sentTo}</strong>.</p>
-        <p className="si-p">Your email changes once you open it.</p>
+      <AccountPage title="Check your email">
+        <p className="si-p">We’ve sent a link to your current email and to <strong>{sentTo}</strong>. Open both to finish.</p>
+        {oneOpened && !again ? <p className="si-p" role="status">{ONE_LINK_OPENED}</p> : null}
         <Alt>Didn’t get it? <TextLink onClick={sendAgain}>Send it again</TextLink></Alt>
         {again ? (
           <div className="si-alt" role="status">

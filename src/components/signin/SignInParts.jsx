@@ -61,6 +61,14 @@ export function Line({ children }) {
   return <p className="si-p">{children}</p>;
 }
 
+/**
+ * A calm line that isn't an error: the page's own grey words, no coral
+ * and no icon (the device's clock looks wrong; one of two links opened).
+ */
+export function Note({ children }) {
+  return <p className="si-p si-note" role="status">{children}</p>;
+}
+
 /** A labelled box. The label is tied to its box. */
 export const Field = forwardRef(function Field({ label, id, className = '', ...rest }, ref) {
   const autoId = useId();

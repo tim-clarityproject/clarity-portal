@@ -8,7 +8,7 @@ import { stillSignedInAs } from '../../lib/signIn/linkRules';
 import { useLinkSession } from '../../lib/signIn/linkSession';
 import { isLeaked, LEAKED, refusedAsLeaked, refusedAsLong, refusedAsShort, TOO_LONG, TOO_SHORT, tooLong, tooShort } from '../../lib/signIn/password';
 import { invitedNotSetUp, termsRecord, TICK_THE_BOX } from '../../lib/signIn/terms';
-import { DIDNT_SAVE, GOOGLE_DIDNT_WORK } from '../../lib/signIn/words';
+import { DIDNT_SAVE, GOOGLE_DIDNT_WORK, inviteIsFor } from '../../lib/signIn/words';
 import { ContinueWithGoogle, EmailField, Line, MainButton, Message, OrLine, PasswordField, SignInPage, TermsRow, Wait } from '../../components/signin/SignInParts';
 import useEnter from '../../components/signin/useEnter';
 import LinkNotWorking from './LinkNotWorking';
@@ -36,7 +36,13 @@ export default function Invite() {
   const [password, setPassword] = useState('');
   const [ticked, setTicked] = useState(false);
   const location = useLocation();
-  const [message, setMessage] = useState(() => (location.state?.message ? { at: 'terms', lines: location.state.message } : null));
+  // Back from Google: it didn't work (said by the box, as before), or the
+  // Google account they picked isn't the invited one (said under the
+  // Google button, with whose invite it is).
+  const [message, setMessage] = useState(() => {
+    if (location.state?.wrongGoogle) return { at: 'google', lines: null };
+    return location.state?.message ? { at: 'terms', lines: location.state.message } : null;
+  });
   const busy = useRef(false);
 
   useEffect(() => {
@@ -120,7 +126,8 @@ export default function Invite() {
     if (isOffline()) return say('terms', needsConnection('Signing in'));
     if (busy.current) return undefined;
     busy.current = true;
-    const { error } = await continueWithGoogle(supabase, { from: SIGN_IN_PATHS.invite, ticked: true }).catch((err) => ({ error: err }));
+    // Google is joined to the invited account, so no second account is made.
+    const { error } = await continueWithGoogle(supabase, { from: SIGN_IN_PATHS.invite, ticked: true, joinTo: user.email }).catch((err) => ({ error: err }));
     if (error) {
       busy.current = false;
       say('terms', isOffline(error) ? needsConnection('Signing in') : GOOGLE_DIDNT_WORK);
@@ -131,12 +138,16 @@ export default function Invite() {
     return undefined;
   };
 
-  const at = (place) => (message?.at === place ? <Message lines={message.lines} /> : null);
+  const at = (place) => {
+    if (message?.at !== place) return null;
+    return <Message lines={place === 'google' ? inviteIsFor(user.email) : message.lines} />;
+  };
 
   return (
     <SignInPage title={names.first ? `Welcome, ${names.first}` : 'Welcome'} onSubmit={submit}>
       <Line>{names.coach ? `${names.coach} has set up your account.` : 'Your coach has set up your account.'}</Line>
       <ContinueWithGoogle onClick={google} />
+      {at('google')}
       <OrLine />
       <EmailField value={user?.email || ''} readOnly />
       <PasswordField autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />

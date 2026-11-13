@@ -37,16 +37,6 @@ export function startedWithGoogle(user) {
 }
 
 /**
- * A Google account the portal has never seen has agreed to nothing yet:
- * it gets Before you start, then Home. An account made with an email and
- * a password agreed when it was made (or when its invite was set up), and
- * adding Google to it later never asks again.
- */
-export function needsBeforeYouStart(user) {
-  return Boolean(user) && startedWithGoogle(user) && !hasAgreed(user);
-}
-
-/**
  * An account a coach set up that hasn't been finished yet: invited, and
  * never agreed. Only such an account (or one whose invite link has just
  * been opened) is shown the invite's page, which sets a password without
@@ -54,6 +44,19 @@ export function needsBeforeYouStart(user) {
  */
 export function invitedNotSetUp(user) {
   return Boolean(user?.invited_at) && !hasAgreed(user);
+}
+
+/**
+ * Who must agree before the portal opens: Before you start, then on.
+ *   - A Google account the portal has never seen has agreed to nothing yet.
+ *   - So has an account a coach set up whose owner came in another way
+ *     than the invite's own page (a reset link, say): it never skips the
+ *     tick box (Tim, 13 Nov).
+ * An account made with an email and a password agreed when it was made,
+ * and adding Google to it later never asks again.
+ */
+export function needsBeforeYouStart(user) {
+  return Boolean(user) && !hasAgreed(user) && (startedWithGoogle(user) || Boolean(user.invited_at));
 }
 
 // The pages a ticked box can be carried from, through Google's round
