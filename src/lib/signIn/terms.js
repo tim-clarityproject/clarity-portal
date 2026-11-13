@@ -85,14 +85,19 @@ export function takeTick(now = new Date()) {
 
 /**
  * Saves the agreement on the account and the profile.
- * @returns {Promise<{ error: object|null }>}
+ * @returns {Promise<{ error: object|null, user: object|null }>} the account as it now stands
  */
 export async function recordAgreement(supabase, userId, at = new Date()) {
-  const { error } = await supabase.auth.updateUser({ data: termsRecord(at) });
-  if (error) return { error };
+  let answer;
+  try {
+    answer = await supabase.auth.updateUser({ data: termsRecord(at) });
+  } catch (error) {
+    answer = { error };
+  }
+  if (answer?.error) return { error: answer.error, user: null };
   // The profile's copy: tried now, and filled in on the next sign-in if this misses.
   try {
     await supabase.from('profiles').update({ terms_accepted: true }).eq('id', userId);
   } catch { /* AuthContext fills it in */ }
-  return { error: null };
+  return { error: null, user: answer?.data?.user || null };
 }

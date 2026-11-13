@@ -55,7 +55,6 @@ import InversionThinkingSummary from './pages/InversionThinkingSummary';
 import ToughConversationStep1Feedback from './pages/ToughConversationStep1Feedback';
 import ToughConversationSummary from './pages/ToughConversationSummary';
 import ToughConversationStep2Coaching from './pages/ToughConversationStep2Coaching';
-import AuthCallback from './pages/AuthCallback';
 import EditPersonalDetails from './pages/EditPersonalDetails';
 import OnboardingMission from './pages/OnboardingMission';
 import PersonalOperatingPlan from './pages/PersonalOperatingPlan';
@@ -88,6 +87,8 @@ import EmailConfirmed from './pages/signin/EmailConfirmed';
 import ForgotPassword from './pages/signin/ForgotPassword';
 import NewPassword from './pages/signin/NewPassword';
 import Invite from './pages/signin/Invite';
+import GoogleReturn from './pages/signin/GoogleReturn';
+import BeforeYouStart from './pages/signin/BeforeYouStart';
 import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 import ScrollToTop from './components/ScrollToTop';
 import HubPage from './pages/hubs/HubPage';
@@ -301,7 +302,6 @@ function AppContent() {
               email link or an old bookmark may still hold keeps working. */}
           <Route path="/" element={user ? <Navigate to="/welcome" replace /> : <Navigate to="/auth/login" replace />} />
         <Route path="/login" element={<MovedTo to="/auth/login" />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/terms-of-service" element={<Navigate to="/legal/terms" replace />} />
         <Route path="/privacy-policy" element={<Navigate to="/legal/privacy" replace />} />
         <Route path="/data-storage-notice" element={<Navigate to="/legal/data-storage" replace />} />
@@ -318,6 +318,12 @@ function AppContent() {
         <Route path="/auth/mission" element={<EmailConfirmed />} />
         <Route path="/email-confirmation" element={<EmailConfirmed />} />
         <Route path="/auth/invite" element={<Invite />} />
+        {/* Where Continue with Google comes back to (and the older
+            callback address), then Before you start for a Google account
+            the portal has never seen. */}
+        <Route path="/auth/google" element={<GoogleReturn />} />
+        <Route path="/auth/callback" element={<GoogleReturn />} />
+        <Route path="/auth/before-you-start" element={<BeforeYouStart />} />
         {/* The old welcome screens: straight to Home now. */}
         <Route path="/auth/finished" element={<Navigate to="/welcome" replace />} />
         <Route path="/auth/welcome-back" element={<Navigate to="/welcome" replace />} />

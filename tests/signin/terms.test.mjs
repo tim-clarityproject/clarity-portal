@@ -58,11 +58,12 @@ test('a tick made just before Google counts, an old one does not', () => {
 test('recording saves the same record on the account, then the profile', async () => {
   const seen = [];
   const supabase = {
-    auth: { updateUser: async (v) => { seen.push(['account', v]); return { error: null }; } },
+    auth: { updateUser: async (v) => { seen.push(['account', v]); return { data: { user: { id: 'u1', user_metadata: v.data } }, error: null }; } },
     from: (table) => ({ update: (v) => ({ eq: async (col, id) => { seen.push([table, v, col, id]); return { error: null }; } }) }),
   };
   const out = await recordAgreement(supabase, 'u1', at);
   assert.equal(out.error, null);
+  assert.equal(hasAgreed(out.user), true);
   assert.deepEqual(seen, [
     ['account', { data: termsRecord(at) }],
     ['profiles', { terms_accepted: true }, 'id', 'u1'],
@@ -73,4 +74,7 @@ test('if the account can’t be saved, nothing claims it was', async () => {
   const supabase = { auth: { updateUser: async () => ({ error: { message: 'no' } }) }, from: () => { throw new Error('not reached'); } };
   const out = await recordAgreement(supabase, 'u1', at);
   assert.deepEqual(out.error, { message: 'no' });
+  assert.equal(out.user, null);
+  const thrown = await recordAgreement({ auth: { updateUser: async () => { throw new Error('offline'); } } }, 'u1', at);
+  assert.equal(thrown.error.message, 'offline');
 });

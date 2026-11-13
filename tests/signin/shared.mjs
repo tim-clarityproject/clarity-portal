@@ -64,6 +64,11 @@ export async function guard(context, calls = [], answers = {}) {
         if (out) return json(route, out.status || 200, out.body ?? {});
       }
     }
+    // These tests show the seeded test client under invented names and
+    // addresses, so nothing they do may be written to its real profile or
+    // account: such writes are answered here and never sent.
+    if (path.endsWith('/rest/v1/profiles') && method !== 'GET') return json(route, 200, []);
+    if (path.endsWith('/auth/v1/user') && method === 'PUT' && !answers['PUT /auth/v1/user']) return json(route, 200, {});
     // Never let a real email be asked for.
     if (/\/auth\/v1\/(signup|resend|recover|otp|magiclink|invite)$/.test(path)) return json(route, 200, {});
     if (path.endsWith('/auth/v1/user') && method === 'PUT' && body && 'email' in body) return json(route, 200, {});

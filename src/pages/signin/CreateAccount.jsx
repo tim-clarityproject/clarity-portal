@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
@@ -29,7 +29,8 @@ export default function CreateAccount() {
   const [password, setPassword] = useState('');
   const [ticked, setTicked] = useState(false);
   // One message at a time, shown where M26 draws it: { at, lines }.
-  const [message, setMessage] = useState(null);
+  const location = useLocation();
+  const [message, setMessage] = useState(() => (location.state?.message ? { at: 'terms', lines: location.state.message } : null));
   const busy = useRef(false);
   const leaving = useRef(false);
 

@@ -11,7 +11,7 @@ const press = (page, name) => page.getByRole('button', { name, exact: true }).cl
 // Signs the seeded test client in, shown under the mock-up's invented
 // name and address: the sign-in answer is passed through with only the
 // first name and email swapped, so the pages read as M26 draws them.
-export async function signedIn(page, { env, answers, SAM }, { email = SAM.email, firstName = SAM.first, change } = {}) {
+export async function signedIn(page, { env, answers, SAM }, { email = SAM.email, firstName = SAM.first, change, land = /\/welcome$/ } = {}) {
   const patch = (user) => {
     if (!user) return user;
     const next = { ...user, email, user_metadata: { ...(user.user_metadata || {}), first_name: firstName } };
@@ -34,7 +34,7 @@ export async function signedIn(page, { env, answers, SAM }, { email = SAM.email,
   await fillEmail(page, env.TEST_CLIENT_EMAIL);
   await fillPassword(page, env.TEST_CLIENT_PASSWORD);
   await page.keyboard.press('Enter');
-  await page.waitForURL(/\/welcome$/, { timeout: 30000 });
+  await page.waitForURL(land, { timeout: 30000 });
 }
 
 const fillCreate = async (page, SAM, password) => {
@@ -56,6 +56,16 @@ export const SCREENS = [
       await fillPassword(page, 'harbourlane');
       await press(page, 'Sign in');
       await page.waitForSelector('.si-err');
+    },
+  },
+  {
+    key: 'signing',
+    name: 'Signing in after Google',
+    // Google's return, held while the sign-in is finished.
+    open: async (page, { answers }) => {
+      answers['POST /auth/v1/token'] = () => new Promise(() => {});
+      await go(page, '/auth/google?code=a-mock-code');
+      await page.waitForSelector('.si-wait');
     },
   },
   // ------------------------------------------------------------ Creating an account
@@ -110,6 +120,20 @@ export const SCREENS = [
     key: 'confirmed',
     name: 'Email confirmed',
     open: async (page, o) => { await signedIn(page, o); await go(page, '/auth/confirmed'); await page.waitForSelector('.si-ttl'); },
+  },
+  {
+    key: 'google-new',
+    name: 'New Google account, before Home',
+    // A Google account the portal has never seen: it is held at Before you start.
+    open: async (page, o) => {
+      await signedIn(page, o, {
+        email: o.SAM.gmail,
+        land: /\/auth\/before-you-start$/,
+        change: (u) => ({ ...u, app_metadata: { provider: 'google', providers: ['google'] }, user_metadata: { name: 'Sam Carter' } }),
+      });
+      await page.waitForSelector('.si-ttl');
+      await page.locator('.ds-check-box').click();
+    },
   },
   {
     key: 'invite',

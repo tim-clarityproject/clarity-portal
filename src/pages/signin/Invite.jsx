@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
@@ -22,7 +23,8 @@ export default function Invite() {
   const [names, setNames] = useState({ first: '', coach: '' });
   const [password, setPassword] = useState('');
   const [ticked, setTicked] = useState(false);
-  const [message, setMessage] = useState(null);
+  const location = useLocation();
+  const [message, setMessage] = useState(() => (location.state?.message ? { at: 'terms', lines: location.state.message } : null));
   const busy = useRef(false);
 
   useEffect(() => {
