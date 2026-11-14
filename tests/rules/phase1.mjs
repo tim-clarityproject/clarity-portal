@@ -44,13 +44,14 @@ begin
   -- Invented data seeded for the preview (scripts/seed-test-plan.mjs) is
   -- set aside inside this run (always rolled back), so the rules start
   -- from the empty accounts they expect.
-  delete from public.recovery_periods where user_id = ${id('client')};
-  delete from public.wins where user_id = ${id('client')};
-  delete from public.todos where user_id = ${id('client')};
-  delete from public.sprints where user_id = ${id('client')};
-  delete from public.performance_plans where user_id = ${id('client')};
-  delete from public.sharing_switches where user_id = ${id('client')};
-  delete from public.person_settings where user_id = ${id('client')};
+  -- Jordan too, since the second person is seeded as well (14 Nov).
+  delete from public.recovery_periods where user_id in (${id('client')}, ${id('org_client')});
+  delete from public.wins where user_id in (${id('client')}, ${id('org_client')});
+  delete from public.todos where user_id in (${id('client')}, ${id('org_client')});
+  delete from public.sprints where user_id in (${id('client')}, ${id('org_client')});
+  delete from public.performance_plans where user_id in (${id('client')}, ${id('org_client')});
+  delete from public.sharing_switches where user_id in (${id('client')}, ${id('org_client')});
+  delete from public.person_settings where user_id in (${id('client')}, ${id('org_client')});
   insert into public.coaches (user_id, role, display_first_name) values (${id('owner_coach')}, 'owner', 'Alex') returning id into oc;
   insert into public.coaches (user_id, role, display_first_name) values (${id('second_coach')}, 'coach', 'Priya') returning id into sc;
   perform set_config('rules.owner_coach_c', oc::text, true);
