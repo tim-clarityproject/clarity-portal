@@ -11,17 +11,32 @@ import './design.css';
 //     …
 //   </GuestFrame>
 //
-// narrow (the default) keeps the column at M9's 460px.
+// narrow (the default) keeps the column at M9's 460px; narrow="wide" at
+// M7b's 560px (the Health Check's welcome).
+// markHref, markLabel: the crosshair is a link (M7b: to the website, in a
+//   new tab).
+// footer: a bottom bar for the page's one button (M7b's results:
+//   "Download my PDF"), lined up with the column, as a guided tool's.
 // CalmCard: the calm card at the foot of a guest's end page (design
 // reference, Calm pages): one sentence, a quieter one under it, then one
 // outlined button.
-export function GuestFrame({ children, narrow = true, className = '' }) {
+export function GuestMark({ href, label }) {
+  if (!href) return <BoldCrosshair size={28} />;
+  return (
+    <a className="ds-guest-mark" href={href} target="_blank" rel="noopener noreferrer" aria-label={label}>
+      <BoldCrosshair size={28} />
+    </a>
+  );
+}
+
+export function GuestFrame({ children, narrow = true, className = '', markHref, markLabel, footer = null }) {
   return (
     <div className={`ds-guest ${className}`.trim()}>
-      <div className="ds-guest-top"><BoldCrosshair size={28} /></div>
+      <div className="ds-guest-top"><GuestMark href={markHref} label={markLabel} /></div>
       <main className="ds-guest-main">
-        <div className={`ds-guest-col${narrow ? ' ds-guest-col--narrow' : ''}`}>{children}</div>
+        <div className={`ds-guest-col${narrow ? ' ds-guest-col--narrow' : ''}${narrow === 'wide' ? ' ds-guest-col--narrow-wide' : ''}`}>{children}</div>
       </main>
+      {footer && <div className="ds-guest-foot"><div className="ds-guest-foot-in">{footer}</div></div>}
     </div>
   );
 }

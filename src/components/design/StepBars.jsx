@@ -11,14 +11,19 @@ import './design.css';
 //          (grey)
 //   word:  the answer in words, read by screen readers only; leave it out
 //          where the words are on screen beside the bars
-export default function StepBars({ value, tone = '', word, steps = 5, className = '' }) {
+//   under: the word shows under the bars instead (M7b's project list; Tim,
+//          14 Nov, 09:43: "can't tell what the bars are"), in the text
+//          colour when the tone is good
+//   strong: the filled steps in the secondary grey, clearly darker than the
+//          empty ones in dark mode too (M7b version 51)
+export default function StepBars({ value, tone = '', word, steps = 5, className = '', under = false, strong = false }) {
   const on = Math.max(0, Math.min(steps, Math.round(Number(value) || 0)));
   return (
     <>
-      <span className={`ds-stepbars${tone ? ` ds-stepbars--${tone}` : ''} ${className}`.trim()} aria-hidden="true">
+      <span className={`ds-stepbars${tone ? ` ds-stepbars--${tone}` : ''}${strong ? ' ds-stepbars--strong' : ''} ${className}`.trim()} aria-hidden="true">
         {Array.from({ length: steps }, (_, k) => <i key={k} className={k < on ? 'ds-stepbars-on' : undefined} />)}
       </span>
-      {word && <span className="ds-sr">{word}</span>}
+      {word && <span className={under ? `ds-stepbars-word${tone === 'good' ? ' ds-stepbars-word--good' : ''}` : 'ds-sr'}>{word}</span>}
     </>
   );
 }

@@ -22,7 +22,32 @@ import './design.css';
 //   <InfoPop id={id} open={open} anchorRef={buttonRef} panelRef={panelRef}>…</InfoPop>
 //
 // lines: a sentence or a list of sentences, one per line (writing rule
-// 49); or children, for anything else.
+// 49); or children, for anything else. A line can also be one of these
+// (M7b version 51; Tim, 14 Nov, 09:41: "what it is and isn't" explainers):
+//   { title }          the pop-up's own name, first ("What is a Success Factor?")
+//   { term, meaning }  a word, then what it means under it, quieter
+//   { heading }        a short heading part-way down ("What it’s not:")
+//   { bullets: [] }    a short bullet list
+const lineKey = (line, n) => (typeof line === 'string' ? line : `${n}:${line.title || line.term || line.heading || line.bullets?.[0] || ''}`);
+
+function PopLine({ line }) {
+  if (line == null || typeof line !== 'object') return <span className="ds-infopop-line">{line}</span>;
+  if (line.title) return <b className="ds-infopop-title">{line.title}</b>;
+  if (line.term) {
+    return (
+      <span className="ds-infopop-term">
+        <span className="ds-infopop-term-word">{line.term}</span>
+        <span className="ds-infopop-term-meaning">{line.meaning}</span>
+      </span>
+    );
+  }
+  if (line.heading) return <span className="ds-infopop-heading">{line.heading}</span>;
+  if (line.bullets) {
+    return <ul className="ds-infopop-bullets">{line.bullets.map((b) => <li key={b}>{b}</li>)}</ul>;
+  }
+  return null;
+}
+
 export default function InfoPop({ id, open, anchorRef, panelRef, lines, children, className = '' }) {
   const scope = useThemeScope();
 
@@ -69,7 +94,7 @@ export default function InfoPop({ id, open, anchorRef, panelRef, lines, children
   return createPortal(
     <div className="ui-root ds-portal" {...themeProps(scope)}>
       <div id={id} ref={panelRef} className={`ds-infopop ${className}`.trim()} role="note" hidden={!open}>
-        {list ? list.map((line) => <span key={line} className="ds-infopop-line">{line}</span>) : children}
+        {list ? list.map((line, n) => <PopLine key={lineKey(line, n)} line={line} />) : children}
       </div>
     </div>,
     document.body,

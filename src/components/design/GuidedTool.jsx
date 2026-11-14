@@ -108,6 +108,21 @@ import './design.css';
 //              ("The feeling" is the kind, then its words). Opened from the
 //              summary, this step is followed by that one, and the summary
 //              shows again after it.
+// More a step can say (M7b's Health Check, 14 Nov):
+//   back:      () => the key of the step Back goes to from here, or null for
+//              the usual one (the first rating of a project opened from the
+//              results goes back to the results). A question opened from a
+//              summary stays an edit after it.
+//   top:       what shows in place of the top bar on this step (M7b's
+//              results: the bold crosshair alone, centred, as a guest page),
+//              so a results step keeps the tool's own "Save my edit".
+//   editNext:  the button's words while this step is open from a summary
+//              and has a second part to come (`thenEdit`): "Next" (M7b: the
+//              Success Factors, then how much each matters, then "Save my
+//              edit").
+//   A one-tap answer follows the step's `onward` too, when it gives a key.
+// onBack:   Back on the first step, when it isn't the same as Close (M7b:
+//           Back leaves for the email and code screen; Close saves).
 // A step's `check`: () => a calm message, or null. Pressing Next (or Save
 //           my edit) on a step whose check gives a message shows it under
 //           the answer ("Type your goal to carry on.") and stays put: the
@@ -276,6 +291,7 @@ export default function GuidedTool({
   skipMoves = true,
   calm = false,
   longName = false,
+  onBack,
 }) {
   const scope = useThemeScope();
   const fullscreen = layout === 'fullscreen';
@@ -314,10 +330,12 @@ export default function GuidedTool({
   const lastMove = useRef(0);
   const finished = useRef(false);
   const onCloseRef = useRef(onClose);
+  const onBackRef = useRef(onBack);
   const positionId = useId();
   useEffect(() => {
     onCloseRef.current = onClose;
-  }, [onClose]);
+    onBackRef.current = onBack;
+  }, [onClose, onBack]);
 
   const i = Math.min(index, steps.length - 1);
   const oneTapTimer = useRef(null);
@@ -543,8 +561,15 @@ export default function GuidedTool({
       const from = i;
       oneTapTimer.current = setTimeout(() => {
         if (indexRef.current !== from) return;
-        if (changingRef.current) backToSummaryRef.current();
-        else go(from + 1, 'jump');
+        if (changingRef.current) {
+          backToSummaryRef.current();
+          return;
+        }
+        // The step's own next place, when it names one (a Health Check
+        // goes straight to the next answer still missing).
+        const onwardKey = steps[from]?.onward?.();
+        const onward = onwardKey ? steps.findIndex((s) => s.key === onwardKey) : -1;
+        go(onward >= 0 && onward !== from ? onward : from + 1, 'jump');
       }, ONE_TAP_MS);
     },
     index: i,
@@ -587,6 +612,25 @@ export default function GuidedTool({
     </nav>
   );
 
+  // Back: the step's own place when it names one, the summary an edit came
+  // from, the step before, or out of the tool from the first step.
+  const goBack = () => {
+    const backKey = step.back?.();
+    const at = backKey ? steps.findIndex((s) => s.key === backKey) : -1;
+    if (at >= 0 && at !== i) {
+      // Back to the summary itself ends the edit.
+      if (at === returnTo) setReturnTo(null);
+      go(at, 'jump');
+      return;
+    }
+    if (changing) backToSummary();
+    else if (i === 0) (onBackRef.current || onCloseRef.current)?.();
+    else go(i - 1);
+  };
+  // An edit with a second part to come keeps its own word on the button.
+  const editHasMore = changing && step.editNext && step.thenEdit
+    && steps.some((s, j) => s.key === step.thenEdit && j !== i && j !== returnTo);
+
   const motion = direction === 'forward' ? ' ds-guide-page--next' : direction === 'back' ? ' ds-guide-page--back' : '';
 
   const tree = (
@@ -600,12 +644,13 @@ export default function GuidedTool({
       onKeyDown={fullscreen ? (e) => trapTab(e, rootRef.current) : undefined}
     >
       <div className="ds-guide-frame">
-        {!step.bare && (
+        {step.top && <div className="ds-guide-top">{step.top}</div>}
+        {!step.bare && !step.top && (
           <div className="ds-guide-bar">
             {/* Back at the top left, beside the tool's name (rules 29o and 29t,
                 Tim, 5 Nov): the chevron alone, its 44px tap area invisible. */}
             {showBack && !step.plain && (
-              <button type="button" className="ds-guide-back" aria-label="Back" onClick={() => (changing ? backToSummary() : i === 0 ? onCloseRef.current?.() : go(i - 1))}>
+              <button type="button" className="ds-guide-back" aria-label="Back" onClick={goBack}>
                 {ARROW}
               </button>
             )}
@@ -651,7 +696,7 @@ export default function GuidedTool({
               )}
               {step.footAside && <div className="ds-guide-foot-aside">{step.footAside}</div>}
               <button type="button" className="ds-btn ds-btn--primary ds-guide-next" onClick={next}>
-                {changing ? 'Save my edit' : (step.nextLabel || (last ? finishLabel : 'Next'))}
+                {editHasMore ? step.editNext : changing ? 'Save my edit' : (step.nextLabel || (last ? finishLabel : 'Next'))}
               </button>
             </div>
           </div>

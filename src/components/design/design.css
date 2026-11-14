@@ -10611,3 +10611,272 @@
   margin-top: var(--space-2);
   color: var(--text-2);
 }
+
+/* ---------- Health Check calm rebuild: shared parts (M7b version 51, 14 Nov) ---------- */
+
+/* Two icons beside a title (TitleIcons): 16px between them, visible edge to
+   visible edge. Each icon's 44px box would overlap the other's by 12px, so
+   the first is narrower on its right and the second takes that strip. */
+.ui-root .ds-title-icons {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.ui-root .ds-title-icons > .ds-who--eye:not(:last-of-type) {
+  justify-content: flex-start;
+  width: calc(var(--tap-min) - (var(--tap-min) - var(--who-icon) - var(--icon-pair-gap)));
+  margin-right: 0;
+}
+
+.ui-root .ds-title-icons > .ds-who--eye:not(:last-of-type) > .ds-who-eye {
+  margin-left: calc((var(--tap-min) - var(--who-icon)) / 2);
+}
+
+.ui-root .ds-title-icons > .ds-who--eye:not(:first-of-type) {
+  margin-left: 0;
+}
+
+/* The ⓘ pop-up's parts (InfoPop lines): its own name, a word and its
+   meaning, a short heading and a bullet list (M7b .ctip). */
+.ui-root .ds-infopop .ds-infopop-title {
+  font-weight: var(--fw-medium);
+}
+
+.ui-root .ds-infopop .ds-infopop-term {
+  margin-top: var(--space-2);
+  opacity: 1;
+}
+
+.ui-root .ds-infopop .ds-infopop-term-meaning {
+  opacity: 0.72;
+}
+
+.ui-root .ds-infopop .ds-infopop-heading {
+  margin-top: var(--space-px10);
+}
+
+.ui-root .ds-infopop .ds-infopop-bullets {
+  display: block;
+  margin: var(--space-1) 0 0;
+  padding: 0 0 0 var(--space-px18);
+  list-style: disc;
+}
+
+.ui-root .ds-infopop .ds-infopop-bullets li {
+  margin: var(--space-px2) 0 0;
+  padding: 0;
+}
+
+/* Step bars with their word under them (M7b .lvw), and the stronger
+   filled steps (M7b version 51 .lv i.on). */
+.ui-root .ds-stepbars--strong:not(.ds-stepbars--good):not(.ds-stepbars--low) i.ds-stepbars-on {
+  background: var(--text-2);
+}
+
+.ui-root .ds-stepbars-word {
+  display: block;
+  margin-top: var(--space-px6);
+  font-size: var(--fs-meta);
+  line-height: 1.3;
+  color: var(--text-2);
+}
+
+.ui-root .ds-stepbars-word--good {
+  color: var(--text);
+}
+
+/* A results section's name with its own quiet link at the right (M7b .sech). */
+.ui-root .ds-results-headrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-px12);
+  min-height: var(--tap-min);
+  margin: 0 0 var(--space-px14);
+  padding-bottom: var(--space-px6);
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-results-headrow .ds-results-head {
+  margin: 0 !important;
+  padding: 0;
+  border: 0;
+}
+
+.ui-root .ds-results-headrow .ds-link {
+  margin: calc(-1 * var(--space-px6)) 0;
+  font-size: var(--fs-note) !important;
+}
+
+/* The link is 44px wide with its word at the left, as M7b's (.text). */
+.ui-root .ds-results-headrow .ds-link {
+  justify-content: flex-start;
+  min-width: var(--tap-min);
+}
+
+/* Every section alike (M7b .sec): the same space above each, whether or
+   not its name has a link beside it. */
+.ui-root .ds-results-section--row {
+  margin-top: var(--hc-section-gap);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-results-section--row {
+    margin-top: var(--hc-section-gap-phone);
+  }
+}
+
+@container guide (max-width: 600px) {
+  .ui-root .ds-results-section--row {
+    margin-top: var(--hc-section-gap-phone);
+  }
+}
+
+/* An ⓘ after a section's name in capitals: 6px after the last letter's
+   ink, on the middle of the capitals. */
+.ui-root .ds-results-head .ds-guide-i.ds-guide-i--end {
+  top: var(--page-info-lift);
+  margin-left: calc(var(--info-gap) - (var(--tap-min) - var(--info-size)) / 2 - var(--ls-results-head));
+  letter-spacing: normal;
+}
+
+/* A question to start with, in parts (M7b .qi): its topic small above it,
+   why it's asked under it; every one alike. */
+/* The line is under each question but the last, as M7b draws it (.qi). */
+.ui-root .ds-startq--parts {
+  padding: var(--space-px14) 0;
+  border-top: 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ds-startq--parts:first-of-type,
+.ui-root .ds-results-headrow + .ds-startq--parts {
+  padding-top: var(--space-px2);
+}
+
+.ui-root .ds-startq--parts:last-child {
+  border-bottom: 0;
+}
+
+.ui-root .ds-startq--parts p {
+  margin: 0;
+  font-size: var(--fs-text);
+  line-height: 1.4;
+}
+
+.ui-root .ds-startq-label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--placeholder);
+}
+
+.ui-root .ds-startq--parts .ds-startq-reason {
+  margin-top: var(--space-1);
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+}
+
+/* A guided step with its own top in place of the bar (M7b's results: the
+   bold crosshair alone, centred, as on a guest page). */
+.ui-root .ds-guide-top {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: content-box;
+  height: var(--guide-bar-h);
+  padding-top: env(safe-area-inset-top, 0px);
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+@container guide (max-width: 600px) {
+  .ui-root .ds-guide-top {
+    height: auto;
+    padding-top: max(var(--space-3), env(safe-area-inset-top, 0px));
+    padding-bottom: var(--space-px6);
+    border-bottom: 0;
+  }
+}
+
+/* The crosshair as a link (M7b .mk): a 44px round tap area. */
+.ui-root .ds-guest-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border-radius: var(--radius-pill);
+  color: var(--text);
+}
+
+.ui-root .ds-guest-mark:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+/* A guest page's wider narrow column (M7b .narrow.w) and its bottom bar (M7b .gft). */
+.ui-root .ds-guest-col--narrow-wide > * {
+  max-width: var(--guest-narrow-wide);
+}
+
+.ui-root .ds-guest-foot {
+  position: sticky;
+  bottom: 0;
+  flex: none;
+  border-top: var(--line-w) solid var(--line);
+  background: var(--bg);
+}
+
+.ui-root .ds-guest-foot-in {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-px12);
+  box-sizing: border-box;
+  max-width: var(--guide-calm-max);
+  margin: 0 auto;
+  padding: var(--space-px14) var(--guide-calm-pad) max(var(--space-px18), env(safe-area-inset-bottom, 0px));
+}
+
+/* A side panel wide enough for a picture (M7b .sheet.vid). */
+.ui-root .ds-panel.ds-panel--wide {
+  width: min(var(--panel-w-wide), 100%);
+}
+
+/* The PDF choice in a side panel (M7b .ddl): two rows in one outlined box. */
+.ui-root .ds-pdfpanel {
+  margin-top: var(--space-2);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-field);
+  background: var(--card);
+  overflow: hidden;
+}
+
+/* !important: an older rule gives every button on a phone its own text size (src/styles/mobile.css). */
+.ui-root .ds-pdfpanel .ds-option {
+  font-size: var(--fs-option) !important;
+}
+
+.ui-root .ds-pdfpanel .ds-option:hover,
+.ui-root .ds-pdfpanel .ds-option:focus-visible {
+  color: var(--coral-text);
+}
+
+.ui-root .ds-pdfpanel-busy {
+  margin: var(--space-px12) 0 0;
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-guest-foot-in {
+    padding: var(--space-px12) var(--space-3) max(var(--space-px30), env(safe-area-inset-bottom, 0px));
+  }
+
+  .ui-root .ds-guest-foot-in .ds-btn {
+    flex: 1;
+  }
+}

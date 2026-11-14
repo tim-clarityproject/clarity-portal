@@ -228,6 +228,38 @@
      capitals, so the icon's box starts 11px and 10px after the letter's. */
   --icon-title-gap: 11px;
   --icon-title-gap-caps: var(--space-px10);
+  /* Two icons beside a title (Tim, 14 Nov, 09:28): 16px between them,
+     visible edge to visible edge; play, then the eye. */
+  --icon-pair-gap: 16px;
+  /* A side panel wide enough for a picture (M7b's Quick guide) and the
+     Health Check welcome's column (M7b .narrow.w). */
+  --panel-w-wide: 780px;
+  --guest-narrow-wide: 560px;
+  /* The Health Check's own measures (M7b version 51): the project list's
+     columns and number ring, its labelled lines on a phone, the small
+     drop-down beside its label, the objective, and the Quick guide's player. */
+  --hc-section-gap: var(--space-px44);   /* above each section of the results (M7b .sec) */
+  --hc-section-gap-phone: 36px;
+  --hc-num-col: 28px;
+  --hc-num: 26px;
+  --hc-col-importance: 136px;
+  --hc-col-rating: 92px;
+  --hc-row-min-h: 68px;
+  --hc-figure-w: 38px;
+  --hc-label-w: 142px;
+  --hc-word-w: 66px;
+  --hc-dd-min-w: 220px;
+  --hc-dd-list-min-w: 260px;
+  --hc-objective-max: 46ch;
+  --hc-keep-max: 44ch;
+  --hc-play: 64px;
+  --hc-play-icon: 22px;
+  --hc-caption-h: 56px;
+  --hc-caption-h-phone: 78px;
+  --hc-control-icon: 18px;
+  --hc-thumb: 14px;
+  --hc-time-w: 72px;
+  --hc-bigplay-max: 34ch;
   --page-info-lift: -0.088em; /* the page title's "i", from its line's middle up to the middle of the capitals (measured on Nekst) */
   --text-info-lift: -0.092em; /* an "i" at the end of a DM Sans sentence, from vertical-align middle up to the middle of the capitals (measured) */
   --onum-size: 22px;         /* circled objective numbers */

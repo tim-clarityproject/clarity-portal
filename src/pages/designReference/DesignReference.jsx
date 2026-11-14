@@ -106,6 +106,7 @@ import { CarriedOverDemo, NightDemo, WorkDoneDemo } from './WindDownDemos';
 import { TimerDemo } from './TimerDemos';
 import { CalmFrameDemo, CalmCardDemo } from './GetUnstuckDemos';
 import { AnswerColumnsDemo, AnswerHintDemo, DissolveDemo, FollowChoiceDemo, NameRowsDemo, ResultsDemo, StepBarsDemo } from './VisualToolDemos';
+import { HealthCheckChartDemo, InfoListDemo, PdfPanelDemo, ProjectListDemo, ResultsPartsDemo, TitleIconsDemo } from './HealthCheckDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import { TODO_WHERE, dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, todoWhereOptions, todoWhereToast, withMeasure, yearView } from '../../lib/performance';
@@ -1956,6 +1957,49 @@ function Gallery() {
             <p><New /><b>Something let go lifts away letter by letter</b> (M10’s Trash; <code>Dissolve</code>), then the page says it has gone.</p>
             <p>Only the tokens’ timings: a letter takes 400ms, and a long text lifts faster. With reduced motion the words simply fade.</p>
             <p>A word never splits across lines while it goes.</p>
+          </>
+        )} />
+
+        <GallerySection id="c77" title="Two icons beside a title" demo={TitleIconsDemo} rules={(
+          <>
+            <p><New /><b>Play, then the eye</b> (Tim, 14 Nov; M7b version 51; <code>TitleIcons</code> with <code>PlayButton</code>): 12px from the title’s last letter to the first icon, then 16px between the two, visible edge to visible edge, each centred on the capitals.</p>
+            <p>Each icon keeps a 44px-tall tap area. Where the two would overlap, the second takes the shared strip, so no two tap areas ever overlap.</p>
+            <p>At most two together. A guest’s eye offers “Only you” or “You and Tim”, with the line under the choice that follows it (<code>HealthCheckEye</code>).</p>
+          </>
+        )} />
+
+        <GallerySection id="c78" title="An ⓘ with a heading and bullets" demo={InfoListDemo} rules={(
+          <>
+            <p><New /><b>What it is, and what it isn’t</b> (Tim, 14 Nov, 09:41; <code>InfoPop</code>’s lines): the pop-up’s own name, sentences, a word with its meaning, a short heading and a bullet list.</p>
+            <p>An ⓘ after a sentence, a label or a heading wraps with its last word (<code>SentenceInfo</code>), 6px after it.</p>
+          </>
+        )} />
+
+        <GallerySection id="c79" title="Bars with their word, and labelled lines on a phone" demo={ProjectListDemo} wide rules={(
+          <>
+            <p><New /><b>The rating word shows under each five-step bar</b> (Tim, 14 Nov, 09:43; <code>StepBars</code> with <code>under</code> and <code>strong</code>): filled steps are clearly darker than empty ones, in dark mode too. Mint at Good or Excellent; never coral on a row that can be tapped.</p>
+            <p><b>A table with more than two data columns becomes labelled lines on a phone</b> (Tim, 14 Nov, 09:47): the column headings go, and each row shows its name, then one labelled line for each column (the Health Check’s <code>ProjectList</code>).</p>
+          </>
+        )} />
+
+        <GallerySection id="c80" title="The Health Check’s chart" demo={HealthCheckChartDemo} wide rules={(
+          <>
+            <p><New /><b>Strategic importance against progress</b> (M7b version 51; <code>HealthCheckChart</code>): mint filled is moving well, a soft coral double ring needs attention, an outline needs managing, a grey ring is less important or too early to tell. Bigger dots need more resource.</p>
+            <p>Every dot has a 44px tap area at any size and the shared pop-up. A dashed ring with a fine line shows where a project stood in an earlier version (<code>was</code>, for Compare two versions).</p>
+          </>
+        )} />
+
+        <GallerySection id="c81" title="A section with its own Edit, and questions in parts" demo={ResultsPartsDemo} wide rules={(
+          <>
+            <p><New /><b>Each section of a results page has its own Edit</b> (M7b; <code>ResultsSection</code> with <code>action</code>), and “Save my edit” goes straight back with “Saved”.</p>
+            <p>A question to start with can carry its topic small above it and why it’s asked under it, every one alike (<code>StartQuestions</code> with objects). They always come last (rule 29ar).</p>
+          </>
+        )} />
+
+        <GallerySection id="c82" title="The PDF choice in a panel, and a wide panel" demo={PdfPanelDemo} rules={(
+          <>
+            <p><New /><b>Where the page’s one coral button is the download</b> (M7b’s results; <code>PdfPanel</code>), it opens “Download PDF” in the side panel: “Light, for printing” and “Dark, for sharing”.</p>
+            <p>A side panel can be wide enough for a picture (<code>SlidePanel</code> with <code>wide</code>; the Quick guide), still full screen on a phone.</p>
           </>
         )} />
 

@@ -20,7 +20,8 @@ const SWIPE_CLOSE_PX = 90;
 const KIND_CLASS = { panel: 'ds-panel', popup: 'ds-popup', sheet: 'ds-choice-sheet', drop: 'ds-choice-sheet ds-drop' };
 const DOUBLE_CLICK_MS = 400;
 
-function Modal({ kind, open, onClose, title, titleAside = null, children, footer, initialFocusRef, closeLabel = 'Close' }) {
+// wide: a panel wide enough for a picture (M7b's Quick guide, 780px).
+function Modal({ kind, open, onClose, title, titleAside = null, children, footer, initialFocusRef, closeLabel = 'Close', wide = false, className = '' }) {
   const ms = kind === 'panel' ? PANEL_MS : POPUP_MS;
   const titleId = useId();
   const scope = useThemeScope();
@@ -162,7 +163,7 @@ function Modal({ kind, open, onClose, title, titleAside = null, children, footer
       />
       <div
         ref={dialogRef}
-        className={`ds-dialog ${KIND_CLASS[kind]}${phoneForm ? ' ds-dialog--phone' : ''}`}
+        className={`ds-dialog ${KIND_CLASS[kind]}${wide ? ' ds-panel--wide' : ''}${phoneForm ? ' ds-dialog--phone' : ''} ${className}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

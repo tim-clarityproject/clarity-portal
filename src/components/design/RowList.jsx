@@ -22,10 +22,13 @@ import './design.css';
 //           the only row out leaves one empty box.
 // undo:     taking a row out shows "Deleted" with Undo (M9; writing rule 28),
 //           which puts it back where it was.
+// removeLabel: (n) => what a row's remove crosshair is called, where the
+//           box's own name can't simply follow "Remove" in lower case
+//           ("Remove Success Factor 2": a name that keeps its capitals).
 // onChange(rows, change): `change` is { removed: i } when a row is taken
 //           out and { restored: i } when Undo puts it back, for a page that
 //           keeps something beside each row.
-export default function RowList({ label, who, coachName, rows = [], onChange, max = 3, itemLabel = (n) => `Item ${n}`, maxLength, placeholder, addLabel = 'Add another', numbered = false, removeAlways = false, undo = false }) {
+export default function RowList({ label, who, coachName, rows = [], onChange, max = 3, itemLabel = (n) => `Item ${n}`, maxLength, placeholder, addLabel = 'Add another', numbered = false, removeAlways = false, undo = false, removeLabel }) {
   // Optional: a page with no toasts still removes rows, without Undo.
   const toast = useContext(ToastContext);
   const labelId = useId();
@@ -85,7 +88,7 @@ export default function RowList({ label, who, coachName, rows = [], onChange, ma
               placeholder={i === 0 ? placeholder : undefined}
             />
             {(shown.length > 1 || removeAlways) && (
-              <IconButton label={`Remove ${itemLabel(i + 1).charAt(0).toLowerCase()}${itemLabel(i + 1).slice(1)}`} className="ds-rowlist-remove" onClick={() => remove(i)} />
+              <IconButton label={removeLabel ? removeLabel(i + 1) : `Remove ${itemLabel(i + 1).charAt(0).toLowerCase()}${itemLabel(i + 1).slice(1)}`} className="ds-rowlist-remove" onClick={() => remove(i)} />
             )}
           </div>
         ))}
