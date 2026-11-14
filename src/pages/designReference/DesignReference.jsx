@@ -106,7 +106,7 @@ import { CarriedOverDemo, NightDemo, WorkDoneDemo } from './WindDownDemos';
 import { TimerDemo } from './TimerDemos';
 import { CalmFrameDemo, CalmCardDemo } from './GetUnstuckDemos';
 import { AnswerColumnsDemo, AnswerHintDemo, DissolveDemo, FollowChoiceDemo, NameRowsDemo, ResultsDemo, StepBarsDemo } from './VisualToolDemos';
-import { HealthCheckChartDemo, InfoListDemo, PdfPanelDemo, ProjectListDemo, ResultsPartsDemo, TitleIconsDemo } from './HealthCheckDemos';
+import { HealthCheckChartDemo, InfoListDemo, InsidePartsDemo, PdfPanelDemo, ProjectListDemo, ResultsPartsDemo, TitleIconsDemo } from './HealthCheckDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import { TODO_WHERE, dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, todoWhereOptions, todoWhereToast, withMeasure, yearView } from '../../lib/performance';
@@ -2000,6 +2000,14 @@ function Gallery() {
           <>
             <p><New /><b>Where the page’s one coral button is the download</b> (M7b’s results; <code>PdfPanel</code>), it opens “Download PDF” in the side panel: “Light, for printing” and “Dark, for sharing”.</p>
             <p>A side panel can be wide enough for a picture (<code>SlidePanel</code> with <code>wide</code>; the Quick guide), still full screen on a phone.</p>
+          </>
+        )} />
+
+        <GallerySection id="c83" title="A dated version, a one-off tip, and a page’s own bottom bar" demo={InsidePartsDemo} rules={(
+          <>
+            <p><New /><b>A version in a list</b> (M7’s team list; <code>VersionRow</code>): its name in words, one quiet line under it and the date on the right. The whole row opens it.</p>
+            <p><b>A one-off tip</b> (<code>OneOffTip</code>): one quiet sentence in a fine outline, with the 45 degree crosshair to close it for good. Only one first-visit message at a time.</p>
+            <p><b>A page’s own bottom bar</b> (<code>BottomBar</code>; M7’s results): the guided tools’ bar on a page in the portal frame. The phone bar steps back while it shows, and the Breathe pill rises above it.</p>
           </>
         )} />
 

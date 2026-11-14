@@ -2,7 +2,6 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'r
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import { BackLink } from '../../components/ui/DiscardLink';
 import DeleteDialog from '../../components/ui/DeleteDialog';
 import {
   AddButton, BottomBar, Button, CalmCard, LoadError, Loading, OneOffTip, PageHeader, PdfPanel, PlayButton, ResultsSection,
@@ -21,8 +20,7 @@ import {
   BASE, TOOL_NAME, TOOL_TYPE, claimedTip, compareVersions, copiedLine, hasAnswers, isWhole, nameTaken, newTeamVersion, newVersionFrom,
   rowFrom, shortHeadline, teamOf, teamsFrom, versionDate, versionName,
 } from '../../lib/healthCheck/inside';
-import { ExampleReport, GuidePanel, HealthCheckResults, HealthCheckTool } from '../healthCheck';
-import HealthCheckCompare from '../healthCheck/HealthCheckCompare';
+import { BackLink, ExampleReport, GuidePanel, HealthCheckCompare, HealthCheckResults, HealthCheckTool } from '../healthCheck';
 import TextField from '../../components/design/TextField';
 import './inside.css';
 
@@ -65,7 +63,7 @@ async function loadRows(userId) {
 
 /** A version kept on the device (a draft) back as a version the screens can draw. */
 function fromDevice(v) {
-  if (!v || typeof v !== 'object' || !isId(v.id) || !v.draft) return null;
+  if (!v || typeof v !== 'object' || !isId(v.id) || !v.data || typeof v.data !== 'object') return null;
   return {
     ...v,
     teamName: typeof v.teamName === 'string' ? v.teamName : '',
@@ -116,7 +114,7 @@ function Frame({ children, back = false, foot = null }) {
     <div className="ui-root">
       <DesignHeader />
       <main className={`hc-in-page${foot ? ' hc-in-page--foot' : ''}`}>
-        {back && <div className="hc-in-back"><BackLink onClick={() => navigate(BASE)} /></div>}
+        {back && <BackLink onClick={() => navigate(BASE)} />}
         {children}
       </main>
       {foot}
@@ -403,12 +401,15 @@ function Version({ store, start, team }) {
       itemRef.current = done;
       setItem(done);
     }
-    const ok = await keep('completed', { quiet: Boolean(edit) });
-    if (!ok) return;
+    // The results show at once; the save follows (the queue keeps it offline).
+    // The device's draft goes first: the list's own copy and the queue hold it now.
+    const wasEdit = Boolean(edit);
+    const saving = keep('completed', { quiet: wasEdit });
     forget();
     setEdit(null);
     setMode('results');
     window.scrollTo(0, 0);
+    await saving;
   };
 
   // Close (and Back on the first step): a version being made is kept as a
@@ -457,7 +458,7 @@ function Version({ store, start, team }) {
 
   // ---- the guided screens ----
   if (mode === 'tool') {
-    const source = item.from ? (team?.versions || []).find((v) => v.id === item.from) : null;
+    const source = item.from ? teams.flatMap((x) => x.versions).find((v) => v.id === item.from) : null;
     const lead = !made ? null : item.made === 'team'
       ? {
         key: 'team',

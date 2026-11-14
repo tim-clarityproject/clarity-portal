@@ -210,7 +210,12 @@ function ResultsStep({ draft, tool, meta, asOf, after, onDraft, onEditProject, o
   const gap = firstGap(draft);
   const gapKey = gap ? stepKey(gap, draft) : null;
   const open = (key) => tool.go(tool.steps.findIndex((s) => s.key === key), { fromSummary: true });
+  // Once per mount and gap: React's development check runs an effect twice,
+  // and a second run would leave an edit straight back for the results.
+  const handled = useRef(undefined);
   useEffect(() => {
+    if (handled.current === gapKey) return;
+    handled.current = gapKey;
     const ask = editRef?.current;
     if (ask) {
       editRef.current = null;

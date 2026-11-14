@@ -7,3 +7,5 @@ export { default as HealthCheckChart } from './HealthCheckChart';
 export { default as HealthCheckEye, sharingLine } from './HealthCheckEye';
 export { default as ExampleReport, EXAMPLE_META } from './ExampleReport';
 export { GuideCard, GuidePanel, readWatched } from './QuickGuide';
+export { default as BackLink } from './BackLink';
+export { default as HealthCheckCompare } from './HealthCheckCompare';

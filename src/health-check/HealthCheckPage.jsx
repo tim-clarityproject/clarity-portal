@@ -16,8 +16,7 @@ import { ErrorMessage, Loading } from '../components/design/Status';
 import { SentenceInfo } from '../components/design/TermInfo';
 import TextField from '../components/design/TextField';
 import { useToast } from '../components/design/toastContext';
-import Chevron from '../components/design/Chevron';
-import { ExampleReport, GuideCard, GuidePanel, HealthCheckEye, HealthCheckTool, readWatched } from '../pages/healthCheck';
+import { BackLink, ExampleReport, GuideCard, GuidePanel, HealthCheckEye, HealthCheckTool, readWatched } from '../pages/healthCheck';
 import { ReadingPanel } from './Reading';
 
 // The outside Strategic Alignment Health Check, built to the approved mock-up
@@ -64,15 +63,6 @@ const HOW_KEPT = [
   { term: 'Kept securely', meaning: 'Your answers are kept for 2 years after your last visit.' },
 ];
 
-/** Back above a page with no guided bar (M7b .bkl): the one chevron, then the word in sentence case. */
-function BackLink({ onClick }) {
-  return (
-    <button type="button" className="hc-back" onClick={onClick}>
-      <Chevron direction="left" size="sm" beside="words" />
-      <span>Back</span>
-    </button>
-  );
-}
 
 function Page() {
   const { token } = useParams();
@@ -353,7 +343,7 @@ function Page() {
       <div className="ui-root">
         <GuestFrame {...frame}>
           <form noValidate onSubmit={(e) => { e.preventDefault(); open(email, code); }}>
-            {!ret && <div className="hc-backrow"><BackLink onClick={() => showPhase('welcome')} /></div>}
+            {!ret && <BackLink onClick={() => showPhase('welcome')} />}
             {ret
               ? <GuestTitle headingRef={headingRef}>Welcome back</GuestTitle>
               : <h1 ref={headingRef} tabIndex={-1} className="ds-guest-question">What’s your email and access code?</h1>}
@@ -407,7 +397,7 @@ function Page() {
       <div className="ui-root">
         <GuestFrame narrow={false} {...frame}>
           {/* Back returns to the email and code screen, where the example was opened. */}
-          <div className="hc-backrow"><BackLink onClick={() => showPhase('signin')} /></div>
+          <BackLink onClick={() => showPhase('signin')} />
           <GuestTitle headingRef={headingRef}>Example report</GuestTitle>
           <ExampleReport onEdit={() => toast.show('The example can’t be edited.')} />
           <div className="hc-end"><Button variant="primary" onClick={() => showPhase('signin')}>Start my Health Check</Button></div>

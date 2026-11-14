@@ -46,6 +46,7 @@
 //   node --import ./tests/scores/register.mjs tests/phase5/calm-rules.mjs [folder for screenshots]
 import { GUEST_TOKEN, GUEST_VISIT, M10, M9, m10Wash } from '../phase8/shared.mjs';
 import { STEPS as HC_STEPS, appPage as hcPage, kestrel as hcKestrel, signIn as hcSignIn } from '../healthcheck/hc-shared.mjs';
+import { IDS as HC_IDS, m7Rows } from '../healthcheck/inside-shared.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -137,6 +138,18 @@ const PAGES_ALL = [
   ['wash-park', '/emotional-wash', 'wash:8'],
   ['wash-act', '/emotional-wash', 'wash:16'],
   ['wash-summary', '/emotional-wash', 'wash:17'],
+  // The Health Check inside the portal (M7 version 8.2): Your teams with no
+  // teams and with M7's two, a version's results (Versions after the
+  // questions), Compare two versions, the example, and the first step of a
+  // new version and of a new team. M7's teams are answered for the Health
+  // Check's own read only (nothing in the database is read or written).
+  ['hc-inside-empty', '/strategic-alignment', 'hc:empty'],
+  ['hc-inside-teams', '/strategic-alignment', 'hc:m7'],
+  ['hc-inside-results', `/strategic-alignment/version/${HC_IDS.lt3}`, 'hc:m7'],
+  ['hc-inside-compare', `/strategic-alignment/compare?team=7a000000-0000-4000-8000-00000000a001&a=${HC_IDS.lt2}&b=${HC_IDS.lt3}`, 'hc:m7'],
+  ['hc-inside-example', '/strategic-alignment/example', 'hc:empty'],
+  ['hc-inside-new-version', '/strategic-alignment/new?team=7a000000-0000-4000-8000-00000000a001', 'hc:m7'],
+  ['hc-inside-new-team', '/strategic-alignment/new-team', 'hc:m7'],
 ];
 // M10's own invented team, as the tool keeps a check while it is open.
 const TEAM_CHECK = {
@@ -255,7 +268,11 @@ function measure({ phone }) {
     // One name is allowed its four words: "Questions to start with:" is a
     // results section's name in approved M10 (version 5.6, 13 Nov), drawn in
     // the same small capitals as "Trust" above it (the mock-up wins; for Tim to confirm).
-    .filter((t) => t.split(' ').filter(Boolean).length > 3 && t !== 'Questions to start with:');
+    // The Health Check's own names, as approved M7b and M7 draw them: the
+    // page title STRATEGIC ALIGNMENT HEALTH CHECK (Tim, 13 Nov, 21:40 and
+    // 23:08: the agreed exception), and its results' and Compare's section
+    // names in small capitals.
+    .filter((t) => t.split(' ').filter(Boolean).length > 3 && !['questions to start with:', 'questions to start with', 'strategic alignment health check', 'strategic importance against progress', 'projects added and removed'].includes(t.toLowerCase()));
 
   // The menu button never sits over a logo or content.
   const over = [];
@@ -333,11 +350,15 @@ for (const width of PAGES.length ? [1280, 390] : []) {
       // The first-time builder needs a person with no plan: every read is
       // answered empty for that page only (nothing in the database is touched).
       if (emptyReads && route.request().method() === 'GET' && /\/rest\/v1\/(?!person_settings|profiles)/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+      // The inside Health Check's own read of its rows: M7's teams, or none (and it never writes here).
+      if (insideRows && /\/rest\/v1\/decisions\?.*tool_type=eq\.strategic-alignment/.test(url) && route.request().method() === 'GET') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(insideRows) });
+      if (insideRows && /\/rest\/v1\/decisions/.test(url) && route.request().method() !== 'GET') return route.abort();
       if (emptyReads && /\/rest\/v1\/rpc\//.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
       if (emptyReads && route.request().method() !== 'GET' && /\/rest\/v1\//.test(url)) return route.abort();
       return route.fallback();
     });
     let emptyReads = false;
+    let insideRows = null;
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -403,7 +424,9 @@ for (const width of PAGES.length ? [1280, 390] : []) {
             localStorage.setItem(`ds-guide:${k === 'review' ? `performance-sprint-review-${uid}` : `performance-plan-build-${uid}`}`, JSON.stringify({ index: Number(n), skipped: [] }));
           }, { kind, at, plan: UNSTUCK_PLAN, team: TEAM_CHECK, wash: m10Wash('steps'), washDone: m10Wash('sum') });
         }
+        insideRows = act === 'hc:m7' ? m7Rows(null) : act === 'hc:empty' ? [] : null;
         await page.goto(`${APP}${path}`);
+        if (insideRows) await page.waitForSelector('.ds-page-title, .ds-guide-question', { timeout: 20000 });
         if (kind === 'review') {
           await page.getByRole('button', { name: 'Review it now' }).click({ timeout: 15000 }).catch(() => null);
         }
@@ -459,6 +482,7 @@ for (const width of PAGES.length ? [1280, 390] : []) {
           pass(`${tag}: what opens in place keeps your place and shows (${reveals.checked} pressed)`, reveals.problems.length === 0, reveals.problems.slice(0, 5).join('; '));
         }
         if (act === 'menu') await page.keyboard.press('Escape');
+        insideRows = null;
         if (kind) await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.startsWith('ds-guide:performance-') || x.startsWith('ds-guide:get-unstuck-') || x.startsWith('ds-guide:team-check-') || x.startsWith('ds-guide:emotional-wash-') || x.startsWith('clarity-cache:') || x.startsWith('clarity-draft:')) localStorage.removeItem(x); });
         emptyReads = false;
       } catch (e) {

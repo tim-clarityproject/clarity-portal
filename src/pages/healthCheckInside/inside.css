@@ -23,13 +23,6 @@
   }
 }
 
-/* Back above the title (M7 .bkrow) */
-.ui-root .hc-in-back {
-  display: flex;
-  align-items: center;
-  margin: calc(-1 * var(--space-px10)) 0 var(--space-px18);
-}
-
 /* Each team: its versions, then its one quiet link (M7 .tacts) */
 .ui-root .hc-in-tacts {
   display: flex;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Button, PageHeader, PdfPanel, PlayButton, ResultsHeadline, ResultsSection, SentenceInfo, SlidePanel, StartQuestions, TitleIcons, WhoSees, useIsPhone, useToast,
+  BottomBar, Button, OneOffTip, PageHeader, VersionList, VersionRow, PdfPanel, PlayButton, ResultsHeadline, ResultsSection, SentenceInfo, SlidePanel, StartQuestions, TitleIcons, WhoSees, useIsPhone, useToast,
 } from '../../components/design';
 import { HealthCheckChart, HealthCheckEye, ProjectList } from '../healthCheck';
 import { EXAMPLE } from '../../health-check/example';
@@ -87,6 +87,27 @@ export function PdfPanelDemo() {
       <SlidePanel open={open === 'wide'} onClose={() => setOpen(null)} title="Quick guide" wide>
         <p>A side panel wide enough for a picture.</p>
       </SlidePanel>
+    </div>
+  );
+}
+
+// M7's own parts (Tim, 13 and 14 Nov): a dated version in a list, a one-off
+// tip with its close, and a page's own bottom bar.
+export function InsidePartsDemo() {
+  const toast = useToast();
+  const [tip, setTip] = useState(true);
+  const [bar, setBar] = useState(false);
+  return (
+    <div className="dr-stack">
+      {tip
+        ? <OneOffTip onClose={() => setTip(false)}>Your April Health Check, done outside the portal, is now with the Leadership team.</OneOffTip>
+        : <Button variant="text" onClick={() => setTip(true)}>Show the tip again</Button>}
+      <VersionList label="Leadership team">
+        <VersionRow name="October Health Check" line="2 of 5 important projects are moving well." date="Tue 27 Oct" onClick={() => toast.show('The October Health Check opens here.')} />
+        <VersionRow name="July Health Check" line="1 of 6 important projects is moving well." date="Tue 14 Jul" onClick={() => toast.show('The July Health Check opens here.')} />
+      </VersionList>
+      <Button variant="text" onClick={() => setBar((b) => !b)}>{bar ? 'Hide the bottom bar' : 'Show a bottom bar'}</Button>
+      {bar && <BottomBar><Button variant="primary" onClick={() => toast.show('The PDF choice opens here.')}>Download my PDF</Button></BottomBar>}
     </div>
   );
 }
