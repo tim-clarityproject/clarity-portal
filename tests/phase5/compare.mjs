@@ -403,7 +403,8 @@ try {
           // Something just opened may still be scrolling gently into view (rule 29aq): let it finish first.
           await sleep(700);
           await page.evaluate(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); for (const el of document.querySelectorAll('*')) if (el.scrollTop > 0) el.scrollTop = 0; });
-          await sleep(200);
+          // The top bar slides back over --dur-slow (400ms) once the page is at its top: read it at rest.
+          await sleep(600);
           const r = await insideInsets(page, c.inset);
           pass(`${tag}: inside the insets`, r.bad.length === 0 && !r.sideways, `${r.bad.join('; ')}${r.sideways ? ' sideways' : ''}`);
           if (mode === 'dark' && c.inset.top === 59) await page.screenshot({ path: join(out, `safe-${s.id.replace(/\W+/g, '-')}.png`) }).catch(() => {});
