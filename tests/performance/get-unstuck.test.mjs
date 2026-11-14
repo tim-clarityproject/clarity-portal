@@ -5,10 +5,11 @@ import assert from 'node:assert/strict';
 import {
   REQUIRED, STAGE, STEP_KEYS, WHERE, emptyPlan, finishMessage, goalQuote, hasAnswers, inThisWeek, nudge, optionChoices,
   pickedOptions, planContent, planFrom, planTitle, question, removeOption, requiredMessage, savedForm, setAct,
-  summaryRows, togglePick, whereLine,
+  summaryRows, tidyPlan, togglePick, whereLine,
 } from '../../src/lib/getUnstuck/model.js';
 import { GET_UNSTUCK_STEPS, RENAMED, TOOLS, renamedPath } from '../../src/lib/navigation.js';
 import { cleanCode, cleanEmail, emailFromSearch, guestError, guestWords, openProblem, tokenFrom, visitEnded, visitFrom, GUEST_WORDS } from '../../src/lib/guest/rules.js';
+import { readVisit } from '../../src/lib/guest/rules.js';
 import { carryOnItems } from '../../src/lib/carryOn.js';
 
 let n = 0;
@@ -250,4 +251,61 @@ test('Home’s "Carry on where you left off" offers a plan closed part-way, and 
   } finally {
     delete globalThis.window;
   }
+});
+
+// The break-it tester, 14 Nov: a draft or a tab's copy that was damaged (or
+// kept by another version) stopped the page. Whatever the device kept, the
+// screens get a plan they can draw.
+test('a plan out of whatever a device kept: always the right shape', () => {
+  const p = full();
+  assert.deepEqual(tidyPlan(p, id), p, 'a good plan is left as it is');
+  for (const bad of [null, undefined, 5, 'x', [], [p]]) assert.deepEqual(tidyPlan(bad, id), emptyPlan());
+  const t = tidyPlan({
+    goal: 5, cons: null, opps: 'x', opts: [null, 'Only option', 7], shared: 'yes',
+    acts: [null, 5, 'x', [1], { option: 99, text: null }, { id: 'a', option: 0, text: 'Do it', where: 'mars', todoId: 5, strategyId: {} }, { id: 'a', option: 0.5, text: 'Same id', where: 'week', todoId: 't1' }],
+  }, id);
+  assert.equal(t.goal, '');
+  assert.deepEqual([t.cons, t.opps, t.opts], [[''], [''], ['Only option']]);
+  assert.equal(t.shared, false);
+  assert.equal(t.acts.length, 3);
+  assert.equal(new Set(t.acts.map((a) => a.id)).size, 3, 'every next step has its own id');
+  assert.deepEqual(t.acts.map((a) => [a.option, a.text, a.where, a.todoId, a.strategyId]), [[null, '', null, null, null], [0, 'Do it', null, null, null], [null, 'Same id', 'week', 't1', null]]);
+  // Every rule that reads a plan takes it without stopping.
+  for (const plan of [t, tidyPlan({ acts: 'x', opts: {} }, id)]) {
+    assert.doesNotThrow(() => { savedForm(plan); summaryRows(plan); planContent(plan); optionChoices(plan); pickedOptions(plan); hasAnswers(plan); planTitle(plan); });
+  }
+});
+
+test('what a guest’s tab kept reads back only as the page wrote it', () => {
+  const store = new Map();
+  const before = globalThis.window;
+  globalThis.window = { sessionStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null) } };
+  try {
+    const token = 'a'.repeat(64);
+    const visit = 'b'.repeat(64);
+    const read = (v) => { store.set(`clarity-guest:${token}`, typeof v === 'string' ? v : JSON.stringify(v)); return readVisit(token); };
+    for (const bad of ['{oops', '5', '[1]', { phase: 'tool' }, { visit: 'short' }, { visit: 5 }, { visit: `${visit}\n` }]) assert.equal(read(bad), null);
+    assert.deepEqual(read({ visit, email: { a: 1 }, tool: 7, toolLabel: null, coachName: ['x'], phase: 'end' }), { visit, email: '', tool: '', toolLabel: '', coachName: '', phase: 'end' });
+    assert.equal(read({ visit, email: 'alex@example.com', coachName: 'Tim' }).email, 'alex@example.com');
+  } finally {
+    globalThis.window = before;
+  }
+});
+
+// The break-it tester, 14 Nov: a character nobody sees (copied in with a
+// name from a web page or a chat) drew as an empty box in every PDF.
+test('nothing unseen is drawn in a PDF: zero-width and direction marks go, an emoji keeps its joiners', async () => {
+  const { seenText, seenSpec } = await import('../../src/lib/pdf/text.js');
+  assert.equal(seenText('Sam‎ Carter​‍ ﻿Head­ of‮ Sales‬⁠'), 'Sam Carter Head of Sales');
+  assert.equal(seenText('One line\r\nthen\tanother\u0000\u0007'), 'One line\nthen\tanother');
+  const family = '\u{1F468}‍\u{1F469}‍\u{1F467}';
+  const flag = '\u{1F3F3}️‍\u{1F308}';
+  const wave = '\u{1F44B}\u{1F3FD}';
+  assert.equal(seenText(`A ${family} and ${flag} and ${wave}‍!`), `A ${family} and ${flag} and ${wave}!`);
+  assert.equal(seenText('Zoë Łukasz-Ångström “quoted” 王小明'), 'Zoë Łukasz-Ångström “quoted” 王小明');
+  const at = new Date(0);
+  const bytes = new Uint8Array(2);
+  const spec = seenSpec({ title: 'A​ plan', who: null, n: 3, at, bytes, sections: [{ blocks: [{ type: 'text', text: 'Step‮ one' }, ['x﻿']] }] });
+  assert.deepEqual([spec.title, spec.who, spec.n, spec.sections[0].blocks[0].text, spec.sections[0].blocks[1][0]], ['A plan', null, 3, 'Step one', 'x']);
+  assert.ok(spec.at === at && spec.bytes === bytes, 'what isn’t text is left as it is');
 });

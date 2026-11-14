@@ -24,7 +24,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { APP, M10, M10_FILE, TEAM_PATH, WASH_INDEX, WASH_PATH, block, clearTeamCheck, clearWash, m10Answers, m10Wash, panel, panelGone, readEnv, seedWash, signIn, sleep, until, withCoach } from './shared.mjs';
+import { APP, M10, M10_FILE, TEAM_PATH, WASH_INDEX, WASH_PATH, block, clearTeamCheck, clearWash, m10Answers, m10Wash, panel, panelGone, readEnv, seedWash, signIn, sleep, until, withCoach, withSeededTodo } from './shared.mjs';
 import { compareParts, compareWords, makeReport, measureParts, words } from './compare-lib.mjs';
 
 const out = process.argv[2] || join(process.cwd(), 'tmp-phase8-compare-m10');
@@ -366,6 +366,7 @@ try {
       const ctx = await browser.newContext({ viewport: { width, height: phone ? 844 : 860 }, colorScheme: mode, locale: 'en-GB', timezoneId: 'Europe/London', hasTouch: phone, isMobile: phone });
       await block(ctx);
       await withCoach(ctx, M10.coach);
+      await withSeededTodo(ctx);
       await ctx.addInitScript((m) => { try { localStorage.setItem('clarity-colour-mode', m); } catch { /* blocked */ } }, mode);
       const page = await ctx.newPage();
       const errors = [];

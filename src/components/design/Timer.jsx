@@ -26,7 +26,11 @@ import './timer.css';
 // portal starts at the length last chosen.
 //
 // It counts down to an end time, not by counting ticks, so it is still
-// right after the tab has been hidden. No sound.
+// right after the tab has been hidden. No sound. Once started it keeps
+// the length it started with until it is reset, whatever is chosen
+// meanwhile in another tab or arrives from the account; and a device
+// clock put back while it runs never makes it start over (the break-it
+// tester, 14 Nov).
 //
 //   <Timer />                          remembers its own length
 //   <Timer onFinish={() => …} />       told once each time it reaches 0:00
@@ -43,16 +47,18 @@ const OPTIONS = [
   { value: CUSTOM, label: 'Custom' },
 ];
 const IDLE = { endsAt: null, left: null }; // not started: the full length is left
+const PRESS_GUARD_MS = 400; // as the guided tool's own guard for Next
 
 export default function Timer({ minutes: given, onMinutesChange, onFinish, className = '' }) {
   const [kept, keep] = useTimerLength();
   const controlled = given != null;
   const minutes = cleanMinutes(controlled ? given : kept) ?? DEFAULT_MINUTES;
-  const length = minutes * 60;
 
   // Running: `endsAt` (the clock time it reaches 0:00). Paused or finished:
   // `left`, the seconds still to go. `now` is the clock at the last repaint.
+  // `length`: the seconds it was started with, kept until it is reset.
   const [run, setRun] = useState(IDLE);
+  const length = run.length ?? minutes * 60;
   const [now, setNow] = useState(() => Date.now());
   const [open, setOpen] = useState(false);
   const onFinishRef = useRef(onFinish);
@@ -67,12 +73,22 @@ export default function Timer({ minutes: given, onMinutesChange, onFinish, class
     const endsAt = run.endsAt;
     if (endsAt == null) return undefined;
     let id = null;
+    let last = Date.now();
     const tick = () => {
       const t = Date.now();
+      // The device's clock was put back: the end moves back with it, so the
+      // time left carries on from where it was.
+      if (t < last - 1500) {
+        const back = last - t;
+        setNow(t);
+        setRun((r) => (r.endsAt == null ? r : { ...r, endsAt: r.endsAt - back }));
+        return;
+      }
+      last = t;
       const ms = endsAt - t;
       setNow(t);
       if (ms <= 0) {
-        setRun({ endsAt: null, left: 0 });
+        setRun((r) => ({ endsAt: null, left: 0, length: r.length }));
         onFinishRef.current?.();
         return;
       }
@@ -91,17 +107,26 @@ export default function Timer({ minutes: given, onMinutesChange, onFinish, class
     };
   }, [run.endsAt]);
 
+  // The second half of a double tap is ignored: it started the timer and
+  // paused it in the same moment (the break-it tester, 14 Nov).
+  const lastPress = useRef(0);
   const go = () => {
+    const pressed = performance.now();
+    if (pressed - lastPress.current < PRESS_GUARD_MS) return;
+    lastPress.current = pressed;
     const t = Date.now();
     setNow(t);
     if (running) {
-      const still = leftAt(run.endsAt, t);
-      setRun({ endsAt: null, left: still });
+      const still = Math.min(length, leftAt(run.endsAt, t));
+      setRun({ endsAt: null, left: still, length });
       if (still <= 0) onFinishRef.current?.();
       return;
     }
     // At 0:00 "Start again" starts from the full length.
-    setRun({ endsAt: t + (left <= 0 ? length : left) * 1000, left: null });
+    // "Start the timer" and "Start again" take the length chosen now.
+    const fresh = left <= 0 || !started;
+    const whole = fresh ? minutes * 60 : length;
+    setRun({ endsAt: t + (fresh ? whole : left) * 1000, left: null, length: whole });
   };
 
   const setLength = (next) => {
@@ -117,7 +142,7 @@ export default function Timer({ minutes: given, onMinutesChange, onFinish, class
       <button
         type="button"
         className="ds-timer-ring"
-        aria-label={ringLabel({ running, left, length })}
+        aria-label={ringLabel({ running, left, length: started ? length : minutes * 60 })}
         aria-haspopup={running ? undefined : 'dialog'}
         disabled={running}
         onClick={() => setOpen(true)}

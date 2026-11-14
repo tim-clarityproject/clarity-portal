@@ -8,6 +8,7 @@ import {
   requiredMessage, resumeStep, sameTodo, savedAnswers, setCheck, setThought, setWash, storyThoughts, strayTodos, summaryRows,
   typedThoughts, wantedTodo, washContent, washFrom, washSteps, washTitle, whereLine, withStoryRows, withTodo,
 } from '../../src/lib/emotionalWash/model.js';
+import { tidyWash } from '../../src/lib/emotionalWash/model.js';
 import { HUBS, PIN_GROUPS, TOOLS, areaOf as menuAreaOf } from '../../src/lib/navigation.js';
 import { planRows, recentRows } from '../../src/lib/savedItems.js';
 import { carryOnItems } from '../../src/lib/carryOn.js';
@@ -373,5 +374,35 @@ test('Home’s "Carry on where you left off" offers an unfinished wash by the to
     assert.deepEqual(found.map((x) => [x.title, x.to]), [['Emotional wash', '/emotional-wash']]);
   } finally {
     delete globalThis.window;
+  }
+});
+
+// The break-it tester, 14 Nov: a damaged draft stopped the page. Whatever a
+// device kept, the screens get a wash they can draw.
+test('a wash out of whatever a device kept: always the right shape', () => {
+  let k = 0;
+  const nid = () => `n${(k += 1)}`;
+  const good = {
+    what: 'The chair backed the other plan.', kind: KINDS[0].value, words: [WORDS[0]], rel: [],
+    thoughts: [{ id: 't1', text: 'The chair has never rated me.', t: CHECK_ANSWERS[0].value, l: null, h: null, wash: 'act', step: 'Ask for 20 minutes', question: '', where: 'week', strategyId: 's1' }],
+    todos: { t1: { id: 'todo1', text: 'Ask for 20 minutes', where: 'week', strategyId: 's1' } },
+  };
+  assert.deepEqual(tidyWash(good, nid), good, 'a good wash is left as it is');
+  for (const bad of [null, undefined, 5, 'x', [], [good]]) {
+    const w = tidyWash(bad, nid);
+    assert.deepEqual([w.what, w.kind, w.words, w.rel, w.thoughts.length, w.todos], ['', null, [], [], 1, {}]);
+  }
+  const t = tidyWash({
+    what: 5, kind: 'nope', words: 'x', rel: [null, 5],
+    thoughts: [null, 5, 'x', { id: 1, text: 5 }, { text: 'No id', t: 'x', wash: 'burn' }, { id: 't', text: 'T', wash: 'act', step: {}, where: 'mars', strategyId: 9 }, { id: 't', text: 'Same id' }],
+    todos: { t: 'x', zz: { id: 'gone' }, [undefined]: null },
+  }, nid);
+  assert.deepEqual([t.what, t.kind, t.words, t.rel], ['', null, [], []]);
+  assert.equal(t.thoughts.length, 4);
+  assert.equal(new Set(t.thoughts.map((th) => th.id)).size, 4, 'every thought has its own id');
+  assert.deepEqual(t.thoughts.map((th) => [th.text, th.t, th.wash, th.step, th.where, th.strategyId]), [['', null, null, '', null, null], ['No id', null, null, '', null, null], ['T', null, 'act', '', null, null], ['Same id', null, null, '', null, null]]);
+  assert.deepEqual(t.todos, {});
+  for (const w of [t, tidyWash({ thoughts: 'x', todos: 'x' }, nid)]) {
+    assert.doesNotThrow(() => { savedAnswers(w); summaryRows(w); washContent(w); hasAnswers(w); isComplete(w); });
   }
 });

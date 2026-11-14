@@ -9,6 +9,7 @@ import {
   options, past, percentAt, question, ratingSteps, removePerson, requiredMessage, restorePerson, savedAnswers,
   setRating, startQuestions, tableRows, trustRows, word,
 } from '../../src/lib/teamCheck/model.js';
+import { tidyCheck } from '../../src/lib/teamCheck/model.js';
 import { HUBS, TOOLS, areaOf as menuAreaOf } from '../../src/lib/navigation.js';
 import { planRows } from '../../src/lib/savedItems.js';
 
@@ -364,4 +365,20 @@ test('the tool has its tile, its one time and its place in the lists', () => {
   assert.equal(rows[0].to.state.checkId, 'r1');
   assert.equal(rows[1].isDraft, true);
   assert.equal(rows[1].edit.path, TOOL_PATH, 'a draft carries on from the list');
+});
+
+// The break-it tester, 14 Nov: whatever a device kept as a draft, the
+// screens get a check they can draw.
+test('a check out of whatever a device kept: always the right shape', () => {
+  const good = { people: [{ id: 'p1', name: 'Priya Shah', role: 'Head of Operations', t: 4, a: 3, u: null }], shared: true, last: { at: '2026-10-01T09:00:00.000Z', people: { p1: { t: 4, a: 4, u: 3 } } } };
+  assert.deepEqual(tidyCheck(good), good, 'a good check is left as it is');
+  for (const bad of [null, undefined, 5, 'x', [], [good]]) assert.deepEqual(tidyCheck(bad), { people: [], shared: false, last: null });
+  const t = tidyCheck({
+    people: [null, 5, 'x', { id: 1, name: 'A number for an id' }, { name: 'No id' }, { id: 'q', name: '   ' }, { id: 'p', name: 'Pat', role: {}, t: 9, a: -1, u: 3 }, { id: 'p', name: 'Same id', t: 3, a: 3, u: 3 }],
+    shared: 'yes',
+    last: { at: 'x', people: 'x' },
+  });
+  assert.deepEqual(t, { people: [{ id: 'p', name: 'Pat', role: '', t: null, a: null, u: 3 }], shared: false, last: null });
+  assert.equal(tidyCheck({ people: 'x', last: 5 }).people.length, 0);
+  assert.equal(tidyCheck({ people: [], last: { at: '2026-10-01', people: { p: null, q: 5, r: { t: 3, a: 3, u: 3 } } } }).last.people.r.t, 3);
 });

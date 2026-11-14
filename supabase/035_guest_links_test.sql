@@ -72,6 +72,7 @@ declare
   d1 jsonb; d2 jsonb; plan_b jsonb; strat_b jsonb; obj_b jsonb; hab_b jsonb; plan_c jsonb;
   j jsonb; code text; n_before integer; n_after integer;
   sug uuid;
+  lx jsonb; vq text; i integer;
 begin
   begin
     owner_u := pg_temp.t_user('owner'); coach2 := pg_temp.t_user('coach'); client_u := pg_temp.t_user('client'); stranger := pg_temp.t_user('stranger');
@@ -457,6 +458,41 @@ begin
     perform pg_temp.t_as(stranger);
     f := f || pg_temp.t_eq('13h nobody else sees it', pg_temp.t_n('select count(*) from public.client_suggestions'), '0');
     f := f || pg_temp.t_eq('13i ... or dismisses it', public.suggestion_dismissed(sug)::text, 'false');
+
+    -- ------------------------------------------------ 13x. a guest can't fill the table, or keep a list of addresses as an email (14 Nov)
+    perform pg_temp.t_as(owner_u);
+    lx := public.guest_link_create('grow');
+    perform pg_temp.t_anon();
+    f := f || pg_temp.t_eq('13x1 two addresses are never one email', public.guest_open(pg_temp.t_tok(lx), 'one@example.com,two@example.com', lx ->> 'code') ->> 'error', 'invalid');
+    f := f || pg_temp.t_eq('13x2 ... nor a name beside an address, or an address with no dot after the @', concat_ws(' ',
+      public.guest_open(pg_temp.t_tok(lx), '"x"<one@example.com>', lx ->> 'code') ->> 'error',
+      public.guest_open(pg_temp.t_tok(lx), 'one@example', lx ->> 'code') ->> 'error',
+      public.guest_open(pg_temp.t_tok(lx), 'one@two@example.com', lx ->> 'code') ->> 'error'), 'invalid invalid invalid');
+    perform pg_temp.t_admin();
+    f := f || pg_temp.t_eq('13x3 ... and none of them was kept', pg_temp.t_n($q$select count(*) from public.guests where email ~ '[,<"]' or email like 'one@%'$q$), '0');
+    f := f || pg_temp.t_eq('13x4 a plain address with a plus and dots still reads', public._guest_email(' First.Last+tag@Mail.Example.co.uk '), 'first.last+tag@mail.example.co.uk');
+    delete from public.guest_link_attempts where link_id = (lx ->> 'link_id')::uuid;
+    update public.guest_links set locked_until = null where id = (lx ->> 'link_id')::uuid;
+    perform pg_temp.t_anon();
+    vq := public.guest_open(pg_temp.t_tok(lx), 'guest.flood@example.com', lx ->> 'code') ->> 'visit';
+    begin
+      perform public.guest_save(vq, 'decisions', jsonb_build_object('title', 'Big', 'form_data', jsonb_build_object('goal', repeat('x', 200001))));
+      f := f || array['13x5 a row over 200,000 bytes was saved'];
+    exception when others then
+      f := f || pg_temp.t_eq('13x5 a row over 200,000 bytes is refused, in plain words', sqlstate || ' ' || sqlerrm, '22023 That''s too long to save. Shorten it and try again.');
+    end;
+    f := f || pg_temp.t_eq('13x6 ... one just under is saved', (public.guest_save(vq, 'decisions', jsonb_build_object('title', 'Long', 'form_data', jsonb_build_object('goal', repeat('x', 199000)))) ->> 'title'), 'Long');
+    for i in 1..199 loop
+      perform public.guest_save(vq, 'decisions', jsonb_build_object('title', 'Row ' || i, 'form_data', '{}'::jsonb));
+    end loop;
+    begin
+      perform public.guest_save(vq, 'decisions', '{"title": "One too many", "form_data": {}}');
+      f := f || array['13x7 a 201st row was saved'];
+    exception when others then
+      f := f || pg_temp.t_eq('13x7 a guest holds 200 rows in a table at most', sqlstate || ' ' || sqlerrm, '22023 That''s as many as can be saved with this email. Delete one you don''t need and try again.');
+    end;
+    f := f || pg_temp.t_eq('13x8 ... a row already there can still be changed', (public.guest_save(vq, 'decisions', jsonb_build_object('id', (public.guest_rows(vq, 'decisions') -> 0 ->> 'id'), 'title', 'Changed')) ->> 'title'), 'Changed');
+    f := f || pg_temp.t_eq('13x9 ... and deleting one makes room for one', (public.guest_delete(vq, 'decisions', jsonb_build_object('id', (public.guest_rows(vq, 'decisions') -> 1 ->> 'id')))::text || ' ' || (public.guest_save(vq, 'decisions', '{"title": "Room again", "form_data": {}}') ->> 'title')), 'true Room again');
 
     -- ------------------------------------------------ 14. locked tables and the structure
     perform pg_temp.t_as(owner_u);

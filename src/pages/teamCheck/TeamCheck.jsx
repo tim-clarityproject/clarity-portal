@@ -10,13 +10,14 @@ import { readCache, writeCache } from '../../lib/pageCache';
 import { clearDraft, readDraft, useDraft } from '../../lib/drafts';
 import { newId } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
-import { deviceToolAnswer, loadToolAnswer, loadToolAnswers, saveToolAnswers } from '../../lib/toolAnswers';
+import { deviceToolAnswer, finishedInAnotherTab, loadToolAnswer, loadToolAnswers, saveToolAnswers } from '../../lib/toolAnswers';
 import {
   TOOL,
   TOOL_NAME,
   checkFrom,
   checkTitle,
   emptyCheck,
+  tidyCheck,
   hasAnswers,
   isComplete,
   newestFinished,
@@ -165,7 +166,18 @@ function Flow({ userId, user, asked, start }) {
     onRestore: (d) => {
       if (!d || typeof d !== 'object' || !d.check || !isId(d.id)) return;
       if (asked && d.id !== asked) return;
-      setItem({ ...start, ...d, check: { ...emptyCheck(), ...d.check } });
+      // Whatever the device kept, the screens get a check they can draw.
+      setItem({
+        ...start,
+        id: d.id,
+        status: ['new', 'draft', 'completed'].includes(d.status) ? d.status : start.status,
+        saved: d.saved === true || start.saved === true,
+        createdAt: typeof d.createdAt === 'string' ? d.createdAt : start.createdAt,
+        finishedAt: typeof d.finishedAt === 'string' ? d.finishedAt : start.finishedAt,
+        check: tidyCheck(d.check),
+      });
+      // What this tab knows of its saved state comes back with the draft.
+      if (d.saved === true && ['draft', 'completed'].includes(d.status)) knows.current = d.status;
     },
   });
 
@@ -175,7 +187,27 @@ function Flow({ userId, user, asked, start }) {
   const [opened, setOpened] = useState(false);
   useEffect(() => { setOpened(true); }, []);
 
-  const onCheck = useCallback((fn) => setItem((s) => ({ ...s, check: fn(s.check) })), []);
+  const touched = useRef(false); // something was changed in this tab
+  const onCheck = useCallback((fn) => {
+    touched.current = true;
+    setItem((s) => ({ ...s, check: fn(s.check) }));
+  }, []);
+
+  // The same check can be open in two tabs (each restores the device's
+  // draft). Once one of them has finished it, the other must never save
+  // what it still shows over it (the break-it tester, 14 Nov): a tab where
+  // nothing was changed saves nothing, and one where something was keeps
+  // it as a check of its own, so nothing is lost.
+  const knows = useRef(start.saved ? start.status : null);
+  const elsewhere = (now) => finishedInAnotherTab(userId, now.id, knows.current);
+  const mine = (now) => {
+    if (!elsewhere(now)) return now;
+    const own = { ...now, id: newId(), status: 'new', saved: false, createdAt: null, finishedAt: null };
+    itemRef.current = own;
+    setItem(own);
+    lastSaved.current = '';
+    return own;
+  };
 
   // Saved for good and leaving: nothing of it stays on the device as a
   // draft. The hook's own clear, so the page doesn't keep it again as it
@@ -212,6 +244,7 @@ function Flow({ userId, user, asked, start }) {
       finishedAt,
     });
     lastSaved.current = JSON.stringify([status, savedAnswers(now.check), now.check.shared]);
+    knows.current = status;
     if (stays) setItem((s) => ({ ...s, status, saved: true, createdAt, finishedAt }));
     return result;
   };
@@ -230,14 +263,23 @@ function Flow({ userId, user, asked, start }) {
       leave();
       return;
     }
+    // Finished in another tab, and nothing changed in this one: it is
+    // saved already, as the other tab left it.
+    if (elsewhere(now) && !touched.current) {
+      forget();
+      toast.show('Saved');
+      leave();
+      return;
+    }
     busy.current = true;
     try {
-      const status = statusOf(now);
+      const own = mine(now);
+      const status = statusOf(own);
       // A finished check, or one opened from My Plans, is in the list: the
       // next visit starts a new one. An unfinished new one keeps its place
       // on this device, so the tool carries on from here.
       const leaves = Boolean(asked) || status === 'completed';
-      const result = unchanged(now, status) ? 'saved' : await save(now, status, { stays: !leaves });
+      const result = unchanged(own, status) ? 'saved' : await save(own, status, { stays: !leaves });
       if (leaves) forget();
       toast.show(result === 'queued' ? 'Will sync' : 'Saved');
       leave();
@@ -251,7 +293,8 @@ function Flow({ userId, user, asked, start }) {
   // Every answer is in and the results are showing: the check is saved as
   // finished, quietly, so nothing depends on how the tool is left.
   const onResults = async () => {
-    const now = itemRef.current;
+    if (elsewhere(itemRef.current) && !touched.current) return;
+    const now = mine(itemRef.current);
     if (!isComplete(now.check) || unchanged(now, 'completed')) return;
     try {
       await save(now, 'completed');
@@ -262,7 +305,9 @@ function Flow({ userId, user, asked, start }) {
 
   // The eye's choice saves at once (WhoSees then says "Saved").
   const share = async (shared) => {
-    const now = { ...itemRef.current, check: { ...itemRef.current.check, shared } };
+    touched.current = true;
+    const from = mine(itemRef.current);
+    const now = { ...from, check: { ...from.check, shared } };
     setItem((s) => ({ ...s, check: { ...s.check, shared } }));
     if (now.saved || hasAnswers(now.check)) await save(now, statusOf(now));
   };

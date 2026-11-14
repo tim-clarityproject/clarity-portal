@@ -13,6 +13,30 @@ const segmenter = typeof Intl !== 'undefined' && Intl.Segmenter
 /** Characters as people see them (an emoji with its joiners stays whole). */
 export const graphemes = (s) => (segmenter ? Array.from(segmenter.segment(s), (x) => x.segment) : Array.from(s));
 
+// Characters nobody sees: control characters, the soft hyphen, zero-width
+// spaces and marks, the marks that turn the reading order round, and the
+// byte-order mark. They arrive with words copied from a web page, a chat
+// or a document, no font has a shape for them, and each one drew as an
+// empty box in the PDF (the break-it tester, 14 Nov). A line break and a
+// tab stay; so does a joiner inside an emoji (a family, a flag), which
+// the emoji font needs.
+// eslint-disable-next-line no-control-regex
+const UNSEEN = /[\u0000-\u0008\u000B-\u001F\u007F-\u009F\u00AD\u061C\u180E\u200B\u200C\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF\uFFF9-\uFFFB]/g;
+const LONE_JOINER = /(?<![\p{Extended_Pictographic}\p{Emoji_Modifier}\uFE0F])\u200D|\u200D(?!\p{Extended_Pictographic})/gu;
+
+/** Text with nothing unseen left in it. */
+export const seenText = (s) => String(s).replace(UNSEEN, '').replace(LONE_JOINER, '');
+
+/** A document description with every piece of its text cleaned the same way (anything that isn't text is left as it is). */
+export function seenSpec(value) {
+  if (typeof value === 'string') return seenText(value);
+  if (Array.isArray(value)) return value.map(seenSpec);
+  if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, seenSpec(v)]));
+  }
+  return value;
+}
+
 /** Text styles, in points. `font` names a chain in FONT_CHAINS. */
 export const STYLES = {
   title: { font: 'nekst', size: 20, lh: 24, tracking: 1.6, upper: true },

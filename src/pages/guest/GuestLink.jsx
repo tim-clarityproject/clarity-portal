@@ -36,7 +36,7 @@ import {
   visitFrom,
 } from '../../lib/guest/api';
 import { sendGuestCopy } from '../../lib/guest/copyEmail';
-import { TOOL_NAME, emptyPlan, hasAnswers, planContent, planFrom, planTitle, savedForm } from '../../lib/getUnstuck/model';
+import { TOOL_NAME, emptyPlan, hasAnswers, planContent, planFrom, planTitle, savedForm, tidyPlan } from '../../lib/getUnstuck/model';
 import GetUnstuckTool from '../getUnstuck/GetUnstuckTool';
 import '../performance/performance.css';
 
@@ -97,7 +97,10 @@ function Guest({ token }) {
   const [kept] = useState(() => readVisit(token));
   const [visit, setVisit] = useState(() => (kept ? { visit: kept.visit, email: kept.email, tool: kept.tool, toolLabel: kept.toolLabel, coachName: kept.coachName } : null));
   const [phase, setPhase] = useState(() => (kept?.phase === 'end' || kept?.phase === 'tool' ? kept.phase : 'start'));
-  const [item, setItem] = useState(() => (kept?.item?.plan ? kept.item : { id: newId(), plan: emptyPlan(), status: 'draft' }));
+  // What the tab kept is read into a plan the screens can always draw.
+  const [item, setItem] = useState(() => (kept?.item && typeof kept.item === 'object' && typeof kept.item.id === 'string' && kept.item.id && kept.item.plan
+    ? { id: kept.item.id, plan: tidyPlan(kept.item.plan, newId), status: kept.item.status === 'completed' ? 'completed' : 'draft' }
+    : { id: newId(), plan: emptyPlan(), status: 'draft' }));
   const [info, setInfo] = useState(null); // the tool and the coach, before the code is typed
   const [copySent, setCopySent] = useState(Boolean(kept?.copySent));
   const [startMessage, setStartMessage] = useState(null);
@@ -118,9 +121,12 @@ function Guest({ token }) {
     keepVisit(token, { ...visit, phase: phase === 'deleted' ? 'start' : phase, item, copySent });
   }, [token, visit, phase, item, copySent]);
 
-  // The visit has ended (2 hours, or the work has moved into an account):
+  // The visit has ended (12 hours, or the work has moved into an account):
   // back to the start, saying so.
+  const heldRef = useRef(null); // the answers on the screen when a visit ended, and whose they were
   const ended = useCallback((error) => {
+    const was = visitRef.current;
+    if (was) heldRef.current = { email: `${was.email || ''}`.trim().toLowerCase(), item: itemRef.current };
     forgetVisit(token);
     setVisit(null);
     setPhase('start');
@@ -138,6 +144,14 @@ function Guest({ token }) {
     saving.current = saving.current.catch(() => null).then(() => guestSave(v.visit, 'decisions', rowOf(now, status || now.status)));
     return saving.current;
   }, []);
+  // A save that didn't go (no connection) is tried again when the
+  // connection is back, not only at the next word typed.
+  const [again, setAgain] = useState(0);
+  useEffect(() => {
+    const online = () => setAgain((n) => n + 1);
+    window.addEventListener('online', online);
+    return () => window.removeEventListener('online', online);
+  }, []);
   useEffect(() => {
     if (phase !== 'tool' || !visit || !dirty.current || !hasAnswers(item.plan)) return undefined;
     const timer = setTimeout(() => {
@@ -149,7 +163,7 @@ function Guest({ token }) {
       });
     }, AUTOSAVE_MS);
     return () => clearTimeout(timer);
-  }, [item, phase, visit, saveNow, ended]);
+  }, [item, phase, visit, saveNow, ended, again]);
 
   const onPlan = useCallback((fn) => {
     dirty.current = true;
@@ -163,11 +177,26 @@ function Guest({ token }) {
   const opened = async (answer, email) => {
     const v = visitFrom(answer, email);
     let next = { id: newId(), plan: emptyPlan(), status: 'draft' };
+    // The visit ended while this tab still held the answers (the tab was
+    // left open past the visit's 12 hours), and the same email has opened
+    // the link again: the answers stay on the screen. A new visit can't
+    // see or change the earlier visit's row until the email is confirmed
+    // (035), so they are saved as a new row (the break-it tester, 14 Nov:
+    // the tool opened empty and everything typed was gone from the page).
+    const held = heldRef.current;
+    if (held && held.email === email.trim().toLowerCase() && hasAnswers(held.item.plan)) {
+      next = { id: newId(), plan: held.item.plan, status: 'draft' };
+      dirty.current = true;
+    }
+    heldRef.current = null;
     try {
       // What this visit may see of the link's earlier work (its own rows).
       const rows = await guestRows(v.visit, 'decisions');
       const row = rows[rows.length - 1];
-      if (row?.form_data) next = { id: row.id, plan: planFrom(row.form_data, newId), status: row.status === 'completed' ? 'completed' : 'draft' };
+      if (row?.form_data) {
+        next = { id: row.id, plan: planFrom(row.form_data, newId), status: row.status === 'completed' ? 'completed' : 'draft' };
+        dirty.current = false;
+      }
     } catch {
       // A new plan; saving says so if the link can't be used.
     }
@@ -183,6 +212,7 @@ function Guest({ token }) {
       toast.show('Saved');
       setPhase('start');
     } catch (error) {
+      dirty.current = true; // still to be saved: tried again when the connection is back
       if (visitEnded(error)) ended(error);
       else toast.error(guestError(error, GUEST_WORDS.save));
     }
@@ -202,12 +232,16 @@ function Guest({ token }) {
 
   const finish = async () => {
     const v = visitRef.current;
+    const before = itemRef.current.status;
     try {
       setItem((s) => ({ ...s, status: 'completed' }));
       itemRef.current = { ...itemRef.current, status: 'completed' };
       await saveNow('completed');
       await guestFinish(v.visit).catch(() => null);
     } catch (error) {
+      // Not finished after all: a later save keeps it as it was.
+      setItem((s) => ({ ...s, status: before }));
+      dirty.current = true;
       if (visitEnded(error)) ended(error);
       else toast.error(guestError(error, GUEST_WORDS.save));
       return false;
@@ -218,15 +252,20 @@ function Guest({ token }) {
     return true;
   };
 
+  const removing = useRef(false); // one request per press
   const remove = async () => {
+    if (removing.current) return;
     const v = visitRef.current;
     const gone = itemRef.current;
+    removing.current = true;
     try {
       await guestDeleteLinkAnswers(v.visit);
     } catch (error) {
       if (visitEnded(error)) ended(error);
       else toast.error(guestError(error, GUEST_WORDS.remove));
       return;
+    } finally {
+      removing.current = false;
     }
     setPhase('deleted');
     setItem({ id: newId(), plan: emptyPlan(), status: 'draft' });

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AddTodoPanel } from './TodoPanels';
 import useToolTodo from './useToolTodo';
 import { TODO_WHERE } from '../../lib/performance/sprintPage';
@@ -20,7 +20,14 @@ import { needsConnection } from '../../lib/friendlyError';
 //     sourceId={decisionId}                 the saved item it came from, if any
 //     onDone={({ where, id, text, strategyId, impact }) => …}
 //     onUndone={({ where, id }) => …}      the toast's Undo was pressed
+//     todoIds={[id, …]}                     optional: to-dos the tool made earlier
+//     onPlaces={(places) => …}              { id: 'week' | 'backlog' | 'later' | 'gone' }
 //   />
+//
+// todoIds and onPlaces: the tool hears where its earlier to-dos are now
+// (useToolTodo's placeOf), each time that changes, so its own lines never
+// say "It’s in this week’s sprint." about one that has since been deleted
+// or moved. Only places that can be told are given.
 //
 // onDone runs once the to-do is saved (or waiting to sync), or when "Don’t
 // add it" was chosen (where 'none', id null); the panel has closed by then.
@@ -32,8 +39,21 @@ const NO_STRATEGY = [
   'Your plan has no Strategies yet, so there’s nothing to add this to.',
 ];
 
-export default function ToolTodoPanel({ open, onClose, startText = '', startStrategyId = null, startWhere, source = 'other_tool', sourceId = null, onDone, onUndone }) {
+export default function ToolTodoPanel({ open, onClose, startText = '', startStrategyId = null, startWhere, source = 'other_tool', sourceId = null, onDone, onUndone, todoIds = null, onPlaces }) {
   const todo = useToolTodo();
+  const onPlacesRef = useRef(onPlaces);
+  useEffect(() => { onPlacesRef.current = onPlaces; });
+  const { placeOf } = todo;
+  const places = {};
+  for (const id of todoIds || []) {
+    const place = placeOf(id);
+    if (place) places[id] = place;
+  }
+  const placesKey = JSON.stringify(places);
+  useEffect(() => {
+    const now = JSON.parse(placesKey);
+    if (Object.keys(now).length) onPlacesRef.current?.(now);
+  }, [placesKey]);
   const start = () => ({
     text: startText || '',
     strategyId: startStrategyId,

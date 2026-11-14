@@ -11,11 +11,12 @@ import { clearDraft, readDraft, useDraft } from '../../lib/drafts';
 import { newId } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
 import { setTodoDeleted } from '../../lib/performance/api';
-import { deviceToolAnswer, loadToolAnswer, saveToolAnswers } from '../../lib/toolAnswers';
+import { deviceToolAnswer, finishedInAnotherTab, loadToolAnswer, saveToolAnswers } from '../../lib/toolAnswers';
 import {
   TOOL,
   TOOL_NAME,
   emptyWash,
+  tidyWash,
   hasAnswers,
   isComplete,
   resumeStep,
@@ -157,7 +158,18 @@ function Flow({ userId, user, asked, start }) {
     onRestore: (d) => {
       if (!d || typeof d !== 'object' || !d.wash || !isId(d.id)) return;
       if (asked && d.id !== asked) return;
-      setItem({ ...start, ...d, wash: { ...emptyWash(newId), ...d.wash } });
+      // Whatever the device kept, the screens get a wash they can draw.
+      setItem({
+        ...start,
+        id: d.id,
+        status: ['new', 'draft', 'completed'].includes(d.status) ? d.status : start.status,
+        saved: d.saved === true || start.saved === true,
+        createdAt: typeof d.createdAt === 'string' ? d.createdAt : start.createdAt,
+        finishedAt: typeof d.finishedAt === 'string' ? d.finishedAt : start.finishedAt,
+        wash: tidyWash(d.wash, newId),
+      });
+      // What this tab knows of its saved state comes back with the draft.
+      if (d.saved === true && ['draft', 'completed'].includes(d.status)) knows.current = d.status;
     },
   });
 
@@ -167,7 +179,28 @@ function Flow({ userId, user, asked, start }) {
   const [opened, setOpened] = useState(false);
   useEffect(() => { setOpened(true); }, []);
 
-  const onWash = useCallback((fn) => setItem((s) => ({ ...s, wash: fn(s.wash) })), []);
+  // `quiet`: a change the page made itself (where a to-do is now), not the person.
+  const touched = useRef(false);
+  const onWash = useCallback((fn, { quiet = false } = {}) => {
+    if (!quiet) touched.current = true;
+    setItem((s) => ({ ...s, wash: fn(s.wash) }));
+  }, []);
+
+  // The same wash can be open in two tabs (each restores the device's
+  // draft). Once one of them has finished it, the other must never save
+  // what it still shows over it (the break-it tester, 14 Nov): a tab where
+  // nothing was changed saves nothing, and one where something was keeps
+  // it as a wash of its own, so nothing is lost.
+  const knows = useRef(start.saved ? start.status : null);
+  const elsewhere = (now) => finishedInAnotherTab(userId, now.id, knows.current);
+  const mine = (now) => {
+    if (!elsewhere(now)) return now;
+    // Its to-dos belong to the finished wash: this copy starts with none.
+    const own = { ...now, id: newId(), wash: { ...now.wash, todos: {} }, status: 'new', saved: false, createdAt: null, finishedAt: null };
+    itemRef.current = own;
+    setItem(own);
+    return own;
+  };
   const todoGone = (id) => { setTodoDeleted(userId, id, new Date().toISOString()).catch(() => null); };
 
   // Saved for good and leaving: nothing of it stays on the device as a
@@ -211,6 +244,7 @@ function Flow({ userId, user, asked, start }) {
       createdAt,
       finishedAt,
     });
+    knows.current = status;
     // 'answers': the wash on screen is left as it is (a to-do being made
     // just now may be writing its id into it), only its saved state is taken.
     if (stays) setItem((s) => ({ ...s, ...(stays === 'answers' ? {} : { wash }), status, saved: true, createdAt, finishedAt }));
@@ -229,16 +263,25 @@ function Flow({ userId, user, asked, start }) {
       leave();
       return;
     }
+    // Finished in another tab, and nothing changed in this one: it is
+    // saved already, as the other tab left it.
+    if (elsewhere(now) && !touched.current) {
+      forget();
+      toast.show('Saved');
+      leave();
+      return;
+    }
     busy.current = true;
     try {
-      const wash = tidy(now.wash);
+      const own = mine(now);
+      const wash = tidy(own.wash);
       // A finished wash stays finished only while it is still whole.
-      const status = now.status === 'completed' && isComplete(wash) ? 'completed' : 'draft';
+      const status = own.status === 'completed' && isComplete(wash) ? 'completed' : 'draft';
       // A finished wash, or one opened from My Plans, is in the list: the
       // next visit starts a new one. An unfinished new one keeps its place
       // on this device, so the tool carries on from here.
       const leaves = Boolean(asked) || status === 'completed';
-      const result = await save(now, wash, status, { stays: !leaves });
+      const result = await save(own, wash, status, { stays: !leaves });
       if (leaves) forget();
       toast.show(result === 'queued' ? 'Will sync' : 'Saved');
       leave();
@@ -253,7 +296,7 @@ function Flow({ userId, user, asked, start }) {
   // and then, so "Saved" is true on every device and not only on this one.
   // To-dos no longer wanted are tidied when the tool is closed or finished.
   const edited = async () => {
-    const now = itemRef.current;
+    const now = mine(itemRef.current);
     try {
       const status = now.status === 'completed' && isComplete(now.wash) ? 'completed' : 'draft';
       const result = await save(now, now.wash, status, { stays: 'answers' });
@@ -264,7 +307,7 @@ function Flow({ userId, user, asked, start }) {
   };
 
   const finish = async () => {
-    const now = itemRef.current;
+    const now = mine(itemRef.current);
     let result;
     try {
       result = await save(now, tidy(now.wash), 'completed');

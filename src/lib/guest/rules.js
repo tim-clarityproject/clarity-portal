@@ -84,7 +84,10 @@ export function readVisit(token) {
   try {
     const raw = window.sessionStorage.getItem(KEY + token);
     const v = raw ? JSON.parse(raw) : null;
-    return v && typeof v === 'object' && typeof v.visit === 'string' ? v : null;
+    if (!v || typeof v !== 'object' || Array.isArray(v) || !GUEST_TOKEN.test(v.visit)) return null;
+    // Only what the page wrote reads back: a damaged copy never reaches a screen.
+    const word = (x) => (typeof x === 'string' ? x : '');
+    return { ...v, email: word(v.email), tool: word(v.tool), toolLabel: word(v.toolLabel), coachName: word(v.coachName) };
   } catch {
     return null;
   }

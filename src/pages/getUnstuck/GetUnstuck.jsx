@@ -22,6 +22,7 @@ import {
   planFrom,
   planTitle,
   savedForm,
+  tidyPlan,
   whereLine,
 } from '../../lib/getUnstuck/model';
 import GetUnstuckTool from './GetUnstuckTool';
@@ -53,6 +54,9 @@ const COLS = 'id, title, form_data, status, draft, created_at, updated_at';
 const isId = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 
 const draftName = (asked) => `get-unstuck:${asked || 'new'}`;
+// The plan last finished on this device ({ id }), so another tab still
+// holding it as unfinished never saves it back as a draft.
+const FINISHED = 'get-unstuck-finished';
 export const stepDraftKey = (userId, asked) => `get-unstuck-${userId}-${asked || 'new'}`;
 
 function fromRow(row) {
@@ -163,7 +167,15 @@ function Flow({ userId, user, asked, start }) {
     onRestore: (d) => {
       if (!d || typeof d !== 'object' || !d.plan || !isId(d.id)) return;
       if (asked && d.id !== asked) return;
-      setItem({ ...start, ...d, plan: { ...emptyPlan(), ...d.plan } });
+      // Whatever the device kept, the screens get a plan they can draw.
+      setItem({
+        ...start,
+        id: d.id,
+        title: typeof d.title === 'string' && d.title ? d.title : start.title || null,
+        status: ['new', 'draft', 'completed'].includes(d.status) ? d.status : start.status,
+        saved: d.saved === true || start.saved === true,
+        plan: tidyPlan(d.plan, newId),
+      });
     },
   });
 
@@ -183,7 +195,31 @@ function Flow({ userId, user, asked, start }) {
     return () => { live = false; };
   }, [savedId, userId]);
 
-  const onPlan = useCallback((fn) => setItem((s) => ({ ...s, plan: fn(s.plan) })), []);
+  // `quiet`: a change the page made itself (where a to-do is now), not the person.
+  const touched = useRef(false);
+  const onPlan = useCallback((fn, { quiet = false } = {}) => {
+    if (!quiet) touched.current = true;
+    setItem((s) => ({ ...s, plan: fn(s.plan) }));
+  }, []);
+
+  // The same plan can be open in two tabs (each restores the device's
+  // draft). Once one of them has finished it, the other must never save
+  // what it still shows over it, as a draft or at all (the break-it
+  // tester, 14 Nov: the finished plan lost its options and next steps). A
+  // tab where nothing was typed saves nothing; one where something was
+  // typed since keeps it as a plan of its own, so nothing is lost.
+  const finishedElsewhere = (now) => now.status !== 'completed' && readCache(userId, FINISHED)?.v?.id === now.id;
+  const statusOf = (now) => (now.status === 'completed' ? 'completed' : 'draft');
+  // What is about to be saved: this tab's plan, under its own id when the
+  // one it started from has been finished in another tab.
+  const mine = () => {
+    const now = itemRef.current;
+    if (!finishedElsewhere(now)) return now;
+    const own = { ...now, id: newId(), title: null, status: 'new', saved: false };
+    itemRef.current = own;
+    setItem(own);
+    return own;
+  };
 
   // Saved for good and leaving: nothing of it stays on the device as a
   // draft. The hook's own clear, so the page doesn't keep it again as it
@@ -232,13 +268,22 @@ function Flow({ userId, user, asked, start }) {
       leave();
       return;
     }
+    // Finished in another tab, and nothing typed in this one: it is saved
+    // already, as the other tab left it.
+    if (finishedElsewhere(now) && !touched.current) {
+      forget();
+      toast.show('Saved');
+      leave();
+      return;
+    }
     busy.current = true;
     try {
-      const status = now.status === 'completed' ? 'completed' : 'draft';
+      const status = statusOf(mine());
       const result = await save(now.plan, status);
-      // A plan opened from My Plans is in the list again; a new one keeps
-      // its place on this device, so the tool carries on from here.
-      if (asked) forget();
+      // A plan opened from My Plans, or a finished one, is in the list
+      // again; a new one keeps its place on this device, so the tool
+      // carries on from here.
+      if (asked || status === 'completed') forget();
       else setItem((s) => ({ ...s, status, saved: true }));
       toast.show(result?.status === 'queued' ? 'Will sync' : 'Saved');
       leave();
@@ -254,8 +299,10 @@ function Flow({ userId, user, asked, start }) {
   // finished plan stays finished; one still being made is kept as a draft).
   const edited = async () => {
     const now = itemRef.current;
+    // Nothing typed and nothing saved: there is nothing to keep.
+    if (!hasAnswers(now.plan) && !now.saved) return;
     try {
-      const status = now.status === 'completed' ? 'completed' : 'draft';
+      const status = statusOf(mine());
       const result = await save(now.plan, status);
       setItem((s) => ({ ...s, status, saved: true }));
       toast.show(result?.status === 'queued' ? 'Will sync' : 'Saved');
@@ -265,13 +312,14 @@ function Flow({ userId, user, asked, start }) {
   };
 
   const finish = async () => {
-    const now = itemRef.current;
+    const now = mine();
     try {
       await save(now.plan, 'completed');
     } catch (error) {
       toast.error(friendlyError(error, SAVE_ERROR));
       return false;
     }
+    writeCache(userId, FINISHED, { id: now.id });
     forget();
     navigate('/performance-sprint', { replace: true, state: { toast: finishMessage(now.plan) } });
     return true;
@@ -282,8 +330,9 @@ function Flow({ userId, user, asked, start }) {
     const now = itemRef.current;
     const plan = { ...now.plan, shared };
     setItem((s) => ({ ...s, plan: { ...s.plan, shared } }));
+    touched.current = true;
     if (now.saved || hasAnswers(plan)) {
-      const status = now.status === 'completed' ? 'completed' : 'draft';
+      const status = statusOf(mine());
       await save(plan, status);
       setItem((s) => ({ ...s, status, saved: true }));
     }

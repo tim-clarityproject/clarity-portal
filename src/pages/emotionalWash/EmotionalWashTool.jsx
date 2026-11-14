@@ -26,6 +26,7 @@ import {
   PLACEHOLDER,
   QUESTION_MAX,
   RELATED,
+  REQUIRED,
   STARTERS,
   STEP_MAX,
   STORY_EXAMPLE,
@@ -43,6 +44,7 @@ import {
   question,
   quoteWords,
   requiredMessage,
+  resumeStep,
   sameTodo,
   setCheck,
   setThought,
@@ -96,8 +98,16 @@ function OnLeave({ run }) {
 
 // The summary with a question still open (a wash carried on from another
 // device, or a thought added since): that question shows instead.
+// So does one with an earlier screen not answered (the place kept on the
+// device said "the summary" for a wash with nothing in it; the break-it
+// tester, 14 Nov): an empty wash is never finished.
+const stillToAnswer = (wash) => {
+  const at = resumeStep(wash);
+  return at === 'sum' ? null : at;
+};
+
 function Summary({ wash, tool }) {
-  const missing = firstUnanswered(wash);
+  const missing = stillToAnswer(wash);
   useEffect(() => {
     if (!missing) return;
     const at = tool.steps.findIndex((s) => s.key === missing);
@@ -136,6 +146,31 @@ export default function EmotionalWashTool({
   // The thought a box held when it was taken out, for its Undo.
   const removed = useRef(null);
   const committing = useRef(new Set()); // one to-do per press
+  // To-dos made while the tool has been open: the sprint's rows may not
+  // have caught up with them yet, so their place isn't second-guessed.
+  const madeHere = useRef(new Set());
+
+  // Where each step's to-do is now (the sprint page's own answer): the
+  // summary never goes on saying "It’s in this week’s to-dos." once the
+  // to-do has been deleted, moved, or left behind in an earlier week. One
+  // that has gone is forgotten, as its Undo would (the step stays, with
+  // nowhere to go), so it is never made a second time or taken away again.
+  const { placeOf: todoPlace } = todo;
+  const placesKey = JSON.stringify(Object.entries(wash.todos || {})
+    .map(([thoughtId, made]) => [thoughtId, made?.id, made?.id ? todoPlace(made.id) : null, made?.where ?? null])
+    .filter(([, , place, where]) => place && place !== where));
+  useEffect(() => {
+    const moved = JSON.parse(placesKey).filter(([, id]) => !madeHere.current.has(id));
+    if (!moved.length) return;
+    onWash((w) => moved.reduce((now, [thoughtId, id, place]) => {
+      const made = now.todos?.[thoughtId];
+      if (!made || made.id !== id) return now;
+      if (place === 'gone') return withTodo(setThought(now, thoughtId, { where: WHERE.none }), thoughtId, null);
+      if (place === WHERE.week || place === WHERE.backlog) return withTodo(setThought(now, thoughtId, { where: place }), thoughtId, { ...made, where: place });
+      // A later week: it is neither in this week nor in the Backlog.
+      return made.where == null ? now : withTodo(now, thoughtId, { ...made, where: null });
+    }, w), { quiet: true });
+  }, [placesKey, onWash]);
 
   const eye = <WhoSees audience="me" note={WHO_NOTE} />;
 
@@ -187,6 +222,7 @@ export default function EmotionalWashTool({
         // The toast's Undo: the step stays, with nowhere to go.
         onUndone: ({ id }) => onWash((w) => (w.todos?.[th.id]?.id === id ? withTodo(setThought(w, th.id, { where: WHERE.none }), th.id, null) : w)),
       });
+      if (saved?.id) madeHere.current.add(saved.id);
       if (saved?.id) onWash((w) => withTodo(w, th.id, { id: saved.id, text: wanted.text, where: saved.where, strategyId: wanted.strategyId }));
     } finally {
       committing.current.delete(th.id);
@@ -424,7 +460,8 @@ export default function EmotionalWashTool({
       noProgress: true,
       className: 'ew-summary',
       footAside: pdf,
-      render: (tool) => <><Summary wash={wash} tool={tool} />{!firstUnanswered(wash) && actions}</>,
+      check: () => (stillToAnswer(wash) ? REQUIRED.what : null),
+      render: (tool) => <><Summary wash={wash} tool={tool} />{!stillToAnswer(wash) && actions}</>,
     },
   ];
 

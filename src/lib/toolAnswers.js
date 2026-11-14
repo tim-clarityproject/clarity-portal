@@ -42,8 +42,14 @@ const iso = (v) => {
 // device's copy the first time it is read after that person signs in again.
 function takeBackWaiting(userId, map) {
   const key = TOOL_ANSWERS_WAITING + userId;
-  const waiting = readJson(key);
-  if (!waiting || typeof waiting !== 'object' || Array.isArray(waiting)) return map;
+  const raw = readJson(key);
+  if (raw == null) return map;
+  const waiting = tidyRecords(raw);
+  // Nothing in it can be read as a saved item: there is nothing to take back.
+  if (!Object.keys(waiting).length) {
+    removeKey(key);
+    return map;
+  }
   // The copy's own (newer) version of an item wins.
   const merged = { ...waiting, ...map };
   writeCache(userId, ON_DEVICE, merged);
@@ -53,9 +59,35 @@ function takeBackWaiting(userId, map) {
   return merged;
 }
 
+// Only what reads as a saved item is ever handed to a page: a copy that
+// was damaged, or kept by another version, never stops My Plans, a hub or
+// a tool (the break-it tester, 14 Nov). What can't be read is left out.
+const TOOLS = new Set(['team_check', 'emotional_wash']);
+const words = (v) => (typeof v === 'string' ? v : '');
+const when = (v) => (typeof v === 'string' && !Number.isNaN(new Date(v).getTime()) ? v : null);
+export function tidyRecords(map) {
+  const out = {};
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return out;
+  for (const [id, r] of Object.entries(map)) {
+    if (!r || typeof r !== 'object' || Array.isArray(r) || r.id !== id || !TOOLS.has(r.tool)) continue;
+    out[id] = {
+      ...r,
+      title: words(r.title),
+      status: r.status === 'completed' ? 'completed' : 'draft',
+      answers: r.answers && typeof r.answers === 'object' && !Array.isArray(r.answers) ? r.answers : {},
+      // An Emotional wash is private: it is never read back as shared.
+      shared: r.tool === 'team_check' && r.shared === true,
+      createdAt: when(r.createdAt),
+      updatedAt: when(r.updatedAt),
+      finishedAt: when(r.finishedAt),
+      sent: r.sent === true,
+    };
+  }
+  return out;
+}
+
 function kept(userId) {
-  const v = readCache(userId, ON_DEVICE)?.v;
-  return takeBackWaiting(userId, v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+  return tidyRecords(takeBackWaiting(userId, tidyRecords(readCache(userId, ON_DEVICE)?.v)));
 }
 
 function keep(userId, map) {
@@ -72,8 +104,8 @@ function rowFor(userId, r) {
     answers: r.answers || {},
     shared_with_coach: Boolean(r.shared),
     finished_at: r.finishedAt || null,
-    created_at: r.createdAt,
-    updated_at: r.updatedAt,
+    created_at: r.createdAt || r.updatedAt || new Date().toISOString(),
+    updated_at: r.updatedAt || new Date().toISOString(),
   };
 }
 
@@ -143,6 +175,18 @@ const newestFirst = (a, b) => `${b.updatedAt || ''}`.localeCompare(`${a.updatedA
 export function deviceToolAnswers(userId, tool) {
   if (!userId) return [];
   return Object.values(kept(userId)).filter((r) => r && r.tool === tool).sort(newestFirst);
+}
+
+/**
+ * True when the item a tab is about to save has been finished since, in
+ * another tab: this device's copy says finished, and this tab neither
+ * opened it finished nor finished it itself (`knows`: the last status this
+ * tab loaded or saved). A tab still showing it unfinished must never save
+ * that over the finished one (the break-it tester, 14 Nov).
+ */
+export function finishedInAnotherTab(userId, id, knows) {
+  if (!userId || !id || knows === 'completed') return false;
+  return deviceToolAnswer(userId, id)?.status === 'completed';
 }
 
 /** One record this device holds, or null. */

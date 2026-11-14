@@ -6,18 +6,19 @@
 // the end, and the person's page settings are put back.
 //
 //   node tests/phase8/get-unstuck.mjs [folder for screenshots]
-//   PARTS=signed,guest SIZES=1440,400   to run a part of it
+//   PARTS=signed,guest,breakit SIZES=1440,400   to run a part of it (breakit: the
+//   break-it tester's faults of 14 Nov, once, at 1280 wide)
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  APP, GUEST_TOKEN, M9, addPanel, block, clientDb, fillTo, guestApi, guestOpenTool, guestStandIn, guestStart, onQuestion, pressNext,
+  APP, GUEST_TOKEN, M9, addPanel, block, clientDb, fillTo, guestApi, guestOpenTool, guestStandIn, guestStart, next, onQuestion, pressNext,
   questionText, readEnv, signIn, sleep, typeRows, until, withCoach,
 } from './shared.mjs';
 
 const out = process.argv[2] || join(process.cwd(), 'tmp-phase8-flows');
 mkdirSync(out, { recursive: true });
-const PARTS = process.env.PARTS ? process.env.PARTS.split(',') : ['signed', 'guest'];
+const PARTS = process.env.PARTS ? process.env.PARTS.split(',') : ['signed', 'guest', 'breakit'];
 const SIZES = process.env.SIZES ? process.env.SIZES.split(',').map(Number) : [1440, 400];
 
 const results = [];
@@ -354,12 +355,232 @@ async function guest(browser, width) {
   await bad.ctx.close();
 }
 
+// The break-it tester's faults (14 Nov), each as someone clumsy or unlucky
+// would meet it: a damaged copy on the device, a visit that ends while the
+// tab is open, two presses, two tabs, a to-do deleted elsewhere, the timer.
+async function breakIt(browser) {
+  const tag = 'break-it';
+  // ---- a guest
+  const make = async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'en-GB', timezoneId: 'Europe/London' });
+    const state = await guestStandIn(ctx);
+    await block(ctx, { api: guestApi(state) });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message.slice(0, 200)));
+    return { ctx, state, page, errors };
+  };
+  const bodyOf = async (page) => (await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ');
+  const visit = 'b2'.repeat(32);
+  for (const [name, item] of Object.entries({
+    'a plan that isn’t one': { id: 'x', plan: 'words', status: 'draft' },
+    'lists that aren’t lists': { id: 'x', plan: { goal: 5, acts: 'x', cons: null, opts: {}, opps: 7 }, status: 'draft' },
+    'next steps that aren’t next steps': { id: 'x', plan: { goal: 'A goal', acts: [null, 5, { id: 1, option: 'x', text: null }], cons: ['a'], opts: [null, 4], opps: [{}] }, status: 'completed' },
+  })) {
+    for (const phase of ['tool', 'end']) {
+      const g = await make();
+      await g.page.addInitScript(([k, v]) => { try { sessionStorage.setItem(k, v); } catch { /* blocked */ } }, [`clarity-guest:${GUEST_TOKEN}`, JSON.stringify({ visit, email: M9.guestEmail, tool: 'grow', coachName: 7, phase, item })]);
+      await g.page.goto(`${APP}/guest/${GUEST_TOKEN}`);
+      await sleep(1200);
+      if (await next(g.page).count()) { await pressNext(g.page); await sleep(500); }
+      const text = await bodyOf(g.page);
+      pass(`${tag}: a guest’s tab copy with ${name} (${phase}) never stops the page`, text.length > 20 && !/this page hit a problem/i.test(text) && g.errors.length === 0, `${g.errors.join(' | ')} ${text.slice(0, 80)}`);
+      await g.ctx.close();
+    }
+  }
+  {
+    // The visit ends while the tab still holds the answers; the code is typed again.
+    const g = await make();
+    await guestOpenTool(g.page);
+    await fillTo(g.page, 'opts');
+    await until(() => g.state.rows.length === 1, 6000);
+    const firstId = g.state.rows[0]?.id;
+    const later = 'c3'.repeat(32);
+    const saves = [];
+    await g.ctx.route(/\/rest\/v1\/rpc\/guest_[a-z_]+/, async (route) => {
+      const name = /rpc\/(guest_[a-z_]+)/.exec(route.request().url())[1];
+      const args = JSON.parse(route.request().postData() || '{}');
+      const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+      if (name === 'guest_link_info') return json({ ok: true, tool: 'grow', tool_label: 'Get unstuck', coach_name: M9.coach, open: true });
+      if (name === 'guest_open') return json({ ok: true, visit: later, tool: 'grow', tool_label: 'Get unstuck', coach_name: M9.coach, confirmed: false });
+      if (args.p_visit !== later) return json({ code: '42501', details: null, hint: null, message: 'That visit has ended. Open your link again.' }, 403);
+      // a new visit sees none of the earlier visit's rows, and can't change them (035)
+      if (name === 'guest_rows') return json([]);
+      if (name === 'guest_save') {
+        if (args.p_row.id === firstId) return json({ code: '42501', details: null, hint: null, message: 'That isn\'t yours, so it wasn\'t changed. Open your own link to carry on.' }, 403);
+        saves.push(args.p_row);
+        return json(args.p_row);
+      }
+      return json(true);
+    });
+    await g.page.locator('.ds-rowlist .ds-text').last().fill('One more option, typed after the visit ended');
+    pass(`${tag}: a visit that ends mid-tool says so on the start page`, Boolean(await until(async () => (await bodyOf(g.page)).includes('That visit has ended. Open your link again.'), 8000)));
+    await g.page.getByLabel('Access code').fill(M9.guestCode);
+    await g.page.getByRole('button', { name: 'Start my plan' }).click();
+    await until(async () => (await next(g.page).count()) === 1, 8000);
+    await until(() => saves.length > 0, 8000);
+    const kept = saves[saves.length - 1]?.form_data || {};
+    pass(`${tag}: … and typing the code again keeps every answer on the screen, saved as a new row`, kept.goal === M9.goal && (kept.options || []).includes('One more option, typed after the visit ended') && saves.every((r) => r.id !== firstId) && g.errors.length === 0, JSON.stringify(kept).slice(0, 200));
+    await g.ctx.close();
+  }
+  {
+    const g = await make();
+    await guestOpenTool(g.page);
+    await fillTo(g.page, 'sum');
+    await sleep(450);
+    await next(g.page).dblclick();
+    await until(async () => (await bodyOf(g.page)).includes('Here’s what you’ll do next.'), 8000);
+    pass(`${tag}: two presses on Finish my plan finish once and ask for one copy`, g.state.calls.filter((c) => c.name === 'guest_finish').length === 1 && g.state.copies === 1 && g.state.rows.length === 1);
+    await g.page.getByRole('button', { name: 'Delete my answers' }).dblclick();
+    await until(async () => (await bodyOf(g.page)).includes('Your answers have been deleted.'), 8000);
+    pass(`${tag}: two presses on Delete my answers ask once`, g.state.calls.filter((c) => c.name === 'guest_delete_link_answers').length === 1);
+    pass(`${tag}: the visit key is never in an address`, !g.page.url().includes(visit));
+    await g.ctx.close();
+  }
+  {
+    // A save that didn't go is sent when the connection is back.
+    const g = await make();
+    await guestOpenTool(g.page);
+    await g.ctx.setOffline(true);
+    await g.page.locator('.ds-guide-body .ds-text').first().fill('Typed with no connection');
+    await sleep(2200);
+    await g.page.locator('.ds-guide-close').click();
+    pass(`${tag}: closing with no connection says so and keeps the tool open`, Boolean(await sawToast(g.page, 'needs a connection')) && (await next(g.page).count()) === 1);
+    await g.ctx.setOffline(false);
+    pass(`${tag}: … and the answers are saved once the connection is back`, Boolean(await until(() => g.state.rows.some((r) => r.form_data?.goal === 'Typed with no connection'), 9000)));
+    await g.ctx.close();
+  }
+
+  // ---- signed in
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: 'dark' });
+  await block(ctx);
+  await withCoach(ctx);
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message.slice(0, 200)));
+  await signIn(page, env);
+  const fresh = async () => { await page.goto(`${APP}/personal/plan`); await sleep(700); await clearDevice(page); };
+  const U = '11111111-1111-4111-8111-111111111111';
+  const seed = (sets) => page.evaluate(([all, uid]) => { for (const [k, v] of Object.entries(all)) localStorage.setItem(k.replace(/<uid>/g, uid), JSON.stringify(v)); }, [sets, me]);
+
+  // A damaged draft never stops the page.
+  for (const [name, plan] of Object.entries({ 'words for a plan': 'x', 'lists that aren’t lists': { goal: 5, acts: 'x', cons: null, opts: {}, opps: 7 }, 'odd next steps': { goal: 'g', acts: [null, { option: 99, text: null }, { id: 'a', text: 'T', where: 'mars' }, { id: 'a', text: 'again' }], opts: [null, 'O'], cons: 'x', opps: [{}] } })) {
+    await fresh();
+    await seed({ 'clarity-draft:<uid>:get-unstuck:new': { v: { id: U, status: 'completed', saved: 'yes', title: { a: 1 }, plan }, at: Date.now() }, 'ds-guide:get-unstuck-<uid>-new': { index: 5, skipped: 7, changing: { step: 5 } } });
+    await page.goto(`${APP}/get-unstuck`);
+    await sleep(1800);
+    const text = await bodyOf(page);
+    pass(`${tag}: a draft on the device with ${name} never stops the page`, text.length > 20 && !/this page hit a problem/i.test(text) && errors.length === 0, `${errors.join(' | ')} ${text.slice(0, 80)}`);
+  }
+  // The place kept on the device says "Your plan" for a plan with nothing in it.
+  await fresh();
+  await seed({ 'ds-guide:get-unstuck-<uid>-new': { index: 6, skipped: [] } });
+  await page.goto(`${APP}/get-unstuck`);
+  await onQuestion(page, 'Here’s your plan');
+  await pressNext(page);
+  pass(`${tag}: a plan with no goal is never finished`, Boolean(await until(async () => (await bodyOf(page)).includes('Type your goal to carry on.'), 6000)) && new URL(page.url()).pathname === '/get-unstuck' && (await mine()).length === 0);
+
+  // The timer.
+  await fresh();
+  await page.goto(`${APP}/get-unstuck`);
+  await fillTo(page, 'opts');
+  const time = () => page.locator('.ds-timer-time').innerText();
+  const start = page.locator('.ds-timer-buttons button').first();
+  await start.dblclick();
+  await sleep(1300);
+  pass(`${tag}: two presses on Start the timer start it, and never pause it in the same moment`, /pause/i.test(await start.innerText()) && (await time()) !== '6:00', `${await start.innerText()} ${await time()}`);
+  // another tab chooses 10 minutes while this one runs
+  await page.evaluate((uid) => { localStorage.setItem(`clarity-cache:${uid}:timer-minutes`, JSON.stringify({ v: 10, at: Date.now() })); window.dispatchEvent(new StorageEvent('storage', { key: `clarity-cache:${uid}:timer-minutes` })); }, me);
+  await sleep(1200);
+  const [m1, s1] = (await time()).split(':').map(Number);
+  pass(`${tag}: a running timer keeps its length when another one is chosen elsewhere`, m1 === 5 && s1 < 59, await time());
+  // the device's clock is put back an hour
+  await page.evaluate(() => { const real = Date.now.bind(Date); window.__back = 0; Date.now = () => real() - window.__back; window.__back = 3600000; });
+  await sleep(2600);
+  const t1 = await time();
+  await sleep(2100);
+  const t2 = await time();
+  const secs = (t) => Number(t.split(':')[0]) * 60 + Number(t.split(':')[1]);
+  pass(`${tag}: … and carries on counting when the device’s clock is put back`, secs(t1) < 360 && secs(t2) < secs(t1) && secs(t1) - secs(t2) <= 4, `${t1} then ${t2}`);
+  pass(`${tag}: the time is a timer, never read out every second`, (await page.locator('.ds-timer-time').evaluate((el) => `${el.getAttribute('role')} ${el.getAttribute('aria-live') || el.closest('[aria-live]')?.getAttribute('aria-live') || 'quiet'}`)) === 'timer quiet');
+  await page.evaluate(() => { window.__back = 0; });
+
+  // A to-do deleted, or moved to the Backlog, somewhere else.
+  await fresh();
+  await page.goto(`${APP}/get-unstuck`);
+  await fillTo(page, 'steps');
+  const lines = async () => (await page.locator('.ds-nextstep-meta > span').allInnerTexts()).map((t) => t.trim());
+  await page.getByRole('button', { name: 'Add next step 1 to this week' }).click();
+  await addPanel(page, 'This week');
+  await sleep(1500);
+  await page.getByRole('button', { name: 'Add next step 2 to this week' }).click();
+  await addPanel(page, 'This week');
+  await until(async () => (await myTodos()).length === 2, 8000);
+  const made = await myTodos();
+  const first = made.find((t) => t.text === M9.acts[0]);
+  const second = made.find((t) => t.text === M9.acts[1]);
+  await db.from('todos').update({ deleted_at: new Date().toISOString() }).eq('id', first.id).eq('user_id', me);
+  await db.from('todos').update({ sprint_id: null, planned_week: null }).eq('id', second.id).eq('user_id', me);
+  await page.reload();
+  const now = await until(async () => { const l = await lines(); return l[0] === 'It isn’t in this week’s sprint yet.' && l[1] === 'It’s in your backlog.' ? l : null; }, 15000);
+  pass(`${tag}: a next step says where its to-do is now (deleted elsewhere; moved to the Backlog)`, Boolean(now), (await lines()).join(' | '));
+  await page.getByRole('button', { name: 'Add next step 1 to this week' }).click();
+  await addPanel(page, 'This week');
+  await until(async () => (await myTodos()).filter((t) => !t.deleted_at).length === 2, 8000);
+  const after = await myTodos();
+  pass(`${tag}: … and adding it again makes a new to-do and leaves the old one as it was`, after.length === 3 && Boolean(after.find((t) => t.id === first.id)?.deleted_at) && (await lines())[0] === 'It’s in this week’s sprint.', JSON.stringify(after.map((t) => Boolean(t.deleted_at))));
+  await cleanUp();
+
+  // Two tabs on the same plan: one finishes, the other is closed.
+  for (const typed of [false, true]) {
+    await fresh();
+    await page.goto(`${APP}/get-unstuck`);
+    await fillTo(page, 'cons');
+    await sleep(900);
+    const other = await ctx.newPage();
+    other.on('pageerror', (e) => errors.push(e.message.slice(0, 200)));
+    await other.goto(`${APP}/get-unstuck`);
+    await onQuestion(other, 'What’s in the way of');
+    await page.bringToFront();
+    await pressNext(page);
+    await onQuestion(page, 'What’s already working');
+    await pressNext(page);
+    await onQuestion(page, 'What could you do to reach');
+    await page.locator('.ds-rowlist .ds-text').first().fill('An option typed in the first tab');
+    await pressNext(page);
+    await onQuestion(page, 'Which options will you act on?');
+    await page.locator('.ds-answer').first().click();
+    await pressNext(page);
+    await onQuestion(page, 'What exactly will you do?');
+    await pressNext(page);
+    await onQuestion(page, 'Here’s your plan');
+    await pressNext(page);
+    await page.waitForURL(/performance-sprint/, { timeout: 15000 });
+    await until(async () => (await mine()).some((d) => d.status === 'completed'), 8000);
+    await other.bringToFront();
+    if (typed) { await other.locator('.ds-rowlist .ds-text').first().fill('A constraint typed in the second tab'); await sleep(500); }
+    await other.locator('.ds-guide-close').click();
+    await other.waitForURL(/personal\/plan/, { timeout: 15000 });
+    await sleep(1500);
+    const rows = await mine();
+    const done = rows.filter((d) => d.status === 'completed' && !d.draft);
+    const whole = done.length === 1 && (done[0].form_data.options || []).includes('An option typed in the first tab') && (done[0].form_data.next_steps || []).length === 1;
+    if (typed) pass(`${tag}: two tabs: what was typed in the second after the first finished is kept as a plan of its own`, whole && rows.length === 2 && rows.some((d) => d.draft && (d.form_data.constraint_list || []).includes('A constraint typed in the second tab')), JSON.stringify(rows.map((d) => [d.status, d.draft])));
+    else pass(`${tag}: two tabs: closing the second, unchanged, leaves the finished plan as the first left it`, whole && rows.length === 1, JSON.stringify(rows.map((d) => [d.status, d.draft, (d.form_data.options || []).length])));
+    await other.close();
+    await cleanUp();
+  }
+  pass(`${tag}: no page errors`, errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 const browser = await chromium.launch();
 try {
   for (const width of SIZES) {
     if (PARTS.includes('signed')) { await signedIn(browser, width); await cleanUp(); await sleep(2000); }
     if (PARTS.includes('guest')) await guest(browser, width);
   }
+  if (PARTS.includes('breakit')) { await breakIt(browser); await cleanUp(); }
 } catch (e) {
   pass('the run finished', false, e.message);
 } finally {

@@ -357,6 +357,10 @@ $$;
 
 -- An email as typed, made plain: lowercased, with spaces around it removed;
 -- null when it holds a space or hidden character inside, or isn't an email.
+-- One address only (the break-it tester, 14 Nov): exactly one @, a dot after
+-- it, and none of the characters that write a list of addresses or a name
+-- beside one (, ; < > ( ) [ ] \ " :), so "a@b.com,c@d.com" is never kept
+-- as someone's email and later handed to the server that sends emails.
 create or replace function public._guest_email(p text)
 returns text
 language sql
@@ -364,7 +368,8 @@ immutable
 set search_path = ''
 as $$
   select case when e ~ '[[:space:][:cntrl:]\u00a0\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff]'
-                or char_length(e) not between 3 and 254 or e not like '%_@_%' then null else e end
+                or char_length(e) not between 3 and 254 or e not like '%_@_%'
+                or e ~ '[,;<>()\[\]\\":]' or e !~ '^[^@]+@[^@.]+(\.[^@.]+)+$' then null else e end
   from (select lower(regexp_replace(coalesce(p, ''), '^[[:space:]\u00a0\u2000-\u200b\u202f\u205f\u3000\ufeff]+|[[:space:]\u00a0\u2000-\u200b\u202f\u205f\u3000\ufeff]+$', '', 'g')) as e) x;
 $$;
 
@@ -882,7 +887,8 @@ as $$
 $$;
 
 -- Adds or changes one of the guest's own rows. Only the columns a guest may
--- write are taken; the owner is always the guest. A new top-level row (a
+-- write are taken; the owner is always the guest. A row is at most 200,000
+-- bytes, and a guest holds at most 200 rows in a table. A new top-level row (a
 -- plan, a decision) needs a link for its tool; its parents must be the
 -- guest's own rows that this visit may see.
 create or replace function public.guest_save(p_visit text, p_table text, p_row jsonb)
@@ -903,11 +909,21 @@ declare
   v_taken boolean;
   v_link uuid;
   v_new boolean := false;
+  v_count integer;
   p jsonb;
+  too_long constant text := 'That''s too long to save. Shorten it and try again.';
+  too_many constant text := 'That''s as many as can be saved with this email. Delete one you don''t need and try again.';
 begin
   select * into t from public._guest_ready_tables() where table_name = p_table;
   if t.table_name is null or jsonb_typeof(v_row) is distinct from 'object' then
     raise exception 'That can''t be saved here. Go back to the tool and try again.' using errcode = '22023';
+  end if;
+  -- A guest's row is a few answers, never a store (the break-it tester, 14
+  -- Nov: one link and its code could fill the table, signed out). A row is
+  -- at most 200,000 bytes as it arrives, and a guest holds at most 200 rows
+  -- in a table (checked where a new row is added).
+  if octet_length(v_row::text) > 200000 then
+    raise exception using message = too_long, errcode = '22023';
   end if;
   if s.link_id is null and not s.confirmed then
     raise exception 'Confirm your email with the code we send to it, then try again.' using errcode = '42501';
@@ -952,6 +968,10 @@ begin
     end if;
     if not t.top_level and s.link_id is not null and not v_tool.tool = any (t.tools) then
       raise exception 'That can''t be saved with this link. Ask your coach for the link for this tool.' using errcode = '42501';
+    end if;
+    execute format('select count(*) from public.%I x where x.guest_id = $1', p_table) into v_count using s.guest_id;
+    if v_count >= 200 then
+      raise exception using message = too_many, errcode = '22023';
     end if;
     if p_table = 'decisions' then
       v_row := v_row || jsonb_build_object('tool_type', v_tool.decision_type);
@@ -1005,7 +1025,7 @@ begin
 exception
   -- answers the table can't take (a missing or badly formed value): one plain message
   when integrity_constraint_violation or data_exception then
-    if sqlerrm = 'That can''t be saved here. Go back to the tool and try again.' then
+    if sqlerrm in ('That can''t be saved here. Go back to the tool and try again.', too_long, too_many) then
       raise; -- our own plain message
     end if;
     raise exception 'Some of that couldn''t be saved as it is. Check it and try again.' using errcode = '22023';

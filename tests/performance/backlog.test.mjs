@@ -30,8 +30,9 @@ const q = await import('../../src/lib/syncQueue.js');
 const api = await import('../../src/lib/performance/api.js');
 const {
   BACKLOG_LINE, BACKLOG_VALUE, TODO_WHERE, backlogTodos, moveOptions, newTodoRow, sprintPageView, sprintTodos, sprintWeekResult,
-  todoWhereOptions, todoWhereToast, withTodoMoved,
+  todoPlaceNow, todoWhereOptions, todoWhereToast, withTodoMoved,
 } = await import('../../src/lib/performance/index.js');
+const { tidyRecords, deviceToolAnswers } = await import('../../src/lib/toolAnswers.js');
 const { m0SprintCalendar } = await import('../../src/lib/scores/index.js');
 
 const setOnline = (on) => (events[on ? 'online' : 'offline'] || []).forEach((fn) => fn());
@@ -264,4 +265,68 @@ test('offline: the add and the plan-in wait on the device in order, then both la
   const row = fake.db.tables.todos.find((x) => x.id === 'b2');
   assert.deepEqual([row.sprint_id, row.planned_week], ['sp', 3]);
   assert.deepEqual(q.queueState(ME), { waiting: 0, failed: 0 });
+});
+
+// The break-it tester, 14 Nov: a tool went on saying "It’s in this week’s
+// sprint." after its to-do had been deleted, moved or left behind.
+test('where a tool’s to-do is now: this week, the Backlog, a later week, or gone', () => {
+  const d = rows({
+    todos: [
+      todo('now'), todo('later', { planned_week: 3 }), todo('rolled', { planned_week: 1 }),
+      todo('done-now', { done_on: '2026-10-13' }), todo('done-before', { planned_week: 1, done_on: '2026-10-06' }),
+      todo('deleted', { deleted_at: '2026-10-13T09:00:00' }),
+    ],
+    backlogTodos: [waiting('waits'), waiting('waited-done', { done_on: '2026-10-12' })],
+  });
+  const v = sprintPageView(d, { today: TODAY });
+  const place = (id) => todoPlaceNow(v, id);
+  assert.equal(place('now'), 'week');
+  assert.equal(place('rolled'), 'week', 'rolled over into this week');
+  assert.equal(place('done-now'), 'week', 'done this week is still this week’s');
+  assert.equal(place('later'), 'later');
+  assert.equal(place('waits'), 'backlog');
+  assert.equal(place('done-before'), 'gone');
+  assert.equal(place('deleted'), 'gone');
+  assert.equal(place('waited-done'), 'gone');
+  assert.equal(place('never-heard-of'), 'gone');
+  // Moved to the Backlog after this week started: it is in the Backlog, not this week.
+  const moved = { ...d, ...withTodoMoved(d, 'now', { sprintId: null, week: null, on: TODAY }) };
+  assert.equal(todoPlaceNow(sprintPageView(moved, { today: TODAY }), 'now'), 'backlog');
+  // The week has rolled over: last week's open to-do rolls into this week; one done last week has gone.
+  const next = sprintPageView(d, { today: '2026-10-21' });
+  assert.equal(todoPlaceNow(next, 'now'), 'week');
+  assert.equal(todoPlaceNow(next, 'done-now'), 'gone');
+  assert.equal(todoPlaceNow(next, 'later'), 'week');
+  // The sprint is over, or there is none: only the Backlog still holds anything.
+  const over = sprintPageView(d, { today: '2026-11-10' });
+  assert.equal(todoPlaceNow(over, 'now'), 'gone');
+  assert.equal(todoPlaceNow(over, 'waits'), 'backlog');
+  assert.equal(todoPlaceNow(sprintPageView(rows({ sprint: null, backlogTodos: [waiting('waits')] }), { today: TODAY }), 'waits'), 'backlog');
+  // Nothing to go on: no answer, so a tool leaves what it says alone.
+  assert.equal(todoPlaceNow(null, 'now'), null);
+  assert.equal(todoPlaceNow(v, null), null);
+});
+
+test('a damaged copy of saved tool answers on the device never reaches a page', () => {
+  const good = { id: 'a', tool: 'team_check', title: 'November team check', status: 'completed', answers: { people: [] }, shared: true, createdAt: '2026-11-14T09:00:00.000Z', updatedAt: '2026-11-14T09:00:00.000Z', finishedAt: null, sent: true };
+  assert.deepEqual(tidyRecords({ a: good }), { a: good });
+  for (const bad of [null, 'x', 5, [good], undefined]) assert.deepEqual(tidyRecords(bad), {});
+  const out = tidyRecords({
+    a: null, b: 5, c: { tool: 'team_check' }, d: { id: 'other', tool: 'team_check' }, e: { id: 'e', tool: 'journal' }, f: [1],
+    g: { id: 'g', tool: 'team_check', title: {}, status: 5, answers: 'x', shared: 'yes', updatedAt: 5, createdAt: 'never', finishedAt: {}, sent: 'true' },
+    h: { id: 'h', tool: 'emotional_wash', status: 'completed', answers: [1], shared: true, updatedAt: '2026-11-14T09:00:00.000Z' },
+  });
+  assert.deepEqual(Object.keys(out), ['g', 'h']);
+  assert.deepEqual(out.g, { id: 'g', tool: 'team_check', title: '', status: 'draft', answers: {}, shared: false, updatedAt: null, createdAt: null, finishedAt: null, sent: false });
+  assert.equal(out.h.shared, false, 'an Emotional wash never reads back as shared');
+  assert.deepEqual(out.h.answers, {});
+  // Read through the device's copy, and through what a Sign out set aside.
+  store.set(`clarity-cache:${ME}:tool-answers`, JSON.stringify({ v: { a: good, z: 'x', y: { id: 'y', tool: 'team_check', updatedAt: {} } }, at: 1 }));
+  assert.deepEqual(deviceToolAnswers(ME, 'team_check').map((r) => r.id).sort(), ['a', 'y']);
+  store.set(`clarity-cache:${ME}:tool-answers`, JSON.stringify({ v: 'x', at: 1 }));
+  store.set(`clarity-tool-answers-local:${ME}`, JSON.stringify({ q: 5, w: { id: 'w', tool: 'emotional_wash', answers: 7 } }));
+  assert.deepEqual(deviceToolAnswers(ME, 'emotional_wash').map((r) => [r.id, r.answers]), [['w', {}]]);
+  store.set(`clarity-tool-answers-local:${ME}`, JSON.stringify(['junk']));
+  assert.deepEqual(deviceToolAnswers(ME, 'team_check'), []);
+  assert.equal(store.has(`clarity-tool-answers-local:${ME}`), false, 'a set-aside copy with nothing readable in it goes');
 });

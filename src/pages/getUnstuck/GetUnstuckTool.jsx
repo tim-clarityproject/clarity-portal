@@ -44,6 +44,7 @@ import './getUnstuck.css';
 // the page around it owns the plan and saves it; this owns the screens.
 //
 //   plan, onPlan(fn)   the plan (src/lib/getUnstuck/model.js) and its setter
+//                      (onPlan(fn, { quiet: true }) for a change the page makes itself)
 //   guest              no sprint lines, no add panel, "start soon"
 //   name               the person's first name, for "Here’s your plan, Sam."
 //   coachName          a guest's coach's first name (from the link)
@@ -90,6 +91,28 @@ export default function GetUnstuckTool({
   const linkRefs = useRef({});
   // The next steps as they were when an option was taken out, for its Undo.
   const actsBefore = useRef(null);
+  // To-dos made while the tool has been open: the sprint's rows may not
+  // have caught up with them yet, so their place isn't second-guessed.
+  const madeHere = useRef(new Set());
+  const todoIds = useMemo(() => (guest ? [] : (plan.acts || []).map((a) => a.todoId).filter(Boolean)), [guest, plan.acts]);
+  // Where each next step's to-do is now (the sprint page's own answer): a
+  // step never goes on saying "It’s in this week’s sprint." once its to-do
+  // has been deleted, moved to the Backlog or a later week, or left behind
+  // in an earlier week. One that has gone is forgotten, so "Add to this
+  // week" makes a new one and never touches the old.
+  const onPlaces = (places) => onPlan((p) => {
+    let changed = false;
+    const acts = (p.acts || []).map((a) => {
+      const place = a.todoId && !madeHere.current.has(a.todoId) ? places[a.todoId] : null;
+      if (!place) return a;
+      const where = place === WHERE.week || place === WHERE.backlog ? place : null;
+      const todoId = place === 'gone' ? null : a.todoId;
+      if (where === a.where && todoId === a.todoId) return a;
+      changed = true;
+      return { ...a, where, todoId };
+    });
+    return changed ? { ...p, acts } : p;
+  }, { quiet: true });
 
   const eye = guest ? (
     <WhoSees
@@ -229,6 +252,9 @@ export default function GetUnstuckTool({
       key: 'sum',
       name: 'Your plan',
       question: question('sum', plan, { name, guest }),
+      // A plan with no goal is never finished (the place kept on the device
+      // can say "Your plan" for a plan with nothing in it).
+      check: () => requiredMessage('goal', plan),
       eye,
       // "Download my PDF" is the quiet link at the bottom bar's left, as on the two Visual tools (M10).
       footAside: pdf || undefined,
@@ -266,9 +292,12 @@ export default function GetUnstuckTool({
           startWhere={addingAct?.where || undefined}
           source={TODO_SOURCE}
           sourceId={sourceId}
+          todoIds={todoIds}
+          onPlaces={onPlaces}
           onDone={({ where, id, text, strategyId }) => {
             const act = addingAct;
             if (!act) return;
+            if (id) madeHere.current.add(id);
             // An edit puts a new to-do in the old one's place.
             if (act.todoId && act.todoId !== id) onTodoGone?.(act.todoId);
             onPlan((p) => setAct(p, act.id, {

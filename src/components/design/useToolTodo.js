@@ -4,8 +4,8 @@ import { useToast } from './toastContext';
 import { useSprintPage } from '../../lib/performance/hooks';
 import { saveTodo, setTodoDeleted } from '../../lib/performance/api';
 import { localToday } from '../../lib/performance/rows';
-import { TODO_WHERE, newTodoRow, sprintPageView, todoWhereOptions, todoWhereToast } from '../../lib/performance/sprintPage';
-import { newId } from '../../lib/syncQueue';
+import { TODO_WHERE, newTodoRow, sprintPageView, todoPlaceNow, todoWhereOptions, todoWhereToast } from '../../lib/performance/sprintPage';
+import { newId, waitingToSend } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
 
 // A to-do added from a tool (Get unstuck, the Team performance check, the
@@ -30,6 +30,11 @@ import { friendlyError } from '../../lib/friendlyError';
 //                 ("Added to this week" or "Added to your backlog", with
 //                 Undo) unless `quiet` is set. `onUndone({ where, id })`
 //                 runs when that Undo is pressed.
+//   placeOf(id)   where a to-do a tool made earlier is now: 'week',
+//                 'backlog', 'later' (a later week) or 'gone' (deleted,
+//                 done in an earlier week, its sprint over); null while it
+//                 can't be told (the rows aren't here yet, or a save is
+//                 still waiting to be sent, so the rows may be behind)
 const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
 
 export default function useToolTodo() {
@@ -77,8 +82,14 @@ export default function useToolTodo() {
     return { where: to, id };
   }, [userId, sprintId, week, today, setData, toast]);
 
+  const placeOf = useCallback((id) => {
+    if (!view || !id || waitingToSend(userId)) return null;
+    return todoPlaceNow(view, id);
+  }, [view, userId]);
+
   return {
     running,
+    placeOf,
     strategies,
     canAdd: strategies.length > 0,
     ready: Boolean(data),

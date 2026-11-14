@@ -29,7 +29,7 @@
 // ALIGNMENT_EMAIL_FROM), SUPABASE_SERVICE_ROLE_KEY, and the Supabase URL
 // the app already has (SUPABASE_URL or VITE_SUPABASE_URL).
 
-import { COPY_TOOLS, copyContent, maySend, planCopyEmail } from './_guestEmails.js';
+import { COPY_TOOLS, copyContent, maySend, oneAddress, planCopyEmail } from './_guestEmails.js';
 import { portalOrigin } from './_portalOrigin.js';
 
 const VISIT = /^[0-9a-f]{64}$/;
@@ -104,9 +104,10 @@ export default async function handler(req, res) {
   }
 
   // Who it goes to and what it says come from the database's answer only.
-  const to = typeof issue.email === 'string' ? issue.email.trim() : '';
+  // One address only: never a list, or a name beside an address.
+  const to = oneAddress(issue.email);
   const content = COPY_TOOLS.includes(issue.tool) && Array.isArray(issue.rows) ? copyContent(issue.rows[0]) : null;
-  if (!/^[^\s@]+@[^\s@]+$/.test(to) || !content) {
+  if (!to || !content) {
     await notSent(visit);
     return reply(res, 200, { ok: false, sent: false });
   }

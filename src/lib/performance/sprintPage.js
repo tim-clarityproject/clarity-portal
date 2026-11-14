@@ -277,6 +277,28 @@ export function todoWhereOptions({ running = true } = {}) {
   ].filter(Boolean);
 }
 
+/**
+ * Where a to-do a tool made is now, read from the sprint page's own view
+ * (sprintPageView), so a tool never goes on saying "It’s in this week’s
+ * sprint." about a to-do that has since been deleted, moved, or left
+ * behind in an earlier week (the break-it tester, 14 Nov):
+ *   'week'     in this week's list (open, rolled over into it, or done this week)
+ *   'backlog'  waiting in the Backlog
+ *   'later'    planned for a later week of this sprint
+ *   'gone'     deleted, done in an earlier week, or in a sprint that has ended
+ * Null when it can't be told (no view yet, or no id).
+ */
+export function todoPlaceNow(view, todoId) {
+  if (!view || !todoId) return null;
+  const running = view.state === 'running';
+  const backlog = (running ? view.todos?.backlog : view.backlog) || [];
+  if (backlog.some((t) => t.id === todoId)) return TODO_WHERE.backlog;
+  if (!running) return 'gone';
+  if ((view.todos?.thisWeek || []).some((t) => t.id === todoId && !t.movedOut)) return TODO_WHERE.week;
+  if ((view.todos?.later || []).some((t) => t.id === todoId)) return 'later';
+  return 'gone';
+}
+
 /** What the toast says once a tool's to-do is added (M10 "Added to this week"). */
 export function todoWhereToast(where) {
   if (where === TODO_WHERE.week) return 'Added to this week';

@@ -536,6 +536,24 @@ export function checkFrom(answers, shared = false) {
   return { people, shared: Boolean(shared), last };
 }
 
+/**
+ * A check the screens can always draw, out of whatever a device kept as a
+ * draft: each person once, with an id and a name, each answer 1 to 5 or
+ * nothing, and the check before it only when it can be read. A draft that
+ * was damaged, or kept by another version, opens as far as it can be read
+ * and never stops the page (the break-it tester, 14 Nov).
+ */
+export function tidyCheck(value) {
+  const c = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const words = (v) => (typeof v === 'string' ? v : '');
+  const ids = new Set();
+  const people = (Array.isArray(c.people) ? c.people : [])
+    .filter((p) => p && typeof p === 'object' && !Array.isArray(p) && words(p.id) && clean(words(p.name)))
+    .filter((p) => !ids.has(p.id) && ids.add(p.id))
+    .map((p) => ({ id: p.id, name: clean(words(p.name)), role: clean(words(p.role)), t: level(p.t), a: level(p.a), u: level(p.u) }));
+  return { people, shared: c.shared === true, last: checkFrom({ last: c.last }).last };
+}
+
 /** True when anyone is on the list (an untouched tool saves nothing). */
 export function hasAnswers(check) {
   return (check?.people || []).length > 0;

@@ -480,6 +480,52 @@ const EW = {
   'Emotional wash, not added': emotionalWashPdf({ person: 'Sam Carter', createdAt: EW_AT, wash: washOf({ ...EW_M10, thoughts: [['I need to win the board back.', 'act', 'Ask the chair for 20 minutes.']] }) }),
 };
 
+// ---- The break-it tester, 14 Nov: what a hostile or clumsy person types ----------------
+// Markup, a template's own braces, right-to-left words, a mark that turns
+// the reading order round, joiners nobody sees, one unbroken 300-character
+// word, the same answer many times over, and answers of only spaces.
+// (Hebrew, Arabic, Greek and Cyrillic letters are not here: the PDF's fonts
+// have no shapes for them yet, so they draw as empty boxes. Reported to Tim
+// on 14 Nov; they join this pack when the fonts do.)
+const NASTY = '<script>alert(1)</script> {{ .ConfirmationURL }} <b>bold</b> &amp; \u202Ereversed\u202C zero\u200Bwidth\u200D joiner\u00A0space \uFEFFcopied\u200E name\u00AD';
+// What the PDF shows of it: nothing unseen is drawn (seenText in src/lib/pdf/text.js).
+const seen = (t) => String(t).replace(/[\u00AD\u200B-\u200F\u202A-\u202E\uFEFF]/g, '');
+const WORD_300 = 'W'.repeat(300);
+GU['Get unstuck, hostile'] = getUnstuckPdf({
+  person: '<img src=x onerror=alert(1)> \u202EmaS',
+  ...GU_SAVED,
+  plan: unstuck({
+    goal: `${NASTY} ${WORD_300}`.slice(0, 300),
+    cons: [...Array.from({ length: 30 }, () => 'The same constraint, word for word'), WORD_300, '   ', '\t\t', NASTY],
+    opps: ['   ', '\u200B\u200B', NASTY, 'A family \u{1F468}\u200D\u{1F469}\u200D\u{1F467} stays whole'],
+    opts: [...Array.from({ length: 30 }, () => 'The same option'), WORD_300],
+    steps: [['The same step', 'week'], ['The same step', 'week'], ['The same step', 'backlog'], [WORD_300, 'none'], [NASTY, null], ['   ', 'week']],
+  }),
+});
+TC['Team check, hostile'] = teamCheckPdf({
+  person: NASTY,
+  createdAt: TC_AT,
+  // thirty people with one name and one role, all on one spot, then the awkward ones
+  check: team([
+    ...Array.from({ length: 30 }, () => ['Sam Carter', 'Head of Sales', 3, 3, 3]),
+    ['Zo\u00EB \u0141ukasz\u200E', 'Head of \u200BOps', 5, 5, 5], [WORD_300.slice(0, 80), WORD_300.slice(0, 80), 1, 1, 1], ['<b>Bo</b> {{ x }}', '\u202Edaeh', 5, 1, 5],
+  ], Array.from({ length: 33 }, () => [3, 3, 3])),
+});
+EW['Emotional wash, hostile'] = emotionalWashPdf({
+  person: '   ',
+  createdAt: EW_AT,
+  wash: washOf({
+    what: `${NASTY} ${WORD_300}`,
+    kind: 'pa',
+    words: ['Anger', 'Fear'],
+    rel: ['Respect'],
+    thoughts: [
+      ...Array.from({ length: 50 }, (_, i) => ['The same thought, every time.', ['trash', 'park', 'act'][i % 3], i % 3 === 1 ? 'The same question?' : 'The same step', i % 3 === 2 ? 'week' : null]),
+      [WORD_300, 'act', WORD_300, 'backlog'], [NASTY, 'park', NASTY],
+    ],
+  }),
+});
+
 const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU, ...TC, ...EW };
 
 // ---- dot charts: dots stay in their own area, and how many touch ----------------------
@@ -593,8 +639,8 @@ function checkWords(file, spec, res) {
   // No "…" anywhere in a PDF (Tim, 26 Oct, 16:12): names wrap instead.
   if (/…|\.\.\./.test(text)) problems.push('the text holds "…": something was cut off');
   // The very long organisation name shows in full in the footer.
-  if (spec.who && spec.confidential && !text.includes(squash(`Confidential: for ${spec.who}`).replace(/\s+/g, ' '))) {
-    const words = squash(String(spec.who)).split(' ');
+  if (spec.who && spec.confidential && !text.includes(squash(`Confidential: for ${seen(spec.who)}`).replace(/\s+/g, ' '))) {
+    const words = squash(seen(spec.who)).split(' ').filter(Boolean);
     if (!words.every((w) => text.includes(w))) problems.push(`the footer doesn't show "${spec.who}" in full`);
   }
   if (title !== res.title) problems.push(`title property is "${title}", not "${res.title}"`);
@@ -717,7 +763,7 @@ for (const [name, spec] of Object.entries(DOCS)) {
   const [{ resultsModel, csfLevel, csfLevelName }, { parseDbTimestamp }] = await Promise.all([
     load('/src/health-check/words.js'), load('/src/lib/dateFormatter.js'),
   ]);
-  const flatText = (t) => t.replace(/\s+/g, '');
+  const flatText = (t) => seen(t).replace(/\s+/g, '');
   const EXPECT = {
     'Health Check 3, every CSF level': (m) => [
       m.factors.map((f) => csfLevelName(csfLevel(f))).join(', ') === 'Critical, Very important, Very important, Important' || 'the CSF levels are wrong',
@@ -792,7 +838,7 @@ for (const [name, spec] of Object.entries(DOCS)) {
     let text = '';
     // read in the order the PDF draws it, without spaces or hyphens: pdftotext
     // drops a hyphen at a line's end, and a long address breaks after its own
-    const flatWords = (t) => t.replace(/[\s-]+/g, '');
+    const flatWords = (t) => seen(t).replace(/[\s-]+/g, '');
     try { text = flatWords(run('pdftotext', ['-raw', join(out, `${name}, A4.pdf`), '-'])); } catch { toolsMissing = true; }
     if (!text) continue;
     // every answer is in the PDF's text, whole (emoji are drawn from their own font and read differently)
@@ -826,13 +872,14 @@ for (const [name, spec] of Object.entries(DOCS)) {
     if (/this month|last month/i.test(JSON.stringify(spec))) problems.push(`${name}: says "this month" or "last month"`);
     if (only && !name.includes(only)) continue;
     let text = '';
-    const flatWords = (t) => t.replace(/[\s-]+/g, '');
+    const flatWords = (t) => seen(t).replace(/[\s-]+/g, '');
     try { text = flatWords(run('pdftotext', ['-raw', join(out, `${name}, A4.pdf`), '-'])); } catch { toolsMissing = true; }
     if (!text) continue;
     const said = [...questions(spec), spec.glance[0].value];
     said.filter((w) => !/\p{Extended_Pictographic}/u.test(w)).forEach((w) => { if (!text.includes(flatWords(w))) problems.push(`${name}: the PDF's text doesn't hold "${w.slice(0, 50)}"`); });
-    const at = (w) => text.indexOf(flatWords(w));
-    if (questions(spec).length && !(at('Questions to start with') > at('Trust now'))) problems.push(`${name}: Questions to start with don't come last`);
+    // The last place each is named: a long check has a contents list on page 1, which names both first.
+    const last = (w) => text.lastIndexOf(flatWords(w));
+    if (questions(spec).length && !(last('Questions to start with') > last('Trust now'))) problems.push(`${name}: Questions to start with don't come last`);
   }
   report.push(`Team performance check (headline, chart, table, trust, then the questions last; words, never numbers)\n  ${problems.length ? `PROBLEMS:\n    ${problems.join('\n    ')}` : 'all checks pass'}`);
   if (problems.length) failed += 1;
@@ -861,7 +908,7 @@ for (const [name, spec] of Object.entries(DOCS)) {
     if (/how strong|\/10|out of 10|\bstrength\b/i.test(JSON.stringify(spec))) problems.push(`${name}: has a strength rating`);
     if (only && !name.includes(only)) continue;
     let text = '';
-    const flatWords = (t) => t.replace(/[\s-]+/g, '');
+    const flatWords = (t) => seen(t).replace(/[\s-]+/g, '');
     try { text = flatWords(run('pdftotext', ['-raw', join(out, `${name}, A4.pdf`), '-'])); } catch { toolsMissing = true; }
     if (!text) continue;
     // every answer is in the PDF's text, whole (emoji and Chinese are drawn from their own fonts and read differently)

@@ -1,5 +1,5 @@
 import PDFDocument from 'pdfkit';
-import { createTypesetter, STYLES } from './text';
+import { createTypesetter, seenSpec, seenText, STYLES } from './text';
 import { flatten, tagNode } from './parts';
 import { layoutPages } from './layout';
 import { PAPER } from './paper';
@@ -55,7 +55,7 @@ const shorten = (s, n = 60) => {
  */
 export function pdfName(spec, variant) {
   const title = [spec.docName, spec.who, formatFileDate(spec.date || new Date())]
-    .map((p) => shorten(clean(p)))
+    .map((p) => shorten(clean(typeof p === 'string' ? seenText(p) : p)))
     .filter(Boolean)
     .join(', ');
   const full = variant === 'dark' ? `${title} (dark)` : title;
@@ -97,7 +97,9 @@ function registerFonts(doc, fonts) {
  * @param {{fonts: Object<string, Uint8Array>}} options.assets
  * @returns {Promise<{bytes: Uint8Array, pages: number, fileName: string, title: string, layout: Object[][]}>}
  */
-export async function renderPdf(spec, { variant = 'light', paper = PAPER.A4, assets }) {
+export async function renderPdf(given, { variant = 'light', paper = PAPER.A4, assets }) {
+  // Nothing unseen is drawn: no font has a shape for it, so it showed as an empty box.
+  const spec = seenSpec(given);
   const t = PDF_THEMES[variant] || PDF_THEMES.light;
   const { title, fileName } = pdfName(spec, variant);
   const W = paper.width;

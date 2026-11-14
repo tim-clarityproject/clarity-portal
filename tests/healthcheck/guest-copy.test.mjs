@@ -9,7 +9,8 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import handler from '../../api/guest-copy.js';
-import { copyContent, maySend } from '../../api/_guestEmails.js';
+import { COPY_STEPS_MAX, copyContent, maySend, oneAddress } from '../../api/_guestEmails.js';
+import { GOAL_MAX, ROW_MAX } from '../../src/lib/getUnstuck/model.js';
 
 const GUEST = 'guest@example.invalid';
 const OTHER = 'someone-else@example.invalid';
@@ -249,4 +250,32 @@ test('what was typed into a plan is only ever text in the email', async () => {
   assert.equal(sent.length, 1);
   assert.ok(!sent[0].html.includes('<script>alert') && !sent[0].html.includes('<img src=x'));
   assert.ok(sent[0].html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
+});
+
+// The break-it tester, 14 Nov: the guest functions can be called without the
+// page, so a saved row can hold far more than the page's boxes take.
+test('a copy never carries more than the page could have written: 300 characters each, 50 next steps', async () => {
+  const long = `<script>alert(1)</script> ${'g'.repeat(150000)}`;
+  const steps = Array.from({ length: 300 }, (_, i) => ({ id: `s${i}`, text: `Step ${i} ${'w'.repeat(5000)}` }));
+  const content = copyContent({ form_data: { goal: long, next_steps: steps } });
+  assert.equal(Array.from(content.goal).length, GOAL_MAX);
+  assert.equal(content.nextSteps.length, COPY_STEPS_MAX);
+  assert.ok(content.nextSteps.every((s) => Array.from(s).length <= ROW_MAX));
+  // An emoji is never cut in half.
+  assert.equal(copyContent({ form_data: { goal: '🙂'.repeat(400) } }).goal, '🙂'.repeat(GOAL_MAX));
+  standIn({ issue: { ...ISSUE, rows: [{ form_data: { goal: long, next_steps: steps } }] } });
+  const { sent } = await ask();
+  assert.equal(sent.length, 1);
+  assert.ok(sent[0].html.length < 60000 && sent[0].text.length < 30000, 'the email stays small');
+});
+
+test('the copy goes to one address only: never a list, or a name beside an address', async () => {
+  for (const email of ['a@example.invalid,b@example.invalid', 'a@example.invalid;b', '<a@example.invalid>', '"A" <a@example.invalid>', 'a@b@example.invalid', 'a@invalid', 'a@example.invalid\nBcc: b@example.invalid', `${'a'.repeat(250)}@example.invalid`, ['a@example.invalid'], null]) {
+    assert.equal(oneAddress(email), '');
+    standIn({ issue: { ...ISSUE, email } });
+    const { res, sent } = await ask();
+    assert.deepEqual([res.statusCode, res.body, sent.length], [200, { ok: false, sent: false }, 0]);
+    assert.ok(calls.some((c) => c.url.endsWith('/guest_copy_failed')), 'the count is taken back');
+  }
+  assert.equal(oneAddress(' first.last+tag@mail.example.co.uk '), 'first.last+tag@mail.example.co.uk');
 });

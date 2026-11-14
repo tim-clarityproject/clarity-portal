@@ -354,6 +354,27 @@ export function m10Wash(at = 'steps') {
   };
 }
 
+/**
+ * The seeded wash's to-do (m10Wash('sum')) is told to the page as one of
+ * this week's, as M10 draws it: the tool asks the sprint's own rows where
+ * each of its to-dos is now, and one it has never heard of has gone
+ * (14 Nov). Only the answer to the page changes; nothing is written.
+ */
+export const SEEDED_TODO = '99999999-9999-4999-8999-999999999999';
+export async function withSeededTodo(context) {
+  await context.route(/\/rest\/v1\/todos\?/, async (route) => {
+    const req = route.request();
+    const sprint = /sprint_id=eq\.([0-9a-f-]{36})/.exec(req.url())?.[1];
+    if (req.method() !== 'GET' || !sprint) return route.fallback();
+    const res = await route.fetch();
+    let rows = null;
+    try { rows = await res.json(); } catch { /* not rows */ }
+    if (!res.ok() || !Array.isArray(rows)) return route.fulfill({ response: res });
+    const row = { id: SEEDED_TODO, strategy_id: rows[0]?.strategy_id ?? null, text: EW.step, impact: 2, sprint_id: sprint, planned_week: 1, created_on: '2026-01-01', done_on: null, source: 'other_tool', source_id: null, move_on: null, deleted_at: null, updated_at: new Date().toISOString() };
+    return route.fulfill({ response: res, json: [...rows.filter((r) => r.id !== SEEDED_TODO), row] });
+  });
+}
+
 /** The place of each screen in the tool, with M10's three thoughts typed. */
 export const WASH_INDEX = { what: 0, kind: 1, words: 2, rel: 3, story: 4, true: 5, logical: 6, helpful: 7, wash1: 8, wash2: 12, wash3: 16, sum: 17 };
 

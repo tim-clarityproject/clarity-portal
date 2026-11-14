@@ -430,6 +430,54 @@ export function washFrom(answers, newId = () => `thought-${Math.random().toStrin
   };
 }
 
+/**
+ * A wash the screens can always draw, out of whatever a device kept as a
+ * draft: the right shape whatever was there. Each thought has its own id,
+ * its words are text, and every answer is one the screens know or nothing.
+ * A draft that was damaged, or kept by another version, opens as far as
+ * it can be read and never stops the page (the break-it tester, 14 Nov).
+ */
+export function tidyWash(value, newId = () => `thought-${Math.random().toString(36).slice(2)}`) {
+  const w = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const words = (v) => (typeof v === 'string' ? v : '');
+  const ids = new Set();
+  const thoughts = (Array.isArray(w.thoughts) ? w.thoughts : [])
+    .filter((th) => th && typeof th === 'object' && !Array.isArray(th))
+    .map((th) => {
+      let id = words(th.id);
+      if (!id || ids.has(id)) id = newId();
+      ids.add(id);
+      return {
+        id,
+        text: words(th.text),
+        t: said(th.t),
+        l: said(th.l),
+        h: said(th.h),
+        wash: washed(th.wash),
+        step: words(th.step),
+        question: words(th.question),
+        where: place(th.where),
+        strategyId: words(th.strategyId) || null,
+      };
+    });
+  const todos = {};
+  if (w.todos && typeof w.todos === 'object' && !Array.isArray(w.todos)) {
+    for (const [thoughtId, made] of Object.entries(w.todos)) {
+      if (made && typeof made === 'object' && words(made.id) && ids.has(thoughtId)) {
+        todos[thoughtId] = { id: made.id, text: words(made.text), where: place(made.where), strategyId: words(made.strategyId) || null };
+      }
+    }
+  }
+  return {
+    what: words(w.what),
+    kind: KINDS.some((k) => k.value === w.kind) ? w.kind : null,
+    words: among(WORDS, w.words),
+    rel: among(RELATED, w.rel),
+    thoughts: thoughts.length ? thoughts : [newThought(newId())],
+    todos,
+  };
+}
+
 /** True when anything has been typed or chosen (an untouched tool saves nothing). */
 export function hasAnswers(wash) {
   return Boolean(clean(wash?.what) || wash?.kind || (wash?.words || []).length || (wash?.rel || []).length || (wash?.thoughts || []).some((th) => clean(th.text)));

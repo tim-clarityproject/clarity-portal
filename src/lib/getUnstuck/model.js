@@ -91,6 +91,41 @@ export function emptyPlan() {
   return { goal: '', cons: [''], opps: [''], opts: [''], acts: [], shared: false };
 }
 
+/**
+ * A plan the screens can always draw, out of whatever a device kept (a
+ * draft, a tab's copy): the right shape whatever was there. Text stays
+ * text, a list is a list of text with at least one box, and a next step
+ * has its own id and points only at an option that exists. A copy that
+ * was damaged, or kept by another version, opens as far as it can be read
+ * and never stops the page (the break-it tester, 14 Nov).
+ */
+export function tidyPlan(value, newId = () => `step-${Math.random().toString(36).slice(2)}`) {
+  const p = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const rows = (v) => {
+    const out = Array.isArray(v) ? v.filter((t) => typeof t === 'string') : [];
+    return out.length ? out : [''];
+  };
+  const word = (v) => (typeof v === 'string' && v ? v : null);
+  const opts = rows(p.opts);
+  const ids = new Set();
+  const acts = (Array.isArray(p.acts) ? p.acts : [])
+    .filter((a) => a && typeof a === 'object' && !Array.isArray(a))
+    .map((a) => {
+      let id = word(a.id);
+      if (!id || ids.has(id)) id = newId();
+      ids.add(id);
+      return {
+        id,
+        option: Number.isInteger(a.option) && a.option >= 0 && a.option < opts.length ? a.option : null,
+        text: typeof a.text === 'string' ? a.text : '',
+        where: Object.values(WHERE).includes(a.where) ? a.where : null,
+        todoId: word(a.todoId),
+        strategyId: word(a.strategyId),
+      };
+    });
+  return { goal: typeof p.goal === 'string' ? p.goal : '', cons: rows(p.cons), opps: rows(p.opps), opts, acts, shared: p.shared === true };
+}
+
 /** The calm message when Next is pressed on a screen that isn't answered yet, or null. */
 export function requiredMessage(key, plan) {
   if (key === 'goal' && !clean(plan?.goal)) return REQUIRED.goal;
