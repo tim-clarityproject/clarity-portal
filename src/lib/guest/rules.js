@@ -14,7 +14,21 @@ export const GUEST_WORDS = {
   wrongLink: 'This link doesn’t look right. Open it again from the message your coach sent.',
   emailFirst: 'Type your email to carry on.',
   codeFirst: 'Type the 6-character code your coach gave you to carry on.',
+  // 035 says "use your email to come back", which has no page yet: the
+  // page says what the person can do today.
+  closed: 'This link has closed. Ask your coach to send a new one.',
 };
+
+/** 035 writes its messages with a plain apostrophe; the page shows the portal's own (’). */
+export function guestWords(text) {
+  return `${text || ''}`.replace(/'/g, '’').trim();
+}
+
+/** What the start page says when guest_open answers that it didn't open. */
+export function openProblem(answer) {
+  if (answer?.error === 'closed') return GUEST_WORDS.closed;
+  return guestWords(answer?.message) || GUEST_WORDS.open;
+}
 
 /** The token from /guest/<token>, or null when the address isn't a guest link. */
 export function tokenFrom(value) {
@@ -55,7 +69,8 @@ export function visitEnded(error) {
 /** One calm line for anything a guest call refuses. */
 export function guestError(error, fallback) {
   if (functionMissing(error)) return GUEST_WORDS.notReady;
-  const text = `${error?.message || ''}`.trim();
+  const text = guestWords(error?.message);
+  if (error?.code === '42501' && /link has closed/i.test(text)) return GUEST_WORDS.closed;
   if (OURS.has(error?.code) && text && !/permission denied|function|relation|column/i.test(text)) return text;
   return friendlyError(error, fallback, 'Using this link');
 }

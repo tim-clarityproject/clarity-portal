@@ -57,7 +57,52 @@ function clearFrom(storage) {
   }
 }
 
-export function clearAppStorage() {
+// The Team performance check and the Emotional wash (toolAnswers.js) keep
+// their saved work in a page copy, clarity-cache:<person>:tool-answers.
+// Until migration 043 has run that copy is the only one there is, so a
+// Sign out that cleared it would lose every check and wash for good (the
+// functionality tester, 14 Nov). Like the other answers that wait for
+// their migration, whatever has not reached the account yet (`sent` not
+// true) is set aside under its own key, which carries the person's id and
+// is never cleared here; toolAnswers.js takes it back the next time that
+// person signs in on this device. Everything the account already holds is
+// cleared with the rest.
+const TOOL_ANSWERS_COPY = /^clarity-cache:([^:]+):tool-answers$/;
+export const TOOL_ANSWERS_WAITING = 'clarity-tool-answers-local:';
+
+/** Sets aside the tool answers that live only on this device. Returns how many. */
+export function keepWaitingToolAnswers(storage) {
+  let count = 0;
+  for (let i = storage.length - 1; i >= 0; i -= 1) {
+    const key = storage.key(i);
+    const person = key && TOOL_ANSWERS_COPY.exec(key)?.[1];
+    if (!person) continue;
+    try {
+      const map = JSON.parse(storage.getItem(key))?.v;
+      if (!map || typeof map !== 'object' || Array.isArray(map)) continue;
+      const waiting = Object.entries(map).filter(([, r]) => r && typeof r === 'object' && r.sent !== true);
+      if (!waiting.length) continue;
+      let before = {};
+      try { before = JSON.parse(storage.getItem(TOOL_ANSWERS_WAITING + person)) || {}; } catch { before = {}; }
+      storage.setItem(TOOL_ANSWERS_WAITING + person, JSON.stringify({ ...before, ...Object.fromEntries(waiting) }));
+      count += waiting.length;
+    } catch {
+      // A copy that can't be read holds nothing to keep.
+    }
+  }
+  return count;
+}
+
+/**
+ * @param {{ deletedAccount?: string }} [opts] the person's id when the
+ *   account itself has just been deleted: then nothing of theirs waits
+ *   anywhere, on this device included.
+ */
+export function clearAppStorage({ deletedAccount = null } = {}) {
+  try {
+    keepWaitingToolAnswers(window.localStorage);
+    if (deletedAccount) window.localStorage.removeItem(TOOL_ANSWERS_WAITING + deletedAccount);
+  } catch { /* storage blocked */ }
   try { clearFrom(window.localStorage); } catch { /* storage blocked */ }
   try { clearFrom(window.sessionStorage); } catch { /* storage blocked */ }
 }

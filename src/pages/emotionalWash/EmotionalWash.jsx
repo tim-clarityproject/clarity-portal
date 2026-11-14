@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
+import SavedItemActions from '../../components/SavedItemActions';
 import { LoadError, Loading, PageHeader, PdfDownload, clearGuideDraft, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { readCache, writeCache } from '../../lib/pageCache';
@@ -210,7 +211,9 @@ function Flow({ userId, user, asked, start }) {
       createdAt,
       finishedAt,
     });
-    if (stays) setItem((s) => ({ ...s, wash, status, saved: true, createdAt, finishedAt }));
+    // 'answers': the wash on screen is left as it is (a to-do being made
+    // just now may be writing its id into it), only its saved state is taken.
+    if (stays) setItem((s) => ({ ...s, ...(stays === 'answers' ? {} : { wash }), status, saved: true, createdAt, finishedAt }));
     return result;
   };
 
@@ -243,6 +246,20 @@ function Flow({ userId, user, asked, start }) {
       toast.error(friendlyError(error, SAVE_ERROR));
     } finally {
       busy.current = false;
+    }
+  };
+
+  // "Save my edit" on the summary: the wash is saved as it stands, there
+  // and then, so "Saved" is true on every device and not only on this one.
+  // To-dos no longer wanted are tidied when the tool is closed or finished.
+  const edited = async () => {
+    const now = itemRef.current;
+    try {
+      const status = now.status === 'completed' && isComplete(now.wash) ? 'completed' : 'draft';
+      const result = await save(now, now.wash, status, { stays: 'answers' });
+      toast.show(result === 'queued' ? 'Will sync' : 'Saved');
+    } catch (error) {
+      toast.error(friendlyError(error, SAVE_ERROR));
     }
   };
 
@@ -286,6 +303,9 @@ function Flow({ userId, user, asked, start }) {
         initialStep={asked ? (start.status === 'completed' ? 'sum' : resumeStep(start.wash)) : undefined}
         onClose={close}
         onFinish={finish}
+        onEdited={edited}
+        actions={<SavedItemActions className="ds-guide-delete" onDeleted={forget} />}
+        actionsFirst={start.status !== 'completed'}
       />
     </div>
   );

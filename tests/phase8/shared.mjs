@@ -157,7 +157,7 @@ export async function guestStandIn(context, opts = {}) {
     }
     if (name === 'guest_open') {
       const right = args.p_token === GUEST_TOKEN && String(args.p_email).trim().toLowerCase() === M9.guestEmail && String(args.p_code).trim().toUpperCase() === M9.guestCode;
-      if (!right) return json(route, { ok: false, error: 'invalid', message: 'That link, email or code isn’t right. Check them and try again.' });
+      if (!right) return json(route, { ok: false, error: 'invalid', message: 'That link, email or code isn\'t right. Check them and try again.' });
       return json(route, { ok: true, visit: GUEST_VISIT, tool: 'grow', tool_label: 'Get unstuck', coach_name: M9.coach, link_expires_at: '2026-12-14T10:00:00+00:00', confirmed: false });
     }
     if (args.p_visit !== GUEST_VISIT) return json(route, { code: '42501', details: null, hint: null, message: 'That visit has ended. Open your link again.' }, 403);

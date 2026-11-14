@@ -3,10 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
+import SavedItemActions from '../../components/SavedItemActions';
 import { LoadError, Loading, PageHeader, PdfDownload, clearGuideDraft, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { readCache, writeCache } from '../../lib/pageCache';
-import { readDraft, useDraft } from '../../lib/drafts';
+import { clearDraft, readDraft, useDraft } from '../../lib/drafts';
 import { newId } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
 import { deviceToolAnswer, loadToolAnswer, loadToolAnswers, saveToolAnswers } from '../../lib/toolAnswers';
@@ -183,6 +184,16 @@ function Flow({ userId, user, asked, start }) {
     draft.clear();
     clearGuideDraft(stepDraftKey(userId, asked));
   };
+  // Deleted (the quiet "Delete" of a check opened from My Plans): nothing
+  // of it stays on this device, the copy the tool's own address carries on
+  // included, so Home never offers a deleted check to carry on.
+  const deleted = () => {
+    forget();
+    if (asked && readDraft(userId, draftName(null))?.v?.id === asked) {
+      clearDraft(userId, draftName(null));
+      clearGuideDraft(stepDraftKey(userId, null));
+    }
+  };
 
   // One saved item, written over itself: a draft until every answer is in.
   // `stays` false: the tool is leaving, so what is on screen isn't touched
@@ -281,6 +292,8 @@ function Flow({ userId, user, asked, start }) {
         draftKey={stepDraftKey(userId, asked)}
         initialStep={asked && start.status === 'completed' ? 'results' : undefined}
         onClose={close}
+        actions={<SavedItemActions className="ds-guide-delete" onDeleted={deleted} />}
+        actionsFirst={start.status !== 'completed'}
       />
     </div>
   );

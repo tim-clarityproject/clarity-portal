@@ -60,6 +60,9 @@ import './teamCheck.css';
 //   sourceId            the saved item's id, for the to-dos made from it
 //   pdf                 the "Download my PDF" link in the results' bottom bar
 //   onResults()         the results are showing with every answer in: the page saves it
+//   actions             “Delete”, for a check opened from My Plans: under the
+//                       results, and under the list while it is still a draft
+//                       (`actionsFirst`), which opens there
 //   draftKey, initialStep, onClose   as GuidedTool's
 //
 // The eye shows on the first step and on the results only (Tim, 13 Nov,
@@ -177,6 +180,8 @@ export default function TeamCheckTool({
   draftKey,
   initialStep,
   onClose,
+  actions = null,
+  actionsFirst = false,
 }) {
   const coach = useCoach();
   const toast = useToast();
@@ -221,6 +226,7 @@ export default function TeamCheckTool({
               <AddButton onClick={() => setAdding(true)}>Add a person</AddButton>
             </div>
           )}
+          {actionsFirst && actions}
         </>
       ),
     },
@@ -255,7 +261,10 @@ export default function TeamCheckTool({
       className: 'tpc-results',
       footAside: pdf,
       render: (tool) => (
-        <Results check={check} tool={tool} onResults={onResults} onEditList={() => tool.go(0, { fromSummary: true })} />
+        <>
+          <Results check={check} tool={tool} onResults={onResults} onEditList={() => tool.go(0, { fromSummary: true })} />
+          {isComplete(check) && actions}
+        </>
       ),
     },
   ];

@@ -29,6 +29,7 @@ import {
   guestRows,
   guestSave,
   keepVisit,
+  openProblem,
   readVisit,
   tokenFrom,
   visitEnded,
@@ -185,6 +186,18 @@ function Guest({ token }) {
     }
   };
 
+  // "Save my edit" on the guest's plan: saved there and then, as it says.
+  const edited = async () => {
+    try {
+      await saveNow();
+      toast.show('Saved');
+    } catch (error) {
+      dirty.current = true;
+      if (visitEnded(error)) ended(error);
+      else toast.error(guestError(error, GUEST_WORDS.save));
+    }
+  };
+
   const finish = async () => {
     const v = visitRef.current;
     try {
@@ -244,6 +257,7 @@ function Guest({ token }) {
             initialStep={item.status === 'completed' ? 'sum' : undefined}
             onClose={close}
             onFinish={finish}
+            onEdited={edited}
           />
         </CoachContext.Provider>
       </div>
@@ -364,7 +378,7 @@ function Start({ token, page, title, coachName, startEmail, carryOn, message, on
     try {
       const answer = await guestOpen(token, address, code);
       if (!answer?.ok) {
-        setProblem({ at: 'code', text: answer?.message || GUEST_WORDS.open });
+        setProblem({ at: 'code', text: openProblem(answer) });
         codeRef.current?.focus();
         return;
       }

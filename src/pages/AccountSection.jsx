@@ -79,8 +79,10 @@ export default function AccountSection() {
         return;
       }
 
+      // The account is gone: nothing of it waits on this device either.
+      const deletedAccount = user?.id || null;
       await logout({ force: true });
-      clearAppStorage();
+      clearAppStorage({ deletedAccount });
 
       toast.show('Your account has been deleted.');
       setTimeout(() => navigate('/'), 500);

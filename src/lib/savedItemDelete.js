@@ -4,6 +4,7 @@ import { deleteReview as deleteJournalEntryRow } from './reviewTool';
 import { deleteJournal } from './dailyJournal';
 import { discardReviewDraft, discardPlanReviewDraft, discardMissionReviewDraft } from './discardDraft';
 import { deleteCheckin } from './wheelOfLifeApi';
+import { deleteToolAnswers } from './toolAnswers';
 
 // Deleting one saved item (a row of My Plans or My Reviews), in one place
 // (Tim, 5 Nov): the lists' rows no longer carry a bin, so the opened item
@@ -23,6 +24,10 @@ export async function deleteSavedItem(userId, item) {
     const { error } = await supabase.from('decisions').delete().eq('id', id);
     if (error) throw error;
     clearProgress();
+  } else if (source === 'tool-answers') {
+    // A Team performance check or an Emotional wash (tool_answers, or the
+    // device's copy until migration 043 has run).
+    await deleteToolAnswers(userId, id);
   } else if (source === 'wheel') {
     const { error } = await deleteCheckin(id);
     if (error) throw new Error(error.message);

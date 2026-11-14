@@ -3,6 +3,8 @@ import { readCache, writeCache } from './pageCache';
 import { saveOrQueue, waitingToSend } from './syncQueue';
 import { isMissingTable, tableReady } from './performance/tableReady';
 import { parseDbTimestamp } from './dateFormatter';
+import { readJson, removeKey } from './deviceStore';
+import { TOOL_ANSWERS_WAITING } from './clearAppStorage';
 
 // The saved work of the tools that keep their own answers (migration 043,
 // `tool_answers`): the Team performance check ('team_check') and the
@@ -35,9 +37,25 @@ const iso = (v) => {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 };
 
+// What a Sign out set aside (clearAppStorage.js: the items that had not
+// reached the account, so they lived only here) is taken back into the
+// device's copy the first time it is read after that person signs in again.
+function takeBackWaiting(userId, map) {
+  const key = TOOL_ANSWERS_WAITING + userId;
+  const waiting = readJson(key);
+  if (!waiting || typeof waiting !== 'object' || Array.isArray(waiting)) return map;
+  // The copy's own (newer) version of an item wins.
+  const merged = { ...waiting, ...map };
+  writeCache(userId, ON_DEVICE, merged);
+  // Only once the copy really holds them (storage can be full or blocked).
+  const now = readCache(userId, ON_DEVICE)?.v;
+  if (now && Object.keys(waiting).every((id) => now[id])) removeKey(key);
+  return merged;
+}
+
 function kept(userId) {
   const v = readCache(userId, ON_DEVICE)?.v;
-  return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  return takeBackWaiting(userId, v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 }
 
 function keep(userId, map) {

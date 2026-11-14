@@ -98,9 +98,12 @@ begin
     db := public.guest_save(vb, 'decisions', '{"title": "B''s own plan", "form_data": {"goal": "Something private"}}');
     perform pg_temp.t_admin();
     select id into guest_a from public.guests where email = 'copy.guest.a@example.com';
-    -- one transaction gives every row the same time, so the order is set here
-    update public.decisions set updated_at = now() - interval '2 hours' where id = (d1 ->> 'id')::uuid;
-    update public.decisions set updated_at = now() - interval '1 hour' where id = (d2 ->> 'id')::uuid;
+    -- one transaction gives every row the same time, so the order is set here.
+    -- decisions' own trigger writes updated_at as now() on every change, so
+    -- both rows keep one updated_at whatever is written to it: the order is
+    -- then decided by when each was made, which the trigger leaves alone.
+    update public.decisions set updated_at = now() - interval '2 hours', created_at = now() - interval '2 hours' where id = (d1 ->> 'id')::uuid;
+    update public.decisions set updated_at = now() - interval '1 hour', created_at = now() - interval '1 hour' where id = (d2 ->> 'id')::uuid;
 
     -- ------------------------------------------------ 0. whose link is this? (guest_link_info)
     perform pg_temp.t_anon();

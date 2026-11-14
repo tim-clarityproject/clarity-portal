@@ -8,7 +8,8 @@ import {
   summaryRows, togglePick, whereLine,
 } from '../../src/lib/getUnstuck/model.js';
 import { GET_UNSTUCK_STEPS, RENAMED, TOOLS, renamedPath } from '../../src/lib/navigation.js';
-import { cleanCode, cleanEmail, emailFromSearch, guestError, tokenFrom, visitEnded, visitFrom, GUEST_WORDS } from '../../src/lib/guest/rules.js';
+import { cleanCode, cleanEmail, emailFromSearch, guestError, guestWords, openProblem, tokenFrom, visitEnded, visitFrom, GUEST_WORDS } from '../../src/lib/guest/rules.js';
+import { carryOnItems } from '../../src/lib/carryOn.js';
 
 let n = 0;
 const id = () => `id-${(n += 1)}`;
@@ -212,4 +213,41 @@ test('guest links: 035’s answers in the page’s names, and one calm line for 
     console.error = quiet;
   }
   for (const line of Object.values(GUEST_WORDS)) assert.ok(!/fail/i.test(line) && line.endsWith('.'));
+});
+
+test('035’s messages show with the portal’s own apostrophe, and a closed link says what can be done today', () => {
+  // As the SQL writes them (a plain apostrophe).
+  assert.equal(guestWords("That link, email or code isn't right. Check them and try again."), 'That link, email or code isn’t right. Check them and try again.');
+  assert.equal(openProblem({ ok: false, error: 'invalid', message: "That link, email or code isn't right. Check them and try again." }), 'That link, email or code isn’t right. Check them and try again.');
+  assert.equal(openProblem({ ok: false, error: 'locked', message: 'Too many tries. Wait 15 minutes, then try again.' }), 'Too many tries. Wait 15 minutes, then try again.');
+  assert.equal(openProblem({ ok: false, error: 'has_account', message: 'This email has an account with The Clarity Portal. Sign in to use the tool there.' }), 'This email has an account with The Clarity Portal. Sign in to use the tool there.');
+  // Coming back with an email has no page yet, so neither message promises it.
+  assert.equal(openProblem({ ok: false, error: 'closed', message: 'This link has closed. To see your work, use your email to come back.' }), GUEST_WORDS.closed);
+  const closed = { code: '42501', message: 'That link has closed. To see your work, come back with your email.' };
+  assert.equal(visitEnded(closed), true);
+  assert.equal(guestError(closed, GUEST_WORDS.save), GUEST_WORDS.closed);
+  assert.equal(guestError({ code: '42501', message: "That isn't yours, so it wasn't changed. Open your own link to carry on." }, GUEST_WORDS.save), 'That isn’t yours, so it wasn’t changed. Open your own link to carry on.');
+  assert.equal(openProblem({ ok: false }), GUEST_WORDS.open);
+});
+
+test('Home’s "Carry on where you left off" offers a plan closed part-way, and nothing once it is finished', () => {
+  const store = new Map();
+  globalThis.window = { localStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k), key: (i) => [...store.keys()][i] ?? null, get length() { return store.size; } }, sessionStorage: { getItem: () => null, setItem: () => {} } };
+  const mine = () => carryOnItems('u1', { today: '2026-11-14', yesterday: '2026-11-13' }).filter((x) => x.key === 'get-unstuck');
+  try {
+    assert.deepEqual(mine(), []);
+    // Closed on the first screen with a goal typed: the draft alone.
+    store.set('clarity-draft:u1:get-unstuck:new~tab1', JSON.stringify({ v: { id: 'x', plan: { goal: 'Hire faster' }, status: 'draft', saved: true }, at: 1763110000000 }));
+    assert.deepEqual(mine().map((x) => [x.title, x.to, x.at]), [['Get unstuck', '/get-unstuck', 1763110000000]]);
+    // Further on: the step it was left on too. Only the tool's name shows.
+    store.set('ds-guide:get-unstuck-u1-new', JSON.stringify({ index: 3, skipped: [] }));
+    assert.deepEqual(mine().map((x) => x.title), ['Get unstuck']);
+    // Finished (the page clears both): nothing to carry on. Another person's never shows.
+    store.delete('clarity-draft:u1:get-unstuck:new~tab1');
+    store.delete('ds-guide:get-unstuck-u1-new');
+    store.set('ds-guide:get-unstuck-u2-new', JSON.stringify({ index: 3, skipped: [] }));
+    assert.deepEqual(mine(), []);
+  } finally {
+    delete globalThis.window;
+  }
 });

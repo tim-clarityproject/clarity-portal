@@ -51,10 +51,18 @@ import './getUnstuck.css';
 //   sourceId           the saved item's id, for the to-dos made from it
 //   onTodoGone(id)     a to-do replaced by an edit: the page deletes it
 //   pdf                “Download my PDF”, the quiet link at Your plan's bottom bar (signed in)
+//   onEdited           “Save my edit” went back to Your plan: the page saves
+//                      the plan as it stands and says so (“Saved”)
+//   actions            “Delete”, for a plan opened from My Plans: under Your plan,
+//                      and under the first question while it is still a draft
+//                      (`actionsFirst`), which opens there
 //   draftKey, initialStep, onClose, onFinish   as GuidedTool's
 //
 // The eye shows on the first step and on Your plan only (Tim, 13 Nov,
 // 09:32), never on every step.
+
+// A step's `after` (the page's "Delete", for a saved plan) sits under its answers.
+const withAfter = (steps) => steps.map((s) => (s.after ? { ...s, render: (tool) => <>{s.render(tool)}{s.after}</> } : s));
 
 const cap = (word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`;
 
@@ -72,6 +80,9 @@ export default function GetUnstuckTool({
   initialStep,
   onClose,
   onFinish,
+  onEdited,
+  actions = null,
+  actionsFirst = false,
 }) {
   const coach = useCoach();
   const toast = useToast();
@@ -152,6 +163,7 @@ export default function GetUnstuckTool({
           onChange={(goal) => onPlan((p) => ({ ...p, goal }))}
         />
       ),
+      after: actionsFirst ? actions : null,
     },
     rowsStep('cons'),
     rowsStep('opps'),
@@ -227,6 +239,7 @@ export default function GetUnstuckTool({
           onChange={tool.go}
         />
       ),
+      after: actions,
     },
   ];
 
@@ -235,14 +248,14 @@ export default function GetUnstuckTool({
       <GuidedTool
         calm
         name={TOOL_NAME}
-        steps={steps}
+        steps={withAfter(steps)}
         progress="percent"
         finishLabel="Finish my plan"
         draftKey={draftKey}
         initialStep={initialStep}
         onClose={onClose}
         onFinish={onFinish}
-        onEdited={() => toast.show('Saved')}
+        onEdited={onEdited || (() => toast.show('Saved'))}
       />
       {!guest && (
         <ToolTodoPanel

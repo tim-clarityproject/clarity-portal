@@ -3,10 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
+import SavedItemActions from '../../components/SavedItemActions';
 import { LoadError, Loading, PageHeader, PdfDownload, clearGuideDraft, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { readCache, writeCache } from '../../lib/pageCache';
-import { clearDraft, useDraft } from '../../lib/drafts';
+import { clearDraft, readDraft, useDraft } from '../../lib/drafts';
 import { isNetworkError } from '../../lib/connection';
 import { newId, saveOrQueue, waitingToSend } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
@@ -56,7 +57,11 @@ export const stepDraftKey = (userId, asked) => `get-unstuck-${userId}-${asked ||
 
 function fromRow(row) {
   const done = !(row.draft || row.status === 'draft');
-  return { id: row.id, plan: planFrom(row.form_data, newId), status: done ? 'completed' : 'draft', saved: true };
+  const plan = planFrom(row.form_data, newId);
+  // A plan saved by the old pages has the name its owner gave it: kept as
+  // it is. A new plan is named by its goal, and follows the goal.
+  const named = `${row.title || ''}`.trim();
+  return { id: row.id, plan, title: named && named !== planTitle(plan) ? named : null, status: done ? 'completed' : 'draft', saved: true };
 }
 
 async function loadFirstName(userId) {
@@ -187,6 +192,16 @@ function Flow({ userId, user, asked, start }) {
     draft.clear();
     clearGuideDraft(stepDraftKey(userId, asked));
   };
+  // Deleted (the quiet "Delete" of a plan opened from My Plans): nothing of
+  // it stays on this device, the copy the tool's own address carries on
+  // included, so Home never offers a deleted plan to carry on.
+  const deleted = () => {
+    forget();
+    if (asked && readDraft(userId, draftName(null))?.v?.id === asked) {
+      clearDraft(userId, draftName(null));
+      clearGuideDraft(stepDraftKey(userId, null));
+    }
+  };
 
   // One row in `decisions`, written over itself: a draft until it is finished.
   const save = (plan, status) => saveOrQueue(userId, {
@@ -197,7 +212,7 @@ function Flow({ userId, user, asked, start }) {
       id: itemRef.current.id,
       user_id: userId,
       tool_type: TOOL_TYPE,
-      title: planTitle(plan),
+      title: itemRef.current.title || planTitle(plan),
       form_data: savedForm(plan),
       status,
       draft: status === 'draft',
@@ -231,6 +246,21 @@ function Flow({ userId, user, asked, start }) {
       toast.error(friendlyError(error, SAVE_ERROR));
     } finally {
       busy.current = false;
+    }
+  };
+
+  // "Save my edit" on Your plan: the plan is saved as it stands, there and
+  // then, so "Saved" is true on every device and not only on this one (a
+  // finished plan stays finished; one still being made is kept as a draft).
+  const edited = async () => {
+    const now = itemRef.current;
+    try {
+      const status = now.status === 'completed' ? 'completed' : 'draft';
+      const result = await save(now.plan, status);
+      setItem((s) => ({ ...s, status, saved: true }));
+      toast.show(result?.status === 'queued' ? 'Will sync' : 'Saved');
+    } catch (error) {
+      toast.error(friendlyError(error, SAVE_ERROR));
     }
   };
 
@@ -283,6 +313,9 @@ function Flow({ userId, user, asked, start }) {
         initialStep={asked && start.status === 'completed' ? 'sum' : undefined}
         onClose={close}
         onFinish={finish}
+        onEdited={edited}
+        actions={<SavedItemActions className="ds-guide-delete" onDeleted={deleted} />}
+        actionsFirst={start.status !== 'completed'}
       />
     </div>
   );

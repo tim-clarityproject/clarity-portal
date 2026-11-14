@@ -10,7 +10,9 @@ import DeleteDialog from './ui/DeleteDialog';
 // Plans or My Reviews carries its row (savedItemRef) in the address's
 // state; this shows a quiet "Delete" for it, and after deleting goes back
 // to the list with "Deleted". Opened any other way, it shows nothing.
-export default function SavedItemActions({ className = '' }) {
+// `onDeleted` runs once it has gone, before leaving: a guided tool clears
+// what it keeps of the item on this device there.
+export default function SavedItemActions({ className = '', onDeleted }) {
   const location = useLocation();
   const navigate = useNavigate();
   const toast = useToast();
@@ -23,6 +25,7 @@ export default function SavedItemActions({ className = '' }) {
     setAsking(false);
     try {
       await deleteSavedItem(user.id, item);
+      onDeleted?.();
       navigate(item.from || '/welcome', { replace: true, state: { toast: 'Deleted' } });
     } catch (err) {
       console.error('[SavedItemActions] delete:', err);

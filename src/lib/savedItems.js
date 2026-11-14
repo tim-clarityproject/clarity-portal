@@ -217,6 +217,8 @@ export function planRows(data, today = getLocalDateKey()) {
       at: r.finishedAt || r.updatedAt || r.createdAt,
       isDraft,
       canEdit: true,
+      // Deleted from inside the opened item (SavedItemActions), like every saved plan.
+      canDelete: true,
       private: Boolean(meta.private),
       to,
       edit: to,

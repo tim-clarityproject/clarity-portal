@@ -69,6 +69,11 @@ import './emotionalWash.css';
 //   sourceId           the saved item's id, for the to-dos made from it
 //   onTodoGone(id)     a to-do replaced by an edit, or no longer wanted: the page deletes it
 //   pdf                the "Download my PDF" link in the summary's bottom bar
+//   onEdited           “Save my edit” went back to the summary: the page saves
+//                      the wash as it stands and says so (“Saved”)
+//   actions            “Delete”, for a wash opened from My Plans: under the
+//                      summary, and under the first question while it is
+//                      still a draft (`actionsFirst`)
 //   draftKey, initialStep, onClose, onFinish   as GuidedTool's
 //
 // The eye shows on the first step and on the summary only (Tim, 13 Nov,
@@ -120,6 +125,9 @@ export default function EmotionalWashTool({
   initialStep,
   onClose,
   onFinish,
+  onEdited,
+  actions = null,
+  actionsFirst = false,
 }) {
   const toast = useToast();
   const todo = useToolTodo();
@@ -262,12 +270,15 @@ export default function EmotionalWashTool({
       percent: percentAt(0, count),
       check: () => requiredMessage('what', wash),
       render: () => (
-        <TextBox
-          ariaLabel={question('what')}
-          maxLength={WHAT_MAX}
-          value={wash.what}
-          onChange={(what) => onWash((w) => ({ ...w, what }))}
-        />
+        <>
+          <TextBox
+            ariaLabel={question('what')}
+            maxLength={WHAT_MAX}
+            value={wash.what}
+            onChange={(what) => onWash((w) => ({ ...w, what }))}
+          />
+          {actionsFirst && actions}
+        </>
       ),
     },
     {
@@ -409,7 +420,7 @@ export default function EmotionalWashTool({
       noProgress: true,
       className: 'ew-summary',
       footAside: pdf,
-      render: (tool) => <Summary wash={wash} tool={tool} />,
+      render: (tool) => <><Summary wash={wash} tool={tool} />{!firstUnanswered(wash) && actions}</>,
     },
   ];
 
@@ -427,7 +438,7 @@ export default function EmotionalWashTool({
       initialStep={initialStep}
       onClose={onClose}
       onFinish={onFinish}
-      onEdited={() => toast.show('Saved')}
+      onEdited={onEdited || (() => toast.show('Saved'))}
     />
   );
 }

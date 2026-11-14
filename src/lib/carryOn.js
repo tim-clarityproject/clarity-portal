@@ -65,6 +65,8 @@ export function carryOnItems(userId, { today, yesterday, exclude = [], finished 
     // Storage blocked: nothing to carry on.
   }
 
+  // Get unstuck (M9): the plan closed part-way, with the step it was left on.
+  add('get-unstuck', 'Get unstuck', '/get-unstuck', { step: `get-unstuck-${userId}-new`, draft: 'get-unstuck:new' });
   // The Team performance check (M10): its step, and the check as it was left.
   add('team-check', 'Team performance check', '/team-performance-check', { step: `team-check-${userId}-new`, draft: 'team-check:new' });
   // The Emotional wash (M10): only the tool's name ever shows, never what was typed.
