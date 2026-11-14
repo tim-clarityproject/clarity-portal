@@ -50,7 +50,7 @@ Answers made from the person's own words (their Strategies, priorities, ways of 
 
 ## Health Check, in the portal (`src/pages/alignment/alignmentFlow.js`) and the outside page (`src/health-check`)
 
-- How much a project contributes to each factor: None, Low, Medium, High. **Left as it is** (one of the Health Check's three rating scales).
+- How much a project contributes to each Success Factor: None, Low, Medium, High. **Left as it is** (one of the Health Check's three rating scales).
 - Progress: Embryonic stage, Bad, Fair, Good, Excellent. **Left as it is** (a Health Check rating scale).
 - Resource required: Minimal, Low, Moderate, High, Very high. **Left as it is** (a Health Check rating scale).
 - Finish date (outside page): Not sure, Open-ended, with no agreed finish date (the other answers are months). **Left as it is** (the Health Check's finish date).

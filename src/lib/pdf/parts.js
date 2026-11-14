@@ -493,7 +493,7 @@ function drawDotMark(doc, kind, x, y, r, t) {
 
 /**
  * Where each dot of a dot chart goes, as on the results page (placeDots in
- * src/health-check/Chart.jsx): dots that would touch are moved apart, but
+ * src/pages/healthCheck/HealthCheckChart.jsx): dots that would touch are moved apart, but
  * only within the dot's own area (the same side of both centre lines; a dot
  * on the middle category stays near its line), so a moved dot never shows a
  * false place. When the area is full, a dot takes the spot that overlaps least.

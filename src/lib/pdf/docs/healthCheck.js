@@ -8,10 +8,10 @@ import {
 
 // The Strategic Alignment Health Check as a document for the shared PDF template.
 
-// The PDF follows the results page (mock-up M7b version 47, in the order of
-// 13 Nov: rule 29ar): the headline in the At a glance panel, then the chart
+// The PDF follows the results page (mock-up M7b version 51, in the order of
+// 13 Nov: rule 29ar; Success Factors and "Projects": Tim, 14 Nov): the headline in the At a glance panel, then the chart
 // (dot size shows resource, and the across line is the Health Check's own line
-// for important), the project list, the objective, the CSFs with their levels,
+// for important), the project list, the objective, the Success Factors with their levels,
 // and last the questions to start with and their reasons. Every figure and word comes from resultsModel
 // (src/health-check/words.js, from src/lib/scores/m20.js), so the page and the
 // PDF never disagree. The PDF keeps a key in words (PDF rules 18 and 21), with
@@ -59,7 +59,8 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
     const rest = missing ? ` ${missing} ${missing === 1 ? 'project has' : 'projects have'} no progress rating yet, so ${missing === 1 ? 'it isn’t' : 'they aren’t'} on the chart.` : '';
     return headlineSentence(headline) + rest;
   };
-  // "Strategic importance is how much a project helps the CSFs, out of 100%. …", the column ⓘ's one definition
+  // "Strategic importance is how much a project helps the Success Factors, out of 100%. High on every
+  // Success Factor scores 100%.": the column ⓘ's lines as full sentences (the weights are no longer explained: Tim, 14 Nov, 09:46)
   const [, first, ...more] = importanceLines();
   const importanceNote = [first.line.replace(/^It’s /, 'Strategic importance is '), ...more.map((l) => l.line)].join(' ');
 
@@ -77,7 +78,7 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
       { label: 'Important projects moving well', value: headline.big, note: headline.important ? headline.rest : headline.line, big: true },
       { label: 'Important means above', value: `${line}%`, big: true },
       { label: 'Projects', value: String(n), big: true },
-      { label: 'Critical Success Factors (CSFs)', value: String(nf), big: true },
+      { label: 'Success Factors', value: String(nf), big: true },
     ],
     sections: [
       {
@@ -101,7 +102,7 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
         }] : [],
       },
       {
-        title: 'Your projects',
+        title: 'Projects',
         blocks: [
           { type: 'text', tone: 'detail', text: 'The one most in need of attention comes first.' },
           {
@@ -125,14 +126,13 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
         ],
       },
       { title: 'Objective', blocks: [{ type: 'text', text: draft.objective || '' }] },
-      // Headings are set in capitals, where the abbreviation would read "CSFS", so they never carry it.
       {
-        title: 'Critical Success Factors',
+        title: 'Success Factors',
         blocks: [{
           type: 'table',
           columns: [
             { label: 'No.', width: 0.45 },
-            { label: 'Critical Success Factor', width: 3.9 },
+            { label: 'Success Factor', width: 3.9 },
             { label: 'How much it matters', width: 1.45 },
           ],
           rows: factors.map((f, i) => [

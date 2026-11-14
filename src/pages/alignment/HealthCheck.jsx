@@ -27,15 +27,15 @@ const PAGE_TITLE = 'Strategic Alignment Health Check';
 
 const HINTS = {
   objective: 'Write your objective to continue',
-  factors: 'Add at least one factor',
+  factors: 'Add at least one Success Factor',
   projects: 'Add at least one project',
-  contrib: 'Rate each factor to continue',
+  contrib: 'Rate each Success Factor to continue',
   progress: 'Choose one to continue',
   resource: 'Choose one to continue',
 };
 
 const SUBTITLE = {
-  contrib: 'How much does this project contribute to your Critical Success Factors?',
+  contrib: 'How much does this project contribute to your Success Factors?',
   progress: 'How far along is it?',
   resource: 'How much resource will it need to deliver in time, people, money and technology?',
 };
@@ -43,7 +43,7 @@ const SUB_LABEL = { contrib: 'Contribution', progress: 'Progress', resource: 'Re
 
 const START = { screen: 'objective', pi: 0, mode: 'full', highlight: [], queue: [] };
 const RESULTS = { screen: 'done', pi: 0, mode: 'full', highlight: [], queue: [] };
-const STEP_NAMES = ['Objective', 'Critical Success Factors', 'Projects', 'Rate projects'];
+const STEP_NAMES = ['Objective', 'Success Factors', 'Projects', 'Rate projects'];
 const pad = (n) => (n < 10 ? `0${n}` : String(n));
 const looksLikeEmail = (v) => /^\S+@\S+\.\S+$/.test(v.trim());
 const accessKey = (token) => `alignment-access:${token}`;
@@ -91,7 +91,7 @@ function SaveStatus({ state }) {
   );
 }
 
-// One numbered box list, used for both Critical Success Factors and projects.
+// One numbered box list, used for both Success Factors and projects.
 function NumberedRows({ rows, kind, label, placeholder, max, focusId, onChange, onRemove, onAdd }) {
   const refs = useRef({});
   useEffect(() => {
@@ -566,16 +566,16 @@ export default function HealthCheck() {
       </div>,
     ];
   } else if (step.screen === 'factors') {
-    shellProps = { align: 'left', headline: 'Critical Success Factors', headlineSize: 'md', columnClassName: 'al-col', letterStaggerMs: 28 };
+    shellProps = { align: 'left', headline: 'Success Factors', headlineSize: 'md', columnClassName: 'al-col', letterStaggerMs: 28 };
     body = [
-      <p key="d" className="al-def">A Critical Success Factor is something that has to be true for your team’s objective to be met.</p>,
+      <p key="d" className="al-def">A Success Factor is something that has to be true for your team’s objective to be met.</p>,
       <p key="e" className="al-eg">For example: <i>Customers feel no dip in service.</i></p>,
       <div key="r" className="al-body">
-        <p className="auth-field-label">Your Critical Success Factors</p>
+        <p className="auth-field-label">Your Success Factors</p>
         <NumberedRows
           rows={draft.csfs}
           kind="csf"
-          label="Critical Success Factor"
+          label="Success Factor"
           placeholder="What must go right?"
           max={MAX_FACTORS}
           focusId={focusId}

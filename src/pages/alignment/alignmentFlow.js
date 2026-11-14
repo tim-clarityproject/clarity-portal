@@ -3,7 +3,7 @@
 //
 // draft  = { objective, csfs: [{id, text, level?}], projects: [{id, text, ...dates}], ratings, importantLine }
 //          dates: started, startedOn, due, dueOn, all optional (src/lib/projectDates.js)
-//          level: a CSF's level, 3 Critical, 2 Very important, 1 Important;
+//          level: a Success Factor's level, 3 Critical, 2 Very important, 1 Important;
 //          none saved reads as 2 (csfLevel in src/lib/alignmentScore.js)
 //          importantLine: the line for important, 30 to 80, or null when none
 //          is saved, which reads as 50 (importantLine in alignmentScore.js)
@@ -54,7 +54,7 @@ function padRows(rows) {
   return out;
 }
 
-/** A CSF's saved level, kept only when it is 1, 2 or 3. */
+/** A Success Factor's saved level, kept only when it is 1, 2 or 3. */
 const keptLevel = (item) => ([1, 2, 3].includes(item.level) ? { level: item.level } : {});
 
 /** The saved line for important, kept only when it is one of the choices. */
@@ -62,7 +62,7 @@ const keptLine = (value) => (LINE_CHOICES.includes(value) ? value : null);
 
 /**
  * Non-blank rows only, text trimmed. These are the real items. A project's
- * valid dates and a CSF's valid level are kept; anything else on an item is
+ * valid dates and a Success Factor's valid level are kept; anything else on an item is
  * dropped.
  */
 export function cleanItems(rows) {

@@ -245,7 +245,7 @@
   overflow-wrap: anywhere;
 }
 
-/* ---- numbered rows (Critical Success Factors, projects) ------------------- */
+/* ---- numbered rows (Success Factors, projects) ------------------- */
 .ui-root .al-row {
   display: grid;
   grid-template-columns: var(--space-4) minmax(0, 1fr) var(--tap-min);
@@ -348,7 +348,7 @@
   color: var(--label);
 }
 
-/* A Critical Success Factor added after projects were rated: the screens
+/* A Success Factor added after projects were rated: the screens
    that come back for it mark it, and quieten the ones already rated. */
 .ui-root .al-factor--new .al-factor-text > b,
 .ui-root .al-factor--new .al-new {

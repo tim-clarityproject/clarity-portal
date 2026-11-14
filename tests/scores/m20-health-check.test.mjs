@@ -222,9 +222,9 @@ test('the questions: the mock-up\'s three, the most urgent first', () => {
     },
     {
       kind: 'csf',
-      label: 'CSF cover',
+      label: 'Success Factors',
       question: 'What could strongly support “A team with the right skills in the right roles”?',
-      reason: 'You didn’t rate any project “High” for this CSF.',
+      reason: 'You didn’t rate any project “High” for this Success Factor.',
       csfId: 'c3',
     },
   ]);
@@ -235,7 +235,7 @@ test('the questions: the example report says "They" and "their"', () => {
   const q = S.m20Questions(ranked, csfs, { asOf: '2026-10', theirs: true });
   assert.equal(q[0].reason, 'They rated its progress “Bad”, and it’s due to finish in 2 months.');
   assert.equal(q[1].reason, 'They rated its resource requirements “High”, and its strategic importance is 15%.');
-  assert.equal(q[2].reason, 'They didn’t rate any project “High” for this CSF.');
+  assert.equal(q[2].reason, 'They didn’t rate any project “High” for this Success Factor.');
   const fix = build([{ id: 'a', text: 'A' }], [['x', 'Fix me', [3], 2, 3]]).ranked;
   assert.equal(S.m20Questions(fix, [], { theirs: true })[0].reason, 'They rated its progress “Bad”, and it’s above their line for important.');
   const fine = build([{ id: 'a', text: 'A' }], [['x', 'X', [3], 4, 3]]).ranked;
@@ -329,7 +329,7 @@ test('CSF cover: a CSF no project rates High, the heavier first, then the first 
   const q = S.m20Questions(ranked, csfs).find((x) => x.kind === 'csf');
   assert.equal(q.csfId, 'b');
   assert.equal(q.question, 'What could strongly support “Second, Very important”?');
-  assert.equal(q.reason, 'You didn’t rate any project “High” for this CSF.');
+  assert.equal(q.reason, 'You didn’t rate any project “High” for this Success Factor.');
   assert.deepEqual(S.m20CsfsWithoutHigh(ranked, csfs), ['a', 'b', 'c']);
   const heavier = csfs.map((f) => (f.id === 'a' ? { ...f, level: 3 } : f));
   assert.equal(S.m20Questions(build(heavier, [['x', 'X', [2, 2, 2, 3], 4, 3]]).ranked, heavier).find((x) => x.kind === 'csf').csfId, 'a');

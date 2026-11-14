@@ -35,14 +35,15 @@
 /** Highest contribution score for one factor. */
 export const MAX_CONTRIBUTION = 3;
 
-// ---------------------------------------------------------------- CSF levels
-// Each Critical Success Factor (CSF) is saved with its level, how much it
+// ---------------------------------------------------------------- Success Factor levels
+// Each Success Factor (called a Critical Success Factor, or CSF, until 14 Nov 2026;
+// the code names and saved keys keep "csf") is saved with its level, how much it
 // matters to the objective: `level` on its item in the answers' csfs list
 // (alignment_sessions.data, which allows extra keys on an item, so no database
 // change). A missing or bad level reads as Very important, so every older
-// Health Check reads as before. Removing a CSF removes its level with it.
+// Health Check reads as before. Removing a Success Factor removes its level with it.
 
-/** Very important: every CSF's level unless changed. */
+/** Very important: every Success Factor's level unless changed. */
 export const DEFAULT_CSF_LEVEL = 2;
 
 /** The three levels, heaviest first, with their names. */
@@ -56,14 +57,14 @@ export const CSF_LEVELS = [
 export const CSF_WEIGHTS = { 1: 1, 2: 1.2, 3: 1.4 };
 
 // The same weights as whole numbers in the same ratio (5 : 6 : 7), so the sums
-// are exact and every CSF at Very important gives exactly the unweighted
+// are exact and every Success Factor at Very important gives exactly the unweighted
 // figure, to the last decimal place.
 const EXACT_WEIGHT = { 1: 5, 2: 6, 3: 7 };
 
 /**
- * A CSF's level, 3 Critical, 2 Very important or 1 Important; Very important
+ * A Success Factor's level, 3 Critical, 2 Very important or 1 Important; Very important
  * when it has none saved or a bad one.
- * @param {{level?: number}|null|undefined} factor a CSF item
+ * @param {{level?: number}|null|undefined} factor a Success Factor item
  * @returns {1|2|3}
  */
 export function csfLevel(factor) {
@@ -77,7 +78,7 @@ export function csfLevelName(level) {
 }
 
 /**
- * Each CSF's level, by id, for strategicImportance.
+ * Each Success Factor's level, by id, for strategicImportance.
  * @param {{id: string, level?: number}[]} factors
  * @returns {Object<string, 1|2|3>}
  */
@@ -187,7 +188,7 @@ export function isAboveLine(importancePct, line = IMPORTANT_ABOVE) {
 }
 
 /**
- * The answers with one CSF's level changed (a new object; the rest kept).
+ * The answers with one Success Factor's level changed (a new object; the rest kept).
  * @param {Object} data the Health Check's answers
  * @param {string} csfId
  * @param {1|2|3} level
@@ -367,7 +368,7 @@ export function dueWhen(monthsLeft, dueWords) {
  *   resource  rated, with a progress rating, at or below the line, resource
  *             High or Very high; the highest resource first, then the lowest
  *             importance, then the list order
- *   csf       a CSF no project rates High (3); the heavier first, then the
+ *   csf       a Success Factor no project rates High (3); the heavier first, then the
  *             first in the list
  *   on_track  only when none of the others applies
  * @param {ReturnType<typeof rankProjects>} ranked
@@ -437,9 +438,9 @@ export function questions(ranked, factors, { line = IMPORTANT_ABOVE, asOf, their
   if (gap) {
     ask({
       kind: 'csf',
-      label: 'CSF cover',
+      label: 'Success Factors',
       question: `What could strongly support “${gap.f.text}”?`,
-      reason: `${they} didn’t rate any project “High” for this CSF.`,
+      reason: `${they} didn’t rate any project “High” for this Success Factor.`,
       csfId: gap.f.id,
     });
   }
@@ -456,11 +457,11 @@ export function questions(ranked, factors, { line = IMPORTANT_ABOVE, asOf, their
 }
 
 /**
- * Which CSFs no project rates High (3), in the list's order. Their cards say
+ * Which Success Factors no project rates High (3), in the list's order. Their cards say
  * "No project strongly supports this yet."
  * @param {ReturnType<typeof rankProjects>} ranked
  * @param {{id: string}[]} factors
- * @returns {string[]} CSF ids
+ * @returns {string[]} Success Factor ids
  */
 export function csfsWithoutHigh(ranked, factors) {
   return (factors || []).filter((f) => !(ranked || []).some((r) => r.contrib?.[f.id] === MAX_CONTRIBUTION)).map((f) => f.id);

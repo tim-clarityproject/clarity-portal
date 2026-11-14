@@ -34,7 +34,7 @@ test('the rule itself: a reworded answer is caught, an example or a meaning is n
   assert.equal(repeatsItsAnswer('I’ll rate it each day, from Poor to Excellent', 'e.g. focus, rated each day'), false);
   assert.equal(repeatsItsAnswer('Stay calm under pressure', 'Staying calm under pressure'), true);
   assert.equal(repeatsItsAnswer('I’ll count it each week', 'e.g. training sessions'), false);
-  assert.equal(repeatsItsAnswer('High', 'This CSF would be hard to achieve without it.'), false);
+  assert.equal(repeatsItsAnswer('High', 'This Success Factor would be hard to achieve without it.'), false);
   assert.equal(repeatsItsAnswer('Monday 16 Nov', 'suggested'), false);
 });
 

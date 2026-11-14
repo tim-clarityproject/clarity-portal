@@ -8,7 +8,7 @@ These are production-ready and tested:
 - [x] **GROW Model** — Structure decisions through Goal, Reality, Options, Will-do
 - [x] **Tough Conversation Framework** — Prepare feedback scripts and coaching questions
 - [x] **Inversion Thinking** — Identify risks and plan mitigation
-- [x] **Where My Team Should Focus** — Strategic alignment with critical success factors
+- [x] **Where My Team Should Focus** — Strategic alignment with Success Factors
 
 ### Workflows in Development
 - [ ] **Risk Mitigation Model** — Full workflow (list risks → identify mitigations → prioritize)

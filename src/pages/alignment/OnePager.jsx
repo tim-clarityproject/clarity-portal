@@ -9,7 +9,7 @@ import { projectDates } from '../../lib/projectDates';
 // The one-pager (everything below the title, which AuthShell draws). All
 // numbers come from src/lib/alignmentScore.js. The overview comes first (rule
 // 29ar; Tim, 13 Nov): the chart, the project list, then the objective and the
-// Critical Success Factors, and Keep your results last.
+// Success Factors, and Keep your results last.
 
 const pad = (n) => (n < 10 ? `0${n}` : String(n));
 
@@ -132,7 +132,7 @@ export default function OnePager({ draft, onEmailLink, onCreateAccount, onEdit, 
           </div>
 
           <div className="al-lhead al-headrow">
-            <span className="al-sect al-sect--first">Your projects</span>
+            <span className="al-sect al-sect--first">Projects</span>
             <EditButton label="Edit the projects" onClick={() => onEdit('projects')} />
           </div>
           <div className="al-sorts" role="group" aria-label="Sort projects">
@@ -208,7 +208,7 @@ export default function OnePager({ draft, onEmailLink, onCreateAccount, onEdit, 
       )}
 
       <p className="al-note">
-        {`Strategic importance: a project’s contribution scores added together, divided by the highest possible score, ${nf} Critical Success Factors × ${MAX_CONTRIBUTION} = ${nf * MAX_CONTRIBUTION}, shown as a percentage. Numbers match the dots on the chart.`}
+        {`Strategic importance: a project’s contribution scores added together, divided by the highest possible score, ${nf} Success Factors × ${MAX_CONTRIBUTION} = ${nf * MAX_CONTRIBUTION}, shown as a percentage. Numbers match the dots on the chart.`}
       </p>
 
       <div className="al-opobj al-opobj--after">
@@ -220,8 +220,8 @@ export default function OnePager({ draft, onEmailLink, onCreateAccount, onEdit, 
       </div>
 
       <div className="al-headrow al-headrow--sect">
-        <span className="al-sect al-sect--first">Critical Success Factors</span>
-        <EditButton label="Edit the Critical Success Factors" onClick={() => onEdit('factors')} />
+        <span className="al-sect al-sect--first">Success Factors</span>
+        <EditButton label="Edit the Success Factors" onClick={() => onEdit('factors')} />
       </div>
       <div className="al-csfg" style={{ '--cols': cols }}>
         {factors.map((f, i) => (
