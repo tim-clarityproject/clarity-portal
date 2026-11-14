@@ -163,6 +163,41 @@ test('“now” and “At your last check, in October”: the real month, never 
   for (const p of c.people) for (const line of dotTip(c, p, NOW).extra) assert.ok(!/this month|last month/i.test(line));
 });
 
+// The functionality tester, 14 Nov: five people rated the same ran off a
+// phone's drawing (twelve off a laptop's). They now stand in rows.
+test('the chart: more people on one spot than a row holds stand in rows, all inside the drawing', () => {
+  const names = ['Priya Shah', 'Tom Ellis', 'Grace Okafor', 'Daniel Reyes', 'Leila Haddad', 'Sam Carter', 'Alexandra Wu', 'Jo Li', 'Mohammed Khan', 'Christopher Vale', 'Ana Diaz', 'Bo Chen'];
+  for (const phone of [true, false]) {
+    const f = chartFrame(phone);
+    for (const [u, a] of [[1, 1], [3, 3], [4, 4], [5, 5], [1, 5], [5, 1]]) {
+      for (const n of [2, 4, 5, 8, 12]) {
+        const dots = chartDots(team(names.slice(0, n).map((name) => [name, 3, a, u])), f);
+        for (const d of dots) {
+          assert.ok(d.x - f.R >= f.PL, `${n} at ${u},${a}: ${d.person.name} starts inside`);
+          assert.ok(d.x + f.R + 6 + f.nameWidth(d.person.name) <= f.W, `${n} at ${u},${a}: ${d.person.name}'s name ends inside`);
+          assert.ok(d.y - f.R >= f.PT && d.y + f.R <= f.PT + f.ph, `${n} at ${u},${a}: ${d.person.name} is inside, top and bottom`);
+        }
+        // Every dot is on its own side of the line between the areas (a name may cross it; a dot never does).
+        for (const d of dots) {
+          assert.ok(u >= 4 ? d.x - f.R > f.midX : d.x + f.R < f.midX, `${n} at ${u},${a}: ${d.person.name} is on the right side of the line`);
+          if (n <= 4) assert.ok(a >= 4 ? d.y + f.R < f.midY : d.y - f.R > f.midY, `${n} at ${u},${a}: ${d.person.name} is on the right side of the line, up and down`);
+        }
+        // No two dots, and no dot and another's name, share a place.
+        for (const d of dots) for (const e of dots) {
+          if (d === e || Math.abs(d.y - e.y) > 2 * f.R) continue;
+          assert.ok(e.x <= d.x || e.x - f.R >= d.x + f.R + 6 + f.nameWidth(d.person.name) - 0.01, `${n} at ${u},${a}: ${e.person.name} clears ${d.person.name}`);
+        }
+      }
+    }
+    // Two with room for both: one row, level with the spot, as M10 draws them.
+    const few = chartDots(team(names.slice(0, 2).map((name) => [name, 3, 2, 2])), f);
+    assert.ok(few.every((d) => Math.abs(d.y - f.Y(2)) < 0.01));
+  }
+  // Five on a phone: more than one row.
+  const ph = chartFrame(true);
+  assert.ok(new Set(chartDots(team(names.slice(0, 5).map((name) => [name, 3, 4, 4])), ph).map((d) => d.y)).size > 1);
+});
+
 test('the chart: M10’s own measures, dots side by side on a shared spot, the last check’s ring', () => {
   const f = chartFrame(false);
   assert.deepEqual([f.W, f.H, f.R], [680, 440, 8]);
@@ -188,7 +223,11 @@ test('the chart: M10’s own measures, dots side by side on a shared spot, the l
   // ... and a row on a shared spot there stays inside the drawing, with room for each name.
   const row = chartDots(team([['Eve Li', 3, 5, 5], ['Maximilian X', 3, 5, 5]]), ph);
   assert.ok(row[1].x + ph.R + 6 + ph.nameWidth('Maximilian X') <= ph.W, 'the last name ends inside the drawing');
-  assert.ok(row[1].x - row[0].x >= ph.R * 2 + 52 - 0.01 && row[0].x - ph.R >= ph.PL);
+  // On a phone the two don't fit side by side on High-performance's side of the line, so one stands above the other.
+  assert.ok(row[1].y - row[0].y >= ph.R * 2 && row.every((d) => d.x - ph.R > ph.midX && d.y + ph.R < ph.midY));
+  // On a laptop they do: side by side, R*2+52 apart or more, both on their side of the line.
+  const wideRow = chartDots(team([['Eve Li', 3, 5, 5], ['Maximilian X', 3, 5, 5]]), f);
+  assert.ok(wideRow[1].x - wideRow[0].x >= f.R * 2 + 52 - 0.01 && wideRow[0].y === wideRow[1].y && wideRow[0].x - f.R > f.midX);
   const long = chartDots(team([['Maximilian X', 3, 3, 3], ['Bo Y', 3, 3, 3]]), ph);
   assert.ok(long[1].x - long[0].x >= ph.R * 2 + 6 + ph.nameWidth('Maximilian X') + 6 - 0.01, 'a long name has room before the next dot');
 });

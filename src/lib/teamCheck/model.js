@@ -309,41 +309,87 @@ const SHARED_GAP = 52; // between two dots that share a spot (M10)
  * Nothing is cut off (M10's own example has nobody at the right-hand
  * edge): a name that would run past the drawing's right edge goes to the
  * left of its dot (`nameLeft`); people who share a spot stand far enough
- * apart for each name, and the row of them is moved back inside the
- * drawing when it would run off either side.
+ * apart for each name, the row of them is moved back inside the drawing
+ * when it would run off either side, and more than one row can hold
+ * stand in rows, one above another.
  */
 export function chartDots(check, frame) {
   const people = ratedPeople(check);
-  const { X, Y, R, W, PL } = frame;
+  const { X, Y, R, W, PL, PT = 0, ph = Infinity } = frame;
   const wide = frame.nameWidth || (() => 0);
   const byId = new Map(people.map((p) => [p.id, p]));
-  // Each shared spot's dots, left to right, centred on the spot and kept inside the drawing.
-  const rows = new Map();
-  const rowFor = (key, ids, x0) => {
-    if (rows.has(key)) return rows.get(key);
-    const at = [0];
-    for (let i = 1; i < ids.length; i += 1) at.push(at[i - 1] + 2 * R + Math.max(SHARED_GAP, NAME_GAP + wide(byId.get(ids[i - 1]).name) + NAME_GAP));
-    const half = at[at.length - 1] / 2;
-    let xs = at.map((a) => x0 + a - half);
-    const over = xs[xs.length - 1] + R + NAME_GAP + wide(byId.get(ids[ids.length - 1]).name) - (W - 2);
-    if (over > 0) xs = xs.map((x) => x - over);
-    const under = PL + R + 2 - xs[0];
-    if (under > 0) xs = xs.map((x) => x + under);
-    rows.set(key, xs);
-    return xs;
+  const tail = (id) => R + NAME_GAP + wide(byId.get(id).name); // from a dot's centre to the end of its name
+  const step = (id) => 2 * R + Math.max(SHARED_GAP, NAME_GAP + wide(byId.get(id).name) + NAME_GAP); // to the next dot's centre
+  // A name's width is an estimate (wide letters run a few px over it), so a row keeps 8px clear of the right edge.
+  const edge = W - 8;
+  const room = edge - (PL + R + 2); // from the first dot's centre to that edge
+  const rowGap = 2 * R + 10;
+  // Each shared spot's dots: side by side, centred on the spot and kept
+  // inside the drawing. More people than one row can hold stand in rows,
+  // one above another, centred on the spot too: nobody's name ever runs
+  // off the drawing.
+  const placed = new Map();
+  const { midX = null, midY = null } = frame;
+  const placeSpot = (ids, x0, y0, u, a) => {
+    // Every dot stays on its own side of the two dividing lines, so nobody
+    // is drawn in an area they aren't in (a name may cross a line; a dot
+    // never does). Dot centres run from `from` to `to`; names end by `edge`.
+    const right = midX != null && u >= 4;
+    const from = right ? midX + R + 4 : PL + R + 2;
+    const to = midX != null && !right ? midX - R - 4 : Infinity;
+    const rows = [[]];
+    let span = 0;
+    for (const id of ids) {
+      const row = rows[rows.length - 1];
+      if (row.length && (from + span + tail(id) > edge || from + span > to)) {
+        rows.push([id]);
+        span = step(id);
+      } else {
+        row.push(id);
+        span += step(id);
+      }
+    }
+    // The rows are centred on the spot, inside its own band when they fit
+    // there (clear of the area's name), otherwise inside the drawing.
+    const height = (rows.length - 1) * rowGap;
+    let low = PT + R + 2;
+    let high = PT + ph - R - 2;
+    if (midY != null && Number.isFinite(high)) {
+      const bandLow = a >= 4 ? PT + 28 + R : midY + R + 3;
+      const bandHigh = a >= 4 ? midY - R - 3 : PT + ph - 24 - R;
+      if (bandHigh - bandLow >= height) { low = bandLow; high = bandHigh; }
+    }
+    let top = y0 - height / 2;
+    if (Number.isFinite(high)) top = Math.max(low, Math.min(top, high - height));
+    rows.forEach((row, r) => {
+      const at = [0];
+      for (let i = 1; i < row.length; i += 1) at.push(at[i - 1] + step(row[i - 1]));
+      const half = at[at.length - 1] / 2;
+      let xs = at.map((x) => x0 + x - half);
+      const over = Math.max(xs[xs.length - 1] + tail(row[row.length - 1]) - edge, xs[xs.length - 1] - to);
+      if (over > 0) xs = xs.map((x) => x - over);
+      const under = from - xs[0];
+      if (under > 0) xs = xs.map((x) => x + under);
+      row.forEach((id, i) => placed.set(id, { x: xs[i], y: top + r * rowGap }));
+    });
   };
   const spots = new Map();
   people.forEach((p) => {
     const key = `${p.u},${p.a}`;
     spots.set(key, [...(spots.get(key) || []), p.id]);
   });
+  spots.forEach((ids, key) => {
+    if (ids.length < 2) return;
+    const [u, a] = key.split(',').map(Number);
+    placeSpot(ids, X(u), Y(a), u, a);
+  });
   return people.map((p) => {
     const group = spots.get(`${p.u},${p.a}`);
     const x0 = X(p.u);
-    const off = group.length > 1 ? rowFor(`${p.u},${p.a}`, group, x0)[group.indexOf(p.id)] - x0 : 0;
+    const y0 = Y(p.a);
+    const at = placed.get(p.id) || { x: x0, y: y0 };
     // Alone at the right-hand edge: the name goes to the left of the dot.
     const nameLeft = group.length === 1 && x0 + R + NAME_GAP + wide(p.name) > W - 2;
-    const y0 = Y(p.a);
     const was = before(check, p);
     let ring = null;
     let line = null;
@@ -353,14 +399,15 @@ export function chartDots(check, frame) {
       const d = Math.hypot(x0 - rx, y0 - ry);
       if (d >= 1) {
         ring = { x: rx, y: ry };
-        if (d > 2 * R + 4) {
-          const ux = (x0 - rx) / d;
-          const uy = (y0 - ry) / d;
-          line = { x1: rx + ux * (R + 2), y1: ry + uy * (R + 2), x2: x0 - ux * (R + 2), y2: y0 - uy * (R + 2) };
+        const dd = Math.hypot(at.x - rx, at.y - ry);
+        if (dd > 2 * R + 4) {
+          const ux = (at.x - rx) / dd;
+          const uy = (at.y - ry) / dd;
+          line = { x1: rx + ux * (R + 2), y1: ry + uy * (R + 2), x2: at.x - ux * (R + 2), y2: at.y - uy * (R + 2) };
         }
       }
     }
-    return { person: p, x: x0 + off, y: y0, good: areaOf(p) === 'hp', nameLeft, ring, line };
+    return { person: p, x: at.x, y: at.y, good: areaOf(p) === 'hp', nameLeft, ring, line };
   });
 }
 
