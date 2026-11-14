@@ -21,6 +21,8 @@ import './healthCheck.css';
 // was:   for Compare two versions (M7): { [projectId]: { progress, importance } },
 //        where each project stood in the earlier version. A dashed ring is
 //        drawn there with a fine line to where it is now.
+// notes: for Compare, one more line in each dot's pop-up, by project id
+//        ("On Tue 14 Jul, its progress was “Fair”.", "It’s new since Tue 14 Jul.").
 
 /** The dot radii from m20DotSize, as the mock-up draws them (x0.85 on a phone). */
 const RADIUS = { small: 8, middle: 12, large: 17 };
@@ -74,7 +76,7 @@ export function placeDots(rows, geo) {
 }
 
 /** What a dot's pop-up says: the kind first, small, then the name, then its figures and answers. */
-export function dotTip(row) {
+export function dotTip(row, note = null) {
   return {
     kind: `Project ${row.n}`,
     name: row.text,
@@ -85,15 +87,16 @@ export function dotTip(row) {
       ...(PROGS[row.progress] ? [`Progress is “${PROGS[row.progress]}”.`] : []),
       // a blank resource counts as Moderate, as its dot size does (m20DotSize), and isn't a chosen answer
       `Resource required is ${RES[row.resource] ? `“${RES[row.resource][0]}”` : RES[3][0]}.`,
+      ...(note ? [note] : []),
     ],
   };
 }
 
-function Dot({ dot, lit, hit }) {
+function Dot({ dot, lit, hit, note }) {
   const { row, x, y, r } = dot;
   const q = row.q || 'no';
   return (
-    <g className={`hc-dot hc-dot--${q}${lit ? ' hc-dot--lit' : ''}`} data-n={row.n} {...tipProps(dotTip(row))} role="button" aria-label={`Project ${row.n}, ${row.text}. ${stateSentence(row)}`}>
+    <g className={`hc-dot hc-dot--${q}${lit ? ' hc-dot--lit' : ''}`} data-n={row.n} {...tipProps(dotTip(row, note))} role="button" aria-label={`Project ${row.n}, ${row.text}. ${stateSentence(row)}`}>
       <circle className="hc-dot-tap" cx={x} cy={y} r={hit} />
       {row.q === 'co' && <circle className="hc-dot-ring" cx={x} cy={y} r={r + 4} />}
       <circle className="hc-dot-mark" cx={x} cy={y} r={r} />
@@ -113,7 +116,7 @@ export function chartFrame(phone) {
   return { W, H, PL, PR, PT, PB, pw: W - PL - PR, ph: H - PT - PB, IN: phone ? 20 : 26 };
 }
 
-export default function HealthCheckChart({ rows, line, phone, lit = null, was = null }) {
+export default function HealthCheckChart({ rows, line, phone, lit = null, was = null, notes = null }) {
   const gid = `hc-dots-${useId().replace(/:/g, '')}`;
   const { W, H, PL, PT, pw, ph, IN } = chartFrame(phone);
   // Dots sit inset from the plot's edges.
@@ -166,18 +169,21 @@ export default function HealthCheckChart({ rows, line, phone, lit = null, was = 
         {was && (
           <g aria-hidden="true">
             {dots.filter((d) => was[d.row.id] && was[d.row.id].progress >= 1).map((d) => {
-              const wx = X(was[d.row.id].progress);
-              const wy = Y(was[d.row.id].importance);
+              const w = was[d.row.id];
+              const wx = X(w.progress);
+              const wy = Y(w.importance);
+              // M7: drawn only where the project has moved, at the size it had then.
+              if (Math.hypot(wx - d.x, wy - d.y) <= 8) return null;
               return (
                 <g key={d.row.id}>
-                  <circle className="hc-chart-was" cx={wx} cy={wy} r={d.r} />
-                  {Math.hypot(wx - d.x, wy - d.y) > 2 * d.r && <line className="hc-chart-moved" x1={wx} y1={wy} x2={d.x} y2={d.y} />}
+                  <line className="hc-chart-moved" x1={wx} y1={wy} x2={d.x} y2={d.y} />
+                  <circle className="hc-chart-was" cx={wx} cy={wy} r={w.size ? dotRadius(w.size, phone) : d.r} />
                 </g>
               );
             })}
           </g>
         )}
-        {dots.map((d) => <Dot key={d.row.id} dot={d} lit={lit === d.row.id} hit={hit} />)}
+        {dots.map((d) => <Dot key={d.row.id} dot={d} lit={lit === d.row.id} hit={hit} note={notes?.[d.row.id] || null} />)}
       </svg>
     </ChartTips>
   );

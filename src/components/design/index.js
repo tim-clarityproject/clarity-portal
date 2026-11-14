@@ -112,3 +112,7 @@ export { ResultsHeadline, ResultsSection, StartQuestions } from './Results';
 export { default as FollowChoice, FollowQuestion } from './FollowChoice';
 export { default as Dissolve } from './Dissolve';
 export { useTimerLength } from './useTimerLength';
+export { default as BottomBar } from './BottomBar';
+export { useHidePhoneBar, usePhoneBarHidden } from './phoneBar';
+export { default as OneOffTip } from './OneOffTip';
+export { default as VersionRow, VersionList } from './VersionRow';

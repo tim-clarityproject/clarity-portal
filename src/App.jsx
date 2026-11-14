@@ -15,14 +15,6 @@ import ProtectedLayout from './components/ProtectedLayout';
 import Home from './pages/Home';
 import About from './pages/About';
 import MyAccount from './pages/MyAccount';
-import GoalSetting from './pages/GoalSetting';
-import RisksAssessment from './pages/RisksAssessment';
-import Strategies from './pages/Strategies';
-import CriticalSuccessFactors from './pages/CriticalSuccessFactors';
-import ProjectList from './pages/ProjectList';
-import ProjectMatrix from './pages/ProjectMatrix';
-import ProjectProgress from './pages/ProjectProgress';
-import ProjectScatter from './pages/ProjectScatter';
 import MyJournal from './pages/MyJournal';
 import DailyJournal from './pages/DailyJournal';
 import DailyJournals from './pages/DailyJournals';
@@ -102,6 +94,7 @@ const HealthCheck = lazy(() => loadWithReload(() => import('./pages/alignment/He
 // Health Check, so its pages and styles stay out of the main bundle.
 const GetUnstuck = lazy(() => loadWithReload(() => import('./pages/getUnstuck/GetUnstuck')));
 const TeamCheck = lazy(() => loadWithReload(() => import('./pages/teamCheck/TeamCheck')));
+const HealthCheckInside = lazy(() => loadWithReload(() => import('./pages/healthCheckInside/HealthCheckInside')));
 const EmotionalWash = lazy(() => loadWithReload(() => import('./pages/emotionalWash/EmotionalWash')));
 const GuestLink = lazy(() => loadWithReload(() => import('./pages/guest/GuestLink')));
 const WheelStart = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelStart')));
@@ -437,14 +430,6 @@ function AppContent() {
           <Route path="/my-account" element={<MyAccount />} />
           <Route path="/my-account/password" element={<AccountPassword />} />
           <Route path="/my-account/email" element={<AccountEmail />} />
-          <Route path="/goal-setting" element={<GoalSetting />} />
-          <Route path="/risks-assessment" element={<RisksAssessment />} />
-          <Route path="/strategies" element={<Strategies />} />
-          <Route path="/critical-success-factors" element={<CriticalSuccessFactors />} />
-          <Route path="/project-list" element={<ProjectList />} />
-          <Route path="/project-matrix" element={<ProjectMatrix />} />
-          <Route path="/project-progress" element={<ProjectProgress />} />
-          <Route path="/project-scatter" element={<ProjectScatter />} />
           <Route path="/my-journal" element={<MyJournalRoute />} />
           <Route path="/daily-journal" element={<DailyJournal />} />
           <Route path="/daily-journals" element={<DailyJournals />} />
@@ -474,6 +459,8 @@ function AppContent() {
               addresses come to it with their query, hash and state. */}
           <Route path="/get-unstuck" element={lazyPage(GetUnstuck)} />
           <Route path="/team-performance-check" element={lazyPage(TeamCheck)} />
+          {/* The Health Check inside the portal (M7 version 8.2): teams, versions, Compare. */}
+          <Route path="/strategic-alignment/*" element={lazyPage(HealthCheckInside)} />
           <Route path="/emotional-wash" element={lazyPage(EmotionalWash)} />
           {GET_UNSTUCK_STEPS.map((path) => (
             <Route key={path} path={path} element={<MovedTo to="/get-unstuck" />} />

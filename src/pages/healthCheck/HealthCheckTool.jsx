@@ -49,6 +49,18 @@ import './healthCheck.css';
 //                         results outside; Versions inside)
 //   onPdf                 the results' one coral button, "Download my PDF"
 //   onClose, onBack       Close on every step; Back on the first
+//   lead                  inside the portal (M7): a step before the objective,
+//                         { key, question, nudges, eye, check, nextLabel,
+//                         render }: "Let’s start from your last answers." or
+//                         "Which team is this Health Check for?"
+//   onResults             inside the portal the results are a page of their
+//                         own in the portal frame (M7): reaching them (the
+//                         last answer, "Save my edit", "Back to results")
+//                         calls this instead of drawing them here
+//   editOn                with onResults, the part of the results to edit as
+//                         the tool opens: 'objective', 'csf', 'projects', or
+//                         { project: id } (a project's row); the tool opens on
+//                         the results, then that part with "Save my edit"
 //
 // One-answer questions move straight on after 150ms and have no bottom bar
 // (rule 21); the last Resource goes straight to the results. A button is
@@ -193,19 +205,30 @@ function WhenStep({ project, onDraft }) {
 
 // The results: with an answer missing (a project or a Success Factor added
 // from the results) it goes to that question instead.
-function ResultsStep({ draft, tool, meta, asOf, after, onDraft, onEditProject, onStep }) {
+function ResultsStep({ draft, tool, meta, asOf, after, onDraft, onEditProject, onStep, onResults, editRef }) {
   const [sort, setSort] = useState('att');
   const gap = firstGap(draft);
   const gapKey = gap ? stepKey(gap, draft) : null;
+  const open = (key) => tool.go(tool.steps.findIndex((s) => s.key === key), { fromSummary: true });
   useEffect(() => {
-    if (!gapKey) return;
-    const to = tool.steps.findIndex((s) => s.key === gapKey);
-    if (to >= 0) tool.go(to);
+    const ask = editRef?.current;
+    if (ask) {
+      editRef.current = null;
+      if (typeof ask === 'object' && ask.project) onEditProject(ask.project);
+      else open(ask);
+      return;
+    }
+    if (gapKey) {
+      const to = tool.steps.findIndex((s) => s.key === gapKey);
+      if (to >= 0) tool.go(to);
+      return;
+    }
+    // The results are the page's own (inside the portal).
+    onResults?.();
     // Only when what's missing changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gapKey]);
-  if (gapKey) return null;
-  const open = (key) => tool.go(tool.steps.findIndex((s) => s.key === key), { fromSummary: true });
+  if (gapKey || onResults || editRef?.current) return null;
   return (
     <>
       <Mark step={at('results')} stepId="results" onStep={onStep} />
@@ -241,15 +264,20 @@ export default function HealthCheckTool({
   onPdf,
   onClose,
   onBack,
+  lead = null,
+  onResults,
+  editOn = null,
 }) {
   const toast = useToast();
+  // An edit asked for as the tool opened (inside the portal) is done once.
+  const editRef = useRef(editOn || null);
   // The project whose questions were opened from its row on the results.
   const [editing, setEditing] = useState(null);
   const toolRef = useRef(null);
   const bins = { csfs: useRef(null), projects: useRef(null) };
   const factors = cleanItems(draft.csfs);
   const projects = cleanItems(draft.projects);
-  const [openOn] = useState(() => (initialStep ? stepKey(initialStep, draft) : undefined));
+  const [openOn] = useState(() => (editOn ? 'results' : initialStep ? (initialStep.screen === 'lead' ? lead?.key : stepKey(initialStep, draft)) : undefined));
 
   const icons = onGuide ? <TitleIcons><PlayButton label="Quick guide" onClick={onGuide} />{eye}</TitleIcons> : eye;
   const keyOf = (step) => (step.screen === 'results' ? 'results' : stepKey(step, draft));
@@ -353,6 +381,13 @@ export default function HealthCheckTool({
   });
 
   const steps = [
+    // Inside the portal: the new version's or the new team's first step (M7).
+    ...(lead ? [{
+      percent: 0,
+      required: true,
+      ...lead,
+      render: (tool) => <>{mark(at('lead'))}{lead.render(tool)}</>,
+    }] : []),
     {
       key: 'objective',
       name: 'Objective',
@@ -478,6 +513,8 @@ export default function HealthCheckTool({
           meta={resultsMeta}
           asOf={asOf}
           after={resultsAfter}
+          onResults={onResults}
+          editRef={editRef}
           onDraft={onDraft}
           onStep={(s) => { setEditing(null); onStep?.(s); }}
           onEditProject={(id) => {

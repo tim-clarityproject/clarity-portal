@@ -1,7 +1,7 @@
 import { useCallback, useContext, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { DesktopMenu, PhoneBar, TileMenu, useCoachName } from './design';
+import { DesktopMenu, PhoneBar, TileMenu, useCoachName, usePhoneBarHidden } from './design';
 import { isNavPhone } from './design/pageLock';
 import { areaOf, DESKTOP_MENU, menuAreas, menuCurrent, TOOLS } from '../lib/navigation';
 import { usePins } from '../lib/menuPins';
@@ -101,6 +101,8 @@ export function SitePhoneNav() {
   const barRef = useRef(null);
   const buttonRef = useRef(null);
   const current = path === '/welcome' ? 'home' : (path === '/performance-sprint' ? 'week' : null);
+  // A page showing its own bottom button asks the bar to step back (M7).
+  const stepBack = usePhoneBarHidden();
 
   useLayoutEffect(() => { if (open) refresh(); }, [open, refresh]);
 
@@ -140,7 +142,7 @@ export function SitePhoneNav() {
   };
 
   return (
-    <div className="ui-root ds-portal no-print">
+    <div className="ui-root ds-portal no-print" style={stepBack ? { display: 'none' } : undefined}>
       {/* Pages below the bar keep their last line clear of it (as the
           old tab bar did). */}
       <style>{`

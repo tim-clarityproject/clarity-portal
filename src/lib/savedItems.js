@@ -75,8 +75,19 @@ const EDIT_ROUTE = {
   grow: '/get-unstuck',
   inversion: '/pre-mortem',
   'tough-conversation': '/give-difficult-feedback',
-  'strategic-alignment': '/goal-setting',
+  'strategic-alignment': '/strategic-alignment',
 };
+
+// The Health Check inside the portal (M7): a version opens at its own address.
+const HEALTH_CHECK_VERSION = (id) => `/strategic-alignment/version/${id}`;
+
+/** A Health Check row's team: its key and its name (src/lib/healthCheck/inside.js; older rows by their title). */
+function healthCheckTeam(d) {
+  const f = d?.form_data;
+  const team = f && f.shape === 2 && f.team && typeof f.team === 'object' ? f.team : null;
+  const name = (team && typeof team.name === 'string' && team.name.trim()) || (d?.title || '').trim() || 'Untitled';
+  return { key: team && team.id ? `id:${team.id}` : `named:${name.toLowerCase()}`, name };
+}
 
 /** Plan types with a "Review this plan" page (prompt 8). */
 export const REVIEWABLE_TYPES = new Set(['daily_plan', 'plan_meeting', 'if_then_planning', 'tough-conversation', 'inversion']);
@@ -151,7 +162,8 @@ function decisionRow(d, reviews, today) {
     ? reviews.find((r) => r.data?.planKind === tool && r.data?.planId === d.id) || null
     : null;
   let to;
-  if (SUMMARY_WITH_ROW[tool]) to = { path: SUMMARY_WITH_ROW[tool], state: { decisionId: d.id, ...d } };
+  if (tool === 'strategic-alignment') to = { path: HEALTH_CHECK_VERSION(d.id) };
+  else if (SUMMARY_WITH_ROW[tool]) to = { path: SUMMARY_WITH_ROW[tool], state: { decisionId: d.id, ...d } };
   else to = { path: SUMMARY_BY_ID[tool] || '/decision-summary', state: { decisionId: d.id } };
   return base(today, {
     id: `decision:${d.id}`,
@@ -169,7 +181,9 @@ function decisionRow(d, reviews, today) {
     reviewed: Boolean(review && !(review.status === 'draft' || review.data?.draft === true)),
     reviewEntryId: review?.id || null,
     to,
-    edit: { path: EDIT_ROUTE[tool] || '/personal/plan', state: { decisionId: d.id, ...(d.form_data || {}), problemTitle: d.title } },
+    edit: tool === 'strategic-alignment'
+      ? { path: HEALTH_CHECK_VERSION(d.id) }
+      : { path: EDIT_ROUTE[tool] || '/personal/plan', state: { decisionId: d.id, ...(d.form_data || {}), problemTitle: d.title } },
     raw: d,
   });
 }
@@ -180,11 +194,11 @@ function numberHealthChecks(rows) {
   rows.filter((r) => r.tool === 'strategic-alignment')
     .sort((a, b) => a.sortAt - b.sortAt)
     .forEach((r) => {
-      const team = r.title;
-      const key = team.toLowerCase();
+      const { key, name } = healthCheckTeam(r.raw);
       const n = (byTeam.get(key) || 0) + 1;
       byTeam.set(key, n);
-      r.team = team;
+      r.team = name;
+      r.teamKey = key;
       r.version = `Version ${n}`;
     });
 }
@@ -548,13 +562,15 @@ export function recentRows(rows, area, n = 3) {
 /** Strategic's saved teams (M3): "Leadership team", "3 versions, latest Mon 12 Oct". */
 export function healthCheckTeams(rows, today = getLocalDateKey()) {
   const teams = new Map();
-  rows.filter((r) => r.tool === 'strategic-alignment').forEach((r) => {
-    const key = r.team.toLowerCase();
-    const t = teams.get(key) || { team: r.team, count: 0, latest: 0, latestDate: null };
+  // Finished versions only: one being made isn't a version yet.
+  rows.filter((r) => r.tool === 'strategic-alignment' && !r.isDraft).forEach((r) => {
+    const key = r.teamKey || r.team.toLowerCase();
+    const t = teams.get(key) || { team: r.team, count: 0, latest: 0, latestDate: null, latestId: null };
     t.count += 1;
     if (r.sortAt >= t.latest) {
       t.latest = r.sortAt;
       t.latestDate = r.date;
+      t.latestId = r.dbId;
     }
     teams.set(key, t);
   });
@@ -562,6 +578,8 @@ export function healthCheckTeams(rows, today = getLocalDateKey()) {
     .sort((a, b) => b.latest - a.latest)
     .map((t) => ({
       team: t.team,
+      // The team's newest version opens (its results; Back goes to Your teams).
+      to: t.latestId ? HEALTH_CHECK_VERSION(t.latestId) : '/strategic-alignment',
       line: t.count === 1
         ? `1 version, ${formatSavedDate(t.latestDate, today)}`
         : `${t.count} versions, latest ${formatSavedDate(t.latestDate, today)}`,

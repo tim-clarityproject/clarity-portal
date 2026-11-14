@@ -19,8 +19,8 @@ import { loadSavedPlans, loadSavedReviews, SAVED_PLANS_CACHE, SAVED_REVIEWS_CACH
 //
 // Plan, Review and Interpersonal end with their last three saved items
 // and a link to My Plans or My Reviews filtered to the area; Strategic's
-// Health Check card lists the saved teams, each opening its versions in My
-// Plans (step 4). They share My Plans' and My Reviews' device copies, so
+// Health Check card lists the saved teams, each opening its newest version
+// in the Health Check itself (M7). They share My Plans' and My Reviews' device copies, so
 // they show at once. Still to come: the tiles' live lines ("Done today",
 // "Version 3.2").
 
@@ -51,10 +51,10 @@ export default function HubPage({ hub: hubKey }) {
     : [];
   const teams = hub.anchor
     ? healthCheckTeams(planList, today).map((t) => ({
-      key: t.team.toLowerCase(),
+      key: t.to,
       team: t.team,
       line: t.line,
-      onClick: () => navigate(`/my-plans?area=strategic&team=${encodeURIComponent(t.team)}`),
+      onClick: () => navigate(t.to),
     }))
     : [];
 
@@ -111,7 +111,7 @@ export default function HubPage({ hub: hubKey }) {
           <HubAnchor>
             <HubTile name={anchor.name} line={anchor.line} time={anchor.time} href={anchor.to} onClick={open(anchor.to)} />
             <HubTeams teams={teams} />
-            <AddButton onClick={() => navigate(anchor.to)}>Start a new Health Check</AddButton>
+            <AddButton onClick={() => navigate(`${anchor.to}/new-team`)}>Start a new Health Check</AddButton>
           </HubAnchor>
         )}
 

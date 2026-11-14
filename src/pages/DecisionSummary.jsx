@@ -19,6 +19,8 @@ const REDIRECT_ROUTE = {
   stop_doing_audit: '/time-audit/summary',
   daily_plan: '/daily-plan-summary',
   plan_meeting: '/meeting-summary',
+  // The Health Check opens inside its own tool (M7), on that version.
+  'strategic-alignment': '/strategic-alignment',
 };
 
 const TYPE_LABEL = {

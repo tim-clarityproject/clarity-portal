@@ -182,12 +182,15 @@ export const TOOLS = {
     to: '/team-performance-check',
     routes: ['/team-performance-check'],
   },
+  // The Health Check inside the portal (M7 version 8.2): your teams and
+  // their versions, at one address; the older pages' addresses come here
+  // (RENAMED below).
   hc: {
     name: 'Strategic Alignment Health Check',
     line: 'See whether your team’s work matches its strategy.',
     time: '~15 minutes',
-    to: '/goal-setting',
-    routes: ['/goal-setting', '/risks-assessment', '/strategies', '/critical-success-factors', '/project-'],
+    to: '/strategic-alignment',
+    routes: ['/strategic-alignment'],
   },
 };
 
@@ -506,6 +509,17 @@ export const RENAMED = {
   '/wheel-of-life/check-in': '/life-balance-review/check-in',
   '/wheel-of-life/results': '/life-balance-review/results',
   '/wheel-of-life/targets': '/life-balance-review/targets',
+  // The Health Check's seven older pages retired (M7, 14 Nov): every one
+  // opens Your teams, and a saved Health Check handed over in the state
+  // (state.decisionId) opens that version.
+  '/goal-setting': '/strategic-alignment',
+  '/risks-assessment': '/strategic-alignment',
+  '/strategies': '/strategic-alignment',
+  '/critical-success-factors': '/strategic-alignment',
+  '/project-list': '/strategic-alignment',
+  '/project-matrix': '/strategic-alignment',
+  '/project-progress': '/strategic-alignment',
+  '/project-scatter': '/strategic-alignment',
 };
 
 /**

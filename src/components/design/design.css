@@ -10880,3 +10880,124 @@
     flex: 1;
   }
 }
+
+/* ---------- A page's own bottom bar (BottomBar; M7's results) ----------
+   The guided tools' calm bottom bar, on a page in the portal frame: a line
+   above, the page's colour behind, the button at the right of the page's
+   column. On a phone it runs full width under the thumb, and the phone bar
+   steps back while it shows (phoneBar.js). */
+.ui-root .ds-bottombar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-bar);
+  border-top: var(--line-w) solid var(--line);
+  background: var(--bg);
+}
+
+.ui-root .ds-bottombar-in {
+  box-sizing: border-box;
+  max-width: var(--guide-calm-max);
+  margin: 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-px12);
+  padding: var(--space-px14) var(--guide-calm-pad) max(var(--space-px18), env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-bottombar-in {
+    padding: var(--space-px12) max(var(--space-3), env(safe-area-inset-right, 0px)) max(var(--space-px30), env(safe-area-inset-bottom, 0px)) max(var(--space-3), env(safe-area-inset-left, 0px));
+  }
+
+  .ui-root .ds-bottombar-in > .ds-btn {
+    flex: 1;
+  }
+}
+
+/* The Breathe pill rises above a page's bottom bar (M7 .gft~.fabp). */
+.ui-root .ds-orb--fixed {
+  bottom: calc(var(--space-4) + var(--bottom-bar-h, 0px));
+}
+
+/* ---------- A one-off tip (OneOffTip; M7's team list) ---------- */
+.ui-root .ds-oneoff-tip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--tap-min);
+  gap: var(--space-2);
+  align-items: center;
+  margin-top: var(--space-3);
+  padding: var(--space-px6) var(--space-px6) var(--space-px6) var(--space-px18);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-field);
+}
+
+.ui-root .ds-oneoff-tip p {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+/* ---------- A dated version in a list (VersionRow; M7's team list) ---------- */
+.ui-root .ds-version-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ui-root .ds-version-row {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: center;
+  min-height: var(--row-h-version);
+  padding: var(--space-px12) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ds-version-main b {
+  display: block;
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-text);
+  line-height: var(--lh-row);
+  color: var(--text);
+  overflow-wrap: anywhere;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .ds-version-main small {
+  display: block;
+  margin-top: var(--space-px2);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-version-date {
+  font-size: var(--fs-note);
+  color: var(--placeholder);
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .ui-root .ds-version-row:hover b {
+    color: var(--coral-text);
+  }
+}
+
+.ui-root .ds-version-row:focus-visible b {
+  color: var(--coral-text);
+}
+
+.ui-root .ds-version-row:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+  border-radius: var(--space-px6);
+}

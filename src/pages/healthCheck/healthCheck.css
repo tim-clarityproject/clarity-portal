@@ -1035,3 +1035,70 @@
 .ui-root .hc-read-link:focus-visible {
   color: var(--coral-text);
 }
+
+/* ---------- Compare two versions (M7 version 8.2) ---------- */
+.ui-root .hc-cmp-pick {
+  margin-top: var(--space-4);
+}
+
+.ui-root .hc-cmp-move {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-px12) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+}
+
+.ui-root .hc-cmp-move span {
+  overflow-wrap: anywhere;
+}
+
+.ui-root .hc-cmp-move span + span {
+  flex: none;
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.ui-root .hc-cmp-move .hc-cmp-up {
+  color: var(--good);
+}
+
+.ui-root .hc-cmp-same {
+  margin: var(--space-px12) 0 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .hc-cmp-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-px28);
+}
+
+.ui-root .hc-cmp-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .hc-cmp-name {
+  margin: 0;
+  padding: var(--space-px10) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .ui-root .hc-cmp-two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

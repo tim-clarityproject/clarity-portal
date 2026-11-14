@@ -1,0 +1,78 @@
+/* The Health Check inside the portal (mock-up M7 version 8.2): its pages in
+   the portal frame, on M7's own column (760px with 28px each side; 16px on
+   a phone). The shared screens' own styles are in ../healthCheck. */
+
+.ui-root .hc-in-page {
+  box-sizing: border-box;
+  max-width: var(--guide-calm-max);
+  margin: 0 auto;
+  padding: var(--space-px44) var(--guide-calm-pad) var(--space-px64);
+}
+
+.ui-root .hc-in-page--foot {
+  padding-bottom: calc(var(--space-px64) + var(--bottom-bar-h, 0px));
+}
+
+@media (max-width: 600px) {
+  .ui-root .hc-in-page {
+    padding: var(--space-px22) max(var(--space-3), env(safe-area-inset-right, 0px)) var(--space-px40) max(var(--space-3), env(safe-area-inset-left, 0px));
+  }
+
+  .ui-root .hc-in-page--foot {
+    padding-bottom: calc(var(--space-px40) + var(--bottom-bar-h, 0px));
+  }
+}
+
+/* Back above the title (M7 .bkrow) */
+.ui-root .hc-in-back {
+  display: flex;
+  align-items: center;
+  margin: calc(-1 * var(--space-px10)) 0 var(--space-px18);
+}
+
+/* Each team: its versions, then its one quiet link (M7 .tacts) */
+.ui-root .hc-in-tacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-px12);
+  margin-top: var(--space-px6);
+}
+
+.ui-root .hc-in-team .hc-in-tacts:first-of-type:not(:only-child) {
+  margin-top: var(--space-px6);
+}
+
+.ui-root .hc-in-add {
+  margin-top: var(--space-px36);
+}
+
+.ui-root .hc-in-example {
+  margin-top: var(--space-px12);
+}
+
+/* New version: the team and the version copied, in the soft panel (M7 .exb) */
+.ui-root .hc-in-copied .hc-in-k2 {
+  font-size: var(--fs-meta);
+  color: var(--placeholder);
+}
+
+.ui-root .hc-in-lead2 {
+  margin-top: var(--space-px6);
+}
+
+.ui-root .hc-in-team-field {
+  margin-top: var(--space-4);
+}
+
+/* Versions, after the questions (M7 .kp) */
+.ui-root .hc-in-compare {
+  margin-top: var(--space-px28);
+}
+
+/* The quiet Delete at the foot of a version (the portal's, inside the opened item) */
+.ui-root .hc-in-delete {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-4);
+  margin-top: var(--space-px40);
+}

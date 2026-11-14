@@ -439,6 +439,9 @@
   --fs-headline-phone: calc(20 * var(--u));
   --headline-max: 34ch;
   --space-px44: 44px;
+  --space-px36: 36px;        /* above "Add another team" (M7) */
+  --row-h-version: 68px;     /* a dated version in a list (M7 .vr) */
+  --lh-row: 1.35;            /* a row's name (M7 .vr b) */
   /* The Emotional wash's parts (M10 Visual tools, version 5.6; 14 Nov). */
   --answer-col-min: 250px;   /* short answers side by side: a column's least width (M10 .ans.two) */
   --follow-box-min-h: 81px;  /* a follow-up's box: two lines (M10's rows="2") */

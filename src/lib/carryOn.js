@@ -1,6 +1,7 @@
 import { STEP_PREFIX } from '../components/design/guideDraft';
 import { readDraft } from './drafts';
 import { readJson } from './deviceStore';
+import { readCache } from './pageCache';
 import { formatSavedDate, getLocalDateKey } from './dateFormatter';
 
 // "Carry on where you left off" on Home (brief, Phase 4 step 2): one row
@@ -71,6 +72,14 @@ export function carryOnItems(userId, { today, yesterday, exclude = [], finished 
   add('team-check', 'Team performance check', '/team-performance-check', { step: `team-check-${userId}-new`, draft: 'team-check:new' });
   // The Emotional wash (M10): only the tool's name ever shows, never what was typed.
   add('emotional-wash', 'Emotional wash', '/emotional-wash', { step: `emotional-wash-${userId}-new`, draft: 'emotional-wash:new' });
+
+  // The Health Check (M7): the version being made on this device, at its own address.
+  const hc = readCache(userId, 'health-check-current')?.v;
+  // Kept until it is finished or deleted, so a version closed part-way (a
+  // draft in My Plans) is offered here too.
+  if (hc && typeof hc.id === 'string' && !finished.includes('health-check')) {
+    found.push({ key: 'health-check', title: 'Strategic Alignment Health Check', to: `/strategic-alignment/version/${hc.id}`, at: hc.at || null });
+  }
 
   // Older tools whose new drafts open from their own address.
   add('journal', 'Journal', '/daily-journal', { draft: `journal:${today}` });
