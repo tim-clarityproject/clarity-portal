@@ -10957,8 +10957,9 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--space-1) var(--space-3);
   align-items: center;
-  min-height: var(--row-h-version);
-  padding: var(--space-px12) 0;
+  /* !important: the older phone rules give every button its own padding. */
+  min-height: var(--row-h-version) !important;
+  padding: var(--space-px12) 0 !important;
   border-bottom: var(--line-w) solid var(--line-soft);
 }
 

@@ -1,7 +1,6 @@
 import { STEP_PREFIX } from '../components/design/guideDraft';
 import { readDraft } from './drafts';
-import { readJson } from './deviceStore';
-import { readCache } from './pageCache';
+import { deviceKey, readJson } from './deviceStore';
 import { formatSavedDate, getLocalDateKey } from './dateFormatter';
 
 // "Carry on where you left off" on Home (brief, Phase 4 step 2): one row
@@ -74,7 +73,8 @@ export function carryOnItems(userId, { today, yesterday, exclude = [], finished 
   add('emotional-wash', 'Emotional wash', '/emotional-wash', { step: `emotional-wash-${userId}-new`, draft: 'emotional-wash:new' });
 
   // The Health Check (M7): the version being made on this device, at its own address.
-  const hc = readCache(userId, 'health-check-current')?.v;
+  // (pageCache's own key, read here without its network code)
+  const hc = readJson(deviceKey('cache', userId, 'health-check-current'))?.v;
   // Kept until it is finished or deleted, so a version closed part-way (a
   // draft in My Plans) is offered here too.
   if (hc && typeof hc.id === 'string' && !finished.includes('health-check')) {

@@ -241,7 +241,7 @@ part('teams', async ({ browser, w, mode, tag, phone }) => {
   await open(page);
   pass(`${tag}: the tip stays closed on the next visit`, await page.locator('.ds-oneoff-tip').count() === 0);
   // The phone bar shows here (no bottom button).
-  if (phone) pass(`${tag}: the phone bar shows on Your teams`, await page.locator('.ds-phonebar, nav[aria-label*="phone" i], .ds-tabbar').first().isVisible().catch(() => false) || await page.evaluate(() => [...document.querySelectorAll('.ds-portal')].some((e) => e.style.display !== 'none' && e.getBoundingClientRect().height > 0)));
+  if (phone) pass(`${tag}: the phone bar shows on Your teams`, await page.locator('.ds-bar-btn').first().isVisible());
   // A version opens.
   await page.locator('.ds-version-row').first().click();
   pass(`${tag}: a version opens at its own address`, await onPage(page, new RegExp(`/version/${IDS.lt3}$`)));
@@ -264,7 +264,7 @@ part('results', async ({ browser, w, mode, tag, phone }) => {
   pass(`${tag}: Versions offers a new version and Compare (three versions)`, await page.getByRole('button', { name: 'Start a new version' }).count() === 1 && await page.getByRole('button', { name: 'Compare two versions' }).count() === 1);
   pass(`${tag}: Download my PDF in the bottom bar`, (await text(page, '.ds-bottombar .ds-btn')).toUpperCase() === 'DOWNLOAD MY PDF');
   if (phone) {
-    pass(`${tag}: the phone bar steps back while the bottom bar shows`, await page.evaluate(() => ![...document.querySelectorAll('.ds-portal')].some((e) => e.querySelector('[class*=phonebar], [class*=phone-bar]') && e.style.display !== 'none')));
+    pass(`${tag}: the phone bar steps back while the bottom bar shows`, !(await page.locator('.ds-bar-btn').first().isVisible().catch(() => false)));
   }
   pass(`${tag}: no ⓘ beside Sort by`, await page.locator('.hc-projects .hc-ctl .ds-guide-i').count() === 0);
   pass(`${tag}: the list is named Projects`, await page.locator('.hc-projects .ds-results-head').innerText().then((t) => t.trim().toUpperCase() === 'PROJECTS'));

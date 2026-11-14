@@ -85,8 +85,9 @@ test('My Plans: the area filter, the tool and team choices, the recent rows and 
   const recent = recentRows(rows, 'personal');
   assert.deepEqual(recent.map((r) => r.title), ['Today’s plan', 'Yesterday’s plan', 'Harbour proposal'], 'no drafts, no plan or sprint rows');
   assert.deepEqual(healthCheckTeams(rows, TODAY), [
-    { team: 'Leadership team', line: '2 versions, latest Mon 12 Oct' },
-    { team: 'Product team', line: '1 version, Wed 2 Sep' },
+    // Each team opens its newest version in the Health Check itself (M7).
+    { team: 'Leadership team', to: '/strategic-alignment/version/d6', line: '2 versions, latest Mon 12 Oct' },
+    { team: 'Product team', to: '/strategic-alignment/version/d7', line: '1 version, Wed 2 Sep' },
   ]);
 });
 
