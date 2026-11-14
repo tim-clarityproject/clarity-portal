@@ -390,6 +390,7 @@ const ALLOWED = [
   { screen: /sprint/, side: 'mock', re: /^move$/, why: 'NEWER RULE: rows in a list look alike, with Move inside the opened item (5e rule 18; 10 Nov, 09:25)' },
   { screen: /sprint/, side: 'mock', re: /^−$/, why: 'NEWER RULE: steppers use the drawn minus and plus, not a typed character (5e rules 29e and 29g)' },
   { screen: /sprint/, side: 'app', re: /^performance score this week so far$/, why: 'NEWER RULE: M5, "…this week so far"' },
+  { screen: /sprint/, side: 'app', re: /^(backlog|it waits there until you plan it into a week\.|a to-do with no week yet goes in your backlog\.|plan into a week)$/, why: 'NEWER RULE: the Backlog holds to-dos with no week yet, beside this week and Later in this sprint (Tim, 13 Nov, 10:42; CLAUDE.md 31)' },
   { screen: /sprint/, side: 'app', re: /^take a recovery week$/, why: 'NEWER RULE: Recovery can be started at any time, from the sprint page (M15, approved 26 Oct; step 7)' },
   { screen: /sprint/, side: 'mock', re: /^how much will it move this strategy\?$/, why: 'NEWER RULE: the question names the Strategy chosen, or says "its Strategy" (writing rule 64; decisions part 4)' },
   { screen: /sprint/, side: 'app', re: /^how much will it move its strategy\?$/, why: 'NEWER RULE: the question names the Strategy chosen, or says "its Strategy" (writing rule 64; decisions part 4)' },

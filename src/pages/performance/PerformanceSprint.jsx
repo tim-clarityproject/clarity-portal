@@ -37,7 +37,7 @@ import {
   saveWin,
   setWinDeleted,
 } from '../../lib/performance/api';
-import { dayName, localToday, moveOptions, recoveryLead, settingForWeek, sprintPageView } from '../../lib/performance';
+import { BACKLOG_LINE, BACKLOG_VALUE, dayName, localToday, moveOptions, recoveryLead, settingForWeek, sprintPageView, withTodoMoved } from '../../lib/performance';
 import { useRecoveryActions } from './recoveryActions';
 import { useSprintActions } from './sprintActions';
 import { DayRow, WeekRow } from './LogRows';
@@ -204,20 +204,23 @@ export default function PerformanceSprint() {
     });
   };
 
-  const moveTo = async (todo, week) => {
-    const fromWeek = todo.plannedWeek;
-    const move = (w, from) => changeRows((d) => ({
-      todos: d.todos.map((t) => (t.id === todo.id ? { ...t, planned_week: w, move_on: today } : t)),
-      todoMoves: [...(d.todoMoves || []), { todo_id: todo.id, moved_on: today, from_sprint_id: view.sprintId, from_week: from, to_sprint_id: view.sprintId, to_week: w, created_at: new Date().toISOString() }],
-    }));
+  // To another week, to the Backlog (no week), or from the Backlog into a
+  // week (Tim, 13 Nov, 10:42): one move, noted as the database notes it.
+  const moveTo = async (todo, to) => {
+    const week = to === BACKLOG_VALUE ? null : to;
+    const fromWeek = todo.plannedWeek ?? null;
+    const move = (w) => changeRows((d) => withTodoMoved(d, todo.id, { sprintId: view.sprintId, week: w, on: today }));
     setMoving(null);
-    move(week, fromWeek);
+    move(week);
     const ok = await sent(() => moveTodo(userId, todo.id, { sprintId: view.sprintId, week, on: today }));
-    if (!ok) return;
+    if (!ok) {
+      move(fromWeek);
+      return;
+    }
     toast.saved({
-      message: week === view.current ? 'Moved to this week.' : `Moved to week ${week}.`,
+      message: week == null ? 'Moved to your backlog.' : week === view.current ? 'Moved to this week.' : `Moved to week ${week}.`,
       onUndo: () => {
-        move(fromWeek, week);
+        move(fromWeek);
         sent(() => moveTodo(userId, todo.id, { sprintId: view.sprintId, week: fromWeek, on: today }));
       },
     });
@@ -302,6 +305,12 @@ export default function PerformanceSprint() {
             question="Ready to build your Individual Performance Plan?"
             action={{ label: 'Build my plan', onClick: () => navigate('/performance-plan/build') }}
           />
+        )}
+        {view.backlog.length > 0 && (
+          // No sprint is running, so there is no week to plan these into yet.
+          <Section title="Backlog" className="ipp-section sprint-section" eye={<WhoSees audience="me" />}>
+            <BacklogList rows={view.backlog} />
+          </Section>
         )}
       </div>
     );
@@ -436,6 +445,8 @@ export default function PerformanceSprint() {
             open={Boolean(movingTodo)}
             onClose={() => setMoving(null)}
             text={movingTodo?.text || ''}
+            title={movingTodo?.backlog ? 'Plan this to-do' : undefined}
+            label={movingTodo?.backlog ? 'Which week should it go into?' : undefined}
             started={movingTodo && movingTodo.plannedWeek != null && movingTodo.plannedWeek <= view.current
               ? `This week has started, so it won’t count as done in week ${view.current}.`
               : null}
@@ -591,7 +602,7 @@ function SprintBody({
                   disabled={x.movedOut}
                   tags={[
                     x.rolledFrom ? `Rolled over from week ${x.rolledFrom}` : null,
-                    x.movedOut ? (x.movedTo ? `Moved to week ${x.movedTo}` : 'Moved out of this sprint') : null,
+                    x.movedOut ? (x.movedTo ? `Moved to week ${x.movedTo}` : x.toBacklog ? 'Moved to your backlog' : 'Moved out of this sprint') : null,
                   ].filter(Boolean)}
                   onToggle={(done) => onToggleTodo(x, done)}
                   onMove={x.done || x.movedOut ? undefined : () => onMove(x)}
@@ -635,6 +646,18 @@ function SprintBody({
               )}
             </Collapsible>
           </div>
+          <div className="sprint-later sprint-backlog">
+            <Collapsible
+              capitals
+              summary={(
+                <span className="sprint-later-head">
+                  <span className="sprint-later-title">Backlog</span>
+                </span>
+              )}
+            >
+              <BacklogList rows={t.backlog} onPlan={onMove} />
+            </Collapsible>
+          </div>
         </Section>
       </div>
 
@@ -644,6 +667,36 @@ function SprintBody({
         <Button onClick={() => navigate('/performance-plan')}>Open my plan</Button>
       </div>
     </>
+  );
+}
+
+// The Backlog (Tim, 13 Nov, 10:42): to-dos with no week yet, rows like
+// every other to-do's. Its one line shows while it is empty (and in the
+// add panel when Backlog is chosen), never on every row; a row opens to
+// "Plan into a week" while a sprint runs. Nothing is ticked here: a to-do
+// is planned into a week first, so it counts in that week.
+function BacklogList({ rows, onPlan }) {
+  if (!rows.length) {
+    return (
+      <div className="sprint-backlog-empty">
+        <p className="ipp-muted">A to-do with no week yet goes in your backlog.</p>
+        <p className="ipp-muted">{BACKLOG_LINE}</p>
+      </div>
+    );
+  }
+  return (
+    <TodoList label="Backlog">
+      {rows.map((x) => (
+        <TodoRow
+          key={x.id}
+          plain
+          text={x.text}
+          strategyName={x.strategyName}
+          onMove={onPlan ? () => onPlan(x) : undefined}
+          moveLabel="Plan into a week"
+        />
+      ))}
+    </TodoList>
   );
 }
 

@@ -321,6 +321,7 @@ await todoRow('Shortlist breathing sound loops').locator('.ds-todo-open').click(
 await todoRow('Shortlist breathing sound loops').getByRole('button', { name: /Move/ }).click();
 await page.waitForSelector('.ds-panel');
 pass('move: says it won’t count this week', (await page.locator('.ds-panel').textContent()).includes('This week has started, so it won’t count as done in week 4.'));
+pass('move: the Backlog is the last place offered', await page.locator('.ds-panel').getByRole('radio').last().textContent() === 'Backlog');
 await page.locator('.ds-panel').getByRole('radio', { name: /Week 6/ }).click();
 const moved = await until(async () => (await db.from('todos').select('id, planned_week').eq('user_id', me).eq('text', 'Shortlist breathing sound loops')).data.find((t) => t.planned_week === 6));
 const moves = moved ? (await db.from('todo_moves').select('to_week, moved_on').eq('todo_id', moved.id)).data : [];
@@ -337,6 +338,52 @@ await shot(page, 'add-todo');
 await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
 const added = await until(async () => (await db.from('todos').select('planned_week, sprint_id, impact').eq('user_id', me).eq('text', 'Send the referral thank-you notes')).data[0]);
 pass('add a to-do: saved for this week', added?.planned_week === 4 && added?.sprint_id === sprint.id, JSON.stringify(added));
+
+// The Backlog (Tim, 13 Nov, 10:42): to-dos with no week yet. One is
+// added there from the add panel, shows under Backlog (never in this
+// week), and is planned into this week from its own row.
+{
+  const BACK = 'Ask the chair for 20 minutes';
+  const backlogFold = page.locator('.sprint-backlog');
+  const backlogRow = (text) => backlogFold.locator('.ds-todo').filter({ hasText: text });
+  await page.locator('.ds-toast').waitFor({ state: 'detached', timeout: 15000 }).catch(() => null);
+  await page.getByRole('button', { name: 'Add a to-do' }).click();
+  await page.waitForSelector('.ds-panel textarea');
+  const panel = page.locator('.ds-panel');
+  await panel.locator('textarea').fill(BACK);
+  await panel.getByRole('radio', { name: 'Grow through referrals' }).click();
+  await panel.getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Backlog', exact: true }).click();
+  pass('backlog: the add panel says it waits there', (await panel.textContent()).includes('It waits there until you plan it into a week.'));
+  await shot(page, 'add-todo-backlog');
+  await panel.getByRole('button', { name: 'Add my to-do' }).click();
+  const said = await page.locator('.ds-toast').filter({ hasText: /backlog/ }).first().textContent({ timeout: 5000 }).catch(() => '');
+  pass('backlog: "Added to your backlog."', said.includes('Added to your backlog.'), said);
+  const waitingRow = await until(async () => (await db.from('todos').select('id, planned_week, sprint_id, source').eq('user_id', me).eq('text', BACK)).data[0]);
+  pass('backlog: saved with no sprint and no week', Boolean(waitingRow) && waitingRow.planned_week === null && waitingRow.sprint_id === null, JSON.stringify(waitingRow));
+  await backlogFold.getByRole('button', { name: 'Backlog' }).click();
+  await backlogRow(BACK).waitFor({ timeout: 5000 }).catch(() => null);
+  pass('backlog: listed under Backlog, with the seeded one', await backlogRow(BACK).count() === 1 && await backlogRow('Ask Tom what would help him').count() === 1);
+  pass('backlog: not among this week’s to-dos', await page.locator('[aria-label="To-dos this week"] .ds-todo').filter({ hasText: BACK }).count() === 0);
+  pass('backlog: rows have nothing to tick', await backlogFold.getByRole('checkbox').count() === 0);
+  await shot(page, 'backlog');
+  await page.locator('.ds-toast').waitFor({ state: 'detached', timeout: 15000 }).catch(() => null);
+  await backlogRow(BACK).locator('.ds-todo-open').click();
+  await backlogRow(BACK).getByRole('button', { name: /Plan into a week/ }).click();
+  await page.waitForSelector('.ds-panel');
+  const plan = page.locator('.ds-panel');
+  pass('backlog: the panel is "Plan this to-do", this week first', (await plan.textContent()).includes('Plan this to-do') && /^This week/.test(await plan.getByRole('radio').first().textContent()) && await plan.getByRole('radio', { name: 'Backlog' }).count() === 0);
+  await shot(page, 'backlog-plan');
+  await plan.getByRole('radio', { name: /^This week/ }).click();
+  const plannedRow = await until(async () => (await db.from('todos').select('id, planned_week, sprint_id').eq('user_id', me).eq('text', BACK)).data.find((t) => t.planned_week === 4));
+  const plannedMoves = plannedRow ? (await db.from('todo_moves').select('from_week, to_week, moved_on').eq('todo_id', plannedRow.id)).data : [];
+  pass('backlog: planned into this week, with the move recorded', plannedRow?.sprint_id === sprint.id && plannedMoves.some((m) => m.from_week === null && m.to_week === 4 && m.moved_on === today), JSON.stringify(plannedMoves));
+  await page.waitForTimeout(500);
+  const inWeek = page.locator('[aria-label="To-dos this week"] .ds-todo').filter({ hasText: BACK });
+  pass('backlog: now in this week, to tick, and gone from the Backlog', await inWeek.getByRole('checkbox').count() === 1 && await backlogRow(BACK).count() === 0);
+  // What this part made is taken away again (the reseed at the end clears the rest).
+  if (plannedRow) await db.from('todos').delete().eq('id', plannedRow.id);
+}
 
 await page.getByRole('button', { name: 'Add an unplanned win' }).click();
 await page.waitForSelector('.ds-panel textarea');

@@ -19,6 +19,7 @@ import {
   AddWinPanel,
   helpQuestion,
   MoveTodoPanel,
+  TodoWhere,
   nextMondayKey,
   SprintLengthChoice,
   SprintStartChoice,
@@ -104,7 +105,7 @@ import { BreathOrbDemo } from './OrbDemos';
 import { CarriedOverDemo, NightDemo, WorkDoneDemo } from './WindDownDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
-import { dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, withMeasure, yearView } from '../../lib/performance';
+import { TODO_WHERE, dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, todoWhereOptions, todoWhereToast, withMeasure, yearView } from '../../lib/performance';
 import './designReference.css';
 
 // The design gallery: every shared component from src/components/design,
@@ -568,6 +569,9 @@ function TodosDemo() {
   const [panel, setPanel] = useState(null);
   const [todo, setTodo] = useState({ text: '', strategyId: null, impact: 2, week: 4 });
   const [win, setWin] = useState({ text: '', strategyIds: [], impact: 2, day: 'we' });
+  // A tool's next step (M10; Tim, 13 Nov, 10:42): This week, Backlog or Don’t add it.
+  const [step, setStep] = useState({ text: 'Ask the chair for 20 minutes before the next board meeting', strategyId: 's2', impact: 2, where: TODO_WHERE.week });
+  const [where, setWhere] = useState(TODO_WHERE.backlog);
   return (
     <div className="dr-stack dr-stack--fill">
       <TodoList label="To-dos this week">
@@ -605,6 +609,34 @@ function TodosDemo() {
         started="This week has started, so it won’t count as done in week 4."
         options={[{ value: 5, label: 'Week 5, Mon 2 Nov to Sun 8 Nov' }, { value: 6, label: 'Week 6, Mon 9 Nov to Sun 15 Nov' }]}
         onMove={(w) => { setPanel(null); toast.saved({ message: `Moved to week ${w}.`, onUndo: () => {} }); }}
+      />
+      <p className="dr-small">The Backlog holds to-dos with no week yet. A row opens to “Plan into a week”.</p>
+      <TodoList label="Backlog">
+        <TodoRow plain text="Ask Tom what would help him bring decisions to me early" strategyName="Grow through referrals" onMove={() => setPanel('plan')} moveLabel="Plan into a week" />
+        <TodoRow plain text="Write up the board paper’s first page" strategyName="Maintain my availability to do good work" onMove={() => setPanel('plan')} moveLabel="Plan into a week" />
+      </TodoList>
+      <MoveTodoPanel
+        open={panel === 'plan'}
+        onClose={() => setPanel(null)}
+        title="Plan this to-do"
+        label="Which week should it go into?"
+        text="Ask Tom what would help him bring decisions to me early"
+        options={[{ value: 4, label: 'This week, Mon 26 Oct to Sun 1 Nov' }, { value: 5, label: 'Week 5, Mon 2 Nov to Sun 8 Nov' }]}
+        onMove={(w) => { setPanel(null); toast.saved({ message: w === 4 ? 'Moved to this week.' : `Moved to week ${w}.`, onUndo: () => {} }); }}
+      />
+      <p className="dr-small">Every tool that adds a to-do asks where it should go, inside one of its own steps or in the add panel.</p>
+      <TodoWhere options={todoWhereOptions({ running: true })} value={where} onChange={setWhere} />
+      <div className="dr-row">
+        <AddButton onClick={() => setPanel('tool')}>Add a to-do from a tool</AddButton>
+      </div>
+      <AddTodoPanel
+        open={panel === 'tool'}
+        onClose={() => setPanel(null)}
+        form={step}
+        onFormChange={setStep}
+        strategies={DEMO_STRATEGIES}
+        where={todoWhereOptions({ running: true })}
+        onAdd={(f) => { setPanel(null); const said = todoWhereToast(f.where); if (said) toast.saved({ message: said, onUndo: () => {} }); }}
       />
     </div>
   );

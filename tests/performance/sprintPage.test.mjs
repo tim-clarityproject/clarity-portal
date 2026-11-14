@@ -151,10 +151,11 @@ test('to-dos this week: rolled over, moved out after the start, done early, late
 
 test('move options: later weeks for one due now, any other week for a later one', () => {
   const cal = m0SprintCalendar({ start: '2026-10-05', lengthWeeks: 4, recoveries: [] }, '2026-10-14');
-  assert.deepEqual(moveOptions(cal, 2, 4, { plannedWeek: 2 }, '2026-10-14').map((o) => o.value), [3, 4]);
-  assert.deepEqual(moveOptions(cal, 2, 4, { plannedWeek: 3 }, '2026-10-14').map((o) => o.value), [2, 4]);
+  // The Backlog is the last place in every list (Tim, 13 Nov, 10:42).
+  assert.deepEqual(moveOptions(cal, 2, 4, { plannedWeek: 2 }, '2026-10-14').map((o) => o.value), [3, 4, 'backlog']);
+  assert.deepEqual(moveOptions(cal, 2, 4, { plannedWeek: 3 }, '2026-10-14').map((o) => o.value), [2, 4, 'backlog']);
   assert.equal(moveOptions(cal, 2, 4, { plannedWeek: 3 }, '2026-10-14')[0].label, 'This week, Mon 12 Oct to Sun 18 Oct');
-  assert.deepEqual(moveOptions(cal, 4, 4, { plannedWeek: 4 }, '2026-11-01'), []);
+  assert.deepEqual(moveOptions(cal, 4, 4, { plannedWeek: 4 }, '2026-11-01').map((o) => o.value), ['backlog']);
   // A to-do due this week moves to a later week: none of those is "This week".
   assert.equal(moveOptions(cal, 2, 4, { plannedWeek: 2 }, '2026-10-14')[0].label, 'Week 3, Mon 19 Oct to Sun 25 Oct');
 });

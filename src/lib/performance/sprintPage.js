@@ -194,16 +194,28 @@ export function logRow(sh, setting, { week, workingDays, today, logs, score, not
  *   - to-dos done this week, whichever week they were planned for (M2:
  *     done early counts in the week it was done).
  * Later lists open to-dos planned for a later week of this sprint.
+ * Backlog lists open to-dos with no week yet (Tim, 13 Nov, 10:42), oldest
+ * first. One moved to the Backlog after this week started still shows in
+ * this week too, ticked off as not done here, like any other moved out.
  */
 export function sprintTodos(d, calendar, number, today) {
   const week = calendar.weeks[number - 1];
   const strategyName = new Map((d.strategies || []).map((s) => [s.id, s.name]));
   const thisWeek = [];
   const later = [];
-  const rows = (d.todos || []).filter((t) => !t.deleted_at);
+  const backlog = backlogTodos(d, strategyName);
+  const waiting = (d.backlogTodos || []).filter((t) => !(d.todos || []).some((x) => x.id === t.id));
+  const rows = [...(d.todos || []), ...waiting].filter((t) => !t.deleted_at);
   for (const row of rows) {
     const t = toTodo(row, d.todoMoves || [], d.sprint.id);
     const base = { id: t.id, text: t.text, strategyName: strategyName.get(t.strategyId) || '', kind: 'todo', plannedWeek: t.currentWeek, impact: t.impact };
+    if (row.sprint_id == null) {
+      // In the Backlog: here only if it left this week after it started.
+      if (t.doneOn) continue;
+      const before = t.createdOn && t.createdOn > week.start ? t.plannedWeek : m2PlannedWeekAt(t, week.start);
+      if (before != null && before <= number) thisWeek.push({ ...base, done: false, movedTo: null, movedOut: true, toBacklog: true });
+      continue;
+    }
     if (t.doneOn) {
       // A rolled-over to-do keeps where it came from once ticked (Tim, 5 Nov).
       if (m0WeekOfDay(calendar.weeks, t.doneOn) === number) thisWeek.push({ ...base, done: true, rolledFrom: t.currentWeek != null && t.currentWeek < number ? t.currentWeek : null });
@@ -232,7 +244,86 @@ export function sprintTodos(d, calendar, number, today) {
       const names = (d.winLinks || []).filter((l) => l.win_id === w.id).map((l) => strategyName.get(l.strategy_id)).filter(Boolean);
       return { id: w.id, text: w.what, strategyName: names.join(', '), kind: 'win', day: DAY_SHORT[weekday(w.local_date)], done: true };
     });
-  return { thisWeek, wins, later, done: counted.filter((t) => t.done).length, total: counted.length };
+  return { thisWeek, wins, later, backlog, done: counted.filter((t) => t.done).length, total: counted.length };
+}
+
+/**
+ * The Backlog as rows for the page: open to-dos with no sprint and no
+ * week, oldest first. `strategyName` is a Map of the Strategies' names
+ * (the running sprint's, or the plan's when no sprint runs).
+ */
+export function backlogTodos(d, strategyName = new Map((d.strategies?.length ? d.strategies : d.planStrategies || []).map((s) => [s.id, s.name]))) {
+  return (d.backlogTodos || [])
+    .filter((t) => !t.deleted_at && !t.done_on && t.sprint_id == null)
+    .slice()
+    .sort((a, b) => (a.created_on < b.created_on ? -1 : a.created_on > b.created_on ? 1 : 0))
+    .map((t) => ({ id: t.id, text: t.text, strategyName: strategyName.get(t.strategy_id) || '', kind: 'todo', plannedWeek: null, impact: t.impact ?? 2, backlog: true }));
+}
+
+/** Where a new to-do can go from a tool (M10 WHERE; Tim, 13 Nov, 10:42). */
+export const TODO_WHERE = { week: 'week', backlog: 'backlog', none: 'none' };
+export const BACKLOG_LINE = 'It waits there until you plan it into a week.';
+
+/**
+ * The choices under "Where should it go?": This week, Backlog, Don’t add
+ * it. With no sprint running there is no week to add it to, so This week
+ * is left out.
+ */
+export function todoWhereOptions({ running = true } = {}) {
+  return [
+    running ? { value: TODO_WHERE.week, label: 'This week' } : null,
+    { value: TODO_WHERE.backlog, label: 'Backlog' },
+    { value: TODO_WHERE.none, label: 'Don’t add it' },
+  ].filter(Boolean);
+}
+
+/** What the toast says once a tool's to-do is added (M10 "Added to this week"). */
+export function todoWhereToast(where) {
+  if (where === TODO_WHERE.week) return 'Added to this week';
+  if (where === TODO_WHERE.backlog) return 'Added to your backlog';
+  return null;
+}
+
+/**
+ * A new to-do's row from what the add panel holds: a week of the running
+ * sprint, or the Backlog (no sprint and no week, empty together).
+ * @param {{ id, text, strategyId, impact, week?: number|null, sprintId?: string|null, today, source?, sourceId? }} t
+ */
+export function newTodoRow({ id, text, strategyId, impact, week = null, sprintId = null, today, source = 'manual', sourceId = null }) {
+  const planned = week != null && sprintId != null;
+  return {
+    id,
+    strategy_id: strategyId,
+    text: String(text || '').trim(),
+    impact: impact ?? 2,
+    sprint_id: planned ? sprintId : null,
+    planned_week: planned ? week : null,
+    created_on: today,
+    done_on: null,
+    source,
+    source_id: sourceId,
+    move_on: null,
+    deleted_at: null,
+  };
+}
+
+/**
+ * The page's rows after a to-do moves: to a week of the running sprint
+ * (from another week, or planned in from the Backlog) or to the Backlog
+ * (`week` null). The move is noted as the database notes it (todo_moves),
+ * so this week's score reads the same before the page refreshes.
+ */
+export function withTodoMoved(d, todoId, { sprintId, week, on, at = new Date().toISOString() }) {
+  const row = [...(d.todos || []), ...(d.backlogTodos || [])].find((t) => t.id === todoId);
+  if (!row) return {};
+  const to = week == null ? { sprint_id: null, planned_week: null } : { sprint_id: sprintId, planned_week: week };
+  const next = { ...row, ...to, move_on: on };
+  const others = (list) => (list || []).filter((t) => t.id !== todoId);
+  return {
+    todos: week == null ? others(d.todos) : [...others(d.todos), next],
+    backlogTodos: week == null ? [...others(d.backlogTodos), next] : others(d.backlogTodos),
+    todoMoves: [...(d.todoMoves || []), { todo_id: todoId, moved_on: on, from_sprint_id: row.sprint_id ?? null, from_week: row.planned_week ?? null, to_sprint_id: to.sprint_id, to_week: to.planned_week, created_at: at }],
+  };
 }
 
 /** "Done. 3 of 4 this week." after a tick (M1). */
@@ -261,11 +352,20 @@ export function weekOptions(calendar, number, lengthWeeks, today, from = number)
  * for a later week can come into this week or any other week, free.
  */
 export function moveOptions(calendar, number, lengthWeeks, todo, today) {
+  // From the Backlog: this week or any later one (planning it in).
+  if (todo.backlog) return weekOptions(calendar, number, lengthWeeks, today, number);
   const dueNow = todo.plannedWeek != null && todo.plannedWeek <= number;
   const from = dueNow ? number + 1 : number;
-  return weekOptions(calendar, number, lengthWeeks, today, from)
-    .filter((o) => o.value !== todo.plannedWeek);
+  return [
+    ...weekOptions(calendar, number, lengthWeeks, today, from).filter((o) => o.value !== todo.plannedWeek),
+    // Or back to the Backlog, with no week (Tim, 13 Nov, 10:42).
+    BACKLOG_OPTION,
+  ];
 }
+
+/** The Backlog as a place in a list of weeks (the add and move panels). */
+export const BACKLOG_VALUE = 'backlog';
+export const BACKLOG_OPTION = { value: BACKLOG_VALUE, label: 'Backlog' };
 
 /**
  * The page's whole view.
@@ -276,7 +376,7 @@ export function sprintPageView(d, { today }) {
   if (!d) return null;
   const sprint = d.sprint || null;
   if (!sprint) {
-    return { state: 'none', today, hasPlan: Boolean(d.plan), recovery: openRecovery(d.recoveries || []), welcomeBack: Boolean(backToday(d.recoveries || [], today)) };
+    return { state: 'none', today, hasPlan: Boolean(d.plan), backlog: backlogTodos(d), recovery: openRecovery(d.recoveries || []), welcomeBack: Boolean(backToday(d.recoveries || [], today)) };
   }
   // Never with its number in client text (5e rule 29m).
   const name = 'Performance Sprint';
@@ -407,7 +507,7 @@ export function sprintPageView(d, { today }) {
     habits,
     shownDays,
     todos: sprintTodos(d, calendar, current, today),
-    weekOptions: weekOptions(calendar, current, sprint.length_weeks, today),
+    weekOptions: [...weekOptions(calendar, current, sprint.length_weeks, today), BACKLOG_OPTION],
     winDays: week.days.filter((day) => day <= today).map((day) => ({ value: day, label: DAY_SHORT[weekday(day)] })),
     calendar,
   };

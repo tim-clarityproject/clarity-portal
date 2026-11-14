@@ -195,6 +195,15 @@ export async function loadPlanPage(userId) {
   };
 }
 
+/**
+ * The Backlog's rows: to-dos with no sprint and no week yet, not done and
+ * not deleted. They wait there until they're planned into a week.
+ */
+export function loadBacklogTodos(userId) {
+  return rows(supabase.from('todos').select('id, strategy_id, text, impact, sprint_id, planned_week, created_on, done_on, source, source_id, move_on, deleted_at, updated_at')
+    .eq('user_id', userId).is('sprint_id', null).is('done_on', null).is('deleted_at', null).order('created_at'));
+}
+
 /** The running sprint's habits, settings, logs, to-dos and wins. */
 export async function loadSprintWeekRows(userId, sprint) {
   const sprintHabits = await rows(supabase.from('sprint_habits')
@@ -620,7 +629,7 @@ export function saveTodoDone(userId, todoId, doneOn) {
  * sprint's debriefs (an unusual week is left out of the range, M0.5).
  */
 export async function loadSprintPage(userId) {
-  const [plan, sprint, recoveries, workingPatterns, personSettings, weekScores, profile] = await Promise.all([
+  const [plan, sprint, recoveries, workingPatterns, personSettings, weekScores, profile, backlogTodos] = await Promise.all([
     loadActivePlan(userId),
     one(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).eq('status', 'running').limit(1)),
     rows(supabase.from('recovery_periods').select(RECOVERY_COLS)
@@ -631,8 +640,14 @@ export async function loadSprintPage(userId) {
       .eq('user_id', userId).order('week_end')),
     // The first name, for "Welcome back, Sam" after a Recovery (M15).
     one(supabase.from('profiles').select('first_name').eq('id', userId).limit(1)).catch(() => null),
+    loadBacklogTodos(userId),
   ]);
-  const base = { plan, sprint, recoveries, workingPatterns, personSettings, weekScores, firstName: profile?.first_name || '' };
+  // The Backlog (Tim, 13 Nov, 10:42): open to-dos with no week yet. With no
+  // sprint running the plan's Strategies come too, to name each one's.
+  const planStrategies = !sprint && plan
+    ? await rows(supabase.from('plan_strategies').select(STRATEGY_COLS).eq('plan_id', plan.id).is('archived_at', null).order('sort_order'))
+    : [];
+  const base = { plan, sprint, recoveries, workingPatterns, personSettings, weekScores, firstName: profile?.first_name || '', backlogTodos, planStrategies };
   if (!sprint) return { ...base, objectives: [], strategies: [], links: [] };
   const [objectives, strategies, links, debriefs, week] = await Promise.all([
     rows(supabase.from('outcome_objectives').select('id').eq('plan_id', sprint.plan_id).is('archived_at', null)),
@@ -721,7 +736,10 @@ export async function freezeWeek(sprintId, week) {
   if (error) throw error;
 }
 
-/** A new to-do for a week of the sprint (M1 "Add a to-do"). */
+/**
+ * A new to-do for a week of the sprint (M1 "Add a to-do"), or for the
+ * Backlog: no sprint and no week (the two are empty together).
+ */
 export function saveTodo(userId, t) {
   return saveOrQueue(userId, {
     table: 'todos',
@@ -732,8 +750,8 @@ export function saveTodo(userId, t) {
       strategy_id: t.strategyId,
       text: t.text,
       impact: t.impact,
-      sprint_id: t.sprintId,
-      planned_week: t.week,
+      sprint_id: t.week == null ? null : t.sprintId,
+      planned_week: t.week == null ? null : t.week,
       created_on: t.createdOn,
       // Where it came from (Daily plan, last night's review); a to-do
       // added on the sprint page is 'manual'.
@@ -745,14 +763,16 @@ export function saveTodo(userId, t) {
 
 /**
  * A to-do moved to another week of the sprint, on the person's local day
- * (the database records the move in todo_moves, which M2 reads).
+ * (the database records the move in todo_moves, which M2 reads). With no
+ * week it goes to the Backlog (no sprint either); from the Backlog, a
+ * week of the running sprint plans it in.
  */
 export function moveTodo(userId, todoId, { sprintId, week, on }) {
   return saveOrQueue(userId, {
     table: 'todos',
     kind: 'update',
     match: { id: todoId, user_id: userId },
-    values: { sprint_id: sprintId, planned_week: week, move_on: on },
+    values: { sprint_id: week == null ? null : sprintId, planned_week: week == null ? null : week, move_on: on },
   });
 }
 
@@ -944,11 +964,10 @@ export async function loadDayPlan(userId, date) {
     lastReview ? rows(supabase.from('day_review_strategies').select('strategy_id, level').eq('day_review_id', lastReview.id)) : [],
     lastReview ? rows(supabase.from('day_plans').select('id, day_plan_strategies(strategy_id)').eq('user_id', userId).eq('local_date', lastReview.local_date).limit(1)) : [],
   ]);
-  let planStrategies = [];
+  const planStrategies = page.planStrategies || [];
   let looseTodos = [];
   if (!page.sprint && page.plan) {
-    [planStrategies, looseTodos] = await Promise.all([
-      rows(supabase.from('plan_strategies').select(STRATEGY_COLS).eq('plan_id', page.plan.id).is('archived_at', null).order('sort_order')),
+    [looseTodos] = await Promise.all([
       rows(supabase.from('todos').select('id, strategy_id, text, impact, sprint_id, planned_week, created_on, done_on, source, source_id, move_on, deleted_at, updated_at')
         .eq('user_id', userId).is('sprint_id', null).is('deleted_at', null)),
     ]);

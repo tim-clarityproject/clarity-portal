@@ -19,6 +19,8 @@ import './design.css';
 //
 // tags:   ['Rolled over from week 3'], read after the Strategy's name
 // onMove: the to-do opens on a tap, showing Move (read out as "Move: [the to-do]")
+// moveLabel: the opened row's own words in place of Move (the Backlog's
+//         "Plan into a week"; Tim, 13 Nov, 10:42)
 // plain:  shown, not ticked here (the debrief's Next week, M1): the box
 //         is only a mark, mint when done, and nothing to press.
 // lead:   words before the Strategy's name in the text colour (Home's
@@ -29,7 +31,7 @@ export function TodoList({ children, label, className = '' }) {
   return <div className={`ds-todos ${className}`.trim()} role="list" aria-label={label}>{children}</div>;
 }
 
-export default function TodoRow({ text, strategyName, tags = [], done = false, onToggle, disabled = false, onMove, win = false, winTag, plain = false, lead }) {
+export default function TodoRow({ text, strategyName, tags = [], done = false, onToggle, disabled = false, onMove, moveLabel = 'Move', win = false, winTag, plain = false, lead }) {
   const textId = useId();
   const moreId = useId();
   const [open, setOpen] = useState(false);
@@ -69,7 +71,7 @@ export default function TodoRow({ text, strategyName, tags = [], done = false, o
         ) : words}
         {onMove && open && (
           <div id={moreId} className="ds-todo-more">
-            <Button variant="text" className="ds-todo-move" aria-label={`Move: ${text}`} onClick={onMove}>Move</Button>
+            <Button variant="text" className="ds-todo-move" aria-label={`${moveLabel}: ${text}`} onClick={onMove}>{moveLabel}</Button>
           </div>
         )}
       </div>

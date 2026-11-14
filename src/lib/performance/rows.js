@@ -105,6 +105,13 @@ export function toTodo(row, moves = [], sprintId = row.sprint_id) {
   };
 }
 
+/** The Backlog's to-dos with a move out of (or into) this sprint, not already among its own. */
+function onceInSprint(d, sprintId) {
+  const own = new Set((d.todos || []).map((t) => t.id));
+  const touched = new Set((d.todoMoves || []).filter((m) => m.from_sprint_id === sprintId || m.to_sprint_id === sprintId).map((m) => m.todo_id));
+  return (d.backlogTodos || []).filter((t) => !own.has(t.id) && touched.has(t.id));
+}
+
 /** A wins row and the Strategies it helped, as M3 reads it. */
 export function toWin(row, links = []) {
   return {
@@ -260,7 +267,9 @@ export function sprintWeekResult(d, calendar, number, soFarUntil = null) {
     strategies: servedCounts(d.strategies || [], d.links || [], d.objectives || []),
     habits,
     logs,
-    todos: (d.todos || []).map((t) => toTodo(t, d.todoMoves || [], sprint.id)),
+    // With the Backlog's to-dos that were once in this sprint (moved out
+    // after a week started, M2), as the database's own score reads them.
+    todos: [...(d.todos || []), ...onceInSprint(d, sprint.id)].map((t) => toTodo(t, d.todoMoves || [], sprint.id)),
     wins: (d.wins || []).map((w) => toWin(w, d.winLinks || [])),
   });
   return { week, workingDays, result };

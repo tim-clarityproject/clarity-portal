@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useToast } from '../../components/design';
 import { habitLogOp, saveHabitLog, saveTodo, saveTodoDone, setTodoDeleted } from '../../lib/performance/api';
-import { doneToast, sprintPageView } from '../../lib/performance';
+import { BACKLOG_VALUE, doneToast, newTodoRow, sprintPageView } from '../../lib/performance';
 import { toStored } from '../../lib/units';
 import { keepForLater, newId, useQueueState } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
@@ -177,22 +177,24 @@ export function useSprintActions({ userId, data, setData, view, today }) {
 
   /**
    * A new to-do for a week of the sprint (M1 "Add a to-do"), with "Added
-   * to this week." and Undo. Resolves false when it didn't save (the page
-   * puts the form back).
+   * to this week." and Undo, or for the Backlog (no week yet; Tim, 13 Nov,
+   * 10:42). Resolves false when it didn't save (the page puts the form back).
    */
   const addTodo = async (form) => {
     const id = newId();
-    const row = { id, strategy_id: form.strategyId, text: form.text.trim(), impact: form.impact, sprint_id: view.sprintId, planned_week: form.week, created_on: today, done_on: null, source: 'manual', move_on: null, deleted_at: null };
-    changeRows((d) => ({ todos: [...(d.todos || []), row] }));
-    const ok = await sent(() => saveTodo(userId, { id, strategyId: row.strategy_id, text: row.text, impact: row.impact, sprintId: view.sprintId, week: row.planned_week, createdOn: today }));
+    const backlog = form.week === BACKLOG_VALUE || form.week == null;
+    const row = newTodoRow({ id, text: form.text, strategyId: form.strategyId, impact: form.impact, week: backlog ? null : form.week, sprintId: view.sprintId, today, source: form.source, sourceId: form.sourceId });
+    const list = backlog ? 'backlogTodos' : 'todos';
+    changeRows((d) => ({ [list]: [...(d[list] || []), row] }));
+    const ok = await sent(() => saveTodo(userId, { id, strategyId: row.strategy_id, text: row.text, impact: row.impact, sprintId: row.sprint_id, week: row.planned_week, createdOn: today, source: row.source, sourceId: row.source_id }));
     if (!ok) {
-      changeRows((d) => ({ todos: d.todos.filter((t) => t.id !== id) }));
+      changeRows((d) => ({ [list]: (d[list] || []).filter((t) => t.id !== id) }));
       return false;
     }
     toast.saved({
-      message: form.week === view.current ? 'Added to this week.' : `Added to week ${form.week}.`,
+      message: backlog ? 'Added to your backlog.' : form.week === view.current ? 'Added to this week.' : `Added to week ${form.week}.`,
       onUndo: () => {
-        changeRows((d) => ({ todos: d.todos.filter((t) => t.id !== id) }));
+        changeRows((d) => ({ [list]: (d[list] || []).filter((t) => t.id !== id) }));
         sent(() => setTodoDeleted(userId, id, new Date().toISOString()));
       },
     });
