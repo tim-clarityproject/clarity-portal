@@ -651,7 +651,8 @@ try {
   await todoRow(TD).getByRole('button', { name: /Move/ }).click();
   await page.waitForSelector('.ds-panel');
   const opts = await page.locator('.ds-panel [role=radio]').allTextContents();
-  pass('move: the only choice is week 3, named as week 3', opts.length === 1 && /^Week 3,/.test(opts[0].trim()), opts.join(' | '));
+  // The Backlog is the last place in every Move panel (rule 31; 13 Nov).
+  pass('move: the only week is week 3, named as week 3, then the Backlog', opts.length === 2 && /^Week 3,/.test(opts[0].trim()) && /^Backlog/.test(opts[1].trim()), opts.join(' | '));
   await page.locator('.ds-panel').getByRole('radio', { name: /^Week 3/ }).click();
   const moved = await until(async () => (await todosOf()).find((t) => t.text === TD && t.planned_week === 3));
   const moves = moved ? await q(db.from('todo_moves').select('from_week, to_week, moved_on').eq('todo_id', moved.id)) : [];
