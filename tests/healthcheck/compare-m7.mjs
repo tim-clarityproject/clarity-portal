@@ -78,6 +78,11 @@ const SCREENS = {
     ['the chart’s heading', '.sech h2', '.ds-results-head', 0, ['pos', 'text']],
     ['the chart', '.dch svg', '.hc-chart svg', 0, ['box']],
     ['Projects', '.sech h2', '.ds-results-head', 1, ['pos', 'text']],
+    ['the first project', '.prow:not(.h)', '.hc-prow:not(.hc-prow--head)', 0, ['box']],
+    ['the last project', '.prow:not(.h)', '.hc-prow:not(.hc-prow--head)', 6, ['box']],
+    ['Objective', '.sech h2', '.ds-results-head', 2, ['pos', 'text']],
+    ['Success Factors', '.sech h2', '.ds-results-head', 3, ['pos', 'text']],
+    ['the last Success Factor', '.csfr', '.hc-factor', 3, ['box']],
     ['Questions to start with', '.sech h2', '.ds-results-head', 4, ['pos', 'text']],
     ['Versions', '.sech h2', '.ds-results-head', 5, ['pos', 'text']],
     ['the Versions line', '.kp p', '.hc-in-versions .hc-keep p', 0, ['pos', 'text']],
@@ -115,7 +120,7 @@ const SCREENS = {
     ['the eye', '.qh .eye1 svg', '.ds-guide-question .ds-who svg', 0, ['box']],
     ['the Team label', '.field label', '.hc-in-team-field label, .hc-in-team-field .ds-label-row-text', 0, ['pos', 'text']],
     ['the Team box', '#tname', '.hc-in-team-field input', 0, ['box', 'edge', 'text']]],
-  example: [...BACK, ...TITLE, ...META,
+  example: [...BACK, ...TITLE, ['the line under the title', '.meta span', '.hc-meta span', 0, ['pos', 'text']],
     ['the soft panel', '.exb', '.hc-example-intro', 0, ['box', 'fill']],
     ['the headline', '.headl', '.ds-headline', 0, ['pos', 'text']],
     ['Start my Health Check', '.endb .btn', '.hc-end .ds-btn', 0, ['box', 'text', 'fill']]],
@@ -132,9 +137,12 @@ const PANELS = {
     ['Light, for printing', '.ddl button', '[role=dialog]:not(.ds-guide) .ds-option', 0, ['box', 'text']],
     ['Dark, for sharing', '.ddl button', '[role=dialog]:not(.ds-guide) .ds-option', 1, ['box', 'text']]],
 };
-const ANCHOR = { teams: ['#h1', '.ds-page-title'], results: ['#h1', '.ds-page-title'], compare: ['#h1', '.ds-page-title'], example: ['#h1', '.ds-page-title'], newv: ['.qpct', '.ds-guide-pct-track'], team: ['.qpct', '.ds-guide-pct-track'], who: ['.sheet', '[role=dialog]:not(.ds-guide)'], pdf: ['.sheet', '[role=dialog]:not(.ds-guide)'] };
+// A page's title is measured by its line (the built title sits inline in its row, M7's is a block).
+const ANCHOR = { teams: ['#h1', '.ds-page-title-row'], results: ['#h1', '.ds-page-title-row'], compare: ['#h1', '.ds-page-title-row'], example: ['#h1', '.ds-page-title-row'], newv: ['.qpct', '.ds-guide-pct-track'], team: ['.qpct', '.ds-guide-pct-track'], who: ['.sheet', '[role=dialog]:not(.ds-guide)'], pdf: ['.sheet', '[role=dialog]:not(.ds-guide)'] };
 
 // ---------------------------------------------------------------- meant differences, each with why
+const ICONS_RULE = 'the shared TitleIcons part keeps the rule (Tim, 14 Nov, 09:28): 12px from the last letter’s ink and 16px between, measured by inside-flow (within 0.5px); M7 draws 12.5 and 16.5, so its icons sit 1px further right';
+const BACK_RULE = 'the shared Back link’s box starts at its chevron’s own box; its chevron’s visible edge is on the content’s edge where M7’s is (measured below)';
 const SHARED_PANEL = 'the portal’s shared side panel and the eye’s shared panel (WhoSees, SlidePanel), as M9’s and M7b’s comparisons accept';
 const DATES = 'M7’s team list puts its newest version first by the date in its script (27 Oct, 14 Jul, 3 Apr): the same here; only the drop-downs and words follow';
 const ALLOW = new Map([
@@ -146,6 +154,14 @@ const ALLOW = new Map([
   ['*|Start a new version|edge', 'every outlined edge reaches 3 to 1 (rule 8a)'],
   ['*|Compare two versions|edge', 'every outlined edge reaches 3 to 1 (rule 8a)'],
   ['*|the Team box|edge', 'every outlined edge reaches 3 to 1 (rule 8a)'],
+  ...['the play icon', 'the eye'].map((p) => [`*|${p}|left`, ICONS_RULE]),
+  ['*|Back|left', BACK_RULE],
+  ['compare|Talk it through|missing', 'shown only where the portal’s Chat to Tim leads somewhere real (useStartChat): the test client’s chat isn’t set up'],
+  ['team|the Team box|height', 'the portal’s shared boxes are 58px (as M7b’s comparison accepts); M7 draws 56.6'],
+  ['team|the Team box|top', 'its label line is the shared field label’s (a 44px-tall row where it has an icon), so the box sits 3.5px lower'],
+  ['who|Only you|text size', SHARED_PANEL],
+  ['who|Only you|colour', SHARED_PANEL],
+  ['who|You and Tim (chosen)|text size', SHARED_PANEL],
 ]);
 const allowed = (screen, part, what) => ALLOW.get(`${screen}|${part}|${what}`) || ALLOW.get(`*|${part}|${what}`) || ALLOW.get(`${screen}|*|${what}`) || null;
 void DATES;
@@ -206,7 +222,7 @@ const BUILT = {
   pdf: async (page) => { await BUILT.results(page); await page.locator('.ds-bottombar .ds-btn').click(); await page.locator('[role=dialog]:not(.ds-guide)').waitFor(); },
 };
 void pressNext;
-const HIDE = '.tipx, .ds-sr, .hdr, header, .ds-header, [class*=hdr-], .fabp, .pbar, .ds-orb, .ctip, #tip, .ds-infopop, .ds-tip';
+const HIDE = '.tipx, .ds-sr, .hdr, [class*=hdr-], .fabp, .pbar, .ds-orb, .ctip, #tip, .ds-infopop, .ds-tip';
 
 // ---------------------------------------------------------------- the run
 const want = (screen) => !ONLY || ONLY.includes(screen);
@@ -251,6 +267,7 @@ try {
             const bi = await titleIcons(b.page, { heading: '.ds-page-title', play: '.ds-page-title .ds-play svg', eye: '.ds-page-title .ds-who:not(.ds-play) svg' });
             const say = (x) => (x ? `${x.gapTitle.toFixed(2)} after the title, ${x.gapPair.toFixed(2)} between; middles ${x.offPlay.toFixed(2)} and ${x.offEye.toFixed(2)}` : 'not found');
             for (const [label, key] of [['the play icon is as far from the title as M7’s', 'gapTitle'], ['the eye is as far from the play icon as M7’s', 'gapPair'], ['the play icon is as high as M7’s', 'offPlay'], ['the eye is as high as M7’s', 'offEye']]) {
+              if (mi && bi && Math.abs(mi[key] - bi[key]) > 0.5 && ['gapTitle', 'gapPair'].includes(key) && Math.abs(bi[key] - (key === 'gapTitle' ? 12 : 16)) <= 0.5) { note(`${tag}: ${label}: built ${bi[key].toFixed(2)}, M7 ${mi[key].toFixed(2)}, as meant: ${ICONS_RULE}`); continue; }
               pass(`${tag}: ${label}`, Boolean(mi && bi) && Math.abs(mi[key] - bi[key]) <= 0.5, `M7 ${say(mi)}; built ${say(bi)}`);
             }
           }

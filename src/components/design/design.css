@@ -4085,7 +4085,8 @@
    12px, answer rows at 15px and the page's full width, list rows 6px from
    their crosshair. */
 .ui-root .ds-guide--calm .ds-btn,
-.ui-root .ds-guest .ds-btn {
+.ui-root .ds-guest .ds-btn,
+.ui-root .ds-bottombar .ds-btn {
   font-size: var(--fs-si-btn) !important;
   letter-spacing: var(--ls-si-btn);
 }

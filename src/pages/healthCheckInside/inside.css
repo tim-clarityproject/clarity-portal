@@ -69,3 +69,37 @@
   gap: 0 var(--space-4);
   margin-top: var(--space-px40);
 }
+
+/* M7's own type on these pages, as the calm guided screens take it: words
+   with no added letter-spacing, the title at 22px (M7 .ptl), the buttons'
+   words at 12px (M9's), and the title's own space under it given by what
+   follows (M7: the tip 16px under it, the meta line 10px). */
+.ui-root .hc-in-page {
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+}
+
+.ui-root .hc-in-page .ds-page-header {
+  padding-bottom: 0;
+}
+
+.ui-root .hc-in-page .ds-page-header .ds-page-title,
+.ui-root .hc-in-page .ds-page-title-row {
+  font-size: var(--fs-si-title) !important;
+}
+
+.ui-root .hc-in-page .ds-btn {
+  font-size: var(--fs-si-btn) !important;
+  letter-spacing: var(--ls-si-btn);
+}
+
+/* New team's one box: its label 14px in the secondary grey (M7 .field label). */
+.ui-root .hc-in-team-field .ds-label-row-text {
+  font-size: var(--fs-note) !important;
+  color: var(--text-2);
+}
+
+.ui-root .hc-in-page .hc-backrow {
+  margin-bottom: var(--space-px17);
+}
