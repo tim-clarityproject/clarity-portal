@@ -137,16 +137,14 @@ const ALLOWED = new Map(Object.entries(JSON.parse(process.env.ALLOWED_JSON || '{
 const EDGE = 'every outlined edge takes the edges colour, 3 to 1 (rule 8a; Tim, 12 Nov, after M9’s parts were drawn)';
 const BOX = 'the portal’s one-line box is 58px, as M9’s own text boxes are; M9’s two start boxes come out 1.4px shorter, so what follows sits that much lower';
 const WHOLE = 'M9’s script sizes a two-line box in whole pixels; the portal’s box is its words’ own height, up to 0.3px a row different';
-const ROWS_SHARED = 'the portal’s shared answer rows inside a panel (16px, grey until chosen), as every other panel';
 export const ALLOW = [
   ['*|the add button|edge', EDGE],
   ['*|the timer’s button|edge', EDGE],
   ['*|the last answer|edge', EDGE],
   ['*|Create my free account|edge', EDGE],
-  ['len|the first length|text size', ROWS_SHARED],
-  ['len|the first length|colour', ROWS_SHARED],
   ['who|the panel’s title|text size', 'the eye’s panel is the portal’s shared small panel (22px title), as on the dashboard'],
-  ['sum|the eye|left', 'the shared heading-with-eye part puts the eye 12px after the last letter’s box (rule 29d); M9 measures 2px less'],
+  ['sum|the eye|left', 'the eye is 12px from the last letter’s ink to its own visible edge, as M9’s is (read from both pages’ pixels by the UI tester, 14 Nov); the portal’s eye is drawn half a pixel wider and starts at its box’s edge, so its box sits 0.5px to the right of M9’s'],
+  ['sum|the coral button|width@phone', 'M9 draws no PDF link on the summary, so its button runs the full width on a phone; the built bar has “Download my PDF” at its left and the button takes the rest, as on the two Visual tools'],
   ['*|the add button|top@phone', WHOLE],
   ['*|where the second is|top@phone', WHOLE],
   ['gwel|the Email box|height', BOX],
@@ -185,7 +183,7 @@ const WORDS_BUILT_ONLY = new Map([
     ['Don’t add it', NEWER_PANEL],
     ['CANCEL', 'the shared panel keeps Cancel (step 4)'],
   ]],
-  ['sum', [['DOWNLOAD PDF', 'Tim’s step 2 asks for the PDF on the signed-in summary; M9 draws it on the guest’s end page only']]],
+  ['sum', [['Download my PDF', 'Tim’s step 2 asks for the PDF on the signed-in summary; M9 draws it on the guest’s end page only. It is the quiet link at the bottom bar’s left, as M10 draws it on the Team performance check’s results']]],
 ]);
 
 // ---------------------------------------------------------------- measuring (runs in the page)

@@ -318,7 +318,7 @@ async function guest(browser, width) {
   pass(`${tag}: the answers are saved through guest_save, only the columns a guest may write`, Boolean(saved) && save.args.p_table === 'decisions' && Object.keys(save.args.p_row).every((k) => ['id', 'title', 'form_data', 'status', 'draft'].includes(k)), JSON.stringify(save && Object.keys(save.args.p_row)));
   await pressNext(page);
   await onQuestion(page, 'Here’s your plan.');
-  pass(`${tag}: a guest’s plan has no name and no sprint lines`, (await questionText(page)) === 'Here’s your plan.' && (await page.locator('.ds-guide-plan-line small').count()) === 0 && (await page.locator('.gu-pdf').count()) === 0);
+  pass(`${tag}: a guest’s plan has no name and no sprint lines`, (await questionText(page)) === 'Here’s your plan.' && (await page.locator('.ds-guide-plan-line small').count()) === 0 && (await page.locator('.ds-guide-foot-aside').count()) === 0);
   await pressNext(page);
   await page.waitForSelector('.ds-guest-question', { timeout: 15000 });
   const end = async () => (await page.locator('.ds-guest').innerText()).replace(/\s+/g, ' ');

@@ -181,6 +181,16 @@ test('the chart: M10’s own measures, dots side by side on a shared spot, the l
   assert.equal(shared[0].y, shared[1].y);
   // Someone not rated has no dot.
   assert.equal(chartDots(team([['A B', 3, 3, 3], ['C D', 3, null, 3]]), f).length, 1);
+  // Nothing is cut off. Alone at the right-hand edge, a name goes to the left of its dot ...
+  assert.equal(chartDots(team([['Maximilian X', 3, 5, 5]]), ph)[0].nameLeft, true);
+  assert.equal(chartDots(m10(), ph).some((d) => d.nameLeft), false, 'M10’s own names stay at the right of their dots');
+  assert.equal(chartDots(m10(), f).some((d) => d.nameLeft), false);
+  // ... and a row on a shared spot there stays inside the drawing, with room for each name.
+  const row = chartDots(team([['Eve Li', 3, 5, 5], ['Maximilian X', 3, 5, 5]]), ph);
+  assert.ok(row[1].x + ph.R + 6 + ph.nameWidth('Maximilian X') <= ph.W, 'the last name ends inside the drawing');
+  assert.ok(row[1].x - row[0].x >= ph.R * 2 + 52 - 0.01 && row[0].x - ph.R >= ph.PL);
+  const long = chartDots(team([['Maximilian X', 3, 3, 3], ['Bo Y', 3, 3, 3]]), ph);
+  assert.ok(long[1].x - long[0].x >= ph.R * 2 + 6 + ph.nameWidth('Maximilian X') + 6 - 0.01, 'a long name has room before the next dot');
 });
 
 test('the colour rules: coral marks the alignment of anyone in Chaotic', () => {

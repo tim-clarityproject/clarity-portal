@@ -119,6 +119,13 @@
 
   /* Brand colours (brand guide 2025, exact) */
   --black: #000000;
+  /* The two small pages in the PDF choice: the PDF's own colours (src/lib/pdf/theme.js), the same in dark and light. */
+  --pdf-thumb-light: #FFFFFF;
+  --pdf-thumb-light-ink: #7F7F7C;
+  --pdf-thumb-light-good: #0B7A52;
+  --pdf-thumb-dark: #000000;
+  --pdf-thumb-dark-ink: #3C3C3B;
+  --pdf-thumb-dark-good: #5FEFBB;
   --grey-brand: #3C3C3B;     /* outlines and outlined buttons */
   --grey-brand-2: #4A4A49;
   --grey-brand-3: #636362;
@@ -214,7 +221,13 @@
      (measured from pixels, 5 Nov), so its visible edge can line up (29t). */
   --chev-left-inset: 5px;
   --chev-right-inset: 5.5px;
-  --icon-title-gap: var(--space-px12); /* from a title's last letter to its eye or play icon (rule 29d, Tim, 5 Nov) */
+  /* From a title's last letter to its eye or play icon: 12px, measured from
+     the letter's own ink to the icon's visible edge (rule 29d, Tim, 5 Nov;
+     M9 and M10, read from their pixels, 14 Nov). A letter's box ends about
+     1px after its ink in DM Sans and about 2px after it in spaced Nekst
+     capitals, so the icon's box starts 11px and 10px after the letter's. */
+  --icon-title-gap: 11px;
+  --icon-title-gap-caps: var(--space-px10);
   --page-info-lift: -0.088em; /* the page title's "i", from its line's middle up to the middle of the capitals (measured on Nekst) */
   --text-info-lift: -0.092em; /* an "i" at the end of a DM Sans sentence, from vertical-align middle up to the middle of the capitals (measured) */
   --onum-size: 22px;         /* circled objective numbers */

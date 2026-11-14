@@ -3,7 +3,8 @@
 // every tap area 44px, one coral button a screen, no sideways scroll, Back's
 // chevron with its visible edge on the content's edge and the tool's name
 // 14px from it, and the eye 12px after its heading's last letter with its
-// middle on the middle of the capitals, within 0.5px.
+// middle on the middle of the capitals, within 0.5px (12px from the letter's
+// ink: its box 11px after a sentence's last letter, 10px after spaced capitals).
 import { sleep } from './shared.mjs';
 
 // The visible marks inside a box, from the screen's own pixels (as
@@ -103,6 +104,7 @@ export function measure({ layer, heading }) {
     const cap = ctx.measureText('H').actualBoundingBoxAscent;
     const e = eye.getBoundingClientRect();
     out.eye = {
+      spaced: spacing > 0,
       gap: e.left - (last.right - spacing),
       off: (e.top + e.height / 2) - (baseline - cap / 2),
       size: `${e.width}x${e.height}`,
@@ -127,7 +129,10 @@ export const makeCheckScreen = (pass) => async function checkScreen(page, tag, {
     pass(`${tag}: the tool’s name is 14px from that edge`, m.back && Math.abs(m.back.name - 14) <= 0.5, JSON.stringify(m.back));
   }
   if (heading) {
-    pass(`${tag}: the eye is 12px from the last letter`, m.eye && Math.abs(m.eye.gap - 12) <= 0.5, JSON.stringify(m.eye));
+    // 12px from the letter's ink to the eye's visible edge (tokens.css --icon-title-gap; read from the
+    // pixels by the UI tester, 14 Nov): box to box that is 11px after a sentence's last letter and
+    // 10px after spaced capitals, whose boxes end about 1px and 2px after their ink.
+    pass(`${tag}: the eye is 12px from the last letter`, m.eye && Math.abs(m.eye.gap - (m.eye.spaced ? 10 : 11)) <= 0.5, JSON.stringify(m.eye));
     pass(`${tag}: the eye is centred on the capitals within 0.5px`, m.eye && Math.abs(m.eye.off) <= 0.5, JSON.stringify(m.eye));
     pass(`${tag}: the eye is 16px, in a 44px tap area`, m.eye && m.eye.size === '16x16' && m.eye.tap >= 44, JSON.stringify(m.eye));
   }

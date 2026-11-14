@@ -291,18 +291,47 @@ export function chartFrame(phone = false) {
   const R = phone ? 7 : 8;
   const X = (v) => PL + IN + ((v - 1) / 4) * (pw - 2 * IN);
   const Y = (v) => PT + IT + ((5 - v) / 4) * (ph - IT - IN);
-  return { W, H, PL, PR, PT, PB, pw, ph, IN, IT, R, X, Y, midX: (X(3) + X(4)) / 2, midY: (Y(3) + Y(4)) / 2, phone };
+  // A first name's width beside its dot, near enough: DM Sans averages a little under 0.6 of its size a letter.
+  const nameSize = phone ? 13 : 14;
+  const nameWidth = (name) => firstName(name).length * nameSize * 0.58;
+  return { W, H, PL, PR, PT, PB, pw, ph, IN, IT, R, X, Y, midX: (X(3) + X(4)) / 2, midY: (Y(3) + Y(4)) / 2, phone, nameWidth };
 }
+
+const NAME_GAP = 6; // from a dot's edge to its name (M10)
+const SHARED_GAP = 52; // between two dots that share a spot (M10)
 
 /**
  * Where each rated person's dot goes: people who share a spot sit side by
- * side. Each: { person, x, y, good, ring: { x, y } | null, line | null }.
+ * side. Each: { person, x, y, good, nameLeft, ring: { x, y } | null, line | null }.
  * `ring` is where they were at the last check (the dashed ring), left out
  * when they haven't moved or weren't on it.
+ *
+ * Nothing is cut off (M10's own example has nobody at the right-hand
+ * edge): a name that would run past the drawing's right edge goes to the
+ * left of its dot (`nameLeft`); people who share a spot stand far enough
+ * apart for each name, and the row of them is moved back inside the
+ * drawing when it would run off either side.
  */
 export function chartDots(check, frame) {
   const people = ratedPeople(check);
-  const { X, Y, R } = frame;
+  const { X, Y, R, W, PL } = frame;
+  const wide = frame.nameWidth || (() => 0);
+  const byId = new Map(people.map((p) => [p.id, p]));
+  // Each shared spot's dots, left to right, centred on the spot and kept inside the drawing.
+  const rows = new Map();
+  const rowFor = (key, ids, x0) => {
+    if (rows.has(key)) return rows.get(key);
+    const at = [0];
+    for (let i = 1; i < ids.length; i += 1) at.push(at[i - 1] + 2 * R + Math.max(SHARED_GAP, NAME_GAP + wide(byId.get(ids[i - 1]).name) + NAME_GAP));
+    const half = at[at.length - 1] / 2;
+    let xs = at.map((a) => x0 + a - half);
+    const over = xs[xs.length - 1] + R + NAME_GAP + wide(byId.get(ids[ids.length - 1]).name) - (W - 2);
+    if (over > 0) xs = xs.map((x) => x - over);
+    const under = PL + R + 2 - xs[0];
+    if (under > 0) xs = xs.map((x) => x + under);
+    rows.set(key, xs);
+    return xs;
+  };
   const spots = new Map();
   people.forEach((p) => {
     const key = `${p.u},${p.a}`;
@@ -310,8 +339,10 @@ export function chartDots(check, frame) {
   });
   return people.map((p) => {
     const group = spots.get(`${p.u},${p.a}`);
-    const off = group.length > 1 ? (group.indexOf(p.id) - (group.length - 1) / 2) * (R * 2 + 52) : 0;
     const x0 = X(p.u);
+    const off = group.length > 1 ? rowFor(`${p.u},${p.a}`, group, x0)[group.indexOf(p.id)] - x0 : 0;
+    // Alone at the right-hand edge: the name goes to the left of the dot.
+    const nameLeft = group.length === 1 && x0 + R + NAME_GAP + wide(p.name) > W - 2;
     const y0 = Y(p.a);
     const was = before(check, p);
     let ring = null;
@@ -329,7 +360,7 @@ export function chartDots(check, frame) {
         }
       }
     }
-    return { person: p, x: x0 + off, y: y0, good: areaOf(p) === 'hp', ring, line };
+    return { person: p, x: x0 + off, y: y0, good: areaOf(p) === 'hp', nameLeft, ring, line };
   });
 }
 

@@ -155,7 +155,7 @@ function AddPersonPanel({ open, onClose, onAdd }) {
       onClose={onClose}
       title="Add a person"
       initialFocusRef={nameRef}
-      footer={<Button variant="primary" onClick={add}>Add this person</Button>}
+      footer={<Button variant="primary" className="ds-panel-go" onClick={add}>Add this person</Button>}
     >
       <div className="tpc-add-form">
         <TextField ref={nameRef} label="What’s their name?" placeholder="e.g. Sam Carter" autoComplete="off" maxLength={NAME_MAX} value={name} onChange={(e) => setName(e.target.value)} onKeyDown={onEnter} />

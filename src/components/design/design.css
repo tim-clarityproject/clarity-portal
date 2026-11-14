@@ -1564,6 +1564,20 @@
   max-width: 50%;
 }
 
+/* The eye's 44px tap area ends where the box under it begins (no two tap
+   areas overlap: sign-in rule 4), 10px under the row. The eye itself stays
+   where it was, at the foot of the row: its tap area is moved up by the
+   4px it used to reach into the box, and the eye is drawn that much lower
+   inside it. */
+.ui-root .ds-label-row > .ds-who--eye {
+  margin-top: calc(var(--who-icon) - var(--tap-min) + var(--space-px10));
+  margin-bottom: calc(-1 * var(--space-px10));
+}
+
+.ui-root .ds-label-row > .ds-who--eye .ds-who-eye {
+  top: calc((var(--tap-min) - var(--who-icon)) / 2 - var(--space-px10));
+}
+
 /* ---------- The branded drop-down (Tim, 22 Oct; M6) ---------- */
 
 /* The box: room to breathe, long choices wrap onto a second line. */
@@ -4977,6 +4991,9 @@
 .ui-root .ds-pdfcancel {
   all: unset;
   cursor: pointer;
+  box-sizing: border-box;
+  /* A phone's older rule pads every button, which pushed this one past the screen's edge. */
+  padding: 0 !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6740,6 +6757,22 @@
 .ui-root .ds-panel-form {
   display: grid;
   gap: var(--space-4);
+}
+
+/* A tool's add panel: the calm line under the part it is about (M9: 12px under its box). */
+.ui-root .ds-panel-needs {
+  margin-top: var(--space-px12);
+}
+
+/* A panel's one button: at the right on a laptop, full width on a phone
+   (M9 and M10 .shf, .ph .shf .btn). */
+.ui-root .ds-dialog-foot .ds-panel-go {
+  margin-left: auto;
+}
+
+.ui-root .ds-dialog--phone .ds-dialog-foot .ds-panel-go {
+  flex: 1;
+  margin-left: 0;
 }
 
 .ui-root .ds-panel-note {
@@ -9866,9 +9899,10 @@
   display: inline-flex;
   align-items: center;
   /* The aside keeps the title's own text size, so the measures below are
-     in the title's em. 12px from the last letter: a spaced title leaves
-     its letter-spacing after that letter, which is taken back here. */
-  margin-left: calc(var(--icon-title-gap) - var(--aside-ls, 0em));
+     in the title's em. 12px from the last letter's ink to the icon's
+     visible edge (the tokens say how): a spaced title leaves its
+     letter-spacing after that letter, which is taken back here. */
+  margin-left: calc(var(--aside-gap, var(--icon-title-gap)) - var(--aside-ls, 0em));
   /* vertical-align middle is the middle of the small letters; the lift
      takes the icon up to the middle of the capitals (measured: within
      0.25px in DM Sans questions and in Nekst titles). */
@@ -9885,6 +9919,7 @@
 .ui-root .ds-page-title-row .ds-page-aside,
 .ui-root .ds-page-title .ds-page-aside {
   --aside-ls: var(--ls-page-title);
+  --aside-gap: var(--icon-title-gap-caps);
   --aside-lift: 0.088em;
 }
 
@@ -9892,6 +9927,7 @@
 .ui-root .ds-mission-card-label .ds-page-aside,
 .ui-root .ds-dialog-title .ds-page-aside {
   --aside-ls: var(--ls-section-title);
+  --aside-gap: var(--icon-title-gap-caps);
   --aside-lift: 0.088em;
 }
 
@@ -10375,6 +10411,7 @@
    capitals, as a page title's (rule 29d). */
 .ui-root .ds-guide-title .ds-page-aside {
   --aside-ls: var(--ls-page-title);
+  --aside-gap: var(--icon-title-gap-caps);
   --aside-lift: 0.088em;
 }
 

@@ -269,6 +269,8 @@ function Flow({ userId, user, asked, start }) {
         sourceId={item.id}
         pdf={(
           <PdfDownload
+            variant="text"
+            label="Download my PDF"
             getDocument={async () => {
               const { getUnstuckPdf } = await import('../../lib/pdf/docs/getUnstuck');
               const plan = itemRef.current.plan;

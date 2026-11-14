@@ -427,6 +427,7 @@ export default function EmotionalWashTool({
       initialStep={initialStep}
       onClose={onClose}
       onFinish={onFinish}
+      onEdited={() => toast.show('Saved')}
     />
   );
 }

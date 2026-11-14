@@ -211,6 +211,7 @@ function TimerLengthPanel({ open, onClose, minutes, onSet }) {
         className="ds-timer-options"
         ariaLabel="How long?"
         form="rows"
+        tick
         options={OPTIONS}
         value={form.picked}
         onChange={(picked) => setForm((f) => ({ ...f, picked, wrong: false }))}

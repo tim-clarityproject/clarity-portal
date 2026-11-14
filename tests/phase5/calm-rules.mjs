@@ -237,7 +237,11 @@ function measure({ phone }) {
     const off = icon.top + icon.height / 2 - capMiddle(letter, last.parentElement);
     if (!sameLine) eyeNotes.push(`${label(title)}: the eye is on its own line`);
     else {
-      if (Math.abs(gap - 12) > 1) eyeNotes.push(`${label(title)}: the eye is ${gap.toFixed(1)}px after the last letter (12 ±1)`);
+      // 12px from the letter's ink to the eye's visible edge (read from the pixels by the UI tester,
+      // 14 Nov; tokens.css --icon-title-gap): the letter's box ends about 1px after its ink in a
+      // sentence and about 2px after it in spaced capitals, so box to box it is 11px and 10px.
+      const want = ls > 0 ? 10 : 11;
+      if (Math.abs(gap - want) > 1) eyeNotes.push(`${label(title)}: the eye is ${gap.toFixed(1)}px after the last letter’s box (${want} ±1)`);
       if (Math.abs(off) > 0.5) eyeNotes.push(`${label(title)}: the eye is ${off.toFixed(2)}px off the middle of the capitals (±0.5)`);
     }
   }

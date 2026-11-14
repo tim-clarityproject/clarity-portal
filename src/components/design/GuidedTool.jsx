@@ -254,6 +254,8 @@ function StepHead({ step, headingRef, positionId, role }) {
  */
 export const ONE_TAP_MS = 150;
 
+// onEdited: runs when a question opened from the summary has gone back to
+// it ("Save my edit", or a one-tap answer): the tool says "Saved" (M9).
 export default function GuidedTool({
   open = true,
   layout = 'fullscreen',
@@ -268,6 +270,7 @@ export default function GuidedTool({
   onSkip,
   onClose,
   onFinish,
+  onEdited,
   autoFocus = false,
   initialStep,
   skipMoves = true,
@@ -396,6 +399,12 @@ export default function GuidedTool({
     setReturnTo(null);
     go(to, 'jump');
   };
+  // "Save my edit" (or a one-tap answer changed from the summary) went back
+  // to the summary: the tool says so (M9: "Saved").
+  const savedEdit = () => {
+    backToSummary();
+    onEdited?.();
+  };
 
   // A step opened from a summary that has a second part (thenEdit): that
   // part opens next, still as an edit. True when it did.
@@ -426,7 +435,7 @@ export default function GuidedTool({
       return;
     }
     if (returnTo != null && returnTo !== i) {
-      if (!editOn()) backToSummary();
+      if (!editOn()) savedEdit();
       return;
     }
     if (last) {
@@ -479,7 +488,7 @@ export default function GuidedTool({
   // A one-answer screen moves on by itself, so it has no Next (rule 21).
   const hasNext = !(step.oneTap && !last);
   changingRef.current = changing;
-  backToSummaryRef.current = () => { if (!editOn()) backToSummary(); };
+  backToSummaryRef.current = () => { if (!editOn()) savedEdit(); };
   // tool.go(to, { fromSummary: true }) opens one question from a summary
   // (GuidedSummary does this); a step moving itself on (a one-tap answer)
   // then goes back to that summary too.

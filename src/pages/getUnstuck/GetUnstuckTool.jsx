@@ -11,6 +11,7 @@ import {
   ToolTodoPanel,
   WhoSees,
   useCoach,
+  useToast,
 } from '../../components/design';
 import { newId } from '../../lib/syncQueue';
 import {
@@ -49,7 +50,7 @@ import './getUnstuck.css';
 //   onShare(shared)    saves who can see it (signed in, with a coach)
 //   sourceId           the saved item's id, for the to-dos made from it
 //   onTodoGone(id)     a to-do replaced by an edit: the page deletes it
-//   pdf                the Download PDF button under Your plan (signed in)
+//   pdf                “Download my PDF”, the quiet link at Your plan's bottom bar (signed in)
 //   draftKey, initialStep, onClose, onFinish   as GuidedTool's
 //
 // The eye shows on the first step and on Your plan only (Tim, 13 Nov,
@@ -73,6 +74,7 @@ export default function GetUnstuckTool({
   onFinish,
 }) {
   const coach = useCoach();
+  const toast = useToast();
   const [adding, setAdding] = useState(null); // the next step whose add panel is open
   const linkRefs = useRef({});
   // The next steps as they were when an option was taken out, for its Undo.
@@ -216,15 +218,14 @@ export default function GetUnstuckTool({
       name: 'Your plan',
       question: question('sum', plan, { name, guest }),
       eye,
+      // "Download my PDF" is the quiet link at the bottom bar's left, as on the two Visual tools (M10).
+      footAside: pdf || undefined,
       render: (tool) => (
-        <>
-          <GuidedSummary
-            stacked
-            rows={summaryRows(plan, { guest }).map((r) => ({ ...r, step: STEP_KEYS.indexOf(r.step) }))}
-            onChange={tool.go}
-          />
-          {pdf && <div className="gu-pdf">{pdf}</div>}
-        </>
+        <GuidedSummary
+          stacked
+          rows={summaryRows(plan, { guest }).map((r) => ({ ...r, step: STEP_KEYS.indexOf(r.step) }))}
+          onChange={tool.go}
+        />
       ),
     },
   ];
@@ -241,6 +242,7 @@ export default function GetUnstuckTool({
         initialStep={initialStep}
         onClose={onClose}
         onFinish={onFinish}
+        onEdited={() => toast.show('Saved')}
       />
       {!guest && (
         <ToolTodoPanel

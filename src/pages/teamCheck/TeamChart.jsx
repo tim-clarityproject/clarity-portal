@@ -80,7 +80,7 @@ export default function TeamChart({ check, now = new Date() }) {
               <g key={d.person.id} className="tpc-dot" {...tipProps({ value: tip.value, when: tip.when, extra: tip.extra })} aria-label={tip.label}>
                 <circle className="tpc-dot-tap" cx={d.x.toFixed(1)} cy={d.y.toFixed(1)} r={tap.toFixed(1)} />
                 <circle className={`tpc-dot-mark${d.good ? ' tpc-dot-mark--good' : ''}`} cx={d.x.toFixed(1)} cy={d.y.toFixed(1)} r={R} />
-                <text className={`tpc-dot-name${phone ? ' tpc-dot-name--phone' : ''}`} x={(d.x + R + 6).toFixed(1)} y={(d.y + 4.5).toFixed(1)}>{firstName(d.person.name)}</text>
+                <text className={`tpc-dot-name${phone ? ' tpc-dot-name--phone' : ''}`} x={(d.nameLeft ? d.x - R - 6 : d.x + R + 6).toFixed(1)} y={(d.y + 4.5).toFixed(1)} textAnchor={d.nameLeft ? 'end' : undefined}>{firstName(d.person.name)}</text>
               </g>
             );
           })}

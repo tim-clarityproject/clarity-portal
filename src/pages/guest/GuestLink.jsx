@@ -396,7 +396,7 @@ function Start({ token, page, title, coachName, startEmail, carryOn, message, on
             autoComplete="email"
             inputMode="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => { setEmail(e.target.value); if (problem?.at === 'email') setProblem(null); }}
           />
           {said('email')}
           <TextField
@@ -408,7 +408,7 @@ function Start({ token, page, title, coachName, startEmail, carryOn, message, on
             autoCorrect="off"
             spellCheck={false}
             value={code}
-            onChange={(e) => setCode(cleanCode(e.target.value))}
+            onChange={(e) => { setCode(cleanCode(e.target.value)); if (problem?.at === 'code') setProblem(null); }}
           />
           {said('code')}
           <p className="ds-guest-sentence">{`Only you and ${coachName || 'your coach'} will see your answers.`}</p>

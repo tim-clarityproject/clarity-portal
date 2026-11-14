@@ -1,9 +1,10 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from './Button';
 import { Choice, Dropdown } from './Choice';
 import MultiChoice from './MultiChoice';
 import TextBox from './TextBox';
 import { SlidePanel } from './Dialogs';
+import { ErrorMessage } from './Status';
 import { IMPACT_OPTIONS, helpQuestion, moveQuestion } from './impact';
 import { BACKLOG_LINE, BACKLOG_VALUE, TODO_WHERE } from '../../lib/performance/sprintPage';
 import './design.css';
@@ -21,14 +22,22 @@ const TEXT_LIMIT = 300; // todos.text and wins.what hold up to 300 characters
 
 const nameOf = (strategies, id) => (strategies || []).find((s) => s.value === id)?.label || null;
 
-function Footer({ onCancel, onAdd, ready, label }) {
+// never: the button is never greyed out (a tool's add panel, as M9 and
+// M10 draw it): pressing it with something missing says what is needed.
+function Footer({ onCancel, onAdd, ready, label, never = false }) {
   return (
     <div className="ds-panel-actions">
       <Button onClick={onCancel}>Cancel</Button>
-      <Button variant="primary" disabled={!ready} onClick={onAdd}>{label}</Button>
+      <Button variant="primary" disabled={!never && !ready} onClick={onAdd}>{label}</Button>
     </div>
   );
 }
+
+// What a tool's add panel says when its button is pressed too soon.
+export const TODO_NEEDS = {
+  text: 'Type what needs doing to carry on.',
+  strategy: 'Choose a Strategy to carry on.',
+};
 
 // Where a tool's to-do goes (M10 "Where should it go?"; Tim, 13 Nov,
 // 10:42): This week, Backlog or Don’t add it, with the Backlog's one line
@@ -62,7 +71,22 @@ export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, we
   const none = tool && form.where === TODO_WHERE.none;
   const noStrategies = Boolean(notice?.length);
   const ready = noStrategies || none || Boolean(form.text.trim() && form.strategyId && (today || (tool ? form.where : form.week)));
-  const add = () => { if (ready) onAdd(noStrategies ? { ...form, where: TODO_WHERE.none } : form); };
+  // A tool's panel never greys its button out (M9, M10): a press with
+  // something missing shows one calm line under the part it is about.
+  const [asked, setAsked] = useState(false);
+  const [was, setWas] = useState(open);
+  if (open !== was) {
+    setWas(open);
+    setAsked(false);
+  }
+  const add = () => {
+    if (ready) onAdd(noStrategies ? { ...form, where: TODO_WHERE.none } : form);
+    else if (tool) {
+      setAsked(true);
+      if (!form.text.trim()) box.current?.focus();
+    }
+  };
+  const needs = tool && asked && !none;
   return (
     <SlidePanel
       open={open}
@@ -71,7 +95,7 @@ export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, we
       initialFocusRef={noStrategies ? undefined : box}
       footer={noStrategies
         ? <Button onClick={add}>Done</Button>
-        : <Footer onCancel={onClose} onAdd={add} ready={ready} label={none ? 'Done' : 'Add my to-do'} />}
+        : <Footer onCancel={onClose} onAdd={add} ready={ready} never={tool} label={none ? 'Done' : 'Add my to-do'} />}
     >
       {noStrategies ? (
         <div className="ds-panel-lead">
@@ -79,8 +103,15 @@ export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, we
         </div>
       ) : (
         <div className="ds-panel-form">
-          <TextBox ref={box} label="What needs doing?" who="me" value={form.text} onChange={(text) => set({ text })} placeholder="e.g. Book a physio assessment" maxLength={TEXT_LIMIT} />
-          <Choice label="Which Strategy does it serve?" options={strategies} value={form.strategyId} onChange={(strategyId) => set({ strategyId })} form="rows" />
+          {/* In a tool the eye is on its first step and its summary only (Tim, 13 Nov, 09:32), so not here. */}
+          <div>
+            <TextBox ref={box} label="What needs doing?" who={tool ? undefined : 'me'} value={form.text} onChange={(text) => set({ text })} placeholder="e.g. Book a physio assessment" maxLength={TEXT_LIMIT} />
+            {needs && !form.text.trim() && <div className="ds-panel-needs"><ErrorMessage>{TODO_NEEDS.text}</ErrorMessage></div>}
+          </div>
+          <div>
+            <Choice label="Which Strategy does it serve?" options={strategies} value={form.strategyId} onChange={(strategyId) => set({ strategyId })} form="rows" />
+            {needs && !form.strategyId && <div className="ds-panel-needs"><ErrorMessage>{TODO_NEEDS.strategy}</ErrorMessage></div>}
+          </div>
           <Choice label={moveQuestion(nameOf(strategies, form.strategyId))} options={IMPACT_OPTIONS} value={form.impact} onChange={(impact) => set({ impact })} />
           {today && <p className="ds-panel-note">{todayNote}</p>}
           {tool && <TodoWhere options={where} value={form.where} onChange={(w) => set({ where: w })} />}
