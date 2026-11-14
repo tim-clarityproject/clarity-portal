@@ -65,6 +65,9 @@ export function carryOnItems(userId, { today, yesterday, exclude = [], finished 
     // Storage blocked: nothing to carry on.
   }
 
+  // The Team performance check (M10): its step, and the check as it was left.
+  add('team-check', 'Team performance check', '/team-performance-check', { step: `team-check-${userId}-new`, draft: 'team-check:new' });
+
   // Older tools whose new drafts open from their own address.
   add('journal', 'Journal', '/daily-journal', { draft: `journal:${today}` });
   add('time-audit', 'Time audit', '/time-audit', { draft: 'stop-doing-audit:new' });

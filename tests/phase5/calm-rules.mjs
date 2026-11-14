@@ -43,7 +43,7 @@
 // other host and every email call is blocked. Nothing is saved.
 //
 //   node --import ./tests/scores/register.mjs tests/phase5/calm-rules.mjs [folder for screenshots]
-import { GUEST_TOKEN, GUEST_VISIT, M9 } from '../phase8/shared.mjs';
+import { GUEST_TOKEN, GUEST_VISIT, M10, M9 } from '../phase8/shared.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -116,7 +116,20 @@ const PAGES_ALL = [
   ['get-unstuck-plan', '/get-unstuck', 'unstuck:6'],
   ['guest-start', `/guest/${GUEST_TOKEN}?email=${encodeURIComponent(M9.guestEmail)}`, 'guest:start'],
   ['guest-end', `/guest/${GUEST_TOKEN}`, 'guest:end'],
+  // The Team performance check (M10; Phase 8a step 3): who reports to you,
+  // a one-tap question with its lines of meaning, and the results (the
+  // chart, trust, and Questions to start with last), opened on their step
+  // from a check on the device (nothing saved).
+  ['team-check-people', '/team-performance-check', 'team:0'],
+  ['team-check-trust', '/team-performance-check', 'team:1'],
+  ['team-check-results', '/team-performance-check', 'team:16'],
 ];
+// M10's own invented team, as the tool keeps a check while it is open.
+const TEAM_CHECK = {
+  people: M10.people.map((p, i) => ({ id: `m10-person-${i + 1}`, name: p.name, role: p.role, t: p.t[0], a: p.a[0], u: p.u[0] })),
+  shared: false,
+  last: { at: '2026-10-14T09:00:00.000Z', people: Object.fromEntries(M10.people.map((p, i) => [`m10-person-${i + 1}`, { t: p.t[1], a: p.a[1], u: p.u[1] }])) },
+};
 // M9's own example, as the tool keeps it while it is being worked on.
 const UNSTUCK_PLAN = {
   goal: M9.goal,
@@ -221,7 +234,10 @@ function measure({ phone }) {
   // Titles in capitals: 3 words at most.
   const longTitles = [...root.querySelectorAll('h1, h2, h3, .ds-page-title, .ds-section-title')].filter((h) => vis(h) && getComputedStyle(h).textTransform === 'uppercase')
     .map((h) => (h.childNodes.length ? [...h.childNodes].filter((n) => !(n.nodeType === 1 && n.matches('.ds-page-aside, .ds-sr'))).map((n) => n.textContent).join('') : h.textContent).replace(/\s+/g, ' ').trim())
-    .filter((t) => t.split(' ').filter(Boolean).length > 3);
+    // One name is allowed its four words: "Questions to start with:" is a
+    // results section's name in approved M10 (version 5.6, 13 Nov), drawn in
+    // the same small capitals as "Trust" above it (the mock-up wins; for Tim to confirm).
+    .filter((t) => t.split(' ').filter(Boolean).length > 3 && t !== 'Questions to start with:');
 
   // The menu button never sits over a logo or content.
   const over = [];
@@ -318,7 +334,7 @@ for (const width of [1280, 390]) {
       errors.length = 0;
       try {
         // A guided tool opened on one step: its saved place is set first.
-        const [kind, at] = /^(review|build|unstuck):\d+$/.test(act || '') ? act.split(':') : [];
+        const [kind, at] = /^(review|build|unstuck|team):\d+$/.test(act || '') ? act.split(':') : [];
         if ((act || '').startsWith('guest:')) {
           // What a guest's tab keeps of the link: nothing yet (the start), or a finished plan (the end).
           await page.evaluate(({ end, token, visit, plan, email, coach }) => {
@@ -334,11 +350,18 @@ for (const width of [1280, 390]) {
           // are cleared after each guided screen, and are only written again
           // while the device is still being warmed.)
           await page.waitForFunction(() => Object.keys(localStorage).some((x) => /^clarity-[a-z-]+:[0-9a-f-]{36}(:|$)/.test(x)) || /"id":"[0-9a-f-]{36}"/.test(localStorage.getItem('clarity-portal-auth') || ''), null, { timeout: 15000 });
-          await page.evaluate(({ kind: k, at: n, plan }) => {
+          await page.evaluate(({ kind: k, at: n, plan, team }) => {
             // The person's id, from any of their page copies on the device.
             let uid = Object.keys(localStorage).map((x) => /^clarity-[a-z-]+:([0-9a-f-]{36})(:|$)/.exec(x)?.[1]).find(Boolean);
             if (!uid) { try { uid = JSON.parse(localStorage.getItem('clarity-portal-auth')).user.id; } catch { /* none */ } }
             for (const x of Object.keys(localStorage)) if (x.startsWith('clarity-cache:') && k === 'build') localStorage.removeItem(x);
+            if (k === 'team') {
+              // The Team performance check carries on from the check kept on the device, at the step it was left on.
+              localStorage.setItem(`clarity-draft:${uid}:team-check:new`, JSON.stringify({ v: { id: '77777777-7777-4777-8777-777777777777', check: team, status: 'new', saved: false, createdAt: null, finishedAt: null }, at: Date.now() }));
+              localStorage.setItem(`ds-guide:team-check-${uid}-new`, JSON.stringify({ index: Number(n), skipped: [] }));
+              localStorage.setItem('clarity-tool-answers-not-yet', String(Date.now()));
+              return;
+            }
             if (k === 'unstuck') {
               // Get unstuck carries on from its draft on the device, at the step it was left on.
               localStorage.setItem(`clarity-draft:${uid}:get-unstuck:new`, JSON.stringify({ v: { id: '44444444-4444-4444-8444-444444444444', plan, status: 'new', saved: false }, at: Date.now() }));
@@ -346,20 +369,20 @@ for (const width of [1280, 390]) {
               return;
             }
             localStorage.setItem(`ds-guide:${k === 'review' ? `performance-sprint-review-${uid}` : `performance-plan-build-${uid}`}`, JSON.stringify({ index: Number(n), skipped: [] }));
-          }, { kind, at, plan: UNSTUCK_PLAN });
+          }, { kind, at, plan: UNSTUCK_PLAN, team: TEAM_CHECK });
         }
         await page.goto(`${APP}${path}`);
         if (kind === 'review') {
           await page.getByRole('button', { name: 'Review it now' }).click({ timeout: 15000 }).catch(() => null);
         }
         if (kind) {
-          await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
-          const want = { 'review:1': 'What worked best in this sprint?', 'review:2': 'What would make the next sprint even better?', 'build:4': 'Which days do you work?', 'unstuck:0': 'What do you want to achieve?', 'unstuck:1': 'What’s in the way of', 'unstuck:3': 'What could you do to reach', 'unstuck:6': 'Here’s your plan' }[act];
-          const got = (await page.locator('.ds-guide-question').first().innerText()).replace(/\s+/g, ' ').trim();
-          pass(`${tag}: opened on "${want}"`, got.startsWith(want), got);
-          const eyes = await page.locator('.ds-guide-question .ds-who, .ds-guide-question .ds-page-aside').count();
+          await page.waitForSelector(act === 'team:16' ? '.ds-guide-title' : '.ds-guide-question', { timeout: 20000 });
+          const want = { 'review:1': 'What worked best in this sprint?', 'review:2': 'What would make the next sprint even better?', 'build:4': 'Which days do you work?', 'unstuck:0': 'What do you want to achieve?', 'unstuck:1': 'What’s in the way of', 'unstuck:3': 'What could you do to reach', 'unstuck:6': 'Here’s your plan', 'team:0': 'Who reports to you?', 'team:1': 'How much does “Priya Shah” trust you as their leader?', 'team:16': 'YOUR TEAM' }[act];
+          const got = (await page.locator('.ds-guide-question, .ds-guide-title').first().innerText()).replace(/\s+/g, ' ').trim();
+          pass(`${tag}: opened on "${want}"`, got.toUpperCase().startsWith(want.toUpperCase()), got);
+          const eyes = await page.locator('.ds-guide-question .ds-who, .ds-guide-question .ds-page-aside, .ds-guide-title .ds-who').count();
           // Get unstuck shows the eye on its first step and on Your plan only (Tim, 13 Nov, 09:32).
-          if (kind === 'unstuck' && at !== '0' && at !== '6') pass(`${tag}: no eye on a middle step`, eyes === 0, `${eyes}`);
+          if ((kind === 'unstuck' && at !== '0' && at !== '6') || act === 'team:1') pass(`${tag}: no eye on a middle step`, eyes === 0, `${eyes}`);
           else pass(`${tag}: the eye is inside the heading`, eyes >= 1, `${eyes}`);
         }
         await page.waitForLoadState('networkidle').catch(() => null);
@@ -404,7 +427,7 @@ for (const width of [1280, 390]) {
           pass(`${tag}: what opens in place keeps your place and shows (${reveals.checked} pressed)`, reveals.problems.length === 0, reveals.problems.slice(0, 5).join('; '));
         }
         if (act === 'menu') await page.keyboard.press('Escape');
-        if (kind) await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.startsWith('ds-guide:performance-') || x.startsWith('ds-guide:get-unstuck-') || x.startsWith('clarity-cache:') || x.startsWith('clarity-draft:')) localStorage.removeItem(x); });
+        if (kind) await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.startsWith('ds-guide:performance-') || x.startsWith('ds-guide:get-unstuck-') || x.startsWith('ds-guide:team-check-') || x.startsWith('clarity-cache:') || x.startsWith('clarity-draft:')) localStorage.removeItem(x); });
         emptyReads = false;
       } catch (e) {
         emptyReads = false;
@@ -599,7 +622,7 @@ if (CHEVRONS) {
       await page.fill('input[type=password]', env.TEST_CLIENT_PASSWORD);
       await page.keyboard.press('Enter');
       await page.waitForURL(/welcome/, { timeout: 30000 });
-      const paths = [...new Set(PAGES_ALL.filter(([, , act]) => !act).map(([, path]) => path)), '/personal/plan', '/life-balance-review', '/get-unstuck'];
+      const paths = [...new Set(PAGES_ALL.filter(([, , act]) => !act).map(([, path]) => path)), '/personal/plan', '/life-balance-review', '/get-unstuck', '/team-performance-check'];
       for (const path of paths) {
         const tag = `chevrons ${path} ${width}px`;
         try {

@@ -105,6 +105,7 @@ import { BreathOrbDemo } from './OrbDemos';
 import { CarriedOverDemo, NightDemo, WorkDoneDemo } from './WindDownDemos';
 import { TimerDemo } from './TimerDemos';
 import { CalmFrameDemo, CalmCardDemo } from './GetUnstuckDemos';
+import { AnswerHintDemo, NameRowsDemo, ResultsDemo, StepBarsDemo } from './VisualToolDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import { TODO_WHERE, dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, todoWhereOptions, todoWhereToast, withMeasure, yearView } from '../../lib/performance';
@@ -124,7 +125,7 @@ const TOC = [
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
   ['c45', 'Levels'], ['c46', 'Rows to pick and add'], ['c47', 'Notes and switches'], ['c48', 'Figures in a week'], ['c49', 'Summaries and celebrating'], ['c50', 'Rules of 5 Nov'],
   ['c32', 'Outcome Objectives'], ['c33', 'Alignment check'], ['c34', 'Strategy tiles'], ['c35', 'My Mission panel'],
-  ['c54', 'Home'], ['c17', 'Breathe button'], ['c67', 'Timer'], ['c68', 'Calm stepped frame'], ['c69', 'Guest pages'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
+  ['c54', 'Home'], ['c17', 'Breathe button'], ['c67', 'Timer'], ['c68', 'Calm stepped frame'], ['c69', 'Guest pages'], ['c70', 'Answers with meaning'], ['c71', 'Five fine steps'], ['c72', 'Rows of names'], ['c73', 'Results pages'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
 ];
 
 // The colour table (design-reference-v3.html): name, what it's for, dark,
@@ -1903,6 +1904,35 @@ function Gallery() {
             <p><New /><b>A tool without an account, through a coach’s link</b> (M9): <code>GuestFrame</code> shows the bold crosshair alone, centred.</p>
             <p>The start asks for the email and one access code box, with the tool’s time beside the button (under it on a phone).</p>
             <p>The end has the calm card: one sentence, a quieter one, and “Create my free account”. Never a booking link.</p>
+          </>
+        )} />
+
+        <GallerySection id="c70" title="Answers with a line of meaning" demo={AnswerHintDemo} rules={(
+          <>
+            <p><New /><b>A line of meaning under the word</b> (M10; <code>Choice</code> with an option’s <code>hint</code>): only where it says something the answer can’t (rule 29ap).</p>
+            <p>With <code>tick</code>, every row keeps a place for the tick at the right, so choosing never moves the words.</p>
+          </>
+        )} />
+
+        <GallerySection id="c71" title="Five fine steps" demo={StepBarsDemo} rules={(
+          <>
+            <p><New /><b>An answer on a five-step scale</b> (M10; <code>StepBars</code>, <code>StepBarRows</code>): grey for the answer, mint at or above the standard, coral for the one that needs you.</p>
+            <p>Coral is never on anything that can be tapped. The answer is always there in words too, on screen or for screen readers.</p>
+            <p>“Show as a table” as a quiet link (<code>ChartTable</code> with <code>link</code>) reads “Hide the table” while open, and keeps your place.</p>
+          </>
+        )} />
+
+        <GallerySection id="c72" title="Rows of names" demo={NameRowsDemo} rules={(
+          <>
+            <p><New /><b>A list people build themselves</b> (M10; <code>NameRows</code>): the name, a quiet line under it, and the crosshair to take the row away.</p>
+            <p>Removing says “Deleted” with Undo, which puts the row back where it was.</p>
+          </>
+        )} />
+
+        <GallerySection id="c73" title="Results pages" demo={ResultsDemo} rules={(
+          <>
+            <p><New /><b>A results page opens with one sentence</b>, never a big figure (<code>ResultsHeadline</code>), then the visuals under names in small capitals (<code>ResultsSection</code>).</p>
+            <p>“Questions to start with:” always come last (<code>StartQuestions</code>, rule 29ar), each naming who it is about.</p>
           </>
         )} />
 

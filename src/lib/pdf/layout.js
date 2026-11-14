@@ -131,6 +131,11 @@ const linesOn = (page) => page.items.reduce((s, it) => s + (it.u.lines ?? 0), 0)
  */
 export function layoutPages(units, geom) {
   let pages = paginate(units, geom);
+  // The run moved by the try before: when a second, earlier run has to move
+  // too, the first one's own break goes (it now travels with the earlier
+  // run), so a short document never ends with a page of its own for two
+  // lines after a chart (Team performance check, one person; 14 Nov).
+  let moved = null;
   for (let tries = 0; tries < 4 && pages.length > 1; tries += 1) {
     const last = pages[pages.length - 1];
     if (linesOn(last) > 2) break;
@@ -139,7 +144,9 @@ export function layoutPages(units, geom) {
     while (k > 0 && prev[k - 1].u.keep) k -= 1;
     const target = prev[k].u;
     if (k === 0 || !units.includes(target) || target.breakBefore) break;
+    if (moved) moved.breakBefore = false;
     target.breakBefore = true;
+    moved = target;
     pages = paginate(units, geom);
   }
   return pages;

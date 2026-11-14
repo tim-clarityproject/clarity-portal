@@ -11,8 +11,14 @@ import './design.css';
 // semantics 'radio':   pick one (Choice). Arrow keys move and choose.
 // semantics 'pressed': a segmented control switching views.
 // form:                'pills' or 'rows' to force one form.
-// options:             [{ value, label, note }], note being a small grey
-//                      word after the label, e.g. "suggested".
+// options:             [{ value, label, note, hint }], note being a small grey
+//                      word after the label, e.g. "suggested"; hint a line
+//                      of meaning under the word, on rows only (M10: Tim's
+//                      trust levels, the kinds of feeling). Never a line
+//                      that only repeats the answer (rule 29ap).
+// tick:                rows keep a place for the drop-down's tick at the
+//                      right, shown on the chosen row (M10 .tk), so
+//                      choosing never moves the words.
 // onChoose:            called after onChange when an option is tapped,
 //                      clicked or pressed with Enter or Space, never when
 //                      the arrow keys move the choice (the check-in's one
@@ -29,6 +35,7 @@ export default function InlineChoice({
   who,
   coachName,
   className = '',
+  tick = false,
 }) {
   const labelId = useId();
   const refs = useRef([]);
@@ -75,7 +82,7 @@ export default function InlineChoice({
         key={option.value}
         ref={(el) => { refs.current[i] = el; }}
         type="button"
-        className={form === 'pills' ? 'ds-seg-btn' : 'ds-answer'}
+        className={form === 'pills' ? 'ds-seg-btn' : `ds-answer${tick ? ' ds-answer--tick' : ''}`}
         {...stateProps}
         onClick={() => { onChange(option.value); onChoose?.(option.value); }}
         onFocus={() => { focused.current = i; }}
@@ -87,7 +94,12 @@ export default function InlineChoice({
           if (e.key === 'End') { e.preventDefault(); moveTo(options.length - 1); }
         } : undefined}
       >
-        <span>{option.label}</span>
+        {form !== 'pills' && option.hint ? (
+          <span className="ds-answer-words">
+            {option.label}
+            <small className="ds-answer-hint">{option.hint}</small>
+          </span>
+        ) : <span>{option.label}</span>}
         {option.note && <small className="ds-answer-note">{option.note}</small>}
       </button>
     );

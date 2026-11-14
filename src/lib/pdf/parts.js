@@ -477,7 +477,8 @@ function barsBlock(L, b, parent, maxH) {
  * yCentre is the across line (the Health Check's own line for important), and
  * the pale areas and the dots' own areas move with it. `radii` gives each
  * point's `size` a radius (dot size shows resource on the Health Check);
- * without it every dot is the standard size. `yTicks` are the values labelled
+ * without it every dot is the standard size. `yTickWords` gives the labelled
+ * values words instead of figures. `yTicks` are the values labelled
  * on the up-and-down axis (0, a quarter, a half, three quarters and the top
  * when not given). `keyNotes` are lines of words added to the key.
  */
@@ -552,7 +553,10 @@ function dotsBlock(L, b, parent, maxH) {
   const nameStyle = STYLES.small;
   const R = 8; // the standard dot radius, and the smallest: room for a two-figure number at 8.5pt
   const yTicks = b.yTicks || [0, 0.25, 0.5, 0.75, 1].map((f) => f * yMax);
-  const yLabW = Math.max(...yTicks.map((v) => ts.width(`${Math.round(v)}${unit}`, tick))) + 8;
+  // `yTickWords` names the labelled values in words instead ("Low", "High":
+  // a five-word scale is never shown as numbers).
+  const yTickText = (v, i) => (b.yTickWords ? String(b.yTickWords[i] ?? '') : `${Math.round(v)}${unit}`);
+  const yLabW = Math.max(...yTicks.map((v, i) => ts.width(yTickText(v, i), tick))) + 8;
   const pts0 = b.points.filter((p) => p.x != null && p.y != null)
     .map((p) => ({ ...p, r: Math.max(R, b.radii?.[p.size] || R) }));
   const Rmax = Math.max(R, ...pts0.map((p) => p.r));
@@ -758,10 +762,10 @@ function dotsBlock(L, b, parent, maxH) {
           .moveTo(X(gm.mx), Y(fTop)).lineTo(X(gm.mx), Y(gm.my - gap))
           .moveTo(X(gm.mx), Y(gm.my + gap)).lineTo(X(gm.mx), Y(fBot))
           .lineWidth(0.5).stroke(t.line);
-        yTicks.forEach((v) => {
+        yTicks.forEach((v, i) => {
           const ty = gm.ys(v);
           doc.moveTo(X(gm.Lx - 3), Y(ty)).lineTo(X(gm.Lx), Y(ty)).lineWidth(0.5).stroke(t.detail);
-          ts.draw(`${Math.round(v)}${unit}`, X(gm.Lx - 6), Y(ty + tick.size * 0.35), tick, t.detail, 'right');
+          ts.draw(yTickText(v, i), X(gm.Lx - 6), Y(ty + tick.size * 0.35), tick, t.detail, 'right');
         });
         b.xLabels.forEach((word, i) => {
           const tx = gm.xs(i + 1);

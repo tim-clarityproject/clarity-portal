@@ -12,7 +12,7 @@ import { isOffline, needsConnection } from '../../lib/friendlyError';
 /**
  * @param {Object} props
  * @param {() => Object|Promise<Object>} props.getDocument the document description for the template
- * @param {'primary'|'outline'} [props.variant]
+ * @param {'primary'|'outline'|'text'} [props.variant] 'text' is a quiet text link (M10: "Download my PDF" beside the coral button)
  * @param {'up'|'down'} [props.placement] where the choice opens on desktop
  * @param {'left'|'right'} [props.align]
  * @param {string} [props.className]

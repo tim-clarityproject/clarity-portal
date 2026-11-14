@@ -84,6 +84,21 @@ import './design.css';
 //           grey stage name above the question ("Goal", "Reality"), Skip is
 //           a quiet link at the bottom bar's left, and a question opened
 //           from the summary shows the bar full.
+// More a step can say (M10, 14 Nov):
+//   percent:   the % bar's own figure, where the steps aren't equal parts
+//              (three questions for each person on a list);
+//   noProgress: no % bar on this step (a results page with its own title);
+//   footAside: a quiet link at the bottom bar's left, where Skip would be
+//              ("Download my PDF" beside "Add a to-do");
+//   onward:    () => the key of the step Next goes to from here, or null
+//              for the usual one. It wins over going back to a summary, so
+//              an edit that needs more answers (someone added to a list)
+//              asks for them before the summary shows again.
+// longName: the tool's name may run to two lines on a phone (M10: "long
+//           tool names wrap rather than being cut off"): its lines balance.
+// skipLabel "Finish later" with skipMoves false is M10's quiet link at the
+// left of every typing step: it calls onSkip and stays put (the tool saves
+// and closes).
 // A step's `check`: () => a calm message, or null. Pressing Next (or Save
 //           my edit) on a step whose check gives a message shows it under
 //           the answer ("Type your goal to carry on.") and stays put: the
@@ -248,6 +263,7 @@ export default function GuidedTool({
   initialStep,
   skipMoves = true,
   calm = false,
+  longName = false,
 }) {
   const scope = useThemeScope();
   const fullscreen = layout === 'fullscreen';
@@ -383,6 +399,13 @@ export default function GuidedTool({
       rest.delete(step.key);
       setSkipped(rest);
     }
+    const onwardKey = step.onward?.();
+    const onward = onwardKey ? steps.findIndex((s) => s.key === onwardKey) : -1;
+    if (onward >= 0 && onward !== i) {
+      setReturnTo(null);
+      go(onward, 'jump');
+      return;
+    }
     if (returnTo != null && returnTo !== i) {
       backToSummary();
       return;
@@ -420,7 +443,7 @@ export default function GuidedTool({
   const position = listed.findIndex(({ j }) => j === i);
   const stepPercent = steps.length > 1 ? Math.round((i / (steps.length - 1)) * 100) : 100;
   // One question opened from the summary: the plan is whole, so the bar is full (M9).
-  const percent = calm && returnTo != null && returnTo !== i ? 100 : stepPercent;
+  const percent = calm && returnTo != null && returnTo !== i ? 100 : (Number.isFinite(step.percent) ? step.percent : stepPercent);
   const positionText = progress === 'percent'
     ? `${percent}% complete`
     : `Step ${position + 1} of ${listed.length}: ${step.name}`;
@@ -510,7 +533,7 @@ export default function GuidedTool({
   const tree = (
     <div
       ref={rootRef}
-      className={`ds-guide ds-guide--${layout}${calm ? ' ds-guide--calm' : ''}${step.bare ? ' ds-guide--bare' : ''}${step.plain ? ' ds-guide--plain' : ''}${step.className ? ` ${step.className}` : ''}`}
+      className={`ds-guide ds-guide--${layout}${calm ? ' ds-guide--calm' : ''}${longName ? ' ds-guide--long-name' : ''}${step.bare ? ' ds-guide--bare' : ''}${step.plain ? ' ds-guide--plain' : ''}${step.className ? ` ${step.className}` : ''}`}
       role={fullscreen ? 'dialog' : 'region'}
       aria-modal={fullscreen ? 'true' : undefined}
       aria-label={name}
@@ -535,9 +558,9 @@ export default function GuidedTool({
         )}
         <div ref={scrollRef} className="ds-guide-scroll">
           <div key={step.key} className={`ds-guide-page${motion}`}>
-            {!step.bare && !step.plain && progressBar}
+            {!step.bare && !step.plain && !step.noProgress && progressBar}
             {/* The % shows once and is said once (29n): the bar itself names it. */}
-            {!step.plain && progress !== 'percent' && <span id={positionId} className="ds-sr">{positionText}</span>}
+            {!step.plain && (progress !== 'percent' || step.noProgress) && <span id={positionId} className="ds-sr">{step.noProgress ? name : positionText}</span>}
             {step.bare || step.plain ? (
               step.render(tool)
             ) : (
@@ -564,9 +587,10 @@ export default function GuidedTool({
         {!step.bare && !step.plain && hasNext && (
           <div className="ds-guide-foot">
             <div className="ds-guide-foot-right">
-              {showSkip && (
+              {showSkip && !step.footAside && (
                 <button type="button" className="ds-guide-skip" onClick={skip}>{skipLabel}</button>
               )}
+              {step.footAside && <div className="ds-guide-foot-aside">{step.footAside}</div>}
               <button type="button" className="ds-btn ds-btn--primary ds-guide-next" onClick={next}>
                 {changing ? 'Save my edit' : (step.nextLabel || (last ? finishLabel : 'Next'))}
               </button>

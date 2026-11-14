@@ -1,0 +1,137 @@
+/* Team performance check (M10, version 5.6). Only what the shared parts
+   don't carry: the chart's own marks, the results page's title straight
+   under the bar, and the add panel's two boxes. Class prefix tpc-. */
+
+.ui-root .tpc-results .ds-guide-title {
+  margin-top: 0 !important;
+}
+
+.ui-root .tpc-results .ds-guide-body {
+  margin-top: 0;
+}
+
+.ui-root .tpc-add {
+  margin-top: var(--space-px12);
+}
+
+.ui-root .tpc-add-form {
+  display: grid;
+  gap: var(--space-px22);
+  margin-top: var(--space-px12);
+}
+
+/* The chart */
+.ui-root .tpc-chart {
+  position: relative;
+  margin-top: var(--space-1);
+}
+
+.ui-root .tpc-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.ui-root .tpc-chart text {
+  font-family: var(--font-body);
+  letter-spacing: normal;
+}
+
+.ui-root .tpc-chart-grain {
+  fill: var(--line);
+}
+
+.ui-root .tpc-chart-lines line {
+  stroke: var(--line);
+  stroke-width: var(--line-w);
+}
+
+.ui-root .tpc-chart-axis {
+  font-size: var(--fs-meta);
+  fill: var(--text-2);
+}
+
+.ui-root .tpc-chart-end {
+  font-size: var(--fs-min);
+  fill: var(--label);
+}
+
+.ui-root .tpc-chart-area {
+  font-size: var(--fs-meta);
+  fill: var(--label);
+}
+
+.ui-root .tpc-chart-area--phone {
+  font-size: var(--fs-min);
+}
+
+.ui-root .tpc-chart-area--good {
+  fill: var(--good);
+}
+
+.ui-root .tpc-chart-was {
+  fill: none;
+  stroke: var(--label);
+  stroke-width: var(--line-w);
+  stroke-dasharray: 2 2.5;
+}
+
+.ui-root .tpc-chart-moved {
+  stroke: var(--quiet-line);
+  stroke-width: var(--line-w);
+}
+
+.ui-root .tpc-dot {
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .tpc-dot-tap {
+  fill: transparent;
+}
+
+/* Never coral at rest: mint in High-performance, an outline elsewhere. */
+.ui-root .tpc-dot-mark {
+  fill: var(--bg);
+  stroke: var(--text-2);
+  stroke-width: var(--line-w-strong);
+}
+
+.ui-root .tpc-dot-mark--good {
+  fill: var(--good);
+  stroke: var(--good);
+}
+
+.ui-root .tpc-dot-name {
+  font-size: var(--fs-note);
+  fill: var(--text);
+}
+
+.ui-root .tpc-dot-name--phone {
+  font-size: var(--fs-meta);
+}
+
+@media (hover: hover) {
+  .ui-root .tpc-dot:hover .tpc-dot-mark {
+    stroke: var(--coral-text);
+  }
+}
+
+.ui-root .tpc-dot:focus-visible .tpc-dot-mark {
+  stroke: var(--coral-text);
+  stroke-width: var(--focus-w);
+}
+
+@media (forced-colors: active) {
+  .ui-root .tpc-dot-mark {
+    forced-color-adjust: none;
+    fill: Canvas;
+    stroke: CanvasText;
+  }
+
+  .ui-root .tpc-dot-mark--good {
+    fill: CanvasText;
+  }
+}

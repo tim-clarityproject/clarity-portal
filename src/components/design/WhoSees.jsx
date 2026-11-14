@@ -30,6 +30,8 @@ import './design.css';
 // plain: the panel as M9 draws it for one saved item (Tim, 13 Nov): the
 //        two choices only, with no name line and no My Account line (a
 //        tool's own item isn't on that page).
+// line:  with `plain`, one quiet line under the two choices (M10: "The
+//        people you rate never see it.").
 // note:  one line in place of the choices, for someone who can't change
 //        it: a guest's "Your answers go to Tim, who sent you the link."
 //        The eye still opens the panel, and reads the same way.
@@ -46,7 +48,7 @@ export function whoSeesSentence(audience, coach) {
 // the eye carries a small dot, so the change shows without words (Claude's
 // call). A changeable eye (onChange) opens "Who can see this?" on a click
 // or tap, and previews its sentence when pointed at.
-export default function WhoSees({ audience = 'me', coachName, name, onChange, plain = false, note = null }) {
+export default function WhoSees({ audience = 'me', coachName, name, onChange, plain = false, note = null, line = null }) {
   const coach = useCoachName(coachName);
   const [open, setOpen] = useState(false);
   const sentence = whoSeesSentence(audience, coach);
@@ -102,12 +104,13 @@ export default function WhoSees({ audience = 'me', coachName, name, onChange, pl
         onChange={onChange}
         plain={plain}
         note={note}
+        line={line}
       />
     </>
   );
 }
 
-function WhoSeesSheet({ open, onClose, name, audience, coach, onChange, plain, note }) {
+function WhoSeesSheet({ open, onClose, name, audience, coach, onChange, plain, note, line }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const choose = async (next) => {
@@ -135,7 +138,7 @@ function WhoSeesSheet({ open, onClose, name, audience, coach, onChange, plain, n
     );
   }
   return (
-    <Sheet open={open} onClose={onClose} title="Who can see this?" footer={plain ? undefined : <p className="ds-sheet-foot">{MY_ACCOUNT_LINE}</p>}>
+    <Sheet open={open} onClose={onClose} title="Who can see this?" footer={plain ? (line ? <p className="ds-sheet-foot">{line}</p> : undefined) : <p className="ds-sheet-foot">{MY_ACCOUNT_LINE}</p>}>
       {name && !plain && <p className="ds-sheet-name">{name}</p>}
       <div className="ds-listbox ds-sheet-options" role="listbox" aria-label="Who can see this?">
         {['me', 'coach'].map((value) => (

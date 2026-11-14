@@ -101,6 +101,7 @@ const HealthCheck = lazy(() => loadWithReload(() => import('./pages/alignment/He
 // Wheel of Life (Review section, inside the portal). Lazy-loaded, like the
 // Health Check, so its pages and styles stay out of the main bundle.
 const GetUnstuck = lazy(() => loadWithReload(() => import('./pages/getUnstuck/GetUnstuck')));
+const TeamCheck = lazy(() => loadWithReload(() => import('./pages/teamCheck/TeamCheck')));
 const GuestLink = lazy(() => loadWithReload(() => import('./pages/guest/GuestLink')));
 const WheelStart = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelStart')));
 const WheelAreas = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelAreas')));
@@ -471,6 +472,7 @@ function AppContent() {
           {/* Get unstuck is one guided tool (M9; Tim, 13 Nov). Its old step
               addresses come to it with their query, hash and state. */}
           <Route path="/get-unstuck" element={lazyPage(GetUnstuck)} />
+          <Route path="/team-performance-check" element={lazyPage(TeamCheck)} />
           {GET_UNSTUCK_STEPS.map((path) => (
             <Route key={path} path={path} element={<MovedTo to="/get-unstuck" />} />
           ))}

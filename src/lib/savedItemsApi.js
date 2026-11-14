@@ -5,6 +5,7 @@ import { listCheckins } from './wheelOfLifeApi';
 import { readCache } from './pageCache';
 import { tableReady } from './performance/tableReady';
 import { ANSWERS_ON_DEVICE } from './performance/sprintReviewAnswers';
+import { loadToolAnswers } from './toolAnswers';
 
 // Reads every saved plan and review for My Plans, My Reviews and the hubs'
 // recent lists (Phase 4 step 4); savedItems.js names them. Each part is
@@ -47,9 +48,14 @@ export async function loadSavedPlans(userId) {
     part('day plans', () => rows(supabase.from('day_plans')
       .select('id, local_date, status, grateful_for, way_of_being, biggest_risk, risk_response').eq('user_id', userId))),
     part('missions', () => rows(supabase.from('missions').select('id, title, created_at, updated_at, archived_at').eq('user_id', userId))),
+    // The Team performance check's saved items (tool_answers, 043): the
+    // table's once it is there, with what waits on this device.
+    part('Team performance checks', () => loadToolAnswers(userId, 'team_check')),
   ]);
-  allFailed(parts);
-  const [decisions, planReviews, plans, sprints, dayPlans, missions] = parts.map((p) => p.rows);
+  // The device's own tool answers don't count: offline, the list keeps
+  // what it showed last time instead of only those.
+  allFailed(parts.slice(0, 6));
+  const [decisions, planReviews, plans, sprints, dayPlans, missions, toolAnswers] = parts.map((p) => p.rows);
   return {
     decisions,
     // Only what the list needs from each review: which plan, and whether a draft.
@@ -58,6 +64,8 @@ export async function loadSavedPlans(userId) {
     sprints,
     dayPlans,
     missions,
+    // Only what the list needs: never the answers themselves.
+    toolAnswers: toolAnswers.map((r) => ({ id: r.id, tool: r.tool, title: r.title, status: r.status, createdAt: r.createdAt, updatedAt: r.updatedAt, finishedAt: r.finishedAt })),
   };
 }
 

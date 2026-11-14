@@ -384,6 +384,16 @@
   --fs-tool-name-calm: calc(11 * var(--u));
   --ls-tool-name-calm: 0.16em;
   --space-px64: 64px;
+  /* Results pages and people lists (M10 Visual tools, version 5.6; 14 Nov). */
+  --row-h-people: 68px;      /* a person's row: a name with a line under it (M10 .pr, .trow) */
+  --steprow-bars-w: 150px;   /* the five steps' column in a list (M10 .trow) */
+  --steprow-word-w: 170px;   /* the level in words, right of the steps */
+  --fs-results-head: calc(13 * var(--u));   /* a results section's name, Nekst (M10 .sech) */
+  --ls-results-head: 0.14em;
+  --fs-headline: calc(22 * var(--u));       /* the opening sentence (M10 .headl) */
+  --fs-headline-phone: calc(20 * var(--u));
+  --headline-max: 34ch;
+  --space-px44: 44px;
   --fs-question: calc(24 * var(--u));       /* the question heading, DM Sans */
   --fs-question-phone: calc(21 * var(--u));
   --fs-rec-question: calc(20 * var(--u));   /* Recovery's daily question (M15 .rqh) */

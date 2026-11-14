@@ -228,3 +228,90 @@ export async function withCoach(context, firstName = M9.coach) {
     body: JSON.stringify([{ coach_id: '22222222-2222-4222-8222-222222222222', first_name: firstName, away_until: null, mobile: null, contact_ways: ['email'] }]),
   }));
 }
+
+// ------------------------------------------------------------ M10 Visual tools
+// Shared by the Team performance check's suites (and the Emotional wash's,
+// when it is built): M10's own file, its invented team, and the steps
+// through the built tool.
+export const M10_FILE = process.env.M10_FILE || `${homedir()}/Downloads/clarity-phase-8a/m10-visual-tools.html`;
+
+/** M10's invented direct reports: [now, at the last check], 1 to 5 (lowest first). */
+export const M10 = {
+  coach: 'Tim',
+  lastMonth: 'October',
+  people: [
+    { name: 'Priya Shah', first: 'Priya', role: 'Head of Operations', t: [5, 4], a: [4, 3], u: [4, 4] },
+    { name: 'Tom Ellis', first: 'Tom', role: 'Sales Director', t: [2, 4], a: [4, 4], u: [3, 3] },
+    { name: 'Grace Okafor', first: 'Grace', role: 'Finance Lead', t: [5, 5], a: [5, 4], u: [2, 2] },
+    { name: 'Daniel Reyes', first: 'Daniel', role: 'Product Lead', t: [4, 4], a: [2, 2], u: [4, 4] },
+    { name: 'Leila Haddad', first: 'Leila', role: 'People Lead', t: [3, 3], a: [2, 2], u: [2, 1] },
+  ],
+};
+
+export const TEAM_PATH = '/team-performance-check';
+export const title = (page) => page.locator('.ds-guide-title').first();
+export const panel = (page) => page.locator('[role=dialog]:not(.ds-guide)').last();
+export const panelGone = (page, ms = 8000) => until(async () => (await page.locator('[role=dialog]:not(.ds-guide)').count()) === 0, ms);
+
+/** A saved Team performance check as the app keeps it (savedAnswers), for seeding the device. `which` 0 is now, 1 the last check. */
+export function m10Answers(which = 0, { last = null, ids = null } = {}) {
+  return {
+    version: 1,
+    people: M10.people.map((p, i) => ({ id: ids?.[i] || `m10-person-${i + 1}`, name: p.name, role: p.role, trust: p.t[which], alignment: p.a[which], autonomy: p.u[which] })),
+    last,
+  };
+}
+
+/**
+ * Puts a finished check from October on the device (as a check saved
+ * before migration 043 has run is kept), so the next one has a last check.
+ * The page must be signed in. Returns the person's id.
+ */
+export async function seedLastCheck(page, { at = '2026-10-14T09:00:00.000Z', id = '55555555-5555-4555-8555-555555555555' } = {}) {
+  return page.evaluate(({ at: when, id: rid, answers }) => {
+    let uid = Object.keys(localStorage).map((x) => /^clarity-[a-z-]+:([0-9a-f-]{36})(:|$)/.exec(x)?.[1]).find(Boolean);
+    if (!uid) { try { uid = JSON.parse(localStorage.getItem('clarity-portal-auth')).user.id; } catch { /* none */ } }
+    const key = `clarity-cache:${uid}:tool-answers`;
+    let map = {};
+    try { map = JSON.parse(localStorage.getItem(key))?.v || {}; } catch { /* none */ }
+    map[rid] = { id: rid, tool: 'team_check', title: 'October team check', status: 'completed', answers, shared: false, createdAt: when, updatedAt: when, finishedAt: when, sent: false };
+    localStorage.setItem(key, JSON.stringify({ v: map, at: Date.now() }));
+    return uid;
+  }, { at, id, answers: m10Answers(1) });
+}
+
+/** Everything the Team performance check keeps on this device is taken off. */
+export async function clearTeamCheck(page) {
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (/team-check|:tool-answers$/.test(k)) localStorage.removeItem(k); });
+}
+
+/** Adds one person through the "Add a person" panel. */
+export async function addPerson(page, name, role = '') {
+  await page.getByRole('button', { name: 'Add a person', exact: true }).click();
+  const p = panel(page);
+  await p.waitFor({ timeout: 10000 });
+  await p.getByLabel('What’s their name?').fill(name);
+  if (role) await p.getByLabel('What’s their role?').fill(role);
+  await sleep(450);
+  await p.getByRole('button', { name: 'Add this person' }).click();
+  await panelGone(page);
+}
+
+/**
+ * Answers the three questions for each of M10's people in turn, from the
+ * first question on screen, as far as the results ("Your team").
+ * `stopAfter`: how many questions to answer before stopping (all by default).
+ */
+export async function rateTeam(page, { stopAfter = Infinity, people = M10.people } = {}) {
+  let n = 0;
+  for (const p of people) {
+    for (const [kind, starts] of [['t', 'How much does'], ['a', 'How well does'], ['u', 'How much autonomy does']]) {
+      if (n >= stopAfter) return;
+      await until(async () => { const q = await questionText(page); return q.startsWith(starts) && q.includes(p.name); }, 15000);
+      await sleep(450);
+      await page.locator('.ds-guide-body .ds-answer').nth(p[kind][0] - 1).click();
+      n += 1;
+    }
+  }
+  await title(page).waitFor({ timeout: 15000 });
+}

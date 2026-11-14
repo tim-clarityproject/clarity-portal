@@ -20,10 +20,11 @@ mkdirSync(out, { recursive: true });
 
 const vite = await createServer({ root, logLevel: 'error', server: { middlewareMode: true }, appType: 'custom' });
 const load = (p) => vite.ssrLoadModule(p);
-const [{ renderPdf }, { PAPER }, { samplePdf }, { healthCheckPdf }, { meetingPlanPdf }, { emojiPartsFor, cjkPartsFor, textOf }, { getUnstuckPdf }, { planFrom }] = await Promise.all([
+const [{ renderPdf }, { PAPER }, { samplePdf }, { healthCheckPdf }, { meetingPlanPdf }, { emojiPartsFor, cjkPartsFor, textOf }, { getUnstuckPdf }, { planFrom }, { teamCheckPdf }] = await Promise.all([
   load('/src/lib/pdf/render.js'), load('/src/lib/pdf/paper.js'), load('/src/lib/pdf/docs/sample.js'),
   load('/src/lib/pdf/docs/healthCheck.js'), load('/src/lib/pdf/docs/meetingPlan.js'), load('/src/lib/pdf/emoji.js'),
   load('/src/lib/pdf/docs/getUnstuck.js'), load('/src/lib/getUnstuck/model.js'),
+  load('/src/lib/pdf/docs/teamCheck.js'),
 ]);
 
 const file = (p) => new Uint8Array(readFileSync(join(root, p)));
@@ -368,7 +369,50 @@ const GU = {
   }),
 };
 
-const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU };
+// ---- Team performance check (mock-up M10): a check as the tool keeps it ------------------
+// people: [name, role, trust, alignment, autonomy], each 1 to 5; `was` the same people's
+// answers at the last check, by their place in the list.
+const TC_AT = '2026-11-14T09:30:00';
+const TC_LAST = new Date(2026, 9, 14, 9).toISOString();
+const team = (rows, was = null) => ({
+  people: rows.map(([name, role, t, a, u], i) => ({ id: `p${i + 1}`, name, role, t, a, u })),
+  shared: false,
+  last: was ? { at: TC_LAST, people: Object.fromEntries(was.map(([t, a, u], i) => [`p${i + 1}`, { t, a, u }]).filter(([, v]) => v.t)) } : null,
+});
+const TC_M10 = [['Priya Shah', 'Head of Operations', 5, 4, 4], ['Tom Ellis', 'Sales Director', 2, 4, 3], ['Grace Okafor', 'Finance Lead', 5, 5, 2], ['Daniel Reyes', 'Product Lead', 4, 2, 4], ['Leila Haddad', 'People Lead', 3, 2, 2]];
+const TC_FIRST = ['Amara', 'Benedikt', 'Chidi', 'Dagny', 'Eero', 'Farah', 'Gwenllian', 'Hiroshi', 'Ingrid', 'Jomo', 'Katarzyna', 'Lorcan', 'Mairead', 'Nnamdi', 'Oksana', 'Piotr', 'Quentin', 'Rangi', 'Siobhan', 'Tadhg', 'Ulla', 'Vikram', 'Wanjiru', 'Xiomara'];
+const TC = {
+  'Team check, normal': teamCheckPdf({ person: 'Sam Carter', createdAt: TC_AT, check: team(TC_M10, [[4, 3, 4], [4, 4, 3], [5, 4, 2], [4, 2, 4], [3, 2, 1]]) }),
+  'Team check, no last check': teamCheckPdf({ person: 'Sam Carter', createdAt: TC_AT, check: team(TC_M10) }),
+  'Team check, one person': teamCheckPdf({ person: 'Sam Carter', createdAt: TC_AT, check: team([['Jo', '', 5, 5, 5]]) }),
+  'Team check, many people': teamCheckPdf({
+    person: 'Sam Carter',
+    createdAt: TC_AT,
+    check: team(TC_FIRST.map((f, i) => [`${f} ${['Okonkwo-Fairweather', 'Lindqvist', 'Ó Súilleabháin'][i % 3]}`, ['Regional Operations Lead', 'Head of Customer Success', ''][i % 3], (i % 5) + 1, ((i * 2) % 5) + 1, ((i * 3) % 5) + 1]),
+      TC_FIRST.map((_, i) => [((i + 2) % 5) + 1, ((i * 2 + 1) % 5) + 1, ((i * 3 + 2) % 5) + 1])),
+  }),
+  'Team check, ties': teamCheckPdf({
+    person: 'Sam Carter',
+    createdAt: TC_AT,
+    // everyone on one spot with the same trust, then two on another
+    check: team([['Ana Reis', 'Design Lead', 3, 3, 3], ['Bo Lind', 'Engineering Lead', 3, 3, 3], ['Cy Ward', 'Data Lead', 3, 3, 3], ['Di Cole', 'Support Lead', 3, 3, 3], ['Ed Park', 'Sales Lead', 2, 2, 2], ['Flo Diaz', 'Marketing Lead', 2, 2, 2]],
+      [[3, 3, 3], [3, 3, 3], [4, 3, 3], [3, 3, 3], [2, 2, 2], [5, 2, 2]]),
+  }),
+  'Team check, long names': teamCheckPdf({
+    person: 'Maximilian Alexander von Hohenzollern-Sigmaringen-Fitzwilliam',
+    createdAt: TC_AT,
+    check: team([
+      ['Dr. Maria-José Fernández de la Vega y Castellanos-Montenegro', 'Vice President of Global Supply Chain Transformation and Continuous Improvement, Europe, the Middle East and Africa', 4, 2, 5],
+      ['Wolfeschlegelsteinhausenbergerdorff Aleksandrovich', 'Interim Head of Platform Reliability Engineering', 1, 5, 2],
+      ['Anne-Marie van der Berg-Smythe', 'Chief of Staff', 5, 5, 5],
+    ], [[4, 2, 5], [4, 5, 2], [5, 4, 4]]),
+  }),
+  'Team check, emoji': teamCheckPdf({ person: 'Sam Carter 🚀', createdAt: TC_AT, check: team([['Priya 🌟 Shah', 'Head of Ops 🔧', 5, 4, 4], ['Tom Ellis', 'Sales 📈', 2, 2, 5]], [[5, 4, 4], [4, 2, 5]]) }),
+  'Team check, Chinese': teamCheckPdf({ person: 'Sam Carter', createdAt: TC_AT, check: team([['王小明', '运营主管', 4, 5, 3], ['李娜', '财务负责人', 5, 2, 4]]) }),
+  'Team check, no questions': teamCheckPdf({ person: 'Sam Carter', createdAt: TC_AT, check: team([['Priya Shah', 'Head of Operations', 5, 5, 5], ['Leila Haddad', 'People Lead', 3, 2, 2]]) }),
+};
+
+const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU, ...TC };
 
 // ---- dot charts: dots stay in their own area, and how many touch ----------------------
 // A dot is in its own area when it is on the same side of both centre lines
@@ -689,6 +733,40 @@ for (const [name, spec] of Object.entries(DOCS)) {
     spec.sections.filter((x) => !x.blocks.length).forEach((x) => { if (text.toLocaleLowerCase('en-GB').includes(flatWords(x.title).toLocaleLowerCase('en-GB'))) problems.push(`${name}: the empty section "${x.title}" still has its heading`); });
   }
   report.push(`Get unstuck (next steps first, blanks left out, where each step is)\n  ${problems.length ? `PROBLEMS:\n    ${problems.join('\n    ')}` : 'all checks pass'}`);
+  if (problems.length) failed += 1;
+}
+
+// ---- Team performance check: the results page's order, questions last, words not numbers ----
+{
+  const problems = [];
+  const titles = (spec) => spec.sections.filter((x) => x.blocks.some((b) => (b.items ? b.items.length : true))).map((x) => x.title).join(' > ');
+  const normal = TC['Team check, normal'];
+  if (titles(normal) !== 'Alignment and autonomy > Trust > Questions to start with') problems.push(`the sections are in the wrong order: ${titles(normal)}`);
+  if (normal.sections[0].blocks[0].type !== 'dots') problems.push('the chart is not first (rule 29ar)');
+  if (normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ') !== 'Right now: 1 of your 5 people is in the high-performance area right now.; On your list: 5 people; Your last check: October') problems.push(`At a glance reads "${normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ')}"`);
+  const questions = (spec) => spec.sections[2].blocks[0].items;
+  if (questions(normal).join(' | ') !== 'What would help “Daniel Reyes” explain the organisation’s intent in their own words? | What has changed for “Tom Ellis”, and what would rebuild their trust? | Which decisions could “Grace Okafor” own, within clear boundaries, to ease your load?') problems.push('the questions are not Chaotic, then trust, then autonomy');
+  if (normal.sections[1].blocks[0].columns[2]?.label !== 'At your last check, in October') problems.push('trust doesn’t say "At your last check, in October"');
+  if (TC['Team check, no last check'].sections[1].blocks[0].columns.length !== 2 || TC['Team check, no last check'].glance.length !== 2) problems.push('a first check mentions a last check');
+  if (titles(TC['Team check, no questions']) !== 'Alignment and autonomy > Trust') problems.push(`with no questions the section is not left out: ${titles(TC['Team check, no questions'])}`);
+  if (TC['Team check, one person'].glance[0].value !== 'Jo is in the high-performance area right now.') problems.push('one person: the headline is wrong');
+  for (const [name, spec] of Object.entries(TC)) {
+    if (spec.glance.length < 2 || spec.glance.length > 4) problems.push(`${name}: At a glance has ${spec.glance.length} item(s)`);
+    for (const q of questions(spec)) if (q.trim().split(/\s+/).length > 15) problems.push(`${name}: a question is over 15 words: ${q}`);
+    // every answer is a word: no figure in any table cell but the row's number
+    spec.sections.flatMap((x) => x.blocks).filter((b) => b.type === 'table').forEach((b) => b.rows.forEach((row) => row.slice(b.columns[0].label === 'No.' ? 2 : 1).forEach((cell) => { if (/\d/.test(cell)) problems.push(`${name}: an answer is a number: ${cell}`); })));
+    if (/this month|last month/i.test(JSON.stringify(spec))) problems.push(`${name}: says "this month" or "last month"`);
+    if (only && !name.includes(only)) continue;
+    let text = '';
+    const flatWords = (t) => t.replace(/[\s-]+/g, '');
+    try { text = flatWords(run('pdftotext', ['-raw', join(out, `${name}, A4.pdf`), '-'])); } catch { toolsMissing = true; }
+    if (!text) continue;
+    const said = [...questions(spec), spec.glance[0].value];
+    said.filter((w) => !/\p{Extended_Pictographic}/u.test(w)).forEach((w) => { if (!text.includes(flatWords(w))) problems.push(`${name}: the PDF's text doesn't hold "${w.slice(0, 50)}"`); });
+    const at = (w) => text.indexOf(flatWords(w));
+    if (questions(spec).length && !(at('Questions to start with') > at('Trust now'))) problems.push(`${name}: Questions to start with don't come last`);
+  }
+  report.push(`Team performance check (headline, chart, table, trust, then the questions last; words, never numbers)\n  ${problems.length ? `PROBLEMS:\n    ${problems.join('\n    ')}` : 'all checks pass'}`);
   if (problems.length) failed += 1;
 }
 

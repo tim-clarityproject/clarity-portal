@@ -38,6 +38,12 @@ export const TOOL_NAME = {
   'strategic-alignment': 'Strategic Alignment Health Check',
 };
 
+// Saved items kept in tool_answers, by their tool: the name, the area and
+// the address that opens one (its id in the page's state).
+const TOOL_ANSWERS = {
+  team_check: { name: 'Team performance check', area: 'interpersonal', path: '/team-performance-check' },
+};
+
 const DECISION_AREA = {
   plan_meeting: 'interpersonal',
   'tough-conversation': 'interpersonal',
@@ -190,6 +196,28 @@ export function planRows(data, today = getLocalDateKey()) {
   const reviews = data.planReviews || [];
   const out = (data.decisions || []).map((d) => decisionRow(d, reviews, today));
   numberHealthChecks(out);
+
+  // The tools that keep their own answers (tool_answers, migration 043; on
+  // the device until it has run): the Team performance check.
+  (data.toolAnswers || []).filter((r) => TOOL_ANSWERS[r.tool]).forEach((r) => {
+    const meta = TOOL_ANSWERS[r.tool];
+    const isDraft = r.status !== 'completed';
+    const to = { path: meta.path, state: { checkId: r.id } };
+    out.push(base(today, {
+      id: `tool:${r.id}`,
+      dbId: r.id,
+      source: 'tool-answers',
+      tool: r.tool,
+      area: meta.area,
+      title: (r.title || '').trim() || meta.name,
+      typeLabel: meta.name,
+      at: r.finishedAt || r.updatedAt || r.createdAt,
+      isDraft,
+      canEdit: true,
+      to,
+      edit: to,
+    }));
+  });
 
   (data.plans || []).forEach((p) => {
     out.push(base(today, {

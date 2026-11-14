@@ -104,4 +104,7 @@ export { default as ButtonNote } from './ButtonNote';
 export { NextSteps, NextStepRow } from './NextSteps';
 export { GuestFrame, GuestTitle, CalmCard } from './GuestPage';
 export { default as Timer } from './Timer';
+export { default as StepBars, StepBarRows } from './StepBars';
+export { default as NameRows } from './NameRows';
+export { ResultsHeadline, ResultsSection, StartQuestions } from './Results';
 export { useTimerLength } from './useTimerLength';

@@ -340,6 +340,13 @@ export const PHASE1_TABLES = [
     make: ({ owner, id: k, n }) => `insert into public.wind_down_nights (id, user_id, night, thoughts) values (${k}, ${owner}, ${D(n)}, array['Rules test'])`,
     change: 'thoughts = t.thoughts',
   }),
+  // 043 (Phase 8a step 3): skipped where 043 hasn't run yet. Own rows
+  // only; shared_with_coach records a choice and no coach reads it yet.
+  userRow({
+    table: 'tool_answers', ifExists: true,
+    make: ({ owner, id: k }) => `insert into public.tool_answers (id, user_id, tool, title) values (${k}, ${owner}, 'team_check', 'Rules test')`,
+    change: 'title = t.title',
+  }),
   userRow({
     table: 'week_scores',
     make: ({ owner, id: k, n, rowOf }) => `insert into public.week_scores (id, user_id, sprint_id, sprint_week, week_start, week_end, score, methods_version) values (${k}, ${owner}, ${rowOf('sprints')}, ${n}, current_date, current_date, 50, '1.1')`,

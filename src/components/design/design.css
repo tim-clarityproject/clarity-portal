@@ -9929,3 +9929,400 @@
 .ui-root .ds-daycount-btn:focus-visible {
   color: var(--coral-text);
 }
+
+/* ---------------------------------------------------------------- M10 Visual tools (version 5.6; 14 Nov)
+   Parts both Visual tools and later results pages share: an answer row
+   with a line of meaning and the tick's place, the bottom bar's quiet
+   link, the five fine steps, rows of names, and a results page's
+   headline, sections and questions. */
+
+/* An answer row with a line of meaning under its word (M10 .opt .ow small). */
+.ui-root .ds-answer-words {
+  display: block;
+  min-width: 0;
+}
+
+.ui-root .ds-answer-hint {
+  display: block;
+  margin-top: var(--space-px2);
+  font-size: var(--fs-note);
+  line-height: 1.4;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+/* One answer of several, with the drop-down's tick at the right once it is
+   chosen. Its place is kept on every row, so choosing never moves the words (M10 .tk). */
+.ui-root .ds-answer--tick {
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.ui-root .ds-answer--tick::after {
+  content: '';
+  flex: none;
+  width: var(--tick-option);
+  height: var(--tick-option);
+}
+
+.ui-root .ds-answer--tick[aria-checked='true']::after,
+.ui-root .ds-answer--tick[aria-pressed='true']::after {
+  background: var(--coral-text);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+@media (forced-colors: active) {
+  .ui-root .ds-answer--tick[aria-checked='true']::after,
+  .ui-root .ds-answer--tick[aria-pressed='true']::after {
+    forced-color-adjust: none;
+    background-color: CanvasText !important;
+  }
+}
+
+/* The bottom bar's quiet link at the left (M10: "Download my PDF" beside "Add a to-do"). */
+.ui-root .ds-guide-foot-aside {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.ui-root .ds-guide-foot-aside .ds-pdfmenu {
+  margin: 0;
+}
+
+/* Five fine steps (M10 .lv): grey for the answer, mint at or above the
+   standard, coral for the one that needs you. */
+.ui-root .ds-stepbars {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-1);
+  width: 100%;
+}
+
+.ui-root .ds-stepbars i {
+  height: var(--bar-h);
+  border-radius: var(--radius-bar);
+  background: var(--line);
+}
+
+.ui-root .ds-stepbars i.ds-stepbars-on {
+  background: var(--quiet-line);
+}
+
+.ui-root .ds-stepbars--good i.ds-stepbars-on {
+  background: var(--good);
+}
+
+.ui-root .ds-stepbars--low i.ds-stepbars-on {
+  background: var(--coral-text);
+}
+
+@media (forced-colors: active) {
+  .ui-root .ds-stepbars i {
+    forced-color-adjust: none;
+    background: Canvas;
+    outline: var(--line-w) solid CanvasText;
+    outline-offset: calc(var(--line-w) * -1);
+  }
+
+  .ui-root .ds-stepbars i.ds-stepbars-on {
+    background: CanvasText;
+  }
+}
+
+/* A list with five steps on each row and the level in words (M10 .trow). */
+.ui-root .ds-steprow {
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--steprow-bars-w) var(--steprow-word-w);
+  gap: var(--space-px6) var(--space-px18);
+  align-items: center;
+  min-height: var(--row-h-people);
+  padding-block: var(--space-px10);
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ds-steprow-name,
+.ui-root .ds-namerow-words {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ui-root .ds-steprow-name b,
+.ui-root .ds-namerow-words b,
+.ui-root .ds-ctable--people tbody th b {
+  display: block;
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-text);
+  line-height: var(--lh-option);
+  color: var(--text);
+}
+
+.ui-root .ds-steprow-name small,
+.ui-root .ds-namerow-words small,
+.ui-root .ds-ctable--people tbody th small {
+  display: block;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-steprow-word {
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  text-align: right;
+  color: var(--text-2);
+}
+
+.ui-root .ds-steprow-word--good {
+  color: var(--good);
+}
+
+.ui-root .ds-steprow-word--low {
+  color: var(--coral-text);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-steprow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "n w" "m m";
+  }
+
+  .ui-root .ds-steprow-name { grid-area: n; }
+  .ui-root .ds-steprow-word { grid-area: w; }
+  .ui-root .ds-steprow-bars { grid-area: m; }
+}
+
+@container guide (max-width: 600px) {
+  .ui-root .ds-steprow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "n w" "m m";
+  }
+
+  .ui-root .ds-steprow-name { grid-area: n; }
+  .ui-root .ds-steprow-word { grid-area: w; }
+  .ui-root .ds-steprow-bars { grid-area: m; }
+}
+
+/* Rows of names, each with its crosshair to take it away (M10 .prs, .pr). */
+.ui-root .ds-namerows {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-namerow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--tap-min);
+  gap: var(--space-px6);
+  align-items: center;
+  min-height: var(--row-h-people);
+  padding-block: var(--space-2);
+  border-bottom: var(--line-w) solid var(--line);
+  box-sizing: border-box;
+}
+
+.ui-root .ds-namerow .ds-cross--close {
+  width: var(--cross-close);
+  height: var(--cross-close);
+}
+
+/* The chart as a table with a person on each row (M10 .tt): it stays a
+   table on a phone, where its three narrow columns fit. */
+.ui-root .ds-ctable--people {
+  font-size: var(--fs-text);
+}
+
+.ui-root .ds-ctable--people thead th {
+  padding: 0 var(--space-px20) var(--space-px10) 0;
+  font-size: var(--fs-note);
+  color: var(--text-2);
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-ctable--people thead th:first-child {
+  width: 40%;
+}
+
+.ui-root .ds-ctable--people tbody th,
+.ui-root .ds-ctable--people tbody td {
+  padding: var(--space-px12) var(--space-px20) var(--space-px12) 0;
+  border-top: 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  vertical-align: middle;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.ui-root .ds-ctable--people td:last-child,
+.ui-root .ds-ctable--people thead th:last-child {
+  padding-right: 0;
+}
+
+.ui-root .ds-ctable--people .ds-stepbars {
+  max-width: var(--steprow-bars-w);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-ctable.ds-ctable--people thead {
+    display: table-header-group;
+  }
+
+  .ui-root .ds-ctable.ds-ctable--people tr {
+    display: table-row;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .ui-root .ds-ctable.ds-ctable--people td {
+    display: table-cell;
+    padding: var(--space-px12) var(--space-px12) var(--space-px12) 0;
+  }
+
+  .ui-root .ds-ctable.ds-ctable--people tbody th,
+  .ui-root .ds-ctable.ds-ctable--people thead th {
+    padding-right: var(--space-px12);
+  }
+
+  .ui-root .ds-ctable.ds-ctable--people thead th:first-child {
+    width: 46%;
+  }
+
+  .ui-root .ds-ctable.ds-ctable--people td:not(:first-child)::before {
+    content: none;
+  }
+}
+
+@container ctable (max-width: 20em) {
+  .ui-root .ds-ctable.ds-ctable--people thead {
+    display: table-header-group;
+  }
+
+  .ui-root .ds-ctable.ds-ctable--people tr {
+    display: table-row;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .ui-root .ds-ctable.ds-ctable--people td {
+    display: table-cell;
+    padding: var(--space-px12) var(--space-px12) var(--space-px12) 0;
+  }
+
+  .ui-root .ds-ctable.ds-ctable--people td:not(:first-child)::before {
+    content: none;
+  }
+}
+
+/* A results page (M10 "Your team"): the opening sentence, never a big
+   figure, then sections named in small capitals with the line under the name. */
+.ui-root .ds-headline {
+  max-width: var(--headline-max);
+  margin: 0;
+  font-size: var(--fs-headline);
+  line-height: 1.4;
+  color: var(--text);
+  text-wrap: balance;
+}
+
+.ui-root .ds-results-section {
+  margin-top: var(--space-px40);
+}
+
+.ui-root .ds-results-section--first {
+  margin-top: var(--space-px28);
+}
+
+.ui-root .ds-results-head {
+  position: relative;
+  top: 0.1em;
+  margin: 0 0 var(--space-px14) !important;
+  padding-bottom: var(--space-px10);
+  border-bottom: var(--line-w) solid var(--line);
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-results-head) !important;
+  line-height: var(--lh-text);
+  letter-spacing: var(--ls-results-head);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.ui-root .ds-results-link {
+  margin-top: var(--space-px12);
+}
+
+.ui-root .ds-startq {
+  margin: 0;
+  padding: var(--space-px12) 0;
+  border-top: var(--line-w) solid var(--line-soft);
+  font-size: var(--fs-text);
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.ui-root .ds-startq:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-headline {
+    font-size: var(--fs-headline-phone);
+  }
+
+  .ui-root .ds-results-section {
+    margin-top: var(--space-5);
+  }
+
+  .ui-root .ds-results-section--first {
+    margin-top: var(--space-px28);
+  }
+}
+
+@container guide (max-width: 600px) {
+  .ui-root .ds-headline {
+    font-size: var(--fs-headline-phone);
+  }
+
+  .ui-root .ds-results-section {
+    margin-top: var(--space-5);
+  }
+
+  .ui-root .ds-results-section--first {
+    margin-top: var(--space-px28);
+  }
+}
+
+/* The calm frame, as M10 draws it: a results page's own title in the page
+   title's size, and a long tool name that may wrap, its lines balanced.
+   (M10 also sets the name's lines closer, 1.35, which makes the browser
+   place its one line 1.4px higher than M9's and off the middle of Back's
+   chevron: the name keeps M9's place, so the chevron stays centred on its
+   capitals, rule 29ao.) */
+.ui-root .ds-guide--calm .ds-guide-title {
+  font-size: var(--fs-si-title) !important;
+}
+
+.ui-root .ds-guide--long-name .ds-guide-name {
+  text-wrap: balance;
+}
+
+/* "Show as a table" as a quiet link under its chart (M10 .change, .tblw). */
+.ui-root .ds-ctable-fold--link {
+  margin-top: var(--space-px12);
+}
+
+.ui-root .ds-ctable-opened {
+  margin-top: var(--space-px12);
+}
+
+/* A guided step's Nekst title with its eye (M10 "Your team"): spaced
+   capitals, as a page title's (rule 29d). */
+.ui-root .ds-guide-title .ds-page-aside {
+  --aside-ls: var(--ls-page-title);
+  --aside-lift: 0.088em;
+}

@@ -197,7 +197,8 @@ const HUB_TILES = {
   '/personal/plan': [['Individual Performance Plan', '/performance-plan'], ['Performance Sprint', '/performance-sprint'], ['Daily plan', '/daily-plan'], ['Get unstuck', '/get-unstuck'], ['Pre-mortem', '/pre-mortem'], ['Time audit', '/time-audit']],
   '/personal/reset': [['Breathe', '/breathe'], ['Sleep wind down', '/sleep-wind-down'], ['Pressure plan', '/pressure-plan'], ['Journal', '/daily-journal']],
   '/personal/review': [['Daily review', '/daily-review'], ['Weekly performance debrief', '/performance-sprint/debrief'], ['After-action review', '/my-journal'], ['Life balance review', '/life-balance-review'], ['Monthly Hardware and Software review', '/monthly-review']],
-  '/interpersonal': [['Meeting planner', '/plan-meeting'], ['Give difficult feedback', '/give-difficult-feedback']],
+  // The Team performance check joined in Phase 8a step 3 (M10), under "Your team".
+  '/interpersonal': [['Meeting planner', '/plan-meeting'], ['Give difficult feedback', '/give-difficult-feedback'], ['Team performance check', '/team-performance-check']],
   '/strategic': [['Strategic Alignment Health Check', '/goal-setting']],
 };
 const HUB_TITLES = { '/personal': 'Personal', '/personal/plan': 'Plan', '/personal/reset': 'Reset', '/personal/review': 'Review', '/interpersonal': 'Interpersonal', '/strategic': 'Strategic' };

@@ -14,6 +14,8 @@ import pageText from '../content/pageText';
 // Confidence Bank, Prepare for a difficult conversation, Prepare for
 // a pitch, Map my stakeholders, Map my team, Understand their sweet spot,
 // Decide who decides, Strategy on a page and Pre-mortem for an initiative.
+// The Team performance check joined Interpersonal in Phase 8a step 3 (M10),
+// under "Your team" (Claude's call: M3 has no group for it).
 // Sleep wind down joined Reset in step 6 (M19), second, marked New for its
 // first two weeks (`newUntil`). The Hardware and Software check-in joined
 // Review in Phase 5 step 1, last, so M3's own order is kept. Points of leverage is removed
@@ -159,6 +161,16 @@ export const TOOLS = {
     to: '/give-difficult-feedback',
     routes: ['/give-difficult-feedback'],
   },
+  // The Team performance check (M10, version 5.6; Phase 8a step 3): trust,
+  // alignment and autonomy for each direct report. M10 gives no time: three
+  // one-tap questions a person, so ~5 minutes for a team of five (Claude's call).
+  team: {
+    name: 'Team performance check',
+    line: 'See where each of your people stands and what to ask next.',
+    time: '~5 minutes',
+    to: '/team-performance-check',
+    routes: ['/team-performance-check'],
+  },
   hc: {
     name: 'Strategic Alignment Health Check',
     line: 'See whether your team’s work matches its strategy.',
@@ -224,7 +236,10 @@ export const HUBS = {
     path: '/interpersonal',
     area: 'interpersonal',
     info: pageText.hubInterpersonal,
-    groups: [{ title: 'Meetings and conversations', tools: ['meet', 'fb'] }],
+    groups: [
+      { title: 'Meetings and conversations', tools: ['meet', 'fb'] },
+      { title: 'Your team', tools: ['team'] },
+    ],
     recent: { list: 'plans', area: 'interpersonal', title: 'My Plans', to: '/my-plans?area=interpersonal' },
   },
   strategic: {
