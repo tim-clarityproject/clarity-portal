@@ -199,7 +199,8 @@ const HUB_TILES = {
   '/personal/review': [['Daily review', '/daily-review'], ['Weekly performance debrief', '/performance-sprint/debrief'], ['After-action review', '/my-journal'], ['Life balance review', '/life-balance-review'], ['Monthly Hardware and Software review', '/monthly-review']],
   // The Team performance check joined in Phase 8a step 3 (M10), under "Your team".
   '/interpersonal': [['Meeting planner', '/plan-meeting'], ['Give difficult feedback', '/give-difficult-feedback'], ['Team performance check', '/team-performance-check']],
-  '/strategic': [['Strategic Alignment Health Check', '/goal-setting']],
+  // The Health Check inside the portal (M7): one address for its teams and versions.
+  '/strategic': [['Strategic Alignment Health Check', '/strategic-alignment']],
 };
 const HUB_TITLES = { '/personal': 'Personal', '/personal/plan': 'Plan', '/personal/reset': 'Reset', '/personal/review': 'Review', '/interpersonal': 'Interpersonal', '/strategic': 'Strategic' };
 const NOT_BUILT = ['Find my sweet spot', 'Deliberate vs default', 'Travel and jet lag plan', 'Delegation audit', 'Identity beyond the role', 'Above or below the line', 'Stay deliberate under pressure', 'Confidence Bank', 'Prepare for a difficult conversation', 'Prepare for a pitch', 'Map my stakeholders', 'Map my team', 'Understand their sweet spot', 'Decide who decides', 'Strategy on a page', 'Points of leverage', 'Pre-mortem for an initiative'];
@@ -326,8 +327,10 @@ if (part(1) || part(2) || part(3)) {
       }
       await goHub(page, '/strategic');
       await page.getByRole('button', { name: 'Start a new Health Check' }).click();
-      pass('/strategic: Start a new Health Check opens /goal-setting', await landsOn(page, '/goal-setting'), path(page));
-      pass('/strategic: the inside Health Check opens as a fresh start', await pageReady(page));
+      // A new team's first question (M7), at its own version's address.
+      pass('/strategic: Start a new Health Check opens a new team', await until(async () => /^\/strategic-alignment\/version\/[0-9a-f-]{36}$/.test(path(page)), 20000), path(page));
+      pass('/strategic: the inside Health Check opens as a fresh start', await until(async () => (await page.locator('.ds-guide-question').innerText().catch(() => '')).includes('Which team is this Health Check for?'), 15000));
+      await page.locator('.ds-guide-close').click();
       await goHub(page, '/personal/review');
       pass('desktop: no back link on a hub (M3)', !(await page.locator('.ds-hub-back').isVisible()));
     }

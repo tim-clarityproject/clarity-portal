@@ -172,7 +172,7 @@ async function seed() {
   for (const day of ['2026-09-01', '2026-10-12']) {
     await insert('decisions', { user_id: me, tool_type: 'strategic-alignment', title: TEAM, form_data: hcForm, status: 'completed', created_at: `${day}T09:00:00` }, 'decisions');
   }
-  expectPlans.push({ title: TEAM, tool: 'Strategic Alignment Health Check', date: 'Mon 12 Oct', area: 'strategic', path: '/decision-summary', version: 'Version 2' });
+  expectPlans.push({ title: TEAM, tool: 'Strategic Alignment Health Check', date: 'Mon 12 Oct', area: 'strategic', path: /^\/strategic-alignment\/version\/[0-9a-f-]{36}$/, version: 'Version 2' });
   expectPlans.push({ title: `Version ${plan.major}.${plan.minor}`, tool: 'Individual Performance Plan', path: '/performance-plan', area: 'personal' });
   expectPlans.push({ title: `Sprint ${sprint.number}`, tool: 'Performance Sprint', date: dayLabel(sprint.start_on), path: '/performance-sprint', area: 'personal' });
 
@@ -405,7 +405,7 @@ async function checkHubs(page, tag) {
   await page.goto(`${APP}/personal/plan`);
   await until(async () => (await page.locator('.ds-hub-recent .ds-row').count()) > 0, 20000);
   await page.locator('.ds-hub-recent .ds-row').first().click();
-  pass(`${tag}: a recent item opens its page`, Boolean(await landsOn(page, /^\/(daily-plan\/|daily-plan-summary|decision-summary|get-unstuck|pre-mortem\/summary|time-audit\/summary|pressure-plan\/summary|give-difficult-feedback\/summary)/)), path(page));
+  pass(`${tag}: a recent item opens its page`, Boolean(await landsOn(page, /^\/(daily-plan\/|daily-plan-summary|decision-summary|strategic-alignment\/version\/|get-unstuck|pre-mortem\/summary|time-audit\/summary|pressure-plan\/summary|give-difficult-feedback\/summary)/)), path(page));
 
   // Strategic: the Health Check's teams.
   await page.goto(`${APP}/strategic`);
@@ -415,7 +415,9 @@ async function checkHubs(page, tag) {
   pass(`${tag}: …with "2 versions, latest Mon 12 Oct"`, (await team.locator('.ds-hub-team-line').innerText()) === '2 versions, latest Mon 12 Oct', await team.innerText());
   await shot(page, `${tag}-strategic`);
   await team.click();
-  pass(`${tag}: the team opens its versions in My Plans`, Boolean(await landsOn(page, '/my-plans')) && new URL(page.url()).searchParams.get('team') === TEAM, page.url());
+  // The team opens its newest version in the Health Check itself (M7); My Plans still filters by team.
+  pass(`${tag}: the team opens its newest version`, Boolean(await landsOn(page, /^\/strategic-alignment\/version\/[0-9a-f-]{36}$/)), page.url());
+  await page.goto(`${APP}/my-plans?area=strategic&team=${encodeURIComponent(TEAM)}`);
   await until(async () => (await page.locator('.ds-filter-line span').count()) > 0, 15000);
   pass(`${tag}: "Showing Strategic, ${TEAM}."`, Boolean(await until(async () => (await appliedLine(page)) === `Showing Strategic, ${TEAM}.`, 15000)), await appliedLine(page));
   const versions = await until(async () => {

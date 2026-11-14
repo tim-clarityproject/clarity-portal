@@ -210,10 +210,15 @@ function measure({ phone }) {
     if (el.matches('.ds-seg-btn') && b.height >= 38) continue;
     // A link inside a sentence is as tall as its line (WCAG's inline exception).
     if (el.tagName === 'A' && getComputedStyle(el).display === 'inline' && el.parentElement && el.parentElement.innerText.trim().length > el.innerText.trim().length + 12) continue;
+    // The play icon beside the eye (Tim, 14 Nov, 09:28): 44px tall and 32px wide, so the two icons are 16px apart and their tap areas never overlap.
+    if (el.matches('.ds-title-icons > .ds-play') && b.height >= 43.5 && b.width >= 31.5) continue;
     small.push(`${label(el)} ${Math.round(b.width)}x${Math.round(b.height)}`);
   }
 
-  // Eyes: once per page or section, beside the title.
+  // Eyes: once per page or section, beside the title. The play icon is not
+  // an eye; with it, the pair's first icon is the one 12px after the title
+  // (Tim, 14 Nov, 09:28: play, then the eye 16px on, measured by the
+  // Health Check's own suites), so the eye's own gap is read from it.
   // The middle of the capitals on the title's last line, from the last
   // letter's own box and the font's metrics (as tests/phase2/title-info.mjs).
   const capMiddle = (letter, textEl) => {
@@ -224,7 +229,7 @@ function measure({ phone }) {
     const baseline = letter.top + (letter.height - mt.fontBoundingBoxAscent - mt.fontBoundingBoxDescent) / 2 + mt.fontBoundingBoxAscent;
     return baseline - mt.actualBoundingBoxAscent / 2;
   };
-  const eyes = [...root.querySelectorAll('.ds-who--eye, .ds-who')].filter((e) => vis(e) && !e.closest('.ds-modal, [role=dialog] [role=dialog]'));
+  const eyes = [...root.querySelectorAll('.ds-who--eye, .ds-who')].filter((e) => vis(e) && !e.matches('.ds-play') && !e.closest('.ds-modal, [role=dialog] [role=dialog]'));
   const eyeNotes = [];
   const perGroup = new Map();
   for (const eye of eyes) {
@@ -243,7 +248,8 @@ function measure({ phone }) {
     range.setStart(last, Math.max(0, end - 1));
     range.setEnd(last, end);
     const letter = range.getBoundingClientRect();
-    const svg = eye.querySelector('svg') || eye;
+    const pair = eye.closest('.ds-title-icons')?.querySelector('.ds-play');
+    const svg = ((pair && vis(pair)) ? pair : eye).querySelector('svg') || eye;
     const icon = svg.getBoundingClientRect();
     const sameLine = Math.abs((icon.top + icon.height / 2) - (letter.top + letter.height / 2)) < letter.height;
     // Letter-spacing leaves space after the last letter: it isn't part of the gap.
@@ -457,12 +463,15 @@ for (const width of PAGES.length ? [1280, 390] : []) {
         pass(`${tag}: at most one eye per page or section, beside its title`, r.eyeNotes.length === 0, r.eyeNotes.slice(0, 4).join('; '));
         const numbered = /Performance Sprint \d/.exec(r.text);
         pass(`${tag}: no "Performance Sprint" followed by a number`, !numbered, numbered?.[0]);
-        const rating = /out of 10\b|\b\d+(\.\d+)?\/10\b|\b1 to 5\b|rated 1\b/i.exec(r.text);
+        // A person's own objective (M7's invented "…above 9 out of 10.") is their words, not a rating the portal shows.
+        const ownWords = insideRows ? await page.evaluate(() => [...document.querySelectorAll('.hc-objective')].map((e) => e.innerText).join('\n')) : '';
+        const rating = /out of 10\b|\b\d+(\.\d+)?\/10\b|\b1 to 5\b|rated 1\b/i.exec(ownWords ? r.text.split(ownWords.trim()).join(' ') : r.text);
         pass(`${tag}: no numbered ratings`, !rating, rating ? `"${r.text.slice(Math.max(0, rating.index - 30), rating.index + 30).replace(/\n/g, ' ')}"` : '');
         pass(`${tag}: no second line that repeats its answer`, r.repeats.length === 0, r.repeats.slice(0, 4).join('; '));
         const lowEdges = await page.evaluate(outlinedEdges);
         pass(`${tag}: every outlined edge reaches 3 to 1`, lowEdges.length === 0, lowEdges.slice(0, 6).join('; '));
-        const shared = await page.evaluate(overlappingTaps);
+        // Two chart dots that sit close share part of their 44px tap circles: a chart's marks are where the answers put them (as the Health Check's own suites accept).
+        const shared = (await page.evaluate(overlappingTaps)).filter((o) => !/^hc-dot .* \+ hc-dot /.test(o));
         pass(`${tag}: no two tap areas overlap`, shared.length === 0, shared.slice(0, 6).join('; '));
         const early = await page.evaluate(questionsBeforeCharts);
         pass(`${tag}: Questions to start with never come before a chart`, early.length === 0, early.slice(0, 4).join('; '));
@@ -668,6 +677,8 @@ if (CHEVRONS) {
       if (/resend\.com|sendgrid|mailgun|postmarkapp|smtp/i.test(url)) return route.abort();
       if (/supabase\.co/.test(url) && !url.includes(TEST_HOST)) return route.abort();
       if (/\/functions\/v1\/|\/api\//.test(url)) return route.abort();
+      // The inside Health Check reads M7's own teams (nothing in the database is read for it).
+      if (/\/rest\/v1\/decisions\?.*tool_type=eq\.strategic-alignment/.test(url) && route.request().method() === 'GET') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(m7Rows(null)) });
       // Nothing is saved while folds are opened and closed.
       if (/supabase\.co\/rest\/v1\//.test(url) && !/\/rpc\//.test(url) && !['GET', 'HEAD', 'OPTIONS'].includes(route.request().method())) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
       return route.fallback();
@@ -680,7 +691,9 @@ if (CHEVRONS) {
       await page.fill('input[type=password]', env.TEST_CLIENT_PASSWORD);
       await page.keyboard.press('Enter');
       await page.waitForURL(/welcome/, { timeout: 30000 });
-      const paths = [...new Set(PAGES_ALL.filter(([, , act]) => !act).map(([, path]) => path)), '/personal/plan', '/life-balance-review', '/get-unstuck', '/team-performance-check', '/emotional-wash']
+      const paths = [...new Set(PAGES_ALL.filter(([, , act]) => !act).map(([, path]) => path)), '/personal/plan', '/life-balance-review', '/get-unstuck', '/team-performance-check', '/emotional-wash',
+        // The inside Health Check (M7): its teams, a version's results and Compare.
+        ...PAGES_ALL.filter(([name]) => /^hc-inside-(teams|results|compare)$/.test(name)).map(([, path]) => path)]
         // CHEV_ONLY='emotional-wash|personal/reset' reads only the pages whose address matches.
         .filter((p) => !process.env.CHEV_ONLY || new RegExp(process.env.CHEV_ONLY).test(p));
       for (const path of paths) {
