@@ -20,7 +20,7 @@
    - Left alone completely, straight to the network as if this worker did
      not exist: the outside Health Check (health-check.html, /health-check/
      and everything its page asks for, even the font files it shares with
-     the portal), /api/, the design
+     the portal), a guest's link (/guest/), /api/, the design
      reference, the addresses a sign-in email link or Google comes back to
      (/auth/google, /auth/confirmed, /auth/invite, /auth/reset-password,
      and the older /auth/callback, /auth/mission, /email-confirmation and
@@ -54,6 +54,8 @@ const ON_DEMAND = new Set(BUILD.onDemand);
 const NETWORK_ONLY = [
   /^\/api\//,
   /^\/health-check(\/|\.html$|$)/,
+  // A guest's link (/guest/<token>, M9): outside the portal, always fresh.
+  /^\/guest\//,
   /^\/design-reference(\/|$)/,
   /^\/email-preview(\/|$)/,
   /^\/auth\/callback(\/|$)/,

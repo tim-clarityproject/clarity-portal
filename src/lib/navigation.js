@@ -355,6 +355,8 @@ export function menuCurrent(pathname) {
 // Pages that aren't a hub or a tool's own page, by address (the longest
 // match wins), for the browser tab.
 const PAGE_NAMES = [
+  // A guest's link (M9): the tab reads as the tool a guest link opens today.
+  ['/guest', 'Get unstuck'],
   ['/welcome', 'Home'],
   ['/my-account', 'My Account'],
   ['/my-account/password', 'Password'],
@@ -456,11 +458,12 @@ export function cleanPins(list) {
  * /plan-my-day and /review-plan redirect only in part (App.jsx).
  */
 export const RENAMED = {
+  // Get unstuck is one guided tool at one address (M9; Tim, 13 Nov).
   '/grow-step-1': '/get-unstuck',
-  '/grow-step-2': '/get-unstuck/reality',
-  '/grow-step-3': '/get-unstuck/options',
-  '/grow-step-3b-prioritize': '/get-unstuck/prioritise',
-  '/grow-step-4': '/get-unstuck/will-do',
+  '/grow-step-2': '/get-unstuck',
+  '/grow-step-3': '/get-unstuck',
+  '/grow-step-3b-prioritize': '/get-unstuck',
+  '/grow-step-4': '/get-unstuck',
   '/inversion-step-1': '/pre-mortem',
   '/inversion-step-2': '/pre-mortem/risks',
   '/inversion-step-3': '/pre-mortem/plan',
@@ -492,6 +495,13 @@ export const MOVED_UNDER = {
   '/my-day/review': '/daily-review',
   '/check-in': '/monthly-review',
 };
+
+/**
+ * Get unstuck's step addresses from Phase 4 (/get-unstuck/reality and the
+ * rest): the tool is one address now, and each of these redirects to it
+ * with its query, hash and state (App.jsx).
+ */
+export const GET_UNSTUCK_STEPS = ['/get-unstuck/reality', '/get-unstuck/options', '/get-unstuck/prioritise', '/get-unstuck/will-do'];
 
 /** An address after the renames (itself when it wasn't renamed). */
 export function renamedPath(path) {

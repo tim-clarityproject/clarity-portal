@@ -219,10 +219,10 @@ const OPENS = [
 ];
 // Every other old address, opened plainly: [old, new, words on the new page].
 const PLAIN = [
-  ['/grow-step-2', '/get-unstuck/reality'],
-  ['/grow-step-3', '/get-unstuck/options'],
-  ['/grow-step-3b-prioritize', '/get-unstuck/prioritise'],
-  ['/grow-step-4', '/get-unstuck/will-do'],
+  ['/grow-step-2', '/get-unstuck'],
+  ['/grow-step-3', '/get-unstuck'],
+  ['/grow-step-3b-prioritize', '/get-unstuck'],
+  ['/grow-step-4', '/get-unstuck'],
   ['/inversion-step-2', '/pre-mortem/risks'],
   ['/inversion-step-3', '/pre-mortem/plan'],
   ['/if-then-planning', '/pressure-plan', 'Pressure plan'],

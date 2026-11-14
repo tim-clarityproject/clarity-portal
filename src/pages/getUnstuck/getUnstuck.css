@@ -1,0 +1,18 @@
+/* Get unstuck (M9). Only what the shared parts don't carry: the goal box's
+   starting height, the space between the timer and the option rows, and
+   the calm lines shown when no option has been typed. */
+
+.ui-root .gu-timer {
+  margin-bottom: var(--space-4);
+}
+
+.ui-root .gu-lines p {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .gu-pdf {
+  margin-top: var(--space-4);
+}

@@ -55,7 +55,10 @@
   function outsideHealthCheck() {
     // In lower case: the app opens the page whatever capitals the address is typed with.
     var path = String(window.location.pathname || '').toLowerCase();
-    return path === '/health-check' || path === '/health-check.html' || path.indexOf('/health-check/') === 0;
+    // A guest's pages (/guest/<token>, M9) are outside the portal too: no
+    // Appearance setting, so they follow the device.
+    return path === '/health-check' || path === '/health-check.html' || path.indexOf('/health-check/') === 0
+      || path.indexOf('/guest/') === 0;
   }
 
   function resolve(c) {

@@ -142,7 +142,7 @@ const PLAN_TOOLS = [
   ['plan_meeting', `${STAMP}: Harbour introduction call`, 'Meeting planner', '/meeting-summary'],
   ['if_then_planning', `${STAMP}: Board presentation`, 'Pressure plan', '/pressure-plan/summary'],
   ['stop_doing_audit', `${STAMP}: Monday mornings`, 'Time audit', '/time-audit/summary'],
-  ['grow', `${STAMP}: Referral pipeline`, 'Get unstuck', '/decision-summary'],
+  ['grow', `${STAMP}: Referral pipeline`, 'Get unstuck', '/get-unstuck'],
   ['inversion', `${STAMP}: Harbour proposal`, 'Pre-mortem', '/pre-mortem/summary'],
   ['tough-conversation', `${STAMP}: Late reports`, 'Give difficult feedback', '/give-difficult-feedback/summary'],
 ];
@@ -405,7 +405,7 @@ async function checkHubs(page, tag) {
   await page.goto(`${APP}/personal/plan`);
   await until(async () => (await page.locator('.ds-hub-recent .ds-row').count()) > 0, 20000);
   await page.locator('.ds-hub-recent .ds-row').first().click();
-  pass(`${tag}: a recent item opens its page`, Boolean(await landsOn(page, /^\/(daily-plan\/|daily-plan-summary|decision-summary|pre-mortem\/summary|time-audit\/summary|pressure-plan\/summary|give-difficult-feedback\/summary)/)), path(page));
+  pass(`${tag}: a recent item opens its page`, Boolean(await landsOn(page, /^\/(daily-plan\/|daily-plan-summary|decision-summary|get-unstuck|pre-mortem\/summary|time-audit\/summary|pressure-plan\/summary|give-difficult-feedback\/summary)/)), path(page));
 
   // Strategic: the Health Check's teams.
   await page.goto(`${APP}/strategic`);

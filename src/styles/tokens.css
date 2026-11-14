@@ -371,6 +371,18 @@
   --guide-bar-h: 72px;
   --guide-bar-h-phone: 68px;
   --guide-page-max: 640px;
+  /* The calm stepped frame (M9, M10, M7b; Tim, 13 Nov). */
+  --guide-calm-max: 760px;   /* the column, its side padding included */
+  --guide-calm-pad: var(--space-px28);
+  --guide-calm-top: 44px;
+  --guide-chev: 14px;        /* Back's chevron in the calm frame */
+  --answer-h-calm: 52px;     /* an answer row in the calm frame */
+  --guide-problem-max: 440px;
+  --guest-narrow: 460px;     /* a guest page's column (M9 .narrow) */
+  --fs-question-calm: calc(22 * var(--u));
+  --fs-tool-name-calm: calc(11 * var(--u));
+  --ls-tool-name-calm: 0.16em;
+  --space-px64: 64px;
   --fs-question: calc(24 * var(--u));       /* the question heading, DM Sans */
   --fs-question-phone: calc(21 * var(--u));
   --fs-rec-question: calc(20 * var(--u));   /* Recovery's daily question (M15 .rqh) */

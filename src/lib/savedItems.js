@@ -52,7 +52,8 @@ const SUMMARY_WITH_ROW = {
   plan_meeting: '/meeting-summary',
   if_then_planning: '/pressure-plan/summary',
   stop_doing_audit: '/time-audit/summary',
-  grow: '/decision-summary',
+  // Get unstuck opens in its own tool, on Your plan (M9; Tim, 13 Nov).
+  grow: '/get-unstuck',
   'tough-conversation': '/give-difficult-feedback/summary',
 };
 const SUMMARY_BY_ID = {

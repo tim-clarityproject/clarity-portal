@@ -94,6 +94,8 @@ export const GUEST_LOCKED_TABLES = [
   { table: 'guest_visits', make: ({ id: k, n }) => `insert into public.guest_visits (id, key_hash, guest_id) select ${k}, encode(extensions.digest('rules-visit-${n}', 'sha256'), 'hex'), id from public.guests limit 1`, change: 'confirmed = true' },
   { table: 'guest_email_codes', make: () => `insert into public.guest_email_codes (guest_id, visit_id, code_hash) select guest_id, id, extensions.crypt('000000', extensions.gen_salt('bf', 4)) from public.guest_visits limit 1`, change: 'tries = 0' },
   { table: 'guest_items', make: ({ n }) => `insert into public.guest_items (table_name, row_key, guest_id) select 'decisions', 'rules-${n}', id from public.guests limit 1`, change: 'visit_id = t.visit_id' },
+  // 042: the count of copies emailed to a guest
+  { table: 'guest_copy_sends', make: () => `insert into public.guest_copy_sends (link_id, guest_id) select l.id, g.id from public.guest_links l cross join public.guests g limit 1`, change: 'sent_at = t.sent_at' },
 ].map((t) => ({ change: 'created_at = t.created_at', ...t, ifExists: true }));
 
 // ---------------------------------------------------------------- functions
@@ -112,6 +114,9 @@ export const GUEST_FUNCTIONS = [
   fn('guest_return_start(text)', "public.guest_return_start('nobody@example.invalid')", ANYONE, 'Coming back: the same answer for every email.'),
   fn('guest_email_confirm(text,text)', `public.guest_email_confirm(${K}, '000000')`, ANYONE, 'The visit key and code are checked inside.'),
   fn('guest_email_code_issue(text)', `public.guest_email_code_issue(${K})`, NOBODY, 'The server only (service role): it emails the code.'),
+  fn('guest_link_info(text)', `public.guest_link_info(${K})`, ANYONE, 'The guest\'s start page: the tool and the coach\'s first name for a real link, nothing else (042).'),
+  fn('guest_copy_issue(text)', `public.guest_copy_issue(${K})`, NOBODY, 'The server only (service role): it emails the guest a copy of their work (042).'),
+  fn('guest_copy_failed(text)', `public.guest_copy_failed(${K})`, NOBODY, 'The server only (service role): takes a count back when the email didn\'t go (042).'),
   fn('guest_rows(text,text)', `public.guest_rows(${K}, 'decisions')`, NOBODY, 'Refused without a real visit key.'),
   fn('guest_my_links(text)', `public.guest_my_links(${K})`, NOBODY, 'Refused without a real visit key.'),
   fn('guest_save(text,text,jsonb)', `public.guest_save(${K}, 'decisions', '{}')`, NOBODY, 'Refused without a real visit key.'),

@@ -1,0 +1,182 @@
+/* ---------- The timer (Timer.jsx; mock-up M9 "timer card": .tmr, .ring,
+   .trk, .arc, .tbs; Tim, 13 Nov, 09:27) ----------
+   Every value is a token from src/styles/tokens.css. The two sizes M9
+   draws that have no token of their own are made from tokens here: the
+   64px ring is two 32px steps of the spacing scale, and the 15px time is
+   15 of the display text unit (--u-big, so Nekst figures grow by a quarter
+   at most and "10:00" always fits inside the ring). */
+
+.ui-root .ds-timer {
+  --ds-timer-ring: calc(2 * var(--space-5));
+  --ds-timer-fs: calc(15 * var(--u-big));
+  display: flex;
+  align-items: center;
+  gap: var(--space-px20);
+  margin-top: var(--space-4);
+}
+
+/* The ring is a button: tapping it opens "How long?" (not while it runs). */
+.ui-root .ds-timer-ring {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  position: relative;
+  flex: none;
+  width: var(--ds-timer-ring);
+  height: var(--ds-timer-ring);
+  border-radius: 50%;
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-timer-ring:disabled {
+  cursor: default;
+}
+
+.ui-root .ds-timer-ring:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px3);
+}
+
+.ui-root .ds-timer-ring svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ui-root .ds-timer-track {
+  stroke: var(--line);
+}
+
+/* No transition on the line: it steps once a second, as M9's does, so
+   there is nothing to switch off under reduced motion. */
+.ui-root .ds-timer-arc {
+  stroke: var(--text);
+}
+
+/* Hover only where there is a mouse, so a tap never leaves it lit. */
+@media (hover: hover) {
+  .ui-root .ds-timer-ring:not(:disabled):hover .ds-timer-track {
+    stroke: var(--coral-text);
+  }
+}
+
+.ui-root .ds-timer-time {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--ds-timer-fs);
+  letter-spacing: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-root .ds-timer-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  min-width: 0;
+}
+
+/* The outlined button keeps its own width, on a phone too (M9 .ph .tbs .ghost). */
+.ui-root .ds-timer-buttons .ds-btn {
+  flex: none;
+  width: auto;
+}
+
+/* "Reset" is a short word: its tap area is still 44px wide. */
+.ui-root .ds-timer-reset {
+  min-width: var(--tap-min);
+}
+
+/* Phone (the portal's phone width, pageLock.js PHONE_QUERY): M9 .ph .tmr. */
+@media (max-width: 600px) {
+  .ui-root .ds-timer {
+    align-items: flex-start;
+  }
+}
+
+/* ---------- "How long?" (M9 sheetHTML 'len') ---------- */
+
+/* The panel's title is a question, so it is DM Sans in sentence case at
+   20px (M9 .shh h2.sq), not the panel's usual Nekst capitals. */
+.ui-root .ds-dialog .ds-dialog-title .ds-timer-title {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-rec-question);
+  line-height: var(--lh-title);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* 18px under the title (M9 .who), with the panel's own 6px. */
+.ui-root .ds-timer-options {
+  margin-top: var(--space-px12);
+}
+
+/* The Minutes box (M9 .field), with no spinner arrows. */
+.ui-root .ds-timer-minutes {
+  margin-top: var(--space-px22);
+}
+
+.ui-root .ds-timer-minutes .ds-field {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.ui-root .ds-timer-minutes .ds-field::-webkit-outer-spin-button,
+.ui-root .ds-timer-minutes .ds-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* "Type a number from 1 to 60." (M9 .ex). */
+.ui-root .ds-timer-error {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+/* "Set the timer" sits at the right on a laptop and runs full width on a
+   phone (M9 .shf, .ph .shf .btn). */
+.ui-root .ds-dialog-foot .ds-timer-set {
+  margin-left: auto;
+}
+
+.ui-root .ds-dialog--phone .ds-dialog-foot .ds-timer-set {
+  flex: 1;
+  margin-left: 0;
+}
+
+/* Windows high-contrast mode (rule 8b): the ring is two flat lines, so
+   each takes a system colour. The line drawn so far is the text colour and
+   the track behind it the system's grey, so how far it has run still
+   shows. */
+@media (forced-colors: active) {
+  .ui-root .ds-timer-ring svg {
+    forced-color-adjust: none;
+  }
+
+  .ui-root .ds-timer-track {
+    stroke: GrayText;
+  }
+
+  .ui-root .ds-timer-arc {
+    stroke: CanvasText;
+  }
+
+  .ui-root .ds-timer-ring:not(:disabled):hover .ds-timer-track {
+    stroke: Highlight;
+  }
+
+  .ui-root .ds-timer-ring:focus-visible {
+    outline-color: Highlight;
+  }
+}

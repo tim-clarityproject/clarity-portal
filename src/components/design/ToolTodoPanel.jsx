@@ -19,6 +19,7 @@ import { needsConnection } from '../../lib/friendlyError';
 //     source="get_unstuck"                  todos.source ('other_tool' when left out)
 //     sourceId={decisionId}                 the saved item it came from, if any
 //     onDone={({ where, id, text, strategyId, impact }) => …}
+//     onUndone={({ where, id }) => …}      the toast's Undo was pressed
 //   />
 //
 // onDone runs once the to-do is saved (or waiting to sync), or when "Don’t
@@ -31,7 +32,7 @@ const NO_STRATEGY = [
   'Your plan has no Strategies yet, so there’s nothing to add this to.',
 ];
 
-export default function ToolTodoPanel({ open, onClose, startText = '', startStrategyId = null, startWhere, source = 'other_tool', sourceId = null, onDone }) {
+export default function ToolTodoPanel({ open, onClose, startText = '', startStrategyId = null, startWhere, source = 'other_tool', sourceId = null, onDone, onUndone }) {
   const todo = useToolTodo();
   const start = () => ({
     text: startText || '',
@@ -62,7 +63,7 @@ export default function ToolTodoPanel({ open, onClose, startText = '', startStra
       return;
     }
     busy.current = true;
-    const saved = await todo.add({ text, strategyId: f.strategyId, impact: f.impact, where: f.where, source, sourceId });
+    const saved = await todo.add({ text, strategyId: f.strategyId, impact: f.impact, where: f.where, source, sourceId, onUndone });
     busy.current = false;
     if (!saved) return;
     onClose?.();

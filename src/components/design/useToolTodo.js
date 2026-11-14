@@ -28,7 +28,8 @@ import { friendlyError } from '../../lib/friendlyError';
 //                 nothing and has no id), or null when it didn't save (a
 //                 calm error has been shown). It shows the toast itself
 //                 ("Added to this week" or "Added to your backlog", with
-//                 Undo) unless `quiet` is set.
+//                 Undo) unless `quiet` is set. `onUndone({ where, id })`
+//                 runs when that Undo is pressed.
 const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
 
 export default function useToolTodo() {
@@ -44,7 +45,7 @@ export default function useToolTodo() {
   const strategies = useMemo(() => (rows || []).map((s) => ({ value: s.id, label: s.name })), [rows]);
   const whereOptions = useMemo(() => todoWhereOptions({ running }), [running]);
 
-  const add = useCallback(async ({ text, strategyId, impact = 2, where, source = 'other_tool', sourceId = null, quiet = false }) => {
+  const add = useCallback(async ({ text, strategyId, impact = 2, where, source = 'other_tool', sourceId = null, quiet = false, onUndone }) => {
     if (where === TODO_WHERE.none) return { where: TODO_WHERE.none, id: null };
     if (!userId || !strategyId || !String(text || '').trim()) return null;
     // "This week" needs a running sprint; without one it waits in the Backlog.
@@ -68,6 +69,8 @@ export default function useToolTodo() {
         onUndo: () => {
           take();
           setTodoDeleted(userId, id, new Date().toISOString()).catch(() => null);
+          // The tool that asked takes it off its own screen too.
+          onUndone?.({ where: to, id });
         },
       });
     }

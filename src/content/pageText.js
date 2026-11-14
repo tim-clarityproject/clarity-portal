@@ -4,7 +4,6 @@
 export const pageText = {
   about: "You won't find an AI chatbot here giving you the easy answers.",
   dailyJournal: 'Write whatever is on your mind. Do not edit, do not aim for good. Keep going until your head is clear.',
-  growStep3bPrioritize: 'Drag and drop your options to the right to place them in order of fit for your situation. You can leave any ideas you think are bad on the left.',
   editPersonalDetails: 'Update your personal information.',
   personalOperatingPlan: 'Your Mission, the strategies that serve it and what you do every day.',
   personalOperatingPlanEdit: 'Your Mission is the anchor. Strategies are how you pursue it. Tactics are what you do every day.',

@@ -20,9 +20,10 @@ mkdirSync(out, { recursive: true });
 
 const vite = await createServer({ root, logLevel: 'error', server: { middlewareMode: true }, appType: 'custom' });
 const load = (p) => vite.ssrLoadModule(p);
-const [{ renderPdf }, { PAPER }, { samplePdf }, { healthCheckPdf }, { meetingPlanPdf }, { emojiPartsFor, cjkPartsFor, textOf }] = await Promise.all([
+const [{ renderPdf }, { PAPER }, { samplePdf }, { healthCheckPdf }, { meetingPlanPdf }, { emojiPartsFor, cjkPartsFor, textOf }, { getUnstuckPdf }, { planFrom }] = await Promise.all([
   load('/src/lib/pdf/render.js'), load('/src/lib/pdf/paper.js'), load('/src/lib/pdf/docs/sample.js'),
   load('/src/lib/pdf/docs/healthCheck.js'), load('/src/lib/pdf/docs/meetingPlan.js'), load('/src/lib/pdf/emoji.js'),
+  load('/src/lib/pdf/docs/getUnstuck.js'), load('/src/lib/getUnstuck/model.js'),
 ]);
 
 const file = (p) => new Uint8Array(readFileSync(join(root, p)));
@@ -277,7 +278,97 @@ const HC3 = Object.fromEntries(Object.entries(HC3_DRAFTS).map(([name, draft]) =>
   organisation: name.endsWith('long names') ? longOrg : 'Quillmark', completedAt: '2026-10-26T08:30:00', draft,
 })]));
 
-const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP };
+// ---- Get unstuck (mock-up M9): a plan as its saved row keeps it (planFrom) -------------
+// `steps` are [words, where] pairs: 'week', 'backlog', 'none' or nothing.
+const unstuck = ({ goal = '', cons = [], opps = [], opts = [], steps = [] }) => planFrom({
+  goal, version: 2, constraint_list: cons, opportunity_list: opps, options: opts,
+  next_steps: steps.map(([text, where], i) => ({ id: `s${i}`, option: i < opts.length ? i : null, text, where: where || null })),
+});
+const LONG_WORD = 'Supercalifragilisticexpialidociousandevenlongerwordthatnevereverbreaksatallanywhere';
+const GU_SAVED = { createdAt: '2026-11-14T08:30:00', updatedAt: '2026-11-14T08:30:00' };
+const GU = {
+  'Get unstuck, normal': getUnstuckPdf({
+    person: 'Sam Carter',
+    createdAt: '2026-11-13T16:10:00',
+    updatedAt: '2026-11-14T09:30:00',
+    plan: unstuck({
+      goal: 'Cut our time to hire to 30 days by March.',
+      cons: ['Hiring managers take a week to give feedback', 'Two of the four interviewers are away in December', 'The careers page still shows last year’s roles'],
+      opps: ['Priya’s team already runs one-day loops', 'The recruiter starts on Monday'],
+      opts: ['Agree a 48-hour feedback rule', 'Run every interview loop in one day', 'Ask Priya to show the other teams her loop', 'Rewrite the careers page', 'Pay a referral bonus'],
+      steps: [['Agree a 48-hour feedback rule with the four hiring managers', 'week'], ['Book Priya for 30 minutes at Thursday’s team meeting', 'backlog'], ['Ask the recruiter to draft the careers page', null]],
+    }),
+  }),
+  'Get unstuck, guest': getUnstuckPdf({
+    guest: true,
+    today: '2026-11-14',
+    plan: unstuck({
+      goal: 'Win the Northfield contract renewal by the end of January.',
+      cons: ['Their new buyer doesn’t know us'],
+      opps: ['Three years of on-time deliveries'],
+      opts: ['Meet the new buyer in person', 'Send the three-year delivery record'],
+      steps: [['Ask Jordan for an introduction to the new buyer', 'week'], ['Put the delivery record on one page']],
+    }),
+  }),
+  'Get unstuck, very short': getUnstuckPdf({ person: 'Sam Carter', ...GU_SAVED, plan: unstuck({ goal: 'Grow.', opts: ['Sell'], steps: [['Sell', 'week']] }) }),
+  'Get unstuck, very long': getUnstuckPdf({
+    person: 'Maximilian Featherstonehaugh-Worthington-Smythe',
+    organisation: longOrg,
+    ...GU_SAVED,
+    plan: unstuck({
+      goal: para(8).slice(0, 300),
+      cons: Array.from({ length: 30 }, (_, i) => (i % 4 === 0 ? `${sentence(25)} ${sentence(20)}`.slice(0, 300) : sentence(4 + rnd(8)))),
+      opps: Array.from({ length: 12 }, () => sentence(5 + rnd(10))),
+      opts: Array.from({ length: 40 }, (_, i) => (i % 5 === 0 ? `${sentence(25)} ${sentence(20)}`.slice(0, 300) : sentence(3 + rnd(8)))),
+      steps: Array.from({ length: 20 }, (_, i) => [`${sentence(24)} ${sentence(22)}`.slice(0, 300), ['week', 'backlog', 'none', null][i % 4]]),
+    }),
+  }),
+  'Get unstuck, long organisation': getUnstuckPdf({
+    organisation: longOrg,
+    ...GU_SAVED,
+    plan: unstuck({ goal: 'Open the Hull depot by June.', opts: ['Sign the lease', 'Hire a depot lead'], steps: [['Sign the lease', 'week'], ['Write the depot lead’s role', 'backlog']] }),
+  }),
+  'Get unstuck, awkward': getUnstuckPdf({
+    person: 'Zoë Łukasz-Ångström of the “Northern & Eastern” Region / Team <A>',
+    ...GU_SAVED,
+    plan: unstuck({
+      goal: `Get “Ångström” live at https://www.example.invalid/a/very/long/address/that-never-ends/with-no-spaces-at-all/and-then-some-more?with=a&query=string#and-a-hash without ${LONG_WORD}`,
+      cons: [LONG_WORD, 'Quotes: "straight", ‘single’ and “curly”, an ampersand & a backslash \\', 'One line\nthen another\n\nand a third'],
+      opps: ['50% done already (really)', '   spaces all round   '],
+      opts: [`${LONG_WORD}${LONG_WORD}`, 'A/B/C/D-E-F_G', '1'],
+      steps: [[`${LONG_WORD} first`, 'week'], ['Ask “Why?” five times', 'backlog'], ['A step\nwith a line break', 'none']],
+    }),
+  }),
+  'Get unstuck, emoji': getUnstuckPdf({
+    person: 'Zoë 🙂',
+    ...GU_SAVED,
+    plan: unstuck({
+      goal: 'Ship faster 🚀 without burning out the team 🙂',
+      cons: ['Too many meetings 📅', '👎'],
+      opps: ['A calm team ❤️'],
+      opts: ['Cancel Friday meetings ✂️', '👍', 'Ask the team 💬'],
+      steps: [['Cancel Friday meetings ✂️', 'week'], ['👍', 'backlog']],
+    }),
+  }),
+  'Get unstuck, Chinese': getUnstuckPdf({
+    organisation: '北京未来科技有限公司',
+    ...GU_SAVED,
+    plan: unstuck({ goal: '到三月份将招聘时间缩短至30天。', cons: ['面试反馈太慢'], opts: ['48小时内反馈', 'One-day loops 一天完成面试'], steps: [['与招聘经理商定48小时反馈规则', 'week']] }),
+  }),
+  'Get unstuck, blank answers': getUnstuckPdf({
+    person: '',
+    today: '2026-11-14',
+    plan: unstuck({ goal: 'Decide whether to open a second site.', cons: ['', '   '], opps: [''], opts: ['', ''], steps: [['   ', null]] }),
+  }),
+  'Get unstuck, an old saved plan': getUnstuckPdf({
+    person: 'Sam Carter',
+    ...GU_SAVED,
+    // as the old pages saved it: text, one a line
+    plan: planFrom({ goal: 'Delegate the weekly report.', constraints: 'Nobody else knows the figures\nIt’s due every Friday', opportunities: 'Jordan has asked to learn it', options: ['Show Jordan this Friday', 'Write the steps down'], will_do: 'Show Jordan this Friday\nBlock an hour on Thursday' }),
+  }),
+};
+
+const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU };
 
 // ---- dot charts: dots stay in their own area, and how many touch ----------------------
 // A dot is in its own area when it is on the same side of both centre lines
@@ -565,6 +656,40 @@ for (const [name, spec] of Object.entries(DOCS)) {
     lines.push(`  ${name}: line ${m.line}%, headline ${m.headline.big}, questions ${m.questions.map((q) => q.label).join(', ')}${problems.length ? `\n    PROBLEMS:\n      ${problems.join('\n      ')}` : ', all checks pass'}`);
   }
   if (lines.length) report.push(`Health Check 3 (the PDF says what the results page says)\n${lines.join('\n')}`);
+}
+
+// ---- Get unstuck: Action first, blanks left out, and where each step is ----------------
+{
+  const problems = [];
+  const titles = (spec) => spec.sections.filter((x) => x.blocks.length).map((x) => x.title).join(' > ');
+  const steps = (spec) => spec.sections[0].blocks[0]?.items || [];
+  const normal = GU['Get unstuck, normal'];
+  if (titles(normal) !== 'Your next steps > Your goal > What’s in the way > What’s already working > Your options') problems.push(`the sections are in the wrong order: ${titles(normal)}`);
+  if (normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ') !== 'Your goal: Cut our time to hire to 30 days by March.; Next steps: 3 next steps; Options you thought of: 5 options') problems.push('At a glance is not the goal, the next steps and the options');
+  if (steps(normal).join(' | ') !== 'Agree a 48-hour feedback rule with the four hiring managers\nIt’s in this week’s sprint. | Book Priya for 30 minutes at Thursday’s team meeting\nIt’s in your backlog. | Ask the recruiter to draft the careers page') problems.push('a next step doesn’t say where it is');
+  if (normal.details.join(' · ') !== 'Sam Carter · Fri 13 Nov 2026 · Get unstuck plan' || !normal.updatedAt) problems.push(`the details line reads "${normal.details.join(' · ')}"`);
+  if (steps(GU['Get unstuck, guest']).some((s) => /sprint|backlog/.test(s))) problems.push('a guest’s next step says where it is');
+  if (GU['Get unstuck, very short'].glance.some((g) => !g.value) || GU['Get unstuck, very short'].updatedAt) problems.push('the very short plan has an empty item or an "Updated" it shouldn’t');
+  const blankDoc = GU['Get unstuck, blank answers'];
+  if (titles(blankDoc) !== 'Your goal') problems.push(`blank answers are not left out: ${titles(blankDoc)}`);
+  if (blankDoc.glance.length < 2 || blankDoc.glance.some((g) => !String(g.value).trim())) problems.push('At a glance has fewer than two items, or an empty one');
+  if (steps(GU['Get unstuck, an old saved plan']).join(' | ') !== 'Show Jordan this Friday | Block an hour on Thursday') problems.push('an old saved plan’s next steps are not read');
+  for (const [name, spec] of Object.entries(GU)) {
+    if (spec.glance.length < 2 || spec.glance.length > 4) problems.push(`${name}: At a glance has ${spec.glance.length} item(s)`);
+    if (only && !name.includes(only)) continue;
+    let text = '';
+    // read in the order the PDF draws it, without spaces or hyphens: pdftotext
+    // drops a hyphen at a line's end, and a long address breaks after its own
+    const flatWords = (t) => t.replace(/[\s-]+/g, '');
+    try { text = flatWords(run('pdftotext', ['-raw', join(out, `${name}, A4.pdf`), '-'])); } catch { toolsMissing = true; }
+    if (!text) continue;
+    // every answer is in the PDF's text, whole (emoji are drawn from their own font and read differently)
+    const said = [...spec.sections.flatMap((x) => x.blocks.flatMap((b) => b.items || [b.text])), ...spec.glance.map((g) => g.value)];
+    said.filter((w) => !/\p{Extended_Pictographic}/u.test(w)).forEach((w) => { if (!text.includes(flatWords(w))) problems.push(`${name}: the PDF's text doesn't hold "${w.slice(0, 50)}"`); });
+    spec.sections.filter((x) => !x.blocks.length).forEach((x) => { if (text.toLocaleLowerCase('en-GB').includes(flatWords(x.title).toLocaleLowerCase('en-GB'))) problems.push(`${name}: the empty section "${x.title}" still has its heading`); });
+  }
+  report.push(`Get unstuck (next steps first, blanks left out, where each step is)\n  ${problems.length ? `PROBLEMS:\n    ${problems.join('\n    ')}` : 'all checks pass'}`);
+  if (problems.length) failed += 1;
 }
 
 writeFileSync(join(out, 'break-report.txt'), `${report.join('\n')}\n`);

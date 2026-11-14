@@ -5,7 +5,7 @@
 import {
   healthCheckFinishedForCoachEmail, healthCheckResultsEmail, healthCheckFinishedNoteEmail,
   sessionTomorrowEmail, sessionInOneHourEmail, leadingIdeasClientEmail, leadingIdeasPublicEmail,
-  confirmEmailEmail, resetPasswordEmail, changeEmailEmail, inviteEmail,
+  confirmEmailEmail, resetPasswordEmail, changeEmailEmail, inviteEmail, guestPlanCopyEmail,
 } from '../../lib/email/emails.js';
 import { instantAt } from '../../lib/time/index.js';
 
@@ -62,6 +62,19 @@ export const EMAIL_EXAMPLES = [
     from: 'From The Clarity Portal, to Tim',
     sends: 'Sent today, when another coach’s link is finished. It never holds the answers or the sign-in details.',
     doc: () => healthCheckFinishedNoteEmail({ organisation: 'Northfield Logistics', dateText: 'Tue 10 Nov 2026' }),
+  },
+  {
+    key: 'guest-plan-copy',
+    name: 'Get unstuck plan, a guest’s copy',
+    from: 'From The Clarity Portal, to Alex, a guest',
+    sends: 'Sent only from the live site, when a guest finishes Get unstuck through a coach’s link (after migrations 035 and 042). Never from a preview.',
+    doc: () => guestPlanCopyEmail({
+      origin: PORTAL,
+      toolName: 'Get unstuck',
+      coachName: 'Tim',
+      goal: 'Cut our time to hire to 30 days by March',
+      nextSteps: ['Agree a 48-hour feedback rule with the four hiring managers', 'Ask Priya to show the other teams her one-day loop'],
+    }),
   },
   {
     key: 'session-tomorrow',

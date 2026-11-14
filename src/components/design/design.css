@@ -3921,6 +3921,545 @@
   }
 }
 
+/* ---------- The calm stepped frame (M9, M10 and M7b; Tim, 13 Nov) ----------
+   GuidedTool with `calm`: the top bar and the bottom bar line up with the
+   page's own column, the % bar has no figure, the stage name is the small
+   grey line above the question, and Skip is a quiet link at the left. */
+
+.ui-root .ds-guide--calm .ds-guide-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto var(--tap-min);
+  gap: 0;
+  padding: env(safe-area-inset-top, 0px) max(var(--guide-calm-pad), calc((100% - var(--guide-calm-max)) / 2 + var(--guide-calm-pad))) 0;
+}
+
+.ui-root .ds-guide--calm .ds-guide-name {
+  grid-column: 2;
+  position: relative;
+  top: 0.1em;
+  font-size: var(--fs-tool-name-calm);
+  letter-spacing: var(--ls-tool-name-calm);
+  /* Back's whole tap area is Back's own (M9). */
+  pointer-events: none;
+}
+
+.ui-root .ds-guide--calm .ds-guide-back {
+  grid-column: 1;
+  /* The chevron's visible edge on the content's left edge, and the name
+     14px from that edge (M9; rule 29t). */
+  margin: 0 calc(var(--back-gap) - (var(--tap-min) + var(--guide-chev)) / 2 + var(--chev-left-inset) * 0.875) 0 calc((var(--guide-chev) - var(--tap-min)) / 2 - var(--chev-left-inset) * 0.875);
+}
+
+.ui-root .ds-guide--calm .ds-guide-back .ds-chevron {
+  width: var(--guide-chev);
+  height: var(--guide-chev);
+}
+
+.ui-root .ds-guide--calm .ds-guide-back .ds-chevron-line {
+  font-size: var(--fs-tool-name-calm);
+}
+
+.ui-root .ds-guide--calm .ds-guide-close {
+  grid-column: 4;
+}
+
+.ui-root .ds-guide--calm .ds-guide-close .ds-cross--close {
+  width: var(--cross-close);
+  height: var(--cross-close);
+}
+
+.ui-root .ds-guide--calm .ds-guide-scroll {
+  padding: var(--guide-calm-top) 0 var(--space-px64);
+}
+
+.ui-root .ds-guide--calm .ds-guide-page {
+  box-sizing: border-box;
+  max-width: var(--guide-calm-max);
+  padding-inline: var(--guide-calm-pad);
+}
+
+.ui-root .ds-guide--calm .ds-guide-pct-text {
+  display: none;
+}
+
+.ui-root .ds-guide--calm .ds-guide-label {
+  display: block;
+  min-height: 0;
+  margin: var(--space-px28) 0 0;
+  line-height: var(--lh-text);
+}
+
+.ui-root .ds-guide--calm .ds-guide-question,
+.ui-root .ds-guide--calm .ds-guide-label + .ds-guide-question {
+  margin-top: var(--space-px6) !important;
+  font-size: var(--fs-question-calm) !important;
+}
+
+.ui-root .ds-guide--calm .ds-guide-pct + .ds-sr + .ds-guide-question,
+.ui-root .ds-guide--calm .ds-guide-pct + .ds-guide-question {
+  margin-top: var(--space-px28) !important;
+}
+
+.ui-root .ds-guide--calm .ds-guide-nudge {
+  max-width: none;
+  margin-top: var(--space-2);
+}
+
+.ui-root .ds-guide--calm .ds-guide-example-link {
+  margin-top: 0;
+  font-size: var(--fs-secondary) !important;
+}
+
+.ui-root .ds-guide--calm .ds-guide-example {
+  max-width: none;
+  margin-top: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.ui-root .ds-guide-problem {
+  max-width: var(--guide-problem-max);
+  margin-top: var(--space-px12);
+}
+
+.ui-root .ds-guide--calm .ds-guide-foot {
+  padding: var(--space-px14) max(var(--guide-calm-pad), calc((100% - var(--guide-calm-max)) / 2 + var(--guide-calm-pad))) max(var(--space-px18), env(safe-area-inset-bottom, 0px));
+}
+
+.ui-root .ds-guide--calm .ds-guide-foot-right {
+  flex: 1;
+  justify-content: space-between;
+  gap: var(--space-px12);
+}
+
+.ui-root .ds-guide--calm .ds-guide-foot .ds-guide-skip {
+  min-width: var(--tap-min);
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+  text-decoration-color: var(--quiet-line);
+}
+
+.ui-root .ds-guide--calm .ds-guide-foot .ds-guide-skip:hover,
+.ui-root .ds-guide--calm .ds-guide-foot .ds-guide-skip:focus-visible {
+  color: var(--coral-text);
+}
+
+.ui-root .ds-guide--calm .ds-btn.ds-guide-next {
+  min-height: var(--btn-h) !important;
+  margin-left: auto;
+  padding: 0 var(--space-4) !important;
+}
+
+/* Inside the calm frame and on a guest page the parts take M9's own
+   values where the portal's older shared values differ: button words at
+   12px, answer rows at 15px and the page's full width, list rows 6px from
+   their crosshair. */
+.ui-root .ds-guide--calm .ds-btn,
+.ui-root .ds-guest .ds-btn {
+  font-size: var(--fs-si-btn) !important;
+  letter-spacing: var(--ls-si-btn);
+}
+
+.ui-root .ds-guide--calm .ds-guide-body .ds-rows {
+  max-width: none;
+}
+
+.ui-root .ds-guide--calm .ds-guide-body > .ds-choice:first-child {
+  margin-top: calc(var(--space-px2) * -1);
+}
+
+.ui-root .ds-guide--calm .ds-guide-body .ds-answer {
+  min-height: var(--answer-h-calm) !important;
+  padding-inline: var(--space-3) !important;
+  font-size: var(--fs-secondary) !important;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+/* The tick's place is kept on every row, so choosing one never moves its words (M9 .tk). */
+.ui-root .ds-guide--calm .ds-guide-body .ds-answer--multi {
+  gap: var(--space-3);
+}
+
+.ui-root .ds-guide--calm .ds-guide-body .ds-answer--multi::after {
+  content: '';
+  flex: none;
+  width: var(--tick-option);
+  height: var(--tick-option);
+}
+
+.ui-root .ds-guide--calm .ds-rowlist-row {
+  grid-template-columns: minmax(0, 1fr) var(--tap-min);
+  gap: var(--space-px6);
+  align-items: center;
+}
+
+.ui-root .ds-guide--calm .ds-rowlist-remove {
+  margin-top: 0;
+}
+
+.ui-root .ds-guide--calm .ds-rowlist-add {
+  margin-top: var(--space-px12);
+}
+
+/* Your plan (M9): every answer on one page, each row one button. */
+.ui-root .ds-guide-plan {
+  margin-top: var(--space-px28);
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-guide--calm .ds-guide-body:has(> .ds-guide-plan:first-child) {
+  margin-top: 0;
+}
+
+.ui-root .ds-guide-plan-row {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0 !important;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: start;
+  padding: var(--space-px14) 0 !important;
+  border-bottom: var(--line-w) solid var(--line);
+  font-family: var(--font-body);
+  letter-spacing: normal;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-guide-plan-value {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ui-root .ds-guide-plan-label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-guide-plan-line {
+  display: block;
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .ds-guide-plan-line + .ds-guide-plan-line {
+  margin-top: var(--space-px6);
+}
+
+.ui-root .ds-guide-plan-line small {
+  display: block;
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .ds-guide-plan-line small.ds-guide-plan-good {
+  color: var(--good);
+}
+
+.ui-root .ds-guide-plan-edit {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+  text-decoration-color: var(--quiet-line);
+}
+
+.ui-root .ds-guide-plan-row:hover .ds-guide-plan-edit,
+.ui-root .ds-guide-plan-row:focus-visible .ds-guide-plan-edit {
+  color: var(--coral-text);
+}
+
+.ui-root .ds-guide-plan-row:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+@container guide (max-width: 600px) {
+  .ui-root .ds-guide--calm .ds-guide-bar {
+    grid-template-columns: auto minmax(0, 1fr) auto var(--tap-min);
+    min-height: 0;
+    padding: max(var(--space-3), env(safe-area-inset-top, 0px)) var(--space-px6) 0 var(--space-3);
+  }
+
+  .ui-root .ds-guide--calm .ds-guide-scroll {
+    padding: var(--space-px22) 0 var(--space-px40);
+  }
+
+  .ui-root .ds-guide--calm .ds-guide-page {
+    padding-inline: var(--space-3);
+  }
+
+  .ui-root .ds-guide--calm .ds-guide-label {
+    margin-top: var(--space-px28);
+  }
+
+  .ui-root .ds-guide--calm .ds-guide-pct + .ds-sr + .ds-guide-question,
+  .ui-root .ds-guide--calm .ds-guide-pct + .ds-guide-question {
+    margin-top: var(--space-px28) !important;
+  }
+
+  .ui-root .ds-guide--calm .ds-guide-foot {
+    padding: var(--space-px12) var(--space-3) max(var(--space-px30), env(safe-area-inset-bottom, 0px));
+  }
+
+  .ui-root .ds-guide--calm .ds-btn.ds-guide-next {
+    flex: 1;
+    padding: 0 var(--space-px14) !important;
+  }
+}
+
+/* ---------- Next steps: every row alike (M9 .ns, .nsm) ---------- */
+
+.ui-root .ds-nextsteps {
+  display: grid;
+  gap: var(--space-px22);
+}
+
+.ui-root .ds-nextstep-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin-top: var(--space-1);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text-2);
+}
+
+.ui-root .ds-nextstep-meta .ds-nextstep-good {
+  color: var(--good);
+}
+
+.ui-root .ds-nextstep-meta .ds-link {
+  justify-content: flex-end;
+  min-width: var(--tap-min);
+}
+
+/* ---------- Guest pages: the bold crosshair alone, centred (M9 .gtop) ---------- */
+
+.ui-root .ds-guest {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-guest-top {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: content-box;
+  height: var(--guide-bar-h);
+  padding-top: env(safe-area-inset-top, 0px);
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-guest-main {
+  flex: 1;
+  width: 100%;
+}
+
+.ui-root .ds-guest-col {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--guide-calm-max);
+  margin: 0 auto;
+  padding: var(--guide-calm-top) var(--guide-calm-pad) var(--space-px64);
+}
+
+.ui-root .ds-guest-col--narrow > * {
+  max-width: var(--guest-narrow);
+  margin-inline: auto;
+}
+
+.ui-root .ds-guest .ds-guest-title {
+  margin-block: 0 !important;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-si-title) !important;
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-page-title);
+  word-spacing: normal;
+  text-transform: uppercase;
+  color: var(--text);
+  outline: none;
+}
+
+.ui-root .ds-guest .ds-guest-question {
+  margin-block: 0 !important;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-question-calm) !important;
+  line-height: var(--lh-question);
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-transform: none;
+  text-wrap: balance;
+  color: var(--text);
+  outline: none;
+}
+
+.ui-root .ds-guest-sub {
+  margin-top: var(--space-px10);
+  margin-bottom: 0;
+  font-size: var(--fs-option);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-guest-field {
+  margin-top: var(--space-px12);
+}
+
+.ui-root .ds-guest-title + .ds-guest-field {
+  margin-top: var(--space-px28);
+}
+
+.ui-root .ds-guest-sentence {
+  margin-top: var(--space-px28);
+  margin-bottom: var(--space-px18);
+  font-size: var(--fs-option);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-guest-problem {
+  margin-top: var(--space-px12);
+}
+
+.ui-root .ds-guest-legal {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0 var(--space-4);
+  margin-top: var(--space-px18);
+}
+
+.ui-root .ds-guest-list {
+  margin-top: var(--space-4);
+  margin-bottom: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-guest-list > li {
+  margin: 0;
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line);
+  font-size: var(--fs-text);
+  overflow-wrap: anywhere;
+}
+
+.ui-root .ds-pdfmenu.ds-guest-pdf {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  margin-top: var(--space-px28);
+}
+
+.ui-root .ds-guest-field .ds-label-row {
+  margin-bottom: var(--space-2);
+}
+
+.ui-root .ds-guest-field .ds-label-row-text {
+  font-size: var(--fs-note) !important;
+}
+
+/* A note beside its button on a laptop (M9 .bnote). */
+.ui-root .ds-btn-note--beside {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.ui-root .ds-btn-note--beside .ds-btn-note-text {
+  margin: 0;
+  font-size: var(--fs-note);
+}
+
+/* The calm card (design reference, Calm pages; M9 .calm). */
+.ui-root .ds-calm-card {
+  margin-top: var(--space-px28);
+  padding: var(--space-px26);
+  border-radius: var(--radius-hub-tile);
+  background: var(--raised);
+}
+
+.ui-root .ds-calm-card p {
+  max-width: 30ch;
+  margin: 0;
+  font-size: var(--fs-empty-title);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .ds-calm-card .ds-calm-card-sub {
+  margin-top: var(--space-2);
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+}
+
+.ui-root .ds-calm-card-action {
+  margin-top: var(--space-px22);
+}
+
+.ui-root .ds-sheet-note {
+  margin: var(--space-px18) 0 0;
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-guest-top {
+    height: auto;
+    padding-top: max(var(--space-3), env(safe-area-inset-top, 0px));
+    padding-bottom: var(--space-px6);
+    border-bottom: 0;
+  }
+
+  .ui-root .ds-guest-col {
+    padding: var(--space-px22) var(--space-3) var(--space-px40);
+  }
+
+  .ui-root .ds-btn-note--beside {
+    flex-direction: column;
+    gap: var(--space-px10);
+  }
+
+  .ui-root .ds-calm-card {
+    padding: var(--space-px22);
+  }
+
+  .ui-root .ds-calm-card-action .ds-btn {
+    width: 100%;
+  }
+}
+
 /* ---------- Help panel: one line, then an example (M6) ---------- */
 
 .ui-root .ds-help-panel {

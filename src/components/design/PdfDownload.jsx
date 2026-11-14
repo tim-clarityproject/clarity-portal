@@ -16,8 +16,9 @@ import { isOffline, needsConnection } from '../../lib/friendlyError';
  * @param {'up'|'down'} [props.placement] where the choice opens on desktop
  * @param {'left'|'right'} [props.align]
  * @param {string} [props.className]
+ * @param {string} [props.label] the button's words ("Download my PDF" on a guest's end page, M9)
  */
-export default function PdfDownload({ getDocument, variant = 'outline', placement = 'up', align = 'left', className = '' }) {
+export default function PdfDownload({ getDocument, variant = 'outline', placement = 'up', align = 'left', className = '', label = 'Download PDF' }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -55,7 +56,7 @@ export default function PdfDownload({ getDocument, variant = 'outline', placemen
         disabled={busy}
         onClick={() => setOpen((o) => !o)}
       >
-        {busy ? 'Making your PDF' : 'Download PDF'}
+        {busy ? 'Making your PDF' : label}
       </Button>
       <PdfChoice
         open={open}

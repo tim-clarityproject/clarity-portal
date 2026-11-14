@@ -7,7 +7,7 @@ import { FormProvider } from './context/FormContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import './lib/debugStorage'; // Make debugging utilities available
-import { ConnectionNotice, Crosshair, FloatingOrb, ToastProvider } from './components/design';
+import { ConnectionNotice, Crosshair, FloatingOrb, ToastProvider, useToast } from './components/design';
 import { startUpdateChecks } from './lib/appUpdate';
 import { startWarming } from './lib/warmDevice';
 import { CoachChatProvider } from './components/coach/CoachChat';
@@ -43,11 +43,6 @@ import BreathingPage from './pages/BreathingPage';
 import BreathingSessionsSummary from './pages/BreathingSessionsSummary';
 import StopDoingAudit from './pages/StopDoingAudit';
 import StopDoingAuditSummary from './pages/StopDoingAuditSummary';
-import GrowStep1Goal from './pages/GrowStep1Goal';
-import GrowStep2Reality from './pages/GrowStep2Reality';
-import GrowStep3Options from './pages/GrowStep3Options';
-import GrowStep3bPrioritize from './pages/GrowStep3bPrioritize';
-import GrowStep4WillDo from './pages/GrowStep4WillDo';
 import InversionStep1Goal from './pages/InversionStep1Goal';
 import InversionStep2Risks from './pages/InversionStep2Risks';
 import InversionStep3Plan from './pages/InversionStep3Plan';
@@ -95,7 +90,8 @@ import { AccountEmail, AccountPassword } from './pages/signin/AccountPages';
 import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 import ScrollToTop from './components/ScrollToTop';
 import HubPage from './pages/hubs/HubPage';
-import { MOVED, MOVED_UNDER, tabTitle } from './lib/navigation';
+import { claimGuestWork } from './lib/guest/claim';
+import { GET_UNSTUCK_STEPS, MOVED, MOVED_UNDER, tabTitle } from './lib/navigation';
 import { loadWithReload } from './lib/loadWithReload';
 
 // Strategic Alignment Health Check: a standalone page for people with no
@@ -104,6 +100,8 @@ const HealthCheck = lazy(() => loadWithReload(() => import('./pages/alignment/He
 
 // Wheel of Life (Review section, inside the portal). Lazy-loaded, like the
 // Health Check, so its pages and styles stay out of the main bundle.
+const GetUnstuck = lazy(() => loadWithReload(() => import('./pages/getUnstuck/GetUnstuck')));
+const GuestLink = lazy(() => loadWithReload(() => import('./pages/guest/GuestLink')));
 const WheelStart = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelStart')));
 const WheelAreas = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelAreas')));
 const WheelCheckIn = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelCheckIn')));
@@ -117,7 +115,7 @@ const lazyPage = (Page) => (
 
 // The private link carries a secret token in the path: never write it into
 // the local diagnostics log.
-const redactHealthCheckToken = (pathname) => pathname.replace(/^(\/health-check\/).*/, '$1[token]');
+const redactHealthCheckToken = (pathname) => pathname.replace(/^(\/health-check\/|\/guest\/).*/, '$1[token]');
 
 // Retired in Phase 3, step 4: the Weekly momentum check-in and the POP
 // review. Starting a new weekly check-in (/my-journal with reviewType
@@ -188,6 +186,7 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
+  const toast = useToast();
 
   // The key pages' data kept on the device, once per visit (warmDevice.js).
   useEffect(() => { startWarming(user?.id ?? null); }, [user?.id]);
@@ -237,6 +236,19 @@ function AppContent() {
       }
     }
   }, [location.pathname, location.search, location.hash, navigate]);
+
+  // A guest's answers move into the account that signs up with the same
+  // email (035's guest_claim, once the email is confirmed). Nothing
+  // happens, and nothing is said, until that migration has run.
+  const claimFor = user?.id && user.email_confirmed_at ? user.id : null;
+  useEffect(() => {
+    if (!claimFor) return;
+    claimGuestWork(claimFor).then((moved) => {
+      if (moved > 0) toast.show('Your plan has moved into My Plans.');
+    });
+    // Once per sign-in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claimFor]);
 
   if (isLoading) {
     // The opening screen: the turning crosshair on the page colour, the
@@ -290,6 +302,7 @@ function AppContent() {
   ].includes(location.pathname)
     || location.pathname.startsWith('/legal/')
     || location.pathname.startsWith('/health-check/')
+    || location.pathname.startsWith('/guest/')
     || location.pathname.startsWith('/personal-operating-plan-history/')
     || location.pathname.startsWith('/personal-operating-plan-archived/');
 
@@ -308,6 +321,10 @@ function AppContent() {
         <Route path="/terms-of-service" element={<Navigate to="/legal/terms" replace />} />
         <Route path="/privacy-policy" element={<Navigate to="/legal/privacy" replace />} />
         <Route path="/data-storage-notice" element={<Navigate to="/legal/data-storage" replace />} />
+
+        {/* A tool without an account, through a coach's link (M9's guest
+            pages; migration 035): /guest/<token>. */}
+        <Route path="/guest/:token" element={lazyPage(GuestLink)} />
 
         {/* Signing in and creating an account. */}
         <Route path="/auth/login" element={<SignIn />} />
@@ -451,11 +468,12 @@ function AppContent() {
           <Route path="/time-audit" element={<StopDoingAudit />} />
           <Route path="/time-audit/summary" element={<StopDoingAuditSummary />} />
           <Route path="/my-plans" element={<MyPlans />} />
-          <Route path="/get-unstuck" element={<GrowStep1Goal />} />
-          <Route path="/get-unstuck/reality" element={<GrowStep2Reality />} />
-          <Route path="/get-unstuck/options" element={<GrowStep3Options />} />
-          <Route path="/get-unstuck/prioritise" element={<GrowStep3bPrioritize />} />
-          <Route path="/get-unstuck/will-do" element={<GrowStep4WillDo />} />
+          {/* Get unstuck is one guided tool (M9; Tim, 13 Nov). Its old step
+              addresses come to it with their query, hash and state. */}
+          <Route path="/get-unstuck" element={lazyPage(GetUnstuck)} />
+          {GET_UNSTUCK_STEPS.map((path) => (
+            <Route key={path} path={path} element={<MovedTo to="/get-unstuck" />} />
+          ))}
           <Route path="/pre-mortem" element={<InversionStep1Goal />} />
           <Route path="/pre-mortem/risks" element={<InversionStep2Risks />} />
           <Route path="/pre-mortem/plan" element={<InversionStep3Plan />} />

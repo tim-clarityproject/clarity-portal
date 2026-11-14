@@ -1,7 +1,8 @@
-import { useEffect, useId, useRef } from 'react';
+import { useContext, useEffect, useId, useRef } from 'react';
 import { AddButton, IconButton } from './Button';
 import FieldLabel from './FieldLabel';
 import TextBox from './TextBox';
+import { ToastContext } from './toastContext';
 import './design.css';
 
 // Lists are rows (Tim, 26 Oct, 16:51; CLAUDE.md rule 30): when someone
@@ -17,7 +18,16 @@ import './design.css';
 // maxLength: each row's limit.
 // numbered: a small grey number before each box (M19's wind-down thoughts).
 // max may be Infinity: Sleep wind down's thoughts have no limit (M19).
-export default function RowList({ label, who, coachName, rows = [], onChange, max = 3, itemLabel = (n) => `Item ${n}`, maxLength, placeholder, addLabel = 'Add another', numbered = false }) {
+// removeAlways: the crosshair shows on a single row too (M9's lists); taking
+//           the only row out leaves one empty box.
+// undo:     taking a row out shows "Deleted" with Undo (M9; writing rule 28),
+//           which puts it back where it was.
+// onChange(rows, change): `change` is { removed: i } when a row is taken
+//           out and { restored: i } when Undo puts it back, for a page that
+//           keeps something beside each row.
+export default function RowList({ label, who, coachName, rows = [], onChange, max = 3, itemLabel = (n) => `Item ${n}`, maxLength, placeholder, addLabel = 'Add another', numbered = false, removeAlways = false, undo = false }) {
+  // Optional: a page with no toasts still removes rows, without Undo.
+  const toast = useContext(ToastContext);
   const labelId = useId();
   const shown = rows.length ? rows : [''];
   const boxes = useRef([]);
@@ -34,10 +44,26 @@ export default function RowList({ label, who, coachName, rows = [], onChange, ma
     focusNext.current = shown.length;
     onChange([...shown, '']);
   };
+  // The rows as they are now, for an Undo pressed after more typing.
+  const latest = useRef(shown);
+  latest.current = shown;
   const remove = (i) => {
+    const gone = shown[i];
     const next = shown.filter((_, j) => j !== i);
     focusNext.current = Math.max(0, i - 1);
-    onChange(next.length ? next : ['']);
+    onChange(next.length ? next : [''], { removed: i });
+    if (!undo || !toast) return;
+    toast.saved({
+      message: 'Deleted',
+      onUndo: () => {
+        const now = latest.current;
+        // The one empty box left behind gives its place back.
+        const base = now.length === 1 && !now[0] && shown.length === 1 ? [] : now;
+        const at = Math.min(i, base.length);
+        focusNext.current = at;
+        onChange([...base.slice(0, at), gone, ...base.slice(at)], { restored: at });
+      },
+    });
   };
 
   return (
@@ -58,7 +84,7 @@ export default function RowList({ label, who, coachName, rows = [], onChange, ma
               maxLength={maxLength}
               placeholder={i === 0 ? placeholder : undefined}
             />
-            {shown.length > 1 && (
+            {(shown.length > 1 || removeAlways) && (
               <IconButton label={`Remove ${itemLabel(i + 1).charAt(0).toLowerCase()}${itemLabel(i + 1).slice(1)}`} className="ds-rowlist-remove" onClick={() => remove(i)} />
             )}
           </div>

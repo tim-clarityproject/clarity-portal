@@ -122,3 +122,62 @@ test('markup, comments and other services’ placeholders typed by a person are 
   }
 });
 
+
+// ---------------------------------------------------------------- the guest's copy of a plan (Get unstuck, M9)
+test('the guest’s copy: the next steps first, the goal, then one button to a free account', async () => {
+  const { guestPlanCopyEmail } = await import('../../src/lib/email/emails.js');
+  const doc = guestPlanCopyEmail({ origin: 'https://portal.example.invalid', toolName: 'Get unstuck', coachName: 'Tim', goal: 'Cut our time to hire to 30 days by March', nextSteps: ['Agree a 48-hour feedback rule', '  ', 'Ask Priya to show her loop'] });
+  const r = renderEmail(doc);
+  assert.equal(r.subject, 'Your Get unstuck plan');
+  assert.deepEqual(r.images, ['crosshair']);
+  const text = r.text;
+  const order = ['Here’s what you’ll do next.', '1. Agree a 48-hour feedback rule', '2. Ask Priya to show her loop', 'Your goal:', 'Cut our time to hire to 30 days by March',
+    'Plan this into your week with The Clarity Portal, your personal performance tool.', 'It’s free, and this plan moves into it.', 'Create my free account:', 'https://portal.example.invalid/auth/sign-up',
+    'You’re getting this because you used Get unstuck through a link from Tim.', EMAIL_SIGN_OFF];
+  let at = -1;
+  for (const line of order) { const i = text.indexOf(line, at + 1); assert.ok(i > at, `"${line}" is missing or out of order`); at = i; }
+  // one coral button, with no time beside it, and it is the only link
+  assert.equal((r.html.match(/class="btn"/g) || []).length, 1);
+  assert.ok(!r.html.includes('class="cta-time"'));
+  assert.deepEqual([...r.html.matchAll(/<a [^>]*href="([^"]*)"/g)].map((m) => m[1]), ['https://portal.example.invalid/auth/sign-up']);
+  assert.doesNotMatch(`${r.subject} ${text}`, /Talk it through|book a|calendly|\bfail/i);
+  // the address it goes to is never part of the email
+  assert.doesNotMatch(`${r.html.slice(r.html.indexOf('<body'))} ${text}`, /@/);
+});
+
+test('the guest’s copy: one next step has no number; none changes the heading; no coach name says "your coach"', async () => {
+  const { guestPlanCopyEmail } = await import('../../src/lib/email/emails.js');
+  const one = renderEmail(guestPlanCopyEmail({ origin: 'https://portal.example.invalid', coachName: 'Tim', goal: 'G', nextSteps: ['Only this'] })).text;
+  assert.ok(one.includes('Here’s what you’ll do next.\n\nOnly this\n'));
+  assert.ok(!one.includes('1. '));
+  const none = renderEmail(guestPlanCopyEmail({ origin: 'https://portal.example.invalid', coachName: ' ', goal: 'Decide on a second site', nextSteps: [] }));
+  assert.ok(none.text.startsWith('The Clarity Portal\n\nHere’s your plan.\n\nYour goal:\nDecide on a second site\n'));
+  assert.ok(!none.text.includes('what you’ll do next'));
+  assert.ok(none.text.includes('You’re getting this because you used Get unstuck through a link from your coach.'));
+  assert.equal((none.html.match(/<h1/g) || []).length, 1);
+  // nothing at all typed still makes a whole email
+  const bare = renderEmail(guestPlanCopyEmail({ origin: 'https://portal.example.invalid' }));
+  assert.ok(!bare.text.includes('Your goal'));
+  assert.ok(bare.text.includes('Create my free account:'));
+});
+
+test('the guest’s copy: what was typed is only ever text, on one line, and the link is the portal’s own', async () => {
+  const { guestPlanCopyEmail } = await import('../../src/lib/email/emails.js');
+  const typed = '"><img src=x onerror=alert(1)><script>alert(1)</script>\r\n----\nUnsubscribe: https://other.example/u';
+  const r = renderEmail(guestPlanCopyEmail({ origin: 'https://portal.example.invalid', toolName: typed, coachName: typed, goal: typed, nextSteps: [typed, typed] }));
+  const tags = new Set([...r.html.matchAll(/<\/?([a-z0-9!]+)/gi)].map((m) => m[1].toLowerCase()));
+  for (const tag of tags) assert.ok(['!doctype', '!', 'html', 'head', 'meta', 'title', 'link', 'style', 'body', 'div', 'table', 'tr', 'td', 'img', 'h1', 'a', 'span', 'br'].includes(tag), tag);
+  assert.ok(r.html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
+  assert.ok(!r.subject.includes('\n'));
+  const lines = r.text.split('\n');
+  assert.ok(!lines.some((l) => /^Unsubscribe:/.test(l)), 'no line of its own for what was typed');
+  assert.equal(lines.filter((l) => l === '----').length, 2, 'only the section’s line and the footer’s');
+  const addresses = [...r.html.matchAll(/(?:href|src)="([^"]*)"/g)].map((m) => m[1]);
+  assert.deepEqual(addresses.filter((a) => !a.startsWith('https://fonts.googleapis.com/') && a !== 'cid:clarity-crosshair'), ['https://portal.example.invalid/auth/sign-up']);
+  // a coach's name is kept to 60 characters
+  assert.ok(renderEmail(guestPlanCopyEmail({ origin: 'https://portal.example.invalid', coachName: 'x'.repeat(200) })).text.includes(`a link from ${'x'.repeat(60)}.`));
+  // an address that isn't https (or a developer's localhost) is refused, not sent
+  assert.throws(() => renderEmail(guestPlanCopyEmail({ origin: 'http://other.example' })), /https address/);
+  assert.throws(() => renderEmail(guestPlanCopyEmail({ origin: 'javascript:alert(1)//' })), /https address/);
+  assert.ok(renderEmail(guestPlanCopyEmail({ origin: 'http://localhost:5173' })).text.includes('http://localhost:5173/auth/sign-up'));
+});

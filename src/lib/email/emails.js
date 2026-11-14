@@ -4,10 +4,12 @@
 // looks, and makes the plain-text version from the same words.
 //
 // Sent today: the three Health Check emails (api/alignment-email.js) and
-// the two sign-in emails Supabase sends (their templates are made from
+// the sign-in emails Supabase sends (their templates are made from
 // these by scripts/make-email-templates.mjs, for Tim to paste into
-// Supabase). Templates only, nothing sends them yet (booking and Kit come
-// in Phase 6a): the session reminders and Leading Ideas.
+// Supabase). The guest's copy of a plan (api/guest-copy.js) is sent only
+// from the live site, once migrations 035 and 042 have run. Templates
+// only, nothing sends them yet (booking and Kit come in Phase 6a): the
+// session reminders and Leading Ideas.
 //
 // Times in an email follow src/lib/time (time-zone-safeguards.md): in the
 // reader's own zone with a city or country name, 12-hour for readers in
@@ -87,6 +89,45 @@ export function healthCheckFinishedNoteEmail({ organisation, dateText }) {
       { type: 'text', text: 'The answers went only to the coach who sent the link.', quiet: true },
     ],
     footer: { lines: ['You get a note when another coach’s Health Check link is finished.', EMAIL_SIGN_OFF] },
+  };
+}
+
+// ---------------------------------------------------------------- guest links
+/**
+ * A guest's copy of the plan they made through a coach's link (mock-up M9,
+ * the guest's end page: "A copy is on its way to …"). The next steps come
+ * first (Action first), then the goal, then the one invitation: a free
+ * account, which the plan moves into. It never carries a booking link.
+ * What was typed is shown as text, each answer on one line.
+ * The address it goes to is never passed in here: the server takes it from
+ * the database (api/guest-copy.js).
+ * @param {object} o
+ * @param {string} o.origin       the portal's own address (api/_portalOrigin.js)
+ * @param {string} [o.toolName]   "Get unstuck"
+ * @param {string} [o.coachName]  the first name of the coach who made the link
+ * @param {string} [o.goal]
+ * @param {string[]} [o.nextSteps]
+ */
+export function guestPlanCopyEmail({ origin, toolName = 'Get unstuck', coachName = '', goal = '', nextSteps = [] }) {
+  const tool = oneLine(toolName) || 'Get unstuck';
+  const coach = oneLine(coachName).slice(0, 60);
+  const steps = (Array.isArray(nextSteps) ? nextSteps : []).map(oneLine).filter(Boolean);
+  const theGoal = oneLine(goal);
+  return {
+    brand: 'portal',
+    subject: `Your ${tool} plan`,
+    blocks: [
+      { type: 'heading', text: steps.length ? 'Here’s what you’ll do next.' : 'Here’s your plan.' },
+      // One next step stands alone; several are numbered.
+      ...steps.map((step, i) => ({ type: 'note', text: steps.length > 1 ? `${i + 1}. ${step}` : step })),
+      ...(theGoal ? [{ type: 'label', text: 'Your goal' }, { type: 'note', text: theGoal }] : []),
+      { type: 'section', blocks: [
+        { type: 'text', text: 'Plan this into your week with The Clarity Portal, your personal performance tool.' },
+        { type: 'text', text: 'It’s free, and this plan moves into it.', quiet: true },
+        { type: 'button', label: 'Create my free account', href: `${origin}/auth/sign-up` },
+      ] },
+    ],
+    footer: { lines: [`You’re getting this because you used ${tool} through a link from ${coach || 'your coach'}.`, EMAIL_SIGN_OFF] },
   };
 }
 

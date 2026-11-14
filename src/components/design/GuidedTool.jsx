@@ -77,6 +77,18 @@ import './design.css';
 // initialStep: the key of the step to open on (instead of where it was left).
 // skipMoves: false when the quiet word only calls onSkip and stays put
 //           (the First review's "Do this later" closes the tool, M12).
+// calm:     the stepped frame of M9, M10 and M7b (Tim, 13 Nov): the top bar
+//           and the bottom bar line up with the page's own column, Back
+//           shows on the first step too (there it closes the tool), the %
+//           bar has no figure beside it, the step's `label` is the small
+//           grey stage name above the question ("Goal", "Reality"), Skip is
+//           a quiet link at the bottom bar's left, and a question opened
+//           from the summary shows the bar full.
+// A step's `check`: () => a calm message, or null. Pressing Next (or Save
+//           my edit) on a step whose check gives a message shows it under
+//           the answer ("Type your goal to carry on.") and stays put: the
+//           button is never greyed out. The message goes once the answer
+//           is given.
 
 const NEXT_GUARD_MS = 400;     // a second tap this soon after a move is ignored
 const TIP_PREFIX = 'ds-tip-seen:';
@@ -235,6 +247,7 @@ export default function GuidedTool({
   autoFocus = false,
   initialStep,
   skipMoves = true,
+  calm = false,
 }) {
   const scope = useThemeScope();
   const fullscreen = layout === 'fullscreen';
@@ -265,6 +278,8 @@ export default function GuidedTool({
   // change shown. The steps in between are never shown again.
   const [returnTo, setReturnTo] = useState(() => (changeLeft ? changeLeft.from : null));
   const [direction, setDirection] = useState('none');
+  // The step Next was pressed on while its check still had something to say.
+  const [asked, setAsked] = useState(null);
   const rootRef = useRef(null);
   const scrollRef = useRef(null);
   const headingRef = useRef(null);
@@ -359,6 +374,10 @@ export default function GuidedTool({
 
   const next = () => {
     if (Date.now() - lastMove.current < NEXT_GUARD_MS) return;
+    if (step.check?.()) {
+      setAsked(step.key);
+      return;
+    }
     if (skipped.has(step.key)) {
       const rest = new Set(skipped);
       rest.delete(step.key);
@@ -399,7 +418,9 @@ export default function GuidedTool({
   // Where you are, for the step list and for screen readers.
   const listed = steps.map((s, j) => ({ s, j })).filter(({ s }) => !s.bare);
   const position = listed.findIndex(({ j }) => j === i);
-  const percent = steps.length > 1 ? Math.round((i / (steps.length - 1)) * 100) : 100;
+  const stepPercent = steps.length > 1 ? Math.round((i / (steps.length - 1)) * 100) : 100;
+  // One question opened from the summary: the plan is whole, so the bar is full (M9).
+  const percent = calm && returnTo != null && returnTo !== i ? 100 : stepPercent;
   const positionText = progress === 'percent'
     ? `${percent}% complete`
     : `Step ${position + 1} of ${listed.length}: ${step.name}`;
@@ -409,7 +430,10 @@ export default function GuidedTool({
   const changing = returnTo != null && returnTo !== i;
   // Back shows on a change from a summary too, even on the first question:
   // it goes back to the summary.
-  const showBack = changing || (i > 0 && !previous?.bare);
+  // In the calm frame Back shows on the first step too, where it leaves the
+  // tool, so the tool's name never moves (M9).
+  const showBack = changing || (i > 0 && !previous?.bare) || (calm && i === 0);
+  const problem = asked === step.key ? step.check?.() || null : null;
   // A one-answer screen moves on by itself, so it has no Next (rule 21).
   const hasNext = !(step.oneTap && !last);
   changingRef.current = changing;
@@ -486,7 +510,7 @@ export default function GuidedTool({
   const tree = (
     <div
       ref={rootRef}
-      className={`ds-guide ds-guide--${layout}${step.bare ? ' ds-guide--bare' : ''}${step.plain ? ' ds-guide--plain' : ''}${step.className ? ` ${step.className}` : ''}`}
+      className={`ds-guide ds-guide--${layout}${calm ? ' ds-guide--calm' : ''}${step.bare ? ' ds-guide--bare' : ''}${step.plain ? ' ds-guide--plain' : ''}${step.className ? ` ${step.className}` : ''}`}
       role={fullscreen ? 'dialog' : 'region'}
       aria-modal={fullscreen ? 'true' : undefined}
       aria-label={name}
@@ -499,7 +523,7 @@ export default function GuidedTool({
             {/* Back at the top left, beside the tool's name (rules 29o and 29t,
                 Tim, 5 Nov): the chevron alone, its 44px tap area invisible. */}
             {showBack && !step.plain && (
-              <button type="button" className="ds-guide-back" aria-label="Back" onClick={() => (changing ? backToSummary() : go(i - 1))}>
+              <button type="button" className="ds-guide-back" aria-label="Back" onClick={() => (changing ? backToSummary() : i === 0 ? onCloseRef.current?.() : go(i - 1))}>
                 {ARROW}
               </button>
             )}
@@ -520,6 +544,13 @@ export default function GuidedTool({
               <>
                 <StepHead step={step} headingRef={headingRef} positionId={positionId} role={role} />
                 <div className="ds-guide-body ds-guide-rv ds-guide-rv--3">{step.render(tool)}</div>
+                {/* Never a greyed-out button: a calm line says what is needed (M9). */}
+                {problem && (
+                  <div className="ds-error ds-guide-problem" role="alert">
+                    <span className="ds-error-mark" aria-hidden="true">!</span>
+                    <span>{problem}</span>
+                  </div>
+                )}
                 {!hasNext && showSkip && (
                   <button type="button" className="ds-guide-skip ds-guide-skip--body" onClick={skip}>{skipLabel}</button>
                 )}
@@ -563,7 +594,41 @@ export default function GuidedTool({
 //   step:  null for a row that can't be changed here.
 // emptyWord: "Skipped" (M5) instead of "Not yet"; the action then reads
 // "Add" for an empty row (M5: "Skipped" with an Add link).
-export function GuidedSummary({ rows, onChange, emptyWord = 'Not yet', addWhenEmpty = false }) {
+//
+// stacked (M9's "Your plan", Tim, 13 Nov): each row is one button, the
+// small grey label over its answer and "Edit" at the right; the whole row
+// opens that one question. A row then has
+//   lines: [{ text, sub, good }]  one paragraph each; `sub` is the small
+//          line under it ("It’s in this week’s sprint."), mint when `good`.
+export function GuidedSummary({ rows, onChange, emptyWord = 'Not yet', addWhenEmpty = false, stacked = false }) {
+  if (stacked) {
+    return (
+      <div className="ds-guide-plan">
+        {rows.map((row) => (
+          <button
+            key={row.key || row.label}
+            type="button"
+            className="ds-guide-plan-row"
+            aria-label={`Edit ${(typeof row.editName === 'string' && row.editName.trim()) || inSentence(row.label)}`}
+            onClick={() => onChange(row.step, { fromSummary: true })}
+          >
+            <span className="ds-guide-plan-value">
+              <span className="ds-guide-plan-label">{row.label}</span>
+              {(row.lines || []).map((line, j) => (
+                // The lines have no ids of their own; their order is their identity.
+                // eslint-disable-next-line react/no-array-index-key
+                <span key={j} className="ds-guide-plan-line">
+                  {line.text}
+                  {line.sub && <small className={line.good ? 'ds-guide-plan-good' : undefined}>{line.sub}</small>}
+                </span>
+              ))}
+            </span>
+            <span className="ds-guide-plan-edit" aria-hidden="true">Edit</span>
+          </button>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="ds-guide-summary">
       {rows.map((row) => {
