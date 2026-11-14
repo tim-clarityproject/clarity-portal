@@ -1,9 +1,13 @@
 // Health Check 5: the Quick guide's player, in the running app.
 //
 //   node tests/healthcheck/quick-guide.mjs [presses|full|all]   (default presses)
-//   APP_URL=http://localhost:5174 (default)  ENGINES=chromium,webkit  SIZES=laptop,phone
+//   APP_URL=http://localhost:5173 (default)  ENGINES=chromium,webkit  SIZES=laptop,phone
 //   PRESSES=20  VTT=<captions file> (default the Health Check's own)
-//   MOCKUP=<a copy of m7b-v49.html> (layout; default ~/Downloads/clarity-quick-guide/m7b-v49.html)
+//
+// The page rebuilt to M7b version 51: the welcome's card plays in place on a
+// laptop; on a phone its Watch opens the Quick guide's panel full screen,
+// so there the first run is in that panel. The second run is always the
+// panel from the play icon beside the first question.
 //
 // presses: pause and play, 20 times in a row while the video plays, with the
 // Pause/Play button, with a tap (or click) on the picture, and with Space and
@@ -22,11 +26,9 @@
 // caption must appear, in order, exactly as the captions file says, within
 // 0.5 seconds of its cue time, with no error from the page or the video.
 //
-// layout: the welcome card's player measured against the mock-up's (version
-// 49, its desktop frame and its phone frame, in Chromium): the picture's
-// shape, the caption bar, the controls and the Watch this first panel, and
-// the caption bar's first line before anything plays. The mock-up's own
-// script runs in a browser with everything outside it blocked.
+// (The layout part that measured the player against mock-up version 49 has
+// gone: the card, the panel, the caption bar and the controls are compared
+// with M7b version 51 itself by tests/healthcheck/compare-m7b.mjs.)
 //
 // Laptop is 1280 by 800 (a mouse); phone is an iPhone size, 390 by 844, with
 // hasTouch and isMobile, so presses are taps. Both run in Chromium and in
@@ -38,18 +40,18 @@
 // localhost is blocked, and every email call (/api/) is answered here and
 // counted, so nothing is sent and no live link is used.
 import { readFileSync } from 'node:fs';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { chromium, webkit } from 'playwright';
 
-const BASE = process.env.APP_URL || 'http://localhost:5174';
+const BASE = process.env.APP_URL || 'http://localhost:5173';
+const CARD = '.hc-vcard--inline';
+const PANEL = '[role=dialog]:not(.ds-guide) .hc-vcard';
 const MODE = process.argv[2] || 'presses';
 const ENGINES = (process.env.ENGINES || 'chromium,webkit').split(',');
 const SIZES = (process.env.SIZES || 'laptop,phone').split(',');
 const PRESSES = Number(process.env.PRESSES || 20);
 const LIMIT = 100; // ms
-const VTT = process.env.VTT || fileURLToPath(new URL('../../src/health-check/media/quick-guide.en-GB.vtt', import.meta.url));
+const VTT = process.env.VTT || fileURLToPath(new URL('../../src/pages/healthCheck/media/quick-guide.en-GB.vtt', import.meta.url));
 const SIZE = {
   laptop: { viewport: { width: 1280, height: 800 }, isMobile: false, hasTouch: false, video: 'quick-guide-desktop' },
   phone: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 3, video: 'quick-guide-phone' },
@@ -101,12 +103,12 @@ async function open(engine, size) {
   // controls logging icons it doesn't ship ("Button failed to load, iconName").
   page.on('console', (m) => { if (m.type() === 'error' && !/WebSocket|\[vite\]|Vite server|Failed to load resource|^Button failed to load, iconName/.test(m.text())) got.errors.push(`console: ${m.text()}`); });
   await page.goto(`${BASE}/health-check/quickguidetest`);
-  await page.locator('.wlc .bigplay').waitFor();
+  await page.locator(`${CARD} .hc-bigplay`).waitFor();
   return { browser, ctx, page, got };
 }
 
 /** The picture's state, read the same way every time. */
-const readState = (root) => document.querySelector(root).querySelector('.vpc .pb')?.getAttribute('aria-label');
+const readState = (root) => document.querySelector(root).querySelector('.hc-vcontrols .hc-vbtn')?.getAttribute('aria-label');
 
 /**
  * Arms the page to time the next press: from the moment the press is made
@@ -119,7 +121,7 @@ async function arm(page, root) {
   await page.evaluate((root) => {
     const box = document.querySelector(root);
     const v = box.querySelector('video');
-    const btn = box.querySelector('.vpc .pb');
+    const btn = box.querySelector('.hc-vcontrols .hc-vbtn');
     const before = btn.getAttribute('aria-label');
     let down = null; let made = null;
     const onDown = (e) => { if (down === null) down = performance.now(); if (e.type === 'keydown' && e.key === 'Enter') made = performance.now(); };
@@ -135,14 +137,18 @@ async function arm(page, root) {
         resolve(r);
       };
       const look = () => {
-        const b = box.querySelector('.vpc .pb');
+        const b = box.querySelector('.hc-vcontrols .hc-vbtn');
         const now = b.getAttribute('aria-label');
         const agree = (now === 'Pause') === !v.paused; // the button says what pressing it will do
         const at = performance.now();
         if (made !== null && now !== before && agree) { mo.disconnect(); return done({ ms: at - made, fromDown: at - down, same: b === btn, before, now }); }
         if (down !== null && at - down > 1500) { mo.disconnect(); return done({ ms: null, same: b === btn, before, now, paused: v.paused }); }
-        requestAnimationFrame(look); setTimeout(look, 2);
+        // One look a frame and one every 2ms, however often this runs: each look used to queue two
+        // more, which doubled until the page stopped drawing when a press took a few frames to land.
+        if (!frame) frame = requestAnimationFrame(() => { frame = 0; look(); });
+        if (!timer) timer = setTimeout(() => { timer = 0; look(); }, 2);
       };
+      let frame = 0; let timer = 0;
       // The change is seen the moment the page makes it (a MutationObserver),
       // and on every frame and timer as well.
       const mo = new MutationObserver(() => look());
@@ -156,10 +162,10 @@ async function arm(page, root) {
 }
 
 async function press(page, root, how, touch) {
-  const btn = page.locator(`${root} .vpc .pb`).first();
+  const btn = page.locator(`${root} .hc-vcontrols .hc-vbtn`).first();
   if (how === 'button') { if (touch) await btn.tap(); else await btn.click(); return; }
   if (how === 'picture') {
-    const stage = page.locator(`${root} .stg`);
+    const stage = page.locator(`${root} .hc-stage`);
     const box = await stage.boundingBox();
     const pos = { x: Math.round(box.width * 0.5), y: Math.round(box.height * 0.4) };
     if (touch) await stage.tap({ position: pos }); else await stage.click({ position: pos });
@@ -187,26 +193,36 @@ async function presses(engine, size) {
   try {
     await page.waitForTimeout(1500);
     check(got.media.length === 0, `${tag}: no video, captions or poster asked for before the guide is opened (${got.media.join(', ') || 'none'})`);
-    const muted0 = await page.evaluate(() => { const v = document.querySelector('.wlc video'); return { paused: v.paused, src: v.currentSrc || v.getAttribute('src') || '' }; });
+    const muted0 = await page.evaluate((card) => { const v = document.querySelector(`${card} video`); return { paused: v.paused, src: v.currentSrc || v.getAttribute('src') || '' }; }, CARD);
     check(muted0.paused && !muted0.src, `${tag}: the welcome card holds no video and plays nothing by itself`);
 
     for (const where of ['card', 'panel']) {
       let root;
       if (where === 'card') {
-        root = '.wlc .vp';
-        if (touch) await page.locator('.wlc .bigplay').tap(); else await page.locator('.wlc .bigplay').click();
+        // On a phone Watch opens the panel full screen; on a laptop it plays in the card.
+        root = touch ? PANEL : CARD;
+        if (touch) await page.locator(`${CARD} .hc-bigplay`).tap(); else await page.locator(`${CARD} .hc-bigplay`).click();
+        await page.locator(root).waitFor();
+        if (touch) {
+          await page.waitForTimeout(700); // the panel has finished rising
+          const full = await page.evaluate(() => { const r = document.querySelector('[role=dialog]:not(.ds-guide)').getBoundingClientRect(); return r.left <= 0.5 && r.top <= 0.5 && r.width >= window.innerWidth - 0.5 && r.height >= window.innerHeight - 0.5; });
+          check(full, `${tag} card: on a phone Watch opens the Quick guide full screen`);
+        }
       } else {
         // Signed in to the first question, where the icon row has Quick guide.
         await page.reload();
         await page.getByRole('button', { name: 'Begin the Health Check' }).click();
-        await page.locator('#hc-email').fill(ctx.session.email);
-        await page.locator('#hc-code').fill(ctx.session.code);
+        await page.getByLabel('Email').fill(ctx.session.email);
+        await page.getByLabel('Access code').fill(ctx.session.code);
         await page.locator('form button[type=submit]').click();
-        await page.locator('.hc-main .page h2').first().waitFor();
+        await page.locator('.ds-guide .ds-guide-question').first().waitFor();
+        await page.waitForTimeout(500);
         const g = page.getByRole('button', { name: 'Quick guide' }).first();
         if (touch) await g.tap(); else await g.click();
-        root = '.vp[role="dialog"]';
+        root = PANEL;
         await page.locator(root).waitFor();
+        const slider = await page.locator(`${root} [role=slider]`).getAttribute('aria-label');
+        check(slider === 'Position in the Quick guide', `${tag} panel: the slider is “Position in the Quick guide” (${slider})`);
       }
       await moving(page, root);
       const src = await page.evaluate((root) => document.querySelector(root).querySelector('video').currentSrc, root);
@@ -241,10 +257,10 @@ async function presses(engine, size) {
       const m = await page.evaluate(async (root) => {
         const box = document.querySelector(root); const v = box.querySelector('video');
         const t = v.currentTime;
-        box.querySelector('.vpc [aria-label="Mute the voice"]').click();
+        box.querySelector('.hc-vcontrols [aria-label="Mute the voice"]').click();
         await new Promise((r) => setTimeout(r, 120));
         const after = { muted: v.muted, jump: v.currentTime - t, paused: v.paused };
-        box.querySelector('.vpc [aria-label="Turn the voice on"]').click();
+        box.querySelector('.hc-vcontrols [aria-label="Turn the voice on"]').click();
         await new Promise((r) => setTimeout(r, 120));
         return { ...after, back: !v.muted };
       }, root);
@@ -261,26 +277,31 @@ async function full(engine, size, cues) {
   const tag = `${engine} ${size}`;
   const { browser, page, got } = await open(engine, size);
   try {
-    await page.evaluate(() => {
-      const box = document.querySelector('.wlc .vp');
+    // On a phone the guide plays in its panel (Watch opens it); on a laptop in the welcome's card.
+    const touch = SIZE[size].hasTouch;
+    const root = touch ? PANEL : CARD;
+    if (touch) { await page.locator(`${CARD} .hc-bigplay`).tap(); await page.locator(root).waitFor(); }
+    await page.evaluate((root) => {
+      const box = document.querySelector(root);
       window.__caps = []; window.__vErr = [];
-      const bar = box.querySelector('.capbar');
+      const bar = box.querySelector('.hc-capbar');
       const v = box.querySelector('video');
       v.addEventListener('error', () => window.__vErr.push(String(v.error?.code)));
       v.addEventListener('ended', () => { window.__ended = performance.now(); });
+      if (bar.textContent && !/^Watch with sound/.test(bar.textContent)) window.__caps.push({ t: v.currentTime, text: bar.textContent });
       new MutationObserver(() => {
         const text = bar.textContent; const last = window.__caps[window.__caps.length - 1];
         if (!last || last.text !== text) window.__caps.push({ t: v.currentTime, text });
       }).observe(bar, { childList: true, characterData: true, subtree: true });
-    });
+    }, root);
     const t0 = Date.now();
-    if (SIZE[size].hasTouch) await page.locator('.wlc .bigplay').tap(); else await page.locator('.wlc .bigplay').click();
+    if (!touch) await page.locator(`${CARD} .hc-bigplay`).click();
     await page.waitForFunction(() => window.__ended, null, { timeout: 120000, polling: 500 });
     const wall = (Date.now() - t0) / 1000;
-    const r = await page.evaluate(() => {
-      const v = document.querySelector('.wlc video');
-      return { caps: window.__caps, err: window.__vErr, dur: v.duration, src: v.currentSrc.split('/').pop().split('?')[0], big: document.querySelector('.wlc .bigplay b')?.textContent };
-    });
+    const r = await page.evaluate(({ root, card }) => {
+      const v = document.querySelector(`${root} video`);
+      return { caps: window.__caps, err: window.__vErr, dur: v.duration, src: v.currentSrc.split('/').pop().split('?')[0], big: document.querySelector(`${card} .hc-bigplay b`)?.textContent, watched: localStorage.getItem('hc-quick-guide-watched') };
+    }, { root, card: CARD });
     check(r.src.startsWith(SIZE[size].video), `${tag}: plays ${r.src}`);
     check(wall >= r.dur - 1, `${tag}: played in real time (${r.dur.toFixed(2)}s of video in ${wall.toFixed(1)}s)`);
     const shown = r.caps.filter((c) => c.text && !/^Watch with sound/.test(c.text));
@@ -294,7 +315,8 @@ async function full(engine, size, cues) {
       check(exact && Math.abs(off) <= 0.5, `${tag}: caption ${i + 1} at ${c.start.toFixed(1)}s, shown at ${s ? s.t.toFixed(2) : '-'}s, ${exact ? 'exactly as written' : `differs: "${s?.text}"`}`);
     });
     console.log(`    ${tag}: worst caption offset ${worst.toFixed(2)}s`);
-    check(r.big === 'Watch again', `${tag}: ends on Watch again`);
+    // The card ends on Watch again; the panel (a phone) marks the guide as watched, so Begin turns coral.
+    check(touch ? r.watched === '1' : r.big === 'Watch again', `${tag}: ${touch ? 'ends with the guide marked as watched' : 'ends on Watch again'}`);
     check(r.err.length === 0 && got.errors.length === 0, `${tag}: no errors from the video or the page${got.errors.length || r.err.length ? ` (${[...r.err, ...got.errors].slice(0, 3).join(' | ')})` : ''}`);
     check(got.emails === 0 && got.outside.length === 0, `${tag}: nothing sent, nothing outside localhost asked for`);
   } finally {
@@ -302,68 +324,6 @@ async function full(engine, size, cues) {
   }
 }
 
-/** The player's measurements, read the same way in the app and in the mock-up. */
-const measure = (root) => {
-  const box = typeof root === 'string' ? document.querySelector(root) : root;
-  const q = (sel) => box.querySelector(sel);
-  const cs = (el) => getComputedStyle(el);
-  const r = (el) => el.getBoundingClientRect();
-  const stg = q('.stg'); const cap = q('.capbar'); const vpc = q('.vpc'); const pbs = [...box.querySelectorAll('.vpc .pb')];
-  const big = q('.bigplay'); const tm = q('.vpc .tm');
-  return {
-    'picture shape (width / height)': (r(stg).width / r(stg).height).toFixed(2),
-    'caption bar min height': cs(cap).minHeight,
-    'caption bar text size': cs(cap).fontSize,
-    'caption bar padding': cs(cap).padding,
-    'caption bar first line': cap.textContent.trim(),
-    'controls padding': cs(vpc).padding,
-    'controls gap': cs(vpc).gap,
-    'control buttons, in order': pbs.map((b) => b.getAttribute('aria-label')).join(', '),
-    'control button size': pbs.map((b) => `${Math.round(r(b).width)}x${Math.round(r(b).height)}`).join(' '),
-    'control icon size': `${Math.round(r(pbs[0].querySelector('svg')).width)}px`,
-    'progress line height': cs(q('.scrub .trk')).height,
-    'progress knob': cs(q('.scrub .th')).width,
-    'time text size': cs(tm).fontSize,
-    'time': tm.textContent.trim(),
-    'Watch panel heading': big?.querySelector('b')?.textContent.trim(),
-    'Watch panel line': big?.querySelector('small')?.textContent.trim(),
-    'Watch panel background solid': big ? (cs(big).backgroundColor.match(/[\d.]+/g) || []).length < 4 || Number(cs(big).backgroundColor.match(/[\d.]+/g)[3]) >= 0.999 : null,
-    'Watch circle': big ? `${Math.round(r(big.querySelector('.bpc')).width)}px` : null,
-    'card corner radius': cs(box).borderRadius,
-  };
-};
-
-async function layout() {
-  const mock = process.env.MOCKUP || join(homedir(), 'Downloads', 'clarity-quick-guide', 'm7b-v49.html');
-  const browser = await chromium.launch();
-  try {
-    const mctx = await browser.newContext({ viewport: { width: 1600, height: 1000 }, colorScheme: 'dark' });
-    await mctx.route(/^https?:\/\//, (r) => r.abort());
-    const mp = await mctx.newPage();
-    await mp.goto(pathToFileURL(mock).href);
-    await mp.waitForSelector('.frame.d [data-vinl] .stg');
-    await mp.waitForSelector('.frame.p [data-vinl] .stg');
-    const want = { laptop: await mp.evaluate(measure, '.frame.d [data-vinl] .vp'), phone: await mp.evaluate(measure, '.frame.p [data-vinl] .vp') };
-    for (const size of ['laptop', 'phone']) {
-      const ctx = await browser.newContext({ viewport: size === 'laptop' ? SIZE.laptop.viewport : { width: 360, height: 780 }, colorScheme: 'dark' });
-      await ctx.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (r) => r.abort());
-      await ctx.route(/\/health-check\/[^/.]+$/, async (r) => (r.request().resourceType() !== 'document' ? r.continue() : r.fulfill({ response: await r.fetch({ url: `${BASE}/health-check.html` }) })));
-      const page = await ctx.newPage();
-      await page.goto(`${BASE}/health-check/quickguidelayout`);
-      await page.locator('.wlc .bigplay').waitFor();
-      await page.waitForTimeout(800);
-      const got = await page.evaluate(measure, '.wlc .vp');
-      for (const k of Object.keys(want[size])) {
-        check(String(got[k]) === String(want[size][k]), `layout ${size}: ${k}: app ${JSON.stringify(got[k])}, mock-up ${JSON.stringify(want[size][k])}`);
-      }
-      await ctx.close();
-    }
-  } finally {
-    await browser.close();
-  }
-}
-
-if (MODE === 'layout' || MODE === 'all') await layout();
 const runs = [];
 for (const e of ENGINES) for (const s of SIZES) runs.push([e, s]);
 if (MODE === 'presses' || MODE === 'all') {

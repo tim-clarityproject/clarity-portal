@@ -4,7 +4,10 @@
 //   [name, the mock-up's selector, the built page's selector, which one (0 = first), what to compare]
 // what: 'box' position and size; 'pos' where its words start; 'text' font,
 // size, spacing and colour; 'edge' border colour and radius; 'foot' its
-// place from the bottom of the screen.
+// place from the bottom of the screen; 'under' its bottom edge (a heading's
+// line); 'band' a bar's height and place from the bottom; 'weight' the
+// font's weight; 'words' where its first words start (for a line that
+// holds an icon or a button as well).
 export const TOL = 0.5;
 
 export function makeReport() {
@@ -47,7 +50,18 @@ export function measureParts({ parts, mock, anchor, bottom }) {
     const cs = getComputedStyle(el);
     const i = ink(el);
     const svg = el instanceof SVGElement;
+    // Where its own words start: the first piece of text, whatever icon or button sits in the line with it.
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let first = null;
+    while (!first && walker.nextNode()) if (walker.currentNode.textContent.trim()) first = walker.currentNode;
+    let t = i;
+    if (first && !svg) {
+      const tr = document.createRange();
+      tr.selectNodeContents(first);
+      t = [...tr.getClientRects()].find((x) => x.width > 0 && x.height > 0) || i;
+    }
     outp[`${name}#${nth}`] = {
+      tx: t.left - ar.left, ty: t.top - ar.top,
       x: r.left - ar.left, y: r.top - ar.top, w: r.width, h: r.height,
       ix: i.left - ar.left, iy: i.top - ar.top,
       fromBottom: foot - r.bottom, right: r.right - ar.left,
@@ -126,6 +140,16 @@ export function compareParts({ report, allowed, mockName }, tag, screen, parts, 
         check('letter-spacing', near(M.ls, B.ls, 0.05), both(M.ls, B.ls));
         check('capitals', M.upper === B.upper, both(M.upper, B.upper));
         check('colour', M.colour === B.colour, both(M.colour, B.colour));
+      } else if (w === 'words') {
+        check('left', near(M.tx, B.tx), both(M.tx, B.tx));
+        check('top', near(M.ty, B.ty), both(M.ty, B.ty));
+      } else if (w === 'under') {
+        check('bottom edge', near(M.y + M.h, B.y + B.h), both(M.y + M.h, B.y + B.h));
+      } else if (w === 'band') {
+        check('from the bottom', near(M.fromBottom, B.fromBottom), both(M.fromBottom, B.fromBottom));
+        check('height', near(M.h, B.h), both(M.h, B.h));
+      } else if (w === 'weight') {
+        check('weight', M.weight === B.weight, both(M.weight, B.weight));
       } else if (w === 'colour') {
         check('colour', M.colour === B.colour, both(M.colour, B.colour));
       } else if (w === 'fill') {

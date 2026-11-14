@@ -1,25 +1,19 @@
-// The results page (mock-up M7b version 46), rendered on the server through
-// Vite: the order of its sections (rule 29ar), At a glance, the chart, the line for
-// important, the CSF levels and the project list, for a new Health Check, the
-// example report and an older Health Check. Invented names only. Run with
-// npm run test:healthcheck.
-import { test, after } from 'node:test';
+// The Health Check's results (mock-up M7b version 51), as the page works
+// them out and words them: the rows, the headline as one sentence, the
+// line for important, the questions to start with, the Success Factor
+// levels, the ⓘ pop-ups' words, the orders of the list and the state
+// words. The page itself (its order on screen, rule 29ar, and what each
+// part looks like) is checked in the browser: tests/healthcheck/flow.mjs
+// and compare-m7b.mjs. Invented names only. Run with npm run test:healthcheck.
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
+import {
+  CHART_TITLE, CON, CSF_LEVELS, IMPORTANCE_MEANS, LINE_OPTIONS, PROG, PROGS, RES, SORTS, SUCCESS_FACTOR_INFO,
+  chartInfo, csfLevel, csfLevelName, headlineLine, headlineSentence, importanceLines, resultRows, resultsModel, sortRows, stateSentence, stateWords,
+} from '../../src/health-check/words.js';
+import { EXAMPLE } from '../../src/health-check/example.js';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const vite = await createServer({ root, logLevel: 'error', server: { middlewareMode: true }, appType: 'custom' });
-after(() => vite.close());
-const load = (p) => vite.ssrLoadModule(p);
-const [{ createElement: h }, { renderToStaticMarkup }] = await Promise.all([import('react'), import('react-dom/server')]);
-const [{ default: Results }, { TipProvider }, { EXAMPLE }, words, flow] = await Promise.all([
-  load('/src/health-check/Results.jsx'), load('/src/health-check/parts.jsx'),
-  load('/src/health-check/example.js'), load('/src/health-check/words.js'), load('/src/pages/alignment/alignmentFlow.js'),
-]);
-
-// The mock-up's own invented answers (OWN in m7b-health-check-mockup-v46.html).
+// The mock-up's own invented answers (OWN in M7b).
 const CSF = ['Win and keep enterprise clients', 'A product customers recommend', 'A team with the right skills in the right roles', 'Cash to invest ahead of growth'];
 const PR = [
   { t: 'Enterprise sales team', c: [3, 2, 2, 3], p: 2, r: 5, s: '2025-09', f: '2026-12' },
@@ -40,124 +34,169 @@ function kestrel({ levels = [3, 2, 2, 1], line } = {}) {
     completedAt: '2026-10-27T09:00:00.000Z',
   };
 }
+const AS_OF = '2026-10-27';
 
-const render = (props) => renderToStaticMarkup(h(TipProvider, null, h(Results, {
-  sort: 'att', phone: false, asOf: '2026-10', onSort() {}, onLine() {}, onChange() {}, onEditProject() {}, onExampleEdit() {}, ...props,
-})));
-const text = (html) => html.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#x27;/g, '’').replace(/\s+/g, ' ');
-const headings = (html) => [...html.matchAll(/<h3>(.*?)<\/h3>/g)].map((m) => m[1]);
-
-test('the results open with the headline, then the chart and the list, and the questions come last (rule 29ar)', () => {
-  const html = render({ draft: kestrel() });
-  assert.deepEqual(headings(html), ['At a glance', 'Strategic importance against progress', 'Your projects', 'Critical Success Factors', 'Questions to start with']);
-  // The objective sits between the project list and the CSFs.
-  const at = (w) => html.indexOf(w);
-  assert.ok(at('<h3>Your projects') < at('class="obj1"') && at('class="obj1"') < at('<h3>Critical Success Factors'));
-  // The headline is first, and the chart comes before the questions.
-  assert.ok(at('class="gst"') < at('<svg') && at('<svg') < at('<h3>Questions to start with'));
-  assert.doesNotMatch(html, /Next step|Start with “/);
-});
-
-test('the headline in At a glance, and the three questions, as the mock-up words them', () => {
-  const t = text(render({ draft: kestrel() }));
-  assert.match(t, /2 of 5 important projects are moving well\. 1 needs managing, 1 needs attention and 1 is too early to tell\./);
-  assert.match(t, /Questions to start with Timing Is “Enterprise sales team” worth a sprint of extra resource to finish by Dec 2026, or should its timeline change\? You rated its progress “Bad”, and it’s due to finish in 2 months\./);
-  assert.match(t, /Resource Is “New office fit-out” worth the resource it takes\? You rated its resource requirements “High”, and its strategic importance is 15%\./);
-  assert.match(t, /CSF cover What could strongly support “A team with the right skills in the right roles”\? You didn’t rate any project “High” for this CSF\./);
-  // No number circles on the questions.
-  const html = render({ draft: kestrel() });
-  assert.doesNotMatch(html.split('<h3>Questions to start with')[1], /class="pn/);
-  // At a glance holds only the headline.
-  assert.doesNotMatch(html.split('<h3>Strategic importance')[0], /Questions to start with|class="mv/);
-});
-
-test('the chart: dotted background, the line, end labels only, two area names, dot size from resource', () => {
-  const html = render({ draft: kestrel() });
-  const svg = html.slice(html.indexOf('<svg'), html.indexOf('</svg>'));
-  assert.match(svg, /<pattern /);
-  for (const w of ['High', 'Low', 'Embryonic', 'Excellent', 'Strategic importance', 'Progress', 'Needs attention', 'Moving well']) assert.match(svg, new RegExp(`>${w}<`));
-  for (const w of ['Needs managing', 'Less important', '50%', 'Bad', 'Fair', 'Good']) assert.doesNotMatch(svg, new RegExp(`>${w}<`));
-  // No project name on the chart.
-  PR.forEach((p) => assert.doesNotMatch(svg, new RegExp(`>${p.t}<`)));
-  // Every outline 1.5px; the needs attention dot keeps its second, 1px ring.
-  const rings = [...svg.matchAll(/<circle cx="[\d.]+" cy="[\d.]+" r="([\d.]+)" style="fill:([^;]+);stroke:([^"]+)" stroke-width="([\d.]+)"/g)];
-  assert.equal(rings.filter((m) => m[4] === '1.5').length, PR.length);
-  assert.equal(rings.filter((m) => m[4] === '1').length, 1);
-  // Very high 17, Moderate 12, Low 8.
-  const radii = rings.filter((m) => m[4] === '1.5').map((m) => Number(m[1])).sort((a, b) => a - b);
-  assert.deepEqual(radii, [8, 12, 12, 12, 17, 17, 17]);
-  assert.match(text(html), /Each dot is a project\. Bigger dots require more resource\. Important means above 50%, suggested/);
-});
-
-test('the line drop-down offers 30% to 80%, 50% suggested, and the line moves everything', () => {
-  assert.deepEqual(words.LINE_OPTIONS.map((o) => o.label), ['30%', '40%', '50%, suggested', '60%', '70%', '80%']);
-  const at70 = text(render({ draft: kestrel({ line: 70 }) }));
-  assert.match(at70, /Important means above 70%/);
-  // Above 70%: Customer success programme (76%, Good) and Enterprise sales team (83%, Bad).
-  assert.match(at70, /1 of 2 important projects is moving well\. 1 needs attention\./);
-  const html = render({ draft: kestrel({ line: 70 }) });
-  const svg = html.slice(html.indexOf('<svg'), html.indexOf('</svg>'));
-  const y = (pct) => 42 + (1 - pct / 100) * (428 - 42 - 56);
-  assert.match(svg, new RegExp(`y1="${y(70)}" y2="${y(70)}"`));
-});
-
-test('CSF cards show their level, and a CSF with no High says so', () => {
-  const t = text(render({ draft: kestrel() }));
-  assert.match(t, /Critical Win and keep enterprise clients/);
-  assert.match(t, /Very important A product customers recommend/);
-  assert.match(t, /Important Cash to invest ahead of growth/);
-  assert.match(t, /Very important A team with the right skills in the right roles No project strongly supports this yet\./);
-  assert.equal((t.match(/No project strongly supports this yet\./g) || []).length, 1);
-});
-
-test('the project list: its two ⓘ, the edit line, the states, with no pop-up on the numbers', () => {
-  const html = render({ draft: kestrel() });
-  assert.match(text(html), /The one most in need of attention comes first\. .*Choose a project to edit its answers\./);
-  assert.match(html, /aria-label="How it’s worked out"/);
-  assert.match(html, /Strategic importance<button type="button" class="ipb" aria-label="What strategic importance means"/);
-  assert.deepEqual(words.ORDER_LINES.map((l) => l.bold || l.line), ['Most in need of attention', 'Important projects that need attention and require more resource come first.']);
-  assert.deepEqual(words.importanceLines().map((l) => l.bold || l.line), [
-    'Strategic importance', 'It’s how much a project helps the CSFs, out of 100%.', 'High on every CSF scores 100%.',
-    'A Critical CSF counts 40% more than an Important one, and a Very important one 20% more.',
+test('the rows: ranked by need of attention, each with its figure, state and dot size', () => {
+  const { rows, line } = resultsModel(kestrel(), { asOf: AS_OF });
+  assert.equal(line, 50);
+  assert.deepEqual(rows.map((r) => [r.n, r.text, r.pct, stateWords(r), r.size]), [
+    [1, 'Enterprise sales team', 83, 'Needs attention', 'large'],
+    [2, 'Hiring plan for 2027', 58, 'Too early to tell', 'large'],
+    [3, 'Pricing review', 57, 'Needs managing', 'small'],
+    [4, 'Partner channel', 43, 'Less important', 'middle'],
+    [5, 'Customer success programme', 76, 'Moving well', 'middle'],
+    [6, 'New office fit-out', 15, 'Less important', 'large'],
+    [7, 'Data platform', 57, 'Moving well', 'middle'],
   ]);
-  for (const m of html.matchAll(/<span class="pn[^"]*"([^>]*)>/g)) assert.equal(m[1], ' aria-hidden="true"');
+  // The same rows the chart and the PDF draw from.
+  assert.deepEqual(resultRows(kestrel()).map((r) => r.id), rows.map((r) => r.id));
+  assert.deepEqual(rows[0].dates, ['Started Sep 2025', 'Due to finish Dec 2026']);
+  assert.deepEqual(rows.find((r) => r.text === 'Partner channel').dates, ['Started Apr 2026', 'Open-ended, with no agreed finish date']);
 });
 
-test('How it works: how to read the chart, the word, then its meaning, with the line in use', () => {
-  const lines = words.howItWorks(60);
-  assert.deepEqual(lines.slice(1).map((l) => l.term), ['Each dot', 'Bigger dots', 'Important', 'Too early to tell']);
-  // Every meaning is a full sentence, word for word from M7b version 49 (Tim, 13 Nov, 18:13).
-  assert.deepEqual(lines.slice(1).map((l) => l.meaning), [
-    'It’s a project, numbered as in the list below.',
-    'They show projects that require more resource.',
-    'It’s a project above the line you set, which is now 60%.',
-    'It’s a project at the Embryonic stage.',
+test('the headline is one sentence, never a big figure, with what needs you on its own line', () => {
+  const { headline } = resultsModel(kestrel(), { asOf: AS_OF });
+  assert.equal(headlineLine(headline), '2 of your 5 important projects are moving well.');
+  assert.equal(headline.rest, '1 needs managing, 1 needs attention and 1 is too early to tell.');
+  // The PDF's chart and the completion email say it in one go.
+  assert.equal(headlineSentence(headline), '2 of 5 important projects are moving well. 1 needs managing, 1 needs attention and 1 is too early to tell.');
+});
+
+test('the headline agrees with its number, and says so when nothing important is under way', () => {
+  const at70 = resultsModel(kestrel({ line: 70 }), { asOf: AS_OF });
+  assert.equal(at70.line, 70);
+  assert.equal(headlineLine(at70.headline), '1 of your 2 important projects is moving well.');
+  assert.equal(at70.headline.rest, '1 needs attention.');
+  const none = kestrel();
+  Object.values(none.ratings).forEach((r) => { r.contrib = { f0: 0, f1: 0, f2: 0, f3: 0 }; });
+  const m = resultsModel(none, { asOf: AS_OF });
+  assert.equal(headlineLine(m.headline), 'None of your important projects is under way yet.');
+  assert.equal(headlineLine(m.headline, true), headlineLine(m.headline));
+});
+
+test('the line for important: 30% to 80%, 50% suggested, and the line moves the states', () => {
+  assert.deepEqual(LINE_OPTIONS, [30, 40, 50, 60, 70, 80].map((v) => ({ value: v, label: v === 50 ? '50%, suggested' : `${v}%` })));
+  const at30 = resultsModel(kestrel({ line: 30 }), { asOf: AS_OF }).rows;
+  assert.equal(stateWords(at30.find((r) => r.text === 'Partner channel')), 'Needs managing');
+  const at80 = resultsModel(kestrel({ line: 80 }), { asOf: AS_OF }).rows;
+  assert.deepEqual(at80.filter((r) => r.q).map((r) => r.text), ['Enterprise sales team']);
+});
+
+test('questions to start with: up to three, each with its topic and why it is asked', () => {
+  const { questions } = resultsModel(kestrel(), { asOf: AS_OF });
+  assert.deepEqual(questions.map((q) => [q.label, q.question, q.reason]), [
+    ['Timing', 'Is “Enterprise sales team” worth a sprint of extra resource to finish by Dec 2026, or should its timeline change?', 'You rated its progress “Bad”, and it’s due to finish in 2 months.'],
+    ['Resource', 'Is “New office fit-out” worth the resource it takes?', 'You rated its resource requirements “High”, and its strategic importance is 15%.'],
+    ['Success Factors', 'What could strongly support “A team with the right skills in the right roles”?', 'You didn’t rate any project “High” for this Success Factor.'],
+  ]);
+  // A question about a project names it, so pointing at it can light its dot.
+  assert.equal(questions[0].projectId, 'p0');
+  assert.equal(questions[2].projectId, undefined);
+});
+
+test('Success Factors: Critical, Very important, Important, and one no project rates High says so', () => {
+  assert.deepEqual(CSF_LEVELS.map((l) => l.name), ['Critical', 'Very important', 'Important']);
+  const { factors, gaps } = resultsModel(kestrel(), { asOf: AS_OF });
+  assert.deepEqual(factors.map((f) => csfLevelName(csfLevel(f))), ['Critical', 'Very important', 'Very important', 'Important']);
+  assert.deepEqual(gaps, ['f2']);
+});
+
+test('an older Health Check: every Success Factor reads Very important, the line is 50', () => {
+  const old = resultsModel(kestrel({ levels: null }), { asOf: AS_OF });
+  assert.equal(old.line, 50);
+  assert.deepEqual(old.factors.map((f) => csfLevelName(csfLevel(f))), Array(4).fill('Very important'));
+  assert.deepEqual(old.rows.map((r) => r.pct), [83, 58, 58, 42, 75, 17, 58]);
+});
+
+test('the example report says "their" and "They"', () => {
+  const e = resultsModel(EXAMPLE.draft, { asOf: EXAMPLE.asOf, theirs: true });
+  assert.equal(e.rows.length, 8);
+  assert.equal(headlineLine(e.headline, true), '2 of their 5 important projects are moving well.');
+  assert.ok(e.questions.length >= 1 && e.questions.length <= 3);
+  for (const q of e.questions) assert.match(q.reason, /^(They |None of them)/);
+  assert.ok(!e.questions.some((q) => /\byou\b|\byour\b/i.test(`${q.question} ${q.reason}`)));
+});
+
+test('the chart’s ⓘ: each mark’s word, then its meaning, with the line as it is now', () => {
+  assert.equal(CHART_TITLE, 'Strategic importance against progress');
+  assert.deepEqual(chartInfo(50), [
+    { bold: 'Strategic importance against progress' },
+    { term: 'Each dot', meaning: 'It’s a project, numbered as in the list below.' },
+    { term: 'Bigger dots', meaning: 'They show projects that require more resource.' },
+    { term: 'Important', meaning: 'It’s a project above the line you set, which is now 50%.' },
+    { term: 'Too early to tell', meaning: 'It’s a project at the Embryonic stage.' },
+  ]);
+  assert.equal(chartInfo(70)[3].meaning, 'It’s a project above the line you set, which is now 70%.');
+});
+
+test('the Strategic importance ⓘ no longer explains the weights', () => {
+  const lines = importanceLines();
+  assert.deepEqual(lines, [
+    { bold: 'Strategic importance' },
+    { line: IMPORTANCE_MEANS },
+    { line: 'High on every Success Factor scores 100%.' },
+  ]);
+  assert.equal(IMPORTANCE_MEANS, 'It’s how much a project helps the Success Factors, out of 100%.');
+  const all = JSON.stringify(lines);
+  for (const gone of ['40%', '20%', '140%', '120%', 'Critical', 'Very important', 'weight']) assert.ok(!all.includes(gone), `still says ${gone}`);
+});
+
+test('what a Success Factor is, and what it is not, word for word', () => {
+  assert.deepEqual(SUCCESS_FACTOR_INFO, [
+    { bold: 'What is a Success Factor?' },
+    { line: 'It’s one of the few things that must go right for you to reach your objective.' },
+    { line: 'For example, “Win and keep enterprise clients”.' },
+    { heading: 'What it’s not:' },
+    { bullets: ['A project or a task, such as “Launch the new CRM”.', 'A target or a measure, such as “£40m in revenue”.'] },
   ]);
 });
 
-test('the example report: "Important means above 50%.", no drop-down, their words', () => {
-  const html = render({ draft: EXAMPLE.draft, asOf: EXAMPLE.asOf, theirs: true });
-  const t = text(html);
-  assert.deepEqual(headings(html), ['At a glance', 'Strategic importance against progress', 'Their projects', 'Critical Success Factors', 'Questions to start with']);
-  assert.match(t, /Important means above 50%\./);
-  assert.doesNotMatch(t, /suggested/);
-  assert.doesNotMatch(t, /Choose a project/);
-  assert.match(t, /They rated its progress/);
-  assert.doesNotMatch(t, /You rated|You didn’t/);
+test('Sort by: four orders, each project keeping its own number', () => {
+  assert.deepEqual(SORTS.map(([key, label]) => [key, label]), [
+    ['att', 'Most in need of attention'], ['imp', 'Strategic importance'], ['prog', 'Progress'], ['res', 'Resource required'],
+  ]);
+  const { rows } = resultsModel(kestrel(), { asOf: AS_OF });
+  assert.deepEqual(sortRows(rows, 'att').map((r) => r.n), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(sortRows(rows, 'imp').map((r) => r.pct), [83, 76, 58, 57, 57, 43, 15]);
+  assert.deepEqual(sortRows(rows, 'prog').map((r) => PROGS[r.progress]), ['Embryonic', 'Bad', 'Fair', 'Fair', 'Good', 'Good', 'Excellent']);
+  assert.deepEqual(sortRows(rows, 'res').map((r) => RES[r.resource][0]), ['Very high', 'High', 'High', 'Moderate', 'Moderate', 'Moderate', 'Low']);
+  // Ties keep the ranked order, and the ranked rows themselves are never reordered.
+  assert.deepEqual(sortRows(rows, 'prog').filter((r) => r.progress === 3).map((r) => r.n), [3, 4]);
+  assert.deepEqual(rows.map((r) => r.n), [1, 2, 3, 4, 5, 6, 7]);
+  // A project not rated yet goes last by progress and by resource.
+  const partly = kestrel();
+  partly.ratings.p0 = { contrib: partly.ratings.p0.contrib, progress: null, resource: null };
+  const r2 = resultsModel(partly, { asOf: AS_OF }).rows;
+  assert.equal(sortRows(r2, 'prog').at(-1).text, 'Enterprise sales team');
+  assert.equal(sortRows(r2, 'res').at(-1).text, 'Enterprise sales team');
 });
 
-test('an older Health Check: every CSF Very important, a line of 50, the old figures', () => {
-  const old = kestrel({ levels: null });
-  const t = text(render({ draft: old }));
-  assert.equal((t.match(/Very important /g) || []).length, 4);
-  assert.doesNotMatch(t, /Critical (Win|A |Cash)/);
-  assert.match(t, /Important means above 50%, suggested/);
-  // Unweighted: Customer success programme 75%, New office fit-out 17%.
-  const rows = words.resultRows(old);
-  assert.equal(rows.find((r) => r.text === 'Customer success programme').pct, 75);
-  assert.equal(rows.find((r) => r.text === 'New office fit-out').pct, 17);
-  // Saved back unchanged: no level and no line are added.
-  const back = flow.dataFromDraft(flow.draftFromData(flow.dataFromDraft(old)));
-  assert.ok(back.csfs.every((f) => !('level' in f)));
-  assert.ok(!('importantLine' in back));
+test('the state in a word or two, and as a sentence', () => {
+  const { rows } = resultsModel(kestrel(), { asOf: AS_OF });
+  const by = (name) => rows.find((r) => r.text === name);
+  assert.deepEqual(
+    ['Enterprise sales team', 'Hiring plan for 2027', 'Pricing review', 'Partner channel', 'Data platform'].map((n) => [stateWords(by(n)), stateSentence(by(n))]),
+    [
+      ['Needs attention', 'It’s important and needs attention.'],
+      ['Too early to tell', 'It’s important, but it’s too early to tell.'],
+      ['Needs managing', 'It’s important and needs managing.'],
+      ['Less important', 'It’s less important to the objective.'],
+      ['Moving well', 'It’s important and moving well.'],
+    ],
+  );
+  const partly = kestrel();
+  partly.ratings.p0 = { contrib: partly.ratings.p0.contrib, progress: null, resource: null };
+  const row = resultsModel(partly, { asOf: AS_OF }).rows.find((r) => r.text === 'Enterprise sales team');
+  assert.equal(stateWords(row), 'Not rated yet');
+  assert.equal(stateSentence(row), 'It isn’t fully rated yet.');
+});
+
+test('the answers people choose from say Success Factor, never CSF', () => {
+  assert.deepEqual(CON.map(([word]) => word), ['None', 'Low', 'Medium', 'High']);
+  assert.deepEqual(PROG.slice(1).map(([word]) => word), ['Embryonic', 'Bad', 'Fair', 'Good', 'Excellent']);
+  assert.deepEqual(RES.slice(1).map(([word]) => word), ['Minimal', 'Low', 'Moderate', 'High', 'Very high']);
+  const all = JSON.stringify([CON, PROG, RES, SORTS, SUCCESS_FACTOR_INFO, chartInfo(50), importanceLines()]);
+  assert.ok(!/CSF|Critical Success Factor/.test(all));
+  // Every meaning is a full sentence.
+  for (const [, meaning] of [...CON, ...PROG.slice(1), ...RES.slice(1)]) assert.match(meaning, /^[A-Z].+\.$/);
 });

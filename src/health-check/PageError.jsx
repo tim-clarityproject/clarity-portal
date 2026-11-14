@@ -1,4 +1,6 @@
 import { Component } from 'react';
+import { Button } from '../components/design/Button';
+import { GuestFrame, GuestTitle } from '../components/design/GuestPage';
 
 // The Health Check page's own error screen: the portal's one offers Home,
 // which a respondent without an account can't use. Says what happened, then
@@ -16,15 +18,15 @@ export default class PageError extends Component {
   render() {
     if (!this.state.failed) return this.props.children;
     return (
-      <div className="ui-root hc" role="alert">
-        <main className="hc-main">
-          <div className="page wlc">
-            <h2 className="t">Strategic Alignment Health Check</h2>
-            <p className="lead">This page didn’t load properly.</p>
-            <p className="lead">Reload it to carry on, because your answers are saved as you go.</p>
-            <button type="button" className="btn full" onClick={() => window.location.reload()}>Reload</button>
+      <div className="ui-root" role="alert">
+        <GuestFrame narrow="wide">
+          <div>
+          <GuestTitle>Strategic Alignment Health Check</GuestTitle>
+          <p className="hc-lead">This page didn’t load properly.</p>
+          <p className="hc-lead">Reload it to carry on, because your answers are saved as you go.</p>
+          <div className="hc-begin"><Button variant="primary" onClick={() => window.location.reload()}>Reload the page</Button></div>
           </div>
-        </main>
+        </GuestFrame>
       </div>
     );
   }

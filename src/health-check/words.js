@@ -1,4 +1,5 @@
-// The Health Check's words (mock-up M7b version 47), and its results worked
+// The Health Check's words (mock-up M7b version 51; Success Factors, never
+// Critical Success Factors: Tim, 14 Nov, 09:38), and its results worked
 // out from src/lib/scores/m20.js (methods M20.1, version 1.4). Definitions are
 // Claude's drafts, for Adie to edit.
 
@@ -11,10 +12,10 @@ import {
 import { projectDatesText } from '../lib/projectDates.js';
 
 export const CON = [
-  ['None', 'It doesn’t move this CSF.'],
+  ['None', 'It doesn’t move this Success Factor.'],
   ['Low', 'It helps a little, or only indirectly.'],
-  ['Medium', 'It clearly helps, but the CSF doesn’t depend on it.'],
-  ['High', 'This CSF would be hard to achieve without it.'],
+  ['Medium', 'It clearly helps, but the Success Factor doesn’t depend on it.'],
+  ['High', 'This Success Factor would be hard to achieve without it.'],
 ];
 // index 1 to 5
 export const PROG = [null,
@@ -33,6 +34,7 @@ export const RES = [null,
   ['Very high', 'It’s one of the biggest demands on the organisation’s people or money.'],
 ];
 
+// The third word of each is the PDF's line under its list; the page shows none (Tim, 14 Nov, 09:46).
 export const SORTS = [
   ['att', 'Most in need of attention', 'The one most in need of attention comes first.'],
   ['imp', 'Strategic importance', 'The most important comes first.'],
@@ -72,7 +74,7 @@ export function resultRows(draft) {
   });
 }
 
-/** The CSF levels, most first: Critical, Very important, Important. */
+/** The Success Factor levels, most first: Critical, Very important, Important. */
 export const CSF_LEVELS = M20_CSF_LEVELS;
 export const csfLevel = m20CsfLevel;
 export const csfLevelName = m20CsfLevelName;
@@ -82,7 +84,7 @@ export const LINE_OPTIONS = M20_LINE_CHOICES.map((v) => ({ value: v, label: `${v
 
 /**
  * Everything the results page shows, worked out once: the rows, the line, the
- * headline, the questions to start with and the CSFs no project rates High.
+ * headline, the questions to start with and the Success Factors no project rates High.
  * @param {Object} draft the answers
  * @param {{asOf?: string|Date, theirs?: boolean}} [opts] asOf: the Health
  *   Check's date (the completed date, or today), for the Timing question
@@ -131,26 +133,48 @@ export function headlineSentence(headline) {
   return [`${headline.big} ${headline.line}`, headline.rest].filter(Boolean).join(' ');
 }
 
+/**
+ * The results' opening sentence (M7b version 51: one sentence, never a big
+ * figure): "2 of your 5 important projects are moving well.", "their" on the
+ * example report, or "None of your important projects is under way yet."
+ * What needs you follows on its own line (headline.rest).
+ */
+export function headlineLine(headline, theirs = false) {
+  if (!headline.important) return headline.line;
+  return `${headline.movingWell} of ${theirs ? 'their' : 'your'} ${headline.important} important projects ${headline.movingWell === 1 ? 'is' : 'are'} moving well.`;
+}
+
 /** Strategic importance has one definition, word for word, in every pop-up (version 47). */
-export const IMPORTANCE_MEANS = 'It’s how much a project helps the CSFs, out of 100%.';
+export const IMPORTANCE_MEANS = 'It’s how much a project helps the Success Factors, out of 100%.';
 /** The order of "Most in need of attention", in full (version 47: never "behind"). */
 export const ORDER_MEANS = 'Important projects that need attention and require more resource come first.';
 
 /**
- * How it works, at the top of the results: how to read the chart, the word,
- * then its meaning, each a full sentence (Tim, 28 Oct, 14:21; the list of
- * 13 Nov, 18:13, word for word from M7b version 49). Strategic importance and
- * the list's order keep their own ⓘ beside them.
+ * The ⓘ beside the chart's heading (M7b version 51; the wording of 13 Nov,
+ * 18:13): how to read the chart, each mark's word then its meaning. The line's
+ * figure follows the line the person set.
  */
-export function howItWorks(line) {
+export const CHART_TITLE = 'Strategic importance against progress';
+export function chartInfo(line) {
   return [
-    { bold: 'How it works' },
+    { bold: CHART_TITLE },
     { term: 'Each dot', meaning: 'It’s a project, numbered as in the list below.' },
     { term: 'Bigger dots', meaning: 'They show projects that require more resource.' },
     { term: 'Important', meaning: `It’s a project above the line you set, which is now ${line}%.` },
     { term: 'Too early to tell', meaning: 'It’s a project at the Embryonic stage.' },
   ];
 }
+/** The older name, kept for the portal's older route. */
+export const howItWorks = chartInfo;
+
+/** What a Success Factor is, and what it isn't (Tim, 14 Nov, 09:29 and 09:41). */
+export const SUCCESS_FACTOR_INFO = [
+  { bold: 'What is a Success Factor?' },
+  { line: 'It’s one of the few things that must go right for you to reach your objective.' },
+  { line: 'For example, “Win and keep enterprise clients”.' },
+  { heading: 'What it’s not:' },
+  { bullets: ['A project or a task, such as “Launch the new CRM”.', 'A target or a measure, such as “£40m in revenue”.'] },
+];
 
 /** The ⓘ beside the list's order line explains only that order (Tim, 28 Oct, 14:37). */
 export const ORDER_LINES = [
@@ -158,13 +182,16 @@ export const ORDER_LINES = [
   { line: ORDER_MEANS },
 ];
 
-/** The ⓘ on the "Strategic importance" column heading (Tim, 28 Oct, 14:37 and 14:40), the same on the example report. */
+/**
+ * The ⓘ on the "Strategic importance" column heading, the same on the example
+ * report. It no longer explains the weights (Tim, 14 Nov, 09:46); the scoring
+ * is unchanged.
+ */
 export function importanceLines() {
   return [
     { bold: 'Strategic importance' },
     { line: IMPORTANCE_MEANS },
-    { line: 'High on every CSF scores 100%.' },
-    { line: 'A Critical CSF counts 40% more than an Important one, and a Very important one 20% more.' },
+    { line: 'High on every Success Factor scores 100%.' },
   ];
 }
 

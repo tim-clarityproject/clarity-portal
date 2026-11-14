@@ -25,7 +25,7 @@
    account, has no Appearance setting, so it follows the person's device,
    light or dark (Tim, 10 Nov, 23:22), whatever was chosen for the portal on
    this device. Its own page (health-check.html) does the same in its own
-   styles (src/health-check/hc.css). */
+   page, built from the portal's shared parts. */
 (function () {
   if (typeof window === 'undefined' || window.ClarityColourMode) return;
 

@@ -1,7 +1,7 @@
 // The new page's steps (src/health-check/flow.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { at, isValid, nextStep, percent, prevStep, sequence, stepFromJson, stepToJson } from '../../src/health-check/flow.js';
+import { at, firstGap, isValid, nextStep, percent, prevStep, sequence, stepFromJson, stepKey, stepToJson } from '../../src/health-check/flow.js';
 
 const draft = (contribFor, extra = {}) => ({
   objective: 'Grow',
@@ -87,4 +87,64 @@ test('a saved weight step opens there, or on the CSFs when there are none', () =
   assert.equal(stepFromJson({ screen: 'weight' }, { ...d, csfs: [] }).screen, 'csf');
   assert.equal(isValid(at('weight'), d), true);
   assert.equal(isValid(at('weight'), { ...d, csfs: [] }), false);
+});
+
+test('a step’s key is made from the ids of its project and Success Factor, so a changed list never moves the question', () => {
+  const d = draft(() => ({ f1: 3, f2: 2 }));
+  assert.equal(stepKey(at('objective'), d), 'objective');
+  assert.equal(stepKey(at('csf'), d), 'csf');
+  assert.equal(stepKey(at('weight'), d), 'weight');
+  assert.equal(stepKey(at('projects'), d), 'projects');
+  assert.equal(stepKey(at('contrib', { pi: 1, fi: 1 }), d), 'contrib:p2:f2');
+  assert.equal(stepKey(at('when', { pi: 0 }), d), 'when:p1');
+  assert.equal(stepKey(at('progress', { pi: 1 }), d), 'progress:p2');
+  assert.equal(stepKey(at('resource', { pi: 1 }), d), 'resource:p2');
+  // Every step of a full run has a key of its own.
+  const keys = sequence(d).map((s) => stepKey(s, d));
+  assert.equal(new Set(keys).size, keys.length);
+  // A project put in front: the same question keeps its key, at its new place.
+  const moved = { ...d, projects: [{ id: 'p0', text: 'Zero' }, ...d.projects] };
+  assert.equal(stepKey(at('progress', { pi: 2 }), moved), 'progress:p2');
+  // A blank row is no project: the places skip it.
+  const blank = { ...d, projects: [{ id: 'px', text: '  ' }, ...d.projects] };
+  assert.equal(stepKey(at('when', { pi: 0 }), blank), 'when:p1');
+});
+
+test('a step whose project or Success Factor has gone falls back to a screen that exists', () => {
+  const d = draft(() => ({ f1: 3, f2: 2 }));
+  assert.equal(stepKey(at('progress', { pi: 5 }), d), 'projects');
+  assert.equal(stepKey(at('contrib', { pi: 0, fi: 9 }), d), 'when:p1');
+  const noFactors = { ...d, csfs: [] };
+  assert.equal(stepKey(at('contrib', { pi: 1, fi: 0 }), noFactors), 'when:p2');
+});
+
+test('the first gap: the objective, the Success Factors, the projects, then the first answer missing', () => {
+  const whole = draft(() => ({ f1: 3, f2: 2 }));
+  assert.equal(firstGap(whole), null);
+  assert.deepEqual(firstGap({ ...whole, objective: '  ' }), at('objective'));
+  assert.deepEqual(firstGap({ ...whole, csfs: [{ id: 'f1', text: '' }] }), at('csf'));
+  assert.deepEqual(firstGap({ ...whole, projects: [] }), at('projects'));
+  // A Success Factor added later: its Contribution for the first project.
+  const newFactor = draft(() => ({ f1: 3 }));
+  assert.deepEqual(firstGap(newFactor), at('contrib', { pi: 0, fi: 1, mode: 'gaps' }));
+  // Once the first project has it, the second project's.
+  newFactor.ratings.p1.contrib.f2 = 1;
+  assert.deepEqual(firstGap(newFactor), at('contrib', { pi: 1, fi: 1, mode: 'gaps' }));
+  // A new project, not rated at all: its first Success Factor.
+  const newProject = { ...whole, projects: [...whole.projects, { id: 'p3', text: 'Three' }] };
+  assert.deepEqual(firstGap(newProject), at('contrib', { pi: 2, fi: 0, mode: 'gaps' }));
+  // Its dates are asked on the way, before its progress.
+  newProject.ratings = { ...whole.ratings, p3: { contrib: { f1: 1, f2: 1 }, progress: null, resource: null } };
+  assert.deepEqual(firstGap(newProject), at('when', { pi: 2, mode: 'gaps' }));
+  // Only resource missing: straight to it (the dates are optional once progress is rated).
+  newProject.ratings.p3.progress = 3;
+  assert.deepEqual(firstGap(newProject), at('resource', { pi: 2, mode: 'gaps' }));
+  newProject.ratings.p3.resource = 2;
+  assert.equal(firstGap(newProject), null);
+});
+
+test('the first gap’s key is a step the guided tool has', () => {
+  const d = draft(() => ({ f1: 3 }));
+  const keys = [...sequence(d).map((s) => stepKey(s, d)), 'results'];
+  assert.ok(keys.includes(stepKey(firstGap(d), d)));
 });

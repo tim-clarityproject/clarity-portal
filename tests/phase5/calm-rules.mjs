@@ -34,7 +34,8 @@
 //   - no console errors.
 //
 //   - the outside Health Check follows the device, light or dark (Tim, 10
-//     Nov, 23:22): its own page on four screens, and the portal's own route.
+//     Nov, 23:22): its own page on every screen (M7b version 51), and the
+//     portal's own route; with ONLY=^health-check nothing signs in.
 //
 // It also saves a light screenshot of every page at both widths into the
 // folder given (Tim's screens folder), named by page.
@@ -44,6 +45,7 @@
 //
 //   node --import ./tests/scores/register.mjs tests/phase5/calm-rules.mjs [folder for screenshots]
 import { GUEST_TOKEN, GUEST_VISIT, M10, M9, m10Wash } from '../phase8/shared.mjs';
+import { STEPS as HC_STEPS, appPage as hcPage, kestrel as hcKestrel, signIn as hcSignIn } from '../healthcheck/hc-shared.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -315,7 +317,8 @@ function measure({ phone }) {
 }
 
 const browser = await chromium.launch();
-for (const width of [1280, 390]) {
+// With no portal page asked for (ONLY=^health-check, or the chevrons' own parts), nothing signs in.
+for (const width of PAGES.length ? [1280, 390] : []) {
   for (const mode of ['light', 'dark']) {
     const phone = width < 600;
     const context = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: mode });
@@ -477,52 +480,71 @@ for (const width of [1280, 390]) {
 // dark. Then the portal's own /health-check route, which must follow the
 // device too, even when the portal on this device is set the other way.
 const HC_ONLY = !ONLY || ONLY.test('health-check');
-const HC_CSF = ['Win and keep enterprise clients', 'A product customers recommend', 'A team with the right skills in the right roles', 'Cash to invest ahead of growth'];
-const HC_PR = [
-  { t: 'Enterprise sales team', c: [3, 2, 2, 3], p: 2, r: 5, s: '2025-09', f: '2026-12' },
-  { t: 'Customer success programme', c: [3, 3, 1, 2], p: 4, r: 3, s: '2026-01', f: '2027-03' },
-  { t: 'Pricing review', c: [2, 2, 0, 3], p: 3, r: 2, s: '2026-06', f: '2026-12' },
-  { t: 'Hiring plan for 2027', c: [2, 1, 2, 2], p: 1, r: 4, s: '2026-10', f: '2027-06' },
-  { t: 'Partner channel', c: [2, 1, 1, 1], p: 3, r: 3, s: '2026-04', f: 'open' },
-  { t: 'New office fit-out', c: [0, 0, 1, 1], p: 4, r: 4, s: '2026-07', f: '2026-11' },
-  { t: 'Data platform', c: [1, 3, 1, 2], p: 5, r: 3, s: '2025-11', f: '2026-12' },
+// The mock-up's own invented answers (Kestrel Group), for the portal's own older route below.
+const hcAnswers = (complete) => (complete ? hcKestrel() : {});
+const HC_DIALOG = '[role=dialog]:not(.ds-guide)';
+const HC_DONE = { complete: true, step: { screen: 'done' } };
+const hcRows = (p) => p.locator('button.hc-prow').first().waitFor({ timeout: 15000 });
+const hcBegin = async (p) => { await p.getByRole('button', { name: 'Begin the Health Check' }).click(); await p.locator('.ds-guest-question').waitFor({ timeout: 10000 }); };
+// Every screen of the outside page (M7b version 51's switcher): [name, the page's options, how to reach it, the layer on top]
+const HC_SCREENS = [
+  ['welcome', { watched: false }, async () => {}, '.ds-guest'],
+  ['welcome-watched', { watched: true }, async () => {}, '.ds-guest'],
+  ['sign-in', {}, hcBegin, '.ds-guest'],
+  ['return-visit', { step: HC_STEPS.objective }, async (p, s) => { await hcSignIn(p, s); await p.locator('.ds-guide-close').click(); await p.getByRole('button', { name: 'Pick up where you left off' }).waitFor({ timeout: 10000 }); await sleep(5500); }, '.ds-guest'],
+  ['first-question', { step: HC_STEPS.objective }, hcSignIn, '.ds-guide'],
+  ['success-factors', { step: HC_STEPS.csf }, hcSignIn, '.ds-guide'],
+  ['weights', { step: HC_STEPS.weight }, hcSignIn, '.ds-guide'],
+  ['projects', { step: HC_STEPS.projects }, hcSignIn, '.ds-guide'],
+  ['contribution', { step: HC_STEPS.contrib }, hcSignIn, '.ds-guide'],
+  ['dates', { step: HC_STEPS.when }, hcSignIn, '.ds-guide'],
+  ['progress', { step: HC_STEPS.progress }, hcSignIn, '.ds-guide'],
+  ['resource-required', { step: HC_STEPS.resource }, hcSignIn, '.ds-guide'],
+  ['results', HC_DONE, async (p, s) => { await hcSignIn(p, s); await hcRows(p); }, '.ds-guide'],
+  ['example-report', {}, async (p) => { await hcBegin(p); await p.getByRole('button', { name: 'See an example report' }).click(); await hcRows(p); }, '.ds-guest'],
+  ['quick-guide', HC_DONE, async (p, s) => { await hcSignIn(p, s); await hcRows(p); await p.locator('.ds-guide-title .ds-play').click(); await p.locator(`${HC_DIALOG} .hc-vcard`).waitFor({ timeout: 10000 }); await sleep(600); await p.evaluate(() => document.querySelector('[role=dialog] video')?.pause()); }, HC_DIALOG],
+  ['who-can-see-this', { step: HC_STEPS.objective }, async (p, s) => { await hcSignIn(p, s); await p.locator('.ds-guide-question .ds-who:not(.ds-play)').click(); await p.locator(HC_DIALOG).waitFor({ timeout: 10000 }); }, HC_DIALOG],
+  ['download-pdf', HC_DONE, async (p, s) => { await hcSignIn(p, s); await hcRows(p); await p.locator('.ds-guide-next').click(); await p.locator(HC_DIALOG).waitFor({ timeout: 10000 }); }, HC_DIALOG],
 ];
-const hcAnswers = (complete) => (complete ? {
-  objective: 'Double recurring revenue by 2028 while keeping client satisfaction high.',
-  csfs: HC_CSF.map((text, i) => ({ id: `f${i}`, text, level: [3, 2, 2, 1][i] })),
-  projects: HC_PR.map((p, i) => ({ id: `p${i}`, text: p.t, started: p.s, due: p.f })),
-  ratings: { owner: Object.fromEntries(HC_PR.map((p, i) => [`p${i}`, { contrib: Object.fromEntries(p.c.map((v, k) => [`f${k}`, v])), progress: p.p, resource: p.r }])) },
-  completedAt: '2026-10-27T09:00:00.000Z',
-} : {});
 
-/** Runs in the Health Check's own page. */
-function measureHealthCheck() {
+/** Runs in the Health Check's own page. `layer`: the part on top (the page, the guided tool, or an open panel). */
+function measureHealthCheck({ layer }) {
   const vis = (el) => {
     const b = el.getBoundingClientRect();
     const st = getComputedStyle(el);
     return b.width > 0 && b.height > 0 && st.visibility !== 'hidden' && st.display !== 'none' && Number(st.opacity) > 0.05 && !el.closest('[hidden],[inert]');
   };
   const label = (el) => `${String(el.className?.baseVal ?? el.className ?? '').split(' ')[0] || el.tagName.toLowerCase()} "${(el.textContent || el.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim().slice(0, 30)}"`;
-  const hc = document.querySelector('.hc');
+  const top = [...document.querySelectorAll(layer)].filter(vis).pop() || document.body;
+  // The page itself: the guest frame, or the guided tool that covers the screen.
+  const hc = [...document.querySelectorAll('.ds-guide--fullscreen, .ds-guest')].filter(vis).pop() || document.body;
   const small = [];
-  for (const el of document.querySelectorAll('button, a, select, textarea, input, [role=radio], [role=checkbox], [role=switch], summary')) {
+  for (const el of top.querySelectorAll('button, a, select, textarea, input, [role=radio], [role=checkbox], [role=switch], [role=option], [role=slider], [role=combobox], summary, .hc-dot')) {
     if (!vis(el) || el.disabled || el.getAttribute('aria-hidden') === 'true') continue;
-    const b = el.getBoundingClientRect();
+    const b = el.matches('.hc-dot') ? el.querySelector('.hc-dot-tap').getBoundingClientRect() : el.getBoundingClientRect();
     const stretch = (p) => p.content !== 'none' && p.position === 'absolute' && (parseFloat(p.height) || 0) >= 43.5 && (parseFloat(p.width) || 0) >= 43.5;
     if ((b.height >= 43.5 && b.width >= 43.5) || stretch(getComputedStyle(el, '::after')) || stretch(getComputedStyle(el, '::before'))) continue;
+    // A pill in the segmented control reaches 44px high through its ::after, and is as wide as its word.
+    const after = getComputedStyle(el, '::after');
+    if (el.matches('.ds-seg-btn') && b.width >= 43.5 && (parseFloat(after.height) || 0) >= 43.5) continue;
     // A link inside a sentence is as tall as its line (WCAG's inline exception).
     if (el.tagName === 'A' && getComputedStyle(el).display === 'inline' && el.parentElement && el.parentElement.innerText.trim().length > el.innerText.trim().length + 12) continue;
+    // The play icon beside the eye (Tim, 14 Nov, 09:28): 44px tall and 32px wide, so the two icons are 16px apart and their tap areas never overlap.
+    if (el.matches('.ds-title-icons > .ds-play') && b.height >= 43.5 && b.width >= 31.5) continue;
     small.push(`${label(el)} ${Math.round(b.width)}x${Math.round(b.height)}`);
   }
-  const heading = [...document.querySelectorAll('.hc h1, .hc h2, .hc .qh')].find(vis);
+  // The first solid colour behind the page.
+  const solid = (el) => { for (let x = el; x; x = x.parentElement) { const c = getComputedStyle(x).backgroundColor; if (c && !/rgba\(0, 0, 0, 0\)|transparent/.test(c)) return c; } return null; };
+  const heading = [...hc.querySelectorAll('h1, h2, .ds-guide-question, .ds-guide-title')].find(vis);
+  const scroller = top.querySelector('.ds-guide-scroll, .ds-dialog-body') || top;
   return {
     small,
-    sideways: document.documentElement.scrollWidth - window.innerWidth,
-    background: hc ? getComputedStyle(hc).backgroundColor : null,
+    sideways: Math.max(document.documentElement.scrollWidth - window.innerWidth, scroller.scrollWidth - scroller.clientWidth),
+    background: solid(hc),
     behind: getComputedStyle(document.documentElement).backgroundColor,
     textColour: heading ? getComputedStyle(heading).color : null,
-    scheme: hc ? getComputedStyle(hc).colorScheme : null,
-    text: (hc || document.body).innerText,
+    theme: document.documentElement.getAttribute('data-theme'),
+    text: hc.innerText,
   };
 }
 
@@ -530,66 +552,49 @@ if (HC_ONLY) {
   for (const width of [1280, 390]) {
     for (const mode of ['light', 'dark']) {
       const phone = width < 600;
-      for (const screen of ['welcome', 'sign-in', 'first-question', 'results']) {
+      for (const [screen, opts, reach, layer] of HC_SCREENS) {
         const tag = `health-check ${screen} ${width}px ${mode}`;
-        const complete = screen === 'results';
-        const context = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: mode, reducedMotion: 'reduce' });
-        const errors = [];
+        let b = null;
         try {
-          // Nothing leaves this machine: the two database calls are answered here, everything else outside is stopped.
-          await context.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => {
-            const url = route.request().url();
-            const json = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
-            if (url.endsWith('/rpc/alignment_open')) return json({ ok: true, status: complete ? 'complete' : 'invited', current_step: null, data: hcAnswers(complete), version: 1, updated_at: '2026-10-27 09:30:00.123', completed_at: complete ? '2026-10-27 09:30:00' : null, client_label: 'Kestrel Group', coach_name: 'Tim' });
-            if (url.endsWith('/rpc/alignment_save')) return json({ ok: true, version: 2, updated_at: '2026-10-27 10:00:00', status: 'in_progress' });
-            return route.abort();
-          });
-          await context.route('**/api/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
-          // As vercel.json does: /health-check/* is the Health Check's own page.
-          await context.route(/\/health-check\/[^/.]+$/, async (route) => {
-            if (route.request().resourceType() !== 'document') return route.continue();
-            return route.fulfill({ response: await route.fetch({ url: `${APP}/health-check.html` }) });
-          });
+          // Nothing leaves this machine: the two database calls and every /api/ call are answered by the
+          // Health Check suites' own stand-ins (tests/healthcheck/hc-shared.mjs); everything else outside is stopped.
           // The portal on this device is set the other way: the Health Check has no such setting and follows the device.
-          await context.addInitScript((other) => { try { localStorage.setItem('clarity-colour-mode', other); localStorage.setItem('hc-quick-guide-watched', '1'); } catch { /* blocked */ } }, mode === 'light' ? 'dark' : 'light');
-          const page = await context.newPage();
-          page.on('pageerror', (e) => errors.push(e.message));
-          page.on('console', (m) => { if (m.type() === 'error' && !/WebSocket|\[vite\]|Vite server|Failed to load resource|net::ERR|favicon/.test(m.text())) errors.push(m.text().slice(0, 160)); });
-          await page.goto(`${APP}/health-check/tok-calm-rules-0000000000000000000000000000`);
-          await page.locator('#hc-email, .wlc .btn.full').first().waitFor({ timeout: 20000 });
-          if (screen !== 'welcome') {
-            const begin = page.getByRole('button', { name: 'Begin the Health Check' });
-            if (await begin.isVisible().catch(() => false)) await begin.click();
-            await page.locator('#hc-email').waitFor({ timeout: 10000 });
-          }
-          if (screen === 'first-question' || screen === 'results') {
-            await page.locator('#hc-email').fill('sam.example@invented.test');
-            await page.locator('#hc-code').fill('ABC234');
-            await page.locator('form button[type=submit]').click();
-            await page.locator(complete ? '.gst b' : '.hc-main .page h2').first().waitFor({ timeout: 15000 });
-          }
+          b = await hcPage(browser, width, mode, { ...opts, storage: { 'clarity-colour-mode': mode === 'light' ? 'dark' : 'light' } });
+          const { page } = b;
+          await reach(page, b.session);
           await page.evaluate(() => document.fonts.ready);
+          await page.mouse.move(2, 2);
           await sleep(700);
-          const r = await page.evaluate(measureHealthCheck);
-          pass(`${tag}: the page and its text follow the device (${mode})`, r.background === BACKGROUND[mode] && r.behind === BACKGROUND[mode] && r.textColour === TEXT[mode] && r.scheme === mode, `${r.background} ${r.behind} ${r.textColour} ${r.scheme}`);
+          const r = await page.evaluate(measureHealthCheck, { layer });
+          pass(`${tag}: the page and its text follow the device (${mode})`, r.background === BACKGROUND[mode] && r.behind === BACKGROUND[mode] && r.textColour === TEXT[mode] && r.theme === mode, `${r.background} ${r.behind} ${r.textColour} ${r.theme}`);
           pass(`${tag}: every tap area is 44px or more`, r.small.length === 0, r.small.slice(0, 6).join('; '));
           pass(`${tag}: no sideways scroll`, r.sideways <= 0, `${r.sideways}px`);
+          pass(`${tag}: no old names (CSF, Critical Success Factor, “How it works”)`, !/\bCSFs?\b|Critical Success Factor|How it works/.test(r.text), (r.text.match(/.{0,30}(CSF|Critical Success Factor|How it works).{0,30}/) || [''])[0]);
+          // Every outlined edge reaches 3 to 1 (rule 8a), and no two tap areas overlap. Two chart dots that sit
+          // close share part of their 44px tap circles: a chart's marks are where the answers put them.
+          const edges = await page.evaluate(outlinedEdges);
+          pass(`${tag}: every outlined edge reaches 3 to 1`, edges.length === 0, edges.slice(0, 4).join('; '));
+          const overlaps = (await page.evaluate(overlappingTaps)).filter((o) => !/^hc-dot .* \+ hc-dot /.test(o));
+          pass(`${tag}: no two tap areas overlap`, overlaps.length === 0, overlaps.slice(0, 4).join('; '));
           // The summary opens with the visuals and the questions come last (Tim, 13 Nov; rule 29ar).
           const early = await page.evaluate(questionsBeforeCharts);
           pass(`${tag}: Questions to start with never come before a chart`, early.length === 0, early.slice(0, 4).join('; '));
-          if (complete) {
-            const order = await page.evaluate(() => {
-              const top = (sel, words) => { const el = [...document.querySelectorAll(sel)].find((x) => !words || x.textContent.trim() === words); return el ? el.getBoundingClientRect().top + window.scrollY : null; };
-              return [top('.gst'), top('.chart svg'), top('.sech h3', 'Your projects'), top('.obj1'), top('.sech h3', 'Critical Success Factors'), top('.sech h3', 'Questions to start with'), top('.sech h3', 'Keep your results')];
-            });
-            pass(`${tag}: the headline, the chart, the projects, the objective, the CSFs, the questions, then Keep your results`, order.every((y, i) => y != null && (i === 0 || y > order[i - 1])), order.map((y) => (y == null ? 'missing' : Math.round(y))).join(', '));
+          if (screen === 'results' || screen === 'example-report') {
+            const order = await page.evaluate((own) => {
+              const root = [...document.querySelectorAll('.ds-guide--fullscreen, .ds-guest')].pop();
+              const top = (sel, words) => { const el = [...root.querySelectorAll(sel)].find((x) => !words || x.textContent.trim() === words); return el ? el.getBoundingClientRect().top + window.scrollY : null; };
+              const head = (words) => top('.ds-results-head', words);
+              return [top('.ds-headline'), top('.hc-chart svg'), head('Projects'), top('.hc-objective'), head('Success Factors'), head('Questions to start with'), ...(own ? [head('Keep your results')] : [])];
+            }, screen === 'results');
+            pass(`${tag}: the headline, the chart, Projects, the Objective, the Success Factors, the questions${screen === 'results' ? ', then Keep your results' : ''}`, order.every((y, i) => y != null && (i === 0 || y > order[i - 1])), order.map((y) => (y == null ? 'missing' : Math.round(y))).join(', '));
           }
-          pass(`${tag}: no console errors`, errors.length === 0, errors.slice(0, 2).join(' | '));
+          pass(`${tag}: no console errors`, b.problems.length === 0, b.problems.slice(0, 2).join(' | '));
+          pass(`${tag}: nothing asked of an outside address`, b.session.outside.length === 0, [...new Set(b.session.outside)].slice(0, 3).join(' | '));
           if (out) await page.screenshot({ path: join(out, `health-check-${screen}-${width === 1280 ? '1280' : '390x844'}-${mode}.png`), fullPage: true });
         } catch (e) {
           pass(`${tag}: opened`, false, e.message.split('\n')[0]);
         }
-        await context.close();
+        if (b) await b.ctx.close();
       }
       // The portal's own /health-check route (kept for rolling back): the device's mode, not the portal's saved choice.
       const context = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, locale: 'en-GB', colorScheme: mode });
@@ -714,43 +719,62 @@ if (CHEVRONS) {
     if (CHEV_PARTS.includes('pages')) pass(`chevrons ${width}px: chevrons beside text were found and measured (${measured})`, measured >= (process.env.CHEV_ONLY ? 1 : 20), `${measured}`);
     await context.close();
 
-    // The outside Health Check: Back on the sign-in screen, and the first question's own chevrons.
-    const hc = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, deviceScaleFactor: 2, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: 'light', reducedMotion: 'reduce' });
-    if (CHEV_PARTS.includes('health-check')) try {
-      await hc.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => {
-        const url = route.request().url();
-        const json = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
-        if (url.endsWith('/rpc/alignment_open')) return json({ ok: true, status: 'complete', current_step: null, data: hcAnswers(true), version: 1, updated_at: '2026-10-27 09:30:00.123', completed_at: '2026-10-27 09:30:00', client_label: 'Kestrel Group', coach_name: 'Tim' });
-        if (url.endsWith('/rpc/alignment_save')) return json({ ok: true, version: 2, updated_at: '2026-10-27 10:00:00', status: 'complete' });
-        return route.abort();
-      });
-      await hc.route('**/api/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
-      await hc.route(/\/health-check\/[^/.]+$/, async (route) => {
-        if (route.request().resourceType() !== 'document') return route.continue();
-        return route.fulfill({ response: await route.fetch({ url: `${APP}/health-check.html` }) });
-      });
-      await hc.addInitScript(() => { try { localStorage.setItem('hc-quick-guide-watched', '1'); } catch { /* blocked */ } });
-      const page2 = await hc.newPage();
-      await page2.goto(`${APP}/health-check/tok-calm-rules-0000000000000000000000000000`);
-      await page2.locator('#hc-email, .wlc .btn.full').first().waitFor({ timeout: 20000 });
-      const begin = page2.getByRole('button', { name: 'Begin the Health Check' });
-      if (await begin.isVisible().catch(() => false)) await begin.click();
-      await page2.locator('#hc-email').waitFor({ timeout: 10000 });
-      await page2.evaluate(() => document.fonts.ready);
-      await sleep(600);
-      const signIn = await measureChevrons(page2);
-      pass(`chevrons, Health Check sign-in ${width}px: Back's chevron is centred on its word`, signIn.length >= 1 && chevronsOff(signIn).length === 0, signIn.length ? chevronsOff(signIn).join('; ') : 'no chevron found');
-      await page2.locator('#hc-email').fill('sam.example@invented.test');
-      await page2.locator('#hc-code').fill('ABC234');
-      await page2.locator('form button[type=submit]').click();
-      await page2.locator('.gst b').first().waitFor({ timeout: 15000 });
-      await sleep(700);
-      const results = await measureChevrons(page2);
-      pass(`chevrons, Health Check results ${width}px: every chevron is centred on its text`, results.length >= 1 && chevronsOff(results).length === 0, results.length ? chevronsOff(results).join('; ') : 'no chevron found');
-    } catch (e) {
-      pass(`chevrons, Health Check ${width}px: measured`, false, e.message.split('\n')[0]);
+    // The outside Health Check (rebuilt to M7b version 51): Back on the email and code screen, Back beside the
+    // tool's name on a question, and the results' drop-downs, closed and open. Its stand-ins are the Health
+    // Check suites' own (tests/healthcheck/hc-shared.mjs): nothing signs in and nothing is saved.
+    if (CHEV_PARTS.includes('health-check')) {
+      let hc = null;
+      try {
+        hc = await hcPage(browser, width, 'light', { complete: true, step: { screen: 'done' }, scale: 2 });
+        const page2 = hc.page;
+        await page2.getByRole('button', { name: 'Begin the Health Check' }).click();
+        await page2.locator('.ds-guest-question').waitFor({ timeout: 10000 });
+        await page2.evaluate(() => document.fonts.ready);
+        await sleep(600);
+        const signIn = await measureChevrons(page2);
+        pass(`chevrons, Health Check email and code ${width}px: Back's chevron is centred on its word`, signIn.length >= 1 && chevronsOff(signIn).length === 0, signIn.length ? chevronsOff(signIn).join('; ') : 'no chevron found');
+        await hcSignIn(page2, hc.session);
+        await page2.locator('button.hc-prow').first().waitFor({ timeout: 15000 });
+        // The pointer is moved off the page's parts: left where the last press was, it would be pointing
+        // at a chart dot once the results are drawn, and the dot's pop-up would lie over a drop-down.
+        await page2.mouse.move(2, 2);
+        await sleep(700);
+        const results = await measureChevrons(page2);
+        pass(`chevrons, Health Check results ${width}px: every chevron is centred on its text (${results.length})`, results.length >= 2 && chevronsOff(results).length === 0, results.length ? chevronsOff(results).join('; ') : 'no chevron found');
+        // A drop-down open (a laptop: its list opens under it and its arrow turns; a phone gets a bottom panel).
+        if (!phone) {
+          await page2.locator('.hc-ctl .ds-dd').first().click();
+          await page2.getByRole('option').first().waitFor({ timeout: 5000 });
+          await sleep(500);
+          const open = await measureChevrons(page2);
+          // (The open list lies over the drop-down under it, which is passed over as covered.)
+          pass(`chevrons, Health Check results ${width}px: the same with a drop-down open`, open.length >= 1 && chevronsOff(open).length === 0, open.length ? chevronsOff(open).join('; ') : 'no chevron found');
+          await page2.keyboard.press('Escape');
+          await sleep(400);
+        }
+        // A question: Back beside the tool's name in capitals.
+        await page2.getByRole('button', { name: 'Edit the objective' }).click();
+        await page2.locator('.ds-guide-back').waitFor({ timeout: 10000 });
+        await page2.mouse.move(2, 2);
+        await sleep(700);
+        const question = await measureChevrons(page2);
+        pass(`chevrons, Health Check question ${width}px: Back's chevron is centred on the tool's name`, question.length >= 1 && chevronsOff(question).length === 0, question.length ? chevronsOff(question).join('; ') : 'no chevron found');
+        // The dates: two drop-downs with their arrows.
+        await page2.locator('.ds-guide-back').click();
+        await page2.locator('button.hc-prow').first().waitFor({ timeout: 10000 });
+        await sleep(500);
+        await page2.locator('button.hc-prow').first().click();
+        for (let i = 0; i < 4; i += 1) { await sleep(500); await page2.locator('.ds-answer[aria-checked=true]').click(); }
+        await page2.locator('.hc-dates .ds-dd').first().waitFor({ timeout: 10000 });
+        await page2.mouse.move(2, 2);
+        await sleep(700);
+        const dates = await measureChevrons(page2);
+        pass(`chevrons, Health Check dates ${width}px: every chevron is centred on its text (${dates.length})`, dates.length >= 3 && chevronsOff(dates).length === 0, dates.length ? chevronsOff(dates).join('; ') : 'no chevron found');
+      } catch (e) {
+        pass(`chevrons, Health Check ${width}px: measured`, false, e.message.split('\n')[0]);
+      }
+      if (hc) await hc.ctx.close();
     }
-    await hc.close();
 
     // The portal's own /health-check route (the older page, kept for rolling
     // back; Tim, 12 Nov): Back beside its word, and the results' sort arrows.

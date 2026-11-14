@@ -106,9 +106,9 @@ function serviceWorker(buildId, preview) {
 // (health-check.html; vercel.json serves it for /health-check/*). It is built
 // in a second, separate pass once the portal's build has finished, into the
 // same folder, so the two never share a file: the portal's build is exactly
-// what it would be without the Health Check page. The page has its own dark
-// and light, following the device (src/health-check/hc.css), so it gets no
-// colour mode boot, gallery or version file.
+// what it would be without the Health Check page. The page follows the
+// device's light or dark (the colour mode boot does that for /health-check),
+// and gets no gallery or version file.
 function healthCheckPage(buildId) {
   let config
   return {
@@ -124,7 +124,9 @@ function healthCheckPage(buildId) {
         mode: config.mode,
         logLevel: config.logLevel,
         publicDir: false, // the portal's pass has already copied public/
-        plugins: [react()],
+        // The colour mode is set before the first paint here too: the page is
+        // built from the portal's shared parts, whose colours follow it.
+        plugins: [react(), colourMode()],
         define: { __BUILD_ID__: JSON.stringify(buildId) },
         build: {
           outDir: config.build.outDir,

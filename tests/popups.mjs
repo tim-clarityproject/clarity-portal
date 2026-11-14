@@ -1,6 +1,6 @@
 // How pop-ups open (Tim, 28 Oct, 14:22 and 14:42; START-HERE section 5),
 // checked in the running app with a real mouse, keyboard and touch screen:
-//  - mouse: pointing at an ⓘ, How it works or a chart dot previews its
+//  - mouse: pointing at an ⓘ or a chart dot previews its
 //    pop-up, and it closes when the pointer moves away;
 //  - click: it stays open until you click away, click it again or press
 //    Escape, and Escape returns focus to the icon;
@@ -13,11 +13,12 @@
 //    target when there's no room above, and is display none when closed.
 //
 //   node tests/popups.mjs [report file]
-//   APP_URL=http://localhost:5174 node tests/popups.mjs   (the release worktree)
+//   ONLY=health-check node tests/popups.mjs   (the outside Health Check alone: nothing signs in)
 //
-// The Health Check (health-check.html) runs on any branch: its two database
-// calls are answered here with invented answers, every email call and
-// everything outside localhost is blocked. Where the portal's design system
+// The outside Health Check (health-check.html, rebuilt to M7b version 51):
+// its two database calls are answered with invented answers, every email
+// call and everything outside localhost is blocked
+// (tests/healthcheck/hc-shared.mjs). Where the portal's design system
 // is there (src/components/design), it also signs in as the invented test
 // client on the TEST database only and checks a sample of portal pages: the
 // sprint, the year, the plan, Daily plan, Daily review, the weekly
@@ -29,10 +30,12 @@
 import { chromium } from 'playwright';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
+import { appPage, signIn as signInHc } from './healthcheck/hc-shared.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_HOST = 'gqtqljngeenqzxneucoc.supabase.co';
-const PORTAL = existsSync('src/components/design/ChartTips.jsx');
+// ONLY=health-check runs the outside Health Check alone: nothing signs in and the test accounts are never read.
+const PORTAL = existsSync('src/components/design/ChartTips.jsx') && process.env.ONLY !== 'health-check';
 const out = process.argv[2] || null;
 const results = [];
 let failures = 0;
@@ -277,7 +280,8 @@ async function touchChecks(page, t, where, other) {
 async function actionChecks(page, loc, kind, where, touch) {
   const label = `${where}, ${kind}`;
   await loc.scrollIntoViewIfNeeded();
-  const dialogOpen = () => page.evaluate(() => [...document.querySelectorAll('[role=dialog]')].some((d) => d.getClientRects().length && getComputedStyle(d).visibility !== 'hidden' && !d.closest('[inert]')));
+  // (A guided tool that covers the screen is a dialog itself; the panel an icon opens is another one, over it.)
+  const dialogOpen = () => page.evaluate(() => [...document.querySelectorAll('[role=dialog]:not(.ds-guide)')].some((d) => d.getClientRects().length && getComputedStyle(d).visibility !== 'hidden' && !d.closest('[inert]')));
   if (!touch) {
     await loc.hover();
     await wait(page);
@@ -314,137 +318,81 @@ async function actionChecks(page, loc, kind, where, touch) {
   }
 }
 
-// ---- the Health Check (any branch) -------------------------------------------
+// ---- the outside Health Check (rebuilt to M7b version 51) ---------------------
+// Its page, stand-ins and invented answers are the Health Check suites' own
+// (tests/healthcheck/hc-shared.mjs): the two database calls and every email
+// call are answered there, and everything outside localhost is blocked.
 
-const PR = [
-  { t: 'Enterprise sales team', c: [3, 2, 2, 3], p: 2, r: 5, s: '2025-09', f: '2026-12' },
-  { t: 'Customer success programme', c: [3, 3, 1, 2], p: 4, r: 3, s: '2026-01', f: '2027-03' },
-  { t: 'Pricing review', c: [2, 2, 0, 3], p: 3, r: 2, s: '2026-06', f: '2026-12' },
-  { t: 'Hiring plan for 2027', c: [2, 1, 2, 2], p: 1, r: 4, s: '2026-10', f: '2027-06' },
-  { t: 'Partner channel', c: [2, 1, 1, 1], p: 3, r: 3, s: '2026-04', f: 'open' },
-  { t: 'New office fit-out', c: [0, 0, 1, 1], p: 4, r: 4, s: '2026-07', f: '2026-11' },
-  { t: 'Data platform', c: [1, 3, 1, 2], p: 5, r: 3, s: '2025-11', f: '2026-12' },
-];
-const CSF = ['Win and keep enterprise clients', 'A product customers recommend', 'A team with the right skills in the right roles', 'Cash to invest ahead of growth'];
-const invented = (complete) => ({
-  objective: 'Double recurring revenue by 2028 while keeping client satisfaction above 9 out of 10.',
-  csfs: CSF.map((text, i) => ({ id: `f${i}`, text, level: [3, 2, 2, 1][i] })),
-  projects: PR.map((p, i) => ({ id: `p${i}`, text: p.t, started: p.s, due: p.f })),
-  ratings: { owner: Object.fromEntries(PR.map((p, i) => [`p${i}`, { contrib: Object.fromEntries(p.c.map((v, k) => [`f${k}`, v])), progress: p.p, resource: p.r }])) },
-  ...(complete ? { completedAt: '2026-10-27T09:00:00.000Z' } : {}),
-});
-
-async function healthCheckPage({ width, touch, step, complete }) {
-  const ctx = await browser.newContext({ viewport: { width, height: width < 641 ? 844 : 900 }, isMobile: touch, hasTouch: touch, colorScheme: 'dark', reducedMotion: 'reduce' });
-  const session = { email: 'sam.example@invented.test', code: 'ABC234', status: complete ? 'complete' : 'in_progress', data: invented(complete), current_step: step, version: 1 };
-  await ctx.route(/^https?:\/\/(?!localhost)/, (route) => {
-    const url = route.request().url();
-    const json = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
-    if (url.endsWith('/rpc/alignment_open')) {
-      return json({ ok: true, status: session.status, current_step: session.current_step, data: session.data, version: session.version, updated_at: '2026-10-27 09:30:00.123', completed_at: complete ? '2026-10-27 09:30:00' : null, client_label: 'Kestrel Group', coach_name: 'Tim' });
-    }
-    if (url.endsWith('/rpc/alignment_save')) {
-      const b = JSON.parse(route.request().postData() || '{}');
-      session.data = b.p_data; session.version += 1;
-      return json({ ok: true, version: session.version, updated_at: '2026-10-27 10:00:00', status: session.status });
-    }
-    return route.abort();
-  });
-  await ctx.route(/localhost:\d+\/health-check\/[^/.]+$/, async (route) => {
-    if (route.request().resourceType() !== 'document') return route.continue();
-    const r = await route.fetch({ url: `${APP}/health-check.html` });
-    return route.fulfill({ response: r });
-  });
-  await ctx.route('**/api/alignment-email', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
-  await ctx.addInitScript(() => { try { localStorage.setItem('hc-quick-guide-watched', '1'); } catch { /* blocked */ } });
-  const page = await ctx.newPage();
-  page.on('pageerror', (e) => pass(`no page errors (Health Check ${width}px)`, false, e.message));
-  await page.goto(`${APP}/health-check/tok-popups-0000000000000000000000000000000`);
-  await page.locator('#hc-email, .wlc .btn.full').first().waitFor();
+async function healthCheckPage({ width, step, complete }) {
+  const b = await appPage(browser, width, 'dark', { step: step || { screen: 'objective' }, complete: !!complete });
+  b.page.on('pageerror', (e) => pass(`no page errors (Health Check ${width}px)`, false, e.message));
+  return b;
+}
+const beginHc = async (page) => {
   const begin = page.getByRole('button', { name: 'Begin the Health Check' });
   if (await begin.isVisible().catch(() => false)) await begin.click();
-  return { ctx, page, session };
-}
-async function signInHc(page, session) {
-  await page.locator('#hc-email').fill(session.email);
-  await page.locator('#hc-code').fill(session.code);
-  await page.locator('form button[type=submit]').click();
-  await page.locator('.hc-main .page h2').first().waitFor();
-  await wait(page);
-}
+  await page.locator('.ds-guest-question').first().waitFor();
+};
 
 async function healthCheck(touch) {
   const width = touch ? 390 : 1280;
   const how = touch ? 'touch' : 'desktop';
-  // The sign-in screen's ⓘ.
+  const run = async (page, t, where, other) => {
+    if (!(await t.loc.count())) { pass(`${where}: has ${t.kind}`, false); return; }
+    if (touch) await touchChecks(page, t, where, other && (await other.count()) ? other : null);
+    else { await mouseChecks(page, t, where); await keyboardChecks(page, t, where); if (t.flip) await flipCheck(page, t, where); }
+  };
+  // The email and code screen's ⓘ, at the end of its sentence.
   {
-    const { ctx, page } = await healthCheckPage({ width, touch, step: { screen: 'objective' }, complete: false });
-    const t = { kind: 'ⓘ (Health Check)', type: 'float', loc: page.locator('.privl .ipb').first() };
-    if (touch) await touchChecks(page, t, `Health Check sign-in ${how}`);
-    else { await mouseChecks(page, t, `Health Check sign-in ${how}`); await keyboardChecks(page, t, `Health Check sign-in ${how}`); }
+    const { ctx, page } = await healthCheckPage({ width });
+    await beginHc(page);
+    await run(page, { kind: 'ⓘ (Health Check)', type: 'inline', loc: page.locator('.ds-guest-sentence .ds-guide-i').first() }, `Health Check email and code ${how}`);
     await ctx.close();
   }
-  // The steps' ⓘ: the CSFs and the projects.
-  for (const screen of ['csf', 'projects']) {
-    const { ctx, page, session } = await healthCheckPage({ width, touch, step: { screen }, complete: false });
+  // The first question: the play icon and the eye (they show there and on the results only).
+  {
+    const { ctx, page, session } = await healthCheckPage({ width, step: { screen: 'objective' } });
     await signInHc(page, session);
-    const t = { kind: 'ⓘ (Health Check)', type: 'float', loc: page.locator('.hc-main .ipb').first() };
-    const where = `Health Check ${screen} step ${how}`;
-    if (await t.loc.count()) {
-      if (touch) await touchChecks(page, t, where);
-      else { await mouseChecks(page, t, where); await keyboardChecks(page, t, where); }
-    } else pass(`${where}: has an ⓘ`, false);
-    await actionChecks(page, page.locator('.ilink.who').first(), 'the eye (Health Check)', where, touch);
+    const where = `Health Check first question ${how}`;
+    await actionChecks(page, page.locator('.ds-guide-question .ds-who:not(.ds-play)').first(), 'the eye (Health Check)', where, touch);
     await actionChecks(page, page.getByRole('button', { name: 'Quick guide' }).first(), 'play, Quick guide (Health Check)', where, touch);
     await ctx.close();
   }
-  // The results: the ⓘ, How it works and the chart's dots.
-  const { ctx, page, session } = await healthCheckPage({ width, touch, step: { screen: 'results' }, complete: true });
-  await signInHc(page, session);
-  await page.locator('.chart g.dot').first().waitFor();
-  const where = `Health Check results ${how}`;
-  const infos = page.locator('.hc-main .ipb:visible');
-  const dots = page.locator('.chart g.dot:visible');
-  const targets = [
-    { kind: 'ⓘ (Health Check)', type: 'float', loc: infos.first(), other: infos.nth(1) },
-    { kind: 'How it works (Health Check)', type: 'float', loc: page.getByRole('button', { name: 'How it works' }).first() },
-    // Health Check 3: the ⓘ on the "Strategic importance" column heading
-    // (a phone's rows show only the name and state, so no column headings).
-    ...(touch ? [] : [{ kind: 'ⓘ on a column heading (Health Check)', type: 'float', loc: page.getByRole('button', { name: 'What strategic importance means' }).first(), other: infos.first() }]),
-    { kind: 'chart dot (Health Check)', type: 'float', loc: dots.first(), other: dots.nth(1), key: 'Enter' },
-    { kind: 'chart dot (Health Check)', type: 'float', loc: dots.last(), key: ' ' },
-  ];
-  for (const t of targets) {
-    if (!(await t.loc.count())) { pass(`${where}: has ${t.kind}`, false); continue; }
-    // Before Health Check 3, How it works opened a panel (a dialog), not a pop-up.
-    if (await t.loc.evaluate((el) => el.getAttribute('aria-haspopup') === 'dialog')) {
-      await actionChecks(page, t.loc, `${t.kind.replace(' (Health Check)', '')}, a panel (Health Check)`, where, touch);
-      continue;
-    }
-    if (touch) await touchChecks(page, t, where, t.other && (await t.other.count()) ? t.other : null);
-    else { await mouseChecks(page, t, where); await keyboardChecks(page, t, where); await flipCheck(page, t, where); }
+  // The steps' ⓘ: the Success Factors' label and the projects' line of help.
+  for (const [screen, sel] of [['csf', '.hc-flab .ds-guide-i'], ['projects', '.ds-guide-nudge .ds-guide-i']]) {
+    const { ctx, page, session } = await healthCheckPage({ width, step: { screen } });
+    await signInHc(page, session);
+    await run(page, { kind: 'ⓘ (Health Check)', type: 'inline', loc: page.locator(sel).first() }, `Health Check ${screen} step ${how}`);
+    await ctx.close();
   }
-  await actionChecks(page, page.locator('.ilink.who').first(), 'the eye (Health Check)', where, touch);
+  // The results: the chart's ⓘ, the column heading's ⓘ (a laptop) and the chart's dots.
+  const { ctx, page, session } = await healthCheckPage({ width, step: { screen: 'done' }, complete: true });
+  await signInHc(page, session);
+  await page.locator('.hc-dot').first().waitFor();
+  const where = `Health Check results ${how}`;
+  const chartI = page.getByRole('button', { name: 'How to read the chart' }).first();
+  const columnI = page.getByRole('button', { name: 'What strategic importance means' }).first();
+  const dots = page.locator('.hc-dot:visible');
+  await run(page, { kind: 'ⓘ (Health Check)', type: 'inline', loc: chartI }, where, touch ? null : columnI);
+  // A phone's rows have no column headings, so no ⓘ there.
+  if (!touch) await run(page, { kind: 'ⓘ on a column heading (Health Check)', type: 'inline', loc: columnI }, where);
+  await run(page, { kind: 'chart dot (Health Check)', type: 'float', loc: dots.first(), key: 'Enter', flip: true }, where, dots.nth(1));
+  await run(page, { kind: 'chart dot (Health Check)', type: 'float', loc: dots.last(), key: ' ', flip: true }, where);
+  await actionChecks(page, page.locator('.ds-guide-title .ds-who:not(.ds-play)').first(), 'the eye (Health Check)', where, touch);
   await actionChecks(page, page.getByRole('button', { name: 'Quick guide' }).first(), 'play, Quick guide (Health Check)', where, touch);
   await ctx.close();
-  // The example report (Health Check 3): its two ⓘ and its dots.
+  // The example report: its ⓘ and its dots.
   {
-    const { ctx: ectx, page: ep } = await healthCheckPage({ width, touch, step: null, complete: false });
+    const { ctx: ectx, page: ep } = await healthCheckPage({ width });
+    await beginHc(ep);
     await ep.getByRole('button', { name: 'See an example report' }).click();
-    await ep.locator('.chart g.dot').first().waitFor();
+    await ep.locator('.hc-dot').first().waitFor();
     await wait(ep);
     const ewhere = `Health Check example report ${how}`;
-    const eInfos = ep.locator('.hc-main .ipb:visible');
-    const eDots = ep.locator('.chart g.dot:visible');
-    for (const t of [
-      { kind: 'ⓘ (Health Check)', type: 'float', loc: eInfos.first(), other: touch ? null : eInfos.nth(1) },
-      ...(touch ? [] : [{ kind: 'ⓘ on a column heading (Health Check)', type: 'float', loc: eInfos.nth(1), other: eInfos.first() }]),
-      { kind: 'chart dot (Health Check)', type: 'float', loc: eDots.nth(2), other: eDots.nth(3), key: 'Enter' },
-    ]) {
-      if (!(await t.loc.count())) { pass(`${ewhere}: has ${t.kind}`, false); continue; }
-      if (touch) await touchChecks(ep, t, ewhere, t.other && (await t.other.count()) ? t.other : null);
-      else { await mouseChecks(ep, t, ewhere); await keyboardChecks(ep, t, ewhere); }
-    }
+    const eDots = ep.locator('.hc-dot:visible');
+    await run(ep, { kind: 'ⓘ (Health Check)', type: 'inline', loc: ep.getByRole('button', { name: 'How to read the chart' }).first() }, ewhere);
+    if (!touch) await run(ep, { kind: 'ⓘ on a column heading (Health Check)', type: 'inline', loc: ep.getByRole('button', { name: 'What strategic importance means' }).first() }, ewhere);
+    await run(ep, { kind: 'chart dot (Health Check)', type: 'float', loc: eDots.nth(0), key: 'Enter' }, ewhere, eDots.nth(7));
     await ectx.close();
   }
 }

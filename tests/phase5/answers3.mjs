@@ -132,9 +132,11 @@ const openHealthCheck = async (context, open) => {
   await context.addInitScript(() => { try { localStorage.setItem('hc-quick-guide-watched', '1'); } catch { /* blocked */ } });
   const page = await context.newPage();
   await page.goto(`${APP}/health-check/tok-answers-three-000000000000000000000000`);
-  await page.locator('#hc-email, .wlc .btn.full').first().waitFor({ timeout: 20000 });
+  // (The page rebuilt to M7b version 51: the welcome, then the email and code screen.)
+  await page.locator('.ds-guest-title, .ds-guest-question').first().waitFor({ timeout: 20000 });
   const begin = page.getByRole('button', { name: 'Begin the Health Check' });
   if (await begin.isVisible().catch(() => false)) await begin.click();
+  await page.locator('.ds-guest-question').waitFor({ timeout: 10000 });
   return page;
 };
 
@@ -234,14 +236,14 @@ try {
       const hc = await browser.newContext(base);
       try {
         const p2 = await openHealthCheck(hc, { ok: true, status: 'in_progress', current_step: { screen: 'when', pi: 0, mode: 'full' }, data: hcAnswers(), version: 1, updated_at: '2026-10-27 09:30:00.123', completed_at: null, client_label: 'Kestrel Group', coach_name: 'Tim' });
-        await p2.locator('#hc-email').fill('sam.example@invented.test');
-        await p2.locator('#hc-code').fill('ABC234');
+        await p2.getByLabel('Email').fill('sam.example@invented.test');
+        await p2.getByLabel('Access code').fill('ABC234');
         await p2.locator('form button[type=submit]').click();
-        await p2.locator('.hc-main .page h2').first().waitFor({ timeout: 15000 });
+        await p2.locator('.ds-guide .ds-guide-question').first().waitFor({ timeout: 15000 });
         await p2.evaluate(() => document.fonts.ready);
         await sleep(800);
         const edit = p2.getByRole('button', { name: 'Edit the exact date' });
-        const text = await p2.locator('.hc-main').innerText();
+        const text = await p2.locator('.ds-guide').innerText();
         pass(`Health Check, when it started ${tag}: opened on the project's dates`, /Enterprise sales team/.test(text), text.slice(0, 160));
         pass(`Health Check, when it started ${tag}: the saved day shows, with "Edit the exact date"`, /18 Dec 2026/.test(text) && (await edit.count()) === 1, `${await edit.count()} found; ${text.replace(/\s+/g, ' ').slice(0, 200)}`);
         pass(`Health Check, when it started ${tag}: nothing says "Change the exact date"`, !/Change the exact date/i.test(text));
@@ -251,7 +253,7 @@ try {
           pass(`Health Check, when it started ${tag}: the link's tap area is 44px high`, b && b.height >= 43.5, b ? `${b.width.toFixed(0)} by ${b.height.toFixed(0)}` : 'not on screen');
           await edit.first().click();
           await sleep(600);
-          const panel = await p2.evaluate(() => { const d = document.querySelector('[role=dialog], .panel, .sheet'); return d ? d.innerText.replace(/\s+/g, ' ').slice(0, 200) : ''; });
+          const panel = await p2.evaluate(() => { const d = [...document.querySelectorAll('[role=dialog]:not(.ds-guide), .ds-cal-pop, .ds-calendar')].pop(); return d ? d.innerText.replace(/\s+/g, ' ').slice(0, 200) : ''; });
           pass(`Health Check, when it started ${tag}: "Edit the exact date" opens the day picker`, /December 2026|Dec 2026/.test(panel), panel || 'no panel opened');
           if (out) await p2.screenshot({ path: join(out, `health-check-exact-date-open-${size}-${mode}.png`), fullPage: true });
         }
@@ -301,10 +303,10 @@ try {
       const forcedHc = await browser.newContext({ ...base, forcedColors: 'active', deviceScaleFactor: 2 });
       try {
         const p3 = await openHealthCheck(forcedHc, { ok: true, status: 'in_progress', current_step: { screen: 'when', pi: 0, mode: 'full' }, data: hcAnswers(), version: 1, updated_at: '2026-10-27 09:30:00.123', completed_at: null, client_label: 'Kestrel Group', coach_name: 'Tim' });
-        await p3.locator('#hc-email').waitFor({ timeout: 10000 });
+        await p3.getByLabel('Email').waitFor({ timeout: 10000 });
         await p3.evaluate(() => document.fonts.ready);
         await sleep(600);
-        const icons = await p3.evaluate(maskedIcons, '.hc .chev, .hc .x');
+        const icons = await p3.evaluate(maskedIcons, '.ds-guest .ds-chevron, .ds-guest .ds-cross');
         pass(`high contrast, Health Check ${tag}: every chevron and crosshair is in the system's text colour (${icons.icons.length})`, icons.icons.length >= 1 && icons.icons.every((i) => i.colour === icons.text), icons.icons.map((i) => `${i.name} ${i.colour}`).join('; ') || 'none found');
         const drawn = await measureChevrons(p3);
         const unseen = (drawn.skipped || []).filter((s) => s.why === 'nothing drawn');

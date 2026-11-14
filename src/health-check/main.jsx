@@ -4,7 +4,9 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { loadWithReload } from '../lib/loadWithReload';
 import { diag } from '../utils/diag';
 import PageError from './PageError';
-import './hc.css';
+import '../lib/colourMode/boot.js';
+import '../globalStyles';
+import { ToastProvider } from '../components/design/Toast';
 import { keepPlaceOnReveal } from '../lib/keepPlace';
 
 // Anything that opens on the same page keeps your place (Tim, 13 Nov).
@@ -12,9 +14,11 @@ keepPlaceOnReveal();
 
 // The outside Strategic Alignment Health Check as its own small page
 // (health-check.html; vercel.json sends /health-check/* here). It renders only
-// the Health Check, in the new design (mock-up M7b version 4), with its own
-// styles only: no sign-in, menu, Breathe button or portal styles. The portal keeps its own /health-check route
-// for now, so rolling back is only the vercel.json line.
+// the Health Check (mock-up M7b version 51), built from the portal's shared
+// parts, so it loads the portal's styles and fonts (src/globalStyles.js) and
+// follows the device's light or dark (src/lib/colourMode/boot.js): no
+// sign-in, menu or Breathe button. The portal keeps its own /health-check
+// route for now, so rolling back is only the vercel.json line.
 
 // Reloads once if a tab opened before a deploy asks for a file that has gone.
 const HealthCheck = lazy(() => loadWithReload(() => import('./HealthCheckPage')));
@@ -23,7 +27,7 @@ const HealthCheck = lazy(() => loadWithReload(() => import('./HealthCheckPage'))
 // the local diagnostics log (as the portal's App.jsx).
 const redactHealthCheckToken = (pathname) => pathname.replace(/^(\/health-check\/).*/, '$1[token]');
 
-const blank = <div className="ui-root hc" />;
+const blank = <div className="ui-root" />;
 
 function Diagnostics() {
   const location = useLocation();
@@ -44,10 +48,12 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <Diagnostics />
       <PageError>
+        <ToastProvider>
         <Routes>
           <Route path="/health-check/:token" element={<Suspense fallback={blank}><HealthCheck /></Suspense>} />
           <Route path="*" element={<LeaveForPortal />} />
         </Routes>
+        </ToastProvider>
       </PageError>
     </BrowserRouter>
   </StrictMode>,

@@ -1,7 +1,7 @@
-// The Health Check's steps (mock-up M7b version 46): Objective, Critical
-// Success Factors, CSF weight, Projects, then for each project Contribution
-// (one factor per screen), When, Progress and Resource required, then the
-// results.
+// The Health Check's steps (mock-up M7b version 51): Objective, Success
+// Factors, how much each matters, Projects, then for each project
+// Contribution (one Success Factor per screen), When, Progress and Resource
+// required, then the results.
 // Pure helpers, no React. The answers use the saved shape from
 // src/pages/alignment/alignmentFlow.js (draftFromData and dataFromDraft).
 //
@@ -164,7 +164,7 @@ export function stepFromJson(json, draft, complete = false) {
   const mode = ['gaps', 'edit'].includes(json.mode) ? json.mode : (complete ? 'gaps' : 'full');
   if (name === 'contrib' && !factors.length) return at('csf');
   if (name === 'contrib' && !Number.isInteger(json.factor)) {
-    // The older page saved no CSF number: open on the first one still to rate.
+    // The older page saved no Success Factor number: open on the first one still to rate.
     const r = draft.ratings[projects[pi].id] || {};
     const gap = factors.findIndex((f) => r.contrib?.[f.id] == null);
     return at(name, { pi, fi: Math.max(0, gap), mode });
@@ -180,4 +180,27 @@ export function clampStep(step, draft) {
   if (!n) return at('projects');
   if (step.screen === 'contrib' && !nf) return at('csf');
   return { ...step, pi: Math.min(step.pi, n - 1), fi: Math.min(step.fi || 0, Math.max(0, nf - 1)) };
+}
+
+/**
+ * A step's key in the guided tool (GuidedTool keeps its place by key), made
+ * from the ids of the project and the Success Factor, so a list that changes
+ * never moves someone onto another question.
+ */
+export function stepKey(step, draft) {
+  if (!PROJECT_SCREENS.includes(step.screen)) return step.screen;
+  const p = cleanItems(draft.projects)[step.pi];
+  if (!p) return 'projects';
+  if (step.screen !== 'contrib') return `${step.screen}:${p.id}`;
+  const f = cleanItems(draft.csfs)[step.fi];
+  return f ? `contrib:${p.id}:${f.id}` : `when:${p.id}`;
+}
+
+/** The first answer still missing (as a step in 'gaps' mode), or null when the results are whole. */
+export function firstGap(draft) {
+  if (!draft.objective.trim()) return at('objective');
+  if (!cleanItems(draft.csfs).length) return at('csf');
+  if (!cleanItems(draft.projects).length) return at('projects');
+  const gap = firstMissing(sequence(draft), draft);
+  return gap ? { ...gap, mode: 'gaps' } : null;
 }

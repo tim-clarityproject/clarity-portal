@@ -24,6 +24,7 @@
 //
 //   node --import ./tests/scores/register.mjs tests/phase5/answers2.mjs [folder for screenshots]
 //   SIZES=390 MODES=light …   one part of it
+import { STEPS as HC_STEPS, appPage as hcPage, signIn as hcSignIn } from '../healthcheck/hc-shared.mjs';
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
@@ -77,21 +78,6 @@ const edgeCheck = (name, found, { least = 1 } = {}) => {
   pass(`${name}: the edge reaches 3 to 1 (${live.length} measured, lowest ${live.length ? Math.min(...live.map((e) => contrast(e.edge, e.behind))).toFixed(2) : 'none'})`, live.length >= least && low.length === 0, live.length ? low.slice(0, 3).map((e) => `"${e.words}" ${contrast(e.edge, e.behind).toFixed(2)} (${e.edge} on ${e.behind})`).join('; ') : 'none found');
 };
 
-// The Health Check's invented answers (as tests/phase5/calm-rules.mjs).
-const HC_CSF = ['Win and keep enterprise clients', 'A product customers recommend', 'A team with the right skills in the right roles', 'Cash to invest ahead of growth'];
-const HC_PR = [
-  { t: 'Enterprise sales team', c: [3, 2, 2, 3], p: 2, r: 5, s: '2025-09', f: '2026-12' },
-  { t: 'Customer success programme', c: [3, 3, 1, 2], p: 4, r: 3, s: '2026-01', f: '2027-03' },
-  { t: 'Pricing review', c: [2, 2, 0, 3], p: 3, r: 2, s: '2026-06', f: '2026-12' },
-  { t: 'Hiring plan for 2027', c: [2, 1, 2, 2], p: 1, r: 4, s: '2026-10', f: '2027-06' },
-];
-const hcAnswers = (complete) => ({
-  objective: 'Double recurring revenue by 2028 while keeping client satisfaction high.',
-  csfs: HC_CSF.map((text, i) => ({ id: `f${i}`, text, level: [3, 2, 2, 1][i] })),
-  projects: HC_PR.map((p, i) => ({ id: `p${i}`, text: p.t, started: p.s, due: p.f })),
-  ratings: complete ? { owner: Object.fromEntries(HC_PR.map((p, i) => [`p${i}`, { contrib: Object.fromEntries(p.c.map((v, k) => [`f${k}`, v])), progress: p.p, resource: p.r }])) } : { owner: {} },
-  ...(complete ? { completedAt: '2026-10-27T09:00:00.000Z' } : {}),
-});
 
 execFileSync('node', ['scripts/seed-test-ratings.mjs'], { stdio: 'ignore' });
 const browser = await chromium.launch();
@@ -216,48 +202,34 @@ try {
       await context.close();
 
       // ------------------------------------------------ the outside Health Check
+      // (Rebuilt to M7b version 51 from the portal's shared parts. Its stand-ins are the Health Check
+      // suites' own, tests/healthcheck/hc-shared.mjs: nothing signs in and nothing is saved.)
       for (const screen of ['question', 'results']) {
         const complete = screen === 'results';
-        const hc = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: mode, reducedMotion: 'reduce' });
+        let hc = null;
         try {
-          await hc.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => {
-            const url = route.request().url();
-            const json = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
-            // A question screen: the first project's contribution, with its answer rows.
-            if (url.endsWith('/rpc/alignment_open')) return json({ ok: true, status: complete ? 'complete' : 'in_progress', current_step: complete ? null : { screen: 'contrib', pi: 0, fi: 0, mode: 'full' }, data: hcAnswers(complete), version: 1, updated_at: '2026-10-27 09:30:00.123', completed_at: complete ? '2026-10-27 09:30:00' : null, client_label: 'Kestrel Group', coach_name: 'Tim' });
-            if (url.endsWith('/rpc/alignment_save')) return json({ ok: true, version: 2, updated_at: '2026-10-27 10:00:00', status: complete ? 'complete' : 'in_progress' });
-            return route.abort();
-          });
-          await hc.route('**/api/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
-          await hc.route(/\/health-check\/[^/.]+$/, async (route) => {
-            if (route.request().resourceType() !== 'document') return route.continue();
-            return route.fulfill({ response: await route.fetch({ url: `${APP}/health-check.html` }) });
-          });
-          await hc.addInitScript(() => { try { localStorage.setItem('hc-quick-guide-watched', '1'); } catch { /* blocked */ } });
-          const p2 = await hc.newPage();
-          await p2.goto(`${APP}/health-check/tok-answers-two-00000000000000000000000000`);
-          await p2.locator('#hc-email, .wlc .btn.full').first().waitFor({ timeout: 20000 });
-          const begin = p2.getByRole('button', { name: 'Begin the Health Check' });
-          if (await begin.isVisible().catch(() => false)) await begin.click();
-          await p2.locator('#hc-email').fill('sam.example@invented.test');
-          await p2.locator('#hc-code').fill('ABC234');
-          await p2.locator('form button[type=submit]').click();
-          await p2.locator(complete ? '.gst b' : '.hc-main .page h2').first().waitFor({ timeout: 15000 });
+          // A question screen: the second project's contribution, with its answer rows.
+          hc = await hcPage(browser, width, mode, complete ? { complete: true, step: { screen: 'done' } } : { step: HC_STEPS.contrib });
+          const p2 = hc.page;
+          await hcSignIn(p2, hc.session);
+          await p2.locator(complete ? 'button.hc-prow' : '.ds-guide .ds-answer').first().waitFor({ timeout: 15000 });
           await p2.evaluate(() => document.fonts.ready);
+          await p2.mouse.move(2, 2);
           await sleep(800);
           if (complete) {
-            edgeCheck(`Health Check results, outlined buttons ${tag}`, await p2.evaluate(edges, '.hc .ghost, .hc .btn.quiet'), { least: 1 });
-            const words = await p2.evaluate(() => [...document.querySelectorAll('.hc button.chg')].map((b) => b.innerText.trim()));
+            edgeCheck(`Health Check results, outlined buttons ${tag}`, await p2.evaluate(edges, '.hc-keep .ds-btn--outline, .ds-calm-card .ds-btn--outline'), { least: 2 });
+            edgeCheck(`Health Check results, the drop-downs ${tag}`, await p2.evaluate(edges, '.hc-ctl .ds-dd'), { least: 2 });
+            const words = await p2.evaluate(() => [...document.querySelectorAll('.ds-results-headrow .ds-link')].map((b) => b.innerText.trim()));
             pass(`Health Check results ${tag}: the three links say "Edit"`, words.length === 3 && words.every((w) => w === 'Edit'), words.join(' | '));
             pass(`Health Check results ${tag}: no link or button says "Change"`, !(await p2.evaluate(() => [...document.querySelectorAll('button, a')].some((el) => /^change\b/i.test((el.innerText || '').trim()) && el.getBoundingClientRect().width > 0))));
           } else {
-            const rows = await p2.evaluate(edges, '.hc .opts5 button:not([aria-checked=true])');
+            const rows = await p2.evaluate(edges, '.ds-guide .ds-answer:not([aria-checked=true])');
             if (rows.length) edgeCheck(`Health Check question, answer rows at rest ${tag}`, rows, { least: 3 });
-            else pass(`Health Check question ${tag}: opened on a question with answer rows`, false, (await p2.locator('.hc-main').innerText()).slice(0, 120));
+            else pass(`Health Check question ${tag}: opened on a question with answer rows`, false, (await p2.locator('.ds-guide').innerText()).slice(0, 120));
           }
           if (out) await p2.screenshot({ path: join(out, `health-check-${screen}-${size}-${mode}.png`), fullPage: true });
         } catch (e) { pass(`Health Check ${screen} ${tag}: checked`, false, e.message.split('\n')[0]); }
-        await hc.close();
+        if (hc) await hc.ctx.close();
       }
     }
   }

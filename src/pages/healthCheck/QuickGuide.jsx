@@ -7,11 +7,17 @@ import phoneVideo from './media/quick-guide-phone.mp4?url&no-inline';
 import desktopPoster from './media/quick-guide-desktop.jpg?url&no-inline';
 import phonePoster from './media/quick-guide-phone.jpg?url&no-inline';
 import captionsUrl from './media/quick-guide.en-GB.vtt?url&no-inline';
-import { Cross, PHONE, useDialog } from './parts';
+import { SlidePanel } from '../../components/design/Dialogs';
+import { PHONE_QUERY as PHONE } from '../../components/design/pageLock';
+import './healthCheck.css';
 
-// The Quick guide video (mock-up M7b version 49), with Tim's voice-over: a
-// card on the welcome, ready to play, and a panel from the play icon (centred
-// on a laptop, full screen on a phone). Laptops and tablets get the desktop
+// The Quick guide video (mock-up M7b version 51), with Tim's voice-over: a
+// card on the welcome, ready to play, and the design reference's side panel
+// from the play icon, made wider for the picture (full screen on a phone).
+// On a phone the welcome's card is square and shows only Watch; Watch opens
+// the panel, so the page never grows and Begin stays in view (Tim, 13 Nov,
+// 18:07). The guide's own content (its screens, voice and captions) is
+// rebuilt in a later step; this is today's video in its new place. Laptops and tablets get the desktop
 // video, phones the phone video, by the page's own phone width; both use the
 // one captions file, shown as written in the bar under the picture. Nothing
 // plays by itself, and nothing is downloaded until the guide is opened: the
@@ -64,7 +70,7 @@ function captionsTrack(v) {
   return track;
 }
 
-function Player({ inline, autoPlay, onWatched }) {
+function Player({ inline, autoPlay, onWatched, onOpenPanel }) {
   const ref = useRef(null);
   const fillRef = useRef(null);
   const thumbRef = useRef(null);
@@ -242,65 +248,60 @@ function Player({ inline, autoPlay, onWatched }) {
   const caption = failed
     ? 'The video didn’t load. Check your connection, then reload the page.'
     : inline && !started ? 'Watch with sound for the voice-over, or read the captions.' : cap;
+  // On a phone the welcome's Watch opens the guide full screen instead.
+  const watch = () => { if (onOpenPanel && window.matchMedia?.(PHONE).matches) onOpenPanel(); else toggle(); };
   return (
-    <>
+    <div className={`hc-vcard${inline ? ' hc-vcard--inline' : ''}${inline && !started ? ' hc-vcard--pre' : ''}`}>
       {/* Tapping the picture pauses or plays it; the Play button does the same for keyboards. */}
-      <div className="stg" onClick={(e) => { if (!e.target.closest('.bigplay')) toggle(); }}>
+      <div className="hc-stage" onClick={(e) => { if (!e.target.closest('.hc-bigplay')) toggle(); }}>
         <video ref={ref} src={video?.src} poster={video?.poster} playsInline preload="none" aria-label="Quick guide video">
           {video && <track kind="captions" src={captionsUrl} srcLang="en-GB" label="English" />}
         </video>
         {showBig && (
-          <button type="button" className={`bigplay${watched ? ' done' : ''}`} onClick={toggle}>
-            <span className="bpc">{BIG_PLAY}</span>
+          <button type="button" className={`hc-bigplay${watched ? ' hc-bigplay--done' : ''}`} onClick={watch}>
+            <span className="hc-bigplay-mark">{BIG_PLAY}</span>
             <b>{ended ? 'Watch again' : 'Watch this first'}</b>
             <small>It takes ~1 minute, and you’ll get more out of the Health Check.</small>
           </button>
         )}
       </div>
-      <div className="capbar" aria-live="polite">{caption}</div>
-      <div className="vpc">
-        <button type="button" className="pb" aria-label={playing ? 'Pause' : 'Play'} onClick={toggle}>{playing ? PAUSE : PLAY}</button>
-        <button type="button" className="pb" aria-label="Replay" onClick={replay}>{REPLAY}</button>
-        <button type="button" className="pb" aria-label={muted ? 'Turn the voice on' : 'Mute the voice'} onClick={mute}>{muted ? MUTED : SOUND}</button>
+      <div className="hc-capbar" aria-live="polite">{caption}</div>
+      <div className="hc-vcontrols">
+        <button type="button" className="hc-vbtn" aria-label={playing ? 'Pause' : 'Play'} onClick={toggle}>{playing ? PAUSE : PLAY}</button>
+        <button type="button" className="hc-vbtn" aria-label="Replay" onClick={replay}>{REPLAY}</button>
+        <button type="button" className="hc-vbtn" aria-label={muted ? 'Turn the voice on' : 'Mute the voice'} onClick={mute}>{muted ? MUTED : SOUND}</button>
         {/* aria-valuenow, aria-valuetext, the widths and the time are written by paint(). */}
         <span
           ref={scrubRef}
-          className={`scrub${drag ? ' drag' : ''}`}
+          className={`hc-scrub${drag ? ' hc-scrub--drag' : ''}`}
           role="slider"
           tabIndex={0}
-          aria-label="Position in the video"
+          aria-label="Position in the Quick guide"
           aria-valuemin={0}
           aria-valuemax={Math.round(dur)}
           onPointerDown={onScrubDown}
           onKeyDown={seekKey}
         >
-          <span className="trk" ref={trackRef}><i ref={fillRef} /></span>
-          <span className="th" ref={thumbRef} />
+          <span className="hc-scrub-track" ref={trackRef}><i ref={fillRef} /></span>
+          <span className="hc-scrub-thumb" ref={thumbRef} />
         </span>
-        <span className="tm" ref={timeRef} />
+        <span className="hc-vtime" ref={timeRef} />
       </div>
-    </>
+    </div>
   );
 }
 
-/** The card on the welcome. */
-export function GuideCard({ onWatched, style }) {
-  return <div className="vp vpi rv" style={style}><Player inline onWatched={onWatched} /></div>;
+/** The card on the welcome. onOpenPanel: on a phone, Watch opens the panel instead. */
+export function GuideCard({ onWatched, onOpenPanel }) {
+  return <Player inline onWatched={onWatched} onOpenPanel={onOpenPanel} />;
 }
 
-/** The panel from the play icon. */
-export function GuidePanel({ onClose }) {
-  const { boxRef, closeRef } = useDialog(onClose);
+/** The panel from the play icon (and from Watch on a phone). */
+export function GuidePanel({ open, onClose, onWatched }) {
   return (
-    <>
-      <div className="vscrim" onClick={onClose} aria-hidden="true" />
-      <div className="vp" role="dialog" aria-modal="true" aria-label="Quick guide" ref={boxRef}>
-        <div className="vph">
-          <h3>Quick guide</h3>
-          <button ref={closeRef} type="button" className="iconbtn" aria-label="Close" onClick={onClose}><Cross className="close" /></button>
-        </div>
-        <Player autoPlay />
-      </div>
-    </>
+    <SlidePanel open={open} onClose={onClose} title="Quick guide" wide className="hc-guide-panel">
+      {/* A fresh player each time it opens: it plays from the start. */}
+      {open && <Player autoPlay onWatched={onWatched} />}
+    </SlidePanel>
   );
 }
