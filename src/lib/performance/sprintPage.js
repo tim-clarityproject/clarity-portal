@@ -390,7 +390,8 @@ export function sprintPageView(d, { today }) {
   const lastDay = calendar.actualEnd || calendar.plannedEnd;
   const dates = { start: sprint.start_on, end: lastDay, text: `${dayName(sprint.start_on, today)} to ${dayName(lastDay, today)}` };
   if (today < sprint.start_on) {
-    return { ...base, state: 'future', dates, startsOn: dayName(sprint.start_on, today) };
+    // No week can take a to-do yet, so the Backlog shows on its own, as with no sprint.
+    return { ...base, state: 'future', dates, startsOn: dayName(sprint.start_on, today), backlog: backlogTodos(d) };
   }
   // Recovery (M15): the sprint is paused. Its finished weeks keep their
   // scores, which the page hides unless "Show my results" is tapped.
@@ -466,7 +467,8 @@ export function sprintPageView(d, { today }) {
 
   const common = { ...base, dates, weeks, toFreeze, usualLine, average, endsIn, debrief };
   if (!current) {
-    return { ...common, state: 'over', endedOn: dayName(lastDay, today) };
+    // Its weeks have all passed: what tools add now waits in the Backlog, shown on its own.
+    return { ...common, state: 'over', endedOn: dayName(lastDay, today), backlog: backlogTodos(d) };
   }
 
   const week = calendar.weeks[current - 1];

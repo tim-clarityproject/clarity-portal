@@ -161,6 +161,10 @@ export default function EmotionalWashTool({
   // away, so the summary only says where it is when it is there.
   const commit = async (th) => {
     if (committing.current.has(th.id)) return;
+    // The person's Strategies aren't here yet (a first open on this device,
+    // pressed before they loaded): nothing is decided for them. The step
+    // keeps where it was to go, and its to-do is made when it is next saved.
+    if (th.wash === 'act' && !todo.ready) return;
     const { where, strategyId } = placeOf(th);
     const now = th.wash === 'act' ? { ...th, where, strategyId } : th;
     if (th.wash === 'act') onWash((w) => setThought(w, th.id, { where, strategyId }));

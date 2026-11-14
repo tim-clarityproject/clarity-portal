@@ -306,12 +306,7 @@ export default function PerformanceSprint() {
             action={{ label: 'Build my plan', onClick: () => navigate('/performance-plan/build') }}
           />
         )}
-        {view.backlog.length > 0 && (
-          // No sprint is running, so there is no week to plan these into yet.
-          <Section title="Backlog" className="ipp-section sprint-section" eye={<WhoSees audience="me" />}>
-            <BacklogList rows={view.backlog} />
-          </Section>
-        )}
+        <BacklogAlone rows={view.backlog} />
       </div>
     );
   } else if (view.state === 'future') {
@@ -325,6 +320,7 @@ export default function PerformanceSprint() {
         <div className="ds-actions ipp-actions">
           <Button variant="primary" onClick={() => navigate('/performance-plan')}>Open my plan</Button>
         </div>
+        <BacklogAlone rows={view.backlog} />
       </>
     );
   } else if (view.state === 'over') {
@@ -349,6 +345,7 @@ export default function PerformanceSprint() {
           {view.debrief && <Button onClick={() => navigate('/performance-sprint/debrief')}>Start my debrief</Button>}
           <Button onClick={() => navigate('/performance-sprint/start')}>Start a new sprint</Button>
         </div>
+        <BacklogAlone rows={view.backlog} />
       </>
     );
   } else if (view.state === 'paused') {
@@ -667,6 +664,19 @@ function SprintBody({
         <Button onClick={() => navigate('/performance-plan')}>Open my plan</Button>
       </div>
     </>
+  );
+}
+
+// The Backlog on its own, when no week can take a to-do: no sprint, one
+// that hasn't started yet, or one whose weeks have all passed (a tool's
+// to-do then says "Added to your backlog", so it must show somewhere: the
+// functionality tester, 14 Nov). Nothing to plan into yet, so rows only.
+function BacklogAlone({ rows }) {
+  if (!rows?.length) return null;
+  return (
+    <Section title="Backlog" className="ipp-section sprint-section" eye={<WhoSees audience="me" />}>
+      <BacklogList rows={rows} />
+    </Section>
   );
 }
 

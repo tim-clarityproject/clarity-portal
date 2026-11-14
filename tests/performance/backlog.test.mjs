@@ -106,6 +106,21 @@ test('with no sprint running the Backlog still shows, named by the plan’s Stra
   assert.deepEqual(backlogTodos(rows({ sprint: null })), []);
 });
 
+// The functionality tester, 14 Nov: a tool says "Added to your backlog"
+// whenever no week can take a to-do, so the sprint page must show the
+// Backlog then too, not only with no sprint at all.
+test('the Backlog shows on its own when the sprint’s weeks have all passed, or it hasn’t started yet', () => {
+  const d = rows({ backlogTodos: [waiting('a'), waiting('done', { done_on: '2026-10-20' }), waiting('gone', { deleted_at: '2026-10-20T10:00:00Z' })] });
+  const over = sprintPageView(d, { today: '2026-11-10' });
+  assert.equal(over.state, 'over');
+  assert.deepEqual(over.backlog.map((x) => [x.id, x.strategyName, x.backlog]), [['a', 'Grow through referrals', true]]);
+  const future = sprintPageView(d, { today: '2026-10-01' });
+  assert.equal(future.state, 'future');
+  assert.deepEqual(future.backlog.map((x) => x.id), ['a']);
+  // Nothing waiting: an empty list, so the page shows no Backlog heading.
+  assert.deepEqual(sprintPageView(rows(), { today: '2026-11-10' }).backlog, []);
+});
+
 test('planning one in: from the Backlog into this week or a later one', () => {
   const d = rows({ backlogTodos: [waiting('a')] });
   const item = sprintTodos(d, cal(), 2, TODAY).backlog[0];
@@ -201,6 +216,35 @@ test('saves: a Backlog to-do has no sprint and no week, and planning it in sets 
   await api.moveTodo(ME, 'b1', { sprintId: 'sp', week: null, on: TODAY });
   const again = fake.db.tables.todos.find((x) => x.id === 'b1');
   assert.deepEqual([again.sprint_id, again.planned_week], [null, null]);
+});
+
+// The functionality tester, 14 Nov: the weekly debrief loaded a sprint's
+// rows without the Backlog, so a to-do moved there after its week started
+// was missing from the debrief's score for that week (it read higher than
+// the sprint page's and the database's).
+test('every loader of a week’s rows brings the Backlog with it, so every page scores a moved-out to-do the same', async () => {
+  fake.put('todos', { id: 'in', user_id: ME, strategy_id: 'grow', text: 'in', impact: 2, sprint_id: 'sp', planned_week: 2, created_on: '2026-10-05', done_on: null, deleted_at: null });
+  fake.put('todos', { id: 'out', user_id: ME, strategy_id: 'grow', text: 'out', impact: 2, sprint_id: null, planned_week: null, created_on: '2026-10-05', done_on: null, deleted_at: null });
+  fake.put('todos', { id: 'theirs', user_id: 'someone-else', strategy_id: 'grow', text: 'x', impact: 2, sprint_id: null, planned_week: null, created_on: '2026-10-05', done_on: null, deleted_at: null });
+  fake.put('todo_moves', { todo_id: 'out', user_id: ME, moved_on: TODAY, from_sprint_id: 'sp', from_week: 2, to_sprint_id: null, to_week: null, created_at: '2026-10-14T10:00:00Z' });
+  const week = await api.loadSprintWeekRows(ME, { id: 'sp', start_on: '2026-10-05' });
+  assert.deepEqual(week.todos.map((t) => t.id), ['in']);
+  assert.deepEqual(week.backlogTodos.map((t) => t.id), ['out']);
+  // A caller that has read the Backlog already hands it over (no second read).
+  const reads = () => fake.db.calls.filter((c) => c.table === 'todos' && c.kind === 'select').length;
+  const before = reads();
+  const given = await api.loadSprintWeekRows(ME, { id: 'sp', start_on: '2026-10-05' }, { backlogTodos: week.backlogTodos });
+  assert.equal(given.backlogTodos, week.backlogTodos);
+  assert.equal(reads() - before, 1, 'only the sprint’s own to-dos are read');
+  // The week's score with those rows: the moved-out one is not done in week 2.
+  const d = rows({ ...week });
+  const after = m0SprintCalendar({ start: '2026-10-05', lengthWeeks: 4, recoveries: [] }, '2026-10-21');
+  assert.equal(sprintWeekResult(d, after, 2, null).result.score, 0);
+  assert.equal(sprintWeekResult({ ...d, backlogTodos: [] }, after, 2, null).result.score, 0, 'the one still in the week is not done either');
+  // Tick the one still in the week: half done with the Backlog's, all done without it (the fault).
+  const ticked = { ...d, todos: d.todos.map((t) => ({ ...t, done_on: '2026-10-15' })) };
+  assert.equal(sprintWeekResult(ticked, after, 2, null).result.score, 50);
+  assert.equal(sprintWeekResult({ ...ticked, backlogTodos: [] }, after, 2, null).result.score, 100);
 });
 
 test('offline: the add and the plan-in wait on the device in order, then both land', async () => {

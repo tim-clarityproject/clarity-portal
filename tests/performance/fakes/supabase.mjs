@@ -36,7 +36,12 @@ function query(table) {
   const filters = [];
   let action = { kind: 'select' };
   const rowsOf = () => (db.tables[table] = db.tables[table] || []);
-  const matches = (r) => filters.every(([k, v, op]) => (op === 'gte' ? `${r[k]}` >= `${v}` : `${r[k]}` === `${v}`));
+  const matches = (r) => filters.every(([k, v, op]) => {
+    if (op === 'gte') return `${r[k]}` >= `${v}`;
+    if (op === 'is') return (r[k] ?? null) === v;
+    if (op === 'in') return v.map(String).includes(`${r[k]}`);
+    return `${r[k]}` === `${v}`;
+  });
   const builder = {
     select() { if (action.kind === 'none') action = { kind: 'select' }; return builder; },
     update(values) { action = { kind: 'update', values }; return builder; },
@@ -44,6 +49,8 @@ function query(table) {
     upsert(values, options = {}) { action = { kind: 'upsert', values, options }; return builder; },
     eq(k, v) { filters.push([k, v]); return builder; },
     gte(k, v) { filters.push([k, v, 'gte']); return builder; },
+    is(k, v) { filters.push([k, v, 'is']); return builder; },
+    in(k, v) { filters.push([k, v, 'in']); return builder; },
     limit() { return builder; },
     order() { return builder; },
     then(resolve, reject) {

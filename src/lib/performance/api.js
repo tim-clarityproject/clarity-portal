@@ -204,14 +204,22 @@ export function loadBacklogTodos(userId) {
     .eq('user_id', userId).is('sprint_id', null).is('done_on', null).is('deleted_at', null).order('created_at'));
 }
 
-/** The running sprint's habits, settings, logs, to-dos and wins. */
-export async function loadSprintWeekRows(userId, sprint) {
+/**
+ * The running sprint's habits, settings, logs, to-dos and wins, with the
+ * Backlog's to-dos. Every page that works out a week's score needs the
+ * Backlog too: a to-do moved there after its week started still counts as
+ * not done in that week (M2), so without it the weekly debrief scored the
+ * week higher than the sprint page and the database did (the functionality
+ * tester, 14 Nov). `known.backlogTodos`: the list, when the caller has
+ * already read it.
+ */
+export async function loadSprintWeekRows(userId, sprint, known = {}) {
   const sprintHabits = await rows(supabase.from('sprint_habits')
     .select('id, sprint_id, habit_id, strategy_id, name, sort_order').eq('sprint_id', sprint.id).order('sort_order'));
   const ids = sprintHabits.map((h) => h.id);
   // Logs and wins from the sprint's start: a sprint stretched by Recovery
   // can run past its planned end, so no end is set.
-  const [settings, logs, todos, todoMoves, wins, winLinks] = await Promise.all([
+  const [settings, logs, todos, todoMoves, wins, winLinks, backlogTodos] = await Promise.all([
     ids.length ? rows(supabase.from('sprint_habit_settings').select('*').in('sprint_habit_id', ids)) : [],
     ids.length ? rows(supabase.from('habit_logs').select('id, sprint_habit_id, local_date, value, to_confirm, updated_at')
       .in('sprint_habit_id', ids).gte('local_date', sprint.start_on)) : [],
@@ -221,8 +229,9 @@ export async function loadSprintWeekRows(userId, sprint) {
     rows(supabase.from('wins').select('id, what, local_date, impact, deleted_at, updated_at')
       .eq('user_id', userId).gte('local_date', sprint.start_on).is('deleted_at', null)),
     rows(supabase.from('win_strategies').select('win_id, strategy_id').eq('user_id', userId)),
+    known.backlogTodos || loadBacklogTodos(userId),
   ]);
-  return { sprintHabits, sprintSettings: settings, logs, todos, todoMoves, wins, winLinks };
+  return { sprintHabits, sprintSettings: settings, logs, todos, todoMoves, wins, winLinks, backlogTodos };
 }
 
 /**
@@ -654,7 +663,7 @@ export async function loadSprintPage(userId) {
     rows(supabase.from('plan_strategies').select(STRATEGY_COLS).eq('plan_id', sprint.plan_id).is('archived_at', null).order('sort_order')),
     rows(supabase.from('strategy_objectives').select('strategy_id, objective_id').eq('user_id', userId)),
     rows(supabase.from('weekly_debriefs').select('sprint_week, unusual, status').eq('sprint_id', sprint.id)),
-    loadSprintWeekRows(userId, sprint),
+    loadSprintWeekRows(userId, sprint, { backlogTodos }),
   ]);
   return { ...base, objectives, strategies, links, debriefs, ...week };
 }

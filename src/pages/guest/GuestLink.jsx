@@ -141,6 +141,8 @@ function Guest({ token }) {
   useEffect(() => {
     if (phase !== 'tool' || !visit || !dirty.current || !hasAnswers(item.plan)) return undefined;
     const timer = setTimeout(() => {
+      // Saved meanwhile (Save my edit, or closing): nothing new to send.
+      if (!dirty.current) return;
       saveNow().catch((error) => {
         dirty.current = true;
         if (visitEnded(error)) ended(error);

@@ -362,6 +362,37 @@ export default function GuidedTool({
   useViewportFit(rootRef, fullscreen && open);
   useKeepScroll(scrollRef, shown);
 
+  // A toast never covers the bottom bar's button (the functionality
+  // tester, 14 Nov: on a phone "Saved" and "Added to this week" sat on the
+  // middle of Next for as long as they showed). Where the button runs
+  // under the middle of the screen, toasts rise to 16px above the bar, as
+  // M9 draws them on a phone; on a laptop the button is at the right and
+  // the toast stays where M9 draws it. Dialogs do the same for their own
+  // footers (Dialogs.jsx).
+  useLayoutEffect(() => {
+    if (!fullscreen || !open || !shown) return undefined;
+    const foot = rootRef.current?.querySelector('.ds-guide-foot');
+    const button = foot?.querySelector('.ds-guide-next');
+    if (!foot || !button) return undefined;
+    const html = document.documentElement;
+    const before = html.style.getPropertyValue('--ds-toast-offset');
+    const place = () => {
+      const b = button.getBoundingClientRect();
+      const middle = window.innerWidth / 2;
+      const under = b.left <= middle && b.right >= middle;
+      if (under) html.style.setProperty('--ds-toast-offset', `${Math.max(0, Math.round(foot.getBoundingClientRect().height) - 16)}px`);
+      else if (before) html.style.setProperty('--ds-toast-offset', before);
+      else html.style.removeProperty('--ds-toast-offset');
+    };
+    place();
+    window.addEventListener('resize', place);
+    return () => {
+      window.removeEventListener('resize', place);
+      if (before) html.style.setProperty('--ds-toast-offset', before);
+      else html.style.removeProperty('--ds-toast-offset');
+    };
+  }, [fullscreen, open, shown, i, returnTo]);
+
   // Each step: back to the top, and focus on the new question.
   useEffect(() => {
     if (!shown) return;
