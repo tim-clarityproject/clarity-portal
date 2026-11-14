@@ -6,6 +6,7 @@
 //
 //   node tests/phase8/compare-m9.mjs [folder for screenshots]
 //   ONLY=goal,sum WIDTHS=1440 MODES=dark   to run a part of it
+//   WIDTHS=400   takes the built page's screenshots only (M9's phone is 390 wide)
 //
 // The built page runs on the TEST database as the invented test client
 // (every other host, every server function and every email call is
@@ -72,6 +73,7 @@ const SCREENS = {
   opps: [...BAR, ...HEAD, ...FOOT, ...ROWS],
   opts: [...BAR, ...HEAD, ...FOOT, ...ROWS,
     ['the timer’s ring', '.ring', '.ds-timer-ring', 0, ['box']],
+    ['the ring as drawn', '.ring svg', '.ds-timer-ring svg', 0, ['box']],
     ['the time', '.ring span', '.ds-timer-time', 0, ['text']],
     ['the timer’s button', '.tbs .ghost', '.ds-timer .ds-btn', 0, ['box', 'text', 'edge']]],
   will: [...BAR, ...HEAD, ...FOOT,
@@ -376,6 +378,7 @@ try {
       const one = async (screen, { panel = false } = {}) => {
         if (!want(screen)) return;
         const tag = `${tagBase}, ${screen}`;
+        if (width === 400) { await sleep(500); await page.screenshot({ path: join(out, `${screen}-${width}-${mode}-built.png`) }); return; }
         await m9Show(m9.page, screen);
         await sleep(600);
         await page.evaluate(() => { document.querySelectorAll('.ds-guide-page, .ds-guide-rv').forEach((el) => { el.style.animation = 'none'; }); });
@@ -470,6 +473,7 @@ try {
         const gone = async (screen) => {
           if (!want(screen)) return;
           const tag = `${tagBase}, ${screen}`;
+          if (width === 400) { await sleep(500); await gp.screenshot({ path: join(out, `${screen}-${width}-${mode}-built.png`), fullPage: true }); return; }
           await m9Show(m9.page, screen);
           await sleep(500);
           const parts = SCREENS[screen];

@@ -3956,6 +3956,9 @@
 }
 
 .ui-root .ds-guide--calm .ds-guide-back .ds-chevron-line {
+  /* The name is nudged down 0.1em (M9), and the chevron stays on the middle of its capitals. */
+  position: relative;
+  top: 0.1em;
   font-size: var(--fs-tool-name-calm);
 }
 

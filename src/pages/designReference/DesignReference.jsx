@@ -104,6 +104,7 @@ import { PatternCardDemo } from './PatternDemos';
 import { BreathOrbDemo } from './OrbDemos';
 import { CarriedOverDemo, NightDemo, WorkDoneDemo } from './WindDownDemos';
 import { TimerDemo } from './TimerDemos';
+import { CalmFrameDemo, CalmCardDemo } from './GetUnstuckDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import { TODO_WHERE, dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, todoWhereOptions, todoWhereToast, withMeasure, yearView } from '../../lib/performance';
@@ -123,7 +124,7 @@ const TOC = [
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
   ['c45', 'Levels'], ['c46', 'Rows to pick and add'], ['c47', 'Notes and switches'], ['c48', 'Figures in a week'], ['c49', 'Summaries and celebrating'], ['c50', 'Rules of 5 Nov'],
   ['c32', 'Outcome Objectives'], ['c33', 'Alignment check'], ['c34', 'Strategy tiles'], ['c35', 'My Mission panel'],
-  ['c54', 'Home'], ['c17', 'Breathe button'], ['c67', 'Timer'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
+  ['c54', 'Home'], ['c17', 'Breathe button'], ['c67', 'Timer'], ['c68', 'Calm stepped frame'], ['c69', 'Guest pages'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
 ];
 
 // The colour table (design-reference-v3.html): name, what it's for, dark,
@@ -1883,6 +1884,25 @@ function Gallery() {
             <p>One tap on a length sets it, closes the panel and shows “The timer is set to 8 minutes.”. The ring can’t be tapped while it runs.</p>
             <p>The choice is remembered for next time, on every device once signed in.</p>
             <p>It counts down to an end time, so it is still right after the tab has been hidden. No sound.</p>
+          </>
+        )} />
+
+        <GallerySection id="c68" title="The calm stepped frame" wide demo={CalmFrameDemo} rules={(
+          <>
+            <p><New /><b>The stepped frame of M9, M10 and M7b</b> (Tim, 13 Nov): <code>GuidedTool</code> with <code>calm</code>. Back and the tool’s name at the top left, close at the top right, the % bar with no figure, and a bottom bar only when there’s a button.</p>
+            <p>The small grey line above the question is the stage’s name (Goal, Reality, Options, Will).</p>
+            <p>A button is never greyed out: a step’s <code>check</code> says what is needed (“Type your goal to carry on.”).</p>
+            <p>Lists are rows, with “Deleted” and Undo. Next steps are every row alike: the step, where it is, and one link.</p>
+            <p>Your plan has every answer on one page; a row opens that one question with “Save my edit”.</p>
+            <p>The eye shows on a tool’s first step and on its summary only.</p>
+          </>
+        )} />
+
+        <GallerySection id="c69" title="Guest pages" demo={CalmCardDemo} rules={(
+          <>
+            <p><New /><b>A tool without an account, through a coach’s link</b> (M9): <code>GuestFrame</code> shows the bold crosshair alone, centred.</p>
+            <p>The start asks for the email and one access code box, with the tool’s time beside the button (under it on a phone).</p>
+            <p>The end has the calm card: one sentence, a quieter one, and “Create my free account”. Never a booking link.</p>
           </>
         )} />
 

@@ -43,6 +43,7 @@
 // other host and every email call is blocked. Nothing is saved.
 //
 //   node --import ./tests/scores/register.mjs tests/phase5/calm-rules.mjs [folder for screenshots]
+import { GUEST_TOKEN, GUEST_VISIT, M9 } from '../phase8/shared.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -105,7 +106,26 @@ const PAGES_ALL = [
   ['sprint-review-worked', '/performance-sprint/review', 'review:1'],
   ['sprint-review-next-time', '/performance-sprint/review', 'review:2'],
   ['build-working-days', '/performance-plan/build', 'build:4'],
+  // Get unstuck (M9; Phase 8a): the first step (with See an example), a middle step, the Options step with the
+  // timer, and Your plan, opened on their step from a draft on the device
+  // (nothing saved); then a guest's start and end pages, on stand-in
+  // answers (migration 035 isn't on the test project until Tim runs it).
+  ['get-unstuck-goal', '/get-unstuck', 'unstuck:0'],
+  ['get-unstuck-reality', '/get-unstuck', 'unstuck:1'],
+  ['get-unstuck-options', '/get-unstuck', 'unstuck:3'],
+  ['get-unstuck-plan', '/get-unstuck', 'unstuck:6'],
+  ['guest-start', `/guest/${GUEST_TOKEN}?email=${encodeURIComponent(M9.guestEmail)}`, 'guest:start'],
+  ['guest-end', `/guest/${GUEST_TOKEN}`, 'guest:end'],
 ];
+// M9's own example, as the tool keeps it while it is being worked on.
+const UNSTUCK_PLAN = {
+  goal: M9.goal,
+  cons: M9.cons,
+  opps: M9.opps,
+  opts: M9.opts,
+  acts: M9.acts.map((text, option) => ({ id: `calm-${option}`, option, text, where: null, todoId: null, strategyId: null })),
+  shared: false,
+};
 const PAGES = PAGES_ALL.filter(([name]) => !ONLY || ONLY.test(name));
 
 const BACKGROUND = { dark: 'rgb(0, 0, 0)', light: 'rgb(249, 248, 245)' };
@@ -272,6 +292,9 @@ for (const width of [1280, 390]) {
       if (/resend\.com|sendgrid|mailgun|postmarkapp|smtp/i.test(url)) return route.abort();
       if (/supabase\.co/.test(url) && !url.includes(TEST_HOST)) return route.abort();
       if (/\/functions\/v1\/|\/api\//.test(url)) return route.abort();
+      // A guest's link: the one question the start page asks, answered as migration 042 would.
+      if (/\/rpc\/guest_link_info/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, tool: 'grow', tool_label: 'Get unstuck', coach_name: M9.coach, open: true }) });
+      if (/\/rpc\/guest_/.test(url)) return route.abort();
       // The first-time builder needs a person with no plan: every read is
       // answered empty for that page only (nothing in the database is touched).
       if (emptyReads && route.request().method() === 'GET' && /\/rest\/v1\/(?!person_settings|profiles)/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
@@ -295,7 +318,15 @@ for (const width of [1280, 390]) {
       errors.length = 0;
       try {
         // A guided tool opened on one step: its saved place is set first.
-        const [kind, at] = /^(review|build):\d+$/.test(act || '') ? act.split(':') : [];
+        const [kind, at] = /^(review|build|unstuck):\d+$/.test(act || '') ? act.split(':') : [];
+        if ((act || '').startsWith('guest:')) {
+          // What a guest's tab keeps of the link: nothing yet (the start), or a finished plan (the end).
+          await page.evaluate(({ end, token, visit, plan, email, coach }) => {
+            const key = `clarity-guest:${token}`;
+            if (!end) { sessionStorage.removeItem(key); return; }
+            sessionStorage.setItem(key, JSON.stringify({ visit, email, tool: 'grow', toolLabel: 'Get unstuck', coachName: coach, phase: 'end', copySent: true, item: { id: '33333333-3333-4333-8333-333333333333', plan, status: 'completed' } }));
+          }, { end: act === 'guest:end', token: GUEST_TOKEN, visit: GUEST_VISIT, plan: UNSTUCK_PLAN, email: M9.guestEmail, coach: M9.coach });
+        }
         emptyReads = kind === 'build';
         if (kind) {
           // The person's page copies carry their id: wait until one is on the device.
@@ -303,13 +334,19 @@ for (const width of [1280, 390]) {
           // are cleared after each guided screen, and are only written again
           // while the device is still being warmed.)
           await page.waitForFunction(() => Object.keys(localStorage).some((x) => /^clarity-[a-z-]+:[0-9a-f-]{36}(:|$)/.test(x)) || /"id":"[0-9a-f-]{36}"/.test(localStorage.getItem('clarity-portal-auth') || ''), null, { timeout: 15000 });
-          await page.evaluate(({ kind: k, at: n }) => {
+          await page.evaluate(({ kind: k, at: n, plan }) => {
             // The person's id, from any of their page copies on the device.
             let uid = Object.keys(localStorage).map((x) => /^clarity-[a-z-]+:([0-9a-f-]{36})(:|$)/.exec(x)?.[1]).find(Boolean);
             if (!uid) { try { uid = JSON.parse(localStorage.getItem('clarity-portal-auth')).user.id; } catch { /* none */ } }
             for (const x of Object.keys(localStorage)) if (x.startsWith('clarity-cache:') && k === 'build') localStorage.removeItem(x);
+            if (k === 'unstuck') {
+              // Get unstuck carries on from its draft on the device, at the step it was left on.
+              localStorage.setItem(`clarity-draft:${uid}:get-unstuck:new`, JSON.stringify({ v: { id: '44444444-4444-4444-8444-444444444444', plan, status: 'new', saved: false }, at: Date.now() }));
+              localStorage.setItem(`ds-guide:get-unstuck-${uid}-new`, JSON.stringify({ index: Number(n), skipped: [] }));
+              return;
+            }
             localStorage.setItem(`ds-guide:${k === 'review' ? `performance-sprint-review-${uid}` : `performance-plan-build-${uid}`}`, JSON.stringify({ index: Number(n), skipped: [] }));
-          }, { kind, at });
+          }, { kind, at, plan: UNSTUCK_PLAN });
         }
         await page.goto(`${APP}${path}`);
         if (kind === 'review') {
@@ -317,11 +354,13 @@ for (const width of [1280, 390]) {
         }
         if (kind) {
           await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
-          const want = { 'review:1': 'What worked best in this sprint?', 'review:2': 'What would make the next sprint even better?', 'build:4': 'Which days do you work?' }[act];
+          const want = { 'review:1': 'What worked best in this sprint?', 'review:2': 'What would make the next sprint even better?', 'build:4': 'Which days do you work?', 'unstuck:0': 'What do you want to achieve?', 'unstuck:1': 'What’s in the way of', 'unstuck:3': 'What could you do to reach', 'unstuck:6': 'Here’s your plan' }[act];
           const got = (await page.locator('.ds-guide-question').first().innerText()).replace(/\s+/g, ' ').trim();
           pass(`${tag}: opened on "${want}"`, got.startsWith(want), got);
           const eyes = await page.locator('.ds-guide-question .ds-who, .ds-guide-question .ds-page-aside').count();
-          pass(`${tag}: the eye is inside the heading`, eyes >= 1, `${eyes}`);
+          // Get unstuck shows the eye on its first step and on Your plan only (Tim, 13 Nov, 09:32).
+          if (kind === 'unstuck' && at !== '0' && at !== '6') pass(`${tag}: no eye on a middle step`, eyes === 0, `${eyes}`);
+          else pass(`${tag}: the eye is inside the heading`, eyes >= 1, `${eyes}`);
         }
         await page.waitForLoadState('networkidle').catch(() => null);
         await page.evaluate(() => document.fonts.ready);
@@ -365,7 +404,7 @@ for (const width of [1280, 390]) {
           pass(`${tag}: what opens in place keeps your place and shows (${reveals.checked} pressed)`, reveals.problems.length === 0, reveals.problems.slice(0, 5).join('; '));
         }
         if (act === 'menu') await page.keyboard.press('Escape');
-        if (kind) await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.startsWith('ds-guide:performance-') || x.startsWith('clarity-cache:') || x.startsWith('clarity-draft:')) localStorage.removeItem(x); });
+        if (kind) await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.startsWith('ds-guide:performance-') || x.startsWith('ds-guide:get-unstuck-') || x.startsWith('clarity-cache:') || x.startsWith('clarity-draft:')) localStorage.removeItem(x); });
         emptyReads = false;
       } catch (e) {
         emptyReads = false;
@@ -560,7 +599,7 @@ if (CHEVRONS) {
       await page.fill('input[type=password]', env.TEST_CLIENT_PASSWORD);
       await page.keyboard.press('Enter');
       await page.waitForURL(/welcome/, { timeout: 30000 });
-      const paths = [...new Set(PAGES_ALL.filter(([, , act]) => !act).map(([, path]) => path)), '/personal/plan', '/life-balance-review'];
+      const paths = [...new Set(PAGES_ALL.filter(([, , act]) => !act).map(([, path]) => path)), '/personal/plan', '/life-balance-review', '/get-unstuck'];
       for (const path of paths) {
         const tag = `chevrons ${path} ${width}px`;
         try {

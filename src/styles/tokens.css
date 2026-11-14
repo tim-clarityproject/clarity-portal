@@ -377,6 +377,7 @@
   --guide-calm-top: 44px;
   --guide-chev: 14px;        /* Back's chevron in the calm frame */
   --answer-h-calm: 52px;     /* an answer row in the calm frame */
+  --timer-ring: 64px;        /* the shared timer's ring (M9 .ring) */
   --guide-problem-max: 440px;
   --guest-narrow: 460px;     /* a guest page's column (M9 .narrow) */
   --fs-question-calm: calc(22 * var(--u));

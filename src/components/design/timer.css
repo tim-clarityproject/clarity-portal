@@ -1,13 +1,12 @@
 /* ---------- The timer (Timer.jsx; mock-up M9 "timer card": .tmr, .ring,
    .trk, .arc, .tbs; Tim, 13 Nov, 09:27) ----------
-   Every value is a token from src/styles/tokens.css. The two sizes M9
-   draws that have no token of their own are made from tokens here: the
-   64px ring is two 32px steps of the spacing scale, and the 15px time is
+   Every value is a token from src/styles/tokens.css. The 64px ring is
+   --timer-ring, and the 15px time is
    15 of the display text unit (--u-big, so Nekst figures grow by a quarter
    at most and "10:00" always fits inside the ring). */
 
 .ui-root .ds-timer {
-  --ds-timer-ring: calc(2 * var(--space-5));
+  --ds-timer-ring: var(--timer-ring);
   --ds-timer-fs: calc(15 * var(--u-big));
   display: flex;
   align-items: center;
@@ -21,7 +20,11 @@
   box-sizing: border-box;
   cursor: pointer;
   position: relative;
+  display: block;
   flex: none;
+  /* A phone's older rule pads every button: the ring has none. */
+  padding: 0 !important;
+  min-height: 0 !important;
   width: var(--ds-timer-ring);
   height: var(--ds-timer-ring);
   border-radius: 50%;
@@ -40,8 +43,10 @@
 
 .ui-root .ds-timer-ring svg {
   display: block;
-  width: 100%;
-  height: 100%;
+  /* Its own size, written out: a phone's rules for icons inside buttons never shrink it. */
+  width: var(--ds-timer-ring) !important;
+  height: var(--ds-timer-ring) !important;
+  max-width: none;
   transform: rotate(-90deg);
 }
 
