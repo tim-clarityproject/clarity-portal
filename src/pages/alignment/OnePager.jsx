@@ -7,7 +7,9 @@ import { importanceText, rankProjects, MAX_CONTRIBUTION } from '../../lib/alignm
 import { projectDates } from '../../lib/projectDates';
 
 // The one-pager (everything below the title, which AuthShell draws). All
-// numbers come from src/lib/alignmentScore.js.
+// numbers come from src/lib/alignmentScore.js. The overview comes first (rule
+// 29ar; Tim, 13 Nov): the chart, the project list, then the objective and the
+// Critical Success Factors, and Keep your results last.
 
 const pad = (n) => (n < 10 ? `0${n}` : String(n));
 
@@ -120,32 +122,11 @@ export default function OnePager({ draft, onEmailLink, onCreateAccount, onEdit, 
 
   return (
     <>
-      <div className="al-opobj">
-        <div className="al-headrow">
-          <span className="al-sect0">Objective</span>
-          <EditButton label="Edit the objective" onClick={() => onEdit('objective')} />
-        </div>
-        <p>{draft.objective.trim() || <span className="al-faint">No objective yet</span>}</p>
-      </div>
-
-      <div className="al-headrow al-headrow--sect">
-        <span className="al-sect al-sect--first">Critical Success Factors</span>
-        <EditButton label="Edit the Critical Success Factors" onClick={() => onEdit('factors')} />
-      </div>
-      <div className="al-csfg" style={{ '--cols': cols }}>
-        {factors.map((f, i) => (
-          <div key={f.id} className={cols === 2 && nf % 2 === 1 && i === nf - 1 ? 'al-span' : undefined}>
-            <b>{pad(i + 1)}</b>
-            <span>{f.text}</span>
-          </div>
-        ))}
-      </div>
-
       {!anyRated ? (
         <p className="al-empty">Your chart appears here once your projects are rated.</p>
       ) : (
         <>
-          <span className="al-sect">Strategic importance versus progress</span>
+          <span className="al-sect al-sect--top">Strategic importance versus progress</span>
           <div className="al-panel al-chartp">
             <AlignmentChart rows={ranked} highlight={hl} onHighlight={setHl} onOpen={onOpenProject} />
           </div>
@@ -229,6 +210,27 @@ export default function OnePager({ draft, onEmailLink, onCreateAccount, onEdit, 
       <p className="al-note">
         {`Strategic importance: a project’s contribution scores added together, divided by the highest possible score, ${nf} Critical Success Factors × ${MAX_CONTRIBUTION} = ${nf * MAX_CONTRIBUTION}, shown as a percentage. Numbers match the dots on the chart.`}
       </p>
+
+      <div className="al-opobj al-opobj--after">
+        <div className="al-headrow">
+          <span className="al-sect0">Objective</span>
+          <EditButton label="Edit the objective" onClick={() => onEdit('objective')} />
+        </div>
+        <p>{draft.objective.trim() || <span className="al-faint">No objective yet</span>}</p>
+      </div>
+
+      <div className="al-headrow al-headrow--sect">
+        <span className="al-sect al-sect--first">Critical Success Factors</span>
+        <EditButton label="Edit the Critical Success Factors" onClick={() => onEdit('factors')} />
+      </div>
+      <div className="al-csfg" style={{ '--cols': cols }}>
+        {factors.map((f, i) => (
+          <div key={f.id} className={cols === 2 && nf % 2 === 1 && i === nf - 1 ? 'al-span' : undefined}>
+            <b>{pad(i + 1)}</b>
+            <span>{f.text}</span>
+          </div>
+        ))}
+      </div>
 
       <ProjectCards onEmailLink={onEmailLink} onCreateAccount={onCreateAccount} email={email} />
     </>

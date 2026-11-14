@@ -136,15 +136,19 @@ export const IMPORTANCE_MEANS = 'It’s how much a project helps the CSFs, out o
 /** The order of "Most in need of attention", in full (version 47: never "behind"). */
 export const ORDER_MEANS = 'Important projects that need attention and require more resource come first.';
 
-/** How it works, at the top of the results: the word, then its meaning, each a full sentence (Tim, 28 Oct, 14:21; version 47). */
+/**
+ * How it works, at the top of the results: how to read the chart, the word,
+ * then its meaning, each a full sentence (Tim, 28 Oct, 14:21; the list of
+ * 13 Nov, 18:13, word for word from M7b version 49). Strategic importance and
+ * the list's order keep their own ⓘ beside them.
+ */
 export function howItWorks(line) {
   return [
     { bold: 'How it works' },
-    { term: 'Strategic importance', meaning: IMPORTANCE_MEANS },
-    { term: 'Important', meaning: `It’s a project above the line you set, which is now ${line}%.` },
-    { term: 'Most in need of attention', meaning: ORDER_MEANS },
-    { term: 'Too early to tell', meaning: 'It’s a project at the Embryonic stage.' },
+    { term: 'Each dot', meaning: 'It’s a project, numbered as in the list below.' },
     { term: 'Bigger dots', meaning: 'They show projects that require more resource.' },
+    { term: 'Important', meaning: `It’s a project above the line you set, which is now ${line}%.` },
+    { term: 'Too early to tell', meaning: 'It’s a project at the Embryonic stage.' },
   ];
 }
 

@@ -44,7 +44,7 @@ export const EMAIL_EXAMPLES = [
         headline: '2 of 4 important projects are moving well. 2 need attention.',
         questions: [
           { label: 'Timing', question: 'What would it take to finish the new depot on time?', reason: 'They rated its progress “Bad”, and it’s due to finish in 2 months.' },
-          { label: 'Resource', question: 'Where is the driver app getting its people from?', reason: 'They rated it important, with little resource behind it.' },
+          { label: 'Resource', question: 'Is “the driver app” worth the resource it takes?', reason: 'They rated its resource requirements “High”, and its strategic importance is 15%.' },
         ],
       },
     }),

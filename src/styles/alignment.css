@@ -661,6 +661,15 @@
   margin-top: 0;
 }
 
+/* The chart opens the one-pager, and the objective follows the project list (rule 29ar). */
+.ui-root .al-sect--top {
+  margin-top: var(--space-5);
+}
+
+.ui-root .al-opobj--after {
+  margin-top: var(--space-6);
+}
+
 .ui-root .al-opobj p {
   margin: var(--space-2) 0 0;
   font-size: var(--fs-title-desktop);

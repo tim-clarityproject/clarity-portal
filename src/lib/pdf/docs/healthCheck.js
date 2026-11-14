@@ -8,11 +8,11 @@ import {
 
 // The Strategic Alignment Health Check as a document for the shared PDF template.
 
-// The PDF follows the results page (mock-up M7b version 47): the headline in
-// the At a glance panel, then the objective, the questions to start with and
-// their reasons, the chart (dot size shows resource, and the across line is
-// the Health Check's own line for important), the CSFs with their levels, and
-// the project list. Every figure and word comes from resultsModel
+// The PDF follows the results page (mock-up M7b version 47, in the order of
+// 13 Nov: rule 29ar): the headline in the At a glance panel, then the chart
+// (dot size shows resource, and the across line is the Health Check's own line
+// for important), the project list, the objective, the CSFs with their levels,
+// and last the questions to start with and their reasons. Every figure and word comes from resultsModel
 // (src/health-check/words.js, from src/lib/scores/m20.js), so the page and the
 // PDF never disagree. The PDF keeps a key in words (PDF rules 18 and 21), with
 // the four kinds of dot told apart by shape as well as colour.
@@ -80,11 +80,6 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
       { label: 'Critical Success Factors (CSFs)', value: String(nf), big: true },
     ],
     sections: [
-      { title: 'Objective', blocks: [{ type: 'text', text: draft.objective || '' }] },
-      {
-        title: 'Questions to start with',
-        blocks: questions.map((q) => ({ type: 'field', label: q.label, text: q.question, note: q.reason })),
-      },
       {
         title: 'Strategic importance against progress',
         blocks: plotted.length ? [{
@@ -104,23 +99,6 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
           sentence: dotSentence(),
           alt: `Dot chart of strategic importance, from 0% to 100%, against progress, from Embryonic to Excellent, divided by lines at ${line}% and Fair. Important means above ${line}%. Bigger dots require more resource. ${plotted.map((r) => `${r.n}. ${r.text}, ${importanceText(r).toLowerCase()}, ${PROGRESS_WORDS[r.progress - 1]}. ${stateSentence(r)} Resource required is ${resourceWord(r.resource)}.`).join(' ')}`,
         }] : [],
-      },
-      // Headings are set in capitals, where the abbreviation would read "CSFS", so they never carry it.
-      {
-        title: 'Critical Success Factors',
-        blocks: [{
-          type: 'table',
-          columns: [
-            { label: 'No.', width: 0.45 },
-            { label: 'Critical Success Factor', width: 3.9 },
-            { label: 'How much it matters', width: 1.45 },
-          ],
-          rows: factors.map((f, i) => [
-            String(i + 1),
-            { text: f.text, detail: gaps.includes(f.id) ? 'No project strongly supports this yet.' : '' },
-            csfLevelName(csfLevel(f)),
-          ]),
-        }],
       },
       {
         title: 'Your projects',
@@ -145,6 +123,29 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
           },
           { type: 'text', tone: 'detail', text: importanceNote },
         ],
+      },
+      { title: 'Objective', blocks: [{ type: 'text', text: draft.objective || '' }] },
+      // Headings are set in capitals, where the abbreviation would read "CSFS", so they never carry it.
+      {
+        title: 'Critical Success Factors',
+        blocks: [{
+          type: 'table',
+          columns: [
+            { label: 'No.', width: 0.45 },
+            { label: 'Critical Success Factor', width: 3.9 },
+            { label: 'How much it matters', width: 1.45 },
+          ],
+          rows: factors.map((f, i) => [
+            String(i + 1),
+            { text: f.text, detail: gaps.includes(f.id) ? 'No project strongly supports this yet.' : '' },
+            csfLevelName(csfLevel(f)),
+          ]),
+        }],
+      },
+      // Questions to start with always come last (rule 29ar; Tim, 13 Nov, 18:11).
+      {
+        title: 'Questions to start with',
+        blocks: questions.map((q) => ({ type: 'field', label: q.label, text: q.question, note: q.reason })),
       },
     ],
   };

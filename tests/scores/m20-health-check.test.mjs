@@ -217,7 +217,7 @@ test('the questions: the mock-up\'s three, the most urgent first', () => {
       kind: 'resource',
       label: 'Resource',
       question: 'Is “New office fit-out” worth the resource it takes?',
-      reason: 'You rated its resource “High”, and its strategic importance is 15%.',
+      reason: 'You rated its resource requirements “High”, and its strategic importance is 15%.',
       projectId: 'p6',
     },
     {
@@ -234,7 +234,7 @@ test('the questions: the example report says "They" and "their"', () => {
   const { ranked, csfs } = kestrel();
   const q = S.m20Questions(ranked, csfs, { asOf: '2026-10', theirs: true });
   assert.equal(q[0].reason, 'They rated its progress “Bad”, and it’s due to finish in 2 months.');
-  assert.equal(q[1].reason, 'They rated its resource “High”, and its strategic importance is 15%.');
+  assert.equal(q[1].reason, 'They rated its resource requirements “High”, and its strategic importance is 15%.');
   assert.equal(q[2].reason, 'They didn’t rate any project “High” for this CSF.');
   const fix = build([{ id: 'a', text: 'A' }], [['x', 'Fix me', [3], 2, 3]]).ranked;
   assert.equal(S.m20Questions(fix, [], { theirs: true })[0].reason, 'They rated its progress “Bad”, and it’s above their line for important.');
@@ -308,7 +308,7 @@ test('Resource: at or below the line with High or Very high; the highest resourc
   const q = S.m20Questions(ranked, csfs).find((x) => x.kind === 'resource');
   assert.equal(q.projectId, 'vh17');
   assert.equal(q.question, 'Is “Very high, 17%” worth the resource it takes?');
-  assert.equal(q.reason, 'You rated its resource “Very high”, and its strategic importance is 17%.');
+  assert.equal(q.reason, 'You rated its resource requirements “Very high”, and its strategic importance is 17%.');
   // Exactly at the line counts as at or below it.
   const at = build(csfs, [['x', 'At the line', [2, 1], 4, 4]]).ranked;
   assert.equal(S.m20Questions(at, csfs).find((x) => x.kind === 'resource').projectId, 'x');

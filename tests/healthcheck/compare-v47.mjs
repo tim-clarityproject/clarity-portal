@@ -44,6 +44,9 @@
 // neutral), each either explained (ALLOWED, with the reason) or left "to
 // check". Writes report.txt, table.txt and screenshots to the folder. Exits 1
 // when a rule check fails or a wording difference is unexplained.
+//
+// Since 13 Nov the results follow a later order than version 47 (rule 29ar):
+// see ORDER_13_NOV below for what is read against the mock-up, and how.
 import { chromium } from 'playwright';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -392,12 +395,38 @@ async function popups(page, { side, frameSel, touch }) {
   return { n, worst, texts, tried: picks.length, opened };
 }
 
+// ------------------------------------------------------------ the order of 13 Nov
+// Summary pages open with the visuals and the questions come last (Tim, 13
+// Nov, 18:11; CLAUDE.md rule 29ar), which is later than version 47 and wins:
+// At a glance (now only the headline), the chart, the projects, the
+// objective, the CSFs, Questions to start with, then Keep your results. The
+// mock-up's own sections are put in that order before the app's are read
+// against them, and its Resource reason takes the wording of 13 Nov, 18:16.
+const ORDER_13_NOV = [/^At a glance$/, /^Strategic importance against progress$/, /^(Your|Their) projects$/, /^Objective$/, /^Critical Success Factors$/, /^Questions to start with$/, /^Keep your results$/];
+function order13Nov(sections) {
+  if (!Array.isArray(sections) || !sections.includes('Questions to start with')) return sections;
+  const head = [];
+  const groups = [];
+  for (const name of sections) {
+    if (ORDER_13_NOV.some((re) => re.test(name))) groups.push([name]);
+    else (groups.length ? groups[groups.length - 1] : head).push(name);
+  }
+  const place = (g) => ORDER_13_NOV.findIndex((re) => re.test(g[0]));
+  return [...head, ...groups.sort((a, b) => place(a) - place(b)).flat()];
+}
+const resource13Nov = (reason) => String(reason || '').replace('rated its resource “', 'rated its resource requirements “');
+
 // ------------------------------------------------------------ approved differences
 // Mock-up wording the app shows differently, because an approved later rule
 // wins or because it is mock-up only (progress.md, Parts 1 to 4). Each entry:
 // the screens it covers, which side, a pattern on the neutral line, and why.
 const ALLOWED = [
   { side: 'both', re: /^(saving|saved)$/, why: 'save status changes as it saves' },
+  { screen: /results|example/, side: 'both', re: /rated its resource (requirements )?"/, why: 'the Resource line reads "rated its resource requirements" (Tim, 13 Nov, 18:16)' },
+  { screen: /results/, side: 'app', re: /^each dot$|^it's a project, numbered as in the list below\.$/, why: 'How it works lists Each dot, Bigger dots, Important and Too early to tell (Tim, 13 Nov, 18:13)' },
+  { screen: /results/, side: 'mock', re: /^strategic importance$|^it's how much a project helps the csfs, out of 100%\.$|^most in need of attention$|^important projects that need attention and require more resource come first\.$/, why: 'How it works no longer lists Strategic importance or the list’s order (Tim, 13 Nov, 18:13); each keeps its own ⓘ' },
+  { screen: /results/, side: 'mock', re: /^change$/, why: '"Edit", never "Change" (Tim, 11 Nov, 12:59; rule 29am)' },
+  { screen: /results/, side: 'app', re: /^edit$/, why: '"Edit", never "Change" (Tim, 11 Nov, 12:59; rule 29am)' },
   { screen: /welcome/, side: 'both', re: /.*/, why: 'the mock-up draws its Quick guide as moving scenes; the app plays the real video (Health Check 5), and its player is measured against version 49 by tests/healthcheck/quick-guide.mjs layout; the panel over it is measured here' },
   { side: 'mock', re: /^<month> #$|^<day> # <month>$/, why: 'the date is the Health Check’s own completed date (Tue 27 Oct in the mock-up)' },
   { screen: /sign-in/, side: 'mock', re: /^what's your access code\?$/, why: 'the code box is labelled "Access code" under the question heading (Tim, 29 Oct, decisions part 3: a question heading is never followed by a second question)' },
@@ -675,8 +704,10 @@ for (const s of wanted) {
       for (const k of [...((width < 641 && s.phoneLayoutKeys) || s.layoutKeys || ['sections', 'glance', 'weight', 'weightRows', 'rowDates', 'gapColour', 'watchPanel']), ...styleKeys]) {
         if (r.layout[k] === undefined && m.layout[k] === undefined) continue;
         if (k === 'rowDates' && width === 700) continue; // the mock-up's desktop frame squeezed to 700px is not a layout of its own
-        const ok = L(k);
-        pass(`${tag}: layout ${k} as the mock-up`, ok, ok ? JSON.stringify(r.layout[k]).slice(0, 160) : `app ${JSON.stringify(r.layout[k])} | mock-up ${JSON.stringify(m.layout[k])}`.slice(0, 400));
+        // The order of 13 Nov: the mock-up's sections in the new order, and the questions under the headline's own section, never beside it.
+        const want = k === 'sections' ? order13Nov(m.layout[k]) : (k === 'glance' && m.layout[k] !== undefined ? 'stacked' : m.layout[k]);
+        const ok = k === 'sections' || k === 'glance' ? JSON.stringify(r.layout[k]) === JSON.stringify(want) : L(k);
+        pass(`${tag}: layout ${k} as the mock-up${k === 'sections' || k === 'glance' ? ', in the order of 13 Nov' : ''}`, ok, ok ? JSON.stringify(r.layout[k]).slice(0, 160) : `app ${JSON.stringify(r.layout[k])} | mock-up ${JSON.stringify(want)}`.slice(0, 600));
         if (!ok) verdict.layout.push(`${k} at ${width}px ${mode}`);
       }
       if (width >= 641 && !s.scope) {
@@ -688,8 +719,8 @@ for (const s of wanted) {
       if (r.questions.length) {
         const sizes = new Set(r.questions.map((q) => q.size));
         pass(`${tag}: the questions are the same size, with no number circles`, sizes.size === 1 && !r.questions.some((q) => q.circle), [...sizes].join(', '));
-        const same = JSON.stringify(r.questions.map((q) => [q.label, q.question, q.reason])) === JSON.stringify(m.questions.map((q) => [q.label, q.question, q.reason]));
-        pass(`${tag}: the questions match the mock-up word for word`, same, same ? r.questions.map((q) => q.label).join(', ') : `app ${JSON.stringify(r.questions.map((q) => q.question))} | mock-up ${JSON.stringify(m.questions.map((q) => q.question))}`);
+        const same = JSON.stringify(r.questions.map((q) => [q.label, q.question, q.reason])) === JSON.stringify(m.questions.map((q) => [q.label, q.question, resource13Nov(q.reason)]));
+        pass(`${tag}: the questions match the mock-up word for word (the Resource line as of 13 Nov)`, same, same ? r.questions.map((q) => q.label).join(', ') : `app ${JSON.stringify(r.questions.map((q) => q.question))} | mock-up ${JSON.stringify(m.questions.map((q) => q.question))}`);
       }
       if (r.dots.length && (width === 1280 || width === 360)) {
         const key = (d) => `${d.n}:${d.cx.toFixed(2)},${d.cy.toFixed(2)},r${d.r},${d.rings}`;

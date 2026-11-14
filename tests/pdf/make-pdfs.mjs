@@ -541,6 +541,9 @@ for (const [name, spec] of Object.entries(DOCS)) {
     const sec = (title) => spec.sections.find((x) => x.title === title);
     const glance = spec.glance[0];
     if (glance.value !== m.headline.big) problems.push(`At a glance shows ${glance.value}, not ${m.headline.big}`);
+    // The order of 13 Nov (rule 29ar): the chart, the list, the objective, the CSFs, and the questions last.
+    const order = spec.sections.map((x) => x.title).join(' > ');
+    if (order !== 'Strategic importance against progress > Your projects > Objective > Critical Success Factors > Questions to start with') problems.push(`the sections are in the wrong order: ${order}`);
     const qs = sec('Questions to start with').blocks;
     if (JSON.stringify(qs.map((q) => [q.label, q.text, q.note])) !== JSON.stringify(m.questions.map((q) => [q.label, q.question, q.reason]))) problems.push('the questions differ from the results page');
     const dots = sec('Strategic importance against progress').blocks[0];

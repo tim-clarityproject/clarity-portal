@@ -425,7 +425,7 @@ export function questions(ranked, factors, { line = IMPORTANT_ABOVE, asOf, their
       kind: 'resource',
       label: 'Resource',
       question: `Is “${heavy.project.text}” worth the resource it takes?`,
-      reason: `${they} rated its resource “${RESOURCE_NAMES[heavy.resource]}”, and its strategic importance is ${roundPct(heavy.importance)}%.`,
+      reason: `${they} rated its resource requirements “${RESOURCE_NAMES[heavy.resource]}”, and its strategic importance is ${roundPct(heavy.importance)}%.`,
       projectId: heavy.project.id,
     });
   }

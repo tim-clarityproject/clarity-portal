@@ -1,5 +1,5 @@
 // The results page (mock-up M7b version 46), rendered on the server through
-// Vite: the order of its sections, At a glance, the chart, the line for
+// Vite: the order of its sections (rule 29ar), At a glance, the chart, the line for
 // important, the CSF levels and the project list, for a new Health Check, the
 // example report and an older Health Check. Invented names only. Run with
 // npm run test:healthcheck.
@@ -47,22 +47,28 @@ const render = (props) => renderToStaticMarkup(h(TipProvider, null, h(Results, {
 const text = (html) => html.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#x27;/g, '’').replace(/\s+/g, ' ');
 const headings = (html) => [...html.matchAll(/<h3>(.*?)<\/h3>/g)].map((m) => m[1]);
 
-test('the results are in the mock-up’s order, with no separate Next step', () => {
+test('the results open with the headline, then the chart and the list, and the questions come last (rule 29ar)', () => {
   const html = render({ draft: kestrel() });
-  assert.ok(html.indexOf('Objective') < html.indexOf('At a glance'));
-  assert.deepEqual(headings(html), ['At a glance', 'Strategic importance against progress', 'Critical Success Factors', 'Your projects']);
+  assert.deepEqual(headings(html), ['At a glance', 'Strategic importance against progress', 'Your projects', 'Critical Success Factors', 'Questions to start with']);
+  // The objective sits between the project list and the CSFs.
+  const at = (w) => html.indexOf(w);
+  assert.ok(at('<h3>Your projects') < at('class="obj1"') && at('class="obj1"') < at('<h3>Critical Success Factors'));
+  // The headline is first, and the chart comes before the questions.
+  assert.ok(at('class="gst"') < at('<svg') && at('<svg') < at('<h3>Questions to start with'));
   assert.doesNotMatch(html, /Next step|Start with “/);
 });
 
-test('At a glance: the headline and the three questions, as the mock-up shows them', () => {
+test('the headline in At a glance, and the three questions, as the mock-up words them', () => {
   const t = text(render({ draft: kestrel() }));
   assert.match(t, /2 of 5 important projects are moving well\. 1 needs managing, 1 needs attention and 1 is too early to tell\./);
   assert.match(t, /Questions to start with Timing Is “Enterprise sales team” worth a sprint of extra resource to finish by Dec 2026, or should its timeline change\? You rated its progress “Bad”, and it’s due to finish in 2 months\./);
-  assert.match(t, /Resource Is “New office fit-out” worth the resource it takes\? You rated its resource “High”, and its strategic importance is 15%\./);
+  assert.match(t, /Resource Is “New office fit-out” worth the resource it takes\? You rated its resource requirements “High”, and its strategic importance is 15%\./);
   assert.match(t, /CSF cover What could strongly support “A team with the right skills in the right roles”\? You didn’t rate any project “High” for this CSF\./);
   // No number circles on the questions.
-  const glance = render({ draft: kestrel() }).split('<h3>Strategic importance')[0];
-  assert.doesNotMatch(glance, /class="pn/);
+  const html = render({ draft: kestrel() });
+  assert.doesNotMatch(html.split('<h3>Questions to start with')[1], /class="pn/);
+  // At a glance holds only the headline.
+  assert.doesNotMatch(html.split('<h3>Strategic importance')[0], /Questions to start with|class="mv/);
 });
 
 test('the chart: dotted background, the line, end labels only, two area names, dot size from resource', () => {
@@ -117,24 +123,22 @@ test('the project list: its two ⓘ, the edit line, the states, with no pop-up o
   for (const m of html.matchAll(/<span class="pn[^"]*"([^>]*)>/g)) assert.equal(m[1], ' aria-hidden="true"');
 });
 
-test('How it works: the word, then its meaning, with the line in use', () => {
+test('How it works: how to read the chart, the word, then its meaning, with the line in use', () => {
   const lines = words.howItWorks(60);
-  assert.deepEqual(lines.slice(1).map((l) => l.term), ['Strategic importance', 'Important', 'Most in need of attention', 'Too early to tell', 'Bigger dots']);
-  // Every meaning is a full sentence, and Strategic importance has its one definition (version 47).
+  assert.deepEqual(lines.slice(1).map((l) => l.term), ['Each dot', 'Bigger dots', 'Important', 'Too early to tell']);
+  // Every meaning is a full sentence, word for word from M7b version 49 (Tim, 13 Nov, 18:13).
   assert.deepEqual(lines.slice(1).map((l) => l.meaning), [
-    'It’s how much a project helps the CSFs, out of 100%.',
-    'It’s a project above the line you set, which is now 60%.',
-    'Important projects that need attention and require more resource come first.',
-    'It’s a project at the Embryonic stage.',
+    'It’s a project, numbered as in the list below.',
     'They show projects that require more resource.',
+    'It’s a project above the line you set, which is now 60%.',
+    'It’s a project at the Embryonic stage.',
   ]);
-  assert.equal(words.importanceLines()[1].line, lines[1].meaning, 'the column ⓘ and How it works use the same words, the example too');
 });
 
 test('the example report: "Important means above 50%.", no drop-down, their words', () => {
   const html = render({ draft: EXAMPLE.draft, asOf: EXAMPLE.asOf, theirs: true });
   const t = text(html);
-  assert.deepEqual(headings(html), ['At a glance', 'Strategic importance against progress', 'Critical Success Factors', 'Their projects']);
+  assert.deepEqual(headings(html), ['At a glance', 'Strategic importance against progress', 'Their projects', 'Critical Success Factors', 'Questions to start with']);
   assert.match(t, /Important means above 50%\./);
   assert.doesNotMatch(t, /suggested/);
   assert.doesNotMatch(t, /Choose a project/);

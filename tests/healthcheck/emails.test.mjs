@@ -72,6 +72,29 @@ test('the email body holds the headline, the line and every question with its re
   assert.ok(!html.includes('Most in need of attention'), 'the old top-three list is gone');
 });
 
+test('the headline comes first and the questions to start with come last (rule 29ar)', () => {
+  const data = saved();
+  const s = completionSummary(data, COMPLETED);
+  const { html, text } = render(data);
+  for (const body of [html, text]) {
+    const at = (w) => body.indexOf(w);
+    const order = [s.headline, 'Important means above 50%.', 'Objective', 'Double recurring revenue', 'Questions to start with', s.questions[0].label].map(at);
+    assert.ok(order.every((n) => n >= 0), 'every part is there');
+    assert.deepEqual(order, order.slice().sort((a, b) => a - b), 'At a glance, the objective, then the questions');
+    // nothing of the results follows the questions: the last one's reason is the last of the summary
+    assert.ok(at(s.questions.at(-1).reason) > at('Questions to start with'));
+    assert.ok(at(s.questions.at(-1).reason) > at('Objective'));
+  }
+});
+
+test('the Resource question words the rating as the results page does', () => {
+  const s = completionSummary(saved(), COMPLETED);
+  const q = s.questions.find((x) => x.label === 'Resource');
+  assert.equal(q.reason, 'They rated its resource requirements “Very high”, and its strategic importance is 11%.');
+  const { html, text } = render(saved());
+  assert.ok(html.includes(q.reason) && text.includes(q.reason));
+});
+
 test('the person\'s own line changes the email as it changes the page', () => {
   const s80 = completionSummary(saved({ importantLine: 80 }), COMPLETED);
   assert.equal(s80.line, 80);

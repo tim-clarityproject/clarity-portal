@@ -28,6 +28,9 @@
 //     Nov; tests/phase5/edges.mjs);
 //   - no two tap areas overlap, so nothing that can be tapped shares its
 //     44px with a neighbour (Tim, 11 Nov; tests/phase5/taps.mjs);
+//   - on a summary or results page, "Questions to start with" never comes
+//     before a chart, in the page's order or on screen (Tim, 13 Nov, 18:11;
+//     rule 29ar; tests/phase5/summary-order.mjs);
 //   - no console errors.
 //
 //   - the outside Health Check follows the device, light or dark (Tim, 10
@@ -48,6 +51,7 @@ import { chevronsOff, measureChevrons } from './chevrons.mjs';
 import { outlinedEdges } from './edges.mjs';
 import { overlappingTaps } from './taps.mjs';
 import { checkReveals } from './reveals.mjs';
+import { questionsBeforeCharts } from './summary-order.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
@@ -343,6 +347,8 @@ for (const width of [1280, 390]) {
         pass(`${tag}: every outlined edge reaches 3 to 1`, lowEdges.length === 0, lowEdges.slice(0, 6).join('; '));
         const shared = await page.evaluate(overlappingTaps);
         pass(`${tag}: no two tap areas overlap`, shared.length === 0, shared.slice(0, 6).join('; '));
+        const early = await page.evaluate(questionsBeforeCharts);
+        pass(`${tag}: Questions to start with never come before a chart`, early.length === 0, early.slice(0, 4).join('; '));
         pass(`${tag}: no title in capitals over 3 words`, r.longTitles.length === 0, r.longTitles.join('; '));
         const old = /plan my day|review my day|hardware and software check-in|monthly check-in|first check-in|performance evidence/i.exec(r.text);
         pass(`${tag}: no old names`, !old, old?.[0]);
@@ -477,6 +483,16 @@ if (HC_ONLY) {
           pass(`${tag}: the page and its text follow the device (${mode})`, r.background === BACKGROUND[mode] && r.behind === BACKGROUND[mode] && r.textColour === TEXT[mode] && r.scheme === mode, `${r.background} ${r.behind} ${r.textColour} ${r.scheme}`);
           pass(`${tag}: every tap area is 44px or more`, r.small.length === 0, r.small.slice(0, 6).join('; '));
           pass(`${tag}: no sideways scroll`, r.sideways <= 0, `${r.sideways}px`);
+          // The summary opens with the visuals and the questions come last (Tim, 13 Nov; rule 29ar).
+          const early = await page.evaluate(questionsBeforeCharts);
+          pass(`${tag}: Questions to start with never come before a chart`, early.length === 0, early.slice(0, 4).join('; '));
+          if (complete) {
+            const order = await page.evaluate(() => {
+              const top = (sel, words) => { const el = [...document.querySelectorAll(sel)].find((x) => !words || x.textContent.trim() === words); return el ? el.getBoundingClientRect().top + window.scrollY : null; };
+              return [top('.gst'), top('.chart svg'), top('.sech h3', 'Your projects'), top('.obj1'), top('.sech h3', 'Critical Success Factors'), top('.sech h3', 'Questions to start with'), top('.sech h3', 'Keep your results')];
+            });
+            pass(`${tag}: the headline, the chart, the projects, the objective, the CSFs, the questions, then Keep your results`, order.every((y, i) => y != null && (i === 0 || y > order[i - 1])), order.map((y) => (y == null ? 'missing' : Math.round(y))).join(', '));
+          }
           pass(`${tag}: no console errors`, errors.length === 0, errors.slice(0, 2).join(' | '));
           if (out) await page.screenshot({ path: join(out, `health-check-${screen}-${width === 1280 ? '1280' : '390x844'}-${mode}.png`), fullPage: true });
         } catch (e) {

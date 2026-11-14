@@ -5,10 +5,11 @@ import {
   LINE_OPTIONS, ORDER_LINES, PROGS, RES, SORTS, csfLevel, csfLevelName, importanceLines, resultsModel, sortRows, stateWords,
 } from './words';
 
-// The one-pager (mock-up M7b version 47): the objective, At a glance (the
-// headline and the questions to start with), the chart with the line for
-// important, the Critical Success Factors with their levels, and the project
-// list. Shared by the person's own results and the read-only example report.
+// The one-pager (mock-up M7b version 47, in the order of 13 Nov: rule 29ar):
+// At a glance (the headline), the chart with the line for important, the
+// project list, the objective, the Critical Success Factors with their levels,
+// and the questions to start with, always last. Shared by the person's own
+// results and the read-only example report.
 // Every figure comes from src/lib/scores/m20.js (resultsModel in words.js).
 
 function ProjectRow({ row, onOpen }) {
@@ -33,35 +34,41 @@ function ProjectRow({ row, onOpen }) {
   );
 }
 
-/** One headline figure, then up to three questions, most urgent first (Tim, 28 Oct, 14:05 to 14:41). */
-function AtAGlance({ headline, questions, onPoint }) {
+/** At a glance holds only the headline (Tim, 13 Nov, 18:11): the figure, its line, then what needs you. */
+function AtAGlance({ headline }) {
   return (
-    <div className="sec gls">
+    <div className="sec gls rv" style={{ '--i': 2 }}>
       <div className="sech"><div><h3>At a glance</h3></div></div>
-      <div className="gl">
-        <div className="gst">
-          <b>{headline.big}</b>
-          <p>{headline.line}</p>
-          {headline.rest && <p className="sub">{headline.rest}</p>}
-        </div>
-        <div className="mvs">
-          <span className="fl">Questions to start with</span>
-          {questions.map((x, i) => (
-            <div
-              key={x.kind}
-              className={`mv${i === 0 ? ' main' : ''}`}
-              // With a mouse, pointing at a question about a project lights its dot.
-              onPointerEnter={x.projectId ? (e) => { if (e.pointerType === 'mouse') onPoint(x.projectId); } : undefined}
-              onPointerLeave={x.projectId ? () => onPoint(null) : undefined}
-            >
-              <div>
-                <small>{x.label}</small>
-                <p className={i === 0 ? 'nxt' : 'mvt'}>{x.question}</p>
-                <p className="why">{x.reason}</p>
-              </div>
+      <div className="gst">
+        <b>{headline.big}</b>
+        <p>{headline.line}</p>
+        {headline.rest && <p className="sub">{headline.rest}</p>}
+      </div>
+    </div>
+  );
+}
+
+/** Up to three questions, most urgent first (Tim, 28 Oct, 14:05 to 14:41): always the last part of the summary (Tim, 13 Nov). */
+function Questions({ questions, onPoint }) {
+  return (
+    <div className="sec">
+      <div className="sech"><div><h3>Questions to start with</h3></div></div>
+      <div className="mvs">
+        {questions.map((x, i) => (
+          <div
+            key={x.kind}
+            className={`mv${i === 0 ? ' main' : ''}`}
+            // With a mouse, pointing at a question about a project lights its dot.
+            onPointerEnter={x.projectId ? (e) => { if (e.pointerType === 'mouse') onPoint(x.projectId); } : undefined}
+            onPointerLeave={x.projectId ? () => onPoint(null) : undefined}
+          >
+            <div>
+              <small>{x.label}</small>
+              <p className={i === 0 ? 'nxt' : 'mvt'}>{x.question}</p>
+              <p className="why">{x.reason}</p>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -83,11 +90,7 @@ export default function Results({ draft, asOf, theirs = false, phone, sort, onSo
   const anyPlotted = rows.some((r) => r.progress != null);
   return (
     <>
-      <div className="obj1 rv" style={{ '--i': 2 }}>
-        <div className="oh"><small>Objective</small>{!theirs && <button type="button" className="chg" onClick={() => onChange('objective')}>Edit</button>}</div>
-        <p>{draft.objective}</p>
-      </div>
-      <AtAGlance headline={headline} questions={questions} onPoint={setLit} />
+      <AtAGlance headline={headline} />
       <div className="sec">
         <div className="sech">
           <div>
@@ -106,25 +109,6 @@ export default function Results({ draft, asOf, theirs = false, phone, sort, onSo
         {anyPlotted
           ? <div className="chart"><Chart rows={rows} line={line} phone={phone} lit={lit} /></div>
           : <p className="chart-empty">The chart shows each project once its progress is rated.</p>}
-      </div>
-      <div className="sec">
-        <div className="sech">
-          {/* In capitals the abbreviation would read "CSFS", so headings never carry it. */}
-          <div><h3>Critical Success Factors</h3></div>
-          {!theirs && <button type="button" className="chg" onClick={() => onChange('csf')}>Edit</button>}
-        </div>
-        <div className="csfs">
-          {factors.map((f, i) => (
-            <div className="csf" key={f.id}>
-              <i>{i + 1}</i>
-              <span>
-                <small className="wl">{csfLevelName(csfLevel(f))}</small>
-                {f.text}
-                {gaps.includes(f.id) && <small className="gap">No project strongly supports this yet.</small>}
-              </span>
-            </div>
-          ))}
-        </div>
       </div>
       <div className="sec">
         <div className="sech">
@@ -150,6 +134,30 @@ export default function Results({ draft, asOf, theirs = false, phone, sort, onSo
           ))}
         </div>
       </div>
+      <div className="obj1">
+        <div className="oh"><small>Objective</small>{!theirs && <button type="button" className="chg" onClick={() => onChange('objective')}>Edit</button>}</div>
+        <p>{draft.objective}</p>
+      </div>
+      <div className="sec">
+        <div className="sech">
+          {/* In capitals the abbreviation would read "CSFS", so headings never carry it. */}
+          <div><h3>Critical Success Factors</h3></div>
+          {!theirs && <button type="button" className="chg" onClick={() => onChange('csf')}>Edit</button>}
+        </div>
+        <div className="csfs">
+          {factors.map((f, i) => (
+            <div className="csf" key={f.id}>
+              <i>{i + 1}</i>
+              <span>
+                <small className="wl">{csfLevelName(csfLevel(f))}</small>
+                {f.text}
+                {gaps.includes(f.id) && <small className="gap">No project strongly supports this yet.</small>}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <Questions questions={questions} onPoint={setLit} />
     </>
   );
 }

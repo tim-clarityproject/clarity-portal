@@ -46,8 +46,8 @@ export function healthCheckResultsEmail({ link, organisation, dateText, email, c
  * To the coach who made the link (or the owner, for an older link with no
  * coach recorded) when a Health Check is finished: the person's email and
  * access code under the button (Tim, 10 Nov, 13:31: "Same for the coach
- * one"), then the same headline and questions to start with as the results
- * page and the PDF (completionSummary).
+ * one"), then the same headline as the results page and the PDF, the
+ * objective, and last the questions to start with (completionSummary).
  */
 export function healthCheckFinishedForCoachEmail({ link, organisation, email, code, finishedText, objective, summary, madeTheLink = true }) {
   const org = oneLine(organisation);
@@ -60,9 +60,10 @@ export function healthCheckFinishedForCoachEmail({ link, organisation, email, co
       { type: 'text', text: `They finished on ${finishedText}.` },
       { type: 'button', label: 'Open the results', href: link },
       { type: 'details', rows: [['Email', email], ['Access code', code]] },
-      ...(oneLine(objective) ? [{ type: 'label', text: 'Objective' }, { type: 'note', text: oneLine(objective) }] : []),
+      // The headline first, and the questions to start with last (rule 29ar; Tim, 13 Nov, 18:11).
       { type: 'label', text: 'At a glance' },
       { type: 'note', text: summary.headline, after: `Important means above ${summary.line}%.` },
+      ...(oneLine(objective) ? [{ type: 'label', text: 'Objective' }, { type: 'note', text: oneLine(objective) }] : []),
       { type: 'label', text: 'Questions to start with' },
       ...summary.questions.map((q) => ({ type: 'note', lead: q.label, text: q.question, after: q.reason })),
     ],
