@@ -6,7 +6,7 @@ import { BackLink } from '../../components/ui/DiscardLink';
 import { LoadError, Loading, PageHeader, PdfDownload, clearGuideDraft, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { readCache, writeCache } from '../../lib/pageCache';
-import { clearDraft, readDraft, useDraft } from '../../lib/drafts';
+import { readDraft, useDraft } from '../../lib/drafts';
 import { newId } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
 import { deviceToolAnswer, loadToolAnswer, loadToolAnswers, saveToolAnswers } from '../../lib/toolAnswers';
@@ -156,7 +156,7 @@ function Flow({ userId, user, asked, start }) {
 
   // The check is kept on the device while the tool is open and put back
   // after a refresh ("Draft restored"): the same check, with the same id.
-  useDraft({
+  const draft = useDraft({
     userId,
     name: draftName(asked),
     value: item,
@@ -176,13 +176,18 @@ function Flow({ userId, user, asked, start }) {
 
   const onCheck = useCallback((fn) => setItem((s) => ({ ...s, check: fn(s.check) })), []);
 
+  // Saved for good and leaving: nothing of it stays on the device as a
+  // draft. The hook's own clear, so the page doesn't keep it again as it
+  // leaves (a finished check then came back as one to carry on; 14 Nov).
   const forget = () => {
-    clearDraft(userId, draftName(asked));
+    draft.clear();
     clearGuideDraft(stepDraftKey(userId, asked));
   };
 
   // One saved item, written over itself: a draft until every answer is in.
-  const save = async (now, status) => {
+  // `stays` false: the tool is leaving, so what is on screen isn't touched
+  // (a change there would be kept as a draft again).
+  const save = async (now, status, { stays = true } = {}) => {
     const createdAt = now.createdAt || new Date().toISOString();
     const finishedAt = status === 'completed' ? (now.finishedAt || new Date().toISOString()) : null;
     const result = await saveToolAnswers(userId, {
@@ -196,7 +201,7 @@ function Flow({ userId, user, asked, start }) {
       finishedAt,
     });
     lastSaved.current = JSON.stringify([status, savedAnswers(now.check), now.check.shared]);
-    setItem((s) => ({ ...s, status, saved: true, createdAt, finishedAt }));
+    if (stays) setItem((s) => ({ ...s, status, saved: true, createdAt, finishedAt }));
     return result;
   };
   const statusOf = (now) => (isComplete(now.check) ? 'completed' : 'draft');
@@ -217,11 +222,12 @@ function Flow({ userId, user, asked, start }) {
     busy.current = true;
     try {
       const status = statusOf(now);
-      const result = unchanged(now, status) ? 'saved' : await save(now, status);
       // A finished check, or one opened from My Plans, is in the list: the
       // next visit starts a new one. An unfinished new one keeps its place
       // on this device, so the tool carries on from here.
-      if (asked || status === 'completed') forget();
+      const leaves = Boolean(asked) || status === 'completed';
+      const result = unchanged(now, status) ? 'saved' : await save(now, status, { stays: !leaves });
+      if (leaves) forget();
       toast.show(result === 'queued' ? 'Will sync' : 'Saved');
       leave();
     } catch (error) {

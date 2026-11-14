@@ -9,13 +9,15 @@ import pageText from '../content/pageText';
 // opens its current page under its new name and its new address (step 5;
 // the old addresses redirect, RENAMED below). The Dashboard joined Personal
 // in Phase 5 step 2, as its first big tile. Not built yet, so no tile: Find my sweet spot, Deliberate vs default, Travel
-// and jet lag plan, Delegation audit, Emotional wash, Identity beyond the
+// and jet lag plan, Delegation audit, Identity beyond the
 // role, Stay deliberate under pressure,
 // Confidence Bank, Prepare for a difficult conversation, Prepare for
 // a pitch, Map my stakeholders, Map my team, Understand their sweet spot,
 // Decide who decides, Strategy on a page and Pre-mortem for an initiative.
 // The Team performance check joined Interpersonal in Phase 8a step 3 (M10),
 // under "Your team" (Claude's call: M3 has no group for it).
+// The Emotional wash joined Reset in Phase 8a step 3 (M10), where M3 has
+// it: after the Pressure plan, before the Journal.
 // Sleep wind down joined Reset in step 6 (M19), second, marked New for its
 // first two weeks (`newUntil`). The Hardware and Software check-in joined
 // Review in Phase 5 step 1, last, so M3's own order is kept. Points of leverage is removed
@@ -102,6 +104,15 @@ export const TOOLS = {
     time: '~8 minutes',
     to: '/pressure-plan',
     routes: ['/pressure-plan'],
+  },
+  // The Emotional wash (M10, version 5.6; Phase 8a step 3). Its line and
+  // its time are M3's own.
+  wash: {
+    name: 'Emotional wash',
+    line: 'Work through a strong emotion so it doesn’t run you.',
+    time: '~10 minutes',
+    to: '/emotional-wash',
+    routes: ['/emotional-wash'],
   },
   journal: {
     name: 'Journal',
@@ -219,7 +230,7 @@ export const HUBS = {
     up: 'personal',
     line: 'Get back to your best when the pressure is on.',
     info: pageText.hubReset,
-    groups: [{ tools: ['breathe', 'wind', 'pp', 'journal'] }],
+    groups: [{ tools: ['breathe', 'wind', 'pp', 'wash', 'journal'] }],
   },
   review: {
     title: 'Review',
@@ -436,7 +447,7 @@ export function tabTitle(pathname) {
  */
 export const PIN_GROUPS = [
   { title: 'Plan', tools: ['pmd', 'grow', 'inv', 'time'] },
-  { title: 'Reset', tools: ['breathe', 'wind', 'pp', 'journal'] },
+  { title: 'Reset', tools: ['breathe', 'wind', 'pp', 'wash', 'journal'] },
   { title: 'Review', tools: ['rmd', 'debrief', 'aar', 'lbr'] },
   { title: 'Interpersonal', tools: ['meet', 'fb'] },
   { title: 'Strategic', tools: ['hc'] },

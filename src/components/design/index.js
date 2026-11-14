@@ -107,4 +107,6 @@ export { default as Timer } from './Timer';
 export { default as StepBars, StepBarRows } from './StepBars';
 export { default as NameRows } from './NameRows';
 export { ResultsHeadline, ResultsSection, StartQuestions } from './Results';
+export { default as FollowChoice, FollowQuestion } from './FollowChoice';
+export { default as Dissolve } from './Dissolve';
 export { useTimerLength } from './useTimerLength';

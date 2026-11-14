@@ -43,7 +43,7 @@
 // other host and every email call is blocked. Nothing is saved.
 //
 //   node --import ./tests/scores/register.mjs tests/phase5/calm-rules.mjs [folder for screenshots]
-import { GUEST_TOKEN, GUEST_VISIT, M10, M9 } from '../phase8/shared.mjs';
+import { GUEST_TOKEN, GUEST_VISIT, M10, M9, m10Wash } from '../phase8/shared.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -123,6 +123,18 @@ const PAGES_ALL = [
   ['team-check-people', '/team-performance-check', 'team:0'],
   ['team-check-trust', '/team-performance-check', 'team:1'],
   ['team-check-results', '/team-performance-check', 'team:16'],
+  // The Emotional wash (M10; Phase 8a step 3): what happened (the eye), the
+  // words side by side, the story (See an example opens in place), a one-tap
+  // check, Park and reflect and Accept and act with their follow-ups open
+  // in the chosen card, and Your wash, opened on their step from a wash on
+  // the device (nothing saved).
+  ['wash-what', '/emotional-wash', 'wash:0'],
+  ['wash-words', '/emotional-wash', 'wash:2'],
+  ['wash-story', '/emotional-wash', 'wash:4'],
+  ['wash-true', '/emotional-wash', 'wash:5'],
+  ['wash-park', '/emotional-wash', 'wash:8'],
+  ['wash-act', '/emotional-wash', 'wash:16'],
+  ['wash-summary', '/emotional-wash', 'wash:17'],
 ];
 // M10's own invented team, as the tool keeps a check while it is open.
 const TEAM_CHECK = {
@@ -334,7 +346,7 @@ for (const width of [1280, 390]) {
       errors.length = 0;
       try {
         // A guided tool opened on one step: its saved place is set first.
-        const [kind, at] = /^(review|build|unstuck|team):\d+$/.test(act || '') ? act.split(':') : [];
+        const [kind, at] = /^(review|build|unstuck|team|wash):\d+$/.test(act || '') ? act.split(':') : [];
         if ((act || '').startsWith('guest:')) {
           // What a guest's tab keeps of the link: nothing yet (the start), or a finished plan (the end).
           await page.evaluate(({ end, token, visit, plan, email, coach }) => {
@@ -350,7 +362,13 @@ for (const width of [1280, 390]) {
           // are cleared after each guided screen, and are only written again
           // while the device is still being warmed.)
           await page.waitForFunction(() => Object.keys(localStorage).some((x) => /^clarity-[a-z-]+:[0-9a-f-]{36}(:|$)/.test(x)) || /"id":"[0-9a-f-]{36}"/.test(localStorage.getItem('clarity-portal-auth') || ''), null, { timeout: 15000 });
-          await page.evaluate(({ kind: k, at: n, plan, team }) => {
+          if (kind === 'wash') {
+            // Away from the tool first (a plain file of the portal's own): the wash screen before this
+            // one keeps its own copy of the wash as it closes, and this tab's own copy wins.
+            await page.goto(`${APP}/version.json`);
+            await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.includes(':emotional-wash:')) localStorage.removeItem(x); });
+          }
+          await page.evaluate(({ kind: k, at: n, plan, team, wash, washDone }) => {
             // The person's id, from any of their page copies on the device.
             let uid = Object.keys(localStorage).map((x) => /^clarity-[a-z-]+:([0-9a-f-]{36})(:|$)/.exec(x)?.[1]).find(Boolean);
             if (!uid) { try { uid = JSON.parse(localStorage.getItem('clarity-portal-auth')).user.id; } catch { /* none */ } }
@@ -362,6 +380,13 @@ for (const width of [1280, 390]) {
               localStorage.setItem('clarity-tool-answers-not-yet', String(Date.now()));
               return;
             }
+            if (k === 'wash') {
+              // The Emotional wash carries on from the wash kept on the device, at the step it was left on.
+              localStorage.setItem(`clarity-draft:${uid}:emotional-wash:new`, JSON.stringify({ v: { id: '88888888-8888-4888-8888-888888888888', wash: Number(n) === 17 ? washDone : wash, status: 'new', saved: false, createdAt: null, finishedAt: null }, at: Date.now() }));
+              localStorage.setItem(`ds-guide:emotional-wash-${uid}-new`, JSON.stringify({ index: Number(n), skipped: [] }));
+              localStorage.setItem('clarity-tool-answers-not-yet', String(Date.now()));
+              return;
+            }
             if (k === 'unstuck') {
               // Get unstuck carries on from its draft on the device, at the step it was left on.
               localStorage.setItem(`clarity-draft:${uid}:get-unstuck:new`, JSON.stringify({ v: { id: '44444444-4444-4444-8444-444444444444', plan, status: 'new', saved: false }, at: Date.now() }));
@@ -369,20 +394,20 @@ for (const width of [1280, 390]) {
               return;
             }
             localStorage.setItem(`ds-guide:${k === 'review' ? `performance-sprint-review-${uid}` : `performance-plan-build-${uid}`}`, JSON.stringify({ index: Number(n), skipped: [] }));
-          }, { kind, at, plan: UNSTUCK_PLAN, team: TEAM_CHECK });
+          }, { kind, at, plan: UNSTUCK_PLAN, team: TEAM_CHECK, wash: m10Wash('steps'), washDone: m10Wash('sum') });
         }
         await page.goto(`${APP}${path}`);
         if (kind === 'review') {
           await page.getByRole('button', { name: 'Review it now' }).click({ timeout: 15000 }).catch(() => null);
         }
         if (kind) {
-          await page.waitForSelector(act === 'team:16' ? '.ds-guide-title' : '.ds-guide-question', { timeout: 20000 });
-          const want = { 'review:1': 'What worked best in this sprint?', 'review:2': 'What would make the next sprint even better?', 'build:4': 'Which days do you work?', 'unstuck:0': 'What do you want to achieve?', 'unstuck:1': 'What’s in the way of', 'unstuck:3': 'What could you do to reach', 'unstuck:6': 'Here’s your plan', 'team:0': 'Who reports to you?', 'team:1': 'How much does “Priya Shah” trust you as their leader?', 'team:16': 'YOUR TEAM' }[act];
+          await page.waitForSelector(act === 'team:16' || act === 'wash:17' ? '.ds-guide-title' : '.ds-guide-question', { timeout: 20000 });
+          const want = { 'review:1': 'What worked best in this sprint?', 'review:2': 'What would make the next sprint even better?', 'build:4': 'Which days do you work?', 'unstuck:0': 'What do you want to achieve?', 'unstuck:1': 'What’s in the way of', 'unstuck:3': 'What could you do to reach', 'unstuck:6': 'Here’s your plan', 'team:0': 'Who reports to you?', 'team:1': 'How much does “Priya Shah” trust you as their leader?', 'team:16': 'YOUR TEAM', 'wash:0': 'What happened?', 'wash:2': 'Which words fit the feeling?', 'wash:4': 'What story are you telling yourself', 'wash:5': 'Is “The chair has never rated me” true?', 'wash:8': 'How will you wash “The chair has never rated me”?', 'wash:16': 'How will you wash “I need to win the board back', 'wash:17': 'YOUR WASH' }[act];
           const got = (await page.locator('.ds-guide-question, .ds-guide-title').first().innerText()).replace(/\s+/g, ' ').trim();
           pass(`${tag}: opened on "${want}"`, got.toUpperCase().startsWith(want.toUpperCase()), got);
           const eyes = await page.locator('.ds-guide-question .ds-who, .ds-guide-question .ds-page-aside, .ds-guide-title .ds-who').count();
           // Get unstuck shows the eye on its first step and on Your plan only (Tim, 13 Nov, 09:32).
-          if ((kind === 'unstuck' && at !== '0' && at !== '6') || act === 'team:1') pass(`${tag}: no eye on a middle step`, eyes === 0, `${eyes}`);
+          if ((kind === 'unstuck' && at !== '0' && at !== '6') || act === 'team:1' || (kind === 'wash' && at !== '0' && at !== '17')) pass(`${tag}: no eye on a middle step`, eyes === 0, `${eyes}`);
           else pass(`${tag}: the eye is inside the heading`, eyes >= 1, `${eyes}`);
         }
         await page.waitForLoadState('networkidle').catch(() => null);
@@ -427,7 +452,7 @@ for (const width of [1280, 390]) {
           pass(`${tag}: what opens in place keeps your place and shows (${reveals.checked} pressed)`, reveals.problems.length === 0, reveals.problems.slice(0, 5).join('; '));
         }
         if (act === 'menu') await page.keyboard.press('Escape');
-        if (kind) await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.startsWith('ds-guide:performance-') || x.startsWith('ds-guide:get-unstuck-') || x.startsWith('ds-guide:team-check-') || x.startsWith('clarity-cache:') || x.startsWith('clarity-draft:')) localStorage.removeItem(x); });
+        if (kind) await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.startsWith('ds-guide:performance-') || x.startsWith('ds-guide:get-unstuck-') || x.startsWith('ds-guide:team-check-') || x.startsWith('ds-guide:emotional-wash-') || x.startsWith('clarity-cache:') || x.startsWith('clarity-draft:')) localStorage.removeItem(x); });
         emptyReads = false;
       } catch (e) {
         emptyReads = false;
@@ -622,7 +647,9 @@ if (CHEVRONS) {
       await page.fill('input[type=password]', env.TEST_CLIENT_PASSWORD);
       await page.keyboard.press('Enter');
       await page.waitForURL(/welcome/, { timeout: 30000 });
-      const paths = [...new Set(PAGES_ALL.filter(([, , act]) => !act).map(([, path]) => path)), '/personal/plan', '/life-balance-review', '/get-unstuck', '/team-performance-check'];
+      const paths = [...new Set(PAGES_ALL.filter(([, , act]) => !act).map(([, path]) => path)), '/personal/plan', '/life-balance-review', '/get-unstuck', '/team-performance-check', '/emotional-wash']
+        // CHEV_ONLY='emotional-wash|personal/reset' reads only the pages whose address matches.
+        .filter((p) => !process.env.CHEV_ONLY || new RegExp(process.env.CHEV_ONLY).test(p));
       for (const path of paths) {
         const tag = `chevrons ${path} ${width}px`;
         try {
@@ -680,7 +707,7 @@ if (CHEVRONS) {
     } catch (e) {
       pass(`chevrons ${width}px: signed in`, false, e.message.split('\n')[0]);
     }
-    if (CHEV_PARTS.includes('pages')) pass(`chevrons ${width}px: chevrons beside text were found and measured (${measured})`, measured >= 20, `${measured}`);
+    if (CHEV_PARTS.includes('pages')) pass(`chevrons ${width}px: chevrons beside text were found and measured (${measured})`, measured >= (process.env.CHEV_ONLY ? 1 : 20), `${measured}`);
     await context.close();
 
     // The outside Health Check: Back on the sign-in screen, and the first question's own chevrons.

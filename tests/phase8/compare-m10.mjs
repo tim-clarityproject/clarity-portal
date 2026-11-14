@@ -3,8 +3,8 @@
 // (1440) and Phone (390, M10's own phone frame: a 410px box with a 10px
 // bezel), dark and light. Positions and sizes to half a pixel, fonts,
 // sizes, letter-spacing and colours, and every visible sentence word for
-// word. This file holds the Team performance check's screens; the
-// Emotional wash's are added to TOOLS below in the same shape.
+// word. Both tools' screens: the Team performance check's, then the
+// Emotional wash's.
 //
 //   node tests/phase8/compare-m10.mjs [folder for screenshots]
 //   ONLY=people,results WIDTHS=1440 MODES=dark   to run a part of it
@@ -24,7 +24,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { APP, M10, M10_FILE, TEAM_PATH, block, clearTeamCheck, m10Answers, panel, panelGone, readEnv, signIn, sleep, until, withCoach } from './shared.mjs';
+import { APP, M10, M10_FILE, TEAM_PATH, WASH_INDEX, WASH_PATH, block, clearTeamCheck, clearWash, m10Answers, m10Wash, panel, panelGone, readEnv, seedWash, signIn, sleep, until, withCoach } from './shared.mjs';
 import { compareParts, compareWords, makeReport, measureParts, words } from './compare-lib.mjs';
 
 const out = process.argv[2] || join(process.cwd(), 'tmp-phase8-compare-m10');
@@ -119,6 +119,79 @@ const SCREENS = {
     ['Leila’s alignment', '.tt .lv i', '.ds-ctable .ds-stepbars i', 40, ['fill']],
     ['the last row', '.tt tbody tr', '.ds-ctable tbody tr', 4, ['size']]],
 };
+// ---- Emotional wash
+const FOOT = [
+  ['the coral button', '.gft .btn', '.ds-guide-next', 0, ['foot', 'text']],
+  ['Finish later', '.gft .text', '.ds-guide-foot .ds-guide-skip', 0, ['foot', 'text']],
+];
+const THOUGHT = [['Thought 1 of 3', '.qn', '.ds-guide-label', 0, ['pos', 'text']]];
+const answers = (last) => [
+  ['the first answer', '.opt', '.ds-guide-body .ds-answer', 0, ['box', 'text', 'edge']],
+  ['the second answer', '.opt', '.ds-guide-body .ds-answer', 1, ['box']],
+  ['the last answer', '.opt', '.ds-guide-body .ds-answer', last, ['box']],
+];
+const CARDS = [
+  ['the first card', '.wopt', '.ds-follow-card', 0, ['box', 'edge']],
+  ['the first card’s words', '.wopt .ow', '.ds-follow-answer .ds-answer-words', 0, ['pos', 'text']],
+  ['the first card’s line', '.wopt .ow small', '.ds-follow-answer .ds-answer-hint', 0, ['pos', 'text']],
+  ['the second card', '.wopt', '.ds-follow-card', 1, ['box']],
+  ['the last card', '.wopt', '.ds-follow-card', 2, ['box']],
+];
+Object.assign(SCREENS, {
+  what: [...BAR, ...HEAD,
+    ['the eye', '.eye1 svg', '.ds-guide-question .ds-who svg', 0, ['box']],
+    ['the box', '#what', '.ds-guide-body textarea', 0, ['box', 'text', 'edge']],
+    ...FOOT],
+  kind: [...BAR, ...HEAD, ...answers(2),
+    ['the first kind’s line', '.opt small', '.ds-answer-hint', 0, ['pos', 'text']],
+    ['the last kind’s line', '.opt small', '.ds-answer-hint', 2, ['pos']]],
+  words: [...BAR, ...HEAD, ...answers(9),
+    ['the chosen answer', '.opt[aria-pressed="true"]', '.ds-guide-body .ds-answer[aria-pressed="true"]', 0, ['box', 'fill', 'edge']],
+    ...FOOT],
+  rel: [...BAR, ...HEAD, ...answers(10), ...FOOT],
+  story: [...BAR, ...HEAD,
+    ['See an example', '.qbody .text', '.ds-guide-example-link', 0, ['pos', 'text']],
+    ['the first thought’s box', '.rw textarea', '.ds-rowlist .ds-text', 0, ['box', 'text', 'edge']],
+    ['the first remove crosshair', '.rw .x', '.ds-rowlist-remove .ds-cross', 0, ['box']],
+    ['the last thought’s box', '.rw textarea', '.ds-rowlist .ds-text', 2, ['box']],
+    ['Add another thought', '.addrow .ghost', '.ds-rowlist-add', 0, ['box', 'text', 'edge']],
+    ...FOOT],
+  true: [...BAR, ...THOUGHT, ...HEAD, ...answers(2)],
+  logical: [...BAR, ...THOUGHT, ...HEAD, ...answers(2)],
+  helpful: [...BAR, ...THOUGHT, ...HEAD, ...answers(2)],
+  wash1: [...BAR, ...THOUGHT, ...HEAD, ...CARDS,
+    ['the follow-up’s question', '.wfu label', '.ds-follow-label', 0, ['pos', 'text']],
+    ['the line under it, in the card', '.wfu .wh', '.ds-follow-hint', 0, ['pos', 'text']],
+    ['the first starter', '.sq', '.ds-follow-body .ds-chip', 0, ['box', 'text', 'edge']],
+    ['the last starter', '.sq', '.ds-follow-body .ds-chip', 2, ['box']],
+    ['the follow-up’s box', '.wfu textarea', '.ds-follow-body textarea', 0, ['box', 'edge']],
+    ...FOOT],
+  wash2: [...BAR, ...THOUGHT, ...HEAD, ...CARDS, ...FOOT],
+  wash3: [...BAR, ...THOUGHT, ...HEAD, ...CARDS,
+    ['the follow-up’s question', '.wfu label', '.ds-follow-label', 0, ['pos', 'text']],
+    ['the line under it, in the card', '.wfu .wh', '.ds-follow-hint', 0, ['pos', 'text']],
+    ['the follow-up’s box', '.wfu textarea', '.ds-follow-body textarea', 0, ['box', 'text', 'edge']],
+    ['Where should it go?', '.wl', '.ds-follow-body .ds-todo-where .ds-label-row-text', 0, ['pos', 'text']],
+    ['the three places', '.wseg', '.ds-follow-body .ds-todo-where .ds-seg', 0, ['box', 'edge']],
+    ['This week', '.wseg button', '.ds-follow-body .ds-todo-where .ds-seg-btn', 0, ['box', 'text', 'fill']],
+    ['Don’t add it', '.wseg button', '.ds-follow-body .ds-todo-where .ds-seg-btn', 2, ['box', 'text']],
+    ...FOOT],
+  sum: [BAR[0], BAR[2],
+    ['the title', '#h1', '.ds-guide-title', 0, ['pos', 'text']],
+    ['the eye', '.eye1 svg', '.ds-guide-title .ds-who svg', 0, ['box']],
+    ['the first row', '.sr', '.ds-guide-plan-row', 0, ['box']],
+    ['the first row’s label', '.sr .k', '.ds-guide-plan-label', 0, ['pos', 'text']],
+    ['what happened', '.sr .v p', '.ds-guide-plan-line', 0, ['pos', 'text']],
+    ['the first Edit', '.sr .ed', '.ds-guide-plan-edit', 0, ['pos', 'text']],
+    ['the feeling’s row', '.sr', '.ds-guide-plan-row', 1, ['box']],
+    ['the feeling’s words', '.sr .v small', '.ds-guide-plan-line small', 0, ['pos', 'text']],
+    ['the step’s row', '.sr', '.ds-guide-plan-row', 3, ['box']],
+    ['where the step is', '.sr .v small', '.ds-guide-plan-line small', 1, ['pos', 'text']],
+    ['the last row', '.sr', '.ds-guide-plan-row', 4, ['box']],
+    ['the last Edit', '.sr .ed', '.ds-guide-plan-edit', 4, ['pos']],
+    ['the coral button', '.gft .btn', '.ds-guide-next', 0, ['foot', 'text']]],
+});
+
 const DIALOG = '[role=dialog]:not(.ds-guide)';
 // Screens that are a panel over the page: their words, and the panel's own parts.
 const PANELS = {
@@ -130,6 +203,10 @@ const PANELS = {
     ['Add this person', '.shf .btn', `${DIALOG} .ds-btn--primary`, 0, ['size', 'text']]],
   whoT: [['the panel’s title', '.shh h2', `${DIALOG} h2`, 0, ['text']]],
   todo: [['the panel’s title', '.shh h2', `${DIALOG} h2`, 0, ['text']]],
+  whoE: [
+    ['the panel’s title', '.shh h2', `${DIALOG} h2`, 0, ['text']],
+    ['Only you can see this.', '.who p', `${DIALOG} .ds-sheet-note`, 0, ['text']],
+    ['the line under it', '.who p', `${DIALOG} .ds-sheet-note`, 1, ['text']]],
 };
 
 // ---------------------------------------------------------------- meant differences
@@ -142,8 +219,27 @@ const FONT = 'the portal ships DM Sans as two fixed files (regular and medium), 
 const EYE = 'the shared heading-with-eye part puts the eye 12px after the last letter’s box (rule 29d); M10 measures 2px less';
 const WHO_PANEL = 'the eye’s panel is the portal’s shared small panel (22px title), as on the dashboard and in Get unstuck';
 const NAME = 'M10 draws the name in its top bar about 1.4px higher than M9 does (its lines are set closer, 1.35); the calm frame is one part, so the built bar keeps M9’s place in every tool, with Back’s chevron centred on the name’s capitals (rule 29ao, measured by tests/phase5/chevrons.mjs)';
+const BAR_H = 'the calm frame’s top bar is 72px with its line inside it (M9’s own measure, checked by compare-m9.mjs); M10’s is 73px, so the crosshair’s middle sits half a pixel higher. That is inside the half pixel allowed on the Team performance check’s screens and a hair over it on these, where M10’s frame sits at a fraction of a pixel under its taller review bar';
+const PERCENT = 'M10 shows the checks for the first thought only, so its bar steps 9 at a time through six screens; the built tool asks all four questions of every thought (here three thoughts, twelve screens), which share the bar from 36 evenly, so it only ever moves forward';
+const SEG = 'the portal’s one shared segmented control (40px pills in a 48px box), as in the shared add panel; M10 draws 38px pills';
+const STRATEGY = 'a to-do can’t be saved without the Strategy it serves (todos.strategy_id is required), so with more than one Strategy in the plan the card also asks “Which Strategy does it serve?”, as the shared add panel does; M10 draws only where it goes. The card is taller by that question, and the cards under it sit lower';
+const SHEET = 'the eye’s panel is the portal’s shared small panel (17px title), as on the dashboard and in Get unstuck';
 export const ALLOW = [
   ['*|the tool’s name|top', NAME],
+  ...['what', 'kind', 'words', 'rel', 'story', 'true', 'logical', 'helpful', 'wash1', 'wash2', 'wash3', 'sum'].map((s) => [`${s}|close|top`, BAR_H]),
+  ...['true', 'logical', 'helpful', 'wash1', 'wash2', 'wash3'].map((s) => [`${s}|how far the % bar is filled|width`, PERCENT]),
+  ['*|Add another thought|edge', EDGE],
+  ['*|the first card|edge', EDGE],
+  ['*|the first starter|edge', EDGE],
+  ['*|the three places|edge', EDGE],
+  ['wash3|the three places|height', SEG],
+  ['wash3|This week|height', SEG],
+  ['wash3|Don’t add it|height', SEG],
+  ['wash3|the first card|height', STRATEGY],
+  ['wash3|the second card|top', STRATEGY],
+  ['wash3|the last card|top', STRATEGY],
+  ['whoE|the panel’s title|text size', SHEET],
+  ['sum|the coral button|width@phone', 'M10 draws no PDF link on the summary, so its button runs the full width on a phone; the built bar has “Download my PDF” at its left (every tool’s PDF comes from the shared template), and the button takes the rest, as on the Team performance check’s results'],
   ['*|Add a person|edge', EDGE],
   ['*|the first answer|edge', EDGE],
   ['addp|the name’s box|edge', EDGE],
@@ -172,7 +268,10 @@ const OWN_PLAN = 'the test client’s own Strategies';
 const MOCK_ONLY = new Map([
   ['todo', [['e.g. Ask Tom what would help him bring decisions to me early', 'the shared add panel has its own example']]],
 ]);
+const PDF_LINK = 'every tool’s PDF comes from the shared template (PROMPT step 3), and M10 draws no place for the wash’s: “Download my PDF” is the quiet link at the bottom bar’s left, as on the Team performance check’s results';
 const BUILT_ONLY = new Map([
+  ['wash3', [['Which Strategy does it serve?', STRATEGY], ['Choose one', STRATEGY]]],
+  ['sum', [['Download my PDF', PDF_LINK]]],
   ['todo', [
     ['e.g. Book a physio assessment', 'the shared add panel’s own example'],
     ['Which Strategy does it serve?', SHARED_ADD],
@@ -248,6 +347,7 @@ const want = (screen) => !ONLY || ONLY.includes(screen);
 const HIDE = '.ds-sr, .tipx, .ds-toast, .toast, #tw, .rev, .notes, .srt, .ctip, .ds-tip';
 const ANCHOR = {
   results: { mock: '#h1', built: '.ds-guide-title' },
+  sum: { mock: '#h1', built: '.ds-guide-title' },
   table: { mock: '.tt', built: '.ds-ctable' },
   panel: { mock: '.shh h2', built: `${DIALOG} h2` },
   step: { mock: '.qpct', built: '.ds-guide-pct-track' },
@@ -341,10 +441,44 @@ try {
           await panelGone(page);
         }
       }
-      // ---- Emotional wash: its screens go here, in the same shape (one('ew', screen)).
+      // ---- Emotional wash
+      const openWash = async (screen, at = 'steps') => {
+        // Away from the tool first, so the screen before can't keep its own wash again as it closes.
+        await page.goto(`${APP}/version.json`);
+        await clearWash(page);
+        await seedWash(page, { wash: m10Wash(at), index: WASH_INDEX[screen] });
+        await page.goto(`${APP}${WASH_PATH}`);
+        await page.waitForSelector('.ds-guide-question, .ds-guide-title', { timeout: 20000 });
+        await until(async () => (await page.locator('.ds-guide-body textarea, .ds-answer, .ds-guide-plan-row').count()) > 0, 15000);
+        await page.evaluate(() => document.fonts.ready);
+        await page.evaluate(() => { document.querySelectorAll('.ds-guide-page, .ds-guide-rv, .ds-follow-body').forEach((el) => { el.style.animation = 'none'; }); });
+        await sleep(4200); // "Draft restored" goes
+        // M10 shows each screen with nothing focused.
+        await page.evaluate(() => document.activeElement?.blur());
+        await page.mouse.move(2, 2);
+        await sleep(300);
+      };
+      for (const screen of ['what', 'kind', 'words', 'rel', 'story', 'true', 'logical', 'helpful', 'wash1', 'wash2', 'wash3']) {
+        if (!want(screen) && !(screen === 'what' && want('whoE'))) continue;
+        await openWash(screen);
+        if (want(screen)) await one('ew', screen);
+        if (screen === 'what' && want('whoE')) {
+          await page.locator('.ds-guide-question .ds-who').click();
+          await panel(page).waitFor({ timeout: 10000 });
+          await sleep(700);
+          await one('ew', 'whoE', { isPanel: true });
+          await page.keyboard.press('Escape');
+          await panelGone(page);
+        }
+      }
+      if (want('sum')) {
+        await openWash('sum', 'sum');
+        await one('ew', 'sum');
+      }
 
       pass(`${tagBase}: no page errors in the tool`, errors.length === 0, errors.join(' | '));
       await clearTeamCheck(page);
+      await clearWash(page);
       await ctx.close();
       if (m10) await m10.ctx.close();
       await sleep(1000);

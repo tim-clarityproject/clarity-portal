@@ -51,11 +51,13 @@ export async function loadSavedPlans(userId) {
     // The Team performance check's saved items (tool_answers, 043): the
     // table's once it is there, with what waits on this device.
     part('Team performance checks', () => loadToolAnswers(userId, 'team_check')),
+    part('Emotional washes', () => loadToolAnswers(userId, 'emotional_wash')),
   ]);
   // The device's own tool answers don't count: offline, the list keeps
   // what it showed last time instead of only those.
   allFailed(parts.slice(0, 6));
-  const [decisions, planReviews, plans, sprints, dayPlans, missions, toolAnswers] = parts.map((p) => p.rows);
+  const [decisions, planReviews, plans, sprints, dayPlans, missions, teamChecks, washes] = parts.map((p) => p.rows);
+  const toolAnswers = [...teamChecks, ...washes];
   return {
     decisions,
     // Only what the list needs from each review: which plan, and whether a draft.

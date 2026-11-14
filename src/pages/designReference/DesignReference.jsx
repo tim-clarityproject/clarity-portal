@@ -105,7 +105,7 @@ import { BreathOrbDemo } from './OrbDemos';
 import { CarriedOverDemo, NightDemo, WorkDoneDemo } from './WindDownDemos';
 import { TimerDemo } from './TimerDemos';
 import { CalmFrameDemo, CalmCardDemo } from './GetUnstuckDemos';
-import { AnswerHintDemo, NameRowsDemo, ResultsDemo, StepBarsDemo } from './VisualToolDemos';
+import { AnswerColumnsDemo, AnswerHintDemo, DissolveDemo, FollowChoiceDemo, NameRowsDemo, ResultsDemo, StepBarsDemo } from './VisualToolDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import { TODO_WHERE, dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, todoWhereOptions, todoWhereToast, withMeasure, yearView } from '../../lib/performance';
@@ -125,7 +125,7 @@ const TOC = [
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
   ['c45', 'Levels'], ['c46', 'Rows to pick and add'], ['c47', 'Notes and switches'], ['c48', 'Figures in a week'], ['c49', 'Summaries and celebrating'], ['c50', 'Rules of 5 Nov'],
   ['c32', 'Outcome Objectives'], ['c33', 'Alignment check'], ['c34', 'Strategy tiles'], ['c35', 'My Mission panel'],
-  ['c54', 'Home'], ['c17', 'Breathe button'], ['c67', 'Timer'], ['c68', 'Calm stepped frame'], ['c69', 'Guest pages'], ['c70', 'Answers with meaning'], ['c71', 'Five fine steps'], ['c72', 'Rows of names'], ['c73', 'Results pages'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
+  ['c54', 'Home'], ['c17', 'Breathe button'], ['c67', 'Timer'], ['c68', 'Calm stepped frame'], ['c69', 'Guest pages'], ['c70', 'Answers with meaning'], ['c71', 'Five fine steps'], ['c72', 'Rows of names'], ['c73', 'Results pages'], ['c74', 'Follow-up in an answer'], ['c75', 'Answers side by side'], ['c76', 'Words that lift away'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
 ];
 
 // The colour table (design-reference-v3.html): name, what it's for, dark,
@@ -1933,6 +1933,29 @@ function Gallery() {
           <>
             <p><New /><b>A results page opens with one sentence</b>, never a big figure (<code>ResultsHeadline</code>), then the visuals under names in small capitals (<code>ResultsSection</code>).</p>
             <p>“Questions to start with:” always come last (<code>StartQuestions</code>, rule 29ar), each naming who it is about.</p>
+          </>
+        )} />
+
+        <GallerySection id="c74" title="A follow-up inside the chosen answer" demo={FollowChoiceDemo} rules={(
+          <>
+            <p><New /><b>The follow-up opens inside the chosen card</b> (M10’s Emotional wash; 5e rule 29k; <code>FollowChoice</code> with <code>FollowQuestion</code>): the question, one quiet line, then its box.</p>
+            <p>Starters are the shared chips: tapping one fills the box, ready to be made your own. On a phone each runs the full width.</p>
+            <p>“Where should it go?” is the shared <code>TodoWhere</code> (rule 31), its three places sharing the width.</p>
+            <p>The card carries the edge, in the edges colour (rule 8a). The follow-up fades and settles in; with reduced motion it is simply there.</p>
+          </>
+        )} />
+
+        <GallerySection id="c75" title="Short answers side by side" demo={AnswerColumnsDemo} rules={(
+          <>
+            <p><New /><b>Short answers sit side by side</b> (M10; <code>MultiChoice</code> with <code>columns</code>): as many columns as fit, one on a phone.</p>
+          </>
+        )} />
+
+        <GallerySection id="c76" title="Words that lift away" demo={DissolveDemo} rules={(
+          <>
+            <p><New /><b>Something let go lifts away letter by letter</b> (M10’s Trash; <code>Dissolve</code>), then the page says it has gone.</p>
+            <p>Only the tokens’ timings: a letter takes 400ms, and a long text lifts faster. With reduced motion the words simply fade.</p>
+            <p>A word never splits across lines while it goes.</p>
           </>
         )} />
 

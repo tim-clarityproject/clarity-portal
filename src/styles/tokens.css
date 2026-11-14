@@ -394,6 +394,9 @@
   --fs-headline-phone: calc(20 * var(--u));
   --headline-max: 34ch;
   --space-px44: 44px;
+  /* The Emotional wash's parts (M10 Visual tools, version 5.6; 14 Nov). */
+  --answer-col-min: 250px;   /* short answers side by side: a column's least width (M10 .ans.two) */
+  --follow-box-min-h: 81px;  /* a follow-up's box: two lines (M10's rows="2") */
   --fs-question: calc(24 * var(--u));       /* the question heading, DM Sans */
   --fs-question-phone: calc(21 * var(--u));
   --fs-rec-question: calc(20 * var(--u));   /* Recovery's daily question (M15 .rqh) */

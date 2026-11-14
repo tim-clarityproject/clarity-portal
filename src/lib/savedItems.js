@@ -42,6 +42,8 @@ export const TOOL_NAME = {
 // the address that opens one (its id in the page's state).
 const TOOL_ANSWERS = {
   team_check: { name: 'Team performance check', area: 'interpersonal', path: '/team-performance-check' },
+  // Private, like the Journal: listed for its owner, never among a hub's recent items.
+  emotional_wash: { name: 'Emotional wash', area: 'personal', path: '/emotional-wash', private: true },
 };
 
 const DECISION_AREA = {
@@ -198,7 +200,8 @@ export function planRows(data, today = getLocalDateKey()) {
   numberHealthChecks(out);
 
   // The tools that keep their own answers (tool_answers, migration 043; on
-  // the device until it has run): the Team performance check.
+  // the device until it has run): the Team performance check and the
+  // Emotional wash.
   (data.toolAnswers || []).filter((r) => TOOL_ANSWERS[r.tool]).forEach((r) => {
     const meta = TOOL_ANSWERS[r.tool];
     const isDraft = r.status !== 'completed';
@@ -214,6 +217,7 @@ export function planRows(data, today = getLocalDateKey()) {
       at: r.finishedAt || r.updatedAt || r.createdAt,
       isDraft,
       canEdit: true,
+      private: Boolean(meta.private),
       to,
       edit: to,
     }));
@@ -528,12 +532,13 @@ export function listFilters(rows) {
 
 /**
  * A hub's recent saved items (M3): the newest `n` finished ones in an area.
- * Journal entries never show (M3 note: never on a shared screen), and the
- * plan and the sprint already have their tiles at the top of Plan.
+ * Journal entries never show (M3 note: never on a shared screen), nor does
+ * an Emotional wash, which is private in the same way; the plan and the
+ * sprint already have their tiles at the top of Plan.
  */
 export function recentRows(rows, area, n = 3) {
   return rows
-    .filter((r) => r.area === area && !r.isDraft && !['journal', 'plan', 'sprint', 'pop'].includes(r.source))
+    .filter((r) => r.area === area && !r.isDraft && !r.private && !['journal', 'plan', 'sprint', 'pop'].includes(r.source))
     .sort((a, b) => b.sortAt - a.sortAt)
     .slice(0, n);
 }

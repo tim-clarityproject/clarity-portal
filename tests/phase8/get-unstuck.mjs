@@ -216,6 +216,9 @@ async function signedIn(browser, width) {
   await pressNext(page);
   pass(`${tag}: finishing lands on This week with the counted message`, Boolean(await until(() => /\/performance-sprint$/.test(new URL(page.url()).pathname), 15000)) && Boolean(await sawToast(page, '1 next step is in this week')));
   await sleep(1500);
+  // Nothing of a finished plan stays on the device as a draft (it once came back as one to carry on; 14 Nov).
+  const left = await page.evaluate(() => Object.keys(localStorage).filter((k) => /^clarity-draft:.*:get-unstuck:|^ds-guide:get-unstuck-/.test(k)).length);
+  pass(`${tag}: a finished plan leaves no draft on the device, so the next visit starts a new plan`, left === 0, `${left} kept`);
   const waiting = (await mine()).find((d) => d.status === 'completed');
   pass(`${tag}: offline, the finished plan hasn’t reached the account yet`, !waiting);
   await ctx.setOffline(false);

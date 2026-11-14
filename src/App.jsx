@@ -102,6 +102,7 @@ const HealthCheck = lazy(() => loadWithReload(() => import('./pages/alignment/He
 // Health Check, so its pages and styles stay out of the main bundle.
 const GetUnstuck = lazy(() => loadWithReload(() => import('./pages/getUnstuck/GetUnstuck')));
 const TeamCheck = lazy(() => loadWithReload(() => import('./pages/teamCheck/TeamCheck')));
+const EmotionalWash = lazy(() => loadWithReload(() => import('./pages/emotionalWash/EmotionalWash')));
 const GuestLink = lazy(() => loadWithReload(() => import('./pages/guest/GuestLink')));
 const WheelStart = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelStart')));
 const WheelAreas = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelAreas')));
@@ -473,6 +474,7 @@ function AppContent() {
               addresses come to it with their query, hash and state. */}
           <Route path="/get-unstuck" element={lazyPage(GetUnstuck)} />
           <Route path="/team-performance-check" element={lazyPage(TeamCheck)} />
+          <Route path="/emotional-wash" element={lazyPage(EmotionalWash)} />
           {GET_UNSTUCK_STEPS.map((path) => (
             <Route key={path} path={path} element={<MovedTo to="/get-unstuck" />} />
           ))}

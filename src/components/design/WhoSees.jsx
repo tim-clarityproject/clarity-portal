@@ -34,7 +34,10 @@ import './design.css';
 //        people you rate never see it.").
 // note:  one line in place of the choices, for someone who can't change
 //        it: a guest's "Your answers go to Tim, who sent you the link."
-//        The eye still opens the panel, and reads the same way.
+//        The eye still opens the panel, and reads the same way. Several
+//        lines (an array): the first as the note, the rest quieter under
+//        it (M10's Emotional wash: "Only you can see this.", then "Your
+//        Emotional wash can’t be shared, like your Journal.").
 export const MY_ACCOUNT_LINE = 'You can also change this in My Account, under What your coach sees.';
 
 /** "Only you can see this.", "You and Tim can see this.", "Your team can see this." */
@@ -133,7 +136,9 @@ function WhoSeesSheet({ open, onClose, name, audience, coach, onChange, plain, n
   if (note) {
     return (
       <Sheet open={open} onClose={onClose} title="Who can see this?">
-        <p className="ds-sheet-note">{note}</p>
+        {(Array.isArray(note) ? note : [note]).map((words, n) => (
+          <p key={words} className={n ? 'ds-sheet-note ds-sheet-note--sub' : 'ds-sheet-note'}>{words}</p>
+        ))}
       </Sheet>
     );
   }

@@ -1,0 +1,10 @@
+/* Emotional wash (M10, version 5.6). Only what the shared parts don't
+   carry: the summary's title straight under the bar. Class prefix ew-. */
+
+.ui-root .ew-summary .ds-guide-title {
+  margin-top: 0 !important;
+}
+
+.ui-root .ew-summary .ds-guide-body {
+  margin-top: 0;
+}

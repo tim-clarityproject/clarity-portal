@@ -23,7 +23,9 @@ import './design.css';
 //      An option with `onlyTags` shows its tags without its detail (a
 //      carried-over row shows only where it came from, M19).
 // count: (n) => the line under the list ("You’ve chosen 2 of 3.").
-export default function MultiChoice({ label, ariaLabel, hint, options, values, onChange, who, coachName, max, variant, groups, count }) {
+// columns: short answers side by side, as many columns as fit (two in the
+//      calm frame, one on a phone; M10's "Which words fit the feeling?").
+export default function MultiChoice({ label, ariaLabel, hint, options, values, onChange, who, coachName, max, variant, groups, count, columns = false }) {
   const labelId = useId();
   const hintId = useId();
   const full = max != null && values.length >= max;
@@ -91,7 +93,7 @@ export default function MultiChoice({ label, ariaLabel, hint, options, values, o
     <div className="ds-choice">
       <FieldLabel label={label} id={labelId} who={who} coachName={coachName} />
       {hint && <p id={hintId} className="ds-hint ds-hint--above">{hint}</p>}
-      <div className={`ds-rows${pick ? ' ds-rows--pick' : ''}`} role="group" aria-labelledby={label ? labelId : undefined} aria-label={label ? undefined : ariaLabel} aria-describedby={hint ? hintId : undefined}>
+      <div className={`ds-rows${pick ? ' ds-rows--pick' : ''}${columns ? ' ds-rows--columns' : ''}`} role="group" aria-labelledby={label ? labelId : undefined} aria-label={label ? undefined : ariaLabel} aria-describedby={hint ? hintId : undefined}>
         {options.map(row)}
       </div>
     </div>

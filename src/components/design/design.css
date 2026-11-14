@@ -4030,10 +4030,19 @@
   padding: var(--space-px14) max(var(--guide-calm-pad), calc((100% - var(--guide-calm-max)) / 2 + var(--guide-calm-pad))) max(var(--space-px18), env(safe-area-inset-bottom, 0px));
 }
 
+/* The quiet link and the button sit side by side; where they can't (a
+   large text size on a phone), the button takes a row of its own, whole:
+   its words never wrap inside its pill or run outside it. */
 .ui-root .ds-guide--calm .ds-guide-foot-right {
   flex: 1;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: var(--space-px12);
+}
+
+.ui-root .ds-guide--calm .ds-btn.ds-guide-next {
+  min-width: max-content;
+  white-space: nowrap;
 }
 
 .ui-root .ds-guide--calm .ds-guide-foot .ds-guide-skip {
@@ -10217,6 +10226,48 @@
   }
 }
 
+/* At a large text size its columns no longer fit: each person becomes a
+   small card (CLAUDE.md rule 20), each column's name before its steps, so
+   no heading is cut off and nothing scrolls sideways (twice the standard
+   size, tests/phase8/text-size.mjs). */
+@container ctable (max-width: 14em) {
+  .ui-root .ds-ctable.ds-ctable--people thead {
+    display: none;
+  }
+
+  .ui-root .ds-ctable.ds-ctable--people tr {
+    display: block;
+    padding: var(--space-px12) 0;
+    border-bottom: var(--line-w) solid var(--line-soft);
+  }
+
+  .ui-root .ds-ctable.ds-ctable--people tbody th {
+    display: block;
+    padding: 0;
+    border-bottom: 0;
+  }
+
+  .ui-root .ds-ctable.ds-ctable--people td {
+    display: flex;
+    align-items: center;
+    gap: var(--space-px12);
+    padding: var(--space-1) 0 0;
+    border-bottom: 0;
+  }
+
+  .ui-root .ds-ctable.ds-ctable--people td:not(:first-child)::before {
+    content: attr(data-label);
+    flex: none;
+    width: 45%;
+    font-size: var(--fs-note);
+    color: var(--text-2);
+  }
+
+  .ui-root .ds-ctable.ds-ctable--people td .ds-stepbars {
+    flex: 1;
+  }
+}
+
 /* A results page (M10 "Your team"): the opening sentence, never a big
    figure, then sections named in small capitals with the line under the name. */
 .ui-root .ds-headline {
@@ -10325,4 +10376,201 @@
 .ui-root .ds-guide-title .ds-page-aside {
   --aside-ls: var(--ls-page-title);
   --aside-lift: 0.088em;
+}
+
+/* ---------------------------------------------------------------- M10's Emotional wash (version 5.6; 14 Nov)
+   Parts it brought, shared: short answers side by side, an answer whose
+   follow-up opens inside its own card, starters that fill a box, words
+   that lift away, and the eye's panel with a quieter second line. */
+
+/* Short answers side by side, as many columns as fit (M10 .ans.two). */
+.ui-root .ds-rows--columns {
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--answer-col-min), 100%), 1fr));
+}
+
+/* An answer whose follow-up opens inside its own card (5e 29k; M10 .wopt).
+   The card carries the edge; the answer inside it has none. */
+.ui-root .ds-follow-card {
+  min-width: 0;
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-field);
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-follow-card:has(> .ds-follow-answer:hover) {
+    border-color: var(--text-2);
+  }
+}
+
+.ui-root .ds-follow-card.ds-follow-card--on {
+  border-color: var(--text);
+  background: var(--raised);
+}
+
+.ui-root .ds-follow-card > .ds-follow-answer {
+  border: 0;
+  background: none;
+}
+
+.ui-root .ds-follow-card > .ds-follow-answer:focus-visible {
+  outline-offset: calc(-1 * var(--space-px2));
+}
+
+.ui-root .ds-follow-body {
+  padding: 0 var(--space-3) var(--space-3);
+  animation: ds-follow-in var(--dur) var(--ease);
+}
+
+@keyframes ds-follow-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--space-px6)));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-follow-body {
+    animation: none;
+  }
+}
+
+.ui-root .ds-follow-label {
+  margin: var(--space-1) 0 var(--space-2);
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .ds-follow-hint {
+  margin: calc(-1 * var(--space-1)) 0 var(--space-px10);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+/* A follow-up's box shows two lines (M10's rows="2"). */
+.ui-root .ds-follow-body .ds-grow--one > .ds-text,
+.ui-root .ds-follow-body .ds-grow--one::after {
+  min-height: var(--follow-box-min-h);
+}
+
+/* "Where should it go?" inside a follow-up (M10 .wl, .wseg): a quiet
+   question, its three places sharing the width. */
+.ui-root .ds-follow-body .ds-todo-where,
+.ui-root .ds-follow-body .ds-follow-also {
+  margin-top: var(--space-px14);
+}
+
+.ui-root .ds-follow-body .ds-label-row {
+  margin-bottom: var(--space-2);
+}
+
+.ui-root .ds-follow-body .ds-label-row-text {
+  font-size: var(--fs-note) !important;
+}
+
+.ui-root .ds-follow-body .ds-seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  width: 100%;
+}
+
+.ui-root .ds-follow-body .ds-seg-btn {
+  justify-content: center;
+  padding-inline: var(--space-px6) !important;
+  text-align: center;
+}
+
+.ui-root .ds-follow-body .ds-panel-note {
+  color: var(--text-2);
+}
+
+.ui-root .ds-follow-note {
+  margin: var(--space-px14) 0 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-follow-note + .ds-follow-note {
+  margin-top: 0;
+}
+
+/* Starters that fill the box when tapped (M10 .stq, .sq): the shared
+   chips, in the follow-up's own values. Each may run to two lines, and
+   takes the full width on a phone. */
+.ui-root .ds-follow-body .ds-chips {
+  gap: var(--space-2);
+  margin-bottom: var(--space-px12);
+}
+
+.ui-root .ds-follow-body .ds-chip {
+  min-height: var(--tap-min) !important;
+  padding: var(--space-2) var(--space-3) !important;
+  background: var(--card);
+  font-size: var(--fs-secondary) !important;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.ui-root .ds-follow-body .ds-chip::after {
+  content: none;
+}
+
+@media (hover: hover) {
+  .ui-root .ds-follow-body .ds-chip:hover {
+    border-color: var(--coral-text);
+  }
+}
+
+.ui-root .ds-follow-body .ds-chip[aria-pressed='true'] {
+  border-color: var(--text);
+}
+
+@container guide (max-width: 600px) {
+  .ui-root .ds-follow-body .ds-chip {
+    width: 100%;
+  }
+}
+
+/* Words that lift away letter by letter, then are gone (M10 .dz). A word
+   never splits across lines while it goes. */
+.ui-root .ds-dissolve-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.ui-root .ds-dissolve-word > span {
+  display: inline-block;
+  animation: ds-dissolve var(--dur-slow) var(--ease) forwards;
+  animation-delay: calc(var(--k) * var(--dissolve-gap));
+}
+
+@keyframes ds-dissolve {
+  to {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--space-px14))) rotate(var(--r));
+  }
+}
+
+@keyframes ds-dissolve-still {
+  to {
+    opacity: 0;
+  }
+}
+
+/* With reduced motion the words simply fade, together (M10). */
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-dissolve-word > span {
+    animation: ds-dissolve-still var(--dur-fade-still) linear forwards;
+    animation-delay: 0s;
+  }
+}
+
+/* The eye's panel for something that can't be shared: a quieter second line (M10 .who .sub). */
+.ui-root .ds-sheet-note--sub {
+  margin-top: var(--space-2);
+  color: var(--text-2);
 }

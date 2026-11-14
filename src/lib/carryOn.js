@@ -67,6 +67,8 @@ export function carryOnItems(userId, { today, yesterday, exclude = [], finished 
 
   // The Team performance check (M10): its step, and the check as it was left.
   add('team-check', 'Team performance check', '/team-performance-check', { step: `team-check-${userId}-new`, draft: 'team-check:new' });
+  // The Emotional wash (M10): only the tool's name ever shows, never what was typed.
+  add('emotional-wash', 'Emotional wash', '/emotional-wash', { step: `emotional-wash-${userId}-new`, draft: 'emotional-wash:new' });
 
   // Older tools whose new drafts open from their own address.
   add('journal', 'Journal', '/daily-journal', { draft: `journal:${today}` });

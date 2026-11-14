@@ -150,7 +150,7 @@ function Flow({ userId, user, asked, start }) {
 
   // Typing is kept on the device and put back after a refresh ("Draft
   // restored"): the same plan, with the same row's id.
-  useDraft({
+  const draft = useDraft({
     userId,
     name: draftName(asked),
     value: item,
@@ -180,8 +180,11 @@ function Flow({ userId, user, asked, start }) {
 
   const onPlan = useCallback((fn) => setItem((s) => ({ ...s, plan: fn(s.plan) })), []);
 
+  // Saved for good and leaving: nothing of it stays on the device as a
+  // draft. The hook's own clear, so the page doesn't keep it again as it
+  // leaves (a finished plan then came back as one to carry on; 14 Nov).
   const forget = () => {
-    clearDraft(userId, draftName(asked));
+    draft.clear();
     clearGuideDraft(stepDraftKey(userId, asked));
   };
 

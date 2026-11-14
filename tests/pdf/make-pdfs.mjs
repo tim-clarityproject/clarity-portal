@@ -20,11 +20,12 @@ mkdirSync(out, { recursive: true });
 
 const vite = await createServer({ root, logLevel: 'error', server: { middlewareMode: true }, appType: 'custom' });
 const load = (p) => vite.ssrLoadModule(p);
-const [{ renderPdf }, { PAPER }, { samplePdf }, { healthCheckPdf }, { meetingPlanPdf }, { emojiPartsFor, cjkPartsFor, textOf }, { getUnstuckPdf }, { planFrom }, { teamCheckPdf }] = await Promise.all([
+const [{ renderPdf }, { PAPER }, { samplePdf }, { healthCheckPdf }, { meetingPlanPdf }, { emojiPartsFor, cjkPartsFor, textOf }, { getUnstuckPdf }, { planFrom }, { teamCheckPdf }, { emotionalWashPdf }] = await Promise.all([
   load('/src/lib/pdf/render.js'), load('/src/lib/pdf/paper.js'), load('/src/lib/pdf/docs/sample.js'),
   load('/src/lib/pdf/docs/healthCheck.js'), load('/src/lib/pdf/docs/meetingPlan.js'), load('/src/lib/pdf/emoji.js'),
   load('/src/lib/pdf/docs/getUnstuck.js'), load('/src/lib/getUnstuck/model.js'),
   load('/src/lib/pdf/docs/teamCheck.js'),
+  load('/src/lib/pdf/docs/emotionalWash.js'),
 ]);
 
 const file = (p) => new Uint8Array(readFileSync(join(root, p)));
@@ -412,7 +413,74 @@ const TC = {
   'Team check, no questions': teamCheckPdf({ person: 'Sam Carter', createdAt: TC_AT, check: team([['Priya Shah', 'Head of Operations', 5, 5, 5], ['Leila Haddad', 'People Lead', 3, 2, 2]]) }),
 };
 
-const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU, ...TC };
+// ---- Emotional wash (mock-up M10): a wash as the tool keeps it ----------------------------
+// thoughts: [text, how it is washed, its step or question, where the step's to-do went].
+const EW_AT = '2026-11-14T09:30:00';
+const washOf = ({ what = '', kind = null, words = [], rel = [], thoughts = [] }) => ({
+  what,
+  kind,
+  words,
+  rel,
+  thoughts: thoughts.map(([text, how, said], i) => ({ id: `t${i + 1}`, text, t: 'no', l: 'unsure', h: 'no', wash: how, step: how === 'act' ? said || '' : '', question: how === 'park' ? said || '' : '', where: null, strategyId: null })),
+  todos: Object.fromEntries(thoughts.map(([, how, said, where], i) => [`t${i + 1}`, how === 'act' && where ? { id: `todo-${i + 1}`, text: said, where, strategyId: 's1' } : null]).filter(([, v]) => v)),
+});
+const EW_M10 = {
+  what: 'The chair backed the board member who undermined my plan in front of everyone.',
+  kind: 'pa',
+  words: ['Disappointment', 'Anger', 'Contempt'],
+  rel: ['Respect', 'Loyalty'],
+  thoughts: [
+    ['The chair has never rated me.', 'park', 'What would show me where I stand with the chair?'],
+    ['If I push back, I’ll look weak.', 'trash'],
+    ['I need to win the board back before the next meeting.', 'act', 'Ask the chair for 20 minutes before the next board meeting.', 'week'],
+  ],
+};
+const EW_LONG = 'I keep going over the way the meeting ended, because the decision we had agreed on beforehand was reopened without warning, and three people who had told me privately that they supported the plan then sat silently while it was taken apart line by line, which makes me think that nothing I bring to that room is ever really settled until the chair has said so twice';
+const EW = {
+  'Emotional wash, normal': emotionalWashPdf({ person: 'Sam Carter', createdAt: EW_AT, wash: washOf(EW_M10) }),
+  'Emotional wash, one thought': emotionalWashPdf({ person: 'Sam Carter', createdAt: EW_AT, wash: washOf({ what: 'I lost my temper.', kind: 'pr', words: ['Regret'], thoughts: [['I always do this.', 'park', 'What sets it off?']] }) }),
+  'Emotional wash, many thoughts': emotionalWashPdf({
+    person: 'Sam Carter',
+    createdAt: EW_AT,
+    wash: washOf({
+      ...EW_M10,
+      words: ['Anger', 'Contempt', 'Disappointment', 'Disgust', 'Fear', 'Guilt', 'Hate', 'Regret', 'Sadness', 'Shame'],
+      rel: ['Trust', 'Respect', 'Fairness', 'Loyalty', 'Recognition', 'Status', 'Control', 'Belonging', 'Security', 'Identity', 'Competence'],
+      thoughts: Array.from({ length: 24 }, (_, i) => (i % 3 === 0
+        ? [`Thought ${i + 1}: they have made up their minds about me.`, 'act', `Ask board member ${i + 1} for ten minutes this week to hear their view.`, i % 2 ? 'backlog' : 'week']
+        : i % 3 === 1
+          ? [`Thought ${i + 1}: I should have seen it coming.`, 'park', `What did I notice before meeting ${i + 1}, and what would I do with it next time?`]
+          : [`Thought ${i + 1}: nobody respects me.`, 'trash'])),
+    }),
+  }),
+  'Emotional wash, very long': emotionalWashPdf({
+    person: 'Maximilian Alexander von Hohenzollern-Sigmaringen-Fitzwilliam',
+    createdAt: EW_AT,
+    wash: washOf({
+      what: `${EW_LONG}. ${EW_LONG}.`.slice(0, 600),
+      kind: 'fc',
+      words: ['Fear', 'Shame', 'Sadness'],
+      rel: ['Status', 'Security', 'Competence'],
+      thoughts: [
+        [EW_LONG.slice(0, 300), 'act', `${EW_LONG.slice(0, 280)} and ask about it.`, 'backlog'],
+        [EW_LONG.slice(20, 320), 'park', `What ${EW_LONG.slice(0, 280).toLowerCase()}?`],
+        [EW_LONG.slice(40, 340), 'act', EW_LONG.slice(60, 360), 'week'],
+        [EW_LONG.slice(0, 300), 'park', `How ${EW_LONG.slice(30, 300).toLowerCase()}?`],
+      ],
+    }),
+  }),
+  'Emotional wash, emoji': emotionalWashPdf({
+    person: 'Sam Carter 🚀',
+    createdAt: EW_AT,
+    wash: washOf({ what: 'The launch slipped again 😤 and I heard about it second-hand 🙄.', kind: 'pa', words: ['Anger', 'Disappointment'], rel: ['Control'], thoughts: [['Nobody tells me anything 🤐', 'act', 'Ask Priya for a Friday update 📅', 'week'], ['I’m the last to know 😶', 'park', 'What would help me hear sooner? 🤔']] }),
+  }),
+  'Emotional wash, Chinese': emotionalWashPdf({ person: 'Sam Carter', createdAt: EW_AT, wash: washOf({ what: '董事会主席在所有人面前支持了那位否定我计划的董事。', kind: 'pa', words: ['Anger'], rel: ['Respect'], thoughts: [['主席从来不看好我。', 'park', '什么能让我知道主席对我的看法？'], ['我需要在下次会议前赢回董事会。', 'act', '请主席在下次董事会前给我二十分钟。', 'backlog']] }) }),
+  'Emotional wash, blank answers': emotionalWashPdf({ person: '', createdAt: EW_AT, wash: washOf({ what: 'It went badly.', kind: 'pr', words: [], rel: [], thoughts: [['', null], ['It’s my fault.', 'trash'], ['   ', 'act', '   ']] }) }),
+  'Emotional wash, nothing to act on': emotionalWashPdf({ person: 'Sam Carter', createdAt: EW_AT, wash: washOf({ ...EW_M10, thoughts: [['The chair has never rated me.', 'trash'], ['If I push back, I’ll look weak.', 'trash']] }) }),
+  'Emotional wash, not added': emotionalWashPdf({ person: 'Sam Carter', createdAt: EW_AT, wash: washOf({ ...EW_M10, thoughts: [['I need to win the board back.', 'act', 'Ask the chair for 20 minutes.']] }) }),
+};
+
+const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU, ...TC, ...EW };
 
 // ---- dot charts: dots stay in their own area, and how many touch ----------------------
 // A dot is in its own area when it is on the same side of both centre lines
@@ -767,6 +835,41 @@ for (const [name, spec] of Object.entries(DOCS)) {
     if (questions(spec).length && !(at('Questions to start with') > at('Trust now'))) problems.push(`${name}: Questions to start with don't come last`);
   }
   report.push(`Team performance check (headline, chart, table, trust, then the questions last; words, never numbers)\n  ${problems.length ? `PROBLEMS:\n    ${problems.join('\n    ')}` : 'all checks pass'}`);
+  if (problems.length) failed += 1;
+}
+
+// ---- Emotional wash: the summary's order, blanks and trashed thoughts left out, no ratings ----
+{
+  const problems = [];
+  const titles = (spec) => spec.sections.filter((x) => x.blocks.length).map((x) => x.title).join(' > ');
+  const items = (spec, title) => spec.sections.find((x) => x.title === title)?.blocks[0]?.items || [];
+  const normal = EW['Emotional wash, normal'];
+  if (titles(normal) !== 'What happened > The feeling > Related to > To act on > To reflect on') problems.push(`the sections are not in the summary's order: ${titles(normal)}`);
+  if (normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ') !== 'The feeling: Present angst; To act on: 1 small step; To reflect on: 1 question') problems.push(`At a glance reads "${normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ')}"`);
+  if (normal.sections[1].blocks.map((b) => b.text).join(' | ') !== 'Present angst | Disappointment, anger and contempt.') problems.push('the feeling is not its kind, then its words as a sentence');
+  if (normal.sections[2].blocks[0].text !== 'Respect and loyalty') problems.push('"Related to" is not said as words');
+  if (items(normal, 'To act on').join(' | ') !== 'Ask the chair for 20 minutes before the next board meeting.\nIt’s in this week’s to-dos.') problems.push('a step doesn’t say where it is');
+  if (items(normal, 'To reflect on').join(' | ') !== 'What would show me where I stand with the chair?') problems.push('the question to reflect on is missing');
+  if (normal.details.join(' · ') !== 'Sam Carter · Sat 14 Nov 2026 · Emotional wash') problems.push(`the details line reads "${normal.details.join(' · ')}"`);
+  if (JSON.stringify(normal).includes('look weak')) problems.push('a trashed thought is in the PDF');
+  if (items(EW['Emotional wash, not added'], 'To act on').join('') !== 'Ask the chair for 20 minutes.') problems.push('a step that wasn’t added says where it is');
+  const blankDoc = EW['Emotional wash, blank answers'];
+  if (titles(blankDoc) !== 'What happened > The feeling') problems.push(`blank answers are not left out: ${titles(blankDoc)}`);
+  if (titles(EW['Emotional wash, nothing to act on']) !== 'What happened > The feeling > Related to') problems.push(`with every thought trashed, a section is still there: ${titles(EW['Emotional wash, nothing to act on'])}`);
+  for (const [name, spec] of Object.entries(EW)) {
+    if (spec.glance.length < 2 || spec.glance.length > 4 || spec.glance.some((g) => !String(g.value).trim())) problems.push(`${name}: At a glance has ${spec.glance.length} item(s), or an empty one`);
+    if (/how strong|\/10|out of 10|\bstrength\b/i.test(JSON.stringify(spec))) problems.push(`${name}: has a strength rating`);
+    if (only && !name.includes(only)) continue;
+    let text = '';
+    const flatWords = (t) => t.replace(/[\s-]+/g, '');
+    try { text = flatWords(run('pdftotext', ['-raw', join(out, `${name}, A4.pdf`), '-'])); } catch { toolsMissing = true; }
+    if (!text) continue;
+    // every answer is in the PDF's text, whole (emoji and Chinese are drawn from their own fonts and read differently)
+    const said = [...spec.sections.flatMap((x) => x.blocks.flatMap((b) => b.items || [b.text])), ...spec.glance.map((g) => g.value)];
+    said.filter((w) => !/\p{Extended_Pictographic}/u.test(w)).forEach((w) => { if (!text.includes(flatWords(w))) problems.push(`${name}: the PDF's text doesn't hold "${w.slice(0, 50)}"`); });
+    spec.sections.filter((x) => !x.blocks.length).forEach((x) => { if (text.toLocaleLowerCase('en-GB').includes(flatWords(x.title).toLocaleLowerCase('en-GB'))) problems.push(`${name}: the empty section "${x.title}" still has its heading`); });
+  }
+  report.push(`Emotional wash (the summary's order, blanks and trashed thoughts left out, where each step is, no ratings)\n  ${problems.length ? `PROBLEMS:\n    ${problems.join('\n    ')}` : 'all checks pass'}`);
   if (problems.length) failed += 1;
 }
 

@@ -99,6 +99,15 @@ import './design.css';
 // skipLabel "Finish later" with skipMoves false is M10's quiet link at the
 // left of every typing step: it calls onSkip and stays put (the tool saves
 // and closes).
+// More a step can say (M10's Emotional wash, 14 Nov):
+//   onNext:    () => runs when Next (or Save my edit) is pressed and the
+//              step's check has nothing to say, just before the tool moves
+//              on: a step that asks "Where should it go?" adds its to-do
+//              here. It never holds the move up.
+//   thenEdit:  the key of a step that belongs with this one on a summary
+//              ("The feeling" is the kind, then its words). Opened from the
+//              summary, this step is followed by that one, and the summary
+//              shows again after it.
 // A step's `check`: () => a calm message, or null. Pressing Next (or Save
 //           my edit) on a step whose check gives a message shows it under
 //           the answer ("Type your goal to carry on.") and stays put: the
@@ -388,12 +397,22 @@ export default function GuidedTool({
     go(to, 'jump');
   };
 
+  // A step opened from a summary that has a second part (thenEdit): that
+  // part opens next, still as an edit. True when it did.
+  const editOn = () => {
+    const at = step.thenEdit ? steps.findIndex((s) => s.key === step.thenEdit) : -1;
+    if (at < 0 || at === i || at === returnTo) return false;
+    go(at, 'jump');
+    return true;
+  };
+
   const next = () => {
     if (Date.now() - lastMove.current < NEXT_GUARD_MS) return;
     if (step.check?.()) {
       setAsked(step.key);
       return;
     }
+    step.onNext?.();
     if (skipped.has(step.key)) {
       const rest = new Set(skipped);
       rest.delete(step.key);
@@ -407,7 +426,7 @@ export default function GuidedTool({
       return;
     }
     if (returnTo != null && returnTo !== i) {
-      backToSummary();
+      if (!editOn()) backToSummary();
       return;
     }
     if (last) {
@@ -460,7 +479,7 @@ export default function GuidedTool({
   // A one-answer screen moves on by itself, so it has no Next (rule 21).
   const hasNext = !(step.oneTap && !last);
   changingRef.current = changing;
-  backToSummaryRef.current = backToSummary;
+  backToSummaryRef.current = () => { if (!editOn()) backToSummary(); };
   // tool.go(to, { fromSummary: true }) opens one question from a summary
   // (GuidedSummary does this); a step moving itself on (a one-tap answer)
   // then goes back to that summary too.

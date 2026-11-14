@@ -315,3 +315,65 @@ export async function rateTeam(page, { stopAfter = Infinity, people = M10.people
   }
   await title(page).waitFor({ timeout: 15000 });
 }
+
+// ------------------------------------------------------------ M10's Emotional wash
+export const WASH_PATH = '/emotional-wash';
+
+/** M10's own invented wash (its script's `A`). */
+export const EW = {
+  what: 'The chair backed the board member who undermined my plan in front of everyone.',
+  kind: 'Present angst',
+  words: ['Disappointment', 'Anger', 'Contempt'],
+  rel: ['Respect', 'Loyalty'],
+  thoughts: ['The chair has never rated me.', 'If I push back, I’ll look weak.', 'I need to win the board back before the next meeting.'],
+  step: 'Ask the chair for 20 minutes before the next board meeting.',
+  question: 'What would show me where I stand with the chair?',
+};
+
+/**
+ * M10's wash as the tool keeps it while it is open. `at`: how far it has
+ * got, as M10 draws each screen: 'steps' (the first thought judged not
+ * true and parked with no question yet, the second not washed, the third
+ * acted on) or 'sum' (every screen answered, the second thought trashed,
+ * the step's to-do in this week).
+ */
+export function m10Wash(at = 'steps') {
+  const sum = at === 'sum';
+  const th = (id, text, more) => ({ id, text, t: null, l: null, h: null, wash: null, step: '', question: '', where: null, strategyId: null, ...more });
+  return {
+    what: EW.what,
+    kind: 'pa',
+    words: [...EW.words],
+    rel: [...EW.rel],
+    thoughts: [
+      th('m10-thought-1', EW.thoughts[0], { t: 'no', l: sum ? 'unsure' : null, h: sum ? 'no' : null, wash: 'park', question: sum ? EW.question : '' }),
+      th('m10-thought-2', EW.thoughts[1], sum ? { t: 'unsure', l: 'no', h: 'no', wash: 'trash' } : {}),
+      th('m10-thought-3', EW.thoughts[2], { t: sum ? 'yes' : null, l: sum ? 'yes' : null, h: sum ? 'yes' : null, wash: 'act', step: EW.step, where: 'week' }),
+    ],
+    todos: sum ? { 'm10-thought-3': { id: '99999999-9999-4999-8999-999999999999', text: EW.step, where: 'week', strategyId: null } } : {},
+  };
+}
+
+/** The place of each screen in the tool, with M10's three thoughts typed. */
+export const WASH_INDEX = { what: 0, kind: 1, words: 2, rel: 3, story: 4, true: 5, logical: 6, helpful: 7, wash1: 8, wash2: 12, wash3: 16, sum: 17 };
+
+/** Everything the Emotional wash keeps on this device is taken off. */
+export async function clearWash(page) {
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (/emotional-wash|:tool-answers$/.test(k)) localStorage.removeItem(k); });
+}
+
+/**
+ * Puts a wash on the device as the tool itself keeps one while it is open,
+ * with the screen it was left on, so the tool opens there. The page must
+ * be signed in and away from the tool (or the screen before rewrites it).
+ */
+export async function seedWash(page, { wash, index = 0, id = '88888888-8888-4888-8888-888888888888' }) {
+  await page.evaluate(({ w, at, rid }) => {
+    let uid = Object.keys(localStorage).map((x) => /^clarity-[a-z-]+:([0-9a-f-]{36})(:|$)/.exec(x)?.[1]).find(Boolean);
+    if (!uid) { try { uid = JSON.parse(localStorage.getItem('clarity-portal-auth')).user.id; } catch { /* none */ } }
+    localStorage.setItem(`clarity-draft:${uid}:emotional-wash:new`, JSON.stringify({ v: { id: rid, wash: w, status: 'new', saved: false, createdAt: null, finishedAt: null }, at: Date.now() }));
+    localStorage.setItem(`ds-guide:emotional-wash-${uid}-new`, JSON.stringify({ index: at, skipped: [] }));
+    // The table isn't on the test project yet (migration 043): not asked about on every screen.
+    localStorage.setItem('clarity-tool-answers-not-yet', String(Date.now()));
+  }, { w: wash, at: index, rid: id });
+}
