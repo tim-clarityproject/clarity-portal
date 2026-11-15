@@ -309,7 +309,11 @@ async function guest(browser, width) {
   await page.locator('.ds-guide-question .ds-who').click();
   const sheet = page.locator('[role=dialog]:not(.ds-guide)').last();
   await sheet.waitFor();
-  pass(`${tag}: a guest sees one line instead of the choice`, (await sheet.innerText()).includes(`Your answers go to ${M9.coach}, who sent you the link.`) && (await sheet.locator('[role=option]').count()) === 0);
+  // A guest chooses (Tim, 14 Nov, 09:52; this replaces the one line of 27 Oct): Only you, or You and the coach, the coach by default.
+  pass(`${tag}: a guest chooses Only you or You and Tim, You and Tim chosen, with the line under it`,
+    (await sheet.locator('[role=option]').allInnerTexts()).join('|') === `Only you|You and ${M9.coach}`
+    && (await sheet.locator('[role=option][aria-selected=true]').innerText()).trim() === `You and ${M9.coach}`
+    && (await sheet.innerText()).includes(`${M9.coach} sent you the link and will see your results.`), await sheet.innerText());
   await page.keyboard.press('Escape');
   await sleep(500);
   await fillTo(page, 'steps');
