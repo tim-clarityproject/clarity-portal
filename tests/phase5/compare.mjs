@@ -199,7 +199,12 @@ async function appContext(width, mode, { height, touch, motion = 'no-preference'
     // Chromium can't emulate display-mode: the app's code is served with
     // "(display-mode: standalone)" read as true (as tests/phase4 does).
     await context.route(`${APP}/src/**`, async (route) => {
-      const res = await route.fetch();
+      // A connection kept open between screens can be closed by the dev
+      // server just as it is reused ("socket hang up", ECONNRESET): ask once more.
+      const res = await route.fetch().catch((e) => {
+        if (/hang up|ECONNRESET/.test(e.message)) return route.fetch();
+        throw e;
+      });
       const body = await res.text();
       return route.fulfill({ response: res, body: body.replaceAll('(display-mode: standalone)', '(min-width: 0px)') });
     });
