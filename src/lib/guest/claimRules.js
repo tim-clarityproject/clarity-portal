@@ -9,7 +9,12 @@
 //                      inside the portal, with its choice (migration 044)
 // Until a migration has run its function isn't there: nothing happens and
 // nothing is said, and it is asked again on the next sign-in.
-const KEY = 'clarity-guest-claim:';
+// Sign out clears it (clearAppStorage.js), so the next sign-in asks again.
+export const CLAIM_KEY = 'clarity-guest-claim:';
+const KEY = CLAIM_KEY;
+// Said on the window when a Health Check has moved in, so an open Your teams
+// reads its list again.
+export const HEALTH_CHECKS_MOVED = 'clarity-health-checks-moved';
 
 async function ask(rpc, name) {
   try {

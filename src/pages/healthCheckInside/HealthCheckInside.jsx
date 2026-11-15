@@ -8,6 +8,7 @@ import {
   TitleIcons, VersionList, VersionRow, WhoSees, useCoachName, useOffer, useToast,
 } from '../../components/design';
 import { HEALTH_CHECK_GUIDE_OFFER } from '../../lib/offers';
+import { HEALTH_CHECKS_MOVED } from '../../lib/guest/claimRules';
 import { useStartChat } from '../../components/coach/startChat';
 import { supabase } from '../../lib/supabase';
 import { useCachedLoad, readCache, writeCache } from '../../lib/pageCache';
@@ -19,7 +20,7 @@ import { dataFromDraft, draftFromData } from '../alignment/alignmentFlow';
 import { at, stepFromJson, stepToJson } from '../../health-check/flow';
 import {
   BASE, TOOL_NAME, TOOL_TYPE, claimedTip, compareVersions, copiedLine, hasAnswers, isWhole, nameTaken, newTeamVersion, newVersionFrom,
-  rowFrom, shortHeadline, teamOf, teamsFrom, versionDate, versionName,
+  rowFrom, shortHeadline, teamOf, teamsFrom, versionDate, versionLabel, versionName,
 } from '../../lib/healthCheck/inside';
 import { BackLink, ExampleReport, GuidePanel, HealthCheckCompare, HealthCheckResults, HealthCheckTool } from '../healthCheck';
 import TextField from '../../components/design/TextField';
@@ -51,6 +52,11 @@ const TITLE = TOOL_NAME;
 const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
 const LOAD_ERROR = 'Your Health Checks didn’t load. Check your connection and try again.';
 const TIP_SEEN = 'health-check-tips-closed';
+// The eye's choice on Your teams before there is a Health Check to keep it
+// on: kept on the device, and the first team starts with it (the
+// functionality tester, 15 Nov).
+const SHARE_PREF = 'health-check-share';
+const sharedPref = (userId) => readCache(userId, SHARE_PREF)?.v !== false;
 const isId = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 const draftName = (id) => `health-check:${id}`;
 
@@ -87,6 +93,14 @@ export default function HealthCheckInside() {
   const load = useCachedLoad({ userId, name: CACHE, load: () => loadRows(userId) });
   const rows = useMemo(() => load.data || [], [load.data]);
   const teams = useMemo(() => teamsFrom(rows), [rows]);
+  // A Health Check moved in from outside after sign-in (App.jsx's claim)
+  // shows at once, with its one-off tip (the functionality tester, 15 Nov).
+  const reload = load.reload;
+  useEffect(() => {
+    const onMoved = () => { reload(); };
+    window.addEventListener(HEALTH_CHECKS_MOVED, onMoved);
+    return () => window.removeEventListener(HEALTH_CHECKS_MOVED, onMoved);
+  }, [reload]);
 
   // An older page's address, or My Plans, handing over a saved Health Check.
   const handed = location.state?.decisionId;
@@ -214,8 +228,11 @@ function TeamsPage({ store }) {
   // The eye here says who sees every Health Check: choosing saves each
   // version (and new ones copy it).
   const all = teams.flatMap((t) => [...t.versions, ...t.drafts]);
-  const shared = all.length ? all.every((v) => v.shared) : true;
+  const [pref, setPref] = useState(() => sharedPref(userId));
+  const shared = all.length ? all.every((v) => v.shared) : pref;
   const shareAll = async (on) => {
+    writeCache(userId, SHARE_PREF, on);
+    setPref(on);
     const changed = all.filter((v) => v.shared !== on);
     await Promise.all(changed.map((v) => save({ ...v, shared: on }, v.status === 'draft' ? 'draft' : 'completed', v.step)));
   };
@@ -302,7 +319,7 @@ function StartNew({ store, teamId }) {
     }
     // A new team: its eye starts as the person's others (You and Tim when there are none).
     const all = teams.flatMap((t) => t.versions);
-    const fresh = newTeamVersion({ id: newId(), teamId: newId(), shared: all.length ? all.every((v) => v.shared) : true });
+    const fresh = newTeamVersion({ id: newId(), teamId: newId(), shared: all.length ? all.every((v) => v.shared) : sharedPref(userId) });
     writeCache(userId, `${CACHE}:fresh:${fresh.id}`, forDevice(fresh));
     return { to: `${BASE}/version/${fresh.id}` };
   });
@@ -373,8 +390,10 @@ function Version({ store, start, team }) {
   });
   // Home's "Carry on where you left off": the version being made here.
   useEffect(() => {
-    if (mode === 'tool' && made) writeCache(userId, CURRENT, { id: item.id, at: Date.now() });
-  }, [mode, made, userId, item.id]);
+    // A new team with nothing typed but its name isn't kept (M7), so it isn't
+    // offered either (the functionality tester, 15 Nov).
+    if (mode === 'tool' && made && (item.status === 'draft' || hasAnswers(item.draft))) writeCache(userId, CURRENT, { id: item.id, at: Date.now() });
+  }, [mode, made, userId, item.id, item.status, item.draft]);
   // `done`: finished or let go, so Home stops offering to carry it on.
   const forget = ({ done = true } = {}) => {
     draft.clear();
@@ -562,6 +581,13 @@ function Version({ store, start, team }) {
     return healthCheckPdf({ draft: now.draft, completedAt: now.draft.completedAt || now.date, updatedAt: now.row?.updated_at || null, organisation: t.name });
   };
   const teamRows = store.rows.filter((r) => teamOf([t], r.id) || r.id === item.id);
+  // Said as the person sees the team: its finished versions, and the one
+  // being made, if there is one (the functionality tester, 15 Nov).
+  const finishedCount = teamRows.filter((r) => r.status !== 'draft').length;
+  const teamWhat = [
+    finishedCount === 1 ? 'its version' : `its ${finishedCount} versions`,
+    teamRows.length > finishedCount ? 'the version being made' : null,
+  ].filter(Boolean).join(' and ');
 
   return (
     <Frame
@@ -606,8 +632,8 @@ function Version({ store, start, team }) {
         open={Boolean(asking)}
         title="Delete this?"
         body={asking === 'team'
-          ? `“${t.name}” and its ${teamRows.length} versions will be removed.`
-          : `“${versionName(item)}” for ${t.name} will be removed.`}
+          ? `“${t.name}”, ${teamWhat}, will be removed.`
+          : `“${versionLabel(item, t.versions)}” for ${t.name} will be removed.`}
         onConfirm={() => {
           const which = asking === 'team' ? teamRows : store.rows.filter((r) => r.id === item.id);
           setAsking(null);
@@ -636,9 +662,16 @@ function ComparePage({ store }) {
   const a0 = byId(q.get('a')) || team.versions.find((v) => v.id !== b0.id);
   const model = compareVersions(a0, b0);
   // Choosing a later version that's older than the earlier swaps the two (M7).
+  // Choosing the version the other drop-down shows swaps the two, so a
+  // version is never compared with itself (the functionality tester, 15 Nov).
   const pick = (which, id) => {
-    const a = which === 'a' ? byId(id) : model.earlier;
-    const b = which === 'b' ? byId(id) : model.later;
+    const other = which === 'a' ? model.later : model.earlier;
+    const mine = which === 'a' ? model.earlier : model.later;
+    const chosen = byId(id);
+    if (!chosen) return;
+    const swap = chosen.id === other.id;
+    const a = which === 'a' ? chosen : (swap ? mine : model.earlier);
+    const b = which === 'b' ? chosen : (swap ? mine : model.later);
     const m = compareVersions(a, b);
     navigate(`${BASE}/compare?team=${encodeURIComponent(team.id)}&a=${m.earlier.id}&b=${m.later.id}`, { replace: true });
   };
@@ -647,7 +680,7 @@ function ComparePage({ store }) {
       <PageHeader title="Compare two versions" meta={[team.name]} />
       <HealthCheckCompare
         model={model}
-        options={team.versions.map((v) => ({ value: v.id, label: versionName(v) }))}
+        options={team.versions.map((v) => ({ value: v.id, label: versionLabel(v, team.versions) }))}
         onPick={pick}
         talk={startChat && coach ? <Button variant="text" onClick={startChat}>{`Talk it through with ${coach}`}</Button> : null}
       />

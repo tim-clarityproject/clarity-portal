@@ -50,6 +50,34 @@ const store = {
   set(area, key, v) { try { window[area].setItem(key, v); } catch { /* storage blocked: nothing kept */ } },
   del(area, key) { try { window[area].removeItem(key); } catch { /* nothing to clear */ } },
 };
+/**
+ * Sends whatever waits and resolves how it went: 'saved' (nothing waits),
+ * 'waiting' (kept on the device, sent again by the queue) or 'refused'.
+ * Gives up waiting after 15 seconds, as 'waiting'.
+ */
+function settledSave(queue) {
+  if (!queue) return Promise.resolve('saved');
+  return new Promise((resolve) => {
+    let off = () => {};
+    let timer = null;
+    const end = (outcome) => { off(); clearTimeout(timer); resolve(outcome); };
+    const read = (status, detail = {}) => {
+      if (status === 'saving') return false;
+      if (status === 'error') end(detail.retryable === false ? 'refused' : 'waiting');
+      else end('saved');
+      return true;
+    };
+    off = queue.on('status', (status, detail) => { read(status, detail); });
+    timer = setTimeout(() => end('waiting'), 15000);
+    queue.flush();
+    // Nothing waited: no status follows the flush.
+    const now = queue.getStatus();
+    if (now !== 'saving') read(now, now === 'error' ? { retryable: true } : {});
+  });
+}
+// The coach's completion email asked for on this visit (044 sends it once
+// whatever; before 044 the page is what keeps it to once).
+const toldKey = (token) => `hc-told:${token}`;
 const readAccess = (token) => { try { return JSON.parse(store.get('sessionStorage', accessKey(token)) || 'null'); } catch { return null; } };
 
 /** "Tue 27 Oct", with the year when it isn't this year. */
@@ -167,6 +195,7 @@ function Page() {
     await sendKeptChoice(shareId(token), sendChoice);
     const creds = credsRef.current;
     if (!creds || !mayTellCoach(sharedRef.current)) return;
+    store.set('sessionStorage', toldKey(token), '1');
     requestAlignmentEmail({ token, email: creds.email, code: creds.code, kind: 'complete' });
   }, [token, sendChoice]);
 
@@ -175,7 +204,10 @@ function Page() {
     setShared(next);
     const r = await saveChoice(shareId(token), next, sendChoice);
     // Back to You and the coach after finishing: the coach hears now, once.
-    if (next && completeRef.current && r.notified !== true && sharedRef.current) tellCoach();
+    // Asked for once on this visit: a second switch back doesn't ask again (the
+    // functionality tester, 15 Nov), whether or not 044 says it went.
+    const told = r.notified === true || store.get('sessionStorage', toldKey(token)) === '1';
+    if (next && completeRef.current && !told && sharedRef.current) tellCoach();
   }, [token, sendChoice, tellCoach]);
 
   // ---- opening the Health Check ----
@@ -323,12 +355,17 @@ function Page() {
   // Close: everything is saved as it is typed, so it says so and waits on
   // the return screen, where the same email and code carry on (M7b's close
   // says "Saved"; the mock-up has nowhere to go).
-  const close = () => {
-    queueRef.current?.flush();
+  // "Saved" only once the save has reached the server; a save still waiting
+  // (no connection: it is kept on the device and sent when the connection is
+  // back) says "Will sync" (Smoothness; the functionality tester, 15 Nov).
+  const close = async () => {
+    const outcome = await settledSave(queueRef.current);
     setPanel(null);
     setRet(true);
     showPhase('signin');
-    toast.show('Saved');
+    if (outcome === 'saved') toast.show('Saved');
+    else if (outcome === 'waiting') toast.show('Will sync');
+    else toast.error();
   };
 
   // ---- results actions ----

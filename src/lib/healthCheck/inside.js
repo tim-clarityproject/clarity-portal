@@ -106,6 +106,17 @@ export function versionName(version) {
   return m ? `${MONTHS[m - 1]} Health Check` : 'Health Check';
 }
 
+/**
+ * The name, with its date when another of the team's versions has the same
+ * name ("October Health Check, 5 Oct 2026"), so two versions of one month
+ * can be told apart in a drop-down (the functionality tester, 15 Nov).
+ */
+export function versionLabel(version, versions = []) {
+  const name = versionName(version);
+  const twin = versions.some((v) => v && v.id !== version?.id && versionName(v) === name);
+  return twin && isDay(version?.date) ? `${name}, ${versionDate(version.date)}` : name;
+}
+
 /** The headline as M7's team list shows it under a version's name. */
 export function shortHeadline(draft) {
   const h = m20Headline(resultRows(draft), { line: m20ImportantLine(draft) });

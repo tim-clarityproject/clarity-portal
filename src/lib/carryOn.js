@@ -77,7 +77,13 @@ export function carryOnItems(userId, { today, yesterday, exclude = [], finished 
   const hc = readJson(deviceKey('cache', userId, 'health-check-current'))?.v;
   // Kept until it is finished or deleted, so a version closed part-way (a
   // draft in My Plans) is offered here too.
-  if (hc && typeof hc.id === 'string' && !finished.includes('health-check')) {
+  // A version that is on neither the device nor the last list read (deleted
+  // from My Plans, say) is not offered (the functionality tester, 15 Nov).
+  const hcRows = hc && typeof hc.id === 'string' ? readJson(deviceKey('cache', userId, 'health-checks'))?.v : null;
+  const hcGone = Array.isArray(hcRows) && !hcRows.some((r) => r?.id === hc.id)
+    && !readJson(deviceKey('cache', userId, `health-checks:fresh:${hc.id}`))?.v
+    && !readDraft(userId, `health-check:${hc.id}`)?.v;
+  if (hc && typeof hc.id === 'string' && !hcGone && !finished.includes('health-check')) {
     found.push({ key: 'health-check', title: 'Strategic Alignment Health Check', to: `/strategic-alignment/version/${hc.id}`, at: hc.at || null });
   }
 

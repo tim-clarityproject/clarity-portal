@@ -6,7 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   BASE, SHAPE, TOOL_TYPE, claimedTip, compareVersions, copiedLine, draftFromOld, formFrom, hasAnswers, isNewShape, isWhole, nameTaken,
-  newTeamVersion, newVersionFrom, oldTeamId, rowFrom, shortHeadline, teamsFrom, versionDate, versionFromRow, versionName,
+  newTeamVersion, newVersionFrom, oldTeamId, rowFrom, shortHeadline, teamsFrom, versionDate, versionFromRow, versionLabel, versionName,
 } from '../../src/lib/healthCheck/inside.js';
 import { cleanItems, dataFromDraft } from '../../src/pages/alignment/alignmentFlow.js';
 import { resultRows } from '../../src/health-check/words.js';
@@ -231,4 +231,16 @@ test('the one-off tip about an outside Health Check that joined a team', () => {
   assert.equal(claimedTip(teamsFrom([row('lt3', '2026-10-27', LT3)])), null);
   // the marker is kept when the version is saved again
   assert.deepEqual(formFrom(teams[0].versions[1]).from_outside, { at: '2026-04-03T10:00:00Z' });
+});
+
+test('two versions of one month are told apart by their date; others by their name alone', () => {
+  const oct5 = { id: 'a', date: '2026-10-05' };
+  const oct27 = { id: 'b', date: '2026-10-27' };
+  const jul = { id: 'c', date: '2026-07-14' };
+  const all = [oct27, oct5, jul];
+  assert.equal(versionLabel(jul, all), 'July Health Check');
+  assert.match(versionLabel(oct5, all), /^October Health Check, .*5 Oct/);
+  assert.match(versionLabel(oct27, all), /^October Health Check, .*27 Oct/);
+  assert.notEqual(versionLabel(oct5, all), versionLabel(oct27, all));
+  assert.equal(versionLabel(oct5, [oct5]), 'October Health Check');
 });

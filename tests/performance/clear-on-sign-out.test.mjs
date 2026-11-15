@@ -80,3 +80,7 @@ test('Sign out sets aside the tool answers that live only on this device, and cl
     delete globalThis.window;
   }
 });
+
+test('Sign out clears the mark that this tab has asked for the claims, so the next sign-in asks again (the functionality tester, 15 Nov)', () => {
+  assert.equal(isAppOwnedKey('clarity-guest-claim:u1'), true);
+});

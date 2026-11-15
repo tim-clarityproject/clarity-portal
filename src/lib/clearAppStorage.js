@@ -35,6 +35,9 @@ export function isAppOwnedKey(key) {
   // pointed, a tick carried to Google, the email just typed, a reset link
   // just opened. None of it is for the next person to sign in here.
   if (key.startsWith('clarity-sign-in-')) return true;
+  // The mark that this tab has asked for a guest's or an outside Health
+  // Check's work (claimRules.js): the next sign-in here asks again.
+  if (key.startsWith('clarity-guest-claim:')) return true;
   // Not cleared: answers that wait on the device until their migration has
   // run (clarity-day-plan-local:, clarity-day-review-local:,
   // clarity-checkin-extras:; dayStore.js, answerExtras.js). They carry the

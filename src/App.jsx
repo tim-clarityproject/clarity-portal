@@ -83,6 +83,7 @@ import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 import ScrollToTop from './components/ScrollToTop';
 import HubPage from './pages/hubs/HubPage';
 import { claimOutsideWork } from './lib/guest/claim';
+import { HEALTH_CHECKS_MOVED } from './lib/guest/claimRules';
 import { GET_UNSTUCK_STEPS, MOVED, MOVED_UNDER, tabTitle } from './lib/navigation';
 import { loadWithReload } from './lib/loadWithReload';
 
@@ -243,6 +244,7 @@ function AppContent() {
     if (!claimFor) return;
     claimOutsideWork(claimFor).then((moved) => {
       if (moved.guest > 0) toast.show('Your plan has moved into My Plans.');
+      if (moved.healthChecks > 0) window.dispatchEvent(new window.Event(HEALTH_CHECKS_MOVED));
     });
     // Once per sign-in.
     // eslint-disable-next-line react-hooks/exhaustive-deps
