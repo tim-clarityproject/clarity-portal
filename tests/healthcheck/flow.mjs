@@ -977,7 +977,9 @@ part('panels', async ({ browser, w, mode, tag }) => {
   await page.locator('.ds-guide-question .ds-who:not(.ds-play)').click();
   pass(`${tag}, who: the eye opens “Who can see this?”`, await until(async () => /who can see this\?/i.test(await page.locator(`${DIALOG} h2`).innerText()), 5000));
   const words = (await page.locator(`${DIALOG} .ds-dialog-body`).innerText()).replace(/\s+/g, ' ').trim();
-  pass(`${tag}, who: it says who the answers go to`, words === 'Your answers go to Tim, who sent you the link.', words);
+  // The guest's choice (Tim, 14 Nov, 09:52): Only you, or You and Tim (chosen), with the line under it.
+  const whole = (await page.locator(DIALOG).last().innerText()).replace(/\s+/g, ' ');
+  pass(`${tag}, who: it offers Only you or You and Tim, with the line under the choice`, words === 'Only you You and Tim' && whole.includes('Tim sent you the link and will see your results.'), whole);
   const label = await page.locator('.ds-guide-question .ds-who:not(.ds-play)').getAttribute('aria-label');
   pass(`${tag}, who: a screen reader hears who can see it`, /You and Tim/.test(label || ''), label);
   await checkScreen(b, `${tag}, who can see this`, { layer: DIALOG, coral: 0 });

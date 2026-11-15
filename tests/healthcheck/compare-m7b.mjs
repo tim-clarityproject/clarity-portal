@@ -269,7 +269,7 @@ const SHARED_DD = 'the drop-down is the portal’s one branded drop-down (the sh
 // (The chart's dots: the app keeps its own rule for dots that would touch, moving them apart inside their own
 // area, where M7b moves them sideways only. With the mock-up's own answers the two rules put every dot in the
 // same place, so no difference is listed here.)
-const WHO = 'the guest’s own choice (Only you, or You and Tim) arrives with a later migration, behind HealthCheckEye’s onShare; until then the eye opens the shared small panel that says who the answers go to, as every guest tool’s eye does';
+const WHO = 'the guest’s choice (Only you, or You and Tim, with its line) is the portal’s shared small panel (GuestEye on WhoSees), so its size is that panel’s, as M9’s comparison accepts';
 const BOX = 'the portal’s one-line box is 58px, as M7b’s own text boxes are; M7b’s two start boxes come out 1.4px shorter, so what follows sits that much lower (as M9’s comparison accepts)';
 const SEG = 'the portal’s one shared segmented control (40px pills in a 48px box), as M10’s comparison accepts; M7b draws 38px pills, so each row is 2px taller';
 const PANEL = 'the portal’s one shared slide-across panel (480px wide on a laptop, 24px gutters, its own title row), as every other panel in the portal and as M9 and M10’s comparisons accept; M7b’s is 460px with 28px gutters';
@@ -316,15 +316,9 @@ const allowedFor = (screen, part, what) => ALLOWED.get(`${screen}|${part}|${what
 // Sentences that differ on purpose, or are only on one side.
 const WORDS_M7B_ONLY = new Map([
   ['signin', [['Only you and Tim will see your answers.', COACH]]],
-  ['who', [
-    ['Only you', WHO],
-    ['You and Tim', WHO],
-    ['Tim sent you the link and will see your results.', WHO],
-  ]],
 ]);
 const WORDS_BUILT_ONLY = new Map([
   ['signin', [['Only you and your coach will see your answers.', COACH]]],
-  ['who', [['Your answers go to Tim, who sent you the link.', WHO]]],
 ]);
 const ctx0 = { report, allowed, mockName: 'M7b' };
 const ctxWords = { report, mockOnly: WORDS_M7B_ONLY, builtOnly: WORDS_BUILT_ONLY, mockName: 'M7b' };

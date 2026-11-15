@@ -211,10 +211,10 @@ export async function insidePage(browser, width, mode, opts = {}) {
   const page = await ctx.newPage();
   const problems = [];
   page.on('pageerror', (e) => problems.push(`page error: ${e.message}`));
-  // Known until Tim runs the migrations: the tool_answers table (043) and guest_claim (035) answer 404.
+  // Known until Tim runs the migrations: the tool_answers table (043), guest_claim (035) and alignment_claim (044) answer 404.
   page.on('console', (m) => { if (m.type() === 'error' && !/net::ERR_FAILED|Failed to load resource|WebSocket|\[vite\]|Vite server/.test(m.text())) problems.push(`console: ${m.text().replace(/eyJ\S+|sb_\S+|[\w.+-]+@[\w-]+\.[\w.]+/g, '…').slice(0, 400)}`); });
   page.on('response', (r) => {
-    if (r.status() >= 400 && !/tool_answers|rpc\/guest_claim/.test(r.url())) problems.push(`HTTP ${r.status()} ${r.url().replace(/\?.*$/, '').replace(/^https?:\/\/[^/]+/, '')}`);
+    if (r.status() >= 400 && !/tool_answers|rpc\/(guest|alignment)_claim/.test(r.url())) problems.push(`HTTP ${r.status()} ${r.url().replace(/\?.*$/, '').replace(/^https?:\/\/[^/]+/, '')}`);
   });
   return { ctx, page, store, problems, fonts, sent, userId };
 }

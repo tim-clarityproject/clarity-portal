@@ -537,7 +537,7 @@ async function run(browser, width) {
   pass(`${tag}: one to-do is left: the step for this week`, live.length === 1 && Boolean(live[0].sprint_id) && live[0].text === stepText, JSON.stringify(live.map((t) => t.text)));
   const probes = refused.filter((r) => /\/rest\/v1\/tool_answers/.test(r));
   // Step 2's guest_claim is asked after each sign-in and isn't on the test project until 035 is run: not this tool's.
-  const others = refused.filter((r) => !/\/rest\/v1\/(tool_answers|rpc\/guest_claim)/.test(r));
+  const others = refused.filter((r) => !/\/rest\/v1\/(tool_answers|rpc\/(guest|alignment)_claim)/.test(r));
   pass(`${tag}: no console errors and no page errors`, errors.length === 0, errors.join(' | '));
   pass(`${tag}: no request was refused, but the one question about the table 043 adds`, others.length === 0 && probes.length <= 1, `${probes.length} for the table; others: ${others.join(' | ')}`);
   await page.goto(`${APP}/version.json`);
