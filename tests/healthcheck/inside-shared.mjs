@@ -215,14 +215,32 @@ export async function insidePage(browser, width, mode, opts = {}) {
   await ctx.route(/\/rest\/v1\/person_settings(\?|$)/, async (route) => {
     const req = route.request();
     const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-    const row = () => ({ user_id: userId, page_preferences: store.prefs, updated_at: store.prefsAt || '2026-11-14T09:00:00' });
-    if (req.method() === 'GET') return json([row()]);
+    // The real answer is read as asked (Home and the rest need its other settings); only the offers in it
+    // are the test's, and a change is answered here, never written.
+    const withOffers = (r) => (r && typeof r === 'object' && 'page_preferences' in r
+      ? { ...r, page_preferences: { ...(r.page_preferences || {}), offers: store.prefs.offers }, ...(store.prefsAt ? { updated_at: store.prefsAt } : {}) }
+      : r);
+    if (req.method() === 'GET') {
+      try {
+        const real = await route.fetch();
+        const body = await real.json().catch(() => null);
+        if (body === null) return route.fulfill({ response: real });
+        // No row yet: the offers alone, as a row would hold them.
+        const none = Array.isArray(body) && !body.length && /page_preferences/.test(decodeURIComponent(req.url()));
+        if (none) return json([withOffers({ user_id: userId, page_preferences: {}, updated_at: '2026-11-14T09:00:00' })]);
+        return json(Array.isArray(body) ? body.map(withOffers) : withOffers(body), real.status());
+      } catch {
+        return route.abort().catch(() => {});
+      }
+    }
     if (req.method() === 'POST' || req.method() === 'PATCH') {
       const body = JSON.parse(req.postData() || '{}');
       const one = Array.isArray(body) ? body[0] : body;
-      if (one?.page_preferences) { store.prefs = one.page_preferences; store.prefWrites.push(one.page_preferences); }
+      if (!one?.page_preferences) return route.fallback();
+      store.prefs = { offers: one.page_preferences.offers || {} };
+      store.prefWrites.push(one.page_preferences);
       store.prefsAt = new Date().toISOString().replace('Z', '');
-      return json([row()], req.method() === 'POST' ? 201 : 200);
+      return json([{ ...one, user_id: userId, updated_at: store.prefsAt }], req.method() === 'POST' ? 201 : 200);
     }
     return route.fallback();
   });

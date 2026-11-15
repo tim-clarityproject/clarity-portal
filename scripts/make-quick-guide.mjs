@@ -91,7 +91,6 @@ const cues = readCues(join(OUT, 'quick-guide.en-GB.vtt'));
 const slot = cues[LINE - 1];
 if (!slot) throw new Error(`The captions have no line ${LINE}.`);
 const median = (list) => { const s = [...list].sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
-const db = (x) => 20 * Math.log10(x);
 
 // ------------------------------------------------------------ 2. the voice
 function makeVoice() {

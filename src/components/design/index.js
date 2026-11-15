@@ -117,5 +117,5 @@ export { default as BottomBar } from './BottomBar';
 export { useHidePhoneBar, usePhoneBarHidden } from './phoneBar';
 export { default as OneOffTip } from './OneOffTip';
 export { default as VersionRow, VersionList } from './VersionRow';
-export { default as OfferRow, OFFER_ICONS } from './OfferRow';
+export { default as OfferRow } from './OfferRow';
 export { default as useOffer } from './useOffer';

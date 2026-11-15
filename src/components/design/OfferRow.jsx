@@ -21,8 +21,8 @@ import './design.css';
 //   <OfferRow action="Watch the Quick guide" detail="~1 minute" onTake={…}
 //             onNotNow={guide.notNow} never={guide.never} onNever={guide.stop} />
 
-/** The icons an offer can hold, each drawn for the 44px circle. */
-export const OFFER_ICONS = {
+/** The icons an offer can hold, each drawn for the 44px circle (or pass a drawing as `icon`). */
+const OFFER_ICONS = {
   // A filled play triangle (M7's PLAY), nudged right so it looks centred.
   play: (
     <svg className="ds-offer-icon ds-offer-icon--play" viewBox="0 0 16 16" aria-hidden="true" focusable="false">

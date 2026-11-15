@@ -58,14 +58,14 @@ export default function useOffer(key, { blocked = false } = {}) {
   const raw = userId ? offersFrom(prefs)[key] : (thisVisitOnly[key] || device[key]);
   const state = cleanOffer(raw);
   const visitKey = `${userId || 'device'}:${key}`;
-  const [hiddenNow, setHiddenNow] = useState(() => hiddenThisVisit.has(visitKey));
-  useEffect(() => { setHiddenNow(hiddenThisVisit.has(visitKey)); }, [visitKey]);
+  const [, chosen] = useState(0); // redraws once a choice is made this visit
+  const hiddenNow = hiddenThisVisit.has(visitKey);
   // The account's copy, read quietly (at most every half a minute).
   useEffect(() => { if (userId) refreshPins(userId); }, [userId]);
 
   const choose = useCallback((next) => {
     hiddenThisVisit.add(visitKey);
-    setHiddenNow(true);
+    chosen((n) => n + 1);
     if (!userId) {
       writeDevice(key, next(cleanOffer(thisVisitOnly[key] || deviceOffers()[key])));
       return;
