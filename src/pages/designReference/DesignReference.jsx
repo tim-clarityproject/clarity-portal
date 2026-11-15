@@ -106,7 +106,7 @@ import { CarriedOverDemo, NightDemo, WorkDoneDemo } from './WindDownDemos';
 import { TimerDemo } from './TimerDemos';
 import { CalmFrameDemo, CalmCardDemo } from './GetUnstuckDemos';
 import { AnswerColumnsDemo, AnswerHintDemo, DissolveDemo, FollowChoiceDemo, NameRowsDemo, ResultsDemo, StepBarsDemo } from './VisualToolDemos';
-import { HealthCheckChartDemo, InfoListDemo, InsidePartsDemo, PdfPanelDemo, ProjectListDemo, ResultsPartsDemo, TitleIconsDemo } from './HealthCheckDemos';
+import { HealthCheckChartDemo, InfoListDemo, InsidePartsDemo, OfferRowDemo, PdfPanelDemo, ProjectListDemo, ResultsPartsDemo, TitleIconsDemo } from './HealthCheckDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import { TODO_WHERE, dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, todoWhereOptions, todoWhereToast, withMeasure, yearView } from '../../lib/performance';
@@ -2008,6 +2008,14 @@ function Gallery() {
             <p><New /><b>A version in a list</b> (M7’s team list; <code>VersionRow</code>): its name in words, one quiet line under it and the date on the right. The whole row opens it.</p>
             <p><b>A one-off tip</b> (<code>OneOffTip</code>): one quiet sentence in a fine outline, with the 45 degree crosshair to close it for good. Only one first-visit message at a time.</p>
             <p><b>A page’s own bottom bar</b> (<code>BottomBar</code>; M7’s results): the guided tools’ bar on a page in the portal frame. The phone bar steps back while it shows, and the Breathe pill rises above it.</p>
+          </>
+        )} />
+
+        <GallerySection id="c84" title="The offer row" demo={OfferRowDemo} wide rules={(
+          <>
+            <p><New /><b>Anything the portal offers but doesn’t need is one slim row</b> (<code>OfferRow</code>, with <code>useOffer</code>; Tim, 14 Nov): a Quick guide, a featured tool on Home, the organisation animation. Never a big card with a sentence and a row of buttons.</p>
+            <p>The soft surface with 18px corners and no border, the height of a list row. On the left one button: a 44px fine circle with one icon, the action in 17px medium, and one quiet detail under it (“~1 minute”). On the right “Not now”, and “Don’t show this again” beside it from the second offer; a one-off offer has a single close instead. No coral.</p>
+            <p>Not now offers it again on the next 2 visits, then it stops. It never plays by itself, never shows with another first-visit message, and while it shows the title’s own icon for the same thing hides. On a phone two links wrap to a second line, on the right.</p>
           </>
         )} />
 

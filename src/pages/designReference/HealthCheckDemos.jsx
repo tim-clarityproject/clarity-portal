@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  BottomBar, Button, OneOffTip, PageHeader, VersionList, VersionRow, PdfPanel, PlayButton, ResultsHeadline, ResultsSection, SentenceInfo, SlidePanel, StartQuestions, TitleIcons, WhoSees, useIsPhone, useToast,
+  BottomBar, Button, OfferRow, OneOffTip, PageHeader, VersionList, VersionRow, PdfPanel, PlayButton, ResultsHeadline, ResultsSection, SentenceInfo, SlidePanel, StartQuestions, TitleIcons, WhoSees, useIsPhone, useToast,
 } from '../../components/design';
 import { HealthCheckChart, HealthCheckEye, ProjectList } from '../healthCheck';
 import { EXAMPLE } from '../../health-check/example';
@@ -108,6 +108,41 @@ export function InsidePartsDemo() {
       </VersionList>
       <Button variant="text" onClick={() => setBar((b) => !b)}>{bar ? 'Hide the bottom bar' : 'Show a bottom bar'}</Button>
       {bar && <BottomBar><Button variant="primary" onClick={() => toast.show('The PDF choice opens here.')}>Download my PDF</Button></BottomBar>}
+    </div>
+  );
+}
+
+// The offer row (5e rule 8b; Tim, 14 Nov, 10:14 to 10:19): the first offer,
+// the second (with "Don’t show this again"), and a one-off offer with its
+// close. Here the visits are pretend: Not now counts one up.
+export function OfferRowDemo() {
+  const toast = useToast();
+  const [notNow, setNotNow] = useState(0);
+  const [gone, setGone] = useState(false);
+  const [oneOff, setOneOff] = useState(true);
+  const shows = !gone && notNow <= 2;
+  return (
+    <div className="dr-stack">
+      <PageHeader
+        as="h3"
+        title="Strategic Alignment Health Check"
+        aside={shows ? null : <PlayButton label="Quick guide" onClick={() => toast.show('The Quick guide opens here.')} />}
+      />
+      {shows
+        ? (
+          <OfferRow
+            action="Watch the Quick guide"
+            detail="~1 minute"
+            onTake={() => { setGone(true); toast.show('The Quick guide opens here.'); }}
+            onNotNow={() => setNotNow((n) => n + 1)}
+            never={notNow >= 1}
+            onNever={() => setGone(true)}
+          />
+        )
+        : <Button variant="text" onClick={() => { setNotNow(0); setGone(false); }}>Start the visits again</Button>}
+      {oneOff
+        ? <OfferRow action="Watch the Quick guide" detail="~1 minute" oneOff onTake={() => toast.show('The Quick guide opens here.')} onClose={() => setOneOff(false)} />
+        : <Button variant="text" onClick={() => setOneOff(true)}>Show the one-off offer again</Button>}
     </div>
   );
 }

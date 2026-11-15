@@ -11003,3 +11003,127 @@
   outline-offset: var(--space-px2);
   border-radius: var(--space-px6);
 }
+
+/* ---------- The offer row (OfferRow; 5e rule 8b; M7 version 8.2's .qg) ---------- */
+.ui-root .ds-offer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-px12);
+  margin-top: var(--space-px28);
+  padding: var(--space-px10) var(--space-px12) var(--space-px10) var(--space-px14);
+  background: var(--raised);
+  border-radius: var(--radius-offer);
+}
+
+.ui-root .ds-offer-take {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-px14);
+  /* !important: the older phone rules give every button its own padding and height. */
+  min-height: var(--offer-h) !important;
+  padding: 0 !important;
+  border-radius: var(--radius-input);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-offer-circle {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border-radius: 50%;
+  border: var(--line-w) solid var(--btn-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-offer-icon {
+  display: block;
+  width: var(--space-px14);
+  height: var(--space-px14);
+  fill: currentColor;
+}
+
+.ui-root .ds-offer-icon--play {
+  margin-left: var(--space-px2);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-offer-take:hover .ds-offer-circle {
+    border-color: var(--coral-text);
+  }
+}
+
+.ui-root .ds-offer-take:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-1);
+}
+
+.ui-root .ds-offer-words {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-px2);
+  min-width: 0;
+  line-height: var(--lh-text);
+}
+
+.ui-root .ds-offer-words b {
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-text);
+  color: var(--text);
+}
+
+.ui-root .ds-offer-words small {
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .ds-offer-ways {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+}
+
+.ui-root .ds-offer-ways .ds-link {
+  padding: 0 var(--space-2) !important;
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-offer {
+    flex-wrap: wrap;
+    row-gap: 0;
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-px12);
+  }
+
+  .ui-root .ds-offer-ways {
+    margin-left: auto;
+  }
+
+  .ui-root .ds-offer--two .ds-offer-take {
+    flex-basis: 100%;
+  }
+}
+
+@media (forced-colors: active) {
+  .ui-root .ds-offer {
+    border: var(--line-w) solid CanvasText;
+  }
+
+  .ui-root .ds-offer-circle {
+    border-color: CanvasText;
+  }
+
+  .ui-root .ds-offer-icon {
+    forced-color-adjust: none;
+    fill: CanvasText;
+  }
+}
