@@ -16,8 +16,9 @@ import './healthCheck.css';
 // from the play icon, made wider for the picture (full screen on a phone).
 // On a phone the welcome's card is square and shows only Watch; Watch opens
 // the panel, so the page never grows and Begin stays in view (Tim, 13 Nov,
-// 18:07). The guide's own content (its screens, voice and captions) is
-// rebuilt in a later step; this is today's video in its new place. Laptops and tablets get the desktop
+// 18:07). The guide itself (M7b version 51's screens, Tim's voice with line
+// 6 re-recorded, the captions) was rebuilt on 15 Nov by
+// scripts/make-quick-guide.mjs (see media/README.md). Laptops and tablets get the desktop
 // video, phones the phone video, by the page's own phone width; both use the
 // one captions file, shown as written in the bar under the picture. Nothing
 // plays by itself, and nothing is downloaded until the guide is opened: the
