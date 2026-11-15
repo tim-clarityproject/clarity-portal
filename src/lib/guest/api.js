@@ -12,6 +12,10 @@ import { cleanCode } from './rules';
 //   guest_save(p_visit, p_table, p_row)     -> the saved row
 //   guest_delete_link_answers(p_visit)      -> how many rows went
 //   guest_finish(p_visit)                   -> true
+// migration 044's, the guest's choice of who sees their answers (for the
+// link their visit came through):
+//   guest_set_sharing(p_visit, p_shared)    -> { ok: true, shared_with_coach } | { ok: false, error: 'no_link' }
+//   guest_sharing(p_visit)                  -> the same, read only
 // and migration 042's, for the start page before the code is typed:
 //   guest_link_info(p_token) -> { ok: true, tool, tool_label, coach_name, open } | { ok: false }
 //
@@ -67,3 +71,10 @@ export function guestFinish(visit) {
   return call('guest_finish', { p_visit: visit });
 }
 
+export function guestSetSharing(visit, shared) {
+  return call('guest_set_sharing', { p_visit: visit, p_shared: Boolean(shared) });
+}
+
+export function guestSharing(visit) {
+  return call('guest_sharing', { p_visit: visit });
+}

@@ -4,7 +4,9 @@
 
 /**
  * @param {{token: string, email: string, code: string, kind: 'link'|'complete'}} args
- * @returns {Promise<{ok: boolean, error?: 'limit'|'already'|'invalid'|'failed'}>}
+ * @returns {Promise<{ok: boolean, sent?: boolean, error?: 'limit'|'already'|'private'|'invalid'|'failed'}>}
+ *   sent: false on a preview or a developer's machine, which never send.
+ *   private: the guest chose Only you (migration 044), so no coach email goes.
  */
 export async function requestAlignmentEmail({ token, email, code, kind }) {
   try {
@@ -14,7 +16,7 @@ export async function requestAlignmentEmail({ token, email, code, kind }) {
       body: JSON.stringify({ token, email, code, kind }),
     });
     const body = await res.json().catch(() => ({}));
-    if (res.ok && body.ok) return { ok: true };
+    if (res.ok && body.ok) return { ok: true, sent: body.sent !== false };
     return { ok: false, error: body.error || 'failed' };
   } catch {
     return { ok: false, error: 'failed' };

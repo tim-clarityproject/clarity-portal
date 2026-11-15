@@ -5,11 +5,11 @@ import {
   ButtonNote,
   CalmCard,
   CoachContext,
+  GuestEye,
   GuestFrame,
   GuestTitle,
   PdfDownload,
   TextField,
-  WhoSees,
   titleWithAside,
   useToast,
 } from '../../components/design';
@@ -28,6 +28,8 @@ import {
   guestOpen,
   guestRows,
   guestSave,
+  guestSetSharing,
+  guestSharing,
   keepVisit,
   openProblem,
   readVisit,
@@ -36,6 +38,7 @@ import {
   visitFrom,
 } from '../../lib/guest/api';
 import { sendGuestCopy } from '../../lib/guest/copyEmail';
+import { functionMissing, keptChoice, openingChoice, saveChoice, sendKeptChoice } from '../../lib/guest/sharing';
 import { TOOL_NAME, emptyPlan, hasAnswers, planContent, planFrom, planTitle, savedForm, tidyPlan } from '../../lib/getUnstuck/model';
 import GetUnstuckTool from '../getUnstuck/GetUnstuckTool';
 import '../performance/performance.css';
@@ -108,6 +111,8 @@ function Guest({ token }) {
   itemRef.current = item;
   const visitRef = useRef(visit);
   visitRef.current = visit;
+  // The guest's choice of who sees the answers, kept for this visit until the database has it (044).
+  const shareId = `guest:${token}`;
 
   useEffect(() => {
     let live = true;
@@ -132,6 +137,24 @@ function Guest({ token }) {
     setPhase('start');
     setStartMessage(guestError(error, GUEST_WORDS.open));
   }, [token]);
+
+  // Who sees the answers (Tim, 14 Nov, 09:52): saved on the link through
+  // 044 (guest_set_sharing). Until 044 has run it is kept for the visit and
+  // sent when it can be; nothing alarming is said.
+  const sendChoice = useCallback(async (value) => {
+    const v = visitRef.current;
+    if (!v) return { ok: false };
+    try {
+      const r = await guestSetSharing(v.visit, value);
+      return { ok: r?.ok === true };
+    } catch (error) {
+      if (visitEnded(error)) {
+        ended(error);
+        return { ok: false };
+      }
+      return { ok: false, missing: functionMissing(error) };
+    }
+  }, [ended]);
 
   // Saved a moment after each change, so the coach's copy keeps up.
   const dirty = useRef(false);
@@ -170,6 +193,12 @@ function Guest({ token }) {
     setItem((s) => ({ ...s, plan: fn(s.plan) }));
   }, []);
 
+  // The choice is also kept in the saved item (form_data.shared_with_coach).
+  const onShare = useCallback(async (next) => {
+    onPlan((p) => ({ ...p, shared: next }));
+    await saveChoice(shareId, next, sendChoice);
+  }, [onPlan, shareId, sendChoice]);
+
   const toolKey = visit?.tool || info?.tool || 'grow';
   const page = TOOL_PAGES[toolKey];
   const coachName = visit?.coachName || info?.coachName || '';
@@ -200,6 +229,24 @@ function Guest({ token }) {
     } catch {
       // A new plan; saving says so if the link can't be used.
     }
+    // Who sees it: a choice kept on this device and not yet sent wins (and
+    // is sent now); otherwise the link's (044), then the device's, then You
+    // and the coach.
+    const kept = keptChoice(shareId);
+    let fromLink = null;
+    try {
+      const r = await guestSharing(v.visit);
+      if (r?.ok && typeof r.shared_with_coach === 'boolean') fromLink = r.shared_with_coach;
+    } catch {
+      // 044 not run yet, or no connection: the device's choice, or the default.
+    }
+    const choice = openingChoice(kept, fromLink);
+    if (next.plan.shared !== choice) {
+      next = { ...next, plan: { ...next.plan, shared: choice } };
+      if (hasAnswers(next.plan)) dirty.current = true;
+    }
+    visitRef.current = v;
+    if (kept && !kept.sent) sendKeptChoice(shareId, sendChoice);
     setItem(next);
     setVisit(v);
     setStartMessage(null);
@@ -247,6 +294,8 @@ function Guest({ token }) {
       return false;
     }
     setPhase('end');
+    // A choice still on the device goes now (the coach's lists read it).
+    sendKeptChoice(shareId, sendChoice);
     // The copy by email: only said once the server has sent it.
     sendGuestCopy(v.visit).then((r) => { if (r?.sent) setCopySent(true); });
     return true;
@@ -296,6 +345,7 @@ function Guest({ token }) {
             coachName={coachName}
             draftKey={`guest-${token.slice(0, 16)}`}
             initialStep={item.status === 'completed' ? 'sum' : undefined}
+            onShare={onShare}
             onClose={close}
             onFinish={finish}
             onEdited={edited}
@@ -310,7 +360,7 @@ function Guest({ token }) {
     return (
       <div className="ui-root">
         <GuestFrame>
-          <EndHeading coachName={coachName}>Here’s what you’ll do next.</EndHeading>
+          <EndHeading coachName={coachName} shared={item.plan.shared !== false} onShare={onShare}>Here’s what you’ll do next.</EndHeading>
           {copySent && <p className="ds-guest-sub">{`A copy is on its way to ${visit.email}.`}</p>}
           {content.nextSteps.length > 0 && (
             <ul className="ds-guest-list">
@@ -370,15 +420,10 @@ function Guest({ token }) {
   );
 }
 
-// The end page's heading, with the eye in it (M9): the coach who sent the link sees the answers.
-function EndHeading({ children, coachName }) {
-  const eye = (
-    <WhoSees
-      audience="coach"
-      coachName={coachName || undefined}
-      note={`Your answers go to ${coachName || 'your coach'}, who sent you the link.`}
-    />
-  );
+// The end page's heading, with the eye in it (M9): the guest's choice of
+// who sees the answers (Tim, 14 Nov, 09:52), You and the coach by default.
+function EndHeading({ children, coachName, shared, onShare }) {
+  const eye = <GuestEye coachName={coachName} shared={shared} onShare={onShare} />;
   return <h1 className="ds-guest-question">{titleWithAside(children, eye)}</h1>;
 }
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { openSession, createSaveQueue, readBackup, clearBackup, SAVE_REFUSED } from '../lib/alignmentApi';
+import { openSession, createSaveQueue, readBackup, clearBackup, setSharing, SAVE_REFUSED } from '../lib/alignmentApi';
+import { keepChoice, keptChoice, mayTellCoach, openingChoice, saveChoice, sendKeptChoice } from '../lib/guest/sharing';
 import { loadWithReload } from '../lib/loadWithReload';
 import { requestAlignmentEmail } from '../lib/alignmentEmail';
 import { formatDocDate, getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
@@ -37,6 +38,8 @@ const cleanCode = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
 const accessKey = (token) => `alignment-access:${token}`;
 const lastSavedKey = (token) => `hc-last-saved:${token}`;
 const seenKey = (token) => `hc-seen:${token}`;
+// The guest's choice of who sees the answers, kept for this visit (src/lib/guest/sharing.js).
+const shareId = (token) => `hc:${token}`;
 // The coach's first name from the last time this link opened on this device,
 // so the email and code screen can name them on a return visit. A new name
 // from 036 on: before it, an older link was named from 034 although its
@@ -85,6 +88,9 @@ function Page() {
   const [serverCompletedAt, setServerCompletedAt] = useState(null);
   const [panel, setPanel] = useState(null); // 'guide' | 'pdf' | 'doc:privacy' | 'doc:dataStorage'
   const [linkMail, setLinkMail] = useState({ status: 'idle' });
+  // Who sees the answers (Tim, 14 Nov, 09:52): You and the coach unless the guest chose Only you.
+  const [shared, setShared] = useState(() => openingChoice(keptChoice(shareId(token)), null));
+  const sharedRef = useRef(shared);
   // The tool opens on a step once; a new opening (or another window's answers) starts it again there.
   const [tool, setTool] = useState({ n: 0, step: at('objective') });
 
@@ -146,6 +152,32 @@ function Page() {
     commit(draftRef.current, step, true);
   }, [commit]);
 
+  // ---- who sees the answers ----
+  const sendChoice = useCallback((value) => {
+    const creds = credsRef.current;
+    if (!creds) return Promise.resolve({ ok: false });
+    return setSharing(token, creds.email, creds.code, value);
+  }, [token]);
+
+  // The coach's completion email, asked for only while the guest's choice is
+  // You and the coach, and only after any choice kept on the device has
+  // reached the database (044 then refuses it for Only you as well). The
+  // server sends it once only, so a repeat does no harm; a failure isn't shown.
+  const tellCoach = useCallback(async () => {
+    await sendKeptChoice(shareId(token), sendChoice);
+    const creds = credsRef.current;
+    if (!creds || !mayTellCoach(sharedRef.current)) return;
+    requestAlignmentEmail({ token, email: creds.email, code: creds.code, kind: 'complete' });
+  }, [token, sendChoice]);
+
+  const onShare = useCallback(async (next) => {
+    sharedRef.current = next;
+    setShared(next);
+    const r = await saveChoice(shareId(token), next, sendChoice);
+    // Back to You and the coach after finishing: the coach hears now, once.
+    if (next && completeRef.current && r.notified !== true && sharedRef.current) tellCoach();
+  }, [token, sendChoice, tellCoach]);
+
   // ---- opening the Health Check ----
   const leave = useCallback((message) => {
     queueRef.current?.destroy();
@@ -170,6 +202,14 @@ function Page() {
     if (session.coachName) store.set('localStorage', coachKey(token), session.coachName);
     else store.del('localStorage', coachKey(token));
     setServerCompletedAt(session.completedAt || null);
+    // The choice: one kept on this device and not yet sent wins, and is sent
+    // now; otherwise the database's (044), then the device's, then the default.
+    const kept = keptChoice(shareId(token));
+    const choice = openingChoice(kept, session.sharedWithCoach);
+    sharedRef.current = choice;
+    setShared(choice);
+    if (kept && !kept.sent) sendKeptChoice(shareId(token), (v) => setSharing(token, creds.email, creds.code, v));
+    else if (typeof session.sharedWithCoach === 'boolean') keepChoice(shareId(token), session.sharedWithCoach, true);
     // The browser copy is used only if it holds unsaved changes made against
     // the same version the server returned; otherwise the server copy wins.
     const saved = readBackup(token);
@@ -202,8 +242,7 @@ function Page() {
         setTimeout(() => {
           if (!notifyRef.current || !credsRef.current) return;
           notifyRef.current = false;
-          // The server sends it once only, so a repeat does no harm; a failure isn't shown.
-          requestAlignmentEmail({ token, email: credsRef.current.email, code: credsRef.current.code, kind: 'complete' });
+          tellCoach();
         }, 0);
       }
       if (state === 'error' && detail?.retryable === false) {
@@ -231,7 +270,7 @@ function Page() {
     });
     if (applyBackup) queue.queueSave({ data: dataFromDraft(d), currentStep: stepToJson(s), complete: s.screen === 'results' }, { immediate: true });
     setPhase('flow');
-  }, [token, leave, toast]);
+  }, [token, leave, toast, tellCoach]);
 
   const openingRef = useRef(false); // one request per press
   const open = useCallback(async (e, c) => {
@@ -306,6 +345,8 @@ function Page() {
     setLinkMail({ status: 'sending' });
     const r = await requestAlignmentEmail({ token, email: creds.email, code: creds.code, kind: 'link' });
     mailBusy.current = false;
+    // A preview never sends (api/alignment-email.js), so it claims nothing.
+    if (r.ok && r.sent === false) { setLinkMail({ status: 'idle' }); return; }
     setLinkMail({ status: r.ok ? 'sent' : (r.error === 'limit' ? 'limit' : 'error'), to: creds.email });
   };
   const createAccount = () => {
@@ -438,9 +479,8 @@ function Page() {
         reached={reached}
         initialStep={tool.step}
         onStep={onStep}
-        // The guest's own choice of who sees the answers arrives with the
-        // sharing setting (migration 044): pass `shared` and `onShare` here.
-        eye={<HealthCheckEye coachName={coachName} />}
+        // The guest chooses who sees the answers (Tim, 14 Nov, 09:52).
+        eye={<HealthCheckEye coachName={coachName} shared={shared} onShare={onShare} />}
         onGuide={() => setPanel('guide')}
         resultsTop={<GuestMark href={SITE} label={SITE_LABEL} />}
         resultsMeta={[organisation, done ? shortDate(done) : null]}

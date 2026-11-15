@@ -375,6 +375,17 @@ export function compareVersions(first, second, today = getLocalDateKey()) {
 const PROGRESS = ['', 'Embryonic', 'Bad', 'Fair', 'Good', 'Excellent'];
 
 /**
+ * A team's name inside a sentence: "the Leadership team" (M7), but a name
+ * that isn't "… team" (an organisation's, which an outside Health Check
+ * claimed into the portal takes, 044) or already says whose it is stands
+ * alone: "Northfield Logistics", "My team".
+ */
+export function teamWords(name) {
+  const n = String(name || '').trim();
+  return /\bteam$/i.test(n) && !/^(my|the|our|your)\b/i.test(n) ? `the ${n}` : n;
+}
+
+/**
  * The one-off tip about an outside Health Check that joined a team (M7
  * "Your teams"): the newest version marked from_outside, until its tip is
  * closed. `seen(versionId)` says whether it was closed.
@@ -385,7 +396,7 @@ export function claimedTip(teams, seen = () => false) {
     .find((x) => !seen(x.v.id));
   if (!found) return null;
   const month = MONTHS[Number(found.v.date.slice(5, 7)) - 1];
-  return { id: found.v.id, text: `Your ${month} Health Check, done outside the portal, is now with the ${found.t.name}.` };
+  return { id: found.v.id, text: `Your ${month} Health Check, done outside the portal, is now with ${teamWords(found.t.name)}.` };
 }
 
 /** "Your objective, 4 Success Factors with their weights, and 7 projects with their dates are copied in." */

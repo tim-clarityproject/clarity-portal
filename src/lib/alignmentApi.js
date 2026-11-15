@@ -97,7 +97,32 @@ function toSession(row) {
     // The first name of the coach who sent the link, from alignment_open once
     // migration 034 has run; null before that, and the page says "your coach".
     coachName: typeof row.coach_name === 'string' && row.coach_name.trim() ? row.coach_name.trim() : null,
+    // The guest's choice of who sees the answers, once migration 044 has
+    // run; null before that (the page then keeps it on the device).
+    sharedWithCoach: typeof row.shared_with_coach === 'boolean' ? row.shared_with_coach : null,
   };
+}
+
+/**
+ * Saves the guest's choice of who sees the answers (migration 044,
+ * alignment_set_sharing), checked with the link, email and access code.
+ * @returns {Promise<{ok: true, shared: boolean, notified: boolean} | {ok: false, missing?: boolean, error?: string}>}
+ *   missing: the function isn't there yet (044 not run).
+ */
+export async function setSharing(token, email, code, shared) {
+  try {
+    const { data, error } = await supabase.rpc('alignment_set_sharing', {
+      p_token: token,
+      p_email: email,
+      p_code: code,
+      p_shared: Boolean(shared),
+    });
+    if (error) return { ok: false, missing: error.code === 'PGRST202' || error.code === '42883' || error.status === 404 };
+    if (!data || !data.ok) return { ok: false, error: data?.error || 'invalid' };
+    return { ok: true, shared: data.shared_with_coach === true, notified: data.notified === true };
+  } catch {
+    return { ok: false };
+  }
 }
 
 /**

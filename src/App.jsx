@@ -82,7 +82,7 @@ import { AccountEmail, AccountPassword } from './pages/signin/AccountPages';
 import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 import ScrollToTop from './components/ScrollToTop';
 import HubPage from './pages/hubs/HubPage';
-import { claimGuestWork } from './lib/guest/claim';
+import { claimOutsideWork } from './lib/guest/claim';
 import { GET_UNSTUCK_STEPS, MOVED, MOVED_UNDER, tabTitle } from './lib/navigation';
 import { loadWithReload } from './lib/loadWithReload';
 
@@ -232,14 +232,17 @@ function AppContent() {
     }
   }, [location.pathname, location.search, location.hash, navigate]);
 
-  // A guest's answers move into the account that signs up with the same
-  // email (035's guest_claim, once the email is confirmed). Nothing
-  // happens, and nothing is said, until that migration has run.
+  // A guest's answers, and each finished outside Health Check, move into
+  // the account that signs up with the same email (035's guest_claim and
+  // 044's alignment_claim, once the email is confirmed), with the guest's
+  // choice of who sees them. Nothing happens, and nothing is said, until
+  // those migrations have run. A Health Check that moved says so on Your
+  // teams (M7's one-off tip), so it has no toast of its own.
   const claimFor = user?.id && user.email_confirmed_at ? user.id : null;
   useEffect(() => {
     if (!claimFor) return;
-    claimGuestWork(claimFor).then((moved) => {
-      if (moved > 0) toast.show('Your plan has moved into My Plans.');
+    claimOutsideWork(claimFor).then((moved) => {
+      if (moved.guest > 0) toast.show('Your plan has moved into My Plans.');
     });
     // Once per sign-in.
     // eslint-disable-next-line react-hooks/exhaustive-deps

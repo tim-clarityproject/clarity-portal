@@ -9,6 +9,7 @@ import {
   TextBox,
   Timer,
   ToolTodoPanel,
+  GuestEye,
   WhoSees,
   useCoach,
   useToast,
@@ -48,7 +49,7 @@ import './getUnstuck.css';
 //   guest              no sprint lines, no add panel, "start soon"
 //   name               the person's first name, for "Here’s your plan, Sam."
 //   coachName          a guest's coach's first name (from the link)
-//   onShare(shared)    saves who can see it (signed in, with a coach)
+//   onShare(shared)    saves who can see it (signed in, with a coach; a guest, always)
 //   sourceId           the saved item's id, for the to-dos made from it
 //   onTodoGone(id)     a to-do replaced by an edit: the page deletes it
 //   pdf                “Download my PDF”, the quiet link at Your plan's bottom bar (signed in)
@@ -114,12 +115,9 @@ export default function GetUnstuckTool({
     return changed ? { ...p, acts } : p;
   }, { quiet: true });
 
+  // A guest chooses Only you or You and the coach (Tim, 14 Nov, 09:52).
   const eye = guest ? (
-    <WhoSees
-      audience="coach"
-      coachName={coachName || undefined}
-      note={`Your answers go to ${coachName || 'your coach'}, who sent you the link.`}
-    />
+    <GuestEye coachName={coachName} shared={plan.shared !== false} onShare={onShare} />
   ) : coach && onShare ? (
     <WhoSees plain audience={plan.shared ? 'coach' : 'me'} onChange={(audience) => onShare(audience === 'coach')} />
   ) : (

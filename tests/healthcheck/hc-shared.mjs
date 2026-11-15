@@ -36,7 +36,8 @@ export const kestrel = ({ complete = true, projects = null } = {}) => {
  * A page on the outside Health Check.
  * opts: complete, step (the saved current_step), data (saved answers), watched (the Quick guide), textTwice,
  *       coach (the coach's first name), height, scale (screen pixels per point), motion (true: animations run),
- *       storage ({ key: value } already in the device's localStorage)
+ *       storage ({ key: value } already in the device's localStorage), shared (the saved choice, 044; default true),
+ *       no044 (a database without migration 044: no sharing function, nothing about it from alignment_open)
  * Returns { ctx, page, session, problems }: problems collects console errors and page errors.
  */
 export async function appPage(browser, width, mode, opts = {}) {
@@ -46,7 +47,11 @@ export async function appPage(browser, width, mode, opts = {}) {
     viewport: { width, height: height || (phone ? 844 : 900) }, isMobile: phone, hasTouch: phone, deviceScaleFactor: opts.scale || (phone ? 2 : 1),
     colorScheme: mode, reducedMotion: opts.motion ? 'no-preference' : 'reduce', locale: 'en-GB', timezoneId: 'Europe/London',
   });
-  const session = { email: EMAIL, code: CODE, status: complete ? 'complete' : 'in_progress', data: data || kestrel({ complete }), current_step: step, version: 1, saves: 0, emails: [], outside: [], fonts: [] };
+  const session = {
+    email: EMAIL, code: CODE, status: complete ? 'complete' : 'in_progress', data: data || kestrel({ complete }), current_step: step, version: 1, saves: 0, emails: [], outside: [], fonts: [],
+    // 044: the guest's choice, and whether the coach's completion email has gone (as alignment_email_check keeps it)
+    shared: opts.shared !== false, notified: false, coachEmails: 0, sharingCalls: [],
+  };
   // Every font file the page asks for, wherever from (none is added by a test).
   ctx.on('request', (r) => { if (r.resourceType() === 'font' && !r.url().startsWith('data:')) session.fonts.push(r.url().replace(/\?.*$/, '')); });
   await ctx.route(/^https?:\/\/(?!localhost)/, (route) => {
@@ -55,7 +60,15 @@ export async function appPage(browser, width, mode, opts = {}) {
     if (url.endsWith('/rpc/alignment_open')) {
       const b = JSON.parse(route.request().postData() || '{}');
       if (String(b.p_code || '').toUpperCase() !== session.code) return json({ ok: false, error: 'invalid' });
-      return json({ ok: true, status: session.status, current_step: session.current_step, data: session.data, version: session.version, updated_at: '2026-10-27 09:30:00.123', completed_at: session.status === 'complete' ? '2026-10-27 09:30:00' : null, client_label: 'Kestrel Group', coach_name: coach });
+      return json({ ok: true, status: session.status, current_step: session.current_step, data: session.data, version: session.version, updated_at: '2026-10-27 09:30:00.123', completed_at: session.status === 'complete' ? '2026-10-27 09:30:00' : null, client_label: 'Kestrel Group', coach_name: coach, ...(opts.no044 ? {} : { shared_with_coach: session.shared }) });
+    }
+    if (url.endsWith('/rpc/alignment_set_sharing')) {
+      const b = JSON.parse(route.request().postData() || '{}');
+      session.sharingCalls.push(b.p_shared);
+      if (opts.no044) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', details: null, hint: null, message: 'Could not find the function public.alignment_set_sharing in the schema cache' }) });
+      if (String(b.p_code || '').toUpperCase() !== session.code) return json({ ok: false, error: 'invalid' });
+      session.shared = b.p_shared === true;
+      return json({ ok: true, shared_with_coach: session.shared, status: session.status, notified: session.notified });
     }
     if (url.endsWith('/rpc/alignment_save')) {
       const b = JSON.parse(route.request().postData() || '{}');
@@ -71,10 +84,20 @@ export async function appPage(browser, width, mode, opts = {}) {
     const r = await route.fetch({ url: `${APP}/health-check.html` });
     return route.fulfill({ response: r });
   });
-  // Never a real email: every /api/ call is answered here.
+  // Never a real email: every /api/ call is answered here, as the server
+  // would after alignment_email_check (044: 'private' for Only you, nothing
+  // marked as sent; 'already' once the coach's email has gone).
   await ctx.route('**/api/**', (route) => {
-    session.emails.push(JSON.parse(route.request().postData() || '{}').kind || 'other');
-    return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+    const kind = JSON.parse(route.request().postData() || '{}').kind || 'other';
+    session.emails.push(kind);
+    const reply = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
+    if (kind === 'complete') {
+      if (!opts.no044 && !session.shared) return reply({ ok: false, error: 'private' });
+      if (session.notified) return reply({ ok: false, error: 'already' });
+      session.notified = true;
+      session.coachEmails += 1;
+    }
+    return reply({ ok: true });
   });
   if (textTwice) await ctx.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = 'html { font-size: 32px !important; }'; document.head.appendChild(st); }); });
   // storage: what the device already holds before the page loads ({ key: value } in localStorage).

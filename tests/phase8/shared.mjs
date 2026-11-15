@@ -136,13 +136,16 @@ export const GUEST_TOKEN = 'a1'.repeat(32);
 export const GUEST_VISIT = 'b2'.repeat(32);
 
 /**
- * Answers the guest functions as migrations 035 and 042 would (checked
+ * Answers the guest functions as migrations 035, 042 and 044 would (checked
  * against the SQL and tests/rules/guests.mjs), keeping the saved rows in
- * memory. `opts.missing` answers as a database that hasn't run 035 yet.
- * Returns { rows, calls } to read what the page asked for.
+ * memory. `opts.missing` answers as a database that hasn't run 035 yet;
+ * `opts.no044` as one with 035 and 042 but not 044 (no sharing functions).
+ * Returns { rows, calls, shared } to read what the page asked for; `shared`
+ * is the link's shared_with_coach (044), and `coachReads()` answers as
+ * coach_guest_answers would (false: refused with 42501).
  */
 export async function guestStandIn(context, opts = {}) {
-  const state = { rows: [], calls: [], finished: false, copies: 0 };
+  const state = { rows: [], calls: [], finished: false, copies: 0, shared: true, coachReads: () => state.shared };
   const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
   await context.route(/\/rest\/v1\/rpc\/guest_[a-z_]+/, async (route) => {
     const name = /rpc\/(guest_[a-z_]+)/.exec(route.request().url())[1];
@@ -173,6 +176,16 @@ export async function guestStandIn(context, opts = {}) {
       return json(route, saved);
     }
     if (name === 'guest_finish') { state.finished = true; return json(route, true); }
+    if (name === 'guest_sharing' || name === 'guest_set_sharing') {
+      if (opts.no044) return json(route, { code: 'PGRST202', details: null, hint: null, message: `Could not find the function public.${name} in the schema cache` }, 404);
+      if (name === 'guest_set_sharing') {
+        if (typeof args.p_shared !== 'boolean') return json(route, { code: '22023', message: 'Choose Only you or You and your coach, then try again.' }, 400);
+        state.shared = args.p_shared;
+        // 044 writes the choice into the link's saved items too (_guest_share_items)
+        state.rows = state.rows.map((r) => ({ ...r, form_data: { ...(r.form_data || {}), shared_with_coach: state.shared } }));
+      }
+      return json(route, { ok: true, shared_with_coach: state.shared });
+    }
     if (name === 'guest_delete_link_answers') { const n = state.rows.length; state.rows = []; state.finished = false; return json(route, n); }
     return json(route, { code: 'PGRST202', message: 'no such function' }, 404);
   });

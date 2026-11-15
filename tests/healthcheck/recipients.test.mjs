@@ -30,6 +30,8 @@ const ENV = {
   RESEND_API_KEY: 'resend-key-placeholder',
   ALIGNMENT_EMAIL_FROM: 'sender@example.invalid',
   ALIGNMENT_NOTIFY_TO: `${OWNER}, ${PARTNER}`,
+  // Only the live site sends (maySend); every send here is stood in for.
+  VERCEL_ENV: 'production',
 };
 
 let saved;
@@ -53,13 +55,14 @@ afterEach(() => {
 });
 
 // The database and Resend, stood in for. Anything else is refused.
-function standIn({ hasCoach, coachEmail, sendFails = () => false }) {
+function standIn({ hasCoach, coachEmail, sendFails = () => false, check: checkAnswer = null }) {
   globalThis.fetch = async (url, init) => {
     const body = JSON.parse(init.body);
     const u = String(url);
     calls.push({ url: u, key: init.headers.apikey || init.headers.Authorization, body });
     const ok = (json) => ({ ok: true, json: async () => json });
     if (u === `${ENV.SUPABASE_URL}/rest/v1/rpc/alignment_email_check`) {
+      if (checkAnswer) return ok(checkAnswer);
       const check = {
         ok: true, client_label: 'Northfield Logistics', respondent_email: GUEST, status: 'complete',
         completed_at: '2026-10-29T09:30:00', data: ANSWERS,
@@ -251,5 +254,28 @@ test('a Health Check with no organisation, no address or no answers still makes 
     }
   }
   globalThis.fetch = realStandIn;
+});
+
+test('a guest who chose Only you (044): nothing goes to the coach or the owner list, and nobody is asked who made it', async () => {
+  standIn({ hasCoach: true, coachEmail: COACH, check: { ok: false, error: 'private' } });
+  const { res, sent } = await finish();
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body, { ok: false, error: 'private' });
+  assert.equal(sent.length, 0, 'no email at all');
+  assert.equal(calls.some((c) => c.url.endsWith('/alignment_recipients')), false);
+  assert.equal(calls.some((c) => c.url.endsWith('/alignment_email_failed')), false, 'nothing to take back: nothing was marked as sent');
+});
+
+test('a preview or a developer\'s machine never sends, and never asks the database', async () => {
+  for (const env of ['preview', 'development', undefined]) {
+    calls = [];
+    if (env === undefined) delete process.env.VERCEL_ENV; else process.env.VERCEL_ENV = env;
+    standIn({ hasCoach: true, coachEmail: COACH });
+    const { res, sent } = await finish();
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(res.body, { ok: true, sent: false });
+    assert.equal(sent.length, 0);
+    assert.equal(calls.length, 0, 'not even the database is asked');
+  }
 });
 

@@ -17,6 +17,16 @@
 // The link in each email starts with one of the portal's own addresses
 // (_portalOrigin.js), never the request's host.
 //
+// A guest who chose Only you (migration 044): alignment_email_check answers
+// 'private' for 'complete' before anything is marked as sent, so no email
+// goes to the coach or the owner list; the answer is { ok: false, error:
+// 'private' }. Their own 'link' email is unchanged.
+//
+// It sends only from the live site (maySend, as api/guest-copy.js): on a
+// preview or a developer's machine it answers { ok: true, sent: false }
+// without asking the database or the email provider anything, so a test
+// there can never email a person.
+//
 // Environment variables (Vercel): RESEND_API_KEY, ALIGNMENT_EMAIL_FROM,
 // ALIGNMENT_NOTIFY_TO, SUPABASE_SERVICE_ROLE_KEY (only to ask who made the
 // link), and the Supabase URL and anon key the app already has
@@ -27,6 +37,7 @@ import {
 } from './_alignmentEmails.js';
 import { parseDbTimestamp } from '../src/lib/dateFormatter.js';
 import { portalOrigin } from './_portalOrigin.js';
+import { maySend } from './_guestEmails.js';
 
 const KINDS = ['link', 'complete'];
 
@@ -86,6 +97,9 @@ export default async function handler(req, res) {
     return reply(res, 400, { ok: false, error: 'invalid' });
   }
 
+  // The first line of defence: only the live site ever sends.
+  if (!maySend(process.env)) return reply(res, 200, { ok: true, sent: false });
+
   const args = { p_token: token, p_email: email, p_code: code, p_kind: kind };
   let check;
   try {
@@ -96,6 +110,7 @@ export default async function handler(req, res) {
   if (!check || !check.ok) {
     if (check?.error === 'limit') return reply(res, 429, { ok: false, error: 'limit' });
     if (check?.error === 'already') return reply(res, 200, { ok: false, error: 'already' });
+    if (check?.error === 'private') return reply(res, 200, { ok: false, error: 'private' });
     return reply(res, 400, { ok: false, error: 'invalid' });
   }
 
@@ -107,7 +122,7 @@ export default async function handler(req, res) {
     if (kind === 'link') {
       // The person's own email and the access code they just proved they hold (Tim, 10 Nov, 13:31).
       await sendWithResend({ to: [check.respondent_email], ...linkEmail({ origin, token, dateText: ukDate(new Date()), clientLabel: check.client_label, email: check.respondent_email, code }) });
-      return reply(res, 200, { ok: true });
+      return reply(res, 200, { ok: true, sent: true });
     }
 
     const data = check.data || {};
@@ -140,7 +155,7 @@ export default async function handler(req, res) {
         await sendWithResend({ to: noticeTo, ...finishedEmail({ clientLabel: check.client_label, dateText: ukDate(parseDbTimestamp(completed)) }) });
       } catch { /* the coach's email went; nothing more to do */ }
     }
-    return reply(res, 200, { ok: true });
+    return reply(res, 200, { ok: true, sent: true });
   } catch {
     // Undo the record of this send so it can be tried again.
     try { await rpc('alignment_email_failed', args); } catch { /* nothing more to do */ }
