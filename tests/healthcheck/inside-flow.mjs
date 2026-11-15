@@ -213,6 +213,67 @@ part('empty', async ({ browser, w, mode, tag }) => {
   await b.ctx.close();
 });
 
+// The Quick guide's offer row (M7 version 8.2; Tim, 14 Nov, 10:14 to 10:19): one first-visit message at a
+// time (the offer first, the one-off tip once it has gone), the title's play icon hidden while it shows, Not now
+// offering it on the next 2 visits, Don’t show this again from the second, and Watch opening the guide.
+part('offer', async ({ browser, w, mode, tag }) => {
+  const b = await insidePage(browser, w, mode, { rows: m7Rows(null), dir: out, offers: {} });
+  const { page, store } = b;
+  const row = () => page.locator('.ds-offer');
+  const play = () => page.locator('.ds-page-title .ds-play');
+  const tipCount = () => page.locator('.ds-oneoff-tip').count();
+  const kept = () => JSON.stringify(store.prefs?.offers?.['health-check-guide'] || {});
+  await open(page);
+  pass(`${tag}: the first visit offers the Quick guide`, await row().count() === 1 && (await text(page, '.ds-offer-words')).replace(/\s+/g, ' ') === 'Watch the Quick guide ~1 minute');
+  pass(`${tag}: first visit: the offer, and no tip with it`, await tipCount() === 0);
+  pass(`${tag}: first visit: the title’s play icon hides while it shows`, await play().count() === 0);
+  pass(`${tag}: first visit: Not now only`, JSON.stringify(await page.locator('.ds-offer-ways button').allInnerTexts()) === '["Not now"]');
+  await checkScreen(b, `${tag}, Your teams with the offer`, { coral: 0 });
+  await page.screenshot({ path: join(out, `offer-${w}-${mode}.png`) });
+  // Not now: gone for this visit, the play icon back, and then the tip.
+  await page.getByRole('button', { name: 'Not now' }).click();
+  pass(`${tag}: Not now hides it`, await until(async () => (await row().count()) === 0));
+  pass(`${tag}: after Not now the play icon is back`, await play().count() === 1);
+  pass(`${tag}: after Not now the one-off tip shows (one message at a time)`, await until(async () => (await tipCount()) === 1));
+  pass(`${tag}: Not now is kept (once)`, await until(async () => kept() === '{"not_now":1}'), kept());
+  // Moving round the portal is the same visit: it stays away.
+  await page.locator('.ds-version-row').first().click();
+  await onPage(page, /\/version\//);
+  await page.locator('.hc-back').click();
+  await onPage(page, /^\/strategic-alignment$/);
+  await sleep(500);
+  pass(`${tag}: the same visit: it stays away`, await row().count() === 0);
+  // The next 2 visits offer it again, with Don’t show this again; then it stops.
+  for (const n of [2, 3]) {
+    await open(page);
+    pass(`${tag}: visit ${n} offers it again, with Don’t show this again`, await row().count() === 1 && JSON.stringify(await page.locator('.ds-offer-ways button').allInnerTexts()) === '["Don’t show this again","Not now"]' && await tipCount() === 0 && await play().count() === 0);
+    if (n === 2) await page.screenshot({ path: join(out, `offer-later-${w}-${mode}.png`) });
+    await page.getByRole('button', { name: 'Not now' }).click();
+    await until(async () => kept() === `{"not_now":${n}}`);
+  }
+  await open(page);
+  pass(`${tag}: visit 4: it has stopped, and the play icon shows`, await row().count() === 0 && await play().count() === 1, kept());
+  // Don’t show this again (from a second offer) stops it.
+  store.prefs = { offers: { 'health-check-guide': { not_now: 1 } } };
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k.endsWith(':menu-pins')) localStorage.removeItem(k); });
+  await open(page);
+  await page.getByRole('button', { name: 'Don’t show this again' }).click();
+  pass(`${tag}: Don’t show this again is kept`, await until(async () => kept() === '{"not_now":1,"never":true}'), kept());
+  await open(page);
+  pass(`${tag}: after Don’t show this again it never comes back`, await row().count() === 0 && await play().count() === 1);
+  // Watch: the guide opens in its panel (it never plays by itself before that), and the offer has done its job.
+  store.prefs = { offers: {} };
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k.endsWith(':menu-pins')) localStorage.removeItem(k); });
+  await open(page);
+  const playing0 = await page.evaluate(() => [...document.querySelectorAll('video')].some((v) => !v.paused));
+  pass(`${tag}: nothing plays by itself`, !playing0);
+  await page.locator('.ds-offer-take').click();
+  pass(`${tag}: Watch the Quick guide opens the guide`, await until(async () => (await page.locator('.hc-guide-panel video, [role=dialog] .hc-vcard').count()) > 0));
+  pass(`${tag}: taking it is kept, and it isn’t offered again`, await until(async () => kept() === '{"taken":true}'), kept());
+  noProblems(b, `${tag}, offer`);
+  await b.ctx.close();
+});
+
 part('teams', async ({ browser, w, mode, tag, phone }) => {
   const rows = (u) => m7Rows(u);
   const b = await insidePage(browser, w, mode, { rows: rows(null), dir: out });

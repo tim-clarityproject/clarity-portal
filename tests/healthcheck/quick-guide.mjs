@@ -26,6 +26,12 @@
 // caption must appear, in order, exactly as the captions file says, within
 // 0.5 seconds of its cue time, with no error from the page or the video.
 //
+// Every run first reads the two video files themselves (rebuilt on 15 Nov by
+// scripts/make-quick-guide.mjs): each at most 3.5 MB, with its index before
+// its media (faststart), and the captions' line 6 in its new words (Tim's
+// re-recorded line, 14 Nov). On a phone, Begin is in view without scrolling
+// on the welcome, and again once the full-screen guide is closed.
+//
 // (The layout part that measured the player against mock-up version 49 has
 // gone: the card, the panel, the caption bar and the controls are compared
 // with M7b version 51 itself by tests/healthcheck/compare-m7b.mjs.)
@@ -193,6 +199,13 @@ async function presses(engine, size) {
   try {
     await page.waitForTimeout(1500);
     check(got.media.length === 0, `${tag}: no video, captions or poster asked for before the guide is opened (${got.media.join(', ') || 'none'})`);
+    const beginInView = () => page.evaluate(() => {
+      const b = [...document.querySelectorAll('button')].find((x) => /Begin the Health Check/i.test(x.textContent));
+      if (!b) return null;
+      const r = b.getBoundingClientRect();
+      return r.top >= 0 && r.bottom <= window.innerHeight && window.scrollY === 0;
+    });
+    if (touch) check(await beginInView(), `${tag}: Begin is in view without scrolling`);
     const muted0 = await page.evaluate((card) => { const v = document.querySelector(`${card} video`); return { paused: v.paused, src: v.currentSrc || v.getAttribute('src') || '' }; }, CARD);
     check(muted0.paused && !muted0.src, `${tag}: the welcome card holds no video and plays nothing by itself`);
 
@@ -265,6 +278,15 @@ async function presses(engine, size) {
         return { ...after, back: !v.muted };
       }, root);
       check(m.muted && m.back && m.jump >= -0.05 && m.jump < 1, `${tag} ${where}: Mute keeps the place (moved ${m.jump.toFixed(2)}s) and the voice comes back`);
+      const dims = await page.evaluate((root) => { const v = document.querySelector(root).querySelector('video'); return `${v.videoWidth} by ${v.videoHeight}, ${v.duration.toFixed(2)}s`; }, root);
+      check(dims === (size === 'phone' ? '632 by 1056, 65.00s' : '956 by 600, 65.00s'), `${tag} ${where}: the video is ${dims}`);
+      if (touch && where === 'card') {
+        // Closing the full-screen guide goes back to the welcome, with Begin still in view.
+        await page.locator('[role=dialog]:not(.ds-guide) [aria-label="Close"]').first().tap();
+        await page.locator('[role=dialog]:not(.ds-guide)').waitFor({ state: 'detached' }).catch(() => {});
+        await page.waitForTimeout(500);
+        check(await beginInView(), `${tag} card: once the guide is closed, Begin is in view without scrolling`);
+      }
     }
     check(got.errors.length === 0, `${tag}: no errors${got.errors.length ? ` (${got.errors.slice(0, 3).join(' | ')})` : ''}`);
     check(got.emails === 0 && got.outside.length === 0, `${tag}: nothing sent, nothing outside localhost asked for`);
@@ -315,6 +337,8 @@ async function full(engine, size, cues) {
       check(exact && Math.abs(off) <= 0.5, `${tag}: caption ${i + 1} at ${c.start.toFixed(1)}s, shown at ${s ? s.t.toFixed(2) : '-'}s, ${exact ? 'exactly as written' : `differs: "${s?.text}"`}`);
     });
     console.log(`    ${tag}: worst caption offset ${worst.toFixed(2)}s`);
+    const six = shown[5];
+    check(six?.text === LINE6 && Math.abs(six.t - 29.5) <= 0.5, `${tag}: line 6 shows “${six?.text}” at ${six ? six.t.toFixed(2) : '-'}s (29.5s)`);
     // The card ends on Watch again; the panel (a phone) marks the guide as watched, so Begin turns coral.
     check(touch ? r.watched === '1' : r.big === 'Watch again', `${tag}: ${touch ? 'ends with the guide marked as watched' : 'ends on Watch again'}`);
     check(r.err.length === 0 && got.errors.length === 0, `${tag}: no errors from the video or the page${got.errors.length || r.err.length ? ` (${[...r.err, ...got.errors].slice(0, 3).join(' | ')})` : ''}`);
@@ -322,6 +346,27 @@ async function full(engine, size, cues) {
   } finally {
     await browser.close();
   }
+}
+
+// The files themselves, and the new line 6.
+const LINE6 = 'Then rate how much each one helps, one success factor at a time.';
+{
+  const media = fileURLToPath(new URL('../../src/pages/healthCheck/media/', import.meta.url));
+  for (const kind of ['desktop', 'phone']) {
+    const b = readFileSync(`${media}quick-guide-${kind}.mp4`);
+    const boxes = [];
+    for (let i = 0; i + 8 <= b.length;) {
+      let size = b.readUInt32BE(i);
+      boxes.push(b.toString('latin1', i + 4, i + 8));
+      if (size === 1) size = Number(b.readBigUInt64BE(i + 8));
+      if (size < 8) break;
+      i += size;
+    }
+    check(b.length <= 3.5 * 1024 * 1024, `quick-guide-${kind}.mp4 is ${(b.length / 1048576).toFixed(2)} MB (at most 3.5 MB)`);
+    check(boxes.indexOf('moov') >= 0 && boxes.indexOf('moov') < boxes.indexOf('mdat'), `quick-guide-${kind}.mp4 has its index first, so it plays while it loads (${boxes.join(', ')})`);
+  }
+  const cue6 = readCues(readFileSync(VTT, 'utf8'))[5];
+  check(cue6?.text === LINE6 && cue6.start === 29.5 && cue6.end === 36, `the captions' line 6 reads “${cue6?.text}” from ${cue6?.start}s to ${cue6?.end}s`);
 }
 
 const runs = [];
