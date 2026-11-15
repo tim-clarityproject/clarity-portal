@@ -123,6 +123,9 @@ export const GUEST_FUNCTIONS = [
   fn('guest_delete(text,text,jsonb)', `public.guest_delete(${K}, 'decisions', '{}')`, NOBODY, 'Refused without a real visit key.'),
   fn('guest_delete_link_answers(text)', `public.guest_delete_link_answers(${K})`, NOBODY, 'Refused without a real visit key.'),
   fn('guest_finish(text)', `public.guest_finish(${K})`, NOBODY, 'Refused without a real visit key.'),
+  fn('guest_set_sharing(text,boolean)', `public.guest_set_sharing(${K}, false)`, NOBODY, 'The guest\'s choice for their link (044): refused without a real visit key.'),
+  fn('guest_sharing(text)', `public.guest_sharing(${K})`, NOBODY, 'Reads the guest\'s choice (044): refused without a real visit key.'),
+  fn('_guest_share_items(uuid,uuid,boolean)', `public._guest_share_items(${R}, ${R}, false)`, NOBODY, 'Inside part of the guest functions (044).'),
   fn('guest_claim()', 'public.guest_claim()', SIGNED_IN, 'Moves in only the guest work of the person\'s own confirmed email.'),
   fn('suggest_tool(uuid,text)', `public.suggest_tool(${R}, 'grow')`, NOBODY, 'Only to the coach\'s own clients.'),
   fn('my_suggestions()', 'count(*) from public.my_suggestions()', SIGNED_IN, 'The person\'s own.'),
@@ -140,6 +143,7 @@ export const GUEST_FUNCTIONS = [
 
 // ---------------------------------------------------------------- scenarios
 const s = (name, steps, expect) => ({ name, steps: steps.map(([as, sql]) => ({ as, sql })), expect, needs: 'public.guests' });
+const s44 = (name, steps, expect) => ({ ...s(name, steps, expect), needs: 'public.guest_set_sharing(text,boolean)' });
 const n = (sql) => `select (${sql})::text`;
 const OPEN = (c, email, code = 'ABCDEF') => n(`public.guest_open(repeat('${c}', 64), '${email}', '${code}') ->> 'error'`);
 const G1 = 'rules-guest-one@example.invalid';
@@ -200,4 +204,11 @@ export const GUEST_SCENARIOS = [
   s('A coach suggests a tool to their own client, who sees it', [['owner_coach', n("select public.suggest_tool({client}, 'grow') is not null")], ['client', n('select coach_first_name || \' suggests: \' || tool from public.my_suggestions() order by suggested_at desc limit 1')]], 'Alex suggests: grow'),
   s('... not to another coach\'s client', [['second_coach', n("select public.suggest_tool({client}, 'grow')")]], 'error 42501'),
   s('... and nobody else sees it', [['owner_coach', n("select public.suggest_tool({client}, 'grow') is not null")], ['org_client', n('select count(*) from public.client_suggestions where client_id = {client}')]], '0'),
+  // 044: the guest chooses who sees their answers
+  s44('A guest chooses Only you with their visit key', [['signed_out', n("public.guest_set_sharing(repeat('4', 64), false) ->> 'shared_with_coach'")]], 'false'),
+  s44('... then their coach can\'t read the answers', [['signed_out', n("public.guest_set_sharing(repeat('4', 64), false) ->> 'ok'")], ['second_coach', n("select public.coach_guest_answers(current_setting('rules.g_l3')::uuid)")]], 'error 42501'),
+  s44('... but still sees the link, marked as not shared', [['signed_out', n("public.guest_set_sharing(repeat('4', 64), false) ->> 'ok'")], ['second_coach', n("select shared_with_coach from public.coach_links() where link_id = current_setting('rules.g_l3')::uuid")]], 'false'),
+  s44('... switched back, the coach reads them again', [['signed_out', n("public.guest_set_sharing(repeat('4', 64), false) ->> 'ok'")], ['signed_out', n("public.guest_set_sharing(repeat('4', 64), true) ->> 'ok'")], ['second_coach', n("select jsonb_array_length(public.coach_guest_answers(current_setting('rules.g_l3')::uuid) -> 'performance_plans')")]], '1'),
+  s44('A coach can\'t set a guest\'s choice', [['second_coach', n(`public.guest_set_sharing(${K}, true) ->> 'ok'`)]], 'error 42501'),
+  s44('A visit with no link has no choice to set', [['signed_out', n("public.guest_set_sharing(repeat('b', 64), false) ->> 'error'")]], 'no_link'),
 ];
