@@ -56,6 +56,14 @@ const GBAR = [
   ['the nudge', '.nudge', '.ds-guide-nudge', 0, ['pos', 'text']],
   ['the button', '.gft .btn', '.ds-guide-next', 0, ['foot', 'text', 'fill']],
 ];
+const OFFER_ROW = [
+  ['the offer row', '.qg', '.ds-offer', 0, ['box', 'fill']],
+  ['its button', '.qgw', '.ds-offer-take', 0, ['box']],
+  ['its circle', '.qpc', '.ds-offer-circle', 0, ['box', 'edge']],
+  ['its play icon', '.qpc svg', '.ds-offer-icon', 0, ['box']],
+  ['Watch the Quick guide', '.qgt b', '.ds-offer-words b', 0, ['pos', 'text']],
+  ['~1 minute', '.qgt small', '.ds-offer-words small', 0, ['pos', 'text']],
+];
 const SCREENS = {
   teams: [...TITLE, ...ICONS,
     ['the tip', '.tipb', '.ds-oneoff-tip', 0, ['box', 'edge']],
@@ -71,6 +79,16 @@ const SCREENS = {
     ['the second team’s name', '.sech h2', '.ds-results-head', 1, ['pos', 'text']],
     ['its version', '.vr', '.ds-version-row', 3, ['box']],
     ['Add another team', '.addrow .ghost', '.hc-in-add .ds-btn', 0, ['box', 'text', 'edge']]],
+  // Your teams on a first visit and a later one (M7 version 8.2's offer row, Tim, 14 Nov, 10:14 to 10:19):
+  // the title's play icon hides while the row offers the Quick guide.
+  offer: [...TITLE, ICONS[1], ...OFFER_ROW, ['Not now', '.qga .text', '.ds-offer-ways .ds-link', 0, ['box', 'text']],
+    ['the first team’s name', '.sech h2', '.ds-results-head', 0, ['pos', 'text']],
+    ['the first version', '.vr', '.ds-version-row', 0, ['box']]],
+  offer2: [...TITLE, ICONS[1], ...OFFER_ROW,
+    ['Don’t show this again', '.qga .text', '.ds-offer-ways .ds-link', 0, ['box', 'text']],
+    ['Not now', '.qga .text', '.ds-offer-ways .ds-link', 1, ['box', 'text']],
+    ['the first team’s name', '.sech h2', '.ds-results-head', 0, ['pos', 'text']],
+    ['the first version', '.vr', '.ds-version-row', 0, ['box']]],
   results: [...BACK, ...TITLE, ...ICONS, ...META,
     ['the date under the title', '.meta span', '.ds-page-meta span', 1, ['pos', 'text']],
     ['the headline', '.headl', '.ds-headline', 0, ['pos', 'text']],
@@ -138,7 +156,7 @@ const PANELS = {
     ['Dark, for sharing', '.ddl button', '[role=dialog]:not(.ds-guide) .ds-option', 1, ['box', 'text']]],
 };
 // A page's title is measured by its line (the built title sits inline in its row, M7's is a block).
-const ANCHOR = { teams: ['#h1', '.ds-page-title-row'], results: ['#h1', '.ds-page-title-row'], compare: ['#h1', '.ds-page-title-row'], example: ['#h1', '.ds-page-title-row'], newv: ['.qpct', '.ds-guide-pct-track'], team: ['.qpct', '.ds-guide-pct-track'], who: ['.sheet', '[role=dialog]:not(.ds-guide)'], pdf: ['.sheet', '[role=dialog]:not(.ds-guide)'] };
+const ANCHOR = { offer: ['#h1', '.ds-page-title-row'], offer2: ['#h1', '.ds-page-title-row'], teams: ['#h1', '.ds-page-title-row'], results: ['#h1', '.ds-page-title-row'], compare: ['#h1', '.ds-page-title-row'], example: ['#h1', '.ds-page-title-row'], newv: ['.qpct', '.ds-guide-pct-track'], team: ['.qpct', '.ds-guide-pct-track'], who: ['.sheet', '[role=dialog]:not(.ds-guide)'], pdf: ['.sheet', '[role=dialog]:not(.ds-guide)'] };
 
 // ---------------------------------------------------------------- meant differences, each with why
 const ICONS_RULE = 'the shared TitleIcons part keeps the rule (Tim, 14 Nov, 09:28): 12px from the last letter’s ink and 16px between, measured by inside-flow (within 0.5px); M7 draws 12.5 and 16.5, so its icons sit 1px further right';
@@ -201,6 +219,8 @@ async function mockShow(page, screen) {
   await page.evaluate((k) => {
     const st = window.__st;
     if (k === 'teams') { window.__jump('teams'); st.gcard = false; st.tip = true; window.__render(); }
+    else if (k === 'offer') { window.__jump('teams'); }
+    else if (k === 'offer2') { window.__jump('teams2'); }
     else if (k === 'pdf') { window.__jump('results'); window.__act('pdf'); }
     else if (k === 'example') { window.__jump('example'); }
     else window.__jump(k);
@@ -213,6 +233,8 @@ async function mockShow(page, screen) {
 const pressNext = async (page) => { await sleep(450); await page.locator('.ds-guide-next').click(); await sleep(300); };
 const BUILT = {
   teams: async (page) => { await page.goto(`${process.env.APP_URL || 'http://localhost:5173'}${BASE}`); await page.locator('.ds-oneoff-tip').waitFor(); },
+  offer: async (page) => { await page.goto(`${process.env.APP_URL || 'http://localhost:5173'}${BASE}`); await page.locator('.ds-offer').waitFor(); },
+  offer2: async (page) => { await page.goto(`${process.env.APP_URL || 'http://localhost:5173'}${BASE}`); await page.locator('.ds-offer-ways .ds-link >> nth=1').waitFor(); },
   results: async (page) => { await page.goto(`${process.env.APP_URL || 'http://localhost:5173'}${BASE}/version/${IDS.lt3}`); await page.locator('.ds-headline').waitFor(); },
   compare: async (page) => { await page.goto(`${process.env.APP_URL || 'http://localhost:5173'}${BASE}/compare?team=${LT}&a=${IDS.lt2}&b=${IDS.lt3}`); await page.locator('.ds-headline').waitFor(); },
   newv: async (page) => { await page.goto(`${process.env.APP_URL || 'http://localhost:5173'}${BASE}/new?team=${LT}`); await page.locator('.ds-guide-question').waitFor(); },
@@ -241,7 +263,9 @@ try {
         let b = null;
         try {
           await mockShow(mock.page, screen);
-          b = await insidePage(browser, width, mode, { rows: m7Rows(null), height: phone ? 844 : 860, scale: 2, dir: out });
+          // The offer's counting: a first visit, then a later one (after one Not now).
+          const offers = screen === 'offer' ? {} : screen === 'offer2' ? { 'health-check-guide': { not_now: 1 } } : undefined;
+          b = await insidePage(browser, width, mode, { rows: m7Rows(null), height: phone ? 844 : 860, scale: 2, dir: out, offers });
           await BUILT[screen](b.page);
           await b.page.evaluate(() => document.fonts.ready);
           await b.page.mouse.move(2, 2);
@@ -261,6 +285,27 @@ try {
             const say = (x) => (x ? `edge ${x.edge.toFixed(2)}, label ${x.gap.toFixed(2)} after` : 'not found');
             pass(`${tag}: Back’s chevron has its visible edge where M7’s is`, Boolean(mb && bb) && Math.abs(mb.edge - bb.edge) <= 0.5, `M7 ${say(mb)}; built ${say(bb)}`);
             if (mb && bb && Math.abs(mb.gap - bb.gap) > 0.5) note(`${tag}: Back’s label is ${bb.gap.toFixed(2)}px after the chevron (M7 ${mb.gap.toFixed(2)}): the portal’s Back puts its label 14px after the chevron (rule 29t), as M7b’s comparison accepts`);
+          }
+          if (['offer', 'offer2'].includes(screen)) {
+            // While the row offers the Quick guide, the title's play icon hides (Tim, 14 Nov, 10:19).
+            const mp = await mock.page.locator('#h1 .ic1').count();
+            const bp = await b.page.locator('.ds-page-title .ds-play').count();
+            pass(`${tag}: the title’s play icon hides while the row shows, as M7’s`, mp === 0 && bp === 0, `M7 ${mp}, built ${bp}`);
+            // No coral on the row, and every part to tap 44px or more.
+            const row = await b.page.evaluate(() => {
+              const coral = ['rgb(255, 111, 92)', 'rgb(194, 65, 46)', 'rgb(224, 83, 63)', 'rgb(255, 138, 122)'];
+              const el = document.querySelector('.ds-offer');
+              const all = [el, ...el.querySelectorAll('*')];
+              const coralAt = all.filter((x) => { const c = getComputedStyle(x); return [c.color, c.backgroundColor, c.borderTopColor, c.fill].some((v) => coral.includes(v)); }).map((x) => x.className?.baseVal ?? x.className);
+              const taps = [...el.querySelectorAll('button')].map((x) => { const r = x.getBoundingClientRect(); return { t: x.textContent.trim(), w: r.width, h: r.height }; });
+              const r = el.getBoundingClientRect();
+              return { coralAt, taps, h: r.height, wide: document.documentElement.scrollWidth > window.innerWidth };
+            });
+            pass(`${tag}: no coral on the offer row`, row.coralAt.length === 0, row.coralAt.join(', '));
+            pass(`${tag}: every part of the offer row to tap is 44px or more`, row.taps.every((x) => x.h >= 44 && x.w >= 44), JSON.stringify(row.taps));
+            pass(`${tag}: no sideways scroll`, !row.wide);
+            // 56px inside: 76px overall on a laptop, 72px on a phone (M7's 8px padding there); two links wrap below on a phone.
+            if (screen === 'offer') pass(`${tag}: the offer row is ${phone ? 72 : 76}px tall`, Math.abs(row.h - (phone ? 72 : 76)) <= 0.5, `${row.h}`);
           }
           if (['teams', 'results'].includes(screen)) {
             const mi = await titleIcons(mock.page, { heading: '#h1', play: '#h1 .ic1 svg', eye: '#h1 .eye1 svg' });

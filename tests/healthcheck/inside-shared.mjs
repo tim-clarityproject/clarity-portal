@@ -206,6 +206,26 @@ export async function insidePage(browser, width, mode, opts = {}) {
       return route.fallback();
     });
   }
+  // The person's page settings (person_settings.page_preferences), answered
+  // here so the offer row's counting is the test's own and nothing is saved:
+  // opts.offers (the offers object; by default the Quick guide's offer has
+  // been taken, so the one-off tip shows as it did before the offer row).
+  store.prefs = { offers: opts.offers === undefined ? { 'health-check-guide': { taken: true } } : opts.offers };
+  store.prefWrites = [];
+  await ctx.route(/\/rest\/v1\/person_settings(\?|$)/, async (route) => {
+    const req = route.request();
+    const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+    const row = () => ({ user_id: userId, page_preferences: store.prefs, updated_at: store.prefsAt || '2026-11-14T09:00:00' });
+    if (req.method() === 'GET') return json([row()]);
+    if (req.method() === 'POST' || req.method() === 'PATCH') {
+      const body = JSON.parse(req.postData() || '{}');
+      const one = Array.isArray(body) ? body[0] : body;
+      if (one?.page_preferences) { store.prefs = one.page_preferences; store.prefWrites.push(one.page_preferences); }
+      store.prefsAt = new Date().toISOString().replace('Z', '');
+      return json([row()], req.method() === 'POST' ? 201 : 200);
+    }
+    return route.fallback();
+  });
   if (opts.textTwice) await ctx.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = 'html { font-size: 32px !important; }'; document.head.appendChild(st); }); });
   if (opts.storage) await ctx.addInitScript((kept) => { try { for (const [k, v] of Object.entries(kept)) localStorage.setItem(k, v); } catch { /* blocked */ } }, opts.storage);
   const page = await ctx.newPage();

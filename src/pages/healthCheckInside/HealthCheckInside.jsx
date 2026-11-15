@@ -4,9 +4,10 @@ import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import DeleteDialog from '../../components/ui/DeleteDialog';
 import {
-  AddButton, BottomBar, Button, CalmCard, LoadError, Loading, OneOffTip, PageHeader, PdfPanel, PlayButton, ResultsSection,
-  TitleIcons, VersionList, VersionRow, WhoSees, useCoachName, useToast,
+  AddButton, BottomBar, Button, CalmCard, LoadError, Loading, OfferRow, OneOffTip, PageHeader, PdfPanel, PlayButton, ResultsSection,
+  TitleIcons, VersionList, VersionRow, WhoSees, useCoachName, useOffer, useToast,
 } from '../../components/design';
+import { HEALTH_CHECK_GUIDE_OFFER } from '../../lib/offers';
 import { useStartChat } from '../../components/coach/startChat';
 import { supabase } from '../../lib/supabase';
 import { useCachedLoad, readCache, writeCache } from '../../lib/pageCache';
@@ -188,11 +189,21 @@ function TeamsPage({ store }) {
   const [closedTips, setClosedTips] = useState(() => readCache(userId, TIP_SEEN)?.v || []);
 
   // One first-visit message at a time (5e rule 8): the Quick guide's offer
-  // row first; the one-off tip about an outside Health Check once it has
-  // gone. QUICK GUIDE OFFER ROW SLOT: the Quick guide's builder puts the
-  // shared offer row here (with its Not now counting) and sets `offer` while
-  // it shows; the title's play icon hides meanwhile (Tim, 14 Nov, 10:19).
-  const offer = null;
+  // row first (OfferRow, M7 version 8.2; Not now offers it on the next 2
+  // visits, then stops); the one-off tip about an outside Health Check waits
+  // until it has gone. While the row shows, the title's play icon hides, so
+  // the Quick guide is offered once (Tim, 14 Nov, 10:19).
+  const guideOffer = useOffer(HEALTH_CHECK_GUIDE_OFFER);
+  const offer = guideOffer.show ? (
+    <OfferRow
+      action="Watch the Quick guide"
+      detail="~1 minute"
+      onTake={() => { guideOffer.take(); setGuide(true); }}
+      onNotNow={guideOffer.notNow}
+      never={guideOffer.never}
+      onNever={guideOffer.stop}
+    />
+  ) : null;
   const tip = offer ? null : claimedTip(teams, (id) => closedTips.includes(id));
   const closeTip = () => {
     const next = [...closedTips, tip.id];
@@ -211,7 +222,7 @@ function TeamsPage({ store }) {
 
   const icons = (
     <TitleIcons>
-      {!offer && <PlayButton label="Quick guide" onClick={() => setGuide(true)} />}
+      {guideOffer.titleIcon && <PlayButton label="Quick guide" onClick={() => setGuide(true)} />}
       <Eye shared={shared} onShare={shareAll} />
     </TitleIcons>
   );
