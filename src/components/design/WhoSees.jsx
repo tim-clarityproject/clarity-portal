@@ -124,9 +124,11 @@ function WhoSeesSheet({ open, onClose, name, audience, coach, onChange, plain, n
     }
     setBusy(true);
     try {
-      await onChange(next);
+      // onChange may say what to show: "Will sync" when the choice is kept
+      // on the device until the connection is back (the break-it tester, 15 Nov).
+      const said = await onChange(next);
       onClose();
-      toast.show('Saved');
+      toast.show(typeof said?.say === 'string' ? said.say : 'Saved');
     } catch {
       toast.error(ERROR_MESSAGE);
     } finally {

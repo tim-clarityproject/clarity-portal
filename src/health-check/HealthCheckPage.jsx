@@ -40,6 +40,10 @@ const lastSavedKey = (token) => `hc-last-saved:${token}`;
 const seenKey = (token) => `hc-seen:${token}`;
 // The guest's choice of who sees the answers, kept for this visit (src/lib/guest/sharing.js).
 const shareId = (token) => `hc:${token}`;
+// Kept on this device (not only this tab), so the link opened again in a new
+// tab still knows Only you was chosen and never asks for the coach's email
+// (the break-it tester, 15 Nov). Only the choice is kept, never the answers.
+const shareStore = () => { try { return window.localStorage; } catch { return null; } };
 // The coach's first name from the last time this link opened on this device,
 // so the email and code screen can name them on a return visit. A new name
 // from 036 on: before it, an older link was named from 034 although its
@@ -117,7 +121,7 @@ function Page() {
   const [panel, setPanel] = useState(null); // 'guide' | 'pdf' | 'doc:privacy' | 'doc:dataStorage'
   const [linkMail, setLinkMail] = useState({ status: 'idle' });
   // Who sees the answers (Tim, 14 Nov, 09:52): You and the coach unless the guest chose Only you.
-  const [shared, setShared] = useState(() => openingChoice(keptChoice(shareId(token)), null));
+  const [shared, setShared] = useState(() => openingChoice(keptChoice(shareId(token), shareStore()), null));
   const sharedRef = useRef(shared);
   // The tool opens on a step once; a new opening (or another window's answers) starts it again there.
   const [tool, setTool] = useState({ n: 0, step: at('objective') });
@@ -192,7 +196,7 @@ function Page() {
   // reached the database (044 then refuses it for Only you as well). The
   // server sends it once only, so a repeat does no harm; a failure isn't shown.
   const tellCoach = useCallback(async () => {
-    await sendKeptChoice(shareId(token), sendChoice);
+    await sendKeptChoice(shareId(token), sendChoice, shareStore());
     const creds = credsRef.current;
     if (!creds || !mayTellCoach(sharedRef.current)) return;
     store.set('sessionStorage', toldKey(token), '1');
@@ -202,13 +206,41 @@ function Page() {
   const onShare = useCallback(async (next) => {
     sharedRef.current = next;
     setShared(next);
-    const r = await saveChoice(shareId(token), next, sendChoice);
+    const r = await saveChoice(shareId(token), next, sendChoice, shareStore());
     // Back to You and the coach after finishing: the coach hears now, once.
     // Asked for once on this visit: a second switch back doesn't ask again (the
     // functionality tester, 15 Nov), whether or not 044 says it went.
     const told = r.notified === true || store.get('sessionStorage', toldKey(token)) === '1';
     if (next && completeRef.current && !told && sharedRef.current) tellCoach();
+    // Not sent (no connection): kept on the device and sent when the
+    // connection is back, so it says "Will sync" (Smoothness). Before 044 it
+    // is kept on the device with nothing alarming said.
+    return { say: r.sent || r.missing ? 'Saved' : 'Will sync' };
   }, [token, sendChoice, tellCoach]);
+
+  // A choice kept on the device and not yet sent goes when the connection is
+  // back; a choice made in another tab shows here too (the break-it tester,
+  // 15 Nov).
+  useEffect(() => {
+    const resend = () => {
+      if (!credsRef.current) return;
+      sendKeptChoice(shareId(token), sendChoice, shareStore()).catch(() => {});
+    };
+    const onStorage = (e) => {
+      if (e.key !== `clarity-share:${shareId(token)}`) return;
+      const kept = keptChoice(shareId(token), shareStore());
+      if (kept && kept.shared !== sharedRef.current) {
+        sharedRef.current = kept.shared;
+        setShared(kept.shared);
+      }
+    };
+    window.addEventListener('online', resend);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('online', resend);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [token, sendChoice]);
 
   // ---- opening the Health Check ----
   const leave = useCallback((message) => {
@@ -236,12 +268,12 @@ function Page() {
     setServerCompletedAt(session.completedAt || null);
     // The choice: one kept on this device and not yet sent wins, and is sent
     // now; otherwise the database's (044), then the device's, then the default.
-    const kept = keptChoice(shareId(token));
+    const kept = keptChoice(shareId(token), shareStore());
     const choice = openingChoice(kept, session.sharedWithCoach);
     sharedRef.current = choice;
     setShared(choice);
-    if (kept && !kept.sent) sendKeptChoice(shareId(token), (v) => setSharing(token, creds.email, creds.code, v));
-    else if (typeof session.sharedWithCoach === 'boolean') keepChoice(shareId(token), session.sharedWithCoach, true);
+    if (kept && !kept.sent) sendKeptChoice(shareId(token), (v) => setSharing(token, creds.email, creds.code, v), shareStore());
+    else if (typeof session.sharedWithCoach === 'boolean') keepChoice(shareId(token), session.sharedWithCoach, true, shareStore());
     // The browser copy is used only if it holds unsaved changes made against
     // the same version the server returned; otherwise the server copy wins.
     const saved = readBackup(token);
@@ -440,7 +472,7 @@ function Page() {
             />
             {openError && <div className="ds-guest-problem"><ErrorMessage>{openError}</ErrorMessage></div>}
             <p className="ds-guest-sentence">
-              <SentenceInfo lines={HOW_KEPT} label="How your answers are kept">{`Only you and ${coachName || 'your coach'} will see your answers.`}</SentenceInfo>
+              <SentenceInfo lines={HOW_KEPT} label="How your answers are kept">{shared === false ? 'Only you will see your answers.' : `Only you and ${coachName || 'your coach'} will see your answers.`}</SentenceInfo>
             </p>
             <Button variant="primary" type="submit" className="hc-wide-btn" aria-busy={opening || undefined}>{ret ? 'Pick up where you left off' : 'Start the Health Check'}</Button>
           </form>

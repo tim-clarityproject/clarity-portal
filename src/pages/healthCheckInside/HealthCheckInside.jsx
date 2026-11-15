@@ -69,13 +69,29 @@ async function loadRows(userId) {
 }
 
 /** A version kept on the device (a draft) back as a version the screens can draw. */
+// Read field by field, never spread over (Get unstuck rule 15): a copy that
+// was damaged, or kept by another version, opens as far as it can be read.
+const isObject = (v) => Boolean(v) && typeof v === 'object' && !Array.isArray(v);
+const isDayKey = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 function fromDevice(v) {
-  if (!v || typeof v !== 'object' || !isId(v.id) || !v.data || typeof v.data !== 'object') return null;
+  if (!isObject(v) || !isId(v.id) || !isObject(v.data)) return null;
+  const text = (x) => typeof x === 'string' && x.length > 0 && x.length < 200;
+  const blank = newTeamVersion({ id: v.id, teamId: text(v.teamId) ? v.teamId : newId() });
   return {
-    ...v,
-    teamName: typeof v.teamName === 'string' ? v.teamName : '',
-    draft: draftFromData(v.data || {}),
-    row: v.row || null,
+    ...blank,
+    teamName: typeof v.teamName === 'string' ? v.teamName.slice(0, 80) : '',
+    date: isDayKey(v.date) ? v.date : blank.date,
+    createdAt: typeof v.createdAt === 'string' ? v.createdAt : null,
+    // Only a version saved on the server is finished; a device copy is one being made.
+    status: v.status === 'draft' ? 'draft' : 'new',
+    shared: v.shared !== false,
+    draft: draftFromData(v.data),
+    step: isObject(v.step) ? v.step : null,
+    made: v.made === 'team' ? 'team' : 'version',
+    from: text(v.from) ? v.from : null,
+    fromOutside: isObject(v.fromOutside) ? v.fromOutside : null,
+    old: v.old === true,
+    row: null,
   };
 }
 /** A version as the device keeps it (the answers in their saved shape). */
@@ -91,7 +107,10 @@ export default function HealthCheckInside() {
   const location = useLocation();
   const rest = location.pathname.replace(/^\/strategic-alignment\/?/, '').replace(/\/+$/, '');
   const load = useCachedLoad({ userId, name: CACHE, load: () => loadRows(userId) });
-  const rows = useMemo(() => load.data || [], [load.data]);
+  // A damaged or older device copy never stops the page (Get unstuck rule
+  // 15; the break-it tester, 15 Nov): only rows with an id are read, and
+  // the database's answer replaces the copy.
+  const rows = useMemo(() => (Array.isArray(load.data) ? load.data.filter((r) => r && typeof r === 'object' && isId(r.id)) : []), [load.data]);
   const teams = useMemo(() => teamsFrom(rows), [rows]);
   // A Health Check moved in from outside after sign-in (App.jsx's claim)
   // shows at once, with its one-off tip (the functionality tester, 15 Nov).
@@ -659,7 +678,8 @@ function ComparePage({ store }) {
   if (!team || team.versions.length < 2) return <Navigate to={BASE} replace />;
   const byId = (id) => team.versions.find((v) => v.id === id);
   const b0 = byId(q.get('b')) || team.versions[0];
-  const a0 = byId(q.get('a')) || team.versions.find((v) => v.id !== b0.id);
+  // An address naming one version twice compares it with another (the break-it tester, 15 Nov).
+  const a0 = (q.get('a') !== b0.id && byId(q.get('a'))) || team.versions.find((v) => v.id !== b0.id);
   const model = compareVersions(a0, b0);
   // Choosing a later version that's older than the earlier swaps the two (M7).
   // Choosing the version the other drop-down shows swaps the two, so a

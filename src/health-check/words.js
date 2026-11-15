@@ -130,6 +130,7 @@ export function stateSentence(row) {
  */
 export function headlineSentence(headline) {
   if (!headline.important) return headline.line;
+  if (headline.important === 1) return [headlineLine(headline), headline.rest].filter(Boolean).join(' ');
   return [`${headline.big} ${headline.line}`, headline.rest].filter(Boolean).join(' ');
 }
 
@@ -141,6 +142,11 @@ export function headlineSentence(headline) {
  */
 export function headlineLine(headline, theirs = false) {
   if (!headline.important) return headline.line;
+  // One important project is said as one (the break-it tester, 15 Nov):
+  // never "0 of your 1 important projects".
+  if (headline.important === 1) {
+    return `${theirs ? 'Their' : 'Your'} one important project ${headline.movingWell ? 'is' : 'isn’t'} moving well${headline.movingWell ? '' : ' yet'}.`;
+  }
   return `${headline.movingWell} of ${theirs ? 'their' : 'your'} ${headline.important} important projects ${headline.movingWell === 1 ? 'is' : 'are'} moving well.`;
 }
 

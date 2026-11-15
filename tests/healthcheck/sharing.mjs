@@ -159,7 +159,7 @@ async function hc(browser, width, mode) {
     const { ctx, page, session, problems } = await appPage(browser, width, mode, { data, step: { screen: 'objective' }, no044: true });
     await signIn(page, session);
     await choose(page, 'Only you', `${tag}, before 044`, 'Tim');
-    const kept = await page.evaluate((t) => sessionStorage.getItem(`clarity-share:hc:${t}`), TOKEN);
+    const kept = await page.evaluate((t) => localStorage.getItem(`clarity-share:hc:${t}`), TOKEN);
     pass(`${tag}, before 044: the choice is kept on the device for the visit, not yet sent`, kept === '{"shared":false,"sent":false}', kept);
     pass(`${tag}, before 044: nothing alarming is said`, !(await toastText(page)).match(/didn’t|couldn’t|try again/i), await toastText(page));
     session.current_step = LAST_RESOURCE;

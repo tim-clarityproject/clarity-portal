@@ -200,3 +200,9 @@ test('the answers people choose from say Success Factor, never CSF', () => {
   // Every meaning is a full sentence.
   for (const [, meaning] of [...CON, ...PROG.slice(1), ...RES.slice(1)]) assert.match(meaning, /^[A-Z].+\.$/);
 });
+
+test('one important project is said as one (the break-it tester, 15 Nov)', () => {
+  assert.equal(headlineLine({ important: 1, movingWell: 1 }), 'Your one important project is moving well.');
+  assert.equal(headlineLine({ important: 1, movingWell: 0 }), 'Your one important project isn’t moving well yet.');
+  assert.equal(headlineLine({ important: 1, movingWell: 0 }, true), 'Their one important project isn’t moving well yet.');
+});
