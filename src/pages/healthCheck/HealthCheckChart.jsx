@@ -13,7 +13,8 @@ import './healthCheck.css';
 // resource (m20DotSize). One line at Fair and one at the Health Check's own
 // line; both axes named with only their ends labelled, and two area names. No
 // project name on the chart: every dot has a 44px tap area at any size and
-// the shared pop-up (ChartTips).
+// the shared pop-up (ChartTips). Where close dots' tap areas overlap, a tap
+// opens the dot whose centre is nearest it (ChartTips' nearest; follow-up 1).
 //
 // rows:  resultRows (src/health-check/words.js)
 // line:  the Health Check's line for important
@@ -143,7 +144,7 @@ export default function HealthCheckChart({ rows, line, phone, lit = null, was = 
   const bottom = PT + ph;
   const small = phone ? ' hc-chart-area--phone' : '';
   return (
-    <ChartTips className="hc-chart">
+    <ChartTips className="hc-chart" nearest>
       <svg ref={ref} className={lit ? 'hc-chart--lit' : undefined} viewBox={`0 0 ${W} ${H}`} role="group" aria-label="Strategic importance against progress, one numbered dot for each project">
         <defs>
           <pattern id={gid} width={10} height={10} patternUnits="userSpaceOnUse" x={PL} y={PT}>

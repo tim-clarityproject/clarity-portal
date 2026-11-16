@@ -52,7 +52,7 @@ function edgeOf(el) {
 /** Labels on a chart that a pop-up must never cover ("Best", "This week", the standard's label). */
 const CHART_LABELS = '[data-chart-label], .ds-wchart-tag, .dash-hchart-tag, .dash-hchart-std-label, .dash-hchart-axis span, .ds-wchart-std-label';
 
-export default function ChartTips({ children, className = '' }) {
+export default function ChartTips({ children, className = '', nearest = false }) {
   const scope = useThemeScope();
   const zoneRef = useRef(null);
   const tipRef = useRef(null);
@@ -165,7 +165,23 @@ export default function ChartTips({ children, className = '' }) {
 
   const markOf = (e) => {
     const el = e.target.closest?.('[data-tip]');
-    return el && zoneRef.current?.contains(el) ? el : null;
+    const hit = el && zoneRef.current?.contains(el) ? el : null;
+    return hit && nearest ? nearestMark(e, hit) : hit;
+  };
+  // nearest: where tap areas overlap (close dots on a phone), the mark whose
+  // centre is nearest the press wins, not the one drawn on top (Health Check
+  // follow-up 1, step 2). Each mark's tap area is the round area its box
+  // holds, so the 44px tap area stays as it is.
+  const nearestMark = (e, hit) => {
+    if (!e.clientX && !e.clientY) return hit; // a keyboard press: the focused mark
+    let best = hit;
+    let bestD = Infinity;
+    zoneRef.current.querySelectorAll('[data-tip]').forEach((m) => {
+      const r = m.getBoundingClientRect();
+      const d = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2));
+      if (d <= Math.min(r.width, r.height) / 2 + 0.5 && d < bestD) { best = m; bestD = d; }
+    });
+    return best;
   };
 
   // Only a mouse previews, and not while a click keeps one open: a touch
@@ -181,7 +197,7 @@ export default function ChartTips({ children, className = '' }) {
     if (e.pointerType === 'mouse' && !shown?.kept) hide();
   };
   const onPointerDown = (e) => {
-    if (e.pointerType !== 'mouse') e.target.closest?.('[data-tip]')?.focus?.({ preventScroll: true });
+    if (e.pointerType !== 'mouse') (markOf(e) || e.target.closest?.('[data-tip]'))?.focus?.({ preventScroll: true });
   };
   // A click (or a tap) keeps the mark's pop-up open; a click on a mark
   // whose pop-up it kept open, or on the chart away from a mark, closes
