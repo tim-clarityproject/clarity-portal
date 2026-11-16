@@ -4,7 +4,7 @@
 // Run with npm run test:healthcheck.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { completeEmail, completionSummary, finishedEmail, linkEmail, ukDate, ukDateTime } from '../../api/_alignmentEmails.js';
+import { completeEmail, completionSummary, finishedEmail, linkEmail, newCodeEmail, ukDate, ukDateTime } from '../../api/_alignmentEmails.js';
 import { draftFromData } from '../../src/pages/alignment/alignmentFlow.js';
 import { headlineSentence, resultsModel } from '../../src/health-check/words.js';
 
@@ -125,18 +125,19 @@ test('without dates there is no Timing question; the date counts in the UK', () 
 });
 
 // ---------------------------------------------------------------- the shared template (Tim, 10 Nov)
-test('the coach’s email and the person’s email show the email address and the access code in the sign-in box', () => {
+test('the person’s email shows their email address and access code; the coach’s shows the address and never a code (follow-up 1)', () => {
   const coach = render(saved());
   const person = linkEmail({ origin: 'https://example.invalid', token: 'test-token-not-real', dateText: 'Tue 10 Nov 2026', clientLabel: 'Quillmark', email: 'someone@example.invalid', code: '482913' });
   for (const e of [coach, person]) {
-    for (const words of ['Email', 'someone@example.invalid', 'Access code', '482913']) {
+    for (const words of ['Email', 'someone@example.invalid']) {
       assert.ok(e.html.includes(words), `the HTML is missing "${words}"`);
       assert.ok(e.text.includes(words), `the text is missing "${words}"`);
     }
-    assert.ok(e.text.includes('Access code: 482913'));
     assert.ok(e.html.includes('https://example.invalid/health-check/test-token-not-real'));
     assert.ok(e.text.includes('https://example.invalid/health-check/test-token-not-real'));
   }
+  assert.ok(person.text.includes('Access code: 482913'));
+  for (const part of [coach.subject, coach.html, coach.text]) assert.ok(!/482913|Access code/.test(part), 'the coach’s email never carries a code');
   assert.equal(person.subject, 'Your Health Check results for Quillmark');
   assert.ok(person.text.includes('Your Health Check results are ready.'));
   assert.ok(person.text.includes('Quillmark, Tue 10 Nov 2026.'));
@@ -179,4 +180,14 @@ test('dates in the emails are in words, and a time says whose time it is', () =>
   assert.equal(ukDate(new Date('2026-11-10T12:00:00Z')), 'Tue 10 Nov 2026');
   assert.equal(ukDateTime('2026-10-26T08:30:00'), 'Mon 26 Oct 2026, 08:30 UK time');
   assert.equal(ukDateTime('2026-07-01T08:30:00'), 'Wed 1 Jul 2026, 09:30 UK time');
+});
+
+test('the guest’s new code email (045): the new code, to them, and never a word for the coach', () => {
+  const e = newCodeEmail({ origin: 'https://example.invalid', token: 'test-token-not-real', clientLabel: 'Quillmark', email: 'someone@example.invalid', code: 'K7MPQ2' });
+  assert.equal(e.subject, 'Your new Health Check access code');
+  for (const words of ['Your new access code.', 'You chose Only you for the Quillmark Health Check, so your answers now open with this code.', 'The code you had before no longer opens them.', 'Open my Health Check', 'Access code: K7MPQ2', 'someone@example.invalid', 'https://example.invalid/health-check/test-token-not-real']) {
+    assert.ok(e.text.includes(words), `the text is missing "${words}"`);
+  }
+  assert.ok(e.html.includes('K7MPQ2'));
+  assert.ok(!/Tim|coach/i.test(e.text.replace('The Clarity Project LTD, founded by Dr. Tim Dutton', '')), 'it says nothing to or about the coach');
 });

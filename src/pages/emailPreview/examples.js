@@ -3,7 +3,7 @@
 // tests/email. The names and figures are the mock-up's own
 // (email-template.html): Northfield Logistics, Jordan, Sam, Jess, Tim.
 import {
-  healthCheckFinishedForCoachEmail, healthCheckResultsEmail, healthCheckFinishedNoteEmail,
+  healthCheckFinishedForCoachEmail, healthCheckResultsEmail, healthCheckNewCodeEmail, healthCheckFinishedNoteEmail,
   sessionTomorrowEmail, sessionInOneHourEmail, leadingIdeasClientEmail, leadingIdeasPublicEmail,
   confirmEmailEmail, resetPasswordEmail, changeEmailEmail, inviteEmail, guestPlanCopyEmail,
 } from '../../lib/email/emails.js';
@@ -36,7 +36,6 @@ export const EMAIL_EXAMPLES = [
       link: HEALTH_CHECK,
       organisation: 'Northfield Logistics',
       email: 'jordan@northfield.example',
-      code: '482913',
       finishedText: 'Tue 10 Nov 2026, 14:05 UK time',
       objective: 'Grow recurring revenue to £4m by the end of 2027.',
       summary: {
@@ -55,6 +54,13 @@ export const EMAIL_EXAMPLES = [
     from: 'From The Clarity Portal, to Jordan',
     sends: 'Sent today, when the person asks for their link.',
     doc: () => healthCheckResultsEmail({ link: HEALTH_CHECK, organisation: 'Northfield Logistics', dateText: 'Tue 10 Nov 2026', email: 'jordan@northfield.example', code: '482913' }),
+  },
+  {
+    key: 'health-check-new-code',
+    name: 'Health Check new access code, to the person',
+    from: 'From The Clarity Portal, to Jordan',
+    sends: 'Sent when the person chooses Only you (migration 045).',
+    doc: () => healthCheckNewCodeEmail({ link: HEALTH_CHECK, organisation: 'Northfield Logistics', email: 'jordan@northfield.example', code: 'K7MPQ2' }),
   },
   {
     key: 'health-check-owner-note',

@@ -106,7 +106,7 @@ function toSession(row) {
 /**
  * Saves the guest's choice of who sees the answers (migration 044,
  * alignment_set_sharing), checked with the link, email and access code.
- * @returns {Promise<{ok: true, shared: boolean, notified: boolean} | {ok: false, missing?: boolean, error?: string}>}
+ * @returns {Promise<{ok: true, shared: boolean, notified: boolean, newCode: boolean} | {ok: false, missing?: boolean, error?: string}>}
  *   missing: the function isn't there yet (044 not run).
  */
 export async function setSharing(token, email, code, shared) {
@@ -119,7 +119,9 @@ export async function setSharing(token, email, code, shared) {
     });
     if (error) return { ok: false, missing: error.code === 'PGRST202' || error.code === '42883' || error.status === 404 };
     if (!data || !data.ok) return { ok: false, error: data?.error || 'invalid' };
-    return { ok: true, shared: data.shared_with_coach === true, notified: data.notified === true };
+    // newCode (045): Only you has just replaced the access code, which is on
+    // its way to the guest's email; the old code no longer opens anything.
+    return { ok: true, shared: data.shared_with_coach === true, notified: data.notified === true, newCode: data.new_code === true };
   } catch {
     return { ok: false };
   }

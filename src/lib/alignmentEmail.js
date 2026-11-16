@@ -3,7 +3,8 @@
 // session. The access code is sent only to prove the request is genuine.
 
 /**
- * @param {{token: string, email: string, code: string, kind: 'link'|'complete'}} args
+ * @param {{token: string, email: string, code: string, kind: 'link'|'complete'|'code'}} args
+ *   code: the guest's new access code after Only you (045), to their own address.
  * @returns {Promise<{ok: boolean, sent?: boolean, error?: 'limit'|'already'|'private'|'invalid'|'failed'}>}
  *   sent: false on a preview or a developer's machine, which never send.
  *   private: the guest chose Only you (migration 044), so no coach email goes.

@@ -175,6 +175,39 @@ async function hc(browser, width, mode) {
     await ctx.close();
   }
 
+  // 5. With 045: Only you replaces the code. The old one (the coach had it) opens nothing; the new one goes to the guest's email.
+  {
+    const { ctx, page, session, problems } = await appPage(browser, width, mode, { data, step: { screen: 'objective' }, with045: true });
+    await signIn(page, session);
+    const old = session.code;
+    {
+      const panel = await readPanel(page);
+      await panel.sheet.getByRole('option', { name: 'Only you', exact: true }).click();
+      pass(`${tag}, 045: choosing “Only you” says “Saved”`, await hasToast(page, 'Saved'), await toastText(page));
+    }
+    pass(`${tag}, 045: Only you replaces the code`, await until(async () => session.reissued === true));
+    pass(`${tag}, 045: the new code is asked to be emailed to the guest (with the old code, as proof)`, await until(async () => session.emails.includes('code'), 4000), session.emails.join(','));
+    const sub = page.getByText('We’ve emailed you a new access code, so only you can open your answers. Type it to carry on.');
+    pass(`${tag}, 045: the page asks for the new code, saying why`, await until(async () => sub.isVisible(), 4000));
+    pass(`${tag}, 045: the access code box is empty, the email still there`, (await page.getByLabel('Access code').inputValue()) === '' && (await page.getByLabel('Email').inputValue()) === session.email);
+    await page.screenshot({ path: join(out, `hc-new-code-${width}-${mode}.png`) });
+    await page.getByRole('button', { name: 'Didn’t get it? Send it again' }).click();
+    pass(`${tag}, 045: “Didn’t get it? Send it again” asks again and says “Sent”`, await until(async () => session.emails.filter((k) => k === 'code').length === 2, 4000) && await hasToast(page, 'Sent'), session.emails.join(','));
+    await page.getByLabel('Access code').fill(old);
+    await page.locator('form button[type=submit]').click();
+    pass(`${tag}, 045: the old code no longer opens it`, await until(async () => (await page.getByText('Those details don’t match').count()) > 0, 4000));
+    await page.getByLabel('Access code').fill(session.code);
+    await page.locator('form button[type=submit]').click();
+    await page.locator('.ds-guide .ds-guide-question, .ds-guide .ds-guide-title').first().waitFor();
+    await page.waitForTimeout(500);
+    pass(`${tag}, 045: the new code opens it, still Only you`, (await eyeLabel(page)) === 'Only you can see this. Edit who can see this.', await eyeLabel(page));
+    await choose(page, 'You and Tim', `${tag}, 045, back`, 'Tim');
+    pass(`${tag}, 045: back to You and Tim with the new code, and no second code`, await until(async () => session.shared === true) && session.code === 'NEW789' && session.emails.filter((k) => k === 'code').length === 2);
+    pass(`${tag}, 045: nothing was refused along the way`, !session.refusedSaves, String(session.refusedSaves || 0));
+    pass(`${tag}, 045: no page errors`, problems.length === 0, problems.join(' | '));
+    await ctx.close();
+  }
+
   // 4. A choice saved earlier (on another device) is what the eye shows.
   {
     const { ctx, page, session, problems } = await appPage(browser, width, mode, { data, step: { screen: 'objective' }, shared: false });

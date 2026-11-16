@@ -88,7 +88,7 @@ export async function saveChoice(id, shared, send, storage = globalThis.sessionS
   }
   const sent = Boolean(answer?.ok);
   if (sent) keepChoice(id, shared, true, storage);
-  return { shared, sent, missing: Boolean(answer?.missing), notified: answer?.notified };
+  return { shared, sent, missing: Boolean(answer?.missing), notified: answer?.notified, newCode: answer?.newCode === true };
 }
 
 /** Sends a kept choice that hasn't gone yet. Resolves what saveChoice does, or null with nothing to send. */

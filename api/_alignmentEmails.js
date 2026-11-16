@@ -13,7 +13,7 @@ import { draftFromData } from '../src/pages/alignment/alignmentFlow.js';
 import { headlineSentence, resultsModel } from '../src/health-check/words.js';
 import { parseDbTimestamp } from '../src/lib/dateFormatter.js';
 import { renderEmail, imagesFor } from '../src/lib/email/template.js';
-import { healthCheckResultsEmail, healthCheckFinishedForCoachEmail, healthCheckFinishedNoteEmail } from '../src/lib/email/emails.js';
+import { healthCheckResultsEmail, healthCheckFinishedForCoachEmail, healthCheckFinishedNoteEmail, healthCheckNewCodeEmail } from '../src/lib/email/emails.js';
 import { dayWords, whenWords } from '../src/lib/time/index.js';
 
 // The coach's and the person's own time zones aren't known to this
@@ -72,6 +72,11 @@ export function linkEmail({ origin, token, dateText, clientLabel, email, code })
   return ready(healthCheckResultsEmail({ link: `${origin}/health-check/${token}`, organisation: clientLabel, dateText, email, code }));
 }
 
+/** To the guest only (045): their new access code after choosing Only you. */
+export function newCodeEmail({ origin, token, clientLabel, email, code }) {
+  return ready(healthCheckNewCodeEmail({ link: `${origin}/health-check/${token}`, organisation: clientLabel, email, code }));
+}
+
 /**
  * Who gets which email when a Health Check is finished (Tim, 29 Oct): the
  * answers go only to the coach who made the link. The owner list
@@ -104,16 +109,15 @@ export function finishedEmail({ clientLabel, dateText }) {
 /**
  * The email to the coach who made the link (or the owner, for an older link)
  * when a Strategic Alignment Health Check is completed: the person's email
- * and access code under "Open the results" (Tim, 10 Nov, 13:31), then
+ * under "Open the results", never the access code (follow-up 1, 15 Nov), then
  * completionSummary's headline and questions to start with, each with its
  * reason.
  */
-export function completeEmail({ origin, token, clientLabel, respondentEmail, code, completedText, objective, summary, madeTheLink = true }) {
+export function completeEmail({ origin, token, clientLabel, respondentEmail, completedText, objective, summary, madeTheLink = true }) {
   return ready(healthCheckFinishedForCoachEmail({
     link: `${origin}/health-check/${token}`,
     organisation: clientLabel,
     email: respondentEmail,
-    code,
     finishedText: completedText,
     objective,
     summary,

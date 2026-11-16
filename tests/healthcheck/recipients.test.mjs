@@ -55,7 +55,9 @@ afterEach(() => {
 });
 
 // The database and Resend, stood in for. Anything else is refused.
-function standIn({ hasCoach, coachEmail, sendFails = () => false, check: checkAnswer = null }) {
+let newCodeAnswer = null;
+function standIn({ hasCoach, coachEmail, sendFails = () => false, check: checkAnswer = null, newCode = null }) {
+  newCodeAnswer = newCode;
   globalThis.fetch = async (url, init) => {
     const body = JSON.parse(init.body);
     const u = String(url);
@@ -72,6 +74,9 @@ function standIn({ hasCoach, coachEmail, sendFails = () => false, check: checkAn
     }
     if (u === `${ENV.SUPABASE_URL}/rest/v1/rpc/alignment_recipients`) return ok({ ok: true, coach_email: coachEmail ?? null });
     if (u === `${ENV.SUPABASE_URL}/rest/v1/rpc/alignment_email_failed`) return ok({ ok: true });
+    if (u === `${ENV.SUPABASE_URL}/rest/v1/rpc/alignment_new_code_to_send`) {
+      return ok(newCodeAnswer ?? { ok: true, respondent_email: GUEST, client_label: 'Northfield Logistics', code: 'K7MPQ2' });
+    }
     if (u === 'https://api.resend.com/emails') return sendFails(body) ? { ok: false, json: async () => ({}) } : ok({ id: 'not-sent' });
     throw new Error('the test reached outside the stand-ins');
   };
@@ -225,7 +230,7 @@ test('a request that is not the right shape is refused before the database is as
       const note = sent.find((m) => m.subject.includes('finished a Health Check'));
       if (note) for (const secret of [ASK.code, GUEST, ASK.token, 'Access code']) assert.ok(!`${note.subject} ${note.html} ${note.text}`.includes(secret), 'the owner\'s note holds no code, address or link');
       const answers = sent.find((m) => m.subject.includes('finished their Health Check'));
-      if (answers) assert.ok(answers.text.includes(`Access code: ${ASK.code}`), 'the coach\'s own email has the code');
+      if (answers) assert.ok(!`${answers.subject} ${answers.html} ${answers.text}`.includes(ASK.code) && !answers.text.includes('Access code'), 'the coach\'s email never has the code (follow-up 1)');
     }
   } finally {
     for (const k of Object.keys(real)) console[k] = real[k];
@@ -279,3 +284,27 @@ test('a preview or a developer\'s machine never sends, and never asks the databa
   }
 });
 
+
+test('the guest’s new code (045): asked with the server’s key, sent only to the address on the link, never handed back', async () => {
+  const ask = async (extra = {}, opts = {}) => {
+    calls = [];
+    standIn({ hasCoach: true, coachEmail: COACH, ...opts });
+    const res = { statusCode: 0, body: null, setHeader() {}, status(c) { this.statusCode = c; return this; }, json(b) { this.body = b; return this; } };
+    await handler({ method: 'POST', headers: { host: 'preview.example.invalid' }, body: { token: 'test-token-not-real', email: 'someone-else@example.invalid', code: 'OLDONE', kind: 'code', ...extra } }, res);
+    return { res, sent: calls.filter((c) => c.url === 'https://api.resend.com/emails').map((c) => c.body), asked: calls.filter((c) => c.url.includes('/rpc/')) };
+  };
+  const { res, sent, asked } = await ask();
+  assert.deepEqual([res.statusCode, res.body], [200, { ok: true, sent: true }]);
+  assert.deepEqual(asked.map((c) => c.url.split('/rpc/')[1]), ['alignment_new_code_to_send'], 'only the new-code function is asked');
+  assert.equal(asked[0].key, ENV.SUPABASE_SERVICE_ROLE_KEY, 'with the server’s key');
+  assert.equal(sent.length, 1);
+  assert.deepEqual(sent[0].to, [GUEST], 'to the address the database gives, not the one in the request');
+  assert.ok(sent[0].text.includes('Access code: K7MPQ2'));
+  assert.ok(!JSON.stringify(res.body).includes('K7MPQ2'), 'the code is never handed back');
+  const refused = await ask({}, { newCode: { ok: false, error: 'invalid' } });
+  assert.deepEqual([refused.res.statusCode, refused.sent.length], [400, 0]);
+  const limited = await ask({}, { newCode: { ok: false, error: 'limit' } });
+  assert.deepEqual([limited.res.statusCode, limited.res.body.error, limited.sent.length], [429, 'limit', 0]);
+  const failing = await ask({}, { sendFails: () => true });
+  assert.deepEqual([failing.res.statusCode, failing.res.body], [502, { ok: false, error: 'failed' }]);
+});

@@ -46,12 +46,12 @@ export function healthCheckResultsEmail({ link, organisation, dateText, email, c
 
 /**
  * To the coach who made the link (or the owner, for an older link with no
- * coach recorded) when a Health Check is finished: the person's email and
- * access code under the button (Tim, 10 Nov, 13:31: "Same for the coach
- * one"), then the same headline as the results page and the PDF, the
+ * coach recorded) when a Health Check is finished: the person's email
+ * under the button, never their access code (Health Check follow-up 1, 15
+ * Nov: replaces Tim's 10 Nov rule for this email), then the same headline as the results page and the PDF, the
  * objective, and last the questions to start with (completionSummary).
  */
-export function healthCheckFinishedForCoachEmail({ link, organisation, email, code, finishedText, objective, summary, madeTheLink = true }) {
+export function healthCheckFinishedForCoachEmail({ link, organisation, email, finishedText, objective, summary, madeTheLink = true }) {
   const org = oneLine(organisation);
   return {
     brand: 'portal',
@@ -61,7 +61,9 @@ export function healthCheckFinishedForCoachEmail({ link, organisation, email, co
       { type: 'heading', text: org ? `${org} finished their Health Check.` : 'A Health Check has finished.' },
       { type: 'text', text: `They finished on ${finishedText}.` },
       { type: 'button', label: 'Open the results', href: link },
-      { type: 'details', rows: [['Email', email], ['Access code', code]] },
+      // Never the access code (Health Check follow-up 1, 15 Nov): a code in the
+      // coach's email would open answers the guest may later make Only you.
+      { type: 'details', rows: [['Email', email]] },
       // The headline first, and the questions to start with last (rule 29ar; Tim, 13 Nov, 18:11).
       { type: 'label', text: 'At a glance' },
       { type: 'note', text: summary.headline, after: `Important means above ${summary.line}%.` },
@@ -70,6 +72,28 @@ export function healthCheckFinishedForCoachEmail({ link, organisation, email, co
       ...summary.questions.map((q) => ({ type: 'note', lead: q.label, text: q.question, after: q.reason })),
     ],
     footer: { lines: [madeTheLink ? 'You made this Health Check link.' : 'This Health Check link has no coach recorded, so its answers come to you.', EMAIL_SIGN_OFF] },
+  };
+}
+
+/**
+ * To the guest only, when they choose Only you (migration 045): the new
+ * access code that now opens their answers. The old one, which the coach
+ * was given with the link, stops working. The address comes from the
+ * database, never the browser (api/alignment-email.js).
+ */
+export function healthCheckNewCodeEmail({ link, organisation, email, code }) {
+  const org = oneLine(organisation);
+  return {
+    brand: 'portal',
+    subject: 'Your new Health Check access code',
+    blocks: [
+      { type: 'heading', text: 'Your new access code.' },
+      { type: 'text', text: org ? `You chose Only you for the ${org} Health Check, so your answers now open with this code.` : 'You chose Only you, so your answers now open with this code.' },
+      { type: 'text', text: 'The code you had before no longer opens them.', quiet: true },
+      { type: 'button', label: 'Open my Health Check', href: link },
+      { type: 'details', rows: [['Email', email], ['Access code', code]] },
+    ],
+    footer: { lines: ['You chose who sees your Health Check answers.', EMAIL_SIGN_OFF] },
   };
 }
 

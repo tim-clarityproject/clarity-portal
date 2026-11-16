@@ -125,6 +125,14 @@ begin
     -- halfway through: Only you
     j := public.alignment_set_sharing(tok, ' ' || upper(hc_email) || ' ', lower(code), false);
     f := f || pg_temp.t_eq('A2d the guest chooses Only you halfway (email and code as typed)', (j ->> 'ok') || ' ' || (j ->> 'shared_with_coach'), 'true false');
+    -- Where 045 has run, Only you gives the guest a new code by email (the
+    -- old one stops working): the test carries on with the new one.
+    perform pg_temp.t_admin();
+    if exists (select 1 from information_schema.columns
+                where table_schema = 'public' and table_name = 'alignment_sessions' and column_name = 'new_code') then
+      execute format('select coalesce(new_code, %L) from public.alignment_sessions where token = %L', code, tok) into code;
+    end if;
+    perform pg_temp.t_anon();
     f := f || pg_temp.t_eq('A2e ... and their page reads it back', public.alignment_open(tok, hc_email, code) ->> 'shared_with_coach', 'false');
     f := f || pg_temp.t_eq('A2f an empty choice is refused', public.alignment_set_sharing(tok, hc_email, code, null) ->> 'error', 'invalid');
 

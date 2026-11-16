@@ -46,7 +46,7 @@ test('a choice is kept for the visit, and marked sent once the database has it',
   const s = memory();
   const sent = [];
   const r = await saveChoice('hc:abc', false, async (v) => { sent.push(v); return { ok: true, notified: false }; }, s);
-  assert.deepEqual(r, { shared: false, sent: true, missing: false, notified: false });
+  assert.deepEqual(r, { shared: false, sent: true, missing: false, notified: false, newCode: false });
   assert.deepEqual(sent, [false]);
   assert.deepEqual(keptChoice('hc:abc', s), { shared: false, sent: true });
   assert.equal(await sendKeptChoice('hc:abc', async () => { throw new Error('never asked'); }, s), null, 'nothing waits');
@@ -55,7 +55,7 @@ test('a choice is kept for the visit, and marked sent once the database has it',
 test('before 044 runs: kept on the device, nothing thrown, sent once the function answers', async () => {
   const s = memory();
   const r = await saveChoice('guest:t', false, async () => { throw MISSING; }, s);
-  assert.deepEqual(r, { shared: false, sent: false, missing: true, notified: undefined });
+  assert.deepEqual(r, { shared: false, sent: false, missing: true, notified: undefined, newCode: false });
   assert.deepEqual(keptChoice('guest:t', s), { shared: false, sent: false });
   // the next open: still not there
   assert.equal((await sendKeptChoice('guest:t', async () => ({ ok: false, missing: true }), s)).sent, false);
@@ -157,4 +157,11 @@ test('the one-off tip names a claimed Health Check\'s team so it reads well', ()
   const teams = teamsFrom([row]);
   assert.equal(claimedTip(teams).text, 'Your April Health Check, done outside the portal, is now with Northfield Logistics.');
   assert.equal(teams[0].versions[0].shared, false, 'the guest’s Only you came with it');
+});
+
+test('045: a choice that replaced the access code says so, so the page asks for the new one', async () => {
+  const s = memory();
+  const r = await saveChoice('hc:new', false, async () => ({ ok: true, notified: false, newCode: true }), s);
+  assert.equal(r.newCode, true);
+  assert.deepEqual(keptChoice('hc:new', s), { shared: false, sent: true });
 });

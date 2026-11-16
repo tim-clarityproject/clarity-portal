@@ -120,6 +120,11 @@ function Page() {
   const [serverCompletedAt, setServerCompletedAt] = useState(null);
   const [panel, setPanel] = useState(null); // 'guide' | 'pdf' | 'doc:privacy' | 'doc:dataStorage'
   const [linkMail, setLinkMail] = useState({ status: 'idle' });
+  // Only you has just replaced the access code (045): 'sent' (on its way to
+  // the guest's email) or 'changed' (a preview, which never sends).
+  const [newCode, setNewCode] = useState('');
+  const oldCodeRef = useRef(null); // the code the page had, only to ask for the new one again
+  const leaveRef = useRef(() => {});
   // Who sees the answers (Tim, 14 Nov, 09:52): You and the coach unless the guest chose Only you.
   const [shared, setShared] = useState(() => openingChoice(keptChoice(shareId(token), shareStore()), null));
   const sharedRef = useRef(shared);
@@ -185,11 +190,25 @@ function Page() {
   }, [commit]);
 
   // ---- who sees the answers ----
-  const sendChoice = useCallback((value) => {
-    const creds = credsRef.current;
-    if (!creds) return Promise.resolve({ ok: false });
-    return setSharing(token, creds.email, creds.code, value);
+  // Only you replaced the code (045), whichever way the choice was sent (now,
+  // or later when the connection came back): the coach was given the old code
+  // with the link, so it stops here. The new one goes to the guest's own
+  // email, and the page asks for it.
+  const onNewCode = useCallback(async (old) => {
+    oldCodeRef.current = { email: old.email, code: old.code };
+    leaveRef.current('');
+    setNewCode('changed');
+    const mail = await requestAlignmentEmail({ token, email: old.email, code: old.code, kind: 'code' });
+    if (mail.ok && mail.sent !== false) setNewCode((n) => (n ? 'sent' : n));
   }, [token]);
+
+  const sendChoice = useCallback(async (value) => {
+    const creds = credsRef.current;
+    if (!creds) return { ok: false };
+    const r = await setSharing(token, creds.email, creds.code, value);
+    if (r.ok && r.newCode) onNewCode(creds);
+    return r;
+  }, [token, onNewCode]);
 
   // The coach's completion email, asked for only while the guest's choice is
   // You and the coach, and only after any choice kept on the device has
@@ -204,9 +223,13 @@ function Page() {
   }, [token, sendChoice]);
 
   const onShare = useCallback(async (next) => {
+    // Only you may replace the code (045), after which the old one saves
+    // nothing: whatever waits is sent first.
+    if (!next) await settledSave(queueRef.current);
     sharedRef.current = next;
     setShared(next);
     const r = await saveChoice(shareId(token), next, sendChoice, shareStore());
+    if (r.newCode) return { say: 'Saved' }; // the page now asks for the new code
     // Back to You and the coach after finishing: the coach hears now, once.
     // Asked for once on this visit: a second switch back doesn't ask again (the
     // functionality tester, 15 Nov), whether or not 044 says it went.
@@ -253,6 +276,19 @@ function Page() {
     setRet(true);
     showPhase('signin');
   }, [token, showPhase]);
+  leaveRef.current = leave;
+
+  const resendBusy = useRef(false);
+  const resendCode = async () => {
+    const old = oldCodeRef.current;
+    if (!old || resendBusy.current) return;
+    resendBusy.current = true;
+    const r = await requestAlignmentEmail({ token, email: old.email, code: old.code, kind: 'code' });
+    resendBusy.current = false;
+    if (r.ok) toast.show('Sent');
+    else if (r.error === 'limit') toast.error('That’s as many as can be sent for now. Try again in an hour.');
+    else toast.error();
+  };
 
   const start = useCallback((session, creds) => {
     queueRef.current?.destroy();
@@ -272,7 +308,7 @@ function Page() {
     const choice = openingChoice(kept, session.sharedWithCoach);
     sharedRef.current = choice;
     setShared(choice);
-    if (kept && !kept.sent) sendKeptChoice(shareId(token), (v) => setSharing(token, creds.email, creds.code, v), shareStore());
+    if (kept && !kept.sent) sendKeptChoice(shareId(token), sendChoice, shareStore());
     else if (typeof session.sharedWithCoach === 'boolean') keepChoice(shareId(token), session.sharedWithCoach, true, shareStore());
     // The browser copy is used only if it holds unsaved changes made against
     // the same version the server returned; otherwise the server copy wins.
@@ -334,7 +370,7 @@ function Page() {
     });
     if (applyBackup) queue.queueSave({ data: dataFromDraft(d), currentStep: stepToJson(s), complete: s.screen === 'results' }, { immediate: true });
     setPhase('flow');
-  }, [token, leave, toast, tellCoach]);
+  }, [token, leave, toast, tellCoach, sendChoice]);
 
   const openingRef = useRef(false); // one request per press
   const open = useCallback(async (e, c) => {
@@ -355,6 +391,8 @@ function Page() {
       setPhase('signin');
       return;
     }
+    setNewCode('');
+    oldCodeRef.current = null;
     start(result.session, { email: e.trim(), code: cleanCode(c) });
   }, [token, start]);
 
@@ -457,7 +495,11 @@ function Page() {
             {ret
               ? <GuestTitle headingRef={headingRef}>Welcome back</GuestTitle>
               : <h1 ref={headingRef} tabIndex={-1} className="ds-guest-question">What’s your email and access code?</h1>}
-            <p className="ds-guest-sub hc-sub">{ret ? 'Enter the same email and access code to pick up where you left off.' : 'Find your access code in the email with your link.'}</p>
+            <p className="ds-guest-sub hc-sub">
+              {newCode === 'sent' ? 'We’ve emailed you a new access code, so only you can open your answers. Type it to carry on.'
+                : newCode === 'changed' ? 'Your access code has changed, so only you can open your answers. Type the new one to carry on.'
+                  : ret ? 'Enter the same email and access code to pick up where you left off.' : 'Find your access code in the email with your link.'}
+            </p>
             <TextField className="ds-guest-field hc-first-field" label="Email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <TextField
               className="ds-guest-field"
@@ -471,6 +513,7 @@ function Page() {
               onChange={(e) => setCode(cleanCode(e.target.value))}
             />
             {openError && <div className="ds-guest-problem"><ErrorMessage>{openError}</ErrorMessage></div>}
+            {newCode === 'sent' && <p className="ds-guest-sentence"><Button variant="text" onClick={resendCode}>Didn’t get it? Send it again</Button></p>}
             <p className="ds-guest-sentence">
               <SentenceInfo lines={HOW_KEPT} label="How your answers are kept">{shared === false ? 'Only you will see your answers.' : `Only you and ${coachName || 'your coach'} will see your answers.`}</SentenceInfo>
             </p>

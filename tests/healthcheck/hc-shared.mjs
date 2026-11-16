@@ -9,6 +9,8 @@ export const APP = process.env.APP_URL || 'http://localhost:5173';
 export const TOKEN = 'tok-hc-m7b-0000000000000000000000000000';
 export const EMAIL = 'sam.example@invented.test';
 export const CODE = 'ABC234';
+/** The code 045 gives the guest when they choose Only you (stand-in). */
+export const NEW_CODE = 'NEW789';
 
 export const CSF = ['Win and keep enterprise clients', 'A product customers recommend', 'A team with the right skills in the right roles', 'Cash to invest ahead of growth'];
 export const PR = [
@@ -37,7 +39,8 @@ export const kestrel = ({ complete = true, projects = null } = {}) => {
  * opts: complete, step (the saved current_step), data (saved answers), watched (the Quick guide), textTwice,
  *       coach (the coach's first name), height, scale (screen pixels per point), motion (true: animations run),
  *       storage ({ key: value } already in the device's localStorage), shared (the saved choice, 044; default true),
- *       no044 (a database without migration 044: no sharing function, nothing about it from alignment_open)
+ *       no044 (a database without migration 044: no sharing function, nothing about it from alignment_open),
+ *       with045 (migration 045: the first Only you replaces the code with NEW_CODE, the old one then opens and saves nothing)
  * Returns { ctx, page, session, problems }: problems collects console errors and page errors.
  */
 export async function appPage(browser, width, mode, opts = {}) {
@@ -68,10 +71,21 @@ export async function appPage(browser, width, mode, opts = {}) {
       if (opts.no044) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', details: null, hint: null, message: 'Could not find the function public.alignment_set_sharing in the schema cache' }) });
       if (String(b.p_code || '').toUpperCase() !== session.code) return json({ ok: false, error: 'invalid' });
       session.shared = b.p_shared === true;
-      return json({ ok: true, shared_with_coach: session.shared, status: session.status, notified: session.notified });
+      let fresh = false;
+      if (opts.with045 && !session.shared && !session.reissued) {
+        session.reissued = true;
+        session.oldCode = session.code;
+        session.code = NEW_CODE;
+        fresh = true;
+      }
+      return json({ ok: true, shared_with_coach: session.shared, status: session.status, notified: session.notified, ...(opts.with045 ? { new_code: fresh } : {}) });
     }
     if (url.endsWith('/rpc/alignment_save')) {
       const b = JSON.parse(route.request().postData() || '{}');
+      if (opts.with045 && String(b.p_code || '').toUpperCase() !== session.code) {
+        session.refusedSaves = (session.refusedSaves || 0) + 1;
+        return json({ ok: false, error: 'invalid', message: 'Those details don’t match. Check the email and access code you were sent.' });
+      }
       session.data = b.p_data; session.current_step = b.p_current_step; session.version += 1; session.saves += 1;
       if (b.p_complete) session.status = 'complete';
       return json({ ok: true, version: session.version, updated_at: '2026-10-27 10:00:00', status: session.status });
@@ -88,9 +102,15 @@ export async function appPage(browser, width, mode, opts = {}) {
   // would after alignment_email_check (044: 'private' for Only you, nothing
   // marked as sent; 'already' once the coach's email has gone).
   await ctx.route('**/api/**', (route) => {
-    const kind = JSON.parse(route.request().postData() || '{}').kind || 'other';
+    const sent = JSON.parse(route.request().postData() || '{}');
+    const kind = sent.kind || 'other';
     session.emails.push(kind);
     const reply = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
+    // 045: the new code goes to the guest's own address; the reply never holds it
+    if (kind === 'code') {
+      const known = [session.code, session.oldCode].includes(String(sent.code || '').toUpperCase());
+      return known && session.reissued ? reply({ ok: true, sent: true }) : route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'invalid' }) });
+    }
     if (kind === 'complete') {
       if (!opts.no044 && !session.shared) return reply({ ok: false, error: 'private' });
       if (session.notified) return reply({ ok: false, error: 'already' });

@@ -1,5 +1,5 @@
 // Strategic Alignment Health Check: sends the two emails.
-//   POST /api/alignment-email  { token, email, code, kind: 'link' | 'complete' }
+//   POST /api/alignment-email  { token, email, code, kind: 'link' | 'complete' | 'code' }
 //
 // The browser never says who the email goes to:
 //   'link'     -> always the session's own email address (from the database)
@@ -11,8 +11,8 @@
 // Every request is first checked in the database (alignment_email_check: link,
 // email and access code, with the same lockout, plus the send limits). Errors
 // are generic. Nothing is logged: no address, access code or token. The access
-// code goes only into the person's own email and the answers email (to the
-// coach who made the link, who set it); never into the owner's notice.
+// code goes only into the person's own emails, never into the coach's answers
+// email or the owner's notice (follow-up 1, 15 Nov).
 //
 // The link in each email starts with one of the portal's own addresses
 // (_portalOrigin.js), never the request's host.
@@ -21,6 +21,14 @@
 // 'private' for 'complete' before anything is marked as sent, so no email
 // goes to the coach or the owner list; the answer is { ok: false, error:
 // 'private' }. Their own 'link' email is unchanged.
+//
+// 'code' (migration 045): the guest chose Only you, so their access code has
+// just changed. The new code goes to the address on the link only, and only
+// the server can read it (alignment_new_code_to_send, the server's key); it is
+// never returned to the browser. The page sends the code it had, which the
+// function still accepts for this one purpose (to ask again), with the same
+// lockout and at most 3 emails an hour.
+// The coach's completion email never carries the access code (follow-up 1).
 //
 // It sends only from the live site (maySend, as api/guest-copy.js): on a
 // preview or a developer's machine it answers { ok: true, sent: false }
@@ -33,13 +41,13 @@
 // (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY, or SUPABASE_URL / SUPABASE_ANON_KEY).
 
 import {
-  linkEmail, completeEmail, completionSummary, completionRecipients, finishedEmail, ownerList, ukDate, ukDateTime,
+  linkEmail, completeEmail, newCodeEmail, completionSummary, completionRecipients, finishedEmail, ownerList, ukDate, ukDateTime,
 } from './_alignmentEmails.js';
 import { parseDbTimestamp } from '../src/lib/dateFormatter.js';
 import { portalOrigin } from './_portalOrigin.js';
 import { maySend } from './_guestEmails.js';
 
-const KINDS = ['link', 'complete'];
+const KINDS = ['link', 'complete', 'code'];
 
 function reply(res, status, body) {
   res.setHeader('Cache-Control', 'no-store');
@@ -100,6 +108,29 @@ export default async function handler(req, res) {
   // The first line of defence: only the live site ever sends.
   if (!maySend(process.env)) return reply(res, 200, { ok: true, sent: false });
 
+  // The guest's new access code, to their own address only.
+  if (kind === 'code') {
+    let fresh;
+    try {
+      fresh = await rpc('alignment_new_code_to_send', { p_token: token, p_email: email, p_code: code }, { server: true });
+    } catch {
+      return reply(res, 502, { ok: false, error: 'failed' });
+    }
+    if (!fresh || !fresh.ok) {
+      if (fresh?.error === 'limit') return reply(res, 429, { ok: false, error: 'limit' });
+      return reply(res, 400, { ok: false, error: 'invalid' });
+    }
+    try {
+      await sendWithResend({
+        to: [fresh.respondent_email],
+        ...newCodeEmail({ origin: portalOrigin(req.headers), token, clientLabel: fresh.client_label, email: fresh.respondent_email, code: fresh.code }),
+      });
+    } catch {
+      return reply(res, 502, { ok: false, error: 'failed' });
+    }
+    return reply(res, 200, { ok: true, sent: true });
+  }
+
   const args = { p_token: token, p_email: email, p_code: code, p_kind: kind };
   let check;
   try {
@@ -139,8 +170,6 @@ export default async function handler(req, res) {
         token,
         clientLabel: check.client_label,
         respondentEmail: check.respondent_email,
-        // Under "Open the results": the access code this request was checked with (Tim, 10 Nov, 13:31).
-        code,
         madeTheLink: Boolean(coachEmail),
         completedText: ukDateTime(completed),
         objective: data.objective || '',
