@@ -10,6 +10,8 @@ The Health Check's Quick guide, with Tim's voice-over (65 seconds), rebuilt on 1
 
 Nothing here is downloaded until the guide is opened (Watch on the welcome, the play icon, or the offer row on Your teams): the video has no source and no poster before then, so the page stays fast on a slow connection. The build copies each file as it is into `dist/assets`; none is put inside the page's code.
 
+The inside Health Check has its own pair (follow-up 1, 16 Nov; the 28 Oct rule that the inside guide starts from the inside start screen): `quick-guide-inside-desktop.mp4` and `quick-guide-inside-phone.mp4`, with their posters, made the same way from M7 version 8.2's own animation (it opens on Your teams and plays in the Quick guide panel, on a laptop too), with the same voice track (line 6 included) and the same captions file. `GuidePanel` plays them when given `inside`.
+
 ## How they are made
 
 `node scripts/make-quick-guide.mjs` rebuilds both videos and posters from their sources, using only what is already on a Mac (Node, the repo's Playwright, and macOS's `afconvert`, `sips` and `swiftc` with AVFoundation; it never downloads anything; tool paths can be given with `--afconvert`, `--sips`, `--swiftc`):
@@ -27,3 +29,14 @@ node scripts/make-quick-guide.mjs \
 ```
 
 It prints every line's loudness, where the new line lies, that the old line is gone, how closely the rest matches the source, and each file's size. Edit the captions by hand; the script never changes them. Then run `node tests/healthcheck/quick-guide.mjs all`.
+
+The inside pair:
+
+```
+node scripts/make-quick-guide.mjs \
+  --mockup ~/Downloads/clarity-health-check-calm/m7-health-check-inside.html \
+  --start teams --player panel --name quick-guide-inside \
+  --voice ~/Downloads/clarity-quick-guide/health-check-quick-guide-voice-over-final.m4a \
+  --line 6 --new-line ~/Downloads/clarity-health-check-calm/quick-guide-line-6-success-factor-matched.m4a \
+  --work <scratch folder>
+```

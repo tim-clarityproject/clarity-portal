@@ -352,7 +352,8 @@ async function full(engine, size, cues) {
 const LINE6 = 'Then rate how much each one helps, one success factor at a time.';
 {
   const media = fileURLToPath(new URL('../../src/pages/healthCheck/media/', import.meta.url));
-  for (const kind of ['desktop', 'phone']) {
+  // The outside pair and the inside pair (M7's own animation, follow-up 1).
+  for (const kind of ['desktop', 'phone', 'inside-desktop', 'inside-phone']) {
     const b = readFileSync(`${media}quick-guide-${kind}.mp4`);
     const boxes = [];
     for (let i = 0; i + 8 <= b.length;) {

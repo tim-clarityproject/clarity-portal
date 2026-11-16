@@ -353,7 +353,7 @@ function TeamsPage({ store }) {
           <div className="hc-in-example"><Button variant="text" onClick={() => navigate(`${BASE}/example`)}>See an example report</Button></div>
         </>
       )}
-      <GuidePanel open={guide} onClose={() => setGuide(false)} onWatched={() => {}} />
+      <GuidePanel inside open={guide} onClose={() => setGuide(false)} onWatched={() => {}} />
     </Frame>
   );
 }
@@ -638,7 +638,7 @@ function Version({ store, start, team }) {
           onClose={close}
           onBack={close}
         />
-        <GuidePanel open={panel === 'guide'} onClose={() => setPanel(null)} onWatched={() => {}} />
+        <GuidePanel inside open={panel === 'guide'} onClose={() => setPanel(null)} onWatched={() => {}} />
       </div>
     );
   }
@@ -723,7 +723,7 @@ function Version({ store, start, team }) {
         onCancel={() => setAsking(null)}
       />
       <PdfPanel open={panel === 'pdf'} onClose={() => setPanel(null)} getDocument={pdfDocument} />
-      <GuidePanel open={panel === 'guide'} onClose={() => setPanel(null)} onWatched={() => {}} />
+      <GuidePanel inside open={panel === 'guide'} onClose={() => setPanel(null)} onWatched={() => {}} />
     </Frame>
   );
 }

@@ -30,6 +30,7 @@
 //     --voice ~/Downloads/clarity-quick-guide/health-check-quick-guide-voice-over-final.m4a \
 //     --line 6 --new-line ~/Downloads/clarity-health-check-calm/quick-guide-line-6-success-factor-matched.m4a \
 //     [--out src/pages/healthCheck/media] [--work <scratch folder>] [--only audio,frames,encode,check]
+//     [--start welcome] [--player card|panel] [--name quick-guide]
 //     [--afconvert /usr/bin/afconvert] [--swiftc /usr/bin/swiftc] [--sips /usr/bin/sips]
 //
 // The captions file (quick-guide.en-GB.vtt in --out) gives every line's
@@ -38,6 +39,17 @@
 // the new line starts, that the old line's slot holds only the new line,
 // that the rest of the voice matches the source, each file's length and
 // size (at most 3.5 MB), and saves a frame of each scene to look at.
+//
+// The inside Health Check's own guide (follow-up 1, step 5: the 28 Oct rule
+// that the inside guide starts from the inside start screen) is made the same
+// way from M7's own animation, which starts on Your teams, with the same
+// voice and captions:
+//   node scripts/make-quick-guide.mjs \
+//     --mockup ~/Downloads/clarity-health-check-calm/m7-health-check-inside.html \
+//     --start teams --player panel --name quick-guide-inside [the same --voice, --line, --new-line]
+// --start: the mock-up's screen the guide is opened from; --player panel:
+// both videos from the mock-up's Quick guide panel (M7 plays it there on a
+// laptop too); --name: the files' names (the captions file is shared).
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
@@ -62,12 +74,15 @@ const AFCONVERT = arg('afconvert', '/usr/bin/afconvert');
 const SWIFTC = arg('swiftc', '/usr/bin/swiftc');
 const SIPS = arg('sips', '/usr/bin/sips');
 const ONLY = (arg('only', 'audio,frames,encode,check')).split(',');
+const START = arg('start', 'welcome');
+const PLAYER = arg('player', '');
+const NAME = arg('name', 'quick-guide');
 const FPS = 30;
 const MAX_BYTES = 3.5 * 1024 * 1024;
 // The two videos: the picture's size on screen (drawn at twice the pixels),
 // the mock-up's device, and the H.264 bit rate that keeps the file small.
 const KINDS = {
-  desktop: { w: 478, h: 300, device: 'd', inline: true, bps: 270000 },
+  desktop: { w: 478, h: 300, device: 'd', inline: PLAYER !== 'panel', bps: 270000 },
   phone: { w: 316, h: 528, device: 'p', inline: false, bps: 230000 },
 };
 const AUDIO_BPS = 128000;
@@ -141,9 +156,9 @@ async function makeFrames(kind) {
     await page.locator('.rp[data-t="light"]').click();
     await page.locator(`.rp[data-w="${k.device}"]`).click();
     await page.evaluate(() => document.fonts.ready);
-    const set = await page.evaluate(({ w, h, inline }) => {
+    const set = await page.evaluate(({ w, h, inline, start }) => {
       const st = window.__st;
-      window.__jump('welcome');
+      window.__jump(start);
       // Desktop: the welcome's own card, where most people watch it (the
       // screens drawn 820 wide, as the first video was, so the words read at
       // this size); phone: the full-screen panel (390 wide).
@@ -180,7 +195,7 @@ async function makeFrames(kind) {
       window.__frameAt(0);
       document.getAnimations().forEach((a) => a.finish());
       return window.__frameAt(0);
-    }, { w: k.w, h: k.h, inline: k.inline });
+    }, { w: k.w, h: k.h, inline: k.inline, start: START });
     if (!set.nekst || !set.dm) throw new Error('The fonts didn’t load.');
     if (set.r.join() !== `0,0,${k.w},${k.h}`) throw new Error(`The picture isn’t at the screen’s corner: ${set.r.join(', ')}`);
     const total = Math.round(65 * FPS);
@@ -201,17 +216,17 @@ function encode(kind) {
   const bin = join(WORK, 'encode');
   const src = join(here, 'quick-guide', 'encode.swift');
   if (!existsSync(bin) || statSync(bin).mtimeMs < statSync(src).mtimeMs) execFileSync(SWIFTC, ['-O', src, '-o', bin], { stdio: 'inherit' });
-  const out = join(OUT, `quick-guide-${kind}.mp4`);
+  const out = join(OUT, `${NAME}-${kind}.mp4`);
   say(execFileSync(bin, [join(WORK, `frames-${kind}`), String(FPS), join(WORK, 'voice.wav'), out, String(KINDS[kind].bps), String(AUDIO_BPS)]).toString().trim());
   // AVFoundation can leave its working copies beside the file ("….mp4.sb-…"): never keep them.
-  for (const f of readdirSync(OUT)) if (f.startsWith(`quick-guide-${kind}.mp4.sb-`)) rmSync(join(OUT, f));
+  for (const f of readdirSync(OUT)) if (f.startsWith(`${NAME}-${kind}.mp4.sb-`)) rmSync(join(OUT, f));
   // The poster: the video's first frame.
-  execFileSync(SIPS, ['-s', 'format', 'jpeg', '-s', 'formatOptions', '82', join(WORK, `frames-${kind}`, '00000.png'), '--out', join(OUT, `quick-guide-${kind}.jpg`)], { stdio: 'ignore' });
+  execFileSync(SIPS, ['-s', 'format', 'jpeg', '-s', 'formatOptions', '82', join(WORK, `frames-${kind}`, '00000.png'), '--out', join(OUT, `${NAME}-${kind}.jpg`)], { stdio: 'ignore' });
 }
 
 // ------------------------------------------------------------ checks
 function check(kind) {
-  const file = join(OUT, `quick-guide-${kind}.mp4`);
+  const file = join(OUT, `${NAME}-${kind}.mp4`);
   const size = statSync(file).size;
   const wav = join(WORK, `check-${kind}.wav`);
   execFileSync(AFCONVERT, ['-f', 'WAVE', '-d', 'LEF32@48000', file, wav]);

@@ -269,6 +269,9 @@ part('offer', async ({ browser, w, mode, tag }) => {
   pass(`${tag}: nothing plays by itself`, !playing0);
   await page.locator('.ds-offer-take').click();
   pass(`${tag}: Watch the Quick guide opens the guide`, await until(async () => (await page.locator('.hc-guide-panel video, [role=dialog] .hc-vcard').count()) > 0));
+  // The inside guide is its own: M7's animation from Your teams (follow-up 1, step 5).
+  const src = await until(async () => /quick-guide-inside-(desktop|phone)/.test(await page.evaluate(() => document.querySelector('video')?.currentSrc || document.querySelector('video')?.getAttribute('src') || '')), 5000);
+  pass(`${tag}: … and plays the inside guide (M7's own animation)`, src, await page.evaluate(() => document.querySelector('video')?.getAttribute('src') || ''));
   pass(`${tag}: taking it is kept, and it isn’t offered again`, await until(async () => kept() === '{"taken":true}'), kept());
   noProblems(b, `${tag}, offer`);
   await b.ctx.close();

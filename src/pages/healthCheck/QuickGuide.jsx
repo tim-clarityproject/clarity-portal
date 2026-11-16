@@ -7,6 +7,12 @@ import phoneVideo from './media/quick-guide-phone.mp4?url&no-inline';
 import desktopPoster from './media/quick-guide-desktop.jpg?url&no-inline';
 import phonePoster from './media/quick-guide-phone.jpg?url&no-inline';
 import captionsUrl from './media/quick-guide.en-GB.vtt?url&no-inline';
+// The inside Health Check's own guide (follow-up 1, step 5): M7's animation,
+// opened from Your teams, with the same voice and captions.
+import insideDesktopVideo from './media/quick-guide-inside-desktop.mp4?url&no-inline';
+import insidePhoneVideo from './media/quick-guide-inside-phone.mp4?url&no-inline';
+import insideDesktopPoster from './media/quick-guide-inside-desktop.jpg?url&no-inline';
+import insidePhonePoster from './media/quick-guide-inside-phone.jpg?url&no-inline';
 import { SlidePanel } from '../../components/design/Dialogs';
 import { PHONE_QUERY as PHONE } from '../../components/design/pageLock';
 import './healthCheck.css';
@@ -40,9 +46,9 @@ const BIG_PLAY = <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3v10l8-
 // until the guide is opened).
 const GUIDE_SECONDS = 65;
 /** The video for this screen, chosen as the guide opens, so it never swaps mid-play. */
-const pickVideo = () => (typeof window !== 'undefined' && window.matchMedia?.(PHONE).matches
-  ? { src: phoneVideo, poster: phonePoster }
-  : { src: desktopVideo, poster: desktopPoster });
+const pickVideo = (inside = false) => (typeof window !== 'undefined' && window.matchMedia?.(PHONE).matches
+  ? (inside ? { src: insidePhoneVideo, poster: insidePhonePoster } : { src: phoneVideo, poster: phonePoster })
+  : (inside ? { src: insideDesktopVideo, poster: insideDesktopPoster } : { src: desktopVideo, poster: desktopPoster }));
 
 const WATCHED_KEY = 'hc-quick-guide-watched';
 export function readWatched() {
@@ -71,7 +77,7 @@ function captionsTrack(v) {
   return track;
 }
 
-function Player({ inline, autoPlay, onWatched, onOpenPanel }) {
+function Player({ inline, autoPlay, onWatched, onOpenPanel, inside = false }) {
   const ref = useRef(null);
   const fillRef = useRef(null);
   const thumbRef = useRef(null);
@@ -82,7 +88,7 @@ function Player({ inline, autoPlay, onWatched, onOpenPanel }) {
   const watchedRef = useRef(onWatched);
   useEffect(() => { watchedRef.current = onWatched; }, [onWatched]);
   // The panel opens playing (it was opened by a press); the card waits for Watch.
-  const [video, setVideo] = useState(() => (autoPlay ? pickVideo() : null));
+  const [video, setVideo] = useState(() => (autoPlay ? pickVideo(inside) : null));
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
   const [dur, setDur] = useState(GUIDE_SECONDS);
@@ -176,7 +182,7 @@ function Player({ inline, autoPlay, onWatched, onOpenPanel }) {
 
   /** Gives the video its source on the first press, inside that press, so the voice is allowed to play. */
   const open = () => {
-    if (!video) flushSync(() => { setVideo(pickVideo()); });
+    if (!video) flushSync(() => { setVideo(pickVideo(inside)); });
     setStarted(true);
     setEnded(false);
   };
@@ -298,11 +304,11 @@ export function GuideCard({ onWatched, onOpenPanel }) {
 }
 
 /** The panel from the play icon (and from Watch on a phone). */
-export function GuidePanel({ open, onClose, onWatched }) {
+export function GuidePanel({ open, onClose, onWatched, inside = false }) {
   return (
     <SlidePanel open={open} onClose={onClose} title="Quick guide" wide className="hc-guide-panel">
       {/* A fresh player each time it opens: it plays from the start. */}
-      {open && <Player autoPlay onWatched={onWatched} />}
+      {open && <Player autoPlay inside={inside} onWatched={onWatched} />}
     </SlidePanel>
   );
 }
