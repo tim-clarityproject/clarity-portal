@@ -111,19 +111,22 @@ begin
 
     -- ------------------------------------------------ N3. try 1: the old code, by every call
     perform pg_temp.t_anon();
-    f := f || pg_temp.t_eq('N3a the old code no longer opens it', public.alignment_open(tok, hc_email, old_code) ->> 'error', 'invalid');
+    f := f || pg_temp.t_eq('N3a the old code no longer opens it, and says the code has changed', public.alignment_open(tok, hc_email, old_code) ->> 'error', 'new_code');
     perform pg_temp.t_unlock(tok); perform pg_temp.t_anon();
     f := f || pg_temp.t_eq('N3b ... nor saves over it',
-      public.alignment_save(tok, hc_email, old_code, '{"objective": "045 overwritten"}', '{"screen": "objective"}', 1, false) ->> 'error', 'invalid');
+      public.alignment_save(tok, hc_email, old_code, '{"objective": "045 overwritten"}', '{"screen": "objective"}', 1, false) ->> 'error', 'new_code');
     perform pg_temp.t_unlock(tok); perform pg_temp.t_anon();
-    f := f || pg_temp.t_eq('N3c ... nor switches it back to shared', public.alignment_set_sharing(tok, hc_email, old_code, true) ->> 'error', 'invalid');
+    f := f || pg_temp.t_eq('N3c ... nor switches it back to shared', public.alignment_set_sharing(tok, hc_email, old_code, true) ->> 'error', 'new_code');
     perform pg_temp.t_unlock(tok); perform pg_temp.t_anon();
-    f := f || pg_temp.t_eq('N3d ... nor asks for the guest''s results email', public.alignment_email_check(tok, hc_email, old_code, 'link') ->> 'error', 'invalid');
+    f := f || pg_temp.t_eq('N3d ... nor asks for the guest''s results email', public.alignment_email_check(tok, hc_email, old_code, 'link') ->> 'error', 'new_code');
     perform pg_temp.t_unlock(tok);
     f := f || pg_temp.t_eq('N3e ... and the answers were not changed',
       pg_temp.t_n(format('select data ->> ''objective'' from public.alignment_sessions where token = %L', tok)), '045 test objective');
     perform pg_temp.t_as(coach);
-    f := f || pg_temp.t_eq('N3f the old code fails signed in as the coach too', public.alignment_open(tok, hc_email, old_code) ->> 'error', 'invalid');
+    f := f || pg_temp.t_eq('N3f the old code fails signed in as the coach too', public.alignment_open(tok, hc_email, old_code) ->> 'error', 'new_code');
+    f := f || pg_temp.t_eq('N3g ... with the new code nowhere in the answer', (position(new_code in public.alignment_open(tok, hc_email, old_code)::text) = 0)::text, 'true');
+    perform pg_temp.t_unlock(tok); perform pg_temp.t_anon();
+    f := f || pg_temp.t_eq('N3h another email with the old code is simply wrong', public.alignment_open(tok, 'someone@example.invalid', old_code) ->> 'error', 'invalid');
     perform pg_temp.t_unlock(tok);
 
     -- ------------------------------------------------ N4. try 2: the coach's own sign-in
@@ -222,14 +225,40 @@ begin
     perform pg_temp.t_as(coach);
     j := public.alignment_set_sharing(tok2, hc_email, old2, false);
     f := f || pg_temp.t_eq('N10a the change gives back no code', ((j ->> 'new_code') = 'true' and not (j ? 'code'))::text, 'true');
-    f := f || pg_temp.t_eq('N10b the coach''s code stops working at once', public.alignment_open(tok2, hc_email, old2) ->> 'error', 'invalid');
+    f := f || pg_temp.t_eq('N10b the coach''s code stops working at once', public.alignment_open(tok2, hc_email, old2) ->> 'error', 'new_code');
     perform pg_temp.t_unlock(tok2);
     perform pg_temp.t_as(coach);
-    f := f || pg_temp.t_eq('N10c the coach can''t switch it back', public.alignment_set_sharing(tok2, hc_email, old2, true) ->> 'error', 'invalid');
+    f := f || pg_temp.t_eq('N10c the coach can''t switch it back', public.alignment_set_sharing(tok2, hc_email, old2, true) ->> 'error', 'new_code');
     perform pg_temp.t_unlock(tok2);
     perform pg_temp.t_service();
     f := f || pg_temp.t_eq('N10d the new code goes only to the guest''s address',
       ((public.alignment_new_code_to_send(tok2, hc_email, old2) ->> 'respondent_email') = hc_email)::text, 'true');
+
+    -- ------------------------------------------------ N12. Only you chosen before 045 (the coach still had the code)
+    perform pg_temp.t_admin();
+    l2 := public.create_alignment_session('045 test organisation three', hc_email, (select upper(email) from auth.users where id = coach));
+    tok2 := l2 ->> 'token'; old2 := l2 ->> 'access_code';
+    update public.alignment_sessions set shared_with_coach = false where token = tok2; -- as 044 left it
+    f := f || pg_temp.t_eq('N12a 045 gives an earlier Only you a new code', (public._alignment_reissue_private() >= 1)::text, 'true');
+    f := f || pg_temp.t_eq('N12b ... once (a second run passes it by)',
+      pg_temp.t_n(format('select (public._alignment_reissue_private() = 0 and (select new_code is not null from public.alignment_sessions where token = %L))::text', tok2)), 'true');
+    perform pg_temp.t_as(coach);
+    f := f || pg_temp.t_eq('N12c the coach''s code no longer opens it', public.alignment_open(tok2, hc_email, old2) ->> 'ok', 'false');
+    perform pg_temp.t_unlock(tok2); perform pg_temp.t_as(coach);
+    f := f || pg_temp.t_eq('N12d ... nor saves over it', public.alignment_save(tok2, hc_email, old2, '{"objective": "x"}', '{"screen": "objective"}', 0, false) ->> 'ok', 'false');
+    perform pg_temp.t_unlock(tok2); perform pg_temp.t_as(coach);
+    f := f || pg_temp.t_eq('N12e ... nor switches it back', public.alignment_set_sharing(tok2, hc_email, old2, true) ->> 'ok', 'false');
+    perform pg_temp.t_unlock(tok2); perform pg_temp.t_service();
+    f := f || pg_temp.t_eq('N12f the guest''s page can have the new code sent to their address',
+      ((public.alignment_new_code_to_send(tok2, hc_email, old2) ->> 'respondent_email') = hc_email)::text, 'true');
+    perform pg_temp.t_admin();
+    l2 := public.create_alignment_session('045 test organisation four', hc_email, (select upper(email) from auth.users where id = coach));
+    perform public._alignment_reissue_private();
+    f := f || pg_temp.t_eq('N12g a link still shared is left alone',
+      pg_temp.t_n(format('select (code_reissued_at is null and new_code is null)::text from public.alignment_sessions where token = %L', l2 ->> 'token')), 'true');
+    f := f || pg_temp.t_eq('N12h nobody but Tim may run the backfill',
+      pg_temp.t_n($q$select string_agg(r, ',' order by r) from (values ('anon'), ('authenticated'), ('service_role')) v(r)
+                     where has_function_privilege(r, 'public._alignment_reissue_private()', 'execute') or has_function_privilege(r, 'public._alignment_new_code()', 'execute')$q$), 'null');
 
     -- ------------------------------------------------ N11. rights on the functions
     perform pg_temp.t_admin();

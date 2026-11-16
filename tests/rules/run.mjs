@@ -260,10 +260,11 @@ const sql = [
 
 // Migrations not yet run on the test database run first, in the same
 // rolled-back transaction, so the rules are checked as they will be once Tim
-// has run them. Tim ran 024 to 032 there on 27 Oct 2026 (MIGRATION_LOG.md),
-// so from then on only 033 onwards run first; raise FIRST_PENDING as Tim
-// runs more. --as-is checks the test database exactly as it is.
-const FIRST_PENDING = 33;
+// has run them. Tim had run 024 to 044 there by 16 Nov 2026 (the database's
+// own migration_log; MIGRATION_LOG.md), so only 045 onwards run first; raise
+// FIRST_PENDING as Tim runs more. --as-is checks the test database exactly
+// as it is.
+const FIRST_PENDING = 45;
 const MIGRATIONS = path.join(REPO, 'supabase/migrations');
 const pending = process.argv.includes('--as-is') ? [] : fs.readdirSync(MIGRATIONS)
   .filter((f) => /^\d{3}_.*\.sql$/.test(f) && Number(f.slice(0, 3)) >= FIRST_PENDING)

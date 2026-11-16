@@ -339,6 +339,28 @@ function same(a, b) {
 
 // A save landed: the book and every later save to the same row that waits
 // on the device (or was cut off mid-send) move on to the new version.
+// The tab a save was made in (kept in the tab, so a reload is the same tab).
+// The queue is on the device and any tab may send it: a save another tab
+// made is never counted as this tab's own, and only the same tab's later
+// saves follow on from it (the break-it tester, 16 Nov: one tab sending
+// another's waiting save then wrote its own change over it). Saves kept
+// before this (no tab) follow on as before.
+let tabId = null;
+function thisTab() {
+  if (tabId) return tabId;
+  try {
+    tabId = globalThis.sessionStorage?.getItem('clarity-queue-tab') || null;
+    if (!tabId) {
+      tabId = newId();
+      globalThis.sessionStorage?.setItem('clarity-queue-tab', tabId);
+    }
+  } catch {
+    tabId = tabId || newId();
+  }
+  return tabId;
+}
+const sameTab = (a, b) => !a.tab || !b.tab || a.tab === b.tab;
+
 function rebase(userId, op, data) {
   const k = opKey(op);
   if (!k) return;
@@ -348,14 +370,16 @@ function rebase(userId, op, data) {
   }
   const at = data?.[0]?.updated_at;
   if (!at) return;
-  noteOwn(k, at);
-  noteVersion(k, at, { mine: true });
+  const mineHere = !op.tab || op.tab === thisTab();
+  if (mineHere) noteOwn(k, at);
+  noteVersion(k, at, { mine: mineHere });
   if (!userId) return;
-  const move = (items) => items.map((x) => (x.basedOn && x.qid !== op.qid && opKey(x) === k ? { ...x, basedOn: at } : x));
+  const follows = (x) => x.basedOn && x.qid !== op.qid && opKey(x) === k && sameTab(x, op);
+  const move = (items) => items.map((x) => (follows(x) ? { ...x, basedOn: at } : x));
   const queued = read(userId);
-  if (queued.some((x) => x.basedOn && x.qid !== op.qid && opKey(x) === k)) write(userId, move(queued));
+  if (queued.some(follows)) write(userId, move(queued));
   const cut = readJson(sendingKey(userId)) || [];
-  if (cut.some((x) => x.basedOn && x.qid !== op.qid && opKey(x) === k)) writeJson(sendingKey(userId), move(cut));
+  if (cut.some(follows)) writeJson(sendingKey(userId), move(cut));
 }
 
 // The version a new change is based on, when the book knows the row.
@@ -487,7 +511,7 @@ export function saveOrQueue(userId, op) {
 async function sendOrKeep(userId, op) {
   // Based on the version this window shows now (after any earlier save to
   // the same row in this window has landed: saves go one at a time).
-  const item = { ...withVersion(op), qid: newId(), at: Date.now() };
+  const item = { ...withVersion(op), qid: newId(), at: Date.now(), tab: thisTab() };
   // Anything still waiting goes first, so saves never arrive out of order
   // (refused ones are set aside and don't hold the rest up).
   if (!isOnline() || backingOff() || read(userId).some((x) => !x.failed)) {
@@ -526,7 +550,7 @@ export function keepForLater(userId, op) {
   if (!userId) return;
   changes += 1;
   try {
-    keep(userId, { ...withVersion(op), qid: newId(), at: Date.now() });
+    keep(userId, { ...withVersion(op), qid: newId(), at: Date.now(), tab: thisTab() });
   } catch {
     // No room on the device: nothing more can be done as the page closes.
     return;

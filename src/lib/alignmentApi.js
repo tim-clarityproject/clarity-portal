@@ -134,7 +134,8 @@ export async function setSharing(token, email, code, shared) {
  * @param {string} token  From the link.
  * @param {string} email
  * @param {string} code   6-character access code (kept in memory only).
- * @returns {Promise<{ok: true, session: AlignmentSession} | {ok: false, error: 'invalid'|'locked'|'network', message: string}>}
+ * @returns {Promise<{ok: true, session: AlignmentSession} | {ok: false, error: 'invalid'|'locked'|'network'|'new_code', message: string}>}
+ *   new_code (045): the code that was just replaced; the new one is on its way to the guest's email.
  */
 export async function openSession(token, email, code) {
   try {
@@ -160,7 +161,7 @@ export async function openSession(token, email, code) {
  * in order, always with the latest data and the latest known version.
  *
  * Events (subscribe with `on`):
- *  - 'status'   (status: SaveStatus, detail: {message?: string, retryable?: boolean})
+ *  - 'status'   (status: SaveStatus, detail: {message?: string, retryable?: boolean, error?: string})
  *  - 'conflict' ({data, currentStep, version, updatedAt, status}) the server had a newer
  *               copy; it has been taken and nothing was overwritten.
  *
@@ -301,7 +302,8 @@ export function createSaveQueue({ token, email, code, session }) {
     // own wording for refused answers is technical, so it is never shown.
     halted = true;
     const message = result.error === 'invalid_data' ? SAVE_REFUSED : (result.message || GENERIC_ERROR);
-    setStatus('error', { message, retryable: false });
+    // error: 'new_code' (045) is the code that was just replaced: the page asks for the new one.
+    setStatus('error', { message, retryable: false, error: result.error });
   }
 
   const handleOnline = () => {

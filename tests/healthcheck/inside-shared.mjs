@@ -188,7 +188,9 @@ export async function insidePage(browser, width, mode, opts = {}) {
         const body = JSON.parse(req.postData() || '[]');
         const list = Array.isArray(body) ? body : [body];
         if (!list.every((r) => r.tool_type === 'strategic-alignment')) return route.fallback();
-        const saved = list.map((r) => {
+        // "Only if no other tab has made it" (a new version's first save): an existing row is left as it is.
+        const onlyNew = /ignore-duplicates/.test(req.headers().prefer || '');
+        const saved = list.filter((r) => !(onlyNew && store.rows.some((x) => x.id === r.id))).map((r) => {
           const i = store.rows.findIndex((x) => x.id === r.id);
           const row = { ...(i >= 0 ? store.rows[i] : { created_at: new Date().toISOString() }), ...r, updated_at: new Date().toISOString() };
           if (i >= 0) store.rows[i] = row; else store.rows.push(row);

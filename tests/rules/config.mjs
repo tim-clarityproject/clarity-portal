@@ -227,6 +227,13 @@ export const FUNCTIONS = [
     note: 'The Health Check email sender: link, email and code are checked inside.' },
   { sig: 'alignment_email_failed(text,text,text,text)', call: "select public.alignment_email_failed('no-such-link', 'nobody@example.invalid', 'AAAAAA', 'link')", access: ANYONE,
     note: 'The Health Check email sender: link, email and code are checked inside.' },
+  // 044 and 045 (follow-up 1): the guest's choice is theirs alone (link, email
+  // and current code checked inside; the first Only you replaces the code),
+  // and only the email server reads the new code.
+  { sig: 'alignment_set_sharing(text,text,text,boolean)', ifExists: true, call: "select public.alignment_set_sharing('no-such-link', 'nobody@example.invalid', 'AAAAAA', false)", access: ANYONE,
+    note: 'The guest’s choice on the outside Health Check: link, email and code are checked inside (044, 045).' },
+  { sig: 'alignment_new_code_to_send(text,text,text)', ifExists: true, call: "select public.alignment_new_code_to_send('no-such-link', 'nobody@example.invalid', 'AAAAAA')", access: NOBODY,
+    note: 'The guest’s new access code, for the email server only (045).' },
   { sig: 'wheel_of_life_checkin_valid(jsonb,jsonb,jsonb)', call: "select public.wheel_of_life_checkin_valid('{}', '{}', '[]')", access: SIGNED_IN,
     note: 'Signed-in people only (020).' },
   { sig: 'wheel_of_life_touch()', call: 'select public.wheel_of_life_touch()', access: NOBODY,

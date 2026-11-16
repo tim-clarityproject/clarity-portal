@@ -40,7 +40,9 @@ export const kestrel = ({ complete = true, projects = null } = {}) => {
  *       coach (the coach's first name), height, scale (screen pixels per point), motion (true: animations run),
  *       storage ({ key: value } already in the device's localStorage), shared (the saved choice, 044; default true),
  *       no044 (a database without migration 044: no sharing function, nothing about it from alignment_open),
- *       with045 (migration 045: the first Only you replaces the code with NEW_CODE, the old one then opens and saves nothing)
+ *       with045 (migration 045: the first Only you replaces the code with NEW_CODE, the old one then opens and saves nothing,
+ *         answering 'new_code' until NEW_CODE has opened it), loseShareAnswer (the choice lands, its answer is lost),
+ *         codeMailFails (the new-code email request answers 502)
  * Returns { ctx, page, session, problems }: problems collects console errors and page errors.
  */
 export async function appPage(browser, width, mode, opts = {}) {
@@ -55,6 +57,8 @@ export async function appPage(browser, width, mode, opts = {}) {
     // 044: the guest's choice, and whether the coach's completion email has gone (as alignment_email_check keeps it)
     shared: opts.shared !== false, notified: false, coachEmails: 0, sharingCalls: [],
   };
+  // 045: the code that was just replaced, while the new one waits for the guest.
+  const replaced = (b) => Boolean(opts.with045 && session.pending && session.oldCode && String(b.p_code || '').toUpperCase() === session.oldCode);
   // Every font file the page asks for, wherever from (none is added by a test).
   ctx.on('request', (r) => { if (r.resourceType() === 'font' && !r.url().startsWith('data:')) session.fonts.push(r.url().replace(/\?.*$/, '')); });
   await ctx.route(/^https?:\/\/(?!localhost)/, (route) => {
@@ -62,26 +66,36 @@ export async function appPage(browser, width, mode, opts = {}) {
     const json = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
     if (url.endsWith('/rpc/alignment_open')) {
       const b = JSON.parse(route.request().postData() || '{}');
+      if (replaced(b)) return json({ ok: false, error: 'new_code', message: 'Your access code has changed. Check your email for the new one.' });
       if (String(b.p_code || '').toUpperCase() !== session.code) return json({ ok: false, error: 'invalid' });
+      if (session.reissued) session.pending = false;
       return json({ ok: true, status: session.status, current_step: session.current_step, data: session.data, version: session.version, updated_at: '2026-10-27 09:30:00.123', completed_at: session.status === 'complete' ? '2026-10-27 09:30:00' : null, client_label: 'Kestrel Group', coach_name: coach, ...(opts.no044 ? {} : { shared_with_coach: session.shared }) });
     }
     if (url.endsWith('/rpc/alignment_set_sharing')) {
       const b = JSON.parse(route.request().postData() || '{}');
       session.sharingCalls.push(b.p_shared);
       if (opts.no044) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', details: null, hint: null, message: 'Could not find the function public.alignment_set_sharing in the schema cache' }) });
+      if (replaced(b)) return json({ ok: false, error: 'new_code', message: 'Your access code has changed. Check your email for the new one.' });
       if (String(b.p_code || '').toUpperCase() !== session.code) return json({ ok: false, error: 'invalid' });
       session.shared = b.p_shared === true;
       let fresh = false;
       if (opts.with045 && !session.shared && !session.reissued) {
         session.reissued = true;
+        session.pending = true;
         session.oldCode = session.code;
         session.code = NEW_CODE;
         fresh = true;
+        // The choice lands, but its answer never reaches the page.
+        if (opts.loseShareAnswer) return route.abort();
       }
       return json({ ok: true, shared_with_coach: session.shared, status: session.status, notified: session.notified, ...(opts.with045 ? { new_code: fresh } : {}) });
     }
     if (url.endsWith('/rpc/alignment_save')) {
       const b = JSON.parse(route.request().postData() || '{}');
+      if (replaced(b)) {
+        session.refusedSaves = (session.refusedSaves || 0) + 1;
+        return json({ ok: false, error: 'new_code', message: 'Your access code has changed. Check your email for the new one.' });
+      }
       if (opts.with045 && String(b.p_code || '').toUpperCase() !== session.code) {
         session.refusedSaves = (session.refusedSaves || 0) + 1;
         return json({ ok: false, error: 'invalid', message: 'Those details don’t match. Check the email and access code you were sent.' });
@@ -108,6 +122,7 @@ export async function appPage(browser, width, mode, opts = {}) {
     const reply = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
     // 045: the new code goes to the guest's own address; the reply never holds it
     if (kind === 'code') {
+      if (opts.codeMailFails) return route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'failed' }) });
       const known = [session.code, session.oldCode].includes(String(sent.code || '').toUpperCase());
       return known && session.reissued ? reply({ ok: true, sent: true }) : route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'invalid' }) });
     }

@@ -195,7 +195,7 @@ async function hc(browser, width, mode) {
     pass(`${tag}, 045: “Didn’t get it? Send it again” asks again and says “Sent”`, await until(async () => session.emails.filter((k) => k === 'code').length === 2, 4000) && await hasToast(page, 'Sent'), session.emails.join(','));
     await page.getByLabel('Access code').fill(old);
     await page.locator('form button[type=submit]').click();
-    pass(`${tag}, 045: the old code no longer opens it`, await until(async () => (await page.getByText('Those details don’t match').count()) > 0, 4000));
+    pass(`${tag}, 045: the old code no longer opens it, and the page says the code has changed`, await until(async () => (await page.getByText('Your access code has changed, so only you can open your answers. Check your email for the new one.').count()) > 0, 4000));
     await page.getByLabel('Access code').fill(session.code);
     await page.locator('form button[type=submit]').click();
     await page.locator('.ds-guide .ds-guide-question, .ds-guide .ds-guide-title').first().waitFor();
@@ -205,6 +205,40 @@ async function hc(browser, width, mode) {
     pass(`${tag}, 045: back to You and Tim with the new code, and no second code`, await until(async () => session.shared === true) && session.code === 'NEW789' && session.emails.filter((k) => k === 'code').length === 2);
     pass(`${tag}, 045: nothing was refused along the way`, !session.refusedSaves, String(session.refusedSaves || 0));
     pass(`${tag}, 045: no page errors`, problems.length === 0, problems.join(' | '));
+    await ctx.close();
+  }
+
+  // 6. 045, the answer to Only you lost on the way back: the next save meets the replaced code, and the page asks for the new one.
+  {
+    const { ctx, page, session, problems } = await appPage(browser, width, mode, { data, step: { screen: 'objective' }, with045: true, loseShareAnswer: true });
+    await signIn(page, session);
+    { const panel = await readPanel(page); await panel.sheet.getByRole('option', { name: 'Only you', exact: true }).click(); }
+    pass(`${tag}, 045 lost answer: the code was replaced on the server`, await until(async () => session.reissued === true));
+    await until(async () => (await page.locator(DIALOG).count()) === 0, 4000);
+    // The guest carries on typing: that save meets the replaced code.
+    await page.locator('.ds-guide-body textarea').first().fill('Double recurring revenue by 2029.');
+    const waiting = page.getByText('Your access code has changed, so only you can open your answers. Check your email for the new one.');
+    pass(`${tag}, 045 lost answer: the page asks for the new code instead of a dead end`, await until(async () => (await waiting.count()) > 0, 10000), await page.locator('main, body').first().innerText().then((t) => t.slice(0, 200)));
+    await page.getByRole('button', { name: 'Didn’t get it? Send it again' }).click();
+    pass(`${tag}, 045 lost answer: “Send it again” asks for the new code with the old one`, await until(async () => session.emails.includes('code'), 4000), session.emails.join(','));
+    await page.getByLabel('Access code').fill(session.code);
+    await page.locator('form button[type=submit]').click();
+    await page.locator('.ds-guide .ds-guide-question, .ds-guide .ds-guide-title').first().waitFor();
+    await page.waitForTimeout(800);
+    pass(`${tag}, 045 lost answer: the new code opens it, Only you, with the typing kept`, (await eyeLabel(page)).startsWith('Only you') && await until(async () => String(session.data?.objective || '').includes('2029') || (await page.locator('.ds-guide-body textarea').first().inputValue()).includes('2029'), 6000));
+    pass(`${tag}, 045 lost answer: no page errors`, problems.length === 0, problems.join(' | '));
+    await ctx.close();
+  }
+
+  // 7. 045, the new-code email didn't go: it says so, with Send it again.
+  {
+    const { ctx, page, session, problems } = await appPage(browser, width, mode, { data, step: { screen: 'objective' }, with045: true, codeMailFails: true });
+    await signIn(page, session);
+    { const panel = await readPanel(page); await panel.sheet.getByRole('option', { name: 'Only you', exact: true }).click(); }
+    const unsent = page.getByText('Your access code has changed, but the email with the new one didn’t go. Send it again to carry on.');
+    pass(`${tag}, 045 email failed: it says the email didn’t go`, await until(async () => (await unsent.count()) > 0, 6000));
+    pass(`${tag}, 045 email failed: “Send it again” is there`, await page.getByRole('button', { name: 'Send it again', exact: true }).isVisible());
+    pass(`${tag}, 045 email failed: no page errors`, problems.length === 0, problems.join(' | '));
     await ctx.close();
   }
 

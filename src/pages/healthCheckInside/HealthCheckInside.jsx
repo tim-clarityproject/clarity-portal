@@ -63,18 +63,24 @@ const CHANGED_ELSEWHERE = 'This version changed in another tab.';
 
 // Two tabs on one version (follow-up 1, step 3): each save is sent as "only
 // if the version is still as this tab opened it" (or as this tab last saved
-// it). The version as this tab first read it from the database, then as its
-// own saves left it, by id; a quiet refresh never moves it on, so a change
-// made in another tab is never written over. Refused: "This version changed
-// in another tab." with "Reload to see it".
+// it). By id: the version as its page opened it (Version), then as this
+// tab's own saves left it; while its page is open a quiet refresh never moves
+// it on, so a change made in another tab is never written over. A version
+// with no page open (the team list's eye) follows the last read. A version
+// the database doesn't have yet is made "only if no other tab has made it"
+// (its first save); after that this tab's saves follow on. Refused: "This
+// version changed in another tab." with "Reload to see it".
 const bases = new Map();
+const openNow = new Map(); // id -> how many of its pages are open in this tab
+const createdHere = new Set();
+const sayChanged = { current: () => {} };
 
 async function loadRows(userId) {
   const { data, error } = await supabase.from('decisions')
     .select('id, title, form_data, status, draft, tool_type, created_at, updated_at')
     .eq('user_id', userId).eq('tool_type', TOOL_TYPE).order('created_at', { ascending: true });
   if (error) throw error;
-  (data || []).forEach((r) => { if (r?.id && r.updated_at && !bases.has(r.id)) bases.set(r.id, r.updated_at); });
+  (data || []).forEach((r) => { if (r?.id && r.updated_at && !openNow.get(r.id)) bases.set(r.id, r.updated_at); });
   guardRows('decisions', data);
   return data || [];
 }
@@ -136,6 +142,12 @@ export default function HealthCheckInside() {
   // with a way to see it. The typing kept on the device for that version
   // goes, so the reload shows the other tab's version, not this one again.
   const [changed, setChanged] = useState(false);
+  // A new version another tab made first (useSaver): the device's copy goes
+  // back to the database's on the reload.
+  useEffect(() => {
+    sayChanged.current = () => setChanged(true);
+    return () => { sayChanged.current = () => {}; };
+  }, []);
   useSuperseded(['decisions'], (error) => {
     if (error.row && error.row.tool_type !== TOOL_TYPE) return;
     if (error.row?.id) {
@@ -207,19 +219,36 @@ function useSaver(store) {
     const values = rowFrom(version, userId, status, step);
     if (!version.createdAt) values.created_at = new Date().toISOString();
     // The list shows it at once; the queue sends it (or keeps it offline).
+    // Its updated_at stays the database's until the save lands (it is what
+    // the next opening bases its saves on), never this device's clock.
     setRows((list) => {
       const all = list || [];
       const i = all.findIndex((r) => r.id === values.id);
-      const row = { ...(i >= 0 ? all[i] : {}), ...values };
+      const row = { ...(i >= 0 ? all[i] : {}), ...values, ...(i >= 0 && all[i].updated_at ? { updated_at: all[i].updated_at } : {}) };
       return i >= 0 ? all.map((r, j) => (j === i ? row : r)) : [...all, row];
     });
     const basedOn = bases.get(values.id);
-    const result = await saveOrQueue(userId, { table: 'decisions', kind: 'upsert', onConflict: 'id', values, ...(basedOn ? { basedOn } : {}) });
+    // A version the database doesn't have yet: made only if no other tab has made it.
+    const first = !basedOn && !createdHere.has(values.id);
+    guardRows('decisions', [values]);
+    const result = await saveOrQueue(userId, {
+      table: 'decisions', kind: 'upsert', onConflict: 'id', values,
+      ...(basedOn ? { basedOn } : {}), ...(first ? { ignoreDuplicates: true } : {}),
+    });
     // Changed in another tab since: nothing was written (the page says so).
     if (result?.status === 'superseded') throw Object.assign(new Error(CHANGED_ELSEWHERE), { superseded: true });
+    if (first && result?.status === 'saved' && Array.isArray(result.data) && result.data.length === 0) {
+      // Another tab made it first: nothing was written over.
+      clearDraft(userId, draftName(values.id));
+      sayChanged.current(values.id);
+      throw Object.assign(new Error(CHANGED_ELSEWHERE), { superseded: true });
+    }
+    if (first) createdHere.add(values.id);
     const at = result?.data?.[0]?.updated_at;
-    if (at) bases.set(values.id, at);
-    else if (!basedOn) guardRows('decisions', [values]); // a new version: guarded from its first save on
+    if (at) {
+      bases.set(values.id, at);
+      setRows((list) => (list || []).map((r) => (r?.id === values.id ? { ...r, updated_at: at } : r)));
+    }
     return { status: result?.status, row: values };
   }, [userId, setRows]);
 }
@@ -425,6 +454,16 @@ function Version({ store, start, team }) {
   const [item, setItem] = useState(start);
   const itemRef = useRef(item);
   itemRef.current = item;
+  // The version as this page opened it is what its saves are based on.
+  const openedAt = start.row?.updated_at || null;
+  useState(() => { if (openedAt) bases.set(start.id, openedAt); return null; });
+  useEffect(() => {
+    openNow.set(start.id, (openNow.get(start.id) || 0) + 1);
+    return () => {
+      const n = (openNow.get(start.id) || 1) - 1;
+      if (n) openNow.set(start.id, n); else openNow.delete(start.id);
+    };
+  }, [start.id]);
   // Where the questions are, as saved (flow.js stepToJson), for the
   // device's copy, the draft row and opening again.
   const stepRef = useRef(start.step);

@@ -31,6 +31,19 @@
 --      never learns it.
 --   5. alignment_coach_answers is unchanged from 044: with Only you the coach
 --      learns only that it finished.
+--   6. The code that was just replaced says so: while a new code waits for
+--      the guest, every call made with the replaced code (and the guest's
+--      email) answers {ok: false, error: 'new_code'} ("Your access code has
+--      changed. Check your email for the new one."), so a page that lost the
+--      answer to its own change, or a tab opened again later, can ask for the
+--      new code to be emailed again, instead of a dead end. It opens
+--      nothing, and it counts towards the lockout like any wrong code
+--      (_alignment_auth, replaced here with that one addition).
+--   7. Guests who chose Only you before 045 ran (044 kept the code the coach
+--      was given) get a new code now, kept for the email server as above; the
+--      coach's code stops working for them the moment 045 runs, and their
+--      page asks for the new one the next time they open it (break-it
+--      tester, 16 Nov).
 --
 -- WHO CAN REACH WHAT
 --   alignment_set_sharing: as 044 (whoever holds the link, email and current
@@ -40,7 +53,8 @@
 --
 -- SAFE TO RUN TWICE
 --   Columns are added only if missing; every function is replaced with the
---   same version; nothing is updated.
+--   same version; the new codes for earlier Only you rows are made once (a
+--   row given one has code_reissued_at set, so a second run passes it by).
 --
 -- WHEN TO RUN
 --   After 044 (it stops with a clear message without it). Then run
@@ -84,6 +98,137 @@ alter table public.alignment_sessions enable row level security;
 revoke all on table public.alignment_sessions from public, anon, authenticated, service_role;
 
 -- -----------------------------------------------------------------------------
+-- A new access code: 6 characters, unbiased, from 036's alphabet (no 0 O 1 I L)
+-- -----------------------------------------------------------------------------
+create or replace function public._alignment_new_code()
+returns text
+language plpgsql
+volatile
+set search_path = ''
+as $$
+declare
+  v_alphabet constant text := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  v_code text := '';
+  v_byte integer;
+begin
+  while char_length(v_code) < 6 loop
+    v_byte := get_byte(extensions.gen_random_bytes(1), 0);
+    if v_byte < 248 then
+      v_code := v_code || substr(v_alphabet, (v_byte % 31) + 1, 1);
+    end if;
+  end loop;
+  return v_code;
+end;
+$$;
+
+revoke all on function public._alignment_new_code() from public, anon, authenticated, service_role;
+
+-- -----------------------------------------------------------------------------
+-- _alignment_auth: as 018, plus 'new_code' for the code that was just replaced
+-- -----------------------------------------------------------------------------
+create or replace function public._alignment_auth(
+  p_token text,
+  p_email text,
+  p_code  text
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  s public.alignment_sessions;
+  v_replaced boolean := false;
+begin
+  select * into s
+  from public.alignment_sessions
+  where token = coalesce(p_token, '')
+  for update;
+
+  if not found or s.link_disabled then
+    return jsonb_build_object(
+      'ok', false, 'error', 'invalid',
+      'message', 'Those details don’t match. Check the email and access code you were sent.');
+  end if;
+
+  if s.locked_until is not null and s.locked_until > now() then
+    return jsonb_build_object(
+      'ok', false, 'error', 'locked',
+      'message', 'Too many attempts. Please try again in a few minutes.');
+  end if;
+
+  if lower(btrim(coalesce(p_email, ''))) = s.respondent_email
+     and crypt(upper(btrim(coalesce(p_code, ''))), s.access_code_hash) = s.access_code_hash then
+    if s.failed_attempts <> 0 or s.locked_until is not null then
+      update public.alignment_sessions
+         set failed_attempts = 0, locked_until = null
+       where id = s.id;
+    end if;
+    return jsonb_build_object('ok', true, 'id', s.id);
+  end if;
+
+  -- The code that was just replaced, while the new one waits for the guest.
+  v_replaced := s.new_code is not null and s.replaced_code_hash is not null
+    and lower(btrim(coalesce(p_email, ''))) = s.respondent_email
+    and crypt(upper(btrim(coalesce(p_code, ''))), s.replaced_code_hash) = s.replaced_code_hash;
+
+  -- Wrong details (the replaced code included): count it, and lock for 15
+  -- minutes after 5 misses.
+  if s.failed_attempts + 1 >= 5 then
+    update public.alignment_sessions
+       set failed_attempts = 0, locked_until = now() + interval '15 minutes'
+     where id = s.id;
+  else
+    update public.alignment_sessions
+       set failed_attempts = failed_attempts + 1
+     where id = s.id;
+  end if;
+
+  if v_replaced then
+    return jsonb_build_object(
+      'ok', false, 'error', 'new_code',
+      'message', 'Your access code has changed. Check your email for the new one.');
+  end if;
+  return jsonb_build_object(
+    'ok', false, 'error', 'invalid',
+    'message', 'Those details don’t match. Check the email and access code you were sent.');
+end;
+$$;
+
+revoke all on function public._alignment_auth(text, text, text) from public, anon, authenticated, service_role;
+
+-- -----------------------------------------------------------------------------
+-- Guests who chose Only you before 045: a new code now (the coach had theirs)
+-- -----------------------------------------------------------------------------
+create or replace function public._alignment_reissue_private()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  n integer;
+begin
+  update public.alignment_sessions
+     set replaced_code_hash = access_code_hash,
+         new_code = c.code,
+         access_code_hash = extensions.crypt(c.code, extensions.gen_salt('bf')),
+         code_reissued_at = now(),
+         failed_attempts = 0,
+         locked_until = null
+    from (select id, public._alignment_new_code() as code
+            from public.alignment_sessions
+           where not shared_with_coach and code_reissued_at is null) c
+   where public.alignment_sessions.id = c.id;
+  get diagnostics n = row_count;
+  return n;
+end;
+$$;
+
+revoke all on function public._alignment_reissue_private() from public, anon, authenticated, service_role;
+
+select public._alignment_reissue_private();
+
+-- -----------------------------------------------------------------------------
 -- alignment_set_sharing (the guest): as 044, but the first Only you replaces
 -- the code
 -- -----------------------------------------------------------------------------
@@ -98,11 +243,9 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_alphabet constant text := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; -- no 0 O 1 I L, as 036
   a        jsonb;
   s        public.alignment_sessions;
-  v_code   text := '';
-  v_byte   integer;
+  v_code   text;
   v_new    boolean := false;
 begin
   a := public._alignment_auth(p_token, p_email, p_code);
@@ -116,13 +259,8 @@ begin
   select * into s from public.alignment_sessions where id = (a ->> 'id')::uuid for update;
 
   if not p_shared and s.code_reissued_at is null then
-    -- The code the coach was given stops here: 6 characters, unbiased, as 036.
-    while char_length(v_code) < 6 loop
-      v_byte := get_byte(extensions.gen_random_bytes(1), 0);
-      if v_byte < 248 then
-        v_code := v_code || substr(v_alphabet, (v_byte % 31) + 1, 1);
-      end if;
-    end loop;
+    -- The code the coach was given stops here.
+    v_code := public._alignment_new_code();
     update public.alignment_sessions
        set shared_with_coach = false,
            replaced_code_hash = access_code_hash,

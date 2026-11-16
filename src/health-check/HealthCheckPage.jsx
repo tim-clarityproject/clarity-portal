@@ -120,8 +120,10 @@ function Page() {
   const [serverCompletedAt, setServerCompletedAt] = useState(null);
   const [panel, setPanel] = useState(null); // 'guide' | 'pdf' | 'doc:privacy' | 'doc:dataStorage'
   const [linkMail, setLinkMail] = useState({ status: 'idle' });
-  // Only you has just replaced the access code (045): 'sent' (on its way to
-  // the guest's email) or 'changed' (a preview, which never sends).
+  // Only you has replaced the access code (045): 'sent' (on its way to the
+  // guest's email), 'changed' (a preview, which never sends), 'unsent' (the
+  // email didn't go) or 'waiting' (the page met the replaced code: its own
+  // change's answer was lost, or it was opened again later).
   const [newCode, setNewCode] = useState('');
   const oldCodeRef = useRef(null); // the code the page had, only to ask for the new one again
   const leaveRef = useRef(() => {});
@@ -199,16 +201,25 @@ function Page() {
     leaveRef.current('');
     setNewCode('changed');
     const mail = await requestAlignmentEmail({ token, email: old.email, code: old.code, kind: 'code' });
-    if (mail.ok && mail.sent !== false) setNewCode((n) => (n ? 'sent' : n));
+    // Only a preview answers sent: false; a failure says so, with Send it again.
+    setNewCode((n) => (n ? (mail.ok ? (mail.sent !== false ? 'sent' : 'changed') : 'unsent') : n));
   }, [token]);
+  // The replaced code met anywhere (a save, the choice, opening): ask for the new one.
+  const onReplaced = useCallback((old) => {
+    if (old) oldCodeRef.current = { email: old.email, code: old.code };
+    leaveRef.current('');
+    setNewCode('waiting');
+  }, []);
 
   const sendChoice = useCallback(async (value) => {
     const creds = credsRef.current;
     if (!creds) return { ok: false };
     const r = await setSharing(token, creds.email, creds.code, value);
     if (r.ok && r.newCode) onNewCode(creds);
+    // The answer to this page's own change was lost, and the code had changed.
+    if (!r.ok && r.error === 'new_code') onReplaced(creds);
     return r;
-  }, [token, onNewCode]);
+  }, [token, onNewCode, onReplaced]);
 
   // The coach's completion email, asked for only while the guest's choice is
   // You and the coach, and only after any choice kept on the device has
@@ -285,7 +296,7 @@ function Page() {
     resendBusy.current = true;
     const r = await requestAlignmentEmail({ token, email: old.email, code: old.code, kind: 'code' });
     resendBusy.current = false;
-    if (r.ok) toast.show('Sent');
+    if (r.ok) { toast.show('Sent'); if (r.sent !== false) setNewCode('sent'); }
     else if (r.error === 'limit') toast.error('That’s as many as can be sent for now. Try again in an hour.');
     else toast.error();
   };
@@ -349,7 +360,10 @@ function Page() {
         // Answers the server refuses can never be saved: drop the browser copy,
         // or every reopen would send them again and be refused again.
         if (detail.message === SAVE_REFUSED) clearBackup(token);
-        leave(detail.message);
+        // The code was replaced (045): unsaved answers stay on the device for
+        // when the new code opens it.
+        if (detail.error === 'new_code') onReplaced(credsRef.current);
+        else leave(detail.message);
       }
     });
     queue.on('conflict', ({ data: serverData, currentStep: serverStep, status }) => {
@@ -370,7 +384,7 @@ function Page() {
     });
     if (applyBackup) queue.queueSave({ data: dataFromDraft(d), currentStep: stepToJson(s), complete: s.screen === 'results' }, { immediate: true });
     setPhase('flow');
-  }, [token, leave, toast, tellCoach, sendChoice]);
+  }, [token, leave, toast, tellCoach, sendChoice, onReplaced]);
 
   const openingRef = useRef(false); // one request per press
   const open = useCallback(async (e, c) => {
@@ -387,7 +401,13 @@ function Page() {
     setOpening(false);
     if (!result.ok) {
       store.del('sessionStorage', accessKey(token));
-      setOpenError(result.message);
+      if (result.error === 'new_code') {
+        // The replaced code: the new one is on its way to their email.
+        oldCodeRef.current = { email: e.trim(), code: cleanCode(c) };
+        setCode('');
+        setOpenError('');
+        setNewCode('waiting');
+      } else setOpenError(result.message);
       setPhase('signin');
       return;
     }
@@ -498,6 +518,8 @@ function Page() {
             <p className="ds-guest-sub hc-sub">
               {newCode === 'sent' ? 'We’ve emailed you a new access code, so only you can open your answers. Type it to carry on.'
                 : newCode === 'changed' ? 'Your access code has changed, so only you can open your answers. Type the new one to carry on.'
+                  : newCode === 'unsent' ? 'Your access code has changed, but the email with the new one didn’t go. Send it again to carry on.'
+                    : newCode === 'waiting' ? 'Your access code has changed, so only you can open your answers. Check your email for the new one.'
                   : ret ? 'Enter the same email and access code to pick up where you left off.' : 'Find your access code in the email with your link.'}
             </p>
             <TextField className="ds-guest-field hc-first-field" label="Email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -513,7 +535,7 @@ function Page() {
               onChange={(e) => setCode(cleanCode(e.target.value))}
             />
             {openError && <div className="ds-guest-problem"><ErrorMessage>{openError}</ErrorMessage></div>}
-            {newCode === 'sent' && <p className="ds-guest-sentence"><Button variant="text" onClick={resendCode}>Didn’t get it? Send it again</Button></p>}
+            {['sent', 'unsent', 'waiting'].includes(newCode) && <p className="ds-guest-sentence"><Button variant="text" onClick={resendCode}>{newCode === 'unsent' ? 'Send it again' : 'Didn’t get it? Send it again'}</Button></p>}
             <p className="ds-guest-sentence">
               <SentenceInfo lines={HOW_KEPT} label="How your answers are kept">{shared === false ? 'Only you will see your answers.' : `Only you and ${coachName || 'your coach'} will see your answers.`}</SentenceInfo>
             </p>
