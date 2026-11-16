@@ -126,7 +126,7 @@ async function makeFrames(kind) {
   const fontCss = `
 @font-face{font-family:'DM Sans';font-weight:400;font-style:normal;src:url(https://fonts.gstatic.com/local/400.woff2) format('woff2')}
 @font-face{font-family:'DM Sans';font-weight:500;font-style:normal;src:url(https://fonts.gstatic.com/local/500.woff2) format('woff2')}`;
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: ['--mute-audio'] }); // silent (Tim, 16 Nov)
   try {
     const ctx = await browser.newContext({ viewport: { width: 1300, height: 1000 }, deviceScaleFactor: 2, colorScheme: 'light', reducedMotion: 'no-preference', locale: 'en-GB' });
     // The mock-up's one outside request, DM Sans, is answered with the portal's own font files; nothing else leaves the machine.

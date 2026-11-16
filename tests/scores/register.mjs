@@ -3,3 +3,6 @@
 import { register } from 'node:module';
 
 register('./resolve-js.mjs', import.meta.url);
+
+// Every browser a test starts is silent (Tim, 16 Nov): tests/mute-audio.mjs.
+await import('../mute-audio.mjs');

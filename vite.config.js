@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { defineConfig, build } from 'vite'
 import react from '@vitejs/plugin-react'
 import { join, resolve } from 'node:path'
+import { trimStyles } from './scripts/build/trimStyles.mjs'
 
 // The design gallery (/design-reference) exists only in local development
 // and on Vercel preview deployments, never on the live site. Vercel sets
@@ -126,7 +127,9 @@ function healthCheckPage(buildId) {
         publicDir: false, // the portal's pass has already copied public/
         // The colour mode is set before the first paint here too: the page is
         // built from the portal's shared parts, whose colours follow it.
-        plugins: [react(), colourMode()],
+        // Only the styles the page's own code can use (follow-up 1, step 4):
+        // the portal's whole stylesheet trimmed to the classes it names.
+        plugins: [react(), colourMode(), trimStyles()],
         define: { __BUILD_ID__: JSON.stringify(buildId) },
         build: {
           outDir: config.build.outDir,
