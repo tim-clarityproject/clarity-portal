@@ -197,6 +197,23 @@ export async function insidePage(browser, width, mode, opts = {}) {
         });
         return json(saved, 201);
       }
+      // "Only if the version is still at updated_at" (the sync queue's guarded
+      // save, follow-up 1 step 3): the database's own conditional update.
+      if (req.method() === 'PATCH' && idEq && store.rows.some((r) => r.id === idEq)) {
+        const body = JSON.parse(req.postData() || '{}');
+        if (body.tool_type && body.tool_type !== 'strategic-alignment') return route.fallback();
+        const at = url.searchParams.get('updated_at')?.replace(/^eq\./, '');
+        const i = store.rows.findIndex((r) => r.id === idEq);
+        if (at && Date.parse(`${store.rows[i].updated_at}`.replace(/Z?$/, 'Z')) !== Date.parse(at.replace(/Z?$/, 'Z'))) {
+          store.refused = (store.refused || 0) + 1;
+          return json([]);
+        }
+        // The database's own clock moves updated_at on (its trigger), in its own format.
+        const row = { ...store.rows[i], ...body, updated_at: new Date(Date.now() + (store.tick = (store.tick || 0) + 1)).toISOString().replace('Z', '') };
+        store.rows[i] = row;
+        store.writes.push(row);
+        return json([row]);
+      }
       if (req.method() === 'DELETE' && idEq && store.rows.some((r) => r.id === idEq)) {
         const gone = store.rows.filter((r) => r.id === idEq);
         store.rows = store.rows.filter((r) => r.id !== idEq);

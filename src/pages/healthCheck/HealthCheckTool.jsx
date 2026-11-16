@@ -258,6 +258,9 @@ export default function HealthCheckTool({
   reached = false,
   initialStep,
   onStep,
+  // After "Save my edit": "Saved" by default; a page that says so itself once
+  // the save has really gone (the inside Health Check) passes its own.
+  onEdited = null,
   eye = null,
   onGuide,
   name = 'Health Check',
@@ -544,7 +547,7 @@ export default function HealthCheckTool({
       initialStep={openOn}
       onClose={onClose}
       onBack={onBack}
-      onEdited={() => toast.show('Saved')}
+      onEdited={onEdited || (() => toast.show('Saved'))}
       // The results' coral button downloads the PDF; it never ends the tool.
       onFinish={() => { onPdf?.(); return false; }}
     />

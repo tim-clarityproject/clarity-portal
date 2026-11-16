@@ -7,7 +7,9 @@ import './design.css';
 // a line above, the page's colour behind, the button at the right of the
 // page's column, full width under the thumb on a phone. While it shows, the
 // phone bar steps back (M7) and the Breathe pill rises above it; the page
-// keeps its last line clear of it (--bottom-bar-h).
+// keeps its last line clear of it (--bottom-bar-h). Where its button runs
+// under the middle of the screen (a phone), toasts rise to 16px above it, as
+// a guided tool's do (GuidedTool; follow-up 1: a toast never sits on it).
 export default function BottomBar({ children, className = '' }) {
   const ref = useRef(null);
   useHidePhoneBar(true);
@@ -15,7 +17,17 @@ export default function BottomBar({ children, className = '' }) {
     const el = ref.current;
     if (!el) return undefined;
     const root = document.documentElement;
-    const measure = () => root.style.setProperty('--bottom-bar-h', `${el.getBoundingClientRect().height}px`);
+    const before = root.style.getPropertyValue('--ds-toast-offset');
+    const measure = () => {
+      const h = el.getBoundingClientRect().height;
+      root.style.setProperty('--bottom-bar-h', `${h}px`);
+      const button = el.querySelector('button, a');
+      const b = button?.getBoundingClientRect();
+      const middle = window.innerWidth / 2;
+      if (b && b.left <= middle && b.right >= middle) root.style.setProperty('--ds-toast-offset', `${Math.max(0, Math.round(h) - 16)}px`);
+      else if (before) root.style.setProperty('--ds-toast-offset', before);
+      else root.style.removeProperty('--ds-toast-offset');
+    };
     measure();
     let observer;
     if (typeof ResizeObserver !== 'undefined') {
@@ -27,6 +39,8 @@ export default function BottomBar({ children, className = '' }) {
       observer?.disconnect();
       window.removeEventListener('resize', measure);
       root.style.removeProperty('--bottom-bar-h');
+      if (before) root.style.setProperty('--ds-toast-offset', before);
+      else root.style.removeProperty('--ds-toast-offset');
     };
   }, []);
   return (

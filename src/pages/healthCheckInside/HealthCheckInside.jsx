@@ -13,7 +13,7 @@ import { useStartChat } from '../../components/coach/startChat';
 import { supabase } from '../../lib/supabase';
 import { useCachedLoad, readCache, writeCache } from '../../lib/pageCache';
 import { clearDraft, readDraft, useDraft } from '../../lib/drafts';
-import { newId, saveOrQueue } from '../../lib/syncQueue';
+import { guardRows, newId, saveOrQueue, useSuperseded } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
 import { loadWithReload } from '../../lib/loadWithReload';
 import { dataFromDraft, draftFromData } from '../alignment/alignmentFlow';
@@ -59,12 +59,23 @@ const SHARE_PREF = 'health-check-share';
 const sharedPref = (userId) => readCache(userId, SHARE_PREF)?.v !== false;
 const isId = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 const draftName = (id) => `health-check:${id}`;
+const CHANGED_ELSEWHERE = 'This version changed in another tab.';
+
+// Two tabs on one version (follow-up 1, step 3): each save is sent as "only
+// if the version is still as this tab opened it" (or as this tab last saved
+// it). The version as this tab first read it from the database, then as its
+// own saves left it, by id; a quiet refresh never moves it on, so a change
+// made in another tab is never written over. Refused: "This version changed
+// in another tab." with "Reload to see it".
+const bases = new Map();
 
 async function loadRows(userId) {
   const { data, error } = await supabase.from('decisions')
     .select('id, title, form_data, status, draft, tool_type, created_at, updated_at')
     .eq('user_id', userId).eq('tool_type', TOOL_TYPE).order('created_at', { ascending: true });
   if (error) throw error;
+  (data || []).forEach((r) => { if (r?.id && r.updated_at && !bases.has(r.id)) bases.set(r.id, r.updated_at); });
+  guardRows('decisions', data);
   return data || [];
 }
 
@@ -121,24 +132,56 @@ export default function HealthCheckInside() {
     return () => window.removeEventListener(HEALTH_CHECKS_MOVED, onMoved);
   }, [reload]);
 
+  // A save refused because the version changed in another tab: said calmly,
+  // with a way to see it. The typing kept on the device for that version
+  // goes, so the reload shows the other tab's version, not this one again.
+  const [changed, setChanged] = useState(false);
+  useSuperseded(['decisions'], (error) => {
+    if (error.row && error.row.tool_type !== TOOL_TYPE) return;
+    if (error.row?.id) {
+      clearDraft(userId, draftName(error.row.id));
+      // The device's copy goes back to the database's version, so "Reload to
+      // see it" shows that, never this tab's refused change.
+      load.setData((list) => (list || []).map((r) => (r?.id === error.row.id ? error.row : r)));
+    }
+    setChanged(true);
+  });
+
   // An older page's address, or My Plans, handing over a saved Health Check.
   const handed = location.state?.decisionId;
   if (!rest && isId(handed)) return <Navigate to={`${BASE}/version/${handed}`} replace />;
 
-  if (!userId || (load.loading && !load.data)) {
-    return <Frame><Loading label="Loading your Health Checks" className="ds-loading--page" /></Frame>;
-  }
-  const failed = load.error && !load.data;
-  const store = { userId, rows, teams, setRows: load.setData, failed };
+  const page = (() => {
+    if (!userId || (load.loading && !load.data)) {
+      return <Frame><Loading label="Loading your Health Checks" className="ds-loading--page" /></Frame>;
+    }
+    const failed = load.error && !load.data;
+    const store = { userId, rows, teams, setRows: load.setData, failed };
 
-  if (rest === 'example') return <ExamplePage />;
-  if (failed && rest !== 'new-team') return <Frame back><LoadError>{LOAD_ERROR}</LoadError></Frame>;
-  if (rest === '') return <TeamsPage store={store} />;
-  if (rest === 'compare') return <ComparePage store={store} />;
-  if (rest === 'new' || rest === 'new-team') return <StartNew store={store} teamId={rest === 'new' ? new URLSearchParams(location.search).get('team') : null} />;
-  const m = /^version\/([^/]+)$/.exec(rest);
-  if (m && isId(m[1])) return <VersionPage key={m[1]} store={store} id={m[1]} />;
-  return <Navigate to={BASE} replace />;
+    if (rest === 'example') return <ExamplePage />;
+    if (failed && rest !== 'new-team') return <Frame back><LoadError>{LOAD_ERROR}</LoadError></Frame>;
+    if (rest === '') return <TeamsPage store={store} />;
+    if (rest === 'compare') return <ComparePage store={store} />;
+    if (rest === 'new' || rest === 'new-team') return <StartNew store={store} teamId={rest === 'new' ? new URLSearchParams(location.search).get('team') : null} />;
+    const m = /^version\/([^/]+)$/.exec(rest);
+    if (m && isId(m[1])) return <VersionPage key={m[1]} store={store} id={m[1]} />;
+    return <Navigate to={BASE} replace />;
+  })();
+  return (
+    <>
+      {page}
+      {changed && (
+        <div className="ui-root ds-portal">
+          <div className="ds-toast-region hc-in-changed" role="alert">
+            <div className="ds-toast ds-toast--shown">
+              <span className="ds-toast-text">{CHANGED_ELSEWHERE}</span>
+              <button type="button" className="ds-toast-undo" onClick={() => window.location.reload()}>Reload to see it</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 /** A page in the portal frame (M7: the menu crosshair, My Mission, Chat to Tim, the phone bar). */
@@ -170,7 +213,13 @@ function useSaver(store) {
       const row = { ...(i >= 0 ? all[i] : {}), ...values };
       return i >= 0 ? all.map((r, j) => (j === i ? row : r)) : [...all, row];
     });
-    const result = await saveOrQueue(userId, { table: 'decisions', kind: 'upsert', onConflict: 'id', values });
+    const basedOn = bases.get(values.id);
+    const result = await saveOrQueue(userId, { table: 'decisions', kind: 'upsert', onConflict: 'id', values, ...(basedOn ? { basedOn } : {}) });
+    // Changed in another tab since: nothing was written (the page says so).
+    if (result?.status === 'superseded') throw Object.assign(new Error(CHANGED_ELSEWHERE), { superseded: true });
+    const at = result?.data?.[0]?.updated_at;
+    if (at) bases.set(values.id, at);
+    else if (!basedOn) guardRows('decisions', [values]); // a new version: guarded from its first save on
     return { status: result?.status, row: values };
   }, [userId, setRows]);
 }
@@ -187,7 +236,7 @@ function useDeleter(store) {
       return;
     }
     setRows((all) => (all || []).filter((r) => !ids.has(r.id)));
-    list.forEach((r) => clearDraft(userId, draftName(r.id)));
+    list.forEach((r) => { clearDraft(userId, draftName(r.id)); bases.delete(r.id); });
     if (readCache(userId, CURRENT)?.v?.id && ids.has(readCache(userId, CURRENT).v.id)) writeCache(userId, CURRENT, null);
     done?.();
     // Deleted, with Undo (rule 28): the same rows go back.
@@ -253,7 +302,11 @@ function TeamsPage({ store }) {
     writeCache(userId, SHARE_PREF, on);
     setPref(on);
     const changed = all.filter((v) => v.shared !== on);
-    await Promise.all(changed.map((v) => save({ ...v, shared: on }, v.status === 'draft' ? 'draft' : 'completed', v.step)));
+    const went = await Promise.allSettled(changed.map((v) => save({ ...v, shared: on }, v.status === 'draft' ? 'draft' : 'completed', v.step)));
+    const missed = went.filter((r) => r.status === 'rejected');
+    if (missed.some((r) => !r.reason?.superseded)) throw missed.find((r) => !r.reason?.superseded).reason;
+    if (missed.length) return { say: CHANGED_ELSEWHERE };
+    return undefined;
   };
 
   const icons = (
@@ -436,6 +489,7 @@ function Version({ store, start, team }) {
       if (!quiet) toast.show(result.status === 'queued' ? 'Will sync' : 'Saved');
       return true;
     } catch (error) {
+      if (error?.superseded) return false; // said by the page's own message
       toast.error(friendlyError(error, SAVE_ERROR));
       return false;
     }
@@ -452,8 +506,9 @@ function Version({ store, start, team }) {
     }
     // The results show at once; the save follows (the queue keeps it offline).
     // The device's draft goes first: the list's own copy and the queue hold it now.
-    const wasEdit = Boolean(edit);
-    const saving = keep('completed', { quiet: wasEdit });
+    // "Saved" once the save has really gone (never before: the version may
+    // have changed in another tab, follow-up 1), so the tool's own is off.
+    const saving = keep('completed');
     forget();
     setEdit(null);
     setMode('results');
@@ -499,7 +554,13 @@ function Version({ store, start, team }) {
     itemRef.current = next;
     setItem(next);
     if (next.status !== 'new' || hasAnswers(next.draft)) {
-      const result = await save(next, next.status === 'completed' ? 'completed' : 'draft', stepRef.current || stepToJson(at('objective')));
+      let result;
+      try {
+        result = await save(next, next.status === 'completed' ? 'completed' : 'draft', stepRef.current || stepToJson(at('objective')));
+      } catch (error) {
+        if (error?.superseded) return { say: CHANGED_ELSEWHERE };
+        throw error;
+      }
       setItem((s) => ({ ...s, status: s.status === 'new' ? 'draft' : s.status, createdAt: s.createdAt || result.row.created_at, row: result.row }));
     }
   };
@@ -572,6 +633,7 @@ function Version({ store, start, team }) {
           asOf={item.date}
           lead={lead}
           onResults={onResults}
+          onEdited={() => {}}
           editOn={edit}
           onClose={close}
           onBack={close}
@@ -592,7 +654,7 @@ function Version({ store, start, team }) {
     const next = { ...itemRef.current, draft: { ...itemRef.current.draft, importantLine: line } };
     itemRef.current = next;
     setItem(next);
-    save(next, 'completed').then((r) => toast.show(r.status === 'queued' ? 'Will sync' : 'Saved')).catch((error) => toast.error(friendlyError(error, SAVE_ERROR)));
+    save(next, 'completed').then((r) => toast.show(r.status === 'queued' ? 'Will sync' : 'Saved')).catch((error) => { if (!error?.superseded) toast.error(friendlyError(error, SAVE_ERROR)); });
   };
   const pdfDocument = async () => {
     const { healthCheckPdf } = await loadWithReload(() => import('../../lib/pdf/docs/healthCheck'));

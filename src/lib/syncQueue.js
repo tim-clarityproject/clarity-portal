@@ -217,8 +217,29 @@ const versions = new Map();
 // Queued saves refused as superseded: never read as "Saved" (useQueuedSave).
 const supersededQids = new Set();
 
+// Rows of an older table a page has asked to guard (guardRows): the inside
+// Health Check's versions in `decisions` (follow-up 1, step 3). Only those
+// rows are guarded, so every other tool's saves to `decisions` go exactly as
+// before (their own two-tab rules).
+const guarded = new Set();
+
+/**
+ * Guards these rows of a table the queue doesn't version on its own (keyed
+ * by id): a save the page bases on a version (`basedOn`, the row's
+ * updated_at as the page opened it or last saved it) is sent as "only if the
+ * row is still at that version", refused as superseded otherwise (the page
+ * says so: useSuperseded), and this window's own later saves follow on.
+ */
+export function guardRows(table, rows) {
+  for (const row of rows || []) if (row?.id != null) guarded.add(`${table}|${row.id}`);
+  return rows;
+}
+
 function rowKey(table, fields) {
-  if (!versioned.has(table)) return null;
+  if (!versioned.has(table)) {
+    const k = fields?.id != null ? `${table}|${fields.id}` : null;
+    return k && guarded.has(k) ? k : null;
+  }
   const cols = ROW_KEYS[table] || ['id'];
   if (!fields || cols.some((c) => fields[c] == null)) return null;
   return `${table}|${cols.map((c) => fields[c]).join('|')}`;
