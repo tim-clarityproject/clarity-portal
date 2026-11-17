@@ -68,7 +68,6 @@ let failures = 0;
 let passes = 0;
 let revealsChecked = 0;
 const fails = [];
-const longReadouts = new Set(); // chart read-out lines over 60 characters, for Tim (tests/phase5/popups.mjs)
 const pass = (name, ok, detail = '') => {
   if (ok) passes += 1;
   else { failures += 1; fails.push(`FAIL  ${name}${detail ? `: ${detail}` : ''}`); }
@@ -480,7 +479,6 @@ for (const width of PAGES.length ? [1280, 390] : []) {
         // A pop-up holds one short line; longer explanations open in the side panel (Tim, 16 Nov, 23:31).
         const pops = await page.evaluate(checkPopups);
         pass(`${tag}: every pop-up is one short line, and no ⓘ sits in a list row (${pops.checked} read)`, pops.problems.length === 0, pops.problems.slice(0, 4).join('; '));
-        for (const l of pops.long) longReadouts.add(`${name}: ${l}`);
         pass(`${tag}: no title in capitals over 3 words`, r.longTitles.length === 0, r.longTitles.join('; '));
         const old = /plan my day|review my day|hardware and software check-in|monthly check-in|first check-in|performance evidence/i.exec(r.text);
         pass(`${tag}: no old names`, !old, old?.[0]);
@@ -620,7 +618,6 @@ if (HC_ONLY) {
           pass(`${tag}: Questions to start with never come before a chart`, early.length === 0, early.slice(0, 4).join('; '));
           const pops = await page.evaluate(checkPopups);
           pass(`${tag}: every pop-up is one short line, and no ⓘ sits in a list row (${pops.checked} read)`, pops.problems.length === 0, pops.problems.slice(0, 4).join('; '));
-          for (const l of pops.long) longReadouts.add(`${screen}: ${l}`);
           if (screen === 'results' || screen === 'example-report') {
             const order = await page.evaluate((own) => {
               const root = [...document.querySelectorAll('.ds-guide--fullscreen, .ds-guest')].pop();
@@ -868,6 +865,5 @@ if (CHEVRONS) {
 await browser.close();
 
 console.log(fails.join('\n'));
-if (longReadouts.size) console.log(`${[...longReadouts].map((l) => `NOTE  a chart read-out line over 60 characters, ${l}`).join('\n')}`);
 console.log(`\n${passes} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);
