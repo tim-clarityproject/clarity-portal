@@ -41,6 +41,7 @@ export { default as LevelChoice } from './LevelChoice';
 export { default as RowList } from './RowList';
 export { default as PriorityRows } from './PriorityRows';
 export { default as TermInfo, SentenceInfo } from './TermInfo';
+export { ExplainPanel, ExplainLink, ExplainInfo, useExplain } from './Explain';
 export { default as SwitchRow } from './SwitchRow';
 export { default as ObjectiveFigureRow } from './ObjectiveFigureRow';
 export { default as ExpandList } from './ExpandList';

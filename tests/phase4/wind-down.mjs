@@ -241,10 +241,8 @@ if (part(1)) {
     await page.locator('.ds-guide-next').click();
     await until(async () => (await heading(page)) === 'Ready to close the day?', 8000);
     pass('review: Close the day asks "Ready to close the day?"', (await heading(page)) === 'Ready to close the day?', await heading(page));
-    pass('review: "Check what moves to tomorrow." with its ⓘ at the end', (await page.locator('.ds-guide-nudge').innerText()).trim() === 'Check what moves to tomorrow.' && (await page.locator('.ds-guide-nudge .ds-guide-i--end').count()) === 1);
-    await page.locator('.ds-guide-nudge .ds-guide-i--end').click();
-    pass('review: the ⓘ says why', (await page.locator('.ds-infopop:visible').innerText()).includes('Anything still open moves to tomorrow, so you can stop thinking about it.'));
-    await page.keyboard.press('Escape');
+    // No ⓘ: the list headed "Moving to tomorrow" already says it (5e rule 1; Tim, 16 Nov, 23:31).
+    pass('review: "Check what moves to tomorrow." with no ⓘ (the list below says it)', (await page.locator('.ds-guide-nudge').innerText()).trim() === 'Check what moves to tomorrow.' && (await page.locator('.ds-guide-nudge .ds-guide-i').count()) === 0);
     const lists = await seen(page, '.ds-guide-body');
     pass('review: Moving to tomorrow lists the open to-do', openTodo ? lists.includes('Moving to tomorrow') && lists.includes(openTodo.text) : true, lists);
     pass('review: Tomorrow starts with the first thing for tomorrow', lists.includes('Tomorrow starts with') && lists.includes(REVIEW[0]), lists);

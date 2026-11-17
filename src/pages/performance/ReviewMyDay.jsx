@@ -797,7 +797,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       name: 'Close',
       question: 'Ready to close the day?',
       nudges: ['Check what moves to tomorrow.'],
-      nudgeInfo: { label: 'About closing the day', text: 'Anything still open moves to tomorrow, so you can stop thinking about it.' },
+      // No ⓘ here: the list headed "Moving to tomorrow" below already says it (5e rule 1; Tim, 16 Nov, 23:31).
       render: () => {
         const first = tomorrowToRow(answers.tomorrow)[0];
         return (

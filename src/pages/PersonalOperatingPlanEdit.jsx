@@ -11,10 +11,26 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import SavingOverlay from '../components/ui/SavingOverlay';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import { StepIcon, Loading, PageHeader, TextBox, TextField, AddButton, Button, SegmentedControl } from '../components/design';
+import { StepIcon, Loading, PageHeader, TextBox, TextField, AddButton, Button, SegmentedControl, ExplainPanel } from '../components/design';
 
-const STRATEGY_INFO = "A strategy is the big-picture approach you take to achieve your Mission. It's your overall direction, how you'll tackle things in a consistent, thoughtful way. Unlike tactics, which happen day-to-day, your strategies don't change frequently. They're the foundation that guides your daily actions.";
-const TACTIC_INFO = 'A tactic is a specific, repeatable action you do regularly to carry out your strategy. These are the everyday, concrete things you actually do: the habits, routines, and practices that bring your strategies to life. Multiple tactics usually work together to execute one strategy.';
+// Longer explanations open in the side panel, one sentence per line (Tim, 16 Nov, 23:31).
+const STRATEGY_INFO = {
+  title: 'What is a strategy?',
+  lines: [
+    'A strategy is the big-picture approach you take to achieve your Mission.',
+    'It’s your overall direction, how you’ll tackle things in a consistent, thoughtful way.',
+    'Unlike tactics, which happen day to day, your strategies don’t change often.',
+    'They’re the foundation that guides your daily actions.',
+  ],
+};
+const TACTIC_INFO = {
+  title: 'What is a tactic?',
+  lines: [
+    'A tactic is a specific action you repeat regularly to carry out your strategy.',
+    'Tactics are the everyday things you actually do, such as habits, routines and practices.',
+    'Several tactics usually work together to carry out one strategy.',
+  ],
+};
 
 function BinIcon() {
   return (
@@ -524,24 +540,8 @@ export default function PersonalOperatingPlanEdit() {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={deleteTarget?.kind === 'strategy' ? confirmDeleteStrategy : confirmDeleteTactic}
       />
-      <ConfirmDialog
-        open={infoOpen === 'strategy'}
-        title="What is a strategy?"
-        message={STRATEGY_INFO}
-        confirmLabel="Got it"
-        hideCancel
-        onCancel={() => setInfoOpen(null)}
-        onConfirm={() => setInfoOpen(null)}
-      />
-      <ConfirmDialog
-        open={infoOpen === 'tactic'}
-        title="What is a tactic?"
-        message={TACTIC_INFO}
-        confirmLabel="Got it"
-        hideCancel
-        onCancel={() => setInfoOpen(null)}
-        onConfirm={() => setInfoOpen(null)}
-      />
+      <ExplainPanel open={infoOpen === 'strategy'} onClose={() => setInfoOpen(null)} explain={STRATEGY_INFO} />
+      <ExplainPanel open={infoOpen === 'tactic'} onClose={() => setInfoOpen(null)} explain={TACTIC_INFO} />
       <SavingOverlay isOpen={isSaving} message="Saving your plan" />
     </div>
   );

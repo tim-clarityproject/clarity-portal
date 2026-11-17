@@ -447,10 +447,11 @@ function popStyle(sel) {
 }
 // The pop-ups: [name, the screen, how M7b opens it, how the built page opens it, M7b's pop-up, the page's]
 const POPS = [
-  ['how your answers are kept', 'signin', (m) => m.locator('#fr .bsent .ib1').click(), (p) => p.locator('.ds-guest-sentence .ds-guide-i').click(), '#tip', '.ds-infopop'],
-  ['what a Success Factor is', 'csf', (m) => m.locator('#fr .flab .ib1').click(), (p) => p.locator('.hc-flab .ds-guide-i').click(), '#tip', '.ds-infopop'],
+  // "How your answers are kept" and "What is a Success Factor?" open in the side panel since Tim's rule of
+  // 16 Nov, 23:31 (a pop-up holds one short line); M7b draws them as pop-ups, so they aren't compared here
+  // (tests/healthcheck/flow.mjs checks the panels).
   ['what counts as a project', 'projects', (m) => m.locator('#fr .nudge .ib1').click(), (p) => p.locator('.ds-guide-nudge .ds-guide-i').click(), '#tip', '.ds-infopop'],
-  ['how to read the chart', 'results', (m) => m.locator('#fr .sech .ib1').first().click(), (p) => p.locator('.ds-results-head .ds-guide-i').first().click(), '#tip', '.ds-infopop'],
+  // How to read the chart: a quiet link under the chart opening the side panel (16 Nov), not M7b's ⓘ on the heading.
   ['what strategic importance means', 'results', (m) => m.locator('#fr .prow.h .ib1').click(), (p) => p.locator('.hc-prow--head .ds-guide-i').click(), '#tip', '.ds-infopop', 'desktop'],
   ['a dot’s pop-up', 'results', (m) => m.locator('#fr g.dot[data-n="1"]').focus().then(() => m.keyboard.press('Enter')), (p) => p.locator('.hc-dot[data-n="1"]').focus(), '#tip', '.ds-tip'],
   ['the play icon’s words', 'objective', (m) => m.locator('#fr .ic1').hover(), (p) => p.locator('.ds-guide-question .ds-play').hover(), '.ic1 .tipx', '.ds-infopop', 'desktop'],

@@ -26,6 +26,7 @@
 //
 // Everything this test adds is deleted at the end, and any check-in rows
 // for the two months it uses are put back as they were.
+import { checkExplainOpener } from '../explain-panel.mjs';
 import { chromium } from 'playwright';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -605,9 +606,11 @@ if (part('C') && !others?.length) {
     pass('first: "What would make coaching useful for you?"', (await heading(page)) === 'What would make coaching useful for you?');
     pass('first: First review in the top bar', (await text(page, '.ds-guide-name')).toLowerCase() === 'first review');
     pass('first: the two nudges', (await page.locator('.ds-guide-nudge').allInnerTexts()).map((t) => t.trim()).join('|') === 'Let’s start with 5 questions about that.|Then your first Hardware and Software review.');
-    await page.locator('.ds-guide-nudge .ds-guide-i').click();
-    pass('first: the ⓘ opens hardware and software', (await page.locator('.ds-infopop:not([hidden]) .ds-infopop-line').allInnerTexts()).join('|') === HARDWARE_SOFTWARE.join('|'));
-    await page.keyboard.press('Escape');
+    // Two terms together, so the side panel (Tim, 16 Nov, 23:31).
+    await checkExplainOpener(page, page.locator('.ds-guide-nudge .ds-guide-i'), {
+      tag: 'first: the ⓘ on hardware and software', pass,
+      words: ['What are hardware and software?', 'Hardware', 'It’s your body’s physiology.', 'Software', 'It’s your decision-making, emotional control and communication.', 'Software relies on hardware being maintained, so we look after both.'],
+    });
     await page.locator('button', { hasText: 'Who sees my answers?' }).click();
     pass('first: Who sees my answers? with a coach', (await text(page, '.ck-who-lines')).split(/\n+/)[0] === 'Only you and Tim see your answers.');
     await checkScreen(page, 'C opening 1280 light');
@@ -652,9 +655,11 @@ if (part('C') && !others?.length) {
       const q = await currentQuestion(page);
       if (!q) break;
       if (q.code === 'H10') {
-        await page.locator('.ds-guide-label .ds-guide-i').click();
-        pass('H10: the ⓘ names the coach', (await text(page, '.ds-infopop:not([hidden])')).includes('Tim uses this to help, never to judge.'));
-        await page.keyboard.press('Escape');
+        // "Why we ask", three sentences, so the side panel (Tim, 16 Nov, 23:31).
+        await checkExplainOpener(page, page.locator('.ds-guide-label .ds-guide-i'), {
+          tag: 'H10: Why we ask', pass,
+          words: ['Why we ask about mood and energy', 'Mood and energy is one of the six Hardware areas.', 'Mood and energy shape how you lead and decide.', 'Tim uses this to help, never to judge.'],
+        });
       }
       await tapAnswer(page, risky[q.code]);
     }
@@ -662,6 +667,11 @@ if (part('C') && !others?.length) {
     pass('results: "Your starting point"', (await heading(page)) === 'Your starting point');
     // Declutter (Tim, 5 Nov): no descriptions under the scores and no "Your graph starts here."; the ⓘ beside each term explains it.
     pass('results: no description under the scores, an ⓘ beside each term', !(await text(page, '.ck-scores')).includes('Sleep, stress, movement, fuel, energy and health.') && (await page.locator('.ck-scores .ds-term-info').count()) === 2);
+    // How each score is worked out opens in the side panel (Tim, 16 Nov, 23:31).
+    await checkExplainOpener(page, page.locator('.ck-scores .ds-term-info').first(), {
+      tag: 'results: the Hardware score’s ⓘ', pass,
+      words: ['How your Hardware score is worked out', 'Hardware is your body’s physiology.', 'Your Hardware score is the average of six areas: sleep, stress, movement, fuel and alcohol, mood and energy, and health.', 'Each area is scored out of 100 from your answers.'],
+    });
     pass('results: no "Your graph starts here."', !(await text(page, '.ds-guide-page')).includes('Your graph starts here'));
     pass('results: no What improved on the first', (await page.locator('.ck-improved').count()) === 0);
     pass('results: My goals, one per line', (await page.locator('.ck-goal-text').allInnerTexts()).join('|') === 'I’d lead the board calmly through the merger.|Lead the merger well|Delegate properly|Get my energy back');

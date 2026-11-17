@@ -56,6 +56,7 @@ import { outlinedEdges } from './edges.mjs';
 import { overlappingTaps } from './taps.mjs';
 import { checkReveals } from './reveals.mjs';
 import { questionsBeforeCharts } from './summary-order.mjs';
+import { checkPopups } from './popups.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
@@ -475,6 +476,9 @@ for (const width of PAGES.length ? [1280, 390] : []) {
         pass(`${tag}: no two tap areas overlap`, shared.length === 0, shared.slice(0, 6).join('; '));
         const early = await page.evaluate(questionsBeforeCharts);
         pass(`${tag}: Questions to start with never come before a chart`, early.length === 0, early.slice(0, 4).join('; '));
+        // A pop-up holds one short line; longer explanations open in the side panel (Tim, 16 Nov, 23:31).
+        const pops = await page.evaluate(checkPopups);
+        pass(`${tag}: every pop-up is one short line, and no ⓘ sits in a list row (${pops.checked} read)`, pops.problems.length === 0, pops.problems.slice(0, 4).join('; '));
         pass(`${tag}: no title in capitals over 3 words`, r.longTitles.length === 0, r.longTitles.join('; '));
         const old = /plan my day|review my day|hardware and software check-in|monthly check-in|first check-in|performance evidence/i.exec(r.text);
         pass(`${tag}: no old names`, !old, old?.[0]);
@@ -612,6 +616,8 @@ if (HC_ONLY) {
           // The summary opens with the visuals and the questions come last (Tim, 13 Nov; rule 29ar).
           const early = await page.evaluate(questionsBeforeCharts);
           pass(`${tag}: Questions to start with never come before a chart`, early.length === 0, early.slice(0, 4).join('; '));
+          const pops = await page.evaluate(checkPopups);
+          pass(`${tag}: every pop-up is one short line, and no ⓘ sits in a list row (${pops.checked} read)`, pops.problems.length === 0, pops.problems.slice(0, 4).join('; '));
           if (screen === 'results' || screen === 'example-report') {
             const order = await page.evaluate((own) => {
               const root = [...document.querySelectorAll('.ds-guide--fullscreen, .ds-guest')].pop();

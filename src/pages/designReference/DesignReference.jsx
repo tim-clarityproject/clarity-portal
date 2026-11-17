@@ -1968,10 +1968,12 @@ function Gallery() {
           </>
         )} />
 
-        <GallerySection id="c78" title="An ⓘ with a heading and bullets" demo={InfoListDemo} rules={(
+        <GallerySection id="c78" title="Explanations: one line, or the side panel" demo={InfoListDemo} rules={(
           <>
-            <p><New /><b>What it is, and what it isn’t</b> (Tim, 14 Nov, 09:41; <code>InfoPop</code>’s lines): the pop-up’s own name, sentences, a word with its meaning, a short heading and a bullet list.</p>
-            <p>An ⓘ after a sentence, a label or a heading wraps with its last word (<code>SentenceInfo</code>), 6px after it.</p>
+            <p><New /><b>A pop-up is for one short line only</b> (Tim, 16 Nov, 23:31): a single term, a chart value, or who can see this. One sentence of about 60 characters at most, so it fits on one line on a phone.</p>
+            <p><b>Anything longer opens in the side panel</b> (<code>ExplainPanel</code>, <code>ExplainLink</code>, <code>ExplainInfo</code>; a <code>SentenceInfo</code> or <code>TermInfo</code> with <code>explain</code>): several terms together, what a chart’s marks mean, how a score is worked out, or why some steps help. From the right, 460px, over a dimmed page; full screen on a phone. Escape, the close crosshair or the dimmed page closes it, and focus goes back to what opened it.</p>
+            <p>Inside: the title says what it explains, as a sentence in DM Sans 20px. Each term on its own line in the main colour, its meaning under it in grey, one sentence per line, a fine line between terms. No bullets, no bold, no ⓘ.</p>
+            <p>What opens it: the ⓘ beside a single term or a combined score, or a quiet text link under the thing it explains (“How to read the chart”). Never an ⓘ inside list rows. Checked on every page by calm-rules (<code>tests/phase5/popups.mjs</code>).</p>
           </>
         )} />
 

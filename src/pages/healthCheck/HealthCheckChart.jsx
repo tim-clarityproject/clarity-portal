@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import ChartTips, { tipProps } from '../../components/design/ChartTips';
-import { PROGS, RES, stateSentence } from '../../health-check/words';
+import { stateSentence } from '../../health-check/words';
 import './healthCheck.css';
 
 // Strategic importance against progress (mock-up M7b version 51, to the
@@ -76,19 +76,19 @@ export function placeDots(rows, geo) {
   });
 }
 
-/** What a dot's pop-up says: the kind first, small, then the name, then its figures and answers. */
+/**
+ * What a dot's pop-up says, as every chart read-out (Tim, 16 Nov, 23:31):
+ * the kind first, small, then the name, its strategic importance, then at
+ * most one more fact: how it moved since the earlier version (Compare), or
+ * where it stands. Progress and resource are in the list under the chart.
+ */
 export function dotTip(row, note = null) {
   return {
     kind: `Project ${row.n}`,
     name: row.text,
     extra: [
       row.rated ? `${row.pct}% strategic importance` : 'Strategic importance isn’t rated yet.',
-      stateSentence(row),
-      // the chosen answers in curly quotes
-      ...(PROGS[row.progress] ? [`Progress is “${PROGS[row.progress]}”.`] : []),
-      // a blank resource counts as Moderate, as its dot size does (m20DotSize), and isn't a chosen answer
-      `Resource required is ${RES[row.resource] ? `“${RES[row.resource][0]}”` : RES[3][0]}.`,
-      ...(note ? [note] : []),
+      note || stateSentence(row),
     ],
   };
 }

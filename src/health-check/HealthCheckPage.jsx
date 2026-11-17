@@ -92,11 +92,14 @@ function shortDate(value) {
   return full.endsWith(` ${year}`) ? full.slice(0, -5) : full;
 }
 
-const HOW_KEPT = [
-  { title: 'How your answers are kept' },
-  { term: 'Saved as you go', meaning: 'You can stop and come back with the same email and access code.' },
-  { term: 'Kept securely', meaning: 'Your answers are kept for 2 years after your last visit.' },
-];
+// Two terms together, so the side panel (Tim, 16 Nov, 23:31).
+const HOW_KEPT = {
+  title: 'How your answers are kept',
+  terms: [
+    { term: 'Saved as you go', meaning: 'You can stop and come back with the same email and access code.' },
+    { term: 'Kept securely', meaning: 'Your answers are kept for 2 years after your last visit.' },
+  ],
+};
 
 
 function Page() {
@@ -537,7 +540,7 @@ function Page() {
             {openError && <div className="ds-guest-problem"><ErrorMessage>{openError}</ErrorMessage></div>}
             {['sent', 'unsent', 'waiting'].includes(newCode) && <p className="ds-guest-sentence"><Button variant="text" onClick={resendCode}>{newCode === 'unsent' ? 'Send it again' : 'Didn’t get it? Send it again'}</Button></p>}
             <p className="ds-guest-sentence">
-              <SentenceInfo lines={HOW_KEPT} label="How your answers are kept">{shared === false ? 'Only you will see your answers.' : `Only you and ${coachName || 'your coach'} will see your answers.`}</SentenceInfo>
+              <SentenceInfo explain={HOW_KEPT} label="How your answers are kept">{shared === false ? 'Only you will see your answers.' : `Only you and ${coachName || 'your coach'} will see your answers.`}</SentenceInfo>
             </p>
             <Button variant="primary" type="submit" className="hc-wide-btn" aria-busy={opening || undefined}>{ret ? 'Pick up where you left off' : 'Start the Health Check'}</Button>
           </form>

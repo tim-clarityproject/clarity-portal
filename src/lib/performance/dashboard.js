@@ -346,7 +346,7 @@ function heroView(d, weeks, sprint, today) {
     usualLine: usual ? null : `Your usual range appears after ${USUAL_RANGE_MIN_WEEKS} weeks.`,
     chart: {
       standard,
-      band: usual ? { low: usual.low, high: usual.high, tip: { value: `${usual.low} to ${usual.high}%`, when: 'Your usual range', extra: [`Your usual range is ${usual.low} to ${usual.high}%.`] } } : null,
+      band: usual ? { low: usual.low, high: usual.high, tip: { value: `${usual.low} to ${usual.high}%`, when: 'Your usual range' } /* no line repeating the value (Tim, 16 Nov, 23:31) */ } : null,
       bars,
       enough,
       empty: 'Your chart starts after your first week.',

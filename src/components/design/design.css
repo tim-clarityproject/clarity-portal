@@ -11199,3 +11199,77 @@
 .ui-root .ds-guest-go {
   margin-top: var(--space-px18);
 }
+
+/* ---------- Explanations in the side panel (design reference "Explanations (16 Nov)"; M21 Travel plan v6) ---------- */
+/* The shared side panel ("Who can see this?"): its head, body and 20px DM
+   Sans title. Each term on its own line in the main colour (16px), its
+   meaning under it in grey (14px), one sentence per line, 12px above and
+   below, a fine line between terms. No bullets, no bold, no ⓘ. */
+.ui-root .ds-explain-lines {
+  margin-top: var(--space-px12);
+}
+
+.ui-root .ds-explain-line {
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-statement);
+  color: var(--text-2);
+}
+
+.ui-root .ds-explain-terms {
+  margin: var(--space-1) 0 0;
+}
+
+.ui-root .ds-explain-term {
+  padding: var(--space-px12) 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.ui-root .ds-explain-term:last-child {
+  border-bottom: 0;
+}
+
+.ui-root .ds-explain-word {
+  margin: 0 0 var(--space-px3);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .ds-explain-meaning {
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-statement);
+  color: var(--text-2);
+}
+
+/* The quiet text link that opens it ("How to read the chart"): underlined
+   grey words with a 44px tap area, coral on hover or keyboard focus. */
+.ui-root .ds-explain-link {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  font-family: var(--font-body);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: var(--space-px3);
+  text-decoration-color: var(--text-2);
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .ds-explain-link:hover,
+.ui-root .ds-explain-link:focus-visible {
+  color: var(--coral-text);
+}
+
+.ui-root .ds-explain-link:focus-visible {
+  outline: 2px solid var(--coral-text);
+  outline-offset: 2px;
+  border-radius: var(--space-1);
+}

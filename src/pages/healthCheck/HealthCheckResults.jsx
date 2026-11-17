@@ -4,10 +4,11 @@ import Dropdown from '../../components/design/Dropdown';
 import { ResultsHeadline, ResultsSection, StartQuestions } from '../../components/design/Results';
 import StepBars from '../../components/design/StepBars';
 import { SentenceInfo } from '../../components/design/TermInfo';
+import { ExplainLink } from '../../components/design/Explain';
 import useIsPhone from '../../components/design/useIsPhone';
 import HealthCheckChart from './HealthCheckChart';
 import {
-  CHART_TITLE, LINE_OPTIONS, PROGS, RES, SORTS, chartInfo, csfLevel, csfLevelName, headlineLine, importanceLines, resultsModel, sortRows, stateWords,
+  CHART_TITLE, IMPORTANCE_SHORT, LINE_OPTIONS, PROGS, RES, SORTS, chartExplain, csfLevel, csfLevelName, headlineLine, resultsModel, sortRows, stateWords,
 } from '../../health-check/words';
 import './healthCheck.css';
 
@@ -75,7 +76,7 @@ export function ProjectList({ rows, theirs = false, onOpen }) {
       <div className="hc-prow hc-prow--head">
         <span />
         <span>Project</span>
-        <span><SentenceInfo lines={popLines(importanceLines())} label="What strategic importance means">Strategic importance</SentenceInfo></span>
+        <span><SentenceInfo lines={[IMPORTANCE_SHORT]} label="What strategic importance means">Strategic importance</SentenceInfo></span>
         <span>Progress</span>
         <span>Resource required</span>
       </div>
@@ -113,7 +114,7 @@ export default function HealthCheckResults({ draft, asOf, theirs = false, sort =
       <ResultsSection
         row
         className="hc-chart-section"
-        title={<SentenceInfo lines={popLines(chartInfo(line))} label="How to read the chart">{CHART_TITLE}</SentenceInfo>}
+        title={CHART_TITLE}
       >
         {!theirs && (
           <div className="hc-ctl">
@@ -123,6 +124,7 @@ export default function HealthCheckResults({ draft, asOf, theirs = false, sort =
         {anyPlotted
           ? <HealthCheckChart rows={rows} line={line} phone={phone} lit={lit} was={was} />
           : <p className="hc-chart-empty">The chart shows each project once its progress is rated.</p>}
+        {anyPlotted && <div className="hc-chart-explain"><ExplainLink explain={chartExplain(line)}>How to read the chart</ExplainLink></div>}
       </ResultsSection>
       <ResultsSection row title="Projects" action={edit('projects', 'Edit the list of projects')} className="hc-projects">
         <div className="hc-ctl">

@@ -147,7 +147,8 @@ export default function SleepWindDown() {
         <div className="day-narrow">
           <IconTextRow className="ds-wind-who">
             <WhoSees audience="me" />
-            <InfoWords title="Why write it down" text="In a sleep study, people who wrote a to-do list for the next day fell asleep faster.">
+            {/* One short line (Tim, 16 Nov, 23:31: a pop-up holds one line). */}
+            <InfoWords text="People who write tomorrow’s to-do list fall asleep faster.">
               Why write it down
             </InfoWords>
           </IconTextRow>

@@ -49,7 +49,7 @@ const SCREENS = [
   ['who can see this', { step: STEPS.objective }, async (p, s) => { await signIn(p, s); await p.locator('.ds-guide-question .ds-who:not(.ds-play)').click(); await p.locator(DIALOG).waitFor(); }, DIALOG],
   ['Download PDF panel', DONE, async (p, s) => { await signIn(p, s); await rows(p); await p.locator('.ds-guide-next').click(); await p.locator(DIALOG).waitFor(); }, DIALOG],
   ['a drop-down’s list', { step: STEPS.when }, async (p, s) => { await signIn(p, s); await p.locator('.hc-dates .ds-dd').first().click(); await p.getByRole('option').first().waitFor(); }, '[role=listbox]'],
-  ['an ⓘ’s pop-up', { step: STEPS.csf }, async (p, s) => { await signIn(p, s); await p.locator('.hc-flab .ds-guide-i').click(); await sleep(400); }, '.ds-guide'],
+  ['an explanation in the side panel', { step: STEPS.csf }, async (p, s) => { await signIn(p, s); await p.locator('.hc-flab .ds-guide-i').click(); await p.locator(DIALOG).waitFor(); await sleep(500); }, DIALOG],
 ];
 
 // Runs in the page: what scrolls sideways, what runs off the side, what is cut off, what is too small to tap.

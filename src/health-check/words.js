@@ -173,6 +173,36 @@ export function chartInfo(line) {
 /** The older name, kept for the portal's older route. */
 export const howItWorks = chartInfo;
 
+/**
+ * How to read the chart, in the side panel (Tim, 16 Nov, 23:31: what a
+ * chart's marks mean opens in the panel, from "How to read the chart"
+ * under the chart). Each mark's word, then its meaning.
+ */
+export function chartExplain(line) {
+  return {
+    title: 'How to read the chart',
+    terms: chartInfo(line).filter((l) => l.term),
+  };
+}
+
+/** What a Success Factor is and isn't, in the side panel (no bullets there). */
+export const SUCCESS_FACTOR_EXPLAIN = {
+  title: 'What is a Success Factor?',
+  lines: [
+    'It’s one of the few things that must go right for you to reach your objective.',
+    'For example, “Win and keep enterprise clients”.',
+  ],
+  terms: [
+    { term: 'It’s not a project or a task', meaning: 'For example, “Launch the new CRM”.' },
+    { term: 'It’s not a target or a measure', meaning: 'For example, “£40m in revenue”.' },
+  ],
+};
+
+/** The one short line behind the ⓘ on "Strategic importance" (a pop-up holds one line). */
+export const IMPORTANCE_SHORT = 'It’s how much a project helps the Success Factors.';
+/** The one short line behind the projects step's ⓘ. */
+export const PROJECTS_SHORT = 'It’s anything that takes your team’s time, money or people.';
+
 /** What a Success Factor is, and what it isn't (Tim, 14 Nov, 09:29 and 09:41). */
 export const SUCCESS_FACTOR_INFO = [
   { bold: 'What is a Success Factor?' },

@@ -18,8 +18,8 @@ import {
   MAX_FACTORS, MAX_ITEM, MAX_OBJECTIVE, MAX_PROJECTS, blankRow, cleanItems, setProjectDates,
 } from '../alignment/alignmentFlow';
 import { at, firstGap, nextStep, percent, prevStep, stepKey } from '../../health-check/flow';
-import { CON, CSF_LEVELS, PROG, RES, SUCCESS_FACTOR_INFO, csfLevel } from '../../health-check/words';
-import HealthCheckResults, { popLines } from './HealthCheckResults';
+import { CON, CSF_LEVELS, PROG, PROJECTS_SHORT, RES, SUCCESS_FACTOR_EXPLAIN, csfLevel } from '../../health-check/words';
+import HealthCheckResults from './HealthCheckResults';
 import './healthCheck.css';
 
 // The Strategic Alignment Health Check as one guided tool (mock-up M7b
@@ -432,7 +432,7 @@ export default function HealthCheckTool({
       render: () => (
         <>
           {mark(at('csf'))}
-          <p className="hc-flab"><SentenceInfo lines={popLines(SUCCESS_FACTOR_INFO)} label="What is a Success Factor?">Success Factors</SentenceInfo></p>
+          <p className="hc-flab"><SentenceInfo explain={SUCCESS_FACTOR_EXPLAIN} label="What is a Success Factor?">Success Factors</SentenceInfo></p>
           <RowList
             rows={draft.csfs.map((x) => x.text)}
             onChange={setList('csfs')}
@@ -482,7 +482,7 @@ export default function HealthCheckTool({
       name: 'Projects',
       question: 'What is your team working on?',
       nudges: ['List every project or piece of work, now or planned.'],
-      nudgeInfo: { label: 'What counts as a project', text: [{ title: 'Projects' }, 'Include anything that takes your team’s time, money or people.'] },
+      nudgeInfo: { label: 'What counts as a project', text: PROJECTS_SHORT },
       required: true,
       percent: percent(at('projects'), draft),
       check: () => (projects.length ? null : NEEDS.projects),

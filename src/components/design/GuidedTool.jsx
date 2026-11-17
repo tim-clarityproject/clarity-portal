@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { IconButton } from './Button';
 import InfoIcon from './InfoIcon';
+import { ExplainInfo } from './Explain';
 import InfoPop from './InfoPop';
 import { useEscapeLayer, pushLayer } from './layers';
 import { lockPage, openerOf, returnFocus, trapTab, unlockPage } from './pageLock';
@@ -55,7 +56,10 @@ import './design.css';
 //   example,              text, or { ceo, coach, leader } by role
 //   tip: { key, text },   a one-off tip
 //   nudgeInfo: { label, text } an "i" at the end of the last nudge,
-//              opening its one line in place (M19's Close the day),
+//              opening its one line in place (M19's Close the day);
+//              { label, explain } opens a longer explanation in the side
+//              panel instead (Explain.jsx; Tim, 16 Nov, 23:31)
+//   info may also be { explain }: "Why we ask" in the side panel,
 //   required, nextLabel, skippable (for the last step), bare,
 //   eye:       the screen's eye (WhoSees), shown beside the question.
 //   oneTap:    a one-answer question (Tim, 5 Nov, 10:23): the chosen answer
@@ -197,7 +201,8 @@ function StepHead({ step, headingRef, positionId, role }) {
       {(step.label || step.info) && (
         <div className="ds-guide-label ds-guide-rv">
           {step.label && <span>{step.label}</span>}
-          {step.info && (
+          {step.info?.explain && <ExplainInfo explain={step.info.explain} label="Why we ask" className="ds-guide-i" />}
+          {step.info && !step.info.explain && (
             <button
               type="button"
               className="ds-guide-i"
@@ -212,7 +217,7 @@ function StepHead({ step, headingRef, positionId, role }) {
           )}
         </div>
       )}
-      {step.info && <InfoPop id={infoId} open={infoOpen} anchorRef={infoButtonRef} panelRef={infoPanelRef} lines={step.info} />}
+      {step.info && !step.info.explain && <InfoPop id={infoId} open={infoOpen} anchorRef={infoButtonRef} panelRef={infoPanelRef} lines={step.info} />}
       <Heading
         ref={headingRef}
         tabIndex={-1}
@@ -226,7 +231,10 @@ function StepHead({ step, headingRef, positionId, role }) {
       {step.nudges?.map((line, n) => (
         <p key={line} className="ds-guide-nudge ds-guide-rv ds-guide-rv--2">
           {line}
-          {step.nudgeInfo && n === step.nudges.length - 1 && (
+          {step.nudgeInfo?.explain && n === step.nudges.length - 1 && (
+            <ExplainInfo explain={step.nudgeInfo.explain} label={step.nudgeInfo.label} className="ds-guide-i ds-guide-i--end" />
+          )}
+          {step.nudgeInfo && !step.nudgeInfo.explain && n === step.nudges.length - 1 && (
             <button
               type="button"
               className="ds-guide-i ds-guide-i--end"
@@ -241,7 +249,7 @@ function StepHead({ step, headingRef, positionId, role }) {
           )}
         </p>
       ))}
-      {step.nudgeInfo && <InfoPop id={nudgeInfoId} open={nudgeOpen} anchorRef={nudgeButtonRef} panelRef={nudgePanelRef} lines={step.nudgeInfo.text} />}
+      {step.nudgeInfo && !step.nudgeInfo.explain && <InfoPop id={nudgeInfoId} open={nudgeOpen} anchorRef={nudgeButtonRef} panelRef={nudgePanelRef} lines={step.nudgeInfo.text} />}
       {example && (
         <>
           <button

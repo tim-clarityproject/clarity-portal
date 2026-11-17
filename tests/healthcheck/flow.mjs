@@ -17,6 +17,7 @@
 // question to the results), back, rows, edits, results, keep, return,
 // example, guide, panels, old (an old Health Check in old words and shape),
 // sizes (one project; 40 projects).
+import { checkExplainOpener, explainWords } from '../explain-panel.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -310,11 +311,11 @@ part('signin', async ({ browser, w, mode, tag }) => {
   const after = await page.evaluate(() => { const s = document.querySelector('.hc-wide-btn'); return { d: s.disabled || s.getAttribute('aria-disabled') === 'true', o: getComputedStyle(s).opacity, fill: getComputedStyle(s).backgroundColor.replace(/\s+/g, '') }; });
   pass(`${tag}, email and code: the button is still coral and can be pressed`, !after.d && after.o === '1' && after.fill === CORAL, JSON.stringify(after));
   await checkScreen(b, `${tag}, email and code with the calm line`, { layer: '.ds-guest' });
-  // The ⓘ: how the answers are kept.
-  await page.locator('.ds-guest-sentence .ds-guide-i').click();
-  pass(`${tag}, email and code: the ⓘ says how the answers are kept`, await popIs(page, ['How your answers are kept', 'Saved as you go', 'You can stop and come back with the same email and access code.', 'Kept securely', 'Your answers are kept for 2 years after your last visit.']), JSON.stringify(await popWords(page)));
-  await page.keyboard.press('Escape');
-  pass(`${tag}, email and code: Escape closes the ⓘ`, await until(async () => (await popWords(page)) === null, 3000));
+  // The ⓘ: how the answers are kept, two terms, so the side panel (Tim, 16 Nov, 23:31).
+  await checkExplainOpener(page, page.locator('.ds-guest-sentence .ds-guide-i'), {
+    tag: `${tag}, email and code: the ⓘ on how the answers are kept`, pass, touch: phone,
+    words: ['How your answers are kept', 'Saved as you go', 'You can stop and come back with the same email and access code.', 'Kept securely', 'Your answers are kept for 2 years after your last visit.'],
+  });
   // A legal link opens the shared reading pop-up.
   await page.locator('.ds-guest-legal a.ds-link').first().click();
   pass(`${tag}, email and code: Privacy Policy opens its pop-up on the page`, await until(async () => (await page.locator(DIALOG).count()) > 0, 5000));
@@ -380,7 +381,7 @@ part('new', async ({ browser, w, mode, tag }) => {
   await checkScreen(b, `${tag}, projects`, { back: true });
   // The ⓘ at the end of the line of help.
   await page.locator('.ds-guide-nudge .ds-guide-i').click();
-  pass(`${tag}, projects: the ⓘ says what counts as a project`, await popIs(page, ['Projects', 'Include anything that takes your team’s time, money or people.']), JSON.stringify(await popWords(page)));
+  pass(`${tag}, projects: the ⓘ says what counts as a project, in one short line`, await popIs(page, ['It’s anything that takes your team’s time, money or people.']), JSON.stringify(await popWords(page)));
   await page.keyboard.press('Escape');
   await pressNext(page);
   // Each project: one Success Factor a screen, the dates, progress, resource.
@@ -695,7 +696,8 @@ part('results', async ({ browser, w, mode, phone, tag }) => {
   figure(`Chart dots’ tap circles, ${phone ? 'phone' : 'laptop'}`, `${dots[0]?.w.toFixed(1)}px on screen (${dots[0]?.drawn}px in the drawing)`);
   // The dots' pop-ups: hover (a laptop), tap, keyboard.
   const tipText = () => page.evaluate(() => { const t = [...document.querySelectorAll('.ds-tip')].find((x) => getComputedStyle(x).display !== 'none' && x.getBoundingClientRect().width > 0); return t ? t.innerText.split('\n').map((s) => s.trim()).filter(Boolean) : null; });
-  const wantTip = ['Project 1', 'Enterprise sales team', '83% strategic importance', 'It’s important and needs attention.', 'Progress is “Bad”.', 'Resource required is “Very high”.'];
+  // The number and name, strategic importance, then one more fact (Tim, 16 Nov, 23:31): the rest is in the list.
+  const wantTip = ['Project 1', 'Enterprise sales team', '83% strategic importance', 'It’s important and needs attention.'];
   await page.locator('.hc-chart').scrollIntoViewIfNeeded();
   const dot1 = page.locator('.hc-dot[data-n="1"] .hc-dot-mark');
   if (!phone) {
@@ -726,12 +728,14 @@ part('results', async ({ browser, w, mode, phone, tag }) => {
     await sleep(200);
     return lines;
   };
-  const chartInfo = (line) => ['Strategic importance against progress', 'Each dot', 'It’s a project, numbered as in the list below.', 'Bigger dots', 'They show projects that require more resource.', 'Important', `It’s a project above the line you set, which is now ${line}%.`, 'Too early to tell', 'It’s a project at the Embryonic stage.'];
-  let got = await info(page.locator('.hc-chart-section .ds-guide-i'));
-  pass(`${tag}, results: the chart’s ⓘ reads Each dot, Bigger dots, Important (the line, now 50%) and Too early to tell`, JSON.stringify(got) === JSON.stringify(chartInfo(50)), JSON.stringify(got));
+  // What the chart's marks mean opens in the side panel from "How to read the chart" under it (Tim, 16 Nov, 23:31).
+  const chartInfo = (line) => ['How to read the chart', 'Each dot', 'It’s a project, numbered as in the list below.', 'Bigger dots', 'They show projects that require more resource.', 'Important', `It’s a project above the line you set, which is now ${line}%.`, 'Too early to tell', 'It’s a project at the Embryonic stage.'];
+  pass(`${tag}, results: no ⓘ on the chart’s heading`, (await page.locator('.hc-chart-section .ds-results-head .ds-guide-i').count()) === 0);
+  await checkExplainOpener(page, page.locator('.hc-chart-section .ds-explain-link'), { tag: `${tag}, results: How to read the chart`, pass, touch: phone, words: chartInfo(50) });
+  let got;
   if (!phone) {
     got = await info(page.locator('.hc-prow--head .ds-guide-i'));
-    pass(`${tag}, results: the Strategic importance ⓘ has no line about weights`, JSON.stringify(got) === JSON.stringify(['Strategic importance', 'It’s how much a project helps the Success Factors, out of 100%.', 'High on every Success Factor scores 100%.']) && !got.join(' ').includes('40%'), JSON.stringify(got));
+    pass(`${tag}, results: the Strategic importance ⓘ is one short line`, JSON.stringify(got) === JSON.stringify(['It’s how much a project helps the Success Factors.']), JSON.stringify(got));
   }
   // The line for important: the chart and the headline follow it.
   const lineY = () => page.evaluate(() => Number(document.querySelector('.hc-chart-lines line').getAttribute('y1')));
@@ -752,8 +756,12 @@ part('results', async ({ browser, w, mode, phone, tag }) => {
   const y70 = await lineY();
   pass(`${tag}, results: the line drop-down moves the chart’s line`, y70 < y50 - 10, `${y50} to ${y70}`);
   pass(`${tag}, results: and the headline follows it`, await until(async () => (await page.locator('.ds-headline').innerText()).trim() === '1 of your 2 important projects is moving well.', 3000), await page.locator('.ds-headline').innerText());
-  got = await info(page.locator('.hc-chart-section .ds-guide-i'));
-  pass(`${tag}, results: the chart’s ⓘ gives the line as it is now, 70%`, JSON.stringify(got) === JSON.stringify(chartInfo(70)), JSON.stringify(got));
+  await page.locator('.hc-chart-section .ds-explain-link').click();
+  await until(async () => (await explainWords(page)) !== null, 3000);
+  got = await explainWords(page);
+  await page.keyboard.press('Escape');
+  await until(async () => (await explainWords(page)) === null, 3000);
+  pass(`${tag}, results: How to read the chart gives the line as it is now, 70%`, JSON.stringify(got) === JSON.stringify(chartInfo(70)), JSON.stringify(got));
   await until(async () => session.saves > saves && session.data?.importantLine === 70, 4000);
   pass(`${tag}, results: the line is saved with the answers`, session.data?.importantLine === 70, `${session.data?.importantLine}`);
   pass(`${tag}, results: the place stays on the page when the line is set`, await page.evaluate(() => document.querySelector('.ds-guide-scroll').scrollTop > 0 || document.querySelector('.hc-ctl .ds-dd').getBoundingClientRect().top >= 0));
@@ -990,14 +998,11 @@ part('panels', async ({ browser, w, mode, tag }) => {
   await pressNext(page);
   await onQuestion(page, 'How will you achieve your objective?');
   pass(`${tag}, who: no eye or play icon on the later questions`, (await page.locator('.ds-guide-question .ds-who').count()) === 0);
-  // The Success Factor ⓘ, word for word.
-  await page.locator('.hc-flab .ds-guide-i').click();
-  await until(async () => (await popWords(page)) !== null, 3000);
-  const sf = await popWords(page);
-  pass(`${tag}, the Success Factor ⓘ reads exactly as agreed`, JSON.stringify(sf) === JSON.stringify(['What is a Success Factor?', 'It’s one of the few things that must go right for you to reach your objective.', 'For example, “Win and keep enterprise clients”.', 'What it’s not:', '• A project or a task, such as “Launch the new CRM”.', '• A target or a measure, such as “£40m in revenue”.']), JSON.stringify(sf));
-  const pop = await page.evaluate(() => { const r = [...document.querySelectorAll('.ds-infopop')].filter((x) => getComputedStyle(x).display !== 'none' && x.getBoundingClientRect().width > 0).pop().getBoundingClientRect(); return { l: r.left, r: window.innerWidth - r.right, t: r.top, b: window.innerHeight - r.bottom }; });
-  pass(`${tag}, the ⓘ’s pop-up stays inside the screen`, pop.l >= 0 && pop.r >= 0 && pop.t >= 0 && pop.b >= 0, JSON.stringify(pop));
-  await page.keyboard.press('Escape');
+  // The Success Factor ⓘ, word for word, in the side panel (no bullets there).
+  await checkExplainOpener(page, page.locator('.hc-flab .ds-guide-i'), {
+    tag: `${tag}, the Success Factor ⓘ`, pass, touch: phone,
+    words: ['What is a Success Factor?', 'It’s one of the few things that must go right for you to reach your objective.', 'For example, “Win and keep enterprise clients”.', 'It’s not a project or a task', 'For example, “Launch the new CRM”.', 'It’s not a target or a measure', 'For example, “£40m in revenue”.'],
+  });
   noProblems(b, `${tag}, panels`);
   await b.ctx.close();
 });

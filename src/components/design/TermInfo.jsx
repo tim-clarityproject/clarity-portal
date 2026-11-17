@@ -2,15 +2,27 @@ import { useId } from 'react';
 import InfoIcon from './InfoIcon';
 import InfoPop from './InfoPop';
 import useInfoToggle from './useInfoToggle';
+import { ExplainInfo } from './Explain';
 import './design.css';
 
 // A term or combined score that needs explaining (Tim, 5 Nov, 11:00 rule 3):
 // the words, then the one "i" 6px after them, which opens a proper box
 // saying what it is and how it's worked out (one sentence per line). The
 // only place an "i" is kept.
-export default function TermInfo({ children, lines = [], label }) {
+//
+// explain: instead of lines, a longer explanation that opens in the side
+// panel (Explain.jsx; Tim, 16 Nov: a pop-up holds one short line only).
+export default function TermInfo({ children, lines = [], label, explain }) {
   const id = useId();
   const { open, buttonRef, panelRef, buttonProps } = useInfoToggle();
+  if (explain) {
+    return (
+      <span className="ds-term">
+        {children}
+        <ExplainInfo explain={explain} label={label || `About ${typeof children === 'string' ? children : 'this'}`} />
+      </span>
+    );
+  }
   return (
     <span className="ds-term">
       {children}
@@ -37,12 +49,15 @@ export default function TermInfo({ children, lines = [], label }) {
 //   lines: as InfoPop's (sentences, or { title }, { term, meaning },
 //          { heading }, { bullets })
 //   label: what a screen reader hears for the ⓘ
-export function SentenceInfo({ children, lines = [], label }) {
+//   explain: a longer explanation for the side panel, instead of lines
+export function SentenceInfo({ children, lines = [], label, explain }) {
   const id = useId();
   const { open, buttonRef, panelRef, buttonProps } = useInfoToggle();
   const text = typeof children === 'string' ? children.trim() : null;
   const at = text ? text.lastIndexOf(' ') : -1;
-  const button = (
+  const button = explain ? (
+    <ExplainInfo explain={explain} label={label || explain.title} className="ds-guide-i ds-guide-i--end" />
+  ) : (
     <button
       type="button"
       ref={buttonRef}
@@ -63,7 +78,7 @@ export function SentenceInfo({ children, lines = [], label }) {
           <span className="ds-title-end">{text.slice(at + 1)}{button}</span>
         </>
       ) : <span className="ds-title-end">{children}{button}</span>}
-      <InfoPop id={id} open={open} anchorRef={buttonRef} panelRef={panelRef} lines={lines} />
+      {!explain && <InfoPop id={id} open={open} anchorRef={buttonRef} panelRef={panelRef} lines={lines} />}
     </>
   );
 }

@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import {
-  BottomBar, Button, OfferRow, OneOffTip, PageHeader, VersionList, VersionRow, PdfPanel, PlayButton, ResultsHeadline, ResultsSection, SentenceInfo, SlidePanel, StartQuestions, TitleIcons, WhoSees, useIsPhone, useToast,
+  BottomBar, Button, ExplainLink, OfferRow, OneOffTip, PageHeader, VersionList, VersionRow, PdfPanel, PlayButton, ResultsHeadline, ResultsSection, SentenceInfo, SlidePanel, StartQuestions, TitleIcons, WhoSees, useIsPhone, useToast,
 } from '../../components/design';
 import { HealthCheckChart, HealthCheckEye, ProjectList } from '../healthCheck';
 import { EXAMPLE } from '../../health-check/example';
-import { SUCCESS_FACTOR_INFO, chartInfo, resultRows } from '../../health-check/words';
-import { popLines } from '../healthCheck/HealthCheckResults';
+import { SUCCESS_FACTOR_EXPLAIN, chartExplain, resultRows } from '../../health-check/words';
 
 // The parts the Health Check's calm rebuild brought (M7b version 51 and M7;
 // Tim, 13 and 14 Nov), each shared: two icons beside a title, an ⓘ with a
@@ -33,11 +32,13 @@ export function TitleIconsDemo() {
   );
 }
 
+/** Explanations (16 Nov): one short line in a pop-up; anything longer in the side panel. */
 export function InfoListDemo() {
   return (
     <div className="dr-stack">
-      <p><SentenceInfo lines={popLines(SUCCESS_FACTOR_INFO)} label="What is a Success Factor?">Success Factors</SentenceInfo></p>
-      <p><SentenceInfo lines={popLines(chartInfo(50))} label="How to read the chart">Strategic importance against progress</SentenceInfo></p>
+      <p><SentenceInfo lines={['It’s how much a project helps the Success Factors.']} label="What strategic importance means">Strategic importance</SentenceInfo></p>
+      <p><SentenceInfo explain={SUCCESS_FACTOR_EXPLAIN} label="What is a Success Factor?">Success Factors</SentenceInfo></p>
+      <p><ExplainLink explain={chartExplain(50)}>How to read the chart</ExplainLink></p>
     </div>
   );
 }

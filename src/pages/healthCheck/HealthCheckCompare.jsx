@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import Dropdown from '../../components/design/Dropdown';
 import { ResultsHeadline, ResultsSection } from '../../components/design/Results';
-import { SentenceInfo } from '../../components/design/TermInfo';
+import { ExplainLink } from '../../components/design/Explain';
 import useIsPhone from '../../components/design/useIsPhone';
 import { resultRows } from '../../health-check/words';
 import HealthCheckChart from './HealthCheckChart';
@@ -20,14 +20,18 @@ import './healthCheck.css';
 //   onPick:  (which: 'a' | 'b', id) => the page swaps them when needed
 //   talk:    the quiet link at the end, or nothing
 
-function chartLines(model) {
-  return [
-    { title: 'How projects moved' },
-    { term: 'Each dot', meaning: `It’s a project, where it is on ${model.laterDate}.` },
-    { term: 'Each dashed ring', meaning: `It shows where the project was on ${model.earlierDate}.` },
-    { term: 'Bigger dots', meaning: 'They show projects that require more resource.' },
-    { term: 'Important', meaning: `It means above ${model.line}%.` },
-  ];
+// What the chart's marks mean, in the side panel from "How to read the
+// chart" under it (Tim, 16 Nov, 23:31).
+function chartExplain(model) {
+  return {
+    title: 'How to read the chart',
+    terms: [
+      { term: 'Each dot', meaning: `It’s a project, where it is on ${model.laterDate}.` },
+      { term: 'Each dashed ring', meaning: `It shows where the project was on ${model.earlierDate}.` },
+      { term: 'Bigger dots', meaning: 'They show projects that require more resource.' },
+      { term: 'Important', meaning: `It means above ${model.line}%.` },
+    ],
+  };
 }
 
 export default function HealthCheckCompare({ model, options, onPick, talk = null }) {
@@ -44,8 +48,9 @@ export default function HealthCheckCompare({ model, options, onPick, talk = null
         <ResultsHeadline>{model.sentence}</ResultsHeadline>
         <p className="hc-headline-rest">{model.counts}</p>
       </ResultsSection>
-      <ResultsSection row title={<SentenceInfo lines={chartLines(model)} label="How to read the chart">How projects moved</SentenceInfo>} className="hc-chart-section">
+      <ResultsSection row title="How projects moved" className="hc-chart-section">
         <HealthCheckChart rows={rows} line={model.line} phone={phone} was={model.was} notes={model.notes} />
+        <div className="hc-chart-explain"><ExplainLink explain={chartExplain(model)}>How to read the chart</ExplainLink></div>
       </ResultsSection>
       <ResultsSection row title="How progress moved">
         {moved.map((m) => (

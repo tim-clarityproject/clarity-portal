@@ -50,6 +50,12 @@ export function whyLines(kind, coachName) {
   return ['Health is one of the six Hardware areas.', 'Health affects everything else.', use];
 }
 
+/** "Why we ask", in the side panel (three sentences: Tim, 16 Nov, 23:31). */
+const WHY_TITLE = { alcohol: 'Why we ask about alcohol', mood: 'Why we ask about mood and energy', health: 'Why we ask about health' };
+export function whyExplain(kind, coachName) {
+  return { title: WHY_TITLE[kind] || WHY_TITLE.health, lines: whyLines(kind, coachName) };
+}
+
 /**
  * The one-tap questions, in M12's order (copied from its intakeSteps).
  * H14 to H16 (travel) are context, never scored; H15 and H16 are asked
@@ -503,6 +509,22 @@ export const SCORE_INFO = Object.freeze({
     'Your Software score is the average of six areas: bouncing back, emotions, focus, decisions, communication and conflict.',
     'Each area is scored out of 100 from how often each statement was true.',
   ],
+});
+
+/** How each combined score is worked out, in the side panel (Tim, 16 Nov, 23:31). */
+export const SCORE_EXPLAIN = Object.freeze({
+  hardware: { title: 'How your Hardware score is worked out', lines: SCORE_INFO.hardware },
+  software: { title: 'How your Software score is worked out', lines: SCORE_INFO.software },
+});
+
+/** "What are hardware and software?", in the side panel: two terms, then why both. */
+export const HARDWARE_SOFTWARE_EXPLAIN = Object.freeze({
+  title: 'What are hardware and software?',
+  terms: [
+    { term: 'Hardware', meaning: 'It’s your body’s physiology.' },
+    { term: 'Software', meaning: 'It’s your decision-making, emotional control and communication.' },
+  ],
+  after: ['Software relies on hardware being maintained, so we look after both.'],
 });
 
 /** The "What are hardware and software?" pop-up (writing rule 40, verbatim). */
