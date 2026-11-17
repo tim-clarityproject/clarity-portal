@@ -68,9 +68,7 @@ export function CarriedOverDemo() {
       options={CARRIED}
       values={picked}
       onChange={setPicked}
-      max={3}
       groups={[{ key: 'carried', title: 'Carried over' }, { key: 'week', title: 'This week' }]}
-      count={(n) => `You’ve chosen ${n} of 3.`}
     />
   );
 }

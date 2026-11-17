@@ -1025,6 +1025,14 @@ export function dayPlanAnswersOp(userId, date, values) {
 }
 
 /** The day plan row as it is now (when a first save found one already there). */
+/** The to-dos a day plan holds in the database now ({ todo_id, is_top }). */
+export async function readDayPlanTodos(dayPlanId) {
+  if (!dayPlanId) return [];
+  const { data, error } = await supabase.from('day_plan_todos').select('todo_id, is_top').eq('day_plan_id', dayPlanId);
+  if (error) throw error;
+  return data || [];
+}
+
 export async function loadDayPlanRow(userId, date) {
   return one(supabase.from('day_plans').select(DAY_PLAN_COLS).eq('user_id', userId).eq('local_date', date).limit(1));
 }

@@ -125,12 +125,14 @@ begin
     select id, updated_at into dph, v1 from public.day_plan_habits where user_id = a and local_date = date '2026-10-21';
     f := f || pg_temp.t_eq('2b one row per day', pg_temp.t_rows(format('insert into public.day_plan_habits (user_id, local_date) values (%L, date ''2026-10-21'')', a)), 'error 23505');
     f := f || pg_temp.t_eq('2c three habits is fine', pg_temp.t_rows(format('update public.day_plan_habits set habit_ids = array[%L, %L, %L]::uuid[] where id = %L', h1, h2, h3, dph)), '1');
-    f := f || pg_temp.t_eq('2d four is refused', pg_temp.t_rows(format('update public.day_plan_habits set habit_ids = array[%L, %L, %L, %L]::uuid[] where id = %L', h1, h2, h3, h4, dph)), 'error 23514');
+    -- 047 (Tim, 16 Nov): as many habits as the person chooses; before it, three at most.
+    f := f || pg_temp.t_eq('2d four: refused before 047, taken after it', pg_temp.t_rows(format('update public.day_plan_habits set habit_ids = array[%L, %L, %L, %L]::uuid[] where id = %L', h1, h2, h3, h4, dph)),
+      case when exists (select 1 from pg_constraint where conname = 'day_plan_habits_many') then '1' else 'error 23514' end);
     f := f || pg_temp.t_eq('2e someone else''s habit is refused', pg_temp.t_rows(format('update public.day_plan_habits set habit_ids = array[%L]::uuid[] where id = %L', hb, dph)), 'error 42501');
     f := f || pg_temp.t_eq('2f ... and on a new day too', pg_temp.t_rows(format('insert into public.day_plan_habits (user_id, local_date, habit_ids) values (%L, date ''2026-10-22'', array[%L]::uuid[])', a, hb)), 'error 42501');
     f := f || pg_temp.t_eq('2g a habit that isn''t there is refused', pg_temp.t_rows(format('insert into public.day_plan_habits (user_id, local_date, habit_ids) values (%L, date ''2026-10-23'', array[gen_random_uuid()])', a)), 'error 42501');
     f := f || pg_temp.t_eq('2h a highest priority that is neither a to-do nor a habit is refused', pg_temp.t_rows(format('update public.day_plan_habits set top_pick = ''anything'' where id = %L', dph)), 'error 23514');
-    f := f || pg_temp.t_eq('2i an order of seven is refused', pg_temp.t_rows(format('update public.day_plan_habits set pick_order = array_fill(%L::text, array[7]) where id = %L', 'habit:' || h1, dph)), 'error 23514');
+    f := f || pg_temp.t_eq('2i an order of seven: refused before 047, taken after it (201 refused)', pg_temp.t_rows(format('update public.day_plan_habits set pick_order = array_fill(%L::text, array[case when exists (select 1 from pg_constraint where conname = ''day_plan_habits_many'') then 201 else 7 end]) where id = %L', 'habit:' || h1, dph)), 'error 23514');
     f := f || pg_temp.t_eq('2j the database moves updated_at on', pg_temp.t_n(format('select (updated_at >= %L)::text from public.day_plan_habits where id = %L', v1, dph)), 'true');
     -- The app's own statements (PostgREST): a save writes over the day's
     -- row; a version-checked save changes it only at the version it read;

@@ -359,7 +359,8 @@ if (part(2)) {
     if (part(3)) {
       await at(page, THU, '08:30');
       await toDoStep(page);
-      pass('morning: "Choose up to 3."', (await page.locator('.ds-guide-nudge').allInnerTexts()).join('|') === 'Choose up to 3.');
+      // No limit of three, and no nudge under the question (Tim, 16 Nov): the ticks show several can be chosen.
+      pass('morning: no nudge under "What will you do today?"', (await page.locator('.ds-guide-nudge').count()) === 0, (await page.locator('.ds-guide-nudge').allInnerTexts()).join('|'));
       const titles = await page.locator('.ds-pick-group-title').allInnerTexts();
       pass('morning: one Carried over list, then This week', titles.join('|') === 'Carried over|This week', titles.join('|'));
       const carried = await groupRows(page, 0);
@@ -369,20 +370,23 @@ if (part(2)) {
       const source = (line) => String(line || '').replace(/^Priority \d+\s*/, '');
       pass('morning: the priorities from Daily review are numbered', carried.slice(0, 3).every((r, i) => String(r.line).startsWith(`Priority ${i + 1}`)), carried.map((r) => r.line).join(' | '));
       pass('morning: each says where it came from', JSON.stringify(carried.map((r) => source(r.line))) === JSON.stringify(CARRIED.map((c) => c[1])), carried.map((r) => r.line).join(' | '));
-      pass('morning: "You’ve chosen 0 of 3."', (await page.locator('.ds-pick-count').innerText()).trim() === 'You’ve chosen 0 of 3.');
+      pass('morning: no count of how many may be chosen', (await page.locator('.ds-pick-count').count()) === 0);
       await shot(page, 'morning-carried');
-      // Pick three carried things; a fourth is refused.
+      // Pick three carried things; a fourth can be chosen too (no limit), then is unchosen again.
       const row = (name) => page.locator('.ds-pick-group').first().locator('.ds-answer--pick', { hasText: name });
       for (const n of [0, 2, 3]) {
         await row(CARRIED[n][0]).click();
         await until(async () => (await row(CARRIED[n][0]).getAttribute('aria-pressed')) === 'true', 10000);
         await sleep(450);
       }
-      pass('morning: three chosen', (await page.locator('.ds-pick-count').innerText()).trim() === 'You’ve chosen 3 of 3.', await page.locator('.ds-pick-count').innerText());
-      pass('morning: the fourth is greyed out', await row(CARRIED[1][0]).isDisabled());
-      await row(CARRIED[1][0]).click({ force: true, timeout: 2000 }).catch(() => null);
+      pass('morning: three chosen', (await page.locator('.ds-answer--pick[aria-pressed="true"]').count()) === 3);
+      pass('morning: the fourth is never greyed out', !(await row(CARRIED[1][0]).isDisabled()));
+      await row(CARRIED[1][0]).click();
+      pass('morning: a fourth can be chosen', Boolean(await until(async () => (await row(CARRIED[1][0]).getAttribute('aria-pressed')) === 'true', 10000)));
       await sleep(600);
-      pass('morning: a fourth is refused', (await page.locator('.ds-pick-count').innerText()).trim() === 'You’ve chosen 3 of 3.' && (await row(CARRIED[1][0]).getAttribute('aria-pressed')) === 'false');
+      await row(CARRIED[1][0]).click();
+      await until(async () => (await row(CARRIED[1][0]).getAttribute('aria-pressed')) === 'false', 10000);
+      await sleep(1200);
       const made = await until(async () => {
         const r = (await db.from('todos').select('text, source, source_id, created_on, planned_week, deleted_at').eq('user_id', me).eq('created_on', THU).is('deleted_at', null)).data || [];
         return r.length === 3 ? r : null;

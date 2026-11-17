@@ -285,16 +285,18 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await until(async () => (await page.locator('.ds-answer--pick[aria-pressed="true"]', { hasText: NIGHT }).count()) === 1, 10000);
   await pick('Draft the Harbour case study').click();
   await pick('Training sessions').click();
-  pass(`${tag}: three chosen, the rest grey out`, (await page.locator('.ds-answer--pick[aria-pressed="true"]').count()) === 3 && await page.locator('.ds-answer--pick', { hasText: 'Reflective notes' }).isDisabled());
+  // No limit of three (Tim, 16 Nov): nothing greys out and there is no count or nudge.
+  pass(`${tag}: three chosen, nothing greys out, no nudge or count`, (await page.locator('.ds-answer--pick[aria-pressed="true"]').count()) === 3 && !(await page.locator('.ds-answer--pick', { hasText: 'Reflective notes' }).isDisabled())
+    && (await page.locator('.ds-guide-nudge, .ds-pick-count').count()) === 0);
   await shot(page, `${tag}-4-do`);
-  // Add a to-do from the panel: no "Which week?", and today is full.
+  // Add a to-do from the panel: no "Which week?", and it joins today too (no limit).
   await page.getByRole('button', { name: 'Add a to-do' }).click();
   const panel = page.locator('[role=dialog]').last();
   await panel.locator('textarea').first().fill(PANEL_TODO);
   pass(`${tag}: the panel has no Which week`, (await panel.getByText('Which week?').count()) === 0 && (await panel.getByText('It’s added to today and to this week’s sprint.').count()) === 1);
   await panel.getByRole('button', { name: 'Add my to-do' }).click();
-  const toast = await until(async () => (await page.getByText('Added to this week’s sprint. Today already has three to-dos.').count()) > 0, 10000);
-  pass(`${tag}: a to-do added when today is full goes to the sprint only`, Boolean(toast));
+  const toast = await until(async () => (await page.getByText('Added to today and this week’s sprint.').count()) > 0, 10000);
+  pass(`${tag}: a to-do added with three chosen joins today as well`, Boolean(toast) && (await page.locator('.ds-answer--pick[aria-pressed="true"]').count()) === 4);
   await next(page);
 
   // 5. Priority
@@ -371,7 +373,7 @@ for (const [width, mode] of sizes) {
       pass('the panel\'s to-do is in this week of the sprint, from this plan', added?.source === 'plan_my_day' && added.source_id === row.id && added.sprint_id === sprint.id && added.planned_week === 4, JSON.stringify(added));
       const dpt = (await db.from('day_plan_todos').select('todo_id, is_top').eq('day_plan_id', row.id)).data;
       const draft = (await db.from('todos').select('id').eq('user_id', me).eq('text', 'Draft the Harbour case study')).data[0];
-      pass('the day holds two to-dos (the habit stays on the device)', dpt.length === 2 && dpt.some((t) => t.todo_id === night?.id), JSON.stringify(dpt));
+      pass('the day holds three to-dos, the panel’s included (the habit is kept with the day)', dpt.length === 3 && dpt.some((t) => t.todo_id === night?.id) && dpt.some((t) => t.todo_id === added?.id), JSON.stringify(dpt));
       pass('the highest priority is marked', dpt.filter((t) => t.is_top).length === 1 && dpt.find((t) => t.is_top).todo_id === draft.id, JSON.stringify(dpt));
       const dps = (await db.from('day_plan_strategies').select('strategy_id').eq('day_plan_id', row.id)).data;
       pass('two Strategies of the day', dps.length === 2);

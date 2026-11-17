@@ -16,7 +16,6 @@ import { sprintPageView } from './sprintPage';
 import { carriedOver, carriedSource, thingKey } from './windDown';
 import { sleepQualityWord } from './words';
 
-export const MAX_DAY_TODOS = 3;       // day_plan_limits: up to three things to do
 export const MAX_DAY_STRATEGIES = 2;  // one recommended, two at most
 export const WAY_MAX = 60;            // M5's box (the table allows 120)
 export const DAY_TEXT_MAX = 300;      // grateful_for, biggest_risk, risk_response
@@ -113,14 +112,17 @@ function weeklyMet(m, values) {
  */
 export function dayPicks(dayTodos = [], local = {}, liveKeys = null) {
   const fromDb = dayTodos.map((t) => `todo:${t.todo_id}`);
+  // To-dos the database couldn't hold yet (before 047), kept on the device.
+  const extra = (local.extra || []).map((id) => `todo:${id}`);
   const habits = (local.habits || []).map((id) => `habit:${id}`);
-  const all = new Set([...fromDb, ...habits]);
+  const all = new Set([...fromDb, ...extra, ...habits]);
   const order = [...(local.order || []).filter((k) => all.has(k)), ...[...all].filter((k) => !(local.order || []).includes(k))];
   const picks = liveKeys ? order.filter((k) => liveKeys.has(k)) : order;
   const dbTop = dayTodos.find((t) => t.is_top);
   let top = dbTop ? `todo:${dbTop.todo_id}` : (local.top && local.top.startsWith('habit:') ? local.top : null);
   if (!picks.includes(top)) top = picks[0] || null;
-  return { picks: picks.slice(0, MAX_DAY_TODOS), top };
+  // As many as the person chose (Tim, 16 Nov, 19:03: no limit of three).
+  return { picks, top };
 }
 
 /** The picks with the highest priority first (M5 order()). */
@@ -131,7 +133,7 @@ export function topFirst(picks, top) {
 /**
  * The saves that take the day's to-dos from `before` to `after` (each
  * { todos: [todo ids], top: todo id or null }), in an order the database
- * accepts: removals first (at most three at a time), the old top cleared
+ * accepts: removals first (so the guard on how many a day holds is never met mid-way), the old top cleared
  * before the new one is set (one top per plan), then additions.
  */
 export function dayTodoOps(userId, planId, before, after) {

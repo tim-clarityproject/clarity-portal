@@ -47,10 +47,14 @@ const device = {
   },
 };
 
-/** The day's choices as the table holds them (039's checks, so a save is never refused). */
+/**
+ * The day's choices as the table holds them: as many as the person chose
+ * (Tim, 16 Nov; migration 047's guards are 100 habits and 200 choices, so a
+ * save is never refused once 047 has run).
+ */
 export function dayChoicesToRow(v = {}) {
-  const habits = [...new Set((v.habits || []).filter((id) => UUID.test(id)))].slice(0, 3);
-  const order = [...new Set((v.order || []).filter((k) => PICK.test(k)))].slice(0, 6);
+  const habits = [...new Set((v.habits || []).filter((id) => UUID.test(id)))].slice(0, 100);
+  const order = [...new Set((v.order || []).filter((k) => PICK.test(k)))].slice(0, 200);
   return { habit_ids: habits, pick_order: order, top_pick: PICK.test(v.top || '') ? v.top : null };
 }
 
@@ -66,8 +70,11 @@ const days = dayStore({
 export function readDayChoices(userId, date) {
   const v = device.get(userId, date);
   if (!v) return {};
-  const { habits, order, top } = v;
-  return { habits: habits || [], order: order || [], top: top || null };
+  const { habits, order, top, extra } = v;
+  // extra: the day's to-dos the database couldn't hold yet (before 047 a day
+  // plan's rows stop at three), kept here so the day still shows them all.
+  const out = { habits: habits || [], order: order || [], top: top || null };
+  return Array.isArray(extra) && extra.length ? { ...out, extra } : out;
 }
 
 /** Keep the day's choices, and send them once 039 is there. */
@@ -86,3 +93,35 @@ export function refreshDayChoices(userId, date) {
 
 /** Calls back whenever a day's choices kept on this device change. */
 export const subscribeDayChoices = days.subscribe;
+
+// Before Tim runs 047 a day plan's database rows stop at three to-dos
+// (028's day_plan_limits). Learned from the database's own refusal, kept
+// on the device for an hour, then tried again (047 may have run since).
+const CAP_KEY = 'clarity-day-plan-cap';
+const CAP_HOURS = 1;
+
+/** How many to-dos the database holds for a day: 3 while 028's limit is there, otherwise no limit. */
+export function dayTodoCap() {
+  const v = readJson(CAP_KEY);
+  return v && v.cap === 3 && Date.now() - Number(v.at || 0) < CAP_HOURS * 3600000 ? 3 : Infinity;
+}
+
+/** The database refused a fourth to-do in a day (028's check): before 047. */
+export function dayLimitRefused(error) {
+  return `${error?.code || ''}` === '23514' && /up to 3 to-dos/i.test(`${error?.message || ''}`);
+}
+
+export function learnDayTodoCap() {
+  writeJson(CAP_KEY, { cap: 3, at: Date.now() });
+}
+
+/**
+ * The to-dos the database is sent for the day (the highest priority first,
+ * then the rest in order, up to the cap), and the ones kept on the device.
+ */
+export function fitDayTodos(todos, top, cap = dayTodoCap()) {
+  if (!(cap < todos.length)) return { sent: todos, extra: [] };
+  const first = top && todos.includes(top) ? [top, ...todos.filter((t) => t !== top)] : todos;
+  const keep = new Set(first.slice(0, cap));
+  return { sent: todos.filter((t) => keep.has(t)), extra: todos.filter((t) => !keep.has(t)) };
+}

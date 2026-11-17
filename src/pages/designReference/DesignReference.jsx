@@ -1716,8 +1716,8 @@ function Gallery() {
 
         <GallerySection id="c46" title="Rows to pick and add" demo={RowsDemo} rules={(
           <>
-            <p><New /><b>Pick up to three</b> (M5 “What will you do today?”): every row has its name, a second line with the Strategy and its tags, and a circle that fills with a tick once chosen.</p>
-            <p>Once the most are chosen, the others grey out until one is unchosen (Tim, 23 Oct).</p>
+            <p><New /><b>Pick as many as you like</b> (M5 “What will you do today?”; no limit of three since Tim, 16 Nov): every row has its name, a second line with the Strategy and its tags, and a circle that fills with a tick once chosen.</p>
+            <p>A list with a limit (pins, up to 3) greys out the rest once it is reached; the Daily plan has none.</p>
             <p>Tags are separate grey words, never joined by dots.</p>
             <p><New /><b>Lists are rows</b> (CLAUDE.md rule 30): one box per thing, “Add another” to add a row and the 45 degree crosshair to remove one, up to a set number.</p>
             <p><New /><b>Rows that open in place</b> (M1 “Your days”): the name, one line of what it holds, and the chevron that turns to point up while open.</p>
@@ -2149,7 +2149,7 @@ function Gallery() {
           <>
             <p><New /><b>One list the next morning</b> (M19): Daily review’s things for tomorrow first, then last night’s sleep wind down thoughts, then This week.</p>
             <p>Each row says where it came from. A line in both is one row, when it matches once case and punctuation are ignored.</p>
-            <p>Up to 3 can be chosen. Once 3 are chosen the rest grey out, and the line under the list says how many.</p>
+            <p>As many as you like can be chosen (Tim, 16 Nov): no count under the list, and nothing greys out.</p>
           </>
         )} />
 

@@ -27,15 +27,14 @@ import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
 import { friendlyError } from '../../lib/friendlyError';
 import { keepForLater, newId, saveOrQueue, useQueueState, useSuperseded } from '../../lib/syncQueue';
-import { createDayPlan, dayPlanAnswersOp, loadDayPlan, loadDayPlanRow, saveTodo, setTodoDeleted } from '../../lib/performance/api';
+import { createDayPlan, dayPlanAnswersOp, loadDayPlan, loadDayPlanRow, readDayPlanTodos, saveTodo, setTodoDeleted } from '../../lib/performance/api';
 import { useLatestWhenSuperseded } from '../../lib/performance/hooks';
-import { readDayChoices, refreshDayChoices, saveDayChoices } from '../../lib/performance/dayPlanHabits';
+import { dayLimitRefused, dayTodoCap, fitDayTodos, learnDayTodoCap, readDayChoices, refreshDayChoices, saveDayChoices } from '../../lib/performance/dayPlanHabits';
 import { lastNightThoughts, refreshWindDown, windDownTodoSource } from '../../lib/performance/windDownStore';
 import {
   DAY_TEXT_MAX,
   GRATITUDE_EXAMPLE,
   MAX_DAY_STRATEGIES,
-  MAX_DAY_TODOS,
   RECOVERY_DAY_LINE,
   SLEEP_MAX_HOURS,
   SLEEP_QUALITY_OPTIONS,
@@ -68,7 +67,7 @@ import './performance.css';
 //              Recovery's Sleep tile)
 //   Gratitude  "What’s one thing you’re grateful for today?"
 //   Be         "How do you want to be today?" own words, recent ones, three suggestions
-//   Do         "What will you do today?" up to three, from one Carried
+//   Do         "What will you do today?" as many as chosen, from one Carried
 //              over list (M19: Daily review's things for tomorrow, then
 //              last night's sleep wind down thoughts, each with where it
 //              came from), then This week's to-dos and weekly habits; last
@@ -347,19 +346,39 @@ function PlanFlow({ userId, date, today, loaded }) {
     return answers[answers.length - 1] ?? null;
   };
 
+  // The day's to-dos the database is sent, and those kept on the device
+  // while it can't hold them (before 047: three at most). No limit for the
+  // person either way (Tim, 16 Nov).
+  const fitTodos = (todos, topTodo) => {
+    const { sent: toSend, extra } = fitDayTodos(todos, topTodo);
+    setLocal((l) => ({ ...l, extra }));
+    setData((d) => ({ ...d, dayTodos: toSend.map((id) => ({ todo_id: id, is_top: id === topTodo })) }));
+    const before = dbTodos.current;
+    const after = { todos: toSend, top: topTodo };
+    dbTodos.current = after;
+    return { before, after };
+  };
+
   const applyPicks = async (keys, top) => {
     const todos = keys.filter((k) => k.startsWith('todo:')).map((k) => k.slice(5));
     const topTodo = top && top.startsWith('todo:') ? top.slice(5) : null;
     setLocal((l) => ({ ...l, habits: keys.filter((k) => k.startsWith('habit:')).map((k) => k.slice(6)), order: keys, top }));
-    setData((d) => ({ ...d, dayTodos: todos.map((id) => ({ todo_id: id, is_top: id === topTodo })) }));
-    const before = dbTodos.current;
-    const after = { todos, top: topTodo };
-    dbTodos.current = after;
-    const ops = () => dayTodoOps(userId, planId.current, before, after);
+    const { before, after } = fitTodos(todos, topTodo);
     if (before.todos.join() === after.todos.join() && before.top === after.top) return true;
     return sent(async () => {
       await ensurePlan();
-      return sendInOrder(ops());
+      try {
+        return await sendInOrder(dayTodoOps(userId, planId.current, before, after));
+      } catch (e) {
+        if (!dayLimitRefused(e) || dayTodoCap() === 3) throw e;
+        // Before 047: the database holds three. Read what it holds now,
+        // keep the rest on the device and send again, quietly.
+        learnDayTodoCap();
+        const held = await readDayPlanTodos(planId.current);
+        dbTodos.current = { todos: held.map((t) => t.todo_id), top: held.find((t) => t.is_top)?.todo_id || null };
+        const again = fitTodos(todos, topTodo);
+        return sendInOrder(dayTodoOps(userId, planId.current, again.before, again.after));
+      }
     });
   };
 
@@ -403,13 +422,12 @@ function PlanFlow({ userId, date, today, loaded }) {
       try {
         const key = await todoFromNight(option);
         // The pick shows at once; its save carries on behind.
-        if (key) applyPicks([...keys, key].slice(0, MAX_DAY_TODOS), keys.includes(view.top) ? view.top : keys[0] || key);
+        if (key) applyPicks([...keys, key], keys.includes(view.top) ? view.top : keys[0] || key);
       } finally {
         converting.current = false;
       }
       return;
     }
-    if (keys.length > MAX_DAY_TODOS) return;
     const top = keys.includes(view.top) ? view.top : keys[0] || null;
     await applyPicks(keys, top);
     // Unchosen the same day it was made from last night's list: it goes
@@ -441,7 +459,6 @@ function PlanFlow({ userId, date, today, loaded }) {
 
   const addTodo = async (form) => {
     const id = newId();
-    const room = view.picks.length < MAX_DAY_TODOS;
     setPanel(false);
     setTodoForm({ text: '', strategyId: firstStrategy, impact: 2 });
     clearTodoDraft();
@@ -460,9 +477,10 @@ function PlanFlow({ userId, date, today, loaded }) {
     };
     const listKey = view.running ? 'todos' : 'looseTodos';
     setData((d) => ({ ...d, [listKey]: [...(d[listKey] || []), row] }));
-    if (room) await applyPicks([...view.picks, `todo:${id}`], view.top || `todo:${id}`);
+    // Always added to today too: there is no limit (Tim, 16 Nov).
+    await applyPicks([...view.picks, `todo:${id}`], view.top || `todo:${id}`);
     const where = view.running ? 'this week’s sprint' : 'your to-dos';
-    toast.show(room ? `Added to today and ${where}.` : `Added to ${where}. Today already has three to-dos.`);
+    toast.show(`Added to today and ${where}.`);
   };
 
   // ------------------------------------------------------------ the steps
@@ -565,7 +583,8 @@ function PlanFlow({ userId, date, today, loaded }) {
       key: 'do',
       name: 'Do',
       question: 'What will you do today?',
-      nudges: ['Choose up to 3.'],
+      // No nudge (Tim, 16 Nov): the ticks show several can be chosen, and there is no limit.
+      nudges: [],
       render: () => (!view.hasPlan ? noPlan : (
         <div className="day-narrow">
           {dayOptions.length ? (
@@ -575,9 +594,7 @@ function PlanFlow({ userId, date, today, loaded }) {
               options={dayOptions}
               values={view.picks}
               onChange={choosePicks}
-              max={MAX_DAY_TODOS}
               groups={[{ key: 'carried', title: 'Carried over' }, { key: 'week', title: 'This week' }]}
-              count={(n) => `You’ve chosen ${n} of ${MAX_DAY_TODOS}.`}
             />
           ) : (
             <>
@@ -595,7 +612,6 @@ function PlanFlow({ userId, date, today, loaded }) {
                   options={backlogOptions}
                   values={view.picks}
                   onChange={choosePicks}
-                  max={MAX_DAY_TODOS}
                 />
               </Collapsible>
             </div>

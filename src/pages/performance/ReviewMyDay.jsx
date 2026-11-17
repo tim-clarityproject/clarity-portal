@@ -562,7 +562,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     />
   );
   // UNDEFINED (audit R0, a day with no plan). CHOICE: the first screen
-  // lists this week's list instead of today's three.
+  // lists this week's list instead of today's choices.
   const planned = view.today.length > 0;
   const weekShown = !planned || showWeek;
   // Today's to-dos still open: they stay on this week's list, so tomorrow's

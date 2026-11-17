@@ -138,7 +138,9 @@ begin
     f := f || pg_temp.t_eq('5c a sensible figure needs nothing', pg_temp.t_n(format('select sleep_to_confirm from public.day_plans where id = %L', dp)), 'false');
     f := f || pg_temp.t_eq('5d sleep in half hours only', pg_temp.t_rows(format('update public.day_plans set sleep_hours = 6.25 where id = %L', dp)), 'error 23514');
     insert into public.day_plan_todos (day_plan_id, todo_id, user_id, is_top) values (dp, todo1, client_a, true), (dp, todo2, client_a, false), (dp, todo3, client_a, false);
-    f := f || pg_temp.t_eq('5e a fourth to-do refused', pg_temp.t_rows(format('insert into public.day_plan_todos (day_plan_id, todo_id, user_id) values (%L, %L, %L)', dp, todo4, client_a)), 'error 23514');
+    -- 047 (Tim, 16 Nov): as many to-dos as the person chooses; before it, three at most.
+    f := f || pg_temp.t_eq('5e a fourth to-do: refused before 047, taken after it', pg_temp.t_rows(format('insert into public.day_plan_todos (day_plan_id, todo_id, user_id) values (%L, %L, %L)', dp, todo4, client_a)),
+      case when exists (select 1 from pg_constraint where conname = 'day_plan_habits_many') then '1' else 'error 23514' end);
     f := f || pg_temp.t_eq('5f only one top priority', pg_temp.t_rows(format('update public.day_plan_todos set is_top = true where todo_id = %L', todo2)), 'error 23505');
     insert into public.day_plan_strategies (day_plan_id, strategy_id, user_id) values (dp, strat_a, client_a);
     f := f || pg_temp.t_eq('5g a Strategy of the day must be your own', pg_temp.t_rows(format('insert into public.day_plan_strategies (day_plan_id, strategy_id, user_id) values (%L, %L, %L)', dp, strat_b, client_a)), 'error 42501');

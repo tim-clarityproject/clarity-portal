@@ -54,13 +54,13 @@ export function ScaleLevelDemo() {
   );
 }
 
-/** Pick up to three, with a second line; rows with Add another; rows that open. */
+/** Pick as many as you like, with a second line; rows with Add another; rows that open. */
 export function RowsDemo() {
   const [picked, setPicked] = useState(['n1', 'h1']);
   const [tomorrow, setTomorrow] = useState(['Call Evan before 09:00 about the referral', '']);
   return (
     <div className="dr-stack dr-stack--fill">
-      <MultiChoice variant="pick" ariaLabel="What will you do today?" who="me" options={DO_LIST} values={picked} onChange={setPicked} max={3} />
+      <MultiChoice variant="pick" ariaLabel="What will you do today?" who="me" options={DO_LIST} values={picked} onChange={setPicked} />
       <RowList who="me" rows={tomorrow} onChange={setTomorrow} max={3} maxLength={300} itemLabel={(n) => `Important thing ${n} for tomorrow`} />
       <ExpandList
         label="Your days"

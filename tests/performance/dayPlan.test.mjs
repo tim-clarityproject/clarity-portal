@@ -219,3 +219,14 @@ test('a day in an address is a real calendar day, or the tool opens on today (th
     assert.equal(isDayKey(not), false, String(not));
   }
 });
+
+test('No limit of three (Tim, 16 Nov): six to-dos and two habits stay chosen, in order, with the 4th on top', () => {
+  const todos = ['t1', 't2', 't3', 't4', 't5', 't6'];
+  const habits = ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'];
+  const order = [...todos.map((t) => `todo:${t}`), ...habits.map((h) => `habit:${h}`)];
+  const p = dayPicks(todos.map((t) => ({ todo_id: t, is_top: t === 't4' })), { habits, order });
+  assert.equal(p.picks.length, 8);
+  assert.deepEqual(p.picks, order);
+  assert.equal(p.top, 'todo:t4');
+  assert.equal(topFirst(p.picks, p.top)[0], 'todo:t4');
+});
