@@ -187,7 +187,8 @@ export const GUEST_SCENARIOS = [
   s('... or to a coach', [['owner_coach', n(`public.guest_email_code_issue(repeat('2', 64)) ->> 'code'`)]], 'error 42501'),
   s('Coming back: an unknown email gets the same answer as a known one', [['signed_out', n(`(select string_agg(k, ',' order by k) from jsonb_object_keys(public.guest_return_start('unknown@example.invalid')) k) = (select string_agg(k, ',' order by k) from jsonb_object_keys(public.guest_return_start('${G1}')) k)`)]], 'true'),
   // coaches
-  s('The owner lists every guest', [['owner_coach', n('select count(*) from public.coach_guests()')]], '3'),
+  // Only the rules test's own guests are counted: the test project also holds real try-outs (the Get unstuck guest link, 17 Nov).
+  s('The owner lists every guest', [['owner_coach', n("select count(*) from public.coach_guests() where email like 'rules-guest%@example.invalid'")]], '3'),
   s('A coach lists only their own guests', [['second_coach', n("select string_agg(email, ',') from public.coach_guests()")]], 'rules-guest-two@example.invalid'),
   s('... and links', [['second_coach', n('select count(*) from public.coach_links()')]], '1'),
   s('... can\'t ask for another coach\'s', [['second_coach', n('select count(*) from public.coach_guests({owner_coach})')]], 'error 42501'),

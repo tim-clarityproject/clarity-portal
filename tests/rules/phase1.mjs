@@ -52,7 +52,10 @@ begin
   delete from public.performance_plans where user_id in (${id('client')}, ${id('org_client')});
   delete from public.sharing_switches where user_id in (${id('client')}, ${id('org_client')});
   delete from public.person_settings where user_id in (${id('client')}, ${id('org_client')});
-  insert into public.coaches (user_id, role, display_first_name) values (${id('owner_coach')}, 'owner', 'Alex') returning id into oc;
+  -- coach-owner@example.com is an active coach on the test project since 17 Nov
+  -- (Tim's yes, for the Get unstuck guest link): the set-up takes that row over.
+  insert into public.coaches (user_id, role, display_first_name) values (${id('owner_coach')}, 'owner', 'Alex')
+    on conflict (user_id) do update set role = 'owner', display_first_name = 'Alex', active = true returning id into oc;
   insert into public.coaches (user_id, role, display_first_name) values (${id('second_coach')}, 'coach', 'Priya') returning id into sc;
   perform set_config('rules.owner_coach_c', oc::text, true);
   insert into public.coach_clients (client_id, coach_id) values (${id('client')}, oc), (${id('org_client')}, sc);
@@ -346,6 +349,57 @@ export const PHASE1_TABLES = [
     table: 'tool_answers', ifExists: true,
     make: ({ owner, id: k }) => `insert into public.tool_answers (id, user_id, tool, title) values (${k}, ${owner}, 'team_check', 'Rules test')`,
     change: 'title = t.title',
+  }),
+  // 048 (Phase 8b, Peak moments and the Travel plan): skipped where 048
+  // hasn't run yet. Own rows; a coach reads a moment only once it is shared
+  // (048's own test checks shared and unshared) and the away flag, never a
+  // plan, its flights, its key moments or its ticks.
+  userRow({
+    table: 'peak_moments', ifExists: true,
+    make: ({ owner, id: k, n }) => `insert into public.peak_moments (id, user_id, name, starts_on, ends_on) values (${k}, ${owner}, 'Rules test', ${D(n)}, ${D(n)})`,
+    change: 'name = t.name',
+  }),
+  userRow({
+    table: 'peak_reviews', links: ['peak_moments'], ifExists: true,
+    make: ({ owner, id: k, n, rowOf }) => `insert into public.peak_reviews (id, user_id, moment_id, occurs_on, answer) values (${k}, ${owner}, ${rowOf('peak_moments')}, ${D(n)}, 'yes')`,
+    change: 'answer = t.answer',
+  }),
+  userRow({
+    table: 'travel_plans', ifExists: true,
+    make: ({ owner, id: k }) => `insert into public.travel_plans (id, user_id, title) values (${k}, ${owner}, 'Rules test')`,
+    change: 'title = t.title',
+  }),
+  userRow({
+    table: 'travel_flights', links: ['travel_plans'], ifExists: true,
+    make: ({ owner, id: k, n, rowOf }) => `insert into public.travel_flights (id, user_id, plan_id, leg, departs_on, departs_at, from_city, from_zone, arrives_on, arrives_at, to_city, to_zone) values (${k}, ${owner}, ${rowOf('travel_plans')}, 'out', ${D(n)}, '11:00', 'London', 'Europe/London', ${D(n)}, '14:00', 'New York', 'America/New_York')`,
+    change: 'departs_at = t.departs_at',
+  }),
+  userRow({
+    table: 'travel_plan_moments', key: 'plan_id', ifExists: true, links: ['peak_moments'],
+    // One key moment per check, on a plan of its own.
+    makeForCheck: ({ owner, id: k, rowOf }) => `with p as (insert into public.travel_plans (id, user_id) values (${k}, ${owner}) returning id)
+      insert into public.travel_plan_moments (plan_id, moment_id, user_id) select p.id, ${rowOf('peak_moments')}, ${owner} from p`,
+    make: ({ owner, id: k, rowOf }) => `with p as (insert into public.travel_plans (id, user_id) values (${k}, ${owner}) returning id)
+      insert into public.travel_plan_moments (plan_id, moment_id, user_id) select p.id, ${rowOf('peak_moments')}, ${owner} from p`,
+    change: 'created_at = t.created_at',
+  }),
+  userRow({
+    table: 'travel_ticks', key: 'plan_id', ifExists: true,
+    makeForCheck: ({ owner, id: k, n }) => `with p as (insert into public.travel_plans (id, user_id) values (${k}, ${owner}) returning id)
+      insert into public.travel_ticks (plan_id, user_id, day, step) select p.id, ${owner}, ${D(n)}, 'light' from p`,
+    make: ({ owner, id: k, n }) => `with p as (insert into public.travel_plans (id, user_id) values (${k}, ${owner}) returning id)
+      insert into public.travel_ticks (plan_id, user_id, day, step) select p.id, ${owner}, ${D(n)}, 'light' from p`,
+    change: 'step = t.step',
+    note: 'Private ticks: never read by a coach.',
+  }),
+  userRow({
+    table: 'travel_away', key: 'plan_id', ifExists: true,
+    makeForCheck: ({ owner, id: k, n }) => `with p as (insert into public.travel_plans (id, user_id) values (${k}, ${owner}) returning id)
+      insert into public.travel_away (plan_id, user_id, city, zone, starts_on, ends_on, hours_apart) select p.id, ${owner}, 'New York', 'America/New_York', ${D(n)}, ${D(n)}, -5 from p`,
+    make: ({ owner, id: k, n }) => `with p as (insert into public.travel_plans (id, user_id) values (${k}, ${owner}) returning id)
+      insert into public.travel_away (plan_id, user_id, city, zone, starts_on, ends_on, hours_apart) select p.id, ${owner}, 'New York', 'America/New_York', ${D(n)}, ${D(n)}, -5 from p`,
+    change: 'city = t.city',
+    access: { read: OWN_OR_COACH }, note: 'The coach sees that the person is away, where and when (M21).',
   }),
   userRow({
     table: 'week_scores',
