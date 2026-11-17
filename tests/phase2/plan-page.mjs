@@ -32,10 +32,11 @@ const out = process.argv[2] || null;
 if (out) mkdirSync(out, { recursive: true });
 const results = [];
 let failures = 0;
+let passes = 0;
 let blocked = 0;
 const blockedHosts = new Set();
 const pass = (name, ok, detail = '') => {
-  if (!ok) failures += 1;
+  if (ok) passes += 1; else failures += 1;
   results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `: ${detail}` : ''}`);
 };
 
@@ -275,5 +276,5 @@ await browser.close();
 console.log(seedForReal('--reset'));
 console.log(results.join('\n'));
 console.log(`Blocked: ${[...blockedHosts].join(', ')}`);
-console.log(`\n${failures === 0 ? 'All passed' : `${failures} failed`} (${blocked} outside or email calls blocked)`);
+console.log(`\n${passes} passed, ${failures} failed (${blocked} outside or email calls blocked)`);
 process.exit(failures ? 1 : 0);
