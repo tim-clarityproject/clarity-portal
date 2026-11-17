@@ -386,7 +386,12 @@ try {
         const tip = page.locator('[data-tip]:visible').first();
         if (await tip.count()) { if (phone) await tip.tap().catch(() => {}); else await tip.hover().catch(() => {}); await sleep(300); await page.mouse.move(1, 1); }
         const info = page.locator('button:has(.ds-info):visible').first();
-        if (await info.count()) { await info.click().catch(() => {}); await sleep(300); await info.click().catch(() => {}); }
+        if (await info.count()) {
+          await info.click().catch(() => {});
+          await sleep(300);
+          // A longer explanation opens the side panel (Tim, 16 Nov, 23:31): Escape closes it; a pop-up closes with a second press.
+          if (await page.locator('.ds-explain-panel').count()) { await page.keyboard.press('Escape'); await sleep(300); } else await info.click().catch(() => {});
+        }
         await sleep(300);
         const seen = await motionSeen(page);
         pass(`${tag}: nothing animates`, seen.length === 0, seen.slice(0, 5).join('; '));

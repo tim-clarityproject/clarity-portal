@@ -357,6 +357,15 @@ export async function popups(page, touch, pass, tag) {
         return { left: b.left, right: window.innerWidth - b.right, first: (t.innerText || '').split('\n')[0].trim() };
       });
       const after = await layout(page);
+      // A longer explanation opens in the side panel instead (Tim, 16 Nov, 23:31).
+      const panelTitle = r ? null : await page.evaluate(() => [...document.querySelectorAll('.ds-explain-panel')].find((p) => p.getBoundingClientRect().width > 0)?.querySelector('.ds-dialog-title')?.textContent.trim() || null);
+      if (panelTitle) {
+        pass(`${tag}: the "i" opens its explanation in the side panel, its title saying what it explains in sentence case`, /^[A-Z][a-z’']*( [A-Za-z’']+)+[?]?$/.test(panelTitle) && panelTitle !== panelTitle.toUpperCase(), panelTitle);
+        await page.keyboard.press('Escape');
+        await sleep(500);
+        pass(`${tag}: Escape closes the side panel`, await page.evaluate(() => ![...document.querySelectorAll('.ds-explain-panel')].some((p) => p.getBoundingClientRect().width > 0 && getComputedStyle(p).visibility !== 'hidden')));
+        return;
+      }
       pass(`${tag}: the "i" opens its pop-up`, Boolean(r));
       if (r) {
         pass(`${tag}: the "i" pop-up 12px inside the edges`, Math.min(r.left, r.right) >= 11.5, `${r.left.toFixed(1)} / ${r.right.toFixed(1)}`);

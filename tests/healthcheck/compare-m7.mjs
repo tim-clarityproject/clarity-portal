@@ -167,7 +167,11 @@ const BACK_RULE = 'the shared Back link’s box starts at its chevron’s own bo
 const STATUS_BAR = 'M7’s phone frame draws its 47px status bar inside the panel; a real phone gives the panel that space as its safe area, which the test browser has none of (each part sits exactly 47px higher)';
 const SHARED_PANEL = 'the portal’s shared side panel and the eye’s shared panel (WhoSees, SlidePanel), as M9’s and M7b’s comparisons accept';
 const DATES = 'M7’s team list puts its newest version first by the date in its script (27 Oct, 14 Jul, 3 Apr): the same here; only the drop-downs and words follow';
+// Explanations (Tim, 16 Nov, 23:31): what a chart's marks mean opens in the side panel from the quiet link "How to
+// read the chart" under the chart (a 44px tap area), so everything below the chart sits 44px lower than M7 draws it.
+const EXPLAIN = 'the quiet link “How to read the chart” under the chart (Tim, 16 Nov, 23:31) puts everything below the chart 44px lower; M7 has an ⓘ on the chart’s heading instead';
 const ALLOW = new Map([
+  ...['results', 'compare', 'example'].map((sc) => [`${sc}|*|top`, EXPLAIN]),
   ...['left', 'top', 'width', 'height'].map((w) => [`pdf|*|${w}`, SHARED_PANEL]),
   ['who|the panel’s title|top@phone', STATUS_BAR],
   ['who|Only you|top@phone', STATUS_BAR],
@@ -192,7 +196,9 @@ const WORDS_M7_ONLY = new Map([
   ['compare', [['Talk it through with Tim', 'shown only where the portal’s Chat to Tim leads somewhere real: the coach’s chat (useStartChat) opens only for a client with a coach and their chat set up; the test client’s chat isn’t, so the link stays out here']]],
 ]);
 const WORDS_BUILT_ONLY = new Map([
-  ['results', [['Delete this version', 'M7 draws no delete: the portal’s quiet Delete inside the opened item (Tim, 5 Nov), as the prompt asks'], ['Delete this team', 'as above, for the whole team']]],
+  ['results', [['Delete this version', 'M7 draws no delete: the portal’s quiet Delete inside the opened item (Tim, 5 Nov), as the prompt asks'], ['Delete this team', 'as above, for the whole team'], ['How to read the chart', EXPLAIN]]],
+  ['compare', [['How to read the chart', EXPLAIN]]],
+  ['example', [['How to read the chart', EXPLAIN]]],
 ]);
 const ctx0 = { report, allowed, mockName: 'M7' };
 const ctxWords = { report, mockOnly: WORDS_M7_ONLY, builtOnly: WORDS_BUILT_ONLY, mockName: 'M7' };

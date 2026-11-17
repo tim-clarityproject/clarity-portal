@@ -35,7 +35,12 @@ async function until(fn, ms) {
 export async function checkExplainOpener(page, opener, { tag, pass, words = null, touch = false }) {
   await opener.scrollIntoViewIfNeeded();
   await sleep(250);
-  const behind = () => page.evaluate(() => ({ y: window.scrollY, w: document.documentElement.scrollWidth - window.innerWidth }));
+  // Where the opener sits on the screen: the page is locked under the
+  // panel (its scroll reads 0 then), so what counts is that nothing moves.
+  const behind = async () => ({
+    y: Math.round((await opener.boundingBox())?.y ?? -1),
+    w: await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+  });
   const before = await behind();
   if (touch) await opener.tap(); else await opener.click();
   const opened = await until(async () => (await explainWords(page)) !== null, 4000);

@@ -249,6 +249,7 @@ if (part(1)) {
     pass('review: the lists hold nothing tappable', (await page.locator('.ds-guide-body button, .ds-guide-body a, .ds-guide-body input').count()) === 0);
     pass('review: the button says Close my day', (await page.locator('.ds-guide-next').innerText()).trim().toLowerCase() === 'close my day');
     await shot(page, 'review-close');
+    await sleep(600); // the tool ignores a tap in its first moment on a step
     await page.locator('.ds-guide-next').click();
     await until(async () => (await heading(page)) === 'Work’s done for today', 10000);
     pass('review: Work’s done for today', (await heading(page)) === 'Work’s done for today', await heading(page));
@@ -284,7 +285,8 @@ if (part(2)) {
     // The eye alone, its words for screen readers (rules of 5 Nov).
     pass('wind-down: the eye says Only you', ((await page.locator('.ds-guide .ds-who').first().getAttribute('aria-label')) || '').includes('Only you'), await page.locator('.ds-guide .ds-who').first().getAttribute('aria-label').catch(() => 'no eye'));
     await page.getByRole('button', { name: 'Why write it down' }).click();
-    pass('wind-down: Why write it down opens its reason', (await page.locator('.ds-infopop:visible').innerText()).includes('fell asleep faster'));
+    // One short line since Tim's rule of 16 Nov, 23:31.
+    pass('wind-down: Why write it down opens its reason, one short line', (await page.locator('.ds-infopop:visible').innerText()).trim() === 'People who write tomorrow’s to-do list fall asleep faster.', await page.locator('.ds-infopop:visible').innerText());
     await page.keyboard.press('Escape');
     pass('wind-down: Skip and Next', (await page.locator('.ds-guide-skip').count()) === 1 && (await page.locator('.ds-guide-next').innerText()).trim().toLowerCase() === 'next');
     pass('wind-down: thoughts typed save on the device (Saved)', Boolean(await typeThoughts(page, THOUGHTS)));

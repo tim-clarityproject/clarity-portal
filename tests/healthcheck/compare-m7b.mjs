@@ -111,7 +111,7 @@ const ONE_PAGER = (ex, lastRow, lastFactor) => [
       [`section name: ${n}`, '.sech h2', '.ds-results-head', i, ['words', 'text']],
       [`section line: ${n}`, '.sech', '.ds-results-headrow', i, ['box']],
     ]),
-  ['the chart’s ⓘ', '.sech .ib1 svg', '.ds-results-head svg', 0, ['box']],
+  // No ⓘ on the chart's heading since 16 Nov: "How to read the chart" is a quiet link under the chart.
   ...(ex ? [] : [
     ['the line’s label', '.ctl .flab', '.hc-ctl .ds-label-row-text', 0, ['pos', 'text']],
     ['the line’s drop-down', '.ctl .dd', '.hc-ctl .ds-dd', 0, ['box', 'text', 'edge', 'fill']],
@@ -312,6 +312,10 @@ export const ALLOW = [
   ['who|the panel|height', WHO],
   ['who|the panel’s title|text size', 'the eye’s panel is the portal’s shared small panel (22px title), as M9’s comparison accepts'],
 ];
+// Explanations (Tim, 16 Nov, 23:31): "How to read the chart" is a quiet link under the chart (44px tall, a tap
+// area), so every part below the chart on the results and the example report sits 44px lower than M7b draws it.
+const EXPLAIN = 'the quiet link “How to read the chart” under the chart (Tim, 16 Nov, 23:31: what a chart’s marks mean opens in the side panel) puts everything below the chart 44px lower; M7b has an ⓘ on the chart’s heading instead';
+ALLOW.push(['results|*|top', EXPLAIN], ['example|*|top', EXPLAIN]);
 const ALLOWED = new Map(ALLOW);
 const allowed = (screen0, part, what) => { const screen = screen0.startsWith('pop:') ? '*' : screen0; return allowedFor(screen, part, what); };
 const allowedFor = (screen, part, what) => ALLOWED.get(`${screen}|${part}|${what}`) || ALLOWED.get(`*|${part}|${what}`) || ALLOWED.get(`${screen}|*|${what}`) || ALLOWED.get(`*|*|${what}`);
@@ -322,6 +326,8 @@ const WORDS_M7B_ONLY = new Map([
 ]);
 const WORDS_BUILT_ONLY = new Map([
   ['signin', [['Only you and your coach will see your answers.', COACH]]],
+  ['results', [['How to read the chart', EXPLAIN]]],
+  ['example', [['How to read the chart', EXPLAIN]]],
 ]);
 const ctx0 = { report, allowed, mockName: 'M7b' };
 const ctxWords = { report, mockOnly: WORDS_M7B_ONLY, builtOnly: WORDS_BUILT_ONLY, mockName: 'M7b' };
@@ -456,7 +462,14 @@ const POPS = [
   ['a dot’s pop-up', 'results', (m) => m.locator('#fr g.dot[data-n="1"]').focus().then(() => m.keyboard.press('Enter')), (p) => p.locator('.hc-dot[data-n="1"]').focus(), '#tip', '.ds-tip'],
   ['the play icon’s words', 'objective', (m) => m.locator('#fr .ic1').hover(), (p) => p.locator('.ds-guide-question .ds-play').hover(), '.ic1 .tipx', '.ds-infopop', 'desktop'],
 ];
-const POP_ALLOW = new Map([]);
+// A pop-up holds one short line (Tim, 16 Nov, 23:31): M7b's longer words are now one line, and a dot's read-out is its
+// number, name, importance and one more fact (Progress and Resource required are in the list under the chart).
+const SHORT = 'a pop-up holds one short line since Tim’s rule of 16 Nov, 23:31';
+const POP_ALLOW = new Map([
+  ['pop:what counts as a project', [['Projects', SHORT], ['Include anything that takes your team’s time, money or people.', SHORT], ['It’s anything that takes your team’s time, money or people.', SHORT]]],
+  ['pop:what strategic importance means', [['Strategic importance', SHORT], ['It’s how much a project helps the Success Factors, out of 100%.', SHORT], ['High on every Success Factor scores 100%.', SHORT], ['It’s how much a project helps the Success Factors.', SHORT]]],
+  ['pop:a dot’s pop-up', [['Progress is “Bad”.', SHORT], ['Resource required is “Very high”.', SHORT]]],
+]);
 
 // ---------------------------------------------------------------- the run
 const want = (screen) => !ONLY || ONLY.includes(screen);

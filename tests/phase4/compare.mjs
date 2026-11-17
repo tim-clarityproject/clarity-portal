@@ -448,6 +448,7 @@ const ALLOWED = [
   // M19
   { screen: /breathe$/, side: 'mock', re: /^change the sound$/, why: 'NOT BUILT: sound is left out until real audio files exist (brief Step 6); off until chosen' },
   { screen: /carried over/, side: 'mock', re: /^(from daily review and last night's sleep wind down|check-in message to a past client)$/, why: 'invented data: no thought here was written in both places, so no merged row (the merge is checked in wind-down.mjs)' },
+  { screen: /carried over/, side: 'mock', re: /^(choose up to #|you've chosen # of #)$/, why: 'LATER RULE: no limit on the Daily plan (Tim, 16 Nov, 19:03): no “Choose up to 3.” and no count (checked as absent in wind-down.mjs and many-picks.mjs)' },
   { screen: /carried over/, side: 'app', re: /^(only you|habit, .*|rolled over from week #|add a to-do|skip)$/, why: 'NAMED DIFFERENCE: Daily plan keeps Phase 3’s M5 pick rows and This week list under Carried over (Step 6)' },
   { side: 'mock', re: /^back$/, why: 'the shared guided tool draws Back as the one chevron on a phone (26 Oct rule 6)' },
   { screen: /^home/, side: 'app', re: /^get help with something$/, why: 'RULE OVER MOCK-UP: never “I” on a button (writing rule 13, 27 Oct): “Get help with something” (Step 9)' },

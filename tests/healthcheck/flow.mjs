@@ -313,7 +313,7 @@ part('signin', async ({ browser, w, mode, tag }) => {
   await checkScreen(b, `${tag}, email and code with the calm line`, { layer: '.ds-guest' });
   // The ⓘ: how the answers are kept, two terms, so the side panel (Tim, 16 Nov, 23:31).
   await checkExplainOpener(page, page.locator('.ds-guest-sentence .ds-guide-i'), {
-    tag: `${tag}, email and code: the ⓘ on how the answers are kept`, pass, touch: phone,
+    tag: `${tag}, email and code: the ⓘ on how the answers are kept`, pass, touch: w <= 600,
     words: ['How your answers are kept', 'Saved as you go', 'You can stop and come back with the same email and access code.', 'Kept securely', 'Your answers are kept for 2 years after your last visit.'],
   });
   // A legal link opens the shared reading pop-up.
@@ -1000,7 +1000,7 @@ part('panels', async ({ browser, w, mode, tag }) => {
   pass(`${tag}, who: no eye or play icon on the later questions`, (await page.locator('.ds-guide-question .ds-who').count()) === 0);
   // The Success Factor ⓘ, word for word, in the side panel (no bullets there).
   await checkExplainOpener(page, page.locator('.hc-flab .ds-guide-i'), {
-    tag: `${tag}, the Success Factor ⓘ`, pass, touch: phone,
+    tag: `${tag}, the Success Factor ⓘ`, pass, touch: w <= 600,
     words: ['What is a Success Factor?', 'It’s one of the few things that must go right for you to reach your objective.', 'For example, “Win and keep enterprise clients”.', 'It’s not a project or a task', 'For example, “Launch the new CRM”.', 'It’s not a target or a measure', 'For example, “£40m in revenue”.'],
   });
   noProblems(b, `${tag}, panels`);
