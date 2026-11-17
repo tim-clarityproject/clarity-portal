@@ -124,7 +124,12 @@ pass('the two builds are different versions', SCRIPT_A !== SCRIPT_B);
 const sw = readFileSync(join(DIST_A, 'sw.js'), 'utf8');
 const list = JSON.parse(sw.slice(sw.indexOf('=') + 1, sw.indexOf(';\n')));
 pass('sw.js lists the app shell, the fonts and the brand images', list.precache.includes('/index.html') && list.precache.includes('/fonts/Nekst-Regular.woff2') && list.precache.includes('/brand/logomark-negative.png') && list.precache.includes(SCRIPT_A));
-pass('sw.js leaves out the Health Check, version.json and the design gallery', !list.precache.some((f) => /health-check|healthCheck|version\.json|designReference|mount-|\.mp4|\.vtt/.test(f)), list.precache.filter((f) => /health|version|design|mp4|vtt/.test(f)).join(', '));
+// The outside Health Check's own page and every file it loads (read from
+// its HTML: its entry is named healthCheck-*.js, as the inside Health
+// Check's PDF document is, which the portal keeps). The Quick guide's
+// videos and captions are left to the network (never kept).
+const outside = new Set([...readFileSync(join(DIST_A, 'health-check.html'), 'utf8').matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((m) => m[1]));
+pass('sw.js leaves out the outside Health Check, version.json, the design gallery and the Quick guide’s videos', outside.size > 0 && !list.precache.some((f) => outside.has(f) || /health-check|version\.json|designReference|mount-|\.mp4|\.vtt/.test(f)), list.precache.filter((f) => outside.has(f) || /health|version|design|mp4|vtt/.test(f)).join(', '));
 
 const srv = await serveBuild({ root: DIST_A, port: PORT });
 const APP = srv.url;

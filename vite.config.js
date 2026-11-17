@@ -63,7 +63,8 @@ function buildVersion(id) {
 // build (this pass only, so the outside Health Check's files, built in the
 // second pass, are never in it) and public/ (fonts, brand images, icons).
 // Left out: version.json, maps, the design gallery's own files (preview
-// builds only), and the Chinese font parts a PDF fetches only when it has
+// builds only), the Quick guide's videos and captions (left to the network),
+// and the Chinese font parts a PDF fetches only when it has
 // Chinese text (about 3 MB), which are kept once used instead.
 function publicFiles(dir, base = '') {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory()
@@ -91,7 +92,11 @@ function serviceWorker(buildId, preview) {
       const files = [
         ...Object.keys(bundle),
         ...(config.publicDir && existsSync(config.publicDir) ? publicFiles(config.publicDir) : []),
-      ].filter((f) => !gallery.has(f) && !/\.map$/.test(f) && f !== 'version.json' && f !== 'sw.js' && !/(^|\/)\.[^/]+$/.test(f))
+      ].filter((f) => !gallery.has(f) && !/\.map$/.test(f) && f !== 'version.json' && f !== 'sw.js' && !/(^|\/)\.[^/]+$/.test(f)
+        // The Quick guide's videos and captions (about 11 MB) stay with the
+        // network: never downloaded up front, and a browser asks for a video
+        // a piece at a time, which a kept whole file can't answer in Safari.
+        && !/\.(mp4|vtt)$/.test(f))
       const onDemand = files.filter((f) => /noto-sans-sc-/.test(f))
       const precache = [...new Set(files.filter((f) => !onDemand.includes(f)))].map((f) => `/${f}`).sort()
       // preview: a Vercel preview build (a branch address or a deployment's

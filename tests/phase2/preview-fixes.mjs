@@ -49,8 +49,9 @@ const part = (n) => !ONLY || ONLY.has(n);
 
 const results = [];
 let failures = 0;
+let passes = 0;
 const pass = (name, ok, detail = '') => {
-  if (!ok) failures += 1;
+  if (ok) passes += 1; else failures += 1;
   results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `: ${detail}` : ''}`);
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `: ${detail}` : ''}`);
 };
@@ -126,17 +127,30 @@ async function go(page, path, ready) {
 // anything moved.
 const boxes = (page) => page.evaluate(() => {
   const list = [];
-  for (const el of document.querySelectorAll('.ui-root *:not(.ds-portal):not(.ds-portal *)')) {
-    if (el.closest('.ds-portal, .ds-infopop, .hdr, .ds-phone-bar, .ds-toast-region')) continue;
+  // Parts that run an endless animation (the gallery's spinners, breathing
+  // rings and pulses) change their box all the time: that is not the page
+  // moving. A transition or a layout change from opening an ⓘ still counts.
+  const endless = new Set(document.getAnimations()
+    .filter((a) => a.constructor.name === 'CSSAnimation' && a.effect?.getTiming?.().iterations === Infinity)
+    .map((a) => a.effect?.target).filter(Boolean));
+  const animated = (el) => { for (let e = el; e; e = e.parentElement) if (endless.has(e)) return true; return false; };
+  // On the design gallery only the ⓘ's own section is read (data-pf-scope):
+  // its other sections hold demos that loop for ever (spinners, breathing orbs).
+  const scope = document.querySelector('[data-pf-scope]');
+  for (const el of (scope || document).querySelectorAll(scope ? '*' : '.ui-root *:not(.ds-portal):not(.ds-portal *)')) {
+    if (el.closest('.ds-portal, .ds-infopop, .hdr, .ds-phone-bar, .ds-toast-region') || animated(el)) continue;
     const r = el.getBoundingClientRect();
     if (!r.width && !r.height) continue;
     list.push(`${Math.round(r.left)},${Math.round(r.top + scrollY)},${Math.round(r.width)},${Math.round(r.height)}`);
   }
   return list;
 });
-const moved = (a, b) => {
+// `readings`: more readings taken before anything was pressed; a part that
+// changed in any of them is animating by itself (the gallery's breathing
+// orbs are animated by script), so only what the ⓘ moved counts.
+const moved = (a, b, readings = []) => {
   if (a.length !== b.length) return `elements ${a.length} then ${b.length}`;
-  const n = a.findIndex((x, i) => x !== b[i]);
+  const n = a.findIndex((x, i) => x !== b[i] && readings.every((r) => r[i] === x));
   return n < 0 ? '' : `element ${n} ${a[n]} then ${b[n]}`;
 };
 
@@ -179,8 +193,14 @@ if (part('info')) {
       for (let i = 0; i < Math.min(count, 3); i += 1) {
         const icon = icons.nth(i);
         await icon.scrollIntoViewIfNeeded();
+        await icon.evaluate((el, gallery) => {
+          document.querySelectorAll('[data-pf-scope]').forEach((e) => e.removeAttribute('data-pf-scope'));
+          if (gallery) el.closest('[id^="c"], section')?.setAttribute('data-pf-scope', '1');
+        }, name === 'the design gallery');
         await still(page);
         const before = await boxes(page);
+        const again = [];
+        for (let k = 0; k < 4; k += 1) { await page.waitForTimeout(400); again.push(await boxes(page)); }
         if (phone) {
           await icon.tap();
         } else {
@@ -190,7 +210,7 @@ if (part('info')) {
         const shown = await popInfo(page);
         const after = await boxes(page);
         pass(`info ${w} ${name} ⓘ ${i + 1}: opens (${phone ? 'tap' : 'hover'})`, Boolean(shown));
-        pass(`info ${w} ${name} ⓘ ${i + 1}: nothing on the page moves`, !moved(before, after), moved(before, after));
+        pass(`info ${w} ${name} ⓘ ${i + 1}: nothing on the page moves`, !moved(before, after, again), moved(before, after, again));
         if (shown) pass(`info ${w} ${name} ⓘ ${i + 1}: 12px inside both edges`, shown.left >= 11.5 && shown.right >= 11.5 && shown.top >= 11.5 && shown.bottom >= 11.5, JSON.stringify(shown));
         if (!phone) {
           await page.mouse.move(2, h - 2);
@@ -667,7 +687,7 @@ if (part('hyphens')) {
 }
 
 for (const b of Object.values(browsers)) await b.close();
-const report = `${results.join('\n')}\n\n${failures ? `${failures} failed` : 'All passed'}\n`;
+const report = `${results.join('\n')}\n\n${passes} passed, ${failures} failed\n`;
 if (out) writeFileSync(out, report);
-console.log(failures ? `${failures} failed` : 'All passed');
+console.log(`${passes} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);

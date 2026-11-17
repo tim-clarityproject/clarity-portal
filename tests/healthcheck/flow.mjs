@@ -976,7 +976,8 @@ part('panels', async ({ browser, w, mode, tag }) => {
   await signIn(page, session);
   await page.locator('.ds-guide-question .ds-who:not(.ds-play)').click();
   pass(`${tag}, who: the eye opens “Who can see this?”`, await until(async () => /who can see this\?/i.test(await page.locator(`${DIALOG} h2`).innerText()), 5000));
-  const words = (await page.locator(`${DIALOG} .ds-dialog-body`).innerText()).replace(/\s+/g, ' ').trim();
+  // The choices are the side panel's answer rows (Phase 8a follow-up), with the line under them.
+  const words = (await page.locator(`${DIALOG} .ds-who-options [role=radio]`).allInnerTexts()).map((t) => t.trim()).join(' ');
   // The guest's choice (Tim, 14 Nov, 09:52): Only you, or You and Tim (chosen), with the line under it.
   const whole = (await page.locator(DIALOG).last().innerText()).replace(/\s+/g, ' ');
   pass(`${tag}, who: it offers Only you or You and Tim, with the line under the choice`, words === 'Only you You and Tim' && whole.includes('Tim sent you the link and will see your results.'), whole);

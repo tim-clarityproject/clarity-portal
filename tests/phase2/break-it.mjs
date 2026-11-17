@@ -543,7 +543,9 @@ if (run('text')) {
       const all = await todosOf();
       const added = all.length - before;
       if (what === 'whitespace only') {
-        pass(`text: a to-do of ${what} can't be added`, !enabled && added === 0, `enabled ${enabled}, added ${added}`);
+        // Never greyed out (Phase 8a follow-up, step 2): pressed, it adds nothing and says what's missing.
+        const said = await page.locator('.ds-panel').innerText().catch(() => '');
+        pass(`text: a to-do of ${what} can't be added, and says so`, enabled && added === 0 && said.includes('Type what needs doing to carry on.'), `enabled ${enabled}, added ${added}`);
         await page.locator('.ds-panel').getByRole('button', { name: 'Cancel' }).click();
         await page.waitForTimeout(500);
         continue;
@@ -568,7 +570,15 @@ if (run('text')) {
       else await page.locator('.ds-panel').getByRole('button', { name: 'Cancel' }).click();
       await page.waitForTimeout(2500);
       const added = (await winsOf()).length - before;
-      pass(`text: a win of ${what} is ${what === 'whitespace only' ? 'refused' : 'saved once'}`, what === 'whitespace only' ? !enabled && added === 0 : added === 1, `enabled ${enabled}, added ${added}`);
+      if (what === 'whitespace only') {
+        // Never greyed out (Phase 8a follow-up, step 2): pressed, it adds nothing and says what's missing.
+        const said = await page.locator('.ds-panel').innerText().catch(() => '');
+        pass(`text: a win of ${what} is refused, and says so`, enabled && added === 0 && said.includes('Type what you did to carry on.'), `enabled ${enabled}, added ${added}`);
+        await page.locator('.ds-panel').getByRole('button', { name: 'Cancel' }).click();
+        await page.waitForTimeout(500);
+        continue;
+      }
+      pass(`text: a win of ${what} is saved once`, added === 1, `enabled ${enabled}, added ${added}`);
     }
     pass('text: the sprint page never scrolls sideways', await noSideways(page));
     noErrors(page, 'text on the sprint page');

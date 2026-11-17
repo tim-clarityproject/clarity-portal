@@ -58,7 +58,7 @@ function measure({ layer }) {
   if (!root) return null;
   const scroller = root.querySelector('.ds-guide-scroll, .ds-dialog-body') || root;
   const wide = window.innerWidth;
-  const sample = root.querySelector('.ds-guide-question, .ds-guest-question, .hc-lead, .ds-headline, .ds-guest-sub, .ds-option-text, .ds-sheet-note, .hc-capbar, .ds-guide-nudge');
+  const sample = root.querySelector('.ds-guide-question, .ds-guest-question, .hc-lead, .ds-headline, .ds-guest-sub, .ds-option-text, .ds-who-options .ds-answer, .ds-sheet-note, .hc-capbar, .ds-guide-nudge');
   const outp = { sideways: Math.max(document.documentElement.scrollWidth - wide, scroller.scrollWidth - scroller.clientWidth, 0), off: [], small: [], size: sample ? getComputedStyle(sample).fontSize : '0', pops: [] };
   const visible = (el) => {
     const r = el.getBoundingClientRect();

@@ -354,7 +354,9 @@ function CheckinFlow({ userId, today, month, loaded }) {
       const patch = { month, ...v };
       setData((d) => ({ ...d, checkins: d.checkins.map((c) => (c.month === month ? { ...c, ...patch } : c)) }));
       noteCheckinOnDevice(userId, patch);
-      const r = await saveOrQueue(userId, checkinAnswersOp(userId, month, v));
+      // Finish: newest choice wins (Tim, 17 Nov): never refused as another tab's.
+      const op = checkinAnswersOp(userId, month, v);
+      const r = await saveOrQueue(userId, v.status === 'finished' ? { ...op, newestWins: true } : op);
       // Saved with the row (or waiting with it in the queue): the device's own copy goes.
       if ('drinks' in v || 'trip' in v) dropCheckinExtras(userId, month);
       return r;

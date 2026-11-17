@@ -186,6 +186,7 @@ const WORDS_BUILT_ONLY = new Map([
     ['Grow through referrals', OWN_PLAN],
     ['Build The Clarity Portal', OWN_PLAN],
     ['How much will it move its Strategy?', 'the shared panel’s own question'],
+    ['How much will it move “Maintain my availability to do good work”?', 'the shared panel’s own question: rule 64 names the Strategy chosen above it, which starts on the plan’s first, as M9’s does'],
     ['Where should it go?', NEWER_PANEL],
     ['Backlog', NEWER_PANEL],
     ['Don’t add it', NEWER_PANEL],

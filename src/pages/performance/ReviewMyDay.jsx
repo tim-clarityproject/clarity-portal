@@ -351,7 +351,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     return sent(async () => {
       await ensureReview();
       setData((d) => ({ ...d, dayReview: { ...(d.dayReview || {}), ...reviewAnswersToRow(a), ...extra } }));
-      const r = await saveOrQueue(userId, answersOp(a, extra));
+      const r = await saveOrQueue(userId, extra.status === 'finished' ? { ...answersOp(a, extra), newestWins: true } : answersOp(a, extra)) // Finish: newest choice wins;
       // Saved on the server, with nothing newer typed: the device's draft
       // goes, so a reload shows the saved row, never older typing over a
       // newer save from another window (break-it tester, 5 Nov).

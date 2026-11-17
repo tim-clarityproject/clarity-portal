@@ -35,6 +35,9 @@ const ONLY = process.env.ONLY ? process.env.ONLY.split(',') : null;
 const WIDTHS = process.env.WIDTHS ? process.env.WIDTHS.split(',').map(Number) : [1440, 390];
 const MODES = process.env.MODES ? process.env.MODES.split(',') : ['dark', 'light'];
 const FONTS = join(process.cwd(), 'node_modules', '@fontsource', 'dm-sans', 'files');
+// The portal's DM Sans (Phase 8a follow-up, 17 Nov): the variable font with optical sizes Google Fonts serves,
+// self-hosted; the mock-up is given the same file for both weights, so both sides measure one font.
+const DM_SANS_FILE = join(process.cwd(), 'node_modules', '@fontsource-variable', 'dm-sans', 'files', 'dm-sans-latin-opsz-normal.woff2');
 const report = makeReport();
 const { pass, note, results } = report;
 const LT = '7a000000-0000-4000-8000-00000000a001';
@@ -204,7 +207,7 @@ async function mockOpen(browser, width, mode) {
   await ctx.route(/fonts\.googleapis\.com/, (r) => r.fulfill({ status: 200, contentType: 'text/css', body: fontCss }));
   await ctx.route(/fonts\.gstatic\.com\/local\/(400|500)/, (r) => {
     const w = /\/(400|500)/.exec(r.request().url())[1];
-    r.fulfill({ status: 200, contentType: 'font/woff2', body: readFileSync(join(FONTS, `dm-sans-latin-${w}-normal.woff2`)) });
+    r.fulfill({ status: 200, contentType: 'font/woff2', body: readFileSync(DM_SANS_FILE) });
   });
   await ctx.route(/^https?:/, (r) => (/fonts\./.test(r.request().url()) ? r.fallback() : r.abort()));
   const page = await ctx.newPage();

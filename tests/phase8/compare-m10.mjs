@@ -294,6 +294,7 @@ const BUILT_ONLY = new Map([
     ['Grow through referrals', OWN_PLAN],
     ['Build The Clarity Portal', OWN_PLAN],
     ['How much will it move its Strategy?', SHARED_ADD],
+    ['How much will it move “Maintain my availability to do good work”?', 'rule 64: the question names the Strategy chosen above it, which starts on the plan’s first, as M10’s drop-down does'],
     ['Low', SHARED_ADD], ['Medium', SHARED_ADD], ['High', SHARED_ADD],
     ['Where should it go?', SHARED_ADD],
     ['This week', SHARED_ADD], ['Backlog', SHARED_ADD], ['Don’t add it', SHARED_ADD],

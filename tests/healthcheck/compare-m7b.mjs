@@ -37,6 +37,9 @@ const WIDTHS = process.env.WIDTHS ? process.env.WIDTHS.split(',').map(Number) : 
 const MODES = process.env.MODES ? process.env.MODES.split(',') : ['dark', 'light'];
 const M7B_FILE = process.env.M7B_FILE || join(homedir(), 'Downloads', 'clarity-health-check-calm', 'm7b-health-check.html');
 const FONTS = join(process.cwd(), 'node_modules', '@fontsource', 'dm-sans', 'files');
+// The portal's DM Sans (Phase 8a follow-up, 17 Nov): the variable font with optical sizes Google Fonts serves,
+// self-hosted; the mock-up is given the same file for both weights, so both sides measure one font.
+const DM_SANS_FILE = join(process.cwd(), 'node_modules', '@fontsource-variable', 'dm-sans', 'files', 'dm-sans-latin-opsz-normal.woff2');
 const MOCK_EMAIL = 'j.hartley@kestrelgroup.com'; // the mock-up's invented address, typed into the box and never sent
 const MOCK_CODE = 'K7Q2MX';
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
@@ -334,7 +337,7 @@ async function mockOpen(browser, width, mode) {
   await ctx.route(/fonts\.googleapis\.com/, (r) => r.fulfill({ status: 200, contentType: 'text/css', body: fontCss }));
   await ctx.route(/fonts\.gstatic\.com\/local\/(400|500)/, (r) => {
     const w = /\/(400|500)/.exec(r.request().url())[1];
-    r.fulfill({ status: 200, contentType: 'font/woff2', body: readFileSync(join(FONTS, `dm-sans-latin-${w}-normal.woff2`)) });
+    r.fulfill({ status: 200, contentType: 'font/woff2', body: readFileSync(DM_SANS_FILE) });
   });
   await ctx.route(/^https?:/, (r) => (/fonts\./.test(r.request().url()) ? r.fallback() : r.abort()));
   const page = await ctx.newPage();

@@ -19,7 +19,8 @@ const LOG = process.env.BREAKIT_LOG || 'tmp-phase5-breakit.txt';
 writeFileSync(LOG, '');
 const out = { push: (l) => appendFileSync(LOG, `${l}\n`) };
 let failures = 0;
-const pass = (n, ok, d = '') => { if (!ok) failures += 1; out.push(`${ok ? 'PASS' : 'FAIL'}  ${n}${!ok && d ? `: ${String(d).slice(0, 300)}` : ''}`); };
+let passes = 0;
+const pass = (n, ok, d = '') => { if (ok) passes += 1; else failures += 1; out.push(`${ok ? 'PASS' : 'FAIL'}  ${n}${!ok && d ? `: ${String(d).slice(0, 300)}` : ''}`); };
 const note = (s) => out.push(`NOTE  ${s}`);
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 async function until(fn, ms = 10000) { const end = Date.now() + ms; let v; while (Date.now() < end) { v = await fn().catch(() => null); if (v) return v; await sleep(250); } return v; }
@@ -126,14 +127,11 @@ try {
   await p3.screenshot({ path: `${LOG}.tab3.png` }).catch(() => {});
   rows = await rowsNow();
   note(`row after Finish: ${rows.map((r) => `${r.status} with ${Object.keys(r.answers).length} answers`).join(', ')}`);
-  // With another tab writing, the first Finish can be refused as changed in
-  // another window (the page reloads the latest): a second tap finishes it.
-  if (rows[0]?.status !== 'finished' && (await p2.locator('.ds-guide-next').count())) {
-    note('the first Finish was refused (another tab had written): tapping Finish again');
-    await next(p2); await sleep(3000);
-    rows = await rowsNow();
-  }
-  pass('2 finished in tab 2: one row, finished', finished && rows.length === 1 && rows[0].status === 'finished', JSON.stringify(rows.map((r) => r.status)));
+  // Newest choice wins (Tim, 17 Nov): Finish in either tab finishes it with
+  // that tab's answers, even though the other tab saved since. It is never
+  // refused, so there is no second press.
+  pass('2 Finish is never refused as another tab\'s', ![...toasts].some((t) => /another window/i.test(t)), [...toasts].join(' | '));
+  pass('2 finished in tab 2 with the first press: one row, finished', finished && rows.length === 1 && rows[0].status === 'finished', JSON.stringify(rows.map((r) => r.status)));
   const answersAtFinish = JSON.stringify(rows[0]?.answers || {});
   // The stale tab answers its next question after the finish.
   const staleRadios = await p3.locator('.ds-guide-body [role=radio]').count();
@@ -197,7 +195,7 @@ try {
   note(`Finish writes: ${finishes}`);
   note(`checkin writes seen: ${writes.length}; page errors: ${errors.length}${errors.length ? ` (${errors.join(' | ').slice(0, 400)})` : ''}`);
   pass('no page errors anywhere', errors.length === 0, errors.join(' | '));
-  out.push(failures ? `${failures} failed` : 'all passed');
+  out.push(`${passes} passed, ${failures} failed`);
   console.log(readFileSync(LOG, 'utf8'));
   process.exitCode = failures ? 1 : 0;
 }

@@ -163,12 +163,12 @@ async function signedIn(browser, width) {
     // M9's add panel (Phase 8a follow-up, step 1): the Strategy in the branded drop-down, How much unchosen.
     const p = page.locator('[role=dialog]:not(.ds-guide)').last();
     await sleep(500);
-    pass(`${tag}: the panel's Strategy is a drop-down, with none chosen yet`, (await p.locator('[aria-haspopup=listbox]').count()) === 1 && (await p.locator('.ds-dd-value').first().innerText()).trim() === 'Choose a Strategy');
+    pass(`${tag}: the panel's Strategy is a drop-down, starting on the plan's first Strategy (M9)`, (await p.locator('[aria-haspopup=listbox]').count()) === 1 && (await p.locator('.ds-dd-value').first().innerText()).trim() !== 'Choose a Strategy');
     pass(`${tag}: … and How much starts unchosen`, (await p.locator('[aria-checked=true], [aria-pressed=true]').filter({ hasText: /^(Low|Medium|High)$/ }).count()) === 0);
     pass(`${tag}: … with “Add my to-do” never greyed out`, !(await p.locator('.ds-btn--primary').isDisabled()));
     await p.locator('.ds-btn--primary').click();
     const said = (await p.innerText()).replace(/\s+/g, ' ');
-    pass(`${tag}: pressed too soon, it says what's missing`, said.includes('Choose a Strategy to carry on.') && said.includes('Choose Low, Medium or High to carry on.'), said.slice(0, 400));
+    pass(`${tag}: pressed too soon, it says what's missing`, said.includes('Choose Low, Medium or High to carry on.') && !said.includes('Choose a Strategy to carry on.'), said.slice(0, 400));
   }
   await addPanel(page, 'This week');
   pass(`${tag}: “Added to this week”`, Boolean(await sawToast(page, 'Added to this week')));

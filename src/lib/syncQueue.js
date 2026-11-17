@@ -374,7 +374,7 @@ function rebase(userId, op, data) {
   if (mineHere) noteOwn(k, at);
   noteVersion(k, at, { mine: mineHere });
   if (!userId) return;
-  const follows = (x) => x.basedOn && x.qid !== op.qid && opKey(x) === k && sameTab(x, op);
+  const follows = (x) => x.basedOn && !x.newestWins && x.qid !== op.qid && opKey(x) === k && sameTab(x, op);
   const move = (items) => items.map((x) => (follows(x) ? { ...x, basedOn: at } : x));
   const queued = read(userId);
   if (queued.some(follows)) write(userId, move(queued));
@@ -383,7 +383,16 @@ function rebase(userId, op, data) {
 }
 
 // The version a new change is based on, when the book knows the row.
+// newestWins: the person's own Finish (Tim, 17 Nov: newest choice wins).
+// With the same item open in two tabs, Finish in either tab finishes it with
+// that tab's answers, even when the other tab saved since, so it is never
+// sent "only if unchanged" and never refused. A stale tab's later save is
+// still checked, so it is refused and shows the finished item.
 function withVersion(op) {
+  if (op.newestWins) {
+    const { basedOn, ...rest } = op;
+    return rest;
+  }
   if (op.basedOn || op.kind === 'delete' || op.ignoreDuplicates) return op;
   const k = opKey(op);
   const at = k && versions.get(k);

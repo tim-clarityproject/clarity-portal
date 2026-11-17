@@ -94,7 +94,9 @@ export default function ToolTodoPanel({ open, onClose, startText = '', startStra
     <AddTodoPanel
       open={open}
       onClose={onClose}
-      form={{ ...form, where }}
+      // M9 and M10 start the Strategy drop-down on the plan's first Strategy
+      // (only "How much" starts unchosen).
+      form={{ ...form, where, strategyId: form.strategyId || todo.strategies[0]?.value || null }}
       onFormChange={setForm}
       strategies={todo.strategies}
       where={todo.whereOptions}

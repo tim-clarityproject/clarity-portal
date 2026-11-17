@@ -143,7 +143,10 @@ try {
         const fromPage = facts.tokens.map((t) => contrast(t, facts.grounds[0]));
         pass(`week grid ${tag}: better days are stronger`, fromPage.every((c, i) => i === 0 || c > fromPage[i - 1]), fromPage.map((c) => c.toFixed(1)).join(' '));
         const rated = facts.boxes.filter((b) => b.rating);
-        pass(`week grid ${tag}: a rated day is filled with its shade`, rated.length >= 2 && rated.every((b) => b.bg === facts.tokens[Number(b.rating) - 1]), JSON.stringify(rated.map((b) => [b.rating, b.bg])));
+        // The seed rates the days up to the day it was run, so this week can hold
+        // one rated day (seeded on Mon 16 Nov, run on Tue 17 Nov): one is enough
+        // to show a rated day is filled with its shade.
+        pass(`week grid ${tag}: a rated day is filled with its shade`, rated.length >= 1 && rated.every((b) => b.bg === facts.tokens[Number(b.rating) - 1]), JSON.stringify(rated.map((b) => [b.rating, b.bg])));
         pass(`week grid ${tag}: no number or word inside a box`, facts.boxes.every((b) => b.text === ''), facts.boxes.map((b) => b.text).join('|'));
         const empty = facts.boxes.filter((b) => !b.rating);
         pass(`week grid ${tag}: a day not rated stays empty`, empty.length >= 1 && empty.every((b) => b.bg === facts.grounds[2]), JSON.stringify(empty.map((b) => b.bg)));

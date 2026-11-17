@@ -273,7 +273,7 @@ function PlanFlow({ userId, date, today, loaded }) {
       // The device's copy of the page learns the answers too, so the
       // next visit shows them at once, offline as well.
       setData((d) => ({ ...d, dayPlan: { ...(d.dayPlan || {}), ...answersToRow(a), ...extra } }));
-      const r = await saveOrQueue(userId, answersOp(a, extra));
+      const r = await saveOrQueue(userId, extra.status === 'finished' ? { ...answersOp(a, extra), newestWins: true } : answersOp(a, extra)) // Finish: newest choice wins;
       // Saved, with nothing newer typed: the draft goes, so a reload shows
       // the saved row, never older typing over another window's newer save.
       if (r?.status === 'saved' && answersRef.current === a) clearAnswersDraft();

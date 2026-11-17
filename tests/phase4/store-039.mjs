@@ -27,7 +27,7 @@
 // Part A runs only while the 039 tables are missing, part C only once they
 // are there. Part A writes only to the device, part B only to the
 // stand-in, part C only rows it deletes again. The clock is fixed (Wed 21
-// Oct 2026, 22:30 London).
+// Oct 2026, 22:30 London, when Sprint 1 ran from Mon 12 Oct; now read from the seeded sprint, below).
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -37,8 +37,6 @@ import { londonInstant } from '../phase2/fixed-day.mjs';
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
 const TEST_HOST = `${TEST_REF}.supabase.co`;
-const NIGHT = '2026-10-21';
-const YESTERDAY = '2026-10-20';
 const H1 = '11111111-1111-4111-8111-111111111111';
 const H2 = '22222222-2222-4222-8222-222222222222';
 const TABLES_039 = ['day_plan_habits', 'wind_down_nights'];
@@ -61,6 +59,14 @@ const { data: signIn, error: signInError } = await db.auth.signInWithPassword({ 
 if (signInError) throw signInError;
 const me = signIn.user.id;
 
+// The night is the Wednesday of the seed's running sprint's second week, at
+// 22:30 London (Wed 21 Oct 2026 when Sprint 1 ran from Mon 12 Oct). The seed
+// dates its sprint from the day it is run, so the night is read from it.
+const dayAfter = (key, n) => { const d = new Date(`${key}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const seeded = (await db.from('sprints').select('start_on').eq('user_id', me).eq('status', 'running').limit(1)).data?.[0];
+const NIGHT = seeded ? dayAfter(seeded.start_on, 9) : '2026-10-21';
+const YESTERDAY = dayAfter(NIGHT, -1);
+
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 async function until(fn, ms = 15000) {
   const end = Date.now() + ms;
@@ -82,7 +88,7 @@ function restStandIn(keys) {
   const tables = Object.fromEntries(Object.keys(keys).map((t) => [t, []]));
   const calls = [];
   let clock = 0;
-  const stamp = () => { clock += 1; return `2026-10-21T21:00:${String(clock).padStart(2, '0')}.000Z`; };
+  const stamp = () => { clock += 1; return `${NIGHT}T21:00:${String(clock).padStart(2, '0')}.000Z`; };
   const id = () => `00000000-0000-4000-8000-${String(Math.floor(Math.random() * 1e12)).padStart(12, '0')}`;
   const same = (a, b) => `${a}` === `${b}` || (Date.parse(a) && Date.parse(a) === Date.parse(`${b}`.replace(' ', '+')));
   async function handle(route) {
@@ -208,11 +214,11 @@ try {
     pass('A: no error shown', (await errorShown(page)) === 0);
 
     // The day's habits, through the app's own module (the same one Daily plan uses).
-    const r = await page.evaluate(async ({ uid, h }) => {
+    const r = await page.evaluate(async ({ uid, h, night }) => {
       const m = await import('/src/lib/performance/dayPlanHabits.js');
-      const out = await m.saveDayChoices(uid, '2026-10-21', { habits: [h], order: [`habit:${h}`], top: `habit:${h}` });
-      return { status: out.status, read: m.readDayChoices(uid, '2026-10-21') };
-    }, { uid: me, h: H1 });
+      const out = await m.saveDayChoices(uid, night, { habits: [h], order: [`habit:${h}`], top: `habit:${h}` });
+      return { status: out.status, read: m.readDayChoices(uid, night) };
+    }, { uid: me, h: H1, night: NIGHT });
     pass('A: a habit chosen for the day answers "device", as before', r.status === 'device', JSON.stringify(r));
     pass('A: ... and is read back from the device', r.read?.habits?.[0] === H1 && r.read.top === `habit:${H1}`, JSON.stringify(r.read));
 
@@ -233,11 +239,11 @@ try {
     rest.tables.person_settings.push({ user_id: me, page_preferences: { menu_pins: ['breathe'], orb_style: 'level' }, updated_at: rest.stamp() });
     const { context, page } = await signedIn({ standIn: rest });
     // What the older app kept on the device: a day's habit and last night's thoughts.
-    await page.evaluate(({ nk, pk, h }) => {
+    await page.evaluate(({ nk, pk, h, yday }) => {
       localStorage.setItem(pk, JSON.stringify({ habits: [h], order: [`habit:${h}`], top: `habit:${h}` }));
-      localStorage.setItem(nk, JSON.stringify({ '2026-10-20': { thoughts: ['Legacy thought'], finishedAt: '2026-10-20T21:40:00.000Z', sound: 'off' } }));
+      localStorage.setItem(nk, JSON.stringify({ [yday]: { thoughts: ['Legacy thought'], finishedAt: `${yday}T21:40:00.000Z`, sound: 'off' } }));
       localStorage.setItem('clarity-orb-style', 'rings');
-    }, { nk: nightsKey, pk: planKey(NIGHT), h: H1 });
+    }, { nk: nightsKey, pk: planKey(NIGHT), h: H1, yday: YESTERDAY });
     await page.goto(`${APP}/welcome`);
     await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
 
@@ -302,11 +308,11 @@ try {
     });
     try {
       const reviewKey = `clarity-cache:${me}:performance-sprint-review-answers`;
-      await page.evaluate(({ nk, pk, rk, h, sid }) => {
+      await page.evaluate(({ nk, pk, rk, h, sid, yday }) => {
         localStorage.setItem(pk, JSON.stringify({ habits: [h], order: [`habit:${h}`], top: `habit:${h}` }));
-        localStorage.setItem(nk, JSON.stringify({ '2026-10-20': { thoughts: ['Device thought'], finishedAt: '2026-10-20T21:40:00.000Z', sound: 'off' } }));
-        localStorage.setItem(rk, JSON.stringify({ v: { [sid]: { worked: 'Morning plans', next: 'Earlier nights', choice: 'sprint', at: null, finishedAt: '2026-10-20T19:00:00.000Z' } }, at: Date.now() }));
-      }, { nk: nightsKey, pk: planKey(NIGHT), rk: reviewKey, h: habit.id, sid: sprint.id });
+        localStorage.setItem(nk, JSON.stringify({ [yday]: { thoughts: ['Device thought'], finishedAt: `${yday}T21:40:00.000Z`, sound: 'off' } }));
+        localStorage.setItem(rk, JSON.stringify({ v: { [sid]: { worked: 'Morning plans', next: 'Earlier nights', choice: 'sprint', at: null, finishedAt: `${yday}T19:00:00.000Z` } }, at: Date.now() }));
+      }, { nk: nightsKey, pk: planKey(NIGHT), rk: reviewKey, h: habit.id, sid: sprint.id, yday: YESTERDAY });
       await page.goto(`${APP}/welcome`);
       await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
       const day = await until(async () => (await db.from('day_plan_habits').select('*').eq('user_id', me).eq('local_date', NIGHT)).data?.[0], 15000);

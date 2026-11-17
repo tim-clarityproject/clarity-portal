@@ -367,7 +367,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
     return sent(async () => {
       await ensureDebrief();
       setData((d) => ({ ...d, debrief: { ...(d.debrief || {}), ...debriefAnswersToRow(a), ...extra } }));
-      return saveOrQueue(userId, answersOp(a, extra));
+      return saveOrQueue(userId, extra.status === 'finished' ? { ...answersOp(a, extra), newestWins: true } : answersOp(a, extra)) // Finish: newest choice wins;
     });
   };
 
