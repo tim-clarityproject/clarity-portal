@@ -5,6 +5,7 @@ import { noteSignedOut } from '../lib/signIn/addresses';
 import { sessionManager } from '../lib/sessionManager';
 import { diag } from '../utils/diag';
 import { clearAppStorage } from '../lib/clearAppStorage';
+import { sendToolAnswersBeforeSignOut } from '../lib/toolAnswers';
 import { flush as flushQueue, queueState, retrySyncQueue, startSyncQueue, stopSyncQueue } from '../lib/syncQueue';
 
 // The session kept on this device (supabase.js storageKey), read directly
@@ -267,8 +268,8 @@ export function AuthProvider({ children }) {
 
   // Helper: clear everything the app keeps in the browser (drafts,
   // legacy tool autosaves, cached profile data) - see clearAppStorage.js.
-  const clearUserDrafts = () => {
-    clearAppStorage();
+  const clearUserDrafts = (opts) => {
+    clearAppStorage(opts);
   };
 
   // Sign out. Saves still waiting are sent first; if any can't be sent
@@ -276,10 +277,16 @@ export function AuthProvider({ children }) {
   // is thrown away (Tim, 26 Oct). force: deleting the account.
   // Resolves { signedOut: true } or { pending: n }.
   const logout = async ({ force = false } = {}) => {
+    // Checks and washes waiting on this device go across first (043 is
+    // there), so nothing of them is left on the device (Phase 8a follow-up).
+    const tools = await Promise.race([
+      sendToolAnswersBeforeSignOut(user?.id).catch(() => ({ there: null, waiting: 0 })),
+      new Promise((resolve) => { setTimeout(() => resolve({ there: null, waiting: 0 }), 20000); }),
+    ]);
     if (!force) {
       await Promise.race([flushQueue(), new Promise((resolve) => { setTimeout(resolve, 20000); })]);
       const { waiting } = queueState();
-      if (waiting > 0) return { pending: waiting };
+      if (waiting + tools.waiting > 0) return { pending: waiting + tools.waiting };
     }
     setIsLoading(true);
     try {
@@ -287,11 +294,12 @@ export function AuthProvider({ children }) {
       // A deliberate sign-out: the page it was pressed on is not kept as
       // the place to land after the next sign-in (ProtectedLayout).
       noteSignedOut();
-      clearUserDrafts();
+      const clearing = { toolAnswersThere: tools.there === true };
+      clearUserDrafts(clearing);
       await auth.signOut();
       // Again once signed out: a page still open can finish a read while
       // the sign-out is on its way and put its copy back on the device.
-      clearUserDrafts();
+      clearUserDrafts(clearing);
       sessionManager.clearSession();
       setUser(null);
     } catch (err) {

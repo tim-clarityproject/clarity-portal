@@ -272,6 +272,22 @@ export function moveToolAnswers(userId) {
 }
 
 /**
+ * Before a deliberate Sign out (Phase 8a follow-up, step 5): once 043 is
+ * there, what waits on this device is sent across first, so Sign out can
+ * clear the device and leave nothing of these tools behind. Resolves
+ * { there, waiting }: whether the table is there (true, false, or null when
+ * it can't be told) and how many items still wait on this device.
+ */
+export async function sendToolAnswersBeforeSignOut(userId) {
+  if (!userId) return { there: null, waiting: 0 };
+  const there = await ready().catch(() => null);
+  if (there !== true) return { there, waiting: 0 };
+  await moveToolAnswers(userId);
+  const waiting = Object.values(kept(userId)).filter((r) => r && r.sent !== true).length;
+  return { there, waiting };
+}
+
+/**
  * Every saved item of a tool, newest first: the table's rows once it is
  * there, with whatever still waits on this device on top. Never throws:
  * offline, or before 043, it is what the device holds.

@@ -81,6 +81,25 @@ test('Sign out sets aside the tool answers that live only on this device, and cl
   }
 });
 
+test('Once 043 is there, Sign out leaves nothing of the checks and washes on the device (Phase 8a follow-up, step 5)', () => {
+  const copy = (map) => JSON.stringify({ v: map, at: 1 });
+  const local = fakeStorage({
+    [`clarity-cache:${SAM}:tool-answers`]: copy({ a: { id: 'a', tool: 'emotional_wash', sent: false }, b: { id: 'b', tool: 'team_check', sent: true } }),
+    [`${TOOL_ANSWERS_WAITING}${SAM}`]: copy({ c: { id: 'c', tool: 'team_check', sent: false } }),
+    [`clarity-draft:${SAM}:team-check:new~tab`]: copy({}),
+    [`ds-guide:emotional-wash-${SAM}-new`]: '{}',
+    'clarity-colour-mode': 'dark',
+  });
+  globalThis.window = { localStorage: local, sessionStorage: fakeStorage() };
+  try {
+    // Sign out has sent what waited first (sendToolAnswersBeforeSignOut), so nothing is set aside.
+    clearAppStorage({ toolAnswersThere: true });
+    assert.deepEqual([...local.store.keys()], ['clarity-colour-mode']);
+  } finally {
+    delete globalThis.window;
+  }
+});
+
 test('Sign out clears the mark that this tab has asked for the claims, so the next sign-in asks again (the functionality tester, 15 Nov)', () => {
   assert.equal(isAppOwnedKey('clarity-guest-claim:u1'), true);
 });

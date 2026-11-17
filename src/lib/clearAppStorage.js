@@ -97,13 +97,24 @@ export function keepWaitingToolAnswers(storage) {
 }
 
 /**
- * @param {{ deletedAccount?: string }} [opts] the person's id when the
- *   account itself has just been deleted: then nothing of theirs waits
- *   anywhere, on this device included.
+ * @param {{ deletedAccount?: string, toolAnswersThere?: boolean }} [opts]
+ *   deletedAccount: the person's id when the account itself has just been
+ *   deleted: then nothing of theirs waits anywhere, on this device included.
+ *   toolAnswersThere: migration 043's table is there, so the checks and
+ *   washes are in the account and none is set aside on the device.
  */
-export function clearAppStorage({ deletedAccount = null } = {}) {
+export function clearAppStorage({ deletedAccount = null, toolAnswersThere = false } = {}) {
   try {
-    keepWaitingToolAnswers(window.localStorage);
+    // Once 043 is there (Phase 8a follow-up, step 5) Sign out has sent
+    // what waited first, and nothing of these tools stays on the device.
+    if (toolAnswersThere) {
+      for (let i = window.localStorage.length - 1; i >= 0; i -= 1) {
+        const key = window.localStorage.key(i);
+        if (key && key.startsWith(TOOL_ANSWERS_WAITING)) window.localStorage.removeItem(key);
+      }
+    } else {
+      keepWaitingToolAnswers(window.localStorage);
+    }
     if (deletedAccount) window.localStorage.removeItem(TOOL_ANSWERS_WAITING + deletedAccount);
   } catch { /* storage blocked */ }
   try { clearFrom(window.localStorage); } catch { /* storage blocked */ }

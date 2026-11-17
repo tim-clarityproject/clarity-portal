@@ -475,8 +475,32 @@ async function run(browser, width) {
   const others = refused.filter((r) => !/\/rest\/v1\/(tool_answers|rpc\/(guest|alignment)_claim)/.test(r));
   pass(`${tag}: no console errors and no page errors`, errors.length === 0, errors.join(' | '));
   pass(`${tag}: no request was refused, but the one question about the table 043 adds`, others.length === 0 && probes.length <= 1, `${probes.length} for the table; others: ${others.join(' | ')}`);
-  await page.goto(`${APP}/version.json`);
-  await clearTeamCheck(page); await clearToolRows(db, me, 'team_check');
+
+  // ---- Sign out leaves nothing of these tools on the device (Phase 8a follow-up, step 5).
+  // A wash kept on the device and not yet sent is moved across first, once.
+  const washId = '7e000000-0000-4000-8000-0000000000e5';
+  await page.goto(`${APP}/my-account`);
+  await page.waitForLoadState('domcontentloaded');
+  await sleep(1500);
+  await page.evaluate((id) => {
+    const key = Object.keys(localStorage).find((k) => /^clarity-cache:.*:tool-answers$/.test(k));
+    const uid = key ? key.split(':')[1] : JSON.parse(localStorage.getItem('clarity-portal-auth') || '{}')?.user?.id;
+    const at = new Date().toISOString();
+    const k = `clarity-cache:${uid}:tool-answers`;
+    let map = {};
+    try { map = JSON.parse(localStorage.getItem(k))?.v || {}; } catch { /* none */ }
+    map[id] = { id, tool: 'emotional_wash', title: 'Your wash', status: 'draft', answers: { happened: 'Kept on the device' }, shared: false, createdAt: at, updatedAt: at, finishedAt: null, sent: false };
+    localStorage.setItem(k, JSON.stringify({ v: map, at: Date.now() }));
+  }, washId);
+  await page.locator('.account-signout .ds-signout').first().click();
+  const signedOut = await until(async () => /\/auth\/|\/sign-in|\/login/.test(new URL(page.url()).pathname), 30000);
+  pass(`${tag}: Sign out signs out`, Boolean(signedOut), page.url());
+  const leftKeys = await page.evaluate(() => Object.keys(localStorage).concat(Object.keys(sessionStorage)).filter((k) => /tool-answers|team-check|emotional-wash/.test(k)));
+  pass(`${tag}: after Sign out nothing of the Team performance check or the Emotional wash is left on the device`, leftKeys.length === 0, leftKeys.join(', '));
+  const moved = (await db.from('tool_answers').select('id').eq('user_id', me).eq('id', washId)).data || [];
+  pass(`${tag}: … and what was waiting on the device went across to the account first, once`, moved.length === 1, `${moved.length} rows`);
+  await clearToolRows(db, me, 'emotional_wash');
+  await clearToolRows(db, me, 'team_check');
   await ctx.close();
 }
 
