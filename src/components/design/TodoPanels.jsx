@@ -38,6 +38,7 @@ export const TODO_NEEDS = {
   text: 'Type what needs doing to carry on.',
   strategy: 'Choose a Strategy to carry on.',
   impact: 'Choose Low, Medium or High to carry on.',
+  week: 'Choose a week to carry on.',
 };
 
 // Where a tool's to-do goes (M10 "Where should it go?"; Tim, 13 Nov,
@@ -82,14 +83,16 @@ export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, we
     setWas(open);
     setAsked(false);
   }
+  // Never greyed out anywhere (Phase 8a follow-up, step 2): the sprint
+  // page's own panel and Daily plan's say what is missing, as a tool's does.
   const add = () => {
     if (ready) onAdd(noStrategies ? { ...form, where: TODO_WHERE.none } : form);
-    else if (tool) {
+    else {
       setAsked(true);
       if (!form.text.trim()) box.current?.focus();
     }
   };
-  const needs = tool && asked && !none;
+  const needs = asked && !none;
   return (
     <SlidePanel
       open={open}
@@ -98,7 +101,7 @@ export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, we
       initialFocusRef={noStrategies ? undefined : box}
       footer={noStrategies
         ? <Button onClick={add}>Done</Button>
-        : <Footer onCancel={onClose} onAdd={add} ready={ready} never={tool} label={none ? 'Done' : 'Add my to-do'} />}
+        : <Footer onCancel={onClose} onAdd={add} ready={ready} never label={none ? 'Done' : 'Add my to-do'} />}
     >
       {noStrategies ? (
         <div className="ds-panel-lead">
@@ -126,6 +129,7 @@ export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, we
           {!today && !tool && (
             <div>
               <Dropdown label="Which week?" options={weeks} value={form.week} onChange={(week) => set({ week })} />
+              {needs && !form.week && <div className="ds-panel-needs"><ErrorMessage>{TODO_NEEDS.week}</ErrorMessage></div>}
               <p className="ds-panel-note">{form.week === BACKLOG_VALUE ? BACKLOG_LINE : 'Moving it before that week starts doesn’t count against you.'}</p>
             </div>
           )}
@@ -135,27 +139,58 @@ export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, we
   );
 }
 
+// Never greyed out (Phase 8a follow-up, step 2): pressed with something
+// missing, it says what under the part it is about.
+export const WIN_NEEDS = {
+  text: 'Type what you did to carry on.',
+  strategies: 'Choose at least one Strategy to carry on.',
+  day: 'Choose a day to carry on.',
+};
+
 export function AddWinPanel({ open, onClose, form, onFormChange, strategies, days, onAdd }) {
   const box = useRef(null);
   const set = (patch) => onFormChange({ ...form, ...patch });
   const ready = Boolean(form.text.trim() && form.strategyIds.length && form.day);
+  const [asked, setAsked] = useState(false);
+  const [was, setWas] = useState(open);
+  if (open !== was) {
+    setWas(open);
+    setAsked(false);
+  }
+  const add = () => {
+    if (ready) onAdd(form);
+    else {
+      setAsked(true);
+      if (!form.text.trim()) box.current?.focus();
+    }
+  };
+  const need = (missing, words) => asked && missing && <div className="ds-panel-needs"><ErrorMessage>{words}</ErrorMessage></div>;
   return (
     <SlidePanel
       open={open}
       onClose={onClose}
       title="Add an unplanned win"
       initialFocusRef={box}
-      footer={<Footer onCancel={onClose} onAdd={() => ready && onAdd(form)} ready={ready} label="Add my win" />}
+      footer={<Footer onCancel={onClose} onAdd={add} ready={ready} never label="Add my win" />}
     >
       <div className="ds-panel-form">
         <div className="ds-panel-lead">
           <p>Something you did that wasn’t in your plan but moved the needle.</p>
           <p>It counts as done and is saved to your Confidence Bank.</p>
         </div>
-        <TextBox ref={box} label="What did you do?" who="me" value={form.text} onChange={(text) => set({ text })} placeholder="e.g. Ran a workshop that led to two referrals" maxLength={TEXT_LIMIT} />
-        <MultiChoice label="Which Strategies did it help?" hint="Pick all that apply." options={strategies} values={form.strategyIds} onChange={(strategyIds) => set({ strategyIds })} />
+        <div>
+          <TextBox ref={box} label="What did you do?" who="me" value={form.text} onChange={(text) => set({ text })} placeholder="e.g. Ran a workshop that led to two referrals" maxLength={TEXT_LIMIT} />
+          {need(!form.text.trim(), WIN_NEEDS.text)}
+        </div>
+        <div>
+          <MultiChoice label="Which Strategies did it help?" hint="Pick all that apply." options={strategies} values={form.strategyIds} onChange={(strategyIds) => set({ strategyIds })} />
+          {need(!form.strategyIds.length, WIN_NEEDS.strategies)}
+        </div>
         <Choice label={helpQuestion(form.strategyIds.map((id) => nameOf(strategies, id)).filter(Boolean))} options={IMPACT_OPTIONS} value={form.impact} onChange={(impact) => set({ impact })} />
-        <Choice label="Which day?" options={days} value={form.day} onChange={(day) => set({ day })} />
+        <div>
+          <Choice label="Which day?" options={days} value={form.day} onChange={(day) => set({ day })} />
+          {need(!form.day, WIN_NEEDS.day)}
+        </div>
       </div>
     </SlidePanel>
   );

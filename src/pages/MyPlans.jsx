@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { getLocalDateKey } from '../lib/dateFormatter';
 import { useCachedLoad } from '../lib/pageCache';
+import { useSavedItemsChanged } from '../lib/savedItemsChanged';
 import { savedItemRef } from '../lib/savedItemDelete';
 import { useOnline } from '../lib/connection';
 import { FIRST_OPEN_OFFLINE } from '../lib/friendlyError';
@@ -33,6 +34,8 @@ export default function MyPlans() {
   // Instant page (Tim, 26 Oct): the plans shown last time appear at once
   // from the device, then refresh quietly in the background.
   const loaded = useCachedLoad({ userId: user?.id, name: SAVED_PLANS_CACHE, load: () => loadSavedPlans(user.id) });
+  // Deleted with Undo from inside an item: read the list again when one goes or comes back.
+  useSavedItemsChanged(() => loaded.reload?.());
   const online = useOnline();
   const today = getLocalDateKey();
   const rows = useMemo(() => planRows(loaded.data, today), [loaded.data, today]);

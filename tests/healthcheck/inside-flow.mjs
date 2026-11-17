@@ -528,7 +528,8 @@ part('delete', async ({ browser, w, mode, tag }) => {
   await open(page, `${BASE}/version/${IDS.pt1}`);
   await resultsShown(page);
   await page.getByRole('button', { name: 'Delete this version' }).click();
-  await page.locator('[role=dialog] .ds-btn, [role=alertdialog] .ds-btn').filter({ hasText: /delete/i }).first().click();
+  // Straight away, with no "Delete this?" (writing rule 14; Phase 8a follow-up, step 2).
+  pass(`${tag}: deleting asks nothing`, (await page.locator('[role=dialog], [role=alertdialog]').count()) === 0);
   pass(`${tag}: "Deleted" with Undo`, await hasToast(page, 'Deleted') && (await toastText(page)).includes('Undo'));
   pass(`${tag}: … back on Your teams, without the Product team`, await onPage(page, /^\/strategic-alignment$/) && !(await page.locator('main .ds-results-head').allInnerTexts()).map((t) => t.toLowerCase()).includes('product team'));
   pass(`${tag}: … deleted`, b.store.deletes.includes(IDS.pt1));
@@ -538,8 +539,7 @@ part('delete', async ({ browser, w, mode, tag }) => {
   await open(page, `${BASE}/version/${IDS.lt2}`);
   await resultsShown(page);
   await page.getByRole('button', { name: 'Delete this team' }).click();
-  pass(`${tag}: deleting a team says how many versions go`, (await text(page, '[role=dialog], [role=alertdialog]')).includes('3 versions'));
-  await page.locator('[role=dialog] .ds-btn, [role=alertdialog] .ds-btn').filter({ hasText: /delete/i }).first().click();
+  pass(`${tag}: deleting a team asks nothing, and says "Deleted" with Undo`, (await page.locator('[role=dialog], [role=alertdialog]').count()) === 0 && await hasToast(page, 'Deleted') && (await toastText(page)).includes('Undo'));
   pass(`${tag}: the team goes`, await until(async () => [IDS.lt1, IDS.lt2, IDS.lt3].every((id) => b.store.deletes.includes(id))));
   noProblems(b, `${tag}, delete`);
   await b.ctx.close();

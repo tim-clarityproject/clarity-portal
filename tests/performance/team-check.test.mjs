@@ -221,6 +221,7 @@ test('the chart: M10’s own measures, dots side by side on a shared spot, the l
   assert.equal(chartDots(team([['Maximilian X', 3, 5, 5]]), ph)[0].nameLeft, true);
   assert.equal(chartDots(m10(), ph).some((d) => d.nameLeft), false, 'M10’s own names stay at the right of their dots');
   assert.equal(chartDots(m10(), f).some((d) => d.nameLeft), false);
+  assert.equal([...chartDots(m10(), ph), ...chartDots(m10(), f)].some((d) => d.nameUp), false, 'M10’s own names stay beside their dots');
   // ... and a row on a shared spot there stays inside the drawing, with room for each name.
   const row = chartDots(team([['Eve Li', 3, 5, 5], ['Maximilian X', 3, 5, 5]]), ph);
   assert.ok(row[1].x + ph.R + 6 + ph.nameWidth('Maximilian X') <= ph.W, 'the last name ends inside the drawing');
@@ -311,6 +312,11 @@ test('Questions to start with: about 15 words or fewer whatever the name, and on
   assert.deepEqual(startQuestions(falls).map((q) => [q.kind, q.id]), [['chaotic', 'q1'], ['trust', 'q3']]);
   // Never more than three.
   assert.ok(startQuestions(m10()).length <= 3);
+  // A first check with nobody in Chaotic: every Permission seeker is asked about, up to three (Phase 8a follow-up, step 2).
+  const seekers2 = team([['Ana', 3, 5, 1], ['Ben', 3, 5, 2], ['Cy', 3, 5, 5]]);
+  assert.deepEqual(startQuestions(seekers2).map((q) => [q.kind, q.id]), [['autonomy', 'q1'], ['autonomy', 'q2']]);
+  const seekers4 = team([['Ana', 3, 5, 1], ['Ben', 3, 5, 2], ['Cal', 3, 4, 1], ['Dee', 3, 4, 2]]);
+  assert.deepEqual(startQuestions(seekers4).map((q) => q.kind), ['autonomy', 'autonomy', 'autonomy']);
 });
 
 test('a new check starts from the last one’s people, with nothing answered', () => {
@@ -381,4 +387,31 @@ test('a check out of whatever a device kept: always the right shape', () => {
   assert.deepEqual(t, { people: [{ id: 'p', name: 'Pat', role: '', t: null, a: null, u: 3 }], shared: false, last: null });
   assert.equal(tidyCheck({ people: 'x', last: 5 }).people.length, 0);
   assert.equal(tidyCheck({ people: [], last: { at: '2026-10-01', people: { p: null, q: 5, r: { t: 3, a: 3, u: 3 } } } }).last.people.r.t, 3);
+});
+
+test('The team chart: no name comes within 4px of an area’s name, wherever the person stands (Phase 8a follow-up, step 2)', () => {
+  const near = (a, b) => {
+    const dx = Math.max(0, Math.max(a.left, b.left) - Math.min(a.right, b.right));
+    const dy = Math.max(0, Math.max(a.top, b.top) - Math.min(a.bottom, b.bottom));
+    return dx && dy ? Math.hypot(dx, dy) : Math.max(dx, dy);
+  };
+  for (const phone of [true, false]) {
+    const f = chartFrame(phone);
+    for (const name of ['Jo', 'Priya Shah', 'Maximilian Alexander']) {
+      for (let u = 1; u <= 5; u += 1) {
+        for (let a = 1; a <= 5; a += 1) {
+          const [d] = chartDots(team([[name, 3, a, u]]), f);
+          const w = f.nameWidth(name);
+          const base = d.nameUp ? d.y - f.R - 4 : d.y + 4.5;
+          const left = d.nameUp ? d.nameX - w / 2 : d.nameLeft ? d.x - f.R - 6 - w : d.x + f.R + 6;
+          const box = { left, right: left + w, top: base - f.nameSize * 0.75, bottom: base + f.nameSize * 0.25 };
+          for (const l of f.labels) assert.ok(near(box, l) >= 4, `${phone ? 'phone' : 'laptop'}: ${name} at autonomy ${u}, alignment ${a} is ${near(box, l).toFixed(1)}px from an area’s name`);
+          assert.ok(box.left >= 0 && box.right <= f.W, `${name} at ${u}, ${a} runs off the drawing`);
+        }
+      }
+    }
+  }
+  // The case found on a phone: alone at the bottom right (Chaotic), the name no longer runs into "Chaotic".
+  const [low] = chartDots(team([['Priya Shah', 3, 1, 5]]), chartFrame(true));
+  assert.equal(low.nameUp, true);
 });

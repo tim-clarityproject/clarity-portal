@@ -4,7 +4,8 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import DeleteDialog from '../components/ui/DeleteDialog';
+import { deleteSavedItemWithUndo } from '../lib/savedItemDelete';
+import { savedItemsChanged } from '../lib/savedItemsChanged';
 import pageText from '../content/pageText';
 import { Loading, PageHeader, Button, useToast } from '../components/design';
 
@@ -16,7 +17,6 @@ export default function StopDoingAuditSummary() {
 
   const [audit, setAudit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [deleteOpen, setDeleteOpen] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -53,14 +53,27 @@ export default function StopDoingAuditSummary() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Deleted straight away, with "Deleted" and Undo (writing rule 14; Phase
+  // 8a follow-up, step 2): no "Delete this audit?".
   const handleDelete = async () => {
     try {
-      const { error } = await supabase.from('decisions').delete().eq('id', audit.id).eq('user_id', user.id);
-      if (error) throw error;
-      navigate('/my-plans', { state: { toast: 'Deleted' } });
+      const undo = await deleteSavedItemWithUndo(user.id, { dbId: audit.id, source: 'decision' });
+      savedItemsChanged();
+      navigate('/my-plans');
+      toast.saved({
+        message: 'Deleted',
+        onUndo: async () => {
+          try {
+            await undo();
+            savedItemsChanged();
+          } catch (error) {
+            console.error('[StopDoingAuditSummary] undo failed:', error);
+            toast.error('That didn’t bring it back. Check your connection and try again.');
+          }
+        },
+      });
     } catch (error) {
       console.error('[StopDoingAuditSummary] delete failed:', error);
-      setDeleteOpen(false);
       toast.error('That didn’t delete. Check your connection and try again.');
     }
   };
@@ -139,19 +152,11 @@ export default function StopDoingAuditSummary() {
           <Button type="button" variant="outline" onClick={() => navigate('/time-audit', { state: { decisionId: audit.id } })}>
             Edit audit
           </Button>
-          <Button type="button" variant="outline" onClick={() => setDeleteOpen(true)}>
+          <Button type="button" variant="outline" onClick={handleDelete}>
             Delete audit
           </Button>
         </div>
       </div>
-
-      <DeleteDialog
-        open={deleteOpen}
-        title="Delete this audit?"
-        body="This cannot be undone."
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteOpen(false)}
-      />
     </div>
   );
 }

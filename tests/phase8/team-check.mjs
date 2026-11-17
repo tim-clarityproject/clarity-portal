@@ -53,6 +53,28 @@ const kept = (page) => page.evaluate(() => {
   try { return Object.values(JSON.parse(localStorage.getItem(key)).v); } catch { return []; }
 });
 const dots = (page) => page.locator('.tpc-dot').count();
+// The closest any person's name comes to an area's label on the chart, in
+// screen pixels (0 when they touch or overlap): at least 4 on every width.
+async function nameGaps(page) {
+  const gap = await page.evaluate(() => {
+    const box = (el) => el.getBoundingClientRect();
+    const apart = (a, b) => {
+      const dx = Math.max(0, Math.max(a.left, b.left) - Math.min(a.right, b.right));
+      const dy = Math.max(0, Math.max(a.top, b.top) - Math.min(a.bottom, b.bottom));
+      return dx && dy ? Math.hypot(dx, dy) : Math.max(dx, dy);
+    };
+    let least = Infinity;
+    let worst = '';
+    for (const n of document.querySelectorAll('.tpc-dot-name')) {
+      for (const l of document.querySelectorAll('.tpc-chart-area')) {
+        const d = apart(box(n), box(l));
+        if (d < least) { least = d; worst = `${n.textContent} to ${l.textContent}`; }
+      }
+    }
+    return { least, worst };
+  });
+  return [gap.least >= 4, `${gap.least.toFixed(1)}px, ${gap.worst}`];
+}
 
 const checkScreen = makeCheckScreen(pass);
 
@@ -199,6 +221,7 @@ async function run(browser, width) {
   pass(`${tag}: one small dot for each person, with their first name`, (await dots(page)) === 5 && JSON.stringify(await page.locator('.tpc-dot-name').allTextContents()) === JSON.stringify(M10.people.map((p) => p.first)));
   pass(`${tag}: the three areas are named on the chart, and nothing else is a key`, JSON.stringify(await page.locator('.tpc-chart-area').allTextContents()) === JSON.stringify(['High-performance', 'Permission seekers', 'Chaotic']));
   pass(`${tag}: a first check has no dashed rings`, (await page.locator('.tpc-chart-was').count()) === 0);
+  pass(`${tag}: every name is at least 4px from every area label (Phase 8a follow-up, step 2)`, ...(await nameGaps(page)));
   const dotColours = await page.locator('.tpc-dot-mark').evaluateAll((els) => els.map((el) => { const cs = getComputedStyle(el); return `${cs.fill}|${cs.stroke}`.replace(/\s+/g, ''); }));
   pass(`${tag}: chart dots are never coral`, dotColours.every((c) => !/255,111,92|194,65,46/.test(c)), dotColours.join(' '));
   pass(`${tag}: only the High-performance dot is filled`, new Set(dotColours.slice(1)).size === 1 && dotColours[0] !== dotColours[1], dotColours.join(' '));
@@ -388,6 +411,20 @@ async function run(browser, width) {
   await row.click();
   pass(`${tag}: a saved check opens on its results`, await until(async () => (await title(page).count()) > 0 && (await dots(page)) === 5, 15000));
   pass(`${tag}: … at the tool’s own address`, new URL(page.url()).pathname === TEAM_PATH);
+  await sleep(600);
+  // ---- Delete, from inside the opened check: straight away, "Deleted" with Undo (writing rule 14; Phase 8a follow-up, step 2)
+  {
+    const savedId = records[0]?.id;
+    const inTable = async () => ((await db.from('tool_answers').select('id').eq('user_id', me).eq('id', savedId)).data || []).length;
+    await page.locator('.ds-guide-delete button, .saved-item-actions button').filter({ hasText: /^Delete$/ }).first().click();
+    pass(`${tag}: Delete asks nothing`, (await page.locator('[role=alertdialog]').count()) === 0 && !(await page.getByText('Delete this?').count()));
+    pass(`${tag}: … goes back to My Plans with “Deleted” and Undo`, await until(async () => /\/my-plans/.test(page.url()), 10000) && await sawToast(page, 'Deleted') && (await page.locator('.ds-toast').last().getByRole('button', { name: 'Undo' }).count()) === 1);
+    pass(`${tag}: … and the check has gone, from the list and the database`, await until(async () => (await page.getByText(`${MONTH} team check`).count()) === 0 && (await inTable()) === 0, 10000));
+    await page.locator('.ds-toast').last().getByRole('button', { name: 'Undo' }).click();
+    pass(`${tag}: Undo puts it back, with its own id, in the list and the database`, await until(async () => (await page.getByText(`${MONTH} team check`).count()) > 0 && (await inTable()) === 1, 15000));
+  }
+  await page.getByText(`${MONTH} team check`).first().click();
+  await until(async () => (await dots(page)) === 5, 15000);
   await sleep(600);
   await page.getByRole('button', { name: 'Close', exact: true }).first().click();
   await page.waitForURL(/\/my-plans/, { timeout: 15000 });

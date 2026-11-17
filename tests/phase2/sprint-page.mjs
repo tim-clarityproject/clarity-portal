@@ -332,6 +332,15 @@ pass('move: stays this week, tagged, its tick off', (await movedRow.textContent(
 
 await page.getByRole('button', { name: 'Add a to-do' }).click();
 await page.waitForSelector('.ds-panel textarea');
+// Never greyed out (Phase 8a follow-up, step 2): pressed too early, it says what's missing.
+{
+  const go = page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' });
+  pass('add a to-do: “Add my to-do” is never greyed out', !(await go.isDisabled()));
+  await go.click();
+  await page.waitForTimeout(500);
+  const said = await page.locator('.ds-panel').innerText();
+  pass('add a to-do: pressed too early, it says what’s missing', said.includes('Type what needs doing to carry on.') && said.includes('Choose a Strategy to carry on.'), said.slice(0, 300));
+}
 await page.locator('.ds-panel textarea').fill('Send the referral thank-you notes');
 await page.locator('.ds-panel').getByRole('radio', { name: 'Grow through referrals' }).click();
 await shot(page, 'add-todo');

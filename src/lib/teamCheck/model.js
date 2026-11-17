@@ -294,15 +294,37 @@ export function chartFrame(phone = false) {
   // A first name's width beside its dot, near enough: DM Sans averages a little under 0.6 of its size a letter.
   const nameSize = phone ? 13 : 14;
   const nameWidth = (name) => firstName(name).length * nameSize * 0.58;
-  return { W, H, PL, PR, PT, PB, pw, ph, IN, IT, R, X, Y, midX: (X(3) + X(4)) / 2, midY: (Y(3) + Y(4)) / 2, phone, nameWidth };
+  // The three areas' names, where TeamChart draws them, as boxes (the same
+  // estimate of a letter's width), so no person's name comes near one.
+  const labelSize = phone ? 12 : 13;
+  const labelBox = (text, x, baseline, end) => {
+    const w = text.length * labelSize * 0.58;
+    return { left: end ? x - w : x, right: end ? x : x + w, top: baseline - labelSize * 0.75, bottom: baseline + labelSize * 0.25 };
+  };
+  const labels = [
+    labelBox(AREA_NAME.hp, PL + pw - 8, PT + 20, true),
+    labelBox(AREA_NAME.ps, PL + 8, PT + 20, false),
+    labelBox(AREA_NAME.ch, PL + pw - 8, PT + ph - 12, true),
+  ];
+  return { W, H, PL, PR, PT, PB, pw, ph, IN, IT, R, X, Y, midX: (X(3) + X(4)) / 2, midY: (Y(3) + Y(4)) / 2, phone, nameWidth, nameSize, labels };
 }
+
+// At least 4px between any name and an area's name on screen (Phase 8a
+// follow-up, step 2); the boxes are estimates, so 6px is kept in the drawing.
+const LABEL_CLEAR = 6;
+const apart = (a, b) => {
+  const dx = Math.max(0, Math.max(a.left, b.left) - Math.min(a.right, b.right));
+  const dy = Math.max(0, Math.max(a.top, b.top) - Math.min(a.bottom, b.bottom));
+  return dx && dy ? Math.hypot(dx, dy) : Math.max(dx, dy);
+};
 
 const NAME_GAP = 6; // from a dot's edge to its name (M10)
 const SHARED_GAP = 52; // between two dots that share a spot (M10)
 
 /**
  * Where each rated person's dot goes: people who share a spot sit side by
- * side. Each: { person, x, y, good, nameLeft, ring: { x, y } | null, line | null }.
+ * side. Each: { person, x, y, good, nameLeft, nameUp, ring: { x, y } | null, line | null }
+ * (nameUp: the name sits centred just above the dot, clear of an area's name).
  * `ring` is where they were at the last check (the dashed ring), left out
  * when they haven't moved or weren't on it.
  *
@@ -389,7 +411,25 @@ export function chartDots(check, frame) {
     const y0 = Y(p.a);
     const at = placed.get(p.id) || { x: x0, y: y0 };
     // Alone at the right-hand edge: the name goes to the left of the dot.
-    const nameLeft = group.length === 1 && x0 + R + NAME_GAP + wide(p.name) > W - 2;
+    let nameLeft = group.length === 1 && x0 + R + NAME_GAP + wide(p.name) > W - 2;
+    // A name never comes near an area's name: the other side of the dot
+    // when that is clear, otherwise just above the dot (Phase 8a follow-up).
+    const size = frame.nameSize || 14;
+    // Above the dot, the name is centred on it but kept inside the drawing.
+    const upX = Math.min(Math.max(at.x, wide(p.name) / 2 + 2), W - wide(p.name) / 2 - 2);
+    const nameBox = (left, up) => {
+      const w = wide(p.name);
+      const base = up ? at.y - R - 4 : at.y + 4.5;
+      const x1 = up ? upX - w / 2 : (left ? at.x - R - NAME_GAP - w : at.x + R + NAME_GAP);
+      return { left: x1, right: x1 + w, top: base - size * 0.75, bottom: base + size * 0.25 };
+    };
+    const clear = (box) => (frame.labels || []).every((l) => apart(box, l) >= LABEL_CLEAR);
+    let nameUp = false;
+    if (!clear(nameBox(nameLeft, false))) {
+      const fitsOther = nameLeft ? at.x + R + NAME_GAP + wide(p.name) <= W - 2 : at.x - R - NAME_GAP - wide(p.name) >= 2;
+      if (fitsOther && clear(nameBox(!nameLeft, false))) nameLeft = !nameLeft;
+      else nameUp = true;
+    }
     const was = before(check, p);
     let ring = null;
     let line = null;
@@ -407,7 +447,7 @@ export function chartDots(check, frame) {
         }
       }
     }
-    return { person: p, x: at.x, y: at.y, good: areaOf(p) === 'hp', nameLeft, ring, line };
+    return { person: p, x: at.x, y: at.y, good: areaOf(p) === 'hp', nameLeft, nameUp, nameX: nameUp ? upX : null, ring, line };
   });
 }
 
@@ -496,10 +536,14 @@ export function startQuestions(check) {
   if (fell) {
     out.push({ kind: 'trust', id: fell.id, text: ask((n) => `What has changed for ${n}, and what would rebuild their trust?`, fell) });
   }
-  const seeker = people.find((p) => areaOf(p) === 'ps' && p !== fell);
-  if (seeker) {
-    out.push({ kind: 'autonomy', id: seeker.id, text: ask((n) => `Which decisions could ${n} own, within clear boundaries, to ease your load?`, seeker) });
-  }
+  // Autonomy: a Permission seeker. With nobody in Chaotic and no trust to
+  // ask about (a first check, so nothing has fallen yet), every Permission
+  // seeker is asked about, up to three (Phase 8a follow-up, step 2); with
+  // none, there is nothing to ask and the section is hidden (5e rule 6).
+  const seekers = people.filter((p) => areaOf(p) === 'ps' && p !== fell);
+  const autonomy = (p) => ({ kind: 'autonomy', id: p.id, text: ask((n) => `Which decisions could ${n} own, within clear boundaries, to ease your load?`, p) });
+  if (!out.length) seekers.slice(0, 3).forEach((p) => out.push(autonomy(p)));
+  else if (seekers[0]) out.push(autonomy(seekers[0]));
   return out.slice(0, 3);
 }
 

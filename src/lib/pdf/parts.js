@@ -96,7 +96,8 @@ const PAD = 16;
 
 /**
  * At a glance: two to four items, each laid out the same way: a label, the
- * value (a big number when `big`), and an optional note.
+ * value (a big number when `big`), and an optional note. A summary's PDF
+ * holds its headline alone (PDF rule 12): one item with no label.
  */
 export function glanceUnits(L, items, parent) {
   const { ts } = L;
@@ -110,7 +111,8 @@ export function glanceUnits(L, items, parent) {
     const big = it.big && ts.width(value, STYLES.big) <= colW;
     const vStyle = big ? STYLES.big : STYLES.glanceText;
     return {
-      label: ts.wrap(it.label, STYLES.smallMedium, colW),
+      // A summary's headline stands alone, with no label (PDF rule 12).
+      label: blank(it.label) ? [] : ts.wrap(it.label, STYLES.smallMedium, colW),
       value: ts.wrap(value, vStyle, colW),
       vStyle,
       note: blank(it.note) ? [] : ts.wrap(it.note, STYLES.small, colW),
@@ -120,7 +122,7 @@ export function glanceUnits(L, items, parent) {
   const valueH = Math.max(...cells.map((c) => c.value.length * c.vStyle.lh));
   const noteH = Math.max(...cells.map((c) => c.note.length)) * STYLES.small.lh;
   const headH = STYLES.panelHeading.lh;
-  const h = PAD + headH + 10 + labelH + 4 + valueH + (noteH ? 4 + noteH : 0) + PAD;
+  const h = PAD + headH + 10 + (labelH ? labelH + 4 : 0) + valueH + (noteH ? 4 + noteH : 0) + PAD;
   const sect = tagNode('Sect', parent);
   const head = tagNode('H2', sect, { actual: 'At a glance', title: 'At a glance' });
   return [{
@@ -139,7 +141,7 @@ export function glanceUnits(L, items, parent) {
         const p = tagNode('P', sect);
         ctx.mark(p, () => {
           c.label.forEach((line, k) => ts.draw(line, cx, top + k * STYLES.smallMedium.lh + ts.baseline(STYLES.smallMedium), STYLES.smallMedium, ctx.t.detail));
-          const vy = top + labelH + 4;
+          const vy = top + (labelH ? labelH + 4 : 0);
           c.value.forEach((line, k) => ts.draw(line, cx, vy + k * c.vStyle.lh + ts.baseline(c.vStyle), c.vStyle, ctx.t.text));
           const ny = vy + valueH + 4;
           c.note.forEach((line, k) => ts.draw(line, cx, ny + k * STYLES.small.lh + ts.baseline(STYLES.small), STYLES.small, ctx.t.detail));

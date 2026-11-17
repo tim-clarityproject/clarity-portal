@@ -222,20 +222,25 @@ export async function addPanel(page, where = 'This week') {
   await sleep(500);
   await panel.getByRole('radio', { name: where, exact: true }).or(panel.getByRole('button', { name: where, exact: true })).first().click();
   if (where !== 'Don’t add it') {
-    // M9: the Strategy in the branded drop-down, and How much chosen (it starts unchosen).
+    // M9: How much chosen (it starts unchosen), then the Strategy in the
+    // branded drop-down. On a phone the drop-down opens as a panel of its
+    // own, so How much is chosen first, while the add panel is the last one.
+    const medium = panel.getByRole('radio', { name: 'Medium', exact: true }).or(panel.getByRole('button', { name: 'Medium', exact: true }));
+    if (await medium.count()) await medium.first().click();
     const dd = panel.locator('[aria-haspopup=listbox]');
     if (await dd.count()) {
       await dd.first().click();
       await page.locator('[role=option]').first().click();
+      await sleep(500);
     } else {
       const rows = panel.locator('.ds-answer');
       if (await rows.count()) await rows.first().click();
     }
-    const medium = panel.getByRole('radio', { name: 'Medium', exact: true }).or(panel.getByRole('button', { name: 'Medium', exact: true }));
-    if (await medium.count()) await medium.first().click();
   }
   await panel.locator('.ds-btn--primary').click();
-  await until(async () => (await page.locator('[role=dialog]:not(.ds-guide)').count()) === 0, 8000);
+  if (!(await until(async () => (await page.locator('[role=dialog]:not(.ds-guide)').count()) === 0, 8000))) {
+    throw new Error(`the add panel stayed open: ${(await panel.innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 300)}`);
+  }
 }
 
 /** The page is told the person's coach is Tim, as in M9 (my_coach's own shape; nothing in the database changes). */

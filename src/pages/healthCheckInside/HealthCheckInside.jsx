@@ -2,7 +2,6 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'r
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import DeleteDialog from '../../components/ui/DeleteDialog';
 import {
   AddButton, BottomBar, Button, CalmCard, LoadError, Loading, OfferRow, OneOffTip, PageHeader, PdfPanel, PlayButton, ResultsSection,
   TitleIcons, VersionList, VersionRow, WhoSees, useCoachName, useOffer, useToast,
@@ -480,7 +479,6 @@ function Version({ store, start, team }) {
   const [toolN, setToolN] = useState(0);
   const [panel, setPanel] = useState(null); // 'pdf' | 'guide'
   const [sort, setSort] = useState('att');
-  const [asking, setAsking] = useState(null); // 'version' | 'team'
   const busy = useRef(false);
 
   // The typing is kept on the device until it is saved ("Draft restored").
@@ -701,13 +699,10 @@ function Version({ store, start, team }) {
     return healthCheckPdf({ draft: now.draft, completedAt: now.draft.completedAt || now.date, updatedAt: now.row?.updated_at || null, organisation: t.name });
   };
   const teamRows = store.rows.filter((r) => teamOf([t], r.id) || r.id === item.id);
-  // Said as the person sees the team: its finished versions, and the one
-  // being made, if there is one (the functionality tester, 15 Nov).
-  const finishedCount = teamRows.filter((r) => r.status !== 'draft').length;
-  const teamWhat = [
-    finishedCount === 1 ? 'its version' : `its ${finishedCount} versions`,
-    teamRows.length > finishedCount ? 'the version being made' : null,
-  ].filter(Boolean).join(' and ');
+  const deleteNow = (what) => {
+    const which = what === 'team' ? teamRows : store.rows.filter((r) => r.id === item.id);
+    remove(which, () => { forget(); navigate(BASE, { replace: true }); });
+  };
 
   return (
     <Frame
@@ -744,23 +739,11 @@ function Version({ store, start, team }) {
         )}
       </ResultsSection>
       {/* M7 draws no delete: the portal's quiet Delete, inside the opened item (Tim, 5 Nov). */}
+      {/* Deleted straight away, with "Deleted" and Undo: no "Delete this?" (writing rule 14; Phase 8a follow-up, step 2). */}
       <div className="hc-in-delete no-print">
-        <Button variant="text" onClick={() => setAsking('version')}>Delete this version</Button>
-        {teamRows.length > 1 && <Button variant="text" onClick={() => setAsking('team')}>Delete this team</Button>}
+        <Button variant="text" onClick={() => deleteNow('version')}>Delete this version</Button>
+        {teamRows.length > 1 && <Button variant="text" onClick={() => deleteNow('team')}>Delete this team</Button>}
       </div>
-      <DeleteDialog
-        open={Boolean(asking)}
-        title="Delete this?"
-        body={asking === 'team'
-          ? `“${t.name}”, ${teamWhat}, will be removed.`
-          : `“${versionLabel(item, t.versions)}” for ${t.name} will be removed.`}
-        onConfirm={() => {
-          const which = asking === 'team' ? teamRows : store.rows.filter((r) => r.id === item.id);
-          setAsking(null);
-          remove(which, () => { forget(); navigate(BASE, { replace: true }); });
-        }}
-        onCancel={() => setAsking(null)}
-      />
       <PdfPanel open={panel === 'pdf'} onClose={() => setPanel(null)} getDocument={pdfDocument} />
       <GuidePanel inside open={panel === 'guide'} onClose={() => setPanel(null)} onWatched={() => {}} />
     </Frame>

@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { getLocalDateKey } from '../lib/dateFormatter';
 import { useCachedLoad } from '../lib/pageCache';
+import { useSavedItemsChanged } from '../lib/savedItemsChanged';
 import { savedItemRef } from '../lib/savedItemDelete';
 import { useOnline } from '../lib/connection';
 import { FIRST_OPEN_OFFLINE } from '../lib/friendlyError';
@@ -34,6 +35,8 @@ export default function MyReviews() {
   // Instant page (Tim, 26 Oct): the reviews shown last time appear at
   // once from the device, then refresh quietly in the background.
   const loaded = useCachedLoad({ userId: user?.id, name: SAVED_REVIEWS_CACHE, load: () => loadSavedReviews(user.id) });
+  // Deleted with Undo from inside an item: read the list again when one goes or comes back.
+  useSavedItemsChanged(() => loaded.reload?.());
   const online = useOnline();
   const today = getLocalDateKey();
   const rows = useMemo(() => reviewRows(loaded.data, today), [loaded.data, today]);

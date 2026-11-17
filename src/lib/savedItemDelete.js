@@ -4,7 +4,7 @@ import { deleteReview as deleteJournalEntryRow } from './reviewTool';
 import { deleteJournal } from './dailyJournal';
 import { discardReviewDraft, discardPlanReviewDraft, discardMissionReviewDraft } from './discardDraft';
 import { deleteCheckin } from './wheelOfLifeApi';
-import { deleteToolAnswers } from './toolAnswers';
+import { deleteToolAnswers, loadToolAnswer, saveToolAnswers } from './toolAnswers';
 
 // Deleting one saved item (a row of My Plans or My Reviews), in one place
 // (Tim, 5 Nov): the lists' rows no longer carry a bin, so the opened item
@@ -14,7 +14,43 @@ import { deleteToolAnswers } from './toolAnswers';
 
 /** The part of a list row an opened item needs to delete itself. */
 export function savedItemRef(row) {
-  return row ? { dbId: row.dbId, source: row.source, isDraft: Boolean(row.isDraft), title: row.title, canDelete: row.canDelete !== false } : null;
+  return row ? { dbId: row.dbId, source: row.source, tool: row.tool || null, isDraft: Boolean(row.isDraft), title: row.title, canDelete: row.canDelete !== false } : null;
+}
+
+// Deleting happens straight away, with "Deleted" and Undo (writing rule 14;
+// Phase 8a follow-up, step 2): no "Delete this?". Each saved item is one
+// row of one table, so the row is read just before it goes, and Undo puts
+// that same row back, with its own id, so every link to it still works.
+const TABLE_OF = {
+  decision: 'decisions',
+  plan: 'mission_progress_reviews',
+  journal: 'daily_journals',
+  wheel: 'wheel_of_life_checkins',
+};
+const tableOf = (source) => TABLE_OF[source] || 'journal_entries';
+
+/**
+ * Deletes it and hands back its Undo: a function that saves it again as it
+ * was (resolves once it is back). Throws when it can't be deleted.
+ */
+export async function deleteSavedItemWithUndo(userId, item) {
+  if (item.source === 'tool-answers') {
+    const record = item.tool ? await loadToolAnswer(userId, item.tool, item.dbId) : null;
+    await deleteSavedItem(userId, item);
+    return async () => {
+      if (!record) throw new Error('Nothing to put back');
+      await saveToolAnswers(userId, { ...record, sent: false });
+    };
+  }
+  const table = tableOf(item.source);
+  const { data: row, error } = await supabase.from(table).select('*').eq('id', item.dbId).eq('user_id', userId).maybeSingle();
+  if (error) throw error;
+  await deleteSavedItem(userId, item);
+  return async () => {
+    if (!row) throw new Error('Nothing to put back');
+    const { error: back } = await supabase.from(table).insert(row);
+    if (back) throw back;
+  };
 }
 
 /** Deletes it; throws when it can't. */

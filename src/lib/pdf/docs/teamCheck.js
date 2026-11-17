@@ -1,7 +1,7 @@
 import { formatDocDate } from '../../dateFormatter';
 import {
   ALIGNMENT, AUTONOMY, AREA_NAME, TOOL_NAME, TRUST,
-  areaOf, before, dotTip, headline, lastMonth, lastWords, ratedPeople, startQuestions,
+  areaOf, before, dotTip, headline, lastWords, ratedPeople, startQuestions,
 } from '../../teamCheck/model';
 
 // A Team performance check as a document for the shared PDF template
@@ -12,7 +12,6 @@ import {
 // white print still reads. Only rated people are shown.
 
 const oneLine = (s) => String(s ?? '').replace(/\s+/g, ' ').trim();
-const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 const KEY = [
   { state: 'mi', text: 'Green dot, in the high-performance area' },
@@ -29,15 +28,11 @@ export function teamCheckPdf({ check, person = '', createdAt = null }) {
   const who = oneLine(person) || null;
   const date = createdAt || new Date();
   const people = ratedPeople(check);
-  const month = lastMonth(check.last, date);
   const said = lastWords(check.last, date);
   const anyBefore = people.some((p) => before(check, p));
 
-  const glance = [
-    { label: 'Right now', value: headline(check) },
-    { label: 'On your list', value: count(people.length, 'person', 'people') },
-  ];
-  if (anyBefore && month) glance.push({ label: 'Your last check', value: month });
+  // The headline alone, as on screen (PDF rule 12; Phase 8a follow-up, step 2).
+  const glance = [{ label: '', value: headline(check) }];
 
   const points = people.map((p, i) => ({ n: i + 1, label: oneLine(p.name), x: p.u, y: p.a - 1, state: areaOf(p) === 'hp' ? 'mi' : '' }));
   const alt = `Dot chart of alignment, from “${ALIGNMENT[0]}” to “${ALIGNMENT[4]}”, against autonomy, from “${AUTONOMY[0]}” to “${AUTONOMY[4]}”. ${people.map((p, i) => `${i + 1}. ${dotTip(check, p, date).label}`).join(' ')}`;

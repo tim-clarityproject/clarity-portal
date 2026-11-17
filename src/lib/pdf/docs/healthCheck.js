@@ -3,7 +3,7 @@ import { importanceText } from '../../alignmentScore';
 import { PROGRESS_WORDS } from '../../../pages/alignment/chartLayout';
 import { formatDocDate, parseDbTimestamp } from '../../dateFormatter';
 import {
-  csfLevel, csfLevelName, headlineSentence, importanceLines, PROGS, RES, resultsModel, stateSentence, stateWords,
+  csfLevel, csfLevelName, headlineLine, headlineSentence, importanceLines, PROGS, RES, resultsModel, stateSentence, stateWords,
 } from '../../../health-check/words';
 
 // The Strategic Alignment Health Check as a document for the shared PDF template.
@@ -49,7 +49,6 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
   const asOf = completedAt ? parseDbTimestamp(completedAt) : new Date();
   const model = resultsModel({ ...draft, csfs: draft.csfs || [], projects: draft.projects || [], ratings: draft.ratings || {} }, { asOf });
   const { rows, factors, line, headline, questions, gaps } = model;
-  const nf = factors.length;
   const n = rows.length;
   const org = organisation?.trim() || null;
   // the chart shows projects with a progress rating, as on the results page
@@ -73,12 +72,10 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
     updatedAt: changedSince(updatedAt, completedAt) ? updatedAt : null,
     date: completedAt || new Date(),
     subject: 'Strategic Alignment Health Check results',
-    // the headline first (PDF rule 12): "2 of 5" important projects moving well, then the rest
+    // The headline alone, as on screen (PDF rule 12; Tim, 13 Nov; Phase 8a
+    // follow-up, step 2): its one sentence, then what needs you under it.
     glance: [
-      { label: 'Important projects moving well', value: headline.big, note: headline.important ? headline.rest : headline.line, big: true },
-      { label: 'Important means above', value: `${line}%`, big: true },
-      { label: 'Projects', value: String(n), big: true },
-      { label: 'Success Factors', value: String(nf), big: true },
+      { label: '', value: headlineLine(headline), note: headline.important > 0 && headline.rest ? headline.rest : null },
     ],
     sections: [
       {

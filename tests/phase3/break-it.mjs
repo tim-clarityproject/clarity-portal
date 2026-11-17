@@ -659,7 +659,10 @@ if (run('text')) {
       await page.getByRole('button', { name: 'Add a to-do' }).click();
       const tp = page.getByRole('dialog', { name: 'Add a to-do' });
       await tp.locator('textarea').first().fill('    ');
-      pass('text: a to-do of spaces only can\'t be added', await tp.getByRole('button', { name: 'Add my to-do' }).isDisabled());
+      // Never greyed out (Phase 8a follow-up, step 2): pressed, it says what's missing and adds nothing.
+      await tp.getByRole('button', { name: 'Add my to-do' }).click();
+      await sleep(600);
+      pass('text: a to-do of spaces only can\'t be added, and says so', !(await tp.getByRole('button', { name: 'Add my to-do' }).isDisabled()) && (await tp.innerText()).includes('Type what needs doing to carry on.') && (await liveTodos('    ')).length === 0);
       const TT = `${TAG} <script>window.__pwned=3</script> عربى 🧪`;
       await tp.locator('textarea').first().fill(TT);
       await tp.getByRole('button', { name: 'Add my to-do' }).click();
@@ -683,7 +686,9 @@ if (run('text')) {
     const wp = page.getByRole('dialog', { name: 'Add an unplanned win' });
     await wp.locator('textarea').first().fill('   ');
     await wp.getByRole('button', { name: S0 }).click();
-    pass('text: a win of spaces only can\'t be added', await wp.getByRole('button', { name: 'Add my win' }).isDisabled());
+    await wp.getByRole('button', { name: 'Add my win' }).click();
+    await sleep(600);
+    pass('text: a win of spaces only can\'t be added, and says so', !(await wp.getByRole('button', { name: 'Add my win' }).isDisabled()) && (await wp.innerText()).includes('Type what you did to carry on.') && (await myWins('    ')).length === 0);
     await wp.locator('textarea').first().fill(WT);
     await wp.getByRole('button', { name: 'Add my win' }).click();
     await until(async () => (await myWins(WT)).length === 1, 10000);

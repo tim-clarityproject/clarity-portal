@@ -801,7 +801,7 @@ for (const [name, spec] of Object.entries(DOCS)) {
 // the Success Factor levels come from the page's own model (resultsModel), and each one
 // is in the PDF's text.
 {
-  const [{ resultsModel, csfLevel, csfLevelName }, { parseDbTimestamp }] = await Promise.all([
+  const [{ resultsModel, csfLevel, csfLevelName, headlineLine }, { parseDbTimestamp }] = await Promise.all([
     load('/src/health-check/words.js'), load('/src/lib/dateFormatter.js'),
   ]);
   const flatText = (t) => seen(t).replace(/\s+/g, '');
@@ -838,7 +838,9 @@ for (const [name, spec] of Object.entries(DOCS)) {
     const problems = (EXPECT[name]?.(m) || []).filter((x) => x !== true);
     const sec = (title) => spec.sections.find((x) => x.title === title);
     const glance = spec.glance[0];
-    if (glance.value !== m.headline.big) problems.push(`At a glance shows ${glance.value}, not ${m.headline.big}`);
+    // The headline alone, as on screen (PDF rule 12; Phase 8a follow-up, step 2).
+    const said = headlineLine(m.headline);
+    if (spec.glance.length !== 1 || glance.value !== said || glance.label) problems.push(`At a glance isn't the headline alone: ${JSON.stringify(spec.glance)}`);
     // The order of 13 Nov (rule 29ar): the chart, the list, the objective, the Success Factors, and the questions last (the names of 14 Nov).
     const order = spec.sections.map((x) => x.title).join(' > ');
     if (order !== 'Strategic importance against progress > Projects > Objective > Success Factors > Questions to start with') problems.push(`the sections are in the wrong order: ${order}`);
@@ -859,7 +861,6 @@ for (const [name, spec] of Object.entries(DOCS)) {
     const OLD_WORDS = /critical\s*success\s*factor|\bCSFs?\b|(your|their)\s*projects/i;
     const specWords = without(JSON.stringify(spec), typed, (x) => JSON.stringify(x).slice(1, -1));
     if (OLD_WORDS.test(specWords)) problems.push(`a heading or label still has the old words: "${specWords.match(OLD_WORDS)[0]}"`);
-    if (spec.glance[3]?.label !== 'Success Factors' || spec.glance[3]?.value !== String(m.factors.length)) problems.push('At a glance doesn’t count the Success Factors by that name');
     if (sec('Success Factors').blocks[0].columns[1].label !== 'Success Factor') problems.push('the column isn’t named "Success Factor"');
     if (/counts? \d+% more/.test(JSON.stringify(spec))) problems.push('the weights are still explained under the table');
     const note = sec('Projects').blocks.at(-1).text;
@@ -870,7 +871,7 @@ for (const [name, spec] of Object.entries(DOCS)) {
     let text = '';
     try { text = flatText(run('pdftotext', [join(out, `${name}, A4.pdf`), '-'])); } catch { toolsMissing = true; }
     if (text) {
-      const words = [m.headline.big, glance.note, ...m.questions.flatMap((q) => [q.label, q.question, q.reason]), `Important means above ${m.line}%.`, ...(dots ? ['Bigger dots require more resource.'] : [])];
+      const words = [said, glance.note, ...m.questions.flatMap((q) => [q.label, q.question, q.reason]), `Important means above ${m.line}%.`, ...(dots ? ['Bigger dots require more resource.'] : [])];
       words.filter(Boolean).forEach((w) => { if (!text.includes(flatText(w))) problems.push(`the PDF's text doesn't hold "${w}"`); });
       typed.forEach((w) => { if (!text.includes(flatText(w))) problems.push(`what the person typed is not in the PDF as typed: "${w}"`); });
       if (!/successfactors/i.test(without(text, typed, flatText))) problems.push('the PDF doesn’t say Success Factors');
@@ -931,15 +932,16 @@ for (const [name, spec] of Object.entries(DOCS)) {
   const normal = TC['Team check, normal'];
   if (titles(normal) !== 'Alignment and autonomy > Trust > Questions to start with') problems.push(`the sections are in the wrong order: ${titles(normal)}`);
   if (normal.sections[0].blocks[0].type !== 'dots') problems.push('the chart is not first (rule 29ar)');
-  if (normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ') !== 'Right now: 1 of your 5 people is in the high-performance area right now.; On your list: 5 people; Your last check: October') problems.push(`At a glance reads "${normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ')}"`);
+  if (normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ') !== ': 1 of your 5 people is in the high-performance area right now.') problems.push(`At a glance reads "${normal.glance.map((g) => `${g.label}: ${g.value}`).join('; ')}"`);
   const questions = (spec) => spec.sections[2].blocks[0].items;
   if (questions(normal).join(' | ') !== 'What would help “Daniel Reyes” explain the organisation’s intent in their own words? | What has changed for “Tom Ellis”, and what would rebuild their trust? | Which decisions could “Grace Okafor” own, within clear boundaries, to ease your load?') problems.push('the questions are not Chaotic, then trust, then autonomy');
   if (normal.sections[1].blocks[0].columns[2]?.label !== 'At your last check, in October') problems.push('trust doesn’t say "At your last check, in October"');
-  if (TC['Team check, no last check'].sections[1].blocks[0].columns.length !== 2 || TC['Team check, no last check'].glance.length !== 2) problems.push('a first check mentions a last check');
+  if (TC['Team check, no last check'].sections[1].blocks[0].columns.length !== 2 || /last check/i.test(JSON.stringify(TC['Team check, no last check'].glance))) problems.push('a first check mentions a last check');
   if (titles(TC['Team check, no questions']) !== 'Alignment and autonomy > Trust') problems.push(`with no questions the section is not left out: ${titles(TC['Team check, no questions'])}`);
   if (TC['Team check, one person'].glance[0].value !== 'Jo is in the high-performance area right now.') problems.push('one person: the headline is wrong');
   for (const [name, spec] of Object.entries(TC)) {
-    if (spec.glance.length < 2 || spec.glance.length > 4) problems.push(`${name}: At a glance has ${spec.glance.length} item(s)`);
+    // The headline alone (PDF rule 12; Phase 8a follow-up, step 2).
+    if (spec.glance.length !== 1 || spec.glance[0].label || !String(spec.glance[0].value).trim()) problems.push(`${name}: At a glance isn't the headline alone (${spec.glance.length} item(s))`);
     for (const q of questions(spec)) if (q.trim().split(/\s+/).length > 15) problems.push(`${name}: a question is over 15 words: ${q}`);
     // every answer is a word: no figure in any table cell but the row's number
     spec.sections.flatMap((x) => x.blocks).filter((b) => b.type === 'table').forEach((b) => b.rows.forEach((row) => row.slice(b.columns[0].label === 'No.' ? 2 : 1).forEach((cell) => { if (/\d/.test(cell)) problems.push(`${name}: an answer is a number: ${cell}`); })));
