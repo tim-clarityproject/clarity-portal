@@ -137,7 +137,7 @@ function Guest({ token }) {
     forgetVisit(token);
     setVisit(null);
     setPhase('start');
-    setStartMessage(guestError(error, GUEST_WORDS.open));
+    setStartMessage(guestError(error, GUEST_WORDS.open, was?.coachName));
   }, [token]);
 
   // Who sees the answers (Tim, 14 Nov, 09:52): saved on the link through
@@ -293,7 +293,7 @@ function Guest({ token }) {
     } catch (error) {
       dirty.current = true; // still to be saved: tried again when the connection is back
       if (visitEnded(error)) ended(error);
-      else toast.error(guestError(error, GUEST_WORDS.save));
+      else toast.error(guestError(error, GUEST_WORDS.save, coachName));
     }
   };
 
@@ -305,7 +305,7 @@ function Guest({ token }) {
     } catch (error) {
       dirty.current = true;
       if (visitEnded(error)) ended(error);
-      else toast.error(guestError(error, GUEST_WORDS.save));
+      else toast.error(guestError(error, GUEST_WORDS.save, coachName));
     }
   };
 
@@ -322,7 +322,7 @@ function Guest({ token }) {
       setItem((s) => ({ ...s, status: before }));
       dirty.current = true;
       if (visitEnded(error)) ended(error);
-      else toast.error(guestError(error, GUEST_WORDS.save));
+      else toast.error(guestError(error, GUEST_WORDS.save, coachName));
       return false;
     }
     setPhase('end');
@@ -343,7 +343,7 @@ function Guest({ token }) {
       await guestDeleteLinkAnswers(v.visit);
     } catch (error) {
       if (visitEnded(error)) ended(error);
-      else toast.error(guestError(error, GUEST_WORDS.remove));
+      else toast.error(guestError(error, GUEST_WORDS.remove, coachName));
       return;
     } finally {
       removing.current = false;
@@ -360,7 +360,7 @@ function Guest({ token }) {
           setItem(gone);
           setPhase('end');
         } catch (error) {
-          toast.error(guestError(error, GUEST_WORDS.save));
+          toast.error(guestError(error, GUEST_WORDS.save, coachName));
         }
       },
     });
@@ -509,13 +509,13 @@ function Start({ token, page, title, coachName, startEmail, carryOn, message, on
     try {
       const answer = await guestOpen(token, address, code);
       if (!answer?.ok) {
-        setProblem({ at: 'code', text: openProblem(answer) });
+        setProblem({ at: 'code', text: openProblem(answer, coachName) });
         codeRef.current?.focus();
         return;
       }
       await onOpened(answer, address);
     } catch (error) {
-      setProblem({ at: 'code', text: guestError(error, GUEST_WORDS.open) });
+      setProblem({ at: 'code', text: guestError(error, GUEST_WORDS.open, coachName) });
     } finally {
       busy.current = false;
     }
@@ -603,7 +603,7 @@ function ConfirmEmail({ title, visit, sent, onSendAgain, onConfirmed, onEnded })
       await onConfirmed();
     } catch (error) {
       if (visitEnded(error)) onEnded(error);
-      else setProblem(guestError(error, GUEST_WORDS.open));
+      else setProblem(guestError(error, GUEST_WORDS.open, visit.coachName));
     } finally {
       busy.current = false;
     }

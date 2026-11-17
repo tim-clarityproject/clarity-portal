@@ -233,6 +233,10 @@ test('035’s messages show with the portal’s own apostrophe, and a closed lin
   const closed = { code: '42501', message: 'That link has closed. To see your work, come back with your email.' };
   assert.equal(visitEnded(closed), true);
   assert.equal(guestError(closed, GUEST_WORDS.save), GUEST_WORDS.closed);
+  // With the coach's first name when the link has one (Phase 8a follow-up, step 7).
+  assert.equal(openProblem({ ok: false, error: 'closed' }, 'Tim'), 'This link has closed. Ask Tim to send a new one.');
+  assert.equal(guestError(closed, GUEST_WORDS.save, 'Adie'), 'This link has closed. Ask Adie to send a new one.');
+  assert.equal(guestError(closed, GUEST_WORDS.save, '  '), 'This link has closed. Ask your coach to send a new one.');
   assert.equal(guestError({ code: '42501', message: "That isn't yours, so it wasn't changed. Open your own link to carry on." }, GUEST_WORDS.save), 'That isn’t yours, so it wasn’t changed. Open your own link to carry on.');
   assert.equal(openProblem({ ok: false }), GUEST_WORDS.open);
 });

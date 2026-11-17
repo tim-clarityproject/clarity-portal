@@ -32,8 +32,15 @@ export function guestWords(text) {
 }
 
 /** What the start page says when guest_open answers that it didn't open. */
-export function openProblem(answer) {
-  if (answer?.error === 'closed') return GUEST_WORDS.closed;
+// "This link has closed. Ask Tim to send a new one." with the coach's first
+// name when the link has one, otherwise "your coach" (Phase 8a follow-up, step 7).
+export function closedLine(coachName) {
+  const coach = `${coachName || ''}`.trim();
+  return coach ? `This link has closed. Ask ${coach} to send a new one.` : GUEST_WORDS.closed;
+}
+
+export function openProblem(answer, coachName = '') {
+  if (answer?.error === 'closed') return closedLine(coachName || answer?.coach_name);
   return guestWords(answer?.message) || GUEST_WORDS.open;
 }
 
@@ -74,10 +81,10 @@ export function visitEnded(error) {
 }
 
 /** One calm line for anything a guest call refuses. */
-export function guestError(error, fallback) {
+export function guestError(error, fallback, coachName = '') {
   if (functionMissing(error)) return GUEST_WORDS.notReady;
   const text = guestWords(error?.message);
-  if (error?.code === '42501' && /link has closed/i.test(text)) return GUEST_WORDS.closed;
+  if (error?.code === '42501' && /link has closed/i.test(text)) return closedLine(coachName);
   if (OURS.has(error?.code) && text && !/permission denied|function|relation|column/i.test(text)) return text;
   return friendlyError(error, fallback, 'Using this link');
 }
