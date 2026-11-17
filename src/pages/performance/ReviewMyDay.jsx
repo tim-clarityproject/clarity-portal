@@ -81,6 +81,7 @@ import {
   wayRatingTapped,
   whereQuestion,
 } from '../../lib/performance';
+import { leadUpByDay, noteLeadUp, usePeakMoments } from '../../lib/peakMoments/store';
 import './performance.css';
 
 // Daily review (mock-up M5, version 19, approved by Tim on 23 Oct; read
@@ -569,6 +570,20 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
   // Daily plan offers them again (M19 "Moving to tomorrow").
   const moving = view.today.filter((t) => t.kind === 'todo' && !t.done);
 
+  // A peak moment's lead-up (M18; Phase 8b): the Daily plan's answer is one
+  // of today's to-dos, and the evening asks, in one tap, "Did you do it?".
+  // The answer ticks that same to-do (or leaves it open), so the sprint and
+  // its score see it, and the review after shows it at its end.
+  usePeakMoments(userId); // the device's copy, kept up to date
+  const peakLead = leadUpByDay(userId, date);
+  const peakRow = peakLead?.todoId ? [...(data.todos || []), ...(data.looseTodos || [])].find((t) => t.id === peakLead.todoId && !t.deleted_at) : null;
+  const peakDid = peakRow ? (peakRow.done_on ? 'yes' : peakLead.did === false ? 'no' : null) : null;
+  const answerPeak = (value) => {
+    const done = value === 'yes';
+    noteLeadUp(userId, peakLead.key, date, { did: done });
+    if (Boolean(peakRow.done_on) !== done) tickTodo({ id: peakRow.id }, done);
+  };
+
   const steps = [
     {
       key: 'do',
@@ -596,6 +611,23 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
         </div>
       )),
     },
+    ...(peakRow ? [{
+      key: 'peak',
+      name: 'Peak moment',
+      label: peakLead.text,
+      question: 'Did you do it?',
+      oneTap: true,
+      render: (tool) => (
+        <Choice
+          ariaLabel="Did you do it?"
+          form="rows"
+          options={[{ value: 'yes', label: 'I did it' }, { value: 'no', label: 'I didn’t get to it' }]}
+          value={peakDid}
+          onChange={answerPeak}
+          onChoose={() => tool.next()}
+        />
+      ),
+    }] : []),
     {
       key: 'be',
       name: 'Be',

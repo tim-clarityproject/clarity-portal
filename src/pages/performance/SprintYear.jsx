@@ -4,8 +4,10 @@ import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
 import {
+  AddButton,
   Button,
   Collapsible,
+  PeakYearList,
   EmptyState,
   Loading,
   PageHeader,
@@ -21,6 +23,9 @@ import { localToday, openRecovery, recoveryLead, selectedWeek, yearView } from '
 import { useQueueState } from '../../lib/syncQueue';
 import { isOnline } from '../../lib/connection';
 import pageText from '../../content/pageText';
+import { heldWeeks } from '../../lib/performance/year';
+import { usePeakMoments } from '../../lib/peakMoments/store';
+import { yearMonths } from '../../lib/peakMoments/model';
 import './performance.css';
 
 // View your year (mock-up M1, R.year): every week of the year as a slim
@@ -55,6 +60,16 @@ export default function SprintYear() {
   const [picked, setPicked] = useState(null);
   const [system, setSystem] = useState(false);
   const tried = useRef(new Set());
+  const peak = usePeakMoments(userId);
+  // View your year's peak moments (M18): a plain list by month, with the sprint each falls in.
+  const peakMonths = useMemo(() => {
+    if (!peak.moments.length || !view) return null;
+    const sprints = (data?.sprints || []).map((s) => {
+      const { weeks } = heldWeeks(s, data.recoveries, today);
+      return weeks.length ? { number: s.number, start: weeks[0].start, end: weeks[weeks.length - 1].end, running: Boolean(view.sprints.find((v) => v.id === s.id)?.running) } : null;
+    }).filter(Boolean);
+    return yearMonths(peak.moments, sprints, today);
+  }, [peak.moments, data, view, today]);
 
   // Finished weeks into week_scores (R3), so every sprint shows its scores.
   useEffect(() => {
@@ -155,6 +170,15 @@ export default function SprintYear() {
             <YearTable view={view} />
           </Collapsible>
         </div>
+
+        {peakMonths && (
+          <Section title="Peak moments" className="ipp-section year-peak">
+            <PeakYearList months={peakMonths} />
+            <div className="ds-actions ipp-actions">
+              <AddButton onClick={() => navigate('/peak-moments/add', { state: { from: '/performance-sprint/year' } })}>Add a peak moment</AddButton>
+            </div>
+          </Section>
+        )}
 
         <Section title="Sprints this year" className="ipp-section">
           {view.sprints.length ? (

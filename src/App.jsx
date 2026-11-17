@@ -97,6 +97,7 @@ const GetUnstuck = lazy(() => loadWithReload(() => import('./pages/getUnstuck/Ge
 const TeamCheck = lazy(() => loadWithReload(() => import('./pages/teamCheck/TeamCheck')));
 const HealthCheckInside = lazy(() => loadWithReload(() => import('./pages/healthCheckInside/HealthCheckInside')));
 const EmotionalWash = lazy(() => loadWithReload(() => import('./pages/emotionalWash/EmotionalWash')));
+const PeakMoments = lazy(() => loadWithReload(() => import('./pages/peakMoments/PeakMoments')));
 const GuestLink = lazy(() => loadWithReload(() => import('./pages/guest/GuestLink')));
 const WheelStart = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelStart')));
 const WheelAreas = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelAreas')));
@@ -467,6 +468,8 @@ function AppContent() {
           {/* The Health Check inside the portal (M7 version 8.2): teams, versions, Compare. */}
           <Route path="/strategic-alignment/*" element={lazyPage(HealthCheckInside)} />
           <Route path="/emotional-wash" element={lazyPage(EmotionalWash)} />
+          {/* Peak moments (M18, Phase 8b): the list, Add, Edit and the review after. */}
+          <Route path="/peak-moments/*" element={lazyPage(PeakMoments)} />
           {GET_UNSTUCK_STEPS.map((path) => (
             <Route key={path} path={path} element={<MovedTo to="/get-unstuck" />} />
           ))}

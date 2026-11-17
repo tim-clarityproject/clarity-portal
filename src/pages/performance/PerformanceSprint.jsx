@@ -46,6 +46,8 @@ import { isOnline } from '../../lib/connection';
 import { useDraft } from '../../lib/drafts';
 import pageText from '../../content/pageText';
 import { prefersReducedMotion } from '../../components/design/timing';
+import { usePeakMoments } from '../../lib/peakMoments/store';
+import { PeakDetails, PeakSprintSection } from '../peakMoments/PeakSprint';
 import './performance.css';
 
 // The Performance Sprint page (mock-up M1, R.sprint): the dial and this
@@ -85,6 +87,7 @@ export default function PerformanceSprint() {
   const today = localToday();
   const view = useMemo(() => (data ? sprintPageView(data, { today }) : null), [data, today]);
   const queue = useQueueState();
+  const peak = usePeakMoments(userId);
 
   const [mode, setMode] = useState('day');
   const [system, setSystem] = useState(false);
@@ -386,6 +389,8 @@ export default function PerformanceSprint() {
         onAddWin={() => { setWinForm((f) => (f.text ? f : emptyWin(today))); setPanel('win'); }}
         navigate={navigate}
         welcome={welcome}
+        peak={peak}
+        today={today}
       />
     );
   }
@@ -467,7 +472,7 @@ export default function PerformanceSprint() {
 
 function SprintBody({
   view, mode, setMode, save, typed, logRef, todoRef, onJump, onLog, onType, onLeave, onTick, onHabit,
-  onToggleTodo, onMove, onAddTodo, onAddWin, navigate, welcome,
+  onToggleTodo, onMove, onAddTodo, onAddWin, navigate, welcome, peak, today,
 }) {
   const centre = view.soFar
     ? { small: 'Performance score this week so far', big: `${view.soFar.value}%`, good: view.soFar.good }
@@ -543,6 +548,7 @@ function SprintBody({
                   </dt>
                   <dd><span className="sprint-figure">{`${view.standard}%`}</span></dd>
                 </div>
+                <PeakDetails dates={view.dates} moments={peak.moments} today={today} />
               </dl>
             </Collapsible>
           </div>
@@ -552,6 +558,9 @@ function SprintBody({
         </div>
       </div>
       )}
+
+      {/* Peak moments in this sprint (M18): only when the sprint holds one. */}
+      {!welcome && <PeakSprintSection view={view} moments={peak.moments} reviews={peak.reviews} today={today} navigate={navigate} />}
 
       <div ref={logRef} id="log-today" className="sprint-anchor">
         <Section

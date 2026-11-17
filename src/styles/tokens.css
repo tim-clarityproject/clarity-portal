@@ -356,6 +356,15 @@
   --year-bar-w: 5px;         /* each week's slim bar (M1: 5 of a 15.8 slot) */
   --year-rec-h: 23%;         /* Recovery's hatched block (M1: 46 of 200) */
   --year-label-h: 22px;      /* the sprint names above, the week numbers and months below */
+  /* Peak moments (M18, version 28; Phase 8b) */
+  --peak-chart-max: 440px;   /* the sprint's week bars (M18 .chart1) */
+  --peak-svg-text: 11px;     /* words in the bars' drawing, in its own units (M18 10; 11 keeps 12px on a phone) */
+  --peak-svg-line: 2px;      /* a ring's line, in the drawing's units (M18) */
+  --peak-svg-std: 1px;       /* the dashed standard line */
+  --peak-svg-dash: 3 3;
+  --peak-now-fill: 0.45;     /* this week, filling in (M18 fill-opacity .45) */
+  --peak-row-min: 64px;      /* a moment's row (M18 .lr) */
+  --peak-mon-col: 170px;     /* View your year's month column (M18 .mon) */
   --fs-lens: calc(18 * var(--u-big));       /* a length tile's figure, Nekst (M6 .lens) */
   --lens-min-h: 72px;
   --figure-box-w: 120px;     /* a figure box beside its words ("weeks", "%") */

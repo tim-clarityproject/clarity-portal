@@ -1,0 +1,64 @@
+/* Peak moments' pages (M18, version 28; Phase 8b). Every value is a token. */
+
+/* "What’s a peak moment?" under the title (the brief: no ⓘ on the title). */
+.ui-root .peak-page .peak-explain { margin-top: var(--space-2); }
+
+/* The calm card (M18 .calm: 28px under the title). */
+.ui-root .peak-page .peak-calm { margin-top: var(--space-px28); }
+
+/* One add button (M18 .acts: 28px under the title). */
+.ui-root .peak-page .peak-add { margin-top: var(--space-px28); }
+
+/* The sections (M18 .sh: 44px above). */
+.ui-root .peak-page .peak-section { margin-top: var(--space-px44); }
+
+.ui-root .peak-dates,
+.ui-root .peak-until {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.ui-root .peak-until .ds-hint { margin-top: calc(-1 * var(--space-2)); }
+.ui-root .peak-until-clear { justify-self: start; }
+
+.ui-root .peak-where-list { margin-top: var(--space-3); }
+.ui-root .peak-where-none { margin-top: var(--space-3); }
+
+.ui-root .peak-delete { margin-top: var(--space-4); }
+
+/* The review's record of the lead-up: at the end only, with no Edit (M18 .clue). */
+.ui-root .peak-leadup {
+  margin-top: var(--space-4);
+  padding-top: var(--space-px18);
+  border-top: var(--line-w) solid var(--line);
+}
+.ui-root .peak-leadup-title {
+  margin: 0 0 var(--space-px6);
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-note);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--label);
+}
+.ui-root .peak-leadup-line {
+  margin: 0;
+  font-size: var(--fs-text);
+  color: var(--text);
+}
+.ui-root .peak-leadup-line + .peak-leadup-line { margin-top: var(--space-px6); }
+.ui-root .peak-leadup-line small {
+  display: block;
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+.ui-root .peak-leadup-line small.peak-leadup-good { color: var(--good); }
+
+/* The Daily plan's lead-up question's suggestions (M18 .chips, 14px under the box). */
+.ui-root .peak-chips { margin-top: var(--space-px14); }
+
+/* The sprint page's section and Sprint details' list. */
+.ui-root .peak-sprint-link { margin-top: var(--space-3); }
+.ui-root .peak-details-list { margin: 0; padding: 0; list-style: none; }
+.ui-root .peak-details-list li + li { margin-top: var(--space-1); }
+.ui-root .peak-details-list span { color: var(--text-2); margin-left: var(--space-2); }

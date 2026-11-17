@@ -6,6 +6,8 @@ import {
   AddButton,
   AddTodoPanel,
   Button,
+  Chip,
+  ChipRow,
   Choice,
   Collapsible,
   GuidedSummary,
@@ -56,6 +58,9 @@ import {
   sleepWords,
   isDayKey,
 } from '../../lib/performance';
+import { leadUpOn, noteLeadUp, peakTodoSource, usePeakMoments } from '../../lib/peakMoments/store';
+import { LEAD_UP_MAX, LEAD_UP_SUGGESTIONS, countdownLine, leadUpFor, leadUpQuestion, onBreak } from '../../lib/peakMoments/model';
+import '../peakMoments/peakMoments.css';
 import './performance.css';
 
 // Daily plan (mock-up M5, version 19, approved by Tim on 23 Oct; read in
@@ -76,8 +81,11 @@ import './performance.css';
 //   Strategy   "Which Strategies does today serve most?" one recommended, two at most
 //   Risk       "What’s the biggest risk to today?" two boxes
 //   Your day   the summary, with the score this week so far; Set my day
-// One extra question can go near the top later (Peak moments and the sleep
-// wind down come in a follow-up): it is one more entry in `steps`.
+//   Peak       (M18; Phase 8b) in the 3 days before a peak moment, straight
+//              after Sleep: one question in the moment's own words, with
+//              full-sentence suggestions; the answer becomes one of today's
+//              to-dos. At most one a day (the nearer moment), never in
+//              Recovery or on a break.
 //
 // Everything saves as it goes: the answers into today's day_plans row a
 // moment after typing pauses, each choice at once, all through the offline
@@ -155,6 +163,19 @@ function PlanFlow({ userId, date, today, loaded }) {
 
   // Last night's sleep wind down thoughts (windDownStore.js).
   const [windThoughts, setWindThoughts] = useState(() => lastNightThoughts(userId, date));
+
+  // The peak moment whose lead-up today is (M18): the nearer one, 1 to 3 days away.
+  const peak = usePeakMoments(userId);
+  const leadUp = useMemo(() => (date === today ? leadUpFor(peak.moments, date) : null), [peak.moments, date, today]);
+  const leadKey = leadUp?.key || null;
+  const [peakText, setPeakText] = useState(() => (leadKey ? leadUpOn(userId, leadKey, date)?.text || '' : ''));
+  const peakTextFor = useRef(leadKey);
+  useEffect(() => {
+    // The moments arrive from the device a moment after the page: the answer comes with them.
+    if (peakTextFor.current === leadKey) return;
+    peakTextFor.current = leadKey;
+    setPeakText(leadKey ? leadUpOn(userId, leadKey, date)?.text || '' : '');
+  }, [leadKey, userId, date]);
 
   // Another device's choices and last night's thoughts, once 039 has run
   // (nothing until then): read quietly, shown when they differ.
@@ -511,6 +532,57 @@ function PlanFlow({ userId, date, today, loaded }) {
     toast.show(`Added to today and ${where}.`);
   };
 
+  // The lead-up answer becomes one of today's to-dos (M18), made when Next
+  // is pressed on its screen, and its words follow an edit while it isn't
+  // ticked. Its source is 'peak_moment' once 048 is there ('other_tool'
+  // before), with the moment as its source_id.
+  const committingPeak = useRef(false);
+  const commitPeak = async () => {
+    const text = peakText.trim().slice(0, LEAD_UP_MAX);
+    if (!leadUp || !text || committingPeak.current) return;
+    const had = leadUpOn(userId, leadUp.key, date);
+    if (had?.todoId && had.text === text) return;
+    committingPeak.current = true;
+    try {
+      const row = had?.todoId ? [...(data.todos || []), ...(data.looseTodos || [])].find((t) => t.id === had.todoId) : null;
+      if (row) {
+        if (row.done_on) return;
+        const listKey = view.running ? 'todos' : 'looseTodos';
+        setData((d) => ({ ...d, [listKey]: (d[listKey] || []).map((t) => (t.id === row.id ? { ...t, text } : t)) }));
+        noteLeadUp(userId, leadUp.key, date, { text, todoId: row.id });
+        await sent(() => saveTodo(userId, { id: row.id, strategyId: row.strategy_id, text, impact: row.impact, sprintId: row.sprint_id, week: row.planned_week, createdOn: row.created_on, source: row.source, sourceId: row.source_id }));
+        return;
+      }
+      const strategyId = view.nightStrategyId || view.strategies[0]?.value || null;
+      // Every to-do serves a Strategy: with none in the plan, the answer is kept as the lead-up alone.
+      if (!strategyId) {
+        noteLeadUp(userId, leadUp.key, date, { text, todoId: null });
+        return;
+      }
+      const id = newId();
+      const source = await peakTodoSource();
+      const todo = {
+        id, strategy_id: strategyId, text, impact: 2, sprint_id: view.sprintId, planned_week: view.week,
+        created_on: date, done_on: null, source, source_id: leadUp.moment.id, move_on: null, deleted_at: null,
+      };
+      const listKey = view.running ? 'todos' : 'looseTodos';
+      setData((d) => ({ ...d, [listKey]: [...(d[listKey] || []), todo] }));
+      noteLeadUp(userId, leadUp.key, date, { text, todoId: id, did: null });
+      const ok = await sent(() => saveTodo(userId, { id, strategyId, text, impact: 2, sprintId: view.sprintId, week: view.week, createdOn: date, source, sourceId: leadUp.moment.id }));
+      if (!ok) {
+        setData((d) => ({ ...d, [listKey]: (d[listKey] || []).filter((t) => t.id !== id) }));
+        noteLeadUp(userId, leadUp.key, date, { text, todoId: null });
+        return;
+      }
+      const now = viewRef.current;
+      await applyPicks([...now.picks.filter((k) => k !== `todo:${id}`), `todo:${id}`], now.top || `todo:${id}`);
+    } finally {
+      committingPeak.current = false;
+    }
+  };
+  const askPeak = Boolean(leadUp) && !view.inRecovery && !onBreak(peak.moments, date) && !view.finished;
+  const peakSuggestions = leadUp ? LEAD_UP_SUGGESTIONS[leadUp.moment.kind] || LEAD_UP_SUGGESTIONS.perform : [];
+
   // ------------------------------------------------------------ the steps
 
   // The eye sits beside each screen's question (GuidedTool's eye), not in its body.
@@ -573,6 +645,23 @@ function PlanFlow({ userId, date, today, loaded }) {
         </div>
       ),
     },
+    ...(askPeak ? [{
+      key: 'peak',
+      name: 'Peak moment',
+      label: countdownLine(leadUp.moment.name, leadUp.on, date),
+      question: leadUpQuestion(leadUp.moment.kind, leadUp.moment.name),
+      onNext: () => { commitPeak(); },
+      render: () => (
+        <div>
+          <TextBox ariaLabel={leadUpQuestion(leadUp.moment.kind, leadUp.moment.name)} lines="one" maxLength={LEAD_UP_MAX} value={peakText} onChange={setPeakText} />
+          <ChipRow label="Suggestions" className="peak-chips">
+            {peakSuggestions.map((words) => (
+              <Chip key={words} pressed={peakText.trim() === words} onClick={() => setPeakText(words)}>{words}</Chip>
+            ))}
+          </ChipRow>
+        </div>
+      ),
+    }] : []),
     {
       key: 'gratitude',
       name: 'Gratitude',
@@ -722,6 +811,7 @@ function PlanFlow({ userId, date, today, loaded }) {
               onChange={tool.go}
               rows={[
                 { label: 'Sleep', value: sleepWords(answers), step: stepIndex('sleep') },
+                ...(askPeak ? [{ label: leadUp.moment.name, editName: `what you’ll do for ${leadUp.moment.name}`, value: peakText.trim(), step: stepIndex('peak') }] : []),
                 { label: 'Gratitude', value: answers.grateful.trim(), step: stepIndex('gratitude') },
                 { label: 'How you want to be', value: answers.way.trim(), step: stepIndex('be') },
                 {

@@ -50,7 +50,10 @@ export const TOOLS = {
     name: 'Performance Sprint',
     line: 'Do the work, week by week.',
     to: '/performance-sprint',
-    routes: ['/performance-sprint', '/recovery'],
+    // Peak moments (M18, Phase 8b) belong with the sprint: no tile of their
+    // own (M3 has none), reached from the sprint page, Start a sprint, View
+    // your year and Home's card.
+    routes: ['/performance-sprint', '/recovery', '/peak-moments'],
   },
   pmd: {
     name: 'Daily plan',
@@ -415,6 +418,10 @@ const PAGE_NAMES = [
   ['/performance-plan/edit', 'Edit my plan'],
   ['/performance-plan/history', 'Version history'],
   ['/performance-sprint/year', 'View your year'],
+  ['/peak-moments', 'Peak moments'],
+  ['/peak-moments/add', 'Add a peak moment'],
+  ['/peak-moments/edit', 'Edit this peak moment'],
+  ['/peak-moments/review', 'Peak moment review'],
   ['/performance-sprint/debrief', 'Weekly performance debrief'],
   ['/performance-sprint/review', 'End-of-sprint review'],
   ['/performance-sprint/start', 'Start my sprint'],

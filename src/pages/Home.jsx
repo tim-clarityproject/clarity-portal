@@ -69,6 +69,8 @@ import { finishedNights, refreshWindDown } from '../lib/performance/windDownStor
 import { DayRow, WeekRow } from './performance/LogRows';
 import { RecoveryDay } from './performance/Recovery';
 import { useSprintActions } from './performance/sprintActions';
+import { usePeakMoments } from '../lib/peakMoments/store';
+import { homeCard as peakHomeCard, onBreak as peakOnBreak } from '../lib/peakMoments/model';
 import './performance/performance.css';
 
 // Home as Today (mock-up M2, approved by Tim on 23 Oct; Phase 4 step 2;
@@ -172,6 +174,9 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   const [todoForm, setTodoForm] = useState(() => emptyTodo(null));
   const [notTonight, addNotTonight] = useDeviceList(userId, 'wind-down-not-tonight');
   const [notNow, addNotNow] = useDeviceList(userId, 'quiet-not-now');
+  // A peak moment's Not now (M18): "We’ll ask again tomorrow.", so it is kept with today's date.
+  const [peakNotNow, addPeakNotNow] = useDeviceList(userId, 'peak-not-now');
+  const peak = usePeakMoments(userId);
   const logRef = useRef(null);
   // The Hardware and Software check-in's line while it's due (Phase 5),
   // from the check-in's own copy on the device, which it updates when
@@ -237,7 +242,10 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
     ? (localReviewed ? local.review.tomorrow : day.dayReview?.tomorrow)
     : day.yesterday?.tomorrow;
 
+  const peakCard = peakHomeCard(peak.moments, peak.reviews, today, peakNotNow.filter((k) => k.startsWith(`${today}|`)).map((k) => k.slice(today.length + 1)));
   const card = homeSuggestion({
+    peak: peakCard,
+    onBreak: Boolean(peakOnBreak(peak.moments, today)),
     today,
     hour,
     minute,
@@ -345,6 +353,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   const cardAction = card?.action ? { label: card.action.label, onClick: () => (card.action.jump ? jumpToLog() : go(card.action.to)) } : null;
   const cardLink = card?.notTonight
     ? { label: 'Not tonight', onClick: () => { notTonightHere(card.notTonight); toast.show('You can wind down tomorrow evening.'); } }
+    : card?.notNow ? { label: 'Not now', onClick: () => { addPeakNotNow(`${today}|${card.notNow}`); toast.show('We’ll ask again tomorrow.'); } }
     : card?.link ? { label: card.link.label, onClick: () => go(card.link.to) } : null;
 
   const dateText = dayName(today, today);

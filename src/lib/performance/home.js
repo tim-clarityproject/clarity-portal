@@ -167,6 +167,18 @@ export function tomorrowPriorities(list) {
 export function homeSuggestion(input) {
   const card = suggestionInTurn(input);
   const c = input.checkin;
+  const p = input.peak;
+  // A break is on (an "arrive rested" peak moment, from the day after it
+  // starts): no work prompts (brief, Phase 8b step 3). Only the wind-down
+  // and the peak moment's own review after.
+  if (input.onBreak && input.person !== 'new') return p?.kind === 'review' ? toCard(p) : card?.key === 'wind-down' ? card : null;
+  // A peak moment (M18): its countdown in the 3 days before, on the day,
+  // and its review after, take their turn like anything timed: once the day
+  // is planned (or Daily plan's morning has gone), in place of "Ready to log
+  // today?", or when nothing else is suggested. Never in Recovery or the night.
+  if (p && input.person !== 'recovery' && input.person !== 'new' && input.hour >= REVIEW_EARLY_HOURS && card?.key !== 'first-checkin' && (!card || card.key === 'today')) {
+    return toCard(p);
+  }
   // The check-in's turn: once the day is planned (or Daily plan's morning
   // has gone), in place of "How is today going?", or when nothing else is
   // suggested. A new coaching client's First review is already the card.
@@ -175,6 +187,11 @@ export function homeSuggestion(input) {
     return { key: c.key, question: c.question, lines: c.lines || [], time: c.time, action: c.action };
   }
   return card;
+}
+
+/** A peak moment's card (src/lib/peakMoments/model.js homeCard) as Home's one card. */
+function toCard(p) {
+  return { key: p.key, label: p.label, question: p.question, lines: p.lines || [], time: p.time, action: p.action, notNow: p.notNow, peak: true };
 }
 
 /**

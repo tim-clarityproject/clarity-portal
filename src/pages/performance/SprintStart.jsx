@@ -7,6 +7,8 @@ import {
   AddButton,
   Button,
   Dropdown,
+  PeakMomentList,
+  PeakMomentRow,
   ErrorMessage,
   GuidedSummary,
   GuidedTool,
@@ -68,6 +70,10 @@ import {
   readSprintSetup,
 } from '../../lib/performance/sprintSetup';
 import { SPRINT_LABEL_PLACEHOLDER, exampleRole } from '../../content/planBuilder';
+import { usePeakMoments } from '../../lib/peakMoments/store';
+import { metaItems, sprintMoments, whenWords } from '../../lib/peakMoments/model';
+import { addDays as addDayKey } from '../../lib/scores/dates.js';
+import '../peakMoments/peakMoments.css';
 import './performance.css';
 
 // Start a sprint (mock-up M6, "Start a sprint"; read in full with its
@@ -377,6 +383,9 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
   const standard = sprintStandard(sprint, fixedStandard);
   const label = sprintLabel(draft.label, sprint.tpl);
   const chosen = sprintHabitsFrom(planHabits, draft.carry, draft.added);
+  const peak = usePeakMoments(userId);
+  const sprintDates = weeks && sprint.start ? { start: sprint.start, end: addDayKey(sprint.start, weeks * 7 - 1) } : null;
+  const peakInSprint = sprintDates ? sprintMoments(peak.moments, sprintDates) : [];
 
   // ------------------------------------------------------------ habits
   const habitDraft = (row) => draftFromRows({ habits: [row] }).habits[0];
@@ -414,6 +423,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
   const steps = [
     {
       key: 'length',
+      percent: 0,
       name: 'Length',
       label: name,
       question: 'How long is this sprint?',
@@ -437,6 +447,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
     },
     {
       key: 'start',
+      percent: 25,
       name: 'Start',
       question: 'When does it start?',
       nudges: earliest > today
@@ -446,6 +457,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
     },
     {
       key: 'standard',
+      percent: 50,
       name: 'Standard',
       question: 'What’s your performance standard this time?',
       nudges: fixedStandard != null ? [] : ['Lower it for a heavy period, or raise it for a stretch.'],
@@ -453,6 +465,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
     },
     {
       key: 'habits',
+      percent: 75,
       name: 'Habits',
       label: 'From your plan',
       question: 'Which habits are you bringing across?',
@@ -513,6 +526,28 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
           ) : (
             <p className="plan-muted sprint-start-gap">Add a Strategy to your plan first, then its habits.</p>
           )}
+        </div>
+      ),
+    },
+    // Peak moments (M18; Phase 8b): which moments in this sprint need you
+    // at your best. It can be skipped. Add opens Add a peak moment and
+    // comes back here (the sprint's answers and this step are kept).
+    {
+      key: 'peak',
+      percent: 88,
+      name: 'Peak moments',
+      question: 'When do you need to be at your best?',
+      nudges: ['Add the moments in this sprint that need more of your energy, attention and focus.'],
+      render: () => (
+        <div>
+          {peakInSprint.length > 0 && (
+            <PeakMomentList label="Peak moments in this sprint">
+              {peakInSprint.map((o) => (
+                <PeakMomentRow key={o.key} name={o.moment.name} meta={metaItems(o.moment, today)} date={whenWords(o.on, o.endsOn, today)} />
+              ))}
+            </PeakMomentList>
+          )}
+          <AddButton className="plan-add" onClick={() => navigate('/peak-moments/add', { state: { from: '/performance-sprint/start' } })}>Add a peak moment</AddButton>
         </div>
       ),
     },

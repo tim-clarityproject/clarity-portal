@@ -107,6 +107,7 @@ import { TimerDemo } from './TimerDemos';
 import { CalmFrameDemo, CalmCardDemo } from './GetUnstuckDemos';
 import { AnswerColumnsDemo, AnswerHintDemo, DissolveDemo, FollowChoiceDemo, NameRowsDemo, ResultsDemo, StepBarsDemo } from './VisualToolDemos';
 import { HealthCheckChartDemo, InfoListDemo, InsidePartsDemo, OfferRowDemo, PdfPanelDemo, ProjectListDemo, ResultsPartsDemo, TitleIconsDemo } from './HealthCheckDemos';
+import { PeakPartsDemo } from './PeakDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import { TODO_WHERE, dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, todoWhereOptions, todoWhereToast, withMeasure, yearView } from '../../lib/performance';
@@ -2018,6 +2019,15 @@ function Gallery() {
             <p><New /><b>Anything the portal offers but doesn’t need is one slim row</b> (<code>OfferRow</code>, with <code>useOffer</code>; Tim, 14 Nov): a Quick guide, a featured tool on Home, the organisation animation. Never a big card with a sentence and a row of buttons.</p>
             <p>The soft surface with 18px corners and no border, the height of a list row. On the left one button: a 44px fine circle with one icon, the action in 17px medium, and one quiet detail under it (“~1 minute”). On the right “Not now”, and “Don’t show this again” beside it from the second offer; a one-off offer has a single close instead. No coral.</p>
             <p>Not now offers it again on the next 2 visits, then it stops. It never plays by itself, never shows with another first-visit message, and while it shows the title’s own icon for the same thing hides. On a phone two links wrap to a second line, on the right.</p>
+          </>
+        )} />
+
+        <GallerySection id="c85" title="Peak moments: rows, the week bars’ rings and the year by month" demo={PeakPartsDemo} wide rules={(
+          <>
+            <p><New /><b>A peak moment’s row</b> (<code>PeakMomentRow</code>; M18, Phase 8b): its name, then its kind’s short name, Work or Personal, how it repeats and its city as quiet items with no dots between them, and the date on the right. A past one can’t be tapped, and shows its lesson as a third line.</p>
+            <p><b>The sprint’s week bars with rings</b> (<code>PeakWeekBars</code>): bars from zero, mint at the standard and grey below it, this week filling in, the dashed standard line labelled at its end, no key. A small ring above each week that holds a peak moment; two or more show as one slightly larger ring with the number in it. Tapping a ring fills it and lists that week’s moments under the chart: no pop-up and no focus box. Keyboard focus shows the coral ring. Each ring’s tap area is 44px or more, and where two overlap the nearer ring wins (M18 let the later one win).</p>
+            <p><b>View your year by month</b> (<code>PeakYearList</code>): the month and the sprint that holds most of it, then its moments, or “Nothing marked yet”. A moment beyond the running sprint says Waiting.</p>
+            <p>Countdowns read “3 days to go”, never “left”. Every peak moment is private by default; a personal one is never shared.</p>
           </>
         )} />
 

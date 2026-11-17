@@ -1,0 +1,193 @@
+/* Peak moments' shared parts (M18, version 28; Phase 8b). Every value is a
+   token (src/styles/tokens.css). */
+
+/* ---------- The list's rows (M18 .lr) ---------- */
+.ui-root .ds-peak-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ui-root .ds-peak-list > li { margin: 0; padding: 0; }
+.ui-root .ds-peak-row {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-px2) var(--space-3);
+  align-items: center;
+  min-height: var(--peak-row-min);
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line);
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-root .ds-peak-row--still { cursor: default; }
+.ui-root .ds-peak-main { min-width: 0; display: block; }
+.ui-root .ds-peak-name {
+  display: block;
+  font-size: var(--fs-text);
+  line-height: var(--lh-row);
+  color: var(--text);
+  overflow-wrap: break-word;
+  transition: color var(--dur) var(--ease);
+}
+.ui-root button.ds-peak-row:hover .ds-peak-name { color: var(--coral-text); }
+.ui-root .ds-peak-row:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+/* The meta line's items, side by side with no dots between them. */
+.ui-root .ds-peak-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-px12);
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+.ui-root .ds-peak-lesson {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+.ui-root .ds-peak-date {
+  font-size: var(--fs-note);
+  color: var(--text-2);
+  white-space: nowrap;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+/* ---------- The sprint's week bars (M18 .bars) ---------- */
+.ui-root .ds-peakbars { max-width: var(--peak-chart-max); }
+.ui-root .ds-peakbars-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  margin-top: var(--space-px10);
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-root .ds-peakbars-svg--on { cursor: pointer; }
+.ui-root .ds-peakbars-svg text {
+  font-family: var(--font-body);
+  font-size: var(--peak-svg-text);
+  fill: var(--label);
+}
+.ui-root .ds-peakbars-bar--good { fill: var(--good); }
+.ui-root .ds-peakbars-bar--below { fill: var(--below); }
+.ui-root .ds-peakbars-bar--now {
+  fill: var(--good);
+  fill-opacity: var(--peak-now-fill);
+  stroke: var(--good);
+  stroke-width: var(--line-w);
+}
+.ui-root .ds-peakbars-std {
+  stroke: var(--text-2);
+  stroke-width: var(--peak-svg-std);
+  stroke-dasharray: var(--peak-svg-dash);
+}
+.ui-root .ds-peakbars-svg .ds-peakbars-stdt { fill: var(--text-2); }
+.ui-root .ds-peakbars-hit { fill: transparent; pointer-events: all; }
+.ui-root .ds-peakbars-pk {
+  fill: var(--bg);
+  stroke: var(--text);
+  stroke-width: var(--peak-svg-line);
+  outline: none;
+  transition: stroke var(--dur) var(--ease), fill var(--dur) var(--ease);
+}
+.ui-root .ds-peakbars-pk:focus { outline: none; }
+/* Keyboard focus and hover: the coral ring, never a box (M18). */
+.ui-root .ds-peakbars-ring--hover .ds-peakbars-pk,
+.ui-root .ds-peakbars-pk:focus-visible { stroke: var(--coral-text); }
+.ui-root .ds-peakbars-ring--open .ds-peakbars-pk { fill: var(--text); stroke: var(--text); }
+.ui-root .ds-peakbars-ring--open.ds-peakbars-ring--hover .ds-peakbars-pk,
+.ui-root .ds-peakbars-ring--open .ds-peakbars-pk:focus-visible { stroke: var(--coral-text); }
+.ui-root .ds-peakbars-svg .ds-peakbars-count {
+  font-weight: var(--fw-medium);
+  fill: var(--text);
+  pointer-events: none;
+}
+.ui-root .ds-peakbars-svg .ds-peakbars-ring--open .ds-peakbars-count { fill: var(--bg); }
+.ui-root .ds-peakbars-detail {
+  margin-top: var(--space-px14);
+  padding-top: var(--space-px12);
+  border-top: var(--line-w) solid var(--line);
+  display: grid;
+  gap: var(--space-px10);
+}
+.ui-root .ds-peakbars-detail b {
+  display: block;
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-secondary);
+  color: var(--text);
+}
+.ui-root .ds-peakbars-detail p {
+  margin: var(--space-px2) 0 0;
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+@media (forced-colors: active) {
+  .ui-root .ds-peakbars-pk { forced-color-adjust: none; stroke: CanvasText; fill: Canvas; }
+  .ui-root .ds-peakbars-ring--open .ds-peakbars-pk { fill: CanvasText; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-peakbars-pk, .ui-root .ds-peak-name { transition: none; }
+}
+
+/* ---------- View your year's months (M18 .mon) ---------- */
+.ui-root .ds-peak-year {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--line-w) solid var(--line);
+}
+.ui-root .ds-peak-mon {
+  display: grid;
+  grid-template-columns: var(--peak-mon-col) minmax(0, 1fr);
+  gap: var(--space-1) var(--space-px20);
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line);
+}
+@media (max-width: 600px) {
+  .ui-root .ds-peak-mon { grid-template-columns: 1fr; }
+}
+.ui-root .ds-peak-mon h3 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-body);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+}
+.ui-root .ds-peak-mon h3 small {
+  display: block;
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+.ui-root .ds-peak-mon p {
+  margin: 0;
+  font-size: var(--fs-body);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.ui-root .ds-peak-mon p + p { margin-top: var(--space-1); }
+.ui-root .ds-peak-mon p em {
+  font-style: normal;
+  color: var(--text-2);
+  margin-right: var(--space-px10);
+  font-size: var(--fs-note);
+}
+.ui-root .ds-peak-mon p.ds-peak-none {
+  color: var(--label);
+  font-size: var(--fs-secondary);
+}
+.ui-root .ds-peak-wait {
+  margin-left: var(--space-px10);
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
