@@ -128,7 +128,10 @@ test('the three named areas', () => {
 test('the opening sentence is a sentence, never a big figure', () => {
   assert.equal(headline(m10()), '1 of your 5 people is in the high-performance area right now.');
   assert.equal(headline(team([['A B', 5, 4, 4], ['C D', 5, 5, 5], ['E F', 1, 1, 1]])), '2 of your 3 people are in the high-performance area right now.');
-  assert.equal(headline(team([['A B', 5, 1, 4], ['C D', 5, 2, 5]])), 'None of your 2 people are in the high-performance area right now.');
+  assert.equal(headline(team([['A B', 5, 1, 4], ['C D', 5, 2, 5]])), 'None of your 2 people is in the high-performance area right now.');
+  // Never "2 of your 2" (the break-it tester, 17 Nov).
+  assert.equal(headline(team([['A B', 5, 4, 4], ['C D', 5, 5, 5]])), 'Both of your people are in the high-performance area right now.');
+  assert.equal(headline(team([['A B', 5, 4, 4], ['C D', 5, 5, 5], ['E F', 5, 5, 4]])), 'All 3 of your people are in the high-performance area right now.');
   assert.equal(headline(team([['Sam Carter', 5, 5, 5]])), 'Sam is in the high-performance area right now.');
   assert.equal(headline(team([['Sam Carter', 5, 2, 5]])), 'Sam isn’t in the high-performance area right now.');
   assert.equal(headline(emptyCheck()), '');
@@ -401,10 +404,7 @@ test('The team chart: no name comes within 4px of an area’s name, wherever the
       for (let u = 1; u <= 5; u += 1) {
         for (let a = 1; a <= 5; a += 1) {
           const [d] = chartDots(team([[name, 3, a, u]]), f);
-          const w = f.nameWidth(name);
-          const base = d.nameUp ? d.y - f.R - 4 : d.y + 4.5;
-          const left = d.nameUp ? d.nameX - w / 2 : d.nameLeft ? d.x - f.R - 6 - w : d.x + f.R + 6;
-          const box = { left, right: left + w, top: base - f.nameSize * 0.75, bottom: base + f.nameSize * 0.25 };
+          const box = nameBox(d, f);
           for (const l of f.labels) assert.ok(near(box, l) >= 4, `${phone ? 'phone' : 'laptop'}: ${name} at autonomy ${u}, alignment ${a} is ${near(box, l).toFixed(1)}px from an area’s name`);
           assert.ok(box.left >= 0 && box.right <= f.W, `${name} at ${u}, ${a} runs off the drawing`);
         }
@@ -413,5 +413,37 @@ test('The team chart: no name comes within 4px of an area’s name, wherever the
   }
   // The case found on a phone: alone at the bottom right (Chaotic), the name no longer runs into "Chaotic".
   const [low] = chartDots(team([['Priya Shah', 3, 1, 5]]), chartFrame(true));
-  assert.equal(low.nameUp, true);
+  assert.notEqual(low.name.side, 'right');
+});
+
+// Where a dot's first name is drawn, as a box (the same width estimate the chart uses).
+function nameBox(d, f) {
+  const w = f.nameWidth(d.person.name);
+  const left = d.name.anchor === 'end' ? d.name.x - w : d.name.anchor === 'middle' ? d.name.x - w / 2 : d.name.x;
+  return { left, right: left + w, top: d.name.y - f.nameSize * 0.75, bottom: d.name.y + f.nameSize * 0.25 };
+}
+
+test('The team chart: names never run through another dot or name, nor off the drawing (the break-it tester, 17 Nov)', () => {
+  const hit = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5;
+  const teams = [
+    // neighbouring spots, long first names on a row
+    [['Christopher A', 3, 3, 2], ['Max B', 3, 3, 3], ['Jordan C', 3, 3, 4], ['Bea D', 3, 3, 5]],
+    [['Alexandria A', 3, 5, 1], ['Bartholomew B', 3, 5, 2], ['Constantine C', 3, 5, 3], ['Dominique D', 3, 5, 4], ['Evangeline E', 3, 5, 5]],
+    // two long names sharing a spot at the right-hand edge
+    [['Wolfgangamadeus Mozart', 3, 4, 5], ['Bartholomew-Johnson Smith', 3, 4, 5]],
+    [['Jo A', 3, 2, 5], ['Al B', 3, 2, 5], ['Ann C', 3, 2, 5]],
+  ];
+  for (const phone of [true, false]) {
+    const f = chartFrame(phone);
+    for (const rows of teams) {
+      const dots = chartDots(team(rows), f);
+      const names = dots.map((d) => nameBox(d, f));
+      const marks = dots.map((d) => ({ left: d.x - f.R, right: d.x + f.R, top: d.y - f.R, bottom: d.y + f.R }));
+      names.forEach((n, i) => {
+        assert.ok(n.left >= 0 && n.right <= f.W, `${phone ? 'phone' : 'laptop'}: “${dots[i].person.name}” runs off the drawing`);
+        marks.forEach((m, j) => { if (j !== i) assert.ok(!hit(n, m), `${phone ? 'phone' : 'laptop'}: “${dots[i].person.name}” runs through ${dots[j].person.name}’s dot`); });
+        names.forEach((o, j) => { if (j < i) assert.ok(!hit(n, o), `${phone ? 'phone' : 'laptop'}: “${dots[i].person.name}” runs into “${dots[j].person.name}”`); });
+      });
+    }
+  }
 });

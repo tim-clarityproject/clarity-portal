@@ -64,8 +64,9 @@ export default function StopDoingAuditSummary() {
         message: 'Deleted',
         onUndo: async () => {
           try {
-            await undo();
+            const r = await undo();
             savedItemsChanged();
+            if (r === 'queued') toast.show('Will sync');
           } catch (error) {
             console.error('[StopDoingAuditSummary] undo failed:', error);
             toast.error('That didn’t bring it back. Check your connection and try again.');

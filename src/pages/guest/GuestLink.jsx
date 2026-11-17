@@ -251,10 +251,15 @@ function Guest({ token }) {
     }
     heldRef.current = null;
     try {
-      // What this visit may see of the link's earlier work (its own rows).
+      // What this visit may see of the link's earlier work.
       const rows = await guestRows(v.visit, 'decisions');
       const row = rows[rows.length - 1];
-      if (row?.form_data) {
+      if (held && next.plan === held.item.plan) {
+        // The typing held on the screen is newer than any saved row: it
+        // stays, and is saved over the same plan when this visit can see it
+        // (046), otherwise as a new row (the break-it tester, 17 Nov).
+        if (rows.some((r) => r.id === held.item.id)) next = { ...next, id: held.item.id };
+      } else if (row?.form_data) {
         next = { id: row.id, plan: planFrom(row.form_data, newId), status: row.status === 'completed' ? 'completed' : 'draft' };
         dirty.current = false;
       }
@@ -629,7 +634,8 @@ function ConfirmEmail({ title, visit, sent, onSendAgain, onConfirmed, onEnded })
             autoComplete="one-time-code"
             inputMode="numeric"
             value={code}
-            onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setProblem(null); }}
+            // Full-width digits read as digits, as the coach's code box does (sign-in rule 37).
+            onChange={(e) => { setCode(e.target.value.replace(/[\uFF10-\uFF19]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/\D/g, '').slice(0, 6)); setProblem(null); }}
           />
           {problem && (
             <div className="ds-error ds-guest-problem" role="alert">
@@ -640,9 +646,11 @@ function ConfirmEmail({ title, visit, sent, onSendAgain, onConfirmed, onEnded })
           <div className="ds-guest-go">
             <Button variant="primary" type="submit">Show my answers</Button>
           </div>
-          <div className="ds-guest-legal">
-            <Button variant="text" onClick={sendAgain}>{sent === 'unsent' ? 'Send it again' : 'Didn’t get it? Send it again'}</Button>
-          </div>
+          {sent !== 'never' && (
+            <div className="ds-guest-legal">
+              <Button variant="text" onClick={sendAgain}>{sent === 'unsent' ? 'Send it again' : 'Didn’t get it? Send it again'}</Button>
+            </div>
+          )}
         </form>
       </GuestFrame>
     </div>

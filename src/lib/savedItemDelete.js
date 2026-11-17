@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { saveOrQueue } from './syncQueue';
 import { clearProgress } from './saveProgress';
 import { deleteReview as deleteJournalEntryRow } from './reviewTool';
 import { deleteJournal } from './dailyJournal';
@@ -39,17 +40,23 @@ export async function deleteSavedItemWithUndo(userId, item) {
     await deleteSavedItem(userId, item);
     return async () => {
       if (!record) throw new Error('Nothing to put back');
-      await saveToolAnswers(userId, { ...record, sent: false });
+      const r = await saveToolAnswers(userId, { ...record, sent: false });
+      return r === 'queued' ? 'queued' : 'saved';
     };
   }
   const table = tableOf(item.source);
   const { data: row, error } = await supabase.from(table).select('*').eq('id', item.dbId).eq('user_id', userId).maybeSingle();
   if (error) throw error;
+  // Already gone (deleted in another tab): said so, with no Undo that can't work.
+  if (!row) throw Object.assign(new Error('Already deleted'), { code: 'GONE' });
   await deleteSavedItem(userId, item);
+  // Undo goes through the offline queue like every save: offline it waits on
+  // the device ("Will sync") and is sent when the connection is back (the
+  // break-it tester, 17 Nov: pressed offline, the item was lost for good).
   return async () => {
-    if (!row) throw new Error('Nothing to put back');
-    const { error: back } = await supabase.from(table).insert(row);
-    if (back) throw back;
+    // The person's own Undo: never refused as another window's (the row has gone).
+    const r = await saveOrQueue(userId, { table, kind: 'upsert', onConflict: 'id', values: row, newestWins: true });
+    return r?.status === 'queued' ? 'queued' : 'saved';
   };
 }
 

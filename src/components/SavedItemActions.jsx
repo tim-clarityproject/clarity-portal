@@ -39,8 +39,9 @@ export default function SavedItemActions({ className = '', onDeleted }) {
         message: 'Deleted',
         onUndo: async () => {
           try {
-            await undo();
+            const r = await undo();
             savedItemsChanged();
+            if (r === 'queued') toast.show('Will sync');
           } catch (err) {
             console.error('[SavedItemActions] undo:', err);
             toast.error(UNDO_PROBLEM);
@@ -48,6 +49,14 @@ export default function SavedItemActions({ className = '', onDeleted }) {
         },
       });
     } catch (err) {
+      if (err?.code === 'GONE') {
+        // Deleted already, in another tab: back to the list, saying so.
+        onDeleted?.();
+        savedItemsChanged();
+        navigate(item.from || '/welcome', { replace: true });
+        toast.show('This was already deleted.');
+        return;
+      }
       console.error('[SavedItemActions] delete:', err);
       toast.error('That didn’t delete. Check your connection and try again.');
     } finally {

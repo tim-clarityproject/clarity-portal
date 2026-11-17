@@ -4,7 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
 import SavedItemActions from '../../components/SavedItemActions';
-import { LoadError, Loading, PageHeader, PdfDownload, clearGuideDraft, useToast } from '../../components/design';
+import { ErrorMessage, LoadError, Loading, PageHeader, PdfDownload, clearGuideDraft, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { readCache, writeCache } from '../../lib/pageCache';
 import { clearDraft, readDraft, useDraft } from '../../lib/drafts';
@@ -50,6 +50,9 @@ import '../performance/performance.css';
 
 const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
 const LOAD_ERROR = 'Your plan didn’t load. Check your connection and try again.';
+// The plan has gone (deleted, here or in another tab): never blamed on the connection.
+const GONE = 'This plan isn’t here any more. It may have been deleted.';
+const DELETED_ELSEWHERE = 'This plan was deleted in another tab, so it wasn’t saved.';
 const COLS = 'id, title, form_data, status, draft, created_at, updated_at';
 const isId = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 
@@ -120,7 +123,7 @@ export default function GetUnstuck() {
   if (state.error) {
     return (
       <Shell>
-        <LoadError>{LOAD_ERROR}</LoadError>
+        {state.error?.message === 'missing' ? <ErrorMessage>{GONE}</ErrorMessage> : <LoadError>{LOAD_ERROR}</LoadError>}
       </Shell>
     );
   }
@@ -247,21 +250,26 @@ function Flow({ userId, user, asked, start }) {
   };
 
   // One row in `decisions`, written over itself: a draft until it is finished.
-  const save = (plan, status) => saveOrQueue(userId, {
-    table: 'decisions',
-    kind: 'upsert',
-    onConflict: 'id',
-    values: {
-      id: itemRef.current.id,
-      user_id: userId,
+  // A plan already saved is only ever changed, never made again: one deleted
+  // in another tab stays deleted (the break-it tester, 17 Nov: a second tab's
+  // Save my edit brought it back and said "Saved").
+  const save = (plan, status) => {
+    const now = itemRef.current;
+    const values = {
       tool_type: TOOL_TYPE,
-      title: itemRef.current.title || planTitle(plan),
+      title: now.title || planTitle(plan),
       form_data: savedForm(plan),
       status,
       draft: status === 'draft',
       updated_at: new Date().toISOString(),
-    },
-  });
+    };
+    if (now.saved) {
+      return saveOrQueue(userId, { table: 'decisions', kind: 'update', values, match: { id: now.id, user_id: userId } });
+    }
+    return saveOrQueue(userId, { table: 'decisions', kind: 'upsert', onConflict: 'id', values: { id: now.id, user_id: userId, ...values } });
+  };
+  // Deleted in another tab: said plainly, and nothing is saved over it.
+  const goneElsewhere = (error) => error?.code === 'NOT_FOUND';
 
   // Back to where they came from: My Plans for a saved plan, otherwise the Plan hub.
   const leave = () => navigate(asked ? '/my-plans' : '/personal/plan', { replace: true });
@@ -295,7 +303,7 @@ function Flow({ userId, user, asked, start }) {
       toast.show(result?.status === 'queued' ? 'Will sync' : 'Saved');
       leave();
     } catch (error) {
-      toast.error(friendlyError(error, SAVE_ERROR));
+      toast.error(goneElsewhere(error) ? DELETED_ELSEWHERE : friendlyError(error, SAVE_ERROR));
     } finally {
       busy.current = false;
     }
@@ -314,7 +322,7 @@ function Flow({ userId, user, asked, start }) {
       setItem((s) => ({ ...s, status, saved: true }));
       toast.show(result?.status === 'queued' ? 'Will sync' : 'Saved');
     } catch (error) {
-      toast.error(friendlyError(error, SAVE_ERROR));
+      toast.error(goneElsewhere(error) ? DELETED_ELSEWHERE : friendlyError(error, SAVE_ERROR));
     }
   };
 
@@ -323,7 +331,7 @@ function Flow({ userId, user, asked, start }) {
     try {
       await save(now.plan, 'completed');
     } catch (error) {
-      toast.error(friendlyError(error, SAVE_ERROR));
+      toast.error(goneElsewhere(error) ? DELETED_ELSEWHERE : friendlyError(error, SAVE_ERROR));
       return false;
     }
     writeCache(userId, FINISHED, { id: now.id });

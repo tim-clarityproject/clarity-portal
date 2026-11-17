@@ -538,7 +538,8 @@ function CheckinFlow({ userId, today, month, loaded }) {
   };
 
   const finish = async () => {
-    const ok = await send({ status: 'finished' });
+    // The time it was pressed goes with it: the newest Finish wins (syncQueue's newestWins).
+    const ok = await send({ status: 'finished', finished_at: new Date().toISOString() });
     if (!ok) return false; // the tool lets Finish be tapped again
     const done = { month, status: 'finished', finished_at: row?.finished_at || new Date().toISOString() };
     setData((d) => ({ ...d, checkins: d.checkins.map((c) => (c.month === month ? { ...c, ...done } : c)) }));

@@ -89,6 +89,17 @@ export function onDraftRestored(fn) {
  * @param {(draft: *) => void} opts.onRestore - puts a draft back into the page
  * @returns {{ clear: () => void }} clear: call after a save or a discard
  */
+// Signed out (in this tab or another): this tab writes no more drafts for
+// that person, so a page closing after Sign out never puts one back on the
+// device (the break-it tester, 17 Nov). Signing in again lifts it.
+const stopped = new Set();
+export function stopDraftsFor(userId) {
+  if (userId) stopped.add(userId);
+}
+export function startDraftsFor(userId) {
+  if (userId) stopped.delete(userId);
+}
+
 export function useDraft({ userId, name, value, ready, onRestore }) {
   const key = userId && name ? deviceKey('draft', userId, `${name}~${thisTab()}`) : null;
   const baseline = useRef(undefined); // what the page loaded, so an unchanged page keeps no draft
@@ -121,10 +132,10 @@ export function useDraft({ userId, name, value, ready, onRestore }) {
   }, [ready, key, started, userId, name]);
 
   const write = useCallback(() => {
-    if (!key || baseline.current === undefined) return;
+    if (!key || baseline.current === undefined || stopped.has(userId)) return;
     if (same(latest.current, baseline.current)) removeKey(key);
     else writeJson(key, { v: latest.current, at: Date.now() });
-  }, [key]);
+  }, [key, userId]);
 
   // A moment after each change.
   useEffect(() => {

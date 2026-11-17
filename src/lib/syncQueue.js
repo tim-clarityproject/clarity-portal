@@ -428,7 +428,26 @@ async function performBased(op, retried = false) {
   throw new SupersededError(op.table, row);
 }
 
+// A Finish sent newest wins carries the time it was pressed (finished_at).
+// The newest choice wins, not the last to arrive: a Finish kept offline and
+// sent later never writes over the row finished after it on another device
+// (the break-it tester, 17 Nov).
+async function laterFinishThere(op) {
+  const at = Date.parse(op.values?.finished_at || '');
+  const cols = ROW_KEYS[op.table];
+  if (!op.newestWins || !cols || Number.isNaN(at)) return null;
+  let now = supabase.from(op.table).select('*');
+  for (const c of cols) now = now.eq(c, op.values[c]);
+  const { data, error, status } = await now.limit(1);
+  if (error) throw withStatus(error, status);
+  const row = data?.[0];
+  const there = Date.parse(row?.finished_at || '');
+  return row && row.status === 'finished' && !Number.isNaN(there) && there > at ? row : null;
+}
+
 async function perform(op) {
+  const later = await laterFinishThere(op);
+  if (later) return [later];
   if (op.basedOn && (op.kind === 'update' || op.kind === 'upsert')) return performBased(op);
   let query = supabase.from(op.table);
   if (op.kind === 'upsert') {

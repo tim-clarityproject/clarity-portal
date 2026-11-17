@@ -222,7 +222,12 @@ export function headline(check) {
     const f = firstName(people[0].name);
     return n ? `${f} is in the high-performance area right now.` : `${f} isn’t in the high-performance area right now.`;
   }
-  const start = n === 0 ? `None of your ${total} people are` : `${n} of your ${total} people ${n === 1 ? 'is' : 'are'}`;
+  // Said as the Health Check says it (the break-it tester, 17 Nov): never
+  // "2 of your 2", and "none of them is".
+  let start;
+  if (n === 0) start = `None of your ${total} people is`;
+  else if (n === total) start = total === 2 ? 'Both of your people are' : `All ${total} of your people are`;
+  else start = `${n} of your ${total} people ${n === 1 ? 'is' : 'are'}`;
   return `${start} in the high-performance area right now.`;
 }
 
@@ -323,8 +328,9 @@ const SHARED_GAP = 52; // between two dots that share a spot (M10)
 
 /**
  * Where each rated person's dot goes: people who share a spot sit side by
- * side. Each: { person, x, y, good, nameLeft, nameUp, ring: { x, y } | null, line | null }
- * (nameUp: the name sits centred just above the dot, clear of an area's name).
+ * side. Each: { person, x, y, good, name: { x, y, anchor, side }, nameLeft, nameUp, ring: { x, y } | null, line | null }
+ * (name: where the first name is drawn, right, left, above or below its dot,
+ * clear of the areas' names, the dots and the other names).
  * `ring` is where they were at the last check (the dashed ring), left out
  * when they haven't moved or weren't on it.
  *
@@ -405,31 +411,45 @@ export function chartDots(check, frame) {
     const [u, a] = key.split(',').map(Number);
     placeSpot(ids, X(u), Y(a), u, a);
   });
-  return people.map((p) => {
-    const group = spots.get(`${p.u},${p.a}`);
+  // The dots first, then each name in turn (Phase 8a follow-up; the
+  // break-it tester, 17 Nov: on a phone a long first name ran through the
+  // next dot, and two long names on one spot ran off the drawing). A name
+  // takes the first place, right of its dot, left, above or below, that is
+  // inside the drawing and clear of the areas' names, every dot and every
+  // name already placed; the right first, or the left at the right-hand edge.
+  const size = frame.nameSize || 14;
+  const H = frame.H || (PT + ph + 46);
+  const dotsAt = people.map((p) => ({ p, at: placed.get(p.id) || { x: X(p.u), y: Y(p.a) } }));
+  const dotBoxes = dotsAt.map(({ at }) => ({ left: at.x - R - 1, right: at.x + R + 1, top: at.y - R - 1, bottom: at.y + R + 1 }));
+  const taken = [];
+  const overlap = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+  const names = dotsAt.map(({ p, at }, i) => {
+    const w = wide(p.name);
+    const box = (side) => {
+      if (side === 'right') { const x1 = at.x + R + NAME_GAP; const b = at.y + 4.5; return { side, x: x1, y: b, anchor: 'start', left: x1, right: x1 + w, top: b - size * 0.75, bottom: b + size * 0.25 }; }
+      if (side === 'left') { const x2 = at.x - R - NAME_GAP; const b = at.y + 4.5; return { side, x: x2, y: b, anchor: 'end', left: x2 - w, right: x2, top: b - size * 0.75, bottom: b + size * 0.25 }; }
+      const cx = Math.min(Math.max(at.x, w / 2 + 2), W - w / 2 - 2);
+      // A second line further out lets neighbours' names stagger.
+      const step = size * 1.15;
+      const b = { up: at.y - R - 4, up2: at.y - R - 4 - step, down: at.y + R + 4 + size * 0.75, down2: at.y + R + 4 + size * 0.75 + step }[side];
+      return { side, x: cx, y: b, anchor: 'middle', left: cx - w / 2, right: cx + w / 2, top: b - size * 0.75, bottom: b + size * 0.25 };
+    };
+    const order = at.x + R + NAME_GAP + w > W - 2 ? ['left', 'right', 'up', 'down', 'down2', 'up2'] : ['right', 'left', 'up', 'down', 'down2', 'up2'];
+    const inside = (b) => b.left >= 2 && b.right <= W - 2 && b.top >= 0 && b.bottom <= H;
+    const clash = (b) => (frame.labels || []).reduce((n, l) => n + (apart(b, l) < LABEL_CLEAR ? 1000 : 0), 0)
+      + dotBoxes.reduce((n, d, j) => n + (j === i ? 0 : overlap(b, d)), 0)
+      + taken.reduce((n, t) => n + overlap({ ...b, left: b.left - 2, right: b.right + 2 }, t), 0);
+    const options = order.map(box).filter(inside);
+    const chosen = options.find((b) => clash(b) === 0)
+      || options.sort((a, b) => clash(a) - clash(b))[0]
+      || box(order[0]);
+    taken.push(chosen);
+    return chosen;
+  });
+  return dotsAt.map(({ p, at }, i) => {
     const x0 = X(p.u);
     const y0 = Y(p.a);
-    const at = placed.get(p.id) || { x: x0, y: y0 };
-    // Alone at the right-hand edge: the name goes to the left of the dot.
-    let nameLeft = group.length === 1 && x0 + R + NAME_GAP + wide(p.name) > W - 2;
-    // A name never comes near an area's name: the other side of the dot
-    // when that is clear, otherwise just above the dot (Phase 8a follow-up).
-    const size = frame.nameSize || 14;
-    // Above the dot, the name is centred on it but kept inside the drawing.
-    const upX = Math.min(Math.max(at.x, wide(p.name) / 2 + 2), W - wide(p.name) / 2 - 2);
-    const nameBox = (left, up) => {
-      const w = wide(p.name);
-      const base = up ? at.y - R - 4 : at.y + 4.5;
-      const x1 = up ? upX - w / 2 : (left ? at.x - R - NAME_GAP - w : at.x + R + NAME_GAP);
-      return { left: x1, right: x1 + w, top: base - size * 0.75, bottom: base + size * 0.25 };
-    };
-    const clear = (box) => (frame.labels || []).every((l) => apart(box, l) >= LABEL_CLEAR);
-    let nameUp = false;
-    if (!clear(nameBox(nameLeft, false))) {
-      const fitsOther = nameLeft ? at.x + R + NAME_GAP + wide(p.name) <= W - 2 : at.x - R - NAME_GAP - wide(p.name) >= 2;
-      if (fitsOther && clear(nameBox(!nameLeft, false))) nameLeft = !nameLeft;
-      else nameUp = true;
-    }
+    const n = names[i];
     const was = before(check, p);
     let ring = null;
     let line = null;
@@ -447,7 +467,13 @@ export function chartDots(check, frame) {
         }
       }
     }
-    return { person: p, x: at.x, y: at.y, good: areaOf(p) === 'hp', nameLeft, nameUp, nameX: nameUp ? upX : null, ring, line };
+    return {
+      person: p, x: at.x, y: at.y, good: areaOf(p) === 'hp',
+      // Where the name is drawn: its x (start, end or middle), its baseline, and which side of the dot.
+      name: { x: n.x, y: n.y, anchor: n.anchor, side: n.side },
+      nameLeft: n.side === 'left', nameUp: n.side === 'up' || n.side === 'up2', nameX: n.anchor === 'middle' ? n.x : null,
+      ring, line,
+    };
   });
 }
 

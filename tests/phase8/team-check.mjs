@@ -492,9 +492,19 @@ async function run(browser, width) {
     map[id] = { id, tool: 'emotional_wash', title: 'Your wash', status: 'draft', answers: { happened: 'Kept on the device' }, shared: false, createdAt: at, updatedAt: at, finishedAt: null, sent: false };
     localStorage.setItem(k, JSON.stringify({ v: map, at: Date.now() }));
   }, washId);
+  // A second tab mid-check when this one signs out (the break-it tester, 17 Nov):
+  // it must leave no draft behind either.
+  const other = await ctx.newPage();
+  await other.goto(`${APP}${TEAM_PATH}`);
+  await onQuestion(other, 'Who reports to you?');
+  await addPerson(other, 'Tab Two Person', 'Head of nothing');
+  await sleep(1800); // its draft is kept on the device
   await page.locator('.account-signout .ds-signout').first().click();
   const signedOut = await until(async () => /\/auth\/|\/sign-in|\/login/.test(new URL(page.url()).pathname), 30000);
   pass(`${tag}: Sign out signs out`, Boolean(signedOut), page.url());
+  await until(async () => /\/auth\/|\/sign-in|\/login/.test(new URL(other.url()).pathname), 15000);
+  await sleep(2000); // the other tab has heard, closed its check and cleared again
+  await other.close();
   const leftKeys = await page.evaluate(() => Object.keys(localStorage).concat(Object.keys(sessionStorage)).filter((k) => /tool-answers|team-check|emotional-wash/.test(k)));
   pass(`${tag}: after Sign out nothing of the Team performance check or the Emotional wash is left on the device`, leftKeys.length === 0, leftKeys.join(', '));
   const moved = (await db.from('tool_answers').select('id').eq('user_id', me).eq('id', washId)).data || [];

@@ -4,7 +4,8 @@ import { hasAgreed } from '../lib/signIn/terms';
 import { noteSignedOut } from '../lib/signIn/addresses';
 import { sessionManager } from '../lib/sessionManager';
 import { diag } from '../utils/diag';
-import { clearAppStorage } from '../lib/clearAppStorage';
+import { clearAfterSignOutElsewhere, clearAppStorage } from '../lib/clearAppStorage';
+import { startDraftsFor, stopDraftsFor } from '../lib/drafts';
 import { sendToolAnswersBeforeSignOut } from '../lib/toolAnswers';
 import { flush as flushQueue, queueState, retrySyncQueue, startSyncQueue, stopSyncQueue } from '../lib/syncQueue';
 
@@ -123,6 +124,13 @@ export function AuthProvider({ children }) {
         if (!nextUser) {
           outcome = 'null';
         }
+        // Signed out, here or in another tab: no more drafts for that person
+        // from this tab, and what a page closing afterwards wrote is cleared.
+        if (event === 'SIGNED_OUT' && prevUser?.id && !nextUser) {
+          stopDraftsFor(prevUser.id);
+          setTimeout(clearAfterSignOutElsewhere, 800);
+        }
+        if (nextUser?.id) startDraftsFor(nextUser.id);
         diag('AUTH_EVENT', { event, userIdShort, outcome });
         return nextUser;
       });

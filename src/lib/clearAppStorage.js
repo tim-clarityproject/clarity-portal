@@ -120,3 +120,13 @@ export function clearAppStorage({ deletedAccount = null, toolAnswersThere = fals
   try { clearFrom(window.localStorage); } catch { /* storage blocked */ }
   try { clearFrom(window.sessionStorage); } catch { /* storage blocked */ }
 }
+
+/**
+ * Another tab has signed out (or this one heard it late): what the app keeps
+ * is cleared here too, so a page this tab closed afterwards leaves nothing.
+ * Only the app's own keys: whatever Sign out set aside on purpose stays.
+ */
+export function clearAfterSignOutElsewhere() {
+  try { clearFrom(window.localStorage); } catch { /* storage blocked */ }
+  try { clearFrom(window.sessionStorage); } catch { /* storage blocked */ }
+}
