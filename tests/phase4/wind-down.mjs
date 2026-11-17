@@ -578,7 +578,7 @@ const PARTS = [
   ['Work’s done button', 'wdone', '.wd .btn', '.ds-end-action button', ['h', 'bg']],
   ['Carried over heading', 'morning', '.grp h5', '.ds-pick-group-title', ['fs', 'ff', 'color']],
   ['source line', 'morning', '.pkrow small', '.ds-pick-group .ds-todo-tag', ['fs', 'color']],
-  ['chosen count', 'morning', '.cnt', '.ds-pick-count', ['fs', 'color']],
+  // M19's "You’ve chosen n of 3" is gone: no limit on the Daily plan (Tim, 16 Nov, 19:03; checked as absent in part 3).
   ['thought number', 'think', '.trow .n', '.ds-rowlist-n', ['fs', 'color']],
 ];
 function compare(view, mode, what, mock, app, fields, known) {
