@@ -349,14 +349,19 @@ export default function PerformanceSprint() {
       </>
     );
   } else if (view.state === 'paused') {
+    // In Recovery the Backlog still shows (Phase 8a follow-up, step 4): a
+    // tool that says "Added to your backlog" must have it somewhere.
     body = (
-      <SprintPaused
-        view={view}
-        working={recovery.working}
-        onMore={() => navigate('/recovery/check-in?add=1', { state: { back } })}
-        onReady={() => recovery.end(view.recovery, today)}
-        onToday={() => navigate('/recovery/today')}
-      />
+      <>
+        <SprintPaused
+          view={view}
+          working={recovery.working}
+          onMore={() => navigate('/recovery/check-in?add=1', { state: { back } })}
+          onReady={() => recovery.end(view.recovery, today)}
+          onToday={() => navigate('/recovery/today')}
+        />
+        <BacklogAlone rows={view.backlog} />
+      </>
     );
   } else {
     body = (

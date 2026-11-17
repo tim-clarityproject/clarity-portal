@@ -7,6 +7,7 @@ import {
   AddTodoPanel,
   Button,
   Choice,
+  Collapsible,
   GuidedSummary,
   GuidedTool,
   Loading,
@@ -480,6 +481,9 @@ function PlanFlow({ userId, date, today, loaded }) {
   );
   const stepIndex = (key) => steps.findIndex((s) => s.key === key);
 
+  // The day's own list, and the Backlog's to-dos in their fold (no sprint running).
+  const dayOptions = (view?.options || []).filter((o) => o.group !== 'backlog');
+  const backlogOptions = (view?.options || []).filter((o) => o.group === 'backlog');
   const steps = [
     {
       key: 'sleep',
@@ -564,11 +568,11 @@ function PlanFlow({ userId, date, today, loaded }) {
       nudges: ['Choose up to 3.'],
       render: () => (!view.hasPlan ? noPlan : (
         <div className="day-narrow">
-          {view.options.length ? (
+          {dayOptions.length ? (
             <MultiChoice
               variant="pick"
               ariaLabel="What will you do today?"
-              options={view.options}
+              options={dayOptions}
               values={view.picks}
               onChange={choosePicks}
               max={MAX_DAY_TODOS}
@@ -580,6 +584,21 @@ function PlanFlow({ userId, date, today, loaded }) {
               {eye}
               <p className="day-quiet-line">Nothing is on this week’s list yet.</p>
             </>
+          )}
+          {/* No sprint running: the Backlog's to-dos sit in a quiet fold, never as the day's list (Phase 8a follow-up, step 4). Open while one of them is chosen. */}
+          {backlogOptions.length > 0 && (
+            <div className="day-backlog">
+              <Collapsible summary="From your Backlog" defaultOpen={backlogOptions.some((o) => view.picks.includes(o.value))}>
+                <MultiChoice
+                  variant="pick"
+                  ariaLabel="From your Backlog"
+                  options={backlogOptions}
+                  values={view.picks}
+                  onChange={choosePicks}
+                  max={MAX_DAY_TODOS}
+                />
+              </Collapsible>
+            </div>
           )}
           {!view.running && <p className="day-quiet-line">{view.inRecovery ? RECOVERY_DAY_LINE : 'No sprint is running, so today’s to-dos aren’t scored yet.'}</p>}
           {view.note && (

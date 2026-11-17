@@ -581,6 +581,8 @@ function pausedView(d, { base, calendar, recovery, today }) {
     state: 'paused',
     dates,
     recovery,
+    // In Recovery the Backlog still shows on the sprint page (Phase 8a follow-up, step 4).
+    backlog: backlogTodos(d),
     pause: {
       week: pause.week,
       complete: pause.complete,

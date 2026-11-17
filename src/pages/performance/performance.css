@@ -1820,3 +1820,8 @@
     display: inline-flex;
   }
 }
+
+/* The Daily plan with no sprint running: the Backlog's to-dos in a quiet fold under the day's list (Phase 8a follow-up, step 4). */
+.ui-root .day-backlog {
+  margin-top: var(--space-4);
+}

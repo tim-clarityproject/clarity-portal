@@ -785,6 +785,16 @@ export function moveTodo(userId, todoId, { sprintId, week, on }) {
   });
 }
 
+/** A to-do's words, following the next step it came from (Phase 8a follow-up, step 4). */
+export function setTodoText(userId, todoId, text) {
+  return saveOrQueue(userId, {
+    table: 'todos',
+    kind: 'update',
+    match: { id: todoId, user_id: userId },
+    values: { text },
+  });
+}
+
 /** A to-do taken away (Undo after adding), or brought back (null). Kept, never deleted. */
 export function setTodoDeleted(userId, todoId, deletedAt) {
   return saveOrQueue(userId, {

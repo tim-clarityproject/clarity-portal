@@ -2,11 +2,12 @@ import { useCallback, useContext, useMemo } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { useToast } from './toastContext';
 import { useSprintPage } from '../../lib/performance/hooks';
-import { saveTodo, setTodoDeleted } from '../../lib/performance/api';
+import { saveTodo, setTodoDeleted, setTodoText } from '../../lib/performance/api';
 import { localToday } from '../../lib/performance/rows';
 import { TODO_WHERE, newTodoRow, sprintPageView, todoPlaceNow, todoWhereOptions, todoWhereToast } from '../../lib/performance/sprintPage';
 import { newId, waitingToSend } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
+import { supabase } from '../../lib/supabase';
 
 // A to-do added from a tool (Get unstuck, the Team performance check, the
 // Emotional wash; Tim, 13 Nov, 10:42): This week, Backlog or Don’t add it.
@@ -30,6 +31,12 @@ import { friendlyError } from '../../lib/friendlyError';
 //                 ("Added to this week" or "Added to your backlog", with
 //                 Undo) unless `quiet` is set. `onUndone({ where, id })`
 //                 runs when that Undo is pressed.
+//   follow(id, text)  a to-do follows its next step's words until it is
+//                 ticked (Phase 8a follow-up, step 4); a done or deleted
+//                 one, or one this device doesn't hold, is left alone
+//   remove(id, { onUndo })  takes a to-do away when the next step it came
+//                 from goes (an option un-chosen), with "Deleted" and Undo;
+//                 Undo brings it back and calls onUndo
 //   placeOf(id)   where a to-do a tool made earlier is now: 'week',
 //                 'backlog', 'later' (a later week) or 'gone' (deleted,
 //                 done in an earlier week, its sprint over); null while it
@@ -82,6 +89,53 @@ export default function useToolTodo() {
     return { where: to, id };
   }, [userId, sprintId, week, today, setData, toast]);
 
+  const rowOf = useCallback((id) => [...(data?.todos || []), ...(data?.backlogTodos || [])].find((t) => t.id === id) || null, [data]);
+  // The to-do as it is now: this device's copy, or (when this copy hasn't
+  // caught up with one just made) the database's. Null when it can't be told.
+  const current = useCallback(async (id) => {
+    const here = rowOf(id);
+    if (here) return here;
+    try {
+      const { data: row, error } = await supabase.from('todos').select('id, text, done_on, deleted_at').eq('id', id).eq('user_id', userId).maybeSingle();
+      return error ? null : row;
+    } catch {
+      return null;
+    }
+  }, [rowOf, userId]);
+
+  const follow = useCallback(async (id, text) => {
+    const words = String(text || '').trim();
+    if (!userId || !id || !words) return;
+    const row = await current(id);
+    if (!row || row.done_on || row.deleted_at || row.text === words) return;
+    // This copy is changed only when it holds the row: writing back a copy
+    // that hasn't caught up would leave the device's shared copy behind.
+    if (rowOf(id)) {
+      const swap = (list) => (list || []).map((t) => (t.id === id ? { ...t, text: words } : t));
+      setData((d) => (d ? { ...d, todos: swap(d.todos), backlogTodos: swap(d.backlogTodos) } : d));
+    }
+    setTodoText(userId, id, words).catch(() => null);
+  }, [userId, current, rowOf, setData]);
+
+  const remove = useCallback(async (id, { onUndo } = {}) => {
+    if (!userId || !id) return;
+    const row = await current(id);
+    // A ticked to-do stays: it was done.
+    if (!row || row.deleted_at || row.done_on) return;
+    const take = (d) => (d ? { ...d, todos: (d.todos || []).filter((t) => t.id !== id), backlogTodos: (d.backlogTodos || []).filter((t) => t.id !== id) } : d);
+    const wasIn = (data?.todos || []).some((t) => t.id === id) ? 'todos' : (data?.backlogTodos || []).some((t) => t.id === id) ? 'backlogTodos' : null;
+    if (wasIn) setData(take);
+    setTodoDeleted(userId, id, new Date().toISOString()).catch(() => null);
+    toast.saved({
+      message: 'Deleted',
+      onUndo: () => {
+        if (wasIn) setData((d) => (d ? { ...d, [wasIn]: [...(d[wasIn] || []), rowOf(id) || row] } : d));
+        setTodoDeleted(userId, id, null).catch(() => null);
+        onUndo?.();
+      },
+    });
+  }, [userId, data, current, rowOf, setData, toast]);
+
   const placeOf = useCallback((id) => {
     if (!view || !id || waitingToSend(userId)) return null;
     return todoPlaceNow(view, id);
@@ -90,6 +144,8 @@ export default function useToolTodo() {
   return {
     running,
     placeOf,
+    follow,
+    remove,
     strategies,
     canAdd: strategies.length > 0,
     ready: Boolean(data),

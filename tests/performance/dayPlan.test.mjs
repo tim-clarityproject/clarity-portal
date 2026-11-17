@@ -207,6 +207,8 @@ test('no sprint: to-dos without a sprint, the plan’s Strategies, and no score'
   assert.equal(v.running, false);
   assert.equal(v.score, null);
   assert.deepEqual(v.options.map((o) => o.value), ['todo:l1']);
+  // They are the Backlog's, offered in its own quiet fold, never as the day's list (Phase 8a follow-up, step 4).
+  assert.deepEqual(v.options.map((o) => [o.group, o.tags[0]]), [['backlog', 'In your backlog']]);
   assert.deepEqual(v.strategies, [{ value: 'grow', label: 'Grow through referrals' }]);
 });
 

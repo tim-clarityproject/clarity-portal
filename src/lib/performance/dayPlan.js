@@ -211,7 +211,10 @@ export function dayPlanView(d, { date, local = {}, windDown = [] }) {
   } else {
     for (const t of d.looseTodos || []) {
       if (t.deleted_at || (t.done_on && !chosenTodos.has(t.id))) continue;
-      open.push({ id: t.id, text: t.text, strategyName: strategyName.get(t.strategy_id) || '', rolledFrom: null });
+      // No sprint running: these are the Backlog's (Phase 8a follow-up,
+      // step 4), offered in a quiet "From your Backlog" fold, never as the
+      // day's list.
+      open.push({ id: t.id, text: t.text, strategyName: strategyName.get(t.strategy_id) || '', rolledFrom: null, backlog: true });
     }
   }
 
@@ -247,7 +250,9 @@ export function dayPlanView(d, { date, local = {}, windDown = [] }) {
     if (row?.source === 'plan_my_day' && row.created_on === date) return 'New to-do today';
     return t.rolledFrom ? `Rolled over from week ${t.rolledFrom}` : 'To-do this week';
   };
-  const asOption = (t) => ({ value: `todo:${t.id}`, label: t.text, detail: t.strategyName, tags: [tagFor(t)], kind: 'todo', id: t.id, group: 'week' });
+  const asOption = (t) => (t.backlog
+    ? { value: `todo:${t.id}`, label: t.text, detail: t.strategyName, tags: ['In your backlog'], kind: 'todo', id: t.id, group: 'backlog' }
+    : { value: `todo:${t.id}`, label: t.text, detail: t.strategyName, tags: [tagFor(t)], kind: 'todo', id: t.id, group: 'week' });
   const rest = open.filter((t) => !used.has(t.id));
   // Then this week's (M5): the to-dos, the habits, then rolled over.
   options.push(...rest.filter((t) => !t.rolledFrom).map(asOption));

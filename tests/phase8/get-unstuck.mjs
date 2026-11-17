@@ -184,6 +184,28 @@ async function signedIn(browser, width) {
   pass(`${tag}: each row says where it is`, JSON.stringify(now) === JSON.stringify(['It’s in this week’s sprint.', 'It’s in your backlog.', 'It isn’t in this week’s sprint yet.']), now.join('|'));
   const todos = await until(async () => { const t = (await myTodos()).filter((x) => !x.deleted_at); return t.length === 2 ? t : null; }, 12000);
   pass(`${tag}: one to-do is in this week and one in the backlog`, Boolean(todos) && todos.filter((t) => t.planned_week != null && t.sprint_id).length === 1 && todos.filter((t) => t.planned_week == null && !t.sprint_id).length === 1, JSON.stringify((todos || []).map((t) => [t.planned_week, Boolean(t.sprint_id)])));
+  // ---- A next step's to-do follows its words until it is ticked (Phase 8a follow-up, step 4)
+  {
+    const first = () => myTodos().then((t) => t.filter((x) => !x.deleted_at && x.planned_week != null)[0]);
+    const firstBox = page.locator('.ds-nextstep .ds-text').nth(0);
+    await firstBox.fill(`${M9.acts[0]} (by Friday)`);
+    pass(`${tag}: editing a next step changes its to-do’s words too`, Boolean(await until(async () => (await first())?.text === `${M9.acts[0]} (by Friday)`, 12000)), (await first())?.text);
+    await firstBox.fill(M9.acts[0]);
+    await until(async () => (await first())?.text === M9.acts[0], 12000);
+    // Un-choosing an option takes its next step's to-do away, with Deleted and Undo
+    const backlogTodo = () => myTodos().then((t) => t.find((x) => x.planned_week == null && !x.sprint_id));
+    await page.locator('.ds-guide-back').click();
+    await onQuestion(page, 'Which options will you act on?');
+    await sleep(500);
+    await page.locator('.ds-guide-body .ds-answer').nth(1).click();
+    pass(`${tag}: un-choosing an option deletes its next step’s to-do, with “Deleted” and Undo`, Boolean(await sawToast(page, 'Deleted')) && (await page.locator('.ds-toast').last().getByRole('button', { name: 'Undo' }).count()) === 1 && Boolean(await until(async () => Boolean((await backlogTodo())?.deleted_at), 12000)));
+    await page.locator('.ds-toast').last().getByRole('button', { name: 'Undo' }).click();
+    pass(`${tag}: Undo brings the to-do back`, Boolean(await until(async () => (await backlogTodo())?.deleted_at === null, 12000)));
+    pass(`${tag}: … and the option is chosen again`, (await page.locator('.ds-guide-body .ds-answer[aria-pressed=true]').count()) === 3);
+    await pressNext(page);
+    await onQuestion(page, 'What exactly will you do?');
+    pass(`${tag}: … with its next step back in its place`, JSON.stringify(await lines()) === JSON.stringify(['It’s in this week’s sprint.', 'It’s in your backlog.', 'It isn’t in this week’s sprint yet.']), (await lines()).join('|'));
+  }
   await page.screenshot({ path: join(out, `steps-${width}.png`) });
 
   // ---- Close part-way and come back

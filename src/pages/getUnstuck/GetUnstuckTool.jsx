@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   GuidedSummary,
   GuidedTool,
@@ -13,6 +13,7 @@ import {
   WhoSees,
   useCoach,
   useToast,
+  useToolTodo,
 } from '../../components/design';
 import { newId } from '../../lib/syncQueue';
 import {
@@ -96,6 +97,16 @@ export default function GetUnstuckTool({
   // have caught up with them yet, so their place isn't second-guessed.
   const madeHere = useRef(new Set());
   const todoIds = useMemo(() => (guest ? [] : (plan.acts || []).map((a) => a.todoId).filter(Boolean)), [guest, plan.acts]);
+  // A next step's to-do follows its words until it is ticked, and goes when
+  // its option is un-chosen, with "Deleted" and Undo (Phase 8a follow-up, step 4).
+  const todo = useToolTodo();
+  const following = useRef({});
+  const followWords = (act, text) => {
+    if (guest || !act.todoId) return;
+    clearTimeout(following.current[act.id]);
+    following.current[act.id] = setTimeout(() => todo.follow(act.todoId, text), 800);
+  };
+  useEffect(() => () => Object.values(following.current).forEach(clearTimeout), []);
   // Where each next step's to-do is now (the sprint page's own answer): a
   // step never goes on saying "It’s in this week’s sprint." once its to-do
   // has been deleted, moved to the Backlog or a later week, or left behind
@@ -203,11 +214,28 @@ export default function GetUnstuckTool({
             ariaLabel={question('will', plan)}
             options={choices}
             values={pickedOptions(plan)}
-            onChange={(values) => onPlan((p) => {
-              const had = pickedOptions(p);
-              const changed = [...values.filter((v) => !had.includes(v)), ...had.filter((v) => !values.includes(v))];
-              return changed.reduce((q, option) => togglePick(q, option, newId), p);
-            })}
+            onChange={(values) => {
+              const had = pickedOptions(plan);
+              const before = plan.acts;
+              // An option un-chosen takes its next step away, and that step's to-do with it.
+              const gone = before.filter((a) => Number.isInteger(a.option) && had.includes(a.option) && !values.includes(a.option) && a.todoId);
+              onPlan((p) => {
+                const was = pickedOptions(p);
+                const changed = [...values.filter((v) => !was.includes(v)), ...was.filter((v) => !values.includes(v))];
+                return changed.reduce((q, option) => togglePick(q, option, newId), p);
+              });
+              if (!guest) {
+                gone.forEach((a) => todo.remove(a.todoId, {
+                  // Undo puts the next step back where it was, with its to-do.
+                  onUndo: () => onPlan((p) => {
+                    if (p.acts.some((x) => x.id === a.id)) return p;
+                    const acts = p.acts.filter((x) => x.option !== a.option);
+                    acts.splice(Math.min(before.indexOf(a), acts.length), 0, a);
+                    return { ...p, acts };
+                  }),
+                }));
+              }
+            }}
           />
         ) : (
           <div className="gu-lines">
@@ -233,7 +261,7 @@ export default function GetUnstuckTool({
                 label={`Next step ${j + 1}`}
                 maxLength={ROW_MAX}
                 value={a.text}
-                onChange={(text) => onPlan((p) => setAct(p, a.id, { text }))}
+                onChange={(text) => { onPlan((p) => setAct(p, a.id, { text })); followWords(a, text); }}
                 line={w?.line}
                 good={w?.good}
                 link={w?.link}

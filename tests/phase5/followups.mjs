@@ -327,6 +327,13 @@ async function checkRecovery(page, tag) {
     pass(`${tag}: ${to} has no button that says "I"`, withI.length === 0, JSON.stringify(withI));
   }
   await shot(page, `${tag}-sprint-paused`);
+  // In Recovery the sprint page still shows the Backlog (Phase 8a follow-up, step 4): the seed keeps a to-do there.
+  const { data: inBacklog } = await db.from('todos').select('text').eq('user_id', me).is('sprint_id', null).is('planned_week', null).is('deleted_at', null).limit(1);
+  if (inBacklog?.length) {
+    pass(`${tag}: the paused sprint page still shows the Backlog`, Boolean(await until(async () => (await bodyText(page)).includes(inBacklog[0].text) && /BACKLOG|Backlog/.test(await bodyText(page)), 8000)));
+  } else {
+    pass(`${tag}: the seed has a Backlog to-do to show`, false, 'no Backlog to-do in the seed');
+  }
 }
 
 try {
