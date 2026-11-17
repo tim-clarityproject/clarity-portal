@@ -88,8 +88,12 @@ export default function GetUnstuck() {
     return { item: handed ? fromRow(handed) : null, error: null };
   });
 
+  // A row handed over as a draft may be older than the plan: My Plans shows
+  // its device copy first, so a plan finished since (in another tab, or
+  // offline and sent) is read again, and opens on Your plan when it is.
+  const handedDraft = Boolean(handed) && fromRow(handed).status !== 'completed';
   useEffect(() => {
-    if (!userId || !asked || handed) return undefined;
+    if (!userId || !asked || (handed && !handedDraft)) return undefined;
     let live = true;
     supabase.from('decisions').select(COLS).eq('id', asked).eq('user_id', userId).eq('tool_type', TOOL_TYPE).limit(1)
       .then(({ data, error }) => {
@@ -100,15 +104,18 @@ export default function GetUnstuck() {
           return;
         }
         writeCache(userId, `get-unstuck:${asked}`, data[0]);
-        setState({ item: fromRow(data[0]), error: null });
+        const fresh = fromRow(data[0]);
+        // Handed over as a draft: only a plan finished since replaces it.
+        if (handedDraft && fresh.status !== 'completed') return;
+        setState({ item: fresh, error: null });
       })
       .catch((error) => {
-        if (!live) return;
+        if (!live || handedDraft) return;
         const cached = isNetworkError(error) ? readCache(userId, `get-unstuck:${asked}`) : null;
         setState(cached ? { item: fromRow(cached.v), error: null } : { item: null, error });
       });
     return () => { live = false; };
-  }, [userId, asked, handed]);
+  }, [userId, asked, handed, handedDraft]);
 
   if (state.error) {
     return (
@@ -120,7 +127,7 @@ export default function GetUnstuck() {
   if (!userId || !state.item) {
     return <div className="ui-root plan-builder-wait"><Loading label="Loading your plan" className="ds-loading--page" /></div>;
   }
-  return <Flow key={`${userId}:${asked || 'new'}`} userId={userId} user={user} asked={asked} start={state.item} />;
+  return <Flow key={`${userId}:${asked || 'new'}:${state.item.status === 'completed' ? 'done' : 'open'}`} userId={userId} user={user} asked={asked} start={state.item} />;
 }
 
 // A plain page (not the full-screen tool), for when a saved plan can't be shown.

@@ -267,7 +267,7 @@ async function signedIn(browser, width) {
   await row.waitFor({ timeout: 20000 });
   pass(`${tag}: My Plans lists it under Get unstuck`, /get unstuck/i.test(await page.locator('.ui-root').first().innerText()));
   await row.click();
-  pass(`${tag}: a saved plan opens on Your plan`, Boolean(await until(() => /\/get-unstuck$/.test(new URL(page.url()).pathname))) && Boolean(await onQuestion(page, 'Here’s your plan')));
+  pass(`${tag}: a saved plan opens on Your plan`, Boolean(await until(() => /\/get-unstuck$/.test(new URL(page.url()).pathname))) && Boolean(await onQuestion(page, 'Here’s your plan')), `${new URL(page.url()).pathname}: ${(await questionText(page)).slice(0, 80)}`);
   await page.locator('.ds-guide-close').click();
   await sleep(1200);
 
