@@ -293,6 +293,17 @@ export async function seedLastCheck(page, { at = '2026-10-14T09:00:00.000Z', id 
   }, { at, id, answers: m10Answers(1) });
 }
 
+/**
+ * The test client's saved rows of one tool are taken off the database
+ * (migration 043's tool_answers, on the test project since 16 Nov), so a run
+ * never starts with an earlier run's checks or washes. Only this tool's rows
+ * of the test client are touched; before 043 there is no table, and nothing to do.
+ */
+export async function clearToolRows(db, me, tool) {
+  const { error } = await db.from('tool_answers').delete().eq('user_id', me).eq('tool', tool);
+  if (error && !/^(PGRST205|42P01)$/.test(error.code || '')) throw new Error(`tool_answers: ${error.code}`);
+}
+
 /** Everything the Team performance check keeps on this device is taken off. */
 export async function clearTeamCheck(page) {
   await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (/team-check|:tool-answers$/.test(k)) localStorage.removeItem(k); });

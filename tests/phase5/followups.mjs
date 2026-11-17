@@ -14,8 +14,10 @@
 // 3. Recovery's button says "Ready to go again", never "I’m ready to go
 //    again".
 //
-// The clock is fixed at Wed 21 Oct 2026, 10:00 in London (the seed's
-// Sprint 1 runs from Mon 12 Oct). A few invented items and one open
+// The clock is fixed at the Wednesday of the seed's running sprint's second
+// week, 10:00 in London (Wed 21 Oct 2026 when Sprint 1 ran from Mon 12 Oct).
+// The seed dates its sprint from the day it is run, so the day is read from
+// the sprint, never written here. A few invented items and one open
 // Recovery are added, and taken away again at the end. The seed itself is
 // not changed.
 import { chromium } from 'playwright';
@@ -32,7 +34,7 @@ const TEST_HOST = `${TEST_REF}.supabase.co`;
 const out = process.argv[2] || null;
 if (out) mkdirSync(out, { recursive: true });
 
-const TODAY = '2026-10-21';
+let TODAY = '2026-10-21'; // set from the seeded sprint below
 const STAMP = 'Followups check';
 
 const results = [];
@@ -98,6 +100,9 @@ process.on('uncaughtException', async (e) => {
 
 const { data: sprint } = await db.from('sprints').select('id, start_on').eq('user_id', me).eq('status', 'running').maybeSingle();
 if (!sprint) throw new Error('The seed has no running sprint: run scripts/seed-test-plan.mjs first.');
+const dayAfter = (key, n) => { const d = new Date(`${key}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+TODAY = dayAfter(sprint.start_on, 9);
+const YESTERDAY = dayAfter(TODAY, -1);
 const { data: openRec } = await db.from('recovery_periods').select('id').eq('user_id', me).is('ended_at', null);
 if (openRec?.length) throw new Error('A Recovery is already open: run scripts/seed-test-plan.mjs --reset first.');
 for (const table of ['day_reviews', 'day_plans']) {
@@ -344,7 +349,7 @@ try {
   }
 
   // Recovery: one open, from yesterday, for a week.
-  await insert('recovery_periods', { id: randomUUID(), user_id: me, sprint_id: sprint.id, start_on: '2026-10-20', chosen_days: 7, extended_days: 0, let_coach_know: false }, 'recoveries');
+  await insert('recovery_periods', { id: randomUUID(), user_id: me, sprint_id: sprint.id, start_on: YESTERDAY, chosen_days: 7, extended_days: 0, let_coach_know: false }, 'recoveries');
   for (const [width, mode] of [[1280, 'dark'], [360, 'light']]) {
     const { context, page, errors } = await signedIn({ width, mode });
     await checkRecovery(page, `${width}px ${mode} Recovery`);

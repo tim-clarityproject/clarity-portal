@@ -19,7 +19,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   APP, M10, TEAM_PATH, addPanel, addPerson, block, clearTeamCheck, clientDb, onQuestion, panel, panelGone, pressNext,
-  questionText, rateTeam, readEnv, seedLastCheck, signIn, sleep, title, until, withCoach,
+  questionText, rateTeam, readEnv, seedLastCheck, clearToolRows, signIn, sleep, title, until, withCoach,
 } from './shared.mjs';
 import { makeCheckScreen } from './measure-lib.mjs';
 
@@ -43,6 +43,7 @@ const keepTodos = new Set((todosBefore || []).map((t) => t.id));
 const myTodos = async () => ((await db.from('todos').select('id, text, sprint_id, planned_week, source, source_id, deleted_at').eq('user_id', me).gte('created_on', todayKey)).data || []).filter((t) => !keepTodos.has(t.id));
 async function cleanUp() {
   for (const t of await myTodos()) await db.from('todos').delete().eq('id', t.id).eq('user_id', me);
+  await clearToolRows(db, me, 'team_check');
 }
 
 const toastText = (page) => page.locator('.ds-toast').last().innerText().then((t) => t.replace(/\s+/g, ' ').trim()).catch(() => '');
@@ -69,7 +70,7 @@ async function run(browser, width) {
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(`console: ${m.text().slice(0, 200)}`); });
   const shot = (name) => page.screenshot({ path: join(out, `${name}-${width}.png`) });
   await signIn(page, env);
-  await clearTeamCheck(page);
+  await clearTeamCheck(page); await clearToolRows(db, me, 'team_check');
   refused.length = 0;
 
   // ---- the hub's tile opens the tool
@@ -393,7 +394,7 @@ async function run(browser, width) {
 
   // ---- the next check: the same people, nothing answered, and "your last check, in October"
   await page.goto(`${APP}/version.json`);
-  await clearTeamCheck(page);
+  await clearTeamCheck(page); await clearToolRows(db, me, 'team_check');
   await page.goto(`${APP}/welcome`);
   await page.waitForLoadState('domcontentloaded');
   await sleep(1500);
@@ -438,7 +439,7 @@ async function run(browser, width) {
   pass(`${tag}: no console errors and no page errors`, errors.length === 0, errors.join(' | '));
   pass(`${tag}: no request was refused, but the one question about the table 043 adds`, others.length === 0 && probes.length <= 1, `${probes.length} for the table; others: ${others.join(' | ')}`);
   await page.goto(`${APP}/version.json`);
-  await clearTeamCheck(page);
+  await clearTeamCheck(page); await clearToolRows(db, me, 'team_check');
   await ctx.close();
 }
 

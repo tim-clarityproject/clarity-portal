@@ -31,6 +31,8 @@ export function ToastProvider({ children }) {
   const remaining = useRef(0);
   const startedAt = useRef(0);
   const nextId = useRef(1);
+  // The toast on screen now, so a plain "Saved" can step aside for it.
+  const current = useRef(null);
   const focusBefore = useRef(null);
 
   const clearTimer = () => {
@@ -54,7 +56,9 @@ export function ToastProvider({ children }) {
     cancelAnimationFrame(frame.current);
     const active = document.activeElement;
     focusBefore.current = active && active !== document.body ? active : null;
-    setToast({ ...next, id: nextId.current++ });
+    const shown = { ...next, id: nextId.current++ };
+    current.current = shown;
+    setToast(shown);
     setPhase('entering');
     // Shown on the next frame, so it fades and rises in.
     frame.current = requestAnimationFrame(() => setPhase('shown'));
@@ -62,11 +66,20 @@ export function ToastProvider({ children }) {
   }, [startTimer]);
 
   const api = useMemo(() => ({
-    show: (message) => open({ kind: 'done', message }, TOAST_MS),
+    // { keepUndo: true }: a page's own "Saved" that follows a toast with
+    // Undo for the same action (a tool's "Added to your backlog" when its
+    // edit then saves) leaves that toast as it is: it says more, and its
+    // Undo must stay. Only toasts still showing are kept.
+    show: (message, { keepUndo = false } = {}) => {
+      if (keepUndo && current.current?.kind === 'undo') return;
+      open({ kind: 'done', message }, TOAST_MS);
+    },
     saved: ({ message = 'Saved', onUndo } = {}) => open({ kind: 'undo', message, onUndo }, TOAST_UNDO_MS),
     error: (message = ERROR_MESSAGE) => open({ kind: 'error', message }, TOAST_UNDO_MS),
     hide,
   }), [open, hide]);
+
+  useEffect(() => { if (phase === 'leaving') current.current = null; }, [phase]);
 
   useEffect(() => () => {
     clearTimer();

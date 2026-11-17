@@ -5,14 +5,23 @@
 //   Chromium: --mute-audio.
 //   Firefox: the media volume scale set to 0.
 //   WebKit (no such option): every page's media plays at volume 0. Only the
-//   volume: `muted` is left as the page set it, so a test of the page's own
-//   sound setting still reads the page's choice.
+//   sound itself: `muted` is left as the page set it, and reading `volume`
+//   gives what the page asked for (1 unless it set one), so the page and a
+//   test of its own sound setting see the page's choice, never the silence.
 const SILENT_PAGES = () => {
-  const quiet = (el) => { try { el.volume = 0; } catch { /* not media */ } };
+  const vol = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'volume');
+  if (!vol?.set || !vol?.get) return;
+  const asked = new WeakMap();
+  const quiet = (el) => { try { vol.set.call(el, 0); } catch { /* not media */ } };
   const play = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function playSilently(...args) { quiet(this); return play.apply(this, args); };
-  const vol = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'volume');
-  if (vol?.set) Object.defineProperty(HTMLMediaElement.prototype, 'volume', { ...vol, set() { vol.set.call(this, 0); } });
+  // Media that starts by itself (autoplay) never calls play().
+  document.addEventListener('play', (e) => quiet(e.target), true);
+  Object.defineProperty(HTMLMediaElement.prototype, 'volume', {
+    ...vol,
+    get() { return asked.has(this) ? asked.get(this) : 1; },
+    set(v) { vol.set.call(this, v); asked.set(this, vol.get.call(this)); vol.set.call(this, 0); },
+  });
 };
 
 function silence(type, patch) {

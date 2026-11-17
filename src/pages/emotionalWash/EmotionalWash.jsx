@@ -300,7 +300,11 @@ function Flow({ userId, user, asked, start }) {
     try {
       const status = now.status === 'completed' && isComplete(now.wash) ? 'completed' : 'draft';
       const result = await save(now, now.wash, status, { stays: 'answers' });
-      toast.show(result === 'queued' ? 'Will sync' : 'Saved');
+      // The edit's own to-do may have just said "Added to your backlog"
+      // with Undo; since 043 the save lands after it, so "Saved" leaves
+      // that toast showing ("Will sync" still says itself).
+      if (result === 'queued') toast.show('Will sync');
+      else toast.show('Saved', { keepUndo: true });
     } catch (error) {
       toast.error(friendlyError(error, SAVE_ERROR));
     }

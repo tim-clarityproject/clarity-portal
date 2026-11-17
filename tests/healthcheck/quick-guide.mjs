@@ -65,7 +65,8 @@ const SIZE = {
 const ENGINE = { chromium, webkit };
 
 let failures = 0;
-const check = (ok, what) => { if (!ok) failures += 1; console.log(`${ok ? 'PASS' : 'FAIL'} ${what}`); return ok; };
+let passes = 0;
+const check = (ok, what) => { if (ok) passes += 1; else failures += 1; console.log(`${ok ? 'PASS' : 'FAIL'} ${what}`); return ok; };
 
 /** The cues of a WebVTT file: [{ start, end, text }]. */
 export function readCues(text) {
@@ -380,5 +381,5 @@ if (MODE === 'full' || MODE === 'all') {
   // The four plays run side by side, each in its own browser, in real time.
   await Promise.all(runs.map(([e, s]) => full(e, s, cues)));
 }
-console.log(failures ? `\n${failures} check(s) failed` : '\nAll checks passed');
+console.log(`\n${passes} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);

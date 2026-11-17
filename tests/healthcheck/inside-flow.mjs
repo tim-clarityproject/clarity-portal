@@ -412,7 +412,8 @@ part('draft', async ({ browser, w, mode, tag }) => {
   pass(`${tag}: closing says "Saved"`, await hasToast(page, 'Saved'));
   pass(`${tag}: … and goes to Your teams`, await onPage(page, /^\/strategic-alignment$/));
   pass(`${tag}: … kept as a draft`, b.store.rows.some((r) => r.status === 'draft' && r.draft === true && r.form_data.team.name === 'Product team' && r.form_data.step?.screen === 'objective'));
-  pass(`${tag}: the team offers Carry on with my new version`, await page.getByRole('button', { name: 'Carry on with my new version' }).count() === 1);
+  // The list can draw before the Close's save has landed, then follows it.
+  pass(`${tag}: the team offers Carry on with my new version`, await until(async () => (await page.getByRole('button', { name: 'Carry on with my new version' }).count()) === 1), `${await page.getByRole('button', { name: 'Carry on with my new version' }).count()} offers`);
   // Home's Carry on where you left off.
   await page.goto(`${APP}/welcome`);
   pass(`${tag}: Home offers to carry it on`, await until(async () => (await page.locator('body').innerText()).includes('Strategic Alignment Health Check'), 15000));

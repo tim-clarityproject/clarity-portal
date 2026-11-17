@@ -1,10 +1,11 @@
 // Emotional wash (M10, version 5.6), the flows: signed in as the invented
 // test client on the TEST database, at 1440 and 400 wide. Every other
 // host, every server function and every email call is blocked. Migration
-// 043 isn't on the test project until Tim runs it, so the saved washes are
-// kept on the device, which is what this tests: the page must work with no
-// error. The to-dos the test adds are deleted at the end, and what the
-// tool keeps on the device is taken off.
+// 043 is on the test project (Tim, 16 Nov), so the saved washes go to
+// tool_answers too; the test client's washes are cleared there before and
+// after each width (clearToolRows), and the page must work with no error.
+// The to-dos the test adds are deleted at the end, and what the tool keeps
+// on the device is taken off.
 //
 // Every path: each check answered each way, Park and reflect with a
 // starter, Trash with its Undo (and with reduced motion), Accept and act
@@ -24,7 +25,7 @@ import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  APP, EW, WASH_PATH, block, clearWash, clientDb, onQuestion, panel, panelGone, pressNext, questionText, readEnv, signIn, sleep, title, until, withCoach,
+  APP, EW, WASH_PATH, block, clearWash, clearToolRows, clientDb, onQuestion, panel, panelGone, pressNext, questionText, readEnv, signIn, sleep, title, until, withCoach,
 } from './shared.mjs';
 import { makeCheckScreen } from './measure-lib.mjs';
 
@@ -48,6 +49,7 @@ const keepTodos = new Set((todosBefore || []).map((t) => t.id));
 const myTodos = async () => ((await db.from('todos').select('id, text, sprint_id, planned_week, source, source_id, deleted_at, strategy_id').eq('user_id', me).gte('created_on', todayKey)).data || []).filter((t) => !keepTodos.has(t.id));
 async function cleanUp() {
   for (const t of await myTodos()) await db.from('todos').delete().eq('id', t.id).eq('user_id', me);
+  await clearToolRows(db, me, 'emotional_wash');
 }
 
 const toastText = (page) => page.locator('.ds-toast').last().innerText().then((t) => t.replace(/\s+/g, ' ').trim()).catch(() => '');
@@ -101,7 +103,7 @@ async function run(browser, width) {
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(`console: ${m.text().slice(0, 200)}`); });
   const shot = (name) => page.screenshot({ path: join(out, `${name}-${width}.png`) });
   await signIn(page, env);
-  await clearWash(page);
+  await clearWash(page); await clearToolRows(db, me, 'emotional_wash');
   refused.length = 0;
 
   // ---- the hub's tile opens the tool
@@ -233,7 +235,7 @@ async function run(browser, width) {
   await page.locator('.ds-toast').last().getByRole('button', { name: 'Undo' }).click();
   pass(`${tag}: Undo puts it back in the same place`, await until(async () => JSON.stringify(await typed()) === JSON.stringify(EW.thoughts), 5000), JSON.stringify(await typed()));
 
-  // ---- Finish later: a draft, kept on the device (043 isn't on the test project), and listed
+  // ---- Finish later: a draft, kept (on the device, and in tool_answers since 043), and listed
   await sleep(600);
   await page.locator('.ds-guide-foot .ds-guide-skip').click();
   pass(`${tag}: Finish later says “Saved”`, await sawToast(page, 'Saved'));
@@ -430,6 +432,10 @@ async function run(browser, width) {
   await sleep(450);
   await page.locator('.ds-guide-next').click();
   pass(`${tag}: Backlog says “Added to your backlog”`, await sawToast(page, 'Added to your backlog'));
+  // The edit's "Saved" lands after the to-do's toast (043): it never takes
+  // that toast's place, so its Undo stays to the end.
+  await sleep(2500);
+  pass(`${tag}: … and that toast, with its Undo, is still there once the edit has saved`, (await toastText(page)).includes('Added to your backlog') && (await page.locator('.ds-toast').last().getByRole('button', { name: 'Undo' }).count()) === 1, await toastText(page));
   await title(page).waitFor({ timeout: 10000 });
   rows = await planRows(page);
   pass(`${tag}: … and the step then says “It’s in your backlog.”`, rows[3].sub[0] === 'It’s in your backlog.', JSON.stringify(rows[3]));
@@ -541,7 +547,7 @@ async function run(browser, width) {
   pass(`${tag}: no console errors and no page errors`, errors.length === 0, errors.join(' | '));
   pass(`${tag}: no request was refused, but the one question about the table 043 adds`, others.length === 0 && probes.length <= 1, `${probes.length} for the table; others: ${others.join(' | ')}`);
   await page.goto(`${APP}/version.json`);
-  await clearWash(page);
+  await clearWash(page); await clearToolRows(db, me, 'emotional_wash');
   await ctx.close();
 }
 
