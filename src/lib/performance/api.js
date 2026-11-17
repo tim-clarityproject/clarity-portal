@@ -1322,6 +1322,18 @@ export async function loadDashboard(userId, today) {
  * sleep, chosen to-dos and way of being ratings. Only the person's own
  * rows, so a pattern is never compared with anyone else (rule 19).
  */
+/** Every row of a read, 1,000 at a time (the database's most per request), 20,000 at most. */
+async function allRows(page) {
+  const out = [];
+  for (let from = 0; from < 20000; from += 1000) {
+    const { data, error } = await page(from, from + 999);
+    if (error) throw error;
+    out.push(...(data || []));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+
 export async function loadPatternRows(userId, today) {
   const since = dayBefore(today, 26 * 7);
   const [sprints, recoveries, workingPatterns, debriefs, links, figures, wins, winLinks, dayPlans, dayPlanTodos, dayReviews, todoMoves] = await Promise.all([
@@ -1335,7 +1347,12 @@ export async function loadPatternRows(userId, today) {
     rows(supabase.from('win_strategies').select('win_id, strategy_id').eq('user_id', userId)),
     rows(supabase.from('day_plans').select('id, local_date, sleep_hours, sleep_quality, sleep_to_confirm')
       .eq('user_id', userId).gte('local_date', since).order('local_date').limit(400)),
-    rows(supabase.from('day_plan_todos').select('day_plan_id, todo_id').eq('user_id', userId).limit(3000)),
+    // Only the last 26 weeks' days, every row, page by page: with no limit
+    // on a day's to-dos a single read would stop at the database's 1,000
+    // (the break-it tester, 17 Nov).
+    allRows((from, to) => supabase.from('day_plan_todos').select('day_plan_id, todo_id, day_plans!inner(local_date)')
+      .eq('user_id', userId).gte('day_plans.local_date', since).order('day_plan_id').order('todo_id').range(from, to))
+      .then((list) => list.map(({ day_plan_id, todo_id }) => ({ day_plan_id, todo_id }))),
     rows(supabase.from('day_reviews').select('local_date, way_of_being_rating')
       .eq('user_id', userId).gte('local_date', since).order('local_date').limit(400)),
     rows(supabase.from('todo_moves').select('todo_id, moved_on, from_sprint_id, from_week, to_sprint_id, to_week, created_at').eq('user_id', userId)),

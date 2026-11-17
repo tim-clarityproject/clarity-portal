@@ -96,14 +96,17 @@ export const subscribeDayChoices = days.subscribe;
 
 // Before Tim runs 047 a day plan's database rows stop at three to-dos
 // (028's day_plan_limits). Learned from the database's own refusal, kept
-// on the device for an hour, then tried again (047 may have run since).
-const CAP_KEY = 'clarity-day-plan-cap';
+// on the device for this person for an hour at most, then tried again (047
+// may have run since). Sign out clears it (clarity-cache:). A saved time in
+// the future (a clock put back) counts as gone.
 const CAP_HOURS = 1;
+const capKey = (userId) => deviceKey('cache', userId, 'day-plan-cap');
 
 /** How many to-dos the database holds for a day: 3 while 028's limit is there, otherwise no limit. */
-export function dayTodoCap() {
-  const v = readJson(CAP_KEY);
-  return v && v.cap === 3 && Date.now() - Number(v.at || 0) < CAP_HOURS * 3600000 ? 3 : Infinity;
+export function dayTodoCap(userId) {
+  const v = userId ? readJson(capKey(userId)) : null;
+  const age = Date.now() - Number(v?.at || 0);
+  return v && v.cap === 3 && age >= 0 && age < CAP_HOURS * 3600000 ? 3 : Infinity;
 }
 
 /** The database refused a fourth to-do in a day (028's check): before 047. */
@@ -111,15 +114,15 @@ export function dayLimitRefused(error) {
   return `${error?.code || ''}` === '23514' && /up to 3 to-dos/i.test(`${error?.message || ''}`);
 }
 
-export function learnDayTodoCap() {
-  writeJson(CAP_KEY, { cap: 3, at: Date.now() });
+export function learnDayTodoCap(userId) {
+  if (userId) writeJson(capKey(userId), { cap: 3, at: Date.now() });
 }
 
 /**
  * The to-dos the database is sent for the day (the highest priority first,
  * then the rest in order, up to the cap), and the ones kept on the device.
  */
-export function fitDayTodos(todos, top, cap = dayTodoCap()) {
+export function fitDayTodos(todos, top, cap = Infinity) {
   if (!(cap < todos.length)) return { sent: todos, extra: [] };
   const first = top && todos.includes(top) ? [top, ...todos.filter((t) => t !== top)] : todos;
   const keep = new Set(first.slice(0, cap));

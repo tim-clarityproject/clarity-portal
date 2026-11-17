@@ -60,6 +60,7 @@ async function clean() {
   await db.from('day_plans').delete().eq('user_id', me).eq('local_date', today);
   await db.from('day_plan_habits').delete().eq('user_id', me).eq('local_date', today);
   await db.from('todos').delete().eq('user_id', me).like('text', 'Many %');
+  await db.from('todos').delete().eq('user_id', me).eq('source', 'plan_my_day').eq('created_on', today);
 }
 async function makeTodos() {
   await clean();
@@ -218,8 +219,88 @@ async function run(width, mode) {
   await context.close();
 }
 
+// The break-it tester's cases (17 Nov): a pick made while "Add a to-do" is
+// still saving stays chosen; a cap key from before 047, with a time in the
+// future, never holds the day at three; to-dos waiting on the device from
+// before 047 are sent once the day opens.
+async function tester() {
+  const tag = 'break-it cases';
+  const made = await makeTodos();
+  const { context, page, errors } = await signedIn(1280, 'dark');
+  try {
+    await page.evaluate((id) => localStorage.setItem(`clarity-cache:${id}:day-plan-cap`, JSON.stringify({ cap: 3, at: Date.now() + 3600000 })), me);
+    await page.goto(`${APP}/daily-plan`);
+    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    await page.getByRole('button', { name: 'Half an hour more' }).click();
+    await page.getByRole('radio', { name: 'Very good', exact: true }).click();
+    await next(page);
+    await page.locator('.ds-guide-body textarea').first().fill('A quiet start.');
+    await next(page);
+    await page.getByRole('radio', { name: 'Decisive' }).click();
+    await next(page);
+    const pick = (name) => page.locator('.ds-answer--pick', { hasText: name }).first();
+    for (const name of TODOS.slice(0, 5)) {
+      await pick(name).click();
+      await until(async () => (await pick(name).getAttribute('aria-pressed')) === 'true', 8000);
+      await sleep(350);
+    }
+    const plan = await until(async () => (await db.from('day_plans').select('id').eq('user_id', me).eq('local_date', today)).data?.[0], 10000);
+    const held = await until(async () => {
+      const r = (await db.from('day_plan_todos').select('todo_id').eq('day_plan_id', plan?.id)).data || [];
+      return r.length === 5 ? r : null;
+    }, 15000);
+    pass(`${tag}: a cap kept with a time in the future never holds the day at three`, Boolean(held), JSON.stringify((await db.from('day_plan_todos').select('todo_id').eq('day_plan_id', plan?.id)).data?.length));
+
+    // A pick made while a new to-do is still saving stays chosen.
+    await page.route(/\/rest\/v1\/todos/, async (route) => {
+      if (route.request().method() === 'GET') return route.fallback();
+      await sleep(2500);
+      return route.fallback();
+    });
+    await page.getByRole('button', { name: 'Add a to-do' }).click();
+    const panel = page.locator('[role=dialog]').last();
+    await panel.locator('textarea').first().fill('Many seven: added in the panel');
+    await panel.getByRole('button', { name: 'Add my to-do' }).click();
+    await sleep(300);
+    await pick(TODOS[5]).click();
+    await sleep(4500);
+    await page.unroute(/\/rest\/v1\/todos/);
+    pass(`${tag}: a pick made while a new to-do saves stays chosen`, (await pick(TODOS[5]).getAttribute('aria-pressed')) === 'true' && (await pick('Many seven').getAttribute('aria-pressed')) === 'true');
+    const seven = await until(async () => {
+      const r = (await db.from('day_plan_todos').select('todo_id').eq('day_plan_id', plan.id)).data || [];
+      return r.length === 7 ? r : null;
+    }, 15000);
+    pass(`${tag}: … and both are saved with the day`, Boolean(seven) && seven.some((t) => t.todo_id === made[5].id));
+
+    // To-dos waiting on the device from before 047 are sent when the day opens.
+    const waiting = [made[0].id, made[1].id];
+    await db.from('day_plan_todos').delete().eq('day_plan_id', plan.id).in('todo_id', waiting);
+    await page.evaluate(({ id, day, extra }) => {
+      const key = `clarity-day-plan-local:${id}:${day}`;
+      const v = JSON.parse(localStorage.getItem(key) || '{}');
+      localStorage.setItem(key, JSON.stringify({ ...v, extra, sent: false }));
+      localStorage.removeItem(`clarity-cache:${id}:day-plan-cap`);
+    }, { id: me, day: today, extra: waiting });
+    await page.goto(`${APP}/daily-plan`);
+    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    const back = await until(async () => {
+      const r = (await db.from('day_plan_todos').select('todo_id').eq('day_plan_id', plan.id)).data || [];
+      return waiting.every((w) => r.some((t) => t.todo_id === w)) ? r : null;
+    }, 15000);
+    pass(`${tag}: to-dos waiting on the device are sent when the day opens`, Boolean(back));
+    pass(`${tag}: no error was shown`, (await page.locator('.ds-toast--error, [role=alert]').count()) === 0);
+    pass(`${tag}: no page errors`, errors.length === 0, errors.join(' | '));
+  } catch (e) {
+    pass(`${tag}: the run finished`, false, `${e.message}`.split('\n')[0]);
+    await shot(page, 'tester-error');
+  }
+  await context.close();
+  await db.from('todos').delete().eq('user_id', me).eq('text', 'Many seven: added in the panel');
+}
+
 const SIZES = (process.env.SIZES || '1280,390,360').split(',').map(Number);
 for (const width of SIZES) await run(width, width === 390 ? 'light' : 'dark');
+if (!process.env.SIZES) await tester();
 await browser.close();
 await clean();
 seedForReal('--reset');

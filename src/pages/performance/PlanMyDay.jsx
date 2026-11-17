@@ -172,6 +172,10 @@ function PlanFlow({ userId, date, today, loaded }) {
     return () => { live = false; };
   }, [userId, date]);
   const view = useMemo(() => dayPlanView(data, { date, local, windDown: windThoughts }), [data, date, local, windThoughts]);
+  // The day's picks as they are now, for a save that finishes later (a pick
+  // made while a new to-do saves is never dropped: the break-it tester, 17 Nov).
+  const viewRef = useRef(view);
+  viewRef.current = view;
   const [answers, setAnswers] = useState(() => answersFromRow(data.dayPlan));
   const [confirmed, setConfirmed] = useState(() => (data.dayPlan && !data.dayPlan.sleep_to_confirm ? Number(data.dayPlan.sleep_hours) : null));
   const [save, setSave] = useState('idle');
@@ -350,7 +354,7 @@ function PlanFlow({ userId, date, today, loaded }) {
   // while it can't hold them (before 047: three at most). No limit for the
   // person either way (Tim, 16 Nov).
   const fitTodos = (todos, topTodo) => {
-    const { sent: toSend, extra } = fitDayTodos(todos, topTodo);
+    const { sent: toSend, extra } = fitDayTodos(todos, topTodo, dayTodoCap(userId));
     setLocal((l) => ({ ...l, extra }));
     setData((d) => ({ ...d, dayTodos: toSend.map((id) => ({ todo_id: id, is_top: id === topTodo })) }));
     const before = dbTodos.current;
@@ -370,10 +374,10 @@ function PlanFlow({ userId, date, today, loaded }) {
       try {
         return await sendInOrder(dayTodoOps(userId, planId.current, before, after));
       } catch (e) {
-        if (!dayLimitRefused(e) || dayTodoCap() === 3) throw e;
+        if (!dayLimitRefused(e) || dayTodoCap(userId) === 3) throw e;
         // Before 047: the database holds three. Read what it holds now,
         // keep the rest on the device and send again, quietly.
-        learnDayTodoCap();
+        learnDayTodoCap(userId);
         const held = await readDayPlanTodos(planId.current);
         dbTodos.current = { todos: held.map((t) => t.todo_id), top: held.find((t) => t.is_top)?.todo_id || null };
         const again = fitTodos(todos, topTodo);
@@ -381,6 +385,29 @@ function PlanFlow({ userId, date, today, loaded }) {
       }
     });
   };
+
+  // To-dos kept on the device while the database held three (before 047)
+  // are sent once the day opens and the limit is gone (the break-it
+  // tester, 17 Nov). Each is an upsert, so one already there is left as it is.
+  const extrasSent = useRef(false);
+  useEffect(() => {
+    if (extrasSent.current || !(local.extra || []).length || !planId.current || dayTodoCap(userId) === 3) return;
+    extrasSent.current = true;
+    // Sent as they are, whatever this device's copy of the day says the
+    // database holds (that copy may be older). The highest priority is
+    // never among them: it always went first.
+    const picked = new Set(viewRef.current.picks);
+    const extra = (local.extra || []).filter((id) => picked.has(`todo:${id}`));
+    sent(async () => {
+      await sendInOrder(extra.map((id) => ({
+        table: 'day_plan_todos', kind: 'upsert', onConflict: 'day_plan_id,todo_id',
+        values: { day_plan_id: planId.current, todo_id: id, user_id: userId, is_top: false },
+      })));
+      setLocal((l) => ({ ...l, extra: [] }));
+      setData((d) => ({ ...d, dayTodos: [...(d.dayTodos || []).filter((t) => !extra.includes(t.todo_id)), ...extra.map((id) => ({ todo_id: id, is_top: false }))] }));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.dayTodos, local.extra, userId]);
 
   // A thing carried over becomes a to-do only when chosen (decisions 23
   // Oct, 12:58), on this week of the sprint. From Daily review it keeps
@@ -478,7 +505,8 @@ function PlanFlow({ userId, date, today, loaded }) {
     const listKey = view.running ? 'todos' : 'looseTodos';
     setData((d) => ({ ...d, [listKey]: [...(d[listKey] || []), row] }));
     // Always added to today too: there is no limit (Tim, 16 Nov).
-    await applyPicks([...view.picks, `todo:${id}`], view.top || `todo:${id}`);
+    const now = viewRef.current;
+    await applyPicks([...now.picks.filter((k) => k !== `todo:${id}`), `todo:${id}`], now.top || `todo:${id}`);
     const where = view.running ? 'this week’s sprint' : 'your to-dos';
     toast.show(`Added to today and ${where}.`);
   };
