@@ -196,7 +196,9 @@ test('guest links: the token, the code and the email as 035 reads them', () => {
 test('guest links: 035’s answers in the page’s names, and one calm line for a refusal', () => {
   // guest_open's answer, exactly as 035 builds it.
   const answer = { ok: true, visit: 'cd'.repeat(32), tool: 'grow', tool_label: 'Get unstuck', coach_name: 'Tim', link_expires_at: '2026-12-14T10:00:00+00:00', confirmed: false };
-  assert.deepEqual(visitFrom(answer, 'alex@example.com'), { visit: answer.visit, email: 'alex@example.com', tool: 'grow', toolLabel: 'Get unstuck', coachName: 'Tim' });
+  assert.deepEqual(visitFrom(answer, 'alex@example.com'), { visit: answer.visit, email: 'alex@example.com', tool: 'grow', toolLabel: 'Get unstuck', coachName: 'Tim', earlierHidden: false });
+  // 046: the link's earlier answers show once the email is confirmed (Only you).
+  assert.equal(visitFrom({ ...answer, earlier_hidden: true }, 'alex@example.com').earlierHidden, true);
   // The functions aren't there yet (035 not run): one calm line.
   assert.equal(guestError({ code: 'PGRST202', message: 'Could not find the function public.guest_open' }, GUEST_WORDS.open), GUEST_WORDS.notReady);
   // 035's own plain refusals are shown as written.
@@ -213,7 +215,11 @@ test('guest links: 035’s answers in the page’s names, and one calm line for 
   } finally {
     console.error = quiet;
   }
-  for (const line of Object.values(GUEST_WORDS)) assert.ok(!/fail/i.test(line) && line.endsWith('.'));
+  // A line that names the email is a function of it (046's codeSent).
+  for (const word of Object.values(GUEST_WORDS)) {
+    const line = typeof word === 'function' ? word('alex@example.com') : word;
+    assert.ok(!/fail/i.test(line) && line.endsWith('.'), line);
+  }
 });
 
 test('035’s messages show with the portal’s own apostrophe, and a closed link says what can be done today', () => {

@@ -368,9 +368,12 @@ begin
 
     -- ------------------------------------------------ 10. deleting
     perform pg_temp.t_anon();
+    -- counted first: with 046 a visit on a shared link also sees that link's
+    -- rows from the guest's other visits, so "only that one" is "as before"
+    n_before := jsonb_array_length(public.guest_rows(vb, 'plan_strategies'));
     j := public.guest_save(vb, 'plan_strategies', jsonb_build_object('plan_id', plan_b ->> 'id', 'name', 'To delete'));
     f := f || pg_temp.t_eq('10a a guest deletes one of their rows', public.guest_delete(vb, 'plan_strategies', jsonb_build_object('id', j ->> 'id'))::text, 'true');
-    f := f || pg_temp.t_eq('10b ... and only that one', jsonb_array_length(public.guest_rows(vb, 'plan_strategies'))::text, '1');
+    f := f || pg_temp.t_eq('10b ... and only that one', jsonb_array_length(public.guest_rows(vb, 'plan_strategies'))::text, n_before::text);
     -- guest A: link 1 has d1, link 5 has d2
     f := f || pg_temp.t_eq('10c deleting a link''s answers removes that link''s only', public.guest_delete_link_answers(va2)::text, '1');
     f := f || pg_temp.t_eq('10d ... the other link''s work stays', (select string_agg(x ->> 'title', ',') from jsonb_array_elements(public.guest_rows(vr, 'decisions')) x), 'Hiring, step 3');

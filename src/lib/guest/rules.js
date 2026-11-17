@@ -17,6 +17,13 @@ export const GUEST_WORDS = {
   // 035 says "use your email to come back", which has no page yet: the
   // page says what the person can do today.
   closed: 'This link has closed. Ask your coach to send a new one.',
+  // 046: opening a link again after choosing Only you (Phase 8a follow-up, step 3)
+  onlyYou: 'You chose Only you, so your answers show once your email is confirmed.',
+  codeSent: (email) => `We’ve emailed a 6-digit code to ${email}. Type it to see your answers.`,
+  codeUnsent: 'The email with your code didn’t go. Send it again to carry on.',
+  codeNoEmail: 'This copy of the page doesn’t send emails, so no code can arrive here.',
+  codeLimit: 'That’s as many codes as can be sent for now. Try again in an hour.',
+  confirmFirst: 'Type the 6-digit code we emailed you to carry on.',
 };
 
 /** 035 writes its messages with a plain apostrophe; the page shows the portal's own (’). */
@@ -117,5 +124,7 @@ export function visitFrom(answer, email) {
     tool: answer.tool,
     toolLabel: answer.tool_label || '',
     coachName: (answer.coach_name || '').trim(),
+    // 046: the link holds earlier answers this visit sees only once the email is confirmed (Only you).
+    earlierHidden: answer.earlier_hidden === true,
   };
 }

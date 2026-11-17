@@ -152,6 +152,12 @@ begin
     f := f || pg_temp.t_eq('2e nothing was counted for any of that', pg_temp.t_n('select count(*) from public.guest_copy_sends'), '0');
 
     -- ------------------------------------------------ 3. the right email, tool, coach and rows
+    -- With 046 a copy goes only to the address a link was made for: these
+    -- links are given the address their guest opened them with.
+    if to_regprocedure('public.guest_link_create(text,text)') is not null then
+      perform pg_temp.t_admin();
+      execute 'update public.guest_links l set for_email = g.email from public.guests g where g.id = l.guest_id and l.for_email is null';
+    end if;
     perform pg_temp.t_service();
     j := public.guest_copy_issue(va);
     f := f || pg_temp.t_eq('3a the guest''s own email, the tool and the coach''s first name', concat_ws(' | ', j ->> 'ok', j ->> 'email', j ->> 'tool', j ->> 'tool_label', j ->> 'coach_first_name'),
@@ -175,6 +181,13 @@ begin
     f := f || pg_temp.t_eq('3m the count keeps no address and no answers', pg_temp.t_n($q$select string_agg(attname, ',' order by attnum) from pg_attribute where attrelid = 'public.guest_copy_sends'::regclass and attnum > 0 and not attisdropped$q$), 'id,link_id,guest_id,sent_at');
 
     -- ------------------------------------------------ 4. earlier work only once the email is confirmed
+    -- With 046 a link shared with the coach shows its own earlier work to a
+    -- new visit; once it is Only you, earlier work needs the email confirmed,
+    -- which is what is checked here.
+    if to_regprocedure('public.guest_link_create(text,text)') is not null then
+      perform pg_temp.t_admin();
+      update public.guest_links set shared_with_coach = false where id = (l1 ->> 'link_id')::uuid;
+    end if;
     perform pg_temp.t_anon();
     va2 := public.guest_open(pg_temp.t_tok(l1), 'copy.guest.a@example.com', l1 ->> 'code') ->> 'visit';
     perform pg_temp.t_service();

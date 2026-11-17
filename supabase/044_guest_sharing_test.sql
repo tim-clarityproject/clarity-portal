@@ -280,6 +280,11 @@ begin
       f := f || pg_temp.t_eq('B3g another coach is refused too',
         pg_temp.t_n(format('select public.coach_guest_answers(%L::uuid)::text', gl ->> 'link_id')), 'error 42501');
       if to_regprocedure('public.guest_copy_issue(text)') is not null then
+        -- with 046 a copy goes only to the address the link was made for
+        if to_regprocedure('public.guest_link_create(text,text)') is not null then
+          perform pg_temp.t_admin();
+          execute format('update public.guest_links set for_email = %L where id = %L', '044-test-guest-tool@example.invalid', gl ->> 'link_id');
+        end if;
         perform pg_temp.t_service();
         f := f || pg_temp.t_eq('B3h the guest still gets their own copy', public.guest_copy_issue(gv) ->> 'ok', 'true');
       end if;

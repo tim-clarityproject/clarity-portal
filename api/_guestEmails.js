@@ -7,7 +7,7 @@
 
 import { EMAIL_IMAGE_BASE64 } from './_emailImages.js';
 import { renderEmail, imagesFor } from '../src/lib/email/template.js';
-import { guestPlanCopyEmail } from '../src/lib/email/emails.js';
+import { guestEmailCodeEmail, guestPlanCopyEmail } from '../src/lib/email/emails.js';
 import { GOAL_MAX, ROW_MAX, planContent, planFrom, TOOL_NAME, TOOL_TYPE } from '../src/lib/getUnstuck/model.js';
 
 /**
@@ -59,5 +59,11 @@ export function copyContent(row) {
 export function planCopyEmail({ origin, toolLabel, coachName, goal, nextSteps }) {
   const doc = guestPlanCopyEmail({ origin, toolName: toolLabel || TOOL_NAME, coachName, goal, nextSteps });
   const { subject, html, text, images } = renderEmail(doc);
+  return { subject, html, text, attachments: imagesFor(images, EMAIL_IMAGE_BASE64) };
+}
+
+/** The 6-digit code that shows a guest their earlier answers (046): what Resend is given. */
+export function guestCodeEmail({ toolLabel, code }) {
+  const { subject, html, text, images } = renderEmail(guestEmailCodeEmail({ toolName: toolLabel || TOOL_NAME, code }));
   return { subject, html, text, attachments: imagesFor(images, EMAIL_IMAGE_BASE64) };
 }

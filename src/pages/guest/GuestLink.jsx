@@ -22,7 +22,9 @@ import {
   emailFromSearch,
   forgetVisit,
   guestDeleteLinkAnswers,
+  guestEmailConfirm,
   guestError,
+  guestWords,
   guestFinish,
   guestLinkInfo,
   guestOpen,
@@ -37,7 +39,7 @@ import {
   visitEnded,
   visitFrom,
 } from '../../lib/guest/api';
-import { sendGuestCopy } from '../../lib/guest/copyEmail';
+import { sendGuestCode, sendGuestCopy } from '../../lib/guest/copyEmail';
 import { functionMissing, keptChoice, openingChoice, saveChoice, sendKeptChoice } from '../../lib/guest/sharing';
 import { TOOL_NAME, emptyPlan, hasAnswers, planContent, planFrom, planTitle, savedForm, tidyPlan } from '../../lib/getUnstuck/model';
 import GetUnstuckTool from '../getUnstuck/GetUnstuckTool';
@@ -203,8 +205,38 @@ function Guest({ token }) {
   const page = TOOL_PAGES[toolKey];
   const coachName = visit?.coachName || info?.coachName || '';
 
+  // Opening the link again after choosing Only you (046): the earlier
+  // answers show once the email is confirmed with the code emailed to it,
+  // never an empty tool. The coach knows the link's code, so that alone
+  // never shows them.
+  const [codeSent, setCodeSent] = useState(null); // 'sent' | 'unsent' | 'never' | 'limit'
+  const askCode = useCallback(async (v) => {
+    const r = await sendGuestCode(v.visit);
+    setCodeSent(r.sent ? 'sent' : r.never ? 'never' : r.limit ? 'limit' : 'unsent');
+    return r;
+  }, []);
+
   const opened = async (answer, email) => {
     const v = visitFrom(answer, email);
+    if (v.earlierHidden) {
+      visitRef.current = v;
+      setVisit(v);
+      setStartMessage(null);
+      setCodeSent(null);
+      setPhase('confirm');
+      askCode(v);
+      return;
+    }
+    await enter(v);
+  };
+
+  const confirmed = async () => {
+    const v = visitRef.current;
+    if (v) await enter({ ...v, earlierHidden: false });
+  };
+
+  const enter = async (v) => {
+    const email = v.email || '';
     let next = { id: newId(), plan: emptyPlan(), status: 'draft' };
     // The visit ended while this tab still held the answers (the tab was
     // left open past the visit's 12 hours), and the same email has opened
@@ -395,6 +427,19 @@ function Guest({ token }) {
     );
   }
 
+  if (phase === 'confirm' && visit) {
+    return (
+      <ConfirmEmail
+        title={page?.name || visit.toolLabel || TOOL_NAME}
+        visit={visit}
+        sent={codeSent}
+        onSendAgain={() => askCode(visit)}
+        onConfirmed={confirmed}
+        onEnded={ended}
+      />
+    );
+  }
+
   if (phase === 'deleted') {
     return (
       <div className="ui-root">
@@ -518,6 +563,85 @@ function Start({ token, page, title, coachName, startEmail, carryOn, message, on
           <div className="ds-guest-legal">
             <Button variant="text" onClick={() => navigate('/legal/privacy')}>Privacy Policy</Button>
             <Button variant="text" onClick={() => navigate('/legal/data-storage')}>Data Storage Notice</Button>
+          </div>
+        </form>
+      </GuestFrame>
+    </div>
+  );
+}
+
+// "Type the code we emailed you" (046): a guest who chose Only you and opens
+// their link again sees their answers once their email is confirmed.
+function ConfirmEmail({ title, visit, sent, onSendAgain, onConfirmed, onEnded }) {
+  const [code, setCode] = useState('');
+  const [problem, setProblem] = useState(null);
+  const [again, setAgain] = useState(false);
+  const busy = useRef(false); // one request per press
+  const codeRef = useRef(null);
+  const line = sent === 'sent' ? GUEST_WORDS.codeSent(visit.email)
+    : sent === 'never' ? GUEST_WORDS.codeNoEmail
+      : sent === 'limit' ? GUEST_WORDS.codeLimit
+        : sent === 'unsent' ? GUEST_WORDS.codeUnsent : null;
+
+  const show = async (e) => {
+    e?.preventDefault();
+    if (busy.current) return;
+    if (code.replace(/\D/g, '').length < 6) {
+      setProblem(GUEST_WORDS.confirmFirst);
+      codeRef.current?.focus();
+      return;
+    }
+    busy.current = true;
+    setProblem(null);
+    try {
+      const answer = await guestEmailConfirm(visit.visit, code);
+      if (!answer?.ok) {
+        setProblem(guestWords(answer?.message) || GUEST_WORDS.open);
+        codeRef.current?.focus();
+        return;
+      }
+      await onConfirmed();
+    } catch (error) {
+      if (visitEnded(error)) onEnded(error);
+      else setProblem(guestError(error, GUEST_WORDS.open));
+    } finally {
+      busy.current = false;
+    }
+  };
+
+  const sendAgain = async () => {
+    if (again) return;
+    setAgain(true);
+    try { await onSendAgain(); } finally { setAgain(false); }
+  };
+
+  return (
+    <div className="ui-root">
+      <GuestFrame>
+        <form onSubmit={show} noValidate>
+          <GuestTitle>{title}</GuestTitle>
+          <p className="ds-guest-sentence">{GUEST_WORDS.onlyYou}</p>
+          {line && <p className="ds-guest-sub" role="status">{line}</p>}
+          <TextField
+            ref={codeRef}
+            className="ds-guest-field"
+            label="Code"
+            autoComplete="one-time-code"
+            inputMode="numeric"
+            value={code}
+            onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setProblem(null); }}
+          />
+          {problem && (
+            <div className="ds-error ds-guest-problem" role="alert">
+              <span className="ds-error-mark" aria-hidden="true">!</span>
+              <span>{problem}</span>
+            </div>
+          )}
+          <div className="ds-guest-go">
+            <Button variant="primary" type="submit">Show my answers</Button>
+          </div>
+          <div className="ds-guest-legal">
+            <Button variant="text" onClick={sendAgain}>{sent === 'unsent' ? 'Send it again' : 'Didn’t get it? Send it again'}</Button>
           </div>
         </form>
       </GuestFrame>

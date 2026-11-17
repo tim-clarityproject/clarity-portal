@@ -3,7 +3,7 @@
 // tests/email. The names and figures are the mock-up's own
 // (email-template.html): Northfield Logistics, Jordan, Sam, Jess, Tim.
 import {
-  healthCheckFinishedForCoachEmail, healthCheckResultsEmail, healthCheckNewCodeEmail, healthCheckFinishedNoteEmail,
+  healthCheckFinishedForCoachEmail, healthCheckResultsEmail, healthCheckNewCodeEmail, guestEmailCodeEmail, healthCheckFinishedNoteEmail,
   sessionTomorrowEmail, sessionInOneHourEmail, leadingIdeasClientEmail, leadingIdeasPublicEmail,
   confirmEmailEmail, resetPasswordEmail, changeEmailEmail, inviteEmail, guestPlanCopyEmail,
 } from '../../lib/email/emails.js';
@@ -61,6 +61,13 @@ export const EMAIL_EXAMPLES = [
     from: 'From The Clarity Portal, to Jordan',
     sends: 'Sent when the person chooses Only you (migration 045).',
     doc: () => healthCheckNewCodeEmail({ link: HEALTH_CHECK, organisation: 'Northfield Logistics', email: 'jordan@northfield.example', code: 'K7MPQ2' }),
+  },
+  {
+    key: 'guest-email-code',
+    name: 'Guest link: the code that shows earlier answers',
+    from: 'From The Clarity Portal, to Jordan',
+    sends: 'Sent when a guest who chose Only you opens their link again (migration 046).',
+    doc: () => guestEmailCodeEmail({ toolName: 'Get unstuck', code: '482913' }),
   },
   {
     key: 'health-check-owner-note',

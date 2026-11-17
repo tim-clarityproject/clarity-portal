@@ -144,8 +144,11 @@ export const GUEST_VISIT = 'b2'.repeat(32);
  * is the link's shared_with_coach (044), and `coachReads()` answers as
  * coach_guest_answers would (false: refused with 42501).
  */
+/** The 6-digit code the stand-in's server 'emails' a guest (046). */
+export const GUEST_EMAIL_CODE = '482913';
+
 export async function guestStandIn(context, opts = {}) {
-  const state = { rows: [], calls: [], finished: false, copies: 0, shared: true, coachReads: () => state.shared };
+  const state = { rows: [], calls: [], finished: false, copies: 0, codes: 0, shared: true, hidden: false, confirmed: false, coachReads: () => state.shared };
   const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
   await context.route(/\/rest\/v1\/rpc\/guest_[a-z_]+/, async (route) => {
     const name = /rpc\/(guest_[a-z_]+)/.exec(route.request().url())[1];
@@ -161,10 +164,19 @@ export async function guestStandIn(context, opts = {}) {
     if (name === 'guest_open') {
       const right = args.p_token === GUEST_TOKEN && String(args.p_email).trim().toLowerCase() === M9.guestEmail && String(args.p_code).trim().toUpperCase() === M9.guestCode;
       if (!right) return json(route, { ok: false, error: 'invalid', message: 'That link, email or code isn\'t right. Check them and try again.' });
-      return json(route, { ok: true, visit: GUEST_VISIT, tool: 'grow', tool_label: 'Get unstuck', coach_name: M9.coach, link_expires_at: '2026-12-14T10:00:00+00:00', confirmed: false });
+      // 046: a link chosen Only you that holds earlier answers hides them until the email is confirmed
+      state.hidden = !opts.no046 && !state.shared && state.rows.length > 0;
+      state.confirmed = false;
+      return json(route, { ok: true, visit: GUEST_VISIT, tool: 'grow', tool_label: 'Get unstuck', coach_name: M9.coach, link_expires_at: '2026-12-14T10:00:00+00:00', confirmed: false, ...(opts.no046 ? {} : { earlier_hidden: state.hidden }) });
     }
     if (args.p_visit !== GUEST_VISIT) return json(route, { code: '42501', details: null, hint: null, message: 'That visit has ended. Open your link again.' }, 403);
+    if (name === 'guest_email_confirm') {
+      if (String(args.p_code) !== GUEST_EMAIL_CODE) return json(route, { ok: false, error: 'invalid', message: 'That code isn\'t right, or it has run out. Ask for a new one and try again.' });
+      state.confirmed = true;
+      return json(route, { ok: true });
+    }
     if (name === 'guest_rows') {
+      if (state.hidden && !state.confirmed) return json(route, []);
       return json(route, state.rows.map((r) => ({ ...r, _from: { link_id: '11111111-1111-4111-8111-111111111111', tool: 'grow', coach_first_name: M9.coach } })));
     }
     if (name === 'guest_save') {
@@ -194,6 +206,13 @@ export async function guestStandIn(context, opts = {}) {
 
 export const guestApi = (state, { sent = true } = {}) => (route) => {
   if (/\/api\/guest-copy/.test(route.request().url())) {
+    let body = {};
+    try { body = JSON.parse(route.request().postData() || '{}'); } catch { /* none */ }
+    // 046: the code that shows earlier answers, emailed by the server (here: GUEST_EMAIL_CODE)
+    if (body.kind === 'code') {
+      state.codes += 1;
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, sent }) });
+    }
     state.copies += 1;
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, sent }) });
   }

@@ -12,6 +12,9 @@ import { cleanCode } from './rules';
 //   guest_save(p_visit, p_table, p_row)     -> the saved row
 //   guest_delete_link_answers(p_visit)      -> how many rows went
 //   guest_finish(p_visit)                   -> true
+//   guest_email_confirm(p_visit, p_code)    -> { ok: true } | { ok: false, error, message }
+// migration 046's: guest_open also answers earlier_hidden (the link's
+// earlier answers show once the email is confirmed: Only you).
 // migration 044's, the guest's choice of who sees their answers (for the
 // link their visit came through):
 //   guest_set_sharing(p_visit, p_shared)    -> { ok: true, shared_with_coach } | { ok: false, error: 'no_link' }
@@ -69,6 +72,11 @@ export function guestDeleteLinkAnswers(visit) {
 
 export function guestFinish(visit) {
   return call('guest_finish', { p_visit: visit });
+}
+
+// 035's own confirm-your-email step, used by 046 for a link chosen Only you.
+export function guestEmailConfirm(visit, code) {
+  return call('guest_email_confirm', { p_visit: visit, p_code: `${code || ''}`.replace(/\D/g, '').slice(0, 6) });
 }
 
 export function guestSetSharing(visit, shared) {

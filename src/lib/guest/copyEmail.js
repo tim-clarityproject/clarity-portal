@@ -23,3 +23,26 @@ export async function sendGuestCopy(visit) {
     return { sent: false };
   }
 }
+
+/**
+ * The 6-digit code that shows a guest their earlier answers (migration 046):
+ * the server emails it to the guest's own address, from the database.
+ * @returns {Promise<{sent: boolean, never?: boolean, limit?: boolean}>} never
+ *   throws; `never` on a deployment that never sends (a preview, a
+ *   developer's machine)
+ */
+export async function sendGuestCode(visit) {
+  try {
+    const res = await fetch('/api/guest-copy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visit, kind: 'code' }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.ok && body?.ok === true && body.sent === true) return { sent: true };
+    if (res.ok && body?.ok === true && body.sent === false) return { sent: false, never: true };
+    return res.status === 429 ? { sent: false, limit: true } : { sent: false };
+  } catch {
+    return { sent: false };
+  }
+}

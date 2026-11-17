@@ -12,7 +12,7 @@ import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  APP, GUEST_TOKEN, M9, addPanel, block, clientDb, fillTo, guestApi, guestOpenTool, guestStandIn, guestStart, next, onQuestion, pressNext,
+  APP, GUEST_EMAIL_CODE, GUEST_TOKEN, M9, addPanel, block, clientDb, fillTo, guestApi, guestOpenTool, guestStandIn, guestStart, next, onQuestion, pressNext,
   questionText, readEnv, signIn, sleep, typeRows, until, withCoach,
 } from './shared.mjs';
 
@@ -361,6 +361,42 @@ async function guest(browser, width) {
   await page.getByRole('button', { name: 'Create my free account' }).click();
   pass(`${tag}: Create my free account opens Create my account with the email carried`, Boolean(await until(() => new URL(page.url()).pathname === '/auth/sign-up')) && (await page.locator('input[type=email]').inputValue()) === M9.guestEmail);
   pass(`${tag}: no email was sent by the page itself, and no page errors`, errors.length === 0, errors.join(' | '));
+
+  // ---- Opening the link again (Phase 8a follow-up, step 3; 046): a new tab
+  // is a new visit. Shared with the coach: the email and code bring back the
+  // answers. Only you: the code emailed to the guest first, never an empty tool.
+  {
+    const again = await ctx.newPage();
+    again.on('pageerror', (e) => errors.push(e.message.slice(0, 200)));
+    await guestStart(again);
+    await again.getByLabel('Access code').fill(M9.guestCode);
+    await again.getByRole('button', { name: 'Start my plan' }).click();
+    pass(`${tag}: opened again in a new tab, it goes back to the plan`, Boolean(await onQuestion(again, 'Here’s your plan.', 15000)) && (await again.locator('.ds-guide').innerText()).includes(M9.goal));
+    // Only you, then opened again
+    await again.locator('.ds-who').first().click();
+    await again.locator('[role=dialog]:not(.ds-guide)').last().getByRole('radio', { name: 'Only you' }).click();
+    await until(() => state.shared === false, 8000);
+    const third = await ctx.newPage();
+    third.on('pageerror', (e) => errors.push(e.message.slice(0, 200)));
+    await guestStart(third);
+    await third.getByLabel('Access code').fill(M9.guestCode);
+    await third.getByRole('button', { name: 'Start my plan' }).click();
+    const confirmWords = async () => (await third.locator('.ds-guest').innerText().catch(() => '')).replace(/\s+/g, ' ');
+    pass(`${tag}: after Only you, opening again asks for the code emailed to the guest, never an empty tool`, Boolean(await until(async () => (await confirmWords()).includes('You chose Only you, so your answers show once your email is confirmed.') && (await confirmWords()).includes(`We’ve emailed a 6-digit code to ${M9.guestEmail}. Type it to see your answers.`), 8000)) && state.codes === 1 && (await third.locator('.ds-guide').count()) === 0, await confirmWords());
+    await third.screenshot({ path: join(out, `guest-confirm-${width}.png`) });
+    await third.getByRole('button', { name: 'Show my answers' }).click();
+    pass(`${tag}: … no code says what to do`, await until(async () => (await confirmWords()).includes('Type the 6-digit code we emailed you to carry on.')));
+    await third.getByLabel('Code').fill('000000');
+    await third.getByRole('button', { name: 'Show my answers' }).click();
+    pass(`${tag}: … a wrong code says so, in 035’s words`, await until(async () => (await confirmWords()).includes('That code isn’t right, or it has run out. Ask for a new one and try again.')));
+    await third.getByRole('button', { name: 'Didn’t get it? Send it again' }).click();
+    pass(`${tag}: … “Didn’t get it? Send it again” asks the server again`, Boolean(await until(() => state.codes === 2, 8000)));
+    await third.getByLabel('Code').fill(GUEST_EMAIL_CODE);
+    await third.getByRole('button', { name: 'Show my answers' }).click();
+    pass(`${tag}: … the right code shows the plan`, Boolean(await onQuestion(third, 'Here’s your plan.', 15000)) && (await third.locator('.ds-guide').innerText()).includes(M9.goal));
+    pass(`${tag}: … and the browser never held the code or the address it went to`, !state.calls.some((c) => JSON.stringify(c.args).includes('"email"')));
+  }
+  pass(`${tag}: no page errors when opening it again`, errors.length === 0, errors.join(' | '));
   await ctx.close();
 
   // A link that isn't one says so.

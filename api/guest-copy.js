@@ -1,6 +1,14 @@
 // Guest links: emails a guest a copy of the plan they just made (mock-up M9,
 // the guest's end page: "A copy is on its way to …").
 //   POST /api/guest-copy  { visit }
+// and, with kind 'code', the 6-digit code that shows a guest their earlier
+// answers when they open their link again after choosing Only you
+// (migration 046; 035's guest_email_code_issue, asked with the server's
+// key, which checks the visit, limits the codes and hands back the guest's
+// own address and the code; neither is ever sent back to the browser):
+//   POST /api/guest-copy  { visit, kind: 'code' }
+//   200 { ok: true, sent: true } | { ok: true, sent: false } (never sends here)
+//   200 { ok: false, sent: false } nothing to send (a limit, or 046 not run)
 //
 // The browser never says who the email goes to, or what it says. It sends
 // only its visit key; the database (migration 042, guest_copy_issue, asked
@@ -29,7 +37,7 @@
 // ALIGNMENT_EMAIL_FROM), SUPABASE_SERVICE_ROLE_KEY, and the Supabase URL
 // the app already has (SUPABASE_URL or VITE_SUPABASE_URL).
 
-import { COPY_TOOLS, copyContent, maySend, oneAddress, planCopyEmail } from './_guestEmails.js';
+import { COPY_TOOLS, copyContent, guestCodeEmail, maySend, oneAddress, planCopyEmail } from './_guestEmails.js';
 import { portalOrigin } from './_portalOrigin.js';
 
 const VISIT = /^[0-9a-f]{64}$/;
@@ -89,6 +97,8 @@ export default async function handler(req, res) {
   const { url, key, resend, from } = config();
   if (!url || !key || !resend || !from) return reply(res, 200, { ok: false, sent: false });
 
+  if (body.kind === 'code') return sendCode(res, visit);
+
   let issue;
   try {
     issue = await rpc('guest_copy_issue', { p_visit: visit });
@@ -126,6 +136,27 @@ export default async function handler(req, res) {
     });
   } catch {
     await notSent(visit);
+    return reply(res, 502, { ok: false, sent: false });
+  }
+  return reply(res, 200, { ok: true, sent: true });
+}
+
+// The code that shows a guest their earlier answers (046): to the guest's
+// own address only, as the database gives it.
+async function sendCode(res, visit) {
+  let issue;
+  try {
+    issue = await rpc('guest_email_code_issue', { p_visit: visit });
+  } catch (e) {
+    if (e.status === 404) return reply(res, 200, { ok: false, sent: false });
+    if (e.status === 403) return reply(res, 400, { ok: false, sent: false, error: 'invalid' });
+    return reply(res, 502, { ok: false, sent: false });
+  }
+  const to = oneAddress(issue?.email);
+  if (!issue || issue.ok !== true || !to || !/^[0-9]{6}$/.test(`${issue.code || ''}`)) return reply(res, 200, { ok: false, sent: false });
+  try {
+    await sendWithResend({ to, ...guestCodeEmail({ code: issue.code }) });
+  } catch {
     return reply(res, 502, { ok: false, sent: false });
   }
   return reply(res, 200, { ok: true, sent: true });

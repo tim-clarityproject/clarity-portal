@@ -11193,3 +11193,9 @@
 .ui-root .ds-dialog--phone.ds-panel.ds-who-panel {
   width: 100%;
 }
+
+/* The guest's code screen (046): 18px above its one button, as above every
+   button that follows a box on these pages (sign-in rule 3). */
+.ui-root .ds-guest-go {
+  margin-top: var(--space-px18);
+}

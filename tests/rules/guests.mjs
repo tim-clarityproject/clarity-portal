@@ -139,11 +139,19 @@ export const GUEST_FUNCTIONS = [
       '(text,jsonb)': "('decisions', '{}')", '(text,text)': "('decisions', 'x')" }[a]))}`, NOBODY, 'Inside part of the guest functions.')),
   fn('_coach_first_name(uuid)', `public._coach_first_name(${R})`, NOBODY, 'Inside part of the guest functions.'),
   fn('_guest_sees(guest_visits,text,text)', "public._guest_sees(null::public.guest_visits, 'decisions', 'x')", NOBODY, 'Inside part of the guest functions.'),
+  // 046 (Phase 8a follow-up): a link made for one email, and what a reopened visit may see.
+  fn('guest_link_create(text,text)', "public.guest_link_create('grow', 'rules-guest@example.invalid')", COACHES, 'Coaches only: a link for one email, which alone opens it and gets the copy (046).'),
+  fn('_guest_link_shared(guest_visits,uuid)', `public._guest_link_shared(null::public.guest_visits, ${R})`, NOBODY, 'Inside part of the guest functions (046).'),
 ];
 
 // ---------------------------------------------------------------- scenarios
 const s = (name, steps, expect) => ({ name, steps: steps.map(([as, sql]) => ({ as, sql })), expect, needs: 'public.guests' });
 const s44 = (name, steps, expect) => ({ ...s(name, steps, expect), needs: 'public.guest_set_sharing(text,boolean)' });
+const s46 = (name, steps, expect) => ({ ...s(name, steps, expect), needs: 'public._guest_link_shared(guest_visits,uuid)' });
+// Only you, chosen first by the visit (044): earlier work then needs the email
+// confirmed, before and after 046 (with 046 a shared link shows its own
+// earlier work to a reopened visit: the scenario under "046" below).
+const ONLY_YOU = ['signed_out', "select (public.guest_set_sharing(repeat('2', 64), false) ->> 'ok')"];
 const n = (sql) => `select (${sql})::text`;
 const OPEN = (c, email, code = 'ABCDEF') => n(`public.guest_open(repeat('${c}', 64), '${email}', '${code}') ->> 'error'`);
 const G1 = 'rules-guest-one@example.invalid';
@@ -155,7 +163,8 @@ export const GUEST_SCENARIOS = [
   s('... a wrong code is refused', [['signed_out', OPEN('1', G1, 'ABCDEG')]], 'invalid'),
   s('... another email with the right code is refused (the link is theirs)', [['signed_out', OPEN('1', 'someone@example.invalid')]], 'invalid'),
   s('... a made-up link is refused the same way', [['signed_out', OPEN('8', G1)]], 'invalid'),
-  s('A guest\'s visit reads only its own work', [['signed_out', ROWS('2', 'decisions')]], '1'),
+  s44('A guest\'s visit reads only its own work (Only you)', [ONLY_YOU, ['signed_out', ROWS('2', 'decisions')]], '1'),
+  s46('... on a link shared with the coach, a reopened visit reads that link\'s earlier work (046)', [['signed_out', ROWS('2', 'decisions')]], '2'),
   s('... not another guest\'s', [['signed_out', ROWS('4', 'decisions')]], '0'),
   s('A guest can\'t change another guest\'s plan', [['signed_out', n(`public.guest_save(repeat('2', 64), 'performance_plans', jsonb_build_object('id', current_setting('rules.g_p2'), 'mission', 'taken')) ->> 'id'`)]], 'error 42501'),
   s('... or delete it', [['signed_out', n(`public.guest_delete(repeat('2', 64), 'performance_plans', jsonb_build_object('id', current_setting('rules.g_p2')))`)]], 'error 42501'),
@@ -171,7 +180,7 @@ export const GUEST_SCENARIOS = [
     ...Array.from({ length: 5 }, () => ['signed_out', OPEN('a', G1, 'ZZZZZZ')]),
     ['signed_out', OPEN('a', G1)]], 'locked'),
   // earlier work only once the email is confirmed
-  s('A visit not yet confirmed can\'t change earlier work', [['signed_out', n(`public.guest_save(repeat('2', 64), 'decisions', jsonb_build_object('id', current_setting('rules.g_d0'), 'title', 'x')) ->> 'id'`)]], 'error 42501'),
+  s44('A visit not yet confirmed can\'t change earlier work (Only you)', [ONLY_YOU, ['signed_out', n(`public.guest_save(repeat('2', 64), 'decisions', jsonb_build_object('id', current_setting('rules.g_d0'), 'title', 'x')) ->> 'id'`)]], 'error 42501'),
   s('A confirmed visit reads earlier work too', [['signed_out', ROWS('b', 'decisions')]], '2'),
   s('A wrong email code doesn\'t confirm', [['signed_out', n(`public.guest_email_confirm(repeat('2', 64), '123456') ->> 'error'`)]], 'invalid'),
   s('The email code is never handed to a guest', [['signed_out', n(`public.guest_email_code_issue(repeat('2', 64)) ->> 'code'`)]], 'error 42501'),
@@ -196,8 +205,8 @@ export const GUEST_SCENARIOS = [
   s('... nothing is left with the guest', [['guest_claimer', n('select public.guest_claim()')], ['owner_coach', n("select public.coach_guest_answers(current_setting('rules.g_l9')::uuid)::text")]], '{}'),
   s('Someone else claims nothing of theirs', [['client', n('select public.guest_claim()')]], '0'),
   // deleting
-  s('A guest deletes the answers given through their link, only those this visit sees', [['signed_out', n("select public.guest_delete_link_answers(repeat('2', 64))")]], '1'),
-  s('... their earlier work stays', [['signed_out', n("select public.guest_delete_link_answers(repeat('2', 64))")], ['signed_out', ROWS('b', 'decisions')]], '1'),
+  s44('A guest deletes the answers given through their link, only those this visit sees (Only you)', [ONLY_YOU, ['signed_out', n("select public.guest_delete_link_answers(repeat('2', 64))")]], '1'),
+  s44('... their earlier work stays', [ONLY_YOU, ['signed_out', n("select public.guest_delete_link_answers(repeat('2', 64))")], ['signed_out', ROWS('b', 'decisions')]], '1'),
   s('... and another guest\'s too', [['signed_out', n("select public.guest_delete_link_answers(repeat('2', 64))")], ['signed_out', ROWS('4', 'performance_plans')]], '1'),
   s('Only the owner deletes old guests', [['second_coach', n('select public.guest_purge_old()')]], 'error 42501'),
   // Send to client

@@ -155,6 +155,29 @@ export function guestPlanCopyEmail({ origin, toolName = 'Get unstuck', coachName
   };
 }
 
+/**
+ * The 6-digit code that shows a guest their earlier answers when they open
+ * their link again after choosing Only you (migration 046, 035's
+ * guest_email_code_issue; Phase 8a follow-up, step 3). It goes only to the
+ * guest's own address, which the database gives the server: the coach,
+ * who knows the link's code, never sees this one. No button: the code is
+ * typed into the page that asked for it, which is still open.
+ */
+export function guestEmailCodeEmail({ toolName = 'Get unstuck', code }) {
+  const tool = oneLine(toolName) || 'Get unstuck';
+  return {
+    brand: 'portal',
+    subject: `Your code to see your ${tool} answers`,
+    blocks: [
+      { type: 'heading', text: 'Your code.' },
+      { type: 'text', text: `Type this code where you opened your ${tool} link, and your answers will show.` },
+      { type: 'text', text: 'It works for 10 minutes.', quiet: true },
+      { type: 'details', rows: [['Code', oneLine(code)]] },
+    ],
+    footer: { lines: ['You chose Only you, so your answers show only once this email address is confirmed.', EMAIL_SIGN_OFF] },
+  };
+}
+
 // ---------------------------------------------------------------- session reminders (templates only)
 /**
  * The day before a coaching session, sent in the reader's own morning.
