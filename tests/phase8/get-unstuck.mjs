@@ -159,6 +159,17 @@ async function signedIn(browser, width) {
   pass(`${tag}: every step starts “It isn’t in this week’s sprint yet.”`, (await lines()).every((l) => l === 'It isn’t in this week’s sprint yet.'));
   await page.getByRole('button', { name: 'Add next step 1 to this week' }).click();
   pass(`${tag}: the panel asks “Where should it go?”`, await until(async () => (await page.locator('[role=dialog]:not(.ds-guide)').last().innerText()).includes('Where should it go?')));
+  {
+    // M9's add panel (Phase 8a follow-up, step 1): the Strategy in the branded drop-down, How much unchosen.
+    const p = page.locator('[role=dialog]:not(.ds-guide)').last();
+    await sleep(500);
+    pass(`${tag}: the panel's Strategy is a drop-down, with none chosen yet`, (await p.locator('[aria-haspopup=listbox]').count()) === 1 && (await p.locator('.ds-dd-value').first().innerText()).trim() === 'Choose a Strategy');
+    pass(`${tag}: … and How much starts unchosen`, (await p.locator('[aria-checked=true], [aria-pressed=true]').filter({ hasText: /^(Low|Medium|High)$/ }).count()) === 0);
+    pass(`${tag}: … with “Add my to-do” never greyed out`, !(await p.locator('.ds-btn--primary').isDisabled()));
+    await p.locator('.ds-btn--primary').click();
+    const said = (await p.innerText()).replace(/\s+/g, ' ');
+    pass(`${tag}: pressed too soon, it says what's missing`, said.includes('Choose a Strategy to carry on.') && said.includes('Choose Low, Medium or High to carry on.'), said.slice(0, 400));
+  }
   await addPanel(page, 'This week');
   pass(`${tag}: “Added to this week”`, Boolean(await sawToast(page, 'Added to this week')));
   await sleep(5600);
@@ -206,7 +217,7 @@ async function signedIn(browser, width) {
   await who.waitFor();
   const whoWords = (await who.innerText()).replace(/\s+/g, ' ');
   pass(`${tag}: “Who can see this?” offers Only you and You and Tim`, whoWords.includes('Who can see this?') && whoWords.includes('Only you') && whoWords.includes(`You and ${M9.coach}`), whoWords);
-  await who.getByRole('option', { name: `You and ${M9.coach}` }).click();
+  await who.getByRole('radio', { name: `You and ${M9.coach}` }).click();
   pass(`${tag}: the choice saves at once`, Boolean(await sawToast(page, 'Saved')) && Boolean(await until(async () => (await mine()).find((d) => d.form_data?.shared_with_coach === true), 12000)));
   pass(`${tag}: the eye now says You and Tim`, await until(async () => (await page.locator('.ds-guide-question .ds-who').getAttribute('aria-label')).startsWith(`You and ${M9.coach} can see this.`)));
   await page.screenshot({ path: join(out, `plan-${width}.png`) });
@@ -311,8 +322,8 @@ async function guest(browser, width) {
   await sheet.waitFor();
   // A guest chooses (Tim, 14 Nov, 09:52; this replaces the one line of 27 Oct): Only you, or You and the coach, the coach by default.
   pass(`${tag}: a guest chooses Only you or You and Tim, You and Tim chosen, with the line under it`,
-    (await sheet.locator('[role=option]').allInnerTexts()).join('|') === `Only you|You and ${M9.coach}`
-    && (await sheet.locator('[role=option][aria-selected=true]').innerText()).trim() === `You and ${M9.coach}`
+    (await sheet.locator('[role=radio]').allInnerTexts()).join('|') === `Only you|You and ${M9.coach}`
+    && (await sheet.locator('[role=radio][aria-checked=true]').innerText()).trim() === `You and ${M9.coach}`
     && (await sheet.innerText()).includes(`${M9.coach} sent you the link and will see your results.`), await sheet.innerText());
   await page.keyboard.press('Escape');
   await sleep(500);

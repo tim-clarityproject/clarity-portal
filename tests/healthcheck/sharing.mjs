@@ -66,8 +66,8 @@ async function readPanel(page) {
   await sleep(300);
   return {
     sheet,
-    options: await sheet.locator('[role=option]').allInnerTexts(),
-    chosen: (await sheet.locator('[role=option][aria-selected=true]').innerText().catch(() => '')).trim(),
+    options: await sheet.locator('[role=radio]').allInnerTexts(),
+    chosen: (await sheet.locator('[role=radio][aria-checked=true]').innerText().catch(() => '')).trim(),
     text: (await sheet.innerText()).replace(/\s+/g, ' '),
   };
 }
@@ -75,7 +75,7 @@ async function readPanel(page) {
 /** Chooses one in the eye's panel; true when it said "Saved" and closed. */
 async function choose(page, words, tag, coach) {
   const panel = await readPanel(page);
-  await panel.sheet.getByRole('option', { name: words, exact: true }).click();
+  await panel.sheet.getByRole('radio', { name: words, exact: true }).click();
   const saved = await hasToast(page, 'Saved');
   const closed = await until(async () => (await page.locator(DIALOG).count()) === 0, 4000);
   pass(`${tag}: choosing “${words}” saves at once with “Saved”`, saved && closed, await toastText(page));
@@ -182,7 +182,7 @@ async function hc(browser, width, mode) {
     const old = session.code;
     {
       const panel = await readPanel(page);
-      await panel.sheet.getByRole('option', { name: 'Only you', exact: true }).click();
+      await panel.sheet.getByRole('radio', { name: 'Only you', exact: true }).click();
       pass(`${tag}, 045: choosing “Only you” says “Saved”`, await hasToast(page, 'Saved'), await toastText(page));
     }
     pass(`${tag}, 045: Only you replaces the code`, await until(async () => session.reissued === true));
@@ -212,7 +212,7 @@ async function hc(browser, width, mode) {
   {
     const { ctx, page, session, problems } = await appPage(browser, width, mode, { data, step: { screen: 'objective' }, with045: true, loseShareAnswer: true });
     await signIn(page, session);
-    { const panel = await readPanel(page); await panel.sheet.getByRole('option', { name: 'Only you', exact: true }).click(); }
+    { const panel = await readPanel(page); await panel.sheet.getByRole('radio', { name: 'Only you', exact: true }).click(); }
     pass(`${tag}, 045 lost answer: the code was replaced on the server`, await until(async () => session.reissued === true));
     await until(async () => (await page.locator(DIALOG).count()) === 0, 4000);
     // The guest carries on typing: that save meets the replaced code.
@@ -234,7 +234,7 @@ async function hc(browser, width, mode) {
   {
     const { ctx, page, session, problems } = await appPage(browser, width, mode, { data, step: { screen: 'objective' }, with045: true, codeMailFails: true });
     await signIn(page, session);
-    { const panel = await readPanel(page); await panel.sheet.getByRole('option', { name: 'Only you', exact: true }).click(); }
+    { const panel = await readPanel(page); await panel.sheet.getByRole('radio', { name: 'Only you', exact: true }).click(); }
     const unsent = page.getByText('Your access code has changed, but the email with the new one didn’t go. Send it again to carry on.');
     pass(`${tag}, 045 email failed: it says the email didn’t go`, await until(async () => (await unsent.count()) > 0, 6000));
     pass(`${tag}, 045 email failed: “Send it again” is there`, await page.getByRole('button', { name: 'Send it again', exact: true }).isVisible());

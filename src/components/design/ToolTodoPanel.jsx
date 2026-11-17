@@ -57,7 +57,7 @@ export default function ToolTodoPanel({ open, onClose, startText = '', startStra
   const start = () => ({
     text: startText || '',
     strategyId: startStrategyId,
-    impact: 2,
+    impact: null, // M9: unchosen until the person chooses
     where: todo.whereOptions.some((o) => o.value === startWhere) ? startWhere : todo.startWhere,
   });
   const [form, setForm] = useState(start);

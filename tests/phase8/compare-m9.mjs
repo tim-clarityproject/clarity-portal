@@ -123,8 +123,13 @@ const SCREENS = {
     ['Delete my answers', '.legal .text', '.ds-guest-legal .ds-link', 0, ['pos', 'text']]],
 };
 // Screens that are a panel over the page: their words, and the panel's own parts.
+const PANEL_ANCHOR = { mock: '.sheet', built: '[role=dialog]:not(.ds-guide)' };
 const PANELS = {
-  who: [['the panel’s title', '.shh h2', '[role=dialog]:not(.ds-guide) h2', 0, ['text']]],
+  who: [
+    ['the panel', '.sheet', '[role=dialog]:not(.ds-guide)', 0, ['box']],
+    ['the panel’s title', '.shh h2', '[role=dialog]:not(.ds-guide) h2', 0, ['pos', 'text']],
+    ['Only you', '.who .opt', '.ds-who-options .ds-answer', 0, ['box', 'text']],
+    ['You and Tim', '.who .opt', '.ds-who-options .ds-answer', 1, ['box', 'text']]],
   add: [['the panel’s title', '.shh h2', '[role=dialog]:not(.ds-guide) h2', 0, ['text']]],
   len: [['the panel’s title', '.shh h2', '.ds-timer-title', 0, ['text']],
     ['the first length', '.sheet .opt', '[role=dialog]:not(.ds-guide) .ds-answer', 0, ['text']]],
@@ -137,12 +142,15 @@ const ALLOWED = new Map(Object.entries(JSON.parse(process.env.ALLOWED_JSON || '{
 const EDGE = 'every outlined edge takes the edges colour, 3 to 1 (rule 8a; Tim, 12 Nov, after M9’s parts were drawn)';
 const BOX = 'the portal’s one-line box is 58px, as M9’s own text boxes are; M9’s two start boxes come out 1.4px shorter, so what follows sits that much lower';
 const WHOLE = 'M9’s script sizes a two-line box in whole pixels; the portal’s box is its words’ own height, up to 0.3px a row different';
+const STATUS_BAR = 'M9’s phone frame draws its 47px status bar inside the panel; a real phone gives the panel that space as its safe area, which the test browser has none of (each part sits exactly 47px higher)';
 export const ALLOW = [
+  ['who|the panel’s title|top@phone', STATUS_BAR],
+  ['who|Only you|top@phone', STATUS_BAR],
+  ['who|You and Tim|top@phone', STATUS_BAR],
   ['*|the add button|edge', EDGE],
   ['*|the timer’s button|edge', EDGE],
   ['*|the last answer|edge', EDGE],
   ['*|Create my free account|edge', EDGE],
-  ['who|the panel’s title|text size', 'the eye’s panel is the portal’s shared small panel (22px title), as on the dashboard'],
   ['sum|the eye|left', 'the eye is 12px from the last letter’s ink to its own visible edge, as M9’s is (read from both pages’ pixels by the UI tester, 14 Nov); the portal’s eye is drawn half a pixel wider and starts at its box’s edge, so its box sits 0.5px to the right of M9’s'],
   ['sum|the coral button|width@phone', 'M9 draws no PDF link on the summary, so its button runs the full width on a phone; the built bar has “Download my PDF” at its left and the button takes the rest, as on the two Visual tools'],
   ['*|the add button|top@phone', WHOLE],
@@ -382,7 +390,9 @@ try {
         await page.evaluate(() => { document.querySelectorAll('.ds-guide-page, .ds-guide-rv').forEach((el) => { el.style.animation = 'none'; }); });
         const parts = panel ? PANELS[screen] : SCREENS[screen];
         const guest = GUEST_ANCHOR[screen];
-        const anchors = guest || TOOL_ANCHOR;
+        // A panel's parts are measured from the panel itself: it sits on the
+        // screen's right edge, and M9's frame is narrower than the screen.
+        const anchors = panel ? PANEL_ANCHOR : (guest || TOOL_ANCHOR);
         const m = await m9.page.evaluate(measureParts, { parts, mock: true, anchor: anchors.mock, bottom: '#fr' });
         const b = await page.evaluate(measureParts, { parts, mock: false, anchor: anchors.built, bottom: null });
         compare(tag, screen, parts, m, b, phone);

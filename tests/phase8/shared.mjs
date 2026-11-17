@@ -222,12 +222,17 @@ export async function addPanel(page, where = 'This week') {
   await sleep(500);
   await panel.getByRole('radio', { name: where, exact: true }).or(panel.getByRole('button', { name: where, exact: true })).first().click();
   if (where !== 'Don’t add it') {
-    const rows = panel.locator('.ds-answer');
-    if (await rows.count()) await rows.first().click();
-    else {
-      await panel.locator('.ds-dropdown, [aria-haspopup=listbox]').first().click();
+    // M9: the Strategy in the branded drop-down, and How much chosen (it starts unchosen).
+    const dd = panel.locator('[aria-haspopup=listbox]');
+    if (await dd.count()) {
+      await dd.first().click();
       await page.locator('[role=option]').first().click();
+    } else {
+      const rows = panel.locator('.ds-answer');
+      if (await rows.count()) await rows.first().click();
     }
+    const medium = panel.getByRole('radio', { name: 'Medium', exact: true }).or(panel.getByRole('button', { name: 'Medium', exact: true }));
+    if (await medium.count()) await medium.first().click();
   }
   await panel.locator('.ds-btn--primary').click();
   await until(async () => (await page.locator('[role=dialog]:not(.ds-guide)').count()) === 0, 8000);

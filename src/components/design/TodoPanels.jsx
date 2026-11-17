@@ -37,6 +37,7 @@ function Footer({ onCancel, onAdd, ready, label, never = false }) {
 export const TODO_NEEDS = {
   text: 'Type what needs doing to carry on.',
   strategy: 'Choose a Strategy to carry on.',
+  impact: 'Choose Low, Medium or High to carry on.',
 };
 
 // Where a tool's to-do goes (M10 "Where should it go?"; Tim, 13 Nov,
@@ -70,7 +71,9 @@ export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, we
   const tool = Array.isArray(where);
   const none = tool && form.where === TODO_WHERE.none;
   const noStrategies = Boolean(notice?.length);
-  const ready = noStrategies || none || Boolean(form.text.trim() && form.strategyId && (today || (tool ? form.where : form.week)));
+  // A tool's panel follows M9 (Phase 8a follow-up, step 1): Strategies in
+  // the branded drop-down, and "How much" starts unchosen, so it is asked.
+  const ready = noStrategies || none || Boolean(form.text.trim() && form.strategyId && (!tool || form.impact) && (today || (tool ? form.where : form.week)));
   // A tool's panel never greys its button out (M9, M10): a press with
   // something missing shows one calm line under the part it is about.
   const [asked, setAsked] = useState(false);
@@ -109,10 +112,15 @@ export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, we
             {needs && !form.text.trim() && <div className="ds-panel-needs"><ErrorMessage>{TODO_NEEDS.text}</ErrorMessage></div>}
           </div>
           <div>
-            <Choice label="Which Strategy does it serve?" options={strategies} value={form.strategyId} onChange={(strategyId) => set({ strategyId })} form="rows" />
+            {tool
+              ? <Dropdown label="Which Strategy does it serve?" options={strategies} value={form.strategyId} onChange={(strategyId) => set({ strategyId })} placeholder="Choose a Strategy" />
+              : <Choice label="Which Strategy does it serve?" options={strategies} value={form.strategyId} onChange={(strategyId) => set({ strategyId })} form="rows" />}
             {needs && !form.strategyId && <div className="ds-panel-needs"><ErrorMessage>{TODO_NEEDS.strategy}</ErrorMessage></div>}
           </div>
-          <Choice label={moveQuestion(nameOf(strategies, form.strategyId))} options={IMPACT_OPTIONS} value={form.impact} onChange={(impact) => set({ impact })} />
+          <div>
+            <Choice label={moveQuestion(nameOf(strategies, form.strategyId))} options={IMPACT_OPTIONS} value={form.impact} onChange={(impact) => set({ impact })} />
+            {needs && !form.impact && <div className="ds-panel-needs"><ErrorMessage>{TODO_NEEDS.impact}</ErrorMessage></div>}
+          </div>
           {today && <p className="ds-panel-note">{todayNote}</p>}
           {tool && <TodoWhere options={where} value={form.where} onChange={(w) => set({ where: w })} />}
           {!today && !tool && (

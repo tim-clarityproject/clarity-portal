@@ -340,7 +340,7 @@ part('results', async ({ browser, w, mode, tag, phone }) => {
   await page.screenshot({ path: join(out, `results-${w}-${mode}-full.png`), fullPage: true });
   // The eye: Only you, saved there and then.
   await page.locator('.ds-page-title .ds-who:not(.ds-play)').click();
-  await page.getByRole('option', { name: 'Only you' }).click();
+  await page.getByRole('radio', { name: 'Only you' }).click();
   pass(`${tag}: the eye's choice saves at once with "Saved"`, await hasToast(page, 'Saved'));
   pass(`${tag}: … kept on the version as shared_with_coach`, await until(async () => b.store.writes.some((r) => r.id === IDS.lt3 && r.form_data.shared_with_coach === false)));
   // The line for important: saved.

@@ -11127,3 +11127,69 @@
     fill: CanvasText;
   }
 }
+
+/* ---------- "Who can see this?" as the side panel (M9 .sheet .who, M10, M7; Phase 8a follow-up, 17 Nov) ---------- */
+/* Laid out as M9's .sheet: the head 20px from the top with 28px at the
+   left and the close button's 44px square at the right (.shh), the body
+   28px in from each side (.shb), and the title a question in DM Sans,
+   sentence case, 20px (.shh h2.sq), as the timer's panel. */
+.ui-root .ds-who-panel .ds-dialog-head {
+  align-items: center;
+  padding: var(--space-px20) var(--space-px12) var(--space-1) calc(var(--space-4) + var(--space-1));
+}
+
+.ui-root .ds-who-panel .ds-dialog-body {
+  padding: 0 calc(var(--space-4) + var(--space-1)) var(--space-4);
+}
+
+/* On a phone M9's 47px at the top is the status bar, which a real phone
+   gives the panel as its safe area (the dialog's own top padding). */
+.ui-root .ds-dialog--phone.ds-who-panel .ds-dialog-head {
+  padding: 0 var(--space-px6) var(--space-1) var(--space-3);
+}
+
+.ui-root .ds-dialog--phone.ds-who-panel .ds-dialog-body {
+  padding: 0 var(--space-3) var(--space-4);
+}
+
+.ui-root .ds-dialog.ds-who-panel .ds-dialog-title {
+  padding-top: 0;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-rec-question) !important;
+  line-height: var(--lh-title);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* The two choices are M9's answer rows (.opt), as the timer's panel: 52px,
+   15px words in the text colour, 8px apart, the tick on the chosen one;
+   18px under the head (.who). */
+.ui-root .ds-who-options {
+  margin-top: var(--space-px18);
+}
+
+.ui-root .ds-who-options .ds-answer {
+  min-height: var(--answer-h-calm) !important;
+  padding-inline: var(--space-3) !important;
+  font-size: var(--fs-secondary) !important;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+/* The quiet line under the choices (M10: "The people you rate never see it."; .sub). */
+.ui-root .ds-who-line {
+  margin: var(--space-px18) 0 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+/* The eye's panel is as wide as the calm tools' mock-ups draw it (460px). */
+.ui-root .ds-panel.ds-who-panel {
+  width: min(var(--panel-w-calm), 100%);
+}
+
+.ui-root .ds-dialog--phone.ds-panel.ds-who-panel {
+  width: 100%;
+}

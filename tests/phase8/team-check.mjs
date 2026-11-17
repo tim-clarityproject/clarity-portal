@@ -343,7 +343,7 @@ async function run(browser, width) {
   pass(`${tag}: the eye opens “Who can see this?” with Only you, You and Tim, and “The people you rate never see it.”`, who.includes('Who can see this?') && who.includes('Only you') && who.includes('You and Tim') && who.includes('The people you rate never see it.'), who.slice(0, 200));
   await checkScreen(page, `${tag}, who can see this`, { layer: '[role=dialog]:not(.ds-guide)', coral: 0 });
   await shot('who-can-see-this');
-  await panel(page).getByRole('option', { name: 'You and Tim' }).click();
+  await panel(page).getByRole('radio', { name: 'You and Tim' }).click();
   pass(`${tag}: choosing saves at once and says “Saved”`, await sawToast(page, 'Saved'));
   await panelGone(page);
   pass(`${tag}: the eye then says “You and Tim can see this.”`, await until(async () => (await page.locator('.ds-guide-title .ds-who').getAttribute('aria-label') || '').startsWith('You and Tim can see this. Edit who can see this.'), 5000));

@@ -147,8 +147,8 @@ const PANELS = {
   who: [
     ['the panel', '.sheet', '[role=dialog]:not(.ds-guide) .ds-dialog, [role=dialog]:not(.ds-guide)', 0, ['box']],
     ['the panel’s title', '.shh h2', '.ds-dialog-title', 0, ['pos', 'text']],
-    ['Only you', '.who .opt', '.ds-sheet-options .ds-option', 0, ['box', 'text']],
-    ['You and Tim (chosen)', '.who .opt', '.ds-sheet-options .ds-option', 1, ['box', 'text']]],
+    ['Only you', '.who .opt', '.ds-who-options .ds-answer', 0, ['box', 'text']],
+    ['You and Tim (chosen)', '.who .opt', '.ds-who-options .ds-answer', 1, ['box', 'text']]],
   pdf: [
     ['the panel', '.sheet', '[role=dialog]:not(.ds-guide)', 0, ['box']],
     ['the panel’s title', '.shh h2', '.ds-dialog-title', 0, ['pos', 'text']],
@@ -161,12 +161,14 @@ const ANCHOR = { offer: ['#h1', '.ds-page-title-row'], offer2: ['#h1', '.ds-page
 // ---------------------------------------------------------------- meant differences, each with why
 const ICONS_RULE = 'the shared TitleIcons part keeps the rule (Tim, 14 Nov, 09:28): 12px from the last letter’s ink and 16px between, measured by inside-flow (within 0.5px); M7 draws 12.5 and 16.5, so its icons sit 1px further right';
 const BACK_RULE = 'the shared Back link’s box starts at its chevron’s own box; its chevron’s visible edge is on the content’s edge where M7’s is (measured below)';
+const STATUS_BAR = 'M7’s phone frame draws its 47px status bar inside the panel; a real phone gives the panel that space as its safe area, which the test browser has none of (each part sits exactly 47px higher)';
 const SHARED_PANEL = 'the portal’s shared side panel and the eye’s shared panel (WhoSees, SlidePanel), as M9’s and M7b’s comparisons accept';
 const DATES = 'M7’s team list puts its newest version first by the date in its script (27 Oct, 14 Jul, 3 Apr): the same here; only the drop-downs and words follow';
 const ALLOW = new Map([
-  ...['left', 'top', 'width', 'height'].map((w) => [`who|*|${w}`, SHARED_PANEL]),
   ...['left', 'top', 'width', 'height'].map((w) => [`pdf|*|${w}`, SHARED_PANEL]),
-  ['who|the panel’s title|text size', SHARED_PANEL],
+  ['who|the panel’s title|top@phone', STATUS_BAR],
+  ['who|Only you|top@phone', STATUS_BAR],
+  ['who|You and Tim (chosen)|top@phone', STATUS_BAR],
   ['*|its drop-down|edge', 'every outlined edge reaches 3 to 1 (rule 8a): the shared drop-down takes --field-line'],
   ['*|Add another team|edge', 'every outlined edge reaches 3 to 1 (rule 8a): outlined buttons take --field-line'],
   ['*|Start a new version|edge', 'every outlined edge reaches 3 to 1 (rule 8a)'],
@@ -177,9 +179,6 @@ const ALLOW = new Map([
   ['compare|Talk it through|missing', 'shown only where the portal’s Chat to Tim leads somewhere real (useStartChat): the test client’s chat isn’t set up'],
   ['team|the Team box|height', 'the portal’s shared boxes are 58px (as M7b’s comparison accepts); M7 draws 56.6'],
   ['team|the Team box|top', 'its label line is the shared field label’s (a 44px-tall row where it has an icon), so the box sits 3.5px lower'],
-  ['who|Only you|text size', SHARED_PANEL],
-  ['who|Only you|colour', SHARED_PANEL],
-  ['who|You and Tim (chosen)|text size', SHARED_PANEL],
 ]);
 const allowed = (screen, part, what) => ALLOW.get(`${screen}|${part}|${what}`) || ALLOW.get(`*|${part}|${what}`) || ALLOW.get(`${screen}|*|${what}`) || null;
 void DATES;

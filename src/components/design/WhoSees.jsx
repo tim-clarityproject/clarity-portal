@@ -3,7 +3,8 @@ import { useCoachName, whoSeesText } from './coachContext';
 import { EyeIcon } from './IconText';
 import InfoPop from './InfoPop';
 import useInfoToggle from './useInfoToggle';
-import { Sheet } from './Dialogs';
+import { Sheet, SlidePanel } from './Dialogs';
+import { Choice } from './Choice';
 import { useToast, ERROR_MESSAGE } from './toastContext';
 import './design.css';
 
@@ -135,33 +136,33 @@ function WhoSeesSheet({ open, onClose, name, audience, coach, onChange, plain, n
       setBusy(false);
     }
   };
+  // The side panel from the right, as M9, M10 and M7 draw "Who can see
+  // this?" (Phase 8a follow-up, step 1): full screen on a phone. One shared
+  // part for every eye that opens it, a guest's included.
   if (note) {
     return (
-      <Sheet open={open} onClose={onClose} title="Who can see this?">
+      <SlidePanel open={open} onClose={onClose} title="Who can see this?" className="ds-who-panel">
         {(Array.isArray(note) ? note : [note]).map((words, n) => (
           <p key={words} className={n ? 'ds-sheet-note ds-sheet-note--sub' : 'ds-sheet-note'}>{words}</p>
         ))}
-      </Sheet>
+      </SlidePanel>
     );
   }
   return (
-    <Sheet open={open} onClose={onClose} title="Who can see this?" footer={plain ? (line ? <p className="ds-sheet-foot">{line}</p> : undefined) : <p className="ds-sheet-foot">{MY_ACCOUNT_LINE}</p>}>
+    <SlidePanel open={open} onClose={onClose} title="Who can see this?" className="ds-who-panel">
       {name && !plain && <p className="ds-sheet-name">{name}</p>}
-      <div className="ds-listbox ds-sheet-options" role="listbox" aria-label="Who can see this?">
-        {['me', 'coach'].map((value) => (
-          <button
-            key={value}
-            type="button"
-            role="option"
-            aria-selected={audience === value}
-            className="ds-option"
-            onClick={() => choose(value)}
-          >
-            <span className="ds-option-text">{whoSeesText(value, coach)}</span>
-          </button>
-        ))}
-      </div>
-    </Sheet>
+      <Choice
+        className="ds-who-options"
+        ariaLabel="Who can see this?"
+        form="rows"
+        tick
+        options={['me', 'coach'].map((value) => ({ value, label: whoSeesText(value, coach) }))}
+        value={audience}
+        onChange={() => {}}
+        onChoose={choose}
+      />
+      {plain ? (line && <p className="ds-who-line">{line}</p>) : <p className="ds-who-line">{MY_ACCOUNT_LINE}</p>}
+    </SlidePanel>
   );
 }
 

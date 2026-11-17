@@ -872,13 +872,13 @@ async function setEye(label, choice) {
   const eye = page.locator('.ds-who').nth(label === 'mission' ? 0 : 1);
   if (((await eye.getAttribute('aria-label')) || '').includes(choice)) return;
   await eye.click();
-  await page.waitForSelector('[role=dialog] [role=option]');
-  await page.getByRole('option', { name: choice }).click();
+  await page.waitForSelector('[role=dialog] [role=radio]');
+  await page.getByRole('radio', { name: choice }).click();
   const part = label === 'mission' ? 'mission' : 'progress';
   await until(async () => (await q(db.from('sharing_switches').select('part, is_on').eq('user_id', me))).some((x) => x.part === part && x.is_on === (choice !== 'Only you')));
   await until(async () => ((await eye.getAttribute('aria-label')) || '').includes(choice), 10000);
   await page.keyboard.press('Escape');
-  await page.locator('[role=dialog] [role=option]').first().waitFor({ state: 'hidden' }).catch(() => null);
+  await page.locator('[role=dialog] [role=radio]').first().waitFor({ state: 'hidden' }).catch(() => null);
   await calm(page);
 }
 try {

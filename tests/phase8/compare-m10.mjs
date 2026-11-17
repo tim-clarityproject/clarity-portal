@@ -201,10 +201,16 @@ const PANELS = {
     ['the name’s box', '.sheet .inp', `${DIALOG} input`, 0, ['size', 'text', 'edge']],
     ['the role’s box', '.sheet .inp', `${DIALOG} input`, 1, ['size']],
     ['Add this person', '.shf .btn', `${DIALOG} .ds-btn--primary`, 0, ['size', 'text']]],
-  whoT: [['the panel’s title', '.shh h2', `${DIALOG} h2`, 0, ['text']]],
+  whoT: [
+    ['the panel', '.sheet', DIALOG, 0, ['box']],
+    ['the panel’s title', '.shh h2', `${DIALOG} h2`, 0, ['pos', 'text']],
+    ['Only you', '.who .opt', `${DIALOG} .ds-who-options .ds-answer`, 0, ['box', 'text']],
+    ['You and Tim', '.who .opt', `${DIALOG} .ds-who-options .ds-answer`, 1, ['box', 'text']],
+    ['The people you rate never see it.', '.sheet .sub', `${DIALOG} .ds-who-line`, 0, ['pos', 'text']]],
   todo: [['the panel’s title', '.shh h2', `${DIALOG} h2`, 0, ['text']]],
   whoE: [
-    ['the panel’s title', '.shh h2', `${DIALOG} h2`, 0, ['text']],
+    ['the panel', '.sheet', DIALOG, 0, ['box']],
+    ['the panel’s title', '.shh h2', `${DIALOG} h2`, 0, ['pos', 'text']],
     ['Only you can see this.', '.who p', `${DIALOG} .ds-sheet-note`, 0, ['text']],
     ['the line under it', '.who p', `${DIALOG} .ds-sheet-note`, 1, ['text']]],
 };
@@ -217,14 +223,24 @@ const EDGE = 'every outlined edge takes the edges colour, 3 to 1 (rule 8a; Tim, 
 const PANEL = 'the portal’s one shared slide-across panel and its fields (480px wide, 58px boxes, 15px questions, its own button size), as every other panel in the portal; M10’s panel is 460px';
 const FONT = 'the portal ships DM Sans as two fixed files (regular and medium), M10 loads Google’s copy with its optical-size axis: at 22px this one question comes out 2px wider, just over the 704px column, so it takes a second line and what follows sits one line lower';
 const EYE = 'the eye is 12px from the last letter’s ink to its own visible edge, as M10’s is (read from both pages’ pixels by the UI tester, 14 Nov); the portal’s eye is drawn half a pixel wider and starts at its box’s edge, so its box sits up to half a pixel to the right of M10’s';
-const WHO_PANEL = 'the eye’s panel is the portal’s shared small panel (22px title), as on the dashboard and in Get unstuck';
 const NAME = 'M10 draws the name in its top bar about 1.4px higher than M9 does (its lines are set closer, 1.35); the calm frame is one part, so the built bar keeps M9’s place in every tool, with Back’s chevron centred on the name’s capitals (rule 29ao, measured by tests/phase5/chevrons.mjs)';
 const BAR_H = 'the calm frame’s top bar is 72px with its line inside it (M9’s own measure, checked by compare-m9.mjs); M10’s is 73px, so the crosshair’s middle sits half a pixel higher. That is inside the half pixel allowed on the Team performance check’s screens and a hair over it on these, where M10’s frame sits at a fraction of a pixel under its taller review bar';
 const PERCENT = 'M10 shows the checks for the first thought only, so its bar steps 9 at a time through six screens; the built tool asks all four questions of every thought (here three thoughts, twelve screens), which share the bar from 36 evenly, so it only ever moves forward';
 const SEG = 'the portal’s one shared segmented control (40px pills in a 48px box), as in the shared add panel; M10 draws 38px pills';
 const STRATEGY = 'a to-do can’t be saved without the Strategy it serves (todos.strategy_id is required), so with more than one Strategy in the plan the card also asks “Which Strategy does it serve?”, as the shared add panel does; M10 draws only where it goes. The card is taller by that question, and the cards under it sit lower';
-const SHEET = 'the eye’s panel is the portal’s shared small panel (17px title), as on the dashboard and in Get unstuck';
+const CHIP_CLASH = 'M10 also uses .sq for its chips, so the chip’s 16px padding and 1px edge land on the panel’s title (17px to the right, the rows 1px lower); M9 draws the same panel without the clash, and the portal matches M9 exactly';
+const STATUS_BAR = 'M10’s phone frame draws its 47px status bar inside the panel; a real phone gives the panel that space as its safe area, which the test browser has none of (and the title’s 17px from M10’s chip class)';
 export const ALLOW = [
+  ['whoT|the panel’s title|left', CHIP_CLASH],
+  ['whoT|the panel’s title|top@phone', STATUS_BAR],
+  ['whoE|the panel’s title|left', CHIP_CLASH],
+  ['whoE|the panel’s title|top@phone', STATUS_BAR],
+  ['whoT|Only you|top', CHIP_CLASH],
+  ['whoT|Only you|top@phone', STATUS_BAR],
+  ['whoT|You and Tim|top', CHIP_CLASH],
+  ['whoT|You and Tim|top@phone', STATUS_BAR],
+  ['whoT|The people you rate never see it.|top', CHIP_CLASH],
+  ['whoT|The people you rate never see it.|top@phone', STATUS_BAR],
   ['*|the tool’s name|top', NAME],
   ...['what', 'kind', 'words', 'rel', 'story', 'true', 'logical', 'helpful', 'wash1', 'wash2', 'wash3', 'sum'].map((s) => [`${s}|close|top`, BAR_H]),
   ...['true', 'logical', 'helpful', 'wash1', 'wash2', 'wash3'].map((s) => [`${s}|how far the % bar is filled|width`, PERCENT]),
@@ -238,7 +254,6 @@ export const ALLOW = [
   ['wash3|the first card|height', STRATEGY],
   ['wash3|the second card|top', STRATEGY],
   ['wash3|the last card|top', STRATEGY],
-  ['whoE|the panel’s title|text size', SHEET],
   ['sum|the coral button|width@phone', 'M10 draws no PDF link on the summary, so its button runs the full width on a phone; the built bar has “Download my PDF” at its left (every tool’s PDF comes from the shared template), and the button takes the rest, as on the Team performance check’s results'],
   ['*|Add a person|edge', EDGE],
   ['*|the first answer|edge', EDGE],
@@ -256,7 +271,6 @@ export const ALLOW = [
   ['align|the second answer|top', FONT],
   ['align|the last answer|top', FONT],
   ['*|the eye|left', EYE],
-  ['whoT|the panel’s title|text size', WHO_PANEL],
 ];
 const ALLOWED = new Map(Object.entries(JSON.parse(process.env.ALLOWED_JSON || '{}')));
 for (const [key, why] of ALLOW) ALLOWED.set(key, why);
@@ -349,7 +363,8 @@ const ANCHOR = {
   results: { mock: '#h1', built: '.ds-guide-title' },
   sum: { mock: '#h1', built: '.ds-guide-title' },
   table: { mock: '.tt', built: '.ds-ctable' },
-  panel: { mock: '.shh h2', built: `${DIALOG} h2` },
+  // A panel's parts are measured from the panel itself (it sits on the screen's right edge).
+  panel: { mock: '.sheet', built: DIALOG },
   step: { mock: '.qpct', built: '.ds-guide-pct-track' },
 };
 const ctxOf = { report, allowed, mockName: 'M10' };
