@@ -293,7 +293,7 @@
 .ui-root .dash-sh {
   margin: 0;
   padding-bottom: var(--space-px12);
-  border-bottom: var(--line-w) solid var(--line);
+  /* No line under it: its rows have their own dividers (Tim, 18 Nov, follow-up 1). */
   font-family: var(--font-body);
   font-weight: 400;
   font-size: var(--fs-text);

@@ -21,10 +21,11 @@
 //     fills(part): whether the button fills its column (keeps its width);
 //     wordsWidth(part): the button's words' width in the new font.
 //   It returns a new list; the mock-up's own reading is left as it was.
-export const BUTTON_H = 34;
-export const BUTTON_H_PHONE = 40;
-export const BUTTON_TEXT = 14;
-export const BUTTON_SIDE = 14;
+// Follow-up 1 (Tim, 18 Nov, 15:57): 40px, 44px on a phone, 16px words, 16px sides.
+export const BUTTON_H = 40;
+export const BUTTON_H_PHONE = 44;
+export const BUTTON_TEXT = 16;
+export const BUTTON_SIDE = 16;
 
 export function withNewButtons(parts, { phone, isButton, fills = () => true, wordsWidth = null }) {
   const want = phone ? BUTTON_H_PHONE : BUTTON_H;

@@ -131,7 +131,8 @@ async function checkScreen(b, tag, { layer = '.ds-guide', coral = 1, back = fals
   if (back) {
     const c = await backChevron(page, { button: '.ds-guide-back', label: '.ds-guide-name', content: '.ds-guide-pct-track' });
     pass(`${tag}: Back’s chevron has its visible edge on the content’s left edge`, c && Math.abs(c.edge) <= 0.5, JSON.stringify(c));
-    pass(`${tag}: the tool’s name is 14px after it`, c && Math.abs(c.gap - 14) <= 0.5, JSON.stringify(c));
+    // 10px from Back's chevron to its words on every page (Tim, 18 Nov, follow-up 1; was 14px).
+    pass(`${tag}: the tool’s name is 10px after it`, c && Math.abs(c.gap - 10) <= 0.5, JSON.stringify(c));
     pass(`${tag}: Back’s tap area is 44px`, c && c.tapW >= 44 && c.tapH >= 44, JSON.stringify(c));
     if (c) figure('Back’s chevron on a guided screen', `visible edge ${c.edge.toFixed(2)}px from the content’s left edge, the name ${c.gap.toFixed(2)}px after it (read at two screen pixels a point)`);
   }

@@ -133,8 +133,8 @@ for (const mode of MODES) {
         continue;
       }
       const got = await page.evaluate(readParts, { root: '.si-col', map: APP_MAP, loose: Boolean(screen.looseBox) });
-      // M26's pill buttons, as the new buttons draw them (Tim, 18 Nov; tests/buttons/expected.mjs): 34px high,
-      // 40px on a phone, 14px words; a button that hugs its words is their width plus 14px each side.
+      // M26's pill buttons, as the new buttons draw them (Tim, 18 Nov, follow-up 1; tests/buttons/expected.mjs): 40px
+      // high, 44px on a phone, 16px words; a button that hugs its words is their width plus 16px each side.
       const boxWidth = Math.max(0, ...want.parts.filter((x) => x.kind === 'inp').map((x) => x.width));
       const appButtons = got.parts.filter((x) => x.kind === 'btn');
       const mockButtons = want.parts.filter((x) => x.kind === 'btn');

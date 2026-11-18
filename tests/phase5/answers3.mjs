@@ -1,7 +1,7 @@
 // Tim's follow-up of 12 Nov, checked in a browser at 1280px and 390 by 844,
 // in light and dark:
 //
-//   - every outlined edge reaches 3 to 1: the Breathe button, the segmented control's outer edge and
+//   - every outlined edge reaches 3 to 1: the Breathe button and
 //     the journal's prompt chips, each measured from the colours the browser
 //     used (tests/phase5/calm-rules.mjs runs the same reading on every page);
 //     outlined buttons since 18 Nov have Tim's hairline in the outline grey
@@ -192,7 +192,9 @@ try {
         await page.goto(`${APP}/performance-sprint`);
         await settle();
         const sprint = await page.evaluate(outlinedEdges, true);
-        edgeCheck(`Sprint page ${tag}, the segmented control's outer edge`, sprint, 'ds-seg', 1);
+        // The segmented switch has no outer edge since 18 Nov (follow-up 1): a quiet grey surface, the chosen option a raised tile.
+        const seg = await page.evaluate(() => { const el = document.querySelector('.ds-seg:not(.ds-seg-measure)'); const st = el && getComputedStyle(el); return el ? { edge: st.borderTopWidth, radius: st.borderTopLeftRadius, fill: st.backgroundColor, tile: Boolean(el.querySelector('.ds-seg-tile')) } : null; });
+        pass(`Sprint page ${tag}: the segmented switch is a quiet surface with a raised tile, 8px corners, no edge`, Boolean(seg) && seg.edge === '0px' && seg.radius === '8px' && !/rgba\(0, 0, 0, 0\)/.test(seg.fill) && seg.tile, JSON.stringify(seg));
         pass(`Sprint page ${tag}: no outlined edge under 3 to 1`, (await page.evaluate(outlinedEdges)).length === 0, (await page.evaluate(outlinedEdges)).join('; '));
         await shot('sprint-page');
 

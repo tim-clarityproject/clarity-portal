@@ -138,7 +138,8 @@ async function measureBack(page, tag, { button, label, edge }) {
   });
   const edgeLeft = await page.evaluate(edge);
   pass(`${tag}: the chevron's visible edge is on the content edge`, s.left !== null && Math.abs(s.left - edgeLeft) <= 1, `strokes from ${s.left}, content edge ${edgeLeft?.toFixed(1)}`);
-  pass(`${tag}: 14px from the chevron to its label`, s.right !== null && Math.abs(labelLeft - s.right - 14) <= 1, `${(labelLeft - s.right).toFixed(1)}px`);
+  // 10px on every page (Tim, 18 Nov, follow-up 1; was 14px).
+  pass(`${tag}: 10px from the chevron to its label`, s.right !== null && Math.abs(labelLeft - s.right - 10) <= 1, `${(labelLeft - s.right).toFixed(1)}px`);
   // Hover (a mouse only): the chevron turns coral, nothing is drawn behind it.
   if (!(await page.evaluate(() => matchMedia('(hover: hover)').matches))) return;
   await b.hover();

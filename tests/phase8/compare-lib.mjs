@@ -194,7 +194,7 @@ export function compareParts({ report, allowed, mockName }, tag, screen, parts, 
  * secondary grey, which the mock-ups don't draw.
  */
 export function newButton(check, both, M, B, what, phone) {
-  const tall = phone ? 40 : 34;
+  const tall = phone ? 44 : 40; // follow-up 1 (Tim, 18 Nov, 15:57)
   const inSlot = (from, to, x) => x >= from - TOL && x <= to + TOL;
   for (const w of what) {
     if (B.addrow) {
@@ -217,8 +217,8 @@ export function newButton(check, both, M, B, what, phone) {
       continue;
     }
     if (w === 'box' || w === 'size' || w === 'foot') {
-      const width = near(M.w, B.w) || near(B.w, B.wordsW + 28, 1);
-      check('width', width, `${both(M.w, B.w)}, or its words plus 14px each side (${(B.wordsW + 28).toFixed(2)})`);
+      const width = near(M.w, B.w) || near(B.w, B.wordsW + 32, 1);
+      check('width', width, `${both(M.w, B.w)}, or its words plus 16px each side (${(B.wordsW + 32).toFixed(2)})`);
       check('height', near(B.h, tall), `${both(M.h, B.h)}, as the new button, ${tall}`);
       if (w === 'box') {
         check('left', near(M.x, B.x) || near(M.x + M.w, B.x + B.w) || near(M.x + M.w / 2, B.x + B.w / 2), `${both(M.x, B.x)}, its left, right or middle on the mock-up’s`);
@@ -232,12 +232,12 @@ export function newButton(check, both, M, B, what, phone) {
       check('left', inSlot(M.x, M.x + M.w, B.ix), `${both(M.ix, B.ix)}, its words inside the mock-up’s button`);
     } else if (w === 'text') {
       check('font', B.font === 'DM Sans', `the new button’s DM Sans, built ${B.font}`);
-      check('text size', near(B.size, 14, 0.01), `the new button’s 14, built ${B.size}`);
+      check('text size', near(B.size, 16, 0.01), `the new button’s 16, built ${B.size}`);
       check('letter-spacing', near(B.ls, -0.005 * B.size, 0.02), `the new button’s -0.005em, built ${B.ls}`);
       check('capitals', B.upper === false, 'the new button is in sentence case');
       if (B.primary) check('colour', M.colour === B.colour, both(M.colour, B.colour));
     } else if (w === 'weight') {
-      check('weight', B.weight === '500', `the new button’s 500, built ${B.weight}`);
+      check('weight', B.weight === (B.primary ? '450' : '400'), `the new button’s ${B.primary ? 450 : 400}, built ${B.weight}`);
     } else if (w === 'fill') {
       check('fill', B.primary ? M.fill === B.fill : /rgba\(0,0,0,0\)|transparent/.test(B.fill), both(M.fill, B.fill));
     } else if (w === 'edge') {
@@ -262,7 +262,7 @@ export function newButton(check, both, M, B, what, phone) {
  * pages' measurements by part; a button counts where the built page has it.
  */
 export function shiftForNewButtons(m, b, phone) {
-  const tall = phone ? 40 : 34;
+  const tall = phone ? 44 : 40;
   const rows = [];
   const all = Object.entries(m).filter(([, M]) => M);
   for (const [key, B] of Object.entries(b)) {

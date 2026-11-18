@@ -126,7 +126,8 @@ export const makeCheckScreen = (pass) => async function checkScreen(page, tag, {
     // The chevron as drawn (it is a mask, so its box says nothing): read from the screen's own pixels.
     const chev = m.back ? await ink(page, { x: m.back.button.x - 2, y: m.back.button.y, width: m.back.nameLeft - m.back.button.x + 1, height: m.back.button.height }) : null;
     pass(`${tag}: Back’s chevron has its visible edge on the content’s edge`, chev && Math.abs(chev.left - m.back.content) <= 0.5, chev ? `${chev.left.toFixed(2)} (content edge ${m.back.content.toFixed(2)})` : 'no chevron found');
-    pass(`${tag}: the tool’s name is 14px from that edge`, m.back && Math.abs(m.back.name - 14) <= 0.5, JSON.stringify(m.back));
+    // 10px from Back's chevron to its words on every page (Tim, 18 Nov, follow-up 1; was 14px).
+    pass(`${tag}: the tool’s name is 10px from that edge`, m.back && Math.abs(m.back.name - 10) <= 0.5, JSON.stringify(m.back));
   }
   if (heading) {
     // 12px from the letter's ink to the eye's visible edge (tokens.css --icon-title-gap; read from the

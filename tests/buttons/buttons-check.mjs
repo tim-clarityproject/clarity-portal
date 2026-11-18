@@ -251,7 +251,8 @@ export function chevronOnlyFolds() {
     if (el.matches('.ds-dd, select, [role=combobox], [aria-haspopup]')) continue; // drop-downs and menus aren't folds
     const words = (el.innerText || '').trim();
     if (words) continue;
-    if (!el.querySelector('.ds-chevron, .ds-disclosure, svg')) continue;
+    // A fold's mark is the chevron; the menu's crosshair and an ⓘ open other things.
+    if (!el.querySelector('.ds-chevron, .ds-disclosure')) continue;
     const row = el.parentElement;
     const rowWords = (row?.innerText || '').trim();
     if (rowWords) out.push(`a fold opened only by its chevron, beside “${rowWords.replace(/\s+/g, ' ').slice(0, 30)}” (${el.getAttribute('aria-label') || 'no label'})`);

@@ -228,7 +228,8 @@ for (const mode of MODES) {
         // From Back's own left edge up to just before its label: only the chevron is in there.
         const chev = await ink(page, { x: p.back.x - 2, y: p.back.y, width: p.backLabelLeft - p.back.x - 1, height: p.back.height });
         pass(`${tag}: Back’s chevron has its visible edge on the content’s left edge`, chev && Math.abs(chev.left - p.col.x) <= 0.5, chev ? `${chev.left.toFixed(2)} (content edge ${p.col.x.toFixed(2)})` : 'no chevron seen');
-        pass(`${tag}: 14px from the chevron to its label`, chev && Math.abs(p.backLabelLeft - chev.right - 14) <= 0.5, chev ? `${(p.backLabelLeft - chev.right).toFixed(2)}px` : '');
+        // 10px on every page (Tim, 18 Nov, follow-up 1; was 14px).
+        pass(`${tag}: 10px from the chevron to its label`, chev && Math.abs(p.backLabelLeft - chev.right - 10) <= 0.5, chev ? `${(p.backLabelLeft - chev.right).toFixed(2)}px` : '');
         pass(`${tag}: Back’s tap area is 44px high`, p.back.height >= 43.5, `${p.back.height}`);
         if (!screen.acct) {
           pass(`${tag}: Back sits at the top left, above the column`, p.back.bottom <= p.mark.y + 0.5 && Math.abs(p.back.x + 5 - p.col.x) <= 0.6, `Back ends ${p.back.bottom.toFixed(1)}, crosshair starts ${p.mark.y.toFixed(1)}`);
