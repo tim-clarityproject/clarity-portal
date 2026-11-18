@@ -326,8 +326,8 @@ async function playThrough(page, tag, { deep = false } = {}) {
   pass(`${tag}: Went well`, (await heading(page)) === 'What went well today?');
   await body(page).locator('textarea').first().fill('The Harbour call landed and the proposal went out at 11:50.');
   await checkScreen(page, `${tag} went well`);
-  await page.getByRole('button', { name: 'Add an unplanned win' }).click();
-  const panel = page.getByRole('dialog', { name: 'Add an unplanned win' });
+  await page.getByRole('button', { name: 'Add unplanned win' }).click();
+  const panel = page.getByRole('dialog', { name: 'Add unplanned win' });
   await panel.locator('textarea').first().waitFor();
   await panel.locator('textarea').first().fill(WIN);
   await panel.getByRole('button', { name: 'Grow through referrals' }).click();

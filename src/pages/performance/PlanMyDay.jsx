@@ -79,7 +79,7 @@ import './performance.css';
 //              over list (M19: Daily review's things for tomorrow, then
 //              last night's sleep wind down thoughts, each with where it
 //              came from), then This week's to-dos and weekly habits; last
-//              night's note; Add a to-do
+//              night's note; Add to-do
 //   Priority   "Which one is your highest priority?" on its own screen
 //   Strategy   "Which Strategies does today serve most?" one recommended, two at most
 //   Risk       "What’s the biggest risk to today?" two boxes
@@ -749,7 +749,7 @@ function PlanFlow({ userId, date, today, loaded }) {
           {view.note && (
             <NotePanel className="day-note" label={view.note.label} after="If it needs doing, add it as a to-do.">{view.note.text}</NotePanel>
           )}
-          <AddButton className="day-add" onClick={() => setPanel(true)}>Add a to-do</AddButton>
+          <AddButton className="day-add" onClick={() => setPanel(true)}>Add to-do</AddButton>
         </div>
       )),
     },

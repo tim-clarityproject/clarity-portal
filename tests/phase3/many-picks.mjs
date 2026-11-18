@@ -219,7 +219,7 @@ async function run(width, mode) {
   await context.close();
 }
 
-// The break-it tester's cases (17 Nov): a pick made while "Add a to-do" is
+// The break-it tester's cases (17 Nov): a pick made while "Add to-do" is
 // still saving stays chosen; a cap key from before 047, with a time in the
 // future, never holds the day at three; to-dos waiting on the device from
 // before 047 are sent once the day opens.
@@ -257,10 +257,10 @@ async function tester() {
       await sleep(2500);
       return route.fallback();
     });
-    await page.getByRole('button', { name: 'Add a to-do' }).click();
+    await page.getByRole('button', { name: 'Add to-do' }).click();
     const panel = page.locator('[role=dialog]').last();
     await panel.locator('textarea').first().fill('Many seven: added in the panel');
-    await panel.getByRole('button', { name: 'Add my to-do' }).click();
+    await panel.getByRole('button', { name: 'Add to-do' }).click();
     await sleep(300);
     await pick(TODOS[5]).click();
     await sleep(4500);

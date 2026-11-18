@@ -65,7 +65,7 @@ const SCREENS = {
     ['the first person’s role', '.pr small', '.ds-namerow-words small', 0, ['pos', 'text']],
     ['the first remove crosshair', '.pr .x', '.ds-namerow .ds-cross', 0, ['box']],
     ['the last person’s row', '.pr', '.ds-namerow', 4, ['box']],
-    ['Add a person', '.addrow .ghost', '.tpc-add .ds-addrow', 0, ['box', 'text', 'edge']],
+    ['Add person', '.addrow .ghost', '.tpc-add .ds-addrow', 0, ['box', 'text', 'edge']],
     ['the coral button', '.gft .btn', '.ds-guide-next', 0, ['foot', 'text']],
     ['Finish later', '.gft .text', '.ds-guide-foot .ds-guide-skip', 0, ['foot', 'text']]],
   trust: [...BAR, ...COUNT, ...HEAD, ...ANSWERS,
@@ -102,7 +102,7 @@ const SCREENS = {
     ['Questions to start with:', '.sech', '.ds-results-head', 2, ['box', 'text']],
     ['the first question', '.qi p', '.ds-startq', 0, ['pos', 'text']],
     ['the last question', '.qi p', '.ds-startq', 2, ['pos']],
-    ['Add a to-do', '.gft .btn', '.ds-guide-next', 0, ['foot', 'text']],
+    ['Add to-do', '.gft .btn', '.ds-guide-next', 0, ['foot', 'text']],
     ['Download my PDF', '.gft .text', '.ds-guide-foot-aside .ds-link', 0, ['foot', 'text']]],
   table: [
     ['the table', '.tt', '.ds-ctable', 0, ['size']],
@@ -414,7 +414,7 @@ try {
         await sleep(4200); // "Draft restored" goes
         if (want('people')) await one('tpc', 'people');
         if (want('addp')) {
-          await page.getByRole('button', { name: 'Add a person', exact: true }).click();
+          await page.getByRole('button', { name: 'Add person', exact: true }).click();
           await panel(page).waitFor({ timeout: 10000 });
           await sleep(700);
           // M10 shows the panel with nothing focused: the box's coral focus edge isn't part of the comparison.

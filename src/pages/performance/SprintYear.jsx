@@ -175,7 +175,7 @@ export default function SprintYear() {
           <Section title="Peak moments" className="ipp-section year-peak">
             <PeakYearList months={peakMonths} />
             <div className="ds-actions ipp-actions">
-              <AddButton onClick={() => navigate('/peak-moments/add', { state: { from: '/performance-sprint/year' } })}>Add a peak moment</AddButton>
+              <AddButton onClick={() => navigate('/peak-moments/add', { state: { from: '/performance-sprint/year' } })}>Add peak moment</AddButton>
             </div>
           </Section>
         )}

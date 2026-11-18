@@ -426,7 +426,7 @@ part('new', async ({ browser, w, mode, tag }) => {
       await page.locator('.hc-dates .ds-dd').nth(1).click();
       pass(`${tag}, dates: Due to finish offers “Open-ended, with no agreed finish date”`, await until(async () => (await page.getByRole('option', { name: 'Open-ended, with no agreed finish date' }).count()) > 0, 4000));
       await page.getByRole('option', { name: `Dec ${year + 1}`, exact: true }).click();
-      pass(`${tag}, dates: “Add an exact date” shows once Due to finish is a month`, await until(async () => (await page.getByRole('button', { name: 'Add an exact date' }).count()) === 1, 3000));
+      pass(`${tag}, dates: “Add an exact date” shows once Due to finish is a month`, await until(async () => (await page.getByRole('button', { name: 'Add exact date' }).count()) === 1, 3000));
     }
     await pressNext(page);
     pass(`${tag}, new: then progress`, await onQuestion(page, `How far along is ${name}?`), await questionText(page));

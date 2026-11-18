@@ -378,15 +378,15 @@ if (run('taps')) {
     pass('taps: the day\'s chosen to-dos match the screen', dpt.length === picked.length, `${dpt.length} saved, ${picked.length} shown`);
     pass('taps: no chosen to-do points at a removed one', dpt.every((r) => liveIds.has(r.todo_id)), JSON.stringify(dpt));
     pass('taps: at most one highest priority', dpt.filter((r) => r.is_top).length <= 1);
-    // Add a to-do, Add my to-do triple tapped.
+    // Add to-do, Add to-do triple tapped.
     const PANEL = `${TAG}: ring the venue`;
-    await page.getByRole('button', { name: 'Add a to-do' }).click();
-    const tpanel = page.getByRole('dialog', { name: 'Add a to-do' });
+    await page.getByRole('button', { name: 'Add to-do' }).click();
+    const tpanel = page.getByRole('dialog', { name: 'Add to-do' });
     await tpanel.locator('textarea').first().fill(PANEL);
-    await tpanel.getByRole('button', { name: 'Add my to-do' }).click({ clickCount: 3 });
+    await tpanel.getByRole('button', { name: 'Add to-do' }).click({ clickCount: 3 });
     await until(async () => (await liveTodos(PANEL)).length >= 1, 10000);
     await settled(page);
-    pass('taps: Add my to-do triple tapped adds one to-do', (await liveTodos(PANEL)).length === 1, `${(await liveTodos(PANEL)).length}`);
+    pass('taps: Add to-do triple tapped adds one to-do', (await liveTodos(PANEL)).length === 1, `${(await liveTodos(PANEL)).length}`);
     await nextUntil(page, PLAN_Q.strategy);
     const opt = page.getByRole('checkbox', { name: S0 }).or(page.locator('.ds-answer', { hasText: S0 })).first();
     await opt.click({ clickCount: 3 });
@@ -446,8 +446,8 @@ if (run('taps')) {
     await next(page);
     pass('taps: on to Went well', (await heading(page)) === REVIEW_Q.well, await heading(page));
     const WIN = `${TAG}: unplanned workshop`;
-    await page.getByRole('button', { name: 'Add an unplanned win' }).click();
-    const wpanel = page.getByRole('dialog', { name: 'Add an unplanned win' });
+    await page.getByRole('button', { name: 'Add unplanned win' }).click();
+    const wpanel = page.getByRole('dialog', { name: 'Add unplanned win' });
     await wpanel.locator('textarea').first().fill(WIN);
     await wpanel.getByRole('button', { name: S0 }).click();
     await wpanel.getByRole('button', { name: 'Add my win' }).click({ clickCount: 3 });
@@ -492,8 +492,8 @@ if (run('taps')) {
       pass('taps: the once-a-week tick triple tapped is saved as shown, once', on ? days.length === 1 : days.length === 0, `shown ${on}, ${days.length} days logged`);
     } else pass('taps: the once-a-week tick is on the debrief', false);
     const DWIN = `${TAG}: debrief win`;
-    await page.getByRole('button', { name: 'Add an unplanned win' }).click();
-    const dw = page.getByRole('dialog', { name: 'Add an unplanned win' });
+    await page.getByRole('button', { name: 'Add unplanned win' }).click();
+    const dw = page.getByRole('dialog', { name: 'Add unplanned win' });
     await dw.locator('textarea').first().fill(DWIN);
     await dw.getByRole('button', { name: S0 }).click();
     await dw.getByRole('button', { name: 'Add my win' }).click({ clickCount: 3 });
@@ -502,14 +502,14 @@ if (run('taps')) {
     pass('taps: the debrief\'s Add my win triple tapped adds one win', (await myWins(DWIN)).length === 1, `${(await myWins(DWIN)).length}`);
     await nextUntil(page, DEBRIEF_Q.next);
     const DTODO = `${TAG}: next week's to-do`;
-    await page.getByRole('button', { name: 'Add a to-do' }).click();
-    const dt = page.getByRole('dialog', { name: 'Add a to-do' });
+    await page.getByRole('button', { name: 'Add to-do' }).click();
+    const dt = page.getByRole('dialog', { name: 'Add to-do' });
     await dt.locator('textarea').first().fill(DTODO);
     await dt.getByRole('radio', { name: S0 }).click();
-    await dt.getByRole('button', { name: 'Add my to-do' }).click({ clickCount: 3 });
+    await dt.getByRole('button', { name: 'Add to-do' }).click({ clickCount: 3 });
     await until(async () => (await liveTodos(DTODO)).length >= 1, 10000);
     await settled(page);
-    pass('taps: the debrief\'s Add my to-do triple tapped adds one to-do', (await liveTodos(DTODO)).length === 1, `${(await liveTodos(DTODO)).length}`);
+    pass('taps: the debrief\'s Add to-do triple tapped adds one to-do', (await liveTodos(DTODO)).length === 1, `${(await liveTodos(DTODO)).length}`);
     await next(page);
     const sw = page.getByRole('switch', { name: `Share with ${COACH}` });
     await sw.click({ clickCount: 3 });
@@ -572,14 +572,14 @@ if (run('back')) {
     // The add panel, Back with the panel open.
     await nextUntil(page, PLAN_Q.do);
     const PT = `${TAG}: half-typed to-do`;
-    await page.getByRole('button', { name: 'Add a to-do' }).click();
-    await page.getByRole('dialog', { name: 'Add a to-do' }).locator('textarea').first().fill(PT);
+    await page.getByRole('button', { name: 'Add to-do' }).click();
+    await page.getByRole('dialog', { name: 'Add to-do' }).locator('textarea').first().fill(PT);
     await page.waitForTimeout(600);
     await backAndForward();
-    const panelBack = await until(async () => (await page.getByRole('dialog', { name: 'Add a to-do' }).locator('textarea').count()) && (await page.getByRole('dialog', { name: 'Add a to-do' }).locator('textarea').first().inputValue()) === PT, 8000);
+    const panelBack = await until(async () => (await page.getByRole('dialog', { name: 'Add to-do' }).locator('textarea').count()) && (await page.getByRole('dialog', { name: 'Add to-do' }).locator('textarea').first().inputValue()) === PT, 8000);
     pass('back: the half-typed to-do comes back in its panel', Boolean(panelBack));
     pass('back: ... and nothing was saved from it', (await liveTodos(PT)).length === 0);
-    if (panelBack) await page.getByRole('dialog', { name: 'Add a to-do' }).getByRole('button', { name: 'Cancel' }).click();
+    if (panelBack) await page.getByRole('dialog', { name: 'Add to-do' }).getByRole('button', { name: 'Cancel' }).click();
     await clean(page, 'back, Daily plan');
 
     // Daily review.
@@ -656,16 +656,16 @@ if (run('text')) {
     // The to-do panel: spaces only can't be added; tags are text.
     await backUntil(page, PLAN_Q.do);
     if ((await heading(page)) === PLAN_Q.do) {
-      await page.getByRole('button', { name: 'Add a to-do' }).click();
-      const tp = page.getByRole('dialog', { name: 'Add a to-do' });
+      await page.getByRole('button', { name: 'Add to-do' }).click();
+      const tp = page.getByRole('dialog', { name: 'Add to-do' });
       await tp.locator('textarea').first().fill('    ');
       // Never greyed out (Phase 8a follow-up, step 2): pressed, it says what's missing and adds nothing.
-      await tp.getByRole('button', { name: 'Add my to-do' }).click();
+      await tp.getByRole('button', { name: 'Add to-do' }).click();
       await sleep(600);
-      pass('text: a to-do of spaces only can\'t be added, and says so', !(await tp.getByRole('button', { name: 'Add my to-do' }).isDisabled()) && (await tp.innerText()).includes('Type what needs doing to carry on.') && (await liveTodos('    ')).length === 0);
+      pass('text: a to-do of spaces only can\'t be added, and says so', !(await tp.getByRole('button', { name: 'Add to-do' }).isDisabled()) && (await tp.innerText()).includes('Type what needs doing to carry on.') && (await liveTodos('    ')).length === 0);
       const TT = `${TAG} <script>window.__pwned=3</script> عربى 🧪`;
       await tp.locator('textarea').first().fill(TT);
-      await tp.getByRole('button', { name: 'Add my to-do' }).click();
+      await tp.getByRole('button', { name: 'Add to-do' }).click();
       await until(async () => (await liveTodos(TT)).length === 1, 10000);
       pass('text: a to-do with tags is saved as typed', (await liveTodos(TT)).length === 1);
       pass('text: ... and listed as text', (await page.locator('.ds-answer--pick', { hasText: '<script>' }).count()) >= 1 && !(await injected()), await injected());
@@ -682,8 +682,8 @@ if (run('text')) {
     pass('text: Went well keeps 4,000 of 50,000', (await w.inputValue()).length === 4000, `${(await w.inputValue()).length}`);
     pass('text: ... with no sideways scroll', await noSideways(page), await sideways(page));
     const WT = `${TAG} 🎉 שלום <img src=x onerror="window.__pwned=4">`;
-    await page.getByRole('button', { name: 'Add an unplanned win' }).click();
-    const wp = page.getByRole('dialog', { name: 'Add an unplanned win' });
+    await page.getByRole('button', { name: 'Add unplanned win' }).click();
+    const wp = page.getByRole('dialog', { name: 'Add unplanned win' });
     await wp.locator('textarea').first().fill('   ');
     await wp.getByRole('button', { name: S0 }).click();
     await wp.getByRole('button', { name: 'Add my win' }).click();
@@ -800,8 +800,8 @@ if (run('offline')) {
     pass('offline: the tick arrived', Boolean(await until(async () => (await myTodos(DRAFT)).some((t) => t.done_on === today), 15000)));
     await nextUntil(page, REVIEW_Q.well);
     const WIN = `${TAG}: win cut off mid-save`;
-    await page.getByRole('button', { name: 'Add an unplanned win' }).click();
-    const wp = page.getByRole('dialog', { name: 'Add an unplanned win' });
+    await page.getByRole('button', { name: 'Add unplanned win' }).click();
+    const wp = page.getByRole('dialog', { name: 'Add unplanned win' });
     await wp.locator('textarea').first().fill(WIN);
     await wp.getByRole('button', { name: S0 }).click();
     await page.route('**/rest/v1/wins*', async (route) => {
@@ -915,8 +915,8 @@ if (run('refresh')) {
     await open(page, '/daily-review');
     await nextUntil(page, REVIEW_Q.well);
     const WIN = `${TAG}: win refreshed mid-save`;
-    await page.getByRole('button', { name: 'Add an unplanned win' }).click();
-    const wp = page.getByRole('dialog', { name: 'Add an unplanned win' });
+    await page.getByRole('button', { name: 'Add unplanned win' }).click();
+    const wp = page.getByRole('dialog', { name: 'Add unplanned win' });
     await wp.locator('textarea').first().fill(WIN);
     await wp.getByRole('button', { name: S0 }).click();
     await hold('**/rest/v1/wins*', ['POST']);
@@ -931,7 +931,7 @@ if (run('refresh')) {
     const panelBack = (await page.locator('.ds-panel textarea').count()) ? await page.locator('.ds-panel textarea').inputValue() : '';
     pass('refresh: a win refreshed mid-save is not lost (saved, or its draft is back)', w.length === 1 || panelBack === WIN, `${w.length} saved, panel "${panelBack}"`);
     if (!w.length && panelBack === WIN) {
-      await page.getByRole('dialog', { name: 'Add an unplanned win' }).getByRole('button', { name: 'Add my win' }).click();
+      await page.getByRole('dialog', { name: 'Add unplanned win' }).getByRole('button', { name: 'Add my win' }).click();
       await until(async () => (await myWins(WIN)).length >= 1, 15000);
     }
     await page.waitForTimeout(1500);

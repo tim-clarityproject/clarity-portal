@@ -402,7 +402,7 @@ function TravelSetup() {
               </div>
             ))}
             <AddButton className="travel-add" onClick={() => change((f) => ({ extras: [...f.extras, { id: newId(), name: '', on: firstAway, at: '09:00' }] }))}>
-              Add a key moment
+              Add key moment
             </AddButton>
           </div>
       ),

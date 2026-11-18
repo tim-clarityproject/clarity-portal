@@ -31,11 +31,11 @@ export const Button = forwardRef(function Button(
 
 // The add row (Tim, 18 Nov 2026; replaces the outlined add pill of 26 Oct
 // and 5 Nov). Every Add that starts a new item at the end of a list ("Add
-// a to-do", "Add an objective", "Add another thought") is this row: the
+// a to-do", "Add objective", "Add another thought") is this row: the
 // list's full width, at least 48px high, a 12px coral cross in an 18px
 // square, then the words in the secondary grey, turning the text colour on
 // hover and keyboard focus. No box and no outline. An Add that saves or
-// sends ("Add my to-do", "Add to this week") is a Button, never this row.
+// sends ("Add to-do", "Add to this week") is a Button, never this row.
 // The cross is drawn here, never the brand crosshair (which only closes).
 export const AddButton = forwardRef(function AddButton(
   { children, className = '', type = 'button', ...rest },
@@ -50,7 +50,7 @@ export const AddButton = forwardRef(function AddButton(
 });
 
 // A 44px round button holding only a crosshair. `label` is required: it
-// is what a screen reader says ("Close", "Add a to-do").
+// is what a screen reader says ("Close", "Add to-do").
 export const IconButton = forwardRef(function IconButton(
   { label, icon = 'close', className = '', type = 'button', ...rest },
   ref,

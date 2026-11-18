@@ -330,23 +330,23 @@ await page.waitForTimeout(500);
 const movedRow = todoRow('Shortlist breathing sound loops').first();
 pass('move: stays this week, tagged, its tick off', (await movedRow.textContent()).includes('Moved to week 6') && await movedRow.getByRole('checkbox').isDisabled());
 
-await page.getByRole('button', { name: 'Add a to-do' }).click();
+await page.getByRole('button', { name: 'Add to-do' }).click();
 await page.waitForSelector('.ds-panel textarea');
 // Never greyed out (Phase 8a follow-up, step 2): pressed too early, it says what's missing.
 {
-  const go = page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' });
-  pass('add a to-do: “Add my to-do” is never greyed out', !(await go.isDisabled()));
+  const go = page.locator('.ds-panel').getByRole('button', { name: 'Add to-do' });
+  pass('add to-do: “Add to-do” is never greyed out', !(await go.isDisabled()));
   await go.click();
   await page.waitForTimeout(500);
   const said = await page.locator('.ds-panel').innerText();
-  pass('add a to-do: pressed too early, it says what’s missing', said.includes('Type what needs doing to carry on.') && said.includes('Choose a Strategy to carry on.'), said.slice(0, 300));
+  pass('add to-do: pressed too early, it says what’s missing', said.includes('Type what needs doing to carry on.') && said.includes('Choose a Strategy to carry on.'), said.slice(0, 300));
 }
 await page.locator('.ds-panel textarea').fill('Send the referral thank-you notes');
 await page.locator('.ds-panel').getByRole('radio', { name: 'Grow through referrals' }).click();
 await shot(page, 'add-todo');
-await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
+await page.locator('.ds-panel').getByRole('button', { name: 'Add to-do' }).click();
 const added = await until(async () => (await db.from('todos').select('planned_week, sprint_id, impact').eq('user_id', me).eq('text', 'Send the referral thank-you notes')).data[0]);
-pass('add a to-do: saved for this week', added?.planned_week === 4 && added?.sprint_id === sprint.id, JSON.stringify(added));
+pass('add to-do: saved for this week', added?.planned_week === 4 && added?.sprint_id === sprint.id, JSON.stringify(added));
 
 // The Backlog (Tim, 13 Nov, 10:42): to-dos with no week yet. One is
 // added there from the add panel, shows under Backlog (never in this
@@ -356,7 +356,7 @@ pass('add a to-do: saved for this week', added?.planned_week === 4 && added?.spr
   const backlogFold = page.locator('.sprint-backlog');
   const backlogRow = (text) => backlogFold.locator('.ds-todo').filter({ hasText: text });
   await page.locator('.ds-toast').waitFor({ state: 'detached', timeout: 15000 }).catch(() => null);
-  await page.getByRole('button', { name: 'Add a to-do' }).click();
+  await page.getByRole('button', { name: 'Add to-do' }).click();
   await page.waitForSelector('.ds-panel textarea');
   const panel = page.locator('.ds-panel');
   await panel.locator('textarea').fill(BACK);
@@ -365,7 +365,7 @@ pass('add a to-do: saved for this week', added?.planned_week === 4 && added?.spr
   await page.getByRole('option', { name: 'Backlog', exact: true }).click();
   pass('backlog: the add panel says it waits there', (await panel.textContent()).includes('It waits there until you plan it into a week.'));
   await shot(page, 'add-todo-backlog');
-  await panel.getByRole('button', { name: 'Add my to-do' }).click();
+  await panel.getByRole('button', { name: 'Add to-do' }).click();
   const said = await page.locator('.ds-toast').filter({ hasText: /backlog/ }).first().textContent({ timeout: 5000 }).catch(() => '');
   pass('backlog: "Added to your backlog."', said.includes('Added to your backlog.'), said);
   const waitingRow = await until(async () => (await db.from('todos').select('id, planned_week, sprint_id, source').eq('user_id', me).eq('text', BACK)).data[0]);
@@ -394,7 +394,7 @@ pass('add a to-do: saved for this week', added?.planned_week === 4 && added?.spr
   if (plannedRow) await db.from('todos').delete().eq('id', plannedRow.id);
 }
 
-await page.getByRole('button', { name: 'Add an unplanned win' }).click();
+await page.getByRole('button', { name: 'Add unplanned win' }).click();
 await page.waitForSelector('.ds-panel textarea');
 await page.locator('.ds-panel textarea').fill('A past client sent two introductions');
 await page.locator('.ds-panel').getByRole('button', { name: 'Grow through referrals' }).click();

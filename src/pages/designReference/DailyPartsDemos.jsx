@@ -173,7 +173,7 @@ export function SummaryDemo() {
         <Stat panel label="Debrief streak" value="6" unit="weeks" note="You’ve debriefed 6 weeks in a row, including this one." />
       </StatGroup>
       <div className="dr-row">
-        <AddButton onClick={() => setPanel(true)}>Add a to-do</AddButton>
+        <AddButton onClick={() => setPanel(true)}>Add to-do</AddButton>
       </div>
       <AddTodoPanel
         open={panel}

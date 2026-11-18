@@ -173,7 +173,7 @@ try {
       try {
         await signIn(page);
         await page.locator('.home-page .ds-page-title').first().waitFor({ timeout: 20000 });
-        await page.getByRole('button', { name: 'Add a to-do' }).first().waitFor({ timeout: 20000 });
+        await page.getByRole('button', { name: 'Add to-do' }).first().waitFor({ timeout: 20000 });
         await settle();
         // Outlined buttons have no border since 18 Nov: a 1px hairline drawn as an inset shadow in the
         // outline grey, #3C3C3B in dark and #B9B7B1 in light (Tim's own values for Quiet precision, which
@@ -285,8 +285,8 @@ try {
         const unseen = (drawn.skipped || []).filter((s) => s.why === 'nothing drawn');
         pass(`high contrast, sprint page ${tag}: the chevrons are drawn on the screen (${drawn.length} read)`, drawn.length >= 1 && unseen.length === 0, unseen.map((s) => s.label).join('; ') || `${drawn.length} read`);
         if (out) await fp.screenshot({ path: join(out, `high-contrast-sprint-page-${size}-${mode}.png`), fullPage: true });
-        // The close crosshair, in a panel (Add a to-do; closed again, nothing saved).
-        await fp.getByRole('button', { name: 'Add a to-do' }).first().click({ timeout: 5000 });
+        // The close crosshair, in a panel (Add to-do; closed again, nothing saved).
+        await fp.getByRole('button', { name: 'Add to-do' }).first().click({ timeout: 5000 });
         await fp.locator('[role=dialog]').first().waitFor({ timeout: 8000 });
         await sleep(500);
         const close = await fp.evaluate(maskedIcons, '[role=dialog] .ds-cross');

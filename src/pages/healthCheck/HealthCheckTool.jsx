@@ -185,7 +185,7 @@ function WhenStep({ project, onDraft }) {
       {month && (
         <div className="hc-exact">
           {dates.dueOn && <span>{formatDocDate(dates.dueOn).slice(4)}</span>}
-          <Button ref={linkRef} variant="text" aria-haspopup="dialog" onClick={() => setPicking(true)}>{dates.dueOn ? 'Edit the exact date' : 'Add an exact date'}</Button>
+          <Button ref={linkRef} variant="text" aria-haspopup="dialog" onClick={() => setPicking(true)}>{dates.dueOn ? 'Edit the exact date' : 'Add exact date'}</Button>
           {dates.dueOn && <Button variant="text" onClick={() => set('fOn', undefined)}>Remove the exact date</Button>}
           <CalendarPopover
             open={picking}
@@ -441,7 +441,7 @@ export default function HealthCheckTool({
             itemLabel={(n) => `Success Factor ${n}`}
             removeLabel={(n) => `Remove Success Factor ${n}`}
             placeholder="e.g. Win enterprise customers in the US"
-            addLabel="Add a Success Factor"
+            addLabel="Add Success Factor"
             removeAlways
             undo
           />
@@ -497,7 +497,7 @@ export default function HealthCheckTool({
             maxLength={MAX_ITEM}
             itemLabel={(n) => `Project ${n}`}
             placeholder="e.g. New CRM roll-out"
-            addLabel="Add a project"
+            addLabel="Add project"
             removeAlways
             undo
           />

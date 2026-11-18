@@ -408,12 +408,12 @@ async function playThrough(page, tag, { deep = false } = {}) {
   pass(`${tag}: an open to-do rolls over`, (await rolled.count()) === 1 && (await rolled.innerText()).includes('Rolls over from week 3'));
   pass(`${tag}: next week's to-dos aren't ticked here`, (await page.locator('.ds-todos [role=checkbox]').count()) === 0);
   await checkScreen(page, `${tag} next week`);
-  await page.getByRole('button', { name: 'Add a to-do' }).click();
-  const panel = page.getByRole('dialog', { name: 'Add a to-do' });
+  await page.getByRole('button', { name: 'Add to-do' }).click();
+  const panel = page.getByRole('dialog', { name: 'Add to-do' });
   await panel.locator('textarea').first().waitFor();
   await panel.locator('textarea').first().fill(TODO);
   await panel.getByRole('radio', { name: 'Grow through referrals' }).click();
-  await panel.getByRole('button', { name: 'Add my to-do' }).click();
+  await panel.getByRole('button', { name: 'Add to-do' }).click();
   pass(`${tag}: the to-do is added to week 4`, Boolean(await until(async () => (await page.getByText('Added to week 4.').count()) > 0, 8000)));
   pass(`${tag}: it shows in next week's list`, (await page.locator('.ds-todo', { hasText: TODO }).count()) === 1);
   await shot(page, `${tag}-7-next`);

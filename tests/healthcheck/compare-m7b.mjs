@@ -208,7 +208,7 @@ const SCREENS = {
     ['its month', '.dts .dd > span:first-child', '.hc-dates .ds-dd-value', 0, ['pos']],
     ['Due to finish', '.dts .flab', '.hc-dates .ds-label-row-text', 1, ['pos', 'text']],
     ['the Due to finish drop-down', '.dts .dd', '.hc-dates .ds-dd', 1, ['box']],
-    ['Add an exact date', '.ans-wrap .text', '.hc-exact .ds-link', 0, ['pos', 'text']]],
+    ['Add exact date', '.ans-wrap .text', '.hc-exact .ds-link', 0, ['pos', 'text']]],
   progress: [...BAR, ...HEAD, ...ANSWERS(4)],
   resource: [...BAR, ...HEAD, ...ANSWERS(4)],
   results: [CROSS,

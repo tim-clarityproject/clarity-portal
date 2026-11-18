@@ -21,7 +21,7 @@ import { addDays, daysBetween, weekday } from '../scores/dates.js';
 import { cleanName } from '../signIn/words.js';
 
 export const TOOL_NAME = 'Peak moments';
-export const ADD_NAME = 'Add a peak moment';
+export const ADD_NAME = 'Add peak moment';
 export const PATH = '/peak-moments';
 export const NAME_MAX = 80;
 export const LEAD_UP_MAX = 300;

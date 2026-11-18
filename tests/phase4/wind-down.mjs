@@ -198,7 +198,7 @@ async function openWindDown(page) {
 }
 async function typeThoughts(page, list) {
   for (let i = 0; i < list.length; i += 1) {
-    if (i > 0) await page.getByRole('button', { name: 'Add a thought' }).click();
+    if (i > 0) await page.getByRole('button', { name: 'Add thought' }).click();
     await page.getByRole('textbox', { name: `Thought ${i + 1}` }).fill(list[i]);
   }
   return until(async () => (await page.locator('.ds-guide-bar').innerText()).includes('Saved'), 8000);
@@ -292,7 +292,7 @@ if (part(2)) {
     pass('wind-down: thoughts typed save on the device (Saved)', Boolean(await typeThoughts(page, THOUGHTS)));
     pass('wind-down: one numbered row each, with a remove crosshair', (await page.locator('.ds-rowlist-n').allInnerTexts()).join() === '1,2,3' && (await page.locator('.ds-rowlist-remove').count()) === 3);
     // 300 characters at most.
-    await page.getByRole('button', { name: 'Add a thought' }).click();
+    await page.getByRole('button', { name: 'Add thought' }).click();
     await page.getByRole('textbox', { name: 'Thought 4' }).fill('x'.repeat(320));
     pass('wind-down: a thought is capped at 300 characters', (await page.getByRole('textbox', { name: 'Thought 4' }).inputValue()).length === 300);
     await page.getByRole('textbox', { name: 'Thought 4' }).pressSequentially('more');

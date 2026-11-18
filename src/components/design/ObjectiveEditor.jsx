@@ -13,7 +13,7 @@ import './design.css';
 // tracked, how (a number, a milestone or a rating in five words, with M6's two
 // lines under the choice), then where they are now, the target and the
 // date from the calendar. Shared by Build your plan, editing the plan and
-// the end-of-sprint review's "Add an objective".
+// the end-of-sprint review's "Add objective".
 //
 // objective: { name, kind: 'number'|'milestone'|'rating', start, target, date }
 //            (figures as typed; the page decides when it is complete)

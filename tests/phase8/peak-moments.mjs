@@ -226,7 +226,7 @@ try {
     pass(`${tag}: Coming up lists them in date order`, JSON.stringify(coming) === JSON.stringify(['Board away-day', 'Cup final', 'Monthly board meeting', 'Mum’s 70th']), coming.join(' | '));
     const pastNames = (await page.locator('.peak-section').nth(1).locator('.ds-peak-name').allInnerTexts().catch(() => [])).map((t) => t.trim());
     pass(`${tag}: yesterday’s is under Past`, pastNames.includes('Investor call'), pastNames.join(' | '));
-    pass(`${tag}: one add button`, (await page.getByRole('button', { name: 'Add a peak moment' }).count()) === 1);
+    pass(`${tag}: one add button`, (await page.getByRole('button', { name: 'Add peak moment' }).count()) === 1);
     pass(`${tag}: no sideways scroll on the list`, await noSideScroll(page));
     await page.screenshot({ path: join(out, `list-${width}.png`), fullPage: true });
 

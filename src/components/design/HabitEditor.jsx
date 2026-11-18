@@ -23,7 +23,7 @@ import './design.css';
 // at most"), and how much it moves its Strategy. Two things M6 leaves out
 // that the methods need: an amount's unit, and whether a higher or lower
 // rating is better. Shared by Build your plan, editing the plan, Start a
-// sprint (Change and Add a habit) and the sprint's habit panel.
+// sprint (Change and Add habit) and the sprint's habit panel.
 //
 // habit:    { name, measure, target, unit, per, direction, impact }
 // onChange: (patch) => void; a new measure comes as { measure }, and the

@@ -176,7 +176,7 @@ export function useSprintActions({ userId, data, setData, view, today }) {
   };
 
   /**
-   * A new to-do for a week of the sprint (M1 "Add a to-do"), with "Added
+   * A new to-do for a week of the sprint (M1 "Add to-do"), with "Added
    * to this week." and Undo, or for the Backlog (no week yet; Tim, 13 Nov,
    * 10:42). Resolves false when it didn't save (the page puts the form back).
    */

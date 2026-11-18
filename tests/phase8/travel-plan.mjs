@@ -247,7 +247,7 @@ async function run(browser, width, mode) {
   pass(`${tag}: the key moments ask what to be sharpest for in New York`, await onQ(page, 'What do you need to be sharpest for in New York?'));
   const boardRow = page.locator('.ds-guide-body .ds-answer', { hasText: 'Harbour board meeting' });
   pass(`${tag}: the trip's peak moment is already chosen; the one in Tokyo isn't offered`, (await boardRow.getAttribute('aria-pressed')) === 'true' && (await page.locator('.ds-guide-body .ds-answer', { hasText: 'Tokyo' }).count()) === 0);
-  await page.getByRole('button', { name: 'Add a key moment' }).click();
+  await page.getByRole('button', { name: 'Add key moment' }).click();
   await pressNext(page);
   pass(`${tag}: a key moment with no name says “Type the key moment’s name to carry on.”`, await until(async () => (await problem(page)).includes('Type the key moment’s name to carry on.'), 4000));
   await page.locator('.travel-extra .ds-text').fill('Investor dinner');

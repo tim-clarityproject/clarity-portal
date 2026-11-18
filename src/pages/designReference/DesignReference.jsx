@@ -587,8 +587,8 @@ function TodosDemo() {
         <TodoRow win text="Spoke at a breakfast event and two people asked about coaching" strategyName="Grow through referrals" winTag="Unplanned win, Tue" />
       </TodoList>
       <div className="dr-row">
-        <AddButton onClick={() => setPanel('todo')}>Add a to-do</AddButton>
-        <AddButton onClick={() => setPanel('win')}>Add an unplanned win</AddButton>
+        <AddButton onClick={() => setPanel('todo')}>Add to-do</AddButton>
+        <AddButton onClick={() => setPanel('win')}>Add unplanned win</AddButton>
       </div>
       <AddTodoPanel
         open={panel === 'todo'}
@@ -633,7 +633,7 @@ function TodosDemo() {
       <p className="dr-small">Every tool that adds a to-do asks where it should go, inside one of its own steps or in the add panel.</p>
       <TodoWhere options={todoWhereOptions({ running: true })} value={where} onChange={setWhere} />
       <div className="dr-row">
-        <AddButton onClick={() => setPanel('tool')}>Add a to-do from a tool</AddButton>
+        <AddButton onClick={() => setPanel('tool')}>Add to-do from a tool</AddButton>
       </div>
       <AddTodoPanel
         open={panel === 'tool'}
@@ -666,7 +666,7 @@ function ButtonsDemo() {
     <div className="dr-stack">
       <div className="dr-row">
         <Button variant="primary" onClick={() => toast.show('Saved')}>Save my Mission</Button>
-        <AddButton onClick={() => toast.show('This adds a to-do.')}>Add a to-do</AddButton>
+        <AddButton onClick={() => toast.show('This adds a to-do.')}>Add to-do</AddButton>
         <Button variant="text" onClick={() => toast.show('Sprint details open here.')}>See the sprint details</Button>
       </div>
       <span className="dr-small">The coral button on hover, then disabled, for comparison:</span>
@@ -1196,23 +1196,23 @@ function PanelsDemo() {
         <div className="dr-mini-page">Page underneath</div>
         <div className="dr-mini-scrim" />
         <div className="dr-mini-sheet">
-          <div className="dr-mini-title">Add a to-do<Crosshair variant="close" size="sm" /></div>
+          <div className="dr-mini-title">Add to-do<Crosshair variant="close" size="sm" /></div>
           <div className="dr-mini-line dr-mini-line--box" />
           <div className="dr-mini-line" />
           <div className="dr-mini-line dr-mini-line--70" />
         </div>
       </div>
       <div className="dr-row">
-        <AddButton onClick={() => setPanel(true)}>Add a to-do</AddButton>
-        <AddButton onClick={() => setWinPanel(true)}>Add an unplanned win</AddButton>
+        <AddButton onClick={() => setPanel(true)}>Add to-do</AddButton>
+        <AddButton onClick={() => setWinPanel(true)}>Add unplanned win</AddButton>
         <Button onClick={() => setPopup(true)}>See how it fits together</Button>
       </div>
       <SlidePanel
         open={panel}
         onClose={() => setPanel(false)}
-        title="Add a to-do"
+        title="Add to-do"
         initialFocusRef={box}
-        footer={<Button variant="primary" disabled={!todo.text.trim()} onClick={() => { setPanel(false); setTodo((t) => ({ ...t, text: '' })); toast.saved({ message: 'Added to this week.', onUndo: () => toast.show('Removed.') }); }}>Add my to-do</Button>}
+        footer={<Button variant="primary" disabled={!todo.text.trim()} onClick={() => { setPanel(false); setTodo((t) => ({ ...t, text: '' })); toast.saved({ message: 'Added to this week.', onUndo: () => toast.show('Removed.') }); }}>Add to-do</Button>}
       >
         <div className="dr-panel-form">
           <TextBox ref={box} label="What needs doing?" who="me" value={todo.text} onChange={(text) => setTodo((t) => ({ ...t, text }))} placeholder="e.g. Send the board pack to the chair" />
@@ -1224,7 +1224,7 @@ function PanelsDemo() {
       <SlidePanel
         open={winPanel}
         onClose={() => setWinPanel(false)}
-        title="Add an unplanned win"
+        title="Add unplanned win"
         initialFocusRef={winBox}
         footer={<Button variant="primary" disabled={!win.text.trim() || win.strategies.length === 0} onClick={() => { setWinPanel(false); setWin((w) => ({ ...w, text: '', strategies: [] })); toast.show('Added to your Confidence Bank.'); }}>Add my win</Button>}
       >
@@ -1263,7 +1263,7 @@ function EmptyDemo() {
     <EmptyState
       as="h3"
       question="What’s one thing that would move this week forward?"
-      action={{ label: 'Add a to-do', onClick: () => toast.show('This adds a to-do.') }}
+      action={{ label: 'Add to-do', onClick: () => toast.show('This adds a to-do.') }}
     />
   );
 }
@@ -1465,10 +1465,10 @@ function Gallery() {
             <p><b>One coral button per screen</b>, the same coral with black text in both modes, with a faint top highlight.</p>
             <p>Every other button has no fill and a hairline in the outline grey; on hover and keyboard focus the hairline and the words turn the text colour. A text link for minor actions.</p>
             <p>Pressing a button shrinks it a little for a moment; Reduce motion turns it off.</p>
-            <p><New /><b>Every Add that starts a new item at the end of a list is a row</b> (Tim, 18 Nov): the list’s full width, a small coral cross, then the words in grey (“Add a to-do”, “Add an objective”, “Add another thought”). An Add that saves or sends (“Add my to-do”, “Add to this week”) is a button.</p>
+            <p><New /><b>Every Add that starts a new item at the end of a list is a row</b> (Tim, 18 Nov): the list’s full width, a small coral cross, then the words in grey (“Add to-do”, “Add objective”, “Add another thought”; never “a” or “an”, Tim, 18 Nov). An Add that saves or sends (“Add to-do”, “Add to this week”) is a button.</p>
             <p><New /><b>Hover never looks disabled</b> (23 Oct): a slightly brighter coral in dark and a slightly deeper coral in light, with black text in both.</p>
             <p>A disabled coral button is the coral at 35% opacity.</p>
-            <p><b>“My” where it’s theirs</b> (Save my Mission, Add my win, Add my to-do), otherwise verb and thing (Add a to-do, See it full screen).</p>
+            <p><b>“My” where it’s theirs</b> (Save my Mission, Add my win, Add to-do), otherwise verb and thing (Add to-do, See it full screen).</p>
             <p>Never Submit, OK or Go.</p>
           </>
         )} />
@@ -1755,7 +1755,7 @@ function Gallery() {
             <p><New /><b>The daily tools’ summary</b> (M5): a skipped answer says “Skipped” with Add; a row can hold several lines, a grey line under it, or a mint line for a win.</p>
             <p><New /><b>The celebration glow</b> (M1 debrief): a thin mint edge that fades in once and stays, at or above the standard only; with reduced motion it is simply there.</p>
             <p>Mint means good, never coral (Tim, 26 Oct).</p>
-            <p><New /><b>Add a to-do from Daily plan</b>: the usual panel without “Which week?”, saying it goes into today and this week’s sprint.</p>
+            <p><New /><b>Add to-do from Daily plan</b>: the usual panel without “Which week?”, saying it goes into today and this week’s sprint.</p>
           </>
         )} />
 
@@ -2156,7 +2156,7 @@ function Gallery() {
         <GallerySection id="c62" title="Sleep wind down: the night screens" demo={NightDemo} rules={(
           <>
             <p><New /><b>Night colours</b> (M19, 29 Oct): each mode’s own colours, one step quieter, named night tokens. Light stays light and dark stays dark.</p>
-            <p>Thoughts are rows, one each, numbered, with the 45 degree crosshair to remove one and Add a thought. Each is 300 characters at most, with no limit on how many.</p>
+            <p>Thoughts are rows, one each, numbered, with the 45 degree crosshair to remove one and Add thought. Each is 300 characters at most, with no limit on how many.</p>
             <p>The breathing shows the orb alone, in the person’s style, 4 seconds in and 6 out, with no words on or beside it.</p>
             <p>Sleep well is centred: the title, two lines and an outlined Back to Home. No list and nothing to act on.</p>
           </>

@@ -97,11 +97,11 @@ export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, we
     <SlidePanel
       open={open}
       onClose={onClose}
-      title="Add a to-do"
+      title="Add to-do"
       initialFocusRef={noStrategies ? undefined : box}
       footer={noStrategies
         ? <Button onClick={add}>Done</Button>
-        : <Footer onCancel={onClose} onAdd={add} ready={ready} never label={none ? 'Done' : 'Add my to-do'} />}
+        : <Footer onCancel={onClose} onAdd={add} ready={ready} never label={none ? 'Done' : 'Add to-do'} />}
     >
       {noStrategies ? (
         <div className="ds-panel-lead">
@@ -169,7 +169,7 @@ export function AddWinPanel({ open, onClose, form, onFormChange, strategies, day
     <SlidePanel
       open={open}
       onClose={onClose}
-      title="Add an unplanned win"
+      title="Add unplanned win"
       initialFocusRef={box}
       footer={<Footer onCancel={onClose} onAdd={add} ready={ready} never label="Add my win" />}
     >

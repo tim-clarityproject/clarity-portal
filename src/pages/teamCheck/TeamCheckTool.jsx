@@ -67,7 +67,7 @@ import './teamCheck.css';
 //
 // The eye shows on the first step and on the results only (Tim, 13 Nov,
 // 09:32). One-answer questions move straight on (rule 21), so they have no
-// bottom bar. "Add a to-do" is the results' one coral button; it opens the
+// bottom bar. "Add to-do" is the results' one coral button; it opens the
 // shared add panel ("Where should it go?", rule 31).
 
 const TABLE_COLUMNS = [
@@ -156,7 +156,7 @@ function AddPersonPanel({ open, onClose, onAdd }) {
     <SlidePanel
       open={open}
       onClose={onClose}
-      title="Add a person"
+      title="Add person"
       initialFocusRef={nameRef}
       footer={<Button variant="primary" className="ds-panel-go" onClick={add}>Add this person</Button>}
     >
@@ -223,7 +223,7 @@ export default function TeamCheckTool({
           />
           {people.length < PEOPLE_MAX && (
             <div className="tpc-add">
-              <AddButton onClick={() => setAdding(true)}>Add a person</AddButton>
+              <AddButton onClick={() => setAdding(true)}>Add person</AddButton>
             </div>
           )}
           {actionsFirst && actions}
@@ -277,7 +277,7 @@ export default function TeamCheckTool({
         name={TOOL_NAME}
         steps={steps}
         progress="percent"
-        finishLabel="Add a to-do"
+        finishLabel="Add to-do"
         skipLabel="Finish later"
         skipMoves={false}
         onSkip={onClose}

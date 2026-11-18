@@ -215,7 +215,7 @@ if (part('D')) {
       await f.evaluate((el) => el.click());
       const ok = await until(async () => path(c1.page) === want[words], 8000);
       let extra = '';
-      if (ok && words === 'Plan it into this week') extra = (await until(async () => c1.page.locator('.ds-dialog', { hasText: 'Add a to-do' }).isVisible(), 6000)) ? '' : ' (no Add a to-do panel)';
+      if (ok && words === 'Plan it into this week') extra = (await until(async () => c1.page.locator('.ds-dialog', { hasText: 'Add to-do' }).isVisible(), 6000)) ? '' : ' (no Add a to-do panel)';
       if (ok && words === 'Review its Strategies') extra = (await until(async () => new URL(c1.page.url()).hash === '#strategies', 3000)) ? '' : ` (hash ${new URL(c1.page.url()).hash})`;
       pass(`D "${words}" lands on ${want[words]}${extra}`, ok && !extra, c1.page.url() + extra);
     }

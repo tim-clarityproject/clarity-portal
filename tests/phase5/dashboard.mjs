@@ -575,9 +575,9 @@ if (part('S')) {
       }, strat[0].id);
       await page.reload();
       await sleep(2500);
-      const panelTodo = page.locator('.ds-dialog', { hasText: 'Add a to-do' });
+      const panelTodo = page.locator('.ds-dialog', { hasText: 'Add to-do' });
       const opened = await until(async () => panelTodo.isVisible(), 6000);
-      pass('holding back: "Plan it into this week" opens Add a to-do', opened);
+      pass('holding back: "Plan it into this week" opens Add to-do', opened);
       if (opened) {
         const chosen = await panelTodo.locator('[aria-checked="true"], [aria-pressed="true"]').allInnerTexts();
         pass('holding back: with that Strategy chosen', chosen.some((t) => t.includes(strat[0].name)), chosen.join(' | '));

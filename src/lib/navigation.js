@@ -428,7 +428,7 @@ const PAGE_NAMES = [
   ['/performance-plan/history', 'Version history'],
   ['/performance-sprint/year', 'View your year'],
   ['/peak-moments', 'Peak moments'],
-  ['/peak-moments/add', 'Add a peak moment'],
+  ['/peak-moments/add', 'Add peak moment'],
   ['/peak-moments/edit', 'Edit this peak moment'],
   ['/peak-moments/review', 'Peak moment review'],
   ['/travel-plan', 'Travel plan'],

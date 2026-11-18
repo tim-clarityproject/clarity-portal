@@ -93,7 +93,7 @@ import './design.css';
 //              (three questions for each person on a list);
 //   noProgress: no % bar on this step (a results page with its own title);
 //   footAside: a quiet link at the bottom bar's left, where Skip would be
-//              ("Download my PDF" beside "Add a to-do");
+//              ("Download my PDF" beside "Add to-do");
 //   onward:    () => the key of the step Next goes to from here, or null
 //              for the usual one. It wins over going back to a summary, so
 //              an edit that needs more answers (someone added to a list)

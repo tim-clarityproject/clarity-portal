@@ -279,7 +279,7 @@ for (const width of [1280, 700, 390, 360]) {
   await objRow(milestone.name).getByRole('radio', { name: 'Retire it', exact: true }).click();
   await page.waitForTimeout(300);
   pass('a retired objective is struck through', await objRow(milestone.name).evaluate((e) => e.classList.contains('ds-carry-row--removed')));
-  await page.getByRole('button', { name: 'Add an objective' }).click();
+  await page.getByRole('button', { name: 'Add objective' }).click();
   await page.waitForTimeout(400);
   const card = page.locator('.review-added .ds-objed').first();
   await card.locator('textarea').fill('Confidence leading group workshops');

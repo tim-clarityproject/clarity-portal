@@ -627,8 +627,8 @@ function SprintBody({
             <p className="ipp-muted sprint-gap">Nothing is planned for this week yet.</p>
           )}
           <div className="ds-actions sprint-add">
-            <AddButton onClick={onAddTodo}>Add a to-do</AddButton>
-            <AddButton onClick={onAddWin}>Add an unplanned win</AddButton>
+            <AddButton onClick={onAddTodo}>Add to-do</AddButton>
+            <AddButton onClick={onAddWin}>Add unplanned win</AddButton>
           </div>
           <div className="sprint-later">
             <Collapsible

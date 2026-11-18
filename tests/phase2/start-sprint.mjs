@@ -281,7 +281,7 @@ try {
   pass('steps: a removed habit is struck through', (await rows.nth(1).getAttribute('class')).includes('ds-carry-row--removed'));
   await rows.nth(0).getByRole('radio', { name: 'Change it', exact: true }).click();
   await rows.nth(0).locator('.ds-habed').getByLabel('What’s the target?').fill('3');
-  await page.getByRole('button', { name: 'Add a habit' }).click();
+  await page.getByRole('button', { name: 'Add habit' }).click();
   await page.locator('.sprint-start-new textarea').first().fill('Walk between meetings');
   await page.locator('.sprint-start-new').getByLabel('What’s the target?').fill('3');
   await shot(page, 'flow-habits');

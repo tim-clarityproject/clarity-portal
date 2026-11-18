@@ -320,7 +320,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
     [userId, today, card?.key, location.key, dayPlanned, reviewed, day.yesterday?.reviewed],
   );
 
-  // Add a to-do: the sprint page's own panel and save (one way to save), with its draft.
+  // Add to-do: the sprint page's own panel and save (one way to save), with its draft.
   const { clear: clearTodoDraft } = useDraft({
     userId,
     name: `home-todo:${view?.sprintId || 'none'}`,
@@ -500,7 +500,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
           </div>
           {running && (
             <AddButton className="home-add" onClick={() => { setTodoForm((f) => (f.text ? f : emptyTodo(view.current))); setPanel('todo'); }}>
-              Add a to-do
+              Add to-do
             </AddButton>
           )}
 

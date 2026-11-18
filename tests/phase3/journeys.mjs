@@ -266,10 +266,10 @@ async function planDay(day, i, { picks, lastNight = [], panel = false }) {
     await until(async () => (await pick.getAttribute('aria-pressed')) === 'true', 8000);
   }
   if (panel) {
-    await page.getByRole('button', { name: 'Add a to-do' }).click();
+    await page.getByRole('button', { name: 'Add to-do' }).click();
     const p = page.locator('[role=dialog]').last();
     await p.locator('textarea').first().fill(PANEL_TODO);
-    await p.getByRole('button', { name: 'Add my to-do' }).click();
+    await p.getByRole('button', { name: 'Add to-do' }).click();
     await until(async () => (await page.getByText(/Added to (today and )?this week’s sprint/).count()) > 0, 10000);
   }
   await next();
@@ -330,8 +330,8 @@ async function reviewDay(day, i, { ticks, win = false, tomorrow = [] }) {
   pass(`${tag}: Went well`, (await heading()) === 'What went well today?', await heading());
   await body().locator('textarea').first().fill(`Day ${i + 1} went to plan.`);
   if (win) {
-    await page.getByRole('button', { name: 'Add an unplanned win' }).click();
-    const p = page.getByRole('dialog', { name: 'Add an unplanned win' });
+    await page.getByRole('button', { name: 'Add unplanned win' }).click();
+    const p = page.getByRole('dialog', { name: 'Add unplanned win' });
     await p.locator('textarea').first().waitFor();
     await p.locator('textarea').first().fill(WIN);
     await p.getByRole('button', { name: 'Grow through referrals' }).click();
@@ -449,12 +449,12 @@ try {
   await body().locator('textarea').first().fill(DEBRIEF.adjust);
   await next();
   pass('debrief: Next week', (await heading()) === 'What’s planned for next week?', await heading());
-  await page.getByRole('button', { name: 'Add a to-do' }).click();
-  const panel = page.getByRole('dialog', { name: 'Add a to-do' });
+  await page.getByRole('button', { name: 'Add to-do' }).click();
+  const panel = page.getByRole('dialog', { name: 'Add to-do' });
   await panel.locator('textarea').first().waitFor();
   await panel.locator('textarea').first().fill(NEXT_TODO);
   await panel.getByRole('radio', { name: 'Grow through referrals' }).click();
-  await panel.getByRole('button', { name: 'Add my to-do' }).click();
+  await panel.getByRole('button', { name: 'Add to-do' }).click();
   pass('debrief: the to-do goes to week 5', Boolean(await until(async () => (await page.getByText('Added to week 5.').count()) > 0, 8000)));
   await next();
   pass('debrief: the summary', /^(Here’s your week, \S+\.|Great week, \S+! You smashed your standard\.)$/.test(await heading()), await heading());

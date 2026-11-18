@@ -129,14 +129,14 @@ async function run(browser, width) {
   pass(`${tag}: … and stays on the list`, (await questionText(page)).startsWith('Who reports to you?'));
 
   // The add panel: a missing name is said, never a greyed-out button.
-  await page.getByRole('button', { name: 'Add a person', exact: true }).click();
+  await page.getByRole('button', { name: 'Add person', exact: true }).click();
   await panel(page).waitFor({ timeout: 10000 });
   await sleep(600);
   pass(`${tag}: the panel is “Add a person”`, (await panel(page).locator('h2').innerText()).trim().toUpperCase() === 'ADD A PERSON');
   pass(`${tag}: its button is never greyed out`, !(await panel(page).getByRole('button', { name: 'Add this person' }).isDisabled()));
   await panel(page).getByRole('button', { name: 'Add this person' }).click();
   pass(`${tag}: no name says “Type their name to carry on.”`, await until(async () => (await panel(page).locator('.ds-error').innerText().catch(() => '')).includes('Type their name to carry on.'), 5000));
-  await checkScreen(page, `${tag}, add a person`, { layer: '[role=dialog]:not(.ds-guide)' });
+  await checkScreen(page, `${tag}, add person`, { layer: '[role=dialog]:not(.ds-guide)' });
   await shot('add-a-person');
   await panel(page).getByLabel('What’s their name?').fill(M10.people[0].name);
   await panel(page).getByLabel('What’s their role?').fill(M10.people[0].role);
@@ -322,7 +322,7 @@ async function run(browser, width) {
   pass(`${tag}: the PDF is made and named in words`, Boolean(file) && /^Team performance check, .*\d{4}\.pdf$/.test(file?.suggestedFilename() || ''), file?.suggestedFilename() || 'no download');
   await sleep(800);
 
-  // ---- Add a to-do: the shared panel, to each place
+  // ---- Add to-do: the shared panel, to each place
   const addTodo = async (text, where) => {
     await sleep(500);
     await page.locator('.ds-guide-next').click();

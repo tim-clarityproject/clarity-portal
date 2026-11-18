@@ -374,6 +374,6 @@ test('ids are looked up as the list’s own, never something every object carrie
 test('the page: its explanation, its tab and its menu place', () => {
   assert.deepEqual(EXPLAIN, { title: 'What’s a peak moment?', terms: [{ term: 'Peak moment', meaning: 'A moment that needs more of your energy, attention and focus, because of its cognitive, physical or social demands.' }] });
   assert.equal(tabTitle('/peak-moments'), 'Peak moments, The Clarity Portal');
-  assert.equal(tabTitle('/peak-moments/add'), 'Add a peak moment, The Clarity Portal');
+  assert.equal(tabTitle('/peak-moments/add'), 'Add peak moment, The Clarity Portal');
   assert.equal(areaOf('/peak-moments'), 'personal');
 });

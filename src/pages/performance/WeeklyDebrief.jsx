@@ -86,7 +86,7 @@ import './performance.css';
 //               a milestone
 //   Went well   with "Your days" (the week's Daily review entries) folded
 //   In the way, Adjust
-//   Next week   the open to-dos that roll over and next week's, Add a to-do
+//   Next week   the open to-dos that roll over and next week's, Add to-do
 //               (into the sprint, next week chosen)
 //   Summary     the week's score (mint and a glow at or above the
 //               standard), the usual range, the debrief streak (M11), and
@@ -673,7 +673,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
                 {view.wins.map((w) => <TodoRow key={w.id} win text={w.text} strategyName={w.strategyName} winTag={`Unplanned win, ${w.day}`} />)}
               </TodoList>
             )}
-            <AddButton className="day-add" onClick={() => { setWinForm((f) => (f.text ? f : emptyWin(view.winDays[view.winDays.length - 1]?.value))); setPanel('win'); }}>Add an unplanned win</AddButton>
+            <AddButton className="day-add" onClick={() => { setWinForm((f) => (f.text ? f : emptyWin(view.winDays[view.winDays.length - 1]?.value))); setPanel('win'); }}>Add unplanned win</AddButton>
           </Section>
         </div>
       ),
@@ -808,7 +808,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
             <p>Habits carry on with the same targets.</p>
             <p>You can change them in the sprint.</p>
           </div>
-          <AddButton className="day-add" onClick={() => { setTodoForm((f) => (f.text ? f : emptyTodo(view.nextWeek.number))); setPanel('todo'); }}>Add a to-do</AddButton>
+          <AddButton className="day-add" onClick={() => { setTodoForm((f) => (f.text ? f : emptyTodo(view.nextWeek.number))); setPanel('todo'); }}>Add to-do</AddButton>
         </div>
       )),
     },

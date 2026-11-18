@@ -231,7 +231,7 @@ export async function guestOpenTool(page) {
 }
 
 /**
- * The add panel ("Add a to-do"), open: picks the first Strategy, then
+ * The add panel ("Add to-do"), open: picks the first Strategy, then
  * where it should go ('This week', 'Backlog' or 'Don’t add it'), and
  * presses the panel's button.
  */
@@ -338,9 +338,9 @@ export async function clearTeamCheck(page) {
   await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (/team-check|:tool-answers$/.test(k)) localStorage.removeItem(k); });
 }
 
-/** Adds one person through the "Add a person" panel. */
+/** Adds one person through the "Add person" panel. */
 export async function addPerson(page, name, role = '') {
-  await page.getByRole('button', { name: 'Add a person', exact: true }).click();
+  await page.getByRole('button', { name: 'Add person', exact: true }).click();
   const p = panel(page);
   await p.waitFor({ timeout: 10000 });
   await p.getByLabel('What’s their name?').fill(name);

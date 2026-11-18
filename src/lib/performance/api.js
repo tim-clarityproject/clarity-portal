@@ -746,7 +746,7 @@ export async function freezeWeek(sprintId, week) {
 }
 
 /**
- * A new to-do for a week of the sprint (M1 "Add a to-do"), or for the
+ * A new to-do for a week of the sprint (M1 "Add to-do"), or for the
  * Backlog: no sprint and no week (the two are empty together).
  */
 export function saveTodo(userId, t) {

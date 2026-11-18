@@ -17,7 +17,7 @@ export function NightDemo() {
         <WhoSees audience="me" />
         <InfoWords title="Why write it down" text="In a sleep study, people who wrote a to-do list for the next day fell asleep faster.">Why write it down</InfoWords>
       </IconTextRow>
-      <RowList numbered rows={rows} onChange={setRows} max={Infinity} maxLength={300} itemLabel={(n) => `Thought ${n}`} addLabel="Add a thought" />
+      <RowList numbered rows={rows} onChange={setRows} max={Infinity} maxLength={300} itemLabel={(n) => `Thought ${n}`} addLabel="Add thought" />
       <span className="dr-small">At night: the mode’s own colours, one step quieter, the orb alone:</span>
       <NightScope className="dr-night">
         <div className="ds-night-breathe">

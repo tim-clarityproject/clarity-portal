@@ -80,7 +80,7 @@ import './peakMoments.css';
 // with the brief's changes, which win over M18 where they differ):
 //   /peak-moments                  the list: Coming up, then Past, one add
 //                                  button; with none, the calm card
-//   /peak-moments/add              Add a peak moment: one question a screen
+//   /peak-moments/add              Add peak moment: one question a screen
 //                                  (M18 draws one side sheet; the brief asks
 //                                  for the calm guided tool), then a summary
 //   /peak-moments/edit/:id         the same tool, opened on its summary

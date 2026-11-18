@@ -390,7 +390,7 @@ if (part(4) || part(5)) {
       await page.waitForSelector('.ds-panel textarea, .ds-panel input', { timeout: 5000 });
       await page.getByLabel('What needs doing?').fill(TODO_TEXT);
       await page.locator('.ds-panel').getByText('Grow through referrals', { exact: true }).click();
-      await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
+      await page.locator('.ds-panel').getByRole('button', { name: 'Add to-do' }).click();
       pass('Home: Add a to-do says it was added', Boolean(await until(async () => (await page.locator('text=Added to this week.').count()) > 0, 10000)));
       const saved = await until(async () => {
         const { data } = await db.from('todos').select('id, planned_week, deleted_at').eq('user_id', me).eq('text', TODO_TEXT);

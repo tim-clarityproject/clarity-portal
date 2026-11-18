@@ -174,13 +174,13 @@ async function strategyNames() {
   return (await q(db.from('plan_strategies').select('name').eq('plan_id', plan.id).is('archived_at', null).order('sort_order'))).map((s) => s.name);
 }
 async function openTodoPanel(page, text, strategy) {
-  await page.getByRole('button', { name: 'Add a to-do' }).click();
+  await page.getByRole('button', { name: 'Add to-do' }).click();
   await page.waitForSelector('.ds-panel textarea');
   await page.locator('.ds-panel textarea').fill(text);
   await page.locator('.ds-panel').getByRole('radio', { name: strategy }).click();
 }
 async function openWinPanel(page, text, strategy) {
-  await page.getByRole('button', { name: 'Add an unplanned win' }).click();
+  await page.getByRole('button', { name: 'Add unplanned win' }).click();
   await page.waitForSelector('.ds-panel textarea');
   await page.locator('.ds-panel textarea').fill(text);
   await page.locator('.ds-panel').getByRole('button', { name: strategy }).click();
@@ -195,10 +195,10 @@ if (run('taps')) {
     await openSprint(page);
     const before = (await todosOf()).length;
     await openTodoPanel(page, 'Triple tap to-do', st0);
-    await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click({ clickCount: 3 });
+    await page.locator('.ds-panel').getByRole('button', { name: 'Add to-do' }).click({ clickCount: 3 });
     await page.waitForTimeout(2500);
     const after = await todosOf();
-    pass('taps: a triple tap on Add my to-do adds one to-do', after.length === before + 1 && after.filter((t) => t.text === 'Triple tap to-do').length === 1, `${before} then ${after.length}`);
+    pass('taps: a triple tap on Add to-do adds one to-do', after.length === before + 1 && after.filter((t) => t.text === 'Triple tap to-do').length === 1, `${before} then ${after.length}`);
     pass('taps: the page lists it once', (await page.locator('.ds-todo').filter({ hasText: 'Triple tap to-do' }).count()) === 1);
 
     const wins0 = (await winsOf()).length;
@@ -536,7 +536,7 @@ if (run('text')) {
       const before = (await todosOf()).length;
       await openTodoPanel(page, text, st0);
       const typed = await page.locator('.ds-panel textarea').inputValue();
-      const add = page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' });
+      const add = page.locator('.ds-panel').getByRole('button', { name: 'Add to-do' });
       const enabled = await add.isEnabled();
       if (enabled) await add.click();
       await page.waitForTimeout(2500);
@@ -682,7 +682,7 @@ if (run('offline')) {
     await openSprint(page);
     await context.setOffline(true);
     await openTodoPanel(page, 'Added while offline', st0);
-    await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
+    await page.locator('.ds-panel').getByRole('button', { name: 'Add to-do' }).click();
     const willSync = await page.waitForFunction(() => /Will sync/.test(document.body.innerText), null, { timeout: 8000 }).then(() => true).catch(() => false);
     pass('offline: adding a to-do says Will sync', willSync);
     await openWinPanel(page, 'Win while offline', st0);
@@ -708,7 +708,7 @@ if (run('offline')) {
       if (route.request().method() === 'POST') { await context.setOffline(true); return route.abort('internetdisconnected'); }
       return route.fallback();
     });
-    await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
+    await page.locator('.ds-panel').getByRole('button', { name: 'Add to-do' }).click();
     const midSync = await page.waitForFunction(() => /Will sync/.test(document.body.innerText), null, { timeout: 10000 }).then(() => true).catch(() => false);
     await page.unroute('**/rest/v1/todos*');
     await context.setOffline(false);
@@ -769,7 +769,7 @@ if (run('refresh')) {
     await hold('**/rest/v1/todos*');
     await openTodoPanel(page, 'Refreshed mid-save to-do', st0);
     const todoSent = sent('/rest/v1/todos');
-    await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
+    await page.locator('.ds-panel').getByRole('button', { name: 'Add to-do' }).click();
     await todoSent;
     await page.reload();
     await page.unroute('**/rest/v1/todos*');
@@ -780,7 +780,7 @@ if (run('refresh')) {
     console.log(`refresh: to-do after the refresh: ${t.length} saved, panel "${panelBack}"`);
     pass('refresh: a to-do refreshed mid-save is not lost (saved, or its draft is back)', t.length === 1 || panelBack.includes('Refreshed mid-save to-do'), `${t.length} saved, panel "${panelBack}"`);
     if (!t.length && panelBack) {
-      await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
+      await page.locator('.ds-panel').getByRole('button', { name: 'Add to-do' }).click();
       await until(async () => (await todosOf()).some((x) => x.text === 'Refreshed mid-save to-do'), 20000);
       t = (await todosOf()).filter((x) => x.text === 'Refreshed mid-save to-do');
     }

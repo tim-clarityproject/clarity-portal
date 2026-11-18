@@ -735,7 +735,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
                   ))}
                 </TodoList>
               )}
-              <AddButton className="day-add" onClick={() => { setWinForm((f) => (f.text ? f : emptyWin(date))); setPanel(true); }}>Add an unplanned win</AddButton>
+              <AddButton className="day-add" onClick={() => { setWinForm((f) => (f.text ? f : emptyWin(date))); setPanel(true); }}>Add unplanned win</AddButton>
             </div>
           )}
         </div>

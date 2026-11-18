@@ -522,7 +522,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
             </div>
           )}
           {addTo ? (
-            <AddButton className="plan-add" onClick={addHabit}>Add a habit</AddButton>
+            <AddButton className="plan-add" onClick={addHabit}>Add habit</AddButton>
           ) : (
             <p className="plan-muted sprint-start-gap">Add a Strategy to your plan first, then its habits.</p>
           )}
@@ -547,7 +547,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
               ))}
             </PeakMomentList>
           )}
-          <AddButton className="plan-add" onClick={() => navigate('/peak-moments/add', { state: { from: '/performance-sprint/start' } })}>Add a peak moment</AddButton>
+          <AddButton className="plan-add" onClick={() => navigate('/peak-moments/add', { state: { from: '/performance-sprint/start' } })}>Add peak moment</AddButton>
         </div>
       ),
     },

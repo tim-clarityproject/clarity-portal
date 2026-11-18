@@ -327,7 +327,7 @@ function compareWords(tag, screen, mw, bw) {
 }
 
 // ---------------------------------------------------------------- M9 itself
-const M9_SCREEN = { goal: 'Goal', cons: 'What’s in the way', opps: 'What’s working', opts: 'Options', will: 'Will', steps: 'Next steps', add: 'Add a to-do', sum: 'Your plan', editsum: 'Edit from your plan', who: 'Who can see this', gwel: 'Guest start', gend: 'Guest end' };
+const M9_SCREEN = { goal: 'Goal', cons: 'What’s in the way', opps: 'What’s working', opts: 'Options', will: 'Will', steps: 'Next steps', add: 'Add to-do', sum: 'Your plan', editsum: 'Edit from your plan', who: 'Who can see this', gwel: 'Guest start', gend: 'Guest end' };
 async function m9Open(browser, width, mode) {
   const phone = width < 600;
   // M9's review bar sits above the frame, so the window is taller than the frame.

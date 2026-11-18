@@ -159,7 +159,7 @@ export default function SleepWindDown() {
             max={Infinity}
             maxLength={WIND_DOWN_THOUGHT_MAX}
             itemLabel={(n) => `Thought ${n}`}
-            addLabel="Add a thought"
+            addLabel="Add thought"
           />
         </div>
       ),

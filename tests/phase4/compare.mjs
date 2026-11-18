@@ -419,7 +419,7 @@ const ALLOWED = [
   { screen: /^hub, review$/, side: 'app', re: /^(hardware and software check-in|check your body and mind are backing your performance\.|~# minutes)$/, why: 'Phase 5 step 1: the check-in is built, so it gets its tile; its line says how it helps (CLAUDE.md 16, one line on how it helps, as Life balance review’s “Check the rest of your life is backing your performance.”), for M3’s “Check in on your hardware and software each month.”' },
   { screen: /^home/, side: 'mock', re: /^your usual range is # to #%\.$/, why: 'data: the seeded sprint has fewer than 6 finished weeks, so “Your usual range appears after 6 weeks.” (M2’s own rule)' },
   { screen: /^home/, side: 'app', re: /^your usual range appears after # weeks\.$/, why: 'data: the seeded sprint has fewer than 6 finished weeks, so “Your usual range appears after 6 weeks.” (M2’s own rule)' },
-  { screen: /^home/, side: 'app', re: /^(daily plan|daily review|add a to-do)$/, why: 'RULE OVER MOCK-UP: Daily plan, Daily review and Add a to-do on Today, for two taps from Home (experience rule 21; Step 2)' },
+  { screen: /^home/, side: 'app', re: /^(daily plan|daily review|add to-do)$/, why: 'RULE OVER MOCK-UP: Daily plan, Daily review and Add a to-do on Today, for two taps from Home (experience rule 21; Step 2)' },
   { screen: /^home/, side: 'mock', re: /^i need help with something$/, why: 'RULE OVER MOCK-UP: never “I” on a button (writing rule 13, 27 Oct): “Get help with something” (Step 9)' },
   { screen: /^home/, side: 'mock', re: /^(# of # to-dos done so far\.)$/, why: 'UNDEFINED: “2 of 3 to-dos done so far” is not in the scoring methods, so no count line (Step 2)' },
   { screen: /^home/, side: 'mock', re: /^(how you want to be <day>|<day>'s strategy)$/, why: 'data: no Daily plan is finished for the day shown, so Today says “Your to-dos for today show here once you’ve planned your day.” (M2’s own before-planning state)' },
@@ -942,7 +942,7 @@ if (PARTS.includes('taps')) {
     { what: 'Log today', onHome: '#log-today .home-log-title', menu: 'Log today', reached: async (p) => { const b = await p.locator('#log-today').boundingBox(); return path(p) === '/welcome' && b && b.y < 500 && b.y > -50; } },
     { what: 'Daily plan', link: /^Daily plan$|^Start my daily plan$/i, menuTool: 'Daily plan', reached: async (p) => path(p) === '/daily-plan' },
     { what: 'Daily review', link: /^Daily review$|^Start my daily review$/i, menuTool: 'Daily review', reached: async (p) => path(p) === '/daily-review' },
-    { what: 'Add a to-do', link: /^Add a to-do$/i, reached: async (p) => (await p.getByLabel('What needs doing?').count()) > 0 },
+    { what: 'Add to-do', link: /^Add a to-do$/i, reached: async (p) => (await p.getByLabel('What needs doing?').count()) > 0 },
   ];
   const MOMENTS = [['morning', THU, '08:30'], ['afternoon', THU, '13:00'], ['evening', THU, '17:30'], ['21:15', THU, '21:15']];
   const runTaps = async (label, day, time, width) => {

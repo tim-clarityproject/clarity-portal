@@ -290,11 +290,11 @@ async function playThrough(page, tag, { deep = false } = {}) {
     && (await page.locator('.ds-guide-nudge, .ds-pick-count').count()) === 0);
   await shot(page, `${tag}-4-do`);
   // Add a to-do from the panel: no "Which week?", and it joins today too (no limit).
-  await page.getByRole('button', { name: 'Add a to-do' }).click();
+  await page.getByRole('button', { name: 'Add to-do' }).click();
   const panel = page.locator('[role=dialog]').last();
   await panel.locator('textarea').first().fill(PANEL_TODO);
   pass(`${tag}: the panel has no Which week`, (await panel.getByText('Which week?').count()) === 0 && (await panel.getByText('It’s added to today and to this week’s sprint.').count()) === 1);
-  await panel.getByRole('button', { name: 'Add my to-do' }).click();
+  await panel.getByRole('button', { name: 'Add to-do' }).click();
   const toast = await until(async () => (await page.getByText('Added to today and this week’s sprint.').count()) > 0, 10000);
   pass(`${tag}: a to-do added with three chosen joins today as well`, Boolean(toast) && (await page.locator('.ds-answer--pick[aria-pressed="true"]').count()) === 4);
   await next(page);

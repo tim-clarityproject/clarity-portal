@@ -87,7 +87,7 @@ const browser = await chromium.launch();
   const pane = page.locator('#c15 .dr-pane').first();
 
   await expectOpening(page);
-  await pane.getByRole('button', { name: 'Add a to-do' }).click();
+  await pane.getByRole('button', { name: 'Add to-do' }).click();
   await wait(page);
   await openingRan(page, 'Slide panel slides in on the first open');
   await watch(page, '.ds-panel', '.ds-panel .ds-dialog-body');
@@ -102,7 +102,7 @@ const browser = await chromium.launch();
   await page.keyboard.press('Escape');
   await wait(page);
 
-  await pane.getByRole('button', { name: 'Add an unplanned win' }).click();
+  await pane.getByRole('button', { name: 'Add unplanned win' }).click();
   await wait(page);
   await watch(page, '.ds-panel', '.ds-panel .ds-dialog-body');
   const win = page.locator('.ds-panel');

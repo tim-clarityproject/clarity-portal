@@ -469,7 +469,7 @@ function ReviewFlow({ userId, data, view, today, onFinish }) {
               <p className="plan-muted">You can link a new objective to a Strategy when you edit your plan.</p>
             </div>
           )}
-          {liveCount < MAX_OBJECTIVES && <AddButton className="plan-add" onClick={addObjective}>Add an objective</AddButton>}
+          {liveCount < MAX_OBJECTIVES && <AddButton className="plan-add" onClick={addObjective}>Add objective</AddButton>}
         </div>
       ),
     },

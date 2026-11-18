@@ -4,7 +4,7 @@ import useToolTodo from './useToolTodo';
 import { TODO_WHERE } from '../../lib/performance/sprintPage';
 import { needsConnection } from '../../lib/friendlyError';
 
-// The add panel every tool opens for a next step (M10 "Add a to-do" with
+// The add panel every tool opens for a next step (M10 "Add to-do" with
 // its "Where should it go?"; Tim, 13 Nov, 10:42): what needs doing, which
 // Strategy it serves, how much it will move it, then This week, Backlog
 // or Don’t add it. It saves the to-do itself (useToolTodo) and shows

@@ -340,8 +340,8 @@ export default function PersonalOperatingPlanReview() {
                     <button
                       type="button"
                       className={`plan-bin-btn pop-note-btn${hasNote ? ' has' : ''}`}
-                      aria-label={hasNote ? 'Edit note' : 'Add a note'}
-                      title={hasNote ? 'Edit note' : 'Add a note'}
+                      aria-label={hasNote ? 'Edit note' : 'Add note'}
+                      title={hasNote ? 'Edit note' : 'Add note'}
                       onClick={() => setOpenNotes((prev) => ({ ...prev, [tactic.id]: true }))}
                     >
                       <NoteIcon />

@@ -102,7 +102,7 @@ try {
         await page.waitForSelector('.ds-panel textarea, .ds-panel input', { timeout: 8000 });
         await page.getByLabel('What needs doing?').fill(words);
         await page.locator('.ds-panel').getByText('Grow through referrals', { exact: true }).click();
-        await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
+        await page.locator('.ds-panel').getByRole('button', { name: 'Add to-do' }).click();
         const todo = await until(async () => (await db.from('todos').select('created_on').eq('user_id', me).eq('text', words)).data?.[0], 15000);
         pass(`${tag}: a to-do added on Home is saved on the client's own day`, todo?.created_on === ownDay, JSON.stringify(todo));
 

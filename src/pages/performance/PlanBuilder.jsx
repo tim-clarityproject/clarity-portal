@@ -385,7 +385,7 @@ function PlanTool({ userId, data, mode }) {
           />
         ))}
         {draft.objectives.length < MAX_OBJECTIVES && (
-          <AddButton className="plan-add" onClick={addObjective}>Add an objective</AddButton>
+          <AddButton className="plan-add" onClick={addObjective}>Add objective</AddButton>
         )}
       </div>
     ),
@@ -446,7 +446,7 @@ function PlanTool({ userId, data, mode }) {
             </div>
           )}
           {strategyRows(mine, o?.id || null)}
-          <AddButton className="plan-add" onClick={() => addStrategy(o?.id || null)}>Add a Strategy</AddButton>
+          <AddButton className="plan-add" onClick={() => addStrategy(o?.id || null)}>Add Strategy</AddButton>
           {others.length > 0 && (
             <div className="plan-picks">
               <FieldLabel label="Do any of your other Strategies help this too?" />
@@ -509,7 +509,7 @@ function PlanTool({ userId, data, mode }) {
               />
             ))}
           </div>
-          <AddButton className="plan-add" onClick={addHabit}>Add a habit</AddButton>
+          <AddButton className="plan-add" onClick={addHabit}>Add habit</AddButton>
         </div>
       );
     },
