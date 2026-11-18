@@ -473,7 +473,10 @@ async function phoneChecks(page, tag) {
     for (const el of document.querySelectorAll('.home-page button, .home-page a, .home-page input')) {
       const r = el.getBoundingClientRect();
       if (!r.width || !r.height || getComputedStyle(el).visibility === 'hidden' || el.closest('[inert]')) continue;
-      if (r.height < 43.5) bad.push(`${(el.innerText || el.getAttribute('aria-label') || el.tagName).trim().slice(0, 30)} ${Math.round(r.height)}px`);
+      // A button's tap area is its box with the invisible 44px ::after laid round it (Tim, 18 Nov).
+      const af = getComputedStyle(el, '::after');
+      const tap = Math.max(r.height, af.content !== 'none' && af.position === 'absolute' ? parseFloat(af.height) || 0 : 0);
+      if (tap < 43.5) bad.push(`${(el.innerText || el.getAttribute('aria-label') || el.tagName).trim().slice(0, 30)} ${Math.round(r.height)}px`);
     }
     return bad;
   });
@@ -513,21 +516,21 @@ const PARTS = {
     ['card label', '#dk .page .hs > small', '.ds-suggest-label', ['fs', 'color']],
     ['card question', '#dk .page .hs h3', '.ds-suggest-question', ['fs', 'color']],
     ['card time', '#dk .page .hs .hsl', '.ds-suggest-time', ['fs', 'color']],
-    ['card button', '#dk .page .hs .btn', '.ds-suggest .ds-btn--primary', ['h', 'bg'], 'The shared coral Button is 48px tall everywhere (design reference: Buttons); M2 drew 50px.'],
+    ['card button', '#dk .page .hs .btn', '.ds-suggest .ds-btn--primary', ['h', 'bg'], 'Every button is 34px high on a laptop and 40px on a phone, in a 44px tap area (Tim, 18 Nov: Quiet precision); M2 drew 50px and 48px pills.'],
     ['mini dial', '#dk .page .hd2 svg', '.ds-mdial svg', ['w']],
     ['mini dial date', '#dk .page .hd2 b', '.ds-mdial-date', ['fs', 'color']],
     ['mini dial week', '#dk .page .hd2 span span', '.ds-mdial-line', ['fs', 'color']],
     ['week figure', '#dk .page .hwk b', '.ds-weekline-figure', ['fs', 'ff', 'color'], 'Coral is never a data colour (26 Oct rule 1): the figure is mint at or above the standard and the text colour below; M2 drew it coral.'],
     ['week line', '#dk .page .hwk .hwu', '.ds-weekline-line', ['fs', 'color']],
-    ['help button', '#dk .page .hhelp .ghost', '.home-help .ds-btn', ['h']],
+    ['help button', '#dk .page .hhelp .ghost', '.home-help .ds-btn', ['h'], 'Every button is 34px high on a laptop and 40px on a phone, in a 44px tap area (Tim, 18 Nov: Quiet precision); M2 drew 50px and 48px pills.'],
   ],
   phone: [
     ['greeting (phone)', '#ph .page h2.hg', '.home-page .ds-page-title', ['fs'], 'The shared PageHeader title on phones; M2 drew 22px.'],
     ['card (phone)', '#ph .page .hs', '.ds-suggest', ['pt', 'pl', 'radius']],
     ['card question (phone)', '#ph .page .hs h3', '.ds-suggest-question', ['fs']],
     // Widths follow each frame's page width, so only heights are compared; both buttons are full width.
-    ['card button (phone)', '#ph .page .hs .btn', '.ds-suggest .ds-btn--primary', ['h'], 'The shared coral Button is 48px tall everywhere (design reference: Buttons); M2 drew 50px.'],
-    ['help button (phone)', '#ph .page .hhelp .ghost', '.home-help .ds-btn', ['h']],
+    ['card button (phone)', '#ph .page .hs .btn', '.ds-suggest .ds-btn--primary', ['h'], 'Every button is 34px high on a laptop and 40px on a phone, in a 44px tap area (Tim, 18 Nov: Quiet precision); M2 drew 50px and 48px pills.'],
+    ['help button (phone)', '#ph .page .hhelp .ghost', '.home-help .ds-btn', ['h'], 'Every button is 34px high on a laptop and 40px on a phone, in a 44px tap area (Tim, 18 Nov: Quiet precision); M2 drew 50px and 48px pills.'],
   ],
 };
 function compare(view, mode, what, mock, app, fields, known) {
@@ -539,6 +542,11 @@ function compare(view, mode, what, mock, app, fields, known) {
   }
   const diffs = fields.filter((f) => (typeof mock[f] === 'number' ? Math.abs(mock[f] - app[f]) > 0.6 : mock[f] !== app[f]))
     .map((f) => `${f} mock ${mock[f]} app ${app[f]}`);
+  // A button is held to the new height itself, not passed as a known difference (Tim, 18 Nov).
+  if (known && known.startsWith('Every button') && fields.includes('h')) {
+    const want = what.includes('(phone)') ? 40 : 34;
+    pass(`M2 ${view} ${mode}: ${what} is the new button, ${want}px high`, Math.abs(app.h - want) <= 0.6, `${app.h}`);
+  }
   if (known && diffs.length) {
     notes.push(`NOTE  M2 ${view} ${mode}: ${what}: ${diffs.join('; ')}. ${known}`);
     pass(`M2 ${view} ${mode}: ${what} (known difference noted)`, true);

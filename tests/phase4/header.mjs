@@ -363,7 +363,8 @@ if (part(4)) {
       pass('Breathe button: 60px pill (breathe-orb.html)', Math.abs(m.h - 60) < 0.6, `${m.h}`);
       pass('Breathe button: 44px orb (breathe-orb.html)', Math.abs(m.orb - 44) < 0.6, `${m.orb}`);
       pass('Breathe button: 24px from the right and bottom', Math.abs(m.right - 24) < 1 && Math.abs(m.bottom - 24) < 1, JSON.stringify(m));
-      pass('Breathe button: Nekst capitals', /Nekst/.test(m.family), m.family);
+      // Its word as every button's since 18 Nov (Tim: no Nekst capitals on buttons); the pill keeps its 60px for the orb.
+      pass('Breathe button: its word in DM Sans', /^"?DM Sans/.test(m.family), m.family);
       note('Breathe button: 60px with a 44px orb, as breathe-orb.html (29 Oct), newer than M2 and M3 (56px, 48px orb).');
       await b.hover();
       const coral = await page.evaluate(() => getComputedStyle(document.querySelector('.ds-orb--fixed')).getPropertyValue('--coral').trim());
