@@ -24,6 +24,7 @@ import {
   useToast,
   LoadError,
   PausedGate,
+  TravelDayPanel,
 } from '../../components/design';
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
@@ -60,6 +61,8 @@ import {
 } from '../../lib/performance';
 import { leadUpOn, noteLeadUp, peakTodoSource, usePeakMoments } from '../../lib/peakMoments/store';
 import { LEAD_UP_MAX, LEAD_UP_SUGGESTIONS, countdownLine, leadUpFor, leadUpQuestion, onBreak } from '../../lib/peakMoments/model';
+import { PATH as TRAVEL_PATH, travelToday } from '../../lib/travel/model';
+import { useTravelPlans } from '../../lib/travel/store';
 import '../peakMoments/peakMoments.css';
 import './performance.css';
 
@@ -167,6 +170,9 @@ function PlanFlow({ userId, date, today, loaded }) {
   // The peak moment whose lead-up today is (M18): the nearer one, 1 to 3 days away.
   const peak = usePeakMoments(userId);
   const leadUp = useMemo(() => (date === today ? leadUpFor(peak.moments, date) : null), [peak.moments, date, today]);
+  // The day's Travel plan steps (M21): above the list, with no tick boxes (they're ticked on Home's card).
+  const travel = useTravelPlans(userId, peak.moments);
+  const travelDay = useMemo(() => travelToday(travel.plans, peak.moments, date), [travel.plans, peak.moments, date]);
   const leadKey = leadUp?.key || null;
   const [peakText, setPeakText] = useState(() => (leadKey ? leadUpOn(userId, leadKey, date)?.text || '' : ''));
   const peakTextFor = useRef(leadKey);
@@ -704,6 +710,12 @@ function PlanFlow({ userId, date, today, loaded }) {
       nudges: [],
       render: () => (!view.hasPlan ? noPlan : (
         <div className="day-narrow">
+          {travelDay && travelDay.steps.length > 0 && (
+            <TravelDayPanel
+              steps={travelDay.steps}
+              onOpen={() => navigate(travelDay.view.short ? `${TRAVEL_PATH}/${travelDay.plan.id}` : `${TRAVEL_PATH}/${travelDay.plan.id}/day/${date}`, { state: { from: location.pathname } })}
+            />
+          )}
           {dayOptions.length ? (
             <MultiChoice
               variant="pick"

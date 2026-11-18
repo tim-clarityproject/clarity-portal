@@ -63,6 +63,15 @@ export const TOOLS = {
     to: '/daily-plan',
     routes: ['/daily-plan', '/my-day/plan', '/plan-my-day', '/daily-plan-summary'],
   },
+  // The Travel plan (M21 version 7.2; Phase 8b part B): in the menu under
+  // Personal, on the Plan hub. Its time is M21's own.
+  travel: {
+    name: 'Travel plan',
+    line: 'Beat jet lag, and be sharp for what matters on the trip.',
+    time: '~3 minutes',
+    to: '/travel-plan',
+    routes: ['/travel-plan'],
+  },
   grow: {
     name: 'Get unstuck',
     line: 'Turn a goal or a decision into next steps you’ll take.',
@@ -224,7 +233,7 @@ export const HUBS = {
     line: 'Set your direction and decide well.',
     info: pageText.hubPlan,
     groups: [
-      { tools: ['ipp', 'sprint', 'pmd'] },
+      { tools: ['ipp', 'sprint', 'pmd', 'travel'] },
       { title: 'Decide', tools: ['grow', 'inv', 'time'] },
     ],
     recent: { list: 'plans', area: 'personal', title: 'My Plans', to: '/my-plans?area=personal' },
@@ -422,6 +431,8 @@ const PAGE_NAMES = [
   ['/peak-moments/add', 'Add a peak moment'],
   ['/peak-moments/edit', 'Edit this peak moment'],
   ['/peak-moments/review', 'Peak moment review'],
+  ['/travel-plan', 'Travel plan'],
+  ['/travel-plan/new', 'Plan my trip'],
   ['/performance-sprint/debrief', 'Weekly performance debrief'],
   ['/performance-sprint/review', 'End-of-sprint review'],
   ['/performance-sprint/start', 'Start my sprint'],

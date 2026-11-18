@@ -239,6 +239,22 @@ export function planRows(data, today = getLocalDateKey()) {
     }));
   });
 
+  // Travel plans (M21; Phase 8b): each stays after its trip, opened from here
+  // and deleted from inside it, like every saved plan.
+  (data.travelPlans || []).forEach((p) => {
+    out.push(base(today, {
+      id: `travel:${p.id}`,
+      dbId: p.id,
+      source: 'travel',
+      tool: 'travel_plan',
+      area: 'personal',
+      title: (p.title || '').trim() || 'Travel plan',
+      typeLabel: 'Travel plan',
+      at: p.updatedAt || p.createdAt,
+      to: { path: `/travel-plan/${p.id}` },
+    }));
+  });
+
   (data.plans || []).forEach((p) => {
     out.push(base(today, {
       id: `plan:${p.id}`,

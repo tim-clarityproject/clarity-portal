@@ -11273,3 +11273,27 @@
   outline-offset: 2px;
   border-radius: var(--space-1);
 }
+
+/* One quiet link at the panel's very end (ExplainPanel's action; M21's
+   "I don’t have caffeine", 14px under what comes before). */
+.ui-root .ds-explain-action {
+  margin-top: var(--space-px14);
+}
+
+/* A step's own bottom bar (GuidedTool's `foot`; M21's day: "Previous day"
+   at the left, "Next day" at the right; on a phone they share the row). */
+.ui-root .ds-guide-foot-right.ds-guide-foot-own {
+  flex: 1;
+  justify-content: space-between;
+  gap: var(--space-px12);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-guide-foot-own > * {
+    flex: 1;
+  }
+
+  .ui-root .ds-guide-foot-own > .ds-link {
+    justify-content: flex-start;
+  }
+}

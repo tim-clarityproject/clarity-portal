@@ -121,3 +121,4 @@ export { default as VersionRow, VersionList } from './VersionRow';
 export { default as OfferRow } from './OfferRow';
 export { default as useOffer } from './useOffer';
 export { PeakMomentList, PeakMomentRow, PeakWeekBars, PeakYearList } from './PeakMoments';
+export { BodyClockChart, MomentNumber, PlaceField, PLANE, TravelDayPanel, TravelDayRow, TravelSteps, TravelTodayCard } from './TravelPlan';

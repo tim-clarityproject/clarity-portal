@@ -18,10 +18,12 @@ import './design.css';
 // terms. No bullets, no bold, no ⓘ.
 //
 //   explain: { title, lines?: [sentence], terms?: [{ term, meaning: sentence | [sentences] }], after?: [sentence] }
+//   action:  (close) => one quiet link at the very end (M21's "I don’t have
+//            caffeine", which closes the panel as it acts), or nothing.
 
 const asList = (v) => (Array.isArray(v) ? v : v ? [v] : []);
 
-export function ExplainPanel({ open, onClose, explain }) {
+export function ExplainPanel({ open, onClose, explain, action = null }) {
   if (!explain) return null;
   const { title, lines = [], terms = [], after = [] } = explain;
   return (
@@ -46,6 +48,7 @@ export function ExplainPanel({ open, onClose, explain }) {
           {after.map((line) => <p key={line} className="ds-explain-line">{line}</p>)}
         </div>
       )}
+      {action && <div className="ds-explain-action">{action(onClose)}</div>}
     </SlidePanel>
   );
 }
@@ -68,7 +71,7 @@ export function useExplain() {
 
 // A quiet text link under the thing it explains ("How to read the chart",
 // "Why these steps help"), opening the panel.
-export function ExplainLink({ explain, children, className = '' }) {
+export function ExplainLink({ explain, children, className = '', action = null }) {
   const e = useExplain();
   return (
     <>
@@ -81,7 +84,7 @@ export function ExplainLink({ explain, children, className = '' }) {
       >
         {children}
       </button>
-      <ExplainPanel open={e.open} onClose={e.close} explain={explain} />
+      <ExplainPanel open={e.open} onClose={e.close} explain={explain} action={action} />
     </>
   );
 }

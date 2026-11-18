@@ -1,0 +1,64 @@
+/* The Travel plan's pages (M21, version 7.2; Phase 8b part B). Every value
+   is a token (src/styles/tokens.css); the shared parts' own look is in
+   src/components/design/travel.css. */
+
+.ui-root .travel-calm { margin-top: var(--space-px28); }
+.ui-root .travel-section { margin-top: var(--space-6); }
+
+/* Your plan: the dates under the title, then the one line (M21 .meta, .headl2.hl1). */
+.ui-root .travel-meta {
+  margin: var(--space-px10) 0 0;
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+.ui-root .travel-headline {
+  margin: var(--space-px20) 0 0;
+  font-size: var(--fs-text);
+  color: var(--text-2);
+}
+.ui-root .travel-plan .ipp-section:first-of-type { margin-top: var(--space-px44); }
+.ui-root .travel-zone { font-size: var(--fs-secondary); color: var(--text-2); }
+.ui-root .travel-steps--flush { margin-top: 0; border-top: 0; }
+.ui-root .travel-earlier { margin-top: var(--space-2); }
+.ui-root .travel-after {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-4);
+  margin-top: var(--space-px12);
+}
+.ui-root .travel-trip .ds-guide-plan-label { display: inline-flex; align-items: center; }
+.ui-root .travel-day-links { margin-top: var(--space-px14); }
+
+/* Set-up: the four boxes two by two (M21 .fg2), one column on a phone. */
+.ui-root .travel-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-px22) var(--space-3);
+}
+.ui-root .travel-when .ds-field { min-height: var(--box-min-h); }
+.ui-root .travel-two {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.ui-root .travel-moments .ipp-muted { margin: 0; }
+.ui-root .travel-extra { margin-top: var(--space-4); }
+.ui-root .travel-extra-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--tap-min);
+  gap: var(--space-px6);
+  align-items: center;
+}
+.ui-root .travel-add { margin-top: var(--space-4); }
+.ui-root .travel-panel-line {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+}
+.ui-root .travel-problem { margin-top: var(--space-px12); }
+
+@media (max-width: 600px) {
+  .ui-root .travel-fields,
+  .ui-root .travel-two { grid-template-columns: minmax(0, 1fr); }
+}

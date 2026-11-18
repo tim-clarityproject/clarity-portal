@@ -365,6 +365,21 @@
   --peak-now-fill: 0.45;     /* this week, filling in (M18 fill-opacity .45) */
   --peak-row-min: 64px;      /* a moment's row (M18 .lr) */
   --peak-mon-col: 170px;     /* View your year's month column (M18 .mon) */
+  --travel-time-w: 76px;     /* a day's time column (M21 .tlr) */
+  --travel-time-w-phone: 64px;
+  --travel-card-tick: 32px;  /* Home's card: the tick column (M21 .tkr) */
+  --travel-card-time: 64px;  /* ... and its time column */
+  --travel-panel-time: 72px; /* the Daily plan's panel: the time column (M21 .wkr) */
+  --travel-num: 18px;        /* a key moment's numbered disc (M21 .cn) */
+  --travel-readout-top: 34px; /* the read-out sits this far below the chart's top (M21 .cct) */
+  --travel-svg-text: 12px;   /* words in the chart's drawing, in its own units (M21 12) */
+  --travel-svg-num: 12px;    /* a marker's number (M21 11; 12 keeps the smallest-text rule) */
+  --travel-svg-line: 2px;    /* the body clock line (M21) */
+  --travel-svg-dot: 1.5px;   /* a day's dot edge */
+  --travel-svg-stem: 1 3;    /* the dotted line from a marker to its day */
+  --travel-dot-gap: 10px;    /* the dot after a key moment's date (M21 .vr.ev) */
+  --travel-dot: 6px;
+  --travel-place-list-max: 312px; /* the place search's list scrolls past 6 (M21 .ddl.scroll) */
   --fs-lens: calc(18 * var(--u-big));       /* a length tile's figure, Nekst (M6 .lens) */
   --lens-min-h: 72px;
   --figure-box-w: 120px;     /* a figure box beside its words ("weeks", "%") */

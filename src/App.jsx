@@ -98,6 +98,7 @@ const TeamCheck = lazy(() => loadWithReload(() => import('./pages/teamCheck/Team
 const HealthCheckInside = lazy(() => loadWithReload(() => import('./pages/healthCheckInside/HealthCheckInside')));
 const EmotionalWash = lazy(() => loadWithReload(() => import('./pages/emotionalWash/EmotionalWash')));
 const PeakMoments = lazy(() => loadWithReload(() => import('./pages/peakMoments/PeakMoments')));
+const TravelPlan = lazy(() => loadWithReload(() => import('./pages/travelPlan/TravelPlan')));
 const GuestLink = lazy(() => loadWithReload(() => import('./pages/guest/GuestLink')));
 const WheelStart = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelStart')));
 const WheelAreas = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelAreas')));
@@ -470,6 +471,7 @@ function AppContent() {
           <Route path="/emotional-wash" element={lazyPage(EmotionalWash)} />
           {/* Peak moments (M18, Phase 8b): the list, Add, Edit and the review after. */}
           <Route path="/peak-moments/*" element={lazyPage(PeakMoments)} />
+          <Route path="/travel-plan/*" element={lazyPage(TravelPlan)} />
           {GET_UNSTUCK_STEPS.map((path) => (
             <Route key={path} path={path} element={<MovedTo to="/get-unstuck" />} />
           ))}

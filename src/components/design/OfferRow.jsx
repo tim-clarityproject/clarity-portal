@@ -1,4 +1,5 @@
 import { Button, IconButton } from './Button';
+import { PLANE } from './TravelPlan';
 import './design.css';
 
 // The offer row (5e rule 8b; Tim, 14 Nov, 10:14 and 10:17; drawn from M7
@@ -29,6 +30,8 @@ const OFFER_ICONS = {
       <path d="M5 3v10l8-5z" />
     </svg>
   ),
+  // The Travel plan's offer (M21): the solid plane, 22px, in the secondary grey.
+  plane: PLANE,
 };
 
 export default function OfferRow({

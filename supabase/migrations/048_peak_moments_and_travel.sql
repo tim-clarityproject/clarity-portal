@@ -18,7 +18,8 @@
 --                        "I don't have caffeine" choice, and when it was made.
 --   travel_flights       the plan's flights: out and home, each with its day,
 --                        time, city and time zone at each end.
---   travel_plan_moments  which peak moments are the plan's key moments.
+--   travel_plan_moments  which peak moments are the plan's key moments, each
+--                        with its start time on the trip.
 --   travel_ticks         the private ticks on a day's steps.
 --   travel_away          the one thing a coach may see of a trip: that the
 --                        person is away, where, when, and the time difference.
@@ -153,9 +154,13 @@ create table if not exists public.travel_plan_moments (
   plan_id     uuid not null references public.travel_plans (id) on delete cascade,
   moment_id   uuid not null references public.peak_moments (id) on delete cascade,
   user_id     uuid not null references auth.users (id) on delete cascade,
+  -- The key moment's start time on the trip, in its own city's time (a
+  -- peak moment keeps a day, not a time; M21: "Tue 10 Nov at 09:00").
+  starts_at   time,
   created_at  timestamptz not null default now(),
   primary key (plan_id, moment_id)
 );
+alter table public.travel_plan_moments add column if not exists starts_at time;
 
 create table if not exists public.travel_ticks (
   plan_id     uuid not null references public.travel_plans (id) on delete cascade,

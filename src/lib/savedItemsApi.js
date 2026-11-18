@@ -6,6 +6,7 @@ import { readCache } from './pageCache';
 import { tableReady } from './performance/tableReady';
 import { ANSWERS_ON_DEVICE } from './performance/sprintReviewAnswers';
 import { loadToolAnswers } from './toolAnswers';
+import { travelPlansOf } from './travel/store';
 
 // Reads every saved plan and review for My Plans, My Reviews and the hubs'
 // recent lists (Phase 4 step 4); savedItems.js names them. Each part is
@@ -52,11 +53,13 @@ export async function loadSavedPlans(userId) {
     // table's once it is there, with what waits on this device.
     part('Team performance checks', () => loadToolAnswers(userId, 'team_check')),
     part('Emotional washes', () => loadToolAnswers(userId, 'emotional_wash')),
+    // Travel plans (048): the device's copy, which the plan's own pages keep up to date with the tables.
+    part('Travel plans', async () => travelPlansOf(userId)),
   ]);
   // The device's own tool answers don't count: offline, the list keeps
   // what it showed last time instead of only those.
   allFailed(parts.slice(0, 6));
-  const [decisions, planReviews, plans, sprints, dayPlans, missions, teamChecks, washes] = parts.map((p) => p.rows);
+  const [decisions, planReviews, plans, sprints, dayPlans, missions, teamChecks, washes, travelPlans] = parts.map((p) => p.rows);
   const toolAnswers = [...teamChecks, ...washes];
   return {
     decisions,
@@ -68,6 +71,7 @@ export async function loadSavedPlans(userId) {
     missions,
     // Only what the list needs: never the answers themselves.
     toolAnswers: toolAnswers.map((r) => ({ id: r.id, tool: r.tool, title: r.title, status: r.status, createdAt: r.createdAt, updatedAt: r.updatedAt, finishedAt: r.finishedAt })),
+    travelPlans: travelPlans.map((p) => ({ id: p.id, title: p.title, createdAt: p.createdAt, updatedAt: p.updatedAt })),
   };
 }
 

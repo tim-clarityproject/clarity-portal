@@ -125,6 +125,12 @@ import './design.css';
 //              Success Factors, then how much each matters, then "Save my
 //              edit").
 //   A one-tap answer follows the step's `onward` too, when it gives a key.
+// More a step can say (M21's Travel plan, 18 Nov):
+//   foot:      the step's own bottom bar in place of the coral button (a
+//              day of the plan: "Previous day" and "Next day"), or null for
+//              no bottom bar at all (a summary page with nothing to press,
+//              Your plan). Its words are the step's own; the bar is the
+//              tool's, so it lines up as every other.
 // onBack:   Back on the first step, when it isn't the same as Close (M7b:
 //           Back leaves for the email and code screen; Close saves).
 // A step's `check`: () => a calm message, or null. Pressing Next (or Save
@@ -543,7 +549,8 @@ export default function GuidedTool({
   const showBack = changing || (i > 0 && !previous?.bare) || (calm && i === 0);
   const problem = asked === step.key ? step.check?.() || null : null;
   // A one-answer screen moves on by itself, so it has no Next (rule 21).
-  const hasNext = !(step.oneTap && !last);
+  const ownFoot = Object.prototype.hasOwnProperty.call(step, 'foot');
+  const hasNext = ownFoot ? Boolean(step.foot) : !(step.oneTap && !last);
   changingRef.current = changing;
   backToSummaryRef.current = () => { if (!editOn()) savedEdit(); };
   // tool.go(to, { fromSummary: true }) opens one question from a summary
@@ -698,6 +705,7 @@ export default function GuidedTool({
             quietly under the answers instead. */}
         {!step.bare && !step.plain && hasNext && (
           <div className="ds-guide-foot">
+            {ownFoot ? <div className="ds-guide-foot-right ds-guide-foot-own">{step.foot}</div> : (
             <div className="ds-guide-foot-right">
               {showSkip && !step.footAside && (
                 <button type="button" className="ds-guide-skip" onClick={skip}>{skipLabel}</button>
@@ -707,6 +715,7 @@ export default function GuidedTool({
                 {editHasMore ? step.editNext : changing ? 'Save my edit' : (step.nextLabel || (last ? finishLabel : 'Next'))}
               </button>
             </div>
+            )}
           </div>
         )}
       </div>

@@ -15,6 +15,7 @@ import {
   HelpList,
   Loading,
   MiniDial,
+  OfferRow,
   PageHeader,
   PerformanceSystem,
   PlanSteps,
@@ -25,8 +26,10 @@ import {
   SystemLink,
   TodoList,
   TodoRow,
+  TravelTodayCard,
   WeekLine,
   WhoSees,
+  useOffer,
   useToast,
 } from '../components/design';
 import { readCache, useCachedLoad } from '../lib/pageCache';
@@ -71,6 +74,10 @@ import { RecoveryDay } from './performance/Recovery';
 import { useSprintActions } from './performance/sprintActions';
 import { usePeakMoments } from '../lib/peakMoments/store';
 import { homeCard as peakHomeCard, onBreak as peakOnBreak } from '../lib/peakMoments/model';
+import { OFFER_GONE, PATH as TRAVEL_PATH, TIME as TRAVEL_TIME, tickKey, travelOffers, travelToday } from '../lib/travel/model';
+import { cleanOffer, offersFrom } from '../lib/offers';
+import { setTick, ticksOn, useTravelPlans } from '../lib/travel/store';
+import { deviceZone } from '../lib/time/index.js';
 import './performance/performance.css';
 
 // Home as Today (mock-up M2, approved by Tim on 23 Oct; Phase 4 step 2;
@@ -177,6 +184,15 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   // A peak moment's Not now (M18): "We’ll ask again tomorrow.", so it is kept with today's date.
   const [peakNotNow, addPeakNotNow] = useDeviceList(userId, 'peak-not-now');
   const peak = usePeakMoments(userId);
+  // The Travel plan (M21): its offer a week before a peak moment in another
+  // time zone, and today's steps during the trip, ticked privately.
+  const travel = useTravelPlans(userId, peak.moments);
+  const travelDay = useMemo(() => travelToday(travel.plans, peak.moments, today), [travel.plans, peak.moments, today]);
+  // One trip at a time, the nearest not yet taken or stopped (each is offered once).
+  const offerPrefs = offersFrom(usePreferences(userId));
+  const tripOffer = useMemo(() => travelOffers(peak.moments, travel.plans, today, deviceZone())
+    .find((o) => { const st = cleanOffer(offerPrefs[o.key]); return !st.never && !st.taken; }) || null, [peak.moments, travel.plans, today, offerPrefs]);
+  const tripOfferState = useOffer(tripOffer?.key || 'travel-offer:none', { blocked: !tripOffer });
   const logRef = useRef(null);
   // The Hardware and Software check-in's line while it's due (Phase 5),
   // from the check-in's own copy on the device, which it updates when
@@ -400,6 +416,28 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
           onDismiss: q.dismissable ? () => { addNotNow(q.key); toast.show('We won’t ask again.'); } : undefined,
         }))}
       />
+
+      {tripOffer && tripOfferState.show && person !== 'recovery' && (
+        <OfferRow
+          className="home-offer"
+          icon="plane"
+          action={tripOffer.action}
+          detail={TRAVEL_TIME}
+          onTake={() => { tripOfferState.take(); go(`${TRAVEL_PATH}/new?moment=${encodeURIComponent(tripOffer.moment.id)}`); }}
+          // Offered once (M21): Not now ends it for this trip.
+          onNotNow={() => { tripOfferState.stop(); toast.show(OFFER_GONE); }}
+        />
+      )}
+      {travelDay && travelDay.steps.length > 0 && (
+        <TravelTodayCard
+          line={travelDay.day.line}
+          steps={travelDay.steps}
+          ticks={ticksOn(travel.state, travelDay.plan.id, today)}
+          keyOf={tickKey}
+          onTick={(step, on) => { setTick(userId, travelDay.plan.id, today, tickKey(step), on).catch(() => null); }}
+          onOpen={() => go(travelDay.view.short ? `${TRAVEL_PATH}/${travelDay.plan.id}` : `${TRAVEL_PATH}/${travelDay.plan.id}/day/${today}`)}
+        />
+      )}
 
       {/* Recovery leads with what's true today (Tim, 5 Nov, 11:09). */}
       {person === 'recovery' && recovery && <p className="home-line home-recovery-line">{RECOVERY_NUMBERS_LINE}</p>}

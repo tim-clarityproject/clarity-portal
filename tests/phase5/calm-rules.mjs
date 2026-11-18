@@ -81,6 +81,26 @@ if (!env.TEST_SUPABASE_URL?.includes(TEST_REF)) throw new Error('Not the test pr
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 
 // [name, address, what to do once it's open (optional)]
+// The Travel plan's pages read plans kept on the device, a few days from today (London's).
+const TRAVEL = (() => {
+  const t = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const day = (n) => { const [y, m, d] = t.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
+  const LHR = { key: 'LHR', code: 'LHR', name: 'London Heathrow, LHR', city: 'London', zone: 'Europe/London' };
+  const JFK = { key: 'JFK', code: 'JFK', name: 'New York JFK', city: 'New York', zone: 'America/New_York' };
+  const DXB = { key: 'DXB', code: 'DXB', name: 'Dubai, DXB', city: 'Dubai', zone: 'Asia/Dubai' };
+  const id = (n) => `7d000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+  const at = '2026-11-01T09:00:00.000Z';
+  const moment = (n, name, on, city, zone) => ({ id: id(n), name, area: 'work', kind: 'perform', span: 'day', startsOn: on, endsOn: on, placeCity: city, placeZone: zone, repeat: null, lesson: '', shared: false, createdAt: at, updatedAt: at });
+  const board = moment(10, 'Harbour board meeting', day(7), 'New York', 'America/New_York');
+  const keynote = moment(11, 'Keynote', day(22), 'Dubai', 'Asia/Dubai');
+  // Three days away in Tokyo, with no plan: Home's offer row.
+  const launch = moment(12, 'Tokyo launch', day(3), 'Tokyo', 'Asia/Tokyo');
+  const plan = { id: id(1), title: 'New York trip', flightOut: { id: id(2), from: LHR, to: JFK, leaves: `${day(5)}T12:00`, lands: `${day(5)}T15:00` }, flightHome: { id: id(3), from: JFK, to: LHR, leaves: `${day(9)}T19:00`, lands: `${day(10)}T07:00` }, momentIds: [board.id], momentTimes: { [board.id]: '09:00' }, usualSleep: { start: '22:30', end: '06:30' }, noCaffeine: false, createdAt: at, updatedAt: at };
+  const short = { id: id(4), title: 'Dubai trip', flightOut: { id: id(5), from: LHR, to: DXB, leaves: `${day(20)}T21:00`, lands: `${day(21)}T08:00` }, flightHome: { id: id(6), from: DXB, to: LHR, leaves: `${day(23)}T09:00`, lands: `${day(23)}T13:00` }, momentIds: [keynote.id], momentTimes: { [keynote.id]: '14:00' }, usualSleep: { start: '22:00', end: '06:00' }, noCaffeine: false, createdAt: at, updatedAt: at };
+  // Under way today: Home's "Today’s travel plan" card.
+  const now = { ...plan, id: id(7), flightOut: { ...plan.flightOut, id: id(8), leaves: `${day(0)}T12:00`, lands: `${day(0)}T15:00` }, flightHome: { ...plan.flightHome, id: id(9), leaves: `${day(4)}T19:00`, lands: `${day(5)}T07:00` }, momentIds: [], momentTimes: {} };
+  return { plan, short, now, moments: [board, keynote, launch] };
+})();
 const PAGES_ALL = [
   ['home', '/welcome'],
   ['menu', '/welcome', 'menu'],
@@ -151,6 +171,16 @@ const PAGES_ALL = [
   ['hc-inside-example', '/strategic-alignment/example', 'hc:empty'],
   ['hc-inside-new-version', '/strategic-alignment/new?team=7a000000-0000-4000-8000-00000000a001', 'hc:m7'],
   ['hc-inside-new-team', '/strategic-alignment/new-team', 'hc:m7'],
+  // The Travel plan (M21 version 7.2; Phase 8b part B): Start, set-up's
+  // first step, a plan with its chart and key moments, a day across two time
+  // zones, and a short trip, from plans and peak moments put on the device
+  // (048 isn't on the test project, so they live there; nothing is saved).
+  ['travel-start', '/travel-plan', 'travel'],
+  ['travel-setup', '/travel-plan/new', 'travel'],
+  ['travel-plan', `/travel-plan/${TRAVEL.plan.id}`, 'travel'],
+  ['travel-day', `/travel-plan/${TRAVEL.plan.id}/day/${TRAVEL.plan.flightOut.leaves.slice(0, 10)}`, 'travel'],
+  ['travel-short', `/travel-plan/${TRAVEL.short.id}`, 'travel'],
+  ['home-travel', '/welcome', 'travel'],
 ];
 // M10's own invented team, as the tool keeps a check while it is open.
 const TEAM_CHECK = {
@@ -389,6 +419,17 @@ for (const width of PAGES.length ? [1280, 390] : []) {
             if (!end) { sessionStorage.removeItem(key); return; }
             sessionStorage.setItem(key, JSON.stringify({ visit, email, tool: 'grow', toolLabel: 'Get unstuck', coachName: coach, phase: 'end', copySent: true, item: { id: '33333333-3333-4333-8333-333333333333', plan, status: 'completed' } }));
           }, { end: act === 'guest:end', token: GUEST_TOKEN, visit: GUEST_VISIT, plan: UNSTUCK_PLAN, email: M9.guestEmail, coach: M9.coach });
+        }
+        if (act === 'travel') {
+          // The Travel plan's plans and peak moments, kept on the device as the app keeps them until 048.
+          await page.waitForFunction(() => /"id":"[0-9a-f-]{36}"/.test(localStorage.getItem('clarity-portal-auth') || ''), null, { timeout: 15000 });
+          await page.evaluate((T) => {
+            const uid = JSON.parse(localStorage.getItem('clarity-portal-auth')).user.id;
+            localStorage.setItem(`clarity-travel-plans-local:${uid}`, JSON.stringify({ plans: { [T.plan.id]: T.plan, [T.short.id]: T.short, [T.now.id]: T.now }, ticks: {} }));
+            localStorage.setItem(`clarity-peak-moments-local:${uid}`, JSON.stringify({ moments: Object.fromEntries(T.moments.map((m) => [m.id, m])), reviews: {}, leadUps: {}, shareWork: false }));
+            localStorage.setItem('clarity-travel-plans-not-yet', String(Date.now()));
+            localStorage.setItem('clarity-peak-moments-not-yet', String(Date.now()));
+          }, TRAVEL);
         }
         emptyReads = kind === 'build';
         if (kind) {

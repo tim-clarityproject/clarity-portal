@@ -108,6 +108,7 @@ import { CalmFrameDemo, CalmCardDemo } from './GetUnstuckDemos';
 import { AnswerColumnsDemo, AnswerHintDemo, DissolveDemo, FollowChoiceDemo, NameRowsDemo, ResultsDemo, StepBarsDemo } from './VisualToolDemos';
 import { HealthCheckChartDemo, InfoListDemo, InsidePartsDemo, OfferRowDemo, PdfPanelDemo, ProjectListDemo, ResultsPartsDemo, TitleIconsDemo } from './HealthCheckDemos';
 import { PeakPartsDemo } from './PeakDemos';
+import { TravelPartsDemo } from './TravelDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import { TODO_WHERE, dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, todoWhereOptions, todoWhereToast, withMeasure, yearView } from '../../lib/performance';
@@ -2028,6 +2029,15 @@ function Gallery() {
             <p><b>The sprint’s week bars with rings</b> (<code>PeakWeekBars</code>): bars from zero, mint at the standard and grey below it, this week filling in, the dashed standard line labelled at its end, no key. A small ring above each week that holds a peak moment; two or more show as one slightly larger ring with the number in it. Tapping a ring fills it and lists that week’s moments under the chart: no pop-up and no focus box. Keyboard focus shows the coral ring. Each ring’s tap area is 44px or more, and where two overlap the nearer ring wins (M18 let the later one win).</p>
             <p><b>View your year by month</b> (<code>PeakYearList</code>): the month and the sprint that holds most of it, then its moments, or “Nothing marked yet”. A moment beyond the running sprint says Waiting.</p>
             <p>Countdowns read “3 days to go”, never “left”. Every peak moment is private by default; a personal one is never shared.</p>
+          </>
+        )} />
+
+        <GallerySection id="c86" title="Travel plan: the body clock chart, a day’s steps, Home’s card and the Daily plan’s panel" demo={TravelPartsDemo} wide rules={(
+          <>
+            <p><New /><b>The body clock chart</b> (<code>BodyClockChart</code>; M21, Phase 8b): the body clock’s line between home’s time and away’s, each time zone named above its own line, each day a dot, a key moment’s day filled, and the key moments as numbered markers joined to their day, named in the key under the chart.</p>
+            <p><b>Its read-out</b> works by pointing, by touch (a tap reads a day, dragging across scrubs, the page still scrolls up and down) and with the arrow keys. It leads with the day’s key moments, then where the body clock is (“Body clock ~80% adjusted to New York time”). No date: the day’s label on the axis is lit instead. On a phone every other label shows until its day is read.</p>
+            <p><b>A day’s steps</b> (<code>TravelSteps</code>): each row is the time and the step, nothing else. Only on a day across two time zones does every time have its zone under it in small grey. <b>Day by day</b> (<code>TravelDayRow</code>): the date, a dot on a key moment’s day, the day’s line and the chevron.</p>
+            <p><b>Home’s card</b> (<code>TravelTodayCard</code>), during the trip only: today’s steps in time order, each with a private tick box; nothing ever says what wasn’t ticked. <b>The Daily plan’s panel</b> (<code>TravelDayPanel</code>): the same steps, with no tick boxes. <b>From and To</b> (<code>PlaceField</code>) search airports and cities. The offer row’s plane is the one solid icon, in the secondary grey.</p>
           </>
         )} />
 

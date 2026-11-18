@@ -1,0 +1,300 @@
+/* The Travel plan's shared parts (M21, version 7.2; Phase 8b part B). Every
+   value is a token (src/styles/tokens.css). */
+
+/* ---------- The body clock chart (M21 .bck .cc) ---------- */
+.ui-root .ds-tc { margin: 0; }
+.ui-root .ds-tc-chart {
+  position: relative;
+  border-radius: var(--space-2);
+  cursor: crosshair;
+  /* Scrubbing across reads each day; up and down still scroll the page. */
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.ui-root .ds-tc-chart:focus-visible {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px6);
+}
+.ui-root .ds-tc-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.ui-root .ds-tc-chart text { font-family: var(--font-body); }
+.ui-root .ds-tc-level { stroke: var(--line); stroke-width: var(--line-w); }
+.ui-root .ds-tc-level-name { font-size: var(--travel-svg-text); fill: var(--text-2); }
+.ui-root .ds-tc-cursor { stroke: var(--text-2); stroke-width: var(--line-w); }
+.ui-root .ds-tc-line {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: var(--travel-svg-line);
+  stroke-linejoin: round;
+}
+.ui-root .ds-tc-dot { fill: var(--bg); stroke: var(--text); stroke-width: var(--travel-svg-dot); }
+.ui-root .ds-tc-dot--moment { fill: var(--text); }
+.ui-root .ds-tc-marker circle { fill: var(--text); }
+.ui-root .ds-tc-marker text {
+  font-size: var(--travel-svg-num);
+  font-weight: var(--fw-medium);
+  fill: var(--bg);
+}
+.ui-root .ds-tc-stem {
+  stroke: var(--text-2);
+  stroke-width: var(--line-w);
+  stroke-dasharray: var(--travel-svg-stem);
+}
+.ui-root .ds-tc-day { font-size: var(--travel-svg-text); fill: var(--placeholder); }
+.ui-root .ds-tc-day--on { fill: var(--text); }
+.ui-root .ds-tc-day--hidden { opacity: 0; }
+
+/* The read-out: the shared pop-up's look, 34px below the chart's top, beside the day. */
+.ui-root .ds-tc-readout {
+  position: absolute;
+  top: var(--travel-readout-top);
+  z-index: 2;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: max-content;
+  max-width: var(--tip-max-w);
+  padding: var(--space-px10) var(--space-px14);
+  border: var(--line-w) solid var(--toast-line);
+  border-radius: var(--radius-input);
+  background: var(--toast-bg);
+  color: var(--toast-text);
+  font-size: var(--fs-note);
+  line-height: var(--lh-row);
+  pointer-events: none;
+  text-wrap: pretty;
+}
+.ui-root .ds-tc-readout-moment {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--fw-medium);
+}
+.ui-root .ds-tc-readout .ds-tc-num { background: var(--toast-text); color: var(--toast-bg); margin-right: 0; }
+.ui-root .ds-tc-readout-clock--alone { font-weight: var(--fw-medium); }
+
+/* A key moment's numbered disc (M21 .cn), in the key, Your trip and the read-out. */
+.ui-root .ds-tc-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--travel-num);
+  height: var(--travel-num);
+  margin-right: var(--space-2);
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--bg);
+  font-size: var(--fs-min);
+  font-style: normal;
+  font-weight: var(--fw-medium);
+  line-height: 1;
+}
+.ui-root .ds-tc-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-px22);
+  margin: var(--space-px14) 0 0;
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+}
+.ui-root .ds-tc-key span { display: inline-flex; align-items: center; }
+
+/* ---------- A day's steps (M21 .tln .tlr) ---------- */
+.ui-root .ds-tsteps {
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--line-w) solid var(--line);
+}
+.ui-root .ds-tsteps-row {
+  display: grid;
+  grid-template-columns: var(--travel-time-w) minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+.ui-root .ds-tsteps-time {
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  padding-top: var(--space-px2);
+}
+.ui-root .ds-tsteps-zone {
+  display: block;
+  font-size: var(--fs-min);
+  color: var(--placeholder);
+  font-variant-numeric: normal;
+}
+.ui-root .ds-tsteps-words {
+  margin: 0;
+  font-size: var(--fs-text);
+  line-height: var(--lh-row);
+  color: var(--text);
+}
+@media (max-width: 600px) {
+  .ui-root .ds-tsteps-row { grid-template-columns: var(--travel-time-w-phone) minmax(0, 1fr); }
+}
+
+/* ---------- Day by day (M21 .vr) ---------- */
+.ui-root .ds-tdays { margin: 0; padding: 0; list-style: none; }
+.ui-root .ds-tdays > li { margin: 0; padding: 0; }
+.ui-root .ds-tday {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--row-min-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-root .ds-tday-words { display: flex; flex-direction: column; gap: var(--space-px2); min-width: 0; }
+.ui-root .ds-tday-title {
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-text);
+  line-height: var(--lh-row);
+  color: var(--text);
+  transition: color var(--dur) var(--ease);
+}
+.ui-root .ds-tday-title--moment::after {
+  content: "";
+  display: inline-block;
+  width: var(--travel-dot);
+  height: var(--travel-dot);
+  margin-left: var(--travel-dot-gap);
+  border-radius: 50%;
+  background: var(--text);
+  vertical-align: middle;
+}
+.ui-root .ds-tday-line { font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .ds-tday .ds-chevron { flex: none; }
+@media (hover: hover) {
+  .ui-root .ds-tday:hover .ds-tday-title { color: var(--coral-text); }
+}
+.ui-root .ds-tday:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+/* ---------- Home's card (M21 .hmc) ---------- */
+.ui-root .ds-tcard {
+  margin-top: var(--space-px28);
+  padding: var(--space-4) var(--space-px26);
+  border-radius: var(--radius-offer);
+  background: var(--raised);
+}
+.ui-root .ds-tcard-label { display: block; font-size: var(--fs-meta); color: var(--placeholder); }
+.ui-root .ds-tcard-title {
+  margin: var(--space-px6) 0 0;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-headline-phone);
+  line-height: var(--lh-row);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+}
+.ui-root .ds-tcard-list { list-style: none; margin: var(--space-px14) 0 var(--space-2); padding: 0; }
+.ui-root .ds-tcard-row {
+  display: grid;
+  grid-template-columns: var(--travel-card-tick) var(--travel-card-time) minmax(0, 1fr);
+  gap: var(--space-px12);
+  align-items: center;
+  padding: var(--space-px10) 0;
+  border-top: var(--line-w) solid var(--line);
+  font-size: var(--fs-body);
+}
+/* The tick box keeps its 44px tap area, its box on the row's left edge. */
+.ui-root .ds-tcard-tick { margin-left: calc(-1 * var(--space-px13)); }
+.ui-root .ds-tcard-time { color: var(--text-2); font-variant-numeric: tabular-nums; }
+.ui-root .ds-tcard-words { color: var(--text); }
+.ui-root .ds-tcard-open { margin-top: var(--space-1); }
+@media (max-width: 600px) {
+  .ui-root .ds-tcard { padding: var(--space-px22); }
+}
+
+/* ---------- The Daily plan's panel (M21 .wkn .wkr) ---------- */
+.ui-root .ds-tpanel {
+  margin: var(--space-px22) 0;
+  padding: var(--space-3) var(--space-px20);
+  border-radius: var(--radius-card);
+  background: var(--raised);
+}
+.ui-root .ds-tpanel-label { display: block; margin-bottom: var(--space-px6); font-size: var(--fs-meta); color: var(--placeholder); }
+.ui-root .ds-tpanel-list { list-style: none; margin: 0; padding: 0; }
+.ui-root .ds-tpanel-row {
+  display: grid;
+  grid-template-columns: var(--travel-panel-time) minmax(0, 1fr);
+  gap: var(--space-px12);
+  padding: var(--space-px10) 0;
+  border-top: var(--line-w) solid var(--line);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-row);
+  color: var(--text);
+}
+.ui-root .ds-tpanel-row:first-child { border-top: 0; }
+.ui-root .ds-tpanel-time { color: var(--text-2); font-variant-numeric: tabular-nums; }
+.ui-root .ds-tpanel-open { margin-top: var(--space-px2); }
+
+/* ---------- From and To (M21 .acw .acl) ---------- */
+.ui-root .ds-place { min-width: 0; }
+.ui-root .ds-place-box { position: relative; }
+.ui-root .ds-place-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + var(--space-2));
+  z-index: 6;
+  max-height: var(--travel-place-list-max);
+  overflow-y: auto;
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-input);
+  background: var(--card);
+}
+.ui-root .ds-place-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-px12);
+  min-height: var(--option-min-h);
+  padding: var(--space-px13) var(--space-px20);
+  border-bottom: var(--line-w) solid var(--line-soft);
+  font-size: var(--fs-option);
+  line-height: var(--lh-row);
+  color: var(--text);
+  cursor: pointer;
+}
+.ui-root .ds-place-option:last-child { border-bottom: 0; }
+.ui-root .ds-place-option--on { background: var(--raised); }
+.ui-root .ds-place-option:hover { color: var(--coral-text); }
+.ui-root .ds-place-words { display: flex; flex-direction: column; min-width: 0; }
+.ui-root .ds-place-words b { font-weight: var(--fw-regular); }
+.ui-root .ds-place-words small, .ui-root .ds-place-code { font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .ds-place-code { flex: none; letter-spacing: var(--ls-label); }
+.ui-root .ds-place-none { margin: 0; padding: var(--space-px14) var(--space-px18); font-size: var(--fs-secondary); color: var(--text-2); }
+
+/* ---------- The offer row's plane (OfferRow icon="plane"): the one solid icon, secondary grey ---------- */
+.ui-root .ds-offer-icon--plane {
+  width: var(--space-px22);
+  height: var(--space-px22);
+  fill: var(--text-2);
+  transform: rotate(-35deg);
+}
+
+@media (forced-colors: active) {
+  .ui-root .ds-tc-num { forced-color-adjust: none; background: CanvasText; color: Canvas; }
+  .ui-root .ds-tday-title--moment::after { forced-color-adjust: none; background: CanvasText; }
+}
