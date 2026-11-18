@@ -18,11 +18,13 @@ export function ResultsHeadline({ children }) {
  * `row` (M7b .sec and .sech, the Health Check): every section's name sits in
  * the same 44px row with the line under it, whether or not it has a link at
  * its right, so the sections are spaced alike.
+ * `rows`: what follows is rows with their own dividers, so the name has no
+ * line under it, never a doubled rule (Tim, 18 Nov, follow-up 1).
  */
-export function ResultsSection({ title, first = false, children, className = '', action = null, row = false }) {
+export function ResultsSection({ title, first = false, children, className = '', action = null, row = false, rows = false }) {
   const inRow = row || Boolean(action);
   return (
-    <section className={`ds-results-section${first ? ' ds-results-section--first' : ''}${row ? ' ds-results-section--row' : ''} ${className}`.trim()}>
+    <section className={`ds-results-section${first ? ' ds-results-section--first' : ''}${row ? ' ds-results-section--row' : ''}${rows ? ' ds-results-section--rows' : ''} ${className}`.trim()}>
       {title && !inRow && <h3 className="ds-results-head">{title}</h3>}
       {/* action: the section's own quiet link at the right of its name ("Edit"; M7b). */}
       {title && inRow && (
@@ -47,7 +49,7 @@ export function ResultsSection({ title, first = false, children, className = '',
 export function StartQuestions({ questions, title = 'Questions to start with:', onPoint, row = false }) {
   if (!questions?.length) return null;
   return (
-    <ResultsSection title={title} className="ds-startqs" row={row}>
+    <ResultsSection title={title} className="ds-startqs" row={row} rows>
       {questions.map((q) => (typeof q === 'string' ? <p key={q} className="ds-startq">{q}</p> : (
         <div
           key={q.key || q.question}

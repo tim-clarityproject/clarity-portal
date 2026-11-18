@@ -52,7 +52,7 @@ export default function HealthCheckCompare({ model, options, onPick, talk = null
         <HealthCheckChart rows={rows} line={model.line} phone={phone} was={model.was} notes={model.notes} />
         <div className="hc-chart-explain"><ExplainLink explain={chartExplain(model)}>How to read the chart</ExplainLink></div>
       </ResultsSection>
-      <ResultsSection row title="How progress moved">
+      <ResultsSection row rows title="How progress moved">
         {moved.map((m) => (
           <div key={m.id} className="hc-cmp-move">
             <span>{m.text}</span>
@@ -62,7 +62,7 @@ export default function HealthCheckCompare({ model, options, onPick, talk = null
         {!moved.length && <p className="hc-cmp-same">No project’s progress has moved.</p>}
         {model.sameLine && <p className="hc-cmp-same">{model.sameLine}</p>}
       </ResultsSection>
-      <ResultsSection row title="Projects added and removed">
+      <ResultsSection row rows title="Projects added and removed">
         <div className="hc-cmp-two">
           <div>
             <span className="hc-cmp-label">{`Added since ${model.earlierDate}`}</span>

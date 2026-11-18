@@ -56,7 +56,7 @@ import { outlinedEdges } from './edges.mjs';
 import { overlappingTaps } from './taps.mjs';
 import { checkReveals } from './reveals.mjs';
 import { questionsBeforeCharts } from './summary-order.mjs';
-import { buttonProblems, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
+import { buttonProblems, chevronOnlyFolds, doubledRules, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
 import { checkPopups } from './popups.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
@@ -544,6 +544,10 @@ for (const width of PAGES.length ? WIDTHS : []) {
         pass(`${tag}: no Nekst inside any control (button check)`, nekst.length === 0, nekst.slice(0, 5).join('; '));
         const sides = await page.evaluate(sideLines);
         pass(`${tag}: no thick coloured side line (button check)`, sides.length === 0, sides.slice(0, 5).join('; '));
+        const doubled = await page.evaluate(doubledRules);
+        pass(`${tag}: no line under a heading over rows with their own lines (button check)`, doubled.length === 0, doubled.slice(0, 4).join('; '));
+        const folds = await page.evaluate(chevronOnlyFolds);
+        pass(`${tag}: every fold opens from its whole heading row (button check)`, folds.length === 0, folds.slice(0, 4).join('; '));
         pass(`${tag}: at most one eye per page or section, beside its title`, r.eyeNotes.length === 0, r.eyeNotes.slice(0, 4).join('; '));
         const numbered = /Performance Sprint \d/.exec(r.text);
         pass(`${tag}: no "Performance Sprint" followed by a number`, !numbered, numbered?.[0]);
@@ -705,6 +709,10 @@ if (HC_ONLY) {
           pass(`${tag}: no Nekst inside any control (button check)`, nekst.length === 0, nekst.slice(0, 5).join('; '));
           const sides = await page.evaluate(sideLines);
           pass(`${tag}: no thick coloured side line (button check)`, sides.length === 0, sides.slice(0, 5).join('; '));
+          const doubled = await page.evaluate(doubledRules);
+          pass(`${tag}: no line under a heading over rows with their own lines (button check)`, doubled.length === 0, doubled.slice(0, 4).join('; '));
+          const folds = await page.evaluate(chevronOnlyFolds);
+          pass(`${tag}: every fold opens from its whole heading row (button check)`, folds.length === 0, folds.slice(0, 4).join('; '));
           pass(`${tag}: no old names (CSF, Critical Success Factor, “How it works”)`, !/\bCSFs?\b|Critical Success Factor|How it works/.test(r.text), (r.text.match(/.{0,30}(CSF|Critical Success Factor|How it works).{0,30}/) || [''])[0]);
           // Every outlined edge reaches 3 to 1 (rule 8a), and no two tap areas overlap. Two chart dots that sit
           // close share part of their 44px tap circles: a chart's marks are where the answers put them.

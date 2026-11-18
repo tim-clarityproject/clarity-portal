@@ -135,7 +135,7 @@ export default function HealthCheckResults({ draft, asOf, theirs = false, sort =
       <ResultsSection row title="Objective" action={edit('objective', 'Edit the objective')}>
         <p className="hc-objective">{draft.objective}</p>
       </ResultsSection>
-      <ResultsSection row title="Success Factors" action={edit('csf', 'Edit the Success Factors')}>
+      <ResultsSection row rows title="Success Factors" action={edit('csf', 'Edit the Success Factors')}>
         <div className="hc-factors">
           {factors.map((f, i) => (
             <div className="hc-factor" key={f.id}>

@@ -199,3 +199,62 @@ export function sideLines() {
   }
   return [...new Set(out)];
 }
+
+// No line directly under a section heading when rows with their own
+// dividers follow (Tim, 18 Nov, follow-up 1), so there's never a doubled
+// rule. A heading's line is its own bottom edge, or a line drawn by the
+// part that holds it, within 24px under its words; the rows are the first
+// boxes after it that carry a top or bottom edge of their own. Run in the
+// page: page.evaluate(doubledRules).
+export function doubledRules() {
+  const out = [];
+  const line = (st, side) => parseFloat(st[`border${side}Width`]) > 0 && st[`border${side}Style`] !== 'none' && !/rgba\(0, 0, 0, 0\)/.test(st[`border${side}Color`]);
+  const vis = (el) => { const b = el.getBoundingClientRect(); return b.width > 0 && b.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
+  const heads = document.querySelectorAll('.ui-root :is(h2, h3, .ds-section-title, .ds-results-head, .ds-collapse-head)');
+  for (const h of heads) {
+    if (!vis(h)) continue;
+    const hb = h.getBoundingClientRect();
+    // The heading's own line, or its row's (a heading row that holds it).
+    let lineAt = null;
+    for (let p = h, i = 0; p && i < 3; p = p.parentElement, i += 1) {
+      const pb = p.getBoundingClientRect();
+      if (pb.bottom - hb.bottom > 24) break;
+      if (line(getComputedStyle(p), 'Bottom')) { lineAt = pb.bottom; break; }
+    }
+    if (lineAt == null) continue;
+    // What follows: the first rows after the heading's block, below the line.
+    let block = h;
+    while (block.parentElement && !block.nextElementSibling && block.parentElement.getBoundingClientRect().bottom - hb.bottom < 24) block = block.parentElement;
+    let next = block.nextElementSibling;
+    while (next && !vis(next)) next = next.nextElementSibling;
+    if (!next) continue;
+    // A row's divider is a top or bottom edge alone: a box with an edge all round (a drop-down, a field, a card) isn't a row.
+    const divided = (el) => { const st = getComputedStyle(el); const tb = line(st, 'Top') || line(st, 'Bottom'); return tb && !(line(st, 'Left') && line(st, 'Right')); };
+    const firstRow = [next, ...next.querySelectorAll('*')].find((el) => vis(el) && !el.matches('h1, h2, h3, h4, .dash-sh, .ds-results-head, .ds-results-headrow') && el.getBoundingClientRect().height >= 32 && divided(el) && el.getBoundingClientRect().top - lineAt < 64);
+    if (!firstRow) continue;
+    const name = (h.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 30);
+    out.push(`“${name}”: a line under the heading and rows with their own lines (${String(firstRow.className?.baseVal ?? firstRow.className ?? '').split(' ')[0] || firstRow.tagName.toLowerCase()})`);
+  }
+  return [...new Set(out)];
+}
+
+// Folds open from the whole row (Tim, 18 Nov, follow-up 1): a section that
+// folds opens from a tap anywhere on its heading row, never only from its
+// chevron. A fold's button holding nothing but its chevron, beside a
+// heading's words it doesn't hold, fails. Run in the page:
+// page.evaluate(chevronOnlyFolds).
+export function chevronOnlyFolds() {
+  const out = [];
+  for (const el of document.querySelectorAll('.ui-root [aria-expanded]')) {
+    const b = el.getBoundingClientRect();
+    if (!(b.width > 0 && b.height > 0) || el.closest('[hidden],[inert]')) continue;
+    if (el.matches('.ds-dd, select, [role=combobox], [aria-haspopup]')) continue; // drop-downs and menus aren't folds
+    const words = (el.innerText || '').trim();
+    if (words) continue;
+    if (!el.querySelector('.ds-chevron, .ds-disclosure, svg')) continue;
+    const row = el.parentElement;
+    const rowWords = (row?.innerText || '').trim();
+    if (rowWords) out.push(`a fold opened only by its chevron, beside “${rowWords.replace(/\s+/g, ' ').slice(0, 30)}” (${el.getAttribute('aria-label') || 'no label'})`);
+  }
+  return [...new Set(out)];
+}

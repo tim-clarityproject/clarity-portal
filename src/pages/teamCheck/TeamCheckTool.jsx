@@ -119,7 +119,7 @@ function Results({ check, tool, onResults, onEditList }) {
           }))}
         />
       </ResultsSection>
-      <ResultsSection title="Trust">
+      <ResultsSection title="Trust" rows>
         <StepBarRows rows={trustRows(check).map((r) => ({ id: r.id, title: r.name, sub: r.role, value: r.value, word: r.word, tone: r.tone, label: r.label }))} />
         <div className="ds-results-link">
           <Button variant="text" onClick={onEditList}>Edit who’s on the list</Button>

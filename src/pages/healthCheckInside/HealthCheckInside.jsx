@@ -350,7 +350,7 @@ function TeamsPage({ store }) {
       {offer}
       {tip && <OneOffTip onClose={closeTip}>{tip.text}</OneOffTip>}
       {teams.map((t) => (
-        <ResultsSection key={t.id} row title={t.name} className="hc-in-team">
+        <ResultsSection key={t.id} row rows title={t.name} className="hc-in-team">
           {t.versions.length > 0 && (
             <VersionList label={t.name}>
               {t.versions.map((v) => (

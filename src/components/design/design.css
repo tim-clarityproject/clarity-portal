@@ -10770,6 +10770,12 @@
   color: var(--text);
 }
 
+/* No line under a section's name when rows with their own dividers follow (Tim, 18 Nov, follow-up 1). */
+.ui-root .ds-results-section--rows > .ds-results-head,
+.ui-root .ds-results-section--rows > .ds-results-headrow {
+  border-bottom: 0;
+}
+
 /* A results section's name with its own quiet link at the right (M7b .sech). */
 .ui-root .ds-results-headrow {
   display: flex;
