@@ -11095,34 +11095,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.ui-root .ds-offer-circle {
-  flex: none;
-  box-sizing: border-box;
-  width: var(--tap-min);
-  height: var(--tap-min);
-  border-radius: 50%;
-  border: var(--line-w) solid var(--btn-line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text);
-  transition: border-color var(--dur) var(--ease);
-}
-
-.ui-root .ds-offer-icon {
-  display: block;
-  width: var(--space-px14);
-  height: var(--space-px14);
-  fill: currentColor;
-}
-
-.ui-root .ds-offer-icon--play {
-  margin-left: var(--space-px2);
-}
-
+/* No circle or icon (Tim, 18 Nov, follow-up 1): on hover the title is underlined, as a link. */
 @media (hover: hover) {
-  .ui-root .ds-offer-take:hover .ds-offer-circle {
-    border-color: var(--coral-text);
+  .ui-root .ds-offer-take:hover .ds-offer-words b {
+    text-decoration: underline;
+    text-underline-offset: var(--space-1);
+    text-decoration-color: var(--quiet-line);
   }
 }
 
@@ -11182,14 +11160,6 @@
     border: var(--line-w) solid CanvasText;
   }
 
-  .ui-root .ds-offer-circle {
-    border-color: CanvasText;
-  }
-
-  .ui-root .ds-offer-icon {
-    forced-color-adjust: none;
-    fill: CanvasText;
-  }
 }
 
 /* ---------- "Who can see this?" as the side panel (M9 .sheet .who, M10, M7; Phase 8a follow-up, 17 Nov) ---------- */

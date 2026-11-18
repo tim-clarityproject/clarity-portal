@@ -38,7 +38,7 @@ export function TravelPartsDemo() {
       <TravelTodayCard line="You fly to New York today." steps={steps} ticks={ticks} keyOf={tickKey} onTick={(s, on) => setTicks((t) => ({ ...t, [tickKey(s)]: on }))} onOpen={() => {}} />
       <TravelDayPanel steps={steps} onOpen={() => {}} />
       <PlaceField label="From" value={from} search={searchPlaces} onChange={setFrom} />
-      <OfferRow icon="plane" action="Plan my New York trip" detail="~3 minutes" onTake={() => {}} onNotNow={() => {}} />
+      <OfferRow action="Plan my New York trip" detail="~3 minutes" onTake={() => {}} onNotNow={() => {}} />
     </div>
   );
 }

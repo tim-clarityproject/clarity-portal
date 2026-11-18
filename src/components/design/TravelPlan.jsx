@@ -27,7 +27,7 @@ import './travel.css';
 //   TravelDayPanel  the Daily plan's view of the same steps, with no tick boxes.
 //   PlaceField      From and To: a search over airports and cities.
 //   MomentNumber    the numbered disc of a key moment.
-//   PLANE           the offer row's solid plane (OfferRow icon="plane").
+//   PLANE           the solid plane (the offer row had it until 18 Nov; offers have no icon now).
 
 export function MomentNumber({ n }) {
   return <i className="ds-tc-num" aria-hidden="true">{n}</i>;

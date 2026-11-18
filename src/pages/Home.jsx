@@ -420,7 +420,6 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
       {tripOffer && tripOfferState.show && person !== 'recovery' && (
         <OfferRow
           className="home-offer"
-          icon="plane"
           action={tripOffer.action}
           detail={TRAVEL_TIME}
           onTake={() => { tripOfferState.take(); go(`${TRAVEL_PATH}/new?moment=${encodeURIComponent(tripOffer.moment.id)}`); }}
