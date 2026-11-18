@@ -135,7 +135,20 @@ async function signedIn(browser, width) {
   page.on('pageerror', (e) => errors.push(e.message.slice(0, 200)));
   await signIn(page, env);
   await page.evaluate((k) => localStorage.removeItem(k), DEVICE);
+  await cleanMoments();
   return { ctx, page, errors };
+}
+
+// Since 048 ran on the test project (18 Nov) the moments this test adds reach
+// the database: only those (by their names), their reviews first.
+async function cleanMoments() {
+  const names = MOMENTS.map((x) => x.name);
+  const { data, error } = await db.from('peak_moments').select('id').eq('user_id', me).in('name', names);
+  if (error) { if (/402|read.?only/i.test(`${error.code} ${error.message}`)) throw new Error('The test project answered 402 or read-only: stopped.'); return; }
+  const ids = (data || []).map((r) => r.id);
+  if (!ids.length) return;
+  await db.from('peak_reviews').delete().eq('user_id', me).in('moment_id', ids);
+  await db.from('peak_moments').delete().eq('user_id', me).in('id', ids);
 }
 
 const browser = await chromium.launch({ args: ['--mute-audio'] });
@@ -143,7 +156,7 @@ const madeTodos = new Set();
 // Only what this test made on the fixed day: the lead-up to-dos and the day's plan and review rows.
 async function cleanDay() {
   for (const id of madeTodos) await db.from('todos').delete().eq('id', id).eq('user_id', me);
-  await db.from('todos').delete().eq('user_id', me).eq('source', 'other_tool').eq('text', 'I’ll be in bed by 22:30');
+  await db.from('todos').delete().eq('user_id', me).in('source', ['other_tool', 'peak_moment']).eq('text', 'I’ll be in bed by 22:30');
   await db.from('day_plans').delete().eq('user_id', me).eq('local_date', today);
   await db.from('day_reviews').delete().eq('user_id', me).eq('local_date', today);
 }
@@ -290,7 +303,7 @@ try {
     pass(`${tag}: only one lead-up question that day`, (await qText(page)).startsWith('What’s one thing'));
     const todo = await until(async () => (await db.from('todos').select('id, text, source, source_id').eq('user_id', me).eq('text', 'I’ll be in bed by 22:30').is('deleted_at', null)).data?.[0], 10000);
     if (todo) madeTodos.add(todo.id);
-    pass(`${tag}: the answer becomes one of today’s to-dos (other_tool until 048, with the moment as its source)`, todo?.source === 'other_tool' && Boolean(todo?.source_id), JSON.stringify(todo));
+    pass(`${tag}: the answer becomes one of today’s to-dos (peak_moment now 048 is there, with the moment as its source)`, todo?.source === 'peak_moment' && Boolean(todo?.source_id), JSON.stringify(todo));
     await page.locator('.ds-guide-close').click();
     await sleep(800);
 
@@ -372,6 +385,7 @@ try {
 } finally {
   // Only what this test made: the lead-up to-dos and today's day rows, then the seed back on the real today.
   await cleanDay();
+  await cleanMoments().catch(() => null);
   try { seedForReal('--reset'); } catch (e) { pass('the seed goes back on the real today', false, e.message.slice(0, 200)); }
   await browser.close();
 }

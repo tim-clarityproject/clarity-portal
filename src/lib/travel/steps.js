@@ -199,7 +199,7 @@ export function stepsFor(trip, day, { before = null, next = null } = {}) {
     // On the clock of wherever the person is then (on a flight, the destination's); when that reads another date, the day's own first clock.
     let place = zoneAt(where, by);
     if (!onDay(by, place.zone, day.date)) place = where.start;
-    if (onDay(by, place.zone, day.date)) steps.push(step('caffeine', by, place, `Have your last caffeine by ${hhmm(by, place.zone)}.`));
+    if (onDay(by, place.zone, day.date)) steps.push(step('caffeine', by, place, caffeineWords(trip, by, hhmm(by, place.zone)), { onPlane: onAPlane(trip, by) }));
   }
 
   // ---- Sleep
@@ -274,6 +274,12 @@ function clearOfFlights(trip, day, light, { landing, place, goingLater, bed }) {
 }
 
 const span = (from, to) => ({ from: from.toISOString(), to: to.toISOString() });
+
+/** Whether an instant falls between a flight's take-off and its landing. */
+export const onAPlane = (trip, t) => trip.legs.some((l) => t > l.departs && t < l.arrives);
+
+/** The last caffeine's words; during a flight it says so (Tim, 18 Nov, 09:00: caffeine in the air is allowed). */
+export const caffeineWords = (trip, by, time) => `Have your last caffeine by ${time}${onAPlane(trip, by) ? ', on the plane' : ''}.`;
 
 function timeOfHours(h) {
   const m = ((Math.round(h * 60) % 1440) + 1440) % 1440;

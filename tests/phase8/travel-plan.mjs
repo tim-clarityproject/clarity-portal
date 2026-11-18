@@ -433,6 +433,21 @@ async function run(browser, width, mode) {
   pass(`${tag}: no sideways scroll on Start`, await noSideScroll(page));
   await shot('start');
 
+  // ---------------------------------------------------------------- a short trip far west (Tim, 18 Nov)
+  // Two nights in New York on 23:00 to 07:00: up at 05:00, not 02:00, with one line saying so.
+  const WEST = plan(4, dayKey(30), dayKey(32), { usualSleep: { start: '23:00', end: '07:00' } });
+  WEST.flightOut = { ...WEST.flightOut, leaves: `${dayKey(30)}T09:00`, lands: `${dayKey(30)}T12:00` };
+  await page.evaluate(({ T, P }) => { const kept = JSON.parse(localStorage.getItem(T)); kept.plans[P.id] = P; localStorage.setItem(T, JSON.stringify(kept)); }, { T: TRAVEL, P: WEST });
+  await page.goto(`${APP}/travel-plan/${WEST.id}`);
+  await onQ(page, 'Here’s your plan for New York');
+  const lines = await dates(page, '.travel-headline');
+  pass(`${tag}: a short trip far west says it stays on London time, then that sleep moves`, lines[0] === 'It’s a short trip, so stay on London time.' && lines[1] === 'Your sleep moves a little so you’re not up at 02:00.', lines.join(' / '));
+  const shortSteps = (await dates(page, '.ds-tsteps-row')).join(' | ');
+  pass(`${tag}: getting up is at 05:00, lights out at 21:00`, /05:00 ?Get up, which is 10:00 in London/.test(shortSteps) && /21:00 ?Turn the lights out, which is 02:00 in London/.test(shortSteps), shortSteps.slice(0, 300));
+  pass(`${tag}: no sideways scroll on the short trip`, await noSideScroll(page));
+  await shot('short-west');
+  await page.evaluate(({ T, id: x }) => { const kept = JSON.parse(localStorage.getItem(T)); delete kept.plans[x]; localStorage.setItem(T, JSON.stringify(kept)); }, { T: TRAVEL, id: WEST.id });
+
   pass(`${tag}: no page errors`, errors.length === 0, errors.join(' | '));
   // Clean up: only what this run made.
   await page.evaluate(({ T, P }) => { localStorage.removeItem(T); localStorage.removeItem(P); }, { T: TRAVEL, P: PEAK });

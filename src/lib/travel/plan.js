@@ -5,7 +5,7 @@ import { addDays, clockChanges, dayKeyWords, instantAt, offsetMinutes, wallClock
 import { RULES, HOUR, nearestFive } from './rules.js';
 import { readTrip, differenceAt, differenceOn, whereOn, zoneOfAt } from './trip.js';
 import { bodyClockDays, inTheAir, usualBedAt, usualWakeAt } from './clock.js';
-import { stepsFor, roundIn } from './steps.js';
+import { stepsFor, roundIn, caffeineWords, onAPlane } from './steps.js';
 
 const round1 = (x) => Math.round(x * 10) / 10 || 0;
 
@@ -133,9 +133,13 @@ function shortPlan(trip, input, check) {
   const onTheDay = (t) => wallClock(t, place.zone).date === date;
   const said = (words, t) => (sameTime ? `${words}.` : `${words}, which is ${inHome(t)} in ${home}.`);
   // The usual home bedtime and wake time that fall on the day where they are.
+  // Going west, sleep moves later just enough that getting up is never
+  // before 05:00 local time and lights out never after 01:00 (Tim, 18 Nov, 09:00).
+  const moved = sleepMove(trip, date, place.zone, check.difference);
   const near = [-1, 0, 1].map((j) => addDays(date, j));
-  const bed = near.map((d) => usualBedAt(trip, d)).find(onTheDay) || usualBedAt(trip, date);
-  const getUp = near.map((d) => usualWakeAt(trip, d)).find(onTheDay) || new Date(bed.getTime() + trip.sleep.hours * HOUR);
+  const shifted = (t) => new Date(t.getTime() + moved.hours * HOUR);
+  const bed = near.map((d) => shifted(usualBedAt(trip, d))).find(onTheDay) || shifted(usualBedAt(trip, date));
+  const getUp = near.map((d) => shifted(usualWakeAt(trip, d))).find(onTheDay) || new Date(bed.getTime() + trip.sleep.hours * HOUR);
   // The night after getting up: caffeine and evening light are aimed at it.
   const nextBed = bed > getUp ? bed : new Date(bed.getTime() + 24 * HOUR);
   // Leaving after getting up: a night flight takes the night (asleep on board); after a day flight the night is at home, on the usual time.
@@ -161,7 +165,7 @@ function shortPlan(trip, input, check) {
   }
   if (!trip.noCaffeine) {
     const by = new Date(nextBed.getTime() - RULES.caffeineHours * HOUR);
-    steps.push(mk('caffeine', by, `Have your last caffeine by ${local(by)}.`));
+    steps.push(mk('caffeine', by, caffeineWords(trip, by, local(by)), { onPlane: onAPlane(trip, by) }));
   }
   for (const m of trip.moments.filter((x) => x.startsOn === date)) {
     const words = m.at ? said(`${m.name} starts`, m.at) : `${m.name} is today.`;
@@ -182,11 +186,36 @@ function shortPlan(trip, input, check) {
     from: trip.flightOut.departsOn,
     to: trip.flightHome.arrivesOn,
     headline: sameTime ? 'There’s no time difference, so keep your usual times.' : `It’s a short trip, so stay on ${home} time.`,
+    // The one line under the headline when sleep moves (null when it doesn't).
+    sleepNote: moved.hours ? moved.note : null,
+    sleepMoved: moved.hours,
     keyDay: { date, title: dayKeyWords(date), zone: place.zone, city: place.city, steps },
     days: [],
     chart: null,
     clockChanges: changesDuring(trip, trip.flightOut.departsOn, trip.flightHome.arrivesOn),
   };
+}
+
+/**
+ * A short trip west: how far sleep moves later so that, on the key day's own
+ * clock, getting up is no earlier than 05:00 and lights out no later than
+ * 01:00 (RULES.shortWakeFrom, RULES.shortBedBy), and the line that says so,
+ * with the real time it would have been ("Your sleep moves a little so
+ * you’re not up at 02:00."). Going east, or with no difference, nothing moves.
+ * @returns {{ hours: number, note: string|null }}
+ */
+export function sleepMove(trip, date, zone, difference) {
+  if (!(difference < 0)) return { hours: 0, note: null };
+  const toMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  // Minutes from b to a on the clock, -12 to +12 hours.
+  const apart = (a, b) => { let d = toMin(a) - toMin(b); if (d > 720) d -= 1440; if (d <= -720) d += 1440; return d; };
+  const wakeAt = wallClock(usualWakeAt(trip, date), zone).time;
+  const bedAt = wallClock(usualBedAt(trip, date), zone).time;
+  const early = apart(wakeAt, RULES.shortWakeFrom); // < 0: up too early
+  if (early < 0) return { hours: -early / 60, note: `Your sleep moves a little so you’re not up at ${wakeAt}.` };
+  const late = apart(bedAt, RULES.shortBedBy); // > 0: to bed too late
+  if (late > 0) return { hours: -late / 60, note: `Your sleep moves a little so you’re not going to bed at ${bedAt}.` };
+  return { hours: 0, note: null };
 }
 
 /**

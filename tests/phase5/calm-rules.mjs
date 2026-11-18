@@ -97,9 +97,11 @@ const TRAVEL = (() => {
   const launch = moment(12, 'Tokyo launch', day(3), 'Tokyo', 'Asia/Tokyo');
   const plan = { id: id(1), title: 'New York trip', flightOut: { id: id(2), from: LHR, to: JFK, leaves: `${day(5)}T12:00`, lands: `${day(5)}T15:00` }, flightHome: { id: id(3), from: JFK, to: LHR, leaves: `${day(9)}T19:00`, lands: `${day(10)}T07:00` }, momentIds: [board.id], momentTimes: { [board.id]: '09:00' }, usualSleep: { start: '22:30', end: '06:30' }, noCaffeine: false, createdAt: at, updatedAt: at };
   const short = { id: id(4), title: 'Dubai trip', flightOut: { id: id(5), from: LHR, to: DXB, leaves: `${day(20)}T21:00`, lands: `${day(21)}T08:00` }, flightHome: { id: id(6), from: DXB, to: LHR, leaves: `${day(23)}T09:00`, lands: `${day(23)}T13:00` }, momentIds: [keynote.id], momentTimes: { [keynote.id]: '14:00' }, usualSleep: { start: '22:00', end: '06:00' }, noCaffeine: false, createdAt: at, updatedAt: at };
+  // A short trip far west: sleep moves so getting up isn't at 02:00, with its one line (Tim, 18 Nov).
+  const west = { id: id(13), title: 'New York trip', flightOut: { id: id(14), from: LHR, to: JFK, leaves: `${day(30)}T09:00`, lands: `${day(30)}T12:00` }, flightHome: { id: id(15), from: JFK, to: LHR, leaves: `${day(32)}T19:00`, lands: `${day(33)}T07:00` }, momentIds: [], momentTimes: {}, usualSleep: { start: '23:00', end: '07:00' }, noCaffeine: false, createdAt: at, updatedAt: at };
   // Under way today: Home's "Today’s travel plan" card.
   const now = { ...plan, id: id(7), flightOut: { ...plan.flightOut, id: id(8), leaves: `${day(0)}T12:00`, lands: `${day(0)}T15:00` }, flightHome: { ...plan.flightHome, id: id(9), leaves: `${day(4)}T19:00`, lands: `${day(5)}T07:00` }, momentIds: [], momentTimes: {} };
-  return { plan, short, now, moments: [board, keynote, launch] };
+  return { plan, short, west, now, moments: [board, keynote, launch] };
 })();
 const PAGES_ALL = [
   ['home', '/welcome'],
@@ -180,6 +182,7 @@ const PAGES_ALL = [
   ['travel-plan', `/travel-plan/${TRAVEL.plan.id}`, 'travel'],
   ['travel-day', `/travel-plan/${TRAVEL.plan.id}/day/${TRAVEL.plan.flightOut.leaves.slice(0, 10)}`, 'travel'],
   ['travel-short', `/travel-plan/${TRAVEL.short.id}`, 'travel'],
+  ['travel-short-west', `/travel-plan/${TRAVEL.west.id}`, 'travel'],
   ['home-travel', '/welcome', 'travel'],
   // Peak moments (M18 version 28; Phase 8b part A): the list, Add's first
   // step, a saved one's summary and the sprint page, from the same peak
@@ -432,7 +435,7 @@ for (const width of PAGES.length ? [1280, 390] : []) {
           await page.waitForFunction(() => /"id":"[0-9a-f-]{36}"/.test(localStorage.getItem('clarity-portal-auth') || ''), null, { timeout: 15000 });
           await page.evaluate((T) => {
             const uid = JSON.parse(localStorage.getItem('clarity-portal-auth')).user.id;
-            localStorage.setItem(`clarity-travel-plans-local:${uid}`, JSON.stringify({ plans: { [T.plan.id]: T.plan, [T.short.id]: T.short, [T.now.id]: T.now }, ticks: {} }));
+            localStorage.setItem(`clarity-travel-plans-local:${uid}`, JSON.stringify({ plans: { [T.plan.id]: T.plan, [T.short.id]: T.short, [T.west.id]: T.west, [T.now.id]: T.now }, ticks: {} }));
             localStorage.setItem(`clarity-peak-moments-local:${uid}`, JSON.stringify({ moments: Object.fromEntries(T.moments.map((m) => [m.id, m])), reviews: {}, leadUps: {}, shareWork: false }));
             localStorage.setItem('clarity-travel-plans-not-yet', String(Date.now()));
             localStorage.setItem('clarity-peak-moments-not-yet', String(Date.now()));

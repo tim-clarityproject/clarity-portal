@@ -624,11 +624,12 @@ test('a short trip west with the key moment on the day home: New York’s clock 
   assert.equal(plan.short, true);
   assert.equal(plan.keyDay.date, '2026-11-26');
   assert.equal(plan.keyDay.zone, NY);
+  // Up at 05:00, not 02:00: sleep moves 3 hours later (Tim, 18 Nov).
   assert.deepEqual(plan.keyDay.steps.map((s) => [s.time || s.label, s.words]), [
-    ['02:00', 'Get up, which is 07:00 in London.'],
-    ['07:00', 'Get daylight once it’s light, and keep the light low from 14:00.'],
-    ['09:00', 'Have your last caffeine by 09:00.'],
+    ['05:00', 'Get up, which is 10:00 in London.'],
+    ['07:00', 'Get daylight once it’s light, and keep the light low from 17:00.'],
     ['10:00', 'Your pitch starts, which is 15:00 in London.'],
+    ['12:00', 'Have your last caffeine by 12:00.'],
     ['On board', 'Sleep on the flight home.'],
   ]);
 });
@@ -640,11 +641,84 @@ test('a short trip west: never daylight in the local night, and lights out comes
   });
   assert.equal(plan.keyDay.date, '2026-11-25');
   assert.deepEqual(plan.keyDay.steps.map((s) => [s.time, s.words]), [
-    ['02:00', 'Get up, which is 07:00 in London.'],
-    ['07:00', 'Get daylight once it’s light, and keep the light low from 14:00.'],
-    ['09:00', 'Have your last caffeine by 09:00.'],
-    ['18:00', 'Turn the lights out, which is 23:00 in London.'],
+    ['05:00', 'Get up, which is 10:00 in London.'],
+    ['07:00', 'Get daylight once it’s light, and keep the light low from 17:00.'],
+    ['12:00', 'Have your last caffeine by 12:00.'],
+    ['21:00', 'Turn the lights out, which is 02:00 in London.'],
   ]);
+});
+
+// ------------------------------------------------------------ short trips far west (Tim, 18 Nov, 09:00)
+// Stay on home time unless that means getting up before 05:00 or going to bed
+// after 01:00 local time; then sleep moves just enough, with one line saying so.
+test('a short trip far west: London to Los Angeles, 2 nights: up at 05:00, not 23:00', () => {
+  const LA = 'America/Los_Angeles';
+  const plan = makeTravelPlan({
+    flightOut: f('2026-11-24', '10:00', 'London', L, '2026-11-24', '13:00', 'Los Angeles', LA),
+    flightHome: f('2026-11-26', '17:00', 'Los Angeles', LA, '2026-11-27', '11:00', 'London', L),
+  });
+  assert.equal(plan.short, true);
+  assert.equal(plan.reason, 'nights');
+  assert.equal(plan.headline, 'It’s a short trip, so stay on London time.');
+  assert.equal(plan.sleepNote, 'Your sleep moves a little so you’re not up at 23:00.');
+  assert.equal(plan.sleepMoved, 6);
+  assert.deepEqual(plan.keyDay.steps.map((s) => [s.time, s.words]), [
+    ['05:00', 'Get up, which is 13:00 in London.'],
+    ['07:00', 'Get daylight once it’s light, and keep the light low from 17:00.'],
+    ['12:00', 'Have your last caffeine by 12:00.'],
+    ['21:00', 'Turn the lights out, which is 05:00 in London.'],
+  ]);
+});
+
+test('a short trip far west: London to New York, 2 nights: up at 05:00, not 02:00', () => {
+  const plan = makeTravelPlan({
+    flightOut: f('2026-11-24', '09:00', 'London', L, '2026-11-24', '12:00', 'New York', NY),
+    flightHome: f('2026-11-26', '19:00', 'New York', NY, '2026-11-27', '07:00', 'London', L),
+  });
+  assert.equal(plan.headline, 'It’s a short trip, so stay on London time.');
+  assert.equal(plan.sleepNote, 'Your sleep moves a little so you’re not up at 02:00.');
+  assert.equal(plan.sleepMoved, 3);
+  const up = plan.keyDay.steps.find((s) => s.wake);
+  const bed = plan.keyDay.steps.find((s) => s.kind === 'sleep' && !s.wake);
+  assert.equal(up.time, '05:00');
+  assert.equal(bed.time, '21:00');
+});
+
+test('a short trip east is unchanged: London to Dubai keeps London’s times, with no line', () => {
+  const plan = makeTravelPlan(SHORT);
+  assert.equal(plan.sleepNote, null);
+  assert.equal(plan.sleepMoved, 0);
+  assert.equal(plan.keyDay.steps.find((s) => s.kind === 'sleep').time, '02:00');
+  assert.equal(plan.keyDay.steps.find((s) => s.wake).time, '10:00');
+});
+
+test('every short trip west: never up before 05:00 or in bed after 01:00 local time; east never moves', () => {
+  let checked = 0;
+  for (const [home, homeCity, away, awayCity, hours] of ROUTES) {
+    for (const out of DEPARTS) {
+      for (const nights of [1, 2]) {
+        const plan = makeTravelPlan(tripFor([home, homeCity, away, awayCity, hours], out, '19:00', nights));
+        const name = `${homeCity} to ${awayCity}, ${out} out, ${nights} nights`;
+        if (plan.difference >= 0) { assert.equal(plan.sleepMoved, 0, name); continue; }
+        const up = plan.keyDay.steps.find((s) => s.wake);
+        if (up) assert.ok(up.time >= RULES.shortWakeFrom, `${name}: up at ${up.time}`);
+        const bed = plan.keyDay.steps.find((s) => s.kind === 'sleep' && !s.wake && !s.onBoard);
+        if (bed) assert.ok(bed.time <= RULES.shortBedBy || bed.time >= '12:00', `${name}: bed at ${bed.time}`);
+        checked += 1;
+      }
+    }
+  }
+  assert.ok(checked > 0);
+});
+
+// ------------------------------------------------------------ caffeine in the air (Tim, 18 Nov, 09:00)
+test('a last caffeine during a flight says it’s on the plane', () => {
+  const plan = makeTravelPlan(M21);
+  const fly = plan.days.find((d) => d.date === '2026-11-08').steps.find((s) => s.kind === 'caffeine');
+  assert.equal(fly.onPlane, true);
+  assert.match(fly.words, /^Have your last caffeine by \d\d:\d\d, on the plane\.$/);
+  // Every other caffeine step on the ground says nothing of a plane.
+  for (const d of plan.days) for (const s of d.steps) if (s.kind === 'caffeine' && !s.onPlane) assert.doesNotMatch(s.words, /plane/, d.date);
 });
 
 test('no time difference (London to Lisbon in November): says so, with no home-time phrase', () => {

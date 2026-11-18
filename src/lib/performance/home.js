@@ -172,6 +172,12 @@ export function homeSuggestion(input) {
   // starts): no work prompts (brief, Phase 8b step 3). Only the wind-down
   // and the peak moment's own review after.
   if (input.onBreak && input.person !== 'new') return p?.kind === 'review' ? toCard(p) : card?.key === 'wind-down' ? card : null;
+  // In the 3 days before a peak moment its countdown wins the one card,
+  // except on the weekly debrief's own day (the last day of the week it is
+  // for), when the debrief keeps its turn (Tim, 18 Nov, 09:00).
+  if (p?.kind === 'lead' && input.person !== 'recovery' && input.person !== 'new' && input.hour >= REVIEW_EARLY_HOURS && !debriefsOwnDay(input)) {
+    return toCard(p);
+  }
   // A peak moment (M18): its countdown in the 3 days before, on the day,
   // and its review after, take their turn like anything timed: once the day
   // is planned (or Daily plan's morning has gone), in place of "Ready to log
@@ -187,6 +193,13 @@ export function homeSuggestion(input) {
     return { key: c.key, question: c.question, lines: c.lines || [], time: c.time, action: c.action };
   }
   return card;
+}
+
+/** Whether today is the last day of the week whose weekly debrief is open and not yet done. */
+export function debriefsOwnDay({ today, sprintView: v }) {
+  if (v?.state !== 'running' || !v.debrief) return false;
+  const week = v.calendar?.weeks?.[v.debrief.week - 1];
+  return Boolean(week && week.end === today);
 }
 
 /** A peak moment's card (src/lib/peakMoments/model.js homeCard) as Home's one card. */

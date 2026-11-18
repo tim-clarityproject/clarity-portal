@@ -16,6 +16,8 @@
   font-size: var(--fs-text);
   color: var(--text-2);
 }
+/* The one line under it when a short trip's sleep moves (Tim, 18 Nov): the next line, no gap. */
+.ui-root .travel-headline--next { margin-top: 0; }
 .ui-root .travel-plan .ipp-section:first-of-type { margin-top: var(--space-px44); }
 .ui-root .travel-zone { font-size: var(--fs-secondary); color: var(--text-2); }
 .ui-root .travel-steps--flush { margin-top: 0; border-top: 0; }

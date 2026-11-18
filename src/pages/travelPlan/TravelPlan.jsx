@@ -663,7 +663,8 @@ function TravelPlanPage() {
       <>
         <p className="travel-meta">{spanWords(view.from, view.to)}</p>
         <p className="travel-headline">{view.headline}</p>
-        <Section title={moment ? 'Your key day' : 'Your first full day'} aside={<span className="travel-zone">{`${view.keyDay.city} time`}</span>} className="ipp-section travel-section">
+        {view.sleepNote && <p className="travel-headline travel-headline--next">{view.sleepNote}</p>}
+        <Section title={moment ? 'Your key day' : 'First full day'} aside={<span className="travel-zone">{`${view.keyDay.city} time`}</span>} className="ipp-section travel-section">
           <p className="ds-sr">{dateWords(view.keyDay.date)}</p>
           <TravelSteps steps={steps} label={`${dateWords(view.keyDay.date)}, ${view.keyDay.city} time`} className="travel-steps--flush" />
           <WhyLink explain={whyShort(view, saved.noCaffeine)} noCaffeine={saved.noCaffeine} onCaffeine={toggleCaffeine} />

@@ -49,6 +49,9 @@ export const RULES = Object.freeze({
   shortDaylightAfterWake: 2,
   /** Staying on home time going west: daylight never before this on the local clock (earlier is still night there). */
   shortFirstLight: '07:00',
+  /** A short trip west: getting up never before this local time, and lights out never after the next (sleep moves later just enough; Tim, 18 Nov). */
+  shortWakeFrom: '05:00',
+  shortBedBy: '01:00',
   /** Staying on home time: low light from this long before bedtime. */
   shortLowBeforeBed: 4,
   /** A trip this many nights away or fewer is a short trip. */

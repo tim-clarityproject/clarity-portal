@@ -204,9 +204,21 @@ test('Home: the countdown in the 3 days before, the day itself, then the review 
 test('Home takes the peak card in turn: after the day is planned, never on a break’s work prompts', () => {
   const peak = { key: 'lead:x', kind: 'lead', label: 'Cup final, 3 days to go', question: 'Q?', lines: [], action: { label: 'Plan for it', to: '/pressure-plan' }, notNow: 'lead:x' };
   const base = { today: TODAY, minute: 0, person: 'sprint', sprintView: { state: 'running', current: 3, lengthWeeks: 8, name: 'Performance Sprint' }, reviewed: false, yesterday: {}, windDown: {} };
-  assert.equal(homeSuggestion({ ...base, hour: 9, dayPlanned: false, peak }).key, 'plan', 'the morning stays Daily plan');
-  assert.equal(homeSuggestion({ ...base, hour: 10, dayPlanned: true, peak }).key, 'lead:x', 'planned: the peak card’s turn');
-  assert.equal(homeSuggestion({ ...base, hour: 18, dayPlanned: true, peak }).key, 'review', 'the evening stays Daily review');
+  // The countdown wins the one card in the 3 days before (Tim, 18 Nov).
+  assert.equal(homeSuggestion({ ...base, hour: 9, dayPlanned: false, peak }).key, 'lead:x', 'the countdown wins over Daily plan');
+  assert.equal(homeSuggestion({ ...base, hour: 10, dayPlanned: true, peak }).key, 'lead:x');
+  assert.equal(homeSuggestion({ ...base, hour: 18, dayPlanned: true, peak }).key, 'lead:x', 'and over Daily review');
+  assert.notEqual(homeSuggestion({ ...base, hour: 2, dayPlanned: false, peak })?.key, 'lead:x', 'never in the night');
+  // The debrief's window is open: the countdown wins on every day but the debrief's own day.
+  const days = Array.from({ length: 7 }, (_, i) => `2026-10-${19 + i}`);
+  const debriefing = { ...base.sprintView, debrief: { week: 3 }, calendar: { weeks: [null, null, { number: 3, start: '2026-10-19', end: '2026-10-25', days }] } };
+  assert.equal(homeSuggestion({ ...base, today: '2026-10-23', hour: 14, dayPlanned: true, sprintView: debriefing, peak }).key, 'lead:x', 'a day of the window that isn’t its own day');
+  assert.equal(homeSuggestion({ ...base, today: '2026-10-27', hour: 14, dayPlanned: true, sprintView: debriefing, peak }).key, 'lead:x', 'after the week ends');
+  assert.equal(homeSuggestion({ ...base, today: '2026-10-25', hour: 14, dayPlanned: true, sprintView: debriefing, peak }).key, 'debrief', 'the debrief’s own day: the debrief wins');
+  // On the day itself, and the review after, still take their turn.
+  const day = { ...peak, kind: 'day', key: 'lead:y' };
+  assert.equal(homeSuggestion({ ...base, hour: 9, dayPlanned: false, peak: day }).key, 'plan', 'on the day: the morning stays Daily plan');
+  assert.equal(homeSuggestion({ ...base, hour: 10, dayPlanned: true, peak: day }).key, 'lead:y');
   assert.equal(homeSuggestion({ ...base, hour: 10, dayPlanned: false, peak, onBreak: true }), null, 'a break: no work prompts');
   assert.equal(homeSuggestion({ ...base, hour: 10, dayPlanned: false, peak: { ...peak, kind: 'review', key: 'review:x' }, onBreak: true }).key, 'review:x');
   assert.equal(homeSuggestion({ ...base, person: 'recovery', hour: 10, dayPlanned: true, peak, sprintView: null }).key, 'next-sprint', 'never in Recovery');

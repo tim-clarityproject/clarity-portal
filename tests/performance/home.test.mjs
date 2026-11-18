@@ -140,6 +140,18 @@ test('debrief days: the debrief from 12:00, mornings stay Daily plan', () => {
   assert.equal(c.action.to, '/performance-sprint/debrief');
 });
 
+test('a peak moment’s countdown wins the one card, except on the weekly debrief’s own day (Tim, 18 Nov)', () => {
+  const v = running({ debrief: { week: 3 }, calendar: { weeks: [null, null, { number: 3, start: '2026-10-19', end: '2026-10-25', days: ['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25'] }] } });
+  const peak = { key: 'lead:cup', kind: 'lead', label: 'Cup final, 3 days to go', question: 'Q?', lines: [], action: { label: 'Plan for it', to: '/pressure-plan' }, notNow: 'lead:cup' };
+  // The debrief's window is open on Wed 21, but its own day is Sun 25: the countdown wins.
+  assert.equal(homeSuggestion(base({ sprintView: v, hour: 14, dayPlanned: true, peak })).key, 'lead:cup');
+  assert.equal(homeSuggestion(base({ sprintView: v, hour: 9, peak })).key, 'lead:cup');
+  // Sun 25, the debrief's own day: the debrief wins from 12:00.
+  assert.equal(homeSuggestion(base({ today: '2026-10-25', sprintView: v, hour: 14, dayPlanned: true, peak })).key, 'debrief');
+  // Done, the debrief leaves the window: the countdown wins that day too.
+  assert.equal(homeSuggestion(base({ today: '2026-10-25', sprintView: running(), hour: 14, dayPlanned: true, peak })).key, 'lead:cup');
+});
+
 test('the last week of the sprint and a sprint that has ended', () => {
   const c = homeSuggestion(base({ hour: 13, sprintView: running({ current: 8 }) }));
   assert.equal(c.question, 'Ready for what comes next?');
