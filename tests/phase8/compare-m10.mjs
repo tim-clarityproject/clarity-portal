@@ -25,7 +25,7 @@ import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { APP, M10, M10_FILE, TEAM_PATH, WASH_INDEX, WASH_PATH, block, clearTeamCheck, clearWash, m10Answers, m10Wash, panel, panelGone, readEnv, seedWash, signIn, sleep, until, withCoach, withSeededTodo } from './shared.mjs';
-import { compareParts, compareWords, makeReport, measureParts, words } from './compare-lib.mjs';
+import { NEW_BAR, compareParts, compareWords, makeReport, measureParts, words } from './compare-lib.mjs';
 
 const out = process.argv[2] || join(process.cwd(), 'tmp-phase8-compare-m10');
 mkdirSync(out, { recursive: true });
@@ -65,7 +65,7 @@ const SCREENS = {
     ['the first person’s role', '.pr small', '.ds-namerow-words small', 0, ['pos', 'text']],
     ['the first remove crosshair', '.pr .x', '.ds-namerow .ds-cross', 0, ['box']],
     ['the last person’s row', '.pr', '.ds-namerow', 4, ['box']],
-    ['Add a person', '.addrow .ghost', '.tpc-add .ds-btn', 0, ['box', 'text', 'edge']],
+    ['Add a person', '.addrow .ghost', '.tpc-add .ds-addrow', 0, ['box', 'text', 'edge']],
     ['the coral button', '.gft .btn', '.ds-guide-next', 0, ['foot', 'text']],
     ['Finish later', '.gft .text', '.ds-guide-foot .ds-guide-skip', 0, ['foot', 'text']]],
   trust: [...BAR, ...COUNT, ...HEAD, ...ANSWERS,
@@ -231,6 +231,8 @@ const STRATEGY = 'a to-do can’t be saved without the Strategy it serves (todos
 const CHIP_CLASH = 'M10 also uses .sq for its chips, so the chip’s 16px padding and 1px edge land on the panel’s title (17px to the right, the rows 1px lower); M9 draws the same panel without the clash, and the portal matches M9 exactly';
 const STATUS_BAR = 'M10’s phone frame draws its 47px status bar inside the panel; a real phone gives the panel that space as its safe area, which the test browser has none of (and the title’s 17px from M10’s chip class)';
 export const ALLOW = [
+  ['*|Finish later|from the bottom', NEW_BAR],
+  ['*|Download my PDF|from the bottom', NEW_BAR],
   ['whoT|the panel’s title|left', CHIP_CLASH],
   ['whoT|the panel’s title|top@phone', STATUS_BAR],
   ['whoE|the panel’s title|left', CHIP_CLASH],
@@ -298,7 +300,7 @@ const BUILT_ONLY = new Map([
     ['Low', SHARED_ADD], ['Medium', SHARED_ADD], ['High', SHARED_ADD],
     ['Where should it go?', SHARED_ADD],
     ['This week', SHARED_ADD], ['Backlog', SHARED_ADD], ['Don’t add it', SHARED_ADD],
-    ['CANCEL', 'the shared panel keeps Cancel (step 4)'],
+    ['Cancel', 'the shared panel keeps Cancel (step 4)'],
   ]],
 ]);
 

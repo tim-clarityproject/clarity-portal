@@ -212,6 +212,7 @@
   /* Component sizes */
   --btn-h: 34px;             /* every button on a laptop (Tim, 18 Nov); its tap area stays 44px */
   --btn-h-phone: 40px;       /* every button on a phone */
+  --hc-dd-h: 48px;           /* the Health Check's small drop-downs (M7b), which kept the old button height */
   --btn-pad-x: 14px;         /* in from each side */
   --btn-pad-y: 4px;          /* above and below, once a larger text size wraps the words */
   --radius-btn: 8px;

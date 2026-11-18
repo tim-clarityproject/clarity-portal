@@ -81,7 +81,7 @@ const SCREENS = {
     ['Start a new version', '.tacts .text', '.hc-in-tacts button', 0, ['pos', 'text']],
     ['the second team’s name', '.sech h2', '.ds-results-head', 1, ['pos', 'text']],
     ['its version', '.vr', '.ds-version-row', 3, ['box']],
-    ['Add another team', '.addrow .ghost', '.hc-in-add .ds-btn', 0, ['box', 'text', 'edge']]],
+    ['Add another team', '.addrow .ghost', '.hc-in-add .ds-addrow', 0, ['box', 'text', 'edge']]],
   // Your teams on a first visit and a later one (M7 version 8.2's offer row, Tim, 14 Nov, 10:14 to 10:19):
   // the title's play icon hides while the row offers the Quick guide.
   offer: [...TITLE, ICONS[1], ...OFFER_ROW, ['Not now', '.qga .text', '.ds-offer-ways .ds-link', 0, ['box', 'text']],

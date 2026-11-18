@@ -20,6 +20,7 @@
 // % bar; the title on a guest page) and the bottom bar from the bottom of
 // the screen. Differences that are meant are listed in ALLOWED with why;
 // anything else fails.
+import { NEW_BAR, NEW_NOTE, newButton, shiftForNewButtons } from './compare-lib.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -144,6 +145,11 @@ const BOX = 'the portal’s one-line box is 58px, as M9’s own text boxes are; 
 const WHOLE = 'M9’s script sizes a two-line box in whole pixels; the portal’s box is its words’ own height, up to 0.3px a row different';
 const STATUS_BAR = 'M9’s phone frame draws its 47px status bar inside the panel; a real phone gives the panel that space as its safe area, which the test browser has none of (each part sits exactly 47px higher)';
 export const ALLOW = [
+  ['*|Skip|from the bottom', NEW_BAR],
+  ['*|Finish later|from the bottom', NEW_BAR],
+  ['*|Download my PDF|from the bottom', NEW_BAR],
+  ['gwel|~15 minutes|left', NEW_NOTE],
+  ['steps|where the second is|top', 'each next step’s “Add to this week” is a 34px button since 18 Nov (Tim: an Add that sends is a button), where M9 draws a 44px text link, so the next row starts 3px higher'],
   ['who|the panel’s title|top@phone', STATUS_BAR],
   ['who|Only you|top@phone', STATUS_BAR],
   ['who|You and Tim|top@phone', STATUS_BAR],
@@ -190,7 +196,7 @@ const WORDS_BUILT_ONLY = new Map([
     ['Where should it go?', NEWER_PANEL],
     ['Backlog', NEWER_PANEL],
     ['Don’t add it', NEWER_PANEL],
-    ['CANCEL', 'the shared panel keeps Cancel (step 4)'],
+    ['Cancel', 'the shared panel keeps Cancel (step 4)'],
   ]],
   ['sum', [['Download my PDF', 'Tim’s step 2 asks for the PDF on the signed-in summary; M9 draws it on the guest’s end page only. It is the quiet link at the bottom bar’s left, as M10 draws it on the Team performance check’s results']]],
 ]);
@@ -231,6 +237,12 @@ function measureParts({ parts, mock, anchor, bottom }) {
       lh: cs.lineHeight === 'normal' ? 'normal' : parseFloat(cs.lineHeight), upper: cs.textTransform === 'uppercase',
       colour: rgb(cs.color), fill: rgb(cs.backgroundColor),
       edge: `${parseFloat(cs.borderTopWidth)}px ${rgb(cs.borderTopColor)}`, radius: parseFloat(cs.borderTopLeftRadius),
+      // The new buttons (Tim, 18 Nov; tests/phase8/compare-lib.mjs newButton).
+      btn: !mock && el.matches('.ds-btn--primary, .ds-btn--outline, .ui-btn-primary, .ui-btn-ghost, .auth-btn-primary, .auth-btn-ghost, .dng, .si-btn, .ds-focus-done'),
+      addrow: !mock && el.matches('.ds-addrow'), primary: !mock && el.matches('.ds-btn--primary, .ui-btn-primary, .auth-btn-primary, .si-btn'),
+      wordsW: i.right - i.left, shadow: cs.boxShadow,
+      // In a bar fixed to the screen (the guided tools' foot), so it never moves the page.
+      fixed: (() => { for (let x = el; x && x !== document.body; x = x.parentElement) { const pos = getComputedStyle(x).position; if (pos === 'fixed' || pos === 'sticky') return true; } return false; })(),
     };
   }
   return outp;
@@ -253,6 +265,7 @@ function words({ root, hide }) {
 // ---------------------------------------------------------------- comparing
 const near = (a, b, tol = TOL) => Math.abs(a - b) <= tol;
 function compare(tag, screen, parts, m, b, phone) {
+  m = shiftForNewButtons(m, b, phone);
   for (const [name, , , nth, what] of parts) {
     const key = `${name}#${nth}`;
     const M = m[key];
@@ -264,6 +277,7 @@ function compare(tag, screen, parts, m, b, phone) {
       if (why && !ok) { note(`${tag}: ${name}, ${label} differs as meant (${detail}): ${why}`); return; }
       pass(`${tag}: ${name}, ${label}`, ok, detail);
     };
+    if (B.btn || B.addrow) { newButton(check, (x, y) => `M9 ${typeof x === 'number' ? x.toFixed(2) : x}, built ${typeof y === 'number' ? y.toFixed(2) : y}`, M, B, what.map((w) => (w === 'box:ink' ? 'box' : w)), phone); continue; }
     for (const w of what) {
       if (w === 'box' || w === 'box:ink') {
         check('left', near(M.x, B.x), `M9 ${M.x.toFixed(2)}, built ${B.x.toFixed(2)}`);

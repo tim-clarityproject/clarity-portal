@@ -26,7 +26,7 @@ import { chromium } from 'playwright';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { compareParts, compareWords, makeReport, measureParts, words } from '../phase8/compare-lib.mjs';
+import { NEW_BAR_H, NEW_CARD, NEW_NOTE, compareParts, compareWords, makeReport, measureParts, words } from '../phase8/compare-lib.mjs';
 import { STEPS, appPage, signIn } from './hc-shared.mjs';
 import { backChevron, titleIcons } from './hc-measure.mjs';
 
@@ -283,6 +283,10 @@ const BACK = 'Back’s label is 14px after the chevron’s visible edge (rule 29
 const COACH = 'the coach’s first name comes with the answers (migration 034), so the page knows it only once the link has been opened on this device; before that it says “your coach”, as the return visit shows “Tim”';
 const TEXTBOX = 'the shared text box is as tall as its example until what is typed is longer than the example (so nothing hidden and no jump while typing; rule 18): on a phone “e.g. Win enterprise customers in the US” takes two lines, so the first Success Factor’s box is two lines tall while its answer is shorter than that; M7b cuts the example off at one line';
 export const ALLOW = [
+  ['*|the bottom bar|height', NEW_BAR_H],
+  ['*|the calm card|height', NEW_CARD],
+  ['*|~15 minutes|left', NEW_NOTE],
+  ['*|~15 minutes|top', NEW_NOTE],
   ...['Begin', 'the add button', 'the first answer', 'the last answer', 'the first control', 'Email my link', 'Create my free account', 'the play disc, once watched'].map((p) => [`*|${p}|edge`, EDGE]),
   ...['signin', 'ret'].flatMap((s) => [
     [`${s}|the Email box|height`, BOX],
