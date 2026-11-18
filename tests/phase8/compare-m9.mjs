@@ -63,6 +63,8 @@ const FOOT = [
 const ROWS = [
   ['the first box', '.rw textarea', '.ds-rowlist .ds-text', 0, ['box', 'text', 'edge']],
   ['the second box', '.rw textarea', '.ds-rowlist .ds-text', 1, ['box']],
+  // The boxes after, measured only so the height each gives back moves what is below them.
+  ...[2, 3, 4, 5, 6, 7].map((n) => [`box ${n + 1}`, '.rw textarea', '.ds-rowlist .ds-text', n, []]),
   ['the first remove crosshair', '.rw .x', '.ds-rowlist-remove .ds-cross', 0, ['box']],
   ['the add button', '.addrow .ghost', '.ds-rowlist-add', 0, ['box', 'text', 'edge']],
 ];
@@ -247,8 +249,11 @@ function measureParts({ parts, mock, anchor, bottom }) {
       field: !mock && el.matches('input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select, .ds-field, .ds-dd, .ds-num--box, .ds-text, .ds-grow, .si-inp, .auth-input, .plan-input'),
       seg: !mock && el.matches('.ds-seg-btn'), segTrack: !mock && el.matches('.ds-seg'), chip: !mock && el.matches('.ds-chip'),
       under: parseFloat(cs.borderBottomWidth) || 0,
-      // In a bar fixed to the screen (the guided tools' foot), so it never moves the page.
-      fixed: (() => { for (let x = el; x && x !== document.body; x = x.parentElement) { const pos = getComputedStyle(x).position; if (pos === 'fixed' || pos === 'sticky') return true; } return false; })(),
+      // In a bar fixed to the screen (the guided tools' foot), so it never moves the page. A layer
+      // fixed over the whole screen (a guided tool's own frame) is the page itself, not a bar.
+      fixed: !!el.closest('.ds-guide-foot, .ds-bottombar') || (() => { for (let x = el; x && x !== document.body; x = x.parentElement) { const pos = getComputedStyle(x).position; if ((pos === 'fixed' || pos === 'sticky') && x.getBoundingClientRect().height < innerHeight / 2) return true; } return false; })(),
+      // As tall as the screen (a side panel): it never gets shorter for what is inside it.
+      screen: r.height >= innerHeight - 2,
     };
   }
   return outp;
@@ -276,7 +281,8 @@ function compare(tag, screen, parts, m, b, phone) {
     const key = `${name}#${nth}`;
     const M = m[key];
     const B = b[key];
-    if (!M) { note(`${tag}: M9 doesn’t draw ${name} here`); continue; }
+    if (!M) { if (what.length) note(`${tag}: M9 doesn’t draw ${name} here`); continue; }
+    if (!B && !what.length) continue;
     if (!B) { pass(`${tag}: ${name} is on the page`, Boolean(allowed(screen, name, 'missing')), 'not found'); continue; }
     const check = (label, ok, detail) => {
       const why = allowed(screen, name, label) || (phone && allowed(screen, name, `${label}@phone`));

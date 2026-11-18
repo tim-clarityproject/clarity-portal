@@ -71,6 +71,8 @@ const ROWS = (last) => [
   ['the first box', '.rw textarea', '.ds-rowlist .ds-text', 0, ['box', 'text', 'edge', 'fill']],
   ['the second box', '.rw textarea', '.ds-rowlist .ds-text', 1, ['box']],
   ['the last box', '.rw textarea', '.ds-rowlist .ds-text', last, ['box']],
+  // The boxes between, measured only so the height each gives back moves what is below it.
+  ...Array.from({ length: Math.max(0, last - 2) }, (_, i) => [`box ${i + 3}`, '.rw textarea', '.ds-rowlist .ds-text', i + 2, []]),
   ['the first remove crosshair', '.rw .x', '.ds-rowlist-remove .ds-cross', 0, ['box']],
   ['the add button', '.addrow .ghost', '.ds-rowlist-add', 0, ['box', 'text', 'edge']],
 ];

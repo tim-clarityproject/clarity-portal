@@ -153,6 +153,7 @@ Object.assign(SCREENS, {
     ['See an example', '.qbody .text', '.ds-guide-example-link', 0, ['pos', 'text']],
     ['the first thought’s box', '.rw textarea', '.ds-rowlist .ds-text', 0, ['box', 'text', 'edge']],
     ['the first remove crosshair', '.rw .x', '.ds-rowlist-remove .ds-cross', 0, ['box']],
+    ['the second thought’s box', '.rw textarea', '.ds-rowlist .ds-text', 1, []],
     ['the last thought’s box', '.rw textarea', '.ds-rowlist .ds-text', 2, ['box']],
     ['Add another thought', '.addrow .ghost', '.ds-rowlist-add', 0, ['box', 'text', 'edge']],
     ...FOOT],

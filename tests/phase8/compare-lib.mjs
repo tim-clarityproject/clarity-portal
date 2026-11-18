@@ -110,8 +110,11 @@ export function measureParts({ parts, mock, anchor, bottom }) {
       // Follow-up 1 (Tim, 18 Nov, 15:57): a field, a segmented switch's option or track, a chip, and the line under it.
       field: !mock && el.matches(FIELDS), seg: !mock && el.matches('.ds-seg-btn'), segTrack: !mock && el.matches('.ds-seg'),
       chip: !mock && el.matches('.ds-chip'), under: parseFloat(cs.borderBottomWidth) || 0,
-      // In a bar fixed to the screen (the guided tools' foot), so it never moves the page.
-      fixed: (() => { for (let x = el; x && x !== document.body; x = x.parentElement) { const pos = getComputedStyle(x).position; if (pos === 'fixed' || pos === 'sticky') return true; } return false; })(),
+      // In a bar fixed to the screen (the guided tools' foot), so it never moves the page. A layer
+      // fixed over the whole screen (a guided tool's own frame) is the page itself, not a bar.
+      fixed: !!el.closest('.ds-guide-foot, .ds-bottombar') || (() => { for (let x = el; x && x !== document.body; x = x.parentElement) { const pos = getComputedStyle(x).position; if ((pos === 'fixed' || pos === 'sticky') && x.getBoundingClientRect().height < innerHeight / 2) return true; } return false; })(),
+      // As tall as the screen (a side panel): it never gets shorter for what is inside it.
+      screen: r.height >= innerHeight - 2,
     };
   }
   return outp;
@@ -379,7 +382,7 @@ export function shiftForNewButtons(m, b, phone) {
     const by = rows.filter((r) => r.foot <= M.y + TOL).reduce((n, r) => n + r.by, 0);
     // A part that holds one (a card) is that much shorter.
     const own = b[key] && gives(key, M, b[key]);
-    const inside = own ? 0 : rows.filter((r) => M.y <= r.top + TOL && M.y + M.h >= r.foot - TOL && M.x <= r.left + TOL && M.x + M.w >= r.right - TOL && !(near(M.y, r.top) && near(M.y + M.h, r.foot))).reduce((n, r) => n + r.by, 0);
+    const inside = own || b[key]?.screen ? 0 : rows.filter((r) => M.y <= r.top + TOL && M.y + M.h >= r.foot - TOL && M.x <= r.left + TOL && M.x + M.w >= r.right - TOL && !(near(M.y, r.top) && near(M.y + M.h, r.foot))).reduce((n, r) => n + r.by, 0);
     // A part beside a field on its row (its remove crosshair) stays on the field's middle.
     const band = own ? 0 : (rows.find((r) => r.field && M.y >= r.top - TOL && M.y + M.h <= r.foot + TOL && !(near(M.y, r.top) && near(M.y + M.h, r.foot)))?.by || 0) / 2;
     const by2 = by + band;
