@@ -967,11 +967,11 @@ html:has(.ui-root) {
   background: transparent;
   border: none;
   cursor: pointer;
-  font-family: var(--font-display);
+  /* DM Sans in sentence case: no Nekst inside a control (Tim, 18 Nov, follow-up 1). */
+  font-family: var(--font-body);
   font-weight: 400;
-  font-size: var(--fs-button) !important;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
+  font-size: var(--fs-secondary) !important;
+  letter-spacing: normal;
   /* A long label that wraps at a large text size reads from the left. */
   text-align: left;
   transition: color var(--dur-slow) var(--ease);

@@ -234,7 +234,7 @@
   --arrow-shift: 22%;        /* keeps the half-crosshair centred as it turns */
   --info-size: 16px;         /* the one "i", drawn like ⓘ */
   --info-gap: 6px;           /* from the last word of a sentence to its "i" */
-  --back-gap: var(--space-px14);      /* from Back's chevron to its label (rule 29t, Tim, 5 Nov) */
+  --back-gap: var(--space-px10);      /* from Back's chevron to its words, on every page (Tim, 18 Nov, follow-up 1; was 14px, rule 29t) */
   /* Where the left-pointing chevron's strokes sit inside its 16px square
      (measured from pixels, 5 Nov), so its visible edge can line up (29t). */
   --chev-left-inset: 5px;

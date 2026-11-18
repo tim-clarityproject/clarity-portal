@@ -204,13 +204,13 @@ export default function DesignHeader({ className = '' }) {
           outline: var(--focus-w) solid var(--text);
           outline-offset: var(--space-px3);
         }
+        /* The pill is a control, so its label is DM Sans, never Nekst (Tim, 18 Nov, follow-up 1). */
         .ui-root .hdr-mis-label {
           flex: none;
-          font-family: var(--font-display);
-          font-weight: var(--fw-regular);
-          font-size: var(--fs-glyph);
-          text-transform: uppercase;
-          letter-spacing: var(--ls-overline);
+          font-family: var(--font-body);
+          font-weight: var(--fw-medium);
+          font-size: var(--fs-note);
+          letter-spacing: normal;
           line-height: 1;
           color: var(--text-2);
           white-space: nowrap;

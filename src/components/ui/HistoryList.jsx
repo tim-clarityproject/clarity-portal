@@ -494,11 +494,10 @@ const HLIST_CSS = `
   padding: 1px 8px;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: calc(10 * var(--u, 1px));
+  font-family: var(--font-body); /* no Nekst inside a row people tap (Tim, 18 Nov, follow-up 1) */
+  font-weight: var(--fw-medium);
+  letter-spacing: normal;
+  font-size: var(--fs-meta);
   color: var(--text-2);
   line-height: 1.4;
 }
@@ -508,11 +507,10 @@ const HLIST_CSS = `
   padding: 1px 8px;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: calc(10 * var(--u, 1px));
+  font-family: var(--font-body); /* no Nekst inside a row people tap (Tim, 18 Nov, follow-up 1) */
+  font-weight: var(--fw-medium);
+  letter-spacing: normal;
+  font-size: var(--fs-meta);
   color: var(--text-2);
   line-height: 1.4;
 }
@@ -522,11 +520,10 @@ const HLIST_CSS = `
   padding: 1px 8px;
   border: 1px solid var(--good);
   border-radius: var(--radius-pill);
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: calc(10 * var(--u, 1px));
+  font-family: var(--font-body); /* no Nekst inside a row people tap (Tim, 18 Nov, follow-up 1) */
+  font-weight: var(--fw-medium);
+  letter-spacing: normal;
+  font-size: var(--fs-meta);
   color: var(--mint-text);
   line-height: 1.4;
 }
@@ -609,11 +606,11 @@ const HLIST_CSS = `
   min-height: var(--tap-min);
   padding: 0 var(--space-2) !important;
   color: var(--coral-text);
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: calc(10 * var(--u, 1px)) !important;
+  /* No Nekst inside a control (Tim, 18 Nov, follow-up 1). */
+  font-family: var(--font-body);
+  font-weight: var(--fw-medium);
+  letter-spacing: normal;
+  font-size: var(--fs-meta) !important;
   white-space: nowrap;
   transition: color var(--dur-fast) var(--ease);
 }
@@ -639,11 +636,10 @@ const HLIST_CSS = `
   align-items: center;
   gap: 6px;
   color: var(--text-2);
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: calc(10 * var(--u, 1px)) !important;
+  font-family: var(--font-body); /* no Nekst inside a row people tap (Tim, 18 Nov, follow-up 1) */
+  font-weight: var(--fw-medium);
+  letter-spacing: normal;
+  font-size: var(--fs-meta) !important;
   white-space: nowrap;
   transition: color var(--dur-fast) var(--ease);
 }
@@ -687,11 +683,11 @@ const HLIST_CSS = `
 }
 
 .hlist-row-tags b {
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: calc(10 * var(--u, 1px));
+  /* No Nekst inside a row people tap (Tim, 18 Nov, follow-up 1). */
+  font-family: var(--font-body);
+  font-weight: var(--fw-medium);
+  letter-spacing: normal;
+  font-size: var(--fs-meta);
   color: var(--text-2);
 }
 

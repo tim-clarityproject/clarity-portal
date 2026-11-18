@@ -263,3 +263,14 @@
 .ui-root .ds-grow--one::after {
   min-height: var(--field-h) !important;
 }
+
+/* ---------- No Nekst inside any control (Tim, 18 Nov, follow-up 1) ----------
+   Not in buttons, chips, choices, steppers or calendar day numbers: Nekst
+   stays for page titles, section headings and big figures (Breathe's
+   countdown is one). These parts of the older pages and shared controls
+   were set in Nekst capitals. */
+.ui-root :is(.ds-stepper-value, .ds-guide-steps button b, .auth-password-toggle, .al-step, .al-seg button b, .al-seg button span, .al-opt b, .inv-stepper-label, .rate-scale-labels, .wol-scale button, .wol-seg button):not(#_) {
+  font-family: var(--font-body) !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}

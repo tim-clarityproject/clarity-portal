@@ -145,3 +145,31 @@ export function sideBySide() {
   }
   return [...new Set(out)];
 }
+
+// No Nekst inside any control (Tim, 18 Nov, follow-up 1): buttons, chips,
+// choices, steppers and calendar day numbers are DM Sans. A fold's
+// heading row is a section heading (Nekst stays) and a big figure inside a
+// control (Breathe's countdown) is not a control's words. Run in the page.
+export function nekstInControls() {
+  const CONTROLS = 'button, [role=button], [role=radio], [role=checkbox], [role=switch], [role=option], [role=tab], [role=gridcell], input, select, textarea, .ds-chip';
+  const out = [];
+  for (const el of document.querySelectorAll(CONTROLS)) {
+    const b = el.getBoundingClientRect();
+    if (!(b.width > 0 && b.height > 0) || el.closest('[hidden],[inert],[aria-hidden=true]')) continue;
+    // A section heading that opens its fold, or a title row, keeps its Nekst capitals.
+    if (el.closest('h1, h2, h3, .ds-collapse-head, .dash-colb, .dash-fold-h, .ds-guide-title, .ds-page-title-row') || el.querySelector('h1, h2, h3')) continue;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (!n.textContent.trim()) continue;
+      const host = n.parentElement;
+      if (host.closest('.ds-sr, [aria-hidden=true]')) continue;
+      const cs = getComputedStyle(host);
+      if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      if (/^"?Nekst/.test(cs.fontFamily) && parseFloat(cs.fontSize) < 24) {
+        out.push(`${String(el.className?.baseVal ?? el.className ?? '').split(' ')[0] || el.tagName.toLowerCase()} "${n.textContent.trim().slice(0, 24)}"`);
+        break;
+      }
+    }
+  }
+  return [...new Set(out)];
+}
