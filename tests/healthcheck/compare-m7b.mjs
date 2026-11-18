@@ -316,6 +316,14 @@ export const ALLOW = [
   ['who|the panel|height', WHO],
   ['who|the panel’s title|text size', 'the eye’s panel is the portal’s shared small panel (22px title), as M9’s comparison accepts'],
 ];
+// No Nekst inside a control (Tim, 18 Nov, follow-up 1): the Quick guide card's "Watch this first" is DM Sans 14px in
+// sentence case, so it is narrower (centred, it starts further in) and its line is shorter: the disc sits 0.8px higher
+// and the line under it 0.8px lower.
+const NO_NEKST = 'no Nekst inside a control (Tim, 18 Nov, follow-up 1): “Watch this first” is DM Sans 14px in sentence case, narrower and on a shorter line than M7b’s 13px spaced capitals';
+ALLOW.push(
+  ...['left', 'top', 'font', 'text size', 'letter-spacing', 'capitals'].map((w) => [`*|Watch this first|${w}`, NO_NEKST]),
+  ...['the play disc', 'the play triangle', 'the play disc, once watched', 'the line under Watch'].map((p) => [`*|${p}|top`, NO_NEKST]),
+);
 // Explanations (Tim, 16 Nov, 23:31): "How to read the chart" is a quiet link under the chart (44px tall, a tap
 // area), so every part below the chart on the results and the example report sits 44px lower than M7b draws it.
 const EXPLAIN = 'the quiet link “How to read the chart” under the chart (Tim, 16 Nov, 23:31: what a chart’s marks mean opens in the side panel) puts everything below the chart 44px lower; M7b has an ⓘ on the chart’s heading instead';

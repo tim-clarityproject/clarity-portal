@@ -36,6 +36,7 @@
 // around one day and every browser's clock starts on it, so nothing depends
 // on the day or time the test runs (TEST_TODAY and TEST_TIME pick another).
 import { chromium } from 'playwright';
+import { ADD_WORDS, newAddWords } from '../phase8/compare-lib.mjs';
 import { seedFixed, seedForReal, fixClock, fixedLabel } from './fixed-day.mjs';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -357,7 +358,7 @@ const ALLOWED = [
   { screen: /recovery day/, side: 'app', re: /^(your chart starts after your second night\.|change my target range|edit my target range)$/, why: 'LATER APPROVED DESIGN: the Recovery sleep chart (Tim, 3 Nov, 14:26): the empty chart’s one line and the target range’s quiet link, under Sleep and Breathe' },
   { screen: /welcome/, side: 'app', re: /.*/, why: 'Welcome back sits on the sprint page for the first day back, with the rest of the page underneath (step 7)' },
   { screen: /review/, side: 'both', re: /^(#%|# of #|#of #|#\/#|#k of #k|up # this sprint|not yet|average|standard #%|weeks at your standard|best week|week # #%|performance sprint #|# to # <month>|kept up in # of # weeks|# sessions a week)$/, why: 'the finished dial’s centre and figures, and each objective’s and habit’s lines as separate labels with no dots (step 6)' },
-  { screen: /review/, side: 'mock', re: /^(milestone, not yet\. by .*|[^,]+, (#|once) a week|#\/# up # this sprint|# of # up # this sprint|add objective)$/, why: 'separate labels (step 6); Add an objective shows only under 4 objectives (the seeded plan has 4)' },
+  { screen: /review/, side: 'mock', re: /^(milestone, not yet\. by .*|[^,]+, (#|once) a week|#\/# up # this sprint|# of # up # this sprint|add an objective)$/, why: 'separate labels (step 6); Add an objective shows only under 4 objectives (the seeded plan has 4)' },
   { screen: /review/, side: 'app', re: /^since you started, /, why: 'a full sentence with no colon (writing rule 48)' },
   { screen: /year with/, side: 'app', re: /^(no sprint running|its review is waiting for you\.)$/, why: 'data: Sprint 2 has ended and waits for its review, so no week is "this week" (the label "No sprint running" is a pop-up value)' },
   { screen: /year with/, side: 'mock', re: /^open this week$/, why: 'data: no sprint is running this week' },
@@ -449,11 +450,14 @@ const allowed = (screen, side, line) => ALLOWED.find((a) => (!a.screen || a.scre
 
 function wordingDiff(screen, appLines, mockLines) {
   const a = new Set(appLines.map(neutral));
-  const m = new Set(mockLines.map(neutral));
+  // An Add has no "a" or "an", and "Add my to-do" is "Add to-do" (Tim, 18 Nov, follow-up 1).
+  const renamed = mockLines.map(neutral).filter((l) => newAddWords(l) !== l && a.has(newAddWords(l)));
+  const m = new Set(mockLines.map(neutral).map((l) => (renamed.includes(l) ? newAddWords(l) : l)));
   const missing = [...m].filter((l) => !a.has(l));
   const extra = [...a].filter((l) => !m.has(l));
   const explained = [];
   const check = [];
+  for (const l of renamed) explained.push(`mock-up only: ${l}  [${ADD_WORDS}]`);
   for (const l of missing) {
     const why = allowed(screen, 'mock', l);
     (why ? explained : check).push(`mock-up only: ${l}${why ? `  [${why.why}]` : ''}`);

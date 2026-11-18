@@ -264,6 +264,12 @@
   min-height: var(--field-h) !important;
 }
 
+/* A follow-up's box is a text box of two lines (M10's rows="2"), not an input. */
+.ui-root .ds-follow-body .ds-grow--one > .ds-text:not(#_),
+.ui-root .ds-follow-body .ds-grow--one:not(#_)::after {
+  min-height: var(--follow-box-min-h) !important;
+}
+
 /* ---------- No Nekst inside any control (Tim, 18 Nov, follow-up 1) ----------
    Not in buttons, chips, choices, steppers or calendar day numbers: Nekst
    stays for page titles, section headings and big figures (Breathe's

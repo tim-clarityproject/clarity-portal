@@ -6,9 +6,11 @@ import useIsPhone from './useIsPhone';
 // resize, rotation, font load or text-size change, so a row of pills
 // never wraps.
 //
-// Phone: pills sit on one line with equal-width buttons, so they fit
-//        only if every pill can be as wide as the widest one, with its
-//        normal padding. Otherwise, rows.
+// Phone: pills sit on one line with equal-width buttons when every pill
+//        can be as wide as the widest one, with its normal padding;
+//        otherwise at their natural widths if those fit (follow-up 1,
+//        18 Nov: the 16px words keep three levels as one control).
+//        Otherwise, rows.
 // Laptop: pills at their natural widths if they fit on one line;
 //        otherwise, rows.
 //
@@ -21,6 +23,7 @@ export default function useInlineForm(force, signature) {
   const boxRef = useRef(null);
   const measureRef = useRef(null);
   const [fits, setFits] = useState(true);
+  const [equal, setEqual] = useState(true);
 
   useLayoutEffect(() => {
     if (force) return undefined;
@@ -37,10 +40,11 @@ export default function useInlineForm(force, signature) {
       const gap = parseFloat(style.columnGap) || 0;
       const widths = pills.map((el) => el.getBoundingClientRect().width);
       const gaps = gap * (widths.length - 1);
-      const needed = isPhone
-        ? Math.max(...widths) * widths.length + gaps + frame
-        : widths.reduce((a, b) => a + b, 0) + gaps + frame;
-      setFits(needed <= box.clientWidth + 0.5);
+      const room = box.clientWidth + 0.5;
+      const evenly = Math.max(...widths) * widths.length + gaps + frame;
+      const natural = widths.reduce((a, b) => a + b, 0) + gaps + frame;
+      setEqual(isPhone && evenly <= room);
+      setFits((isPhone && evenly <= room) || natural <= room);
     };
 
     check();
@@ -56,5 +60,5 @@ export default function useInlineForm(force, signature) {
   }, [force, isPhone, signature]);
 
   const form = force || (fits ? 'pills' : 'rows');
-  return { form, isPhone, boxRef, measureRef };
+  return { form, isPhone, equal: isPhone && (Boolean(force) || equal), boxRef, measureRef };
 }

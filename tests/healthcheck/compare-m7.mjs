@@ -170,6 +170,7 @@ const DATES = 'M7’s team list puts its newest version first by the date in its
 // Explanations (Tim, 16 Nov, 23:31): what a chart's marks mean opens in the side panel from the quiet link "How to
 // read the chart" under the chart (a 44px tap area), so everything below the chart sits 44px lower than M7 draws it.
 const EXPLAIN = 'the quiet link “How to read the chart” under the chart (Tim, 16 Nov, 23:31) puts everything below the chart 44px lower; M7 has an ⓘ on the chart’s heading instead';
+const OFFER_NO_ICON = 'offer rows have no icon (Tim, 18 Nov, follow-up 1): the row is its words, its time and Not now, so the words start at the row’s padding';
 const ALLOW = new Map([
   ...['results', 'compare', 'example'].map((sc) => [`${sc}|*|top`, EXPLAIN]),
   ...['left', 'top', 'width', 'height'].map((w) => [`pdf|*|${w}`, SHARED_PANEL]),
@@ -186,6 +187,9 @@ const ALLOW = new Map([
   ['compare|Talk it through|missing', 'shown only where the portal’s Chat to Tim leads somewhere real (useStartChat): the test client’s chat isn’t set up'],
   ['team|the Team box|height', 'the portal’s shared boxes are 58px (as M7b’s comparison accepts); M7 draws 56.6'],
   ['team|the Team box|top', 'its label line is the shared field label’s (a 44px-tall row where it has an icon), so the box sits 3.5px lower'],
+  // Offer rows have no icon (Tim, 18 Nov, follow-up 1): no circle and no play icon, so the words start at the row's own padding.
+  ...['its circle', 'its play icon'].map((p) => [`*|${p}|missing`, OFFER_NO_ICON]),
+  ...['Watch the Quick guide', '~1 minute'].map((p) => [`*|${p}|left`, OFFER_NO_ICON]),
 ]);
 const allowed = (screen, part, what) => ALLOW.get(`${screen}|${part}|${what}`) || ALLOW.get(`*|${part}|${what}`) || ALLOW.get(`${screen}|*|${what}`) || null;
 void DATES;

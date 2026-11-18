@@ -3777,7 +3777,8 @@
   height: var(--tap-min);
   min-height: 0 !important;
   padding: 0 !important;
-  margin: 0 calc((var(--who-icon) - var(--tap-min)) / 2 - var(--chev-right-inset)) 0 calc((var(--who-icon) - var(--tap-min)) / 2 - var(--chev-left-inset));
+  /* The name --back-gap from the chevron's ink, inside the bar's 14px gap (follow-up 1). */
+  margin: 0 calc((var(--who-icon) - var(--tap-min)) / 2 - var(--chev-right-inset) + var(--back-gap) - var(--space-px14)) 0 calc((var(--who-icon) - var(--tap-min)) / 2 - var(--chev-left-inset));
   color: var(--text-2);
   transition: color var(--dur-fast) var(--ease);
   -webkit-tap-highlight-color: transparent;
@@ -10594,13 +10595,13 @@
 .ui-root .ds-follow-body .ds-seg {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
+  /* Each option its words plus the family's 16px each side, the room left shared out (follow-up 1). */
+  grid-auto-columns: auto;
   width: 100%;
 }
 
 .ui-root .ds-follow-body .ds-seg-btn {
   justify-content: center;
-  padding-inline: var(--space-px6) !important;
   text-align: center;
 }
 

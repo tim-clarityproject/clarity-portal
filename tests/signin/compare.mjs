@@ -15,7 +15,7 @@ import { mkdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { APP, MOCKUP, SAM, guard, makeChecks, sleep, testEnv } from './shared.mjs';
 import { SCREENS } from './screens.mjs';
-import { withNewButtons } from '../buttons/expected.mjs';
+import { withNewButtons, withNewFields } from '../buttons/expected.mjs';
 
 const env = testEnv();
 const out = process.argv[2] || null;
@@ -151,6 +151,8 @@ for (const mode of MODES) {
         fills: (x) => !boxWidth || x.width >= boxWidth - 1,
         wordsWidth: (x) => words[mockButtons.findIndex((m) => m.text === x.text && m.top === x.top)] ?? x.width,
       });
+      // Its boxes, at follow-up 1's 56px (52px on a phone): what's below them moves by the difference.
+      want.parts = withNewFields(want.parts, { phone, isField: (x) => x.kind === 'inp' });
       pass(`${tag}: no page error`, errors.length === 0, errors[0]);
       pass(`${tag}: no sideways scroll`, got.sideways <= 0, `${got.sideways}px`);
       // M26 sets its buttons in capitals; since 18 Nov the portal's buttons are sentence case

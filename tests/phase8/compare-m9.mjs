@@ -20,7 +20,7 @@
 // % bar; the title on a guest page) and the bottom bar from the bottom of
 // the screen. Differences that are meant are listed in ALLOWED with why;
 // anything else fails.
-import { NEW_BAR, NEW_NOTE, newButton, shiftForNewButtons } from './compare-lib.mjs';
+import { ADD_WORDS, NEW_BAR, NEW_NOTE, heightCheck, newAddWords, newButton, newSeg, shiftForNewButtons } from './compare-lib.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -146,6 +146,8 @@ const WHOLE = 'M9’s script sizes a two-line box in whole pixels; the portal’
 const STATUS_BAR = 'M9’s phone frame draws its 47px status bar inside the panel; a real phone gives the panel that space as its safe area, which the test browser has none of (each part sits exactly 47px higher)';
 export const ALLOW = [
   ['*|Skip|from the bottom', NEW_BAR],
+  // No Nekst inside a control (Tim, 18 Nov, follow-up 1): the timer's ring is tapped to set its length, so its time is DM Sans.
+  ['opts|the time|font', 'no Nekst inside a control (Tim, 18 Nov, follow-up 1): the timer’s ring opens “How long?”, so its time is DM Sans'],
   ['*|Finish later|from the bottom', NEW_BAR],
   ['*|Download my PDF|from the bottom', NEW_BAR],
   ['gwel|~15 minutes|left', NEW_NOTE],
@@ -241,6 +243,10 @@ function measureParts({ parts, mock, anchor, bottom }) {
       btn: !mock && el.matches('.ds-btn--primary, .ds-btn--outline, .ui-btn-primary, .ui-btn-ghost, .auth-btn-primary, .auth-btn-ghost, .dng, .si-btn, .ds-focus-done'),
       addrow: !mock && el.matches('.ds-addrow'), primary: !mock && el.matches('.ds-btn--primary, .ui-btn-primary, .auth-btn-primary, .si-btn'),
       wordsW: i.right - i.left, shadow: cs.boxShadow,
+      // Follow-up 1 (Tim, 18 Nov, 15:57; compare-lib.mjs): a field, a segmented switch's option or track, a chip, the line under it.
+      field: !mock && el.matches('input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select, .ds-field, .ds-dd, .ds-num--box, .ds-text, .ds-grow, .si-inp, .auth-input, .plan-input'),
+      seg: !mock && el.matches('.ds-seg-btn'), segTrack: !mock && el.matches('.ds-seg'), chip: !mock && el.matches('.ds-chip'),
+      under: parseFloat(cs.borderBottomWidth) || 0,
       // In a bar fixed to the screen (the guided tools' foot), so it never moves the page.
       fixed: (() => { for (let x = el; x && x !== document.body; x = x.parentElement) { const pos = getComputedStyle(x).position; if (pos === 'fixed' || pos === 'sticky') return true; } return false; })(),
     };
@@ -278,12 +284,14 @@ function compare(tag, screen, parts, m, b, phone) {
       pass(`${tag}: ${name}, ${label}`, ok, detail);
     };
     if (B.btn || B.addrow) { newButton(check, (x, y) => `M9 ${typeof x === 'number' ? x.toFixed(2) : x}, built ${typeof y === 'number' ? y.toFixed(2) : y}`, M, B, what.map((w) => (w === 'box:ink' ? 'box' : w)), phone); continue; }
+    const both = (x, y) => `M9 ${typeof x === 'number' ? x.toFixed(2) : x}, built ${typeof y === 'number' ? y.toFixed(2) : y}`;
+    if (B.seg || B.segTrack) { newSeg(check, both, M, B, what.map((w) => (w === 'box:ink' ? 'box' : w)), phone); continue; }
     for (const w of what) {
       if (w === 'box' || w === 'box:ink') {
         check('left', near(M.x, B.x), `M9 ${M.x.toFixed(2)}, built ${B.x.toFixed(2)}`);
         check('top', near(M.y, B.y), `M9 ${M.y.toFixed(2)}, built ${B.y.toFixed(2)}`);
         check('width', near(M.w, B.w), `M9 ${M.w.toFixed(2)}, built ${B.w.toFixed(2)}`);
-        check('height', near(M.h, B.h), `M9 ${M.h.toFixed(2)}, built ${B.h.toFixed(2)}`);
+        heightCheck(check, both, M, B, phone);
       } else if (w === 'pos') {
         check('left', near(M.ix, B.ix), `M9 ${M.ix.toFixed(2)}, built ${B.ix.toFixed(2)}`);
         check('top', near(M.iy, B.iy), `M9 ${M.iy.toFixed(2)}, built ${B.iy.toFixed(2)}`);
@@ -300,7 +308,8 @@ function compare(tag, screen, parts, m, b, phone) {
         check('colour', M.colour === B.colour, `M9 ${M.colour}, built ${B.colour}`);
       } else if (w === 'edge') {
         check('edge', M.edge === B.edge, `M9 ${M.edge}, built ${B.edge}`);
-        check('corners', near(M.radius, B.radius, 0.01) || (M.radius > 100 && B.radius > 100), `M9 ${M.radius}, built ${B.radius}`);
+        if (B.chip) check('corners', near(B.radius, 6, 0.01), `a chip’s 6, built ${B.radius}`);
+        else check('corners', near(M.radius, B.radius, 0.01) || (M.radius > 100 && B.radius > 100), `M9 ${M.radius}, built ${B.radius}`);
       }
     }
   }
@@ -313,13 +322,16 @@ function compareWords(tag, screen, mw, bw) {
   const upperM = new Set([...M].map((s) => s.toUpperCase()));
   const skipM = new Map(WORDS_M9_ONLY.get(screen) || []);
   const skipB = new Map(WORDS_BUILT_ONLY.get(screen) || []);
+  const addM = new Set([...M].map((s) => newAddWords(s).toUpperCase()));
   for (const s of M) {
     if (B.has(s) || upper.has(s.toUpperCase())) continue;
+    if (newAddWords(s) !== s && upper.has(newAddWords(s).toUpperCase())) { note(`${tag}: M9’s “${s}” reads “${newAddWords(s)}”, as meant: ${ADD_WORDS}`); continue; }
     if (skipM.has(s)) { note(`${tag}: M9’s “${s}” isn’t on the page, as meant: ${skipM.get(s)}`); continue; }
     pass(`${tag}: M9’s words “${s.slice(0, 90)}” are on the page`, false, 'missing');
   }
   for (const s of B) {
     if (M.has(s) || upperM.has(s.toUpperCase())) continue;
+    if (addM.has(s.toUpperCase())) continue;
     if (skipB.has(s)) { note(`${tag}: the page’s “${s}” isn’t in M9, as meant: ${skipB.get(s)}`); continue; }
     pass(`${tag}: the page’s words “${s.slice(0, 90)}” are M9’s`, false, 'not in M9');
   }
@@ -327,7 +339,7 @@ function compareWords(tag, screen, mw, bw) {
 }
 
 // ---------------------------------------------------------------- M9 itself
-const M9_SCREEN = { goal: 'Goal', cons: 'What’s in the way', opps: 'What’s working', opts: 'Options', will: 'Will', steps: 'Next steps', add: 'Add to-do', sum: 'Your plan', editsum: 'Edit from your plan', who: 'Who can see this', gwel: 'Guest start', gend: 'Guest end' };
+const M9_SCREEN = { goal: 'Goal', cons: 'What’s in the way', opps: 'What’s working', opts: 'Options', will: 'Will', steps: 'Next steps', add: 'Add a to-do', sum: 'Your plan', editsum: 'Edit from your plan', who: 'Who can see this', gwel: 'Guest start', gend: 'Guest end' };
 async function m9Open(browser, width, mode) {
   const phone = width < 600;
   // M9's review bar sits above the frame, so the window is taller than the frame.

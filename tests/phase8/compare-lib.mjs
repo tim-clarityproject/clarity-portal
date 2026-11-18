@@ -18,6 +18,26 @@ export const NEW_BAR_H = 'the bar holds the new 34px button (40px on a phone), s
 export const NEW_CARD = 'the card holds a new 34px button (40px on a phone), so it is 14px (8px) shorter than round the mock-up’s 48px pill (Tim, 18 Nov)';
 export const NEW_BAR = 'the new 34px button leaves the bar as tall as its 44px text link, 4px shorter than with the mock-up’s 48px pill, so the link sits 2px lower (Tim, 18 Nov)';
 
+// Follow-up 1 (Tim, 18 Nov, 15:57), against mock-ups drawn before it:
+//   - text inputs and drop-downs are 56px (52px on a phone), so a one-line box is that height and a
+//     box of several lines keeps its lines with the inputs' padding; what's below moves by the
+//     difference (`FIELD`);
+//   - a segmented switch is a quiet track (8px corners, no edge) with plain 16px words and a raised
+//     tile for the chosen one (`SEG`); chips have 6px corners;
+//   - Back's chevron is 10px from the tool's name, 4px nearer than the mock-ups' 14px (`BACK`);
+//   - a section heading over rows with their own lines has no line under it (`NO_LINE`);
+//   - an Add has no "a" or "an", and "Add my to-do" is "Add to-do" (`ADD_WORDS`).
+export const FIELD = 'text inputs and drop-downs are 56px, 52px on a phone (Tim, 18 Nov, follow-up 1)';
+export const SEG = 'a segmented switch is a quiet track with plain 16px words and a raised tile for the chosen one (Tim, 18 Nov, follow-up 1)';
+export const BACK = 'Back’s chevron is 10px from the name, 4px nearer than the mock-up’s 14px (Tim, 18 Nov, follow-up 1)';
+export const NO_LINE = 'no line under a section heading over rows with their own lines (Tim, 18 Nov, follow-up 1)';
+export const ADD_WORDS = 'no “a” or “an” in an Add, and “Add my to-do” is “Add to-do” (Tim, 18 Nov, follow-up 1)';
+const BACK_SHIFT = 4;
+const SEG_PAD = 3;
+const fieldH = (phone) => (phone ? 52 : 56);
+/** An Add's words as follow-up 1 has them. */
+export const newAddWords = (t) => t.replace(/^(add) (?:a|an) /i, '$1 ').replace(/^(add) my (to-do)$/i, '$1 $2');
+
 export function makeReport() {
   const results = [];
   let failures = 0;
@@ -33,6 +53,7 @@ export function makeReport() {
 export function measureParts({ parts, mock, anchor, bottom }) {
   const NEW_BUTTONS = '.ds-btn--primary, .ds-btn--outline, .ui-btn-primary, .ui-btn-ghost, .auth-btn-primary, .auth-btn-ghost, .dng, .si-btn, .ds-focus-done';
   const NEW_PRIMARY = '.ds-btn--primary, .ui-btn-primary, .auth-btn-primary, .si-btn';
+  const FIELDS = 'input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select, .ds-field, .ds-dd, .ds-num--box, .ds-text, .ds-grow, .si-inp, .auth-input, .plan-input';
   const q = (sel, nth, root = document) => [...root.querySelectorAll(sel)].filter((el) => {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0;
@@ -86,6 +107,9 @@ export function measureParts({ parts, mock, anchor, bottom }) {
       // with its words' own width and its drawn hairline or highlight.
       btn: !mock && el.matches(NEW_BUTTONS), addrow: !mock && el.matches('.ds-addrow'),
       primary: !mock && el.matches(NEW_PRIMARY), wordsW: i.right - i.left, shadow: cs.boxShadow,
+      // Follow-up 1 (Tim, 18 Nov, 15:57): a field, a segmented switch's option or track, a chip, and the line under it.
+      field: !mock && el.matches(FIELDS), seg: !mock && el.matches('.ds-seg-btn'), segTrack: !mock && el.matches('.ds-seg'),
+      chip: !mock && el.matches('.ds-chip'), under: parseFloat(cs.borderBottomWidth) || 0,
       // In a bar fixed to the screen (the guided tools' foot), so it never moves the page.
       fixed: (() => { for (let x = el; x && x !== document.body; x = x.parentElement) { const pos = getComputedStyle(x).position; if (pos === 'fixed' || pos === 'sticky') return true; } return false; })(),
     };
@@ -135,15 +159,16 @@ export function compareParts({ report, allowed, mockName }, tag, screen, parts, 
     };
     const both = (x, y) => `${mockName} ${typeof x === 'number' ? x.toFixed(2) : x}, built ${typeof y === 'number' ? y.toFixed(2) : y}`;
     if (B.btn || B.addrow) { newButton(check, both, M, B, what, phone); continue; }
+    if (B.seg || B.segTrack) { newSeg(check, both, M, B, what, phone); continue; }
     for (const w of what) {
       if (w === 'box') {
         check('left', near(M.x, B.x), both(M.x, B.x));
         check('top', near(M.y, B.y), both(M.y, B.y));
         check('width', near(M.w, B.w), both(M.w, B.w));
-        check('height', near(M.h, B.h), both(M.h, B.h));
+        heightCheck(check, both, M, B, phone);
       } else if (w === 'size') {
         check('width', near(M.w, B.w), both(M.w, B.w));
-        check('height', near(M.h, B.h), both(M.h, B.h));
+        heightCheck(check, both, M, B, phone);
       } else if (w === 'pos') {
         check('left', near(M.ix, B.ix), both(M.ix, B.ix));
         check('top', near(M.iy, B.iy), both(M.iy, B.iy));
@@ -174,8 +199,67 @@ export function compareParts({ report, allowed, mockName }, tag, screen, parts, 
         check('fill', M.fill === B.fill, both(M.fill, B.fill));
       } else if (w === 'edge') {
         check('edge', M.edge === B.edge, both(M.edge, B.edge));
-        if (!Number.isNaN(M.radius)) check('corners', near(M.radius, B.radius, 0.01) || (M.radius > 100 && B.radius > 100), both(M.radius, B.radius));
+        if (B.chip) check('corners', near(B.radius, 6, 0.01), `a chip’s 6, built ${B.radius}`);
+        else if (!Number.isNaN(M.radius)) check('corners', near(M.radius, B.radius, 0.01) || (M.radius > 100 && B.radius > 100), both(M.radius, B.radius));
       }
+    }
+  }
+}
+
+/** A part's height: a field's is follow-up 1's; a heading that lost its line under it is that much shorter. */
+export function heightCheck(check, both, M, B, phone) {
+  if (B.field && !near(M.h, B.h)) {
+    if (M.h <= 60) check('height', near(B.h, fieldH(phone)), `${both(M.h, B.h)}, a field’s ${fieldH(phone)}`);
+    else check('height', B.h <= M.h + TOL && B.h >= M.h - 8, `${both(M.h, B.h)}, several lines with the inputs’ padding`);
+    return;
+  }
+  if (M.under > 0 && B.under === 0 && !B.field) {
+    check('height', near(M.h - M.under, B.h) || near(M.h, B.h), `${both(M.h, B.h)}, with no line under it`);
+    return;
+  }
+  check('height', near(M.h, B.h), both(M.h, B.h));
+}
+
+/**
+ * A segmented switch, against a mock-up drawn before follow-up 1: the track is the family's height
+ * (40px, 44px on a phone), 8px corners and no edge, its left or right edge on the mock-up's; each
+ * option is 6px less than the track, its words DM Sans 16px weight 400 with at least 16px each side,
+ * no fill of its own (the raised tile behind the chosen one) and 6px corners. Its place along the
+ * track follows its new words' widths, so only its top is held to the mock-up's (within the track's
+ * 3px padding).
+ */
+export function newSeg(check, both, M, B, what, phone) {
+  const tall = phone ? 44 : 40;
+  for (const w of what) {
+    if (B.segTrack) {
+      if (w === 'box' || w === 'size') {
+        check('height', near(B.h, tall, 1), `${both(M.h, B.h)}, the track’s ${tall}`);
+        if (w === 'box') {
+          check('left', near(M.x, B.x) || near(M.x + M.w, B.x + B.w) || near(M.w, B.w), `${both(M.x, B.x)}, its left or right edge on the mock-up’s`);
+          check('top', Math.abs(M.y + M.h / 2 - (B.y + B.h / 2)) <= Math.abs(M.h - tall) / 2 + 1, `${both(M.y, B.y)}, centred on the mock-up’s`);
+        }
+      } else if (w === 'edge') {
+        check('edge', B.edge.startsWith('0px'), `the track has no edge, built ${B.edge}`);
+        check('corners', near(B.radius, 8, 0.01), `the track’s 8, built ${B.radius}`);
+      }
+      continue;
+    }
+    if (w === 'box' || w === 'size') {
+      check('height', near(B.h, tall - 2 * SEG_PAD, 1), `${both(M.h, B.h)}, an option’s ${tall - 2 * SEG_PAD}`);
+      check('width', B.w >= B.wordsW + 32 - 1, `${both(M.w, B.w)}, at least its words plus 16px each side (${(B.wordsW + 32).toFixed(2)})`);
+      if (w === 'box') check('top', Math.abs(M.y + M.h / 2 - (B.y + B.h / 2)) <= Math.abs(M.h - (tall - 2 * SEG_PAD)) / 2 + SEG_PAD + TOL, `${both(M.y, B.y)}, centred in the mock-up’s slot`);
+    } else if (w === 'pos' || w === 'words') {
+      check('left', B.ix >= B.x - TOL && B.ix <= B.x + B.w + TOL, `${B.ix.toFixed(2)}, its words inside the option`);
+    } else if (w === 'text') {
+      check('font', B.font === 'DM Sans', `the option’s DM Sans, built ${B.font}`);
+      check('text size', near(B.size, 16, 0.01), `the option’s 16, built ${B.size}`);
+      check('capitals', B.upper === false, 'the option is in sentence case');
+    } else if (w === 'weight') {
+      check('weight', B.weight === '400', `the option’s 400, built ${B.weight}`);
+    } else if (w === 'fill') {
+      check('fill', /rgba\(0,0,0,0\)|transparent/.test(B.fill), `no fill of its own (the tile is behind it), built ${B.fill}`);
+    } else if (w === 'edge') {
+      check('corners', near(B.radius, 6, 0.01), `the option’s 6, built ${B.radius}`);
     }
   }
 }
@@ -265,22 +349,41 @@ export function shiftForNewButtons(m, b, phone) {
   const tall = phone ? 44 : 40;
   const rows = [];
   const all = Object.entries(m).filter(([, M]) => M);
+  // What gives back height (follow-up 1 adds fields, segmented tracks and a heading's lost line).
+  const gives = (key, M, B) => {
+    if (B.fixed) return 0;
+    if (B.btn) return M.h > tall ? M.h - tall : 0;
+    if (B.segTrack) return M.h - B.h;
+    if (B.field) return Math.abs(M.h - B.h) >= TOL ? M.h - B.h : 0;
+    if (M.under > 0 && B.under === 0) return near(M.h, B.h) ? 0 : M.under;
+    return 0;
+  };
   for (const [key, B] of Object.entries(b)) {
     const M = m[key];
-    if (!M || !B || !B.btn || B.fixed || M.h <= tall) continue;
-    // A part beside the button as tall as its row (the timer's ring) keeps the row's height.
-    const beside = all.some(([k, P]) => k !== key && !b[k]?.btn && P.y <= M.y + TOL && P.y + P.h >= M.y + M.h - TOL && (P.x + P.w <= M.x + TOL || P.x >= M.x + M.w - TOL));
+    if (!M || !B) continue;
+    const by = gives(key, M, B);
+    if (!by) continue;
+    // A part beside it as tall as its row (the timer's ring) keeps the row's height.
+    const beside = B.btn && all.some(([k, P]) => k !== key && !b[k]?.btn && !b[k]?.field && P.y <= M.y + TOL && P.y + P.h >= M.y + M.h - TOL && (P.x + P.w <= M.x + TOL || P.x >= M.x + M.w - TOL));
     if (beside) continue;
-    if (!rows.some((r) => Math.abs(r.top - M.y) < 1)) rows.push({ top: M.y, foot: M.y + M.h, left: M.x, right: M.x + M.w, by: M.h - tall });
+    // Parts inside one another, or side by side on one row, give it back once.
+    if (rows.some((r) => Math.abs(r.top - M.y) < 1 || (r.top <= M.y + TOL && r.foot >= M.y + M.h - TOL))) continue;
+    for (let i = rows.length - 1; i >= 0; i -= 1) if (M.y <= rows[i].top + TOL && M.y + M.h >= rows[i].foot - TOL) rows.splice(i, 1);
+    rows.push({ top: M.y, foot: M.y + M.h, left: M.x, right: M.x + M.w, by, field: Boolean(B.field) });
   }
-  if (!rows.length) return m;
   const out = {};
   for (const [key, M] of Object.entries(m)) {
     if (!M) { out[key] = M; continue; }
+    // Back's chevron is 4px nearer the tool's name.
+    const back = /^the tool’s name/.test(key) ? BACK_SHIFT : 0;
     const by = rows.filter((r) => r.foot <= M.y + TOL).reduce((n, r) => n + r.by, 0);
-    // A part that holds a button (a card) is that much shorter.
-    const inside = b[key]?.btn ? 0 : rows.filter((r) => M.y <= r.top + TOL && M.y + M.h >= r.foot - TOL && M.x <= r.left + TOL && M.x + M.w >= r.right - TOL).reduce((n, r) => n + r.by, 0);
-    out[key] = by || inside ? { ...M, y: M.y - by, iy: M.iy - by, h: M.h - inside, ...(M.ty != null ? { ty: M.ty - by } : {}) } : M;
+    // A part that holds one (a card) is that much shorter.
+    const own = b[key] && gives(key, M, b[key]);
+    const inside = own ? 0 : rows.filter((r) => M.y <= r.top + TOL && M.y + M.h >= r.foot - TOL && M.x <= r.left + TOL && M.x + M.w >= r.right - TOL && !(near(M.y, r.top) && near(M.y + M.h, r.foot))).reduce((n, r) => n + r.by, 0);
+    // A part beside a field on its row (its remove crosshair) stays on the field's middle.
+    const band = own ? 0 : (rows.find((r) => r.field && M.y >= r.top - TOL && M.y + M.h <= r.foot + TOL && !(near(M.y, r.top) && near(M.y + M.h, r.foot)))?.by || 0) / 2;
+    const by2 = by + band;
+    out[key] = by2 || inside || back ? { ...M, x: M.x - back, ix: M.ix - back, y: M.y - by2, iy: M.iy - by2, h: M.h - inside, ...(M.tx != null ? { tx: M.tx - back } : {}), ...(M.ty != null ? { ty: M.ty - by2 } : {}) } : M;
   }
   return out;
 }
@@ -295,13 +398,16 @@ export function compareWords({ report, mockOnly, builtOnly, mockName }, tag, scr
   const upperM = new Set([...M].map((s) => s.toUpperCase()));
   const skipM = new Map(mockOnly.get(screen) || []);
   const skipB = new Map(builtOnly.get(screen) || []);
+  const addM = new Set([...M].map((s) => newAddWords(s).toUpperCase()));
   for (const s of M) {
     if (B.has(s) || upper.has(s.toUpperCase())) continue;
+    if (newAddWords(s) !== s && upper.has(newAddWords(s).toUpperCase())) { note(`${tag}: ${mockName}’s “${s}” reads “${newAddWords(s)}”, as meant: ${ADD_WORDS}`); continue; }
     if (skipM.has(s)) { note(`${tag}: ${mockName}’s “${s}” isn’t on the page, as meant: ${skipM.get(s)}`); continue; }
     pass(`${tag}: ${mockName}’s words “${s.slice(0, 90)}” are on the page`, false, 'missing');
   }
   for (const s of B) {
     if (M.has(s) || upperM.has(s.toUpperCase())) continue;
+    if (addM.has(s.toUpperCase())) continue;
     if (skipB.has(s)) { note(`${tag}: the page’s “${s}” isn’t in ${mockName}, as meant: ${skipB.get(s)}`); continue; }
     pass(`${tag}: the page’s words “${s.slice(0, 90)}” are ${mockName}’s`, false, `not in ${mockName}`);
   }

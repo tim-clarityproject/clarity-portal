@@ -132,7 +132,7 @@ async function run(browser, width) {
   await page.getByRole('button', { name: 'Add person', exact: true }).click();
   await panel(page).waitFor({ timeout: 10000 });
   await sleep(600);
-  pass(`${tag}: the panel is “Add a person”`, (await panel(page).locator('h2').innerText()).trim().toUpperCase() === 'ADD A PERSON');
+  pass(`${tag}: the panel is “Add person”`, (await panel(page).locator('h2').innerText()).trim().toUpperCase() === 'ADD PERSON');
   pass(`${tag}: its button is never greyed out`, !(await panel(page).getByRole('button', { name: 'Add this person' }).isDisabled()));
   await panel(page).getByRole('button', { name: 'Add this person' }).click();
   pass(`${tag}: no name says “Type their name to carry on.”`, await until(async () => (await panel(page).locator('.ds-error').innerText().catch(() => '')).includes('Type their name to carry on.'), 5000));
@@ -312,7 +312,7 @@ async function run(browser, width) {
   // ---- the bottom bar: Download my PDF is a text link, Add a to-do the one coral button
   const pdfLink = page.locator('.ds-guide-foot-aside button').first();
   pass(`${tag}: “Download my PDF” is a quiet text link`, (await pdfLink.innerText()).trim() === 'Download my PDF' && (await pdfLink.evaluate((el) => getComputedStyle(el).backgroundColor.replace(/\s+/g, ''))) === 'rgba(0,0,0,0)' && /underline/.test(await pdfLink.evaluate((el) => getComputedStyle(el).textDecorationLine)));
-  pass(`${tag}: “Add a to-do” is the coral button`, (await page.locator('.ds-guide-next').innerText()).trim().toUpperCase() === 'ADD A TO-DO');
+  pass(`${tag}: “Add to-do” is the coral button`, (await page.locator('.ds-guide-next').innerText()).trim().toUpperCase() === 'ADD TO-DO');
   await pdfLink.click();
   const choice = page.getByRole('button', { name: /Light/ }).first();
   pass(`${tag}: the PDF offers Light, for printing and Dark, for sharing`, await until(async () => (await choice.count()) > 0 && (await page.getByRole('button', { name: /Dark/ }).count()) > 0, 8000));
@@ -331,13 +331,13 @@ async function run(browser, width) {
     await panel(page).locator('textarea').first().fill(text);
     await addPanel(page, where);
   };
-  pass(`${tag}: “Add a to-do” opens the shared panel, which asks “Where should it go?”`, await (async () => {
+  pass(`${tag}: “Add to-do” opens the shared panel, which asks “Where should it go?”`, await (async () => {
     await sleep(500);
     await page.locator('.ds-guide-next').click();
     await panel(page).waitFor({ timeout: 10000 });
     await sleep(600);
     const t = await panel(page).innerText();
-    const ok = /ADD A TO-DO/i.test(t) && t.includes('Where should it go?') && t.includes('This week') && t.includes('Backlog') && t.includes('Don’t add it');
+    const ok = /ADD TO-DO/i.test(t) && t.includes('Where should it go?') && t.includes('This week') && t.includes('Backlog') && t.includes('Don’t add it');
     await page.keyboard.press('Escape');
     await panelGone(page);
     return ok;

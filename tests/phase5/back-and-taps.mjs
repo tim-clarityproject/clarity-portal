@@ -166,17 +166,20 @@ async function measureSwitches(page, tag) {
       const misses = [];
       const hits = [[cx, cy - 21], [cx, cy + 21], [q.left + 1, cy - 21], [q.right - 1, cy + 21]].map(([x, y]) => {
         const t = document.elementFromPoint(x, y);
-        const ok = Boolean(t && (t === el || el.contains(t)));
+        // The whole row holding a switch is its tap area (Tim, 18 Nov, follow-up 1): a tap on the row, not on another button in it, toggles it.
+        const row = el.closest('.ds-switch-tap');
+        const ok = Boolean(t && (t === el || el.contains(t) || (row && row.contains(t) && !(t.closest('button, a, input') && !t.closest('button, a, input').contains(el)))));
         if (!ok) misses.push(`${Math.round(y - cy)}: ${t ? `${t.tagName.toLowerCase()}.${String(t.className).split(' ')[0]}` : 'nothing'}`);
         return ok;
       });
-      out.push({ name: el.getAttribute('aria-label') || el.closest('[class*=switchrow], .ui-row, label, li, div')?.textContent?.trim().slice(0, 40) || '', w: q.width, h: q.height, hits, misses });
+      const rowBox = el.closest('.ds-switch-tap')?.getBoundingClientRect();
+      out.push({ name: el.getAttribute('aria-label') || el.closest('[class*=switchrow], .ui-row, label, li, div')?.textContent?.trim().slice(0, 40) || '', w: rowBox ? rowBox.width : q.width, h: q.height, hits, misses, row: Boolean(rowBox) });
     }
     return out;
   });
   if (!found.length) { note(`${tag}: no switch on screen`); return; }
   for (const s of found) {
-    pass(`${tag}: switch "${s.name}" answers a tap anywhere in its 44px band`, s.hits.every(Boolean) && s.w >= 43.5, `track ${s.w.toFixed(0)} × ${s.h.toFixed(0)}, covered at ${s.misses.join('; ')}`);
+    pass(`${tag}: switch "${s.name}" answers a tap anywhere in its 44px band`, s.hits.every(Boolean) && s.w >= 43.5, `${s.row ? 'row' : 'track'} ${s.w.toFixed(0)} × ${s.h.toFixed(0)}, covered at ${s.misses.join('; ')}`);
   }
 }
 

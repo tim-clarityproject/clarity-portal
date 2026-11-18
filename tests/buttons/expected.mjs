@@ -58,3 +58,29 @@ export function withNewButtons(parts, { phone, isButton, fills = () => true, wor
   }
   return out;
 }
+
+// Follow-up 1 (Tim, 18 Nov, 15:57): text inputs are 56px high, 52px on a phone (`--field-h`). A mock-up
+// drawn before it has its own box height, so a comparison expects each box at the new height, a part
+// below a box moved by the height it gave back, and a part inside a box's band (its Show) kept on its
+// middle.
+//   withNewFields(parts, { phone, isField }) returns a new list, as withNewButtons does.
+export const FIELD_H = 56;
+export const FIELD_H_PHONE = 52;
+
+export function withNewFields(parts, { phone, isField }) {
+  const want = phone ? FIELD_H_PHONE : FIELD_H;
+  const out = parts.map((p) => ({ ...p }));
+  const boxes = out.filter(isField).map((f) => ({ f, top: f.top, foot: f.top + f.height, by: f.height - want }));
+  const rows = [];
+  for (const x of boxes) if (!rows.some((r) => Math.abs(r.top - x.top) < 1)) rows.push(x);
+  const above = (top) => rows.filter((r) => r.foot <= top + 0.5).reduce((n, r) => n + r.by, 0);
+  for (const p of out) {
+    const own = boxes.find((x) => x.f === p);
+    const inBand = own ? null : rows.find((x) => p.top >= x.top - 0.5 && p.top + p.height <= x.foot + 0.5);
+    let top = p.top - above(p.top);
+    if (own) p.height = want;
+    else if (inBand) top -= inBand.by / 2;
+    p.top = top;
+  }
+  return out;
+}

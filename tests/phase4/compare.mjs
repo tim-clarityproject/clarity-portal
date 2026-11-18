@@ -45,6 +45,7 @@
 // report.txt (and screenshots) to the folder. Exits 1 when a rule check
 // fails or a wording line is left to check.
 import { chromium } from 'playwright';
+import { ADD_WORDS, newAddWords } from '../phase8/compare-lib.mjs';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -450,7 +451,7 @@ const ALLOWED = [
   { screen: /breathe$/, side: 'mock', re: /^change the sound$/, why: 'NOT BUILT: sound is left out until real audio files exist (brief Step 6); off until chosen' },
   { screen: /carried over/, side: 'mock', re: /^(from daily review and last night's sleep wind down|check-in message to a past client)$/, why: 'invented data: no thought here was written in both places, so no merged row (the merge is checked in wind-down.mjs)' },
   { screen: /carried over/, side: 'mock', re: /^(choose up to #|you've chosen # of #)$/, why: 'LATER RULE: no limit on the Daily plan (Tim, 16 Nov, 19:03): no “Choose up to 3.” and no count (checked as absent in wind-down.mjs and many-picks.mjs)' },
-  { screen: /carried over/, side: 'app', re: /^(only you|habit, .*|rolled over from week #|add a to-do|skip)$/, why: 'NAMED DIFFERENCE: Daily plan keeps Phase 3’s M5 pick rows and This week list under Carried over (Step 6)' },
+  { screen: /carried over/, side: 'app', re: /^(only you|habit, .*|rolled over from week #|add to-do|skip)$/, why: 'NAMED DIFFERENCE: Daily plan keeps Phase 3’s M5 pick rows and This week list under Carried over (Step 6)' },
   { side: 'mock', re: /^back$/, why: 'the shared guided tool draws Back as the one chevron on a phone (26 Oct rule 6)' },
   { screen: /^home/, side: 'app', re: /^get help with something$/, why: 'RULE OVER MOCK-UP: never “I” on a button (writing rule 13, 27 Oct): “Get help with something” (Step 9)' },
 ];
@@ -504,10 +505,14 @@ const neutral = (l) => names.reduce((t, n) => t.split(n).join('<name>'), l
 const allowed = (screen, side, line) => ALLOWED.find((a) => (!a.screen || new RegExp(a.screen.source, 'i').test(screen)) && (a.side === 'both' || a.side === side) && new RegExp(a.re.source, 'i').test(line));
 function wordingDiff(screen, appLines, mockLines) {
   const a = new Set(appLines.map(neutral));
-  const m = new Set(mockLines.map(neutral));
+  // An Add has no "a" or "an", and "Add my to-do" is "Add to-do" (Tim, 18 Nov, follow-up 1).
+  const renamed = mockLines.map(neutral).filter((l) => newAddWords(l) !== l && a.has(newAddWords(l)));
+  const m = new Set(mockLines.map(neutral).map((l) => (renamed.includes(l) ? newAddWords(l) : l)));
   const explained = [];
   const check = [];
   const reasons = new Set();
+  for (const l of renamed) explained.push(`mock-up only: ${l}  [${ADD_WORDS}]`);
+  if (renamed.length) reasons.add(ADD_WORDS);
   for (const [side, from, other] of [['mock', m, a], ['app', a, m]]) {
     for (const l of [...from].filter((x) => !other.has(x))) {
       const why = allowed(screen, side, l);
@@ -942,7 +947,7 @@ if (PARTS.includes('taps')) {
     { what: 'Log today', onHome: '#log-today .home-log-title', menu: 'Log today', reached: async (p) => { const b = await p.locator('#log-today').boundingBox(); return path(p) === '/welcome' && b && b.y < 500 && b.y > -50; } },
     { what: 'Daily plan', link: /^Daily plan$|^Start my daily plan$/i, menuTool: 'Daily plan', reached: async (p) => path(p) === '/daily-plan' },
     { what: 'Daily review', link: /^Daily review$|^Start my daily review$/i, menuTool: 'Daily review', reached: async (p) => path(p) === '/daily-review' },
-    { what: 'Add to-do', link: /^Add a to-do$/i, reached: async (p) => (await p.getByLabel('What needs doing?').count()) > 0 },
+    { what: 'Add to-do', link: /^Add to-do$/i, reached: async (p) => (await p.getByLabel('What needs doing?').count()) > 0 },
   ];
   const MOMENTS = [['morning', THU, '08:30'], ['afternoon', THU, '13:00'], ['evening', THU, '17:30'], ['21:15', THU, '21:15']];
   const runTaps = async (label, day, time, width) => {

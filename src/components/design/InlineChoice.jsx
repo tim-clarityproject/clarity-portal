@@ -40,7 +40,7 @@ export default function InlineChoice({
   const labelId = useId();
   const refs = useRef([]);
   const signature = options.map((o) => `${o.label}${o.note || ''}`).join('\u0000');
-  const { form, isPhone, boxRef, measureRef } = useInlineForm(forced, signature);
+  const { form, isPhone, equal, boxRef, measureRef } = useInlineForm(forced, signature);
   const radio = semantics === 'radio';
   const selectedIndex = Math.max(0, options.findIndex((o) => o.value === value));
 
@@ -89,7 +89,7 @@ export default function InlineChoice({
     const watch = new ResizeObserver(() => { if (started) place(true); started = true; });
     watch.observe(seg);
     return () => watch.disconnect();
-  }, [form, chosen, isPhone, signature]);
+  }, [form, chosen, isPhone, equal, signature]);
 
   const moveTo = (next) => {
     onChange(options[next].value);
@@ -158,7 +158,7 @@ export default function InlineChoice({
             (a reused button would fade from one look to the other). */}
         {form === 'pills'
           ? (
-            <div key="pills" ref={segRef} className={`ds-seg${isPhone ? ' ds-seg--equal' : ''}`} {...groupProps}>
+            <div key="pills" ref={segRef} className={`ds-seg${equal ? ' ds-seg--equal' : ''}`} {...groupProps}>
               <span ref={tileRef} className="ds-seg-tile" aria-hidden="true" />
               {buttons}
             </div>

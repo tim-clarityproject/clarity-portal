@@ -366,7 +366,7 @@ part('new', async ({ browser, w, mode, tag }) => {
     }
   };
   await typeRows(CSF.slice(0, 2));
-  pass(`${tag}, Success Factors: the add button says what it adds, in words only`, (await page.locator('.ds-rowlist-add').innerText()).trim().toLowerCase() === 'add a success factor' && (await page.locator('.ds-rowlist-add svg, .ds-rowlist-add .ds-cross').count()) === 0);
+  pass(`${tag}, Success Factors: the add button says what it adds, in words only`, (await page.locator('.ds-rowlist-add').innerText()).trim().toLowerCase() === 'add success factor' && (await page.locator('.ds-rowlist-add svg, .ds-rowlist-add .ds-cross').count()) === 0);
   await checkScreen(b, `${tag}, Success Factors`, { back: true });
   await pressNext(page);
   pass(`${tag}, new: then how much each matters`, await onQuestion(page, 'How much does each Success Factor matter to your objective?'));

@@ -585,8 +585,9 @@ if (part(7)) {
       }
       pass(`M2 ${at}: pill at least 50px`, m.pillMin >= 50, `${m.pillMin}`);
       pass(`M2 ${at}: pill 22px side padding`, m.pillPadX === 22, `${m.pillPadX}`);
-      pass(`M2 ${at}: label in Nekst`, /Nekst/.test(m.labelFamily), m.labelFamily);
-      note(`M2 ${at}: label ${m.labelSize}px (M2 9.5px; Nekst never below 10px, rule 4).`);
+      // No Nekst inside a control (Tim, 18 Nov, follow-up 1): the pill's label is DM Sans.
+      pass(`M2 ${at}: label in DM Sans`, /DM Sans/.test(m.labelFamily) && !/Nekst/.test(m.labelFamily), m.labelFamily);
+      note(`M2 ${at}: label ${m.labelSize}px (M2 9.5px in Nekst; DM Sans since follow-up 1).`);
       await shot(page, `m2-header-${width}-${mode}`);
     } finally {
       await context.close();

@@ -40,6 +40,7 @@
 // the real today (--reset). Writes report.txt (and screenshots) to the
 // folder. Exits 1 when a rule check fails or a wording line is left to check.
 import { chromium } from 'playwright';
+import { ADD_WORDS, newAddWords } from '../phase8/compare-lib.mjs';
 import { FIXED_TODAY, seedFixed, seedForReal, fixClock, fixedLabel, londonInstant } from '../phase2/fixed-day.mjs';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -390,7 +391,7 @@ const ALLOWED = [
   { screen: /daily plan/, side: 'mock', re: /^if it happens: /, why: 'no colons (writing rule 48): “If it happens, …” (step 1)' },
   { screen: /no plan/, side: 'app', re: /^try one of these\.$/, why: 'data: with no plan there are no earlier ways of being, so M5’s “You’ve used these recently.” is left out and the suggestions open the list' },
   { screen: /no plan/, side: 'mock', re: /^(or try one of these\.|you've used these recently\.|add a to-do|last night you also wrote this note\.|if it needs doing, add it as a to-do\.)$/, why: 'CHOICE (audit P0): with no plan, Do offers Build my plan, and there is no last night or earlier way of being' },
-  { screen: /debrief, add a to-do/, side: 'both', re: /^(this week|week #),? <day> # <month> to <day> # <month>$/, why: 'data: week 3 is debriefed on Wednesday of week 4, so its next week is this week, named as the sprint page’s panel names it; M1’s debrief is at the end of week 4' },
+  { screen: /debrief, add to-do/, side: 'both', re: /^(this week|week #),? <day> # <month> to <day> # <month>$/, why: 'data: week 3 is debriefed on Wednesday of week 4, so its next week is this week, named as the sprint page’s panel names it; M1’s debrief is at the end of week 4' },
   { screen: /debrief, your days/, side: 'both', re: /^strateg(y|ies) that moved$/, why: 'M1’s “Strategy that moved”, plural when several moved that day' },
   { side: 'app', re: /^(on last night's list|to-do this week|habit, .*|rolled over from week #|rolls over from week #|highest priority|done)$/, why: 'the mock-up’s dotted line split into separate labels, the Strategy and the tag (26 Oct rule 5)' },
   // Tim, 10 Nov (part 5 and Phase 5 calm layout):
@@ -514,12 +515,16 @@ const allowed = (screen, side, line) => ALLOWED.find((a) => (!a.screen || a.scre
 
 function wordingDiff(screen, appLines, mockLines) {
   const a = new Set(appLines.map(neutral));
-  const m = new Set(mockLines.map(neutral));
+  // An Add has no "a" or "an", and "Add my to-do" is "Add to-do" (Tim, 18 Nov, follow-up 1).
+  const renamed = mockLines.map(neutral).filter((l) => newAddWords(l) !== l && a.has(newAddWords(l)));
+  const m = new Set(mockLines.map(neutral).map((l) => (renamed.includes(l) ? newAddWords(l) : l)));
   const missing = [...m].filter((l) => !a.has(l));
   const extra = [...a].filter((l) => !m.has(l));
   const explained = [];
   const check = [];
   const reasons = new Set();
+  for (const l of renamed) explained.push(`mock-up only: ${l}  [${ADD_WORDS}]`);
+  if (renamed.length) reasons.add(ADD_WORDS);
   for (const l of missing) {
     const why = allowed(screen, 'mock', l);
     if (why) reasons.add(why.why);
