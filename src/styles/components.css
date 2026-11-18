@@ -1450,15 +1450,8 @@ html:has(.ui-root) {
 }
 
 .ui-root .plan-menu-option::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  background: var(--coral);
-  transform: scaleY(0);
-  transition: transform var(--dur) var(--ease);
+  /* No thick coloured side line on any card (Tim, 18 Nov, follow-up 1): the hover bar is gone. */
+  content: none;
 }
 
 .ui-root .plan-menu-option:hover,
@@ -2335,15 +2328,8 @@ span.tc-editable:focus-visible {
 }
 
 .ui-root .dt-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 18px;
-  bottom: 18px;
-  width: 3px;
-  background: var(--coral);
-  transform: scaleY(0);
-  transition: transform var(--dur) var(--ease);
+  /* No thick coloured side line on any card (Tim, 18 Nov, follow-up 1): the hover bar is gone. */
+  content: none;
 }
 
 .ui-root .dt-card:hover,
@@ -2780,8 +2766,8 @@ span.tc-editable:focus-visible {
 /* ---- Read-only plan view: strategy cards + tactic tick/progress ---- */
 
 .pop-view-strategy {
+  /* No thick coloured side line on any card (Tim, 18 Nov, follow-up 1). */
   border: 1px solid var(--line);
-  border-left: 3px solid var(--quiet-line);
   border-radius: var(--radius-card);
   padding: var(--space-4);
   margin-bottom: var(--space-3);

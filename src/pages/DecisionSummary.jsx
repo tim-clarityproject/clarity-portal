@@ -352,19 +352,19 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
           <div style={{ padding: '24px', backgroundColor: 'var(--raised)', borderRadius: '12px', border: '1px solid var(--line)' }}>
             <h3 style={{ fontSize: 'calc(14 * var(--u, 1px))', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>What does each quadrant mean?</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
-              <div style={{ padding: '12px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', borderLeft: '3px solid var(--coral-soft-text)' }} onMouseEnter={() => setHoveredQuadrant('topLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
+              <div style={{ padding: '12px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px' }} onMouseEnter={() => setHoveredQuadrant('topLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
                 <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resources to these projects?</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, low progress</div>
               </div>
-              <div style={{ padding: '12px', backgroundColor: 'var(--mint-tint)', borderRadius: '8px', borderLeft: '3px solid var(--good)' }} onMouseEnter={() => setHoveredQuadrant('topRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
+              <div style={{ padding: '12px', backgroundColor: 'var(--mint-tint)', borderRadius: '8px' }} onMouseEnter={() => setHoveredQuadrant('topRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
                 <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, high progress</div>
               </div>
-              <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--label)' }} onMouseEnter={() => setHoveredQuadrant('bottomLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
+              <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px' }} onMouseEnter={() => setHoveredQuadrant('bottomLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
                 <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, low progress</div>
               </div>
-              <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--coral-soft-text)' }} onMouseEnter={() => setHoveredQuadrant('bottomRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
+              <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px' }} onMouseEnter={() => setHoveredQuadrant('bottomRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
                 <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, high progress</div>
               </div>

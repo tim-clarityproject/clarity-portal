@@ -173,3 +173,29 @@ export function nekstInControls() {
   }
   return [...new Set(out)];
 }
+
+// No thick coloured side lines (Tim, 18 Nov, follow-up 1): no card, row or
+// calendar block has a left (or right) edge 2px or more that its other
+// edges don't share, and no bar 2px or more drawn down its side. Run in
+// the page: page.evaluate(sideLines).
+export function sideLines() {
+  const out = [];
+  for (const el of document.querySelectorAll('.ui-root *')) {
+    const b = el.getBoundingClientRect();
+    if (!(b.width > 0 && b.height > 0) || b.height < 20) continue;
+    const st = getComputedStyle(el);
+    if (st.display === 'none' || st.visibility === 'hidden') continue;
+    const l = parseFloat(st.borderLeftWidth) || 0;
+    const r = parseFloat(st.borderRightWidth) || 0;
+    const t = parseFloat(st.borderTopWidth) || 0;
+    if ((l >= 2 && l > t + 0.5) || (r >= 2 && r > t + 0.5)) out.push(`${String(el.className?.baseVal ?? el.className ?? '').split(' ')[0] || el.tagName.toLowerCase()} ${Math.max(l, r)}px side edge`);
+    for (const which of ['::before', '::after']) {
+      const ps = getComputedStyle(el, which);
+      if (ps.content === 'none' || ps.position !== 'absolute' || ps.display === 'none') continue;
+      const w = parseFloat(ps.width) || 0;
+      const h = parseFloat(ps.height) || 0;
+      if (w >= 2 && w <= 6 && h >= 20 && h > b.height * 0.5 && !/rgba\(0, 0, 0, 0\)|transparent/.test(ps.backgroundColor) && Number(ps.opacity) > 0.05 && !/scaleY\(0\)|matrix\(1, 0, 0, 0,/.test(ps.transform)) out.push(`${String(el.className?.baseVal ?? el.className ?? '').split(' ')[0] || el.tagName.toLowerCase()}${which} a ${w}px bar down its side`);
+    }
+  }
+  return [...new Set(out)];
+}

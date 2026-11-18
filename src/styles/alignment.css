@@ -1173,15 +1173,8 @@
 }
 
 .ui-root .al-card::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: var(--space-3);
-  bottom: var(--space-3);
-  width: 3px;
-  background: var(--coral-text);
-  transform: scaleY(0);
-  transition: transform var(--dur) var(--ease);
+  /* No thick coloured side line on any card (Tim, 18 Nov, follow-up 1): the hover bar is gone. */
+  content: none;
 }
 
 .ui-root .al-card:hover,
