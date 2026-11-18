@@ -58,9 +58,6 @@
   /* Big display text (Nekst titles and big numbers) grows less, up to a
      quarter, so long words in spaced capitals never split on a phone. */
   --u-big: min(var(--u), 1.25px);
-  /* Button words grow with the device's text size up to 1.75 times (not twice), so a label
-     such as "Start a new Health Check" stays on one line inside a card on a phone (Tim, 18 Nov). */
-  --u-btn: min(var(--u), 1.75px);
 
   /* Font sizes */
   --fs-greeting-phone: calc(26 * var(--u-big));
@@ -155,7 +152,9 @@
   --fs-minus: calc(20 * var(--u));          /* the stepper's minus sign */
   --fs-number: calc(32 * var(--u-big));         /* big numbers, Nekst Light (v3 stats) */
   --fs-number-sm: calc(16 * var(--u));      /* a tile's score */
-  --fs-btn: calc(14 * var(--u-btn));            /* every button: DM Sans, sentence case (Tim, 18 Nov; src/styles/buttons.css) */
+  --fs-btn: calc(16 * var(--u));            /* every button, segmented switch and choice: DM Sans, sentence case, growing up to twice with the device's text size (Tim, 18 Nov, follow-up 1; src/styles/buttons.css) */
+  --fw-btn: 400;
+  --fw-btn-main: 450;        /* the coral main button (DM Sans is variable, 100 to 1000) */
   --fs-addrow: calc(16 * var(--u));         /* the add row's words (Tim, 18 Nov) */
   --lh-btn: 1.3;
   --fs-empty-title: calc(19 * var(--u));
@@ -210,12 +209,16 @@
   --radius-bar: 2px;
 
   /* Component sizes */
-  --btn-h: 34px;             /* every button on a laptop (Tim, 18 Nov); its tap area stays 44px */
-  --btn-h-phone: 40px;       /* every button on a phone */
+  --btn-h: 40px;             /* every button, segmented switch and choice on a laptop (Tim, 18 Nov, follow-up 1); its tap area stays 44px */
+  --btn-h-phone: 44px;       /* the same on a phone */
   --hc-dd-h: 48px;           /* the Health Check's small drop-downs (M7b), which kept the old button height */
-  --btn-pad-x: 14px;         /* in from each side */
+  --btn-pad-x: 16px;         /* in from each side */
   --btn-pad-y: 4px;          /* above and below, once a larger text size wraps the words */
   --radius-btn: 8px;
+  --radius-seg-tile: 6px;    /* the chosen option's tile in a segmented switch */
+  --radius-chip: 6px;
+  --seg-pad: 3px;            /* round the segmented switch's options, inside its surface */
+  --dur-glide: 220ms;        /* the segmented switch's tile sliding to the new option (Tim, 18 Nov) */
   --btn-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.28); /* the coral button's faint top highlight */
   --btn-press: 0.97;         /* pressing scales a button this much, for --dur-fast */
   --addrow-h: 48px;          /* the add row (Tim, 18 Nov): at least this high */
@@ -651,6 +654,9 @@
 
   /* Colours with no dark token above (dark values) */
   --raised: #111110;         /* surface: tiles, the Mission pill, examples, the chosen option */
+  --seg-track: #111110;      /* a segmented switch's quiet grey surface (Tim, 18 Nov) */
+  --seg-tile: #262626;       /* its chosen option's raised tile: the card colour in light; in dark a step up, as the dark card would vanish on the surface */
+  --seg-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); /* the tile's very faint shadow */
   --outline: #3C3C3B;        /* outlined buttons (brand grey) */
   --quiet-line: #4A4A49;     /* link underlines, the current step, today in the calendar */
   --on-text: #000000;        /* words on a pill filled with the text colour */
@@ -715,6 +721,9 @@
   --surface: #FFFFFF;        /* boxes (the old name for --card) */
   --card: #FFFFFF;
   --raised: #EFEDE8;
+  --seg-track: #EFEDE8;
+  --seg-tile: #FFFFFF;
+  --seg-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   --line: #DCDAD3;
   --line-soft: #E9E7E1;
   --field-line: #858480;     /* box edges, 3.5 to 1 */

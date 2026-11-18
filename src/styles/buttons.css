@@ -4,10 +4,15 @@
    the coach portal alike, written once here. The Nekst capital pills are
    gone.
 
-   Every button: DM Sans 14px, weight 500, sentence case, letter-spacing
-   -0.005em; 34px high on a laptop and 40px on a phone; 14px in at each
-   side; 8px corners. The tap area stays 44px: an invisible ::after, 44px
-   high and as wide as the button, centred on it.
+   Follow-up 1 (Tim, 18 Nov, 15:57): buttons, segmented switches, form
+   choices (Zoom or In person, 30, 60 or 90 minutes, light or dark) and
+   filter buttons are one family. DM Sans 16px, sentence case, weight 400
+   (the coral main button 450), letter-spacing -0.005em; 40px high on a
+   laptop and 44px on a phone; 16px in at each side; 8px corners. Words
+   grow with the device's text size up to twice: a button then grows
+   taller and wraps onto centred lines, never cutting a word off. The tap
+   area stays 44px: an invisible ::after, 44px high and as wide as the
+   button, centred on it.
    The main button (one per screen): flat coral with black text and a faint
    top highlight; on hover, each mode's coral hover.
    Other buttons: no fill, a 1px hairline drawn as an inset shadow in the
@@ -44,11 +49,19 @@
   border-radius: var(--radius-btn) !important;
   font-family: var(--font-body) !important;
   font-size: var(--fs-btn) !important;
-  font-weight: var(--fw-medium) !important;
+  font-weight: var(--fw-btn) !important;
   line-height: var(--lh-btn) !important;
   letter-spacing: var(--ls-btn) !important;
   text-transform: none !important;
   word-spacing: normal !important;
+  /* Larger words wrap onto centred lines; a word too long for the button breaks rather than spill. */
+  white-space: normal !important;
+  text-align: center !important;
+  overflow-wrap: break-word;
+}
+
+.ui-root :is(.ds-btn--primary, .ui-btn-primary, .auth-btn-primary, .si-btn):not(#_) {
+  font-weight: var(--fw-btn-main) !important;
 }
 
 .ui-root :is(.ds-btn--primary, .ds-btn--outline, .ui-btn-primary, .ui-btn-ghost, .auth-btn-primary, .auth-btn-ghost, .dng, .si-btn, .ds-focus-done):is(button, a, label, span) {
@@ -69,8 +82,8 @@
   position: absolute;
   left: 0;
   right: 0;
-  /* 5px above and below a 34px button (2px round a 40px one); none once
-     larger words make the button 44px or more. */
+  /* 2px above and below a 40px button; none once it is 44px or more (a
+     phone, or larger words). */
   top: min(0px, calc(50% - var(--tap-min) / 2));
   bottom: min(0px, calc(50% - var(--tap-min) / 2));
 }
@@ -128,4 +141,104 @@
   .ui-root :is(.ds-btn--primary, .ds-btn--outline, .ui-btn-primary, .ui-btn-ghost, .auth-btn-primary, .auth-btn-ghost, .dng, .si-btn, .ds-focus-done):is(button, a, label, span):active {
     transform: none;
   }
+}
+
+/* ---------- Segmented switches and form choices (Tim, 18 Nov, follow-up 1) ----------
+   InlineChoice's pills (`.ds-seg`, `.ds-seg-btn`): the same family's size
+   and type, on a quiet grey surface with 8px corners. The chosen option is
+   a soft raised tile with 6px corners, in the card colour, with a very
+   faint shadow (`.ds-seg-tile`, which slides to the new option); the
+   others are plain text. Until the tile is placed (the first paint), the
+   chosen option draws its own tile. */
+.ui-root .ds-seg:not(#_) {
+  position: relative;
+  min-height: var(--btn-h);
+  padding: var(--seg-pad) !important;
+  gap: 0;
+  border: 0 !important;
+  border-radius: var(--radius-btn) !important;
+  background: var(--seg-track);
+}
+
+.ui-root .ds-seg-btn:not(#_) {
+  min-height: calc(var(--btn-h) - 2 * var(--seg-pad)) !important;
+  padding: 0 var(--btn-pad-x) !important;
+  border-radius: var(--radius-seg-tile) !important;
+  font-family: var(--font-body) !important;
+  font-size: var(--fs-btn) !important;
+  font-weight: var(--fw-btn) !important;
+  line-height: var(--lh-btn) !important;
+  letter-spacing: var(--ls-btn) !important;
+  text-transform: none !important;
+  white-space: normal !important;
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-seg:not(#_) { min-height: var(--btn-h-phone); }
+  .ui-root .ds-seg-btn:not(#_) { min-height: calc(var(--btn-h-phone) - 2 * var(--seg-pad)) !important; }
+}
+
+/* Equal widths on a phone keep their narrower sides. */
+.ui-root .ds-seg--equal .ds-seg-btn:not(#_) {
+  padding: 0 var(--space-px6) !important;
+}
+
+.ui-root .ds-seg .ds-seg-btn {
+  z-index: 1;
+  background: transparent;
+  color: var(--text-2);
+}
+
+.ui-root .ds-seg .ds-seg-btn:is([aria-pressed='true'], [aria-checked='true']) {
+  background: transparent;
+  color: var(--text);
+}
+
+.ui-root .ds-seg:not(.ds-seg--placed) .ds-seg-btn:is([aria-pressed='true'], [aria-checked='true']) {
+  background: var(--seg-tile);
+  box-shadow: var(--seg-shadow);
+}
+
+.ui-root .ds-seg .ds-seg-btn:is([aria-pressed='true'], [aria-checked='true']) .ds-answer-note {
+  color: var(--text-2);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-seg .ds-seg-btn:hover {
+    color: var(--text);
+  }
+}
+
+/* Its 44px tap area: from the option's own box, at least 44px high. */
+.ui-root .ds-seg .ds-seg-btn::after {
+  inset: auto 0;
+  top: min(calc(-1 * var(--seg-pad)), calc(50% - var(--tap-min) / 2));
+  bottom: min(calc(-1 * var(--seg-pad)), calc(50% - var(--tap-min) / 2));
+}
+
+.ui-root .ds-seg-tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: var(--radius-seg-tile);
+  background: var(--seg-tile);
+  box-shadow: var(--seg-shadow);
+  pointer-events: none;
+  transition: transform var(--dur-glide) var(--ease), width var(--dur-glide) var(--ease), height var(--dur-glide) var(--ease);
+}
+
+.ui-root .ds-seg-tile[data-still] {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-seg-tile {
+    transition: none;
+  }
+}
+
+/* Chips: 6px corners. */
+.ui-root .ds-chip:not(#_) {
+  border-radius: var(--radius-chip) !important;
 }

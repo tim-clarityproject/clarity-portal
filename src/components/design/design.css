@@ -1903,9 +1903,12 @@
 .ui-root .ds-seg-measure-pill {
   display: inline-flex;
   align-items: center;
-  padding: 0 var(--space-3);
+  /* As the pills are drawn (src/styles/buttons.css). */
+  padding: 0 var(--btn-pad-x);
   font-family: var(--font-body);
-  font-size: var(--fs-note);
+  font-size: var(--fs-btn);
+  font-weight: var(--fw-btn);
+  letter-spacing: var(--ls-btn);
   white-space: nowrap;
 }
 

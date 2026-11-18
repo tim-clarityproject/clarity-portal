@@ -56,6 +56,41 @@ export default function InlineChoice({
     if (el && lost) el.focus({ preventScroll: true });
   }, [form, boxRef]);
 
+  // Segmented switches glide (Tim, 18 Nov, follow-up 1): one raised tile
+  // behind the chosen pill slides to the new one (--dur-glide, the --ease
+  // curve; Reduce motion: no slide, src/styles/buttons.css). It is placed
+  // without sliding the first time, and whenever the pills change size.
+  const segRef = useRef(null);
+  const tileRef = useRef(null);
+  const chosen = options.findIndex((o) => o.value === value);
+  useLayoutEffect(() => {
+    if (form !== 'pills') return undefined;
+    const seg = segRef.current;
+    const tile = tileRef.current;
+    if (!seg || !tile) return undefined;
+    const place = (still) => {
+      const el = refs.current[chosen];
+      if (!el) { tile.style.opacity = '0'; seg.classList.add('ds-seg--placed'); return; }
+      if (still) tile.setAttribute('data-still', '');
+      tile.style.opacity = '1';
+      tile.style.width = `${el.offsetWidth}px`;
+      tile.style.height = `${el.offsetHeight}px`;
+      tile.style.transform = `translate(${el.offsetLeft}px, ${el.offsetTop}px)`;
+      seg.classList.add('ds-seg--placed');
+      if (still) {
+        void tile.offsetWidth;
+        tile.removeAttribute('data-still');
+      }
+    };
+    place(!seg.classList.contains('ds-seg--placed'));
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    // A new observer reports the size it starts with at once: only a later change places the tile again.
+    let started = false;
+    const watch = new ResizeObserver(() => { if (started) place(true); started = true; });
+    watch.observe(seg);
+    return () => watch.disconnect();
+  }, [form, chosen, isPhone, signature]);
+
   const moveTo = (next) => {
     onChange(options[next].value);
     const el = refs.current[next];
@@ -122,7 +157,12 @@ export default function InlineChoice({
         {/* Keyed by form, so switching between pills and rows is instant
             (a reused button would fade from one look to the other). */}
         {form === 'pills'
-          ? <div key="pills" className={`ds-seg${isPhone ? ' ds-seg--equal' : ''}`} {...groupProps}>{buttons}</div>
+          ? (
+            <div key="pills" ref={segRef} className={`ds-seg${isPhone ? ' ds-seg--equal' : ''}`} {...groupProps}>
+              <span ref={tileRef} className="ds-seg-tile" aria-hidden="true" />
+              {buttons}
+            </div>
+          )
           : <div key="rows" className="ds-rows" {...groupProps}>{buttons}</div>}
       </div>
     </div>
