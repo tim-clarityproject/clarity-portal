@@ -2034,6 +2034,25 @@
   transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
+.ui-root .ds-todo--important .ds-check-box > span {
+  /* The highest priority (Tim, 18 Nov, follow-up 1): a 2px soft coral edge,
+     inside the same 18px square, so the title stays where it is. */
+  border-width: var(--important-line);
+  border-color: var(--coral-soft-text);
+}
+
+/* Where there's no tick box: a small soft coral box before the title. */
+.ui-root .ds-important-mark {
+  display: inline-block;
+  box-sizing: border-box;
+  width: var(--important-mark);
+  height: var(--important-mark);
+  margin-right: var(--space-2);
+  border: var(--important-line) solid var(--coral-soft-text);
+  border-radius: var(--radius-bar);
+  vertical-align: baseline;
+}
+
 .ui-root .ds-check-box[aria-checked='true'] > span {
   /* Ticked boxes fill mint (Tim, 26 Oct): bright mint with a black tick
      in dark, deep green with a white tick in light. */

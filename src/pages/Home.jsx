@@ -470,7 +470,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
                       key={x.key}
                       text={x.text}
                       strategyName={x.strategyName}
-                      lead={x.top ? 'Highest priority' : undefined}
+                      important={x.top}
                       done={x.done}
                       onToggle={(done) => actions.toggleTodo(x.row, done)}
                     />
@@ -479,7 +479,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
                       key={x.key}
                       text={x.text}
                       strategyName={x.strategyName}
-                      lead={x.top ? 'Highest priority' : undefined}
+                      important={x.top}
                       tags={[x.line]}
                       done={x.done}
                       plain={x.habit.measure !== 'yes_no_weekly'}

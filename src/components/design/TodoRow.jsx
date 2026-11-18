@@ -23,6 +23,9 @@ import './design.css';
 //         "Plan into a week"; Tim, 13 Nov, 10:42)
 // plain:  shown, not ticked here (the debrief's Next week, M1): the box
 //         is only a mark, mint when done, and nothing to press.
+// important: the highest priority (Tim, 18 Nov, follow-up 1): its tick box
+//         takes a 2px soft coral edge, the words stay as they are, and a
+//         screen reader hears ", highest priority" after them.
 // lead:   words before the Strategy's name in the text colour (Home's
 //         "Highest priority", M2 .hpri).
 const TICK = <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -31,13 +34,13 @@ export function TodoList({ children, label, className = '' }) {
   return <div className={`ds-todos ${className}`.trim()} role="list" aria-label={label}>{children}</div>;
 }
 
-export default function TodoRow({ text, strategyName, tags = [], done = false, onToggle, disabled = false, onMove, moveLabel = 'Move', win = false, winTag, plain = false, lead }) {
+export default function TodoRow({ text, strategyName, tags = [], done = false, onToggle, disabled = false, onMove, moveLabel = 'Move', win = false, winTag, plain = false, lead, important = false }) {
   const textId = useId();
   const moreId = useId();
   const [open, setOpen] = useState(false);
   const words = (
     <>
-      <span id={textId} className="ds-todo-text">{keepWords(text)}</span>
+      <span id={textId} className="ds-todo-text">{keepWords(text)}{important && <span className="ds-sr">, highest priority</span>}</span>
       <span className="ds-todo-line">
         {lead && <span className="ds-todo-lead">{lead}</span>}
         {strategyName && <span>{strategyName}</span>}
@@ -47,7 +50,7 @@ export default function TodoRow({ text, strategyName, tags = [], done = false, o
     </>
   );
   return (
-    <div className={`ds-todo${done && !win ? ' ds-todo--done' : ''}${win ? ' ds-todo--win' : ''}`} role="listitem">
+    <div className={`ds-todo${done && !win ? ' ds-todo--done' : ''}${win ? ' ds-todo--win' : ''}${important ? ' ds-todo--important' : ''}`} role="listitem">
       {win || plain ? (
         <span className={`ds-check-box ds-todo-mark${plain && !done ? ' ds-todo-mark--open' : ''}`} aria-hidden="true"><span>{TICK}</span></span>
       ) : (

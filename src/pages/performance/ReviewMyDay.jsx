@@ -557,7 +557,8 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       key={item.key}
       text={item.text}
       strategyName={item.strategyName}
-      tags={list === 'today' ? (item.top ? ['Highest priority'] : []) : item.tags}
+      tags={list === 'today' ? [] : item.tags}
+      important={list === 'today' && item.top}
       done={item.done}
       onToggle={(done) => tick(item, done, list)}
     />

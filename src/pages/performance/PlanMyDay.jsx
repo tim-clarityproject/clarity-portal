@@ -830,8 +830,10 @@ function PlanFlow({ userId, date, today, loaded }) {
                   label: 'To-dos',
                   value: view.ordered.map((o, i) => (
                     <>
+                      {/* The highest priority: a small soft coral box before the title (Tim, 18 Nov, follow-up 1). */}
+                      {i === 0 && <span className="ds-important-mark" aria-hidden="true" />}
                       {`${i + 1}. ${o.label}`}
-                      {i === 0 && <span className="day-tag">Highest priority</span>}
+                      {i === 0 && <span className="ds-sr">, highest priority</span>}
                     </>
                   )),
                   step: stepIndex('do'),
