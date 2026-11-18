@@ -188,7 +188,8 @@ part('welcome', async ({ browser, w, mode, phone, tag }) => {
   let b = await appPage(browser, w, mode, { watched: false });
   const { page } = b;
   await checkScreen(b, `${tag}, welcome`, { layer: '.ds-guest' });
-  await checkFonts(b, `${tag}, welcome`, [['the title', '.ds-guest-title', 'Nekst'], ['the line under it', '.hc-lead', 'DM Sans'], ['Begin', '.hc-begin .ds-btn', 'Nekst'], ['the time beside it', '.ds-btn-note-text', 'DM Sans']]);
+  // Buttons are DM Sans since 18 Nov (Tim's Quiet precision); titles and section names stay Nekst.
+  await checkFonts(b, `${tag}, welcome`, [['the title', '.ds-guest-title', 'Nekst'], ['the line under it', '.hc-lead', 'DM Sans'], ['Begin', '.hc-begin .ds-btn', 'DM Sans'], ['the time beside it', '.ds-btn-note-text', 'DM Sans']]);
   const place = () => page.evaluate(() => {
     const btn = document.querySelector('.hc-begin .ds-btn').getBoundingClientRect();
     const n = document.querySelector('.ds-btn-note-text');
@@ -337,7 +338,7 @@ part('new', async ({ browser, w, mode, tag }) => {
   pass(`${tag}, new: it opens on the first question`, await onQuestion(page, 'What is your team trying to achieve?'));
   await checkScreen(b, `${tag}, objective`, { back: true });
   await checkIcons(page, `${tag}, the first question`, '.ds-guide-question');
-  await checkFonts(b, `${tag}, the first question`, [['the question', '.ds-guide-question', 'DM Sans'], ['the line under it', '.ds-guide-nudge', 'DM Sans'], ['the tool’s name', '.ds-guide-name', 'Nekst'], ['Next', '.ds-guide-next', 'Nekst'], ['the box', '.ds-guide-body textarea', 'DM Sans']]);
+  await checkFonts(b, `${tag}, the first question`, [['the question', '.ds-guide-question', 'DM Sans'], ['the line under it', '.ds-guide-nudge', 'DM Sans'], ['the tool’s name', '.ds-guide-name', 'Nekst'], ['Next', '.ds-guide-next', 'DM Sans'], ['the box', '.ds-guide-body textarea', 'DM Sans']]);
   const notOff = async (what) => {
     await page.mouse.move(2, 2); // the button's own colour, not its hover
     await sleep(350);
@@ -617,7 +618,7 @@ part('results', async ({ browser, w, mode, phone, tag }) => {
   await page.locator('button.hc-prow').first().waitFor();
   await checkScreen(b, `${tag}, results`, { back: false });
   await checkIcons(page, `${tag}, the results’ title`, '.ds-guide-title');
-  await checkFonts(b, `${tag}, results`, [['the title', '.ds-guide-title', 'Nekst'], ['the headline', '.ds-headline', 'DM Sans'], ['a section’s name', '.ds-results-head', 'Nekst'], ['a project’s name', '.hc-pt b', 'DM Sans'], ['Download my PDF', '.ds-guide-next', 'Nekst'], ['Email my link', '.hc-keep .ds-btn', 'Nekst']]);
+  await checkFonts(b, `${tag}, results`, [['the title', '.ds-guide-title', 'Nekst'], ['the headline', '.ds-headline', 'DM Sans'], ['a section’s name', '.ds-results-head', 'Nekst'], ['a project’s name', '.hc-pt b', 'DM Sans'], ['Download my PDF', '.ds-guide-next', 'DM Sans'], ['Email my link', '.hc-keep .ds-btn', 'DM Sans']]);
   pass(`${tag}, results: the bold crosshair alone at the top, no Back or Close`, (await page.locator('.ds-guide-top .ds-guest-mark').count()) === 1 && (await page.locator('.ds-guide-back, .ds-guide-close').count()) === 0);
   // The order (rule 29ar).
   const order = await page.evaluate(() => {
