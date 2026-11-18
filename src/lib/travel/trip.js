@@ -111,3 +111,13 @@ export function whereOn(trip, date) {
 
 /** The hours of a flight in the air. */
 export const flightHours = (f) => (f.arrives - f.departs) / HOUR;
+
+/** The zone the person is in at an instant, by the flights alone, or null on a plane. */
+export function zoneOfAt(trip, t) {
+  let zone = trip.base.zone;
+  for (const f of trip.legs) {
+    if (t > f.departs && t < f.arrives) return null;
+    if (t >= f.arrives) zone = f.toZone;
+  }
+  return zone;
+}

@@ -4,7 +4,7 @@ import { saveOrQueue, waitingToSend } from '../syncQueue';
 import { isMissingTable, tableReady } from '../performance/tableReady';
 import { parseDbTimestamp } from '../dateFormatter';
 import { deviceKey, readJson, writeJson } from '../deviceStore';
-import { tidyMoment, tidyRepeat } from './model';
+import { cleanMomentName, ownEntry, tidyMoment, tidyRepeat } from './model';
 
 // Where peak moments are kept (migration 048: public.peak_moments and
 // public.peak_reviews; Phase 8b part A).
@@ -26,8 +26,14 @@ import { tidyMoment, tidyRepeat } from './model';
 //   { moments: { [id]: moment }, reviews: { ['id:YYYY-MM-DD']: review },
 //     leadUps: { ['id:YYYY-MM-DD']: { [day]: { text, todoId, did } } },
 //     shareWork: boolean }
-// A moment or review may carry `sent: true` (the table has it) and `gone:
-// true` (deleted here, its delete still to be sent).
+// A moment or review may carry `sent: true` (the table has it), `gone:
+// true` (deleted here, its delete still to be sent) and `refused: true`
+// (the database refused it: it stays here, unsent, and isn't sent again
+// until it is changed). Only a save the database has answered marks one as
+// sent: one that waits in the offline queue stays unsent until a load finds
+// the table holding exactly it, so a save the queue later has refused is
+// never taken for sent and never cleared from the device by a load (the
+// break-it tester, 18 Nov).
 //
 // The lead-up answers (what the Daily plan's question was answered with,
 // and Daily review's "Did you do it?") have no table of their own: each one
@@ -54,13 +60,14 @@ const iso = (v) => {
 export function tidyState(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ...EMPTY };
   const moments = {};
-  for (const [id, m] of Object.entries(raw.moments || {})) {
+  for (const [id, m] of Object.entries(raw.moments && typeof raw.moments === 'object' ? raw.moments : {})) {
+    if (id === '__proto__') continue;
     const t = tidyMoment(m);
-    if (t && t.id === id && t.startsOn) moments[id] = { ...t, sent: m.sent === true, gone: m.gone === true };
+    if (t && t.id === id && t.startsOn) moments[id] = { ...t, sent: m.sent === true, gone: m.gone === true, refused: m.refused === true };
   }
   const reviews = {};
-  for (const [k, r] of Object.entries(raw.reviews || {})) {
-    if (!r || typeof r !== 'object' || typeof r.momentId !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(r.occursOn || '')) continue;
+  for (const [k, r] of Object.entries(raw.reviews && typeof raw.reviews === 'object' ? raw.reviews : {})) {
+    if (k === '__proto__' || !r || typeof r !== 'object' || typeof r.momentId !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(r.occursOn || '')) continue;
     reviews[k] = {
       id: typeof r.id === 'string' ? r.id : null,
       momentId: r.momentId,
@@ -71,9 +78,13 @@ export function tidyState(raw) {
       updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : null,
       sent: r.sent === true,
       gone: r.gone === true,
+      refused: r.refused === true,
     };
   }
-  const leadUps = raw.leadUps && typeof raw.leadUps === 'object' && !Array.isArray(raw.leadUps) ? raw.leadUps : {};
+  const leadUps = {};
+  if (raw.leadUps && typeof raw.leadUps === 'object' && !Array.isArray(raw.leadUps)) {
+    for (const [k, v] of Object.entries(raw.leadUps)) if (k !== '__proto__' && v && typeof v === 'object') leadUps[k] = v;
+  }
   return { moments, reviews, leadUps, shareWork: raw.shareWork === true };
 }
 
@@ -186,7 +197,7 @@ function momentRow(userId, m) {
   return {
     id: m.id,
     user_id: userId,
-    name: m.name.trim().slice(0, 80),
+    name: cleanMomentName(m.name),
     area: m.area,
     kind: m.kind,
     starts_on: m.startsOn,
@@ -242,6 +253,19 @@ function reviewFrom(row) {
   };
 }
 
+/** Whether the table's row is exactly what this device kept (written the same way). */
+function sameMoment(userId, here, there) {
+  return JSON.stringify(momentRow(userId, here)) === JSON.stringify(momentRow(userId, there));
+}
+
+function sameReview(userId, here, there) {
+  const row = (r) => {
+    const { user_id: who, moment_id: momentId, occurs_on: on, answer, kept, lesson } = reviewRow(userId, r);
+    return JSON.stringify([who, momentId, on, answer, kept, lesson]);
+  };
+  return row(here) === row(there);
+}
+
 // ---------------------------------------------------------------- sending
 
 async function sendMoment(userId, m) {
@@ -249,10 +273,10 @@ async function sendMoment(userId, m) {
     ? { table: MOMENTS_TABLE, kind: 'delete', match: { id: m.id, user_id: userId } }
     : { table: MOMENTS_TABLE, kind: 'upsert', onConflict: 'id', values: momentRow(userId, m) };
   const r = await saveOrQueue(userId, op);
-  // Marked as sent only when nothing newer was kept meanwhile.
+  // Marked as sent only once the database has it, and only when nothing newer was kept meanwhile.
   const s = read(userId);
   const now = s.moments[m.id];
-  if (now && now.updatedAt === m.updatedAt) {
+  if (r?.status === 'saved' && now && now.updatedAt === m.updatedAt) {
     const moments = { ...s.moments };
     if (now.gone) delete moments[m.id];
     else moments[m.id] = { ...now, sent: true };
@@ -269,7 +293,7 @@ async function sendReview(userId, key, r) {
   const res = await saveOrQueue(userId, op);
   const s = read(userId);
   const now = s.reviews[key];
-  if (now && now.updatedAt === r.updatedAt) {
+  if (res?.status === 'saved' && now && now.updatedAt === r.updatedAt) {
     const reviews = { ...s.reviews };
     if (now.gone) delete reviews[key];
     else reviews[key] = { ...now, sent: true };
@@ -298,7 +322,7 @@ export async function saveMoment(userId, moment) {
   const now = new Date().toISOString();
   const s = read(userId);
   const had = s.moments[moment.id];
-  const m = { ...tidyMoment(moment), createdAt: had?.createdAt || moment.createdAt || now, updatedAt: now, sent: false, gone: false };
+  const m = { ...tidyMoment(moment), createdAt: had?.createdAt || moment.createdAt || now, updatedAt: now, sent: false, gone: false, refused: false };
   delete m.today;
   if (!write(userId, { ...s, moments: { ...s.moments, [m.id]: m } })) throw new Error('The device has no room to keep this.');
   if (!(await peakReady())) return 'device';
@@ -308,7 +332,7 @@ export async function saveMoment(userId, moment) {
 /** Delete one moment (its Undo saves it again with saveMoment). */
 export async function deleteMoment(userId, id) {
   const s = read(userId);
-  const had = s.moments[id];
+  const had = ownEntry(s.moments, id);
   if (!had) return 'device';
   const now = new Date().toISOString();
   const there = await peakReady();
@@ -332,12 +356,12 @@ export async function saveReview(userId, review) {
   const now = new Date().toISOString();
   const s = read(userId);
   const had = s.reviews[key];
-  const r = { ...had, ...review, id: had?.id || review.id || null, updatedAt: now, sent: false, gone: false };
+  const r = { ...had, ...review, id: had?.id || review.id || null, updatedAt: now, sent: false, gone: false, refused: false };
   let moments = s.moments;
   const m = s.moments[review.momentId];
   // The lesson is saved for the next peak moment (M18): the moment keeps the newest one.
   const lesson = review.lesson?.trim();
-  const withLesson = m && lesson && lesson !== m.lesson ? { ...m, lesson, updatedAt: now, sent: false } : null;
+  const withLesson = m && lesson && lesson !== m.lesson ? { ...m, lesson, updatedAt: now, sent: false, refused: false } : null;
   if (withLesson) moments = { ...moments, [m.id]: withLesson };
   write(userId, { ...s, moments, reviews: { ...s.reviews, [key]: r } });
   if (!(await peakReady())) return 'device';
@@ -356,7 +380,7 @@ export async function setShareWork(userId, share) {
   const changed = [];
   for (const m of Object.values(moments)) {
     if (m.gone || m.area !== 'work' || m.shared === share) continue;
-    moments[m.id] = { ...m, shared: share, updatedAt: now, sent: false };
+    moments[m.id] = { ...m, shared: share, updatedAt: now, sent: false, refused: false };
     changed.push(moments[m.id]);
   }
   write(userId, { ...s, moments, shareWork: Boolean(share) });
@@ -371,20 +395,21 @@ export async function setShareWork(userId, share) {
 /** Note what a day's lead-up question was answered with (and its to-do). */
 export function noteLeadUp(userId, occurrenceKey, day, value) {
   const s = read(userId);
-  const forOcc = { ...(s.leadUps[occurrenceKey] || {}) };
+  const forOcc = { ...(ownEntry(s.leadUps, occurrenceKey) || {}) };
   if (value == null) delete forOcc[day];
   else forOcc[day] = { ...(forOcc[day] || {}), ...value };
+  if (occurrenceKey === '__proto__') return;
   write(userId, { ...s, leadUps: { ...s.leadUps, [occurrenceKey]: forOcc } });
 }
 
 /** A day's lead-up, or null. */
 export function leadUpOn(userId, occurrenceKey, day) {
-  return read(userId).leadUps[occurrenceKey]?.[day] || null;
+  return ownEntry(ownEntry(read(userId).leadUps, occurrenceKey), day) || null;
 }
 
 /** Every day's lead-up for one time a moment came round, in day order: [{ day, text, todoId, did }]. */
 export function leadUpsOf(userId, occurrenceKey) {
-  const forOcc = read(userId).leadUps[occurrenceKey] || {};
+  const forOcc = ownEntry(read(userId).leadUps, occurrenceKey) || {};
   return Object.entries(forOcc).sort(([a], [b]) => (a < b ? -1 : 1)).map(([day, v]) => ({ day, ...v }));
 }
 
@@ -404,19 +429,26 @@ export function movePeak(userId) {
   if (!userId) return Promise.resolve(0);
   if (moving) return moving;
   moving = (async () => {
+    // Saves already waiting in the queue go first, as the queue sends them.
+    if (waitingToSend(userId)) return 0;
     const s = read(userId);
-    const moments = Object.values(s.moments).filter((m) => m.sent !== true);
-    const reviews = Object.entries(s.reviews).filter(([, r]) => r.sent !== true);
+    const moments = Object.values(s.moments).filter((m) => m.sent !== true && m.refused !== true);
+    const reviews = Object.entries(s.reviews).filter(([, r]) => r.sent !== true && r.refused !== true);
     if ((!moments.length && !reviews.length) || !(await peakReady())) return 0;
     let moved = 0;
+    // Refused: kept here, unsent, and not sent again until it is changed. Never marked sent.
+    const refuse = (kind, key, updatedAt) => {
+      const cur = read(userId);
+      const had = cur[kind][key];
+      if (had && had.updatedAt === updatedAt) write(userId, { ...cur, [kind]: { ...cur[kind], [key]: { ...had, refused: true } } });
+    };
     for (const m of moments) {
       try {
         await sendMoment(userId, m);
         moved += 1;
       } catch (error) {
         if (!NEVER.has(`${error?.code || ''}`)) return moved; // offline: tried again next time
-        const cur = read(userId);
-        if (cur.moments[m.id]) write(userId, { ...cur, moments: { ...cur.moments, [m.id]: { ...cur.moments[m.id], sent: true } } });
+        refuse('moments', m.id, m.updatedAt);
       }
     }
     for (const [key, r] of reviews) {
@@ -425,8 +457,7 @@ export function movePeak(userId) {
         moved += 1;
       } catch (error) {
         if (!NEVER.has(`${error?.code || ''}`)) return moved;
-        const cur = read(userId);
-        if (cur.reviews[key]) write(userId, { ...cur, reviews: { ...cur.reviews, [key]: { ...cur.reviews[key], sent: true } } });
+        refuse('reviews', key, r.updatedAt);
       }
     }
     return moved;
@@ -457,19 +488,26 @@ export async function refreshPeak(userId) {
       const m = momentFrom(row);
       if (!m) continue;
       ids.add(m.id);
-      if (!moments[m.id] || moments[m.id].sent === true) moments[m.id] = { ...m, sent: true, gone: false };
+      const here = moments[m.id];
+      if (!here || here.sent === true) moments[m.id] = { ...m, sent: true, gone: false };
+      // A save the queue sent later: the table holds exactly what this device kept.
+      else if (!here.gone && sameMoment(userId, here, m)) moments[m.id] = { ...here, sent: true, refused: false };
     }
-    // Sent before and gone from the table: deleted on another device.
-    for (const m of Object.values(moments)) if (m.sent === true && !ids.has(m.id)) delete moments[m.id];
+    // Sent before and gone from the table: deleted on another device. A delete
+    // waiting here that the table no longer holds has gone through.
+    for (const m of Object.values(moments)) if (!ids.has(m.id) && (m.sent === true || m.gone === true)) delete moments[m.id];
     const reviews = { ...s.reviews };
     const keys = new Set();
     for (const row of rRes.data || []) {
       const r = reviewFrom(row);
       const key = `${r.momentId}:${r.occursOn}`;
+      if (key === '__proto__') continue;
       keys.add(key);
-      if (!reviews[key] || reviews[key].sent === true) reviews[key] = r;
+      const here = reviews[key];
+      if (!here || here.sent === true) reviews[key] = r;
+      else if (!here.gone && sameReview(userId, here, r)) reviews[key] = { ...here, id: r.id, sent: true, refused: false };
     }
-    for (const [key, r] of Object.entries(reviews)) if (r.sent === true && !keys.has(key)) delete reviews[key];
+    for (const [key, r] of Object.entries(reviews)) if (!keys.has(key) && (r.sent === true || r.gone === true)) delete reviews[key];
     write(userId, { ...s, moments, reviews });
     return true;
   } catch {

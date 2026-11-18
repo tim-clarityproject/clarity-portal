@@ -154,7 +154,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-px14) 0;
+  /* !important: src/styles/mobile.css pads every button 16px in at 768px and below (as components.css explains). */
+  padding: var(--space-px14) 0 !important;
   border-bottom: var(--line-w) solid var(--line-soft);
   font-family: var(--font-body);
   text-align: left;

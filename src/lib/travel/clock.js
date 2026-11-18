@@ -9,8 +9,8 @@
 // more than 1 hour a day going earlier (east) or 1.5 hours going later
 // (west), and 1 hour a day before the flight out. The night's bedtime is
 // the target, kept within 1.5 hours of where the body clock is.
-import { addDays, daysBetween, instantAt } from '../time/index.js';
-import { RULES, HOUR, clamp } from './rules.js';
+import { addDays, daysBetween, instantAt, offsetMinutes, wallClock } from '../time/index.js';
+import { RULES, HOUR, clamp, wrapHours } from './rules.js';
 import { differenceOn, whereOn } from './trip.js';
 
 /** The phase of a day: 'wait', 'before', 'out', 'away', 'turn', 'flyHome' or 'back'. */
@@ -39,15 +39,47 @@ export const usualWakeAt = (trip, date) => instantAt(date, trip.sleep.end, trip.
 /** The sleep shift (hours from home, east positive) that a bedtime instant means. */
 export const shiftOfBed = (trip, date, bedAt) => (usualBedAt(trip, date) - bedAt) / HOUR;
 
-/** The flight that day that the night is spent on, or null. */
-export function nightOnBoard(trip, date, plannedBed) {
-  const { flights } = whereOn(trip, date);
-  for (const f of flights) {
-    if (f.arrivesOn > f.departsOn) return f;
-    if (plannedBed >= f.departs && plannedBed < f.arrives) return f;
+/** A home-anchored instant moved by whole days, so that on a zone's clock it falls from `fromHour` on a date to `fromHour` the next. */
+export function ontoDay(instant, zone, date, fromHour = 12) {
+  const w = wallClock(instant, zone);
+  const k = Math.floor(daysBetween(date, w.date) + (w.hour + w.minute / 60 - fromHour) / 24);
+  return k ? new Date(instant.getTime() - k * 24 * HOUR) : instant;
+}
+
+/** The hours the home zone's clocks are ahead of UTC on a day, read at noon home time. */
+const homeOffsetOn = (trip, date) => offsetMinutes(instantAt(date, '12:00', trip.base.zone), trip.base.zone) / 60;
+
+/**
+ * The night of a day spent on board, or null: a flight that leaves that day
+ * and lands on a later date, with the plan's bedtime or the body's own
+ * bedtime inside it (from 3 hours before take-off until 3 hours before
+ * landing). Asleep at that bedtime, and never sooner than an hour after
+ * take-off.
+ * @returns {{ flight: object, sleepAt: Date }|null}
+ */
+export function nightOnBoard(trip, date, { target, clock }) {
+  for (const f of whereOn(trip, date).flights) {
+    if (f.arrivesOn <= f.departsOn) continue;
+    const sleepAt = bedOnFlight(trip, date, f, { target, clock });
+    if (sleepAt) return { flight: f, sleepAt };
   }
   return null;
 }
+
+/** When the person is asleep on a flight that leaves on a day, or null when neither bedtime falls inside it. */
+export function bedOnFlight(trip, date, f, { target, clock }) {
+  const usual = usualBedAt(trip, date).getTime();
+  const lo = f.departs.getTime() - RULES.boardWindow * HOUR;
+  const hi = f.arrives.getTime() - RULES.boardWindow * HOUR;
+  // The day's bedtimes, read as that night's on the departure's clock (from noon that day to noon the next).
+  const inside = [target, clock]
+    .map((x) => ontoDay(new Date(usual - x * HOUR), f.fromZone, date).getTime())
+    .filter((b) => b >= lo && b <= hi);
+  return inside.length ? new Date(Math.max(Math.min(...inside), f.departs.getTime() + RULES.sleepAfterTakeOff * HOUR)) : null;
+}
+
+/** A flight in the air for the whole of a day: it left on an earlier date and lands on a later one. */
+export const inTheAir = (trip, date) => trip.legs.find((l) => l.departsOn < date && l.arrivesOn > date) || null;
 
 /**
  * The body clock and the sleep plan, from a day onwards, until the clock is
@@ -56,17 +88,25 @@ export function nightOnBoard(trip, date, plannedBed) {
  * @param {object} o
  * @param {string} o.from   the first day ('YYYY-MM-DD')
  * @param {number} [o.clock] where the body clock is coming into that day (hours from home)
- * @returns {{ date, phase, k, difference, target, clock, sleepShift, onBoard }[]}
+ * @param {string} [o.since] the day that clock was read on (the day before `from` when carrying on); a change of the home clocks since then moves it
+ * @returns {{ date, phase, k, difference, target, clock, sleepShift, onBoard, boardSleep, inAir, homeOffset }[]}
  */
-export function bodyClockDays(trip, { from, clock = 0 }) {
+export function bodyClockDays(trip, { from, clock = 0, since = from }) {
   const days = [];
   let c = clock;
+  let homeOffset = homeOffsetOn(trip, since);
   const towards = Math.sign(differenceOn(trip.flightOut.arrivesOn, trip.base.zone, trip.away.zone)) || 1;
   for (let date = from, n = 0; n < RULES.maxDays; date = addDays(date, 1), n += 1) {
+    // The body keeps true time: when the home clocks change, the same body
+    // clock reads an hour more or less against them.
+    const offset = homeOffsetOn(trip, date);
+    c += homeOffset - offset;
+    homeOffset = offset;
     const { phase, k } = phaseOf(trip, date);
     const D = differenceOn(date, trip.base.zone, trip.away.zone);
     let target;
     let onBoard = null;
+    let boardSleep = null;
     if (phase === 'wait') target = c;
     else if (phase === 'before') {
       target = towards * Math.min(RULES.preRate * (k - 0.5), Math.abs(D));
@@ -77,10 +117,13 @@ export function bodyClockDays(trip, { from, clock = 0 }) {
     else target = phase === 'out' ? D : 0;
 
     // A night on board: asleep soon after take-off, wherever the body clock is.
-    if (phase === 'out' || phase === 'flyHome' || whereOn(trip, date).flights.length) {
-      const planned = new Date(usualBedAt(trip, date).getTime() - target * HOUR);
-      onBoard = nightOnBoard(trip, date, planned);
-      if (onBoard) target = shiftOfBed(trip, date, new Date(onBoard.departs.getTime() + RULES.sleepAfterTakeOff * HOUR));
+    const inAir = inTheAir(trip, date);
+    const night = inAir ? null : nightOnBoard(trip, date, { target, clock: c });
+    if (night) {
+      onBoard = night.flight;
+      boardSleep = night.sleepAt;
+      // The bedtime that sleep means, read as the nearest one to the body clock.
+      target = c + wrapHours(shiftOfBed(trip, date, boardSleep) - c);
     }
 
     const gap = target - c;
@@ -91,7 +134,7 @@ export function bodyClockDays(trip, { from, clock = 0 }) {
     if (phase === 'back' && Math.abs(c) <= RULES.there) c = 0;
 
     const sleepShift = onBoard ? target : clamp(target, c - RULES.sleepWindow, c + RULES.sleepWindow);
-    days.push({ date, phase, k, difference: D, target, clock: c, sleepShift, onBoard });
+    days.push({ date, phase, k, difference: D, target, clock: c, sleepShift, onBoard, boardSleep, inAir, homeOffset: offset });
     if (phase === 'back' && c === 0) break;
   }
   return days;

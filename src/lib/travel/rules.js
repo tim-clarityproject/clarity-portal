@@ -35,12 +35,22 @@ export const RULES = Object.freeze({
   eveningBeforeUsualBed: 3.5,
   /** On the first day the clock moves back, dim the lights this long before bed. */
   dimBeforeBed: 2.5,
+  /** A night is spent on board when a bedtime falls from this many hours before take-off until this many before landing. */
+  boardWindow: 3,
   /** Asleep on board this long after take-off. */
   sleepAfterTakeOff: 1,
   /** Out of the airport this long after landing. */
   afterLanding: 0.5,
+  /** Bed is never sooner than this long after landing... */
+  bedAfterLanding: 1,
+  /** ...and landing up to this long after the planned bedtime moves bed later; landing later than that, the day has no night (one long day). */
+  lateBedHours: 4,
   /** Staying on home time: daylight from this long after the body's wake time. */
   shortDaylightAfterWake: 2,
+  /** Staying on home time going west: daylight never before this on the local clock (earlier is still night there). */
+  shortFirstLight: '07:00',
+  /** Staying on home time: low light from this long before bedtime. */
+  shortLowBeforeBed: 4,
   /** A trip this many nights away or fewer is a short trip. */
   shortNights: 2,
   /** A trip this many hours' difference or less is a short trip. */

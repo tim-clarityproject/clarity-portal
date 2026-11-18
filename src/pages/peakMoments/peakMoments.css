@@ -56,6 +56,9 @@
 
 /* The Daily plan's lead-up question's suggestions (M18 .chips, 14px under the box). */
 .ui-root .peak-chips { margin-top: var(--space-px14); }
+/* Each suggestion is a full 44px to tap (the UI tester, 18 Nov), so it needs no tap area beyond its edge. */
+.ui-root .peak-chips .ds-chip { min-height: var(--tap-min) !important; }
+.ui-root .peak-chips .ds-chip::after { content: none; }
 
 /* The sprint page's section and Sprint details' list. */
 .ui-root .peak-sprint-link { margin-top: var(--space-3); }

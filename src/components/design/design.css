@@ -11253,8 +11253,10 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--tap-min);
+  /* !important: src/styles/mobile.css pads every button 16px in, at 14px, at 768px and below (as components.css explains). */
+  padding: 0 !important;
   font-family: var(--font-body);
-  font-size: var(--fs-secondary);
+  font-size: var(--fs-secondary) !important;
   line-height: var(--lh-text);
   color: var(--text-2);
   text-decoration: underline;

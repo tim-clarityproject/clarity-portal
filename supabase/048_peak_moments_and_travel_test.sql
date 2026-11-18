@@ -9,11 +9,14 @@
 --        only) and the migration recorded itself;
 --     2. peak moments save as the app saves them (a day at home, two days
 --        in New York repeating monthly, a shared one), the checks refuse
---        what can't be kept, there is no limit, and one review per day;
---     3. a Travel plan with its flights, key moment, tick, away flag and
---        no-caffeine choice;
+--        what can't be kept (a personal moment shared, a stop day that
+--        isn't a real day or comes before the start), there is no limit,
+--        and one review per day;
+--     3. a Travel plan with its flights (landing from 2 days before to 3
+--        days after the day it leaves, as the app allows), key moment, tick,
+--        away flag and no-caffeine choice;
 --     4. nobody points at, reads, changes or removes another person's;
---     5. a coach reads only shared moments, their reviews and the away
+--     5. a coach reads only shared work moments, their reviews and the away
 --        flag, never the plan, its flights, key moments or ticks;
 --     6. someone signed out reads nothing;
 --     7. todos take the source peak_moment, and everything goes with the account.
@@ -114,6 +117,12 @@ begin
     f := f || pg_temp.t_eq('2k written as someone else is refused', pg_temp.t_rows(format('insert into public.peak_moments (user_id, name, starts_on, ends_on) values (%L, ''X'', ''2026-11-20'', ''2026-11-20'')', b)), 'error 42501');
     f := f || pg_temp.t_eq('2l a review after, once per day it comes round', pg_temp.t_rows(format('insert into public.peak_reviews (user_id, moment_id, occurs_on, answer, lesson) values (%L, %L, ''2026-11-20'', ''well'', ''Sleep early the night before.'')', a, m1)), '1');
     f := f || pg_temp.t_eq('2m a second review of the same day is refused', pg_temp.t_rows(format('insert into public.peak_reviews (user_id, moment_id, occurs_on, answer) values (%L, %L, ''2026-11-20'', ''well'')', a, m1)), 'error 23505');
+    f := f || pg_temp.t_eq('2n a personal moment can''t be shared', pg_temp.t_rows(format('update public.peak_moments set shared = true where id = %L', m2)), 'error 23514');
+    f := f || pg_temp.t_eq('2o ... nor saved shared', pg_temp.t_rows(format('insert into public.peak_moments (user_id, name, area, starts_on, ends_on, shared) values (%L, ''X'', ''personal'', ''2026-11-20'', ''2026-11-20'', true)', a)), 'error 23514');
+    f := f || pg_temp.t_eq('2p a stop day that doesn''t exist is refused', pg_temp.t_rows(format('update public.peak_moments set repeat_rule = ''{"every":"week","until":"2027-02-30"}''::jsonb where id = %L', m2)), 'error 23514');
+    f := f || pg_temp.t_eq('2q a stop day before the start is refused', pg_temp.t_rows(format('update public.peak_moments set repeat_rule = ''{"every":"week","until":"2026-11-01"}''::jsonb where id = %L', m2)), 'error 23514');
+    f := f || pg_temp.t_eq('2r a stop day on the start day is fine', pg_temp.t_rows(format('update public.peak_moments set repeat_rule = ''{"every":"week","until":"2026-11-21"}''::jsonb where id = %L', m2)), '1');
+    f := f || pg_temp.t_eq('2s a later start past its stop day is refused', pg_temp.t_rows(format('update public.peak_moments set starts_on = ''2026-11-28'', ends_on = ''2026-11-29'' where id = %L', m2)), 'error 23514');
 
     -- 3. A Travel plan.
     f := f || pg_temp.t_eq('3a a plan', pg_temp.t_rows(format('insert into public.travel_plans (id, user_id, title, sleep_start, sleep_end) values (%L, %L, ''New York trip'', ''22:30'', ''07:00'')', p1, a)), '1');
@@ -121,6 +130,9 @@ begin
     f := f || pg_temp.t_eq('3c its key moment', pg_temp.t_rows(format('insert into public.travel_plan_moments (plan_id, moment_id, user_id) values (%L, %L, %L)', p1, m2, a)), '1');
     f := f || pg_temp.t_eq('3d a tick and the away flag', pg_temp.t_rows(format('with t as (insert into public.travel_ticks (plan_id, user_id, day, step) values (%1$L, %2$L, ''2026-11-09'', ''light'') returning 1), w as (insert into public.travel_away (plan_id, user_id, city, zone, starts_on, ends_on, hours_apart) values (%1$L, %2$L, ''New York'', ''America/New_York'', ''2026-11-08'', ''2026-11-13'', -5) returning 1) select 1 from t, w', p1, a)), '1');
     f := f || pg_temp.t_eq('3e no caffeine', pg_temp.t_rows(format('update public.travel_plans set no_caffeine = true where id = %L', p1)), '1');
+    f := f || pg_temp.t_eq('3g a flight landing 3 days after the day it leaves (30 hours, across the date line) saves', pg_temp.t_rows(format('insert into public.travel_flights (user_id, plan_id, leg, departs_on, departs_at, from_city, from_zone, arrives_on, arrives_at, to_city, to_zone) values (%L, %L, ''between'', ''2026-11-08'', ''23:30'', ''Honolulu'', ''Pacific/Honolulu'', ''2026-11-11'', ''05:30'', ''Kiritimati'', ''Pacific/Kiritimati'')', a, p1)), '1');
+    f := f || pg_temp.t_eq('3h ... one landing 2 days before it, across the date line the other way, saves', pg_temp.t_rows(format('insert into public.travel_flights (user_id, plan_id, leg, departs_on, departs_at, from_city, from_zone, arrives_on, arrives_at, to_city, to_zone) values (%L, %L, ''between'', ''2026-11-10'', ''00:30'', ''Kiritimati'', ''Pacific/Kiritimati'', ''2026-11-08'', ''23:30'', ''Pago Pago'', ''Pacific/Pago_Pago'')', a, p1)), '1');
+    f := f || pg_temp.t_eq('3i ... and 4 days after is refused', pg_temp.t_rows(format('insert into public.travel_flights (user_id, plan_id, leg, departs_on, departs_at, from_city, from_zone, arrives_on, arrives_at, to_city, to_zone) values (%L, %L, ''between'', ''2026-11-08'', ''11:00'', ''London'', ''Europe/London'', ''2026-11-12'', ''14:00'', ''New York'', ''America/New_York'')', a, p1)), 'error 23514');
     f := f || pg_temp.t_eq('3f a flight on a leg not on the list is refused', pg_temp.t_rows(format('insert into public.travel_flights (user_id, plan_id, leg, departs_on, departs_at, from_city, from_zone, arrives_on, arrives_at, to_city, to_zone) values (%L, %L, ''sideways'', ''2026-11-08'', ''11:00'', ''London'', ''Europe/London'', ''2026-11-08'', ''14:00'', ''New York'', ''America/New_York'')', a, p1)), 'error 23514');
 
     -- 4. Another person's plan or moment can't be pointed at.
@@ -144,6 +156,8 @@ begin
     update public.peak_moments set shared = true where id = m1;
     perform pg_temp.t_as(coach_u);
     f := f || pg_temp.t_eq('5g once Ada shares a moment, its review shows too', pg_temp.t_n(format('select count(*)::text from public.peak_reviews where moment_id = %L', m1)), '1');
+    perform pg_temp.t_admin();
+    f := f || pg_temp.t_eq('5h the coach''s rules read work moments only, even one marked shared', (select count(*)::text from pg_policies where tablename in ('peak_moments', 'peak_reviews') and policyname like 'Coach:%' and qual like '%area%''work''%'), '2');
 
     -- 6. Signed out.
     perform pg_temp.t_anon();

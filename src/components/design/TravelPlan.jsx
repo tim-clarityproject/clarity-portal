@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import Chevron from './Chevron';
 import FieldLabel from './FieldLabel';
 import useIsPhone from './useIsPhone';
+import { chartDayLabels, stepTime } from '../../lib/travel/model';
 import './travel.css';
 
 // The Travel plan's shared parts (M21 version 7.2; Phase 8b part B). Each
@@ -120,6 +121,8 @@ export function BodyClockChart({ plan, label }) {
     moments: (byDay.get(at) || []).map((m) => ({ number: m.number, words: m.time ? `${m.name}, ${m.time}` : m.name })),
     clock: plan.days[at].readout,
   };
+  // Labels never touch: every other day (or fewer) where they're close, and the lit day's neighbours step back.
+  const labelShown = chartDayLabels(plan.chart.points.map((p) => p.label), at, iw);
   const path = plan.chart.points.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(p.clock).toFixed(1)}`).join(' ');
 
   return (
@@ -167,7 +170,7 @@ export function BodyClockChart({ plan, label }) {
           {plan.chart.points.map((p, i) => (
             <text
               key={`l${p.date}`}
-              className={`ds-tc-day${at === i ? ' ds-tc-day--on' : ''}${phone && n > 6 && i % 2 === 1 && at !== i ? ' ds-tc-day--hidden' : ''}`}
+              className={`ds-tc-day${at === i ? ' ds-tc-day--on' : ''}${labelShown[i] ? '' : ' ds-tc-day--hidden'}`}
               x={X(i)}
               y={g.H - 10}
               textAnchor="middle"
@@ -197,6 +200,17 @@ export function BodyClockChart({ plan, label }) {
   );
 }
 
+/** A step's time, with its city under it on a two-zone day; an untimed key moment reads "All day". */
+function StepTime({ s, className }) {
+  const t = stepTime(s);
+  return (
+    <span className={className}>
+      {t.time}
+      {t.zone && <small className="ds-tsteps-zone">{t.zone}</small>}
+    </span>
+  );
+}
+
 /** A day's rows: the time (with its zone under it on a two-zone day) and the step. */
 export function TravelSteps({ steps, label = 'Steps', className = '' }) {
   return (
@@ -205,10 +219,7 @@ export function TravelSteps({ steps, label = 'Steps', className = '' }) {
         // A step's kind and time are its identity within a day; two key moments at once keep their order.
         // eslint-disable-next-line react/no-array-index-key
         <li key={`${s.kind}-${s.momentId || ''}-${i}`} className="ds-tsteps-row">
-          <span className="ds-tsteps-time">
-            {s.time || s.label || ''}
-            {s.showZone && s.city && <small className="ds-tsteps-zone">{s.city}</small>}
-          </span>
+          <StepTime s={s} className="ds-tsteps-time" />
           <p className="ds-tsteps-words">{s.words}</p>
         </li>
       ))}
@@ -255,10 +266,7 @@ export function TravelTodayCard({ line, steps, ticks = {}, keyOf, onTick, onOpen
               >
                 <span>{TICK}</span>
               </button>
-              <span className="ds-tcard-time">
-                {s.time || s.label || ''}
-                {s.showZone && s.city && <small className="ds-tsteps-zone">{s.city}</small>}
-              </span>
+              <StepTime s={s} className="ds-tcard-time" />
               <span className="ds-tcard-words">{s.words}</span>
             </li>
           );
@@ -278,10 +286,7 @@ export function TravelDayPanel({ steps, onOpen }) {
         {steps.map((s, i) => (
           // eslint-disable-next-line react/no-array-index-key
           <li key={`${s.kind}-${i}`} className="ds-tpanel-row">
-            <span className="ds-tpanel-time">
-              {s.time || s.label || ''}
-              {s.showZone && s.city && <small className="ds-tsteps-zone">{s.city}</small>}
-            </span>
+            <StepTime s={s} className="ds-tpanel-time" />
             <span>{s.words}</span>
           </li>
         ))}

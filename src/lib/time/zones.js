@@ -259,6 +259,42 @@ export function zonePlace(zone) {
   return city.replace(/_/g, ' ');
 }
 
+/**
+ * The tz database's current names for zones a device may still call by an
+ * older one (Intl lists "Asia/Calcutta", "Europe/Kiev", "Asia/Saigon"). The
+ * same clock either way; the current name is the one people know.
+ */
+const CURRENT_NAMES = {
+  'Asia/Calcutta': 'Asia/Kolkata',
+  'Asia/Katmandu': 'Asia/Kathmandu',
+  'Asia/Rangoon': 'Asia/Yangon',
+  'Asia/Saigon': 'Asia/Ho_Chi_Minh',
+  'Europe/Kiev': 'Europe/Kyiv',
+  'America/Godthab': 'America/Nuuk',
+  'Atlantic/Faeroe': 'Atlantic/Faroe',
+  'Africa/Asmera': 'Africa/Asmara',
+  'Pacific/Enderbury': 'Pacific/Kanton',
+  'Pacific/Ponape': 'Pacific/Pohnpei',
+  'Pacific/Truk': 'Pacific/Chuuk',
+  'Pacific/Yap': 'Pacific/Chuuk',
+  'Asia/Ulan_Bator': 'Asia/Ulaanbaatar',
+  'Asia/Dacca': 'Asia/Dhaka',
+  'Asia/Thimbu': 'Asia/Thimphu',
+  'Asia/Ashkhabad': 'Asia/Ashgabat',
+  'Asia/Macao': 'Asia/Macau',
+  'Asia/Chungking': 'Asia/Chongqing',
+  'Asia/Ujung_Pandang': 'Asia/Makassar',
+};
+
+/** A zone by its current name ("Asia/Calcutta" as "Asia/Kolkata"), when this device knows it; otherwise the zone as given. */
+export function currentZone(zone) {
+  const now = own(CURRENT_NAMES, zone);
+  return now && isZone(now) ? now : zone;
+}
+
+/** Whether two zones are the same place's clock by name, whichever spelling each was saved with. */
+export const sameZone = (a, b) => Boolean(a && b) && currentZone(a) === currentZone(b);
+
 /** The main city's zone a zone is read as ("America/Indiana/Knox" as "America/Chicago"), or the zone itself. For tests. */
 export const mainCityZone = (zone) => own(MAIN_CITY_ZONE, zone) || zone;
 

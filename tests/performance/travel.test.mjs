@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeTravelPlan, replanFrom, shortTrip, RULES } from '../../src/lib/travel/index.js';
-import { clockChanges } from '../../src/lib/time/index.js';
+import { addDays, clockChanges, daysBetween, instantAt, wallClock } from '../../src/lib/time/index.js';
 
 const L = 'Europe/London';
 const NY = 'America/New_York';
@@ -326,30 +326,88 @@ test('a trip with several stops follows the place with most nights; each moment 
 });
 
 // ------------------------------------------------------------ clock changes
+// The brief's trip: the UK clocks go back on Sun 25 Oct 2026, the US clocks on Sun 1 Nov.
 const CLOCK_CHANGE = {
-  flightOut: f('2026-10-22', '11:00', 'London', L, '2026-10-22', '13:30', 'New York', NY),
-  flightHome: f('2026-10-28', '19:00', 'New York', NY, '2026-10-29', '07:00', 'London', L),
+  flightOut: f('2026-10-24', '12:00', 'London', L, '2026-10-24', '15:00', 'New York', NY),
+  flightHome: f('2026-10-29', '19:00', 'New York', NY, '2026-10-30', '07:00', 'London', L),
 };
+const dayOf = (plan, date) => plan.days.find((d) => d.date === date);
+const sleepOf = (day) => day.steps.find((s) => s.kind === 'sleep');
 
 test('a trip over a clock change: the UK goes back on 25 Oct, so New York is 4 hours behind until 1 Nov', () => {
   const plan = makeTravelPlan(CLOCK_CHANGE);
   // The changes come from src/lib/time's clockChanges, for every zone of the trip.
   const uk = clockChanges(L, new Date('2026-10-19T00:00:00Z'), 14)[0];
-  assert.deepEqual(plan.clockChanges.map((c) => [c.city, c.date, c.direction]), [['London', '2026-10-25', 'back']]);
+  assert.deepEqual(plan.clockChanges.map((c) => [c.city, c.date, c.direction]), [['London', '2026-10-25', 'back'], ['New York', '2026-11-01', 'back']]);
   assert.equal(plan.clockChanges[0].at, uk.at.toISOString());
-  const before = plan.days.find((d) => d.date === '2026-10-24');
-  const after = plan.days.find((d) => d.date === '2026-10-26');
-  assert.equal(before.difference, -5);
-  assert.equal(after.difference, -4);
+  const sat = dayOf(plan, '2026-10-24');
+  const sun = dayOf(plan, '2026-10-25');
+  assert.equal(sat.difference, -5);
+  assert.equal(sun.difference, -4);
+  // The body keeps true time: London's clocks going back an hour leaves the
+  // body an hour nearer London's new time, and from there it closes half the
+  // gap to New York (it isn't left an hour past where it really is).
+  const rebased = sat.engine.clock + 1;
+  assert.ok(Math.abs(sun.engine.clock - (rebased + RULES.follow * (sun.difference - rebased))) < 1e-9, `Sun 25's body clock is ${sun.engine.clock}`);
+  assert.equal(sun.readout, 'Body clock ~75% adjusted to New York time');
   // Same usual bedtime on New York's clock either side of the change.
-  assert.equal(before.steps.find((s) => s.kind === 'sleep').time, '23:00');
-  assert.equal(after.steps.find((s) => s.kind === 'sleep').time, '23:00');
-  // The body clock aims at the new difference: it never goes past New York time.
-  assert.ok(after.clock >= -4.5);
-  assert.equal(after.readout, 'Body clock on New York time');
-  // The day the UK clocks change, London's evening steps are still on London's clock.
-  assert.equal(plan.days.find((d) => d.date === '2026-10-30').steps.find((s) => s.kind === 'sleep').time, '23:00');
+  assert.equal(sleepOf(sun).time, '23:00');
+  assert.equal(sleepOf(dayOf(plan, '2026-10-26')).time, '23:00');
+  // Sat 24 goes later (west): evening daylight from landing, not low light.
+  assert.equal(sat.steps.find((s) => s.kind === 'light').words, 'Get daylight from landing until dark.');
+  // Back in London, its evening steps are on London's clock, and the plan ends back on London time.
+  assert.equal(sleepOf(dayOf(plan, '2026-10-31')).time, '23:00');
   assert.equal(plan.days.at(-1).readout, 'Body clock back on London time');
+});
+
+// A body clock fully on the away time stays there when either side's clocks change.
+const LONG_NY = {
+  flightOut: f('2026-10-10', '12:00', 'London', L, '2026-10-10', '15:00', 'New York', NY),
+  flightHome: f('2026-11-05', '19:00', 'New York', NY, '2026-11-06', '07:00', 'London', L),
+};
+
+test('a clock change at home moves the body clock against home time; one away moves only the target', () => {
+  const plan = makeTravelPlan(LONG_NY);
+  const sat = dayOf(plan, '2026-10-24');
+  const sun = dayOf(plan, '2026-10-25');
+  // Fully on New York time before the UK change, and still on it after (it was an hour past it without the rebase).
+  assert.ok(Math.abs(sat.engine.clock - -5) < 0.05, `Sat 24: ${sat.engine.clock}`);
+  assert.ok(Math.abs(sun.engine.clock - -4) < 0.05, `Sun 25: ${sun.engine.clock}`);
+  assert.equal(sun.readout, 'Body clock on New York time');
+  // The US change on 1 Nov is away: the body doesn't jump, it starts to follow New York's new time.
+  const oct31 = dayOf(plan, '2026-10-31');
+  const nov1 = dayOf(plan, '2026-11-01');
+  assert.equal(nov1.difference, -5);
+  assert.ok(Math.abs(nov1.engine.clock - (oct31.engine.clock + RULES.follow * (-5 - oct31.engine.clock))) < 1e-9);
+  // Bed on New York's clock stays 23:00 either side of both changes.
+  for (const date of ['2026-10-24', '2026-10-25', '2026-11-02']) assert.equal(sleepOf(dayOf(plan, date)).time, '23:00', date);
+});
+
+test('a clock change at home, the other way round: New York home, the US change on 1 Nov', () => {
+  const plan = makeTravelPlan({
+    flightOut: f('2026-10-12', '19:00', 'New York', NY, '2026-10-13', '07:00', 'London', L),
+    flightHome: f('2026-11-08', '12:00', 'London', L, '2026-11-08', '15:00', 'New York', NY),
+  });
+  assert.equal(plan.direction, 'east');
+  const oct24 = dayOf(plan, '2026-10-24');
+  const oct25 = dayOf(plan, '2026-10-25');
+  const oct31 = dayOf(plan, '2026-10-31');
+  const nov1 = dayOf(plan, '2026-11-01');
+  // The UK change is away: London goes from 5 to 4 hours ahead; the body (on London time) doesn't jump.
+  assert.equal(oct24.difference, 5);
+  assert.equal(oct25.difference, 4);
+  assert.ok(Math.abs(oct25.engine.clock - oct24.engine.clock) <= RULES.westRate + 1e-9);
+  // The US change is at home: New York's clocks go back, so the same body reads an hour more ahead of them.
+  assert.equal(nov1.difference, 5);
+  assert.ok(Math.abs(oct31.engine.clock - 4) < 0.05, `Oct 31: ${oct31.engine.clock}`);
+  assert.ok(Math.abs(nov1.engine.clock - 5) < 0.05, `Nov 1: ${nov1.engine.clock}`);
+  assert.equal(nov1.readout, 'Body clock on London time');
+});
+
+test('carrying on over a clock change rebases from yesterday’s clock', () => {
+  const plan = makeTravelPlan(LONG_NY);
+  const again = replanFrom(plan, '2026-10-25');
+  assert.deepEqual(again.days.map((d) => [d.date, d.clock, d.readout]), plan.days.map((d) => [d.date, d.clock, d.readout]));
 });
 
 // ------------------------------------------------------------ editing
@@ -426,4 +484,217 @@ test('the engine refuses what isn’t a trip', () => {
   assert.throws(() => makeTravelPlan({ ...M21, flightOut: { ...M21.flightOut, arrivesOn: '2026-11-07' } }), /lands before it leaves/);
   assert.throws(() => makeTravelPlan({ flightOut: M21.flightOut }), /flight home is missing/);
   assert.throws(() => makeTravelPlan({ ...M21, usualSleep: { start: '25:00', end: '06:30' } }), /not a time of day/);
+});
+
+// ------------------------------------------------------------ every day's steps on its own day (break-it 1, 18 Nov)
+// Differences over 12 hours (Los Angeles to Tokyo is 17 hours ahead, read as
+// 7 behind), the date line, half-hour and 45-minute zones, early and late
+// flights. Whichever way the body clock is moved, every step listed under a
+// day falls on that day on the clock it's shown on (a bedtime may run past
+// midnight, until noon), in time order, where the person is, and never while
+// they're on a plane, other than the flight's own steps ("On board") and the
+// last caffeine (on a flight, on the destination's clock: the method).
+const LA = 'America/Los_Angeles';
+const TYO = 'Asia/Tokyo';
+const AKL = 'Pacific/Auckland';
+const ROUTES = [
+  [L, 'London', NY, 'New York', 8], [NY, 'New York', L, 'London', 7], [LA, 'Los Angeles', TYO, 'Tokyo', 11.5], [TYO, 'Tokyo', LA, 'Los Angeles', 10],
+  [L, 'London', AKL, 'Auckland', 25], [AKL, 'Auckland', L, 'London', 26], [L, 'London', TYO, 'Tokyo', 14], [L, 'London', 'Asia/Kolkata', 'Mumbai', 9.5],
+  [L, 'London', 'Asia/Kathmandu', 'Kathmandu', 11], ['Australia/Adelaide', 'Adelaide', L, 'London', 23], ['America/St_Johns', 'St John’s', L, 'London', 5.5],
+  ['Pacific/Honolulu', 'Honolulu', 'Australia/Sydney', 'Sydney', 10.5], [DXB, 'Dubai', LA, 'Los Angeles', 16], [TYO, 'Tokyo', NY, 'New York', 13],
+];
+const DEPARTS = ['06:00', '12:00', '19:00', '23:30'];
+const landing = (on, at, from, hours, to) => {
+  const t = new Date(instantAt(on, at, from).getTime() + hours * HOUR);
+  const w = wallClock(t, to);
+  return [w.date, w.time];
+};
+function tripFor([home, homeCity, away, awayCity, hours], out, back, nights) {
+  const outOn = addDays('2026-11-10', 0);
+  const [arrOn, arrAt] = landing(outOn, out, home, hours, away);
+  const backOn = addDays(arrOn, nights);
+  const [homeOn, homeAt] = landing(backOn, back, away, hours, home);
+  return {
+    flightOut: f(outOn, out, homeCity, home, arrOn, arrAt, awayCity, away),
+    flightHome: f(backOn, back, awayCity, away, homeOn, homeAt, homeCity, home),
+    keyMoments: [{ id: 'k', name: 'Your talk', startsOn: addDays(arrOn, 1), at: '10:00', city: awayCity, zone: away }],
+  };
+}
+const TRIPS = [];
+// (Each plan takes about 30ms, most of it in the time library's zone check, so the set is kept to 112 trips.)
+for (const r of ROUTES) for (const out of DEPARTS) for (const [back, nights] of [['06:00', 3], ['19:00', 6]]) TRIPS.push(tripFor(r, out, back, nights));
+
+/** Where the person is at an instant: a zone, or null on a plane. */
+function placeAt(plan, t) {
+  const legs = [plan.input.flightOut, ...(plan.input.legs || []), plan.input.flightHome].map((l) => ({ ...l, departs: instantAt(l.departsOn, l.departsAt, l.fromZone), arrives: instantAt(l.arrivesOn, l.arrivesAt, l.toZone) }));
+  let zone = legs[0].fromZone;
+  for (const l of legs) {
+    if (t > l.departs && t < l.arrives) return null;
+    if (t >= l.arrives) zone = l.toZone;
+  }
+  return zone;
+}
+
+test('every step sits on its own day, in time order, where the person is, and nothing but the flight’s own steps on a plane', () => {
+  let checked = 0;
+  for (const input of TRIPS) {
+    const plan = makeTravelPlan(input);
+    const name = `${input.flightOut.fromCity} to ${input.flightOut.toCity}, ${input.flightOut.departsAt} out, ${input.flightHome.departsAt} back, ${plan.nights} nights`;
+    if (plan.short) continue;
+    for (const day of plan.days) {
+      const at = `${name}, ${day.title}`;
+      let last = -Infinity;
+      const kinds = {};
+      for (const s of day.steps) {
+        kinds[s.kind] = (kinds[s.kind] || 0) + 1;
+        if (s.kind === 'moment') continue;
+        const t = new Date(s.at);
+        if (s.onBoard) {
+          assert.equal(s.time, null, at);
+          assert.equal(s, day.steps.at(-1), `${at}: "On board" comes last`);
+          continue;
+        }
+        checked += 1;
+        const w = wallClock(t, s.zone);
+        assert.equal(s.time, w.time, `${at} ${s.kind}`);
+        if (s.kind === 'sleep') {
+          const hours = daysBetween(day.date, w.date) * 24 + w.hour + w.minute / 60;
+          assert.ok(hours >= 12 && hours < 36, `${at}: bed at ${w.date} ${w.time} ${s.city} time isn't that night`);
+        } else assert.equal(w.date, day.date, `${at}: ${s.kind} "${s.words}" is on ${w.date} ${w.time} ${s.city} time`);
+        const where = placeAt(plan, t);
+        if (s.kind !== 'caffeine') {
+          assert.notEqual(where, null, `${at}: ${s.kind} "${s.words}" at ${w.time} ${s.city} time is on the plane`);
+          assert.equal(where, s.zone, `${at}: ${s.kind} at ${w.time} is shown on ${s.city}'s clock but the person is elsewhere`);
+        }
+        assert.ok(t.getTime() >= last, `${at}: ${s.kind} at ${w.time} is out of time order`);
+        last = t.getTime();
+      }
+      for (const k of ['light', 'caffeine', 'sleep']) assert.ok((kinds[k] || 0) <= 1, `${at}: ${kinds[k]} ${k} steps`);
+      assert.equal(kinds.sleep, 1, `${at}: one sleep step`);
+    }
+    assert.equal(plan.days.at(-1).readout.startsWith('Body clock back on'), true, name);
+  }
+  assert.ok(checked > 2500, `${checked} steps checked`);
+});
+
+test('the date line: Los Angeles to Tokyo has no night on the day out, and every Tokyo day’s steps are on Tokyo’s date', () => {
+  const plan = makeTravelPlan(tripFor(ROUTES[2], '11:00', '17:00', 6));
+  assert.equal(plan.difference, -7); // 17 hours ahead, read as 7 behind
+  const out = plan.days.find((d) => d.phase === 'out');
+  assert.deepEqual(out.steps.filter((s) => s.kind === 'sleep').map((s) => [s.label, s.words]), [['On board', 'Stay awake on the flight.']]);
+  const landingDay = plan.days[plan.days.indexOf(out) + 1];
+  assert.equal(landingDay.date, '2026-11-11');
+  assert.equal(landingDay.steps.find((s) => s.kind === 'light').words, 'Get daylight from landing until dark.');
+  for (const d of plan.days.filter((x) => x.phase === 'away')) {
+    const bed = d.steps.find((s) => s.kind === 'sleep');
+    assert.equal(wallClock(new Date(bed.at), TYO).date, d.date, d.title);
+  }
+});
+
+test('an early flight east: the last caffeine is that morning, never the evening before', () => {
+  const plan = makeTravelPlan({
+    flightOut: f('2026-11-20', '06:00', 'London', L, '2026-11-21', '03:00', 'Tokyo', TYO),
+    flightHome: f('2026-11-28', '11:00', 'Tokyo', TYO, '2026-11-28', '15:00', 'London', L),
+  });
+  const fri = dayOf(plan, '2026-11-20');
+  const caffeine = fri.steps.find((s) => s.kind === 'caffeine');
+  assert.equal(wallClock(new Date(caffeine.at), L).date, '2026-11-20');
+  assert.ok(Date.parse(caffeine.at) <= instantAt('2026-11-20', '06:00', L).getTime(), `caffeine at ${caffeine.time}`);
+  // The night is on board, at Tokyo's night, not an hour after an early-morning take-off.
+  assert.equal(sleepOf(fri).label, 'On board');
+  const thu = dayOf(plan, '2026-11-19');
+  assert.ok(Date.parse(caffeine.at) > Date.parse(sleepOf(thu).at), 'after Thu 19’s own bedtime');
+});
+
+test('a 24-hour flight: the day spent in the air has one step, and the plan carries on from landing', () => {
+  const plan = makeTravelPlan(tripFor(ROUTES[4], '21:00', '10:00', 6));
+  const air = plan.days.find((d) => d.date === '2026-11-11');
+  assert.deepEqual(air.steps.map((s) => [s.label, s.words]), [['On board', 'Rest on the flight, and sleep when you can.']]);
+  const next = plan.days[plan.days.indexOf(air) + 1];
+  assert.match(next.steps.find((s) => s.kind === 'light').words, /landing/);
+});
+
+// ------------------------------------------------------------ short trips, the break-it tester's cases (18 Nov)
+test('a short trip west with the key moment on the day home: New York’s clock all day, getting up first, the night on the flight', () => {
+  const plan = makeTravelPlan({
+    flightOut: f('2026-11-24', '09:00', 'London', L, '2026-11-24', '12:00', 'New York', NY),
+    flightHome: f('2026-11-26', '19:00', 'New York', NY, '2026-11-27', '07:00', 'London', L),
+    keyMoments: [{ id: 'k', name: 'Your pitch', startsOn: '2026-11-26', at: '10:00', city: 'New York', zone: NY }],
+  });
+  assert.equal(plan.short, true);
+  assert.equal(plan.keyDay.date, '2026-11-26');
+  assert.equal(plan.keyDay.zone, NY);
+  assert.deepEqual(plan.keyDay.steps.map((s) => [s.time || s.label, s.words]), [
+    ['02:00', 'Get up, which is 07:00 in London.'],
+    ['07:00', 'Get daylight once it’s light, and keep the light low from 14:00.'],
+    ['09:00', 'Have your last caffeine by 09:00.'],
+    ['10:00', 'Your pitch starts, which is 15:00 in London.'],
+    ['On board', 'Sleep on the flight home.'],
+  ]);
+});
+
+test('a short trip west: never daylight in the local night, and lights out comes last', () => {
+  const plan = makeTravelPlan({
+    flightOut: f('2026-11-24', '09:00', 'London', L, '2026-11-24', '12:00', 'New York', NY),
+    flightHome: f('2026-11-26', '19:00', 'New York', NY, '2026-11-27', '07:00', 'London', L),
+  });
+  assert.equal(plan.keyDay.date, '2026-11-25');
+  assert.deepEqual(plan.keyDay.steps.map((s) => [s.time, s.words]), [
+    ['02:00', 'Get up, which is 07:00 in London.'],
+    ['07:00', 'Get daylight once it’s light, and keep the light low from 14:00.'],
+    ['09:00', 'Have your last caffeine by 09:00.'],
+    ['18:00', 'Turn the lights out, which is 23:00 in London.'],
+  ]);
+});
+
+test('no time difference (London to Lisbon in November): says so, with no home-time phrase', () => {
+  const input = {
+    flightOut: f('2026-11-10', '09:00', 'London', L, '2026-11-10', '11:45', 'Lisbon', 'Europe/Lisbon'),
+    flightHome: f('2026-11-15', '19:00', 'Lisbon', 'Europe/Lisbon', '2026-11-15', '21:45', 'London', L),
+    keyMoments: [{ id: 'k', name: 'Your workshop', startsOn: '2026-11-12', at: '09:30', city: 'Lisbon', zone: 'Europe/Lisbon' }],
+  };
+  assert.deepEqual(shortTrip(input), { short: true, reason: 'difference', nights: 5, difference: 0 });
+  const plan = makeTravelPlan(input);
+  assert.equal(plan.sameTime, true);
+  assert.equal(plan.headline, 'There’s no time difference, so keep your usual times.');
+  assert.deepEqual(plan.keyDay.steps.map((s) => [s.time, s.words]), [
+    ['07:00', 'Get up.'],
+    ['07:00', 'Get daylight early in your day, and keep the light low from 19:00.'],
+    ['09:30', 'Your workshop starts.'],
+    ['14:00', 'Have your last caffeine by 14:00.'],
+    ['23:00', 'Turn the lights out.'],
+  ]);
+  assert.doesNotMatch(JSON.stringify(plan.keyDay), /which is|in London|0 hours/);
+  assert.ok(plan.keyDay.steps.every((s) => !s.homeTime));
+  // A short trip with a difference keeps its home-time phrase.
+  assert.equal(makeTravelPlan(SHORT).sameTime, false);
+});
+
+test('every short trip’s key day: on that day, in time order, where the person is', () => {
+  let checked = 0;
+  for (const [home, homeCity, away, awayCity, hours] of ROUTES) {
+    for (const out of DEPARTS) {
+      for (const nights of [1, 2]) {
+        const t = tripFor([home, homeCity, away, awayCity, hours], out, '19:00', nights);
+        t.keyMoments[0].startsOn = addDays(t.flightOut.arrivesOn, nights);
+        const plan = makeTravelPlan(t);
+        assert.equal(plan.short, true);
+        const name = `${homeCity} to ${awayCity}, ${out} out, ${nights} nights`;
+        let last = -Infinity;
+        for (const s of plan.keyDay.steps) {
+          if (s.onBoard) { assert.equal(s, plan.keyDay.steps.at(-1), name); continue; }
+          if (!s.at) continue;
+          const at = new Date(s.at);
+          assert.equal(wallClock(at, plan.keyDay.zone).date, plan.keyDay.date, `${name}: "${s.words}"`);
+          assert.ok(at.getTime() >= last, `${name}: "${s.words}" out of order`);
+          last = at.getTime();
+          if (s.kind !== 'caffeine') assert.equal(placeAt(plan, at), plan.keyDay.zone, `${name}: "${s.words}" at ${s.time}`);
+          checked += 1;
+        }
+        const light = plan.keyDay.steps.find((s) => s.kind === 'light');
+        if (light && plan.difference <= 0) assert.ok(light.time >= RULES.shortFirstLight, `${name}: daylight at ${light.time}`);
+      }
+    }
+  }
+  assert.ok(checked > 300, `${checked} steps checked`);
 });

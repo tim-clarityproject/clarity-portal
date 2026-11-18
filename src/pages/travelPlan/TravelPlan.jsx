@@ -56,6 +56,7 @@ import {
   dateWords,
   dayLine,
   emptyFlight,
+  extrasProblem,
   flightLine,
   flightProblem,
   homeFrom,
@@ -80,7 +81,7 @@ import {
   zoneNote,
 } from '../../lib/travel/model';
 import { deletePlan, planSnapshot, restorePlan, savePlan, useTravelPlans } from '../../lib/travel/store';
-import { emptyMoment, occurrences, tidyMoment } from '../../lib/peakMoments/model';
+import { cleanMomentName, emptyMoment, occurrences, ownEntry, tidyMoment } from '../../lib/peakMoments/model';
 import { saveMoment, usePeakMoments } from '../../lib/peakMoments/store';
 import '../performance/performance.css';
 import '../peakMoments/peakMoments.css';
@@ -140,7 +141,7 @@ function TravelStart() {
   const navigate = useNavigate();
   const homeZone = deviceZone();
   const planned = new Set(travel.plans.flatMap((p) => p.momentIds));
-  // Peak moments in another time zone in the next year with no plan yet (M21 "From your Peak moments").
+  // Peak moments in another time zone in the next year with no plan yet (M21 "From your Peak moments"; lower case, as everywhere else in the portal).
   const away = useMemo(() => peak.moments
     .filter((m) => m.placeZone && !planned.has(m.id))
     .map((m) => occurrences(m, addDays(today, 1), addDays(today, 366), 1)[0])
@@ -177,8 +178,8 @@ function TravelStart() {
           </div>
         </div>
         {away.length > 0 && (
-          <Section title="Your Peak moments" className="ipp-section travel-section">
-            <PeakMomentList label="Your Peak moments">
+          <Section title="Your peak moments" className="ipp-section travel-section">
+            <PeakMomentList label="Your peak moments">
               {away.map((o) => (
                 <PeakMomentRow key={o.key} name={o.moment.name} meta={[o.moment.placeCity]} date={dateWords(o.on)} onClick={() => start(`?moment=${encodeURIComponent(o.moment.id)}`)} />
               ))}
@@ -241,7 +242,7 @@ function TravelSetup() {
   const [params] = useSearchParams();
   const prefs = usePreferences(userId);
   const editId = params.get('edit');
-  const editing = editId ? travel.state.plans[editId] : null;
+  const editing = editId ? ownEntry(travel.state.plans, editId) || null : null;
   const busy = useRef(false);
   const [sleepOpen, setSleepOpen] = useState(false);
   const [sleepDraft, setSleepDraft] = useState(null);
@@ -250,7 +251,7 @@ function TravelSetup() {
     if (editing) return tidyForm({ ...editing, picked: true, extras: [] }, editing.usualSleep);
     const f = emptyForm(prefs?.[SLEEP_PREF]);
     // Use again: the same places and times, the days still to choose.
-    const again = params.get('again') ? travel.state.plans[params.get('again')] : null;
+    const again = params.get('again') ? ownEntry(travel.state.plans, params.get('again')) || null : null;
     if (again) {
       const keep = (fl, id) => ({ ...emptyFlight(id), from: fl.from, to: fl.to });
       return { ...f, flightOut: keep(again.flightOut, f.flightOut.id), flightHome: keep(again.flightHome, f.flightHome.id), usualSleep: tidySleep(again.usualSleep) };
@@ -296,9 +297,10 @@ function TravelSetup() {
       const id = editing ? editing.id : newId();
       // Each key moment added here is a new peak moment, in the trip's city (Phase 8b brief).
       const made = [];
+      // Never one outside the trip: the check asks for its day again first (extrasProblem).
+      if (extrasProblem(form.extras, days)) return false;
       for (const x of form.extras) {
-        if (!x.name.trim() || !x.on) continue;
-        const m = { ...emptyMoment(x.id, today), name: x.name.trim(), area: 'work', kind: 'perform', startsOn: x.on, endsOn: x.on, placeCity: form.flightOut.to.city, placeZone: form.flightOut.to.zone, shared: peak.shareWork };
+        const m = { ...emptyMoment(x.id, today), name: cleanMomentName(x.name), area: 'work', kind: 'perform', startsOn: x.on, endsOn: x.on, placeCity: form.flightOut.to.city, placeZone: form.flightOut.to.zone, shared: peak.shareWork };
         await saveMoment(userId, m);
         made.push(m);
       }
@@ -338,7 +340,7 @@ function TravelSetup() {
   };
 
   const eye = <WhoSees audience="me" note="Only you can see your plan." />;
-  const extrasProblem = form.extras.some((x) => !x.name.trim()) ? 'Type the key moment’s name to carry on.' : null;
+  const extrasNeed = extrasProblem(form.extras, days);
   const dayOptions = days.map((d) => ({ value: d, label: dateWords(d) }));
 
   const steps = [
@@ -367,7 +369,7 @@ function TravelSetup() {
       question: `What do you need to be sharpest for in ${city}?`,
       nudges: ['Pick all that apply.'],
       required: true,
-      check: () => extrasProblem,
+      check: () => extrasNeed,
       render: () => (
           <div className="travel-moments">
             {inTrip.length > 0 && (
@@ -410,11 +412,14 @@ function TravelSetup() {
       name: 'Check',
       question: named('What would you change', first) + '?',
       required: true,
-      check: () => flightProblem(form.flightOut) || homeProblem(form.flightOut, form.flightHome),
+      check: () => flightProblem(form.flightOut) || homeProblem(form.flightOut, form.flightHome) || extrasNeed,
       render: (tool) => {
         const chosen = inTrip.filter((o) => form.momentIds.includes(o.moment.id))
           .map((o) => `${o.moment.name}, ${momentWhen(o.on, form.momentTimes[o.moment.id] || editing?.momentTimes?.[o.moment.id])}`);
-        const extra = form.extras.filter((x) => x.name.trim() && x.on).map((x) => `${x.name.trim()}, ${momentWhen(x.on, x.at)}`);
+        // A key moment whose day the new flights left behind says so here, and the check asks for its day again.
+        const extra = form.extras.filter((x) => cleanMomentName(x.name)).map((x) => (x.on && days.includes(x.on)
+          ? `${cleanMomentName(x.name)}, ${momentWhen(x.on, x.at)}`
+          : `${cleanMomentName(x.name)} isn’t on a day of your trip.`));
         const at = (key) => tool.steps.findIndex((s) => s.key === key);
         return (
           <GuidedSummary
@@ -474,7 +479,8 @@ function TravelSetup() {
 /** The saved plan, its peak moments and the plan worked out from them; and a moved peak moment keeps the past as it was. */
 function usePlan(id) {
   const t = useTravel();
-  const saved = t.travel.state.plans[id] && !t.travel.state.plans[id].gone ? t.travel.state.plans[id] : null;
+  const own = ownEntry(t.travel.state.plans, id);
+  const saved = own && !own.gone ? own : null;
   const view = useMemo(() => (saved ? planFor(saved, t.peak.moments) : null), [saved, t.peak.moments]);
   // A peak moment moved elsewhere in the portal: the plan follows it from
   // today, and the days already past stay as they were.
@@ -736,14 +742,15 @@ function TravelPlanPage() {
             const m = peak.moments.find((x) => x.id === panel.id);
             const km = keyMoments.find((x) => x.id === panel.id);
             if (!m || !km) { setPanel(null); return; }
-            const shift = daysBetween(km.startsOn, on);
+            // A repeating peak moment's day is never moved from here: that would move every time it comes round.
+            const shift = m.repeat ? 0 : daysBetween(km.startsOn, on);
             try {
               if (shift) await saveMoment(userId, tidyMoment({ ...m, startsOn: addDays(m.startsOn, shift), endsOn: addDays(m.endsOn || m.startsOn, shift) }));
             } catch (e) {
               toast.error(friendlyError(e, SAVE_ERROR));
               return;
             }
-            const ok = await edit({ ...saved, momentTimes: { ...saved.momentTimes, [m.id]: at } }, 'Saved. Your plan and your Peak moment are updated.');
+            const ok = await edit({ ...saved, momentTimes: { ...saved.momentTimes, [m.id]: at } }, shift ? 'Saved. Your plan and your peak moment are updated.' : 'Saved. Your plan is updated.');
             if (ok) setPanel(null);
           }}
         />
@@ -792,11 +799,23 @@ function MomentPanel({ moment, keyMoment, days, onClose, onSave }) {
       className="ds-who-panel travel-panel"
       footer={<Button variant="primary" className="ds-panel-go" onClick={() => onSave({ on, at })}>Save</Button>}
     >
-      <p className="travel-panel-line">It’s one of your peak moments, so it moves there too.</p>
-      <div className="travel-two">
-        <Dropdown label="Day" options={options.map((d) => ({ value: d, label: dateWords(d) }))} value={on} onChange={setOn} />
-        <Dropdown label="Start time" options={START_TIMES.map((t) => ({ value: t, label: t }))} value={at} onChange={setAt} />
-      </div>
+      {moment.repeat ? (
+        <>
+          {/* A repeating one keeps its day here: moving it would move every time it comes round (the functionality tester, 18 Nov). */}
+          <p className="travel-panel-line">{`It’s one of your peak moments and it repeats, so its day stays ${dateWords(keyMoment.startsOn)}.`}</p>
+          <div className="travel-two">
+            <Dropdown label="Start time" options={START_TIMES.map((t) => ({ value: t, label: t }))} value={at} onChange={setAt} />
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="travel-panel-line">It’s one of your peak moments, so it moves there too.</p>
+          <div className="travel-two">
+            <Dropdown label="Day" options={options.map((d) => ({ value: d, label: dateWords(d) }))} value={on} onChange={setOn} />
+            <Dropdown label="Start time" options={START_TIMES.map((t) => ({ value: t, label: t }))} value={at} onChange={setAt} />
+          </div>
+        </>
+      )}
     </SlidePanel>
   );
 }

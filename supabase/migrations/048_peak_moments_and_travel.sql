@@ -26,11 +26,18 @@
 --   todos.source         gains 'peak_moment', for the to-do the lead-up
 --                        question makes in the Daily plan (widened only).
 --   Additive: new tables, one wider check. Nothing old reads the tables.
+--   The checks agree with the app's own (18 Nov): a personal moment is never
+--   shared, a repeat's stop day is a real day on or after the start, and a
+--   flight lands from 2 days before to 3 days after the day it leaves on the
+--   local calendars (the app's longest flight, 30 hours, across the widest
+--   time difference, 26 hours).
 --
 -- WHO CAN SEE WHAT
 --   Everything here is the person's own: they read, add, change and remove
 --   their own rows. A coach (public.is_coach_of) reads only:
---     - a peak moment the person has shared (shared = true), and its reviews;
+--     - a work peak moment the person has shared (shared = true), and its
+--       reviews (a personal one is never shared, and never read even if it
+--       were marked so);
 --     - the away flag (travel_away).
 --   Nobody else reads any of it, and a coach never reads a Travel plan, its
 --   flights, its ticks or an unshared moment. Signed out reads nothing.
@@ -146,7 +153,7 @@ create table if not exists public.travel_flights (
   constraint travel_flights_leg check (leg in ('out', 'between', 'home')),
   constraint travel_flights_cities check (char_length(btrim(from_city)) between 1 and 120 and char_length(btrim(to_city)) between 1 and 120),
   constraint travel_flights_zones check (from_zone ~ '^[A-Za-z]+(/[A-Za-z0-9_+-]+){1,2}$' and to_zone ~ '^[A-Za-z]+(/[A-Za-z0-9_+-]+){1,2}$'),
-  constraint travel_flights_days check (arrives_on >= departs_on - 1 and arrives_on <= departs_on + 2)
+  constraint travel_flights_days check (arrives_on >= departs_on - 2 and arrives_on <= departs_on + 3)
 );
 create index if not exists travel_flights_plan on public.travel_flights (plan_id, sort_order);
 
@@ -191,6 +198,46 @@ comment on table public.travel_away is
   'That the person is away, for their coach (M21: "Tim sees that you''re away in New York, and your key moments."). The coach portal reads it in Phase 6a.';
 create index if not exists travel_away_person on public.travel_away (user_id, starts_on);
 
+-- ---------------------------------------------------------------- checks that agree with the app (18 Nov)
+-- A repeat's stop day: a real day (never 2027-02-30), on or after the start.
+-- A function, so a day that doesn't exist is refused by the check (23514),
+-- never stops the save with a date error.
+create or replace function public.peak_until_ok(p_rule jsonb, p_starts date)
+returns boolean
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare d date;
+begin
+  if p_rule is null or p_rule ->> 'until' is null then
+    return true;
+  end if;
+  if (p_rule ->> 'until') !~ '^\d{4}-\d{2}-\d{2}$' then
+    return false;
+  end if;
+  d := (p_rule ->> 'until')::date;
+  return to_char(d, 'YYYY-MM-DD') = p_rule ->> 'until' and d >= p_starts;
+exception when others then
+  return false;
+end;
+$$;
+revoke all on function public.peak_until_ok(jsonb, date) from public, anon;
+grant execute on function public.peak_until_ok(jsonb, date) to authenticated, service_role;
+
+-- Made again by name each time, so a database that ran an earlier copy of
+-- 048 gets them too (safe to run twice).
+do $checks$
+begin
+  alter table public.peak_moments drop constraint if exists peak_moments_until;
+  alter table public.peak_moments add constraint peak_moments_until check (public.peak_until_ok(repeat_rule, starts_on));
+  alter table public.peak_moments drop constraint if exists peak_moments_personal_private;
+  alter table public.peak_moments add constraint peak_moments_personal_private check (not (shared and area = 'personal'));
+  alter table public.travel_flights drop constraint if exists travel_flights_days;
+  alter table public.travel_flights add constraint travel_flights_days check (arrives_on >= departs_on - 2 and arrives_on <= departs_on + 3);
+end
+$checks$;
+
 -- ---------------------------------------------------------------- updated_at
 do $touch$
 declare t text;
@@ -227,10 +274,10 @@ $rules$;
 
 drop policy if exists "Coach: shared moments" on public.peak_moments;
 create policy "Coach: shared moments" on public.peak_moments for select to authenticated
-  using (shared and public.is_coach_of(user_id));
+  using (shared and area = 'work' and public.is_coach_of(user_id));
 drop policy if exists "Coach: reviews of shared moments" on public.peak_reviews;
 create policy "Coach: reviews of shared moments" on public.peak_reviews for select to authenticated
-  using (public.is_coach_of(user_id) and exists (select 1 from public.peak_moments m where m.id = moment_id and m.shared));
+  using (public.is_coach_of(user_id) and exists (select 1 from public.peak_moments m where m.id = moment_id and m.shared and m.area = 'work'));
 drop policy if exists "Coach: away" on public.travel_away;
 create policy "Coach: away" on public.travel_away for select to authenticated
   using (public.is_coach_of(user_id));

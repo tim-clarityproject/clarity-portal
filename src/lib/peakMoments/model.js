@@ -18,6 +18,7 @@
 // voice (29aa), with no second line repeating it (29ap).
 
 import { addDays, daysBetween, weekday } from '../scores/dates.js';
+import { cleanName } from '../signIn/words.js';
 
 export const TOOL_NAME = 'Peak moments';
 export const ADD_NAME = 'Add a peak moment';
@@ -92,6 +93,17 @@ const parts = (key) => key.split('-').map(Number);
 const daysInMonth = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
 const keyOf = (y, m, d) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
+/**
+ * A name as it is kept: characters nobody can see (zero-width spaces,
+ * direction marks such as U+202E, control characters) taken out and the
+ * spaces trimmed, as sign-in rule 38's cleanName does, so a name of only
+ * unseen characters is no name (the break-it tester, 18 Nov).
+ */
+export const cleanMomentName = (value) => cleanName(value).slice(0, NAME_MAX);
+
+/** An entry a list holds itself, never one every object carries ("constructor", "__proto__"). */
+export const ownEntry = (list, key) => (list && typeof key === 'string' && Object.hasOwn(list, key) ? list[key] : undefined);
+
 // ---------------------------------------------------------------- one moment
 
 /** A new moment, before anything is answered (M18: Work, Perform at my best, at home, no repeat). */
@@ -124,14 +136,16 @@ export function tidyMoment(m) {
   if (!m || typeof m !== 'object' || Array.isArray(m) || typeof m.id !== 'string' || !m.id) return null;
   const startsOn = isDay(m.startsOn) ? m.startsOn : null;
   const endsOn = isDay(m.endsOn) && startsOn && m.endsOn >= startsOn ? m.endsOn : startsOn;
-  const repeat = tidyRepeat(m.repeat);
+  // A stop day before the start would leave nothing to show: it is let go (the break-it tester, 18 Nov).
+  const kept = tidyRepeat(m.repeat);
+  const repeat = kept?.until && startsOn && kept.until < startsOn ? { every: kept.every } : kept;
   const place = typeof m.placeCity === 'string' && m.placeCity.trim() && typeof m.placeZone === 'string' && m.placeZone
     ? { placeCity: m.placeCity.trim().slice(0, 120), placeZone: m.placeZone }
     : { placeCity: null, placeZone: null };
   const area = m.area === 'personal' ? 'personal' : m.area === 'work' ? 'work' : null;
   return {
     ...m,
-    name: words(m.name).slice(0, NAME_MAX),
+    name: cleanMomentName(words(m.name)),
     area,
     kind: KINDS.some((k) => k.value === m.kind) ? m.kind : null,
     span: startsOn && endsOn && endsOn > startsOn ? SPAN.days : (m.span === SPAN.days ? SPAN.days : SPAN.day),
@@ -152,15 +166,16 @@ export function tidyRepeat(r) {
 
 /** Whether a moment has everything it needs to be saved. */
 export function isComplete(m) {
-  return Boolean(m && m.name.trim() && m.area && m.kind && m.startsOn && m.endsOn && m.endsOn >= m.startsOn);
+  return Boolean(m && cleanMomentName(m.name) && m.area && m.kind && m.startsOn && m.endsOn && m.endsOn >= m.startsOn && !repeatProblem(m));
 }
 
 /** The first question still to answer, by its step key, or 'sum'. */
 export function firstUnanswered(m) {
-  if (!m.name.trim()) return 'name';
+  if (!cleanMomentName(m.name)) return 'name';
   if (!m.area) return 'area';
   if (!m.kind) return 'kind';
   if (!m.startsOn || !m.endsOn) return 'when';
+  if (repeatProblem(m)) return 'repeat';
   return 'sum';
 }
 
@@ -177,10 +192,16 @@ export function repeatProblem(m) {
   return null;
 }
 
-/** The day picked for "When is it?", with the end kept in step (one day: the same day). */
+/**
+ * The day picked for "When is it?", with the end kept in step (one day: the
+ * same day). A repeat's stop day that would now fall before the start is
+ * let go, so the summary shows it keeps going and nothing is saved that
+ * never comes round (the break-it tester, 18 Nov).
+ */
 export function withStart(m, startsOn) {
   const endsOn = m.span === SPAN.days && m.endsOn && m.endsOn > startsOn ? m.endsOn : (m.span === SPAN.days ? null : startsOn);
-  return { ...m, startsOn, endsOn };
+  const repeat = m.repeat?.until && startsOn && m.repeat.until < startsOn ? { every: m.repeat.every } : m.repeat;
+  return { ...m, startsOn, endsOn, repeat };
 }
 
 export function withSpan(m, span) {
@@ -354,13 +375,23 @@ export function occurrences(m, from, to, limit = 400) {
   if (m.repeat.every === 'week') k = Math.max(0, Math.floor((daysBetween(m.startsOn, from) - length) / 7));
   else if (m.repeat.every === 'year') k = Math.max(0, Number(from.slice(0, 4)) - Number(m.startsOn.slice(0, 4)) - 1);
   else k = Math.max(0, (Number(from.slice(0, 4)) - Number(m.startsOn.slice(0, 4))) * 12 + Number(from.slice(5, 7)) - Number(m.startsOn.slice(5, 7)) - 1);
-  for (let guard = 0; guard < limit * 3 && out.length < limit; guard += 1, k += 1) {
+  // Far enough for a day that comes round rarely: 29 Feb (8 years from a
+  // year after a leap year, past 2100), the 31st (every other month).
+  for (let guard = 0; guard < limit * 3 + SKIPS && out.length < limit; guard += 1, k += 1) {
     const on = startOf(m, k);
     if (on == null) continue;
     if (on > to || (until && on > until)) break;
     if (addDays(on, length) >= from) out.push(occ(m, on, length));
   }
   return out;
+}
+
+/** The most times in a row a repeat can come round on no day at all (29 Feb: 7 years over 2100). */
+const SKIPS = 12;
+
+/** Whether a moment comes round on this day (a review's address must be one of its days). */
+export function comesRoundOn(m, day) {
+  return Boolean(m?.startsOn && occurrences(m, day, day).some((o) => o.on === day));
 }
 
 const occ = (m, on, length) => ({ moment: m, on, endsOn: addDays(on, length), key: `${m.id}:${on}` });
@@ -377,9 +408,9 @@ function byDate(a, b) {
   return a.moment.name.localeCompare(b.moment.name);
 }
 
-/** The next time a moment comes round that hasn't ended before today, or null. */
+/** The next time a moment comes round that hasn't ended before today, or null. Nine years ahead: 29 Feb skips 2100. */
 export function nextOccurrence(m, today) {
-  return occurrences(m, today, addDays(today, 3 * 366), 1)[0] || null;
+  return occurrences(m, today, addDays(today, 9 * 366), 1)[0] || null;
 }
 
 /** The last time it came round that has ended before today, or null. */
@@ -404,11 +435,26 @@ export function listView(moments, reviews, today) {
     if (!m.repeat) {
       if (!next) past.push({ ...occurrences(m, m.startsOn, m.endsOn)[0], lesson: reviewOf(reviews, m.id, m.startsOn)?.lesson || m.lesson || '' });
     } else {
+      let shown = Boolean(next);
       for (const r of Object.values(reviews || {})) {
         if (r.momentId !== m.id || r.occursOn >= today) continue;
         const o = occurrences(m, r.occursOn, r.occursOn)[0];
-        if (o && o.on === r.occursOn && o.endsOn < today) past.push({ ...o, lesson: r.lesson || '' });
+        if (o && o.on === r.occursOn && o.endsOn < today) {
+          past.push({ ...o, lesson: r.lesson || '' });
+          shown = true;
+        }
       }
+      // A repeat that has stopped, with no review, still shows once: its last time.
+      if (!shown) {
+        const last = lastOccurrence(m, today);
+        if (last) {
+          past.push({ ...last, lesson: reviewOf(reviews, m.id, last.on)?.lesson || m.lesson || '' });
+          shown = true;
+        }
+      }
+      // One kept with no time it comes round at all (an older copy) still shows,
+      // and can be opened, so it can be put right or deleted.
+      if (!shown) past.push({ ...occ(m, m.startsOn, daysBetween(m.startsOn, m.endsOn || m.startsOn)), lesson: m.lesson || '', stray: true });
     }
   }
   comingUp.sort(byDate);
@@ -418,7 +464,7 @@ export function listView(moments, reviews, today) {
 
 /** A review by its moment and day. */
 export function reviewOf(reviews, momentId, on) {
-  return (reviews || {})[`${momentId}:${on}`] || null;
+  return ownEntry(reviews, `${momentId}:${on}`) || null;
 }
 
 // ---------------------------------------------------------------- the lead-up
@@ -671,7 +717,7 @@ export function ringNote(o, reviews, today) {
   if (left === 'today') return 'It’s today.';
   if (left) return `${left[0].toUpperCase()}${left.slice(1)}.`;
   const r = reviewOf(reviews, o.moment.id, o.on);
-  return r?.lesson?.trim() || r?.kept?.trim() || '';
+  return r?.lesson?.trim() || r?.kept?.trim() || o.moment.lesson?.trim() || '';
 }
 
 // ---------------------------------------------------------------- View your year
@@ -733,7 +779,7 @@ export function sprintMoments(moments, dates) {
 /** "Your peak moment": one line per answer, no second line repeating it (29ap). */
 export function summaryRows(m, today) {
   return [
-    { key: 'name', label: 'Name', step: 'name', editName: 'its name', lines: [{ text: m.name.trim() }] },
+    { key: 'name', label: 'Name', step: 'name', editName: 'its name', lines: [{ text: cleanMomentName(m.name) }] },
     { key: 'area', label: 'For', step: 'area', editName: 'work or personal', lines: [{ text: areaOf(m.area)?.label || '' }] },
     { key: 'kind', label: 'What you need from it', step: 'kind', editName: 'what you need from it', lines: [{ text: kindOf(m.kind)?.label || '' }] },
     { key: 'when', label: 'When', step: 'when', editName: 'when it is', lines: [{ text: whenWords(m.startsOn, m.endsOn, today) }] },

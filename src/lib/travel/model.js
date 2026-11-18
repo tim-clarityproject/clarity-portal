@@ -4,10 +4,10 @@
 // where the plan shows outside its own pages (Home's offer and card, the
 // Daily plan). Pure: no React, no database. The engine is ./plan.js.
 
-import { addDays, daysBetween, dayKeyWords, instantAt, offsetMinutes } from '../time/index.js';
+import { addDays, daysBetween, dayKeyWords, instantAt, offsetMinutes, sameZone } from '../time/index.js';
 import { makeTravelPlan, replanFrom } from './plan.js';
 import { RULES } from './rules.js';
-import { occurrences } from '../peakMoments/model.js';
+import { cleanMomentName, occurrences, ownEntry } from '../peakMoments/model.js';
 
 export const TOOL_NAME = 'Travel plan';
 export const PATH = '/travel-plan';
@@ -155,20 +155,39 @@ export function tripDays(out, home) {
 }
 
 /**
- * The peak moments that come round during the trip in the place it goes to
- * (or kept with no place), each once: [{ moment, on, endsOn }]. A moment in
- * another city on those days isn't this trip's.
+ * The peak moments that come round during the trip in the place it goes to,
+ * each once: [{ moment, on, endsOn }]. Only a moment kept in the trip's
+ * time zone is a key moment (rule 2; the functionality tester, 18 Nov): one
+ * kept "at home" or in another city on those days isn't this trip's. Zones
+ * are compared by their current names, so a moment kept in Asia/Calcutta
+ * belongs to a trip to Asia/Kolkata.
  */
 export function momentsInTrip(moments, out, home) {
   const days = tripDays(out, home);
-  if (!days.length) return [];
+  if (!days.length || !out?.to?.zone) return [];
   const seen = new Set();
-  const here = (m) => !m.placeZone || !out.to || m.placeZone === out.to.zone || m.placeCity === out.to.city;
+  const here = (m) => Boolean(m.placeZone) && sameZone(m.placeZone, out.to.zone);
   return moments
     .filter(here)
     .flatMap((m) => occurrences(m, days[0], days[days.length - 1]))
     .filter((o) => (seen.has(o.moment.id) ? false : seen.add(o.moment.id)))
     .sort((a, b) => (a.on < b.on ? -1 : a.on > b.on ? 1 : a.moment.name.localeCompare(b.moment.name)));
+}
+
+/**
+ * A key moment added in set-up that still needs something before the plan
+ * can be made, as the calm line ("Type the key moment’s name to carry on."),
+ * or null. Its day must be one of the trip's: when the flights change after
+ * it was chosen it is asked again, never saved outside the trip (the
+ * break-it tester, 18 Nov).
+ */
+export function extrasProblem(extras, days) {
+  for (const x of extras || []) {
+    const name = cleanMomentName(x.name);
+    if (!name) return 'Type the key moment’s name to carry on.';
+    if (!x.on || !days.includes(x.on)) return `Choose a day in your trip for “${name}” to carry on.`;
+  }
+  return null;
 }
 
 /** "Tue 10 Nov at 09:00", or the day alone with no time. */
@@ -202,6 +221,7 @@ export function keyMomentsFor(plan, moments) {
   const home = plan.flightHome;
   if (!out?.to || !home?.leaves) return [];
   const byId = new Map(moments.map((m) => [m.id, m]));
+  const times = plan.momentTimes || {};
   const inTrip = new Map(momentsInTrip(moments.filter((m) => plan.momentIds.includes(m.id)), out, home).map((o) => [o.moment.id, o]));
   return plan.momentIds
     .map((id) => {
@@ -213,7 +233,7 @@ export function keyMomentsFor(plan, moments) {
         name: m.name,
         startsOn: o.on,
         endsOn: o.endsOn,
-        at: plan.momentTimes[id] || null,
+        at: ownEntry(times, id) || null,
         city: m.placeCity || out.to.city,
         zone: m.placeZone || out.to.zone,
       };
@@ -368,6 +388,15 @@ export function whyShort(plan, noCaffeine) {
   const away = plan.away.city;
   const h = Math.abs(plan.difference);
   const hours = `${h === 1 ? 'an hour' : `${Number.isInteger(h) ? h : h.toFixed(1)} hours`}`;
+  if (plan.sameTime) {
+    const terms = [
+      { term: 'No time difference', meaning: [`${away} keeps the same time as ${home}, so your body clock doesn’t need to move.`, 'Your usual times work there too.'] },
+      { term: 'Sleep', meaning: ['Sleeping at your usual times keeps your body clock where it is.'] },
+      { term: 'Light', meaning: ['Light is the strongest signal to your body clock.', 'Daylight in the morning keeps it steady.'] },
+    ];
+    if (!noCaffeine) terms.push({ term: 'Caffeine', meaning: ['Caffeine can still cut your sleep 9 hours later.', 'So your last one is 9 hours before you go to bed.'] });
+    return { title: 'Why these steps help', terms, after: [MEDICINES] };
+  }
   const staying = {
     term: `Staying on ${home} time`,
     meaning: plan.reason === 'difference'
@@ -401,6 +430,39 @@ export function travelToday(plans, moments, today) {
 
 /** Home and the Daily plan show the day's travel steps only (Light, Caffeine, Sleep), never the key moments: those are already on the day. */
 const tickable = (steps) => steps.filter((s) => s.kind !== 'moment');
+
+/**
+ * What a step's time column shows: its time (or its label), with its city
+ * under it on a day across two time zones. A key moment with no time reads
+ * "All day", with no city: a city alone under nothing says nothing (the
+ * functionality tester, 18 Nov).
+ */
+export function stepTime(s) {
+  const time = s.time || s.label || '';
+  if (!time) return { time: s.kind === 'moment' ? 'All day' : '', zone: null };
+  return { time, zone: s.showZone && s.city ? s.city : null };
+}
+
+/**
+ * Which day labels the body clock chart shows along its axis, so no two
+ * ever touch (the UI tester, 18 Nov: "Fri 6 Sat 7Sun 8" on a phone).
+ * `labels`: each day's label; `width`: the drawing's width between its
+ * first and last day, in its own units, where a letter is about `letter`
+ * wide. Every `every`th day shows; the lit day always shows, and the days
+ * too near it step back while it is lit. Returns a boolean per day.
+ */
+export function chartDayLabels(labels, lit, width, { letter = 7, gap = 6 } = {}) {
+  const n = labels.length;
+  if (!n) return [];
+  const spacing = n > 1 ? width / (n - 1) : width;
+  const widest = Math.max(...labels.map((l) => String(l || '').length)) * letter + gap;
+  const every = Math.max(1, Math.ceil(widest / spacing));
+  return labels.map((_, i) => {
+    if (lit != null && i === lit) return true;
+    if (i % every !== 0) return false;
+    return lit == null || Math.abs(i - lit) >= every;
+  });
+}
 
 /** A step's own key for its private tick ("light", "caffeine", "sleep"). */
 export const tickKey = (step) => (step.kind === 'moment' ? `moment:${step.momentId}` : step.kind);
@@ -448,17 +510,32 @@ export function awayOf(plan, view) {
 
 // ---------------------------------------------------------------- what the device keeps (store.js)
 
+/**
+ * What a saved plan is, as the tables keep it: its name, flights (each end's
+ * city and zone, and the times), key moments with their times, usual sleep
+ * and the caffeine choice. Two plans with the same key are the same plan,
+ * so a save the queue sent later is known to have landed (store.js).
+ */
+export function planKey(p) {
+  const t = tidyPlan(p);
+  if (!t) return null;
+  const f = (x) => [x.from?.city, x.from?.zone, x.to?.city, x.to?.zone, x.leaves, x.lands];
+  const ids = [...t.momentIds].sort();
+  return JSON.stringify([t.title, f(t.flightOut), f(t.flightHome), ids, ids.map((id) => ownEntry(t.momentTimes, id) || null), t.usualSleep.start, t.usualSleep.end, t.noCaffeine]);
+}
+
 /** What the device keeps, read so that nothing kept by another version stops a page. */
 export function tidyState(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { plans: {}, ticks: {} };
   const plans = {};
-  for (const [id, p] of Object.entries(raw.plans || {})) {
+  for (const [id, p] of Object.entries(raw.plans && typeof raw.plans === 'object' ? raw.plans : {})) {
+    if (id === '__proto__') continue;
     const t = tidyPlan(p);
-    if (t && t.id === id) plans[id] = { ...t, sent: p.sent === true, gone: p.gone === true };
+    if (t && t.id === id) plans[id] = { ...t, sent: p.sent === true, gone: p.gone === true, refused: p.refused === true };
   }
   const ticks = {};
   for (const [planId, days] of Object.entries(raw.ticks && typeof raw.ticks === 'object' ? raw.ticks : {})) {
-    if (!days || typeof days !== 'object') continue;
+    if (!days || typeof days !== 'object' || planId === '__proto__') continue;
     ticks[planId] = {};
     for (const [day, steps] of Object.entries(days)) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !steps || typeof steps !== 'object') continue;

@@ -181,6 +181,13 @@ const PAGES_ALL = [
   ['travel-day', `/travel-plan/${TRAVEL.plan.id}/day/${TRAVEL.plan.flightOut.leaves.slice(0, 10)}`, 'travel'],
   ['travel-short', `/travel-plan/${TRAVEL.short.id}`, 'travel'],
   ['home-travel', '/welcome', 'travel'],
+  // Peak moments (M18 version 28; Phase 8b part A): the list, Add's first
+  // step, a saved one's summary and the sprint page, from the same peak
+  // moments on the device.
+  ['peak-list', '/peak-moments', 'travel'],
+  ['peak-add', '/peak-moments/add', 'travel'],
+  ['peak-edit', `/peak-moments/edit/${TRAVEL.moments[0].id}`, 'travel'],
+  ['peak-sprint', '/performance-sprint', 'travel'],
 ];
 // M10's own invented team, as the tool keeps a check while it is open.
 const TEAM_CHECK = {

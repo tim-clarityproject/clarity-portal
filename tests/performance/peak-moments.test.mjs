@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   EXPLAIN, KINDS, AREAS, LEAD_UP_SUGGESTIONS,
-  countdownLine, countdownWords, dayWords, emptyMoment, firstUnanswered, homeCard, isComplete, leadUpFor, leadUpLines,
+  cleanMomentName, comesRoundOn, countdownLine, countdownWords, dayWords, ownEntry, repeatProblem, emptyMoment, firstUnanswered, homeCard, isComplete, leadUpFor, leadUpLines,
   leadUpQuestion, listView, metaItems, nearestRing, nextOccurrence, occurrences, onBreak, repeatOptions, repeatWords,
   reviewAnswers, reviewDay, reviewDue, reviewLine, reviewQuestion, ringLabel, ringNote, sprintMoments, summaryRows,
   tidyMoment, weekOfMonth, weekRings, whenProblem, whenWords, withArea, withRepeat, withSpan, withStart, withUntil, yearMonths,
@@ -230,6 +230,10 @@ test('the week bars: one ring a week, two or more counted, and the nearer ring w
   assert.equal(ringLabel(rings[0], TODAY), '2 peak moments in week 5');
   assert.equal(ringLabel(rings[1], TODAY), 'Peak moment, Investor call, Thu 15 Oct');
   assert.equal(ringNote(rings[2].occurrences[0], {}, TODAY), '3 days to go.');
+  // A past one with no review reads the lesson the moment keeps (the UI tester, 18 Nov).
+  const gone = { moment: m('p', 'Pitch', '2026-10-01', { lesson: 'Sleep early the night before.' }), on: '2026-10-01', endsOn: '2026-10-01', key: 'p:2026-10-01' };
+  assert.equal(ringNote(gone, {}, TODAY), 'Sleep early the night before.');
+  assert.equal(ringNote(gone, { 'p:2026-10-01': { momentId: 'p', occursOn: '2026-10-01', lesson: 'Its own lesson.' } }, TODAY), 'Its own lesson.');
   assert.equal(sprintMoments(ms, { start: weeks[0].start, end: weeks[7].end }).length, 4);
   // M18's drawing: columns 28.25 units apart, tap areas of 25: they overlap.
   const placed = rings.map((r) => ({ ...r, x: (r.week - 1) * 28.25 + 14.125, y: 40 }));
@@ -269,11 +273,90 @@ test('the review after: what was done in the lead-up, each answer once', () => {
 });
 
 test('places: a city and its IANA zone, from the one time library', () => {
-  assert.deepEqual(searchCities('new y')[0], { city: 'New York', zone: 'America/New_York', line: 'New York time' });
+  assert.deepEqual(searchCities('new y')[0], { city: 'New York', zone: 'America/New_York', line: 'New York time', hint: null });
   assert.equal(searchCities('lond')[0].zone, 'Europe/London');
   assert.equal(searchCities('lond')[0].line, 'UK time');
   assert.deepEqual(searchCities('n'), [], 'two letters first');
   for (const c of searchCities('an', 50)) assert.match(c.zone, /^[A-Za-z]+(\/[A-Za-z0-9_+-]+){1,2}$/, 'a zone 048 accepts');
+});
+
+test('places: no second line repeating the city, current names, Delhi and Mumbai (the UI and break-it testers, 18 Nov)', () => {
+  for (const c of searchCities('an', 50)) if (c.hint) assert.equal(repeatsItsAnswer(c.city, c.hint), false, `${c.city} / ${c.hint}`);
+  assert.equal(searchCities('new york')[0].hint, null, 'never “New York” over “New York time”');
+  assert.equal(searchCities('kolk')[0].hint, 'India time', 'the country where it says something');
+  const named = (q) => searchCities(q, 10).map((c) => `${c.city} ${c.zone}`);
+  assert.ok(named('kolkata').includes('Kolkata Asia/Kolkata'));
+  assert.ok(named('delhi').includes('Delhi Asia/Kolkata'));
+  assert.ok(named('mumbai').includes('Mumbai Asia/Kolkata'));
+  assert.ok(named('kyiv').includes('Kyiv Europe/Kyiv'));
+  assert.ok(named('kathm').includes('Kathmandu Asia/Kathmandu'));
+  assert.ok(named('yangon').includes('Yangon Asia/Yangon'));
+  assert.ok(named('ho chi').includes('Ho Chi Minh City Asia/Ho_Chi_Minh'));
+  assert.ok(named('st john').includes('St John’s America/St_Johns'));
+  assert.ok(named('buenos').includes('Buenos Aires America/Argentina/Buenos_Aires'));
+  for (const old of ['calcutta', 'kiev', 'saigon', 'rangoon', 'katmandu']) assert.deepEqual(named(old), [], old);
+  assert.ok(!searchCities('st j', 10).some((c) => c.city === 'St Johns'));
+});
+
+test('names: characters nobody can see are taken out, so a name of only those is no name (the break-it tester, 18 Nov)', () => {
+  assert.equal(cleanMomentName('\u200b\u202e\u2060 '), '');
+  assert.equal(cleanMomentName(' Cup\u202e final\u200b '), 'Cup final');
+  assert.equal(cleanMomentName('Cup final 👩‍👩‍👧'), 'Cup final 👩‍👩‍👧', 'an emoji keeps its joiners');
+  const x = m('u', '\u200b\u202e', '2026-11-12');
+  assert.equal(x.name, '');
+  assert.equal(isComplete({ ...x, area: 'work', kind: 'perform' }), false);
+  assert.equal(firstUnanswered(x), 'name');
+});
+
+test('a stop day before the start is never kept, on any path (the break-it tester, 18 Nov)', () => {
+  const weekly = m('w', 'Stand-up', '2026-11-02', { repeat: { every: 'week', until: '2026-11-30' } });
+  assert.equal(repeatProblem({ ...weekly, startsOn: '2026-12-07' }), 'It can’t stop before it starts. Choose a later day, or none.');
+  assert.equal(isComplete({ ...weekly, startsOn: '2026-12-07', endsOn: '2026-12-07' }), false, 'onEdited and Finish both ask isComplete');
+  assert.equal(firstUnanswered({ ...weekly, startsOn: '2026-12-07', endsOn: '2026-12-07' }), 'repeat');
+  // Moving "When is it?" past the stop day lets the stop day go, so the summary says it keeps going.
+  const moved = withStart(weekly, '2026-12-07');
+  assert.deepEqual(moved.repeat, { every: 'week' });
+  assert.equal(isComplete(moved), true);
+  assert.deepEqual(withStart(weekly, '2026-11-09').repeat, { every: 'week', until: '2026-11-30' });
+  // An older copy kept with one is read without it.
+  assert.deepEqual(tidyMoment({ ...weekly, repeat: { every: 'week', until: '2026-10-01' } }).repeat, { every: 'week' });
+});
+
+test('every moment the device holds shows somewhere: a stopped repeat in Past, by its last time (the break-it tester, 18 Nov)', () => {
+  const stopped = m('st', 'Old stand-up', '2026-09-07', { repeat: { every: 'week', until: '2026-09-21' } });
+  const v = listView([stopped], {}, TODAY);
+  assert.equal(v.comingUp.length, 0);
+  assert.deepEqual(v.past.map((o) => [o.moment.id, o.on, Boolean(o.stray)]), [['st', '2026-09-21', false]]);
+  // One with no day it comes round on at all still shows, and can be opened.
+  const odd = { ...stopped, id: 'odd', repeat: { every: 'week', until: '2026-01-01' } };
+  const w = listView([odd], {}, TODAY);
+  assert.equal(w.past.length, 1);
+  assert.equal(w.past[0].stray, true);
+});
+
+test('29 Feb comes round in leap years, however far ahead (the break-it tester, 18 Nov)', () => {
+  const leap = m('leap', 'Leap day run', '2024-02-29', { repeat: { every: 'year' } });
+  assert.equal(nextOccurrence(leap, '2026-03-01').on, '2028-02-29');
+  assert.equal(nextOccurrence(leap, '2096-03-01').on, '2104-02-29', 'past 2100, which isn’t a leap year');
+  const thirty = m('31', 'Month end', '2026-01-31', { repeat: { every: 'month_date' } });
+  assert.equal(nextOccurrence(thirty, '2026-02-01').on, '2026-03-31');
+  assert.deepEqual(occurrences(leap, '2025-01-01', '2033-01-01').map((o) => o.on), ['2028-02-29', '2032-02-29']);
+});
+
+test('a review’s address must be a day the moment comes round on (the break-it tester, 18 Nov)', () => {
+  const weekly = m('w', 'Stand-up', '2026-11-02', { repeat: { every: 'week' } });
+  assert.equal(comesRoundOn(weekly, '2026-11-16'), true);
+  assert.equal(comesRoundOn(weekly, '2026-11-17'), false);
+  assert.equal(comesRoundOn(weekly, '2026-10-26'), false, 'before it began');
+  assert.equal(comesRoundOn(m('one', 'Cup final', '2026-10-31'), '2026-10-31'), true);
+  assert.equal(comesRoundOn(m('one', 'Cup final', '2026-10-31'), '2026-11-01'), false);
+});
+
+test('ids are looked up as the list’s own, never something every object carries (the break-it tester, 18 Nov)', () => {
+  const list = { a: 1 };
+  for (const k of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) assert.equal(ownEntry(list, k), undefined, k);
+  assert.equal(ownEntry(list, 'a'), 1);
+  assert.equal(ownEntry(null, 'a'), undefined);
 });
 
 test('the page: its explanation, its tab and its menu place', () => {

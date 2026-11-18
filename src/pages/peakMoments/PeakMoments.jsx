@@ -44,12 +44,15 @@ import {
   SPAN,
   SPANS,
   TOOL_NAME,
+  cleanMomentName,
+  comesRoundOn,
   emptyMoment,
   firstUnanswered,
   isComplete,
   leadUpLines,
   listView,
   metaItems,
+  ownEntry,
   repeatOptions,
   repeatProblem,
   reviewAnswers,
@@ -68,6 +71,7 @@ import {
   withUntil,
 } from '../../lib/peakMoments/model';
 import { searchCities } from '../../lib/peakMoments/places';
+import { sameZone } from '../../lib/time/index.js';
 import { deleteMoment, leadUpsOf, saveMoment, saveReview, setShareWork, usePeakMoments } from '../../lib/peakMoments/store';
 import '../performance/performance.css';
 import './peakMoments.css';
@@ -175,6 +179,8 @@ function PeakList() {
                       meta={metaItems({ ...o.moment, repeat: null }, today)}
                       date={whenWords(o.on, o.endsOn, today)}
                       lesson={o.lesson}
+                      // A past one can't be opened, apart from one with no day it comes round on (an older copy), so it can be put right or deleted.
+                      onClick={o.stray ? () => navigate(`${PATH}/edit/${o.moment.id}`, { state: { from: PATH } }) : undefined}
                     />
                   ))}
                 </PeakMomentList>
@@ -201,7 +207,7 @@ function PeakEdit() {
   const toast = useToast();
   const [today] = useState(() => localToday());
   const { state, shareWork } = usePeakMoments(userId);
-  const saved = id ? state.moments[id] : null;
+  const saved = id ? ownEntry(state.moments, id) || null : null;
   const editing = Boolean(id);
   const [m, setM] = useState(() => (saved && !saved.gone ? tidyMoment(saved) : emptyMoment(newId(), today)));
   const [query, setQuery] = useState('');
@@ -259,7 +265,7 @@ function PeakEdit() {
     if (busy.current) return false;
     if (!isComplete(m)) return false;
     busy.current = true;
-    const ok = await persist({ ...m, shared: m.area === 'work' && (editing ? m.shared : shareWork) }, editing ? 'Saved' : 'It’s in your peak moments');
+    const ok = await persist({ ...m, name: cleanMomentName(m.name), shared: m.area === 'work' && (editing ? m.shared : shareWork) }, editing ? 'Saved' : 'It’s in your peak moments');
     busy.current = false;
     if (!ok) return false;
     if (!editing) {
@@ -274,7 +280,7 @@ function PeakEdit() {
   const remove = async () => {
     if (busy.current) return;
     busy.current = true;
-    const kept = state.moments[m.id];
+    const kept = ownEntry(state.moments, m.id);
     try {
       await deleteMoment(userId, m.id);
       navigate(PATH, { replace: true });
@@ -296,16 +302,18 @@ function PeakEdit() {
   };
 
   const cities = searchCities(query);
-  const placeValue = m.placeZone ? m.placeZone : HOME;
+  // A city is its zone and its name: Delhi, Mumbai and Kolkata keep one clock.
+  const placeValue = m.placeZone ? `${(cities.find((c) => c.city === m.placeCity && sameZone(c.zone, m.placeZone)) || { zone: m.placeZone }).zone}|${m.placeCity}` : HOME;
   const placeOptions = [
     { value: HOME, label: AT_HOME },
-    ...(m.placeZone && !cities.some((c) => c.zone === m.placeZone) ? [{ value: m.placeZone, label: m.placeCity }] : []),
-    ...cities.map((c) => ({ value: c.zone, label: c.city, hint: c.line })),
+    ...(m.placeZone && !cities.some((c) => c.city === m.placeCity && sameZone(c.zone, m.placeZone)) ? [{ value: `${m.placeZone}|${m.placeCity}`, label: m.placeCity }] : []),
+    // Its time's name only where it says something the city doesn't ("India time" under Kolkata; 29ap).
+    ...cities.map((c) => ({ value: `${c.zone}|${c.city}`, label: c.city, ...(c.hint ? { hint: c.hint } : {}) })),
   ];
   const choosePlace = (value) => {
     if (value === HOME) change({ placeCity: null, placeZone: null });
     else {
-      const c = cities.find((x) => x.zone === value);
+      const c = cities.find((x) => `${x.zone}|${x.city}` === value);
       if (c) change({ placeCity: c.city, placeZone: c.zone });
     }
   };
@@ -317,7 +325,7 @@ function PeakEdit() {
       question: 'What is it called?',
       required: true,
       eye,
-      check: () => (m.name.trim() ? null : 'Type its name to carry on.'),
+      check: () => (cleanMomentName(m.name) ? null : 'Type its name to carry on.'),
       render: () => (
         <TextBox
           ariaLabel="What is it called?"
@@ -472,6 +480,7 @@ function PeakEdit() {
       required: true,
       check: () => {
         const at = firstUnanswered(m);
+        if (at === 'repeat') return repeatProblem(m);
         return at === 'sum' ? null : 'Answer every question to carry on.';
       },
       render: (tool) => (
@@ -503,7 +512,8 @@ function PeakEdit() {
         finishLabel={editing ? 'Save my changes' : 'Add my peak moment'}
         onClose={leave}
         onFinish={finish}
-        onEdited={() => { if (editing && isComplete(m)) persist(m, 'Saved'); }}
+        // Saved there and then only when it can be kept as it stands (a stop day before the start never is).
+        onEdited={() => { if (editing && isComplete(m)) persist({ ...m, name: cleanMomentName(m.name) }, 'Saved'); }}
       />
     </div>
   );
@@ -520,13 +530,15 @@ function PeakReview() {
   const toast = useToast();
   const [today] = useState(() => localToday());
   const { state, reviews } = usePeakMoments(userId);
-  const moment = state.moments[id] && !state.moments[id].gone ? state.moments[id] : null;
-  const had = moment && isDay(day) ? reviewOf(reviews, id, day) : null;
+  const own = ownEntry(state.moments, id);
+  // Only a day the moment really comes round on has a review (the break-it tester, 18 Nov).
+  const moment = own && !own.gone && isDay(day) && comesRoundOn(own, day) ? own : null;
+  const had = moment ? reviewOf(reviews, id, day) : null;
   const [r, setR] = useState(() => ({ answer: had?.answer || '', kept: had?.kept || '', lesson: had?.lesson || '' }));
   const busy = useRef(false);
   const backTo = location.state?.from || '/welcome';
 
-  if (!moment || !isDay(day)) {
+  if (!moment) {
     return (
       <div className="ui-root">
         <DesignHeader />

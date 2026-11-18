@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  awayOf, dayLine, flightLine, flightProblem, homeProblem, inputFor, keyMomentsFor, momentsInTrip, pastAfterEdit, planFor,
+  awayOf, chartDayLabels, dayLine, extrasProblem, planKey, stepTime, flightLine, flightProblem, homeProblem, inputFor, keyMomentsFor, momentsInTrip, pastAfterEdit, planFor,
   readoutLines, seenOf, shortSpan, spanWords, stepsShown, tickKey, tidyPlan, travelOffer, travelToday, whyFor, whyShort, zoneNote,
 } from '../../src/lib/travel/model.js';
 import { searchPlaces } from '../../src/lib/travel/airports.js';
@@ -85,6 +85,59 @@ test('the flights: a calm line for what’s missing, never a greyed-out button',
 test('key moments: peak moments inside the trip and its city only, each once', () => {
   const inTrip = momentsInTrip([...MOMENTS, moment('later', 'Later', '2026-12-01'), moment('tokyo', 'Tokyo talk', '2026-11-10', { placeCity: 'Tokyo', placeZone: 'Asia/Tokyo' }), moment('weekly', 'Stand-up', '2026-10-05', { repeat: { every: 'week' } })], M21.flightOut, M21.flightHome);
   assert.deepEqual(inTrip.map((o) => `${o.moment.id} ${o.on}`), ['dinner 2026-11-09', 'weekly 2026-11-09', 'board 2026-11-10']);
+});
+
+test('key moments: never one kept at home, and zones by their current names (the functionality and break-it testers, 18 Nov)', () => {
+  const home = moment('home', 'Call from the kitchen', '2026-11-10', { placeCity: null, placeZone: null });
+  assert.deepEqual(momentsInTrip([...MOMENTS, home], M21.flightOut, M21.flightHome).map((o) => o.moment.id), ['dinner', 'board']);
+  const DEL = place('Delhi', 'Asia/Kolkata', 'Delhi, DEL');
+  const out = { id: 'o', from: LHR, to: DEL, leaves: '2026-11-08T09:00', lands: '2026-11-08T23:00' };
+  const back = { id: 'h', from: DEL, to: LHR, leaves: '2026-11-14T03:00', lands: '2026-11-14T08:00' };
+  const old = moment('old', 'Pitch', '2026-11-10', { placeCity: 'Calcutta', placeZone: 'Asia/Calcutta' });
+  assert.deepEqual(momentsInTrip([old], out, back).map((o) => o.moment.id), ['old'], 'Asia/Calcutta is Asia/Kolkata');
+});
+
+test('a key moment added in set-up keeps a day inside the trip, or is asked again (the break-it tester, 18 Nov)', () => {
+  const days = ['2026-11-08', '2026-11-09', '2026-11-10'];
+  assert.equal(extrasProblem([{ id: 'x', name: 'Keynote', on: '2026-11-09' }], days), null);
+  assert.equal(extrasProblem([{ id: 'x', name: '  ', on: '2026-11-09' }], days), 'Type the key moment’s name to carry on.');
+  assert.equal(extrasProblem([{ id: 'x', name: '\u200b\u202e', on: '2026-11-09' }], days), 'Type the key moment’s name to carry on.', 'only unseen characters is no name');
+  assert.equal(extrasProblem([{ id: 'x', name: 'Keynote', on: '2026-11-20' }], days), 'Choose a day in your trip for “Keynote” to carry on.');
+  assert.equal(extrasProblem([{ id: 'x', name: 'Keynote', on: null }], days), 'Choose a day in your trip for “Keynote” to carry on.');
+});
+
+test('a step’s time: an untimed key moment reads “All day”, never a city alone (the functionality tester, 18 Nov)', () => {
+  assert.deepEqual(stepTime({ kind: 'moment', time: null, showZone: true, city: 'New York' }), { time: 'All day', zone: null });
+  assert.deepEqual(stepTime({ kind: 'light', time: '08:00', showZone: true, city: 'New York' }), { time: '08:00', zone: 'New York' });
+  assert.deepEqual(stepTime({ kind: 'sleep', time: '23:00', showZone: false, city: 'London' }), { time: '23:00', zone: null });
+  const view = planFor(M21, MOMENTS);
+  for (const d of view.days) for (const s of d.steps) assert.ok(stepTime(s).time || s.kind !== 'moment', `${d.date} ${s.kind}`);
+});
+
+test('the chart’s day labels never touch, the lit one’s neighbours stepping back (the UI tester, 18 Nov)', () => {
+  const labels = ['Thu 5', 'Fri 6', 'Sat 7', 'Sun 8', 'Mon 9', 'Tue 10', 'Wed 11', 'Thu 12', 'Fri 13', 'Sat 14', 'Sun 15', 'Mon 16'];
+  const phone = 340 - 10 - 14;
+  const desk = 680 - 10 - 18;
+  const touching = (shown, width) => {
+    const at = shown.map((on, i) => (on ? i : null)).filter((i) => i != null);
+    const spacing = width / (labels.length - 1);
+    return at.some((i, k) => k > 0 && (i - at[k - 1]) * spacing < (labels[i].length + labels[at[k - 1]].length) / 2 * 7);
+  };
+  for (const lit of [null, ...labels.keys()]) {
+    const p = chartDayLabels(labels, lit, phone);
+    assert.equal(touching(p, phone), false, `phone, lit ${lit}`);
+    if (lit != null) assert.equal(p[lit], true);
+    assert.equal(touching(chartDayLabels(labels, lit, desk), desk), false, `desktop, lit ${lit}`);
+  }
+  assert.deepEqual(chartDayLabels(labels, null, desk), labels.map(() => true), 'every day on a laptop');
+  assert.deepEqual(chartDayLabels(labels, 1, phone).slice(0, 5), [false, true, false, false, true], 'Fri 6 lit: Thu 5 and Sat 7 step back');
+});
+
+test('a plan’s key: the same plan read back from the tables is known as sent (the break-it tester, 18 Nov)', () => {
+  const back = tidyPlan({ ...M21, flightOut: { ...M21.flightOut, from: { ...LHR, code: null, name: 'London' } }, momentTimes: { ...M21.momentTimes } });
+  assert.equal(planKey(back), planKey(M21));
+  assert.notEqual(planKey({ ...M21, noCaffeine: true }), planKey(M21));
+  assert.notEqual(planKey({ ...M21, momentTimes: { board: '10:00' } }), planKey(M21));
 });
 
 test('no caffeine: every caffeine step goes from the days, Home and the Why panel', () => {
@@ -168,4 +221,27 @@ test('what the device kept is read so it never stops a page', () => {
   assert.deepEqual(Object.keys(s.plans), ['trip']);
   assert.deepEqual(s.ticks.trip['2026-11-08'], { light: true });
   assert.equal(tidyPlan({ id: 'p', flightOut: 'nonsense' }).flightOut.from, null);
+});
+
+test('a plan or tick kept under a name every object carries is never read as one (the break-it tester, 18 Nov)', () => {
+  const raw = JSON.parse('{"plans":{"__proto__":{"id":"__proto__"},"trip":' + JSON.stringify(M21) + '},"ticks":{"__proto__":{"2026-11-08":{"light":true}}}}');
+  const s = tidyState(raw);
+  assert.deepEqual(Object.keys(s.plans), ['trip']);
+  assert.equal(Object.getPrototypeOf(s.plans), Object.prototype);
+  assert.equal(Object.hasOwn(s.ticks, '__proto__'), false);
+  assert.equal(Object.hasOwn(s.plans.trip, 'refused'), true);
+});
+
+test('a trip with no time difference explains itself without "0 hours" (break-it tester, 18 Nov)', async () => {
+  const { makeTravelPlan } = await import('../../src/lib/travel/index.js');
+  const fl = (departsOn, departsAt, fromCity, fromZone, arrivesOn, arrivesAt, toCity, toZone) => ({ departsOn, departsAt, fromCity, fromZone, arrivesOn, arrivesAt, toCity, toZone });
+  const plan = makeTravelPlan({
+    flightOut: fl('2026-11-10', '09:00', 'London', L, '2026-11-10', '11:45', 'Lisbon', 'Europe/Lisbon'),
+    flightHome: fl('2026-11-15', '19:00', 'Lisbon', 'Europe/Lisbon', '2026-11-15', '21:45', 'London', L),
+    keyMoments: [],
+  });
+  assert.equal(plan.sameTime, true);
+  const why = JSON.stringify(whyShort(plan, false));
+  assert.doesNotMatch(why, /0 hours|Staying on/);
+  assert.match(why, /No time difference/);
 });

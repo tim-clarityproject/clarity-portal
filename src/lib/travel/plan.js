@@ -3,8 +3,8 @@
 // docs/travel-plan-method.md explains every rule.
 import { addDays, clockChanges, dayKeyWords, instantAt, offsetMinutes, wallClock } from '../time/index.js';
 import { RULES, HOUR, nearestFive } from './rules.js';
-import { readTrip, differenceAt, differenceOn, whereOn } from './trip.js';
-import { bodyClockDays, usualBedAt } from './clock.js';
+import { readTrip, differenceAt, differenceOn, whereOn, zoneOfAt } from './trip.js';
+import { bodyClockDays, inTheAir, usualBedAt, usualWakeAt } from './clock.js';
 import { stepsFor, roundIn } from './steps.js';
 
 const round1 = (x) => Math.round(x * 10) / 10 || 0;
@@ -71,7 +71,7 @@ function shapeDays(trip, clockDays, startIndex = 0) {
       moments: steps.filter((s) => s.kind === 'moment').map((s) => s.momentId),
       steps,
       // Kept so a replan can carry on from exactly where the clock is.
-      engine: { clock: day.clock, target: day.target, sleepShift: day.sleepShift, onBoard: day.onBoard ? day.onBoard.departs.toISOString() : null },
+      engine: { clock: day.clock, target: day.target, sleepShift: day.sleepShift, onBoard: day.onBoard ? day.onBoard.departs.toISOString() : null, boardSleep: day.boardSleep ? day.boardSleep.toISOString() : null },
     };
   });
 }
@@ -111,7 +111,10 @@ function base(trip, input) {
 /**
  * A short trip: the key day's steps on local time, staying on home time,
  * with home time where it matters ("Turn the lights out, which is 22:00 in
- * London."). No chart and no day-by-day plan.
+ * London."). No chart and no day-by-day plan. The key day runs from
+ * midnight to midnight where the person spends it: the usual home bedtime
+ * and wake time that fall on it, in the order they come (going east, lights
+ * out comes first, after midnight; going west, getting up comes first).
  */
 function shortPlan(trip, input, check) {
   const firstAway = trip.flightOut.arrivesOn;
@@ -119,45 +122,66 @@ function shortPlan(trip, input, check) {
   const inTrip = trip.moments.find((m) => m.startsOn >= firstAway && m.startsOn <= lastAway);
   const date = inTrip ? inTrip.startsOn : (addDays(firstAway, 1) <= lastAway ? addDays(firstAway, 1) : firstAway);
   const where = whereOn(trip, date);
-  const place = where.end;
+  // Where the day is spent: the key moment's city, or before the flight home on the day it leaves.
+  const momentPlace = inTrip && inTrip.startsOn === date && where.places.find((p) => p.zone === inTrip.zone);
+  const place = momentPlace || (date === lastAway ? where.start : where.end);
   const home = trip.base.city;
   const homeZone = trip.base.zone;
+  const sameTime = trip.legs.every((l) => offsetMinutes(l.departs, homeZone) === offsetMinutes(l.departs, l.toZone) && offsetMinutes(l.arrives, homeZone) === offsetMinutes(l.arrives, l.toZone));
   const inHome = (t) => wallClock(t, homeZone).time;
   const local = (t) => wallClock(t, place.zone).time;
-  // The home bedtime that falls on this day where they are (02:00 in Dubai is the night before's 22:00 in London).
-  const beds = [usualBedAt(trip, addDays(date, -1)), usualBedAt(trip, date)];
-  const bed = beds.find((b) => wallClock(b, place.zone).date === date) || beds[1];
-  const getUp = new Date(bed.getTime() + trip.sleep.hours * HOUR);
-  const nextBed = new Date(bed.getTime() + 24 * HOUR);
+  const onTheDay = (t) => wallClock(t, place.zone).date === date;
+  const said = (words, t) => (sameTime ? `${words}.` : `${words}, which is ${inHome(t)} in ${home}.`);
+  // The usual home bedtime and wake time that fall on the day where they are.
+  const near = [-1, 0, 1].map((j) => addDays(date, j));
+  const bed = near.map((d) => usualBedAt(trip, d)).find(onTheDay) || usualBedAt(trip, date);
+  const getUp = near.map((d) => usualWakeAt(trip, d)).find(onTheDay) || new Date(bed.getTime() + trip.sleep.hours * HOUR);
+  // The night after getting up: caffeine and evening light are aimed at it.
+  const nextBed = bed > getUp ? bed : new Date(bed.getTime() + 24 * HOUR);
+  // Leaving after getting up: a night flight takes the night (asleep on board); after a day flight the night is at home, on the usual time.
+  const leaving = where.flights.find((f) => f.departs > getUp && f.departs.getTime() - RULES.boardWindow * HOUR <= nextBed.getTime());
+  const nightOnFlight = leaving && nextBed.getTime() <= leaving.arrives.getTime() - RULES.boardWindow * HOUR;
   const easterly = check.difference > 0;
   const steps = [];
   const mk = (kind, at, words, extra = {}) => ({ kind, at: at.toISOString(), time: local(at), zone: place.zone, city: place.city, showZone: false, words, ...extra });
-  steps.push(mk('sleep', bed, `Turn the lights out, which is ${inHome(bed)} in ${home}.`, { homeTime: inHome(bed) }));
-  steps.push(mk('sleep', getUp, `Get up, which is ${inHome(getUp)} in ${home}.`, { homeTime: inHome(getUp), wake: true }));
+  const homeTime = (t) => (sameTime ? {} : { homeTime: inHome(t) });
+  if (!leaving || bed < getUp) steps.push(mk('sleep', bed, said('Turn the lights out', bed), homeTime(bed)));
+  else if (nightOnFlight) steps.push({ ...mk('sleep', new Date(Math.max(leaving.departs.getTime() + RULES.sleepAfterTakeOff * HOUR, nextBed.getTime())), 'Sleep on the flight home.'), time: null, label: 'On board', onBoard: true });
+  steps.push(mk('sleep', getUp, said('Get up', getUp), { ...homeTime(getUp), wake: true }));
+  const lowFrom = roundIn(new Date(nextBed.getTime() - RULES.shortLowBeforeBed * HOUR), place.zone);
   if (easterly) {
     const from = roundIn(new Date(getUp.getTime() + RULES.shortDaylightAfterWake * HOUR), place.zone, { up: true });
-    steps.push(mk('light', from, 'Get daylight from now, not first thing.', { bright: { from: from.toISOString(), to: new Date(nextBed.getTime() - 4 * HOUR).toISOString() } }));
+    steps.push(mk('light', from, 'Get daylight from now, not first thing.', { bright: { from: from.toISOString(), to: lowFrom.toISOString() } }));
   } else {
-    const lowFrom = roundIn(new Date(nextBed.getTime() - 4 * HOUR), place.zone);
-    steps.push(mk('light', getUp, `Get daylight early in your day, and keep the light low from ${local(lowFrom)}.`, { bright: { from: getUp.toISOString(), to: lowFrom.toISOString() } }));
+    // Going west (or with no difference): daylight early in the day, but never in the local night.
+    const firstLight = instantAt(date, RULES.shortFirstLight, place.zone);
+    const from = getUp > firstLight ? getUp : firstLight;
+    const words = from > getUp ? `Get daylight once it’s light, and keep the light low from ${local(lowFrom)}.` : `Get daylight early in your day, and keep the light low from ${local(lowFrom)}.`;
+    steps.push(mk('light', from, words, { bright: { from: from.toISOString(), to: lowFrom.toISOString() } }));
   }
   if (!trip.noCaffeine) {
     const by = new Date(nextBed.getTime() - RULES.caffeineHours * HOUR);
     steps.push(mk('caffeine', by, `Have your last caffeine by ${local(by)}.`));
   }
   for (const m of trip.moments.filter((x) => x.startsOn === date)) {
-    const words = m.at ? `${m.name} starts, which is ${inHome(m.at)} in ${home}.` : `${m.name} is today.`;
-    steps.push({ ...(m.at ? mk('moment', m.at, words) : { kind: 'moment', at: null, time: null, zone: m.zone, city: m.city, showZone: false, words }), momentId: m.id, number: m.number, name: m.name, homeTime: m.at ? inHome(m.at) : null, time: m.at ? wallClock(m.at, m.zone).time : null });
+    const words = m.at ? said(`${m.name} starts`, m.at) : `${m.name} is today.`;
+    steps.push({ ...(m.at ? mk('moment', m.at, words) : { kind: 'moment', at: null, time: null, zone: m.zone, city: m.city, showZone: false, words }), momentId: m.id, number: m.number, name: m.name, homeTime: m.at && !sameTime ? inHome(m.at) : null, time: m.at ? wallClock(m.at, m.zone).time : null });
   }
-  steps.sort((a, b) => (a.at ? Date.parse(a.at) : -Infinity) - (b.at ? Date.parse(b.at) : -Infinity) || (a.kind === 'moment' ? -1 : 1));
+  // Only what falls on the day, where the person is (the last caffeine may be on a flight): nothing before landing or after leaving.
+  const kept = steps.filter((x) => x.kind === 'moment' || x.onBoard || (onTheDay(new Date(x.at)) && (x.kind === 'caffeine' || zoneOfAt(trip, new Date(x.at)) === place.zone)));
+  steps.length = 0;
+  steps.push(...kept);
+  const rank = (x) => (x.onBoard ? Number.MAX_SAFE_INTEGER : x.at ? Date.parse(x.at) : -Infinity);
+  steps.sort((a, b) => rank(a) - rank(b) || (a.kind === 'moment' ? -1 : b.kind === 'moment' ? 1 : 0));
   return {
     short: true,
     reason: check.reason,
     difference: check.difference,
+    sameTime,
     ...base(trip, input),
     from: trip.flightOut.departsOn,
     to: trip.flightHome.arrivesOn,
-    headline: `It’s a short trip, so stay on ${home} time.`,
+    headline: sameTime ? 'There’s no time difference, so keep your usual times.' : `It’s a short trip, so stay on ${home} time.`,
     keyDay: { date, title: dayKeyWords(date), zone: place.zone, city: place.city, steps },
     days: [],
     chart: null,
@@ -231,8 +255,10 @@ export function replanFrom(plan, today, edits = {}) {
     target: last.engine.target,
     sleepShift: last.engine.sleepShift,
     onBoard: last.engine.onBoard ? trip.legs.find((f) => f.departs.toISOString() === last.engine.onBoard) || null : null,
+    boardSleep: last.engine.boardSleep ? new Date(last.engine.boardSleep) : null,
+    inAir: inTheAir(trip, last.date),
   };
-  const fresh = bodyClockDays(trip, { from: today, clock: last.engine.clock });
+  const fresh = bodyClockDays(trip, { from: today, clock: last.engine.clock, since: last.date });
   const shaped = shapeDays(trip, [before, ...fresh], kept.length - 1).slice(1);
   return finish(trip, input, check, [...kept, ...shaped]);
 }

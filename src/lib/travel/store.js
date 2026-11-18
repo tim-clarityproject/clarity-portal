@@ -4,7 +4,8 @@ import { saveOrQueue, waitingToSend } from '../syncQueue';
 import { isMissingTable, tableReady } from '../performance/tableReady';
 import { parseDbTimestamp } from '../dateFormatter';
 import { deviceKey, readJson, writeJson } from '../deviceStore';
-import { awayOf, planFor, planTitle, tidyPlan, tidyState } from './model';
+import { awayOf, planFor, planKey, planTitle, tidyPlan, tidyState } from './model';
+import { ownEntry } from '../peakMoments/model';
 
 // Where Travel plans are kept (migration 048: travel_plans, travel_flights,
 // travel_plan_moments, travel_ticks and travel_away; Phase 8b part B).
@@ -27,6 +28,13 @@ import { awayOf, planFor, planTitle, tidyPlan, tidyState } from './model';
 // links them, with the time of day) and usual sleep. A plan edited while
 // under way keeps its earlier days on the device (`past`), so they stay as
 // they were here; another device works them out again.
+//
+// A plan is marked as sent only once the database has answered every one of
+// its saves. One waiting in the offline queue stays unsent until a load
+// finds the tables holding exactly it (planKey); one the database refused
+// stays here, unsent, marked `refused`, and isn't sent again until it is
+// changed. So a refused plan is never cleared from the device by a load
+// (the break-it tester, 18 Nov).
 //
 // Ticks are private (never read by a coach, and nothing ever says what
 // wasn't ticked). The away flag (travel_away: where, when, hours apart) is
@@ -161,7 +169,7 @@ function planOps(userId, plan, moments) {
     { table: 'travel_flights', kind: 'upsert', onConflict: 'id', values: flightRow(userId, plan, plan.flightHome, 'home', 1) },
     // The links are written whole each time: the old ones go first.
     { table: 'travel_plan_moments', kind: 'delete', match: { plan_id: plan.id, user_id: userId } },
-    ...plan.momentIds.map((id) => ({ table: 'travel_plan_moments', kind: 'upsert', onConflict: 'plan_id,moment_id', values: { plan_id: plan.id, moment_id: id, user_id: userId, starts_at: plan.momentTimes[id] || null } })),
+    ...plan.momentIds.map((id) => ({ table: 'travel_plan_moments', kind: 'upsert', onConflict: 'plan_id,moment_id', values: { plan_id: plan.id, moment_id: id, user_id: userId, starts_at: ownEntry(plan.momentTimes, id) || null } })),
   ];
   const away = awayOf(plan, planFor(plan, moments));
   if (away) {
@@ -176,10 +184,10 @@ async function sendPlan(userId, plan, moments) {
     const r = await saveOrQueue(userId, op);
     if (r?.status === 'queued') status = 'queued';
   }
-  // Marked as sent only when nothing newer was kept meanwhile.
+  // Marked as sent only once the database has every save, and only when nothing newer was kept meanwhile.
   const s = read(userId);
   const now = s.plans[plan.id];
-  if (now && now.updatedAt === plan.updatedAt) {
+  if (status === 'saved' && now && now.updatedAt === plan.updatedAt) {
     const plans = { ...s.plans };
     if (now.gone) delete plans[plan.id];
     else plans[plan.id] = { ...now, sent: true };
@@ -210,7 +218,7 @@ export async function savePlan(userId, plan, moments = []) {
   const now = new Date().toISOString();
   const s = read(userId);
   const had = s.plans[plan.id];
-  const p = { ...tidyPlan(plan), createdAt: had?.createdAt || plan.createdAt || now, updatedAt: now, sent: false, gone: false };
+  const p = { ...tidyPlan(plan), createdAt: had?.createdAt || plan.createdAt || now, updatedAt: now, sent: false, gone: false, refused: false };
   if (!p.title) p.title = planTitle(p);
   if (!write(userId, { ...s, plans: { ...s.plans, [p.id]: p } })) throw new Error('The device has no room to keep this.');
   if (!(await travelReady())) return 'device';
@@ -220,7 +228,7 @@ export async function savePlan(userId, plan, moments = []) {
 /** Delete one plan (its Undo saves it again with savePlan). Its ticks go with it. */
 export async function deletePlan(userId, id) {
   const s = read(userId);
-  const had = s.plans[id];
+  const had = ownEntry(s.plans, id);
   if (!had) return 'device';
   const there = await travelReady();
   if (there === false || (!there && !had.sent)) {
@@ -238,7 +246,8 @@ export async function deletePlan(userId, id) {
 /** A plan as it was, for Undo after a delete: its ticks come back too. */
 export function planSnapshot(userId, id) {
   const s = read(userId);
-  return s.plans[id] ? { plan: s.plans[id], ticks: s.ticks[id] || null } : null;
+  const plan = ownEntry(s.plans, id);
+  return plan ? { plan, ticks: ownEntry(s.ticks, id) || null } : null;
 }
 
 export async function restorePlan(userId, snapshot, moments = []) {
@@ -256,7 +265,7 @@ export async function restorePlan(userId, snapshot, moments = []) {
 
 /** One day's private ticks for a plan: { [step]: true }. */
 export function ticksOn(state, planId, day) {
-  return state.ticks[planId]?.[day] || {};
+  return ownEntry(ownEntry(state.ticks, planId), day) || {};
 }
 
 async function sendTick(userId, planId, day, step, on) {
@@ -272,8 +281,9 @@ async function sendTick(userId, planId, day, step, on) {
 
 /** Tick a step on a day, or take the tick off. Private: never read by a coach. */
 export async function setTick(userId, planId, day, step, on) {
+  if (planId === '__proto__' || day === '__proto__' || step === '__proto__') return 'device';
   const s = read(userId);
-  const forPlan = { ...(s.ticks[planId] || {}) };
+  const forPlan = { ...(ownEntry(s.ticks, planId) || {}) };
   const forDay = { ...(forPlan[day] || {}) };
   if (on) forDay[step] = true;
   else delete forDay[step];
@@ -289,8 +299,10 @@ export function moveTravel(userId, moments = []) {
   if (!userId) return Promise.resolve(0);
   if (moving) return moving;
   moving = (async () => {
+    // Saves already waiting in the queue go first, as the queue sends them.
+    if (waitingToSend(userId)) return 0;
     const s = read(userId);
-    const waiting = Object.values(s.plans).filter((p) => p.sent !== true);
+    const waiting = Object.values(s.plans).filter((p) => p.sent !== true && p.refused !== true);
     if (!waiting.length || !(await travelReady())) return 0;
     let moved = 0;
     for (const p of waiting) {
@@ -302,8 +314,10 @@ export function moveTravel(userId, moments = []) {
         moved += 1;
       } catch (error) {
         if (!NEVER.has(`${error?.code || ''}`)) return moved; // offline: tried again next time
+        // Refused: kept here, unsent, and not sent again until it is changed. Never marked sent.
         const cur = read(userId);
-        if (cur.plans[p.id]) write(userId, { ...cur, plans: { ...cur.plans, [p.id]: { ...cur.plans[p.id], sent: true } } });
+        const had = cur.plans[p.id];
+        if (had && had.updatedAt === p.updatedAt) write(userId, { ...cur, plans: { ...cur.plans, [p.id]: { ...had, refused: true } } });
       }
     }
     return moved;
@@ -367,11 +381,15 @@ export async function refreshTravel(userId, moments = []) {
       ids.add(p.id);
       const here = plans[p.id];
       if (!here || here.sent === true) plans[p.id] = { ...p, past: here?.past || null, seen: here?.seen || null, sent: true, gone: false };
+      // A save the queue sent later: the tables hold exactly what this device kept.
+      else if (!here.gone && planKey(here) === planKey(p)) plans[p.id] = { ...here, sent: true, refused: false };
     }
-    for (const p of Object.values(plans)) if (p.sent === true && !ids.has(p.id)) delete plans[p.id];
+    // Sent before and gone from the table: deleted on another device. A delete
+    // waiting here that the table no longer holds has gone through.
+    for (const p of Object.values(plans)) if (!ids.has(p.id) && (p.sent === true || p.gone === true)) delete plans[p.id];
     const ticks = { ...s.ticks };
     for (const id of ids) {
-      if (s.plans[id] && s.plans[id].sent !== true) continue;
+      if (id === '__proto__' || (s.plans[id] && s.plans[id].sent !== true)) continue;
       ticks[id] = {};
       for (const t of (tRes.data || []).filter((x) => x.plan_id === id)) {
         ticks[id][t.day] = { ...(ticks[id][t.day] || {}), [t.step]: true };
