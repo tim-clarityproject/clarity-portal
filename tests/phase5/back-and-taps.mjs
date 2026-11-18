@@ -225,7 +225,9 @@ try {
           await page.goto(`${APP}/about`);
           await page.waitForSelector('.ui-back-link', { timeout: 30000 });
           await sleep(800);
-          await page.locator('.ui-back-link').first().scrollIntoViewIfNeeded();
+          // To the middle of the screen, clear of the phone bar fixed at its foot.
+          await page.locator('.ui-back-link').first().evaluate((el) => el.scrollIntoView({ block: 'center' }));
+          await sleep(300);
           await measureBack(page, tag, {
             button: '.ui-back-link', label: '.ui-back-link > span:last-child',
             // Its own box's left: the visible strokes start where the link does

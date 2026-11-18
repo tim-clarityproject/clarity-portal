@@ -1,10 +1,11 @@
 // Tim's follow-up of 12 Nov, checked in a browser at 1280px and 390 by 844,
 // in light and dark:
 //
-//   - every outlined edge reaches 3 to 1: the portal's outlined buttons, the
-//     Add button, the Breathe button, the segmented control's outer edge and
+//   - every outlined edge reaches 3 to 1: the Breathe button, the segmented control's outer edge and
 //     the journal's prompt chips, each measured from the colours the browser
 //     used (tests/phase5/calm-rules.mjs runs the same reading on every page);
+//     outlined buttons since 18 Nov have Tim's hairline in the outline grey
+//     instead (Quiet precision), read as the browser drew it;
 //   - in Windows high-contrast mode (forced colours) the masked icons, the
 //     chevrons and the close crosshair, are drawn in the system's text
 //     colour: read from the style the browser used and from the screen's own
@@ -174,8 +175,16 @@ try {
         await page.locator('.home-page .ds-page-title').first().waitFor({ timeout: 20000 });
         await page.getByRole('button', { name: 'Add a to-do' }).first().waitFor({ timeout: 20000 });
         await settle();
+        // Outlined buttons have no border since 18 Nov: a 1px hairline drawn as an inset shadow in the
+        // outline grey, #3C3C3B in dark and #B9B7B1 in light (Tim's own values for Quiet precision, which
+        // replace rule 8a's 3 to 1 for a button's edge; the button's words carry it).
+        const hairlines = async (where) => {
+          const got = await page.evaluate(() => [...document.querySelectorAll('.ds-btn--outline')].filter((b) => b.getBoundingClientRect().width > 0).map((b) => getComputedStyle(b).boxShadow));
+          const want = mode === 'dark' ? 'rgb(60, 60, 59) 0px 0px 0px 1px inset' : 'rgb(185, 183, 177) 0px 0px 0px 1px inset';
+          pass(`${where} ${tag}: every outlined button has the outline grey hairline (${got.length} read)`, got.length >= 1 && got.every((x) => x === want), [...new Set(got)].join(' | '));
+        };
         const home = await page.evaluate(outlinedEdges, true);
-        edgeCheck(`Home ${tag}, the Add button and outlined buttons`, home, 'ds-btn', 1);
+        await hairlines('Home');
         if (!phone) edgeCheck(`Home ${tag}, the Breathe button`, home, 'ds-breathe', 1);
         pass(`Home ${tag}: no outlined edge under 3 to 1`, (await page.evaluate(outlinedEdges)).length === 0, (await page.evaluate(outlinedEdges)).join('; '));
         await shot('home');
@@ -196,7 +205,7 @@ try {
 
         await page.goto(`${APP}/strategic`);
         await settle();
-        edgeCheck(`Strategic hub ${tag}, its outlined button`, await page.evaluate(outlinedEdges, true), 'ds-btn', 1);
+        await hairlines('Strategic hub');
       } catch (e) { pass(`outlined edges ${tag}: measured`, false, `${e.message.split('\n')[0]} at ${page.url().replace(APP, '')}: ${(await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 160)}`); }
 
       try {

@@ -15,6 +15,7 @@ import { mkdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { APP, MOCKUP, SAM, guard, makeChecks, sleep, testEnv } from './shared.mjs';
 import { SCREENS } from './screens.mjs';
+import { withNewButtons } from '../buttons/expected.mjs';
 
 const env = testEnv();
 const out = process.argv[2] || null;
@@ -132,9 +133,29 @@ for (const mode of MODES) {
         continue;
       }
       const got = await page.evaluate(readParts, { root: '.si-col', map: APP_MAP, loose: Boolean(screen.looseBox) });
+      // M26's pill buttons, as the new buttons draw them (Tim, 18 Nov; tests/buttons/expected.mjs): 34px high,
+      // 40px on a phone, 14px words; a button that hugs its words is their width plus 14px each side.
+      const boxWidth = Math.max(0, ...want.parts.filter((x) => x.kind === 'inp').map((x) => x.width));
+      const appButtons = got.parts.filter((x) => x.kind === 'btn');
+      const mockButtons = want.parts.filter((x) => x.kind === 'btn');
+      const words = !appButtons.length ? [] : await page.evaluate((texts) => {
+        const c = document.createElement('canvas').getContext('2d');
+        const st = getComputedStyle(document.querySelector('.si-col .si-btn'));
+        c.font = `${st.fontWeight} ${st.fontSize} ${st.fontFamily}`;
+        c.letterSpacing = st.letterSpacing;
+        return texts.map((t) => c.measureText(t).width);
+      }, appButtons.map((x) => x.text));
+      want.parts = withNewButtons(want.parts, {
+        phone,
+        isButton: (x) => x.kind === 'btn',
+        fills: (x) => !boxWidth || x.width >= boxWidth - 1,
+        wordsWidth: (x) => words[mockButtons.findIndex((m) => m.text === x.text && m.top === x.top)] ?? x.width,
+      });
       pass(`${tag}: no page error`, errors.length === 0, errors[0]);
       pass(`${tag}: no sideways scroll`, got.sideways <= 0, `${got.sideways}px`);
-      const kinds = (list) => list.parts.map((p) => `${p.kind}${p.text ? ` "${p.text}"` : ''}`);
+      // M26 sets its buttons in capitals; since 18 Nov the portal's buttons are sentence case
+      // (Tim's Quiet precision), so a button's words are compared letter for letter, whatever the case.
+      const kinds = (list) => list.parts.map((p) => `${p.kind}${p.text ? ` "${p.kind === 'btn' ? p.text.toLowerCase() : p.text}"` : ''}`);
       const same = JSON.stringify(kinds(want)) === JSON.stringify(kinds(got));
       pass(`${tag}: the same parts, in the same order, with the same words`, same, same ? '' : `\n   M26: ${kinds(want).join(' | ')}\n   app: ${kinds(got).join(' | ')}`);
       if (same) {

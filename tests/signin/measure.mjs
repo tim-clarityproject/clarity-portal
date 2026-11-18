@@ -148,11 +148,16 @@ function parts() {
       boxLeft: Math.min(...[...col.querySelectorAll('.si-inp')].filter(vis).map((i) => i.getBoundingClientRect().left)),
     };
   }
-  // Tap areas: every control's own box.
+  // Tap areas: every control's own box, with the invisible ::after a button
+  // lays round itself (since 18 Nov a button is 34px, 40px on a phone, in a
+  // 44px-high target as wide as it).
   out.low = [];
   for (const el of col.querySelectorAll('a[href], button, input, [role=checkbox]')) {
     if (!vis(el)) continue;
-    const b = el.getBoundingClientRect();
+    const own = el.getBoundingClientRect();
+    const af = getComputedStyle(el, '::after');
+    const reach = af.content !== 'none' && af.position === 'absolute' && af.pointerEvents !== 'none' ? { width: parseFloat(af.width) || 0, height: parseFloat(af.height) || 0 } : { width: 0, height: 0 };
+    const b = { width: Math.max(own.width, reach.width), height: Math.max(own.height, reach.height) };
     const name = `${el.className.toString().split(' ')[0]} "${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 24)}"`;
     if (b.height < 43.5) out.low.push(`${name} ${b.height.toFixed(1)}px high`);
     if (!el.matches('.si-link') && b.width < 43.5) out.low.push(`${name} ${b.width.toFixed(1)}px wide`);
