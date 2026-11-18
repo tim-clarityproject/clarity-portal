@@ -10,7 +10,9 @@
 // such as `hc-dot--${state}`), so a class the code builds is never lost.
 // Everything else stays as it is: element, attribute and id selectors,
 // @font-face, @keyframes and every other at-rule. A rule with several
-// selectors keeps the ones that can match and drops the rest. Then the
+// selectors keeps the ones that can match and drops the rest; inside
+// `:is()` or `:where()` one choice that can match is enough, and `:not()`
+// asks for nothing. Then the
 // design tokens (custom properties, `--name: value`) that nothing left reads
 // go too: not any of the page's CSS files (one reads another's tokens), and
 // not the page's code (which sets or reads some, such as --ds-toast-offset),
@@ -39,6 +41,24 @@ export function classUsed(name, names) {
 }
 
 /**
+ * Whether a selector can match on the page. Inside `:is()` and `:where()`
+ * one of the choices is enough; `:not()` never needs its classes (the
+ * buttons' `:is(.ds-btn--primary, .si-btn, …):not(#_)`, Tim, 18 Nov).
+ */
+export function selectorCanMatch(sel, names) {
+  // The innermost pseudo-class with a list, worked out and replaced, until none is left.
+  const inner = /:(is|where|not|matches)\(([^()]*)\)/i;
+  let rest = sel;
+  // A list none of whose choices can match leaves a mark that no page names, so the choice holding it can't match either.
+  const NEVER = '.zzzclassnopagenameszzz';
+  for (let m = inner.exec(rest); m; m = inner.exec(rest)) {
+    const ok = m[1].toLowerCase() === 'not' || m[2].split(',').some((alt) => !alt.includes(NEVER) && selectorCanMatch(alt, names));
+    rest = rest.slice(0, m.index) + (ok ? '' : NEVER) + rest.slice(m.index + m[0].length);
+  }
+  return !rest.includes(NEVER) && [...rest.matchAll(CLASS)].every((c) => classUsed(c[1], names));
+}
+
+/**
  * Every stylesheet of a page, trimmed together.
  * @param {string[]} sheets the CSS files' text
  * @param {Set<string>} names namesIn(the page's scripts and HTML)
@@ -51,7 +71,7 @@ export function trimSheets(sheets, names, texts = []) {
   for (const root of roots) {
     root.walkRules((rule) => {
       if (rule.parent?.type === 'atrule' && /keyframes$/i.test(rule.parent.name)) return;
-      const keep = rule.selectors.filter((sel) => [...sel.matchAll(CLASS)].every((m) => classUsed(m[1], names)));
+      const keep = rule.selectors.filter((sel) => selectorCanMatch(sel, names));
       dropped += rule.selectors.length - keep.length;
       if (!keep.length) rule.remove();
       else if (keep.length !== rule.selectors.length) rule.selectors = keep;

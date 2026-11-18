@@ -35,7 +35,7 @@ export default function FilterButton({ label = 'Filter', applied, onClear, child
         onClick={() => setOpen((v) => !v)}
       >
         {label}
-        <DisclosureArrow open={open} beside="capitals" />
+        <DisclosureArrow open={open} beside="words" />
       </button>
       <div id={panelId} className="ds-filter-panel" hidden={!open}>
         {children}

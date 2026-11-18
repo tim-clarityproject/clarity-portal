@@ -31,8 +31,8 @@ export function buttonProblems({ phone, scale = 1 }) {
   const name = (el) => `"${(el.textContent || el.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim().slice(0, 32)}"`;
   const near = (a, b, tol = 0.6) => Math.abs(a - b) <= tol;
   const out = [];
-  // The screen's top layer: an open panel or dialog, else the page.
-  const top = [...document.querySelectorAll('[role=dialog], [aria-modal=true], .ds-guide--fullscreen')].filter(vis).pop() || document.body;
+  // The screen's top layer: an open panel, dialog or the phone's menu (over its scrim), else the page.
+  const top = [...document.querySelectorAll('[role=dialog], [aria-modal=true], .ds-guide--fullscreen, .ds-tmenu')].filter(vis).pop() || document.body;
   const buttons = [...top.querySelectorAll(FAMILIES)].filter(vis);
   for (const el of buttons) {
     const cs = getComputedStyle(el);

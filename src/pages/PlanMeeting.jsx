@@ -392,8 +392,8 @@ export default function PlanMeeting() {
               onClick={() => setMenuOpen(!menuOpen)}
             >
               Add section
-              {/* Beside the button's capitals, so centred on them (rule 29ao). */}
-              <DisclosureArrow open={menuOpen} beside="capitals" />
+              {/* Beside the button's words, in sentence case since 18 Nov, so centred on their x-height (rule 29ao). */}
+              <DisclosureArrow open={menuOpen} beside="words" />
             </Button>
             {menuOpen && (
               <div className="plan-menu-list" role="menu">

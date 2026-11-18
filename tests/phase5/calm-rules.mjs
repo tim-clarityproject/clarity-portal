@@ -524,7 +524,8 @@ for (const width of PAGES.length ? WIDTHS : []) {
         await page.evaluate(() => document.fonts.ready);
         await sleep(1200);
         if (act === 'menu') {
-          await page.locator(phone ? '.ds-bar-menu' : '.hdr-menu').click();
+          // The phone bar's menu button shows up to 768px wide, the header's above it.
+          await page.locator('.ds-bar-menu:visible, .hdr-menu:visible').first().click();
           await sleep(700);
         }
         const fonts = await page.evaluate(() => [document.fonts.check('16px "DM Sans"'), document.fonts.check('16px Nekst')]);
