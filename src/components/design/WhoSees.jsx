@@ -227,7 +227,7 @@ function CoachSeesSheet({ open, onClose, parts, onToggle, coach }) {
       <p className="ds-sheet-name">{who} only sees what you switch on here.</p>
       <div className="ds-sheet-rows">
         {parts.map((part) => (
-          <div className="ds-sheet-row" key={part.key}>
+          <div className="ds-sheet-row ds-switch-tap" key={part.key} onClick={(e) => { if (!e.target.closest('button')) flip(part); }}>
             <span>{part.label}</span>
             <button
               type="button"

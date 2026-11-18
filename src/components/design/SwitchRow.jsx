@@ -5,14 +5,16 @@ import './design.css';
 // words on the left (a short label, then one grey line saying what
 // switching it on does) and the shared switch on the right, mint when on.
 // The whole row reads as one switch to a screen reader; the switch has a
-// 44px tap area.
+// 44px tap area, and a tap anywhere on the row switches it too (Tim, 18
+// Nov, follow-up 1: the whole row is the tap area on a phone).
 //
 // label: "Share with Tim"; note: "Tim will see this week's scores, …".
 export default function SwitchRow({ label, note, checked = false, onChange, busy = false }) {
   const labelId = useId();
   const noteId = useId();
   return (
-    <div className="ds-switchrow">
+    // The switch itself takes the keyboard; the row only widens the tap.
+    <div className="ds-switchrow ds-switch-tap" onClick={(e) => { if (!e.target.closest('button')) onChange(!checked); }}>
       <div className="ds-switchrow-words">
         <span id={labelId} className="ds-switchrow-label">{label}</span>
         {note && <span id={noteId} className="ds-switchrow-note">{note}</span>}

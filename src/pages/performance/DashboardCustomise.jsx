@@ -69,7 +69,7 @@ export function DashboardCustomise({ open, onClose }) {
     }
   };
   const row = (key, { movable = false, i = 0 } = {}) => (
-    <div className="dash-cus-row" key={key}>
+    <div className="dash-cus-row ds-switch-tap" key={key} onClick={(e) => { if (!e.target.closest('button')) save((s) => toggleHidden(s, key)); }}>
       <span className="dash-cus-name">{SECTION_NAMES[key]}</span>
       {movable && (
         <>

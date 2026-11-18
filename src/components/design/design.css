@@ -3086,7 +3086,15 @@
   color: var(--label);
 }
 
-/* The switch (M4 v46 .swt): mint when on, the mode's own mint. */
+/* The switch (Tim, 18 Nov, follow-up 1): one everywhere, a 40 by 24px
+   track with a round knob; off the quiet grey track, on the mode's mint
+   (never coral) with the knob at the right. A row holding a switch
+   (`.ds-switch-tap`) switches it from a tap anywhere on it. */
+.ui-root .ds-switch-tap {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .ui-root .ds-switch {
   all: unset;
   cursor: pointer;

@@ -324,8 +324,8 @@
   --icon-line: 1.5px;
   --icon-gap: 6px;
   --icon-item-gap: 20px;
-  --switch-w: 52px;          /* the switch (M4 v46) */
-  --switch-h: 30px;
+  --switch-w: 40px;          /* one switch everywhere (Tim, 18 Nov, follow-up 1): a 40 by 24px track, a round knob */
+  --switch-h: 24px;
   --switch-knob: #FFFFFF;    /* white in both modes, as the mock-up */
   /* The chart pop-up (Tim, 26 Oct; M4 dashboard v46) */
   --tip-edge: 12px;          /* never closer than this to a screen edge */
