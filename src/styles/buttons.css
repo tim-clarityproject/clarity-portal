@@ -242,3 +242,24 @@
 .ui-root .ds-chip:not(#_) {
   border-radius: var(--radius-chip) !important;
 }
+
+/* ---------- Text inputs and drop-downs (Tim, 18 Nov, follow-up 1) ----------
+   One height, 56px on a laptop and 52px on a phone (--field-h), with 14px
+   corners: the shared one-line field, drop-down and figure box, the
+   sign-in pages' boxes and the older pages' inputs. Larger words make them
+   taller, never cut off. */
+.ui-root :is(.ds-field, .ds-dd, .ds-num--box, .si-inp, .auth-input, input.plan-input, select.plan-input):not(#_) {
+  box-sizing: border-box;
+  min-height: var(--field-h) !important;
+  border-radius: var(--radius-field) !important;
+}
+
+.ui-root :is(.auth-input, input.plan-input, select.plan-input):not(#_) {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.ui-root .ds-grow--one > .ds-text:not(#_),
+.ui-root .ds-grow--one::after {
+  min-height: var(--field-h) !important;
+}

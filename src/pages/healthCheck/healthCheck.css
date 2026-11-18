@@ -126,7 +126,6 @@
 .ui-root .hc-ctl .ds-dd {
   width: auto;
   min-width: var(--hc-dd-min-w);
-  min-height: var(--hc-dd-h) !important;
   padding: var(--space-px10) var(--space-px18) !important;
   font-size: var(--fs-option) !important;
 }

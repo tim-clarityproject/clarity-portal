@@ -211,7 +211,6 @@
   /* Component sizes */
   --btn-h: 40px;             /* every button, segmented switch and choice on a laptop (Tim, 18 Nov, follow-up 1); its tap area stays 44px */
   --btn-h-phone: 44px;       /* the same on a phone */
-  --hc-dd-h: 48px;           /* the Health Check's small drop-downs (M7b), which kept the old button height */
   --btn-pad-x: 16px;         /* in from each side */
   --btn-pad-y: 4px;          /* above and below, once a larger text size wraps the words */
   --radius-btn: 8px;
@@ -306,8 +305,11 @@
      drop-down has 20px each side, 15px top and bottom, at least 58px of
      height and 14px corners; long choices wrap rather than squeeze. */
   --box-pad-x: 20px;
-  --box-pad-y: 15px;
-  --box-min-h: 58px;
+  /* Text inputs and drop-downs are one height (Tim, 18 Nov, follow-up 1): 56px on a laptop,
+     52px on a phone (below), 14px corners; the padding is what one line of typed words leaves. */
+  --field-h: 56px;
+  --box-pad-y: max(var(--space-1), calc((var(--field-h) - 2 * var(--line-w) - var(--fs-text) * var(--lh-box)) / 2));
+  --box-min-h: var(--field-h);
   --radius-field: 14px;
   --lh-box: 1.45;            /* typed text */
   --lh-option: 1.35;         /* drop-down choices and their box */
@@ -793,6 +795,13 @@
 @supports (font: -apple-system-body) and (-webkit-touch-callout: none) {
   .ui-root {
     --u: min(calc(1rem / 17), 2px);
+  }
+}
+
+/* A phone's fields (Tim, 18 Nov, follow-up 1). */
+@media (max-width: 600px) {
+  .ui-root {
+    --field-h: 52px;
   }
 }
 
