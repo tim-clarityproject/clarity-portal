@@ -1,4 +1,4 @@
-import { Button } from './Button';
+import { AddButton, Button } from './Button';
 import './design.css';
 
 // Recovery's quiet panels (M15, Tim, 26 Oct), on the soft surface colour
@@ -15,8 +15,9 @@ import './design.css';
 // in recovery until Mon 2 Nov." on the left and "4 days to go." on the
 // right, wrapping under it on a narrow screen.
 //
-// RecoveryLinks (M15 .rlinks): the quiet text links that sit under them,
-// "Add a few more days" and "Ready to go again".
+// RecoveryLinks (M15 .rlinks): what sits under them. "Add a few more days"
+// is the add row, on its own line (Tim, 18 Nov: every Add that adds to
+// what's there); "Ready to go again" stays a quiet text link.
 
 export function RecoveryNotice({ lead, lines = [], action, className = '', children }) {
   return (
@@ -43,8 +44,9 @@ export function RecoveryBanner({ until, left, className = '' }) {
 export function RecoveryLinks({ links, className = '' }) {
   return (
     <div className={`ds-rec-links ${className}`.trim()}>
-      {links.filter(Boolean).map((l) => (
-        <Button key={l.label} variant="text" onClick={l.onClick} disabled={l.disabled}>{l.label}</Button>
+      {links.filter(Boolean).map((l) => (/^Add (a|an|another) /.test(l.label)
+        ? <AddButton key={l.label} onClick={l.onClick} disabled={l.disabled}>{l.label}</AddButton>
+        : <Button key={l.label} variant="text" onClick={l.onClick} disabled={l.disabled}>{l.label}</Button>
       ))}
     </div>
   );

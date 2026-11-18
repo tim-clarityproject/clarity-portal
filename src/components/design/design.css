@@ -364,29 +364,74 @@
   outline-offset: var(--space-px3);
 }
 
-/* The one add button (AddButton; Tim, 26 Oct, 16:54): the crosshair in
-   the text colour, coral only on hover or keyboard focus, full width on
-   a phone. */
-.ui-root .ds-add .ds-cross {
-  background-color: var(--text);
-  transition: background-color var(--dur) var(--ease);
+/* The add row (AddButton; Tim, 18 Nov): the list's full width, at least
+   48px high, a 12px coral cross (two 1.5px lines) in an 18px square, 14px
+   on to the words in DM Sans 16px in the secondary grey; the words turn
+   the text colour on hover and keyboard focus. No box and no outline.
+   !important where src/styles/mobile.css pads and sizes every button on a
+   phone. */
+.ui-root .ds-addrow {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--addrow-gap);
+  width: 100%;
+  min-height: var(--addrow-h) !important;
+  padding: 0 !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-addrow) !important;
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-tile);
+  letter-spacing: normal;
+  text-align: left;
+  color: var(--text-2);
+  transition: color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.ui-root .ds-add:hover,
-.ui-root .ds-add:focus-visible {
-  border-color: var(--coral-text);
+.ui-root .ds-addrow-mark {
+  position: relative;
+  flex: none;
+  width: var(--addrow-box);
+  height: var(--addrow-box);
 }
 
-.ui-root .ds-add:hover .ds-cross,
-.ui-root .ds-add:focus-visible .ds-cross {
-  background-color: var(--coral-text);
+.ui-root .ds-addrow-mark::before,
+.ui-root .ds-addrow-mark::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--addrow-cross);
+  height: var(--icon-line);
+  border-radius: var(--icon-line);
+  background: var(--coral-text);
+  transform: translate(-50%, -50%);
 }
 
-@media (max-width: 768px) {
-  .ui-root .ds-add {
-    width: 100%;
-    justify-content: center;
+.ui-root .ds-addrow-mark::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.ui-root .ds-addrow:focus-visible {
+  color: var(--text);
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px3);
+  border-radius: var(--space-1);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-addrow:hover {
+    color: var(--text);
   }
+}
+
+.ui-root .ds-addrow:disabled {
+  cursor: default;
+  opacity: var(--disabled-opacity);
 }
 
 .ui-root .ds-btn[aria-disabled='true'],
@@ -2577,11 +2622,11 @@
   border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-pill);
   background: var(--bg);
-  font-family: var(--font-display);
-  font-weight: var(--fw-regular);
+  /* Its word as every button's (Tim, 18 Nov); the pill keeps its size for the orb. */
+  font-family: var(--font-body);
+  font-weight: var(--fw-medium);
   font-size: var(--fs-btn) !important;
   line-height: 1;
-  text-transform: uppercase;
   letter-spacing: var(--ls-btn);
   color: var(--text);
   transition: border-color var(--dur) var(--ease);
@@ -3746,7 +3791,7 @@
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  min-height: var(--btn-h) !important;
+  min-height: var(--tap-min) !important;
   padding: 0 var(--space-px10) !important;
   font-family: var(--font-body);
   font-size: var(--fs-secondary) !important;
@@ -4277,6 +4322,10 @@
 .ui-root .ds-nextstep-meta .ds-link {
   justify-content: flex-end;
   min-width: var(--tap-min);
+}
+
+.ui-root .ds-nextstep-meta .ds-btn {
+  margin-top: var(--space-1);
 }
 
 /* ---------- Guest pages: the bold crosshair alone, centred (M9 .gtop) ---------- */
@@ -7237,6 +7286,10 @@
   gap: 0 var(--space-px28);
 }
 
+.ui-root .ds-rec-links .ds-addrow {
+  flex-basis: 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ui-root .ds-daycount-btn .ds-cross,
   .ui-root .ds-daycount-minus {
@@ -8336,7 +8389,7 @@
   }
 }
 
-.ui-root .ds-hub-anchor .ds-add {
+.ui-root .ds-hub-anchor .ds-hub-new {
   margin-top: var(--space-px18);
 }
 

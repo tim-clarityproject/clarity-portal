@@ -3,7 +3,6 @@ import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import {
-  AddButton,
   Bar,
   Button,
   ChartTable,
@@ -944,7 +943,7 @@ function WorkOn({ userId, today, kind, coach, workOn, sprint, checkinId, ensureC
               </li>
             ))}
           </ul>
-          {running && <AddButton className="ck-one-add" onClick={() => choose({ key: 'other' })}>Something else</AddButton>}
+          {running && <Button className="ck-one-add" onClick={() => choose({ key: 'other' })}>Something else</Button>}
           {!running && <p className="ck-one-next">{noSprintLine({ kind, coachName: coach })}</p>}
           <Button variant="text" className="ck-one-nothing" onClick={nothingThisMonth}>Nothing this month</Button>
         </>

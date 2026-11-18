@@ -5,7 +5,7 @@ import { useDraft } from '../../lib/drafts';
 import DesignHeader from '../../components/DesignHeader';
 import pageText from '../../content/pageText';
 import {
-  AddButton, Button, PageHeader, TextBox, useToast,
+  Button, PageHeader, TextBox, useToast,
 } from '../../components/design';
 import {
   OWN_NAME_MAX, areaName, differsFromStandard, isDuplicateName, questionFor, sortAreas,
@@ -167,9 +167,9 @@ export default function WheelAreas() {
               onChange={setDraft}
               onKeyDown={(e) => { if (e.key === 'Enter') add(); }}
             />
-            <AddButton className="wol-add-btn" disabled={!draft.trim() || pending} onClick={add}>
+            <Button className="wol-add-btn" disabled={!draft.trim() || pending} onClick={add}>
               Add area
-            </AddButton>
+            </Button>
           </div>
           <small>New areas start with no history. Their question will read “…how satisfied are you with travel in your life right now?”</small>
         </div>

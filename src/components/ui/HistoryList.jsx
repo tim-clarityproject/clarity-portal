@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react';
 import { parseDbTimestamp, formatDayMonthTime } from '../../lib/dateFormatter';
 import pageText from '../../content/pageText';
 import { noMatchLine, searchRows } from '../../lib/savedItems';
-import { AddButton, Button, Chevron, Dropdown, EmptyState, FilterButton, PageHeader, SearchField, keepsHappeningLine, useCoach } from '../design';
+import { Button, Chevron, Dropdown, EmptyState, FilterButton, PageHeader, SearchField, keepsHappeningLine, useCoach } from '../design';
 
 // LIST ROW GUIDELINES (CLAUDE.md "List row guidelines"; a mock-up or a
 // newer decision wins where it shows a detail). Every row of every list:
@@ -763,9 +763,9 @@ const HLIST_CSS = `
 }
 `;
 
-// "New plan", "New review", "New journal": the one add button (CLAUDE.md 29),
-// its crosshair in the text colour; "Continue today" is a plain button.
+// "New plan", "New review", "New journal", "Continue today": a plain
+// button. It opens a tool rather than adding a row to the list under it,
+// so it is never the add row (Tim, 18 Nov).
 function NewButton({ newButton, className = '' }) {
-  if (newButton.icon === null) return <Button className={className} onClick={newButton.onClick}>{newButton.label}</Button>;
-  return <AddButton className={className} onClick={newButton.onClick}>{newButton.label}</AddButton>;
+  return <Button className={className} onClick={newButton.onClick}>{newButton.label}</Button>;
 }

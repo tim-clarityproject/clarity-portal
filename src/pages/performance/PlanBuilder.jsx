@@ -450,7 +450,7 @@ function PlanTool({ userId, data, mode }) {
           {others.length > 0 && (
             <div className="plan-picks">
               <FieldLabel label="Do any of your other Strategies help this too?" />
-              {others.map((s) => <AddButton key={s.id} onClick={() => serveToo(s.id, o.id)}>{s.name.trim()}</AddButton>)}
+              {others.map((s) => <Button key={s.id} className="plan-pick" onClick={() => serveToo(s.id, o.id)}>{s.name.trim()}</Button>)}
             </div>
           )}
           {fresh.length > 0 && (
@@ -458,7 +458,7 @@ function PlanTool({ userId, data, mode }) {
               {/* M6's "Need ideas? Pick one, then make it yours." as two lines: one sentence per line (writing rule 49). */}
               <FieldLabel label="Need ideas?" />
               <p className="plan-muted plan-picks-nudge">Pick one, then make it yours.</p>
-              {fresh.map((idea) => <AddButton key={idea} onClick={() => addStrategy(o?.id || null, idea)}>{idea}</AddButton>)}
+              {fresh.map((idea) => <Button key={idea} className="plan-pick" onClick={() => addStrategy(o?.id || null, idea)}>{idea}</Button>)}
             </div>
           )}
         </div>

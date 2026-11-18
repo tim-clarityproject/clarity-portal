@@ -229,7 +229,7 @@
   margin-top: calc(-1 * var(--space-1));
 }
 
-.ui-root .plan-picks .ds-add {
+.ui-root .plan-picks .plan-pick {
   justify-content: flex-start;
   text-align: left;
 }
@@ -1105,9 +1105,6 @@
 
 .ui-root .day-score { margin-top: var(--space-5); }
 
-@media (max-width: 600px) {
-  .ui-root .day-add { width: 100%; }
-}
 
 /* ---------- Daily review (M5) ---------- */
 .ui-root .rev-list { margin-top: var(--space-px2); }
@@ -1362,8 +1359,7 @@
 }
 
 @media (max-width: 600px) {
-  .ui-root .home-help .ds-btn,
-  .ui-root .home-add {
+  .ui-root .home-help .ds-btn {
     width: 100%;
     justify-content: center;
   }

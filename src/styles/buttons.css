@@ -1,0 +1,131 @@
+/* ==========================================================================
+   Buttons: Quiet precision (Tim, 18 Nov 2026; decisions part 8, 09:45 and
+   12:00). One look for every button in the portal, the client portal and
+   the coach portal alike, written once here. The Nekst capital pills are
+   gone.
+
+   Every button: DM Sans 14px, weight 500, sentence case, letter-spacing
+   -0.005em; 34px high on a laptop and 40px on a phone; 14px in at each
+   side; 8px corners. The tap area stays 44px: an invisible ::after, 44px
+   high and as wide as the button, centred on it.
+   The main button (one per screen): flat coral with black text and a faint
+   top highlight; on hover, each mode's coral hover.
+   Other buttons: no fill, a 1px hairline drawn as an inset shadow in the
+   outline grey (#3C3C3B dark, #B9B7B1 light); on hover and keyboard focus
+   the hairline and the words turn the full text colour.
+   Pressing scales the button to 0.97 for 150ms; Reduce motion turns it off.
+
+   Why `:not(#_)`: older rules give every button its own size with
+   !important (src/styles/mobile.css on phones, and a page's own rules
+   that beat it at a higher specificity, as design.css's header explains).
+   `:not(#_)` matches every element and adds one id's weight, so the shape
+   and type below win over all of them without a page having to undo its
+   own rule. Only the shape and type are held this way: a page's colours,
+   widths and margins still apply. The colours and the tap area add the
+   element's type (`:is(button, a, label, span)`), just enough to beat the
+   shared button's own `all: unset` (design.css loads after this file),
+   so a page's own colour rule can still win.
+
+   The families: the shared Button (`.ds-btn--primary`, `.ds-btn--outline`)
+   and the older pages' (`.ui-btn-*`, `.auth-btn-*`, `.dng`), the sign-in
+   pages' coral button (`.si-btn`) and focus mode's Done. Not buttons in
+   this sense, and left as they are: text links, the segmented control,
+   steppers, chips, answer rows, icon buttons (the 44px round ones), the
+   floating Breathe pill (it holds the 44px breathing orb), Google's own
+   button and the add row (`.ds-addrow`, in design.css).
+   ========================================================================== */
+
+.ui-root :is(.ds-btn--primary, .ds-btn--outline, .ui-btn-primary, .ui-btn-ghost, .auth-btn-primary, .auth-btn-ghost, .dng, .si-btn, .ds-focus-done):not(#_) {
+  box-sizing: border-box;
+  height: auto !important;
+  min-height: var(--btn-h) !important;
+  padding: var(--btn-pad-y) var(--btn-pad-x) !important;
+  border: 0 !important;
+  border-radius: var(--radius-btn) !important;
+  font-family: var(--font-body) !important;
+  font-size: var(--fs-btn) !important;
+  font-weight: var(--fw-medium) !important;
+  line-height: var(--lh-btn) !important;
+  letter-spacing: var(--ls-btn) !important;
+  text-transform: none !important;
+  word-spacing: normal !important;
+}
+
+.ui-root :is(.ds-btn--primary, .ds-btn--outline, .ui-btn-primary, .ui-btn-ghost, .auth-btn-primary, .auth-btn-ghost, .dng, .si-btn, .ds-focus-done):is(button, a, label, span) {
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+@media (max-width: 600px) {
+  .ui-root :is(.ds-btn--primary, .ds-btn--outline, .ui-btn-primary, .ui-btn-ghost, .auth-btn-primary, .auth-btn-ghost, .dng, .si-btn, .ds-focus-done):not(#_) {
+    min-height: var(--btn-h-phone) !important;
+  }
+}
+
+/* The 44px tap area, centred on the button, as wide as it. */
+.ui-root :is(.ds-btn--primary, .ds-btn--outline, .ui-btn-primary, .ui-btn-ghost, .auth-btn-primary, .auth-btn-ghost, .dng, .si-btn, .ds-focus-done):is(button, a, label, span)::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* 5px above and below a 34px button (2px round a 40px one); none once
+     larger words make the button 44px or more. */
+  top: min(0px, calc(50% - var(--tap-min) / 2));
+  bottom: min(0px, calc(50% - var(--tap-min) / 2));
+}
+
+/* The main button. */
+.ui-root :is(.ds-btn--primary, .ui-btn-primary, .auth-btn-primary, .si-btn):is(button, a, label, span) {
+  background: var(--coral);
+  color: var(--on-coral);
+  box-shadow: var(--btn-highlight);
+}
+
+@media (hover: hover) {
+  .ui-root :is(.ds-btn--primary, .ui-btn-primary, .auth-btn-primary, .si-btn):is(button, a, label, span):hover {
+    background: var(--coral-hover);
+  }
+}
+
+/* Every other button. */
+.ui-root :is(.ds-btn--outline, .ui-btn-ghost, .auth-btn-ghost, .ds-focus-done):is(button, a, label, span) {
+  background: transparent;
+  color: var(--text-2);
+  box-shadow: inset 0 0 0 var(--line-w) var(--btn-line);
+}
+
+/* The danger button keeps its deeper coral words. */
+.ui-root .dng:is(button, a, label, span) {
+  background: transparent;
+  box-shadow: inset 0 0 0 var(--line-w) var(--btn-line);
+}
+
+.ui-root :is(.ds-btn--outline, .ui-btn-ghost, .auth-btn-ghost, .ds-focus-done, .dng):is(button, a, label, span):focus-visible {
+  color: var(--text);
+  box-shadow: inset 0 0 0 var(--line-w) var(--text);
+}
+
+@media (hover: hover) {
+  .ui-root :is(.ds-btn--outline, .ui-btn-ghost, .auth-btn-ghost, .ds-focus-done, .dng):is(button, a, label, span):hover {
+    color: var(--text);
+    box-shadow: inset 0 0 0 var(--line-w) var(--text);
+  }
+}
+
+/* A switched-off button doesn't light up. */
+.ui-root :is(.ds-btn--outline, .ui-btn-ghost, .auth-btn-ghost, .dng):is(button, a, label, span):is(:disabled, [aria-disabled='true']):hover {
+  color: var(--text-2);
+  box-shadow: inset 0 0 0 var(--line-w) var(--btn-line);
+}
+
+/* Pressing. */
+.ui-root :is(.ds-btn--primary, .ds-btn--outline, .ui-btn-primary, .ui-btn-ghost, .auth-btn-primary, .auth-btn-ghost, .dng, .si-btn, .ds-focus-done):is(button, a, label, span):not(:disabled, [aria-disabled='true']):active {
+  transform: scale(var(--btn-press));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root :is(.ds-btn--primary, .ds-btn--outline, .ui-btn-primary, .ui-btn-ghost, .auth-btn-primary, .auth-btn-ghost, .dng, .si-btn, .ds-focus-done):is(button, a, label, span):active {
+    transform: none;
+  }
+}

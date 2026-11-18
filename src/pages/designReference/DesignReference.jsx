@@ -1420,7 +1420,7 @@ function Gallery() {
 
         <GallerySection id="c2" title="Type" demo={TypeDemo} rules={(
           <>
-            <p><b>Nekst capitals only for short names:</b> page titles, section names and buttons.</p>
+            <p><b>Nekst capitals only for short names:</b> page titles and section names. Buttons are DM Sans in sentence case (Tim, 18 Nov).</p>
             <p><b>Screen questions are sentence case in DM Sans</b>, so long questions read easily.</p>
             <p>Nekst Light for numbers 24px and up.</p>
             <p>Body 17px.</p>
@@ -1461,9 +1461,11 @@ function Gallery() {
 
         <GallerySection id="c5" title="Buttons" demo={ButtonsDemo} rules={(
           <>
-            <p><b>One coral button per screen</b>, the same coral with black text in both modes.</p>
-            <p>Outlined buttons for everything else; a text link for minor actions.</p>
-            <p><New /><b>One add button everywhere</b> (Tim, 26 Oct): an outlined pill with words only (no icon, 5 Nov), words that say what it adds (“Add objective”, “Add agenda item”, “Add a to-do”, “Add another”), coral only on hover or keyboard focus, and full width on a phone.</p>
+            <p><New /><b>Quiet precision</b> (Tim, 18 Nov): DM Sans 14px, weight 500, in sentence case; 34px high on a laptop and 40px on a phone, 14px in at each side, 8px corners. The tap area stays 44px.</p>
+            <p><b>One coral button per screen</b>, the same coral with black text in both modes, with a faint top highlight.</p>
+            <p>Every other button has no fill and a hairline in the outline grey; on hover and keyboard focus the hairline and the words turn the text colour. A text link for minor actions.</p>
+            <p>Pressing a button shrinks it a little for a moment; Reduce motion turns it off.</p>
+            <p><New /><b>Every Add that starts a new item at the end of a list is a row</b> (Tim, 18 Nov): the list’s full width, a small coral cross, then the words in grey (“Add a to-do”, “Add an objective”, “Add another thought”). An Add that saves or sends (“Add my to-do”, “Add to this week”) is a button.</p>
             <p><New /><b>Hover never looks disabled</b> (23 Oct): a slightly brighter coral in dark and a slightly deeper coral in light, with black text in both.</p>
             <p>A disabled coral button is the coral at 35% opacity.</p>
             <p><b>“My” where it’s theirs</b> (Save my Mission, Add my win, Add my to-do), otherwise verb and thing (Add a to-do, See it full screen).</p>

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  AddButton,
   Button,
   DesktopMenu,
   HubAnchor,
@@ -113,7 +112,7 @@ export function HubTilesDemo() {
       </HubGroup>
       <HubAnchor>
         <HubTile name="Strategic Alignment Health Check" line="See whether your team’s work matches its strategy." time="~15 minutes" href="#hc" onClick={go('the Health Check')} />
-        <AddButton onClick={() => say('Starts a new Health Check.')}>Start a new Health Check</AddButton>
+        <Button className="ds-hub-new" onClick={() => say('Starts a new Health Check.')}>Start a new Health Check</Button>
       </HubAnchor>
     </>
   );
@@ -148,7 +147,7 @@ export function SavedItemsDemo() {
             { key: 'product', team: 'Product team', line: '1 version, Wed 2 Sep', onClick: open('the Product team’s version in My Plans') },
           ]}
         />
-        <AddButton onClick={() => say('Starts a new Health Check.')}>Start a new Health Check</AddButton>
+        <Button className="ds-hub-new" onClick={() => say('Starts a new Health Check.')}>Start a new Health Check</Button>
       </HubAnchor>
       <HubRecent
         title="My Plans"

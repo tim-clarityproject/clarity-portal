@@ -5,13 +5,16 @@ import InfoIcon from './InfoIcon';
 import { IconText } from './IconText';
 import './design.css';
 
-// Buttons (design reference: Buttons). Nekst capitals, labels are verb
-// plus object ("Log today", "Add a to-do"), never Open, Go, Submit or
+// Buttons (design reference: Buttons; Quiet precision, Tim, 18 Nov): DM
+// Sans 14px in sentence case, 34px high (40px on a phone) with a 44px tap
+// area, 8px corners; the look is in src/styles/buttons.css. Labels are
+// verb plus object ("Log today", "Save my win"), never Open, Go, Submit or
 // Continue on their own.
 //
 // variant 'primary': flat coral, ONE per screen, for the thing most
 //                    people come to do.
-// variant 'outline': everything else (brand grey #3C3C3B outline).
+// variant 'outline': everything else (no fill, a hairline in the outline
+//                    grey).
 // variant 'text':    a text link, for minor actions.
 export const Button = forwardRef(function Button(
   // eslint-disable-next-line no-unused-vars
@@ -26,19 +29,22 @@ export const Button = forwardRef(function Button(
   );
 });
 
-// The one add button (Tim, 26 Oct, 16:54; words only since 5 Nov, 5e rule
-// 29e, swept on 10 Nov): every button that adds something looks the same.
-// An outlined pill with words that say what it adds ("Add objective",
-// "Add agenda item", "Add a to-do", "Add another") and no icon, coral only
-// on hover or keyboard focus, and full width on a phone. The crosshair is
-// only ever the close (turned 45 degrees), and half of it every chevron.
+// The add row (Tim, 18 Nov 2026; replaces the outlined add pill of 26 Oct
+// and 5 Nov). Every Add that starts a new item at the end of a list ("Add
+// a to-do", "Add an objective", "Add another thought") is this row: the
+// list's full width, at least 48px high, a 12px coral cross in an 18px
+// square, then the words in the secondary grey, turning the text colour on
+// hover and keyboard focus. No box and no outline. An Add that saves or
+// sends ("Add my to-do", "Add to this week") is a Button, never this row.
+// The cross is drawn here, never the brand crosshair (which only closes).
 export const AddButton = forwardRef(function AddButton(
   { children, className = '', type = 'button', ...rest },
   ref,
 ) {
   return (
-    <button ref={ref} type={type} className={`ds-btn ds-btn--outline ds-add ${className}`.trim()} {...rest}>
-      {keepWords(children)}
+    <button ref={ref} type={type} className={`ds-addrow ${className}`.trim()} {...rest}>
+      <span className="ds-addrow-mark" aria-hidden="true" />
+      <span className="ds-addrow-words">{keepWords(children)}</span>
     </button>
   );
 });

@@ -5,8 +5,8 @@ import './design.css';
 // Next steps (M9 "Next steps", and M10's; Tim, 13 Nov): every row alike.
 // The step in its own box, one line saying where it is ("It’s in this
 // week’s sprint.", mint when it is; "It isn’t in this week’s sprint
-// yet."; "It’s in your backlog."), and one link ("Add to this week", or
-// "Edit" once added). A guest has no sprint, so a row with no `line`
+// yet."; "It’s in your backlog."), and the button "Add to this week" (the
+// quiet link "Edit" once added). A guest has no sprint, so a row with no `line`
 // shows the box alone.
 //
 //   <NextSteps>
@@ -29,7 +29,8 @@ export function NextStepRow({ label, value, onChange, maxLength, line, good = fa
       {line && (
         <div className="ds-nextstep-meta">
           <span className={good ? 'ds-nextstep-good' : undefined}>{line}</span>
-          {link && <Button ref={linkRef} variant="text" aria-label={linkLabel} onClick={onLink}>{link}</Button>}
+          {/* "Add to this week" sends the step to the sprint, so it is a button (Tim, 18 Nov); "Edit" stays a quiet link. */}
+          {link && <Button ref={linkRef} variant={/^Add\b/.test(link) ? 'outline' : 'text'} aria-label={linkLabel} onClick={onLink}>{link}</Button>}
         </div>
       )}
     </div>

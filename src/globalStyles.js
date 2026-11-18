@@ -8,5 +8,7 @@ import './styles/fonts.css'
 import './styles/tokens.css'
 import './styles/components.css'
 import './styles/mobile.css'
+// Every button's one look (Tim, 18 Nov), after mobile.css's older phone rule.
+import './styles/buttons.css'
 import './styles/print.css'
 import './pwa-standalone.css'

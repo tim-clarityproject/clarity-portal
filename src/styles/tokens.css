@@ -152,7 +152,9 @@
   --fs-minus: calc(20 * var(--u));          /* the stepper's minus sign */
   --fs-number: calc(32 * var(--u-big));         /* big numbers, Nekst Light (v3 stats) */
   --fs-number-sm: calc(16 * var(--u));      /* a tile's score */
-  --fs-btn: calc(10.5 * var(--u));          /* Nekst capitals on buttons, as the mock-up */
+  --fs-btn: calc(14 * var(--u));            /* every button: DM Sans, sentence case (Tim, 18 Nov; src/styles/buttons.css) */
+  --fs-addrow: calc(16 * var(--u));         /* the add row's words (Tim, 18 Nov) */
+  --lh-btn: 1.3;
   --fs-empty-title: calc(19 * var(--u));
   --fs-orb-cross: calc(11 * var(--u));
   --fw-light: 300;           /* Nekst Light for numbers 24px and up */
@@ -160,7 +162,7 @@
   --fw-medium: 500;
   --ls-page-title: 0.1em;
   --ls-section-title: 0.12em;
-  --ls-btn: 0.18em;
+  --ls-btn: -0.005em;
   --lh-text: 1.55;
   --lh-title: 1.25;
   --lh-tile: 1.35;
@@ -205,7 +207,17 @@
   --radius-bar: 2px;
 
   /* Component sizes */
-  --btn-h: 48px;             /* primary and outlined buttons */
+  --btn-h: 34px;             /* every button on a laptop (Tim, 18 Nov); its tap area stays 44px */
+  --btn-h-phone: 40px;       /* every button on a phone */
+  --btn-pad-x: 14px;         /* in from each side */
+  --btn-pad-y: 4px;          /* above and below, once a larger text size wraps the words */
+  --radius-btn: 8px;
+  --btn-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.28); /* the coral button's faint top highlight */
+  --btn-press: 0.97;         /* pressing scales a button this much, for --dur-fast */
+  --addrow-h: 48px;          /* the add row (Tim, 18 Nov): at least this high */
+  --addrow-box: 18px;        /* the square its cross sits in */
+  --addrow-cross: 12px;      /* the cross: two 1.5px lines */
+  --addrow-gap: 14px;        /* from the cross's square to the words */
   --chip-h: 40px;
   --seg-h: 40px;             /* pills, as M6 */
   --cross-sm: 14px;          /* never smaller than this */
@@ -481,12 +493,12 @@
   --fs-tool-name: calc(12 * var(--u));      /* the tool's name in the top bar, Nekst */
   --ls-tool-name: 0.14em;
   --ls-back: 0.16em;
-  --ls-btn-phone: 0.14em;
+  --ls-btn-phone: var(--ls-btn);
   --steps-h: 36px;           /* the step list on desktop */
   --steps-h-phone: 28px;     /* the slim line on phone */
   --steps-line: 3px;
   --fs-step-num: calc(11 * var(--u));
-  --btn-h-tool: 50px;        /* the tool's coral button */
+  --btn-h-tool: var(--btn-h); /* the tool's coral button: every button is one size (Tim, 18 Nov) */
   --nudge-max: 52ch;
   --example-max: 56ch;
   --radius-example: 12px;

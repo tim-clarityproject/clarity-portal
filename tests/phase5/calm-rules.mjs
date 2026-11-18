@@ -56,6 +56,7 @@ import { outlinedEdges } from './edges.mjs';
 import { overlappingTaps } from './taps.mjs';
 import { checkReveals } from './reveals.mjs';
 import { questionsBeforeCharts } from './summary-order.mjs';
+import { buttonProblems } from '../buttons/buttons-check.mjs';
 import { checkPopups } from './popups.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
@@ -68,7 +69,17 @@ let failures = 0;
 let passes = 0;
 let revealsChecked = 0;
 const fails = [];
+// The UI tester's run for the new buttons (Tim, 18 Nov): WIDTHS=1440,768,400
+// TEXT=2 MOTION=reduce UI=1 checks only what the brief asks of every page
+// there (button words that never wrap or cut off, the buttons' look, one
+// coral button per screen, every tap area 44px, no sideways scroll).
+const WIDTHS = (process.env.WIDTHS || '1280,390').split(',').map(Number);
+const SCALE = Number(process.env.TEXT || 1);
+const MOTION = process.env.MOTION || 'no-preference';
+const UI = process.env.UI === '1';
+const UI_CHECK = /opened|real fonts|tap area|sideways|button|add row/;
 const pass = (name, ok, detail = '') => {
+  if (UI && !UI_CHECK.test(name)) return;
   if (ok) passes += 1;
   else { failures += 1; fails.push(`FAIL  ${name}${detail ? `: ${detail}` : ''}`); }
 };
@@ -228,7 +239,8 @@ function measure({ phone }) {
   for (const b of document.querySelectorAll('button, a')) {
     if (!vis(b)) continue;
     const words = (b.textContent || '').trim();
-    const adds = b.classList.contains('ds-add') || /^(add|start a new|something else|save a new)\b/i.test(words);
+    // Since 18 Nov an add row carries its own small cross (.ds-addrow-mark), drawn with no image; nothing else does.
+    const adds = b.classList.contains('ds-addrow') || /^(add|start a new|something else|save a new)\b/i.test(words);
     if (adds && b.querySelector('svg, img, .ds-cross, .ds-bold-cross')) addIcons.push(label(b));
   }
   // A crosshair is only ever the close (turned), the spinner, the menu button or the orb.
@@ -246,14 +258,22 @@ function measure({ phone }) {
     if (el.tagName === 'INPUT' && ['checkbox', 'radio'].includes(el.type) && el.closest('label')) continue;
     if (el.closest('label') && el.tagName !== 'LABEL' && el.tagName !== 'INPUT') continue;
     if (el.closest('.ds-ctable td, .ds-ctable th')) continue;
-    const stretch = (p) => p.content !== 'none' && p.position === 'absolute' && (parseFloat(p.height) || 0) >= 43.5 && (parseFloat(p.width) || 0) >= 43.5;
-    if ((b.height >= 43.5 && b.width >= 43.5) || stretch(getComputedStyle(el, '::after')) || stretch(getComputedStyle(el, '::before'))) continue;
+    // The tap area is the control's own box together with an invisible
+    // ::after or ::before laid round it (every button since 18 Nov: 34px
+    // high, 40px on a phone, in a 44px-high target as wide as it). Both
+    // ways, the larger of the two must reach 44px.
+    const reach = (p) => (p.content !== 'none' && p.position === 'absolute' && p.display !== 'none' && p.pointerEvents !== 'none')
+      ? { w: parseFloat(p.width) || 0, h: parseFloat(p.height) || 0 } : { w: 0, h: 0 };
+    const [ra, rb] = [reach(getComputedStyle(el, '::after')), reach(getComputedStyle(el, '::before'))];
+    const tapW = Math.max(b.width, ra.w, rb.w);
+    const tapH = Math.max(b.height, ra.h, rb.h);
+    if (tapW >= 43.5 && tapH >= 43.5) continue;
     if (el.matches('.ds-seg-btn') && b.height >= 38) continue;
     // A link inside a sentence is as tall as its line (WCAG's inline exception).
     if (el.tagName === 'A' && getComputedStyle(el).display === 'inline' && el.parentElement && el.parentElement.innerText.trim().length > el.innerText.trim().length + 12) continue;
     // The play icon beside the eye (Tim, 14 Nov, 09:28): 44px tall and 32px wide, so the two icons are 16px apart and their tap areas never overlap.
     if (el.matches('.ds-title-icons > .ds-play') && b.height >= 43.5 && b.width >= 31.5) continue;
-    small.push(`${label(el)} ${Math.round(b.width)}x${Math.round(b.height)}`);
+    small.push(`${label(el)} ${Math.round(tapW)}x${Math.round(tapH)}`);
   }
 
   // Eyes: once per page or section, beside the title. The play icon is not
@@ -382,10 +402,12 @@ function measure({ phone }) {
 
 const browser = await chromium.launch();
 // With no portal page asked for (ONLY=^health-check, or the chevrons' own parts), nothing signs in.
-for (const width of PAGES.length ? [1280, 390] : []) {
+for (const width of PAGES.length ? WIDTHS : []) {
   for (const mode of ['light', 'dark']) {
     const phone = width < 600;
-    const context = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: mode });
+    const context = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: mode, reducedMotion: MOTION });
+    // The device's text-size setting, as a root size (16px is standard), on every page it opens.
+    if (SCALE !== 1) await context.addInitScript((px) => { document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = `html{font-size:${px}px !important}`; document.head.appendChild(st); }); }, 16 * SCALE);
     await context.route('**/*', (route) => {
       const url = route.request().url();
       if (/resend\.com|sendgrid|mailgun|postmarkapp|smtp/i.test(url)) return route.abort();
@@ -512,6 +534,9 @@ for (const width of PAGES.length ? [1280, 390] : []) {
         pass(`${tag}: no crosshair used as a plus`, r.plusCross.length === 0, r.plusCross.slice(0, 4).join('; '));
         pass(`${tag}: every tap area is 44px or more`, r.small.length === 0, r.small.slice(0, 6).join('; '));
         pass(`${tag}: no sideways scroll`, r.sideways <= 0, `${r.sideways}px`);
+        // Every button in the new style, its words on one line and whole, and one coral button (Tim, 18 Nov).
+        const btns = await page.evaluate(buttonProblems, { phone, scale: SCALE });
+        pass(`${tag}: every button in the new style, its words whole on one line, one coral button (${btns.checked} read)`, btns.problems.length === 0, btns.problems.slice(0, 5).join('; '));
         pass(`${tag}: at most one eye per page or section, beside its title`, r.eyeNotes.length === 0, r.eyeNotes.slice(0, 4).join('; '));
         const numbered = /Performance Sprint \d/.exec(r.text);
         pass(`${tag}: no "Performance Sprint" followed by a number`, !numbered, numbered?.[0]);
@@ -536,7 +561,7 @@ for (const width of PAGES.length ? [1280, 390] : []) {
         pass(`${tag}: the background and text match the ${mode} setting`, r.theme === mode && r.background === BACKGROUND[mode] && (r.textColour == null || r.textColour === TEXT[mode]), `${r.theme} ${r.background} ${r.textColour}`);
         pass(`${tag}: the menu button sits over nothing`, r.over.length === 0, r.over.slice(0, 3).join('; '));
         pass(`${tag}: no console errors`, errors.length === 0, errors.slice(0, 2).join(' | '));
-        if (out && mode === 'light') await page.screenshot({ path: join(out, `${name}-${width === 1280 ? '1280' : '390x844'}.png`), fullPage: true });
+        if (out && mode === 'light') await page.screenshot({ path: join(out, `${name}-${width === 1280 ? '1280' : width === 390 ? '390x844' : width}.png`), fullPage: true });
         // Anything that opens on the same page keeps your place (Tim, 13
         // Nov): each reveal is pressed at the foot of the screen. Once per
         // width is enough (the two modes lay out the same).
@@ -610,8 +635,16 @@ function measureHealthCheck({ layer }) {
   for (const el of top.querySelectorAll('button, a, select, textarea, input, [role=radio], [role=checkbox], [role=switch], [role=option], [role=slider], [role=combobox], summary, .hc-dot')) {
     if (!vis(el) || el.disabled || el.getAttribute('aria-hidden') === 'true') continue;
     const b = el.matches('.hc-dot') ? el.querySelector('.hc-dot-tap').getBoundingClientRect() : el.getBoundingClientRect();
-    const stretch = (p) => p.content !== 'none' && p.position === 'absolute' && (parseFloat(p.height) || 0) >= 43.5 && (parseFloat(p.width) || 0) >= 43.5;
-    if ((b.height >= 43.5 && b.width >= 43.5) || stretch(getComputedStyle(el, '::after')) || stretch(getComputedStyle(el, '::before'))) continue;
+    // The tap area is the control's own box together with an invisible
+    // ::after or ::before laid round it (every button since 18 Nov: 34px
+    // high, 40px on a phone, in a 44px-high target as wide as it). Both
+    // ways, the larger of the two must reach 44px.
+    const reach = (p) => (p.content !== 'none' && p.position === 'absolute' && p.display !== 'none' && p.pointerEvents !== 'none')
+      ? { w: parseFloat(p.width) || 0, h: parseFloat(p.height) || 0 } : { w: 0, h: 0 };
+    const [ra, rb] = [reach(getComputedStyle(el, '::after')), reach(getComputedStyle(el, '::before'))];
+    const tapW = Math.max(b.width, ra.w, rb.w);
+    const tapH = Math.max(b.height, ra.h, rb.h);
+    if (tapW >= 43.5 && tapH >= 43.5) continue;
     // A pill in the segmented control reaches 44px high through its ::after, and is as wide as its word.
     const after = getComputedStyle(el, '::after');
     if (el.matches('.ds-seg-btn') && b.width >= 43.5 && (parseFloat(after.height) || 0) >= 43.5) continue;
@@ -619,7 +652,7 @@ function measureHealthCheck({ layer }) {
     if (el.tagName === 'A' && getComputedStyle(el).display === 'inline' && el.parentElement && el.parentElement.innerText.trim().length > el.innerText.trim().length + 12) continue;
     // The play icon beside the eye (Tim, 14 Nov, 09:28): 44px tall and 32px wide, so the two icons are 16px apart and their tap areas never overlap.
     if (el.matches('.ds-title-icons > .ds-play') && b.height >= 43.5 && b.width >= 31.5) continue;
-    small.push(`${label(el)} ${Math.round(b.width)}x${Math.round(b.height)}`);
+    small.push(`${label(el)} ${Math.round(tapW)}x${Math.round(tapH)}`);
   }
   // The first solid colour behind the page.
   const solid = (el) => { for (let x = el; x; x = x.parentElement) { const c = getComputedStyle(x).backgroundColor; if (c && !/rgba\(0, 0, 0, 0\)|transparent/.test(c)) return c; } return null; };
@@ -637,7 +670,7 @@ function measureHealthCheck({ layer }) {
 }
 
 if (HC_ONLY) {
-  for (const width of [1280, 390]) {
+  for (const width of WIDTHS) {
     for (const mode of ['light', 'dark']) {
       const phone = width < 600;
       for (const [screen, opts, reach, layer] of HC_SCREENS) {
@@ -647,7 +680,7 @@ if (HC_ONLY) {
           // Nothing leaves this machine: the two database calls and every /api/ call are answered by the
           // Health Check suites' own stand-ins (tests/healthcheck/hc-shared.mjs); everything else outside is stopped.
           // The portal on this device is set the other way: the Health Check has no such setting and follows the device.
-          b = await hcPage(browser, width, mode, { ...opts, storage: { 'clarity-colour-mode': mode === 'light' ? 'dark' : 'light' } });
+          b = await hcPage(browser, width, mode, { ...opts, textTwice: SCALE === 2 || opts.textTwice, motion: MOTION !== 'reduce', storage: { 'clarity-colour-mode': mode === 'light' ? 'dark' : 'light' } });
           const { page } = b;
           await reach(page, b.session);
           await page.evaluate(() => document.fonts.ready);
@@ -657,6 +690,8 @@ if (HC_ONLY) {
           pass(`${tag}: the page and its text follow the device (${mode})`, r.background === BACKGROUND[mode] && r.behind === BACKGROUND[mode] && r.textColour === TEXT[mode] && r.theme === mode, `${r.background} ${r.behind} ${r.textColour} ${r.theme}`);
           pass(`${tag}: every tap area is 44px or more`, r.small.length === 0, r.small.slice(0, 6).join('; '));
           pass(`${tag}: no sideways scroll`, r.sideways <= 0, `${r.sideways}px`);
+          const btns = await page.evaluate(buttonProblems, { phone, scale: SCALE });
+          pass(`${tag}: every button in the new style, its words whole on one line, one coral button (${btns.checked} read)`, btns.problems.length === 0, btns.problems.slice(0, 5).join('; '));
           pass(`${tag}: no old names (CSF, Critical Success Factor, “How it works”)`, !/\bCSFs?\b|Critical Success Factor|How it works/.test(r.text), (r.text.match(/.{0,30}(CSF|Critical Success Factor|How it works).{0,30}/) || [''])[0]);
           // Every outlined edge reaches 3 to 1 (rule 8a), and no two tap areas overlap. Two chart dots that sit
           // close share part of their 44px tap circles: a chart's marks are where the answers put them.
@@ -680,7 +715,7 @@ if (HC_ONLY) {
           }
           pass(`${tag}: no console errors`, b.problems.length === 0, b.problems.slice(0, 2).join(' | '));
           pass(`${tag}: nothing asked of an outside address`, b.session.outside.length === 0, [...new Set(b.session.outside)].slice(0, 3).join(' | '));
-          if (out) await page.screenshot({ path: join(out, `health-check-${screen}-${width === 1280 ? '1280' : '390x844'}-${mode}.png`), fullPage: true });
+          if (out) await page.screenshot({ path: join(out, `health-check-${screen}-${width === 1280 ? '1280' : width === 390 ? '390x844' : width}-${mode}.png`), fullPage: true });
         } catch (e) {
           pass(`${tag}: opened`, false, e.message.split('\n')[0]);
         }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
-import { AddButton, Button, HubAnchor, HubGroup, HubGrid, HubRecent, HubTeams, HubTile, PageHeader, PinPanel, useToast } from '../../components/design';
+import { Button, HubAnchor, HubGroup, HubGrid, HubRecent, HubTeams, HubTile, PageHeader, PinPanel, useToast } from '../../components/design';
 import { HUBS, PIN_GROUPS, TOOLS, isNewTool, toolCount, MAX_PINS } from '../../lib/navigation';
 import { usePins } from '../../lib/menuPins';
 import { getLocalDateKey } from '../../lib/dateFormatter';
@@ -111,7 +111,7 @@ export default function HubPage({ hub: hubKey }) {
           <HubAnchor>
             <HubTile name={anchor.name} line={anchor.line} time={anchor.time} href={anchor.to} onClick={open(anchor.to)} />
             <HubTeams teams={teams} />
-            <AddButton onClick={() => navigate(`${anchor.to}/new-team`)}>Start a new Health Check</AddButton>
+            <Button className="ds-hub-new" onClick={() => navigate(`${anchor.to}/new-team`)}>Start a new Health Check</Button>
           </HubAnchor>
         )}
 
