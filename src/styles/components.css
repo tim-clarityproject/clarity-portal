@@ -459,7 +459,7 @@ html:has(.ui-root) {
 .ui-root .auth-input:focus {
   outline: none;
   /* Never fainter than the edge at rest (see .ui-btn-ghost). */
-  border-color: var(--coral-text);
+  border-color: var(--text-2) /* a field takes a stronger grey edge on focus, never coral (Tim, 18 Nov, follow-up 1) */;
 }
 
 .ui-root .auth-input.error {
@@ -1335,7 +1335,7 @@ html:has(.ui-root) {
 
 .ui-root .plan-input:focus {
   /* Never fainter than the edge at rest (see .ui-btn-ghost). */
-  border-color: var(--coral-text);
+  border-color: var(--text-2) /* a field takes a stronger grey edge on focus, never coral (Tim, 18 Nov, follow-up 1) */;
 }
 
 /* A <textarea> does not vertically centre its text the way <input>

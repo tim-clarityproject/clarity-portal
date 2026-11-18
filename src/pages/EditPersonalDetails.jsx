@@ -216,7 +216,7 @@ export default function EditPersonalDetails() {
         }
 
         .edit-profile-input:focus {
-          border-color: var(--coral-text);
+          border-color: var(--text-2) /* a field takes a stronger grey edge on focus, never coral (Tim, 18 Nov, follow-up 1) */;
           outline: none;
         }
 

@@ -20,12 +20,18 @@ export default function NameDialog({
   const [error, setError] = useState('');
   const inputRef = useRef(null);
 
-  // Fresh each time it opens, with the suggestion selected.
+  // Fresh each time it opens, the cursor at the end of the suggestion (Tim, 18 Nov, follow-up 1: an
+  // inline edit opens as a normal input with the grey edge, the cursor at the end, nothing selected).
   useEffect(() => {
     if (!open) return;
     setName(suggestedName);
     setError('');
-    const frame = requestAnimationFrame(() => inputRef.current?.select());
+    const frame = requestAnimationFrame(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    });
     return () => cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);

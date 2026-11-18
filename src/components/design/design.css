@@ -1079,7 +1079,7 @@
   transition: border-color var(--dur) var(--ease);
 }
 
-.ui-root .ds-logweek-box input:focus { border-color: var(--coral-text); }
+.ui-root .ds-logweek-box input:focus { border-color: var(--text-2) /* a field takes a stronger grey edge on focus, never coral (Tim, 18 Nov, follow-up 1) */; }
 .ui-root .ds-logweek-box input:disabled { opacity: 0.35; }
 
 /* A rated habit's days (Tim, 10 Nov, 23:22): a box a day in a shade of
@@ -1574,7 +1574,7 @@
 }
 
 .ui-root .ds-textbox:focus {
-  border-color: var(--coral-text);
+  border-color: var(--text-2) /* a field takes a stronger grey edge on focus, never coral (Tim, 18 Nov, follow-up 1) */;
 }
 
 /* ---------- Label row (M6): the question above a box ---------- */
@@ -3231,7 +3231,7 @@
 }
 
 .ui-root .ds-grow > .ds-text:focus {
-  border-color: var(--coral-text);
+  border-color: var(--text-2) /* a field takes a stronger grey edge on focus, never coral (Tim, 18 Nov, follow-up 1) */;
 }
 
 .ui-root .ds-textbox-foot {
@@ -4763,7 +4763,7 @@
 }
 
 .ui-root .ds-field:focus {
-  border-color: var(--coral-text);
+  border-color: var(--text-2) /* a field takes a stronger grey edge on focus, never coral (Tim, 18 Nov, follow-up 1) */;
 }
 
 /* ---------- A search box (SearchField): the field, with the 45 degree
