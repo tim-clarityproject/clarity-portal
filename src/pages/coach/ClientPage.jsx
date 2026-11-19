@@ -221,8 +221,12 @@ export default function ClientPage() {
   const addNote = async (e) => {
     e.preventDefault();
     if (!clean(note)) { setNoteProblem('Type your note to carry on.'); return; }
+    if (busy.current) return; // one note a press
+    busy.current = true;
     const row = { id: newId(), profile_id: profile.id, coach_id: coach.id, body: note.trim().slice(0, 4000), noted_on: todayKey, pinned: false };
-    if (await done(() => saveRow(userId, 'client_notes', row), 'Note added', () => removeRow(userId, 'client_notes', row.id))) { setNote(''); setNoteProblem(null); }
+    try {
+      if (await done(() => saveRow(userId, 'client_notes', row), 'Note added', () => removeRow(userId, 'client_notes', row.id))) { setNote(''); setNoteProblem(null); }
+    } finally { busy.current = false; }
   };
   const pin = (n, on) => {
     if (on && pinned.length >= 3) { toast.show('Up to 3 notes can be pinned. Unpin one first.'); return; }

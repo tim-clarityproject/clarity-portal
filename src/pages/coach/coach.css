@@ -676,3 +676,11 @@
   .ui-root .cc-count { forced-color-adjust: none; background: CanvasText; color: Canvas; }
   .ui-root .cc-tick { stroke: CanvasText; }
 }
+
+/* A very long name (a workshop's title, a double-barrelled name) wraps inside
+   its title, never running off the side of a phone (the break-it tester). */
+.ui-root.cc-app .ds-page-title, .ui-root.cc-public .ds-page-title { overflow-wrap: anywhere; min-width: 0; }
+.ui-root.cc-app .ds-page-title-row, .ui-root.cc-public .ds-page-title-row { min-width: 0; }
+.ui-root.cc-app .ds-page-title-row, .ui-root.cc-public .ds-page-title-row { white-space: normal; }
+/* A title here is a name someone typed, so even its last word may break (the shared title keeps a last word whole). */
+.ui-root.cc-app .ds-page-title :is(span, .ds-keep, .ds-title-end), .ui-root.cc-public .ds-page-title :is(span, .ds-keep, .ds-title-end) { white-space: normal !important; overflow-wrap: anywhere; }
