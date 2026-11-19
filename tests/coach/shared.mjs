@@ -98,6 +98,8 @@ const refused = (route, code, message, status = 403) => json(route, { code, mess
 const KEYS = {
   coach_settings: ['coach_id'], coach_profiles: ['coach_id'], client_about: ['profile_id', 'coach_id'],
   coach_tag_links: ['tag_id', 'item_kind', 'item_id'], coach_field_values: ['field_id', 'item_id'],
+  // The coaching day (050), as src/lib/coach/store.js TABLES has them.
+  coach_days: ['coach_id', 'day'], coach_weeks: ['coach_id', 'week_start'], coach_session_people: ['session_id', 'profile_id'], coach_session_notes: ['session_id'],
 };
 const TABLES = ['organisations', 'coach_settings', 'coach_profiles', 'coach_away', 'client_profiles', 'client_about', 'client_notes', 'client_files', 'client_view_requests',
   'coach_tags', 'coach_tag_links', 'coach_fields', 'coach_field_values', 'coach_views', 'organisation_contacts', 'organisation_documents', 'coach_groups',

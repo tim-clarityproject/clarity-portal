@@ -1,0 +1,189 @@
+// Saving a session, its private notes and its actions, and sending the
+// recap (Phase 6a run 2, step 5; M11's "After a call: the recap"). Device
+// first, as every coach table (store.js): a save resolves 'device' until
+// Tim has run migration 050, then 'saved' or 'queued'. The rules themselves
+// (what counts, what a sent recap locks, the words) are day.js's.
+//
+// A SENT RECAP IS LOCKED. Migration 050 refuses, in the database, any
+// change to what the client was given: the recap, what happened, Waive it,
+// when the session was and who it was with; and the actions that went with
+// it can't be reworded, unticked, re-pointed or deleted, while one added
+// afterwards never goes to the client. Before 050 there is no database to
+// refuse, so every save here is checked the same way first (day.js's
+// lockedSession and lockedAction) and refused here. Private notes and For
+// supervision are never locked.
+//
+// Nothing here sends by itself: sendRecap runs only when the coach presses
+// Send the recap, and it sends once however often it is pressed.
+import { supabase } from '../supabase';
+import { coachDayReady, coachState, keyOf, loadCoach, newId, noteRows, removeRow, rowOf, rowsOf, saveRow, saveRows } from './store';
+import { actionsOf, ALREADY_SENT, lockedAction, lockedSession, moveSession, NEEDS_RECAP, newSession, SENT_LINE, sessionPeopleRows, sessionSent } from './day';
+import { clean } from './model';
+
+const SESSIONS = 'coach_sessions';
+const PEOPLE = 'coach_session_people';
+const ACTIONS = 'coach_session_actions';
+const NOTES = 'coach_session_notes';
+
+const locked = () => { const e = new Error(SENT_LINE); e.code = 'locked'; return e; };
+const kept = (userId, id) => rowOf(coachState(userId), SESSIONS, id);
+
+/** The session's private notes row, or a blank one. */
+export const notesOf = (notes, session) => (notes || []).find((n) => n.session_id === session.id)
+  || { session_id: session.id, coach_id: session.coach_id, layout: 'regular', focus: null, insight: null, next_time: null, supervision: null };
+
+/**
+ * Saves a session as it now stands. Refused (an Error whose code is
+ * 'locked', saying day.js's SENT_LINE) when its recap has been sent and the
+ * change touches what the client was given.
+ */
+export async function saveSession(userId, next) {
+  const check = lockedSession(kept(userId, next.id), next);
+  if (!check.ok) throw locked();
+  return saveRow(userId, SESSIONS, check.row);
+}
+
+/** Saves the private notes and For supervision: the coach's alone, and never locked. */
+export const saveNotes = (userId, notes) => saveRow(userId, NOTES, notes);
+
+/**
+ * Saves one action. After the recap has gone: a new one is kept with send
+ * off (it never goes to the client), and a change to the words, the tick or
+ * where it goes is refused.
+ */
+export async function saveAction(userId, action) {
+  const state = coachState(userId);
+  const check = lockedAction(rowOf(state, SESSIONS, action.session_id), rowOf(state, ACTIONS, action.id), action);
+  if (!check.ok) throw locked();
+  return saveRow(userId, ACTIONS, check.row);
+}
+
+/** Deletes one action; resolves the row for Undo. Refused when it went with a sent recap. */
+export async function removeAction(userId, action) {
+  const state = coachState(userId);
+  if (!lockedAction(rowOf(state, SESSIONS, action.session_id), rowOf(state, ACTIONS, action.id) || action, null).ok) throw locked();
+  return removeRow(userId, ACTIONS, action.id);
+}
+
+/**
+ * Adds a session, not yet written up. A group's session names each member
+ * whose session counts against their own engagement.
+ * @param {{ coachId: string, profileId?: string, groupId?: string, engagementId?: string, kind?: string, startsAt: string, minutes: number, members?: object[], engagements?: object[] }} a
+ * @returns {Promise<{ session: object, pairs: [string, object][] }>} the pairs for Undo (removeSession)
+ */
+export async function addSession(userId, { members = [], engagements = [], ...what }) {
+  const session = newSession({ id: newId(), ...what });
+  const pairs = [[SESSIONS, session], ...(session.group_id ? sessionPeopleRows(session.id, members, engagements).map((p) => [PEOPLE, p]) : [])];
+  await saveRows(userId, pairs);
+  return { session, pairs };
+}
+
+/**
+ * Deletes a session with its notes, actions and people; resolves the rows
+ * Undo saves again. Refused once its recap has been sent: the client has it.
+ */
+export async function removeSession(userId, session) {
+  const state = coachState(userId);
+  if (sessionSent(rowOf(state, SESSIONS, session.id) || session)) throw locked();
+  const gone = [[SESSIONS, session]];
+  for (const [table, rows] of [[ACTIONS, rowsOf(state, ACTIONS)], [NOTES, rowsOf(state, NOTES)], [PEOPLE, rowsOf(state, PEOPLE)]]) {
+    for (const row of rows.filter((r) => r.session_id === session.id)) {
+      gone.push([table, row]);
+      await removeRow(userId, table, keyOf(table, row)).catch(() => null);
+    }
+  }
+  await removeRow(userId, SESSIONS, session.id);
+  return gone;
+}
+
+/**
+ * Moved: this session is marked moved to the new time and a new one is
+ * made there with the same people. Resolves what Undo needs.
+ * @returns {Promise<{ made: object, undo: () => Promise<void> }>}
+ */
+export async function moveSessionTo(userId, session, newStartsAt) {
+  const state = coachState(userId);
+  const before = rowOf(state, SESSIONS, session.id) || session;
+  if (sessionSent(before)) throw locked();
+  const { moved, made, people } = moveSession({ ...before, ...session }, newStartsAt, newId(), rowsOf(state, PEOPLE));
+  await saveRows(userId, [[SESSIONS, { ...moved, written_up_at: moved.written_up_at || new Date().toISOString() }], [SESSIONS, made], ...people.map((p) => [PEOPLE, p])]);
+  return {
+    made,
+    undo: async () => {
+      for (const p of people) await removeRow(userId, PEOPLE, keyOf(PEOPLE, p)).catch(() => null);
+      await removeRow(userId, SESSIONS, made.id).catch(() => null);
+      await saveRow(userId, SESSIONS, before).catch(() => null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- sending the recap
+
+const sending = new Map(); // session id → the send on its way (one request a press, and one send however many presses)
+
+async function emailRecap(sessionId) {
+  // The server reads the session and who it goes to with the coach's own
+  // sign-in, and only ever sends from the live site.
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    if (!token) return false;
+    const res = await fetch('/api/coach-send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ kind: 'recap', sessionId }),
+    });
+    const body = await res.json().catch(() => null);
+    return res.ok && body?.sent === true;
+  } catch {
+    return false;
+  }
+}
+
+async function send(userId, { session, notes = null, actions = [] }) {
+  const before = kept(userId, session.id);
+  if (sessionSent(before)) return { status: 'already_sent', message: ALREADY_SENT };
+  if (!clean(session.recap)) return { status: 'needs_recap', message: NEEDS_RECAP };
+  const now = new Date().toISOString();
+  // (a) Everything on the page is saved first, as it stands.
+  const row = { ...(before || {}), ...session, outcome: 'held', waived: false, moved_to: null, written_up_at: session.written_up_at || now };
+  const pairs = [[SESSIONS, row], ...(notes ? [[NOTES, notes]] : []), ...actions.filter((a) => clean(a.title)).map((a) => [ACTIONS, a])];
+  const saved = await saveRows(userId, pairs);
+
+  // (b) With 050: the database sends it, once ('sent' or 'already_sent'), then the email is asked for.
+  if ((await coachDayReady()) === true) {
+    if (saved === 'queued') { const e = new Error('Sending needs a connection, so try again when you’re back online.'); e.code = 'offline'; throw e; }
+    const { data, error } = await supabase.rpc('session_send_recap', { p_session: session.id });
+    if (error) { const e = new Error(error.code === '22023' || error.code === '42501' ? error.message : 'That didn’t send. Check your connection and try again.'); e.code = error.code; throw e; }
+    if (data === 'already_sent') { loadCoach(userId); return { status: 'already_sent', message: ALREADY_SENT }; }
+    // The device's copy follows the database's at once; the next load brings its own time.
+    noteRows(userId, [[SESSIONS, { ...row, recap_sent_at: now, recap_sent_by: userId }]]);
+    const emailed = await emailRecap(session.id);
+    loadCoach(userId);
+    return { status: 'sent', emailed };
+  }
+
+  // (c) Before 050: marked sent on this device only, and nothing is emailed.
+  if (sessionSent(kept(userId, session.id))) return { status: 'already_sent', message: ALREADY_SENT };
+  await saveRow(userId, SESSIONS, { ...row, recap_sent_at: now, recap_sent_by: userId });
+  return { status: 'sent', emailed: false, device: true };
+}
+
+/**
+ * Send the recap. It sends once: a second press while the first is on its
+ * way resolves { status: 'sending' }, and any press after it has gone
+ * (here, or in another tab) resolves { status: 'already_sent' }.
+ * @param {string} userId
+ * @param {{ session: object, notes?: object, actions?: object[] }} page the session, its notes and its actions as the page has them
+ * @returns {Promise<{ status: 'sent'|'already_sent'|'needs_recap'|'sending', emailed?: boolean, message?: string }>}
+ */
+export function sendRecap(userId, page) {
+  const id = page.session.id;
+  if (sending.has(id)) return Promise.resolve({ status: 'sending' });
+  const run = send(userId, page).finally(() => { sending.delete(id); });
+  sending.set(id, run);
+  return run;
+}
+
+/** A session's actions as kept, in order (for a page that isn't rendering). */
+export const keptActions = (userId, sessionId) => actionsOf(rowsOf(coachState(userId), ACTIONS), sessionId);

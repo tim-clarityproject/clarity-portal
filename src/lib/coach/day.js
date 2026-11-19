@@ -814,3 +814,257 @@ export const movedWords = (n) => `${n} moved to tomorrow`;
 
 /** A call's length on Today: "60 minutes", or "Done" once it has been written up. */
 export const callLength = (session) => (session.outcome === 'held' ? 'Done' : `${session.minutes} minutes`);
+
+// ---------------------------------------------------------------- after a call: the recap, and what a sent one locks
+
+/** The one line once a recap has gone: nothing the client was given changes afterwards. */
+export const SENT_LINE = 'The recap has been sent, so this session stays as it is.';
+export const ALREADY_SENT = 'This recap has already been sent.';
+export const NEEDS_RECAP = 'Type the recap to carry on.';
+export const NEEDS_NEW_TIME = 'Choose the new day and time to carry on.';
+/** The most actions one recap carries. */
+export const ACTIONS_MAX = 30;
+
+/** Has this session's recap been sent? (Then it is locked: 050's guards, and sessionActions.js before 050.) */
+export const sessionSent = (session) => Boolean(session?.recap_sent_at);
+
+/** What a sent recap fixes on its session (050's coach_sessions_guard). */
+export const LOCKED_FIELDS = ['recap', 'outcome', 'waived', 'moved_to', 'starts_at', 'profile_id', 'group_id', 'recap_sent_at', 'recap_sent_by'];
+const same = (a, b) => (a ?? null) === (b ?? null) || ((a == null || a === false) && (b == null || b === false));
+
+/**
+ * A session's change, checked as the database checks it: once its recap is
+ * sent, the recap, what happened, Waive it, when it was and who it was with
+ * stay as they were. An unsent session can't be marked sent by a plain save.
+ * @param {object|null} before the session as kept (null for a new one)
+ * @param {object} next the session as it would be saved
+ * @returns {{ ok: boolean, row: object, changed: string[] }} `changed`: the locked fields the save tried to change
+ */
+export function lockedSession(before, next) {
+  if (!before || !sessionSent(before)) return { ok: true, row: next, changed: [] };
+  const changed = LOCKED_FIELDS.filter((f) => !same(before[f], next[f]));
+  const row = { ...next };
+  for (const f of changed) { if (f in before) row[f] = before[f]; else delete row[f]; }
+  return { ok: changed.length === 0, row, changed };
+}
+
+/**
+ * An action's change, checked as the database checks it (050's
+ * coach_session_actions_guard). Once the recap is sent: an action added
+ * afterwards never goes to the client (send is false), none is reworded,
+ * unticked, re-pointed or moved to another session, and one that went with
+ * the recap can't be deleted. Done and "added to my to-dos" still change.
+ * @param {object} session the action's session
+ * @param {object|null} before the action as kept (null for a new one)
+ * @param {object|null} next the action as it would be saved (null to delete it)
+ * @returns {{ ok: boolean, row: object|null }} ok false: refused, nothing is saved
+ */
+export function lockedAction(session, before, next) {
+  if (!sessionSent(session)) return { ok: true, row: next };
+  if (!next) return { ok: !before?.send, row: null };
+  if (!before) return { ok: true, row: { ...next, send: false } };
+  const fixed = ['session_id', 'title', 'send', 'goes_to'];
+  const ok = fixed.every((f) => same(before[f], next[f]));
+  const row = { ...next };
+  for (const f of fixed) row[f] = before[f];
+  return { ok, row };
+}
+
+/** A session's actions, in the coach's order. */
+export const actionsOf = (actions, sessionId) => (actions || []).filter((a) => a.session_id === sessionId)
+  .sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0) || String(a.created_at || '').localeCompare(String(b.created_at || '')));
+
+/** "Goes to this week" or "Goes to the Backlog": where a sent action lands for the client. */
+export const goesWords = (action) => (action?.goes_to === 'backlog' ? 'Goes to the Backlog' : 'Goes to this week');
+
+/** "Sent Mon 16 Nov, 16:05". Empty until the recap has gone. */
+export function sentWords(session, todayKey) {
+  if (!sessionSent(session)) return '';
+  const d = new Date(session.recap_sent_at);
+  return Number.isNaN(d.getTime()) ? 'Sent' : `Sent ${dayWords(toDayKey(d), todayKey)}, ${clockTime(d)}`;
+}
+
+/**
+ * What the toast says once a recap is sent, exactly what happened.
+ * `emailed`: the email went too (the live site, with 050); otherwise the
+ * recap only shows in the portal.
+ * @param {{ name?: string, people?: number, emailed?: boolean }} a `people`: how many are in the group (a group's session)
+ */
+export function recapSentWords({ name = '', people = 0, emailed = false } = {}) {
+  if (people > 0) {
+    const all = people === 1 ? 'The one member' : people === 2 ? 'Both' : `All ${people}`;
+    return emailed ? `Sent. ${all} ${people === 1 ? 'gets' : 'get'} it by email and in the portal.` : `Sent. ${all} ${people === 1 ? 'sees' : 'see'} it in the portal.`;
+  }
+  const first = firstName(name) || 'Your client';
+  return emailed ? `Sent. ${first} gets it by email and in the portal, with the actions you ticked.` : `Sent. ${first} sees it in the portal, with the actions you ticked.`;
+}
+
+/** "One recap to all 6", "One recap to both", "One recap to the group". */
+export const oneRecapWords = (people) => (people > 2 ? `One recap to all ${people}` : people === 2 ? 'One recap to both' : 'One recap to the group');
+
+/** The line under "What happened?" for a client's or a group's session. */
+export function sessionOutcomeLine(session, { name = '', group = false } = {}) {
+  if (!group) return outcomeLine(session.outcome, name, session.waived);
+  if (session.outcome === 'late_cancel' && !session.waived) return 'It counts as one of the group’s sessions.';
+  return outcomeLine(session.outcome, 'the group', session.waived);
+}
+
+/** Has a session's time come? (What happened can only be said once it has started.) */
+export const sessionStarted = (session, now) => new Date(session.starts_at).getTime() <= new Date(now).getTime();
+
+/**
+ * What "What happened?" offers: everything once the session has started;
+ * before it, only Moved, and a late cancellation in its last 24 hours.
+ */
+export function outcomeChoices(session, now) {
+  if (sessionStarted(session, now)) return OUTCOMES;
+  return OUTCOMES.filter((o) => o.value === 'moved' || (o.value === 'late_cancel' && isLateCancellation(session.starts_at, now)));
+}
+
+/** A day and a time on the device's own clock, as an instant; null when either is missing or isn't real. */
+export function instantFrom(dayKey, time) {
+  const d = fromDayKey(dayKey);
+  const m = /^(\d{2}):(\d{2})$/.exec(String(time || ''));
+  if (!d || !m || Number(m[1]) > 23 || Number(m[2]) > 59) return null;
+  const out = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Number(m[1]), Number(m[2]), 0, 0);
+  return toDayKey(out) === dayKey ? out.toISOString() : null;
+}
+
+/**
+ * A new session, not yet written up.
+ * @param {{ id: string, coachId: string, profileId?: string, groupId?: string, engagementId?: string, kind?: string, startsAt: string, minutes?: number, place?: string }} a
+ */
+export function newSession({ id, coachId, profileId = null, groupId = null, engagementId = null, kind = null, startsAt, minutes = 60, place = null }) {
+  return {
+    id, coach_id: coachId, profile_id: groupId ? null : profileId, group_id: groupId, engagement_id: engagementId, kind: kind || (groupId ? 'group' : 'coaching'),
+    starts_at: startsAt, minutes: SESSION_LENGTHS.includes(Number(minutes)) ? Number(minutes) : 60, place: place || null,
+    outcome: null, waived: false, moved_to: null, written_up_at: null, recap: null, recap_sent_at: null, recap_sent_by: null,
+  };
+}
+
+/**
+ * A group session's members whose session counts against their own
+ * engagement (049's counts_against 'own'): one row each, naming their own
+ * active engagement (the newest), or none when they have none running.
+ */
+export function sessionPeopleRows(sessionId, members = [], engagements = []) {
+  return members.filter((m) => m.counts_against === 'own' && m.profile_id).map((m) => {
+    const own = engagements.filter((e) => e.profile_id === m.profile_id && e.status !== 'ended')
+      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0] || null;
+    return { session_id: sessionId, profile_id: m.profile_id, engagement_id: own ? own.id : null };
+  });
+}
+
+/**
+ * Moved: this session is marked moved to the new time, and a new one, not
+ * yet written up, is made at that time with the same people.
+ * @returns {{ moved: object, made: object, people: object[] }}
+ */
+export function moveSession(session, newStartsAt, newId, people = []) {
+  const made = newSession({ id: newId, coachId: session.coach_id, profileId: session.profile_id, groupId: session.group_id, engagementId: session.engagement_id, kind: session.kind, startsAt: newStartsAt, minutes: session.minutes, place: session.place });
+  return {
+    moved: { ...session, outcome: 'moved', waived: false, moved_to: newStartsAt },
+    made,
+    people: people.filter((p) => p.session_id === session.id).map((p) => ({ session_id: newId, profile_id: p.profile_id, engagement_id: p.engagement_id || null })),
+  };
+}
+
+/** "7 held", "1 held": the Sessions and recaps fold when it is closed. */
+export const heldWords = (engagement) => (engagement ? `${Number(engagement.sessions_held) || 0} held` : '');
+
+/** "60 minutes, Zoom": a session's length and where it is (a link reads as Zoom). */
+export const lengthPlace = (session) => `${session.minutes} minutes, ${isLink(session.place) || !clean(session.place) ? 'Zoom' : clean(session.place)}`;
+/** Is this an https link (the only kind Join on Zoom opens)? */
+export const isLink = (value) => /^https:\/\/[^\s]+$/i.test(String(value || '').trim());
+
+// ---------------------------------------------------------------- the brief's parts
+
+/** From last time: the actions that went with the last session's recap, each Done or Not yet. */
+export function fromLastTime(actions, last) {
+  if (!last) return [];
+  return actionsOf(actions, last.id).filter((a) => a.send).map((a) => ({ action: a, done: Boolean(a.done_at), state: a.done_at ? 'Done' : 'Not yet' }));
+}
+
+export const COMING_UP_DAYS = 14;
+/**
+ * Coming up: a client's shared work peak moments from today to 14 days on, soonest first.
+ * @param {{ moment: object, on: string }[]} occurrences as src/lib/peakMoments gives them
+ * @returns {{ key: string, words: string }[]} "Board meeting, Wed 18 Nov"
+ */
+export function comingUp(occurrences, todayKey) {
+  const to = addDays(todayKey, COMING_UP_DAYS);
+  return (occurrences || [])
+    .filter((o) => o?.moment && o.moment.area === 'work' && o.moment.shared === true && o.on >= todayKey && o.on <= to)
+    .sort((a, b) => a.on.localeCompare(b.on) || clean(a.moment.name).localeCompare(clean(b.moment.name)))
+    .map((o) => { const away = clean(o.moment.placeCity); return { key: `${o.moment.id}:${o.on}`, words: `${clean(o.moment.name)}${away ? `, ${away}` : ''}, ${o.on === todayKey ? 'today' : dayWords(o.on, todayKey)}` }; });
+}
+
+/**
+ * The debrief after a big moment: the newest review of a shared work
+ * moment since the last session (the last 4 weeks for a first session).
+ * @param {{ moment_id: string, occurs_on: string }[]} reviews what the client shares
+ * @param {object[]} moments the client's shared work moments
+ * @returns {{ review: object, moment: object, line: string }|null}
+ */
+export function sharedReview(reviews, moments, lastSessionAt, todayKey, name) {
+  const since = lastSessionAt ? toDayKey(new Date(lastSessionAt)) : addDays(todayKey, -28);
+  const found = (reviews || [])
+    .map((r) => ({ review: r, moment: (moments || []).find((m) => m.id === r.moment_id && m.area === 'work' && m.shared === true) }))
+    .filter((x) => x.moment && x.review.occurs_on >= since && x.review.occurs_on <= todayKey)
+    .sort((a, b) => String(b.review.occurs_on).localeCompare(String(a.review.occurs_on)))[0];
+  if (!found) return null;
+  return { ...found, line: `After “${clean(found.moment.name)}” on ${dayWords(found.review.occurs_on, todayKey)}, ${firstName(name) || 'your client'} wrote this.` };
+}
+
+// ---------------------------------------------------------------- the guided close
+
+export const KEEPS = [{ value: 'individual', label: 'Individual' }, { value: 'free', label: 'Free' }];
+
+/** "6-month coaching, Mon 4 May to Fri 4 Dec": the engagement being closed. */
+export function closeLine(engagement, todayKey) {
+  if (!engagement) return '';
+  const dates = engagement.starts_on && engagement.ends_on ? `${dayWords(engagement.starts_on, todayKey)} to ${dayWords(engagement.ends_on, todayKey)}`
+    : engagement.starts_on ? `from ${dayWords(engagement.starts_on, todayKey)}` : '';
+  return [clean(engagement.name) || 'Coaching', dates].filter(Boolean).join(', ');
+}
+
+/**
+ * Outcomes: the Hardware and Software scores at the start (the first
+ * finished review) and now (the newest), from the reviews the client shares.
+ * @param {{ month: string, status: string, hardware_score: number|null, software_score: number|null }[]} checkins
+ * @returns {{ key: string, label: string, start: number, now: number, startWords: string }[]} empty when nothing is shared
+ */
+export function closeScores(checkins) {
+  const done = (checkins || []).filter((c) => c.status === 'finished').sort((a, b) => String(a.month).localeCompare(String(b.month)));
+  if (!done.length) return [];
+  const first = done[0];
+  const last = done.at(-1);
+  return [['hardware', 'Hardware score', 'hardware_score'], ['software', 'Software score', 'software_score']]
+    .filter(([, , col]) => last[col] != null)
+    .map(([key, label, col]) => {
+      const now = Math.round(Number(last[col]));
+      const start = first[col] == null ? null : Math.round(Number(first[col]));
+      return { key, label, now, start: done.length > 1 ? start : null, startWords: done.length > 1 && start != null ? `${start} at the start` : 'One review so far' };
+    });
+}
+
+/** The First review's goals a client wrote, as rows: what they most want (up to 3), in their own words. */
+export function closeGoals(checkins) {
+  const first = (checkins || []).find((c) => c.kind === 'first' && c.goals && typeof c.goals === 'object');
+  const three = Array.isArray(first?.goals?.G3) ? first.goals.G3 : [];
+  return three.map((g) => clean(g)).filter(Boolean).slice(0, 3);
+}
+
+/** "Asked Mon 16 Nov": a request the coach has ticked as made. Empty when it hasn't been. */
+export const askedWords = (day, todayKey) => (day && fromDayKey(day) ? `Asked ${dayWords(day, todayKey)}` : '');
+
+/** The toast once a client is in Past clients. */
+export const pastWords = (name) => { const first = firstName(name) || 'Your client'; return `${first} is in Past clients, still searchable, and you can start a new engagement from ${possessive(first)} page.`; };
+
+/** The rows a close saves: the profile in Past clients from today, and its engagement ended. */
+export function closeRows(profile, engagement, todayKey) {
+  return {
+    profile: { ...profile, status: 'past', ended_on: todayKey },
+    engagement: engagement ? { ...engagement, status: 'ended' } : null,
+  };
+}

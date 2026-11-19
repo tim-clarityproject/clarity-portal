@@ -29,7 +29,8 @@
 --     coach_sessions        a session with a client or a group: when, how
 --                           long (30, 60 or 90 minutes), what happened (it went
 --                           ahead, a late cancellation with Waive it, a
---                           no-show, moved), the typed recap, sent at and by
+--                           no-show, moved), the typed recap, sent at and by, and
+--                           when its email went (once)
 --     coach_session_people  a group session's members whose session counts
 --                           against their own engagement
 --     coach_session_actions the recap's actions, each going to the client's
@@ -270,6 +271,7 @@ create table if not exists public.coach_sessions (
   recap           text check (char_length(recap) <= 12000),
   recap_sent_at   timestamptz,
   recap_sent_by   uuid references auth.users (id) on delete set null,
+  recap_emailed_at timestamptz,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now(),
   check ((profile_id is not null) <> (group_id is not null)),
@@ -517,11 +519,11 @@ begin
     return new;
   end if;
   if tg_op = 'INSERT' then
-    new.recap_sent_at := null; new.recap_sent_by := null;
+    new.recap_sent_at := null; new.recap_sent_by := null; new.recap_emailed_at := null;
     return new;
   end if;
   new.coach_id := old.coach_id;
-  new.recap_sent_at := old.recap_sent_at; new.recap_sent_by := old.recap_sent_by;
+  new.recap_sent_at := old.recap_sent_at; new.recap_sent_by := old.recap_sent_by; new.recap_emailed_at := old.recap_emailed_at;
   if old.recap_sent_at is not null then
     -- Once sent, what the client was given stays as it was sent: the recap,
     -- that it went ahead, and when it was. (A session moved afterwards is a
@@ -739,6 +741,30 @@ end;
 $$;
 revoke all on function public.session_send_recap(uuid) from public, anon;
 grant execute on function public.session_send_recap(uuid) to authenticated;
+
+-- The recap's email goes once. The email server asks this, with the coach's
+-- own sign-in, BEFORE it sends: true the first time for a sent recap, false
+-- ever after (a second press, another tab, a retry), so nobody is emailed
+-- the same recap twice.
+create or replace function public.session_recap_email_claim(p_session uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  n integer;
+begin
+  perform set_config('clarity.sending', 'on', true);
+  update public.coach_sessions set recap_emailed_at = now()
+  where id = p_session and coach_id = public.my_coach_id() and recap_sent_at is not null and recap_emailed_at is null;
+  get diagnostics n = row_count;
+  perform set_config('clarity.sending', '', true);
+  return n > 0;
+end;
+$$;
+revoke all on function public.session_recap_email_claim(uuid) from public, anon;
+grant execute on function public.session_recap_email_claim(uuid) to authenticated;
 
 -- Who a sent recap goes to, for the email server only: each person's first
 -- name and email (a client's own, or each member of a group who has one).

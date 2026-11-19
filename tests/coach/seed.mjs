@@ -287,14 +287,101 @@ export const PRESSURE = {
  * `seedRows()` with the coaching day's rows added (tags and tag links are joined, not replaced).
  * The working day is 09:30 to 16:45 on weekdays, so M11's Tuesday (4 hours 30 minutes of calls and
  * 3 hours 30 minutes of to-dos) is 45 minutes over; Priya has 2 sessions left and Jordan 1.
- * @param {{ over?: boolean, accounts?: boolean }} options `over`: a week over capacity (17 of 15); `accounts`: three clients have accounts (PRESSURE.users)
+ * @param {{ over?: boolean, accounts?: boolean, sessions?: boolean }} options `over`: a week over capacity (17 of 15); `accounts`: three clients have accounts (PRESSURE.users);
+ *   `sessions`: Hannah Wells and her sessions, a group's past sessions, and the actions and note behind Sam's brief (sessionExtras)
  */
-export function seedWithDay({ over = false, accounts = false } = {}) {
+export function seedWithDay({ over = false, accounts = false, sessions = false } = {}) {
   const rows = seedRows();
   for (const [table, list] of Object.entries(daySeed({ over }))) rows[table] = [...(rows[table] || []), ...list];
+  if (sessions) {
+    // Sam's last session was on Thu 5 Nov on M11's Tuesday (12 days back): his earlier calls this week go to Mia, so the week's count stays as it was.
+    const start = at(0, 0, 0);
+    rows.coach_sessions = rows.coach_sessions.map((x) => (x.profile_id === ID.sam && x.starts_at < start ? { ...x, profile_id: ID.mia } : x));
+    for (const [table, list] of Object.entries(sessionExtras(rows))) rows[table] = [...(rows[table] || []), ...list];
+  }
   const hours = { from: '09:30', to: '16:45' };
   rows.coach_settings = rows.coach_settings.map((s) => ({ ...s, working_hours: { mon: hours, tue: hours, wed: hours, thu: hours, fri: hours } }));
   rows.engagements = rows.engagements.map((e) => (e.id === ID.ePriya ? { ...e, sessions_held: 4 } : e.id === ID.eJordan ? { ...e, sessions_held: 19 } : e));
   if (accounts) rows.client_profiles = rows.client_profiles.map((p) => (PRESSURE.users[p.id] ? { ...p, user_id: PRESSURE.users[p.id] } : p));
   return rows;
 }
+
+// ---------------------------------------------------------------- the brief, after a call and the guided close (Phase 6a run 2, steps 4 and 5)
+export const SES = {
+  hannah: u(18), eHannah: u(57),
+  write: u(6901), late: u(6902), sent: u(6903), future: u(6904), blank: u(6905), group1: u(6906), group2: u(6907), samLast: u(6908),
+  a1: u(6911), a2: u(6912), a3: u(6913), s1: u(6921), s2: u(6922), b1: u(6931), b2: u(6932), b3: u(6933),
+  samUser: u(7001), priyaUser: u(7002),
+};
+
+/**
+ * M11's own "After a call": Hannah Wells, whose session yesterday at 15:30
+ * went ahead and is written up (the recap typed, three actions, not sent);
+ * her late cancellation, an earlier session whose recap was sent (locked),
+ * one next week and one that has ended and isn't written up. The Kestrel
+ * group's two past sessions, each with one recap sent. And behind Sam's
+ * brief: three actions sent with his last session (two done) and the
+ * coach's note for next time. None is in this week's count of calls except
+ * Hannah's two (kept out of the default seed, so Today's own walk stays as it was).
+ * @param {object} rows the seed so far (its coach_sessions decide which of Sam's sessions was the last)
+ */
+export function sessionExtras(rows) {
+  const session = (id, offset, hour, minute, minutes, who, extra = {}) => ({
+    id, coach_id: ME, profile_id: null, group_id: null, engagement_id: null, kind: who.group_id ? 'group' : 'coaching', starts_at: at(offset, hour, minute), minutes,
+    place: null, outcome: null, waived: false, moved_to: null, written_up_at: null, recap: null, recap_sent_at: null, recap_sent_by: null, created_at: at(-40), ...who, ...extra,
+  });
+  const hannah = { profile_id: SES.hannah, engagement_id: SES.eHannah };
+  const action = (id, sessionId, title, position, extra = {}) => ({ id, session_id: sessionId, coach_id: ME, title, send: true, goes_to: 'week', position, done_at: null, placed_at: null, ...extra });
+  const recap = 'Thanks for today, Hannah.\n\nWe looked at the pricing launch and where your time goes in the week before it. You named two things only you can do: the investor call and the pricing story for the sales team.\n\nYou’re handing the rest of the launch plan to Femi, with a 15-minute check-in each morning.';
+  // Sam's last session that went ahead before today's call: 12 days back, its recap sent.
+  const samLast = session(SES.samLast, -12, 12, 30, 60, { profile_id: ID.sam, engagement_id: ID.eSam }, { outcome: 'held', written_up_at: at(-12, 14), recap: 'Thanks for today, Sam.\n\nYou set out who decides what with the COO.', recap_sent_at: at(-12, 14, 10) });
+  return {
+    client_profiles: [{ ...rows.client_profiles[0], id: SES.hannah, name: 'Hannah Wells', email: 'hannah@example.invalid', organisation_id: null, job_title: 'Founder', city: 'Bristol', mobile: null, referred_by: null, last_contact_on: day(-1), invited_at: at(-80), getting_started: { first_review: true, welcome_pack: true } }],
+    engagements: [{ ...rows.engagements[0], id: SES.eHannah, profile_id: SES.hannah, name: '6-month coaching', sessions_total: 12, sessions_held: 3, funded_by: null }],
+    coach_sessions: [
+      samLast,
+      session(SES.write, -1, 15, 30, 60, hannah, { outcome: 'held', written_up_at: at(-1, 17), recap }),
+      session(SES.late, -15, 15, 30, 60, hannah, { outcome: 'late_cancel', written_up_at: at(-15, 16) }),
+      session(SES.sent, -29, 15, 30, 60, hannah, { outcome: 'held', written_up_at: at(-29, 17), recap: 'Thanks for today, Hannah.\n\nYou chose the two launch markets, and the three calls that will tell you whether they are right.', recap_sent_at: at(-29, 17, 5) }),
+      session(SES.future, 6, 10, 0, 60, hannah),
+      session(SES.blank, -3, 11, 0, 60, hannah),
+      session(SES.group1, -14, 14, 0, 90, { group_id: ID.group, engagement_id: ID.eGroup }, { outcome: 'held', written_up_at: at(-14, 16), recap: 'Thank you all. We agreed who decides on pricing.', recap_sent_at: at(-14, 16, 30) }),
+      session(SES.group2, -28, 14, 0, 90, { group_id: ID.group, engagement_id: ID.eGroup }, { outcome: 'held', written_up_at: at(-28, 16), recap: 'Thank you all. We mapped the decisions that are stuck.', recap_sent_at: at(-28, 16, 30) }),
+    ],
+    coach_session_people: [
+      { session_id: SES.group1, profile_id: ID.sam, engagement_id: ID.eSam },
+      { session_id: SES.group2, profile_id: ID.sam, engagement_id: ID.eSam },
+    ],
+    coach_session_actions: [
+      action(SES.a1, SES.write, 'Hand the launch plan to Femi by Wednesday', 1),
+      action(SES.a2, SES.write, 'Book a 15-minute check-in each morning', 2, { goes_to: 'backlog' }),
+      action(SES.a3, SES.write, 'Write the pricing story on one page', 3, { send: false }),
+      action(SES.s1, SES.sent, 'Call the three launch customers', 1, { done_at: at(-20) }),
+      action(SES.s2, SES.sent, 'Draft the pricing page', 2, { goes_to: 'backlog' }),
+      ...(samLast ? [
+        action(SES.b1, samLast.id, 'Agree decision rights with the COO', 1, { done_at: at(-1, 8) }),
+        action(SES.b2, samLast.id, 'Block two strategy mornings a week', 2, { done_at: at(-1, 8, 5) }),
+        action(SES.b3, samLast.id, 'Draft the restructure announcement', 3),
+      ] : []),
+    ],
+    coach_session_notes: [
+      { session_id: SES.sent, coach_id: ME, layout: 'regular', focus: 'Choosing the launch markets.', insight: 'Hannah decides fastest when she talks it through.', next_time: 'Ask what the three calls showed.', supervision: null },
+      ...(samLast ? [{ session_id: samLast.id, coach_id: ME, layout: 'regular', focus: 'The restructure.', insight: null, next_time: 'Ask how the CFO conversation went.', supervision: null }] : []),
+    ],
+  };
+}
+
+/** What a client shares, as the database would answer their coach: For next time, week scores, a peak review and the monthly reviews. */
+export const SHARED = {
+  prep: () => ({ body: 'I want to talk about the restructure, and how to bring the CFO with me.', noted_at: at(-2, 19) }),
+  weekScores: () => [{ week_end: day(-2), score: 84 }, { week_end: day(-9), score: 78 }, { week_end: day(-30), score: 60 }],
+  moments: (userId) => [
+    { id: u(7201), user_id: userId, name: 'Investor update', area: 'work', kind: 'perform', starts_on: day(-5), ends_on: day(-5), place_city: null, place_zone: null, repeat_rule: null, shared: true },
+    { id: u(7101), user_id: userId, name: 'Board meeting', area: 'work', kind: 'perform', starts_on: day(1), ends_on: day(1), place_city: null, place_zone: null, repeat_rule: null, shared: true },
+  ],
+  reviews: () => [{ moment_id: u(7201), occurs_on: day(-5), answer: 'well', kept: 'I kept to three messages.', lesson: 'Bring the CFO in earlier on the numbers.' }],
+  checkins: () => [
+    { kind: 'first', month: `${day(-180).slice(0, 7)}-01`, status: 'finished', hardware_score: 52, software_score: 58, goals: { G1: 'I’d lead the theatre list without taking it home.', G3: ['Sleep 7 hours on work nights', 'Stay calm in the quarterly review', 'Delegate the weekly report'] } },
+    { kind: 'monthly', month: `${day(-10).slice(0, 7)}-01`, status: 'finished', hardware_score: 71, software_score: 76, goals: null },
+  ],
+};

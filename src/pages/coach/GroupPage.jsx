@@ -3,13 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AddButton, Button, Dropdown, InlineChoice, PageHeader, SlidePanel, Stat, StatGroup, TextField, useToast } from '../../components/design';
 import { newId, removeRow, rowsOf, saveRow } from '../../lib/coach/store';
 import { clean, firstName, isEmail, possessive, sessionsLeft } from '../../lib/coach/model';
+import { lengthPlace, nextSession, whenWords, withSessions } from '../../lib/coach/day';
 import { Back, Line, TextLink, useCoachPortal, Part } from './parts';
+import { AddSessionPanel, SessionRows } from './sessionParts';
 import { currentEngagement } from './clientData';
 import { draftFrom, EngagementPanel } from './ClientPage';
 
 // A group (M11): its members, each with what they count against (their own
-// engagement or the group's), the next group session (run 3), sessions
-// left, and one recap to all (run 2).
+// engagement or the group's), the next group session, sessions left, and
+// its sessions, each written up once with one recap to everyone.
 const COUNTS = [{ value: 'group', label: 'The group’s engagement' }, { value: 'own', label: 'Their own engagement' }];
 const NONE = '__none__';
 
@@ -17,19 +19,23 @@ export default function GroupPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { userId, state, groups, clients, organisations } = useCoachPortal();
+  const { userId, state, groups, clients, organisations, sessions: allSessions, sessionPeople, todayKey, now } = useCoachPortal();
   const group = groups.find((g) => g.id === id) || null;
   const [adding, setAdding] = useState(false);
   const [f, setF] = useState({ profile: NONE, name: '', email: '', counts: 'group' });
   const [problem, setProblem] = useState(null);
   const [engDraft, setEngDraft] = useState(null);
+  const [addingSession, setAddingSession] = useState(false);
   useEffect(() => { if (adding) { setF({ profile: NONE, name: '', email: '', counts: 'group' }); setProblem(null); } }, [adding]);
   if (!group) {
     return <div className="cc-page"><div className="cc-col"><Back onClick={() => navigate('/coach/clients?tab=groups')} /><PageHeader title="Group" /><p className="cc-quiet">This group isn’t here any more.</p></div></div>;
   }
   const members = rowsOf(state, 'coach_group_members').filter((m) => m.group_id === group.id).sort((a, b) => a.name.localeCompare(b.name));
   const engagement = currentEngagement(rowsOf(state, 'engagements'), { groupId: group.id });
-  const sessions = sessionsLeft(engagement, rowsOf(state, 'engagement_packs'));
+  // Sessions left follows each recorded session (day.js's withSessions).
+  const sessions = sessionsLeft(withSessions(engagement, allSessions, sessionPeople), rowsOf(state, 'engagement_packs'));
+  const mySessions = allSessions.filter((x) => x.group_id === group.id);
+  const next = nextSession(mySessions, () => true, now);
   const org = organisations.find((o) => o.id === group.organisation_id);
   const done = async (work, message, onUndo) => {
     try { const status = await work(); toast.saved({ message: status === 'queued' ? 'Will sync' : message, onUndo, long: true }); return true; } catch (error) { toast.error(error?.message || 'That didn’t save. Check your connection and try again.'); return false; }
@@ -51,7 +57,14 @@ export default function GroupPage() {
         <Back onClick={() => navigate('/coach/clients?tab=groups')} />
         <PageHeader title={group.name} meta={[org?.name, `${members.length} ${members.length === 1 ? 'person' : 'people'}`]} />
         <Part title="Next group session">
-          <p className="cc-quiet">No session is booked. Booking arrives with the calendar.</p>
+          {next ? (
+            <div className="cc-ses-next">
+              <span><b>{whenWords(next.starts_at, todayKey)}</b><small>{lengthPlace(next)}</small></span>
+              <TextLink aria-label="Open the next group session" onClick={() => navigate(`/coach/sessions/${next.id}`)}>Open</TextLink>
+            </div>
+          ) : (
+            <p className="cc-quiet cc-ses-none"><span>No session is booked.</span><TextLink onClick={() => setAddingSession(true)}>Add session</TextLink></p>
+          )}
         </Part>
         {sessions && <StatGroup className="cc-stats"><Stat label="Group sessions left" value={`${sessions.left} of ${sessions.total}`} bar={sessions.total ? sessions.left / sessions.total : 0} /></StatGroup>}
         <div className="cc-acts">
@@ -78,7 +91,8 @@ export default function GroupPage() {
           <div className="cc-add"><AddButton onClick={() => setAdding(true)}>Add member</AddButton></div>
         </Part>
         <Part title="Sessions and recaps">
-          <p className="cc-quiet">One recap to everyone arrives with the coaching day.</p>
+          <div className="cc-add"><AddButton onClick={() => setAddingSession(true)}>Add session</AddButton></div>
+          <SessionRows sessions={mySessions} people={members.length} label="Group sessions" />
         </Part>
         <div className="cc-acts">
           <TextLink onClick={() => done(async () => { for (const m of members) await removeRow(userId, 'coach_group_members', m.id); await removeRow(userId, 'coach_groups', group.id); return 'saved'; }, 'Deleted', async () => { await saveRow(userId, 'coach_groups', group); for (const m of members) await saveRow(userId, 'coach_group_members', m); }).then((ok) => { if (ok) navigate('/coach/clients?tab=groups'); })}>Delete this group</TextLink>
@@ -95,6 +109,7 @@ export default function GroupPage() {
         {problem && <p className="cc-problem" role="alert">{problem}</p>}
       </SlidePanel>
       <EngagementPanel draft={engDraft} setDraft={setEngDraft} group={group} />
+      <AddSessionPanel open={addingSession} onClose={() => setAddingSession(false)} group={group} engagement={engagement} />
     </div>
   );
 }

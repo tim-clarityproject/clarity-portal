@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AddButton, Button, Dropdown, InlineChoice, PageHeader, SearchField, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
@@ -11,7 +11,10 @@ import {
   gettingStarted, isEmail, minutesClocked, minutesWords, possessive, quickContacts, runningEntry, sessionsLeft, START_ZONES,
   timeCredit, timeline, TIMELINE_KINDS,
 } from '../../lib/coach/model';
+import { heldWords, lengthPlace, nextSession, openWords, sortTodos, whenWords, withHeldTyped, withSessions } from '../../lib/coach/day';
 import { Back, Detail, EditCell, Eye, Fold, InlineLink, Line, TextLink, useCoachPortal, useEverySecond, Part } from './parts';
+import { AddSessionPanel, SessionRows } from './sessionParts';
+import { QuickAddPanel, TodoList, TodoPanel } from './todoParts';
 import { currentEngagement } from './clientData';
 import { TagsPanel } from './ClientPanels';
 import { FieldPanel } from './Settings';
@@ -20,12 +23,15 @@ import NameNote from './NameNote';
 // A client's page (M11: Sam, Leo, Marcus, Priya and Jordan). Overview is
 // the Mission, the next session (run 3), sessions to go, then folding
 // sections that remember what was left open. Everything is one timeline in
-// date order. Sessions and recaps and To-dos fill in run 2.
+// date order. Sessions and recaps (each session opens After a call) and
+// the coach's own to-dos for this client came with run 2.
 
 const SAVE_PROBLEM = 'That didn’t save. Check your connection and try again.';
 const VIEWS = [{ value: 'over', label: 'Overview' }, { value: 'all', label: 'Everything' }];
 const PIN = <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 1.5l5 5-2.2.7-2.6 2.6.3 3.2-1 1L5.5 10.5 1.5 14.5M5.5 10.5L2 7l1-1 3.2.3 2.6-2.6z" /></svg>;
 const MAX_FILE = 50 * 1024 * 1024;
+// The brief before a call (its own file): opened from the next session.
+const BriefPanel = lazy(() => import('./Brief'));
 
 function useDone() {
   const toast = useToast();
@@ -133,7 +139,7 @@ export default function ClientPage() {
   const toast = useToast();
   const done = useDone();
   const portal = useCoachPortal();
-  const { userId, coach, isOwner, coaches, state, clients, organisations, tags, fields, settings, todayKey, reloadCoaches } = portal;
+  const { userId, coach, isOwner, coaches, state, clients, organisations, tags, fields, settings, todayKey, reloadCoaches, sessions: allSessions, sessionPeople, todos } = portal;
   const profile = clients.find((p) => p.id === id) || null;
 
   const foldsKey = deviceKey('cache', userId, 'coach-folds');
@@ -151,6 +157,9 @@ export default function ClientPage() {
   const [q, setQ] = useState('');
   const [over, setOver] = useState(false);
   const [shared, setShared] = useState(null);
+  const [openTodo, setOpenTodo] = useState(null);
+  const [briefId, setBriefId] = useState(null);
+  const [briefAsked, setBriefAsked] = useState(false);
   const fileRef = useRef(null);
   const busy = useRef(false);
   // One tap from Past clients: back in the list, with a new engagement to fill in.
@@ -206,12 +215,18 @@ export default function ClientPage() {
 
   const first = firstName(profile.name);
   const { engagement, packs, entries, notes, files, about, links, values, projects } = data;
-  const sessions = sessionsLeft(engagement, packs);
+  // Sessions left follows each recorded session (day.js's withSessions); the kept row itself is never saved from here to change the count.
+  const mySessions = allSessions.filter((x) => x.profile_id === profile.id);
+  const counted = withSessions(engagement, allSessions, sessionPeople);
+  const sessions = sessionsLeft(counted, packs);
+  const next = nextSession(mySessions, () => true, portal.now);
+  const myTodos = sortTodos(todos.filter((t) => t.profile_id === profile.id && !t.done_at));
+  const typeHeld = (total) => done(() => saveRow(userId, 'engagements', withHeldTyped(engagement, total, counted.sessions_recorded)), 'Saved', () => saveRow(userId, 'engagements', engagement));
   const credit = timeCredit(engagement, packs, entries, now);
   const pinned = notes.filter((n) => n.pinned).slice(0, 3);
   const org = organisations.find((o) => o.id === profile.organisation_id) || null;
   const contacts = quickContacts(profile);
-  const started = gettingStarted(profile, { engagement, sessionsHeld: engagement?.sessions_held || 0 });
+  const started = gettingStarted(profile, { engagement, sessionsHeld: counted?.sessions_held || 0 });
   const save = (change, message) => done(() => saveRow(userId, 'client_profiles', { ...profile, ...change }), message, () => saveRow(userId, 'client_profiles', profile));
   const birthday = birthdaysOn(about ? [about] : [], [profile], todayKey).length > 0;
   const tagNames = links.map((l) => tags.find((t) => t.id === l.tag_id)?.name).filter(Boolean);
@@ -313,7 +328,6 @@ export default function ClientPage() {
     } catch (error) { toast.error(error.message || SAVE_PROBLEM); }
   };
   const askToView = () => done(() => saveRow(userId, 'client_view_requests', { id: newId(), profile_id: profile.id, coach_id: coach.id, asked_at: new Date().toISOString(), answered_at: null, allowed: null, expires_at: null }), `${first} has been asked`);
-  const end = () => save({ status: 'past', ended_on: todayKey }, `${first} is in Past clients`).then((ok) => { if (ok) navigate('/coach/clients'); });
 
   const saveField = (f, typed) => {
     const row = fieldFromTyped(f, typed);
@@ -388,7 +402,14 @@ export default function ClientPage() {
             )}
 
             <Part title="Next coaching session">
-              <p className="cc-quiet">No session is booked. Booking arrives with the calendar.</p>
+              {next ? (
+                <div className="cc-ses-next">
+                  <span><b>{whenWords(next.starts_at, todayKey)}</b><small>{lengthPlace(next)}</small></span>
+                  <TextLink onClick={() => { setBriefAsked(true); setBriefId(next.id); }}>Open the brief</TextLink>
+                </div>
+              ) : (
+                <p className="cc-quiet cc-ses-none"><span>No session is booked.</span>{profile.status !== 'past' && <TextLink onClick={() => setPanel('session')}>Add session</TextLink>}</p>
+              )}
             </Part>
 
             {(sessions || credit) && (
@@ -419,13 +440,15 @@ export default function ClientPage() {
                   ? <StatGroup className="cc-stats"><Stat label="Performance score, latest week" value={`${Math.round(shared.latest_week_score)}%`} good={shared.latest_week_score >= 85} /></StatGroup>
                   : <p className="cc-quiet">{profile.user_id ? `${first} isn’t sharing a score with you yet.` : `${first} has no portal account yet, so there is nothing to show.`}</p>}
               </Fold>
-              <Fold title="Sessions and recaps" open={Boolean(folds.ses)} onToggle={() => toggle('ses')} summary={engagement ? `${engagement.sessions_held || 0} held` : ''}>
+              <Fold title="Sessions and recaps" open={Boolean(folds.ses)} onToggle={() => toggle('ses')} summary={heldWords(counted)}>
+                {profile.status !== 'past' && <div className="cc-add"><AddButton onClick={() => setPanel('session')}>Add session</AddButton></div>}
+                <SessionRows sessions={mySessions} label="Sessions" />
                 {engagement && (
-                  <Line title="Sessions held" small="Counted here until recaps arrive with the coaching day.">
+                  <Line title="Sessions held" small={counted.sessions_recorded > 0 ? `${counted.sessions_recorded} recorded here, counted with the ones from before.` : 'Each session you write up is counted here.'}>
                     <span className="cc-line-actions">
-                      <TextLink aria-label="One fewer session held" onClick={() => { if (engagement.sessions_held > 0) done(() => saveRow(userId, 'engagements', { ...engagement, sessions_held: engagement.sessions_held - 1 }), 'Saved', () => saveRow(userId, 'engagements', engagement)); }}>Take one off</TextLink>
-                      <span className="cc-line-state">{engagement.sessions_held || 0}</span>
-                      <TextLink aria-label="One more session held" onClick={() => done(() => saveRows(userId, [['engagements', { ...engagement, sessions_held: (engagement.sessions_held || 0) + 1 }], ['client_profiles', { ...profile, last_contact_on: todayKey }]]), 'Saved', () => saveRows(userId, [['engagements', engagement], ['client_profiles', profile]]))}>Add one</TextLink>
+                      <TextLink aria-label="One fewer session held" onClick={() => { if (counted.sessions_held > 0) typeHeld(counted.sessions_held - 1); }}>Take one off</TextLink>
+                      <span className="cc-line-state">{counted.sessions_held || 0}</span>
+                      <TextLink aria-label="One more session held" onClick={() => typeHeld((counted.sessions_held || 0) + 1)}>Add one</TextLink>
                     </span>
                   </Line>
                 )}
@@ -446,8 +469,10 @@ export default function ClientPage() {
                   <div className="cc-acts"><Button variant="outline" type="submit">Add my note</Button></div>
                 </form>
               </Fold>
-              <Fold title="To-dos" open={Boolean(folds.todo)} onToggle={() => toggle('todo')} summary="">
-                <p className="cc-quiet">To-dos arrive with the coaching day.</p>
+              <Fold title="To-dos" open={Boolean(folds.todo)} onToggle={() => toggle('todo')} summary={myTodos.length ? openWords(myTodos) : ''}>
+                {myTodos.length === 0 && <p className="cc-quiet">Your own to-dos for {first} show here.</p>}
+                {myTodos.length > 0 && <TodoList todos={myTodos} view="list" label={`Your to-dos for ${first}`} onOpen={setOpenTodo} />}
+                <div className="cc-add"><AddButton onClick={() => setPanel('todo')}>Add to-do</AddButton></div>
               </Fold>
               <Fold title="Files" eye={<Eye sentence={`You and ${first} can see these.`} shared />} open={Boolean(folds.files)} onToggle={() => toggle('files')} summary={`${files.length} ${files.length === 1 ? 'file' : 'files'}`}>
                 {files.map((f) => (
@@ -516,12 +541,12 @@ export default function ClientPage() {
                 <div className="cc-field"><SwitchRow label="Frequent traveller" note={`Session emails say the calendar invite moves with ${first}.`} checked={profile.frequent_traveller === true} onChange={(on) => save({ frequent_traveller: on })} /></div>
                 {profile.status !== 'past' && <div className="cc-field"><SwitchRow label="Paused" note="A paused client stays in your list, in the board’s Paused column." checked={profile.status === 'paused'} onChange={(on) => save({ status: on ? 'paused' : 'active' })} /></div>}
               </Fold>
-              <Fold title="More" open={Boolean(folds.more)} onToggle={() => toggle('more')} summary="View as client, export, delete">
+              <Fold title="More" open={Boolean(folds.more)} onToggle={() => toggle('more')} summary="View as client, close, export or delete">
                 <div className="cc-links">
                   {profile.user_id && <TextLink onClick={askToView}>Ask to view {possessive(first)} portal</TextLink>}
                   {profile.status === 'past'
                     ? <TextLink onClick={() => save({ status: 'active', ended_on: null }, `${first} is back in your clients`).then(() => setEngDraft(draftFrom(null)))}>Start a new engagement</TextLink>
-                    : <TextLink onClick={end}>Move to Past clients</TextLink>}
+                    : <TextLink onClick={() => navigate(`/coach/clients/${profile.id}/close`)}>Start the guided close</TextLink>}
                   <TextLink onClick={exportData}>Export {possessive(first)} data</TextLink>
                   <TextLink onClick={() => { setTypedName(''); setDeleteProblem(null); setPanel('delete'); }}>Delete {possessive(first)} data</TextLink>
                 </div>
@@ -541,6 +566,10 @@ export default function ClientPage() {
       <FieldPanel draft={field} setDraft={setField} />
       <NameNote profile={panel === 'note' ? profile : null} reason="It’s their birthday today." onClose={() => setPanel(null)} />
       <PackPanel open={panel === 'pack'} onClose={() => setPanel(null)} engagement={engagement} />
+      <AddSessionPanel open={panel === 'session'} onClose={() => setPanel(null)} profile={profile} engagement={engagement} />
+      <QuickAddPanel open={panel === 'todo'} onClose={() => setPanel(null)} defaults={{ profile_id: profile.id }} />
+      <TodoPanel id={openTodo} onClose={() => setOpenTodo(null)} />
+      {briefAsked && <Suspense fallback={null}><BriefPanel sessionId={briefId} onClose={() => setBriefId(null)} /></Suspense>}
       <SlidePanel
         open={panel === 'invite'}
         onClose={() => setPanel(null)}

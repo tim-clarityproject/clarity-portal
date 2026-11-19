@@ -180,6 +180,34 @@ export const rowOf = (state, table, key) => {
   return row && !state.marks[table]?.[key]?.gone ? row : null;
 };
 
+const rawSeen = new Map();
+/**
+ * The coach's data on this device as it stands this moment, read from the
+ * device itself (never during a page's render): for a check made just
+ * before a save, so a change made in another tab is seen even if this tab
+ * hasn't heard of it yet. When the device holds something newer, this
+ * tab's copy and its pages follow.
+ */
+export function coachState(userId) {
+  if (!userId) return EMPTY;
+  let raw = null;
+  let key = localKey(userId);
+  try {
+    raw = window.localStorage.getItem(key);
+    if (raw == null) { key = cacheKey(userId); raw = window.localStorage.getItem(key); }
+  } catch {
+    return read(userId);
+  }
+  if (raw == null || (cache.has(userId) && rawSeen.get(userId) === raw)) return read(userId);
+  rawSeen.set(userId, raw);
+  const fresh = tidyState(readJson(key));
+  const before = cache.get(userId);
+  if (before && JSON.stringify(before) === JSON.stringify(fresh)) return before;
+  cache.set(userId, fresh);
+  listeners.forEach((fn) => fn());
+  return fresh;
+}
+
 /** Is anything here still waiting to reach the database? */
 export const coachWaiting = (userId) => anyUnsent(read(userId));
 
@@ -498,6 +526,7 @@ export { newId };
 // For tests: forget what this module remembers.
 export function resetCoachStoreForTests() {
   cache.clear();
+  rawSeen.clear();
   readyNow = null;
   dayReadyNow = null;
 }

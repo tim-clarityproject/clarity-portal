@@ -406,3 +406,140 @@ test('Today’s small words: what was moved, and a call’s length', () => {
   assert.deepEqual([1, 6].map(movedWords), ['1 moved to tomorrow', '6 moved to tomorrow']);
   assert.deepEqual([{ minutes: 60 }, { minutes: 90, outcome: 'held' }].map(callLength), ['60 minutes', 'Done']);
 });
+
+// ---------------------------------------------------------------- after a call, the brief's parts and the guided close (step 5)
+const day5 = await import('../../src/lib/coach/day.js');
+
+test('a sent recap locks its session: the recap, what happened, Waive it, when and who stay as sent', () => {
+  const { lockedSession, sessionSent, SENT_LINE } = day5;
+  const unsent = { id: 's', recap: 'Draft', outcome: 'held', waived: false, starts_at: at(16, 15, 30), profile_id: 'p', minutes: 60 };
+  assert.equal(sessionSent(unsent), false);
+  assert.deepEqual(lockedSession(unsent, { ...unsent, recap: 'More', outcome: 'moved' }), { ok: true, row: { ...unsent, recap: 'More', outcome: 'moved' }, changed: [] });
+  const sent = { ...unsent, recap_sent_at: at(16, 16, 5), recap_sent_by: 'u' };
+  assert.equal(sessionSent(sent), true);
+  // Private things still change: the length stays the coach's to correct.
+  assert.equal(lockedSession(sent, { ...sent, minutes: 90 }).ok, true);
+  for (const change of [{ recap: 'Rewritten' }, { outcome: 'moved' }, { outcome: 'late_cancel', waived: true }, { starts_at: at(17, 9) }, { profile_id: 'q' }, { recap_sent_at: null }, { moved_to: at(18, 9) }]) {
+    const r = lockedSession(sent, { ...sent, ...change });
+    assert.equal(r.ok, false, JSON.stringify(change));
+    assert.deepEqual(r.row, sent, 'the row is put back as it was sent');
+  }
+  assert.equal(SENT_LINE, 'The recap has been sent, so this session stays as it is.');
+});
+
+test('a sent recap locks its actions: none reworded, unticked, re-pointed or deleted; one added later never goes', () => {
+  const { lockedAction } = day5;
+  const sent = { id: 's', recap_sent_at: at(16, 16, 5) };
+  const a = { id: 'a', session_id: 's', title: 'Hand over the plan', send: true, goes_to: 'week', done_at: null };
+  assert.equal(lockedAction({ id: 's' }, a, { ...a, title: 'Other' }).ok, true, 'before sending anything changes');
+  assert.equal(lockedAction({ id: 's' }, a, null).ok, true);
+  for (const change of [{ title: 'Other words' }, { send: false }, { goes_to: 'backlog' }, { session_id: 't' }]) assert.equal(lockedAction(sent, a, { ...a, ...change }).ok, false, JSON.stringify(change));
+  assert.equal(lockedAction(sent, a, null).ok, false, 'an action that went with the recap stays');
+  assert.equal(lockedAction(sent, { ...a, send: false }, null).ok, true, 'one that never went can go');
+  const done = lockedAction(sent, a, { ...a, done_at: at(17) });
+  assert.equal(done.ok, true);
+  assert.equal(done.row.done_at, at(17), 'Done still changes');
+  assert.equal(lockedAction(sent, null, { ...a, id: 'b', send: true }).row.send, false, 'an action added afterwards never goes to the client');
+});
+
+test('after a call: the words for what was sent, where an action goes and a group’s recap', () => {
+  const { sentWords, recapSentWords, goesWords, oneRecapWords, sessionOutcomeLine, actionsOf, lengthPlace, isLink } = day5;
+  assert.equal(sentWords({ recap_sent_at: at(16, 16, 5) }, TODAY), 'Sent Mon 16 Nov, 16:05');
+  assert.equal(sentWords({}, TODAY), '');
+  assert.equal(recapSentWords({ name: 'Hannah Wells', emailed: true }), 'Sent. Hannah gets it by email and in the portal, with the actions you ticked.');
+  assert.equal(recapSentWords({ name: 'Hannah Wells' }), 'Sent. Hannah sees it in the portal, with the actions you ticked.');
+  assert.equal(recapSentWords({ people: 6, emailed: true }), 'Sent. All 6 get it by email and in the portal.');
+  assert.equal(recapSentWords({ people: 6 }), 'Sent. All 6 see it in the portal.');
+  assert.equal(recapSentWords({ people: 2, emailed: true }), 'Sent. Both get it by email and in the portal.');
+  assert.equal(goesWords({ goes_to: 'week' }), 'Goes to this week');
+  assert.equal(goesWords({ goes_to: 'backlog' }), 'Goes to the Backlog');
+  assert.equal(oneRecapWords(6), 'One recap to all 6');
+  assert.equal(oneRecapWords(2), 'One recap to both');
+  assert.equal(sessionOutcomeLine({ outcome: 'late_cancel', waived: false }, { name: 'Hannah Wells' }), 'It counts as one of Hannah’s sessions.');
+  assert.equal(sessionOutcomeLine({ outcome: 'late_cancel', waived: false }, { group: true }), 'It counts as one of the group’s sessions.');
+  assert.equal(sessionOutcomeLine({ outcome: 'late_cancel', waived: true }, { group: true }), 'Waived. It no longer counts as used.');
+  assert.equal(sessionOutcomeLine({ outcome: 'moved' }, { name: 'Hannah Wells' }), 'It doesn’t count as used.');
+  assert.deepEqual(actionsOf([{ id: 'b', session_id: 's', position: 2 }, { id: 'x', session_id: 't', position: 0 }, { id: 'a', session_id: 's', position: 1 }], 's').map((a) => a.id), ['a', 'b']);
+  assert.equal(lengthPlace({ minutes: 60, place: null }), '60 minutes, Zoom');
+  assert.equal(lengthPlace({ minutes: 90, place: 'In person, Leeds' }), '90 minutes, In person, Leeds');
+  assert.equal(lengthPlace({ minutes: 60, place: 'https://zoom.us/j/1' }), '60 minutes, Zoom');
+  assert.equal(isLink('https://zoom.us/j/1'), true);
+  assert.equal(isLink('http://zoom.us/j/1'), false);
+  assert.equal(isLink('Zoom'), false);
+});
+
+test('what happened can only be said once it could have: before the start, Moved, and a late cancellation in the last 24 hours', () => {
+  const { outcomeChoices, sessionStarted, instantFrom } = day5;
+  const s = { starts_at: at(17, 12, 30) };
+  assert.equal(sessionStarted(s, new Date(2026, 10, 17, 12, 30)), true);
+  assert.deepEqual(outcomeChoices(s, new Date(2026, 10, 17, 13)).map((o) => o.value), ['held', 'late_cancel', 'no_show', 'moved']);
+  assert.deepEqual(outcomeChoices(s, new Date(2026, 10, 17, 9)).map((o) => o.value), ['late_cancel', 'moved']);
+  assert.deepEqual(outcomeChoices(s, new Date(2026, 10, 15, 9)).map((o) => o.value), ['moved']);
+  assert.equal(instantFrom('2026-11-19', '16:00'), at(19, 16));
+  assert.equal(instantFrom('2026-11-19', ''), null);
+  assert.equal(instantFrom('2026-02-30', '09:00'), null, 'a day that doesn’t exist is refused, never rolled on');
+  assert.equal(instantFrom('2026-11-19', '24:00'), null);
+});
+
+test('a moved session makes a new one at the new time with the same people, and never counts', () => {
+  const { moveSession, newSession, sessionPeopleRows } = day5;
+  const s = { ...newSession({ id: 's', coachId: 'c', groupId: 'g', engagementId: 'eg', startsAt: at(16, 14), minutes: 90 }), place: 'Zoom' };
+  assert.equal(s.kind, 'group');
+  assert.equal(s.profile_id, null);
+  const people = sessionPeopleRows('s', [{ profile_id: 'sam', counts_against: 'own' }, { profile_id: null, counts_against: 'group' }, { profile_id: 'mia', counts_against: 'own' }, { profile_id: 'leo', counts_against: 'group' }],
+    [{ id: 'old', profile_id: 'sam', status: 'ended', created_at: '2026-01-01' }, { id: 'e1', profile_id: 'sam', status: 'active', created_at: '2026-05-01' }]);
+  assert.deepEqual(people, [{ session_id: 's', profile_id: 'sam', engagement_id: 'e1' }, { session_id: 's', profile_id: 'mia', engagement_id: null }]);
+  const { moved, made, people: next } = moveSession(s, at(19, 16), 'n', people);
+  assert.equal(moved.outcome, 'moved');
+  assert.equal(moved.moved_to, at(19, 16));
+  assert.equal(sessionCounts(moved), false);
+  assert.deepEqual([made.id, made.starts_at, made.outcome, made.minutes, made.group_id, made.engagement_id, made.kind], ['n', at(19, 16), null, 90, 'g', 'eg', 'group']);
+  assert.deepEqual(next, [{ session_id: 'n', profile_id: 'sam', engagement_id: 'e1' }, { session_id: 'n', profile_id: 'mia', engagement_id: null }]);
+  assert.equal(newSession({ id: 'x', coachId: 'c', profileId: 'p', startsAt: at(16), minutes: 45 }).minutes, 60, 'only 30, 60 or 90 minutes');
+});
+
+test('the brief: from last time, coming up and the debrief after a big moment', () => {
+  const { fromLastTime, comingUp, sharedReview, heldWords } = day5;
+  const last = { id: 's' };
+  const actions = [{ id: 'a', session_id: 's', title: 'One', send: true, done_at: at(10), position: 1 }, { id: 'b', session_id: 's', title: 'Two', send: false, position: 2 }, { id: 'c', session_id: 's', title: 'Three', send: true, done_at: null, position: 3 }];
+  assert.deepEqual(fromLastTime(actions, last).map((r) => [r.action.title, r.state]), [['One', 'Done'], ['Three', 'Not yet']]);
+  assert.deepEqual(fromLastTime(actions, null), []);
+  const m = (id, extra = {}) => ({ id, name: 'Board meeting', area: 'work', shared: true, placeCity: '', ...extra });
+  const occ = [{ moment: m('m1'), on: '2026-11-18' }, { moment: m('m2', { name: 'v Rangers, away', placeCity: 'New York' }), on: '2026-12-01' }, { moment: m('m3', { name: 'Offsite' }), on: '2026-12-02' }, { moment: m('m4', { shared: false }), on: '2026-11-19' }, { moment: m('m5', { area: 'personal' }), on: '2026-11-19' }, { moment: m('m6', { name: 'Stand-up' }), on: TODAY }];
+  assert.deepEqual(comingUp(occ, TODAY).map((r) => r.words), ['Stand-up, today', 'Board meeting, Wed 18 Nov', 'v Rangers, away, New York, Tue 1 Dec']);
+  const reviews = [{ moment_id: 'm1', occurs_on: '2026-11-12', answer: 'well' }, { moment_id: 'm1', occurs_on: '2026-11-03', answer: 'well' }, { moment_id: 'm4', occurs_on: '2026-11-14', answer: 'well' }];
+  const moments = [m('m1', { name: 'Investor update' }), m('m4', { shared: false })];
+  const found = sharedReview(reviews, moments, at(5, 15), TODAY, 'Sam Okafor');
+  assert.equal(found.review.occurs_on, '2026-11-12');
+  assert.equal(found.line, 'After “Investor update” on Thu 12 Nov, Sam wrote this.');
+  assert.equal(sharedReview(reviews, moments, at(13, 15), TODAY, 'Sam Okafor'), null, 'only since the last session');
+  assert.equal(sharedReview([reviews[2]], moments, null, TODAY, 'Sam'), null, 'never a moment that isn’t shared');
+  assert.equal(heldWords({ sessions_held: 7 }), '7 held');
+  assert.equal(heldWords(null), '');
+});
+
+test('the guided close: the engagement’s line, the scores at the start and now, the goals and the rows it saves', () => {
+  const { closeLine, closeScores, closeGoals, askedWords, pastWords, closeRows, KEEPS } = day5;
+  assert.equal(closeLine({ name: '6-month coaching', starts_on: '2026-05-04', ends_on: '2026-12-04' }, TODAY), '6-month coaching, Mon 4 May to Fri 4 Dec');
+  assert.equal(closeLine({ name: '', starts_on: null, ends_on: null }, TODAY), 'Coaching');
+  const checkins = [
+    { kind: 'monthly', month: '2026-11-01', status: 'finished', hardware_score: 71.2, software_score: 76 },
+    { kind: 'first', month: '2026-05-01', status: 'finished', hardware_score: 52, software_score: 57.6, goals: { G1: 'A calmer board', G3: ['Sleep 7 hours on work nights', ' ', 'Delegate the weekly report'] } },
+    { kind: 'monthly', month: '2026-12-01', status: 'draft', hardware_score: null, software_score: null },
+  ];
+  assert.deepEqual(closeScores(checkins), [
+    { key: 'hardware', label: 'Hardware score', now: 71, start: 52, startWords: '52 at the start' },
+    { key: 'software', label: 'Software score', now: 76, start: 58, startWords: '58 at the start' },
+  ]);
+  assert.deepEqual(closeScores([checkins[1]]).map((s) => [s.now, s.start, s.startWords]), [[52, null, 'One review so far'], [58, null, 'One review so far']]);
+  assert.deepEqual(closeScores([]), []);
+  assert.deepEqual(closeGoals(checkins), ['Sleep 7 hours on work nights', 'Delegate the weekly report']);
+  assert.deepEqual(closeGoals([]), []);
+  assert.equal(askedWords('2026-11-16', TODAY), 'Asked Mon 16 Nov');
+  assert.equal(askedWords(null, TODAY), '');
+  assert.equal(pastWords('Priya Nair'), 'Priya is in Past clients, still searchable, and you can start a new engagement from Priya’s page.');
+  const rows = closeRows({ id: 'p', status: 'active', ended_on: null }, { id: 'e', status: 'active' }, TODAY);
+  assert.deepEqual([rows.profile.status, rows.profile.ended_on, rows.engagement.status], ['past', TODAY, 'ended']);
+  assert.equal(closeRows({ id: 'p' }, null, TODAY).engagement, null);
+  assert.deepEqual(KEEPS.map((k) => k.label), ['Individual', 'Free']);
+});

@@ -220,6 +220,44 @@ export function sessionInOneHourEmail({ coach, zoomLink, preferencesLink }) {
   };
 }
 
+// ---------------------------------------------------------------- the session recap (Phase 6a run 2)
+/** The most actions one recap email lists, and the most characters of the recap it carries. */
+export const RECAP_EMAIL_ACTIONS_MAX = 30;
+export const RECAP_EMAIL_MAX = 12000;
+
+/**
+ * A session's recap, to the client (or each member of a group), sent only
+ * when their coach presses Send the recap (api/coach-send.js; migration
+ * 050's session_send_recap decides it goes once). The recap is the coach's
+ * own typed words, shown as text, a paragraph at a time; the actions are the
+ * ones the coach ticked to send. The address it goes to is never passed in
+ * here: the server takes it from the database.
+ * @param {object} o
+ * @param {string} o.origin      the portal's own address (api/_portalOrigin.js)
+ * @param {string} o.coach       the coach's first name
+ * @param {string} o.dateText    the session's day in words, "Mon 16 Nov 2026"
+ * @param {string} o.recap
+ * @param {string[]} [o.actions] the ticked actions' words
+ */
+export function sessionRecapEmail({ origin, coach, dateText, recap, actions = [] }) {
+  const name = oneLine(coach).slice(0, 60) || 'your coach';
+  const day = oneLine(dateText);
+  const paragraphs = String(recap || '').slice(0, RECAP_EMAIL_MAX).split(/\n\s*\n/).map(oneLine).filter(Boolean);
+  const steps = (Array.isArray(actions) ? actions : []).map((a) => oneLine(a).slice(0, 300)).filter(Boolean).slice(0, RECAP_EMAIL_ACTIONS_MAX);
+  return {
+    brand: 'portal',
+    subject: `Your session recap from ${name}${day ? `, ${day}` : ''}`,
+    blocks: [
+      { type: 'heading', text: 'Your session recap' },
+      { type: 'text', text: day ? `From ${name}, after your session on ${day}.` : `From ${name}.`, quiet: true },
+      ...paragraphs.map((text) => ({ type: 'text', text })),
+      ...(steps.length ? [{ type: 'label', text: steps.length === 1 ? 'Your action' : 'Your actions' }, ...steps.map((step, i) => ({ type: 'note', text: steps.length > 1 ? `${i + 1}. ${step}` : step }))] : []),
+      { type: 'button', label: 'Open my portal', href: `${origin}/welcome` },
+    ],
+    footer: { lines: [`You get this because ${name} is your coach.`, EMAIL_SIGN_OFF] },
+  };
+}
+
 // ---------------------------------------------------------------- workshops (templates only; Phase 6a run 1)
 // A workshop's attendees are emails, not clients, so these come from the
 // business. Times are in the workshop's own place (zone), where the people

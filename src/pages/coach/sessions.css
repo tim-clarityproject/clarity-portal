@@ -1,0 +1,150 @@
+/* The brief before a call, After a call, the guided close and the sessions
+   on a client's and a group's page (Phase 6a run 2, steps 4 and 5; mock-up
+   M11, seq 77). Every value is a token; the boxes, the tick box, the
+   drop-down, the segmented choice, the stat and the bottom bar are the
+   shared ones. Phone is 600px and under. The brief is drawn outside the
+   page (its own .ui-root), so nothing of it leans on .cc-app. */
+
+/* ---------------------------------------------------------------- the brief */
+.ui-root .cc-brief-meta { display: flex; flex-wrap: wrap; gap: var(--space-px2) var(--icon-item-gap); margin: 0; font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-brief-pins { margin-top: var(--space-3); }
+.ui-root .cc-brief .cc-part { margin-top: var(--space-5); }
+.ui-root .cc-brief .cc-part > .cc-quiet { margin-top: var(--space-2); }
+.ui-root .cc-brief-soft { margin-top: var(--space-2); }
+.ui-root .cc-brief-soft + .cc-brief-soft, .ui-root .cc-brief-stat + .cc-brief-soft, .ui-root .cc-brief .cc-quiet + .cc-brief-soft { margin-top: var(--space-px20); }
+.ui-root .cc-brief-stat { margin-top: var(--space-3); }
+.ui-root .cc-brief-stat .ds-stat { width: 100%; }
+.ui-root .cc-brief-stat .ds-bar { width: 100%; }
+
+/* From last time: each action is one row to tap, Done or Not yet at its right. */
+.ui-root .cc-brief-row {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: center;
+  min-height: var(--cc-row-h);
+  /* An older phone rule pads every button and sets its size (mobile.css). */
+  padding: var(--space-px10) 0 !important;
+  font-size: var(--fs-text) !important;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-root .cc-brief-row b { font-weight: var(--fw-regular); font-size: var(--fs-text); line-height: var(--lh-row); overflow-wrap: anywhere; transition: color var(--dur) var(--ease); }
+@media (hover: hover) {
+  .ui-root .cc-brief-row:hover b { color: var(--coral-text); }
+}
+.ui-root .cc-brief-row:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--space-px6); }
+.ui-root .cc-brief-row:focus-visible b { color: var(--coral-text); }
+
+/* The debrief after a big moment: the question, then what the client wrote. */
+.ui-root .cc-brief-dl { margin: var(--space-2) 0 0; }
+.ui-root .cc-brief-dl > div { display: grid; grid-template-columns: var(--cc-detail-w) minmax(0, 1fr); gap: var(--space-px2) var(--space-3); padding: var(--space-px10) 0; border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-brief-dl > div:last-child { border-bottom: 0; padding-bottom: 0; }
+.ui-root .cc-brief-dl dt { font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-brief-dl dd { margin: 0; font-size: var(--fs-secondary); line-height: var(--lh-box); overflow-wrap: anywhere; }
+.ui-root .cc-brief-coming { margin: var(--space-px12) 0 0; font-size: var(--fs-text); overflow-wrap: anywhere; }
+.ui-root .cc-brief-coming + .cc-brief-coming { margin-top: var(--space-1); }
+
+/* ---------------------------------------------------------------- sessions on a client's or a group's page */
+.ui-root .cc-ses-rows { margin-top: var(--space-2); }
+/* The shared row, kept on the section's left edge on a phone too (mobile.css pads every button). */
+.ui-root .cc-ses-rows .cc-row { padding: var(--space-px12) 0 !important; }
+.ui-root .cc-ses-next { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-px2) var(--space-3); align-items: center; min-height: var(--tap-min); margin-top: var(--space-2); }
+.ui-root .cc-ses-next b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-text); line-height: var(--lh-row); }
+.ui-root .cc-ses-next small { display: block; font-size: var(--fs-note); color: var(--text-2); margin-top: var(--space-px2); }
+.ui-root .cc-ses-next .ds-link, .ui-root .cc-ses-none .ds-link { min-width: var(--tap-min); }
+.ui-root .cc-ses-none { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-px14); min-height: var(--tap-min); margin-top: var(--space-1); }
+.ui-root .cc-fold-body .cc-todos { margin-top: 0; }
+
+/* Two boxes side by side stay level, top and bottom, whatever their labels
+   or their words do: the labels share one row and the boxes the next. */
+.ui-root .cc-ses-two, .ui-root .cc-ses-top { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto; column-gap: var(--space-px12); row-gap: 0; align-items: stretch; }
+.ui-root .cc-ses-two > *, .ui-root .cc-ses-top > * { display: grid; grid-template-rows: subgrid; grid-row: span 2; margin: 0; min-width: 0; }
+.ui-root .cc-ses-two > * > .ds-label-row, .ui-root .cc-ses-top > * > .ds-label-row { align-self: end; }
+.ui-root .cc-ses-two .ds-field { height: 100%; min-height: var(--field-h); }
+
+/* ---------------------------------------------------------------- after a call */
+/* M11 draws no line between these pages' sections, nor the brief's. */
+.ui-root .cc-ses .cc-part.ds-section, .ui-root .cc-brief .cc-part.ds-section { border-top: 0; padding-top: 0; }
+.ui-root .cc-ses .cc-part > .ds-section-head, .ui-root .cc-brief .cc-part > .ds-section-head { margin-bottom: 0; min-height: var(--tap-min); align-items: center; }
+.ui-root .cc-ses-top { margin-top: var(--space-px20); }
+/* Side by side, the choice of length is as tall as the drop-down beside it (rule 4a). */
+.ui-root .cc-ses-long .ds-inline { display: flex; min-width: 0; }
+.ui-root .cc-ses-long .ds-seg:not(#_) { display: flex; flex: 1 1 auto; min-height: var(--field-h); }
+.ui-root .cc-ses-long .ds-seg-btn:not(#_) { flex: 1 1 0; }
+
+.ui-root .cc-ses-outcome { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-top: var(--space-px14); }
+.ui-root .cc-ses-outcome .cc-quiet { margin: 0; }
+.ui-root .cc-ses-sent { margin-top: var(--space-px14); }
+.ui-root .cc-ses-facts { margin-top: var(--space-2); }
+.ui-root .cc-ses-senton { margin-left: auto; font-family: var(--font-body); font-size: var(--fs-note); letter-spacing: normal; text-transform: none; color: var(--text-2); white-space: nowrap; }
+.ui-root .cc-part > .ds-section-head .ds-section-title:has(.cc-ses-senton) { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-3); width: 100%; }
+.ui-root .cc-ses-recap { margin-top: var(--space-2); }
+.ui-root .cc-ses-recap p + p { margin-top: var(--space-px12); }
+.ui-root .cc-ses-recap p { white-space: pre-wrap; }
+
+/* An action: the tick that sends it, its words, where it goes, and the cross that removes it. */
+.ui-root .cc-ses-acts { display: grid; gap: var(--space-px12); margin-top: var(--space-2); }
+/* The tick's visible box sits on the column's left edge; its 44px tap area reaches past it. */
+.ui-root .cc-ses-act { --cc-act-box-h: calc(var(--field-h) + var(--space-px2)); --cc-tick-in: calc((var(--tap-min) - var(--checkbox-box)) / 2); display: grid; grid-template-columns: calc(var(--tap-min) - var(--cc-tick-in)) minmax(0, 1fr) var(--tap-min); gap: 0 var(--space-1); align-items: start; }
+.ui-root .cc-ses-act > .ds-check-box, .ui-root .cc-ses-act > .ds-icon-btn { margin-top: calc((var(--cc-act-box-h) - var(--tap-min)) / 2); }
+.ui-root .cc-ses-act > .ds-check-box { margin-left: calc(-1 * var(--cc-tick-in)); }
+.ui-root .cc-ses-act-words { min-width: 0; }
+.ui-root .cc-ses-act-words .ds-textbox-field { margin: 0; }
+.ui-root .cc-ses-where { min-height: var(--tap-min); min-width: var(--tap-min); font-size: var(--fs-note) !important; padding: 0 !important; }
+.ui-root .cc-ses-speak { margin-top: var(--space-px22); }
+.ui-root .cc-ses-delete { margin-top: var(--space-6); }
+.ui-root .cc-ses-sentacts .cc-line { min-height: var(--cc-row-h); }
+
+/* The page's own bottom bar: on the page's column, the phone bar stepping back while it shows. */
+.ui-root .cc-ses-bar .ds-bottombar-in { max-width: calc(var(--content-max) + 2 * var(--space-px28)); padding-inline: var(--space-px28); }
+.ui-root .cc-ses-page--bar { padding-bottom: calc(var(--bottom-bar-h, 0px) + var(--space-6)); }
+.ui-root.cc-app:has(.cc-ses-bar) .cc-phonebar { display: none; }
+
+/* ---------------------------------------------------------------- the guided close */
+.ui-root .cc-close-score { display: grid; grid-template-columns: minmax(0, 1fr) var(--cc-close-bars-w) minmax(var(--space-px44), auto); gap: var(--space-2) var(--space-4); align-items: center; min-height: var(--cc-row-h); padding: var(--space-px10) 0; border-bottom: var(--line-w) solid var(--line-soft); --cc-close-bars-w: calc(var(--cc-detail-w) + var(--space-7)); }
+.ui-root .cc-close-score b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-text); line-height: var(--lh-row); }
+.ui-root .cc-close-score small { display: block; font-size: var(--fs-note); color: var(--text-2); margin-top: var(--space-px2); }
+.ui-root .cc-close-bars { display: grid; gap: var(--space-px6); }
+.ui-root .cc-close-bar { display: block; height: var(--bar-h); border-radius: var(--radius-bar); background: var(--line); overflow: hidden; }
+.ui-root .cc-close-bar > i { display: block; height: 100%; border-radius: var(--radius-bar); background: var(--text-2); }
+.ui-root .cc-close-bar--now > i { background: var(--good); }
+.ui-root .cc-close-now { font-family: var(--font-display); font-weight: var(--fw-light); font-size: var(--fs-fold-figure); line-height: 1; font-variant-numeric: tabular-nums; color: var(--good); text-align: right; }
+.ui-root .cc-close-goalsline { margin-top: var(--space-2); }
+.ui-root .cc-close-goal { min-height: var(--tap-min); }
+.ui-root .cc-close-ask-words { --cc-tick-in: calc((var(--tap-min) - var(--checkbox-box)) / 2); display: grid; grid-template-columns: calc(var(--tap-min) - var(--cc-tick-in)) minmax(0, 1fr); gap: 0 var(--space-1); align-items: center; min-width: 0; }
+.ui-root .cc-close-ask-words > .ds-check-box { margin-left: calc(-1 * var(--cc-tick-in)); }
+.ui-root .cc-close-keep { margin-top: var(--space-4); }
+
+/* On a tablet and a phone the two choices stack: the three lengths never wrap inside their pills. */
+@media (max-width: 900px) {
+  .ui-root .cc-ses-top { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; row-gap: var(--space-px22); }
+  .ui-root .cc-ses-top > * { display: block; grid-row: auto; }
+  .ui-root .cc-ses-long .ds-seg:not(#_) { min-height: var(--btn-h); }
+}
+
+@media (max-width: 600px) {
+  .ui-root .cc-ses-long .ds-seg:not(#_) { min-height: var(--btn-h-phone); }
+  .ui-root .cc-brief-dl > div { grid-template-columns: minmax(0, 1fr); }
+  /* The brief's foot on a phone: the quiet link over the full-width button (M11). */
+  .ui-root .cc-brief-foot { flex-direction: column; align-items: stretch; gap: var(--space-2); }
+  .ui-root .cc-brief-foot > .ds-link { align-self: center; justify-content: center; }
+  .ui-root .cc-brief-foot > .ds-btn { width: 100%; }
+
+  .ui-root .cc-ses-two { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; row-gap: var(--space-px22); }
+  .ui-root .cc-ses-two > * { display: block; grid-row: auto; }
+  .ui-root .cc-ses-two .ds-field { height: auto; }
+  .ui-root .cc-ses-outcome > .ds-btn { width: 100%; }
+  .ui-root .cc-ses-speak > .ds-btn { width: 100%; }
+  .ui-root .cc-ses-bar .ds-bottombar-in { padding-inline: max(var(--space-3), env(safe-area-inset-left, 0px)) max(var(--space-3), env(safe-area-inset-right, 0px)); }
+  .ui-root .cc-ses-page--bar { padding-bottom: calc(var(--bottom-bar-h, 0px) + var(--space-5)); }
+
+  .ui-root .cc-close-score { grid-template-columns: minmax(0, 1fr) auto; }
+  .ui-root .cc-close-bars { grid-column: 1 / -1; grid-row: 2; }
+  .ui-root .cc-close-ask { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .cc-close-ask > .cc-line-state { padding-left: calc(var(--tap-min) - (var(--tap-min) - var(--checkbox-box)) / 2 + var(--space-1)); white-space: normal; }
+}

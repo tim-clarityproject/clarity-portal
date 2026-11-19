@@ -6,7 +6,7 @@ import {
   healthCheckFinishedForCoachEmail, healthCheckResultsEmail, healthCheckNewCodeEmail, guestEmailCodeEmail, healthCheckFinishedNoteEmail,
   sessionTomorrowEmail, sessionInOneHourEmail, leadingIdeasClientEmail, leadingIdeasPublicEmail,
   confirmEmailEmail, resetPasswordEmail, changeEmailEmail, inviteEmail, guestPlanCopyEmail,
-  workshopTomorrowEmail, workshopInOneHourEmail, workshopFollowUpEmail,
+  workshopTomorrowEmail, workshopInOneHourEmail, workshopFollowUpEmail, sessionRecapEmail,
 } from '../../lib/email/emails.js';
 import { instantAt } from '../../lib/time/index.js';
 
@@ -131,6 +131,19 @@ export const EMAIL_EXAMPLES = [
     from: 'From The Clarity Project, to someone who came',
     sends: 'A template only: nothing sends it yet.',
     doc: () => workshopFollowUpEmail({ title: 'Decide who decides', words: 'Thank you for Tuesday. Here are the slides and the decision rights canvas.\nYou’re also welcome to a free Clarity Portal account, to keep using the tools.', surveyLink: `${PORTAL}/workshop/survey/00000000-0000-4000-8000-000000000001` }),
+  },
+  {
+    key: 'session-recap',
+    name: 'Session recap',
+    from: 'From The Clarity Portal, to Hannah',
+    sends: 'Sent only from the live site, once, when the coach presses Send the recap (after migration 050). Never from a preview, and never by itself.',
+    doc: () => sessionRecapEmail({
+      origin: PORTAL,
+      coach: 'Tim',
+      dateText: 'Mon 16 Nov 2026',
+      recap: 'Thanks for today, Hannah.\n\nWe looked at the pricing launch and where your time goes in the week before it. You named two things only you can do: the investor call and the pricing story for the sales team.\n\nYou’re handing the rest of the launch plan to Femi, with a 15-minute check-in each morning.',
+      actions: ['Hand the launch plan to Femi by Wednesday', 'Book a 15-minute check-in each morning'],
+    }),
   },
   {
     key: 'leading-ideas-client',
