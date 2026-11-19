@@ -1,0 +1,132 @@
+/* The coach's own to-dos (Phase 6a run 2; mock-up M11, seq 77): the
+   To-dos page, a list with headings, and the parts Today shares
+   (todoParts.jsx). Every value is a token; the tick box, the fields, the
+   chips and the switches are the shared ones. Phone is 600px and under.
+   Panels are drawn outside the page (their own .ui-root), so nothing here
+   leans on .cc-app. */
+
+/* ---------------------------------------------------------------- underlined tabs */
+.ui-root .cc-todo-bar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-px12) var(--space-3); margin-top: var(--space-px40); }
+.ui-root .cc-todo-bar .ds-choice { margin: 0; }
+.ui-root .cc-utabs { display: flex; gap: var(--space-px22); max-width: 100%; overflow-x: auto; scrollbar-width: none; border-bottom: var(--line-w) solid var(--line); }
+.ui-root .cc-utabs::-webkit-scrollbar { display: none; }
+.ui-root .cc-utab {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  flex: none;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-family: var(--font-body);
+  font-size: var(--fs-btn);
+  color: var(--text-2);
+  box-shadow: inset 0 calc(-1 * var(--focus-w)) 0 transparent;
+  transition: color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-root .cc-utab[aria-selected='true'] { color: var(--text); box-shadow: inset 0 calc(-1 * var(--focus-w)) 0 var(--text); }
+@media (hover: hover) {
+  .ui-root .cc-utab:hover { color: var(--text); }
+}
+.ui-root .cc-utab:focus-visible { color: var(--text); outline: var(--focus-w) solid var(--coral-text); outline-offset: calc(-1 * var(--focus-w)); border-radius: var(--space-1); }
+
+/* ---------------------------------------------------------------- the quick add */
+.ui-root .cc-qadd { margin-top: var(--space-px22); }
+.ui-root .cc-qadd > .ds-textbox-field { margin: 0; }
+.ui-root .cc-qadd-read { margin-top: var(--space-px10); }
+.ui-root .cc-qadd-title { margin: 0; font-size: var(--fs-secondary); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .cc-qadd-chips { list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-px6); margin: var(--space-2) 0 0; padding: 0; }
+.ui-root .cc-qadd-chips li { padding: var(--space-1) var(--space-px10); border-radius: var(--radius-chip); background: var(--raised); font-size: var(--fs-meta); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .cc-qadd-help { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-px14); margin-top: var(--space-1); font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-qadd-help .ds-explain-link { font-size: var(--fs-note) !important; }
+.ui-root .cc-qadd-go { margin-top: var(--space-2); }
+
+/* ---------------------------------------------------------------- rows */
+.ui-root .cc-todo-group { margin: var(--space-px28) 0 0; font-family: var(--font-display); font-weight: var(--fw-regular); text-transform: uppercase; letter-spacing: var(--ls-cc-section) !important; word-spacing: normal; font-size: var(--fs-label) !important; line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .cc-todos { font-size: var(--fs-text); }
+.ui-root .cc-todo-group + .cc-todos { margin-top: var(--space-1); }
+.ui-root .cc-todo.ds-todo { grid-template-columns: var(--tap-min) minmax(0, 1fr) auto; min-width: 0; }
+.ui-root .cc-todo-open .ds-todo-text { transition: color var(--dur) var(--ease); }
+@media (hover: hover) {
+  .ui-root .cc-todo-open:hover .ds-todo-text { color: var(--coral-text); }
+}
+.ui-root .cc-todo-open:focus-visible .ds-todo-text { color: var(--coral-text); }
+.ui-root .cc-todo--done .cc-todo-open:hover .ds-todo-text { color: var(--text-2); }
+.ui-root .cc-todo-dots { fill: currentColor; stroke: none; }
+.ui-root .cc-todo-more { opacity: 0; transition: opacity var(--dur-fast) var(--ease), color var(--dur) var(--ease); }
+.ui-root .cc-todo-row:hover .cc-todo-more, .ui-root .cc-todo-row:focus-within .cc-todo-more, .ui-root .cc-todo-more[aria-expanded='true'] { opacity: 1; }
+@media (hover: none) {
+  .ui-root .cc-todo-more { display: none; }
+}
+/* Where a dragged to-do will land. */
+.ui-root .cc-todo-row--before { box-shadow: 0 calc(-1 * var(--focus-w)) 0 var(--text); }
+.ui-root .cc-todo-row--after { box-shadow: 0 var(--focus-w) 0 var(--text); }
+.ui-root .cc-todo-none { min-height: var(--tap-min); border-bottom: var(--line-w) solid var(--line-soft); border-radius: var(--radius-menu-row); }
+.ui-root .cc-todos--drop .cc-todo-none { background: var(--raised); }
+.ui-root .cc-add .ds-addrow + .ds-addrow { margin-top: 0; }
+
+/* Several chosen: the bar's actions. */
+.ui-root .cc-todo-bulk-acts { display: flex; align-items: center; gap: var(--space-px6); min-width: 0; }
+
+/* ---------------------------------------------------------------- a list with headings */
+.ui-root .cc-list-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-px20); min-height: var(--tap-min); font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-list-meta .ds-link { font-size: var(--fs-note); min-width: var(--tap-min); }
+.ui-root .cc-list-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-px28); }
+.ui-root .cc-list-head .cc-todo-group { margin: 0; min-width: 0; }
+.ui-root .cc-list-head + .cc-todos { margin-top: 0; }
+.ui-root .cc-heading-box { margin-top: var(--space-px22); }
+
+/* ---------------------------------------------------------------- one to-do in its panel */
+/* Whole-pixel heights above the drop-downs, so each chevron stays centred on its words (rule 29ao: the
+   browser sets words on whole pixels, and a box that starts on a part of one puts its chevron off them). */
+.ui-root .cc-todo-when { margin: 0 0 var(--space-px14); min-height: var(--space-px22); line-height: var(--space-px22); font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-todo-switch .ds-switchrow { box-sizing: border-box; min-height: var(--field-h); border-top: 0; padding: var(--space-1) 0; }
+.ui-root .cc-field.cc-todo-switch { margin-top: var(--space-2); }
+/* Two boxes side by side stay level and one height, whichever label or value wraps onto two lines: the two
+   labels share one row of the grid and the two boxes the next. */
+@media (min-width: 601px) {
+  .ui-root .cc-todo-two { grid-auto-flow: column; grid-template-rows: auto 1fr; row-gap: 0; }
+  .ui-root .cc-todo-two > .cc-daychoice, .ui-root .cc-todo-two > .cc-daychoice > .ds-choice { display: contents; }
+  .ui-root .cc-todo-two .ds-label-row { align-self: end; min-width: 0; }
+  .ui-root .cc-todo-two .ds-dd { min-width: 0; }
+}
+.ui-root .cc-daychoice > .ds-choice { margin: 0; }
+.ui-root .cc-todo-est .ds-seg { max-width: 100%; }
+.ui-root .cc-todo-sec { margin-top: var(--space-px28); }
+.ui-root .cc-todo-sechead { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-todo-h { margin: 0; font-family: var(--font-display); font-weight: var(--fw-regular); text-transform: uppercase; letter-spacing: var(--ls-cc-section) !important; word-spacing: normal; font-size: var(--fs-label) !important; line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .cc-checklist { margin-top: var(--space-1); }
+.ui-root .cc-check-item { display: grid; grid-template-columns: var(--tap-min) minmax(0, 1fr) var(--tap-min); align-items: center; gap: var(--space-2); min-height: var(--field-h); border-bottom: var(--line-w) solid var(--line-soft); font-size: var(--fs-text); overflow-wrap: anywhere; }
+.ui-root .cc-check-item--done > span { color: var(--text-2); text-decoration: line-through; text-decoration-color: var(--label); }
+.ui-root .cc-check-add { margin-top: var(--space-px12); }
+.ui-root .cc-check-add > .ds-textbox-field { margin: 0; }
+.ui-root .cc-check-add-go { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-px20); margin-top: var(--space-px12); }
+.ui-root .cc-check-add-go .ds-link { min-width: var(--tap-min); }
+.ui-root .cc-todo-linked { display: grid; gap: var(--space-px2); margin-top: var(--space-2); padding-bottom: var(--space-px12); border-bottom: var(--line-w) solid var(--line-soft); overflow-wrap: anywhere; }
+.ui-root .cc-todo-linked b { font-weight: var(--fw-regular); font-size: var(--fs-text); }
+.ui-root .cc-todo-linked small { font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-todo-linked span { font-size: var(--fs-secondary); margin-top: var(--space-2); }
+
+/* ---------------------------------------------------------------- phone */
+@media (max-width: 600px) {
+  .ui-root .cc-todo-bar { margin-top: var(--space-px22); }
+  .ui-root .cc-qadd-go .ds-btn { width: 100%; }
+  /* Once choosing has begun the round tick takes the tick box's place. */
+  .ui-root .cc-picking .cc-pick-row .cc-todo.ds-todo { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .cc-picking .cc-pick-row .cc-todo .ds-check-box { display: none; }
+  .ui-root .cc-todo-row { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  .ui-root .cc-bulk.cc-todo-bulk { display: grid; grid-template-columns: minmax(0, 1fr) auto; width: calc(100% - 2 * var(--space-3)); max-width: none; border-radius: var(--cc-col-radius); padding: var(--space-1) var(--space-px6) var(--space-px6) var(--space-3); }
+  .ui-root .cc-todo-bulk .cc-bulk-n { align-self: center; }
+  .ui-root .cc-todo-bulk-clear { grid-column: 2; grid-row: 1; }
+  .ui-root .cc-todo-bulk-acts { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; justify-content: space-between; gap: 0; margin-left: calc(-1 * var(--space-2)); }
+  .ui-root .cc-todo-bulk .cc-bulk-btn { flex: 1 1 auto; justify-content: center; min-width: var(--tap-min); padding: 0 var(--space-2) !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .cc-utab, .ui-root .cc-todo-more { transition: none; }
+}

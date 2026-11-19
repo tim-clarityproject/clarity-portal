@@ -11,7 +11,7 @@ import {
   repeatValue, nextRepeat, completeTodo, parseQuickAdd, quickAddChips, addedWords, workingDay, callsOn, dayLoad, overWords,
   suggestMoves, moveState, weekStart, capacity, capacityFromTyped, todayOffer, sessionCounts, isLateCancellation,
   outcomeLine, withSessions, withHeldTyped, leftWords, sessionRow, toWriteUp, recapNudges, lastSession, nextSession,
-  whenWords, averageSince, prepLine, attentionRows, dayDone, weekDone, doneThisWeek,
+  whenWords, averageSince, prepLine, attentionRows, dayDone, weekDone, doneThisWeek, doneWords, openWords, positionAt, quickDays,
 } from '../../src/lib/coach/day.js';
 import { sessionsLeft } from '../../src/lib/coach/model.js';
 
@@ -140,6 +140,31 @@ test('the quick add reads plain words', () => {
   assert.equal(parseQuickAdd('Fix it 20m', ctx).title, 'Fix it 20m', 'an estimate that isn’t a 15-minute step stays in the title');
   assert.equal(parseQuickAdd('   ', ctx).title, '');
   assert.equal(parseQuickAdd('x'.repeat(400), ctx).title.length, 300);
+});
+
+test('a list’s own day: with no day typed a to-do goes to the list’s day, and "someday" still means no day', () => {
+  const ctx = { todayKey: TODAY, defaultDay: TODAY };
+  assert.deepEqual([parseQuickAdd('Reply to Elena', ctx).planned_on, parseQuickAdd('Reply to Elena', ctx).someday], [TODAY, false]);
+  assert.deepEqual([parseQuickAdd('Read the guidance someday', ctx).planned_on, parseQuickAdd('Read the guidance someday', ctx).someday], [null, true]);
+  assert.equal(parseQuickAdd('Call Priya tomorrow', ctx).planned_on, '2026-11-18');
+  assert.equal(parseQuickAdd('Reply to Elena', { todayKey: TODAY }).someday, true);
+});
+
+test('putting a to-do in a new place: between its neighbours of the same importance', () => {
+  const list = [todo('t1', { important: true, position: 100 }), todo('t2', { position: 1000 }), todo('t3', { position: 2000 }), todo('t4', { position: 3000 })];
+  assert.equal(positionAt(list[3], list, 2), 1500, 'between t2 and t3');
+  assert.ok(positionAt(list[3], list, 0) < 1000, 'above an Important one it still sorts after it, before t2');
+  assert.ok(positionAt(list[1], list, 3) > 3000, 'the end');
+  assert.equal(positionAt(todo('n9'), [], 0), 1000, 'an empty list');
+  const moved = { ...list[3], position: positionAt(list[3], list, 2) };
+  assert.deepEqual(sortTodos([list[0], list[1], list[2], moved]).map((t) => t.id), ['t1', 't2', 't4', 't3']);
+});
+
+test('done on, how many are open, and the days Date offers for several at once', () => {
+  assert.equal(doneWords(todo('t1', { done_at: at(16) }), TODAY), 'Mon 16 Nov');
+  assert.equal(doneWords(todo('t1'), TODAY), '');
+  assert.equal(openWords([todo('t1'), todo('t2', { done_at: at(16) }), todo('t3')]), '2 open');
+  assert.deepEqual(quickDays(TODAY).map((d) => [d.label, d.day]), [['Today', TODAY], ['Tomorrow', '2026-11-18'], ['Next week', '2026-11-23'], ['Someday', null]]);
 });
 
 test('the working day and a day that is over-full', () => {

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, lazy, Suspense, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { BoldCrosshair, PageHeader, SlidePanel, useHidePhoneBar, useToast } from '../../components/design';
@@ -11,6 +11,7 @@ import { loadAdminClients, loadCoaches } from '../../lib/coach/actions';
 import { callForBar, favouriteViews, nextCallBar, searchResults, withRecent } from '../../lib/coach/model';
 import { COACH_MENU, COACH_PAGES, coachTitle, SETTINGS_SECTIONS } from '../../lib/coach/navigation';
 import { testCalls } from '../../lib/coach/calls';
+import { todayTodos } from '../../lib/coach/day';
 import { CoachPortalContext, TextLink, useCoachPortal } from './parts';
 import './coach.css';
 
@@ -89,7 +90,7 @@ export function CallBar({ calls, now }) {
 }
 
 function Menu({ open, onClose, onSignOut }) {
-  const { isOwner, views } = useCoachPortal();
+  const { isOwner, views, todos, todoLists, todayKey } = useCoachPortal();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const navRef = useRef(null);
@@ -105,6 +106,10 @@ function Menu({ open, onClose, onSignOut }) {
   const items = COACH_MENU.filter((i) => (!i.owner || isOwner) && (!i.later || !LIVE));
   const current = (to) => (to === '/coach' ? pathname === '/coach' : pathname === to || pathname.startsWith(`${to}/`));
   const favourites = favouriteViews(views);
+  // To-dos shows how many are for today, with the coach's own lists under it (M11's menu).
+  const today = todayTodos(todos, todayKey);
+  const todosToday = today.work.length + today.afterWork.length;
+  const lists = todoLists.filter((l) => !l.finished_at);
   return (
     <>
       <div className="cc-scrim cc-scrim--menu" onClick={onClose} aria-hidden="true" />
@@ -115,9 +120,18 @@ function Menu({ open, onClose, onSignOut }) {
           </button>
         </div>
         <div className="cc-menu-nav" ref={navRef}>
-          {items.filter((i) => i.key !== 'settings').map((i) => (
+          {items.filter((i) => i.key !== 'settings').map((i) => (i.key !== 'todos' ? (
             <button key={i.key} type="button" className="cc-menu-item" aria-current={current(i.to) ? 'page' : undefined} onClick={() => go(i.to)}>{i.label}</button>
-          ))}
+          ) : (
+            <Fragment key={i.key}>
+              <button type="button" className="cc-menu-item" aria-current={pathname === i.to ? 'page' : undefined} aria-label={todosToday ? `To-dos, ${todosToday} for today` : undefined} onClick={() => go(i.to)}>
+                {i.label}{todosToday > 0 && <span className="cc-menu-n" aria-hidden="true">{todosToday}</span>}
+              </button>
+              {lists.map((l) => (
+                <button key={l.id} type="button" className="cc-menu-item cc-menu-item--sub" aria-current={pathname === `/coach/todos/lists/${l.id}` ? 'page' : undefined} onClick={() => go(`/coach/todos/lists/${l.id}`)}>{l.name}</button>
+              ))}
+            </Fragment>
+          )))}
           {favourites.length > 0 && <p className="cc-menu-label">Favourite views</p>}
           {favourites.map((v) => (
             <button key={v.id} type="button" className="cc-menu-item" onClick={() => go(`/coach/clients?view=${v.id}`)}>{v.name}</button>

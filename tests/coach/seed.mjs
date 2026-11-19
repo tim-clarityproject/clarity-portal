@@ -136,3 +136,93 @@ export const ADMIN_ROWS = () => [
   { profile_id: ID.owen, name: 'Owen Price', coach_id: OTHER, coach_first_name: 'Maya', organisation_id: ID.kestrel, organisation_name: 'Kestrel Group', status: 'active', engagement_kind: 'sessions', sessions_total: 6, sessions_held: 1, time_credit_minutes: null, ends_on: day(70) },
   { profile_id: ID.ella, name: 'Ella Fraser', coach_id: OTHER, coach_first_name: 'Maya', organisation_id: null, organisation_name: null, status: 'paused', engagement_kind: 'sessions', sessions_total: 6, sessions_held: 3, time_credit_minutes: null, ends_on: null },
 ];
+
+// ---------------------------------------------------------------- the coaching day (Phase 6a run 2)
+export const DAY = {
+  tagPhone: u(35), tagEmail: u(36), tagWriting: u(37), tagHome: u(38),
+  listKestrel: u(4001), listNorthfield: u(4002), listBook: u(4003), listAdmin: u(4004), listBusiness: u(4005),
+  headReview: u(4101), headProposal: u(4102),
+  t1: u(5001), t2: u(5002), t3: u(5003), t4: u(5004), t5: u(5005), t6: u(5006), t9: u(5009), t10: u(5010), t11: u(5011),
+  t12: u(5012), t13: u(5013), t14: u(5014), t15: u(5015), aw1: u(5021), aw2: u(5022),
+};
+
+/**
+ * M11's own invented to-dos, as the coach's own (coach_todos, never a
+ * client's): Today with the Important one, two carried over, the one with
+ * a checklist and the one from a forwarded email; two After work;
+ * Upcoming and Someday; a dozen done; and the "Kestrel renewal" list with
+ * its two headings. Days are counted from today, so the words on screen
+ * ("From yesterday", "Tomorrow") stay true whenever a test runs.
+ * Returns rows by table; `seedWithDay()` adds them to `seedRows()`.
+ */
+export function daySeed() {
+  let n = 0;
+  const todo = (id, title, extra = {}) => {
+    n += 1;
+    const planned = extra.planned_on ?? null;
+    return {
+      id, coach_id: ME, title, notes: null, important: false, planned_on: planned, planned_time: null, first_planned_on: null, due_on: null, minutes: null,
+      list_id: null, heading_id: null, profile_id: null, lead_id: null, repeat_rule: null, repeat_of: null, remind: false, someday: !planned, after_work: false,
+      checklist: [], position: n * 1000, done_at: null, from_email_sender: null, from_email_subject: null, from_email_at: null, created_at: at(-9, 9, n), ...extra,
+    };
+  };
+  const tag = (tagId, todoId) => ({ tag_id: tagId, item_kind: 'todo', item_id: todoId, coach_id: ME });
+  const done = ['Send Hannah the recap', 'Book the Leeds room', 'Reply to Jack Moran', 'Write issue 148 of Leading Ideas', 'Pay the Zoom invoice', 'Confirm the Kestrel room',
+    'Send Mia the welcome pack', 'Update the workshop slides', 'Reply to Dana about the review', 'Order the printed workbooks', 'File the October expenses', 'Thank Dan for the referral'];
+  return {
+    coach_tags: [
+      { id: DAY.tagPhone, coach_id: ME, name: 'Phone', position: 4 }, { id: DAY.tagEmail, coach_id: ME, name: 'Email', position: 5 },
+      { id: DAY.tagWriting, coach_id: ME, name: 'Writing', position: 6 }, { id: DAY.tagHome, coach_id: ME, name: 'Home', position: 7 },
+    ],
+    coach_todo_lists: [
+      { id: DAY.listKestrel, coach_id: ME, name: 'Kestrel renewal', profile_id: null, organisation_id: ID.kestrel, position: 1, finished_at: null },
+      { id: DAY.listNorthfield, coach_id: ME, name: 'Northfield workshop', profile_id: null, organisation_id: ID.northfield, position: 2, finished_at: null },
+      { id: DAY.listBook, coach_id: ME, name: 'The book', profile_id: null, organisation_id: null, position: 3, finished_at: null },
+      { id: DAY.listAdmin, coach_id: ME, name: 'Admin', profile_id: null, organisation_id: null, position: 4, finished_at: null },
+      { id: DAY.listBusiness, coach_id: ME, name: 'Business', profile_id: null, organisation_id: null, position: 5, finished_at: null },
+    ],
+    coach_todo_headings: [
+      { id: DAY.headReview, list_id: DAY.listKestrel, coach_id: ME, name: 'Before the review', position: 1 },
+      { id: DAY.headProposal, list_id: DAY.listKestrel, coach_id: ME, name: 'The proposal', position: 2 },
+    ],
+    coach_todos: [
+      // Today
+      todo(DAY.t1, 'Renew professional indemnity insurance', { planned_on: day(0), important: true, due_on: day(3), list_id: DAY.listAdmin, minutes: 30 }),
+      todo(DAY.t9, 'Reply to Elena Ruiz', { planned_on: day(0), minutes: 15 }),
+      todo(DAY.t10, 'Check in with Tom Hale on his decision', { planned_on: day(-4), minutes: 15 }),
+      todo(DAY.t2, 'Send Sam the decision rights article', { planned_on: day(0), profile_id: ID.sam, minutes: 15 }),
+      todo(DAY.t3, 'Draft the Northfield workshop outline', { planned_on: day(-1), list_id: DAY.listNorthfield, minutes: 120, checklist: [{ text: 'Opening exercise', done: true }, { text: 'Decision rights canvas', done: true }, { text: 'Close and survey', done: false }] }),
+      todo(DAY.t11, 'Reply to Ruth about the January start', { planned_on: day(0), minutes: 15, from_email_sender: 'Ruth Adams', from_email_subject: 'The January start', from_email_at: at(-1, 16, 20) }),
+      // After work
+      todo(DAY.aw1, 'Book the boiler service', { planned_on: day(0), after_work: true }),
+      todo(DAY.aw2, 'Collect the dry cleaning', { planned_on: day(0), after_work: true }),
+      // Upcoming
+      todo(DAY.t4, 'Call Priya about the keynote', { planned_on: day(1), planned_time: '10:00', profile_id: ID.priya, minutes: 15 }),
+      todo(DAY.t13, 'Pull Sam’s progress for the review', { planned_on: day(1), list_id: DAY.listKestrel, heading_id: DAY.headReview, minutes: 30 }),
+      todo(DAY.t5, 'Write issue 149 of Leading Ideas', { planned_on: day(2), list_id: DAY.listBusiness, repeat_rule: { every: 'week' } }),
+      todo(DAY.t12, 'Send the Kestrel proposal', { planned_on: day(3), planned_time: '09:15', due_on: day(3), important: true, list_id: DAY.listKestrel, heading_id: DAY.headProposal }),
+      todo(DAY.t14, 'Check in with Marcus on the offsite', { planned_on: day(4), profile_id: ID.marcus }),
+      todo(DAY.t15, 'Agree the review date with Dana', { planned_on: day(4), list_id: DAY.listKestrel, heading_id: DAY.headReview }),
+      todo(DAY.t6, 'Send the invoice summary to the accountant', { planned_on: day(12), list_id: DAY.listAdmin, repeat_rule: { every: 'month' } }),
+      // Someday
+      todo(u(5031), 'Read the new ICF ethics guidance', { list_id: DAY.listAdmin }),
+      todo(u(5032), 'Sketch a workshop on decision rights', { list_id: DAY.listBusiness }),
+      todo(u(5033), 'Outline chapter 3, pressure and sleep', { list_id: DAY.listBook }),
+      todo(u(5034), 'Ask Ana for the agent’s email', { list_id: DAY.listBook }),
+      // Done
+      ...done.map((title, i) => todo(u(5101 + i), title, { planned_on: day(i < 7 ? 0 : -1), done_at: at(i < 7 ? 0 : -1, 8, 50 - i) })),
+    ],
+    coach_tag_links: [
+      tag(DAY.tagEmail, DAY.t9), tag(DAY.tagPhone, DAY.t10), tag(DAY.tagEmail, DAY.t2), tag(DAY.tagWriting, DAY.t3),
+      tag(DAY.tagHome, DAY.aw1), tag(DAY.tagPhone, DAY.aw1), tag(DAY.tagHome, DAY.aw2), tag(DAY.tagPhone, DAY.t4), tag(DAY.tagWriting, DAY.t5),
+      tag(ID.tagKestrel, DAY.t15), tag(DAY.tagEmail, DAY.t15), tag(DAY.tagWriting, u(5032)), tag(DAY.tagWriting, u(5033)),
+    ],
+  };
+}
+
+/** `seedRows()` with the coaching day's rows added (tags and tag links are joined, not replaced). */
+export function seedWithDay() {
+  const rows = seedRows();
+  for (const [table, list] of Object.entries(daySeed())) rows[table] = [...(rows[table] || []), ...list];
+  return rows;
+}

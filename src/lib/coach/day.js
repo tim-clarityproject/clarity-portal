@@ -137,6 +137,37 @@ export function moveToDay(todo, dayKey) {
 /** A to-do with no day: Someday. */
 export const moveToSomeday = (todo) => ({ ...todo, planned_on: null, planned_time: null, someday: true, first_planned_on: null });
 
+/** "Mon 16 Nov": the day a to-do was done. Empty when it isn't done. */
+export const doneWords = (todo, todayKey) => (todo.done_at ? dayWords(toDayKey(new Date(todo.done_at)), todayKey) : '');
+
+/** "3 open", "1 open": a list's to-dos still to do. */
+export const openWords = (todos) => `${(todos || []).filter((t) => !t.done_at).length} open`;
+
+/**
+ * Where a to-do lands when it is put at `index` among a list's others: a
+ * position between its nearest neighbours of the same importance (Important
+ * ones always sort first, so only those neighbours decide its place).
+ * @param {object} todo the to-do being moved
+ * @param {object[]} listTodos the list it lands in, in the order shown
+ * @param {number} index its new place among the others (0 is the top)
+ */
+export function positionAt(todo, listTodos, index) {
+  const others = (listTodos || []).filter((t) => t.id !== todo.id);
+  const same = (t) => Boolean(t.important) === Boolean(todo.important);
+  const at = Math.max(0, Math.min(index, others.length));
+  const before = others.slice(0, at).filter(same).at(-1);
+  const after = others.slice(at).filter(same)[0];
+  return positionBetween(before ? Number(before.position) || 0 : null, after ? Number(after.position) || 0 : null);
+}
+
+/** The days "Date" offers for several to-dos at once: Today, Tomorrow, Next week (its Monday) and Someday (no day). */
+export const quickDays = (todayKey) => [
+  { label: 'Today', day: todayKey },
+  { label: 'Tomorrow', day: addDays(todayKey, 1) },
+  { label: 'Next week', day: addDays(weekStart(todayKey), 7) },
+  { label: 'Someday', day: null },
+];
+
 // ---------------------------------------------------------------- repeats (a rule, never a list of dates)
 
 export const REPEATS = [
@@ -234,9 +265,11 @@ const sameName = (a, b) => clean(a).toLowerCase() === clean(b).toLowerCase();
  * A day (today, tomorrow, a weekday), a time (10:00), an estimate (30m, 1h,
  * 1h30), "every Monday" and friends, "someday", "after work", # a list or
  * client, @ a tag, ! important. What isn't recognised stays in the title.
- * @param {{ todayKey: string, lists?: object[], tags?: object[], clients?: object[] }} ctx
+ * `defaultDay`: the day a to-do goes to when no day is typed (Today's own
+ * list adds to today); typing "someday" still means no day.
+ * @param {{ todayKey: string, lists?: object[], tags?: object[], clients?: object[], defaultDay?: string|null }} ctx
  */
-export function parseQuickAdd(text, { todayKey, lists = [], tags = [], clients = [] } = {}) {
+export function parseQuickAdd(text, { todayKey, lists = [], tags = [], clients = [], defaultDay = null } = {}) {
   let rest = ` ${String(text || '').replace(/\s+/g, ' ')} `;
   const out = { title: '', planned_on: null, planned_time: null, minutes: null, important: false, list_id: null, new_list: null, profile_id: null, tag_ids: [], new_tags: [], repeat_rule: null, someday: false, after_work: false };
   const take = (re, fn) => { rest = rest.replace(re, (...m) => { const keep = fn(...m); return keep === false ? m[0] : ' '; }); };
@@ -284,6 +317,7 @@ export function parseQuickAdd(text, { todayKey, lists = [], tags = [], clients =
   });
 
   if (out.someday) { out.planned_on = null; out.planned_time = null; } else if (!out.planned_on && (out.planned_time || out.repeat_rule || out.after_work)) out.planned_on = todayKey;
+  if (!out.someday && !out.planned_on && defaultDay) out.planned_on = defaultDay;
   if (!out.planned_on) { out.someday = true; out.planned_time = null; }
   const title = clean(rest);
   out.title = (title ? title[0].toUpperCase() + title.slice(1) : '').slice(0, 300);

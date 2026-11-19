@@ -138,7 +138,28 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
     return json(route, []);
   });
 
-  if (db === 'none') return store;
+  if (db === 'none') {
+    // "Before the tables": everything must stay on the device. 049 is on the
+    // test project now, so the page is told "not yet" on every load (both
+    // 049's note and 050's), and any write that still leaves the page for
+    // the database is stopped here and counted, never sent (19 Nov: a walk
+    // in this mode once wrote the seed's organisations to the test project).
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('clarity-coach-not-yet', String(Date.now()));
+        localStorage.setItem('clarity-coach-day-not-yet', String(Date.now()));
+      } catch { /* blocked */ }
+    });
+    await page.route('**/rest/v1/**', (route) => {
+      const req = route.request();
+      const name = new URL(req.url()).pathname.split('/rest/v1/')[1] || '';
+      if (name.startsWith('coaches')) return route.fallback();
+      if (req.method() === 'GET' || req.method() === 'HEAD') return route.fallback();
+      store.calls.push(`blocked ${req.method()} ${name}`);
+      return route.abort('blockedbyclient');
+    });
+    return store;
+  }
   // "049 isn't there yet" is remembered on a device for an hour; a page that is
   // answered by the stand-in starts without that note, every time it loads.
   await page.addInitScript(() => { try { localStorage.removeItem('clarity-coach-not-yet'); } catch { /* blocked */ } });
