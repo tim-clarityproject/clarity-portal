@@ -258,7 +258,7 @@ export function SettingRow({ label, value, words, editLabel = 'Edit', editor, on
     }
   };
   return (
-    <form className="cc-setrow cc-setrow--edit" onSubmit={(e) => { e.preventDefault(); save(); }} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setEditing(false); } }}>
+    <form noValidate className="cc-setrow cc-setrow--edit" onSubmit={(e) => { e.preventDefault(); save(); }} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setEditing(false); } }}>
       <span className="cc-setrow-label">{label}</span>
       <div className="cc-setrow-edit">
         {editor({ value: draft, setValue: (v) => { setDraft(v); setProblem(null); }, label })}

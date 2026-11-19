@@ -197,7 +197,7 @@ export default function WorkshopPage() {
               <div className="cc-acts"><TextLink onClick={() => setFollowUp(workshop.follow_up || '')}>Edit the follow-up</TextLink></div>
             </>
           ) : (
-            <form className="cc-field" onSubmit={(e) => { e.preventDefault(); save({ follow_up: followUp.trim().slice(0, 4000) || null }).then((ok) => { if (ok) setFollowUp(null); }); }}>
+            <form noValidate className="cc-field" onSubmit={(e) => { e.preventDefault(); save({ follow_up: followUp.trim().slice(0, 4000) || null }).then((ok) => { if (ok) setFollowUp(null); }); }}>
               <TextBox label="What each person gets" value={followUp} maxLength={4000} onChange={setFollowUp} />
               <div className="cc-acts"><Button variant="primary" type="submit">Save</Button><TextLink onClick={() => setFollowUp(null)}>Cancel</TextLink></div>
             </form>

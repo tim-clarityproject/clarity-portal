@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { BoldCrosshair, PageHeader, SlidePanel, useHidePhoneBar, useToast } from '../../components/design';
@@ -139,11 +139,13 @@ function Search({ open, onClose }) {
   const listRef = useRef(null);
   const recentKey = deviceKey('cache', userId, 'coach-recent');
   const [recent, setRecent] = useState([]);
-  useEffect(() => {
+  // Each opening starts empty and takes the keyboard at once, before anything
+  // can be typed: the first letter is never lost, nor added to the last search.
+  useLayoutEffect(() => {
     if (!open) return;
     setQ(''); setAt(0);
     setRecent(Array.isArray(readJson(recentKey)) ? readJson(recentKey) : []);
-    requestAnimationFrame(() => inputRef.current?.focus());
+    inputRef.current?.focus();
   }, [open, recentKey]);
 
   const all = useMemo(() => {

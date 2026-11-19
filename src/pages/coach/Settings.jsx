@@ -164,7 +164,7 @@ function AwayAndCover() {
         </div>
       ))}
       {adding ? (
-        <form className="cc-setrow cc-setrow--edit" onSubmit={add}>
+        <form noValidate className="cc-setrow cc-setrow--edit" onSubmit={add}>
           <span className="cc-setrow-label">Away</span>
           <div className="cc-setrow-edit">
             <div className="cc-two">
@@ -523,7 +523,7 @@ function TagsAndFields() {
         />
       ))}
       {adding ? (
-        <form className="cc-setrow cc-setrow--edit" onSubmit={add}>
+        <form noValidate className="cc-setrow cc-setrow--edit" onSubmit={add}>
           <span className="cc-setrow-label">New tag</span>
           <div className="cc-setrow-edit">
             <TextField label="Tag" value={name} maxLength={40} onChange={(e) => { setName(e.target.value); setProblem(null); }} autoFocus />

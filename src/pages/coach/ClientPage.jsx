@@ -436,7 +436,7 @@ export default function ClientPage() {
                     </span>
                   </Line>
                 ))}
-                <form onSubmit={addNote} className="cc-field">
+                <form noValidate onSubmit={addNote} className="cc-field">
                   <TextBox label="A new note" value={note} maxLength={4000} onChange={(v) => { setNote(v); setNoteProblem(null); }} />
                   {noteProblem && <p className="cc-problem" role="alert">{noteProblem}</p>}
                   <div className="cc-acts"><Button variant="outline" type="submit">Add my note</Button></div>
@@ -566,7 +566,7 @@ function ProjectAdd({ onAdd }) {
   const [problem, setProblem] = useState(null);
   if (!adding) return <div className="cc-add"><AddButton onClick={() => setAdding(true)}>Add project</AddButton></div>;
   return (
-    <form className="cc-field" onSubmit={(e) => { e.preventDefault(); if (!clean(name)) { setProblem('Type the project’s name to carry on.'); return; } onAdd(name); setName(''); setAdding(false); }}>
+    <form noValidate className="cc-field" onSubmit={(e) => { e.preventDefault(); if (!clean(name)) { setProblem('Type the project’s name to carry on.'); return; } onAdd(name); setName(''); setAdding(false); }}>
       <TextField label="Project" value={name} maxLength={120} autoFocus onChange={(e) => { setName(e.target.value); setProblem(null); }} />
       {problem && <p className="cc-problem" role="alert">{problem}</p>}
       <div className="cc-acts"><Button variant="outline" type="submit">Add project</Button><TextLink onClick={() => setAdding(false)}>Cancel</TextLink></div>

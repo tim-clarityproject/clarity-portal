@@ -139,6 +139,9 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
   });
 
   if (db === 'none') return store;
+  // "049 isn't there yet" is remembered on a device for an hour; a page that is
+  // answered by the stand-in starts without that note, every time it loads.
+  await page.addInitScript(() => { try { localStorage.removeItem('clarity-coach-not-yet'); } catch { /* blocked */ } });
 
   const filtered = (table, url) => {
     let out = store.rows[table];
@@ -235,6 +238,33 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
           store.rows.workshop_attendees.push({ id: randomUUID(), workshop_id: w.id, name: args.p_name, email, status, answers: args.p_answers || {}, attended: false, source: 'page', survey_key: randomUUID(), registered_at: new Date().toISOString() });
           store.rows.coach_notifications.push({ id: randomUUID(), coach_id: w.coach_id, kind: 'workshop', title: `${args.p_name} ${status === 'registered' ? 'registered for' : 'joined the waiting list for'} ${w.title}`, detail: null, item_kind: 'workshop', item_id: w.id, created_at: new Date().toISOString(), read_at: null });
           return json(route, status);
+        }
+        case 'client_merge': {
+          const keep = profiles.find((x) => x.id === args.p_keep);
+          const drop = profiles.find((x) => x.id === args.p_drop);
+          if (args.p_keep === args.p_drop) return refused(route, '22023', 'Choose two different people to merge.', 400);
+          if (!keep || !drop) return refused(route, '42501', 'Both clients must be yours.');
+          const id = randomUUID();
+          store.merges = store.merges || {};
+          store.merges[id] = { keep: { ...keep }, drop: { ...drop } };
+          for (const k of Object.keys(args.p_values || {})) keep[k] = drop[k];
+          drop.merged_into = keep.id;
+          return json(route, id);
+        }
+        case 'client_unmerge': {
+          const m = store.merges?.[args.p_merge];
+          if (!m) return refused(route, '22023', 'That merge can’t be undone any more.', 400);
+          Object.assign(profiles.find((x) => x.id === m.keep.id), m.keep);
+          Object.assign(profiles.find((x) => x.id === m.drop.id), m.drop);
+          delete store.merges[args.p_merge];
+          return route.fulfill({ status: 204 });
+        }
+        case 'client_delete': {
+          const p = profiles.find((x) => x.id === args.p_profile);
+          if (!p) return refused(route, '42501', 'That client isn’t yours.');
+          if (String(args.p_typed_name || '').trim() !== p.name.trim()) return refused(route, '22023', 'Type the name exactly to carry on.', 400);
+          store.rows.client_profiles = profiles.filter((x) => x.id !== p.id);
+          return route.fulfill({ status: 204 });
         }
         case 'coach_client_list':
           return json(route, []);
