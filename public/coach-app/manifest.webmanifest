@@ -1,0 +1,17 @@
+{
+  "id": "/coach",
+  "name": "Clarity Coach",
+  "short_name": "Clarity Coach",
+  "description": "Clarity Coach, the coach portal of The Clarity Project",
+  "start_url": "/coach",
+  "scope": "/coach",
+  "display": "standalone",
+  "lang": "en-GB",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
+  "icons": [
+    { "src": "/coach-app/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/coach-app/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/coach-app/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

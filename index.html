@@ -17,6 +17,28 @@
     <meta name="apple-mobile-web-app-title" content="Clarity" />
     <title>The Clarity Portal</title>
     <script>
+      // Clarity Coach, the coach portal (/coach), is its own Home Screen app:
+      // its own manifest, icons and name (Phase 6a). Swapped here, before
+      // anything is read by the browser's "Add to Home Screen".
+      (function () {
+        var path = String(window.location.pathname || '').toLowerCase();
+        if (path !== '/coach' && path.indexOf('/coach/') !== 0) return;
+        var head = document.head;
+        var set = function (sel, attr, value) { var el = head.querySelector(sel); if (el) el.setAttribute(attr, value); };
+        set('link[rel="manifest"]', 'href', '/coach-app/manifest.webmanifest');
+        head.querySelectorAll('link[rel="icon"]').forEach(function (el) { el.parentNode.removeChild(el); });
+        [['icon', '/coach-app/favicon.ico', 'any', null], ['icon', '/coach-app/favicon.svg', null, 'image/svg+xml'], ['icon', '/coach-app/icon-192.png', '192x192', 'image/png']].forEach(function (i) {
+          var el = document.createElement('link'); el.rel = i[0]; el.href = i[1];
+          if (i[2]) el.setAttribute('sizes', i[2]);
+          if (i[3]) el.type = i[3];
+          head.appendChild(el);
+        });
+        set('link[rel="apple-touch-icon"]', 'href', '/coach-app/apple-touch-icon.png');
+        set('meta[name="apple-mobile-web-app-title"]', 'content', 'Clarity Coach');
+        document.title = 'Clarity Coach';
+      })();
+    </script>
+    <script>
       // When the browser blocks all site storage (Safari with "Block all
       // cookies", some private modes), reading it throws, and the app would
       // open on a blank screen. Then it gets an in-memory stand-in for this
