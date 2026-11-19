@@ -125,15 +125,77 @@ export async function addClientFor(coachId, profile) {
   return rpc('client_add_for', { p_coach: coachId, p_id: profile.id, p_name: profile.name, p_email: profile.email, p_organisation: profile.organisation_id, p_time_zone: profile.time_zone, p_frequent_traveller: profile.frequent_traveller, p_referred_by: profile.referred_by });
 }
 
-/** Invite to the portal: records that the coach pressed it. Nothing is sent from here. */
+/**
+ * Asks the server to send one of the coach's emails (api/coach-send.js),
+ * with the coach's own sign-in. Resolves the server's answer ({ sent,
+ * people, reason }); anything that isn't an answer (offline, no server on a
+ * developer's machine) reads as { sent: false, reason: 'no_answer' }.
+ */
+export async function coachSend(body) {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    if (!token) return { sent: false, reason: 'no_answer' };
+    const res = await fetch('/api/coach-send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    });
+    const answer = await res.json().catch(() => null);
+    if (!answer || typeof answer !== 'object' || typeof answer.sent !== 'boolean') return { sent: false, reason: 'no_answer' };
+    return { sent: answer.sent === true, people: Number(answer.people) || 0, reason: answer.sent ? null : (answer.reason || 'no_answer') };
+  } catch {
+    return { sent: false, reason: 'no_answer' };
+  }
+}
+
+/** What the coach reads after pressing Invite: the email went, a preview never sends, or it didn't go. */
+export function inviteWords(first, answer) {
+  if (answer?.sent) return `Invite sent to ${first}.`;
+  if (answer?.reason === 'preview') return 'Invited. No email goes from a preview.';
+  return `${first} is invited, but the email didn’t go. Try again in a moment.`;
+}
+
+/**
+ * Invite to the portal: records that the coach pressed it, then asks the
+ * server for the invite email. The email goes only when the coach presses
+ * this, and only from the live site. Resolves the server's answer.
+ */
 export async function inviteClient(userId, profile) {
   if (!profile.email) throw new Error('Add an email first.');
   if ((await coachReady()) === true) {
     await rpc('client_invite', { p_profile: profile.id });
     await loadCoach(userId);
-    return;
+  } else {
+    await saveRow(userId, 'client_profiles', { ...profile, invited_at: new Date().toISOString() });
   }
-  await saveRow(userId, 'client_profiles', { ...profile, invited_at: new Date().toISOString() });
+  return coachSend({ kind: 'invite', profileId: profile.id });
+}
+
+/** What the coach reads after pressing Send the follow-up. `sent`: whether to read what has gone again. */
+export function followUpWords(answer) {
+  const n = answer?.people || 0;
+  if (answer?.sent) return `Follow-up sent to ${n} ${n === 1 ? 'person' : 'people'}.`;
+  switch (answer?.reason) {
+    case 'preview': return 'Nothing is sent from a preview.';
+    case 'early': return 'The follow-up goes after the workshop has started.';
+    case 'already': return 'The follow-up has already gone.';
+    case 'nobody': return 'Nobody registered has an email, so nothing was sent.';
+    case 'not_ready': return NEEDS_050;
+    case 'setup': return 'Email isn’t set up yet, so nothing was sent. Let Tim know.';
+    default: return 'That didn’t send. Check your connection and try again.';
+  }
+}
+
+/**
+ * Send a workshop's follow-up (with its survey when that switch is on): the
+ * server claims it in the database first, so it goes once, and only from
+ * the live site. Resolves the server's answer; what has gone is read again.
+ */
+export async function sendWorkshopFollowUp(userId, workshopId) {
+  const answer = await coachSend({ kind: 'workshop_follow_up', workshopId });
+  if (answer.sent || answer.reason === 'already') await loadCoach(userId).catch(() => {});
+  return answer;
 }
 
 // The rows of a table that hang off a profile, and the column they hang by.

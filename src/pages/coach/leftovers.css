@@ -1,0 +1,83 @@
+/* Clarity Coach: what run 1 left (Phase 6a run 2, step 6): a card moved
+   between the board's columns, the table's heading row that stays at the
+   top, a workshop's Emails and an organisation's access code. Every value
+   is a token (src/styles/tokens.css). Phone is 600px and under. */
+
+/* ---------------------------------------------------------------- the board: a card that moves
+   The card is a box holding the button that opens the client (and, on a
+   phone, More). Dragged with a mouse it leaves its place faded and a copy
+   follows the pointer; the column it is over shows a stronger edge. */
+.ui-root .cc-card { cursor: default; padding: 0; position: relative; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); align-content: stretch; gap: 0; }
+.ui-root .cc-card-open {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-width: 0;
+  display: grid;
+  gap: var(--space-px2);
+  align-content: start;
+  padding: var(--space-px10) var(--space-px12) !important;
+  font-size: inherit !important;
+  border-radius: inherit;
+}
+.ui-root .cc-card-open:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: calc(-1 * var(--space-px2)); }
+.ui-root .cc-card--lifted { opacity: var(--cc-card-lifted); }
+.ui-root .cc-board--dragging { user-select: none; -webkit-user-select: none; }
+.ui-root .cc-board--dragging .cc-card-open { cursor: grabbing; }
+.ui-root .cc-board-col { transition: box-shadow var(--dur-fast) var(--ease); }
+.ui-root .cc-board-col--over { box-shadow: inset 0 0 0 var(--line-w-strong) var(--text-2); }
+.ui-root .cc-card-ghost {
+  position: fixed;
+  z-index: var(--z-pop);
+  margin: 0;
+  pointer-events: none;
+  border-color: var(--text-2);
+  box-shadow: var(--cc-pop-shadow);
+}
+.ui-root .cc-card-ghost .cc-card-open { cursor: grabbing; }
+
+/* With a finger nothing is dragged: the card has More. On a tablet's narrow
+   columns it sits under the card's words; on a phone, beside them. */
+.ui-root .cc-card--more { grid-template-rows: minmax(0, 1fr) auto; }
+.ui-root .cc-card .cc-card-move { justify-self: end; min-height: var(--tap-min); min-width: var(--tap-min); margin: 0 var(--space-px12) 0 0; justify-content: flex-end; font-size: var(--fs-note) !important; color: var(--text-2); }
+
+/* ---------------------------------------------------------------- the table's heading row stays at the top
+   Under the coach header (the call bar scrolls away with the page). The
+   line under it is drawn as a shadow: a collapsed border doesn't travel
+   with a heading that sticks. */
+.ui-root .cc-table thead th {
+  position: sticky;
+  top: calc(var(--cc-header-h) + var(--line-w) + env(safe-area-inset-top, 0px));
+  z-index: 1;
+  background: var(--bg);
+  border-bottom: 0;
+  box-shadow: inset 0 calc(-1 * var(--line-w)) 0 var(--line);
+}
+
+/* ---------------------------------------------------------------- a button at the end of a line (Send the follow-up) */
+.ui-root .cc-line .cc-line-btn { flex: none; white-space: nowrap; }
+
+/* ---------------------------------------------------------------- an organisation's access code, shown once */
+.ui-root .cc-code {
+  margin: var(--space-px20) 0 0;
+  padding: var(--space-px18) var(--space-px22);
+  background: var(--raised);
+  border-radius: var(--radius-card);
+  font-family: var(--font-body);
+  font-size: var(--fs-cc-code);
+  line-height: var(--lh-row);
+  letter-spacing: var(--ls-cc-code);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-align: center;
+  overflow-wrap: anywhere;
+  user-select: all;
+  -webkit-user-select: all;
+}
+.ui-root .cc-code-copied { margin: var(--space-px12) 0 0; font-size: var(--fs-note); color: var(--mint-text); }
+
+@media (max-width: 600px) {
+  .ui-root .cc-card--more { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr); }
+  .ui-root .cc-card .cc-card-move { justify-self: auto; align-self: start; }
+  .ui-root .cc-line .cc-line-btn { white-space: normal; }
+}

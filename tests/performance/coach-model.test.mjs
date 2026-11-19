@@ -1,6 +1,8 @@
 // The coach portal's rules (Phase 6a run 1, step 10): the parsers, merge,
 // saved views, filtering by custom fields, sessions left from an engagement
 // record, time credit to the minute, the cover dates, and the next-call bar.
+import { createHash } from 'node:crypto';
+import { CODE_ALPHABET, CODE_LENGTH, accessCodeHash, codeGroups, makeAccessCode } from '../../src/lib/coach/accessCode.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -8,7 +10,7 @@ import {
   engagementLine, coverState, boardStage, fieldValue, fieldWords, fieldFromTyped, filterClients, filterCount, sortClients,
   sortOptions, viewFromList, listFromView, favouriteViews, canFavourite, mergePlan, mergeValues, mergedProfile,
   likelyDuplicates, nextCallBar, callForBar, searchResults, withRecent, quickContacts, birthdaysOn, birthdayNote,
-  gettingStarted, exportRows, toCsv, workshopCounts, registrationStatus, parseHours, START_ZONES, dayWords, rangeWords,
+  gettingStarted, exportRows, toCsv, workshopCounts, registrationStatus, workshopEmailRows, viewAskState, stageMove, stageBeside, boardStage as boardStageOf, parseHours, START_ZONES, dayWords, rangeWords,
   addDays, timeline, possessive,
 } from '../../src/lib/coach/model.js';
 import { xlsxBytes } from '../../src/lib/coach/xlsx.js';
@@ -313,6 +315,94 @@ test('a workshop: places, the waiting list and attendance', () => {
   assert.equal(registrationStatus(at, 2, 'new@x.co'), 'waiting');
   assert.equal(registrationStatus(at, 3, 'A@x.co'), 'already_registered');
   assert.equal(registrationStatus(at, 3, 'd@x.co'), 'registered', 'someone who cancelled can register again');
+});
+
+test('a workshop’s emails: when each goes or went, and the follow-up the coach sends', () => {
+  // Thu 19 Nov 2026, 09:30 to 12:30 in Leeds (UK time is UTC in November).
+  const w = { id: 'w1', starts_at: '2026-11-19T09:30:00+00:00', ends_at: '2026-11-19T12:30:00+00:00', time_zone: 'Europe/London', remind_day_before: true, remind_hour_before: true, survey_on: true };
+  const words = (rows) => rows.map((r) => `${r.label}: ${r.words}`);
+  // Two days before: both reminders are still to go, the day-before one at 07:00 the day before.
+  let rows = workshopEmailRows(w, [], new Date('2026-11-17T10:00:00Z'));
+  assert.deepEqual(words(rows), [
+    'Reminder the day before: It goes on Wed 18 Nov at 07:00.',
+    'Reminder 1 hour before: It goes on Thu 19 Nov at 08:30.',
+    'Follow-up: You send this after the day.',
+    'Survey: It goes with the follow-up.',
+  ]);
+  assert.deepEqual(rows.map((r) => [r.kind, r.sent, r.button]), [['day_before', false, false], ['hour_before', false, false], ['follow_up', false, true], ['survey', false, false]]);
+  assert.equal(rows[2].early, true, 'the follow-up is too soon before the workshop has started');
+  // Only the emails whose switches are on have a row; the follow-up always does.
+  assert.deepEqual(workshopEmailRows({ ...w, remind_day_before: false, remind_hour_before: false, survey_on: false }, [], new Date('2026-11-17T10:00:00Z')).map((r) => r.kind), ['follow_up']);
+  // Once sent, the row says when and to how many (a timestamp with no zone ending is UTC).
+  const sends = [{ workshop_id: 'w1', kind: 'day_before', sent_at: '2026-11-18T07:00:04', people: 18 }, { workshop_id: 'other', kind: 'hour_before', sent_at: '2026-11-19T08:30:00Z', people: 3 }];
+  rows = workshopEmailRows(w, sends, new Date('2026-11-18T12:00:00Z'));
+  assert.equal(rows[0].words, 'It was sent on Wed 18 Nov at 07:00, to 18 people.');
+  assert.equal(rows[0].sent, true);
+  assert.equal(rows[1].words, 'It goes on Thu 19 Nov at 08:30.', 'another workshop’s send never counts');
+  // Due, and the scheduled job hasn't run yet.
+  assert.equal(workshopEmailRows(w, [], new Date('2026-11-18T07:05:00Z'))[0].words, 'It goes in the next few minutes.');
+  assert.equal(workshopEmailRows(w, [], new Date('2026-11-19T08:20:00Z'))[1].words, 'It goes in the next few minutes.');
+  // Too late to go: under 2 hours (the day before's) and under 45 minutes (the 1-hour one's), as the database has it.
+  assert.equal(workshopEmailRows(w, [], new Date('2026-11-19T08:00:00Z'))[0].words, 'It wasn’t sent, because it was switched on under 2 hours before the start.');
+  assert.equal(workshopEmailRows(w, [], new Date('2026-11-19T09:00:00Z'))[1].words, 'It wasn’t sent, because it was switched on under 1 hour before the start.');
+  // After it has started the follow-up can go; once it has, the survey went with it.
+  rows = workshopEmailRows(w, [], new Date('2026-11-20T09:00:00Z'));
+  assert.deepEqual([rows[2].button, rows[2].early], [true, false]);
+  rows = workshopEmailRows(w, [{ workshop_id: 'w1', kind: 'follow_up', sent_at: '2026-11-20T09:12:00Z', people: 1 }, { workshop_id: 'w1', kind: 'survey', sent_at: '2026-11-20T09:12:00Z', people: 1 }], new Date('2026-11-20T10:00:00Z'));
+  assert.equal(rows[2].words, 'It was sent on Fri 20 Nov at 09:12, to 1 person.');
+  assert.deepEqual([rows[2].button, rows[3].sent], [false, true]);
+  assert.equal(workshopEmailRows({ ...w }, [{ workshop_id: 'w1', kind: 'follow_up', sent_at: '2026-11-20T09:12:00Z', people: 4 }], new Date('2026-11-20T10:00:00Z'))[3].words, 'It didn’t go with the follow-up, because it was switched on afterwards.');
+  // 07:00 is the workshop's own morning: New York's day before, said with the place for a reader elsewhere, and the year when it isn't this one.
+  const ny = { ...w, time_zone: 'America/New_York', starts_at: '2027-01-12T14:30:00Z', remind_hour_before: false, survey_on: false };
+  assert.equal(workshopEmailRows(ny, [], new Date('2026-12-20T10:00:00Z'), 'Europe/London')[0].words, 'It goes on Mon 11 Jan 2027 at 07:00 New York time.');
+  // No date yet, and no zone (read as UK time, as the database does).
+  assert.equal(workshopEmailRows({ ...w, starts_at: null }, [], new Date('2026-11-17T10:00:00Z'))[0].words, 'It goes once the workshop has a date.');
+  assert.equal(workshopEmailRows({ ...w, time_zone: null }, [], new Date('2026-11-17T10:00:00Z'))[0].words, 'It goes on Wed 18 Nov at 07:00.');
+  assert.deepEqual(workshopEmailRows(null), []);
+});
+
+test('the board: a card moved to another column sets the stage, and Paused follows the status', () => {
+  const p = { id: 'p1', status: 'active', stage: null };
+  assert.deepEqual(stageMove(p, 'renewal_due'), { stage: 'renewal_due' });
+  assert.equal(boardStageOf({ ...p, ...stageMove(p, 'renewal_due') }, null, [], '2026-11-19'), 'renewal_due', 'the coach’s own choice wins over the worked-out column');
+  // To Paused: the status, and the stage it had is kept for when they come back.
+  assert.deepEqual(stageMove({ ...p, stage: 'closing' }, 'paused'), { status: 'paused' });
+  assert.equal(boardStageOf({ ...p, stage: 'closing', status: 'paused' }, null, [], '2026-11-19'), 'paused');
+  // Out of Paused: active again, in the column chosen.
+  assert.deepEqual(stageMove({ ...p, status: 'paused' }, 'active'), { stage: 'active', status: 'active' });
+  assert.equal(stageMove(p, 'nowhere'), null);
+  assert.deepEqual([stageBeside('starting', -1), stageBeside('starting', 1), stageBeside('closing', 1), stageBeside('paused', 1), stageBeside('x', 1)], [null, 'active', 'paused', null, null]);
+});
+
+test('an organisation’s access code: made evenly from clear characters, and kept only as its SHA-256', async () => {
+  const code = makeAccessCode();
+  assert.equal(code.length, CODE_LENGTH);
+  assert.ok([...code].every((c) => CODE_ALPHABET.includes(c)));
+  assert.ok(!/[0O1IL]/.test(CODE_ALPHABET), 'nothing that reads as something else');
+  assert.notEqual(makeAccessCode(), makeAccessCode());
+  // A byte that would favour the first letters is thrown away (248 and up), never folded in.
+  let call = 0;
+  const fixed = makeAccessCode((bytes) => { call += 1; return bytes.fill(call === 1 ? 255 : 30); });
+  assert.equal(fixed, CODE_ALPHABET[30].repeat(CODE_LENGTH));
+  // The hash is what the database would compute from the typed code: sha256(upper(btrim(code))), in hex.
+  const expected = createHash('sha256').update('ABCD2345EFGH6789').digest('hex');
+  assert.equal(await accessCodeHash('ABCD2345EFGH6789'), expected);
+  assert.equal(await accessCodeHash(' abcd-2345 efgh-6789 '), expected, 'as a person might type it back');
+  assert.match(expected, /^[0-9a-f]{64}$/);
+  assert.deepEqual(codeGroups('ABCD2345EFGH6789'), ['ABCD', '2345', 'EFGH', '6789']);
+});
+
+test('View as client: asked, a yes for its 30 minutes, a no for a day', () => {
+  const now = new Date('2026-11-19T14:10:00Z');
+  assert.equal(viewAskState([], now), null);
+  assert.deepEqual(viewAskState([{ asked_at: '2026-11-19T14:00:00Z', answered_at: null }], now), { state: 'asked' });
+  assert.equal(viewAskState([{ asked_at: '2026-11-10T14:00:00Z', answered_at: null }], now), null, 'an ask nobody answered goes after 7 days');
+  const yes = { asked_at: '2026-11-19T14:00:00Z', answered_at: '2026-11-19T14:02:00Z', allowed: true, expires_at: '2026-11-19T14:32:00Z' };
+  assert.deepEqual(viewAskState([{ asked_at: '2026-11-01T09:00:00Z', answered_at: '2026-11-01T09:01:00Z', allowed: false }, yes], now), { state: 'yes', until: '2026-11-19T14:32:00Z' }, 'the newest ask decides');
+  assert.equal(viewAskState([yes], new Date('2026-11-19T14:32:00Z')), null, 'the yes has run out');
+  const no = { asked_at: '2026-11-19T14:00:00Z', answered_at: '2026-11-19T14:02:00Z', allowed: false, expires_at: null };
+  assert.deepEqual(viewAskState([no], now), { state: 'no' });
+  assert.equal(viewAskState([no], new Date('2026-11-21T14:10:00Z')), null);
 });
 
 // ---------------------------------------------------------------- Settings and days

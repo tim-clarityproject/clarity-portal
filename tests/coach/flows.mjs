@@ -75,7 +75,7 @@ if (parts.some((p) => p !== 'associate')) {
     await button(page, 'Open the menu').click();
     await settle(page, 500);
     const items = await page.locator('.cc-menu-item').allInnerTexts();
-    pass('shell: the owner’s menu, in M11’s order', items.join(', ') === 'Today, Business, To-dos, Clients, Leads, Network, Boards, Calendar, Leading Ideas, Library, Executives, Settings, Sign out', items.join(', '));
+    pass('shell: the owner’s menu, in M11’s order', items.join(', ') === 'Today, Finances, To-dos, Clients, Leads, Network, Boards, Calendar, Leading Ideas, Library, Executives, Settings, Sign out', items.join(', '));
     pass('shell: favourite views sit under their own label', (await page.locator('.cc-menu-label').innerText()).toLowerCase() === 'favourite views');
     const above = await page.evaluate(() => { const z = (s) => Number(getComputedStyle(document.querySelector(s)).zIndex) || 0; return z('.cc-menu') > z('.cc-header'); });
     pass('shell: the menu sits above everything', above);
@@ -732,8 +732,8 @@ if (has('associate')) {
   }
   await open(page, `/coach/organisations/${ID.kestrel}`);
   pass('associate: an organisation’s page is the owner’s', new URL(page.url()).pathname === '/coach/clients', new URL(page.url()).pathname);
-  await open(page, '/coach/business');
-  pass('associate: Business is the owner’s', new URL(page.url()).pathname === '/coach', new URL(page.url()).pathname);
+  await open(page, '/coach/finances');
+  pass('associate: Finances is the owner’s', new URL(page.url()).pathname === '/coach', new URL(page.url()).pathname);
   await open(page, '/coach/clients/00000000-0000-4000-8000-00000000ffff');
   pass('associate: a client who isn’t theirs has no page', /isn’t in your list any more/.test(await text(page)));
 

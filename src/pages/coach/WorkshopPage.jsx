@@ -3,10 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AddButton, Button, Checkbox, InlineChoice, PageHeader, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { coachReadyNow, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
-import { NEEDS_049 } from '../../lib/coach/actions';
-import { clean, parsePeople, workshopCounts, workshopIsPast } from '../../lib/coach/model';
+import { followUpWords, NEEDS_049, sendWorkshopFollowUp } from '../../lib/coach/actions';
+import { clean, parsePeople, workshopCounts, workshopEmailRows, workshopIsPast } from '../../lib/coach/model';
 import { Back, Line, SettingRow, TextLink, useCoachPortal, Part } from './parts';
 import { workshopWhen } from './workshopWords';
+import './leftovers.css';
 
 // A workshop (M11): the page before and after the day. Registration with
 // its public page, questions, capacity and a waiting list; reminders;
@@ -21,7 +22,7 @@ export default function WorkshopPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { userId, state, workshops, organisations, settings } = useCoachPortal();
+  const { userId, state, workshops, organisations, settings, now } = useCoachPortal();
   const workshop = workshops.find((w) => w.id === id) || null;
   const [panel, setPanel] = useState(null);
   const [pasted, setPasted] = useState('');
@@ -30,6 +31,7 @@ export default function WorkshopPage() {
   const [followUp, setFollowUp] = useState(null);
   const [all, setAll] = useState(false);
   const fileRef = useRef(null);
+  const sending = useRef(false);
   if (!workshop) {
     return <div className="cc-page"><div className="cc-col"><Back onClick={() => navigate('/coach/clients?tab=workshops')} /><PageHeader title="Workshop" /><p className="cc-quiet">This workshop isn’t here any more.</p></div></div>;
   }
@@ -83,6 +85,22 @@ export default function WorkshopPage() {
     const { data, error } = await supabase.storage.from('coach-files').createSignedUrl(m.storage_path, 60);
     if (error || !data?.signedUrl) { toast.error('That file didn’t open. Check your connection and try again.'); return; }
     window.open(data.signedUrl, '_blank', 'noopener');
+  };
+  // The emails: when each goes or went (model.js), and the follow-up, which the coach sends.
+  const emails = workshopEmailRows(workshop, rowsOf(state, 'workshop_sends'), now, settings.time_zone);
+  const reach = registered.filter((a) => a.email).length;
+  const askFollowUp = (row) => {
+    if (row.early) { toast.show('The follow-up goes after the workshop has started.'); return; }
+    setPanel('follow-up');
+  };
+  const sendFollowUp = async () => {
+    if (sending.current) return; // one request per press
+    sending.current = true;
+    try {
+      const answer = await sendWorkshopFollowUp(userId, workshop.id);
+      if (answer.sent) toast.saved({ message: followUpWords(answer), long: true }); else toast.show(followUpWords(answer));
+      setPanel(null);
+    } finally { sending.current = false; }
   };
   const ratings = answers.map((s) => Number(s.answers?.useful)).filter((n) => n >= 1 && n <= 5);
   const average = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : null;
@@ -139,9 +157,16 @@ export default function WorkshopPage() {
           <Part title="Reminders">
             <SwitchRow label="Email the day before" checked={workshop.remind_day_before === true} onChange={(on) => save({ remind_day_before: on })} />
             <SwitchRow label="Email 1 hour before" checked={workshop.remind_hour_before === true} onChange={(on) => save({ remind_hour_before: on })} />
-            <p className="cc-note">These keep your choice. Reminders start to send when booking emails arrive with the calendar.</p>
           </Part>
         )}
+
+        <Part title="Emails">
+          {emails.map((row) => (
+            <Line key={row.kind} title={row.label} small={row.words}>
+              {row.button ? <Button variant="outline" className="cc-line-btn" onClick={() => askFollowUp(row)}>Send the follow-up</Button> : <span className={`cc-line-state${row.sent ? ' cc-line-state--good' : ''}`}>{row.sent ? 'Sent' : ''}</span>}
+            </Line>
+          ))}
+        </Part>
 
         <Part title={past ? 'Attendance' : 'Who’s coming'}>
           {registered.length === 0 && <p className="cc-quiet">Nobody is registered yet.</p>}
@@ -202,13 +227,22 @@ export default function WorkshopPage() {
               <div className="cc-acts"><Button variant="primary" type="submit">Save</Button><TextLink onClick={() => setFollowUp(null)}>Cancel</TextLink></div>
             </form>
           )}
-          <p className="cc-note">Nothing is sent from here yet: the follow-up and the survey go out when workshop emails are switched on.</p>
         </Part>
 
         <div className="cc-acts">
           <TextLink onClick={() => done(async () => { await removeRow(userId, 'workshops', workshop.id); return 'saved'; }, 'Deleted', () => saveRows(userId, [['workshops', workshop], ...attendees.map((a) => ['workshop_attendees', a]), ...materials.map((m) => ['workshop_materials', m])])).then((ok) => { if (ok) navigate('/coach/clients?tab=workshops'); })}>Delete this workshop</TextLink>
         </div>
       </div>
+
+      <SlidePanel
+        open={panel === 'follow-up'}
+        onClose={() => setPanel(null)}
+        title="Send the follow-up"
+        footer={<div className="cc-panel-foot"><TextLink onClick={() => setPanel(null)}>Not now</TextLink><Button variant="primary" onClick={sendFollowUp}>Send the follow-up</Button></div>}
+      >
+        <p className="cc-quiet">It goes to {reach} {reach === 1 ? 'person' : 'people'}, once.{workshop.survey_on ? ' The survey goes with it.' : ''}</p>
+        <div className="cc-soft"><span className="cc-soft-label">What each person gets</span><p>{workshop.follow_up || 'Thank you for coming.'}</p></div>
+      </SlidePanel>
 
       <SlidePanel open={panel === 'attendees'} onClose={() => setPanel(null)} title="Add attendees" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={addAttendees}>{fresh.length ? `Add ${fresh.length} ${fresh.length === 1 ? 'person' : 'people'}` : 'Add attendees'}</Button></div>}>
         <div className="cc-field">

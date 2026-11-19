@@ -6,7 +6,7 @@ import {
   healthCheckFinishedForCoachEmail, healthCheckResultsEmail, healthCheckNewCodeEmail, guestEmailCodeEmail, healthCheckFinishedNoteEmail,
   sessionTomorrowEmail, sessionInOneHourEmail, leadingIdeasClientEmail, leadingIdeasPublicEmail,
   confirmEmailEmail, resetPasswordEmail, changeEmailEmail, inviteEmail, guestPlanCopyEmail,
-  workshopTomorrowEmail, workshopInOneHourEmail, workshopFollowUpEmail, sessionRecapEmail,
+  workshopTomorrowEmail, workshopInOneHourEmail, workshopFollowUpEmail, sessionRecapEmail, clientInviteEmail,
 } from '../../lib/email/emails.js';
 import { instantAt } from '../../lib/time/index.js';
 
@@ -115,21 +115,21 @@ export const EMAIL_EXAMPLES = [
     key: 'workshop-tomorrow',
     name: 'Workshop tomorrow',
     from: 'From The Clarity Project, to someone registered',
-    sends: 'A template only: nothing sends it yet.',
+    sends: 'Sent only from the live site, once, by the scheduled job (api/workshop-emails.js) from 07:00 the day before in the workshop’s own time zone, when its switch is on (after migration 050).',
     doc: () => workshopTomorrowEmail({ title: 'Leading under pressure', at: instantAt('2026-11-11', '09:30', 'Europe/London'), zone: 'Europe/London', place: 'In person, Leeds', now: NOW }),
   },
   {
     key: 'workshop-one-hour',
     name: 'Workshop in 1 hour',
     from: 'From The Clarity Project, to someone registered',
-    sends: 'A template only. It never gives a clock time.',
+    sends: 'Sent only from the live site, once, by the scheduled job about 1 hour before, when its switch is on (after migration 050). It never gives a clock time.',
     doc: () => workshopInOneHourEmail({ title: 'Leading under pressure', place: 'In person, Leeds' }),
   },
   {
     key: 'workshop-follow-up',
     name: 'Workshop follow-up, with the survey',
     from: 'From The Clarity Project, to someone who came',
-    sends: 'A template only: nothing sends it yet.',
+    sends: 'Sent only from the live site, once, when the coach presses Send the follow-up on the workshop’s page (after migration 050). Never from a preview, and never by itself.',
     doc: () => workshopFollowUpEmail({ title: 'Decide who decides', words: 'Thank you for Tuesday. Here are the slides and the decision rights canvas.\nYou’re also welcome to a free Clarity Portal account, to keep using the tools.', surveyLink: `${PORTAL}/workshop/survey/00000000-0000-4000-8000-000000000001` }),
   },
   {
@@ -144,6 +144,13 @@ export const EMAIL_EXAMPLES = [
       recap: 'Thanks for today, Hannah.\n\nWe looked at the pricing launch and where your time goes in the week before it. You named two things only you can do: the investor call and the pricing story for the sales team.\n\nYou’re handing the rest of the launch plan to Femi, with a 15-minute check-in each morning.',
       actions: ['Hand the launch plan to Femi by Wednesday', 'Book a 15-minute check-in each morning'],
     }),
+  },
+  {
+    key: 'client-invite',
+    name: 'Invite to the portal',
+    from: 'From The Clarity Portal, to Leo',
+    sends: 'Sent only from the live site, when the coach presses Invite on a client’s page. Never from a preview, and never by itself.',
+    doc: () => clientInviteEmail({ origin: PORTAL, coach: 'Tim' }),
   },
   {
     key: 'leading-ideas-client',

@@ -2,6 +2,7 @@
 // version 3.6). Pure functions only: nothing here reads the database, the
 // device or the clock by itself, so every rule is a unit test
 // (tests/performance/coach-model.test.mjs).
+import { addDays as addZoneDays, instantAt, isZone, wallClock, zonePlace } from '../time/index.js';
 
 const UNSEEN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F­​-‏‪-‮⁠-⁤﻿]/g;
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -304,6 +305,25 @@ export function boardStage(profile, engagement, packs, todayKey) {
   const endsSoon = engagement.ends_on && todayKey && engagement.ends_on <= addDays(todayKey, 30);
   if ((s && s.total > 0 && s.left <= 2) || endsSoon) return 'renewal_due';
   return 'active';
+}
+
+/**
+ * A card moved to another column of the board: what changes on the client's
+ * profile. A column is the coach's own choice of `stage`; Paused is the
+ * client's status, so moving there pauses them (the stage they had is
+ * kept), and moving out of Paused makes them active again. Null for a
+ * column there isn't.
+ */
+export function stageMove(profile, to) {
+  if (!STAGES.some((s) => s.value === to)) return null;
+  if (to === 'paused') return { status: 'paused' };
+  return { stage: to, ...(profile?.status === 'paused' ? { status: 'active' } : {}) };
+}
+
+/** The column to the left (-1) or right (1) of one, or null at the board's edge. */
+export function stageBeside(stage, step) {
+  const i = STAGES.findIndex((s) => s.value === stage);
+  return i < 0 ? null : STAGES[i + step]?.value || null;
 }
 
 /** A custom field's value for an item, as kept: text, a number, or a day key. Null when empty. */
@@ -688,6 +708,95 @@ export function registrationStatus(attendees, capacity, email) {
 
 /** Has the workshop's day passed? */
 export const workshopIsPast = (workshop, now = new Date()) => Boolean(workshop?.starts_at) && new Date(workshop.ends_at || workshop.starts_at).getTime() < new Date(now).getTime();
+
+/**
+ * View as client: where the coach's newest ask stands (049's
+ * client_view_requests; a yes lasts 30 minutes). 'asked' (no answer yet,
+ * for 7 days, as the client is shown it), 'yes' with `until` while the 30
+ * minutes run, 'no' for a day after a no; otherwise null.
+ */
+export function viewAskState(requests, now = new Date()) {
+  const at = new Date(now).getTime();
+  const newest = [...(requests || [])].sort((a, b) => instantOf(b.asked_at) - instantOf(a.asked_at))[0];
+  if (!newest) return null;
+  if (!newest.answered_at) return at - instantOf(newest.asked_at).getTime() < 7 * 24 * HOUR_MS ? { state: 'asked' } : null;
+  if (newest.allowed === true) return newest.expires_at && instantOf(newest.expires_at).getTime() > at ? { state: 'yes', until: newest.expires_at } : null;
+  return at - instantOf(newest.answered_at).getTime() < 24 * HOUR_MS ? { state: 'no' } : null;
+}
+
+// A workshop's emails (Phase 6a run 2). The reminders are sent by a
+// scheduled job when their switches are on; the follow-up (with the survey
+// when its switch is on) goes when the coach presses "Send the follow-up".
+export const WORKSHOP_HOME_ZONE = 'Europe/London'; // as the database reads a workshop with no zone (050)
+const DAY_BEFORE_AT = '07:00'; // in the workshop's own time zone, as 050's workshop_emails_due has it
+const HOUR_MS = 60 * 60 * 1000;
+
+/** "Wed 18 Nov at 07:00" in a place, with the year when it isn't `now`'s, and the place when the reader is elsewhere. */
+/** A saved timestamp as a Date: one with no time-zone ending is UTC (CLAUDE.md rule 19). */
+const instantOf = (value) => (typeof value === 'string' && !/(Z|[+-]\d{2}(:?\d{2})?)$/i.test(value.trim()) ? new Date(`${value.trim().replace(' ', 'T')}Z`) : new Date(value));
+
+function instantWords(instant, zone, now, readerZone) {
+  const w = wallClock(instantOf(instant), zone);
+  const p = (n) => String(n).padStart(2, '0');
+  const year = w.year === wallClock(new Date(now), zone).year ? '' : ` ${w.year}`;
+  const elsewhere = readerZone && isZone(readerZone) && readerZone !== zone ? ` ${zonePlace(zone)} time` : '';
+  return `${DAYS[w.weekday % 7]} ${w.day} ${MONTHS[w.month - 1]}${year} at ${p(w.hour)}:${p(w.minute)}${elsewhere}`;
+}
+
+/**
+ * The Emails section of a workshop's page: one row for each email whose
+ * switch is on, saying when it goes or went, then the follow-up, which the
+ * coach sends. `sends` are the workshop's workshop_sends rows (050: what
+ * has gone, once each). The day-before reminder goes from 07:00 the day
+ * before in the workshop's own time zone, and only while the workshop is
+ * more than 2 hours away; the 1-hour reminder goes 1 hour before (the
+ * database sends it between 75 and 45 minutes before).
+ * Each row: { kind, label, words, sent, button } (`button`: "Send the
+ * follow-up" belongs on this row; `early`: pressed now, it is too soon).
+ */
+export function workshopEmailRows(workshop, sends = [], now = new Date(), readerZone = null) {
+  if (!workshop) return [];
+  const zone = isZone(workshop.time_zone) ? workshop.time_zone : WORKSHOP_HOME_ZONE;
+  const at = new Date(now).getTime();
+  const starts = workshop.starts_at ? instantOf(workshop.starts_at).getTime() : NaN;
+  const dated = Number.isFinite(starts);
+  const gone = (kind) => (sends || []).find((x) => x.workshop_id === workshop.id && x.kind === kind) || null;
+  const went = (send) => {
+    const n = Number(send.people) || 0;
+    return `It was sent on ${instantWords(send.sent_at, zone, now, readerZone)}, to ${n} ${n === 1 ? 'person' : 'people'}.`;
+  };
+  const rows = [];
+  if (workshop.remind_day_before === true) {
+    const sent = gone('day_before');
+    let words = 'It goes once the workshop has a date.';
+    if (sent) words = went(sent);
+    else if (dated) {
+      const goes = instantAt(addZoneDays(wallClock(new Date(starts), zone).date, -1), DAY_BEFORE_AT, zone).getTime();
+      if (starts - at <= 2 * HOUR_MS) words = 'It wasn’t sent, because it was switched on under 2 hours before the start.';
+      else if (at >= goes) words = 'It goes in the next few minutes.';
+      else words = `It goes on ${instantWords(goes, zone, now, readerZone)}.`;
+    }
+    rows.push({ kind: 'day_before', label: 'Reminder the day before', words, sent: Boolean(sent), button: false });
+  }
+  if (workshop.remind_hour_before === true) {
+    const sent = gone('hour_before');
+    let words = 'It goes once the workshop has a date.';
+    if (sent) words = went(sent);
+    else if (dated) {
+      if (starts - at < 0.75 * HOUR_MS) words = 'It wasn’t sent, because it was switched on under 1 hour before the start.';
+      else if (starts - at <= 1.25 * HOUR_MS) words = 'It goes in the next few minutes.';
+      else words = `It goes on ${instantWords(starts - HOUR_MS, zone, now, readerZone)}.`;
+    }
+    rows.push({ kind: 'hour_before', label: 'Reminder 1 hour before', words, sent: Boolean(sent), button: false });
+  }
+  const followUp = gone('follow_up');
+  rows.push({ kind: 'follow_up', label: 'Follow-up', words: followUp ? went(followUp) : 'You send this after the day.', sent: Boolean(followUp), button: !followUp, early: !dated || starts > at });
+  if (workshop.survey_on === true) {
+    const survey = gone('survey');
+    rows.push({ kind: 'survey', label: 'Survey', words: survey ? went(survey) : followUp ? 'It didn’t go with the follow-up, because it was switched on afterwards.' : 'It goes with the follow-up.', sent: Boolean(survey), button: false });
+  }
+  return rows;
+}
 
 // ---------------------------------------------------------------- Settings
 

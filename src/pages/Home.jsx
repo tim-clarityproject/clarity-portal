@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import DesignHeader from '../components/DesignHeader';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
+import useCoachingNews from './coaching/useCoachingNews';
 import { useStartChat } from '../components/coach/startChat';
 import {
   AddButton,
@@ -181,6 +182,8 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   const [todoForm, setTodoForm] = useState(() => emptyTodo(null));
   const [notTonight, addNotTonight] = useDeviceList(userId, 'wind-down-not-tonight');
   const [notNow, addNotNow] = useDeviceList(userId, 'quiet-not-now');
+  // Something new from their coach (an invite, a request, cover, a recap): one quiet line to the Coaching page.
+  const coachingNew = useCoachingNews(userId, { today, now });
   // A peak moment's Not now (M18): "We’ll ask again tomorrow.", so it is kept with today's date.
   const [peakNotNow, addPeakNotNow] = useDeviceList(userId, 'peak-not-now');
   const peak = usePeakMoments(userId);
@@ -282,7 +285,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
     reviewTo: reviewed ? '/daily-review' : `/daily-review/${addDayKey(today, -1)}`,
   });
   const joined = user?.created_at ? Math.floor((now - parseDbTimestamp(user.created_at)) / 86400000) : 0;
-  const quiet = quietLines({ person, hasCoach: Boolean(coach), mission: day.plan?.mission, joinedDaysAgo: joined, dismissed: notNow });
+  const quiet = quietLines({ person, hasCoach: Boolean(coach), mission: day.plan?.mission, joinedDaysAgo: joined, dismissed: notNow, coaching: coachingNew });
 
   // Coming back: the first day back from a Recovery (M15), or the first
   // visit after a gap of 7 days with nothing logged, planned or reviewed.

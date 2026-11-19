@@ -1,0 +1,42 @@
+/* Coaching, the client's side of working with a coach (Phase 6a run 2).
+   The shared parts carry their own styles (design.css); this is only the
+   page's own cards and spacing. Every value is a token. */
+
+.ui-root .coaching-empty { margin-top: var(--space-4); }
+.ui-root .coaching-page > .coaching-section:first-of-type { margin-top: var(--space-5); }
+
+/* ---- From your coach: one calm card each */
+.ui-root .coaching-asks { display: grid; gap: var(--space-px12); }
+.ui-root .coaching-ask { background: var(--raised); border-radius: var(--radius-offer); padding: var(--space-px20) var(--space-px22); }
+.ui-root .coaching-ask-line { margin: 0; font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .coaching-ask-note { margin: var(--space-1) 0 0; font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .coaching-ask-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-px20); margin-top: var(--space-3); }
+.ui-root .coaching-ask-acts:empty { display: none; }
+.ui-root .coaching-ask-acts .ds-link { min-width: var(--tap-min); }
+.ui-root .coaching-agreed { display: inline-flex; align-items: center; min-height: var(--tap-min); font-size: var(--fs-note); color: var(--mint-text); }
+
+/* ---- For next time */
+.ui-root .coaching-note { margin: var(--space-px10) 0 0; font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .coaching-acts { display: flex; justify-content: flex-end; margin-top: var(--space-px18); }
+
+/* ---- Session recaps: the date, the recap as text, then its actions */
+.ui-root .coaching-recaps { display: grid; gap: var(--space-5); }
+.ui-root .coaching-recap + .coaching-recap { border-top: var(--line-w) solid var(--line); padding-top: var(--space-5); }
+.ui-root .coaching-recap-date { margin: 0; font-family: var(--font-body); font-weight: var(--fw-medium); font-size: var(--fs-text); line-height: var(--lh-row); letter-spacing: normal; word-spacing: normal; text-transform: none; color: var(--text); }
+.ui-root .coaching-recap-meta { margin: var(--space-px2) 0 0; font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .coaching-recap-text { margin: var(--space-px14) 0 0; font-size: var(--fs-text); line-height: var(--lh-box); color: var(--text); white-space: pre-line; overflow-wrap: anywhere; }
+.ui-root .coaching-actions { list-style: none; margin: var(--space-px18) 0 0; padding: 0; border-top: var(--line-w) solid var(--line-soft); }
+.ui-root .coaching-action { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-1) var(--space-3); min-height: var(--field-h); padding: var(--space-2) 0; border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .coaching-action .ds-check-label { overflow-wrap: anywhere; }
+.ui-root .coaching-action-meta { display: flex; justify-content: flex-end; }
+.ui-root .coaching-action-meta:empty { display: none; }
+.ui-root .coaching-action-line { font-size: var(--fs-note); line-height: var(--lh-text); color: var(--mint-text); text-align: right; }
+
+@media (max-width: 600px) {
+  .ui-root .coaching-ask { padding: var(--space-px18) var(--space-px18); }
+  .ui-root .coaching-ask-acts .ds-btn { flex: 1 1 auto; }
+  .ui-root .coaching-acts .ds-btn { width: 100%; }
+  /* The button drops under its action, at the right. */
+  .ui-root .coaching-action { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .coaching-action-meta { padding-bottom: var(--space-1); }
+}

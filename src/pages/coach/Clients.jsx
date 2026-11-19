@@ -6,12 +6,13 @@ import { keyOf, newId, removeRow, rowsOf, saveRow } from '../../lib/coach/store'
 import { moveClient } from '../../lib/coach/actions';
 import {
   dayWords, engagementLine, fieldFromTyped, fieldValue, fieldWords, filterClients, filterCount, likelyDuplicates,
-  listFromView, sortClients, sortOptions, STAGES, workshopCounts,
+  listFromView, sortClients, sortOptions, stageBeside, stageLabel, stageMove, STAGES, workshopCounts,
 } from '../../lib/coach/model';
 import { EditCell, MenuItem, MenuLabel, PopMenu, Row, TextLink, useCoachPortal, useNarrowerThan } from './parts';
 import { useClientRows } from './clientData';
 import { AddClientPanel, AddGroupPanel, AddTeamPanel, AddWorkshopPanel, ExportPanel, FilterPanel, MergePanel } from './ClientPanels';
 import { FieldPanel } from './Settings';
+import './leftovers.css';
 
 // Clients (M11, version 3.6): people as a list, a board or a table (a
 // phone offers the list and the board), with groups and workshops beside
@@ -25,6 +26,7 @@ const EMPTY_FILTERS = { tag: [], status: [], organisation: null, coach: null, fi
 const START = { layout: 'list', sort: 'next', filters: EMPTY_FILTERS, hidden: [], viewId: null };
 const SAVE_PROBLEM = 'That didn’t save. Check your connection and try again.';
 const HOLD_MS = 450;
+const DRAG_START = 6; // how far the mouse moves, in px, before a press becomes a drag
 
 const BASE_COLUMNS = [
   { key: 'next', label: 'Next session', sorts: [['next', 'Soonest first']] },
@@ -58,6 +60,20 @@ function useEvenCards(ref, deps) {
   }, deps);
 }
 
+/** Whether the device's main pointer is a finger (a phone or a tablet): nothing is dragged there. */
+function useTouchFirst() {
+  const query = '(pointer: coarse)';
+  const [touch, setTouch] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const check = () => setTouch(media.matches);
+    check();
+    media.addEventListener('change', check);
+    return () => media.removeEventListener('change', check);
+  }, []);
+  return touch;
+}
+
 function PickTick({ on, name, onChange }) {
   return (
     <button type="button" className="cc-pick" role="checkbox" aria-checked={on} aria-label={`Select ${name}`} onClick={(e) => { e.stopPropagation(); onChange(!on); }}>
@@ -73,6 +89,7 @@ export default function Clients() {
   const location = useLocation();
   const toast = useToast();
   const isPhone = useIsPhone();
+  const touchFirst = useTouchFirst();
   const [params, setParams] = useSearchParams();
   const tab = TABS.some((t) => t.value === params.get('tab')) ? params.get('tab') : 'people';
 
@@ -204,6 +221,83 @@ export default function Clients() {
   const boardRef = useRef(null);
   useEvenCards(boardRef, [layout, shown.length, shown.map((r) => r.profile.name).join('|')]);
 
+  // ---- the board: a card moves to another column (Phase 6a run 2). With a
+  // mouse it is dragged; with the keyboard a focused card moves left and
+  // right with the arrow keys; on a phone or a tablet its More menu has
+  // "Move to…".
+  const [drag, setDrag] = useState(null); // { row, over, dx, dy, rect }
+  const dragging = useRef(null);
+  const dragged = useRef(false);
+  const [moved, setMoved] = useState(''); // said to screen readers
+  const focusCard = useRef(null);
+  const moveTo = (r, to, { keepFocus = false } = {}) => {
+    if (!to || r.stage === to) return;
+    if (r.admin) { toast.show(`${r.profile.name} is ${r.coachName}’s client, so only ${r.coachName} moves them.`); return; }
+    const before = r.profile;
+    const change = stageMove(before, to);
+    if (!change) return;
+    const label = stageLabel(to);
+    if (keepFocus) focusCard.current = before.id;
+    saveRow(userId, 'client_profiles', { ...before, ...change })
+      .then((status) => {
+        setMoved(`Moved to ${label}.`);
+        toast.saved({ message: status === 'queued' ? 'Will sync' : `Moved to ${label}`, long: true, onUndo: () => saveRow(userId, 'client_profiles', before) });
+      })
+      .catch((error) => toast.error(error?.message || SAVE_PROBLEM));
+  };
+  // A card moved with the keyboard keeps the focus in its new column.
+  useEffect(() => {
+    if (!focusCard.current) return;
+    const card = [...(boardRef.current?.querySelectorAll('[data-card]') || [])].find((el) => el.dataset.card === focusCard.current);
+    if (card && document.activeElement !== card) card.focus();
+    if (card) focusCard.current = null;
+  });
+  const stageUnder = (e) => document.elementFromPoint(e.clientX, e.clientY)?.closest?.('[data-stage]')?.dataset.stage || null;
+  const cardDown = (e, r) => {
+    dragged.current = false;
+    if (e.pointerType !== 'mouse' || e.button !== 0 || r.admin) return;
+    dragging.current = { row: r, x: e.clientX, y: e.clientY, on: false, rect: e.currentTarget.closest('.cc-card').getBoundingClientRect() };
+  };
+  const cardMove = (e) => {
+    const d = dragging.current;
+    if (!d) return;
+    if (!d.on) {
+      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < DRAG_START) return;
+      d.on = true;
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+    }
+    setDrag({ row: d.row, over: stageUnder(e), dx: e.clientX - d.x, dy: e.clientY - d.y, rect: d.rect });
+  };
+  const cardUp = (e) => {
+    const d = dragging.current;
+    dragging.current = null;
+    if (!d?.on) return;
+    dragged.current = true; // the click that follows a drag opens nothing
+    setTimeout(() => { dragged.current = false; }, 80);
+    setDrag(null);
+    if (e.type === 'pointerup') moveTo(d.row, stageUnder(e));
+  };
+  useEffect(() => {
+    if (!drag) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') { dragging.current = null; setDrag(null); } };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [drag]);
+  const cardKey = (e, r) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    moveTo(r, stageBeside(r.stage, e.key === 'ArrowLeft' ? -1 : 1), { keepFocus: true });
+  };
+  const cardWords = (r) => (
+    <>
+      <b>{r.profile.name}</b>
+      <small>{orgName(r.profile.organisation_id) || (r.admin ? `${r.coachName}’s client` : 'Self-funded')}</small>
+      <span>{when(r)}</span>
+      <span>{engagementLine(r.engagement, packs, entries, ctx.now, { toGo: true }) || 'No engagement yet'}</span>
+    </>
+  );
+  const menuRow = menu?.startsWith('card:') ? shown.find((r) => r.profile.id === menu.slice(5)) || null : null;
+
   const when = (r) => (r.nextAt ? dayWords(r.nextAt.slice(0, 10), todayKey) : 'Not booked');
   const facts = (r) => [orgName(r.profile.organisation_id) || (r.admin ? null : 'Self-funded'), r.profile.city, r.admin ? `${r.coachName}’s client` : null, !r.admin && !r.profile.user_id && !r.profile.invited_at ? 'No account yet' : null];
 
@@ -257,27 +351,50 @@ export default function Clients() {
       )}
 
       {layout === 'board' && shown.length > 0 && (
-        <div className="cc-board cc-fade" ref={boardRef} key="board">
+        <div className={`cc-board cc-fade${drag ? ' cc-board--dragging' : ''}`} ref={boardRef} key="board">
           {STAGES.map((s) => {
             const here = shown.filter((r) => r.stage === s.value);
             return (
-              <section key={s.value} className="cc-board-col" aria-label={`${s.label}, ${here.length}`}>
+              <section key={s.value} className={`cc-board-col${drag && drag.over === s.value && drag.row.stage !== s.value ? ' cc-board-col--over' : ''}`} data-stage={s.value} aria-label={`${s.label}, ${here.length}`}>
                 <div className="cc-board-head"><span>{s.label}</span><span>{here.length}</span></div>
                 <div className="cc-board-cards">
                   {here.map((r) => (
-                    <button key={r.profile.id} type="button" className="cc-card" onClick={() => open(r)}>
-                      <b>{r.profile.name}</b>
-                      <small>{orgName(r.profile.organisation_id) || (r.admin ? `${r.coachName}’s client` : 'Self-funded')}</small>
-                      <span>{when(r)}</span>
-                      <span>{engagementLine(r.engagement, packs, entries, ctx.now, { toGo: true }) || 'No engagement yet'}</span>
-                    </button>
+                    <div key={r.profile.id} className={`cc-card${drag?.row.profile.id === r.profile.id ? ' cc-card--lifted' : ''}${(isPhone || touchFirst) && !r.admin ? ' cc-card--more' : ''}`}>
+                      <button
+                        type="button"
+                        className="cc-card-open"
+                        data-card={r.profile.id}
+                        aria-roledescription={r.admin ? undefined : 'Card that can be moved to another column'}
+                        onClick={() => { if (!dragged.current) open(r); }}
+                        onKeyDown={(e) => cardKey(e, r)}
+                        onPointerDown={(e) => cardDown(e, r)}
+                        onPointerMove={cardMove}
+                        onPointerUp={cardUp}
+                        onPointerCancel={cardUp}
+                      >
+                        {cardWords(r)}
+                      </button>
+                      {(isPhone || touchFirst) && !r.admin && (
+                        <TextLink className="cc-card-move" ref={ref(`card:${r.profile.id}`)} aria-haspopup="menu" aria-expanded={menu === `card:${r.profile.id}`} aria-label={`More for ${r.profile.name}`} onClick={() => setMenu(`card:${r.profile.id}`)}>More</TextLink>
+                      )}
+                    </div>
                   ))}
                 </div>
               </section>
             );
           })}
+          <span className="ds-sr" role="status" aria-live="polite">{moved}</span>
         </div>
       )}
+      {drag && (
+        <div className="cc-card cc-card-ghost" aria-hidden="true" style={{ left: drag.rect.left, top: drag.rect.top, width: drag.rect.width, minHeight: drag.rect.height, transform: `translate(${drag.dx}px, ${drag.dy}px)` }}>
+          <div className="cc-card-open">{cardWords(drag.row)}</div>
+        </div>
+      )}
+      <PopMenu open={Boolean(menuRow)} onClose={() => setMenu(null)} anchorRef={anchor(menu || '')} title="More">
+        <MenuLabel>Move to…</MenuLabel>
+        {menuRow && STAGES.map((st) => <MenuItem key={st.value} checked={menuRow.stage === st.value} onClick={() => { setMenu(null); moveTo(menuRow, st.value); }}>{st.label}</MenuItem>)}
+      </PopMenu>
 
       {layout === 'table' && shown.length > 0 && (
         <div className={`cc-table-wrap cc-fade${picking ? ' cc-picking' : ''}`} key="table">

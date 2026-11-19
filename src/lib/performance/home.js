@@ -375,10 +375,16 @@ function suggestionInTurn(input) {
  * 6a). Timed things (the check-ins) queue for the card instead
  * (homeSuggestion; Tim, 5 Nov).
  * "Ready to add your mission?" shows once, two weeks after someone
- * without a coach joined, until Not now.
+ * without a coach joined, until Not now. "Tim has sent something for you."
+ * (or "Tim sent a recap of your session.") shows while something on the
+ * Coaching page is new.
  */
-export function quietLines({ person, hasCoach, mission, joinedDaysAgo = 0, dismissed = [], checkin = null }) {
+export function quietLines({ person, hasCoach, mission, joinedDaysAgo = 0, dismissed = [], checkin = null, coaching = null }) {
   const out = [];
+  // Something new on the Coaching page (Phase 6a run 2): an invite, a
+  // request or cover to answer, or a recap sent since the page was last
+  // opened (coachingNews in src/lib/coachingRules.js). One line, first.
+  if (coaching?.lines?.length && coaching.action?.to) out.push({ key: 'coaching', lines: coaching.lines, action: coaching.action });
   // The check-in is timed, so it waits for the one card (homeSuggestion),
   // never a quiet line (Tim, 5 Nov). `checkin` is kept for older callers.
   void checkin;

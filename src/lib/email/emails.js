@@ -258,6 +258,34 @@ export function sessionRecapEmail({ origin, coach, dateText, recap, actions = []
   };
 }
 
+// ---------------------------------------------------------------- the invite to the portal (Phase 6a run 2)
+/**
+ * A coach invites a client to the portal: sent only when the coach presses
+ * "Invite" on the client's page (api/coach-send.js, kind 'invite'), and
+ * only from the live site. The button opens the portal's own Create your
+ * account page; once the person has an account with this email address,
+ * their Coaching page offers the invite to accept (049's my_coach_invites).
+ * The address it goes to is never passed in here: the server takes it from
+ * the database.
+ * @param {object} o
+ * @param {string} o.origin  the portal's own address (api/_portalOrigin.js)
+ * @param {string} o.coach   the coach's first name
+ */
+export function clientInviteEmail({ origin, coach }) {
+  const name = oneLine(coach).slice(0, 60);
+  return {
+    brand: 'portal',
+    subject: name ? `${name} has invited you to The Clarity Portal` : 'You’re invited to The Clarity Portal',
+    blocks: [
+      { type: 'heading', text: 'You’re invited to The Clarity Portal' },
+      { type: 'text', text: `${name || 'Your coach'} has invited you to work together in The Clarity Portal, your personal performance tool.` },
+      { type: 'text', text: 'Create your account with this email address, then open the invite from Home.', quiet: true },
+      { type: 'button', label: 'Create my account', href: `${origin}/auth/sign-up` },
+    ],
+    footer: { lines: [`You get this because ${name || 'your coach'} added this email address as a client in The Clarity Portal.`, EMAIL_SIGN_OFF] },
+  };
+}
+
 // ---------------------------------------------------------------- workshops (templates only; Phase 6a run 1)
 // A workshop's attendees are emails, not clients, so these come from the
 // business. Times are in the workshop's own place (zone), where the people

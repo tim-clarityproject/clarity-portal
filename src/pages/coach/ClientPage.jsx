@@ -4,12 +4,13 @@ import { AddButton, Button, Dropdown, InlineChoice, PageHeader, SearchField, Sli
 import { supabase } from '../../lib/supabase';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { zonePlace } from '../../lib/time';
+import { formatClockTime } from '../../lib/dateFormatter';
 import { coachReadyNow, keyOf, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
-import { deleteClient, inviteClient, moveClient, NEEDS_049 } from '../../lib/coach/actions';
+import { deleteClient, inviteClient, inviteWords, moveClient, NEEDS_049 } from '../../lib/coach/actions';
 import {
   birthdaysOn, birthdayWords, clean, clockWords, dayWords, ENGAGEMENT_KINDS, fieldFromTyped, fieldValue, fieldWords, firstName,
   gettingStarted, isEmail, minutesClocked, minutesWords, possessive, quickContacts, runningEntry, sessionsLeft, START_ZONES,
-  timeCredit, timeline, TIMELINE_KINDS,
+  timeCredit, timeline, TIMELINE_KINDS, viewAskState,
 } from '../../lib/coach/model';
 import { heldWords, lengthPlace, nextSession, openWords, sortTodos, whenWords, withHeldTyped, withSessions } from '../../lib/coach/day';
 import { Back, Detail, EditCell, Eye, Fold, InlineLink, Line, TextLink, useCoachPortal, useEverySecond, Part } from './parts';
@@ -214,7 +215,7 @@ export default function ClientPage() {
   }
 
   const first = firstName(profile.name);
-  const { engagement, packs, entries, notes, files, about, links, values, projects } = data;
+  const { engagement, packs, entries, notes, files, about, links, values, projects, requests } = data;
   // Sessions left follows each recorded session (day.js's withSessions); the kept row itself is never saved from here to change the count.
   const mySessions = allSessions.filter((x) => x.profile_id === profile.id);
   const counted = withSessions(engagement, allSessions, sessionPeople);
@@ -326,6 +327,16 @@ export default function ClientPage() {
       toast.saved({ message: `${first} moved to ${to.first_name}`, long: true, onUndo: () => moveClient(userId, profile.id, from).then(reloadCoaches).catch(() => {}) });
       navigate('/coach/clients');
     } catch (error) { toast.error(error.message || SAVE_PROBLEM); }
+  };
+  const viewAsk = viewAskState(requests, portal.now);
+  const invite = async () => {
+    if (busy.current) return; // one request per press
+    busy.current = true;
+    try {
+      const answer = await inviteClient(userId, profile);
+      toast.saved({ message: inviteWords(first, answer), long: true });
+      setPanel(null);
+    } catch (error) { toast.error(error?.message || SAVE_PROBLEM); } finally { busy.current = false; }
   };
   const askToView = () => done(() => saveRow(userId, 'client_view_requests', { id: newId(), profile_id: profile.id, coach_id: coach.id, asked_at: new Date().toISOString(), answered_at: null, allowed: null, expires_at: null }), `${first} has been asked`);
 
@@ -543,13 +554,16 @@ export default function ClientPage() {
               </Fold>
               <Fold title="More" open={Boolean(folds.more)} onToggle={() => toggle('more')} summary="View as client, close, export or delete">
                 <div className="cc-links">
-                  {profile.user_id && <TextLink onClick={askToView}>Ask to view {possessive(first)} portal</TextLink>}
+                  {profile.user_id && (!viewAsk || viewAsk.state === 'no') && <TextLink onClick={askToView}>Ask to view {possessive(first)} portal</TextLink>}
                   {profile.status === 'past'
                     ? <TextLink onClick={() => save({ status: 'active', ended_on: null }, `${first} is back in your clients`).then(() => setEngDraft(draftFrom(null)))}>Start a new engagement</TextLink>
                     : <TextLink onClick={() => navigate(`/coach/clients/${profile.id}/close`)}>Start the guided close</TextLink>}
                   <TextLink onClick={exportData}>Export {possessive(first)} data</TextLink>
                   <TextLink onClick={() => { setTypedName(''); setDeleteProblem(null); setPanel('delete'); }}>Delete {possessive(first)} data</TextLink>
                 </div>
+                {profile.user_id && viewAsk?.state === 'yes' && <p className="cc-quiet" role="status">{first} said yes. You can view what {first} shares until {formatClockTime(viewAsk.until)}.</p>}
+                {profile.user_id && viewAsk?.state === 'asked' && <p className="cc-note" role="status">{first} has been asked, and the answer will show here.</p>}
+                {profile.user_id && viewAsk?.state === 'no' && <p className="cc-note" role="status">{first} said no.</p>}
                 {profile.user_id && <p className="cc-note">{first} is asked first. A yes lets you view for 30 minutes.</p>}
                 {isOwner && others.length > 0 && (
                   <div className="cc-field"><Dropdown label="Move to a coach" placeholder="Choose a coach" options={others.map((c) => ({ value: c.coach_id, label: c.full_name || c.first_name }))} value={null} onChange={move} /></div>
@@ -574,10 +588,10 @@ export default function ClientPage() {
         open={panel === 'invite'}
         onClose={() => setPanel(null)}
         title="Invite to the portal"
-        footer={<div className="cc-panel-foot"><TextLink onClick={() => setPanel(null)}>Not now</TextLink><Button variant="primary" onClick={() => done(() => inviteClient(userId, profile).then(() => 'saved'), `${first} is invited`).then(() => setPanel(null))}>Invite {first}</Button></div>}
+        footer={<div className="cc-panel-foot"><TextLink onClick={() => setPanel(null)}>Not now</TextLink><Button variant="primary" onClick={invite}>Invite {first}</Button></div>}
       >
-        <p className="cc-quiet">{first} will be able to join with {profile.email}.</p>
-        <p className="cc-note">When {first} signs in to The Clarity Portal with that email, their account joins this page and you become their coach. The invite email itself arrives with the coaching day, so nothing is sent yet.</p>
+        <p className="cc-quiet">{first} gets an email at {profile.email}, with a link to create their account.</p>
+        <p className="cc-note">When {first} accepts in The Clarity Portal, their account joins this page and you become their coach.</p>
       </SlidePanel>
       <SlidePanel
         open={panel === 'delete'}

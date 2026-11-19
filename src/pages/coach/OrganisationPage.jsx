@@ -1,18 +1,26 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AddButton, Button, Chip, ChipRow, PageHeader, SlidePanel, Stat, StatGroup, SwitchRow, TextField, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { coachReadyNow, newId, removeRow, rowsOf, saveRow } from '../../lib/coach/store';
 import { NEEDS_049 } from '../../lib/coach/actions';
+import { accessCodeHash, codeGroups, makeAccessCode } from '../../lib/coach/accessCode';
 import { addDays, clean, dayWords, ENGAGEMENT_KINDS, firstName, isEmail, possessive, sessionsLeft } from '../../lib/coach/model';
 import { Back, Eye, Line, Row, SettingRow, TextLink, useCoachPortal, Part } from './parts';
 import { currentEngagement } from './clientData';
+import './leftovers.css';
 
 // An organisation (M11, with version 3.6's account map), the owner's: Who's
 // who (contacts with their roles, the people coached there, its groups),
 // the engagements running there, Room to grow, seats, and documents with an
 // optional expiry.
 const ROLES = [{ value: 'sponsor', label: 'Sponsor' }, { value: 'invoices', label: 'Invoices contact' }];
+const CODE_WORDS = {
+  loading: '',
+  none: 'No access code is set.',
+  set: 'An access code is set.',
+  unknown: 'The code can’t be checked right now.',
+};
 const roleWords = (roles) => ROLES.filter((r) => (roles || []).includes(r.value)).map((r) => r.label).join(', ');
 
 export default function OrganisationPage() {
@@ -25,6 +33,21 @@ export default function OrganisationPage() {
   const [doc, setDoc] = useState(null);
   const [problem, setProblem] = useState(null);
   const fileRef = useRef(null);
+  // The access code (026's organisation_access_codes): only its hash is
+  // kept, so the code shows once, when it is made, and never again.
+  const [code, setCode] = useState({ state: 'loading' }); // 'loading' | 'none' | 'set' | 'unknown'
+  const [codePanel, setCodePanel] = useState(null); // 'reset' | 'show'
+  const [fresh, setFresh] = useState(null); // the new code, held only while its panel is open
+  const [copied, setCopied] = useState(false);
+  const [codeProblem, setCodeProblem] = useState(null);
+  const making = useRef(false);
+  const orgId = org?.id || null;
+  const readCode = useCallback(async () => {
+    if (!orgId) return;
+    const { data, error } = await supabase.from('organisation_access_codes').select('id').eq('organisation_id', orgId).is('switched_off_at', null).limit(1);
+    setCode({ state: error ? 'unknown' : data?.length ? 'set' : 'none' });
+  }, [orgId]);
+  useEffect(() => { setCode({ state: 'loading' }); readCode(); }, [readCode]);
   if (!org) {
     return <div className="cc-page"><div className="cc-col"><Back onClick={() => navigate('/coach/clients')} /><PageHeader title="Organisation" /><p className="cc-quiet">This organisation isn’t here any more.</p></div></div>;
   }
@@ -58,6 +81,36 @@ export default function OrganisationPage() {
   }
   const ahead = workshops.filter((w) => w.organisation_id === org.id && w.starts_at && w.starts_at.slice(0, 10) >= todayKey);
   if (!ahead.length) grow.push({ key: 'workshop', title: 'No workshop is booked here.', small: 'A team workshop is one way to grow the work.' });
+
+  // Make a code, or reset it: the new one is saved (its hash) before the old one is switched off.
+  const makeCode = async (reset) => {
+    if (making.current) return; // one request per press
+    making.current = true;
+    setCodeProblem(null);
+    try {
+      const next = makeAccessCode();
+      const row = { id: newId(), organisation_id: org.id, code_hash: await accessCodeHash(next), seats, created_by: userId };
+      const { error } = await supabase.from('organisation_access_codes').insert(row);
+      if (error) {
+        const words = 'The code wasn’t made. Check your connection and try again.';
+        if (reset) setCodeProblem(words); else toast.error(words);
+        return;
+      }
+      let oldStill = false;
+      if (reset) {
+        const { error: offError } = await supabase.from('organisation_access_codes').update({ switched_off_at: new Date().toISOString() }).eq('organisation_id', org.id).is('switched_off_at', null).neq('id', row.id);
+        oldStill = Boolean(offError);
+      }
+      setCode({ state: 'set' });
+      setCopied(false);
+      setFresh({ code: next, oldStill });
+      setCodePanel('show');
+    } finally { making.current = false; }
+  };
+  const copyCode = async () => {
+    try { await navigator.clipboard.writeText(fresh.code); setCopied(true); } catch { toast.show('That didn’t copy. Select the code and copy it yourself.'); }
+  };
+  const closeCode = () => { setCodePanel(null); setFresh(null); setCopied(false); setCodeProblem(null); };
 
   const saveContact = async () => {
     const name = clean(contact.name);
@@ -120,7 +173,7 @@ export default function OrganisationPage() {
           {theirs.filter((a) => a.engagement_kind).map((a) => (
             <Row key={a.profile_id} title={`${ENGAGEMENT_KINDS.find((k) => k.value === a.engagement_kind)?.label} for ${firstName(a.name)}`} facts={[`${a.coach_first_name}’s client`, a.sessions_total ? `${Math.max(0, a.sessions_total - a.sessions_held)} of ${a.sessions_total} sessions to go` : null]} when={a.ends_on ? `Ends ${dayWords(a.ends_on, todayKey)}` : ''} />
           ))}
-          {!mine.some((p) => currentEngagement(engagements, { profileId: p.id })) && !theirs.some((a) => a.engagement_kind) && <p className="cc-quiet">No engagement is running here. Agreements and proposals arrive with the Business space.</p>}
+          {!mine.some((p) => currentEngagement(engagements, { profileId: p.id })) && !theirs.some((a) => a.engagement_kind) && <p className="cc-quiet">No engagement is running here. Agreements and proposals arrive with Finances.</p>}
         </Part>
 
         {grow.length > 0 && (
@@ -149,7 +202,13 @@ export default function OrganisationPage() {
             onSave={(v) => save({ city: clean(v) || null })}
           />
           <SwitchRow label="Organisation area" note={`Seats unlock the team tools for ${org.name}.`} checked={org.area_enabled === true} onChange={(on) => save({ area_enabled: on })} />
-          <p className="cc-note">Access codes stay as they were set up. Prices and invoices arrive with the Business space.</p>
+          <Line title="Access code" small={CODE_WORDS[code.state]}>
+            {code.state === 'none' && <TextLink onClick={() => (seats > 0 ? makeCode(false) : toast.show('Add the number of seats first, so the code knows how many people it lets in.'))}>Make an access code</TextLink>}
+            {code.state === 'set' && <TextLink onClick={() => (seats > 0 ? setCodePanel('reset') : toast.show('Add the number of seats first, so the code knows how many people it lets in.'))}>Reset the code</TextLink>}
+            {code.state === 'unknown' && <TextLink onClick={readCode}>Try again</TextLink>}
+            {code.state === 'loading' && <span />}
+          </Line>
+          <p className="cc-note">Prices and invoices arrive with Finances.</p>
         </Part>
 
         <Part title="Documents" aside={<Eye sentence="Only you can see these." />}>
@@ -187,6 +246,32 @@ export default function OrganisationPage() {
             </div>
             <div className="cc-field"><TextField label="A note" value={contact.note} maxLength={240} placeholder="e.g. Decides on renewals" onChange={(e) => setContact({ ...contact, note: e.target.value })} /></div>
             {problem && <p className="cc-problem" role="alert">{problem}</p>}
+          </>
+        )}
+      </SlidePanel>
+
+      <SlidePanel
+        open={codePanel === 'reset'}
+        onClose={closeCode}
+        title="Reset the code"
+        footer={<div className="cc-panel-foot"><TextLink onClick={closeCode}>Keep it</TextLink><Button variant="primary" onClick={() => makeCode(true)}>Reset the code</Button></div>}
+      >
+        <p className="cc-quiet">The code you gave out stops working as soon as you reset it, and a new one is shown once.</p>
+        {codeProblem && <p className="cc-problem" role="alert">{codeProblem}</p>}
+      </SlidePanel>
+
+      <SlidePanel
+        open={codePanel === 'show' && Boolean(fresh)}
+        onClose={closeCode}
+        title="Access code"
+        footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={copyCode}>Copy</Button></div>}
+      >
+        {fresh && (
+          <>
+            <p className="cc-quiet">This is the only time the code is shown. Copy it now.</p>
+            <p className="cc-code" aria-label={`Access code: ${codeGroups(fresh.code).join(' ')}`}>{fresh.code}</p>
+            <p className="cc-code-copied" role="status">{copied ? 'Copied.' : ''}</p>
+            {fresh.oldStill && <p className="cc-problem" role="alert">The old code still works, because switching it off didn’t save. Reset the code again in a moment.</p>}
           </>
         )}
       </SlidePanel>

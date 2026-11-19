@@ -13,6 +13,16 @@
   flex-direction: column;
 }
 
+/* The header (and a table's heading row, a Settings list) stays at the top
+   as the page scrolls. The portal's own rule (src/index.css) gives body
+   `overflow-x: hidden`, which makes body a scroll box that never scrolls, so
+   nothing inside it could stick: the header scrolled away with the page.
+   While the coach portal is on screen body clips sideways instead, which
+   hides the same overflow without making a scroll box (Phase 6a run 2). */
+body:has(> #root .ui-root.cc-app) {
+  overflow-x: clip;
+}
+
 .ui-root .cc-header {
   position: sticky;
   top: 0;
