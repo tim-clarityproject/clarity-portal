@@ -14,8 +14,8 @@ import { testCalls } from '../../lib/coach/calls';
 import { CoachPortalContext, TextLink, useCoachPortal } from './parts';
 import './coach.css';
 
-// Clarity Coach, the coach portal (Phase 6a run 1; mock-up M11, version
-// 3.6). Open only to coach accounts: anyone else is sent to their own
+// Clarity Coach, the coach portal (Phase 6a runs 1 and 2; mock-up M11, seq
+// 77). Open only to coach accounts: anyone else is sent to their own
 // Home, and the database's rules decide what each coach reads whatever a
 // page shows. This file is the frame every coach page sits in: the header
 // (the bold crosshair menu button, one search box, the bell), the slim
@@ -29,6 +29,10 @@ const GroupPage = lazy(() => import('./GroupPage'));
 const WorkshopPage = lazy(() => import('./WorkshopPage'));
 const OrganisationPage = lazy(() => import('./OrganisationPage'));
 const Settings = lazy(() => import('./Settings'));
+const Todos = lazy(() => import('./Todos'));
+const TodoListPage = lazy(() => import('./TodoListPage'));
+const SessionPage = lazy(() => import('./SessionPage'));
+const ClosePage = lazy(() => import('./ClosePage'));
 
 const BELL = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" /></svg>;
 const HOME = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg>;
@@ -344,8 +348,19 @@ export default function CoachApp() {
       views: mine(rowsOf(state, 'coach_views')),
       notifications: mine(rowsOf(state, 'coach_notifications')),
       settings: rowsOf(state, 'coach_settings').find((s) => s.coach_id === coach.id) || { coach_id: coach.id },
+      // The coaching day (run 2): the coach's own to-dos, lists, days, weeks and sessions.
+      todos: mine(rowsOf(state, 'coach_todos')),
+      todoLists: mine(rowsOf(state, 'coach_todo_lists')).sort((a, b) => (a.position || 0) - (b.position || 0) || a.name.localeCompare(b.name)),
+      todoHeadings: mine(rowsOf(state, 'coach_todo_headings')).sort((a, b) => (a.position || 0) - (b.position || 0)),
+      days: mine(rowsOf(state, 'coach_days')),
+      weeks: mine(rowsOf(state, 'coach_weeks')),
+      sessions: mine(rowsOf(state, 'coach_sessions')),
+      sessionPeople: rowsOf(state, 'coach_session_people'),
+      sessionActions: mine(rowsOf(state, 'coach_session_actions')),
+      sessionNotes: mine(rowsOf(state, 'coach_session_notes')),
+      now,
     };
-  }, [coach, isOwner, state, todayKey, coaches, admin, userId, reloadCoaches, role.reload]);
+  }, [coach, isOwner, state, todayKey, coaches, admin, userId, reloadCoaches, role.reload, now]);
 
   if (role.loading) return <Blank />;
   if (!coach) return <Navigate to="/welcome" replace />;
@@ -382,6 +397,12 @@ export default function CoachApp() {
               <Route path="groups/:id" element={<GroupPage />} />
               <Route path="workshops/:id" element={<WorkshopPage />} />
               <Route path="organisations/:id" element={isOwner ? <OrganisationPage /> : <Navigate to="/coach/clients" replace />} />
+              <Route path="todos" element={<Todos />} />
+              <Route path="todos/lists/:id" element={<TodoListPage />} />
+              <Route path="sessions/:id" element={<SessionPage />} />
+              <Route path="clients/:id/close" element={<ClosePage />} />
+              <Route path="business/*" element={<Navigate to="/coach/finances" replace />} />
+              {!LIVE && <Route path="renewals/:id" element={<ComingSoon title="Renewal" />} />}
               <Route path="settings" element={<Settings />} />
               <Route path="settings/:section" element={<Settings />} />
               {!LIVE && later.filter((p) => !p.owner || isOwner).map((p) => <Route key={p.key} path={`${p.to.replace('/coach/', '')}/*`} element={<ComingSoon title={p.label} />} />)}

@@ -60,10 +60,28 @@ export const TABLES = {
   data_requests: ['id'],
   coach_notifications: ['id'],
   activity_log: ['id'],
+  // The coaching day (migration 050; Phase 6a run 2).
+  coach_todo_lists: ['id'],
+  coach_todo_headings: ['id'],
+  coach_todos: ['id'],
+  coach_days: ['coach_id', 'day'],
+  coach_weeks: ['coach_id', 'week_start'],
+  coach_sessions: ['id'],
+  coach_session_people: ['session_id', 'profile_id'],
+  coach_session_actions: ['id'],
+  coach_session_notes: ['session_id'],
+  workshop_sends: ['id'],
 };
+// The tables of migration 050. Until Tim has run it they are kept on the
+// device only, exactly as every coach table was before 049: no error, and
+// what waits is moved across once the tables are there.
+const DAY_TABLES = new Set(['coach_todo_lists', 'coach_todo_headings', 'coach_todos', 'coach_days', 'coach_weeks', 'coach_sessions',
+  'coach_session_people', 'coach_session_actions', 'coach_session_notes', 'workshop_sends']);
+// Columns only migration 050 adds to an older table: left out of a save until it is there.
+const DAY_COLUMNS = { coach_settings: ['hidden_help'], engagements: ['sessions_held_base'] };
 // Read from the database but never written by a plain save (the database
 // adds these rows itself, or a checked function does).
-const READ_ONLY = new Set(['activity_log', 'workshop_survey_answers']);
+const READ_ONLY = new Set(['activity_log', 'workshop_survey_answers', 'workshop_sends']);
 // Tables a coach may add to but never change: a save is sent as "add it
 // unless it is there" (a plain upsert would need the right to change rows).
 const ADD_ONLY = new Set(['client_files', 'client_view_requests']);
@@ -74,6 +92,7 @@ const DB_ONLY = ['created_at', 'updated_at'];
 // The codes that mean the database will never take this row as it is.
 const NEVER = new Set(['42501', '23503', '23514', '23505', '22023', '22P02', 'PGRST204']);
 const NOT_YET_KEY = 'clarity-coach-not-yet';
+const DAY_NOT_YET_KEY = 'clarity-coach-day-not-yet';
 const NOT_YET_MS = 60 * 60 * 1000;
 const LOCAL = 'coach-local';
 
@@ -188,19 +207,19 @@ function mark(userId, table, k, change) {
 
 // ---------------------------------------------------------------- whether 049 is there
 
-function notYet() {
+function notYet(key = NOT_YET_KEY) {
   try {
-    const at = Number(window.localStorage.getItem(NOT_YET_KEY));
+    const at = Number(window.localStorage.getItem(key));
     return Number.isFinite(at) && at > 0 && Date.now() - at < NOT_YET_MS && Date.now() >= at;
   } catch {
     return false;
   }
 }
 
-function noteNotYet(missing) {
+function noteNotYet(missing, key = NOT_YET_KEY) {
   try {
-    if (missing) window.localStorage.setItem(NOT_YET_KEY, String(Date.now()));
-    else window.localStorage.removeItem(NOT_YET_KEY);
+    if (missing) window.localStorage.setItem(key, String(Date.now()));
+    else window.localStorage.removeItem(key);
   } catch {
     // Storage blocked: it is asked again next time.
   }
@@ -235,16 +254,52 @@ export async function coachReady() {
 /** What the last look said, without asking again: true, false or null (not asked yet). */
 export const coachReadyNow = () => readyNow;
 
+let dayReadyNow = null;
+let askingDay = null;
+
+/**
+ * Whether migration 050's tables (the coaching day) are there: true, false
+ * (not yet) or null (can't be told). Asked only once 049 is there, and
+ * "not yet" is remembered for an hour, as above.
+ */
+export async function coachDayReady() {
+  if (dayReadyNow === true) return true;
+  if ((await coachReady()) !== true) return coachReadyNow() === false ? false : null;
+  if (notYet(DAY_NOT_YET_KEY)) { dayReadyNow = false; return false; }
+  if (!askingDay) {
+    askingDay = (async () => {
+      try {
+        const there = await tableReady('coach_todos');
+        if (there === false) noteNotYet(true, DAY_NOT_YET_KEY);
+        if (there === true) noteNotYet(false, DAY_NOT_YET_KEY);
+        if (there !== null) dayReadyNow = there;
+        return there;
+      } catch {
+        return null;
+      }
+    })().finally(() => { askingDay = null; });
+  }
+  return askingDay;
+}
+export const coachDayReadyNow = () => dayReadyNow;
+
+/** Is this table's home in the database yet? */
+async function tableThere(table) {
+  if ((await coachReady()) !== true) return false;
+  return DAY_TABLES.has(table) ? (await coachDayReady()) === true : true;
+}
+
 // ---------------------------------------------------------------- saving
 
-const forDb = (row) => Object.fromEntries(Object.entries(row).filter(([c]) => !DB_ONLY.includes(c)));
+const forDb = (table, row) => Object.fromEntries(Object.entries(row).filter(([c]) => !DB_ONLY.includes(c)
+  && !(dayReadyNow !== true && DAY_COLUMNS[table]?.includes(c))));
 
 async function send(userId, table, row) {
   const k = keyOf(table, row);
   try {
     const op = MARK_ONLY[table]
       ? { table, kind: 'update', values: Object.fromEntries(MARK_ONLY[table].map((c) => [c, row[c] ?? null])), match: Object.fromEntries(TABLES[table].map((c) => [c, row[c]])) }
-      : { table, kind: 'upsert', values: forDb(row), onConflict: TABLES[table].join(','), ...(ADD_ONLY.has(table) ? { ignoreDuplicates: true } : {}) };
+      : { table, kind: 'upsert', values: forDb(table, row), onConflict: TABLES[table].join(','), ...(ADD_ONLY.has(table) ? { ignoreDuplicates: true } : {}) };
     const answer = await saveOrQueue(userId, op);
     if (answer.status === 'saved') mark(userId, table, k, { sent: true, refused: false });
     return answer.status;
@@ -266,7 +321,7 @@ export async function saveRow(userId, table, row) {
   if (!stamped.created_at) stamped.created_at = stamped.updated_at;
   write(userId, setRow(read(userId), table, stamped));
   if (READ_ONLY.has(table)) return 'device';
-  if ((await coachReady()) !== true) return 'device';
+  if (!(await tableThere(table))) return 'device';
   return send(userId, table, stamped);
 }
 
@@ -281,6 +336,7 @@ export async function saveRows(userId, pairs) {
   let worst = 'saved';
   for (const [table, row] of stamped) {
     if (READ_ONLY.has(table)) continue;
+    if (!(await tableThere(table))) { worst = 'device'; continue; }
     const status = await send(userId, table, row);
     if (status !== 'saved') worst = status;
   }
@@ -299,10 +355,11 @@ export async function removeRow(userId, table, key) {
   if (!wasSent) {
     write(userId, dropRow(state, table, key));
     // It may be on its way in the queue: its delete follows it there.
-    if ((await coachReady()) !== true) return row;
+    if (!(await tableThere(table))) return row;
   } else {
     mark(userId, table, key, { gone: true });
   }
+  if (!(await tableThere(table))) return row;
   try {
     const match = Object.fromEntries(TABLES[table].map((c) => [c, row[c]]));
     const answer = await saveOrQueue(userId, { table, kind: 'delete', match });
@@ -334,8 +391,8 @@ export function noteRows(userId, pairs) {
 
 const loading = new Map();
 
-async function fetchAll() {
-  const names = Object.keys(TABLES);
+async function fetchAll(dayThere) {
+  const names = Object.keys(TABLES).filter((t) => dayThere || !DAY_TABLES.has(t));
   const out = {};
   // A few at a time: gentle on the database, quick enough for the page.
   for (let i = 0; i < names.length; i += 6) {
@@ -361,9 +418,10 @@ export function loadCoach(userId) {
   const run = (async () => {
     const there = await coachReady();
     if (there !== true) return there;
+    const dayThere = (await coachDayReady()) === true;
     let db;
     try {
-      db = await fetchAll();
+      db = await fetchAll(dayThere);
     } catch {
       return null;
     }
@@ -371,6 +429,11 @@ export function loadCoach(userId) {
     const waiting = waitingToSend(userId) > 0;
     let next = { rows: {}, marks: {} };
     for (const table of Object.keys(TABLES)) {
+      if (!db[table]) {
+        // Its table isn't there yet (050): the device's copy is all there is.
+        if (before.rows[table]) { next.rows[table] = before.rows[table]; next.marks[table] = before.marks[table] || {}; }
+        continue;
+      }
       for (const row of db[table]) next = setRow(next, table, row, { sent: true });
       for (const [k, row] of Object.entries(before.rows[table] || {})) {
         const m = before.marks[table]?.[k] || {};
@@ -400,6 +463,7 @@ export function loadCoach(userId) {
 async function moveAcross(userId) {
   for (const table of Object.keys(TABLES)) {
     if (READ_ONLY.has(table)) continue;
+    if (!(await tableThere(table))) continue;
     const state = read(userId);
     for (const [k, row] of Object.entries(state.rows[table] || {})) {
       const m = state.marks[table]?.[k] || {};
@@ -435,4 +499,5 @@ export { newId };
 export function resetCoachStoreForTests() {
   cache.clear();
   readyNow = null;
+  dayReadyNow = null;
 }

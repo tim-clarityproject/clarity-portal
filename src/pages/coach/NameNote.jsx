@@ -9,8 +9,9 @@ import { TextLink, useCoachPortal } from './parts';
 // note. Email opens the coach's own email app with the note; nothing is
 // sent until they send it there. "View Priya's page" sits at the bottom.
 //
-// M11 also draws "Portal message". The client portal has no messages page
-// to show one in yet, so it isn't offered: a message would go nowhere.
+// M11 also draws "Portal message". It is dropped for good (Phase 6a run 2):
+// Tim's answer 40 (17 Nov) is no messages in the portal, ever. The note
+// offers Email only, plus View their page.
 
 export default function NameNote({ profile, reason, onClose }) {
   const { coach } = useCoachPortal();

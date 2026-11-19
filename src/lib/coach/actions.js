@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import { coachReady, forgetRows, keyOf, loadCoach, newId, noteRows, removeRow, rowsOf, saveRow, saveRows } from './store';
+import { coachDayReady, coachReady, forgetRows, keyOf, loadCoach, newId, noteRows, removeRow, rowsOf, saveRow, saveRows } from './store';
 import { clean, mergedProfile } from './model';
 
 // What the coach portal does that is more than saving one row (Phase 6a
@@ -10,6 +10,7 @@ import { clean, mergedProfile } from './model';
 // coaches (Move to a coach, approving a profile) waits for 049 and says so.
 
 export const NEEDS_049 = 'This will work once the coach portal’s tables are in place.';
+export const NEEDS_050 = 'This will work once the coaching day’s tables are in place.';
 
 function refuse(error) {
   // The database's own sentence is written for people (049's functions).
@@ -78,6 +79,18 @@ export async function addCoach({ firstName, fullName, email }) {
   const body = await res.json().catch(() => null);
   if (!res.ok || !body) throw new Error(body?.message || 'That didn’t work. Try again in a moment.');
   return body;
+}
+
+/**
+ * The coaching hours a week a coach aims for (Today's Capacity). Each coach
+ * sets their own through the database's checked function (050); before
+ * that only the owner's own row can be changed (026).
+ */
+export async function saveCapacity(coach, hours) {
+  if ((await coachDayReady()) === true) { await rpc('coach_save_capacity', { p_hours: hours }); return; }
+  if (coach.role !== 'owner') throw new Error(NEEDS_050);
+  const { error } = await supabase.from('coaches').update({ capacity_hours_week: hours }).eq('id', coach.id);
+  if (error) throw refuse(error);
 }
 
 /** Move to a coach (owner). Resolves the coach the client had, for Undo. */

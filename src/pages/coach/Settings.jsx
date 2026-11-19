@@ -5,10 +5,12 @@ import { AddButton, Button, Dropdown, InlineChoice, PageHeader, SearchField, Sli
 import { zonePlace, isZone } from '../../lib/time';
 import { parseDbTimestamp, getLocalDateKey } from '../../lib/dateFormatter';
 import { newId, removeRow, rowsOf, saveRow, keyOf } from '../../lib/coach/store';
-import { addCoach, decideProfile, saveCoachDetails, saveCoachFacts, switchCoach } from '../../lib/coach/actions';
+import { addCoach, decideProfile, saveCapacity, saveCoachDetails, saveCoachFacts, switchCoach } from '../../lib/coach/actions';
+import { capacityFromTyped } from '../../lib/coach/day';
 import { clean, coverState, dayWords, hoursWords, isEmail, NOTIFICATION_KINDS, notificationOn, parseHours, rangeWords, START_ZONES } from '../../lib/coach/model';
 import { SETTINGS_SECTIONS } from '../../lib/coach/navigation';
 import { Back, Line, SettingRow, TextLink, useCoachPortal } from './parts';
+import { useHiddenHelp } from './help';
 
 // Settings, two panes (M11, version 3.4): on a laptop the list of sections
 // on the left and the chosen one on the right; on a phone the list, and
@@ -112,15 +114,6 @@ function YourDetails() {
         editor={({ value, setValue }) => <Dropdown label="Time zone" options={zoneOptions} value={value} onChange={setValue} />}
         check={(v) => (v && isZone(v) ? null : 'Choose a time zone to carry on.')}
         onSave={(v) => saved(() => saveSettings({ time_zone: v }), { onUndo: () => saveSettings({ time_zone: zone }) })}
-      />
-      <SettingRow
-        label="Coaching hours a week"
-        value={String(Number(coach.capacity_hours_week ?? 15))}
-        words={`${Number(coach.capacity_hours_week ?? 15)} hours`}
-        still={!isOwner}
-        editor={textEditor({ inputMode: 'decimal' })}
-        check={(v) => (Number(v) >= 0 && Number(v) <= 80 && clean(v) !== '' ? null : 'Type a number of hours from 0 to 80.')}
-        onSave={(v) => saved(async () => { await saveCoachFacts(coach.id, { capacity_hours_week: Number(v) }); reloadRole(); })}
       />
       <p className="cc-small-label">How clients can reach you</p>
       {way('email', 'Email')}
@@ -296,7 +289,8 @@ function Booking() {
 }
 
 function WorkingHours() {
-  const { settings } = useCoachPortal();
+  const { settings, coach, reloadRole } = useCoachPortal();
+  const hoursAWeek = Number(coach.capacity_hours_week ?? 15);
   const saved = useSaved();
   const saveSettings = useSettingsSave();
   const block = (key, title, start) => {
@@ -323,7 +317,16 @@ function WorkingHours() {
     <>
       {block('working_hours', 'Your working day', week)}
       {block('booking_hours', 'Open for bookings', {})}
-      <p className="cc-note">Each day has its own hours. The calendar and booking pages use them when they arrive.</p>
+      <p className="cc-small-label">Capacity</p>
+      <SettingRow
+        label="Coaching hours each week"
+        value={String(hoursAWeek)}
+        words={`${hoursAWeek} hours`}
+        editor={textEditor({ inputMode: 'decimal' })}
+        check={(v) => (capacityFromTyped(v) == null ? 'Type a number of hours from 1 to 80.' : null)}
+        onSave={(v) => saved(async () => { await saveCapacity(coach, capacityFromTyped(v)); reloadRole(); }, { onUndo: () => saveCapacity(coach, hoursAWeek).then(reloadRole).catch(() => {}) })}
+      />
+      <p className="cc-note">Each day has its own hours. Today uses them to say when a day is over-full.</p>
     </>
   );
 }
@@ -662,7 +665,9 @@ function ActivityLog() {
 // ---------------------------------------------------------------- Look
 function Look() {
   const { choice, setChoice } = useColourMode();
+  const help = useHiddenHelp();
   return (
+    <>
     <SettingRow
       label="Look"
       value={choice}
@@ -670,6 +675,10 @@ function Look() {
       editor={({ value, setValue }) => <InlineChoice ariaLabel="Look" options={LOOKS} value={value} onChange={setValue} form="pills" />}
       onSave={async (v) => { setChoice(v); }}
     />
+    <Line title="Hidden help" small={help.count === 0 ? 'Nothing is hidden.' : help.count === 1 ? '1 explanation is hidden.' : `${help.count} explanations are hidden.`}>
+      {help.count > 0 && <Button variant="text" onClick={help.showAll}>Show it again</Button>}
+    </Line>
+    </>
   );
 }
 

@@ -1,0 +1,672 @@
+// The coaching day's rules (Phase 6a run 2; mock-up M11, seq 77): the
+// coach's own to-dos, Today, the brief, after a call and sessions left.
+// Pure functions only, as model.js: nothing here reads the database, the
+// device or the clock by itself, so every rule is a unit test
+// (tests/performance/coach-day.test.mjs).
+import { addDays, clean, dayWords, firstName, fromDayKey, minutesWords, possessive, sessionsLeft, timeCredit, toDayKey } from './model.js';
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+export const WEEK_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+const daysBetween = (a, b) => Math.round((fromDayKey(b) - fromDayKey(a)) / 86400000);
+const p2 = (n) => String(n).padStart(2, '0');
+/** "10:00" from a saved time ("10:00:00"). */
+export const timeWords = (time) => (/^\d{2}:\d{2}/.test(String(time || '')) ? String(time).slice(0, 5) : '');
+
+// ---------------------------------------------------------------- how long a to-do takes
+
+export const ESTIMATES = [15, 30, 60, 120];
+/** Other: 45 minutes to 8 hours in 15-minute steps (3 hours is suggested first). */
+export const OTHER_ESTIMATES = Array.from({ length: (480 - 45) / 15 + 1 }, (_, i) => 45 + i * 15).filter((m) => !ESTIMATES.includes(m));
+export const OTHER_SUGGESTED = 180;
+export const estimateOk = (m) => m == null || (Number.isInteger(m) && m >= 15 && m <= 480 && m % 15 === 0);
+/** "15 min", "1 h", "1 h 30 min". Empty for none. */
+export const estimateWords = (m) => (m ? minutesWords(m, true) : '');
+
+// ---------------------------------------------------------------- where a to-do shows
+
+/** 'done', 'today' (planned for today or carried over), 'upcoming' or 'someday' (no day yet). */
+export function todoSection(todo, todayKey) {
+  if (todo.done_at) return 'done';
+  if (!todo.planned_on) return 'someday';
+  return todo.planned_on <= todayKey ? 'today' : 'upcoming';
+}
+
+/** "From yesterday" or "From Fri 13 Nov" for a to-do carried over (never "overdue"); empty otherwise. */
+export function carriedWords(todo, todayKey) {
+  const from = todo.first_planned_on && todo.first_planned_on < (todo.planned_on || todayKey) ? todo.first_planned_on : todo.planned_on;
+  if (!from || from >= todayKey || todo.done_at) return '';
+  return from === addDays(todayKey, -1) ? 'From yesterday' : `From ${dayWords(from, todayKey)}`;
+}
+
+/** "Today", "Tomorrow" (single words), otherwise "Planned for Wed 18 Nov, 10:00". Empty for no day. */
+export function plannedWords(todo, todayKey) {
+  if (!todo.planned_on) return '';
+  const time = timeWords(todo.planned_time);
+  if (todo.planned_on === todayKey) return 'Today';
+  if (todo.planned_on === addDays(todayKey, 1)) return 'Tomorrow';
+  return `Planned for ${dayWords(todo.planned_on, todayKey)}${time ? `, ${time}` : ''}`;
+}
+
+/** "Due Fri" inside the next week, "Due today", otherwise "Due Fri 27 Nov". Empty for no deadline. */
+export function dueWords(todo, todayKey) {
+  if (!todo.due_on || !fromDayKey(todo.due_on)) return '';
+  const gap = daysBetween(todayKey, todo.due_on);
+  if (gap === 0) return 'Due today';
+  if (gap === 1) return 'Due tomorrow';
+  if (gap > 1 && gap < 7) return `Due ${SHORT_DAYS[fromDayKey(todo.due_on).getDay()]}`;
+  return `Due ${dayWords(todo.due_on, todayKey)}`;
+}
+
+/** "2 of 3" for a checklist with items; empty otherwise. */
+export function checklistWords(todo) {
+  const list = Array.isArray(todo.checklist) ? todo.checklist : [];
+  return list.length ? `${list.filter((i) => i.done).length} of ${list.length}` : '';
+}
+
+/**
+ * The quiet facts under a to-do's title, in M11's order: when (not on
+ * Today's own list, where it is understood), the deadline, its list or
+ * client, its checklist, "From email".
+ * @param {{ lists?: object[], clients?: object[], view?: 'today'|'upcoming'|'someday'|'list' }} ctx
+ */
+export function todoFacts(todo, ctx = {}, todayKey) {
+  const out = [];
+  const carried = carriedWords(todo, todayKey);
+  if (carried) out.push(carried);
+  else if (ctx.view === 'list' || ctx.view === 'upcoming' || ctx.view === 'plan') { const w = plannedWords(todo, todayKey); if (w) out.push(w); }
+  else if (ctx.view === 'today' && timeWords(todo.planned_time)) out.push(timeWords(todo.planned_time));
+  const due = dueWords(todo, todayKey);
+  if (due) out.push(due);
+  const list = (ctx.lists || []).find((l) => l.id === todo.list_id);
+  const client = (ctx.clients || []).find((c) => c.id === todo.profile_id);
+  if (list && ctx.view !== 'list') out.push(list.name);
+  else if (client) out.push(client.name);
+  const chk = checklistWords(todo);
+  if (chk) out.push(chk);
+  if (todo.repeat_rule) out.push(repeatWords(todo.repeat_rule, todo.planned_on));
+  if (todo.from_email_sender) out.push('From email');
+  return out;
+}
+
+const byOrder = (a, b) => (Number(Boolean(b.important)) - Number(Boolean(a.important))) || ((a.position || 0) - (b.position || 0)) || String(a.created_at || '').localeCompare(String(b.created_at || ''));
+/** Important first, then the coach's own order. */
+export const sortTodos = (todos) => [...todos].sort(byOrder);
+
+/** Today's list: the working day's to-dos, then After work. */
+export function todayTodos(todos, todayKey) {
+  const today = sortTodos((todos || []).filter((t) => todoSection(t, todayKey) === 'today'));
+  return { work: today.filter((t) => !t.after_work), afterWork: today.filter((t) => t.after_work) };
+}
+
+/** Upcoming, grouped by day: "Tomorrow", then "Thu 19 Nov"… */
+export function upcomingGroups(todos, todayKey) {
+  const groups = new Map();
+  for (const t of (todos || []).filter((x) => todoSection(x, todayKey) === 'upcoming')) {
+    if (!groups.has(t.planned_on)) groups.set(t.planned_on, []);
+    groups.get(t.planned_on).push(t);
+  }
+  return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([day, items]) => ({
+    day, label: day === addDays(todayKey, 1) ? 'Tomorrow' : dayWords(day, todayKey),
+    items: [...items].sort((a, b) => String(a.planned_time || '99').localeCompare(String(b.planned_time || '99')) || byOrder(a, b)),
+  }));
+}
+
+export const somedayTodos = (todos, todayKey) => sortTodos((todos || []).filter((t) => todoSection(t, todayKey) === 'someday'));
+
+/** Done this week (since its Monday), newest first. */
+export function doneThisWeek(todos, todayKey) {
+  const from = weekStart(todayKey);
+  return (todos || []).filter((t) => t.done_at && toDayKey(new Date(t.done_at)) >= from).sort((a, b) => String(b.done_at).localeCompare(String(a.done_at)));
+}
+
+/** A position that sorts between two neighbours (either may be missing). */
+export function positionBetween(before, after) {
+  if (before == null && after == null) return 1000;
+  if (before == null) return after - 1000;
+  if (after == null) return before + 1000;
+  return (before + after) / 2;
+}
+
+/** A to-do moved to a day: it keeps the day it was first planned for, and loses its old time. */
+export function moveToDay(todo, dayKey) {
+  return { ...todo, planned_on: dayKey, planned_time: null, someday: false, first_planned_on: todo.first_planned_on || todo.planned_on || null };
+}
+
+/** A to-do with no day: Someday. */
+export const moveToSomeday = (todo) => ({ ...todo, planned_on: null, planned_time: null, someday: true, first_planned_on: null });
+
+// ---------------------------------------------------------------- repeats (a rule, never a list of dates)
+
+export const REPEATS = [
+  { value: 'never', label: 'Never', rule: null },
+  { value: 'day', label: 'Every day', rule: { every: 'day' } },
+  { value: 'weekday', label: 'Every weekday', rule: { every: 'weekday' } },
+  { value: 'week', label: 'Every week', rule: { every: 'week' } },
+  { value: 'week2', label: 'Every 2 weeks', rule: { every: 'week', interval: 2 } },
+  { value: 'month', label: 'Every month', rule: { every: 'month' } },
+  { value: 'year', label: 'Every year', rule: { every: 'year' } },
+];
+
+export function repeatValue(rule) {
+  if (!rule || !rule.every) return 'never';
+  if (rule.every === 'week' && Number(rule.interval) === 2) return 'week2';
+  return REPEATS.some((r) => r.value === rule.every) ? rule.every : 'never';
+}
+
+/** "Every Thursday", "Every 2 weeks", "Every weekday", "Every month". */
+export function repeatWords(rule, plannedOn) {
+  if (!rule || !rule.every) return '';
+  const n = Number(rule.interval) || 1;
+  const d = fromDayKey(plannedOn);
+  if (rule.every === 'day') return n > 1 ? `Every ${n} days` : 'Every day';
+  if (rule.every === 'weekday') return 'Every weekday';
+  if (rule.every === 'week') return n > 1 ? `Every ${n} weeks` : (d ? `Every ${DAY_NAMES[d.getDay()]}` : 'Every week');
+  if (rule.every === 'month') return n > 1 ? `Every ${n} months` : 'Every month';
+  return 'Every year';
+}
+
+function stepRepeat(rule, key) {
+  const n = Math.max(1, Number(rule.interval) || 1);
+  const d = fromDayKey(key);
+  if (!d) return null;
+  if (rule.every === 'day') return addDays(key, n);
+  if (rule.every === 'weekday') {
+    let next = addDays(key, 1);
+    while ([0, 6].includes(fromDayKey(next).getDay())) next = addDays(next, 1);
+    return next;
+  }
+  if (rule.every === 'week') return addDays(key, 7 * n);
+  // A month or a year on: the same date, or the month's last day where it has no such date (31 Jan, then 28 Feb).
+  const months = rule.every === 'month' ? n : 12 * n;
+  const y = d.getFullYear() + Math.floor((d.getMonth() + months) / 12);
+  const m = (d.getMonth() + months) % 12;
+  const last = new Date(y, m + 1, 0).getDate();
+  return toDayKey(new Date(y, m, Math.min(d.getDate(), last), 12));
+}
+
+/**
+ * The next day a repeating to-do comes round: after the day it was planned
+ * for and after today, so one ticked late never comes back in the past.
+ * Null when the rule has stopped (its "until" has passed) or there is none.
+ */
+export function nextRepeat(rule, plannedOn, todayKey) {
+  if (!rule || !rule.every) return null;
+  const base = plannedOn || todayKey;
+  let next = base;
+  // A monthly rule keeps its own day of the month (31 Jan, 28 Feb, 31 Mar): each step starts from the first day.
+  let steps = 0;
+  do {
+    steps += 1;
+    next = rule.every === 'month' || rule.every === 'year' ? stepRepeat({ ...rule, interval: (Number(rule.interval) || 1) * steps }, base) : stepRepeat(rule, next);
+    if (!next || steps > 5000) return null;
+  } while (next <= todayKey);
+  if (rule.until && next > rule.until) return null;
+  return next;
+}
+
+/**
+ * Ticking a to-do. A repeating one makes the next (a new row, with its
+ * checklist unticked); otherwise just the tick.
+ * @returns {{ done: object, next: object|null }}
+ */
+export function completeTodo(todo, nowIso, todayKey, newId) {
+  const done = { ...todo, done_at: nowIso };
+  const day = nextRepeat(todo.repeat_rule, todo.planned_on, todayKey);
+  if (!day) return { done, next: null };
+  const next = {
+    ...todo, id: newId, done_at: null, planned_on: day, first_planned_on: null, repeat_of: todo.id,
+    checklist: (todo.checklist || []).map((i) => ({ ...i, done: false })), created_at: nowIso, updated_at: nowIso,
+  };
+  return { done: { ...done, repeat_rule: null }, next };
+}
+
+// ---------------------------------------------------------------- the quick add
+
+const WORD_DAYS = { sunday: 0, sun: 0, monday: 1, mon: 1, tuesday: 2, tue: 2, tues: 2, wednesday: 3, wed: 3, thursday: 4, thu: 4, thurs: 4, friday: 5, fri: 5, saturday: 6, sat: 6 };
+const nextWeekday = (todayKey, dow) => { let k = addDays(todayKey, 1); while (fromDayKey(k).getDay() !== dow) k = addDays(k, 1); return k; };
+const sameName = (a, b) => clean(a).toLowerCase() === clean(b).toLowerCase();
+
+/**
+ * What was typed into "What needs doing?", read in plain words:
+ * "Send the renewal pack to Dana tomorrow 10:00 30m #Kestrel renewal @Email !"
+ * A day (today, tomorrow, a weekday), a time (10:00), an estimate (30m, 1h,
+ * 1h30), "every Monday" and friends, "someday", "after work", # a list or
+ * client, @ a tag, ! important. What isn't recognised stays in the title.
+ * @param {{ todayKey: string, lists?: object[], tags?: object[], clients?: object[] }} ctx
+ */
+export function parseQuickAdd(text, { todayKey, lists = [], tags = [], clients = [] } = {}) {
+  let rest = ` ${String(text || '').replace(/\s+/g, ' ')} `;
+  const out = { title: '', planned_on: null, planned_time: null, minutes: null, important: false, list_id: null, new_list: null, profile_id: null, tag_ids: [], new_tags: [], repeat_rule: null, someday: false, after_work: false };
+  const take = (re, fn) => { rest = rest.replace(re, (...m) => { const keep = fn(...m); return keep === false ? m[0] : ' '; }); };
+
+  take(/\s!(?=\s)|\s!important(?=\s)/gi, () => { out.important = true; });
+  // # a list or a client: the longest name that matches wins ("#Kestrel renewal").
+  take(/\s#([^#@!]+?)(?=\s[#@!]|\s+$)/g, (_m, raw) => {
+    const words = clean(raw).split(' ');
+    for (let n = words.length; n > 0; n -= 1) {
+      const name = words.slice(0, n).join(' ');
+      const list = lists.find((l) => sameName(l.name, name) && !l.finished_at);
+      const client = clients.find((c) => sameName(c.name, name) || (n === 1 && sameName(firstName(c.name), name)));
+      if (list || client) {
+        if (list) out.list_id = list.id; else out.profile_id = client.id;
+        rest = `${rest} ${words.slice(n).join(' ')} `;
+        return true;
+      }
+    }
+    out.new_list = clean(raw).slice(0, 80);
+    return true;
+  });
+  take(/\s@([^\s#@!]+)/g, (_m, raw) => {
+    const tag = tags.find((t) => sameName(t.name, raw));
+    if (tag) out.tag_ids.push(tag.id); else out.new_tags.push(clean(raw).slice(0, 40));
+  });
+  take(/\severy (day|weekday|week|month|year|other week|2 weeks|sunday|monday|tuesday|wednesday|thursday|friday|saturday)(?=\s)/gi, (_m, w) => {
+    const word = w.toLowerCase();
+    if (word in WORD_DAYS) { out.repeat_rule = { every: 'week' }; out.planned_on = fromDayKey(todayKey).getDay() === WORD_DAYS[word] ? todayKey : nextWeekday(todayKey, WORD_DAYS[word]); } else if (word === 'other week' || word === '2 weeks') out.repeat_rule = { every: 'week', interval: 2 };
+    else out.repeat_rule = { every: word };
+  });
+  take(/\safter work(?=\s)/gi, () => { out.after_work = true; });
+  take(/\ssomeday(?=\s)/gi, () => { out.someday = true; });
+  take(/\s(today|tomorrow)(?=\s)/gi, (_m, w) => { out.planned_on = w.toLowerCase() === 'today' ? todayKey : addDays(todayKey, 1); });
+  take(/\s(?:on |next )?(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tues?|wed|thurs?|fri|sat)(?=\s)/gi, (_m, w) => {
+    if (out.planned_on) return false;
+    out.planned_on = nextWeekday(todayKey, WORD_DAYS[w.toLowerCase()]);
+    return true;
+  });
+  take(/\s(?:at )?([01]?\d|2[0-3])[:.]([0-5]\d)(?=\s)/g, (_m, h, m) => { out.planned_time = `${p2(h)}:${m}`; });
+  take(/\s(\d{1,2})\s?h(?:(?:ours?|rs?)?\s?([0-5]?\d)\s?m(?:in(?:s|utes)?)?)?(?=\s)|\s(\d{1,3})\s?m(?:in(?:s|utes)?)?(?=\s)/gi, (_m, h, hm, m) => {
+    const mins = h != null ? Number(h) * 60 + (Number(hm) || 0) : Number(m);
+    if (!estimateOk(mins)) return false;
+    out.minutes = mins;
+    return true;
+  });
+
+  if (out.someday) { out.planned_on = null; out.planned_time = null; } else if (!out.planned_on && (out.planned_time || out.repeat_rule || out.after_work)) out.planned_on = todayKey;
+  if (!out.planned_on) { out.someday = true; out.planned_time = null; }
+  const title = clean(rest);
+  out.title = (title ? title[0].toUpperCase() + title.slice(1) : '').slice(0, 300);
+  return out;
+}
+
+/** The chips under the quick add, saying how it was read: "Tomorrow", "at 10:00", the list, tags, "Important", "30 min". */
+export function quickAddChips(parsed, { todayKey, lists = [], tags = [], clients = [] } = {}) {
+  if (!parsed || !parsed.title) return [];
+  const chips = [];
+  if (parsed.after_work) chips.push('After work, today');
+  else if (parsed.someday || !parsed.planned_on) chips.push('Someday');
+  else if (parsed.planned_on === todayKey) chips.push('Today');
+  else if (parsed.planned_on === addDays(todayKey, 1)) chips.push('Tomorrow');
+  else chips.push(dayWords(parsed.planned_on, todayKey));
+  if (parsed.planned_time) chips.push(`at ${parsed.planned_time}`);
+  if (parsed.repeat_rule) chips.push(repeatWords(parsed.repeat_rule, parsed.planned_on));
+  const list = lists.find((l) => l.id === parsed.list_id);
+  if (list) chips.push(list.name);
+  if (parsed.new_list) chips.push(`New list: ${parsed.new_list}`);
+  const client = clients.find((c) => c.id === parsed.profile_id);
+  if (client) chips.push(client.name);
+  for (const id of parsed.tag_ids) { const t = tags.find((x) => x.id === id); if (t) chips.push(t.name); }
+  for (const name of parsed.new_tags) chips.push(`New tag: ${name}`);
+  if (parsed.important) chips.push('Important');
+  if (parsed.minutes) chips.push(estimateWords(parsed.minutes));
+  return chips;
+}
+
+/** Where a new to-do went, for its toast: "Added to Today.", "Added to Thu 19 Nov." */
+export function addedWords(parsed, todayKey) {
+  if (parsed.after_work) return 'Added to After work.';
+  if (!parsed.planned_on) return 'Added to Someday.';
+  if (parsed.planned_on === todayKey) return 'Added to Today.';
+  if (parsed.planned_on === addDays(todayKey, 1)) return 'Added to Tomorrow.';
+  return `Added to ${dayWords(parsed.planned_on, todayKey)}.`;
+}
+
+// ---------------------------------------------------------------- the working day, and a day that is over-full
+
+const DEFAULT_HOURS = { mon: { from: '09:00', to: '17:00' }, tue: { from: '09:00', to: '17:00' }, wed: { from: '09:00', to: '17:00' }, thu: { from: '09:00', to: '17:00' }, fri: { from: '09:00', to: '17:00' } };
+const clockMinutes = (hhmm) => { const m = /^(\d{1,2}):(\d{2})/.exec(String(hhmm || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+
+/** The coach's working day on a day: { from, to, minutes }, or null for a day off. */
+export function workingDay(settings, dayKey) {
+  const d = fromDayKey(dayKey);
+  if (!d) return null;
+  const own = settings?.working_hours && Object.keys(settings.working_hours).length ? settings.working_hours : DEFAULT_HOURS;
+  const h = own[WEEK_KEYS[d.getDay()]];
+  const a = clockMinutes(h?.from);
+  const b = clockMinutes(h?.to);
+  if (a == null || b == null || b <= a) return null;
+  return { from: h.from, to: h.to, minutes: b - a };
+}
+
+/** The sessions on a day that are still to happen or went ahead (a moved, cancelled or missed one takes no time). */
+export function callsOn(sessions, dayKey) {
+  return (sessions || []).filter((s) => toDayKey(new Date(s.starts_at)) === dayKey && (!s.outcome || s.outcome === 'held'))
+    .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+}
+
+/**
+ * How full a day is: the calls booked, the to-dos from their time
+ * estimates (After work and done ones left out), and the working day.
+ * `over` is the minutes it runs past the working day, 0 when it fits.
+ */
+export function dayLoad({ sessions = [], todos = [], settings = null, dayKey }) {
+  const calls = callsOn(sessions, dayKey);
+  const callMinutes = calls.reduce((n, s) => n + (Number(s.minutes) || 0), 0);
+  const work = todayTodos(todos, dayKey).work;
+  const todoMinutes = work.reduce((n, t) => n + (Number(t.minutes) || 0), 0);
+  const day = workingDay(settings, dayKey);
+  const dayMinutes = day ? day.minutes : 0;
+  return { calls: calls.length, callMinutes, todoMinutes, day, dayMinutes, over: day ? Math.max(0, callMinutes + todoMinutes - dayMinutes) : 0 };
+}
+
+/** "45 minutes over", "1 hour 15 minutes over": the words that are the link in "Today is 45 minutes over." */
+export const overWords = (minutes) => `${minutesWords(minutes)} over`;
+
+/**
+ * Choose what to move: enough of today's to-dos to fit the day, taken from
+ * the bottom of the list up, never an Important one and never one with no
+ * estimate (moving it frees nothing).
+ * @returns {string[]} the ids suggested, in the list's order
+ */
+export function suggestMoves(workTodos, over) {
+  if (!(over > 0)) return [];
+  const picked = [];
+  let freed = 0;
+  for (let i = workTodos.length - 1; i >= 0 && freed < over; i -= 1) {
+    const t = workTodos[i];
+    if (t.important || !(Number(t.minutes) > 0)) continue;
+    picked.push(t.id);
+    freed += Number(t.minutes);
+  }
+  const ids = new Set(picked);
+  return workTodos.filter((t) => ids.has(t.id)).map((t) => t.id);
+}
+
+/** As boxes are ticked: what is still over, the line that says so and the button's words. */
+export function moveState(workTodos, tickedIds, over) {
+  const ids = new Set(tickedIds);
+  const freed = workTodos.filter((t) => ids.has(t.id)).reduce((n, t) => n + (Number(t.minutes) || 0), 0);
+  const still = Math.max(0, over - freed);
+  return {
+    still,
+    line: still > 0 ? `Still ${minutesWords(still, true)} over.` : 'That fits your day.',
+    button: `Move ${ids.size} to tomorrow`,
+    count: ids.size,
+  };
+}
+
+// ---------------------------------------------------------------- the week and capacity
+
+/** The Monday of a day's week. */
+export function weekStart(dayKey) {
+  const d = fromDayKey(dayKey);
+  if (!d) return null;
+  return addDays(dayKey, -((d.getDay() + 6) % 7));
+}
+
+const hoursWords = (minutes) => { const h = Math.round((minutes / 60) * 10) / 10; return Number.isInteger(h) ? String(h) : h.toFixed(1); };
+
+/**
+ * Capacity: this week's coaching hours (sessions that went ahead or are
+ * still to come) against the coach's target. A week over reads "17 of 15"
+ * with a small "2 over"; its bar is full, in soft coral, never mint.
+ */
+export function capacity(sessions, target, todayKey) {
+  const from = weekStart(todayKey);
+  const to = addDays(from, 6);
+  const mine = (sessions || []).filter((s) => { const k = toDayKey(new Date(s.starts_at)); return k >= from && k <= to && (!s.outcome || s.outcome === 'held'); });
+  const minutes = mine.reduce((n, s) => n + (Number(s.minutes) || 0), 0);
+  const goal = Number(target) > 0 ? Number(target) : 15;
+  const overMinutes = Math.max(0, minutes - goal * 60);
+  return {
+    minutes, calls: mine.length, target: goal,
+    words: `${hoursWords(minutes)} of ${hoursWords(goal * 60)}`,
+    over: overMinutes > 0,
+    overWords: overMinutes > 0 ? `${hoursWords(overMinutes)} over` : '',
+    percent: Math.min(100, Math.round((minutes / (goal * 60)) * 100)),
+    spoken: `${hoursWords(minutes)} of ${hoursWords(goal * 60)} coaching hours this week${overMinutes > 0 ? `, ${hoursWords(overMinutes)} over` : ''}`,
+  };
+}
+
+/** What a typed capacity must be: whole or half hours from 1 to 80. Returns the number, or null. */
+export function capacityFromTyped(typed) {
+  const n = Number(clean(typed).replace(/\s*hours?$/i, ''));
+  return Number.isFinite(n) && n >= 1 && n <= 80 && Number.isInteger(n * 2) ? n : null;
+}
+
+export const ENERGY = [
+  { value: 'poor', label: 'Poor' }, { value: 'fair', label: 'Fair' }, { value: 'good', label: 'Good' },
+  { value: 'very_good', label: 'Very good' }, { value: 'excellent', label: 'Excellent' },
+];
+export const energyWord = (value) => ENERGY.find((e) => e.value === value)?.label || '';
+
+/**
+ * Today's one offer row (never two at once): Close the day in the evening
+ * (from the working day's end, or 17:00); on a Friday afternoon Rate my
+ * energy until it is rated, then the Weekly review until it is done; in the
+ * morning Plan my day until it is planned. Null when there is none, or it
+ * was put off with Not now (kept for the visit by the page).
+ * @param {{ now: Date, todayKey: string, day?: object, week?: object, settings?: object, putOff?: string[] }} a
+ */
+export function todayOffer({ now, todayKey, day = null, week = null, settings = null, putOff = [] }) {
+  const mins = now.getHours() * 60 + now.getMinutes();
+  const hours = workingDay(settings, todayKey);
+  const evening = Math.max(clockMinutes(hours?.to) ?? 17 * 60, 16 * 60);
+  const friday = fromDayKey(todayKey)?.getDay() === 5;
+  const off = new Set(putOff);
+  const planned = Boolean(day?.planned_at);
+  if (mins >= evening) return !day?.closed_at && !off.has('close') ? 'close' : null;
+  if (friday && mins >= 12 * 60 && !week?.energy && !off.has('energy')) return 'energy';
+  if (friday && !week?.reviewed_at && (planned || day?.plan_skipped || mins >= 12 * 60) && !off.has('review')) return 'review';
+  if (!planned && !day?.plan_skipped && !off.has('plan')) return 'plan';
+  if (friday && !week?.reviewed_at && !off.has('review')) return 'review';
+  return null;
+}
+
+export const OFFERS = {
+  plan: { title: 'Plan my day', time: '~3 minutes' },
+  close: { title: 'Close the day', time: '~2 minutes' },
+  review: { title: 'Weekly review', time: '~3 minutes' },
+  energy: { title: 'Rate my energy', time: '~30 seconds' },
+};
+
+// ---------------------------------------------------------------- sessions
+
+export const OUTCOMES = [
+  { value: 'held', label: 'It went ahead' },
+  { value: 'late_cancel', label: 'Cancelled with under 24 hours’ notice' },
+  { value: 'no_show', label: 'No-show' },
+  { value: 'moved', label: 'Moved' },
+];
+export const SESSION_LENGTHS = [30, 60, 90];
+export const SESSION_KINDS = { coaching: 'Coaching session', group: 'Group session', three_way: 'Three-way meeting', review: 'Review', chemistry: 'Chemistry Call', other: 'Session' };
+
+/** Does a session count as one of the engagement's? (The database decides the same way: 050's session_counts.) */
+export const sessionCounts = (s) => Boolean(s) && (s.outcome === 'held' || s.outcome === 'no_show' || (s.outcome === 'late_cancel' && !s.waived));
+
+/** Was a cancellation late: under 24 hours before the session's start? */
+export function isLateCancellation(startsAt, cancelledAt) {
+  const gap = new Date(startsAt).getTime() - new Date(cancelledAt).getTime();
+  return Number.isFinite(gap) && gap < 24 * 60 * 60 * 1000;
+}
+
+/** The one line under "What happened?" for anything but a session that went ahead. */
+export function outcomeLine(outcome, name, waived = false) {
+  const first = firstName(name) || 'the client';
+  if (outcome === 'late_cancel') return waived ? 'Waived. It no longer counts as used.' : `It counts as one of ${possessive(first)} sessions.`;
+  if (outcome === 'no_show') return 'It counts as used, and only you see it.';
+  if (outcome === 'moved') return 'It doesn’t count as used.';
+  return '';
+}
+
+/**
+ * An engagement with its count as it stands on this device: the sessions
+ * held before sessions were recorded one by one, plus every recorded one
+ * that counts (its own, and a group session's own-engagement members). The
+ * database keeps sessions_held the same way once 050 is there.
+ */
+export function withSessions(engagement, sessions = [], people = []) {
+  if (!engagement) return engagement;
+  const counted = sessions.filter((s) => s.engagement_id === engagement.id && sessionCounts(s)).length
+    + people.filter((sp) => sp.engagement_id === engagement.id && sessionCounts(sessions.find((s) => s.id === sp.session_id))).length;
+  // Before 050 (or before its row has come back) there is no base: the count kept so far is it.
+  const known = engagement.sessions_held_base != null;
+  const base = known ? Number(engagement.sessions_held_base) : (Number(engagement.sessions_held) || 0);
+  return { ...engagement, sessions_held: Math.max(0, base + counted), sessions_recorded: counted, sessions_held_base: base };
+}
+
+/** A count the coach types: the base moves so the total is what they typed. */
+export const withHeldTyped = (engagement, typed, recorded = 0) => ({ ...engagement, sessions_held: Math.max(0, typed), sessions_held_base: Math.max(0, typed) - recorded });
+
+/** "2 sessions left", "1 session left", "No sessions left"; empty when it isn't counted in sessions. */
+export function leftWords(engagement, packs) {
+  const s = sessionsLeft(engagement, packs);
+  if (!s) return '';
+  return s.left === 0 ? 'No sessions left' : `${s.left} ${s.left === 1 ? 'session' : 'sessions'} left`;
+}
+
+const ended = (s) => new Date(s.starts_at).getTime() + (Number(s.minutes) || 0) * 60000;
+
+/** A session's row on the client's page: its name, its quiet facts and its day. */
+export function sessionRow(session, todayKey) {
+  const day = dayWords(toDayKey(new Date(session.starts_at)), todayKey);
+  const mins = `${session.minutes} minutes`;
+  if (session.outcome === 'late_cancel') return { title: 'Late cancellation', facts: [session.waived ? 'Waived' : 'Counts as used'], when: day };
+  if (session.outcome === 'no_show') return { title: 'No-show', facts: ['Counts as used'], when: day };
+  if (session.outcome === 'moved') return { title: 'Moved', facts: session.moved_to ? [`To ${dayWords(toDayKey(new Date(session.moved_to)), todayKey)}`] : [], when: day };
+  const title = SESSION_KINDS[session.kind] || SESSION_KINDS.coaching;
+  if (!session.outcome) return { title, facts: [mins], when: day };
+  return { title, facts: [mins, session.recap_sent_at ? 'Recap sent' : (clean(session.recap) ? 'Recap to send' : 'No recap yet')], when: day };
+}
+
+/** Sessions that have ended and haven't been written up, oldest first. */
+export const toWriteUp = (sessions, now) => (sessions || []).filter((s) => !s.outcome && ended(s) <= new Date(now).getTime()).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+
+export const RECAP_NUDGE_HOURS = 24;
+/** Recaps still unsent 24 hours after a call that went ahead (the quiet line on Today), oldest first. */
+export function recapNudges(sessions, now) {
+  const limit = new Date(now).getTime() - RECAP_NUDGE_HOURS * 60 * 60 * 1000;
+  return (sessions || []).filter((s) => s.outcome === 'held' && !s.recap_sent_at && ended(s) <= limit).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+}
+
+/** The last session with someone that happened before a moment, and the next one after it. */
+export function lastSession(sessions, match, before) {
+  const t = new Date(before).getTime();
+  return (sessions || []).filter((s) => match(s) && s.outcome === 'held' && new Date(s.starts_at).getTime() < t).sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at))[0] || null;
+}
+export function nextSession(sessions, match, after) {
+  const t = new Date(after).getTime();
+  return (sessions || []).filter((s) => match(s) && !s.outcome && ended(s) > t).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))[0] || null;
+}
+
+/** "Today, 12:30", "Tomorrow, 09:00", "Thu 19 Nov, 16:00" on the device's own clock. */
+export function whenWords(at, todayKey) {
+  const d = new Date(at);
+  if (Number.isNaN(d.getTime())) return '';
+  const key = toDayKey(d);
+  const time = `${p2(d.getHours())}:${p2(d.getMinutes())}`;
+  if (key === todayKey) return `Today, ${time}`;
+  if (key === addDays(todayKey, 1)) return `Tomorrow, ${time}`;
+  return `${dayWords(key, todayKey)}, ${time}`;
+}
+export const clockTime = (at) => { const d = new Date(at); return Number.isNaN(d.getTime()) ? '' : `${p2(d.getHours())}:${p2(d.getMinutes())}`; };
+
+// ---------------------------------------------------------------- the brief
+
+/**
+ * Since last time: the average performance score of the weeks that ended
+ * since the last session (the last 4 weeks for a first session).
+ * @param {{ week_end: string, score: number|null }[]} weekScores what the client shares
+ * @returns {{ label: string, value: string|null, none: string }} value is "81%", or null with `none` to say instead
+ */
+export function averageSince(weekScores, lastSessionAt, todayKey) {
+  const since = lastSessionAt ? toDayKey(new Date(lastSessionAt)) : addDays(todayKey, -28);
+  const rows = (weekScores || []).filter((w) => w.score != null && w.week_end > since && w.week_end <= todayKey);
+  const label = lastSessionAt ? `Average performance score since ${dayWords(since, todayKey)}` : 'Average performance score over the last 4 weeks';
+  if (!rows.length) return { label, value: null, none: lastSessionAt ? `No check-ins since ${dayWords(since, todayKey)}.` : 'No check-ins in the last 4 weeks.' };
+  const avg = rows.reduce((n, w) => n + Number(w.score), 0) / rows.length;
+  return { label, value: `${Math.round(avg)}%`, none: '' };
+}
+
+/** "Sam added this on Sun 15 Nov." */
+export const prepLine = (name, notedAt, todayKey) => `${firstName(name)} added this on ${dayWords(toDayKey(new Date(notedAt)), todayKey)}.`;
+
+// ---------------------------------------------------------------- who needs attention (coaching facts only)
+
+/**
+ * Who needs attention: coaching facts only, never flags from portal use.
+ * A session to write up, a recap to send, 2 sessions or fewer left (with
+ * Offer a renewal), time credit running low, and no next session booked.
+ * @returns {{ key: string, profileId: string, name: string, line: string, action: string, to: string }[]}
+ */
+export function attentionRows({ clients = [], engagements = [], packs = [], entries = [], sessions = [], people = [], now, todayKey }) {
+  const rows = [];
+  const t = new Date(now).getTime();
+  for (const c of clients.filter((p) => p.status !== 'past' && !p.merged_into)) {
+    const mine = sessions.filter((s) => s.profile_id === c.id);
+    const first = firstName(c.name);
+    const waiting = toWriteUp(mine, now)[0];
+    if (waiting) {
+      const day = toDayKey(new Date(waiting.starts_at));
+      rows.push({ key: `w:${waiting.id}`, profileId: c.id, name: c.name, line: `${day === todayKey ? 'Today’s' : day === addDays(todayKey, -1) ? 'Yesterday’s' : `${possessive(dayWords(day, todayKey))}`} session is ready to write up.`, action: 'Write it up', to: `/coach/sessions/${waiting.id}` });
+    }
+    const unsent = mine.filter((s) => s.outcome === 'held' && !s.recap_sent_at && clean(s.recap)).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))[0];
+    if (unsent && unsent !== waiting) {
+      const day = toDayKey(new Date(unsent.starts_at));
+      rows.push({ key: `r:${unsent.id}`, profileId: c.id, name: c.name, line: `${day === addDays(todayKey, -1) ? 'Yesterday’s' : possessive(dayWords(day, todayKey))} recap is ready to check.`, action: 'Check the recap', to: `/coach/sessions/${unsent.id}` });
+    }
+    const raw = engagements.find((e) => e.profile_id === c.id && e.status !== 'ended');
+    const engagement = withSessions(raw, sessions, people);
+    const left = sessionsLeft(engagement, packs);
+    if (left && left.total > 0 && left.left <= 2 && left.held > 0) {
+      rows.push({ key: `l:${c.id}`, profileId: c.id, name: c.name, line: `${leftWords(engagement, packs)}.`.replace(/^(\d+ sessions? left)\.$/, `${first} has $1.`).replace(/^No sessions left\.$/, `${first} has no sessions left.`), short: leftWords(engagement, packs), action: 'Offer a renewal', to: `/coach/renewals/${c.id}`, later: true });
+    }
+    const credit = timeCredit(raw, packs, entries, now);
+    if (credit && credit.total > 0 && credit.left <= 180) {
+      rows.push({ key: `c:${c.id}`, profileId: c.id, name: c.name, line: `${minutesWords(credit.left)} of time credit ${credit.left === 60 || credit.left === 1 ? 'is' : 'are'} left.`, action: `Open ${possessive(first)} page`, to: `/coach/clients/${c.id}` });
+    }
+    const held = mine.some((s) => s.outcome === 'held');
+    const upcoming = mine.some((s) => !s.outcome && new Date(s.starts_at).getTime() > t);
+    if (held && !upcoming && left && left.left > 0 && !waiting) {
+      rows.push({ key: `n:${c.id}`, profileId: c.id, name: c.name, line: 'No next session is booked.', action: `Open ${possessive(first)} page`, to: `/coach/clients/${c.id}` });
+    }
+  }
+  return rows;
+}
+
+/** The first 4, then "Show all 9". */
+export const ATTENTION_FIRST = 4;
+
+// ---------------------------------------------------------------- the day's and the week's summaries
+
+/** Close the day, step 1: "4 calls held, 3 recaps sent." */
+export function dayDone({ sessions = [], todos = [], todayKey }) {
+  const today = sessions.filter((s) => toDayKey(new Date(s.starts_at)) === todayKey);
+  const held = today.filter((s) => s.outcome === 'held').length;
+  const sent = today.filter((s) => s.recap_sent_at).length;
+  const done = todos.filter((t) => t.done_at && toDayKey(new Date(t.done_at)) === todayKey).length;
+  const n = (count, one, many) => `${count} ${count === 1 ? one : many}`;
+  return { calls: today.filter((s) => !s.outcome || s.outcome === 'held').length, held, sent, done, line: `${n(held, 'call', 'calls')} held, ${n(sent, 'recap', 'recaps')} sent.` };
+}
+
+/** The weekly review's figures: hours, calls, to-dos done and recaps sent this week, and next week's calls a day. */
+export function weekDone({ sessions = [], todos = [], target, todayKey }) {
+  const from = weekStart(todayKey);
+  const to = addDays(from, 6);
+  const inWeek = (at, a = from, b = to) => { const k = toDayKey(new Date(at)); return k >= a && k <= b; };
+  const cap = capacity(sessions, target, todayKey);
+  const next = Array.from({ length: 5 }, (_, i) => addDays(from, 7 + i));
+  const shape = next.map((day) => ({ day, label: SHORT_DAYS[fromDayKey(day).getDay()], calls: callsOn(sessions, day).length }));
+  const total = shape.reduce((n, d) => n + d.calls, 0);
+  const max = Math.max(0, ...shape.map((d) => d.calls));
+  const busiest = shape.filter((d) => d.calls === max && max > 0).map((d) => DAY_NAMES[fromDayKey(d.day).getDay()]);
+  const shapeLine = total === 0 ? 'No calls are booked next week yet.'
+    : `${total} ${total === 1 ? 'call' : 'calls'}, the busiest on ${busiest.length > 2 ? `${busiest.slice(0, -1).join(', ')} and ${busiest.at(-1)}` : busiest.join(' and ')}.`;
+  return {
+    capacity: cap,
+    todosDone: doneThisWeek(todos, todayKey),
+    recapsSent: sessions.filter((s) => s.recap_sent_at && inWeek(s.recap_sent_at)).length,
+    shape, shapeLine,
+  };
+}

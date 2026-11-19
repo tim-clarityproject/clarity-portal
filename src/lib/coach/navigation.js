@@ -1,4 +1,4 @@
-// The coach portal's map (Phase 6a run 1; M11's menu screen): its pages, in
+// The coach portal's map (Phase 6a runs 1 and 2; M11's menu screen): its pages, in
 // the menu's order, for the owner and for an associate. `owner`: only the
 // owner has it. `later`: its page comes in a later run of Phase 6a (or in
 // 6b or 6c); until then it shows on previews only, and opens the calm
@@ -6,8 +6,8 @@
 
 export const COACH_MENU = [
   { key: 'today', label: 'Today', to: '/coach' },
-  { key: 'business', label: 'Business', to: '/coach/business', owner: true, later: true },
-  { key: 'todos', label: 'To-dos', to: '/coach/todos', later: true },
+  { key: 'finances', label: 'Finances', to: '/coach/finances', owner: true, later: true },
+  { key: 'todos', label: 'To-dos', to: '/coach/todos' },
   { key: 'clients', label: 'Clients', to: '/coach/clients' },
   { key: 'leads', label: 'Leads', to: '/coach/leads', owner: true, later: true },
   { key: 'network', label: 'Network', to: '/coach/network', owner: true, later: true },
@@ -48,6 +48,9 @@ const TITLES = [
   ['/coach/workshops', 'Workshop'],
   ['/coach/organisations', 'Organisation'],
   ['/coach/settings', 'Settings'],
+  ['/coach/todos', 'To-dos'],
+  ['/coach/sessions', 'After a call'],
+  ['/coach/renewals', 'Renewal'],
   ...COACH_MENU.filter((i) => i.later).map((i) => [i.to, i.label]),
 ];
 
