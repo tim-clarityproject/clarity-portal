@@ -323,3 +323,86 @@ test('the day’s and the week’s summaries', () => {
   assert.equal(week.shapeLine, '3 calls, the busiest on Thursday.');
   assert.equal(weekDone({ sessions: [], todos: [], todayKey: TODAY }).shapeLine, 'No calls are booked next week yet.');
 });
+
+// ---------------------------------------------------------------- Today's own rules (Phase 6a run 2, step 3)
+const {
+  recapNudgeLine, planChanges, freeStarts, dayLine, pressureRows, movedWords, callLength,
+} = await import('../../src/lib/coach/day.js');
+
+test('the recap nudge’s line: the oldest, then how many more are waiting', () => {
+  const clients = [{ id: 'h', name: 'Hannah Wells' }, { id: 's', name: 'Sam Okafor' }];
+  const groups = [{ id: 'g', name: 'Kestrel leadership team' }];
+  const now = at(19, 9);
+  const one = [{ id: 'a', profile_id: 'h', starts_at: at(16, 14), minutes: 60, outcome: 'held' }];
+  assert.equal(recapNudgeLine({ sessions: one, clients, groups, now, todayKey: '2026-11-19' }).line, 'Hannah’s recap from Mon 16 Nov hasn’t been sent yet.');
+  const three = [...one, { id: 'b', profile_id: 's', starts_at: at(17, 9), minutes: 60, outcome: 'held' }, { id: 'c', group_id: 'g', starts_at: at(13, 9), minutes: 90, outcome: 'held' }];
+  const line = recapNudgeLine({ sessions: three, clients, groups, now, todayKey: '2026-11-19' });
+  assert.equal(line.session.id, 'c', 'the oldest first');
+  assert.equal(line.line, 'The recap for Kestrel leadership team from Fri 13 Nov hasn’t been sent yet, and 2 more are waiting.');
+  assert.equal(recapNudgeLine({ sessions: three.slice(0, 2), clients, groups, now, todayKey: '2026-11-19' }).line, 'Hannah’s recap from Mon 16 Nov hasn’t been sent yet, and 1 more is waiting.');
+  assert.equal(recapNudgeLine({ sessions: [{ ...one[0], recap_sent_at: at(16, 16) }], clients, groups, now, todayKey: '2026-11-19' }), null);
+  assert.equal(recapNudgeLine({ sessions: [{ ...one[0], starts_at: at(18, 14) }], clients, groups, now, todayKey: '2026-11-19' }), null, 'not before 24 hours have passed');
+});
+
+test('Plan my day: unticked carried-over to-dos go to tomorrow, ticked upcoming ones come to today, times are kept', () => {
+  const todos = [
+    todo('t1', { minutes: 30 }), todo('t2', { planned_on: '2026-11-13', minutes: 15 }), todo('t3', { planned_on: '2026-11-16', minutes: 120 }),
+    todo('t4', { planned_on: '2026-11-18', planned_time: '10:00', minutes: 15 }), todo('t5', { planned_on: '2026-11-20' }), todo('t6', { planned_on: '2026-11-10', done_at: at(10, 9) }),
+  ];
+  const same = planChanges({ todos, todayKey: TODAY });
+  assert.equal(same.changed.length, 0, 'nothing ticked or unticked changes nothing');
+  assert.deepEqual(same.work.map((t) => t.id), ['t1', 't2', 't3']);
+  const plan = planChanges({ todos, keep: { t2: true, t3: false }, picked: { t4: true }, times: { t1: '09:15', t4: '11:00', t5: '09:00' }, todayKey: TODAY });
+  assert.deepEqual(plan.changed.map((t) => t.id), ['t1', 't3', 't4']);
+  assert.deepEqual(plan.work.map((t) => t.id), ['t1', 't2', 't4']);
+  const by = Object.fromEntries(plan.todos.map((t) => [t.id, t]));
+  assert.deepEqual([by.t3.planned_on, by.t3.first_planned_on], ['2026-11-18', '2026-11-16'], 'it keeps the day it was first planned for');
+  assert.deepEqual([by.t4.planned_on, by.t4.planned_time, by.t4.first_planned_on], [TODAY, '11:00', '2026-11-18']);
+  assert.equal(by.t1.planned_time, '09:15');
+  assert.equal(by.t5.planned_time ?? null, null, 'a to-do that isn’t today’s takes no time');
+  assert.equal(by.t6, todos[5], 'a done to-do is never moved');
+});
+
+test('the gaps between calls: quarter hours inside the working day, clear of calls and of what is already placed', () => {
+  const settings = { working_hours: { tue: { from: '09:00', to: '12:00' } } };
+  const sessions = [{ starts_at: at(17, 10), minutes: 60 }, { starts_at: at(17, 11, 30), minutes: 30, outcome: 'moved' }];
+  assert.deepEqual(freeStarts({ sessions, settings, dayKey: TODAY, minutes: 30 }), ['09:00', '09:15', '09:30', '11:00', '11:15', '11:30']);
+  assert.deepEqual(freeStarts({ sessions, settings, dayKey: TODAY, minutes: 60 }), ['09:00', '11:00']);
+  assert.deepEqual(freeStarts({ sessions, settings, dayKey: TODAY, minutes: 30, placed: [{ time: '09:00', minutes: 30 }] }), ['09:30', '11:00', '11:15', '11:30']);
+  assert.deepEqual(freeStarts({ sessions, settings, dayKey: TODAY }), ['09:00', '09:15', '09:30', '09:45', '11:00', '11:15', '11:30', '11:45'], 'no estimate counts as 15 minutes');
+  assert.deepEqual(freeStarts({ sessions, settings: { working_hours: { mon: { from: '09:00', to: '17:00' } } }, dayKey: TODAY }), [], 'a day off has no gaps');
+  assert.deepEqual(freeStarts({ sessions, settings, dayKey: TODAY, minutes: 240 }), []);
+});
+
+test('a day at a glance: calls and timed to-dos in time order', () => {
+  const sessions = [{ id: 's2', starts_at: at(18, 17), minutes: 60 }, { id: 's1', starts_at: at(18, 13), minutes: 30 }, { id: 's0', starts_at: at(18, 9), minutes: 60, outcome: 'moved' }];
+  const todos = [todo('a', { planned_on: '2026-11-18', planned_time: '10:00:00', minutes: 15 }), todo('b', { planned_on: '2026-11-18' }), todo('c', { planned_on: '2026-11-18', planned_time: '13:00', done_at: at(17, 9) }), todo('d', { planned_on: '2026-11-18', planned_time: '13:00' })];
+  assert.deepEqual(dayLine({ sessions, todos, dayKey: '2026-11-18' }).map((r) => `${r.time} ${r.kind} ${r.id}`), ['10:00 todo a', '13:00 call s1', '13:00 todo d', '17:00 call s2']);
+  assert.deepEqual(dayLine({ sessions: [], todos: [], dayKey: TODAY }), []);
+});
+
+test('the pressure forecast: shared work moments of the coach’s own clients in the next 7 days', () => {
+  const clients = [{ id: 'p1', user_id: 'u1', name: 'Sam Okafor', status: 'active' }, { id: 'p2', user_id: 'u2', name: 'Jordan Reyes', status: 'active' }, { id: 'p3', user_id: null, name: 'Leo Grant', status: 'active' }, { id: 'p4', user_id: 'u4', name: 'Grace Liu', status: 'past' }];
+  const m = (id, userId, name, extra = {}) => ({ id, userId, name, area: 'work', shared: true, placeCity: null, ...extra });
+  const occurrences = [
+    { moment: m('a', 'u2', 'v Rangers', { placeCity: 'New York' }), on: '2026-11-21' },
+    { moment: m('b', 'u1', 'Board meeting'), on: '2026-11-18' },
+    { moment: m('c', 'u1', 'Today’s own'), on: TODAY },
+    { moment: m('d', 'u1', 'Too far'), on: '2026-11-25' },
+    { moment: m('e', 'u1', 'Family day', { area: 'personal' }), on: '2026-11-19' },
+    { moment: m('f', 'u1', 'Not shared', { shared: false }), on: '2026-11-19' },
+    { moment: m('g', 'u4', 'A past client’s'), on: '2026-11-19' },
+    { moment: m('h', 'u9', 'Nobody’s'), on: '2026-11-19' },
+    { moment: m('i', 'u1', 'A week today'), on: '2026-11-24' },
+  ];
+  const rows = pressureRows({ occurrences, clients, todayKey: TODAY });
+  assert.deepEqual(rows.map((r) => `${r.name}: ${r.moment}, ${r.when}`), ['Sam Okafor: Board meeting, Wed 18 Nov', 'Jordan Reyes: v Rangers, New York, Sat 21 Nov', 'Sam Okafor: A week today, Tue 24 Nov']);
+  assert.equal(rows[1].short, 'v Rangers', 'a phone shows the moment alone');
+  assert.equal(rows[0].profileId, 'p1');
+  assert.deepEqual(pressureRows({ occurrences: [], clients, todayKey: TODAY }), []);
+});
+
+test('Today’s small words: what was moved, and a call’s length', () => {
+  assert.deepEqual([1, 6].map(movedWords), ['1 moved to tomorrow', '6 moved to tomorrow']);
+  assert.deepEqual([{ minutes: 60 }, { minutes: 90, outcome: 'held' }].map(callLength), ['60 minutes', 'Done']);
+});

@@ -143,6 +143,9 @@
   text-decoration-color: var(--field-line);
   text-underline-offset: var(--cc-underline-gap);
   transition: color var(--dur) var(--ease);
+  /* An older phone rule pads every button and sets its size (mobile.css): a link inside a sentence keeps the sentence's. */
+  padding: 0 !important;
+  font-size: inherit !important;
 }
 .ui-root .cc-inline-link::after { content: ''; position: absolute; left: 0; right: 0; top: calc(50% - var(--tap-min) / 2); height: var(--tap-min); }
 @media (hover: hover) {

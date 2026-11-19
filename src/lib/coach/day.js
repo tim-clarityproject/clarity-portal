@@ -704,3 +704,113 @@ export function weekDone({ sessions = [], todos = [], target, todayKey }) {
     shape, shapeLine,
   };
 }
+
+// ---------------------------------------------------------------- Today's own rules (the page, Plan my day, Close the day)
+
+const nameOfSession = (s, clients, groups) => (s.group_id ? (groups || []).find((g) => g.id === s.group_id)?.name : (clients || []).find((c) => c.id === s.profile_id)?.name) || '';
+
+/**
+ * The recap nudge's one quiet line: the oldest recap still unsent 24 hours
+ * after its call, "and 2 more are waiting" when there are others.
+ * @returns {{ session: object, line: string, more: number }|null}
+ */
+export function recapNudgeLine({ sessions = [], clients = [], groups = [], now, todayKey }) {
+  const waiting = recapNudges(sessions, now);
+  if (!waiting.length) return null;
+  const [first, ...rest] = waiting;
+  const name = nameOfSession(first, clients, groups);
+  const whose = first.group_id ? `The recap for ${name || 'the group'}` : `${possessive(firstName(name) || 'A client')} recap`;
+  const more = rest.length ? `, and ${rest.length} more ${rest.length === 1 ? 'is' : 'are'} waiting` : '';
+  return { session: first, more: rest.length, line: `${whose} from ${dayWords(toDayKey(new Date(first.starts_at)), todayKey)} hasn’t been sent yet${more}.` };
+}
+
+/**
+ * Plan my day, as it stands while boxes are ticked: carried-over to-dos
+ * left unticked go to tomorrow, upcoming ones ticked come to today, and a
+ * to-do given a time between calls takes it.
+ * @param {{ todos: object[], keep?: Record<string, boolean>, picked?: Record<string, boolean>, times?: Record<string, string|null>, todayKey: string }} a
+ *   `keep`: carried-over ids, false to move one to tomorrow; `picked`: upcoming ids brought to today; `times`: id to "HH:MM"
+ * @returns {{ todos: object[], changed: object[], work: object[] }} every to-do as it would be, the ones that differ, and today's working list in order
+ */
+export function planChanges({ todos = [], keep = {}, picked = {}, times = {}, todayKey }) {
+  const tomorrow = addDays(todayKey, 1);
+  const changed = [];
+  const all = todos.map((t) => {
+    if (t.done_at) return t;
+    const section = todoSection(t, todayKey);
+    let next = t;
+    if (section === 'today' && keep[t.id] === false) next = moveToDay(t, tomorrow);
+    else if (section === 'upcoming' && picked[t.id]) next = moveToDay(t, todayKey);
+    if (todoSection(next, todayKey) === 'today' && Object.hasOwn(times, t.id) && (timeWords(times[t.id]) || null) !== (timeWords(next.planned_time) || null)) {
+      next = { ...next, planned_time: timeWords(times[t.id]) || null };
+    }
+    if (next !== t) changed.push(next);
+    return next;
+  });
+  return { todos: all, changed, work: todayTodos(all, todayKey).work };
+}
+
+const hhmm = (mins) => `${p2(Math.floor(mins / 60))}:${p2(mins % 60)}`;
+const startMinutes = (at) => { const d = new Date(at); return d.getHours() * 60 + d.getMinutes(); };
+
+/**
+ * The quarter hours a to-do can start at between calls: inside the working
+ * day, clear of every call and of the to-dos already given a time.
+ * @param {{ sessions: object[], settings: object, dayKey: string, minutes?: number, placed?: { time: string, minutes?: number }[] }} a
+ * @returns {string[]} "09:00", "09:15"…
+ */
+export function freeStarts({ sessions = [], settings = null, dayKey, minutes = 15, placed = [] }) {
+  const day = workingDay(settings, dayKey);
+  if (!day) return [];
+  const length = Math.max(15, Number(minutes) || 15);
+  const busy = [
+    ...callsOn(sessions, dayKey).map((s) => [startMinutes(s.starts_at), startMinutes(s.starts_at) + (Number(s.minutes) || 0)]),
+    ...placed.filter((p) => clockMinutes(p.time) != null).map((p) => [clockMinutes(p.time), clockMinutes(p.time) + Math.max(15, Number(p.minutes) || 15)]),
+  ];
+  const out = [];
+  for (let t = clockMinutes(day.from); t + length <= clockMinutes(day.to); t += 15) {
+    if (!busy.some(([a, b]) => t < b && t + length > a)) out.push(hhmm(t));
+  }
+  return out;
+}
+
+/**
+ * A day at a glance: its calls and its to-dos that have a time, in time order.
+ * @returns {{ kind: 'call'|'todo', id: string, time: string, minutes: number|null, session?: object, todo?: object }[]}
+ */
+export function dayLine({ sessions = [], todos = [], dayKey }) {
+  return [
+    ...callsOn(sessions, dayKey).map((s) => ({ kind: 'call', id: s.id, time: clockTime(s.starts_at), minutes: Number(s.minutes) || null, session: s })),
+    ...(todos || []).filter((t) => !t.done_at && t.planned_on === dayKey && timeWords(t.planned_time)).map((t) => ({ kind: 'todo', id: t.id, time: timeWords(t.planned_time), minutes: Number(t.minutes) || null, todo: t })),
+  ].sort((a, b) => a.time.localeCompare(b.time) || (a.kind === b.kind ? 0 : a.kind === 'call' ? -1 : 1));
+}
+
+export const PRESSURE_DAYS = 7;
+/**
+ * The pressure forecast: each client's shared work peak moments in the
+ * next 7 days (tomorrow to a week today), soonest first. The coach is only
+ * ever given shared work moments; anything else is left out here too.
+ * @param {{ occurrences: { moment: object, on: string }[], clients: object[], todayKey: string }} a
+ *   `occurrences` as src/lib/peakMoments gives them, each moment carrying its owner's `userId`
+ * @returns {{ key: string, profileId: string, name: string, moment: string, short: string, day: string, when: string }[]}
+ */
+export function pressureRows({ occurrences = [], clients = [], todayKey }) {
+  const to = addDays(todayKey, PRESSURE_DAYS);
+  return occurrences
+    .filter((o) => o?.moment && o.moment.area === 'work' && o.moment.shared === true && o.on > todayKey && o.on <= to)
+    .map((o) => {
+      const client = clients.find((c) => c.user_id && c.user_id === o.moment.userId && c.status !== 'past' && !c.merged_into);
+      if (!client) return null;
+      const name = clean(o.moment.name);
+      const away = clean(o.moment.placeCity);
+      return { key: `${o.moment.id}:${o.on}`, profileId: client.id, name: client.name, moment: away ? `${name}, ${away}` : name, short: name, day: o.on, when: dayWords(o.on, todayKey) };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.day.localeCompare(b.day) || a.name.localeCompare(b.name));
+}
+
+/** "6 moved to tomorrow", "1 moved to tomorrow". */
+export const movedWords = (n) => `${n} moved to tomorrow`;
+
+/** A call's length on Today: "60 minutes", or "Done" once it has been written up. */
+export const callLength = (session) => (session.outcome === 'held' ? 'Done' : `${session.minutes} minutes`);

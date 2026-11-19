@@ -16,12 +16,18 @@ export const ID = {
   view1: u(91), view2: u(92),
 };
 
-const day = (offset) => { const d = new Date(); d.setDate(d.getDate() + offset); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
-const at = (offset, hour = 9, minute = 0) => { const d = new Date(); d.setDate(d.getDate() + offset); d.setHours(hour, minute, 0, 0); return d.toISOString(); };
+// "Today" for the seed: the real day, or the day a test has pinned the page's clock to (seedClock), so
+// "From yesterday", today's calls and this week's capacity stay true on a pinned day too.
+let BASE = null;
+/** Pins the seed's "today" (a Date or anything Date reads); nothing, or null, goes back to the real day. */
+export function seedClock(date = null) { BASE = date ? new Date(date) : null; }
+const base = () => (BASE ? new Date(BASE) : new Date());
+const day = (offset) => { const d = base(); d.setDate(d.getDate() + offset); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+const at = (offset, hour = 9, minute = 0) => { const d = base(); d.setDate(d.getDate() + offset); d.setHours(hour, minute, 0, 0); return d.toISOString(); };
 
 /** The rows, by table. `today` decides whose birthday it is (Priya's). */
 export function seedRows() {
-  const now = new Date();
+  const now = base();
   const profile = (id, name, extra = {}) => ({ id, coach_id: ME, user_id: null, name, email: `${name.split(' ')[0].toLowerCase()}@example.invalid`, mobile: null, organisation_id: null, job_title: null, city: null, time_zone: 'Europe/London', frequent_traveller: false, referred_by: null, status: 'active', stage: null, getting_started: {}, last_contact_on: null, invited_at: null, ended_on: null, merged_into: null, created_by: null, ...extra });
   const link = (tag, item) => ({ tag_id: tag, item_kind: 'client', item_id: item, coach_id: ME });
   const value = (field, item, v) => ({ field_id: field, item_id: item, coach_id: ME, value_text: null, value_number: null, value_date: null, ...v });
@@ -155,7 +161,7 @@ export const DAY = {
  * ("From yesterday", "Tomorrow") stay true whenever a test runs.
  * Returns rows by table; `seedWithDay()` adds them to `seedRows()`.
  */
-export function daySeed() {
+export function daySeed({ over = false } = {}) {
   let n = 0;
   const todo = (id, title, extra = {}) => {
     n += 1;
@@ -217,12 +223,78 @@ export function daySeed() {
       tag(DAY.tagHome, DAY.aw1), tag(DAY.tagPhone, DAY.aw1), tag(DAY.tagHome, DAY.aw2), tag(DAY.tagPhone, DAY.t4), tag(DAY.tagWriting, DAY.t5),
       tag(ID.tagKestrel, DAY.t15), tag(DAY.tagEmail, DAY.t15), tag(DAY.tagWriting, u(5032)), tag(DAY.tagWriting, u(5033)),
     ],
+    coach_sessions: sessionSeed({ over }),
   };
 }
 
-/** `seedRows()` with the coaching day's rows added (tags and tag links are joined, not replaced). */
-export function seedWithDay() {
+/**
+ * Today's sessions (M11's): on a Friday Marcus, Mia and the Kestrel group;
+ * on any other day Sam at 12:30, the Kestrel group at 14:00, Jordan at
+ * 15:45 (09:45 in Chicago) and Priya at 17:00. With them: yesterday's
+ * session with Marcus, not written up; a session with Leo 2 days ago that
+ * went ahead, its recap typed and not sent; enough others this week (the
+ * past ones held and sent) that capacity reads 11 of 15 over 12 calls, or
+ * 17 of 15 over 18 with `over`; and next week's 15 calls, the busiest on
+ * Tuesday and Thursday.
+ */
+function sessionSeed({ over = false } = {}) {
+  let n = 0;
+  const session = (offset, hour, minute, minutes, who, extra = {}) => {
+    n += 1;
+    return {
+      id: u(6000 + n), coach_id: ME, profile_id: null, group_id: null, engagement_id: null, kind: who.group_id ? 'group' : 'coaching', starts_at: at(offset, hour, minute), minutes,
+      place: null, outcome: null, waived: false, moved_to: null, written_up_at: null, recap: null, recap_sent_at: null, recap_sent_by: null, created_at: at(-20), ...who, ...extra,
+    };
+  };
+  const client = (id) => ({ profile_id: id });
+  const sent = (offset) => ({ outcome: 'held', written_up_at: at(offset, 18), recap: 'We agreed the next two steps.', recap_sent_at: at(offset, 18, 5) });
+  const dow = (base().getDay() + 6) % 7; // Monday 0
+  const today = dow === 4
+    ? [session(0, 11, 30, 60, client(ID.marcus)), session(0, 14, 0, 60, client(ID.mia)), session(0, 16, 15, 90, { group_id: ID.group })]
+    : [session(0, 12, 30, 60, client(ID.sam)), session(0, 14, 0, 90, { group_id: ID.group }), session(0, 15, 45, 60, client(ID.jordan)), session(0, 17, 0, 60, client(ID.priya))];
+  const special = [
+    session(-1, 13, 0, 60, client(ID.marcus)),
+    session(-2, 14, 0, 60, client(ID.leo), { outcome: 'held', written_up_at: at(-2, 16), recap: 'Leo will bring the rota to the next call.' }),
+  ];
+  // This week (Monday to Saturday) apart from today: filled to 12 calls and 11 hours with today's and the two above.
+  const inWeek = (offset) => dow + offset >= 0 && dow + offset <= 6;
+  const k = special.filter((_, i) => inWeek(-1 - i)).length;
+  const todayMinutes = today.reduce((sum, x) => sum + x.minutes, 0);
+  const lengths = [...Array(3).fill(30), ...Array(Math.max(0, (660 - todayMinutes - 60 * k - 90) / 60)).fill(60), ...(over ? Array(6).fill(60) : [])];
+  const offsets = [-dow, 1 - dow, 2 - dow, 3 - dow, 4 - dow, 5 - dow].filter((o) => o !== 0);
+  const people = [ID.sam, ID.priya, ID.jordan, ID.mia, ID.marcus];
+  const rest = lengths.map((minutes, i) => {
+    const offset = offsets[i % offsets.length];
+    const slot = Math.floor(i / offsets.length);
+    return session(offset, 8 + slot * 2, 30, minutes, client(people[i % people.length]), offset < 0 ? sent(offset) : {});
+  });
+  // Next week: Mon 3, Tue 4, Wed 2, Thu 4, Fri 2.
+  const next = [3, 4, 2, 4, 2].flatMap((count, d) => Array.from({ length: count }, (_, i) => session(7 - dow + d, 9 + i * 2, 0, 60, client(people[(d + i) % people.length]))));
+  return [...today, ...special, ...rest, ...next];
+}
+
+/** Invented shared work peak moments for the pressure forecast, as the database would answer a coach: `clientUsers` gives each client an account's id. */
+export const PRESSURE = {
+  users: { [ID.sam]: u(7001), [ID.priya]: u(7002), [ID.jordan]: u(7003) },
+  moments: () => [
+    { id: u(7101), user_id: u(7001), name: 'Board meeting', area: 'work', kind: 'perform', starts_on: day(1), ends_on: day(1), place_city: null, place_zone: null, repeat_rule: null, shared: true },
+    { id: u(7102), user_id: u(7002), name: 'Keynote at the Leeds Leaders Forum', area: 'work', kind: 'perform', starts_on: day(2), ends_on: day(2), place_city: null, place_zone: null, repeat_rule: null, shared: true },
+    { id: u(7103), user_id: u(7003), name: 'v Rangers, away', area: 'work', kind: 'perform', starts_on: day(4), ends_on: day(4), place_city: 'New York', place_zone: 'America/New_York', repeat_rule: null, shared: true },
+  ],
+};
+
+/**
+ * `seedRows()` with the coaching day's rows added (tags and tag links are joined, not replaced).
+ * The working day is 09:30 to 16:45 on weekdays, so M11's Tuesday (4 hours 30 minutes of calls and
+ * 3 hours 30 minutes of to-dos) is 45 minutes over; Priya has 2 sessions left and Jordan 1.
+ * @param {{ over?: boolean, accounts?: boolean }} options `over`: a week over capacity (17 of 15); `accounts`: three clients have accounts (PRESSURE.users)
+ */
+export function seedWithDay({ over = false, accounts = false } = {}) {
   const rows = seedRows();
-  for (const [table, list] of Object.entries(daySeed())) rows[table] = [...(rows[table] || []), ...list];
+  for (const [table, list] of Object.entries(daySeed({ over }))) rows[table] = [...(rows[table] || []), ...list];
+  const hours = { from: '09:30', to: '16:45' };
+  rows.coach_settings = rows.coach_settings.map((s) => ({ ...s, working_hours: { mon: hours, tue: hours, wed: hours, thu: hours, fri: hours } }));
+  rows.engagements = rows.engagements.map((e) => (e.id === ID.ePriya ? { ...e, sessions_held: 4 } : e.id === ID.eJordan ? { ...e, sessions_held: 19 } : e));
+  if (accounts) rows.client_profiles = rows.client_profiles.map((p) => (PRESSURE.users[p.id] ? { ...p, user_id: PRESSURE.users[p.id] } : p));
   return rows;
 }

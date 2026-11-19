@@ -1,0 +1,191 @@
+/* Today and its panels (Phase 6a run 2, step 3; mock-up M11, seq 77).
+   Every value is a token; the tick box, the stats, the offer row, the
+   fields and the to-do rows are the shared ones. Phone is 600px and under.
+   Panels are drawn outside the page (their own .ui-root), so nothing here
+   leans on .cc-app. */
+
+/* ---------------------------------------------------------------- under the date */
+/* The owner's Finances line (Phase 6b; M11 .bizl). */
+.ui-root .cc-today-fin {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-3);
+  min-height: var(--tap-min);
+  margin: var(--space-px6) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-secondary) !important;
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+  /* An older phone rule pads every button and sets its size (mobile.css). */
+  padding: 0 !important;
+}
+.ui-root .cc-today-fin--open { cursor: pointer; transition: color var(--dur) var(--ease); -webkit-tap-highlight-color: transparent; }
+@media (hover: hover) {
+  .ui-root .cc-today-fin--open:hover { color: var(--coral-text); }
+}
+.ui-root .cc-today-fin--open:focus-visible { color: var(--coral-text); outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--space-1); }
+
+/* A quiet line with its own link: the recap still to send. */
+.ui-root .cc-today-recap { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-px14); min-height: var(--tap-min); margin-top: var(--space-1); }
+.ui-root .cc-today-recap > span { min-width: 0; overflow-wrap: anywhere; }
+.ui-root .cc-today-recap .ds-link { min-width: var(--tap-min); }
+.ui-root .cc-quiet + .cc-today-recap { margin-top: 0; }
+
+/* ---------------------------------------------------------------- sections */
+.ui-root .cc-today-head { justify-content: space-between; flex-wrap: nowrap; gap: var(--space-3); min-height: var(--tap-min); }
+.ui-root .cc-today-head .ds-section-title { min-width: 0; outline: none; }
+.ui-root .cc-today-head .ds-link { flex: none; justify-content: flex-end; white-space: nowrap; }
+/* M11 draws no line between Today's sections. */
+.ui-root .cc-today-part.ds-section { border-top: 0; padding-top: 0; }
+.ui-root .cc-today-part > .ds-section-head { margin-bottom: 0; }
+.ui-root .cc-today-part > .cc-quiet { margin-top: var(--space-2); }
+.ui-root .cc-today-part > .cc-todos { margin-top: var(--space-2); }
+.ui-root .cc-today-part > .cc-todo-group + .cc-todos { margin-top: var(--space-1); }
+.ui-root .cc-today-rows { margin-top: var(--space-2); }
+/* The shared row, kept on the section's left edge on a phone too (mobile.css pads every button). */
+.ui-root .cc-today-rows .cc-row { padding: var(--space-px12) 0 !important; }
+
+/* ---------------------------------------------------------------- a call's row (M11 .vr.t3) */
+.ui-root .cc-today-calls { margin-top: var(--space-2); }
+.ui-root .cc-today-call {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  /* The time's column grows with the text size, so a large time never runs into the name. */
+  grid-template-columns: minmax(var(--cc-time-w), max-content) minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: center;
+  min-height: var(--cc-row-h);
+  padding: var(--space-px12) 0 !important;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  font-family: var(--font-body);
+  color: var(--text);
+}
+.ui-root .cc-today-call--open { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ui-root .cc-today-time { font-size: var(--fs-text); line-height: var(--lh-row); letter-spacing: var(--ls-btn); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ui-root .cc-today-call-words { min-width: 0; }
+.ui-root .cc-today-call b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-text); line-height: var(--lh-row); overflow-wrap: anywhere; transition: color var(--dur) var(--ease); }
+.ui-root .cc-today-call small { display: flex; flex-wrap: wrap; gap: 0 var(--space-px14); margin-top: var(--space-px2); font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
+/* A laptop shows the length at the right; a phone in the quiet line. Only one of the two is ever there. */
+.ui-root .cc-today-len { display: none; }
+.ui-root .cc-today-call-len { font-size: var(--fs-note); color: var(--text-2); text-align: right; white-space: nowrap; }
+@media (hover: hover) {
+  .ui-root .cc-today-call--open:hover b { color: var(--coral-text); }
+}
+.ui-root .cc-today-call--open:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--space-px6); }
+.ui-root .cc-today-call--open:focus-visible b { color: var(--coral-text); }
+
+/* ---------------------------------------------------------------- the over-full line */
+.ui-root .cc-quiet.cc-today-over { margin-block: var(--space-px18) var(--space-px18); }
+.ui-root .cc-today-over + .cc-add { margin-top: 0; }
+
+/* ---------------------------------------------------------------- who needs attention (M11 .ar) */
+.ui-root .cc-today-atts { margin-top: var(--space-2); }
+.ui-root .cc-today-att {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-px2) var(--space-3);
+  align-items: center;
+  min-height: var(--cc-row-h);
+  padding: var(--space-px10) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+.ui-root .cc-today-att b { grid-column: 1; grid-row: 1; align-self: end; font-weight: var(--fw-regular); font-size: var(--fs-text); line-height: var(--lh-row); overflow-wrap: anywhere; }
+.ui-root .cc-today-att small { grid-column: 1; grid-row: 2; align-self: start; font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .cc-today-att .ds-link { grid-column: 2; grid-row: 1 / span 2; justify-content: flex-end; min-width: var(--tap-min); text-align: right; }
+.ui-root .cc-today-more { margin-top: var(--space-1); }
+
+/* ---------------------------------------------------------------- figures on an equal grid */
+.ui-root .cc-today-figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-6); align-items: start; margin-top: var(--space-px20); }
+.ui-root .cc-today-figures .ds-stat-value { white-space: nowrap; }
+.ui-root .cc-today-figures .ds-unit { white-space: nowrap; }
+/* Capacity is a target, not a performance standard: its bar is the text colour, and a week over is full in soft coral, never mint. */
+.ui-root .cc-today-cap .ds-bar > span { background: var(--text); }
+.ui-root .cc-today-cap--over .ds-bar > span { background: var(--coral-soft-text); }
+.ui-root .cc-today-cap .ds-unit { white-space: nowrap; }
+
+/* ---------------------------------------------------------------- the stepped panels (M11 .sheet, .qh, .nudge, .td.sm) */
+.ui-root .cc-today-step { display: flex; flex-wrap: wrap; gap: 0 var(--space-px20); margin: 0 0 var(--space-px12); font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .cc-today-q {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-question-calm) !important;
+  line-height: var(--lh-title);
+  letter-spacing: normal !important;
+  word-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+  outline: none;
+  overflow-wrap: anywhere;
+}
+.ui-root .cc-today-nudge { margin: var(--space-2) 0 0; font-size: var(--fs-body); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .cc-today-nudge--first { margin-top: 0; }
+.ui-root .cc-today-stepbody { margin-top: var(--space-px14); }
+.ui-root .cc-today-stepbody > .cc-today-figures:first-child { margin-top: var(--space-px22); }
+.ui-root .cc-today-list { margin-top: var(--space-2); }
+.ui-root .cc-today-list--after { margin-top: var(--space-px22); }
+.ui-root .cc-today-pick.ds-todo { min-height: var(--cc-step-row-h); box-sizing: border-box; }
+.ui-root .cc-today-pick-words { display: block; min-width: 0; }
+.ui-root .cc-today-pick .ds-todo-text, .ui-root .cc-today-still .ds-todo-text { font-size: var(--fs-body); line-height: var(--lh-row); }
+.ui-root .cc-today-pick .ds-todo-line, .ui-root .cc-today-still .ds-todo-line { gap: 0 var(--space-px14); margin-top: var(--space-px2); font-size: var(--fs-note); }
+.ui-root .cc-today-still {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: center;
+  min-height: var(--cc-step-row-h);
+  padding: var(--space-2) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+.ui-root .cc-today-still .ds-link { min-width: var(--tap-min); justify-content: flex-end; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ui-root .cc-today-place > .cc-today-still:has(+ .cc-today-when) { border-bottom: 0; }
+.ui-root .cc-today-when { padding: var(--space-1) 0 var(--space-3); border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-today-when > .ds-choice { margin: 0; }
+.ui-root .cc-today-h { margin: var(--space-px28) 0 0; font-family: var(--font-display); font-weight: var(--fw-regular); text-transform: uppercase; letter-spacing: var(--ls-cc-section) !important; word-spacing: normal; font-size: var(--fs-label) !important; line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .cc-today-stepbody > .cc-today-h:first-child { margin-top: var(--space-px22); }
+.ui-root .cc-today-flow .cc-today-over { margin-block: var(--space-px18) 0; }
+.ui-root .cc-today-foot > span:empty { display: none; }
+.ui-root .cc-today-foot .ds-link { min-width: var(--tap-min); }
+.ui-root .cc-today-links { margin-top: var(--space-px14); }
+.ui-root .cc-today-links .ds-link { min-width: var(--tap-min); }
+.ui-root .cc-today-energy .ds-choice { margin: 0; }
+
+/* Next week's shape: five small bars, the busiest in the text colour (M11 .wk). */
+.ui-root .cc-today-shape { display: flex; gap: var(--space-2); max-width: var(--cc-shape-max); margin-top: var(--space-px28); }
+.ui-root .cc-today-shape-day { flex: 1; min-width: 0; display: block; cursor: default; border-radius: var(--space-1); }
+.ui-root .cc-today-shape-day:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); }
+.ui-root .cc-today-shape-bar { display: flex; align-items: flex-end; justify-content: center; height: var(--cc-shape-h); border-bottom: var(--line-w) solid var(--line); }
+.ui-root .cc-today-shape-bar i { display: block; width: 100%; max-width: var(--cc-shape-bar); border-radius: var(--cc-shape-radius) var(--cc-shape-radius) 0 0; background: var(--below); }
+.ui-root .cc-today-shape-bar i.cc-today-shape-top { background: var(--text); }
+.ui-root .cc-today-shape-label { display: block; margin-top: var(--space-px6); text-align: center; font-size: var(--fs-chart); line-height: var(--lh-text); color: var(--label); white-space: nowrap; }
+
+/* ---------------------------------------------------------------- phone */
+@media (max-width: 600px) {
+  .ui-root .cc-today-fin { font-size: var(--fs-meta) !important; gap: 0 var(--space-px12); }
+  .ui-root .cc-today-call { grid-template-columns: minmax(var(--cc-time-w), max-content) minmax(0, 1fr); }
+  .ui-root .cc-today-len { display: inline; }
+  .ui-root .cc-today-call-len { display: none; }
+  .ui-root .cc-today-att { row-gap: 0; }
+  .ui-root .cc-today-att b { align-self: center; }
+  .ui-root .cc-today-att .ds-link { grid-row: 1; align-self: center; }
+  .ui-root .cc-today-att small { grid-column: 1 / -1; }
+  .ui-root .cc-today-figures { gap: var(--space-4) var(--space-3); }
+  /* "17 of 15" stays whole: the small "2 over" goes under it. */
+  .ui-root .cc-today-cap--over .ds-unit { display: block; margin: var(--space-px6) 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .cc-today-fin--open, .ui-root .cc-today-call b { transition: none; }
+}
+
+@media (forced-colors: active) {
+  .ui-root .cc-today-shape-bar i { forced-color-adjust: none; background: CanvasText; }
+  .ui-root .cc-today-cap .ds-bar > span { forced-color-adjust: none; background: CanvasText; }
+}

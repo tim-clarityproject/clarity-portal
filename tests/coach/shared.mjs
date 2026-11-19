@@ -155,6 +155,8 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
       const name = new URL(req.url()).pathname.split('/rest/v1/')[1] || '';
       if (name.startsWith('coaches')) return route.fallback();
       if (req.method() === 'GET' || req.method() === 'HEAD') return route.fallback();
+      // A checked function (the portal's own questions after sign-in among them) is answered with nothing: it never runs.
+      if (name.startsWith('rpc/')) { store.calls.push(`rpc ${name.slice(4)} (not run)`); return json(route, null); }
       store.calls.push(`blocked ${req.method()} ${name}`);
       return route.abort('blockedbyclient');
     });

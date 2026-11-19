@@ -867,10 +867,18 @@
   --cc-undo-ms: 10000;          /* Undo stays for 10 seconds */
   --fs-cc-count: calc(11 * var(--u));
   --ls-cc-section: 0.14em;
+  /* Today (Phase 6a run 2; M11 .vr.t3, .wk) */
+  --cc-time-w: 64px;            /* a call's time, before its name */
+  --cc-shape-h: 96px;           /* next week's shape: the bars' height */
+  --cc-shape-bar: 22px;         /* one bar, at its widest */
+  --cc-shape-max: 420px;
+  --cc-shape-radius: 4px;
+  --cc-step-row-h: 56px;        /* a to-do in a stepped panel (M11 .td.sm) */
 }
 
 @media (max-width: 600px) {
   .ui-root {
     --cc-callbar-h: 44px;
+    --cc-time-w: 56px;
   }
 }
