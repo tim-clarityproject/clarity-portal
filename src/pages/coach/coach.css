@@ -50,7 +50,7 @@
 .ui-root .cc-round--mark { color: var(--text); }
 .ui-root .cc-round svg { transition: transform var(--dur) var(--ease); }
 .ui-root .cc-round--mark[aria-expanded='true'] svg { transform: rotate(45deg); }
-.ui-root .cc-round .cc-line-icon { fill: none; stroke: currentColor; stroke-width: var(--icon-line); stroke-linejoin: round; stroke-linecap: round; }
+.ui-root .cc-round .cc-line-icon { width: var(--cc-bar-icon); height: var(--cc-bar-icon); flex: none; fill: none; stroke: currentColor; stroke-width: var(--icon-line); stroke-linejoin: round; stroke-linecap: round; }
 .ui-root .cc-round .ds-bold-cross { stroke: currentColor; }
 
 @media (hover: hover) {
@@ -144,11 +144,19 @@
   text-underline-offset: var(--cc-underline-gap);
   transition: color var(--dur) var(--ease);
 }
-.ui-root .cc-inline-link::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: var(--tap-min); transform: translateY(-50%); }
+.ui-root .cc-inline-link::after { content: ''; position: absolute; left: 0; right: 0; top: calc(50% - var(--tap-min) / 2); height: var(--tap-min); }
 @media (hover: hover) {
   .ui-root .cc-inline-link:hover { color: var(--coral-text); }
 }
 .ui-root .cc-inline-link:focus-visible { color: var(--coral-text); outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--space-1); }
+
+/* Every text link in the coach portal is at least 44px wide as well as
+   high (a short one, "Edit", keeps its words at its own edge). */
+.ui-root.cc-app .ds-link, .ui-root .cc-panel-foot .ds-link, .ui-root .cc-acts .ds-link, .ui-root .cc-line-actions .ds-link, .ui-root .cc-setrow .ds-link { min-width: var(--tap-min); }
+.ui-root .cc-setrow > .ds-link, .ui-root .cc-line > .ds-link, .ui-root .cc-line-actions .ds-link, .ui-root .cc-panel-foot > .ds-link:last-child { justify-content: flex-end; }
+.ui-root .cc-field .ds-chip:not(#_), .ui-root .cc-chips .ds-chip:not(#_) { min-height: var(--tap-min) !important; }
+/* A line with a name to tap keeps clear of what is above and below it. */
+.ui-root .cc-quiet:has(.cc-inline-link) { margin-block: var(--space-px18) var(--space-px18); }
 
 /* ---------------------------------------------------------------- the menu */
 .ui-root .cc-scrim { position: fixed; inset: 0; background: var(--scrim); z-index: var(--z-dialog); animation: cc-fade var(--dur) var(--ease) both; }
@@ -294,8 +302,12 @@
 .ui-root .cc-acts { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); align-items: center; margin-top: var(--space-px14); }
 .ui-root .cc-links { display: flex; flex-wrap: wrap; gap: 0 var(--space-px22); margin-top: var(--space-px6); }
 .ui-root .cc-add { margin-top: var(--space-3); }
-.ui-root .cc-section { margin-top: var(--space-px40); }
-.ui-root .cc-section > .ds-section { margin: 0; }
+.ui-root .cc-part { margin-top: var(--space-px40); }
+.ui-root .cc-part > .ds-section-head { margin-bottom: var(--space-2); }
+.ui-root .cc-part > .ds-section-head .ds-who { margin-left: var(--space-px10); }
+.ui-root .cc-backrow { margin: calc(-1 * var(--space-px10)) 0 var(--space-px14); }
+.ui-root .cc-setpane.ds-section { border-top: 0; padding-top: 0; }
+.ui-root .cc-setpane > .ds-section-head { margin-bottom: var(--space-px12); }
 
 .ui-root .cc-soft { background: var(--raised); border-radius: var(--radius-card); padding: var(--space-px18) var(--space-px22); margin-top: var(--space-px20); }
 .ui-root .cc-soft-label { display: block; font-size: var(--fs-small); color: var(--placeholder); margin-bottom: var(--space-1); }
@@ -321,10 +333,13 @@
   padding: var(--space-2) 0;
   border-bottom: var(--line-w) solid var(--line);
 }
-.ui-root .cc-fold-head h2 { margin: 0; font-family: var(--font-display); font-weight: var(--fw-regular); text-transform: uppercase; letter-spacing: var(--ls-cc-section); font-size: var(--fs-small); line-height: var(--lh-title); display: flex; align-items: center; gap: var(--space-px10); word-spacing: normal; }
+.ui-root .cc-fold-head h2 { margin: 0; font-family: var(--font-display); font-weight: var(--fw-regular); text-transform: uppercase; letter-spacing: var(--ls-section-title); font-size: var(--fs-section-title); line-height: var(--lh-text); display: flex; align-items: center; gap: var(--space-px10); word-spacing: normal; }
 .ui-root .cc-fold-btn { all: unset; cursor: pointer; transition: color var(--dur) var(--ease); }
 .ui-root .cc-fold-btn::after { content: ''; position: absolute; inset: 0; }
 .ui-root .cc-fold-head h2 > :not(.cc-fold-btn) { position: relative; z-index: 1; }
+/* The eye's own 44px box starts where the title's words end, so the two tap areas never share a pixel. */
+.ui-root .cc-fold-head h2 { gap: 0; }
+.ui-root .cc-fold-head h2 > .ds-who { margin: calc(-1 * var(--space-px10)) 0 calc(-1 * var(--space-px10)) var(--space-px2); }
 .ui-root .cc-fold-sum { font-size: var(--fs-note); color: var(--text-2); text-align: right; pointer-events: none; overflow-wrap: anywhere; }
 .ui-root .cc-fold-mark { pointer-events: none; display: inline-flex; color: var(--text-2); }
 @media (hover: hover) {
@@ -395,7 +410,7 @@
 .ui-root .cc-bulk .ds-icon-btn .ds-crosshair { background-color: var(--toast-text); }
 
 /* A small menu that floats above everything (never cut off by a table). */
-.ui-root .cc-pop { display: grid; min-width: var(--cc-pop-min); padding: var(--space-px6); max-height: var(--cc-pop-max-h); overflow: auto; box-sizing: border-box; }
+.ui-root .cc-pop { display: grid; min-width: var(--cc-pop-min); padding: var(--space-px6); max-height: var(--cc-pop-max-h); overflow: auto; box-sizing: border-box; background: var(--card); border: var(--line-w) solid var(--line); border-radius: var(--cc-pop-radius); box-shadow: var(--cc-pop-shadow); font-family: var(--font-body); letter-spacing: normal; color: var(--text); }
 .ui-root .cc-pop-label { margin: var(--space-px10) var(--space-px12) var(--space-1); font-size: var(--fs-small); color: var(--placeholder); }
 .ui-root .cc-pop-item {
   all: unset;
@@ -431,7 +446,7 @@
   box-sizing: border-box;
   width: 100%;
   background: var(--bg);
-  border: var(--line-w) solid var(--line);
+  border: var(--line-w) solid var(--field-line);
   border-radius: var(--cc-card-radius);
   padding: var(--space-px10) var(--space-px12);
   display: grid;
@@ -452,11 +467,11 @@
 .ui-root .cc-table th { text-align: left; font-weight: var(--fw-regular); padding: 0 var(--space-2); border-bottom: var(--line-w) solid var(--line); vertical-align: bottom; height: var(--field-h); }
 .ui-root .cc-table th:first-child { width: var(--cc-th-name); padding-left: 0; }
 .ui-root .cc-table th.cc-th-add { width: var(--cc-th-add); }
-.ui-root .cc-table td { padding: var(--space-px6) var(--space-2); border-bottom: var(--line-w) solid var(--line-soft); vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ui-root .cc-table td { padding: var(--space-px6) var(--space-2); border-bottom: var(--line-w) solid var(--line-soft); vertical-align: middle; overflow-wrap: anywhere; }
 .ui-root .cc-table td:first-child { padding-left: 0; position: relative; overflow: visible; white-space: normal; }
 .ui-root .cc-table td small { display: block; font-size: var(--fs-small); color: var(--text-2); overflow-wrap: anywhere; }
 .ui-root .cc-table tr.cc-pick-row--on td { background: var(--raised); border-radius: 0; }
-.ui-root .cc-th { all: unset; cursor: pointer; box-sizing: border-box; min-height: var(--tap-min); max-width: 100%; display: inline-flex; align-items: flex-end; padding-bottom: var(--space-1); color: var(--text-2); font-size: var(--fs-small); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color var(--dur) var(--ease); }
+.ui-root .cc-th { all: unset; cursor: pointer; box-sizing: border-box; min-height: var(--tap-min); min-width: var(--tap-min); max-width: 100%; display: inline-flex; align-items: flex-end; padding-bottom: var(--space-1); color: var(--text-2); font-size: var(--fs-small); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color var(--dur) var(--ease); }
 .ui-root .cc-th--on { color: var(--text); text-decoration: underline; text-underline-offset: var(--space-1); }
 @media (hover: hover) {
   .ui-root .cc-th:hover { color: var(--coral-text); }
@@ -517,7 +532,6 @@
 .ui-root .cc-panel-foot--end { justify-content: flex-end; }
 .ui-root .cc-paste { box-sizing: border-box; width: 100%; min-height: var(--textbox-min-h); background: var(--card); border: var(--line-w) solid var(--field-line); border-radius: var(--radius-field); color: var(--text); font-family: var(--font-body); font-size: var(--fs-input); line-height: var(--lh-box); padding: var(--space-px14) var(--space-3); resize: vertical; }
 .ui-root .cc-paste:focus { outline: 0; border-color: var(--text-2); }
-.ui-root .cc-paste:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); }
 .ui-root .cc-preview { margin-top: var(--space-3); }
 .ui-root .cc-preview-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-px2) var(--space-3); padding: var(--space-px10) 0; border-bottom: var(--line-w) solid var(--line-soft); font-size: var(--fs-secondary); }
 .ui-root .cc-preview-row small { display: block; font-size: var(--fs-note); color: var(--text-2); overflow-wrap: anywhere; }
@@ -577,7 +591,7 @@
   .ui-root .cc-callbar-who { overflow: hidden; text-overflow: ellipsis; }
   .ui-root .cc-col { padding-inline: var(--space-3); }
   .ui-root .cc-page { padding-block: var(--space-px18) calc(var(--cc-phone-bar-h) + var(--space-px40) + env(safe-area-inset-bottom, 0px)); }
-  .ui-root .cc-section { margin-top: var(--space-5); }
+  .ui-root .cc-part { margin-top: var(--space-5); }
 
   .ui-root .cc-phonebar {
     display: flex;

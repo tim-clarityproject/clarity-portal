@@ -190,7 +190,7 @@ export default function Clients() {
     return true;
   };
   const columnFilter = (c) => {
-    if (!c.field) return [];
+    if (!c.field || (c.field.kind !== 'choice' && c.field.kind !== 'text')) return [];
     const all = c.field.kind === 'choice' ? c.field.options || [] : [...new Set(values.filter((v) => v.field_id === c.field.id).map((v) => String(v.value_text ?? v.value_number ?? v.value_date ?? '')).filter(Boolean))].sort().slice(0, 20);
     return [...all, 'none'];
   };

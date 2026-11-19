@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { coachReadyNow, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { NEEDS_049 } from '../../lib/coach/actions';
 import { clean, parsePeople, workshopCounts, workshopIsPast } from '../../lib/coach/model';
-import { Back, Line, SettingRow, TextLink, useCoachPortal } from './parts';
+import { Back, Line, SettingRow, TextLink, useCoachPortal, Part } from './parts';
 import { workshopWhen } from './workshopWords';
 
 // A workshop (M11): the page before and after the day. Registration with
@@ -105,8 +105,7 @@ export default function WorkshopPage() {
         </StatGroup>
 
         {!past && (
-          <section className="cc-section">
-            <div className="ds-section-head"><h2 className="ds-section-title">Registration</h2></div>
+          <Part title="Registration">
             <SwitchRow label="Registration page" note={workshop.registration_open ? 'Open: anyone with the link can register.' : 'Closed: the page says registration isn’t open.'} checked={workshop.registration_open === true} onChange={(on) => save({ registration_open: on }, on ? 'Registration is open' : 'Registration is closed')} />
             <div className="cc-acts">
               <TextLink onClick={() => copy(pageAddress, 'Link copied')}>Copy the page’s link</TextLink>
@@ -133,20 +132,18 @@ export default function WorkshopPage() {
               </Line>
             ))}
             <div className="cc-add"><AddButton onClick={() => { setQuestion({ id: newId(), q: '', kind: 'short', needed: false }); setProblem(null); }}>Add question</AddButton></div>
-          </section>
+          </Part>
         )}
 
         {!past && (
-          <section className="cc-section">
-            <div className="ds-section-head"><h2 className="ds-section-title">Reminders</h2></div>
+          <Part title="Reminders">
             <SwitchRow label="Email the day before" checked={workshop.remind_day_before === true} onChange={(on) => save({ remind_day_before: on })} />
             <SwitchRow label="Email 1 hour before" checked={workshop.remind_hour_before === true} onChange={(on) => save({ remind_hour_before: on })} />
             <p className="cc-note">These keep your choice. Reminders start to send when booking emails arrive with the calendar.</p>
-          </section>
+          </Part>
         )}
 
-        <section className="cc-section">
-          <div className="ds-section-head"><h2 className="ds-section-title">{past ? 'Attendance' : 'Who’s coming'}</h2></div>
+        <Part title={past ? 'Attendance' : 'Who’s coming'}>
           {registered.length === 0 && <p className="cc-quiet">Nobody is registered yet.</p>}
           {list.map((a) => (
             <div key={a.id} className="cc-tickrow">
@@ -164,11 +161,10 @@ export default function WorkshopPage() {
           ))}
           <div className="cc-add"><AddButton onClick={() => { setPasted(''); setProblem(null); setPanel('attendees'); }}>Add attendees</AddButton></div>
           {!past && <p className="cc-note">Tick people in as they arrive on the day.</p>}
-        </section>
+        </Part>
 
         {workshop.survey_on && past && answers.length > 0 && (
-          <section className="cc-section">
-            <div className="ds-section-head"><h2 className="ds-section-title">Survey</h2></div>
+          <Part title="Survey">
             {average && <Line title="How useful was it?" small={`Average of ${ratings.length} ${ratings.length === 1 ? 'answer' : 'answers'}`}><span className="cc-line-state">{average} of 5</span></Line>}
             <Line title="Would you recommend it?" small={`${answers.length} ${answers.length === 1 ? 'answer' : 'answers'}`}><span className="cc-line-state cc-line-state--good">{yes} yes</span></Line>
             {said.length > 0 && <p className="cc-small-label">What will you do differently?</p>}
@@ -176,11 +172,10 @@ export default function WorkshopPage() {
               // eslint-disable-next-line react/no-array-index-key
               <div key={i} className="cc-soft"><p>“{t}”</p></div>
             ))}
-          </section>
+          </Part>
         )}
 
-        <section className="cc-section">
-          <div className="ds-section-head"><h2 className="ds-section-title">Materials</h2></div>
+        <Part title="Materials">
           {materials.length === 0 && <p className="cc-quiet">No materials yet.</p>}
           {materials.map((m) => (
             <Line key={m.id} title={m.name} small={m.link ? 'Link' : 'File'}>
@@ -192,10 +187,9 @@ export default function WorkshopPage() {
           ))}
           <div className="cc-add"><AddButton onClick={() => fileRef.current?.click()}>Add file</AddButton></div>
           <input ref={fileRef} className="cc-hidden-file" type="file" tabIndex={-1} aria-hidden="true" onChange={(e) => { addMaterial(e.target.files?.[0]); e.target.value = ''; }} />
-        </section>
+        </Part>
 
-        <section className="cc-section">
-          <div className="ds-section-head"><h2 className="ds-section-title">Afterwards</h2></div>
+        <Part title="Afterwards">
           <SwitchRow label="A short survey the day after" note="3 questions, by each person’s own link" checked={workshop.survey_on === true} onChange={(on) => save({ survey_on: on })} />
           {followUp == null ? (
             <>
@@ -209,7 +203,7 @@ export default function WorkshopPage() {
             </form>
           )}
           <p className="cc-note">Nothing is sent from here yet: the follow-up and the survey go out when workshop emails are switched on.</p>
-        </section>
+        </Part>
 
         <div className="cc-acts">
           <TextLink onClick={() => done(async () => { await removeRow(userId, 'workshops', workshop.id); return 'saved'; }, 'Deleted', () => saveRows(userId, [['workshops', workshop], ...attendees.map((a) => ['workshop_attendees', a]), ...materials.map((m) => ['workshop_materials', m])])).then((ok) => { if (ok) navigate('/coach/clients?tab=workshops'); })}>Delete this workshop</TextLink>

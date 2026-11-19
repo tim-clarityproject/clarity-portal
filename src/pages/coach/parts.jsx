@@ -1,5 +1,6 @@
 import { createContext, forwardRef, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { Button, Chevron, DisclosureArrow, EyeIcon, InfoPop, Popover, useInfoToggle } from '../../components/design';
+import { Button, DisclosureArrow, EyeIcon, InfoPop, Popover, useInfoToggle } from '../../components/design';
+import { BackLink } from '../../components/ui/DiscardLink';
 
 // The coach portal's own small parts (Phase 6a run 1; M11, version 3.6),
 // each built from the shared set (src/components/design) and used on every
@@ -21,15 +22,18 @@ export function InlineLink({ children, ...rest }) {
   return <button type="button" className="cc-inline-link" {...rest}>{children}</button>;
 }
 
-/** Back, at the top left: the chevron 10px from its words (the shared BackLink's look). */
+/** Back, at the top left: the shared Back link (the chevron 10px from its words, on the content's left edge). */
 export function Back({ to = 'Clients', onClick }) {
+  return <div className="cc-backrow"><BackLink onClick={onClick} label={to} /></div>;
+}
+
+/** A section: the shared heading, then its rows (no line under the heading when rows with their own lines follow). */
+export function Part({ title, aside, children }) {
   return (
-    <div className="ds-guide-backrow">
-      <button type="button" className="ds-guide-back" onClick={onClick}>
-        <Chevron direction="left" beside="words" />
-        <span>{to}</span>
-      </button>
-    </div>
+    <section className="ds-section cc-part">
+      <div className="ds-section-head"><h2 className="ds-section-title">{title}{aside}</h2></div>
+      {children}
+    </section>
   );
 }
 

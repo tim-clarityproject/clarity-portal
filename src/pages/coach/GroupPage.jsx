@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AddButton, Button, Dropdown, InlineChoice, PageHeader, SlidePanel, Stat, StatGroup, TextField, useToast } from '../../components/design';
 import { newId, removeRow, rowsOf, saveRow } from '../../lib/coach/store';
 import { clean, firstName, isEmail, possessive, sessionsLeft } from '../../lib/coach/model';
-import { Back, Line, TextLink, useCoachPortal } from './parts';
+import { Back, Line, TextLink, useCoachPortal, Part } from './parts';
 import { currentEngagement } from './clientData';
 import { draftFrom, EngagementPanel } from './ClientPage';
 
@@ -50,16 +50,14 @@ export default function GroupPage() {
       <div className="cc-col">
         <Back onClick={() => navigate('/coach/clients?tab=groups')} />
         <PageHeader title={group.name} meta={[org?.name, `${members.length} ${members.length === 1 ? 'person' : 'people'}`]} />
-        <section className="cc-section">
-          <div className="ds-section-head"><h2 className="ds-section-title">Next group session</h2></div>
+        <Part title="Next group session">
           <p className="cc-quiet">No session is booked. Booking arrives with the calendar.</p>
-        </section>
+        </Part>
         {sessions && <StatGroup className="cc-stats"><Stat label="Group sessions left" value={`${sessions.left} of ${sessions.total}`} bar={sessions.total ? sessions.left / sessions.total : 0} /></StatGroup>}
         <div className="cc-acts">
           <TextLink onClick={() => setEngDraft(draftFrom(engagement))}>{engagement ? 'Edit the group’s engagement' : 'Add the group’s engagement'}</TextLink>
         </div>
-        <section className="cc-section">
-          <div className="ds-section-head"><h2 className="ds-section-title">Members</h2></div>
+        <Part title="Members">
           {members.length === 0 && <p className="cc-quiet">Nobody is in this group yet.</p>}
           {members.map((m) => {
             const own = m.counts_against === 'own';
@@ -78,11 +76,10 @@ export default function GroupPage() {
             );
           })}
           <div className="cc-add"><AddButton onClick={() => setAdding(true)}>Add member</AddButton></div>
-        </section>
-        <section className="cc-section">
-          <div className="ds-section-head"><h2 className="ds-section-title">Sessions and recaps</h2></div>
+        </Part>
+        <Part title="Sessions and recaps">
           <p className="cc-quiet">One recap to everyone arrives with the coaching day.</p>
-        </section>
+        </Part>
         <div className="cc-acts">
           <TextLink onClick={() => done(async () => { for (const m of members) await removeRow(userId, 'coach_group_members', m.id); await removeRow(userId, 'coach_groups', group.id); return 'saved'; }, 'Deleted', async () => { await saveRow(userId, 'coach_groups', group); for (const m of members) await saveRow(userId, 'coach_group_members', m); }).then((ok) => { if (ok) navigate('/coach/clients?tab=groups'); })}>Delete this group</TextLink>
         </div>

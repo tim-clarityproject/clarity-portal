@@ -195,7 +195,6 @@ function Search({ open, onClose }) {
     if (e.key === 'ArrowUp') { e.preventDefault(); setAt((n) => Math.max(0, n - 1)); }
     if (e.key === 'Enter') { e.preventDefault(); choose(flat[at]); }
   };
-  let n = -1;
   return (
     <>
       <div className="cc-scrim" onClick={onClose} aria-hidden="true" />
@@ -207,8 +206,7 @@ function Search({ open, onClose }) {
             <div key={g.label} role="group" aria-label={g.label}>
               <p className="cc-jump-label">{g.label}</p>
               {g.items.map((item) => {
-                n += 1;
-                const i = n;
+                const i = flat.indexOf(item);
                 return (
                   <button key={item.key} type="button" role="option" aria-selected={i === at} className={`cc-jump-item${i === at ? ' cc-jump-item--on' : ''}`} onMouseMove={() => { if (at !== i) setAt(i); }} onClick={() => choose(item)}>
                     <b>{item.title}</b>

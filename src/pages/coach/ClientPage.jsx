@@ -11,7 +11,7 @@ import {
   gettingStarted, isEmail, minutesClocked, minutesWords, possessive, quickContacts, runningEntry, sessionsLeft, START_ZONES,
   timeCredit, timeline, TIMELINE_KINDS,
 } from '../../lib/coach/model';
-import { Back, Detail, EditCell, Eye, Fold, InlineLink, Line, TextLink, useCoachPortal, useEverySecond } from './parts';
+import { Back, Detail, EditCell, Eye, Fold, InlineLink, Line, TextLink, useCoachPortal, useEverySecond, Part } from './parts';
 import { currentEngagement } from './clientData';
 import { TagsPanel } from './ClientPanels';
 import { FieldPanel } from './Settings';
@@ -371,8 +371,7 @@ export default function ClientPage() {
             {shared?.mission && <div className="cc-soft"><span className="cc-soft-label">{possessive(first)} Mission</span><p>{shared.mission}</p></div>}
 
             {!started.complete && profile.status !== 'past' && (
-              <section className="cc-section">
-                <div className="ds-section-head"><h2 className="ds-section-title">Getting started</h2></div>
+              <Part title="Getting started">
                 {started.rows.map((r) => (
                   <Line key={r.key} title={r.label} small={r.key === 'invited' && !profile.email && !r.done ? `Add ${possessive(first)} email first.` : null}>
                     {r.done ? <span className="cc-line-state cc-line-state--good">Done</span>
@@ -381,13 +380,12 @@ export default function ClientPage() {
                           : <TextLink aria-label={`Tick ${r.label}`} onClick={() => save({ getting_started: { ...(profile.getting_started || {}), [r.key]: true } })}>Tick as done</TextLink>}
                   </Line>
                 ))}
-              </section>
+              </Part>
             )}
 
-            <section className="cc-section">
-              <div className="ds-section-head"><h2 className="ds-section-title">Next coaching session</h2></div>
+            <Part title="Next coaching session">
               <p className="cc-quiet">No session is booked. Booking arrives with the calendar.</p>
-            </section>
+            </Part>
 
             {(sessions || credit) && (
               <StatGroup className="cc-stats">
@@ -397,8 +395,7 @@ export default function ClientPage() {
             )}
 
             {credit && (
-              <section className="cc-section">
-                <div className="ds-section-head"><h2 className="ds-section-title">Projects</h2></div>
+              <Part title="Projects">
                 {[...projects, ...(projects.length ? [] : [{ id: null, name: 'Coaching' }])].map((p) => {
                   const on = running && running.engagement_id === engagement.id && (running.project_id || null) === p.id;
                   const total = minutesClocked(entries, { engagementId: engagement.id, projectId: p.id }, now);
@@ -409,7 +406,7 @@ export default function ClientPage() {
                   );
                 })}
                 <ProjectAdd onAdd={addProject} />
-              </section>
+              </Part>
             )}
 
             <div className="cc-folds">

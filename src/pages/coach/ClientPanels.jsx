@@ -351,7 +351,7 @@ export function FilterPanel({ open, onClose, list, setList, count }) {
       {isOwner && others.length > 1 && (
         <div className="cc-field"><Dropdown label="Coach" options={[{ value: NONE, label: 'Any coach' }, ...others.map((c) => ({ value: c.coach_id, label: c.coach_id === coach.id ? 'You' : c.full_name || c.first_name }))]} value={f.coach || NONE} onChange={(v) => set({ coach: v === NONE ? null : v })} /></div>
       )}
-      {fields.map((field) => {
+      {fields.filter((field) => field.kind === 'choice' || field.kind === 'text').map((field) => {
         const options = field.kind === 'choice' ? field.options || [] : [...new Set(values.filter((v) => v.field_id === field.id).map((v) => String(v.value_text ?? v.value_number ?? v.value_date ?? '')).filter(Boolean))].sort().slice(0, 24);
         if (!options.length) return null;
         const on = f.fields?.[field.id] || [];
@@ -364,7 +364,7 @@ export function FilterPanel({ open, onClose, list, setList, count }) {
           </div>
         );
       })}
-      <div className="cc-section">
+      <div className="cc-part ds-section">
         <div className="ds-section-head"><h3 className="ds-section-title">Saved views</h3></div>
         {mine.map((v) => (
           <div key={v.id} className="cc-line">

@@ -722,7 +722,7 @@ export default function Settings() {
               <button key={s.key} type="button" className="cc-setnav-item" aria-current={s.key === chosen.key ? 'true' : undefined} onClick={() => navigate(`/coach/settings/${s.key}`)}>{s.label}</button>
             ))}
           </nav>
-          <section className="cc-setpane" aria-labelledby="cc-set-h">
+          <section className="cc-setpane ds-section" aria-labelledby="cc-set-h">
             <div className="ds-section-head"><h2 id="cc-set-h" className="ds-section-title">{chosen.label}</h2></div>
             <Pane key={chosen.key} />
           </section>

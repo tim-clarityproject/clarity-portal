@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { coachReadyNow, newId, removeRow, rowsOf, saveRow } from '../../lib/coach/store';
 import { NEEDS_049 } from '../../lib/coach/actions';
 import { addDays, clean, dayWords, ENGAGEMENT_KINDS, firstName, isEmail, possessive, sessionsLeft } from '../../lib/coach/model';
-import { Back, Eye, Line, Row, SettingRow, TextLink, useCoachPortal } from './parts';
+import { Back, Eye, Line, Row, SettingRow, TextLink, useCoachPortal, Part } from './parts';
 import { currentEngagement } from './clientData';
 
 // An organisation (M11, with version 3.6's account map), the owner's: Who's
@@ -97,8 +97,7 @@ export default function OrganisationPage() {
           {seats > 0 && <Stat label="Seats in use" value={`${withAccount} of ${seats}`} bar={seats ? withAccount / seats : 0} />}
         </StatGroup>
 
-        <section className="cc-section">
-          <div className="ds-section-head"><h2 className="ds-section-title">Who’s who</h2></div>
+        <Part title="Who’s who">
           {contacts.map((c) => (
             <Row key={c.id} title={c.name} facts={[roleWords(c.roles), c.job_title, c.note]} when="" onClick={() => { setProblem(null); setContact({ id: c.id, name: c.name, email: c.email || '', job_title: c.job_title || '', roles: c.roles || [], note: c.note || '' }); }} label={`Edit ${c.name}`} />
           ))}
@@ -109,10 +108,9 @@ export default function OrganisationPage() {
             return <Row key={g.id} title={g.name} facts={[`Group of ${n}`]} when="" onClick={() => navigate(`/coach/groups/${g.id}`)} />;
           })}
           <div className="cc-add"><AddButton onClick={() => { setProblem(null); setContact({ id: newId(), name: '', email: '', job_title: '', roles: [], note: '' }); }}>Add someone</AddButton></div>
-        </section>
+        </Part>
 
-        <section className="cc-section">
-          <div className="ds-section-head"><h2 className="ds-section-title">Engagements</h2></div>
+        <Part title="Engagements">
           {mine.map((p) => {
             const e = currentEngagement(engagements, { profileId: p.id });
             if (!e) return null;
@@ -123,21 +121,19 @@ export default function OrganisationPage() {
             <Row key={a.profile_id} title={`${ENGAGEMENT_KINDS.find((k) => k.value === a.engagement_kind)?.label} for ${firstName(a.name)}`} facts={[`${a.coach_first_name}’s client`, a.sessions_total ? `${Math.max(0, a.sessions_total - a.sessions_held)} of ${a.sessions_total} sessions to go` : null]} when={a.ends_on ? `Ends ${dayWords(a.ends_on, todayKey)}` : ''} />
           ))}
           {!mine.some((p) => currentEngagement(engagements, { profileId: p.id })) && !theirs.some((a) => a.engagement_kind) && <p className="cc-quiet">No engagement is running here. Agreements and proposals arrive with the Business space.</p>}
-        </section>
+        </Part>
 
         {grow.length > 0 && (
-          <section className="cc-section">
-            <div className="ds-section-head"><h2 className="ds-section-title">Room to grow</h2></div>
+          <Part title="Room to grow">
             {grow.slice(0, 5).map((g) => (
               <Line key={g.key} title={g.title} small={g.small}>
                 {g.to ? <TextLink aria-label={`Open the page for: ${g.title}`} onClick={() => navigate(g.to)}>Open their page</TextLink> : <span />}
               </Line>
             ))}
-          </section>
+          </Part>
         )}
 
-        <section className="cc-section">
-          <div className="ds-section-head"><h2 className="ds-section-title">Seats</h2></div>
+        <Part title="Seats">
           <SettingRow
             label="Seats"
             value={String(seats)}
@@ -154,10 +150,9 @@ export default function OrganisationPage() {
           />
           <SwitchRow label="Organisation area" note={`Seats unlock the team tools for ${org.name}.`} checked={org.area_enabled === true} onChange={(on) => save({ area_enabled: on })} />
           <p className="cc-note">Access codes stay as they were set up. Prices and invoices arrive with the Business space.</p>
-        </section>
+        </Part>
 
-        <section className="cc-section">
-          <div className="ds-section-head"><h2 className="ds-section-title">Documents <Eye sentence="Only you can see these." /></h2></div>
+        <Part title="Documents" aside={<Eye sentence="Only you can see these." />}>
           {docs.length === 0 && <p className="cc-quiet">No documents yet. A services agreement or a non-disclosure agreement would sit here.</p>}
           {docs.map((d) => (
             <Line key={d.id} title={d.name} small={d.expires_on ? `${d.expires_on < todayKey ? 'Expired' : 'Expires'} on ${dayWords(d.expires_on, todayKey)}.` : 'No expiry date.'}>
@@ -168,7 +163,7 @@ export default function OrganisationPage() {
             </Line>
           ))}
           <div className="cc-add"><AddButton onClick={() => { setProblem(null); setDoc({ id: newId(), name: '', expires: '', file: null }); }}>Add document</AddButton></div>
-        </section>
+        </Part>
       </div>
 
       <SlidePanel
