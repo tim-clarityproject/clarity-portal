@@ -105,7 +105,7 @@ try {
     pass('it has no Create my account link', !/create my account|new here/i.test(words), words.slice(0, 200));
     pass('“Clarity drives performance.” is on Sign in only', !/clarity drives performance/i.test(words));
     const order = await page.evaluate(() => [...document.querySelectorAll('.si-col .ds-google, .si-col .si-field label, .si-col .si-btn, .si-col .si-alt')].map((el) => el.innerText.trim()));
-    pass('Continue with Google sits above email, then Sign in and Forgotten your password?', JSON.stringify(order) === JSON.stringify(['Continue with Google', 'Email', 'Password', 'SIGN IN', 'Forgotten your password?']), order.join(' | '));
+    pass('Continue with Google sits above email, then Sign in and Forgotten your password?', JSON.stringify(order) === JSON.stringify(['Continue with Google', 'Email', 'Password', 'Sign in', 'Forgotten your password?']), order.join(' | '));
     await page.getByRole('link', { name: 'Forgotten your password?' }).click();
     await page.waitForURL(/\/forgot-password$/);
     await page.getByRole('link', { name: 'Back to sign in' }).click();
