@@ -19,8 +19,15 @@ function files(dir) {
   });
 }
 
-test('"Next coaching session" is shown nowhere until the coach portal exists', () => {
+// Since Phase 6a run 1 (19 Nov) the coach portal exists: its own pages
+// (src/pages/coach, a coach's view of a client, as M11 draws it) name the
+// section, and it fills when the calendar arrives. Nothing a client can see
+// may show it yet: every other source file is still searched.
+const COACH_PORTAL = /^src\/(pages|lib)\/coach\//;
+
+test('"Next coaching session" is shown nowhere in the client portal (the coach portal alone names it)', () => {
   const found = [...files('src'), ...files('public'), 'index.html', 'health-check.html']
+    .filter((f) => !COACH_PORTAL.test(f.replace(/\\/g, '/')))
     .filter((f) => existsSync(f) && TEXT.test(readFileSync(f, 'utf8')));
   assert.deepEqual(found, [], `found in ${found.join(', ')}`);
 });

@@ -30,7 +30,6 @@ const RUN3 = 'the calendar and booking are run 3';
 const RUN4 = 'the CRM is run 4';
 const LATER = 'agreements, prices and invoices are Phase 6b';
 const KEYS = 'no keyboard shortcut is shown anywhere (Tim, 18 Nov)';
-const SHARED = 'the shared part’s own words';
 
 // [title, M11 screen, who, clicks in M11 (data-a), built screen, built role, same words, differences]
 const SCREENS = [

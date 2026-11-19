@@ -26,7 +26,7 @@ test('one document makes both versions: every line of the plain text is in the H
     // The logo's words are its alt text: what shows with images blocked.
     const words = r.html.replace(/<img[^>]*alt="([^"]*)"[^>]*>/g, ' $1 ').replace(/<style[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&middot;/g, '·').replace(/&#39;/g, '\'').replace(/&quot;/g, '"').replace(/\s+/g, ' ');
     for (const line of r.text.split('\n').filter((l) => l && l !== '----' && !/^https:|^\{\{/.test(l))) {
-      const said = line.replace(/: https:\S+$|: \{\{ [a-z_.A-Z ]+ \}\}$/, '').replace(/ \(~\d+ minutes\):$/, '').replace(/:$/, '').replace(/^- /, '');
+      const said = line.replace(/: https:\S+$|: \{\{ [a-z_.A-Z ]+ \}\}$/, '').replace(/ \(~\d+ minutes?\):$/, '').replace(/:$/, '').replace(/^- /, '');
       // A sign-in detail is "Email: …" in the text and two cells in the HTML.
       for (const part of (words.includes(said) ? [said] : said.split(': '))) assert.ok(words.includes(part), `${e.key}: "${part}" is only in the plain text`);
     }
