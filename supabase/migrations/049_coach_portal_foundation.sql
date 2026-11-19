@@ -52,7 +52,8 @@
 --   cover coach, between the cover dates, once the client has agreed.
 --
 -- WHO CAN SEE WHAT
---   - A coach reads and changes only their own clients' profiles. An
+--   - A coach reads and changes only their own clients' profiles (and may
+--     take back one they have just added, while it has no account). An
 --     associate never reads another coach's client.
 --   - The owner reads only admin facts of an associate's clients (name,
 --     coach, organisation, status, the engagement and its sessions), through
@@ -987,11 +988,14 @@ begin
   -- between the dates; the client reads their own. The owner adds a client
   -- for any coach, and reads associates' clients only through
   -- coach_admin_clients().
-  grant select, insert, update on public.client_profiles to authenticated;
+  grant select, insert, update, delete on public.client_profiles to authenticated;
   perform pg_temp.rule('client_profiles', 'Profiles: read', 'select',
     mine || ' or user_id = (select auth.uid()) or (select public.covers_profile(id))');
   perform pg_temp.rule('client_profiles', 'Profiles: add', 'insert', null, mine || ' or (select public.is_owner())');
   perform pg_temp.rule('client_profiles', 'Profiles: change', 'update', mine, mine);
+  -- A coach takes back a client they have just added (Undo). Deleting a
+  -- client's data for good goes through client_delete(), which is logged.
+  perform pg_temp.rule('client_profiles', 'Profiles: remove own', 'delete', mine || ' and user_id is null');
 
   grant select on public.client_profile_coaches to authenticated;
   perform pg_temp.rule('client_profile_coaches', 'Profile coaches: read', 'select', mine || ' or (select public.is_owner())');
@@ -1282,6 +1286,34 @@ end;
 $$;
 revoke all on function public.coach_admin_clients() from public, anon;
 grant execute on function public.coach_admin_clients() to authenticated;
+
+-- The owner adds a client for another coach. (A plain save can't hand the
+-- new row back, because the owner may not read an associate's client.)
+create or replace function public.client_add_for(p_coach uuid, p_id uuid, p_name text, p_email text default null, p_organisation uuid default null,
+                                                 p_time_zone text default null, p_frequent_traveller boolean default false, p_referred_by text default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare v_to text;
+begin
+  if not public.is_owner() then
+    raise exception 'Only the owner can do this.' using errcode = '42501';
+  end if;
+  select display_first_name into v_to from public.coaches where id = p_coach and active;
+  if v_to is null then
+    raise exception 'Choose a coach who is switched on.' using errcode = '22023';
+  end if;
+  insert into public.client_profiles (id, coach_id, name, email, organisation_id, time_zone, frequent_traveller, referred_by)
+  values (coalesce(p_id, gen_random_uuid()), p_coach, btrim(p_name), nullif(lower(btrim(coalesce(p_email, ''))), ''), p_organisation,
+          p_time_zone, coalesce(p_frequent_traveller, false), nullif(btrim(coalesce(p_referred_by, '')), ''))
+  returning id into p_id;
+  return p_id;
+end;
+$$;
+revoke all on function public.client_add_for(uuid, uuid, text, text, uuid, text, boolean, text) from public, anon;
+grant execute on function public.client_add_for(uuid, uuid, text, text, uuid, text, boolean, text) to authenticated;
 
 -- Move to a coach (owner). Returns the coach the client had, for Undo.
 create or replace function public.client_move(p_profile uuid, p_to_coach uuid)

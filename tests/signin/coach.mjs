@@ -120,8 +120,9 @@ try {
     await page.goto(`${APP}/coach/sign-in`);
     await page.waitForSelector('.si-col .ds-google');
     await fill(page, 'COACH_OWNER');
-    await page.waitForURL(/\/welcome$/, { timeout: 30000 }).catch(() => null);
-    pass('a coach with no authenticator set up is let in after the password', path(page) === '/welcome', path(page));
+    // Since Phase 6a a coach lands in the coach portal (Clarity Coach, /coach).
+    await page.waitForURL(/\/coach$/, { timeout: 30000 }).catch(() => null);
+    pass('a coach with no authenticator set up is let in after the password, to the coach portal', path(page) === '/coach', path(page));
     await ctx.close();
   }
 
@@ -161,8 +162,8 @@ try {
     // The right code.
     await page.getByLabel('Code').fill(totp(secret));
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await page.waitForURL(/\/welcome$/, { timeout: 30000 }).catch(() => null);
-    pass('the right code signs the coach in to Home', path(page) === '/welcome', `${path(page)} ${await message(page)}`);
+    await page.waitForURL(/\/coach$/, { timeout: 30000 }).catch(() => null);
+    pass('the right code signs the coach in to the coach portal', path(page) === '/coach', `${path(page)} ${await message(page)}`);
     await page.goto(`${APP}/dashboard`);
     await sleep(2500);
     pass('and the portal is open to them', path(page) === '/dashboard', path(page));

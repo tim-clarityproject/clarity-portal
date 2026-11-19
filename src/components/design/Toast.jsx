@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ERROR_MESSAGE, ToastContext } from './toastContext';
-import { POPUP_MS, TOAST_MS, TOAST_UNDO_MS, prefersReducedMotion } from './timing';
+import { POPUP_MS, TOAST_LONG_UNDO_MS, TOAST_MS, TOAST_UNDO_MS, prefersReducedMotion } from './timing';
 import './design.css';
 
 // Toast (design reference: Feedback; decisions: "Motion and feedback",
@@ -74,7 +74,7 @@ export function ToastProvider({ children }) {
       if (keepUndo && current.current?.kind === 'undo') return;
       open({ kind: 'done', message }, TOAST_MS);
     },
-    saved: ({ message = 'Saved', onUndo } = {}) => open({ kind: 'undo', message, onUndo }, TOAST_UNDO_MS),
+    saved: ({ message = 'Saved', onUndo, long = false } = {}) => open({ kind: 'undo', message, onUndo }, long ? TOAST_LONG_UNDO_MS : TOAST_UNDO_MS),
     error: (message = ERROR_MESSAGE) => open({ kind: 'error', message }, TOAST_UNDO_MS),
     hide,
   }), [open, hide]);

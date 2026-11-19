@@ -151,6 +151,10 @@ begin
     perform pg_temp.t_as(own_u);
     f := f || pg_temp.t_eq('3a the owner adds their own client', pg_temp.t_rows(format('insert into public.client_profiles (id, coach_id, name, email, organisation_id) values (%L, %L, ''Sam Okafor'', %L, %L)', p_sam, own_c, sam_email, org)), '1');
     f := f || pg_temp.t_eq('3b the owner adds a client for Maya', pg_temp.t_rows(format('insert into public.client_profiles (id, coach_id, name) values (%L, %L, ''Owen Price'')', p_owen, maya_c)), '1');
+    f := f || pg_temp.t_eq('3b2 or through the checked function, which hands back the id', pg_temp.t_n(format('select (public.client_add_for(%L, null, '' Temp Person '', ''TEMP@Example.invalid'') is not null)::text', maya_c)), 'true');
+    perform pg_temp.t_admin();
+    delete from public.client_profiles where name = 'Temp Person' and email = 'temp@example.invalid' and coach_id = maya_c;
+    perform pg_temp.t_as(own_u);
     f := f || pg_temp.t_eq('3c the owner reads only their own profiles', (select count(*)::text from public.client_profiles), '1');
     f := f || pg_temp.t_eq('3d admin facts name every client and coach', (select string_agg(name || ':' || coach_first_name, ',' order by name) from public.coach_admin_clients()), 'Ella F:Maya,Ella Fraser:Maya,Owen Price:Maya,Sam Okafor:Tess');
     f := f || pg_temp.t_eq('3e never About them', (select count(*)::text from public.client_about), '0');
@@ -173,6 +177,9 @@ begin
     f := f || pg_temp.t_eq('4d she can''t note on it', pg_temp.t_rows(format('insert into public.client_notes (profile_id, coach_id, body) values (%L, %L, ''x'')', p_sam, maya_c)), 'error 42501');
     f := f || pg_temp.t_eq('4e she can''t move a client', pg_temp.t_n(format('select public.client_move(%L, %L)::text', p_sam, maya_c)), 'error 42501');
     f := f || pg_temp.t_eq('4f she can''t hand her own client on by a plain save', pg_temp.t_rows(format('update public.client_profiles set coach_id = %L where id = %L', own_c, p_ella)), 'error 42501');
+    f := f || pg_temp.t_eq('4f2 nor add a client for another coach', pg_temp.t_n(format('select public.client_add_for(%L, null, ''X'')::text', own_c)), 'error 42501');
+    f := f || pg_temp.t_eq('4f3 she takes back a client she just added (Undo)', concat(pg_temp.t_rows(format('insert into public.client_profiles (id, coach_id, name) values (''00000000-0000-4000-8000-0000000000aa'', %L, ''Just Added'')', maya_c)), pg_temp.t_rows('delete from public.client_profiles where id = ''00000000-0000-4000-8000-0000000000aa''')), '11');
+    f := f || pg_temp.t_eq('4f4 but not the owner''s client', pg_temp.t_rows(format('delete from public.client_profiles where id = %L', p_sam)), '0');
     f := f || pg_temp.t_eq('4g she can''t ask for admin facts', pg_temp.t_n('select count(*)::text from public.coach_admin_clients()'), 'error 42501');
     f := f || pg_temp.t_eq('4h she reads no contacts or documents', (select concat((select count(*) from public.organisation_contacts), (select count(*) from public.organisation_documents))), '00');
     f := f || pg_temp.t_eq('4i she reads the organisation her client is in', (select count(*)::text from public.organisations where id = org), '1');
@@ -201,9 +208,13 @@ begin
     f := f || pg_temp.t_eq('6d Sam sees one invite, from Tess', (select string_agg(coach_first_name, ',') from public.my_coach_invites()), 'Tess');
     f := f || pg_temp.t_eq('6e Sam accepts', pg_temp.t_n(format('select public.client_accept_invite(%L)', p_sam)), 'linked');
     f := f || pg_temp.t_eq('6f Sam reads their own profile only', (select count(*)::text from public.client_profiles), '1');
+    f := f || pg_temp.t_eq('6f2 Sam can''t delete their profile', pg_temp.t_rows(format('delete from public.client_profiles where id = %L', p_sam)), '0');
     f := f || pg_temp.t_eq('6g Sam reads no notes, tags or About them', (select concat((select count(*) from public.client_notes), (select count(*) from public.coach_tags), (select count(*) from public.client_about))), '000');
     perform pg_temp.t_admin();
     f := f || pg_temp.t_eq('6h Tess is Sam''s coach now', (select count(*)::text from public.coach_clients where client_id = sam_u and coach_id = own_c and ended_at is null), '1');
+
+    perform pg_temp.t_as(own_u);
+    f := f || pg_temp.t_eq('6i a linked client is deleted only with the name typed, never by a plain delete', pg_temp.t_rows(format('delete from public.client_profiles where id = %L', p_sam)), '0');
 
     -- 7. Cover.
     perform pg_temp.t_as(own_u);

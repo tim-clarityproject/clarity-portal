@@ -8,6 +8,8 @@ export const LOADING_DELAY_MS = 300;
 // A toast stays for about 3 seconds, or about 5 when it offers Undo.
 export const TOAST_MS = 3000;
 export const TOAST_UNDO_MS = 5000;
+// The coach portal: every action has Undo in its message for 10 seconds (Tim, 18 Nov).
+export const TOAST_LONG_UNDO_MS = 10000;
 
 // How long the panel and pop-up take to slide or fade away (match
 // --dur-slow and --dur in tokens.css), so they stay on screen until then.

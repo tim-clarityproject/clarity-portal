@@ -14,14 +14,15 @@ import { Button, IconText, Sheet } from './design';
 // "Wait", so nothing is lost without the person choosing it.
 
 /** The sign-out flow: `start` signs out, `choice` is the "not synced" panel. */
-export function useSignOut({ before } = {}) {
+export function useSignOut({ before, to = '/' } = {}) {
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const [unsynced, setUnsynced] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const finish = (result) => {
-    if (result?.signedOut) navigate('/');
+    // `to`: where to land afterwards (the coach portal sends coaches to their own sign-in page).
+    if (result?.signedOut) navigate(to);
   };
 
   const start = async () => {

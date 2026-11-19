@@ -153,6 +153,9 @@ export default defineConfig(({ command }) => {
   const buildId = command === 'serve' ? 'dev' : (process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now()))
   return {
     plugins: [react(), colourMode(), designGallery(galleryEnabled), buildVersion(buildId), serviceWorker(buildId, process.env.VERCEL_ENV === 'preview'), healthCheckPage(buildId)],
-    define: { __BUILD_ID__: JSON.stringify(buildId) },
+    // __CLARITY_LIVE__: true only in the live site's build. The coach portal
+    // shows pages still to come, and takes test calls for the next-call bar,
+    // everywhere else (previews, local builds), never on the live site.
+    define: { __BUILD_ID__: JSON.stringify(buildId), __CLARITY_LIVE__: JSON.stringify(process.env.VERCEL_ENV === 'production') },
   }
 })

@@ -100,6 +100,11 @@ const EmotionalWash = lazy(() => loadWithReload(() => import('./pages/emotionalW
 const PeakMoments = lazy(() => loadWithReload(() => import('./pages/peakMoments/PeakMoments')));
 const TravelPlan = lazy(() => loadWithReload(() => import('./pages/travelPlan/TravelPlan')));
 const GuestLink = lazy(() => loadWithReload(() => import('./pages/guest/GuestLink')));
+// Clarity Coach, the coach portal (Phase 6a): its own lazy-loaded part, so
+// none of it is in a client's bundle. The two public workshop pages too.
+const CoachApp = lazy(() => loadWithReload(() => import('./pages/coach/CoachApp')));
+const WorkshopRegister = lazy(() => loadWithReload(() => import('./pages/coach/WorkshopPublic').then((m) => ({ default: m.WorkshopRegister }))));
+const WorkshopSurvey = lazy(() => loadWithReload(() => import('./pages/coach/WorkshopPublic').then((m) => ({ default: m.WorkshopSurvey }))));
 const WheelStart = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelStart')));
 const WheelAreas = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelAreas')));
 const WheelCheckIn = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelCheckIn')));
@@ -136,7 +141,8 @@ function MyJournalRoute() {
 function TabTitle() {
   const { pathname } = useLocation();
   useEffect(() => {
-    if (/^\/health-check(\/|$)/.test(pathname)) return;
+    // The coach portal and the workshop pages name their own tabs.
+    if (/^\/(health-check|coach(?!\/sign-in)|workshop)(\/|$)/.test(pathname)) return;
     document.title = tabTitle(pathname);
   }, [pathname]);
   return null;
@@ -305,6 +311,8 @@ function AppContent() {
     || location.pathname.startsWith('/legal/')
     || location.pathname.startsWith('/health-check/')
     || location.pathname.startsWith('/guest/')
+    || location.pathname === '/coach' || location.pathname.startsWith('/coach/')
+    || location.pathname.startsWith('/workshop/')
     || location.pathname.startsWith('/personal-operating-plan-history/')
     || location.pathname.startsWith('/personal-operating-plan-archived/');
 
@@ -327,6 +335,11 @@ function AppContent() {
         {/* A tool without an account, through a coach's link (M9's guest
             pages; migration 035): /guest/<token>. */}
         <Route path="/guest/:token" element={lazyPage(GuestLink)} />
+
+        {/* A workshop's registration page and its survey (M11): no account
+            needed, by the page's or the person's own key (migration 049). */}
+        <Route path="/workshop/survey/:key" element={lazyPage(WorkshopSurvey)} />
+        <Route path="/workshop/:key" element={lazyPage(WorkshopRegister)} />
 
         {/* Signing in and creating an account. */}
         <Route path="/auth/login" element={<SignIn />} />
@@ -381,6 +394,9 @@ function AppContent() {
 
         {/* PROTECTED ROUTES - ALL routes here require valid session */}
         <Route element={<ProtectedLayout />}>
+          {/* Clarity Coach (Phase 6a): open only to coach accounts (CoachApp
+              sends anyone else to their own Home). */}
+          <Route path="/coach/*" element={lazyPage(CoachApp)} />
           <Route path="/about" element={<About />} />
           <Route path="/welcome" element={<Home />} />
           {/* The hub pages (M3, Phase 4 step 1), and the old section pages

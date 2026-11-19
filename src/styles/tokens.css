@@ -821,3 +821,56 @@
 .ui-root.ds-portal {
   background: transparent;
 }
+
+/* Clarity Coach, the coach portal (Phase 6a; mock-up M11, version 3.6). Its
+   own sizes, each drawn in M11; every colour, font, space and timing it
+   uses is one of the tokens above. */
+.ui-root {
+  --cc-header-h: 72px;          /* the header: menu button, search, bell */
+  --cc-callbar-h: 48px;         /* the slim next-call bar under it */
+  --cc-wide-max: 1040px;        /* the board, the table and Settings */
+  --cc-search-max: 520px;       /* the search box in the header */
+  --cc-row-h: 68px;             /* a list row: a name, one quiet line */
+  --cc-setrow-h: 60px;          /* a Settings row: label, value, Edit */
+  --cc-setnav-w: 216px;         /* Settings' list of sections */
+  --cc-setnav-gap: 48px;
+  --cc-label-w: 200px;          /* a Settings row's label */
+  --cc-detail-w: 150px;         /* a details line's label */
+  --cc-when-w: 120px;           /* the timeline's date */
+  --cc-fold-h: 56px;            /* a fold's heading row */
+  --cc-board-gap: 12px;
+  --cc-board-col-min: 320px;
+  --cc-col-radius: 14px;
+  --cc-card-radius: 10px;
+  --cc-pop-radius: 14px;
+  --cc-pop-row-radius: 9px;
+  --cc-pop-min: 220px;
+  --cc-pop-max-h: 340px;
+  --cc-pop-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  --cc-count: 18px;             /* the bell's small count */
+  --cc-jump-w: 620px;           /* search, open */
+  --cc-jump-top: 96px;
+  --cc-jump-row: 52px;
+  --cc-jump-max-h: 520px;
+  --cc-select: 18px;            /* the round tick for choosing several */
+  --cc-select-out: 52px;        /* how far it sits outside the row */
+  --cc-bulk-shade: rgba(127, 127, 127, 0.22);
+  --cc-th-name: 24%;            /* the table's first column */
+  --cc-th-add: 52px;
+  --cc-merge-label: 120px;
+  --cc-underline-gap: 4px;      /* a link inside a sentence */
+  --cc-bar-icon: 22px;
+  --cc-bar-mark: 32px;
+  --cc-header-mark: 26px;
+  --cc-phone-bar-h: 64px;
+  --cc-dot: 7px;                /* an unread notification */
+  --cc-undo-ms: 10000;          /* Undo stays for 10 seconds */
+  --fs-cc-count: calc(11 * var(--u));
+  --ls-cc-section: 0.14em;
+}
+
+@media (max-width: 600px) {
+  .ui-root {
+    --cc-callbar-h: 44px;
+  }
+}

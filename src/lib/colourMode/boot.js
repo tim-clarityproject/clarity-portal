@@ -58,7 +58,9 @@
     // A guest's pages (/guest/<token>, M9) are outside the portal too: no
     // Appearance setting, so they follow the device.
     return path === '/health-check' || path === '/health-check.html' || path.indexOf('/health-check/') === 0
-      || path.indexOf('/guest/') === 0;
+      || path.indexOf('/guest/') === 0
+      // A workshop's registration page and survey (Phase 6a) are outside the portal as well.
+      || path.indexOf('/workshop/') === 0;
   }
 
   function resolve(c) {

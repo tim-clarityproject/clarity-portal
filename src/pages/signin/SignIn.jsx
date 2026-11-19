@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
-import { rememberNext, SIGN_IN_PATHS } from '../../lib/signIn/addresses';
+import { peekNext, rememberNext, SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import { deviceClockLooksWrong } from '../../lib/signIn/clock';
 import { continueWithGoogle } from '../../lib/signIn/flow';
 import { emailChangeLink } from '../../lib/signIn/linkSession';
@@ -33,6 +33,8 @@ export default function SignIn({ coach = false }) {
   // Where they were heading when they were asked to sign in.
   useEffect(() => {
     if (location.state?.returnTo) rememberNext(location.state.returnTo);
+    // A coach with nowhere else to go lands in the coach portal (Phase 6a).
+    else if (coach && !peekNext()) rememberNext('/coach');
   }, []);
 
   // Already signed in (another tab, or coming back to this address): on they go.
