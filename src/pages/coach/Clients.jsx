@@ -8,7 +8,7 @@ import {
   dayWords, engagementLine, fieldFromTyped, fieldValue, fieldWords, filterClients, filterCount, likelyDuplicates,
   listFromView, sortClients, sortOptions, STAGES, workshopCounts,
 } from '../../lib/coach/model';
-import { EditCell, MenuItem, MenuLabel, PopMenu, Row, TextLink, useCoachPortal } from './parts';
+import { EditCell, MenuItem, MenuLabel, PopMenu, Row, TextLink, useCoachPortal, useNarrowerThan } from './parts';
 import { useClientRows } from './clientData';
 import { AddClientPanel, AddGroupPanel, AddTeamPanel, AddWorkshopPanel, ExportPanel, FilterPanel, MergePanel } from './ClientPanels';
 import { FieldPanel } from './Settings';
@@ -114,7 +114,9 @@ export default function Clients() {
 
   const { rows, packs, entries, values } = useClientRows();
   const ctx = useMemo(() => ({ fields, values, packs, entries, tags, organisations, now: new Date() }), [fields, values, packs, entries, tags, organisations]);
-  const layout = isPhone && list.layout === 'table' ? 'list' : list.layout;
+  // The table needs a laptop's width; a tablet and a phone offer the list and the board.
+  const noTable = useNarrowerThan(1100);
+  const layout = noTable && list.layout === 'table' ? 'list' : list.layout;
   const shown = useMemo(() => sortClients(filterClients(rows, { ...list.filters, q }, ctx), list.sort, ctx), [rows, list.filters, list.sort, q, ctx]);
   const sorts = sortOptions(fields);
   const sortLabel = sorts.find((s) => s.value === list.sort)?.label || sorts[0].label;
@@ -209,7 +211,7 @@ export default function Clients() {
     <>
       {!isPhone && <div className="cc-search-field"><SearchField label="Search clients" placeholder="Search clients" value={q} onChange={setQ} /></div>}
       <div className="cc-toolbar">
-        {!isPhone && <div className="cc-seg"><InlineChoice ariaLabel="Layout" semantics="pressed" options={LAYOUTS} value={layout} onChange={(v) => setList({ ...list, layout: v })} form="pills" /></div>}
+        {!isPhone && <div className="cc-seg"><InlineChoice ariaLabel="Layout" semantics="pressed" options={noTable ? LAYOUTS.slice(0, 2) : LAYOUTS} value={layout} onChange={(v) => setList({ ...list, layout: v })} form="pills" /></div>}
         {isPhone && <TextLink ref={ref('view')} aria-haspopup="menu" aria-expanded={menu === 'view'} onClick={() => setMenu('view')}>View</TextLink>}
         {isPhone ? <TextLink onClick={() => setPanel('filter')}>{filtersOn ? `Filter, ${filtersOn} on` : 'Filter'}</TextLink> : <Button variant="outline" onClick={() => setPanel('filter')}>{filtersOn ? `Filter, ${filtersOn} on` : 'Filter'}</Button>}
         {!isPhone && <TextLink onClick={() => setPanel('export')}>Export</TextLink>}
@@ -341,7 +343,7 @@ export default function Clients() {
         <div className="cc-bulk" role="toolbar" aria-label={`${pickedRows.length} chosen`}>
           <span className="cc-bulk-n" aria-live="polite">{pickedRows.length} chosen</span>
           {tags.length > 0 && pickedRows.some((r) => !r.admin) && <button type="button" className="cc-bulk-btn" ref={ref('tag')} aria-haspopup="menu" aria-expanded={menu === 'tag'} onClick={() => setMenu('tag')}>Tag</button>}
-          {isOwner && coaches.filter((c) => c.active).length > 1 && <button type="button" className="cc-bulk-btn" ref={ref('move')} aria-haspopup="menu" aria-expanded={menu === 'move'} onClick={() => setMenu('move')}>Move to a coach</button>}
+          {isOwner && coaches.filter((c) => c.active).length > 1 && <button type="button" className="cc-bulk-btn" ref={ref('move')} aria-haspopup="menu" aria-expanded={menu === 'move'} onClick={() => setMenu('move')}>Move</button>}
           {pickedRows.length === 2 && pickedRows.every((r) => !r.admin) && <button type="button" className="cc-bulk-btn" onClick={() => { setMergePair([pickedRows[0].profile, pickedRows[1].profile]); setPicked({}); }}>Merge</button>}
           <IconButton label="Stop choosing" onClick={() => setPicked({})} />
           <PopMenu open={menu === 'tag'} onClose={() => setMenu(null)} anchorRef={anchor('tag')} title="Tag">

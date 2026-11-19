@@ -363,6 +363,8 @@
 .ui-root .cc-pick {
   all: unset;
   cursor: pointer;
+  box-sizing: border-box;
+  padding: 0 !important;
   position: absolute;
   left: calc(-1 * var(--cc-select-out));
   top: 50%;
@@ -401,7 +403,7 @@
   box-sizing: border-box;
 }
 .ui-root .cc-bulk-n { font-size: var(--fs-secondary); margin-right: var(--space-px10); white-space: nowrap; }
-.ui-root .cc-bulk-btn { all: unset; cursor: pointer; box-sizing: border-box; min-height: var(--tap-min); padding: 0 var(--space-px12); border-radius: var(--radius-pill); font-size: var(--fs-secondary); display: inline-flex; align-items: center; }
+.ui-root .cc-bulk-btn { all: unset; cursor: pointer; box-sizing: border-box; white-space: nowrap; min-height: var(--tap-min); padding: 0 var(--space-px12); border-radius: var(--radius-pill); font-size: var(--fs-secondary); display: inline-flex; align-items: center; }
 @media (hover: hover) {
   .ui-root .cc-bulk-btn:hover { background: var(--cc-bulk-shade); }
 }
@@ -580,6 +582,14 @@
 /* The public pages (a workshop's registration and survey). */
 .ui-root .cc-public { min-height: 100dvh; background: var(--bg); color: var(--text); font-family: var(--font-body); }
 .ui-root .cc-public-brand { display: flex; align-items: center; gap: var(--space-px10); margin-bottom: var(--space-px28); font-family: var(--font-display); text-transform: uppercase; letter-spacing: var(--ls-menu-label); font-size: var(--fs-label); color: var(--text-2); }
+
+/* A tablet: no room outside the row for the round tick, so it sits inside
+   it, at the row's left (shown on hover, keyboard focus, or once choosing
+   has begun, as on a laptop). */
+@media (min-width: 601px) and (max-width: 1180px) {
+  .ui-root .cc-rows .cc-pick-row { display: grid; grid-template-columns: var(--tap-min) minmax(0, 1fr); align-items: center; }
+  .ui-root .cc-rows .cc-pick { position: static; margin: 0; }
+}
 
 /* ---------------------------------------------------------------- phone */
 @media (max-width: 600px) {

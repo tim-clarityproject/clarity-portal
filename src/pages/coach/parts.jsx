@@ -295,3 +295,17 @@ export function useEverySecond(on) {
   }, [on]);
   return now;
 }
+
+/** Is the screen narrower than this many pixels? (The table needs a laptop's width: rule 20, tables never squash.) */
+export function useNarrowerThan(px) {
+  const query = `(max-width: ${px - 1}px)`;
+  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const check = () => setNarrow(media.matches);
+    check();
+    media.addEventListener('change', check);
+    return () => media.removeEventListener('change', check);
+  }, [query]);
+  return narrow;
+}
