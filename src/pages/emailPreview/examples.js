@@ -6,6 +6,7 @@ import {
   healthCheckFinishedForCoachEmail, healthCheckResultsEmail, healthCheckNewCodeEmail, guestEmailCodeEmail, healthCheckFinishedNoteEmail,
   sessionTomorrowEmail, sessionInOneHourEmail, leadingIdeasClientEmail, leadingIdeasPublicEmail,
   confirmEmailEmail, resetPasswordEmail, changeEmailEmail, inviteEmail, guestPlanCopyEmail,
+  workshopTomorrowEmail, workshopInOneHourEmail, workshopFollowUpEmail,
 } from '../../lib/email/emails.js';
 import { instantAt } from '../../lib/time/index.js';
 
@@ -109,6 +110,27 @@ export const EMAIL_EXAMPLES = [
     from: 'From The Clarity Portal, to Sam',
     sends: 'A template only. It never gives a clock time.',
     doc: () => sessionInOneHourEmail({ coach: 'Tim', zoomLink: ZOOM, preferencesLink: PREFERENCES }),
+  },
+  {
+    key: 'workshop-tomorrow',
+    name: 'Workshop tomorrow',
+    from: 'From The Clarity Project, to someone registered',
+    sends: 'A template only: nothing sends it yet.',
+    doc: () => workshopTomorrowEmail({ title: 'Leading under pressure', at: instantAt('2026-11-11', '09:30', 'Europe/London'), zone: 'Europe/London', place: 'In person, Leeds', now: NOW }),
+  },
+  {
+    key: 'workshop-one-hour',
+    name: 'Workshop in 1 hour',
+    from: 'From The Clarity Project, to someone registered',
+    sends: 'A template only. It never gives a clock time.',
+    doc: () => workshopInOneHourEmail({ title: 'Leading under pressure', place: 'In person, Leeds' }),
+  },
+  {
+    key: 'workshop-follow-up',
+    name: 'Workshop follow-up, with the survey',
+    from: 'From The Clarity Project, to someone who came',
+    sends: 'A template only: nothing sends it yet.',
+    doc: () => workshopFollowUpEmail({ title: 'Decide who decides', words: 'Thank you for Tuesday. Here are the slides and the decision rights canvas.\nYou’re also welcome to a free Clarity Portal account, to keep using the tools.', surveyLink: `${PORTAL}/workshop/survey/00000000-0000-4000-8000-000000000001` }),
   },
   {
     key: 'leading-ideas-client',

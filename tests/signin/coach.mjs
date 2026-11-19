@@ -162,8 +162,11 @@ try {
     // The right code.
     await page.getByLabel('Code').fill(totp(secret));
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await page.waitForURL(/\/coach$/, { timeout: 30000 }).catch(() => null);
-    pass('the right code signs the coach in to the coach portal', path(page) === '/coach', `${path(page)} ${await message(page)}`);
+    // In: to the coach portal when this account has a coach's row on the test project, otherwise
+    // on to their own Home (the coach area opens only for coach accounts; Phase 6a).
+    await page.waitForURL(/\/(coach|welcome)$/, { timeout: 30000 }).catch(() => null);
+    await page.waitForTimeout(1500);
+    pass('the right code signs the coach in', path(page) === '/coach' || path(page) === '/welcome', `${path(page)} ${await message(page)}`);
     await page.goto(`${APP}/dashboard`);
     await sleep(2500);
     pass('and the portal is open to them', path(page) === '/dashboard', path(page));

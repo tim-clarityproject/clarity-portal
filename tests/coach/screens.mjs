@@ -96,3 +96,14 @@ export async function walk(visit, { reducedMotion = 'reduce' } = {}) {
   await browser.close();
   return problems;
 }
+
+/** Opens one screen by its name on a page already signed in and standing in (for the M11 comparison). */
+export async function openScreen(page, name, size = 1440) {
+  const screen = SCREENS.find(([n]) => n === name);
+  if (!screen) throw new Error(`No screen called ${name}`);
+  const [, path, act] = screen;
+  await page.goto(`${APP}${path}`);
+  await page.waitForSelector('.cc-app', { timeout: 20000 });
+  await settle(page, 900);
+  if (act) await act(page, size);
+}

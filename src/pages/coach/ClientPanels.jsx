@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Chip, ChipRow, Dropdown, InlineChoice, SlidePanel, SwitchRow, TextField, useToast } from '../../components/design';
-import { zonePlace } from '../../lib/time';
+import { instantAt, zonePlace } from '../../lib/time';
 import { keyOf, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { addClientFor, logActivity, mergeClients, unmergeClients } from '../../lib/coach/actions';
 import {
@@ -444,17 +444,6 @@ export const SURVEY_QUESTIONS = [
   { id: 'differently', q: 'What will you do differently?', kind: 'long' },
 ];
 
-/** A day and a time in a place, as an instant (the time library's rule: saved as UTC with its zone). */
-export function instantFor(day, time, zone) {
-  if (!day || !time) return null;
-  // Find the instant whose clock in `zone` reads this day and time.
-  const guess = new Date(`${day}T${time}:00Z`);
-  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(guess);
-  const get = (t) => Number(parts.find((p) => p.type === t).value);
-  const shown = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'));
-  return new Date(guess.getTime() - (shown - guess.getTime())).toISOString();
-}
-
 export function AddWorkshopPanel({ open, onClose, onAdded }) {
   const { userId, coach, organisations, settings, todayKey } = useCoachPortal();
   const done = useDone();
@@ -476,7 +465,7 @@ export function AddWorkshopPanel({ open, onClose, onAdded }) {
     const ok = await done(async () => {
       const o = await organisationFor(userId, f.org, f.orgName, organisations);
       return saveRow(userId, 'workshops', {
-        id, coach_id: coach.id, organisation_id: o.id, title: title.slice(0, 80), starts_at: instantFor(f.day, f.from, f.zone), ends_at: instantFor(f.day, f.to, f.zone), time_zone: f.zone,
+        id, coach_id: coach.id, organisation_id: o.id, title: title.slice(0, 80), starts_at: instantAt(f.day, f.from, f.zone).toISOString(), ends_at: instantAt(f.day, f.to, f.zone).toISOString(), time_zone: f.zone,
         place: clean(f.place).slice(0, 120) || null, capacity, page_key: newId(), registration_open: false, registration_closes_on: null, questions: WORKSHOP_QUESTIONS,
         remind_day_before: true, remind_hour_before: false, survey_on: true, survey_questions: SURVEY_QUESTIONS, follow_up: null,
       });

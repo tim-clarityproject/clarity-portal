@@ -220,6 +220,59 @@ export function sessionInOneHourEmail({ coach, zoomLink, preferencesLink }) {
   };
 }
 
+// ---------------------------------------------------------------- workshops (templates only; Phase 6a run 1)
+// A workshop's attendees are emails, not clients, so these come from the
+// business. Times are in the workshop's own place (zone), where the people
+// coming are. Nothing sends them yet: the coach portal keeps each
+// workshop's choices, and sending arrives with the booking emails.
+const workshopFooter = (title) => ({ lines: [`You get this because you registered for ${oneLine(title)}.`, EMAIL_SIGN_OFF] });
+
+/** The day before a workshop. */
+export function workshopTomorrowEmail({ title, at, zone, place, now = new Date() }) {
+  const day = relativeDayWords(at, zone, now);
+  const name = oneLine(title);
+  return {
+    brand: 'project',
+    subject: `${name} is ${day === 'tomorrow' || day === 'today' ? day : `on ${day}`} at ${timeWords(at, zone)}`,
+    blocks: [
+      { type: 'heading', text: day === 'tomorrow' ? `${name} is tomorrow.` : `${name} is coming up.` },
+      { type: 'text', text: `It starts ${sessionWhenWords(at, zone, now)}.` },
+      place ? { type: 'details', rows: [['Where', oneLine(place)]] } : null,
+    ],
+    footer: workshopFooter(title),
+  };
+}
+
+/** One hour before: no clock time at all, so it can't be wrong. */
+export function workshopInOneHourEmail({ title, place }) {
+  const name = oneLine(title);
+  return {
+    brand: 'project',
+    subject: `${name} starts in 1 hour`,
+    blocks: [
+      { type: 'heading', text: `${name} starts in 1 hour.` },
+      place ? { type: 'details', rows: [['Where', oneLine(place)]] } : null,
+    ],
+    footer: workshopFooter(title),
+  };
+}
+
+/** The follow-up the day after: the coach's own words, then the short survey by each person's own link. */
+export function workshopFollowUpEmail({ title, words = '', surveyLink = null }) {
+  const name = oneLine(title);
+  const lines = String(words || '').split(/\n+/).map((l) => l.trim()).filter(Boolean).slice(0, 12);
+  return {
+    brand: 'project',
+    subject: `Thank you for coming to ${name}`,
+    blocks: [
+      { type: 'heading', text: 'Thank you for coming.' },
+      ...lines.map((text) => ({ type: 'text', text })),
+      surveyLink ? { type: 'button', label: 'Answer 3 questions', href: surveyLink, time: '~1 minute' } : null,
+    ],
+    footer: workshopFooter(title),
+  };
+}
+
 // ---------------------------------------------------------------- Leading Ideas (templates only)
 const LEADING_IDEAS_HEADLINE = 'Your weekly fuel for leading under pressure.';
 const LEADING_IDEAS_BY = 'Leading Ideas by Dr. Tim Dutton, every Thursday.';
