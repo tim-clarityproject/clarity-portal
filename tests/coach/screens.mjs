@@ -17,7 +17,7 @@
 // with every function it calls stood in (client.mjs).
 import { chromium } from 'playwright';
 import { accountId, APP, clearDevice, coachContext, seedDevice, settle, SIZES, standIn } from './shared.mjs';
-import { ADMIN_ROWS, DAY, ID, PRESSURE, seedClock, seedRows, seedWithDay, SES, SHARED } from './seed.mjs';
+import { ADMIN_ROWS, DAY, ID, PRESSURE, seedClock, seedRows, seedWithCal, seedWithDay, SES, SHARED } from './seed.mjs';
 import { clearCoaching, clientContext, clientStandIn, fromCoach } from './client.mjs';
 
 const click = (name, role = 'button') => async (page) => { await page.getByRole(role, { name, exact: true }).first().click(); await settle(page, 500); };
@@ -55,7 +55,7 @@ export const SCREENS = [
   ...['you', 'away', 'notifications', 'booking', 'hours', 'zones', 'calendars', 'tags', 'look'].map((s) => [`settings-${s}`, `/coach/settings/${s}`]),
   ...['email', 'layouts', 'coaches', 'log'].map((s) => [`settings-${s}`, `/coach/settings/${s}`, null, 'owner']),
   ['settings-edit', '/coach/settings/you', async (page) => { await page.getByRole('button', { name: 'Edit Name clients see' }).click(); await settle(page, 300); }],
-  ['coming', '/coach/calendar'],
+  ['coming', '/coach/library'],
 ];
 
 // ---------------------------------------------------------------- run 2: the coaching day
@@ -228,6 +228,34 @@ export const GROUPS = [
       ['clients-table-scrolled', '/coach/clients', async (page) => { await page.getByRole('button', { name: 'Table', exact: true }).click(); await settle(page, 600); await page.evaluate(() => window.scrollTo(0, 450)); await settle(page, 300); }, { sizes: [1440], viewport: { width: 1440, height: 520 }, expects: ['table'] }],
     ],
   },
+  // The calendar (run 3): M11's own week on the device (seedWithCal), for both roles.
+  {
+    name: 'cal', at: TUE, cal: true,
+    screens: [
+      ['cal-week', '/coach/calendar?view=week', null, { full: true }],
+      ['cal-day', '/coach/calendar?view=day', null, { full: true }],
+      ['cal-month', '/coach/calendar?view=month', null, { full: true }],
+      ['cal-schedule', '/coach/calendar?view=schedule'],
+      ['cal-todos', '/coach/calendar?view=week', async (page, size) => { if (size === 400) return 'skip'; await press(page, 'Show to-dos'); await page.evaluate(() => window.scrollTo(0, 0)); return null; }, { full: true }],
+      ['cal-hours', '/coach/calendar?view=week', async (page, size) => { if (size === 400) await page.getByRole('button', { name: 'Working hours' }).scrollIntoViewIfNeeded(); await press(page, 'Working hours'); await page.evaluate(() => window.scrollTo(0, 0)); }, { full: true }],
+      ['cal-quick', '/coach/calendar?view=week', async (page) => { await press(page, 'Add to calendar'); await page.locator('.ds-dialog').getByLabel('Title').fill('Coffee with Dan Thu 10:00'); await settle(page, 300); }, { expects: ['panel'] }],
+      ['cal-quick-beside', '/coach/calendar?view=week', async (page, size) => { if (size === 400) return 'skip'; const b = await page.locator('[data-cal-day="2026-11-19"]').boundingBox(); await page.mouse.click(b.x + b.width / 2, b.y + 44 * 2.3); await settle(page, 600); return null; }],
+      ['cal-quick-empty', '/coach/calendar?view=week', async (page) => { await press(page, 'Add to calendar'); await page.locator('.ds-dialog .ds-btn--primary').click(); await settle(page, 300); }, { expects: ['panel'] }],
+      ['cal-item', '/coach/calendar?view=schedule', async (page) => { await page.locator('.cc-sched-row', { hasText: 'Writing' }).first().click(); await settle(page, 700); }, { expects: ['panel', 'level'] }],
+      ['cal-item-more', '/coach/calendar?view=schedule', async (page) => { await page.locator('.cc-sched-row', { hasText: 'Leaders’ dinner' }).first().click(); await settle(page, 700); await press(page, 'More options'); }, { expects: ['panel'] }],
+      ['cal-item-more-foot', '/coach/calendar?view=schedule', async (page) => { await page.locator('.cc-sched-row', { hasText: 'Leaders’ dinner' }).first().click(); await settle(page, 700); await press(page, 'More options'); await page.locator('.ds-dialog-body').evaluate((b) => { b.scrollTop = b.scrollHeight; }); await settle(page, 300); }, { expects: ['panel'] }],
+      ['cal-repeat', '/coach/calendar?view=schedule', async (page) => { await page.locator('.cc-sched-row', { hasText: 'Training' }).first().click(); await settle(page, 700); await press(page, 'More options'); await pick(page, 'Repeats', 'Custom'); }, { expects: ['panel'] }],
+      ['cal-todo-item', '/coach/calendar?view=schedule', async (page) => { await page.locator('.cc-sched-row', { hasText: 'Send the Kestrel proposal' }).first().click(); await settle(page, 700); }, { expects: ['panel'] }],
+      ['cal-calendars', '/coach/calendar?view=schedule', async (page) => { await press(page, 'My calendars'); }, { expects: ['panel'] }],
+      ['cal-zone-menu', '/coach/calendar?view=day', async (page) => { await page.locator('.cc-cal-zone-btn').click(); await settle(page, 400); }],
+      ['cal-view-menu', '/coach/calendar', async (page, size) => { if (size !== 400) return 'skip'; await press(page, 'View'); return null; }],
+      ['cal-jump', '/coach/calendar?view=schedule', async (page) => { await page.locator('.cc-cal-range').click(); await settle(page, 500); }],
+      ['cal-note', '/coach/calendar?view=day', async (page) => { await page.locator('[data-cal-key]', { hasText: 'Priya Nair' }).first().focus(); await page.keyboard.press('ArrowDown'); await settle(page, 900); await press(page, 'Open the note'); }, { expects: ['panel'] }],
+      ['todos-calendar', '/coach/todos', async (page) => { await page.locator('.cc-todo-bar .cc-seg').getByRole('button', { name: 'Calendar', exact: true }).click(); await settle(page, 700); }, { full: true, expects: ['tabs'] }],
+      // Last: the switch is kept in Settings, so every screen after it would show seven days.
+      ['cal-weekends', '/coach/calendar?view=week', async (page, size) => { if (size === 400) return 'skip'; await page.getByRole('switch', { name: 'Weekends' }).click(); await settle(page, 700); return null; }, { full: true }],
+    ],
+  },
   // Help that can be hidden, walked once for each role, size and mode (rules.mjs's hiddenHelp does the walking).
   { name: 'help', at: TUE, screens: [['help-hidden', '/coach/todos', null, { expects: ['help-flow'] }]] },
   {
@@ -322,7 +350,7 @@ async function openGroup(browser, group, { role, size, theme, reducedMotion }) {
   await page.evaluate((t) => localStorage.setItem('clarity-colour-mode', t), theme);
   await clearDevice(page, me);
   if (device) {
-    const rows = seedWithDay({ accounts: true, ...(typeof group.seed === 'object' && group.seed ? group.seed : {}) });
+    const rows = (group.cal ? seedWithCal : seedWithDay)({ accounts: true, ...(typeof group.seed === 'object' && group.seed ? group.seed : {}) });
     await seedDevice(page, me, typeof group.seed === 'function' ? group.seed(rows) : rows);
   } else if (!there) await seedDevice(page, me, seedRows());
   return {

@@ -109,9 +109,9 @@ function BriefBody({ session, client }) {
 /**
  * The brief for one session. Today mounts it on the first click of a call
  * and keeps it mounted: a null `sessionId` is closed.
- * @param {{ sessionId: string|null, onClose: () => void }} props
+ * @param {{ sessionId: string|null, onClose: () => void, joinHref?: string|null }} props `joinHref`: the calendar item's own meeting link (run 3),  used when the session has none; `aside`: one more quiet link in the foot (the calendar's "Edit the call")
  */
-export function BriefPanel({ sessionId, onClose }) {
+export function BriefPanel({ sessionId, onClose, joinHref = null, aside = null }) {
   const { sessions, clients } = useCoachPortal();
   const navigate = useNavigate();
   const live = sessionId ? sessions.find((s) => s.id === sessionId) || null : null;
@@ -133,7 +133,8 @@ export function BriefPanel({ sessionId, onClose }) {
       footer={(
         <div className="cc-panel-foot cc-brief-foot">
           <TextLink onClick={() => { onClose(); navigate(`/coach/clients/${client.id}`); }}>Open {possessive(first)} page</TextLink>
-          {isLink(session.place) && <a className="ds-btn ds-btn--outline ds-panel-go" href={session.place.trim()} target="_blank" rel="noreferrer">Join on Zoom</a>}
+          {aside}
+          {(isLink(session.place) || isLink(joinHref)) && <a className="ds-btn ds-btn--outline ds-panel-go" href={isLink(session.place) ? session.place.trim() : joinHref} target="_blank" rel="noreferrer">Join on Zoom</a>}
         </div>
       )}
     >

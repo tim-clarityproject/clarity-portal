@@ -12,6 +12,8 @@ import { callForBar, favouriteViews, nextCallBar, searchResults, withRecent } fr
 import { COACH_MENU, COACH_PAGES, coachTitle, SETTINGS_SECTIONS } from '../../lib/coach/navigation';
 import { testCalls } from '../../lib/coach/calls';
 import { todayTodos } from '../../lib/coach/day';
+import { coachZoneOf, searchItems } from '../../lib/coach/calendar';
+import { deviceZone } from '../../lib/time/index.js';
 import { CoachPortalContext, TextLink, useCoachPortal } from './parts';
 import './coach.css';
 
@@ -34,6 +36,7 @@ const Todos = lazy(() => import('./Todos'));
 const TodoListPage = lazy(() => import('./TodoListPage'));
 const SessionPage = lazy(() => import('./SessionPage'));
 const ClosePage = lazy(() => import('./ClosePage'));
+const Calendar = lazy(() => import('./Calendar'));
 
 const BELL = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" /></svg>;
 const HOME = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg>;
@@ -148,7 +151,7 @@ function Menu({ open, onClose, onSignOut }) {
 
 /** One box finds people, pages and actions as it is typed, with recent items before anything is typed. */
 function Search({ open, onClose }) {
-  const { userId, isOwner, clients, groups, workshops, organisations, admin, coaches, coach } = useCoachPortal();
+  const { userId, isOwner, clients, groups, workshops, organisations, admin, coaches, coach, calItems, calGuests, settings, todayKey } = useCoachPortal();
   const navigate = useNavigate();
   const toast = useToast();
   const [q, setQ] = useState('');
@@ -190,8 +193,10 @@ function Search({ open, onClose }) {
       { key: 'a:export', title: 'Export clients to a spreadsheet', to: '/coach/clients', state: { open: 'export' } },
       ...(coaches.length > 1 && isOwner ? [{ key: 'a:coach', title: 'Add coach', to: '/coach/settings/coaches', state: { open: 'coach' } }] : []),
     ];
-    return { people, pages, actions, recent };
-  }, [clients, groups, workshops, organisations, admin, isOwner, coaches, coach, recent]);
+    // Calendar items, found by title, person or note; each opens its own day.
+    const items = searchItems({ items: calItems, guests: calGuests, coachZone: coachZoneOf(settings, deviceZone()), todayKey });
+    return { people, pages, actions, recent, items };
+  }, [clients, groups, workshops, organisations, admin, isOwner, coaches, coach, recent, calItems, calGuests, settings, todayKey]);
 
   const groupsShown = useMemo(() => searchResults(q, all), [q, all]);
   const flat = groupsShown.flatMap((g) => g.items);
@@ -429,6 +434,13 @@ export default function CoachApp() {
               <Route path="sessions/:id" element={<SessionPage />} />
               <Route path="clients/:id/close" element={<ClosePage />} />
               <Route path="business/*" element={<Navigate to="/coach/finances" replace />} />
+              <Route path="calendar" element={<Calendar />} />
+              {/* Book a call, Open for calls, Offer times by email and polls: their own pages (run 3's booking step) take these places. */}
+              {!LIVE && <Route path="calendar/book" element={<ComingSoon title="Book a call" />} />}
+              {!LIVE && <Route path="calendar/open" element={<ComingSoon title="Open for calls" />} />}
+              {!LIVE && <Route path="calendar/offer" element={<ComingSoon title="Offer times" />} />}
+              {!LIVE && <Route path="calendar/polls/:id" element={<ComingSoon title="Poll" />} />}
+              <Route path="calendar/*" element={<Navigate to="/coach/calendar" replace />} />
               {!LIVE && <Route path="renewals/:id" element={<ComingSoon title="Renewal" />} />}
               <Route path="settings" element={<Settings />} />
               <Route path="settings/:section" element={<Settings />} />
@@ -440,7 +452,7 @@ export default function CoachApp() {
         <nav className="cc-phonebar" aria-label="Clarity Coach">
           <button type="button" className="cc-round" aria-label="Today" aria-current={pathname === '/coach' ? 'page' : undefined} onClick={() => { setMenu(false); navigate('/coach'); }}>{HOME}</button>
           <button type="button" className="cc-round cc-round--mark" aria-label={menu ? 'Close the menu' : 'Menu'} aria-expanded={menu} onClick={() => setMenu((v) => !v)}><BoldCrosshair size={32} /></button>
-          {!LIVE && <button type="button" className="cc-round" aria-label="Calendar" aria-current={pathname.startsWith('/coach/calendar') ? 'page' : undefined} onClick={() => { setMenu(false); navigate('/coach/calendar'); }}>{CALENDAR}</button>}
+          <button type="button" className="cc-round" aria-label="Calendar" aria-current={pathname.startsWith('/coach/calendar') ? 'page' : undefined} onClick={() => { setMenu(false); navigate('/coach/calendar'); }}>{CALENDAR}</button>
         </nav>
         <Menu open={menu} onClose={() => setMenu(false)} onSignOut={signOut.start} />
         <Search open={search} onClose={() => setSearch(false)} />

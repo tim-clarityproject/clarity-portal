@@ -4,15 +4,16 @@ import { AddButton, InlineChoice, PageHeader, SearchField, useIsPhone } from '..
 import { doneThisWeek, somedayTodos, todayTodos, upcomingGroups } from '../../lib/coach/day';
 import { Eye, Fold, TextLink, useCoachPortal } from './parts';
 import { QuickAdd, QuickAddPanel, TodoBulkBar, TodoList, TodoPanel, UnderTabs, useTodoPicks } from './todoParts';
+import { TodosCalendar } from './calendarPanels';
 
 // To-dos (M11): the coach's own, never a client's. Today (the working
 // day's, then After work), Upcoming (by day) and Someday behind underlined
 // tabs, with what's done folded at the foot. The quick add reads plain
 // words; a row opens the to-do in its side panel; several can be chosen at
-// once. To-dos as a calendar come with the calendar (run 3): the switch's
-// place is kept on previews and opens a calm line.
+// once. Calendar shows the same to-dos as a calendar (run 3; M11's
+// "todocal"): this week with the to-dos to place beside it, built from the
+// calendar's own parts.
 
-const LIVE = typeof __CLARITY_LIVE__ !== 'undefined' && __CLARITY_LIVE__;
 const TABS = [{ value: 'today', label: 'Today' }, { value: 'upcoming', label: 'Upcoming' }, { value: 'someday', label: 'Someday' }];
 const SHOW = [{ value: 'list', label: 'List' }, { value: 'calendar', label: 'Calendar' }];
 const PAGE = 50;
@@ -54,17 +55,17 @@ export default function Todos() {
 
   return (
     <div className="cc-page">
-      <div className="cc-col">
+      <div className={`cc-col${show === 'calendar' ? ' cc-cal-page cc-cal-page--wide' : ''}`}>
         <PageHeader title="To-dos" aside={<Eye sentence="Only you can see this." />} />
         {!isPhone && <QuickAdd defaultDay={tab === 'today' ? todayKey : null} />}
 
         <div className="cc-todo-bar">
           <UnderTabs label="To-dos" tabs={TABS} value={tab} panelId={PANEL} onChange={(v) => setParams(v === 'today' ? {} : { tab: v }, { replace: true })} />
-          {!LIVE && <div className="cc-seg"><InlineChoice ariaLabel="Show as" semantics="pressed" options={SHOW} value={show} onChange={setShow} form="pills" /></div>}
+          <div className="cc-seg"><InlineChoice ariaLabel="Show as" semantics="pressed" options={SHOW} value={show} onChange={setShow} form="pills" /></div>
         </div>
 
         <div role="tabpanel" id={PANEL} aria-labelledby={`${PANEL}-${tab}`} className="cc-fade" key={`${tab}:${show}`}>
-          {show === 'calendar' && <p className="cc-quiet">Coming in this build. It isn’t ready to use yet.</p>}
+          {show === 'calendar' && <TodosCalendar />}
 
           {show === 'list' && tab === 'today' && (
             <>

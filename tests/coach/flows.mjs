@@ -84,9 +84,10 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     pass('shell: favourite views sit under their own label', (await page.locator('.cc-menu-label').innerText()).toLowerCase() === 'favourite views');
     const above = await page.evaluate(() => { const z = (s) => Number(getComputedStyle(document.querySelector(s)).zIndex) || 0; return z('.cc-menu') > z('.cc-header'); });
     pass('shell: the menu sits above everything', above);
-    await page.locator('.cc-menu-item', { hasText: 'Calendar' }).click();
+    // The Calendar is built (run 3): Library is still a later run's page.
+    await page.locator('.cc-menu-item', { hasText: 'Library' }).click();
     await settle(page, 600);
-    pass('shell: a page of a later run opens the calm “Coming in this build” page', /Coming in this build/.test(await text(page)) && new URL(page.url()).pathname === '/coach/calendar');
+    pass('shell: a page of a later run opens the calm “Coming in this build” page', /Coming in this build/.test(await text(page)) && new URL(page.url()).pathname === '/coach/library');
     await button(page, 'Open the menu').click();
     await settle(page, 400);
     await page.keyboard.press('Escape');

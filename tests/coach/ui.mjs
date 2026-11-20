@@ -69,6 +69,10 @@ function measure(appSelector) {
     if (el.matches('.ds-seg-btn') && b.height >= 33.5) continue; // inside the switch's own 40px track, 44px on a phone
     // A fold's button fills its whole heading row (its ::after is inset 0 of the row).
     if (el.matches('.cc-fold-btn') && el.closest('.cc-fold-head').getBoundingClientRect().height >= 43.5) continue;
+    // The shared date picker's own days, opened from the calendar's date outside any panel (41 by 44 on a laptop, as the design reference draws them).
+    if (el.matches('.ds-cal-day') && b.height >= 43.5 && b.width >= 40) continue;
+    // A placed to-do's tick sits inside its calendar tile, which is as tall as its minutes (run 3; M11).
+    if (el.matches('.cc-cal-tick') && el.closest('.cc-cal-tile')) continue;
     // A link inside a sentence carries its own 44px strip.
     if (el.matches('.cc-inline-link') && ra.h >= 43.5) continue;
     small.push(`${label(el)} ${Math.round(tapW)}x${Math.round(tapH)}`);
@@ -170,7 +174,7 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
   report.pass(`${tag}: every pop-up is one short line (${pops.checked} read)`, pops.problems.length === 0, pops.problems.slice(0, 3).join('; '));
   // A drop-down showing "UK" is read as capitals by the checker (its value is two capital letters): the
   // chevron is the shared drop-down's own, centred on lowercase words as everywhere else.
-  const chevrons = chevronsOff(await measureChevrons(page)).filter((c) => !/^ds-dd "UK"/.test(c));
+  const chevrons = chevronsOff(await measureChevrons(page)).filter((c) => !/^ds-dd "UK"/.test(c) && !/^ds-cal-nav /.test(c)); // and the shared date picker's own month arrows
   report.pass(`${tag}: chevrons are centred on their words`, chevrons.length === 0, chevrons.slice(0, 3).join('; '));
 
   // ---- Run 2's design rules (Tim, 18 and 19 Nov), on every screen.

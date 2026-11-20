@@ -419,6 +419,26 @@ export function entryLabel(e, coachZone) {
 
 export const MOVED_IN_GOOGLE = 'Moved in Google Calendar';
 
+/**
+ * Calendar items as the header's search finds them: by title, person
+ * (guests, the place) or note. Each opens its own day: a repeat's next time
+ * from today, anything else the day it is on. Held times and removed times
+ * are left out.
+ * @returns {{ key: string, title: string, kind: string, also: string, to: string }[]}
+ */
+export function searchItems({ items = [], guests = [], coachZone, todayKey }) {
+  return items.filter((i) => !i.removed && i.kind !== 'hold' && clean(i.title)).map((i) => {
+    let at = new Date(i.starts_at);
+    if (i.repeat_rule && wallClock(at, coachZone).date < todayKey) {
+      const next = occurrences([i], instantAt(todayKey, '00:00', coachZone), instantAt(addDays(todayKey, 370), '00:00', coachZone))[0];
+      if (next) at = next.startsAt;
+    }
+    const day = i.all_day && i.starts_on && !i.repeat_rule ? i.starts_on : wallClock(at, coachZone).date;
+    const who = guests.filter((g) => g.item_id === i.id).map((g) => `${g.name || ''} ${g.email || ''}`).join(' ');
+    return { key: `i:${i.id}`, title: i.title, kind: i.all_day ? dayKeyWords(day) : `${dayKeyWords(day)}, ${wallClock(at, coachZone).time}`, also: `${who} ${i.notes || ''} ${i.location || ''}`, to: `/coach/calendar?view=day&day=${day}` };
+  });
+}
+
 // ---------------------------------------------------------------- the views
 
 export const CAL_VIEWS = [{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }, { value: 'schedule', label: 'Schedule' }];
@@ -582,6 +602,29 @@ export function nowLine(now, coachZone, days) {
   const w = wallClock(now, coachZone);
   const index = (days || []).indexOf(w.date);
   return index < 0 ? null : { day: w.date, index, minutes: w.hour * 60 + w.minute, time: w.time };
+}
+
+/**
+ * The hours a week or day grid shows: 08:00 to 21:00, opened out to hold
+ * every timed item on the days showing and the working hours themselves;
+ * `whole` is midnight to midnight. Whole hours, so the hour labels line up.
+ * @param {object[]} entries from calendarEntries
+ * @param {{ days: string[], coachZone: string, hours?: object, whole?: boolean }} view `hours`: workingHours()'s shape (the editing mode's own, while it is open)
+ * @returns {{ fromHour: number, toHour: number, fromMin: number, toMin: number }}
+ */
+export function hoursWindow(entries, { days = [], coachZone, hours = null, whole = false }) {
+  let from = whole ? 0 : 8 * 60;
+  let to = whole ? DAY_MINUTES : 21 * 60;
+  if (!whole) {
+    for (const day of days) {
+      for (const t of layoutDay(entries, day, coachZone).tiles) { from = Math.min(from, t.startMin); to = Math.max(to, t.endMin); }
+      const h = hours?.[weekKeyOf(day)];
+      if (h) { from = Math.min(from, minutesOfTime(h.from) - 60); to = Math.max(to, minutesOfTime(h.to) + 60); }
+    }
+  }
+  const fromHour = Math.max(0, Math.floor(from / 60));
+  const toHour = Math.min(24, Math.ceil(to / 60));
+  return { fromHour, toHour, fromMin: fromHour * 60, toMin: toHour * 60 };
 }
 
 // ---------------------------------------------------------------- two time columns

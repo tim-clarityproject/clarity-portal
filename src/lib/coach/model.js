@@ -577,7 +577,7 @@ export function callForBar(calls, now = new Date()) {
  * @param {{ people: object[], pages: object[], actions: object[], recent: object[] }} all each item { key, title, kind, ... }
  * @returns {{ label: string, items: object[] }[]}
  */
-export function searchResults(query, { people = [], pages = [], actions = [], recent = [] } = {}) {
+export function searchResults(query, { people = [], pages = [], actions = [], recent = [], items = [] } = {}) {
   const q = clean(query).toLowerCase();
   if (!q) {
     return [{ label: 'Recent', items: recent.slice(0, 5) }, { label: 'Actions', items: actions }].filter((g) => g.items.length);
@@ -596,6 +596,7 @@ export function searchResults(query, { people = [], pages = [], actions = [], re
     .sort((a, b) => b[0] - a[0] || a[1].title.localeCompare(b[1].title)).map(([, item]) => item);
   return [
     { label: 'People', items: rank(people).slice(0, 8) },
+    { label: 'Calendar', items: rank(items).slice(0, 6) },
     { label: 'Pages', items: rank(pages).slice(0, 6) },
     { label: 'Actions', items: rank(actions).slice(0, 6) },
   ].filter((g) => g.items.length);

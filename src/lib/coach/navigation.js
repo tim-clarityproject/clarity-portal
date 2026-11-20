@@ -12,7 +12,7 @@ export const COACH_MENU = [
   { key: 'leads', label: 'Leads', to: '/coach/leads', owner: true, later: true },
   { key: 'network', label: 'Network', to: '/coach/network', owner: true, later: true },
   { key: 'boards', label: 'Boards', to: '/coach/boards', owner: true, later: true },
-  { key: 'calendar', label: 'Calendar', to: '/coach/calendar', later: true },
+  { key: 'calendar', label: 'Calendar', to: '/coach/calendar' },
   { key: 'leading-ideas', label: 'Leading Ideas', to: '/coach/leading-ideas', later: true },
   { key: 'library', label: 'Library', to: '/coach/library', later: true },
   { key: 'settings', label: 'Settings', to: '/coach/settings' },
@@ -51,6 +51,7 @@ const TITLES = [
   ['/coach/todos', 'To-dos'],
   ['/coach/sessions', 'After a call'],
   ['/coach/renewals', 'Renewal'],
+  ['/coach/calendar', 'Calendar'],
   ...COACH_MENU.filter((i) => i.later).map((i) => [i.to, i.label]),
 ];
 

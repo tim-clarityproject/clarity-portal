@@ -1,0 +1,248 @@
+/* The Calendar and its parts (Phase 6a run 3; mock-up M11, seq 77; the
+   calendar colours of 19 Nov). Every value is a token (the tile colours
+   are tokens.css's --cal-* ones, each with its own text colours so every
+   line is 4.5 to 1). Phone is 600px and under. */
+
+/* ---------------------------------------------------------------- the page and its bars */
+.ui-root .cc-cal-page--wide { max-width: var(--cal-wide-max); }
+.ui-root .cc-cal-top { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
+.ui-root .cc-cal-top > :first-child { flex: 1; min-width: 0; }
+.ui-root .cc-cal-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-px12) var(--space-3); margin-top: var(--space-px20); }
+.ui-root .cc-cal-nav { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.ui-root .cc-cal-nav .ds-link { margin-left: var(--space-px12); }
+.ui-root .cc-cal-stepper { display: inline-flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.ui-root .cc-cal-step { all: unset; cursor: pointer; box-sizing: border-box; flex: none; font-family: var(--font-body); font-size: var(--fs-body); width: var(--tap-min); height: var(--tap-min); display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-btn); -webkit-tap-highlight-color: transparent; }
+.ui-root .cc-cal-step .ds-chevron { background-color: var(--text-2); transition: background-color var(--dur) var(--ease); }
+@media (hover: hover) { .ui-root .cc-cal-step:hover .ds-chevron { background-color: var(--coral-text); } }
+.ui-root .cc-cal-step:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: calc(-1 * var(--space-1)); }
+.ui-root .cc-cal-step:focus-visible .ds-chevron { background-color: var(--coral-text); }
+.ui-root .cc-cal-range { all: unset; cursor: pointer; box-sizing: border-box; min-height: var(--tap-min); min-width: var(--tap-min); display: inline-flex; align-items: center; padding: 0 var(--space-1); font-family: var(--font-body); font-size: var(--fs-body); color: var(--text); white-space: nowrap; font-variant-numeric: tabular-nums; border-radius: var(--radius-btn); transition: color var(--dur) var(--ease); }
+@media (hover: hover) { .ui-root .cc-cal-range:hover { color: var(--coral-text); } }
+.ui-root .cc-cal-range:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); }
+.ui-root .cc-cal-weekends .ds-switchrow { border: 0; padding: 0; min-height: var(--tap-min); gap: var(--space-px10); }
+.ui-root .cc-cal-weekends .ds-switchrow-label { font-size: var(--fs-secondary); color: var(--text-2); }
+.ui-root .cc-cal-views { margin-left: auto; }
+.ui-root .cc-cal-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-px12) var(--space-px10); margin-top: var(--space-px14); }
+.ui-root .cc-cal-acts .ds-link { margin-right: var(--space-px6); }
+.ui-root .cc-cal-hoursbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-px12) var(--space-3); margin-top: var(--space-px14); padding-block: var(--space-px10); border-block: var(--line-w) solid var(--line); }
+.ui-root .cc-cal-hoursbar p { margin: 0; font-size: var(--fs-secondary); color: var(--text); min-width: 0; flex: 1 1 var(--cc-pop-min); }
+.ui-root .cc-cal-tell { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-px14); min-height: var(--tap-min); }
+.ui-root .cc-cal-foot { margin-top: var(--space-px22); gap: var(--space-1) var(--space-px26); }
+
+/* ---------------------------------------------------------------- the week and the day */
+.ui-root .cc-cal-board { margin-top: var(--space-3); }
+.ui-root .cc-cal-board--todos { display: grid; grid-template-columns: var(--cal-side-w) minmax(0, 1fr); gap: var(--space-px18); align-items: start; }
+.ui-root .cc-cal { position: relative; border-top: var(--line-w) solid var(--line); min-width: 0; }
+.ui-root .cc-cal-defs { position: absolute; }
+.ui-root .cc-cal-defs line { stroke: var(--cal-hatch); stroke-width: var(--line-w-strong); }
+.ui-root .cc-cal-head, .ui-root .cc-cal-body { display: grid; grid-template-columns: var(--cal-time-w) var(--cal-time-w) repeat(var(--cal-days), minmax(0, 1fr)); }
+/* The heading row stays at the top as the page scrolls. */
+.ui-root .cc-cal-head { position: sticky; top: var(--cc-header-h); z-index: 4; background: var(--bg); border-bottom: var(--line-w) solid var(--line); min-height: var(--cal-head-h); }
+.ui-root .cc-cal-zone { display: flex; align-items: center; justify-content: center; font-size: var(--fs-min); color: var(--text-2); min-width: 0; text-align: center; line-height: var(--lh-cal-tile); }
+.ui-root .cc-cal-zone-btn { all: unset; cursor: pointer; position: relative; box-sizing: border-box; font: inherit; color: inherit; text-align: center; padding: var(--space-px2) var(--space-px3); border-radius: var(--radius-bar); transition: color var(--dur) var(--ease); }
+.ui-root .cc-cal-zone-btn::after { content: ''; position: absolute; left: 50%; top: 50%; width: var(--tap-min); height: var(--tap-min); transform: translate(-50%, -50%); }
+@media (hover: hover) { .ui-root .cc-cal-zone-btn:hover { color: var(--text); } }
+.ui-root .cc-cal-zone-btn:focus-visible { color: var(--text); outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); }
+.ui-root .cc-cal-day { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: var(--fs-meta); color: var(--text-2); border-left: var(--line-w) solid var(--line-soft); min-width: 0; }
+.ui-root .cc-cal-day b { font-weight: var(--fw-regular); font-size: var(--fs-empty-title); line-height: var(--lh-cal-one); color: var(--text); font-variant-numeric: tabular-nums; }
+.ui-root .cc-cal-day--today { color: var(--text); }
+.ui-root .cc-cal-day--today b { text-decoration: underline; text-decoration-thickness: var(--focus-w); text-underline-offset: var(--space-px6); }
+
+.ui-root .cc-cal-allday { display: grid; grid-template-columns: calc(2 * var(--cal-time-w)) minmax(0, 1fr); border-bottom: var(--line-w) solid var(--line); }
+.ui-root .cc-cal-allday-label { font-size: var(--fs-min); color: var(--text-2); text-align: right; padding: var(--space-px6) var(--space-2) 0 0; }
+.ui-root .cc-cal-allday-row { display: grid; grid-template-columns: repeat(var(--cal-days), minmax(0, 1fr)); gap: var(--space-px2) 0; padding-block: var(--space-px3); }
+.ui-root .cc-cal-allday-row .cc-cal-banner { position: static; margin-inline: var(--cal-tile-gap); min-height: var(--space-px26); display: flex; align-items: center; cursor: pointer; }
+
+.ui-root .cc-cal-hour { box-sizing: border-box; height: var(--cal-hour-h); border-bottom: var(--line-w) solid var(--line-soft); font-size: var(--fs-min); color: var(--text-2); padding: var(--space-px2) var(--space-2) 0 0; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ui-root .cc-cal-col { position: relative; border-left: var(--line-w) solid var(--line-soft); min-width: 0; touch-action: pan-y; }
+.ui-root .cc-cal-hl { box-sizing: border-box; height: var(--cal-hour-h); border-bottom: var(--line-w) solid var(--line-soft); pointer-events: none; }
+.ui-root .cc-cal-off { position: absolute; left: 0; width: 100%; pointer-events: none; }
+.ui-root .cc-cal-now { position: absolute; left: 0; right: 0; height: 0; border-top: var(--line-w-strong) solid var(--cal-now); z-index: 3; pointer-events: none; }
+
+/* ---------------------------------------------------------------- tiles */
+.ui-root .cc-cal-tile {
+  all: unset;
+  position: absolute;
+  box-sizing: border-box;
+  display: block;
+  z-index: 1;
+  min-height: var(--cal-tile-min);
+  overflow: hidden;
+  border-radius: var(--cal-tile-radius);
+  padding: var(--space-px3) var(--cal-tile-pad);
+  font-family: var(--font-body);
+  font-size: var(--fs-cal-tile);
+  line-height: var(--lh-cal-tile);
+  text-align: left;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  container-type: inline-size;
+  transition: opacity var(--dur-fast) var(--ease);
+  background: var(--tile-bg, var(--cal-other));
+  color: var(--tile-text, var(--cal-other-text));
+  box-shadow: inset 0 0 0 var(--line-w) var(--tile-edge, transparent);
+}
+.ui-root .cc-cal-tile--fixed { cursor: pointer; }
+/* A title wraps between words only; a word too long for a narrow tile ends with "…" (the full title shows on hover). */
+.ui-root .cc-cal-title { display: block; overflow: hidden; overflow-wrap: normal; text-overflow: ellipsis; }
+.ui-root .cc-cal-sub { display: block; font-size: var(--fs-cal-sub); color: var(--tile-sub, var(--tile-text, var(--cal-other-sub))); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ui-root .cc-cal-tile--client { --tile-bg: var(--cal-client); --tile-text: var(--cal-client-text); --tile-sub: var(--cal-client-sub); --tile-edge: var(--cal-client-edge); }
+.ui-root .cc-cal-tile--chemistry { --tile-bg: var(--cal-chemistry); --tile-text: var(--cal-chemistry-text); --tile-sub: var(--cal-chemistry-sub); }
+.ui-root .cc-cal-tile--connection { --tile-bg: var(--cal-connection); --tile-text: var(--cal-connection-text); --tile-sub: var(--cal-connection-text); --tile-edge: var(--cal-connection-edge); }
+.ui-root .cc-cal-tile--admin { --tile-bg: var(--cal-admin); --tile-text: var(--cal-admin-text); --tile-sub: var(--cal-admin-sub); --tile-edge: var(--cal-grey-edge); }
+.ui-root .cc-cal-tile--writing { --tile-bg: var(--cal-writing); --tile-text: var(--cal-writing-text); --tile-sub: var(--cal-writing-sub); --tile-edge: var(--cal-grey-edge); }
+.ui-root .cc-cal-tile--other { --tile-bg: var(--cal-other); --tile-text: var(--cal-other-text); --tile-sub: var(--cal-other-sub); --tile-edge: var(--cal-grey-edge); }
+/* Life, personal and held items: a dashed outline on the page's own colour. */
+.ui-root .cc-cal-tile--life { --tile-bg: var(--bg); --tile-text: var(--cal-life-text); --tile-sub: var(--cal-life-text); box-shadow: none; border: var(--line-w) dashed var(--cal-life-edge); }
+.ui-root .cc-cal-tile--hold { --tile-bg: var(--bg); --tile-text: var(--cal-hold-text); --tile-sub: var(--cal-hold-text); box-shadow: none; border: var(--line-w) dashed var(--cal-hold-edge); }
+/* Open times: outlined in mint, never coral. */
+.ui-root .cc-cal-tile--open { --tile-bg: var(--bg); --tile-text: var(--cal-open-text); --tile-sub: var(--cal-open-text); box-shadow: none; border: var(--line-w) solid var(--cal-open-edge); }
+@media (hover: hover) { .ui-root .cc-cal:not(.cc-cal--hours) .cc-cal-tile:hover { opacity: var(--cal-hover); } }
+.ui-root .cc-cal-tile:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--line-w); z-index: 3; opacity: 1; }
+
+/* Under 45 minutes: one line. The tick, the title ending with "…", then the start time only if it fits. */
+.ui-root .cc-cal-tile--one { display: flex; align-items: center; padding-block: 0; padding-inline: var(--space-px6); font-size: var(--fs-cal-sub); line-height: var(--lh-cal-one); white-space: nowrap; }
+.ui-root .cc-cal-one { display: flex; align-items: center; gap: var(--space-px6); min-width: 0; flex: 1; }
+.ui-root .cc-cal-one .cc-cal-title { white-space: nowrap; text-overflow: ellipsis; min-width: 0; overflow-wrap: normal; }
+.ui-root .cc-cal-time { flex: none; color: var(--tile-sub, var(--tile-text)); font-variant-numeric: tabular-nums; }
+@container (max-width: 118px) { .ui-root .cc-cal-time { display: none; } }
+
+/* A placed to-do: its tick box, the same soft coral edge when it is important. */
+.ui-root .cc-cal-tick { all: unset; cursor: pointer; flex: none; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; width: var(--cal-tick); height: var(--cal-tick); margin-right: var(--space-px6); -webkit-tap-highlight-color: transparent; }
+.ui-root .cc-cal-tick > span { box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border: var(--line-w-strong) solid currentColor; border-radius: var(--space-px3); transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease); }
+.ui-root .cc-cal-tick svg { width: 100%; height: 100%; fill: none; stroke: var(--on-good); stroke-width: var(--cal-tick-stroke); stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.ui-root .cc-cal-tile--important .cc-cal-tick > span { border-width: var(--important-line); border-color: var(--coral-soft-text); }
+.ui-root .cc-cal-tick[aria-checked='true'] > span { background: var(--good); border-color: var(--good); }
+.ui-root .cc-cal-tick[aria-checked='true'] svg { opacity: 1; }
+.ui-root .cc-cal-tick:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--space-px3); }
+.ui-root .cc-cal-tile--one .cc-cal-tick { width: var(--cal-tick-one); height: var(--cal-tick-one); }
+.ui-root .cc-cal-tile--todo:not(.cc-cal-tile--one) .cc-cal-tick { float: left; margin-top: var(--space-px2); }
+.ui-root .cc-cal-tile--done .cc-cal-title { text-decoration: line-through; }
+
+/* The strip that makes a tile longer or shorter. */
+.ui-root .cc-cal-grip { position: absolute; left: 0; right: 0; bottom: 0; height: var(--cal-grip); cursor: ns-resize; touch-action: none; }
+.ui-root .cc-cal-tile--one .cc-cal-grip { height: var(--space-1); }
+
+/* Being made or dragged. */
+.ui-root .cc-cal-tile--new { z-index: 5; pointer-events: none; box-shadow: none; outline: var(--line-w) solid var(--coral-text); opacity: var(--cal-ghost); }
+.ui-root .cc-cal-tile--lifted { opacity: var(--cal-lifted); }
+.ui-root .cc-cal-tile--held { outline: var(--focus-w) solid var(--coral-text); z-index: 5; }
+.ui-root .cc-cal--dragging { cursor: grabbing; }
+.ui-root .cc-cal--dragging .cc-cal-tile { cursor: grabbing; }
+
+/* ---------------------------------------------------------------- working hours, edited on the week */
+.ui-root .cc-cal--hours .cc-cal-tile { opacity: var(--cal-dim); cursor: default; pointer-events: none; }
+/* The dashed outlines are quiet already: dimmed too, their edges would drop under 3 to 1. */
+.ui-root .cc-cal--hours .cc-cal-tile--life, .ui-root .cc-cal--hours .cc-cal-tile--hold { opacity: 1; }
+.ui-root .cc-cal-handle { position: absolute; left: 0; right: 0; height: 0; z-index: 6; border-top: var(--focus-w) solid var(--text); cursor: ns-resize; touch-action: none; outline: none; }
+/* A strip either side of the line takes the pointer and the finger. */
+.ui-root .cc-cal-handle::after { content: ''; position: absolute; left: 0; right: 0; top: calc(-1 * var(--space-px22)); height: var(--tap-min); }
+.ui-root .cc-cal-handle > span { position: absolute; left: var(--space-px6); box-sizing: border-box; height: var(--cal-handle-h); display: inline-flex; align-items: center; padding: 0 var(--space-2); font-size: var(--fs-min); line-height: var(--lh-cal-one); white-space: nowrap; color: var(--text); background: var(--card); border: var(--line-w) solid var(--field-line); border-radius: var(--cal-tile-radius); font-variant-numeric: tabular-nums; pointer-events: none; }
+.ui-root .cc-cal-handle--from > span { bottom: var(--space-px6); }
+.ui-root .cc-cal-handle--to > span { top: var(--space-1); }
+.ui-root .cc-cal-handle:focus-visible { border-top-color: var(--coral-text); }
+.ui-root .cc-cal-handle:focus-visible > span { border-color: var(--coral-text); }
+.ui-root .cc-cal-sethours { position: absolute; top: var(--space-2); left: 50%; transform: translateX(-50%); z-index: 6; white-space: nowrap; }
+
+/* ---------------------------------------------------------------- to-dos to place */
+.ui-root .cc-cal-todos { box-sizing: border-box; min-width: 0; border-radius: var(--cc-card-radius); outline: var(--line-w-strong) dashed transparent; outline-offset: var(--space-px6); transition: outline-color var(--dur) var(--ease); }
+/* A placed to-do held over the panel: a dashed coral outline says it will come off the calendar. */
+.ui-root .cc-cal-todos--over { outline-color: var(--coral-text); }
+.ui-root .cc-cal-todos-title { margin: 0 0 var(--space-px10); font-family: var(--font-body); font-weight: var(--fw-regular); font-size: var(--fs-note); color: var(--text-2); min-height: var(--space-px22); }
+.ui-root .cc-cal-todos-list { display: grid; gap: var(--space-2); align-content: start; }
+.ui-root .cc-cal-todo { all: unset; cursor: grab; box-sizing: border-box; display: block; width: 100%; min-height: var(--tap-min); padding: var(--space-px10) var(--space-px12); border-radius: var(--cc-card-radius); border: var(--line-w) solid var(--field-line); font-family: var(--font-body); touch-action: pan-y; user-select: none; -webkit-user-select: none; transition: border-color var(--dur) var(--ease); }
+.ui-root .cc-cal-todo b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-note); line-height: var(--lh-cal-tile); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .cc-cal-todo small { display: block; margin-top: var(--space-px2); font-size: var(--fs-min); color: var(--text-2); }
+@media (hover: hover) { .ui-root .cc-cal-todo:hover { border-color: var(--text-2); } }
+.ui-root .cc-cal-todo:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); }
+
+/* ---------------------------------------------------------------- the quick add, beside the new item */
+.ui-root .cc-cal-quick { position: fixed; z-index: var(--z-dialog); box-sizing: border-box; width: min(var(--cal-quick-w), calc(100vw - var(--space-4))); padding: var(--space-3) var(--space-px18) var(--space-px12); background: var(--bg); border: var(--line-w) solid var(--line); border-radius: var(--radius-card); box-shadow: var(--cc-pop-shadow); }
+.ui-root .cc-cal-quick-when { margin: var(--space-px10) 0 0; font-size: var(--fs-note); color: var(--text-2); line-height: var(--lh-text); }
+.ui-root .cc-cal-quick-form .cc-field { margin-top: var(--space-px12); }
+.ui-root .cc-cal-quick-go { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-px14); }
+
+/* ---------------------------------------------------------------- one item's panel */
+.ui-root .cc-cal-found { display: grid; margin-top: var(--space-2); }
+.ui-root .cc-cal-found-row { all: unset; cursor: pointer; box-sizing: border-box; min-height: var(--tap-min); display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-px12); padding: var(--space-px6) var(--space-px12); border-radius: var(--cc-pop-row-radius); font-family: var(--font-body); transition: background-color var(--dur) var(--ease); }
+.ui-root .cc-cal-found-row b, .ui-root .cc-cal-guest b { font-weight: var(--fw-regular); font-size: var(--fs-secondary); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .cc-cal-found-row small, .ui-root .cc-cal-guest small { font-size: var(--fs-note); color: var(--text-2); overflow-wrap: anywhere; }
+@media (hover: hover) { .ui-root .cc-cal-found-row:hover { background: var(--raised); } }
+.ui-root .cc-cal-found-row:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: calc(-1 * var(--focus-w)); }
+.ui-root .cc-cal-guest { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: var(--tap-min); border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-cal-guest > span { display: grid; min-width: 0; padding-block: var(--space-px6); }
+
+/* ---------------------------------------------------------------- the Schedule */
+.ui-root .cc-sched { margin-top: var(--space-2); }
+.ui-root .cc-sched-day { margin: var(--space-px26) 0 var(--space-1); font-family: var(--font-display); font-weight: var(--fw-regular); text-transform: uppercase; letter-spacing: var(--ls-menu-label); font-size: var(--fs-label); color: var(--text-2); }
+.ui-root .cc-sched-row { all: unset; cursor: pointer; box-sizing: border-box; width: 100%; display: grid; grid-template-columns: var(--cal-square) var(--cc-time-w) minmax(0, 1fr); gap: 0 var(--space-px10); align-items: center; min-height: var(--cc-row-h); padding-block: var(--space-px10); border-bottom: var(--line-w) solid var(--line-soft); font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
+.ui-root .cc-sched-time { font-size: var(--fs-text); color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ui-root .cc-sched-words { min-width: 0; }
+.ui-root .cc-sched-words b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); overflow-wrap: anywhere; transition: color var(--dur) var(--ease); }
+.ui-root .cc-sched-words small { display: flex; flex-wrap: wrap; gap: 0 var(--space-px14); margin-top: var(--space-px2); font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-sched-row--done b { text-decoration: line-through; color: var(--text-2); }
+@media (hover: hover) { .ui-root .cc-sched-row:hover b { color: var(--coral-text); } }
+.ui-root .cc-sched-row:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: calc(-1 * var(--focus-w)); border-radius: var(--radius-btn); }
+/* The small square of each tile's colour: an edge on grey and pale ones, dashed for held and life items. */
+.ui-root .cc-sched-square { all: unset; box-sizing: border-box; display: block; position: static; width: var(--cal-square); height: var(--cal-square); border-radius: var(--radius-bar); background: var(--tile-bg, var(--cal-other)); box-shadow: none; }
+.ui-root .cc-sched-square--edged { border: var(--line-w) solid var(--cal-life-edge); }
+.ui-root .cc-sched-square--dashed { background: transparent; border: var(--line-w) dashed var(--tile-text); }
+
+/* ---------------------------------------------------------------- the month */
+.ui-root .cc-month { margin-top: var(--space-3); border-top: var(--line-w) solid var(--line); }
+.ui-root .cc-month-head, .ui-root .cc-month-week { display: grid; grid-template-columns: repeat(var(--cal-days), minmax(0, 1fr)); }
+.ui-root .cc-month-head { position: sticky; top: var(--cc-header-h); z-index: 2; background: var(--bg); border-bottom: var(--line-w) solid var(--line); }
+.ui-root .cc-month-head span { padding: var(--space-px10) var(--space-2); font-size: var(--fs-meta); color: var(--text-2); text-align: center; }
+.ui-root .cc-month-cell { all: unset; cursor: pointer; box-sizing: border-box; min-width: 0; min-height: var(--cal-month-cell); display: flex; flex-direction: column; gap: var(--space-px2); padding: var(--space-px6); border-bottom: var(--line-w) solid var(--line-soft); border-left: var(--line-w) solid var(--line-soft); font-family: var(--font-body); transition: background-color var(--dur) var(--ease); -webkit-tap-highlight-color: transparent; }
+.ui-root .cc-month-cell:first-child { border-left: 0; }
+.ui-root .cc-month-cell b { font-weight: var(--fw-regular); font-size: var(--fs-secondary); color: var(--text); font-variant-numeric: tabular-nums; align-self: flex-start; }
+.ui-root .cc-month-cell--out b { color: var(--placeholder); }
+.ui-root .cc-month-cell--today b { text-decoration: underline; text-decoration-thickness: var(--focus-w); text-underline-offset: var(--space-1); }
+.ui-root .cc-month-cell small { font-size: var(--fs-min); color: var(--text-2); }
+.ui-root .cc-month-item { all: unset; box-sizing: border-box; display: block; position: static; padding: var(--space-px2) var(--space-px6); border-radius: var(--cal-tile-radius); font-size: var(--fs-min); line-height: var(--lh-cal-tile); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--tile-bg, var(--cal-other)); color: var(--tile-text, var(--cal-other-text)); box-shadow: inset 0 0 0 var(--line-w) var(--tile-edge, transparent); }
+.ui-root .cc-month-item.cc-cal-tile--life, .ui-root .cc-month-item.cc-cal-tile--hold { box-shadow: none; border: var(--line-w) dashed var(--tile-text); }
+.ui-root .cc-month-dots { display: flex; flex-wrap: wrap; gap: var(--space-px3); }
+@media (hover: hover) { .ui-root .cc-month-cell:hover { background: var(--raised); } }
+.ui-root .cc-month-cell:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: calc(-1 * var(--focus-w)); }
+
+/* ---------------------------------------------------------------- narrower screens */
+@media (max-width: 900px) {
+  /* The to-dos sit above the week, side by side, so the week keeps its width. */
+  .ui-root .cc-cal-board--todos { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .cc-cal-todos-list { grid-template-columns: repeat(auto-fill, minmax(var(--cal-side-w), 1fr)); }
+}
+@media (max-width: 600px) {
+  /* The week and Book a call share one line; a longer title (a month's) lets the button drop under it, at the right. */
+  .ui-root .cc-cal-bar { flex-wrap: wrap; justify-content: flex-end; gap: var(--space-1) var(--space-px6); margin-top: var(--space-px12); }
+  .ui-root .cc-cal-bar .cc-cal-nav { margin-right: auto; }
+  .ui-root .cc-cal-nav, .ui-root .cc-cal-stepper { gap: 0; }
+  .ui-root .cc-cal-nav .ds-link { margin-left: var(--space-1); }
+  .ui-root .cc-cal-bar .ds-btn, .ui-root .cc-cal-bar .ds-btn * { white-space: nowrap; text-wrap: nowrap; }
+  .ui-root .cc-month-cell { min-height: var(--space-px64); padding: var(--space-1); align-items: center; }
+  .ui-root .cc-month-cell b { align-self: center; }
+  .ui-root .cc-month-dots { justify-content: center; }
+  .ui-root .cc-cal-foot { display: grid; gap: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .cc-cal-tile, .ui-root .cc-cal-todos { transition: none; }
+}
+@media (forced-colors: active) {
+  .ui-root .cc-cal-tile, .ui-root .cc-month-item { forced-color-adjust: none; background: Canvas; color: CanvasText; box-shadow: none; border: var(--line-w) solid CanvasText; }
+  .ui-root .cc-cal-sub, .ui-root .cc-cal-time { color: CanvasText; }
+  .ui-root .cc-cal-tile--life, .ui-root .cc-cal-tile--hold { border-style: dashed; }
+}
+
+/* An older phone rule pads every plain button and sets its size up to 768px (mobile.css). The calendar's own
+   buttons keep the padding and the size written for them above, at every width. */
+.ui-root .cc-cal-step { padding: 0 !important; font-size: var(--fs-body) !important; }
+.ui-root .cc-cal-range { padding: 0 var(--space-1) !important; font-size: var(--fs-body) !important; }
+.ui-root .cc-cal-zone-btn { padding: var(--space-px2) var(--space-px3) !important; font-size: inherit !important; }
+.ui-root .cc-cal-tick { padding: 0 !important; font-size: inherit !important; min-height: 0; }
+.ui-root .cc-cal-todo { padding: var(--space-px10) var(--space-px12) !important; font-size: inherit !important; }
+.ui-root .cc-cal-found-row { padding: var(--space-px6) var(--space-px12) !important; font-size: inherit !important; }
+.ui-root .cc-sched-row { padding: var(--space-px10) 0 !important; font-size: inherit !important; }
+.ui-root .cc-month-cell { padding: var(--space-px6) !important; font-size: inherit !important; }
+@media (max-width: 600px) { .ui-root .cc-month-cell { padding: var(--space-1) !important; } }

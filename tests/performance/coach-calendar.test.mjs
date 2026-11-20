@@ -1075,6 +1075,36 @@ test('the clock-change week line on Today', () => {
   assert.deepEqual(cal.clockChangeLines({ items: [local], now: at('2026-10-26', '08:00'), coachZone: LON }), []);
 });
 
+test('the grid shows 08:00 to 21:00, opened out for what is on it', () => {
+  const none = cal.hoursWindow([], { days: ['2026-11-16'], coachZone: LON });
+  assert.deepEqual(none, { fromHour: 8, toHour: 21, fromMin: 480, toMin: 1260 });
+  const early = cal.calendarEntries({ items: [call('a', 'Early', '2026-11-16', '06:30', '07:15'), call('b', 'Late', '2026-11-17', '21:30', '22:40')] }, { fromDay: '2026-11-16', toDay: '2026-11-17', coachZone: LON });
+  assert.deepEqual(cal.hoursWindow(early, { days: ['2026-11-16', '2026-11-17'], coachZone: LON }), { fromHour: 6, toHour: 23, fromMin: 360, toMin: 1380 });
+  // A day that isn't showing doesn't open it out; the whole day is midnight to midnight.
+  assert.equal(cal.hoursWindow(early, { days: ['2026-11-16'], coachZone: LON }).toHour, 21);
+  assert.deepEqual(cal.hoursWindow(early, { days: ['2026-11-16'], coachZone: LON, whole: true }), { fromHour: 0, toHour: 24, fromMin: 0, toMin: 1440 });
+  // While the working hours are edited, each handle has an hour of room.
+  const hours = { mon: { from: '07:00', to: '21:30' }, tue: null };
+  assert.deepEqual(cal.hoursWindow([], { days: ['2026-11-16', '2026-11-17'], coachZone: LON, hours }), { fromHour: 6, toHour: 23, fromMin: 360, toMin: 1380 });
+});
+
+test('search finds calendar items by title, person or note, and opens their day', () => {
+  const items = [
+    { ...call('a', 'Coffee with Dan Reid', '2026-11-18', '12:30', '13:00'), notes: 'Ask about the Brightwater offsite', location: 'The Lighthouse' },
+    { ...call('b', 'Training', '2026-10-19', '09:45', '12:00'), repeat_rule: { every: 'week', weekdays: [1, 2] } },
+    { ...call('c', 'Mia and Paul', '2026-11-16', '17:00', '18:00'), kind: 'hold' },
+    { ...call('d', 'Gone', '2026-11-16', '10:00', '11:00'), removed: true },
+  ];
+  const found = cal.searchItems({ items, guests: [{ item_id: 'a', name: 'Dana Whitfield', email: 'dana@example.invalid' }], coachZone: LON, todayKey: '2026-11-17' });
+  assert.deepEqual(found.map((f) => f.title), ['Coffee with Dan Reid', 'Training']);
+  assert.equal(found[0].to, '/coach/calendar?view=day&day=2026-11-18');
+  assert.equal(found[0].kind, 'Wed 18 Nov, 12:30');
+  assert.match(found[0].also, /Dana Whitfield/);
+  assert.match(found[0].also, /Brightwater/);
+  // A repeat opens its next time from today.
+  assert.equal(found[1].to, '/coach/calendar?view=day&day=2026-11-17');
+});
+
 test('every word here follows the writing rules', () => {
   const words = Object.values(cal).flatMap((v) => (typeof v === 'string' ? [v] : v && typeof v === 'object' && !Array.isArray(v) ? Object.values(v).filter((x) => typeof x === 'string') : Array.isArray(v) ? v.map((x) => x?.label).filter((x) => typeof x === 'string') : []));
   assert.ok(words.length > 60);
