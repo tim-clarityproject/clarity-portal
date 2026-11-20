@@ -4,6 +4,10 @@
 //
 //   node --import ./tests/scores/register.mjs tests/coach/flows.mjs
 //   PARTS=shell,clients,table,client,workshop,settings,associate narrows it.
+//   PARTS=day-plan,day-calls,day-week,day-left,day-finances,day-client,day-move are run 2's
+//   coaching day (day-flows.mjs: a day as Tim at 1440, then as Maya at 400, each
+//   on the device only and with the database there; ROLES and DB narrow them).
+//   Run a few parts a command: the whole file takes longer than one command should.
 //
 // As the owner (1440, 049's tables answered by the stand-in): the shell,
 // the menu, the next-call bar with test calls, search, the bell; add three
@@ -18,10 +22,11 @@
 import { chromium } from 'playwright';
 import { accountId, APP, clearDevice, coachContext, makeReport, OTHER, seedDevice, settle, standIn, toastText } from './shared.mjs';
 import { ADMIN_ROWS, ID, seedRows } from './seed.mjs';
+import { DAY_PARTS, runDay } from './day-flows.mjs';
 
 const report = makeReport('Coach portal, the functionality tester');
 const { pass } = report;
-const parts = (process.env.PARTS || 'shell,clients,table,client,workshop,settings,associate').split(',');
+const parts = (process.env.PARTS || ['shell', 'clients', 'table', 'client', 'workshop', 'settings', 'associate', ...DAY_PARTS].join(',')).split(',');
 const has = (p) => parts.includes(p);
 const browser = await chromium.launch();
 
@@ -43,7 +48,7 @@ async function addClient(page, { name, email, tag, referred }) {
 }
 
 // ================================================================ the owner, with 049's tables answered
-if (parts.some((p) => p !== 'associate')) {
+if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
   const ctx = await coachContext(browser, { size: 1440, theme: 'light', reducedMotion: 'no-preference' });
   const page = await ctx.newPage();
   const errors = [];
@@ -784,6 +789,9 @@ if (has('associate')) {
   await clearDevice(page, me);
   await ctx.close();
 }
+
+// ================================================================ run 2: the coaching day, as one day
+if (parts.some((p) => DAY_PARTS.includes(p))) await runDay({ browser, report, parts });
 
 await browser.close();
 report.done();

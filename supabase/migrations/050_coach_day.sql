@@ -383,7 +383,9 @@ comment on column public.coach_settings.hidden_help is
 -- ---------------------------------------------------------------- sessions left
 alter table public.engagements add column if not exists sessions_held_base integer;
 update public.engagements set sessions_held_base = sessions_held where sessions_held_base is null;
-alter table public.engagements alter column sessions_held_base set default 0;
+-- No default: a new row with no base given takes its count as the base
+-- (the guard below), and one moved across from a device keeps its own.
+alter table public.engagements alter column sessions_held_base drop default;
 alter table public.engagements alter column sessions_held_base set not null;
 comment on column public.engagements.sessions_held_base is
   'The sessions held before sessions were recorded one by one (050). sessions_held is this plus every recorded session that counts.';
@@ -444,7 +446,9 @@ begin
     return new;
   end if;
   if tg_op = 'INSERT' then
-    new.sessions_held_base := coalesce(new.sessions_held, 0);
+    -- A row moved across from a device brings its own base (a count typed
+    -- there, less the sessions it had recorded); any other takes its count.
+    new.sessions_held_base := coalesce(new.sessions_held_base, new.sessions_held, 0);
     return new;
   end if;
   if new.sessions_held is distinct from old.sessions_held then

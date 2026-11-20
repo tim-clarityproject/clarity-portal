@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { BottomBar, Button, Dropdown, PageHeader, useToast } from '../../components/design';
 import { rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { dayWords, firstName, possessive, toDayKey } from '../../lib/coach/model';
-import { askedWords, closeGoals, closeLine, closeRows, closeScores, KEEPS, nextSession, pastWords } from '../../lib/coach/day';
+import { askedWords, closeGoals, closeLine, closeRows, closeScores, engagementToSave, KEEPS, nextSession, pastWords } from '../../lib/coach/day';
 import { useReviews } from '../../lib/coach/dayData';
 import { Back, Line, Part, TextLink, TICK, useCoachPortal } from './parts';
 import { currentEngagement } from './clientData';
@@ -28,7 +28,7 @@ export default function ClosePage() {
   const navigate = useNavigate();
   const toast = useToast();
   const say = useSay();
-  const { userId, state, clients, sessions, todayKey, now } = useCoachPortal();
+  const { userId, state, clients, sessions, sessionPeople, todayKey, now } = useCoachPortal();
   const profile = clients.find((p) => p.id === id) || null;
   const reviews = useReviews(profile?.user_id || null);
   const [brief, setBrief] = useState(null);
@@ -61,9 +61,11 @@ export default function ClosePage() {
     if (busy.current) return; // one request a press
     busy.current = true;
     try {
-      const rows = closeRows(profile, engagement, todayKey);
+      // The engagement is saved with its count as it stands now, so ending it (or Undo) never moves the count.
+      const kept = engagementToSave(engagement, sessions, sessionPeople);
+      const rows = closeRows(profile, kept, todayKey);
       const pairs = [['client_profiles', rows.profile], ...(rows.engagement ? [['engagements', rows.engagement]] : [])];
-      const before = [['client_profiles', profile], ...(engagement ? [['engagements', engagement]] : [])];
+      const before = [['client_profiles', profile], ...(kept ? [['engagements', kept]] : [])];
       const status = await saveRows(userId, pairs);
       toast.saved({ message: status === 'queued' ? 'Will sync' : pastWords(profile.name), long: true, onUndo: () => saveRows(userId, before).catch(() => {}) });
       navigate('/coach/clients');

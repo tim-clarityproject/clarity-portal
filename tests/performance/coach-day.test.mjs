@@ -10,7 +10,7 @@ import {
   todoFacts, sortTodos, todayTodos, upcomingGroups, somedayTodos, positionBetween, moveToDay, moveToSomeday, repeatWords,
   repeatValue, nextRepeat, completeTodo, parseQuickAdd, quickAddChips, addedWords, workingDay, callsOn, dayLoad, overWords,
   suggestMoves, moveState, weekStart, capacity, capacityFromTyped, todayOffer, sessionCounts, isLateCancellation,
-  outcomeLine, withSessions, withHeldTyped, leftWords, sessionRow, toWriteUp, recapNudges, lastSession, nextSession,
+  outcomeLine, withSessions, withHeldTyped, engagementToSave, leftWords, sessionRow, toWriteUp, recapNudges, lastSession, nextSession,
   whenWords, averageSince, prepLine, attentionRows, dayDone, weekDone, doneThisWeek, doneWords, openWords, positionAt, quickDays,
 } from '../../src/lib/coach/day.js';
 import { sessionsLeft } from '../../src/lib/coach/model.js';
@@ -233,6 +233,16 @@ test('sessions left after each kind of session, a late cancellation and Waive it
   const typed = withHeldTyped(kept, 7, kept.sessions_recorded);
   assert.deepEqual([typed.sessions_held, typed.sessions_held_base], [7, 6], 'a count the coach types stands: the base moves');
   assert.equal(withSessions(typed, [s('held')]).sessions_held, 7);
+  // Saved for another reason (its dates, ending it, Undo), an engagement carries the count as it stands now, never the one it was
+  // loaded with: 050 reads a different count as one the coach typed, and would move the base (the functionality tester, 20 Nov).
+  const loaded = { id: 'e', sessions_total: 12, sessions_held: 4, sessions_held_base: 3, status: 'active' };
+  const since = [s('held'), s('no_show')];
+  assert.deepEqual(engagementToSave({ ...loaded, status: 'ended' }, since), { ...loaded, status: 'ended', sessions_held: 5 }, 'a session recorded since it was loaded is in the count it is saved with');
+  assert.equal('sessions_recorded' in engagementToSave(loaded, since), false, 'and only its own columns are saved');
+  assert.deepEqual(engagementToSave(typed, [s('held')]), typed, 'a typed count goes as typed');
+  const before050 = { id: 'e', sessions_total: 12, sessions_held: 3 };
+  assert.equal(engagementToSave(before050, since), before050, 'before there is a base the kept count is the base, and the row goes as it is');
+  assert.equal(engagementToSave(null, since), null);
   assert.equal(leftWords({ id: 'x', sessions_total: 6, sessions_held: 4 }, []), '2 sessions left');
   assert.equal(leftWords({ id: 'x', sessions_total: 6, sessions_held: 5 }, []), '1 session left');
   assert.equal(leftWords({ id: 'x', sessions_total: 6, sessions_held: 6 }, []), 'No sessions left');

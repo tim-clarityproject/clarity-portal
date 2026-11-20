@@ -550,6 +550,21 @@ export function withSessions(engagement, sessions = [], people = []) {
   return { ...engagement, sessions_held: Math.max(0, base + counted), sessions_recorded: counted, sessions_held_base: base };
 }
 
+/**
+ * An engagement as it is saved for any reason but a typed count (its dates,
+ * its name, ending it, a close, an Undo): the count it carries is the base
+ * plus every recorded session that counts, as it stands now. Migration 050
+ * reads a count that differs from the database's as one the coach typed and
+ * moves the base, so a row saved with the count it had when it was loaded
+ * would lose the sessions recorded since. Before there is a base (before
+ * 050, and before any count is typed) the kept count is the base, and the
+ * row goes as it is.
+ */
+export function engagementToSave(engagement, sessions = [], people = []) {
+  if (!engagement || engagement.sessions_held_base == null) return engagement;
+  return { ...engagement, sessions_held: withSessions(engagement, sessions, people).sessions_held };
+}
+
 /** A count the coach types: the base moves so the total is what they typed. */
 export const withHeldTyped = (engagement, typed, recorded = 0) => ({ ...engagement, sessions_held: Math.max(0, typed), sessions_held_base: Math.max(0, typed) - recorded });
 
