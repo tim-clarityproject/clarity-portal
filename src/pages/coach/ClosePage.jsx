@@ -8,6 +8,7 @@ import { useReviews } from '../../lib/coach/dayData';
 import { Back, Line, Part, TextLink, TICK, useCoachPortal } from './parts';
 import { currentEngagement } from './clientData';
 import { useSay } from './sessionParts';
+import { useCoachingEnded } from './crmParts';
 import './sessions.css';
 
 // The guided close (Phase 6a run 2, step 5; M11's "The guided close"): the
@@ -34,6 +35,7 @@ export default function ClosePage() {
   const [brief, setBrief] = useState(null);
   const [briefAsked, setBriefAsked] = useState(false);
   const busy = useRef(false);
+  const ended = useCoachingEnded();
 
   if (!profile) {
     return (
@@ -67,7 +69,10 @@ export default function ClosePage() {
       const pairs = [['client_profiles', rows.profile], ...(rows.engagement ? [['engagements', rows.engagement]] : [])];
       const before = [['client_profiles', profile], ...(kept ? [['engagements', kept]] : [])];
       const status = await saveRows(userId, pairs);
-      toast.saved({ message: status === 'queued' ? 'Will sync' : pastWords(profile.name), long: true, onUndo: () => saveRows(userId, before).catch(() => {}) });
+      // Coaching has ended (run 4): check-ins are suggested at 3, 6 and 12 months, and "when coaching ends" automations add
+      // their to-dos. Nothing is sent; Undo takes all of it back.
+      const after = await ended(rows.profile).catch(() => null);
+      toast.saved({ message: status === 'queued' ? 'Will sync' : pastWords(profile.name), long: true, onUndo: async () => { if (after) await after.undo().catch(() => {}); await saveRows(userId, before).catch(() => {}); } });
       navigate('/coach/clients');
     } catch (error) {
       toast.error(error?.message && !/fetch|network/i.test(error.message) ? error.message : undefined);

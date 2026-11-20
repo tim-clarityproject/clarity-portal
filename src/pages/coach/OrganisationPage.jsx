@@ -1,36 +1,49 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AddButton, Button, Chip, ChipRow, PageHeader, SlidePanel, Stat, StatGroup, SwitchRow, TextField, useToast } from '../../components/design';
+import { AddButton, Button, Chip, ChipRow, Dropdown, PageHeader, SlidePanel, Stat, StatGroup, SwitchRow, TextField, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
-import { coachReadyNow, newId, removeRow, rowsOf, saveRow } from '../../lib/coach/store';
+import { coachCrmReadyNow, coachReadyNow, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { NEEDS_049 } from '../../lib/coach/actions';
 import { accessCodeHash, codeGroups, makeAccessCode } from '../../lib/coach/accessCode';
 import { addDays, clean, dayWords, ENGAGEMENT_KINDS, firstName, isEmail, possessive, sessionsLeft } from '../../lib/coach/model';
 import { Back, Eye, Line, Row, SettingRow, TextLink, useCoachPortal, Part } from './parts';
 import { currentEngagement } from './clientData';
+import {
+  ACCOUNT_WORDS, accountMap, CONTACT_ROLES, contactLast, DEAL_KINDS, DEAL_PER, DEAL_STATUSES, dealFromTyped, emailsOn, growthAction, growthLines, growthToLead,
+} from '../../lib/coach/crm';
+import { EmailRows } from './crmParts';
+import { useStartStages } from './leadParts';
+import './leads.css';
+import './crm.css';
 import './leftovers.css';
 
 // An organisation (M11, with version 3.6's account map), the owner's: Who's
-// who (contacts with their roles, the people coached there, its groups),
-// the engagements running there, Room to grow, seats, and documents with an
-// optional expiry.
-const ROLES = [{ value: 'sponsor', label: 'Sponsor' }, { value: 'invoices', label: 'Invoices contact' }];
+// who (contacts with their roles and when you last spoke or emailed, the
+// people coached there, its groups), Agreements and proposals (each deal,
+// its value and when it renews), Room to grow (each with the one thing to do
+// next, which adds it to the pipeline), seats, and documents with an
+// optional expiry. The map's rules and words are crm.js's (run 4).
+// Sponsor and Invoices are 049's; Buyer, HR and Participant arrive with 052, so they are offered once it is there.
+const ROLES_049 = ['sponsor', 'invoices'];
+const rolesNow = () => CONTACT_ROLES.filter(([value]) => ROLES_049.includes(value) || coachCrmReadyNow() === true).map(([value, label]) => ({ value, label }));
 const CODE_WORDS = {
   loading: '',
   none: 'No access code is set.',
   set: 'An access code is set.',
   unknown: 'The code can’t be checked right now.',
 };
-const roleWords = (roles) => ROLES.filter((r) => (roles || []).includes(r.value)).map((r) => r.label).join(', ');
 
 export default function OrganisationPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { userId, coach, state, organisations, clients, groups, workshops, admin, todayKey } = useCoachPortal();
+  const { userId, coach, state, organisations, clients, groups, workshops, admin, todayKey, orgDeals, orgGrowth, leadStages, emails, emailLinks } = useCoachPortal();
+  useStartStages(); // Room to grow adds to the pipeline, which needs its stages
   const org = organisations.find((o) => o.id === id) || null;
   const [contact, setContact] = useState(null);
   const [doc, setDoc] = useState(null);
+  const [deal, setDeal] = useState(null); // an agreement or proposal, as typed
+  const [dealProblem, setDealProblem] = useState(null);
   const [problem, setProblem] = useState(null);
   const fileRef = useRef(null);
   // The access code (026's organisation_access_codes): only its hash is
@@ -68,19 +81,43 @@ export default function OrganisationPage() {
 
   // Room to grow: worked out from what is here, one calm line each.
   const grow = [];
-  if (seats > withAccount) grow.push({ key: 'seats', title: `${seats - withAccount} of ${seats} seats are free.`, small: 'People coached here could use them for their own sprints.' });
+  if (seats > withAccount) grow.push({ key: 'seats', kind: 'seats', title: `${seats - withAccount} of ${seats} seats are free.`, small: 'People coached here could use them for their own sprints.' });
   const soon = addDays(todayKey, 60);
   for (const p of mine) {
     const e = currentEngagement(engagements, { profileId: p.id });
     const s = sessionsLeft(e, packs);
-    if (e?.ends_on && e.ends_on <= soon) grow.push({ key: `end-${p.id}`, title: `${possessive(firstName(p.name))} coaching ends on ${dayWords(e.ends_on, todayKey)}.`, small: 'A renewal could be planned now.', to: `/coach/clients/${p.id}` });
-    else if (s && s.total > 0 && s.left <= 2) grow.push({ key: `left-${p.id}`, title: `${firstName(p.name)} has ${s.left} of ${s.total} sessions to go.`, small: 'A renewal could be planned now.', to: `/coach/clients/${p.id}` });
+    if (e?.ends_on && e.ends_on <= soon) grow.push({ key: `end-${p.id}`, kind: 'renewal', title: `${possessive(firstName(p.name))} coaching ends on ${dayWords(e.ends_on, todayKey)}.`, small: 'A renewal could be planned now.', to: `/coach/clients/${p.id}` });
+    else if (s && s.total > 0 && s.left <= 2) grow.push({ key: `left-${p.id}`, kind: 'renewal', title: `${firstName(p.name)} has ${s.left} of ${s.total} sessions to go.`, small: 'A renewal could be planned now.', to: `/coach/clients/${p.id}` });
   }
   for (const a of theirs) {
-    if (a.ends_on && a.ends_on <= soon) grow.push({ key: `end-${a.profile_id}`, title: `${possessive(firstName(a.name))} coaching ends on ${dayWords(a.ends_on, todayKey)}.`, small: `${a.coach_first_name} is their coach.` });
+    if (a.ends_on && a.ends_on <= soon) grow.push({ key: `end-${a.profile_id}`, kind: 'renewal', title: `${possessive(firstName(a.name))} coaching ends on ${dayWords(a.ends_on, todayKey)}.`, small: `${a.coach_first_name} is their coach.` });
   }
   const ahead = workshops.filter((w) => w.organisation_id === org.id && w.starts_at && w.starts_at.slice(0, 10) >= todayKey);
-  if (!ahead.length) grow.push({ key: 'workshop', title: 'No workshop is booked here.', small: 'A team workshop is one way to grow the work.' });
+  if (!ahead.length) grow.push({ key: 'workshop', kind: 'workshop', title: 'No workshop is booked here.', small: 'A team workshop is one way to grow the work.' });
+
+  // The account map (run 4): Who's who, Agreements and proposals, and what was noted under Room to grow.
+  const map = accountMap({ organisation: org, contacts, clients, adminClients: theirs, groups, deals: orgDeals, growth: orgGrowth, todayKey });
+  const growRows = growthLines(map.growth, grow);
+  const dealNames = new Set(map.deals.map((d) => d.name.toLowerCase()));
+  /** Room to grow's one thing to do next: it goes into the pipeline as a lead, and the line then opens that lead. */
+  const toPipeline = async (g) => {
+    const noted = orgGrowth.find((r) => r.id === g.id) || null;
+    const row = noted || { id: newId(), organisation_id: org.id, kind: g.kind, title: g.title, note: g.small || null, status: 'open', lead_id: null, created_by: userId };
+    const made = growthToLead(row, org, { id: newId(), coachId: coach.id, stages: leadStages, contacts });
+    if (made.error) { toast.show(made.error); return; }
+    await done(() => saveRows(userId, [['coach_leads', made.lead], ['organisation_growth', made.growth]]), made.toast, async () => {
+      if (noted) await saveRow(userId, 'organisation_growth', noted); else await removeRow(userId, 'organisation_growth', row.id);
+      await removeRow(userId, 'coach_leads', made.lead.id);
+    });
+  };
+  const openDeal = (d) => { const row = orgDeals.find((r) => r.id === d.id); if (!row) return; setDealProblem(null); setDeal({ id: row.id, name: row.name, kind: row.kind, status: row.status, value: row.value == null ? '' : String(row.value), per: row.per || 'once', renews: row.renews_on || '', detail: row.detail || '' }); };
+  const saveDeal = async () => {
+    const before = orgDeals.find((r) => r.id === deal.id) || null;
+    const read = dealFromTyped(deal, { id: deal.id, organisationId: org.id, before, todayKey });
+    if (read.error) { setDealProblem(read); return; }
+    if (await done(() => saveRow(userId, 'organisation_deals', { ...read.deal, created_by: before?.created_by ?? userId }), before ? 'Saved' : 'Added', () => (before ? saveRow(userId, 'organisation_deals', before) : removeRow(userId, 'organisation_deals', read.deal.id)))) setDeal(null);
+  };
+  const dealAt = (key) => (dealProblem?.at === key ? <p className="cc-problem" role="alert">{dealProblem.error}</p> : null);
 
   // Make a code, or reset it: the new one is saved (its hash) before the old one is switched off.
   const makeCode = async (reset) => {
@@ -148,12 +185,14 @@ export default function OrganisationPage() {
         <StatGroup className="cc-stats">
           <Stat label="People coached here" value={String(people)} />
           {seats > 0 && <Stat label="Seats in use" value={`${withAccount} of ${seats}`} bar={seats ? withAccount / seats : 0} />}
+          {map.nextRenewal && <Stat label={ACCOUNT_WORDS.nextRenewal} value={map.nextRenewal} />}
         </StatGroup>
 
         <Part title="Who’s who">
-          {contacts.map((c) => (
-            <Row key={c.id} title={c.name} facts={[roleWords(c.roles), c.job_title, c.note]} when="" onClick={() => { setProblem(null); setContact({ id: c.id, name: c.name, email: c.email || '', job_title: c.job_title || '', roles: c.roles || [], note: c.note || '' }); }} label={`Edit ${c.name}`} />
-          ))}
+          {map.whosWho.filter((w) => w.kind === 'contact').map((w) => {
+            const c = contacts.find((x) => x.id === w.id);
+            return <Row key={c.id} title={c.name} facts={[w.role, w.note]} when={contactLast(c, emails, emailLinks, todayKey)} onClick={() => { setProblem(null); setContact({ id: c.id, name: c.name, email: c.email || '', job_title: c.job_title || '', roles: c.roles || [], note: c.note || '' }); }} label={`Edit ${c.name}`} />;
+          })}
           {mine.map((p) => <Row key={p.id} title={p.name} facts={['Client', p.job_title]} when="" onClick={() => navigate(`/coach/clients/${p.id}`)} />)}
           {theirs.map((a) => <Row key={a.profile_id} title={a.name} facts={[`${a.coach_first_name}’s client`]} when="" />)}
           {here.map((g) => {
@@ -163,24 +202,34 @@ export default function OrganisationPage() {
           <div className="cc-add"><AddButton onClick={() => { setProblem(null); setContact({ id: newId(), name: '', email: '', job_title: '', roles: [], note: '' }); }}>Add someone</AddButton></div>
         </Part>
 
-        <Part title="Engagements">
+        <Part title="Agreements and proposals">
+          {map.deals.map((d) => (
+            <div key={d.id} className="cc-map-deal">
+              <Row title={d.name} facts={[d.status, d.detail, d.opened]} when={<>{d.value && <b aria-label={d.valueSpoken}>{d.value}</b>}{d.renews && <span>{d.renews}</span>}</>} label={`Edit ${d.name}`} onClick={() => openDeal(d)} />
+            </div>
+          ))}
           {mine.map((p) => {
             const e = currentEngagement(engagements, { profileId: p.id });
             if (!e) return null;
             const s = sessionsLeft(e, packs);
-            return <Row key={p.id} title={`${e.name || ENGAGEMENT_KINDS.find((k) => k.value === e.kind)?.label} for ${firstName(p.name)}`} facts={['Active', s ? `${s.left} of ${s.total} sessions to go` : null]} when={e.ends_on ? `Ends ${dayWords(e.ends_on, todayKey)}` : ''} onClick={() => navigate(`/coach/clients/${p.id}`)} />;
+            const title = `${e.name || ENGAGEMENT_KINDS.find((k) => k.value === e.kind)?.label} for ${firstName(p.name)}`;
+            if (dealNames.has(title.toLowerCase())) return null; // its agreement is already listed above
+            return <Row key={p.id} title={title} facts={['Active', s ? `${s.left} of ${s.total} sessions to go` : null]} when={e.ends_on ? `Ends ${dayWords(e.ends_on, todayKey)}` : ''} onClick={() => navigate(`/coach/clients/${p.id}`)} />;
           })}
           {theirs.filter((a) => a.engagement_kind).map((a) => (
             <Row key={a.profile_id} title={`${ENGAGEMENT_KINDS.find((k) => k.value === a.engagement_kind)?.label} for ${firstName(a.name)}`} facts={[`${a.coach_first_name}’s client`, a.sessions_total ? `${Math.max(0, a.sessions_total - a.sessions_held)} of ${a.sessions_total} sessions to go` : null]} when={a.ends_on ? `Ends ${dayWords(a.ends_on, todayKey)}` : ''} />
           ))}
-          {!mine.some((p) => currentEngagement(engagements, { profileId: p.id })) && !theirs.some((a) => a.engagement_kind) && <p className="cc-quiet">No engagement is running here. Agreements and proposals arrive with Finances.</p>}
+          {map.deals.length === 0 && !mine.some((p) => currentEngagement(engagements, { profileId: p.id })) && !theirs.some((a) => a.engagement_kind) && <p className="cc-quiet">{ACCOUNT_WORDS.noDeals}</p>}
+          <div className="cc-add"><AddButton onClick={() => { setDealProblem(null); setDeal({ id: newId(), name: '', kind: 'agreement', status: 'active', value: '', per: 'once', renews: '', detail: '' }); }}>{ACCOUNT_WORDS.addDeal}</AddButton></div>
         </Part>
 
-        {grow.length > 0 && (
+        {growRows.length > 0 && (
           <Part title="Room to grow">
-            {grow.slice(0, 5).map((g) => (
-              <Line key={g.key} title={g.title} small={g.small}>
-                {g.to ? <TextLink aria-label={`Open the page for: ${g.title}`} onClick={() => navigate(g.to)}>Open their page</TextLink> : <span />}
+            {growRows.slice(0, 6).map((g) => (
+              <Line key={g.id || g.key} title={g.title} small={g.note || g.small}>
+                {g.leadId ? <TextLink aria-label={`Open the lead for: ${g.title}`} onClick={() => navigate(`/coach/leads/${g.leadId}`)}>Open the lead</TextLink>
+                  : g.to ? <TextLink aria-label={`Open the page for: ${g.title}`} onClick={() => navigate(g.to)}>Open their page</TextLink>
+                    : g.raised ? <span /> : <TextLink aria-label={`${g.action || growthAction(g.kind)}: ${g.title}`} onClick={() => toPipeline(g)}>{g.action || growthAction(g.kind)}</TextLink>}
               </Line>
             ))}
           </Part>
@@ -242,10 +291,37 @@ export default function OrganisationPage() {
             <div className="cc-field"><TextField label="Email" type="email" value={contact.email} autoComplete="off" onChange={(e) => { setContact({ ...contact, email: e.target.value }); setProblem(null); }} /></div>
             <div className="cc-field"><TextField label="Role there" value={contact.job_title} maxLength={120} placeholder="e.g. HR director" onChange={(e) => setContact({ ...contact, job_title: e.target.value })} /></div>
             <div className="cc-field"><span className="cc-field-label">For you, they are</span>
-              <ChipRow label="For you, they are">{ROLES.map((r) => <Chip key={r.value} pressed={contact.roles.includes(r.value)} onClick={() => setContact({ ...contact, roles: contact.roles.includes(r.value) ? contact.roles.filter((x) => x !== r.value) : [...contact.roles, r.value] })}>{r.label}</Chip>)}</ChipRow>
+              <ChipRow label="For you, they are">{rolesNow().map((r) => <Chip key={r.value} pressed={contact.roles.includes(r.value)} onClick={() => setContact({ ...contact, roles: contact.roles.includes(r.value) ? contact.roles.filter((x) => x !== r.value) : [...contact.roles, r.value] })}>{r.label}</Chip>)}</ChipRow>
             </div>
             <div className="cc-field"><TextField label="A note" value={contact.note} maxLength={240} placeholder="e.g. Decides on renewals" onChange={(e) => setContact({ ...contact, note: e.target.value })} /></div>
             {problem && <p className="cc-problem" role="alert">{problem}</p>}
+            {/* Emails logged with this person (the copy-in address or Gmail): each opens. */}
+            <EmailRows rows={emailsOn(emails, emailLinks, 'contact', contact.id, todayKey, contact)} />
+          </>
+        )}
+      </SlidePanel>
+
+      <SlidePanel
+        open={Boolean(deal)}
+        onClose={() => setDeal(null)}
+        title={deal && orgDeals.some((d) => d.id === deal.id) ? ACCOUNT_WORDS.editDeal : ACCOUNT_WORDS.addDeal}
+        footer={deal ? (
+          <div className="cc-panel-foot">
+            {orgDeals.some((d) => d.id === deal.id) ? <TextLink onClick={() => { const before = orgDeals.find((d) => d.id === deal.id); done(() => removeRow(userId, 'organisation_deals', deal.id).then(() => 'saved'), 'Deleted', () => saveRow(userId, 'organisation_deals', before)).then(() => setDeal(null)); }}>Delete</TextLink> : <span />}
+            <Button variant="primary" onClick={saveDeal}>{orgDeals.some((d) => d.id === deal.id) ? 'Save my edit' : 'Add to this organisation'}</Button>
+          </div>
+        ) : null}
+      >
+        {deal && (
+          <>
+            <div className="cc-field"><TextField label="What is it called?" value={deal.name} maxLength={200} placeholder="e.g. Portal seats" autoComplete="off" onChange={(e) => { setDeal({ ...deal, name: e.target.value }); setDealProblem(null); }} />{dealAt('name')}</div>
+            <div className="cc-field"><Dropdown label="What is it?" options={DEAL_KINDS} value={deal.kind} onChange={(v) => setDeal({ ...deal, kind: v, status: v === 'proposal' ? 'sent' : 'active' })} /></div>
+            <div className="cc-field"><Dropdown label="Where is it up to?" options={DEAL_STATUSES} value={deal.status} onChange={(v) => setDeal({ ...deal, status: v })} /></div>
+            <div className="cc-field"><TextField label="Value" value={deal.value} maxLength={20} placeholder="e.g. £13,500" autoComplete="off" onChange={(e) => { setDeal({ ...deal, value: e.target.value }); setDealProblem(null); }} />{dealAt('value')}</div>
+            <div className="cc-field"><Dropdown label="How often?" options={DEAL_PER} value={deal.per} onChange={(v) => setDeal({ ...deal, per: v })} /></div>
+            <div className="cc-field"><TextField label="Renews on, if it does" type="date" value={deal.renews} onChange={(e) => { setDeal({ ...deal, renews: e.target.value }); setDealProblem(null); }} />{dealAt('renews')}</div>
+            <div className="cc-field"><TextField label="A detail" value={deal.detail} maxLength={200} placeholder="e.g. 20 seats" autoComplete="off" onChange={(e) => setDeal({ ...deal, detail: e.target.value })} /></div>
+            {deal && orgDeals.find((d) => d.id === deal.id)?.lead_id && <div className="cc-acts"><TextLink onClick={() => navigate(`/coach/leads/${orgDeals.find((d) => d.id === deal.id).lead_id}`)}>Open the lead</TextLink></div>}
           </>
         )}
       </SlidePanel>

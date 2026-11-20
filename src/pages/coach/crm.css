@@ -1,0 +1,73 @@
+/* Automations, Boards, emails logged, past clients' check-ins and the
+   account map (Phase 6a run 4, step 3; M11 seq 77: .autorow, .autosum, the
+   boards' .board and .bcv, the New board and Edit this board panels, .setrow
+   for the two addresses, .pastp). Tokens only; every class starts cc-. The
+   board, the cards, the rows, the table and the menus are the coach
+   portal's own (coach.css, leftovers.css, leads.css): this file adds only
+   what these pages draw that nothing else does. */
+
+/* ---------------------------------------------------------------- Automations: one sentence a row, how often it ran, and its switch */
+.ui-root .cc-auto-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 var(--space-px20); border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-auto-open { all: unset; cursor: pointer; box-sizing: border-box; display: grid; gap: var(--space-px2); min-height: var(--cc-row-h); padding: var(--space-px12) 0 !important; font-size: inherit !important; min-width: 0; text-align: left; }
+.ui-root .cc-auto-open b { font-weight: var(--fw-regular); font-size: var(--fs-text); line-height: var(--lh-row); overflow-wrap: anywhere; transition: color var(--dur) var(--ease); }
+.ui-root .cc-auto-open small { font-size: var(--fs-note); color: var(--text-2); }
+@media (hover: hover) {
+  .ui-root .cc-auto-open:hover b { color: var(--coral-text); }
+}
+.ui-root .cc-auto-open:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--space-px6); }
+.ui-root .cc-auto-open:focus-visible b { color: var(--coral-text); }
+.ui-root .cc-auto-line { grid-column: 1 / -1; margin: 0 0 var(--space-px12); }
+.ui-root .cc-auto-help { margin-top: var(--space-4); }
+/* The automation being made, read back as one sentence (M11 .autosum). */
+.ui-root .cc-auto-sentence { margin: var(--space-px22) 0 0; padding: var(--space-px18) var(--space-px20); background: var(--raised); border-radius: var(--cc-col-radius); font-size: var(--fs-text); line-height: var(--lh-text); overflow-wrap: anywhere; }
+
+/* ---------------------------------------------------------------- Boards */
+.ui-root .cc-board-new { margin-top: var(--space-px22); }
+.ui-root .cc-board-tpl { display: grid; gap: var(--space-px14); margin: var(--space-px22) 0 0; }
+.ui-root .cc-board-tpl > div { display: grid; gap: var(--space-px2); }
+.ui-root .cc-board-tpl dt { font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-board-tpl dd { margin: 0; font-size: var(--fs-text); overflow-wrap: anywhere; }
+/* A board's card: its name, its first two fields on one line, the rest under them. */
+.ui-root .cc-brd .cc-card small { display: block; }
+.ui-root .cc-brd-of { margin-top: 0; }
+.ui-root .cc-brd-th { display: inline-flex; align-items: flex-end; min-height: var(--tap-min); padding-bottom: var(--space-1); box-sizing: border-box; color: var(--text-2); font-size: var(--fs-note); }
+/* Edit this board: its stages (a handle, the name, a cross) and its fields (the name, what kind it is, a cross). */
+.ui-root .cc-brd-h { margin: var(--space-px28) 0 0; font-family: var(--font-display); font-weight: var(--fw-regular); text-transform: uppercase; letter-spacing: var(--ls-cc-section) !important; word-spacing: normal; font-size: var(--fs-label) !important; line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .cc-brd-rows { display: grid; gap: var(--space-2); margin-top: var(--space-px12); }
+.ui-root .cc-brd-row { display: grid; gap: var(--space-2); align-items: center; }
+.ui-root .cc-brd-row--stage { grid-template-columns: var(--tap-min) minmax(0, 1fr) var(--tap-min); }
+.ui-root .cc-brd-row--field { grid-template-columns: minmax(0, 1fr) var(--cc-brd-kind-w) var(--tap-min); }
+/* A field's name and its kind are one height, whatever size the device's text makes the name's box. */
+.ui-root .cc-brd-row--field > .cc-cell-input { align-self: stretch; height: auto; }
+.ui-root .cc-brd-grip-icon { width: var(--cc-lead-dots); height: var(--cc-lead-dots); fill: currentColor; }
+
+/* ---------------------------------------------------------------- Settings, Email: an address to copy */
+.ui-root .cc-addr { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-px2) var(--space-px20); min-height: var(--cc-setrow-h); padding: var(--space-px10) 0; border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-addr b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-body); }
+.ui-root .cc-addr small { display: block; font-size: var(--fs-secondary); color: var(--text-2); overflow-wrap: anywhere; user-select: all; }
+.ui-root .cc-addr small.cc-addr-none { user-select: none; }
+.ui-root .cc-email-note { margin: var(--space-px12) 0 var(--space-px14); }
+
+/* ---------------------------------------------------------------- Past clients: a check-in's note */
+.ui-root .cc-past-meta { display: grid; gap: var(--space-px2); margin: 0; font-size: var(--fs-secondary); color: var(--text-2); }
+.ui-root .cc-past-note { margin-top: var(--space-px22); }
+.ui-root .cc-past-switch { margin-top: var(--space-2); }
+.ui-root .cc-past-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-px12) var(--space-px20); width: 100%; }
+.ui-root .cc-past-foot > :last-child { margin-left: auto; }
+
+/* ---------------------------------------------------------------- the account map: an agreement's value sits at its right, with when it renews under it */
+.ui-root .cc-map-deal .cc-row-when { display: grid; gap: var(--space-px2); justify-items: end; font-variant-numeric: tabular-nums; }
+.ui-root .cc-map-deal .cc-row-when b { font-size: var(--fs-secondary); color: var(--text); }
+
+/* ---------------------------------------------------------------- a phone */
+@media (max-width: 600px) {
+  .ui-root .cc-auto-row { gap: 0 var(--space-px14); }
+  .ui-root .cc-brd-row--field { grid-template-columns: minmax(0, 1fr) var(--tap-min); }
+  .ui-root .cc-brd-row--field > select { grid-row: 2; grid-column: 1; }
+  .ui-root .cc-past-foot > :last-child { margin-left: 0; width: 100%; }
+}
+
+/* ---------------------------------------------------------------- Windows high-contrast mode */
+@media (forced-colors: active) {
+  .ui-root .cc-brd-grip-icon { fill: CanvasText; }
+}

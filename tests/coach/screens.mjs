@@ -16,7 +16,7 @@
 // answered by stand-ins. The client's page is opened as the test client
 // with every function it calls stood in (client.mjs).
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, seedDevice, settle, SIZES, standIn } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, OTHER, seedDevice, settle, SIZES, standIn } from './shared.mjs';
 import { ADMIN_ROWS, CAL, CRM, DAY, ID, manyLeads, PRESSURE, seedClock, seedRows, seedWithCal, seedWithCrm, seedWithDay, SES, SHARED } from './seed.mjs';
 import { bookStore, guestStandIn } from './book-standin.mjs';
 import { clearCoaching, clientContext, clientStandIn, fromCoach } from './client.mjs';
@@ -194,6 +194,52 @@ const LEAD_SCREENS = [
   ['lead-is-cold', `/coach/leads/${CRM.coldLead}`],
   ['lead-carried', `/coach/clients/${ID.leo}`, click('Everything')],
 ];
+// Run 4, step 3 (the owner's): Automations, Boards, emails logged, past clients' check-ins and the account map.
+const boardAs = async (page, size, layout) => {
+  if (size === 400) { await click('View')(page); await page.getByRole('menuitemcheckbox', { name: layout }).click(); } else await page.getByRole('button', { name: layout, exact: true }).click();
+  await settle(page, 600);
+};
+const CRM_SCREENS = [
+  ['automations', '/coach/leads/automations', null, { full: true, expects: ['automations'] }],
+  ['automations-add', '/coach/leads/automations', click('Add automation'), { expects: ['panel'] }],
+  ['automations-edit', '/coach/leads/automations', async (page) => { await page.getByRole('button', { name: /^Edit: When a lead moves to Proposal sent/ }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+  ['automations-stage', '/coach/leads/automations', async (page) => { await click('Add automation')(page); await pick(page, 'Then', 'Move the lead to a stage'); await settle(page, 300); }, { expects: ['panel'] }],
+  ['boards', '/coach/boards', null, { expects: ['boards'] }],
+  ['boards-new', '/coach/boards', async (page) => { await click('New board')(page); await page.getByRole('button', { name: 'Speaking', exact: true }).last().click(); await settle(page, 300); }, { expects: ['panel'] }],
+  ['boards-menu', '/coach/boards', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600); }],
+  ['board', `/coach/boards/${CRM.speaking}`, null, { full: true, expects: ['board'] }],
+  ['board-list', `/coach/boards/${CRM.speaking}`, (page, size) => boardAs(page, size, 'List'), { full: true }],
+  ['board-table', `/coach/boards/${CRM.speaking}`, async (page, size) => { if (size < 1100) return 'skip'; await boardAs(page, size, 'Table'); return null; }],
+  ['board-table-stage', `/coach/boards/${CRM.speaking}`, async (page, size) => { if (size < 1100) return 'skip'; await boardAs(page, size, 'Table'); await page.getByRole('button', { name: 'Stage, Pitched. Edit' }).first().click(); await settle(page, 500); return null; }],
+  ['board-table-typing', `/coach/boards/${CRM.speaking}`, async (page, size) => { if (size < 1100) return 'skip'; await boardAs(page, size, 'Table'); await page.getByRole('button', { name: 'Fee, £4,500. Edit' }).click(); await settle(page, 400); return null; }],
+  ['board-card', `/coach/boards/${CRM.speaking}`, async (page, size) => { await boardAs(page, size, 'Board'); await page.getByRole('button', { name: /CIPD Festival of Work/ }).first().click(); await settle(page, 600); }, { expects: ['panel'] }],
+  ['board-add-card', `/coach/boards/${CRM.speaking}`, async (page, size) => { await boardAs(page, size, 'Board'); await page.getByRole('button', { name: 'Add card to Ideas' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+  ['board-edit', `/coach/boards/${CRM.speaking}`, click('Edit this board'), { expects: ['panel'] }],
+  ['board-partners', `/coach/boards/${CRM.partners}`, (page, size) => boardAs(page, size, 'Board'), { full: true }],
+  ['settings-email', '/coach/settings/email', null, { expects: ['email-settings'] }],
+  ['settings-email-standin', '/coach/settings/email', async (page) => { await page.getByRole('switch', { name: 'Use stand-in addresses on this device' }).click(); await settle(page, 700); }, { expects: ['email-addresses'] }],
+  ['past', '/coach/clients/past', null, { full: true, expects: ['past-due'] }],
+  ['past-note', '/coach/clients/past', async (page) => { await page.getByRole('button', { name: /^Grace Liu, 6-month check-in/ }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+  ['past-note-ask', '/coach/clients/past', async (page) => { await page.getByRole('button', { name: /^Grace Liu, 6-month check-in/ }).click(); await settle(page, 500); await click('Add referral ask')(page); }, { expects: ['panel'] }],
+  ['today-keep', '/coach', null, { full: true, expects: ['keep-in-touch'] }],
+  ['today-keep-note', '/coach', async (page) => { await page.getByRole('button', { name: /^Ben Ortiz: 3-month check-in/ }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+  ['org-map', `/coach/organisations/${ID.kestrel}`, null, { full: true, expects: ['account-map'] }],
+  ['org-deal', `/coach/organisations/${ID.kestrel}`, async (page) => { await page.getByRole('button', { name: 'Edit Portal seats' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+  ['org-deal-add', `/coach/organisations/${ID.kestrel}`, click('Add agreement or proposal'), { expects: ['panel'] }],
+  ['org-contact', `/coach/organisations/${ID.kestrel}`, async (page) => { await page.getByRole('button', { name: 'Edit Jo Mensah' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+  ['leads-automations-link', '/coach/leads', null, { expects: ['automations-link'] }],
+];
+/**
+ * The seed as an associate's device holds it: the boards are the owner's (the other coach's), Speaking shared with associates.
+ * Partners, not shared, would never be handed to an associate by the database; it is left here so the page's own rule is read too.
+ */
+export const withSharedBoard = () => {
+  const rows = seedWithCrm({ accounts: true, network: false });
+  rows.coach_boards = rows.coach_boards.map((b) => ({ ...b, coach_id: OTHER, shared: b.id === CRM.speaking }));
+  rows.coach_board_stages = rows.coach_board_stages.map((r) => ({ ...r, coach_id: OTHER }));
+  rows.coach_board_items = rows.coach_board_items.map((r) => ({ ...r, coach_id: OTHER }));
+  return rows;
+};
 const withManyLeads = () => { const rows = seedWithCrm({ accounts: true, network: false }); rows.coach_leads = [...rows.coach_leads, ...manyLeads(300)]; return rows; };
 
 export const GROUPS = [
@@ -423,6 +469,21 @@ export const GROUPS = [
       ['leads-closed-lead', `/coach/leads/${CRM.amy}`, null, { expects: ['not-leads'] }],
       ['leads-closed-menu', '/coach/leads/cold', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600); }, { expects: ['not-leads'] }],
       ['leads-closed-search', '/coach', async (page) => { await page.getByRole('button', { name: 'Search, or do anything' }).click(); await page.keyboard.type('amy'); await settle(page, 400); }, { expects: ['not-leads'] }],
+    ],
+  },
+  // Run 4, step 3: Automations, Boards, Settings' Email, Past clients' check-ins, Today's Keep in touch and an organisation's
+  // account map, the owner's, device first (052 isn't on the test project). Then an associate, who sees only the board the
+  // owner has shared, can't change it, and has no Automations.
+  { name: 'crm', at: TUE, roles: ['owner'], seed: () => seedWithCrm({ accounts: true, network: false }), screens: CRM_SCREENS },
+  {
+    name: 'crm-associate', at: TUE, roles: ['associate'], seed: withSharedBoard,
+    screens: [
+      ['boards-shared', '/coach/boards', null, { expects: ['shared-board'] }],
+      ['board-shared', `/coach/boards/${CRM.speaking}`, null, { full: true, expects: ['read-only'] }],
+      ['board-shared-card', `/coach/boards/${CRM.speaking}`, async (page) => { await page.getByRole('button', { name: /CIPD Festival of Work/ }).first().click(); await settle(page, 600); }, { expects: ['panel'] }],
+      ['board-not-shared', `/coach/boards/${CRM.partners}`, null, { expects: ['board-gone'] }],
+      ['boards-shared-menu', '/coach', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600); }, { expects: ['shared-board'] }],
+      ['automations-closed', '/coach/leads/automations', null, { expects: ['not-leads'] }],
     ],
   },
   { name: 'help', at: TUE, screens: [['help-hidden', '/coach/todos', null, { expects: ['help-flow'] }]] },

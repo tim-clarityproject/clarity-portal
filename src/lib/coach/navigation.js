@@ -3,6 +3,8 @@
 // owner has it. `later`: its page comes in a later run of Phase 6a (or in
 // 6b or 6c); until then it shows on previews only, and opens the calm
 // "Coming in this build" page.
+// `shared`: the owner's, and an associate's only once the owner has shared
+// something there with them (Boards: run 4).
 
 export const COACH_MENU = [
   { key: 'today', label: 'Today', to: '/coach' },
@@ -11,7 +13,7 @@ export const COACH_MENU = [
   { key: 'clients', label: 'Clients', to: '/coach/clients' },
   { key: 'leads', label: 'Leads', to: '/coach/leads', owner: true },
   { key: 'network', label: 'Network', to: '/coach/network', owner: true, later: true },
-  { key: 'boards', label: 'Boards', to: '/coach/boards', owner: true, later: true },
+  { key: 'boards', label: 'Boards', to: '/coach/boards', shared: true },
   { key: 'calendar', label: 'Calendar', to: '/coach/calendar' },
   { key: 'leading-ideas', label: 'Leading Ideas', to: '/coach/leading-ideas', later: true },
   { key: 'library', label: 'Library', to: '/coach/library', later: true },
@@ -44,7 +46,9 @@ export const COACH_NAME = 'Clarity Coach';
 const TITLES = [
   ['/coach/clients/past', 'Past clients'],
   ['/coach/leads/cold', 'Cold leads'],
+  ['/coach/leads/automations', 'Automations'],
   ['/coach/leads', 'Leads'],
+  ['/coach/boards', 'Boards'],
   ['/coach/clients', 'Clients'],
   ['/coach/groups', 'Group'],
   ['/coach/workshops', 'Workshop'],
@@ -66,3 +70,6 @@ export function coachTitle(pathname) {
   const hit = TITLES.find(([p]) => path === p || path.startsWith(`${p}/`));
   return hit ? `${hit[1]}, ${COACH_NAME}` : COACH_NAME;
 }
+
+/** The menu's pages for one coach: an associate never has the owner's pages, and has a shared page only when something there is shared with them. */
+export const menuFor = ({ isOwner, live = false, hasShared = false } = {}) => COACH_MENU.filter((i) => (!i.owner || isOwner) && (!i.later || !live) && (!i.shared || isOwner || hasShared));

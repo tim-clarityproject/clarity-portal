@@ -1688,7 +1688,7 @@ export function accountMap({ organisation, contacts = [], clients = [], adminCli
     opened: d.kind === 'proposal' ? openedWords(Number(d.opens) || 0) : '', leadId: d.lead_id || null,
   }));
   const growRows = growth.filter((g) => mine(g) && (g.status === 'open' || g.status === 'raised')).map((g) => ({
-    id: g.id, title: g.title, note: clean(g.note), raised: g.status === 'raised', action: g.status === 'raised' ? (g.lead_id ? 'Open the lead' : '') : GROWTH_ACTIONS[g.kind] || GROWTH_ACTIONS.other, leadId: g.lead_id || null,
+    id: g.id, kind: g.kind, title: g.title, note: clean(g.note), raised: g.status === 'raised', action: g.status === 'raised' ? (g.lead_id ? 'Open the lead' : '') : GROWTH_ACTIONS[g.kind] || GROWTH_ACTIONS.other, leadId: g.lead_id || null,
   }));
   return { whosWho, deals: dealRows, growth: growRows, nextRenewal: nextRenewal(deals.filter(mine), todayKey) };
 }
@@ -1898,3 +1898,365 @@ export const LEADS_EMPTY = 'You have no leads yet. Add one, or import a spreadsh
 export const LEADS_NO_MATCH = 'Nobody matches. Clear the search or the filters to see every lead.';
 /** A lead that has gone (deleted, or merged into another that can't be found). */
 export const LEAD_GONE = 'This lead isn’t in your list any more.';
+
+// ---------------------------------------------------------------- step 3's pages' own rules (Automations, Boards, emails arriving, past clients, the account map)
+
+/** The Automations page's words (M11 "Automations", "Automations: add one"). */
+export const AUTOMATION_WORDS = {
+  title: 'Automations', add: 'Add automation', edit: 'Edit automation', when: 'When', then: 'Then', stage: 'Which stage?', call: 'Which call?', anyCall: 'Any call',
+  times: 'How many times?', days: 'After how many days?', todo: 'To-do', todoExample: 'e.g. Follow up on the proposal', todoWhen: 'When?', toStage: 'Which stage does it move to?',
+  none: 'You have no automations yet. Add one, such as a to-do to follow up 3 days after a proposal goes.', added: 'Added', saved: 'Saved', deleted: 'Deleted', on: 'Switched on', off: 'Switched off',
+};
+/** The choices for a trigger's number: "Once", "3 times" for a proposal opened; "14 days" for a quiet lead. */
+export function countChoices(trigger) {
+  const t = TRIGGERS.find((x) => x.value === trigger);
+  if (!t || t.needs !== 'count') return [];
+  return t.counts.map((n) => ({ value: n, label: trigger === 'lead_quiet' ? plural(n, 'day') : n === 1 ? 'Once' : `${n} times` }));
+}
+
+/**
+ * THE LOOP GUARD, when an automation is saved or switched on: an automation
+ * that moves a lead to a stage is refused when the automations already on
+ * would carry the lead from that stage back to the one that starts it (A:
+ * to Deciding; B: back to Proposal sent). Returns the calm line, or ''.
+ * (Were one ever saved another way, runAutomations still runs each
+ * automation at most once for an event, so nothing can go round.)
+ */
+export function automationLoop(a, automations = [], stages = []) {
+  if (!a || a.action !== 'stage' || a.trigger !== 'lead_stage' || a.active === false || !a.trigger_stage_id || !a.to_stage_id) return '';
+  const moves = (automations || []).filter((x) => x.id !== a.id && x.active && x.action === 'stage' && x.trigger === 'lead_stage' && x.trigger_stage_id && x.to_stage_id);
+  const seen = new Set([a.to_stage_id]);
+  const queue = [a.to_stage_id];
+  while (queue.length) {
+    const at = queue.shift();
+    for (const m of moves) {
+      if (m.trigger_stage_id !== at || seen.has(m.to_stage_id)) continue;
+      if (m.to_stage_id === a.trigger_stage_id) {
+        return `That would send a lead round in a circle: another automation moves it back to ${stageName(stages, a.trigger_stage_id) || 'the stage that starts this one'}. Choose another stage.`;
+      }
+      seen.add(m.to_stage_id);
+      queue.push(m.to_stage_id);
+    }
+  }
+  return '';
+}
+
+/**
+ * An automation ready to save, or the calm line that stops it (something
+ * missing, a move to Won, or a circle).
+ * @returns {{ automation: object, toast: string }|{ error: string }}
+ */
+export function automationSavePlan(draft, { automations = [], stages = [] } = {}) {
+  const tidy = tidyAutomation({ ...draft, active: draft.active !== false });
+  const problem = automationProblem(tidy, { stages }) || automationLoop(tidy, automations, stages);
+  if (problem) return { error: problem };
+  const isNew = !(automations || []).some((x) => x.id === tidy.id);
+  return { automation: isNew ? { ...tidy, position: Math.max(-1, ...(automations || []).map((x) => Number(x.position) || 0)) + 1 } : tidy, toast: isNew ? AUTOMATION_WORDS.added : AUTOMATION_WORDS.saved };
+}
+
+/** An automation switched on or off. Switching one on is refused when it would close a circle. */
+export function automationSwitch(a, on, { automations = [], stages = [] } = {}) {
+  const next = { ...a, active: Boolean(on) };
+  const problem = on ? automationProblem(next, { stages }) || automationLoop(next, automations, stages) : '';
+  return problem ? { error: problem } : { automation: next, toast: on ? AUTOMATION_WORDS.on : AUTOMATION_WORDS.off };
+}
+
+/**
+ * The events to ask about when the owner's portal opens (each is claimed
+ * before it runs, so asking again is harmless): leads that are quiet now,
+ * proposals opened, and calls booked that are still to come.
+ * @param {{ leads: object[], stages: object[], events: object[], bookings?: object[], todayKey: string }} o
+ *   `bookings`: 051's coach_bookings rows (a booking's own start is the call's day; before one is on the device, the lead's next step's day)
+ */
+export function openingEvents({ leads = [], stages = [], events = [], bookings = [], todayKey }) {
+  const out = [...quietEvents(leads, stages, todayKey)];
+  const open = openLeads(leads);
+  const opened = new Map();
+  for (const e of events || []) if (e.kind === 'proposal_opened') { const k = `${e.lead_id}|${lower(clean(e.data?.name))}`; opened.set(k, { n: (opened.get(k)?.n || 0) + 1, name: clean(e.data?.name), leadId: e.lead_id }); }
+  for (const { n, name, leadId } of opened.values()) { const lead = open.find((l) => l.id === leadId); if (lead) out.push(openedEvent(lead, name, n)); }
+  for (const lead of open) {
+    if (!lead.booking_id) continue;
+    const booking = (bookings || []).find((b) => b.id === lead.booking_id) || null;
+    const day = booking?.starts_at ? dayOfInstant(booking.starts_at) : lead.next_step_on || null;
+    if (booking?.status === 'cancelled' || !day || day < todayKey) continue; // only a call still to come: an old booking sets nothing off
+    out.push(bookedEvent(lead, { id: lead.booking_id, call_type_key: lead.call_type_key || null, day }));
+  }
+  return out;
+}
+
+// ---- boards
+
+/** The Boards pages' words (M11 "Boards", "A board", "Boards: a new board"). */
+export const BOARD_WORDS = {
+  title: 'Boards', add: 'New board', make: 'Make the board', nameLabel: 'What’s it called?', from: 'Start from', edit: 'Edit this board', addCard: 'Add card', newCard: 'New card', addStage: 'Add stage', addField: 'Add field',
+  who: 'Who can see this', offMeans: 'Off means only you can see this board.', remove: 'Delete the board', none: 'You have no boards yet. Make one for anything you track in stages, such as speaking or partners.',
+  noneShared: 'No board is shared with you yet.', gone: 'This board isn’t here any more.', made: 'Board made', deleted: 'Deleted', cardAdded: 'Added', empty: 'No cards yet.',
+};
+
+/** Edit this board, as a draft: the name, the stages and fields in order (each can be renamed, added or taken out), and sharing. */
+export const boardDraft = (board, stages) => ({
+  name: board.name || '', shared: board.shared === true,
+  stages: boardStagesOf(stages, board.id).map((s) => ({ id: s.id, name: s.name, removed: false })),
+  columns: (board.columns || []).map((c) => ({ id: c.id, name: c.name, kind: c.kind, removed: false })),
+});
+
+/**
+ * Edit this board, saved in one go. A stage taken out hands its cards to
+ * the stage before it (the first kept stage, for the first); a field taken
+ * out keeps its values on the cards, unseen, so Undo brings them back.
+ * @returns {{ same: true }|{ error: string }|{ board: object, stages: object[], items: object[], removeStages: string[], toast: string, undo: { board: object, stages: object[], items: object[], removeStages: string[] } }}
+ *   save `board`, then `stages`, then `items`, then remove `removeStages`; Undo saves `undo.stages`, `undo.items`, `undo.board`, then removes `undo.removeStages`
+ */
+export function boardSavePlan(board, stages, items, draft, { coachId, boards = [] } = {}) {
+  const problem = boardProblem(draft.name, boards, board.id);
+  if (problem) return { error: problem };
+  const before = boardStagesOf(stages, board.id);
+  const kept = (draft.stages || []).filter((s) => !s.removed);
+  if (!kept.length) return { error: 'A board needs at least one stage.' };
+  if (kept.some((s) => !clean(s.name))) return { error: 'Type each stage’s name to carry on.' };
+  const twice = kept.find((s, i) => kept.findIndex((x) => lower(clean(x.name)) === lower(clean(s.name))) !== i);
+  if (twice) return { error: `There are two stages called ${clean(kept.find((x) => lower(clean(x.name)) === lower(clean(twice.name))).name)}. Rename one to carry on.` };
+  const cols = (draft.columns || []).filter((c) => !c.removed);
+  if (cols.some((c) => !clean(c.name))) return { error: 'Type each field’s name to carry on.' };
+  const twiceCol = cols.find((c, i) => cols.findIndex((x) => lower(clean(x.name)) === lower(clean(c.name))) !== i);
+  if (twiceCol) return { error: `There are two fields called ${clean(cols.find((x) => lower(clean(x.name)) === lower(clean(twiceCol.name))).name)}. Rename one to carry on.` };
+  if (cols.length > 30) return { error: 'A board can have up to 30 fields. Take one out first.' };
+  const old = new Map((board.columns || []).map((c) => [c.id, c]));
+  const nextBoard = { ...board, name: cut(clean(draft.name), BOARD_NAME_MAX), shared: draft.shared === true,
+    columns: cols.map((c) => ({ ...(old.get(c.id) || {}), id: c.id, name: cut(clean(c.name), 40), kind: BOARD_COLUMN_KINDS.some(([k]) => k === c.kind) ? c.kind : 'text', ...(c.kind === 'choice' ? { options: old.get(c.id)?.options || [] } : {}) })) };
+  const stageRows = kept.map((s, i) => ({ ...(before.find((b) => b.id === s.id) || { id: s.id, board_id: board.id, coach_id: coachId }), name: cut(clean(s.name), 40), position: i }));
+  const changedStages = stageRows.filter((s) => { const b = before.find((x) => x.id === s.id); return !b || b.name !== s.name || (b.position || 0) !== s.position; });
+  const removeStages = before.filter((b) => !kept.some((s) => s.id === b.id)).map((b) => b.id);
+  // A removed stage's cards go to the stage that stood before it and is kept (the first kept stage otherwise), last there.
+  const order = (draft.stages || []).map((s) => s.id);
+  const home = (stageId) => { const at = order.indexOf(stageId); for (let i = at - 1; i >= 0; i -= 1) if (kept.some((s) => s.id === order[i])) return order[i]; return kept[0].id; };
+  const mine = boardItemsOf(items, board.id);
+  const last = new Map();
+  const moved = [];
+  for (const card of mine.filter((c) => removeStages.includes(c.stage_id)).sort((a, b) => (a.position || 0) - (b.position || 0))) {
+    const to = home(card.stage_id);
+    const next = (last.has(to) ? last.get(to) : Math.max(-1, ...mine.filter((c) => c.stage_id === to).map((c) => Number(c.position) || 0))) + 1;
+    last.set(to, next);
+    moved.push({ ...card, stage_id: to, position: next });
+  }
+  const sameBoard = nextBoard.name === board.name && nextBoard.shared === (board.shared === true) && JSON.stringify(nextBoard.columns) === JSON.stringify(board.columns || []);
+  if (sameBoard && !changedStages.length && !removeStages.length) return { same: true };
+  return {
+    board: nextBoard, stages: changedStages, items: moved, removeStages, toast: 'Saved',
+    undo: { board, stages: before.filter((b) => removeStages.includes(b.id) || changedStages.some((s) => s.id === b.id)), items: mine.filter((c) => moved.some((m) => m.id === c.id)), removeStages: changedStages.filter((s) => !before.some((b) => b.id === s.id)).map((s) => s.id) },
+  };
+}
+
+/** Delete the board: it is set aside (archived), so Undo brings it back whole with its cards. */
+export const boardDeletePlan = (board, nowIso) => ({ board: { ...board, archived_at: nowIso }, toast: BOARD_WORDS.deleted, undo: board });
+
+/** A card's panel, as typed boxes: its name, its stage, each field as it reads, and its notes. */
+export const boardItemDraft = (board, item, todayKey) => ({
+  title: item?.title || '', stageId: item?.stage_id || null, notes: item?.notes || '',
+  fields: Object.fromEntries((board.columns || []).map((c) => [c.id, c.kind === 'date' ? item?.field_values?.[c.id] || '' : boardFieldWords(c, item?.field_values?.[c.id], todayKey)])),
+});
+/**
+ * A card saved from its panel: the row to save, or the calm line and the
+ * box it is about (`at`: 'title', or a column's id).
+ * @returns {{ item: object }|{ error: string, at: string }}
+ */
+export function boardItemFromTyped(board, item, typed, { todayKey, stages = [], items = [] } = {}) {
+  const title = cut(clean(typed.title), 200);
+  if (!title) return { error: 'Type the card’s name to carry on.', at: 'title' };
+  const values = { ...(item.field_values || {}) };
+  for (const c of board.columns || []) {
+    const read = boardFieldFromTyped(c, typed.fields?.[c.id] ?? '', todayKey);
+    if (read.error) return { error: read.error, at: c.id };
+    if (read.value == null) delete values[c.id]; else values[c.id] = read.value;
+  }
+  const stageId = boardStagesOf(stages, board.id).some((s) => s.id === typed.stageId) ? typed.stageId : item.stage_id;
+  const moved = stageId !== item.stage_id ? moveBoardItem(item, stageId, items) : item;
+  return { item: { ...moved, title, field_values: values, notes: cut(String(typed.notes || '').trim(), 6000) || null } };
+}
+/** One field typed over in the board's table: the card to save, or the calm line. */
+export function boardCellChange(board, item, columnId, typed, todayKey) {
+  const column = (board.columns || []).find((c) => c.id === columnId);
+  if (!column) return { error: 'That field isn’t on this board any more.' };
+  const read = boardFieldFromTyped(column, typed, todayKey);
+  if (read.error) return read;
+  const values = { ...(item.field_values || {}) };
+  if (read.value == null) delete values[columnId]; else values[columnId] = read.value;
+  return { item: { ...item, field_values: values } };
+}
+/** The stage beside a card's own, for the arrow keys (null at either end). */
+export function boardStageBeside(stages, boardId, stageId, step) {
+  const order = boardStagesOf(stages, boardId);
+  const at = order.findIndex((s) => s.id === stageId);
+  return at < 0 ? null : order[at + step] || null;
+}
+/** Boards as search finds them: the owner's, and for an associate the shared ones. */
+export const boardSearchItems = (boards, { isOwner }) => boardsFor(boards, { isOwner }).map((b) => ({ key: `b:${b.id}`, title: b.name, kind: 'Board', to: `/coach/boards/${b.id}` }));
+
+// ---- emails arriving, device first (before 052; with 052 the database's coach_email_add does all of this)
+
+/** One email as a coach_emails row (the database's own tidying: lower-cased addresses, 50 people a line, a 300-character snippet). */
+export function emailRow(email, { id, coachId, nowIso }) {
+  const person = (p) => ({ name: cut(clean(p?.name), 120), email: lower(clean(p?.email)) });
+  const people = (list) => (Array.isArray(list) ? list : []).map(person).filter((p) => isEmail(p.email)).slice(0, 50);
+  const sent = new Date(email?.sent_at);
+  const from = email?.from ? person(email.from) : null;
+  return {
+    id, coach_id: coachId, direction: email?.direction === 'in' ? 'in' : 'out', from_name: from?.name || null, from_email: from && isEmail(from.email) ? from.email : null,
+    to_people: people(email?.to), cc_people: people(email?.cc), subject: cut(clean(email?.subject), 300) || null, snippet: cut(clean(email?.snippet || email?.body), 300) || null,
+    sent_at: Number.isNaN(sent.getTime()) ? nowIso : sent.toISOString(), thread_key: cut(String(email?.thread_key || ''), 200) || null,
+    source: ['copy_in', 'gmail', 'manual'].includes(email?.source) ? email.source : 'manual', external_id: cut(clean(email?.external_id), 300) || null,
+    link: /^https:\/\//.test(String(email?.link || '')) && String(email.link).length <= 600 ? email.link : null, hidden: false,
+  };
+}
+
+/**
+ * One email logged on the device, as the database logs it: kept once (its
+ * source and its own id), put on the timeline of everyone it names who is
+ * a lead, a client, a Network person or a contact (a lead also gets its
+ * timeline line and its last contact moved forward), and anyone else on
+ * its From or To line waits on Leads.
+ * @param {object} email as coach_email_add takes it
+ * @param {{ id: string, coachId: string, newId: () => string, nowIso: string, emails?: object[], leads?: object[], clients?: object[], network?: object[], contacts?: object[], own?: string[], keys?: string[], waiting?: object[] }} ctx
+ * @returns {{ new: false, emailId: string }|{ new: true, emailId: string, email: object, body: string, links: object[], waiting: object[], events: object[], leads: object[], clients: object[] }}
+ */
+export function emailLogPlan(email, { id, coachId, newId, nowIso, emails = [], leads = [], clients = [], network = [], contacts = [], own = [], keys = [], waiting = [] }) {
+  const row = emailRow(email, { id, coachId, nowIso });
+  const there = row.external_id ? (emails || []).find((e) => e.source === row.source && e.external_id === row.external_id) : null;
+  if (there) return { new: false, emailId: there.id };
+  const belongs = emailBelongs({ from: { name: row.from_name, email: row.from_email }, to: row.to_people, cc: row.cc_people }, { leads, clients, network, contacts, own, keys, waiting });
+  const day = dayOfInstant(row.sent_at);
+  const events = [];
+  const movedLeads = [];
+  for (const link of belongs.links.filter((l) => l.person_kind === 'lead')) {
+    const lead = leads.find((l) => l.id === link.person_id);
+    if (!lead) continue;
+    const line = leadEvent({ id: newId(), lead, kind: 'email', nowIso: row.sent_at, todayKey: day, title: row.subject || 'Email', data: { email_id: id, direction: row.direction } });
+    events.push(line);
+    const next = withContact(lead, line);
+    if (next !== lead) movedLeads.push(next);
+  }
+  const movedClients = belongs.links.filter((l) => l.person_kind === 'client').map((l) => clients.find((c) => c.id === l.person_id)).filter((c) => c && day && (!c.last_contact_on || c.last_contact_on < day)).map((c) => ({ ...c, last_contact_on: day }));
+  return {
+    new: true, emailId: id, email: row, body: cut(String(email?.body || ''), 100000),
+    links: belongs.links.map((l) => ({ email_id: id, coach_id: coachId, ...l })),
+    waiting: belongs.waiting.map((w) => ({ id: newId(), coach_id: coachId, email_id: id, name: w.name || null, email: w.email, status: 'waiting', lead_id: null, decided_at: null, created_at: nowIso })),
+    events, leads: movedLeads, clients: movedClients,
+  };
+}
+
+/**
+ * An email forwarded to the to-do address, as the one to-do it makes (the
+ * database's email_in does the same): its subject as the title without
+ * "Fwd:", what it says as the note, and who sent it. Once an email.
+ * @returns {{ todo: object }|{ existing: object }}
+ */
+export function todoFromEmail(email, { id, coachId, todos = [], nowIso }) {
+  const ref = cut(clean(email?.external_id), 300) || null;
+  const existing = ref ? (todos || []).find((t) => t.from_email_ref === ref) : null;
+  if (existing) return { existing };
+  const sender = cut(clean(email?.from?.name) || clean(email?.from?.email), 200) || null;
+  const title = cut(clean(clean(email?.subject) || `An email from ${clean(email?.from?.name) || 'someone'}`).replace(/^((fwd?|fw|re):\s*)+/i, ''), 300) || 'An email';
+  const sent = new Date(email?.sent_at);
+  return { todo: {
+    ...leadTodo({ id, lead: { id: null, coach_id: coachId }, title, plannedOn: null }), notes: cut(String(email?.snippet || email?.body || '').trim(), 4000) || null,
+    from_email_ref: ref, from_email_sender: sender, from_email_subject: cut(clean(email?.subject), 300) || null, from_email_at: Number.isNaN(sent.getTime()) ? nowIso : sent.toISOString(),
+  } };
+}
+
+/** What a to-do made from a forwarded email shows under Attachments: "Email from Ruth Adams", "Forwarded from Gmail" (M11's "A to-do from a forwarded email"), and the email itself when it is on a timeline too. */
+export function todoEmailLine(todo, emails = []) {
+  if (!todo?.from_email_sender && !todo?.from_email_ref) return null;
+  const email = todo.from_email_ref ? (emails || []).find((e) => e.external_id === todo.from_email_ref) || null : null;
+  return { title: `Email from ${clean(todo.from_email_sender) || 'someone'}`, small: email?.source === 'gmail' ? 'Forwarded from Gmail' : 'Forwarded by email', email };
+}
+
+/**
+ * The emails on one person's timeline who isn't a lead (a client, an
+ * organisation's contact, a Network person), newest first; a hidden
+ * thread's are left out. Each row opens its email.
+ * @returns {{ id: string, when: string, title: string, tag: 'Email', emailId: string, at: string }[]}
+ */
+export function emailsOn(emails, links, personKind, personId, todayKey, person = null) {
+  const ids = new Set((links || []).filter((l) => l.person_kind === personKind && l.person_id === personId).map((l) => l.email_id));
+  return (emails || []).filter((e) => ids.has(e.id) && !e.hidden).sort((a, b) => String(b.sent_at).localeCompare(String(a.sent_at)))
+    .map((e) => { const day = dayOfInstant(e.sent_at); return { id: `email:${e.id}`, when: day === todayKey ? `Today, ${timeOfInstant(e.sent_at)}` : dayWords(day, todayKey), title: emailTitle(e, person), tag: 'Email', emailId: e.id, at: e.sent_at }; });
+}
+
+/** Settings, Email: the Gmail connection's words (its server side waits for Google's review, so it reads calmly as not set up). */
+export const GMAIL_WORDS = {
+  connect: 'Connect Gmail', notSetUp: 'Gmail isn’t set up yet. The copy-in address does the same job in the meantime.', connected: 'Connected',
+  standIn: 'Use a stand-in Gmail on this device', standInNote: 'For trying this out. It never reads a real inbox.',
+  standInCopy: 'Use stand-in addresses on this device',
+};
+
+// ---- past clients
+
+/**
+ * The check-ins still to suggest: for a past client (or each of several),
+ * the 3, 6 and 12 month ones that aren't there yet and haven't passed.
+ * Called when coaching ends, and when the switch is turned back on.
+ * @returns {object[]} client_check_ins rows to add
+ */
+export function checkInsToSuggest(profiles, { coachId, newId, existing = [], todayKey }) {
+  return (profiles || []).filter((p) => p && p.status === 'past' && p.ended_on && !p.merged_into)
+    .flatMap((p) => checkInsFor(p, { coachId, newId, existing }).filter((c) => c.due_on && c.due_on >= todayKey));
+}
+/** Past clients' words. */
+export const PAST_WORDS = { due: 'Check-ins due', everyone: 'Everyone', note: (first) => `A note to ${first}`, open: 'Open in my email', later: 'Not now', switchedOff: 'Check-ins won’t be suggested.', switchedOn: 'Check-ins will be suggested.' };
+/** A check-in's note with its ask put in or taken out (the coach's own edits to the rest are kept when the ask's line can be found). */
+export function checkInAsk(note, ask, on) {
+  const line = ASK_LINES[ask];
+  if (!line) return note;
+  const body = String(note.body || '');
+  if (!on) return { ...note, body: body.replace(`\n\n${line}`, '').replace(line, '').replace(/\n{3,}/g, '\n\n') };
+  if (body.includes(line)) return note;
+  // Before the sign-off (the last short line), when there is one; otherwise at the end.
+  const lines = body.split('\n');
+  const lastAt = lines.length - 1;
+  const signed = lastAt > 1 && lines[lastAt].trim() && lines[lastAt].trim().length <= 30 && lines[lastAt - 1].trim() === '';
+  return { ...note, body: signed ? [...lines.slice(0, lastAt - 1), '', line, '', lines[lastAt]].join('\n') : `${body.replace(/\s+$/, '')}\n\n${line}` };
+}
+
+// ---- the account map
+
+export const DEAL_KINDS = [{ value: 'agreement', label: 'Agreement' }, { value: 'proposal', label: 'Proposal' }];
+export const DEAL_STATUSES = Object.entries(DEAL_STATUS).map(([value, label]) => ({ value, label }));
+export const DEAL_PER = [{ value: 'once', label: 'Once' }, { value: 'month', label: 'Each month' }, { value: 'year', label: 'Each year' }];
+export const ACCOUNT_WORDS = { addDeal: 'Add agreement or proposal', editDeal: 'Edit details', noDeals: 'No agreement or proposal is here yet.', nextRenewal: 'Next renewal', dealNeedsName: 'Type its name to carry on.' };
+/** An agreement or proposal as typed in its panel: the row to save, or the calm line and its box. */
+export function dealFromTyped(typed, { id, organisationId, before = null, todayKey }) {
+  const name = cut(clean(typed.name), 200);
+  if (!name) return { error: ACCOUNT_WORDS.dealNeedsName, at: 'name' };
+  const value = moneyFromTyped(typed.value);
+  if (value === undefined) return { error: NEEDS_AMOUNT, at: 'value' };
+  const renews = clean(typed.renews) ? dayFromTyped(typed.renews, todayKey) : null;
+  if (clean(typed.renews) && !renews) return { error: NEEDS_DAY, at: 'renews' };
+  const kind = typed.kind === 'proposal' ? 'proposal' : 'agreement';
+  return { deal: {
+    ...(before || { opens: 0, lead_id: null, starts_on: null, currency: 'GBP' }), id, organisation_id: organisationId, name, kind,
+    status: has(DEAL_STATUS, typed.status) ? typed.status : kind === 'proposal' ? 'sent' : 'active', value: value ?? null, per: DEAL_PER.some((p) => p.value === typed.per) ? typed.per : 'once',
+    detail: cut(clean(typed.detail), 200) || null, renews_on: renews,
+  } };
+}
+/**
+ * Room to grow, in one list: what was noted for the organisation (the
+ * account map's own rows), then what the page works out from what is
+ * there, leaving out any kind already noted.
+ */
+export function growthLines(noted, workedOut) {
+  const kinds = new Set((noted || []).map((g) => g.kind));
+  return [...(noted || []), ...(workedOut || []).filter((g) => !kinds.has(g.kind))];
+}
+/**
+ * When a contact was last in touch, with emails counted: the newer of the
+ * day noted on the contact and their newest logged email ("Emailed Fri 6
+ * Nov"); '' when neither is there.
+ */
+export function contactLast(contact, emails, links, todayKey) {
+  const ids = new Set((links || []).filter((l) => l.person_kind === 'contact' && l.person_id === contact.id).map((l) => l.email_id));
+  const newest = (emails || []).filter((e) => ids.has(e.id) && !e.hidden).map((e) => dayOfInstant(e.sent_at)).filter(Boolean).sort().pop() || null;
+  if (newest && (!contact.last_contact_on || newest >= contact.last_contact_on)) return `Emailed ${dayWords(newest, todayKey)}`;
+  return contact.last_contact_on ? `${HOW_WORDS[contact.last_contact_how] || 'Spoke'} ${dayWords(contact.last_contact_on, todayKey)}` : '';
+}
+/** Room to grow's one thing to do next, by kind (the page's own worked-out lines use the same words as the noted ones). */
+export const growthAction = (kind) => GROWTH_ACTIONS[kind] || GROWTH_ACTIONS.other;

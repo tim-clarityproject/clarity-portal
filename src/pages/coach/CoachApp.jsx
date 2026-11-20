@@ -9,17 +9,18 @@ import { useCoachRole } from '../../lib/coach/role';
 import { rowsOf, saveRows, useCoachLoad, useCoachStore } from '../../lib/coach/store';
 import { loadAdminClients, loadCoaches } from '../../lib/coach/actions';
 import { callForBar, favouriteViews, nextCallBar, searchResults, withRecent } from '../../lib/coach/model';
-import { COACH_MENU, COACH_PAGES, coachTitle, SETTINGS_SECTIONS } from '../../lib/coach/navigation';
+import { COACH_PAGES, coachTitle, menuFor, SETTINGS_SECTIONS } from '../../lib/coach/navigation';
 import { testCalls } from '../../lib/coach/calls';
 import { todayTodos } from '../../lib/coach/day';
 import { barCalls, coachZoneOf, searchItems } from '../../lib/coach/calendar';
-import { LEAD_SEARCH_ACTIONS, leadSearchItems } from '../../lib/coach/crm';
+import { boardSearchItems, boardsFor, LEAD_SEARCH_ACTIONS, leadSearchItems } from '../../lib/coach/crm';
 // Network's people are moved across before anything that points at one (a lead's Referred by): the module says so to the
 // store as it loads, so it is loaded with the frame, whichever page opens first.
 import '../../lib/coach/networkData';
 import { deviceZone } from '../../lib/time/index.js';
 import { CoachPortalContext, InlineLink, TextLink, useCoachPortal } from './parts';
 import { CalSync } from './calSync';
+import { AutomationWatch, EmailSync } from './crmParts';
 import './coach.css';
 
 // Clarity Coach, the coach portal (Phase 6a runs 1 and 2; mock-up M11, seq
@@ -45,6 +46,9 @@ const Calendar = lazy(() => import('./Calendar'));
 const Leads = lazy(() => import('./Leads'));
 const LeadPage = lazy(() => import('./LeadPage'));
 const ColdLeads = lazy(() => import('./ColdLeads'));
+const Automations = lazy(() => import('./Automations'));
+const Boards = lazy(() => import('./Boards'));
+const BoardPage = lazy(() => import('./BoardPage'));
 const OpenForCalls = lazy(() => import('./OpenForCalls'));
 const PollPage = lazy(() => import('./PollPage'));
 const BriefPanel = lazy(() => import('./Brief').then((m) => ({ default: m.BriefPanel || m.default })));
@@ -113,7 +117,7 @@ export function CallBar({ calls, now }) {
 }
 
 function Menu({ open, onClose, onSignOut }) {
-  const { isOwner, views, todos, todoLists, todayKey } = useCoachPortal();
+  const { isOwner, views, todos, todoLists, todayKey, boards } = useCoachPortal();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const navRef = useRef(null);
@@ -126,7 +130,9 @@ function Menu({ open, onClose, onSignOut }) {
   }, [open, onClose]);
   if (!open) return null;
   const go = (to) => { onClose(); navigate(to); };
-  const items = COACH_MENU.filter((i) => (!i.owner || isOwner) && (!i.later || !LIVE));
+  // Boards: the owner's own under it; an associate has the page only once a board is shared with them.
+  const menuBoards = boardsFor(boards, { isOwner });
+  const items = menuFor({ isOwner, live: LIVE, hasShared: menuBoards.length > 0 });
   const current = (to) => (to === '/coach' ? pathname === '/coach' : pathname === to || pathname.startsWith(`${to}/`));
   const favourites = favouriteViews(views).filter((v) => v.list !== 'leads' || isOwner);
   // To-dos shows how many are for today, with the coach's own lists under it (M11's menu).
@@ -143,7 +149,14 @@ function Menu({ open, onClose, onSignOut }) {
           </button>
         </div>
         <div className="cc-menu-nav" ref={navRef}>
-          {items.filter((i) => i.key !== 'settings').map((i) => (i.key !== 'todos' ? (
+          {items.filter((i) => i.key !== 'settings').map((i) => (i.key === 'boards' ? (
+            <Fragment key={i.key}>
+              <button type="button" className="cc-menu-item" aria-current={pathname === i.to ? 'page' : undefined} onClick={() => go(i.to)}>{i.label}</button>
+              {menuBoards.map((b) => (
+                <button key={b.id} type="button" className="cc-menu-item cc-menu-item--sub" aria-current={pathname === `/coach/boards/${b.id}` ? 'page' : undefined} onClick={() => go(`/coach/boards/${b.id}`)}>{b.name}</button>
+              ))}
+            </Fragment>
+          ) : i.key !== 'todos' ? (
             <button key={i.key} type="button" className="cc-menu-item" aria-current={current(i.to) ? 'page' : undefined} onClick={() => go(i.to)}>{i.label}</button>
           ) : (
             <Fragment key={i.key}>
@@ -171,7 +184,7 @@ function Menu({ open, onClose, onSignOut }) {
 
 /** One box finds people, pages and actions as it is typed, with recent items before anything is typed. */
 function Search({ open, onClose }) {
-  const { userId, isOwner, clients, groups, workshops, organisations, admin, coaches, coach, calItems, calGuests, settings, todayKey, leads, leadStages } = useCoachPortal();
+  const { userId, isOwner, clients, groups, workshops, organisations, admin, coaches, coach, calItems, calGuests, settings, todayKey, leads, leadStages, boards } = useCoachPortal();
   const navigate = useNavigate();
   const toast = useToast();
   const [q, setQ] = useState('');
@@ -201,9 +214,12 @@ function Search({ open, onClose }) {
       ...(isOwner ? organisations.map((o) => ({ key: `o:${o.id}`, title: o.name, kind: 'Organisation', to: `/coach/organisations/${o.id}` })) : []),
       // Leads are the owner's alone: an associate's search never finds one (run 4).
       ...(isOwner ? leadSearchItems(leads, leadStages) : []),
+      // Boards: the owner's own; an associate finds only the ones shared with them.
+      ...boardSearchItems(boards, { isOwner }),
     ];
     const pages = [
-      ...COACH_MENU.filter((i) => (!i.owner || isOwner) && (!i.later || !LIVE)).map((i) => ({ key: `p:${i.key}`, title: i.label, kind: 'Page', to: i.to })),
+      ...menuFor({ isOwner, live: LIVE, hasShared: boardsFor(boards, { isOwner }).length > 0 }).map((i) => ({ key: `p:${i.key}`, title: i.label, kind: 'Page', to: i.to })),
+      ...(isOwner ? [{ key: 'p:automations', title: 'Automations', kind: 'Page', to: '/coach/leads/automations' }] : []),
       ...SETTINGS_SECTIONS.filter((s) => !s.owner || isOwner).map((s) => ({ key: `s:${s.key}`, title: s.label, kind: 'Settings', also: 'settings', to: `/coach/settings/${s.key}` })),
       { key: 'p:past', title: 'Past clients', kind: 'Page', to: '/coach/clients/past' },
     ];
@@ -213,7 +229,7 @@ function Search({ open, onClose }) {
       { key: 'a:group', title: 'Add group', to: '/coach/clients?tab=groups', state: { open: 'group' } },
       { key: 'a:workshop', title: 'Add workshop', to: '/coach/clients?tab=workshops', state: { open: 'workshop' } },
       { key: 'a:export', title: 'Export clients to a spreadsheet', to: '/coach/clients', state: { open: 'export' } },
-      ...(isOwner ? LEAD_SEARCH_ACTIONS : []),
+      ...(isOwner ? [...LEAD_SEARCH_ACTIONS, { key: 'a:board', title: 'New board', to: '/coach/boards', state: { open: 'board' } }, { key: 'a:automation', title: 'Add automation', to: '/coach/leads/automations', state: { open: 'add' } }] : []),
       { key: 'a:book', title: 'Book a call', to: '/coach/calendar/book' },
       { key: 'a:open', title: 'Set my open times', to: '/coach/calendar/open' },
       { key: 'a:offer', title: 'Offer times by email', to: '/coach/calendar/offer' },
@@ -223,7 +239,7 @@ function Search({ open, onClose }) {
     // Calendar items, found by title, person or note; each opens its own day.
     const items = searchItems({ items: calItems, guests: calGuests, coachZone: coachZoneOf(settings, deviceZone()), todayKey });
     return { people, pages, actions, recent, items };
-  }, [clients, groups, workshops, organisations, admin, isOwner, coaches, coach, recent, calItems, calGuests, settings, todayKey, leads, leadStages]);
+  }, [clients, groups, workshops, organisations, admin, isOwner, coaches, coach, recent, calItems, calGuests, settings, todayKey, leads, leadStages, boards]);
 
   const groupsShown = useMemo(() => searchResults(q, all), [q, all]);
   const flat = groupsShown.flatMap((g) => g.items);
@@ -456,6 +472,9 @@ export default function CoachApp() {
   return (
     <CoachPortalContext.Provider value={value}>
       <CalSync>
+      {/* Run 4: the automations nobody presses a button for, and emails arriving (both the owner's; neither ever sends anything). */}
+      <AutomationWatch />
+      <EmailSync />
       <div className="ui-root cc-app">
         <header className="cc-header">
           <div className="cc-header-in">
@@ -489,7 +508,11 @@ export default function CoachApp() {
               {/* Leads (run 4) are the owner's alone: an associate is sent to their own Today, whatever address they open. */}
               <Route path="leads" element={isOwner ? <Leads /> : <Navigate to="/coach" replace />} />
               <Route path="leads/cold" element={isOwner ? <ColdLeads /> : <Navigate to="/coach" replace />} />
+              <Route path="leads/automations" element={isOwner ? <Automations /> : <Navigate to="/coach" replace />} />
               <Route path="leads/:id" element={isOwner ? <LeadPage /> : <Navigate to="/coach" replace />} />
+              {/* Boards (run 4): the owner's own; an associate opens only a board the owner has shared, and can't change it. */}
+              <Route path="boards" element={<Boards />} />
+              <Route path="boards/:id" element={<BoardPage />} />
               <Route path="business/*" element={<Navigate to="/coach/finances" replace />} />
               <Route path="calendar" element={<Calendar />} />
               {/* Booking (run 3, step 4): Book a call is a side panel over the calendar; Offer times by email and a poll's times

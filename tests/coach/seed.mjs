@@ -691,7 +691,10 @@ export function crmSeed() {
     source: 'copy_in', external_id: `seed-${id}`, link: null, hidden: false, created_at: at(offset, hour, 40), updated_at: at(offset, hour, 40), ...extra });
   const amy = { name: 'Amy Cole', email: 'amy.cole@example.invalid' };
   const ruth = { name: 'Ruth Adeyemi', email: 'ruth@example.invalid' };
-  const run = (n, automationId, leadId, offset) => ({ id: u(9500 + n), automation_id: automationId, coach_id: ME, event_key: `seed:${n}`, lead_id: leadId, profile_id: null, todo_id: null, ran_at: at(offset), created_at: at(offset), updated_at: at(offset) });
+  // Three of the runs carry the key of what really set them off in this seed (Amy's proposal opened three times, Tom quiet for
+  // 19 days, Ruth's Chemistry Call booked), so the watch that asks about those when the portal opens finds each already ran.
+  const RAN = { 5: `opened:${CRM.amy}:leadership accelerator`, 7: `quiet:${CRM.tom}:${day(-19)}`, 10: `booking:${CAL.bookRuth}` };
+  const run = (n, automationId, leadId, offset) => ({ id: u(9500 + n), automation_id: automationId, coach_id: ME, event_key: RAN[n] || `seed:${n}`, lead_id: leadId, profile_id: null, todo_id: null, ran_at: at(offset), created_at: at(offset), updated_at: at(offset) });
   const card = (n, boardId, stageId, title, values, position) => ({ id: u(9600 + n), board_id: boardId, coach_id: ME, stage_id: stageId, title, field_values: values, notes: null, position, created_at: at(-30), updated_at: at(-30) });
   const past = (id, name, endedOffset, extra = {}) => ({ id, coach_id: ME, user_id: null, name, email: `${name.split(' ')[0].toLowerCase()}@example.invalid`, mobile: null, organisation_id: null, job_title: null, city: null,
     time_zone: 'Europe/London', frequent_traveller: false, referred_by: null, status: 'past', stage: null, getting_started: {}, last_contact_on: day(endedOffset), invited_at: null, ended_on: day(endedOffset), merged_into: null,

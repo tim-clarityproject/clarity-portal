@@ -478,6 +478,17 @@ begin
       pg_temp.t_rows(format('insert into public.organisation_deals (organisation_id, name, kind, status, value, per, opens) values (%L, ''Team workshops'', ''proposal'', ''sent'', 5640, ''once'', 2)', org)),
       pg_temp.t_rows(format('insert into public.organisation_deals (organisation_id, name, status) values (%L, ''x'', ''maybe'')', org)),
       pg_temp.t_rows(format('insert into public.organisation_deals (organisation_id, name, per) values (%L, ''x'', ''week'')', org))), '1/error 23514/error 23514');
+    -- A coach's connections also take Gmail, and stay the server's alone.
+    perform pg_temp.t_admin();
+    f := f || pg_temp.t_eq('8c a coach''s connections take Gmail beside Google Calendar and Zoom; nothing else', concat_ws('/',
+      pg_temp.t_rows(format('insert into public.coach_connections (coach_id, service, status, account_label, secret) values (%L, ''gmail'', ''on'', ''alex@example.invalid'', ''not-a-real-token'')', own_c)),
+      pg_temp.t_rows(format('insert into public.coach_connections (coach_id, service) values (%L, ''zoom'') on conflict do nothing', own_c)),
+      pg_temp.t_rows(format('insert into public.coach_connections (coach_id, service) values (%L, ''outlook'')', own_c))), '1/1/error 23514');
+    perform pg_temp.t_as(own_u);
+    f := f || pg_temp.t_eq('8d the Gmail connection is the server''s alone: its coach reads no row, only its status, never the secret', concat_ws('/',
+      pg_temp.t_rows('select 1 from public.coach_connections'),
+      (select string_agg(concat_ws(' ', service, status, account_label), ', ' order by service) from public.coach_connections_mine() where service = 'gmail'),
+      pg_temp.t_rows(format('insert into public.coach_connections (coach_id, service) values (%L, ''gmail'')', own_c))), 'error 42501/gmail on alex@example.invalid/error 42501');
 
     -- 9. Network.
     f := f || pg_temp.t_eq('9a Keep close: trust 7 or more and what you get 7 or more (checked first)', concat_ws(' ',

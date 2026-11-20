@@ -425,6 +425,7 @@ export default function Leads() {
           <TextLink onClick={() => setPanel('stages')}>Edit stages</TextLink>
           <TextLink onClick={() => setPanel('import')}>Import from a spreadsheet</TextLink>
           <TextLink onClick={() => setPanel('export')}>Export</TextLink>
+          <TextLink onClick={() => navigate('/coach/leads/automations')}>Automations</TextLink>
           <TextLink onClick={() => navigate('/coach/leads/cold')}>Cold leads</TextLink>
         </div>
 

@@ -129,6 +129,8 @@
 --     own id: one to-do an email); coach_settings.crm jsonb (this run's
 --     small settings: hidden Network columns, the archive card's Not now,
 --     the leads view, "Suggest check-ins").
+--     coach_connections.service (051: google_calendar | zoom) also takes
+--     gmail, for the optional Gmail connection. Still the server's alone.
 --
 -- FUNCTIONS
 --   The owner:
@@ -1063,6 +1065,20 @@ begin
 end
 $c$;
 comment on column public.coach_settings.crm is 'Run 4''s small settings: hidden Network columns, the archive card''s "Not now", the Leads view, "Suggest check-ins at 3, 6 and 12 months".';
+
+-- A coach's connections (051: Google Calendar and Zoom) also take Gmail, for "Log Gmail with clients and leads". 051's own
+-- file is unchanged: its unnamed check is replaced here by a named one. Still the server's alone: no person reads a row.
+do $c$
+begin
+  alter table public.coach_connections drop constraint if exists coach_connections_service_check;
+  if not exists (select 1 from pg_constraint where conname = 'coach_connections_service_ok') then
+    alter table public.coach_connections add constraint coach_connections_service_ok
+      check (service in ('google_calendar', 'zoom', 'gmail'));
+  end if;
+end
+$c$;
+comment on table public.coach_connections is
+  'A coach''s connection to Google Calendar, Zoom or Gmail (052 adds Gmail). calendars maps work, personal and family to the Google calendars'' ids; secret is the service''s token. The server''s alone (the service role): no person reads a row. coach_connections_mine() tells a coach the status of their own, never the secret.';
 
 -- ---------------------------------------------------------------- updated_at
 do $touch$

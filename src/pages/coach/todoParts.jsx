@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   AddButton, Button, Chip, ChipRow, DatePicker, Dropdown, IconButton, InlineChoice, SlidePanel, SwitchRow, TextBox, TextField, useIsPhone, useToast,
 } from '../../components/design';
@@ -12,7 +12,11 @@ import {
 import { deleteTodos, linksToAdd, removePairs, rowsForNew, saveTodos, tickRows, todoLinks } from '../../lib/coach/todoActions';
 import { MenuItem, MenuLabel, PopMenu, TextLink, useCoachPortal } from './parts';
 import { HelpLink } from './help';
+import { todoEmailLine } from '../../lib/coach/crm';
 import './todos.css';
+
+// The email a forwarded to-do came from opens in Leads' own email panel (loaded only when one is opened).
+const EmailPanel = lazy(() => import('./LeadPanels').then((m) => ({ default: m.EmailPanel })));
 
 // The coach's own to-dos, in parts (Phase 6a run 2; M11): the row and its
 // list (tick, open, choose several, a small menu, drag and arrow keys to
@@ -588,7 +592,8 @@ function Checklist({ todo, onSave }) {
  * with Undo). `id` is the to-do to show, or null for closed.
  */
 export function TodoPanel({ id, onClose }) {
-  const { todos, todoLists, todoHeadings, clients, tags, state, todayKey } = useCoachPortal();
+  const { todos, todoLists, todoHeadings, clients, tags, state, todayKey, emails } = useCoachPortal();
+  const [mail, setMail] = useState(null);
   const actions = useTodoActions();
   const live = id ? todos.find((t) => t.id === id) || null : null;
   // What it showed stays while the panel slides away.
@@ -729,6 +734,20 @@ export function TodoPanel({ id, onClose }) {
         <TextBox label="Notes" placeholder="Anything to remember" value={notes} maxLength={4000} onChange={setNotes} onBlur={saveNotes} />
       </div>
 
+      {/* A to-do made from a forwarded email (run 4; M11's "A to-do from a forwarded email"): the email it came from, which
+          opens when it is on a timeline too. The email's own attachments aren't kept (052 has nowhere for them). */}
+      {todoEmailLine(todo, emails) && (
+        <section className="cc-todo-sec" aria-label="Attachments">
+          <div className="cc-todo-sechead"><h3 className="cc-todo-h">Attachments</h3></div>
+          <div className="cc-todo-linked">
+            {todoEmailLine(todo, emails).email
+              ? <button type="button" className="cc-table-name" onClick={() => setMail(todoEmailLine(todo, emails).email)}>{todoEmailLine(todo, emails).title}</button>
+              : <b>{todoEmailLine(todo, emails).title}</b>}
+            <small>{todoEmailLine(todo, emails).small}</small>
+          </div>
+        </section>
+      )}
+
       {todo.from_email_sender && (
         <section className="cc-todo-sec" aria-label="Linked to">
           <div className="cc-todo-sechead"><h3 className="cc-todo-h">Linked to</h3></div>
@@ -745,7 +764,7 @@ export function TodoPanel({ id, onClose }) {
         <SwitchRow label="Remind me" note="On your phone, at the to-do’s time" checked={Boolean(todo.remind)} onChange={(on) => change({ remind: on })} />
       </div>
       {/* "Remove from calendar" goes here once run 3 places to-dos on the calendar. */}
-      {/* Attachments ("Add file", the forwarded email itself) come with email logging in run 4. */}
+      <Suspense fallback={null}>{mail && <EmailPanel email={mail} onClose={() => setMail(null)} />}</Suspense>
     </SlidePanel>
   );
 }

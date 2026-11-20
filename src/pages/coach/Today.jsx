@@ -16,13 +16,17 @@ import {
   ReviewPanel, useCallWords, useDayRows,
 } from './todayParts';
 import NameNote from './NameNote';
+import { checkInsDue, checkInsOn } from '../../lib/coach/crm';
+import { TODAY_KEEP_IN_TOUCH, todayKeepInTouch } from '../../lib/coach/network';
+import { CheckInPanel } from './pastParts';
 import './today.css';
 
 // Today (M11; Phase 6a run 2, step 3), top to bottom: the date and any
 // quiet lines (a birthday, a recap still unsent a day after its call), the
 // one offer row (Plan my day, Close the day, the Weekly review, Rate my
 // energy), today's calls, the coach's own to-dos with the over-full line,
-// who needs attention (coaching facts only), the pressure forecast (shared
+// who needs attention (coaching facts only), Keep in touch (past clients'
+// check-ins that are due: run 4), the pressure forecast (shared
 // work peak moments in the next 7 days) and capacity. The owner's Finances
 // line waits for Phase 6b; an associate's Supervision and Your hours and
 // pay come with later runs. The calendar is run 3: sessions are added from
@@ -58,7 +62,7 @@ function Section({ title, aside, headRef, children }) {
 }
 
 export default function Today() {
-  const { state, clients, groups, todos, sessions, sessionPeople, settings, todayKey, now, coach, isOwner, calItems } = useCoachPortal();
+  const { state, clients, groups, todos, sessions, sessionPeople, settings, todayKey, now, coach, isOwner, calItems, checkIns, organisations } = useCoachPortal();
   const navigate = useNavigate();
   const isPhone = useIsPhone();
   const { day, week } = useDayRows();
@@ -93,6 +97,11 @@ export default function Today() {
   }), [clients, state, coach.id, sessions, sessionPeople, now, todayKey]);
   const attentionShown = allAttention ? attention : attention.slice(0, ATTENTION_FIRST);
   const pressure = usePressure(clients, todayKey);
+  // Keep in touch (run 4): past clients' check-ins that are due, one quiet line each (each coach's own). The people in
+  // Network who are due a catch-up join this same section (`due`: network.js's todayDueQuery, the owner's alone).
+  const [checkInId, setCheckInId] = useState(null);
+  const dueCheckIns = useMemo(() => (checkInsOn(settings) ? checkInsDue(checkIns, clients.filter((p) => p.status === 'past'), { todayKey, organisations }) : []), [settings, checkIns, clients, todayKey, organisations]);
+  const keep = todayKeepInTouch({ due: null, checkIns: dueCheckIns.slice(0, TODAY_KEEP_IN_TOUCH), today: todayKey });
 
   const close = () => setPanel(null);
   // Choose what to move opens from the over-full panel, whose own opener is the line's link. When it closes,
@@ -184,6 +193,15 @@ export default function Today() {
           </Section>
         )}
 
+        {keep && (
+          <Section title={keep.title}>
+            <div className="cc-rows cc-today-rows">
+              {keep.checkIns.map((c) => <Row key={c.id} title={c.name} facts={[c.sub]} when={c.when} label={`${c.line} Open the note`} onClick={() => setCheckInId(c.id)} />)}
+            </div>
+            {dueCheckIns.length > keep.checkIns.length && <div className="cc-acts cc-today-more"><TextLink onClick={() => navigate('/coach/clients/past')}>Show all {dueCheckIns.length} check-ins</TextLink></div>}
+          </Section>
+        )}
+
         {pressure.length > 0 && (
           <Section title="Pressure forecast">
             <div className="cc-rows cc-today-rows">
@@ -201,6 +219,7 @@ export default function Today() {
         <NameNote profile={note} reason="It’s their birthday today." onClose={() => setNote(null)} />
       </div>
 
+      <CheckInPanel checkInId={checkInId} onClose={() => setCheckInId(null)} />
       <TodoBulkBar picks={picks} />
       <TodoPanel id={openId} onClose={() => setOpenId(null)} />
       <QuickAddPanel open={panel === 'add'} onClose={close} defaultDay={todayKey} />

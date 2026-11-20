@@ -881,6 +881,7 @@
   --cc-lead-q-w: 170px;         /* "Where Amy is": a row's label */
   --cc-lead-dots: 16px;         /* the three dots of a row's More menu */
   --cc-stage-pct-w: 84px;       /* Edit stages: a stage's likelihood */
+  --cc-brd-kind-w: 128px;       /* Edit this board: what kind a field is */
   --fs-cc-code: calc(26 * var(--u-big)); /* an access code, shown once */
   --ls-cc-code: 0.12em;
 }

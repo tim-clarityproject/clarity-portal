@@ -14,6 +14,9 @@ import { useHiddenHelp } from './help';
 import BookingSettings from './BookingSettings';
 import { calendarShown, CONNECT_WORDS, connectionRows } from '../../lib/coach/calendar';
 import { useCalSync } from './calSync';
+import { EMAIL_SETTINGS, GMAIL_WORDS } from '../../lib/coach/crm';
+import { setEmailStandIn, useEmailAddresses } from './crmParts';
+import './crm.css';
 
 // Settings, two panes (M11, version 3.4): on a laptop the list of sections
 // on the left and the chosen one on the right; on a phone the list, and
@@ -423,14 +426,37 @@ function Calendars() {
 }
 
 function Email() {
-  const { settings } = useCoachPortal();
+  const { userId, settings } = useCoachPortal();
   const saved = useSaved();
+  const toast = useToast();
   const saveSettings = useSettingsSave();
   const email = settings.email || {};
+  const addresses = useEmailAddresses();
+  const copy = async (address) => {
+    try { await navigator.clipboard.writeText(address); toast.show(EMAIL_SETTINGS.copied); } catch { toast.show('That didn’t copy. Select the address and copy it yourself.'); }
+  };
+  const standIn = (name, on) => { setEmailStandIn(userId, name, on); addresses.refresh(); };
+  /** One address to copy: its name, the address in full (or the calm line until the email service is set up), and Copy. */
+  const address = (words, value) => (
+    <div className="cc-addr">
+      <span><b>{words.label}</b><small className={value ? undefined : 'cc-addr-none'}>{value || (addresses.ready ? EMAIL_SETTINGS.notSetUp : '')}</small></span>
+      {value ? <TextLink aria-label={`Copy the ${words.label.toLowerCase()}`} onClick={() => copy(value)}>Copy</TextLink> : <span />}
+    </div>
+  );
   return (
     <>
-      <SwitchRow label="Log Gmail with clients and leads" note="One line each on their timeline" checked={email.log_gmail === true} onChange={(on) => saved(() => saveSettings({ email: { ...email, log_gmail: on } }), { onUndo: () => saveSettings({ email }) }).catch(() => {})} />
-      <p className="cc-note">This keeps your choice. Emails start to log when Leads and the pipeline arrive. Associates never see your inbox.</p>
+      {address({ label: EMAIL_SETTINGS.forward.label }, addresses.todo)}
+      <Line title={GMAIL_WORDS.connect} small={addresses.gmail ? GMAIL_WORDS.connected : addresses.standIns.gmail ? GMAIL_WORDS.standInNote : GMAIL_WORDS.notSetUp}><span /></Line>
+      <SwitchRow label={EMAIL_SETTINGS.gmail.label} note={EMAIL_SETTINGS.gmail.value} checked={email.log_gmail === true} onChange={(on) => saved(() => saveSettings({ email: { ...email, log_gmail: on } }), { onUndo: () => saveSettings({ email }) }).catch(() => {})} />
+      <p className="cc-note cc-email-note">{EMAIL_SETTINGS.gmail.help}</p>
+      {address(EMAIL_SETTINGS.copyIn, addresses.log)}
+      <p className="cc-note cc-email-note">{EMAIL_SETTINGS.copyIn.help}</p>
+      {!LIVE_BUILD && (
+        <>
+          <SwitchRow label={GMAIL_WORDS.standInCopy} note={CONNECT_WORDS.standInNote} checked={addresses.standIns.copyIn === true} onChange={(on) => standIn('copyIn', on)} />
+          <SwitchRow label={GMAIL_WORDS.standIn} note={CONNECT_WORDS.standInNote} checked={addresses.standIns.gmail === true} onChange={(on) => standIn('gmail', on)} />
+        </>
+      )}
     </>
   );
 }

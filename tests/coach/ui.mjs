@@ -147,6 +147,20 @@ const MUST = {
   'lead-board': (r) => ['£31,500', '£15,750 likely', 'No value yet', 'Opened 3 times', 'Quiet for 19 days', 'Still to find out: when', 'Ready to decide'].every((w) => r.text.includes(w)),
   'lead-waiting': (r) => r.text.includes('You emailed Sarah Kent, who isn’t in the portal yet.') && r.text.includes('Chris Doyle may be in here twice.'),
   'lead-page': (r) => ['Nearly there. Still to find out: when.', 'Referred by', 'Hannah Wells', 'Leadership Accelerator. Opened 3 times.', 'Not known yet'].every((w) => r.text.includes(w)),
+  // Run 4, step 3: Automations, Boards, emails logged, past clients' check-ins, the account map.
+  automations: (r) => ['When a lead moves to Proposal sent, add the to-do “Follow up on the proposal”, 3 days later.', 'Ran 4 times in November', 'When a Chemistry Call is booked, add the to-do “Read their booking answers”, the day before.', 'Off', 'Automations add to-dos and move stages. They never send anything.'].every((w) => r.text.includes(w)) && !/add tags|keep people in touch/.test(r.text),
+  'automations-link': (r) => r.text.includes('Automations') && r.text.includes('Cold leads'),
+  boards: (r) => ['Speaking', '4 stages', '5 cards', 'Partners', '3 stages', '2 cards', 'New board'].every((w) => r.text.includes(w)),
+  board: (r) => ['Ideas', 'Pitched', 'Confirmed', 'Done', 'CIPD Festival of Work', '£4,500', '800 HR leaders', 'League Managers Association', 'Head coaches', 'Edit this board'].every((w) => r.text.includes(w)),
+  'email-settings': (r) => ['Forward emails to to-dos', 'Copy-in address', 'Log Gmail with clients and leads', 'Connect Gmail', 'Gmail isn’t set up yet.', 'This address is ready once the email service is set up.'].every((w) => r.text.includes(w)),
+  'email-addresses': (r) => /todo\.[a-z0-9.]+@in\.example\.invalid/.test(r.text) && /log\.[a-z0-9.]+@in\.example\.invalid/.test(r.text) && (r.text.match(/\bCopy\b/g) || []).length >= 2,
+  'past-due': (r) => ['Suggest check-ins at 3, 6 and 12 months', 'Check-ins due', 'Grace Liu', '6-month check-in', 'Ben Ortiz', '3-month check-in', 'Leah Moran', '12-month check-in', 'Everyone', 'Omar Haddad'].every((w) => new RegExp(w.replace(/[-,]/g, '[-,]'), 'i').test(r.text)),
+  'keep-in-touch': (r) => /keep in touch/i.test(r.text) && ['Ben Ortiz', '3-month check-in', 'Grace Liu', '6-month check-in'].every((w) => r.text.includes(w)),
+  'account-map': (r) => ['Dana Whitfield', 'Sponsor', 'Jo Mensah', 'HR', 'Asked about team workshops', 'Leadership Accelerator for Sam', '£13,460', 'Portal seats', '20 seats', '£640/month', 'Team workshops for the leadership team', 'Proposal sent', 'Opened 2 times', '6 of 20 seats are free.', 'Offer the seats', 'Add to the pipeline', 'Next renewal'].every((w) => r.text.includes(w)) && /who’s who/i.test(r.text) && /agreements and proposals/i.test(r.text) && /room to grow/i.test(r.text),
+  // An associate: only the board the owner shared, read only; the owner's other board isn't there at all.
+  'shared-board': (r) => r.text.includes('Speaking') && !r.text.includes('Partners') && !r.text.includes('New board'),
+  'read-only': (r) => r.text.includes('You can see it and can’t edit it.') && r.text.includes('CIPD Festival of Work') && !r.text.includes('Edit this board') && !r.text.includes('Add card'),
+  'board-gone': (r) => r.text.includes('This board isn’t here any more.') && !r.text.includes('Quillmark'),
   // An associate: no Leads page, no Leads in the menu, no lead in search (they are on their own Today).
   'not-leads': (r) => !/\bLeads?\b/.test(r.text) && !r.text.includes('Amy Cole') && !r.text.includes('Quiet for 19 days'),
 };
