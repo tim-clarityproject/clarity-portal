@@ -17,7 +17,7 @@
 import {
   addDays, clockChanges, clockChangeLine, clockWords, dayKeyWords, daysBetween, holidayLine, instantAt, isZone, onQuarterHour,
   publicHolidayFor, sameZone, seriesCalls, seriesRule, sociable, wallClock, weekdayOf, zoneLabel, zonePlace, morningOf, inTheMorning,
-  hourBeforeReminderAt, dayWords as zoneDayWords, timeWords, EARLY_AND_LATE_LABEL, GAP_MINUTES,
+  hourBeforeReminderAt, dayWords as zoneDayWords, timeWords, EARLY_AND_LATE_LABEL, GAP_MINUTES, zoneCountry,
 } from '../time/index.js';
 import { clean, cut, firstName, minutesWords, parsePeople } from './model.js';
 import { SENT_LINE, SESSION_LENGTHS, WEEK_KEYS, isLateCancellation, isLink, newSession, parseQuickAdd, workingDay } from './day.js';
@@ -590,7 +590,8 @@ export function scheduleDays(entries, { days, coachZone, todayKey }) {
   return days.map((day) => {
     const rows = entriesOn(entries, day).map((e) => ({
       entry: e, time: isBanner(e) ? 'All day' : (e.fromDay < day ? '00:00' : wallClock(e.startsAt, coachZone).time), title: e.title,
-      lines: [e.clientWords, e.sub || (e.type === 'item' ? ITEM_KINDS[e.kind]?.label : ''), e.movedInGoogle ? MOVED_IN_GOOGLE : ''].filter(Boolean),
+      // (A line that only repeats the title, "Writing" under Writing, is left out: 5e rule 29ap.)
+      lines: [e.clientWords, e.sub || (e.type === 'item' ? ITEM_KINDS[e.kind]?.label : ''), e.movedInGoogle ? MOVED_IN_GOOGLE : ''].filter((l) => l && clean(l).toLowerCase() !== clean(e.title).toLowerCase()),
       length: isBanner(e) ? '' : minutesWords(e.minutes),
       square: { className: e.colourClass, dashed: e.dashed, edged: COLOURS[e.colour].edged },
     }));
@@ -2025,10 +2026,17 @@ export function clockChangeLines({ items = [], sessions = [], clients = [], now,
         const nowTime = wallClock(e.startsAt, coachZone).time;
         if (was !== nowTime && !moves.some((m) => m.name === firstName(e.title))) moves.push({ name: firstName(e.title), zone: anchor, change: { ...change, zone }, call: { at: e.startsAt, date: wallClock(e.startsAt, anchor).date }, was, now: nowTime });
       }
-      if (moves.length) lines.push({ at: change.at, words: clockChangeLine({ coachZone, change: { ...change, zone }, moves }) });
+      if (moves.length) lines.push({ at: change.at, change: { ...change, zone }, moves, key: `${change.date}|${change.direction}|${zone === coachZone ? 'own' : zoneCountry(zone) || zone}` });
     }
   }
-  return lines.sort((a, b) => a.at - b.at).map((l) => l.words);
+  // One line a change: a country's clocks change on one day whatever its zones (New York and Chicago), so their calls share a line.
+  const merged = [];
+  for (const l of lines.sort((a, b) => a.at - b.at)) {
+    const same = merged.find((m) => m.key === l.key);
+    if (same) same.moves.push(...l.moves.filter((m) => !same.moves.some((x) => x.name === m.name)));
+    else merged.push({ ...l, moves: [...l.moves] });
+  }
+  return merged.map((l) => clockChangeLine({ coachZone, change: l.change, moves: l.moves }));
 }
 
 export const DAY_BEFORE_HOUR = '18:00';

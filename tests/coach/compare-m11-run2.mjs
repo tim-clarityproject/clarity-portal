@@ -84,7 +84,7 @@ const M11_PARTS = {
   }).filter((s, i, all) => !all.some((o) => o !== s && o.contains(s))),
 };
 const BUILT_PARTS = {
-  page: () => [document.querySelector('.cc-main'), ...document.querySelectorAll('.ds-portal')], // the page, with any menu it has open (on a phone a menu is a panel from the foot)
+  page: () => [document.querySelector('.cc-main') || document.querySelector('.ui-root.cc-book'), ...document.querySelectorAll('.ds-portal')], // the page (a booking page outside the portal has no frame), with any menu it has open (on a phone a menu is a panel from the foot)
   sheet: () => [...document.querySelectorAll('.ds-portal')], // the panel, and any menu it has open
   bar: () => [document.querySelector('.cc-callbar')],
   header: () => [document.querySelector('.cc-header')],
@@ -149,9 +149,11 @@ function moved(a, b) {
  * SCREENS (a pattern on M11's screen id or the row's name), ROLES (owner,associate) and SIZES (1440,400)
  * narrow it; DUMP=<folder> writes what each side said, for whoever is writing the list.
  */
-export async function compareRun2(report, table, { file, rows, extraGroups, everywhere }) {
+export async function compareRun2(report, table, { file, rows, extraGroups, everywhere, label = 'Run 2' }) {
   const only = process.env.SCREENS ? new RegExp(process.env.SCREENS) : null;
   const roles = (process.env.ROLES || 'owner,associate').split(',').filter((r) => r === 'owner' || r === 'associate');
+  // A row with `as: 'signed-out'` (run 3's booking pages outside the portal) is opened with nobody signed in, and held against M11's owner screen.
+  const outside = (r) => r.as === 'signed-out';
   const sizes = (process.env.SIZES || '1440,400').split(',').map(Number).filter((s) => s === 1440 || s === 400);
   const wanted = rows.filter((r) => !only || only.test(r.m11) || only.test(r.name));
   const dump = process.env.DUMP || null;
@@ -166,7 +168,7 @@ export async function compareRun2(report, table, { file, rows, extraGroups, ever
   if (need.length && !(kept && existsSync(kept))) {
     process.env.ONLY = `^(${need.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})$`;
     delete process.env.GROUPS;
-    process.env.SIZES = sizes.join(','); process.env.MODES = 'dark'; process.env.ROLES = roles.join(',');
+    process.env.SIZES = sizes.join(','); process.env.MODES = 'dark'; process.env.ROLES = [...roles, ...(wanted.some(outside) && roles.includes('owner') ? ['signed-out'] : [])].join(',');
     const problems = await walk(async (page, at) => {
       const got = {};
       for (const part of ['page', 'sheet', 'bar', 'header', 'menu']) got[part] = await run(page, BUILT_PARTS[part], null);
@@ -174,7 +176,7 @@ export async function compareRun2(report, table, { file, rows, extraGroups, ever
       built[`${at.name}|${at.role}|${at.size}`] = got;
     }, { groups: null });
     for (const [k, v] of Object.entries(was)) if (v === undefined) delete process.env[k]; else process.env[k] = v;
-    report.pass('Run 2: every built screen opened, with no page error and no write leaving the page', problems.length === 0, problems.slice(0, 8).join(' | '));
+    report.pass(`${label}: every built screen opened, with no page error and no write leaving the page`, problems.length === 0, problems.slice(0, 8).join(' | '));
     if (kept) writeFileSync(kept, JSON.stringify(built));
   }
 
@@ -225,7 +227,7 @@ export async function compareRun2(report, table, { file, rows, extraGroups, ever
         const where = `${row.name} (${who}, ${dev === 'p' ? 'phone' : 'desktop'})`;
         const part = row.sections ? `sections:${row.sections.join('|')}` : row.part || 'page';
         const builtName = row.builtOn?.[dev] || row.built; // `builtOn`: another built screen for a phone, or for a laptop
-        const b = built[`${builtName}|${who}|${size}`]?.[part];
+        const b = built[`${builtName}|${outside(row) ? 'signed-out' : who}|${size}`]?.[part];
         if (!b) { if (!(row.skips || []).includes(`${who}-${dev}`)) report.pass(`${where}: the built screen opened`, false, `no screen called ${builtName} was read`); continue; }
         let m;
         try { m = await m11(row, who, dev); } catch (e) { report.pass(`${where}: M11’s screen opened`, false, String(e).split('\n')[0]); continue; }

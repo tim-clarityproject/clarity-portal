@@ -13,6 +13,16 @@
 //   - chevrons centred on their words;
 //   - no keyboard shortcut is shown anywhere; Add rows drop "a" and "an";
 //   - each mode uses its own colours; nothing in the console;
+// to run 3's rules for the calendar and booking (Tim, 19 Nov; cal-rules.mjs),
+// each a named check on every screen: the tile colours read from computed
+// styles in both modes, 4px corners, no tile text under 12px, every tile
+// line 4.5 to 1 against what is behind it, flat hatching under the tiles
+// and no gradient anywhere, Open times in mint, the Schedule's 10px square,
+// the client's own time in each call's block, no key hints; and, on the
+// screens that are there for them, the two time columns (clock-change days
+// included), working hours edited on the week, a to-do on the calendar, and
+// the booking pages' own rules (the device's mode, one coral button, times
+// with a city, "Show early and late times");
 // and to run 2's design rules (Tim, 18 and 19 Nov; rules.mjs), each a named
 // check on every screen: underlined tabs that scroll in their own strip;
 // boxes side by side level; one line of help at most, and help that can be
@@ -35,6 +45,9 @@ import { chevronsOff, measureChevrons } from '../phase5/chevrons.mjs';
 import { APP, makeReport } from './shared.mjs';
 import { GROUPS, picture as takePicture, walk } from './screens.mjs';
 import { chartPopups, hiddenHelp, readRules, readTwice, SOFT_CORAL, tableHeadings } from './rules.mjs';
+import { earlyAndLate, hoursEditing, readBooking, readCalRules, readPhoneCalendar, TILE, todoOnCalendar, zoneColumns } from './cal-rules.mjs';
+import { settle } from './shared.mjs';
+import { DAY } from './seed.mjs';
 
 const OUT = process.argv[2] || null;
 if (OUT) mkdirSync(OUT, { recursive: true });
@@ -69,10 +82,15 @@ function measure(appSelector) {
     if (el.matches('.ds-seg-btn') && b.height >= 33.5) continue; // inside the switch's own 40px track, 44px on a phone
     // A fold's button fills its whole heading row (its ::after is inset 0 of the row).
     if (el.matches('.cc-fold-btn') && el.closest('.cc-fold-head').getBoundingClientRect().height >= 43.5) continue;
-    // The shared date picker's own days, opened from the calendar's date outside any panel (41 by 44 on a laptop, as the design reference draws them).
-    if (el.matches('.ds-cal-day') && b.height >= 43.5 && b.width >= 40) continue;
-    // A placed to-do's tick sits inside its calendar tile, which is as tall as its minutes (run 3; M11).
-    if (el.matches('.cc-cal-tick') && el.closest('.cc-cal-tile')) continue;
+    // The shared date picker's own days (`DatePicker`, the design reference's part: seven days share its 360px, so each is
+    // 44px tall and 41 to 43px wide with its neighbours touching, and a wider tap area would overlap them). Only a day of that
+    // picker's own grid, a full 44px tall and never under 40.5 wide.
+    if (el.matches('.ds-cal .ds-cal-grid .ds-cal-day, .ds-cal .ds-cal-day') && b.height >= 43.5 && b.width >= 40.5) continue;
+    // A placed to-do's tick sits inside its calendar tile, which is as tall as its minutes (15 minutes is 11px), so a 44px
+    // area can't fit without covering the tile it sits in and its neighbours (run 3; M11 draws it so). Only the tick of a
+    // to-do's own tile, never smaller than the 11px box it is drawn as, and only where the tile itself (which opens the
+    // to-do, where it can be ticked at full size) is a control around it.
+    if (el.matches('.cc-cal-tile--todo .cc-cal-tick') && b.width >= 10.5 && b.height >= 10.5 && el.closest('.cc-cal-tile--todo').matches('[role=button], button, [tabindex]')) continue;
     // A link inside a sentence carries its own 44px strip.
     if (el.matches('.cc-inline-link') && ra.h >= 43.5) continue;
     small.push(`${label(el)} ${Math.round(tapW)}x${Math.round(tapH)}`);
@@ -99,6 +117,28 @@ function measure(appSelector) {
 const picture = (page, file, full) => (OUT ? takePicture(page, `${OUT}/${file}.png`, full) : null);
 
 /** What a screen must show, by the name it gives in `expects` (screens.mjs). */
+const KINDS_ON_THE_WEEK = ['client', 'chemistry', 'connection', 'admin', 'writing', 'other', 'life', 'hold'];
+/** Run 3's: read from cal-rules.mjs's `found`. */
+const CAL_MUST = {
+  tiles: (c) => c.found.tiles > 5,
+  kinds: (c) => KINDS_ON_THE_WEEK.every((k) => c.found.kinds.includes(k)),
+  hatch: (c) => c.found.hatch > 0,
+  squares: (c) => c.found.squares > 5,
+  month: (c) => c.found.tiles + c.found.squares > 5,
+  'client-time': (c) => c.found.clientTimes > 0,
+  'open-times': (c) => c.found.kinds.includes('open'),
+  weekends: (c) => /\bSat\b/.test(c.found.said) && /\bSun\b/.test(c.found.said),
+  which: (c) => ['Which ones?', 'This one', 'This and following', 'All of them'].every((w) => c.found.said.includes(w)),
+  'moved-tile': (c) => c.found.movedTile,
+  'bar-8': (c) => c.found.bar && /in 8 minutes/.test(c.found.bar.words) && !c.found.bar.soon,
+  'bar-5': (c) => c.found.bar && /in 5 minutes/.test(c.found.bar.words) && c.found.bar.soon,
+  'bar-now': (c) => c.found.bar && /is starting now/.test(c.found.bar.words) && c.found.bar.soon,
+  'bar-in': (c) => c.found.bar && /started 6 minutes ago/.test(c.found.bar.words) && c.found.bar.soon,
+  // One quiet line for the one change, however many US time zones the coach's clients are in.
+  'clock-line': (c) => (c.found.said.match(/US clocks go back on Sunday 1 Nov\./g) || []).length === 1 && /Mia’s \w+ call moves from \d\d:\d\d to \d\d:\d\d UK time, and Jordan’s \w+ call moves from \d\d:\d\d to \d\d:\d\d UK time this week\./.test(c.found.said),
+  // Checked by their own driven checks above.
+  zones: () => true, early: () => true, 'hours-edit': () => true, 'todo-tile': () => true, 'todos-panel': () => true, 'phone-cal': () => true,
+};
 const MUST = {
   finances: (r) => r.text.includes('November £2,300 of £5,000'),
   'capacity-row': (r) => /Capacity/i.test(r.text) && r.text.includes('Coaching hours each week'),
@@ -107,7 +147,7 @@ const MUST = {
 // Underlined tabs are the same on a laptop and a phone: the same words, size, line and space at every width.
 const TABS_LOOK = { size: '16px', line: 2, gap: '22px' };
 
-const problems = await walk(async (page, { name, role, size, theme, run, root, expects, full, group }) => {
+const problems = await walk(async (page, { name, role, size, theme, run, root, expects, full, group, day }) => {
   const tag = `${name}, ${role}, ${size}px ${theme}`;
   counting = `${role} ${size} ${theme}`;
   const phone = size <= 600;
@@ -203,11 +243,41 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
     report.pass(`${tag}: chart pop-ups (${tips.read} opened) are ${phone ? 'one line, inside the screen' : 'a title with rows when they hold more than one fact'}`, tips.read > 0 && tips.problems.length === 0, tips.problems.slice(0, 3).join('; '));
   }
   if (expects.includes('table')) rule('the table’s heading row stays at the top as the page and the table scroll', await tableHeadings(page));
+  // ---- Run 3's rules for the calendar and booking (Tim, 19 Nov), on every screen.
+  const cal = await page.evaluate(readCalRules, { app: root, theme, phone, tile: TILE });
+  rule(`tiles are the colours of 19 Nov (${cal.found.tiles} read)`, cal.colours);
+  rule('tiles have 4px corners', cal.corners);
+  rule('no tile text is under 12px', cal.small);
+  rule('every tile line is 4.5 to 1 against what is behind it', cal.contrast);
+  rule('no line of a tile is cut through by the tile’s own edge', cal.cut);
+  rule(`out-of-hours hatching is flat lines under the tiles (${cal.found.hatch} read)`, cal.hatch);
+  rule('no gradient anywhere', cal.gradients);
+  rule('Open times are outlined in mint, never coral', cal.open);
+  rule(`the Schedule’s square is 10px, the tile’s colour, edged or dashed as it should be, before the time (${cal.found.squares} read)`, cal.squares);
+  rule('no key hint (⌘, Ctrl, Cmd, Esc, Shift) is shown or spoken', cal.keys);
+  rule(`a call’s block gives the client’s own time with a city, 12-hour for the US and Canada (${cal.found.clientTimes} read)`, cal.clientTime);
+  if (group === 'public') {
+    const book = await page.evaluate(readBooking, { theme, coral: ['rgb(255, 111, 92)', 'rgb(255, 133, 116)', 'rgb(240, 96, 78)'] });
+    rule('the booking page follows the device’s light or dark', book.device);
+    rule('one coral button at most', book.coral);
+    rule(`times are said with a city or country, never letters or an offset (${book.found.times} times read)`, book.zones);
+    rule('a page that holds early and late times back offers “Show early and late times”', book.early);
+    if (expects.includes('early')) rule('only times from 07:00 that end by 20:00 the visitor’s time show, until “Show early and late times” is pressed', await earlyAndLate(page, { settle }));
+  }
+  if (phone && root === '.cc-app') {
+    const pc = await page.evaluate(readPhoneCalendar);
+    rule(`on a phone the calendar can be used: nothing runs off the side, rows and columns a finger wide (${pc.rows} rows, ${pc.cols} columns)`, pc.problems);
+  }
+  // The driven checks, on the screens that are there for them.
+  if (expects.includes('zones') && (await page.locator('.cc-cal .cc-cal-times').count())) rule('two time columns, UK and one other switched by one choice, each hour right for the day', await zoneColumns(page, { settle, day }));
+  if (expects.includes('hours-edit')) rule('working hours: a handle at each day’s start and finish with 44px tap areas, events dimmed, Done, arrow keys move 15 minutes', await hoursEditing(page, { settle }));
+  if (expects.includes('todo-tile')) rule(`a to-do under 45 minutes on the calendar: one line, the tick, the title ending “…”, the time only if it fits${phone ? '' : ', its full title on hover after 0.3 seconds'}${expects.includes('todos-panel') ? ', the dashed coral outline on the to-dos panel while dragged over' : ''}`, await todoOnCalendar(page, { settle, hover: !phone, key: `todo:${DAY.t12}`, title: 'Send the Kestrel proposal', coral: ['rgb(255, 111, 92)', 'rgb(255, 133, 116)', 'rgb(194, 65, 46)', 'rgb(168, 78, 40)', 'rgb(255, 189, 158)'] }));
   // What this screen is there to show must be on it.
   for (const need of expects) {
     if (need === 'table' || need === 'help-flow') continue;
     if (need === 'level' && size < 1440) continue; // on a phone, and for some rows on a tablet, the boxes stack
-    const there = MUST[need] ? MUST[need](r) : rules.found[need];
+    if (phone && ['cal-week', 'cal-clock-week'].includes(name) && ['tiles', 'kinds', 'hatch'].includes(need)) continue; // on a phone the week is its own list, not a squashed grid: its rows are read as the Schedule's are
+    const there = MUST[need] ? MUST[need](r) : CAL_MUST[need] ? CAL_MUST[need](cal) : rules.found[need];
     report.pass(`${tag}: the screen shows what it is for (${need})`, Boolean(there));
   }
   if (run === 2 && expects.includes('panel') && phone) report.pass(`${tag}: on a phone a side panel is the whole screen`, await page.evaluate(() => { const d = [...document.querySelectorAll('.ds-dialog')].filter((x) => x.getBoundingClientRect().width > 0).pop(); if (!d) return true; const b = d.getBoundingClientRect(); return d.matches('.ds-sheet, [class*=sheet]') || b.width >= window.innerWidth - 1; }));

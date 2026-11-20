@@ -125,7 +125,8 @@ export const EVERYWHERE = {
 // What the test's associate shows is the owner's seed, so each of its lines is held against the owner's M11 screen too.
 // M11's Maya has a quieter day: nothing over, two rows in Who needs attention, nothing done. Those states are the owner's only.
 const OWNER = { who: 'owner' };
-const BRIEF_LINK = ['Open the brief', TIM('the phone’s call bar keeps its visible “Open the brief” link'), null, { on: 'p' }];
+const BRIEF_NAME = [/^name: .+: open the brief$/, 'the name on the bar opens the brief too, and says so to a screen reader (run 3: the bar’s name opens the brief in place)'];
+// (On a phone the bar is the name, when and Join on Zoom, as M11 draws it: the name itself opens the brief. Run 3.)
 const TAG_P = [/^(Writing|Phone)$/, T_TAGS, null, { on: 'p', say: 'a tag M11’s phone leaves off a row' }];
 
 const steps = (n) => Array.from({ length: n }, () => 'fstep:1');
@@ -200,11 +201,11 @@ export const ROWS = [
       ['Call at 17:00', 'It’s their birthday today.', T_NOTE], [/^Happy birthday, Priya! .+ See you at 17:00, unless you’d rather move it\. Tim$/, 'Happy birthday, Priya! I hope you get some proper time off today.', T_NOTE, { say: 'See you at 17:00, unless you’d rather move it.' }]],
     added: [[/^(Nothing is sent until you send it from your own email\.|Open in my email)$/, 'nothing the coach writes sends by itself: Email opens the coach’s own email app (coach rule 11)', null, { say: 'Open in my email' }]] },
   // ---- Today
-  { name: 'The next-call bar, 8 minutes before', m11: 'today:tue', part: 'bar', built: 'm11-bar-8', added: [BRIEF_LINK] },
-  { name: 'The next-call bar, 5 minutes before', m11: 'today:5', part: 'bar', built: 'm11-bar-5', added: [BRIEF_LINK] },
+  { name: 'The next-call bar, 8 minutes before', m11: 'today:tue', part: 'bar', built: 'm11-bar-8', added: [BRIEF_NAME] },
+  { name: 'The next-call bar, 5 minutes before', m11: 'today:5', part: 'bar', built: 'm11-bar-5', added: [BRIEF_NAME] },
   { name: 'The next-call bar, as the call starts', m11: 'today:now', part: 'bar', built: 'm11-bar-now',
     changes: [['Sam Okafor Starting now', 'Sam Okafor is starting now', 'every line is a full sentence with a verb (26 Oct design rule 9)', { on: 'd' }]],
-    added: [['Sam Okafor is starting now', 'every line is a full sentence with a verb (26 Oct design rule 9); M11 says “Starting now”', null, { on: 'p' }], BRIEF_LINK] },
+    added: [['Sam Okafor is starting now', 'every line is a full sentence with a verb (26 Oct design rule 9); M11 says “Starting now”', null, { on: 'p' }], BRIEF_NAME] },
   { name: 'Today, a Tuesday morning', m11: 'today:tue', built: 'today-tue', ...today() },
   { name: 'Today, Who needs attention shown in full', m11: 'today:tue', clicks: ['more:att'], sections: ['Who needs attention'], built: 'today-attention-all', ...OWNER, ...today() },
   { name: 'Today, a to-do’s More menu', m11: 'today:tue', clicks: ['rm:todo:t9'], sections: ['To-dos'], built: 'm11-today-more', on: 'd', ...OWNER,
@@ -253,7 +254,7 @@ export const ROWS = [
     added: [seeded('Leave Thursday afternoon clear for writing.', 'what the test types in the box')] },
   { name: 'A week over capacity', m11: 'capover', sections: ['Capacity'], built: 'today-cap', ...OWNER },
   { name: 'Capacity’s Edit, in Settings', m11: 'capover', clicks: ['caps'], from: 'Capacity', built: 'settings-hours-capacity',
-    added: [['Each day has its own hours. Today uses them to say when a day is over-full.', 'the page’s one line of help: the working day now decides Today’s over-full line (coach rules 17 and 23)']] },
+    added: [['Each day has its own hours. Today’s over-full line and booking follow them, and they can be dragged on the calendar.', 'the page’s one line of help: the working day decides Today’s over-full line and booking, and is set on the calendar (coach rules 17 and 23; run 3)']] },
   { name: 'Today, the evening', m11: 'today:eve', built: 'today-eve', ...today({
     changes: [seed('Done', null, 'M11’s evening has every call written up, so each reads Done; the seed’s four aren’t yet, so each keeps its length and asks to be written up')],
     added: [seeded(/^(It’s Priya Nair’s birthday today\.|60 minutes|90 minutes)$/, 'the seed’s evening: the calls aren’t written up, and Priya’s birthday is always the pinned day', { say: 'the seed’s own evening' })],
@@ -306,7 +307,7 @@ export const ROWS = [
     changes: [...QUICK.changes, ['Fri 09:15', 'Planned for Fri 20 Nov, 09:15', DATES]],
     added: [...QUICK.added, [/^(Tomorrow|Planned for Sat 21 Nov)$/, SAID, null, { say: 'each to-do’s day' }],
       [/^name: More for (Before the review|The proposal)$/, 'a heading’s own menu, to rename or remove it: M11 draws headings and no way to change one', null, { say: 'More for a heading' }]] },
-  { name: 'To-dos as a calendar', m11: 'todocal', built: null, why: 'placing to-dos on the calendar is run 3; the List and Calendar switch keeps its slot, and Calendar opens “Coming in this build” on a preview (coach rule 16)' },
+  // (To-dos as a calendar, M11's todocal, is built in run 3: its row is in compare-m11-run3-screens.mjs.)
   // ---- sessions
   { name: 'After a call', m11: 'session', built: 'session',
     changes: [['Clients', 'Hannah Wells', BACK], ['Open the Fathom summary', null, 'the Fathom draft is Phase 6c (coach rule 26)'],

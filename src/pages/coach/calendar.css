@@ -51,7 +51,7 @@
 .ui-root .cc-cal-allday { display: grid; grid-template-columns: calc(2 * var(--cal-time-w)) minmax(0, 1fr); border-bottom: var(--line-w) solid var(--line); }
 .ui-root .cc-cal-allday-label { font-size: var(--fs-min); color: var(--text-2); text-align: right; padding: var(--space-px6) var(--space-2) 0 0; }
 .ui-root .cc-cal-allday-row { display: grid; grid-template-columns: repeat(var(--cal-days), minmax(0, 1fr)); gap: var(--space-px2) 0; padding-block: var(--space-px3); }
-.ui-root .cc-cal-allday-row .cc-cal-banner { position: static; margin-inline: var(--cal-tile-gap); min-height: var(--space-px26); display: flex; align-items: center; cursor: pointer; }
+.ui-root .cc-cal-allday-row .cc-cal-banner { position: static; margin-inline: var(--cal-tile-gap); min-height: var(--tap-min); display: flex; align-items: center; cursor: pointer; }
 
 .ui-root .cc-cal-hour { box-sizing: border-box; height: var(--cal-hour-h); border-bottom: var(--line-w) solid var(--line-soft); font-size: var(--fs-min); color: var(--text-2); padding: var(--space-px2) var(--space-2) 0 0; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ui-root .cc-cal-col { position: relative; border-left: var(--line-w) solid var(--line-soft); min-width: 0; touch-action: pan-y; }
@@ -100,6 +100,12 @@
 .ui-root .cc-cal-tile--hold { --tile-bg: var(--bg); --tile-text: var(--cal-hold-text); --tile-sub: var(--cal-hold-text); box-shadow: none; border: var(--line-w) dashed var(--cal-hold-edge); }
 /* Open times: outlined in mint, never coral. */
 .ui-root .cc-cal-tile--open { --tile-bg: var(--bg); --tile-text: var(--cal-open-text); --tile-sub: var(--cal-open-text); box-shadow: none; border: var(--line-w) solid var(--cal-open-edge); }
+/* A line that doesn't wholly fit is left out, never cut through by the tile's edge: the title keeps a whole number of its
+   lines, and the line under it goes when there isn't room for all of it (it wraps into a column the tile's own edge hides).
+   The full title shows on hover. A placed to-do keeps its tick beside its title. */
+.ui-root .cc-cal-col > .cc-cal-tile:not(.cc-cal-tile--one):not(.cc-cal-tile--todo) { container-type: size; display: flex; flex-flow: column wrap; align-content: flex-start; column-gap: calc(2 * var(--cal-tile-pad)); }
+.ui-root .cc-cal-col > .cc-cal-tile:not(.cc-cal-tile--one):not(.cc-cal-tile--todo) > :is(.cc-cal-title, .cc-cal-sub, .cc-cal-moved) { flex: none; box-sizing: border-box; width: 100%; }
+.ui-root .cc-cal-col > .cc-cal-tile:not(.cc-cal-tile--one):not(.cc-cal-tile--todo) > .cc-cal-title { min-height: 1lh; max-height: round(down, 100cqh, 1lh); }
 @media (hover: hover) { .ui-root .cc-cal:not(.cc-cal--hours) .cc-cal-tile:hover { opacity: var(--cal-hover); } }
 .ui-root .cc-cal-tile:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--line-w); z-index: 3; opacity: 1; }
 
@@ -241,6 +247,7 @@
 .ui-root .cc-cal-range { padding: 0 var(--space-1) !important; font-size: var(--fs-body) !important; }
 .ui-root .cc-cal-zone-btn { padding: var(--space-px2) var(--space-px3) !important; font-size: inherit !important; }
 .ui-root .cc-cal-tick { padding: 0 !important; font-size: inherit !important; min-height: 0; }
+.ui-root .cc-cal-banner { padding: var(--space-px3) var(--cal-tile-pad) !important; font-size: var(--fs-cal-tile) !important; }
 .ui-root .cc-cal-todo { padding: var(--space-px10) var(--space-px12) !important; font-size: inherit !important; }
 .ui-root .cc-cal-found-row { padding: var(--space-px6) var(--space-px12) !important; font-size: inherit !important; }
 .ui-root .cc-sched-row { padding: var(--space-px10) 0 !important; font-size: inherit !important; }

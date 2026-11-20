@@ -54,7 +54,7 @@ export default function PollPage() {
     <div className="cc-page">
       <div className="cc-col cc-poll-page">
         {back}
-        <PageHeader title={joinNames(people.map((p) => p.name)) || poll.title} meta={[poll.title, callPlaceLine(poll.minutes || 60, poll.place_kind)]} />
+        <PageHeader title={poll.title || joinNames(people.map((p) => p.name))} meta={[poll.title ? joinNames(people.map((p) => p.name)) : null, callPlaceLine(poll.minutes || 60, poll.place_kind)].filter(Boolean)} />
         {!isOpen && (
           <p className="cc-quiet" role="status">
             {poll.status === 'confirmed' && confirmed ? `It’s confirmed for ${bookedWhenWords(confirmed.starts_at, cal.coachZone)}.` : poll.status === 'confirmed' ? 'It’s confirmed.' : 'This poll was cancelled, and its times are free again.'}

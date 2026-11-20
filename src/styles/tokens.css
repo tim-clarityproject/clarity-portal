@@ -927,7 +927,7 @@
   --cal-ghost: 0.92;                /* a tile being made or dragged */
   --cal-lifted: 0.35;               /* where a dragged tile came from */
   --cal-hour-h: 44px;               /* an hour's row */
-  --cal-time-w: 60px;               /* one time column */
+  --cal-time-w: max(60px, calc(60 * var(--u)));  /* one time column: it grows with the text, so its times and its place's name fit at twice the size */
   --cal-tile-min: 16px;             /* the least a tile is drawn, however short it is */
   --cal-tick-one: 11px;             /* the tick box on a one-line tile */
   --cal-head-h: 52px;               /* a day's heading */
@@ -946,8 +946,8 @@
   --book-time-w: 229px;             /* one time on a booking page */
   --book-time-gap: 8px;
   --book-hour-h: 192px;             /* an hour beside "Your calendar": four quarter-hour times fit, each a full tap area */
-  --book-hours-w: 60px;
-  --book-pick-field: 220px;         /* a drop-down in the picking bar */
+  --book-hours-w: max(60px, calc(60 * var(--u)));
+  --book-pick-field: max(220px, calc(220 * var(--u)));  /* a drop-down in the picking bar: it grows with the text, so its words stay on one line */
   --cal-month-cell: 112px;
   --cal-mini-cell: 36px;
   --cal-hold-ms: 450;               /* press and hold to drag on a phone */

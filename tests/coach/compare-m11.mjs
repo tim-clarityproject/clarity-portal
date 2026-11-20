@@ -4,7 +4,9 @@
 //
 //   node --import ./tests/scores/register.mjs tests/coach/compare-m11.mjs [M11 v3.6 file] [M11 seq 77 file]
 //
-// RUN=1 or RUN=2 runs one run's screens (both when left out). Run 1's
+// RUN=1, RUN=2 or RUN=3 runs one run's screens (all three when left out).
+// Run 3's (the calendar and booking) are in compare-m11-run3-screens.mjs,
+// read from M11 seq 77 the same way as run 2's, and split the same way. Run 1's
 // screens are listed below and read from M11 v3.6, as run 1 left them.
 // Run 2's (the coaching day) are in compare-m11-run2-screens.mjs and read
 // from M11 seq 77 (the second argument, or M11_RUN2), line by line, as the
@@ -35,16 +37,16 @@ import { ADMIN_ROWS, seedRows } from './seed.mjs';
 import { openScreen } from './screens.mjs';
 import { compareRun2, m11File } from './compare-m11-run2.mjs';
 import { EVERYWHERE, EXTRA_GROUPS, ROWS } from './compare-m11-run2-screens.mjs';
+import { EVERYWHERE as EVERYWHERE3, EXTRA_GROUPS as EXTRA_GROUPS3, ROWS as ROWS3 } from './compare-m11-run3-screens.mjs';
 
-const RUNS = (process.env.RUN || '1,2').split(',');
+const RUNS = (process.env.RUN || '1,2,3').split(',');
 const M11 = process.argv[2] || join(homedir(), 'Downloads/clarity-phase-6a/M11-coach-portal-v3.6.html');
 if (RUNS.includes('1') && !existsSync(M11)) { console.log(`The M11 file isn’t at ${M11}. Give its path as the first argument.`); process.exit(1); }
 const M11_SEQ77 = m11File(process.argv[3]);
-if (RUNS.includes('2') && !M11_SEQ77) { console.log('M11 seq 77 wasn’t found. Give its path as the second argument, or as M11_RUN2.'); process.exit(1); }
+if ((RUNS.includes('2') || RUNS.includes('3')) && !M11_SEQ77) { console.log('M11 seq 77 wasn’t found. Give its path as the second argument, or as M11_RUN2.'); process.exit(1); }
 const report = makeReport('Coach portal against M11');
 
 const RUN2 = 'the coaching day is run 2';
-const RUN3 = 'the calendar and booking are run 3';
 const RUN4 = 'the CRM is run 4';
 const LATER = 'agreements, prices and invoices are Phase 6b';
 const KEYS = 'no keyboard shortcut is shown anywhere (Tim, 18 Nov)';
@@ -61,12 +63,12 @@ const SCREENS = [
   ['The menu, associate', 'menu', 'maya', [], 'menu', 'associate',
     ['Today', 'To-dos', 'Clients', 'Calendar', 'Leading Ideas', 'Library', 'Favourite views', 'Settings', 'Sign out'], []],
   ['Search', 'qj', 'owner', [], 'search', 'owner',
-    ['Search or type an action', 'Actions'],
-    [['Join the next call', RUN3], ['Select several', KEYS], ['Undo the last change', KEYS], ['Book a call', RUN3]]],
-  ['Notifications', 'bell', 'owner', [], 'bell', 'owner', ['Notifications', 'Mark all as read'], [['booked a Chemistry Call', RUN3]]],
+    ['Search or type an action', 'Actions', 'Book a call'],
+    [['Join the next call', 'not built in run 3: a call is joined from the next-call bar, the brief or its calendar item (left for Tim to decide)'], ['Select several', KEYS], ['Undo the last change', KEYS]]],
+  ['Notifications', 'bell', 'owner', [], 'bell', 'owner', ['Notifications', 'Mark all as read'], [['booked a Chemistry Call', 'the test’s data: the seed’s bell holds no booking (run 3’s bookings are walked in book-flows.mjs)']]],
   ['Clients', 'clients', 'owner', [], 'clients', 'owner',
     ['Clients', 'People', 'Groups', 'Workshops', 'Search clients', 'List', 'Board', 'Table', 'Filter', 'Export', 'Next session first', 'Everyone', 'Sam Okafor', 'Maya’s client', 'Add client', 'Past clients'],
-    [['Message clients', 'there are no messages inside the portal (the prompt)'], ['Today, 12:30', RUN3]]],
+    [['Message clients', 'there are no messages inside the portal (the prompt)'], ['Today, 12:30', 'the test’s data: run 1’s seed has no sessions, so no client has a next session to show']]],
   ['Clients as a board', 'clientsb', 'owner', [], 'clients-board', 'owner', ['Starting', 'Active', 'Renewal due', 'Closing', 'Paused', 'to go'], []],
   ['Clients as a table', 'clientst', 'owner', [], 'clients-table', 'owner',
     ['Name', 'Next session', 'Sessions to go', 'Last contact', 'Sector', 'Value', 'Renewal date', 'Finance'],
@@ -80,8 +82,8 @@ const SCREENS = [
   ['Groups', 'clients', 'owner', ['set:tab:groups'], 'clients-groups', 'owner', ['Kestrel leadership team', 'Kestrel Group', 'Add group'], [['6 people', 'the test’s own group has 3 people']]],
   ['Workshops', 'clients', 'owner', ['set:tab:workshops'], 'clients-workshops', 'owner', ['Leading under pressure', 'Northfield Logistics', '18 of 20 places', '3 waiting', 'Decide who decides', 'Add workshop'], [['Follow-up to send', 'workshop emails send in a later run']]],
   ['A client, mid-engagement (Sam)', 'client:sam', 'owner', [], 'client-sam', 'owner',
-    ['Clients', 'Sam Okafor', 'Kestrel Group', 'Chief executive', 'London', 'Prefers early calls when travelling.', 'Let Sam raise the CFO first.', 'Email', 'WhatsApp', 'Overview', 'Everything', 'Next coaching session', 'Coaching sessions to go', '7 of 12', 'Progress', 'Sessions and recaps', 'Private notes', 'To-dos', 'Files', 'About Sam', 'Details', 'More'],
-    [['Agreement', 'the prompt names this section Engagement; agreements are Phase 6b'], ['iMessage', 'iMessage shows only for +1 numbers (the prompt), and Sam’s is +44'], ['Book a call', RUN3], ['Open the brief', RUN2], ['Sam’s Mission', 'the Mission shows once Sam has a portal account and shares it']]],
+    ['Clients', 'Sam Okafor', 'Kestrel Group', 'Chief executive', 'London', 'Prefers early calls when travelling.', 'Let Sam raise the CFO first.', 'Email', 'WhatsApp', 'Overview', 'Everything', 'Next coaching session', 'Coaching sessions to go', '7 of 12', 'Progress', 'Sessions and recaps', 'Private notes', 'To-dos', 'Files', 'About Sam', 'Details', 'More', 'Book a call'],
+    [['Agreement', 'the prompt names this section Engagement; agreements are Phase 6b'], ['iMessage', 'iMessage shows only for +1 numbers (the prompt), and Sam’s is +44'], ['Open the brief', 'the test’s data: run 1’s seed has no session booked for Sam, so there is no brief to open (the brief is run 2’s)'], ['Sam’s Mission', 'the Mission shows once Sam has a portal account and shares it']]],
   ['A client, the sections open (Sam)', 'client:sam', 'owner', ['fold:prog', 'fold:ses', 'fold:notes', 'fold:agr', 'fold:about', 'fold:det', 'fold:more'], 'client-sam-open', 'owner',
     ['Pin to the top', 'Unpin', 'Birthday', '12 Mar', 'Partner', 'Ama', 'Children', 'Kofi and Esi', 'Referred by', 'Dana Whitfield', 'Sector', 'Finance', 'Tags', 'Executive, Finance sector, Kestrel', 'Add field', 'Frequent traveller', 'Start the guided close', 'Export Sam’s data', 'Delete Sam’s data'],
     [['Ask to view Sam’s portal', 'it shows once Sam has a portal account to view'], ['Sponsor', LATER], ['Expenses allowed', LATER]]],
@@ -93,7 +95,7 @@ const SCREENS = [
     ['Marcus Bell', 'Head of people', 'Time credit left', '2 hours 10 minutes', 'Projects', 'Leadership offsite design', '6 hours 40 minutes so far', 'Team performance check', 'One-to-one coaching', 'Clock in'], []],
   ['A head coach (Jordan)', 'client:jordan', 'owner', [], 'client-jordan', 'owner',
     ['Jordan Reyes', 'Harbour City FC', 'Head coach', 'Chicago', 'Coaching sessions to go', '9 of 20', 'iMessage'],
-    [['Fixtures', 'fixtures come with the calendar, in run 3']]],
+    [['Fixtures', 'not built: a head coach’s fixtures aren’t in run 3’s prompt or the calendar’s parity list; a match is added as a calendar item or a shared peak moment (left for Tim to decide)']]],
   ['A group', 'group', 'owner', [], 'group', 'owner',
     ['Kestrel leadership team', 'Kestrel Group', 'Next group session', 'Group sessions left', '4 of 6', 'Members', 'Sam Okafor', 'Counts against Sam’s own', 'Dana Whitfield', 'Counts against the group’s', 'Add member', 'Sessions and recaps'],
     [['One recap to all 6', RUN2]]],
@@ -114,8 +116,8 @@ const SCREENS = [
   ['Settings, Away and cover', 'settings', 'owner', ['sets:away'], 'settings-away', 'owner', ['Away and cover', 'Away', 'Each client agrees first', 'cover coach'], [['Maya sees only what they share, until', 'cover is for one client at a time (the prompt: cover coach, client, start, end), so it is a list with Add cover, each with its own dates']]],
   ['Settings, Notifications', 'settings', 'owner', ['sets:noti'], 'settings-notifications', 'owner', ['Bookings, moves and cancellations', 'Agreements signed', 'Payments in and overdue', 'Support flags', '10 minutes before each call', 'This one comes in quiet hours too.', 'The bell in the header keeps everything, whatever you choose here.'], []],
   ['Settings, Booking', 'setph', 'owner', [], 'settings-booking', 'owner', ['Booking', 'Reminders', 'Email 24 hours before', 'Email 1 hour before', 'What the email says', 'Limits', 'Gap between calls', 'Calls a day, at most', 'Notice needed', 'Open this far ahead', 'Pages and links', 'Chemistry Call page', 'Connection Call page', 'Single-use links'], [['Text messages', 'nothing in the portal sends a text message']]],
-  ['Settings, Working hours', 'settings', 'owner', ['sets:hours'], 'settings-hours', 'owner', ['Working hours', 'Your working day', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Open for bookings'], [['Set my open times', RUN3]]],
-  ['Settings, My calendars', 'settings', 'owner', ['sets:cals'], 'settings-calendars', 'owner', ['My calendars', 'Work', 'Personal', 'Family', 'Titles for you, Busy to everyone else'], [['Google Calendar, tim@', RUN3]]],
+  ['Settings, Working hours', 'settings', 'owner', ['sets:hours'], 'settings-hours', 'owner', ['Working hours', 'Your working day', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Open for bookings'], [['Set my open times', 'run 3 puts it on the calendar itself (its foot link) and in search, where M11’s calendar has it too']]],
+  ['Settings, My calendars', 'settings', 'owner', ['sets:cals'], 'settings-calendars', 'owner', ['My calendars', 'Work', 'Personal', 'Family', 'Titles for you, Busy to everyone else'], [['Google Calendar, tim@', 'no Google key exists yet, so the row reads “Connect Google Calendar” until one is added (run 3)']]],
   ['Settings, Tags and fields', 'settings', 'owner', ['sets:tags'], 'settings-tags', 'owner', ['Tags and fields', 'Tags', 'Executive', 'Sport', 'Finance sector', 'Kestrel', 'uses', 'Add tag', 'Custom fields', 'Sector', 'Choice from 6', 'Value', 'Number', 'Renewal date', 'Date', 'Add field'], []],
   ['Settings, Note layouts', 'settings', 'owner', ['sets:lay'], 'settings-layouts', 'owner', ['Note layouts', 'First session', 'What brought them to coaching, What good looks like in 6 months, What to watch for', 'Regular session', 'Focus, Insight, Next time', 'Review', 'Close'], []],
   ['Settings, Coaches', 'settings', 'owner', ['sets:coaches'], 'settings-coaches', 'owner', ['Coaches', 'Maya Collins', 'Associate', 'Approve Maya’s profile', 'Add coach'], [['£100 an hour', 'a rate is written “£100/hr”, heard as “per hour” (Tim, 19 Nov)']]],
@@ -126,7 +128,7 @@ const SCREENS = [
   ['Past clients', 'past', 'owner', [], 'clients-past', 'owner', ['Clients', 'Past clients', 'Grace Liu', 'Ended'], [['Check-ins due', `past clients’ check-ins belong to Network: ${RUN4}`]]],
   ['Merge into one', 'merge', 'owner', [], 'merge', 'owner', ['Merge into one', 'These two look like the same person. Choose what to keep where they differ.', 'They’re different people', 'Nothing is lost.'], [['Both timelines join into one.', 'said as what joins: “Their notes, files, tags and engagements join into one.”']]],
   ['A name in a quiet line opens a note', 'today:tue', 'owner', ['sheet:bday'], 'today-note', 'owner', ['Priya Nair', 'A note to Priya', 'Happy birthday, Priya!', 'View Priya’s page'], [['Portal message', 'the client portal has no messages page to show one in, so only Email is offered: a message would go nowhere'], ['Send message', 'as above']]],
-  ['A page of a later run', 'calendar', 'owner', [], 'coming', 'owner', ['Calendar'], [['Week', RUN3]]],
+  ['A page of a later run', 'library', 'owner', [], 'coming', 'owner', ['Library'], [['Guest links', 'the Library and its guest links are Phase 6c']]],
 ];
 
 const table = [];
@@ -222,6 +224,11 @@ if (RUNS.includes('1')) {
 if (RUNS.includes('2')) {
   table.push('| **Run 2, the coaching day (M11 seq 77)** | | |');
   await compareRun2(report, table, { file: M11_SEQ77, rows: ROWS, extraGroups: EXTRA_GROUPS, everywhere: EVERYWHERE });
+}
+// Run 3, the calendar and booking: M11 seq 77, line by line.
+if (RUNS.includes('3')) {
+  table.push('| **Run 3, the calendar and booking (M11 seq 77)** | | |');
+  await compareRun2(report, table, { file: M11_SEQ77, rows: ROWS3, extraGroups: EXTRA_GROUPS3, everywhere: EVERYWHERE3, label: 'Run 3' });
 }
 console.log('\n| M11 screen | Result | What differs and why |\n|---|---|---|');
 console.log(table.join('\n'));

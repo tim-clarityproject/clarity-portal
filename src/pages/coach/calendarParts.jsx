@@ -4,7 +4,7 @@ import { deviceZone, addDays, dayKeyWords, wallClock } from '../../lib/time/inde
 import { newId, removeRow, saveRow, saveRows } from '../../lib/coach/store';
 import { estimateWords } from '../../lib/coach/day';
 import {
-  bannerRows, calendarEntries, coachZoneOf, DRAG_STEP, entryLabel, entryLines, FULL_TITLE_AFTER_MS, hourLabels, hoursHandleWords, layoutDay, monthCell, monthGrid,
+  bannerRows, calendarEntries, coachZoneOf, COLOURS, DRAG_STEP, entryLabel, entryLines, FULL_TITLE_AFTER_MS, hourLabels, hoursHandleWords, layoutDay, monthCell, monthGrid,
   moveHours, nowLine, nudgeHours, outOfHours, hoursToSave, scheduleDays, secondZoneChoices, snapMinutes, TODOS_TO_PLACE, todosToPlace, weekKeyOf, zoneColumnLabel,
 } from '../../lib/coach/calendar';
 import { MenuItem, PopMenu, TICK, useCoachPortal } from './parts';
@@ -273,7 +273,10 @@ export function CalGrid({
     const el = e.currentTarget;
     const title = el.querySelector('.cc-cal-title');
     clearTimeout(tipTimer.current);
-    if (!title || (title.scrollWidth <= title.clientWidth + 1 && el.scrollHeight <= el.clientHeight + 1)) return;
+    // Cut off: a word that didn't fit, a title kept to fewer lines than it has, or a line under it left out for want of room.
+    const whole = title && title.scrollWidth <= title.clientWidth + 1 && title.scrollHeight <= title.clientHeight + 1 && el.scrollHeight <= el.clientHeight + 1
+      && (el.classList.contains('cc-cal-tile--one') || el.scrollWidth <= el.clientWidth + 1);
+    if (!title || whole) return;
     tipTimer.current = setTimeout(() => { tipAnchor.current = el; setTip(entry.title); }, FULL_TITLE_AFTER_MS);
   };
   const unhover = () => { clearTimeout(tipTimer.current); setTip(null); };
@@ -467,7 +470,7 @@ export function CalMonth({ day, entries, cal, weekends, onDay, phone = false }) 
               <button key={c.day} type="button" role="gridcell" className={`cc-month-cell${c.inMonth ? '' : ' cc-month-cell--out'}${c.day === cal.todayKey ? ' cc-month-cell--today' : ''}`} aria-label={cell.label} onClick={() => onDay(c.day)}>
                 <b>{c.number}</b>
                 {phone ? (
-                  <span className="cc-month-dots" aria-hidden="true">{cell.shown.map((e) => <i key={e.key} className={`cc-sched-square ${e.colourClass}${e.dashed ? ' cc-sched-square--dashed' : ''}`} />)}</span>
+                  <span className="cc-month-dots" aria-hidden="true">{cell.shown.map((e) => <i key={e.key} className={`cc-sched-square ${e.colourClass}${e.dashed ? ' cc-sched-square--dashed' : ''}${COLOURS[e.colour]?.edged ? ' cc-sched-square--edged' : ''}`} />)}</span>
                 ) : cell.shown.map((e) => <span key={e.key} className={`cc-month-item ${e.colourClass}`} aria-hidden="true">{e.title}</span>)}
                 {cell.more > 0 && <small aria-hidden="true">{cell.moreWords}</small>}
               </button>

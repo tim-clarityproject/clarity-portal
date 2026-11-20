@@ -258,7 +258,7 @@ async function run() {
     await settle(page, 900);
     const poll = (await rowsNow('coach_polls')).find((p) => p.title === 'Sponsor review');
     pass(`${tag}: the poll is made: its people each with their own key, its times held`, Boolean(poll) && (await count('coach_poll_people', (p) => p.poll_id === poll.id && p.vote_key)) === 2 && (await count('coach_poll_options', (o) => o.poll_id === poll.id)) === 2 && (await count('coach_cal_items', (i) => i.kind === 'hold')) === holdsWas + 2);
-    pass(`${tag}: it opens the poll's own page`, page.url().endsWith(`/coach/calendar/polls/${poll?.id}`) && (await page.locator('.ds-page-title').textContent()) === 'Dana Whitfield and Ruth Adeyemi');
+    pass(`${tag}: it opens the poll's own page`, page.url().endsWith(`/coach/calendar/polls/${poll?.id}`) && (await page.locator('.ds-page-title').textContent()) === 'Sponsor review' && (await page.locator('.cc-poll-page').innerText()).includes('Dana Whitfield and Ruth Adeyemi')); // what it is for is the title, the people under it, as M11 draws a poll (the UI tester, 20 Nov)
     const dana = (await rowsNow('coach_poll_people')).find((p) => p.poll_id === poll.id && p.name === 'Dana Whitfield');
     const href = decodeURIComponent((await page.getByRole('link', { name: 'Open the note to Dana in my email' }).getAttribute('href')) || '');
     pass(`${tag}: each person's note is drafted with their own link, and opens the coach's own email`, href.startsWith('mailto:dana@example.invalid?') && href.includes(`${APP}/poll/${dana.vote_key}`), href.slice(0, 80).replace(/[\w.]+@[\w.]+/, '<email>'));

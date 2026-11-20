@@ -1070,6 +1070,10 @@ test('the clock-change week line on Today', () => {
   assert.equal(lines('2026-10-30').length, 1);
   // The week the UK's own clocks go back: calls with clients elsewhere move for the coach.
   assert.deepEqual(lines('2026-10-19'), ['UK clocks go back on Sunday 25 Oct. Your calls with clients in other time zones stay at their usual time for them; for you, Tyson’s Monday call moves from 12:30 to 11:30 UK time this week.']);
+  // Clients in two US time zones: the country's clocks change on one day, so it is said once, with both calls (the UI tester, 20 Nov).
+  const jordan = call('jordan', 'Jordan Reyes', '2026-10-06', '09:45', '10:45', { time_zone: 'America/Chicago', repeat_rule: { every: 'week' } });
+  assert.deepEqual(cal.clockChangeLines({ items: [tyson, jordan, local], now: at('2026-10-27', '08:00'), coachZone: LON }),
+    ['US clocks go back on Sunday 1 Nov. Your calls with US clients stay at their usual time for them; for you, Tyson’s Monday call moves from 11:30 to 12:30 UK time, and Jordan’s Tuesday call moves from 14:45 to 15:45 UK time this week.']);
   // No change coming, or no call it moves: nothing is said.
   assert.deepEqual(lines('2026-11-09'), []);
   assert.deepEqual(cal.clockChangeLines({ items: [local], now: at('2026-10-26', '08:00'), coachZone: LON }), []);
