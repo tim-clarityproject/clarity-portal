@@ -45,5 +45,16 @@ export function useCoachRole() {
     });
     return () => { live = false; };
   }, [userId, turn]);
+  // Another tab's fresh answer (capacity edited there, say) shows here too, with nothing asked of the database.
+  useEffect(() => {
+    if (!userId) return undefined;
+    const heard = (e) => {
+      if (e.key !== keyFor(userId) || !e.newValue) return;
+      const kept = readJson(keyFor(userId));
+      if (kept && 'coach' in kept) setState({ loading: false, coach: kept.coach });
+    };
+    window.addEventListener('storage', heard);
+    return () => window.removeEventListener('storage', heard);
+  }, [userId]);
   return { ...state, isOwner: state.coach?.role === 'owner', userId, reload: () => setTurn((n) => n + 1) };
 }

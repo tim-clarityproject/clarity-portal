@@ -4,7 +4,7 @@ import { Button, ChartTips, Dropdown, InlineChoice, Sheet, SlidePanel, Stat, Tex
 import keepWords from '../../components/design/keepWords';
 import { deviceZone, isZone, sameZone, wallClock, zonePlace } from '../../lib/time';
 import { keyOf, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
-import { addDays, dayWords, hoursWords, minutesWords } from '../../lib/coach/model';
+import { addDays, cut, dayWords, hoursWords, minutesWords } from '../../lib/coach/model';
 import {
   callLength, capacity, carriedWords, dayDone, dayLine, dayLoad, doneWords, dueWords, ENERGY, estimateWords, freeStarts,
   movedWords, moveState, moveToDay, overWords, planChanges, plannedWords, suggestMoves, timeWords, todayTodos, upcomingGroups, weekDone, weekStart,
@@ -518,10 +518,13 @@ function useEnergy() {
   const { userId } = useCoachPortal();
   const rows = useDayRows();
   const save = useSaver();
+  // One request a tap: the same word tapped again while its save is on its way is ignored.
+  const sending = useRef(null);
   return (value, say) => {
-    if (rows.week?.energy === value) return Promise.resolve(true);
+    if (rows.week?.energy === value || sending.current === value) return Promise.resolve(true);
+    sending.current = value;
     const made = rows.weekRow({ energy: value, energy_at: new Date().toISOString() });
-    return save(() => saveRow(userId, 'coach_weeks', made), say ? 'Saved' : null, rows.undoWeek(made));
+    return save(() => saveRow(userId, 'coach_weeks', made), say ? 'Saved' : null, rows.undoWeek(made)).finally(() => { if (sending.current === value) sending.current = null; });
   };
 }
 
@@ -590,7 +593,7 @@ export function ReviewPanel({ open, onClose }) {
   const finish = async () => {
     if (busy.current) return;
     busy.current = true;
-    const made = rows.weekRow({ review: { ...(rows.week?.review || {}), change: change.trim().slice(0, 2000) }, reviewed_at: new Date().toISOString() });
+    const made = rows.weekRow({ review: { ...(rows.week?.review || {}), change: cut(change.trim(), 2000) }, reviewed_at: new Date().toISOString() });
     const ok = await save(() => saveRow(userId, 'coach_weeks', made), 'Review saved', rows.undoWeek(made));
     busy.current = false;
     if (!ok) return;

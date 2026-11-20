@@ -4,7 +4,7 @@ import {
   AddButton, BottomBar, Button, DatePicker, Dropdown, IconButton, InlineChoice, PageHeader, TextBox, TextField, useAutosave, useIsPhone, useToast,
 } from '../../components/design';
 import { loadCoach, coachDayReadyNow, newId } from '../../lib/coach/store';
-import { addDays, clean, dayWords } from '../../lib/coach/model';
+import { addDays, clean, cut, dayWords } from '../../lib/coach/model';
 import {
   ACTIONS_MAX, actionsOf, goesWords, instantFrom, NEEDS_NEW_TIME, NEEDS_RECAP, outcomeChoices, OUTCOMES, recapSentWords, SENT_LINE, sentWords,
   SESSION_KINDS, sessionOutcomeLine, sessionSent, sessionStarted, whenWords,
@@ -108,7 +108,7 @@ function SessionBody({ session, who }) {
   const writeNotes = async () => {
     if (gone.current) return;
     const n = notesRef.current;
-    const text = (v) => (v.trim() ? v.slice(0, NOTE_MAX) : null);
+    const text = (v) => (v.trim() ? cut(v, NOTE_MAX) : null);
     await saveNotes(userId, { ...keptNotesRef.current, coach_id: coach.id, focus: text(n.focus), insight: text(n.insight), next_time: text(n.next_time), supervision: text(n.supervision) });
     if (!sessionSent(latest.current)) await Promise.resolve(ensureHeld()).catch(unlessLocked);
   };
@@ -129,7 +129,7 @@ function SessionBody({ session, who }) {
     const kept = keptActions(userId, session.id);
     let wrote = false;
     for (const a of actsRef.current) {
-      const title = clean(a.title).slice(0, 300);
+      const title = cut(clean(a.title), 300);
       if (!title) continue;
       const before = kept.find((k) => k.id === a.id);
       if (before && before.title === title && before.send === a.send && before.goes_to === a.goes_to && before.position === a.position) continue;
@@ -143,7 +143,7 @@ function SessionBody({ session, who }) {
     setActs((list) => list.map((a) => (a.id === id ? { ...a, ...patch } : a)));
     // A tick or where it goes saves at once (the words save once typing pauses).
     const a = actsRef.current.find((x) => x.id === id);
-    if (a && clean(a.title) && !('title' in patch)) saveAction(userId, { ...a, ...patch, title: clean(a.title).slice(0, 300) }).catch((e) => { if (e?.code !== 'locked') toast.error(); });
+    if (a && clean(a.title) && !('title' in patch)) saveAction(userId, { ...a, ...patch, title: cut(clean(a.title), 300) }).catch((e) => { if (e?.code !== 'locked') toast.error(); });
   };
   const addAct = () => {
     if (acts.length >= ACTIONS_MAX) { toast.show(`A recap carries up to ${ACTIONS_MAX} actions. Take one out first.`); return; }
@@ -194,10 +194,15 @@ function SessionBody({ session, who }) {
       })), 'Saved', () => saveSession(userId, before).catch(() => {}));
     } finally { busy.current = false; }
   };
+  // One request a press: a second press of the same choice while the first is on its way is ignored (the other choice still goes).
+  const waiving = useRef(null);
   const waive = (on) => {
+    if (waiving.current === on) return;
+    waiving.current = on;
     const before = session;
     const next = { ...before, outcome: 'late_cancel', waived: on, moved_to: null, written_up_at: before.written_up_at || new Date().toISOString() };
-    say(async () => recount(await saveSession(userId, next)), on ? sessionOutcomeLine(next, { name: who.name, group }) : 'Saved', () => saveSession(userId, before).catch(() => {}));
+    say(async () => recount(await saveSession(userId, next)), on ? sessionOutcomeLine(next, { name: who.name, group }) : 'Saved', () => saveSession(userId, before).catch(() => {}))
+      .finally(() => { if (waiving.current === on) waiving.current = null; });
   };
   const setLength = (v) => {
     if (Number(v) === session.minutes) return;
@@ -211,12 +216,12 @@ function SessionBody({ session, who }) {
     busy.current = true;
     try {
       const n = notesRef.current;
-      const text = (v) => (v.trim() ? v.slice(0, NOTE_MAX) : null);
+      const text = (v) => (v.trim() ? cut(v, NOTE_MAX) : null);
       const anyNotes = Object.values(n).some((v) => v.trim()) || sessionNotes.some((x) => x.session_id === session.id);
       const answer = await sendRecap(userId, {
         session: { ...latest.current, recap },
         notes: anyNotes ? { ...keptNotesRef.current, coach_id: coach.id, focus: text(n.focus), insight: text(n.insight), next_time: text(n.next_time), supervision: text(n.supervision) } : null,
-        actions: actsRef.current.filter((a) => clean(a.title)).map((a) => ({ ...a, title: clean(a.title).slice(0, 300) })),
+        actions: actsRef.current.filter((a) => clean(a.title)).map((a) => ({ ...a, title: cut(clean(a.title), 300) })),
       });
       if (answer.status === 'sent') toast.saved({ message: recapSentWords({ name: who.name, people: group ? who.people : 0, emailed: answer.emailed === true }), long: true });
       else if (answer.status === 'already_sent') toast.show(answer.message);
@@ -248,7 +253,7 @@ function SessionBody({ session, who }) {
       r.onresult = (e) => {
         // Only the words are kept, as text the coach can edit: the audio never is.
         const said = [...e.results].slice(e.resultIndex).filter((x) => x.isFinal).map((x) => x[0].transcript.trim()).filter(Boolean).join(' ');
-        if (said) setNotes((n) => ({ ...n, [key]: `${n[key]}${n[key].trim() ? ' ' : ''}${said}`.slice(0, NOTE_MAX) }));
+        if (said) setNotes((n) => ({ ...n, [key]: cut(`${n[key]}${n[key].trim() ? ' ' : ''}${said}`, NOTE_MAX) }));
       };
       r.onend = () => setListening(false);
       r.onerror = (e) => { setListening(false); if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast.show('The microphone is switched off for this page. Allow it in your browser, then try again.'); };

@@ -3,7 +3,7 @@
 // Pure functions only, as model.js: nothing here reads the database, the
 // device or the clock by itself, so every rule is a unit test
 // (tests/performance/coach-day.test.mjs).
-import { addDays, clean, dayWords, firstName, fromDayKey, minutesWords, possessive, sessionsLeft, timeCredit, toDayKey } from './model.js';
+import { addDays, clean, cut, dayWords, firstName, fromDayKey, minutesWords, possessive, sessionsLeft, timeCredit, toDayKey } from './model.js';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -288,12 +288,12 @@ export function parseQuickAdd(text, { todayKey, lists = [], tags = [], clients =
         return true;
       }
     }
-    out.new_list = clean(raw).slice(0, 80);
+    out.new_list = cut(clean(raw), 80);
     return true;
   });
   take(/\s@([^\s#@!]+)/g, (_m, raw) => {
     const tag = tags.find((t) => sameName(t.name, raw));
-    if (tag) out.tag_ids.push(tag.id); else out.new_tags.push(clean(raw).slice(0, 40));
+    if (tag) out.tag_ids.push(tag.id); else out.new_tags.push(cut(clean(raw), 40));
   });
   take(/\severy (day|weekday|week|month|year|other week|2 weeks|sunday|monday|tuesday|wednesday|thursday|friday|saturday)(?=\s)/gi, (_m, w) => {
     const word = w.toLowerCase();
@@ -320,7 +320,7 @@ export function parseQuickAdd(text, { todayKey, lists = [], tags = [], clients =
   if (!out.someday && !out.planned_on && defaultDay) out.planned_on = defaultDay;
   if (!out.planned_on) { out.someday = true; out.planned_time = null; }
   const title = clean(rest);
-  out.title = (title ? title[0].toUpperCase() + title.slice(1) : '').slice(0, 300);
+  out.title = cut(title ? title[0].toUpperCase() + title.slice(1) : '', 300);
   return out;
 }
 

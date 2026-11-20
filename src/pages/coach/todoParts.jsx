@@ -4,7 +4,7 @@ import {
 } from '../../components/design';
 import keepWords from '../../components/design/keepWords';
 import { keyOf, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
-import { addDays, clean, dayWords, minutesWords } from '../../lib/coach/model';
+import { addDays, clean, cut, dayWords, minutesWords } from '../../lib/coach/model';
 import {
   addedWords, checklistWords, doneWords, ESTIMATES, estimateWords, moveToDay, moveToSomeday, OTHER_ESTIMATES, OTHER_SUGGESTED, parseQuickAdd,
   plannedWords, positionAt, quickAddChips, quickDays, repeatValue, REPEATS, timeWords, todoFacts, whenWords,
@@ -548,7 +548,7 @@ function Checklist({ todo, onSave }) {
   useEffect(() => { if (adding) boxRef.current?.focus(); }, [adding]);
   useEffect(() => { setAdding(false); setText(''); setProblem(null); }, [todo.id]);
   const add = () => {
-    const words = clean(text).slice(0, 200);
+    const words = cut(clean(text), 200);
     if (!words) { setProblem('Type the item to carry on.'); boxRef.current?.focus(); return; }
     if (items.length >= 50) { setProblem('A checklist holds up to 50 items. Take one out first.'); return; }
     onSave([...items, { text: words, done: false }]);
@@ -612,12 +612,12 @@ export function TodoPanel({ id, onClose }) {
   const links = todoLinks(rowsOf(state, 'coach_tag_links'), todo.id);
   const change = (patch, message) => actions.change(todo, patch, message);
   const saveTitle = () => {
-    const words = clean(title).slice(0, 300);
+    const words = cut(clean(title), 300);
     if (!words) { setProblem(NEEDS_WORDS); return; }
     if (words !== todo.title) change({ title: words });
     setTitle(words);
   };
-  const saveNotes = () => { const words = notes.slice(0, 4000); if (words !== (todo.notes || '')) change({ notes: words.trim() ? words : null }); };
+  const saveNotes = () => { const words = cut(notes, 4000); if (words !== (todo.notes || '')) change({ notes: words.trim() ? words : null }); };
   const saveTime = () => {
     const next = /^\d{2}:\d{2}$/.test(time) ? time : null;
     if (next !== (timeWords(todo.planned_time) || null)) change({ planned_time: next });

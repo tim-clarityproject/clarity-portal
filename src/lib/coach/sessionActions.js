@@ -96,6 +96,19 @@ export async function removeSession(userId, session) {
   return gone;
 }
 
+/** With 050 and a connection: has this session's recap been sent, whatever this device's copy says? */
+async function sentElsewhere(userId, id) {
+  try {
+    if ((await coachDayReady()) !== true) return false;
+    const { data, error } = await supabase.from(SESSIONS).select('id, recap_sent_at').eq('id', id).limit(1);
+    if (error || !data?.[0]?.recap_sent_at) return false;
+    await loadCoach(userId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Moved: this session is marked moved to the new time and a new one is
  * made there with the same people. Resolves what Undo needs.
@@ -105,6 +118,9 @@ export async function moveSessionTo(userId, session, newStartsAt) {
   const state = coachState(userId);
   const before = rowOf(state, SESSIONS, session.id) || session;
   if (sessionSent(before)) throw locked();
+  // Sent from another device since this page loaded: the database would keep the session as it was sent, yet the new
+  // session would still be made. So the database is asked first, and the page then shows the session as sent.
+  if (await sentElsewhere(userId, session.id)) throw locked();
   const { moved, made, people } = moveSession({ ...before, ...session }, newStartsAt, newId(), rowsOf(state, PEOPLE));
   await saveRows(userId, [[SESSIONS, { ...moved, written_up_at: moved.written_up_at || new Date().toISOString() }], [SESSIONS, made], ...people.map((p) => [PEOPLE, p])]);
   return {

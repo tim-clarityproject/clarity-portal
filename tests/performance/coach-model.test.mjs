@@ -11,8 +11,9 @@ import {
   sortOptions, viewFromList, listFromView, favouriteViews, canFavourite, mergePlan, mergeValues, mergedProfile,
   likelyDuplicates, nextCallBar, callForBar, searchResults, withRecent, quickContacts, birthdaysOn, birthdayNote,
   gettingStarted, exportRows, toCsv, workshopCounts, registrationStatus, workshopEmailRows, viewAskState, stageMove, stageBeside, boardStage as boardStageOf, parseHours, START_ZONES, dayWords, rangeWords,
-  addDays, timeline, possessive,
+  addDays, timeline, possessive, cut,
 } from '../../src/lib/coach/model.js';
+import { parseQuickAdd } from '../../src/lib/coach/day.js';
 import { xlsxBytes } from '../../src/lib/coach/xlsx.js';
 import { isZone } from '../../src/lib/time/index.js';
 
@@ -440,4 +441,18 @@ test('Everything: one timeline in date order, filtered by kind and searched', ()
   assert.deepEqual(timeline(data, { kind: 'file' }).map((i) => i.id), ['f:f1']);
   assert.deepEqual(timeline(data, { q: 'restructure' }).map((i) => i.id), ['n:n1']);
   assert.equal(timeline(data)[0].line, 'Time, 1 hour 30 minutes');
+});
+
+test('typed text is cut to its limit without ever ending on half of an emoji (the break-it tester, 20 Nov)', () => {
+  const whole = (text) => !/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(text);
+  assert.equal(cut('abc', 5), 'abc');
+  assert.equal(cut('abcdef', 3), 'abc');
+  assert.equal(cut('ab🎉', 3), 'ab', 'half of the pair would fit, so it is left out whole');
+  assert.equal(cut('ab🎉', 4), 'ab🎉');
+  assert.equal(cut('🎉🎉', 2), '🎉');
+  assert.equal(cut(null, 3), '');
+  const parsed = parseQuickAdd(`E${'f'.repeat(298)}🎉 tomorrow`, { todayKey: '2026-11-17' });
+  assert.ok(whole(parsed.title) && parsed.title.length === 299, 'the quick add’s 300-character title drops the emoji that would be cut');
+  assert.equal(parseQuickAdd(`#${'x'.repeat(79)}🎉 call`, { todayKey: '2026-11-17' }).new_list?.length <= 80, true);
+  assert.equal(parseQuickAdd('\u200B\u200B\u200E\u2060', { todayKey: '2026-11-17' }).title, '', 'only unseen characters is no title');
 });

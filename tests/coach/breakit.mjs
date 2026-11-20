@@ -2,6 +2,8 @@
 //
 //   node --import ./tests/scores/register.mjs tests/coach/breakit.mjs
 //   PARTS=reach,taps,paste,tabs,offline,odd narrows it.
+//   PARTS=d-reach,d-twice,d-taps,d-500,d-tabs,d-offline,d-moved,d-odd,d-client are run 2's
+//   (the coaching day: day-breakit.mjs). Run a few parts a command: all of them take longer than 10 minutes.
 //
 //   reach    an associate trying to read the owner's things (in the pages;
 //            the database's own refusals are proved by 049's SQL test)
@@ -14,10 +16,11 @@
 import { chromium } from 'playwright';
 import { accountId, APP, clearDevice, coachContext, makeReport, ME, OTHER, seedDevice, settle, standIn, toastText } from './shared.mjs';
 import { ADMIN_ROWS, ID, seedRows } from './seed.mjs';
+import { BREAK_PARTS, runDayBreak } from './day-breakit.mjs';
 
 const report = makeReport('Coach portal, the break-it tester');
 const { pass } = report;
-const parts = (process.env.PARTS || 'reach,taps,paste,tabs,offline,odd').split(',');
+const parts = (process.env.PARTS || ['reach', 'taps', 'paste', 'tabs', 'offline', 'odd', ...BREAK_PARTS].join(',')).split(',');
 const has = (p) => parts.includes(p);
 const browser = await chromium.launch();
 const text = (page, sel = '.cc-main') => page.locator(sel).innerText();
@@ -35,6 +38,9 @@ async function session({ role = 'owner', db = 'there', rows = seedRows(), admin 
   await open(page, '/coach');
   const me = await accountId(page);
   await clearDevice(page, me);
+  // The saved sign-in carries the role the test account really has (the owner's, since 19 Nov), so that first load began as
+  // the owner for a moment whatever the stand-in says. What counts is what the page asks once it knows who the coach is.
+  store.calls.length = 0;
   if (db === 'none') await seedDevice(page, me, rows);
   await open(page, '/coach');
   return { ctx, page, store, me, errors };
@@ -372,6 +378,8 @@ if (has('odd')) {
     await ctx.close();
   }
 }
+
+if (parts.some((p) => BREAK_PARTS.includes(p))) await runDayBreak({ browser, report, parts });
 
 await browser.close();
 report.done();

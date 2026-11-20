@@ -173,13 +173,14 @@ function dayChecks(table, r) {
  *   `strict` (with db 'there'): nothing but a read ever reaches the test project: a function the stand-in doesn't know is answered
  *     with nothing (listed as `rpc name (not run)`), and a write to any other table is stopped and listed as `blocked …`.
  *   `now`: the database's clock (a walk that pins the page's clock hands the same time in).
- * @returns the stand-in database ({ rows, calls, coaches, sends, claims, fn, api })
+ *   `page` may be a browser context: every tab in it is then answered by the one stand-in.
+ * @returns the stand-in database ({ rows, calls, coaches, sends, claims, fn, api, withheld, leak })
  */
 export async function standIn(page, { role = 'owner', db = 'none', rows = {}, admin = [], day = false, strict = false, now: clock = () => new Date() } = {}) {
   const me = { id: ME, user_id: null, role: role === 'owner' ? 'owner' : 'coach', display_first_name: role === 'owner' ? 'Alex' : 'Maya', full_name: role === 'owner' ? 'Alex Morgan' : 'Maya Collins', email: null, mobile: null, contact_ways: ['email'], active: true, capacity_hours_week: 15, hourly_rate: role === 'owner' ? null : 100, rate_currency: 'GBP' };
   const other = { id: OTHER, user_id: randomUUID(), role: role === 'owner' ? 'coach' : 'owner', display_first_name: role === 'owner' ? 'Maya' : 'Alex', full_name: role === 'owner' ? 'Maya Collins' : 'Alex Morgan', email: null, mobile: null, contact_ways: ['email'], active: true, capacity_hours_week: 15, hourly_rate: role === 'owner' ? 100 : null, rate_currency: 'GBP' };
   const held = db === 'there' && day ? [...TABLES, ...DAY_TABLES] : TABLES;
-  const store = { rows: Object.fromEntries(held.map((t) => [t, [...(rows[t] || [])]])), calls: [], coaches: [me, other], down: false, sends: [], claims: [], api: { live: false, asked: [] } };
+  const store = { rows: Object.fromEntries(held.map((t) => [t, [...(rows[t] || [])]])), calls: [], coaches: [me, other], down: false, sends: [], claims: [], api: { live: false, asked: [] }, withheld: 0, leak: false };
   const keyOf = (table, row) => (KEYS[table] || ['id']).map((c) => row[c]).join('|');
   const stamp = () => clock().toISOString();
 
@@ -469,8 +470,17 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
     } catch { /* blocked */ }
   }, day);
 
+  // 050's read rules (the break-it tester, 20 Nov): a coach reads only their own to-dos, lists, days, weeks and sessions, and
+  // the owner is no exception. A row of another coach's is never returned (counted in `store.withheld`), changed or deleted.
+  // `store.leak = true` switches that off, for a walk that asks what a page would show if such a row ever reached the device.
+  const readable = (table, r) => !day || !DAY_TABLES.includes(table) || store.leak === true || (
+    table === 'coach_session_people' ? sessionOf(r.session_id)?.coach_id === ME
+      : table === 'workshop_sends' ? store.rows.workshops.find((w) => w.id === r.workshop_id)?.coach_id === ME
+        : r.coach_id === ME);
   const filtered = (table, url) => {
-    let out = store.rows[table];
+    const all = store.rows[table];
+    let out = all.filter((r) => readable(table, r));
+    store.withheld += all.length - out.length;
     for (const [k, v] of url.searchParams) {
       if (['select', 'limit', 'on_conflict', 'order', 'offset', 'columns'].includes(k)) continue;
       if (v.startsWith('eq.')) out = out.filter((r) => String(r[k]) === v.slice(3));
@@ -648,6 +658,8 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
           const at = store.rows[table].findIndex((x) => keyOf(table, x) === keyOf(table, r));
           const old = at >= 0 ? store.rows[table][at] : null;
           if (old && ignore) continue;
+          // An upsert onto a row the coach can't read is a change to another coach's row: row security refuses it.
+          if (old && !readable(table, old)) return refused(route, '42501', `new row violates row-level security policy (USING expression) for table "${table}"`);
           let row = old ? { ...old, ...r, updated_at: now } : { created_at: now, ...r, updated_at: now };
           if (hooked) {
             if (DAY_TABLES.includes(table)) mine(table, row);

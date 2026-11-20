@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AddButton, Button, PageHeader, TextBox, useIsPhone, useToast } from '../../components/design';
 import { removeRow, newId, saveRow, saveRows } from '../../lib/coach/store';
-import { clean } from '../../lib/coach/model';
+import { clean, cut } from '../../lib/coach/model';
 import { doneWords, openWords } from '../../lib/coach/day';
 import { listGroups } from '../../lib/coach/todoActions';
 import { Back, Eye, Fold, MenuItem, PopMenu, TextLink, useCoachPortal } from './parts';
@@ -24,7 +24,7 @@ function HeadingBox({ start = '', button, onSave, onCancel }) {
   const box = useRef(null);
   useEffect(() => { const el = box.current; if (!el) return; el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch { /* not a text box */ } }, []);
   const save = () => {
-    const words = clean(name).slice(0, 80);
+    const words = cut(clean(name), 80);
     if (!words) { setProblem('Type the heading to carry on.'); box.current?.focus(); return; }
     onSave(words);
   };

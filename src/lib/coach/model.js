@@ -11,6 +11,16 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 /** Text as typed, without what can't be seen and without spaces round it. */
 export const clean = (value) => String(value ?? '').replace(UNSEEN, '').replace(/\s+/g, ' ').trim();
 
+/**
+ * The first `max` characters of what was typed, never ending on half of an emoji (a character kept as a pair is
+ * left out whole when only its first half would fit: the database refuses half of one).
+ */
+export function cut(value, max) {
+  const text = String(value ?? '');
+  if (text.length <= max) return text;
+  return text.slice(0, /[\uD800-\uDBFF]/.test(text[max - 1]) ? max - 1 : max);
+}
+
 // ---------------------------------------------------------------- days
 
 /** A day key ("2026-11-19") as a local Date at midday (never shifted by a clock change). */

@@ -102,6 +102,21 @@ const EMPTY = Object.freeze({ rows: {}, marks: {} });
 
 export const keyOf = (table, row) => (TABLES[table] || ['id']).map((c) => row?.[c]).join('|');
 
+// What a page needs of a coaching-day row before it can draw it (the break-it tester, 20 Nov): a row without it is
+// left out, as one whose key doesn't match is; a part of the wrong kind is put right. A good row is handed back as it is.
+const isText = (v) => typeof v === 'string';
+const SHAPES = {
+  coach_todos: (r) => {
+    if (!isText(r.title)) return null;
+    if (Array.isArray(r.checklist ?? []) && (r.notes == null || isText(r.notes))) return r;
+    return { ...r, checklist: Array.isArray(r.checklist) ? r.checklist : [], notes: isText(r.notes) ? r.notes : null };
+  },
+  coach_todo_lists: (r) => (isText(r.name) ? r : null),
+  coach_todo_headings: (r) => (isText(r.name) ? r : null),
+  coach_session_actions: (r) => (isText(r.title) ? r : null),
+  coach_sessions: (r) => (isText(r.starts_at) && !Number.isNaN(new Date(r.starts_at).getTime()) ? (r.recap == null || isText(r.recap) ? r : { ...r, recap: null }) : null),
+};
+
 /** What the device keeps, read so that nothing kept by another version stops a page. */
 export function tidyState(raw) {
   const out = { rows: {}, marks: {} };
@@ -109,8 +124,10 @@ export function tidyState(raw) {
   for (const table of Object.keys(TABLES)) {
     const rows = raw.rows?.[table];
     if (!rows || typeof rows !== 'object' || Array.isArray(rows)) continue;
-    for (const [k, row] of Object.entries(rows)) {
-      if (k === '__proto__' || !row || typeof row !== 'object' || Array.isArray(row) || keyOf(table, row) !== k) continue;
+    for (const [k, kept] of Object.entries(rows)) {
+      if (k === '__proto__' || !kept || typeof kept !== 'object' || Array.isArray(kept) || keyOf(table, kept) !== k) continue;
+      const row = SHAPES[table] ? SHAPES[table](kept) : kept;
+      if (!row) continue;
       (out.rows[table] ||= {})[k] = row;
       const m = raw.marks?.[table]?.[k];
       if (m && typeof m === 'object') (out.marks[table] ||= {})[k] = { sent: m.sent === true, gone: m.gone === true, refused: m.refused === true };

@@ -8,7 +8,7 @@
 // coach_todos rows, never todos, day_plans or the Backlog.
 import { keyOf, newId, removeRow, saveRows } from './store';
 import { completeTodo, sortTodos } from './day';
-import { clean } from './model';
+import { clean, cut } from './model';
 
 const TODOS = 'coach_todos';
 const LINKS = 'coach_tag_links';
@@ -38,7 +38,7 @@ export function rowsForNew(parsed, { coachId, todos = [], lists = [], tags = [],
   const pairs = [];
   let listId = parsed.list_id || null;
   if (!listId && parsed.new_list) {
-    const list = { id: newId(), coach_id: coachId, name: clean(parsed.new_list).slice(0, 80), profile_id: null, organisation_id: null, position: Math.max(0, ...lists.map((l) => Number(l.position) || 0)) + 1, finished_at: null };
+    const list = { id: newId(), coach_id: coachId, name: cut(clean(parsed.new_list), 80), profile_id: null, organisation_id: null, position: Math.max(0, ...lists.map((l) => Number(l.position) || 0)) + 1, finished_at: null };
     pairs.push(['coach_todo_lists', list]);
     listId = list.id;
   }
