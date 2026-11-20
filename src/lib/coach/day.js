@@ -312,7 +312,7 @@ export function parseQuickAdd(text, { todayKey, lists = [], tags = [], clients =
   take(/\safter work(?=\s)/gi, () => { out.after_work = true; });
   take(/\ssomeday(?=\s)/gi, () => { out.someday = true; });
   take(/\s(today|tomorrow)(?=\s)/gi, (_m, w) => { out.planned_on = w.toLowerCase() === 'today' ? todayKey : addDays(todayKey, 1); });
-  take(/\s(?:on |next )?(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tues?|wed|thurs?|fri|sat)(?=\s)/gi, (_m, w) => {
+  take(/\s(?:on |next )?(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tues?|wed|thu(?:rs)?|fri|sat)(?=\s)/gi, (_m, w) => {
     if (out.planned_on) return false;
     out.planned_on = nextWeekday(todayKey, WORD_DAYS[w.toLowerCase()]);
     return true;
