@@ -86,7 +86,7 @@ export default function Todos() {
                 <section key={g.day} aria-label={g.label}>
                   <h2 className="cc-todo-group">{g.label}</h2>
                   {/* Under its day's heading the day is understood, as on Today: only a time shows. */}
-                  <TodoList todos={g.items} view="today" label={g.label} picks={picks} onOpen={setOpenId} />
+                  <TodoList todos={g.items} view={g.later ? 'upcoming' : 'today'} label={g.label} picks={picks} onOpen={setOpenId} />
                 </section>
               ))}
             </>

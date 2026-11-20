@@ -66,6 +66,13 @@ test('Today’s list: Important first, then the coach’s own order, with After 
   const groups = upcomingGroups([...all, todo('u2', { planned_on: '2026-11-18', planned_time: '14:00' }), todo('u3', { planned_on: '2026-11-18', planned_time: '10:00' })], TODAY);
   assert.deepEqual(groups.map((g) => g.label), ['Tomorrow', 'Thu 19 Nov']);
   assert.deepEqual(groups[0].items.map((t) => t.id), ['u3', 'u2'], 'a day’s to-dos run in time order');
+  const far = upcomingGroups([...all, todo('f2', { planned_on: '2026-12-09' }), todo('f1', { planned_on: '2026-12-01' }), todo('w1', { planned_on: '2026-11-24' })], TODAY);
+  assert.deepEqual(far.map((g) => g.label), ['Thu 19 Nov', 'Tue 24 Nov', 'Later'], 'more than a week away sits together under Later');
+  assert.deepEqual(far[2].items.map((t) => t.id), ['f1', 'f2']);
+  const lists = [{ id: 'k', name: 'Kestrel renewal' }, { id: 'n', name: 'Northfield workshop' }];
+  assert.equal(parseQuickAdd('Call Sam #Kestrel', { todayKey: TODAY, lists }).list_id, 'k', 'one word that starts one list’s name is that list');
+  assert.equal(parseQuickAdd('Call Sam #Kes', { todayKey: TODAY, lists }).new_list, 'Kes');
+  assert.equal(parseQuickAdd('Call Sam #Kestrel', { todayKey: TODAY, lists: [...lists, { id: 'k2', name: 'Kestrel away day' }] }).new_list, 'Kestrel', 'two lists that start the same are never guessed between');
 });
 
 test('a to-do’s quiet facts, in M11’s order', () => {

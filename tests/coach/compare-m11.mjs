@@ -1,8 +1,21 @@
-// Every M11 screen of Phase 6a run 1, held against the built page, word for
-// word where the run builds it as M11 draws it, with each meant difference
-// listed here with why.
+// Every M11 screen of Phase 6a runs 1 and 2, held against the built page,
+// word for word where the run builds it as M11 draws it, with each meant
+// difference listed with why.
 //
-//   node --import ./tests/scores/register.mjs tests/coach/compare-m11.mjs [M11 file]
+//   node --import ./tests/scores/register.mjs tests/coach/compare-m11.mjs [M11 v3.6 file] [M11 seq 77 file]
+//
+// RUN=1 or RUN=2 runs one run's screens (both when left out). Run 1's
+// screens are listed below and read from M11 v3.6, as run 1 left them.
+// Run 2's (the coaching day) are in compare-m11-run2-screens.mjs and read
+// from M11 seq 77 (the second argument, or M11_RUN2), line by line, as the
+// owner and as an associate, on a laptop (1440) and a phone (400): see
+// compare-m11-run2.mjs. One browser run stays inside 10 minutes when run 2
+// is split by role and size:
+//   RUN=2 ROLES=owner SIZES=1440 node --import ./tests/scores/register.mjs tests/coach/compare-m11.mjs
+//   (then ROLES=owner SIZES=400, ROLES=associate SIZES=1440, ROLES=associate SIZES=400;
+//    SCREENS=<pattern> narrows it to some of M11's screens)
+// A difference no rule explains is never listed as meant: it FAILS, and is
+// printed again under "Faults" with the words on both sides.
 //
 // The built pages are made from the portal's shared parts (the design
 // reference wins over M11 for how a part looks), so this compares what
@@ -20,9 +33,14 @@ import { join } from 'node:path';
 import { accountId, APP, clearDevice, coachContext, makeReport, seedDevice, settle, standIn } from './shared.mjs';
 import { ADMIN_ROWS, seedRows } from './seed.mjs';
 import { openScreen } from './screens.mjs';
+import { compareRun2, m11File } from './compare-m11-run2.mjs';
+import { EVERYWHERE, EXTRA_GROUPS, ROWS } from './compare-m11-run2-screens.mjs';
 
+const RUNS = (process.env.RUN || '1,2').split(',');
 const M11 = process.argv[2] || join(homedir(), 'Downloads/clarity-phase-6a/M11-coach-portal-v3.6.html');
-if (!existsSync(M11)) { console.log(`The M11 file isn’t at ${M11}. Give its path as the first argument.`); process.exit(1); }
+if (RUNS.includes('1') && !existsSync(M11)) { console.log(`The M11 file isn’t at ${M11}. Give its path as the first argument.`); process.exit(1); }
+const M11_SEQ77 = m11File(process.argv[3]);
+if (RUNS.includes('2') && !M11_SEQ77) { console.log('M11 seq 77 wasn’t found. Give its path as the second argument, or as M11_RUN2.'); process.exit(1); }
 const report = makeReport('Coach portal against M11');
 
 const RUN2 = 'the coaching day is run 2';
@@ -111,92 +129,100 @@ const SCREENS = [
   ['A page of a later run', 'calendar', 'owner', [], 'coming', 'owner', ['Calendar'], [['Week', RUN3]]],
 ];
 
-// What a screen says: its words, with what its boxes hold and say when empty.
-const READ = (root) => `${root.innerText} ${[...root.querySelectorAll('input, textarea')].map((e) => `${e.placeholder || ''} ${e.value || ''}`).join(' ')}`;
-const browser = await chromium.launch();
-const mock = await browser.newPage({ viewport: { width: 1600, height: 1200 } });
-await mock.goto(`file://${M11}`);
-await mock.waitForTimeout(1500);
-async function m11Words(screen, who, clicks) {
-  const [role, device] = who.split('-');
-  await mock.click(`[data-r="${role}"]`);
-  await mock.click(`[data-w="${device === 'phone' ? 'p' : 'd'}"]`);
-  await mock.selectOption('#scr', screen);
-  await mock.waitForTimeout(250);
-  for (const a of clicks) { await mock.locator(`#fr [data-a="${a}"]`).first().click({ force: true }).catch(() => {}); await mock.waitForTimeout(200); }
-  return (await mock.locator('#fr').evaluate(READ)).replace(/\s+/g, ' ');
-}
-
-const sessions = {};
-async function built(role) {
-  if (sessions[role]) return sessions[role];
-  const [who, device] = role.split('-');
-  const size = device === 'phone' ? 400 : 1440;
-  const ctx = await coachContext(browser, { size, theme: 'light' });
-  const page = await ctx.newPage();
-  const there = who === 'owner';
-  await standIn(page, { role: who, db: there ? 'there' : 'none', rows: there ? seedRows() : {}, admin: there ? ADMIN_ROWS() : [] });
-  await page.goto(`${APP}/coach`);
-  await page.waitForSelector('.cc-app');
-  const me = await accountId(page);
-  await clearDevice(page, me);
-  if (!there) await seedDevice(page, me, seedRows());
-  sessions[role] = { ctx, page, me, size };
-  return sessions[role];
-}
-async function builtWords(name, role) {
-  const { page, size } = await built(role);
-  if (name === 'callbar') {
-    await page.goto(`${APP}/coach`);
-    await page.evaluate(() => sessionStorage.setItem('clarity-coach-test-calls', JSON.stringify([{ name: 'Sam Okafor', startsAt: new Date(Date.now() + 7.6 * 60000).toISOString(), zoom: 'https://zoom.example/j/1', briefTo: '/coach/clients' }])));
-    await page.goto(`${APP}/coach`); await page.waitForSelector('.cc-callbar'); 
-    const t = await page.locator('.cc-callbar').innerText();
-    await page.evaluate(() => sessionStorage.removeItem('clarity-coach-test-calls'));
-    return t.replace(/\s+/g, ' ');
-  }
-  if (name === 'public') {
-    const { ID } = await import('./seed.mjs');
-    await page.goto(`${APP}/workshop/${ID.wsNextKey}`);
-    await page.waitForSelector('.cc-public h1');
-    await settle(page, 500);
-    return (await page.locator('.cc-public').innerText()).replace(/\s+/g, ' ');
-  }
-  if (name === 'merge') {
-    await page.goto(`${APP}/coach/clients`); await page.waitForSelector('.cc-app'); await settle(page, 900);
-    await page.getByRole('button', { name: 'List', exact: true }).click().catch(() => {});
-    await page.locator('.cc-pick-row', { hasText: 'Sam Okafor' }).hover();
-    await page.getByRole('checkbox', { name: 'Select Sam Okafor' }).click({ force: true });
-    await page.getByRole('checkbox', { name: 'Select Leo Grant' }).click({ force: true });
-    await page.locator('.cc-bulk-btn', { hasText: 'Merge' }).click();
-    await settle(page, 600);
-  } else {
-    await openScreen(page, name, size);
-  }
-  await settle(page, 300);
-  const main = await page.locator('.cc-app').evaluate(READ);
-  const layers = await page.locator('.ds-portal').evaluateAll((all, read) => all.map((el) => new Function('root', `return (${read})(root)`)(el)), READ.toString());
-  return `${main} ${layers.join(' ')}`.replace(/\s+/g, ' ');
-}
-
-const has = (text, words) => text.toLowerCase().includes(words.toLowerCase());
 const table = [];
-for (const [title, screen, who, clicks, name, role, same, differs] of SCREENS) {
-  let m; let b;
-  try { m = await m11Words(screen, who, clicks); b = await builtWords(name, role); } catch (e) { report.pass(`${title}: opened`, false, String(e).split('\n')[0]); continue; }
-  const missingInMock = same.filter((w) => !has(m, w));
-  const missingInBuilt = same.filter((w) => has(m, w) && !has(b, w));
-  report.pass(`${title}: M11’s words are on the built screen (${same.length} read)`, missingInBuilt.length === 0, missingInBuilt.join(' | '));
-  // Words this list expects of M11 that M11 doesn't say are the test's own (invented names differ): they must still be built.
-  const own = missingInMock.filter((w) => !has(b, w));
-  report.pass(`${title}: nothing listed is missing from both`, own.length === 0, own.join(' | '));
-  for (const [words, why] of differs) {
-    report.pass(`${title}: M11 shows “${words}”`, has(m, words), 'M11 doesn’t show it, so it isn’t a difference');
-    report.pass(`${title}: the built screen leaves “${words}” out or says it another way (${why})`, !has(b, words), 'the built screen shows it, so it isn’t a difference any more');
+if (RUNS.includes('1')) {
+  // What a screen says: its words, with what its boxes hold and say when empty.
+  const READ = (root) => `${root.innerText} ${[...root.querySelectorAll('input, textarea')].map((e) => `${e.placeholder || ''} ${e.value || ''}`).join(' ')}`;
+  const browser = await chromium.launch();
+  const mock = await browser.newPage({ viewport: { width: 1600, height: 1200 } });
+  await mock.goto(`file://${M11}`);
+  await mock.waitForTimeout(1500);
+  async function m11Words(screen, who, clicks) {
+    const [role, device] = who.split('-');
+    await mock.click(`[data-r="${role}"]`);
+    await mock.click(`[data-w="${device === 'phone' ? 'p' : 'd'}"]`);
+    await mock.selectOption('#scr', screen);
+    await mock.waitForTimeout(250);
+    for (const a of clicks) { await mock.locator(`#fr [data-a="${a}"]`).first().click({ force: true }).catch(() => {}); await mock.waitForTimeout(200); }
+    return (await mock.locator('#fr').evaluate(READ)).replace(/\s+/g, ' ');
   }
-  table.push(`| ${title} | ${differs.length ? 'Matches with a change' : 'Matches'} | ${differs.map(([w, why]) => `“${w}”: ${why}`).join('; ') || ''} |`);
+
+  const sessions = {};
+  async function built(role) {
+    if (sessions[role]) return sessions[role];
+    const [who, device] = role.split('-');
+    const size = device === 'phone' ? 400 : 1440;
+    const ctx = await coachContext(browser, { size, theme: 'light' });
+    const page = await ctx.newPage();
+    const there = who === 'owner';
+    await standIn(page, { role: who, db: there ? 'there' : 'none', rows: there ? seedRows() : {}, admin: there ? ADMIN_ROWS() : [] });
+    await page.goto(`${APP}/coach`);
+    await page.waitForSelector('.cc-app');
+    const me = await accountId(page);
+    await clearDevice(page, me);
+    if (!there) await seedDevice(page, me, seedRows());
+    sessions[role] = { ctx, page, me, size };
+    return sessions[role];
+  }
+  async function builtWords(name, role) {
+    const { page, size } = await built(role);
+    if (name === 'callbar') {
+      await page.goto(`${APP}/coach`);
+      await page.evaluate(() => sessionStorage.setItem('clarity-coach-test-calls', JSON.stringify([{ name: 'Sam Okafor', startsAt: new Date(Date.now() + 7.6 * 60000).toISOString(), zoom: 'https://zoom.example/j/1', briefTo: '/coach/clients' }])));
+      await page.goto(`${APP}/coach`); await page.waitForSelector('.cc-callbar'); 
+      const t = await page.locator('.cc-callbar').innerText();
+      await page.evaluate(() => sessionStorage.removeItem('clarity-coach-test-calls'));
+      return t.replace(/\s+/g, ' ');
+    }
+    if (name === 'public') {
+      const { ID } = await import('./seed.mjs');
+      await page.goto(`${APP}/workshop/${ID.wsNextKey}`);
+      await page.waitForSelector('.cc-public h1');
+      await settle(page, 500);
+      return (await page.locator('.cc-public').innerText()).replace(/\s+/g, ' ');
+    }
+    if (name === 'merge') {
+      await page.goto(`${APP}/coach/clients`); await page.waitForSelector('.cc-app'); await settle(page, 900);
+      await page.getByRole('button', { name: 'List', exact: true }).click().catch(() => {});
+      await page.locator('.cc-pick-row', { hasText: 'Sam Okafor' }).hover();
+      await page.getByRole('checkbox', { name: 'Select Sam Okafor' }).click({ force: true });
+      await page.getByRole('checkbox', { name: 'Select Leo Grant' }).click({ force: true });
+      await page.locator('.cc-bulk-btn', { hasText: 'Merge' }).click();
+      await settle(page, 600);
+    } else {
+      await openScreen(page, name, size);
+    }
+    await settle(page, 300);
+    const main = await page.locator('.cc-app').evaluate(READ);
+    const layers = await page.locator('.ds-portal').evaluateAll((all, read) => all.map((el) => new Function('root', `return (${read})(root)`)(el)), READ.toString());
+    return `${main} ${layers.join(' ')}`.replace(/\s+/g, ' ');
+  }
+
+  const has = (text, words) => text.toLowerCase().includes(words.toLowerCase());
+  for (const [title, screen, who, clicks, name, role, same, differs] of SCREENS) {
+    let m; let b;
+    try { m = await m11Words(screen, who, clicks); b = await builtWords(name, role); } catch (e) { report.pass(`${title}: opened`, false, String(e).split('\n')[0]); continue; }
+    const missingInMock = same.filter((w) => !has(m, w));
+    const missingInBuilt = same.filter((w) => has(m, w) && !has(b, w));
+    report.pass(`${title}: M11’s words are on the built screen (${same.length} read)`, missingInBuilt.length === 0, missingInBuilt.join(' | '));
+    // Words this list expects of M11 that M11 doesn't say are the test's own (invented names differ): they must still be built.
+    const own = missingInMock.filter((w) => !has(b, w));
+    report.pass(`${title}: nothing listed is missing from both`, own.length === 0, own.join(' | '));
+    for (const [words, why] of differs) {
+      report.pass(`${title}: M11 shows “${words}”`, has(m, words), 'M11 doesn’t show it, so it isn’t a difference');
+      report.pass(`${title}: the built screen leaves “${words}” out or says it another way (${why})`, !has(b, words), 'the built screen shows it, so it isn’t a difference any more');
+    }
+    table.push(`| ${title} | ${differs.length ? 'Matches with a change' : 'Matches'} | ${differs.map(([w, why]) => `“${w}”: ${why}`).join('; ') || ''} |`);
+  }
+  for (const s of Object.values(sessions)) { await clearDevice(s.page, s.me); await s.ctx.close(); }
+  await browser.close();
 }
-for (const s of Object.values(sessions)) { await clearDevice(s.page, s.me); await s.ctx.close(); }
-await browser.close();
+
+// Run 2, the coaching day: M11 seq 77, line by line.
+if (RUNS.includes('2')) {
+  table.push('| **Run 2, the coaching day (M11 seq 77)** | | |');
+  await compareRun2(report, table, { file: M11_SEQ77, rows: ROWS, extraGroups: EXTRA_GROUPS, everywhere: EVERYWHERE });
+}
 console.log('\n| M11 screen | Result | What differs and why |\n|---|---|---|');
 console.log(table.join('\n'));
 report.done();

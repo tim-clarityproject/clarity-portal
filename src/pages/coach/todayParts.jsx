@@ -639,7 +639,7 @@ export function ReviewPanel({ open, onClose }) {
     },
     {
       title: 'What would you change?',
-      body: <div className="cc-field"><TextBox ariaLabel="What would you change?" value={change} maxLength={2000} onChange={type} /></div>,
+      body: <div className="cc-field"><TextBox ariaLabel="What would you change?" placeholder="e.g. Keep Wednesday mornings for writing" value={change} maxLength={2000} onChange={type} /></div>,
     },
   ];
   return <StepPanel open={open} onClose={onClose} title="Weekly review" time="~3 minutes" titleAside={<Eye sentence={ONLY_YOU} />} steps={steps} step={step} setStep={setStep} last="Finish the review" onFinish={finish} />;

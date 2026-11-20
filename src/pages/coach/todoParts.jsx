@@ -488,7 +488,7 @@ export function QuickAdd({ defaults, defaultDay = null, onAdded, boxRef }) {
 
   return (
     <form className="cc-qadd" noValidate onSubmit={(e) => { e.preventDefault(); submit(); }}>
-      <TextBox ref={field} lines="one" label="What needs doing?" value={text} maxLength={400} onChange={(v) => { setText(v); setProblem(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} autoComplete="off" />
+      <TextBox ref={field} lines="one" label="What needs doing?" placeholder="e.g. Call Sam Fri 10:00 #Kestrel @phone ! 30m" value={text} maxLength={400} onChange={(v) => { setText(v); setProblem(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} autoComplete="off" />
       {problem && <p className="cc-problem" role="alert">{problem}</p>}
       {parsed.title && (
         <div className="cc-qadd-read" aria-live="polite">
@@ -726,7 +726,7 @@ export function TodoPanel({ id, onClose }) {
       <Checklist todo={todo} onSave={(checklist, message) => change({ checklist }, message)} />
 
       <div className="cc-field cc-todo-notes">
-        <TextBox label="Notes" value={notes} maxLength={4000} onChange={setNotes} onBlur={saveNotes} />
+        <TextBox label="Notes" placeholder="Anything to remember" value={notes} maxLength={4000} onChange={setNotes} onBlur={saveNotes} />
       </div>
 
       {todo.from_email_sender && (

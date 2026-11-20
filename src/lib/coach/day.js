@@ -100,17 +100,19 @@ export function todayTodos(todos, todayKey) {
   return { work: today.filter((t) => !t.after_work), afterWork: today.filter((t) => t.after_work) };
 }
 
-/** Upcoming, grouped by day: "Tomorrow", then "Thu 19 Nov"… */
+/** Upcoming, grouped by day: "Tomorrow", then "Thu 19 Nov"…, and everything more than a week away together as "Later" (M11). */
 export function upcomingGroups(todos, todayKey) {
   const groups = new Map();
+  const lastDay = addDays(todayKey, 7);
   for (const t of (todos || []).filter((x) => todoSection(x, todayKey) === 'upcoming')) {
-    if (!groups.has(t.planned_on)) groups.set(t.planned_on, []);
-    groups.get(t.planned_on).push(t);
+    const key = t.planned_on > lastDay ? 'later' : t.planned_on;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(t);
   }
-  return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([day, items]) => ({
-    day, label: day === addDays(todayKey, 1) ? 'Tomorrow' : dayWords(day, todayKey),
-    items: [...items].sort((a, b) => String(a.planned_time || '99').localeCompare(String(b.planned_time || '99')) || byOrder(a, b)),
-  }));
+  const inOrder = (a, b) => String(a.planned_time || '99').localeCompare(String(b.planned_time || '99')) || byOrder(a, b);
+  return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([day, items]) => (day === 'later'
+    ? { day, label: 'Later', later: true, items: [...items].sort((a, b) => a.planned_on.localeCompare(b.planned_on) || inOrder(a, b)) }
+    : { day, label: day === addDays(todayKey, 1) ? 'Tomorrow' : dayWords(day, todayKey), items: [...items].sort(inOrder) }));
 }
 
 export const somedayTodos = (todos, todayKey) => sortTodos((todos || []).filter((t) => todoSection(t, todayKey) === 'someday'));
@@ -287,6 +289,13 @@ export function parseQuickAdd(text, { todayKey, lists = [], tags = [], clients =
         rest = `${rest} ${words.slice(n).join(' ')} `;
         return true;
       }
+    }
+    // One word that starts exactly one list's name is that list ("#Kestrel" is "Kestrel renewal": M11).
+    const starts = lists.filter((l) => !l.finished_at && sameName(String(l.name || '').split(' ')[0], words[0]));
+    if (starts.length === 1) {
+      out.list_id = starts[0].id;
+      rest = `${rest} ${words.slice(1).join(' ')} `;
+      return true;
     }
     out.new_list = cut(clean(raw), 80);
     return true;

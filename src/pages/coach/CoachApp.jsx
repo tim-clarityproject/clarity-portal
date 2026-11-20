@@ -108,7 +108,7 @@ function Menu({ open, onClose, onSignOut }) {
   const favourites = favouriteViews(views);
   // To-dos shows how many are for today, with the coach's own lists under it (M11's menu).
   const today = todayTodos(todos, todayKey);
-  const todosToday = today.work.length + today.afterWork.length;
+  const todosToday = today.work.length; // the working day only, as M11 counts it: After work sits apart
   const lists = todoLists.filter((l) => !l.finished_at);
   return (
     <>

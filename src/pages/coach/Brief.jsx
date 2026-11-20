@@ -31,7 +31,7 @@ function BriefBody({ session, client }) {
   const shared = useBriefData(client.user_id || null, todayKey);
   const last = lastSession(sessions, (s) => s.profile_id === client.id, session.starts_at);
   const pinned = rowsOf(state, 'client_notes').filter((n) => n.profile_id === client.id && n.coach_id === coach.id && n.pinned)
-    .sort((a, b) => String(b.noted_on).localeCompare(String(a.noted_on))).slice(0, 3);
+    .sort((a, b) => String(b.noted_on).localeCompare(String(a.noted_on))).slice(0, 3).reverse() // the newest three, oldest first (M11);
   const before = fromLastTime(sessionActions, last);
   const average = averageSince(shared.scores, last?.starts_at, todayKey);
   const review = sharedReview(shared.reviews, shared.moments, last?.starts_at, todayKey, client.name);
