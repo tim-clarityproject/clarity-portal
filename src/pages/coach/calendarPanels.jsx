@@ -6,7 +6,7 @@ import {
 import { addDays, dayKeyWords, wallClock, weekdayOf } from '../../lib/time/index.js';
 import { newId, rowsOf } from '../../lib/coach/store';
 import { blankTodo, lastPosition } from '../../lib/coach/todoActions';
-import { firstName } from '../../lib/coach/model';
+import { clean, cut, firstName } from '../../lib/coach/model';
 import {
   allDayItem, CAL_REPEATS, CALENDARS, calendarShown, calQuickAddChips, calRepeatValue, calRepeatWords, deleteEntry, duplicateEntry, editRepeat, guestRows, invited, INVITED_EXAMPLE,
   hoursWindow, INVITED_LABEL, ITEM_KINDS, joinLink, lengthLine, moveEntry, NEEDS_TITLE, newItem, nudgeEntry, parseCalQuickAdd, pickPeople, placeTodo, PLACES, QUICK_KINDS, QUICK_TITLE,
@@ -50,9 +50,9 @@ function QuickAddBody({ cal, slot, onDone, onMore, boxRef }) {
   const busy = useRef(false);
   const parsed = useMemo(() => parseCalQuickAdd(title, { todayKey: cal.todayKey, defaultDay: slot.day }), [title, cal.todayKey, slot.day]);
   // Typed times win; otherwise the slot that was dragged or clicked.
-  const times = parsed.title && !parsed.allDay
-    ? typedTimes({ day: parsed.day, from: parsed.from, to: parsed.to, coachZone: cal.coachZone })
-    : timesAt({ day: parsed.title ? parsed.day : slot.day, startMin: slot.fromMin, minutes: slot.toMin - slot.fromMin, coachZone: cal.coachZone });
+  const fromSlot = () => timesAt({ day: parsed.title ? parsed.day : slot.day, startMin: slot.fromMin, minutes: slot.toMin - slot.fromMin, coachZone: cal.coachZone });
+  const typed = parsed.title && !parsed.allDay ? typedTimes({ day: parsed.day, from: parsed.from, to: parsed.to, coachZone: cal.coachZone }) : null;
+  const times = typed && !typed.problem ? typed : fromSlot(); // a typed time that can't be kept never stops the page: the slot stands
   const guess = parsed.kind === 'connection' ? 'net' : 'own';
   const chosen = kind || guess;
   const when = `${dayKeyWords(wallClock(times.starts_at, cal.coachZone).date)}, ${spanWords(new Date(times.starts_at), new Date(times.ends_at), cal.coachZone)}`;
@@ -155,7 +155,7 @@ function draftOf(entry, fresh, coachZone) {
 /** What the panel saves: the plan, or a calm line. */
 function planFromDraft(d, { entry, cal }) {
   const { ctx, coachZone, data, coach } = cal;
-  const title = d.title.trim();
+  const title = cut(clean(d.title), 200); // as the quick add: unseen characters are no title, and 200 is what the database keeps
   if (!title) return { problem: NEEDS_TITLE };
   let times = null;
   if (!d.allDay) {
@@ -168,11 +168,17 @@ function planFromDraft(d, { entry, cal }) {
   }
   const repeat = draftRule(d);
   if (repeat.problem) return { problem: repeat.problem };
+  // A repeat that stops before it starts would be saved and show nowhere.
+  if (repeat.rule?.until && repeat.rule.until < d.day && !(entry?.item?.repeat_rule && d.scope === 'one')) return { problem: 'Choose a last day on or after the first to carry on.' };
   const patch = {
     title, kind: d.kind, calendar: d.calendar, place_kind: d.place === NONE ? null : d.place, location: d.location.trim() || null, notes: d.notes.trim() ? d.notes : null,
     reminders: d.remind === NONE ? [] : [{ minutes: Number(d.remind), by: d.by }], busy: d.busy !== 'free', private: d.private,
   };
-  const people = [...invited(d.paste).people, ...d.picked];
+  // Nobody is invited twice: someone already on the item, or pasted and picked as well, is left out (the database keeps one
+  // row an email on an item, and refusing the second stopped the whole save: the break-it tester, 20 Nov).
+  const mail = (p) => String(p.email || '').toLowerCase();
+  const have = new Set((entry?.item ? data.guests.filter((g) => g.item_id === entry.item.id && !d.gone.includes(g.id)) : []).map(mail).filter(Boolean));
+  const people = [...invited(d.paste).people, ...d.picked].filter((p, n, all) => !mail(p) || (!have.has(mail(p)) && all.findIndex((x) => mail(x) === mail(p)) === n));
   const guestsFor = (itemId) => guestRows(people, { itemId, coachId: coach.id, newId, clients: data.clients }).map((g) => [T.guests, g]);
   const allDay = d.allDay ? allDayItem({ id: 'x', coachId: coach.id, title, firstDay: d.day, lastDay: d.lastDay, zone: coachZone }) : null;
   const when = allDay ? { all_day: true, starts_on: allDay.starts_on, ends_on: allDay.ends_on, starts_at: allDay.starts_at, ends_at: allDay.ends_at } : { all_day: false, starts_on: null, ends_on: null, starts_at: times.starts_at, ends_at: times.ends_at };

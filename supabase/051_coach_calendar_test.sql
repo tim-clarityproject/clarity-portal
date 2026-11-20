@@ -658,17 +658,17 @@ begin
     -- 11. Reminders, for the email server only.
     perform pg_temp.t_server();
     f := f || pg_temp.t_eq('11a the calls coming in the next 36 hours: the day-before reminder only (the 1-hour one is off to start)', (select string_agg(concat_ws(' ', r.kind, r.title, r.person_zone, r.coach_first_name), ', ' order by r.title)
-      from public.cal_reminders_coming(pg_temp.t_lon(d0, '15:30') - interval '20 hours') r where r.coach_id = maya_c), 'day_before Ella Fraser America/New_York Maya');
-    f := f || pg_temp.t_eq('11b a reminder is claimed once', (select concat(
-      public.cal_reminder_claim(r.item_id, r.kind, r.occurrence_at, 1), public.cal_reminder_claim(r.item_id, r.kind, r.occurrence_at, 1))
-      from public.cal_reminders_coming(pg_temp.t_lon(d0, '15:30') - interval '20 hours') r where r.coach_id = maya_c), 'tf');
+      from public.cal_reminders_coming(pg_temp.t_lon(d0, '15:30') - interval '20 hours') r where r.coach_id = maya_c), 'day_before Dana Whitfield Europe/London Maya, day_before Ella Fraser America/New_York Maya'); -- Dana booked through a single-use link: a call too (the break-it tester, 20 Nov)
+    f := f || pg_temp.t_eq('11b a reminder is claimed once', (select string_agg(concat(
+      public.cal_reminder_claim(r.item_id, r.kind, r.occurrence_at, 1), public.cal_reminder_claim(r.item_id, r.kind, r.occurrence_at, 1)), ',')
+      from public.cal_reminders_coming(pg_temp.t_lon(d0, '15:30') - interval '20 hours') r where r.coach_id = maya_c), 'tf,tf');
     f := f || pg_temp.t_eq('11c and is no longer coming', (select count(*)::text from public.cal_reminders_coming(pg_temp.t_lon(d0, '15:30') - interval '20 hours') r where r.coach_id = maya_c), '0');
     perform pg_temp.t_as(maya_u);
     f := f || pg_temp.t_eq('11d Maya reads what went, can''t write it, and can''t ask what is coming', concat_ws('/',
-      (select count(*) from public.coach_cal_reminder_sends), pg_temp.t_rows('delete from public.coach_cal_reminder_sends'), pg_temp.t_n('select count(*) from public.cal_reminders_coming()')), '1/error 42501/error 42501');
+      (select count(*) from public.coach_cal_reminder_sends), pg_temp.t_rows('delete from public.coach_cal_reminder_sends'), pg_temp.t_n('select count(*) from public.cal_reminders_coming()')), '2/error 42501/error 42501');
     f := f || pg_temp.t_eq('11e Maya turns the 1-hour reminder on', pg_temp.t_rows(format('update public.coach_settings set booking = ''{"remind_1": true}'' where coach_id = %L', maya_c)), '1');
     perform pg_temp.t_server();
-    f := f || pg_temp.t_eq('11f so the 1-hour one is coming too, and the day-before one has gone', (select string_agg(r.kind, ',' order by r.kind) from public.cal_reminders_coming(pg_temp.t_lon(d0, '15:30') - interval '20 hours') r where r.coach_id = maya_c), 'hour_before');
+    f := f || pg_temp.t_eq('11f so the 1-hour one is coming too, and the day-before one has gone', (select string_agg(r.kind, ',' order by r.kind) from public.cal_reminders_coming(pg_temp.t_lon(d0, '15:30') - interval '20 hours') r where r.coach_id = maya_c), 'hour_before,hour_before');
 
     -- 12. Connections, and the two starting call types.
     insert into public.coach_connections (coach_id, service, status, account_label, secret) values (maya_c, 'google_calendar', 'on', 'maya@example.invalid', 'not-a-real-token');
@@ -684,6 +684,29 @@ begin
       (select count(*) from public.coach_call_types_start()), (select count(*) from public.coach_call_types where id = own_type))), 'chemistry 30 24 4, connection 30 48 2/2/1');
     perform pg_temp.t_as(ella_u);
     f := f || pg_temp.t_eq('12d a client can''t ask for them', pg_temp.t_n('select count(*) from public.coach_call_types_start()'), 'error 42501');
+
+    -- 14. The break-it tester's faults (20 Nov), each kept shut.
+    perform pg_temp.t_admin();
+    f := f || pg_temp.t_eq('14a a repeat''s "until" is a real day', concat_ws('/',
+      public.coach_cal_repeat_ok('{"every":"day","until":"2026-02-31"}'::jsonb), public.coach_cal_repeat_ok('{"every":"day","until":"2026-02-28"}'::jsonb),
+      pg_temp.t_rows(format('insert into public.coach_cal_items (coach_id, title, starts_at, ends_at, time_zone, repeat_rule) values (%L, ''x'', now(), now() + interval ''1 hour'', ''Europe/London'', ''{"every":"day","until":"2026-13-01"}'')', maya_c))), 'f/t/error 23514');
+    update public.coach_call_types set active = true where id = chem;
+    perform pg_temp.t_anon();
+    f := f || pg_temp.t_eq('14b a start years away, or at the edge of what a date holds, is "taken", never a raw error', concat_ws('/',
+      pg_temp.t_n(format('select public.booking_make(%L, ''294276-12-31 23:45+00'', ''Nadia Osei'', ''nadia@example.invalid'', ''Europe/London'') ->> ''status''', chem_key)),
+      pg_temp.t_n(format('select public.booking_make(%L, now() + interval ''5 years'', ''Nadia Osei'', ''nadia@example.invalid'', ''Europe/London'') ->> ''status''', chem_key)),
+      pg_temp.t_n(format('select count(*) from public.booking_free_times(%L, ''294276-12-01 00:00+00'', ''294276-12-31 00:00+00'')', chem_key))), 'taken/taken/0');
+    f := f || pg_temp.t_eq('14c a name nobody can see is no name', concat_ws('/',
+      public.booking_make(chem_key, pg_temp.t_lon(d0, '10:00'), E'\t\n\u200B\u200D\uFEFF\u00A0', 'nadia@example.invalid', 'Europe/London') ->> 'status',
+      public.booking_make(chem_key, pg_temp.t_lon(d0, '10:00'), U&'\200B\2060', 'nadia@example.invalid', 'Europe/London') ->> 'status'), 'name/name');
+    perform pg_temp.t_admin();
+    -- A booked item of kind 'other' (a single-use link for someone outside, a coach's own call type) is a call: the gap, the limit and the reminders count it.
+    perform set_config('clarity.booking', 'on', true);
+    insert into public.coach_cal_items (id, coach_id, kind, title, starts_at, ends_at, time_zone) values (i_free, maya_c, 'other', 'Booked by link', pg_temp.t_lon(d0 + 70, '10:00'), pg_temp.t_lon(d0 + 70, '10:30'), 'Europe/London')
+      on conflict (id) do update set kind = 'other', starts_at = excluded.starts_at, ends_at = excluded.ends_at, repeat_rule = null, removed = false, busy = true;
+    f := f || pg_temp.t_eq('14d an item of kind other is not a call until someone has booked it', (select is_call::text from public._cal_occurrences(maya_c, pg_temp.t_lon(d0 + 70, '00:00'), pg_temp.t_lon(d0 + 71, '00:00')) where item_id = i_free), 'false');
+    insert into public.coach_bookings (coach_id, item_id, name, email, time_zone, starts_at, ends_at, source) values (maya_c, i_free, 'Dana Whitfield', 'dana@example.invalid', 'Europe/London', pg_temp.t_lon(d0 + 70, '10:00'), pg_temp.t_lon(d0 + 70, '10:30'), 'link');
+    f := f || pg_temp.t_eq('14e and is one once it is booked', (select is_call::text from public._cal_occurrences(maya_c, pg_temp.t_lon(d0 + 70, '00:00'), pg_temp.t_lon(d0 + 71, '00:00')) where item_id = i_free), 'true');
 
     perform pg_temp.t_admin();
     raise exception 'undo the test rows' using errcode = 'P0051';

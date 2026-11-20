@@ -212,6 +212,15 @@ begin
   if p_rule ? 'by' and (jsonb_typeof(p_rule -> 'by') <> 'string' or (p_rule ->> 'by') not in ('date', 'weekday') or (p_rule ->> 'every') <> 'month') then return false; end if;
   if p_rule ? 'count' and (jsonb_typeof(p_rule -> 'count') <> 'number' or (p_rule ->> 'count')::numeric not between 1 and 730
      or (p_rule ->> 'count')::numeric <> trunc((p_rule ->> 'count')::numeric)) then return false; end if;
+  -- "until" is a real day (the break-it tester, 20 Nov: "2026-02-31" has the right shape, and reading it as a date
+  -- then stopped every question about that coach's free times, and the reminders for every coach).
+  if p_rule ? 'until' then
+    begin
+      perform (p_rule ->> 'until')::date;
+    exception when others then
+      return false;
+    end;
+  end if;
   return true;
 end;
 $$;
@@ -653,7 +662,12 @@ security definer
 set search_path = ''
 as $$
   -- Single items, and the rows that stand in for one time of a series.
-  select i.id, i.starts_at, i.ends_at, i.kind, i.busy, i.kind in ('client_call', 'chemistry', 'connection'), i.occurrence_on
+  select i.id, i.starts_at, i.ends_at, i.kind, i.busy,
+         -- A call with someone: by its kind, or because someone booked it (a single-use link for someone outside and a
+         -- coach's own call type make an item of kind 'other': the gap, the calls-a-day limit and the reminders count it too).
+         i.kind in ('client_call', 'chemistry', 'connection')
+           or exists (select 1 from public.coach_bookings b where b.item_id = i.id and b.status = 'booked'),
+         i.occurrence_on
   from public.coach_cal_items i
   where i.coach_id = p_coach and i.repeat_rule is null and not i.removed
     and i.starts_at < p_to and i.ends_at > p_from
@@ -745,6 +759,8 @@ declare
   v_hours jsonb;
 begin
   if p_minutes is null or p_minutes < 15 or p_from is null or p_to is null then return; end if;
+  -- Nothing is ever free years away, and a date at the edge of what can be held is never added to.
+  if not (p_from between p_now - interval '2 years' and p_now + interval '2 years') then return; end if;
   v_lo := greatest(p_from, p_now + make_interval(hours => coalesce(p_notice_hours, 24)));
   v_lo := date_bin(interval '15 minutes', v_lo + interval '14 minutes 59.999999 seconds', timestamptz '2000-01-01 00:00:00+00');
   -- Never more than 45 days in one question, however far ahead is allowed.
@@ -1219,7 +1235,8 @@ set search_path = ''
 as $$
 declare
   t jsonb := public._booking_target(p_key);
-  v_name text := btrim(coalesce(p_name, ''));
+  -- A name is what can be seen of it: spaces of every kind, unseen characters and control characters are no name.
+  v_name text := btrim(regexp_replace(coalesce(p_name, ''), '[\s\u00A0\u200B-\u200F\u2028-\u202E\u2060\uFEFF[:cntrl:]]+', ' ', 'g'));
   v_email text := lower(btrim(coalesce(p_email, '')));
   v_coach uuid;
   v_minutes integer;
@@ -1242,6 +1259,10 @@ begin
   end if;
   v_coach := (t ->> 'coach_id')::uuid;
   v_minutes := (t ->> 'minutes')::integer;
+  -- A start nobody could be offered (years away, or at the edge of what a date can hold) is simply not free: never a raw error.
+  if p_start is not null and not (p_start between now() - interval '1 day' and now() + interval '2 years') then
+    return jsonb_build_object('status', 'taken');
+  end if;
   -- A quarter hour in the booker's own time.
   if p_start is null or extract(minute from (p_start at time zone p_zone))::integer % 15 <> 0 or extract(second from p_start) <> 0 then
     return jsonb_build_object('status', 'quarter');
@@ -1252,6 +1273,11 @@ begin
   v_end := p_start + make_interval(mins => v_minutes);
 
   perform public._cal_lock(v_coach);
+  -- Read again now the lock is held (the break-it tester, 20 Nov): two people with one single-use link, choosing
+  -- different starts in the same moment, both read it as open before either held the lock, and both were booked.
+  t := public._booking_target(p_key);
+  if t is null then return jsonb_build_object('status', 'not_found'); end if;
+  if t ->> 'state' <> 'open' then return jsonb_build_object('status', t ->> 'state'); end if;
   if (select count(*) from public.coach_bookings b where b.coach_id = v_coach and b.status = 'booked'
         and lower(b.email) = v_email and b.starts_at > now()) >= 3 then
     return jsonb_build_object('status', 'too_many');
@@ -1386,6 +1412,9 @@ begin
   select * into b from public.coach_bookings x where x.id = b.id for update;
   if b.status <> 'booked' then return jsonb_build_object('status', 'not_found'); end if;
   v_minutes := (extract(epoch from (b.ends_at - b.starts_at)) / 60)::integer;
+  if p_start is not null and not (p_start between now() - interval '1 day' and now() + interval '2 years') then
+    return jsonb_build_object('status', 'taken');
+  end if;
   if p_start is null or extract(minute from (p_start at time zone b.time_zone))::integer % 15 <> 0 or extract(second from p_start) <> 0 then
     return jsonb_build_object('status', 'quarter');
   end if;

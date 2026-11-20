@@ -159,10 +159,16 @@ export function repeatOk(rule) {
   return true;
 }
 
-/** Which of CAL_REPEATS a rule is ('custom' for anything the short list can't say). */
+/**
+ * Which of CAL_REPEATS a rule is ('custom' for anything the short list can't
+ * say). When it stops (an end day or a count) is its own choice in the
+ * panel, so it never makes a rule 'custom': "Every weekday until Fri 18 Dec"
+ * is still 'weekday' (Custom has no weekdays-only or "on this weekday" choice,
+ * so reading those as Custom turned them into every day, or a day of the month).
+ */
 export function calRepeatValue(rule) {
   if (!rule || !rule.every) return 'never';
-  const plain = !rule.weekdays?.length && !rule.until && !rule.count;
+  const plain = !rule.weekdays?.length;
   const n = Number(rule.interval) || 1;
   if (!plain || n > 2 || (n === 2 && rule.every !== 'week')) return 'custom';
   if (rule.every === 'week') return n === 2 ? 'week2' : 'week';
@@ -859,7 +865,9 @@ const unsynced = { google_event_id: null, google_etag: null, google_synced_at: n
  * A change to one time of a repeat, as the rows to save.
  *   'one'        a row that stands in for that one time (series_id and occurrence_on);
  *   'following'  the series ends the day before (until), and a new series starts
- *                at this time (split_from), keeping what is left of a count; the
+ *                at this time (split_from), with the rule the patch gives when it
+ *                gives one (Repeats changed in the panel; no rule: this time alone
+ *                is left), keeping what is left of a count that wasn't changed; the
  *                times after it that were edited on their own are let go;
  *   'all'        the series itself moves by the same days and to the same clock
  *                time in its anchor zone (its edited times go when the day moves).
@@ -880,7 +888,8 @@ export function editRepeat({ series, on, scope, patch = {}, times = null, items 
   const dayShift = daysBetween(on, wallClock(at.starts_at, zone).date);
   if (scope === 'following' && on > first.date) {
     const gone = series.repeat_rule.count ? ruleDays(series.repeat_rule, first.date, first.date, addDays(on, -1)).length : 0;
-    const rule = shiftWeekdays({ ...series.repeat_rule, ...(series.repeat_rule.count ? { count: Math.max(1, series.repeat_rule.count - gone) } : {}) }, dayShift);
+    const asked = patch.repeat_rule !== undefined ? patch.repeat_rule : series.repeat_rule;
+    const rule = asked ? shiftWeekdays({ ...asked, ...(asked.count && asked.count === series.repeat_rule.count ? { count: Math.max(1, asked.count - gone) } : {}) }, dayShift) : null;
     return {
       save: [
         [T.items, { ...series, repeat_rule: { ...series.repeat_rule, until: addDays(on, -1) } }],
@@ -1096,7 +1105,7 @@ export function parseCalQuickAdd(text, { todayKey, defaultDay = null } = {}) {
     const b = clockFrom(h2, m2, half2);
     let a = clockFrom(h1, m1, half1 || (half2 && Number(h1) <= 12 ? half2 : null));
     if (a != null && b != null && a >= b && !half1 && half2) a = clockFrom(h1, m1, 'am'); // "11-1pm"
-    if (a == null || b == null || a >= b) return all;
+    if (a == null || b == null || a >= b || a % TYPE_STEP || b % TYPE_STEP) return all; // off the 5-minute step: left as words
     from = a; to = b;
     return ' ';
   });
@@ -1104,7 +1113,7 @@ export function parseCalQuickAdd(text, { todayKey, defaultDay = null } = {}) {
   if (from == null) {
     rest = rest.replace(/\s(?:at )?(\d{1,2})(?:[:.]([0-5]\d))?\s?(am|pm)(?=\s)|\s(?:at )?([01]?\d|2[0-3])[:.]([0-5]\d)(?=\s)/i, (all, h, m, half, h24, m24) => {
       const a = h != null ? clockFrom(h, m, half) : clockFrom(h24, m24, null);
-      if (a == null) return all;
+      if (a == null || a % TYPE_STEP) return all; // "9:07" isn't a time the calendar keeps: it stays in the title
       from = a;
       return ' ';
     });
@@ -1825,8 +1834,28 @@ const eventTimes = (event, fallbackZone) => {
     const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(raw);
     return m ? instantAt(m[1], m[2], zoneOr(side?.timeZone, fallbackZone)) : new Date(NaN);
   };
-  return { all_day: false, starts_on: null, ends_on: null, time_zone: zoneOr(event.start?.timeZone, fallbackZone), starts_at: read(event.start).toISOString(), ends_at: read(event.end).toISOString() };
+  const text = (d) => (Number.isNaN(d.getTime()) ? '' : d.toISOString()); // a side that can't be read is no time (never a thrown error)
+  return { all_day: false, starts_on: null, ends_on: null, time_zone: zoneOr(event.start?.timeZone, fallbackZone), starts_at: text(read(event.start)), ends_at: text(read(event.end)) };
 };
+
+/**
+ * Whether an event read from Google can be kept as a calendar item: real
+ * times, an end after its start, and no longer than the 32 days 051 keeps.
+ * One that can't is left where it is in Google and skipped here: before
+ * this, a single event with no end stopped every round of the sync, for
+ * good (the break-it tester, 20 Nov).
+ */
+export function googleEventReadable(event, fallbackZone) {
+  if (!event || !event.id) return false;
+  if (event.status === 'cancelled') return true;
+  try {
+    const t = eventTimes(event, fallbackZone);
+    const [a, z] = [ms(t.starts_at), ms(t.ends_at)];
+    return !Number.isNaN(a) && !Number.isNaN(z) && z > a && z - a <= 32 * DAY_MINUTES * MIN;
+  } catch {
+    return false;
+  }
+}
 
 // "Changed here since it was last in step" can't be read from updated_at (every
 // save restamps it, a sync's own save included), so each item keeps, beside
@@ -1888,7 +1917,7 @@ export function mergeFromGoogle({ items = [], guests = [], sessions = [], events
   const byId = new Map(items.map((i) => [i.id, i]));
   const newerHere = (item, event) => changedHere(item, guests) && ms(item.updated_at) > (ms(event.updated) || 0);
   for (const event of events) {
-    if (!event || !event.id) continue;
+    if (!googleEventReadable(event, coachZone)) continue;
     const item = byEvent.get(event.id) || byId.get(event.extendedProperties?.private?.clarityId) || null;
     const gone = event.status === 'cancelled';
     if (!item) {

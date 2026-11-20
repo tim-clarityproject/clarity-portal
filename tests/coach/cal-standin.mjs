@@ -158,7 +158,9 @@ export function calStandIn({ store, ME, me, clock, no }) {
         if (h && clockOk(h.from) && clockOk(h.to)) windows.push([instantAt(d, h.from, zone).getTime(), instantAt(d, h.to, zone).getTime()]);
       }
     }
-    const busy = occurrences(rows.coach_cal_items, coach, lo - DAY_MS, hi + DAY_MS).filter((o) => o.busy && o.item.id !== skip);
+    // A call by its kind, or because someone booked it (a single-use link for someone outside makes an item of kind 'other').
+    const busy = occurrences(rows.coach_cal_items, coach, lo - DAY_MS, hi + DAY_MS).filter((o) => o.busy && o.item.id !== skip)
+      .map((o) => (o.isCall || !rows.coach_bookings.some((b) => b.item_id === o.item.id && b.status === 'booked') ? o : { ...o, isCall: true }));
     const calls = {};
     for (const o of busy) if (o.isCall) { const d = wallClock(new Date(o.starts), zone).date; calls[d] = (calls[d] || 0) + 1; }
     const away = rows.coach_away.filter((x) => x.coach_id === coach);
@@ -240,7 +242,8 @@ export function calStandIn({ store, ME, me, clock, no }) {
       const t = target(key);
       if (!t) return { status: 'not_found' };
       if (t.state !== 'open') return { status: t.state };
-      const who = String(name ?? '').trim();
+      const who = String(name ?? '').replace(/[\s\u00A0\u200B-\u200F\u2028-\u202E\u2060\uFEFF\u0000-\u001F\u007F]+/g, ' ').trim(); // a name nobody can see is no name
+      if (start != null && !(ms(start) >= now() - DAY_MS && ms(start) <= now() + 730 * DAY_MS)) return target(key) ? (target(key).state === 'open' ? { status: 'taken' } : { status: target(key).state }) : { status: 'not_found' };
       const mail = String(email ?? '').trim().toLowerCase();
       if (!named(who, 1, 120)) return { status: 'name' };
       if (!emailOk(mail)) return { status: 'email' };

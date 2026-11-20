@@ -5,6 +5,7 @@ import {
   CAL_VIEWS, HIDE_TODOS, HOURS_HELP, HOURS_SAVED, hoursToSave, hoursWindow, OFFER_TIMES, SHOW_TODOS, startingView, stepView, viewRange, workingHours,
 } from '../../lib/coach/calendar';
 import { firstName } from '../../lib/coach/model';
+import { addDays } from '../../lib/time/index.js';
 import { MenuItem, PopMenu, TextLink, useNarrowerThan } from './parts';
 import { CAL_HOOKS, CalMonth, CalSchedule, useCalendar } from './calendarParts';
 import { CalBoard, CalendarsPanel, useCalPanels, useSecondZone } from './calendarPanels';
@@ -23,6 +24,11 @@ import { usePick } from './calendarPick';
 // their own pages (CAL_HOOKS).
 
 const NOTHING = () => {};
+/** A day key the calendar can open: a day that exists, from 2000 to 2100 (the break-it tester, 20 Nov: "2026-02-30" in the address stopped the page). */
+const realDay = (key) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(key || '') || key < '2000-01-01' || key > '2100-12-31') return false;
+  try { return addDays(key, 0) === key; } catch { return false; }
+};
 
 export default function Calendar({ side = null }) {
   const cal = useCalendar();
@@ -35,7 +41,7 @@ export default function Calendar({ side = null }) {
   const asked = CAL_VIEWS.some((v) => v.value === params.get('view')) ? params.get('view') : startingView(isPhone);
   // Times are picked on the grid: the week on a laptop, the day on a phone.
   const view = picking && !(asked === 'day' || (asked === 'week' && !isPhone)) ? (isPhone ? 'day' : 'week') : asked;
-  const day = /^\d{4}-\d{2}-\d{2}$/.test(params.get('day') || '') && !Number.isNaN(Date.parse(params.get('day'))) ? params.get('day') : cal.todayKey;
+  const day = realDay(params.get('day')) ? params.get('day') : cal.todayKey; // an address with a day that doesn't exist (30 Feb) opens today, never a broken page
   const go = (next) => {
     const v = next.view || view;
     const d = next.day || day;

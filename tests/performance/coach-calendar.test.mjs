@@ -192,6 +192,20 @@ test('repeats keep their clock time across clock changes, in their own anchor zo
   assert.equal(cal.calRepeatValue({ every: 'week', interval: 2 }), 'week2');
   assert.equal(cal.calRepeatValue({ every: 'week', weekdays: [1, 3] }), 'custom');
   assert.equal(cal.calRepeatValue(null), 'never');
+  // When it stops is its own choice in the panel, so it never makes a rule Custom (the break-it tester, 20 Nov: Custom has no
+  // weekdays-only or "on this weekday" choice, so saving "All of them" turned such a repeat into every day, or a day of the month).
+  assert.equal(cal.calRepeatValue({ every: 'weekday', until: '2026-12-18' }), 'weekday');
+  assert.equal(cal.calRepeatValue({ every: 'month', by: 'weekday', count: 6 }), 'month_weekday');
+  assert.equal(cal.calRepeatValue({ every: 'week', interval: 3, until: '2026-12-18' }), 'custom');
+});
+
+test('the quick add leaves a time off the 5-minute step as words (the break-it tester, 20 Nov: "Coffee 9:07" stopped the page)', () => {
+  for (const text of ['Coffee 9:07', 'Talk 9-11:03', 'Walk 9.07am', 'Q 9:59-10:01']) {
+    const p = cal.parseCalQuickAdd(text, { todayKey: '2026-11-17' });
+    assert.equal(p.allDay, true, text);
+    assert.equal(p.from, null, text);
+  }
+  assert.equal(cal.parseCalQuickAdd('Coffee 9:05', { todayKey: '2026-11-17' }).from, '09:05');
 });
 
 test('a repeat edited "this one", "this and following" and "all"', () => {
@@ -221,6 +235,14 @@ test('a repeat edited "this one", "this and following" and "all"', () => {
   assert.equal(next.repeat_rule.until, undefined);
   assert.deepEqual(following.remove, [['coach_cal_items', 's9']]);
   assert.deepEqual(days(apply([series, lateStandIn], following)), ['2026-11-02 09:45', '2026-11-09 09:45', '2026-11-17 14:00', '2026-11-24 14:00', '2026-12-01 14:00', '2026-12-08 14:00']);
+  // Repeats changed in the panel with "this and following": the following ones take the new rule (the break-it tester, 20 Nov:
+  // it was dropped and they carried on weekly). A count the person typed is theirs; an unchanged one is what is left of it;
+  // "Doesn't repeat" leaves this time alone.
+  const fortnightly = cal.editRepeat({ series, on: '2026-11-16', scope: 'following', patch: { repeat_rule: { every: 'week', interval: 2 } }, items: [series], newId }).save[1][1];
+  assert.deepEqual(fortnightly.repeat_rule, { every: 'week', interval: 2 });
+  assert.equal(cal.editRepeat({ series, on: '2026-11-16', scope: 'following', patch: { repeat_rule: { every: 'week', count: 2 } }, items: [series], newId }).save[1][1].repeat_rule.count, 2);
+  assert.equal(cal.editRepeat({ series, on: '2026-11-16', scope: 'following', patch: { repeat_rule: { ...series.repeat_rule } }, items: [series], newId }).save[1][1].repeat_rule.count, 4);
+  assert.equal(cal.editRepeat({ series, on: '2026-11-16', scope: 'following', patch: { repeat_rule: null }, items: [series], newId }).save[1][1].repeat_rule, null);
   // On the series' own first time, "this and following" is all of them.
   assert.equal(cal.editRepeat({ series, on: '2026-11-02', scope: 'following', times: { starts_at: at('2026-11-02', '10:00'), ends_at: at('2026-11-02', '12:15') }, items: [series], newId }).save.length, 1);
 
@@ -1132,4 +1154,28 @@ test('every word here follows the writing rules', () => {
     assert.ok(!/\b(color|organiz|canceled)\b/i.test(w), `UK spelling: ${w}`);
   }
   assert.equal(weekdayOf('2026-11-17'), 2);
+});
+
+test('an event Google gives that can\'t be kept is skipped, and never stops the round (the break-it tester, 20 Nov)', () => {
+  const LON = 'Europe/London';
+  const side = (t) => ({ dateTime: t, timeZone: LON });
+  const events = [
+    { id: 'g1', summary: 'No end at all', start: side('2026-11-20T20:00:00') },
+    { id: 'g2', summary: 'Ends before it starts', start: side('2026-11-20T19:00:00'), end: side('2026-11-20T18:00:00') },
+    { id: 'g3', summary: 'Six weeks long', start: side('2026-11-20T09:00:00'), end: side('2027-01-05T09:00:00') },
+    { id: 'g4', summary: 'A day that isn\'t there', start: { date: '2026-02-31' }, end: { date: '2026-03-01' } },
+    { id: 'g5', start: side('2026-11-20T08:00:00'), end: side('2026-11-20T08:30:00') },
+    { id: 'g6', summary: 'x'.repeat(5000), start: side('2026-11-19T10:00:00'), end: side('2026-11-19T10:45:00') },
+    { id: 'g7', summary: 'Zone nobody knows', start: { dateTime: '2026-11-20T16:00:00', timeZone: 'Mars/Olympus_Mons' }, end: { dateTime: '2026-11-20T16:30:00', timeZone: 'Mars/Olympus_Mons' } },
+    { id: 'g8', summary: 'All day', start: { date: '2026-11-20' }, end: { date: '2026-11-21' } },
+  ];
+  let n = 0;
+  const merged = cal.mergeFromGoogle({ items: [], events, now: '2026-11-17T09:00:00Z', coachZone: LON, coachId: 'c', newId: () => `n${(n += 1)}` });
+  const made = merged.save.map(([, r]) => r);
+  assert.deepEqual(made.map((r) => r.google_event_id), ['g5', 'g6', 'g7', 'g8']);
+  assert.equal(made[0].title, 'Busy');
+  assert.equal([...made[1].title].length, 200);
+  assert.equal(made[2].time_zone, LON);
+  assert.deepEqual([made[3].all_day, made[3].starts_on, made[3].ends_on], [true, '2026-11-20', '2026-11-20']);
+  for (const r of made) assert.ok(new Date(r.ends_at) > new Date(r.starts_at));
 });

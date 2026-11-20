@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Dropdown, InlineChoice, PageHeader, SlidePanel, useToast } from '../../components/design';
 import { deviceZone, wallClock, zoneLabel } from '../../lib/time/index.js';
-import { saveRow } from '../../lib/coach/store';
+import { coachState, rowsOf, saveRow } from '../../lib/coach/store';
 import { firstName } from '../../lib/coach/model';
 import {
   BOOK_PATHS, bookedWhenWords, callPlaceLine, cancelPollPlan, confirmPollPlan, joinNames, POLL_HELD_LINE, pollNote, pollRows, pollTabs, publicLink, visitorZones,
@@ -40,8 +40,11 @@ export default function PollPage() {
   const isOpen = (poll.status || 'open') === 'open';
   const confirmed = options.find((o) => o.id === poll.confirmed_option_id) || null;
   const once = async (work) => { if (busy.current) return; busy.current = true; try { await work(); } finally { busy.current = false; } };
-  const confirm = (option) => once(async () => { await cal.run(confirmPollPlan({ poll, option, people }, cal.ctx)); });
-  const cancel = () => once(async () => { const ok = await cal.run(cancelPollPlan({ poll }, cal.ctx)); if (ok) navigate('/coach/calendar'); });
+  // Read from the device itself just before it is settled: another tab may have confirmed or cancelled it a moment ago, and a
+  // second confirm made from this tab's older copy removed the call the first one made (the break-it tester, 20 Nov).
+  const settled = () => { const now = rowsOf(coachState(cal.userId), 'coach_polls').find((p) => p.id === poll.id); return !now || (now.status || 'open') !== 'open'; };
+  const confirm = (option) => once(async () => { if (settled()) { toast.show('This poll has already been settled.'); return; } await cal.run(confirmPollPlan({ poll, option, people }, cal.ctx)); });
+  const cancel = () => once(async () => { if (settled()) { toast.show('This poll has already been settled.'); return; } const ok = await cal.run(cancelPollPlan({ poll }, cal.ctx)); if (ok) navigate('/coach/calendar'); });
   const linkOf = (p) => publicLink(window.location.origin, BOOK_PATHS.poll(p.vote_key));
   const copy = async (p) => { const ok = await copyWords(linkOf(p)); toast.show(ok ? `Link copied. It’s ${firstName(p.name)}’s own.` : 'That didn’t copy. Open it in your email instead.'); };
   const mail = (p) => { const n = pollNote({ person: p, poll, options, link: linkOf(p), coachFirstName: cal.coach.display_first_name || '' }); return `mailto:${encodeURIComponent(p.email || '')}?subject=${encodeURIComponent(n.subject)}&body=${encodeURIComponent(n.body)}`; };

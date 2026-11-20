@@ -184,7 +184,7 @@
 /* ---------------------------------------------------------------- the Schedule */
 .ui-root .cc-sched { margin-top: var(--space-2); }
 .ui-root .cc-sched-day { margin: var(--space-px26) 0 var(--space-1); font-family: var(--font-display); font-weight: var(--fw-regular); text-transform: uppercase; letter-spacing: var(--ls-menu-label); font-size: var(--fs-label); color: var(--text-2); }
-.ui-root .cc-sched-row { all: unset; cursor: pointer; box-sizing: border-box; width: 100%; display: grid; grid-template-columns: var(--cal-square) var(--cc-time-w) minmax(0, 1fr); gap: 0 var(--space-px10); align-items: center; min-height: var(--cc-row-h); padding-block: var(--space-px10); border-bottom: var(--line-w) solid var(--line-soft); font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
+.ui-root .cc-sched-row { all: unset; cursor: pointer; box-sizing: border-box; width: 100%; display: grid; grid-template-columns: var(--cal-square) minmax(var(--cc-time-w), max-content) minmax(0, 1fr); /* the time's column grows with the text size: at twice the size it ran under the title */ gap: 0 var(--space-px10); align-items: center; min-height: var(--cc-row-h); padding-block: var(--space-px10); border-bottom: var(--line-w) solid var(--line-soft); font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
 .ui-root .cc-sched-time { font-size: var(--fs-text); color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ui-root .cc-sched-words { min-width: 0; }
 .ui-root .cc-sched-words b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); overflow-wrap: anywhere; transition: color var(--dur) var(--ease); }
