@@ -372,6 +372,19 @@ export default function CoachApp() {
       sessionPeople: rowsOf(state, 'coach_session_people'),
       sessionActions: mine(rowsOf(state, 'coach_session_actions')),
       sessionNotes: mine(rowsOf(state, 'coach_session_notes')),
+      // The calendar and booking (run 3; migration 051): the coach's own, kept on the device until 051 is there.
+      calItems: mine(rowsOf(state, 'coach_cal_items')),
+      calGuests: mine(rowsOf(state, 'coach_cal_guests')),
+      callTypes: mine(rowsOf(state, 'coach_call_types')).sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)),
+      openBlocks: mine(rowsOf(state, 'coach_open_blocks')),
+      polls: mine(rowsOf(state, 'coach_polls')),
+      pollPeople: mine(rowsOf(state, 'coach_poll_people')).sort((x, y) => (x.position || 0) - (y.position || 0)),
+      pollOptions: mine(rowsOf(state, 'coach_poll_options')),
+      pollVotes: rowsOf(state, 'coach_poll_votes'),
+      bookingLinks: mine(rowsOf(state, 'coach_booking_links')),
+      bookings: mine(rowsOf(state, 'coach_bookings')),
+      leads: mine(rowsOf(state, 'coach_leads')),
+      reminderSends: mine(rowsOf(state, 'coach_cal_reminder_sends')),
       now,
     };
   }, [coach, isOwner, state, todayKey, coaches, admin, userId, reloadCoaches, role.reload, now]);

@@ -71,6 +71,19 @@ export const TABLES = {
   coach_session_actions: ['id'],
   coach_session_notes: ['session_id'],
   workshop_sends: ['id'],
+  // The calendar and booking (migration 051; Phase 6a run 3).
+  coach_call_types: ['id'],
+  coach_polls: ['id'],
+  coach_poll_people: ['id'],
+  coach_poll_options: ['id'],
+  coach_poll_votes: ['option_id', 'person_id'],
+  coach_booking_links: ['id'],
+  coach_leads: ['id'],
+  coach_cal_items: ['id'],
+  coach_cal_guests: ['id'],
+  coach_open_blocks: ['id'],
+  coach_bookings: ['id'],
+  coach_cal_reminder_sends: ['id'],
 };
 // The tables of migration 050. Until Tim has run it they are kept on the
 // device only, exactly as every coach table was before 049: no error, and
@@ -79,9 +92,19 @@ const DAY_TABLES = new Set(['coach_todo_lists', 'coach_todo_headings', 'coach_to
   'coach_session_people', 'coach_session_actions', 'coach_session_notes', 'workshop_sends']);
 // Columns only migration 050 adds to an older table: left out of a save until it is there.
 const DAY_COLUMNS = { coach_settings: ['hidden_help'], engagements: ['sessions_held_base'] };
+// The tables of migration 051 (the calendar and booking). Until Tim has run
+// it they are kept on the device only, in the same way.
+const CAL_TABLES = new Set(['coach_call_types', 'coach_polls', 'coach_poll_people', 'coach_poll_options', 'coach_poll_votes',
+  'coach_booking_links', 'coach_leads', 'coach_cal_items', 'coach_cal_guests', 'coach_open_blocks', 'coach_bookings',
+  'coach_cal_reminder_sends']);
+// Rows of one table that point at another row of the same table: the row
+// pointed at is sent first (a series before the times that stand in for
+// it, a call before its travel time).
+const PARENT_COLUMNS = { coach_cal_items: ['series_id', 'travel_for'] };
 // Read from the database but never written by a plain save (the database
 // adds these rows itself, or a checked function does).
-const READ_ONLY = new Set(['activity_log', 'workshop_survey_answers', 'workshop_sends']);
+const READ_ONLY = new Set(['activity_log', 'workshop_survey_answers', 'workshop_sends', 'coach_poll_votes', 'coach_bookings',
+  'coach_cal_reminder_sends']);
 // Tables a coach may add to but never change: a save is sent as "add it
 // unless it is there" (a plain upsert would need the right to change rows).
 const ADD_ONLY = new Set(['client_files', 'client_view_requests']);
@@ -93,6 +116,7 @@ const DB_ONLY = ['created_at', 'updated_at'];
 const NEVER = new Set(['42501', '23503', '23514', '23505', '22023', '22P02', 'PGRST204']);
 const NOT_YET_KEY = 'clarity-coach-not-yet';
 const DAY_NOT_YET_KEY = 'clarity-coach-day-not-yet';
+const CAL_NOT_YET_KEY = 'clarity-coach-cal-not-yet';
 const NOT_YET_MS = 60 * 60 * 1000;
 const LOCAL = 'coach-local';
 
@@ -105,6 +129,8 @@ export const keyOf = (table, row) => (TABLES[table] || ['id']).map((c) => row?.[
 // What a page needs of a coaching-day row before it can draw it (the break-it tester, 20 Nov): a row without it is
 // left out, as one whose key doesn't match is; a part of the wrong kind is put right. A good row is handed back as it is.
 const isText = (v) => typeof v === 'string';
+const isInstant = (v) => isText(v) && !Number.isNaN(new Date(v).getTime());
+const isObject = (v) => Boolean(v) && typeof v === 'object' && !Array.isArray(v);
 const SHAPES = {
   coach_todos: (r) => {
     if (!isText(r.title)) return null;
@@ -115,6 +141,20 @@ const SHAPES = {
   coach_todo_headings: (r) => (isText(r.name) ? r : null),
   coach_session_actions: (r) => (isText(r.title) ? r : null),
   coach_sessions: (r) => (isText(r.starts_at) && !Number.isNaN(new Date(r.starts_at).getTime()) ? (r.recap == null || isText(r.recap) ? r : { ...r, recap: null }) : null),
+  // The calendar (051): a row a page can't place in time, or name, is left out.
+  coach_cal_items: (r) => {
+    if (!isText(r.title) || !isInstant(r.starts_at) || !isInstant(r.ends_at) || !isText(r.time_zone)) return null;
+    if (Array.isArray(r.reminders ?? []) && Array.isArray(r.attachments ?? []) && (r.repeat_rule == null || isObject(r.repeat_rule))) return r;
+    return { ...r, reminders: Array.isArray(r.reminders) ? r.reminders : [], attachments: Array.isArray(r.attachments) ? r.attachments : [], repeat_rule: isObject(r.repeat_rule) ? r.repeat_rule : null };
+  },
+  coach_open_blocks: (r) => (isInstant(r.starts_at) && isInstant(r.ends_at) && isText(r.time_zone) ? r : null),
+  coach_poll_options: (r) => (isInstant(r.starts_at) && isInstant(r.ends_at) ? r : null),
+  coach_bookings: (r) => (isText(r.name) && isInstant(r.starts_at) && isInstant(r.ends_at) ? (isObject(r.answers ?? {}) ? r : { ...r, answers: {} }) : null),
+  coach_call_types: (r) => (isText(r.name) && isText(r.key) ? (Array.isArray(r.questions ?? []) ? r : { ...r, questions: [] }) : null),
+  coach_polls: (r) => (isText(r.title) ? r : null),
+  coach_poll_people: (r) => (isText(r.name) ? r : null),
+  coach_booking_links: (r) => (isText(r.purpose) ? r : null),
+  coach_leads: (r) => (isText(r.name) ? (isObject(r.answers ?? {}) ? r : { ...r, answers: {} }) : null),
 };
 
 /** What the device keeps, read so that nothing kept by another version stops a page. */
@@ -328,9 +368,39 @@ export async function coachDayReady() {
 }
 export const coachDayReadyNow = () => dayReadyNow;
 
+let calReadyNow = null;
+let askingCal = null;
+
+/**
+ * Whether migration 051's tables (the calendar and booking) are there:
+ * true, false (not yet) or null (can't be told). Asked only once 050 is
+ * there (051 needs it), and "not yet" is remembered for an hour, as above.
+ */
+export async function coachCalReady() {
+  if (calReadyNow === true) return true;
+  if ((await coachDayReady()) !== true) return coachDayReadyNow() === false ? false : null;
+  if (notYet(CAL_NOT_YET_KEY)) { calReadyNow = false; return false; }
+  if (!askingCal) {
+    askingCal = (async () => {
+      try {
+        const there = await tableReady('coach_cal_items');
+        if (there === false) noteNotYet(true, CAL_NOT_YET_KEY);
+        if (there === true) noteNotYet(false, CAL_NOT_YET_KEY);
+        if (there !== null) calReadyNow = there;
+        return there;
+      } catch {
+        return null;
+      }
+    })().finally(() => { askingCal = null; });
+  }
+  return askingCal;
+}
+export const coachCalReadyNow = () => calReadyNow;
+
 /** Is this table's home in the database yet? */
 async function tableThere(table) {
   if ((await coachReady()) !== true) return false;
+  if (CAL_TABLES.has(table)) return (await coachCalReady()) === true;
   return DAY_TABLES.has(table) ? (await coachDayReady()) === true : true;
 }
 
@@ -436,8 +506,8 @@ export function noteRows(userId, pairs) {
 
 const loading = new Map();
 
-async function fetchAll(dayThere) {
-  const names = Object.keys(TABLES).filter((t) => dayThere || !DAY_TABLES.has(t));
+async function fetchAll(dayThere, calThere) {
+  const names = Object.keys(TABLES).filter((t) => (dayThere || !DAY_TABLES.has(t)) && (calThere || !CAL_TABLES.has(t)));
   const out = {};
   // A few at a time: gentle on the database, quick enough for the page.
   for (let i = 0; i < names.length; i += 6) {
@@ -464,9 +534,10 @@ export function loadCoach(userId) {
     const there = await coachReady();
     if (there !== true) return there;
     const dayThere = (await coachDayReady()) === true;
+    const calThere = dayThere && (await coachCalReady()) === true;
     let db;
     try {
-      db = await fetchAll(dayThere);
+      db = await fetchAll(dayThere, calThere);
     } catch {
       return null;
     }
@@ -475,7 +546,7 @@ export function loadCoach(userId) {
     let next = { rows: {}, marks: {} };
     for (const table of Object.keys(TABLES)) {
       if (!db[table]) {
-        // Its table isn't there yet (050): the device's copy is all there is.
+        // Its table isn't there yet (050, 051): the device's copy is all there is.
         if (before.rows[table]) { next.rows[table] = before.rows[table]; next.marks[table] = before.marks[table] || {}; }
         continue;
       }
@@ -510,7 +581,11 @@ async function moveAcross(userId) {
     if (READ_ONLY.has(table)) continue;
     if (!(await tableThere(table))) continue;
     const state = read(userId);
-    for (const [k, row] of Object.entries(state.rows[table] || {})) {
+    // A row that points at another row of its own table goes after it.
+    const points = (row) => (PARENT_COLUMNS[table] || []).some((c) => row[c] != null);
+    const waitingRows = Object.entries(state.rows[table] || {});
+    if (PARENT_COLUMNS[table]) waitingRows.sort((a, b) => Number(points(a[1])) - Number(points(b[1])));
+    for (const [k, row] of waitingRows) {
       const m = state.marks[table]?.[k] || {};
       if (m.sent || m.refused) continue;
       if (m.gone) continue;
@@ -546,4 +621,5 @@ export function resetCoachStoreForTests() {
   rawSeen.clear();
   readyNow = null;
   dayReadyNow = null;
+  calReadyNow = null;
 }

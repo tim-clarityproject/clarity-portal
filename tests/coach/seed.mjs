@@ -2,6 +2,7 @@
 // Jordan, Priya, Leo, Marcus, Mia), with their organisations, engagements,
 // tags, fields, a group and two workshops. Nobody here is real.
 import { ME, OTHER } from './shared.mjs';
+import { addDays, instantAt, weekdayOf } from '../../src/lib/time/instants.js';
 
 const u = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 export const ID = {
@@ -385,3 +386,198 @@ export const SHARED = {
     { kind: 'monthly', month: `${day(-10).slice(0, 7)}-01`, status: 'finished', hardware_score: 71, software_score: 76, goals: null },
   ],
 };
+
+// ---------------------------------------------------------------- the calendar and booking (Phase 6a run 3; migration 051)
+export const CAL = {
+  // call types and their pages
+  chem: u(8001), conn: u(8002), chemKey: u(8003), connKey: u(8004),
+  // single-use links
+  linkDana: u(8011), linkPaul: u(8012), linkDanaKey: u(8013), linkPaulKey: u(8014),
+  // the poll, its people, their own keys, its three times and their held times
+  poll: u(8021), pollMia: u(8022), pollPaul: u(8023), pollMiaKey: u(8024), pollPaulKey: u(8025), opt1: u(8026), opt2: u(8027), opt3: u(8028),
+  hold1: u(8031), hold2: u(8032), hold3: u(8033),
+  // this week's items, as M11's Calendar draws them (Mon 16 to Fri 20 Nov 2026 in M11)
+  training: u(8101), hannahMon: u(8102), miaMon: u(8103), swimming: u(8104),
+  samTue: u(8111), kestrelTue: u(8112), jordanTue: u(8113), priyaTue: u(8114), parents: u(8115),
+  writing: u(8121), coffeeDan: u(8122), ruth: u(8123), admin: u(8124), noraWed: u(8125),
+  travelOut: u(8131), leoThu: u(8132), travelBack: u(8133), supervision: u(8134), dinner: u(8135), calebThu: u(8136), dentist: u(8137),
+  nadia: u(8141), marcusFri: u(8142), hannahFri: u(8143), kestrelFri: u(8144), sarah: u(8145),
+  // next week
+  conference: u(8151), open1: u(8161), open2: u(8162), open3: u(8163),
+  // what the two bookings made
+  bookRuth: u(8171), bookNadia: u(8172), bookRuthKey: u(8173), bookNadiaKey: u(8174), leadRuth: u(8181), leadNadia: u(8182),
+  guestDana: u(8191), guestMaya: u(8192),
+  todoProposal: u(8201),
+};
+
+/**
+ * M11's own invented week on the calendar (its "Calendar" screen: Mon 16 to
+ * Fri 20 Nov 2026), placed on the week the seed's "today" is in, so it is
+ * this week whenever a test runs (pin the day with seedClock for M11's own
+ * Tuesday). As migration 051 keeps it:
+ *   - coach_cal_items: Training (a repeat, every Monday and Tuesday), the
+ *     client calls (each anchored to the client's own zone: Mia at 09:00 New
+ *     York time, Jordan at 09:45 and Caleb at 08:30 Chicago time, Nora at
+ *     09:00 Los Angeles time), the group's calls, Writing, Admin, a
+ *     Connection Call and two booked through the pages (Ruth, a Chemistry
+ *     Call; Nadia, a Connection Call), Leo in person with travel time either
+ *     side, Supervision with Maya, the Leaders' dinner, the family and
+ *     personal items (Swimming with Esme, Parents' evening, Dentist, Dinner
+ *     with Sarah), three times held for a poll, and next week an all-day
+ *     conference over two days (not in M11: an example of one);
+ *   - the Chemistry Call and Connection Call types with their pages, two
+ *     open single-use links (for Dana Whitfield and Paul Garner), next week's
+ *     Open for calls blocks (M11's "Open for calls"), the poll "Three-way
+ *     meeting" with Mia's and Paul's answers, the two bookings and the leads
+ *     they made, and the guests of two items.
+ * "Send the Kestrel proposal" on Friday at 09:15 is a to-do placed on the
+ * calendar: it stays a coach_todos row (the day seed's DAY.t12 when the day
+ * seed is used; CAL.todoProposal here), never a calendar item.
+ * Returns rows by table; `seedWithCal()` adds them to `seedWithDay()`.
+ */
+export function calSeed() {
+  const b = base();
+  const p2 = (n) => String(n).padStart(2, '0');
+  const todayKey = `${b.getFullYear()}-${p2(b.getMonth() + 1)}-${p2(b.getDate())}`;
+  const monday = addDays(todayKey, 1 - weekdayOf(todayKey));
+  const LON = 'Europe/London';
+  /** A day of this week (0 Monday) and a clock time in a zone, as an instant. */
+  const when = (d, time, zone = LON) => instantAt(addDays(monday, d), time, zone).toISOString();
+  const made = when(-21, '09:00');
+  const item = (id, title, kind, d, from, to, extra = {}) => {
+    const zone = extra.time_zone || LON;
+    return {
+      id, coach_id: ME, kind, calendar: 'work', title, starts_at: when(d, from, zone), ends_at: when(d, to, zone), time_zone: zone, all_day: false, starts_on: null, ends_on: null,
+      repeat_rule: null, series_id: null, occurrence_on: null, removed: false, split_from: null, location: null, place_kind: null, meeting_link: null, meeting_id: null, notes: null, attachments: [],
+      reminders: [], busy: true, private: false, profile_id: null, group_id: null, session_id: null, poll_option_id: null, travel_for: null, google_event_id: null, google_calendar_id: null,
+      google_etag: null, google_synced_at: null, moved_in_google_at: null, created_at: made, ...extra,
+    };
+  };
+  let z = 0;
+  const zoom = () => { z += 1; return { place_kind: 'zoom', meeting_link: `https://zoom.example.invalid/j/${9000 + z}` }; };
+  const call = (id, title, d, from, to, extra = {}) => item(id, title, 'client_call', d, from, to, { ...zoom(), reminders: [{ minutes: 60, by: 'email' }], ...extra });
+  const life = (id, title, calendar, d, from, to) => item(id, title, 'other', d, from, to, { calendar, private: true });
+  const option = (id, d, from, to, position) => ({ id, poll_id: CAL.poll, coach_id: ME, starts_at: when(d, from), ends_at: when(d, to), position, created_at: made });
+  const hold = (id, optionId, d, from, to) => item(id, 'Mia and Paul', 'hold', d, from, to, { poll_option_id: optionId });
+  const type = (id, key, name, pageKey, notice, ahead, position, questions) => ({
+    id, coach_id: ME, key, name, description: null, minutes: 30, gap_before: 15, gap_after: 15, notice_hours: notice, ahead_weeks: ahead, day_limit: 5, questions, place_kind: 'zoom',
+    page_key: pageKey, active: true, makes_lead: true, position, created_at: made,
+  });
+  const link = (id, key, purpose, forName) => ({
+    id, coach_id: ME, key, purpose, for_name: forName, for_email: null, call_name: null, profile_id: null, minutes: 30, place_kind: 'zoom', notice_hours: 24, ahead_weeks: 4, expires_on: null,
+    used_at: null, booking_id: null, revoked_at: null, created_at: when(-2, '10:00'),
+  });
+  const booked = (id, key, typeId, itemId, leadId, name, d, from, to) => ({
+    id, coach_id: ME, call_type_id: typeId, link_id: null, item_id: itemId, session_id: null, profile_id: null, lead_id: leadId, name, email: `${name.split(' ')[0].toLowerCase()}@example.invalid`, time_zone: LON,
+    starts_at: when(d, from), ends_at: when(d, to), answers: { q1: 'To think out loud about what comes next.' }, status: 'booked', source: 'page', guest_key: key, moved_from: null, moved_at: null,
+    cancelled_at: null, late_cancel: false, moved_in_google_at: null, created_at: when(-4, '18:20'),
+  });
+  const lead = (id, name, source, key, bookingId) => ({
+    id, coach_id: ME, name, email: `${name.split(' ')[0].toLowerCase()}@example.invalid`, source, call_type_key: key, booking_id: bookingId, time_zone: LON, answers: { q1: 'To think out loud about what comes next.' },
+    status: 'new', notes: null, created_at: when(-4, '18:20'),
+  });
+  const block = (id, d, from, to) => ({ id, coach_id: ME, starts_at: when(d, from), ends_at: when(d, to), time_zone: LON, call_type_id: null, created_at: made });
+  return {
+    coach_call_types: [
+      type(CAL.chem, 'chemistry', 'Chemistry Call', CAL.chemKey, 24, 4, 0, [{ id: 'q1', label: 'What would you like from the call?', kind: 'long', required: true }]),
+      type(CAL.conn, 'connection', 'Connection Call', CAL.connKey, 48, 2, 1, [{ id: 'q1', label: 'What would you like to talk about?', kind: 'long', required: false }]),
+    ],
+    coach_polls: [{ id: CAL.poll, coach_id: ME, title: 'Three-way meeting', minutes: 60, place_kind: 'zoom', time_zone: LON, status: 'open', confirmed_option_id: null, confirmed_item_id: null, notes: null, created_at: when(-3, '11:00') }],
+    coach_poll_people: [
+      { id: CAL.pollMia, poll_id: CAL.poll, coach_id: ME, name: 'Mia Torres', email: 'mia@example.invalid', profile_id: ID.mia, time_zone: 'America/New_York', vote_key: CAL.pollMiaKey, voted_at: when(-2, '15:00'), position: 0, created_at: when(-3, '11:00') },
+      { id: CAL.pollPaul, poll_id: CAL.poll, coach_id: ME, name: 'Paul Garner', email: 'paul@example.invalid', profile_id: null, time_zone: LON, vote_key: CAL.pollPaulKey, voted_at: when(-2, '16:30'), position: 1, created_at: when(-3, '11:00') },
+    ],
+    coach_poll_options: [option(CAL.opt1, 0, '17:00', '18:00', 0), option(CAL.opt2, 3, '17:00', '18:00', 1), option(CAL.opt3, 4, '15:00', '16:00', 2)],
+    // M11's poll: Mon, Mia can and Paul can't; Thu, everyone can; Fri, Mia can't and Paul can.
+    coach_poll_votes: [
+      { option_id: CAL.opt1, person_id: CAL.pollMia, can: true, voted_at: when(-2, '15:00') }, { option_id: CAL.opt1, person_id: CAL.pollPaul, can: false, voted_at: when(-2, '16:30') },
+      { option_id: CAL.opt2, person_id: CAL.pollMia, can: true, voted_at: when(-2, '15:00') }, { option_id: CAL.opt2, person_id: CAL.pollPaul, can: true, voted_at: when(-2, '16:30') },
+      { option_id: CAL.opt3, person_id: CAL.pollMia, can: false, voted_at: when(-2, '15:00') }, { option_id: CAL.opt3, person_id: CAL.pollPaul, can: true, voted_at: when(-2, '16:30') },
+    ],
+    coach_booking_links: [link(CAL.linkDana, CAL.linkDanaKey, 'Sponsor call', 'Dana Whitfield'), link(CAL.linkPaul, CAL.linkPaulKey, 'Three-way meeting', 'Paul Garner')],
+    coach_leads: [lead(CAL.leadRuth, 'Ruth Adeyemi', 'chemistry_page', 'chemistry', CAL.bookRuth), lead(CAL.leadNadia, 'Nadia Osei', 'connection_page', 'connection', CAL.bookNadia)],
+    coach_cal_items: [
+      // Monday
+      item(CAL.training, 'Training', 'own_time', -28, '09:45', '12:00', { repeat_rule: { every: 'week', weekdays: [1, 2] } }),
+      call(CAL.hannahMon, 'Hannah Wells', 0, '15:30', '16:30'),
+      call(CAL.miaMon, 'Mia Torres', 0, '09:00', '10:00', { time_zone: 'America/New_York', profile_id: ID.mia }),
+      life(CAL.swimming, 'Swimming with Esme', 'family', 0, '18:00', '19:00'),
+      hold(CAL.hold1, CAL.opt1, 0, '17:00', '18:00'),
+      // Tuesday
+      call(CAL.samTue, 'Sam Okafor', 1, '12:30', '13:30', { profile_id: ID.sam }),
+      call(CAL.kestrelTue, 'Kestrel leadership team', 1, '14:00', '15:30', { group_id: ID.group }),
+      call(CAL.jordanTue, 'Jordan Reyes', 1, '09:45', '10:45', { time_zone: 'America/Chicago', profile_id: ID.jordan }),
+      call(CAL.priyaTue, 'Priya Nair', 1, '17:00', '18:00', { profile_id: ID.priya }),
+      life(CAL.parents, 'Parents’ evening', 'family', 1, '19:00', '20:30'),
+      // Wednesday
+      item(CAL.writing, 'Writing', 'writing', 2, '09:00', '12:00'),
+      item(CAL.coffeeDan, 'Coffee with Dan Reid', 'connection', 2, '12:30', '13:00', { place_kind: 'in_person', location: 'The Lighthouse café' }),
+      item(CAL.ruth, 'Ruth Adeyemi', 'chemistry', 2, '13:00', '13:30', zoom()),
+      item(CAL.admin, 'Admin', 'admin', 2, '14:00', '16:00'),
+      call(CAL.noraWed, 'Nora Ellis', 2, '09:00', '10:00', { time_zone: 'America/Los_Angeles' }),
+      // Thursday
+      life(CAL.dentist, 'Dentist', 'personal', 3, '08:00', '09:00'),
+      item(CAL.travelOut, 'Travel', 'travel', 3, '11:30', '12:00', { travel_for: CAL.leoThu }),
+      call(CAL.leoThu, 'Leo Grant', 3, '12:00', '13:00', { profile_id: ID.leo, place_kind: 'in_person', meeting_link: null, location: 'Northfield Logistics, Leeds' }),
+      item(CAL.travelBack, 'Travel', 'travel', 3, '13:00', '13:30', { travel_for: CAL.leoThu }),
+      call(CAL.calebThu, 'Caleb Hunt', 3, '08:30', '09:30', { time_zone: 'America/Chicago' }),
+      item(CAL.supervision, 'Supervision with Maya', 'other', 3, '16:00', '17:00', zoom()),
+      item(CAL.dinner, 'Leaders’ dinner, Birmingham', 'event', 3, '18:30', '20:30', { place_kind: 'in_person', location: 'Birmingham' }),
+      hold(CAL.hold2, CAL.opt2, 3, '17:00', '18:00'),
+      // Friday
+      call(CAL.marcusFri, 'Marcus Bell', 4, '11:30', '12:30', { profile_id: ID.marcus }),
+      item(CAL.nadia, 'Nadia Osei', 'connection', 4, '12:30', '13:00', zoom()),
+      call(CAL.hannahFri, 'Hannah Wells', 4, '14:00', '15:00'),
+      call(CAL.kestrelFri, 'Kestrel leadership team', 4, '16:15', '17:45', { group_id: ID.group }),
+      life(CAL.sarah, 'Dinner with Sarah', 'personal', 4, '18:00', '20:00'),
+      hold(CAL.hold3, CAL.opt3, 4, '15:00', '16:00'),
+      // Next week: all day, over two days.
+      { ...item(CAL.conference, 'Leading Teams conference', 'event', 9, '00:00', '00:00', { location: 'Manchester' }), ends_at: when(11, '00:00'), all_day: true, starts_on: addDays(monday, 9), ends_on: addDays(monday, 10) },
+    ],
+    coach_cal_guests: [
+      { id: CAL.guestMaya, item_id: CAL.supervision, coach_id: ME, name: 'Maya Collins', email: null, profile_id: null, guest_coach_id: OTHER, contact_id: null, reply: 'yes', replied_at: when(-1, '09:10'), invited_at: when(-3, '12:00'), position: 0, created_at: made },
+      { id: CAL.guestDana, item_id: CAL.dinner, coach_id: ME, name: 'Dana Whitfield', email: 'dana@example.invalid', profile_id: null, guest_coach_id: null, contact_id: null, reply: 'maybe', replied_at: when(-1, '14:00'), invited_at: when(-3, '12:00'), position: 0, created_at: made },
+    ],
+    // M11's "Open for calls": next week, Mon 14:00 to 16:00, Thu 13:30 to 15:00, Fri 14:00 to 16:00.
+    coach_open_blocks: [block(CAL.open1, 7, '14:00', '16:00'), block(CAL.open2, 10, '13:30', '15:00'), block(CAL.open3, 11, '14:00', '16:00')],
+    coach_bookings: [
+      booked(CAL.bookRuth, CAL.bookRuthKey, CAL.chem, CAL.ruth, CAL.leadRuth, 'Ruth Adeyemi', 2, '13:00', '13:30'),
+      booked(CAL.bookNadia, CAL.bookNadiaKey, CAL.conn, CAL.nadia, CAL.leadNadia, 'Nadia Osei', 4, '12:30', '13:00'),
+    ],
+    coach_cal_reminder_sends: [],
+    // The placed to-do, for a seed without the day's own (seedWithCal leaves it out: DAY.t12 is the same to-do).
+    coach_todos: [{
+      id: CAL.todoProposal, coach_id: ME, title: 'Send the Kestrel proposal', notes: null, important: true, planned_on: addDays(monday, 4), planned_time: '09:15', first_planned_on: null, due_on: addDays(monday, 4), minutes: 30,
+      list_id: null, heading_id: null, profile_id: null, lead_id: null, repeat_rule: null, repeat_of: null, remind: false, someday: false, after_work: false, checklist: [], position: 1, done_at: null,
+      from_email_sender: null, from_email_subject: null, from_email_at: null, created_at: made,
+    }],
+  };
+}
+
+/**
+ * Everything: seedWithDay() and the calendar's week. A client call's item is tied to the day seed's session for the same client
+ * or group at the same moment (session_id), so the calendar, Today and the next-call bar agree; a seeded session with no item of
+ * its own is still a session (the calendar's rules decide how it shows). M11's placed to-do is the day seed's own.
+ * Settings gain M11's Booking limits as numbers, My calendars' switches and the working hours M11's "Working hours" screen draws.
+ */
+export function seedWithCal(options = {}) {
+  const rows = seedWithDay(options);
+  const cal = calSeed();
+  const sessionFor = (i) => rows.coach_sessions.find((x) => x.starts_at === i.starts_at && ((i.profile_id && x.profile_id === i.profile_id) || (i.group_id && x.group_id === i.group_id)));
+  const taken = new Set();
+  cal.coach_cal_items = cal.coach_cal_items.map((i) => {
+    const s = i.kind === 'client_call' ? sessionFor(i) : null;
+    if (!s || taken.has(s.id)) return i;
+    taken.add(s.id);
+    return { ...i, session_id: s.id };
+  });
+  delete cal.coach_todos;
+  for (const [table, list] of Object.entries(cal)) rows[table] = [...(rows[table] || []), ...list];
+  rows.coach_settings = rows.coach_settings.map((s) => ({
+    ...s,
+    working_hours: { mon: { from: '09:00', to: '18:30' }, tue: { from: '09:00', to: '18:30' }, wed: { from: '09:00', to: '17:00' }, thu: { from: '09:00', to: '20:45' }, fri: { from: '09:00', to: '15:00' } },
+    booking: { remind_24: true, remind_1: false, gap: '15 minutes', per_day: '5', notice: '24 hours', ahead: '4 weeks' },
+    calendars: { work: true, personal: true, family: true, weekends: false },
+  }));
+  return rows;
+}

@@ -20,12 +20,22 @@
 //     once and its email claimed once, capacity, the workshop follow-up
 //     claimed once, and what the client's own functions return.
 //
+//   - migration 051's tables (the calendar and booking; Phase 6a run 3):
+//     with `cal: true` (and `day: true`) the stand-in also holds the
+//     calendar's tables and answers 051's rules, triggers and functions as
+//     the SQL does (tests/coach/cal-standin.mjs): each coach's calendar is
+//     theirs alone, a moved item takes its session and booking with it, the
+//     free times are worked out from the open blocks or the weekly hours
+//     less anything busy, and a start someone else has just booked is
+//     refused. Without it, 051 "isn't there yet", as for Tim tonight.
+//
 // No test here sends an email or a message: every /api/ call is answered
 // with a stand-in, and nothing is ever written to the test project.
 import { readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { CAL_FUNCTIONS, CAL_KEYS, CAL_TABLES, calStandIn } from './cal-standin.mjs';
 
 export const APP = (process.env.APP_URL || 'http://localhost:4317').replace(/\/$/, '');
 const TEST_REF = 'gqtqljngeenqzxneucoc';
@@ -108,6 +118,8 @@ const KEYS = {
   coach_tag_links: ['tag_id', 'item_kind', 'item_id'], coach_field_values: ['field_id', 'item_id'],
   // The coaching day (050), as src/lib/coach/store.js TABLES has them.
   coach_days: ['coach_id', 'day'], coach_weeks: ['coach_id', 'week_start'], coach_session_people: ['session_id', 'profile_id'], coach_session_notes: ['session_id'],
+  // The calendar (051).
+  ...CAL_KEYS,
 };
 const TABLES = ['organisations', 'coach_settings', 'coach_profiles', 'coach_away', 'client_profiles', 'client_about', 'client_notes', 'client_files', 'client_view_requests',
   'coach_tags', 'coach_tag_links', 'coach_fields', 'coach_field_values', 'coach_views', 'organisation_contacts', 'organisation_documents', 'coach_groups',
@@ -170,16 +182,20 @@ function dayChecks(table, r) {
  * Puts the stand-ins in front of a page.
  * @param {{ role: 'owner'|'associate', db: 'none'|'there', rows?: object, admin?: object[], day?: boolean, strict?: boolean, now?: () => Date }} opts
  *   `day` (with db 'there'): migration 050 is there too: its tables are held and its functions and triggers answered as the SQL does.
+ *   `cal` (with db 'there' and day): migration 051 is there too (the calendar and booking), answered by tests/coach/cal-standin.mjs.
+ *     Its functions are on `store.fn` beside 050's (`store.fn.booking_make(uid, key, start, name, email, zone, answers, earlyLate)` and so on),
+ *     so a walk can book as a guest without a page; `store.connections` is what coach_connections_mine() answers from.
  *   `strict` (with db 'there'): nothing but a read ever reaches the test project: a function the stand-in doesn't know is answered
  *     with nothing (listed as `rpc name (not run)`), and a write to any other table is stopped and listed as `blocked …`.
  *   `now`: the database's clock (a walk that pins the page's clock hands the same time in).
  *   `page` may be a browser context: every tab in it is then answered by the one stand-in.
  * @returns the stand-in database ({ rows, calls, coaches, sends, claims, fn, api, withheld, leak })
  */
-export async function standIn(page, { role = 'owner', db = 'none', rows = {}, admin = [], day = false, strict = false, now: clock = () => new Date() } = {}) {
+export async function standIn(page, { role = 'owner', db = 'none', rows = {}, admin = [], day = false, cal = false, strict = false, now: clock = () => new Date() } = {}) {
   const me = { id: ME, user_id: null, role: role === 'owner' ? 'owner' : 'coach', display_first_name: role === 'owner' ? 'Alex' : 'Maya', full_name: role === 'owner' ? 'Alex Morgan' : 'Maya Collins', email: null, mobile: null, contact_ways: ['email'], active: true, capacity_hours_week: 15, hourly_rate: role === 'owner' ? null : 100, rate_currency: 'GBP' };
   const other = { id: OTHER, user_id: randomUUID(), role: role === 'owner' ? 'coach' : 'owner', display_first_name: role === 'owner' ? 'Maya' : 'Alex', full_name: role === 'owner' ? 'Maya Collins' : 'Alex Morgan', email: null, mobile: null, contact_ways: ['email'], active: true, capacity_hours_week: 15, hourly_rate: role === 'owner' ? 100 : null, rate_currency: 'GBP' };
-  const held = db === 'there' && day ? [...TABLES, ...DAY_TABLES] : TABLES;
+  const calThere = db === 'there' && day && cal; // 051 needs 050
+  const held = db === 'there' && day ? [...TABLES, ...DAY_TABLES, ...(calThere ? CAL_TABLES : [])] : TABLES;
   const store = { rows: Object.fromEntries(held.map((t) => [t, [...(rows[t] || [])]])), calls: [], coaches: [me, other], down: false, sends: [], claims: [], api: { live: false, asked: [] }, withheld: 0, leak: false };
   const keyOf = (table, row) => (KEYS[table] || ['id']).map((c) => row[c]).join('|');
   const stamp = () => clock().toISOString();
@@ -196,6 +212,7 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
     if (e) e.sessions_held = Math.min(1000, Math.max(0, (Number(e.sessions_held_base) || 0) + recorded(e.id)));
   };
   const sessionOf = (id) => store.rows.coach_sessions.find((s) => s.id === id) || null;
+  store.recount = recount;
   if (db === 'there' && day) {
     // The migration copies sessions_held into sessions_held_base once; a seed's sessions then count on top, as they would from that day on.
     for (const e of store.rows.engagements) { if (e.sessions_held_base == null) e.sessions_held_base = Number(e.sessions_held) || 0; }
@@ -370,6 +387,10 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
     },
   };
 
+  // 051, as its SQL: the calendar's rules, triggers and functions (its functions sit on store.fn beside 050's).
+  const calSim = calThere ? calStandIn({ store, ME, me, clock, no }) : null;
+  if (calSim) { Object.assign(store.fn, calSim.fn); store.freeTimes = calSim.freeTimes; store.connections = []; }
+
   await page.route('**/api/**', (r) => { store.calls.push(`api ${new URL(r.request().url()).pathname}`); return json(r, { ok: true, sent: false }); });
   if (db === 'there' && day) {
     // The email server (api/coach-send.js), answered as it answers and never sending: a preview ({ live: false }) says so
@@ -446,6 +467,7 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
       try {
         localStorage.setItem('clarity-coach-not-yet', String(Date.now()));
         localStorage.setItem('clarity-coach-day-not-yet', String(Date.now()));
+        localStorage.setItem('clarity-coach-cal-not-yet', String(Date.now()));
       } catch { /* blocked */ }
     });
     await page.route('**/rest/v1/**', (route) => {
@@ -454,6 +476,11 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
       if (name.startsWith('coaches')) return route.fallback();
       if (req.method() === 'GET' || req.method() === 'HEAD') return route.fallback();
       // A checked function (the portal's own questions after sign-in among them) is answered with nothing: it never runs.
+      // 051's functions aren't there yet: the page is told so, as a database without them would tell it.
+      if (name.startsWith('rpc/') && CAL_FUNCTIONS.includes(name.slice(4).split('?')[0])) {
+        store.calls.push(`rpc ${name.slice(4)} (not there)`);
+        return json(route, { code: 'PGRST202', details: null, hint: null, message: `Could not find the function public.${name.slice(4)} in the schema cache` }, 404);
+      }
       if (name.startsWith('rpc/')) { store.calls.push(`rpc ${name.slice(4)} (not run)`); return json(route, null); }
       store.calls.push(`blocked ${req.method()} ${name}`);
       return route.abort('blockedbyclient');
@@ -462,18 +489,21 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
   }
   // "049 isn't there yet" is remembered on a device for an hour; a page that is
   // answered by the stand-in starts without that note, every time it loads.
-  await page.addInitScript((dayThere) => {
+  await page.addInitScript(([dayThere, calIsThere]) => {
     try {
       localStorage.removeItem('clarity-coach-not-yet');
       // 050: there (the page is never told "not yet"), or not (told so on every load, so it never asks the test project).
       if (dayThere) localStorage.removeItem('clarity-coach-day-not-yet'); else localStorage.setItem('clarity-coach-day-not-yet', String(Date.now()));
+      // 051, the same way.
+      if (calIsThere) localStorage.removeItem('clarity-coach-cal-not-yet'); else localStorage.setItem('clarity-coach-cal-not-yet', String(Date.now()));
     } catch { /* blocked */ }
-  }, day);
+  }, [day, calThere]);
 
   // 050's read rules (the break-it tester, 20 Nov): a coach reads only their own to-dos, lists, days, weeks and sessions, and
   // the owner is no exception. A row of another coach's is never returned (counted in `store.withheld`), changed or deleted.
   // `store.leak = true` switches that off, for a walk that asks what a page would show if such a row ever reached the device.
-  const readable = (table, r) => !day || !DAY_TABLES.includes(table) || store.leak === true || (
+  const readable = (table, r) => (calSim && CAL_TABLES.includes(table) ? store.leak === true || calSim.readable(table, r) : readableDay(table, r));
+  const readableDay = (table, r) => !day || !DAY_TABLES.includes(table) || store.leak === true || (
     table === 'coach_session_people' ? sessionOf(r.session_id)?.coach_id === ME
       : table === 'workshop_sends' ? store.rows.workshops.find((w) => w.id === r.workshop_id)?.coach_id === ME
         : r.coach_id === ME);
@@ -605,6 +635,37 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
         case 'coach_client_list':
           return json(route, []);
         default:
+          if (CAL_FUNCTIONS.includes(fn)) {
+            // 051's functions, as their SQL (store.fn); without `cal` they aren't there, and the test project is never asked.
+            if (!calSim) return json(route, { code: 'PGRST202', details: null, hint: null, message: `Could not find the function public.${fn} in the schema cache` }, 404);
+            if (fn === 'cal_reminders_coming' || fn === 'cal_reminder_claim') return refused(route, '42501', `permission denied for function ${fn}`);
+            try {
+              const uid = me.user_id;
+              const a = args;
+              const answers = {
+                booking_page: () => store.fn.booking_page(uid, a.p_key),
+                booking_free_times: () => store.fn.booking_free_times(uid, a.p_key, a.p_from, a.p_to),
+                booking_make: () => store.fn.booking_make(uid, a.p_key, a.p_start, a.p_name, a.p_email, a.p_zone, a.p_answers ?? {}, a.p_early_late ?? false),
+                booking_mine: () => store.fn.booking_mine(uid, a.p_guest_key),
+                booking_move_times: () => store.fn.booking_move_times(uid, a.p_guest_key, a.p_from, a.p_to),
+                booking_move: () => store.fn.booking_move(uid, a.p_guest_key, a.p_start, a.p_early_late ?? false),
+                booking_cancel: () => store.fn.booking_cancel(uid, a.p_guest_key),
+                poll_page: () => store.fn.poll_page(uid, a.p_key),
+                poll_vote: () => store.fn.poll_vote(uid, a.p_key, a.p_votes),
+                my_booking_times: () => store.fn.my_booking_times(uid, a.p_from, a.p_to, a.p_minutes ?? null),
+                my_sessions_coming: () => store.fn.my_sessions_coming(uid),
+                my_session_book: () => store.fn.my_session_book(uid, a.p_start, a.p_minutes ?? null),
+                my_session_move: () => store.fn.my_session_move(uid, a.p_session, a.p_start, a.p_late_ok ?? false),
+                my_session_cancel: () => store.fn.my_session_cancel(uid, a.p_session, a.p_late_ok ?? false),
+                coach_call_types_start: () => store.fn.coach_call_types_start(uid),
+                coach_connections_mine: () => store.fn.coach_connections_mine(uid),
+              };
+              return json(route, answers[fn]());
+            } catch (e) {
+              if (e instanceof Refusal) return refused(route, e.code, e.message, e.status);
+              throw e;
+            }
+          }
           if (day) {
             // 050's functions, as their SQL (store.fn); a refusal is answered as the database words it.
             try {
@@ -637,13 +698,16 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
     if (!held.includes(table)) {
       const method = req.method();
       // 050 isn't there: its tables answer as a database without them does, and the test project is never asked.
-      if (DAY_TABLES.includes(table)) return json(route, { code: 'PGRST205', details: null, hint: null, message: `Could not find the table 'public.${table}' in the schema cache` }, 404);
+      // 051's connections are the server's alone: no person reads or writes a row.
+      if (calSim && table === 'coach_connections') return refused(route, '42501', 'permission denied for table coach_connections');
+      if (DAY_TABLES.includes(table) || CAL_TABLES.includes(table) || table === 'coach_connections') return json(route, { code: 'PGRST205', details: null, hint: null, message: `Could not find the table 'public.${table}' in the schema cache` }, 404);
       if (strict && method !== 'GET' && method !== 'HEAD') { store.calls.push(`blocked ${method} ${table}`); return route.abort('blockedbyclient'); }
       return route.fallback();
     }
     const method = req.method();
     const now = stamp();
     const hooked = day && (DAY_TABLES.includes(table) || table === 'engagements');
+    const calHooked = Boolean(calSim) && CAL_TABLES.includes(table);
     store.calls.push(`${method} ${table}`);
     if (method === 'GET' || method === 'HEAD') return json(route, filtered(table, url));
     try {
@@ -668,8 +732,10 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
             if (old) row = before(table, old, row);
             if (DAY_TABLES.includes(table)) { dayChecks(table, row); points(table, row); }
           }
+          if (calHooked) row = calSim.before(table, old, row);
           if (old) store.rows[table][at] = row; else store.rows[table].push(row);
           if (hooked) after(table, old, row);
+          if (calHooked) calSim.after(table, old, row);
           out.push(row);
         }
         return json(route, out, 201);
@@ -681,14 +747,16 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
         for (const old of hit) {
           let row = { ...old, ...body, updated_at: now };
           if (hooked) { if (DAY_TABLES.includes(table)) mine(table, row); row = before(table, old, row); if (DAY_TABLES.includes(table)) { dayChecks(table, row); points(table, row); } }
+          if (calHooked) row = calSim.before(table, old, row);
           const was = { ...old };
           Object.assign(old, row);
           if (hooked) after(table, was, old);
+          if (calHooked) calSim.after(table, was, old);
           out.push(old);
         }
         return json(route, out);
       }
-      if (method === 'DELETE') return json(route, removeRows(table, filtered(table, url)));
+      if (method === 'DELETE') return json(route, calHooked ? calSim.remove(table, filtered(table, url)) : removeRows(table, filtered(table, url)));
     } catch (e) {
       if (e instanceof Refusal) { store.calls.push(`refused ${method} ${table} ${e.code}`); return refused(route, e.code, e.message, e.status); }
       throw e;
@@ -727,7 +795,7 @@ export async function seedDevice(page, userId, rows) {
 /** Takes the coach portal's device copies off this browser (what a test made is never kept). */
 export async function clearDevice(page, userId) {
   await page.evaluate((id) => {
-    for (const k of Object.keys(localStorage)) if (k.startsWith(`clarity-coach-local:${id}`) || k.startsWith(`clarity-cache:${id}:coach`) || k === 'clarity-coach-not-yet' || k === 'clarity-coach-day-not-yet') localStorage.removeItem(k);
+    for (const k of Object.keys(localStorage)) if (k.startsWith(`clarity-coach-local:${id}`) || k.startsWith(`clarity-cache:${id}:coach`) || k === 'clarity-coach-not-yet' || k === 'clarity-coach-day-not-yet' || k === 'clarity-coach-cal-not-yet') localStorage.removeItem(k);
   }, userId);
 }
 
