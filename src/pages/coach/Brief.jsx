@@ -4,6 +4,8 @@ import { SlidePanel, Stat, StatGroup } from '../../components/design';
 import { rowsOf } from '../../lib/coach/store';
 import { firstName, possessive } from '../../lib/coach/model';
 import { averageSince, comingUp, fromLastTime, isLink, lastSession, lengthPlace, prepLine, sharedReview, whenWords } from '../../lib/coach/day';
+import { clientTimeWords, coachZoneOf } from '../../lib/coach/calendar';
+import { deviceZone, isZone, sameZone } from '../../lib/time';
 import { useBriefData } from '../../lib/coach/dayData';
 import { saveAction } from '../../lib/coach/sessionActions';
 import { reviewRows } from '../../lib/peakMoments/model';
@@ -26,9 +28,12 @@ import './sessions.css';
 const PIN = <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 1.5l5 5-2.2.7-2.6 2.6.3 3.2-1 1L5.5 10.5 1.5 14.5M5.5 10.5L2 7l1-1 3.2.3 2.6-2.6z" /></svg>;
 
 function BriefBody({ session, client }) {
-  const { userId, coach, state, sessions, sessionActions, sessionNotes, todayKey } = useCoachPortal();
+  const { userId, coach, state, sessions, sessionActions, sessionNotes, settings, todayKey } = useCoachPortal();
   const say = useSay();
   const first = firstName(client.name);
+  // A client in another time zone: their own time beside the coach's, with their day when it differs (time zone rules 5 and 6).
+  const coachZone = coachZoneOf(settings, deviceZone());
+  const theirs = isZone(client.time_zone) && !sameZone(client.time_zone, coachZone) ? `${clientTimeWords(session.starts_at, client.time_zone, coachZone)} time` : '';
   const shared = useBriefData(client.user_id || null, todayKey);
   const last = lastSession(sessions, (s) => s.profile_id === client.id, session.starts_at);
   const pinned = rowsOf(state, 'client_notes').filter((n) => n.profile_id === client.id && n.coach_id === coach.id && n.pinned)
@@ -47,7 +52,7 @@ function BriefBody({ session, client }) {
 
   return (
     <>
-      <p className="cc-brief-meta"><span>{whenWords(session.starts_at, todayKey)}</span><span>{lengthPlace(session)}</span></p>
+      <p className="cc-brief-meta"><span>{whenWords(session.starts_at, todayKey)}</span>{theirs && <span>{theirs}</span>}<span>{lengthPlace(session)}</span></p>
       {pinned.length > 0 && (
         <div className="cc-pins cc-brief-pins" aria-label="Pinned notes, only you can see these">
           {pinned.map((n) => <p key={n.id}>{PIN}<span>{n.body}</span></p>)}

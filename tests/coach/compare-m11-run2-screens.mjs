@@ -103,6 +103,7 @@ const T_TIME = TIM('under a day’s heading only the time shows (rule 29ap: no r
 export const EVERYWHERE = {
   changes: [
     [/^(Elena Ruiz|Tom Hale|Ruth Adams)$/, null, 'a to-do names its client; a lead’s or contact’s name on its row comes with the CRM, run 4, and one from an email says “From email” with the sender in its panel', { quiet: true, say: 'a lead’s or contact’s name on a to-do’s row' }],
+    ['09:45 Chicago', '9:45 am Chicago', 'a US or Canadian client’s own time is 12-hour (time zone rule 5), as on the calendar’s tiles; M11 writes it 24-hour', { quiet: true, say: '09:45 Chicago' }],
     seed(/^Group of 6$/, 'Group of 3', 'the Kestrel group has 3 members, where M11’s has 6', { quiet: true, say: 'Group of 6' }),
     // An associate: M11 gives Maya her own invented people; the test's associate keeps the owner's seed on the device.
     seed(/^(Nina Shah|Nina Shah in \d minutes|Nina Shah Starting now|Lakeside Rowing Club|Ross Kemp|Ella Fraser|13:00|16:30|Prepare for supervision with Tim|Send Nina the pressure plan worksheet|No next session is booked, and one is due by Fri \d+ Nov\.|Nothing here yet\.|Book a call|Season review with the board, 10:00|Season review with the board|6 of 12|5|Today|Self-funded|Wed 18 Nov|Zoom|60 minutes|Done)$/, null, 'M11 gives Maya her own invented clients and to-dos; the test’s associate keeps the owner’s seed on the device', { who: 'associate', quiet: true, say: 'Maya’s own clients and to-dos' }),
@@ -234,12 +235,12 @@ export const ROWS = [
       [/^name: (.+ Drag onto the calendar|Chicago time\. Choose the second time zone|.+, Tue 17 Nov \d\d:\d\d to \d\d:\d\d.*)$/, null, STEP3, { say: 'the calendar’s spoken names' }],
       seed(/^(Call Priya about the keynote|Pull Sam’s progress for the review|15 min|30 min)$/, null, 'M11’s step 3 has two to-dos picked in step 2; nothing is picked on the way here', { say: 'two to-dos picked in step 2' })],
     added: [[/^(Add a time|YOUR DAY)$/, STEP3, null, { say: 'Add a time, and Your day' }], [/^name: Add a time for /, STEP3, null, { say: 'Add a time for …' }],
-      [/^(Kestrel Group|60 minutes|90 minutes|Harbour City FC|Self-funded|Group of 3|Zoom|09:45 Chicago)$/, `${STEP3}; the calls are a plain list in time order, as Today’s Calls`, null, { say: 'the calls as Today’s rows' }]],
+      [/^(Kestrel Group|60 minutes|90 minutes|Harbour City FC|Self-funded|Group of 3|Zoom|9:45 am Chicago)$/, `${STEP3}; the calls are a plain list in time order, as Today’s Calls`, null, { say: 'the calls as Today’s rows' }]],
     moved: [[/^(15 min|30 min|\d\d:\d\d|sam okafor|kestrel leadership team|jordan reyes|priya nair)$/, STEP3, null, { say: 'the calls and estimates' }]] },
   { name: 'Today, a Friday afternoon', m11: 'today:fri', built: 'today-fri', shiftDays: -7, ...today({
     changes: [['Weekly review', 'Rate my energy', 'on a Friday afternoon the one offer is Rate my energy, then the Weekly review (coach rule 17)'], ['~3 minutes', '~30 seconds', 'Rate my energy’s own time (coach rule 17)'],
       seed(/^(Quillmark|Zoom|Due Fri|From Fri 6 Nov|Pricing launch, 09:00|v Bay City, home, Chicago, 19:30 there, 01:30 for you|v Bay City, 01:30 for you|Wed 18 Nov|Tue 17 Nov)$/, null, 'the seed’s Friday: Mia at 14:00 in New York’s time where M11 has Hannah, and every day counted from the pinned Friday', { say: 'M11’s own Friday' })],
-    added: [seeded(/^(It’s Priya Nair’s birthday today\.|Mia Torres|Brightline Media|09:00 New York|Due Mon|From Mon 9 Nov|Board meeting|Keynote at the Leeds Leaders Forum|Sat 14 Nov|Sun 15 Nov|Tue 17 Nov)$/, 'the seed’s Friday: Priya’s birthday is always the pinned day, and the forecast is the same three moments', { say: 'the seed’s own Friday' })],
+    added: [seeded(/^(It’s Priya Nair’s birthday today\.|Mia Torres|Brightline Media|9:00 am New York|Due Mon|From Mon 9 Nov|Board meeting|Keynote at the Leeds Leaders Forum|Sat 14 Nov|Sun 15 Nov|Tue 17 Nov)$/, 'the seed’s Friday: Priya’s birthday is always the pinned day, and the forecast is the same three moments', { say: 'the seed’s own Friday' })],
     moved: [seeded(/^(zoom|northfield logistics|tue 17 nov|60 minutes)$/, 'the seed’s Friday')],
   }) },
   { name: 'Weekly review, step 1', m11: 'review', part: 'sheet', built: 'today-review-1', shiftDays: -7,

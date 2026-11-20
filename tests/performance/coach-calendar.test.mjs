@@ -27,6 +27,17 @@ const ctx = (data, extra = {}) => ({ coachZone: LON, data, newId, ...extra });
 
 // ---------------------------------------------------------------- time-zone-safeguards.md: the tests it asks for
 
+test('a call’s row gives a US client’s own time 12-hour with the city, the day too when it differs, and the place for a client at home', () => {
+  const session = (day, time, zone, place = null) => ({ starts_at: at(day, time, zone), place });
+  assert.equal(cal.callPlaceWords(session('2026-11-17', '09:45', 'America/Chicago'), 'America/Chicago', LON), '9:45 am Chicago');
+  assert.equal(cal.callPlaceWords(session('2026-11-17', '13:00', 'America/Toronto'), 'America/Toronto', LON), '1:00 pm Toronto');
+  assert.equal(cal.callPlaceWords(session('2026-11-17', '18:15', 'Asia/Kolkata'), 'Asia/Kolkata', LON), '18:15 India');
+  assert.equal(cal.callPlaceWords(session('2026-11-16', '08:00', 'Australia/Sydney'), 'Australia/Sydney', LON), 'Mon 16 Nov, 08:00 Sydney');
+  assert.equal(cal.callPlaceWords(session('2026-11-17', '12:30', LON), LON, LON), 'Zoom');
+  assert.equal(cal.callPlaceWords(session('2026-11-17', '12:30', LON, 'Northfield Logistics, Leeds'), null, LON), 'Northfield Logistics, Leeds');
+  assert.equal(cal.callPlaceWords(session('2026-11-17', '12:30', LON), 'EST', LON), 'Zoom');
+});
+
 test('a New York client’s Monday 07:30 series keeps 07:30 there through 25 Oct and 1 Nov 2026, while Tim’s time moves 12:30, 11:30, 12:30', () => {
   const series = call('tyson', 'Tyson Reed', '2026-10-19', '07:30', '08:30', { time_zone: NY, repeat_rule: { every: 'week' } });
   const calls = cal.occurrences([series], at('2026-10-19', '00:00'), at('2026-11-03', '00:00'));
@@ -1066,14 +1077,14 @@ test('the clock-change week line on Today', () => {
   const local = call('sam', 'Sam Okafor', '2026-10-05', '14:00', '15:00', { repeat_rule: { every: 'week' } });
   const lines = (day) => cal.clockChangeLines({ items: [tyson, local], now: at(day, '08:00'), coachZone: LON });
   // The week before the US clocks go back (the Monday before Sun 1 Nov 2026).
-  assert.deepEqual(lines('2026-10-26'), ['US clocks go back on Sunday 1 Nov. Your calls with US clients stay at their usual time for them; for you, Tyson’s Monday call moves from 11:30 to 12:30 UK time this week.']);
+  assert.deepEqual(lines('2026-10-26'), ['US clocks go back on Sunday 1 Nov. Your calls with US clients stay at their usual time for them; for you, Tyson’s Monday call moves from 11:30 to 12:30 UK time from Mon 2 Nov.']);
   assert.equal(lines('2026-10-30').length, 1);
   // The week the UK's own clocks go back: calls with clients elsewhere move for the coach.
-  assert.deepEqual(lines('2026-10-19'), ['UK clocks go back on Sunday 25 Oct. Your calls with clients in other time zones stay at their usual time for them; for you, Tyson’s Monday call moves from 12:30 to 11:30 UK time this week.']);
+  assert.deepEqual(lines('2026-10-19'), ['UK clocks go back on Sunday 25 Oct. Your calls with clients in other time zones stay at their usual time for them; for you, Tyson’s Monday call moves from 12:30 to 11:30 UK time from Mon 26 Oct.']);
   // Clients in two US time zones: the country's clocks change on one day, so it is said once, with both calls (the UI tester, 20 Nov).
   const jordan = call('jordan', 'Jordan Reyes', '2026-10-06', '09:45', '10:45', { time_zone: 'America/Chicago', repeat_rule: { every: 'week' } });
   assert.deepEqual(cal.clockChangeLines({ items: [tyson, jordan, local], now: at('2026-10-27', '08:00'), coachZone: LON }),
-    ['US clocks go back on Sunday 1 Nov. Your calls with US clients stay at their usual time for them; for you, Tyson’s Monday call moves from 11:30 to 12:30 UK time, and Jordan’s Tuesday call moves from 14:45 to 15:45 UK time this week.']);
+    ['US clocks go back on Sunday 1 Nov. Your calls with US clients stay at their usual time for them; for you, Tyson’s Monday call moves from 11:30 to 12:30 UK time from Mon 2 Nov, and Jordan’s Tuesday call moves from 14:45 to 15:45 UK time from Tue 3 Nov.']);
   // No change coming, or no call it moves: nothing is said.
   assert.deepEqual(lines('2026-11-09'), []);
   assert.deepEqual(cal.clockChangeLines({ items: [local], now: at('2026-10-26', '08:00'), coachZone: LON }), []);

@@ -2,7 +2,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, ChartTips, Dropdown, InlineChoice, Sheet, SlidePanel, Stat, TextBox, tipProps, useIsPhone, useToast } from '../../components/design';
 import keepWords from '../../components/design/keepWords';
-import { deviceZone, isZone, sameZone, wallClock, zonePlace } from '../../lib/time';
+import { deviceZone, isZone } from '../../lib/time';
+import { callPlaceWords } from '../../lib/coach/calendar';
 import { keyOf, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { addDays, cut, dayWords, hoursWords, minutesWords } from '../../lib/coach/model';
 import {
@@ -78,10 +79,8 @@ export function useCallWords() {
     }
     const client = clients.find((c) => c.id === session.profile_id);
     const org = organisations.find((o) => o.id === client?.organisation_id)?.name;
-    const zone = client?.time_zone;
-    // A client in another time zone: their own time and city (the time library's names, never letters).
-    const away = isZone(zone) && mine && !sameZone(zone, mine);
-    const place = away ? `${wallClock(new Date(session.starts_at), zone).time} ${zonePlace(zone)}` : session.place || 'Zoom';
+    // A client in another time zone: their own time and city (the calendar's rule: 12-hour for the US and Canada, never letters).
+    const place = callPlaceWords(session, client?.time_zone, mine);
     return { name: client?.name || 'Client', facts: [org || 'Self-funded', place], to: null, group: false };
   };
 }

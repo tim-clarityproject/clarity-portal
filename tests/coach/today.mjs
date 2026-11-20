@@ -345,7 +345,7 @@ seedClock(null);
 // The words, read once (1440, dark).
 const has = (key, words, what) => { if (said[key] != null) report.pass(what, said[key].toLowerCase().includes(words.toLowerCase()), `“${words}” not found`); };
 has('tue page', 'Today is 45 minutes over.', 'Tuesday: the over-full line reads as M11');
-has('tue page', '09:45 Chicago', 'Tuesday: a client in another time zone shows their own time and city');
+has('tue page', '9:45 am Chicago', 'Tuesday: a client in another time zone shows their own time and city');
 has('tue page', 'Group of 3', 'Tuesday: a group’s row says how many are in it');
 has('tue page', 'Self-funded', 'Tuesday: a client with no organisation is Self-funded');
 has('tue page', 'hasn’t been sent yet.', 'Tuesday: the recap nudge shows');

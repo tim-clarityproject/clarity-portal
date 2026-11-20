@@ -280,6 +280,16 @@ export function clientTimeWords(instant, clientZone, coachZone) {
   return wallClock(instant, clientZone).date === wallClock(instant, coachZone).date ? words : `${zoneDayWords(instant, clientZone)}, ${words}`;
 }
 
+/**
+ * The last fact on a call's row (Today, Plan my day): for a client in another
+ * zone their own time and city ("9:45 am Chicago", 12-hour for the US and
+ * Canada, with their day when it differs), otherwise where it is ("Zoom").
+ */
+export function callPlaceWords(session, clientZone, coachZone) {
+  const away = isZone(clientZone) && isZone(coachZone) && !sameZone(clientZone, coachZone);
+  return away ? clientTimeWords(session.starts_at, clientZone, coachZone) : session.place || 'Zoom';
+}
+
 /** "09:45 to 12:00" on the coach's own clock. */
 export const spanWords = (startsAt, endsAt, coachZone) => `${wallClock(startsAt, coachZone).time} to ${wallClock(endsAt, coachZone).time}`;
 

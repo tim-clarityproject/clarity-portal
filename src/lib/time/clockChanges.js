@@ -6,8 +6,10 @@
 //
 // For Phase 6a's quiet line in the coach portal: "US clocks go back on
 // Sunday 1 Nov. Your calls with US clients stay at their usual time for
-// them; for you, Tyson's Monday call moves from 12:30 to 13:30 UK time
-// this week."
+// them; for you, Tyson's Monday call moves from 11:30 to 12:30 UK time
+// from Mon 2 Nov." (time-zone-safeguards.md as corrected on 11 Nov: the line
+// shows from the Monday BEFORE the change, so the call that moves is next
+// week's, and the line names its day instead of saying "this week".)
 import { offsetMinutes, toDate, wallClock } from './instants.js';
 import { nextCall, seriesCalls } from './series.js';
 import { clockWords, dayKeyWords } from './words.js';
@@ -103,10 +105,10 @@ export function clockChangeLine({ coachZone, change, moves }) {
   const first = `${adjective} clocks go ${change.direction === 'back' ? 'back' : 'forward'} on ${dayKeyWords(change.date, { long: true })}.`;
   if (!moves.length) return first;
   const own = change.zone === coachZone;
-  const each = moves.map((m) => `${m.name}’s ${WEEKDAY_WORDS[wallClock(m.call.at, coachZone).weekday - 1]} call moves from ${clockWords(seriesInstantAt(m, 'was', coachZone), coachZone)} to ${clockWords(m.call.at, coachZone)} ${zoneLabel(coachZone)}`);
+  const each = moves.map((m) => `${m.name}’s ${WEEKDAY_WORDS[wallClock(m.call.at, coachZone).weekday - 1]} call moves from ${clockWords(seriesInstantAt(m, 'was', coachZone), coachZone)} to ${clockWords(m.call.at, coachZone)} ${zoneLabel(coachZone)} from ${dayKeyWords(wallClock(m.call.at, coachZone).date)}`);
   // The coach's own clocks: every client elsewhere keeps their time, so their calls move for the coach.
   const who = own ? 'clients in other time zones' : `${adjective} clients`;
-  return `${first} Your calls with ${who} stay at their usual time for them; for you, ${each.join(', and ')} this week.`;
+  return `${first} Your calls with ${who} stay at their usual time for them; for you, ${each.join(', and ')}.`;
 }
 
 // The instant on the call's own day that reads `was` on the coach's clock:

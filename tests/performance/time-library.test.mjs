@@ -346,7 +346,7 @@ test('the clock changes coming up in the next 7 days, and which calls move for T
   assert.deepEqual(clockChanges('Asia/Kolkata', monday, 7), []);
   const moves = callsThatMove({ coachZone: UK, series, from: monday, days: 7 });
   assert.deepEqual(moves.map((m) => [m.name, m.was, m.now]), [['Tyson', '11:30', '12:30']]);
-  assert.equal(clockChangeLine({ coachZone: UK, change: moves[0].change, moves }), 'US clocks go back on Sunday 1 Nov. Your calls with US clients stay at their usual time for them; for you, Tyson’s Monday call moves from 11:30 to 12:30 UK time this week.');
+  assert.equal(clockChangeLine({ coachZone: UK, change: moves[0].change, moves }), 'US clocks go back on Sunday 1 Nov. Your calls with US clients stay at their usual time for them; for you, Tyson’s Monday call moves from 11:30 to 12:30 UK time from Mon 2 Nov.');
 
   // The Monday before the UK change (Sun 25 Oct): calls anchored outside the UK move for Tim, UK ones don't.
   const before = instantAt('2026-10-19', '08:00', UK);
@@ -355,7 +355,7 @@ test('the clock changes coming up in the next 7 days, and which calls move for T
   assert.ok(!ukMoves.some((m) => m.name === 'Dana'));
   // The coach's own clocks: the line names the clients elsewhere, and says "this week" once.
   const ukChange = ukMoves[0].change;
-  assert.equal(clockChangeLine({ coachZone: UK, change: ukChange, moves: ukMoves.filter((m) => m.name === 'Tyson') }), 'UK clocks go back on Sunday 25 Oct. Your calls with clients in other time zones stay at their usual time for them; for you, Tyson’s Monday call moves from 12:30 to 11:30 UK time this week.');
+  assert.equal(clockChangeLine({ coachZone: UK, change: ukChange, moves: ukMoves.filter((m) => m.name === 'Tyson') }), 'UK clocks go back on Sunday 25 Oct. Your calls with clients in other time zones stay at their usual time for them; for you, Tyson’s Monday call moves from 12:30 to 11:30 UK time from Mon 26 Oct.');
   assert.throws(() => seriesRule({ time: '25:99', zone: NY, from: '2026-10-19' }), /HH:MM/);
   // A quiet week: nothing.
   assert.deepEqual(callsThatMove({ coachZone: UK, series, from: instantAt('2026-11-09', '08:00', UK), days: 7 }), []);

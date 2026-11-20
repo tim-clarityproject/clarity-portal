@@ -135,7 +135,7 @@ const CAL_MUST = {
   'bar-now': (c) => c.found.bar && /is starting now/.test(c.found.bar.words) && c.found.bar.soon,
   'bar-in': (c) => c.found.bar && /started 6 minutes ago/.test(c.found.bar.words) && c.found.bar.soon,
   // One quiet line for the one change, however many US time zones the coach's clients are in.
-  'clock-line': (c) => (c.found.said.match(/US clocks go back on Sunday 1 Nov\./g) || []).length === 1 && /Mia’s \w+ call moves from \d\d:\d\d to \d\d:\d\d UK time, and Jordan’s \w+ call moves from \d\d:\d\d to \d\d:\d\d UK time this week\./.test(c.found.said),
+  'clock-line': (c) => (c.found.said.match(/US clocks go back on Sunday 1 Nov\./g) || []).length === 1 && /Mia’s \w+ call moves from \d\d:\d\d to \d\d:\d\d UK time from \w+ \d+ Nov, and Jordan’s \w+ call moves from \d\d:\d\d to \d\d:\d\d UK time from \w+ \d+ Nov\./.test(c.found.said),
   // Checked by their own driven checks above.
   zones: () => true, early: () => true, 'hours-edit': () => true, 'todo-tile': () => true, 'todos-panel': () => true, 'phone-cal': () => true,
 };
