@@ -1,0 +1,90 @@
+/* Booking (Phase 6a run 3, step 4; M11's book, slink, cft, pollpick, poll,
+   open and the two booking page screens). Tokens only. */
+
+/* ---- Book a call and the single-use link (side panels) */
+.ui-root .cc-book-count { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.ui-root .cc-book-count .cc-field-label { margin: 0; }
+.ui-root .cc-book-clash { margin-top: var(--space-px12); }
+.ui-root .cc-book-clash .cc-problem { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-px12); }
+.ui-root .cc-book-clash .ds-choice { margin-top: var(--space-2); }
+.ui-root .cc-book-links { margin-top: var(--space-4); border-top: var(--line-w) solid var(--line); }
+.ui-root .cc-book-link { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: var(--tap-min); border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-book-link > span:first-child { display: grid; min-width: 0; padding-block: var(--space-px6); }
+.ui-root .cc-book-link b { font-weight: var(--fw-regular); font-size: var(--fs-secondary); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .cc-book-link small { font-size: var(--fs-note); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .cc-book-link-acts { display: flex; gap: var(--space-3); flex: none; }
+.ui-root .cc-book-link-acts .ds-link { min-width: var(--tap-min); }
+
+/* What was read back or worked out (who was pasted, both clocks, a public holiday): a status, not help. */
+.ui-root .cc-book-read { margin: var(--space-2) 0 0; font-size: var(--fs-note); color: var(--text-2); overflow-wrap: anywhere; }
+
+/* ---- picking times on the calendar (Offer times by email, a poll) */
+.ui-root .cc-pickbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-px12) var(--space-3); margin-top: var(--space-px14); padding-block: var(--space-px10); border-block: var(--line-w) solid var(--line); min-height: var(--tap-min); }
+.ui-root .cc-pickbar-count { margin: 0; align-self: center; font-size: var(--fs-secondary); color: var(--text); }
+.ui-root .cc-pickbar-what { margin: 0; align-self: center; flex: 1 1 var(--cc-pop-min); min-width: 0; font-size: var(--fs-secondary); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .cc-pickbar-field { flex: 0 1 var(--book-pick-field); min-width: 0; }
+.ui-root .cc-pickbar-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-px12) var(--space-3); margin-left: auto; align-self: center; }
+.ui-root .cc-pickbar-acts .ds-link { min-width: var(--tap-min); }
+
+/* ---- Open for calls */
+.ui-root .cc-open-bar { justify-content: space-between; }
+.ui-root .cc-open-range { cursor: default; }
+.ui-root .cc-open-days { margin-top: var(--space-px12); }
+.ui-root .cc-open-page .cc-cal { margin-top: var(--space-px18); }
+.ui-root .cc-open-page .ds-add-row { margin-top: var(--space-px12); }
+
+/* ---- a poll (the coach's page) */
+.ui-root .cc-poll-tabs { margin-top: var(--space-px20); }
+.ui-root .cc-poll-rows { display: grid; }
+.ui-root .cc-poll-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-px12) var(--space-3); flex-wrap: wrap; min-height: var(--row-min-h); padding-block: var(--space-px10); border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-poll-when { display: grid; min-width: 0; flex: 1 1 var(--cc-pop-min); }
+.ui-root .cc-poll-when b { font-weight: var(--fw-regular); font-size: var(--fs-text); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .cc-poll-when small { font-size: var(--fs-note); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .cc-poll-when small.cc-poll-all, .ui-root .cc-poll-done { color: var(--mint-text); }
+.ui-root .cc-poll-done { font-size: var(--fs-secondary); }
+.ui-root .cc-poll-acts { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); }
+.ui-root .cc-poll-acts .ds-link { min-width: var(--tap-min); min-height: var(--tap-min); display: inline-flex; align-items: center; }
+
+/* ---- the booking pages outside the portal */
+.ui-root.cc-book .cc-book-zone { max-width: var(--book-zone-w); }
+.ui-root .cc-book-days { margin-top: var(--space-px22); }
+.ui-root .cc-book-more { margin-top: var(--space-1); }
+.ui-root .cc-book-times { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--book-time-w)), 1fr)); gap: var(--book-time-gap); margin-top: var(--space-px18); }
+.ui-root .cc-book-time { color: var(--text); }
+.ui-root .cc-book-toggles { margin-top: var(--space-px12); }
+.ui-root .cc-book-form { margin-top: var(--space-4); padding-top: var(--space-px18); border-top: var(--line-w) solid var(--line); }
+.ui-root .cc-book-when, .ui-root .cc-book-done { margin: 0; font-size: var(--fs-text); color: var(--text); }
+.ui-root .cc-book-done { margin-top: var(--space-px14); }
+.ui-root .cc-book-foot { margin-top: var(--space-5); }
+.ui-root .cc-book-after { gap: var(--space-px12) var(--space-4); }
+.ui-root .cc-book-after .ds-link, .ui-root .cc-book-toggles .ds-link, .ui-root .cc-book-more .ds-link { min-height: var(--tap-min); min-width: var(--tap-min); display: inline-flex; align-items: center; }
+.ui-root .cc-book-move { margin-top: var(--space-4); padding-top: var(--space-1); border-top: var(--line-w) solid var(--line); }
+.ui-root .cc-poll-ticks { display: grid; gap: var(--space-1); margin-top: var(--space-px18); }
+
+/* "Show my calendar": the free times beside the visitor's own day, on one clock. */
+.ui-root .cc-book-both { margin-top: var(--space-px18); }
+.ui-root .cc-book-both-head, .ui-root .cc-book-both-body { display: grid; grid-template-columns: var(--book-hours-w) minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--book-time-gap); }
+.ui-root .cc-book-both-head { font-size: var(--fs-meta); color: var(--text-2); padding-bottom: var(--space-px10); border-bottom: var(--line-w) solid var(--line); }
+.ui-root .cc-book-both-body { height: calc(var(--book-hours) * var(--book-hour-h)); border-bottom: var(--line-w) solid var(--line); }
+.ui-root .cc-book-both-hours { display: grid; grid-template-rows: repeat(var(--book-hours), var(--book-hour-h)); }
+.ui-root .cc-book-both-hours span { font-size: var(--fs-min); color: var(--text-2); padding-top: var(--space-px6); border-top: var(--line-w) solid var(--line); }
+.ui-root .cc-book-both-hours span:first-child { border-top: 0; }
+.ui-root .cc-book-both-col { position: relative; background-image: none; }
+.ui-root .cc-book-both-slot { position: absolute; left: 0; right: 0; padding-block: var(--space-px2); box-sizing: border-box; display: flex; }
+.ui-root .cc-book-both-slot .cc-book-time { min-height: var(--tap-min) !important; height: 100%; padding-block: 0 !important; }
+.ui-root .cc-book-both-busy { position: absolute; left: 0; right: 0; box-sizing: border-box; padding: var(--space-px10); border-radius: var(--radius-input); background: var(--raised); color: var(--text-2); font-size: var(--fs-meta); overflow: hidden; }
+
+/* ---- Settings, Booking: a page's two actions, and a call type's questions */
+.ui-root .cc-setrow-acts { display: flex; align-items: center; gap: var(--space-3); justify-self: end; }
+.ui-root .cc-setrow-acts .ds-link { min-width: var(--tap-min); min-height: var(--tap-min); }
+.ui-root .cc-book-question { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
+.ui-root .cc-book-question > :first-child { flex: 1 1 auto; min-width: 0; }
+
+@media (max-width: 640px) {
+  .ui-root .cc-pickbar { align-items: stretch; }
+  .ui-root .cc-pickbar-field { flex: 1 1 100%; }
+  .ui-root .cc-pickbar-acts { margin-left: 0; width: 100%; justify-content: space-between; }
+  .ui-root .cc-book-times { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ui-root .cc-poll-row .ds-btn { width: 100%; }
+  .ui-root .cc-book-after > .ds-btn { width: 100%; }
+}

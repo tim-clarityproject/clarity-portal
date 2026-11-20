@@ -423,7 +423,7 @@ export default function ClientPage() {
                   <TextLink onClick={() => { setBriefAsked(true); setBriefId(next.id); }}>Open the brief</TextLink>
                 </div>
               ) : (
-                <p className="cc-quiet cc-ses-none"><span>No session is booked.</span>{profile.status !== 'past' && <TextLink onClick={() => setPanel('session')}>Add session</TextLink>}</p>
+                <p className="cc-quiet cc-ses-none"><span>No session is booked.</span>{profile.status !== 'past' && <TextLink onClick={() => navigate('/coach/calendar/book', { state: { clientId: profile.id } })}>Book a call</TextLink>}{profile.status !== 'past' && <TextLink onClick={() => setPanel('session')}>Add session</TextLink>}</p>
               )}
             </Part>
 

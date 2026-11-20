@@ -16,7 +16,7 @@
 // the US and Canada, dates in words. The 1-hour reminder never gives a
 // clock time, so it can never be wrong.
 import { EMAIL_SIGN_OFF, oneLine } from './template.js';
-import { sessionWhenWords, timeWords, relativeDayWords } from '../time/index.js';
+import { sessionWhenWords, timeWords, relativeDayWords, whenWords } from '../time/index.js';
 
 const possessive = (name) => `${name}’s`;
 
@@ -463,5 +463,32 @@ export function inviteEmail({ link }) {
       { type: 'text', text: 'If you weren’t expecting this, you can ignore this email.', quiet: true },
     ],
     footer: { lines: ['You get this because your coach added this email address to The Clarity Portal.', EMAIL_SIGN_OFF] },
+  };
+}
+
+// ---------------------------------------------------------------- a call booked through a booking page (Phase 6a run 3)
+// To the person who booked: the time in THEIR own zone with its city's
+// name (12-hour for the US and Canada), the day in words, one button to
+// move or cancel (their own link), and the Zoom link when the call has one.
+// It goes from the business (the person may have no account). Sent only by
+// api/booking-email.js, from the live site, once for each time booked.
+
+/**
+ * @param {{ name: string, callName: string, coach?: string, at: Date|string, zone: string, placeKind?: string, zoomLink?: string, mineLink: string, moved?: boolean, now?: Date }} booking
+ */
+export function bookingConfirmedEmail({ name, callName, coach, at, zone, placeKind = 'zoom', zoomLink = null, mineLink, moved = false, now = new Date() }) {
+  const call = oneLine(callName) || 'Your call';
+  const withWho = coach ? ` with ${oneLine(coach)}` : '';
+  return {
+    brand: 'project',
+    subject: `${moved ? 'Moved' : 'Booked'}: ${call}${withWho}, ${whenWords(at, zone)}`,
+    blocks: [
+      { type: 'heading', text: moved ? 'Your call has moved.' : 'You’re booked.' },
+      { type: 'text', text: `${oneLine(name).split(' ')[0] || 'Hello'}, your ${call}${withWho} is ${sessionWhenWords(at, zone, now)}.` },
+      { type: 'details', rows: [['When', whenWords(at, zone)], ['Where', placeKind === 'in_person' ? 'In person' : placeKind === 'phone' ? 'By phone' : 'Zoom']] },
+      { type: 'button', label: 'Move or cancel', href: mineLink },
+      zoomLink ? { type: 'link', label: 'Join on Zoom', href: zoomLink } : null,
+    ],
+    footer: { lines: [`You get this because you booked ${call}.`, EMAIL_SIGN_OFF] },
   };
 }

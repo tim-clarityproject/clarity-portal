@@ -63,7 +63,7 @@ export default function GroupPage() {
               <TextLink aria-label="Open the next group session" onClick={() => navigate(`/coach/sessions/${next.id}`)}>Open</TextLink>
             </div>
           ) : (
-            <p className="cc-quiet cc-ses-none"><span>No session is booked.</span><TextLink onClick={() => setAddingSession(true)}>Add session</TextLink></p>
+            <p className="cc-quiet cc-ses-none"><span>No session is booked.</span><TextLink onClick={() => navigate('/coach/calendar/book', { state: { groupId: group.id } })}>Book a call</TextLink><TextLink onClick={() => setAddingSession(true)}>Add session</TextLink></p>
           )}
         </Part>
         {sessions && <StatGroup className="cc-stats"><Stat label="Group sessions left" value={`${sessions.left} of ${sessions.total}`} bar={sessions.total ? sessions.left / sessions.total : 0} /></StatGroup>}

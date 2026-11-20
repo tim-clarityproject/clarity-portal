@@ -37,6 +37,8 @@ const TodoListPage = lazy(() => import('./TodoListPage'));
 const SessionPage = lazy(() => import('./SessionPage'));
 const ClosePage = lazy(() => import('./ClosePage'));
 const Calendar = lazy(() => import('./Calendar'));
+const OpenForCalls = lazy(() => import('./OpenForCalls'));
+const PollPage = lazy(() => import('./PollPage'));
 
 const BELL = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" /></svg>;
 const HOME = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg>;
@@ -191,6 +193,10 @@ function Search({ open, onClose }) {
       { key: 'a:group', title: 'Add group', to: '/coach/clients?tab=groups', state: { open: 'group' } },
       { key: 'a:workshop', title: 'Add workshop', to: '/coach/clients?tab=workshops', state: { open: 'workshop' } },
       { key: 'a:export', title: 'Export clients to a spreadsheet', to: '/coach/clients', state: { open: 'export' } },
+      { key: 'a:book', title: 'Book a call', to: '/coach/calendar/book' },
+      { key: 'a:open', title: 'Set my open times', to: '/coach/calendar/open' },
+      { key: 'a:offer', title: 'Offer times by email', to: '/coach/calendar/offer' },
+      { key: 'a:poll', title: 'Start a poll', to: '/coach/calendar/polls/new' },
       ...(coaches.length > 1 && isOwner ? [{ key: 'a:coach', title: 'Add coach', to: '/coach/settings/coaches', state: { open: 'coach' } }] : []),
     ];
     // Calendar items, found by title, person or note; each opens its own day.
@@ -435,11 +441,13 @@ export default function CoachApp() {
               <Route path="clients/:id/close" element={<ClosePage />} />
               <Route path="business/*" element={<Navigate to="/coach/finances" replace />} />
               <Route path="calendar" element={<Calendar />} />
-              {/* Book a call, Open for calls, Offer times by email and polls: their own pages (run 3's booking step) take these places. */}
-              {!LIVE && <Route path="calendar/book" element={<ComingSoon title="Book a call" />} />}
-              {!LIVE && <Route path="calendar/open" element={<ComingSoon title="Open for calls" />} />}
-              {!LIVE && <Route path="calendar/offer" element={<ComingSoon title="Offer times" />} />}
-              {!LIVE && <Route path="calendar/polls/:id" element={<ComingSoon title="Poll" />} />}
+              {/* Booking (run 3, step 4): Book a call is a side panel over the calendar; Offer times by email and a poll's times
+                  are picked on the calendar itself; Open for calls and a poll are their own pages. */}
+              <Route path="calendar/book" element={<Calendar side="book" />} />
+              <Route path="calendar/offer" element={<Calendar side="offer" />} />
+              <Route path="calendar/polls/new" element={<Calendar side="poll" />} />
+              <Route path="calendar/open" element={<OpenForCalls />} />
+              <Route path="calendar/polls/:id" element={<PollPage />} />
               <Route path="calendar/*" element={<Navigate to="/coach/calendar" replace />} />
               {!LIVE && <Route path="renewals/:id" element={<ComingSoon title="Renewal" />} />}
               <Route path="settings" element={<Settings />} />

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, CalendarPopover, Chevron, InlineChoice, PageHeader, SwitchRow, useIsPhone } from '../../components/design';
 import {
   CAL_VIEWS, HIDE_TODOS, HOURS_HELP, HOURS_SAVED, hoursToSave, hoursWindow, OFFER_TIMES, SHOW_TODOS, startingView, stepView, viewRange, workingHours,
@@ -8,6 +8,8 @@ import { firstName } from '../../lib/coach/model';
 import { MenuItem, PopMenu, TextLink, useNarrowerThan } from './parts';
 import { CAL_HOOKS, CalMonth, CalSchedule, useCalendar } from './calendarParts';
 import { CalBoard, CalendarsPanel, useCalPanels, useSecondZone } from './calendarPanels';
+import { BookCallPanel, LinkPanel } from './BookCall';
+import { usePick } from './calendarPick';
 
 // The Calendar (Phase 6a run 3; M11's calendar, calwk, calday, calsched,
 // caltd, cedit and whedit): Day, Week, Month and Schedule (the phone's
@@ -15,16 +17,24 @@ import { CalBoard, CalendarsPanel, useCalPanels, useSecondZone } from './calenda
 // opens a small month to jump to a day; Weekends is a switch (Monday to
 // Friday by default); two time columns; working hours edited on the week
 // itself. The view and the day are kept in the address, so a link opens the
-// same thing. Book a call, Open for calls, Offer times by email and polls
-// are their own pages (CAL_HOOKS).
+// same thing. Book a call and the single-use link are side panels over it
+// (`side` 'book'); Offer times by email and a poll's times are picked on the
+// calendar itself (`side` 'offer' and 'poll'); Open for calls and a poll are
+// their own pages (CAL_HOOKS).
 
-export default function Calendar() {
+const NOTHING = () => {};
+
+export default function Calendar({ side = null }) {
   const cal = useCalendar();
   const isPhone = useIsPhone();
   const tablet = useNarrowerThan(1100); // a tablet's columns hold a tile's shorter words
   const navigate = useNavigate();
+  const location = useLocation();
   const [params, setParams] = useSearchParams();
-  const view = CAL_VIEWS.some((v) => v.value === params.get('view')) ? params.get('view') : startingView(isPhone);
+  const picking = side === 'offer' || side === 'poll';
+  const asked = CAL_VIEWS.some((v) => v.value === params.get('view')) ? params.get('view') : startingView(isPhone);
+  // Times are picked on the grid: the week on a laptop, the day on a phone.
+  const view = picking && !(asked === 'day' || (asked === 'week' && !isPhone)) ? (isPhone ? 'day' : 'week') : asked;
   const day = /^\d{4}-\d{2}-\d{2}$/.test(params.get('day') || '') && !Number.isNaN(Date.parse(params.get('day'))) ? params.get('day') : cal.todayKey;
   const go = (next) => {
     const v = next.view || view;
@@ -49,6 +59,17 @@ export default function Calendar() {
   const titleRef = useRef(null);
   const viewRef = useRef(null);
   const panels = useCalPanels(cal, { days: range.days });
+  const [link, setLink] = useState(null); // the single-use link's panel, with what it starts from
+  /** Back to the calendar itself, on a day when one is given. */
+  const home = (toDay = null) => {
+    const next = new URLSearchParams(location.search);
+    if (toDay) { if (toDay === cal.todayKey) next.delete('day'); else next.set('day', toDay); }
+    navigate({ pathname: '/coach/calendar', search: next.toString() ? `?${next}` : '' }, { replace: true });
+  };
+  const to = (pathname, state) => navigate({ pathname, search: location.search }, state ? { state } : undefined);
+  const pick = usePick(cal, picking ? side : null, { start: location.state, onDone: () => home() });
+  const board = pick ? { ...panels, slot: null, create: pick.create, open: pick.open, move: NOTHING, resize: NOTHING, nudge: NOTHING, unplace: NOTHING, tick: NOTHING } : panels;
+  const shown = useMemo(() => (pick ? [...entries, ...pick.entries] : entries), [entries, pick]);
 
   const startHours = () => { setHours(workingHours(cal.settings)); if (!grid) go({ view: isPhone ? 'day' : 'week' }); };
   const doneHours = async () => {
@@ -69,7 +90,7 @@ export default function Calendar() {
       <TextLink onClick={() => go({ day: cal.todayKey })}>Today</TextLink>
     </div>
   );
-  const book = <Button variant="primary" onClick={() => navigate(CAL_HOOKS.book)}>Book a call</Button>;
+  const book = <Button variant="primary" onClick={() => to(CAL_HOOKS.book)}>Book a call</Button>;
 
   return (
     <div className="cc-page">
@@ -83,10 +104,10 @@ export default function Calendar() {
           {nav}
           {!isPhone && view !== 'day' && <div className="cc-cal-weekends"><SwitchRow label="Weekends" checked={weekends} onChange={setWeekends} /></div>}
           {!isPhone && <div className="cc-seg cc-cal-views"><InlineChoice ariaLabel="View" semantics="pressed" options={CAL_VIEWS} value={view} onChange={(v) => { setHours(null); go({ view: v }); }} form="pills" /></div>}
-          {isPhone && !hours && book}
+          {isPhone && !hours && !pick && book}
         </div>
 
-        {hours ? (
+        {pick ? pick.bar : hours ? (
           <div className="cc-cal-hoursbar">
             <p>{HOURS_HELP}</p>
             <Button variant="primary" onClick={doneHours}>Done</Button>
@@ -104,20 +125,20 @@ export default function Calendar() {
         )}
 
         <div className="cc-fade" key={`${view}:${grid}`}>
-          {grid && <CalBoard cal={cal} panels={panels} days={range.days} entries={entries} win={win} otherZone={zone} onOtherZone={setZone} hours={hours} onHours={setHours} todosOpen={todosOpen && !hours && !isPhone} narrow={view !== 'day' && (tablet || range.days.length > 5)} />}
+          {grid && <CalBoard cal={cal} panels={board} days={range.days} entries={shown} win={win} otherZone={zone} onOtherZone={setZone} hours={hours} onHours={setHours} todosOpen={todosOpen && !hours && !isPhone && !pick} narrow={view !== 'day' && (tablet || range.days.length > 5)} />}
           {!grid && view !== 'month' && <CalSchedule days={range.days} entries={entries} cal={cal} onOpen={panels.open} />}
           {view === 'month' && <CalMonth day={day} entries={entries} cal={cal} weekends={weekends} phone={isPhone} onDay={(d) => go({ view: 'day', day: d })} />}
         </div>
 
         {!hours && (
           <div className="cc-acts cc-cal-foot">
-            {isPhone && <TextLink onClick={panels.add}>Add to calendar</TextLink>}
+            {isPhone && !pick && <TextLink onClick={panels.add}>Add to calendar</TextLink>}
             <TextLink onClick={() => navigate(CAL_HOOKS.open)}>Set my open times</TextLink>
-            {grid && !isPhone && <TextLink aria-expanded={todosOpen} onClick={() => setTodosOpen((v) => !v)}>{todosOpen ? HIDE_TODOS : SHOW_TODOS}</TextLink>}
-            <TextLink onClick={() => navigate(CAL_HOOKS.offer)}>{OFFER_TIMES}</TextLink>
+            {grid && !isPhone && !pick && <TextLink aria-expanded={todosOpen} onClick={() => setTodosOpen((v) => !v)}>{todosOpen ? HIDE_TODOS : SHOW_TODOS}</TextLink>}
+            {!pick && <TextLink onClick={() => to(CAL_HOOKS.offer)}>{OFFER_TIMES}</TextLink>}
             <TextLink onClick={() => setCalsOpen(true)}>My calendars</TextLink>
             {grid && <TextLink onClick={() => setWhole((v) => !v)}>{whole ? 'Show the working day' : 'Show the whole day'}</TextLink>}
-            {isPhone && <TextLink onClick={startHours}>Working hours</TextLink>}
+            {isPhone && !pick && <TextLink onClick={startHours}>Working hours</TextLink>}
           </div>
         )}
       </div>
@@ -129,6 +150,12 @@ export default function Calendar() {
       </PopMenu>
       <CalendarsPanel cal={cal} open={calsOpen} onClose={() => setCalsOpen(false)} />
       {panels.node}
+      {pick?.node}
+      <BookCallPanel
+        cal={cal} open={side === 'book'} start={side === 'book' ? location.state : null} onClose={(d) => home(d || null)}
+        onLink={(start) => { setLink(start); home(); }} onPoll={(start) => navigate(CAL_HOOKS.poll('new'), { state: start })}
+      />
+      <LinkPanel cal={cal} open={Boolean(link)} start={link} onClose={() => setLink(null)} />
     </div>
   );
 }

@@ -60,7 +60,9 @@
     return path === '/health-check' || path === '/health-check.html' || path.indexOf('/health-check/') === 0
       || path.indexOf('/guest/') === 0
       // A workshop's registration page and survey (Phase 6a) are outside the portal as well.
-      || path.indexOf('/workshop/') === 0;
+      || path.indexOf('/workshop/') === 0
+      // The booking pages and a poll's page (Phase 6a run 3) too.
+      || path.indexOf('/book/') === 0 || path.indexOf('/poll/') === 0;
   }
 
   function resolve(c) {

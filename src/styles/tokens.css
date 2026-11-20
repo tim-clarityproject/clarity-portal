@@ -941,6 +941,13 @@
   --cal-quick-w: 300px;             /* the quick add beside a new item */
   --cal-side-w: 210px;              /* To-dos to place */
   --cal-wide-max: 1180px;
+  /* Booking (Phase 6a run 3, step 4): the booking pages, the poll and the picking bar. */
+  --book-zone-w: 342px;             /* "Your time zone" on a booking page (M11) */
+  --book-time-w: 229px;             /* one time on a booking page */
+  --book-time-gap: 8px;
+  --book-hour-h: 192px;             /* an hour beside "Your calendar": four quarter-hour times fit, each a full tap area */
+  --book-hours-w: 60px;
+  --book-pick-field: 220px;         /* a drop-down in the picking bar */
   --cal-month-cell: 112px;
   --cal-mini-cell: 36px;
   --cal-hold-ms: 450;               /* press and hold to drag on a phone */

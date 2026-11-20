@@ -7,6 +7,8 @@ import {
   ATTENTION_FIRST, attentionRows, callLength, callsOn, clockTime, dayLoad, OFFERS, recapNudgeLine, todayOffer, todayTodos,
 } from '../../lib/coach/day';
 import { usePressure } from '../../lib/coach/dayData';
+import { clockChangeLines, coachZoneOf } from '../../lib/coach/calendar';
+import { deviceZone } from '../../lib/time/index.js';
 import { InlineLink, Row, TextLink, useCoachPortal } from './parts';
 import { QuickAddPanel, TodoBulkBar, TodoList, TodoPanel, useTodoPicks } from './todoParts';
 import {
@@ -56,7 +58,7 @@ function Section({ title, aside, headRef, children }) {
 }
 
 export default function Today() {
-  const { state, clients, groups, todos, sessions, sessionPeople, settings, todayKey, now, coach, isOwner } = useCoachPortal();
+  const { state, clients, groups, todos, sessions, sessionPeople, settings, todayKey, now, coach, isOwner, calItems } = useCoachPortal();
   const navigate = useNavigate();
   const isPhone = useIsPhone();
   const { day, week } = useDayRows();
@@ -73,6 +75,9 @@ export default function Today() {
   const abouts = rowsOf(state, 'client_about').filter((a) => a.coach_id === coach.id);
   const birthdays = birthdaysOn(abouts, clients, todayKey);
   const nudge = recapNudgeLine({ sessions, clients, groups, now, todayKey });
+  // A clock-change week (time-zone-safeguards.md, rule 1): one quiet line from the Monday before, saying which calls move for the coach.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const clockLines = useMemo(() => clockChangeLines({ items: calItems, sessions, clients, now, coachZone: coachZoneOf(settings, deviceZone()) }), [calItems, sessions, clients, settings, todayKey]);
 
   const offer = todayOffer({ now, todayKey, day, week, settings, putOff: off });
   const calls = useMemo(() => callsOn(sessions, todayKey), [sessions, todayKey]);
@@ -116,6 +121,7 @@ export default function Today() {
             It’s <InlineLink onClick={() => setNote(p)}>{possessive(p.name)}</InlineLink> birthday today.
           </p>
         ))}
+        {clockLines.map((line) => <p key={line} className="cc-quiet">{line}</p>)}
         {nudge && (
           <p className="cc-quiet cc-today-recap">
             <span>{nudge.line}</span>

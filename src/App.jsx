@@ -105,6 +105,10 @@ const GuestLink = lazy(() => loadWithReload(() => import('./pages/guest/GuestLin
 // none of it is in a client's bundle. The two public workshop pages too.
 const CoachApp = lazy(() => loadWithReload(() => import('./pages/coach/CoachApp')));
 const WorkshopRegister = lazy(() => loadWithReload(() => import('./pages/coach/WorkshopPublic').then((m) => ({ default: m.WorkshopRegister }))));
+// The booking pages (Phase 6a run 3): a call type's page, a single-use link, a guest's own booking and a poll.
+const BookingPage = lazy(() => loadWithReload(() => import('./pages/coach/BookingPublic').then((m) => ({ default: m.BookingPage }))));
+const BookingMine = lazy(() => loadWithReload(() => import('./pages/coach/BookingPublic').then((m) => ({ default: m.BookingMine }))));
+const PollVote = lazy(() => loadWithReload(() => import('./pages/coach/BookingPublic').then((m) => ({ default: m.PollVote }))));
 const WorkshopSurvey = lazy(() => loadWithReload(() => import('./pages/coach/WorkshopPublic').then((m) => ({ default: m.WorkshopSurvey }))));
 const WheelStart = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelStart')));
 const WheelAreas = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelAreas')));
@@ -143,7 +147,7 @@ function TabTitle() {
   const { pathname } = useLocation();
   useEffect(() => {
     // The coach portal and the workshop pages name their own tabs.
-    if (/^\/(health-check|coach(?!\/sign-in)|workshop)(\/|$)/.test(pathname)) return;
+    if (/^\/(health-check|coach(?!\/sign-in)|workshop|book|poll)(\/|$)/.test(pathname)) return;
     document.title = tabTitle(pathname);
   }, [pathname]);
   return null;
@@ -314,6 +318,7 @@ function AppContent() {
     || location.pathname.startsWith('/guest/')
     || location.pathname === '/coach' || location.pathname.startsWith('/coach/')
     || location.pathname.startsWith('/workshop/')
+    || location.pathname.startsWith('/book/') || location.pathname.startsWith('/poll/')
     || location.pathname.startsWith('/personal-operating-plan-history/')
     || location.pathname.startsWith('/personal-operating-plan-archived/');
 
@@ -341,6 +346,14 @@ function AppContent() {
             needed, by the page's or the person's own key (migration 049). */}
         <Route path="/workshop/survey/:key" element={lazyPage(WorkshopSurvey)} />
         <Route path="/workshop/:key" element={lazyPage(WorkshopRegister)} />
+
+        {/* Booking (M11's booking pages; migration 051): no account needed,
+            by a call type's page key, a single-use link, the guest's own
+            key, or a person's own key for a poll. */}
+        <Route path="/book/link/:key" element={lazyPage(BookingPage)} />
+        <Route path="/book/mine/:key" element={lazyPage(BookingMine)} />
+        <Route path="/book/:key" element={lazyPage(BookingPage)} />
+        <Route path="/poll/:key" element={lazyPage(PollVote)} />
 
         {/* Signing in and creating an account. */}
         <Route path="/auth/login" element={<SignIn />} />

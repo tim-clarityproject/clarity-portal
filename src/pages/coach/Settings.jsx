@@ -11,6 +11,7 @@ import { clean, coverState, dayWords, hoursWords, isEmail, NOTIFICATION_KINDS, n
 import { SETTINGS_SECTIONS } from '../../lib/coach/navigation';
 import { Back, Line, SettingRow, TextLink, useCoachPortal } from './parts';
 import { useHiddenHelp } from './help';
+import BookingSettings from './BookingSettings';
 
 // Settings, two panes (M11, version 3.4): on a laptop the list of sections
 // on the left and the chosen one on the right; on a phone the list, and
@@ -20,8 +21,9 @@ import { useHiddenHelp } from './help';
 //
 // Built fully now: Your details, Away and cover (cover is the owner's),
 // Notifications, Coaches (owner), Look, Tags and fields, the Activity log
-// (owner). Rows and storage now, put to work in later runs: Booking,
-// Working hours, Time zones, My calendars, Email, Note layouts.
+// (owner), and since run 3 Booking (BookingSettings.jsx), Working hours and
+// Time zones, which the calendar and booking read. Rows and storage now,
+// put to work in later runs: My calendars' connection, Email, Note layouts.
 
 const SAVE_PROBLEM = 'That didn’t save. Check your connection and try again.';
 const DAYS = [['mon', 'Monday'], ['tue', 'Tuesday'], ['wed', 'Wednesday'], ['thu', 'Thursday'], ['fri', 'Friday'], ['sat', 'Saturday'], ['sun', 'Sunday']];
@@ -31,9 +33,6 @@ const LAYOUTS = [
   ['regular', 'Regular session', ['Focus', 'Insight', 'Next time']],
   ['review', 'Review', ['Progress against the goals', 'What has shifted', 'What to keep doing']],
   ['close', 'Close', ['The biggest change', 'What they carry on with', 'A line for the testimonial']],
-];
-const BOOKING = [
-  ['gap', 'Gap between calls', '15 minutes'], ['per_day', 'Calls a day, at most', '5'], ['notice', 'Notice needed', '24 hours'], ['ahead', 'Open this far ahead', '4 weeks'],
 ];
 
 const textEditor = (props = {}) => ({ value, setValue, label }) => (
@@ -267,27 +266,7 @@ function Notifications() {
   );
 }
 
-// ---------------------------------------------------------------- rows kept now, wired later
-function Booking() {
-  const { settings } = useCoachPortal();
-  const saved = useSaved();
-  const saveSettings = useSettingsSave();
-  const booking = settings.booking || {};
-  const set = (change) => saved(() => saveSettings({ booking: { ...booking, ...change } }), { onUndo: () => saveSettings({ booking }) }).catch(() => {});
-  return (
-    <>
-      <p className="cc-small-label">Reminders</p>
-      <SwitchRow label="Email 24 hours before" checked={booking.remind_24 !== false} onChange={(on) => set({ remind_24: on })} />
-      <SwitchRow label="Email 1 hour before" checked={booking.remind_1 === true} onChange={(on) => set({ remind_1: on })} />
-      <p className="cc-small-label">Limits</p>
-      {BOOKING.map(([key, label, start]) => (
-        <SettingRow key={key} label={label} value={booking[key] || start} editor={textEditor({ maxLength: 40 })} check={(v) => (clean(v) ? null : 'Type a value to carry on.')} onSave={(v) => set({ [key]: clean(v) })} />
-      ))}
-      <p className="cc-note">These are kept now. Booking pages use them when the calendar arrives.</p>
-    </>
-  );
-}
-
+// ---------------------------------------------------------------- the calendar's settings (Booking is its own file: BookingSettings.jsx)
 function WorkingHours() {
   const { settings, coach, reloadRole } = useCoachPortal();
   const hoursAWeek = Number(coach.capacity_hours_week ?? 15);
@@ -326,7 +305,7 @@ function WorkingHours() {
         check={(v) => (capacityFromTyped(v) == null ? 'Type a number of hours from 1 to 80.' : null)}
         onSave={(v) => saved(async () => { await saveCapacity(coach, capacityFromTyped(v)); reloadRole(); }, { onUndo: () => saveCapacity(coach, hoursAWeek).then(reloadRole).catch(() => {}) })}
       />
-      <p className="cc-note">Each day has its own hours. Today uses them to say when a day is over-full.</p>
+      <p className="cc-note">Each day has its own hours. Today’s over-full line and booking follow them, and they can be dragged on the calendar.</p>
     </>
   );
 }
@@ -356,7 +335,7 @@ function TimeZones() {
         editor={({ value, setValue }) => <Dropdown label="Second time zone" options={list.map((z) => ({ value: z, label: zonePlace(z) }))} value={value} onChange={setValue} />}
         onSave={(v) => saved(() => saveSettings({ second_time_zone: v || null }), { onUndo: () => saveSettings({ second_time_zone: second }) })}
       />
-      <p className="cc-note">It shows beside UK time on the calendar, when the calendar arrives.</p>
+      <p className="cc-note">It shows beside your own time on the calendar, and the calendar’s time column offers every city on your list.</p>
       <div className="cc-setrow">
         <span className="cc-setrow-label">Your list</span>
         <span className="cc-setrow-value">{list.length} {list.length === 1 ? 'city' : 'cities'}</span>
@@ -691,7 +670,7 @@ function Look() {
   );
 }
 
-const PANES = { you: YourDetails, away: AwayAndCover, notifications: Notifications, booking: Booking, hours: WorkingHours, zones: TimeZones, calendars: Calendars, email: Email, tags: TagsAndFields, layouts: NoteLayouts, coaches: Coaches, log: ActivityLog, look: Look };
+const PANES = { you: YourDetails, away: AwayAndCover, notifications: Notifications, booking: BookingSettings, hours: WorkingHours, zones: TimeZones, calendars: Calendars, email: Email, tags: TagsAndFields, layouts: NoteLayouts, coaches: Coaches, log: ActivityLog, look: Look };
 
 export default function Settings() {
   const { isOwner } = useCoachPortal();

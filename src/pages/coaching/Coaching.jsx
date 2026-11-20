@@ -13,6 +13,7 @@ import {
   markAction, markCoachingSeen, noteCoachingPlaced, placedLine, readCoachingNotNow, readCoachingPlaced, savePrep, tidyCoaching, withAction,
 } from '../../lib/coaching';
 import '../performance/performance.css';
+import CoachingSessions from './CoachingSessions';
 import './coaching.css';
 
 // Coaching (Phase 6a run 2): the client's side of working with a coach, on
@@ -23,6 +24,10 @@ import './coaching.css';
 //                     what happens in one sentence
 //   For next time     the client's own note for their next session, which
 //                     their coach reads in the brief as "For this call"
+//   Your sessions     the sessions still to come, each to move or cancel,
+//                     and Book a session from their coach's free times
+//                     (run 3; CoachingSessions.jsx), for someone with a
+//                     coach
 //   Session recaps    the recaps their coach has sent, newest first, each
 //                     with its actions: a tick for done, and "Add to this
 //                     week" or "Add to my backlog" through the one shared
@@ -141,7 +146,9 @@ export default function Coaching() {
   const hasAsks = asks.invites.length + asks.views.length + asks.covers.length > 0;
   // The note is for a coach to read: it shows once the person has one (and the coaching day's tables are there).
   const showPrep = data.day && (Boolean(myCoach) || Boolean(data.prep));
-  const empty = coachingEmpty(data, { now, today, notNow: closedOnly(notNow) }) && !showPrep;
+  // Their own sessions: booking, moving and cancelling, for someone with a coach (run 3).
+  const showSessions = Boolean(myCoach);
+  const empty = coachingEmpty(data, { now, today, notNow: closedOnly(notNow) }) && !showPrep && !showSessions;
   const day = (key) => dayKeyWords(key, { year: !thisYear(key, today) });
 
   let body;
@@ -213,6 +220,8 @@ export default function Coaching() {
             </form>
           </Section>
         )}
+
+        {showSessions && <CoachingSessions coachName={coachName} ready={data.day} />}
 
         {data.recaps.length > 0 && (
           <Section title="Session recaps" className="ipp-section coaching-section">

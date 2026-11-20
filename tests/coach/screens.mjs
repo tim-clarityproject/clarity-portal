@@ -17,7 +17,8 @@
 // with every function it calls stood in (client.mjs).
 import { chromium } from 'playwright';
 import { accountId, APP, clearDevice, coachContext, seedDevice, settle, SIZES, standIn } from './shared.mjs';
-import { ADMIN_ROWS, DAY, ID, PRESSURE, seedClock, seedRows, seedWithCal, seedWithDay, SES, SHARED } from './seed.mjs';
+import { ADMIN_ROWS, CAL, DAY, ID, PRESSURE, seedClock, seedRows, seedWithCal, seedWithDay, SES, SHARED } from './seed.mjs';
+import { bookStore, guestStandIn } from './book-standin.mjs';
 import { clearCoaching, clientContext, clientStandIn, fromCoach } from './client.mjs';
 
 const click = (name, role = 'button') => async (page) => { await page.getByRole(role, { name, exact: true }).first().click(); await settle(page, 500); };
@@ -256,6 +257,29 @@ export const GROUPS = [
       ['cal-weekends', '/coach/calendar?view=week', async (page, size) => { if (size === 400) return 'skip'; await page.getByRole('switch', { name: 'Weekends' }).click(); await settle(page, 700); return null; }, { full: true }],
     ],
   },
+  // Booking (run 3, step 4): Book a call, the single-use link, Offer times, a poll, Open for calls and Settings' Booking, on M11's week.
+  {
+    name: 'book', at: TUE, cal: true,
+    screens: [
+      ['book-call', '/coach/calendar/book', async (page) => { await pick(page, 'Who is it with', 'Jordan Reyes'); await page.locator('.ds-dialog .ds-answer').first().click(); await settle(page, 300); await pick(page, 'How often', 'Every 2 weeks'); await settle(page, 500); }, { expects: ['panel'] }],
+      ['book-call-empty', '/coach/calendar/book', async (page) => { await page.locator('.ds-dialog .ds-btn--primary').click(); await settle(page, 300); }, { expects: ['panel'] }],
+      ['book-call-person', '/coach/calendar/book', async (page) => { await pick(page, 'Who is it with', 'Leo Grant'); await page.locator('.ds-dialog').getByRole('radio', { name: 'In person' }).click(); await settle(page, 400); }, { expects: ['panel'] }],
+      ['book-call-group', '/coach/calendar/book', async (page) => { await pick(page, 'Who is it with', 'Kestrel leadership team'); await page.locator('.ds-dialog').getByLabel('Who’s invited?').fill('Dana Whitfield <dana@example.invalid>, Paul Garner'); await settle(page, 400); }, { expects: ['panel'] }],
+      ['book-link', '/coach/settings/booking', async (page) => { await press(page, 'Make a single-use link'); await settle(page, 400); }, { expects: ['panel'] }],
+      ['book-link-made', '/coach/settings/booking', async (page) => { await press(page, 'Make a single-use link'); await page.locator('.ds-dialog').getByLabel('Who is it for?').fill('Dana Whitfield'); await press(page, 'Create the link'); await settle(page, 600); }, { expects: ['panel'] }],
+      ['book-offer', '/coach/calendar/offer', async (page, size) => { for (const [day, row] of size === 400 ? [['2026-11-17', 8.2]] : [['2026-11-18', 8.2], ['2026-11-20', 2.2]]) { const b = await page.locator(`[data-cal-day="${day}"]`).boundingBox(); await page.mouse.click(b.x + b.width / 2, b.y + 44 * row); await settle(page, 300); } await page.evaluate(() => window.scrollTo(0, 0)); }, { full: true }],
+      ['book-poll-start', '/coach/calendar/polls/new', async (page) => { await page.locator('.ds-dialog').getByLabel('What’s it for?').fill('Three-way meeting'); await page.locator('.ds-dialog').getByLabel('Who’s invited?').fill('Mia Torres <mia@example.invalid>, Paul Garner <paul@example.invalid>'); await settle(page, 300); }, { expects: ['panel'] }],
+      ['book-poll-pick', '/coach/calendar/polls/new', async (page, size) => { await page.locator('.ds-dialog').getByLabel('What’s it for?').fill('Three-way meeting'); await page.locator('.ds-dialog').getByLabel('Who’s invited?').fill('Mia Torres <mia@example.invalid>, Paul Garner <paul@example.invalid>'); await press(page, 'Pick the times'); await settle(page, 600); if (size !== 400) { const b = await page.locator('[data-cal-day="2026-11-18"]').boundingBox(); await page.mouse.click(b.x + b.width / 2, b.y + 44 * 8.2); await settle(page, 300); } await page.evaluate(() => window.scrollTo(0, 0)); }, { full: true }],
+      ['book-poll', `/coach/calendar/polls/${CAL.poll}`, null, { full: true }],
+      ['book-poll-mia', `/coach/calendar/polls/${CAL.poll}`, async (page) => { await press(page, 'As Mia sees it'); }, { full: true }],
+      ['book-open', '/coach/calendar/open', null, { full: true }],
+      ['book-open-edit', '/coach/calendar/open', async (page) => { await page.locator('.cc-cal-tile--open').first().click(); await settle(page, 600); }, { expects: ['panel'] }],
+      ['book-open-add', '/coach/calendar/open', async (page) => { await press(page, 'Add open time'); await settle(page, 300); }, { expects: ['panel'] }],
+      ['book-settings', '/coach/settings/booking', null, { full: true }],
+      ['book-settings-limit', '/coach/settings/booking', async (page) => { await press(page, 'Edit Gap between calls'); }],
+      ['book-settings-type', '/coach/settings/booking', async (page) => { await press(page, 'Edit Chemistry Call page'); await settle(page, 400); }, { expects: ['panel'] }],
+    ],
+  },
   // Help that can be hidden, walked once for each role, size and mode (rules.mjs's hiddenHelp does the walking).
   { name: 'help', at: TUE, screens: [['help-hidden', '/coach/todos', null, { expects: ['help-flow'] }]] },
   {
@@ -265,9 +289,37 @@ export const GROUPS = [
       ['coaching-add', '/coaching', async (page) => { await page.getByRole('button', { name: /^Add to my backlog: Book a 15-minute/ }).click(); await settle(page, 900); }, { expects: ['panel'] }],
       ['coaching-nothing', '/coaching', null, { data: () => fromCoach({ nothing: true }) }],
       ['coaching-home', '/welcome', async (page) => { const line = page.locator('.ds-quiet-row').filter({ hasText: 'has sent something for you' }).first(); if (await line.count()) await line.scrollIntoViewIfNeeded(); }],
+      // Run 3: the client's own sessions (with 051: book, move inside 24 hours, cancel; before it: one calm line).
+      ['coaching-book', '/coaching', async (page) => { await page.getByRole('button', { name: 'Book a session', exact: true }).click(); await settle(page, 700); await page.locator('.coaching-times .ds-answer').first().click(); await settle(page, 300); }, { full: true }],
+      ['coaching-move-late', '/coaching', async (page) => { await page.getByRole('button', { name: /^Move the session/ }).first().click(); await settle(page, 700); }, { full: true }],
+      ['coaching-cancel', '/coaching', async (page) => { await page.getByRole('button', { name: /^Cancel the session/ }).last().click(); await settle(page, 400); }, { full: true }],
+      // Last: "not yet" is remembered on the device for an hour, so every screen after it would show the calm line.
+      ['coaching-not-yet', '/coaching', null, { full: true, data: () => ({ ...fromCoach(), sessions: undefined }) }],
     ],
   },
 ];
+
+// The booking pages outside the portal (run 3, step 4), signed out: 051's functions are answered by book-standin.mjs from M11's
+// seeded week, on M11's own Tuesday. Nothing reaches the test project, and no email is asked for that would send.
+const bookAt = async (page) => { await pick(page, 'Your time zone', 'New York'); await settle(page, 300); };
+GROUPS.push({
+  name: 'public', roles: ['signed-out'], root: '.ui-root', at: TUE,
+  screens: [
+    ['bpage', `/book/${CAL.chemKey}`, bookAt],
+    ['bpage-time', `/book/${CAL.chemKey}`, async (page) => { await bookAt(page); await page.locator('.cc-book-time').nth(1).click(); await settle(page, 500); }, { full: true }],
+    ['bpage-needs', `/book/${CAL.chemKey}`, async (page) => { await bookAt(page); await page.locator('.cc-book-time').first().click(); await settle(page, 300); await page.locator('.cc-book-form .ds-btn--primary').click(); await settle(page, 300); }, { full: true }],
+    ['bpage2', `/book/${CAL.chemKey}`, async (page) => { await bookAt(page); await press(page, 'Show my calendar'); await settle(page, 500); }, { full: true }],
+    ['bpage-booked', `/book/${CAL.chemKey}`, async (page) => { await bookAt(page); await page.locator('.cc-book-time').first().click(); await settle(page, 300); await page.getByLabel('Your name').fill('Grace Liu'); await page.getByLabel('Your email').fill('grace@example.invalid'); await page.getByLabel('What would you like from the call?').fill('To think through a new role.'); await page.locator('.cc-book-form .ds-btn--primary').click(); await settle(page, 900); }, { full: true }],
+    ['bpage-connection', `/book/${CAL.connKey}`, null],
+    ['bpage-link', `/book/link/${CAL.linkDanaKey}`, null],
+    ['bpage-nobody', '/book/00000000-0000-4000-8000-00000000dead', null],
+    ['bpage-not-yet', `/book/${CAL.chemKey}`, null, { there: false }],
+    ['bmine', `/book/mine/${CAL.bookNadiaKey}`, null],
+    ['bmine-move', `/book/mine/${CAL.bookNadiaKey}`, async (page) => { await press(page, 'Move it'); await settle(page, 700); }, { full: true }],
+    ['bmine-cancel', `/book/mine/${CAL.bookNadiaKey}`, async (page) => { await press(page, 'Cancel it'); await settle(page, 300); }],
+    ['poll-vote', `/poll/${CAL.pollMiaKey}`, null],
+  ],
+});
 
 // The sign-in pages, signed out: the coach header's rule for the body must change nothing on them.
 GROUPS.push({ name: 'signin', roles: ['signed-out'], root: '.ui-root', screens: [['sign-in', '/auth/login'], ['coach-sign-in', '/coach/sign-in']] });
@@ -300,6 +352,22 @@ async function openGroup(browser, group, { role, size, theme, reducedMotion }) {
         await ctx.close();
         return problems;
       },
+    };
+  }
+  if (group.name === 'public') {
+    // Nobody is signed in: 051's functions are answered from a database made here, and anything else is stopped and listed.
+    seedClock(group.at || null);
+    const ctx = await browser.newContext({ viewport: SIZES[size], colorScheme: theme, serviceWorkers: 'block', reducedMotion, hasTouch: size === 400 });
+    const page = await ctx.newPage();
+    page.on('pageerror', (e) => errors.push(String(e).slice(0, 240)));
+    if (group.at) await page.clock.setFixedTime(group.at);
+    const held = { store: null };
+    const stopped = [];
+    const fresh = (there = true) => { held.store = Object.assign(held.store || {}, bookStore(seedWithCal({ accounts: true }), { now: () => group.at || new Date() }), { there, blocked: stopped }); return held.store; };
+    await guestStandIn(page, fresh());
+    return {
+      page, errors, wait: '.ui-root', fresh,
+      close: async () => { const stray = held.store.blocked || []; await ctx.close(); return [...new Set(errors)].map((e) => `signed out ${size} ${theme}: ${e}`).concat(stray.length ? [`signed out ${size} ${theme}: a write left the page (stopped): ${[...new Set(stray)].slice(0, 4).join('; ')}`] : []); },
     };
   }
   if (group.name === 'signin') {
@@ -396,6 +464,7 @@ export async function walk(visit, { reducedMotion = 'reduce', twice = false, gro
             for (const [name, path, act, opt] of screens) {
               const o = optionsOf(opt);
               if (o.data && t.held) t.held.data = o.data(); else if (t.held) t.held.data = fromCoach();
+              if (t.fresh) t.fresh(o.there !== false); // each public screen starts from the seed again (a booking made on one never shows on the next)
               await t.page.setViewportSize(o.viewport || SIZES[size]);
               try {
                 await t.page.goto(`${APP}${path}`);

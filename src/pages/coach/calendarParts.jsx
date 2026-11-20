@@ -277,7 +277,7 @@ export function CalGrid({
     if (step && !editing) { e.preventDefault(); onNudge?.(entry, step); }
   };
 
-  const fixed = (e) => editing || e.type === 'open' || (e.allDay);
+  const fixed = (e) => editing || e.type === 'open' || e.allDay || e.fixed === true; // `fixed`: a tile its page says can't be moved (a picked time; something busy on Open for calls)
   const tile = (t, day) => {
     const e = t.entry;
     const moving = drag && drag.key === e.key && (drag.mode === 'move' || drag.mode === 'resize');

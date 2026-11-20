@@ -43,6 +43,9 @@ export function fromCoach({ nothing = false } = {}) {
   const iso = (ms) => new Date(ms).toISOString();
   const dayKey = (offset) => { const d = new Date(now + offset * 86400000); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
   if (nothing) return { coach: null, invites: [], views: [], covers: [], recaps: [], prep: null };
+  // Run 3: the client's own sessions (051's my_ functions). Quarter hours on the clock everywhere: 10:00 and 14:30 UTC.
+  const at = (days, hour, minute = 0) => { const d = new Date(now + days * 86400000); d.setUTCHours(hour, minute, 0, 0); return d.toISOString(); };
+  const soon = (() => { const d = new Date(now + 5 * 3600000); d.setUTCMinutes(0, 0, 0); return d.toISOString(); })();
   return {
     coach: { coach_id: uid(900), first_name: 'Tim', away_until: null, mobile: null, contact_ways: ['email'] },
     invites: [{ profile_id: uid(901), coach_first_name: 'Tim', invited_at: iso(now - 3600000) }],
@@ -59,6 +62,12 @@ export function fromCoach({ nothing = false } = {}) {
       { session_id: uid(911), starts_at: iso(now - 17 * 86400000), minutes: 60, kind: 'session', coach_first_name: 'Tim', group_name: 'Leadership team', sent_at: iso(now - 17 * 86400000 + 7200000), recap: 'A short one this time: the team agreed who decides on pricing, and when.', actions: [] },
     ],
     prep: null,
+    // One session inside 24 hours (moving it is late) and one next week; the free times a client is offered.
+    sessions: [
+      { session_id: uid(930), starts_at: soon, minutes: 60, time_zone: 'Europe/London', place_kind: 'zoom', meeting_link: 'https://zoom.example.invalid/j/9930', location: null, coach_first_name: 'Tim', late: true, moved_in_google: false },
+      { session_id: uid(931), starts_at: at(6, 10), minutes: 60, time_zone: 'Europe/London', place_kind: 'zoom', meeting_link: null, location: null, coach_first_name: 'Tim', late: false, moved_in_google: false },
+    ],
+    times: [at(2, 10), at(2, 11, 15), at(2, 14, 30), at(3, 10), at(3, 15), at(7, 10), at(7, 13, 45)],
   };
 }
 
@@ -115,6 +124,29 @@ export async function clientStandIn(page, data) {
           if (args.p_placed != null) a.placed = args.p_placed;
           return route.fulfill({ status: 204 });
         }
+        // Run 3: the client's own sessions, as 051's my_ functions answer; without `sessions` the functions aren't there (before 051).
+        case 'my_sessions_coming': case 'my_booking_times': case 'my_session_book': case 'my_session_move': case 'my_session_cancel': {
+          if (!Array.isArray(data.sessions)) return json(route, { code: 'PGRST202', details: null, hint: null, message: `Could not find the function public.${fn} in the schema cache` }, 404);
+          calls.push(fn === 'my_sessions_coming' || fn === 'my_booking_times' ? fn : `${fn} ${JSON.stringify(args)}`);
+          const sorted = () => [...data.sessions].sort((x, y) => String(x.starts_at).localeCompare(String(y.starts_at)));
+          if (fn === 'my_sessions_coming') return json(route, sorted().map((s) => ({ ...s, late: new Date(s.starts_at).getTime() - now < 24 * 3600000 })));
+          if (fn === 'my_booking_times') return json(route, (data.times || []).filter((t) => !data.sessions.some((s) => s.starts_at === t)).map((t) => ({ starts_at: t })));
+          const free = (t) => (data.times || []).some((x) => new Date(x).getTime() === new Date(t).getTime()) && !data.sessions.some((s) => new Date(s.starts_at).getTime() === new Date(t).getTime());
+          if (fn === 'my_session_book') {
+            if (!free(args.p_start)) return json(route, { status: 'taken' });
+            const s = { session_id: `00000000-0000-4000-8000-${String(940 + data.sessions.length).padStart(12, '0')}`, starts_at: new Date(args.p_start).toISOString(), minutes: 60, time_zone: 'Europe/London', place_kind: 'zoom', meeting_link: null, location: null, coach_first_name: 'Tim', late: false, moved_in_google: false };
+            data.sessions = [...data.sessions, s];
+            return json(route, { status: 'booked', session_id: s.session_id, starts_at: s.starts_at });
+          }
+          const s = data.sessions.find((x) => x.session_id === args.p_session);
+          if (!s) return json(route, { status: 'not_found' });
+          const late = new Date(s.starts_at).getTime() - now < 24 * 3600000;
+          if (late && !args.p_late_ok) return json(route, { status: 'late', late: true });
+          if (fn === 'my_session_cancel') { data.sessions = data.sessions.filter((x) => x !== s); return json(route, { status: 'cancelled', late }); }
+          if (!free(args.p_start)) return json(route, { status: 'taken' });
+          s.starts_at = new Date(args.p_start).toISOString();
+          return json(route, { status: 'moved', late, session_id: s.session_id, starts_at: s.starts_at });
+        }
         // Any other checked function is answered with nothing: it never runs.
         default: return json(route, null);
       }
@@ -139,7 +171,7 @@ export async function clientStandIn(page, data) {
 export async function clearCoaching(page, { after = false } = {}) {
   await page.evaluate((done) => {
     for (const k of Object.keys(localStorage)) {
-      if (/:coaching(-|$)/.test(k) || /coaching-prep/.test(k) || k === 'clarity-coaching-not-yet') localStorage.removeItem(k);
+      if (/:coaching(-|$)/.test(k) || /coaching-prep/.test(k) || k === 'clarity-coaching-not-yet' || k === 'clarity-booking-not-yet') localStorage.removeItem(k);
       if (done && (k.startsWith('clarity-queue:') || k.startsWith('clarity-sending:'))) localStorage.removeItem(k);
     }
   }, after);

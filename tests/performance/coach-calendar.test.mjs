@@ -696,7 +696,7 @@ test('a booking at 02:00 the guest’s time is hidden unless "Show early and lat
   assert.deepEqual(cal.freeDays(ny, NY).map((d) => [d.day, d.label, d.title]), [['2026-11-17', 'Tue 17', 'Tue 17 Nov']]);
   assert.equal(cal.bookButtonWords(ny[0], NY), 'Book Tue 17 Nov, 7:00 am');
   assert.equal(cal.bookingWords('hours'), 'That time is early or late where you are. Choose “Show early and late times” to book it.');
-  assert.equal(cal.bookingWords('taken'), 'That time has just been taken. Choose another one.');
+  assert.equal(cal.bookingWords('taken'), 'That time has just been taken. Choose another.');
   assert.equal(cal.bookingWords('something_new'), 'That didn’t work. Try again in a moment.');
   for (const words of Object.values(cal.BOOKING_WORDS)) assert.ok(!/fail/i.test(words) && /[.]$/.test(words));
 });

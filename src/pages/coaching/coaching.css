@@ -40,3 +40,24 @@
   .ui-root .coaching-action { grid-template-columns: minmax(0, 1fr); }
   .ui-root .coaching-action-meta { padding-bottom: var(--space-1); }
 }
+
+/* ---- Your sessions (Phase 6a run 3): the sessions to come, and booking, moving or cancelling one */
+.ui-root .coaching-sessions { list-style: none; margin: 0; padding: 0; border-top: var(--line-w) solid var(--line-soft); }
+.ui-root .coaching-session { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 var(--space-3); min-height: var(--field-h); padding: var(--space-1) 0; border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .coaching-session-when { flex: 1 1 var(--cc-pop-min, 220px); min-width: 0; font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .coaching-session-acts { display: flex; gap: var(--space-3); margin-left: auto; }
+.ui-root .coaching-session .ds-link { min-width: var(--tap-min); }
+.ui-root .coaching-book { margin-top: var(--space-px18); background: var(--raised); border-radius: var(--radius-offer); padding: var(--space-px20) var(--space-px22); }
+.ui-root .coaching-book .ds-choice { margin-top: var(--space-px14); }
+.ui-root .coaching-times { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--book-time-w)), 1fr)); gap: var(--book-time-gap); margin-top: var(--space-px14); }
+.ui-root .coaching-times .ds-answer { color: var(--text); background: var(--bg); }
+.ui-root .coaching-times .ds-answer[aria-checked='true'] { background: var(--surface); }
+.ui-root .coaching-late { margin: var(--space-px10) 0 0; font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text); }
+.ui-root .coaching-problem { margin: var(--space-px10) 0 0; font-size: var(--fs-note); color: var(--coral-text); }
+.ui-root .coaching-book .coaching-acts { flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-px20); }
+.ui-root .coaching-acts--links { justify-content: flex-start; margin-top: var(--space-1); gap: var(--space-3); }
+@media (max-width: 600px) {
+  .ui-root .coaching-book { padding: var(--space-px18); }
+  .ui-root .coaching-times { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ui-root .coaching-acts--links .ds-btn { width: auto; }
+}

@@ -56,6 +56,9 @@ const NETWORK_ONLY = [
   /^\/health-check(\/|\.html$|$)/,
   // A guest's link (/guest/<token>, M9): outside the portal, always fresh.
   /^\/guest\//,
+  // The booking pages and a poll's page (Phase 6a run 3): outside the portal, and their free times are only ever fresh.
+  /^\/book\//,
+  /^\/poll\//,
   /^\/design-reference(\/|$)/,
   /^\/email-preview(\/|$)/,
   /^\/auth\/callback(\/|$)/,

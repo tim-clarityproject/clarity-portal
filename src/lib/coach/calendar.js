@@ -1356,7 +1356,7 @@ export const BOOKING_WORDS = Object.freeze({
   booked: 'Booked. Your invite is on its way.',
   moved: 'Moved. Your invite is updated.',
   cancelled: 'Your call is cancelled.',
-  taken: 'That time has just been taken. Choose another one.',
+  taken: 'That time has just been taken. Choose another.',
   not_found: 'This link isn’t working. Ask for a new one.',
   closed: 'This page is closed at the moment. Ask for a new link.',
   used: 'This link has already been used. Ask for a new one.',
@@ -2068,3 +2068,226 @@ export const dayBeforeWords = (startsAt, readerZone, coachFirstName) => `Your ca
 /** What the 1-hour email says: never a clock time. */
 export const hourBeforeWords = (coachFirstName) => `Your call with ${coachFirstName || 'your coach'} starts in 1 hour.`;
 export const REMINDER_SWITCHES = [{ key: 'remind_24', label: 'Email 24 hours before', startsOn: true }, { key: 'remind_1', label: 'Email 1 hour before', startsOn: false }];
+
+// ---------------------------------------------------------------- booking: what its pages show (run 3, step 4)
+
+/** The addresses of the pages outside the portal: a call type's page, a single-use link, a guest's own booking and a poll. */
+export const BOOK_PATHS = Object.freeze({ page: (key) => `/book/${key}`, link: (key) => `/book/link/${key}`, mine: (key) => `/book/mine/${key}`, poll: (key) => `/poll/${key}` });
+/** A key is only ever a uuid: anything else is nobody's link, and the database is never asked about it. */
+export const isBookingKey = (key) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(key || ''));
+/** A page's whole address, from the page's own origin (never written out). */
+export const publicLink = (origin, path) => `${String(origin || '').replace(/\/+$/, '')}${path}`;
+
+/** The two call types every coach starts with, for a device that has none yet (as 051's coach_call_types_start()). */
+export function startingCallTypes({ coachId, newId, have = [] }) {
+  const type = (key, name, notice, ahead, position) => ({
+    id: newId(), coach_id: coachId, key, name, description: null, minutes: 30, gap_before: 15, gap_after: 15, notice_hours: notice, ahead_weeks: ahead, day_limit: MAX_CALLS_A_DAY,
+    questions: [], place_kind: 'zoom', page_key: newId(), active: true, makes_lead: true, position,
+  });
+  return [type('chemistry', 'Chemistry Call', 24, 4, 0), type('connection', 'Connection Call', 48, 2, 1)].filter((t) => !have.some((x) => x.key === t.key));
+}
+
+/** What a call type's Edit asks, each with its bounds (as 051 checks them). */
+export const CALL_TYPE_ROWS = [
+  { key: 'minutes', label: 'How long?', unit: 'minutes', min: 15, max: 240, step: 15 },
+  { key: 'gap_before', label: 'Gap before', unit: 'minutes before', min: 0, max: 120, step: 5 },
+  { key: 'gap_after', label: 'Gap after', unit: 'minutes after', min: 0, max: 120, step: 5 },
+  { key: 'notice_hours', label: 'Notice needed', unit: 'hours of notice', min: 0, max: 720, step: 1 },
+  { key: 'ahead_weeks', label: 'Open this far ahead', unit: 'weeks ahead', min: 1, max: 12, step: 1 },
+  { key: 'day_limit', label: 'Calls a day, at most', unit: 'calls a day', min: 1, max: 20, step: 1 },
+];
+export const QUESTIONS_MAX = 10;
+/** A whole number typed into a number editor, or null. */
+export const wholeNumber = (typed) => (/^\s*\d{1,4}\s*$/.test(String(typed ?? '')) ? Number(String(typed).trim()) : null);
+/** Why a typed number can't be kept for a row with bounds; null when it can. */
+export function numberProblem(row, typed) {
+  const n = wholeNumber(typed);
+  if (n == null || n < row.min || n > row.max) return `Type a number from ${row.min} to ${row.max}.`;
+  if (row.key === 'minutes' && n % 15 !== 0) return 'Type a length in quarter hours, like 30 or 45.';
+  return null;
+}
+/** A call type's draft checked: the first calm line, or null. */
+export function callTypeProblem(draft) {
+  if (!clean(draft.name)) return 'Type a name to carry on.';
+  for (const row of CALL_TYPE_ROWS) { const p = numberProblem(row, draft[row.key]); if (p) return `${row.label} ${p.charAt(0).toLowerCase()}${p.slice(1)}`; }
+  return null;
+}
+/** The questions a call type keeps: each typed line that holds something, at most 10, keeping an old question's id and kind. */
+export function questionsToSave(rows, newId) {
+  return (rows || []).map((q) => ({ ...q, label: cut(clean(q.label), 200) })).filter((q) => q.label).slice(0, QUESTIONS_MAX)
+    .map((q) => ({ id: q.id || newId(), label: q.label, kind: q.kind === 'short' ? 'short' : 'long', required: q.required === true }));
+}
+/** A booking page's question as it is asked: its label whichever older shape kept it. */
+export const questionLabel = (q) => clean(q?.label ?? q?.q ?? '');
+
+/** The limit a number editor saves: the number itself (bookingLimits reads it, and 051 its leading whole number). */
+export const limitToSave = (booking, key, typed) => ({ ...(booking || {}), [key]: wholeNumber(typed) });
+
+// ---- Book a call
+
+/** What kind of session Book a call offers for one client; a group's is always its own. */
+export const BOOK_KINDS = [{ value: 'coaching', label: 'Coaching session' }, { value: 'three_way', label: 'Three-way meeting' }, { value: 'review', label: 'Review' }, { value: 'other', label: 'Session' }];
+export const BOOK_WITH_SOMEONE_ELSE = 'someone_else';
+/** Who a call can be with: each client, each group, then someone who isn't a client (a single-use link's kind of call). */
+export function bookWhoChoices({ clients = [], groups = [] }) {
+  return [
+    ...clients.filter((c) => c.status !== 'past').map((c) => ({ value: `c:${c.id}`, label: c.name })).sort((a, b) => a.label.localeCompare(b.label)),
+    ...groups.map((g) => ({ value: `g:${g.id}`, label: g.name })).sort((a, b) => a.label.localeCompare(b.label)),
+    { value: BOOK_WITH_SOMEONE_ELSE, label: 'Someone else' },
+  ];
+}
+
+/**
+ * The times Book a call suggests: free in the coach's working day, clear of
+ * every other call by the gap, on a quarter hour in the client's own time and
+ * between 07:00 and 20:00 where the client is, from an hour from now.
+ * @returns {Date[]}
+ */
+export function bookSuggestions({ minutes, zone, coachZone, settings = null, data = {}, now, days = 14, earlyAndLate = false }) {
+  return freeTimes({
+    source: 'hours', minutes, from: now, to: new Date(ms(now) + days * DAY_MS), now, coachZone, clientZone: zone, bookerZone: zone, settings, items: data.items || [], sessions: data.sessions || [],
+    noticeHours: 1, aheadWeeks: Math.ceil(days / 7), earlyAndLate,
+  });
+}
+
+/** A typed day and time on the coach's own clock as a start, or a calm line. */
+export function typedStart({ day, time, coachZone }) {
+  const m = minutesOfTime(time);
+  if (!day || m == null) return { start: null, problem: 'Choose a day and a time to carry on.' };
+  return { start: instantAt(day, hhmm(m), coachZone), problem: null };
+}
+
+/** "Thu 19 Nov, 15:30 UK time · 9:30 am Chicago time", with both days when they differ: the line under a chosen time. */
+export const bookWhenWords = (start, coachZone, zone) => bothTimes(start, coachZone, zone);
+
+// ---- picking times on the calendar (a poll's times, Offer times by email)
+
+/**
+ * One press on the calendar while times are being picked: a time already
+ * picked comes off; a new one is added when it is free, still to come and
+ * inside the most that can be picked.
+ * @returns {{ starts: Date[], problem: string|null }}
+ */
+export function pickTime(starts, { day, startMin, minutes, coachZone, data = {}, now, max = POLL_MAX }) {
+  const at = instantAt(day, hhmm(snapMinutes(startMin)), coachZone);
+  const end = at.getTime() + minutes * MIN;
+  const hit = starts.find((s) => ms(s) < end && ms(s) + minutes * MIN > at.getTime());
+  if (hit) return { starts: starts.filter((s) => s !== hit), problem: null };
+  if (now != null && at <= new Date(now)) return { starts, problem: 'That time has passed. Pick a later one.' };
+  if (starts.length >= max) return { starts, problem: max === POLL_MAX ? 'Up to 5 times in one poll.' : `Up to ${max} times at once.` };
+  const busy = busySpans({ items: data.items || [], sessions: data.sessions || [], from: at, to: new Date(end) }).find((o) => o.start < end && o.end > at);
+  if (busy) return { starts, problem: `That overlaps ${busy.title}. Pick a free time.` };
+  return { starts: [...starts, at].sort((a, b) => a - b), problem: null };
+}
+
+/** The picked times as tiles on the calendar: dashed, each saying its time (in the reader's zone when one is chosen: "7:00 am New York"). A press takes one off. */
+export function pickedEntries(starts, minutes, { coachZone, zone = null }) {
+  return (starts || []).map((s) => entry({
+    key: `pick:${ms(s)}`, type: 'pick', kind: 'hold', colour: 'hold', title: zone && !sameZone(zone, coachZone) ? offerCellWords(s, zone) : wallClock(s, coachZone).time, sub: 'Picked',
+    startsAt: new Date(s), endsAt: new Date(ms(s) + minutes * MIN), busy: false, fixed: true, oneLine: minutes < ONE_LINE_UNDER,
+  }, coachZone));
+}
+export const OFFER_MAX = 8;
+/** The bar while times to offer are picked: "Pick free times", then "2 picked". */
+export const offerPickWords = (n) => (n ? `${n} picked` : 'Pick free times');
+/** The zones a reader can be in for Offer times by email: the coach's list, the coach's own first. */
+export const offerZoneChoices = (settings, coachZone) => [{ value: coachZone, label: zonePlace(coachZone) }, ...secondZoneChoices(settings, coachZone).filter((z) => !sameZone(z.value, coachZone))];
+
+// ---- Open for calls, as its own page draws it
+
+/**
+ * What Open for calls draws: everything busy as a quiet dashed outline that
+ * can't be moved (every calendar counts, switched on or not), and the open
+ * blocks, which can. An all-day item isn't drawn: a block over one is
+ * refused with its name ("That overlaps Leading Teams conference.").
+ */
+export function openPageEntries(data, { fromDay, toDay, coachZone }) {
+  return calendarEntries(data, { fromDay, toDay, coachZone, settings: null, showTodos: false, showOpen: true }).filter((e) => !e.allDay && (e.type === 'open' || e.busy))
+    .map((e) => (e.type === 'open'
+      ? { ...e, type: 'item', isOpen: true, oneLine: e.minutes < ONE_LINE_UNDER }
+      : { ...e, fixed: true, colour: 'life', colourClass: COLOURS.life.className, dashed: true, sub: '', clientWords: '', session: null }));
+}
+/** Remove an open time. */
+export const removeOpenPlan = (block, { data = {} } = {}) => plan(data, { remove: [[T.open, block.id]], words: 'Removed' });
+/** The weeks Open for calls can show: this one and the four after it. */
+export function openWeeks(todayKey) {
+  const monday = mondayOf(todayKey);
+  return Array.from({ length: OPEN_WEEKS + 1 }, (_, i) => addDays(monday, i * 7));
+}
+/** An open time's typed hours on a day as the times placeOpen takes, or a calm line (quarter hours, the end after the start). */
+export function openTyped({ day, from, to, coachZone }) {
+  const a = minutesOfTime(from);
+  const z = minutesOfTime(to);
+  if (a == null || z == null) return { problem: 'Type the times like 14:00 and 16:00.' };
+  if (a % 15 || z % 15) return { problem: 'Open times start and end on a quarter hour.' };
+  if (z <= a) return { problem: 'Choose an end after the start.' };
+  return { starts_at: instantAt(day, hhmm(a), coachZone).toISOString(), ends_at: instantAt(day, hhmm(z), coachZone).toISOString(), problem: null };
+}
+
+// ---- the pages outside the portal
+
+const MORE_VISITOR_ZONES = ['Europe/London', 'Europe/Dublin', 'Europe/Paris', 'Europe/Berlin', 'Europe/Madrid', 'Africa/Johannesburg', 'Asia/Kolkata', 'Asia/Hong_Kong', 'Asia/Tokyo', 'Australia/Sydney', 'Pacific/Auckland', 'America/Vancouver'];
+/** The zones a visitor can choose on a booking page: their device's own first in mind, the usual cities, A to Z by name. */
+export function visitorZones(device, also = []) {
+  const seen = [];
+  for (const z of [device, ...also, ...SECOND_ZONES, ...MORE_VISITOR_ZONES]) if (isZone(z) && !seen.some((s) => sameZone(s, z))) seen.push(z);
+  return seen.map((z) => ({ value: z, label: zonePlace(z) })).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** "Wed 18 Nov, 11:30 am New York time": a booked call for the person who booked it. */
+export const bookedWhenWords = (start, zone) => `${zoneDayWords(start, zone)}, ${timeWords(start, zone)}`;
+
+/** What a guest is told before they move or cancel inside 24 hours: one calm line (nothing is charged to a guest). */
+export const guestLateLine = (startsAt, now) => (isLateCancellation(startsAt, now) ? 'This call is in under 24 hours.' : null);
+
+/**
+ * "Add to calendar": the call as an .ics file made in the page. The times
+ * are UTC instants, so every calendar app shows it at the right moment
+ * wherever the person is.
+ * @returns {string}
+ */
+export function icsFile({ uid, title, startsAt, endsAt, description = '', location = '', now = new Date() }) {
+  const stamp = (d) => new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const esc = (s) => String(s ?? '').replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/([,;])/g, '\\$1');
+  const fold = (line) => { const out = []; let rest = line; while (rest.length > 73) { out.push(rest.slice(0, 73)); rest = ` ${rest.slice(73)}`; } out.push(rest); return out.join('\r\n'); };
+  return `${[
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//The Clarity Project//The Clarity Portal//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+    `UID:${String(uid).replace(/[^A-Za-z0-9-]/g, '')}@theclarityportal`, `DTSTAMP:${stamp(now)}`, `DTSTART:${stamp(startsAt)}`, `DTEND:${stamp(endsAt)}`, `SUMMARY:${esc(title)}`,
+    location ? `LOCATION:${esc(location)}` : null, description ? `DESCRIPTION:${esc(description)}` : null, 'END:VEVENT', 'END:VCALENDAR',
+  ].filter(Boolean).map(fold).join('\r\n')}\r\n`;
+}
+/** The file's name: "Chemistry Call with Tim.ics". */
+export const icsName = (title) => `${clean(String(title || 'Call').replace(/[\\/:*?"<>|]/g, ' ')) || 'Call'}.ics`;
+
+/** A poll page's time for the person asked, in their own zone: "Thu 19 Nov, 12:00 pm New York time". */
+export const pollOptionWords = (startsAt, zone) => `${zoneDayWords(startsAt, zone)}, ${timeWords(startsAt, zone)}`;
+
+/** The email that offers picked times, opened in the coach's own email app: its subject and body. */
+export function offerNote({ starts, minutes, zone, coachFirstName = '' }) {
+  const made = offerTimesText({ starts, minutes, zone });
+  return { subject: 'Times for a call', body: [made.text, coachFirstName].filter(Boolean).join('\n\n') };
+}
+
+// ---- a client's own sessions (their Coaching page)
+
+/** The days a client is shown times for: 14 from tomorrow, a week at a time. */
+export const MY_BOOKING_DAYS = 14;
+/** A coming session's line for the client, in their own time: "Tue 24 Nov, 10:00 am Chicago time, 60 minutes". */
+export const mySessionWords = (s, zone) => `${zoneDayWords(s.starts_at, zone)}, ${timeWords(s.starts_at, zone)}, ${minutesWords(Number(s.minutes) || 60)}`;
+
+/**
+ * "Show my calendar" on a booking page: a day's free times beside what the
+ * visitor already has, on one clock (theirs). Minutes are from midnight
+ * where the visitor is; the hours run from the first thing to the last.
+ * @returns {{ fromMin: number, toMin: number, hours: string[], free: { start: Date, fromMin: number, toMin: number }[], busy: { title: string, fromMin: number, toMin: number }[] }}
+ */
+export function visitorDay({ starts = [], events = [], zone, minutes }) {
+  // A free time is drawn a quarter hour high (starts can be a quarter hour apart), wherever the call would end.
+  const free = starts.map((s) => ({ start: s, fromMin: wallMinutes(s, zone), toMin: wallMinutes(s, zone) + 15, endMin: wallMinutes(s, zone) + minutes }));
+  const busy = events.map((e) => ({ title: e.title, fromMin: wallMinutes(e.startsAt, zone), toMin: Math.max(wallMinutes(e.startsAt, zone) + 15, wallMinutes(new Date(ms(e.endsAt) - 1), zone) + 1) }));
+  const all = [...free, ...busy];
+  if (!all.length) return { fromMin: 540, toMin: 600, hours: ['09:00'], free, busy };
+  const fromMin = Math.floor(Math.min(...all.map((x) => x.fromMin)) / 60) * 60;
+  const toMin = Math.min(DAY_MINUTES, Math.ceil(Math.max(...all.map((x) => x.endMin ?? x.toMin)) / 60) * 60);
+  return { fromMin, toMin, hours: Array.from({ length: Math.max(1, (toMin - fromMin) / 60) }, (_, i) => hhmm(fromMin + i * 60)), free, busy };
+}

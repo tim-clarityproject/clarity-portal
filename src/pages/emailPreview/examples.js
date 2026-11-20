@@ -6,7 +6,7 @@ import {
   healthCheckFinishedForCoachEmail, healthCheckResultsEmail, healthCheckNewCodeEmail, guestEmailCodeEmail, healthCheckFinishedNoteEmail,
   sessionTomorrowEmail, sessionInOneHourEmail, leadingIdeasClientEmail, leadingIdeasPublicEmail,
   confirmEmailEmail, resetPasswordEmail, changeEmailEmail, inviteEmail, guestPlanCopyEmail,
-  workshopTomorrowEmail, workshopInOneHourEmail, workshopFollowUpEmail, sessionRecapEmail, clientInviteEmail,
+  workshopTomorrowEmail, workshopInOneHourEmail, workshopFollowUpEmail, sessionRecapEmail, clientInviteEmail, bookingConfirmedEmail,
 } from '../../lib/email/emails.js';
 import { instantAt } from '../../lib/time/index.js';
 
@@ -110,6 +110,20 @@ export const EMAIL_EXAMPLES = [
     from: 'From The Clarity Portal, to Sam',
     sends: 'A template only. It never gives a clock time.',
     doc: () => sessionInOneHourEmail({ coach: 'Tim', zoomLink: ZOOM, preferencesLink: PREFERENCES }),
+  },
+  {
+    key: 'booking-confirmed',
+    name: 'A call booked through a booking page',
+    from: 'From The Clarity Project, to the person who booked',
+    sends: 'Sent only from the live site, once for each time booked (api/booking-email.js claims the send in the database first; after migration 051). The time is in the reader’s own zone: 12-hour for the US and Canada.',
+    doc: () => bookingConfirmedEmail({ name: 'Grace Liu', callName: 'Chemistry Call', coach: 'Tim', at: instantAt('2026-11-18', '11:30', 'America/New_York'), zone: 'America/New_York', zoomLink: ZOOM, mineLink: `${PORTAL}/book/mine/3f1c0a52-7b1e-4c0a-9a57-2d0f6b1c8e11`, now: NOW }),
+  },
+  {
+    key: 'booking-moved',
+    name: 'A booked call moved by the person who booked it',
+    from: 'From The Clarity Project, to the person who booked',
+    sends: 'Sent only from the live site, once for each move. A reader outside the US and Canada sees a 24-hour time.',
+    doc: () => bookingConfirmedEmail({ name: 'Nadia Osei', callName: 'Connection Call', coach: 'Tim', at: instantAt('2026-11-24', '14:15', 'Europe/London'), zone: 'Europe/London', mineLink: `${PORTAL}/book/mine/3f1c0a52-7b1e-4c0a-9a57-2d0f6b1c8e12`, moved: true, now: NOW }),
   },
   {
     key: 'workshop-tomorrow',

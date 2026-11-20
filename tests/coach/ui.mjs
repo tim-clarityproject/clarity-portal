@@ -107,7 +107,7 @@ const MUST = {
 // Underlined tabs are the same on a laptop and a phone: the same words, size, line and space at every width.
 const TABS_LOOK = { size: '16px', line: 2, gap: '22px' };
 
-const problems = await walk(async (page, { name, role, size, theme, run, root, expects, full }) => {
+const problems = await walk(async (page, { name, role, size, theme, run, root, expects, full, group }) => {
   const tag = `${name}, ${role}, ${size}px ${theme}`;
   counting = `${role} ${size} ${theme}`;
   const phone = size <= 600;
@@ -133,8 +133,9 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
     return;
   }
 
-  if (role === 'signed-out') {
+  if (role === 'signed-out' && group !== 'public') {
     // The sign-in pages: only that the coach header's rule for the body changed nothing on them.
+    // (The booking pages outside the portal, the group "public", are read in full like every other screen.)
     const s = await page.evaluate(readRules, { app: root, phone, wide: false, theme, softCoral: SOFT_CORAL[theme], mint: [] });
     report.pass(`${tag}: the coach header’s rule for the body doesn’t reach the sign-in page`, s.header.length === 0, s.header.join('; '));
     report.pass(`${tag}: no sideways scroll`, await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth) <= 0);
