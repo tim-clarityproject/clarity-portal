@@ -64,6 +64,8 @@
   padding: var(--space-px12) 0 !important;
   border-bottom: var(--line-w) solid var(--line-soft);
   font-family: var(--font-body);
+  /* Its own size on a phone too (mobile.css sets every button's), so its lines sit where they do on a laptop. */
+  font-size: var(--fs-text) !important;
   color: var(--text);
 }
 .ui-root .cc-today-call--open { cursor: pointer; -webkit-tap-highlight-color: transparent; }

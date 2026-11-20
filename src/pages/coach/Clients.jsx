@@ -12,6 +12,7 @@ import { EditCell, MenuItem, MenuLabel, PopMenu, Row, TextLink, useCoachPortal, 
 import { useClientRows } from './clientData';
 import { AddClientPanel, AddGroupPanel, AddTeamPanel, AddWorkshopPanel, ExportPanel, FilterPanel, MergePanel } from './ClientPanels';
 import { FieldPanel } from './Settings';
+import { UnderTabs } from './todoParts';
 import './leftovers.css';
 
 // Clients (M11, version 3.6): people as a list, a board or a table (a
@@ -479,7 +480,8 @@ export default function Clients() {
     <div className="cc-page">
       <div className={`cc-col${wide ? ' cc-col--wide' : ''}`}>
         <PageHeader title="Clients" />
-        <div className="cc-tabs"><InlineChoice ariaLabel="Show" semantics="pressed" options={TABS} value={tab} onChange={(v) => setParams(v === 'people' ? {} : { tab: v }, { replace: true })} form="pills" /></div>
+        {/* Underlined tabs move between parts of a page; the gliding switch only changes how the same thing is shown (Tim, 18 Nov). */}
+        <div className="cc-tabs"><UnderTabs label="Clients" tabs={TABS} value={tab} onChange={(v) => setParams(v === 'people' ? {} : { tab: v }, { replace: true })} /></div>
         {tab === 'people' && people}
         {tab === 'groups' && (
           <>

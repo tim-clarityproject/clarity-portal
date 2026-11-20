@@ -23,7 +23,8 @@
   justify-content: center;
   white-space: nowrap;
   font-family: var(--font-body);
-  font-size: var(--fs-btn);
+  /* The same size on a laptop and a phone: an older phone rule sets every button's size (mobile.css). */
+  font-size: var(--fs-btn) !important;
   color: var(--text-2);
   box-shadow: inset 0 calc(-1 * var(--focus-w)) 0 transparent;
   transition: color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);

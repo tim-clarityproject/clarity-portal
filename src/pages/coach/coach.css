@@ -326,7 +326,17 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-soft-label { display: block; font-size: var(--fs-small); color: var(--placeholder); margin-bottom: var(--space-1); }
 .ui-root .cc-soft p { margin: 0; font-size: var(--fs-text); line-height: var(--lh-box); overflow-wrap: anywhere; }
 
-.ui-root .cc-stats { display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-6); margin-top: var(--space-4); }
+/* Figures in a row sit on an equal grid (Tim, 19 Nov): equal columns, two by two on a phone; one figure alone keeps the row. */
+.ui-root .cc-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: var(--space-4) var(--space-6); margin-top: var(--space-4); }
+.ui-root .cc-stats:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 601px) {
+  .ui-root .cc-stats:has(> :nth-child(3)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ui-root .cc-stats:has(> :nth-child(4)) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .ui-root .cc-stats { column-gap: var(--space-3); }
+}
+.ui-root .cc-rate { white-space: nowrap; }
 
 .ui-root .cc-pins { margin-top: var(--space-px14); display: grid; gap: var(--space-1); }
 .ui-root .cc-pins p { margin: 0; display: flex; gap: var(--space-2); align-items: flex-start; font-size: var(--fs-secondary); overflow-wrap: anywhere; }
@@ -366,7 +376,7 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-px12) var(--space-3); margin-top: var(--space-3); }
 .ui-root .cc-toolbar .ds-choice { margin: 0; }
 .ui-root .cc-toolbar-who { margin-left: auto; font-size: var(--fs-note); color: var(--text-2); }
-.ui-root .cc-tabs { margin-top: var(--space-px22); }
+.ui-root .cc-tabs { display: flex; margin-top: var(--space-px22); }
 .ui-root .cc-tabs .ds-choice, .ui-root .cc-seg .ds-choice { margin: 0; }
 .ui-root .cc-search-field { margin-top: var(--space-px22); }
 
@@ -697,3 +707,21 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root.cc-app .ds-page-title-row, .ui-root.cc-public .ds-page-title-row { white-space: normal; }
 /* A title here is a name someone typed, so even its last word may break (the shared title keeps a last word whole). */
 .ui-root.cc-app .ds-page-title :is(span, .ds-keep, .ds-title-end), .ui-root.cc-public .ds-page-title :is(span, .ds-keep, .ds-title-end) { white-space: normal !important; overflow-wrap: anywhere; }
+
+/* An older phone rule pads every plain button and sets its size up to 768px (mobile.css). The coach
+   portal's own buttons keep the padding and the size written for them above, at every width: rows start on
+   the page's left edge, a fold's title keeps its size, and the search box its height (run 2's UI tester). */
+.ui-root .cc-search { padding: 0 var(--space-px22) !important; font-size: var(--fs-secondary) !important; }
+.ui-root .cc-menu-item { padding: 0 var(--space-px12) !important; font-size: var(--fs-menu-row) !important; }
+.ui-root .cc-menu-item--sub { padding-left: var(--space-px28) !important; font-size: var(--fs-note) !important; }
+.ui-root .cc-jump-item { padding: var(--space-2) var(--space-px12) !important; }
+.ui-root .cc-row { padding: var(--space-px12) 0 !important; }
+.ui-root .cc-fold-btn { padding: 0 !important; font-size: inherit !important; }
+.ui-root .cc-notice { padding: var(--space-px10) 0 !important; }
+.ui-root .cc-table-name { padding: 0 !important; font-size: var(--fs-secondary) !important; }
+.ui-root .cc-bulk-btn { font-size: var(--fs-secondary) !important; }
+.ui-root .cc-pop-item { padding: 0 var(--space-px12) !important; font-size: var(--fs-secondary) !important; }
+.ui-root .cc-setnav-item { padding: 0 var(--space-px12) !important; font-size: var(--fs-secondary) !important; }
+.ui-root .cc-round { padding: 0 !important; }
+.ui-root .cc-cell { padding: 0 var(--space-px6) !important; font-size: inherit !important; }
+.ui-root .cc-bulk-btn { padding: 0 var(--space-px12) !important; }

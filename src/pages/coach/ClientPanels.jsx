@@ -123,7 +123,7 @@ export function AddClientPanel({ open, onClose, onAdded }) {
       <div className="cc-field"><Dropdown label="Time zone" placeholder="Choose a time zone" options={zones} value={f.zone} onChange={(v) => set({ zone: v })} /></div>
       <div className="cc-field"><SwitchRow label="Frequent traveller" note="Session emails say the calendar invite moves with them." checked={f.traveller} onChange={(on) => set({ traveller: on })} /></div>
       <div className="cc-field"><TextField label="Referred by" value={f.referred} maxLength={120} autoComplete="off" onChange={(e) => set({ referred: e.target.value })} /></div>
-      <p className="cc-note">This makes their page, with no portal account yet. Nothing is sent: you invite them from their page when you’re ready.</p>
+      <p className="cc-note">Nothing is sent until you invite them from their page.</p>
     </SlidePanel>
   );
 }
@@ -190,7 +190,7 @@ export function AddTeamPanel({ open, onClose }) {
         <TextLink onClick={() => fileRef.current?.click()}>Choose a spreadsheet</TextLink>
         <input ref={fileRef} className="cc-hidden-file" type="file" accept=".csv,.tsv,.txt,text/csv" tabIndex={-1} aria-hidden="true" onChange={(e) => { readFile(e.target.files?.[0]); e.target.value = ''; }} />
       </div>
-      <p className="cc-note">A spreadsheet needs a Name and an Email column. Role, Mobile and City come too when they’re there.</p>
+      <p className="cc-note">A spreadsheet needs a Name and an Email column.</p>
       {problem && <p className="cc-problem" role="alert">{problem}</p>}
       {preview.rows.length > 0 && (
         <div className="cc-preview" aria-live="polite">

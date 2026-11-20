@@ -563,8 +563,17 @@ function Coaches() {
   const [problem, setProblem] = useState(null);
   const [busy, setBusy] = useState(false);
   const others = coaches.filter((c) => c.coach_id !== coach.id);
-  const money = (c) => (c.hourly_rate == null ? null : `${new Intl.NumberFormat('en-GB', { style: 'currency', currency: c.rate_currency || 'GBP', maximumFractionDigits: 2, minimumFractionDigits: 0 }).format(Number(c.hourly_rate))} an hour`);
-  const facts = (c) => [c.active ? 'Associate' : 'Switched off', c.clients == null ? null : `${c.clients} ${Number(c.clients) === 1 ? 'client' : 'clients'}`, money(c)].filter(Boolean).join(', ');
+  // A rate reads "£100/hr" with no spaces, and a screen reader hears "per hour" (Tim, 19 Nov).
+  const money = (c) => (c.hourly_rate == null ? null : (
+    <span className="cc-rate">
+      {new Intl.NumberFormat('en-GB', { style: 'currency', currency: c.rate_currency || 'GBP', maximumFractionDigits: 2, minimumFractionDigits: 0 }).format(Number(c.hourly_rate))}
+      <span aria-hidden="true">/hr</span><span className="ds-sr"> per hour</span>
+    </span>
+  ));
+  const facts = (c) => {
+    const words = [c.active ? 'Associate' : 'Switched off', c.clients == null ? null : `${c.clients} ${Number(c.clients) === 1 ? 'client' : 'clients'}`].filter(Boolean).join(', ');
+    return c.hourly_rate == null ? words : <>{words}, {money(c)}</>;
+  };
   const chosen = others.find((c) => c.coach_id === open) || null;
   const theirs = chosen ? admin.filter((a) => a.coach_id === chosen.coach_id && a.status !== 'past') : [];
   const run = (work, message) => saved(async () => { await work(); reloadCoaches(); }, { message }).catch(() => {});

@@ -42,7 +42,7 @@ export default function NameNote({ profile, reason, onClose }) {
       <div className="cc-field">
         <TextBox label={`A note to ${first}`} value={note} onChange={setNote} />
       </div>
-      <p className="cc-note">{email ? 'It opens in your own email, and nothing is sent until you send it there.' : `Add ${possessive(first)} email to their page to send this.`}</p>
+      <p className="cc-note">{email ? 'Nothing is sent until you send it from your own email.' : `Add ${possessive(first)} email to their page to send this.`}</p>
       {!email && <div className="cc-acts"><Button variant="outline" onClick={() => { onClose(); navigate(`/coach/clients/${profile.id}`); }}>Open {possessive(first)} page</Button></div>}
     </SlidePanel>
   );

@@ -23,13 +23,14 @@ export function Bar({ value = 0, band, className = '' }) {
 //       "6 weeks"; never "h" or "wks"). A unit starting with "/" sits
 //       right against the number ("8/10").
 // bar:  optional 0 to 1 for the thin bar underneath (mint: progress).
+// barBand: 'below' draws that bar grey, for a score under the standard.
 // panel: the stat sits in a soft panel (a summary's facts, M1 .fact).
 // celebrate: the mint celebration glow (M1 debrief summary at or above
 //       the standard; mint, never coral, Tim 26 Oct): a thin mint edge
 //       that fades in once and stays. With reduced motion it is simply
 //       there. Implies panel.
 // note: one line, or a list of lines, each its own sentence.
-export function Stat({ label, value, unit, note, good = false, bar, panel = false, celebrate = false, className = '' }) {
+export function Stat({ label, value, unit, note, good = false, bar, barBand, panel = false, celebrate = false, className = '' }) {
   const box = celebrate ? ' ds-stat--panel ds-stat--celebrate' : panel ? ' ds-stat--panel' : '';
   return (
     <div className={`ds-stat${box} ${className}`.trim()}>
@@ -39,7 +40,7 @@ export function Stat({ label, value, unit, note, good = false, bar, panel = fals
         {unit && <span className={`ds-unit${unit.startsWith('/') ? ' ds-unit--tight' : ''}`}>{unit}</span>}
       </strong>
       {(Array.isArray(note) ? note.filter(Boolean) : [note].filter(Boolean)).map((line, i) => <span key={typeof line === 'string' ? line : `note-${i}`} className="ds-stat-note">{line}</span>)}
-      {bar != null && <Bar value={bar} />}
+      {bar != null && <Bar value={bar} band={barBand} />}
     </div>
   );
 }

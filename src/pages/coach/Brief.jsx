@@ -79,7 +79,7 @@ function BriefBody({ session, client }) {
 
       <Part title="Since last time">
         {average.value
-          ? <StatGroup className="cc-stats cc-brief-stat"><Stat label={average.label} value={average.value} bar={parseInt(average.value, 10) / 100} /></StatGroup>
+          ? <StatGroup className="cc-stats cc-brief-stat"><Stat label={average.label} value={average.value} bar={parseInt(average.value, 10) / 100} barBand={parseInt(average.value, 10) < 85 ? 'below' : undefined} /></StatGroup>
           : <p className="cc-quiet">{average.none}</p>}
         {review && (
           <div className="cc-soft cc-brief-soft">

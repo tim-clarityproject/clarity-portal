@@ -646,7 +646,7 @@ if (parts.some((p) => p !== 'associate')) {
 
     await open(page, '/coach/settings/coaches');
     const coaches = (await text(page)).replace(/\n+/g, ' ');
-    pass('coaches: each coach with their facts, and a profile to approve', /Maya Collins\s+Associate, \d+ clients?, £100 an hour\s+Approve Maya’s profile/.test(coaches), coaches);
+    pass('coaches: each coach with their facts, and a profile to approve', /Maya Collins\s+Associate, \d+ clients?, £100\/hr( per hour)?\s+Approve Maya’s profile/.test(coaches), coaches);
     await button(page, 'Edit Maya Collins').click();
     await settle(page, 600);
     const mayas = (await panel(page).innerText()).replace(/\n+/g, ' ');

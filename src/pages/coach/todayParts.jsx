@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, ChartTips, Dropdown, InlineChoice, Sheet, SlidePanel, Stat, TextBox, tipProps, useToast } from '../../components/design';
+import { Button, ChartTips, Dropdown, InlineChoice, Sheet, SlidePanel, Stat, TextBox, tipProps, useIsPhone, useToast } from '../../components/design';
 import keepWords from '../../components/design/keepWords';
 import { deviceZone, isZone, sameZone, wallClock, zonePlace } from '../../lib/time';
 import { keyOf, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
@@ -135,7 +135,7 @@ export function OverLine({ over, onOpen }) {
 function PickRow({ todo, facts = [], checked, onChange, label }) {
   return (
     <div className={`ds-todo cc-today-pick${todo.important ? ' ds-todo--important' : ''}`} role="listitem">
-      <button type="button" role="checkbox" className="ds-check-box" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}><span>{TICK}</span></button>
+      <button type="button" role="checkbox" className="ds-check-box" aria-checked={checked} aria-label={todo.important ? `${label}, important` : label} onClick={() => onChange(!checked)}><span>{TICK}</span></button>
       <span className="cc-today-pick-words">
         <span className="ds-todo-text">{keepWords(todo.title)}{todo.important && <span className="ds-sr">, important</span>}</span>
         {facts.filter(Boolean).length > 0 && <span className="ds-todo-line">{facts.filter(Boolean).map((f) => <span key={f} className="ds-todo-tag">{f}</span>)}</span>}
@@ -540,13 +540,16 @@ export function EnergyPanel({ open, onClose }) {
 
 /** Next week's calls a day as five small bars, each with the shared pop-up; no key. */
 function WeekShape({ shape, todayKey }) {
+  const isPhone = useIsPhone();
   const max = Math.max(1, ...shape.map((d) => d.calls));
   const top = Math.max(...shape.map((d) => d.calls));
+  // On a phone a chart pop-up is one line (Tim, 19 Nov): the calls and the day together.
+  const tip = (d) => { const calls = `${d.calls} ${d.calls === 1 ? 'call' : 'calls'}`; const day = dayWords(d.day, todayKey); return isPhone ? { value: `${calls}, ${day}` } : { value: calls, when: day }; };
   return (
     <ChartTips>
       <div className="cc-today-shape" role="group" aria-label="Calls each day next week">
         {shape.map((d) => (
-          <div key={d.day} className="cc-today-shape-day" {...tipProps({ value: `${d.calls} ${d.calls === 1 ? 'call' : 'calls'}`, when: dayWords(d.day, todayKey) })}>
+          <div key={d.day} className="cc-today-shape-day" {...tipProps(tip(d))}>
             <span className="cc-today-shape-bar"><i className={d.calls > 0 && d.calls === top ? 'cc-today-shape-top' : undefined} style={{ height: `${Math.round((d.calls / max) * 100)}%` }} /></span>
             <span className="cc-today-shape-label" aria-hidden="true">{d.label}</span>
           </div>
