@@ -29,6 +29,14 @@
 //     less anything busy, and a start someone else has just booked is
 //     refused. Without it, 051 "isn't there yet", as for Tim tonight.
 //
+//   - migration 052's tables (Leads, the CRM and Network; Phase 6a run 4):
+//     with `crm: true` (and `day: true, cal: true`) the stand-in also holds
+//     052's tables and answers its rules, triggers and functions as the SQL
+//     does (tests/coach/crm-standin.mjs): the owner alone reads Leads'
+//     stages, automations, boards, emails and Network; an associate reads
+//     only a shared board; Network is answered a page at a time. Without
+//     it, 052 "isn't there yet".
+//
 // No test here sends an email or a message: every /api/ call is answered
 // with a stand-in, and nothing is ever written to the test project.
 import { readFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -36,6 +44,7 @@ import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { CAL_FUNCTIONS, CAL_KEYS, CAL_TABLES, calStandIn } from './cal-standin.mjs';
+import { CRM_FUNCTIONS, CRM_HOOKED, CRM_KEYS, CRM_TABLES, crmStandIn } from './crm-standin.mjs';
 
 export const APP = (process.env.APP_URL || 'http://localhost:4317').replace(/\/$/, '');
 const TEST_REF = 'gqtqljngeenqzxneucoc';
@@ -120,6 +129,8 @@ const KEYS = {
   coach_days: ['coach_id', 'day'], coach_weeks: ['coach_id', 'week_start'], coach_session_people: ['session_id', 'profile_id'], coach_session_notes: ['session_id'],
   // The calendar (051).
   ...CAL_KEYS,
+  // Leads, the CRM and Network (052).
+  ...CRM_KEYS,
 };
 const TABLES = ['organisations', 'coach_settings', 'coach_profiles', 'coach_away', 'client_profiles', 'client_about', 'client_notes', 'client_files', 'client_view_requests',
   'coach_tags', 'coach_tag_links', 'coach_fields', 'coach_field_values', 'coach_views', 'organisation_contacts', 'organisation_documents', 'coach_groups',
@@ -185,17 +196,21 @@ function dayChecks(table, r) {
  *   `cal` (with db 'there' and day): migration 051 is there too (the calendar and booking), answered by tests/coach/cal-standin.mjs.
  *     Its functions are on `store.fn` beside 050's (`store.fn.booking_make(uid, key, start, name, email, zone, answers, earlyLate)` and so on),
  *     so a walk can book as a guest without a page; `store.connections` is what coach_connections_mine() answers from.
+ *   `crm` (with db 'there', day and cal): migration 052 is there too (Leads, the CRM and Network), answered by tests/coach/crm-standin.mjs.
+ *     Its functions are on `store.fn` by name, called with their SQL arguments (`store.fn.network_page({ p_search: 'reid' })`,
+ *     `store.fn.email_in(key, email)` as the email server); `store.rows.network_people` and the rest hold its rows.
  *   `strict` (with db 'there'): nothing but a read ever reaches the test project: a function the stand-in doesn't know is answered
  *     with nothing (listed as `rpc name (not run)`), and a write to any other table is stopped and listed as `blocked …`.
  *   `now`: the database's clock (a walk that pins the page's clock hands the same time in).
  *   `page` may be a browser context: every tab in it is then answered by the one stand-in.
  * @returns the stand-in database ({ rows, calls, coaches, sends, claims, fn, api, withheld, leak })
  */
-export async function standIn(page, { role = 'owner', db = 'none', rows = {}, admin = [], day = false, cal = false, strict = false, now: clock = () => new Date() } = {}) {
+export async function standIn(page, { role = 'owner', db = 'none', rows = {}, admin = [], day = false, cal = false, crm = false, strict = false, now: clock = () => new Date() } = {}) {
   const me = { id: ME, user_id: null, role: role === 'owner' ? 'owner' : 'coach', display_first_name: role === 'owner' ? 'Alex' : 'Maya', full_name: role === 'owner' ? 'Alex Morgan' : 'Maya Collins', email: null, mobile: null, contact_ways: ['email'], active: true, capacity_hours_week: 15, hourly_rate: role === 'owner' ? null : 100, rate_currency: 'GBP' };
   const other = { id: OTHER, user_id: randomUUID(), role: role === 'owner' ? 'coach' : 'owner', display_first_name: role === 'owner' ? 'Maya' : 'Alex', full_name: role === 'owner' ? 'Maya Collins' : 'Alex Morgan', email: null, mobile: null, contact_ways: ['email'], active: true, capacity_hours_week: 15, hourly_rate: role === 'owner' ? 100 : null, rate_currency: 'GBP' };
   const calThere = db === 'there' && day && cal; // 051 needs 050
-  const held = db === 'there' && day ? [...TABLES, ...DAY_TABLES, ...(calThere ? CAL_TABLES : [])] : TABLES;
+  const crmThere = calThere && crm; // 052 needs 051
+  const held = db === 'there' && day ? [...TABLES, ...DAY_TABLES, ...(calThere ? CAL_TABLES : []), ...(crmThere ? CRM_TABLES : [])] : TABLES;
   const store = { rows: Object.fromEntries(held.map((t) => [t, [...(rows[t] || [])]])), calls: [], coaches: [me, other], down: false, sends: [], claims: [], api: { live: false, asked: [] }, withheld: 0, leak: false };
   const keyOf = (table, row) => (KEYS[table] || ['id']).map((c) => row[c]).join('|');
   const stamp = () => clock().toISOString();
@@ -390,6 +405,9 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
   // 051, as its SQL: the calendar's rules, triggers and functions (its functions sit on store.fn beside 050's).
   const calSim = calThere ? calStandIn({ store, ME, me, clock, no }) : null;
   if (calSim) { Object.assign(store.fn, calSim.fn); store.freeTimes = calSim.freeTimes; store.connections = []; }
+  // 052, as its SQL: Leads, the CRM and Network (its functions sit on store.fn by name, with their SQL arguments).
+  const crmSim = crmThere ? crmStandIn({ store, ME, me, clock, no }) : null;
+  if (crmSim) Object.assign(store.fn, crmSim.fn);
 
   await page.route('**/api/**', (r) => { store.calls.push(`api ${new URL(r.request().url()).pathname}`); return json(r, { ok: true, sent: false }); });
   if (db === 'there' && day) {
@@ -468,6 +486,7 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
         localStorage.setItem('clarity-coach-not-yet', String(Date.now()));
         localStorage.setItem('clarity-coach-day-not-yet', String(Date.now()));
         localStorage.setItem('clarity-coach-cal-not-yet', String(Date.now()));
+        localStorage.setItem('clarity-coach-crm-not-yet', String(Date.now()));
       } catch { /* blocked */ }
     });
     await page.route('**/rest/v1/**', (route) => {
@@ -477,7 +496,7 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
       if (req.method() === 'GET' || req.method() === 'HEAD') return route.fallback();
       // A checked function (the portal's own questions after sign-in among them) is answered with nothing: it never runs.
       // 051's functions aren't there yet: the page is told so, as a database without them would tell it.
-      if (name.startsWith('rpc/') && CAL_FUNCTIONS.includes(name.slice(4).split('?')[0])) {
+      if (name.startsWith('rpc/') && [...CAL_FUNCTIONS, ...CRM_FUNCTIONS].includes(name.slice(4).split('?')[0])) {
         store.calls.push(`rpc ${name.slice(4)} (not there)`);
         return json(route, { code: 'PGRST202', details: null, hint: null, message: `Could not find the function public.${name.slice(4)} in the schema cache` }, 404);
       }
@@ -489,20 +508,23 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
   }
   // "049 isn't there yet" is remembered on a device for an hour; a page that is
   // answered by the stand-in starts without that note, every time it loads.
-  await page.addInitScript(([dayThere, calIsThere]) => {
+  await page.addInitScript(([dayThere, calIsThere, crmIsThere]) => {
     try {
       localStorage.removeItem('clarity-coach-not-yet');
       // 050: there (the page is never told "not yet"), or not (told so on every load, so it never asks the test project).
       if (dayThere) localStorage.removeItem('clarity-coach-day-not-yet'); else localStorage.setItem('clarity-coach-day-not-yet', String(Date.now()));
       // 051, the same way.
       if (calIsThere) localStorage.removeItem('clarity-coach-cal-not-yet'); else localStorage.setItem('clarity-coach-cal-not-yet', String(Date.now()));
+      // 052, the same way.
+      if (crmIsThere) localStorage.removeItem('clarity-coach-crm-not-yet'); else localStorage.setItem('clarity-coach-crm-not-yet', String(Date.now()));
     } catch { /* blocked */ }
-  }, [day, calThere]);
+  }, [day, calThere, crmThere]);
 
   // 050's read rules (the break-it tester, 20 Nov): a coach reads only their own to-dos, lists, days, weeks and sessions, and
   // the owner is no exception. A row of another coach's is never returned (counted in `store.withheld`), changed or deleted.
   // `store.leak = true` switches that off, for a walk that asks what a page would show if such a row ever reached the device.
-  const readable = (table, r) => (calSim && CAL_TABLES.includes(table) ? store.leak === true || calSim.readable(table, r) : readableDay(table, r));
+  const readable = (table, r) => (crmSim && CRM_TABLES.includes(table) ? store.leak === true || crmSim.readable(table, r)
+    : calSim && CAL_TABLES.includes(table) ? store.leak === true || calSim.readable(table, r) : readableDay(table, r));
   const readableDay = (table, r) => !day || !DAY_TABLES.includes(table) || store.leak === true || (
     table === 'coach_session_people' ? sessionOf(r.session_id)?.coach_id === ME
       : table === 'workshop_sends' ? store.rows.workshops.find((w) => w.id === r.workshop_id)?.coach_id === ME
@@ -515,6 +537,22 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
       if (['select', 'limit', 'on_conflict', 'order', 'offset', 'columns'].includes(k)) continue;
       if (v.startsWith('eq.')) out = out.filter((r) => String(r[k]) === v.slice(3));
       else if (v === 'is.null') out = out.filter((r) => r[k] == null);
+      else if (v.startsWith('in.(') && v.endsWith(')')) { const set = v.slice(4, -1).split(',').map((x) => x.replace(/^"|"$/g, '')); out = out.filter((r) => set.includes(String(r[k]))); }
+    }
+    // "order=happened_on.desc,created_at.desc": the columns in turn, empty last.
+    const order = (url.searchParams.get('order') || '').split(',').filter(Boolean).map((o) => o.split('.'));
+    if (order.length) {
+      out = [...out].sort((a, b) => {
+        for (const [col, dir] of order) {
+          const x = a[col]; const y = b[col];
+          if (x == null && y == null) continue;
+          if (x == null) return 1;
+          if (y == null) return -1;
+          const c = String(x).localeCompare(String(y));
+          if (c) return dir === 'desc' ? -c : c;
+        }
+        return 0;
+      });
     }
     return out;
   };
@@ -635,6 +673,34 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
         case 'coach_client_list':
           return json(route, []);
         default:
+          if (CRM_FUNCTIONS.includes(fn)) {
+            // 052's functions, as their SQL (store.fn); without `crm` they aren't there, and the test project is never asked.
+            if (!crmSim) return json(route, { code: 'PGRST202', details: null, hint: null, message: `Could not find the function public.${fn} in the schema cache` }, 404);
+            if (fn === 'email_in') return refused(route, '42501', `permission denied for function ${fn}`);
+            try {
+              const a = args;
+              const answers = {
+                coach_lead_stages_start: () => store.fn.coach_lead_stages_start(),
+                lead_merge: () => store.fn.lead_merge(a.p_keep, a.p_drop, a.p_values ?? {}),
+                lead_unmerge: () => store.fn.lead_unmerge(a.p_merge),
+                network_page: () => store.fn.network_page(a),
+                network_map: () => store.fn.network_map(a),
+                network_counts: () => store.fn.network_counts(a),
+                network_archive: () => store.fn.network_archive(a.p_ids ?? [], a.p_keep ?? []),
+                network_restore: () => store.fn.network_restore(a.p_ids ?? [], a.p_unkeep ?? []),
+                network_duplicates: () => store.fn.network_duplicates(a.p_rows),
+                network_import: () => store.fn.network_import(a.p_rows),
+                network_merge: () => store.fn.network_merge(a.p_keep, a.p_drop, a.p_values ?? {}),
+                network_unmerge: () => store.fn.network_unmerge(a.p_merge),
+                coach_email_addresses_start: () => store.fn.coach_email_addresses_start(),
+                coach_email_add: () => store.fn.coach_email_add(a.p_email),
+              };
+              return json(route, answers[fn]());
+            } catch (e) {
+              if (e instanceof Refusal) return refused(route, e.code, e.message, e.status);
+              throw e;
+            }
+          }
           if (CAL_FUNCTIONS.includes(fn)) {
             // 051's functions, as their SQL (store.fn); without `cal` they aren't there, and the test project is never asked.
             if (!calSim) return json(route, { code: 'PGRST202', details: null, hint: null, message: `Could not find the function public.${fn} in the schema cache` }, 404);
@@ -700,7 +766,7 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
       // 050 isn't there: its tables answer as a database without them does, and the test project is never asked.
       // 051's connections are the server's alone: no person reads or writes a row.
       if (calSim && table === 'coach_connections') return refused(route, '42501', 'permission denied for table coach_connections');
-      if (DAY_TABLES.includes(table) || CAL_TABLES.includes(table) || table === 'coach_connections') return json(route, { code: 'PGRST205', details: null, hint: null, message: `Could not find the table 'public.${table}' in the schema cache` }, 404);
+      if (DAY_TABLES.includes(table) || CAL_TABLES.includes(table) || CRM_TABLES.includes(table) || table === 'coach_connections') return json(route, { code: 'PGRST205', details: null, hint: null, message: `Could not find the table 'public.${table}' in the schema cache` }, 404);
       if (strict && method !== 'GET' && method !== 'HEAD') { store.calls.push(`blocked ${method} ${table}`); return route.abort('blockedbyclient'); }
       return route.fallback();
     }
@@ -708,6 +774,8 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
     const now = stamp();
     const hooked = day && (DAY_TABLES.includes(table) || table === 'engagements');
     const calHooked = Boolean(calSim) && CAL_TABLES.includes(table);
+    const crmHooked = Boolean(crmSim) && CRM_HOOKED.includes(table); // coach_leads and organisation_contacts are older tables 052 adds rules to
+    const mayChange = (r) => !crmSim || !CRM_TABLES.includes(table) || crmSim.writable(table, r);
     store.calls.push(`${method} ${table}`);
     if (method === 'GET' || method === 'HEAD') return json(route, filtered(table, url));
     try {
@@ -733,30 +801,40 @@ export async function standIn(page, { role = 'owner', db = 'none', rows = {}, ad
             if (DAY_TABLES.includes(table)) { dayChecks(table, row); points(table, row); }
           }
           if (calHooked) row = calSim.before(table, old, row);
+          if (crmHooked) row = crmSim.before(table, old, row);
           if (old) store.rows[table][at] = row; else store.rows[table].push(row);
           if (hooked) after(table, old, row);
           if (calHooked) calSim.after(table, old, row);
+          if (crmHooked) crmSim.after(table, old, row);
           out.push(row);
         }
         return json(route, out, 201);
       }
       if (method === 'PATCH') {
-        const hit = filtered(table, url);
+        const hit = filtered(table, url).filter(mayChange);
         const body = req.postDataJSON();
         const out = [];
         for (const old of hit) {
           let row = { ...old, ...body, updated_at: now };
           if (hooked) { if (DAY_TABLES.includes(table)) mine(table, row); row = before(table, old, row); if (DAY_TABLES.includes(table)) { dayChecks(table, row); points(table, row); } }
           if (calHooked) row = calSim.before(table, old, row);
+          if (crmHooked) row = crmSim.before(table, old, row);
           const was = { ...old };
           Object.assign(old, row);
           if (hooked) after(table, was, old);
           if (calHooked) calSim.after(table, was, old);
+          if (crmHooked) crmSim.after(table, was, old);
           out.push(old);
         }
         return json(route, out);
       }
-      if (method === 'DELETE') return json(route, calHooked ? calSim.remove(table, filtered(table, url)) : removeRows(table, filtered(table, url)));
+      if (method === 'DELETE') {
+        const hit = filtered(table, url).filter(mayChange);
+        if (crmSim && CRM_TABLES.includes(table)) return json(route, crmSim.remove(table, hit));
+        // A lead that goes takes its timeline with it (052), then 051 lets go of its booking.
+        if (crmSim && table === 'coach_leads') crmSim.remove(table, hit, { cascadeOnly: true });
+        return json(route, calHooked ? calSim.remove(table, hit) : removeRows(table, hit));
+      }
     } catch (e) {
       if (e instanceof Refusal) { store.calls.push(`refused ${method} ${table} ${e.code}`); return refused(route, e.code, e.message, e.status); }
       throw e;
@@ -793,9 +871,18 @@ export async function seedDevice(page, userId, rows) {
 }
 
 /** Takes the coach portal's device copies off this browser (what a test made is never kept). */
+/**
+ * Puts Network's people on the device as the coach portal keeps them before 052 (clarity-coach-network-local:<account>):
+ * `seedNetworkDevice(page, userId, networkDeviceSeed())` from seed.mjs.
+ */
+export async function seedNetworkDevice(page, userId, { people = [], gives = [], ratings = [] } = {}) {
+  const now = new Date().toISOString();
+  const state = { people: Object.fromEntries(people.map((p) => [p.id, { created_at: now, updated_at: now, ...p }])), gives: Object.fromEntries(gives.map((g) => [g.id, { created_at: now, ...g }])), ratings, merges: {} };
+  await page.evaluate(([id, s]) => { localStorage.setItem(`clarity-coach-network-local:${id}`, JSON.stringify(s)); }, [userId, state]);
+}
 export async function clearDevice(page, userId) {
   await page.evaluate((id) => {
-    for (const k of Object.keys(localStorage)) if (k.startsWith(`clarity-coach-local:${id}`) || k.startsWith(`clarity-cache:${id}:coach`) || k === 'clarity-coach-not-yet' || k === 'clarity-coach-day-not-yet' || k === 'clarity-coach-cal-not-yet') localStorage.removeItem(k);
+    for (const k of Object.keys(localStorage)) if (k.startsWith(`clarity-coach-local:${id}`) || k.startsWith(`clarity-cache:${id}:coach`) || k === 'clarity-coach-not-yet' || k === 'clarity-coach-crm-not-yet' || k === 'clarity-coach-crm-seen' || k.startsWith(`clarity-coach-network-local:${id}`) || k.startsWith(`clarity-coach-email-bodies-local:${id}`) || k === 'clarity-coach-day-not-yet' || k === 'clarity-coach-cal-not-yet') localStorage.removeItem(k);
   }, userId);
 }
 

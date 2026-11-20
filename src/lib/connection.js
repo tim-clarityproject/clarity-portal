@@ -73,6 +73,10 @@ export function subscribeOnline(fn) {
 export function isNetworkError(error) {
   if (!error) return false;
   if (error.name === 'TypeError' || error.name === 'AbortError') return true;
+  // The database's own answer is never "no connection", whatever its words say: a refusal carries Postgres's
+  // five-character code (or PostgREST's), and its message may well hold the word "network" (the table
+  // network_people, "in your Network": Phase 6a run 4). Without this, such a refusal was kept and tried again for ever.
+  if (typeof error.code === 'string' && /^(PGRST\d{3}|[0-9A-Z]{5})$/.test(error.code)) return false;
   const text = `${error.message || ''} ${error.details || ''}`;
   return /Failed to fetch|NetworkError|Load failed|network|offline|timed out/i.test(text);
 }

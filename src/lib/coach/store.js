@@ -78,12 +78,29 @@ export const TABLES = {
   coach_poll_options: ['id'],
   coach_poll_votes: ['option_id', 'person_id'],
   coach_booking_links: ['id'],
+  coach_lead_stages: ['id'], // 052: here so a stage is sent before the leads in it
   coach_leads: ['id'],
   coach_cal_items: ['id'],
   coach_cal_guests: ['id'],
   coach_open_blocks: ['id'],
   coach_bookings: ['id'],
   coach_cal_reminder_sends: ['id'],
+  // Leads, the CRM and Network's own columns (migration 052; Phase 6a run 4). Network's PEOPLE are never here:
+  // they are read a page at a time (networkData.js).
+  coach_lead_events: ['id'],
+  coach_automations: ['id'],
+  coach_automation_runs: ['id'],
+  coach_boards: ['id'],
+  coach_board_stages: ['id'],
+  coach_board_items: ['id'],
+  coach_emails: ['id'],
+  coach_email_links: ['email_id', 'person_kind', 'person_id'],
+  coach_email_waiting: ['id'],
+  coach_email_addresses: ['id'],
+  client_check_ins: ['id'],
+  organisation_deals: ['id'],
+  organisation_growth: ['id'],
+  network_columns: ['id'],
 };
 // The tables of migration 050. Until Tim has run it they are kept on the
 // device only, exactly as every coach table was before 049: no error, and
@@ -97,26 +114,42 @@ const DAY_COLUMNS = { coach_settings: ['hidden_help'], engagements: ['sessions_h
 const CAL_TABLES = new Set(['coach_call_types', 'coach_polls', 'coach_poll_people', 'coach_poll_options', 'coach_poll_votes',
   'coach_booking_links', 'coach_leads', 'coach_cal_items', 'coach_cal_guests', 'coach_open_blocks', 'coach_bookings',
   'coach_cal_reminder_sends']);
+// The tables of migration 052 (Leads, the CRM and Network). Until Tim has
+// run it they are kept on the device only, in the same way. coach_leads
+// itself is 051's; 052 adds columns to it (CRM_COLUMNS).
+const CRM_TABLES = new Set(['coach_lead_stages', 'coach_lead_events', 'coach_automations', 'coach_automation_runs', 'coach_boards',
+  'coach_board_stages', 'coach_board_items', 'coach_emails', 'coach_email_links', 'coach_email_waiting', 'coach_email_addresses',
+  'client_check_ins', 'organisation_deals', 'organisation_growth', 'network_columns']);
+// Columns only migration 052 adds to an older table: left out of a save until it is there. A row that holds one is
+// then only PART sent: it stays marked unsent, so the device's copy stays in front and the whole row goes once 052 is there.
+const CRM_COLUMNS = {
+  coach_leads: ['stage_id', 'organisation', 'organisation_id', 'job_title', 'phone', 'value', 'currency', 'next_step', 'next_step_on',
+    'next_step_time', 'referred_by', 'referred_by_person', 'network_person_id', 'last_contact_on', 'want_outcome', 'want_pain',
+    'who_decides', 'who_funds', 'decide_when', 'won_at', 'won_profile_id', 'cold_at', 'cold_reason', 'cold_check_on', 'merged_into'],
+  coach_todos: ['network_person_id', 'automation_id', 'board_item_id', 'from_email_ref'],
+  coach_settings: ['crm'],
+};
 // Rows of one table that point at another row of the same table: the row
 // pointed at is sent first (a series before the times that stand in for
-// it, a call before its travel time).
-const PARENT_COLUMNS = { coach_cal_items: ['series_id', 'travel_for'] };
+// it, a call before its travel time, a lead before one merged into it).
+const PARENT_COLUMNS = { coach_cal_items: ['series_id', 'travel_for'], coach_leads: ['merged_into'] };
 // Read from the database but never written by a plain save (the database
 // adds these rows itself, or a checked function does).
 const READ_ONLY = new Set(['activity_log', 'workshop_survey_answers', 'workshop_sends', 'coach_poll_votes', 'coach_bookings',
-  'coach_cal_reminder_sends']);
+  'coach_cal_reminder_sends', 'coach_email_addresses']);
 // Tables a coach may add to but never change: a save is sent as "add it
 // unless it is there" (a plain upsert would need the right to change rows).
-const ADD_ONLY = new Set(['client_files', 'client_view_requests']);
+const ADD_ONLY = new Set(['client_files', 'client_view_requests', 'coach_automation_runs', 'coach_email_links']);
 // Tables a coach may only mark: the one column a save may change.
 const MARK_ONLY = { coach_notifications: ['read_at'] };
 // Columns the database fills in; never sent with a save.
 const DB_ONLY = ['created_at', 'updated_at'];
 // The codes that mean the database will never take this row as it is.
-const NEVER = new Set(['42501', '23503', '23514', '23505', '22023', '22P02', 'PGRST204']);
+const NEVER = new Set(['42501', '23503', '23001', '23514', '23505', '22023', '22P02', 'PGRST204']);
 const NOT_YET_KEY = 'clarity-coach-not-yet';
 const DAY_NOT_YET_KEY = 'clarity-coach-day-not-yet';
 const CAL_NOT_YET_KEY = 'clarity-coach-cal-not-yet';
+const CRM_NOT_YET_KEY = 'clarity-coach-crm-not-yet';
 const NOT_YET_MS = 60 * 60 * 1000;
 const LOCAL = 'coach-local';
 
@@ -155,6 +188,20 @@ const SHAPES = {
   coach_poll_people: (r) => (isText(r.name) ? r : null),
   coach_booking_links: (r) => (isText(r.purpose) ? r : null),
   coach_leads: (r) => (isText(r.name) ? (isObject(r.answers ?? {}) ? r : { ...r, answers: {} }) : null),
+  // Leads, the CRM and Network's columns (052): a row a page can't name or place is left out.
+  coach_lead_stages: (r) => (isText(r.name) ? r : null),
+  coach_lead_events: (r) => (isText(r.lead_id) && isText(r.kind) ? (isObject(r.data ?? {}) ? r : { ...r, data: {} }) : null),
+  coach_automations: (r) => (isText(r.trigger) && isText(r.action) ? r : null),
+  coach_automation_runs: (r) => (isText(r.automation_id) && isText(r.event_key) ? r : null),
+  coach_boards: (r) => (isText(r.name) ? (Array.isArray(r.columns ?? []) ? r : { ...r, columns: [] }) : null),
+  coach_board_stages: (r) => (isText(r.name) && isText(r.board_id) ? r : null),
+  coach_board_items: (r) => (isText(r.title) && isText(r.board_id) ? (isObject(r.field_values ?? {}) ? r : { ...r, field_values: {} }) : null),
+  coach_emails: (r) => (Array.isArray(r.to_people ?? []) && Array.isArray(r.cc_people ?? []) ? r : { ...r, to_people: Array.isArray(r.to_people) ? r.to_people : [], cc_people: Array.isArray(r.cc_people) ? r.cc_people : [] }),
+  coach_email_waiting: (r) => (isText(r.email) ? r : null),
+  client_check_ins: (r) => (isText(r.profile_id) && isText(r.due_on) ? r : null),
+  organisation_deals: (r) => (isText(r.name) && isText(r.organisation_id) ? r : null),
+  organisation_growth: (r) => (isText(r.title) && isText(r.organisation_id) ? r : null),
+  network_columns: (r) => (isText(r.name) ? (Array.isArray(r.options ?? []) ? r : { ...r, options: [] }) : null),
 };
 
 /** What the device keeps, read so that nothing kept by another version stops a page. */
@@ -170,7 +217,7 @@ export function tidyState(raw) {
       if (!row) continue;
       (out.rows[table] ||= {})[k] = row;
       const m = raw.marks?.[table]?.[k];
-      if (m && typeof m === 'object') (out.marks[table] ||= {})[k] = { sent: m.sent === true, gone: m.gone === true, refused: m.refused === true };
+      if (m && typeof m === 'object') (out.marks[table] ||= {})[k] = { sent: m.sent === true, gone: m.gone === true, refused: m.refused === true, ...(m.part === true ? { part: true } : {}) };
     }
   }
   return out;
@@ -397,9 +444,39 @@ export async function coachCalReady() {
 }
 export const coachCalReadyNow = () => calReadyNow;
 
+let crmReadyNow = null;
+let askingCrm = null;
+
+/**
+ * Whether migration 052's tables (Leads, the CRM and Network) are there:
+ * true, false (not yet) or null (can't be told). Asked only once 051 is
+ * there (052 needs it), and "not yet" is remembered for an hour, as above.
+ */
+export async function coachCrmReady() {
+  if (crmReadyNow === true) return true;
+  if ((await coachCalReady()) !== true) return coachCalReadyNow() === false ? false : null;
+  if (notYet(CRM_NOT_YET_KEY)) { crmReadyNow = false; return false; }
+  if (!askingCrm) {
+    askingCrm = (async () => {
+      try {
+        const there = await tableReady('coach_lead_stages');
+        if (there === false) noteNotYet(true, CRM_NOT_YET_KEY);
+        if (there === true) noteNotYet(false, CRM_NOT_YET_KEY);
+        if (there !== null) crmReadyNow = there;
+        return there;
+      } catch {
+        return null;
+      }
+    })().finally(() => { askingCrm = null; });
+  }
+  return askingCrm;
+}
+export const coachCrmReadyNow = () => crmReadyNow;
+
 /** Is this table's home in the database yet? */
 async function tableThere(table) {
   if ((await coachReady()) !== true) return false;
+  if (CRM_TABLES.has(table)) return (await coachCrmReady()) === true;
   if (CAL_TABLES.has(table)) return (await coachCalReady()) === true;
   return DAY_TABLES.has(table) ? (await coachDayReady()) === true : true;
 }
@@ -407,7 +484,11 @@ async function tableThere(table) {
 // ---------------------------------------------------------------- saving
 
 const forDb = (table, row) => Object.fromEntries(Object.entries(row).filter(([c]) => !DB_ONLY.includes(c)
-  && !(dayReadyNow !== true && DAY_COLUMNS[table]?.includes(c))));
+  && !(dayReadyNow !== true && DAY_COLUMNS[table]?.includes(c))
+  && !(crmReadyNow !== true && CRM_COLUMNS[table]?.includes(c))));
+/** Does this row hold something of 052's that the database can't take yet? */
+const heldBack = (table, row) => crmReadyNow !== true && Boolean(CRM_COLUMNS[table]?.some((c) => row[c] != null && !(c === 'currency' && row[c] === 'GBP')
+  && !(c === 'crm' && Object.keys(row[c] || {}).length === 0)));
 
 async function send(userId, table, row) {
   const k = keyOf(table, row);
@@ -415,9 +496,10 @@ async function send(userId, table, row) {
     const op = MARK_ONLY[table]
       ? { table, kind: 'update', values: Object.fromEntries(MARK_ONLY[table].map((c) => [c, row[c] ?? null])), match: Object.fromEntries(TABLES[table].map((c) => [c, row[c]])) }
       : { table, kind: 'upsert', values: forDb(table, row), onConflict: TABLES[table].join(','), ...(ADD_ONLY.has(table) ? { ignoreDuplicates: true } : {}) };
+    const part = heldBack(table, row);
     const answer = await saveOrQueue(userId, op);
-    if (answer.status === 'saved') mark(userId, table, k, { sent: true, refused: false });
-    return answer.status;
+    if (answer.status === 'saved') mark(userId, table, k, part ? { sent: false, refused: false, part: true } : { sent: true, refused: false, part: false });
+    return answer.status === 'saved' && part ? 'device' : answer.status;
   } catch (error) {
     if (NEVER.has(error?.code)) mark(userId, table, k, { refused: true });
     throw error;
@@ -506,8 +588,8 @@ export function noteRows(userId, pairs) {
 
 const loading = new Map();
 
-async function fetchAll(dayThere, calThere) {
-  const names = Object.keys(TABLES).filter((t) => (dayThere || !DAY_TABLES.has(t)) && (calThere || !CAL_TABLES.has(t)));
+async function fetchAll(dayThere, calThere, crmThere) {
+  const names = Object.keys(TABLES).filter((t) => (dayThere || !DAY_TABLES.has(t)) && (calThere || !CAL_TABLES.has(t)) && (crmThere || !CRM_TABLES.has(t)));
   const out = {};
   // A few at a time: gentle on the database, quick enough for the page.
   for (let i = 0; i < names.length; i += 6) {
@@ -535,9 +617,10 @@ export function loadCoach(userId) {
     if (there !== true) return there;
     const dayThere = (await coachDayReady()) === true;
     const calThere = dayThere && (await coachCalReady()) === true;
+    const crmThere = calThere && (await coachCrmReady()) === true;
     let db;
     try {
-      db = await fetchAll(dayThere, calThere);
+      db = await fetchAll(dayThere, calThere, crmThere);
     } catch {
       return null;
     }
@@ -546,7 +629,7 @@ export function loadCoach(userId) {
     let next = { rows: {}, marks: {} };
     for (const table of Object.keys(TABLES)) {
       if (!db[table]) {
-        // Its table isn't there yet (050, 051): the device's copy is all there is.
+        // Its table isn't there yet (050, 051, 052): the device's copy is all there is.
         if (before.rows[table]) { next.rows[table] = before.rows[table]; next.marks[table] = before.marks[table] || {}; }
         continue;
       }
@@ -563,7 +646,7 @@ export function loadCoach(userId) {
         if (m.sent) continue; // the database's copy (or its absence) is the truth
         if (READ_ONLY.has(table)) continue;
         // Unsent: the device's copy stays in front until it has been sent.
-        next = setRow(next, table, row, { sent: false, refused: m.refused === true });
+        next = setRow(next, table, row, { sent: false, refused: m.refused === true, ...(m.part === true ? { part: true } : {}) });
       }
     }
     write(userId, next);
@@ -574,9 +657,23 @@ export function loadCoach(userId) {
   return run;
 }
 
+const movers = new Set();
+/**
+ * Registers something to move across before the store's own rows are sent
+ * (networkData.js: Network's people, which leads and to-dos point at).
+ */
+export function beforeMoveAcross(fn) {
+  movers.add(fn);
+  return () => { movers.delete(fn); };
+}
+
 // What waited on the device from before 049 (or from a save that never
 // landed) is sent once, parents before their parts. A refused row stays.
 async function moveAcross(userId) {
+  // What these rows may point at but the store doesn't hold (Network's people) goes first.
+  for (const fn of movers) {
+    try { await fn(userId); } catch { /* it tries again on the next load */ }
+  }
   for (const table of Object.keys(TABLES)) {
     if (READ_ONLY.has(table)) continue;
     if (!(await tableThere(table))) continue;
@@ -589,6 +686,8 @@ async function moveAcross(userId) {
       const m = state.marks[table]?.[k] || {};
       if (m.sent || m.refused) continue;
       if (m.gone) continue;
+      // Part sent, and 052 still isn't there: nothing new to send.
+      if (m.part && crmReadyNow !== true) continue;
       try {
         await send(userId, table, row);
       } catch {
@@ -622,4 +721,5 @@ export function resetCoachStoreForTests() {
   readyNow = null;
   dayReadyNow = null;
   calReadyNow = null;
+  crmReadyNow = null;
 }

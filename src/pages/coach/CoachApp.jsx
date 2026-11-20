@@ -381,6 +381,8 @@ export default function CoachApp() {
       organisations: rowsOf(state, 'organisations'),
       tags: mine(rowsOf(state, 'coach_tags')).sort((a, b) => (a.position || 0) - (b.position || 0) || a.name.localeCompare(b.name)),
       fields: mine(rowsOf(state, 'coach_fields')).filter((f) => f.applies_to === 'client').sort((a, b) => (a.position || 0) - (b.position || 0) || a.name.localeCompare(b.name)),
+      // A lead's own fields (049's coach_fields with applies_to 'lead'): Sector, Value, Renewal date and the coach's own.
+      leadFields: mine(rowsOf(state, 'coach_fields')).filter((f) => f.applies_to === 'lead').sort((a, b) => (a.position || 0) - (b.position || 0) || a.name.localeCompare(b.name)),
       views: mine(rowsOf(state, 'coach_views')),
       notifications: mine(rowsOf(state, 'coach_notifications')),
       settings: rowsOf(state, 'coach_settings').find((s) => s.coach_id === coach.id) || { coach_id: coach.id },
@@ -407,6 +409,24 @@ export default function CoachApp() {
       bookings: mine(rowsOf(state, 'coach_bookings')),
       leads: mine(rowsOf(state, 'coach_leads')),
       reminderSends: mine(rowsOf(state, 'coach_cal_reminder_sends')),
+      // Leads, the CRM and Network's columns (run 4; migration 052): kept on the device until 052 is there. Network's
+      // PEOPLE are never here: pages ask networkData.js for a page of them at a time.
+      leadStages: mine(rowsOf(state, 'coach_lead_stages')).sort((x, y) => (x.position || 0) - (y.position || 0) || String(x.created_at || '').localeCompare(String(y.created_at || ''))),
+      leadEvents: mine(rowsOf(state, 'coach_lead_events')),
+      automations: mine(rowsOf(state, 'coach_automations')).sort((x, y) => (x.position || 0) - (y.position || 0) || String(x.created_at || '').localeCompare(String(y.created_at || ''))),
+      automationRuns: mine(rowsOf(state, 'coach_automation_runs')),
+      // The owner's boards; an associate is only ever handed the ones the owner has shared (read only).
+      boards: rowsOf(state, 'coach_boards').filter((b) => !b.archived_at && (b.coach_id === coach.id || b.shared === true)).sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)),
+      boardStages: rowsOf(state, 'coach_board_stages').sort((x, y) => (x.position || 0) - (y.position || 0)),
+      boardItems: rowsOf(state, 'coach_board_items').sort((x, y) => (x.position || 0) - (y.position || 0)),
+      emails: mine(rowsOf(state, 'coach_emails')),
+      emailLinks: mine(rowsOf(state, 'coach_email_links')),
+      emailWaiting: mine(rowsOf(state, 'coach_email_waiting')),
+      emailAddresses: mine(rowsOf(state, 'coach_email_addresses')),
+      checkIns: mine(rowsOf(state, 'client_check_ins')),
+      orgDeals: rowsOf(state, 'organisation_deals'),
+      orgGrowth: rowsOf(state, 'organisation_growth'),
+      networkColumns: mine(rowsOf(state, 'network_columns')).sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)),
       now,
     };
   }, [coach, isOwner, state, todayKey, coaches, admin, userId, reloadCoaches, role.reload, now]);

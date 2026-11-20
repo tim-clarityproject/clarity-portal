@@ -581,3 +581,327 @@ export function seedWithCal(options = {}) {
   }));
   return rows;
 }
+
+// ---------------------------------------------------------------- Leads, the CRM and Network (Phase 6a run 4; migration 052)
+export const CRM = {
+  // the pipeline's stages, as coach_lead_stages_start() makes them
+  stNew: u(9001), stCall: u(9002), stProp: u(9003), stDeciding: u(9004), stWon: u(9005),
+  // M11's leads (Ruth and Nadia are the calendar seed's own booking-made leads, CAL.leadRuth and CAL.leadNadia)
+  elena: u(9011), jack: u(9012), amy: u(9013), chrisLowe: u(9014), tom: u(9015), leoWon: u(9016), chrisDoyle: u(9017), christopherDoyle: u(9018), coldLead: u(9019),
+  // the leads' own fields
+  lfSector: u(9021), lfBudget: u(9022), lfRenew: u(9023),
+  // automations
+  a1: u(9031), a2: u(9032), a3: u(9033), a4: u(9034), a6: u(9036),
+  // boards
+  speaking: u(9041), partners: u(9042), spIdeas: u(9043), spPitched: u(9044), spConfirmed: u(9045), spDone: u(9046), ptTalking: u(9047), ptAgreed: u(9048), ptActive: u(9049),
+  // emails and the person waiting
+  e1: u(9061), e2: u(9062), e3: u(9063), e4: u(9064), eSarah: u(9065), waitSarah: u(9066), addrLog: u(9067), addrTodo: u(9068),
+  // past clients (Grace Liu is ID.past)
+  ben: u(9071), leah: u(9072), omar: u(9073), ciGrace: u(9074), ciBen: u(9075), ciLeah: u(9076),
+  // Network, as M11 draws it
+  sofia: u(9101), dana: u(9102), hannah: u(9103), jamal: u(9104), vera: u(9105), umar: u(9106), rosa: u(9107), erin: u(9108), dan: u(9109), david: u(9110),
+  zaraF: u(9111), finn: u(9112), kate: u(9113), yusuf: u(9114), mayaK: u(9115), zaraN: u(9116), beaR: u(9117), danielV: u(9118), adamF: u(9119), priyeshY: u(9120),
+  colSector: u(9131),
+};
+
+/** A day some whole months before (or after) one of the seed's days, as the database counts months. */
+const monthsFrom = (dayKey, months) => {
+  const [y, m, d] = dayKey.split('-').map(Number);
+  const total = y * 12 + (m - 1) + months;
+  const yy = Math.floor(total / 12);
+  const mm = total - yy * 12;
+  const last = new Date(Date.UTC(yy, mm + 1, 0)).getUTCDate();
+  return `${String(yy).padStart(4, '0')}-${String(mm + 1).padStart(2, '0')}-${String(Math.min(d, last)).padStart(2, '0')}`;
+};
+/** The day someone last spoke so that, on their rhythm, the catch-up fell due `offset` days from the seed's today. */
+const spokeFor = (rhythm, offset) => monthsFrom(day(offset), -rhythm);
+
+/** A Network person, as a row of network_people (the worked-out columns are the database's, or the stand-in's). */
+const person = (id, name, organisation, role, ratings, rhythm, lastSpoke, extra = {}) => ({
+  id, coach_id: ME, name, organisation, organisation_id: null, role, email: `${name.toLowerCase().replace(/[^a-z]+/g, '.')}@example.invalid`, phone: null,
+  influence: ratings?.[0] ?? null, trust: ratings?.[1] ?? null, value_delivery: ratings?.[2] ?? null, what_you_get: ratings?.[3] ?? null,
+  rhythm_months: rhythm, last_spoke_on: lastSpoke, snoozed_until: null, added_on: day(-700), own: {}, archived_at: null, keep: false, profile_id: null, notes: null,
+  merged_into: null, created_at: at(-700), updated_at: at(-700), ...extra,
+});
+
+/**
+ * Network as M11 draws it: who is due (Sofia 9 days overdue, Dana 7, Hannah 5, then 3), Dan Reid (given once and asked once),
+ * David Stark (one person's page: spoken to 2 days ago, an idea given today), three people ready to archive and two archived.
+ * @returns {{ network_people: object[], network_gives: object[], network_ratings: object[], network_columns: object[] }}
+ */
+export function networkSeed() {
+  const people = [
+    person(CRM.sofia, 'Sofia Marsh', 'Citadel', 'Key contact', [7, 4, 5, 6], 3, spokeFor(3, -9), { phone: '+1 617 555 0122' }),
+    person(CRM.dana, 'Dana Whitfield', 'Kestrel Group', 'Sponsor', [9, 8, 6, 7], 1, spokeFor(1, -7), { phone: '07700 900383', organisation_id: ID.kestrel }),
+    person(CRM.hannah, 'Hannah Wells', 'Quillmark', 'Client', [5, 8, 8, 9], 2, spokeFor(2, -5), { phone: '07700 900262' }),
+    person(CRM.jamal, 'Jamal Irwin', 'Linden Partners', 'Client', [1, 4, 8, 7], 12, spokeFor(12, -3)),
+    person(CRM.vera, 'Vera Ellis', 'Ashby Rugby', 'Network', [9, 1, 8, 0], 12, spokeFor(12, -3)),
+    person(CRM.umar, 'Umar Young', 'Westgate Schools', 'Key contact', [3, 6, 2, 6], 1, spokeFor(1, -3)),
+    person(CRM.rosa, 'Rosa Price', 'Ridgeway Trust', 'Key contact', [4, 6, 0, 2], 1, spokeFor(1, -3)),
+    person(CRM.erin, 'Erin Banks', 'Northfield Logistics', 'Past client', [10, 8, 6, 0], 1, spokeFor(1, -3), { organisation_id: ID.northfield }),
+    person(CRM.dan, 'Dan Reid', 'Harbour Lane', 'Referrer', [6, 9, 7, 8], 3, spokeFor(3, -2), { phone: '07700 900141' }),
+    person(CRM.david, 'David Stark', 'Citadel', 'Chief medical officer', [9, 6, 7, 7], 2, day(-2), { phone: '+1 212 555 0147' }),
+    person(CRM.zaraF, 'Zara Fraser', 'Westgate Schools', 'Referrer', [7, 9, 8, 4], 6, spokeFor(6, 12)),
+    person(CRM.finn, 'Finn Carver', 'Northfield Logistics', 'Referrer', [7, 8, 7, 3], 6, spokeFor(6, 25)),
+    person(CRM.kate, 'Kate Banks', 'Northfield Logistics', 'Sponsor', [4, 7, 2, 9], 12, spokeFor(12, 40)),
+    person(CRM.yusuf, 'Yusuf Lyle', 'Ashby Rugby', 'Sponsor', [4, 7, 2, 3], 6, spokeFor(6, 58)),
+    person(CRM.mayaK, 'Maya Kerr', 'Kestrel Group', 'Sponsor', [0, 9, 8, 8], 1, spokeFor(1, 20)),
+    // Ready to archive: no contact for 18 months, and on no focus list.
+    person(CRM.zaraN, 'Zara Nash', 'Orbital Health', 'Network', null, null, day(-555)),
+    person(CRM.beaR, 'Bea Reeves', 'Harbour City FC', 'Network', [5, 5, 5, 5], null, day(-620)),
+    person(CRM.danielV, 'Daniel Vance', 'Arden Vale', 'Past client', null, null, day(-560)),
+    // Archived already.
+    person(CRM.adamF, 'Adam Ford', 'Fenwick Rowing', 'Key contact', [1, 5, 1, 8], 2, day(-650), { archived_at: at(-30) }),
+    person(CRM.priyeshY, 'Priyesh Young', 'Northfield Logistics', 'Referrer', [2, 6, 2, 8], 2, day(-650), { archived_at: at(-30) }),
+  ];
+  const give = (n, personId, direction, kind, note, offset) => ({ id: u(9200 + n), person_id: personId, coach_id: ME, direction, kind, note, happened_on: day(offset), created_at: at(offset), updated_at: at(offset) });
+  return {
+    network_people: people,
+    network_gives: [
+      give(1, CRM.dan, 'gave', 'introduction', 'Introduced Dan to the Kestrel leadership team.', -60),
+      give(2, CRM.dan, 'asked', 'referral', 'Asked who else at Harbour Lane is building a team.', -45),
+      give(3, CRM.dana, 'gave', 'resource', 'Sent the article on decision rights.', -20),
+      give(4, CRM.dana, 'asked', 'advice', 'Asked how the board reads the renewal.', -12),
+      give(5, CRM.david, 'gave', 'idea', 'Suggested a different approach to his team’s human performance challenge.', 0),
+    ],
+    network_ratings: [],
+    network_columns: [{ id: CRM.colSector, coach_id: ME, name: 'Sector', kind: 'text', options: [], note: 'The sector they work in.', position: 0, hidden: false }],
+  };
+}
+
+/**
+ * Leads and the CRM as M11 draws them: five stages, eight leads on the board (two of them the calendar seed's booking-made
+ * leads), Amy's and Ruth's timelines with their emails, the two Chris Doyles who may be one person, Sarah Kent waiting, five
+ * automations (M11's sixth, "keep in touch every 3 months", isn't one of the two actions an automation can take), two boards,
+ * past clients with their check-ins, and Kestrel's account map.
+ */
+export function crmSeed() {
+  const stage = (id, name, likelihood, position, isWon = false) => ({ id, coach_id: ME, name, likelihood, position, is_won: isWon, created_at: at(-200), updated_at: at(-200) });
+  const lead = (id, name, stageId, extra = {}) => ({
+    id, coach_id: ME, name, email: `${name.toLowerCase().replace(/[^a-z]+/g, '.')}@example.invalid`, source: 'manual', call_type_key: null, booking_id: null, time_zone: 'Europe/London',
+    answers: {}, status: 'new', notes: null, stage_id: stageId, organisation: null, organisation_id: null, job_title: null, phone: null, value: null, currency: 'GBP', next_step: null,
+    next_step_on: null, next_step_time: null, referred_by: null, referred_by_person: null, network_person_id: null, last_contact_on: null, want_outcome: null, want_pain: null,
+    who_decides: null, who_funds: null, decide_when: null, won_at: null, won_profile_id: null, cold_at: null, cold_reason: null, cold_check_on: null, merged_into: null,
+    created_at: at(-20), updated_at: at(-1), ...extra,
+  });
+  const event = (n, leadId, kind, offset, title, detail = null, data = {}, hour = 9, minute = 0) => ({ id: u(9300 + n), coach_id: ME, lead_id: leadId, kind, happened_at: at(offset, hour, minute),
+    happened_on: day(offset), title, detail, data, created_at: at(offset, hour, minute), updated_at: at(offset, hour, minute) });
+  const email = (id, direction, who, subject, snippet, offset, hour, extra = {}) => ({ id, coach_id: ME, direction, from_name: direction === 'in' ? who.name : 'Alex Morgan', from_email: direction === 'in' ? who.email : 'alex@example.invalid',
+    to_people: direction === 'in' ? [{ name: 'Alex Morgan', email: 'alex@example.invalid' }] : [who], cc_people: [], subject, snippet, sent_at: at(offset, hour, 40), thread_key: `thread-${subject.replace(/^re: /i, '').toLowerCase()}`,
+    source: 'copy_in', external_id: `seed-${id}`, link: null, hidden: false, created_at: at(offset, hour, 40), updated_at: at(offset, hour, 40), ...extra });
+  const amy = { name: 'Amy Cole', email: 'amy.cole@example.invalid' };
+  const ruth = { name: 'Ruth Adeyemi', email: 'ruth@example.invalid' };
+  const run = (n, automationId, leadId, offset) => ({ id: u(9500 + n), automation_id: automationId, coach_id: ME, event_key: `seed:${n}`, lead_id: leadId, profile_id: null, todo_id: null, ran_at: at(offset), created_at: at(offset), updated_at: at(offset) });
+  const card = (n, boardId, stageId, title, values, position) => ({ id: u(9600 + n), board_id: boardId, coach_id: ME, stage_id: stageId, title, field_values: values, notes: null, position, created_at: at(-30), updated_at: at(-30) });
+  const past = (id, name, endedOffset, extra = {}) => ({ id, coach_id: ME, user_id: null, name, email: `${name.split(' ')[0].toLowerCase()}@example.invalid`, mobile: null, organisation_id: null, job_title: null, city: null,
+    time_zone: 'Europe/London', frequent_traveller: false, referred_by: null, status: 'past', stage: null, getting_started: {}, last_contact_on: day(endedOffset), invited_at: null, ended_on: day(endedOffset), merged_into: null,
+    created_at: at(endedOffset - 200), updated_at: at(endedOffset), ...extra });
+  return {
+    coach_lead_stages: [stage(CRM.stNew, 'New', 10, 0), stage(CRM.stCall, 'Call booked', 25, 1), stage(CRM.stProp, 'Proposal sent', 50, 2), stage(CRM.stDeciding, 'Deciding', 70, 3), stage(CRM.stWon, 'Won', 100, 1000000, true)],
+    coach_leads: [
+      lead(CRM.elena, 'Elena Ruiz', CRM.stNew, { job_title: 'Founder', next_step: 'Reply to her email', next_step_on: day(0), last_contact_on: day(-1), source: 'email' }),
+      lead(CRM.jack, 'Jack Moran', CRM.stNew, { job_title: 'Head coach, rugby', next_step: 'Book a Chemistry Call', next_step_on: day(1), last_contact_on: day(-3), source: 'referral' }),
+      // The calendar seed's two booking-made leads, now in the pipeline (the same ids: these rows take their place).
+      lead(CAL.leadRuth, 'Ruth Adeyemi', CRM.stCall, { email: ruth.email, source: 'chemistry_page', call_type_key: 'chemistry', booking_id: CAL.bookRuth, organisation: 'Harbour City FC', organisation_id: ID.harbour,
+        job_title: 'Head of performance', phone: '07700 900213', next_step: 'Chemistry Call', next_step_on: day(2), next_step_time: '13:00', last_contact_on: day(-2) }),
+      lead(CAL.leadNadia, 'Nadia Osei', CRM.stCall, { email: 'nadia@example.invalid', source: 'connection_page', call_type_key: 'connection', booking_id: CAL.bookNadia, organisation: 'Vale Health',
+        next_step: 'Connection Call', next_step_on: day(4), next_step_time: '12:30', last_contact_on: day(-5) }),
+      lead(CRM.amy, 'Amy Cole', CRM.stProp, { email: amy.email, organisation: 'Northfield Logistics', organisation_id: ID.northfield, job_title: 'Chief operating officer', phone: '07700 900461', value: 13500,
+        next_step: 'Follow up on the proposal', next_step_on: day(2), last_contact_on: day(0), referred_by: 'Hannah Wells', referred_by_person: CRM.hannah, source: 'referral',
+        want_outcome: 'A leadership team that owns its decisions.', want_pain: 'Every decision still comes back to her.', who_decides: 'Amy, with her CEO.', who_funds: 'Northfield, from the L&D budget.' }),
+      lead(CRM.chrisLowe, 'Chris Lowe', CRM.stProp, { organisation: 'Kestrel Group', organisation_id: ID.kestrel, value: 18000, next_step: 'Send workshop dates', next_step_on: day(6), last_contact_on: day(-6) }),
+      lead(CRM.tom, 'Tom Hale', CRM.stDeciding, { organisation: 'Brightwater Capital', value: 7500, next_step: 'Check in on his decision', next_step_on: day(-4), last_contact_on: day(-19),
+        want_outcome: 'A calmer first year as managing partner.', want_pain: 'He is carrying every client relationship himself.', who_decides: 'Tom.', who_funds: 'Brightwater.', decide_when: 'Before the end of the month.' }),
+      lead(CRM.leoWon, 'Leo Grant', CRM.stWon, { email: null, organisation: 'Northfield Logistics', organisation_id: ID.northfield, value: 13500, last_contact_on: day(-4), won_at: at(-4), won_profile_id: ID.leo }),
+      // May be the same person twice ("Chris Doyle may be in here twice.").
+      lead(CRM.chrisDoyle, 'Chris Doyle', CRM.stNew, { email: 'chris@example.invalid', organisation: 'Doyle Capital', notes: 'Referrer, 3 people sent', last_contact_on: day(-12) }),
+      lead(CRM.christopherDoyle, 'Christopher Doyle', CRM.stNew, { email: null, phone: '07700 900542', organisation: 'Doyle Capital Partners', notes: 'Added from the Chemistry Call page', source: 'chemistry_page', last_contact_on: day(-8) }),
+      // A cold lead, with what happened and when to check in again.
+      lead(CRM.coldLead, 'Priya Menon', CRM.stProp, { organisation: 'Marlow Analytics', value: 9000, last_contact_on: day(-50), cold_at: at(-30), cold_reason: 'Budget frozen until the new financial year.', cold_check_on: day(60) }),
+    ],
+    coach_lead_events: [
+      // Amy's timeline, as M11 draws it (newest first on the page).
+      event(1, CRM.amy, 'referred', -11, 'Referred by Hannah Wells', 'Hannah introduced you by email.', { by: 'Hannah Wells' }),
+      event(2, CRM.amy, 'booking', -8, 'Booked a Chemistry Call', 'From your Chemistry Call page.', { call_type_key: 'chemistry' }),
+      event(3, CRM.amy, 'call', -7, 'Chemistry Call, 30 minutes', 'Wants her senior team pulling the same way before the Q1 restructure.\nDecides with her CEO by the end of November.', { minutes: 30 }),
+      event(4, CRM.amy, 'proposal', -5, 'Proposal sent', 'Leadership Accelerator, £13,500 + VAT.', { name: 'Leadership Accelerator', amount: 13500 }),
+      event(5, CRM.amy, 'email', -5, 'You sent the proposal', null, { email_id: CRM.e3, direction: 'out' }, 9, 40),
+      event(6, CRM.amy, 'proposal_opened', -4, 'Opened your proposal', 'Leadership Accelerator.', { name: 'Leadership Accelerator' }),
+      event(7, CRM.amy, 'proposal_opened', -2, 'Opened your proposal', 'Leadership Accelerator.', { name: 'Leadership Accelerator' }),
+      event(8, CRM.amy, 'email', 0, 'Amy replied: Our CEO is in on Thursday', null, { email_id: CRM.e4, direction: 'in' }, 7, 55),
+      event(9, CRM.amy, 'proposal_opened', 0, 'Opened your proposal', 'Leadership Accelerator.', { name: 'Leadership Accelerator' }, 9, 12),
+      // Ruth's.
+      event(11, CAL.leadRuth, 'first_contact', -5, 'First contact', 'From the Chemistry Call page.', { source: 'chemistry_page' }),
+      event(12, CAL.leadRuth, 'booking', -4, 'Booked a Chemistry Call', 'From your Chemistry Call page.', { booking_id: CAL.bookRuth, call_type_key: 'chemistry' }),
+      event(13, CAL.leadRuth, 'email', -3, 'You sent the Chemistry Call details', null, { email_id: CRM.e2, direction: 'out' }),
+      event(14, CAL.leadRuth, 'email', 0, 'Ruth replied: Can we start in January?', null, { email_id: CRM.e1, direction: 'in' }, 8, 40),
+      // Tom's: a proposal opened once, then quiet.
+      event(21, CRM.tom, 'call', -30, 'Chemistry Call, 30 minutes', 'Ready to decide once the partners have met.', { minutes: 30 }),
+      event(22, CRM.tom, 'proposal', -21, 'Proposal sent', 'Executive coaching, £7,500 + VAT.', { name: 'Executive coaching', amount: 7500 }),
+      event(23, CRM.tom, 'proposal_opened', -19, 'Opened your proposal', 'Executive coaching.', { name: 'Executive coaching' }),
+      event(31, CRM.leoWon, 'won', -4, 'Won', 'Leadership Accelerator, £13,500 + VAT.', { profile_id: ID.leo }),
+      event(41, CRM.coldLead, 'cold', -30, 'Marked as cold', 'Budget frozen until the new financial year.', {}),
+    ],
+    coach_fields: [
+      { id: CRM.lfSector, coach_id: ME, applies_to: 'lead', name: 'Sector', kind: 'choice', options: ['Finance', 'Sport', 'Logistics', 'Media', 'Health', 'Food'], position: 0 },
+      { id: CRM.lfBudget, coach_id: ME, applies_to: 'lead', name: 'Value', kind: 'number', options: [], position: 1 },
+      { id: CRM.lfRenew, coach_id: ME, applies_to: 'lead', name: 'Renewal date', kind: 'date', options: [], position: 2 },
+    ],
+    coach_field_values: [[CRM.amy, 'Logistics'], [CAL.leadRuth, 'Sport'], [CRM.tom, 'Finance'], [CRM.elena, 'Media'], [CRM.chrisLowe, 'Finance'], [CAL.leadNadia, 'Health'], [CRM.jack, 'Sport'], [CRM.leoWon, 'Logistics']]
+      .map(([item, v]) => ({ field_id: CRM.lfSector, item_id: item, coach_id: ME, value_text: v, value_number: null, value_date: null })),
+    coach_tag_links: [{ tag_id: ID.tagExec, item_kind: 'lead', item_id: CRM.amy, coach_id: ME }, { tag_id: ID.tagSport, item_kind: 'lead', item_id: CAL.leadRuth, coach_id: ME }],
+    coach_automations: [
+      { id: CRM.a1, coach_id: ME, trigger: 'lead_stage', trigger_stage_id: CRM.stProp, trigger_count: null, call_type_key: null, action: 'todo', todo_title: 'Follow up on the proposal', todo_days: 3, to_stage_id: null, active: true, position: 0 },
+      { id: CRM.a2, coach_id: ME, trigger: 'proposal_opened', trigger_stage_id: null, trigger_count: 3, call_type_key: null, action: 'todo', todo_title: 'Call while the proposal is fresh', todo_days: 0, to_stage_id: null, active: true, position: 1 },
+      { id: CRM.a3, coach_id: ME, trigger: 'lead_quiet', trigger_stage_id: null, trigger_count: 14, call_type_key: null, action: 'todo', todo_title: 'Check in', todo_days: 0, to_stage_id: null, active: true, position: 2 },
+      { id: CRM.a4, coach_id: ME, trigger: 'call_booked', trigger_stage_id: null, trigger_count: null, call_type_key: 'chemistry', action: 'todo', todo_title: 'Read their booking answers', todo_days: -1, to_stage_id: null, active: true, position: 3 },
+      { id: CRM.a6, coach_id: ME, trigger: 'coaching_ended', trigger_stage_id: null, trigger_count: null, call_type_key: null, action: 'todo', todo_title: 'Ask for a testimonial', todo_days: 14, to_stage_id: null, active: false, position: 5 },
+    ].map((a) => ({ ...a, created_at: at(-120), updated_at: at(-120) })),
+    // "Ran 4 times in November", 2, 3 and 5 (each run this month, whatever the day).
+    coach_automation_runs: [...[1, 2, 3, 4].map((n) => run(n, CRM.a1, CRM.amy, 0)), ...[5, 6].map((n) => run(n, CRM.a2, CRM.amy, 0)), ...[7, 8, 9].map((n) => run(n, CRM.a3, CRM.tom, 0)),
+      ...[10, 11, 12, 13, 14].map((n) => run(n, CRM.a4, CAL.leadRuth, 0))],
+    coach_boards: [
+      { id: CRM.speaking, coach_id: ME, name: 'Speaking', columns: [{ id: 'date', name: 'Date', kind: 'date' }, { id: 'fee', name: 'Fee', kind: 'money' }, { id: 'audience', name: 'Audience', kind: 'text' }], shared: false, position: 0, archived_at: null },
+      { id: CRM.partners, coach_id: ME, name: 'Partners', columns: [{ id: 'contact', name: 'Contact', kind: 'text' }], shared: false, position: 1, archived_at: null },
+    ].map((b) => ({ ...b, created_at: at(-90), updated_at: at(-90) })),
+    coach_board_stages: [[CRM.spIdeas, CRM.speaking, 'Ideas'], [CRM.spPitched, CRM.speaking, 'Pitched'], [CRM.spConfirmed, CRM.speaking, 'Confirmed'], [CRM.spDone, CRM.speaking, 'Done'],
+      [CRM.ptTalking, CRM.partners, 'Talking'], [CRM.ptAgreed, CRM.partners, 'Agreed'], [CRM.ptActive, CRM.partners, 'Active']]
+      .map(([id, boardId, name], i) => ({ id, board_id: boardId, coach_id: ME, name, position: i, created_at: at(-90), updated_at: at(-90) })),
+    coach_board_items: [
+      card(1, CRM.speaking, CRM.spIdeas, 'League Managers Association', { audience: 'Head coaches' }, 0),
+      card(2, CRM.speaking, CRM.spPitched, 'CIPD Festival of Work', { date: day(203), fee: 4500, audience: '800 HR leaders' }, 0),
+      card(3, CRM.speaking, CRM.spPitched, 'Henley Business School alumni', { date: day(117), fee: 3000, audience: '120 alumni' }, 1),
+      card(4, CRM.speaking, CRM.spConfirmed, 'Northfield leadership offsite', { date: day(63), fee: 6000, audience: '40 senior leaders' }, 0),
+      card(5, CRM.speaking, CRM.spDone, 'Leaders in Sport podcast', { date: day(-16), audience: 'Sport leaders' }, 0),
+      card(6, CRM.partners, CRM.ptTalking, 'Quillmark Publishing', { contact: 'Hannah Wells' }, 0),
+      card(7, CRM.partners, CRM.ptActive, 'Fenwick Rowing', { contact: 'Isla Hale' }, 0),
+    ],
+    coach_emails: [
+      email(CRM.e1, 'in', ruth, 'Re: Chemistry Call', 'Thanks for the details. Before Wednesday, can we start in January? Our season review lands in December and I want the staff free for it.', 0, 8),
+      email(CRM.e2, 'out', ruth, 'Chemistry Call', 'Here are the details for Wednesday, and the three questions I’ll ask.', -3, 9),
+      email(CRM.e3, 'out', amy, 'Leadership Accelerator proposal', 'The proposal is attached. It covers the six months we talked about.', -5, 9),
+      email(CRM.e4, 'in', amy, 'Re: Leadership Accelerator proposal', 'Our CEO is in on Thursday, so I’ll take him through it then.', 0, 7),
+      email(CRM.eSarah, 'out', { name: 'Sarah Kent', email: 'sarah.kent@example.invalid' }, 'Good to meet you at the summit', 'It was good to meet you on Tuesday. Here is the article I mentioned.', -1, 16),
+    ],
+    coach_email_links: [[CRM.e1, CAL.leadRuth], [CRM.e2, CAL.leadRuth], [CRM.e3, CRM.amy], [CRM.e4, CRM.amy]].map(([emailId, leadId]) => ({ email_id: emailId, coach_id: ME, person_kind: 'lead', person_id: leadId, created_at: at(-1) })),
+    coach_email_waiting: [{ id: CRM.waitSarah, coach_id: ME, email_id: CRM.eSarah, name: 'Sarah Kent', email: 'sarah.kent@example.invalid', status: 'waiting', lead_id: null, decided_at: null, created_at: at(-1), updated_at: at(-1) }],
+    coach_email_addresses: [{ id: CRM.addrLog, coach_id: ME, kind: 'log', key: 'log.alex.7kx2m4qa', created_at: at(-100) }, { id: CRM.addrTodo, coach_id: ME, kind: 'todo', key: 'todo.alex.9bd3w6tz', created_at: at(-100) }],
+    // Past clients (with ID.past, Grace Liu, in the first seed) and the check-ins that are due.
+    client_profiles: [past(CRM.ben, 'Ben Ortiz', -91), past(CRM.leah, 'Leah Moran', -359, { organisation_id: ID.harbour }), past(CRM.omar, 'Omar Haddad', -20, { organisation_id: ID.brightline })],
+    client_check_ins: [
+      { id: CRM.ciGrace, coach_id: ME, profile_id: ID.past, months: 6, due_on: day(23), done_at: null, skipped_at: null, note: null, ask: null },
+      { id: CRM.ciBen, coach_id: ME, profile_id: CRM.ben, months: 3, due_on: day(1), done_at: null, skipped_at: null, note: null, ask: null },
+      { id: CRM.ciLeah, coach_id: ME, profile_id: CRM.leah, months: 12, due_on: day(6), done_at: null, skipped_at: null, note: null, ask: null },
+    ].map((c) => ({ ...c, created_at: at(-30), updated_at: at(-30) })),
+    // Kestrel's account map: one more person in Who's who (the first seed has Dana and Lee), its deals and its room to grow.
+    organisation_contacts: [{ id: u(403), organisation_id: ID.kestrel, name: 'Jo Mensah', email: 'jo@example.invalid', mobile: null, job_title: 'HR director', roles: ['hr'], note: 'Asked about team workshops', last_contact_on: day(-16), last_contact_how: 'spoke', created_by: null }],
+    organisation_deals: [
+      { id: u(9701), organisation_id: ID.kestrel, name: 'Leadership Accelerator for Sam', kind: 'agreement', status: 'active', value: 13460, currency: 'GBP', per: 'once', detail: null, starts_on: day(-70), renews_on: day(109), opens: 0, lead_id: null },
+      { id: u(9702), organisation_id: ID.kestrel, name: 'Portal seats', kind: 'agreement', status: 'active', value: 640, currency: 'GBP', per: 'month', detail: '20 seats', starts_on: day(-70), renews_on: day(109), opens: 0, lead_id: null },
+      { id: u(9703), organisation_id: ID.kestrel, name: 'Team workshops for the leadership team', kind: 'proposal', status: 'sent', value: 5640, currency: 'GBP', per: 'once', detail: null, starts_on: null, renews_on: null, opens: 2, lead_id: CRM.chrisLowe },
+    ].map((d) => ({ ...d, created_by: null, created_at: at(-70), updated_at: at(-5) })),
+    organisation_growth: [
+      { id: u(9711), organisation_id: ID.kestrel, kind: 'seats', title: '6 of 20 seats are free.', note: 'The leadership team could use them for their own sprints.', status: 'open', lead_id: null },
+      { id: u(9712), organisation_id: ID.kestrel, kind: 'renewal', title: 'Owen’s coaching ends soon.', note: 'Maya is his coach.', status: 'open', lead_id: null },
+      { id: u(9713), organisation_id: ID.kestrel, kind: 'workshop', title: 'No workshop is booked for next quarter.', note: null, status: 'open', lead_id: null },
+    ].map((g) => ({ ...g, created_by: null, created_at: at(-10), updated_at: at(-10) })),
+  };
+}
+
+/**
+ * Everything: seedWithCal() and the CRM (for `standIn(page, { db: 'there', day: true, cal: true, crm: true, rows: seedWithCrm() })`).
+ * The calendar seed's two booking-made leads are replaced by their fuller rows; Network's people come too (with `network: false`
+ * they are left out, for a walk that brings its own, such as manyNetwork(1200)).
+ */
+export function seedWithCrm({ network = true, ...options } = {}) {
+  const rows = seedWithCal(options);
+  const crm = crmSeed();
+  const fuller = new Set(crm.coach_leads.map((l) => l.id));
+  rows.coach_leads = (rows.coach_leads || []).filter((l) => !fuller.has(l.id));
+  for (const [table, list] of Object.entries(crm)) rows[table] = [...(rows[table] || []), ...list];
+  if (network) for (const [table, list] of Object.entries(networkSeed())) rows[table] = [...(rows[table] || []), ...list];
+  rows.coach_settings = rows.coach_settings.map((s) => ({ ...s, crm: { suggest_check_ins: true } }));
+  return rows;
+}
+
+// A small steady generator (the same people every run; nobody real).
+const FIRST = ['Adam', 'Amara', 'Bea', 'Ben', 'Cal', 'Chloe', 'Daniel', 'Dev', 'Ella', 'Erin', 'Farid', 'Finn', 'Grace', 'Gwen', 'Hugo', 'Isla', 'Jamal', 'Kate', 'Leon', 'Maya',
+  'Noah', 'Olivia', 'Priyesh', 'Quinn', 'Rosa', 'Sam', 'Tara', 'Umar', 'Vera', 'Will', 'Yusuf', 'Zara'];
+const LAST = ['Abbott', 'Banks', 'Bryant', 'Carver', 'Dawson', 'Doyle', 'Egan', 'Ellis', 'Ford', 'Fraser', 'Gill', 'Grant', 'Hale', 'Hart', 'Iqbal', 'Irwin', 'Jensen', 'Joyce', 'Kerr', 'Khan',
+  'Lowe', 'Lyle', 'Mason', 'Moss', 'Nash', 'Okoro', 'Price', 'Quinlan', 'Reeves', 'Shah', 'Turner', 'Usman', 'Vance', 'Walsh', 'Young', 'Zhou'];
+const ORGS = ['Arden Vale', 'Ashby Rugby', 'Brightwater Capital', 'Citadel', 'Corran Energy', 'Fenwick Rowing', 'Harbour City FC', 'Harbour Lane', 'Kestrel Group', 'Linden Partners',
+  'Marlow Analytics', 'Northfield Logistics', 'Orbital Health', 'Quillmark', 'Ridgeway Trust', 'Tessaly Foods', 'Vale Health', 'Westgate Schools'];
+const ROLES = ['Key contact', 'Sponsor', 'Client', 'Past client', 'Network', 'Referrer'];
+const RHYTHMS = [1, 2, 3, 6, 12];
+/** A steady stream of whole numbers from a seed (the same every run). */
+function stream(seed) {
+  let x = seed >>> 0;
+  return (max) => { x = (Math.imul(x, 1664525) + 1013904223) >>> 0; return Math.floor((x / 4294967296) * max); };
+}
+
+/**
+ * Invented Network people, the same every run: `n` in all (1,200 for the browser suites, 5,000 for the break-it tester).
+ * About 3% are archived and about 3% are ready to archive (no contact for 18 months, unrated); about 1 in 40 is due a
+ * catch-up now; the rest are rated 0 to 10 and spread over the next year. Names repeat with a number once they run out.
+ * @param {number} n
+ * @param {{ archived?: number, ready?: number, due?: number }} [counts] how many of each, when a walk needs exact numbers
+ * @returns {object[]} rows of network_people
+ */
+export function manyNetwork(n = 1200, { archived = Math.round(n * 0.03), ready = Math.round(n * 0.03), due = Math.round(n / 40) } = {}) {
+  const next = stream(20261119);
+  const out = [];
+  for (let i = 0; i < n; i += 1) {
+    const first = FIRST[i % FIRST.length];
+    const last = LAST[Math.floor(i / FIRST.length) % LAST.length];
+    const round = Math.floor(i / (FIRST.length * LAST.length));
+    const name = round ? `${first} ${last} ${round + 1}` : `${first} ${last}`;
+    const isArchived = i < archived;
+    const isReady = !isArchived && i < archived + ready;
+    const isDue = !isArchived && !isReady && i < archived + ready + due;
+    const rhythm = RHYTHMS[next(RHYTHMS.length)];
+    const ratings = isReady ? null : [next(11), next(11), next(11), next(11)];
+    const lastSpoke = isArchived ? day(-650 - next(60)) : isReady ? day(-560 - next(200)) : isDue ? spokeFor(rhythm, -1 - next(9)) : spokeFor(rhythm, 1 + next(360));
+    out.push(person(u(600000 + i), name, ORGS[next(ORGS.length)], ROLES[next(ROLES.length)], ratings, isReady ? null : rhythm, lastSpoke, {
+      email: `${first}.${last}${round ? round + 1 : ''}.${i}@example.invalid`.toLowerCase(), phone: `07700 9${String(10000 + i).slice(-5)}`,
+      archived_at: isArchived ? at(-20) : null,
+    }));
+  }
+  return out;
+}
+
+/**
+ * Invented leads, the same every run (300 for the browser suites), spread over the seed's stages (pass the stages' ids to use others).
+ * Every tenth is cold; about a third have a value; some are quiet (no contact for more than 14 days).
+ * @param {number} n
+ * @param {string[]} [stageIds] the stages to spread them over, in order (not Won)
+ * @returns {object[]} rows of coach_leads
+ */
+export function manyLeads(n = 300, stageIds = [CRM.stNew, CRM.stCall, CRM.stProp, CRM.stDeciding]) {
+  const next = stream(20261120);
+  const out = [];
+  for (let i = 0; i < n; i += 1) {
+    const first = FIRST[(i * 7) % FIRST.length];
+    const last = LAST[(i * 11 + Math.floor(i / 5)) % LAST.length];
+    const cold = i % 10 === 9;
+    const quiet = next(4) === 0;
+    out.push({
+      id: u(700000 + i), coach_id: ME, name: `${first} ${last}`, email: `${first}.${last}.${i}@example.invalid`.toLowerCase(), source: ['manual', 'import', 'chemistry_page', 'referral'][next(4)],
+      call_type_key: null, booking_id: null, time_zone: 'Europe/London', answers: {}, status: 'new', notes: null, stage_id: stageIds[next(stageIds.length)], organisation: ORGS[next(ORGS.length)],
+      organisation_id: null, job_title: null, phone: `07700 9${String(20000 + i).slice(-5)}`, value: next(3) === 0 ? 2500 * (1 + next(12)) : null, currency: 'GBP',
+      next_step: cold ? null : ['Send the proposal', 'Book a Chemistry Call', 'Follow up', 'Check in on the decision'][next(4)], next_step_on: cold ? null : day(next(21) - 5), next_step_time: null,
+      referred_by: null, referred_by_person: null, network_person_id: null, last_contact_on: day(quiet ? -15 - next(40) : -next(14)), want_outcome: null, want_pain: null, who_decides: null, who_funds: null,
+      decide_when: null, won_at: null, won_profile_id: null, cold_at: cold ? at(-10 - next(60)) : null, cold_reason: cold ? 'No budget this year.' : null, cold_check_on: cold ? day(30 + next(120)) : null,
+      merged_into: null, created_at: at(-60 - next(200)), updated_at: at(-next(14)),
+    });
+  }
+  return out;
+}
+
+/**
+ * Network for a page that is device first (before 052): hand this to seedNetworkDevice(page, userId, ...) in shared.mjs.
+ * @param {object[]} [people] defaults to M11's own (networkSeed)
+ */
+export function networkDeviceSeed(people = null) {
+  const seed = networkSeed();
+  return { people: people || seed.network_people, gives: people ? [] : seed.network_gives, ratings: [] };
+}
