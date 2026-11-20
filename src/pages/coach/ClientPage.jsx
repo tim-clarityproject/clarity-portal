@@ -12,6 +12,7 @@ import {
   gettingStarted, isEmail, minutesClocked, minutesWords, possessive, quickContacts, runningEntry, sessionsLeft, START_ZONES,
   timeCredit, timeline, TIMELINE_KINDS, viewAskState,
 } from '../../lib/coach/model';
+import { carriedTimeline, leadTimeline } from '../../lib/coach/crm';
 import { engagementToSave, heldWords, lengthPlace, nextSession, openWords, sortTodos, whenWords, withHeldTyped, withSessions } from '../../lib/coach/day';
 import { Back, Detail, EditCell, Eye, Fold, InlineLink, Line, TextLink, useCoachPortal, useEverySecond, Part } from './parts';
 import { AddSessionPanel, SessionRows } from './sessionParts';
@@ -143,6 +144,7 @@ export default function ClientPage() {
   const done = useDone();
   const portal = useCoachPortal();
   const { userId, coach, isOwner, coaches, state, clients, organisations, tags, fields, settings, todayKey, reloadCoaches, sessions: allSessions, sessionPeople, todos } = portal;
+  const { leads, leadEvents, emails } = portal;
   const profile = clients.find((p) => p.id === id) || null;
 
   const foldsKey = deviceKey('cache', userId, 'coach-folds');
@@ -361,6 +363,9 @@ export default function ClientPage() {
   };
 
   const everything = timeline({ notes, files, entries: entries.filter((t) => data.engagements.some((e) => e.id === t.engagement_id)), engagements: data.engagements, projects: rowsOf(state, 'engagement_projects') }, { kind, q }, now);
+  // A client who was a lead keeps the lead's timeline (Won carries it over without copying: crm.js's carriedTimeline). It
+  // is older than anything on the client's own, so it follows it.
+  const carried = kind === 'all' ? leadTimeline(carriedTimeline(leadEvents, leads, profile.id), { emails, todayKey }).filter((r) => !clean(q) || `${r.title} ${r.lines.join(' ')}`.toLowerCase().includes(clean(q).toLowerCase())) : [];
   const engagementWords = engagement ? [ENGAGEMENT_KINDS.find((k) => k.value === engagement.kind)?.label, engagement.name].filter(Boolean).join(', ') : 'None yet';
   const others = coaches.filter((c) => c.active && c.coach_id !== coach.id);
 
@@ -389,11 +394,17 @@ export default function ClientPage() {
               <SearchField label={`Search ${possessive(first)} history`} placeholder={`Search ${possessive(first)} history`} value={q} onChange={setQ} />
               <Dropdown label="Show" options={TIMELINE_KINDS} value={kind} onChange={setKind} />
             </div>
-            {everything.length === 0 && <p className="cc-quiet">{q || kind !== 'all' ? 'Nothing matches.' : `Nothing is on ${possessive(first)} timeline yet.`}</p>}
+            {everything.length === 0 && carried.length === 0 && <p className="cc-quiet">{q || kind !== 'all' ? 'Nothing matches.' : `Nothing is on ${possessive(first)} timeline yet.`}</p>}
             {everything.map((i) => (
               <div key={i.id} className="cc-timeline-row">
                 <span>{dayWords((i.day || String(i.at)).slice(0, 10), todayKey)}</span>
                 <div><b>{i.title}</b><p>{i.line}</p></div>
+              </div>
+            ))}
+            {carried.map((r) => (
+              <div key={r.id} className="cc-timeline-row">
+                <span>{r.when}</span>
+                <div><b>{r.title}</b>{r.tag && <p>{r.tag}</p>}{r.lines.map((line) => <p key={line}>{line}</p>)}</div>
               </div>
             ))}
           </div>

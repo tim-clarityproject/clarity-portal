@@ -748,3 +748,105 @@ test('the account map has three parts: Who’s who, Agreements and proposals, an
   const raised = crm.growthToLead({ id: 'g-1', kind: 'seats', title: '6 of 20 seats are free.', status: 'open' }, org, { id: 'l-g', coachId: ME, stages: STAGES, contacts: [{ organisation_id: 'org-k', name: 'Dana Whitfield', email: 'dana@example.invalid', roles: ['sponsor'] }] });
   assert.deepEqual([raised.lead.name, raised.lead.organisation, raised.lead.organisation_id, raised.lead.next_step, raised.growth.status, raised.growth.lead_id], ['Dana Whitfield', 'Kestrel Group', 'org-k', '6 of 20 seats are free', 'raised', 'l-g']);
 });
+
+// ---------------------------------------------------------------- the Leads pages' own rules
+test('a won lead’s client keeps a mobile only in the form the client’s row takes', () => {
+  const uk = crm.wonPlan({ ...AMY, phone: '07700 900461' }, { stages: STAGES, profileId: 'p', eventId: 'e', nowIso: NOW, todayKey: TODAY });
+  assert.equal(uk.profile.mobile, '+447700900461');
+  assert.equal(crm.wonPlan({ ...AMY, phone: 'ask her PA' }, { stages: STAGES, profileId: 'p', eventId: 'e', nowIso: NOW, todayKey: TODAY }).profile.mobile, null);
+});
+
+test('Leads narrowed by tags and by the coach’s own fields', () => {
+  const tags = { amy: ['t-exec'], ruth: ['t-sport'] };
+  const sector = { amy: 'Logistics', ruth: 'Sport', tom: 'Finance' };
+  const c = { ...ctx, tagIds: (l) => tags[l.id] || [], fieldValue: (l, id) => (id === 'f-sector' ? sector[l.id] ?? null : null) };
+  const open = crm.openLeads(LEADS);
+  assert.deepEqual(crm.filterLeads(open, { tag: ['t-exec'] }, c).map((l) => l.id), ['amy']);
+  assert.deepEqual(crm.filterLeads(open, { fields: { 'f-sector': ['Sport', 'Finance'] } }, c).map((l) => l.id).sort(), ['ruth', 'tom']);
+  assert.deepEqual(crm.filterLeads(open, { fields: { 'f-sector': ['none'] } }, c).map((l) => l.id).sort(), ['chris', 'elena', 'leo']);
+  assert.equal(crm.filterLeads(open, { tag: [], fields: { 'f-sector': [] } }, c).length, open.length);
+  assert.equal(crm.leadFilterCount({ ...crm.EMPTY_LEAD_FILTERS, tag: ['t'], last: ['quiet'], fields: { a: ['x'], b: [] } }), 3);
+  assert.equal(crm.leadFilterCount(crm.EMPTY_LEAD_FILTERS), 0);
+});
+
+test('a saved view of Leads puts the list back as it was, without the search', () => {
+  const view = crm.leadViewFromList('  Quiet leads ', { filters: { ...crm.EMPTY_LEAD_FILTERS, last: ['quiet'], q: 'tom' }, sort: 'last_desc', hidden: ['value'], layout: 'table' });
+  assert.deepEqual([view.name, view.sort, view.columns, view.layout, view.filters.q], ['Quiet leads', 'last_desc', ['value'], 'table', undefined]);
+  assert.deepEqual(crm.leadListFromView(view), { filters: { ...crm.EMPTY_LEAD_FILTERS, last: ['quiet'] }, sort: 'last_desc', hidden: ['value'], layout: 'table' });
+  assert.deepEqual(crm.leadListFromView({ filters: 'x', layout: 'grid' }), { filters: crm.EMPTY_LEAD_FILTERS, sort: 'next', hidden: [], layout: 'board' });
+});
+
+test('the table has one Value column: the lead’s own, where a field of that name would sit', () => {
+  const fields = [{ id: 'f1', name: 'Sector', kind: 'choice' }, { id: 'f2', name: 'Value', kind: 'number' }, { id: 'f3', name: 'Renewal date', kind: 'date' }];
+  assert.deepEqual(crm.leadTableColumns(fields).map((c) => c.label), ['Stage', 'Next step', 'Last contact', 'Sector', 'Value', 'Renewal date']);
+  assert.deepEqual(crm.leadTableColumns(fields).map((c) => c.key), ['stage', 'next', 'last', 'field:f1', 'value', 'field:f3']);
+  assert.deepEqual(crm.leadTableColumns([{ id: 'f9', name: 'Budget', kind: 'number' }]).map((c) => c.key), ['stage', 'next', 'last', 'value', 'field:f9']);
+  assert.deepEqual(crm.leadTableColumns([{ id: 'f9', name: 'Budget', kind: 'number' }])[4].sorts, [['field:f9', 'Lowest first'], ['field:f9:desc', 'Highest first']]);
+  assert.deepEqual(crm.leadOwnFields(fields).map((f) => f.id), ['f1', 'f3']);
+});
+
+test('a lead a booking made before 052 still shows its booking on the timeline, and never twice', () => {
+  const booked = lead('b1', 'Ruth Adeyemi', null, { booking_id: 'bk-1', call_type_key: 'chemistry', created_at: '2026-11-15T10:00:00.000Z' });
+  const lines = crm.bookingLines(booked, { events: [], booking: { id: 'bk-1', created_at: '2026-11-15T10:00:00.000Z' }, callName: 'Chemistry Call' });
+  assert.deepEqual(lines.map((e) => [e.kind, e.title, e.detail]), [['first_contact', 'First contact', 'From the Chemistry Call page.'], ['booking', 'Booked a Chemistry Call', 'From your Chemistry Call page.']]);
+  assert.deepEqual(crm.leadTimeline(lines, { todayKey: TODAY }).map((r) => r.title), ['Booked a Chemistry Call', 'First contact']);
+  assert.deepEqual(crm.bookingLines(booked, { events: [{ lead_id: 'b1', kind: 'booking' }] }), []);
+  assert.deepEqual(crm.bookingLines(AMY, { events: [] }), []);
+});
+
+test('Edit stages saved: renamed, added, moved and removed, with its leads moved first', () => {
+  const draft = crm.stagesDraft(STAGES);
+  assert.deepEqual(draft.map((d) => [d.name, d.likelihood, d.is_won]), [['New', '10', false], ['Call booked', '25', false], ['Proposal sent', '50', false], ['Deciding', '70', false], ['Won', '100', true]]);
+  assert.deepEqual(crm.stagesSavePlan(STAGES, LEADS, draft, { coachId: ME }), { same: true });
+  // Renamed, a new likelihood, one added before Won, two swapped.
+  const edited = [{ ...draft[1] }, { ...draft[0], name: 'Enquiry', likelihood: '15%' }, draft[2], draft[3], { id: 's-x', name: 'Contract out', likelihood: '90', is_won: false, removed: false, toId: null }, draft[4]];
+  const plan = crm.stagesSavePlan(STAGES, LEADS, edited, { coachId: ME });
+  assert.deepEqual(plan.save.map(([t, r]) => [t, r.id, r.name, r.likelihood, r.position]), [['coach_lead_stages', 's-call', 'Call booked', 25, 0], ['coach_lead_stages', 's-new', 'Enquiry', 15, 1], ['coach_lead_stages', 's-x', 'Contract out', 90, 4]]);
+  assert.deepEqual([plan.remove, plan.undo.remove, plan.undo.save.map(([, r]) => r.name), plan.toast], [[], [['coach_lead_stages', 's-x']], ['Call booked', 'New'], 'Stages saved.']);
+  // Removed: Proposal sent's leads (the cold one too) go to the stage before it, and an automation naming it goes with it.
+  const autos = [{ id: 'a1', trigger_stage_id: 's-prop', to_stage_id: null }, { id: 'a2', trigger_stage_id: null, to_stage_id: 's-dec' }];
+  const cut = crm.stagesSavePlan(STAGES, LEADS, draft.map((d) => (d.id === 's-prop' ? { ...d, removed: true } : d)), { coachId: ME, automations: autos });
+  assert.deepEqual(cut.save.filter(([t]) => t === 'coach_leads').map(([, l]) => [l.id, l.stage_id]), [['amy', 's-call'], ['chris', 's-call'], ['cold', 's-call']]);
+  assert.deepEqual([cut.remove, cut.moved], [[['coach_automations', 'a1'], ['coach_lead_stages', 's-prop']], 2]);
+  assert.deepEqual(cut.save.filter(([t]) => t === 'coach_lead_stages').map(([, s]) => [s.id, s.position]), [['s-dec', 2]]);
+  assert.deepEqual(cut.undo.save.map(([t, r]) => `${t}:${r.id}`), ['coach_lead_stages:s-dec', 'coach_lead_stages:s-prop', 'coach_leads:amy', 'coach_leads:chris', 'coach_leads:cold', 'coach_automations:a1']);
+  // Where they go can be chosen; a stage that is going too is never chosen.
+  const chosen = crm.stagesSavePlan(STAGES, LEADS, draft.map((d) => (d.id === 's-prop' ? { ...d, removed: true, toId: 's-dec' } : d)), { coachId: ME });
+  assert.deepEqual(chosen.save.filter(([t]) => t === 'coach_leads').map(([, l]) => l.stage_id), ['s-dec', 's-dec', 's-dec']);
+  const both = crm.stagesSavePlan(STAGES, LEADS, draft.map((d) => (d.id === 's-prop' ? { ...d, removed: true, toId: 's-call' } : d.id === 's-call' ? { ...d, removed: true } : d)), { coachId: ME });
+  assert.deepEqual(both.save.filter(([t]) => t === 'coach_leads').map(([, l]) => [l.id, l.stage_id]), [['ruth', 's-new'], ['amy', 's-new'], ['chris', 's-new'], ['cold', 's-new']]);
+  // What can't be saved says why.
+  assert.equal(crm.stagesSavePlan(STAGES, LEADS, draft.map((d) => (d.is_won ? d : { ...d, removed: true })), { coachId: ME }).error, 'A pipeline needs at least one stage before Won.');
+  assert.deepEqual(crm.stagesSavePlan(STAGES, LEADS, draft.map((d) => (d.id === 's-dec' ? { ...d, name: ' new ' } : d)), { coachId: ME }), { error: 'There’s already a stage called New. Choose another name.', at: 's-dec' });
+  assert.equal(crm.stagesSavePlan(STAGES, LEADS, draft.map((d) => (d.id === 's-dec' ? { ...d, likelihood: '140' } : d)), { coachId: ME }).error, 'Type a number from 0 to 100.');
+  // Won keeps 100% and its place; its name can change.
+  const renamed = crm.stagesSavePlan(STAGES, LEADS, draft.map((d) => (d.is_won ? { ...d, name: 'Signed', likelihood: '20' } : d)), { coachId: ME });
+  assert.deepEqual(renamed.save.map(([, s]) => [s.id, s.name, s.likelihood, s.position]), [['s-won', 'Signed', 100, crm.WON_POSITION]]);
+});
+
+test('Edit details saved: what was typed, checked, with the stage left for its own move', () => {
+  const orgs = [{ id: 'org-k', name: 'Kestrel Group' }];
+  const out = crm.leadDetailsPatch(ELENA, { name: ' Elena Ruiz ', organisation: 'kestrel group', job_title: 'Founder', email: 'Elena@Example.invalid', phone: '07700 900100', stageId: 's-call', next_step: 'Send the outline', next_step_on: '2026-11-20', value: '£8,000', source: 'referral', referred_by: 'Dan Reid' }, { organisations: orgs });
+  assert.deepEqual([out.lead.name, out.lead.organisation, out.lead.organisation_id, out.lead.email, out.lead.phone, out.lead.value, out.lead.source, out.lead.referred_by, out.lead.next_step, out.lead.next_step_on, out.lead.stage_id, out.toStageId],
+    ['Elena Ruiz', 'kestrel group', 'org-k', 'elena@example.invalid', '07700 900100', 8000, 'referral', 'Dan Reid', 'Send the outline', '2026-11-20', 's-new', 's-call']);
+  assert.deepEqual(crm.leadDetailsPatch(ELENA, { name: ' ' }), { error: 'Type their name to carry on.', at: 'name' });
+  assert.deepEqual(crm.leadDetailsPatch(ELENA, { name: 'E', email: 'nope' }), { error: 'That email doesn’t look right. Check it and try again.', at: 'email' });
+  assert.deepEqual(crm.leadDetailsPatch(ELENA, { name: 'E', value: 'lots' }), { error: 'Type an amount in numbers, such as 13,500.', at: 'value' });
+  // A next step taken out takes its day with it; who referred them is kept only for a referral; the same stage is no move.
+  const cleared = crm.leadDetailsPatch(AMY, { name: 'Amy Cole', email: 'amy@example.invalid', organisation: 'Northfield Logistics', next_step: '', next_step_on: '2026-11-19', value: '13500', source: 'other', referred_by: 'Hannah Wells', stageId: 's-prop' });
+  assert.deepEqual([cleared.lead.next_step, cleared.lead.next_step_on, cleared.lead.referred_by, cleared.lead.referred_by_person, cleared.lead.organisation_id, cleared.toStageId], [null, null, null, null, 'org-n', null]);
+  assert.equal(crm.leadDetailsPatch(AMY, { name: 'Amy Cole', source: 'referral', referred_by: 'Hannah Wells', value: '' }).lead.referred_by_person, 'np-hannah');
+});
+
+test('a spreadsheet that can’t be read here says so calmly; search finds open and cold leads; automations say what they did', () => {
+  assert.equal(crm.importFileProblem('Leads 2026.xlsx'), 'An Excel file can’t be read here yet. Save it as CSV, or copy the rows and paste them.');
+  assert.equal(crm.importFileProblem('leads.pdf'), 'That file can’t be read here. Save it as CSV, or copy the rows and paste them.');
+  assert.equal(crm.importFileProblem('leads.CSV', 2000), '');
+  assert.equal(crm.importFileProblem('leads.csv', 9 * 1024 * 1024), 'That file is too big. Split it, or paste the rows instead.');
+  const found = crm.leadSearchItems([...LEADS, { ...ELENA, id: 'gone', merged_into: 'elena' }], STAGES);
+  assert.deepEqual(found.map((i) => [i.title, i.kind]), [['Amy Cole', 'Lead'], ['Chris Lowe', 'Lead'], ['Tom Hale', 'Lead'], ['Elena Ruiz', 'Lead'], ['Ruth Adeyemi', 'Lead'], ['Priya Menon', 'Cold lead']]);
+  assert.equal(found[0].to, '/coach/leads/amy');
+  assert.equal(crm.automationsSaid({ ran: 0, todos: 0, moves: 0 }), '');
+  assert.equal(crm.automationsSaid({ todos: 1, moves: 0 }), 'An automation added a to-do.');
+  assert.equal(crm.automationsSaid({ todos: 2, moves: 1 }), 'Automations added 2 to-dos. An automation moved the lead on.');
+});

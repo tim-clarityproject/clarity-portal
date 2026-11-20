@@ -12,7 +12,7 @@
 // header; the functions here that do the same are for the device-first
 // copy, before 052 is there.
 import { addDays, clean, cut, dayWords, firstName, fromDayKey, isEmail, parsePeople, possessive, quickContacts, safeCell, toCsv, toDayKey } from './model.js';
-import { monthsOn, typedDay } from './network.js';
+import { mobileForLinks, monthsOn, typedDay } from './network.js';
 
 const lower = (v) => String(v ?? '').toLowerCase();
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o || {}, k);
@@ -151,7 +151,8 @@ export function stageStep(stages, id, step) {
   return from < 0 ? -1 : Math.max(0, Math.min(open.length - 1, from + step));
 }
 
-export const STAGES_HELP = 'Drag a stage to move it. A stage with leads in it is removed once you choose where they go.';
+// One line of help at most (Tim, 18 Nov): where a removed stage's leads go is asked as it is removed (moveLeadsQuestion).
+export const STAGES_HELP = 'Drag a stage to move it.';
 export const WON_LAST = 'Won is always last, because it makes the lead a client.';
 export const STAGES_SAVED = 'Stages saved.';
 
@@ -422,8 +423,9 @@ export function sortLeads(leads, sort = 'next', ctx = {}) {
 /**
  * Leads narrowed by the search box and the headings' "Show only".
  * @param {object[]} leads the open leads
- * @param {{ q?: string, stage?: string[], next?: string[], last?: string[], value?: string[] }} filters
- * @param {{ stages?: object[], todayKey: string }} ctx
+ * @param {{ q?: string, stage?: string[], next?: string[], last?: string[], value?: string[], tag?: string[], fields?: Record<string, string[]> }} filters
+ *   `tag`: tag ids (any of them); `fields`: a coach's own field's id to the values wanted ('none' for not set)
+ * @param {{ stages?: object[], todayKey: string, tagIds?: (lead: object) => string[], fieldValue?: (lead: object, fieldId: string) => unknown }} ctx
  */
 export function filterLeads(leads, filters = {}, ctx = {}) {
   const q = lower(clean(filters.q));
@@ -432,8 +434,15 @@ export function filterLeads(leads, filters = {}, ctx = {}) {
   const next = pick(filters.next);
   const last = pick(filters.last);
   const value = pick(filters.value);
+  const tag = pick(filters.tag);
+  const fields = Object.entries(filters.fields || {}).filter(([, v]) => Array.isArray(v) && v.length);
   const weekEnd = ctx.todayKey ? addDays(ctx.todayKey, 7) : null;
   return (leads || []).filter((l) => {
+    if (tag && !(ctx.tagIds ? ctx.tagIds(l) : []).some((t) => tag.includes(t))) return false;
+    for (const [id, wanted] of fields) {
+      const v = ctx.fieldValue ? ctx.fieldValue(l, id) : null;
+      if (!(v == null || v === '' ? wanted.includes('none') : wanted.includes(String(v)))) return false;
+    }
     if (q && !lower(l.name).includes(q) && !lower(l.organisation).includes(q) && !lower(l.email).includes(q)) return false;
     if (stage && !stage.includes(l.stage_id)) return false;
     if (next && !next.some((k) => (k === 'none' ? !clean(l.next_step) : Boolean(l.next_step_on) && l.next_step_on <= weekEnd))) return false;
@@ -668,7 +677,7 @@ export function wonPlan(lead, { stages = [], profileId, eventId, dealId = null, 
   if (lead.won_at) return { error: `${firstName(lead.name) || 'This lead'} is already a client.` };
   const clientId = existingProfile?.id || profileId;
   const profile = existingProfile ? null : {
-    id: profileId, coach_id: lead.coach_id, user_id: null, name: lead.name, email: lead.email || null, mobile: lead.phone || null, organisation_id: lead.organisation_id || null, job_title: lead.job_title || null,
+    id: profileId, coach_id: lead.coach_id, user_id: null, name: lead.name, email: lead.email || null, mobile: mobileForLinks(lead.phone) || null, organisation_id: lead.organisation_id || null, job_title: lead.job_title || null,
     city: null, time_zone: lead.time_zone || null, frequent_traveller: false, referred_by: lead.referred_by || null, status: 'active', stage: 'starting', getting_started: {}, last_contact_on: lead.last_contact_on || null,
     invited_at: null, ended_on: null, merged_into: null,
   };
@@ -1702,3 +1711,190 @@ export function growthToLead(growth, organisation, { id, coachId, stages = [], c
   if (made.error) return made;
   return { lead: made.lead, growth: { ...growth, status: 'raised', lead_id: id }, toast: LEAD_ADDED(firstStage(stages)) };
 }
+
+// ---------------------------------------------------------------- the Leads pages' own rules (the page, its panels and search)
+
+/** No filter on: what "Clear" puts back. */
+export const EMPTY_LEAD_FILTERS = { stage: [], next: [], last: [], value: [], tag: [], fields: {} };
+export const LEAD_LAYOUTS = [{ value: 'board', label: 'Board' }, { value: 'list', label: 'List' }, { value: 'table', label: 'Table' }];
+/** A board column shows this many cards, then "Show all 67". */
+export const BOARD_FOLD = 25;
+/** How many filters are on (the Filter button says "Filter, 2 on"). */
+export const leadFilterCount = (f = {}) => ['stage', 'next', 'last', 'value', 'tag'].filter((k) => Array.isArray(f[k]) && f[k].length).length + Object.values(f.fields || {}).filter((v) => Array.isArray(v) && v.length).length;
+/** A view to save from the list as it stands (049's coach_views, list 'leads'); the search box is never part of it. */
+export const leadViewFromList = (name, { filters = {}, sort = 'next', hidden = [], layout = 'board' } = {}) => { const { q: _q, ...kept } = filters; return { name: cut(clean(name), 60), filters: kept, sort, columns: hidden, layout }; };
+/** What a saved view puts back on Leads (anything it doesn't know is left at its start). */
+export function leadListFromView(view) {
+  const f = view?.filters && typeof view.filters === 'object' && !Array.isArray(view.filters) ? view.filters : {};
+  const list = (v) => (Array.isArray(v) ? v : []);
+  return {
+    filters: { stage: list(f.stage), next: list(f.next), last: list(f.last), value: list(f.value), tag: list(f.tag), fields: f.fields && typeof f.fields === 'object' && !Array.isArray(f.fields) ? f.fields : {} },
+    sort: typeof view?.sort === 'string' && view.sort ? view.sort : 'next',
+    hidden: list(view?.columns),
+    layout: ['board', 'list', 'table'].includes(view?.layout) ? view.layout : 'board',
+  };
+}
+
+/**
+ * The table's columns after Name, in order: Stage, Next step, Last contact,
+ * then the coach's own fields, with the lead's own Value where a field of
+ * that name would sit (so there is one Value column, never two: M11 draws
+ * Sector, Value, Renewal date), or straight after Last contact.
+ * @param {object[]} fields the coach's own fields for leads, in their order
+ * @returns {{ key: string, label: string, sorts: [string, string][], only?: string|[string, string][], edit?: string, field?: object }[]}
+ */
+export function leadTableColumns(fields = []) {
+  const own = LEAD_COLUMNS.filter((c) => c.key !== 'name');
+  const value = own.find((c) => c.key === 'value');
+  const out = own.filter((c) => c.key !== 'value');
+  let placed = false;
+  const mine = [];
+  for (const f of fields) {
+    if (lower(clean(f.name)) === 'value') { if (!placed) { mine.push(value); placed = true; } continue; }
+    const key = `field:${f.id}`;
+    mine.push({ key, label: f.name, field: f, edit: 'type', sorts: f.kind === 'number' ? [[key, 'Lowest first'], [`${key}:desc`, 'Highest first']] : f.kind === 'date' ? [[key, 'Soonest first']] : [[key, 'A to Z']] });
+  }
+  return placed ? [...out, ...mine] : [...out, value, ...mine];
+}
+/** The coach's own fields a lead's Details show: every one but a field named Value, which is the lead's own Value. */
+export const leadOwnFields = (fields = []) => fields.filter((f) => lower(clean(f.name)) !== 'value');
+
+/**
+ * The two lines a booking leaves on its lead's timeline, for a lead a
+ * booking made before 052 was there (the database writes them itself once
+ * it is: then this gives nothing). They are shown, never saved.
+ * @param {object} lead
+ * @param {{ events?: object[], booking?: object|null, callName?: string }} o
+ * @returns {object[]} timeline lines shaped as coach_lead_events rows
+ */
+export function bookingLines(lead, { events = [], booking = null, callName = '' } = {}) {
+  if (!lead?.booking_id || (events || []).some((e) => e.lead_id === lead.id && (e.kind === 'booking' || e.kind === 'first_contact'))) return [];
+  const at = booking?.created_at || lead.created_at;
+  const day = at ? dayOfInstant(at) : null;
+  if (!day) return [];
+  const words = BOOKING_LINES(callName);
+  const line = (key, kind, w) => ({ id: `${lead.id}:${key}`, coach_id: lead.coach_id, lead_id: lead.id, kind, happened_at: at, happened_on: day, title: w.title, detail: w.detail, data: { booking_id: lead.booking_id, shown_only: true } });
+  // Newest first on the page: "Booked" sits above "First contact", as the database's own two lines do.
+  return [line('0first', 'first_contact', words.first), line('1booked', 'booking', words.booked)];
+}
+
+/** Edit stages as it opens: one row a stage, in order, Won last. */
+export const stagesDraft = (stages) => stagesInOrder(stages).map((s) => ({ id: s.id, name: s.name, likelihood: String(Number(s.likelihood) || 0), is_won: Boolean(s.is_won), removed: false, toId: null }));
+
+/**
+ * Edit stages, saved: what was renamed, given a new likelihood, added,
+ * moved or removed, as rows. A removed stage's leads move first (to the
+ * stage chosen, or the one before it), and any automation naming it goes.
+ * @param {object[]} stages as they are now
+ * @param {object[]} leads every lead (cold and merged ones too)
+ * @param {{ id: string, name: string, likelihood: string|number, is_won: boolean, removed: boolean, toId: string|null }[]} draft the panel's rows, in their new order
+ * @param {{ coachId: string, automations?: object[] }} o
+ * @returns {{ error: string, at?: string }|{ same: true }|{ save: [string, object][], remove: [string, string][], undo: { save: [string, object][], remove: [string, string][] }, toast: string, moved: number }}
+ *   save `save` in order (stages first, then the leads), then remove `remove` (automations, then stages); Undo saves `undo.save` and removes `undo.remove`
+ */
+export function stagesSavePlan(stages, leads, draft, { coachId, automations = [] } = {}) {
+  const kept = (draft || []).filter((d) => !d.removed);
+  const open = kept.filter((d) => !d.is_won);
+  if (!open.length) return { error: 'A pipeline needs at least one stage before Won.' };
+  // A name used twice is said at the second of the two.
+  for (const [i, d] of kept.entries()) { const line = stageProblem(d, kept.slice(0, i)); if (line) return { error: line, at: d.id }; }
+  const save = [];
+  const before = [];
+  const added = [];
+  open.forEach((d, i) => {
+    const was = stageOf(stages, d.id);
+    if (!was) { save.push(['coach_lead_stages', { ...addStage([], { id: d.id, coachId, name: d.name, likelihood: d.likelihood }), position: i }]); added.push(d.id); return; }
+    const next = { ...editStage(was, d), position: i };
+    if (next.name !== was.name || Number(next.likelihood) !== Number(was.likelihood) || next.position !== was.position) { save.push(['coach_lead_stages', next]); before.push(was); }
+  });
+  const won = wonStage(stages);
+  const wonDraft = kept.find((d) => d.is_won);
+  if (won && wonDraft && editStage(won, { name: wonDraft.name }).name !== won.name) { save.push(['coach_lead_stages', editStage(won, { name: wonDraft.name })]); before.push(won); }
+  const order = stagesInOrder(stages).filter((s) => !s.is_won);
+  const stays = new Set(open.map((d) => d.id));
+  const gone = (draft || []).filter((d) => d.removed).map((d) => ({ d, stage: stageOf(stages, d.id) })).filter((x) => x.stage && !x.stage.is_won);
+  const movedLeads = [];
+  const leadsBefore = [];
+  const autos = [];
+  for (const { d, stage } of gone) {
+    const at = order.findIndex((s) => s.id === stage.id);
+    const near = [...order.slice(0, at).reverse(), ...order.slice(at + 1)].find((s) => stays.has(s.id));
+    const toId = (d.toId && stays.has(d.toId) ? d.toId : null) || near?.id || open[0].id;
+    for (const l of (leads || []).filter((x) => x.stage_id === stage.id)) { leadsBefore.push(l); movedLeads.push({ ...l, stage_id: toId }); }
+    for (const a of (automations || []).filter((x) => x.trigger_stage_id === stage.id || x.to_stage_id === stage.id)) if (!autos.includes(a)) autos.push(a);
+  }
+  if (!save.length && !gone.length) return { same: true };
+  return {
+    save: [...save, ...movedLeads.map((l) => ['coach_leads', l])],
+    remove: [...autos.map((a) => ['coach_automations', a.id]), ...gone.map((x) => ['coach_lead_stages', x.stage.id])],
+    undo: { save: [...[...before, ...gone.map((x) => x.stage)].map((s) => ['coach_lead_stages', s]), ...leadsBefore.map((l) => ['coach_leads', l]), ...autos.map((a) => ['coach_automations', a])], remove: added.map((id) => ['coach_lead_stages', id]) },
+    toast: STAGES_SAVED,
+    moved: movedLeads.filter(isOpenLead).length,
+  };
+}
+
+/**
+ * Edit details, saved: the lead with what was typed. The stage isn't
+ * changed here (a stage move has its own line on the timeline: `toStageId`
+ * says where to move it afterwards, or null).
+ * @param {object} lead
+ * @param {{ name: string, organisation?: string, job_title?: string, email?: string, phone?: string, stageId?: string, next_step?: string, next_step_on?: string, value?: string, source?: string, referred_by?: string, notes?: string }} typed
+ * @param {{ organisations?: object[] }} [o] the organisations the coach can see: a typed name that is one of them is joined to it
+ * @returns {{ lead: object, toStageId: string|null }|{ error: string, at: string }}
+ */
+export function leadDetailsPatch(lead, typed = {}, { organisations = [] } = {}) {
+  const name = cut(clean(typed.name), 120);
+  if (!name) return { error: LEAD_NEEDS_NAME, at: 'name' };
+  const email = lower(clean(typed.email));
+  if (email && !isEmail(email)) return { error: LEAD_NEEDS_EMAIL, at: 'email' };
+  const value = moneyFromTyped(typed.value);
+  if (value === undefined) return { error: NEEDS_AMOUNT, at: 'value' };
+  const organisation = cut(clean(typed.organisation), 120) || null;
+  const sameOrg = lower(organisation) === lower(clean(lead.organisation));
+  const org = organisation ? (organisations || []).find((o) => lower(clean(o.name)) === lower(organisation)) || null : null;
+  const source = LEAD_SOURCES.some(([k]) => k === typed.source) ? typed.source : lead.source;
+  const by = source === 'referral' ? cut(clean(typed.referred_by), 120) || null : null;
+  const stepped = withNextStep(lead, typed.next_step);
+  const on = stepped.next_step && /^\d{4}-\d{2}-\d{2}$/.test(String(typed.next_step_on || '')) ? typed.next_step_on : null;
+  return {
+    lead: {
+      ...lead, name, email: email || null, organisation, organisation_id: sameOrg ? lead.organisation_id ?? org?.id ?? null : org?.id ?? null, job_title: cut(clean(typed.job_title), 120) || null,
+      phone: cut(clean(typed.phone), 40) || null, value, source, referred_by: by, referred_by_person: by && by === clean(lead.referred_by) ? lead.referred_by_person ?? null : null,
+      next_step: stepped.next_step, next_step_on: on, next_step_time: on && on === lead.next_step_on ? lead.next_step_time ?? null : null,
+      notes: has(typed, 'notes') ? cut(String(typed.notes || '').trim(), 6000) || null : lead.notes ?? null,
+    },
+    toStageId: typed.stageId && typed.stageId !== lead.stage_id ? typed.stageId : null,
+  };
+}
+
+/** A spreadsheet chosen for import that can't be read here: the calm line to show, or '' when it can. */
+export function importFileProblem(name, size = 0) {
+  if (/\.(xlsx|xls|xlsm|numbers|ods)$/i.test(String(name || ''))) return 'An Excel file can’t be read here yet. Save it as CSV, or copy the rows and paste them.';
+  if (!/\.(csv|tsv|txt)$/i.test(String(name || ''))) return 'That file can’t be read here. Save it as CSV, or copy the rows and paste them.';
+  return size > 4 * 1024 * 1024 ? 'That file is too big. Split it, or paste the rows instead.' : '';
+}
+
+/** Leads as search finds them (the owner's search only): open and cold leads by name, organisation or email; a won lead is found as the client it became. */
+export function leadSearchItems(leads, stages = []) {
+  return (leads || []).filter((l) => !l.merged_into && !isWonLead(l, stages))
+    .map((l) => ({ key: `l:${l.id}`, title: l.name, kind: l.cold_at ? 'Cold lead' : 'Lead', also: `${l.organisation || ''} ${l.email || ''}`, to: `/coach/leads/${l.id}` }));
+}
+/** Leads' own actions in search. */
+export const LEAD_SEARCH_ACTIONS = [
+  { key: 'a:lead', title: 'Add lead', to: '/coach/leads', state: { open: 'add' } },
+  { key: 'a:lead-import', title: 'Import leads from a spreadsheet', to: '/coach/leads', state: { open: 'import' } },
+  { key: 'a:lead-export', title: 'Export leads to a spreadsheet', to: '/coach/leads', state: { open: 'export' } },
+];
+
+/** What automations did after something the coach did, to add to its message: "An automation added a to-do." ('' when none ran). */
+export function automationsSaid(done) {
+  const todos = done?.todos || 0;
+  const moves = done?.moves || 0;
+  return [todos === 1 ? 'An automation added a to-do.' : todos ? `Automations added ${todos} to-dos.` : '', moves ? 'An automation moved the lead on.' : ''].filter(Boolean).join(' ');
+}
+
+/** Leads with nobody in it yet, and a search or filter that finds nobody. */
+export const LEADS_EMPTY = 'You have no leads yet. Add one, or import a spreadsheet. A booking from one of your pages lands here by itself.';
+export const LEADS_NO_MATCH = 'Nobody matches. Clear the search or the filters to see every lead.';
+/** A lead that has gone (deleted, or merged into another that can't be found). */
+export const LEAD_GONE = 'This lead isn’t in your list any more.';

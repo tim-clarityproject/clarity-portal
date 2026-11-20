@@ -876,6 +876,11 @@
   --cc-step-row-h: 56px;        /* a to-do in a stepped panel (M11 .td.sm) */
   /* What run 1 left (Phase 6a run 2, step 6) */
   --cc-card-lifted: 0.4;        /* a card's place on the board while it is dragged */
+  /* Leads (Phase 6a run 4; M11 .board, .lcard, .qrow, the Edit stages panel) */
+  --cc-lead-col-min: 190px;     /* a stage's column, at its narrowest: five fit the board's width, more wrap under */
+  --cc-lead-q-w: 170px;         /* "Where Amy is": a row's label */
+  --cc-lead-dots: 16px;         /* the three dots of a row's More menu */
+  --cc-stage-pct-w: 84px;       /* Edit stages: a stage's likelihood */
   --fs-cc-code: calc(26 * var(--u-big)); /* an access code, shown once */
   --ls-cc-code: 0.12em;
 }

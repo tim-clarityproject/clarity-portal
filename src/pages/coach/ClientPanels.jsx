@@ -384,14 +384,15 @@ export function FilterPanel({ open, onClose, list, setList, count }) {
 }
 
 // ---------------------------------------------------------------- one client's tags
-export function TagsPanel({ profile, onClose }) {
+/** `kind`: whose tags these are, 'client' unless told ('lead' on a lead's page: run 4). `profile` is the person: its id and name. */
+export function TagsPanel({ profile, onClose, kind = 'client' }) {
   const { userId, coach, tags, state } = useCoachPortal();
   const done = useDone();
   if (!profile) return <SlidePanel open={false} onClose={onClose} title="Tags" />;
-  const links = rowsOf(state, 'coach_tag_links').filter((l) => l.item_kind === 'client' && l.item_id === profile.id);
+  const links = rowsOf(state, 'coach_tag_links').filter((l) => l.item_kind === kind && l.item_id === profile.id);
   const toggle = (tag) => {
     const link = links.find((l) => l.tag_id === tag.id);
-    const row = { tag_id: tag.id, item_kind: 'client', item_id: profile.id, coach_id: coach.id };
+    const row = { tag_id: tag.id, item_kind: kind, item_id: profile.id, coach_id: coach.id };
     if (link) done(() => removeRow(userId, 'coach_tag_links', keyOf('coach_tag_links', link)).then(() => 'saved'), 'Saved', () => saveRow(userId, 'coach_tag_links', link));
     else done(() => saveRow(userId, 'coach_tag_links', row), 'Saved', () => removeRow(userId, 'coach_tag_links', keyOf('coach_tag_links', row)));
   };

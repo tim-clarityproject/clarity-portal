@@ -13,6 +13,10 @@ import { COACH_MENU, COACH_PAGES, coachTitle, SETTINGS_SECTIONS } from '../../li
 import { testCalls } from '../../lib/coach/calls';
 import { todayTodos } from '../../lib/coach/day';
 import { barCalls, coachZoneOf, searchItems } from '../../lib/coach/calendar';
+import { LEAD_SEARCH_ACTIONS, leadSearchItems } from '../../lib/coach/crm';
+// Network's people are moved across before anything that points at one (a lead's Referred by): the module says so to the
+// store as it loads, so it is loaded with the frame, whichever page opens first.
+import '../../lib/coach/networkData';
 import { deviceZone } from '../../lib/time/index.js';
 import { CoachPortalContext, InlineLink, TextLink, useCoachPortal } from './parts';
 import { CalSync } from './calSync';
@@ -38,6 +42,9 @@ const TodoListPage = lazy(() => import('./TodoListPage'));
 const SessionPage = lazy(() => import('./SessionPage'));
 const ClosePage = lazy(() => import('./ClosePage'));
 const Calendar = lazy(() => import('./Calendar'));
+const Leads = lazy(() => import('./Leads'));
+const LeadPage = lazy(() => import('./LeadPage'));
+const ColdLeads = lazy(() => import('./ColdLeads'));
 const OpenForCalls = lazy(() => import('./OpenForCalls'));
 const PollPage = lazy(() => import('./PollPage'));
 const BriefPanel = lazy(() => import('./Brief').then((m) => ({ default: m.BriefPanel || m.default })));
@@ -121,7 +128,7 @@ function Menu({ open, onClose, onSignOut }) {
   const go = (to) => { onClose(); navigate(to); };
   const items = COACH_MENU.filter((i) => (!i.owner || isOwner) && (!i.later || !LIVE));
   const current = (to) => (to === '/coach' ? pathname === '/coach' : pathname === to || pathname.startsWith(`${to}/`));
-  const favourites = favouriteViews(views);
+  const favourites = favouriteViews(views).filter((v) => v.list !== 'leads' || isOwner);
   // To-dos shows how many are for today, with the coach's own lists under it (M11's menu).
   const today = todayTodos(todos, todayKey);
   const todosToday = today.work.length; // the working day only, as M11 counts it: After work sits apart
@@ -150,7 +157,7 @@ function Menu({ open, onClose, onSignOut }) {
           )))}
           {favourites.length > 0 && <p className="cc-menu-label">Favourite views</p>}
           {favourites.map((v) => (
-            <button key={v.id} type="button" className="cc-menu-item" onClick={() => go(`/coach/clients?view=${v.id}`)}>{v.name}</button>
+            <button key={v.id} type="button" className="cc-menu-item" onClick={() => go(`/coach/${v.list === 'leads' ? 'leads' : 'clients'}?view=${v.id}`)}>{v.name}</button>
           ))}
           <button type="button" className="cc-menu-item" aria-current={current('/coach/settings') ? 'page' : undefined} onClick={() => go('/coach/settings')}>Settings</button>
         </div>
@@ -164,7 +171,7 @@ function Menu({ open, onClose, onSignOut }) {
 
 /** One box finds people, pages and actions as it is typed, with recent items before anything is typed. */
 function Search({ open, onClose }) {
-  const { userId, isOwner, clients, groups, workshops, organisations, admin, coaches, coach, calItems, calGuests, settings, todayKey } = useCoachPortal();
+  const { userId, isOwner, clients, groups, workshops, organisations, admin, coaches, coach, calItems, calGuests, settings, todayKey, leads, leadStages } = useCoachPortal();
   const navigate = useNavigate();
   const toast = useToast();
   const [q, setQ] = useState('');
@@ -192,6 +199,8 @@ function Search({ open, onClose }) {
       ...groups.map((g) => ({ key: `g:${g.id}`, title: g.name, kind: 'Group', also: orgName(g.organisation_id), to: `/coach/groups/${g.id}` })),
       ...workshops.map((w) => ({ key: `w:${w.id}`, title: w.title, kind: 'Workshop', also: orgName(w.organisation_id), to: `/coach/workshops/${w.id}` })),
       ...(isOwner ? organisations.map((o) => ({ key: `o:${o.id}`, title: o.name, kind: 'Organisation', to: `/coach/organisations/${o.id}` })) : []),
+      // Leads are the owner's alone: an associate's search never finds one (run 4).
+      ...(isOwner ? leadSearchItems(leads, leadStages) : []),
     ];
     const pages = [
       ...COACH_MENU.filter((i) => (!i.owner || isOwner) && (!i.later || !LIVE)).map((i) => ({ key: `p:${i.key}`, title: i.label, kind: 'Page', to: i.to })),
@@ -204,6 +213,7 @@ function Search({ open, onClose }) {
       { key: 'a:group', title: 'Add group', to: '/coach/clients?tab=groups', state: { open: 'group' } },
       { key: 'a:workshop', title: 'Add workshop', to: '/coach/clients?tab=workshops', state: { open: 'workshop' } },
       { key: 'a:export', title: 'Export clients to a spreadsheet', to: '/coach/clients', state: { open: 'export' } },
+      ...(isOwner ? LEAD_SEARCH_ACTIONS : []),
       { key: 'a:book', title: 'Book a call', to: '/coach/calendar/book' },
       { key: 'a:open', title: 'Set my open times', to: '/coach/calendar/open' },
       { key: 'a:offer', title: 'Offer times by email', to: '/coach/calendar/offer' },
@@ -213,7 +223,7 @@ function Search({ open, onClose }) {
     // Calendar items, found by title, person or note; each opens its own day.
     const items = searchItems({ items: calItems, guests: calGuests, coachZone: coachZoneOf(settings, deviceZone()), todayKey });
     return { people, pages, actions, recent, items };
-  }, [clients, groups, workshops, organisations, admin, isOwner, coaches, coach, recent, calItems, calGuests, settings, todayKey]);
+  }, [clients, groups, workshops, organisations, admin, isOwner, coaches, coach, recent, calItems, calGuests, settings, todayKey, leads, leadStages]);
 
   const groupsShown = useMemo(() => searchResults(q, all), [q, all]);
   const flat = groupsShown.flatMap((g) => g.items);
@@ -476,6 +486,10 @@ export default function CoachApp() {
               <Route path="todos/lists/:id" element={<TodoListPage />} />
               <Route path="sessions/:id" element={<SessionPage />} />
               <Route path="clients/:id/close" element={<ClosePage />} />
+              {/* Leads (run 4) are the owner's alone: an associate is sent to their own Today, whatever address they open. */}
+              <Route path="leads" element={isOwner ? <Leads /> : <Navigate to="/coach" replace />} />
+              <Route path="leads/cold" element={isOwner ? <ColdLeads /> : <Navigate to="/coach" replace />} />
+              <Route path="leads/:id" element={isOwner ? <LeadPage /> : <Navigate to="/coach" replace />} />
               <Route path="business/*" element={<Navigate to="/coach/finances" replace />} />
               <Route path="calendar" element={<Calendar />} />
               {/* Booking (run 3, step 4): Book a call is a side panel over the calendar; Offer times by email and a poll's times

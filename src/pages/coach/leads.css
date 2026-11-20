@@ -1,0 +1,104 @@
+/* Leads (Phase 6a run 4; M11 seq 77: .board, .bcv, .lcard, .lq, .lrd, .nxt,
+   .qrow, .tlxr, .fline, the Edit stages panel). Tokens only; every class
+   starts cc-. The board, the cards, the rows, the table and the menus are
+   the coach portal's own (coach.css, leftovers.css); this file adds only
+   what Leads draws that Clients doesn't. */
+
+/* ---------------------------------------------------------------- the quiet lines above the leads (someone waiting, a possible duplicate) */
+.ui-root .cc-lead-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-3); font-size: var(--fs-note); }
+.ui-root .cc-lead-line > span { padding-block: var(--space-px12); }
+
+/* ---------------------------------------------------------------- the board: a column a stage; more than fit wrap under */
+.ui-root .cc-lboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--cc-lead-col-min), 1fr)); gap: var(--cc-board-gap); margin-top: var(--space-px20); }
+.ui-root .cc-lboard .cc-board-col { min-height: var(--cc-board-col-min); box-sizing: border-box; }
+.ui-root .cc-lboard-sum { display: flex; justify-content: space-between; gap: var(--space-2); padding: 0 var(--space-1) var(--space-px10); margin-top: calc(-1 * var(--space-px6)); font-size: var(--fs-small); color: var(--text); font-variant-numeric: tabular-nums; }
+.ui-root .cc-lboard-sum small { font-size: var(--fs-small); color: var(--text-2); text-align: right; }
+.ui-root .cc-lboard-sum--none { color: var(--placeholder); }
+.ui-root .cc-lboard-add { margin-top: var(--space-2); }
+.ui-root .cc-lboard .cc-acts { margin-top: var(--space-1); padding-left: var(--space-1); }
+
+/* A lead's card: its value in the text colour, how often the proposal was opened beside it, the next step on two lines at
+   most, "Quiet for 19 days" as a small pill with a soft coral edge (it needs you), and how ready they are in words. */
+.ui-root .cc-lead-card .cc-lead-v { display: flex; flex-wrap: wrap; gap: 0 var(--space-px10); color: var(--text); }
+.ui-root .cc-lead-card .cc-lead-v i { font-style: normal; color: var(--text-2); margin: 0; }
+.ui-root .cc-lead-card .cc-lead-next { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+.ui-root .cc-lead-card .cc-lead-quiet { justify-self: start; margin-top: var(--space-px6); font-size: var(--fs-min); color: var(--text); border: var(--line-w) solid var(--coral-soft-text); border-radius: var(--radius-pill); padding: var(--space-px2) var(--space-px10); white-space: nowrap; }
+.ui-root .cc-lead-card .cc-lead-ready { margin-top: var(--space-px6); font-size: var(--fs-min); color: var(--text-2); }
+.ui-root .cc-lead-card .cc-lead-ready--ok { color: var(--good); }
+
+/* The three dots of a row's More menu. In a list they show on hover and keyboard focus (always where there is no hover);
+   on a card, only where there is no mouse to drag with. */
+.ui-root .cc-lead-dots { width: var(--cc-lead-dots); height: var(--cc-lead-dots); fill: currentColor; }
+.ui-root .cc-lead-more { color: var(--text-2); }
+.ui-root .cc-lead-more:focus-visible, .ui-root .cc-lead-more[aria-expanded='true'] { color: var(--coral-text); }
+.ui-root .cc-lead-more--card { justify-self: end; margin: 0 var(--space-1) var(--space-px2) 0; }
+@media (hover: hover) {
+  .ui-root .cc-lead-rw .cc-lead-more { opacity: 0; transition: opacity var(--dur-fast) var(--ease); }
+  .ui-root .cc-pick-row:hover .cc-lead-more, .ui-root .cc-lead-rw .cc-lead-more:focus-visible, .ui-root .cc-lead-rw .cc-lead-more[aria-expanded='true'], .ui-root .cc-pick-row:focus-within .cc-lead-more { opacity: 1; }
+  .ui-root .cc-lead-more:hover { color: var(--coral-text); }
+}
+
+/* ---------------------------------------------------------------- the list: a row opens the lead; More sits at its right */
+.ui-root .cc-lead-rows { margin-top: 0; }
+.ui-root .cc-lead-rw { display: grid; grid-template-columns: minmax(0, 1fr) var(--tap-min); align-items: center; min-width: 0; }
+.ui-root .cc-lead-rw .cc-row-when small { display: block; margin: 0; font-size: var(--fs-note); color: var(--text-2); }
+
+/* ---------------------------------------------------------------- the table */
+.ui-root .cc-lead-table td small { margin-top: var(--space-px2); }
+/* A next step is read whole: it wraps onto more lines and its row grows (tables never squash their text). */
+.ui-root .cc-lead-table .cc-cell { white-space: normal; overflow-wrap: anywhere; text-align: left; line-height: var(--lh-row); }
+.ui-root .cc-lead-table td .cc-cell + small { margin-top: calc(-1 * var(--space-px6)); padding-bottom: var(--space-px6); }
+
+/* ---------------------------------------------------------------- a lead's page */
+.ui-root .cc-lead-nextbox small { display: block; margin-top: var(--space-px2); font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-lead-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-px12) var(--space-3); margin-top: var(--space-px18); }
+.ui-root .cc-lead-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.ui-root .cc-lead-sum { margin: var(--space-px12) 0 var(--space-px6); font-size: var(--fs-body); }
+.ui-root .cc-lead-q { display: grid; grid-template-columns: var(--cc-lead-q-w) minmax(0, 1fr); gap: var(--space-3); padding: var(--space-px12) 0; border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-lead-q > span:first-child { font-size: var(--fs-secondary); color: var(--text-2); }
+.ui-root .cc-lead-q > span:last-child { font-size: var(--fs-body); overflow-wrap: anywhere; }
+.ui-root .cc-lead-q .cc-lead-q--no { color: var(--placeholder); }
+/* An email on the timeline opens: the whole row is its button. */
+.ui-root .cc-lead-mail { all: unset; cursor: pointer; box-sizing: border-box; width: 100%; display: grid; grid-template-columns: var(--cc-when-w) minmax(0, 1fr); gap: var(--space-3); padding: var(--space-px14) 0 !important; font-size: inherit !important; min-height: 0 !important; border-bottom: var(--line-w) solid var(--line-soft); text-align: left; }
+.ui-root .cc-lead-mail > span { font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-lead-mail b { font-weight: var(--fw-regular); font-size: var(--fs-body); overflow-wrap: anywhere; transition: color var(--dur) var(--ease); }
+@media (hover: hover) {
+  .ui-root .cc-lead-mail:hover b { color: var(--coral-text); }
+}
+.ui-root .cc-lead-mail:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--space-1); }
+.ui-root .cc-lead-mail:focus-visible b { color: var(--coral-text); }
+
+/* An email, opened */
+.ui-root .cc-email-who { display: flex; flex-wrap: wrap; gap: 0 var(--space-px14); margin: 0; font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-email-who b { font-weight: var(--fw-regular); font-size: var(--fs-body); color: var(--text); flex-basis: 100%; }
+.ui-root .cc-email-body { margin: var(--space-px18) 0 0; font-size: var(--fs-body); line-height: var(--lh-text); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ---------------------------------------------------------------- Cold leads */
+.ui-root .cc-lead-cold small + small { margin-top: 0; }
+
+/* ---------------------------------------------------------------- Edit stages: a handle, the name, how likely it is to win, and its cross */
+.ui-root .cc-stage-head, .ui-root .cc-stage-row { display: grid; grid-template-columns: var(--tap-min) minmax(0, 1fr) var(--cc-stage-pct-w) var(--tap-min); gap: var(--space-2); align-items: center; }
+.ui-root .cc-stage-head { font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-stage-head > span:first-child { grid-column: 2; }
+.ui-root .cc-stage-rows { display: grid; gap: var(--space-2); margin-top: var(--space-2); }
+.ui-root .cc-stage-grip { color: var(--text-2); cursor: grab; touch-action: none; }
+.ui-root .cc-stage-grip:focus-visible { color: var(--coral-text); }
+@media (hover: hover) {
+  .ui-root .cc-stage-grip:hover { color: var(--coral-text); }
+}
+.ui-root .cc-stage-fixed { font-size: var(--fs-input); color: var(--text-2); padding-left: var(--space-px12); }
+.ui-root .cc-stage-gone { padding: var(--space-px12) 0; border-block: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-stage-gone .cc-quiet { margin-top: 0; }
+
+/* ---------------------------------------------------------------- a phone */
+@media (max-width: 600px) {
+  .ui-root .cc-lboard { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .cc-lboard .cc-board-col { min-height: 0; }
+  .ui-root .cc-lead-q, .ui-root .cc-lead-mail { grid-template-columns: minmax(0, 1fr); gap: var(--space-px2); }
+}
+
+/* ---------------------------------------------------------------- Windows high-contrast mode: the dots take the system's text colour */
+@media (forced-colors: active) {
+  .ui-root .cc-lead-dots { fill: CanvasText; }
+  .ui-root .cc-lead-card .cc-lead-quiet { border-color: CanvasText; }
+}

@@ -17,7 +17,7 @@
 // with every function it calls stood in (client.mjs).
 import { chromium } from 'playwright';
 import { accountId, APP, clearDevice, coachContext, seedDevice, settle, SIZES, standIn } from './shared.mjs';
-import { ADMIN_ROWS, CAL, DAY, ID, PRESSURE, seedClock, seedRows, seedWithCal, seedWithDay, SES, SHARED } from './seed.mjs';
+import { ADMIN_ROWS, CAL, CRM, DAY, ID, manyLeads, PRESSURE, seedClock, seedRows, seedWithCal, seedWithCrm, seedWithDay, SES, SHARED } from './seed.mjs';
 import { bookStore, guestStandIn } from './book-standin.mjs';
 import { clearCoaching, clientContext, clientStandIn, fromCoach } from './client.mjs';
 import { chooseZone } from './cal-rules.mjs';
@@ -156,6 +156,46 @@ const clockSeed = (rows) => {
  * `expects` (the design rules that must be found on it, by name: see
  * rules.mjs), `full` (a full-page picture), `viewport`, `sizes`.
  */
+// ---------------------------------------------------------------- run 4: Leads (the owner's alone)
+/** Leads shown as a list or a table: the gliding switch on a laptop and a tablet, the View menu on a phone. */
+const leadsAs = async (page, size, layout) => {
+  if (size === 400) { await press(page, 'View'); await page.getByRole('menuitemcheckbox', { name: layout }).click(); } else await page.getByRole('button', { name: layout, exact: true }).click();
+  await settle(page, 600);
+};
+const LEADS_SHEET = 'Name,Email,Company,Deal size,Lead source\nDana Whitfield,dana@example.invalid,Kestrel Group,"£12,000",Referral\nAmy Cole,amy.cole@example.invalid,Northfield Logistics,,\nElena Ruiz,,,,\nGrace Liu,grace.liu@example.invalid,Quillmark,4.5k,Chemistry Call\nGrace Again,grace.liu@example.invalid,,,\n,nobody@example.invalid,,,';
+const LEAD_SCREENS = [
+  ['leads-board', '/coach/leads', null, { full: true, expects: ['lead-board', 'lead-waiting'] }],
+  ['leads-list', '/coach/leads', (page, size) => leadsAs(page, size, 'List'), { full: true, expects: ['lead-waiting'] }],
+  ['leads-table', '/coach/leads', async (page, size) => { if (size < 1100) return 'skip'; await leadsAs(page, size, 'Table'); return null; }],
+  ['leads-table-stage', '/coach/leads', async (page, size) => { if (size < 1100) return 'skip'; await leadsAs(page, size, 'Table'); await page.getByRole('button', { name: 'Stage, Proposal sent. Edit' }).first().click(); await settle(page, 500); return null; }],
+  ['leads-table-column', '/coach/leads', async (page, size) => { if (size < 1100) return 'skip'; await leadsAs(page, size, 'Table'); await page.getByRole('button', { name: 'Stage', exact: true }).click(); await settle(page, 500); return null; }],
+  ['leads-table-typing', '/coach/leads', async (page, size) => { if (size < 1100) return 'skip'; await leadsAs(page, size, 'Table'); await page.getByRole('button', { name: 'Next step, Follow up on the proposal. Edit' }).click(); await settle(page, 400); return null; }],
+  ['leads-row-menu', '/coach/leads', async (page, size) => { await leadsAs(page, size, 'List'); await page.getByRole('button', { name: 'More for Amy Cole' }).click({ force: true }); await settle(page, 500); }],
+  ['leads-picked', '/coach/leads', async (page, size) => { if (size === 400) return 'skip'; await leadsAs(page, size, 'List'); await page.getByRole('checkbox', { name: 'Select Chris Doyle' }).click({ force: true }); await page.getByRole('checkbox', { name: 'Select Christopher Doyle' }).click({ force: true }); await settle(page, 400); return null; }],
+  ['leads-add', '/coach/leads', async (page) => { await page.getByRole('button', { name: 'Add lead', exact: true }).first().click(); await settle(page, 600); }, { expects: ['panel'] }],
+  ['leads-filter', '/coach/leads', click('Filter'), { expects: ['panel'] }],
+  ['leads-stages', '/coach/leads', click('Edit stages'), { expects: ['panel'] }],
+  ['leads-stages-remove', '/coach/leads', async (page) => { await click('Edit stages')(page); await page.getByRole('button', { name: 'Remove Proposal sent' }).click(); await settle(page, 400); }, { expects: ['panel'] }],
+  ['leads-import', '/coach/leads', async (page) => { await click('Import from a spreadsheet')(page); await page.locator('#cc-lead-paste').fill(LEADS_SHEET); await settle(page, 500); }, { expects: ['panel'] }],
+  ['leads-export', '/coach/leads', click('Export'), { expects: ['panel'] }],
+  ['leads-merge', '/coach/leads', click('Review'), { expects: ['panel'] }],
+  ['leads-search', '/coach/leads', async (page) => { await page.getByRole('button', { name: 'Search, or do anything' }).click(); await page.keyboard.type('lead'); await settle(page, 400); }],
+  ['leads-cold', '/coach/leads/cold'],
+  ['lead-amy', `/coach/leads/${CRM.amy}`, null, { full: true, expects: ['lead-page'] }],
+  ['lead-ruth', `/coach/leads/${CAL.leadRuth}`, null, { full: true }],
+  ['lead-email', `/coach/leads/${CAL.leadRuth}`, async (page) => { await page.getByRole('button', { name: /Ruth replied/ }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+  ['lead-call', `/coach/leads/${CAL.leadRuth}`, click('Log a call'), { expects: ['panel'] }],
+  ['lead-note', `/coach/leads/${CRM.amy}`, click('Add note'), { expects: ['panel'] }],
+  ['lead-where', `/coach/leads/${CRM.amy}`, async (page) => { await page.getByRole('button', { name: 'Edit where Amy is' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+  ['lead-edit', `/coach/leads/${CRM.amy}`, click('Edit details'), { expects: ['panel'] }],
+  ['lead-mark-cold', `/coach/leads/${CRM.amy}`, click('Mark as cold'), { expects: ['panel'] }],
+  ['lead-tom', `/coach/leads/${CRM.tom}`, null, { full: true }],
+  ['lead-won', `/coach/leads/${CRM.leoWon}`],
+  ['lead-is-cold', `/coach/leads/${CRM.coldLead}`],
+  ['lead-carried', `/coach/clients/${ID.leo}`, click('Everything')],
+];
+const withManyLeads = () => { const rows = seedWithCrm({ accounts: true, network: false }); rows.coach_leads = [...rows.coach_leads, ...manyLeads(300)]; return rows; };
+
 export const GROUPS = [
   { name: 'run1', screens: SCREENS },
   {
@@ -364,6 +404,27 @@ export const GROUPS = [
     ],
   },
   // Help that can be hidden, walked once for each role, size and mode (rules.mjs's hiddenHelp does the walking).
+  // Run 4, Leads: the owner's alone, device first (052 isn't on the test project). M11's seed, then the same with 300 more
+  // leads; an associate who opens Leads lands on their own Today and finds no lead in the menu or in search.
+  { name: 'leads', at: TUE, roles: ['owner'], seed: () => seedWithCrm({ accounts: true, network: false }), screens: LEAD_SCREENS },
+  {
+    name: 'leads-many', at: TUE, roles: ['owner'], seed: withManyLeads,
+    screens: [
+      ['leads-many-board', '/coach/leads', null, { full: true }],
+      ['leads-many-list', '/coach/leads', (page, size) => leadsAs(page, size, 'List')],
+      ['leads-many-table', '/coach/leads', async (page, size) => { if (size < 1100) return 'skip'; await leadsAs(page, size, 'Table'); return null; }],
+      ['leads-many-table-scrolled', '/coach/leads', async (page) => { await leadsAs(page, 1440, 'Table'); await page.evaluate(() => window.scrollTo(0, 450)); await settle(page, 300); }, { sizes: [1440], viewport: { width: 1440, height: 520 }, expects: ['table'] }],
+    ],
+  },
+  {
+    name: 'leads-associate', at: TUE, roles: ['associate'], seed: () => seedWithCrm({ accounts: true, network: false }),
+    screens: [
+      ['leads-closed', '/coach/leads', null, { expects: ['not-leads'] }],
+      ['leads-closed-lead', `/coach/leads/${CRM.amy}`, null, { expects: ['not-leads'] }],
+      ['leads-closed-menu', '/coach/leads/cold', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600); }, { expects: ['not-leads'] }],
+      ['leads-closed-search', '/coach', async (page) => { await page.getByRole('button', { name: 'Search, or do anything' }).click(); await page.keyboard.type('amy'); await settle(page, 400); }, { expects: ['not-leads'] }],
+    ],
+  },
   { name: 'help', at: TUE, screens: [['help-hidden', '/coach/todos', null, { expects: ['help-flow'] }]] },
   {
     name: 'client', roles: ['client'], root: '.ui-root',

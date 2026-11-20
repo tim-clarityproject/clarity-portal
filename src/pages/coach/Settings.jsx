@@ -464,8 +464,11 @@ function NoteLayouts() {
 const KINDS = [{ value: 'text', label: 'Text' }, { value: 'number', label: 'Number' }, { value: 'date', label: 'Date' }, { value: 'choice', label: 'Choice' }];
 const kindWords = (f) => (f.kind === 'choice' ? `Choice from ${(f.options || []).length}` : KINDS.find((k) => k.value === f.kind)?.label || '');
 
-export function FieldPanel({ draft, setDraft }) {
-  const { userId, coach, fields, state } = useCoachPortal();
+/** Add or edit one of the coach's own fields. `appliesTo`: 'client' (as on Clients), or 'lead' for a lead's own fields (run 4). */
+export function FieldPanel({ draft, setDraft, appliesTo = 'client' }) {
+  const portal = useCoachPortal();
+  const { userId, coach, state } = portal;
+  const fields = appliesTo === 'lead' ? portal.leadFields : portal.fields;
   const saved = useSaved();
   const [problem, setProblem] = useState(null);
   if (!draft) return <SlidePanel open={false} onClose={() => setDraft(null)} title="Add field" />;
@@ -478,7 +481,7 @@ export function FieldPanel({ draft, setDraft }) {
     const options = draft.kind === 'choice' ? [...new Set(String(draft.optionsText || '').split(/[\n,]/).map(clean).filter(Boolean))].slice(0, 60) : [];
     if (draft.kind === 'choice' && options.length < 2) { setProblem('Type at least 2 choices to carry on.'); return; }
     const before = fields.find((f) => f.id === draft.id);
-    const row = { id: draft.id, coach_id: coach.id, applies_to: 'client', name, kind: draft.kind, options, position: before?.position ?? fields.length };
+    const row = { id: draft.id, coach_id: coach.id, applies_to: appliesTo, name, kind: draft.kind, options, position: before?.position ?? fields.length };
     await saved(() => saveRow(userId, 'coach_fields', row), { message: isNew ? 'Field added' : 'Saved', onUndo: () => (before ? saveRow(userId, 'coach_fields', before) : removeRow(userId, 'coach_fields', row.id)) }).catch(() => {});
     setDraft(null);
   };

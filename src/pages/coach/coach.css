@@ -715,6 +715,7 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-menu-item { padding: 0 var(--space-px12) !important; font-size: var(--fs-menu-row) !important; }
 .ui-root .cc-menu-item--sub { padding-left: var(--space-px28) !important; font-size: var(--fs-note) !important; }
 .ui-root .cc-jump-item { padding: var(--space-2) var(--space-px12) !important; }
+.ui-root .cc-merge-choice { padding: var(--space-2) var(--space-px12) !important; font-size: var(--fs-secondary) !important; } /* Merge into one's choices, on a tablet and a phone (run 4's UI check) */
 .ui-root .cc-row { padding: var(--space-px12) 0 !important; }
 .ui-root .cc-fold-btn { padding: 0 !important; font-size: inherit !important; }
 .ui-root .cc-notice { padding: var(--space-px10) 0 !important; }

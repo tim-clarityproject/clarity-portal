@@ -9,7 +9,7 @@ export const COACH_MENU = [
   { key: 'finances', label: 'Finances', to: '/coach/finances', owner: true, later: true },
   { key: 'todos', label: 'To-dos', to: '/coach/todos' },
   { key: 'clients', label: 'Clients', to: '/coach/clients' },
-  { key: 'leads', label: 'Leads', to: '/coach/leads', owner: true, later: true },
+  { key: 'leads', label: 'Leads', to: '/coach/leads', owner: true },
   { key: 'network', label: 'Network', to: '/coach/network', owner: true, later: true },
   { key: 'boards', label: 'Boards', to: '/coach/boards', owner: true, later: true },
   { key: 'calendar', label: 'Calendar', to: '/coach/calendar' },
@@ -43,6 +43,8 @@ export const COACH_NAME = 'Clarity Coach';
 
 const TITLES = [
   ['/coach/clients/past', 'Past clients'],
+  ['/coach/leads/cold', 'Cold leads'],
+  ['/coach/leads', 'Leads'],
   ['/coach/clients', 'Clients'],
   ['/coach/groups', 'Group'],
   ['/coach/workshops', 'Workshop'],

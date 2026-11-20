@@ -143,6 +143,12 @@ const MUST = {
   finances: (r) => r.text.includes('November £2,300 of £5,000'),
   'capacity-row': (r) => /Capacity/i.test(r.text) && r.text.includes('Coaching hours each week'),
   'hidden-help': (r) => r.text.includes('Hidden help') && r.text.includes('Nothing is hidden.'),
+  // Run 4, Leads.
+  'lead-board': (r) => ['£31,500', '£15,750 likely', 'No value yet', 'Opened 3 times', 'Quiet for 19 days', 'Still to find out: when', 'Ready to decide'].every((w) => r.text.includes(w)),
+  'lead-waiting': (r) => r.text.includes('You emailed Sarah Kent, who isn’t in the portal yet.') && r.text.includes('Chris Doyle may be in here twice.'),
+  'lead-page': (r) => ['Nearly there. Still to find out: when.', 'Referred by', 'Hannah Wells', 'Leadership Accelerator. Opened 3 times.', 'Not known yet'].every((w) => r.text.includes(w)),
+  // An associate: no Leads page, no Leads in the menu, no lead in search (they are on their own Today).
+  'not-leads': (r) => !/\bLeads?\b/.test(r.text) && !r.text.includes('Amy Cole') && !r.text.includes('Quiet for 19 days'),
 };
 // Underlined tabs are the same on a laptop and a phone: the same words, size, line and space at every width.
 const TABS_LOOK = { size: '16px', line: 2, gap: '22px' };

@@ -42,7 +42,7 @@ function fieldSorts(f) {
 }
 
 /** Every card on the board is one height, set by the fullest card (Tim, 18 Nov). */
-function useEvenCards(ref, deps) {
+export function useEvenCards(ref, deps) {
   useLayoutEffect(() => {
     const board = ref.current;
     if (!board) return undefined;
@@ -62,7 +62,7 @@ function useEvenCards(ref, deps) {
 }
 
 /** Whether the device's main pointer is a finger (a phone or a tablet): nothing is dragged there. */
-function useTouchFirst() {
+export function useTouchFirst() {
   const query = '(pointer: coarse)';
   const [touch, setTouch] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
   useEffect(() => {
@@ -75,7 +75,7 @@ function useTouchFirst() {
   return touch;
 }
 
-function PickTick({ on, name, onChange }) {
+export function PickTick({ on, name, onChange }) {
   return (
     <button type="button" className="cc-pick" role="checkbox" aria-checked={on} aria-label={`Select ${name}`} onClick={(e) => { e.stopPropagation(); onChange(!on); }}>
       <i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></i>
