@@ -8,6 +8,7 @@ import {
   moveHours, nowLine, nudgeHours, outOfHours, hoursToSave, scheduleDays, secondZoneChoices, snapMinutes, TODOS_TO_PLACE, todosToPlace, weekKeyOf, zoneColumnLabel,
 } from '../../lib/coach/calendar';
 import { MenuItem, PopMenu, TICK, useCoachPortal } from './parts';
+import { useCalSync } from './calSync';
 import './calendar.css';
 
 // The calendar's parts (Phase 6a run 3; M11, seq 77), used by the Calendar
@@ -43,6 +44,9 @@ export const CAL_HOOKS = {
 export function useCalendar() {
   const p = useCoachPortal();
   const toast = useToast();
+  const sync = useCalSync(); // Google Calendar and Zoom (calSync.jsx): every save here is followed by a round
+  const syncNow = useRef({ sync, items: p.calItems });
+  syncNow.current = { sync, items: p.calItems };
   const coachZone = coachZoneOf(p.settings, deviceZone());
   const data = useMemo(() => ({
     items: p.calItems, guests: p.calGuests, sessions: p.sessions, todos: p.todos, openBlocks: p.openBlocks, polls: p.polls, pollPeople: p.pollPeople, pollOptions: p.pollOptions,
@@ -59,9 +63,11 @@ export function useCalendar() {
     if (!plan.save.length && !plan.remove.length) return false;
     busy.current = true;
     let status = 'saved';
+    const itemsBefore = syncNow.current.items; // as they stand before anything is removed
     try {
       if (plan.save.length) status = await saveRows(userId, plan.save);
       for (const [table, id] of plan.remove) await removeRow(userId, table, id);
+      syncNow.current.sync.removed(plan.remove, itemsBefore); // what must go from Google and Zoom too
     } catch {
       busy.current = false;
       toast.error(SAVE_PROBLEM);
@@ -72,11 +78,13 @@ export function useCalendar() {
       last.current = null;
       setTell(null);
       for (const [table, id] of plan.undo.remove) await removeRow(userId, table, id).catch(() => {});
-      if (plan.undo.save.length) await saveRows(userId, plan.undo.save).catch(() => {});
+      if (plan.undo.save.length) await saveRows(userId, syncNow.current.sync.restored(plan.undo.save)).catch(() => {});
+      syncNow.current.sync.after();
     };
     last.current = undo;
     setTell(plan.tell || null);
     if (!quiet) toast.saved({ message: status === 'queued' ? 'Will sync' : plan.words || 'Saved', long: true, onUndo: undo });
+    syncNow.current.sync.after(); // once the Undo has passed, the change goes to Google Calendar and Zoom
     return true;
   }, [userId, toast]);
 
@@ -93,7 +101,7 @@ export function useCalendar() {
     return () => document.removeEventListener('keydown', onKey);
   }, [toast]);
 
-  const ctx = useMemo(() => ({ coachZone, data, newId, coachId: p.coach.id, coachFirstName: p.coach.display_first_name || '', invites: false, now: p.now }), [coachZone, data, p.coach, p.now]);
+  const ctx = useMemo(() => ({ coachZone, data, newId, coachId: p.coach.id, coachFirstName: p.coach.display_first_name || '', invites: sync.invites, now: p.now }), [coachZone, data, p.coach, p.now, sync.invites]);
   const entriesFor = useCallback((fromDay, toDay, { showTodos = true } = {}) => calendarEntries(data, { fromDay, toDay, coachZone, settings: p.settings, showTodos }), [data, coachZone, p.settings]);
   /** One change to the coach's settings, with Undo. */
   const saveSettings = useCallback(async (patch, message = 'Saved') => {
@@ -121,7 +129,8 @@ function TileWords({ e, coachZone, narrow }) {
   return (
     <>
       <span className="cc-cal-title">{lines.title}</span>
-      {lines.line && <span className="cc-cal-sub">{lines.line}</span>}
+      {/* A call moved in Google Calendar says so where its place and time were (an hour's tile holds two lines); its panel has the rest. */}
+      {lines.moved ? <span className="cc-cal-moved">{lines.moved}</span> : (lines.line && <span className="cc-cal-sub">{lines.line}</span>)}
     </>
   );
 }

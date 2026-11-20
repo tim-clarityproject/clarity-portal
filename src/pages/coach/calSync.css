@@ -1,0 +1,17 @@
+/* Keeping in step with Google Calendar and Zoom (Phase 6a run 3, step 3):
+   the "Moved in Google Calendar" line, the line a tile carries, the
+   connection rows in Settings and the next-call bar's name. Tokens only. */
+.ui-root .cc-moved { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-3); margin-top: var(--space-2); }
+.ui-root .cc-moved > p { margin: 0; }
+.ui-root .cc-moved .ds-link { min-width: var(--tap-min); }
+.ui-root .cc-cal-moved { display: block; font-size: var(--fs-cal-sub); color: var(--tile-sub, var(--tile-text, var(--cal-other-sub))); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ui-root .cc-connect-note { margin-top: 0; }
+.ui-root .cc-callbar-who .cc-inline-link { font-weight: var(--fw-medium); color: var(--text); }
+.ui-root .cc-callbar--soon .cc-callbar-who .cc-inline-link { color: var(--coral-text); }
+/* On a phone the bar is the name, when, and Join on Zoom, as M11 draws it: the name itself opens the brief. */
+@media (max-width: 600px) {
+  .ui-root .cc-callbar-links button.ds-link { display: none; }
+}
+@media (forced-colors: active) {
+  .ui-root .cc-cal-moved { color: CanvasText; }
+}

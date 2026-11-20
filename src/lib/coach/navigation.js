@@ -30,7 +30,7 @@ export const SETTINGS_SECTIONS = [
   { key: 'booking', label: 'Booking' },
   { key: 'hours', label: 'Working hours' },
   { key: 'zones', label: 'Time zones' },
-  { key: 'calendars', label: 'My calendars', wired: false },
+  { key: 'calendars', label: 'My calendars' },
   { key: 'email', label: 'Email', owner: true, wired: false },
   { key: 'tags', label: 'Tags and fields' },
   { key: 'layouts', label: 'Note layouts', owner: true, wired: false },

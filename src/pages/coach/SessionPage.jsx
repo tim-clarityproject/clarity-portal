@@ -14,6 +14,8 @@ import {
 } from '../../lib/coach/sessionActions';
 import { Back, Detail, Eye, Part, TextLink, TICK, useCoachPortal } from './parts';
 import { LENGTHS, putBack, useSay, useSessionWho } from './sessionParts';
+import { joinLink } from '../../lib/coach/calendar';
+import { MovedInGoogle } from './calSync';
 import './sessions.css';
 
 // After a call: the recap (Phase 6a run 2, step 5; M11's session screen).
@@ -54,7 +56,7 @@ export default function SessionPage() {
 }
 
 function SessionBody({ session, who }) {
-  const { userId, coach, sessionActions, sessionNotes, todayKey, now } = useCoachPortal();
+  const { userId, coach, sessionActions, sessionNotes, todayKey, now, calItems = [] } = useCoachPortal();
   const navigate = useNavigate();
   const toast = useToast();
   const say = useSay();
@@ -299,11 +301,16 @@ function SessionBody({ session, who }) {
     </>
   );
 
+  const calItem = calItems.find((i) => i.session_id === session.id) || null;
+  const joinHref = joinLink(calItem, session);
   return (
     <div className={`cc-page cc-ses${bar ? ' cc-ses-page--bar' : ''}`}>
       <div className="cc-col">
         <Back to={who.name} onClick={() => navigate(who.to)} />
         <PageHeader title={title} meta={[who.name, whenWords(session.starts_at, todayKey)]} />
+        {/* The call's own calendar item (run 3): moved in Google Calendar, and its Zoom link until it has been written up. */}
+        <MovedInGoogle item={calItem} />
+        {joinHref && !session.outcome && <div className="cc-acts"><a className="ds-link" href={joinHref} target="_blank" rel="noreferrer">Join on Zoom</a></div>}
 
         {sent ? (
           <>

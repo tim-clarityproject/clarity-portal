@@ -200,12 +200,16 @@ export function sessionTomorrowEmail({ coach, at, zone, frequentTraveller = fals
       { type: 'text', text: `Your coaching session with ${coach} is ${when}.` },
       // Only for people the coach has marked as a frequent traveller (Tim, 13:25); everyone else never sees it.
       frequentTraveller ? { type: 'text', text: 'Travelling? Your calendar invite moves with you.', quiet: true } : null,
-      { type: 'button', label: 'Start my prep', href: prepLink, time: '~2 minutes' },
-      { type: 'link', label: 'Join on Zoom', href: zoomLink },
+      prepLink ? { type: 'button', label: 'Start my prep', href: prepLink, time: '~2 minutes' } : null,
+      // A session in person has no Zoom link, and the link is left out rather than sent empty.
+      zoomLink ? { type: 'link', label: 'Join on Zoom', href: zoomLink } : null,
     ],
-    footer: { lines: [`You get session reminders as one of ${possessive(coach)} coaching clients.`, EMAIL_SIGN_OFF, { label: 'Choose which emails to get', href: preferencesLink }] },
+    footer: { lines: reminderFooter(coach, preferencesLink) },
   };
 }
+
+// "Choose which emails to get" needs its page first (Emails, rule 8): until a link is given it is left out.
+const reminderFooter = (coach, preferencesLink) => [`You get session reminders as one of ${possessive(coach)} coaching clients.`, EMAIL_SIGN_OFF, preferencesLink ? { label: 'Choose which emails to get', href: preferencesLink } : null].filter(Boolean);
 
 /** One hour before: no clock time at all, so it can't be wrong (Tim, 13:23). */
 export function sessionInOneHourEmail({ coach, zoomLink, preferencesLink }) {
@@ -214,9 +218,9 @@ export function sessionInOneHourEmail({ coach, zoomLink, preferencesLink }) {
     subject: `Your coaching session with ${coach} starts in 1 hour`,
     blocks: [
       { type: 'heading', text: `Your coaching session with ${coach} starts in 1 hour.` },
-      { type: 'button', label: 'Join on Zoom', href: zoomLink },
+      zoomLink ? { type: 'button', label: 'Join on Zoom', href: zoomLink } : null,
     ],
-    footer: { lines: [`You get session reminders as one of ${possessive(coach)} coaching clients.`, EMAIL_SIGN_OFF, { label: 'Choose which emails to get', href: preferencesLink }] },
+    footer: { lines: reminderFooter(coach, preferencesLink) },
   };
 }
 
@@ -490,5 +494,49 @@ export function bookingConfirmedEmail({ name, callName, coach, at, zone, placeKi
       zoomLink ? { type: 'link', label: 'Join on Zoom', href: zoomLink } : null,
     ],
     footer: { lines: [`You get this because you booked ${call}.`, EMAIL_SIGN_OFF] },
+  };
+}
+
+// ---------------------------------------------------------------- reminders for a call someone booked (Phase 6a run 3, step 6)
+// To the person who booked a call on a booking page (they may have no
+// account, so there is no prep and nothing to sign in to): the day before
+// at 18:00 their own time, and 1 hour before. Times are in THEIR zone with
+// its city's name; the 1-hour one never gives a clock time. Sent only by
+// api/coach-reminders.js, from the live site, once each.
+
+/**
+ * @param {{ name?: string, callName: string, coach?: string, at: Date|string, zone: string, placeKind?: string, zoomLink?: string, mineLink?: string, now?: Date }} call
+ */
+export function callTomorrowEmail({ name = '', callName, coach, at, zone, placeKind = 'zoom', zoomLink = null, mineLink = null, now = new Date() }) {
+  const call = oneLine(callName);
+  const withWho = coach ? ` with ${oneLine(coach)}` : '';
+  const day = relativeDayWords(at, zone, now);
+  return {
+    brand: 'project',
+    subject: `${call || 'Your call'}${withWho} is ${day === 'tomorrow' || day === 'today' ? day : `on ${day}`} at ${timeWords(at, zone)}`,
+    blocks: [
+      { type: 'heading', text: day === 'tomorrow' ? 'Your call is tomorrow.' : 'Your call is coming up.' },
+      { type: 'text', text: `${oneLine(name).split(' ')[0] || 'Hello'}, your ${call || 'call'}${withWho} is ${sessionWhenWords(at, zone, now)}.` },
+      { type: 'details', rows: [['When', whenWords(at, zone)], ['Where', placeKind === 'in_person' ? 'In person' : placeKind === 'phone' ? 'By phone' : 'Zoom']] },
+      mineLink ? { type: 'button', label: 'Move or cancel', href: mineLink } : null,
+      zoomLink ? { type: 'link', label: 'Join on Zoom', href: zoomLink } : null,
+    ],
+    footer: { lines: [`You get this because you booked ${call || 'a call'}.`, EMAIL_SIGN_OFF] },
+  };
+}
+
+/** One hour before a booked call: no clock time at all, so it can't be wrong. */
+export function callInOneHourEmail({ callName, coach, zoomLink = null, mineLink = null }) {
+  const call = oneLine(callName);
+  const withWho = coach ? ` with ${oneLine(coach)}` : '';
+  return {
+    brand: 'project',
+    subject: `${call || 'Your call'}${withWho} starts in 1 hour`,
+    blocks: [
+      { type: 'heading', text: `${call || 'Your call'}${withWho} starts in 1 hour.` },
+      zoomLink ? { type: 'button', label: 'Join on Zoom', href: zoomLink } : null,
+      !zoomLink && mineLink ? { type: 'link', label: 'Move or cancel', href: mineLink } : null,
+    ],
+    footer: { lines: [`You get this because you booked ${call || 'a call'}.`, EMAIL_SIGN_OFF] },
   };
 }

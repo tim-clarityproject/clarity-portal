@@ -12,9 +12,10 @@ import { callForBar, favouriteViews, nextCallBar, searchResults, withRecent } fr
 import { COACH_MENU, COACH_PAGES, coachTitle, SETTINGS_SECTIONS } from '../../lib/coach/navigation';
 import { testCalls } from '../../lib/coach/calls';
 import { todayTodos } from '../../lib/coach/day';
-import { coachZoneOf, searchItems } from '../../lib/coach/calendar';
+import { barCalls, coachZoneOf, searchItems } from '../../lib/coach/calendar';
 import { deviceZone } from '../../lib/time/index.js';
-import { CoachPortalContext, TextLink, useCoachPortal } from './parts';
+import { CoachPortalContext, InlineLink, TextLink, useCoachPortal } from './parts';
+import { CalSync } from './calSync';
 import './coach.css';
 
 // Clarity Coach, the coach portal (Phase 6a runs 1 and 2; mock-up M11, seq
@@ -39,6 +40,7 @@ const ClosePage = lazy(() => import('./ClosePage'));
 const Calendar = lazy(() => import('./Calendar'));
 const OpenForCalls = lazy(() => import('./OpenForCalls'));
 const PollPage = lazy(() => import('./PollPage'));
+const BriefPanel = lazy(() => import('./Brief').then((m) => ({ default: m.BriefPanel || m.default })));
 
 const BELL = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" /></svg>;
 const HOME = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg>;
@@ -73,24 +75,33 @@ function useNow(ms = 15000) {
 /**
  * The slim next-call bar: from 10 minutes before a call until 10 minutes
  * in, coral from 5 minutes before, with Join on Zoom as a quiet link. The
- * calls themselves arrive with the calendar (run 3); until then it is
- * given test calls on previews only.
+ * calls are the coach's own, from their sessions and calendar items
+ * (calendar.js's barCalls); the name, and "Open the brief", open a client
+ * session's brief where they are. On previews only it can also be given
+ * test calls (lib/coach/calls.js), for the suites.
  */
 export function CallBar({ calls, now }) {
   const navigate = useNavigate();
+  const [briefId, setBriefId] = useState(null);
+  const [briefAsked, setBriefAsked] = useState(false);
   const call = callForBar(calls, now);
   const bar = nextCallBar(call, now);
-  if (!bar) return null;
+  const brief = briefAsked ? <Suspense fallback={null}><BriefPanel sessionId={briefId} joinHref={bar?.zoom || null} onClose={() => setBriefId(null)} /></Suspense> : null;
+  if (!bar) return brief;
+  const open = bar.sessionId ? () => { setBriefAsked(true); setBriefId(bar.sessionId); } : (bar.briefTo ? () => navigate(bar.briefTo) : null);
   return (
-    <div className={`cc-callbar${bar.coral ? ' cc-callbar--soon' : ''}`} role="status">
-      <div className="cc-callbar-in">
-        <span className="cc-callbar-who"><b>{bar.name}</b> {bar.words}</span>
-        <span className="cc-callbar-links">
-          {bar.briefTo && <TextLink onClick={() => navigate(bar.briefTo)}>Open the brief</TextLink>}
-          {bar.zoom && <a className="ds-link" href={bar.zoom} target="_blank" rel="noreferrer">Join on Zoom</a>}
-        </span>
+    <>
+      <div className={`cc-callbar${bar.coral ? ' cc-callbar--soon' : ''}`} role="status">
+        <div className="cc-callbar-in">
+          <span className="cc-callbar-who">{open ? <InlineLink aria-label={`${bar.name}: open the brief`} onClick={open}>{bar.name}</InlineLink> : <b>{bar.name}</b>} {bar.words}</span>
+          <span className="cc-callbar-links">
+            {open && <TextLink onClick={open}>Open the brief</TextLink>}
+            {bar.zoom && <a className="ds-link" href={bar.zoom} target="_blank" rel="noreferrer">Join on Zoom</a>}
+          </span>
+        </div>
       </div>
-    </div>
+      {brief}
+    </>
   );
 }
 
@@ -404,11 +415,17 @@ export default function CoachApp() {
   if (!coach) return <Navigate to="/welcome" replace />;
 
   const unread = value.notifications.filter((n) => !n.read_at).length;
-  const calls = LIVE ? [] : testCalls();
+  // The next-call bar: the coach's own calls (sessions and calendar items); on previews the suites can add test calls.
+  const coachZone = coachZoneOf(value.settings, deviceZone());
+  const calls = [
+    ...barCalls({ items: value.calItems, sessions: value.sessions, clients: value.clients, groups: value.groups, now, coachZone, settings: value.settings }),
+    ...(LIVE ? [] : testCalls()),
+  ];
   const later = COACH_PAGES.filter((p) => p.later);
 
   return (
     <CoachPortalContext.Provider value={value}>
+      <CalSync>
       <div className="ui-root cc-app">
         <header className="cc-header">
           <div className="cc-header-in">
@@ -467,6 +484,7 @@ export default function CoachApp() {
         <Bell open={bell} onClose={() => setBell(false)} />
         {signOut.choice}
       </div>
+      </CalSync>
     </CoachPortalContext.Provider>
   );
 }

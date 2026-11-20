@@ -12,6 +12,8 @@ import { SETTINGS_SECTIONS } from '../../lib/coach/navigation';
 import { Back, Line, SettingRow, TextLink, useCoachPortal } from './parts';
 import { useHiddenHelp } from './help';
 import BookingSettings from './BookingSettings';
+import { calendarShown, CONNECT_WORDS, connectionRows } from '../../lib/coach/calendar';
+import { useCalSync } from './calSync';
 
 // Settings, two panes (M11, version 3.4): on a laptop the list of sections
 // on the left and the chosen one on the right; on a phone the list, and
@@ -23,7 +25,7 @@ import BookingSettings from './BookingSettings';
 // Notifications, Coaches (owner), Look, Tags and fields, the Activity log
 // (owner), and since run 3 Booking (BookingSettings.jsx), Working hours and
 // Time zones, which the calendar and booking read. Rows and storage now,
-// put to work in later runs: My calendars' connection, Email, Note layouts.
+// put to work in later runs: Email, Note layouts. (My calendars' connections: run 3, calSync.jsx.)
 
 const SAVE_PROBLEM = 'That didn’t save. Check your connection and try again.';
 const DAYS = [['mon', 'Monday'], ['tue', 'Tuesday'], ['wed', 'Wednesday'], ['thu', 'Thursday'], ['fri', 'Friday'], ['sat', 'Saturday'], ['sun', 'Sunday']];
@@ -352,18 +354,70 @@ function TimeZones() {
   );
 }
 
+const LIVE_BUILD = typeof __CLARITY_LIVE__ !== 'undefined' && __CLARITY_LIVE__;
+
+/**
+ * My calendars: the three show switches, then the two connections (run 3,
+ * step 3). With no key the row says, calmly, that it isn't connected on
+ * this build; on a build that isn't the live site each service has a
+ * stand-in that can be switched on, so the sync can be walked with no key.
+ */
 function Calendars() {
   const { settings } = useCoachPortal();
   const saved = useSaved();
+  const toast = useToast();
   const saveSettings = useSettingsSave();
+  const sync = useCalSync();
+  const { search } = useLocation();
+  const navigate = useNavigate();
+  const [told, setTold] = useState(null);
   const cals = settings.calendars || {};
   const set = (key, on) => saved(() => saveSettings({ calendars: { ...cals, [key]: on } }), { onUndo: () => saveSettings({ calendars: cals }) }).catch(() => {});
+  // Back from Google's own page: say how it went, once, and tidy the address.
+  useEffect(() => {
+    const how = new URLSearchParams(search).get('google');
+    if (!how) return;
+    if (how === 'on') { toast.show(CONNECT_WORDS.connected); sync.refresh(); } else toast.error(CONNECT_WORDS.didntConnect);
+    navigate('/coach/settings/calendars', { replace: true });
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [search]);
+  const act = async (row) => {
+    setTold(null);
+    if (row.does === 'explain') { setTold(row.key); return; }
+    if (row.does === 'connect') {
+      const url = await sync.connect();
+      if (url) window.location.assign(url); else toast.error(CONNECT_WORDS.didntConnect);
+      return;
+    }
+    if (row.does === 'disconnect') {
+      if (await sync.disconnect()) toast.show(CONNECT_WORDS.disconnected); else toast.error('That didn’t work. Try again in a moment.');
+    }
+  };
+  const rows = connectionRows({ live: LIVE_BUILD, status: sync.status, standIns: sync.standIns });
   return (
     <>
-      <SwitchRow label="Work" note="Titles for you, Busy to everyone else" checked={cals.work !== false} onChange={(on) => set('work', on)} />
-      <SwitchRow label="Personal" note="Titles for you, Busy to everyone else" checked={cals.personal === true} onChange={(on) => set('personal', on)} />
-      <SwitchRow label="Family" note="Titles for you, Busy to everyone else" checked={cals.family === true} onChange={(on) => set('family', on)} />
-      <p className="cc-note">Google Calendar connects when the calendar arrives. Clients and associates only ever see these as Busy.</p>
+      <SwitchRow label="Work" note="Titles for you, Busy to everyone else" checked={calendarShown(settings, 'work')} onChange={(on) => set('work', on)} />
+      <SwitchRow label="Personal" note="Titles for you, Busy to everyone else" checked={calendarShown(settings, 'personal')} onChange={(on) => set('personal', on)} />
+      <SwitchRow label="Family" note="Titles for you, Busy to everyone else" checked={calendarShown(settings, 'family')} onChange={(on) => set('family', on)} />
+      <p className="cc-note">Clients and associates only ever see these as Busy.</p>
+      <p className="cc-small-label">Connections</p>
+      {rows.map((row) => (
+        <div key={row.key}>
+          <div className="cc-setrow">
+            <span className="cc-setrow-label">{row.label}</span>
+            <span className="cc-setrow-value">{row.value}</span>
+            {row.action && <TextLink onClick={() => act(row)}>{row.action}</TextLink>}
+          </div>
+          {(told === row.key || row.value === 'Connected') && <p className="cc-note cc-connect-note" role="status">{row.line}</p>}
+        </div>
+      ))}
+      {sync.problem && <p className="cc-note" role="status">{sync.problem}</p>}
+      {!LIVE_BUILD && (
+        <>
+          <SwitchRow label={CONNECT_WORDS.standInGoogle} note={CONNECT_WORDS.standInNote} checked={sync.standIns.google === true} onChange={(on) => sync.setStandIn('google', on)} />
+          <SwitchRow label={CONNECT_WORDS.standInZoom} note={CONNECT_WORDS.standInNote} checked={sync.standIns.zoom === true} onChange={(on) => sync.setStandIn('zoom', on)} />
+        </>
+      )}
     </>
   );
 }

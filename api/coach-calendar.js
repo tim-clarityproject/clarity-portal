@@ -3,7 +3,9 @@
 // here with the coach's own sign-in, and this function uses the keys in its
 // environment.
 //   POST /api/coach-calendar  { kind: 'status' }
-//        → { ok: true, google_calendar: boolean, zoom: boolean }
+//        → { ok: true, google_calendar: boolean, zoom: boolean, google_ready: boolean }
+//          google_ready: Google's keys are set, so the coach can connect
+//          their own account (api/coach-calendar-connect.js)
 //   POST /api/coach-calendar  { service: 'google_calendar', kind: 'list', syncToken? }
 //        → { ok: true, events, syncToken }
 //   POST /api/coach-calendar  { service: 'google_calendar', kind: 'create' | 'update' | 'delete', id?, event?, invite? }
@@ -25,12 +27,13 @@
 // secret, read with the server's key); it is never sent to the browser and
 // nothing is logged.
 //
-// NOT BUILT YET: the screen where a coach connects their Google account
-// (Google's consent page and the return that stores the token). Until that
-// exists no coach_connections row is 'connected', so Google stays the
-// stand-in even with the keys set. Zoom needs no consent screen: it uses the
-// company's own Server-to-Server app. The calls to Google and Zoom below
-// have never met the real services: test them when the keys are added.
+// A coach connects their own Google account from Settings, My calendars
+// (api/coach-calendar-connect.js: Google's consent page and the return that
+// stores the token; the row's status is then 'on'). Until a coach has, Google
+// stays not connected even with the keys set. Zoom needs no consent screen:
+// it uses the company's own Server-to-Server app. The calls to Google and
+// Zoom below have never met the real services: test them when the keys are
+// added.
 //
 // Environment variables (Vercel, Production only):
 //   GOOGLE_CALENDAR_CLIENT_ID, GOOGLE_CALENDAR_CLIENT_SECRET   Google Cloud, an OAuth client (Web application)
@@ -132,7 +135,7 @@ async function googleToken(env, coachId) {
   // The coach's own token is the server's alone: read with the server's key, for this coach only.
   const server = createClient(url, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data } = await server.from('coach_connections').select('secret,status').eq('coach_id', coachId).eq('service', 'google_calendar').maybeSingle();
-  if (!data?.secret || data.status !== 'connected') return null;
+  if (!data?.secret || data.status !== 'on') return null;
   const r = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ client_id: env.GOOGLE_CALENDAR_CLIENT_ID, client_secret: env.GOOGLE_CALENDAR_CLIENT_SECRET, refresh_token: data.secret, grant_type: 'refresh_token' }),
@@ -205,8 +208,8 @@ export default async function handler(req, res) {
   const coach = coachRows?.[0];
   if (coachError || !coach || coach.active === false) return reply(res, 404, { ok: false, message: 'That isn’t yours to use.' });
   if (mineError && !isMissingFunction(mineError)) return reply(res, 502, { ok: false, reason: 'no_answer', message: DIDNT_WORK });
-  const connected = (service) => (Array.isArray(mine) ? mine : []).some((c) => c.service === service && c.status === 'connected');
-  const status = { google_calendar: keys.google_calendar && connected('google_calendar'), zoom: keys.zoom };
+  const connected = (service) => (Array.isArray(mine) ? mine : []).some((c) => c.service === service && c.status === 'on');
+  const status = { google_calendar: keys.google_calendar && connected('google_calendar'), zoom: keys.zoom, google_ready: keys.google_calendar };
   if (asked.kind === 'status') return reply(res, 200, { ok: true, ...status });
   if (!status[asked.service]) return reply(res, 200, { ok: false, reason: 'not_connected' });
 

@@ -21,10 +21,28 @@ import { ADMIN_ROWS, CAL, DAY, ID, PRESSURE, seedClock, seedRows, seedWithCal, s
 import { bookStore, guestStandIn } from './book-standin.mjs';
 import { clearCoaching, clientContext, clientStandIn, fromCoach } from './client.mjs';
 
+/**
+ * Marks three calls on the device as a round of the sync marks one moved in Google Calendar (Sam's, with its session; Ruth's
+ * Chemistry Call; Priya's), the way another tab's change arrives. Resolves Sam's session id.
+ */
+const movedInGoogle = async (page) => {
+  const session = await page.evaluate((ids) => {
+    const key = Object.keys(localStorage).find((k) => k.startsWith('clarity-coach-local:'));
+    const s = JSON.parse(localStorage.getItem(key));
+    for (const id of ids) if (s.rows.coach_cal_items?.[id]) s.rows.coach_cal_items[id] = { ...s.rows.coach_cal_items[id], moved_in_google_at: new Date().toISOString() };
+    const next = JSON.stringify(s);
+    localStorage.setItem(key, next);
+    window.dispatchEvent(new StorageEvent('storage', { key, newValue: next }));
+    return s.rows.coach_cal_items?.[ids[0]]?.session_id || null;
+  }, [CAL.samTue, CAL.ruth, CAL.priyaTue]);
+  await settle(page, 600);
+  return session;
+};
+
 const click = (name, role = 'button') => async (page) => { await page.getByRole(role, { name, exact: true }).first().click(); await settle(page, 500); };
 export const SCREENS = [
   ['today', '/coach'],
-  ['today-note', '/coach', async (page) => { await page.locator('.cc-inline-link').first().click(); await settle(page, 600); }],
+  ['today-note', '/coach', async (page) => { await page.locator('.cc-main .cc-inline-link').first().click(); await settle(page, 600); }],
   ['menu', '/coach', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600); }],
   ['search', '/coach', async (page) => { await page.getByRole('button', { name: 'Search, or do anything' }).click(); await settle(page, 400); }],
   ['search-typed', '/coach', async (page) => { await page.getByRole('button', { name: 'Search, or do anything' }).click(); await page.keyboard.type('sam'); await settle(page, 400); }],
@@ -61,6 +79,8 @@ export const SCREENS = [
 
 // ---------------------------------------------------------------- run 2: the coaching day
 export const TUE = new Date(2026, 10, 17, 9, 0);
+/** The same Tuesday at 12:22, 8 minutes before Sam's call: the next-call bar is showing. */
+export const BAR_AT = new Date(2026, 10, 17, 12, 22);
 export const EVE = new Date(2026, 10, 17, 18, 45);
 export const FRI = new Date(2026, 10, 13, 13, 30);
 
@@ -278,6 +298,29 @@ export const GROUPS = [
       ['book-settings', '/coach/settings/booking', null, { full: true }],
       ['book-settings-limit', '/coach/settings/booking', async (page) => { await press(page, 'Edit Gap between calls'); }],
       ['book-settings-type', '/coach/settings/booking', async (page) => { await press(page, 'Edit Chemistry Call page'); await settle(page, 400); }, { expects: ['panel'] }],
+    ],
+  },
+  // Google Calendar, Zoom and the next-call bar (run 3, steps 3 and 6), on M11's week at 12:22: Sam's call is 8 minutes away, so
+  // the bar shows. The device keeps what a screen changed, so the plain screens come first, then a call "moved in Google"
+  // (marked on the device as a round would mark it), and the stand-in switches last.
+  {
+    name: 'sync', at: BAR_AT, cal: true,
+    screens: [
+      ['sync-bar', '/coach', null, { full: true }],
+      ['sync-bar-brief', '/coach', async (page) => { await page.locator('.cc-callbar .cc-inline-link').click(); await settle(page, 900); }, { expects: ['panel'] }],
+      ['sync-settings', '/coach/settings/calendars', null, { full: true }],
+      ['sync-settings-google', '/coach/settings/calendars', async (page) => { await press(page, 'Connect Google Calendar'); }],
+      ['sync-settings-zoom', '/coach/settings/calendars', async (page) => { await press(page, 'Connect Zoom'); }],
+      ['sync-moved-week', '/coach/calendar?view=week', async (page) => { await movedInGoogle(page); }, { full: true }],
+      ['sync-moved-schedule', '/coach/calendar?view=schedule', async (page) => { await movedInGoogle(page); }],
+      ['sync-moved-item', '/coach/calendar?view=schedule', async (page) => { await movedInGoogle(page); await page.locator('.cc-sched-row', { hasText: 'Ruth Adeyemi' }).first().click(); await settle(page, 700); }, { expects: ['panel'] }],
+      ['sync-moved-brief', '/coach', async (page) => { await movedInGoogle(page); await page.locator('.cc-callbar .cc-inline-link').click(); await settle(page, 900); }, { expects: ['panel'] }],
+      ['sync-moved-session', '/coach', async (page) => {
+        const id = await movedInGoogle(page);
+        await page.evaluate((to) => { window.history.pushState({}, '', to); window.dispatchEvent(new PopStateEvent('popstate')); }, `/coach/sessions/${id}`);
+        await page.waitForSelector('.cc-ses', { timeout: 10000 }); await settle(page, 600);
+      }, { full: true }],
+      ['sync-settings-standins', '/coach/settings/calendars', async (page) => { await page.getByRole('switch', { name: 'Use a stand-in Google Calendar' }).click(); await page.getByRole('switch', { name: 'Use a stand-in Zoom' }).click(); await settle(page, 2500); }, { full: true }],
     ],
   },
   // Help that can be hidden, walked once for each role, size and mode (rules.mjs's hiddenHelp does the walking).

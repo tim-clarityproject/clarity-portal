@@ -1047,7 +1047,7 @@ test('the next-call bar and Join on Zoom from real data: from 10 minutes before 
   const data = WEEK();
   const bar = (now) => { const calls = cal.barCalls({ ...data, groups: [{ id: 'g1', name: 'Kestrel leadership team' }], now, coachZone: LON }); return nextCallBar(callForBar(calls, new Date(now)), new Date(now)); };
   assert.equal(bar(at('2026-11-17', '12:19')), null);
-  assert.deepEqual(bar(at('2026-11-17', '12:22')), { name: 'Sam Okafor', words: 'in 8 minutes', coral: false, zoom: 'https://zoom.example/j/1', briefTo: '/coach/sessions/ses-sam' });
+  assert.deepEqual(bar(at('2026-11-17', '12:22')), { name: 'Sam Okafor', words: 'in 8 minutes', coral: false, zoom: 'https://zoom.example/j/1', briefTo: '/coach/sessions/ses-sam', sessionId: 'ses-sam' });
   assert.equal(bar(at('2026-11-17', '12:25')).coral, true);
   assert.equal(bar(at('2026-11-17', '12:30')).words, 'is starting now');
   assert.equal(bar(at('2026-11-17', '12:39')).words, 'started 9 minutes ago');

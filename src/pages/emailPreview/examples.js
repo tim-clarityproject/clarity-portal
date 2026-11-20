@@ -6,7 +6,7 @@ import {
   healthCheckFinishedForCoachEmail, healthCheckResultsEmail, healthCheckNewCodeEmail, guestEmailCodeEmail, healthCheckFinishedNoteEmail,
   sessionTomorrowEmail, sessionInOneHourEmail, leadingIdeasClientEmail, leadingIdeasPublicEmail,
   confirmEmailEmail, resetPasswordEmail, changeEmailEmail, inviteEmail, guestPlanCopyEmail,
-  workshopTomorrowEmail, workshopInOneHourEmail, workshopFollowUpEmail, sessionRecapEmail, clientInviteEmail, bookingConfirmedEmail,
+  workshopTomorrowEmail, workshopInOneHourEmail, workshopFollowUpEmail, sessionRecapEmail, clientInviteEmail, bookingConfirmedEmail, callTomorrowEmail, callInOneHourEmail,
 } from '../../lib/email/emails.js';
 import { instantAt } from '../../lib/time/index.js';
 
@@ -94,21 +94,21 @@ export const EMAIL_EXAMPLES = [
     key: 'session-tomorrow',
     name: 'Coaching session tomorrow',
     from: 'From The Clarity Portal, to Sam',
-    sends: 'A template only: nothing sends it yet. Shown for a client in Chicago whose coach has ticked them as a frequent traveller.',
+    sends: 'Sent only from the live site, once, by the scheduled job (api/coach-reminders.js) from 18:00 the day before in the client’s own time, when its switch is on (after migration 051). Shown for a client in Chicago whose coach has ticked them as a frequent traveller.',
     doc: () => sessionTomorrowEmail({ coach: 'Jess', at: instantAt('2026-11-11', '10:00', 'America/Chicago'), zone: 'America/Chicago', frequentTraveller: true, prepLink: `${PORTAL}/welcome`, zoomLink: ZOOM, preferencesLink: PREFERENCES, now: NOW }),
   },
   {
     key: 'session-tomorrow-uk',
     name: 'Coaching session tomorrow, a UK client',
     from: 'From The Clarity Portal, to Sam',
-    sends: 'A template only. Shown for a client in the UK who isn’t ticked as a frequent traveller: a 24-hour time and no travel line.',
+    sends: 'Sent only from the live site, once, by the scheduled job (api/coach-reminders.js) from 18:00 the day before in the client’s own time, when its switch is on (after migration 051). Shown for a client in the UK who isn’t ticked as a frequent traveller: a 24-hour time and no travel line.',
     doc: () => sessionTomorrowEmail({ coach: 'Tim', at: instantAt('2026-11-11', '15:00', 'Europe/London'), zone: 'Europe/London', prepLink: `${PORTAL}/welcome`, zoomLink: ZOOM, preferencesLink: PREFERENCES, now: NOW }),
   },
   {
     key: 'session-one-hour',
     name: 'Session in 1 hour',
     from: 'From The Clarity Portal, to Sam',
-    sends: 'A template only. It never gives a clock time.',
+    sends: 'Sent only from the live site, once, by the scheduled job (api/coach-reminders.js) 1 hour before, when its switch is on (after migration 051). It never gives a clock time.',
     doc: () => sessionInOneHourEmail({ coach: 'Tim', zoomLink: ZOOM, preferencesLink: PREFERENCES }),
   },
   {
@@ -124,6 +124,20 @@ export const EMAIL_EXAMPLES = [
     from: 'From The Clarity Project, to the person who booked',
     sends: 'Sent only from the live site, once for each move. A reader outside the US and Canada sees a 24-hour time.',
     doc: () => bookingConfirmedEmail({ name: 'Nadia Osei', callName: 'Connection Call', coach: 'Tim', at: instantAt('2026-11-24', '14:15', 'Europe/London'), zone: 'Europe/London', mineLink: `${PORTAL}/book/mine/3f1c0a52-7b1e-4c0a-9a57-2d0f6b1c8e12`, moved: true, now: NOW }),
+  },
+  {
+    key: 'call-tomorrow',
+    name: 'A booked call tomorrow',
+    from: 'From The Clarity Project, to the person who booked',
+    sends: 'Sent only from the live site, once, by the scheduled job (api/coach-reminders.js) from 18:00 the day before in the reader’s own time, when its switch is on (after migration 051).',
+    doc: () => callTomorrowEmail({ name: 'Grace Liu', callName: 'Chemistry Call', coach: 'Tim', at: instantAt('2026-11-11', '11:30', 'America/New_York'), zone: 'America/New_York', zoomLink: ZOOM, mineLink: `${PORTAL}/book/mine/3f1c0a52-7b1e-4c0a-9a57-2d0f6b1c8e11`, now: NOW }),
+  },
+  {
+    key: 'call-one-hour',
+    name: 'A booked call in 1 hour',
+    from: 'From The Clarity Project, to the person who booked',
+    sends: 'Sent only from the live site, once, by the scheduled job (api/coach-reminders.js) 1 hour before, when its switch is on. It never gives a clock time.',
+    doc: () => callInOneHourEmail({ callName: 'Chemistry Call', coach: 'Tim', zoomLink: ZOOM }),
   },
   {
     key: 'workshop-tomorrow',

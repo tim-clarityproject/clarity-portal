@@ -12,7 +12,7 @@ import { zoomAdapter } from './zoom.js';
 import { googleStandIn, zoomStandIn } from './standIn.js';
 
 export { googleStandIn, zoomStandIn, tabKeep } from './standIn.js';
-export { syncOnce } from './sync.js';
+export { syncOnce, zoomOnce } from './sync.js';
 
 // One stand-in of each for the device, so every page that asks shares the same calendar.
 let deviceGoogle = null;

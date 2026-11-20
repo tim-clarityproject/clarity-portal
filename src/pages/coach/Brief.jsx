@@ -9,6 +9,7 @@ import { saveAction } from '../../lib/coach/sessionActions';
 import { reviewRows } from '../../lib/peakMoments/model';
 import { Eye, Part, TextLink, useCoachPortal } from './parts';
 import { useSay } from './sessionParts';
+import { MovedInGoogle } from './calSync';
 import './sessions.css';
 
 // The brief before a call (Phase 6a run 2, step 4; M11's brief): the side
@@ -112,7 +113,7 @@ function BriefBody({ session, client }) {
  * @param {{ sessionId: string|null, onClose: () => void, joinHref?: string|null }} props `joinHref`: the calendar item's own meeting link (run 3),  used when the session has none; `aside`: one more quiet link in the foot (the calendar's "Edit the call")
  */
 export function BriefPanel({ sessionId, onClose, joinHref = null, aside = null }) {
-  const { sessions, clients } = useCoachPortal();
+  const { sessions, clients, calItems = [] } = useCoachPortal();
   const navigate = useNavigate();
   const live = sessionId ? sessions.find((s) => s.id === sessionId) || null : null;
   // What it showed stays while the panel slides away.
@@ -124,6 +125,9 @@ export function BriefPanel({ sessionId, onClose, joinHref = null, aside = null }
   const client = session ? clients.find((c) => c.id === session.profile_id) || null : null;
   if (!session || !client) return <SlidePanel open={false} onClose={onClose} title="Brief" />;
   const first = firstName(client.name);
+  // The call's own calendar item (run 3): its Zoom link when the session has none, and whether it was moved in Google Calendar.
+  const item = calItems.find((i) => i.session_id === session.id) || null;
+  const join = [session.place, joinHref, item?.meeting_link].find((v) => isLink(v)) || null;
   return (
     <SlidePanel
       open={Boolean(live)}
@@ -134,10 +138,11 @@ export function BriefPanel({ sessionId, onClose, joinHref = null, aside = null }
         <div className="cc-panel-foot cc-brief-foot">
           <TextLink onClick={() => { onClose(); navigate(`/coach/clients/${client.id}`); }}>Open {possessive(first)} page</TextLink>
           {aside}
-          {(isLink(session.place) || isLink(joinHref)) && <a className="ds-btn ds-btn--outline ds-panel-go" href={isLink(session.place) ? session.place.trim() : joinHref} target="_blank" rel="noreferrer">Join on Zoom</a>}
+          {join && <a className="ds-btn ds-btn--outline ds-panel-go" href={join.trim()} target="_blank" rel="noreferrer">Join on Zoom</a>}
         </div>
       )}
     >
+      <MovedInGoogle item={item} />
       <BriefBody key={session.id} session={session} client={client} />
     </SlidePanel>
   );

@@ -396,7 +396,8 @@ export function calendarEntries({ items = [], sessions = [], todos = [], openBlo
  * alone); held and life items say what they are; anything else its place and
  * its span ("Zoom, 12:30 to 13:30"). Under 45 minutes it is one line: the
  * title, then the start time only if it fits.
- * @returns {{ title: string, line: string, time: string, oneLine: boolean }}
+ * A call moved in Google Calendar says so on its own line (`moved`).
+ * @returns {{ title: string, line: string, time: string, oneLine: boolean, moved?: string }}
  */
 export function entryLines(e, { coachZone, narrow = false } = {}) {
   const start = e.allDay ? '' : wallClock(e.startsAt, coachZone).time;
@@ -408,7 +409,7 @@ export function entryLines(e, { coachZone, narrow = false } = {}) {
   else if (e.colour === 'hold' || e.colour === 'life' || e.type === 'open') line = e.type === 'open' ? span : e.sub;
   else if (narrow) line = e.sub || span;
   else line = e.sub ? `${e.sub}, ${span}` : span;
-  return { title: e.title, line, time: start, oneLine: false };
+  return { title: e.title, line, time: start, oneLine: false, ...(e.movedInGoogle ? { moved: MOVED_IN_GOOGLE } : {}) };
 }
 
 /** What a screen reader hears for a tile: "Sam Okafor, Tue 17 Nov, 12:30 to 13:30, Zoom". */
@@ -1974,6 +1975,7 @@ export const SYNC_WORDS = Object.freeze({
   waiting: 'Changes will reach Google Calendar when you’re back online.',
   problem: 'Google Calendar didn’t answer. Your changes are safe here and will be sent again.',
   zoomStandIn: 'Zoom isn’t connected yet, so calls have no Zoom link.',
+  zoomProblem: 'Zoom didn’t answer. Your calls are safe here and their links will be made again.',
 });
 
 // ---------------------------------------------------------------- the next-call bar, Join on Zoom, clock changes and reminders
@@ -1982,7 +1984,7 @@ export const SYNC_WORDS = Object.freeze({
  * The calls the next-call bar is told about (model.js's callForBar and
  * nextCallBar decide the rest: from 10 minutes before until 10 minutes in,
  * coral from 5 minutes before, "is starting now").
- * @returns {{ name: string, startsAt: string, zoom: string|null, briefTo: string|null }[]}
+ * @returns {{ name: string, startsAt: string, zoom: string|null, briefTo: string|null, sessionId: string|null }[]} `sessionId`: a client's session, whose brief the bar opens
  */
 export function barCalls({ items = [], sessions = [], clients = [], groups = [], now, coachZone, settings = null }) {
   const today = wallClock(now, coachZone).date;
@@ -1991,6 +1993,7 @@ export function barCalls({ items = [], sessions = [], clients = [], groups = [],
     .map((e) => ({
       name: e.title, startsAt: e.startsAt.toISOString(), zoom: joinLink(e.item, e.session),
       briefTo: e.session ? `/coach/sessions/${e.session.id}` : (e.item?.profile_id ? `/coach/clients/${e.item.profile_id}` : null),
+      sessionId: e.session && e.session.profile_id ? e.session.id : null,
     }));
 }
 
@@ -2290,4 +2293,170 @@ export function visitorDay({ starts = [], events = [], zone, minutes }) {
   const fromMin = Math.floor(Math.min(...all.map((x) => x.fromMin)) / 60) * 60;
   const toMin = Math.min(DAY_MINUTES, Math.ceil(Math.max(...all.map((x) => x.endMin ?? x.toMin)) / 60) * 60);
   return { fromMin, toMin, hours: Array.from({ length: Math.max(1, (toMin - fromMin) / 60) }, (_, i) => hhmm(fromMin + i * 60)), free, busy };
+}
+
+// ---------------------------------------------------------------- keeping in step: the loop, the connections and the reminders that go (run 3, steps 3 and 6)
+
+/** How often the calendar asks Google Calendar what changed while the tab shows: "within a few minutes". */
+export const SYNC_EVERY_MS = 3 * MIN;
+/** A change made here goes to Google once its 10-second Undo has passed, so an undone change never sends an invite. */
+export const SYNC_AFTER_SAVE_MS = 11000;
+const SYNC_FIRST_MS = 2000;
+const SYNC_MAX_MS = 5 * MIN;
+
+/**
+ * How long the loop waits before its next round. After rounds that didn't
+ * get an answer it backs off like the offline queue: about 2, 4, 8 seconds
+ * and on, up to about 5 minutes, with ±20% randomness.
+ * @param {number} failures rounds in a row with no answer
+ */
+export function syncWait(failures, random = Math.random) {
+  if (!failures) return SYNC_EVERY_MS;
+  return Math.round(Math.min(SYNC_FIRST_MS * 2 ** (failures - 1), SYNC_MAX_MS) * (0.8 + 0.4 * random()));
+}
+
+/**
+ * What the next round must delete in Google and Zoom for the rows a plan
+ * removes here (calendar items only; one never sent there needs nothing).
+ * @param {[string, string][]} removeList a plan's `remove`   @param {object[]} items the items before
+ * @returns {{ id: string, google_event_id: string|null, meeting_id: string|null }[]}
+ */
+export function removedForSync(removeList, items = []) {
+  const byId = new Map(items.map((i) => [i.id, i]));
+  return (removeList || []).filter(([t]) => t === T.items).map(([, id]) => byId.get(id)).filter((i) => i && (i.google_event_id || i.meeting_id))
+    .map((i) => ({ id: i.id, google_event_id: i.google_event_id || null, meeting_id: i.meeting_id || null }));
+}
+
+/**
+ * Rows an Undo puts back. An item whose Google event (or Zoom meeting) has
+ * already been deleted by a round starts again there, so the next round
+ * makes it anew instead of changing something that has gone.
+ * @param {[string, object][]} saveList an Undo's `save`   @param {{ id: string }[]} sentGone what rounds have already deleted
+ */
+export function restoredForSync(saveList, sentGone = []) {
+  const gone = new Set(sentGone.map((r) => r.id));
+  return (saveList || []).map(([t, row]) => (t === T.items && gone.has(row.id)
+    ? [t, { ...row, google_event_id: null, google_etag: null, google_synced_at: null, meeting_link: row.meeting_id ? null : row.meeting_link, meeting_id: null }]
+    : [t, row]));
+}
+
+const GOOGLE_FIELDS = ['google_event_id', 'google_calendar_id', 'google_etag', 'google_synced_at'];
+
+/**
+ * A row a round wants to save, laid over the row as it stands now. A round
+ * takes a moment, and the coach may have changed the same item meanwhile:
+ * their newer change is never written over. The row keeps their change and
+ * takes only what the round learnt from the services (the event's id and
+ * tag, the Zoom link), so the next round sees it as changed here and sends it.
+ * @param {object|null} latest the row now   @param {object} fromSync the round's row   @param {object|null} before the row as the round read it
+ */
+export function syncRowOver(latest, fromSync, before) {
+  if (!latest) return before ? null : fromSync; // deleted here meanwhile: it stays deleted
+  if (!before || latest.updated_at === before.updated_at) return fromSync;
+  const next = { ...latest };
+  for (const f of GOOGLE_FIELDS) if (f in fromSync) next[f] = fromSync[f];
+  if (!latest.meeting_link && fromSync.meeting_link) { next.meeting_link = fromSync.meeting_link; next.meeting_id = fromSync.meeting_id ?? null; }
+  return next;
+}
+
+/** Which of My calendars an event read from Google belongs to: the coach's own map of Google calendars, otherwise Work. */
+export function calendarOfEvent(event, map = {}) {
+  const id = event?.calendarId || event?.organizer?.email || null;
+  const found = Object.entries(map || {}).find(([key, value]) => CALENDARS.some((c) => c.value === key) && value && value === id);
+  if (found) return found[0];
+  return CALENDARS.some((c) => c.value === id) ? id : 'work';
+}
+
+/**
+ * Zoom on its own, for a coach whose Zoom is connected and whose Google
+ * Calendar isn't: which calls need a meeting made, and which need theirs
+ * moved. `sent` is what each meeting was last told ({ meeting id: mark }).
+ * @returns {{ make: object[], move: object[], mark: (item) => string }}
+ */
+export function zoomWork(items = [], sent = {}) {
+  const mark = (i) => `${ms(i.starts_at)}|${ms(i.ends_at)}|${i.title}|${i.time_zone}`;
+  const wants = (i) => CALL_KINDS.includes(i.kind) && (i.place_kind || 'zoom') === 'zoom' && !i.all_day && !i.removed;
+  return {
+    make: items.filter((i) => wants(i) && !i.meeting_link),
+    move: items.filter((i) => wants(i) && i.meeting_id && sent[i.meeting_id] !== undefined && sent[i.meeting_id] !== mark(i)),
+    mark,
+  };
+}
+
+/**
+ * Settings, My calendars: the two connections as rows.
+ * @param {{ live: boolean, status?: { google_calendar?: boolean, zoom?: boolean, google_ready?: boolean }, standIns?: { google?: boolean, zoom?: boolean } }} a
+ *   `status`: the server's own answer; `google_ready`: the keys are set, so the coach can connect their account.
+ * @returns {{ key: 'google'|'zoom', label: string, value: string, action: string|null, does: 'connect'|'disconnect'|'explain'|null, line: string }[]}
+ */
+export function connectionRows({ live, status = {}, standIns = {} }) {
+  const google = status.google_calendar === true;
+  const zoom = status.zoom === true;
+  return [
+    {
+      key: 'google', label: 'Google Calendar',
+      value: google ? 'Connected' : (!live && standIns.google ? 'Stand-in' : 'Not connected'),
+      action: google ? 'Disconnect Google Calendar' : (!live && standIns.google ? null : 'Connect Google Calendar'),
+      does: google ? 'disconnect' : (!live && standIns.google ? null : (live && status.google_ready === true ? 'connect' : 'explain')),
+      line: google ? SYNC_WORDS.connected : CONNECT_WORDS.google,
+    },
+    {
+      key: 'zoom', label: 'Zoom',
+      value: zoom ? 'Connected' : (!live && standIns.zoom ? 'Stand-in' : 'Not connected'),
+      action: zoom || (!live && standIns.zoom) ? null : 'Connect Zoom', does: zoom || (!live && standIns.zoom) ? null : 'explain',
+      line: zoom ? CONNECT_WORDS.zoomOn : CONNECT_WORDS.zoom,
+    },
+  ];
+}
+
+export const CONNECT_WORDS = Object.freeze({
+  google: 'Google Calendar isn’t connected on this build, so your calendar is kept in the portal only.',
+  zoom: 'Zoom isn’t connected on this build, so calls have no Zoom link.',
+  zoomOn: 'Each call booked on Zoom gets its own link, made in the client’s time zone.',
+  standInGoogle: 'Use a stand-in Google Calendar',
+  standInZoom: 'Use a stand-in Zoom',
+  standInNote: 'For testing on this build. Nothing leaves this tab.',
+  didntConnect: 'Google Calendar didn’t connect. Try again in a moment.',
+  connected: 'Google Calendar is connected.',
+  disconnected: 'Google Calendar is disconnected.',
+  gotIt: 'Got it',
+});
+
+/** The line under a calendar item that a round is holding a change back for (it is being edited). */
+export const conflictWords = (conflicts, itemId) => (conflicts || []).find((c) => c.id === itemId)?.words || null;
+
+// ---- the reminders that go (the email server asks these; nothing here sends)
+
+/** The day-before reminder goes from 18:00 to 21:00 in the reader's own time, never later in their evening. */
+export const DAY_BEFORE_UNTIL = '21:00';
+/** The 1-hour reminder goes from 60 to 30 minutes before: later than that "in 1 hour" would be wrong. */
+export const HOUR_BEFORE_UNTIL_MIN = 30;
+
+/**
+ * Which of the calls coming up (051's cal_reminders_coming: one row a call,
+ * a kind and a person) are due this moment.
+ *   day_before   from 18:00 to 21:00 on the day before, on the reader's own
+ *                calendar and clock (a call booked later than that gets none:
+ *                its confirmation has just said when it is);
+ *   hour_before  from 60 to 30 minutes before. It never gives a clock time.
+ * A row without a reader, a start or a real time zone is left out.
+ * @param {object[]} rows   @param {Date|string} now
+ * @returns {object[]} the due rows, each with `readerZone`
+ */
+export function remindersToSend(rows, now) {
+  const t = ms(now);
+  const out = [];
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (!row || !row.item_id || !row.person_email || Number.isNaN(ms(row.occurrence_at))) continue;
+    const readerZone = [row.person_zone, row.time_zone].find((z) => isZone(z));
+    if (!readerZone) continue;
+    const start = ms(row.occurrence_at);
+    if (row.kind === 'hour_before') {
+      if (t >= start - HOUR && t < start - HOUR_BEFORE_UNTIL_MIN * MIN) out.push({ ...row, readerZone });
+    } else if (row.kind === 'day_before') {
+      const day = addDays(wallClock(row.occurrence_at, readerZone).date, -1);
+      if (t >= instantAt(day, DAY_BEFORE_HOUR, readerZone).getTime() && t < instantAt(day, DAY_BEFORE_UNTIL, readerZone).getTime()) out.push({ ...row, readerZone });
+    }
+  }
+  return out;
 }

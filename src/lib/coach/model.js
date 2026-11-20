@@ -561,7 +561,7 @@ export function nextCallBar(call, now = new Date()) {
   if (secs > 0) words = `in ${before} ${before === 1 ? 'minute' : 'minutes'}`;
   else if (into < 1) words = 'is starting now';
   else words = `started ${into} ${into === 1 ? 'minute' : 'minutes'} ago`;
-  return { name: call.name, words, coral: secs <= CALL_BAR.coralMinutes * 60, zoom: call.zoom || null, briefTo: call.briefTo || null };
+  return { name: call.name, words, coral: secs <= CALL_BAR.coralMinutes * 60, zoom: call.zoom || null, briefTo: call.briefTo || null, sessionId: call.sessionId || null };
 }
 
 /** The call the bar is for: the first one inside its window. */

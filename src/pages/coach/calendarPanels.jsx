@@ -13,6 +13,7 @@ import {
   quickAddPlan, quickSaveLabel, removeLabel, REPEAT_SCOPES, startingSecondZone, viewRange, repeatOk, REPLIES, replyWords, resizeEntry, spanWords, T, timesAt, typedTimes, undoOf,
 } from '../../lib/coach/calendar';
 import { TextLink } from './parts';
+import { MovedInGoogle, useCalSync, useConflictLine } from './calSync';
 import { CAL_HOOKS, CalGrid, gridPoint, TodosToPlace, useBeside, useCalendar } from './calendarParts';
 import { TodoPanel, useTodoActions } from './todoParts';
 
@@ -215,6 +216,12 @@ function ItemPanel({ cal, entry, fresh, days, onClose }) {
   const [problem, setProblem] = useState(null);
   const [q, setQ] = useState('');
   const busy = useRef(false);
+  // While an item is open here nothing changes under it: a change from Google Calendar waits, and says so (calSync.jsx).
+  const sync = useCalSync();
+  const editingId = open && e?.type === 'item' ? e.item.id : null;
+  const setEditing = sync.setEditing;
+  useEffect(() => { setEditing(editingId); return () => setEditing(null); }, [editingId, setEditing]);
+  const conflict = useConflictLine(editingId);
   useEffect(() => { if (open) { setD(draftOf(e, f, cal.coachZone)); setMore(Boolean(f)); setProblem(null); setQ(''); } /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [key, open]);
   if (!d || (!e && !f)) return <SlidePanel open={false} onClose={onClose} title="Calendar item" />;
   const set = (patch) => { setD((was) => ({ ...was, ...patch })); setProblem(null); };
@@ -251,6 +258,8 @@ function ItemPanel({ cal, entry, fresh, days, onClose }) {
         </div>
       )}
     >
+      {conflict && <p className="cc-note" role="status">{conflict}</p>}
+      {i && <MovedInGoogle item={cal.calItems.find((x) => x.id === i.id) || null} />}
       {e?.clientWords && <p className="cc-quiet">{firstName(e.title)}’s time: {e.clientWords}.</p>}
       {link && <div className="cc-acts"><a className="ds-link" href={link} target="_blank" rel="noreferrer">Join on Zoom</a></div>}
       {!todo && <div className="cc-field"><TextBox lines="one" label="Title" value={d.title} maxLength={200} onChange={(v) => set({ title: v })} /></div>}
