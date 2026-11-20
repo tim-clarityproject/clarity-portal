@@ -159,3 +159,96 @@ export function tabKeep(key) {
     write(state) { try { window.sessionStorage.setItem(key, JSON.stringify(state)); } catch { /* full or blocked */ } },
   };
 }
+
+// ---------------------------------------------------------------- email (Phase 6a run 4)
+//
+// Stand-ins for the copy-in address and for Gmail. Until Tim adds the keys
+// (and never on the live site), emails "arrive" through these: they start
+// EMPTY, hold only what a test or a tester hands them, and never talk to
+// anything outside the device. Nothing is ever sent, and neither has any
+// way to send. An email they hand over is invented.
+
+/** The inbound domain the stand-in's addresses use (a name that can never receive real email). */
+export const STAND_IN_DOMAIN = 'in.example.invalid';
+
+/**
+ * The copy-in address, stood in. `arrive` makes an email turn up as the
+ * inbound-email service would post it (the same webhook shape the server
+ * reads), and `handOver` gives the waiting ones to whoever logs them.
+ * @param {{ now?: () => Date, keep?: { read: () => object|null, write: (state: object) => void }, domain?: string }} [o]
+ */
+export function copyInStandIn({ now = () => new Date(), keep = null, domain = STAND_IN_DOMAIN } = {}) {
+  const kept = keep?.read?.();
+  const state = kept && typeof kept === 'object' && Array.isArray(kept.waiting) ? kept : { next: 1, waiting: [] };
+  const save = () => { try { keep?.write?.(state); } catch { /* carries on in memory */ } };
+  return {
+    service: 'copy_in_email',
+    real: false,
+    async status() { return { ready: true, domain }; },
+    async addresses(keys) {
+      const k = Array.isArray(keys) ? { log: keys.find((x) => x.kind === 'log')?.key || '', todo: keys.find((x) => x.kind === 'todo')?.key || '' } : { log: keys?.log || '', todo: keys?.todo || '' };
+      return { log: k.log ? `${k.log}@${domain}` : '', todo: k.todo ? `${k.todo}@${domain}` : '' };
+    },
+    /**
+     * An invented email arrives at one of the owner's addresses: copied in
+     * (bcc) to the log address, or forwarded to the to-do address.
+     * @param {string} key the address's key ("log.alex.7kx2m4qa")
+     * @param {{ from: { name?: string, email: string }, to?: object[], cc?: object[], subject?: string, text?: string, date?: string, message_id?: string, in_reply_to?: string }} email
+     * @returns {object} the webhook's payload, as the inbound-email service would post it
+     */
+    arrive(key, email) {
+      const id = email.message_id || `standin-${state.next}@${domain}`;
+      state.next += 1;
+      const payload = clone({ from: email.from, to: email.to || [], cc: email.cc || [], bcc: [{ email: `${key}@${domain}` }], recipient: `${key}@${domain}`, subject: email.subject || '', text: email.text || '',
+        date: email.date || now().toISOString(), message_id: id, in_reply_to: email.in_reply_to || null });
+      state.waiting.push(payload);
+      save();
+      return payload;
+    },
+    /** The payloads waiting, handed over once (the stand-in then holds none). */
+    handOver() { const out = clone(state.waiting); state.waiting = []; save(); return out; },
+    waiting: () => clone(state.waiting),
+  };
+}
+
+/**
+ * A Gmail kept on the device: READ ONLY for the portal, exactly as the real
+ * adapter is. `inGmail` is the test hook: an email received or sent "in
+ * Gmail", by hand. listMessages hands back what is new since the cursor.
+ * @param {{ now?: () => Date, keep?: object, me?: { name?: string, email: string } }} [o] `me`: the owner's own invented address
+ */
+export function gmailStandIn({ now = () => new Date(), keep = null, me = { name: 'Alex Morgan', email: 'alex@example.invalid' } } = {}) {
+  const kept = keep?.read?.();
+  const state = kept && typeof kept === 'object' && Array.isArray(kept.emails) ? kept : { next: 1, emails: [] };
+  const save = () => { try { keep?.write?.(state); } catch { /* carries on in memory */ } };
+  const add = (direction, email) => {
+    const n = state.next;
+    state.next += 1;
+    const other = direction === 'in' ? email.from : (email.to || [])[0];
+    const thread = email.thread_key || `thread-${String(email.subject || '').replace(/^((re|fwd?)\s*:\s*)+/i, '').toLowerCase()}-${String(other?.email || '').toLowerCase()}`;
+    const made = { n, external_id: `gmail-standin-${n}`, source: 'gmail', direction, from: direction === 'in' ? clone(email.from) : clone(me), to: direction === 'in' ? [clone(me)] : clone(email.to || []), cc: clone(email.cc || []),
+      subject: email.subject || '', snippet: String(email.text || '').replace(/\s+/g, ' ').trim().slice(0, 300), body: email.text || '', sent_at: email.sent_at || now().toISOString(), thread_key: thread,
+      link: `https://mail.example/mail/u/0/#all/standin${n}` };
+    state.emails.push(made);
+    save();
+    return clone(made);
+  };
+  return {
+    service: 'gmail',
+    real: false,
+    /** What arrived or was sent since the cursor (everything, the first time or when the cursor isn't one of ours), and the cursor for next time. */
+    async listMessages({ cursor = null } = {}) {
+      const since = /^\d+$/.test(String(cursor ?? '')) && Number(cursor) < state.next ? Number(cursor) : 0;
+      const emails = state.emails.filter((e) => e.n > since).sort((a, b) => a.n - b.n).map(({ n: _n, ...rest }) => clone(rest));
+      return { emails, cursor: String(state.next - 1) };
+    },
+    /** The test hook: emails that come and go "in Gmail". The portal itself can never do either. */
+    inGmail: {
+      /** Someone emails the owner. */
+      receive(email) { return add('in', email); },
+      /** The owner emails someone, from Gmail itself. */
+      send(email) { return add('out', email); },
+    },
+    emails: () => state.emails.map(({ n: _n, ...rest }) => clone(rest)),
+  };
+}
