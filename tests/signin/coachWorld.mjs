@@ -120,7 +120,7 @@ export function makeWorld(o = {}) {
     ],
   };
   const keep = (plain) => { const salt = randomBytes(16); return { salt, hash: hashOf(plain, salt) }; };
-  const setOf = (plains, { known }) => plains.map((p, i) => ({ ...keep(p), position: i + 1, plain: known ? p : null, usedAt: null }));
+  const setOf = (plains, { known }) => { const set = randomUUID(); return plains.map((p, i) => ({ ...keep(p), set, position: i + 1, plain: known ? p : null, usedAt: null })); };
   if (world.codesMade) {
     world.codeRows = setOf(M26_CODES, { known: true });
     world.codeRows.forEach((r, i) => { if (i < 10 - (o.codesLeft ?? 10)) r.usedAt = new Date().toISOString(); });
@@ -215,6 +215,11 @@ export function makeWorld(o = {}) {
       return ok({ status: 'reset', codes_removed: codes, factors_removed: removed.factors, sessions_removed: removed.sessions });
     }
     if (!isCoach || me !== world.user.id) return err(403, '42501', 'coaches only');
+    // 053 since the break-it tester (21 Nov): a sign-in from before the reset changes nothing.
+    const stale = () => !sessionOk(claims);
+    if (name === 'coach_authenticator_on' && aal2 && stale()) return ok({ status: 'signed_out' });
+    if (name === 'coach_recovery_codes_make' && aal2 && stale()) return ok({ status: 'signed_out' });
+    if ((name === 'coach_recovery_codes_saved' || name === 'coach_recovery_code_use') && stale()) return ok({ status: 'signed_out' });
     if (name === 'coach_authenticator_on') {
       if (!aal2) return ok({ status: 'needs_code' });
       world.turnedOnAt = new Date().toISOString();
@@ -233,10 +238,12 @@ export function makeWorld(o = {}) {
       world.codesSaved = false;
       world.wrongRecovery = 0;
       world.waitUntil = 0;
-      return ok({ status: 'made', codes: plains.map((c) => `${c.slice(0, 4)}-${c.slice(4)}`), made_at: new Date().toISOString() });
+      return ok({ status: 'made', codes: plains.map((c) => `${c.slice(0, 4)}-${c.slice(4)}`), made_at: new Date().toISOString(), set_id: world.codeRows[0].set });
     }
     if (name === 'coach_recovery_codes_saved') {
       if (!world.codeRows.length) return ok({ status: 'none' });
+      // 053 since the break-it tester (21 Nov): the tick names its set; one replaced since is refused.
+      if (args?.p_set && args.p_set !== world.codeRows[0].set) return ok({ status: 'replaced' });
       world.codesSaved = true;
       return ok({ status: 'saved' });
     }
@@ -245,7 +252,7 @@ export function makeWorld(o = {}) {
       const plain = plainOf(args?.p_code);
       const hit = /^[a-z0-9]{8}$/.test(plain) ? world.codeRows.find((r) => !r.usedAt && timingSafeEqual(hashOf(plain, r.salt), r.hash)) : null;
       if (!hit) {
-        if (world.wrongRecovery + 1 >= 5) { world.wrongRecovery = 0; world.waitUntil = Date.now() + 30000; return ok({ status: 'wait', wait_seconds: 30 }); }
+        if (world.wrongRecovery + 1 >= 5) { world.wrongRecovery = 0; world.waitUntil = Date.now() + 30000; return ok({ status: 'wait', wait_seconds: 30, started: true }); }
         world.wrongRecovery += 1;
         return ok({ status: 'no_match', tries_left: 5 - world.wrongRecovery });
       }

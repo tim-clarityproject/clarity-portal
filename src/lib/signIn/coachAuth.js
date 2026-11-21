@@ -140,6 +140,8 @@ export const SET_UP_DIDNT_START = ['Your authenticator couldn’t be set up just
 export const CODES_DIDNT_MAKE = ['Your recovery codes couldn’t be made just now.', 'Reload the page and try again.'];
 /** The copy icon couldn't reach the clipboard (Claude's). */
 export const COPY_DIDNT_GO = 'That didn’t copy. Select it and copy it yourself.';
+/** The codes on this page were replaced by newer ones made in another tab (Claude's; the break-it tester, 21 Nov). */
+export const CODES_REPLACED = ['These codes stopped working, because newer ones were made in another window.', 'Reload this page for a new set, and save that one.'];
 /** A sign-in from before the owner's reset (Claude's): shown on Coach sign in. */
 export const SIGNED_OUT_BY_RESET = ['You’ve been signed out, because your authenticator was reset.', 'Sign in again to set it up.'];
 /** The codes couldn't be made because 053 isn't there yet (Claude's). */
@@ -319,8 +321,13 @@ export function waitWords(seconds, { justNow = false } = {}) {
 }
 
 const TRIES_KEY = 'clarity-sign-in-code-tries';
-/** The wrong 6-digit codes in a row in this tab (a reload doesn't start the count again; Sign out clears it). */
-export function readTries(storage = globalThis.sessionStorage) {
+/**
+ * The wrong 6-digit codes in a row on this device: a reload or a new tab
+ * doesn't start the count again (the break-it tester, 21 Nov: it was kept
+ * per tab, so a second tab skipped the wait). Sign out clears it. The
+ * 6-digit code is Supabase's to check, so Supabase's own limit is behind it.
+ */
+export function readTries(storage = globalThis.localStorage) {
   try {
     const kept = JSON.parse(storage?.getItem(TRIES_KEY) || 'null');
     return kept && Number.isFinite(kept.tries) && Number.isFinite(kept.waitUntil) ? kept : NO_WRONG_TRIES;
@@ -329,7 +336,7 @@ export function readTries(storage = globalThis.sessionStorage) {
   }
 }
 /** Keeps the count (NO_WRONG_TRIES after a right code). */
-export function keepTries(state, storage = globalThis.sessionStorage) {
+export function keepTries(state, storage = globalThis.localStorage) {
   try {
     if (!state || (!state.tries && !state.waitUntil)) storage?.removeItem(TRIES_KEY);
     else storage?.setItem(TRIES_KEY, JSON.stringify({ tries: state.tries, waitUntil: state.waitUntil }));

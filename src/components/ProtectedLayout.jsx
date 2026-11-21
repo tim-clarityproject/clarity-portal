@@ -9,6 +9,9 @@ import { needsBeforeYouStart } from '../lib/signIn/terms';
 import { diag } from '../utils/diag';
 import { SitePhoneNav } from './SiteMenu';
 
+/** How often, at most, the coach portal asks again what a coach owes (a reset since, say). */
+const RECHECK_MS = 10 * 1000;
+
 /**
  * Master auth guard - wraps ALL protected routes via React Router layout pattern.
  * Routes inside this layout are GUARANTEED to have a valid session or redirected to login.
@@ -85,8 +88,32 @@ export default function ProtectedLayout() {
   // the coach portal.
   const [checked, setChecked] = useState({ id: null, coach: false, stop: undefined });
   const userId = user?.id || null;
+  // In the coach portal it is asked again as the coach moves between its
+  // pages and comes back to the tab, at most once in RECHECK_MS: a tab left
+  // open when the owner reset the authenticator is let go then, not only on
+  // its next reload (the break-it tester, 21 Nov). What was found stays on
+  // screen meanwhile, so asking again never blanks the page.
+  const [nudge, setNudge] = useState(0);
+  const lastAsked = useRef(0);
+  const checkedNow = useRef(checked);
+  checkedNow.current = checked;
+  useEffect(() => {
+    if (!coachPlace || !userId) return undefined;
+    const again = () => { if (document.visibilityState !== 'hidden') setNudge((n) => n + 1); };
+    document.addEventListener('visibilitychange', again);
+    window.addEventListener('focus', again);
+    return () => {
+      document.removeEventListener('visibilitychange', again);
+      window.removeEventListener('focus', again);
+    };
+  }, [coachPlace, userId]);
+  const askAgain = coachPlace ? `${location.pathname}|${nudge}` : '';
   useEffect(() => {
     if (!mayOwe) return undefined;
+    const held = checkedNow.current;
+    const clearedHere = held.id === userId && held.coach === coachPlace && held.stop === null;
+    if (coachPlace && clearedHere && Date.now() - lastAsked.current < RECHECK_MS) return undefined;
+    lastAsked.current = Date.now();
     let live = true;
     signInStop(supabase, user, { coach: coachPlace }).then(async (owed) => {
       if (!live) return;
@@ -97,7 +124,7 @@ export default function ProtectedLayout() {
       if (live) setChecked({ id: userId, coach: coachPlace, stop: owed });
     });
     return () => { live = false; };
-  }, [mayOwe, user, userId, navigate, coachPlace]);
+  }, [mayOwe, user, userId, navigate, coachPlace, askAgain]);
   const cleared = !mayOwe || (checked.id === userId && checked.coach === coachPlace && checked.stop === null);
 
   // During auth check, show loading screen (blocks rendering of child routes)

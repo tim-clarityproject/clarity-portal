@@ -7,7 +7,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  AUTHENTICATOR_APPS, CODE_ALPHABET, CODE_DIDNT_WORK, COACH_AUTH_WORDS, RECOVERY_DIDNT_WORK, NO_WRONG_TRIES,
+  AUTHENTICATOR_APPS, CODE_ALPHABET, CODE_DIDNT_WORK, CODES_REPLACED, COACH_AUTH_WORDS, RECOVERY_DIDNT_WORK, NO_WRONG_TRIES,
   afterWrongCode, codesFileName, codesFileText, codesForCopy, codesInColumns, codesLeftSummary, coachAuthStop, coachStopPath,
   keyInGroups, lostCodesLine, lowCodesLine, makeNewCodesLine, onSinceLine, plainKey, readRecoveryCode, resetWords,
   shouldTellLowCodes, showRecoveryCode, usedCodeLine, waitSecondsLeft, waitWords, youHaveLeft,
@@ -211,6 +211,16 @@ test('with 053: the state, the stop, the codes made once and a code used', async
   assert.equal((await markCodesSaved(sb, { storage })).status, 'saved');
 });
 
+test('the tick names its set: a set replaced in another tab is refused (the break-it tester, 21 Nov)', async () => {
+  const storage = memory();
+  forgetCoachAuthReady(storage);
+  const sb = standIn({ answers: { coach_recovery_codes_make: { status: 'made', codes: CODES, made_at: '2026-12-02T09:31:00Z', set_id: 's1' }, coach_recovery_codes_saved: { status: 'replaced' } } });
+  assert.equal((await makeRecoveryCodes(sb, { storage })).setId, 's1');
+  assert.equal((await markCodesSaved(sb, 's1', { storage })).status, 'replaced');
+  assert.deepEqual(sb.calls.find(([n]) => n === 'coach_recovery_codes_saved')[1], { p_set: 's1' });
+  assert.ok(CODES_REPLACED.length === 2 && !/fail|change/i.test(CODES_REPLACED.join(' ')));
+});
+
 test('a wrong code, the wait and a code asked for first come back as plain statuses', async () => {
   const storage = memory();
   forgetCoachAuthReady(storage);
@@ -218,7 +228,9 @@ test('a wrong code, the wait and a code asked for first come back as plain statu
   assert.deepEqual(await spendRecoveryCode(wrong, 'zzzz-zzzz', { storage }), { status: 'no_match' });
   assert.deepEqual(await makeRecoveryCodes(wrong, { storage }), { status: 'needs_code' });
   const waiting = standIn({ answers: { coach_recovery_code_use: { status: 'wait', wait_seconds: 21 } } });
-  assert.deepEqual(await spendRecoveryCode(waiting, 'zzzz-zzzz', { storage }), { status: 'wait', seconds: 21 });
+  assert.deepEqual(await spendRecoveryCode(waiting, 'zzzz-zzzz', { storage }), { status: 'wait', seconds: 21, justNow: false });
+  const fifth = standIn({ answers: { coach_recovery_code_use: { status: 'wait', wait_seconds: 30, started: true } } });
+  assert.equal((await spendRecoveryCode(fifth, 'zzzz-zzzz', { storage })).justNow, true, 'the 5th says so once; a try during the wait doesn’t');
 });
 
 test('before 053: not yet, remembered; TOTP still asked; set-up still needed; no codes', async () => {

@@ -105,7 +105,8 @@ export function makeHandler({ createClient: make = createClient, now = () => Dat
     }
 
     // kind === 'reset'
-    const coachId = String(req.body?.coachId || '');
+    // Only a plain id: never a list or anything else read as one (the break-it tester, 21 Nov).
+    const coachId = typeof req.body?.coachId === 'string' ? req.body.coachId : '';
     if (!UUID.test(coachId)) return reply(res, 400, { message: RESET_WORDS.notThere });
     const { data: owner, error: ownerError } = await asCaller.rpc('is_owner');
     if (ownerError || owner !== true) return reply(res, 403, { message: RESET_WORDS.notOwner });

@@ -68,3 +68,16 @@ test('053: a sign-in from before the reset is told by when it began (amr), so a 
   assert.ok(ok.indexOf("v_claims -> 'amr'") >= 0 && ok.indexOf("v_claims -> 'amr'") < ok.indexOf("v_claims ->> 'iat'"), 'amr first, iat only without it');
   assert.match(ok, /to_timestamp\(v_iat\) < p_reset then return false/);
 });
+
+test('053: the tick names its set, so a set another tab replaced is never marked saved (the break-it tester, 21 Nov)', () => {
+  assert.match(body('coach_recovery_codes_make'), /'set_id', v_set/);
+  const saved = body('coach_recovery_codes_saved');
+  assert.match(saved, /a := public\._coach_auth_lock\(me\);.*if p_set is not null and not exists \(select 1 from public\.coach_recovery_codes where user_id = me and set_id = p_set\) then return jsonb_build_object\('status', 'replaced'\)/);
+  assert.match(squash(SQL), /drop function if exists public\.coach_recovery_codes_saved\(\);/, 'the first version (no set) is replaced, never left beside it');
+});
+
+test('053: a sign-in from before the reset changes nothing: no new codes, no turning on, no tick, no code used (the break-it tester, 21 Nov)', () => {
+  for (const name of ['coach_authenticator_on', 'coach_recovery_codes_make', 'coach_recovery_codes_saved', 'coach_recovery_code_use']) {
+    assert.match(body(name), /a := public\._coach_auth_lock\(me\);.*if not public\._coach_auth_session_ok\(a\.last_reset_at\) then return jsonb_build_object\('status', 'signed_out'\)/, name);
+  }
+});

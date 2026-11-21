@@ -36,7 +36,9 @@
 --   through the page is held back too: 5 wrong codes in a row, then 30
 --   seconds (wait_until), counted here, not only on the device.
 --
--- THE FUNCTIONS (all as the person signed in; none for anon)
+-- THE FUNCTIONS (all as the person signed in; none for anon). A sign-in
+-- from before the coach's last reset gets 'signed_out' from every one that
+-- changes their codes or authenticator.
 --   coach_auth_state()            what the screens need: coach or not, the
 --     owner's first name (for "Ask Tim to reset your authenticator."),
 --     turned on since, codes left of 10, the codes saved or not, the wait,
@@ -45,7 +47,8 @@
 --   coach_recovery_codes_make()   a new set of 10 (aal2 only: "needs a
 --     current code"); the old set stops working. Returns the plain codes
 --     once.
---   coach_recovery_codes_saved()  the tick was ticked for the set in force.
+--   coach_recovery_codes_saved(set) the tick was ticked for the set in
+--     force; a set replaced since (another tab) answers 'replaced'.
 --   coach_recovery_code_use(code) one code, used once, atomically: the
 --     coach's row is locked first, so two tabs can't both use one code. A
 --     used code removes the coach's lost TOTP factors where the database
@@ -339,6 +342,12 @@ begin
     return jsonb_build_object('status', 'needs_code');
   end if;
   a := public._coach_auth_lock(me);
+  -- A sign-in from before the owner's reset changes nothing here: where the
+  -- database can't end its session, it could otherwise make a new set of
+  -- codes for the account it was reset out of (the break-it tester, 21 Nov).
+  if not public._coach_auth_session_ok(a.last_reset_at) then
+    return jsonb_build_object('status', 'signed_out');
+  end if;
   update public.coach_authenticators
      set turned_on_at = now(), factor_id = p_factor, wrong_tries = 0, wait_until = null, updated_at = now()
    where user_id = me
@@ -373,6 +382,12 @@ begin
     return jsonb_build_object('status', 'needs_code');
   end if;
   a := public._coach_auth_lock(me);
+  -- A sign-in from before the owner's reset changes nothing here: where the
+  -- database can't end its session, it could otherwise make a new set of
+  -- codes for the account it was reset out of (the break-it tester, 21 Nov).
+  if not public._coach_auth_session_ok(a.last_reset_at) then
+    return jsonb_build_object('status', 'signed_out');
+  end if;
   delete from public.coach_recovery_codes where user_id = me;
   i := 1;
   while i <= 10 loop
@@ -391,11 +406,16 @@ begin
      set codes_made_at = now(), codes_saved_at = null, wrong_tries = 0, wait_until = null, updated_at = now()
    where user_id = me
   returning * into a;
-  return jsonb_build_object('status', 'made', 'codes', to_jsonb(v_codes), 'made_at', a.codes_made_at);
+  return jsonb_build_object('status', 'made', 'codes', to_jsonb(v_codes), 'made_at', a.codes_made_at, 'set_id', v_set);
 end;
 $$;
 
-create or replace function public.coach_recovery_codes_saved()
+-- The tick, for the set the page shows (p_set, from coach_recovery_codes_make).
+-- A set replaced since (new codes made in another tab) is never ticked as
+-- saved: its codes don't work, so the page says so (the break-it tester,
+-- 21 Nov). The first version took no set; it is replaced here.
+drop function if exists public.coach_recovery_codes_saved();
+create or replace function public.coach_recovery_codes_saved(p_set uuid default null)
 returns jsonb
 language plpgsql
 security definer
@@ -406,10 +426,19 @@ begin
   if me is null or not public.is_coach() then
     raise exception 'coaches only' using errcode = '42501';
   end if;
+  a := public._coach_auth_lock(me);
+  -- A sign-in from before the owner's reset changes nothing here: where the
+  -- database can't end its session, it could otherwise make a new set of
+  -- codes for the account it was reset out of (the break-it tester, 21 Nov).
+  if not public._coach_auth_session_ok(a.last_reset_at) then
+    return jsonb_build_object('status', 'signed_out');
+  end if;
   if not exists (select 1 from public.coach_recovery_codes where user_id = me) then
     return jsonb_build_object('status', 'none');
   end if;
-  a := public._coach_auth_lock(me);
+  if p_set is not null and not exists (select 1 from public.coach_recovery_codes where user_id = me and set_id = p_set) then
+    return jsonb_build_object('status', 'replaced');
+  end if;
   update public.coach_authenticators set codes_saved_at = now(), updated_at = now() where user_id = me;
   return jsonb_build_object('status', 'saved');
 end;
@@ -436,6 +465,12 @@ begin
   end if;
   -- One at a time for this coach: a second tab waits here, then finds the code used.
   a := public._coach_auth_lock(me);
+  -- A sign-in from before the owner's reset changes nothing here: where the
+  -- database can't end its session, it could otherwise make a new set of
+  -- codes for the account it was reset out of (the break-it tester, 21 Nov).
+  if not public._coach_auth_session_ok(a.last_reset_at) then
+    return jsonb_build_object('status', 'signed_out');
+  end if;
   if a.wait_until is not null and a.wait_until > now() then
     return jsonb_build_object('status', 'wait', 'wait_seconds', ceil(extract(epoch from (a.wait_until - now())))::integer);
   end if;
@@ -451,7 +486,8 @@ begin
     -- Wrong or already used: the same answer either way, so it tells a guesser nothing.
     if a.wrong_tries + 1 >= 5 then
       update public.coach_authenticators set wrong_tries = 0, wait_until = now() + interval '30 seconds', updated_at = now() where user_id = me;
-      return jsonb_build_object('status', 'wait', 'wait_seconds', 30);
+      -- 'started': this was the 5th, so the page says so once (a try during the wait doesn't).
+      return jsonb_build_object('status', 'wait', 'wait_seconds', 30, 'started', true);
     end if;
     update public.coach_authenticators set wrong_tries = a.wrong_tries + 1, updated_at = now() where user_id = me;
     return jsonb_build_object('status', 'no_match', 'tries_left', 4 - a.wrong_tries);
@@ -520,7 +556,7 @@ begin
     'public.coach_auth_state()',
     'public.coach_authenticator_on(uuid)',
     'public.coach_recovery_codes_make()',
-    'public.coach_recovery_codes_saved()',
+    'public.coach_recovery_codes_saved(uuid)',
     'public.coach_recovery_code_use(text)',
     'public.coach_authenticator_reset(uuid)'] loop
     execute format('revoke all on function %s from public, anon', fn);

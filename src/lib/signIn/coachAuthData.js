@@ -171,6 +171,8 @@ export async function coachSignInStop(supabase, user, opts = {}) {
 const answer = (got, ok) => {
   if (got.notYet) return { status: 'not_yet' };
   if (got.error) return { status: got.offline ? 'offline' : 'error' };
+  // A sign-in from before the owner's reset: 053 changes nothing for it, and the page lets it go.
+  if (got.data?.status === 'signed_out') return { status: 'signed_out' };
   return ok(got.data || {});
 };
 
@@ -184,18 +186,25 @@ export async function noteAuthenticatorOn(supabase, factorId, opts = {}) {
  * A new set of 10 (needs this sign-in to have given its 6-digit code).
  * The plain codes come back once: keep them in the page's memory only,
  * never on the device and never in a log.
- * { status: 'made', codes, madeAt } | needs_code | not_yet | offline | error
+ * { status: 'made', codes, madeAt, setId } | needs_code | signed_out | not_yet | offline | error
  */
 export async function makeRecoveryCodes(supabase, opts = {}) {
   const got = await call(supabase, 'coach_recovery_codes_make', undefined, opts.storage ?? globalThis.localStorage);
   return answer(got, (d) => (d.status === 'made' && Array.isArray(d.codes) && d.codes.length === RECOVERY_CODE_COUNT
-    ? { status: 'made', codes: d.codes, madeAt: d.made_at || null }
+    ? { status: 'made', codes: d.codes, madeAt: d.made_at || null, ...(d.set_id ? { setId: d.set_id } : {}) }
     : { status: d.status === 'needs_code' ? 'needs_code' : 'error' }));
 }
 
-/** The tick "I've saved them somewhere safe." { status: 'saved' | 'none' | ... } */
-export async function markCodesSaved(supabase, opts = {}) {
-  const got = await call(supabase, 'coach_recovery_codes_saved', undefined, opts.storage ?? globalThis.localStorage);
+/**
+ * The tick "I've saved them somewhere safe.", for the set the page shows
+ * (`setId`, from makeRecoveryCodes). { status: 'saved' | 'replaced' | 'none'
+ * | ... }: 'replaced' when new codes were made since (another tab), so the
+ * codes on this page don't work and nothing is marked saved (the break-it
+ * tester, 21 Nov).
+ */
+export async function markCodesSaved(supabase, setId = null, opts = {}) {
+  if (setId && typeof setId === 'object') return markCodesSaved(supabase, null, setId);
+  const got = await call(supabase, 'coach_recovery_codes_saved', setId ? { p_set: setId } : undefined, opts.storage ?? globalThis.localStorage);
   return answer(got, (d) => ({ status: d.status || 'error' }));
 }
 
@@ -204,7 +213,7 @@ export async function markCodesSaved(supabase, opts = {}) {
  *   { status: 'used', left }        in; the lost phone's factor is removed
  *                                   (then ask the server: askServerRecovered)
  *   { status: 'no_match' }          wrong, or already used (one answer)
- *   { status: 'wait', seconds }     5 wrong in a row: 30 seconds
+ *   { status: 'wait', seconds, justNow } 5 wrong in a row: 30 seconds (justNow: this was the 5th)
  *   { status: 'type_it' }           nothing that could be a code was typed
  *   { status: 'not_yet' | 'offline' | 'error' }
  */
@@ -214,7 +223,7 @@ export async function spendRecoveryCode(supabase, typed, opts = {}) {
   const got = await call(supabase, 'coach_recovery_code_use', { p_code: plain }, opts.storage ?? globalThis.localStorage);
   return answer(got, (d) => {
     if (d.status === 'used') return { status: 'used', left: Number(d.codes_left) || 0, factorsRemoved: d.factors_removed ?? null };
-    if (d.status === 'wait') return { status: 'wait', seconds: Number(d.wait_seconds) || 30 };
+    if (d.status === 'wait') return { status: 'wait', seconds: Number(d.wait_seconds) || 30, justNow: d.started === true };
     if (d.status === 'no_match') return { status: 'no_match' };
     return { status: 'error' };
   });

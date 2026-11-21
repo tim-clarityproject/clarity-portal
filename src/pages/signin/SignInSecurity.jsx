@@ -8,6 +8,7 @@ import { loadCoachAuth, makeRecoveryCodes } from '../../lib/signIn/coachAuthData
 import { CodeField, keepSixDigit, Line, MainButton, Message, Note, TextLink, Wait } from '../../components/signin/SignInParts';
 import { AccountPage } from './AccountPages';
 import { checkSixDigits, holdCodes } from './CoachAuth';
+import { goToStop } from '../../lib/signIn/flow';
 
 // My Account, Sign-in security (Phase 6a run 5; M26 seq 7, "My Account,
 // sign-in security"): coaches only. Authenticator app, "On since …", and
@@ -63,9 +64,10 @@ function SecurityPage() {
       if (isOffline()) return setMessage(needsConnection(COACH_AUTH_WORDS.offline.security));
       const made = await makeRecoveryCodes(supabase);
       if (made.status === 'made') {
-        holdCodes(user.id, made.codes, made.madeAt);
+        holdCodes(user.id, made.codes, made.madeAt, made.setId);
         return navigate(COACH_AUTH_PATHS.codes, { state: { from: 'security' } });
       }
+      if (made.status === 'signed_out') return goToStop(supabase, navigate, 'signedOut');
       if (made.status === 'not_yet') return setMessage(CODES_NOT_YET);
       if (made.status === 'offline') return setMessage(needsConnection(COACH_AUTH_WORDS.offline.security));
       return setMessage(CODES_DIDNT_MAKE);

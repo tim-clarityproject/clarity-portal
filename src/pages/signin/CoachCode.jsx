@@ -29,8 +29,8 @@ const WORDS = COACH_AUTH_WORDS.code;
 // Phase 6a run 5 (M26 seq 7): "You’re only asked on a new phone or
 // computer." A wrong code says "That code didn’t work." and never which
 // part was wrong; after 5 wrong codes in a row the next try waits 30
-// seconds, said calmly (the count is kept for the tab, so a reload doesn't
-// start it again; Supabase limits tries on its side too). After the code,
+// seconds, said calmly (the count is kept on the device, so a reload or a
+// new tab doesn't start it again; Supabase limits tries on its side too). After the code,
 // a coach with 2 or fewer recovery codes left is told once, on You're in.
 // The box reads "123 456", "123-456" and full-width digits as 123456
 // (CodeField's digitsOf).

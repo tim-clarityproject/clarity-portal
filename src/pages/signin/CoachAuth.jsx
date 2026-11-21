@@ -6,7 +6,7 @@ import { needsConnection, isOffline } from '../../lib/friendlyError';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import { CODE_SIX_DIGITS, DIDNT_SIGN_IN, TOO_MANY } from '../../lib/signIn/words';
 import {
-  afterWrongCode, CODE_DIDNT_WORK, CODES_DIDNT_MAKE, CODES_NOT_YET, codesFileName, codesFileText, codesForCopy,
+  afterWrongCode, CODE_DIDNT_WORK, CODES_DIDNT_MAKE, CODES_NOT_YET, CODES_REPLACED, codesFileName, codesFileText, codesForCopy,
   COACH_AUTH_PATHS, COACH_AUTH_WORDS, COPY_DIDNT_GO, keepTries, keyInGroups, lostCodesLine, lowCodesLine, makeNewCodesLine,
   NO_WRONG_TRIES, plainKey, readTries, RECOVERY_DIDNT_WORK, SAVE_DIDNT_GO, SET_UP_DIDNT_START, SIGN_IN_DIDNT_GO,
   showRecoveryCode, TYPE_RECOVERY_CODE, usedCodeLine, waitSecondsLeft, waitWords,
@@ -15,6 +15,7 @@ import { askServerRecovered, loadCoachAuth, makeRecoveryCodes, markCodesSaved, n
 import { Alt, CodeField, CopyButton, Field, keepSixDigit, Line, MainButton, Message, QrCode, SignInPage, TextLink, TickRow, Wait } from '../../components/signin/SignInParts';
 import { useToast } from '../../components/design';
 import useEnter from '../../components/signin/useEnter';
+import { goToStop } from '../../lib/signIn/flow';
 
 // The coach authenticator's own sign-in screens (Phase 6a run 5; M26 seq 7,
 // "Set up your authenticator" to "Signed in with a recovery code"; the
@@ -30,10 +31,10 @@ import useEnter from '../../components/signin/useEnter';
 // device and never in the history's state, so Back from set-up shows the
 // same set again while the tab is open.
 
-let held = null; // { userId, codes, madeAt }
-/** The plain codes for this account, held in memory only. */
-export function holdCodes(userId, codes, madeAt) {
-  held = { userId, codes, madeAt: madeAt || new Date().toISOString() };
+let held = null; // { userId, codes, madeAt, setId }
+/** The plain codes for this account, held in memory only (with the set's id, so the tick names it). */
+export function holdCodes(userId, codes, madeAt, setId = null) {
+  held = { userId, codes, madeAt: madeAt || new Date().toISOString(), setId };
 }
 const heldFor = (userId) => (held && held.userId === userId ? held : null);
 const letGo = () => { held = null; };
@@ -98,6 +99,23 @@ function useIsCoach(userId) {
 }
 const toHome = <Navigate to={SIGN_IN_PATHS.home} replace />;
 
+/**
+ * A counter that goes up when the connection comes back (and on `again()`),
+ * while `waiting()` says the screen still needs what it couldn't fetch:
+ * its effect asks again. { n, again }
+ */
+function useAgainWhenOnline(waiting) {
+  const [n, setN] = useState(0);
+  const wait = useRef(waiting);
+  wait.current = waiting;
+  useEffect(() => {
+    const back = () => { if (wait.current()) setN((x) => x + 1); };
+    window.addEventListener('online', back);
+    return () => window.removeEventListener('online', back);
+  }, []);
+  return { n, again: () => setN((x) => x + 1) };
+}
+
 async function accessToken() {
   try {
     const { data } = await supabase.auth.getSession();
@@ -134,6 +152,9 @@ export function CoachSetUp() {
   const mounted = useMounted();
   const userId = user?.id || null;
   const coach = useIsCoach(userId);
+  // Started again when the connection comes back (the break-it tester, 21 Nov:
+  // a set-up opened offline stayed stuck on its line until a reload).
+  const attempt = useAgainWhenOnline(() => started.current === null);
 
   useEffect(() => {
     if (!userId || coach === undefined || coach === false || started.current === userId) return;
@@ -169,7 +190,7 @@ export function CoachSetUp() {
         started.current = null;
       }
     })();
-  }, [userId, coach, mode, navigate, goIn, user, mounted]);
+  }, [userId, coach, mode, navigate, goIn, user, mounted, attempt.n]);
 
   if (out) return <Navigate to={SIGN_IN_PATHS.coach} replace />;
   if (coach === false) return toHome;
@@ -180,13 +201,19 @@ export function CoachSetUp() {
     e.preventDefault();
     if (busy.current) return undefined;
     setMessage(null);
-    if (!factor) return setMessage(problem || SET_UP_DIDNT_START);
+    if (!factor) {
+      // Back online: start again (a new key shows); still offline: the line again.
+      if (!isOffline() && started.current === null) { setProblem(null); attempt.again(); return undefined; }
+      return setMessage(problem || SET_UP_DIDNT_START);
+    }
     busy.current = true;
     try {
       const wrong = await checkSixDigits(factor.id, code, COACH_AUTH_WORDS.offline.setUp);
       if (wrong) { setCode(''); return setMessage(wrong); }
       // "On since": recorded by 053 (before it runs, Supabase's factor is enough).
-      await noteAuthenticatorOn(supabase, factor.id);
+      // A sign-in from before the owner's reset is let go (053 records nothing for it).
+      const on = await noteAuthenticatorOn(supabase, factor.id);
+      if (on.status === 'signed_out') { setFactor(null); return goToStop(supabase, navigate, 'signedOut'); }
       // A new phone, or set up again: the old phone's factor comes off now (this sign-in is at aal2).
       if (mode === 'newPhone' || mode === 'again') {
         const { data: factors } = await supabase.auth.mfa.listFactors().catch(() => ({ data: null }));
@@ -246,8 +273,9 @@ export function CoachSetUp() {
  * and Download, then the tick box and "Open the coach portal", which
  * stays unavailable until the box is ticked (the prompt says so: the one
  * exception to "never greyed out"). Arriving with no codes in memory (a
- * reload, or the address typed) makes a new set: the old, unsaved set is
- * replaced. Back returns to set-up. `from: 'security'`: made in My Account.
+ * reload, or the address typed) while the codes are owed makes a new set:
+ * the old, unsaved set is replaced. Once a set is saved, arriving with none
+ * in memory makes nothing and passes them on. Back returns to set-up. `from: 'security'`: made in My Account.
  */
 export function CoachCodes() {
   const { user, out } = useSignedIn();
@@ -266,6 +294,7 @@ export function CoachCodes() {
   const busy = useRef(false);
   const mounted = useMounted();
   const coach = useIsCoach(userId);
+  const attempt = useAgainWhenOnline(() => asked.current === null && !heldFor(userId));
 
   useEffect(() => {
     if (!userId || coach === undefined || coach === false) return;
@@ -275,13 +304,26 @@ export function CoachCodes() {
     asked.current = userId;
     (async () => {
       if (isOffline()) { setProblem(needsConnection(COACH_AUTH_WORDS.offline.codes)); asked.current = null; return; }
+      // Codes already saved, and none held here (Back from the coach portal,
+      // or the address typed): nothing is owed, so nothing is made. Making a
+      // set here would stop the saved codes working (the break-it tester,
+      // 21 Nov). New codes come only from Sign-in security, which holds them first.
+      const now = await loadCoachAuth(supabase, user);
+      if (!mounted.current) return;
+      if (now.ready && now.codesSaved && now.codesTotal > 0) {
+        if (fromSecurity) navigate(COACH_AUTH_PATHS.security, { replace: true });
+        else goIn(user);
+        return;
+      }
       const made = await makeRecoveryCodes(supabase);
-      if (made.status === 'made') holdCodes(userId, made.codes, made.madeAt);
+      if (made.status === 'made') holdCodes(userId, made.codes, made.madeAt, made.setId);
       if (!mounted.current) return;
       if (made.status === 'made') {
         setSet(heldFor(userId));
       } else if (made.status === 'needs_code') {
         navigate(COACH_AUTH_PATHS.code, { replace: true });
+      } else if (made.status === 'signed_out') {
+        goToStop(supabase, navigate, 'signedOut');
       } else if (made.status === 'not_yet') {
         // Before 053 no codes can be kept, so none are shown: on in.
         if (fromSecurity) navigate(COACH_AUTH_PATHS.security, { replace: true });
@@ -291,7 +333,7 @@ export function CoachCodes() {
         asked.current = null;
       }
     })();
-  }, [userId, coach, navigate, goIn, user, fromSecurity, mounted]);
+  }, [userId, coach, navigate, goIn, user, fromSecurity, mounted, attempt.n]);
 
   if (out) return <Navigate to={SIGN_IN_PATHS.coach} replace />;
   if (coach === false) return toHome;
@@ -316,12 +358,18 @@ export function CoachCodes() {
     e.preventDefault();
     if (!ticked || busy.current) return undefined;
     setMessage(null);
-    if (!set) return setMessage(problem || CODES_DIDNT_MAKE);
+    if (!set) {
+      if (!isOffline() && asked.current === null) { setProblem(null); attempt.again(); return undefined; }
+      return setMessage(problem || CODES_DIDNT_MAKE);
+    }
     if (isOffline()) return setMessage(needsConnection(COACH_AUTH_WORDS.offline.codes));
     busy.current = true;
     try {
-      const saved = await markCodesSaved(supabase);
+      const saved = await markCodesSaved(supabase, set.setId);
       if (saved.status === 'offline') return setMessage(needsConnection(COACH_AUTH_WORDS.offline.codes));
+      // Newer codes were made in another tab: these don't work, so they aren't the ones to keep.
+      if (saved.status === 'replaced') { letGo(); return setMessage(CODES_REPLACED); }
+      if (saved.status === 'signed_out') { letGo(); return goToStop(supabase, navigate, 'signedOut'); }
       if (saved.status !== 'saved' && saved.status !== 'not_yet') return setMessage(SAVE_DIDNT_GO);
       letGo();
       if (fromSecurity) return navigate(COACH_AUTH_PATHS.security, { replace: true, state: { said: 'codes' } });
@@ -396,8 +444,9 @@ export function CoachLost() {
       const spent = await spendRecoveryCode(supabase, code);
       if (spent.status === 'type_it') return setMessage(TYPE_RECOVERY_CODE);
       if (spent.status === 'no_match') { setCode(''); return setMessage(RECOVERY_DIDNT_WORK); }
-      if (spent.status === 'wait') { setCode(''); return setMessage(waitWords(spent.seconds, { justNow: spent.seconds >= 30 })); }
+      if (spent.status === 'wait') { setCode(''); return setMessage(waitWords(spent.seconds, { justNow: spent.justNow })); }
       if (spent.status === 'not_yet') return setMessage(CODES_NOT_YET);
+      if (spent.status === 'signed_out') return goToStop(supabase, navigate, 'signedOut');
       if (spent.status === 'offline') return setMessage(needsConnection(COACH_AUTH_WORDS.offline.lost));
       if (spent.status !== 'used') return setMessage(SIGN_IN_DIDNT_GO);
       // The lost phone's factor: 053 takes it off where the database can;

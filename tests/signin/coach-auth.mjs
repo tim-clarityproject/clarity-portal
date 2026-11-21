@@ -490,8 +490,8 @@ if (PARTS.includes('flows')) {
     await tapButton(page, 'Sign in');
     await sleep(400);
     pass('Second computer: during the wait even the right code waits, said calmly', /^Wait \d+ seconds?, then try again\.$/.test(await message(page)) && path(page) === '/coach/sign-in/code', await message(page));
-    // The wait is over (the tab's count is moved on, as 30 seconds would).
-    await page.evaluate(() => sessionStorage.removeItem('clarity-sign-in-code-tries'));
+    // The wait is over (the device's count is moved on, as 30 seconds would; kept on the device since the break-it tester, 21 Nov).
+    await page.evaluate(() => localStorage.removeItem('clarity-sign-in-code-tries'));
     await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode);
     await tapButton(page, 'Sign in');
     await page.waitForURL(/\/coach$/, { timeout: 20000 }).catch(() => null);
