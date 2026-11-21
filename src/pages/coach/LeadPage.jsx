@@ -5,7 +5,7 @@ import { newId } from '../../lib/coach/store';
 import { clean, fieldValue, fieldWords, firstName, isEmail, quickContacts } from '../../lib/coach/model';
 import { mobileForLinks } from '../../lib/coach/network';
 import { bookingLines, cameFromRow, coldRows, discoveryRows, isWonLead, LEAD_GONE, leadCard, leadOwnFields, leadTimeline, readiness, whereTitle } from '../../lib/coach/crm';
-import { Back, Detail, EditCell, Part, TextLink, useCoachPortal } from './parts';
+import { Back, Detail, EditCell, InlineLink, Part, TextLink, useCoachPortal } from './parts';
 import { useLeadActions, useLeadData, useStartStages } from './leadParts';
 import { ColdPanel, EditLeadPanel, EmailPanel, LeadNotePanel, LogCallPanel, WherePanel } from './LeadPanels';
 import { TagsPanel } from './ClientPanels';
@@ -39,7 +39,7 @@ export default function LeadPage() {
     if (!lead) return [];
     const mine = leadEvents.filter((e) => e.lead_id === lead.id);
     const booking = lead.booking_id ? bookings.find((b) => b.id === lead.booking_id) || null : null;
-    return leadTimeline([...mine, ...bookingLines(lead, { events: mine, booking, callName: callTypes.find((t) => t.key === lead.call_type_key)?.name || '' })], { emails, lead, todayKey });
+    return leadTimeline([...mine, ...bookingLines(lead, { events: mine, booking, callName: callTypes.find((t) => t.key === lead.call_type_key)?.name || '' })], { emails, lead, todayKey, callNames: Object.fromEntries(callTypes.map((t) => [t.key, t.name])) });
   }, [lead, leadEvents, bookings, callTypes, emails, todayKey]);
 
   if (kept?.merged_into && leads.some((l) => l.id === kept.merged_into)) return <Navigate to={`/coach/leads/${kept.merged_into}`} replace />;
@@ -129,7 +129,7 @@ export default function LeadPage() {
         <Part title="Details">
           <Detail label="Email" edit><EditCell label="Email" value={lead.email || ''} onSave={saveText('email', (v) => isEmail(v.toLowerCase()), 'That email doesn’t look right. Check it and try again.')} /></Detail>
           <Detail label="Phone" edit><EditCell label="Phone" value={lead.phone || ''} onSave={saveText('phone')} /></Detail>
-          <Detail label={from.label}>{from.value}</Detail>
+          <Detail label={from.label}>{from.personId && isOwner ? <InlineLink onClick={() => navigate(`/coach/network?person=${from.personId}`)}>{from.value}</InlineLink> : from.value}</Detail>
           <Detail label="Value" edit><EditCell label="Value" value={lead.value == null ? '' : String(lead.value)} words={card.valueWords} empty="Not set yet" onSave={(typed) => actions.value(lead, typed)} /></Detail>
           {leadOwnFields(leadFields).map((f) => {
             const v = fieldValue(f, values, lead.id);

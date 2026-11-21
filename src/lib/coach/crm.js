@@ -479,6 +479,17 @@ export const sourceWords = (lead) => SOURCE_WORDS[lead?.source] || SOURCE_WORDS.
 /** The Details row: "Referred by" with the name when someone referred them, otherwise "Where they came from". */
 export const cameFromRow = (lead) => (clean(lead?.referred_by) ? { label: 'Referred by', value: clean(lead.referred_by), personId: lead.referred_by_person || null } : { label: 'Where they came from', value: sourceWords(lead), personId: null });
 
+/**
+ * The Network person a typed referrer names: the one active person with exactly that name (capitals and spaces aside),
+ * or null when nobody, or more than one, has it. `people` are rows a Network search answered.
+ */
+export function referrerOf(people, typed) {
+  const name = lower(clean(typed));
+  if (!name) return null;
+  const same = (people || []).filter((p) => p && !p.archived_at && !p.merged_into && lower(clean(p.name)) === name);
+  return same.length === 1 ? same[0].id : null;
+}
+
 export const LEAD_NEEDS_NAME = 'Type their name to carry on.';
 export const LEAD_NEEDS_EMAIL = 'That email doesn’t look right. Check it and try again.';
 export const LEAD_ADDED = (stage) => `Added to ${stage?.name || 'Leads'}.`;
@@ -612,6 +623,11 @@ export function emailTitle(email, person = null) {
   return `${who} ${reply ? 'replied' : 'emailed'}: ${about}`;
 }
 
+/** What a lead answered on the booking page, one line each: "What would you like from the call? To think through a new role." */
+export const bookingAnswers = (lead) => (lead?.answers && typeof lead.answers === 'object' && !Array.isArray(lead.answers)
+  ? Object.entries(lead.answers).map(([q, a]) => [clean(q), clean(typeof a === 'string' || typeof a === 'number' ? String(a) : '')]).filter(([, a]) => a).map(([q, a]) => (q ? `${q} ${a}` : a))
+  : []);
+
 /**
  * A lead's timeline, newest first: every line with its day ("Today, 07:55"
  * for today's, otherwise "Thu 12 Nov"), its title and its lines of detail.
@@ -619,10 +635,13 @@ export function emailTitle(email, person = null) {
  * ("Leadership Accelerator. Opened 3 times."); an email is one line tagged
  * Email, and an email whose thread is hidden isn't shown.
  * @param {object[]} events the lead's coach_lead_events (a won client's page passes the events of the lead whose won_profile_id it is)
- * @param {{ emails?: object[], lead?: object, todayKey: string }} ctx
+ * The two lines a booking writes in the database have no title of their own
+ * (052's trigger): they read "First contact" and "Booked a Chemistry Call",
+ * as bookingLines words them before 052 (`callNames`: call type key to name).
+ * @param {{ emails?: object[], lead?: object, todayKey: string, callNames?: Record<string, string> }} ctx
  * @returns {{ id: string, kind: string, when: string, title: string, lines: string[], tag: string, emailId: string|null, at: string }[]}
  */
-export function leadTimeline(events, { emails = [], lead = null, todayKey } = {}) {
+export function leadTimeline(events, { emails = [], lead = null, todayKey, callNames = {} } = {}) {
   const mail = new Map((emails || []).map((e) => [e.id, e]));
   const newest = [...(events || [])].sort((a, b) => String(b.happened_at).localeCompare(String(a.happened_at)) || String(b.id).localeCompare(String(a.id)));
   const opens = new Map();
@@ -646,7 +665,14 @@ export function leadTimeline(events, { emails = [], lead = null, todayKey } = {}
       if (email && (!title || lower(title) === lower(clean(email.subject)))) title = emailTitle(email, lead);
       else if (!title) title = 'Email';
       lines = [];
+    } else if (!title && (e.kind === 'booking' || e.kind === 'first_contact')) {
+      const w = BOOKING_LINES(callNames?.[e.data?.call_type_key || lead?.call_type_key] || '');
+      const said = e.kind === 'booking' ? w.booked : w.first;
+      title = said.title;
+      if (!lines.length) lines = [said.detail];
     }
+    // What they answered when they booked, under the newest booking (the automation's "Read their booking answers").
+    if (e.kind === 'booking' && !seen.has('answers')) { seen.add('answers'); lines = [...lines, ...bookingAnswers(lead)]; }
     const day = e.happened_on || dayOfInstant(e.happened_at);
     rows.push({ id: e.id, kind: e.kind, when: day === todayKey ? `Today, ${timeOfInstant(e.happened_at)}` : dayWords(day, todayKey), title, lines, tag, emailId: email?.id || e.data?.email_id || null, at: e.happened_at });
   }

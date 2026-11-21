@@ -794,6 +794,41 @@ test('a lead a booking made before 052 still shows its booking on the timeline, 
   assert.deepEqual(crm.bookingLines(AMY, { events: [] }), []);
 });
 
+test('a referrer typed by name is joined to the one Network person with that name, and only then', () => {
+  const people = [{ id: 'p1', name: 'Dan Reid' }, { id: 'p2', name: 'Sam Lee' }, { id: 'p3', name: 'Sam Lee' }, { id: 'p4', name: 'Ann Bell', archived_at: '2026-01-01T00:00:00Z' }, { id: 'p5', name: 'Kit Low', merged_into: 'p1' }];
+  assert.equal(crm.referrerOf(people, 'Dan Reid'), 'p1');
+  assert.equal(crm.referrerOf(people, '  dan reid '), 'p1');
+  assert.equal(crm.referrerOf(people, 'Dan'), null);
+  assert.equal(crm.referrerOf(people, 'Sam Lee'), null);
+  assert.equal(crm.referrerOf(people, 'Ann Bell'), null);
+  assert.equal(crm.referrerOf(people, 'Kit Low'), null);
+  assert.equal(crm.referrerOf(people, ''), null);
+  assert.equal(crm.referrerOf(null, 'Dan Reid'), null);
+  assert.deepEqual(crm.cameFromRow({ referred_by: 'Dan Reid', referred_by_person: 'p1' }), { label: 'Referred by', value: 'Dan Reid', personId: 'p1' });
+});
+
+test('the two lines the database writes for a booking (052, no title of their own) read as words, never blank', () => {
+  const booked = lead('b2', 'Nell Okoye', null, { booking_id: 'bk-2', call_type_key: 'chemistry' });
+  const db = [
+    { id: 'x1', lead_id: 'b2', kind: 'first_contact', happened_at: '2026-11-17T08:59:59.000Z', happened_on: TODAY, title: null, detail: null, data: { source: 'chemistry_page' } },
+    { id: 'x2', lead_id: 'b2', kind: 'booking', happened_at: '2026-11-17T09:00:00.000Z', happened_on: TODAY, title: null, detail: null, data: { booking_id: 'bk-2', call_type_key: 'chemistry' } },
+  ];
+  const rows = crm.leadTimeline(db, { lead: booked, todayKey: TODAY, callNames: { chemistry: 'Chemistry Call' } });
+  assert.deepEqual(rows.map((r) => [r.title, r.lines]), [['Booked a Chemistry Call', ['From your Chemistry Call page.']], ['First contact', ['From the Chemistry Call page.']]]);
+  // A client's page (no lead handed in) still words them, from the booking line's own call type.
+  assert.deepEqual(crm.leadTimeline(db, { todayKey: TODAY, callNames: { chemistry: 'Chemistry Call' } }).map((r) => r.title), ['Booked a Chemistry Call', 'First contact']);
+  assert.ok(crm.leadTimeline(db, { todayKey: TODAY }).every((r) => r.title));
+  // What they answered when they booked shows under the newest booking line only.
+  const answered = { ...booked, answers: { 'What would you like from the call?': 'To think through a new role.', 'Anything else?': '  ' } };
+  const withAnswers = crm.leadTimeline([...db, { ...db[1], id: 'x0', happened_at: '2026-11-10T09:00:00.000Z', happened_on: '2026-11-10' }], { lead: answered, todayKey: TODAY, callNames: { chemistry: 'Chemistry Call' } });
+  assert.deepEqual(withAnswers[0].lines, ['From your Chemistry Call page.', 'What would you like from the call? To think through a new role.']);
+  assert.deepEqual(withAnswers[2].lines, ['From your Chemistry Call page.']);
+  assert.deepEqual(crm.bookingAnswers({ answers: null }), []);
+  assert.deepEqual(crm.bookingAnswers({ answers: ['x'] }), []);
+  // A line with its own title keeps it.
+  assert.equal(crm.leadTimeline([{ ...db[1], title: 'Booked a call' }], { todayKey: TODAY })[0].title, 'Booked a call');
+});
+
 test('Edit stages saved: renamed, added, moved and removed, with its leads moved first', () => {
   const draft = crm.stagesDraft(STAGES);
   assert.deepEqual(draft.map((d) => [d.name, d.likelihood, d.is_won]), [['New', '10', false], ['Call booked', '25', false], ['Proposal sent', '50', false], ['Deciding', '70', false], ['Won', '100', true]]);

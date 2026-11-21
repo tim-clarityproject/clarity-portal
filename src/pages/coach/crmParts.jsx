@@ -8,7 +8,7 @@ import {
   alreadyRan, automationMatches, checkInsToSuggest, claimed, emailLogPlan, endedEvent, openingEvents, runAutomations, todoFromEmail,
 } from '../../lib/coach/crm';
 import { copyInStandIn, gmailStandIn, STAND_IN_DOMAIN } from '../../lib/coach/connect/standIn.js';
-import { readInbound } from '../../lib/coach/connect/copyInEmail.js';
+import { directionOf, readInbound } from '../../lib/coach/connect/copyInEmail.js';
 import { gmailOnce } from '../../lib/coach/connect/gmail.js';
 import { chooseEmailAdapters, emailStatus } from '../../lib/coach/connect/index.js';
 import { askEmailServer } from '../../lib/coach/connect/server.js';
@@ -239,7 +239,8 @@ export function EmailSync() {
             const made = todoFromEmail(read.email, { id: newId(), coachId, todos: mine('coach_todos'), nowIso: new Date().toISOString() });
             if (made.todo) { await saveRow(userId, 'coach_todos', made.todo); out.todos += 1; }
           } else {
-            const answer = await log({ ...read.email, source: 'copy_in' });
+            // Which way it went, as the server decides it for the real address (api/coach-email-in.js): from the owner it was sent, from anyone else it came in.
+            const answer = await log({ ...read.email, direction: directionOf(read.email, own), source: 'copy_in' });
             if (answer.new) out.logged += 1;
             out.waiting += answer.waiting || 0;
           }

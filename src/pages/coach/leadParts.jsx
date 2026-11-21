@@ -5,8 +5,10 @@ import { leadStagesStart } from '../../lib/coach/crmData';
 import { fieldFromTyped, fieldValue } from '../../lib/coach/model';
 import {
   alreadyRan, automationsSaid, claimed, coldPlan, discoveryPatch, firstStage, LEAD_ADDED, leadDetailsPatch, leadEvent, leadNote, logCall, moneyFromTyped,
-  NEEDS_AMOUNT, newLead, openLeads, runAutomations, stageEvent, stageMove, stageOf, startStages, warmPlan, withFirstStage, withNextStep, wonEvent, wonPlan,
+  NEEDS_AMOUNT, newLead, openLeads, referrerOf, runAutomations, stageEvent, stageMove, stageOf, startStages, warmPlan, withFirstStage, withNextStep, wonEvent, wonPlan,
 } from '../../lib/coach/crm';
+import { networkPageOf } from '../../lib/coach/networkData';
+import { searchQuery } from '../../lib/coach/network';
 import { useCoachPortal } from './parts';
 
 // What the Leads pages share (Phase 6a run 4): the leads as the pages read
@@ -62,8 +64,13 @@ export function useStartStages() {
 
 /** Every action on a lead. Each resolves true when it saved, false when it didn't (a calm line has then been shown), or `{ error }` to show in its panel. */
 export function useLeadActions() {
-  const { userId, coach, leadStages: stages, automations, clients, organisations, todayKey } = useCoachPortal();
+  const { userId, coach, isOwner, leadStages: stages, automations, clients, organisations, todayKey } = useCoachPortal();
   const toast = useToast();
+  /** Who referred a lead, when that is someone in the owner's Network (the one person with that name), or null. Never stops a save. */
+  const referrerIn = async (name) => {
+    if (!isOwner || !String(name || '').trim()) return null;
+    try { return referrerOf((await networkPageOf(userId, searchQuery(name, todayKey)))?.rows, name); } catch { return null; }
+  };
   const busy = useRef(false);
   const stamp = () => ({ nowIso: new Date().toISOString(), todayKey });
   const leadsNow = () => rowsOf(coachState(userId), 'coach_leads').filter((l) => l.coach_id === coach.id);
@@ -178,7 +185,7 @@ export function useLeadActions() {
       const made = newLead({ id, coachId: coach.id, stages, name: typed.name, email: typed.email, organisation: typed.organisation, source: typed.source, referredBy: typed.referredBy });
       if (made.error) return { error: made.error, at: made.error.includes('email') ? 'email' : 'name' };
       const org = made.lead.organisation ? organisations.find((o) => o.name.toLowerCase() === made.lead.organisation.toLowerCase()) || null : null;
-      const lead = { ...made.lead, organisation_id: org?.id ?? null };
+      const lead = { ...made.lead, organisation_id: org?.id ?? null, referred_by_person: made.lead.referred_by ? await referrerIn(made.lead.referred_by) : null };
       const line = lead.referred_by ? leadEvent({ id: newId(), lead, kind: 'referred', ...stamp(), title: `Referred by ${lead.referred_by}`, data: { by: lead.referred_by } }) : null;
       const ok = await act({
         pairs: [['coach_leads', lead], ...(line ? [['coach_lead_events', line]] : [])], message: LEAD_ADDED(firstStage(stages)),
@@ -190,6 +197,7 @@ export function useLeadActions() {
     details: async (lead, typed) => {
       const patch = leadDetailsPatch(lead, typed, { organisations });
       if (patch.error) return patch;
+      if (patch.lead.referred_by && !patch.lead.referred_by_person) patch.lead = { ...patch.lead, referred_by_person: await referrerIn(patch.lead.referred_by) };
       const to = patch.toStageId ? stageOf(stages, patch.toStageId) : null;
       if (to?.is_won) {
         // Won makes a client: the details are saved first, then Won runs as it does from anywhere else.

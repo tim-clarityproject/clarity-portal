@@ -146,7 +146,7 @@ export default function ClientPage() {
   const done = useDone();
   const portal = useCoachPortal();
   const { userId, coach, isOwner, coaches, state, clients, organisations, tags, fields, settings, todayKey, reloadCoaches, sessions: allSessions, sessionPeople, todos } = portal;
-  const { leads, leadEvents, emails, emailLinks } = portal;
+  const { leads, leadEvents, emails, emailLinks, callTypes = [] } = portal;
   const profile = clients.find((p) => p.id === id) || null;
 
   const foldsKey = deviceKey('cache', userId, 'coach-folds');
@@ -367,7 +367,7 @@ export default function ClientPage() {
   const everything = timeline({ notes, files, entries: entries.filter((t) => data.engagements.some((e) => e.id === t.engagement_id)), engagements: data.engagements, projects: rowsOf(state, 'engagement_projects') }, { kind, q }, now);
   // A client who was a lead keeps the lead's timeline (Won carries it over without copying: crm.js's carriedTimeline). It
   // is older than anything on the client's own, so it follows it.
-  const carried = kind === 'all' ? leadTimeline(carriedTimeline(leadEvents, leads, profile.id), { emails, todayKey }).filter((r) => !clean(q) || `${r.title} ${r.lines.join(' ')}`.toLowerCase().includes(clean(q).toLowerCase())) : [];
+  const carried = kind === 'all' ? leadTimeline(carriedTimeline(leadEvents, leads, profile.id), { emails, todayKey, callNames: Object.fromEntries(callTypes.map((t) => [t.key, t.name])) }).filter((r) => !clean(q) || `${r.title} ${r.lines.join(' ')}`.toLowerCase().includes(clean(q).toLowerCase())) : [];
   // Emails logged with this client (the copy-in address or Gmail; run 4) sit on the same timeline, each in its place by time.
   const mails = kind === 'all' ? emailsOn(emails, emailLinks, 'client', profile.id, todayKey, profile).filter((r) => !clean(q) || r.title.toLowerCase().includes(clean(q).toLowerCase())) : [];
   const timelineRows = [...everything.map((i) => ({ sort: String(i.at || i.day || ''), item: i })), ...mails.map((m) => ({ sort: String(m.at || ''), mail: m }))].sort((a, b) => b.sort.localeCompare(a.sort));
