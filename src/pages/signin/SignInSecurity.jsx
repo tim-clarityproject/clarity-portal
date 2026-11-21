@@ -15,6 +15,9 @@ import { checkSixDigits, holdCodes } from './CoachAuth';
 // codes, with "Making new codes stops the old ones working." Both need a
 // current 6-digit code first (the prompt), asked for here in place; 053
 // refuses either without it too.
+// The current-code step both links open in place (aria-controls, so what opens is found: rule 29aq).
+const STEP_ID = 'si-current-code';
+
 export default function SignInSecurity() {
   const { user } = useContext(AuthContext);
   return <SecurityPage key={user?.id || 'nobody'} />;
@@ -81,19 +84,21 @@ function SecurityPage() {
           <div className="si-srows">
             <div className="si-srow">
               <span className="si-sl">{W.app}<span>{auth.turnedOnAt ? onSinceLine(auth.turnedOnAt) : (auth.factor ? '' : W.notOnYet)}</span></span>
-              {auth.factor ? <TextLink onClick={() => ask('newPhone')} aria-expanded={asking === 'newPhone'}>{W.newPhone}</TextLink> : null}
+              {auth.factor ? <TextLink onClick={() => ask('newPhone')} aria-expanded={asking === 'newPhone'} aria-controls={STEP_ID}>{W.newPhone}</TextLink> : null}
             </div>
             <div className="si-srow">
               <span className="si-sl">{W.codes}<span>{auth.ready ? codesLeftSummary(auth.codesLeft, auth.codesTotal || undefined) : W.codesNotYet}</span></span>
-              {auth.ready && auth.factor ? <TextLink onClick={() => ask('codes')} aria-expanded={asking === 'codes'}>{W.makeNew}</TextLink> : null}
+              {auth.ready && auth.factor ? <TextLink onClick={() => ask('codes')} aria-expanded={asking === 'codes'} aria-controls={STEP_ID}>{W.makeNew}</TextLink> : null}
             </div>
           </div>
-          <Line>{W.makeNewNote}</Line>
+          {/* The note is about new codes: while the new phone's code step is open
+              it would read as that step's (the UI tester, run 5). */}
+          {asking === 'newPhone' ? null : <Line>{W.makeNewNote}</Line>}
           {said === 'newPhone' ? <Note>{W.newPhoneSaved}</Note> : null}
           {said === 'codes' ? <Note>{W.codesSaved}</Note> : null}
           {asking ? (
             <>
-              <Line>{keepSixDigit(W.currentCodeLine)}</Line>
+              <Line id={STEP_ID}>{keepSixDigit(W.currentCodeLine)}</Line>
               <CodeField label={COACH_AUTH_WORDS.code.label} value={code} onDigits={setCode} />
               <Message lines={message} />
               <div className="si-bwrap"><MainButton>{W.currentCodeButton}</MainButton></div>

@@ -216,6 +216,131 @@ for (const mode of MODES) {
   }
   await mockCtx.close();
 }
+// The coach authenticator's screens (Phase 6a run 5; M26 seq 7), word for
+// word: the run's prompt wins over M26, and the design reference over M26
+// for how a part looks, so their places aren't held to M26's (the QR, the
+// apps' rows and the reset's side panel are drawn differently on purpose;
+// measure.mjs and coach-auth.mjs measure the spacing rule on them). Every
+// line M26 draws must be there in M26's order, and nothing else may be,
+// apart from the differences listed in COACH_MEANT with why. Each screen is
+// stood in whole (coachWorld.mjs), and the owner's Reset is the test
+// coach's saved read-only sign-in with 049 to 053 and the server stood in.
+//   ONLY=coach-words runs this part alone.
+const COACH_MEANT = {
+  // The prompt: "Back returns to set-up" (M26 draws no Back here).
+  'auth-codes': { added: ['Back'], gone: [] },
+  // A side panel from the menu, the coach portal's shared part (the design reference wins): no Back "Coaches",
+  // and its foot reads left to right, the quiet Keep it before the coral Reset it at the right.
+  'acct-reset': { added: [], gone: ['Coaches'], swap: ['Reset it', 'Keep it'] },
+};
+const COACH_WORDS = [
+  { key: 'coach-code', go: '/coach/sign-in/code', world: { factor: 'verified' }, wait: '.si-field' },
+  { key: 'auth-setup', go: '/coach/sign-in/set-up', world: { factor: 'none', codesMade: false, codesSaved: false }, wait: '.si-qr svg' },
+  { key: 'auth-codes', go: '/coach/sign-in/recovery-codes', world: { factor: 'verified', aal: 'aal2', codesSaved: false }, wait: '.si-rc li' },
+  { key: 'auth-lost', go: '/coach/sign-in/help', world: { factor: 'verified' }, wait: '.si-field' },
+  {
+    key: 'auth-in', go: '/coach/sign-in/help', world: { factor: 'verified' }, wait: '.si-field',
+    then: async (page) => {
+      await page.getByLabel('Recovery code').fill('k7q2-9fmd');
+      await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+      await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
+      await page.getByText('That recovery code is now used.').waitFor({ timeout: 10000 });
+    },
+  },
+  { key: 'acct-security', go: '/my-account/sign-in-security', world: { factor: 'verified', aal: 'aal2', codesLeft: 9 }, wait: '.si-srow', root: '.si-col--account' },
+  { key: 'acct-reset', go: '/coach/settings/coaches', root: '[role=dialog]' },
+];
+if (!ONLY || ONLY.includes('coach-words')) {
+  const { coachWorld } = await import('./coachWorld.mjs');
+  // M26's lines for a screen: every element whose own words show, in order (the name and the mark left out).
+  const mockLines = (root) => {
+    const out = [];
+    const el = document.querySelector(root);
+    const walk = (n) => {
+      for (const c of n.children) {
+        const st = getComputedStyle(c);
+        if (st.display === 'none' || st.visibility === 'hidden' || c.matches('.brand, .mark, svg')) continue;
+        const own = [...c.childNodes].filter((x) => x.nodeType === 3).map((x) => x.textContent).join('').trim();
+        if (own) out.push(c.innerText.replace(/\s+/g, ' ').trim()); else walk(c);
+      }
+    };
+    walk(el);
+    return out;
+  };
+  const clean = (t) => t.replace(/[‑‐]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
+  for (const mode of MODES) {
+    const mockCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 }, colorScheme: mode, locale: 'en-GB' });
+    const mock = await mockCtx.newPage();
+    await mock.goto(pathToFileURL(MOCKUP).href);
+    await mock.locator(`#mode button[data-m="${mode}"]`).click();
+    for (const width of SIZES) {
+      const phone = width < 700;
+      for (const sc of COACH_WORDS) {
+        const tag = `${sc.key} (words), ${width}px ${mode}`;
+        await mock.locator(`#scrs .pick button[data-s="${sc.key}"]`).click();
+        await sleep(80);
+        const want = (await mock.evaluate(mockLines, phone ? '#ph' : '#dk')).map(clean);
+        let ctx;
+        try {
+          let page;
+          if (sc.world) {
+            ctx = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, colorScheme: mode, locale: 'en-GB', timezoneId: 'Europe/London', hasTouch: phone, isMobile: phone, serviceWorkers: 'block' });
+            await ctx.addInitScript((m) => { try { localStorage.setItem('clarity-colour-mode', m); } catch { /* the device's mode */ } }, mode);
+            await coachWorld(ctx, sc.world);
+            page = await ctx.newPage();
+          } else {
+            const { coachContext, standIn } = await import('../coach/shared.mjs');
+            ctx = await coachContext(browser, { size: phone ? 400 : 1440, theme: mode });
+            page = await ctx.newPage();
+            await standIn(page, { role: 'owner', db: 'none' });
+            await page.route('**/api/coach-auth-reset', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"ran":false}' }));
+          }
+          await page.goto(`${APP}${sc.go}`);
+          if (sc.wait) await page.waitForSelector(sc.wait, { timeout: 20000 });
+          if (sc.then) await sc.then(page);
+          if (sc.key === 'acct-reset') {
+            await page.getByRole('button', { name: /^More for / }).first().click({ timeout: 25000 });
+            await page.getByRole('menuitem', { name: 'Reset authenticator' }).click();
+            await page.getByRole('dialog', { name: /Reset .*authenticator/i }).waitFor({ timeout: 10000 });
+          }
+          await sleep(300);
+          const root = sc.root || '.si-col';
+          const got = (await page.evaluate(({ r }) => {
+            const el = document.querySelector(r);
+            const out = [];
+            const walk = (n) => {
+              for (const c of n.children) {
+                const st = getComputedStyle(c);
+                if (st.display === 'none' || st.visibility === 'hidden' || c.matches('.si-brand, .si-mark, svg, .ds-sr, .sr-only, [aria-hidden=true]')) continue;
+                const own = [...c.childNodes].filter((x) => x.nodeType === 3).map((x) => x.textContent).join('').trim();
+                if (own) out.push(c.innerText.replace(/\s+/g, ' ').trim()); else walk(c);
+              }
+            };
+            walk(el);
+            return out;
+          }, { r: root })).map(clean);
+          const meant = COACH_MEANT[sc.key] || { added: [], gone: [] };
+          let wantNow = want.filter((t) => t !== 'the clarity portal' && !meant.gone.map(clean).includes(t));
+          if (meant.swap) {
+            const [x, y] = meant.swap.map(clean);
+            wantNow = wantNow.map((t) => (t === x ? y : t === y ? x : t));
+          }
+          const gotNow = got.filter((t) => t !== 'the clarity portal' && !meant.added.map(clean).includes(t) && t !== 'close');
+          // Line by line, in order; a part may be split or joined differently (a step's number, a line's two halves).
+          const a = wantNow.join(' | ');
+          const b = gotNow.join(' | ');
+          const squash = (x) => x.replace(/[|\s]+/g, ' ').trim();
+          pass(`${tag}: M26’s words, in M26’s order, and nothing else`, squash(a) === squash(b), `\n   M26: ${a}\n   app: ${b}`);
+        } catch (e) {
+          pass(`${tag}: opens`, false, e.message.split('\n')[0]);
+        }
+        await ctx?.close();
+      }
+    }
+    await mockCtx.close();
+  }
+}
+
 await browser.close();
 const blocked = calls.filter((c) => c.blocked && !/fonts\.(googleapis|gstatic)\.com|pwnedpasswords/.test(c.blocked));
 pass('no outside host was asked for anything', blocked.length === 0, [...new Set(blocked.map((c) => c.blocked))].slice(0, 4).join(', '));

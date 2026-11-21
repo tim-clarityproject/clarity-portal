@@ -33,6 +33,10 @@
 //     rule 29ar; tests/phase5/summary-order.mjs);
 //   - no console errors.
 //
+//   - the coach authenticator's screens (Phase 6a run 5), stood in whole
+//     with nothing signed in, and the owner's Reset panel on the test
+//     coach's saved read-only sign-in; ONLY=^coach-auth runs them alone;
+//
 //   - the outside Health Check follows the device, light or dark (Tim, 10
 //     Nov, 23:22): its own page on every screen (M7b version 51), and the
 //     portal's own route; with ONLY=^health-check nothing signs in.
@@ -966,6 +970,152 @@ if (CHEVRONS) {
       pass(`chevrons, the portal's own Health Check route ${width}px: measured`, false, e.message.split('\n')[0]);
     }
     await old.close();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The coach authenticator's screens (Phase 6a run 5; M26 seq 7): Enter your
+// code (and its wait after 5 wrong codes), Set up your authenticator, Save
+// your recovery codes, Lost your authenticator app?, You're in (and the
+// 2-or-fewer line), My Account's Sign-in security (at rest and both of its
+// current-code steps), and the owner's Reset authenticator panel on
+// Settings, Coaches. Every screen but the last is stood in whole
+// (tests/signin/coachWorld.mjs: an invented associate, Supabase's MFA, 053
+// and the server's reset), so nothing signs in to the test project and no
+// authenticator is enrolled. The Coaches page is the test coach's saved
+// read-only sign-in with 049 to 053 and the server stood in
+// (tests/coach/shared.mjs). ONLY=^coach-auth runs this part alone.
+const COACH_AUTH = !ONLY || ONLY.test('coach-auth');
+if (COACH_AUTH) {
+  const { coachWorld } = await import('../signin/coachWorld.mjs');
+  const code = (page) => page.getByRole('textbox', { name: 'Code', exact: true });
+  const press = (page, name) => page.getByRole('button', { name, exact: true }).click();
+  const SCREENS = [
+    ['coach-auth-code', { factor: 'verified' }, '/coach/sign-in/code', '.si-field'],
+    ['coach-auth-code-wait', { factor: 'verified' }, '/coach/sign-in/code', '.si-field', async (page) => {
+      for (let i = 1; i <= 5; i += 1) { await code(page).fill(`00000${i}`); await press(page, 'Sign in'); await sleep(350); }
+      await page.getByText('That was 5 wrong codes in a row.').waitFor({ timeout: 10000 });
+    }, /status of 422/],
+    ['coach-auth-setup', { factor: 'none', codesMade: false, codesSaved: false }, '/coach/sign-in/set-up', '.si-qr svg'],
+    ['coach-auth-codes', { factor: 'verified', aal: 'aal2', codesSaved: false }, '/coach/sign-in/recovery-codes', '.si-rc li'],
+    ['coach-auth-lost', { factor: 'verified' }, '/coach/sign-in/help', '.si-field'],
+    ['coach-auth-in', { factor: 'verified', codesLeft: 3 }, '/coach/sign-in/help', '.si-field', async (page, world) => {
+      await page.getByLabel('Recovery code').fill(world.codes.find((c) => !c.used).code);
+      await press(page, 'Sign in');
+      await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
+      await page.getByText('That recovery code is now used.').waitFor({ timeout: 10000 });
+    }],
+    ['coach-auth-low-codes', { factor: 'verified', codesLeft: 2 }, '/coach', null, async (page, world) => {
+      await page.waitForURL(/\/coach\/sign-in\/code$/, { timeout: 15000 });
+      await code(page).fill(world.goodCode);
+      await press(page, 'Sign in');
+      await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
+      await page.getByText('Make new codes in My Account').waitFor({ timeout: 10000 });
+    }],
+    ['coach-auth-security', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, '/my-account/sign-in-security', '.si-srow'],
+    ['coach-auth-security-codes', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, '/my-account/sign-in-security', '.si-srow', async (page) => {
+      await page.getByRole('button', { name: 'Make new codes' }).click();
+      await code(page).waitFor();
+    }],
+    ['coach-auth-security-phone', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, '/my-account/sign-in-security', '.si-srow', async (page) => {
+      await page.getByRole('button', { name: 'Set up on a new phone' }).click();
+      await code(page).waitFor();
+    }],
+    ['coach-auth-reset', null, '/coach/settings/coaches', null, async (page) => {
+      await page.getByRole('button', { name: /^More for / }).first().click({ timeout: 25000 });
+      await page.getByRole('menuitem', { name: 'Reset authenticator' }).click();
+      await page.getByRole('dialog', { name: /Reset .*authenticator/i }).waitFor({ timeout: 10000 });
+      // 053 stood in as "not there yet" (404 PGRST202): the browser notes it as a resource that didn't load.
+    }, /status of 404/],
+  ].filter(([name]) => !ONLY || ONLY.test(name));
+  for (const width of WIDTHS) {
+    for (const mode of ['light', 'dark']) {
+      const phone = width < 600;
+      for (const [name, world, path, wait, then, okError] of SCREENS) {
+        const tag = `${name} ${width}px ${mode}${SCALE !== 1 ? ` text ×${SCALE}` : ''}`;
+        let context;
+        let store = null;
+        try {
+          if (world) {
+            context = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: mode, reducedMotion: MOTION, serviceWorkers: 'block' });
+            await context.addInitScript((m) => { try { localStorage.setItem('clarity-colour-mode', m); } catch { /* the device's mode */ } }, mode);
+          } else {
+            const { coachContext } = await import('../coach/shared.mjs');
+            context = await coachContext(browser, { size: phone ? 400 : width, theme: mode, reducedMotion: MOTION });
+          }
+          if (SCALE !== 1) await context.addInitScript((px) => { document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = `html{font-size:${px}px !important}`; document.head.appendChild(st); }); }, 16 * SCALE);
+          const w = world ? await coachWorld(context, world) : null;
+          const page = await context.newPage();
+          if (!world) {
+            const { standIn } = await import('../coach/shared.mjs');
+            store = await standIn(page, { role: 'owner', db: 'none' });
+            await page.route('**/api/coach-auth-reset', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, ran: false, message: 'Resetting an authenticator only works on the live site, so nothing has changed here.' }) }));
+          }
+          const errors = [];
+          page.on('pageerror', (e) => errors.push(e.message));
+          page.on('console', (m) => { if (m.type() === 'error' && !/favicon/.test(m.text()) && !(okError && okError.test(m.text()))) errors.push(m.text().slice(0, 160)); });
+          await page.goto(`${APP}${path}`);
+          if (wait) await page.waitForSelector(wait, { timeout: 20000 });
+          if (then) await then(page, w);
+          await page.evaluate(() => document.fonts.ready);
+          await page.mouse.move(1, 1);
+          await sleep(800);
+          const fonts = await page.evaluate(() => [document.fonts.check('16px "DM Sans"'), document.fonts.check('16px Nekst')]);
+          pass(`${tag}: the real fonts are loaded`, fonts[0] && fonts[1], JSON.stringify(fonts));
+          const r = await page.evaluate(measure, { phone });
+          pass(`${tag}: no icon in any add button`, r.addIcons.length === 0, r.addIcons.join('; '));
+          pass(`${tag}: no crosshair used as a plus`, r.plusCross.length === 0, r.plusCross.slice(0, 4).join('; '));
+          pass(`${tag}: every tap area is 44px or more`, r.small.length === 0, r.small.slice(0, 6).join('; '));
+          pass(`${tag}: no sideways scroll`, r.sideways <= 0, `${r.sideways}px`);
+          const btns = await page.evaluate(buttonProblems, { phone, scale: SCALE });
+          pass(`${tag}: every button in the new style, its words whole and inside its card, one coral button (${btns.checked} read)`, btns.problems.length === 0, btns.problems.slice(0, 5).join('; '));
+          const uneven = await page.evaluate(sideBySide);
+          pass(`${tag}: boxes side by side are one height (button check)`, uneven.length === 0, uneven.slice(0, 4).join('; '));
+          const nekst = await page.evaluate(nekstInControls);
+          pass(`${tag}: no Nekst inside any control (button check)`, nekst.length === 0, nekst.slice(0, 5).join('; '));
+          const sides = await page.evaluate(sideLines);
+          pass(`${tag}: no thick coloured side line (button check)`, sides.length === 0, sides.slice(0, 5).join('; '));
+          const doubled = await page.evaluate(doubledRules);
+          pass(`${tag}: no line under a heading over rows with their own lines (button check)`, doubled.length === 0, doubled.slice(0, 4).join('; '));
+          const folds = await page.evaluate(chevronOnlyFolds);
+          pass(`${tag}: every fold opens from its whole heading row (button check)`, folds.length === 0, folds.slice(0, 4).join('; '));
+          pass(`${tag}: at most one eye per page or section, beside its title`, r.eyeNotes.length === 0, r.eyeNotes.slice(0, 4).join('; '));
+          const rating = /out of 10\b|\b\d+(\.\d+)?\/10\b|\b1 to 5\b|rated 1\b/i.exec(r.text);
+          pass(`${tag}: no numbered ratings`, !rating, rating?.[0]);
+          pass(`${tag}: no second line that repeats its answer`, r.repeats.length === 0, r.repeats.slice(0, 4).join('; '));
+          const lowEdges = await page.evaluate(outlinedEdges);
+          pass(`${tag}: every outlined edge reaches 3 to 1`, lowEdges.length === 0, lowEdges.slice(0, 6).join('; '));
+          const shared = await page.evaluate(overlappingTaps);
+          pass(`${tag}: no two tap areas overlap`, shared.length === 0, shared.slice(0, 6).join('; '));
+          const pops = await page.evaluate(checkPopups);
+          pass(`${tag}: every pop-up is one short line, and no ⓘ sits in a list row (${pops.checked} read)`, pops.problems.length === 0, pops.problems.slice(0, 4).join('; '));
+          // M26's own titles, word for word (sign-in rule 2; the run's prompt: "exactly as M26 draws and words
+          // them"), are the agreed exception, as the outside Health Check's full name is.
+          const M26_TITLES = /^(Set up your authenticator|Save your recovery codes|Lost your authenticator app\?|Reset .+’s authenticator\?)$/i;
+          const long = r.longTitles.filter((t) => !M26_TITLES.test(t.trim()));
+          pass(`${tag}: no title in capitals over 3 words (M26's own titles excepted)`, long.length === 0, long.join('; '));
+          // The chevrons beside words (Back, My Account, the menu's): centred on their text within 0.5px.
+          if (SCALE === 1) {
+            const chev = await measureChevrons(page);
+            pass(`${tag}: every chevron beside text is centred on it (${chev.length} measured)`, chevronsOff(chev).length === 0, chevronsOff(chev).slice(0, 4).join('; '));
+          }
+          pass(`${tag}: the background and text match the ${mode} setting`, r.theme === mode && r.background === BACKGROUND[mode], `${r.theme} ${r.background}`);
+          pass(`${tag}: the menu button sits over nothing`, r.over.length === 0, r.over.slice(0, 3).join('; '));
+          pass(`${tag}: no console errors`, errors.length === 0, errors.slice(0, 2).join(' | '));
+          if (store) pass(`${tag}: nothing was written to the test project`, !store.calls.some((c) => /^blocked/.test(c)), store.calls.filter((c) => /^blocked/.test(c)).slice(0, 3).join(', '));
+          if (w) pass(`${tag}: nothing reached anywhere but the stand-ins`, !w.calls.some((c) => c.startsWith('blocked')), w.calls.filter((c) => c.startsWith('blocked')).join(', '));
+          if (out && mode === 'light') await page.screenshot({ path: join(out, `${name}-${width === 1280 ? '1280' : width === 390 ? '390x844' : width}.png`), fullPage: true });
+          if (mode === 'dark') {
+            const reveals = await page.evaluate(checkReveals);
+            revealsChecked += reveals.checked;
+            pass(`${tag}: what opens in place keeps your place and shows (${reveals.checked} pressed)`, reveals.problems.length === 0, reveals.problems.slice(0, 5).join('; '));
+          }
+        } catch (e) {
+          pass(`${tag}: opened`, false, e.message.split('\n')[0]);
+        }
+        await context?.close();
+      }
+    }
   }
 }
 

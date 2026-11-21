@@ -203,6 +203,12 @@
   --si-brand-nudge: 0.1em;    /* Nekst capitals sit high on their line */
   /* The coach authenticator's screens (M26 seq 7; Phase 6a run 5). */
   --si-qr: 200px;             /* the QR code, its quiet zone included (M26 draws a shorter code at 168px; the real set-up address needs more modules) */
+  /* The QR code's own square, its quiet zone included, in both modes: the light
+     page colour with the dark text colour's dots, so a phone's reader needs no
+     inverting (light on black in dark mode may defeat some authenticator apps).
+     The same values as light mode's --bg and --text, so light mode is unchanged. */
+  --si-qr-paper: #F9F8F5;
+  --si-qr-ink: #000000;
   --si-step-in: 32px;         /* a set-up step's words, after its number */
   --si-rc-pad-y: 20px;        /* the recovery codes' box */
   --si-rc-pad-x: 22px;

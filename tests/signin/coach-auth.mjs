@@ -21,6 +21,17 @@
 //
 //   APP_URL=http://localhost:4317 node --import ./tests/scores/register.mjs tests/signin/coach-auth.mjs [shots folder]
 //   PARTS=screens,flows,reset  SIZES=1440,768,400  MODES=dark,light  narrow a run.
+//   TEXT=2 opens every screen at twice the device's text size (the pictures
+//   then end ".text2"); ONLY=auth-in,low-codes keeps the screens whose key or
+//   picture name starts so.
+//
+// The UI tester (run 5) added: the QR read with jsQR's dontInvert in both
+// modes (dark dots on the light page colour's own square, with nothing round
+// it), every line of text at 4.5 to 1 (3 to 1 at 24px or 18.5px bold), the
+// count on You're in at 9, 2, 1 and 0, the 2-or-fewer line at 2, 1 and 0,
+// the wait after 5 wrong codes, both of Sign-in security's current-code
+// steps, a picture of each offline line, and the owner's Reset at every
+// size and mode.
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -30,6 +41,7 @@ import { coachWorld, M26_CODES, M26_KEY } from './coachWorld.mjs';
 import { ruleProblems, spacingRule } from './spacing.mjs';
 import { overlappingTaps } from '../phase5/taps.mjs';
 import { outlinedEdges } from '../phase5/edges.mjs';
+import { lowCodesLine, makeNewCodesLine, usedCodeLine } from '../../src/lib/signIn/coachAuth.js';
 
 const require = createRequire(import.meta.url);
 const JSQR = require.resolve('jsqr/dist/jsQR.js');
@@ -38,6 +50,9 @@ if (OUT) mkdirSync(OUT, { recursive: true });
 const PARTS = (process.env.PARTS || 'screens,flows,reset').split(',');
 const SIZES = (process.env.SIZES || '1440,768,400').split(',').map(Number);
 const MODES = (process.env.MODES || 'dark,light').split(',');
+const SCALE = Number(process.env.TEXT || 1);
+const ONLY = process.env.ONLY ? process.env.ONLY.split(',') : null;
+const SUFFIX = SCALE !== 1 ? `.text${SCALE}` : '';
 const { pass, done } = makeChecks();
 const browser = await chromium.launch();
 const path = (page) => new URL(page.url()).pathname;
@@ -50,6 +65,8 @@ async function open(world, { width = 1440, mode = 'dark' } = {}) {
   const phone = width < 700;
   const ctx = await browser.newContext({ viewport: { width, height: phone ? 844 : 1000 }, colorScheme: mode, locale: 'en-GB', timezoneId: 'Europe/London', hasTouch: phone, isMobile: phone, deviceScaleFactor: 2, serviceWorkers: 'block' });
   await ctx.addInitScript((m) => { try { localStorage.setItem('clarity-colour-mode', m); } catch { /* the device's mode */ } }, mode);
+  // The device's text-size setting, as a root size (16px is standard), as calm-rules sets it.
+  if (SCALE !== 1) await ctx.addInitScript((px) => { document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = `html{font-size:${px}px !important}`; document.head.appendChild(st); }); }, 16 * SCALE);
   const w = await coachWorld(ctx, world);
   const page = await ctx.newPage();
   const errors = [];
@@ -97,15 +114,24 @@ function lowTaps(root) {
   return low;
 }
 
-// The QR code read back from the screen's own pixels (jsQR, in the page).
+// The QR code read back from the screen's own pixels (jsQR, in the page),
+// with dontInvert only: dark dots on a light square, in both modes, as an
+// authenticator app's reader expects. The picture is taken 8px wider than
+// the code's square all round, so what sits round it is read too: the
+// page's own colour, with no card or edge.
 async function readQr(page) {
-  // The code's own square, its quiet zone included, as the screen draws it (scrolled into view first).
   const qr = page.locator('.si-qr svg');
   if (!(await qr.count())) return { text: null };
-  await qr.scrollIntoViewIfNeeded();
-  const png = (await qr.screenshot()).toString('base64');
+  // In the middle of the screen, so the picture round it is all on screen.
+  await qr.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+  await sleep(400);
+  const box = await qr.boundingBox();
+  const pad = 8;
+  const buf = await page.screenshot({ clip: { x: box.x - pad, y: box.y - pad, width: box.width + pad * 2, height: box.height + pad * 2 } });
+  if (process.env.QR_DEBUG) (await import('node:fs')).writeFileSync(process.env.QR_DEBUG, buf);
+  const png = buf.toString('base64');
   await page.addScriptTag({ path: JSQR });
-  return page.evaluate(async (data) => {
+  return page.evaluate(async ({ data, pad: p }) => {
     const img = new Image();
     img.src = `data:image/png;base64,${data}`;
     await img.decode();
@@ -113,15 +139,60 @@ async function readQr(page) {
     c.width = img.width; c.height = img.height;
     const ctx = c.getContext('2d');
     ctx.drawImage(img, 0, 0);
+    const scale = devicePixelRatio;
     const px = ctx.getImageData(0, 0, c.width, c.height);
+    const at = (x, y) => { const i = (Math.round(y) * c.width + Math.round(x)) * 4; return [px.data[i], px.data[i + 1], px.data[i + 2]]; };
+    const edge = p * scale;
+    // The code's own square (its quiet zone's corner) and the page just outside it, on each side.
+    const square = at(edge + 2, edge + 2);
+    const outside = [at(edge / 2, c.height / 2), at(c.width - edge / 2, c.height / 2), at(c.width / 2, edge / 2), at(c.width / 2, c.height - edge / 2)];
+    // Just inside and outside the square's edge: no line drawn round it.
+    const rim = [at(edge + 0.5 * scale, c.height / 2), at(edge - 1.5 * scale, c.height / 2)];
     // jsQR can throw on an image with no finder patterns it can use: that is "not read".
-    const read = (how) => { try { return window.jsQR(px.data, c.width, c.height, { inversionAttempts: how }); } catch { return null; } };
-    const plain = read('dontInvert');
-    // ('onlyInvert' throws in jsQR 1.4.0; 'attemptBoth' tries the inverted image after the plain one.)
-    const inverted = plain ? null : read('attemptBoth');
-    const corner = [px.data[0], px.data[1], px.data[2]];
-    return { text: (plain || inverted)?.data || null, inverted: !plain && Boolean(inverted), corner };
-  }, png);
+    let plain = null;
+    try { plain = window.jsQR(px.data, c.width, c.height, { inversionAttempts: 'dontInvert' }); } catch { plain = null; }
+    const page = getComputedStyle(document.body).backgroundColor.match(/\d+/g).slice(0, 3).map(Number);
+    return { text: plain?.data || null, square, outside, rim, page };
+  }, { data: png, pad });
+}
+
+// Every line of text in the column at 4.5 to 1 against what it sits on (3 to
+// 1 for large text: 24px, or 18.5px bold), its opacity counted. A control
+// that can't be pressed yet is exempt (WCAG 1.4.3), as is Google's own button.
+function lowText(root) {
+  const col = document.querySelector(root);
+  if (!col) return ['no column'];
+  const parse = (c) => { const m = String(c).match(/[\d.]+/g); if (!m) return null; const [r, g, b, a = 1] = m.map(Number); return [r, g, b, a]; };
+  const lin = (v) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; };
+  const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  const mix = (fg, bg, a) => [0, 1, 2].map((i) => fg[i] * a + bg[i] * (1 - a));
+  const behind = (el) => {
+    const layers = [];
+    for (let e = el; e; e = e.parentElement) { const c = parse(getComputedStyle(e).backgroundColor); if (c && c[3] > 0) { layers.push(c); if (c[3] >= 0.99) break; } }
+    let bg = parse(getComputedStyle(document.body).backgroundColor) || [0, 0, 0, 1];
+    for (const c of layers.reverse()) bg = [...mix(c, bg, c[3]), 1];
+    return bg;
+  };
+  const low = [];
+  for (const el of col.querySelectorAll('*')) {
+    if (el.closest('svg, .ds-google, :disabled, [aria-disabled="true"]')) continue;
+    const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+    if (!own) continue;
+    const b = el.getBoundingClientRect();
+    const st = getComputedStyle(el);
+    if (!b.width || !b.height || st.visibility === 'hidden') continue;
+    let alpha = 1;
+    for (let e = el; e; e = e.parentElement) alpha *= Number(getComputedStyle(e).opacity);
+    const fg = parse(st.color);
+    const bg = behind(el);
+    const seen = mix(fg, bg, fg[3] * alpha);
+    const [a, z] = [lum(seen), lum(bg)].sort((x, y) => y - x);
+    const ratio = (a + 0.05) / (z + 0.05);
+    const size = parseFloat(st.fontSize);
+    const large = size >= 24 || (size >= 18.5 && Number(st.fontWeight) >= 700);
+    if (ratio < (large ? 3 : 4.5) - 0.01) low.push(`"${el.textContent.trim().slice(0, 28)}" ${ratio.toFixed(2)} to 1`);
+  }
+  return low;
 }
 
 const SCREENS = [
@@ -141,6 +212,7 @@ const SCREENS = [
       await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
       await page.getByText('That recovery code is now used.').waitFor({ timeout: 10000 });
     },
+    expect: [usedCodeLine(9)],
   },
   { key: 'acct-security', name: 'My Account, sign-in security', acct: true, world: { factor: 'verified', aal: 'aal2', codesLeft: 9 }, go: '/my-account/sign-in-security', wait: '.si-srow' },
   {
@@ -166,6 +238,71 @@ const SCREENS = [
       await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
       await page.getByText('recovery codes left').waitFor({ timeout: 10000 });
     },
+    expect: [lowCodesLine(2)],
+  },
+  // The wait after 5 wrong codes in a row (the prompt's words; M26 draws none).
+  {
+    key: 'coach-code',
+    name: 'Enter your code, after 5 wrong codes (not drawn in M26)',
+    shot: 'coach-code-wait',
+    noMock: true,
+    world: { factor: 'verified', aal: 'aal1' },
+    go: '/coach/sign-in/code',
+    then: async (page) => {
+      for (let i = 1; i <= 5; i += 1) {
+        await page.getByRole('textbox', { name: 'Code', exact: true }).fill(`00000${i}`);
+        await tapButton(page, 'Sign in');
+        await sleep(350);
+      }
+      await page.getByText('That was 5 wrong codes in a row.').waitFor({ timeout: 10000 });
+    },
+    expect: ['That was 5 wrong codes in a row.', 'Wait 30 seconds, then try again.'],
+  },
+  // You're in at 2, 1 and 0 left (M26 draws 9).
+  ...[2, 1, 0].map((n) => ({
+    key: 'auth-in',
+    name: `Signed in with a recovery code, ${n} left (M26 draws 9)`,
+    shot: `auth-in-${n}`,
+    noMock: true,
+    world: { factor: 'verified', aal: 'aal1', codesLeft: n + 1 },
+    go: '/coach/sign-in/help',
+    wait: '.si-field',
+    then: async (page, world) => {
+      await page.getByLabel('Recovery code').fill(world.codes.find((c) => !c.used).code);
+      await tapButton(page, 'Sign in');
+      await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
+      await page.getByText('That recovery code is now used.').waitFor({ timeout: 10000 });
+    },
+    expect: [usedCodeLine(n), makeNewCodesLine(n)].filter(Boolean),
+  })),
+  // The 2-or-fewer line after a code sign-in, at 1 and 0 too.
+  ...[1, 0].map((n) => ({
+    key: 'low-codes',
+    name: `You’re in, ${n} codes left (not drawn in M26)`,
+    shot: `low-codes-${n}`,
+    noMock: true,
+    world: { factor: 'verified', aal: 'aal1', codesLeft: n },
+    go: '/coach',
+    then: async (page, world) => {
+      await page.waitForURL(/\/coach\/sign-in\/code$/, { timeout: 15000 });
+      await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode);
+      await tapButton(page, 'Sign in');
+      await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
+      await page.getByText('Make new codes in My Account').waitFor({ timeout: 10000 });
+    },
+    expect: [lowCodesLine(n)],
+  })),
+  // Sign-in security's other current-code step: Set up on a new phone.
+  {
+    key: 'acct-security',
+    name: 'My Account, sign-in security, a current code before a new phone (not drawn in M26)',
+    shot: 'acct-security-phone',
+    noMock: true,
+    acct: true,
+    world: { factor: 'verified', aal: 'aal2', codesLeft: 9 },
+    go: '/my-account/sign-in-security',
+    wait: '.si-srow',
+    then: async (page) => { await page.getByRole('button', { name: 'Set up on a new phone' }).click(); await page.getByRole('textbox', { name: 'Code', exact: true }).waitFor(); },
   },
 ];
 
@@ -176,7 +313,8 @@ if (PARTS.includes('screens')) {
   for (const mode of MODES) {
     for (const width of SIZES) {
       for (const s of SCREENS) {
-        const tag = `${s.name}, ${width} ${mode}`;
+        if (ONLY && !ONLY.some((o) => (s.shot || s.key).startsWith(o))) continue;
+        const tag = `${s.name}, ${width} ${mode}${SCALE !== 1 ? `, text ×${SCALE}` : ''}`;
         const { ctx, page, world, errors } = await open(s.world, { width, mode });
         try {
           await page.goto(`${APP}${s.go}`);
@@ -192,10 +330,17 @@ if (PARTS.includes('screens')) {
           continue;
         }
         const root = s.acct ? '.si-col--account' : '.si-col';
-        if (OUT) await page.screenshot({ path: `${OUT}/${s.shot || s.key}.${width}.${mode}.png`, fullPage: true });
+        if (OUT) await page.screenshot({ path: `${OUT}/${s.shot || s.key}.${width}.${mode}${SUFFIX}.png`, fullPage: true });
+        if (s.expect) {
+          const built = squash(await words(page, root));
+          const missing = s.expect.filter((line) => !built.includes(squash(line)));
+          pass(`${tag}: says “${s.expect.join(' ')}”`, missing.length === 0, missing.join(' | '));
+        }
+        const dim = await page.evaluate(lowText, root);
+        pass(`${tag}: every line of text reaches 4.5 to 1 (3 to 1 when large)`, dim.length === 0, dim.slice(0, 4).join('; '));
 
         // M26's words, in M26's order (the prompt's words where they differ).
-        if (mock[s.key]) {
+        if (mock[s.key] && !s.noMock) {
           const built = squash(await words(page, root));
           let at = 0;
           const missing = [];
@@ -218,15 +363,19 @@ if (PARTS.includes('screens')) {
         pass(`${tag}: every outlined edge reaches 3 to 1`, edges.length === 0, edges.slice(0, 3).join('; '));
         const sideways = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
         pass(`${tag}: no sideways scroll`, sideways <= 0, `${sideways}px`);
-        pass(`${tag}: no console errors`, errors.length === 0, errors.slice(0, 2).join(' | '));
+        // A wrong code is Supabase's own 422, which the browser notes as a resource that didn't load.
+        const own = errors.filter((e) => !(s.shot === 'coach-code-wait' && /status of 422/.test(e)));
+        pass(`${tag}: no console errors`, own.length === 0, own.slice(0, 2).join(' | '));
         pass(`${tag}: nothing reached anywhere but the stand-ins`, !world.calls.some((c) => c.startsWith('blocked')), world.calls.filter((c) => c.startsWith('blocked')).join(', '));
 
         if (s.key === 'auth-setup') {
           const qr = await readQr(page);
           const shownKey = (await page.locator('.si-key').innerText()).replace(/\s+/g, '');
           const secret = qr.text ? new URL(qr.text.replace('otpauth://', 'https://')).searchParams.get('secret') : null;
-          pass(`${tag}: the QR code reads back as the typed key (jsQR${qr.inverted ? ', light on black' : ''})`, Boolean(qr.text) && secret === shownKey && shownKey === M26_KEY, qr.text ? 'read, but not the same key' : 'not read');
-          pass(`${tag}: the QR code is ${mode === 'dark' ? 'light on black' : 'dark on the page'}, with no white box`, mode === 'dark' ? qr.inverted === true && qr.corner.every((v) => v < 40) : qr.inverted === false, JSON.stringify({ inverted: qr.inverted, corner: qr.corner }));
+          pass(`${tag}: the QR code reads back as the typed key, with jsQR’s dontInvert`, Boolean(qr.text) && secret === shownKey && shownKey === M26_KEY, qr.text ? 'read, but not the same key' : 'not read');
+          const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) <= 3);
+          // The light page colour (#F9F8F5) under the dots in both modes; round it, the page itself, with no card or edge.
+          pass(`${tag}: the code alone sits on a square of the light page colour, with nothing round it`, near(qr.square, [249, 248, 245]) && qr.outside.every((c) => near(c, qr.page)) && near(qr.rim[0], [249, 248, 245]) && near(qr.rim[1], qr.page), JSON.stringify({ square: qr.square, outside: qr.outside, rim: qr.rim, page: qr.page }));
           pass(`${tag}: the key is shown in groups of four`, /^([A-Z2-7]{4} )+[A-Z2-7]{1,4}$/.test((await page.locator('.si-key').innerText()).trim()));
           const appRows = await page.locator('.si-apps .si-link').evaluateAll((els) => els.map((el) => { const b = el.getBoundingClientRect(); return { top: Math.round(b.top), h: b.height, href: el.getAttribute('href') }; }));
           pass(`${tag}: the three apps are links, each in its own 44px row`, appRows.length === 3 && appRows.every((r) => r.h >= 44 && /^https:\/\//.test(r.href)) && new Set(appRows.map((r) => r.top)).size === 3, JSON.stringify(appRows));
@@ -440,17 +589,19 @@ if (PARTS.includes('flows')) {
     await ctx.close();
   }
 
-  // Offline: one calm line on each screen.
-  for (const [go, setUp, press, line] of [
-    ['/coach/sign-in/code', { factor: 'verified' }, async (p) => { await p.getByRole('textbox', { name: 'Code', exact: true }).fill('123456'); await tapButton(p, 'Sign in'); }, 'Signing in needs a connection, so try again when you’re back online.'],
-    ['/coach/sign-in/help', { factor: 'verified' }, async (p) => { await p.getByLabel('Recovery code').fill('k7q2-9fmd'); await tapButton(p, 'Sign in'); }, 'Signing in needs a connection, so try again when you’re back online.'],
-    ['/coach/sign-in/set-up', { factor: 'none', codesMade: false, codesSaved: false }, null, 'Setting up your authenticator needs a connection, so try again when you’re back online.'],
-    ['/coach/sign-in/recovery-codes', { factor: 'verified', aal: 'aal2', codesSaved: false }, null, 'Making your recovery codes needs a connection, so try again when you’re back online.'],
-  ]) {
-    const { ctx, page, world } = await open(setUp);
+  // Offline: one calm line on each screen (with a picture of each, 1440 and 400, dark and light).
+  const OFFLINE_SIZES = [[1440, 'dark'], [400, 'light'], [1440, 'light'], [400, 'dark']];
+  for (const [go, setUp, press, line, shot, width, mode] of [
+    ['/coach/sign-in/code', { factor: 'verified' }, async (p) => { await p.getByRole('textbox', { name: 'Code', exact: true }).fill('123456'); await tapButton(p, 'Sign in'); }, 'Signing in needs a connection, so try again when you’re back online.', 'coach-code'],
+    ['/coach/sign-in/help', { factor: 'verified' }, async (p) => { await p.getByLabel('Recovery code').fill('k7q2-9fmd'); await tapButton(p, 'Sign in'); }, 'Signing in needs a connection, so try again when you’re back online.', 'auth-lost'],
+    ['/coach/sign-in/set-up', { factor: 'none', codesMade: false, codesSaved: false }, null, 'Setting up your authenticator needs a connection, so try again when you’re back online.', 'auth-setup'],
+    ['/coach/sign-in/recovery-codes', { factor: 'verified', aal: 'aal2', codesSaved: false }, null, 'Making your recovery codes needs a connection, so try again when you’re back online.', 'auth-codes'],
+    ['/my-account/sign-in-security', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, async (p) => { await p.getByRole('button', { name: 'Make new codes' }).click(); await p.getByRole('textbox', { name: 'Code', exact: true }).fill('123456'); await tapButton(p, 'Carry on'); }, 'Sign-in security needs a connection, so try again when you’re back online.', 'acct-security'],
+  ].flatMap((row) => OFFLINE_SIZES.map(([w, m]) => [...row, w, m]))) {
+    const { ctx, page, world, errors } = await open(setUp, { width, mode });
     if (press) {
       await page.goto(`${APP}${go}`);
-      await page.waitForSelector('.si-field', { timeout: 15000 });
+      await page.waitForSelector('.si-field, .si-srow', { timeout: 15000 });
       world.down = true;
       await ctx.setOffline(true);
       await press(page);
@@ -461,7 +612,16 @@ if (PARTS.includes('flows')) {
     }
     await page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
     const said = await message(page);
-    pass(`Offline on ${go}: one calm line`, said === line, said);
+    pass(`Offline on ${go}, ${width} ${mode}: one calm line`, said === line, said);
+    const root = go.startsWith('/my-account') ? '.si-col--account' : '.si-col';
+    await page.mouse.move(1, 1);
+    const sideways = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+    pass(`Offline on ${go}, ${width} ${mode}: no sideways scroll`, sideways <= 0, `${sideways}px`);
+    const dim = await page.evaluate(lowText, root);
+    pass(`Offline on ${go}, ${width} ${mode}: every line of text reaches 4.5 to 1`, dim.length === 0, dim.slice(0, 3).join('; '));
+    const crash = errors.filter((e) => !/Failed to load resource|net::ERR/.test(e));
+    pass(`Offline on ${go}, ${width} ${mode}: no page errors`, crash.length === 0, crash.slice(0, 2).join(' | '));
+    if (OUT) await page.screenshot({ path: `${OUT}/offline-${shot}.${width}.${mode}${SUFFIX}.png`, fullPage: true });
     await ctx.close();
   }
 
@@ -485,9 +645,10 @@ if (PARTS.includes('flows')) {
 // ---------------------------------------------------------------- part 3: the owner's reset
 if (PARTS.includes('reset')) {
   const { coachContext, standIn } = await import('../coach/shared.mjs');
-  for (const [width, mode] of [[1440, 'dark'], [400, 'light']]) {
-    const tag = `Owner’s reset, ${width} ${mode}`;
+  for (const [width, mode] of MODES.flatMap((m) => SIZES.map((w) => [w, m]))) {
+    const tag = `Owner’s reset, ${width} ${mode}${SCALE !== 1 ? `, text ×${SCALE}` : ''}`;
     const ctx = await coachContext(browser, { size: width, theme: mode });
+    if (SCALE !== 1) await ctx.addInitScript((px) => { document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = `html{font-size:${px}px !important}`; document.head.appendChild(st); }); }, 16 * SCALE);
     const page = await ctx.newPage();
     const store = await standIn(page, { role: 'owner', db: 'none' });
     const asked = [];
@@ -503,7 +664,8 @@ if (PARTS.includes('reset')) {
     await page.getByRole('button', { name: /^More for / }).first().waitFor({ timeout: 25000 }).catch(() => null);
     const mores = await page.getByRole('button', { name: /^More for / }).count();
     pass(`${tag}: each associate’s row has a More menu, the owner’s own has none`, mores === store.coaches.filter((c) => c.role !== 'owner' && c.active).length && mores >= 1, `${mores}`);
-    if (OUT) await page.screenshot({ path: `${OUT}/coaches.${width}.${mode}.png` });
+    await sleep(400);
+    if (OUT) await page.screenshot({ path: `${OUT}/coaches.${width}.${mode}${SUFFIX}.png` });
     if (mores) {
       await page.getByRole('button', { name: /^More for / }).first().click();
       await page.getByRole('menuitem', { name: 'Reset authenticator' }).click();
@@ -512,7 +674,30 @@ if (PARTS.includes('reset')) {
       await sleep(400);
       const text = (await panel.innerText()).replace(/\s+/g, ' ');
       pass(`${tag}: “Reset Maya’s authenticator?” with M26’s two lines, Reset it and Keep it`, text.toLowerCase().includes('reset maya’s authenticator?') && text.includes('Only do this after a video call with Maya, to check it’s them.') && text.includes('Their next sign-in asks them to set it up again, and their old recovery codes stop working.') && text.includes('Reset it') && text.includes('Keep it'), text.slice(0, 240));
-      if (OUT) await page.screenshot({ path: `${OUT}/acct-reset.${width}.${mode}.png` });
+      if (OUT) await page.screenshot({ path: `${OUT}/acct-reset.${width}.${mode}${SUFFIX}.png` });
+      // The panel itself: 44px taps, none shared, edges at 3 to 1, text at 4.5 to 1, no sideways scroll.
+      const panelTaps = (await page.evaluate(overlappingTaps)).filter((o) => /Reset it|Keep it|Close/.test(o));
+      pass(`${tag}: the panel's taps don't overlap`, panelTaps.length === 0, panelTaps.slice(0, 3).join('; '));
+      const small = await page.evaluate(() => {
+        const d = document.querySelector('[role=dialog]');
+        const out = [];
+        for (const el of d.querySelectorAll('button, a[href]')) {
+          const b = el.getBoundingClientRect();
+          if (!b.width) continue;
+          const af = getComputedStyle(el, '::after');
+          const h = Math.max(b.height, af.content !== 'none' && af.position === 'absolute' ? parseFloat(af.height) || 0 : 0);
+          const w = Math.max(b.width, af.content !== 'none' && af.position === 'absolute' ? parseFloat(af.width) || 0 : 0);
+          if (h < 43.5 || w < 43.5) out.push(`"${(el.getAttribute('aria-label') || el.textContent).trim().slice(0, 20)}" ${w.toFixed(0)} by ${h.toFixed(0)}`);
+        }
+        return out;
+      });
+      pass(`${tag}: every tap area in the panel is 44px`, small.length === 0, small.join('; '));
+      const panelEdges = await page.evaluate(outlinedEdges);
+      pass(`${tag}: every outlined edge reaches 3 to 1`, panelEdges.length === 0, panelEdges.slice(0, 3).join('; '));
+      const panelText = await page.evaluate(lowText, '[role=dialog]');
+      pass(`${tag}: every line of text in the panel reaches 4.5 to 1`, panelText.length === 0, panelText.slice(0, 3).join('; '));
+      const wide = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      pass(`${tag}: no sideways scroll`, wide <= 0, `${wide}px`);
       await page.getByRole('button', { name: 'Keep it' }).click();
       await sleep(500);
       pass(`${tag}: Keep it closes it, and nothing is asked of the server`, asked.length === 0 && !(await page.getByRole('dialog', { name: /Reset Maya/i }).isVisible().catch(() => false)));
@@ -522,6 +707,19 @@ if (PARTS.includes('reset')) {
       await page.getByText('only works on the live site').waitFor({ timeout: 10000 }).catch(() => null);
       pass(`${tag}: Reset it asks the server once, with the owner’s own sign-in and the coach’s id`, asked.length === 1 && asked[0].kind === 'reset' && asked[0].bearer && asked[0].coachId === store.coaches.find((c) => c.role !== 'owner').id, JSON.stringify(asked.map((a) => ({ kind: a.kind, bearer: a.bearer }))));
       pass(`${tag}: off the live site it says calmly that nothing changed`, await page.getByText('Resetting an authenticator only works on the live site, so nothing has changed here.').isVisible().catch(() => false));
+      // Offline: Reset it says one calm line, and asks nothing.
+      await page.keyboard.press('Escape');
+      await sleep(300);
+      await page.getByRole('button', { name: /^More for / }).first().click();
+      await page.getByRole('menuitem', { name: 'Reset authenticator' }).click();
+      await page.getByRole('dialog', { name: /Reset Maya/i }).waitFor({ timeout: 10000 });
+      await ctx.setOffline(true);
+      await page.getByRole('button', { name: 'Reset it' }).click();
+      const offLine = 'Resetting an authenticator needs a connection, so try again when you’re back online.';
+      await page.getByText(offLine).waitFor({ timeout: 10000 }).catch(() => null);
+      pass(`${tag}: offline, Reset it says one calm line and asks nothing`, (await page.getByText(offLine).isVisible().catch(() => false)) && asked.length === 1);
+      if (OUT) await page.screenshot({ path: `${OUT}/offline-acct-reset.${width}.${mode}${SUFFIX}.png` });
+      await ctx.setOffline(false);
     }
     pass(`${tag}: nothing was written to the test project`, !store.calls.some((c) => /^blocked/.test(c)), store.calls.filter((c) => /^blocked/.test(c)).slice(0, 3).join(', '));
     pass(`${tag}: no page errors`, errors.length === 0, errors.slice(0, 2).join(' | '));

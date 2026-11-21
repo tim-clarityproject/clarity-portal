@@ -374,7 +374,10 @@
   all: unset;
   cursor: pointer;
   box-sizing: border-box;
-  display: inline-flex;
+  /* Block-level: as an inline box it sat on a line of its own, and at twice
+     the text size that line's strut put 1px more under it than the spacing
+     rule's 18px to a link (the UI tester, run 5). */
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-px10);
@@ -642,8 +645,10 @@
   height: var(--si-qr);
 }
 
-.ui-root .si-qr-bg { fill: var(--bg); }
-.ui-root .si-qr-dots { fill: var(--text); }
+/* Dark dots on the light page colour in both modes (the UI tester, run 5): the
+   code alone, its quiet zone included, with no card or edge round it. */
+.ui-root .si-qr-bg { fill: var(--si-qr-paper); }
+.ui-root .si-qr-dots { fill: var(--si-qr-ink); }
 
 .ui-root .si-keyrow {
   margin-top: var(--space-px20);

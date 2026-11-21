@@ -57,8 +57,8 @@ export function SignInPage({ title, core = false, back = false, onSubmit, childr
 }
 
 /** A line of words under the title. */
-export function Line({ children }) {
-  return <p className="si-p">{children}</p>;
+export function Line({ children, id }) {
+  return <p className="si-p" id={id}>{children}</p>;
 }
 
 /**
@@ -242,10 +242,12 @@ export function CopyButton({ text, label, onCopied, onMissed }) {
 
 /**
  * The authenticator's QR code, drawn here from the set-up address (never
- * Supabase's own picture, which has a white box): the code's dark modules
- * in the text colour on the page's own colour, so it is light on black in
- * dark mode. The square behind it is the page's colour and includes the
- * code's quiet zone (4 modules), so a phone's camera finds its edges.
+ * Supabase's own picture, which has a white box): dark modules on a square
+ * in the light page colour, in both modes, so an authenticator app reads it
+ * without inverting (light on black in dark mode was a real risk for Google
+ * and Microsoft Authenticator: the prompt's "page-coloured square", as
+ * decided). The square is the code alone with its quiet zone (4 modules),
+ * so a phone's camera finds its edges; no card or edge round it.
  * The address is never logged or kept: it lives only in the page's memory.
  */
 export function QrCode({ value, label }) {
