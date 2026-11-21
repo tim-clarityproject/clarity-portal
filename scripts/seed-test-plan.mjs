@@ -307,7 +307,7 @@ await put('todos', [
 ].map((t) => ({ ...t, id: randomUUID(), user_id: me, sprint_id: sprintId, source: 'manual' })));
 // One to-do waiting in the Backlog: no sprint and no week yet (Tim, 13 Nov, 10:42).
 await put('todos', [
-  { id: randomUUID(), user_id: me, strategy_id: S[2], text: 'Ask Tom what would help him bring decisions to me early', impact: 2, sprint_id: null, planned_week: null, created_on: day(startOn, 19), source: 'manual' },
+  { id: randomUUID(), user_id: me, strategy_id: S[2], text: 'Ask Tom what would make it easier to bring decisions to me early', impact: 2, sprint_id: null, planned_week: null, created_on: day(startOn, 19), source: 'manual' },
 ]);
 
 const winId = randomUUID();

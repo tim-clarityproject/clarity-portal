@@ -372,7 +372,7 @@ pass('add to-do: saved for this week', added?.planned_week === 4 && added?.sprin
   pass('backlog: saved with no sprint and no week', Boolean(waitingRow) && waitingRow.planned_week === null && waitingRow.sprint_id === null, JSON.stringify(waitingRow));
   await backlogFold.getByRole('button', { name: 'Backlog' }).click();
   await backlogRow(BACK).waitFor({ timeout: 5000 }).catch(() => null);
-  pass('backlog: listed under Backlog, with the seeded one', await backlogRow(BACK).count() === 1 && await backlogRow('Ask Tom what would help him').count() === 1);
+  pass('backlog: listed under Backlog, with the seeded one', await backlogRow(BACK).count() === 1 && await backlogRow('Ask Tom what would').count() === 1);
   pass('backlog: not among this week’s to-dos', await page.locator('[aria-label="To-dos this week"] .ds-todo').filter({ hasText: BACK }).count() === 0);
   pass('backlog: rows have nothing to tick', await backlogFold.getByRole('checkbox').count() === 0);
   await shot(page, 'backlog');

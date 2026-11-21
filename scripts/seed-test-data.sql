@@ -247,9 +247,9 @@ declare
           'Interviewed two designers. One of them asked better questions than I would have at that stage.',
           'Tired today. A slower day is fine. The plan still holds.'],
     array['The pilot is going better than I expected. The shift leads are more confident than they let on.',
-          'I am avoiding the conversation with Tom about his timekeeping. It needs to happen this week.',
+          'I am avoiding the conversation with Tom about timekeeping. It needs to happen this week.',
           'A good day would be leaving by 18:00 and still feeling on top of things.',
-          'Grateful for Aisha. She handled the scanner failure without calling me.',
+          'Grateful for Aisha, who handled the scanner failure without calling me.',
           'Peak season is coming. I want to go into it rested, not already running on empty.']])[v:v];
 
   journal_prompts text[] := array['What is on my mind?', 'What am I avoiding?', 'What would make today a good day?',
@@ -494,7 +494,7 @@ begin
             jsonb_build_object(
               'observation', 'Tom has started three of the last five shifts late.',
               'impact', 'The early vans leave late and the drivers wait around.',
-              'need', 'Shifts that start on time, and to know if something is going on for him.',
+              'need', 'Shifts that start on time, and to know if something is going on for them.',
               'selectedQuestions', jsonb_build_array(0, 2),
               'customQuestion', 'What would help you get in on time?'),
             true, 'draft', pg_temp.day_at(2, 21, 10), pg_temp.day_at(2, 21, 20));

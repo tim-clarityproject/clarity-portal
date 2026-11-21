@@ -338,7 +338,7 @@ const GU = {
       goal: 'Cut our time to hire to 30 days by March.',
       cons: ['Hiring managers take a week to give feedback', 'Two of the four interviewers are away in December', 'The careers page still shows last year’s roles'],
       opps: ['Priya’s team already runs one-day loops', 'The recruiter starts on Monday'],
-      opts: ['Agree a 48-hour feedback rule', 'Run every interview loop in one day', 'Ask Priya to show the other teams her loop', 'Rewrite the careers page', 'Pay a referral bonus'],
+      opts: ['Agree a 48-hour feedback rule', 'Run every interview loop in one day', 'Ask Priya to share the loop with the other teams', 'Rewrite the careers page', 'Pay a referral bonus'],
       steps: [['Agree a 48-hour feedback rule with the four hiring managers', 'week'], ['Book Priya for 30 minutes at Thursday’s team meeting', 'backlog'], ['Ask the recruiter to draft the careers page', null]],
     }),
   }),

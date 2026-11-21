@@ -618,7 +618,7 @@ function TodosDemo() {
       />
       <p className="dr-small">The Backlog holds to-dos with no week yet. A row opens to “Plan into a week”.</p>
       <TodoList label="Backlog">
-        <TodoRow plain text="Ask Tom what would help him bring decisions to me early" strategyName="Grow through referrals" onMove={() => setPanel('plan')} moveLabel="Plan into a week" />
+        <TodoRow plain text="Ask Tom what would make it easier to bring decisions to me early" strategyName="Grow through referrals" onMove={() => setPanel('plan')} moveLabel="Plan into a week" />
         <TodoRow plain text="Write up the board paper’s first page" strategyName="Maintain my availability to do good work" onMove={() => setPanel('plan')} moveLabel="Plan into a week" />
       </TodoList>
       <MoveTodoPanel
@@ -626,7 +626,7 @@ function TodosDemo() {
         onClose={() => setPanel(null)}
         title="Plan this to-do"
         label="Which week should it go into?"
-        text="Ask Tom what would help him bring decisions to me early"
+        text="Ask Tom what would make it easier to bring decisions to me early"
         options={[{ value: 4, label: 'This week, Mon 26 Oct to Sun 1 Nov' }, { value: 5, label: 'Week 5, Mon 2 Nov to Sun 8 Nov' }]}
         onMove={(w) => { setPanel(null); toast.saved({ message: w === 4 ? 'Moved to this week.' : `Moved to week ${w}.`, onUndo: () => {} }); }}
       />

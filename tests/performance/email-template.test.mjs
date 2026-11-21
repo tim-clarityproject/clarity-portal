@@ -126,12 +126,12 @@ test('markup, comments and other services’ placeholders typed by a person are 
 // ---------------------------------------------------------------- the guest's copy of a plan (Get unstuck, M9)
 test('the guest’s copy: the next steps first, the goal, then one button to a free account', async () => {
   const { guestPlanCopyEmail } = await import('../../src/lib/email/emails.js');
-  const doc = guestPlanCopyEmail({ origin: 'https://portal.example.invalid', toolName: 'Get unstuck', coachName: 'Tim', goal: 'Cut our time to hire to 30 days by March', nextSteps: ['Agree a 48-hour feedback rule', '  ', 'Ask Priya to show her loop'] });
+  const doc = guestPlanCopyEmail({ origin: 'https://portal.example.invalid', toolName: 'Get unstuck', coachName: 'Tim', goal: 'Cut our time to hire to 30 days by March', nextSteps: ['Agree a 48-hour feedback rule', '  ', 'Ask Priya to share the loop'] });
   const r = renderEmail(doc);
   assert.equal(r.subject, 'Your Get unstuck plan');
   assert.deepEqual(r.images, ['crosshair']);
   const text = r.text;
-  const order = ['Here’s what you’ll do next.', '1. Agree a 48-hour feedback rule', '2. Ask Priya to show her loop', 'Your goal:', 'Cut our time to hire to 30 days by March',
+  const order = ['Here’s what you’ll do next.', '1. Agree a 48-hour feedback rule', '2. Ask Priya to share the loop', 'Your goal:', 'Cut our time to hire to 30 days by March',
     'Plan this into your week with The Clarity Portal, your personal performance tool.', 'It’s free, and this plan moves into it.', 'Create my free account:', 'https://portal.example.invalid/auth/sign-up',
     'You’re getting this because you used Get unstuck through a link from Tim.', EMAIL_SIGN_OFF];
   let at = -1;

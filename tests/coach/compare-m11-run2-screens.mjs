@@ -22,6 +22,7 @@
 // difference, until a rule explains it. The differences no rule explains
 // that were kept as built are listed with "left for Tim to decide".
 import { settle } from './shared.mjs';
+import { THEY, THEY_NAMES } from './compare-m11-they.mjs';
 import { DAY, ID, SES } from './seed.mjs';
 import { TUE } from './screens.mjs';
 
@@ -102,6 +103,7 @@ const T_TIME = TIM('under a day’s heading only the time shows (rule 29ap: no r
 /** Differences that hold on every screen: met where M11 shows them, never required. */
 export const EVERYWHERE = {
   changes: [
+    ...THEY,
     [/^(Elena Ruiz|Tom Hale|Ruth Adams)$/, null, 'a to-do names its client; a lead’s or contact’s name on its row wasn’t added in run 4 (left for Tim to decide), and one from an email says “From email” with the sender in its panel', { quiet: true, say: 'a lead’s or contact’s name on a to-do’s row' }],
     ['09:45 Chicago', '9:45 am Chicago', 'a US or Canadian client’s own time is 12-hour (time zone rule 5), as on the calendar’s tiles; M11 writes it 24-hour', { quiet: true, say: '09:45 Chicago' }],
     seed(/^Group of 6$/, 'Group of 3', 'the Kestrel group has 3 members, where M11’s has 6', { quiet: true, say: 'Group of 6' }),
@@ -111,6 +113,7 @@ export const EVERYWHERE = {
     [/^(SUPERVISION|Hours since your last check-in|8 of 10|Next check-in with Tim|Thu 19 Nov, 16:00, Zoom|Thu 12 Nov, 16:00, Zoom|Join on Zoom|YOUR HOURS AND PAY|Coaching hours in November|24|Pay for November|£2,400|Download my November statement)$/, null, 'an associate’s Supervision and Your hours and pay are Phase 6b and 6c (coach rule 26)', { who: 'associate', quiet: true, say: 'Supervision, and Your hours and pay' }],
   ],
   added: [
+    ...THEY_NAMES,
     [/^name: Who can see this: /, 'the eye says “Who can see this:” before its words to a screen reader (rule 24)', null, { quiet: true, say: 'Who can see this:' }],
     [/^name: \d\d:\d\d, .+\. Open the (brief|group)$/, 'a call’s row tells a screen reader what it opens; its words are M11’s', null, { quiet: true, say: 'a call’s spoken name' }],
     [/^name: [^“”]+, (Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d+ (Nov|Dec)$/, 'a forecast row is read out as one sentence; its words are the row’s', null, { quiet: true, say: 'a forecast row’s spoken name' }],

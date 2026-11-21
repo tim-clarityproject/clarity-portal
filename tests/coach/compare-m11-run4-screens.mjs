@@ -88,7 +88,7 @@ const MORE_TOUCH = 'on a touch screen a card can’t be dragged, so each has Mor
 const LEADS_PAGE = {
   changes: [['Reports', null, REPORTS], ['You emailed Sarah Kent at Arden Vale, who isn’t in the portal yet.', 'You emailed Sarah Kent, who isn’t in the portal yet.', WAIT_ORG], ...LEAD_DATES],
   added: [DOYLES, ...LEAD_DATES_ADDED,
-    [/^(Chris Doyle may be in here twice\.|Review|Head coach, rugby|Opened (3 times|once)|Still to find out: when|£18,000|Brightwater Capital|Quiet for 19 days|Ready to decide|Search leads|Book a Chemistry Call|Chemistry Call|Follow up on the proposal|Send workshop dates|Check in on his decision)$/, PHONE_CARDS, null, { on: 'p', say: 'a card’s other lines on a phone' }],
+    [/^(Chris Doyle may be in here twice\.|Review|Head coach, rugby|Opened (3 times|once)|Still to find out: when|£18,000|Brightwater Capital|Quiet for 19 days|Ready to decide|Search leads|Book a Chemistry Call|Chemistry Call|Follow up on the proposal|Send workshop dates|Check in on the decision)$/, PHONE_CARDS, null, { on: 'p', say: 'a card’s other lines on a phone' }],
     [/^name: More for .+$/, MORE_TOUCH, null, { on: 'p', say: 'More for Amy Cole, on a phone' }]],
   moved: [['automations', TIM('the foot row reads Edit stages, Import from a spreadsheet, Export, Automations, Cold leads (builder D added Automations to the end of builder C’s row); M11 puts Automations second'), null, { say: 'Automations, in the foot row' }]],
 };
@@ -114,12 +114,15 @@ const ORGPAGE = {
   moved: [seeded(/./, 'the seed’s organisation has its rows in another order where M11’s next sessions and Owen aren’t there', { say: 'the order of the rows' })],
 };
 
+import { THEY, THEY_NAMES } from './compare-m11-they.mjs';
+
 export const EXTRA_GROUPS = [];
 
 /** Differences that hold on every screen of this run: met where M11 shows them, never required. */
 export const EVERYWHERE = {
-  changes: [],
+  changes: [...THEY],
   added: [
+    ...THEY_NAMES,
     [/^name: Who can see this: /, 'the eye says “Who can see this:” before its words to a screen reader (rule 24)', null, { quiet: true, say: 'Who can see this:' }],
     [/^name: Close$/, 'a panel and, on a phone, a menu has the shared Close (the built design reference)', null, { quiet: true, say: 'Close' }],
   ],
@@ -140,7 +143,7 @@ export const ROWS = [
     moved: [...LEADS_PAGE.moved, [/./, TIM('the table opens soonest next step first (Tom’s overdue one at the top); M11 lists them in the order they were added'), null, { say: 'the table’s order' }]] },
   { name: 'A lead', m11: 'lead', built: 'lead-amy', ...OWNER,
     changes: [['iMessage', null, IMSG], seed('amy.cole@northfield.co', 'amy.cole@example.invalid', 'invented addresses in the tests are example.invalid'), [/^(Value|£13,500)$/, null, ONEVALUE, { say: 'the second Value' }]],
-    added: [[/^name: (Edit where Amy is|Email, .+\. Edit|Phone, .+\. Edit|Tags, .+\. Edit)$/, EDIT, null, { say: 'Edit where Amy is, Email … Edit' }], [/^(Wants her senior team pulling the same way before the Q1 restructure\.|Decides with her CEO by the end of November\.)$/, TIM('on a phone the timeline keeps each line’s detail; M11’s phone shows the line alone'), null, { on: 'p', say: 'a call’s notes on the timeline, on a phone' }]],
+    added: [[/^name: (Edit where Amy is|Email, .+\. Edit|Phone, .+\. Edit|Tags, .+\. Edit)$/, EDIT, null, { say: 'Edit where Amy is, Email … Edit' }], [/^(Wants the senior team pulling the same way before the Q1 restructure\.|Decides with the CEO by the end of November\.)$/, TIM('on a phone the timeline keeps each line’s detail; M11’s phone shows the line alone'), null, { on: 'p', say: 'a call’s notes on the timeline, on a phone' }]],
     moved: [[/^(mark as won|booking link)$/, 'Mark as won and Booking link stay in the row on a phone (builder C’s decision 8)', null, { on: 'p', say: 'Mark as won, Booking link' }], [/^(opened your proposal|you sent the proposal|proposal sent|chemistry call, 30 minutes|booked a chemistry call|referred by hannah wells)$/, TIM('on a phone the timeline’s lines and details keep the laptop’s order; M11’s phone sets them otherwise'), null, { on: 'p', say: 'the timeline, on a phone' }], [/^(today, 07:55|amy replied: our ceo is in on thursday|email)$/, NEWEST, null, { say: 'Amy’s reply above the proposal opened' }], ['northfield logistics', 'the organisation is its own link line under the title, as on a client’s page (builder C’s decision 8)'], [/^(value|£13,500)$/, ONEVALUE, null, { say: 'Value' }]] },
   { name: 'A lead with emails', m11: 'lead2', built: 'lead-ruth', ...OWNER,
     changes: [['iMessage', null, IMSG], ['Send a proposal', null, PROPOSAL], ...LEAD_DATES, seed('ruth.adeyemi@harbourcityfc.co.uk', 'ruth@example.invalid', 'invented addresses'), [/^(Value|Add)$/, null, ONEVALUE, { say: 'the second Value' }]],

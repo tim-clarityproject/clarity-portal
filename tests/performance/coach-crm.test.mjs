@@ -25,12 +25,12 @@ const lead = (id, name, stageId, extra = {}) => ({ id, coach_id: ME, name, email
   next_step: null, next_step_on: null, next_step_time: null, referred_by: null, referred_by_person: null, network_person_id: null, last_contact_on: null, want_outcome: null, want_pain: null, who_decides: null,
   who_funds: null, decide_when: null, won_at: null, won_profile_id: null, cold_at: null, cold_reason: null, cold_check_on: null, merged_into: null, notes: null, created_at: '2026-10-20T09:00:00.000Z', ...extra });
 const AMY = lead('amy', 'Amy Cole', 's-prop', { email: 'amy@example.invalid', organisation: 'Northfield Logistics', organisation_id: 'org-n', value: 13500, next_step: 'Follow up on the proposal', next_step_on: '2026-11-19',
-  last_contact_on: TODAY, referred_by: 'Hannah Wells', referred_by_person: 'np-hannah', source: 'referral', want_outcome: 'A team that owns its decisions.', want_pain: 'Every decision comes back to her.',
-  who_decides: 'Amy, with her CEO.', who_funds: 'Northfield.' });
+  last_contact_on: TODAY, referred_by: 'Hannah Wells', referred_by_person: 'np-hannah', source: 'referral', want_outcome: 'A team that owns its decisions.', want_pain: 'Every decision comes back to Amy.',
+  who_decides: 'Amy, with the CEO.', who_funds: 'Northfield.' });
 const CHRIS = lead('chris', 'Chris Lowe', 's-prop', { organisation: 'Kestrel Group', value: 18000, next_step: 'Send workshop dates', next_step_on: '2026-11-23', last_contact_on: '2026-11-11' });
-const TOM = lead('tom', 'Tom Hale', 's-dec', { organisation: 'Brightwater Capital', value: 7500, next_step: 'Check in on his decision', next_step_on: '2026-11-13', last_contact_on: '2026-10-29',
+const TOM = lead('tom', 'Tom Hale', 's-dec', { organisation: 'Brightwater Capital', value: 7500, next_step: 'Check in on the decision', next_step_on: '2026-11-13', last_contact_on: '2026-10-29',
   want_outcome: 'x', want_pain: 'x', who_decides: 'x', who_funds: 'x', decide_when: 'January.' });
-const ELENA = lead('elena', 'Elena Ruiz', 's-new', { job_title: 'Founder', next_step: 'Reply to her email', next_step_on: TODAY, last_contact_on: '2026-11-16' });
+const ELENA = lead('elena', 'Elena Ruiz', 's-new', { job_title: 'Founder', next_step: 'Reply to Elena’s email', next_step_on: TODAY, last_contact_on: '2026-11-16' });
 const RUTH = lead('ruth', 'Ruth Adeyemi', 's-call', { email: 'ruth@example.invalid', organisation: 'Harbour City FC', next_step: 'Chemistry Call', next_step_on: '2026-11-18', next_step_time: '13:00:00', last_contact_on: '2026-11-15' });
 const LEO = lead('leo', 'Leo Grant', 's-won', { organisation: 'Northfield Logistics', value: 13500, won_at: '2026-11-13T12:00:00.000Z', won_profile_id: 'p-leo', last_contact_on: '2026-11-13' });
 const COLD = lead('cold', 'Priya Menon', 's-prop', { value: 9000, cold_at: '2026-10-18T09:00:00.000Z', cold_reason: 'No budget this year.', cold_check_on: '2027-01-16' });
@@ -131,7 +131,7 @@ test('Quiet shows from 14 days with no contact, never on a won or cold lead', ()
 });
 
 test('the next step says when: Today, the day, the day and time, or Overdue since', () => {
-  assert.deepEqual(crm.nextStepWords(ELENA, TODAY), { step: 'Reply to her email', when: 'Today', overdue: false, line: 'Reply to her email, Today' });
+  assert.deepEqual(crm.nextStepWords(ELENA, TODAY), { step: 'Reply to Elena’s email', when: 'Today', overdue: false, line: 'Reply to Elena’s email, Today' });
   assert.equal(crm.nextStepWords(RUTH, TODAY).line, 'Chemistry Call, Wed 18 Nov, 13:00');
   assert.equal(crm.nextStepWords(AMY, TODAY).when, 'Thu 19 Nov');
   assert.deepEqual([crm.nextStepWords(TOM, TODAY).when, crm.nextStepWords(TOM, TODAY).overdue], ['Overdue since Fri 13 Nov', true]);
@@ -195,7 +195,7 @@ test('the table sorts as its headings say, blanks last both ways, and Show only 
   assert.deepEqual([crm.leadCountWords(8, 8), crm.leadCountWords(3, 8), crm.leadCountWords(1, 1)], ['8 leads', '3 of 8 leads', '1 lead']);
   // "Edit stage", never "Change stage".
   assert.deepEqual(crm.LEAD_ROW_MENU.map(([, label]) => label), ['Edit details', 'Edit stage', 'Log a call', 'Select', 'Mark as cold']);
-  assert.deepEqual([crm.withNextStep(AMY, ' Call her CEO ').next_step, crm.withNextStep(AMY, '').next_step_on], ['Call her CEO', null]);
+  assert.deepEqual([crm.withNextStep(AMY, ' Call the CEO ').next_step, crm.withNextStep(AMY, '').next_step_on], ['Call the CEO', null]);
 });
 
 // ---------------------------------------------------------------- adding, Referred by
@@ -236,7 +236,7 @@ test('the timeline is newest first, with one line for a proposal opened several 
   const emails = [{ id: 'e4', direction: 'in', from_name: 'Amy Cole', subject: 'Re: Leadership Accelerator proposal', hidden: false }, { id: 'e3', direction: 'out', subject: 'Leadership Accelerator proposal', hidden: false }, { id: 'e9', direction: 'in', subject: 'Hidden', hidden: true }];
   const events = [
     ev('1', 'referred', local('2026-11-06', '09:00'), 'Referred by Hannah Wells', 'Hannah introduced you by email.'),
-    ev('3', 'call', local('2026-11-10', '09:00'), 'Chemistry Call, 30 minutes', 'Wants her team pulling the same way.\nDecides with her CEO.'),
+    ev('3', 'call', local('2026-11-10', '09:00'), 'Chemistry Call, 30 minutes', 'Wants the team pulling the same way.\nDecides with the CEO.'),
     ev('4', 'proposal', local('2026-11-12', '09:00'), 'Proposal sent', 'Leadership Accelerator, £13,500 + VAT.'),
     ev('5', 'email', local('2026-11-12', '09:40'), 'Leadership Accelerator proposal', null, { email_id: 'e3' }),
     ev('6', 'proposal_opened', local('2026-11-13', '09:00'), 'Opened your proposal', null, { name: 'Leadership Accelerator' }),
@@ -251,7 +251,7 @@ test('the timeline is newest first, with one line for a proposal opened several 
     ['Thu 12 Nov', 'Proposal sent', ''], ['Tue 10 Nov', 'Chemistry Call, 30 minutes', ''], ['Fri 6 Nov', 'Referred by Hannah Wells', ''],
   ]);
   assert.deepEqual(rows[0].lines, ['Leadership Accelerator. Opened 3 times.']);
-  assert.deepEqual(rows[4].lines, ['Wants her team pulling the same way.', 'Decides with her CEO.']);
+  assert.deepEqual(rows[4].lines, ['Wants the team pulling the same way.', 'Decides with the CEO.']);
   assert.equal(rows[1].emailId, 'e4');
   // A line the coach's own words are on keeps them.
   assert.equal(crm.leadTimeline([ev('x', 'email', local(TODAY, '08:00'), 'Amy replied: Our CEO is in on Thursday', null, { email_id: 'e4' })], { emails, lead: AMY, todayKey: TODAY })[0].title, 'Amy replied: Our CEO is in on Thursday');
@@ -268,11 +268,11 @@ test('contact moves a lead’s last contact forward and never back; a note or a 
 });
 
 test('Log a call writes the line, what was learned, the next step and its to-do, and the stage', () => {
-  const out = crm.logCall(RUTH, { how: 'Keen to start in January.', next: 'Call with her CEO', nextOn: '2026-11-20', stageId: 's-prop', learned: { want_outcome: 'A calmer season.', decide_when: 'January.' }, callName: 'Chemistry Call', minutes: 30 },
+  const out = crm.logCall(RUTH, { how: 'Keen to start in January.', next: 'Call with the CEO', nextOn: '2026-11-20', stageId: 's-prop', learned: { want_outcome: 'A calmer season.', decide_when: 'January.' }, callName: 'Chemistry Call', minutes: 30 },
     { id: 'c1', todoId: 't1', moveId: 'm1', nowIso: NOW, todayKey: TODAY, stages: STAGES });
-  assert.deepEqual([out.lead.last_contact_on, out.lead.next_step, out.lead.next_step_on, out.lead.stage_id, out.lead.want_outcome, out.lead.decide_when], [TODAY, 'Call with her CEO', '2026-11-20', 's-prop', 'A calmer season.', 'January.']);
+  assert.deepEqual([out.lead.last_contact_on, out.lead.next_step, out.lead.next_step_on, out.lead.stage_id, out.lead.want_outcome, out.lead.decide_when], [TODAY, 'Call with the CEO', '2026-11-20', 's-prop', 'A calmer season.', 'January.']);
   assert.deepEqual(out.events.map((e) => [e.kind, e.title]), [['call', 'Chemistry Call, 30 minutes'], ['stage', 'Moved to Proposal sent']]);
-  assert.deepEqual([out.todo.title, out.todo.planned_on, out.todo.lead_id, out.todo.someday], ['Call with her CEO', '2026-11-20', 'ruth', false]);
+  assert.deepEqual([out.todo.title, out.todo.planned_on, out.todo.lead_id, out.todo.someday], ['Call with the CEO', '2026-11-20', 'ruth', false]);
   assert.equal(out.toast, 'Logged. The follow-up is on your to-dos for Fri 20 Nov.');
   assert.equal(crm.logCall(RUTH, { how: ' ' }, { id: 'c2', todoId: 't2', moveId: 'm2', nowIso: NOW, todayKey: TODAY }).error, 'Type how it went, or what happens next, to carry on.');
   // Log a call never makes a client: Won is the coach's own button.
@@ -357,7 +357,7 @@ test('import shows duplicates first: the same email, the same name, or twice in 
 // ---------------------------------------------------------------- merge and Undo
 
 const DOYLE = lead('d1', 'Chris Doyle', 's-new', { email: 'chris@example.invalid', organisation: 'Doyle Capital', notes: 'Referrer, 3 people sent', last_contact_on: '2026-11-05' });
-const DOYLE2 = lead('d2', 'Christopher Doyle', 's-new', { phone: '07700 900542', organisation: 'Doyle Capital Partners', notes: 'Added from the Chemistry Call page', last_contact_on: '2026-11-09', next_step: 'Call him', next_step_on: '2026-11-20', want_outcome: 'More referrals' });
+const DOYLE2 = lead('d2', 'Christopher Doyle', 's-new', { phone: '07700 900542', organisation: 'Doyle Capital Partners', notes: 'Added from the Chemistry Call page', last_contact_on: '2026-11-09', next_step: 'Call Chris', next_step_on: '2026-11-20', want_outcome: 'More referrals' });
 
 test('likely duplicates are found by email, by name and by a first name that starts the other, until the coach says they differ', () => {
   const pairs = crm.leadDuplicates([...LEADS, DOYLE, DOYLE2]);
@@ -374,7 +374,7 @@ test('Merge into one offers a choice only where the two differ, and merges as th
   assert.deepEqual(plan.map((r) => [r.label, r.choose, r.one]), [['Name', true, ''], ['Email', false, 'chris@example.invalid'], ['Mobile', false, '07700 900542'], ['Organisation', true, ''], ['Notes', true, '']]);
   const merged = crm.mergedLead(DOYLE, DOYLE2, { organisation: true });
   assert.deepEqual([merged.name, merged.email, merged.phone, merged.organisation, merged.notes, merged.next_step, merged.next_step_on, merged.want_outcome, merged.last_contact_on],
-    ['Chris Doyle', 'chris@example.invalid', '07700 900542', 'Doyle Capital Partners', 'Referrer, 3 people sent', 'Call him', '2026-11-20', 'More referrals', '2026-11-09']);
+    ['Chris Doyle', 'chris@example.invalid', '07700 900542', 'Doyle Capital Partners', 'Referrer, 3 people sent', 'Call Chris', '2026-11-20', 'More referrals', '2026-11-09']);
 });
 
 test('a merge on the device moves everything to the kept lead, and Undo puts every row back as it was', () => {
@@ -687,7 +687,7 @@ test('check-ins due are the next one a past client, within 30 days or overdue, s
   assert.equal(crm.checkInsDue([ci('t', 'p-ben', 3, TODAY)], profiles, { todayKey: TODAY })[0].when, 'Due today');
 });
 
-test('a check-in note opens in the coach’s own email with the ask he chose, and nothing is sent', () => {
+test('a check-in note opens in the coach’s own email with the ask they chose, and nothing is sent', () => {
   const grace = { id: 'p-grace', name: 'Grace Liu', email: 'grace@example.invalid', ended_on: '2026-06-12' };
   const checkIn = { id: '1', profile_id: 'p-grace', months: 6, due_on: '2026-12-12', ask: 'referral' };
   assert.deepEqual([crm.suggestedAsk(3), crm.suggestedAsk(6), crm.suggestedAsk(12)], ['testimonial', 'referral', 'referral']);
@@ -729,7 +729,7 @@ test('the account map has three parts: Who’s who, Agreements and proposals, an
     ],
     growth: [
       { id: 'g-1', organisation_id: 'org-k', kind: 'seats', title: '6 of 20 seats are free.', note: 'The leadership team could use them for their own sprints.', status: 'open' },
-      { id: 'g-2', organisation_id: 'org-k', kind: 'renewal', title: 'Owen’s coaching ends soon.', note: 'Maya is his coach.', status: 'open' },
+      { id: 'g-2', organisation_id: 'org-k', kind: 'renewal', title: 'Owen’s coaching ends soon.', note: 'Maya is Owen’s coach.', status: 'open' },
       { id: 'g-3', organisation_id: 'org-k', kind: 'workshop', title: 'No workshop is booked for next quarter.', status: 'raised', lead_id: 'l-9' },
       { id: 'g-4', organisation_id: 'org-k', kind: 'other', title: 'Dropped.', status: 'dropped' },
     ],
@@ -753,7 +753,7 @@ test('the account map has three parts: Who’s who, Agreements and proposals, an
 test('a won lead’s client keeps a mobile only in the form the client’s row takes', () => {
   const uk = crm.wonPlan({ ...AMY, phone: '07700 900461' }, { stages: STAGES, profileId: 'p', eventId: 'e', nowIso: NOW, todayKey: TODAY });
   assert.equal(uk.profile.mobile, '+447700900461');
-  assert.equal(crm.wonPlan({ ...AMY, phone: 'ask her PA' }, { stages: STAGES, profileId: 'p', eventId: 'e', nowIso: NOW, todayKey: TODAY }).profile.mobile, null);
+  assert.equal(crm.wonPlan({ ...AMY, phone: 'ask the PA' }, { stages: STAGES, profileId: 'p', eventId: 'e', nowIso: NOW, todayKey: TODAY }).profile.mobile, null);
 });
 
 test('Leads narrowed by tags and by the coach’s own fields', () => {

@@ -87,7 +87,7 @@ export const EMAIL_EXAMPLES = [
       toolName: 'Get unstuck',
       coachName: 'Tim',
       goal: 'Cut our time to hire to 30 days by March',
-      nextSteps: ['Agree a 48-hour feedback rule with the four hiring managers', 'Ask Priya to show the other teams her one-day loop'],
+      nextSteps: ['Agree a 48-hour feedback rule with the four hiring managers', 'Ask Priya to share the one-day loop with the other teams'],
     }),
   },
   {

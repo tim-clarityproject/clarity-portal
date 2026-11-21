@@ -172,7 +172,7 @@ export async function runDay({ browser, report, parts }) {
     const planned = async (again = '') => {
       const text = await words(page);
       pass(`${tag}: Start my day says “Your day is planned”${again}`, (await toast(page)) === 'Your day is planned', await toast(page));
-      pass(`${tag}: the two picked are in today’s list, the one sent on has gone, the one kept stays${again}`, /Call Priya about the keynote/.test(text) && /Pull Sam’s progress for the review/.test(text) && !/Draft the Northfield workshop outline/.test(text) && /Check in with Tom Hale on his decision/.test(text));
+      pass(`${tag}: the two picked are in today’s list, the one sent on has gone, the one kept stays${again}`, /Call Priya about the keynote/.test(text) && /Pull Sam’s progress for the review/.test(text) && !/Draft the Northfield workshop outline/.test(text) && /Check in with Tom Hale on the decision/.test(text));
       pass(`${tag}: the offer has gone${again}`, !/Plan my day/.test(text));
       const [t3, t4, t13, t10, d] = [await todo(DAY.t3), await todo(DAY.t4), await todo(DAY.t13), await todo(DAY.t10), await dayRow()];
       pass(`${tag}: the carried-over one unticked is planned for tomorrow, the kept one is still today’s${again}`, t3?.planned_on === TOMORROW && t10?.planned_on <= TODAY && !t10?.done_at, `${t3?.planned_on} ${t10?.planned_on}`);

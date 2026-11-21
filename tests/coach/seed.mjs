@@ -196,7 +196,7 @@ export function daySeed({ over = false } = {}) {
       // Today
       todo(DAY.t1, 'Renew professional indemnity insurance', { planned_on: day(0), important: true, due_on: day(3), list_id: DAY.listAdmin, minutes: 30 }),
       todo(DAY.t9, 'Reply to Elena Ruiz', { planned_on: day(0), minutes: 15 }),
-      todo(DAY.t10, 'Check in with Tom Hale on his decision', { planned_on: day(-4), minutes: 15 }),
+      todo(DAY.t10, 'Check in with Tom Hale on the decision', { planned_on: day(-4), minutes: 15 }),
       todo(DAY.t2, 'Send Sam the decision rights article', { planned_on: day(0), profile_id: ID.sam, minutes: 15 }),
       todo(DAY.t3, 'Draft the Northfield workshop outline', { planned_on: day(-1), list_id: DAY.listNorthfield, minutes: 120, checklist: [{ text: 'Opening exercise', done: true }, { text: 'Decision rights canvas', done: true }, { text: 'Close and survey', done: false }] }),
       todo(DAY.t11, 'Reply to Ruth about the January start', { planned_on: day(0), minutes: 15, from_email_sender: 'Ruth Adams', from_email_subject: 'The January start', from_email_at: at(-1, 16, 20) }),
@@ -366,7 +366,7 @@ export function sessionExtras(rows) {
       ] : []),
     ],
     coach_session_notes: [
-      { session_id: SES.sent, coach_id: ME, layout: 'regular', focus: 'Choosing the launch markets.', insight: 'Hannah decides fastest when she talks it through.', next_time: 'Ask what the three calls showed.', supervision: null },
+      { session_id: SES.sent, coach_id: ME, layout: 'regular', focus: 'Choosing the launch markets.', insight: 'Hannah decides fastest when talking it through.', next_time: 'Ask what the three calls showed.', supervision: null },
       ...(samLast ? [{ session_id: samLast.id, coach_id: ME, layout: 'regular', focus: 'The restructure.', insight: null, next_time: 'Ask how the CFO conversation went.', supervision: null }] : []),
     ],
   };
@@ -662,7 +662,7 @@ export function networkSeed() {
       give(2, CRM.dan, 'asked', 'referral', 'Asked who else at Harbour Lane is building a team.', -45),
       give(3, CRM.dana, 'gave', 'resource', 'Sent the article on decision rights.', -20),
       give(4, CRM.dana, 'asked', 'advice', 'Asked how the board reads the renewal.', -12),
-      give(5, CRM.david, 'gave', 'idea', 'Suggested a different approach to his team’s human performance challenge.', 0),
+      give(5, CRM.david, 'gave', 'idea', 'Suggested a different approach to the team’s human performance challenge.', 0),
     ],
     network_ratings: [],
     network_columns: [{ id: CRM.colSector, coach_id: ME, name: 'Sector', kind: 'text', options: [], note: 'The sector they work in.', position: 0, hidden: false }],
@@ -702,7 +702,7 @@ export function crmSeed() {
   return {
     coach_lead_stages: [stage(CRM.stNew, 'New', 10, 0), stage(CRM.stCall, 'Call booked', 25, 1), stage(CRM.stProp, 'Proposal sent', 50, 2), stage(CRM.stDeciding, 'Deciding', 70, 3), stage(CRM.stWon, 'Won', 100, 1000000, true)],
     coach_leads: [
-      lead(CRM.elena, 'Elena Ruiz', CRM.stNew, { job_title: 'Founder', next_step: 'Reply to her email', next_step_on: day(0), last_contact_on: day(-1), source: 'email' }),
+      lead(CRM.elena, 'Elena Ruiz', CRM.stNew, { job_title: 'Founder', next_step: 'Reply to Elena’s email', next_step_on: day(0), last_contact_on: day(-1), source: 'email' }),
       lead(CRM.jack, 'Jack Moran', CRM.stNew, { job_title: 'Head coach, rugby', next_step: 'Book a Chemistry Call', next_step_on: day(1), last_contact_on: day(-3), source: 'referral' }),
       // The calendar seed's two booking-made leads, now in the pipeline (the same ids: these rows take their place).
       lead(CAL.leadRuth, 'Ruth Adeyemi', CRM.stCall, { email: ruth.email, source: 'chemistry_page', call_type_key: 'chemistry', booking_id: CAL.bookRuth, organisation: 'Harbour City FC', organisation_id: ID.harbour,
@@ -711,10 +711,10 @@ export function crmSeed() {
         next_step: 'Connection Call', next_step_on: day(4), next_step_time: '12:30', last_contact_on: day(-5) }),
       lead(CRM.amy, 'Amy Cole', CRM.stProp, { email: amy.email, organisation: 'Northfield Logistics', organisation_id: ID.northfield, job_title: 'Chief operating officer', phone: '07700 900461', value: 13500,
         next_step: 'Follow up on the proposal', next_step_on: day(2), last_contact_on: day(0), referred_by: 'Hannah Wells', referred_by_person: CRM.hannah, source: 'referral',
-        want_outcome: 'A leadership team that owns its decisions.', want_pain: 'Every decision still comes back to her.', who_decides: 'Amy, with her CEO.', who_funds: 'Northfield, from the L&D budget.' }),
+        want_outcome: 'A leadership team that owns its decisions.', want_pain: 'Every decision still comes back to Amy.', who_decides: 'Amy, with the CEO.', who_funds: 'Northfield, from the L&D budget.' }),
       lead(CRM.chrisLowe, 'Chris Lowe', CRM.stProp, { organisation: 'Kestrel Group', organisation_id: ID.kestrel, value: 18000, next_step: 'Send workshop dates', next_step_on: day(6), last_contact_on: day(-6) }),
-      lead(CRM.tom, 'Tom Hale', CRM.stDeciding, { organisation: 'Brightwater Capital', value: 7500, next_step: 'Check in on his decision', next_step_on: day(-4), last_contact_on: day(-19),
-        want_outcome: 'A calmer first year as managing partner.', want_pain: 'He is carrying every client relationship himself.', who_decides: 'Tom.', who_funds: 'Brightwater.', decide_when: 'Before the end of the month.' }),
+      lead(CRM.tom, 'Tom Hale', CRM.stDeciding, { organisation: 'Brightwater Capital', value: 7500, next_step: 'Check in on the decision', next_step_on: day(-4), last_contact_on: day(-19),
+        want_outcome: 'A calmer first year as managing partner.', want_pain: 'Tom is carrying every client relationship alone.', who_decides: 'Tom.', who_funds: 'Brightwater.', decide_when: 'Before the end of the month.' }),
       lead(CRM.leoWon, 'Leo Grant', CRM.stWon, { email: null, organisation: 'Northfield Logistics', organisation_id: ID.northfield, value: 13500, last_contact_on: day(-4), won_at: at(-4), won_profile_id: ID.leo }),
       // May be the same person twice ("Chris Doyle may be in here twice.").
       lead(CRM.chrisDoyle, 'Chris Doyle', CRM.stNew, { email: 'chris@example.invalid', organisation: 'Doyle Capital', notes: 'Referrer, 3 people sent', last_contact_on: day(-12) }),
@@ -726,7 +726,7 @@ export function crmSeed() {
       // Amy's timeline, as M11 draws it (newest first on the page).
       event(1, CRM.amy, 'referred', -11, 'Referred by Hannah Wells', 'Hannah introduced you by email.', { by: 'Hannah Wells' }),
       event(2, CRM.amy, 'booking', -8, 'Booked a Chemistry Call', 'From your Chemistry Call page.', { call_type_key: 'chemistry' }),
-      event(3, CRM.amy, 'call', -7, 'Chemistry Call, 30 minutes', 'Wants her senior team pulling the same way before the Q1 restructure.\nDecides with her CEO by the end of November.', { minutes: 30 }),
+      event(3, CRM.amy, 'call', -7, 'Chemistry Call, 30 minutes', 'Wants the senior team pulling the same way before the Q1 restructure.\nDecides with the CEO by the end of November.', { minutes: 30 }),
       event(4, CRM.amy, 'proposal', -5, 'Proposal sent', 'Leadership Accelerator, £13,500 + VAT.', { name: 'Leadership Accelerator', amount: 13500 }),
       event(5, CRM.amy, 'email', -5, 'You sent the proposal', null, { email_id: CRM.e3, direction: 'out' }, 9, 40),
       event(6, CRM.amy, 'proposal_opened', -4, 'Opened your proposal', 'Leadership Accelerator.', { name: 'Leadership Accelerator' }),
@@ -783,7 +783,7 @@ export function crmSeed() {
       email(CRM.e1, 'in', ruth, 'Re: Chemistry Call', 'Thanks for the details. Before Wednesday, can we start in January? Our season review lands in December and I want the staff free for it.', 0, 8),
       email(CRM.e2, 'out', ruth, 'Chemistry Call', 'Here are the details for Wednesday, and the three questions I’ll ask.', -3, 9),
       email(CRM.e3, 'out', amy, 'Leadership Accelerator proposal', 'The proposal is attached. It covers the six months we talked about.', -5, 9),
-      email(CRM.e4, 'in', amy, 'Re: Leadership Accelerator proposal', 'Our CEO is in on Thursday, so I’ll take him through it then.', 0, 7),
+      email(CRM.e4, 'in', amy, 'Re: Leadership Accelerator proposal', 'Our CEO is in on Thursday, so I’ll take them through it then.', 0, 7),
       email(CRM.eSarah, 'out', { name: 'Sarah Kent', email: 'sarah.kent@example.invalid' }, 'Good to meet you at the summit', 'It was good to meet you on Tuesday. Here is the article I mentioned.', -1, 16),
     ],
     coach_email_links: [[CRM.e1, CAL.leadRuth], [CRM.e2, CAL.leadRuth], [CRM.e3, CRM.amy], [CRM.e4, CRM.amy]].map(([emailId, leadId]) => ({ email_id: emailId, coach_id: ME, person_kind: 'lead', person_id: leadId, created_at: at(-1) })),
@@ -805,7 +805,7 @@ export function crmSeed() {
     ].map((d) => ({ ...d, created_by: null, created_at: at(-70), updated_at: at(-5) })),
     organisation_growth: [
       { id: u(9711), organisation_id: ID.kestrel, kind: 'seats', title: '6 of 20 seats are free.', note: 'The leadership team could use them for their own sprints.', status: 'open', lead_id: null },
-      { id: u(9712), organisation_id: ID.kestrel, kind: 'renewal', title: 'Owen’s coaching ends soon.', note: 'Maya is his coach.', status: 'open', lead_id: null },
+      { id: u(9712), organisation_id: ID.kestrel, kind: 'renewal', title: 'Owen’s coaching ends soon.', note: 'Maya is Owen’s coach.', status: 'open', lead_id: null },
       { id: u(9713), organisation_id: ID.kestrel, kind: 'workshop', title: 'No workshop is booked for next quarter.', note: null, status: 'open', lead_id: null },
     ].map((g) => ({ ...g, created_by: null, created_at: at(-10), updated_at: at(-10) })),
   };

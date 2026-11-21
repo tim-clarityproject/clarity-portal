@@ -43,11 +43,14 @@ const TIM = (why) => `left for Tim to decide: ${why}`;
 const GRID_ORDER = [/./, 'the built grid lists each day’s tiles in time order, as a keyboard and a screen reader meet them; M11’s markup lists a day’s calls first, then the rest', null, { quiet: true, say: 'the order of a day’s tiles' }];
 const BAR_NAME = [/^name: .+: open the brief$/, 'the name on the bar opens the brief in place and says so to a screen reader (builder E’s report)'];
 
+import { THEY, THEY_NAMES } from './compare-m11-they.mjs';
+
 export const EXTRA_GROUPS = [];
 
 /** Differences that hold on every screen of this run: met where M11 shows them, never required. */
 export const EVERYWHERE = {
   changes: [
+    ...THEY,
     [new RegExp(`^(\\d\\d:\\d\\d, )?\\d\\d:\\d\\d (${US.slice(1, -1)}|LA)$`), null, TZ12, { quiet: true, say: 'a US client’s own time, “09:45 Chicago”' }],
     [/^(CHI|NY|LA|LON)$/, null, TZ12, { quiet: true, say: 'a time column headed by letters, “CHI”' }],
     [/^name: .+ time\. Choose the second time zone$/, null, 'its spoken name is “Second time column, Chicago. Edit”: “Edit”, never “Choose” (5e rule 29am)', { quiet: true, say: 'the second column’s spoken name' }],
@@ -60,6 +63,7 @@ export const EVERYWHERE = {
     seed(/^Nina Shah( in \d minutes| Starting now)?$/, null, 'M11 gives Maya her own call; the test’s associate keeps the owner’s seed on the device', { who: 'associate', quiet: true, say: 'Maya’s own call on the bar' }),
   ],
   added: [
+    ...THEY_NAMES,
     [new RegExp(`^(\\d\\d:\\d\\d, )?\\d{1,2}:\\d\\d (am|pm) ${US}$`), TZ12, null, { quiet: true, say: '“9:45 am Chicago”' }],
     [/^(Chicago|New York|Los Angeles)$/, TZ12, null, { quiet: true, say: 'a column headed “Chicago”' }],
     [/^In person, \d\d:\d\d to \d\d:\d\d$/, TIM('an item with a place says where it is, where M11 names its kind (“Event”)'), null, { quiet: true, say: 'In person, 18:30 to 20:30' }],
