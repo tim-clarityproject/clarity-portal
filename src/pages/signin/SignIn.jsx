@@ -37,6 +37,18 @@ export default function SignIn({ coach = false }) {
     else if (coach && !peekNext()) rememberNext('/coach');
   }, []);
 
+  // A sign-in from before the owner reset this coach's authenticator
+  // (Phase 6a run 5): it is let go here, before anything else, and the
+  // page says why.
+  const letGo = useRef(Boolean(location.state?.signOut));
+  if (letGo.current) leaving.current = true;
+  useEffect(() => {
+    if (!letGo.current) return;
+    letGo.current = false;
+    supabase.auth.signOut({ scope: 'local' }).catch(() => null).finally(() => { leaving.current = false; });
+    navigate(location.pathname, { replace: true, state: { message: location.state?.message } });
+  }, []);
+
   // Already signed in (another tab, or coming back to this address): on they go.
   useAlreadyIn(leaving);
 

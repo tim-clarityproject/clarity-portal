@@ -13,7 +13,18 @@
 //     overlapping; every tap area 44px high;
 //   - the tick box: 18px, a 1.5px edge, 5px corners, a 12px tick, a 44px
 //     tap area, and its row lined up with the boxes' left edge;
-//   - "6-digit" on one line; boxes 16px or more; every outlined edge 3 to 1.
+//   - "6-digit" on one line; boxes 16px or more; every outlined edge 3 to 1;
+//   - the spacing rule of 19 Nov, 21:25 (Phase 6a run 5), read from the
+//     page's own boxes (tests/signin/spacing.mjs): title to its first line
+//     12px, line to line 12px, text to a box, list or button 24px, box to
+//     button 18px, button to link 18px, paragraphs at 1.55. M26 seq 7 draws
+//     it on the sign-in pages; where seq 7 differs (My Account's pages kept
+//     version 4's 22px under a title and 17px to a link), the rule wins and
+//     the difference is listed in MEANT.
+//
+// Since Phase 6a run 5 it also measures the coach authenticator's screens
+// (COACH_SCREENS), stood in whole (tests/signin/coachWorld.mjs: nothing of
+// them reaches the test project), against M26 seq 7's own.
 //
 //   node tests/signin/measure.mjs
 //   ONLY=signin,create  MODES=dark  SIZES=1280  narrow a run.
@@ -23,6 +34,8 @@ import { chromium } from 'playwright';
 import { pathToFileURL } from 'node:url';
 import { APP, MOCKUP, SAM, guard, makeChecks, sleep, testEnv } from './shared.mjs';
 import { SCREENS } from './screens.mjs';
+import { COACH_SCREENS } from './coachScreens.mjs';
+import { ruleProblems, spacingRule } from './spacing.mjs';
 import { overlappingTaps } from '../phase5/taps.mjs';
 import { outlinedEdges } from '../phase5/edges.mjs';
 import { chevronsOff, measureChevrons } from '../phase5/chevrons.mjs';
@@ -120,6 +133,16 @@ function rhythm({ root, m }) {
 const MOCK = { heads: '.brand, .core, .ttl, .ph3 h1', words: '.p, .alt, .core', field: '.field', btn: '.btn', link: '.alt a', terms: '.terms' };
 const BUILT = { heads: '.si-brand, .si-core, .si-ttl, .si-account-title', words: '.si-p, .si-alt, .si-core', field: '.si-field', btn: '.si-btn', link: '.si-alt .si-link', terms: '.si-terms' };
 
+// Where the build's spacing differs from M26 seq 7 on purpose: the spacing
+// rule of 19 Nov wins (the run's prompt). got = M26's + the difference.
+const MEANT = {
+  // Button to link 18px (seq 7 kept version 4's 17px on My Account's pages).
+  'acct-password': { buttonToLink: 1 },
+  'acct-password-saved': { buttonToLink: 1 },
+  // Title to its first line 12px (seq 7 kept version 4's 22px there).
+  'acct-email-sent': { underHead: -10 },
+};
+
 // Everything else that is read from the page itself.
 function parts() {
   const col = document.querySelector('.si-col');
@@ -178,7 +201,7 @@ for (const mode of MODES) {
   await mock.locator(`#mode button[data-m="${mode}"]`).click();
   for (const width of SIZES) {
     const phone = width < 700;
-    for (const screen of SCREENS) {
+    for (const screen of [...SCREENS, ...COACH_SCREENS]) {
       if (ONLY && !ONLY.includes(screen.key)) continue;
       const tag = `${screen.name}, ${width}px ${mode}`;
       await mock.locator(`#scrs .pick button[data-s="${screen.key}"]`).click();
@@ -246,12 +269,17 @@ for (const mode of MODES) {
       // The spacing rhythm, against M26 read the same way.
       const gaps = [];
       for (const k of Object.keys(want || {})) {
-        const w = [].concat(want[k]); const g = [].concat(got?.[k] ?? []);
+        const shift = MEANT[screen.key]?.[k] || 0;
+        const w = [].concat(want[k]).map((v) => v + shift); const g = [].concat(got?.[k] ?? []);
         const ok = w.length === g.length && w.every((v, i) => Math.abs(v - g[i]) <= 0.5);
         if (!ok) gaps.push(`${k} ${JSON.stringify(got?.[k])} (M26 ${JSON.stringify(want[k])})`);
       }
       const extra = Object.keys(got || {}).filter((k) => !(k in (want || {})));
       pass(`${tag}: the spacing matches M26’s, read the same way`, gaps.length === 0 && extra.length === 0, [...gaps, ...extra.map((k) => `${k} only in the build`)].join('; '));
+      // The spacing rule, from the page's own boxes.
+      const rule = await page.evaluate(spacingRule, '.si-col');
+      pass(`${tag}: the spacing rule (title to line 12, line to line 12, text to a box, list or button 24, box to button 18, button to link 18; lines at 1.55)`, ruleProblems(rule).length === 0, ruleProblems(rule).join('; '));
+      if (mode === MODES[0]) table.push(`${screen.name} ${width}: rule ${rule.gaps.map((x) => `${x.key} ${x.gap}`).join(', ') || 'no pairs it names'}`);
       if (got?.betweenBoxes) pass(`${tag}: 12px between boxes`, got.betweenBoxes.every((v) => Math.abs(v - 12) <= 0.5), JSON.stringify(got.betweenBoxes));
       if (got?.linksApart) pass(`${tag}: stacked links are at least 28px apart`, got.linksApart.every((v) => v >= 28), JSON.stringify(got.linksApart));
       if (mode === MODES[0] && got) table.push(`${screen.name} ${width}: ${Object.entries(got).map(([k, v]) => `${k} ${JSON.stringify(v)}`).join(', ')}`);

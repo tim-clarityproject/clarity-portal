@@ -15,6 +15,8 @@ import './performance/performance.css';
 import { DashboardCustomise } from './performance/DashboardCustomise';
 import { SLEEP_SUGGESTED_LINE, rangeWords } from '../lib/performance/sleepChart';
 import { useStartChat } from '../components/coach/startChat';
+import { useCoachRole } from '../lib/coach/role';
+import { COACH_AUTH_PATHS, COACH_AUTH_WORDS } from '../lib/signIn/coachAuth';
 
 export default function MyAccount() {
   const navigate = useNavigate();
@@ -25,6 +27,8 @@ export default function MyAccount() {
   const { mission: personalGoal, hasPlan, showInHeader, updateShowInHeader } = useContext(MissionContext);
   const coachName = useCoachName();
   const startChat = useStartChat();
+  // Coaches only: the authenticator and recovery codes (Phase 6a run 5).
+  const { coach: coachRow } = useCoachRole();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -277,6 +281,14 @@ export default function MyAccount() {
               </div>
             </>
           )}
+          {coachRow ? (
+            <div className="account-row">
+              <div className="account-row-text">
+                <p className="account-row-title">{COACH_AUTH_WORDS.security.link}</p>
+              </div>
+              <Button variant="text" onClick={() => navigate(COACH_AUTH_PATHS.security)}>{COACH_AUTH_WORDS.security.linkButton}</Button>
+            </div>
+          ) : null}
         </Section>
 
         <Section id="mission-section" title="My Mission" className="ipp-section account-section">

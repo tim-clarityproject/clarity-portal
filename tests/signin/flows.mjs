@@ -229,7 +229,8 @@ for (const address of ['/auth/confirmed', '/auth/mission', '/email-confirmation'
   await v.page.goto(`${APP}/auth/confirmed?error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired`);
   await ready(v.page);
   const words = await text(v.page);
-  pass('a confirmation link that has run out: Link not working', words.includes('LINK NOT WORKING') && words.includes('This link has run out or has already been used.') && words.includes('SEND A NEW LINK'), words);
+  // Buttons are sentence case since 18 Nov (rule 4a): its words are read whatever the case.
+  pass('a confirmation link that has run out: Link not working', words.includes('LINK NOT WORKING') && words.includes('This link has run out or has already been used.') && words.toLowerCase().includes('send a new link'), words);
   await v.ctx.close();
 }
 
@@ -411,7 +412,10 @@ for (const address of ['/auth/confirmed', '/auth/mission', '/email-confirmation'
   for (const [name, key] of [['the Google button', 'ds-google'], ['the tick box', 'ds-check-box'], ['Show', 'si-show'], ['a text link', 'si-link'], ['the terms link', 'si-link terms'], ['the coral button', 'si-btn']]) {
     pass(`keyboard focus shows on ${name}`, Boolean(rings[key]?.ring), JSON.stringify(rings[key] || Object.keys(rings)));
   }
-  pass('keyboard focus shows on a box (its edge turns coral)', Boolean(rings['si-inp']) && rings['si-inp'].edge === 'rgb(255, 111, 92)', JSON.stringify(rings['si-inp']));
+  // Since 18 Nov (rule 4a, follow-up 1) a text field takes the stronger grey edge on focus, never coral.
+  const strongerGrey = await page.evaluate(() => { const el = document.querySelector('.si-inp'); return el ? getComputedStyle(el).getPropertyValue('--text-2').trim() : ''; });
+  const toRgb = (hex) => { const m = /^#([0-9a-f]{6})$/i.exec(hex); return m ? `rgb(${parseInt(m[1].slice(0, 2), 16)}, ${parseInt(m[1].slice(2, 4), 16)}, ${parseInt(m[1].slice(4), 16)})` : hex; };
+  pass('keyboard focus shows on a box (its edge turns the stronger grey)', Boolean(rings['si-inp']) && rings['si-inp'].edge === toRgb(strongerGrey), JSON.stringify({ ...rings['si-inp'], want: strongerGrey }));
   // Space ticks the box from the keyboard.
   await page.getByRole('checkbox').focus();
   await page.keyboard.press('Space');

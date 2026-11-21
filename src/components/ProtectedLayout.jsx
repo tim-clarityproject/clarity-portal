@@ -3,7 +3,8 @@ import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { justSignedOut, rememberNext } from '../lib/signIn/addresses';
-import { hasAuthenticator, signInStop, stopPath } from '../lib/signIn/flow';
+import { goToStop, hasAuthenticator, signInStop } from '../lib/signIn/flow';
+import { isCoachPlace } from '../lib/signIn/coachAuth';
 import { needsBeforeYouStart } from '../lib/signIn/terms';
 import { diag } from '../utils/diag';
 import { SitePhoneNav } from './SiteMenu';
@@ -71,25 +72,33 @@ export default function ProtectedLayout() {
   // you start, and an account with an authenticator app must give its
   // code. Whichever way they came in, no page opens until it's done.
   // Everyone else (no authenticator, already agreed) is never held up.
-  const mayOwe = Boolean(user) && (hasAuthenticator(user) || needsBeforeYouStart(user));
-  // What was found, and who it was found for: an answer for one account
-  // never opens the portal for the next one to sign in on this tab.
-  const [checked, setChecked] = useState({ id: null, stop: undefined });
+  // The coach portal holds every coach too (Phase 6a run 5): set up the
+  // authenticator, give its code, save the recovery codes; a sign-in from
+  // before the owner's reset is let go. Typing the coach portal's address
+  // is asked the same way, so it never skips a stop. Clients' pages never
+  // ask about any of this.
+  const coachPlace = isCoachPlace(location.pathname);
+  const mayOwe = Boolean(user) && (coachPlace || hasAuthenticator(user) || needsBeforeYouStart(user));
+  // What was found, who it was found for, and for which part of the
+  // portal: an answer for one account never opens the portal for the next
+  // one to sign in on this tab, and a client page's answer never opens
+  // the coach portal.
+  const [checked, setChecked] = useState({ id: null, coach: false, stop: undefined });
   const userId = user?.id || null;
   useEffect(() => {
     if (!mayOwe) return undefined;
     let live = true;
-    signInStop(supabase, user).then((owed) => {
+    signInStop(supabase, user, { coach: coachPlace }).then(async (owed) => {
       if (!live) return;
       if (owed) {
-        rememberNext(asked);
-        navigate(stopPath(owed), { replace: true });
+        if (owed !== 'signedOut') rememberNext(asked);
+        await goToStop(supabase, navigate, owed);
       }
-      setChecked({ id: userId, stop: owed });
+      if (live) setChecked({ id: userId, coach: coachPlace, stop: owed });
     });
     return () => { live = false; };
-  }, [mayOwe, user, userId, navigate]);
-  const cleared = !mayOwe || (checked.id === userId && checked.stop === null);
+  }, [mayOwe, user, userId, navigate, coachPlace]);
+  const cleared = !mayOwe || (checked.id === userId && checked.coach === coachPlace && checked.stop === null);
 
   // During auth check, show loading screen (blocks rendering of child routes)
   if (isLoading) {

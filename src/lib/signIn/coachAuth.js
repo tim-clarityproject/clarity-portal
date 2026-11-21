@@ -85,6 +85,7 @@ export const COACH_AUTH_WORDS = {
     title: 'Sign-in security',
     back: 'My Account',
     link: 'Sign-in security', // Claude's: My Account's row that opens it
+    linkButton: 'Edit my sign-in security', // Claude's: that row's link (rule 29am: Edit)
     app: 'Authenticator app',
     newPhone: 'Set up on a new phone',
     codes: 'Recovery codes',
@@ -95,6 +96,21 @@ export const COACH_AUTH_WORDS = {
     currentCodeLine: 'Type the 6-digit code from your authenticator app to carry on.',
     notOnYet: 'Not set up yet', // Claude's
     codesNotYet: 'Recovery codes come with the next update.', // Claude's: before 053 runs
+    currentCodeButton: 'Carry on', // Claude's: the current-code step's one button
+    newPhoneSaved: 'Your authenticator is on your new phone.', // Claude's: back on Sign-in security
+    codesSaved: 'Your new recovery codes are in force.', // Claude's: back on Sign-in security
+  },
+  // Claude's: the 2-or-fewer line after a sign-in with the 6-digit code
+  // shows once on You're in, with this one button.
+  low: { title: 'You’re in', button: 'Open the coach portal' },
+  // One calm line for each screen with no connection (needsConnection's subject).
+  offline: {
+    code: 'Signing in',
+    setUp: 'Setting up your authenticator',
+    codes: 'Making your recovery codes',
+    lost: 'Signing in',
+    security: 'Sign-in security',
+    reset: 'Resetting an authenticator',
   },
   reset: {
     menu: 'Reset authenticator',
@@ -118,6 +134,12 @@ export const TYPE_RECOVERY_CODE = 'Type one of your recovery codes to carry on.'
 /** No connection, or the database didn't answer. */
 export const SIGN_IN_DIDNT_GO = DIDNT_SIGN_IN;
 export const SAVE_DIDNT_GO = DIDNT_SAVE;
+/** Supabase didn't start the set-up (Claude's): what happened, then what to do. */
+export const SET_UP_DIDNT_START = ['Your authenticator couldn’t be set up just now.', 'Reload the page and try again.'];
+/** The codes couldn't be made (Claude's). */
+export const CODES_DIDNT_MAKE = ['Your recovery codes couldn’t be made just now.', 'Reload the page and try again.'];
+/** The copy icon couldn't reach the clipboard (Claude's). */
+export const COPY_DIDNT_GO = 'That didn’t copy. Select it and copy it yourself.';
 /** A sign-in from before the owner's reset (Claude's): shown on Coach sign in. */
 export const SIGNED_OUT_BY_RESET = ['You’ve been signed out, because your authenticator was reset.', 'Sign in again to set it up.'];
 /** The codes couldn't be made because 053 isn't there yet (Claude's). */
@@ -296,6 +318,24 @@ export function waitWords(seconds, { justNow = false } = {}) {
   return justNow ? [`That was ${WRONG_IN_A_ROW} wrong codes in a row.`, wait] : [wait];
 }
 
+const TRIES_KEY = 'clarity-sign-in-code-tries';
+/** The wrong 6-digit codes in a row in this tab (a reload doesn't start the count again; Sign out clears it). */
+export function readTries(storage = globalThis.sessionStorage) {
+  try {
+    const kept = JSON.parse(storage?.getItem(TRIES_KEY) || 'null');
+    return kept && Number.isFinite(kept.tries) && Number.isFinite(kept.waitUntil) ? kept : NO_WRONG_TRIES;
+  } catch {
+    return NO_WRONG_TRIES;
+  }
+}
+/** Keeps the count (NO_WRONG_TRIES after a right code). */
+export function keepTries(state, storage = globalThis.sessionStorage) {
+  try {
+    if (!state || (!state.tries && !state.waitUntil)) storage?.removeItem(TRIES_KEY);
+    else storage?.setItem(TRIES_KEY, JSON.stringify({ tries: state.tries, waitUntil: state.waitUntil }));
+  } catch { /* the count starts again: Supabase still limits tries */ }
+}
+
 // ---------------------------------------------------------------- the owner
 
 /**
@@ -361,6 +401,23 @@ export function coachAuthStop({ isCoach, hasFactor, level, ready, codesSaved, se
   if (!hasFactor) return 'setup';
   if (ready && !codesSaved) return 'codes';
   return null;
+}
+
+/** True for an address in the coach portal (never its sign-in pages, which aren't behind the stop). */
+export function isCoachPlace(path) {
+  const p = String(path || '');
+  return /^\/coach(\/|$|\?|#)/.test(p) && !/^\/coach\/sign-in(\/|$|\?|#)/.test(p);
+}
+
+/** The sign-in's own session id, from its access token (the low-codes line is shown once per sign-in). */
+export function sessionKeyOf(accessToken) {
+  try {
+    const part = String(accessToken || '').split('.')[1] || '';
+    const json = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/')));
+    return json.session_id || null;
+  } catch {
+    return null;
+  }
 }
 
 /** The address for a stop. */

@@ -1,4 +1,4 @@
-import { forwardRef, useId, useState } from 'react';
+import { forwardRef, useEffect, useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import BoldCrosshair from '../design/BoldCrosshair';
 import Chevron from '../design/Chevron';
@@ -154,9 +154,9 @@ export function MainButton({ children, type = 'submit', busy = false, ...rest })
 }
 
 /** A text link: a route (`to`) or an action (`onClick`). */
-export function TextLink({ to, state, onClick, children }) {
-  if (to) return <Link className="si-link" to={to} state={state}>{children}</Link>;
-  return <button type="button" className="si-link" onClick={onClick}>{children}</button>;
+export function TextLink({ to, state, onClick, children, ...rest }) {
+  if (to) return <Link className="si-link" to={to} state={state} {...rest}>{children}</Link>;
+  return <button type="button" className="si-link" onClick={onClick} {...rest}>{children}</button>;
 }
 
 /** A line under the button holding a text link, with any words before it. */
@@ -216,5 +216,130 @@ export function Wait({ children }) {
       <Crosshair size="lg" tone="coral" spin />
       <span>{children}</span>
     </div>
+  );
+}
+
+/**
+ * The small copy icon (M26 seq 7: no Copy button). Copies `text` and says
+ * "Copied." in the design reference's toast (the page passes `onCopied`).
+ * A 44px tap area; the words are for screen readers.
+ */
+export function CopyButton({ text, label, onCopied, onMissed }) {
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(typeof text === 'function' ? text() : text);
+      onCopied?.();
+    } catch {
+      onMissed?.();
+    }
+  };
+  return (
+    <button type="button" className="si-cpy" aria-label={label} onClick={copy}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5" /><path d="M15.5 8.5V6.5A2 2 0 0 0 13.5 4.5H6.5A2 2 0 0 0 4.5 6.5V13.5A2 2 0 0 0 6.5 15.5H8.5" /></svg>
+    </button>
+  );
+}
+
+/**
+ * The authenticator's QR code, drawn here from the set-up address (never
+ * Supabase's own picture, which has a white box): the code's dark modules
+ * in the text colour on the page's own colour, so it is light on black in
+ * dark mode. The square behind it is the page's colour and includes the
+ * code's quiet zone (4 modules), so a phone's camera finds its edges.
+ * The address is never logged or kept: it lives only in the page's memory.
+ */
+export function QrCode({ value, label }) {
+  const [cells, setCells] = useState(null);
+  useEffect(() => {
+    let live = true;
+    setCells(null);
+    if (!value) return undefined;
+    // Loaded only when a code is shown, so no other page carries it.
+    import('qrcode-generator').then(({ default: qrcode }) => {
+      if (!live) return;
+      const qr = qrcode(0, 'M');
+      qr.addData(value);
+      qr.make();
+      const n = qr.getModuleCount();
+      let d = '';
+      for (let r = 0; r < n; r += 1) {
+        for (let c = 0; c < n; c += 1) if (qr.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
+      }
+      setCells({ n, d });
+    }).catch(() => { if (live) setCells({ n: 0, d: '' }); });
+    return () => { live = false; };
+  }, [value]);
+  const quiet = 4;
+  return (
+    <div className="si-qr" role="img" aria-label={label}>
+      {cells && cells.n ? (
+        <svg viewBox={`${-quiet} ${-quiet} ${cells.n + quiet * 2} ${cells.n + quiet * 2}`} shapeRendering="crispEdges" aria-hidden="true">
+          <rect className="si-qr-bg" x={-quiet} y={-quiet} width={cells.n + quiet * 2} height={cells.n + quiet * 2} />
+          <path className="si-qr-dots" d={cells.d} />
+        </svg>
+      ) : <span className="si-qr-wait" />}
+    </div>
+  );
+}
+
+/** Words with "6-digit" kept whole on its line (neither font has the non-breaking hyphen). */
+export function keepSixDigit(text) {
+  const parts = String(text ?? '').split('6-digit');
+  return parts.flatMap((part, i) => (i ? [<span key={i} className="si-nowrap">6-digit</span>, part] : [part]));
+}
+
+/** A tick box row in the sign-in pages' own shape (the shared 18px box, a 44px tap area). */
+export function TickRow({ checked, onChange, label, children }) {
+  return (
+    <div className="si-terms">
+      <button type="button" role="checkbox" className="ds-check-box" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}>
+        <span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+        </span>
+      </button>
+      <span className="si-terms-words" onClick={() => onChange(!checked)}>{children}</span>
+    </div>
+  );
+}
+
+/** The six digits out of whatever was typed or pasted: "123 456" and "123-456" (as authenticator apps copy them) and full-width digits all read as 123456. */
+export const digitsOf = (text) => String(text ?? '').normalize('NFKC').replace(/\D+/g, '').slice(0, 6);
+
+/**
+ * The 6-digit code's box: no example code in it, the one-time-code
+ * autocomplete, and whatever is typed, pasted or put in at once read as
+ * its six digits.
+ */
+export function CodeField({ label, value, onDigits, autoFocus = true }) {
+  return (
+    <Field
+      label={label}
+      name="one-time-code"
+      inputMode="numeric"
+      autoComplete="one-time-code"
+      maxLength={6}
+      pattern="[0-9]*"
+      autoFocus={autoFocus}
+      value={value}
+      onChange={(e) => onDigits(digitsOf(e.target.value))}
+      // The box holds 6 characters, so a browser would cut "123 456" to
+      // "123 45" before the page saw it: a paste is read here instead.
+      onPaste={(e) => {
+        const pasted = e.clipboardData?.getData('text');
+        if (typeof pasted !== 'string') return;
+        e.preventDefault();
+        onDigits(digitsOf(pasted));
+      }}
+      // The same for several characters put in at once another way (a
+      // keyboard's own suggestion, a password manager).
+      onBeforeInput={(e) => {
+        if (typeof e.data !== 'string' || e.data.length < 2) return;
+        e.preventDefault();
+        const box = e.target;
+        const from = box.selectionStart ?? box.value.length;
+        const to = box.selectionEnd ?? box.value.length;
+        onDigits(digitsOf(`${box.value.slice(0, from)}${e.data}${box.value.slice(to)}`));
+      }}
+    />
   );
 }

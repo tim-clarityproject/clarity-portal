@@ -201,6 +201,15 @@
   --ls-si-brand: 0.22em;
   --ls-si-btn: 0.14em;
   --si-brand-nudge: 0.1em;    /* Nekst capitals sit high on their line */
+  /* The coach authenticator's screens (M26 seq 7; Phase 6a run 5). */
+  --si-qr: 200px;             /* the QR code, its quiet zone included (M26 draws a shorter code at 168px; the real set-up address needs more modules) */
+  --si-step-in: 32px;         /* a set-up step's words, after its number */
+  --si-rc-pad-y: 20px;        /* the recovery codes' box */
+  --si-rc-pad-x: 22px;
+  --si-row-min: 64px;         /* a Sign-in security row */
+  --ls-si-code: 0.06em;       /* the set-up key and the recovery codes */
+  --lh-si-step: 1.5;
+  --si-cpy-icon: 18px;        /* the copy icon, in its 44px tap area */
 
   /* Radii (--radius-input 12px, --radius-card 16px and --radius-pill
      are defined above) */

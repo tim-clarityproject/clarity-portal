@@ -1,5 +1,6 @@
 // The sign-in pages beside their mock-up, M26 (version 4, approved by Tim
-// on 11 Nov): all 21 screens, dark and light, at 1280 wide and at 390 by
+// on 11 Nov; seq 7 since Phase 6a run 5, with the spacing rule of 19 Nov):
+// all 21 screens, dark and light, at 1280 wide and at 390 by
 // 844. For each screen the same parts must appear in the same order with
 // the same words, and each part must sit in the same place and be the
 // same size as M26 draws it, to within half a pixel. It also saves a
@@ -91,6 +92,28 @@ function allowed(kind, what, screen, phone) {
   return 0.6;
 }
 
+// The spacing rule of 19 Nov, 21:25 (Phase 6a run 5; the run's prompt wins
+// over M26): M26 seq 7 draws it on the sign-in pages, but My Account's
+// pages kept version 4's 22px from a box to the button, 17px from the
+// button to a link and 22px from the title to its first line. The rule
+// moves those parts (box to button 18, button to link 18, title to line
+// 12): from the first part of each kind named, everything below moves by
+// that much.
+const SPACING_RULE = {
+  'acct-password': [['btn', -4], ['alt', 1]],
+  'acct-password-saved': [['btn', -4], ['alt', 1]],
+  'acct-email': [['btn', -4]],
+  'acct-email-sent': [['p', -10], ['alt', 1]],
+};
+function withSpacingRule(parts, key) {
+  const steps = [...(SPACING_RULE[key] || [])];
+  let shift = 0;
+  return parts.map((x) => {
+    if (steps.length && x.kind === steps[0][0]) shift += steps.shift()[1];
+    return shift ? { ...x, top: x.top + shift } : x;
+  });
+}
+
 const browser = await chromium.launch();
 const calls = [];
 for (const mode of MODES) {
@@ -126,6 +149,9 @@ for (const mode of MODES) {
         await screen.open(page, { env, answers, SAM, phone, ctx });
         await page.waitForSelector(screen.acct ? '.si-col--account' : '.si-col', { timeout: 20000 });
         await page.evaluate(() => document.fonts.ready);
+        // The pointer away from the column, as measure.mjs does: a link that
+        // lands under the last press would be read in its hover colour.
+        await page.mouse.move(1, 1);
         await sleep(350);
       } catch (e) {
         pass(`${tag}: opens`, false, e.message.split('\n')[0]);
@@ -153,6 +179,7 @@ for (const mode of MODES) {
       });
       // Its boxes, at follow-up 1's 56px (52px on a phone): what's below them moves by the difference.
       want.parts = withNewFields(want.parts, { phone, isField: (x) => x.kind === 'inp' });
+      want.parts = withSpacingRule(want.parts, screen.key);
       pass(`${tag}: no page error`, errors.length === 0, errors[0]);
       pass(`${tag}: no sideways scroll`, got.sideways <= 0, `${got.sideways}px`);
       // M26 sets its buttons in capitals; since 18 Nov the portal's buttons are sentence case

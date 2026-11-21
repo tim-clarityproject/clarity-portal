@@ -1,5 +1,7 @@
 import { returnAddress, SIGN_IN_PATHS } from './addresses';
 import { forgetTick, needsBeforeYouStart, rememberTick } from './terms';
+import { coachAuthStop, coachStopPath, SIGNED_OUT_BY_RESET } from './coachAuth';
+import { loadCoachAuth } from './coachAuthData';
 
 // What happens between proving who you are and getting in (M26; Tim's
 // decisions of 11 Nov). One place decides it, and the sign-in pages,
@@ -13,14 +15,29 @@ export function hasAuthenticator(user) {
 
 /**
  * The stop someone must make before the portal opens, or null.
- *   'code'    an account with an authenticator app that hasn't given its
- *             6-digit code this sign-in. Google never skips it.
- *   'before'  a Google account the portal has never seen: Before you start.
- * An account with no authenticator set up is let in after its password
- * (Tim: don't lock a coach out before the set-up screens exist).
+ *   'code'      an account with an authenticator app that hasn't given its
+ *               6-digit code this sign-in. Google never skips it.
+ *   'before'    a Google account the portal has never seen: Before you start.
+ * And for a coach heading into the coach portal (`coach`; Phase 6a run 5,
+ * which retires the rule that a coach with no authenticator gets in after
+ * the password), coachAuthStop's:
+ *   'signedOut' a sign-in from before the owner reset their authenticator;
+ *   'setup'     no authenticator yet: Set up your authenticator;
+ *   'codes'     recovery codes made and not yet ticked as saved.
+ * Clients are never asked about any of this: `coach` is only set on the
+ * way into the coach portal (its address, or Coach sign in's own landing).
+ * @param {{ coach?: boolean }} [opts]
  */
-export async function signInStop(supabase, user) {
+export async function signInStop(supabase, user, { coach = false } = {}) {
   if (!user) return null;
+  if (coach) {
+    const auth = await loadCoachAuth(supabase, user);
+    if (auth.isCoach === true) {
+      const stop = coachAuthStop({ isCoach: true, hasFactor: Boolean(auth.factor), level: auth.level, ready: auth.ready, codesSaved: auth.codesSaved, sessionOk: auth.sessionOk });
+      if (stop) return stop;
+      return needsBeforeYouStart(user) ? 'before' : null;
+    }
+  }
   if (hasAuthenticator(user)) {
     try {
       const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -36,7 +53,22 @@ export async function signInStop(supabase, user) {
 export function stopPath(stop) {
   if (stop === 'code') return SIGN_IN_PATHS.coachCode;
   if (stop === 'before') return SIGN_IN_PATHS.beforeYouStart;
-  return null;
+  return coachStopPath(stop);
+}
+
+/**
+ * Goes to the stop someone owes. A sign-in from before the owner's reset
+ * is let go on this device first, then Coach sign in says why.
+ */
+export async function goToStop(supabase, navigate, stop) {
+  if (stop === 'signedOut') {
+    // Coach sign in lets the sign-in go itself as it opens (`signOut`), so
+    // the portal's guard never sends them to the clients' page first.
+    navigate(SIGN_IN_PATHS.coach, { replace: true, state: { message: SIGNED_OUT_BY_RESET, signOut: true } });
+    return;
+  }
+  const path = stopPath(stop);
+  if (path) navigate(path, { replace: true });
 }
 
 // Where Continue with Google was pressed, kept for this tab while Google

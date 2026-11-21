@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { sessionManager } from '../../lib/sessionManager';
-import { takeNext } from '../../lib/signIn/addresses';
-import { signInStop, stopPath } from '../../lib/signIn/flow';
+import { peekNext, takeNext } from '../../lib/signIn/addresses';
+import { isCoachPlace } from '../../lib/signIn/coachAuth';
+import { goToStop, signInStop } from '../../lib/signIn/flow';
 
 /**
  * Lets someone in once they have proved who they are: first any stop
@@ -18,9 +19,10 @@ export default function useEnter() {
       const { data } = await supabase.auth.getSession();
       if (data?.session?.user) sessionManager.saveSessionMetadata(data.session);
     } catch { /* the session's own record is enough */ }
-    const stop = await signInStop(supabase, user);
-    const path = stopPath(stop);
-    if (path) navigate(path, { replace: true });
+    // A coach heading into the coach portal owes its stops too (Phase 6a
+    // run 5): the authenticator set up, its codes saved. Clients never.
+    const stop = await signInStop(supabase, user, { coach: isCoachPlace(peekNext()) });
+    if (stop) await goToStop(supabase, navigate, stop);
     else navigate(takeNext(), { replace: true, state });
   }, [navigate]);
 }
@@ -48,7 +50,7 @@ export function useAlreadyIn(leaving) {
     if (!user || leaving.current) return;
     leaving.current = true;
     (async () => {
-      const halfIn = opened.current === user.id ? await signInStop(supabase, user) : null;
+      const halfIn = opened.current === user.id ? await signInStop(supabase, user, { coach: isCoachPlace(peekNext()) }) : null;
       if (!halfIn) return enter(user);
       try {
         await supabase.auth.signOut({ scope: 'local' });

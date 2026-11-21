@@ -8,7 +8,9 @@ import { join } from 'node:path';
 
 export const APP = process.env.APP_URL || 'http://localhost:5173';
 export const TEST_REF = 'gqtqljngeenqzxneucoc';
-export const MOCKUP = process.env.M26 || join(homedir(), 'Downloads', 'clarity-google-sign-in', 'M26-sign-in-pages.html');
+// M26 seq 7 (19 Nov, 21:35): version 4's pages with the spacing rule of
+// 19 Nov, 21:25 and the coach authenticator's screens (Phase 6a run 5).
+export const MOCKUP = process.env.M26 || join(homedir(), 'Downloads', 'clarity-phase-6a', 'M26-sign-in-seq7.html');
 
 export function testEnv() {
   const env = {};

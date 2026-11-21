@@ -18,7 +18,7 @@ import { Alt, BackTo, EmailField, MainButton, Message, Note, PasswordField, Text
 // with Google has no Password page: My Account says "You sign in with
 // Google." instead.
 
-function AccountPage({ title, onSubmit, children }) {
+export function AccountPage({ title, onSubmit, children }) {
   const Col = onSubmit ? 'form' : 'div';
   const formProps = onSubmit ? { onSubmit, noValidate: true } : {};
   return (

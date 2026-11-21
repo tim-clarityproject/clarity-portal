@@ -9,7 +9,12 @@ import { addCoach, decideProfile, saveCapacity, saveCoachDetails, saveCoachFacts
 import { capacityFromTyped } from '../../lib/coach/day';
 import { clean, coverState, dayWords, hoursWords, isEmail, NOTIFICATION_KINDS, notificationOn, parseHours, rangeWords, START_ZONES } from '../../lib/coach/model';
 import { SETTINGS_SECTIONS } from '../../lib/coach/navigation';
-import { Back, Line, SettingRow, TextLink, useCoachPortal } from './parts';
+import { Back, Line, MenuItem, PopMenu, SettingRow, TextLink, useCoachPortal } from './parts';
+import { supabase } from '../../lib/supabase';
+import { needsConnection, isOffline } from '../../lib/friendlyError';
+import { COACH_AUTH_WORDS, resetWords } from '../../lib/signIn/coachAuth';
+import { resetCoachAuthenticator } from '../../lib/signIn/coachAuthData';
+import './coachAuth.css';
 import { useHiddenHelp } from './help';
 import BookingSettings from './BookingSettings';
 import { calendarShown, CONNECT_WORDS, connectionRows } from '../../lib/coach/calendar';
@@ -31,6 +36,7 @@ import './crm.css';
 // put to work in later runs: Email, Note layouts. (My calendars' connections: run 3, calSync.jsx.)
 
 const SAVE_PROBLEM = 'That didn’t save. Check your connection and try again.';
+const MORE_DOTS = <svg className="cc-auth-dots" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5.5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="18.5" cy="12" r="1.5" /></svg>;
 const DAYS = [['mon', 'Monday'], ['tue', 'Tuesday'], ['wed', 'Wednesday'], ['thu', 'Thursday'], ['fri', 'Friday'], ['sat', 'Saturday'], ['sun', 'Sunday']];
 const LOOKS = [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'device', label: 'Match my device' }];
 const LAYOUTS = [
@@ -625,6 +631,38 @@ function Coaches() {
   const [problem, setProblem] = useState(null);
   const [busy, setBusy] = useState(false);
   const others = coaches.filter((c) => c.coach_id !== coach.id);
+  // Reset authenticator (Phase 6a run 5; M26 seq 7, "Tim resets an
+  // associate's authenticator"): the owner only, never their own, through
+  // the server (api/coach-auth-reset.js: the service key never reaches the
+  // browser). It can't be put back, so the panel asks first and the toast
+  // has no Undo (like deleting a client's data).
+  const [more, setMore] = useState(null);
+  const [moreAt, setMoreAt] = useState(null);
+  const [resetting, setResetting] = useState(null);
+  const [resetProblem, setResetProblem] = useState(null);
+  const [resetBusy, setResetBusy] = useState(false);
+  const resetFor = others.find((c) => c.coach_id === resetting) || null;
+  const reset = async () => {
+    if (!resetFor || resetBusy) return;
+    setResetProblem(null);
+    if (isOffline()) { setResetProblem(needsConnection(COACH_AUTH_WORDS.offline.reset)); return; }
+    setResetBusy(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const answer = await resetCoachAuthenticator({ coachId: resetFor.coach_id, token: data?.session?.access_token || '' });
+      if (answer.status === 'done') {
+        toast.show(resetWords(resetFor.first_name).done);
+        setResetting(null);
+        reloadCoaches();
+        return;
+      }
+      if (answer.status === 'offline') { setResetProblem(needsConnection(COACH_AUTH_WORDS.offline.reset)); return; }
+      setResetProblem(answer.message || needsConnection(COACH_AUTH_WORDS.offline.reset));
+    } finally {
+      setResetBusy(false);
+    }
+  };
+  const resetText = resetFor ? resetWords(resetFor.first_name) : null;
   // A rate reads "£100/hr" with no spaces, and a screen reader hears "per hour" (Tim, 19 Nov).
   const money = (c) => (c.hourly_rate == null ? null : (
     <span className="cc-rate">
@@ -662,9 +700,18 @@ function Coaches() {
         <div key={c.coach_id} className="cc-setrow">
           <span className="cc-setrow-label">{c.full_name || c.first_name}</span>
           <span className="cc-setrow-value">{facts(c)}</span>
-          <TextLink aria-label={`Edit ${c.full_name || c.first_name}`} onClick={() => setOpen(c.coach_id)}>{c.profile_waiting ? `Approve ${c.first_name}’s profile` : 'Edit'}</TextLink>
+          <span className="cc-setrow-acts">
+            <TextLink aria-label={`Edit ${c.full_name || c.first_name}`} onClick={() => setOpen(c.coach_id)}>{c.profile_waiting ? `Approve ${c.first_name}’s profile` : 'Edit'}</TextLink>
+            {/* The More menu: Reset authenticator (Phase 6a run 5), for a switched-on associate only. */}
+            {c.active && c.role !== 'owner' ? (
+              <button type="button" className="cc-round cc-auth-more" aria-haspopup="menu" aria-expanded={more === c.coach_id} aria-label={`More for ${c.full_name || c.first_name}`} onClick={(e) => { setMoreAt(e.currentTarget); setMore(c.coach_id); }}>{MORE_DOTS}</button>
+            ) : null}
+          </span>
         </div>
       ))}
+      <PopMenu open={Boolean(more)} onClose={() => setMore(null)} anchorRef={{ current: moreAt }} title="More">
+        <MenuItem onClick={() => { setResetting(more); setMore(null); setResetProblem(null); }}>{COACH_AUTH_WORDS.reset.menu}</MenuItem>
+      </PopMenu>
       <div className="cc-add"><AddButton onClick={() => setAdding(true)}>Add coach</AddButton></div>
 
       <SlidePanel open={Boolean(chosen)} onClose={() => setOpen(null)} title={chosen ? chosen.full_name || chosen.first_name : ''}>
@@ -699,6 +746,25 @@ function Coaches() {
               checked={chosen.active}
               onChange={(on) => run(() => switchCoach(chosen.coach_id, on), on ? 'Switched on' : 'Switched off')}
             />
+          </>
+        )}
+      </SlidePanel>
+
+      <SlidePanel
+        open={Boolean(resetFor)}
+        onClose={() => setResetting(null)}
+        title={resetText?.title || ''}
+        footer={resetText ? (
+          <div className="cc-panel-foot cc-panel-foot--end">
+            <TextLink onClick={() => setResetting(null)}>{resetText.keep}</TextLink>
+            <Button variant="primary" aria-busy={resetBusy || undefined} onClick={reset}>{resetText.button}</Button>
+          </div>
+        ) : null}
+      >
+        {resetText && (
+          <>
+            {resetText.lines.map((line) => <p key={line} className="cc-auth-line">{line}</p>)}
+            {resetProblem && <p className="cc-problem" role="alert">{resetProblem}</p>}
           </>
         )}
       </SlidePanel>

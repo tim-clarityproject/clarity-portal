@@ -45,6 +45,7 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { CAL_FUNCTIONS, CAL_KEYS, CAL_TABLES, calStandIn } from './cal-standin.mjs';
 import { CRM_FUNCTIONS, CRM_HOOKED, CRM_KEYS, CRM_TABLES, crmStandIn } from './crm-standin.mjs';
+import { asAal2 } from '../signin/aal2.mjs';
 
 export const APP = (process.env.APP_URL || 'http://localhost:4317').replace(/\/$/, '');
 const TEST_REF = 'gqtqljngeenqzxneucoc';
@@ -93,6 +94,11 @@ export async function coachContext(browser, { size = 1440, theme = 'dark', fresh
   const ctx = await browser.newContext(opts);
   const page = await ctx.newPage();
   await page.route('**/api/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"sent":false}' }));
+  // Since Phase 6a run 5 the coach portal opens only for a coach who has set
+  // up an authenticator and given its code: the test coach is shown to the
+  // page as one (a stand-in factor, the level raised), and no real
+  // authenticator is ever enrolled (tests/signin/aal2.mjs).
+  await asAal2(page, { host: `${TEST_REF}.supabase.co` });
   await page.goto(`${APP}/coach/sign-in`);
   await page.getByLabel('Email').fill(env.TEST_COACH_OWNER_EMAIL);
   await page.getByLabel('Password', { exact: true }).fill(env.TEST_COACH_OWNER_PASSWORD);
@@ -205,7 +211,20 @@ function dayChecks(table, r) {
  *   `page` may be a browser context: every tab in it is then answered by the one stand-in.
  * @returns the stand-in database ({ rows, calls, coaches, sends, claims, fn, api, withheld, leak })
  */
-export async function standIn(page, { role = 'owner', db = 'none', rows = {}, admin = [], day = false, cal = false, crm = false, strict = false, now: clock = () => new Date() } = {}) {
+export async function standIn(page, opts = {}) {
+  const store = await standInRows(page, opts);
+  // 053 isn't on the test project: its functions answer as a database without them would.
+  await page.route(/\/rest\/v1\/rpc\/coach_(auth_state|authenticator_on|recovery_codes_make|recovery_codes_saved|recovery_code_use|authenticator_reset)(\?|$)/, (route) => route.fulfill({
+    status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', details: null, hint: null, message: 'Could not find the function in the schema cache' }),
+  }));
+  // Last, so it runs first: the page sees a coach with an authenticator who
+  // has given its code (Phase 6a run 5), and the test project only ever sees
+  // the real sign-in (tests/signin/aal2.mjs). No real authenticator is enrolled.
+  await asAal2(page, { host: `${TEST_REF}.supabase.co` });
+  return store;
+}
+
+async function standInRows(page, { role = 'owner', db = 'none', rows = {}, admin = [], day = false, cal = false, crm = false, strict = false, now: clock = () => new Date() } = {}) {
   const me = { id: ME, user_id: null, role: role === 'owner' ? 'owner' : 'coach', display_first_name: role === 'owner' ? 'Alex' : 'Maya', full_name: role === 'owner' ? 'Alex Morgan' : 'Maya Collins', email: null, mobile: null, contact_ways: ['email'], active: true, capacity_hours_week: 15, hourly_rate: role === 'owner' ? null : 100, rate_currency: 'GBP' };
   const other = { id: OTHER, user_id: randomUUID(), role: role === 'owner' ? 'coach' : 'owner', display_first_name: role === 'owner' ? 'Maya' : 'Alex', full_name: role === 'owner' ? 'Maya Collins' : 'Alex Morgan', email: null, mobile: null, contact_ways: ['email'], active: true, capacity_hours_week: 15, hourly_rate: role === 'owner' ? 100 : null, rate_currency: 'GBP' };
   const calThere = db === 'there' && day && cal; // 051 needs 050

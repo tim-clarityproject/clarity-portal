@@ -118,7 +118,14 @@
   color: var(--text);
 }
 
-.ui-root .si-ttl + .si-p { margin-top: calc(-1 * var(--space-px14)) !important; }
+.ui-root .si-ttl + .si-p { margin-top: calc(-1 * var(--space-2)) !important; }
+
+/* The spacing rule (Tim, 19 Nov, 21:25; M26 seq 7 draws it): title to its
+   first line 12px, line to line 12px, text to a box, list or button 24px,
+   box to button 18px, button to link 18px, paragraphs at 1.55 line
+   height (--lh-text). It replaces the older rhythm's 8px between lines
+   and 15px from a line to a box or button. */
+.ui-root .si-p + .si-p { margin-top: var(--space-px12) !important; }
 
 .ui-root .si-nowrap { white-space: nowrap; }
 
@@ -146,7 +153,7 @@
 }
 
 .ui-root .si-ttl + .ds-google { margin-top: 0; }
-.ui-root .si-p + .ds-google { margin-top: var(--space-px18); }
+.ui-root .si-p + .ds-google { margin-top: var(--space-4); }
 
 .ui-root .si-or {
   display: flex;
@@ -174,7 +181,7 @@
 }
 
 .ui-root .si-ttl + .si-field { margin-top: 0; }
-.ui-root .si-p + .si-field { margin-top: var(--space-px15); }
+.ui-root .si-p + .si-field { margin-top: var(--space-4); }
 .ui-root .si-err + .si-field { margin-top: var(--space-px12); }
 
 .ui-root .si-field label {
@@ -287,7 +294,7 @@
   color: var(--text);
 }
 
-.ui-root .si-p + .si-terms { margin-top: var(--space-px2); }
+.ui-root .si-p + .si-terms { margin-top: var(--space-px14); }
 
 /* When the words wrap (a narrow phone, a reader's larger text), "terms"
    can be on the first or last line: the row grows to hold its 44px tap
@@ -357,7 +364,7 @@
 }
 
 .ui-root .si-btn + .si-alt,
-.ui-root .si-p + .si-alt { margin-top: var(--space-px17); }
+.ui-root .si-p + .si-alt { margin-top: var(--space-px18); }
 
 .ui-root .si-alt + .si-alt { margin-top: var(--space-4); }
 
@@ -400,8 +407,8 @@
   outline-offset: var(--space-px3);
 }
 
-.ui-root .si-terms + .si-btn { margin-top: var(--space-px6); }
-.ui-root .si-p + .si-btn { margin-top: var(--space-px15); }
+.ui-root .si-terms + .si-btn { margin-top: var(--space-px14); }
+.ui-root .si-p + .si-btn { margin-top: var(--space-4); }
 
 /* ---------- Messages: what happened, then what to do ---------- */
 
@@ -520,18 +527,24 @@
 }
 
 .ui-root .si-col--account .si-account-title + .si-field { margin-top: 0; }
+/* The spacing rule: a title to its first line is 12px here too (M26 drew
+   22px on My Account's pages; the rule of 19 Nov wins). */
+.ui-root .si-col--account .si-account-title + .si-p { margin-top: calc(var(--space-px12) - var(--space-px22)) !important; }
 
 .ui-root .si-col--account .si-p {
   margin: 0 0 var(--space-2) !important;
 }
 
-.ui-root .si-col--account .si-alt { margin-top: var(--space-px17); }
+.ui-root .si-col--account .si-alt { margin-top: var(--space-px18); }
+.ui-root .si-col--account .si-p + .si-p { margin-top: var(--space-px12) !important; }
+.ui-root .si-col--account .si-p + .si-bwrap { margin-top: var(--space-4); }
 
 .ui-root .si-bwrap {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin-top: var(--space-px22);
+  /* Box to button 18px: the spacing rule of 19 Nov (M26 drew 22px here). */
+  margin-top: var(--space-px18);
 }
 
 .ui-root .si-bwrap .si-btn {
@@ -547,6 +560,237 @@
 
   .ui-root .si-bwrap .si-btn { width: 100%; }
   .ui-root .si-bwrap .ds-status { align-self: center; }
+}
+
+/* ---------- The coach authenticator (M26 seq 7; Phase 6a run 5) ---------- */
+
+/* The one coral button that waits for its tick box ("Open the coach
+   portal": the prompt says it stays unavailable until the box is ticked,
+   the one exception to "never greyed out"). */
+.ui-root .si-btn:disabled,
+.ui-root .si-btn[aria-disabled='true'] {
+  cursor: default;
+  opacity: var(--disabled-opacity);
+}
+
+@media (hover: hover) {
+  .ui-root .si-btn:disabled:hover { background: var(--coral); }
+}
+
+/* Set-up's two steps: numbered rows with a line between. */
+.ui-root .si-steps {
+  margin: var(--space-px18) 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: si-step;
+  text-align: left;
+}
+
+.ui-root .si-p + .si-steps { margin-top: var(--space-4); }
+
+.ui-root .si-steps > li {
+  counter-increment: si-step;
+  position: relative;
+  padding: var(--space-px14) 0 var(--space-px14) var(--si-step-in);
+  border-top: var(--line-w) solid var(--line);
+  font-size: var(--fs-body);
+  line-height: var(--lh-si-step);
+  color: var(--text);
+}
+
+.ui-root .si-steps > li:last-child { border-bottom: var(--line-w) solid var(--line); }
+
+.ui-root .si-steps > li::before {
+  content: counter(si-step);
+  position: absolute;
+  left: 0;
+  top: var(--space-px14);
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  color: var(--text-2);
+}
+
+/* The three apps: each its own 44px row (the prompt), so no two tap areas
+   ever share a line. */
+.ui-root .si-apps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: var(--space-px2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-root .si-apps .si-link {
+  margin-block: 0;
+  padding-block: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--fs-body) !important;
+}
+
+.ui-root .si-qr {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-4) 0 0;
+}
+
+.ui-root .si-qr svg,
+.ui-root .si-qr-wait {
+  display: block;
+  width: var(--si-qr);
+  height: var(--si-qr);
+}
+
+.ui-root .si-qr-bg { fill: var(--bg); }
+.ui-root .si-qr-dots { fill: var(--text); }
+
+.ui-root .si-keyrow {
+  margin-top: var(--space-px20);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-px2);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .si-kv {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-px2);
+}
+
+.ui-root .si-key {
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-body);
+  letter-spacing: var(--ls-si-code);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ui-root .si-keyrow + .si-field { margin-top: var(--space-px20); }
+
+/* The copy icon: a 44px tap area, no button shape. */
+.ui-root .si-cpy {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  flex: none;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  transition: color var(--dur-fast) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .si-cpy svg {
+  width: var(--si-cpy-icon);
+  height: var(--si-cpy-icon);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--icon-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (hover: hover) {
+  .ui-root .si-cpy:hover { color: var(--coral-text); }
+}
+
+.ui-root .si-cpy:focus-visible {
+  color: var(--coral-text);
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: calc(-1 * var(--space-1));
+}
+
+/* The ten recovery codes, in two columns. */
+.ui-root .si-rc {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-px14) var(--space-4);
+  margin: var(--space-px18) 0 0;
+  padding: var(--si-rc-pad-y) var(--si-rc-pad-x);
+  list-style: none;
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-field);
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  letter-spacing: var(--ls-si-code);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-align: left;
+}
+
+.ui-root .si-p + .si-rc { margin-top: var(--space-4); }
+.ui-root .si-rc li { min-width: 0; overflow-wrap: anywhere; }
+
+.ui-root .si-rcact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-px20);
+  margin-top: var(--space-px18);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+}
+
+.ui-root .si-rcact .si-link { margin-block: 0; }
+.ui-root .si-rcact + .si-terms { margin-top: var(--space-px18); }
+
+/* Sign-in security's rows: what it is, its state, then its one link. */
+.ui-root .si-srow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--si-row-min);
+  padding: var(--space-px14) 0;
+  border-top: var(--line-w) solid var(--line);
+  text-align: left;
+}
+
+.ui-root .si-srows > .si-srow:last-child { border-bottom: var(--line-w) solid var(--line); }
+
+.ui-root .si-sl {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .si-sl > span {
+  margin-top: var(--space-px2);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .si-srow .si-link {
+  margin-block: 0;
+  padding-block: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--fs-secondary) !important;
+  white-space: nowrap;
+  text-underline-offset: var(--space-1);
+}
+
+.ui-root .si-col--account .si-srows + .si-p { margin-top: var(--space-px18) !important; }
+
+@media (max-width: 700px) {
+  .ui-root .si-srow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: var(--space-px10) 0;
+  }
 }
 
 /* A reader's own larger text: the column never forces a sideways scroll. */

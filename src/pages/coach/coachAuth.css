@@ -1,0 +1,28 @@
+/* The owner's Reset authenticator on the Coaches page (Phase 6a run 5;
+   M26 seq 7, "Tim resets an associate's authenticator"). Tokens only. */
+
+/* Edit and the More menu sit together in the row's last column. */
+.ui-root .cc-setrow-acts {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: var(--space-1);
+}
+
+.ui-root .cc-auth-more { color: var(--text-2); }
+.ui-root .cc-auth-more:focus-visible,
+.ui-root .cc-auth-more[aria-expanded='true'] { color: var(--coral-text); }
+
+@media (hover: hover) {
+  .ui-root .cc-auth-more:hover { color: var(--text); }
+}
+
+.ui-root .cc-auth-dots { fill: currentColor; }
+
+/* M26's two lines, the panel's own words (16px, 1.55, 12px apart). */
+.ui-root .cc-auth-line {
+  margin: 0 0 var(--space-px12);
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}

@@ -77,8 +77,9 @@ import Invite from './pages/signin/Invite';
 import GoogleReturn from './pages/signin/GoogleReturn';
 import BeforeYouStart from './pages/signin/BeforeYouStart';
 import CoachCode from './pages/signin/CoachCode';
-import CoachHelp from './pages/signin/CoachHelp';
+import { CoachCodes, CoachIn, CoachLost, CoachSetUp } from './pages/signin/CoachAuth';
 import { AccountEmail, AccountPassword } from './pages/signin/AccountPages';
+import SignInSecurity from './pages/signin/SignInSecurity';
 import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 import ScrollToTop from './components/ScrollToTop';
 import HubPage from './pages/hubs/HubPage';
@@ -379,10 +380,17 @@ function AppContent() {
 
         {/* Coaches have their own sign-in page at its own address, with no
             Create my account link, then the code from their authenticator
-            app (Tim, 11 Nov). */}
+            app (Tim, 11 Nov; set up first since Phase 6a run 5). */}
         <Route path="/coach/sign-in" element={<SignIn coach />} />
         <Route path="/coach/sign-in/code" element={<CoachCode />} />
-        <Route path="/coach/sign-in/help" element={<CoachHelp />} />
+        {/* The coach authenticator (Phase 6a run 5; M26 seq 7): set it up,
+            save the recovery codes, lost the phone, and You're in. A coach
+            with no authenticator is brought here after the password and
+            can't reach the coach portal until it's done. */}
+        <Route path="/coach/sign-in/set-up" element={<CoachSetUp />} />
+        <Route path="/coach/sign-in/recovery-codes" element={<CoachCodes />} />
+        <Route path="/coach/sign-in/help" element={<CoachLost />} />
+        <Route path="/coach/sign-in/in" element={<CoachIn />} />
 
         {/* Passwords. /auth/reset-password is where a reset link lands. */}
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -467,6 +475,7 @@ function AppContent() {
           <Route path="/my-account" element={<MyAccount />} />
           <Route path="/my-account/password" element={<AccountPassword />} />
           <Route path="/my-account/email" element={<AccountEmail />} />
+          <Route path="/my-account/sign-in-security" element={<SignInSecurity />} />
           <Route path="/my-journal" element={<MyJournalRoute />} />
           <Route path="/daily-journal" element={<DailyJournal />} />
           <Route path="/daily-journals" element={<DailyJournals />} />
