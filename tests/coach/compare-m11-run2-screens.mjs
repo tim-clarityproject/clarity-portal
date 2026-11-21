@@ -65,7 +65,7 @@ const seed = (m11, built, why, more = {}) => [m11, built, `the test’s data: ${
 const seeded = (built, why, more = {}) => [built, `the test’s data: ${why}`, null, { data: true, ...more }];
 const FIN = 'Finances is Phase 6b: Today’s Finances line is built and hidden until it exists (coach rule 17)';
 const MONEY = 'invoices, top-ups, agreements and the renewal proposal are Finances, Phase 6b (coach rule 26)';
-const KIT = 'Keep in touch and past clients’ check-ins on Today are run 4 (coach rule 26)';
+const KIT = 'the test’s data: run 2’s seed holds no Network people and no past clients’ check-ins, so Today has no Keep in touch (built in run 4, and held against M11’s todaykit with RUN=4)';
 const FACTS = 'Who needs attention is coaching facts only (coach rule 17): sessions, recaps, time credit and no next session';
 const NOTIME = 'a peak moment keeps its day and place, never a time of day, so the forecast and Coming up give none (migration 048)';
 const NUDGE = 'the prompt’s recap nudge: one quiet line when a recap is still unsent 24 hours after a call (coach rule 17)';
@@ -76,8 +76,8 @@ const HELP1 = 'one line of help at most, the rest behind a quiet link to the sid
 const ADDROW = 'the add row at the end of a list (rule 29)';
 const STEP3 = 'Plan my day’s step 3 gives each to-do a time from a menu of the gaps between calls; dragging onto a calendar comes with the calendar, run 3 (the prompt)';
 const PEAK = 'the debrief is shown with the client portal’s own three answers and the moment’s own name (Peak moments rule 5; the prompt: no invented fields)';
-const MAIL = 'email logging is run 4 (coach rule 26)';
-const ATTACH = 'a to-do’s attachments and the forwarded-email address are run 4 (coach rule 16)';
+const MAIL = 'the test’s data: run 2’s seed logs no email on Sam (emails on a client’s Everything are built in run 4)';
+const ATTACH = 'a to-do’s attachments aren’t kept: 050 and 052 have nowhere for them (run 4: builder B’s decision 14, builder D’s “not built”)';
 const DATES = 'dates read “Planned for Wed 18 Nov, 10:00”; Today and Tomorrow stay single words (coach rule 16)';
 const SAID = 'a to-do’s day is said wherever the list isn’t Today’s own (coach rule 16)';
 const BACK = 'Back goes to the client the page is about (the prompt)';
@@ -102,7 +102,7 @@ const T_TIME = TIM('under a day’s heading only the time shows (rule 29ap: no r
 /** Differences that hold on every screen: met where M11 shows them, never required. */
 export const EVERYWHERE = {
   changes: [
-    [/^(Elena Ruiz|Tom Hale|Ruth Adams)$/, null, 'a to-do names its client; a lead’s or contact’s name on its row comes with the CRM, run 4, and one from an email says “From email” with the sender in its panel', { quiet: true, say: 'a lead’s or contact’s name on a to-do’s row' }],
+    [/^(Elena Ruiz|Tom Hale|Ruth Adams)$/, null, 'a to-do names its client; a lead’s or contact’s name on its row wasn’t added in run 4 (left for Tim to decide), and one from an email says “From email” with the sender in its panel', { quiet: true, say: 'a lead’s or contact’s name on a to-do’s row' }],
     ['09:45 Chicago', '9:45 am Chicago', 'a US or Canadian client’s own time is 12-hour (time zone rule 5), as on the calendar’s tiles; M11 writes it 24-hour', { quiet: true, say: '09:45 Chicago' }],
     seed(/^Group of 6$/, 'Group of 3', 'the Kestrel group has 3 members, where M11’s has 6', { quiet: true, say: 'Group of 6' }),
     // An associate: M11 gives Maya her own invented people; the test's associate keeps the owner's seed on the device.
@@ -194,7 +194,7 @@ const clientRow = (name, who, more = {}) => ({ name: `${name}’s sessions and t
 export const ROWS = [
   // ---- the frame
   { name: 'The menu', m11: 'menu', part: 'menu', built: 'm11-menu',
-    changes: [[/^(27|Speaking|Partners|name: Network, 27 due a catch-up)$/, null, 'Network’s count and the boards come with the CRM, run 4 (coach rule 26)', { who: 'owner', say: 'Network’s count, and the boards' }],
+    changes: [[/^(27|Speaking|Partners|name: Network, 27 due a catch-up)$/, null, 'the test’s data: run 2’s seed holds no Network people and no boards (the menu with them is held with RUN=4)', { who: 'owner', say: 'Network’s count, and the boards' }],
       seed(/^(Renewals due|Quiet leads|Phone to-dos)$/, null, 'the favourite views are the seed’s own', { say: 'M11’s favourite views' })],
     added: [seeded(/^(Admin|Business)$/, 'the seed makes Admin and Business to-do lists, so it has five; M11 has three lists (Kestrel renewal, Northfield workshop, The book), and Admin and Business there are only words on a to-do', { say: 'Admin, Business' })] },
   { name: 'A name’s note, from Today', m11: 'today:tue', clicks: ['sheet:bday'], part: 'sheet', built: 'm11-today-note', ...OWNER,
@@ -299,7 +299,7 @@ export const ROWS = [
     changes: [...PANEL.changes, [/^(Every Thursday|Monthly on the 1st|2 weeks after I finish it)$/, null, T_REPEATS, { say: 'Every Thursday, Monthly on the 1st, 2 weeks after I finish it' }]],
     added: [...PANEL.added, AFTER_WORK, [/^(Every day|Every weekday|Every 2 weeks|Every month|Every year)$/, T_REPEATS, null, { say: 'Every day, Every weekday, Every 2 weeks, Every month, Every year' }]], moved: [[/^(never|every week)$/, POPUP]] },
   { name: 'A to-do from a forwarded email', m11: 'todomail', part: 'sheet', built: 'todos-todo-email',
-    changes: [[/^(ATTACHMENTS|Add file|Email from Ruth Adams|Forwarded from Gmail)$/i, null, ATTACH, { say: 'Attachments, with the forwarded email' }], seed('Forwarded from Gmail on Tue 17 Nov, 07:58.', null, 'the seed’s to-do has no notes')],
+    changes: [['Add file', null, ATTACH], seed(/^Forwarded from Gmail$/, 'Forwarded by email', 'the seed’s email came through the copy-in address, not Gmail (run 4 built the Attachments line: crm.js todoEmailLine)'), seed('Forwarded from Gmail on Tue 17 Nov, 07:58.', null, 'the seed’s to-do has no notes')],
     added: [...PANEL.added, AFTER_WORK,
       [/^(The January start|Mon 16 Nov, 16:20)$/, 'Linked to gives the sender, the email’s subject and when it came (the prompt)', null, { say: 'the email’s subject and when it came' }]] },
   { name: 'Several to-dos chosen', m11: 'bulk', built: 'todos-picked', cut: TYPED, ...QUICK, added: [...QUICK.added, TAG_P] },

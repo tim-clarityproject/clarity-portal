@@ -191,6 +191,8 @@ const LEAD_SCREENS = [
   ['lead-mark-cold', `/coach/leads/${CRM.amy}`, click('Mark as cold'), { expects: ['panel'] }],
   ['lead-tom', `/coach/leads/${CRM.tom}`, null, { full: true }],
   ['lead-won', `/coach/leads/${CRM.leoWon}`],
+  // The UI tester's: Mark as won pressed on Amy (on the device only): the page turns won, and says so with Undo.
+  ['lead-marked-won', `/coach/leads/${CRM.amy}`, async (page) => { await page.getByRole('button', { name: 'Mark as won', exact: true }).first().click(); await settle(page, 900); }, { expects: ['toast-undo'] }],
   ['lead-is-cold', `/coach/leads/${CRM.coldLead}`],
   ['lead-carried', `/coach/clients/${ID.leo}`, click('Everything')],
 ];
@@ -250,8 +252,8 @@ const netOpen = (label) => async (page) => { await page.locator('.cc-main').getB
 const netPanel = (id, label) => async (page) => { await page.locator('.ds-modal--shown .ds-dialog').last().getByRole('button', { name: label, exact: true }).click(); await settle(page, 600); };
 const netDot = (pick) => async (page) => { await page.locator(`.cc-net-dot${pick}`).first().focus(); await page.keyboard.press('Enter'); await settle(page, 700); };
 const NETWORK_SCREENS = [
-  ['net-actions', '/coach/network', null, { full: true, expects: ['tabs', 'net-actions'] }],
-  ['net-actions-all', '/coach/network', netOpen(/^Show all \d+$/), { full: true }],
+  ['net-actions', '/coach/network', null, { full: true, expects: ['tabs', 'net-actions', 'net-fold'] }],
+  ['net-actions-all', '/coach/network', netOpen(/^Show all \d+$/), { full: true, expects: ['net-fold-all'] }],
   ['net-add', '/coach/network', netOpen('Add someone'), { expects: ['panel'] }],
   ['net-ready', '/coach/network', netOpen('Review them'), { expects: ['panel', 'net-ready'] }],
   ['net-person', `/coach/network?person=${CRM.david}`, null, { expects: ['panel', 'net-person'] }],
@@ -265,6 +267,9 @@ const NETWORK_SCREENS = [
   ['net-table-rating', '/coach/network?tab=table', netOpen(/^Trust in you for Dana Whitfield/), { expects: ['net-rating'] }],
   ['net-table-rhythm', '/coach/network?tab=table', netOpen(/^Rhythm for Dana Whitfield/)],
   ['net-table-typing', '/coach/network?tab=table', netOpen(/^Organisation for Dana Whitfield/)],
+  // The UI tester's (TEST4-UI.md): search with its count and Clear; a rating changed, saying "Saved." with Undo.
+  ['net-table-search', '/coach/network?tab=table', async (page) => { await page.getByRole('searchbox', { name: 'Search your network' }).fill('kestrel'); await settle(page, 900); }, { expects: ['net-searched'] }],
+  ['net-table-saved', '/coach/network?tab=table', async (page) => { await netOpen(/^Trust in you for Dana Whitfield/)(page); await page.locator('[role=menuitemradio][aria-checked=false]').nth(2).click(); await settle(page, 700); }, { expects: ['toast-undo', 'net-saved'] }],
   ['net-table-focus', '/coach/network?tab=table', async (page) => { await netOpen('Where to focus')(page); await page.getByRole('menuitemcheckbox', { name: 'Keep close', exact: true }).click(); await settle(page, 500); await page.keyboard.press('Escape'); await settle(page, 500); }, { expects: ['net-focus'] }],
   ['net-table-columns', '/coach/network?tab=table', netOpen('Show or hide columns'), { expects: ['panel', 'net-columns'] }],
   ['net-table-addcolumn', '/coach/network?tab=table', netOpen('Add column'), { expects: ['panel'] }],
@@ -272,9 +277,11 @@ const NETWORK_SCREENS = [
   ['net-import-empty', '/coach/network?tab=table', netOpen('Import a spreadsheet'), { expects: ['panel'] }],
   ['net-export', '/coach/network?tab=table', netOpen('Export'), { expects: ['panel'] }],
   ['net-archive', '/coach/network?tab=table&archived=1', null, { expects: ['tabs', 'net-archive'] }],
-  ['net-map', '/coach/network?tab=map', null, { full: true, expects: ['tabs', 'net-map'] }],
+  ['net-map', '/coach/network?tab=map', null, { full: true, expects: ['tabs', 'net-map', 'net-styles', 'net-nearest'] }],
   ['net-map-help', '/coach/network?tab=map', netOpen('How to read the map'), { expects: ['panel', 'net-map-help'] }],
   ['net-map-show', '/coach/network?tab=map', async (page) => { await page.locator('.cc-net-show').getByRole('combobox').first().click(); await settle(page, 300); await page.getByRole('option', { name: 'Keep close', exact: true }).click(); await settle(page, 700); }, { full: true }],
+  // Each of the other lists, one at a time (the UI tester's: Show narrows the map to one list).
+  ...[['maintain', 'Maintain'], ['invest', 'Invest'], ['rebalance', 'Rebalance?'], ['none', 'No list']].map(([key, label]) => [`net-map-show-${key}`, '/coach/network?tab=map', async (page) => { await page.locator('.cc-net-show').getByRole('combobox').first().click(); await settle(page, 300); await page.getByRole('option', { name: label, exact: true }).click(); await settle(page, 700); }, { expects: ['net-only'] }]),
   ['net-map-found', '/coach/network?tab=map', async (page) => { await page.getByRole('searchbox', { name: 'Find someone' }).fill('David'); await settle(page, 900); await page.getByRole('option', { name: /David Stark/ }).click(); await settle(page, 700); }, { full: true, expects: ['net-found'] }],
   ['today-keep-network', '/coach', null, { full: true, expects: ['net-today'] }],
   ['net-menu', '/coach/network', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 800); }, { expects: ['net-menu'] }],
@@ -343,7 +350,7 @@ export const GROUPS = [
       ['todos-todo-foot', '/coach/todos', async (page) => { await page.locator(`[data-todo="${DAY.t3}"]`).click(); await settle(page, 600); await page.locator('.ds-dialog-body').evaluate((b) => { b.scrollTop = b.scrollHeight; }); await settle(page, 300); }, { expects: ['panel'] }],
       ['todos-todo-important', '/coach/todos', async (page) => { await page.locator(`[data-todo="${DAY.t1}"]`).click(); await settle(page, 600); }, { expects: ['panel', 'level'] }],
       ['todos-todo-day', '/coach/todos', async (page) => { await page.locator(`[data-todo="${DAY.t9}"]`).click(); await settle(page, 600); await pick(page, 'Deadline', 'Another day'); }, { expects: ['panel', 'level'] }],
-      ['todos-todo-email', '/coach/todos', async (page) => { await page.locator(`[data-todo="${DAY.t11}"]`).click(); await settle(page, 600); await page.locator('.cc-todo-linked').scrollIntoViewIfNeeded(); await settle(page, 200); }, { expects: ['panel'] }],
+      ['todos-todo-email', '/coach/todos', async (page) => { await page.locator(`[data-todo="${DAY.t11}"]`).click(); await settle(page, 600); await page.locator('.cc-todo-linked').last().scrollIntoViewIfNeeded(); await settle(page, 200); }, { expects: ['panel'] }],
       ['todos-picked', '/coach/todos', chooseTwo, { expects: ['bulk'] }],
       ['todos-picked-menu', '/coach/todos', async (page, size) => { await chooseTwo(page, size); await page.locator('.cc-todo-bulk').getByRole('button', { name: 'Move', exact: true }).click(); await settle(page, 400); }],
       ['todos-more', '/coach/todos', async (page, size) => { if (size === 400) return 'skip'; await page.locator('.cc-todo-row').nth(1).hover(); await page.locator('.cc-todo-row').nth(1).locator('.cc-todo-more').click(); await settle(page, 400); return null; }],
@@ -533,10 +540,10 @@ export const GROUPS = [
   {
     name: 'network-many', at: TUE, roles: ['owner'], network: 'many', seed: withNetworkColumns,
     screens: [
-      ['net-many-actions', '/coach/network', null, { full: true, expects: ['net-many-actions'] }],
-      ['net-many-table', '/coach/network?tab=table', null, { expects: ['net-many-table'] }],
-      ['net-many-table-more', '/coach/network?tab=table', async (page) => { await netOpen('Show 50 more')(page); await page.locator('.cc-net-box').evaluate((b) => { b.scrollTop = 900; b.scrollLeft = 300; }); await settle(page, 400); }, { expects: ['net-frozen'] }],
-      ['net-many-map', '/coach/network?tab=map', null, { full: true, expects: ['net-many-map'] }],
+      ['net-many-actions', '/coach/network', null, { full: true, expects: ['net-many-actions', 'net-fold'] }],
+      ['net-many-table', '/coach/network?tab=table', null, { expects: ['net-many-table', 'net-50'] }],
+      ['net-many-table-more', '/coach/network?tab=table', async (page) => { await netOpen('Show 50 more')(page); await page.locator('.cc-net-box').evaluate((b) => { b.scrollTop = 900; b.scrollLeft = 300; }); await settle(page, 400); }, { expects: ['net-frozen', 'net-100'] }],
+      ['net-many-map', '/coach/network?tab=map', null, { full: true, expects: ['net-many-map', 'net-styles-mixed', 'net-nearest'] }],
       ['net-many-spot', '/coach/network?tab=map', netDot(':has(.cc-net-num)'), { expects: ['panel', 'net-spot'] }],
       ['net-many-rebalance', '/coach/network?tab=map', async (page) => { await page.locator('.cc-net-show').getByRole('combobox').first().click(); await settle(page, 300); await page.getByRole('option', { name: 'Rebalance?', exact: true }).click(); await settle(page, 700); }, { full: true }],
       ['net-many-ready', '/coach/network', netOpen('Review them'), { expects: ['panel'] }],

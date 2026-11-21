@@ -15,12 +15,12 @@
 .ui-root .cc-net-ctl > .ds-search { flex: 1 1 var(--cc-net-cell-max); min-width: 0; }
 .ui-root .cc-net-count { font-size: var(--fs-secondary); color: var(--text-2); font-variant-numeric: tabular-nums; }
 .ui-root .cc-net-mapline { margin: var(--space-px14) 0 0; }
-.ui-root .cc-net-ctl--map { align-items: flex-end; }
-.ui-root .cc-net-show { flex: 0 1 var(--cc-pop-min); min-width: 0; }
+.ui-root .cc-net-ctl--map { align-items: flex-start; } /* tops level whatever the text size (the drop-down and the search box grow differently) */
+.ui-root .cc-net-show { flex: 0 1 var(--cc-net-ctl-min); min-width: 0; }
 .ui-root .cc-net-show .ds-choice { margin: 0; }
 /* "Show" is said to a screen reader; the choice's own words say it on screen (M11 .srt). */
 .ui-root .cc-net-show .ds-label-row { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.ui-root .cc-net-find { position: relative; flex: 1 1 var(--cc-pop-min); min-width: 0; }
+.ui-root .cc-net-find { position: relative; flex: 1 1 var(--cc-net-ctl-min); min-width: 0; }
 .ui-root .cc-net-hits { position: absolute; z-index: 5; inset: calc(100% + var(--space-1)) 0 auto; }
 .ui-root .cc-net-hits small { color: var(--text-2); font-size: var(--fs-note); }
 
@@ -132,6 +132,8 @@
 .ui-root .cc-net-drop--over { border-color: var(--text); }
 
 @media (max-width: 600px) {
+  /* On a phone the search box has the row to itself, so its words and the count beside it are never cut off; the count sits under it. */
+  .ui-root .cc-net-ctl:not(.cc-net-ctl--map) > .ds-search { flex-basis: 100%; }
   .ui-root .cc-net-card { padding: var(--space-px20); }
   .ui-root .cc-net-box { max-height: max(var(--cc-net-box-min), calc(100dvh - var(--cc-net-box-rest) - var(--cc-phone-bar-h))); }
   .ui-root .cc-table.cc-net-table .cc-net-name { min-width: calc(var(--cc-net-name-w) - var(--space-5)); max-width: calc(var(--cc-net-name-w) - var(--space-5)); }

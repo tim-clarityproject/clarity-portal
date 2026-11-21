@@ -22,6 +22,7 @@
 import { chromium } from 'playwright';
 import { accountId, APP, clearDevice, coachContext, makeReport, seedDevice, seedNetworkDevice, settle, standIn, toastText } from './shared.mjs';
 import { CAL, CRM, ID, manyLeads, networkDeviceSeed, seedClock, seedWithCrm } from './seed.mjs';
+import { xlsxBytes } from '../../src/lib/coach/xlsx.js';
 
 export const LEAD_PARTS = ['lead-pipeline', 'lead-page', 'lead-won', 'lead-cold', 'lead-merge', 'lead-waiting', 'lead-import', 'lead-export', 'lead-stages', 'lead-many', 'lead-associate', 'lead-arrives'];
 const TUE = new Date(2026, 10, 17, 9, 0);
@@ -283,7 +284,13 @@ async function run() {
         await press(page, 'Import from a spreadsheet');
         await dialog(page).locator('input[type=file]').setInputFiles({ name: 'Leads 2026.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from('PK not a real workbook') });
         await settle(page, 400);
-        pass(`${tag}: an Excel file is refused calmly, with what to do`, (await dialog(page).innerText()).includes('An Excel file can’t be read here yet. Save it as CSV, or copy the rows and paste them.'));
+        pass(`${tag}: a damaged Excel file is refused calmly, with what to do`, (await dialog(page).innerText()).includes('That file can’t be read here. Save it as Excel or CSV, or copy the rows and paste them.'));
+        // A real Excel workbook (made with the portal's own xlsx.js) is read like a CSV file: its columns matched, its rows counted.
+        const book = xlsxBytes([['Name', 'Email', 'Company'], ['Nell Okoye', 'nell.okoye@example.invalid', 'Harbour Lane'], ['Amy Cole', 'amy.cole@example.invalid', 'Northfield Logistics']], 'Leads');
+        await dialog(page).locator('input[type=file]').setInputFiles({ name: 'Leads 2026.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(book) });
+        await settle(page, 600);
+        const fromExcel = await dialog(page).innerText();
+        pass(`${tag}: an Excel file is read: its columns matched and its duplicate listed first`, ['Nell Okoye', 'Amy Cole is already a lead, with the same email.', '1 to add.', 'Add 1 lead'].every((w) => fromExcel.includes(w)) && !fromExcel.includes('can’t be read'), fromExcel.slice(0, 300));
         // Odd columns: other names for the headings, one nobody knows, a row with no name, the same person twice, someone already here.
         const sheet = 'Full Name;E-mail;Company;Deal_Size;Lead Source;Shoe size\nDana Whitfield;dana@example.invalid;Kestrel Group;"£12,000";Referral;7\nAmy Cole;amy.cole@example.invalid;Northfield Logistics;;;\nelena ruiz;;;;;\nGrace Liu;grace.liu@example.invalid;Quillmark;4.5k;Chemistry Call;\nGrace Again;grace.liu@example.invalid;;;;\n;nobody@example.invalid;;;;';
         await dialog(page).locator('input[type=file]').setInputFiles({ name: 'leads.csv', mimeType: 'text/csv', buffer: Buffer.from(sheet) });

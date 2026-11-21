@@ -47,7 +47,8 @@ import { GROUPS, picture as takePicture, walk } from './screens.mjs';
 import { chartPopups, hiddenHelp, readRules, readTwice, SOFT_CORAL, tableHeadings } from './rules.mjs';
 import { earlyAndLate, hoursEditing, readBooking, readCalRules, readPhoneCalendar, TILE, todoOnCalendar, zoneColumns } from './cal-rules.mjs';
 import { settle } from './shared.mjs';
-import { mapProblems, readMap, tableFrozen } from './net-rules.mjs';
+import { actionsProblems, dotStyleProblems, mapCard, mapProblems, nearestWins, netTabProblems, readActions, readDotStyles, readFloatingMenus, readClipped, readLeadRules, readMap, readNetTabs, readTableRows, tableFrozen } from './net-rules.mjs';
+import { toastText } from './shared.mjs';
 import { DAY } from './seed.mjs';
 
 const OUT = process.argv[2] || null;
@@ -98,7 +99,10 @@ function measure(appSelector) {
   }
   const text = (app.innerText || '') + [...document.querySelectorAll('.ds-portal')].map((p) => p.innerText).join('\n');
   const adds = [...document.querySelectorAll('.ds-addrow')].filter(vis).map((b) => b.textContent.trim()).filter((t) => /^Add (a|an) /.test(t));
-  const cards = [...document.querySelectorAll('.cc-card')].filter(vis).map((c) => Math.round(c.getBoundingClientRect().height));
+  // Cards side by side are one height; cards stacked in one column (a phone's board) keep their own (M11's phone).
+  const shownCards = [...document.querySelectorAll('.cc-card')].filter(vis);
+  const sideBySideCards = new Set(shownCards.map((c) => Math.round(c.getBoundingClientRect().left))).size > 1;
+  const cards = sideBySideCards ? shownCards.map((c) => Math.round(c.getBoundingClientRect().height)) : [];
   const cs = getComputedStyle(app);
   return {
     small,
@@ -180,6 +184,11 @@ const MUST = {
   'net-today': (r) => has(r, ['Keep in touch', 'Sofia Marsh', 'Key contact', 'Dana Whitfield', 'Hannah Wells', 'Show all 9', 'Ben Ortiz', '3-month check-in']),
   'net-menu': (r) => /Network\s*9\b/.test(r.text),
   'net-search': (r) => has(r, ['Sofia Marsh', 'Network']),
+  'net-searched': (r) => /\b\d+ of 18 people\b/.test(r.text) && r.text.includes('Clear') && r.text.includes('Dana Whitfield') && !r.text.includes('Sofia Marsh'),
+  // Show narrows the map to one list: the count says so ("3 of 18 people"), or the calm line when nobody is in it.
+  'net-only': (r) => /\b\d+ of 18 people\b/.test(r.text) || r.text.includes('Nobody in this list is on the map.'),
+  // Checked by their own driven checks.
+  'net-fold': () => true, 'net-fold-all': () => true, 'net-50': () => true, 'net-100': () => true, 'net-styles': () => true, 'net-styles-mixed': () => true, 'net-nearest': () => true, 'toast-undo': () => true, 'net-saved': () => true,
   'net-many-actions': (r) => has(r, ['36 people have had no contact for 18 months and aren’t in a focus list.', 'Show all 30', 'days overdue', 'Coming up']),
   'net-many-table': (r) => has(r, ['1,164 people', 'Showing 50 of 1,164', 'Show 50 more', 'Archived, 36']),
   'net-many-map': (r) => r.text.includes('Showing 150 of 1,164 people: your focus lists first, then who you spoke to most recently.'),
@@ -241,7 +250,7 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
   report.pass(`${tag}: no sideways scroll`, r.sideways <= 0, `${r.sideways}px`);
   report.pass(`${tag}: no keyboard shortcut is shown`, r.shortcuts === 0, `${r.shortcuts}`);
   report.pass(`${tag}: Add rows drop “a” and “an”`, r.adds.length === 0, r.adds.join('; '));
-  report.pass(`${tag}: every card on the board is one height`, r.cards.length <= 1, r.cards.join(', '));
+  report.pass(`${tag}: every card on the board is one height where columns sit side by side`, r.cards.length <= 1, r.cards.join(', '));
   report.pass(`${tag}: no “fail” in what people read`, !r.fail);
   report.pass(`${tag}: Mission keeps its capital`, !r.purpose);
   const btns = await page.evaluate(buttonProblems, { phone, scale: 1 });
@@ -296,6 +305,36 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
   }
   // ---- Run 4, step 4: Network's map and its table's own box, on the screens that hold them.
   if (await page.locator('.cc-net-map svg').count()) rule('the map: one shared 0, a faint point at every spot, “7 or more” once on each line and outside the chart, one same-size dot a spot, never coral, at most 150 people, 44px tap areas, no key', mapProblems(await page.evaluate(readMap), { phone }));
+  // ---- Run 4: the UI tester's own named checks (TEST4-UI.md), on the screens that hold them.
+  const RUN4 = ['leads', 'leads-many', 'leads-associate', 'crm', 'crm-associate', 'network', 'network-many', 'network-associate'].includes(group);
+  if (RUN4) {
+    const floating = await page.evaluate(readFloatingMenus);
+    rule('no words are cut off at the side, a box’s own words included', await page.evaluate(readClipped));
+    if (floating.read) rule(`floating menus sit over everything, inside the screen and outside the table (${floating.read} read)`, floating.problems);
+  }
+  if (['leads', 'leads-many', 'crm'].includes(group)) {
+    const l = await page.evaluate(readLeadRules, size >= 1100);
+    rule(`Leads and boards: how ready in words, never a number; money the portal’s way; Edit, never Change; no table under 1100px (${l.cards} cards read)`, l.problems);
+  }
+  if (role === 'owner' && (await page.locator('.cc-net .cc-utabs').count())) rule('Network is three underlined tabs, Actions first', netTabProblems(await page.evaluate(readNetTabs)));
+  if (expects.includes('net-fold') || expects.includes('net-fold-all')) rule('Due now reads “9 days overdue”, most overdue first, folding after 8 with Show all; Coming up soonest first, folding after 4', actionsProblems(await page.evaluate(readActions), { all: expects.includes('net-fold-all') }));
+  if (expects.includes('net-50') || expects.includes('net-100')) {
+    const t = await page.evaluate(readTableRows);
+    const want = expects.includes('net-100') ? 100 : 50;
+    rule(`the table holds ${want} rows a page with “Show 50 more”, never everyone (${t.rows} rows read)`, [t.rows !== want ? `${t.rows} rows in the page` : null, /Show 50 more/.test(t.foot) ? null : `under the table: “${t.foot}”`, /Showing [\d,]+ of 1,164/.test(t.foot) ? null : 'no “Showing … of 1,164”'].filter(Boolean));
+  }
+  if (await page.locator('.cc-net-map svg').count()) {
+    const need = expects.includes('net-styles') ? ['keep_close', 'maintain', 'invest', 'rebalance', 'none'] : expects.includes('net-styles-mixed') ? ['mixed'] : [];
+    rule(`the map’s dots: Keep close green with a fine ring, Maintain solid, Invest an outline, Rebalance? a dashed grey outline, mixed pale, no list plain grey, never coral (read in ${theme})`, dotStyleProblems(await page.evaluate(readDotStyles), { need }));
+    const open = await page.evaluate(() => [...document.querySelectorAll('[role=dialog]')].some((d) => d.getBoundingClientRect().width > 0));
+    if (!open && (await page.locator('.cc-net-map .cc-net-dot:not(:has(.cc-net-num))').count())) rule(`a single dot’s pop-up ${phone ? 'is its name first, inside the screen' : 'is a card: the name, the organisation and the list, then Influence, Trust and Catch-up, inside the screen'}`, await mapCard(page, { phone, settle }));
+  }
+  if (expects.includes('toast-undo')) {
+    const said = await toastText(page);
+    const undo = await page.locator('.ds-toast').last().getByRole('button', { name: 'Undo' }).count();
+    const want = expects.includes('net-saved') ? 'Saved.' : null;
+    rule(`the change says so${want ? ` (“${want}”)` : ''} with Undo`, [!said.trim() ? 'no toast' : want && said.trim() !== want ? `the toast says “${said}”` : null, undo ? null : 'no Undo in the toast'].filter(Boolean));
+  }
   if (expects.includes('net-frozen')) rule('the table sits in its own box: its heading row and its Name column stay put as it scrolls down and sideways, and the page never scrolls sideways', await tableFrozen(page, { settle }));
   if (expects.includes('table')) rule('the table’s heading row stays at the top as the page and the table scroll', await tableHeadings(page));
   // ---- Run 3's rules for the calendar and booking (Tim, 19 Nov), on every screen.
@@ -334,6 +373,10 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
     if (phone && ['cal-week', 'cal-clock-week'].includes(name) && ['tiles', 'kinds', 'hatch'].includes(need)) continue; // on a phone the week is its own list, not a squashed grid: its rows are read as the Schedule's are
     const there = MUST[need] ? MUST[need](r) : CAL_MUST[need] ? CAL_MUST[need](cal) : rules.found[need];
     report.pass(`${tag}: the screen shows what it is for (${need})`, Boolean(there));
+  }
+  if (expects.includes('net-nearest')) {
+    const near = await nearestWins(page, { settle });
+    if (phone || near.read) rule(`where two dots’ tap areas overlap, the press opens the nearer one (${near.read} pressed)`, phone && !near.read ? ['no two dots close enough to press between'] : near.problems);
   }
   if (run === 2 && expects.includes('panel') && phone) report.pass(`${tag}: on a phone a side panel is the whole screen`, await page.evaluate(() => { const d = [...document.querySelectorAll('.ds-dialog')].filter((x) => x.getBoundingClientRect().width > 0).pop(); if (!d) return true; const b = d.getBoundingClientRect(); return d.matches('.ds-sheet, [class*=sheet]') || b.width >= window.innerWidth - 1; }));
 }, { twice: TWICE, groups: TWICE ? GROUPS.map((g) => g.name).filter((g) => g !== 'run1' && g !== 'help') : null });

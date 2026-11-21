@@ -512,6 +512,8 @@ body:has(> #root .ui-root.cc-app) {
    the quiet grey edge (the coral ring only for keyboard focus). */
 .ui-root .cc-cell { all: unset; cursor: text; box-sizing: border-box; min-height: var(--tap-min); min-width: var(--tap-min); max-width: 100%; display: inline-flex; align-items: center; padding: 0 var(--space-px6); margin-left: calc(-1 * var(--space-px6)); border-radius: var(--radius-btn); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ui-root .cc-cell--empty { color: var(--placeholder); }
+/* A detail typed over (a lead's or a client's email) wraps rather than being cut off when the text is large (twice the text size). */
+.ui-root .cc-detail--edit .cc-cell { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
 @media (hover: hover) {
   .ui-root .cc-cell:hover { background: var(--raised); }
 }
@@ -641,6 +643,8 @@ body:has(> #root .ui-root.cc-app) {
     border-top: var(--line-w) solid var(--line);
     background: var(--bg);
   }
+  /* A toast rises above the coach's phone bar, as it does above the client portal's (which sets --tabbar-height; this bar doesn't). */
+  :root:has(.cc-phonebar) .ui-root .ds-toast-region { bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--space-3)) + var(--space-3) + max(var(--ds-toast-offset, 0px), calc(var(--cc-phone-bar-h) + env(safe-area-inset-bottom, 0px)))); }
   .ui-root .cc-phonebar .cc-round[aria-current='page'] { color: var(--text); }
   .ui-root .cc-phonebar .cc-round--mark { color: var(--text); }
 

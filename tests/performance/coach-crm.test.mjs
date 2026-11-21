@@ -839,8 +839,13 @@ test('Edit details saved: what was typed, checked, with the stage left for its o
 });
 
 test('a spreadsheet that can’t be read here says so calmly; search finds open and cold leads; automations say what they did', () => {
-  assert.equal(crm.importFileProblem('Leads 2026.xlsx'), 'An Excel file can’t be read here yet. Save it as CSV, or copy the rows and paste them.');
-  assert.equal(crm.importFileProblem('leads.pdf'), 'That file can’t be read here. Save it as CSV, or copy the rows and paste them.');
+  // An Excel workbook is read (xlsx.js's xlsxTable); an older or other spreadsheet kind says what to do instead.
+  assert.equal(crm.importFileProblem('Leads 2026.xlsx'), '');
+  assert.equal(crm.isXlsxFile('Leads 2026.XLSX'), true);
+  assert.equal(crm.isXlsxFile('leads.csv'), false);
+  assert.equal(crm.importFileProblem('Leads 2003.xls'), 'That kind of spreadsheet can’t be read here. Save it as Excel (.xlsx) or CSV, or copy the rows and paste them.');
+  assert.equal(crm.importFileProblem('leads.pdf'), 'That file can’t be read here. Save it as Excel or CSV, or copy the rows and paste them.');
+  assert.equal(crm.importFileProblem('leads.xlsx', 9 * 1024 * 1024), 'That file is too big. Split it, or paste the rows instead.');
   assert.equal(crm.importFileProblem('leads.CSV', 2000), '');
   assert.equal(crm.importFileProblem('leads.csv', 9 * 1024 * 1024), 'That file is too big. Split it, or paste the rows instead.');
   const found = crm.leadSearchItems([...LEADS, { ...ELENA, id: 'gone', merged_into: 'elena' }], STAGES);

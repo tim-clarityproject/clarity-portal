@@ -5,10 +5,10 @@ import { logActivity } from '../../lib/coach/actions';
 import { leadMerge, leadUnmerge } from '../../lib/coach/crmData';
 import { emailBody } from '../../lib/coach/networkData';
 import { canFavourite, FAVOURITES_FULL, fieldValue, fieldWords, firstName } from '../../lib/coach/model';
-import { xlsxBytes } from '../../lib/coach/xlsx';
+import { canReadXlsx, xlsxBytes, xlsxTable } from '../../lib/coach/xlsx';
 import {
   COLD_CHECKS, COLD_REASONS, csvTable, duplicateWords, emailPanel, EMPTY_LEAD_FILTERS, EXPORT_FORMATS, EXPORT_HELP, exportName, exportWhat, followUpDays, hasHeadingRow,
-  hideThread, IMPORT_EMPTY, IMPORT_HELP, IMPORT_MAX, IMPORT_NEEDS_NAME, IMPORT_TOO_MANY, importButton, importedWords, importFileProblem, KEPT_AS_TWO, LEAD_IMPORT_FIELDS,
+  hideThread, IMPORT_EMPTY, IMPORT_HELP, IMPORT_MAX, IMPORT_NEEDS_NAME, IMPORT_TOO_MANY, importButton, importedWords, importFileProblem, IMPORT_UNREADABLE, isXlsxFile, KEPT_AS_TWO, LEAD_IMPORT_FIELDS,
   LEAD_SOURCES, leadExportRows, leadFromImport, leadImportPlan, leadMergeDevice, leadMergePlan, leadsCsv, leadUnmergeDevice, leadViewFromList, matchColumns, MERGE_INTRO,
   MERGE_NOTHING_LOST, mergedLead, mergedWords, moveLeadsQuestion, QUALIFY, sheetRows, stageOf, STAGES_HELP, stagesDraft, stagesSavePlan, whereTitle, withNotSame,
 } from '../../lib/coach/crm';
@@ -323,14 +323,15 @@ export function ImportLeadsPanel({ open, onClose }) {
   const { all } = useLeadData();
   const toast = useToast();
   const [text, setText] = useState('');
+  const [cells, setCells] = useState(null); // an Excel file's rows of cells (xlsx.js); pasted or CSV rows are read from `text`
   const [chosen, setChosen] = useState({}); // a column's index to the field the coach chose ('' leaves it out)
   const [anyway, setAnyway] = useState({}); // a duplicate's row number, when it is to be added all the same
   const [problem, setProblem] = useState(null);
   const fileRef = useRef(null);
   const busy = useRef(false);
-  useEffect(() => { if (open) { setText(''); setChosen({}); setAnyway({}); setProblem(null); } }, [open]);
+  useEffect(() => { if (open) { setText(''); setCells(null); setChosen({}); setAnyway({}); setProblem(null); } }, [open]);
   const sheet = useMemo(() => {
-    const table = csvTable(text);
+    const table = cells || csvTable(text);
     if (!table.length) return null;
     const headed = hasHeadingRow(table[0]);
     const width = Math.max(...table.map((r) => r.length));
@@ -338,7 +339,7 @@ export function ImportLeadsPanel({ open, onClose }) {
     const matched = matchColumns(headings);
     const body = headed ? table.slice(1) : table;
     return { headed, body, columns: matched.columns.map((c) => ({ ...c, sample: body.find((r) => r[c.index])?.[c.index] || '' })) };
-  }, [text]);
+  }, [text, cells]);
   const columns = sheet ? sheet.columns.map((c) => ({ ...c, field: chosen[c.index] !== undefined ? chosen[c.index] || null : c.field })) : [];
   const named = columns.some((c) => ['name', 'first', 'last'].includes(c.field));
   const read = useMemo(() => (sheet ? sheetRows(sheet.body, columns) : { rows: [], skipped: 0 }), /* eslint-disable-next-line react-hooks/exhaustive-deps */ [sheet, JSON.stringify(chosen)]);
@@ -348,7 +349,13 @@ export function ImportLeadsPanel({ open, onClose }) {
     if (!file) return;
     const line = importFileProblem(file.name, file.size);
     if (line) { setProblem(line); return; }
-    setText(await file.text()); setChosen({}); setAnyway({}); setProblem(null);
+    try {
+      if (isXlsxFile(file.name)) {
+        if (!canReadXlsx()) { setProblem(IMPORT_UNREADABLE); return; }
+        const rows = await xlsxTable(new Uint8Array(await file.arrayBuffer()));
+        setText(''); setCells(rows.length ? rows : null); setChosen({}); setAnyway({}); setProblem(rows.length ? null : IMPORT_EMPTY);
+      } else { setCells(null); setText(await file.text()); setChosen({}); setAnyway({}); setProblem(null); }
+    } catch { setProblem(IMPORT_UNREADABLE); }
   };
   const choose = (index, field) => {
     // A field is one column's at a time: choosing it for another takes it from the first.
@@ -374,12 +381,12 @@ export function ImportLeadsPanel({ open, onClose }) {
   return (
     <SlidePanel open={open} onClose={onClose} title="Import from a spreadsheet" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>{adding.length ? importButton(adding.length) : 'Add leads'}</Button></div>}>
       <div className="cc-field" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); readFile(e.dataTransfer?.files?.[0]); }}>
-        <label className="cc-field-label" htmlFor="cc-lead-paste">Paste rows from a spreadsheet, or drop a CSV file here</label>
-        <textarea id="cc-lead-paste" className="cc-paste" rows={5} value={text} placeholder={'Name, Email, Organisation\nDana Whitfield, dana@example.com, Kestrel Group'} onChange={(e) => { setText(e.target.value); setChosen({}); setAnyway({}); setProblem(null); }} />
+        <label className="cc-field-label" htmlFor="cc-lead-paste">Paste rows from a spreadsheet, or drop an Excel or CSV file here</label>
+        <textarea id="cc-lead-paste" className="cc-paste" rows={5} value={text} placeholder={'Name, Email, Organisation\nDana Whitfield, dana@example.com, Kestrel Group'} onChange={(e) => { setText(e.target.value); setCells(null); setChosen({}); setAnyway({}); setProblem(null); }} />
       </div>
       <div className="cc-acts">
         <TextLink onClick={() => fileRef.current?.click()}>Choose a file</TextLink>
-        <input ref={fileRef} className="cc-hidden-file" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,text/csv" tabIndex={-1} aria-hidden="true" onChange={(e) => { readFile(e.target.files?.[0]); e.target.value = ''; }} />
+        <input ref={fileRef} className="cc-hidden-file" type="file" accept=".xlsx,.csv,.tsv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" tabIndex={-1} aria-hidden="true" onChange={(e) => { readFile(e.target.files?.[0]); e.target.value = ''; }} />
       </div>
       <p className="cc-note">{IMPORT_HELP}</p>
       <Problem line={problem} />

@@ -4,7 +4,8 @@
 //
 //   node --import ./tests/scores/register.mjs tests/coach/compare-m11.mjs [M11 v3.6 file] [M11 seq 77 file]
 //
-// RUN=1, RUN=2 or RUN=3 runs one run's screens (all three when left out).
+// RUN=1, RUN=2, RUN=3 or RUN=4 runs one run's screens (all four when left out).
+// Run 4's (Leads, the CRM and Network) are in compare-m11-run4-screens.mjs, read the same way.
 // Run 3's (the calendar and booking) are in compare-m11-run3-screens.mjs,
 // read from M11 seq 77 the same way as run 2's, and split the same way. Run 1's
 // screens are listed below and read from M11 v3.6, as run 1 left them.
@@ -38,16 +39,16 @@ import { openScreen } from './screens.mjs';
 import { compareRun2, m11File } from './compare-m11-run2.mjs';
 import { EVERYWHERE, EXTRA_GROUPS, ROWS } from './compare-m11-run2-screens.mjs';
 import { EVERYWHERE as EVERYWHERE3, EXTRA_GROUPS as EXTRA_GROUPS3, ROWS as ROWS3 } from './compare-m11-run3-screens.mjs';
+import { EVERYWHERE as EVERYWHERE4, EXTRA_GROUPS as EXTRA_GROUPS4, ROWS as ROWS4 } from './compare-m11-run4-screens.mjs';
 
-const RUNS = (process.env.RUN || '1,2,3').split(',');
+const RUNS = (process.env.RUN || '1,2,3,4').split(',');
 const M11 = process.argv[2] || join(homedir(), 'Downloads/clarity-phase-6a/M11-coach-portal-v3.6.html');
 if (RUNS.includes('1') && !existsSync(M11)) { console.log(`The M11 file isn’t at ${M11}. Give its path as the first argument.`); process.exit(1); }
 const M11_SEQ77 = m11File(process.argv[3]);
-if ((RUNS.includes('2') || RUNS.includes('3')) && !M11_SEQ77) { console.log('M11 seq 77 wasn’t found. Give its path as the second argument, or as M11_RUN2.'); process.exit(1); }
+if ((RUNS.includes('2') || RUNS.includes('3') || RUNS.includes('4')) && !M11_SEQ77) { console.log('M11 seq 77 wasn’t found. Give its path as the second argument, or as M11_RUN2.'); process.exit(1); }
 const report = makeReport('Coach portal against M11');
 
 const RUN2 = 'the coaching day is run 2';
-const RUN4 = 'the CRM is run 4';
 const LATER = 'agreements, prices and invoices are Phase 6b';
 const KEYS = 'no keyboard shortcut is shown anywhere (Tim, 18 Nov)';
 
@@ -59,7 +60,7 @@ const SCREENS = [
   ['The next-call bar', 'today:tue', 'owner', [], 'callbar', 'owner', ['Open the brief', 'Join on Zoom', 'in 8 minutes'], []],
   ['The menu, owner', 'menu', 'owner', [], 'menu', 'owner',
     ['Today', 'To-dos', 'Clients', 'Leads', 'Network', 'Boards', 'Calendar', 'Leading Ideas', 'Library', 'Favourite views', 'Executives', 'Settings', 'Sign out'],
-    [['Kestrel renewal', 'to-do lists arrive with To-dos, in run 2'], ['Speaking', 'boards arrive with the CRM, in run 4']]],
+    [['Kestrel renewal', 'to-do lists arrive with To-dos, in run 2'], ['Speaking', 'the test’s data: run 1’s seed holds no boards (the menu with Boards is held with RUN=4)']]],
   ['The menu, associate', 'menu', 'maya', [], 'menu', 'associate',
     ['Today', 'To-dos', 'Clients', 'Calendar', 'Leading Ideas', 'Library', 'Favourite views', 'Settings', 'Sign out'], []],
   ['Search', 'qj', 'owner', [], 'search', 'owner',
@@ -87,7 +88,7 @@ const SCREENS = [
   ['A client, the sections open (Sam)', 'client:sam', 'owner', ['fold:prog', 'fold:ses', 'fold:notes', 'fold:agr', 'fold:about', 'fold:det', 'fold:more'], 'client-sam-open', 'owner',
     ['Pin to the top', 'Unpin', 'Birthday', '12 Mar', 'Partner', 'Ama', 'Children', 'Kofi and Esi', 'Referred by', 'Dana Whitfield', 'Sector', 'Finance', 'Tags', 'Executive, Finance sector, Kestrel', 'Add field', 'Frequent traveller', 'Start the guided close', 'Export Sam’s data', 'Delete Sam’s data'],
     [['Ask to view Sam’s portal', 'it shows once Sam has a portal account to view'], ['Sponsor', LATER], ['Expenses allowed', LATER]]],
-  ['A client, Everything (Sam)', 'everything', 'owner', [], 'client-sam-everything', 'owner', ['Search Sam’s history', 'Everything', 'Private note'], [['Invoice 1031 paid', LATER], ['Fathom summary', RUN2], ['Sam emailed', RUN4]]],
+  ['A client, Everything (Sam)', 'everything', 'owner', [], 'client-sam-everything', 'owner', ['Search Sam’s history', 'Everything', 'Private note'], [['Invoice 1031 paid', LATER], ['Fathom summary', RUN2], ['Sam emailed', 'the test’s data: run 1’s seed logs no email on Sam (emails on Everything are built in run 4)']]],
   ['A new client (Leo)', 'client:leo', 'owner', [], 'client-leo', 'owner',
     ['Leo Grant', 'Northfield Logistics', 'Operations director', 'Leeds', 'Getting started', 'First session', 'Welcome pack', 'Next coaching session'],
     [['First check-in', 'the portal’s name for it is the First review (rule 26a)'], ['Send the pack', 'the Library and its packs are Phase 6c'], ['Agreement', 'the first step here is the engagement; agreements are Phase 6b']]],
@@ -107,8 +108,8 @@ const SCREENS = [
     []],
   ['A workshop registration page', 'wreg', 'owner', [], 'public', 'owner', ['The Clarity Project', 'Leading under pressure', 'Your name', 'Your email', 'What do you want from the morning?', 'Your role', 'Anything we should know?', 'Register'], [['places taken.', 'a full sentence: “18 of 20 places are taken.”']]],
   ['An organisation, with its account map', 'org', 'owner', [], 'organisation', 'owner',
-    ['Kestrel Group', 'Organisation', 'London', 'Who’s who', 'Dana Whitfield', 'Sponsor', 'Decides on renewals', 'Lee Hart', 'Invoices go to Lee', 'Sam Okafor', 'Client', 'Owen Price', 'Maya’s client', 'Kestrel leadership team', 'Add someone', 'Room to grow', 'seats are free.', 'Seats', 'Organisation area', 'Documents', 'Master services agreement', 'No expiry date.', 'Non-disclosure agreement', 'Add document'],
-    [['Agreements and proposals', `this run lists the engagements; ${LATER}`], ['Invested this year', LATER], ['Price per seat', LATER], ['CLARITY-KESTREL', 'access codes are kept hashed, as already built, so the page can’t show one to copy']]],
+    ['Kestrel Group', 'Organisation', 'London', 'Who’s who', 'Dana Whitfield', 'Sponsor', 'Decides on renewals', 'Lee Hart', 'Invoices go to Lee', 'Sam Okafor', 'Client', 'Owen Price', 'Maya’s client', 'Kestrel leadership team', 'Add someone', 'Room to grow', 'Agreements and proposals', 'seats are free.', 'Seats', 'Organisation area', 'Documents', 'Master services agreement', 'No expiry date.', 'Non-disclosure agreement', 'Add document'],
+    [['Invested this year', LATER], ['Price per seat', LATER], ['CLARITY-KESTREL', 'access codes are kept hashed, as already built, so the page can’t show one to copy']]],
   ['Settings, Your details', 'settings', 'owner', [], 'settings', 'owner',
     ['Settings', 'Your details', 'Away and cover', 'Notifications', 'Booking', 'Working hours', 'My calendars', 'Email', 'Tags and fields', 'Note layouts', 'Coaches', 'Activity log', 'Look', 'Name clients see', 'Mobile', 'Edit', 'How clients can reach you', 'WhatsApp', 'iMessage'],
     [['Second time zone', 'the prompt names this section Time zones, with the editable list']]],
@@ -125,7 +126,7 @@ const SCREENS = [
   ['Settings, Look', 'settings', 'owner', ['sets:look'], 'settings-look', 'owner', ['Look', 'Match my device', 'Edit'], []],
   ['Settings, associate', 'settings', 'maya', [], 'settings', 'associate', ['Your details', 'Away and cover', 'Notifications', 'Booking', 'Working hours', 'My calendars', 'Look', 'Name clients see', 'Maya'], [['Second time zone', 'the prompt names this section Time zones']]],
   ['Settings on a phone', 'settings', 'owner-phone', [], 'settings', 'owner-phone', ['Settings', 'Your details', 'Away and cover', 'Notifications', 'Booking', 'Working hours', 'My calendars', 'Tags and fields', 'Coaches', 'Activity log', 'Look'], [['Tim, email and messages', 'each section’s row is its name alone: its values show inside it']]],
-  ['Past clients', 'past', 'owner', [], 'clients-past', 'owner', ['Clients', 'Past clients', 'Grace Liu', 'Ended'], [['Check-ins due', `past clients’ check-ins belong to Network: ${RUN4}`]]],
+  ['Past clients', 'past', 'owner', [], 'clients-past', 'owner', ['Clients', 'Past clients', 'Grace Liu', 'Ended'], [['Check-ins due', 'the test’s data: run 1’s seed has no check-ins due (Check-ins due is built in run 4 and held with RUN=4)']]],
   ['Merge into one', 'merge', 'owner', [], 'merge', 'owner', ['Merge into one', 'These two look like the same person. Choose what to keep where they differ.', 'They’re different people', 'Nothing is lost.'], [['Both timelines join into one.', 'said as what joins: “Their notes, files, tags and engagements join into one.”']]],
   ['A name in a quiet line opens a note', 'today:tue', 'owner', ['sheet:bday'], 'today-note', 'owner', ['Priya Nair', 'A note to Priya', 'Happy birthday, Priya!', 'View Priya’s page'], [['Portal message', 'the client portal has no messages page to show one in, so only Email is offered: a message would go nowhere'], ['Send message', 'as above']]],
   ['A page of a later run', 'library', 'owner', [], 'coming', 'owner', ['Library'], [['Guest links', 'the Library and its guest links are Phase 6c']]],
@@ -229,6 +230,11 @@ if (RUNS.includes('2')) {
 if (RUNS.includes('3')) {
   table.push('| **Run 3, the calendar and booking (M11 seq 77)** | | |');
   await compareRun2(report, table, { file: M11_SEQ77, rows: ROWS3, extraGroups: EXTRA_GROUPS3, everywhere: EVERYWHERE3, label: 'Run 3' });
+}
+// Run 4, Leads, the CRM and Network: M11 seq 77, line by line.
+if (RUNS.includes('4')) {
+  table.push('| **Run 4, Leads, the CRM and Network (M11 seq 77)** | | |');
+  await compareRun2(report, table, { file: M11_SEQ77, rows: ROWS4, extraGroups: EXTRA_GROUPS4, everywhere: EVERYWHERE4, label: 'Run 4' });
 }
 console.log('\n| M11 screen | Result | What differs and why |\n|---|---|---|');
 console.log(table.join('\n'));

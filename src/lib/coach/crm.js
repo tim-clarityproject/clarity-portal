@@ -1869,10 +1869,15 @@ export function leadDetailsPatch(lead, typed = {}, { organisations = [] } = {}) 
 
 /** A spreadsheet chosen for import that can't be read here: the calm line to show, or '' when it can. */
 export function importFileProblem(name, size = 0) {
-  if (/\.(xlsx|xls|xlsm|numbers|ods)$/i.test(String(name || ''))) return 'An Excel file can’t be read here yet. Save it as CSV, or copy the rows and paste them.';
-  if (!/\.(csv|tsv|txt)$/i.test(String(name || ''))) return 'That file can’t be read here. Save it as CSV, or copy the rows and paste them.';
+  const n = String(name || '');
+  if (/\.(xls|xlsm|numbers|ods)$/i.test(n)) return 'That kind of spreadsheet can’t be read here. Save it as Excel (.xlsx) or CSV, or copy the rows and paste them.';
+  if (!/\.(csv|tsv|txt|xlsx)$/i.test(n)) return IMPORT_UNREADABLE;
   return size > 4 * 1024 * 1024 ? 'That file is too big. Split it, or paste the rows instead.' : '';
 }
+/** An import file that is an Excel workbook (.xlsx), read with xlsx.js's `xlsxTable`; anything else readable is text. */
+export const isXlsxFile = (name) => /\.xlsx$/i.test(String(name || ''));
+/** A file that looked readable and wasn't (a damaged workbook, or a browser that can't unpack one). */
+export const IMPORT_UNREADABLE = 'That file can’t be read here. Save it as Excel or CSV, or copy the rows and paste them.';
 
 /** Leads as search finds them (the owner's search only): open and cold leads by name, organisation or email; a won lead is found as the client it became. */
 export function leadSearchItems(leads, stages = []) {

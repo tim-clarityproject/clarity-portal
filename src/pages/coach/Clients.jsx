@@ -49,6 +49,8 @@ export function useEvenCards(ref, deps) {
     const even = () => {
       const cards = [...board.querySelectorAll('.cc-card')];
       cards.forEach((c) => { c.style.minHeight = ''; });
+      // Only cards in columns side by side are made one height; stacked in one column (a phone), each keeps its own (M11's phone).
+      if (new Set(cards.map((c) => Math.round(c.getBoundingClientRect().left))).size < 2) return;
       const tallest = Math.max(0, ...cards.map((c) => c.getBoundingClientRect().height));
       cards.forEach((c) => { c.style.minHeight = `${tallest}px`; });
     };

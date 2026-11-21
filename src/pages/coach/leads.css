@@ -45,6 +45,8 @@
 
 /* ---------------------------------------------------------------- the table */
 .ui-root .cc-lead-table td small { margin-top: var(--space-px2); }
+/* A heading wraps between its words when the device's text is large, never cut off (rule 20; twice the text size). */
+.ui-root .cc-lead-table .cc-th { white-space: normal; overflow: visible; text-overflow: clip; }
 /* A next step is read whole: it wraps onto more lines and its row grows (tables never squash their text). */
 .ui-root .cc-lead-table .cc-cell { white-space: normal; overflow-wrap: anywhere; text-align: left; line-height: var(--lh-row); }
 .ui-root .cc-lead-table td .cc-cell + small { margin-top: calc(-1 * var(--space-px6)); padding-bottom: var(--space-px6); }
