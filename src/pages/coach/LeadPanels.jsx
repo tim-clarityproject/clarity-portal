@@ -7,10 +7,10 @@ import { emailBody } from '../../lib/coach/networkData';
 import { canFavourite, FAVOURITES_FULL, fieldValue, fieldWords, firstName } from '../../lib/coach/model';
 import { canReadXlsx, xlsxBytes, xlsxTable } from '../../lib/coach/xlsx';
 import {
-  COLD_CHECKS, COLD_REASONS, csvTable, duplicateWords, emailPanel, EMPTY_LEAD_FILTERS, EXPORT_FORMATS, EXPORT_HELP, exportName, exportWhat, followUpDays, hasHeadingRow,
+  COLD_CHECKS, COLD_REASONS, crmProblem, csvTable, duplicateWords, emailPanel, EMPTY_LEAD_FILTERS, EXPORT_FORMATS, EXPORT_HELP, exportName, exportWhat, followUpDays, hasHeadingRow,
   hideThread, IMPORT_EMPTY, IMPORT_HELP, IMPORT_MAX, IMPORT_NEEDS_NAME, IMPORT_TOO_MANY, importButton, importedWords, importFileProblem, IMPORT_UNREADABLE, isXlsxFile, KEPT_AS_TWO, LEAD_IMPORT_FIELDS,
   LEAD_SOURCES, leadExportRows, leadFromImport, leadImportPlan, leadMergeDevice, leadMergePlan, leadsCsv, leadUnmergeDevice, leadViewFromList, matchColumns, MERGE_INTRO,
-  MERGE_NOTHING_LOST, mergedLead, mergedWords, moveLeadsQuestion, QUALIFY, sheetRows, stageOf, STAGES_HELP, stagesDraft, stagesSavePlan, whereTitle, withNotSame,
+  MERGE_NOTHING_LOST, mergedLead, mergedWords, mergePair, moveLeadsQuestion, QUALIFY, sheetRows, stageOf, STAGES_HELP, stagesDraft, stagesSavePlan, whereTitle, withNotSame,
 } from '../../lib/coach/crm';
 import { TextLink, useCoachPortal } from './parts';
 import { SAVE_PROBLEM, useLeadActions, useLeadData } from './leadParts';
@@ -23,7 +23,7 @@ import { SAVE_PROBLEM, useLeadActions, useLeadData } from './leadParts';
 // it says what's missing. Nothing here sends anything.
 
 const NONE = '__none__';
-const calm = (error) => (error?.message && !/fetch|network/i.test(error.message) ? error.message : SAVE_PROBLEM);
+const calm = (error) => crmProblem(error);
 const Problem = ({ line }) => (line ? <p className="cc-problem" role="alert">{line}</p> : null);
 
 // ---------------------------------------------------------------- Add lead
@@ -354,7 +354,7 @@ export function ImportLeadsPanel({ open, onClose }) {
         if (!canReadXlsx()) { setProblem(IMPORT_UNREADABLE); return; }
         const rows = await xlsxTable(new Uint8Array(await file.arrayBuffer()));
         setText(''); setCells(rows.length ? rows : null); setChosen({}); setAnyway({}); setProblem(rows.length ? null : IMPORT_EMPTY);
-      } else { setCells(null); setText(await file.text()); setChosen({}); setAnyway({}); setProblem(null); }
+      } else { const t = await file.text(); setCells(null); setText(t); setChosen({}); setAnyway({}); setProblem(csvTable(t).length ? null : IMPORT_EMPTY); }
     } catch { setProblem(IMPORT_UNREADABLE); }
   };
   const choose = (index, field) => {
@@ -477,11 +477,14 @@ export function MergeLeadsPanel({ pair, onClose }) {
   const ids = pair ? `${pair.a.id}|${pair.b.id}` : '';
   useEffect(() => { setChoices({}); }, [ids]);
   if (!pair) return <SlidePanel open={false} onClose={onClose} title="Merge into one" />;
-  const { a, b } = pair;
+  // A won lead is always the one kept (its client carries its timeline); two clients aren't merged here.
+  const ordered = mergePair(pair.a, pair.b) || pair;
+  const { a, b } = ordered.error ? pair : ordered;
   const plan = leadMergePlan(a, b) || [];
   const taken = Object.fromEntries(Object.entries(choices).filter(([, v]) => v === 'b').map(([k]) => [k, true]));
   const merge = async () => {
     if (busy.current) return;
+    if (ordered.error) { toast.show(ordered.error); return; }
     busy.current = true;
     try {
       const mergeId = await leadMerge(userId, a.id, b.id, taken);

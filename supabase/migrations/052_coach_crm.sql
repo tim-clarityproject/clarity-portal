@@ -24,7 +24,9 @@
 --       want_pain, who_decides, who_funds, decide_when (text each),
 --       won_at, won_profile_id (the client Won made), cold_at, cold_reason
 --       (what happened), cold_check_on (when to check in again),
---       merged_into.
+--       merged_into (cleared only by lead_unmerge(): a save from a page that
+--       still shows the lead, in another tab or on another device, keeps it
+--       merged; network_people.merged_into the same, by network_unmerge()).
 --     051's source list gains: manual, import, email, network, referral.
 --
 --   coach_lead_events     the lead timeline: id, coach_id, lead_id,
@@ -522,6 +524,11 @@ begin
     new.given_count := old.given_count;
     new.asked_count := old.asked_count;
     new.coach_id := old.coach_id;
+    -- A merge is undone only by network_unmerge(): a save from a page that still shows the person (another tab, another
+    -- device) keeps them merged.
+    if old.merged_into is not null and new.merged_into is null and coalesce(current_setting('clarity.unmerge', true), '') <> 'on' then
+      new.merged_into := old.merged_into;
+    end if;
   end if;
   return new;
 end;
@@ -604,6 +611,11 @@ begin
     select s.id into new.stage_id from public.coach_lead_stages s where s.coach_id = new.coach_id order by s.position, s.created_at limit 1;
   end if;
   if tg_op = 'UPDATE' then new.coach_id := old.coach_id; end if;
+  -- A merge is undone only by lead_unmerge(): a save from a page that still shows the lead merged away (another tab,
+  -- another device) keeps it merged, so its timeline never ends up on two leads.
+  if tg_op = 'UPDATE' and old.merged_into is not null and new.merged_into is null and coalesce(current_setting('clarity.unmerge', true), '') <> 'on' then
+    new.merged_into := old.merged_into;
+  end if;
   if new.stage_id is not null and (tg_op = 'INSERT' or new.stage_id is distinct from old.stage_id)
      and not exists (select 1 from public.coach_lead_stages s where s.id = new.stage_id and s.coach_id = new.coach_id) then
     raise exception 'That stage isn''t one of yours.' using errcode = '23514';
@@ -1345,7 +1357,9 @@ begin
     who_decides = k ->> 'who_decides', who_funds = k ->> 'who_funds', decide_when = k ->> 'decide_when',
     last_contact_on = (k ->> 'last_contact_on')::date
   where id = m.kept_id;
+  perform set_config('clarity.unmerge', 'on', true);
   update public.coach_leads set merged_into = null where id = m.dropped_id;
+  perform set_config('clarity.unmerge', '', true);
   update public.coach_lead_merges set undone_at = now() where id = p_merge;
 end;
 $$;
@@ -1781,7 +1795,9 @@ begin
     rhythm_months = (k ->> 'rhythm_months')::smallint, last_spoke_on = (k ->> 'last_spoke_on')::date, added_on = (k ->> 'added_on')::date,
     own = coalesce(k -> 'own', '{}'::jsonb), keep = (k ->> 'keep')::boolean, profile_id = (k ->> 'profile_id')::uuid
   where id = m.kept_id;
+  perform set_config('clarity.unmerge', 'on', true);
   update public.network_people set merged_into = null where id = m.dropped_id;
+  perform set_config('clarity.unmerge', '', true);
   perform public._network_recount(m.kept_id);
   perform public._network_recount(m.dropped_id);
   update public.network_merges set undone_at = now() where id = p_merge;

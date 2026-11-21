@@ -170,6 +170,31 @@ test('before 052: Network is kept on the device, and answers in the database’s
   assert.equal(Object.values(db.rows).flat().length, 0);
 });
 
+test('before 052, a device with no room left: the save is refused with NO_ROOM, and nothing is shown as kept that isn’t (break-it, 21 Nov)', async () => {
+  // The device as the test before left it is put back at the end: the next test carries on from it.
+  const before = new Map(local.keys().map((k) => [k, local.getItem(k)]));
+  const dbBefore = { rows: db.rows, sim: db.sim };
+  freshDb();
+  local.removeItem(`clarity-coach-network-local:${USER}`);
+  reload();
+  assert.equal(await data.networkReady(), false);
+  await data.saveNetworkPerson(USER, person('dan', 'Dan Reid', { influence: 6, trust: 9, value_delivery: 7, what_you_get: 8 }));
+  const setItem = local.setItem;
+  local.setItem = (k, v) => { if (String(k).includes('network-local')) throw Object.assign(new Error('QuotaExceededError'), { name: 'QuotaExceededError' }); return setItem(k, v); };
+  try {
+    await assert.rejects(() => data.saveNetworkPerson(USER, person('nell', 'Nell Okoye')), (e) => e.code === 'NO_ROOM');
+    await assert.rejects(() => data.saveNetworkPerson(USER, { id: 'dan', trust: 2 }), (e) => e.code === 'NO_ROOM');
+    const now = await page();
+    assert.deepEqual([now.total, now.rows.map((p) => `${p.name} ${p.trust}`).join(',')], [1, 'Dan Reid 9']);
+  } finally {
+    local.setItem = setItem;
+    for (const k of local.keys()) local.removeItem(k);
+    for (const [k, v] of before) local.setItem(k, v);
+    Object.assign(db, dbBefore);
+    reload();
+  }
+});
+
 test('when 052 arrives, what waited is moved across once, and the same questions are answered by the database', async () => {
   const before = { page: await page(), due: await page({ sort: 'due', only: { due: 'now' } }), counts: await data.networkCountsOf(USER, TODAY), dan: await data.networkPerson(USER, 'dan') };
   db.there = true;
@@ -235,3 +260,4 @@ test('no connection: the last answer to the same question is shown; a device tha
   reload();
   assert.equal((await page()).total, live.total);
 });
+

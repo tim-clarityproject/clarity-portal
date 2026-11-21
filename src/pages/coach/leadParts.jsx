@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useToast } from '../../components/design';
-import { coachState, forgetRows, keyOf, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
+import { coachState, forgetRows, keyOf, loadCoach, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { leadStagesStart } from '../../lib/coach/crmData';
 import { fieldFromTyped, fieldValue } from '../../lib/coach/model';
 import {
-  alreadyRan, automationsSaid, claimed, coldPlan, discoveryPatch, firstStage, LEAD_ADDED, leadDetailsPatch, leadEvent, leadNote, logCall, moneyFromTyped,
-  NEEDS_AMOUNT, newLead, openLeads, referrerOf, runAutomations, stageEvent, stageMove, stageOf, startStages, warmPlan, withFirstStage, withNextStep, wonEvent, wonPlan,
+  alreadyRan, automationsSaid, claimed, coldPlan, crmProblem, discoveryPatch, firstStage, LEAD_ADDED, leadDetailsPatch, leadEvent, leadNote, logCall, moneyFromTyped,
+  isRefusal, NEEDS_AMOUNT, newLead, openLeads, referrerOf, runAutomations, stageEvent, stageMove, stageOf, startStages, warmPlan, withFirstStage, withNextStep, wonEvent, wonPlan,
 } from '../../lib/coach/crm';
 import { networkPageOf } from '../../lib/coach/networkData';
 import { searchQuery } from '../../lib/coach/network';
@@ -74,7 +74,7 @@ export function useLeadActions() {
   const busy = useRef(false);
   const stamp = () => ({ nowIso: new Date().toISOString(), todayKey });
   const leadsNow = () => rowsOf(coachState(userId), 'coach_leads').filter((l) => l.coach_id === coach.id);
-  const problem = (error) => toast.error(error?.message && !/fetch|network/i.test(error.message) ? error.message : SAVE_PROBLEM);
+  const problem = (error) => toast.error(crmProblem(error));
 
   /** Runs one event through the automations; resolves what ran and how to take it back. */
   const runFor = async (event) => {
@@ -116,7 +116,13 @@ export function useLeadActions() {
         onUndo: async () => { try { if (auto) await auto.undo(); await undo(); } catch (e) { problem(e); } },
       });
       return true;
-    } catch (e) { problem(e); return false; } finally { busy.current = false; }
+    } catch (e) {
+      problem(e);
+      // Refused by the database (a stage removed in another tab, a lead merged away): the device lets go of what it kept
+      // and reads the database's copy again, so the lead shows where it really is, never in a stage that has gone.
+      if (isRefusal(e)) { forgetRows(userId, pairs.map(([table, row]) => [table, keyOf(table, row)])); loadCoach(userId).catch(() => {}); }
+      return false;
+    } finally { busy.current = false; }
   };
   const drop = (table, id) => removeRow(userId, table, id).catch(() => {});
 

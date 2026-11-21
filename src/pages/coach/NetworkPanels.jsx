@@ -5,7 +5,7 @@ import { newId, removeRow, saveRow, saveRows } from '../../lib/coach/store';
 import { logActivity } from '../../lib/coach/actions';
 import { toCsv } from '../../lib/coach/model';
 import { canReadXlsx, xlsxBytes, xlsxTable } from '../../lib/coach/xlsx';
-import { csvTable, emailsOn, EXPORT_FORMATS, EXPORT_HELP, exportName, hasHeadingRow, leadFromNetwork, leadOfPerson, matchColumns } from '../../lib/coach/crm';
+import { csvTable, emailsOn, EXPORT_FORMATS, EXPORT_HELP, exportName, hasHeadingRow, leadFromNetwork, leadOfPerson, matchColumns, sameId } from '../../lib/coach/crm';
 import {
   archiveNetwork, importNetwork, networkDuplicatesOf, networkPageOf, networkPerson, removeNetworkGive, removeNetworkPeople, removeNetworkPerson, restoreNetwork, saveNetworkGive, saveNetworkPerson,
 } from '../../lib/coach/networkData';
@@ -76,9 +76,9 @@ export function PersonPanel({ id, onClose }) {
   const [problem, setProblem] = useState(null);
   const busy = useRef(false);
   useEffect(() => { setSub(null); setProblem(null); }, [id]);
-  const person = found.data?.person || null;
-  const gives = found.data?.gives || [];
-  const ratings = found.data?.ratings || [];
+  const person = found.data?.person?.id === id ? found.data.person : null; // never an earlier person's answer
+  const gives = person ? found.data.gives || [] : [];
+  const ratings = person ? found.data.ratings || [] : [];
   const back = () => { setSub(null); setProblem(null); };
   const open = (kind) => {
     setProblem(null);
@@ -176,7 +176,8 @@ export function PersonPanel({ id, onClose }) {
     const mail = emailsOn(emails, emailLinks, 'network', person.id, todayKey, person);
     const move = async () => {
       if (lead) { navigate(`/coach/leads/${lead.id}`); return; }
-      const made = leadFromNetwork(person, { id: newId(), eventId: newId(), coachId: coach.id, stages: leadStages, nowIso: new Date().toISOString(), todayKey });
+      // Its ids are made from the person's (sameId): pressed twice, or in two tabs, it is one lead with one line.
+      const made = leadFromNetwork(person, { id: sameId(person.id, 0x1ead) || newId(), eventId: sameId(person.id, 0x1eae) || newId(), coachId: coach.id, stages: leadStages, nowIso: new Date().toISOString(), todayKey });
       if (made.error) { toast.error(made.error); return; }
       await act({
         run: () => saveRows(userId, [['coach_leads', made.lead], ['coach_lead_events', made.event]]), message: made.toast,
@@ -247,7 +248,7 @@ export function PersonPanel({ id, onClose }) {
 export function ReadyPanel({ open, onClose }) {
   const { userId, todayKey } = useCoachPortal();
   const { act } = useNetworkActions();
-  const [page, setPage] = useState({ rows: [], total: 0 });
+  const [page, setPage] = useState(null); // null until the list has come: never "0 people" while it is on its way, or can't come
   const [unticked, setUnticked] = useState({});
   const [problem, setProblem] = useState(null);
   const busy = useRef(false);
@@ -255,27 +256,28 @@ export function ReadyPanel({ open, onClose }) {
   useEffect(() => {
     if (!open) return undefined;
     let live = true;
-    setUnticked({}); setProblem(null);
+    setUnticked({}); setProblem(null); setPage(null);
     networkPageOf(userId, readyQuery(todayKey)).then((p) => { if (live) setPage({ rows: p.rows, total: p.total }); }).catch((e) => { if (live) setProblem(networkProblem(e)); });
     return () => { live = false; };
   }, [open, userId, todayKey]);
-  const plan = archivePlan(page.rows.map((p) => p.id), Object.keys(unticked).filter((k) => unticked[k]));
+  const plan = archivePlan((page?.rows || []).map((p) => p.id), Object.keys(unticked).filter((k) => unticked[k]));
   const go = async () => {
     if (busy.current) return;
+    if (!page) { if (!problem) setProblem('The list is still on its way. Try again in a moment.'); return; }
     if (plan.needs) { setProblem(plan.needs); return; }
     busy.current = true;
     const ok = await act({ run: () => archiveNetwork(userId, plan.archive, plan.keep), message: plan.toast, undo: () => restoreNetwork(userId, plan.archive, plan.keep) });
     busy.current = false;
     if (ok) onClose();
   };
-  const n = page.total;
+  const n = page?.total || 0;
   return (
-    <SlidePanel open={open} onClose={onClose} title={READY_BUTTONS.title} footer={<div className="cc-panel-foot"><TextLink onClick={onClose}>{READY_BUTTONS.cancel}</TextLink><Button variant="primary" onClick={go}>{plan.button}</Button></div>}>
-      <p className="cc-net-who">{n === 1 ? '1 person' : `${n.toLocaleString('en-GB')} people`}</p>
+    <SlidePanel open={open} onClose={onClose} title={READY_BUTTONS.title} footer={<div className="cc-panel-foot"><TextLink onClick={onClose}>{READY_BUTTONS.cancel}</TextLink><Button variant="primary" onClick={go}>{page ? plan.button : 'Archive'}</Button></div>}>
+      {page && <p className="cc-net-who">{n === 1 ? '1 person' : `${n.toLocaleString('en-GB')} people`}</p>}
       <p className="cc-quiet">No contact for 18 months, and not in a focus list.</p>
       <Problem line={problem} />
       <div className="cc-net-ready">
-        {page.rows.map((p) => {
+        {(page?.rows || []).map((p) => {
           const r = readyRow(p, todayKey);
           return (
             <Checkbox key={r.id} checked={!unticked[r.id]} onChange={(on) => { setUnticked((u) => ({ ...u, [r.id]: !on })); setProblem(null); }} after={<span className="cc-row-when">{r.last}</span>}>
@@ -284,7 +286,7 @@ export function ReadyPanel({ open, onClose }) {
           );
         })}
       </div>
-      {page.total > page.rows.length && <p className="cc-note">The next {(page.total - page.rows.length).toLocaleString('en-GB')} show once these are done.</p>}
+      {page && page.total > page.rows.length && <p className="cc-note">The next {(page.total - page.rows.length).toLocaleString('en-GB')} show once these are done.</p>}
     </SlidePanel>
   );
 }
@@ -398,7 +400,7 @@ export function ImportPanel({ open, onClose }) {
         const cells = await xlsxTable(new Uint8Array(await file.arrayBuffer()));
         reset(); setText(''); setTable(cells.length ? cells : null);
         if (!cells.length) setProblem(IMPORT_WORDS.empty);
-      } else { const t = await file.text(); reset(); setTable(null); setText(t); }
+      } else { const t = await file.text(); reset(); setTable(null); setText(t); if (!csvTable(t).length) setProblem(IMPORT_WORDS.empty); }
     } catch { setProblem(IMPORT_WORDS.unreadable); }
   };
   const choose = (index, field) => {

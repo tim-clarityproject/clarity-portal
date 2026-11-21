@@ -19,19 +19,22 @@ import { useCoachPortal } from './parts';
  */
 export function useNetworkAsk(ask, deps) {
   const version = useNetworkVersion();
-  const [state, setState] = useState({ data: null, error: null, loading: Boolean(ask) });
+  // Which question the answer is for: until the question asked now has its answer, `loading` stays true (a panel opened
+  // for one person never says "isn't here any more" while the answer is still on its way, or can't come).
+  const key = JSON.stringify(deps);
+  const [state, setState] = useState({ data: null, error: null, loading: Boolean(ask), for: null });
   const turn = useRef(0);
   useEffect(() => {
-    if (!ask) { setState({ data: null, error: null, loading: false }); return undefined; }
+    if (!ask) { setState({ data: null, error: null, loading: false, for: key }); return undefined; }
     turn.current += 1;
     const mine = turn.current;
     Promise.resolve().then(ask)
-      .then((data) => { if (mine === turn.current) setState({ data, error: null, loading: false }); })
-      .catch((error) => { if (mine === turn.current) setState((s) => ({ data: s.data, error, loading: false })); });
+      .then((data) => { if (mine === turn.current) setState({ data, error: null, loading: false, for: key }); })
+      .catch((error) => { if (mine === turn.current) setState((s) => ({ data: s.data, error, loading: false, for: key })); });
     return () => { turn.current += 1; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [version, ...deps]);
-  return state;
+  return state.for === key ? state : { ...state, loading: Boolean(ask) };
 }
 
 /** The counts ({ active, archived, due, ready }): the owner's alone. `on` false asks nothing (the menu while it is shut). */

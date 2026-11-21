@@ -441,6 +441,8 @@ export function crmStandIn({ store, ME, me, clock, no }) {
       if (!/^[A-Z]{3}$/.test(r.currency ?? 'GBP')) bad(table, 'coach_leads_value_ok');
       if ((r.won_at && r.cold_at) || (r.next_step_time && !r.next_step_on) || (r.merged_into && r.merged_into === r.id)) bad(table, 'coach_leads_won_or_cold');
       r = { currency: 'GBP', ...r };
+      // coach_leads_guard(): a merge is undone only by lead_unmerge(); a save from a page that still shows the lead keeps it merged.
+      if (old?.merged_into && !r.merged_into) r = { ...r, merged_into: old.merged_into };
       if (!old && r.stage_id == null) r.stage_id = stagesOf(r.coach_id)[0]?.id ?? null;
       if (r.stage_id != null && r.stage_id !== old?.stage_id && !rows.coach_lead_stages.some((s) => s.id === r.stage_id && s.coach_id === r.coach_id)) bad(table, 'That stage isn’t one of yours.');
       if (r.won_profile_id != null && r.won_profile_id !== old?.won_profile_id && !rows.client_profiles.some((p) => p.id === r.won_profile_id && p.coach_id === r.coach_id)) bad(table, 'That client isn’t yours.');
@@ -532,8 +534,9 @@ export function crmStandIn({ store, ME, me, clock, no }) {
       if (!within(r.organisation, 120) || !within(r.role, 80) || !within(r.phone, 40) || !within(r.notes, 6000) || (r.email != null && !emailOk(r.email))) bad(table, 'shape');
       if (r.own != null && (typeof r.own !== 'object' || Array.isArray(r.own))) bad(table, 'own');
       if (r.merged_into && r.merged_into === r.id) bad(table, 'merged_into');
-      // network_people_guard(): the two counts are the database's.
-      r = worked({ own: {}, keep: false, archived_at: null, added_on: today(), ...r, given_count: old?.given_count ?? 0, asked_count: old?.asked_count ?? 0 });
+      // network_people_guard(): the two counts are the database's, and a merge is undone only by network_unmerge().
+      r = worked({ own: {}, keep: false, archived_at: null, added_on: today(), ...r, given_count: old?.given_count ?? 0, asked_count: old?.asked_count ?? 0,
+        ...(old?.merged_into && !r.merged_into ? { merged_into: old.merged_into } : {}) });
     }
     if (table === 'network_ratings' || table === 'network_gives') {
       if (personOf(r.person_id)?.coach_id !== ME) rls(table);

@@ -379,6 +379,11 @@ begin
     f := f || pg_temp.t_eq('5b the same two can''t be merged again, nor one with itself', concat_ws('/',
       pg_temp.t_n(format('select public.lead_merge(%L, %L)', l_ruth, l_dup)), pg_temp.t_n(format('select public.lead_merge(%L, %L)', l_ruth, l_ruth)),
       pg_temp.t_n(format('select public.lead_merge(%L, %L)', l_ruth, l_maya))), 'error 22023/error 22023/error 42501');
+    -- A page that still shows the lead merged away (another tab, another device) saves it whole: it stays merged.
+    r := '{}';
+    r := r || pg_temp.t_rows(format('update public.coach_leads set merged_into = null, job_title = ''Partner'' where id = %L', l_dup));
+    r := r || (select coalesce((merged_into = l_ruth)::text, 'not merged') || ' ' || coalesce(job_title, 'no role') from public.coach_leads where id = l_dup);
+    f := f || pg_temp.t_eq('5b2 a save that clears merged_into (a stale page) keeps the lead merged; only Undo lets it go', array_to_string(r, '/'), '1/true Partner');
     perform pg_temp.t_admin();
     select id into mg from public.coach_lead_merges where kept_id = l_ruth;
     perform pg_temp.t_as(maya_u);
@@ -642,6 +647,10 @@ begin
     r := r || (public.network_counts(today) ->> 'active');
     f := f || pg_temp.t_eq('9v two people merge into one: gives, asks and what points at them join; chosen values are kept; blanks are filled', array_to_string(r, '/'),
       'true/Dan Reid | Harbour Lane Partners | dan@example.invalid | 07700 900141 | 6 | 1 | 2/true/true/1/124');
+    r := '{}';
+    r := r || pg_temp.t_rows(format('update public.network_people set merged_into = null, role = ''Network'' where id = %L', n_dup));
+    r := r || (select coalesce((merged_into = n_dan)::text, 'not merged') || ' ' || coalesce(role, 'no role') from public.network_people where id = n_dup);
+    f := f || pg_temp.t_eq('9v2 a save that clears merged_into (a stale page) keeps the person merged; only Undo lets them go', array_to_string(r, '/'), '1/true Network');
     perform pg_temp.t_admin();
     select id into mg from public.network_merges where kept_id = n_dan;
     perform pg_temp.t_as(own_u);

@@ -130,8 +130,8 @@ export default function Leads() {
   const waiting = waitingRows(emailWaiting)[0] || null;
   const waitingEmail = waiting ? emails.find((e) => e.id === waiting.email_id) || null : null;
   const addWaiting = async () => {
-    const id = newId();
-    const made = leadFromWaiting(waiting, waitingEmail, { id, eventId: newId(), coachId: coach.id, stages, nowIso: new Date().toISOString(), todayKey });
+    const made = leadFromWaiting(waiting, waitingEmail, { coachId: coach.id, stages, nowIso: new Date().toISOString(), todayKey }); // its ids are the waiting row's: one lead however often it is pressed
+    const id = made.lead?.id;
     if (made.error) { toast.show(made.error); return; }
     try {
       const status = await saveRows(userId, [['coach_leads', made.lead], ['coach_email_waiting', made.waiting], ['coach_email_links', made.link], ['coach_lead_events', made.event]]);

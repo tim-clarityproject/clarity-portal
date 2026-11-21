@@ -84,13 +84,13 @@ function local(userId) {
 }
 
 function keep(userId, next) {
-  cache.set(userId, next);
   const empty = !Object.keys(next.people).length;
   if (empty) removeKey(localKey(userId));
   else if (!writeJson(localKey(userId), next)) {
-    // The device has no room: the page is told, so nothing is shown as kept when it isn't.
+    // The device has no room: the page is told, and the device's copy in memory stays as it was, so nothing is shown as kept when it isn't.
     throw Object.assign(new Error('This device has no room left to keep that.'), { code: 'NO_ROOM' });
   }
+  cache.set(userId, next);
   changed();
 }
 

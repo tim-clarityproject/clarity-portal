@@ -5,7 +5,7 @@ import { coachCrmReady, coachState, forgetRows, loadCoach, newId, removeRow, row
 import { emailAddressesStart, logEmail } from '../../lib/coach/crmData';
 import { networkDuplicatesOf, saveEmailBody } from '../../lib/coach/networkData';
 import {
-  alreadyRan, automationMatches, checkInsToSuggest, claimed, emailLogPlan, endedEvent, openingEvents, runAutomations, todoFromEmail,
+  alreadyRan, automationMatches, checkInsToSuggest, claimed, crmProblem, emailLogPlan, endedEvent, openingEvents, runAutomations, todoFromEmail,
 } from '../../lib/coach/crm';
 import { copyInStandIn, gmailStandIn, STAND_IN_DOMAIN } from '../../lib/coach/connect/standIn.js';
 import { directionOf, readInbound } from '../../lib/coach/connect/copyInEmail.js';
@@ -25,7 +25,8 @@ import { EmailPanel } from './LeadPanels';
 /* global __CLARITY_LIVE__ */
 const LIVE = typeof __CLARITY_LIVE__ !== 'undefined' && __CLARITY_LIVE__;
 export const SAVE_PROBLEM = 'That didn’t save. Check your connection and try again.';
-export const calm = (error) => (error?.message && !/fetch|network/i.test(error.message) ? error.message : SAVE_PROBLEM);
+/** The calm line for a save that didn't go (crm.js's crmProblem: never the database's technical words). */
+export const calm = (error) => crmProblem(error);
 
 // ---------------------------------------------------------------- automations
 

@@ -62,7 +62,7 @@ export function moneyFromTyped(typed) {
   const m = /^(\d+(?:\.\d{1,2})?)(k)?$/i.exec(t);
   if (!m) return undefined;
   const n = Number(m[1]) * (m[2] ? 1000 : 1);
-  return n <= 9999999999 ? n : undefined;
+  return n <= 100000000 ? n : undefined; // the database's most for a lead's value and a deal (100,000,000)
 }
 export const NEEDS_AMOUNT = 'Type an amount in numbers, such as 13,500.';
 
@@ -935,6 +935,19 @@ export const MERGE_NOTHING_LOST = 'Both timelines join into one. Nothing is lost
 export const mergedWords = (kept) => `Merged. Both timelines are now on ${kept.name}.`;
 export const KEPT_AS_TWO = 'Kept as two people. You won’t be asked again.';
 
+/** Two leads that are both clients already: Merge into one says so, and they stay as two. */
+export const BOTH_WON = 'Both are clients now, so they stay as two leads. Merge the two clients on Clients instead.';
+/**
+ * The two leads of "Merge into one" in the order they merge (`a` is kept). A won lead is always the one kept, because
+ * its client's page carries its timeline (carriedTimeline): merged away, the client would lose every line of it.
+ * @returns {{ a: object, b: object }|{ error: string }|null}
+ */
+export function mergePair(a, b) {
+  if (!a || !b || a.id === b.id) return null;
+  if (a.won_at && b.won_at) return { error: BOTH_WON };
+  return b.won_at && !a.won_at ? { a: b, b: a } : { a, b };
+}
+
 /** The rows of "Merge into one": a row for each field either has; where they differ the coach chooses. */
 export function leadMergePlan(a, b) {
   if (!a || !b || a.id === b.id) return null;
@@ -1019,7 +1032,7 @@ export function leadDuplicates(leads, notSame = []) {
     for (let j = i + 1; j < live.length; j += 1) {
       const a = live[i];
       const b = live[j];
-      if (said.has([a.id, b.id].sort().join('|'))) continue;
+      if (said.has([a.id, b.id].sort().join('|')) || (a.won_at && b.won_at)) continue;
       const sameEmail = a.email && b.email && lower(a.email) === lower(b.email);
       const sameName = lower(clean(a.name)) === lower(clean(b.name));
       // "Chris Doyle" and "Christopher Doyle": the same last name, and one first name starts the other.
@@ -1539,7 +1552,24 @@ export const WAITING_BUTTONS = { add: 'Add as a lead', dismiss: 'Not now' };
  * added, the email put on the new lead's timeline, and its line there.
  * @returns {{ lead: object, waiting: object, link: object, event: object, toast: string }|{ error: string }}
  */
-export function leadFromWaiting(waiting, email, { id, eventId, coachId, stages = [], nowIso, todayKey }) {
+/**
+ * Another id made from one, always the same for the same id and number (a UUID's last twelve hex digits turned by the
+ * number): so two tabs, or two devices, doing the same thing at once write the same rows, never a second copy.
+ */
+export function sameId(id, n = 1) {
+  const m = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-)([0-9a-f]{12})$/i.exec(String(id || ''));
+  if (!m) return null;
+  const turned = (BigInt(`0x${m[2]}`) ^ BigInt(n)).toString(16).padStart(12, '0');
+  return `${m[1]}${turned}`.toLowerCase();
+}
+
+/**
+ * Add as a lead, for someone an email waits on. The lead's id is the waiting row's own, and its email line's is made
+ * from it (sameId), so "Add as a lead" pressed in two tabs, or on two devices, makes one lead with one line.
+ */
+export function leadFromWaiting(waiting, email, { id: givenId, eventId: givenEventId, coachId, stages = [], nowIso, todayKey }) {
+  const id = givenId || waiting.id;
+  const eventId = givenEventId || sameId(waiting.id, 1);
   const name = clean(waiting.name) || clean(String(waiting.email).split('@')[0].replace(/[._-]+/g, ' ')).replace(/\b[a-z]/g, (ch) => ch.toUpperCase());
   const made = newLead({ id, coachId, stages, name, email: waiting.email, source: 'email' });
   if (made.error) return made;
@@ -1929,6 +1959,29 @@ export const LEADS_EMPTY = 'You have no leads yet. Add one, or import a spreadsh
 export const LEADS_NO_MATCH = 'Nobody matches. Clear the search or the filters to see every lead.';
 /** A lead that has gone (deleted, or merged into another that can't be found). */
 export const LEAD_GONE = 'This lead isn’t in your list any more.';
+
+/** A save that didn't go, said calmly: a lost connection, or the database's refusal (never its own technical words). */
+export const CRM_SAVE_PROBLEM = 'That didn’t save. Check your connection and try again.';
+const REFUSALS = new Set(['23514', '23505', '23503', '23001', '22023', '22P02', '22003', '23502', 'PGRST204']);
+/**
+ * The calm line for an error from a save on Leads, the boards, automations or past clients.
+ * A sentence the app or the database wrote for people ("One of these has already been merged.") is shown as it is; a
+ * refusal in the database's own words (a check, a key, row security) becomes one calm line; anything else is the
+ * connection's line.
+ * @param {{ code?: string, message?: string }|null} error
+ * @returns {string}
+ */
+export function crmProblem(error) {
+  const code = String(error?.code || '');
+  const message = String(error?.message || '').trim();
+  const technical = /violates|constraint|relation\s|duplicate key|invalid input|permission denied|row-level security|null value|out of range|syntax|column\s|PGRST|JSON/i.test(message);
+  if (message && !technical && !/fetch|network|load failed|timeout/i.test(message) && /[.!?]$/.test(message) && message.length <= 200) return message;
+  if (code === '42501') return 'That didn’t save, because it is the owner’s to change.';
+  if (REFUSALS.has(code)) return 'That couldn’t be kept as it is. It may have just changed in another tab, so check it and try again.';
+  return CRM_SAVE_PROBLEM;
+}
+/** Database refusals: a save the database answered with one of these won't go however often it is sent. */
+export const isRefusal = (error) => error?.code === '42501' || REFUSALS.has(String(error?.code || ''));
 
 // ---------------------------------------------------------------- step 3's pages' own rules (Automations, Boards, emails arriving, past clients, the account map)
 
