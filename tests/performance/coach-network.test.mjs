@@ -474,7 +474,7 @@ test('one dot per spot, with the number inside when people share it, and a style
   assert.deepEqual(net.spotCard(at(8, 9), rows, TODAY), { title: 'Dana Whitfield', sub: ['Kestrel Group', 'Keep close'], rows: [['Influence', '9/10'], ['Trust', '8/10'], ['Catch-up', 'Due now']], foot: '' });
   assert.deepEqual(net.spotCard(at(7, 10), rows, TODAY), { title: '3 people', sub: ['Several lists'], rows: [['Influence', '10/10'], ['Trust', '7/10']], foot: 'Choose to see who' });
   assert.deepEqual([net.spotCard(at(8, 8), rows, TODAY).sub, net.spotCard(at(5, 5), rows, TODAY).sub, net.spotCard(at(5, 5), rows, TODAY).rows[2]], [['Maintain'], [], ['Catch-up', 'No rhythm']]);
-  assert.equal(net.spotLine(at(8, 9), rows, TODAY), 'Dana Whitfield, Kestrel Group, Keep close, Due now');
+  assert.equal(net.spotLine(at(8, 9), rows, TODAY), 'Dana Whitfield, Keep close, Due now');
   // A numbered dot opens the list of names at that spot: by list, then by name.
   assert.deepEqual(net.spotTitle(at(7, 10)), { title: '3 people', meta: 'Trust 7/10, influence 10/10' });
   assert.deepEqual(net.spotPeople(rows, at(7, 10), TODAY).map((p) => [p.name, p.organisation, p.list, p.due]), [['Leon Banks', 'Ridgeway Trust', 'Keep close', 'Due Sat 16 Jan 2027'], ['Ben Jensen', 'Tessaly Foods', 'Maintain', ''], ['Ben Egan', 'Arden Vale', 'Invest', '']]);

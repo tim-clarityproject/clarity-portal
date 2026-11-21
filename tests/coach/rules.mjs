@@ -258,7 +258,11 @@ export function readRules(o) {
       let last = null;
       for (const el of col.querySelectorAll('button, a, input, textarea, p, h1, h2, h3, li, small, [role=listitem], .ds-stat')) {
         if (!vis(el) || el.closest('.cc-phonebar, .ds-phonebar, .cc-header, .cc-bulk, .cc-ses-bar, .ds-bottombar, .ds-sr') || getComputedStyle(el).position === 'fixed') continue;
-        const b = el.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        // What scrolls inside its own box (Network's table, run 4) is seen only as far as that box reaches: the box must clear the bar.
+        let bottom = r.bottom;
+        for (let p = el.parentElement; p && p !== col; p = p.parentElement) if (/auto|scroll|hidden|clip/.test(getComputedStyle(p).overflowY)) bottom = Math.min(bottom, p.getBoundingClientRect().bottom);
+        const b = { bottom };
         if (!last || b.bottom > last.b.bottom) last = { el, b };
       }
       const barNow = bar.getBoundingClientRect();
@@ -372,7 +376,9 @@ export async function chartPopups(page, { phone, most = 5 }) {
   for (const i of marks.slice(0, most)) {
     const mark = page.locator(`[data-ui-mark="${i}"]`);
     await mark.scrollIntoViewIfNeeded().catch(() => {});
-    if (phone) await mark.tap({ force: true }).catch(() => mark.click({ force: true })); else await mark.hover({ force: true });
+    // A mark that opens something when tapped (a Network dot opens its person): its pop-up is read from keyboard focus on a phone.
+    const opens = await mark.getAttribute('data-opens');
+    if (phone && opens) await mark.focus(); else if (phone) await mark.tap({ force: true }).catch(() => mark.click({ force: true })); else await mark.hover({ force: true });
     await settle(page, 250);
     const tip = await page.evaluate((n) => {
       const el = [...document.querySelectorAll('.ds-tip')].filter((t) => !t.hidden && t.getBoundingClientRect().width > 0).pop();

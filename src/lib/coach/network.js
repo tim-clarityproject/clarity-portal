@@ -848,8 +848,8 @@ export function spotCard(spot, rows, today) {
   const p = (rows || []).find((x) => x.id === spot.ids[0]) || {};
   return { title: p.name || '', sub: [clean(p.organisation), focusLabel(spot.style)].filter(Boolean), rows: [...ratings, ['Catch-up', catchUpWords(p.due_on ?? dueOn(p), today)]], foot: '' };
 }
-/** On a phone a chart pop-up is one line. */
-export const spotLine = (spot, rows, today) => { const c = spotCard(spot, rows, today); return [c.title, ...c.sub, ...(spot.count > 1 ? [] : c.rows.slice(2).map(([, v]) => v))].filter(Boolean).join(', '); };
+/** On a phone a chart pop-up is one line: the name, the list and the catch-up (the organisation is on the card and the person's page; with it the line ran to two on a 400px phone). */
+export const spotLine = (spot, rows, today) => { const c = spotCard(spot, rows, today); return [c.title, ...(spot.count > 1 ? c.sub : [focusLabel(spot.style)]), ...(spot.count > 1 ? [] : c.rows.slice(2).map(([, v]) => v))].filter(Boolean).join(', '); };
 
 /** Find someone: the person found is added to the map's rows (they may be outside its 150), so their dot can be ringed and named. No spot until influence and trust are rated. */
 export function withFound(rows, person) {
@@ -1049,3 +1049,146 @@ export function todayKeepInTouch({ due = null, checkIns = [], today }) {
 
 /** The menu's count beside Network: how many people are due a catch-up ('' for none), and what a screen reader hears. */
 export const menuCount = (counts) => { const n = Number(counts?.due) || 0; return n > 0 ? { count: count(n), spoken: `${count(n)} due a catch-up` } : { count: '', spoken: '' }; };
+
+// =============================================================================
+// THE PAGES' OWN RULES (builder E): what Network's page, its panels, the
+// frame's search and Today need beyond the above. Still pure, still the
+// only place a word or a rule of Network's is written.
+// =============================================================================
+
+/** Network's address for a tab, the archive, or one person's panel (a page never writes its own). */
+export function networkPath({ tab = 'actions', archived = false, person = null } = {}) {
+  const q = new URLSearchParams();
+  if (tab && tab !== 'actions') q.set('tab', tab);
+  if (archived) { q.set('tab', 'table'); q.set('archived', '1'); }
+  if (person) q.set('person', person);
+  const s = q.toString();
+  return `/coach/network${s ? `?${s}` : ''}`;
+}
+
+/** The table opens sorted by who is due first, as M11 draws it. */
+export const TABLE_START = { search: '', sort: 'due', desc: false, only: {}, pages: 1 };
+
+/**
+ * A heading's "Show only" choices, as [value, words]: the lists for Where
+ * to focus, the rhythms for Rhythm; for Role and Organisation, the ones
+ * among the rows showing (Network is never loaded whole, so the table can
+ * only offer what it has in hand), with any already chosen kept in.
+ * @param {object} column one of tableColumns' columns
+ * @param {object[]} rows the rows showing
+ * @param {object} state the table's state
+ * @returns {[string|number, string][]}
+ */
+export function onlyChoices(column, rows = [], state = {}) {
+  if (!column?.only) return [];
+  if (column.only === 'focus') return FOCUS_ONLY;
+  if (column.only === 'rhythm') return RHYTHM_ONLY;
+  const seen = new Set([...(column.only === 'role' ? ROLES : []), ...(rows || []).map((p) => clean(p[column.key])).filter(Boolean), ...(state.only?.[column.only] || [])]);
+  return [...seen].sort((a, b) => a.localeCompare(b, 'en')).slice(0, 60).map((v) => [v, v]);
+}
+
+/** A row after a change, as the database would hand it back (Where to focus and Next due worked out again), so the table updates at once. */
+export const rowAfter = (row, patch) => withWorkedOut({ ...row, ...patch });
+
+/** What a cell holds when it is opened to type over: the words it shows (a day as "Thu 6 Feb 2025", so the same words save nothing). */
+export const cellTyped = (person, column, today) => (column.own ? (person.own?.[column.own.id] == null ? '' : column.own.kind === 'date' ? dayWords(person.own[column.own.id], today) || String(person.own[column.own.id]) : String(person.own[column.own.id]))
+  : column.key === 'last_spoke_on' ? (person.last_spoke_on ? dayWords(person.last_spoke_on, today) : '') : person[column.key] == null ? '' : String(person[column.key]));
+
+/** What a screen reader hears for a rating's or the rhythm's cell before it opens its small menu. */
+export const cellLabel = (person, column, today) => `${column.label} for ${person.name}, ${cellWords(person, column, today) || 'not set'}. Edit`;
+
+/** Show or hide columns: one switch a column (Name always shows), each with its one line of meaning. */
+export const columnSwitches = (columns = [], crmSettings = null) => { const t = tableColumns(columns, crmSettings); const shown = new Set(t.shown.map((c) => c.key)); return t.all.filter((c) => !c.fixed).map((c) => ({ key: c.key, label: c.label, note: c.note, shown: shown.has(c.key), own: c.own || null })); };
+export const COLUMNS_WORDS = { title: 'Columns', add: 'Add column', name: 'What’s it called?', kind: 'What kind is it?', added: 'Column added.', kinds: OWN_COLUMN_KINDS.filter(([k]) => k !== 'choice') };
+
+/** "When?" on Log what you gave and Log an ask: today, yesterday, and the five days before. */
+export const giveDays = (today) => Array.from({ length: 7 }, (_, i) => { const day = addDays(today, -i); return { value: day, label: i === 0 ? 'Today' : i === 1 ? 'Yesterday' : dayWords(day, today) }; });
+
+/** Add someone's panel. */
+export const ADD_WORDS = { title: 'Add to your Network', who: 'Who?', role: 'Who are they to you?', rhythm: 'How often?', button: 'Add' };
+/** Edit contact details', Edit ratings' and the logs' panels. */
+export const PANEL_WORDS = { contact: 'Contact details', email: 'Email', phone: 'Phone', ratings: 'Edit ratings', notRated: 'Not rated', save: 'Save', kind: 'What was it?', when: 'When?', history: 'Earlier ratings' };
+
+/** Export: what to export, and the file's sheet name. */
+export const exportChoices = (viewTotal, all, narrowed) => [...(narrowed ? [{ value: 'view', label: `This view, ${people(viewTotal)}` }] : []), { value: 'all', label: `Everyone, ${people(all)}` }, { value: 'archived', label: 'The archive' }];
+export const EXPORT_PAGE = 200;
+/** The questions an export asks, a page at a time (never everyone at once): each is a query for the paging function. */
+export function exportQueries(what, state, total, today) {
+  const base = what === 'view' ? { ...tableQuery({ ...state, pages: 1 }, today) } : { sort: 'name', desc: false, only: {}, archived: what === 'archived', today };
+  return Array.from({ length: Math.max(1, Math.ceil(total / EXPORT_PAGE)) }, (_, i) => ({ ...base, limit: EXPORT_PAGE, offset: i * EXPORT_PAGE }));
+}
+
+/**
+ * A spreadsheet's rows for Network's import: by the matched columns (first
+ * and last name joined), with each column nobody matched kept under its
+ * own heading (`extra`), so it can fill one of your own columns by name.
+ * A row with no name is no person.
+ * @param {string[][]} table the rows under the heading row
+ * @param {{ index: number, heading: string, field: string|null }[]} columns crm.js's matchColumns answer, as the coach left it
+ * @returns {{ rows: object[], skipped: number }}
+ */
+export function networkSheetRows(table, columns) {
+  const rows = [];
+  let skipped = 0;
+  for (const cells of table || []) {
+    const row = {};
+    const extra = {};
+    for (const c of columns || []) {
+      const v = clean(cells[c.index]);
+      if (!v) continue;
+      if (c.field) row[c.field] = v; else if (clean(c.heading)) extra[clean(c.heading)] = v;
+    }
+    const name = clean(row.name) || clean([row.first, row.last].filter(Boolean).join(' '));
+    delete row.first; delete row.last;
+    if (!name) { skipped += 1; continue; }
+    rows.push({ ...row, name, extra });
+  }
+  return { rows, skipped };
+}
+/** Import: what the panel says about the file before anyone is added. */
+export function importSummary({ adding, duplicates, skipped }) {
+  return [adding ? `${people(adding)} to add.` : 'Nobody new to add yet.', duplicates ? `${count(duplicates)} may already be here.` : null,
+    skipped ? `${count(skipped)} ${skipped === 1 ? 'row has' : 'rows have'} no name, so ${skipped === 1 ? 'it is' : 'they are'} left out.` : null].filter(Boolean).join(' ');
+}
+export const IMPORT_WORDS = { title: 'Import a spreadsheet', choose: 'Choose a file', paste: 'Or paste rows copied from a spreadsheet', duplicates: 'Possible duplicates', columns: 'Your columns', addAnyway: 'Add anyway', leaveOut: 'Leave out',
+  none: 'Choose a spreadsheet or paste its rows to carry on.', needsName: 'Choose which column holds the name to carry on.', empty: 'That file has no rows to add. Check it and try again.',
+  tooMany: 'A spreadsheet can add up to 5,000 people at a time. Split it and try again.', allThere: 'Everyone in this file is already in your Network. Choose “Add anyway” beside anyone to add them again.',
+  unreadable: 'That file can’t be read here. Save it as Excel or CSV, or copy the rows and paste them.', tooBig: 'That file is too big. Split it, or paste the rows instead.' };
+/** A file chosen for Network's import: 'xlsx' or 'text' (how to read it), or the calm line when it can't be read here. */
+export function importFileKind(name, size = 0) {
+  if (size > 8 * 1024 * 1024) return { problem: IMPORT_WORDS.tooBig };
+  if (/\.xlsx$/i.test(String(name || ''))) return { kind: 'xlsx' };
+  if (/\.(csv|tsv|txt)$/i.test(String(name || ''))) return { kind: 'text' };
+  return { problem: IMPORT_WORDS.unreadable };
+}
+
+/** Network people as the frame's search shows them (the owner's alone): found by name or organisation, each opening their panel. */
+export const networkSearchItems = (rows) => (rows || []).map((p) => ({ key: `n:${p.id}`, title: p.name, kind: p.archived_at ? 'Network, archived' : 'Network', also: `${p.organisation || ''} ${p.role || ''}`, to: networkPath({ tab: 'table', archived: Boolean(p.archived_at), person: p.id }) }));
+/** Network's own actions in search. */
+export const NETWORK_SEARCH_ACTIONS = [
+  { key: 'a:network', title: 'Add someone to your Network', to: '/coach/network', state: { open: 'add' } },
+  { key: 'a:network-import', title: 'Import a spreadsheet into your Network', to: '/coach/network?tab=table', state: { open: 'import' } },
+];
+/** Search asks for this many Network people as it is typed. */
+export const searchQuery = (typed, today, archived = false) => ({ search: clean(typed).slice(0, 120), sort: 'name', desc: false, only: {}, archived, limit: 6, offset: 0, today });
+/** Find someone on the map: the same question, among everyone active. */
+export const findQuery = (typed, today) => searchQuery(typed, today, false);
+
+/** What a page says when Network can't be shown or a change can't be kept: what happened, then what to do. Never the database's own words. */
+export function networkProblem(error) {
+  const code = error?.code || '';
+  if (code === 'OFFLINE') return 'Network needs a connection the first time it opens on this device, so try again when you’re back online.';
+  if (code === 'NO_ROOM') return 'This device has no room left to keep that. Free some space and try again.';
+  if (code === '42501') return 'That didn’t save, because Network is the owner’s to change.';
+  if (code === '23514' || code === '22023' || code === '23505' || code === '23503' || code === '23001') return 'That couldn’t be kept as it is. Check it and try again.';
+  return 'That didn’t save. Check your connection and try again.';
+}
+export const NETWORK_LOAD_PROBLEM = 'Network didn’t load. Check your connection and try again.';
+/** Not now on the Ready to archive? card. */
+export const READY_NOT_NOW = 'Hidden for a month.';
+/** The person's panel when they aren't there any more. */
+export const PERSON_GONE = 'This person isn’t in your Network any more.';
+/** The map's own words for a screen reader. */
+export const MAP_LABEL = 'Your Network by influence and trust';
+/** Actions' "Show more" once Show all has more than a page to show. */
+export const moreWords = (shown, total) => (total > shown ? `Show ${count(Math.min(ACTIONS_ALL, total - shown))} more` : '');

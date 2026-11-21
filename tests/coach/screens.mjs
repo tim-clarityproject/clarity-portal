@@ -16,8 +16,8 @@
 // answered by stand-ins. The client's page is opened as the test client
 // with every function it calls stood in (client.mjs).
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, OTHER, seedDevice, settle, SIZES, standIn } from './shared.mjs';
-import { ADMIN_ROWS, CAL, CRM, DAY, ID, manyLeads, PRESSURE, seedClock, seedRows, seedWithCal, seedWithCrm, seedWithDay, SES, SHARED } from './seed.mjs';
+import { accountId, APP, clearDevice, coachContext, OTHER, seedDevice, seedNetworkDevice, settle, SIZES, standIn } from './shared.mjs';
+import { ADMIN_ROWS, CAL, CRM, DAY, ID, manyLeads, manyNetwork, networkDeviceSeed, networkSeed, PRESSURE, seedClock, seedRows, seedWithCal, seedWithCrm, seedWithDay, SES, SHARED } from './seed.mjs';
 import { bookStore, guestStandIn } from './book-standin.mjs';
 import { clearCoaching, clientContext, clientStandIn, fromCoach } from './client.mjs';
 import { chooseZone } from './cal-rules.mjs';
@@ -241,6 +241,46 @@ export const withSharedBoard = () => {
   return rows;
 };
 const withManyLeads = () => { const rows = seedWithCrm({ accounts: true, network: false }); rows.coach_leads = [...rows.coach_leads, ...manyLeads(300)]; return rows; };
+
+
+// Run 4, step 4: Network (M11 seq 77: kit, ntable, nedit, ncolm, nimport, narcp, narchv, kitp, netrate, netfocus, netmap,
+// nhowp, nbunp, nbig, nsmall), Today's Keep in touch with people due, the menu's count and search.
+const netTab = (name) => async (page) => { await page.getByRole('tab', { name, exact: true }).click(); await settle(page, 700); };
+const netOpen = (label) => async (page) => { await page.locator('.cc-main').getByRole('button', { name: label, exact: true }).first().click(); await settle(page, 700); };
+const netPanel = (id, label) => async (page) => { await page.locator('.ds-modal--shown .ds-dialog').last().getByRole('button', { name: label, exact: true }).click(); await settle(page, 600); };
+const netDot = (pick) => async (page) => { await page.locator(`.cc-net-dot${pick}`).first().focus(); await page.keyboard.press('Enter'); await settle(page, 700); };
+const NETWORK_SCREENS = [
+  ['net-actions', '/coach/network', null, { full: true, expects: ['tabs', 'net-actions'] }],
+  ['net-actions-all', '/coach/network', netOpen(/^Show all \d+$/), { full: true }],
+  ['net-add', '/coach/network', netOpen('Add someone'), { expects: ['panel'] }],
+  ['net-ready', '/coach/network', netOpen('Review them'), { expects: ['panel', 'net-ready'] }],
+  ['net-person', `/coach/network?person=${CRM.david}`, null, { expects: ['panel', 'net-person'] }],
+  ['net-person-contact', `/coach/network?person=${CRM.david}`, netPanel(CRM.david, 'Edit contact details'), { expects: ['panel'] }],
+  ['net-person-ratings', `/coach/network?person=${CRM.dana}`, netPanel(CRM.dana, 'Edit ratings'), { expects: ['panel', 'net-ratings'] }],
+  ['net-person-gave', `/coach/network?person=${CRM.david}`, netPanel(CRM.david, 'Log what you gave'), { expects: ['panel'] }],
+  ['net-person-asked', `/coach/network?person=${CRM.david}`, netPanel(CRM.david, 'Log an ask'), { expects: ['panel'] }],
+  ['net-person-archived', `/coach/network?tab=table&archived=1&person=${CRM.adamF}`, null, { expects: ['panel'] }],
+  ['net-table', '/coach/network?tab=table', null, { full: true, expects: ['tabs', 'net-table'] }],
+  ['net-table-colmenu', '/coach/network?tab=table', netOpen('Where to focus'), { expects: ['net-colmenu'] }],
+  ['net-table-rating', '/coach/network?tab=table', netOpen(/^Trust in you for Dana Whitfield/), { expects: ['net-rating'] }],
+  ['net-table-rhythm', '/coach/network?tab=table', netOpen(/^Rhythm for Dana Whitfield/)],
+  ['net-table-typing', '/coach/network?tab=table', netOpen(/^Organisation for Dana Whitfield/)],
+  ['net-table-focus', '/coach/network?tab=table', async (page) => { await netOpen('Where to focus')(page); await page.getByRole('menuitemcheckbox', { name: 'Keep close', exact: true }).click(); await settle(page, 500); await page.keyboard.press('Escape'); await settle(page, 500); }, { expects: ['net-focus'] }],
+  ['net-table-columns', '/coach/network?tab=table', netOpen('Show or hide columns'), { expects: ['panel', 'net-columns'] }],
+  ['net-table-addcolumn', '/coach/network?tab=table', netOpen('Add column'), { expects: ['panel'] }],
+  ['net-import', '/coach/network?tab=table', async (page) => { await netOpen('Import a spreadsheet')(page); await page.locator('#cc-net-paste').fill('Name\tCompany\tEmail\tInfluence\tTrust\tSector\nDana Whitfield\tKestrel Group\tdana.whitfield@example.invalid\t9\t8\tLogistics\nNell Okoye\tHarbour Lane\tnell.okoye@example.invalid\t6\t\tProperty\n\tNo name here\t\t\t\t'); await settle(page, 900); }, { expects: ['panel', 'net-import'] }],
+  ['net-import-empty', '/coach/network?tab=table', netOpen('Import a spreadsheet'), { expects: ['panel'] }],
+  ['net-export', '/coach/network?tab=table', netOpen('Export'), { expects: ['panel'] }],
+  ['net-archive', '/coach/network?tab=table&archived=1', null, { expects: ['tabs', 'net-archive'] }],
+  ['net-map', '/coach/network?tab=map', null, { full: true, expects: ['tabs', 'net-map'] }],
+  ['net-map-help', '/coach/network?tab=map', netOpen('How to read the map'), { expects: ['panel', 'net-map-help'] }],
+  ['net-map-show', '/coach/network?tab=map', async (page) => { await page.locator('.cc-net-show').getByRole('combobox').first().click(); await settle(page, 300); await page.getByRole('option', { name: 'Keep close', exact: true }).click(); await settle(page, 700); }, { full: true }],
+  ['net-map-found', '/coach/network?tab=map', async (page) => { await page.getByRole('searchbox', { name: 'Find someone' }).fill('David'); await settle(page, 900); await page.getByRole('option', { name: /David Stark/ }).click(); await settle(page, 700); }, { full: true, expects: ['net-found'] }],
+  ['today-keep-network', '/coach', null, { full: true, expects: ['net-today'] }],
+  ['net-menu', '/coach/network', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 800); }, { expects: ['net-menu'] }],
+  ['net-search', '/coach', async (page) => { await page.getByRole('button', { name: 'Search, or do anything' }).click(); await page.keyboard.type('sofia'); await settle(page, 900); }, { expects: ['net-search'] }],
+];
+const withNetworkColumns = () => { const rows = seedWithCrm({ accounts: true, network: false }); rows.network_columns = networkSeed().network_columns || []; return rows; };
 
 export const GROUPS = [
   { name: 'run1', screens: SCREENS },
@@ -486,6 +526,31 @@ export const GROUPS = [
       ['automations-closed', '/coach/leads/automations', null, { expects: ['not-leads'] }],
     ],
   },
+  // Run 4, step 4: Network, the owner's alone, device first (052 isn't on the test project): M11's twenty people, then 1,200
+  // (the table's pages of 50 in its own box, the map's 150 with numbered spots); an associate who opens it lands on their own
+  // Today and finds no Network in the menu or in search.
+  { name: 'network', at: TUE, roles: ['owner'], network: 'seed', seed: withNetworkColumns, screens: NETWORK_SCREENS },
+  {
+    name: 'network-many', at: TUE, roles: ['owner'], network: 'many', seed: withNetworkColumns,
+    screens: [
+      ['net-many-actions', '/coach/network', null, { full: true, expects: ['net-many-actions'] }],
+      ['net-many-table', '/coach/network?tab=table', null, { expects: ['net-many-table'] }],
+      ['net-many-table-more', '/coach/network?tab=table', async (page) => { await netOpen('Show 50 more')(page); await page.locator('.cc-net-box').evaluate((b) => { b.scrollTop = 900; b.scrollLeft = 300; }); await settle(page, 400); }, { expects: ['net-frozen'] }],
+      ['net-many-map', '/coach/network?tab=map', null, { full: true, expects: ['net-many-map'] }],
+      ['net-many-spot', '/coach/network?tab=map', netDot(':has(.cc-net-num)'), { expects: ['panel', 'net-spot'] }],
+      ['net-many-rebalance', '/coach/network?tab=map', async (page) => { await page.locator('.cc-net-show').getByRole('combobox').first().click(); await settle(page, 300); await page.getByRole('option', { name: 'Rebalance?', exact: true }).click(); await settle(page, 700); }, { full: true }],
+      ['net-many-ready', '/coach/network', netOpen('Review them'), { expects: ['panel'] }],
+    ],
+  },
+  {
+    name: 'network-associate', at: TUE, roles: ['associate'], network: 'seed', seed: withNetworkColumns,
+    screens: [
+      ['net-closed', '/coach/network', null, { expects: ['not-network'] }],
+      ['net-closed-person', `/coach/network?tab=table&person=${CRM.david}`, null, { expects: ['not-network'] }],
+      ['net-closed-menu', '/coach/network?tab=map', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600); }, { expects: ['not-network'] }],
+      ['net-closed-search', '/coach', async (page) => { await page.getByRole('button', { name: 'Search, or do anything' }).click(); await page.keyboard.type('sofia'); await settle(page, 900); }, { expects: ['not-network'] }],
+    ],
+  },
   { name: 'help', at: TUE, screens: [['help-hidden', '/coach/todos', null, { expects: ['help-flow'] }]] },
   {
     name: 'client', roles: ['client'], root: '.ui-root',
@@ -635,6 +700,8 @@ async function openGroup(browser, group, { role, size, theme, reducedMotion }) {
   if (device) {
     const rows = (group.cal ? seedWithCal : seedWithDay)({ accounts: true, ...(typeof group.seed === 'object' && group.seed ? group.seed : {}) });
     await seedDevice(page, me, typeof group.seed === 'function' ? group.seed(rows) : rows);
+    // Network's people are never among the store's rows: they are kept apart on the device (M11's twenty, or 1,200).
+    if (group.network) await seedNetworkDevice(page, me, networkDeviceSeed(group.network === 'many' ? manyNetwork(1200) : null));
   } else if (!there) await seedDevice(page, me, seedRows());
   return {
     page, errors, store, me, wait: '.cc-app',

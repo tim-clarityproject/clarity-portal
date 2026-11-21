@@ -5199,6 +5199,73 @@
   opacity: 0.75;
 }
 
+/* A pop-up with several facts is a small card (Tim, 19 Nov, 15:54): the
+   title, quiet lines under it, then label and value rows under a hairline
+   (labels at the left, values at the right in tabular figures), never a
+   run-on sentence. */
+.ui-root .ds-tip--card {
+  min-width: var(--tip-card-min);
+  padding: var(--space-px12) var(--space-px14);
+}
+
+.ui-root .ds-tip-title {
+  display: block;
+  margin-bottom: var(--space-px2);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-tip-title);
+}
+
+.ui-root .ds-tip--card .ds-tip-line {
+  font-size: var(--fs-note);
+}
+
+.ui-root .ds-tip-rows {
+  display: grid;
+  gap: var(--space-1);
+  position: relative;
+  margin: var(--space-px10) 0 0;
+  padding-top: var(--space-px10);
+  font-size: var(--fs-note);
+}
+
+/* The hairline, in the pop-up's own text colour (its edge colour is the
+   pop-up's own black in light mode, so it wouldn't show). */
+.ui-root .ds-tip-rows::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--line-w);
+  background: currentColor;
+  opacity: 0.25;
+}
+
+.ui-root .ds-tip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-px18);
+}
+
+.ui-root .ds-tip-row dt {
+  opacity: 0.75;
+}
+
+.ui-root .ds-tip-row dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-root .ds-tip-foot {
+  margin-top: var(--space-px6);
+  font-size: var(--fs-tip);
+  opacity: 0.6;
+}
+
+/* On a phone a chart pop-up is one line: it may use the screen's width before it wraps. */
+.ui-root .ds-tip--wide {
+  --tip-max-w: 100vw;
+}
+
 /* "Edit my mission", "Edit this objective", "Edit this Strategy", "Edit
    this habit": one quiet link for changing one part of the plan, the same
    look everywhere (Tim, 3 Nov). Its 44px tap area sits on its own line;

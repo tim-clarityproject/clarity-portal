@@ -33,12 +33,18 @@ let tipCount = 0;
 /**
  * Props for one mark: what its pop-up says, focusable, and read out in
  * the same words by a screen reader.
- * @param {{value?: string, when?: string, extra?: string[], kind?: string, name?: string}} tip
+ *
+ * A pop-up with several facts is a small card (Tim, 19 Nov, 15:54): a
+ * `title` (a name, or "2 people"), `sub` lines under it in the text colour
+ * (the organisation, the list), then `rows` of [label, value] under a
+ * hairline, and a quiet `foot` ("Choose to see who"). `wide`: a one-line
+ * pop-up on a phone may use the screen's whole width before it wraps.
+ * @param {{value?: string, when?: string, extra?: string[], kind?: string, name?: string, title?: string, sub?: string[], rows?: [string, string][], foot?: string, wide?: boolean}} tip
  */
-export function tipProps({ value, when, extra = [], kind, name }) {
-  const words = kind ? [kind, name, ...extra] : [value, when, ...extra];
+export function tipProps({ value, when, extra = [], kind, name, title, sub = [], rows = [], foot, wide }) {
+  const words = title ? [title, ...sub, ...rows.map(([label, v]) => `${label} ${v}`), foot] : kind ? [kind, name, ...extra] : [value, when, ...extra];
   return {
-    'data-tip': JSON.stringify({ value, when, extra, kind, name }),
+    'data-tip': JSON.stringify(title ? { title, sub, rows, foot } : { value, when, extra, kind, name, ...(wide ? { wide: true } : {}) }),
     tabIndex: 0,
     role: 'img',
     'aria-label': words.filter(Boolean).join(', '),
@@ -52,13 +58,26 @@ function edgeOf(el) {
 /** Labels on a chart that a pop-up must never cover ("Best", "This week", the standard's label). */
 const CHART_LABELS = '[data-chart-label], .ds-wchart-tag, .dash-hchart-tag, .dash-hchart-std-label, .dash-hchart-axis span, .ds-wchart-std-label';
 
-export default function ChartTips({ children, className = '', nearest = false }) {
+/**
+ * `onChoose(mark)`: a mark that opens something (a person, a list). A
+ * click, a tap or Enter then hands over the mark (the nearest one, with
+ * `nearest`) and closes its pop-up instead of keeping it open; pointing at
+ * it and keyboard focus still show the pop-up.
+ */
+export default function ChartTips({ children, className = '', nearest = false, onChoose = null }) {
   const scope = useThemeScope();
   const zoneRef = useRef(null);
   const tipRef = useRef(null);
   const [shown, setShown] = useState(null); // { el, tip, kept }
   // Focus going back to a mark after Escape doesn't open it again.
   const quiet = useRef(false);
+  // Nor does focus going back to a mark once what it opened has closed.
+  const chosen = useRef(null);
+  const chooseMark = (el) => {
+    chosen.current = el;
+    setShown(null);
+    onChoose(el);
+  };
   const [idRef] = useState(() => {
     tipCount += 1;
     return `ds-tip-${tipCount}`;
@@ -209,7 +228,8 @@ export default function ChartTips({ children, className = '', nearest = false })
   };
   const onClick = (e) => {
     const el = markOf(e);
-    if (el) toggle(el);
+    if (el && onChoose) chooseMark(el);
+    else if (el) toggle(el);
     else hide();
   };
   // Enter and Space on a mark that isn't a button act as a click (also
@@ -219,10 +239,13 @@ export default function ChartTips({ children, className = '', nearest = false })
     const el = markOf(e);
     if (!el || el !== e.target || el.matches('button, a, input, select, textarea')) return;
     e.preventDefault();
-    toggle(el);
+    if (onChoose) chooseMark(el);
+    else toggle(el);
   };
   const onFocus = (e) => {
     const el = markOf(e);
+    if (el && chosen.current === el) { chosen.current = null; return; }
+    chosen.current = null;
     if (el && !quiet.current && shown?.el !== el) show(el);
   };
   const onBlur = (e) => {
@@ -245,8 +268,19 @@ export default function ChartTips({ children, className = '', nearest = false })
       {children}
       {createPortal(
         <div className="ui-root ds-portal" {...themeProps(scope)}>
-          <div ref={tipRef} id={idRef} className="ds-tip" role="tooltip" hidden={!tip}>
-            {tip?.kind ? (
+          <div ref={tipRef} id={idRef} className={`ds-tip${tip?.title ? ' ds-tip--card' : ''}${tip?.wide ? ' ds-tip--wide' : ''}`} role="tooltip" hidden={!tip}>
+            {tip?.title ? (
+              <>
+                <b className="ds-tip-title">{tip.title}</b>
+                {tip.sub?.map((line) => <span key={line} className="ds-tip-line ds-tip-sub">{line}</span>)}
+                {tip.rows?.length > 0 && (
+                  <dl className="ds-tip-rows">
+                    {tip.rows.map(([label, v]) => <div key={label} className="ds-tip-row"><dt>{label}</dt><dd>{v}</dd></div>)}
+                  </dl>
+                )}
+                {tip.foot && <span className="ds-tip-line ds-tip-foot">{tip.foot}</span>}
+              </>
+            ) : tip?.kind ? (
               <>
                 <span className="ds-tip-kind">{tip.kind}</span>
                 <b className="ds-tip-value">{tip.name}</b>

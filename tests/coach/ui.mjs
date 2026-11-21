@@ -47,6 +47,7 @@ import { GROUPS, picture as takePicture, walk } from './screens.mjs';
 import { chartPopups, hiddenHelp, readRules, readTwice, SOFT_CORAL, tableHeadings } from './rules.mjs';
 import { earlyAndLate, hoursEditing, readBooking, readCalRules, readPhoneCalendar, TILE, todoOnCalendar, zoneColumns } from './cal-rules.mjs';
 import { settle } from './shared.mjs';
+import { mapProblems, readMap, tableFrozen } from './net-rules.mjs';
 import { DAY } from './seed.mjs';
 
 const OUT = process.argv[2] || null;
@@ -161,9 +162,37 @@ const MUST = {
   'shared-board': (r) => r.text.includes('Speaking') && !r.text.includes('Partners') && !r.text.includes('New board'),
   'read-only': (r) => r.text.includes('You can see it and can’t edit it.') && r.text.includes('CIPD Festival of Work') && !r.text.includes('Edit this board') && !r.text.includes('Add card'),
   'board-gone': (r) => r.text.includes('This board isn’t here any more.') && !r.text.includes('Quillmark'),
+  // Run 4, step 4: Network (Actions, Table, Map, one person), Today's Keep in touch, the menu's count and search.
+  'net-actions': (r) => has(r, ['Due now', 'Sofia Marsh', 'Key contact', 'Every 3 months', '9 days overdue', '7 days overdue', 'Show all 9', 'Coming up', 'Due Sun 29 Nov', 'Add someone', '3 people have had no contact for 18 months and aren’t in a focus list.', 'Review them', 'Not now']),
+  'net-ready': (r) => has(r, ['Ready to archive?', '3 people', 'No contact for 18 months, and not in a focus list.', 'Bea Reeves', 'Harbour City FC', 'Last spoke', 'Cancel', 'Archive 3']),
+  'net-person': (r) => has(r, ['David Stark', 'Chief medical officer, Citadel', 'You last spoke on Sun 15 Nov.', 'How often?', 'Every 2 months', 'I spoke to David today', 'Email', 'WhatsApp', 'Not now, in 2 weeks', 'Stop keeping in touch', 'Contact', 'Edit contact details', 'How it is', 'Invest', 'They matter, and there’s room to build trust.', 'Trust in you', '6/10', 'Edit ratings', 'What you’ve given', 'You’ve given once and haven’t asked yet.', 'An idea', 'Log what you gave', 'What you’ve asked', 'Nothing asked yet.', 'Log an ask', 'Move to Leads', 'Archive']),
+  'net-ratings': (r) => has(r, ['Edit ratings', 'Dana Whitfield', 'How much influence do they have?', 'How much do they trust you?', 'How much value do you deliver to them?', 'How much do you get from it?', 'Every change is kept with its date.', 'Cancel', 'Save']),
+  'net-table': (r) => has(r, ['18 people', 'Name', 'Organisation', 'Role', 'Email', 'Phone', 'Where to focus', 'Influence', 'Trust in you', 'Value delivery', 'What you get', 'Rhythm', 'Last spoke', 'Next due', 'Given', 'Asked', 'Sector', 'Sofia Marsh', '9 days overdue', 'Add someone', 'Import a spreadsheet', 'Export', 'Show or hide columns', 'Archived, 2']) && !/Showing \d/.test(r.text),
+  'net-colmenu': (r) => has(r, ['Sort', 'Keep close first', 'Rebalance? first', 'Show only', 'Keep close', 'Maintain', 'Invest', 'Rebalance?', 'No list']),
+  'net-rating': (r) => /0\s+1\s+2\s+3\s+4\s+5\s+6\s+7\s+8\s+9\s+10/.test(r.text),
+  'net-focus': (r) => has(r, ['Where to focus, 1', 'of 18 people', 'Clear', 'Keep close']) && !r.text.includes('Sofia Marsh'),
+  'net-columns': (r) => has(r, ['Columns', 'Organisation', 'Where they work.', 'How much they trust you, 0 to 10.', 'Worked out from the rhythm and when you last spoke.', 'How many times you’ve asked for something.', 'Sector', 'Add column']),
+  'net-import': (r) => has(r, ['Import a spreadsheet', 'Drop an Excel or CSV file here', 'Choose a file', 'Duplicates show before anyone is added.', '1 person to add. 1 may already be here. 1 row has no name, so it is left out.', 'Possible duplicates', 'Dana Whitfield, Kestrel Group, is already in your Network, with the same email.', 'Add anyway', 'Your columns', 'Nell Okoye', 'Add 1 person']),
+  'net-archive': (r) => has(r, ['Network', '2 archived', 'Adam Ford', 'Priyesh Young']) && !r.text.includes('Import a spreadsheet') && !r.text.includes('Sofia Marsh'),
+  'net-map': (r) => has(r, ['Everyone', 'Influence', 'Trust', '7 or more', 'How to read the map']) && !r.text.includes('Showing'),
+  'net-map-help': (r) => has(r, ['How to read the map', 'Up and across', 'A green dot with a fine ring', 'Keep close: their trust in you and what you get are both 7 or more.', 'An outline', 'A solid dot in the text colour', 'A dashed grey outline', 'A number', 'A pale dot with a number', 'A plain grey dot', 'Don’t show me this again']),
+  'net-found': (r) => r.text.includes('David Stark'),
+  'net-today': (r) => has(r, ['Keep in touch', 'Sofia Marsh', 'Key contact', 'Dana Whitfield', 'Hannah Wells', 'Show all 9', 'Ben Ortiz', '3-month check-in']),
+  'net-menu': (r) => /Network\s*9\b/.test(r.text),
+  'net-search': (r) => has(r, ['Sofia Marsh', 'Network']),
+  'net-many-actions': (r) => has(r, ['36 people have had no contact for 18 months and aren’t in a focus list.', 'Show all 30', 'days overdue', 'Coming up']),
+  'net-many-table': (r) => has(r, ['1,164 people', 'Showing 50 of 1,164', 'Show 50 more', 'Archived, 36']),
+  'net-many-map': (r) => r.text.includes('Showing 150 of 1,164 people: your focus lists first, then who you spoke to most recently.'),
+  'net-spot': (r) => /\d+ people/i.test(r.text) && /Trust \d+\/10, influence \d+\/10/.test(r.text) && /Due /.test(r.text),
+  // An associate: no Network page, no Network in the menu, nobody of the owner's Network in search (they are on their own Today).
+  'not-network': (r) => !/\bNetwork\b/i.test(r.text.replace(/network_/g, '')) && !r.text.includes('Sofia Marsh') && !r.text.includes('9 days overdue'),
+  // Checked by their own driven checks below.
+  'net-frozen': () => true,
   // An associate: no Leads page, no Leads in the menu, no lead in search (they are on their own Today).
   'not-leads': (r) => !/\bLeads?\b/.test(r.text) && !r.text.includes('Amy Cole') && !r.text.includes('Quiet for 19 days'),
 };
+/** Every one of these words is on the screen, whatever its capitals (a section heading is drawn in capitals). */
+const has = (r, list) => { const t = r.text.replace(/\u00a0/g, ' ').toLowerCase(); return list.every((w) => t.includes(w.toLowerCase())); };
 // Underlined tabs are the same on a laptop and a phone: the same words, size, line and space at every width.
 const TABS_LOOK = { size: '16px', line: 2, gap: '22px' };
 
@@ -229,13 +258,16 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
   report.pass(`${tag}: every fold opens from its whole heading row`, folds.length === 0, folds.slice(0, 4).join('; '));
   const edges = await page.evaluate(outlinedEdges);
   report.pass(`${tag}: every outlined edge reaches 3 to 1`, edges.length === 0, edges.slice(0, 4).join('; '));
-  const overlaps = await page.evaluate(overlappingTaps);
+  // The map's dots keep their 44px tap areas where spots are closer than that (a phone): a tap opens the dot whose centre
+  // is nearest it (ChartTips' `nearest`, as the Health Check's chart; network-flows.mjs taps every overlap), so one dot's
+  // area over its neighbour's is the one overlap that is meant. Nothing else may overlap, and no dot may overlap anything else.
+  const overlaps = (await page.evaluate(overlappingTaps)).filter((o) => !/^cc-net-dot .* \+ cc-net-dot /.test(o));
   report.pass(`${tag}: no two tap areas overlap`, overlaps.length === 0, overlaps.slice(0, 4).join('; '));
   const pops = await page.evaluate(checkPopups);
   report.pass(`${tag}: every pop-up is one short line (${pops.checked} read)`, pops.problems.length === 0, pops.problems.slice(0, 3).join('; '));
   // A drop-down showing "UK" is read as capitals by the checker (its value is two capital letters): the
   // chevron is the shared drop-down's own, centred on lowercase words as everywhere else.
-  const chevrons = chevronsOff(await measureChevrons(page)).filter((c) => !/^ds-dd "UK"/.test(c) && !/^ds-cal-nav /.test(c)); // and the shared date picker's own month arrows
+  const chevrons = chevronsOff(await measureChevrons(page)).filter((c) => !/^ds-dd "UK"/.test(c) && !/^ds-dd "\d+"/.test(c) && !/^ds-cal-nav /.test(c)); // a drop-down showing only a number (Edit ratings' 0 to 10) is read the same way: figures stand as tall as capitals // and the shared date picker's own month arrows
   report.pass(`${tag}: chevrons are centred on their words`, chevrons.length === 0, chevrons.slice(0, 3).join('; '));
 
   // ---- Run 2's design rules (Tim, 18 and 19 Nov), on every screen.
@@ -262,6 +294,9 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
     const tips = await chartPopups(page, { phone });
     report.pass(`${tag}: chart pop-ups (${tips.read} opened) are ${phone ? 'one line, inside the screen' : 'a title with rows when they hold more than one fact'}`, tips.read > 0 && tips.problems.length === 0, tips.problems.slice(0, 3).join('; '));
   }
+  // ---- Run 4, step 4: Network's map and its table's own box, on the screens that hold them.
+  if (await page.locator('.cc-net-map svg').count()) rule('the map: one shared 0, a faint point at every spot, “7 or more” once on each line and outside the chart, one same-size dot a spot, never coral, at most 150 people, 44px tap areas, no key', mapProblems(await page.evaluate(readMap), { phone }));
+  if (expects.includes('net-frozen')) rule('the table sits in its own box: its heading row and its Name column stay put as it scrolls down and sideways, and the page never scrolls sideways', await tableFrozen(page, { settle }));
   if (expects.includes('table')) rule('the table’s heading row stays at the top as the page and the table scroll', await tableHeadings(page));
   // ---- Run 3's rules for the calendar and booking (Tim, 19 Nov), on every screen.
   const cal = await page.evaluate(readCalRules, { app: root, theme, phone, tile: TILE });

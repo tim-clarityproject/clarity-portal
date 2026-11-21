@@ -17,7 +17,8 @@ import {
 } from './todayParts';
 import NameNote from './NameNote';
 import { checkInsDue, checkInsOn } from '../../lib/coach/crm';
-import { TODAY_KEEP_IN_TOUCH, todayKeepInTouch } from '../../lib/coach/network';
+import { networkPath, TODAY_KEEP_IN_TOUCH, todayKeepInTouch } from '../../lib/coach/network';
+import { useNetworkDue } from './networkParts';
 import { CheckInPanel } from './pastParts';
 import './today.css';
 
@@ -101,7 +102,8 @@ export default function Today() {
   // Network who are due a catch-up join this same section (`due`: network.js's todayDueQuery, the owner's alone).
   const [checkInId, setCheckInId] = useState(null);
   const dueCheckIns = useMemo(() => (checkInsOn(settings) ? checkInsDue(checkIns, clients.filter((p) => p.status === 'past'), { todayKey, organisations }) : []), [settings, checkIns, clients, todayKey, organisations]);
-  const keep = todayKeepInTouch({ due: null, checkIns: dueCheckIns.slice(0, TODAY_KEEP_IN_TOUCH), today: todayKey });
+  const networkDue = useNetworkDue();
+  const keep = todayKeepInTouch({ due: networkDue, checkIns: dueCheckIns.slice(0, TODAY_KEEP_IN_TOUCH), today: todayKey });
 
   const close = () => setPanel(null);
   // Choose what to move opens from the over-full panel, whose own opener is the line's link. When it closes,
@@ -195,9 +197,17 @@ export default function Today() {
 
         {keep && (
           <Section title={keep.title}>
-            <div className="cc-rows cc-today-rows">
-              {keep.checkIns.map((c) => <Row key={c.id} title={c.name} facts={[c.sub]} when={c.when} label={`${c.line} Open the note`} onClick={() => setCheckInId(c.id)} />)}
-            </div>
+            {keep.people.length > 0 && (
+              <div className="cc-rows cc-today-rows">
+                {keep.people.map((p) => <Row key={p.id} title={p.name} facts={[p.sub]} label={`${p.line} Open`} onClick={() => navigate(networkPath({ person: p.id }))} />)}
+              </div>
+            )}
+            {keep.more && <div className="cc-acts cc-today-more"><TextLink onClick={() => navigate(networkPath())}>{keep.more}</TextLink></div>}
+            {keep.checkIns.length > 0 && (
+              <div className="cc-rows cc-today-rows">
+                {keep.checkIns.map((c) => <Row key={c.id} title={c.name} facts={[c.sub]} when={c.when} label={`${c.line} Open the note`} onClick={() => setCheckInId(c.id)} />)}
+              </div>
+            )}
             {dueCheckIns.length > keep.checkIns.length && <div className="cc-acts cc-today-more"><TextLink onClick={() => navigate('/coach/clients/past')}>Show all {dueCheckIns.length} check-ins</TextLink></div>}
           </Section>
         )}

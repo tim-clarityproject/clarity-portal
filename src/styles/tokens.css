@@ -335,6 +335,7 @@
   --tip-edge: 12px;          /* never closer than this to a screen edge */
   --tip-gap: 8px;            /* between the mark and the pop-up */
   --tip-max-w: 240px;
+  --tip-card-min: 180px;     /* a pop-up laid out as a card: a title, then label and value rows */
   --info-pop-max-w: 300px;   /* an ⓘ's pop-up: a sentence or two, as the Health Check's */
   /* The Individual Performance Plan (M1, Phase 2) */
   --fs-mission: calc(24 * var(--u-big));        /* the mission on its panel */
@@ -409,6 +410,7 @@
   --fs-tip: calc(13 * var(--u));
   --fs-tip-value: calc(14 * var(--u));      /* the value comes first, and larger (M4: 14px against 13px) */
   --fs-tip-kind: calc(12 * var(--u));       /* "Outcome Objective 2", small, before a name */
+  --fs-tip-title: calc(16 * var(--u));      /* a card pop-up's title: a name, or "2 people" */
   /* Charts drawn on screen (design reference v15, M4) */
   --chart-h: 120px;
   --chart-bar-max: 22px;
@@ -882,6 +884,17 @@
   --cc-lead-dots: 16px;         /* the three dots of a row's More menu */
   --cc-stage-pct-w: 84px;       /* Edit stages: a stage's likelihood */
   --cc-brd-kind-w: 128px;       /* Edit this board: what kind a field is */
+  /* Network (Phase 6a run 4; M11 .ntw, .ntbl, .ngrid2, .narr) */
+  --cc-net-row-h: 52px;         /* a row of the table */
+  --cc-net-box-min: 240px;      /* the table's own box, which scrolls by itself: never shorter */
+  --cc-net-box-rest: 330px;     /* what the rest of the screen keeps round it */
+  --cc-net-name-w: 168px;       /* the Name column, which stays put */
+  --cc-net-cell-max: 260px;     /* a typed cell before its words wrap */
+  --cc-net-rate-cols: 6;        /* a rating's small menu: 0 to 10 on two rows */
+  --cc-net-card-radius: 18px;   /* the Ready to archive? card */
+  --cc-net-dot-line: 1.25px;    /* an outlined dot on the map */
+  --cc-net-dash: 2.2px;         /* Rebalance?'s dashes */
+  --fs-cc-net-dot: calc(10 * var(--u-big)); /* how many share a spot, inside the dot (M11: fine 10px numbers) */
   --fs-cc-code: calc(26 * var(--u-big)); /* an access code, shown once */
   --ls-cc-code: 0.12em;
 }

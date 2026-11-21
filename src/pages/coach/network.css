@@ -1,0 +1,148 @@
+/* Network (Phase 6a run 4, step 4; M11 seq 77: .ntw, .ntbl, .ngrid2, .narr).
+   Every value is a token; every class starts cc-net. */
+
+/* ---------------------------------------------------------------- the Ready to archive? card: one quiet card, two text links */
+.ui-root .cc-net-card { margin-top: var(--space-px22); padding: var(--space-px26); border-radius: var(--cc-net-card-radius); background: var(--raised); }
+.ui-root .cc-net-card p { margin: 0; max-width: 26em; font-size: var(--fs-empty-title); line-height: 1.5; color: var(--text); }
+.ui-root .cc-net-card .cc-acts { margin-top: var(--space-px14); }
+
+/* The archive's own back link, clear of the tabs' tap area above it. */
+.ui-root .cc-net .cc-backrow { margin-top: var(--space-px26); }
+.ui-root .cc-net .cc-backrow + .cc-net-ctl { margin-top: var(--space-px14); }
+
+/* ---------------------------------------------------------------- above the table and the map: the search box, the count, Clear */
+.ui-root .cc-net-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-px12) var(--space-3); margin-top: var(--space-px22); }
+.ui-root .cc-net-ctl > .ds-search { flex: 1 1 var(--cc-net-cell-max); min-width: 0; }
+.ui-root .cc-net-count { font-size: var(--fs-secondary); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.ui-root .cc-net-mapline { margin: var(--space-px14) 0 0; }
+.ui-root .cc-net-ctl--map { align-items: flex-end; }
+.ui-root .cc-net-show { flex: 0 1 var(--cc-pop-min); min-width: 0; }
+.ui-root .cc-net-show .ds-choice { margin: 0; }
+/* "Show" is said to a screen reader; the choice's own words say it on screen (M11 .srt). */
+.ui-root .cc-net-show .ds-label-row { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ui-root .cc-net-find { position: relative; flex: 1 1 var(--cc-pop-min); min-width: 0; }
+.ui-root .cc-net-hits { position: absolute; z-index: 5; inset: calc(100% + var(--space-1)) 0 auto; }
+.ui-root .cc-net-hits small { color: var(--text-2); font-size: var(--fs-note); }
+
+/* ---------------------------------------------------------------- the table, in its own box: the headings and the Name column stay put
+   while the rest scrolls, up and down and sideways, like a spreadsheet. The
+   page itself never scrolls sideways. */
+.ui-root .cc-net-box { margin-top: var(--space-px18); border-top: var(--line-w) solid var(--line); overflow: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; max-height: max(var(--cc-net-box-min), calc(100dvh - var(--cc-net-box-rest))); outline: 0; }
+.ui-root .cc-net-box:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); }
+.ui-root .cc-table.cc-net-table { width: max-content; min-width: 100%; table-layout: auto; border-collapse: separate; border-spacing: 0; font-size: var(--fs-secondary); font-variant-numeric: tabular-nums; }
+.ui-root .cc-table.cc-net-table th, .ui-root .cc-table.cc-net-table td { width: auto; white-space: nowrap; background: var(--bg); padding: var(--space-1) var(--space-3) var(--space-1) 0; overflow: visible; text-align: left; }
+.ui-root .cc-table.cc-net-table td, .ui-root .cc-table.cc-net-table tbody th { height: var(--cc-net-row-h); box-sizing: border-box; color: var(--text-2); font-weight: var(--fw-regular); vertical-align: middle; border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-table.cc-net-table thead th { position: sticky; top: 0; z-index: 3; border-bottom: 0; box-shadow: inset 0 calc(-1 * var(--line-w)) 0 var(--line); }
+.ui-root .cc-table.cc-net-table th:first-child { width: auto; }
+.ui-root .cc-table.cc-net-table .cc-net-name { position: sticky; left: 0; z-index: 2; min-width: var(--cc-net-name-w); max-width: var(--cc-net-name-w); padding-right: var(--space-px20); white-space: normal; overflow-wrap: anywhere; box-shadow: inset calc(-1 * var(--line-w)) 0 0 var(--line); }
+.ui-root .cc-table.cc-net-table thead .cc-net-name { z-index: 4; box-shadow: inset calc(-1 * var(--line-w)) calc(-1 * var(--line-w)) 0 var(--line); }
+.ui-root .cc-table.cc-net-table .cc-net-name + th, .ui-root .cc-table.cc-net-table .cc-net-name + td { padding-left: var(--space-3); }
+.ui-root .cc-table.cc-net-table .cc-net-n { text-align: right; }
+.ui-root .cc-table.cc-net-table th.cc-net-n .cc-th { justify-content: flex-end; }
+.ui-root .cc-table.cc-net-table td.cc-net-n .cc-cell { justify-content: flex-end; margin-left: 0; margin-right: calc(-1 * var(--space-px6)); }
+.ui-root .cc-table.cc-net-table .cc-th { overflow: visible; }
+/* The older phone rule for plain buttons (mobile.css, !important, up to 768px) never reaches the headings:
+   Network's table shows at every width, where the Leads and Clients tables only show at 1100px and wider. */
+.ui-root .cc-table.cc-net-table .cc-th { padding: 0 0 var(--space-1) !important; font-size: var(--fs-small) !important; }
+.ui-root .cc-table.cc-net-table .cc-cell { max-width: var(--cc-net-cell-max); color: var(--text-2); }
+.ui-root .cc-table.cc-net-table .cc-cell--empty { color: var(--placeholder); }
+.ui-root .cc-table.cc-net-table .cc-cell-input { min-width: var(--cc-pop-min); }
+.ui-root .cc-table.cc-net-table td.cc-net-n .cc-cell-input { min-width: var(--cc-stage-pct-w); }
+.ui-root .cc-table.cc-net-table th.cc-th-add { width: var(--cc-th-add); padding-right: 0; vertical-align: middle; }
+.ui-root .cc-table.cc-net-table td:last-child { padding-right: 0; }
+@media (hover: hover) {
+  .ui-root .cc-table.cc-net-table tbody tr:hover td, .ui-root .cc-table.cc-net-table tbody tr:hover th { background: var(--raised); }
+}
+.ui-root .cc-net-more { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); margin-top: var(--space-px6); }
+
+/* A rating's small menu: 0 to 10, six to a row, floating above the table. */
+.ui-root .cc-net-rate { display: grid; grid-template-columns: repeat(var(--cc-net-rate-cols), var(--tap-min)); gap: var(--space-px2); }
+.ui-root .cc-net-rate .cc-net-rate-n { justify-content: center; padding: 0; min-width: var(--tap-min); font-variant-numeric: tabular-nums; }
+.ui-root .cc-net-rate .cc-net-rate-n[aria-checked='true'] { box-shadow: inset 0 0 0 var(--line-w) var(--text); }
+.ui-root .cc-pop:has(> .cc-net-rate) { min-width: 0; }
+
+/* ---------------------------------------------------------------- the map: Where to focus */
+.ui-root .cc-net-map { margin-top: var(--space-px26); min-width: 0; }
+.ui-root .cc-net-map svg { display: block; overflow: visible; }
+.ui-root .cc-net-map text { font-family: var(--font-body); }
+.ui-root .cc-net-point { fill: var(--line); }
+.ui-root .cc-net-seven { stroke: var(--field-line); stroke-width: var(--line-w); stroke-dasharray: var(--space-px2) var(--space-1); opacity: 0.7; }
+.ui-root .cc-net-tick { font-size: var(--fs-chart); fill: var(--placeholder); font-variant-numeric: tabular-nums; }
+.ui-root .cc-net-axis { font-size: var(--fs-meta); fill: var(--text-2); }
+.ui-root .cc-net-halo { paint-order: stroke; stroke: var(--bg); stroke-width: var(--space-1); stroke-linejoin: round; }
+.ui-root .cc-net-dot { cursor: pointer; outline: none; }
+.ui-root .ds-tipzone .cc-net-dot[data-tip] { cursor: pointer; }
+.ui-root .cc-net-tap { fill: transparent; }
+.ui-root .cc-net-o { transition: transform var(--dur-fast) var(--ease); }
+@media (hover: hover) {
+  .ui-root .cc-net-dot:hover .cc-net-o { transform: scale(1.18); }
+  .ui-root .cc-net-dot:hover .cc-net-named { fill: var(--coral-text); }
+}
+.ui-root .cc-net-dot:focus-visible .cc-net-o { transform: scale(1.18); stroke: var(--coral-text); stroke-width: var(--focus-w); stroke-dasharray: none; }
+.ui-root .ds-tipzone .cc-net-dot[data-tip]:focus-visible { outline: none; }
+.ui-root .cc-net-num { font-size: var(--fs-cc-net-dot); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; pointer-events: none; }
+.ui-root .cc-net-named { font-size: var(--fs-min); fill: var(--text); pointer-events: none; }
+.ui-root .cc-net-found { fill: none; stroke: var(--text); stroke-width: var(--line-w); }
+/* Keep close: green with a fine ring. Maintain: solid. Invest: an outline. Rebalance?: a dashed grey outline.
+   A mixed spot: pale with a fine edge. No list: plain grey. Never coral. */
+.ui-root .cc-net-dot--keep_close .cc-net-o { fill: var(--good); }
+.ui-root .cc-net-dot--keep_close .cc-net-ring { fill: none; stroke: var(--good); stroke-width: var(--line-w); opacity: 0.55; }
+.ui-root .cc-net-dot--keep_close .cc-net-num { fill: var(--on-good); }
+.ui-root .cc-net-dot--maintain .cc-net-o { fill: var(--text); }
+.ui-root .cc-net-dot--maintain .cc-net-num { fill: var(--bg); }
+.ui-root .cc-net-dot--invest .cc-net-o { fill: var(--bg); stroke: var(--text); stroke-width: var(--cc-net-dot-line); }
+.ui-root .cc-net-dot--invest .cc-net-num { fill: var(--text); }
+.ui-root .cc-net-dot--rebalance .cc-net-o { fill: var(--bg); stroke: var(--below); stroke-width: var(--cc-net-dot-line); stroke-dasharray: var(--cc-net-dash) var(--cc-net-dash); }
+.ui-root .cc-net-dot--rebalance .cc-net-num { fill: var(--text-2); }
+.ui-root .cc-net-dot--mixed .cc-net-o { fill: var(--raised); stroke: var(--field-line); stroke-width: var(--line-w); }
+.ui-root .cc-net-dot--mixed .cc-net-num { fill: var(--text); }
+.ui-root .cc-net-dot--none .cc-net-o { fill: var(--line); }
+.ui-root .cc-net-dot--none .cc-net-num { fill: var(--text-2); }
+
+/* ---------------------------------------------------------------- one person's panel */
+.ui-root .cc-net-who { margin: 0; font-size: var(--fs-secondary); color: var(--text-2); }
+.ui-root .cc-net-who + .cc-quiet { margin-top: var(--space-1); }
+.ui-root .cc-net-acts { margin-top: var(--space-px18); }
+.ui-root .cc-net-kv { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); min-height: var(--tap-min); border-bottom: var(--line-w) solid var(--line-soft); font-size: var(--fs-secondary); }
+.ui-root .cc-net-kv > span:first-child { color: var(--text); }
+.ui-root .cc-net-kv > span:last-child { color: var(--text-2); text-align: right; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.ui-root .cc-net-kv .cc-net-kv-none { color: var(--placeholder); }
+.ui-root .cc-net-how { margin: var(--space-px14) 0 var(--space-1); }
+.ui-root .cc-net-how b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-secondary); color: var(--text); }
+.ui-root .cc-net-how small { display: block; font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .cc-net-give { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); padding: var(--space-px12) 0; border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-net-give b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-secondary); color: var(--text); }
+.ui-root .cc-net-give small { display: block; font-size: var(--fs-note); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .cc-net-end { margin-top: var(--space-5); }
+.ui-root .cc-net-person .cc-part { margin-top: var(--space-5); }
+
+/* ---------------------------------------------------------------- Ready to archive?: everyone ticked, each a row */
+.ui-root .cc-net-ready { margin-top: var(--space-px14); }
+.ui-root .cc-net-ready .ds-check { display: flex; align-items: center; gap: var(--space-px12); min-height: var(--cc-row-h); border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-net-ready .ds-check { flex-wrap: nowrap; }
+.ui-root .cc-net-ready .ds-check .ds-check-label { flex: 1 1 0; min-width: 0; }
+.ui-root .cc-net-ready .ds-check .cc-row-when { margin-left: auto; white-space: normal; }
+.ui-root .cc-net-ready-who b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-text); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .cc-net-ready-who small { display: block; font-size: var(--fs-note); color: var(--text-2); overflow-wrap: anywhere; }
+
+/* ---------------------------------------------------------------- Show or hide columns; Import's drop area */
+.ui-root .cc-net-switches .ds-switchrow { border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-net-drop { display: grid; justify-items: center; gap: var(--space-px14); padding: var(--space-5) var(--space-3); border: var(--line-w) dashed var(--field-line); border-radius: var(--radius-input); text-align: center; }
+.ui-root .cc-net-drop p { margin: 0; font-size: var(--fs-secondary); color: var(--text-2); }
+.ui-root .cc-net-drop--over { border-color: var(--text); }
+
+@media (max-width: 600px) {
+  .ui-root .cc-net-card { padding: var(--space-px20); }
+  .ui-root .cc-net-box { max-height: max(var(--cc-net-box-min), calc(100dvh - var(--cc-net-box-rest) - var(--cc-phone-bar-h))); }
+  .ui-root .cc-table.cc-net-table .cc-net-name { min-width: calc(var(--cc-net-name-w) - var(--space-5)); max-width: calc(var(--cc-net-name-w) - var(--space-5)); }
+  .ui-root .cc-net-show, .ui-root .cc-net-find { flex: 1 1 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .cc-net-o { transition: none; }
+  .ui-root .cc-net-dot:hover .cc-net-o, .ui-root .cc-net-dot:focus-visible .cc-net-o { transform: none; }
+}
+@media (forced-colors: active) {
+  .ui-root .cc-net-dot .cc-net-o { forced-color-adjust: none; stroke: CanvasText; }
+  .ui-root .cc-net-dot--keep_close .cc-net-o, .ui-root .cc-net-dot--maintain .cc-net-o { fill: CanvasText; }
+  .ui-root .cc-net-dot--keep_close .cc-net-num, .ui-root .cc-net-dot--maintain .cc-net-num { fill: Canvas; }
+}

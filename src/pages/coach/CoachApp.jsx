@@ -16,7 +16,9 @@ import { barCalls, coachZoneOf, searchItems } from '../../lib/coach/calendar';
 import { boardSearchItems, boardsFor, LEAD_SEARCH_ACTIONS, leadSearchItems } from '../../lib/coach/crm';
 // Network's people are moved across before anything that points at one (a lead's Referred by): the module says so to the
 // store as it loads, so it is loaded with the frame, whichever page opens first.
-import '../../lib/coach/networkData';
+import { networkPageOf } from '../../lib/coach/networkData';
+import { menuCount, NETWORK_SEARCH_ACTIONS, networkSearchItems, searchQuery } from '../../lib/coach/network';
+import { useNetworkCounts } from './networkParts';
 import { deviceZone } from '../../lib/time/index.js';
 import { CoachPortalContext, InlineLink, TextLink, useCoachPortal } from './parts';
 import { CalSync } from './calSync';
@@ -49,6 +51,7 @@ const ColdLeads = lazy(() => import('./ColdLeads'));
 const Automations = lazy(() => import('./Automations'));
 const Boards = lazy(() => import('./Boards'));
 const BoardPage = lazy(() => import('./BoardPage'));
+const Network = lazy(() => import('./Network'));
 const OpenForCalls = lazy(() => import('./OpenForCalls'));
 const PollPage = lazy(() => import('./PollPage'));
 const BriefPanel = lazy(() => import('./Brief').then((m) => ({ default: m.BriefPanel || m.default })));
@@ -121,6 +124,8 @@ function Menu({ open, onClose, onSignOut }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const navRef = useRef(null);
+  // Network shows how many people are due a catch-up (the owner's alone; asked only while the menu is open).
+  const due = menuCount(useNetworkCounts(open).data);
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -156,6 +161,10 @@ function Menu({ open, onClose, onSignOut }) {
                 <button key={b.id} type="button" className="cc-menu-item cc-menu-item--sub" aria-current={pathname === `/coach/boards/${b.id}` ? 'page' : undefined} onClick={() => go(`/coach/boards/${b.id}`)}>{b.name}</button>
               ))}
             </Fragment>
+          ) : i.key === 'network' ? (
+            <button key={i.key} type="button" className="cc-menu-item" aria-current={current(i.to) ? 'page' : undefined} aria-label={due.spoken ? `Network, ${due.spoken}` : undefined} onClick={() => go(i.to)}>
+              {i.label}{due.count && <span className="cc-menu-n" aria-hidden="true">{due.count}</span>}
+            </button>
           ) : i.key !== 'todos' ? (
             <button key={i.key} type="button" className="cc-menu-item" aria-current={current(i.to) ? 'page' : undefined} onClick={() => go(i.to)}>{i.label}</button>
           ) : (
@@ -193,6 +202,18 @@ function Search({ open, onClose }) {
   const listRef = useRef(null);
   const recentKey = deviceKey('cache', userId, 'coach-recent');
   const [recent, setRecent] = useState([]);
+  // Network's people are never loaded whole: search asks for the few that match, as it is typed (the owner's alone).
+  const [network, setNetwork] = useState([]);
+  useEffect(() => {
+    const typed = q.trim();
+    if (!open || !isOwner || typed.length < 2) { setNetwork([]); return undefined; }
+    let live = true;
+    const timer = setTimeout(() => {
+      Promise.all([networkPageOf(userId, searchQuery(typed, todayKey)), networkPageOf(userId, searchQuery(typed, todayKey, true))])
+        .then(([active, archived]) => { if (live) setNetwork(networkSearchItems([...active.rows, ...archived.rows])); }).catch(() => { if (live) setNetwork([]); });
+    }, 200);
+    return () => { live = false; clearTimeout(timer); };
+  }, [q, open, isOwner, userId, todayKey]);
   // Each opening starts empty and takes the keyboard at once, before anything
   // can be typed: the first letter is never lost, nor added to the last search.
   useLayoutEffect(() => {
@@ -216,6 +237,8 @@ function Search({ open, onClose }) {
       ...(isOwner ? leadSearchItems(leads, leadStages) : []),
       // Boards: the owner's own; an associate finds only the ones shared with them.
       ...boardSearchItems(boards, { isOwner }),
+      // Network's people, the owner's alone: the few that match what is typed.
+      ...(isOwner ? network : []),
     ];
     const pages = [
       ...menuFor({ isOwner, live: LIVE, hasShared: boardsFor(boards, { isOwner }).length > 0 }).map((i) => ({ key: `p:${i.key}`, title: i.label, kind: 'Page', to: i.to })),
@@ -229,7 +252,7 @@ function Search({ open, onClose }) {
       { key: 'a:group', title: 'Add group', to: '/coach/clients?tab=groups', state: { open: 'group' } },
       { key: 'a:workshop', title: 'Add workshop', to: '/coach/clients?tab=workshops', state: { open: 'workshop' } },
       { key: 'a:export', title: 'Export clients to a spreadsheet', to: '/coach/clients', state: { open: 'export' } },
-      ...(isOwner ? [...LEAD_SEARCH_ACTIONS, { key: 'a:board', title: 'New board', to: '/coach/boards', state: { open: 'board' } }, { key: 'a:automation', title: 'Add automation', to: '/coach/leads/automations', state: { open: 'add' } }] : []),
+      ...(isOwner ? [...LEAD_SEARCH_ACTIONS, ...NETWORK_SEARCH_ACTIONS, { key: 'a:board', title: 'New board', to: '/coach/boards', state: { open: 'board' } }, { key: 'a:automation', title: 'Add automation', to: '/coach/leads/automations', state: { open: 'add' } }] : []),
       { key: 'a:book', title: 'Book a call', to: '/coach/calendar/book' },
       { key: 'a:open', title: 'Set my open times', to: '/coach/calendar/open' },
       { key: 'a:offer', title: 'Offer times by email', to: '/coach/calendar/offer' },
@@ -239,7 +262,7 @@ function Search({ open, onClose }) {
     // Calendar items, found by title, person or note; each opens its own day.
     const items = searchItems({ items: calItems, guests: calGuests, coachZone: coachZoneOf(settings, deviceZone()), todayKey });
     return { people, pages, actions, recent, items };
-  }, [clients, groups, workshops, organisations, admin, isOwner, coaches, coach, recent, calItems, calGuests, settings, todayKey, leads, leadStages, boards]);
+  }, [clients, groups, workshops, organisations, admin, isOwner, coaches, coach, recent, calItems, calGuests, settings, todayKey, leads, leadStages, boards, network]);
 
   const groupsShown = useMemo(() => searchResults(q, all), [q, all]);
   const flat = groupsShown.flatMap((g) => g.items);
@@ -511,6 +534,7 @@ export default function CoachApp() {
               <Route path="leads/automations" element={isOwner ? <Automations /> : <Navigate to="/coach" replace />} />
               <Route path="leads/:id" element={isOwner ? <LeadPage /> : <Navigate to="/coach" replace />} />
               {/* Boards (run 4): the owner's own; an associate opens only a board the owner has shared, and can't change it. */}
+              <Route path="network" element={isOwner ? <Network /> : <Navigate to="/coach" replace />} />
               <Route path="boards" element={<Boards />} />
               <Route path="boards/:id" element={<BoardPage />} />
               <Route path="business/*" element={<Navigate to="/coach/finances" replace />} />
