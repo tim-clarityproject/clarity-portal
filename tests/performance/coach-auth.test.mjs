@@ -301,7 +301,12 @@ function server({ caller = OWNER, owner = true, coaches = [], resetAnswer = { st
   return { log, handler: makeHandler({ createClient, now: () => Date.parse('2026-12-02T10:00:00Z') }) };
 }
 
-async function ask(handler, { body, auth = 'Bearer caller-token', method = 'POST' } = {}) {
+// A stand-in access token in Supabase's shape (never signed: the stand-in's getUser decides who it is).
+const tokenAt = (aal) => `Bearer h.${Buffer.from(JSON.stringify({ sub: 'stand-in', aal })).toString('base64url')}.s`;
+const AAL2 = tokenAt('aal2');
+const AAL1 = tokenAt('aal1');
+
+async function ask(handler, { body, auth = AAL2, method = 'POST' } = {}) {
   const out = { status: 0, body: null, headers: {} };
   const res = { status(n) { out.status = n; return this; }, setHeader(k, v) { out.headers[k] = v; return this; }, json(b) { out.body = b; return this; } };
   await handler({ method, headers: { authorization: auth }, body }, res);
@@ -396,7 +401,8 @@ test('after a recovery code: only the caller’s lost factors, only within 15 mi
     { id: 'other', user: OWNER, factor_type: 'totp', status: 'verified', created_at: '2026-10-01T09:00:00Z' },
   ];
   const fine = server({ caller: MAYA_U, state: { coach: true, recovered_at: used }, factors });
-  const out = await ask(fine.handler, { body: { kind: 'recovered' } });
+  // A recovery code is used before any code can be given: this works at aal1 (054).
+  const out = await ask(fine.handler, { auth: AAL1, body: { kind: 'recovered' } });
   assert.deepEqual([out.status, out.body.factorsRemoved], [200, 1]);
   assert.deepEqual(fine.log.deleted, ['lost']);
   const late = server({ caller: MAYA_U, state: { coach: true, recovered_at: new Date(Date.parse('2026-12-02T10:00:00Z') - RECOVERED_FOR_MS - 1000).toISOString() }, factors });
@@ -406,4 +412,14 @@ test('after a recovery code: only the caller’s lost factors, only within 15 mi
   const client = server({ caller: MAYA_U, state: { coach: false }, factors });
   assert.equal((await ask(client.handler, { body: { kind: 'recovered' } })).status, 403);
   assert.deepEqual([...late.log.deleted, ...never.log.deleted, ...client.log.deleted], []);
+}));
+
+test('054: the reset needs the 6-digit code on the server too, before anything is asked', withEnv(LIVE, async () => {
+  const { handler, log } = server({ coaches: COACHES });
+  const out = await ask(handler, { auth: AAL1, body: { kind: 'reset', coachId: MAYA_C } });
+  assert.deepEqual([out.status, out.body.message, out.body.needsCode], [403, RESET_WORDS.needsCode, true]);
+  // Nothing asked of the database, and the service key never used.
+  assert.deepEqual([log.rpc.length, log.deleted.length, log.made.includes(LIVE.SUPABASE_SERVICE_ROLE_KEY)], [0, 0, false]);
+  const plain = await ask(handler, { auth: 'Bearer not-a-jwt', body: { kind: 'reset', coachId: MAYA_C } });
+  assert.equal(plain.status, 403);
 }));

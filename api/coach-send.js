@@ -42,6 +42,7 @@
 // GUEST_EMAIL_FROM, or ALIGNMENT_EMAIL_FROM), and the Supabase URL and anon
 // key the app already has.
 import { maySend, oneAddress } from './_guestEmails.js';
+import { codeRefusal } from './_coachCode.js';
 import { portalOrigin } from './_portalOrigin.js';
 import { UUID, asCallerClient, canSend, emailFrom, isMissingFunction, isMissingTable, onePerAddress, sendEach, supabaseOf } from './_coachEmails.js';
 import { clientInviteEmail, sessionRecapEmail, workshopFollowUpEmail } from '../src/lib/email/emails.js';
@@ -187,6 +188,9 @@ export default async function handler(req, res) {
   const asCaller = asCallerClient(env, token);
   const { data: who, error: whoError } = await asCaller.auth.getUser(token);
   if (whoError || !who?.user?.id) return reply(res, 401, { sent: false, message: 'Sign in again to carry on.' });
+  // Only a sign-in that has given its 6-digit code (054).
+  const noCode = codeRefusal(token, { sent: false });
+  if (noCode) return reply(res, noCode.status, noCode.body);
 
   const ctx = { env, req, res, asCaller, userId: who.user.id, id: asked.id };
   if (asked.kind === 'invite') return sendInvite(ctx);

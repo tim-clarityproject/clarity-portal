@@ -42,6 +42,7 @@
 // and the Supabase URL and anon key the app already has.
 import { createClient } from '@supabase/supabase-js';
 import { maySend } from './_guestEmails.js';
+import { codeRefusal } from './_coachCode.js';
 import { asCallerClient, isMissingFunction, supabaseOf } from './_coachEmails.js';
 
 export const config = { maxDuration: 30 };
@@ -201,6 +202,9 @@ export default async function handler(req, res) {
   const asCaller = asCallerClient(env, token);
   const { data: who, error: whoError } = await asCaller.auth.getUser(token);
   if (whoError || !who?.user?.id) return reply(res, 401, { ok: false, message: 'Sign in again to carry on.' });
+  // Only a sign-in that has given its 6-digit code (054).
+  const noCode = codeRefusal(token, { ok: false });
+  if (noCode) return reply(res, noCode.status, noCode.body);
   const [{ data: coachRows, error: coachError }, { data: mine, error: mineError }] = await Promise.all([
     asCaller.from('coaches').select('id,active').eq('user_id', who.user.id).limit(1),
     asCaller.rpc('coach_connections_mine'),

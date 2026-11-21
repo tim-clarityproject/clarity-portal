@@ -14,6 +14,7 @@
 // Needs SUPABASE_URL (or VITE_SUPABASE_URL), SUPABASE_ANON_KEY (or
 // VITE_SUPABASE_ANON_KEY) and SUPABASE_SERVICE_ROLE_KEY in Vercel.
 import { createClient } from '@supabase/supabase-js';
+import { codeRefusal } from './_coachCode.js';
 import { maySend, oneAddress } from './_guestEmails.js';
 import { portalOrigin } from './_portalOrigin.js';
 
@@ -33,6 +34,10 @@ export default async function handler(req, res) {
   const email = clean(req.body?.email, 254).toLowerCase();
   if (!firstName) return reply(res, 400, { message: 'Type their first name to carry on.' });
   if (!oneAddress(email)) return reply(res, 400, { message: 'That email doesn’t look right. Check it and try again.' });
+
+  // Only a sign-in that has given its 6-digit code (054).
+  const noCode = codeRefusal(token, {});
+  if (noCode) return reply(res, noCode.status, noCode.body);
 
   // Asked as the caller: only the owner may add a coach.
   const asCaller = createClient(url, anon, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { persistSession: false, autoRefreshToken: false } });

@@ -98,7 +98,8 @@ export async function coachContext(browser, { size = 1440, theme = 'dark', fresh
   // up an authenticator and given its code: the test coach is shown to the
   // page as one (a stand-in factor, the level raised), and no real
   // authenticator is ever enrolled (tests/signin/aal2.mjs).
-  await asAal2(page, { host: `${TEST_REF}.supabase.co` });
+  // After 054, a real code when Tim has given the test coach a real authenticator (item 57; never printed).
+  await asAal2(page, { host: `${TEST_REF}.supabase.co`, totpKey: env.TEST_COACH_OWNER_TOTP_KEY || null });
   await page.goto(`${APP}/coach/sign-in`);
   await page.getByLabel('Email').fill(env.TEST_COACH_OWNER_EMAIL);
   await page.getByLabel('Password', { exact: true }).fill(env.TEST_COACH_OWNER_PASSWORD);

@@ -29,6 +29,7 @@
 // VITE_SUPABASE_ANON_KEY) and SUPABASE_SERVICE_ROLE_KEY in Vercel.
 import { createClient } from '@supabase/supabase-js';
 import { maySend } from './_guestEmails.js';
+import { codeGiven } from './_coachCode.js';
 
 /** The words this function answers with (Claude's, in the portal's pattern: what happened, then what to do). */
 export const RESET_WORDS = {
@@ -104,7 +105,8 @@ export function makeHandler({ createClient: make = createClient, now = () => Dat
       return reply(res, 200, { ok: true, ran: true, factorsRemoved: removed });
     }
 
-    // kind === 'reset'
+    // kind === 'reset': only a sign-in that has given its 6-digit code (054; 053's function asks the same).
+    if (!codeGiven(token)) return reply(res, 403, { message: RESET_WORDS.needsCode, needsCode: true });
     // Only a plain id: never a list or anything else read as one (the break-it tester, 21 Nov).
     const coachId = typeof req.body?.coachId === 'string' ? req.body.coachId : '';
     if (!UUID.test(coachId)) return reply(res, 400, { message: RESET_WORDS.notThere });

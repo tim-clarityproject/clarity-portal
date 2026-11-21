@@ -50,6 +50,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { timingSafeEqual } from 'node:crypto';
 import { maySend } from './_guestEmails.js';
+import { codeRefusal } from './_coachCode.js';
 import { asCallerClient, isMissingFunction, supabaseOf } from './_coachEmails.js';
 import { directionOf, readInbound } from '../src/lib/coach/connect/copyInEmail.js';
 
@@ -128,6 +129,9 @@ export default async function handler(req, res) {
     const asCaller = asCallerClient(env, token);
     const { data: who, error: whoError } = await asCaller.auth.getUser(token);
     if (whoError || !who?.user?.id) return reply(res, 401, { ok: false, message: 'Sign in again to carry on.' });
+    // Only a sign-in that has given its 6-digit code (054).
+    const noCode = codeRefusal(token, { ok: false });
+    if (noCode) return reply(res, noCode.status, noCode.body);
     const { data: coachRows, error: coachError } = await asCaller.from('coaches').select('id,active,role').eq('user_id', who.user.id).limit(1);
     const coach = coachRows?.[0];
     if (coachError || !coach || coach.active === false || coach.role !== 'owner') return reply(res, 404, { ok: false, message: 'That isn’t yours to use.' });

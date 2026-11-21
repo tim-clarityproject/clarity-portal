@@ -32,7 +32,7 @@
 -- =============================================================================
 create or replace function pg_temp.t_as(p uuid) returns void language plpgsql as $f$
 begin
-  perform set_config('request.jwt.claims', json_build_object('sub', p, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claims', json_build_object('sub', p, 'role', 'authenticated', 'aal', 'aal2')::text, true);  -- 054: signed in with the code
   perform set_config('role', 'authenticated', true);
 end $f$;
 create or replace function pg_temp.t_anon() returns void language plpgsql as $f$

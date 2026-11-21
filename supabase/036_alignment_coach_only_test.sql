@@ -28,7 +28,7 @@
 -- ---------------------------------------------------------------- helpers
 create or replace function pg_temp.t_as(p uuid) returns void language plpgsql as $f$
 begin
-  perform set_config('request.jwt.claims', json_build_object('sub', p, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claims', json_build_object('sub', p, 'role', 'authenticated', 'aal', 'aal2')::text, true);  -- 054: signed in with the code
   perform set_config('role', 'authenticated', true);
 end $f$;
 create or replace function pg_temp.t_anon() returns void language plpgsql as $f$
@@ -50,7 +50,7 @@ end $f$;
 create or replace function pg_temp.t_admin_as(p uuid) returns void language plpgsql as $f$
 begin
   perform set_config('role', 'none', true);
-  perform set_config('request.jwt.claims', json_build_object('sub', p)::text, true);
+  perform set_config('request.jwt.claims', json_build_object('sub', p, 'aal', 'aal2')::text, true);  -- 054: signed in with the code
 end $f$;
 create or replace function pg_temp.t36_user(p_label text) returns uuid language plpgsql as $f$
 declare u uuid := gen_random_uuid();

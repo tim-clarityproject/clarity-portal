@@ -15,6 +15,18 @@
 //   await asAal2(pageOrContext, { host })   register AFTER any other routes
 //     on the same page or context, so it runs first and every later handler
 //     sees the real token.
+//
+// AFTER MIGRATION 054 (run 6, item 57): the database itself refuses coach
+// data to a sign-in without its code, so the raised copy no longer opens
+// real coach tables. If Tim enrols an authenticator on a test coach himself
+// and keeps its set-up key in ~/.clarity-test-accounts.env (for example
+// TEST_COACH_OWNER_TOTP_KEY), pass it as `totpKey`: the real sign-in is then
+// given its real code (Supabase's own challenge and verify, the code made
+// here from the key), so the page and the database both see a real aal2
+// sign-in and nothing is raised. Without a key nothing changes. The key and
+// every code stay in this process: never printed, logged or kept.
+import { totp } from './totp.mjs';
+
 const FACTOR_ID = '00000000-0000-4000-8000-0000000000f1';
 export const STAND_IN_FACTOR = { id: FACTOR_ID, factor_type: 'totp', status: 'verified', friendly_name: 'Authenticator', created_at: '2026-11-02T09:00:00Z', updated_at: '2026-11-02T09:00:00Z' };
 
@@ -53,7 +65,38 @@ const withFactor = (user, factor) => (user && factor ? { ...user, factors: [...(
  *   false: the stand-in factor only, the level left as it is (aal1), so the
  *   page asks for the code.
  */
-export async function asAal2(target, { host, factor = true, raise = true } = {}) {
+/**
+ * A real sign-in given its real 6-digit code (054): Supabase's own challenge
+ * and verify for the account's verified TOTP factor. Returns the new session
+ * (aal2) or null. `fetchImpl` is for the unit test.
+ */
+export async function upgradeWithCode({ base, apikey, session, totpKey, fetchImpl = fetch }) {
+  const factor = (session?.user?.factors || []).find((f) => f.factor_type === 'totp' && f.status === 'verified');
+  if (!factor || !totpKey || !session?.access_token) return null;
+  const headers = { apikey, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' };
+  const challenge = await fetchImpl(`${base}/auth/v1/factors/${factor.id}/challenge`, { method: 'POST', headers, body: '{}' });
+  if (!challenge.ok) return null;
+  const { id } = await challenge.json();
+  const verify = await fetchImpl(`${base}/auth/v1/factors/${factor.id}/verify`, { method: 'POST', headers, body: JSON.stringify({ challenge_id: id, code: totp(totpKey) }) });
+  if (!verify.ok) return null;
+  const next = await verify.json();
+  return next?.access_token ? next : null;
+}
+
+export async function asAal2(target, { host, factor = true, raise = true, totpKey = null } = {}) {
+  // A real code for the real sign-in (054): nothing is raised or stood in.
+  if (totpKey) {
+    await target.route((url) => url.hostname === host && url.pathname.endsWith('/auth/v1/token'), async (route) => {
+      const req = route.request();
+      const res = await route.fetch();
+      const body = await res.json().catch(() => null);
+      const up = res.ok() && new URL(req.url()).searchParams.get('grant_type') === 'password'
+        ? await upgradeWithCode({ base: `https://${host}`, apikey: req.headers().apikey, session: body, totpKey }).catch(() => null)
+        : null;
+      return route.fulfill({ status: res.status(), contentType: 'application/json', body: JSON.stringify(up || body) });
+    });
+    return;
+  }
   // A session already on the device (a saved sign-in) is raised as the page opens.
   await target.addInitScript(({ standIn, withF, up }) => {
     try {

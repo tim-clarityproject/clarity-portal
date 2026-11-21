@@ -33,6 +33,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { maySend } from './_guestEmails.js';
+import { codeRefusal } from './_coachCode.js';
 import { asCallerClient, supabaseOf, UUID } from './_coachEmails.js';
 import { LIVE_ORIGIN, portalOrigin } from './_portalOrigin.js';
 
@@ -127,6 +128,9 @@ export default async function handler(req, res) {
   if (!ready) return reply(res, 200, { ok: false, reason: 'not_connected' });
   const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) return reply(res, 401, { ok: false, message: 'Sign in again to carry on.' });
+  // Only a sign-in that has given its 6-digit code (054).
+  const noCode = codeRefusal(token, { ok: false });
+  if (noCode) return reply(res, noCode.status, noCode.body);
   const coach = await callerCoach(env, token).catch(() => null);
   if (!coach) return reply(res, 404, { ok: false, message: 'That isn’t yours to use.' });
 

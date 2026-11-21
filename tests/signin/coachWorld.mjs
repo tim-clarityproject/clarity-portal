@@ -41,6 +41,12 @@
 //     (api/coach-auth-reset.js) as the live site would, with Supabase and
 //     its admin calls answered by this world; otherwise it answers as a
 //     preview does (nothing changes).
+//   - `coachData: true` (run 6, migration 054): the coach portal's own
+//     tables and functions answer as 054 makes the database answer: at aal1
+//     a table reads empty (the restrictive rule) and a coach function is
+//     refused (42501); at aal2 they hold one invented client whose name is
+//     COACH_DATA_MARKER, so a test can see whether coach data ever reached
+//     the page. world.coachAnswers lists each answer: { path, aal, gave }.
 //   - `sqlReachesAuth: false`: a hosted database whose migration can't reach
 //     Supabase's own auth tables: 053 removes no factors or sessions, and
 //     the server's admin calls remove the factors (no admin call signs a
@@ -55,6 +61,11 @@ const b64u = (text) => Buffer.from(text, 'utf8').toString('base64url');
 export const MAYA = { id: '00000000-0000-4000-8000-00000000c0a1', email: 'maya.collins@harbourlane.co', first: 'Maya' };
 export const OWNER = { id: '00000000-0000-4000-8000-00000000c0a0', first: 'Tim' };
 export const MAYA_COACH = '00000000-0000-4000-8000-0000000c0ac1';
+/** The invented client in the stood-in coach tables (054's stand-in): seen anywhere at aal1, coach data leaked. */
+export const COACH_DATA_MARKER = 'Quill Invented-Marker';
+/** The coach portal's own tables and functions (054's coach_code_tables(), and the coach functions), by name. */
+export const COACH_TABLE = /^(coach_|client_|network_|workshop|engagement|organisation_(contacts|documents|deals|growth)$|activity_log$|data_requests$|time_entries$|session_prep$)/;
+export const COACH_RPC = /^(coach_|client_|network_|lead_|session_(send|recap)|workshop_follow_up|board_|is_owner$|is_coach)/;
 export const OWNER_COACH = '00000000-0000-4000-8000-0000000c0ac0';
 /** Maya's invented password (never a real one). */
 export const MAYA_PASSWORD = 'lighthouse-keeper-77';
@@ -114,6 +125,8 @@ export function makeWorld(o = {}) {
     resets: [],
     serverRecovered: 0,
     server: [],
+    coachData: Boolean(o.coachData),
+    coachAnswers: [],
     coaches: o.coaches || [
       { id: MAYA_COACH, user_id: user0.id, role: o.role === 'owner' ? 'owner' : 'coach', active: true, display_first_name: user0.first },
       { id: OWNER_COACH, user_id: OWNER.id, role: 'owner', active: true, display_first_name: OWNER.first },
@@ -421,6 +434,19 @@ export function makeWorld(o = {}) {
     if (rpc && ['coach_auth_state', 'coach_authenticator_on', 'coach_recovery_codes_make', 'coach_recovery_codes_saved', 'coach_recovery_code_use', 'coach_authenticator_reset'].includes(rpc)) {
       const out = world.rpc(rpc, body, claims);
       return json(route, out.body, out.status);
+    }
+    // ---- the coach portal's own data, as 054 makes the database answer it.
+    const table = /\/rest\/v1\/([a-z_]+)$/.exec(path)?.[1];
+    if (world.coachData && ((rpc && COACH_RPC.test(rpc)) || (!rpc && table && COACH_TABLE.test(table)))) {
+      const aal = claims?.aal === 'aal2' && session ? 'aal2' : 'aal1';
+      if (aal !== 'aal2') {
+        world.coachAnswers.push({ path, aal, gave: false });
+        if (rpc) return json(route, { code: '42501', message: 'Give your 6-digit code to carry on.', details: null, hint: null }, 403);
+        return json(route, method === 'GET' || method === 'HEAD' ? [] : { code: '42501', message: 'new row violates row-level security policy' }, method === 'GET' || method === 'HEAD' ? 200 : 403);
+      }
+      world.coachAnswers.push({ path, aal, gave: true });
+      const row = { id: '00000000-0000-4000-8000-00000000d054', coach_id: MAYA_COACH, name: COACH_DATA_MARKER, title: COACH_DATA_MARKER, created_at: '2026-12-02T10:00:00Z' };
+      return json(route, rpc ? [row] : (method === 'GET' || method === 'HEAD' ? [row] : [row]), method === 'GET' || rpc ? 200 : 201);
     }
     if (path.includes('/rest/v1/coaches') && world.role === 'client') return json(route, []);
     if (path.includes('/rest/v1/coaches')) {
