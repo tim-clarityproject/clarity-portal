@@ -227,6 +227,12 @@ revoke all on function public._coach_auth_remove(uuid, boolean) from public, ano
 -- Whether this sign-in is still good: it didn't begin before the coach's
 -- last reset, and (where the database can see sessions) its session is
 -- still there. A session from before a reset is told to sign in again.
+-- When the sign-in began is the earliest of its "amr" times (Supabase keeps
+-- them for the session, so a refreshed token carries the first sign-in's
+-- time); "iat" only when there are none, because every refresh gives a new
+-- iat: where the reset can't remove sessions, an hour's refresh would
+-- otherwise let a sign-in from before it carry on (the functionality
+-- tester, 21 Nov).
 create or replace function public._coach_auth_session_ok(p_reset timestamptz)
 returns boolean
 language plpgsql
@@ -241,9 +247,17 @@ declare
   v_there boolean;
 begin
   begin
-    v_iat := nullif(v_claims ->> 'iat', '')::bigint;
+    select min((m ->> 'timestamp')::bigint) into v_iat
+      from jsonb_array_elements(case when jsonb_typeof(v_claims -> 'amr') = 'array' then v_claims -> 'amr' else '[]'::jsonb end) m
+     where jsonb_typeof(m) = 'object' and (m ->> 'timestamp') ~ '^[0-9]{1,12}$';
   exception when others then v_iat := null;
   end;
+  if v_iat is null then
+    begin
+      v_iat := nullif(v_claims ->> 'iat', '')::bigint;
+    exception when others then v_iat := null;
+    end;
+  end if;
   if p_reset is not null and v_iat is not null and to_timestamp(v_iat) < p_reset then
     return false;
   end if;

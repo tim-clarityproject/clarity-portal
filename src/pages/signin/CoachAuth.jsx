@@ -78,6 +78,26 @@ function useSignedIn() {
   return { user, isLoading, out: !isLoading && !user };
 }
 
+/**
+ * Whether the signed-in person is a coach: undefined while asking, then
+ * true, false, or null when it can't be told (no connection). Clients never
+ * see these screens: one opened by its address sends them Home, before
+ * anything is enrolled or made (the functionality tester, 21 Nov).
+ */
+function useIsCoach(userId) {
+  const [coach, setCoach] = useState({ userId: null, is: undefined });
+  useEffect(() => {
+    if (!userId) return undefined;
+    let live = true;
+    loadCoachAuth(supabase, { id: userId })
+      .then((a) => { if (live) setCoach({ userId, is: a.isCoach }); })
+      .catch(() => { if (live) setCoach({ userId, is: null }); });
+    return () => { live = false; };
+  }, [userId]);
+  return coach.userId === userId ? coach.is : undefined;
+}
+const toHome = <Navigate to={SIGN_IN_PATHS.home} replace />;
+
 async function accessToken() {
   try {
     const { data } = await supabase.auth.getSession();
@@ -113,9 +133,10 @@ export function CoachSetUp() {
   const started = useRef(null);
   const mounted = useMounted();
   const userId = user?.id || null;
+  const coach = useIsCoach(userId);
 
   useEffect(() => {
-    if (!userId || started.current === userId) return;
+    if (!userId || coach === undefined || coach === false || started.current === userId) return;
     started.current = userId;
     const live = () => mounted.current;
     (async () => {
@@ -148,9 +169,12 @@ export function CoachSetUp() {
         started.current = null;
       }
     })();
-  }, [userId, mode, navigate, goIn, user, mounted]);
+  }, [userId, coach, mode, navigate, goIn, user, mounted]);
 
   if (out) return <Navigate to={SIGN_IN_PATHS.coach} replace />;
+  if (coach === false) return toHome;
+  // Asking whether this is a coach: nothing of the screen shows until it's known.
+  if (coach === undefined) return null;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -241,9 +265,10 @@ export function CoachCodes() {
   const asked = useRef(null);
   const busy = useRef(false);
   const mounted = useMounted();
+  const coach = useIsCoach(userId);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || coach === undefined || coach === false) return;
     const kept = heldFor(userId);
     if (kept) { setSet(kept); return; }
     if (asked.current === userId) return;
@@ -266,9 +291,12 @@ export function CoachCodes() {
         asked.current = null;
       }
     })();
-  }, [userId, navigate, goIn, user, fromSecurity, mounted]);
+  }, [userId, coach, navigate, goIn, user, fromSecurity, mounted]);
 
   if (out) return <Navigate to={SIGN_IN_PATHS.coach} replace />;
+  if (coach === false) return toHome;
+  // Asking whether this is a coach: nothing of the screen shows until it's known.
+  if (coach === undefined) return null;
 
   const download = () => {
     if (!set) return;
@@ -355,6 +383,8 @@ export function CoachLost() {
   }, [userId, user]);
 
   if (out) return <Navigate to={SIGN_IN_PATHS.coach} replace />;
+  if (auth?.isCoach === false) return toHome;
+  if (auth === null) return null;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -424,8 +454,12 @@ export function CoachIn() {
   const left = location.state?.left;
   const low = location.state?.low;
   const W = COACH_AUTH_WORDS.in;
+  const coach = useIsCoach(user?.id || null);
 
   if (out) return <Navigate to={SIGN_IN_PATHS.coach} replace />;
+  if (coach === false) return toHome;
+  // Asking whether this is a coach: nothing of the screen shows until it's known.
+  if (coach === undefined) return null;
 
   if (Number.isFinite(low)) {
     return (

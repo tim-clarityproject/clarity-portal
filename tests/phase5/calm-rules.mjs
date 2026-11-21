@@ -1041,7 +1041,8 @@ if (COACH_AUTH) {
             await context.addInitScript((m) => { try { localStorage.setItem('clarity-colour-mode', m); } catch { /* the device's mode */ } }, mode);
           } else {
             const { coachContext } = await import('../coach/shared.mjs');
-            context = await coachContext(browser, { size: phone ? 400 : width, theme: mode, reducedMotion: MOTION });
+            // coachContext knows 1440, 768 and 400 by name; any other width is passed as its viewport.
+            context = await coachContext(browser, { size: phone ? 400 : { width, height: 900 }, theme: mode, reducedMotion: MOTION });
           }
           if (SCALE !== 1) await context.addInitScript((px) => { document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = `html{font-size:${px}px !important}`; document.head.appendChild(st); }); }, 16 * SCALE);
           const w = world ? await coachWorld(context, world) : null;

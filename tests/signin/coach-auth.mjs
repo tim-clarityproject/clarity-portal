@@ -425,7 +425,9 @@ if (PARTS.includes('flows')) {
     await page.locator('.ds-toast').getByText('Copied.').waitFor({ timeout: 5000 }).catch(() => null);
     pass(`${tag}: the copy icon says “Copied.” in the shared toast`, await page.locator('.ds-toast').getByText('Copied.').isVisible().catch(() => false));
     const copied = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '');
-    pass(`${tag}: and copies the key as typed into an app (no spaces)`, copied === M26_KEY);
+    // Each enrolment has its own key (coming back to set-up made a new one, as Supabase does).
+    const shownKey = (await page.locator('.si-key').innerText().catch(() => '')).replace(/\s+/g, '');
+    pass(`${tag}: and copies the key as typed into an app (no spaces)`, Boolean(copied) && copied === shownKey && /^[A-Z2-7]+$/.test(copied));
     // A wrong code, then the right one.
     await page.getByRole('textbox', { name: 'Code', exact: true }).fill('111111');
     await tapButton(page, 'Turn it on');
@@ -619,7 +621,8 @@ if (PARTS.includes('flows')) {
     pass(`Offline on ${go}, ${width} ${mode}: no sideways scroll`, sideways <= 0, `${sideways}px`);
     const dim = await page.evaluate(lowText, root);
     pass(`Offline on ${go}, ${width} ${mode}: every line of text reaches 4.5 to 1`, dim.length === 0, dim.slice(0, 3).join('; '));
-    const crash = errors.filter((e) => !/Failed to load resource|net::ERR/.test(e));
+    // AuthContext notes its own profile read that couldn't reach the database (Failed to fetch): that's being offline, not a fault.
+    const crash = errors.filter((e) => !/Failed to load resource|net::ERR|Failed to fetch/.test(e));
     pass(`Offline on ${go}, ${width} ${mode}: no page errors`, crash.length === 0, crash.slice(0, 2).join(' | '));
     if (OUT) await page.screenshot({ path: `${OUT}/offline-${shot}.${width}.${mode}${SUFFIX}.png`, fullPage: true });
     await ctx.close();
