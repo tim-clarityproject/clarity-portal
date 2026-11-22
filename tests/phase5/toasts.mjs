@@ -36,10 +36,14 @@ export function toastCovers() {
     }
     return true;
   };
+  // Fixed to the screen and not inside anything that scrolls on the way
+  // (a full-screen guided tool is fixed, but its questions scroll inside it
+  // like any page; its bottom bar doesn't).
   const fixed = (el) => {
     for (let p = el; p && p !== document.documentElement; p = p.parentElement) {
-      const pos = getComputedStyle(p).position;
-      if (pos === 'fixed' || pos === 'sticky') return true;
+      const st = getComputedStyle(p);
+      if (st.position === 'fixed' || st.position === 'sticky') return true;
+      if (p !== el && /auto|scroll/.test(st.overflowY) && p.scrollHeight > p.clientHeight + 1) return false;
     }
     return false;
   };
