@@ -407,11 +407,13 @@ export default function GuidedTool({
   // under the middle of the screen, toasts rise to 16px above the bar, as
   // M9 draws them on a phone; on a laptop the button is at the right and
   // the toast stays where M9 draws it. Dialogs do the same for their own
-  // footers (Dialogs.jsx).
+  // footers (Dialogs.jsx). A step's own bar (`foot`, M21's "Previous day"
+  // and "Next day") is measured as one row: on a phone its buttons share
+  // the width, so toasts rise above it there too (the UI tester, 22 Nov).
   useLayoutEffect(() => {
     if (!fullscreen || !open || !shown) return undefined;
     const foot = rootRef.current?.querySelector('.ds-guide-foot');
-    const button = foot?.querySelector('.ds-guide-next');
+    const button = foot?.querySelector('.ds-guide-next, .ds-guide-foot-own');
     if (!foot || !button) return undefined;
     const html = document.documentElement;
     const before = html.style.getPropertyValue('--ds-toast-offset');
