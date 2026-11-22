@@ -52,7 +52,8 @@ export function toastCovers() {
   const out = [];
   for (const el of document.querySelectorAll(CONTROLS)) {
     // An open menu or list is a moment's layer that closes with the next tap, and a toast follows a choice made in it.
-    if (el.closest('.ds-toast-region, [role=menu], [role=listbox]') || !vis(el) || !fixed(el)) continue;
+    // The coach portal's open menu (.cc-menu, a nav drawer, not role=menu) is one too (the UI tester, 22 Nov: its Sign out at 400px).
+    if (el.closest('.ds-toast-region, [role=menu], [role=listbox], .cc-menu') || !vis(el) || !fixed(el)) continue;
     if (top && !top.contains(el)) continue;
     const b = el.getBoundingClientRect();
     // Its 44px tap area where a shared control draws one round itself.

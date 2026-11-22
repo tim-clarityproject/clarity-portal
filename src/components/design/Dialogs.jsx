@@ -7,6 +7,7 @@ import { isPhoneWidth, lockPage, openerOf, returnFocus, trapTab, unlockPage } fr
 import { themeProps, useThemeScope } from './themeScope';
 import { PANEL_MS, POPUP_MS, prefersReducedMotion } from './timing';
 import { usePanelDraft } from './usePanelDraft';
+import { useHidePhoneBar } from './phoneBar';
 import './design.css';
 
 // The slide-across panel and the centred pop-up (design reference:
@@ -97,6 +98,10 @@ function Modal({ kind, open, onClose, title, titleAside = null, children, footer
   // opened it must not land on the scrim and close it straight away.
   const openedAtRef = useRef(0);
 
+  // A full-screen panel on a phone covers the phone bar, which steps back
+  // meanwhile, so its height no longer lifts toasts (phoneBar.js).
+  useHidePhoneBar(Boolean(active) && phoneForm && kind === 'panel');
+
   // While open: lock the page, move focus in, and on close give it back.
   useLayoutEffect(() => {
     if (!active) return undefined;
@@ -110,15 +115,19 @@ function Modal({ kind, open, onClose, title, titleAside = null, children, footer
     target?.focus({ preventScroll: true });
 
     // Toasts rise above the dialog's footer so they never cover its button.
+    // A full-screen panel with no footer (an explanation opened from another
+    // panel) takes the toasts back down, so the footer of the panel under it
+    // no longer lifts them over its last link (the UI tester, 22 Nov).
     const html = document.documentElement;
     const foot = dialogRef.current?.querySelector('.ds-dialog-foot');
     const previousOffset = html.style.getPropertyValue('--ds-toast-offset');
-    if (foot) html.style.setProperty('--ds-toast-offset', `${foot.getBoundingClientRect().height}px`);
+    const ownOffset = foot ? `${foot.getBoundingClientRect().height}px` : (phoneForm && kind === 'panel' ? '0px' : null);
+    if (ownOffset) html.style.setProperty('--ds-toast-offset', ownOffset);
 
     return () => {
       removeLayer();
       removeEntry?.();
-      if (foot) {
+      if (ownOffset) {
         if (previousOffset) html.style.setProperty('--ds-toast-offset', previousOffset);
         else html.style.removeProperty('--ds-toast-offset');
       }

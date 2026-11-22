@@ -654,8 +654,9 @@ body:has(> #root .ui-root.cc-app) {
     border-top: var(--line-w) solid var(--line);
     background: var(--bg);
   }
-  /* A toast rises above the coach's phone bar, as it does above the client portal's (which sets --tabbar-height; this bar doesn't). */
-  :root:has(.cc-phonebar) .ui-root .ds-toast-region { bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--space-3)) + var(--space-3) + max(var(--ds-toast-offset, 0px), calc(var(--cc-phone-bar-h) + env(safe-area-inset-bottom, 0px)))); }
+  /* A toast rises above the coach's phone bar, as it does above the client portal's (which sets --tabbar-height; this bar doesn't).
+     Not while a full-screen panel covers the bar: the panel's own footer lifts it then, or nothing does (the UI tester, 22 Nov). */
+  :root:has(.cc-phonebar):not(:has(.ds-dialog--phone)) .ui-root .ds-toast-region { bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--space-3)) + var(--space-3) + max(var(--ds-toast-offset, 0px), calc(var(--cc-phone-bar-h) + env(safe-area-inset-bottom, 0px)))); }
   .ui-root .cc-phonebar .cc-round[aria-current='page'] { color: var(--text); }
   .ui-root .cc-phonebar .cc-round--mark { color: var(--text); }
 
