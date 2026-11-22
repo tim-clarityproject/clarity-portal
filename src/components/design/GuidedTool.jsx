@@ -11,6 +11,7 @@ import { themeProps, useThemeScope } from './themeScope';
 import { STEP_PREFIX } from './guideDraft';
 import useKeepScroll from './useKeepScroll';
 import useViewportFit from './useViewportFit';
+import { useHidePhoneBar } from './phoneBar';
 import Chevron from './Chevron';
 import keepWords, { endWithIcon, titleWithAside } from './keepWords';
 import useInfoToggle from './useInfoToggle';
@@ -393,6 +394,11 @@ export default function GuidedTool({
   }, [fullscreen, open]);
 
   useViewportFit(rootRef, fullscreen && open);
+  // The phone bar steps back while a full-screen tool covers it (phoneBar.js),
+  // so its measured height (--tabbar-height) no longer lifts toasts over the
+  // tool's last answer (the UI tester, 22 Nov: "Draft restored" sat over
+  // the Team performance check's "Committed" at 390px).
+  useHidePhoneBar(fullscreen && open);
   useKeepScroll(scrollRef, shown);
 
   // A toast never covers the bottom bar's button (the functionality
