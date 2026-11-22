@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../design';
+import { Chevron } from '../design';
 import { homeSuggestionLine, waitingSuggestions } from '../../lib/ownQuestions/model';
 import { seeSuggestion, useOwnQuestions } from '../../lib/ownQuestions/store';
 import './ownQuestions.css';
@@ -26,7 +26,10 @@ export default function HomeOwnSuggestion({ userId }) {
   if (!shown) return null;
   return (
     <div className="oq-home">
-      <Button variant="text" onClick={() => navigate('/my-account#own-questions')}>{homeSuggestionLine(shown)}</Button>
+      <button type="button" className="oq-go" onClick={() => navigate('/my-account#own-questions')}>
+        <span>{homeSuggestionLine(shown)}</span>
+        <Chevron direction="right" size="sm" beside="words" />
+      </button>
     </div>
   );
 }

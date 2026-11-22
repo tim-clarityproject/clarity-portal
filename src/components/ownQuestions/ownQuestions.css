@@ -32,7 +32,9 @@
   display: block;
   width: 100%;
   min-height: var(--tap-min);
-  padding: var(--space-px12) 0;
+  /* !important: mobile.css pads every button 12px 16px on a phone, which
+     pushed the question 16px in from its tool's name (UI tester, 22 Nov). */
+  padding: var(--space-px12) 0 !important;
 }
 .ui-root .oq-row-q {
   display: block;
@@ -138,6 +140,49 @@
 
 /* ---------------------------------------------------------------- Home */
 .ui-root .oq-home { margin-top: var(--space-2); }
+
+/* A link that says what it does, with the crosshair chevron (design
+   reference "A link says what you'll do"; the mock-up's .go): Home's "See
+   the question Tim suggested" (pointing on) and the debrief's "Read your
+   answers" (pointing down, turning up while open: it opens in place).
+   The words in the text colour, the chevron in the secondary grey; both
+   coral on hover and keyboard focus. */
+.ui-root .oq-go {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-body) !important;
+  line-height: var(--lh-statement);
+  color: var(--text);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-fast) var(--ease);
+}
+.ui-root .oq-go .ds-chevron-line { color: var(--text-2); transition: color var(--dur-fast) var(--ease); }
+.ui-root .oq-go:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+  border-radius: var(--space-1);
+}
+.ui-root .oq-go:focus-visible,
+.ui-root .oq-go:focus-visible .ds-chevron-line { color: var(--coral-text); }
+@media (hover: hover) {
+  .ui-root .oq-go:hover,
+  .ui-root .oq-go:hover .ds-chevron-line { color: var(--coral-text); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .oq-go,
+  .ui-root .oq-go .ds-chevron-line { transition: none; }
+}
+@media (forced-colors: active) {
+  .ui-root .oq-go .ds-chevron { forced-color-adjust: none; background-color: CanvasText; }
+}
 
 /* ---------------------------------------------------------------- the coach's Suggest a question panel */
 .ui-root .oq-panel {

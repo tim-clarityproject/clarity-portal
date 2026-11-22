@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Choice, Section, TextBox, useToast } from '../design';
+import { Chevron, Choice, Section, TextBox, useToast } from '../design';
 import { friendlyError } from '../../lib/friendlyError';
 import {
   ANSWER_MAX,
@@ -156,9 +156,11 @@ function OwnAnswerRow({ row }) {
       <p className="oq-answer-a">{row.value}</p>
       {row.answers && (
         <>
-          <Button variant="text" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
-            {open ? 'Hide your answers' : 'Read your answers'}
-          </Button>
+          <button type="button" className="oq-go" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
+            <span>{open ? 'Hide your answers' : 'Read your answers'}</span>
+            {/* It opens in place, so the chevron points down and turns up while open (rule 6). */}
+            <Chevron direction={open ? 'up' : 'down'} size="sm" beside="words" />
+          </button>
           {open && (
             <div id={id} className="oq-read">
               {row.answers.map((a) => (
