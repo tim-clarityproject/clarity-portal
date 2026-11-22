@@ -6,6 +6,7 @@ import { useDraft } from '../lib/drafts';
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import { Loading, PageHeader, TextField, Button, useToast } from '../components/design';
+import { BackLink } from '../components/ui/DiscardLink';
 import { limitName, NAME_MAX, NAME_TOO_LONG } from '../lib/nameLimit';
 
 export default function EditPersonalDetails() {
@@ -169,7 +170,7 @@ export default function EditPersonalDetails() {
         }
 
         .edit-profile-back {
-          margin-bottom: 24px;
+          margin-bottom: var(--space-4);
         }
 
         .edit-profile-loading {
@@ -243,9 +244,10 @@ export default function EditPersonalDetails() {
 
       <div className="edit-profile-content">
         <div className="edit-profile-column">
-          <Button variant="text" className="edit-profile-back" onClick={() => navigate(-1)}>
-            Back
-          </Button>
+          {/* The shared Back: chevron on the column's edge, 10px before its word (tidy pass item 17). */}
+          <div className="edit-profile-back">
+            <BackLink onClick={() => navigate(-1)} />
+          </div>
 
           <PageHeader title="Edit Profile" info={pageText.editPersonalDetails} />
 

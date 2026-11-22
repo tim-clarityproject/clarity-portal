@@ -456,7 +456,7 @@
   color: var(--placeholder);
 }
 
-/* ---------- Back: the chevron's visible edge on the content's left edge, 14px before its label ---------- */
+/* ---------- Back: the chevron's visible edge on the content's left edge, 10px (--back-gap) before its label ---------- */
 
 .ui-root .si-back {
   all: unset;

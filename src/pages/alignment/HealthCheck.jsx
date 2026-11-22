@@ -5,9 +5,10 @@ import BigLogo from '../../components/auth/BigLogo';
 import { AuthTextField } from '../../components/auth/AuthField';
 import { AuthPrimaryButton } from '../../components/auth/AuthButton';
 import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
+import { BackLink } from '../../components/ui/DiscardLink';
 import OnePager from './OnePager';
 import AccessCodeInput, { cleanCode } from './AccessCodeInput';
-import { AddButton, Chevron, Loading, TextBox, PdfChoice, savePdf, PDF_ERROR } from '../../components/design';
+import { AddButton, Loading, TextBox, PdfChoice, savePdf, PDF_ERROR } from '../../components/design';
 import { formatUkDate } from '../../lib/dateFormatter';
 import { requestAlignmentEmail } from '../../lib/alignmentEmail';
 import { healthCheckPdf } from '../../lib/pdf/docs/healthCheck';
@@ -745,7 +746,7 @@ export default function HealthCheck() {
   const footer = onWelcome ? null : (
     <div className={`al-foot${onDone ? ' al-foot--wide' : ''}`}>
       <div className="al-foot-left">
-        <button type="button" className="al-back" onClick={goBack}><Chevron direction="left" size="sm" beside="words" /><span>Back</span></button>
+        <BackLink onClick={goBack} />
         {editing && !onDone && (
           <button
             type="button"

@@ -1,8 +1,8 @@
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Navigate } from 'react-router-dom';
 import { legalDocuments } from '../../content/legal';
 import LegalDocBody from '../../components/legal/LegalDocBody';
 import { PageHeader } from '../../components/design';
-import Chevron from '../../components/design/Chevron';
+import { BackLink } from '../../components/ui/DiscardLink';
 
 // Standalone, publicly reachable pages for the same three documents the
 // sign-up reading pop-up shows (src/components/auth/ReadingPopup.jsx),
@@ -49,40 +49,11 @@ export default function LegalDocumentPage() {
           flex-direction: column;
         }
 
+        /* Back sits in the reading column, its chevron's visible edge on
+           the column's left edge and 10px before its word: the shared
+           BackLink (tidy pass item 17). */
         .legal-page-topbar {
-          height: 76px;
-          padding: 0 20px;
-          display: flex;
-          align-items: center;
-          flex-shrink: 0;
-        }
-
-        @media (min-width: 769px) {
-          .legal-page-topbar {
-            height: 72px;
-            padding: 0 32px;
-          }
-        }
-
-        .ui-root .legal-page-back {
-          display: inline-flex;
-          align-items: center;
-          gap: var(--icon-gap);
-          min-height: var(--tap-min) !important;
-          padding: 0 !important;
-          font-family: var(--font-body);
-          font-size: var(--fs-who) !important;
-          color: var(--text-2);
-          background: transparent;
-          border: none;
-          text-decoration: none;
-          cursor: pointer;
-          transition: color var(--dur-fast) var(--ease);
-        }
-
-        .ui-root .legal-page-back:hover,
-        .ui-root .legal-page-back:focus-visible {
-          color: var(--coral-text);
+          padding: var(--space-3) 0;
         }
 
         .legal-page-content {
@@ -142,12 +113,11 @@ export default function LegalDocumentPage() {
         }
       `}</style>
 
-      <div className="legal-page-topbar">
-        <Link to="/auth/login" className="legal-page-back"><Chevron direction="left" size="sm" /><span>Back</span></Link>
-      </div>
-
       <div className="legal-page-content">
         <div className="legal-page-column">
+          <div className="legal-page-topbar">
+            <BackLink to="/auth/login" />
+          </div>
           <PageHeader title={doc.title} meta={[doc.lastUpdated]} />
           <LegalDocBody blocks={doc.blocks} classNames={PAGE_CLASS_NAMES} />
         </div>

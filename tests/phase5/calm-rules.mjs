@@ -954,11 +954,11 @@ if (CHEVRONS) {
       await page3.locator('input[type=email]').fill('sam.example@invented.test');
       await page3.locator('.al-otp-input').fill('ABC234');
       await page3.locator('form button[type=submit]').click();
-      await page3.locator('.al-back').waitFor({ timeout: 15000 });
+      await page3.locator('.al-foot .ui-back-link').waitFor({ timeout: 15000 });
       await page3.evaluate(() => document.fonts.ready);
       await sleep(900);
       const list = await measureChevrons(page3);
-      const back = list.filter((c) => c.label.startsWith('al-back'));
+      const back = list.filter((c) => c.label.startsWith('ui-back-link'));
       pass(`chevrons, the portal's own Health Check route ${width}px: Back's chevron is centred on its word`, back.length === 1 && chevronsOff(back).length === 0, back.length ? chevronsOff(back).join('; ') : 'Back was not found');
       pass(`chevrons, the portal's own Health Check route ${width}px: every chevron beside words is centred on them (${list.length})`, chevronsOff(list).length === 0, chevronsOff(list).slice(0, 4).join('; '));
       // Its results table sorts by a heading or a pill, whose arrow then shows beside the words.
@@ -967,7 +967,7 @@ if (CHEVRONS) {
         await sorter.click({ timeout: 3000 }).catch(() => null);
         await sleep(500);
         const sorted = (await measureChevrons(page3));
-        const arrows = sorted.filter((c) => !c.label.startsWith('al-back'));
+        const arrows = sorted.filter((c) => !c.label.startsWith('ui-back-link'));
         pass(`chevrons, the portal's own Health Check route ${width}px: the sort arrow is centred on its words (${arrows.length})`, chevronsOff(arrows).length === 0, chevronsOff(arrows).join('; '));
         if (process.env.CHEV_SHOW) console.log(`old route sorted ${width}: ${sorted.map((c) => `${c.label} ${c.off.toFixed(2)} ${c.capitals ? 'caps' : 'lower'} ${c.font}`).join(' | ')} || skipped: ${sorted.skipped.map((s) => `${s.label}: ${s.why}`).join(' | ')}`);
       } else if (process.env.CHEV_SHOW) console.log(`old route ${width}: no sort heading or pill on this screen`);

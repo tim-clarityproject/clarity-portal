@@ -990,14 +990,17 @@ html:has(.ui-root) {
   color: var(--coral-text);
 }
 
-/* Back (rule 29t, Tim, 5 Nov): the chevron's visible edge on the content's
-   left edge, 14px before its label; the 44px tap area is invisible, and on
-   hover only the chevron turns coral, never a shape behind it. */
+/* Back (rule 29t, Tim, 5 Nov; 10px since 18 Nov, follow-up 1): the
+   chevron's visible edge on the content's left edge, --back-gap before its
+   label; the 44px tap area is invisible, and on hover only the chevron
+   turns coral, never a shape behind it. A link (the legal pages) is drawn
+   the same, with no underline. */
 .ui-root .ui-back-link {
   gap: var(--back-gap);
+  text-decoration: none;
 }
 
-/* The chevron's visible strokes, not its square, on the content edge and 14px before the label. */
+/* The chevron's visible strokes, not its square, on the content edge and --back-gap before the label. */
 /* (The chevron stands on its label's baseline, inside .ds-chevron-line, so
    it is centred on the label's capitals: the line carries the insets.) */
 .ui-root .ui-back-link .ds-chevron-line {

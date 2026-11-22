@@ -5,7 +5,8 @@
 //
 // Rules 29o and 29t, Back: in every guided tool and on BackLink, the
 // chevron's visible strokes (read from the screen's pixels) start on the
-// content's left edge and end 14px before the label; the tap area is 44px
+// content's left edge and end 10px before the label (--back-gap; Tim,
+// 18 Nov, follow-up 1); the tap area is 44px
 // and invisible; on hover only the chevron turns coral, never a shape
 // behind it. CLAUDE.md 9: every switch (.ui-switch, .ds-switch) answers a
 // tap anywhere in its 44px band. At 1280px, half width (700px) and a
@@ -237,6 +238,24 @@ try {
             // Its own box's left: the visible strokes start where the link does
             // (About centres it, so the page's left edge doesn't apply).
             edge: () => document.querySelector('.ui-back-link').getBoundingClientRect().left,
+          });
+        } finally {
+          await context.close();
+        }
+      }
+      // BackLink as a link: the legal pages' Back, on the reading column's
+      // left edge (tidy pass item 17; it sat in a bar of its own before).
+      {
+        const tag = `The legal page's BackLink, ${width}px ${mode}`;
+        const { context, page } = await open('CLIENT', width, mode);
+        try {
+          await page.goto(`${APP}/legal/terms`);
+          await page.waitForSelector('.legal-page-column .ui-back-link', { timeout: 30000 });
+          await sleep(800);
+          await measureBack(page, tag, {
+            button: '.ui-back-link', label: '.ui-back-link > span:last-child',
+            edge: () => document.querySelector('.legal-page-column h1, .legal-page-column .ds-page-title')?.getBoundingClientRect().left
+              ?? document.querySelector('.legal-page-column').getBoundingClientRect().left,
           });
         } finally {
           await context.close();

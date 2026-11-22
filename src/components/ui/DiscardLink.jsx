@@ -2,6 +2,7 @@
 // classes get the `.ui-root` ancestor prefix in components.css to beat
 // src/styles/mobile.css's `button:not(.breathe-button)` (0,1,1,
 // !important) on font-size/padding - see the comment there.
+import { Link } from 'react-router-dom';
 import Chevron from '../design/Chevron';
 
 function BinIcon() {
@@ -37,7 +38,19 @@ export function DiscardLink({ onClick, label = 'Discard', ...props }) {
   );
 }
 
-export function BackLink({ onClick, label = 'Back', ...props }) {
+// Back (rule 29t): the chevron's visible edge on the content's left edge,
+// --back-gap (10px, Tim, 18 Nov, follow-up 1) before its words. With \`to\`
+// it is a link to that address (the legal pages' Back to sign-in), drawn
+// the same.
+export function BackLink({ onClick, label = 'Back', to, ...props }) {
+  if (to) {
+    return (
+      <Link to={to} className="ui-back-link" {...props}>
+        <ArrowLeftIcon />
+        <span>{label}</span>
+      </Link>
+    );
+  }
   return (
     <button type="button" className="ui-back-link" onClick={onClick} {...props}>
       <ArrowLeftIcon />

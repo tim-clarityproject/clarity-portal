@@ -5,7 +5,7 @@
 //     crosshair's middle (within 0.5px), and both in the same place on
 //     every page;
 //   - "Back to sign in": the chevron's visible edge on the content's left
-//     edge, 14px before its label, and clear of the phone's notch;
+//     edge, 10px before its label, and clear of the phone's notch;
 //   - the spacing rhythm, read the same way on the page and on M26 itself:
 //     under the name, title or core line, between boxes, above the
 //     button, and from the button to the first link;
