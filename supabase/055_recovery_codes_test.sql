@@ -1,6 +1,6 @@
 -- =============================================================================
 -- 055_recovery_codes_test.sql
--- Checks 055's recovery codes part (supabase/migrations/055_part_recovery_codes.sql,
+-- Checks 055's recovery codes part (part 2 of supabase/migrations/055_own_questions.sql,
 -- folded into 055): using a recovery code ends the coach's other sign-ins and
 -- keeps the one that used it. RUN ORDER: 053, 054, then 055, then this.
 --
