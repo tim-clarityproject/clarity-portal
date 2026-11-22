@@ -13,7 +13,7 @@ import {
   dayReviewView,
   inRecoveryOn,
 } from '../../src/lib/performance/index.js';
-import { listFilters, noMatchLine, planRows, reviewRows, searchRows } from '../../src/lib/savedItems.js';
+import { filterLineText, listFilters, noMatchLine, planRows, reviewRows, searchRows } from '../../src/lib/savedItems.js';
 
 const TODAY = '2026-10-21'; // a Wednesday
 
@@ -162,4 +162,11 @@ test('search: My Reviews too, by name and by tool', () => {
 test('the line when nothing matches is one full sentence with the words in curly quotes', () => {
   assert.equal(noMatchLine('xyz'), 'Nothing matches “xyz”.');
   assert.equal(noMatchLine('  sales  '), 'Nothing matches “sales”.');
+});
+
+test('while searching, the filter line says what is shown, in curly quotes (tidy pass item 8)', () => {
+  assert.equal(filterLineText('', ' check-in '), 'Showing results for “check-in”.');
+  assert.equal(filterLineText('Decisions, GROW', 'sales'), 'Showing results for “sales” in Decisions, GROW.');
+  assert.equal(filterLineText('Decisions', '   '), 'Showing Decisions.');
+  assert.equal(filterLineText('', ''), 'Showing everything.');
 });

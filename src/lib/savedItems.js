@@ -634,3 +634,15 @@ export function searchRows(rows, query) {
 export function noMatchLine(query) {
   return `Nothing matches “${String(query || '').trim()}”.`;
 }
+
+/**
+ * The line under the Filter button: what is shown. While searching it says
+ * so, Showing results for “check-in”. (tidy pass item 8), with the filter
+ * after it when one is applied too; otherwise "Showing Decisions, GROW." or
+ * "Showing everything.".
+ */
+export function filterLineText(applied, searchFor) {
+  const words = String(searchFor || '').trim();
+  if (words) return `Showing results for “${words}”${applied ? ` in ${applied}` : ''}.`;
+  return applied ? `Showing ${applied}.` : 'Showing everything.';
+}

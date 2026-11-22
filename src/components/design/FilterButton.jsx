@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from 'react';
 import DisclosureArrow from './DisclosureArrow';
+import { filterLineText } from '../../lib/savedItems';
 import './design.css';
 
 // Filter: one Filter button that opens the dropdowns (children, usually
@@ -8,7 +9,11 @@ import './design.css';
 //
 // applied: words for what is applied ("day reviews from this month"), or
 //          empty when nothing is.
-export default function FilterButton({ label = 'Filter', applied, onClear, children }) {
+// searchFor: the words being searched for, if any (My Plans, My Reviews):
+//          the line then reads Showing results for “check-in”. (tidy pass
+//          item 8; filterLineText in lib/savedItems.js).
+
+export default function FilterButton({ label = 'Filter', applied, searchFor, onClear, children }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const buttonRef = useRef(null);
@@ -41,7 +46,7 @@ export default function FilterButton({ label = 'Filter', applied, onClear, child
         {children}
       </div>
       <p className="ds-filter-line" aria-live="polite">
-        <span>{applied ? `Showing ${applied}.` : 'Showing everything.'}</span>
+        <span>{filterLineText(applied, searchFor)}</span>
         {applied && onClear && (
           <button
             type="button"

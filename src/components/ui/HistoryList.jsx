@@ -179,6 +179,7 @@ export default function HistoryList({
       {allFilters.length > 0 && (
         <FilterButton
           applied={appliedText}
+          searchFor={searching ? searchText : ''}
           onClear={() => { setActiveFilter('all'); setActiveSubFilter('all'); }}
         >
           <Dropdown
@@ -560,7 +561,10 @@ const HLIST_CSS = `
   .ui-root .hlist-row-main {
     flex: 1 1 100%;
     text-align: left;
-    padding: var(--space-3) var(--space-2) var(--space-1) var(--space-3) !important;
+    /* No side padding on a phone, so the words start on the list's left
+       edge and the date ends on its right, as every other list's rows
+       (.ds-row) do (tidy pass item 10). */
+    padding: var(--space-3) 0 var(--space-1) 0 !important;
   }
   .ui-root .hlist-row-controls--empty {
     display: none;
@@ -595,7 +599,7 @@ const HLIST_CSS = `
     flex: 1 1 100%;
     justify-content: flex-end;
     gap: var(--space-1);
-    padding: 0 var(--space-1) var(--space-1) var(--space-3);
+    padding: 0 0 var(--space-1) 0;
   }
 }
 

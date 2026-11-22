@@ -16,11 +16,11 @@ import './design.css';
 
 // The person's sleep target range (Tim, 3 Nov 2026): 7 to 9 hours until
 // they change it, then their own. One control, on Recovery's Home beside
-// the sleep chart's action and in My Account (Settings): "Change my target
+// the sleep chart's action and in My Account (Settings): "Edit my target
 // range", a quiet link, opens two steppers in place, "From 7 hours" and
 // "To 9 hours", in half hours from 4 up to 12, the start always below the
-// end (the portal's stepper: a plain line for minus, the crosshair for
-// plus). It saves by itself ("Saving", then "Saved", or "Will sync"
+// end (the portal's stepper, \`StepIcon\`'s plain minus and plus, rule
+// 29g; never the crosshair). It saves by itself ("Saving", then "Saved", or "Will sync"
 // offline), then says "This is your own target range."
 //
 // Kept in the account with the person's other page settings
