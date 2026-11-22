@@ -802,6 +802,15 @@ async function standInRows(page, { role = 'owner', db = 'none', rows = {}, admin
       if (calSim && table === 'coach_connections') return refused(route, '42501', 'permission denied for table coach_connections');
       if (DAY_TABLES.includes(table) || CAL_TABLES.includes(table) || CRM_TABLES.includes(table) || table === 'coach_connections') return json(route, { code: 'PGRST205', details: null, hint: null, message: `Could not find the table 'public.${table}' in the schema cache` }, 404);
       if (strict && method !== 'GET' && method !== 'HEAD') { store.calls.push(`blocked ${method} ${table}`); return route.abort('blockedbyclient'); }
+      // Not strict: a write to a table the stand-in doesn't hold (the portal's own settings, say) is still never sent to the
+      // test project; it is answered here as saved, with what was sent (the break-it tester, Phase 9 tidy 1).
+      if (method !== 'GET' && method !== 'HEAD') {
+        store.calls.push(`${method} ${table} (answered here)`);
+        if (method === 'DELETE') return route.fulfill({ status: 204, body: '' });
+        let sent = null;
+        try { sent = req.postDataJSON(); } catch { sent = null; }
+        return json(route, Array.isArray(sent) ? sent : sent ? [sent] : [], method === 'POST' ? 201 : 200);
+      }
       return route.fallback();
     }
     const method = req.method();
