@@ -67,7 +67,7 @@ const SIGNED_OUT = [
   ['create-account', '/auth/sign-up'],
   ['terms-panel', '/auth/sign-up', pressLink('terms')],
   ['forgot-password', '/forgot-password'],
-  ['legal-terms', '/legal/terms-of-service'],
+  ['legal-terms', '/legal/terms'],
   ['old-health-check', '/health-check/not-a-real-link'],
 ];
 
