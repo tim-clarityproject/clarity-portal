@@ -100,7 +100,7 @@ export async function saveCapacity(coach, hours) {
 export async function moveClient(userId, profileId, toCoachId) {
   if ((await coachReady()) !== true) throw new Error(NEEDS_049);
   const from = await rpc('client_move', { p_profile: profileId, p_to_coach: toCoachId });
-  await loadCoach(userId);
+  await loadCoach(userId, { again: true });
   return from;
 }
 
@@ -170,7 +170,7 @@ export async function inviteClient(userId, profile) {
   if (!profile.email) throw new Error('Add an email first.');
   if ((await coachReady()) === true) {
     await rpc('client_invite', { p_profile: profile.id });
-    await loadCoach(userId);
+    await loadCoach(userId, { again: true });
   } else {
     await saveRow(userId, 'client_profiles', { ...profile, invited_at: new Date().toISOString() });
   }
@@ -199,7 +199,7 @@ export function followUpWords(answer) {
  */
 export async function sendWorkshopFollowUp(userId, workshopId) {
   const answer = await coachSend({ kind: 'workshop_follow_up', workshopId });
-  if (answer.sent || answer.reason === 'already') await loadCoach(userId).catch(() => {});
+  if (answer.sent || answer.reason === 'already') await loadCoach(userId, { again: true }).catch(() => {});
   return answer;
 }
 
@@ -214,7 +214,7 @@ export async function mergeClients(userId, state, keepId, dropId, values = {}) {
   if (keepId === dropId) throw new Error('Choose two different people to merge.');
   if ((await coachReady()) === true) {
     const mergeId = await rpc('client_merge', { p_keep: keepId, p_drop: dropId, p_values: values });
-    await loadCoach(userId);
+    await loadCoach(userId, { again: true });
     return { mergeId };
   }
   const keep = state.rows.client_profiles?.[keepId];
@@ -256,7 +256,7 @@ export async function mergeClients(userId, state, keepId, dropId, values = {}) {
 export async function unmergeClients(userId, undo) {
   if (undo.mergeId) {
     await rpc('client_unmerge', { p_merge: undo.mergeId });
-    await loadCoach(userId);
+    await loadCoach(userId, { again: true });
     return;
   }
   for (const [table, row] of undo.device.made) await removeRow(userId, table, keyOf(table, row));
@@ -275,7 +275,7 @@ export async function deleteClient(userId, state, profile, typedName) {
   if ((await coachReady()) === true) {
     await rpc('client_delete', { p_profile: profile.id, p_typed_name: typedName });
     forgetRows(userId, [...parts, ['client_profiles', profile.id]]);
-    await loadCoach(userId);
+    await loadCoach(userId, { again: true });
     return;
   }
   for (const [table, key] of parts) await removeRow(userId, table, key);

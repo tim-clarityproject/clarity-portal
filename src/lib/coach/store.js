@@ -1065,10 +1065,11 @@ export async function findCalItems(typed, { max = 30 } = {}) {
  * the FIRST reads are in; the LATER ones follow quietly (loadCoachLater).
  */
 const loadAgain = new Map();
-export function loadCoach(userId) {
+export function loadCoach(userId, { again = false } = {}) {
   if (!userId) return Promise.resolve(null);
-  // Asked again while a load is on its way (after a send, say): one more load follows it, so what changed since that
-  // load began is read too. Never more than one waits.
+  // A load asked for while one is on its way shares it. `again` (after the server has written: a send, a merge): one
+  // more load follows it, so what changed since that load began is read too. Never more than one waits.
+  if (loading.has(userId) && !again) return loading.get(userId);
   if (loading.has(userId)) {
     if (!loadAgain.has(userId)) {
       const gen = generation;

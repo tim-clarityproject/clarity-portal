@@ -175,7 +175,7 @@ async function sentElsewhere(userId, id) {
     if ((await coachDayReady()) !== true) return false;
     const { data, error } = await supabase.from(SESSIONS).select('id, recap_sent_at').eq('id', id).limit(1);
     if (error || !data?.[0]?.recap_sent_at) return false;
-    await loadCoach(userId);
+    await loadCoach(userId, { again: true });
     return true;
   } catch {
     return false;
@@ -265,12 +265,12 @@ async function send(userId, { session, notes = null, actions = [] }, { base } = 
     if (saved === 'queued') { const e = new Error('Sending needs a connection, so try again when you’re back online.'); e.code = 'offline'; throw e; }
     const { data, error } = await sendInDatabase(session.id, row.recap);
     if (error) { const e = new Error(error.code === '22023' || error.code === '42501' ? error.message : 'That didn’t send. Check your connection and try again.'); e.code = error.code; throw e; }
-    if (data === 'already_sent') { loadCoach(userId); return { status: 'already_sent', message: ALREADY_SENT }; }
-    if (data === 'changed') { loadCoach(userId); return CHANGED; }
+    if (data === 'already_sent') { loadCoach(userId, { again: true }); return { status: 'already_sent', message: ALREADY_SENT }; }
+    if (data === 'changed') { loadCoach(userId, { again: true }); return CHANGED; }
     // The device's copy follows the database's at once; the next load brings its own time.
     noteRows(userId, [[SESSIONS, { ...row, recap_sent_at: now, recap_sent_by: userId }]]);
     const emailed = await emailRecap(session.id);
-    loadCoach(userId);
+    loadCoach(userId, { again: true });
     return { status: 'sent', emailed };
   }
 
