@@ -196,7 +196,7 @@ test('with 053: the state, the stop, the codes made once and a code used', async
   const sb = standIn({ state: { codes_left: 9, codes_total: 10, codes_saved: true, owner_first_name: 'Tess', turned_on_at: '2026-12-02T09:30:00Z' }, factor: { id: 'f1', status: 'verified' }, level: 'aal2',
     answers: {
       coach_recovery_codes_make: { status: 'made', codes: CODES, made_at: '2026-12-02T09:31:00Z' },
-      coach_recovery_code_use: { status: 'used', codes_left: 8, factors_removed: 1 },
+      coach_recovery_code_use: { status: 'used', codes_left: 8, factors_removed: 1, others_ended: true },
       coach_authenticator_on: { status: 'on', turned_on_at: '2026-12-02T09:30:00Z' },
       coach_recovery_codes_saved: { status: 'saved' },
     } });
@@ -204,7 +204,7 @@ test('with 053: the state, the stop, the codes made once and a code used', async
   assert.deepEqual([auth.isCoach, auth.ready, auth.codesLeft, auth.ownerFirstName, auth.sessionOk], [true, true, 9, 'Tess', true]);
   assert.equal(await coachSignInStop(sb, { id: 'u1' }, { storage }), null);
   assert.deepEqual(await makeRecoveryCodes(sb, { storage }), { status: 'made', codes: CODES, madeAt: '2026-12-02T09:31:00Z' });
-  assert.deepEqual(await spendRecoveryCode(sb, ' K7Q2 9FMD ', { storage }), { status: 'used', left: 8, factorsRemoved: 1 });
+  assert.deepEqual(await spendRecoveryCode(sb, ' K7Q2 9FMD ', { storage }), { status: 'used', left: 8, factorsRemoved: 1, othersEnded: true });
   assert.deepEqual(sb.calls.find(([n]) => n === 'coach_recovery_code_use')[1], { p_code: 'k7q29fmd' }, 'sent as 053 keeps it');
   assert.deepEqual(await spendRecoveryCode(sb, 'nope', { storage }), { status: 'type_it' }, 'nothing that could be a code is never sent');
   assert.equal((await noteAuthenticatorOn(sb, 'f1', { storage })).status, 'on');
@@ -423,3 +423,17 @@ test('054: the reset needs the 6-digit code on the server too, before anything i
   const plain = await ask(handler, { auth: 'Bearer not-a-jwt', body: { kind: 'reset', coachId: MAYA_C } });
   assert.equal(plain.status, 403);
 }));
+
+test('a recovery code ends the other sign-ins: the words, and Supabase’s own sign out of the others (run 7)', async () => {
+  const { COACH_AUTH_WORDS: W, signedOutWords, SIGNED_OUT_BY_RECOVERY, SIGNED_OUT_BY_RESET } = await import('../../src/lib/signIn/coachAuth.js');
+  const { endOtherSignIns } = await import('../../src/lib/signIn/coachAuthData.js');
+  assert.equal(W.in.othersEnded, 'Your other sign-ins have ended.');
+  assert.deepEqual(signedOutWords('recovery'), SIGNED_OUT_BY_RECOVERY);
+  for (const by of ['reset', 'session', null, undefined]) assert.deepEqual(signedOutWords(by), SIGNED_OUT_BY_RESET);
+  assert.ok(SIGNED_OUT_BY_RECOVERY.every((line) => !/\b(she|he|her|his|him)\b/i.test(line)));
+  const asked = [];
+  assert.equal(await endOtherSignIns({ auth: { signOut: async (o) => { asked.push(o); return { error: null }; } } }), true);
+  assert.deepEqual(asked, [{ scope: 'others' }], 'never this sign-in: scope others only');
+  assert.equal(await endOtherSignIns({ auth: { signOut: async () => ({ error: { status: 500 } }) } }), false);
+  assert.equal(await endOtherSignIns({ auth: { signOut: async () => { throw new TypeError('Failed to fetch'); } } }), false);
+});

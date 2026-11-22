@@ -11,7 +11,7 @@ import {
   NO_WRONG_TRIES, plainKey, readTries, RECOVERY_DIDNT_WORK, SAVE_DIDNT_GO, SET_UP_DIDNT_START, SIGN_IN_DIDNT_GO,
   showRecoveryCode, TYPE_RECOVERY_CODE, usedCodeLine, waitSecondsLeft, waitWords,
 } from '../../lib/signIn/coachAuth';
-import { askServerRecovered, loadCoachAuth, makeRecoveryCodes, markCodesSaved, noteAuthenticatorOn, spendRecoveryCode } from '../../lib/signIn/coachAuthData';
+import { askServerRecovered, endOtherSignIns, loadCoachAuth, makeRecoveryCodes, markCodesSaved, noteAuthenticatorOn, spendRecoveryCode } from '../../lib/signIn/coachAuthData';
 import { Alt, CodeField, CopyButton, Field, keepSixDigit, Line, MainButton, Message, QrCode, SignInPage, TextLink, TickRow, Wait } from '../../components/signin/SignInParts';
 import { useToast } from '../../components/design';
 import useEnter from '../../components/signin/useEnter';
@@ -457,8 +457,12 @@ export function CoachLost() {
       // is read again, so set-up sees no authenticator.
       const token = await accessToken();
       if (token) await askServerRecovered({ token }).catch(() => null);
+      // The lost phone may be in someone else's hands: every other sign-in
+      // ends (055 already refuses them coach data; Supabase's own sign out
+      // of the others stops them refreshing), and this one carries on.
+      const ended = await endOtherSignIns(supabase);
       await supabase.auth.refreshSession().catch(() => null);
-      return navigate(COACH_AUTH_PATHS.in, { replace: true, state: { left: spent.left } });
+      return navigate(COACH_AUTH_PATHS.in, { replace: true, state: { left: spent.left, othersEnded: spent.othersEnded || ended } });
     } finally {
       busy.current = false;
     }
@@ -494,7 +498,8 @@ export function CoachLost() {
 
 /**
  * /coach/sign-in/in. After a recovery code: "That recovery code is now
- * used. You have 9 left.", then Set it up. After a sign-in with the
+ * used. You have 9 left.", "Your other sign-ins have ended." (when they
+ * were), then Set it up. After a sign-in with the
  * 6-digit code at 2 or fewer codes (once per sign-in): the low-codes line
  * and "Open the coach portal".
  */
@@ -505,6 +510,7 @@ export function CoachIn() {
   const goIn = useEnter();
   const left = location.state?.left;
   const low = location.state?.low;
+  const othersEnded = location.state?.othersEnded === true;
   const W = COACH_AUTH_WORDS.in;
   const coach = useIsCoach(user?.id || null);
 
@@ -534,6 +540,7 @@ export function CoachIn() {
   return (
     <SignInPage title={W.title} onSubmit={(e) => { e.preventDefault(); navigate(COACH_AUTH_PATHS.setUp, { replace: true }); }}>
       <Line>{usedCodeLine(left)}</Line>
+      {othersEnded ? <Line>{W.othersEnded}</Line> : null}
       <Line>{W.setUpLine}</Line>
       {more ? <Line>{more}</Line> : null}
       <MainButton>{W.button}</MainButton>

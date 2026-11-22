@@ -1,7 +1,7 @@
 import { returnAddress, SIGN_IN_PATHS } from './addresses';
 import { forgetTick, needsBeforeYouStart, rememberTick } from './terms';
-import { coachAuthStop, coachStopPath, SIGNED_OUT_BY_RESET } from './coachAuth';
-import { loadCoachAuth } from './coachAuthData';
+import { coachAuthStop, coachStopPath, signedOutWords } from './coachAuth';
+import { endedByNow, loadCoachAuth } from './coachAuthData';
 
 // What happens between proving who you are and getting in (M26; Tim's
 // decisions of 11 Nov). One place decides it, and the sign-in pages,
@@ -57,14 +57,17 @@ export function stopPath(stop) {
 }
 
 /**
- * Goes to the stop someone owes. A sign-in from before the owner's reset
- * is let go on this device first, then Coach sign in says why.
+ * Goes to the stop someone owes. A sign-in from before the owner's reset,
+ * or ended by a recovery code used elsewhere, is let go on this device
+ * first, then Coach sign in says why.
  */
 export async function goToStop(supabase, navigate, stop) {
   if (stop === 'signedOut') {
     // Coach sign in lets the sign-in go itself as it opens (`signOut`), so
     // the portal's guard never sends them to the clients' page first.
-    navigate(SIGN_IN_PATHS.coach, { replace: true, state: { message: SIGNED_OUT_BY_RESET, signOut: true } });
+    // Why: the owner's reset, or a recovery code used elsewhere (055).
+    const endedBy = await endedByNow(supabase);
+    navigate(SIGN_IN_PATHS.coach, { replace: true, state: { message: signedOutWords(endedBy), signOut: true } });
     return;
   }
   const path = stopPath(stop);

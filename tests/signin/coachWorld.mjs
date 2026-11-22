@@ -34,7 +34,11 @@
 //     removes every factor (053's _coach_auth_remove) where the database can;
 //   - coach_auth_state's session_ok is 053's: the session still there (where
 //     the database can see sessions) and begun (its earliest amr) no earlier
-//     than the last reset;
+//     than the last reset; and 055's: a sign-in begun before a recovery code
+//     was used, other than the one that used it, is ended ('ended_by'
+//     'recovery'); a used code ends the other sessions where the database
+//     can reach them, and Supabase's own sign out (scope others) ends them
+//     anywhere;
 //   - coach_authenticator_reset is 053's (the owner only, 42501 otherwise;
 //     aal2; never their own; codes, factors and every session go, recorded);
 //   - with `live: true`, /api/coach-auth-reset runs the real server
@@ -119,6 +123,8 @@ export function makeWorld(o = {}) {
     turnedOnAt: o.turnedOnAt === undefined ? (o.factor === 'verified' ? seededAt : null) : o.turnedOnAt,
     recoveredAt: null,
     lastResetAt: null,
+    othersEndedAt: null,
+    keptSession: null,
     wrongRecovery: 0,
     waitUntil: 0,
     down: Boolean(o.offline),
@@ -179,19 +185,22 @@ export function makeWorld(o = {}) {
     const c = claimsOf(String(headers.authorization || '').replace(/^Bearer\s+/i, ''));
     return { claims: c, session: c && c.sub === world.user.id ? world.sessions.get(c.session_id) || null : null };
   };
-  /** 053's _coach_auth_session_ok, as fixed on 21 Nov: earliest amr, else iat. */
-  const sessionOk = (claims) => {
+  /** 055's _coach_auth_ended (053's check, as fixed on 21 Nov, and the recovery code's marker): null, 'reset', 'recovery' or 'session'. */
+  const endedBy = (claims) => {
     const times = (claims?.amr || []).map((m) => Number(m.timestamp)).filter(Number.isFinite);
     const began = times.length ? Math.min(...times) : Number(claims?.iat);
-    if (world.lastResetAt && Number.isFinite(began) && began * 1000 < world.lastResetAt) return false;
-    if (world.sqlReachesAuth && claims?.session_id && !world.sessions.has(claims.session_id)) return false;
-    return true;
+    if (world.lastResetAt && Number.isFinite(began) && began * 1000 < world.lastResetAt) return 'reset';
+    if (world.othersEndedAt && (claims?.session_id || null) !== world.keptSession && (!Number.isFinite(began) || began * 1000 < world.othersEndedAt)) return 'recovery';
+    if (world.sqlReachesAuth && claims?.session_id && !world.sessions.has(claims.session_id)) return 'session';
+    return null;
   };
+  const sessionOk = (claims) => endedBy(claims) === null;
   world.state = (claims) => ({
     coach: true, owner: world.role === 'owner', owner_first_name: owner()?.display_first_name ?? null, turned_on_at: world.turnedOnAt,
     codes_left: world.left(), codes_total: world.codeRows.length, codes_made_at: world.codeRows.length ? '2026-12-02T10:05:00Z' : null,
     codes_saved: world.codesSaved && world.codeRows.length > 0, wait_seconds: Math.max(0, Math.ceil((world.waitUntil - Date.now()) / 1000)),
     recovered_at: world.recoveredAt, last_reset_at: world.lastResetAt ? new Date(world.lastResetAt).toISOString() : null, session_ok: sessionOk(claims),
+    ended_by: endedBy(claims),
   });
   /** Removes factors and, when asked, sessions, where the database can reach them (053's _coach_auth_remove). */
   const sqlRemove = (sessions) => {
@@ -274,7 +283,14 @@ export function makeWorld(o = {}) {
       hit.usedAt = new Date().toISOString();
       const removed = sqlRemove(false);
       Object.assign(world, { wrongRecovery: 0, waitUntil: 0, recoveredAt: new Date().toISOString(), turnedOnAt: null });
-      return ok({ status: 'used', codes_left: world.left(), factors_removed: removed.factors });
+      // 055: every other sign-in ends (the marker; and the sessions, where the database can reach them); this one carries on.
+      const keep = claims?.session_id || null;
+      let ended = null;
+      if (keep) {
+        Object.assign(world, { othersEndedAt: Date.now(), keptSession: keep });
+        if (world.sqlReachesAuth) { ended = 0; for (const id of [...world.sessions.keys()]) if (id !== keep) { world.sessions.delete(id); ended += 1; } }
+      }
+      return ok({ status: 'used', codes_left: world.left(), factors_removed: removed.factors, others_ended: Boolean(keep), sessions_removed: ended });
     }
     return err(404, 'PGRST202', 'Could not find the function in the schema cache');
   };

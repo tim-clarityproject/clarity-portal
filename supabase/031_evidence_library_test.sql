@@ -3,10 +3,14 @@
 -- Checks 031_evidence_library.sql. RUN ORDER: 026 to 031, then this.
 --
 -- WHAT IT DOES
---   Checks the library holds the claims register version 1.1 exactly (its
+--   Checks the library holds the claims register version 1.3 exactly (its
 --   counts and some wording word for word; `node scripts/make-evidence-seed.mjs
 --   --check` compares every row with docs/claims-register.md), and who can
 --   read and change it. Everything it makes is undone at the end.
+--   The counts follow the register: version 1.3 added C48 and C49 (both
+--   strong) and R48, so 34 references, 48 claims and 41 claim links (the
+--   test still had 1.1's 33, 46 and 39 until Phase 6a run 7). When the
+--   register changes, regenerate 031 and change these counts with it.
 --
 --   It ends with the notice ALL CHECKS PASSED, or stops with FAILED and a
 --   list naming each check that failed.
@@ -78,13 +82,13 @@ begin
     f := f || pg_temp.t_eq('1a counts: references, claims, claim links, tools, tool links, flagged tools', pg_temp.t_n($q$select concat_ws(',',
       (select count(*) from public.evidence_references), (select count(*) from public.evidence_claims),
       (select count(*) from public.evidence_claim_references), (select count(*) from public.evidence_tools),
-      (select count(*) from public.evidence_tool_claims), (select count(*) from public.evidence_tools where flagged))$q$), '33,46,39,37,69,21');
+      (select count(*) from public.evidence_tool_claims), (select count(*) from public.evidence_tools where flagged))$q$), '34,48,41,37,69,21');
     f := f || pg_temp.t_eq('1b C1 word for word', pg_temp.t_n('select wording from public.evidence_claims where id = ''C1'''), 'Tracking your progress makes you more likely to reach your goals, especially when you record it or share it.');
     f := f || pg_temp.t_eq('1c C1 strength as written', pg_temp.t_n('select strength || '' / '' || strength_level from public.evidence_claims where id = ''C1'''), 'Moderate (close to strong) / moderate');
     f := f || pg_temp.t_eq('1d C9''s caveat word for word', pg_temp.t_n('select caveat from public.evidence_claims where id = ''C9'''), 'Few studies measured time to a habit, many at high risk of bias; the time varied from days to most of a year. Never say "66 days" as a rule.');
     f := f || pg_temp.t_eq('1e R26 as listed', pg_temp.t_n('select checked_on from public.evidence_references where id = ''R26'''), 'Book''s contents page, checked by Tim on the publisher''s preview, 26 Oct 2026');
     f := f || pg_temp.t_eq('1f R3 keeps both links', pg_temp.t_n('select cardinality(links) from public.evidence_references where id = ''R3'''), '2');
-    f := f || pg_temp.t_eq('1g claims by strength (strong, moderate, early, our model)', pg_temp.t_n($q$select concat_ws(',', count(*) filter (where strength_level = 'strong'), count(*) filter (where strength_level = 'moderate'), count(*) filter (where strength_level = 'early'), count(*) filter (where strength_level = 'our_model')) from public.evidence_claims$q$), '11,16,6,13');
+    f := f || pg_temp.t_eq('1g claims by strength (strong, moderate, early, our model)', pg_temp.t_n($q$select concat_ws(',', count(*) filter (where strength_level = 'strong'), count(*) filter (where strength_level = 'moderate'), count(*) filter (where strength_level = 'early'), count(*) filter (where strength_level = 'our_model')) from public.evidence_claims$q$), '13,16,6,13');
     f := f || pg_temp.t_eq('1h the check-in''s claims (C20 to C24 expanded)', pg_temp.t_n('select string_agg(claim_id, '','' order by claim_id) from public.evidence_tool_claims where tool_key = ''hardware_and_software_check_in'''), 'C11,C20,C21,C22,C23,C24,C30,C47');
     f := f || pg_temp.t_eq('1i no C34 (the register has none)', pg_temp.t_n('select count(*) from public.evidence_claims where id = ''C34'''), '0');
 
@@ -94,7 +98,7 @@ begin
     f := f || pg_temp.t_eq('2b a client reads a tool''s Why this works', pg_temp.t_n('select (j ->> ''tool'') || '' '' || jsonb_array_length(j -> ''claims'') || '' '' || jsonb_array_length(j -> ''claims'' -> 0 -> ''references'') from public.why_this_works(''breathe'') j'), 'Breathe 1 1');
     f := f || pg_temp.t_eq('2c an unknown tool gives nothing', pg_temp.t_n('select public.why_this_works(''no_such_tool'') is null'), 'true');
     perform pg_temp.t_as(coach_u);
-    f := f || pg_temp.t_eq('2d a coach reads the library', pg_temp.t_n('select count(*) from public.evidence_claims'), '46');
+    f := f || pg_temp.t_eq('2d a coach reads the library', pg_temp.t_n('select count(*) from public.evidence_claims'), '48');
     f := f || pg_temp.t_eq('2e a coach can''t change it', pg_temp.t_rows('update public.evidence_claims set wording = ''x'' where id = ''C1'''), '0');
     f := f || pg_temp.t_eq('2f a coach can''t switch Why this works off', pg_temp.t_rows('update public.evidence_tools set why_this_works_visible = false where key = ''breathe'''), '0');
     perform pg_temp.t_as(owner_u);

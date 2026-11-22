@@ -12,7 +12,7 @@
 // password, token or email address is printed.
 //
 //   APP_URL=http://localhost:4317 node --import ./tests/scores/register.mjs tests/signin/coach-auth-flows.mjs
-//   PARTS=first,second,lost,newcodes,reset,hosted,low,client   (all by default)
+//   PARTS=first,second,lost,others,newcodes,reset,hosted,low,client   (all by default)
 //   SIZES=1440,400   the core stories (first, second, lost) at each; the rest at the first size.
 //
 //   first     a new associate's first sign-in: the password, set-up (the key typed
@@ -21,8 +21,13 @@
 //   second    a second computer: asked once there, then never again on that device
 //             after a reload or a new tab, until sign out
 //   lost      the lost phone: Lost your authenticator app?, a recovery code, You're
-//             in with the real count, a new phone; the used code and the old phone
-//             never work again
+//             in with the real count and "Your other sign-ins have ended.", a new
+//             phone; the lost phone's own sign-in is ended and told why; the used
+//             code and the old phone never work again
+//   others    the same where nothing could end the lost phone's session (the
+//             database can't reach Supabase's sessions, and Supabase's own sign
+//             out of the others never arrives): 055's marker alone refuses it
+//             coach data and signs it out (run 7)
 //   newcodes  Make new codes in My Account (a current code first): the old codes
 //             stop working, and it reads 10 of 10 left
 //   reset     the owner resets the associate on the Coaches page (the owner's real
@@ -36,13 +41,13 @@
 //   client    a client signs in exactly as before and never sees any of this
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
-import { APP, makeChecks, sleep } from './shared.mjs';
+import { APP, makeChecks, sleep, TEST_REF } from './shared.mjs';
 import { claimsOf, makeWorld, M26_CODES, M26_KEY, MAYA, MAYA_PASSWORD } from './coachWorld.mjs';
 import { totp } from './totp.mjs';
-import { codesLeftSummary, COACH_AUTH_WORDS, lowCodesLine, RECOVERY_DIDNT_WORK, SIGNED_OUT_BY_RESET, usedCodeLine, CODE_DIDNT_WORK } from '../../src/lib/signIn/coachAuth.js';
+import { codesLeftSummary, COACH_AUTH_WORDS, lowCodesLine, RECOVERY_DIDNT_WORK, SIGNED_OUT_BY_RECOVERY, SIGNED_OUT_BY_RESET, usedCodeLine, CODE_DIDNT_WORK } from '../../src/lib/signIn/coachAuth.js';
 import { RESET_WORDS } from '../../api/coach-auth-reset.js';
 
-const PARTS = (process.env.PARTS || 'first,second,lost,newcodes,reset,hosted,low,client').split(',');
+const PARTS = (process.env.PARTS || 'first,second,lost,others,newcodes,reset,hosted,low,client').split(',');
 const SIZES = (process.env.SIZES || '1440,400').split(',').map(Number);
 const { pass, done } = makeChecks();
 const browser = await chromium.launch();
@@ -108,6 +113,10 @@ async function signOut(page) {
 }
 
 const signedOutLine = SIGNED_OUT_BY_RESET.join(' ');
+const recoveryLine = SIGNED_OUT_BY_RECOVERY.join(' ');
+/** A coach table read with a sign-in's own token, as the page would: the marker row at aal2, nothing otherwise (054). */
+const readCoachData = (page, token) => page.evaluate(async ({ url, token }) => { try { const r = await fetch(url, { headers: { Authorization: `Bearer ${token}`, apikey: 'stand-in' } }); return await r.json(); } catch { return null; } }, { url: `https://${TEST_REF}.supabase.co/rest/v1/coach_todos?select=*`, token });
+const tokenOf = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('clarity-portal-auth') || '{}').access_token || null);
 
 // ---------------------------------------------------------------- 1. a new associate's first sign-in
 if (PARTS.includes('first')) {
@@ -217,6 +226,12 @@ if (PARTS.includes('lost')) {
     const tag = `Lost phone, ${width} ${mode}`;
     const world = makeWorld({ factor: 'verified', live: true });
     world.secret = NEW_PHONE_KEY;
+    // The lost phone, still signed in with its code given, in someone else's hands.
+    const lostPhone = await device(world, { width, mode, signedIn: true, aal: 'aal2' });
+    const lostSession = [...world.sessions.keys()].at(-1);
+    await lostPhone.page.goto(`${APP}/coach`);
+    pass(`${tag}: the lost phone is in the coach portal before the code is used`, (await waitPath(lostPhone.page, /^\/coach$/)) === '/coach', path(lostPhone.page));
+    await sleep(1200);
     const { ctx, page, errors } = await device(world, { width, mode });
     await signIn(page, world);
     await waitPath(page, /\/code$/);
@@ -234,6 +249,16 @@ if (PARTS.includes('lost')) {
     pass(`${tag}: a recovery code, typed in capitals with a space, gets in`, (await waitPath(page, /\/in$/)) === '/coach/sign-in/in', path(page));
     const inWords = await words(page);
     pass(`${tag}: You're in: "That recovery code is now used. You have 9 left."`, inWords.includes(usedCodeLine(9)) && world.left() === 9);
+    pass(`${tag}: You're in: "Your other sign-ins have ended.", between the count and Set it up`, inWords.includes(`${usedCodeLine(9)} ${COACH_AUTH_WORDS.in.othersEnded} ${COACH_AUTH_WORDS.in.setUpLine}`), inWords.slice(0, 240));
+    const mine = claimsOf(await tokenOf(page))?.session_id;
+    pass(`${tag}: the lost phone's session has ended; the one that used the code carries on`, !world.sessions.has(lostSession) && world.sessions.has(mine) && world.sessions.size === 1, `${world.sessions.size} sessions`);
+    pass(`${tag}: and Supabase was asked to end the others, never this one (scope others)`, world.calls.includes('POST /auth/v1/logout'), world.calls.filter((c) => /logout/.test(c)).join(', '));
+    await lostPhone.page.reload();
+    await waitPath(lostPhone.page, /^\/coach\/sign-in$/);
+    await lostPhone.page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+    pass(`${tag}: the lost phone is signed out of the coach portal and told why`, path(lostPhone.page) === '/coach/sign-in' && (await message(lostPhone.page)) === recoveryLine, `${path(lostPhone.page)} "${await message(lostPhone.page)}"`);
+    pass(`${tag}: nothing of the lost phone's sign-in is left on it`, !(await tokenOf(lostPhone.page)));
+    await lostPhone.ctx.close();
     pass(`${tag}: the lost phone's authenticator is gone, and the server was asked (the live site's own check)`, world.factors.length === 0 && world.server.some((s) => s.kind === 'recovered' && s.status === 200), JSON.stringify(world.server));
     await press(page, COACH_AUTH_WORDS.in.button);
     pass(`${tag}: Set it up opens set-up`, (await waitPath(page, /set-up$/)) === '/coach/sign-in/set-up', path(page));
@@ -242,9 +267,14 @@ if (PARTS.includes('lost')) {
     await giveCode(page, phone, 'Turn it on');
     pass(`${tag}: the new phone on, into the coach portal (the codes were saved before)`, (await waitPath(page, /^\/coach$/)) === '/coach' && world.factors.filter((f) => f.status === 'verified').length === 1, path(page));
     // Another computer: the old phone's code and the used recovery code never work again.
+    // A sign-in's start is kept to the second (its amr time), so one begun in
+    // the same second as the code was used counts as from before it and is
+    // ended too (the safe way round). A person can't sign in that fast; the
+    // stand-ins can, so the other computer waits a second.
+    await sleep(1100);
     const other = await device(world, { width, mode });
     await signIn(other.page, world);
-    await waitPath(other.page, /\/code$/);
+    pass(`${tag}: another computer, signed in after the code, is asked for its 6-digit code`, (await waitPath(other.page, /\/code$/)) === '/coach/sign-in/code', `${path(other.page)} "${await message(other.page)}"`);
     await giveCode(other.page, M26_KEY);
     await other.page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
     pass(`${tag}: the lost phone's code no longer works`, path(other.page) === '/coach/sign-in/code' && (await message(other.page)) === CODE_DIDNT_WORK.join(' '), path(other.page));
@@ -262,6 +292,46 @@ if (PARTS.includes('lost')) {
     await other.ctx.close();
     await ctx.close();
   }
+}
+
+// ---------------------------------------------------------------- 3b. the marker alone (run 7)
+if (PARTS.includes('others')) {
+  const tag = `A recovery code, nothing else reaching the lost phone, ${SIZES[0]}`;
+  // A hosted database that can't reach Supabase's sessions, and Supabase's own sign out of the others never arriving.
+  const world = makeWorld({ factor: 'verified', live: true, sqlReachesAuth: false, coachData: true });
+  const lostPhone = await device(world, { signedIn: true, aal: 'aal2' });
+  const lostSession = [...world.sessions.keys()].at(-1);
+  await lostPhone.page.goto(`${APP}/coach`);
+  await waitPath(lostPhone.page, /^\/coach$/);
+  const lostToken = await tokenOf(lostPhone.page);
+  const before = await readCoachData(lostPhone.page, lostToken);
+  pass(`${tag}: before the code, the lost phone reads coach data`, Array.isArray(before) && before.length === 1, JSON.stringify(before)?.slice(0, 80));
+  await sleep(1200);
+  const { ctx, page, errors } = await device(world);
+  await ctx.route('**/auth/v1/logout**', (route) => route.abort('internetdisconnected'));
+  await signIn(page, world);
+  await waitPath(page, /\/code$/);
+  await page.goto(`${APP}/coach/sign-in/help`);
+  await page.getByRole('textbox', { name: 'Recovery code' }).waitFor({ timeout: 15000 }).catch(() => null);
+  await page.getByLabel('Recovery code').fill('k7q2-9fmd');
+  await press(page, 'Sign in');
+  pass(`${tag}: the code gets in`, (await waitPath(page, /\/in$/)) === '/coach/sign-in/in', path(page));
+  const inWords = await words(page);
+  pass(`${tag}: You're in still says "Your other sign-ins have ended." (the database ended them)`, inWords.includes(COACH_AUTH_WORDS.in.othersEnded), inWords.slice(0, 200));
+  pass(`${tag}: the lost phone's session is still there (nothing could remove it)`, world.sessions.has(lostSession));
+  const after = await readCoachData(lostPhone.page, lostToken);
+  pass(`${tag}: its token, still within its hour, now reads no coach data (055's marker)`, Array.isArray(after) && after.length === 0, JSON.stringify(after)?.slice(0, 80));
+  await lostPhone.page.reload();
+  await waitPath(lostPhone.page, /^\/coach\/sign-in$/);
+  await lostPhone.page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
+  pass(`${tag}: and the coach portal lets it go, saying why`, path(lostPhone.page) === '/coach/sign-in' && (await message(lostPhone.page)) === recoveryLine, `${path(lostPhone.page)} "${await message(lostPhone.page)}"`);
+  // The coach carries on: the sign-in that used the code is still good (set-up is walked in "lost").
+  const mine = world.rpc('coach_auth_state', null, claimsOf(await tokenOf(page))).body;
+  pass(`${tag}: the sign-in that used the code carries on`, mine.session_ok === true && !mine.ended_by && path(page) === '/coach/sign-in/in', JSON.stringify({ ok: mine.session_ok, by: mine.ended_by }));
+  pass(`${tag}: nothing reached anywhere but the stand-ins`, bad(world).length === 0, bad(world).join(', '));
+  pass(`${tag}: no page errors`, [...errors, ...lostPhone.errors].length === 0, [...errors, ...lostPhone.errors].slice(0, 2).join(' | '));
+  await lostPhone.ctx.close();
+  await ctx.close();
 }
 
 // ---------------------------------------------------------------- 4. new codes in My Account

@@ -153,6 +153,8 @@ export async function loadCoachAuth(supabase, user, opts = {}) {
     ownerFirstName: state?.owner_first_name || null,
     waitSeconds: state?.wait_seconds || 0,
     sessionOk: state ? state.session_ok !== false : true,
+    // Why this sign-in was ended ('reset', 'recovery' or 'session'; 055), null while it is good.
+    endedBy: state?.ended_by || null,
     lastResetAt: state?.last_reset_at || null,
   };
 }
@@ -209,9 +211,36 @@ export async function markCodesSaved(supabase, setId = null, opts = {}) {
 }
 
 /**
+ * Why a sign-in was ended, asked once more as Coach sign in is opened with
+ * the reason: 'recovery', 'reset', 'session', or null when it can't be told.
+ */
+export async function endedByNow(supabase, opts = {}) {
+  const { state } = await loadCoachAuthState(supabase, opts).catch(() => ({ state: null }));
+  return state?.ended_by || null;
+}
+
+/**
+ * After a recovery code: Supabase's own sign out of every other session of
+ * the account (scope 'others' keeps this one), so the lost phone's sign-in
+ * can't refresh any more. 055's marker already refuses it coach data; this
+ * ends it in the client portal too. True when Supabase answered.
+ */
+export async function endOtherSignIns(supabase) {
+  try {
+    const { error } = await supabase.auth.signOut({ scope: 'others' });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * One recovery code, used once.
- *   { status: 'used', left }        in; the lost phone's factor is removed
- *                                   (then ask the server: askServerRecovered)
+ *   { status: 'used', left, othersEnded } in; the lost phone's factor is
+ *                                   removed (then ask the server:
+ *                                   askServerRecovered), and the other
+ *                                   sign-ins ended where 055 could tell
+ *                                   this one apart (then endOtherSignIns)
  *   { status: 'no_match' }          wrong, or already used (one answer)
  *   { status: 'wait', seconds, justNow } 5 wrong in a row: 30 seconds (justNow: this was the 5th)
  *   { status: 'type_it' }           nothing that could be a code was typed
@@ -222,7 +251,7 @@ export async function spendRecoveryCode(supabase, typed, opts = {}) {
   if (!plain) return { status: 'type_it' };
   const got = await call(supabase, 'coach_recovery_code_use', { p_code: plain }, opts.storage ?? globalThis.localStorage);
   return answer(got, (d) => {
-    if (d.status === 'used') return { status: 'used', left: Number(d.codes_left) || 0, factorsRemoved: d.factors_removed ?? null };
+    if (d.status === 'used') return { status: 'used', left: Number(d.codes_left) || 0, factorsRemoved: d.factors_removed ?? null, othersEnded: d.others_ended === true };
     if (d.status === 'wait') return { status: 'wait', seconds: Number(d.wait_seconds) || 30, justNow: d.started === true };
     if (d.status === 'no_match') return { status: 'no_match' };
     return { status: 'error' };

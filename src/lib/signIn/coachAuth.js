@@ -79,6 +79,8 @@ export const COACH_AUTH_WORDS = {
   in: {
     title: 'You’re in',
     setUpLine: 'Set up your authenticator on your new phone, so your next sign-in is quick.',
+    // Claude's (run 7): a recovery code ends every other sign-in, because the lost phone may be in someone else's hands.
+    othersEnded: 'Your other sign-ins have ended.',
     button: 'Set it up',
   },
   security: {
@@ -144,6 +146,12 @@ export const COPY_DIDNT_GO = 'That didn’t copy. Select it and copy it yourself
 export const CODES_REPLACED = ['These codes stopped working, because newer ones were made in another window.', 'Reload this page for a new set, and save that one.'];
 /** A sign-in from before the owner's reset (Claude's): shown on Coach sign in. */
 export const SIGNED_OUT_BY_RESET = ['You’ve been signed out, because your authenticator was reset.', 'Sign in again to set it up.'];
+/** A sign-in ended because a recovery code was used on another one (Claude's, run 7): shown on Coach sign in. */
+export const SIGNED_OUT_BY_RECOVERY = ['You’ve been signed out, because one of your recovery codes was used to sign in elsewhere.', 'Sign in again to carry on.'];
+/** Why Coach sign in says a sign-in was ended: coach_auth_state's ended_by ('recovery', else the reset's words). */
+export function signedOutWords(endedBy) {
+  return endedBy === 'recovery' ? SIGNED_OUT_BY_RECOVERY : SIGNED_OUT_BY_RESET;
+}
 /** The codes couldn't be made because 053 isn't there yet (Claude's). */
 export const CODES_NOT_YET = ['Recovery codes aren’t ready yet.', 'You can still sign in with your authenticator app.'];
 

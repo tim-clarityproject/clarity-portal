@@ -153,7 +153,9 @@ if (PARTS.includes('reuse')) {
   await useRecovery(a.page, 'k7q2-9fmd');
   const again = await waitMessage(a.page);
   pass(`${tag}: the same code again in the same tab is refused, with the wrong code's words`, again === flat(RECOVERY_DIDNT_WORK) && path(a.page) === '/coach/sign-in/help' && world.left() === 9, `"${again}"`);
-  // On another device, written a different way.
+  // On another device, written a different way (a second later: a sign-in begun in the
+  // same second as the code was used counts as from before it, and is ended, run 7).
+  await sleep(1100);
   const b = await device(world, { width: 400, mode: 'light' });
   await signIn(b.page, world);
   await waitPath(b.page, /\/(code|set-up)$/);

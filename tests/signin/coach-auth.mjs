@@ -41,7 +41,7 @@ import { coachWorld, M26_CODES, M26_KEY } from './coachWorld.mjs';
 import { ruleProblems, spacingRule } from './spacing.mjs';
 import { overlappingTaps } from '../phase5/taps.mjs';
 import { outlinedEdges } from '../phase5/edges.mjs';
-import { lowCodesLine, makeNewCodesLine, usedCodeLine } from '../../src/lib/signIn/coachAuth.js';
+import { COACH_AUTH_WORDS, lowCodesLine, makeNewCodesLine, usedCodeLine } from '../../src/lib/signIn/coachAuth.js';
 
 const require = createRequire(import.meta.url);
 const JSQR = require.resolve('jsqr/dist/jsQR.js');
@@ -212,7 +212,7 @@ const SCREENS = [
       await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
       await page.getByText('That recovery code is now used.').waitFor({ timeout: 10000 });
     },
-    expect: [usedCodeLine(9)],
+    expect: [usedCodeLine(9), COACH_AUTH_WORDS.in.othersEnded],
   },
   { key: 'acct-security', name: 'My Account, sign-in security', acct: true, world: { factor: 'verified', aal: 'aal2', codesLeft: 9 }, go: '/my-account/sign-in-security', wait: '.si-srow' },
   {
@@ -273,7 +273,7 @@ const SCREENS = [
       await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
       await page.getByText('That recovery code is now used.').waitFor({ timeout: 10000 });
     },
-    expect: [usedCodeLine(n), makeNewCodesLine(n)].filter(Boolean),
+    expect: [usedCodeLine(n), COACH_AUTH_WORDS.in.othersEnded, makeNewCodesLine(n)].filter(Boolean),
   })),
   // The 2-or-fewer line after a code sign-in, at 1 and 0 too.
   ...[1, 0].map((n) => ({
@@ -519,6 +519,7 @@ if (PARTS.includes('flows')) {
     await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 }).catch(() => null);
     const inWords = await words(page);
     pass('Lost phone: You’re in: “That recovery code is now used. You have 9 left.”', inWords.includes('That recovery code is now used. You have 9 left.'), inWords.slice(0, 200));
+    pass('Lost phone: You’re in: “Your other sign-ins have ended.”', inWords.includes('Your other sign-ins have ended.'), inWords.slice(0, 200));
     pass('Lost phone: the server is asked to take the lost phone off (nothing changes off the live site)', world.serverRecovered === 1);
     await tapButton(page, 'Set it up');
     await page.waitForURL(/\/coach\/sign-in\/set-up$/, { timeout: 15000 }).catch(() => null);
