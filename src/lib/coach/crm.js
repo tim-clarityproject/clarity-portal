@@ -11,7 +11,7 @@
 // moving forward, an email's links and its waiting row) is listed in 052's
 // header; the functions here that do the same are for the device-first
 // copy, before 052 is there.
-import { addDays, clean, cut, dayWords, firstName, fromDayKey, isEmail, parsePeople, possessive, quickContacts, safeCell, toCsv, toDayKey } from './model.js';
+import { addDays, CHANGED_ELSEWHERE_CODE, clean, IMPORT_FILE_MAX, cut, dayWords, firstName, fromDayKey, isEmail, parsePeople, possessive, quickContacts, safeCell, toCsv, toDayKey } from './model.js';
 import { mobileForLinks, monthsOn, typedDay } from './network.js';
 
 const lower = (v) => String(v ?? '').toLowerCase();
@@ -1308,8 +1308,12 @@ export async function runAutomations(event, ctx, { claim, addTodo, move }) {
 /** Whether an automation has already run for an event, among the runs the device holds (before 052 nothing else enforces once-only; with 052 the database's unique row does too). */
 export const alreadyRan = (runs, run) => (runs || []).some((r) => r.automation_id === run.automation_id && r.event_key === run.event_key && r.id !== run.id);
 
-/** A save's answer read as a claim: true when the run row was taken, false when the database refused it as already there (23505). */
-export const claimed = (answerOrError) => !(answerOrError && (answerOrError.code === '23505' || answerOrError === 'duplicate'));
+/**
+ * A save's answer read as a claim: true when the run row was taken, false when the database refused it as already
+ * there (23505), or because the automation was switched off in another tab or device since this one read it (054's
+ * claim checks the automation is still on in the same statement: CC409). Nothing then runs.
+ */
+export const claimed = (answerOrError) => !(answerOrError && (answerOrError.code === '23505' || answerOrError.code === CHANGED_ELSEWHERE_CODE || answerOrError === 'duplicate'));
 
 // ---------------------------------------------------------------- your own boards
 
@@ -1928,7 +1932,7 @@ export function importFileProblem(name, size = 0) {
   const n = String(name || '');
   if (/\.(xls|xlsm|numbers|ods)$/i.test(n)) return 'That kind of spreadsheet can’t be read here. Save it as Excel (.xlsx) or CSV, or copy the rows and paste them.';
   if (!/\.(csv|tsv|txt|xlsx)$/i.test(n)) return IMPORT_UNREADABLE;
-  return size > 4 * 1024 * 1024 ? 'That file is too big. Split it, or paste the rows instead.' : '';
+  return size > IMPORT_FILE_MAX ? 'That file is too big. Split it, or paste the rows instead.' : '';
 }
 /** An import file that is an Excel workbook (.xlsx), read with xlsx.js's `xlsxTable`; anything else readable is text. */
 export const isXlsxFile = (name) => /\.xlsx$/i.test(String(name || ''));
@@ -1962,7 +1966,7 @@ export const LEAD_GONE = 'This lead isn’t in your list any more.';
 
 /** A save that didn't go, said calmly: a lost connection, or the database's refusal (never its own technical words). */
 export const CRM_SAVE_PROBLEM = 'That didn’t save. Check your connection and try again.';
-const REFUSALS = new Set(['23514', '23505', '23503', '23001', '22023', '22P02', '22003', '23502', 'PGRST204']);
+const REFUSALS = new Set(['23514', '23505', '23503', '23001', '22023', '22P02', '22003', '23502', 'PGRST204', CHANGED_ELSEWHERE_CODE]);
 /**
  * The calm line for an error from a save on Leads, the boards, automations or past clients.
  * A sentence the app or the database wrote for people ("One of these has already been merged.") is shown as it is; a

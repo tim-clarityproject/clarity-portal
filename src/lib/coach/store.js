@@ -337,6 +337,15 @@ function mark(userId, table, k, change) {
   write(userId, { rows: state.rows, marks: { ...state.marks, [table]: { ...(state.marks[table] || {}), [k]: { ...(state.marks[table]?.[k] || {}), ...change } } } });
 }
 
+/** Puts the database's copy of a row on the device, marked sent, while the device still holds `sentRow` (the version that went). */
+function settle(userId, table, sentRow, dbRow) {
+  const state = read(userId);
+  const k = keyOf(table, sentRow);
+  const here = state.rows[table]?.[k];
+  if (here && here.updated_at !== sentRow.updated_at) return; // changed here again since: that change is still to go
+  write(userId, setRow(state, table, dbRow, { sent: true }));
+}
+
 // ---------------------------------------------------------------- whether 049 is there
 
 function notYet(key = NOT_YET_KEY) {
@@ -498,7 +507,16 @@ async function send(userId, table, row) {
       : { table, kind: 'upsert', values: forDb(table, row), onConflict: TABLES[table].join(','), ...(ADD_ONLY.has(table) ? { ignoreDuplicates: true } : {}) };
     const part = heldBack(table, row);
     const answer = await saveOrQueue(userId, op);
-    if (answer.status === 'saved') mark(userId, table, k, part ? { sent: false, refused: false, part: true } : { sent: true, refused: false, part: false });
+    if (answer.status === 'saved') {
+      mark(userId, table, k, part ? { sent: false, refused: false, part: true } : { sent: true, refused: false, part: false });
+      // The database's own copy (its updated_at, and anything its guards kept: a sent recap, a merge, Won or Cold)
+      // replaces the device's, unless the row has changed here again since this save left.
+      const there = Array.isArray(answer.data) ? answer.data.find((r) => r && keyOf(table, r) === k) : null;
+      if (there && !part) settle(userId, table, row, { ...row, ...there });
+    }
+    // Refused because the row changed in another tab or device since this one read it (a guarded row, syncQueue's
+    // basedOn): the device goes back to the database's copy, and the page says so.
+    if (answer.status === 'superseded' && answer.row) settle(userId, table, row, answer.row);
     return answer.status === 'saved' && part ? 'device' : answer.status;
   } catch (error) {
     if (NEVER.has(error?.code)) mark(userId, table, k, { refused: true });
@@ -531,13 +549,15 @@ export async function saveRows(userId, pairs) {
   write(userId, state);
   if ((await coachReady()) !== true) return 'device';
   let worst = 'saved';
+  let superseded = false;
   for (const [table, row] of stamped) {
     if (READ_ONLY.has(table)) continue;
     if (!(await tableThere(table))) { worst = 'device'; continue; }
     const status = await send(userId, table, row);
-    if (status !== 'saved') worst = status;
+    if (status === 'superseded') superseded = true;
+    else if (status !== 'saved') worst = status;
   }
-  return worst;
+  return superseded ? 'superseded' : worst;
 }
 
 /**

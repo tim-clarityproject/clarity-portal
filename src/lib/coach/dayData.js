@@ -83,13 +83,20 @@ export async function loadPrep(clientUserId) {
 
 /**
  * A client's finished weeks' scores (028's week_scores), which the
- * database returns only while the client shares Progress.
- * @returns {Promise<{ week_end: string, score: number|null }[]>}
+ * database returns only while the client shares Progress, each with its
+ * sprint's standard (028's sprints, shared the same way): the client's own
+ * standard for the brief's bar (run 6, item 5). A standard that can't be
+ * read is left out, and the bar uses the default.
+ * @returns {Promise<{ week_end: string, score: number|null, standard: number|null }[]>}
  */
 export async function loadWeekScores(clientUserId) {
   if (!clientUserId) return [];
-  const rows = await quiet(() => supabase.from('week_scores').select('week_end,score').eq('user_id', clientUserId).order('week_end', { ascending: false }).limit(60));
-  return Array.isArray(rows) ? rows.filter((r) => r && typeof r.week_end === 'string') : [];
+  const rows = await quiet(() => supabase.from('week_scores').select('week_end,score,sprint_id').eq('user_id', clientUserId).order('week_end', { ascending: false }).limit(60));
+  const weeks = Array.isArray(rows) ? rows.filter((r) => r && typeof r.week_end === 'string') : [];
+  const ids = [...new Set(weeks.map((w) => w.sprint_id).filter((id) => typeof id === 'string'))];
+  const sprints = ids.length ? await quiet(() => supabase.from('sprints').select('id,standard').in('id', ids)) : [];
+  const standards = new Map((Array.isArray(sprints) ? sprints : []).filter((s) => s && s.id).map((s) => [s.id, Number(s.standard)]));
+  return weeks.map(({ sprint_id: id, ...w }) => ({ ...w, standard: standards.get(id) ?? null }));
 }
 
 /**

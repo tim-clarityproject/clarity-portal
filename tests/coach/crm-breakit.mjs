@@ -451,12 +451,13 @@ PARTS['r-tabs'] = async () => {
     await card(B, 'Jack Moran').focus(); await B.keyboard.press('ArrowRight'); await settle(B, 900);
     await card(B, 'Jack Moran').focus(); await B.keyboard.press('ArrowRight'); await settle(B, 1500);
     const ran = todosFor(CRM.jack).length;
-    pass(`${tag}: the move ran it at most once (the stale tab still had it on: ${ran})`, ran <= 1, String(ran));
+    // 054 (run 6, item 7): the claim checks the automation is still on, so the stale tab's run is refused and nothing runs.
+    pass(`${tag}: the stale tab's move runs nothing: the claim is refused because it was switched off (${ran})`, ran === 0, String(ran));
     await go(B, '/coach/leads');
     await card(B, 'Elena Ruiz').focus(); await B.keyboard.press('ArrowRight'); await settle(B, 900);
     await card(B, 'Elena Ruiz').focus(); await B.keyboard.press('ArrowRight'); await settle(B, 1500);
     pass(`${tag}: once the tab has asked again, a move into Proposal sent runs nothing`, todosFor(CRM.elena).length === 0 && (await stageOfLead(a, CRM.elena)) === CRM.stProp, String(todosFor(CRM.elena).length));
-    await a.close({ refusals: 0 });
+    await a.close({ refusals: 1 }); // the stale tab's claim (CC409), and nothing else
     timings.push(`NOTE r-tabs: an automation switched off in one tab still ran once from a stale tab: ${ran === 1 ? 'yes' : 'no'}`);
   }
 };

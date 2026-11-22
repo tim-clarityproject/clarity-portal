@@ -11,7 +11,7 @@
 // The words a page shows (the lists' names, "9 days overdue", the map's
 // pop-up card, the give and ask line) are in this file too, in its second
 // half, never worked out in a page.
-import { addDays, clean, cut, dayWords, firstName, fromDayKey, isEmail, quickContacts } from './model.js';
+import { addDays, clean, cut, dayWords, firstName, fromDayKey, IMPORT_FILE_MAX, isEmail, quickContacts } from './model.js';
 
 /** The four ratings, in the order they are shown; each 0 to 10, or empty until rated. */
 export const RATINGS = ['influence', 'trust', 'value_delivery', 'what_you_get'];
@@ -612,7 +612,12 @@ export function cellWords(person, column, today) {
 }
 
 const MONTHS3 = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-/** A day as typed (a cell typed over, a board card's date): "today", "yesterday", "tomorrow", "12 Oct", "Mon 12 Oct", "12 October 2025", "12/10/2025" (day first) or 2025-10-12. A day that doesn't exist is no day. */
+/**
+ * A day as typed or imported (a cell typed over, a board card's date, an imported "Last spoke"): "today", "yesterday",
+ * "tomorrow", "12 Oct", "Mon 12 Oct", "12 October 2025", the month first when it is a name ("Oct 12 2025", "October 12,
+ * 2025", "Mon Oct 12"), "12/10/2025" (day first, the portal's own order: an all-number date is never read the US way)
+ * or 2025-10-12. A day that doesn't exist is no day.
+ */
 export function typedDay(typed, today) {
   const t = clean(typed).toLowerCase().replace(/,/g, '');
   if (!t) return null;
@@ -626,6 +631,9 @@ export function typedDay(typed, today) {
   m = /^(\d{1,2})[/.](\d{1,2})(?:[/.](\d{2}|\d{4}))?$/.exec(t);
   if (m) return real(m[3] ? (m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3])) : year, Number(m[2]), Number(m[1]));
   m = /^(?:[a-z]{3,9}\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3,9})(?:\s+(\d{4}))?$/.exec(t);
+  // The month's name first ("Oct 12 2025"): a name can't be mistaken for a day, so either order reads the same.
+  const named = m ? null : /^(?:[a-z]{3,9}\s+)?([a-z]{3,9})\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s+(\d{4}))?$/.exec(t);
+  if (named) m = [named[0], named[2], named[1], named[3]];
   if (!m) return null;
   const mo = MONTHS3.indexOf(m[2].slice(0, 3));
   return mo < 0 ? null : real(m[3] ? Number(m[3]) : year, mo + 1, Number(m[1]));
@@ -1156,7 +1164,7 @@ export const IMPORT_WORDS = { title: 'Import a spreadsheet', choose: 'Choose a f
   unreadable: 'That file can’t be read here. Save it as Excel or CSV, or copy the rows and paste them.', tooBig: 'That file is too big. Split it, or paste the rows instead.' };
 /** A file chosen for Network's import: 'xlsx' or 'text' (how to read it), or the calm line when it can't be read here. */
 export function importFileKind(name, size = 0) {
-  if (size > 8 * 1024 * 1024) return { problem: IMPORT_WORDS.tooBig };
+  if (size > IMPORT_FILE_MAX) return { problem: IMPORT_WORDS.tooBig };
   if (/\.xlsx$/i.test(String(name || ''))) return { kind: 'xlsx' };
   if (/\.(csv|tsv|txt)$/i.test(String(name || ''))) return { kind: 'text' };
   return { problem: IMPORT_WORDS.unreadable };

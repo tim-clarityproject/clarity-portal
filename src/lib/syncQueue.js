@@ -235,6 +235,11 @@ export function guardRows(table, rows) {
   return rows;
 }
 
+/** Stops guarding these rows (a page that guarded them has closed): later saves go as before. */
+export function unguardRows(table, rows) {
+  for (const row of rows || []) if (row?.id != null) guarded.delete(`${table}|${row.id}`);
+}
+
 function rowKey(table, fields) {
   if (!versioned.has(table)) {
     const k = fields?.id != null ? `${table}|${fields.id}` : null;

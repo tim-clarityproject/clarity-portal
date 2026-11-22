@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import { coachCrmReady, loadCoach, noteRows } from './store';
+import { CHANGED_ELSEWHERE_CODE } from './model.js';
 
 // The CRM's few checked functions (migration 052; Phase 6a run 4), each
 // asked only once 052 is there. Before that every one resolves null, and
@@ -76,4 +77,31 @@ export async function leadUnmerge(userId, mergeId) {
   if (error) throw error;
   await loadCoach(userId);
   return true;
+}
+
+/**
+ * Undo Won, Undo Cold, or bring a cold lead back (run 6, item 8). From 054
+ * an ordinary save never takes a lead's Won or Cold away (a tab left open
+ * would otherwise undo one set in another tab), so this asks the database
+ * first, and only while the lead is still Won (or Cold) at the moment this
+ * tab saw it set. Resolves 'undone' (the page then saves the lead as it
+ * was, as before), or 'device' before 052 and 'older' before 054 (nothing
+ * guards it there). Rejects with code CC409 when the lead changed in
+ * another tab, which crmProblem says calmly; nothing is undone.
+ * @param {object} lead the lead as this tab saw it Won or Cold (its won_at or cold_at)
+ * @param {'won'|'cold'} kind
+ * @returns {Promise<'undone'|'device'|'older'>}
+ */
+export async function leadUnsettle(userId, lead, kind) {
+  if (!(await ready())) return 'device';
+  const at = kind === 'won' ? lead?.won_at : lead?.cold_at;
+  if (!at) return 'undone';
+  const { data, error, status } = await supabase.rpc('lead_unsettle', { p_lead: lead.id, p_kind: kind, p_at: at });
+  if (error && (error.code === 'PGRST202' || status === 404)) return 'older';
+  if (error) throw error;
+  if (data === 'changed') {
+    loadCoach(userId).catch(() => {});
+    throw Object.assign(new Error(''), { code: CHANGED_ELSEWHERE_CODE });
+  }
+  return 'undone';
 }

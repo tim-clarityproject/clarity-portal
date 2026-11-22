@@ -10,7 +10,7 @@ import {
   SESSION_KINDS, sessionOutcomeLine, sessionSent, sessionStarted, whenWords,
 } from '../../lib/coach/day';
 import {
-  keptActions, moveSessionTo, notesOf, removeAction, removeSession, saveAction, saveNotes, saveSession, sendRecap,
+  CHANGED_ELSEWHERE, holdSession, keptActions, moveSessionTo, notesOf, removeAction, removeSession, saveAction, saveNotes, saveSession, sendRecap,
 } from '../../lib/coach/sessionActions';
 import { Back, Detail, Eye, Part, TextLink, TICK, useCoachPortal } from './parts';
 import { LENGTHS, putBack, useSay, useSessionWho } from './sessionParts';
@@ -91,13 +91,28 @@ function SessionBody({ session, who }) {
     ? { ...row, outcome: 'held', waived: false, moved_to: null, written_up_at: row.written_up_at || new Date().toISOString() } : row);
   const ensureHeld = () => { const row = asHeld(latest.current); return row === latest.current ? null : saveSession(userId, row); };
 
+  // ---- two tabs on one session (run 6, item 3): this tab's saves never go over another tab's
+  // The recap as this tab last read or saved it: a save or Send finding another there is refused, said calmly with "Reload to see it".
+  const base = useRef(session.recap ?? null);
+  const [changedElsewhere, setChangedElsewhere] = useState(false);
+  // Held once, as the page opened with it (the page is keyed by the session).
+  const opened = useRef(session);
+  useEffect(() => holdSession(userId, opened.current, () => setChangedElsewhere(true)), [userId]);
+
   // ---- the recap, saved as it is typed
   const [recap, setRecap] = useState(session.recap || '');
   // Sent meanwhile in another tab: the save is refused (sessionActions.js) and the page shows the session as it was sent.
-  const unlessLocked = (error) => { if (error?.code !== 'locked') throw error; };
+  // Changed meanwhile in another tab: nothing is written over it, and the page says so.
+  const unlessLocked = (error) => {
+    if (error?.code === 'changed') { setChangedElsewhere(true); return null; }
+    if (error?.code !== 'locked') throw error;
+    return null;
+  };
   const recapState = useAutosave(recap, (text) => {
     if (gone.current || sessionSent(latest.current)) return null;
-    return saveSession(userId, { ...asHeld(latest.current), recap: text.trim() ? text : null }).catch(unlessLocked);
+    const next = text.trim() ? text : null;
+    return saveSession(userId, { ...asHeld(latest.current), recap: next }, { base: base.current })
+      .then((status) => { base.current = next; return status; }).catch(unlessLocked);
   });
 
   // ---- private notes and For supervision: never locked
@@ -208,7 +223,7 @@ function SessionBody({ session, who }) {
   };
   const setLength = (v) => {
     if (Number(v) === session.minutes) return;
-    saveSession(userId, { ...latest.current, minutes: Number(v) }).catch((e) => { if (e?.code !== 'locked') toast.error(); });
+    saveSession(userId, { ...latest.current, minutes: Number(v) }).catch((e) => { if (e?.code === 'changed') setChangedElsewhere(true); else if (e?.code !== 'locked') toast.error(); });
   };
 
   // ---- send the recap: once
@@ -224,8 +239,9 @@ function SessionBody({ session, who }) {
         session: { ...latest.current, recap },
         notes: anyNotes ? { ...keptNotesRef.current, coach_id: coach.id, focus: text(n.focus), insight: text(n.insight), next_time: text(n.next_time), supervision: text(n.supervision) } : null,
         actions: actsRef.current.filter((a) => clean(a.title)).map((a) => ({ ...a, title: cut(clean(a.title), 300) })),
-      });
+      }, { base: base.current });
       if (answer.status === 'sent') toast.saved({ message: recapSentWords({ name: who.name, people: group ? who.people : 0, emailed: answer.emailed === true }), long: true });
+      else if (answer.status === 'changed') setChangedElsewhere(true);
       else if (answer.status === 'already_sent') toast.show(answer.message);
       else if (answer.status === 'needs_recap') setRecapProblem(answer.message);
     } catch (error) {
@@ -412,6 +428,15 @@ function SessionBody({ session, who }) {
         </BottomBar>
       )}
       {briefAsked && <Suspense fallback={null}><BriefPanel sessionId={brief} onClose={() => setBrief(null)} /></Suspense>}
+      {changedElsewhere && (
+        // As the Health Check's two tabs say it (Health Check rule 21): calm, never "Saved", with a way to see the other tab's.
+        <div className="ds-toast-region cc-ses-changed" role="alert">
+          <div className="ds-toast ds-toast--shown">
+            <span className="ds-toast-text">{CHANGED_ELSEWHERE}</span>
+            <button type="button" className="ds-toast-undo" onClick={() => window.location.reload()}>Reload to see it</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

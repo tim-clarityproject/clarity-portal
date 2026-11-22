@@ -252,12 +252,31 @@ test('no connection: the last answer to the same question is shown; a device tha
   const stale = await page();
   assert.deepEqual([stale.stale, stale.total, stale.rows.length], [true, live.total, live.rows.length]);
   await assert.rejects(() => page({ search: 'a question never asked before' }), { code: 'OFFLINE' });
-  // A cold start with no connection.
+  // A cold start (a reload) with no connection, on a device that has opened Network before (run 6, item 9): the
+  // device's own copy is shown, marked stale, never "needs a connection the first time".
+  reload();
+  const cold = await page();
+  assert.deepEqual([cold.stale, cold.total, cold.rows.map((r) => r.id)], [true, live.total, live.rows.map((r) => r.id)]);
+  // ... the next day too (yesterday's answer beats none)
+  assert.equal((await data.networkPageOf(USER, { today: '2026-11-20' })).total, live.total);
+  // ... the counts too, when this device has had them answered; a question it never had answered still says so.
+  assert.equal((await data.networkCountsOf(USER, TODAY)).stale, true);
+  await assert.rejects(() => page({ search: 'still never asked' }), { code: 'OFFLINE' });
+  // A device with no copy at all (another device, or after a Sign out) says it needs a connection.
+  for (const k of local.keys()) if (k.endsWith(':coach-network')) local.removeItem(k);
   reload();
   await assert.rejects(() => page(), { code: 'OFFLINE' });
-  await assert.rejects(() => data.networkCountsOf(USER, TODAY), { code: 'OFFLINE' });
   db.down = false;
   reload();
   assert.equal((await page()).total, live.total);
+});
+
+test('the device keeps at most ANSWERS_KEPT of Network\'s answers, the newest first', async () => {
+  for (let i = 0; i < data.ANSWERS_KEPT + 5; i += 1) await page({ search: `kept ${i}` });
+  const key = local.keys().find((k) => k.endsWith(':coach-network'));
+  const kept = JSON.parse(local.getItem(key)).v;
+  assert.equal(kept.length, data.ANSWERS_KEPT);
+  assert.match(kept[0][0], /kept 28/);
+  assert.ok(!kept.some(([k]) => /p_today/.test(k)), 'kept without their day');
 });
 

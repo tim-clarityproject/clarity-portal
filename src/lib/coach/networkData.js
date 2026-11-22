@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { supabase } from '../supabase';
 import { isNetworkError } from '../connection';
 import { deviceKey, readJson, removeKey, writeJson } from '../deviceStore';
+import { readCache, writeCache } from '../pageCache';
 import { getLocalDateKey } from '../dateFormatter';
 import { newId, saveOrQueue } from '../syncQueue';
 import { beforeMoveAcross, coachCrmReady, coachCrmReadyNow } from './store';
@@ -125,22 +126,51 @@ export const networkReady = () => coachCrmReady();
 const lastAnswers = new Map();
 /** What a page is told when Network can't be reached and there is nothing to show: one shape, code OFFLINE. */
 const offlineError = () => Object.assign(new Error('Network needs a connection.'), { code: 'OFFLINE' });
+
+// The last answers, kept on the device too (run 6, item 9), as the coach
+// store keeps its last data shown (clarity-cache:<account>:…): a reload with
+// no connection shows Network as it was last seen here, marked stale, and
+// only a device that has never opened it says it needs a connection. The
+// questions are kept without their day (yesterday's answer beats none), at
+// most ANSWERS_KEPT of them, the newest first; a Sign out clears them with
+// the rest of the account's copies.
+const ANSWERS_CACHE = 'coach-network';
+export const ANSWERS_KEPT = 24;
+const dayless = (key) => key.replace(/,?"p_today":"[^"]*"/, '');
+function keptAnswer(userId, key) {
+  const kept = readCache(userId, ANSWERS_CACHE)?.v;
+  const hit = Array.isArray(kept) ? kept.find((x) => Array.isArray(x) && x[0] === dayless(key)) : null;
+  return hit ? { data: hit[1] } : null;
+}
+function keepAnswer(userId, key, data) {
+  if (!userId) return;
+  try {
+    const kept = readCache(userId, ANSWERS_CACHE)?.v;
+    const rest = (Array.isArray(kept) ? kept : []).filter((x) => Array.isArray(x) && x[0] !== dayless(key));
+    writeCache(userId, ANSWERS_CACHE, [[dayless(key), data], ...rest].slice(0, ANSWERS_KEPT));
+  } catch { /* no room on the device: the answer is still shown */ }
+}
+const staleOf = (last) => (last && typeof last === 'object' && !Array.isArray(last) ? { ...last, stale: true } : last);
+
 /**
  * Asks the database. When it can't be reached, hands back the last answer
- * to the same question (marked `stale`), or tells the page so (code
- * OFFLINE) when that question was never answered here.
+ * to the same question (marked `stale`), from this visit or kept on the
+ * device, or tells the page so (code OFFLINE) when that question was never
+ * answered on this device.
  */
-async function ask(key, fn) {
+async function ask(key, fn, userId = null) {
   try {
     const { data, error } = await fn();
     if (error) throw error;
     lastAnswers.set(key, data);
+    keepAnswer(userId, key, data);
     return data;
   } catch (error) {
     if (error?.code || !isNetworkError(error)) throw error;
-    if (!lastAnswers.has(key)) throw offlineError();
-    const last = lastAnswers.get(key);
-    return last && typeof last === 'object' && !Array.isArray(last) ? { ...last, stale: true } : last;
+    if (lastAnswers.has(key)) return staleOf(lastAnswers.get(key));
+    const kept = keptAnswer(userId, key);
+    if (!kept) throw offlineError();
+    return staleOf(kept.data);
   }
 }
 
@@ -160,7 +190,9 @@ async function onDevice(userId) {
     await moveNetworkAcross(userId);
     return networkWaiting(userId);
   }
-  if (there === null && seen() && !networkWaiting(userId)) throw offlineError();
+  // No connection on a device that has seen 052: the database is asked, and ask() answers from the device's last copy
+  // (or says Network needs a connection, when this device has none).
+  if (there === null && seen() && !networkWaiting(userId)) return false;
   return true;
 }
 
@@ -179,7 +211,7 @@ export async function networkPageOf(userId, query = {}, columns = []) {
   if (await onDevice(userId)) return networkPage(localPeople(userId), { ...query, today }, columns);
   const args = { p_search: query.search || null, p_sort: query.sort || 'name', p_desc: query.desc === true, p_only: query.only || {},
     p_archived: query.archived === true, p_limit: query.limit ?? 50, p_offset: query.offset ?? 0, p_today: today };
-  return ask(`page:${JSON.stringify(args)}`, () => supabase.rpc('network_page', args));
+  return ask(`page:${JSON.stringify(args)}`, () => supabase.rpc('network_page', args), userId);
 }
 
 /**
@@ -189,7 +221,7 @@ export async function networkPageOf(userId, query = {}, columns = []) {
 export async function networkMapOf(userId, { show = 'everyone', limit = 150, today } = {}) {
   if (await onDevice(userId)) return networkMap(localPeople(userId), { show, limit });
   const args = { p_show: show, p_limit: limit, p_today: today || getLocalDateKey() };
-  return ask(`map:${JSON.stringify(args)}`, () => supabase.rpc('network_map', args));
+  return ask(`map:${JSON.stringify(args)}`, () => supabase.rpc('network_map', args), userId);
 }
 
 /**
@@ -198,7 +230,7 @@ export async function networkMapOf(userId, { show = 'everyone', limit = 150, tod
  */
 export async function networkCountsOf(userId, today = getLocalDateKey()) {
   if (await onDevice(userId)) return networkCounts(localPeople(userId), today);
-  return ask('counts', () => supabase.rpc('network_counts', { p_today: today }));
+  return ask('counts', () => supabase.rpc('network_counts', { p_today: today }), userId);
 }
 
 /**

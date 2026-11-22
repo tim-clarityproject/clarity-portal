@@ -9,6 +9,21 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** Text as typed, without what can't be seen and without spaces round it. */
+/**
+ * The database's answer when a row changed in another tab or device since
+ * this one read it (054, run 6: a poll settled twice, an automation switched
+ * off, Won or Cold undone from a tab left open). Its message is a sentence
+ * for people; nothing was written.
+ */
+export const CHANGED_ELSEWHERE_CODE = 'CC409';
+
+/**
+ * The largest spreadsheet an import reads, the same for Leads and Network
+ * (run 6, item 10): 8 MB, room for the 5,000 rows one import can add from
+ * any real sheet. Pasted rows have no file to measure.
+ */
+export const IMPORT_FILE_MAX = 8 * 1024 * 1024;
+
 export const clean = (value) => String(value ?? '').replace(UNSEEN, '').replace(/\s+/g, ' ').trim();
 
 /**

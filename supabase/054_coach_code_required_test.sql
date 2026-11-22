@@ -372,3 +372,118 @@ begin
   raise notice '054 CHECKS PASSED';
 end
 $t$;
+
+-- =============================================================================
+-- Run 6, items 3, 6, 7 and 8 (builder B6): two tabs never undo each other.
+--   9a-9e   the recap is sent only as the tab shows it (session_send_recap(session, recap)),
+--   9f-9l   a poll is settled once (a second confirm is refused, CC409; Undo back to open works),
+--   9m-9q   an automation's run is claimed only while it is on,
+--   9r-9z   Won and Cold are kept from an ordinary save, and undone only by lead_unsettle() while
+--           the lead is as the tab saw it.
+-- Everything it makes is undone at the end. Ends with the notice 054 TWO TABS CHECKS PASSED.
+-- =============================================================================
+do $t2$
+declare
+  f text[] := '{}';
+  tess_u uuid; tess_c uuid;
+  p_sam uuid := gen_random_uuid();
+  sess uuid := gen_random_uuid();
+  poll uuid := gen_random_uuid(); opt1 uuid := gen_random_uuid(); opt2 uuid := gen_random_uuid();
+  item1 uuid := gen_random_uuid(); item2 uuid := gen_random_uuid();
+  auto uuid := gen_random_uuid();
+  lead uuid := gen_random_uuid();
+  won timestamptz := '2026-11-20 10:15:30.123+00';
+  cold timestamptz := '2026-11-21 09:00:00.456+00';
+begin
+  begin
+    tess_u := pg_temp.t_user('tess2');
+    insert into public.coaches (user_id, role, display_first_name) values (tess_u, 'owner', 'Tess') returning id into tess_c;
+    perform pg_temp.t_as(tess_u, 'aal2');
+    insert into public.client_profiles (id, coach_id, name, time_zone) values (p_sam, tess_c, 'Sam Invented', 'Europe/London');
+
+    -- ---------------------------------------------------------------- 3. the recap
+    insert into public.coach_sessions (id, coach_id, profile_id, starts_at, minutes, outcome, recap)
+    values (sess, tess_c, p_sam, now() - interval '1 day', 60, 'held', 'Line saved in the first tab.');
+    f := f || pg_temp.t_eq('9a a second tab''s older recap isn''t sent', public.session_send_recap(sess, 'The older recap.'), 'changed');
+    f := f || pg_temp.t_eq('9b ... and nothing was sent or changed',
+      (select concat_ws('/', (recap_sent_at is null)::text, recap) from public.coach_sessions where id = sess), 'true/Line saved in the first tab.');
+    f := f || pg_temp.t_eq('9c the recap as the tab shows it is sent', public.session_send_recap(sess, 'Line saved in the first tab.'), 'sent');
+    f := f || pg_temp.t_eq('9d once', public.session_send_recap(sess, 'Line saved in the first tab.'), 'already_sent');
+    f := f || pg_temp.t_eq('9e the older one-argument send still answers', public.session_send_recap(sess), 'already_sent');
+
+    -- ---------------------------------------------------------------- 6. a poll is settled once
+    insert into public.coach_polls (id, coach_id, title, time_zone) values (poll, tess_c, 'Invented three-way', 'Europe/London');
+    insert into public.coach_poll_options (id, poll_id, coach_id, starts_at, ends_at, position) values
+      (opt1, poll, tess_c, now() + interval '3 days', now() + interval '3 days 1 hour', 0),
+      (opt2, poll, tess_c, now() + interval '4 days', now() + interval '4 days 1 hour', 1);
+    f := f || pg_temp.t_eq('9f the first tab confirms', pg_temp.t_rows(format(
+      'update public.coach_polls set status = ''confirmed'', confirmed_option_id = %L, confirmed_item_id = %L where id = %L', opt1, item1, poll)), '1');
+    f := f || pg_temp.t_eq('9g the second tab''s confirm of another time is refused, as changed in another tab', pg_temp.t_rows(format(
+      'update public.coach_polls set status = ''confirmed'', confirmed_option_id = %L, confirmed_item_id = %L where id = %L', opt2, item2, poll)), 'error CC409');
+    f := f || pg_temp.t_eq('9h ... and the first confirm stands', (select confirmed_item_id::text from public.coach_polls where id = poll), item1::text);
+    f := f || pg_temp.t_eq('9i the same confirm sent again is fine', pg_temp.t_rows(format(
+      'update public.coach_polls set status = ''confirmed'', confirmed_option_id = %L, confirmed_item_id = %L where id = %L', opt1, item1, poll)), '1');
+    f := f || pg_temp.t_eq('9j a confirmed poll can''t be cancelled from an older tab', pg_temp.t_rows(format(
+      'update public.coach_polls set status = ''cancelled'' where id = %L', poll)), 'error CC409');
+    f := f || pg_temp.t_eq('9k Undo puts it back to open', pg_temp.t_rows(format(
+      'update public.coach_polls set status = ''open'', confirmed_option_id = null, confirmed_item_id = null where id = %L', poll)), '1');
+    f := f || pg_temp.t_eq('9l then it can be confirmed again', pg_temp.t_rows(format(
+      'update public.coach_polls set status = ''confirmed'', confirmed_option_id = %L, confirmed_item_id = %L where id = %L', opt2, item2, poll)), '1');
+
+    -- ---------------------------------------------------------------- 7. a run only while the automation is on
+    insert into public.coach_automations (id, coach_id, trigger, action, todo_title) values (auto, tess_c, 'lead_won', 'todo', 'Invented welcome');
+    f := f || pg_temp.t_eq('9m a run is claimed while it is on', pg_temp.t_rows(format(
+      'insert into public.coach_automation_runs (automation_id, coach_id, event_key) values (%L, %L, ''won:a'')', auto, tess_c)), '1');
+    update public.coach_automations set active = false where id = auto;
+    f := f || pg_temp.t_eq('9n switched off (in another tab): the next claim is refused', pg_temp.t_rows(format(
+      'insert into public.coach_automation_runs (automation_id, coach_id, event_key) values (%L, %L, ''won:b'')', auto, tess_c)), 'error CC409');
+    f := f || pg_temp.t_eq('9o ... and nothing ran', (select count(*)::text from public.coach_automation_runs where automation_id = auto), '1');
+    f := f || pg_temp.t_eq('9p the run already claimed, sent again, is still "already there"', pg_temp.t_rows(format(
+      'insert into public.coach_automation_runs (id, automation_id, coach_id, event_key) select id, automation_id, coach_id, event_key from public.coach_automation_runs where automation_id = %L on conflict (id) do nothing', auto)), '0');
+    update public.coach_automations set active = true where id = auto;
+    f := f || pg_temp.t_eq('9q switched on again, it runs again', pg_temp.t_rows(format(
+      'insert into public.coach_automation_runs (automation_id, coach_id, event_key) values (%L, %L, ''won:c'')', auto, tess_c)), '1');
+
+    -- ---------------------------------------------------------------- 8. Won and Cold
+    insert into public.coach_leads (id, coach_id, name) values (lead, tess_c, 'Invented lead');
+    update public.coach_leads set won_at = won where id = lead;
+    f := f || pg_temp.t_eq('9r a tab left open saves the lead as it saw it',
+      pg_temp.t_rows(format('update public.coach_leads set won_at = null, notes = ''typed later'' where id = %L', lead)), '1');
+    f := f || pg_temp.t_eq('9r2 ... its change is kept, and Won stays',
+      (select concat_ws('/', (won_at = won)::text, notes) from public.coach_leads where id = lead), 'true/typed later');
+    f := f || pg_temp.t_eq('9s Undo from a tab that set Won at another moment is refused', public.lead_unsettle(lead, 'won', won + interval '1 second'), 'changed');
+    f := f || pg_temp.t_eq('9t ... Won still stands', (select (won_at = won)::text from public.coach_leads where id = lead), 'true');
+    f := f || pg_temp.t_eq('9u Undo from the tab that set it', public.lead_unsettle(lead, 'won', won), 'undone');
+    f := f || pg_temp.t_eq('9v ... Won is gone', (select (won_at is null and won_profile_id is null)::text from public.coach_leads where id = lead), 'true');
+    f := f || pg_temp.t_eq('9w Undo again (another tab got there first) says changed', public.lead_unsettle(lead, 'won', won), 'changed');
+    update public.coach_leads set cold_at = cold, cold_reason = 'They went quiet.' where id = lead;
+    perform pg_temp.t_rows(format('update public.coach_leads set cold_at = null, cold_reason = null where id = %L', lead));
+    f := f || pg_temp.t_eq('9x Cold stays through an ordinary save', (select concat_ws('/', (cold_at = cold)::text, cold_reason) from public.coach_leads where id = lead), 'true/They went quiet.');
+    f := f || pg_temp.t_eq('9y Back in the pipeline, from the tab that saw it cold', public.lead_unsettle(lead, 'cold', cold), 'undone');
+    f := f || pg_temp.t_eq('9z ... Cold is gone', (select (cold_at is null and cold_reason is null)::text from public.coach_leads where id = lead), 'true');
+    f := f || pg_temp.t_eq('9z2 a kind that isn''t Won or Cold is refused', pg_temp.t_n(format('select public.lead_unsettle(%L, ''lost'', now())', lead)), 'error 22023');
+
+    -- At aal1 the new calls answer nothing (054's code check).
+    perform pg_temp.t_as(tess_u, 'aal1');
+    f := f || pg_temp.t_eq('9z3 at aal1 the two-argument send refuses', pg_temp.t_nothing(format('select public.session_send_recap(%L, ''x'')', sess)), 'nothing');
+    f := f || pg_temp.t_eq('9z4 at aal1 lead_unsettle refuses', pg_temp.t_nothing(format('select public.lead_unsettle(%L, ''won'', now())', lead)), 'nothing');
+    -- Someone else's lead.
+    perform pg_temp.t_anon();
+    f := f || pg_temp.t_eq('9z5 signed out, neither can be called', concat_ws('/',
+      pg_temp.t_n(format('select public.session_send_recap(%L, ''x'')', sess)), pg_temp.t_n(format('select public.lead_unsettle(%L, ''won'', now())', lead))),
+      'error 42501/error 42501');
+
+    perform pg_temp.t_admin();
+    raise exception 'undo the test rows' using errcode = 'P0054';
+  exception when sqlstate 'P0054' then
+    perform pg_temp.t_admin();
+  end;
+
+  f := f || pg_temp.t_eq('9z6 everything the test made is undone',
+    (select count(*)::text from auth.users where email like 'p6a-test-%@example.invalid'), '0');
+  if cardinality(f) > 0 then
+    raise exception E'054 TWO TABS FAILED (%):\n%', cardinality(f), array_to_string(f, E'\n');
+  end if;
+  raise notice '054 TWO TABS CHECKS PASSED';
+end
+$t2$;

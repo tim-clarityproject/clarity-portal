@@ -639,14 +639,22 @@ export async function runDayBreak({ browser, report, parts }) {
     // ---- a session written up in one tab and its recap sent in the other
     await go(a, `/coach/sessions/${SES.write}`); await go(b, `/coach/sessions/${SES.write}`);
     const sentText = store.rows.coach_sessions.find((s) => s.id === SES.write).recap;
-    await a.getByLabel('Recap for Hannah').fill(`${sentText}\n\nOne more line, typed in the first tab.`);
+    const aText = `${sentText}\n\nOne more line, typed in the first tab.`;
+    await a.getByLabel('Recap for Hannah').fill(aText);
     await settle(a, 1700); // saved
     await settle(b, 400);
+    // Run 6, item 3: the second tab still shows the recap as it read it, so its Send replaces nothing and sends nothing.
+    await press(b, 'Send the recap'); await settle(b, 1500);
+    pass(`${tag}: Send in a tab that read the recap before the other tab’s line sends nothing`, store.sends.length === 0 && !store.rows.coach_sessions.find((s) => s.id === SES.write).recap_sent_at, JSON.stringify(store.sends));
+    pass(`${tag}: ... the first tab’s line is kept`, store.rows.coach_sessions.find((s) => s.id === SES.write).recap === aText);
+    pass(`${tag}: ... and the second tab says so calmly, with a way to see it (never “Saved”)`, /This session changed in another tab\./.test(await words(b)) && (await b.getByRole('button', { name: 'Reload to see it' }).count()) === 1 && !/^Sent\./.test(await toast(b)), flat(await words(b)).slice(-160));
+    await b.getByRole('button', { name: 'Reload to see it' }).click(); await settle(b, 2000);
     const bShows = await b.getByLabel('Recap for Hannah').inputValue();
+    pass(`${tag}: reloaded, the second tab shows the first tab’s line`, bShows === aText, `${bShows.length} characters`);
     await press(b, 'Send the recap'); await settle(b, 1500);
     const asSent = store.rows.coach_sessions.find((s) => s.id === SES.write).recap;
     pass(`${tag}: Send in the second tab sends the recap once`, store.sends.length === 1 && store.sends[0].answer === 'sent' && /^Sent\./.test(await toast(b)), `${JSON.stringify(store.sends)}; ${await toast(b)}`);
-    pass(`${tag}: what went is what the second tab showed when Send was pressed`, asSent === bShows, `sent ${asSent.length} characters; the second tab showed ${bShows.length}; the first tab had saved ${sentText.length + 41}`);
+    pass(`${tag}: what went is what the second tab showed when Send was pressed`, asSent === bShows, `sent ${asSent.length} characters; the second tab showed ${bShows.length}; the first tab had saved ${aText.length}`);
     await settle(a, 800);
     const box = a.getByLabel('Recap for Hannah');
     if (await box.count()) { await box.fill('Rewritten after it was sent.'); await settle(a, 1800); }

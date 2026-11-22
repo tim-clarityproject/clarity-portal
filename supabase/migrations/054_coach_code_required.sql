@@ -69,6 +69,10 @@
 --   The server's key (service_role) passes every rule as before, so the
 --   scheduled reminders and the inbound-email service are unchanged.
 --
+-- TWO TABS (run 6, items 3, 6, 7 and 8; see the section near the end):
+--   session_send_recap(session, recap), a poll settled once, an automation
+--   run claimed only while it is on, and lead_unsettle() for Won and Cold.
+--
 -- Additive (no table, column or data changes) and safe to run twice.
 -- Needs 053. Ends by recording itself.
 -- =============================================================================
@@ -643,6 +647,178 @@ begin
   end loop;
 end
 $rules$;
+
+-- =============================================================================
+-- Run 6, items 3, 6, 7 and 8 (builder B6): two tabs never undo each other.
+-- Each is the standard compare-and-set, decided in one statement with the
+-- row locked, so two tabs pressing at the same instant can't both win. The
+-- refusal is SQLSTATE CC409 ("changed in another tab"); the app says it
+-- calmly and never as "Saved". Nothing here is a new table or column.
+--
+--   3. session_send_recap(session, recap): sends only when the recap in the
+--      database is still the one this tab shows ('changed' otherwise). The
+--      one-argument 050 function stays, word for word, for older pages.
+--   6. A poll is settled once: once confirmed or cancelled it can only go
+--      back to open (the coach's own Undo), never to another time or to the
+--      other ending, so a second tab's confirm is refused (CC409) before it
+--      takes a held time away.
+--   7. An automation's run is claimed only while the automation is still on:
+--      the claim reads the automation with a share lock in the same
+--      statement, so one switched off in another tab never runs again.
+--   8. Won and Cold are undone only through lead_unsettle(lead, kind, at),
+--      and only while the lead is still Won (or Cold) at the moment this tab
+--      set it: an ordinary save from a tab left open keeps them, as 052's
+--      merge guard keeps a merge.
+-- =============================================================================
+
+-- ---------------------------------------------------------------- 3. the recap, sent only as this tab shows it
+create or replace function public.session_send_recap(p_session uuid, p_recap text)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v record;
+begin
+  select s.id, s.coach_id, s.recap, s.recap_sent_at, s.outcome into v
+  from public.coach_sessions s where s.id = p_session for update;
+  if v.id is null or v.coach_id is distinct from public.my_coach_id() then
+    raise exception 'That session isn''t yours.' using errcode = '42501';
+  end if;
+  if v.recap_sent_at is not null then
+    return 'already_sent';
+  end if;
+  -- Another tab saved another recap since this one read it: nothing is sent.
+  if v.recap is distinct from p_recap then
+    return 'changed';
+  end if;
+  if v.outcome is distinct from 'held' then
+    raise exception 'A recap goes only for a session that went ahead.' using errcode = '22023';
+  end if;
+  if v.recap is null or char_length(btrim(v.recap)) = 0 then
+    raise exception 'Type the recap first.' using errcode = '22023';
+  end if;
+  perform set_config('clarity.sending', 'on', true);
+  update public.coach_sessions set recap_sent_at = now(), recap_sent_by = (select auth.uid()) where id = p_session;
+  perform set_config('clarity.sending', '', true);
+  return 'sent';
+end;
+$$;
+revoke all on function public.session_send_recap(uuid, text) from public, anon;
+grant execute on function public.session_send_recap(uuid, text) to authenticated;
+
+-- ---------------------------------------------------------------- 6. a poll is settled once
+create or replace function public.coach_polls_settled_guard()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if old.status in ('confirmed', 'cancelled')
+     and new.status is distinct from 'open'
+     and (new.status, new.confirmed_option_id, new.confirmed_item_id)
+         is distinct from (old.status, old.confirmed_option_id, old.confirmed_item_id) then
+    raise exception 'This poll has already been settled.' using errcode = 'CC409';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.coach_polls_settled_guard() from public, anon, authenticated;
+drop trigger if exists coach_polls_settled_guard on public.coach_polls;
+create trigger coach_polls_settled_guard before update on public.coach_polls
+  for each row execute function public.coach_polls_settled_guard();
+
+-- ---------------------------------------------------------------- 7. a run is claimed only while its automation is on
+create or replace function public.coach_automation_runs_claim_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_on boolean;
+begin
+  -- The same run sent again (a retry) is "already there": nothing to check.
+  if exists (select 1 from public.coach_automation_runs r where r.id = new.id) then
+    return new;
+  end if;
+  -- A share lock: a switch-off in another tab either lands first (and is seen here) or waits for this claim.
+  select a.active into v_on from public.coach_automations a where a.id = new.automation_id for share;
+  if not coalesce(v_on, false) then
+    raise exception 'That automation is switched off.' using errcode = 'CC409';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.coach_automation_runs_claim_guard() from public, anon, authenticated;
+drop trigger if exists coach_automation_runs_claim_guard on public.coach_automation_runs;
+create trigger coach_automation_runs_claim_guard before insert on public.coach_automation_runs
+  for each row execute function public.coach_automation_runs_claim_guard();
+
+-- ---------------------------------------------------------------- 8. Won and Cold, undone only on purpose
+create or replace function public.coach_leads_settled_guard()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if coalesce(current_setting('clarity.unsettle', true), '') <> 'on' then
+    if old.won_at is not null and new.won_at is null then
+      new.won_at := old.won_at;
+      new.won_profile_id := old.won_profile_id;
+      new.stage_id := old.stage_id;
+    end if;
+    if old.cold_at is not null and new.cold_at is null then
+      new.cold_at := old.cold_at;
+      new.cold_reason := old.cold_reason;
+      new.cold_check_on := old.cold_check_on;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.coach_leads_settled_guard() from public, anon, authenticated;
+drop trigger if exists coach_leads_settled_guard on public.coach_leads;
+create trigger coach_leads_settled_guard before update on public.coach_leads
+  for each row execute function public.coach_leads_settled_guard();
+
+-- Undo Won, Undo Cold, or bring a cold lead back: 'undone', or 'changed'
+-- when the lead isn't Won (or Cold) at the moment this tab set it any more.
+-- The page then saves the lead as it was before, as it always has.
+create or replace function public.lead_unsettle(p_lead uuid, p_kind text, p_at timestamptz)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_coach uuid := public.my_coach_id();
+  l record;
+begin
+  if p_kind is null or p_kind not in ('won', 'cold') then
+    raise exception 'Choose Won or Cold.' using errcode = '22023';
+  end if;
+  select x.id, x.won_at, x.cold_at into l from public.coach_leads x
+  where x.id = p_lead and x.coach_id = v_coach for update;
+  if not found or v_coach is null then
+    raise exception 'That lead isn''t yours.' using errcode = '42501';
+  end if;
+  if (case when p_kind = 'won' then l.won_at else l.cold_at end) is distinct from p_at or p_at is null then
+    return 'changed';
+  end if;
+  perform set_config('clarity.unsettle', 'on', true);
+  if p_kind = 'won' then
+    update public.coach_leads set won_at = null, won_profile_id = null where id = p_lead;
+  else
+    update public.coach_leads set cold_at = null, cold_reason = null, cold_check_on = null where id = p_lead;
+  end if;
+  perform set_config('clarity.unsettle', '', true);
+  return 'undone';
+end;
+$$;
+revoke all on function public.lead_unsettle(uuid, text, timestamptz) from public, anon;
+grant execute on function public.lead_unsettle(uuid, text, timestamptz) to authenticated;
 
 -- ---------------------------------------------------------------- record it
 do $log$

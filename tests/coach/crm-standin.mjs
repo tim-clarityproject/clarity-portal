@@ -31,7 +31,7 @@ export const CRM_KEYS = {
 /** 052's functions: answered by the stand-in with `crm`, and as "no such function" without it (the test project is never asked). */
 export const CRM_FUNCTIONS = ['coach_lead_stages_start', 'lead_merge', 'lead_unmerge', 'network_page', 'network_map', 'network_counts',
   'network_archive', 'network_restore', 'network_duplicates', 'network_import', 'network_merge', 'network_unmerge',
-  'coach_email_addresses_start', 'coach_email_add', 'email_in'];
+  'coach_email_addresses_start', 'coach_email_add', 'email_in', 'lead_unsettle'];
 
 /** The five stages coach_lead_stages_start() makes, as the SQL has them. */
 export const START_STAGES = [
@@ -246,6 +246,17 @@ export function crmStandIn({ store, ME, me, clock, no }) {
       });
       return id;
     },
+    /** 054's lead_unsettle(): Undo Won or Cold, or bring a cold lead back, only while it is as the tab saw it set. */
+    lead_unsettle(leadId, kind, at) {
+      if (!['won', 'cold'].includes(kind)) no('22023', 'Choose Won or Cold.');
+      const l = leadOf(leadId);
+      if (!l || l.coach_id !== ME) no('42501', 'That lead isn’t yours.', 403);
+      const was = kind === 'won' ? l.won_at : l.cold_at;
+      if (!at || !was || Date.parse(was) !== Date.parse(at)) return 'changed';
+      if (kind === 'won') Object.assign(l, { won_at: null, won_profile_id: null, updated_at: stamp() });
+      else Object.assign(l, { cold_at: null, cold_reason: null, cold_check_on: null, updated_at: stamp() });
+      return 'undone';
+    },
     lead_unmerge(mergeId) {
       const m = rows.coach_lead_merges.find((x) => x.id === mergeId && x.coach_id === ME && !x.undone_at);
       if (!m) no('22023', 'That merge can’t be undone any more.');
@@ -443,6 +454,9 @@ export function crmStandIn({ store, ME, me, clock, no }) {
       r = { currency: 'GBP', ...r };
       // coach_leads_guard(): a merge is undone only by lead_unmerge(); a save from a page that still shows the lead keeps it merged.
       if (old?.merged_into && !r.merged_into) r = { ...r, merged_into: old.merged_into };
+      // 054's coach_leads_settled_guard(): Won and Cold are undone only by lead_unsettle(), never by a save from a tab left open.
+      if (old?.won_at && !r.won_at) r = { ...r, won_at: old.won_at, won_profile_id: old.won_profile_id ?? null, stage_id: old.stage_id };
+      if (old?.cold_at && !r.cold_at) r = { ...r, cold_at: old.cold_at, cold_reason: old.cold_reason ?? null, cold_check_on: old.cold_check_on ?? null };
       if (!old && r.stage_id == null) r.stage_id = stagesOf(r.coach_id)[0]?.id ?? null;
       if (r.stage_id != null && r.stage_id !== old?.stage_id && !rows.coach_lead_stages.some((s) => s.id === r.stage_id && s.coach_id === r.coach_id)) bad(table, 'That stage isn’t one of yours.');
       if (r.won_profile_id != null && r.won_profile_id !== old?.won_profile_id && !rows.client_profiles.some((p) => p.id === r.won_profile_id && p.coach_id === r.coach_id)) bad(table, 'That client isn’t yours.');
@@ -472,6 +486,8 @@ export function crmStandIn({ store, ME, me, clock, no }) {
     }
     if (table === 'coach_automation_runs') {
       if (!rows.coach_automations.some((a) => a.id === r.automation_id && a.coach_id === ME)) rls(table);
+      // 054's claim: only while the automation is still on (a run already there, sent again, is "already there").
+      if (!rows.coach_automation_runs.some((x) => x.id === r.id) && rows.coach_automations.find((a) => a.id === r.automation_id)?.active === false) no('CC409', 'That automation is switched off.', 400);
       if (!named(r.event_key, 1, 200)) bad(table, 'event_key');
       if (rows.coach_automation_runs.some((x) => x.automation_id === r.automation_id && x.event_key === r.event_key && x.id !== r.id)) no('23505', 'duplicate key value violates unique constraint "coach_automation_runs_once"', 409);
       r = { ran_at: stamp(), ...r };

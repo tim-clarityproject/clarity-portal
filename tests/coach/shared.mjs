@@ -333,11 +333,15 @@ async function standInRows(page, { role = 'owner', db = 'none', rows = {}, admin
   const myProfiles = (uid) => store.rows.client_profiles.filter((p) => uid && p.user_id === uid && !p.merged_into);
   const firstNameOf = (coachId) => store.coaches.find((c) => c.id === coachId)?.display_first_name ?? null;
   store.fn = {
-    /** session_send_recap(p_session): only its coach, only once, only a session that went ahead with something typed. */
-    session_send_recap(uid, id) {
+    /**
+     * session_send_recap(p_session[, p_recap]): only its coach, only once, only a session that went ahead with something
+     * typed; with 054's p_recap, only when the recap there is the one the tab shows ('changed' otherwise).
+     */
+    session_send_recap(uid, id, recap) {
       const s = sessionOf(id);
       if (!s || s.coach_id !== ME) no('42501', 'That session isn’t yours.', 403);
       if (s.recap_sent_at) return 'already_sent';
+      if (recap !== undefined && (s.recap ?? null) !== (recap ?? null)) return 'changed';
       if (s.outcome !== 'held') no('22023', 'A recap goes only for a session that went ahead.');
       if (!String(s.recap ?? '').trim()) no('22023', 'Type the recap first.');
       Object.assign(s, { recap_sent_at: stamp(), recap_sent_by: uid, updated_at: stamp() });
@@ -703,6 +707,7 @@ async function standInRows(page, { role = 'owner', db = 'none', rows = {}, admin
                 coach_lead_stages_start: () => store.fn.coach_lead_stages_start(),
                 lead_merge: () => store.fn.lead_merge(a.p_keep, a.p_drop, a.p_values ?? {}),
                 lead_unmerge: () => store.fn.lead_unmerge(a.p_merge),
+                lead_unsettle: () => store.fn.lead_unsettle(a.p_lead, a.p_kind, a.p_at),
                 network_page: () => store.fn.network_page(a),
                 network_map: () => store.fn.network_map(a),
                 network_counts: () => store.fn.network_counts(a),
@@ -758,7 +763,7 @@ async function standInRows(page, { role = 'owner', db = 'none', rows = {}, admin
               const uid = me.user_id;
               switch (fn) {
                 case 'coach_save_capacity': store.fn.coach_save_capacity(uid, args.p_hours); return route.fulfill({ status: 204 });
-                case 'session_send_recap': { const answer = store.fn.session_send_recap(uid, args.p_session); store.sends.push({ session: args.p_session, answer }); return json(route, answer); }
+                case 'session_send_recap': { const answer = store.fn.session_send_recap(uid, args.p_session, args.p_recap); store.sends.push({ session: args.p_session, answer }); return json(route, answer); }
                 case 'session_recap_email_claim': return json(route, store.fn.session_recap_email_claim(uid, args.p_session));
                 case 'session_recap_people': return json(route, store.fn.session_recap_people(uid, args.p_session));
                 case 'workshop_follow_up_claim': return json(route, store.fn.workshop_follow_up_claim(uid, args.p_workshop));

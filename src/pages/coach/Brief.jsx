@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { SlidePanel, Stat, StatGroup } from '../../components/design';
 import { rowsOf } from '../../lib/coach/store';
 import { firstName, possessive } from '../../lib/coach/model';
-import { averageSince, comingUp, fromLastTime, isLink, lastSession, lengthPlace, prepLine, sharedReview, whenWords } from '../../lib/coach/day';
+import { averageSince, belowStandard, comingUp, fromLastTime, isLink, lastSession, lengthPlace, prepLine, sharedReview, standardSince, whenWords } from '../../lib/coach/day';
 import { clientTimeWords, coachZoneOf } from '../../lib/coach/calendar';
 import { deviceZone, isZone, sameZone } from '../../lib/time';
 import { useBriefData } from '../../lib/coach/dayData';
@@ -40,6 +40,8 @@ function BriefBody({ session, client }) {
     .sort((a, b) => String(b.noted_on).localeCompare(String(a.noted_on))).slice(0, 3).reverse() // the newest three, oldest first (M11);
   const before = fromLastTime(sessionActions, last);
   const average = averageSince(shared.scores, last?.starts_at, todayKey);
+  // The bar's grey band below the client's own standard, as their dashboard shows it (85 only when they have none).
+  const standard = standardSince(shared.scores, last?.starts_at, todayKey);
   const review = sharedReview(shared.reviews, shared.moments, last?.starts_at, todayKey, client.name);
   const reviewLines = review ? reviewRows(review.moment.kind, review.review, []).rows.filter((r) => r.lines[0].text !== 'Skipped') : [];
   const coming = comingUp(shared.coming, todayKey);
@@ -85,7 +87,7 @@ function BriefBody({ session, client }) {
 
       <Part title="Since last time">
         {average.value
-          ? <StatGroup className="cc-stats cc-brief-stat"><Stat label={average.label} value={average.value} bar={parseInt(average.value, 10) / 100} barBand={parseInt(average.value, 10) < 85 ? 'below' : undefined} /></StatGroup>
+          ? <StatGroup className="cc-stats cc-brief-stat"><Stat label={average.label} value={average.value} bar={parseInt(average.value, 10) / 100} barBand={belowStandard(average.value, standard) ? 'below' : undefined} /></StatGroup>
           : <p className="cc-quiet">{average.none}</p>}
         {review && (
           <div className="cc-soft cc-brief-soft">

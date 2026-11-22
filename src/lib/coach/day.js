@@ -4,6 +4,7 @@
 // device or the clock by itself, so every rule is a unit test
 // (tests/performance/coach-day.test.mjs).
 import { addDays, clean, cut, dayWords, firstName, fromDayKey, minutesWords, possessive, sessionsLeft, timeCredit, toDayKey } from './model.js';
+import { DEFAULT_STANDARD, m7IsValidStandard, m7WeekColour } from '../scores/m7.js';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -646,6 +647,26 @@ export function averageSince(weekScores, lastSessionAt, todayKey) {
   const avg = rows.reduce((n, w) => n + Number(w.score), 0) / rows.length;
   return { label, value: `${Math.round(avg)}%`, none: '' };
 }
+
+/**
+ * The client's own standard for the brief's bar (run 6, item 5): the
+ * standard of the sprint of the newest week the average counts (each
+ * week_scores row carries its sprint's `standard`, as the client's own
+ * dashboard reads it from their sprint), else of the newest week shared at
+ * all; the default 85 only when there is none.
+ * @param {{ week_end: string, score: number|null, standard?: number|null }[]} weekScores
+ * @returns {number}
+ */
+export function standardSince(weekScores, lastSessionAt, todayKey) {
+  const since = lastSessionAt ? toDayKey(new Date(lastSessionAt)) : addDays(todayKey, -28);
+  const own = (weekScores || []).filter((w) => m7IsValidStandard(Number(w.standard)) && w.week_end <= todayKey)
+    .sort((a, b) => String(b.week_end).localeCompare(String(a.week_end)));
+  const counted = own.find((w) => w.score != null && w.week_end > since);
+  return Number((counted || own[0])?.standard ?? DEFAULT_STANDARD);
+}
+
+/** Is an average ("81%") below the client's standard (the bar's grey band)? As the client's own dashboard colours a week (M7). */
+export const belowStandard = (value, standard = DEFAULT_STANDARD) => value != null && m7WeekColour(parseFloat(value), standard) === 'below';
 
 /** "Sam added this on Sun 15 Nov." */
 export const prepLine = (name, notedAt, todayKey) => `${firstName(name)} added this on ${dayWords(toDayKey(new Date(notedAt)), todayKey)}.`;

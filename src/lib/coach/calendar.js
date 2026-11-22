@@ -1706,7 +1706,8 @@ export function confirmPollPlan({ poll, option, people = [], kind = null }, { da
   const withClient = people.find((p) => p.profile_id);
   const item = { ...(held || newItem({ id: newId(), coachId: poll.coach_id, title: poll.title, starts_at: option.starts_at, ends_at: option.ends_at, time_zone: poll.time_zone })), kind: kind || (withClient ? 'client_call' : 'other'), title: poll.title, place_kind: poll.place_kind || 'zoom', poll_option_id: null };
   return plan(data, {
-    save: [[T.items, item], [T.polls, { ...poll, status: 'confirmed', confirmed_option_id: option.id, confirmed_item_id: item.id }], ...guestRows(people, { itemId: item.id, coachId: poll.coach_id, newId, clients: data.clients || [] }).map((g) => [T.guests, g])],
+    // The poll goes first: a poll another tab has just settled refuses it (054), so nothing else of this confirm is saved.
+    save: [[T.polls, { ...poll, status: 'confirmed', confirmed_option_id: option.id, confirmed_item_id: item.id }], [T.items, item], ...guestRows(people, { itemId: item.id, coachId: poll.coach_id, newId, clients: data.clients || [] }).map((g) => [T.guests, g])],
     remove: holds.filter((i) => i.id !== item.id).map((i) => [T.items, i.id]),
     words: `Confirmed for ${zoneDayWords(option.starts_at, zoneOr(poll.time_zone))}. The other times are free again.`,
   });

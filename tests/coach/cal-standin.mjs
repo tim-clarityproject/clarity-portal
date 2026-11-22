@@ -549,6 +549,11 @@ export function calStandIn({ store, ME, me, clock, no }) {
       }
       if (table === 'coach_polls') {
         if (!named(r.title, 1, 200) || !zoneIsReal(r.time_zone) || !['open', 'confirmed', 'cancelled'].includes(r.status ?? 'open')) bad(table, 'title, zone or status');
+        // 054's coach_polls_settled_guard(): settled once; only Undo takes it back to open.
+        if (old && ['confirmed', 'cancelled'].includes(old.status) && (r.status ?? 'open') !== 'open'
+          && (r.status !== old.status || (r.confirmed_option_id ?? null) !== (old.confirmed_option_id ?? null) || (r.confirmed_item_id ?? null) !== (old.confirmed_item_id ?? null))) {
+          no('CC409', 'This poll has already been settled.', 400);
+        }
       }
       if (table === 'coach_poll_people' && !named(r.name, 1, 120)) bad(table, 'name');
       if (table === 'coach_poll_options') {

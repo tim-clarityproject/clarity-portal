@@ -129,8 +129,13 @@ export async function runDay({ browser, report, parts }) {
         pass(`${tag}: no write was stopped on its way out (none was tried)`, blocked.length === 0, [...new Set(blocked)].slice(0, 5).join('; '));
         pass(`${tag}: nothing but a read reached the test project, and no email server was asked for real`, reached.length === 0, [...new Set(reached)].slice(0, 5).join('; '));
         if (there) {
-          const waiting = await page.evaluate((id) => Boolean(localStorage.getItem(`clarity-coach-local:${id}`)), me);
-          pass(`${tag}: everything reached the database, and nothing waits on the device`, !waiting);
+          const waiting = await page.evaluate((id) => {
+            const s = JSON.parse(localStorage.getItem(`clarity-coach-local:${id}`) || 'null');
+            if (!s) return '';
+            // What waits, by table and mark (never the rows' words), so a failure says where to look.
+            return Object.entries(s.marks || {}).flatMap(([t, m]) => Object.values(m).filter((x) => !x.sent).map((x) => `${t}${x.refused ? ' refused' : ''}${x.gone ? ' gone' : ''}`)).join('; ') || 'kept, all sent';
+          }, me);
+          pass(`${tag}: everything reached the database, and nothing waits on the device`, !waiting, waiting);
           const refused = store.calls.filter((c) => c.startsWith('refused'));
           pass(`${tag}: the database refused nothing the page sent`, refused.length === refusals, [...new Set(refused)].slice(0, 5).join('; '));
         } else {
@@ -436,24 +441,22 @@ export async function runDay({ browser, report, parts }) {
 
     if (there) {
       // Sent from another device meanwhile: this page still shows Leo's recap as unsent. What is typed here can't replace what
-      // the client was given, pressing Send sends nothing twice, and the page then shows the session as it was sent.
+      // the client was given: from run 6 (item 3) this tab's save is refused as changed in another tab, said calmly with
+      // "Reload to see it" (never "Saved"), and the page shows the session as it was sent, with nothing to press.
       const leo = store.rows.coach_sessions.find((s) => s.profile_id === ID.leo && s.outcome === 'held' && !s.recap_sent_at);
+      leo.updated_at ||= '2026-11-16T18:00:00.000Z'; // a database row always has one (the seed's rows may not)
       await go(page, `/coach/sessions/${leo.id}`);
       const asSent = leo.recap;
       store.fn.session_send_recap(store.coaches[0].user_id, leo.id); // the other device's Send
+      // The stand-in's clock is pinned to the walk's Tuesday; the database's own updated_at moves on with every change.
+      leo.updated_at = new Date(Date.parse(leo.updated_at || '2026-11-16T18:00:00.000Z') + 60000).toISOString();
       await page.getByLabel('Recap for Leo').fill('Rewritten here, after it went from the other device.');
-      await page.locator('.ds-addrow', { hasText: 'Add action' }).click(); await settle(page, 300);
-      await page.keyboard.type('Added after it was sent');
       await settle(page, 1800);
       pass(`${tag}: a recap sent from another device can’t be rewritten from here (the database keeps it as sent)`, leo.recap === asSent && Boolean(leo.recap_sent_at), leo.recap.slice(0, 60));
-      const late = store.rows.coach_session_actions.find((a) => a.session_id === leo.id && a.title === 'Added after it was sent');
-      pass(`${tag}: an action added after it was sent never goes to the client`, late?.send === false, JSON.stringify(late || null).slice(0, 120));
-      await press(page, 'Send the recap');
-      await settle(page, 1500);
-      const answers = store.sends.filter((x) => x.session === leo.id).map((x) => x.answer);
-      pass(`${tag}: pressing Send here is answered “already sent”, and says so`, answers.length === 1 && answers[0] === 'already_sent' && (await toast(page)) === 'This recap has already been sent.' && store.claims.filter((x) => x.session === leo.id).length === 0, `${answers.join(',')}; ${await toast(page)}`);
       const text = await words(page);
-      pass(`${tag}: and the page shows the session as it was sent, read-only`, text.includes('The recap has been sent, so this session stays as it is.') && text.includes(asSent) && !text.includes('Rewritten here') && (await page.locator('.cc-ses-bar').count()) === 0 && /Added after it was sent\s+Not sent/.test(text), flat((text.match(/RECAP[\s\S]{0,200}/i) || [''])[0]));
+      pass(`${tag}: the page says it changed in another tab, with a way to see it`, /This session changed in another tab\./.test(text) && (await page.getByRole('button', { name: 'Reload to see it' }).count()) === 1 && (await toast(page)) !== 'Saved', flat(text).slice(-160));
+      pass(`${tag}: and shows the session as it was sent, read-only, with nothing sent twice`, text.includes('The recap has been sent, so this session stays as it is.') && text.includes(asSent) && !text.includes('Rewritten here') && (await page.locator('.cc-ses-bar').count()) === 0
+        && store.sends.filter((x) => x.session === leo.id).length === 0 && store.claims.filter((x) => x.session === leo.id).length === 0, flat((text.match(/RECAP[\s\S]{0,200}/i) || [''])[0]));
     }
 
     // ---- 6. A late cancellation: it counts; Waive it; Undo

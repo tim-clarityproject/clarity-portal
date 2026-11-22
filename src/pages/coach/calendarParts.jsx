@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { InfoPop, useToast } from '../../components/design';
 import { deviceZone, addDays, dayKeyWords, wallClock } from '../../lib/time/index.js';
-import { newId, removeRow, saveRow, saveRows } from '../../lib/coach/store';
+import { forgetRows, loadCoach, newId, noteRows, removeRow, saveRow, saveRows } from '../../lib/coach/store';
+import { CHANGED_ELSEWHERE_CODE } from '../../lib/coach/model';
 import { estimateWords } from '../../lib/coach/day';
 import {
   bannerRows, calendarEntries, coachZoneOf, COLOURS, DRAG_STEP, entryLabel, entryLines, FULL_TITLE_AFTER_MS, hourLabels, hoursHandleWords, layoutDay, monthCell, monthGrid,
@@ -36,6 +37,12 @@ export const CAL_HOOKS = {
   poll: (id) => `/coach/calendar/polls/${id}`,
 };
 
+/** A plan refused by the database: the device lets go of what it kept for it (what it made, and its changes, go back). */
+function undoOnDevice(userId, plan) {
+  forgetRows(userId, plan.undo.remove.map(([table, id]) => [table, id]));
+  noteRows(userId, plan.undo.save);
+}
+
 /**
  * The calendar's data and the one way it is saved. `run(plan)` takes a plan
  * from calendar.js: it saves, says the plan's words with Undo for 10
@@ -68,8 +75,16 @@ export function useCalendar() {
       if (plan.save.length) status = await saveRows(userId, plan.save);
       for (const [table, id] of plan.remove) await removeRow(userId, table, id);
       syncNow.current.sync.removed(plan.remove, itemsBefore); // what must go from Google and Zoom too
-    } catch {
+    } catch (error) {
       busy.current = false;
+      if (error?.code === CHANGED_ELSEWHERE_CODE) {
+        // Settled in another tab or device a moment ago (a poll confirmed twice, 054): nothing of this plan stays on the
+        // device, the database's copy is read again, and the page says so in the database's own sentence.
+        undoOnDevice(userId, plan);
+        loadCoach(userId).catch(() => {});
+        toast.show(error.message);
+        return false;
+      }
       toast.error(SAVE_PROBLEM);
       return false;
     }

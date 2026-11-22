@@ -15,7 +15,20 @@
 //
 // Nothing here sends by itself: sendRecap runs only when the coach presses
 // Send the recap, and it sends once however often it is pressed.
+//
+// TWO TABS ON ONE SESSION (run 6, item 3): a tab never writes over what
+// another tab (or device) saved since it read the session. The page holds
+// the session (holdSession) while it is open: every save of that session
+// from this tab is sent "only if the session is still as this tab read it,
+// or as this tab last saved it" (the sync queue's guarded rows, as the
+// Health Check's versions; Health Check rule 21), and refused otherwise
+// (code 'changed'). On the device itself the recap is compared as text
+// first (`base`: the recap as this tab last read or saved it), so two tabs
+// on one device are told at once, and before 050 too. Send carries the
+// recap the tab shows to 054's session_send_recap(session, recap), which
+// sends nothing when the database holds another ('changed').
 import { supabase } from '../supabase';
+import { guardRows, noteVersions, onSuperseded, unguardRows } from '../syncQueue';
 import { coachDayReady, coachState, keyOf, loadCoach, newId, noteRows, removeRow, rowOf, rowsOf, saveRow, saveRows } from './store';
 import { actionsOf, ALREADY_SENT, lockedAction, lockedSession, moveSession, NEEDS_RECAP, newSession, SENT_LINE, sessionPeopleRows, sessionSent } from './day';
 import { clean } from './model';
@@ -28,6 +41,58 @@ const NOTES = 'coach_session_notes';
 const locked = () => { const e = new Error(SENT_LINE); e.code = 'locked'; return e; };
 const kept = (userId, id) => rowOf(coachState(userId), SESSIONS, id);
 
+/** What a page says when its session changed in another tab (with "Reload to see it"). */
+export const CHANGED_ELSEWHERE = 'This session changed in another tab.';
+const changed = () => { const e = new Error(CHANGED_ELSEWHERE); e.code = 'changed'; return e; };
+const textOf = (v) => (typeof v === 'string' && v.trim() ? v : null);
+
+/**
+ * Has the recap changed since this tab read it? `base` is the recap as this
+ * tab last read or saved it; `kept` the recap as the device (or database)
+ * holds it now; `next` what this tab would save. A save that only repeats
+ * what is there already is never refused.
+ * @param {string|null|undefined} base undefined: not checked
+ * @returns {boolean}
+ */
+export function recapChangedSince(base, keptRecap, next) {
+  if (base === undefined) return false;
+  const now = textOf(keptRecap);
+  return now !== textOf(base) && now !== textOf(next);
+}
+
+/**
+ * The session page holds its session while it is open: this tab's saves of
+ * it are then sent only if it is still as this tab read it (054 not needed:
+ * the queue's own "only if unchanged"). Resolves the release, for when the
+ * page closes. `onChanged` hears a waiting save refused later.
+ * @param {string} userId
+ * @param {object} session the session as the page opened with it
+ * @param {(row: object|null) => void} [onChanged]
+ * @returns {() => void}
+ */
+export function holdSession(userId, session, onChanged = () => {}) {
+  const rows = [{ id: session.id }];
+  guardRows(SESSIONS, rows);
+  let open = true;
+  const stop = onSuperseded((error) => {
+    if (!open || error?.table !== SESSIONS || (error.row && error.row.id !== session.id)) return;
+    if (error.row) noteRows(userId, [[SESSIONS, error.row]]);
+    onChanged(error.row || null);
+  });
+  (async () => {
+    // The version this tab's saves are based on: the database's, when it holds the recap this page opened with;
+    // otherwise this page is already behind, and its first save says so.
+    if ((await coachDayReady()) !== true || !open) return;
+    try {
+      const { data, error } = await supabase.from(SESSIONS).select('id, recap, updated_at').eq('id', session.id).limit(1);
+      const row = data?.[0];
+      if (error || !row?.updated_at || !open) return;
+      noteVersions(SESSIONS, [textOf(row.recap) === textOf(session.recap) ? row : { id: row.id, updated_at: '1970-01-01T00:00:00.000Z' }]);
+    } catch { /* offline: the device's own check still holds */ }
+  })();
+  return () => { open = false; stop(); unguardRows(SESSIONS, rows); };
+}
+
 /** The session's private notes row, or a blank one. */
 export const notesOf = (notes, session) => (notes || []).find((n) => n.session_id === session.id)
   || { session_id: session.id, coach_id: session.coach_id, layout: 'regular', focus: null, insight: null, next_time: null, supervision: null };
@@ -35,12 +100,19 @@ export const notesOf = (notes, session) => (notes || []).find((n) => n.session_i
 /**
  * Saves a session as it now stands. Refused (an Error whose code is
  * 'locked', saying day.js's SENT_LINE) when its recap has been sent and the
- * change touches what the client was given.
+ * change touches what the client was given; and (code 'changed') when its
+ * recap changed in another tab since this one read it (`base`), or the
+ * database says the session moved on since (a held session).
+ * @param {{ base?: string|null }} [opts] base: the recap as this tab last read or saved it
  */
-export async function saveSession(userId, next) {
-  const check = lockedSession(kept(userId, next.id), next);
+export async function saveSession(userId, next, { base } = {}) {
+  const before = kept(userId, next.id);
+  const check = lockedSession(before, next);
   if (!check.ok) throw locked();
-  return saveRow(userId, SESSIONS, check.row);
+  if (recapChangedSince(base, before?.recap, next.recap)) throw changed();
+  const status = await saveRow(userId, SESSIONS, check.row);
+  if (status === 'superseded') throw changed();
+  return status;
 }
 
 /** Saves the private notes and For supervision: the coach's alone, and never locked. */
@@ -122,7 +194,13 @@ export async function moveSessionTo(userId, session, newStartsAt) {
   // session would still be made. So the database is asked first, and the page then shows the session as sent.
   if (await sentElsewhere(userId, session.id)) throw locked();
   const { moved, made, people } = moveSession({ ...before, ...session }, newStartsAt, newId(), rowsOf(state, PEOPLE));
-  await saveRows(userId, [[SESSIONS, { ...moved, written_up_at: moved.written_up_at || new Date().toISOString() }], [SESSIONS, made], ...people.map((p) => [PEOPLE, p])]);
+  const status = await saveRows(userId, [[SESSIONS, { ...moved, written_up_at: moved.written_up_at || new Date().toISOString() }], [SESSIONS, made], ...people.map((p) => [PEOPLE, p])]);
+  if (status === 'superseded') {
+    // Changed in another tab since this one read it: the new time isn't made either.
+    for (const p of people) await removeRow(userId, PEOPLE, keyOf(PEOPLE, p)).catch(() => null);
+    await removeRow(userId, SESSIONS, made.id).catch(() => null);
+    throw changed();
+  }
   return {
     made,
     undo: async () => {
@@ -156,22 +234,36 @@ async function emailRecap(sessionId) {
   }
 }
 
-async function send(userId, { session, notes = null, actions = [] }) {
+const CHANGED = Object.freeze({ status: 'changed', message: CHANGED_ELSEWHERE });
+
+/** 054's send with the recap as this tab shows it; 050's own before 054 has run. */
+async function sendInDatabase(id, recap) {
+  const answer = await supabase.rpc('session_send_recap', { p_session: id, p_recap: recap });
+  const missing = answer.error && (answer.error.code === 'PGRST202' || answer.status === 404);
+  return missing ? supabase.rpc('session_send_recap', { p_session: id }) : answer;
+}
+
+async function send(userId, { session, notes = null, actions = [] }, { base } = {}) {
   const before = kept(userId, session.id);
   if (sessionSent(before)) return { status: 'already_sent', message: ALREADY_SENT };
   if (!clean(session.recap)) return { status: 'needs_recap', message: NEEDS_RECAP };
+  // Another tab on this device saved another recap since this one read it: nothing is saved or sent.
+  if (recapChangedSince(base, before?.recap, session.recap)) return CHANGED;
   const now = new Date().toISOString();
   // (a) Everything on the page is saved first, as it stands.
   const row = { ...(before || {}), ...session, outcome: 'held', waived: false, moved_to: null, written_up_at: session.written_up_at || now };
   const pairs = [[SESSIONS, row], ...(notes ? [[NOTES, notes]] : []), ...actions.filter((a) => clean(a.title)).map((a) => [ACTIONS, a])];
   const saved = await saveRows(userId, pairs);
+  // Another tab or device saved this session since this tab read it: the database kept theirs, and nothing is sent.
+  if (saved === 'superseded') return CHANGED;
 
   // (b) With 050: the database sends it, once ('sent' or 'already_sent'), then the email is asked for.
   if ((await coachDayReady()) === true) {
     if (saved === 'queued') { const e = new Error('Sending needs a connection, so try again when you’re back online.'); e.code = 'offline'; throw e; }
-    const { data, error } = await supabase.rpc('session_send_recap', { p_session: session.id });
+    const { data, error } = await sendInDatabase(session.id, row.recap);
     if (error) { const e = new Error(error.code === '22023' || error.code === '42501' ? error.message : 'That didn’t send. Check your connection and try again.'); e.code = error.code; throw e; }
     if (data === 'already_sent') { loadCoach(userId); return { status: 'already_sent', message: ALREADY_SENT }; }
+    if (data === 'changed') { loadCoach(userId); return CHANGED; }
     // The device's copy follows the database's at once; the next load brings its own time.
     noteRows(userId, [[SESSIONS, { ...row, recap_sent_at: now, recap_sent_by: userId }]]);
     const emailed = await emailRecap(session.id);
@@ -188,15 +280,18 @@ async function send(userId, { session, notes = null, actions = [] }) {
 /**
  * Send the recap. It sends once: a second press while the first is on its
  * way resolves { status: 'sending' }, and any press after it has gone
- * (here, or in another tab) resolves { status: 'already_sent' }.
+ * (here, or in another tab) resolves { status: 'already_sent' }. When the
+ * recap changed in another tab since this one read it, nothing is saved or
+ * sent: { status: 'changed' }.
  * @param {string} userId
  * @param {{ session: object, notes?: object, actions?: object[] }} page the session, its notes and its actions as the page has them
- * @returns {Promise<{ status: 'sent'|'already_sent'|'needs_recap'|'sending', emailed?: boolean, message?: string }>}
+ * @param {{ base?: string|null }} [opts] base: the recap as this tab last read or saved it
+ * @returns {Promise<{ status: 'sent'|'already_sent'|'needs_recap'|'sending'|'changed', emailed?: boolean, message?: string }>}
  */
-export function sendRecap(userId, page) {
+export function sendRecap(userId, page, opts = {}) {
   const id = page.session.id;
   if (sending.has(id)) return Promise.resolve({ status: 'sending' });
-  const run = send(userId, page).finally(() => { sending.delete(id); });
+  const run = send(userId, page, opts).finally(() => { sending.delete(id); });
   sending.set(id, run);
   return run;
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useToast } from '../../components/design';
 import { coachState, forgetRows, keyOf, loadCoach, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
-import { leadStagesStart } from '../../lib/coach/crmData';
+import { leadStagesStart, leadUnsettle } from '../../lib/coach/crmData';
 import { fieldFromTyped, fieldValue } from '../../lib/coach/model';
 import {
   alreadyRan, automationsSaid, claimed, coldPlan, crmProblem, discoveryPatch, firstStage, LEAD_ADDED, leadDetailsPatch, leadEvent, leadNote, logCall, moneyFromTyped,
@@ -105,7 +105,9 @@ export function useLeadActions() {
   };
 
   /** Saves rows, runs what follows, and says so with Undo. One at a time. */
-  const act = async ({ pairs, message, undo, event = null }) => {
+  // `first`: asked before anything is undone (Won and Cold: only while the lead is still as this tab set it); when it
+  // refuses, nothing is undone and the page says why.
+  const act = async ({ pairs, message, undo, event = null, first = null }) => {
     if (busy.current) return false;
     busy.current = true;
     try {
@@ -113,7 +115,7 @@ export function useLeadActions() {
       const auto = event ? await runFor(event) : null;
       toast.saved({
         message: status === 'queued' ? 'Will sync' : [message, auto ? automationsSaid(auto.done) : ''].filter(Boolean).join(' '), long: true,
-        onUndo: async () => { try { if (auto) await auto.undo(); await undo(); } catch (e) { problem(e); } },
+        onUndo: async () => { try { if (first) await first(); if (auto) await auto.undo(); await undo(); } catch (e) { problem(e); } },
       });
       return true;
     } catch (e) {
@@ -135,7 +137,7 @@ export function useLeadActions() {
     const line = { ...plan.event, data: { ...plan.event.data, agreement_draft: plan.agreementDraft } };
     return act({
       pairs: [...(plan.profile ? [['client_profiles', { ...plan.profile, created_by: userId }]] : []), ['coach_leads', plan.lead], ['coach_lead_events', line], ...(plan.deal ? [['organisation_deals', plan.deal]] : [])],
-      message: plan.toast, event: wonEvent(plan.lead),
+      message: plan.toast, event: wonEvent(plan.lead), first: () => leadUnsettle(userId, plan.lead, 'won'),
       undo: async () => {
         await saveRow(userId, 'coach_leads', lead);
         await drop('coach_lead_events', line.id);
@@ -243,11 +245,14 @@ export function useLeadActions() {
       if (plan.error) return plan;
       return act({
         pairs: [['coach_leads', plan.lead], ['coach_lead_events', plan.event], ...(plan.todo ? [['coach_todos', plan.todo]] : [])], message: plan.toast,
+        first: () => leadUnsettle(userId, plan.lead, 'cold'),
         undo: async () => { await saveRow(userId, 'coach_leads', lead); await drop('coach_lead_events', plan.event.id); if (plan.todo) await drop('coach_todos', plan.todo.id); },
       });
     },
-    /** A cold lead brought back into the pipeline, at the stage it left. */
-    warm: (lead) => {
+    /** A cold lead brought back into the pipeline, at the stage it left: only while still Cold as this tab sees it (054). */
+    warm: async (lead) => {
+      if (busy.current) return false;
+      try { await leadUnsettle(userId, lead, 'cold'); } catch (e) { problem(e); return false; }
       const plan = warmPlan(lead, { eventId: newId(), ...stamp(), stages });
       return act({ pairs: [['coach_leads', plan.lead], ['coach_lead_events', plan.event]], message: plan.toast, undo: async () => { await saveRow(userId, 'coach_leads', lead); await drop('coach_lead_events', plan.event.id); } });
     },
