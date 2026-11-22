@@ -11,7 +11,8 @@ import PersonalGoalModal from '../components/PersonalGoalModal';
 import { SignOutLink, useSignOut } from '../components/SignOut';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import OwnQuestionsSection from '../components/ownQuestions/OwnQuestionsSection';
-import { useCoachName, PageHeader, Button, ColourModeChoice, Section, SwitchRow, useToast, SleepTargetEditor, SleepTargetLink, useSleepTarget, keepWords } from '../components/design';
+import { useCoachName, PageHeader, Button, ColourModeChoice, Section, SwitchRow, useToast, SleepTargetEditor, SleepTargetLink, useSleepTarget, keepWords, useHiddenHelp } from '../components/design';
+import { hiddenHelpWords } from '../lib/hiddenHelp';
 import './performance/performance.css';
 import { DashboardCustomise } from './performance/DashboardCustomise';
 import { SLEEP_SUGGESTED_LINE, rangeWords } from '../lib/performance/sleepChart';
@@ -44,6 +45,7 @@ export default function MyAccount() {
   const [showGoalModal, setShowGoalModal] = useState(false);
   // The sleep target range (Tim, 3 Nov 2026): the same control as Recovery's Home.
   const [sleepTarget, changeSleepTarget] = useSleepTarget();
+  const hiddenHelp = useHiddenHelp();
   const [sleepEditing, setSleepEditing] = useState(false);
   const [customising, setCustomising] = useState(false);
   const [archivedMissionsCount, setArchivedMissionsCount] = useState(0);
@@ -310,6 +312,16 @@ export default function MyAccount() {
           <div className="account-choice">
             <ColourModeChoice />
           </div>
+          {/* Hidden help (tidy pass, item 13): only once an explanation has been hidden. */}
+          {hiddenHelp.count > 0 && (
+            <div className="account-row account-row--help">
+              <div className="account-row-text">
+                <p className="account-row-title">Hidden help</p>
+                <p className="account-row-note">{hiddenHelpWords(hiddenHelp.count)}</p>
+              </div>
+              <Button variant="text" onClick={hiddenHelp.showAll}>Show it again</Button>
+            </div>
+          )}
         </Section>
 
         <Section title="Settings" className="ipp-section account-section">
