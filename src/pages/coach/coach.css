@@ -434,7 +434,7 @@ body:has(> #root .ui-root.cc-app) {
   box-sizing: border-box;
 }
 .ui-root .cc-bulk-n { font-size: var(--fs-secondary); margin-right: var(--space-px10); white-space: nowrap; }
-.ui-root .cc-bulk-btn { all: unset; cursor: pointer; box-sizing: border-box; white-space: nowrap; min-height: var(--tap-min); padding: 0 var(--space-px12); border-radius: var(--radius-pill); font-size: var(--fs-secondary); display: inline-flex; align-items: center; }
+.ui-root .cc-bulk-btn { all: unset; cursor: pointer; box-sizing: border-box; white-space: nowrap; min-height: var(--tap-min); padding: 0 var(--space-px12); border-radius: var(--radius-btn); font-size: var(--fs-secondary); display: inline-flex; align-items: center; } /* 8px corners, never a pill (Tim, 22 Nov: one controls family) */
 @media (hover: hover) {
   .ui-root .cc-bulk-btn:hover { background: var(--cc-bulk-shade); }
 }

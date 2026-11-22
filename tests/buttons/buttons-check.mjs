@@ -383,7 +383,9 @@ export function controlsFamily({ phone, scale = 1 }) {
       const pad = parseFloat(ts.paddingTop) || 0;
       const rowsOk = rows > 1 && boxes.every((b) => near(b.height, want - 2 * pad, 0.6));
       // Taller only to match a box beside it in the same row (boxes side by side are one height).
-      const beside = [...(track.parentElement?.parentElement?.querySelectorAll('.ds-field, .ds-dd, input, select, .ds-btn') || [])]
+      let area = track;
+      for (let i = 0; i < 4 && area.parentElement; i += 1) area = area.parentElement;
+      const beside = [...area.querySelectorAll('.ds-field, .ds-dd, input, select, .ds-btn')]
         .filter((x) => vis(x) && !track.contains(x) && Math.abs(x.getBoundingClientRect().top - tb.top) < 2)
         .some((x) => near(x.getBoundingClientRect().height, tb.height, 1));
       if (!wraps && !beside && !rowsOk && !near(tb.height, want, 0.6)) bad.push(`${Math.round(tb.height * 10) / 10}px high, not ${want}`);
