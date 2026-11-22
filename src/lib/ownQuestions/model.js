@@ -149,18 +149,50 @@ export function answerWords(a) {
   return scaleOf(a.scale).words[a.rating - 1];
 }
 
-/** The summary's rows for one day: answered questions only, in place order, each under the words it was answered with. */
+// The order answers show in: the live questions by place, then deleted
+// ones (rule 7: a deleted question's past answers stay in their
+// summaries), then any answer whose question this device no longer holds.
+function questionOrder(questions, tool) {
+  const rank = new Map();
+  (questions || [])
+    .filter((q) => q.tool === tool && !q.refused)
+    .sort((x, y) => (x.deletedAt ? 1 : 0) - (y.deletedAt ? 1 : 0) || x.position - y.position
+      || String(x.createdAt).localeCompare(String(y.createdAt)))
+    .forEach((q, i) => rank.set(q.id, i));
+  return (id) => (rank.has(id) ? rank.get(id) : rank.size);
+}
+
+/**
+ * The summary's rows for one day: answered questions only, in place order,
+ * each under the words it was answered with. A question deleted since keeps
+ * its answer here (rule 7).
+ */
 export function daySummaryRows(questions, answers, tool, occasion) {
-  const rows = [];
-  for (const q of questionsFor(questions, tool)) {
-    const a = (answers || []).find((x) => x.questionId === q.id && x.occasion === occasion);
-    if (!answered(a)) continue;
-    rows.push({ id: q.id, label: a.wording || q.wording, value: answerWords(a) });
-  }
-  return rows;
+  const rankOf = questionOrder(questions, tool);
+  return (answers || [])
+    .filter((a) => a.tool === tool && a.occasion === occasion && answered(a))
+    .sort((x, y) => rankOf(x.questionId) - rankOf(y.questionId))
+    .map((a) => {
+      const q = (questions || []).find((x) => x.id === a.questionId);
+      return { id: a.questionId, label: a.wording || q?.wording || '', value: answerWords(a) };
+    });
 }
 
 const times = (n) => (n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`);
+
+// One question's week of answers, split by the words, kind and scale they
+// were given under (rule 7): a question edited mid-week shows its earlier
+// days under their old words, never counted under the new ones. Written
+// answers stay together (each day shows its own words in Read your answers).
+function versionsOf(list) {
+  const groups = new Map();
+  for (const a of list) {
+    const k = a.answerType === 'written' ? 'written' : `${a.answerType}|${a.scale || ''}|${a.wording}`;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(a);
+  }
+  return [...groups.values()];
+}
 
 /**
  * The debrief's "Your own questions": the debrief's own questions' answers
@@ -168,6 +200,8 @@ const times = (n) => (n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`);
  * days: a rating as the answer given most ("“Often” on 3 of 5 days."), a yes
  * or no as a count ("Yes on 3 of 5 days."), written answers as "You answered
  * on 4 of 5 days." with Read your answers. Skipped questions don't appear.
+ * Each row is under the words its answers were given to: a question edited
+ * mid-week gives a row for its earlier words and one for its new ones.
  *
  * @param questions  every question the person has (deleted ones too: a
  *                   question deleted mid-week still shows its week's answers)
@@ -175,56 +209,49 @@ const times = (n) => (n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`);
  * @param week       { sprintId, week, workingDays: ['YYYY-MM-DD', ...] }
  */
 export function weekSummaryRows(questions, answers, week) {
-  const rows = [];
-  const all = questions || [];
   const occasion = occasionOf('weekly_debrief', week);
-  for (const q of questionsFor(all, 'weekly_debrief')) {
-    const a = (answers || []).find((x) => x.questionId === q.id && x.occasion === occasion);
-    if (answered(a)) rows.push({ id: q.id, kind: 'week', label: a.wording || q.wording, value: answerWords(a) });
-  }
+  const rows = occasion
+    ? daySummaryRows(questions, answers, 'weekly_debrief', occasion).map((r) => ({ ...r, kind: 'week' }))
+    : [];
   const days = [...new Set(week?.workingDays || [])].sort();
   const total = days.length;
   if (!total) return rows;
   const inWeek = new Set(days);
   for (const tool of ['daily_plan', 'daily_review']) {
+    const rankOf = questionOrder(questions, tool);
     const byQ = new Map();
     for (const a of answers || []) {
       if (a.tool !== tool || !inWeek.has(a.occasion) || !answered(a)) continue;
       if (!byQ.has(a.questionId)) byQ.set(a.questionId, []);
       byQ.get(a.questionId).push(a);
     }
-    const order = all.filter((q) => q.tool === tool).sort((x, y) => (x.deletedAt ? 1 : 0) - (y.deletedAt ? 1 : 0) || x.position - y.position);
-    for (const q of order) {
-      const list = (byQ.get(q.id) || []).sort((x, y) => x.occasion.localeCompare(y.occasion));
-      if (!list.length) continue;
-      const label = q.deletedAt ? list[list.length - 1].wording : q.wording;
-      const n = list.length;
-      if (q.answerType === 'rating' || list[0].answerType === 'rating') {
-        const ratings = list.filter((a) => a.answerType === 'rating');
-        const count = new Map();
-        for (const a of ratings) count.set(`${a.scale}:${a.rating}`, (count.get(`${a.scale}:${a.rating}`) || 0) + 1);
-        // The answer given most; a tie goes to the later answer given, so it reads as the week now.
-        let best = null;
-        for (const a of ratings) {
-          const k = `${a.scale}:${a.rating}`;
-          if (!best || count.get(k) >= count.get(best.k)) best = { k, a };
+    const ids = [...byQ.keys()].sort((x, y) => rankOf(x) - rankOf(y));
+    for (const qid of ids) {
+      const all = byQ.get(qid).sort((x, y) => x.occasion.localeCompare(y.occasion));
+      const versions = versionsOf(all);
+      versions.forEach((list, i) => {
+        const id = versions.length > 1 ? `${qid}:${i + 1}` : qid;
+        const label = list[list.length - 1].wording;
+        const kind = list[0].answerType;
+        if (kind === 'rating') {
+          const count = new Map();
+          for (const a of list) count.set(a.rating, (count.get(a.rating) || 0) + 1);
+          // The answer given most; a tie goes to the later answer given, so it reads as the week now.
+          let best = null;
+          for (const a of list) if (!best || count.get(a.rating) >= count.get(best.rating)) best = a;
+          rows.push({ id, kind, label, value: `“${answerWords(best)}” on ${count.get(best.rating)} of ${total} days.` });
+        } else if (kind === 'yes_no') {
+          const yes = list.filter((a) => a.yesNo).length;
+          rows.push({ id, kind, label, value: `Yes on ${yes} of ${total} days.` });
+        } else {
+          rows.push({
+            id,
+            kind,
+            label,
+            value: `You answered on ${list.length} of ${total} days.`,
+            answers: list.map((a) => ({ date: a.occasion, wording: a.wording, text: a.written.trim() })),
+          });
         }
-        if (best) {
-          rows.push({ id: q.id, kind: 'rating', label, value: `“${answerWords(best.a)}” on ${count.get(best.k)} of ${total} days.` });
-          continue;
-        }
-      }
-      if (q.answerType === 'yes_no' || list[0].answerType === 'yes_no') {
-        const yes = list.filter((a) => a.answerType === 'yes_no' && a.yesNo).length;
-        rows.push({ id: q.id, kind: 'yes_no', label, value: `Yes on ${yes} of ${total} days.` });
-        continue;
-      }
-      rows.push({
-        id: q.id,
-        kind: 'written',
-        label,
-        value: `You answered on ${n} of ${total} days.`,
-        answers: list.map((a) => ({ date: a.occasion, wording: a.wording, text: a.written.trim() })),
       });
     }
   }

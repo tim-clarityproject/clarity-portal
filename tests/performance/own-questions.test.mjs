@@ -111,6 +111,58 @@ test('the week: a rating as the answer given most, a yes or no as a count, writt
   assert.deepEqual(weekSummaryRows([], [], { sprintId: 's1', week: 1, workingDays: days }), []);
 });
 
+test('a deleted question’s past answers stay in their summaries (rule 7)', () => {
+  const qs = [
+    q('a', 'daily_review', 1, { wording: 'Did I take a real break today?', answerType: 'yes_no', deletedAt: '2026-11-18T10:00:00Z' }),
+    q('n', 'daily_review', 1, { wording: 'What did I notice when the pressure rose today?' }),
+    q('d', 'weekly_debrief', 1, { wording: 'How good was my focus this week?', answerType: 'rating', scale: 'good', deletedAt: '2026-11-23T10:00:00Z' }),
+  ];
+  const as = [
+    { questionId: 'a', tool: 'daily_review', occasion: '2026-11-17', wording: 'Did I take a real break today?', answerType: 'yes_no', yesNo: true },
+    { questionId: 'n', tool: 'daily_review', occasion: '2026-11-17', wording: 'What did I notice when the pressure rose today?', answerType: 'written', written: 'My jaw.' },
+    { questionId: 'd', tool: 'weekly_debrief', occasion: 's1:3', wording: 'How good was my focus this week?', answerType: 'rating', scale: 'good', rating: 4 },
+  ];
+  assert.deepEqual(daySummaryRows(qs, as, 'daily_review', '2026-11-17').map((r) => [r.label, r.value]), [
+    ['What did I notice when the pressure rose today?', 'My jaw.'],
+    ['Did I take a real break today?', 'Yes'],
+  ]);
+  assert.deepEqual(weekSummaryRows(qs, as, { sprintId: 's1', week: 3, workingDays: ['2026-11-17'] }).map((r) => [r.label, r.value]), [
+    ['How good was my focus this week?', 'Very good'],
+    ['What did I notice when the pressure rose today?', 'You answered on 1 of 1 days.'],
+    ['Did I take a real break today?', 'Yes on 1 of 1 days.'],
+  ]);
+});
+
+test('a question edited mid-week: the earlier days stay under their old words, never counted under the new', () => {
+  const days = ['2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20'];
+  const qs = [q('r', 'daily_review', 1, { wording: 'How good was my listening today?', answerType: 'rating', scale: 'good' })];
+  const r = (day, rating, wording, scale) => ({ questionId: 'r', tool: 'daily_review', occasion: day, wording, answerType: 'rating', scale, rating });
+  const as = [
+    r(days[0], 4, 'How often did I listen before I spoke today?', 'often'),
+    r(days[1], 4, 'How often did I listen before I spoke today?', 'often'),
+    r(days[2], 3, 'How often did I listen before I spoke today?', 'often'),
+    r(days[3], 4, 'How good was my listening today?', 'good'),
+    r(days[4], 5, 'How good was my listening today?', 'good'),
+  ];
+  const rows = weekSummaryRows(qs, as, { sprintId: 's1', week: 3, workingDays: days });
+  assert.deepEqual(rows.map((x) => [x.label, x.value]), [
+    ['How often did I listen before I spoke today?', '“Often” on 2 of 5 days.'],
+    ['How good was my listening today?', '“Excellent” on 1 of 5 days.'],
+  ]);
+  assert.equal(new Set(rows.map((x) => x.id)).size, 2, 'each row has its own id');
+  // Changed kind and back (written, then yes or no, then written): never breaks, each kept as given.
+  const qs2 = [q('w', 'daily_plan', 1, { wording: 'What will I protect today?' })];
+  const as2 = [
+    { questionId: 'w', tool: 'daily_plan', occasion: days[0], wording: 'What will I protect today?', answerType: 'written', written: 'Thinking time.' },
+    { questionId: 'w', tool: 'daily_plan', occasion: days[1], wording: 'Will I protect thinking time?', answerType: 'yes_no', yesNo: true },
+    { questionId: 'w', tool: 'daily_plan', occasion: days[2], wording: 'What will I protect today?', answerType: 'written', written: 'The 1:1.' },
+  ];
+  assert.deepEqual(weekSummaryRows(qs2, as2, { sprintId: 's1', week: 3, workingDays: days }).map((x) => [x.label, x.value]), [
+    ['What will I protect today?', 'You answered on 2 of 5 days.'],
+    ['Will I protect thinking time?', 'Yes on 1 of 5 days.'],
+  ]);
+});
+
 test('the coach’s name always from the data', () => {
   assert.equal(suggestedBy({ coachFirstName: 'Maya' }), 'Suggested by Maya');
   assert.equal(homeSuggestionLine({ coachFirstName: 'Tim' }), 'See the question Tim suggested');
