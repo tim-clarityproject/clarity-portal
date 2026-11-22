@@ -353,7 +353,8 @@ export const GROUPS = [
         await page.getByLabel('What needs doing?').first().fill(QUICK_WORDS); await settle(page, 300);
       }, { expects: ['help'] }],
       ['todos-quick-add-panel', '/coach/todos', async (page) => { await openAdd(page); await page.locator('.ds-dialog').getByLabel('What needs doing?').fill(QUICK_WORDS); await settle(page, 300); }, { expects: ['panel', 'help'] }],
-      ['todos-quick-add-empty', '/coach/todos', async (page) => { await openAdd(page); await page.locator('.ds-dialog .ds-btn--primary').click(); await settle(page, 300); }, { expects: ['panel'] }],
+      // The screen before leaves its words as the panel's draft (tidy pass item 3: closing keeps them), so the box is emptied first.
+      ['todos-quick-add-empty', '/coach/todos', async (page) => { await openAdd(page); await page.locator('.ds-dialog').getByLabel('What needs doing?').fill(''); await settle(page, 200); await page.locator('.ds-dialog .ds-btn--primary').click(); await settle(page, 300); }, { expects: ['panel'] }],
       ['todos-help', '/coach/todos', async (page) => { await openAdd(page); await page.locator('.ds-dialog .ds-explain-link').click(); await settle(page, 600); }, { expects: ['panel', 'explain'] }],
       ['todos-todo', '/coach/todos', async (page) => { await page.locator(`[data-todo="${DAY.t3}"]`).click(); await settle(page, 600); }, { expects: ['panel', 'level'] }],
       ['todos-todo-foot', '/coach/todos', async (page) => { await page.locator(`[data-todo="${DAY.t3}"]`).click(); await settle(page, 600); await page.locator('.ds-dialog-body').evaluate((b) => { b.scrollTop = b.scrollHeight; }); await settle(page, 300); }, { expects: ['panel'] }],

@@ -61,7 +61,9 @@ body:has(.ds-ctable, .year-tbl, .plan-table) {
 
 .ui-root .cc-table:not(.cc-net-table) thead th {
   position: sticky;
-  top: calc(var(--cc-header-h) + env(safe-area-inset-top, 0px));
+  /* Under the header's own bottom line too (the UI tester, 22 Nov: at
+     --cc-header-h alone the row sat 1px under it). */
+  top: calc(var(--cc-header-h) + var(--line-w) + env(safe-area-inset-top, 0px));
   z-index: 2;
   background: var(--bg);
 }
