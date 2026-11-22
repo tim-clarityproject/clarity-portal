@@ -163,6 +163,10 @@ test('an unchanged table, and each unchanged row, is handed back as it was', () 
   assert.notEqual(changed.rows, first.rows);
   assert.equal(changed.rows.a, first.rows.a, 'row a kept as it was');
   assert.equal(changed.rows.b.title, 'B2');
+  // A change the database made without moving updated_at (a table with no touch trigger) is still seen.
+  const quiet = mergeTable('coach_todos', first.rows, first.marks, [{ ...dbRows[0], title: 'A, changed quietly' }, { ...dbRows[1] }], null);
+  assert.equal(quiet.rows.a.title, 'A, changed quietly');
+  assert.equal(quiet.rows.b, first.rows.b);
 });
 
 test('a read that covers part of a table leaves the rest as it was', () => {
@@ -178,12 +182,12 @@ test('a read that covers part of a table leaves the rest as it was', () => {
   assert.ok(w.inScope({ id: 'x', series_id: 's', occurrence_on: '2026-11-10', starts_at: '2027-05-01T00:00:00Z', ends_at: '2027-05-01T01:00:00Z' }), 'a stand-in for a time in the window, moved out of it');
 });
 
-test('nothing is cut off: 2,500 rows come in three pages, and the calendar comes by window', async () => {
+test('nothing is cut off: 6,500 rows come whole (one read, then pages in key order), and the calendar comes by window', async () => {
   store.resetCoachStoreForTests();
   db.rows = {};
   const now = Date.now();
   const iso = (ms) => new Date(ms).toISOString();
-  db.rows.client_profiles = Array.from({ length: 2500 }, (_, n) => ({ id: `p${String(n).padStart(5, '0')}`, coach_id: 'c1', name: `Client ${n}` }));
+  db.rows.client_profiles = Array.from({ length: 6500 }, (_, n) => ({ id: `p${String(n).padStart(5, '0')}`, coach_id: 'c1', name: `Client ${n}` }));
   db.rows.coach_todos = [
     { id: 't-open', coach_id: 'c1', title: 'Open', done_at: null },
     { id: 't-recent', coach_id: 'c1', title: 'Done lately', done_at: iso(now - 5 * 864e5) },
@@ -198,8 +202,10 @@ test('nothing is cut off: 2,500 rows come in three pages, and the calendar comes
   db.reads = [];
   assert.equal(await store.loadCoach('acct'), true);
   let state = store.coachState('acct');
-  assert.equal(store.rowsOf(state, 'client_profiles').length, 2500, 'every client, past any page size');
-  assert.deepEqual(db.reads.filter((r) => r.table === 'client_profiles').map((r) => r.from).slice(-3), [0, 1000, 2000], 'after the one look that the table is there');
+  assert.equal(store.rowsOf(state, 'client_profiles').length, 6500, 'every client, past the old cap of 5,000');
+  assert.equal(new Set(store.rowsOf(state, 'client_profiles').map((p) => p.id)).size, 6500, 'each once');
+  assert.deepEqual(db.reads.filter((r) => r.table === 'client_profiles').map((r) => r.from).slice(-8), [0, 0, 1000, 2000, 3000, 4000, 5000, 6000], 'one read of 5,000, then pages of 1,000');
+  assert.equal(db.reads.filter((r) => r.table === 'coach_todos' && r.or).length, 1, 'a small table: one read, as before');
   assert.deepEqual(store.rowsOf(state, 'coach_todos').map((t) => t.id).sort(), ['t-open', 't-recent'], 'first: open and lately done');
   assert.deepEqual(store.rowsOf(state, 'coach_cal_items').map((t) => t.id).sort(), ['c-now', 'c-series'], 'first: the weeks around now, and every series');
   assert.equal(store.rowsOf(state, 'client_notes').length, 0, 'client notes come later');

@@ -817,8 +817,10 @@ const loading = new Map();
 //   - LATER, once the page has drawn, quietly and once a visit: the older to-dos, every session's notes, client notes,
 //     the activity log and the lead events.
 //   - The calendar's other weeks are read as the coach moves to them (ensureCalRange), never all at once.
-// Every read goes a page of 1,000 rows at a time until the table has no more, so nothing is ever cut off unseen.
+// A read that fills its 5,000 rows goes on a page of 1,000 at a time until the table has no more, so nothing is ever
+// cut off unseen.
 const PAGE = 1000;
+const FIRST_READ = 5000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const CAL_BACK_DAYS = 42;
 const CAL_AHEAD_DAYS = 120;
@@ -861,15 +863,24 @@ function plans(names, nowMs, tier) {
   return out;
 }
 
-/** Every row of one read, a page at a time, in the order of the table's key. */
+/**
+ * Every row of one read. First as before (one read, up to 5,000 rows, in the database's own order, so the pages see
+ * their rows in the order they always have); a table that fills it is then read again a page of 1,000 at a time in the
+ * order of its key until it has no more, so nothing is ever cut off unseen (the owner's calendar once was).
+ */
 async function fetchTable(table, narrow) {
+  let q = supabase.from(table).select('*');
+  if (narrow) q = narrow(q);
+  const first = await q.limit(FIRST_READ);
+  if (first.error) throw first.error;
+  if ((first.data || []).length < FIRST_READ) return first.data || [];
   const out = [];
   const seen = new Set();
   for (let from = 0; ; from += PAGE) {
-    let q = supabase.from(table).select('*');
-    if (narrow) q = narrow(q);
-    for (const c of TABLES[table]) q = q.order(c, { ascending: true });
-    const { data, error } = await q.range(from, from + PAGE - 1);
+    let p = supabase.from(table).select('*');
+    if (narrow) p = narrow(p);
+    for (const c of TABLES[table]) p = p.order(c, { ascending: true });
+    const { data, error } = await p.range(from, from + PAGE - 1);
     if (error) throw error;
     const rows = data || [];
     let fresh = 0;
@@ -896,9 +907,21 @@ async function fetchPlans(list) {
 }
 
 const sameMark = (a, b) => a === b || (Boolean(a) && Boolean(b) && a.sent === b.sent && a.gone === b.gone && a.refused === b.refused && a.part === b.part);
-const sameRow = (a, b) => a === b || (Boolean(a) && Boolean(b) && (a.updated_at != null || b.updated_at != null
-  ? a.updated_at === b.updated_at && a.created_at === b.created_at && Object.keys(a).length === Object.keys(b).length
-  : JSON.stringify(a) === JSON.stringify(b)));
+// Field by field (a stamp like updated_at isn't enough: not every table's is moved by the database on a change).
+function sameRow(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  for (const k of keys) {
+    const x = a[k];
+    const y = b[k];
+    if (x === y) continue;
+    if (x && y && typeof x === 'object' && typeof y === 'object' && JSON.stringify(x) === JSON.stringify(y)) continue;
+    return false;
+  }
+  return true;
+}
 
 /**
  * One table brought up to date, in one pass (it once copied the whole table for every row: 10 seconds for the owner).
