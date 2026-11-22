@@ -1,4 +1,4 @@
-import { useParams, Navigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { legalDocuments } from '../../content/legal';
 import LegalDocBody from '../../components/legal/LegalDocBody';
 import { PageHeader } from '../../components/design';
@@ -32,6 +32,12 @@ const PAGE_CLASS_NAMES = {
 export default function LegalDocumentPage() {
   const { doc: slug } = useParams();
   const key = SLUG_TO_KEY[slug];
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Back goes to the page that opened this one (a guest's link, the sign-in
+  // screens), so nobody loses their place; opened on its own (a new tab, a
+  // bookmark), it goes to sign in (the functionality tester, 22 Nov).
+  const cameFromPortal = location.key !== 'default';
 
   if (!key) {
     return <Navigate to="/auth/login" replace />;
@@ -116,7 +122,7 @@ export default function LegalDocumentPage() {
       <div className="legal-page-content">
         <div className="legal-page-column">
           <div className="legal-page-topbar">
-            <BackLink to="/auth/login" />
+            {cameFromPortal ? <BackLink onClick={() => navigate(-1)} /> : <BackLink to="/auth/login" />}
           </div>
           <PageHeader title={doc.title} meta={[doc.lastUpdated]} />
           <LegalDocBody blocks={doc.blocks} classNames={PAGE_CLASS_NAMES} />
