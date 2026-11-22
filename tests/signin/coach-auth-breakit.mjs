@@ -693,7 +693,7 @@ if (PARTS.includes('typed')) {
     const at = await waitPath(d.page, /\/in$/, 10000);
     pass(`Typed (${label}): read as the code and used`, at === '/coach/sign-in/in' && world.left() === left - 1, `${at}, ${world.left()} left`);
     // Signed in again for the next one (a recovery code removes the phone).
-    world.factors = [{ id: '00000000-0000-4000-8000-0000000000f1', factor_type: 'totp', status: 'verified', friendly_name: 'Authenticator', created_at: '2026-12-02T10:00:00Z', updated_at: '2026-12-02T10:00:00Z' }];
+    world.factors = [{ id: '00000000-0000-4000-8000-0000000000f1', factor_type: 'totp', status: 'verified', friendly_name: 'Authenticator', created_at: '2026-11-02T10:00:00Z', updated_at: '2026-11-02T10:00:00Z' }];
     world.keys.set('00000000-0000-4000-8000-0000000000f1', M26_KEY);
   }
   for (const [label, typed, want] of [

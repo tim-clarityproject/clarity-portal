@@ -103,7 +103,7 @@ export function claimsOf(token) {
  */
 export function makeWorld(o = {}) {
   const user0 = o.user || MAYA;
-  const seededAt = '2026-12-02T10:00:00Z';
+  const seededAt = '2026-11-02T10:00:00Z';
   const world = {
     calls: [],
     user: user0,
@@ -197,7 +197,7 @@ export function makeWorld(o = {}) {
   const sessionOk = (claims) => endedBy(claims) === null;
   world.state = (claims) => ({
     coach: true, owner: world.role === 'owner', owner_first_name: owner()?.display_first_name ?? null, turned_on_at: world.turnedOnAt,
-    codes_left: world.left(), codes_total: world.codeRows.length, codes_made_at: world.codeRows.length ? '2026-12-02T10:05:00Z' : null,
+    codes_left: world.left(), codes_total: world.codeRows.length, codes_made_at: world.codeRows.length ? '2026-11-02T10:05:00Z' : null,
     codes_saved: world.codesSaved && world.codeRows.length > 0, wait_seconds: Math.max(0, Math.ceil((world.waitUntil - Date.now()) / 1000)),
     recovered_at: world.recoveredAt, last_reset_at: world.lastResetAt ? new Date(world.lastResetAt).toISOString() : null, session_ok: sessionOk(claims),
     ended_by: endedBy(claims),
@@ -464,7 +464,7 @@ export function makeWorld(o = {}) {
         return json(route, method === 'GET' || method === 'HEAD' ? [] : { code: '42501', message: 'new row violates row-level security policy' }, method === 'GET' || method === 'HEAD' ? 200 : 403);
       }
       world.coachAnswers.push({ path, aal, gave: true });
-      const row = { id: '00000000-0000-4000-8000-00000000d054', coach_id: MAYA_COACH, name: COACH_DATA_MARKER, title: COACH_DATA_MARKER, created_at: '2026-12-02T10:00:00Z' };
+      const row = { id: '00000000-0000-4000-8000-00000000d054', coach_id: MAYA_COACH, name: COACH_DATA_MARKER, title: COACH_DATA_MARKER, created_at: '2026-11-02T10:00:00Z' };
       return json(route, rpc ? [row] : (method === 'GET' || method === 'HEAD' ? [row] : [row]), method === 'GET' || rpc ? 200 : 201);
     }
     if (path.includes('/rest/v1/coaches') && world.role === 'client') return json(route, []);
