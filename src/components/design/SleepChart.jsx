@@ -19,8 +19,8 @@ import './design.css';
 // "Day 2" and so on, with "Last night" under the latest bar; on a phone
 // only every other day is named, and fewer still when the names would
 // touch (a long Recovery, or the largest text size). Every bar has the
-// shared pop-up (ChartTips): the hours, larger, then the day and its
-// night ("Day 4, night of 23 Oct."), then its quality.
+// shared pop-up (ChartTips) as a small card: the day and its night ("Day
+// 4, night of 23 Oct"), then Hours and Quality rows.
 //
 // Before there are two nights, the empty frame with one line saying when
 // it starts.
@@ -40,17 +40,13 @@ const LABEL_GAP = 8; // px between two names along the bottom
 const DENSE_FROM = 28;
 
 function tipFor(s) {
-  // The pop-up names the day as the axis does, then the night it holds.
-  const when = `${s.day}, ${s.night.charAt(0).toLowerCase()}${s.night.slice(1)}.`;
-  if (s.state === 'next') return tipProps({ value: 'To come', when });
+  // A small card (tidy pass, item 15): the day as the axis names it, with
+  // its night, then the hours and the quality as label and value rows.
+  const title = `${s.day}, ${s.night.charAt(0).toLowerCase()}${s.night.slice(1)}`;
+  if (s.state === 'next') return tipProps({ title, rows: [['Hours', 'To come']] });
   const q = qualityWords(s.quality);
-  if (s.state === 'none') {
-    // Quality answered without the hours: say which part is missing.
-    return q
-      ? tipProps({ value: 'Hours not answered', when, extra: [`Quality: ${q}.`] })
-      : tipProps({ value: 'Not answered', when });
-  }
-  return tipProps({ value: `${hoursFigure(s.hours)} hours`, when, extra: q ? [`Quality: ${q}.`] : [] });
+  const hours = s.state === 'none' ? 'Not answered' : `${hoursFigure(s.hours)} hours`;
+  return tipProps({ title, rows: [['Hours', hours], ...(q ? [['Quality', q]] : [])] });
 }
 
 // Which names along the bottom fit: "Last night" always, Day 1 whenever it

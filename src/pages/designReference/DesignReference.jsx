@@ -100,6 +100,7 @@ import { FiguresDemo, NoteSwitchDemo, RowsDemo, ScaleLevelDemo, SummaryDemo } fr
 import { DesktopMenuDemo, HubTilesDemo, PhoneNavDemo, PinPanelDemo, SavedItemsDemo } from './NavigationDemos';
 import { CarryOnDemo, DayFocusDemo, HelpListDemo, MiniDialDemo, PlanStepsDemo, SuggestionDemo } from './TodayDemos';
 import { CheckinChartDemo } from './CheckinDemos';
+import { SleepChartDemo } from './SleepDemos';
 import { PatternCardDemo } from './PatternDemos';
 import { BreathOrbDemo } from './OrbDemos';
 import { CarriedOverDemo, NightDemo, WorkDoneDemo } from './WindDownDemos';
@@ -2183,6 +2184,16 @@ function Gallery() {
             <p>No key: each line is named at its right end with its latest score, months run along the bottom, and a small ring under a month marks long-haul travel. Every dot and ring has the shared pop-up.</p>
             <p>Show as a table sits under every chart, closed until opened, so nothing depends on colour or on pointing. Under about 600px each row becomes a small card.</p>
             <p>With one month, the empty frame says when the graph starts.</p>
+          </>
+        )} />
+
+        <GallerySection id="c87" title="The sleep chart" wide demo={SleepChartDemo} rules={(
+          <>
+            <p><New /><b>One bar per night, drawn to scale from zero</b> (Recovery’s Home, approved by Tim on 3 Nov; the dashboard’s sleep row): nights inside or above the target range are mint, nights below it the below-standard grey, nights to come or not answered a faint 2px stub. Coral is never a data colour.</p>
+            <p>No key: the target range is a faint mint band between two thin dashed mint lines, labelled in place, to the right on a laptop and in a strip above the right end on a phone. Only last night’s figure is written above its bar.</p>
+            <p>Along the bottom, Day 1, Day 2 and so on, with Last night under the latest bar; on a phone every other day, and fewer when the names would touch.</p>
+            <p>Every bar has the shared pop-up as a small card: the day and its night, then Hours and Quality rows.</p>
+            <p>Before the second night, the empty frame says when the chart starts.</p>
           </>
         )} />
 

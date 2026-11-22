@@ -43,11 +43,13 @@ function change(points, i, key) {
   return a - b;
 }
 
-function changeWords(d, before) {
+// The pop-up's row for the change since the month before (a small card,
+// tidy pass item 15: labels grey on the left, values on the right).
+function changeRows(d, before) {
   if (d == null) return [];
-  if (d > 0) return [`Up ${d} on ${before}.`];
-  if (d < 0) return [`Down ${-d} on ${before}.`];
-  return [`The same as ${before}.`];
+  if (d > 0) return [[`Since ${before}`, `Up ${d}`]];
+  if (d < 0) return [[`Since ${before}`, `Down ${-d}`]];
+  return [[`Since ${before}`, 'The same']];
 }
 
 export default function CheckinChart({ points = [], empty = 'Your graph starts here after your second monthly review.', label = 'Hardware score and Software score by month, out of 100' }) {
@@ -127,7 +129,7 @@ export default function CheckinChart({ points = [], empty = 'Your graph starts h
                   cx={X(i)}
                   cy={Y(p[s.key])}
                   r={i === n - 1 ? 4 : 2.6}
-                  {...tipProps({ value: `${s.name} score ${p[s.key]}/100`, when: p.when, extra: changeWords(d, i ? points[i - 1].when.split(' ')[0] : '') })}
+                  {...tipProps({ title: `${s.name} score`, rows: [['Month', p.when], ['Score', `${p[s.key]}/100`], ...changeRows(d, i ? points[i - 1].when.split(' ')[0] : '')] })}
                 />
               );
             }))}
@@ -140,7 +142,7 @@ export default function CheckinChart({ points = [], empty = 'Your graph starts h
                   <text className="ds-cchart-text" x={X(i)} y={h - 20} textAnchor="middle" aria-hidden="true">{p.axis}</text>
                 )}
                 {p.trips > 0 && (
-                  <circle className="ds-cchart-trip" cx={X(i)} cy={h - 7} r={3.5} {...tipProps({ value: tripsWords(p.trips), when: p.when, extra: ['Each crossed 3 or more time zones.'] })} />
+                  <circle className="ds-cchart-trip" cx={X(i)} cy={h - 7} r={3.5} {...tipProps({ title: tripsWords(p.trips), rows: [['Month', p.when]], foot: 'Each crossed 3 or more time zones.' })} />
                 )}
               </g>
             ))}

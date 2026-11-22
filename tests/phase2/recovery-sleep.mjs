@@ -408,7 +408,8 @@ if (part('chart')) {
       if (touch) await bar.tap(); else await bar.hover();
       await still(page);
       const tip = await popUp(page);
-      pass(`${tag}: pop-up on ${touch ? 'tap' : 'hover'}: hours, night, quality`, tip && tip.lines.join(' | ') === '6 hours | Day 2, night of 30 Oct. | Quality: Fair.', tip?.lines?.join(' | '));
+      // A small card (tidy pass, item 15): the night, then Hours and Quality rows.
+      pass(`${tag}: pop-up on ${touch ? 'tap' : 'hover'}: night, hours, quality`, tip && tip.lines.join(' | ') === 'Day 2, night of 30 Oct | Hours6 hoursQualityFair', tip?.lines?.join(' | '));
       pass(`${tag}: pop-up 12px inside the screen`, tip && tip.left >= 11.5 && tip.right >= 11.5 && tip.top >= 11.5 && tip.bottom >= 11.5, JSON.stringify(tip));
       const after = await boxes(page);
       pass(`${tag}: the pop-up moves nothing`, before.join(';') === after.join(';'));
@@ -416,9 +417,9 @@ if (part('chart')) {
       await page.locator('.ds-schart-bar').nth(4).focus();
       await still(page);
       const focusTip = await popUp(page);
-      pass(`${tag}: pop-up on keyboard focus`, focusTip?.lines?.[0] === '6.5 hours' && focusTip.lines[1] === 'Day 5, night of 2 Nov.', focusTip?.lines?.join(' | '));
+      pass(`${tag}: pop-up on keyboard focus`, focusTip?.lines?.[0] === 'Day 5, night of 2 Nov' && focusTip.lines[1] === 'Hours6.5 hours', focusTip?.lines?.join(' | '));
       const next = f.bars[6].tip;
-      pass(`${tag}: a day to come says so`, next?.value === 'To come' && next.when === 'Day 7, night of 4 Nov.', JSON.stringify(next));
+      pass(`${tag}: a day to come says so`, next?.title === 'Day 7, night of 4 Nov' && next.rows?.[0]?.[1] === 'To come', JSON.stringify(next));
       await page.keyboard.press('Escape');
       // The table.
       pass(`${tag}: "Show as a table" with the chevron`, f.fold === 'Show as a table' && f.foldChevron, f.fold);

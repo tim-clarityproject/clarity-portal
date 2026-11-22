@@ -58,8 +58,8 @@ export default function TeamChart({ check, now = new Date() }) {
           <g aria-hidden="true">
             <text className="tpc-chart-axis" transform={`translate(${phone ? 12 : 14} ${PT + ph / 2}) rotate(-90)`} textAnchor="middle">Alignment</text>
             <text className="tpc-chart-end" x={PL - 8} y={PT + 12} textAnchor="end">High</text>
-            <text className="tpc-chart-end" x={PL - 8} y={bottom} textAnchor="end">Low</text>
-            <text className="tpc-chart-end" x={PL} y={bottom + 18}>Low</text>
+            {/* Both axes start at Low, so it is written once, at the corner (tidy pass, item 14). */}
+            <text className="tpc-chart-end" x={PL - 8} y={bottom + 18} textAnchor="end">Low</text>
             <text className="tpc-chart-end" x={PL + pw} y={bottom + 18} textAnchor="end">High</text>
             <text className="tpc-chart-axis" x={PL + pw / 2} y={bottom + 38} textAnchor="middle">Autonomy</text>
             <text className={`${area} tpc-chart-area--good`} data-chart-label x={PL + pw - 8} y={PT + 20} textAnchor="end">{AREA_NAME.hp}</text>

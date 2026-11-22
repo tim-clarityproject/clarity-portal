@@ -335,7 +335,7 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
                     return (
                       <g
                         key={idx}
-                        {...tipProps({ kind: 'Project', name: project.name, extra: [`Progress ${project.progress} of 5.`, `Strategic importance ${project.importance}.`] })}
+                        {...tipProps({ title: project.name, sub: ['Project'], rows: [['Progress', `${project.progress} of 5`], ['Strategic importance', `${project.importance} of 5`]] })}
                         onClick={() => setSelectedProjectIdx(isSelected ? null : idx)}
                       >
                         <circle cx={x} cy={y} r={isSelected ? 8 : 6} fill="var(--text)" stroke={isSelected ? 'var(--coral-text)' : 'none'} strokeWidth="2" opacity={isSelected ? 1 : 0.7} style={{ cursor: 'pointer' }} />

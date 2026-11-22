@@ -56,8 +56,9 @@ export function remap(areas, series, targets, labelValues) {
 }
 
 /**
- * What one area's pop-up says: its score first, then when, then how it
- * moved since the start of the range.
+ * What one area's pop-up says, as a small card (tidy pass, item 15): the
+ * area, then its score, when, how it moved since the start of the range and
+ * its target as label and value rows.
  * @param {object} M - from remap
  * @param {number} i - the area's place on the wheel
  * @param {{ when?: string, startWhen?: string }} dates - "Sat 3 Oct"
@@ -65,16 +66,14 @@ export function remap(areas, series, targets, labelValues) {
 export function areaTip(M, i, { when, startWhen } = {}) {
   const v = M.now ? M.now[i] : null;
   const s = M.start ? M.start[i] : null;
-  const extra = [];
+  const rows = [['Score', v == null ? 'No score' : `${v}/10`]];
+  if (when) rows.push(['Latest', when]);
   if (v != null && s != null && startWhen) {
-    if (v > s) extra.push(`Up ${v - s} from ${s} on ${startWhen}.`);
-    else if (v < s) extra.push(`Down ${s - v} from ${s} on ${startWhen}.`);
-    else extra.push(`The same as on ${startWhen}.`);
+    const label = `Since ${startWhen}`;
+    if (v > s) rows.push([label, `Up ${v - s} from ${s}`]);
+    else if (v < s) rows.push([label, `Down ${s - v} from ${s}`]);
+    else rows.push([label, 'The same']);
   }
-  if (M.tgt && M.tgt[i] != null) extra.push(v != null && v >= M.tgt[i] ? `Target ${M.tgt[i]} reached.` : `Target ${M.tgt[i]}.`);
-  return {
-    value: v == null ? `${M.names[i]}: no score` : `${M.names[i]} ${v}/10`,
-    when: when ? `Latest, ${when}` : undefined,
-    extra,
-  };
+  if (M.tgt && M.tgt[i] != null) rows.push(['Target', v != null && v >= M.tgt[i] ? `${M.tgt[i]} (reached)` : `${M.tgt[i]}`]);
+  return { title: M.names[i], rows };
 }

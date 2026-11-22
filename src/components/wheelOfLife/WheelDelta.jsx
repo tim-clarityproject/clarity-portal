@@ -1,13 +1,17 @@
 import { deltaView, formatCheckinDate } from '../../lib/wheelOfLife';
 import { tipProps } from '../design/ChartTips';
 
-// Each bar's pop-up (every mark has one, Tim 26 Oct): the change first,
-// then the two check-ins it compares.
+// Each bar's pop-up (every mark has one, Tim 26 Oct), a small card (tidy
+// pass, item 15): the area, then the change, the scores and the two
+// check-ins it compares as label and value rows.
 function deltaTip(r, first, last) {
   return {
-    value: `${r.name} ${r.changeText}`,
-    when: `${first} to ${last}`,
-    extra: [r.start == null ? `New, now ${r.latest}.` : `From ${r.start} to ${r.latest}.`],
+    title: r.name,
+    rows: [
+      ['Change', r.changeText],
+      r.start == null ? ['Now', `${r.latest} (new)`] : ['Score', `${r.start} to ${r.latest}`],
+      ['Check-ins', `${first} to ${last}`],
+    ],
   };
 }
 
