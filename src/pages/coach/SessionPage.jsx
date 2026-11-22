@@ -195,7 +195,10 @@ function SessionBody({ session, who }) {
       say(() => saveSession(userId, { ...before, outcome: 'held', waived: false, moved_to: null }), 'Saved', () => saveSession(userId, before).catch(() => {}));
     }
   };
-  const recount = (status) => { if (status === 'saved' && coachDayReadyNow() === true) loadCoach(userId); return status; };
+  // The database recounts the engagement's sessions when one is saved: a load follows, and `again` makes it one that
+  // begins after this save (a load already on its way read the session from before it: waived, then Count it as used
+  // straight away, ended showing it waived; fixer D, 22 Nov).
+  const recount = (status) => { if (status === 'saved' && coachDayReadyNow() === true) loadCoach(userId, { again: true }); return status; };
   const saveOutcome = async () => {
     if (busy.current) return;
     busy.current = true;

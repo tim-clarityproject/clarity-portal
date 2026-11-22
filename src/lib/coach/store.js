@@ -431,7 +431,13 @@ if (typeof window !== 'undefined') {
     const local = `clarity-${LOCAL}:`;
     const userId = e.key.startsWith(local) ? e.key.slice(local.length) : (/^clarity-cache:(.+):coach$/.exec(e.key) || [])[1];
     if (!userId || !e.newValue) return;
-    const raw = parseRaw(e.newValue);
+    // What the key holds now, not the event's own value: the event arrives after this tab may have written the key
+    // itself, and a newer copy here must never be put back by another tab's older one (a to-do ticked in one tab and
+    // deleted in the other came back in the deleting tab; fixer D, 22 Nov, as before the scale check).
+    let now = null;
+    try { now = window.localStorage.getItem(e.key); } catch { now = e.newValue; }
+    if (now == null) return;
+    const raw = parseRaw(now);
     // A large copy's waiting rows: laid over this tab's copy, never in place of it.
     cache.set(userId, raw?.partial ? overlay(read(userId), tidyState(raw)) : tidyState(raw));
     listeners.forEach((fn) => fn());
