@@ -469,10 +469,20 @@ function SleepPanel({ open, onClose, userId, today, saved, onSaved }) {
   const savedRaw = useRef({ hours: null, quality: null });
   const savedRef = useRef(saved);
   useEffect(() => { savedRef.current = saved; });
+  // The day the panel opened on: the page works "today" out again on every
+  // render, so after midnight a re-render behind an open panel would have
+  // emptied what was being typed and loaded the new day's night instead
+  // (the break-it tester, Phase 9 tidy 1). The save still goes to the day
+  // it is made on.
+  const todayRef = useRef(today);
+  useEffect(() => { todayRef.current = today; });
+  const openedOn = useRef(today);
 
   useEffect(() => {
     if (!open || !userId) return;
     let live = true;
+    const day = todayRef.current;
+    openedOn.current = day;
     touched.current = { hours: false, quality: false };
     savedHas.current = { hours: false, quality: false };
     savedRaw.current = { hours: null, quality: null };
@@ -496,9 +506,9 @@ function SleepPanel({ open, onClose, userId, today, saved, onSaved }) {
     setHours(null);
     setQuality(null);
     fill(savedRef.current);
-    loadSleep(userId, today).then((row) => { if (live) fill(row); }).catch(() => {});
+    loadSleep(userId, day).then((row) => { if (live) fill(row); }).catch(() => {});
     return () => { live = false; };
-  }, [open, userId, today]);
+  }, [open, userId]);
 
   const keep = async () => {
     if (hours == null && !quality) {
@@ -513,9 +523,10 @@ function SleepPanel({ open, onClose, userId, today, saved, onSaved }) {
       // answer shown moves with it. On its own day only what the person
       // answered or changed is sent (sleepPanelSend).
       const now = localToday();
-      const day = now > today ? now : today;
+      const from = openedOn.current;
+      const day = now > from ? now : from;
       const sent = sleepPanelSend({
-        hours, quality, touched: touched.current, savedHas: savedHas.current, raw: savedRaw.current, moving: day !== today,
+        hours, quality, touched: touched.current, savedHas: savedHas.current, raw: savedRaw.current, moving: day !== from,
       });
       const r = await saveSleep(userId, day, sent);
       toast.show(r?.status === 'queued' ? 'Will sync' : 'Saved');
