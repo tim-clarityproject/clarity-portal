@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useLayoutEffect, useRef } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { announceDraftRestored } from '../../lib/drafts';
-import { clearPanelDraft, fieldEntry, fieldsToRestore, hasTyping, keepPanelDraft, readPanelDraft } from '../../lib/panelDraft';
+import { clearPanelDraft, fieldEntry, fieldsToRestore, hasTyping, keepPanelDraft, readPanelDraft, typedFields } from '../../lib/panelDraft';
 
 // The shared panel's draft (tidy pass item 3; the rules are in
 // src/lib/panelDraft.js). Modal calls it with the panel's `draftKey`; with
@@ -58,7 +58,8 @@ export function usePanelDraft({ draftKey, open, shown, bodyRef }) {
     const root = bodyRef.current;
     if (!key || !root || !opened.current) return;
     const now = readFields(root);
-    if (hasTyping(now, opened.current)) keepPanelDraft(userRef.current, key, now);
+    // Only the boxes typed in are kept (typedFields), never the others' values as the panel opened.
+    if (hasTyping(now, opened.current)) keepPanelDraft(userRef.current, key, typedFields(now, opened.current));
     else clearPanelDraft(userRef.current, key);
   }, [bodyRef]);
 

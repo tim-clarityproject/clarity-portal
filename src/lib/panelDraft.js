@@ -55,6 +55,20 @@ export function hasTyping(fields = [], opened = []) {
   return !sameFields(fields, opened) && fields.some((f) => f.v.trim());
 }
 
+/**
+ * Only the fields typed in: those that differ from how the panel opened.
+ * An edit panel's other fields are never kept, so a draft put back later
+ * never puts an old value over one changed since on another device or tab
+ * (the break-it tester, Phase 9 tidy 1: a lead's Edit details kept every
+ * box, and its untouched email went back over the newer one).
+ */
+export function typedFields(fields = [], opened = []) {
+  return fields.filter((f, n) => {
+    const was = opened[n];
+    return !was || was.label !== f.label || was.v !== f.v;
+  });
+}
+
 export function keepPanelDraft(userId, key, fields) {
   if (!key) return;
   if (!userId) { memory.set(key, fields); return; }

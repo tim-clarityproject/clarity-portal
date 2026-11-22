@@ -52,3 +52,19 @@ test('a tool with several next steps keeps one draft per step (the functionality
   assert.notEqual(toolTodoDraftKey('get_unstuck', 'd1', 'act-1'), toolTodoDraftKey('get_unstuck', 'd1', 'act-2'));
   assert.equal(toolTodoDraftKey('get_unstuck', null, 'act-1'), 'tool-todo:get_unstuck:none:act-1');
 });
+
+// The break-it tester (Phase 9 tidy 1): an edit panel keeps only the boxes
+// typed in, so a draft put back never puts an old value over a newer one.
+import { typedFields } from '../../src/lib/panelDraft.js';
+
+test('only the boxes typed in are kept, so an untouched box takes no old value back', () => {
+  const editOpened = [fieldEntry(0, 'Name', 'Amy Shaw'), fieldEntry(1, 'Email', 'amy@old.example')];
+  const now = [fieldEntry(0, 'Name', 'Amy Shaw-Reid'), fieldEntry(1, 'Email', 'amy@old.example')];
+  const kept = typedFields(now, editOpened);
+  assert.deepEqual(kept, [fieldEntry(0, 'Name', 'Amy Shaw-Reid')]);
+  // Reopened after the email changed elsewhere: the name goes back, the newer email stays.
+  const reopened = [fieldEntry(0, 'Name', 'Amy Shaw'), fieldEntry(1, 'Email', 'amy@new.example')];
+  assert.deepEqual(fieldsToRestore(kept, reopened), [{ i: 0, v: 'Amy Shaw-Reid' }]);
+  // A box emptied on purpose is typing too.
+  assert.deepEqual(typedFields([fieldEntry(0, 'Name', ''), editOpened[1]], editOpened), [fieldEntry(0, 'Name', '')]);
+});
