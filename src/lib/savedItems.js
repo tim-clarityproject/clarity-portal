@@ -630,9 +630,17 @@ export function searchRows(rows, query) {
   });
 }
 
+// The words searched for, as a line says them: one space between words, and
+// quote marks typed round them left off (the search ignores them, and the
+// line puts its own round them: never ““check-in””; the break-it tester,
+// Phase 9 tidy 1).
+function searchedWords(query) {
+  return String(query || '').replace(/\s+/g, ' ').trim().replace(/^[“”"‘’']+|[“”"‘’']+$/g, '').trim();
+}
+
 /** The line when nothing matches: "Nothing matches “sales”." */
 export function noMatchLine(query) {
-  return `Nothing matches “${String(query || '').trim()}”.`;
+  return `Nothing matches “${searchedWords(query)}”.`;
 }
 
 /**
@@ -642,7 +650,7 @@ export function noMatchLine(query) {
  * "Showing everything.".
  */
 export function filterLineText(applied, searchFor) {
-  const words = String(searchFor || '').trim();
+  const words = searchedWords(searchFor);
   if (words) return `Showing results for “${words}”${applied ? ` in ${applied}` : ''}.`;
   return applied ? `Showing ${applied}.` : 'Showing everything.';
 }

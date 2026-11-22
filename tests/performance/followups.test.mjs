@@ -169,4 +169,10 @@ test('while searching, the filter line says what is shown, in curly quotes (tidy
   assert.equal(filterLineText('Decisions, GROW', 'sales'), 'Showing results for “sales” in Decisions, GROW.');
   assert.equal(filterLineText('Decisions', '   '), 'Showing Decisions.');
   assert.equal(filterLineText('', ''), 'Showing everything.');
+  // Quote marks typed round the words aren't doubled; spaces inside are one; quotes alone are no search (the break-it tester).
+  assert.equal(filterLineText('', '"check-in"'), 'Showing results for “check-in”.');
+  assert.equal(filterLineText('', '“check   in”'), 'Showing results for “check in”.');
+  assert.equal(filterLineText('', '""'), 'Showing everything.');
+  assert.equal(noMatchLine(' "sales" '), 'Nothing matches “sales”.');
+  assert.equal(filterLineText('', 'Plan 🚀'), 'Showing results for “Plan 🚀”.');
 });
