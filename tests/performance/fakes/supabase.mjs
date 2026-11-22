@@ -32,18 +32,39 @@ export function changeElsewhere(table, match, values) {
   return row;
 }
 
+// The tables a read can bring inside another's rows ("sprint_habits?select=
+// id, habit_logs(...)"), by the column that points at the parent.
+const CHILD_OF = { sprint_habits: 'sprint_habit_id', day_plans: 'day_plan_id', wins: 'win_id', day_reviews: 'day_review_id' };
+
 function query(table) {
   const filters = [];
+  let embeds = [];
+  let columns = null;
+  const sorted = [];
+  let limited = null;
   let action = { kind: 'select' };
   const rowsOf = () => (db.tables[table] = db.tables[table] || []);
-  const matches = (r) => filters.every(([k, v, op]) => {
+  const sorts = [];
+  let most = null;
+  // An embedded filter (a column of a joined table, "sprints.status") is
+  // left to the loader: they narrow what comes back on the device again.
+  const matches = (r) => filters.filter(([k]) => !k.includes('.')).every(([k, v, op]) => {
     if (op === 'gte') return `${r[k]}` >= `${v}`;
+    if (op === 'lte') return `${r[k]}` <= `${v}`;
+    if (op === 'lt') return `${r[k]}` < `${v}`;
+    if (op === 'not-is') return (r[k] ?? null) !== v;
     if (op === 'is') return (r[k] ?? null) === v;
     if (op === 'in') return v.map(String).includes(`${r[k]}`);
     return `${r[k]}` === `${v}`;
   });
   const builder = {
-    select() { if (action.kind === 'none') action = { kind: 'select' }; return builder; },
+    select(cols = '*') {
+      if (action.kind === 'none') action = { kind: 'select' };
+      columns = `${cols}`;
+      // Tables inside, with their columns: "name(a, b)" (not the empty "name!inner()" filters).
+      embeds = [...`${cols}`.matchAll(/([a-z_]+)\(([^()]+)\)/g)].map((m) => [m[1], m[2].split(',').map((c) => c.trim())]);
+      return builder;
+    },
     update(values) { action = { kind: 'update', values }; return builder; },
     delete() { action = { kind: 'delete' }; return builder; },
     upsert(values, options = {}) { action = { kind: 'upsert', values, options }; return builder; },
@@ -51,11 +72,14 @@ function query(table) {
     gte(k, v) { filters.push([k, v, 'gte']); return builder; },
     is(k, v) { filters.push([k, v, 'is']); return builder; },
     in(k, v) { filters.push([k, v, 'in']); return builder; },
-    limit() { return builder; },
-    order() { return builder; },
+    lt(k, v) { filters.push([k, v, 'lt']); return builder; },
+    lte(k, v) { filters.push([k, v, 'lte']); return builder; },
+    not(k, op, v) { filters.push([k, v, `not-${op}`]); return builder; },
+    limit(n) { most = n; limited = n; return builder; },
+    order(k, { ascending = true } = {}) { sorted.push([k, ascending]); if (!k.includes('.')) sorts.push([k, ascending]); return builder; },
     then(resolve, reject) {
       try {
-        db.calls.push({ table, kind: action.kind, filters: [...filters] });
+        db.calls.push({ table, kind: action.kind, filters: [...filters], columns, order: [...sorted], limit: limited });
         // The database not answering (sync back-off tests): the gateway's
         // answer, e.g. { status: 503 } or { status: 504, code: 'PGRST003' }.
         if (db.down) {
@@ -68,7 +92,21 @@ function query(table) {
           return;
         }
         let data;
-        if (action.kind === 'select') data = rowsOf().filter(matches).map((r) => ({ ...r }));
+        if (action.kind === 'select') {
+          data = rowsOf().filter(matches).map((r) => ({ ...r }));
+          const fk = CHILD_OF[table];
+          for (const [child, cols] of fk ? embeds : []) {
+            const inner = filters.filter(([k]) => k.startsWith(`${child}.`)).map(([k, v, op]) => [k.slice(child.length + 1), v, op]);
+            const pick = (c) => (cols.includes('*') ? { ...c } : Object.fromEntries(cols.map((k) => [k, c[k] ?? null])));
+            for (const r of data) {
+              r[child] = (db.tables[child] || [])
+                .filter((c) => c[fk] === r.id && inner.every(([k, v, op]) => (op === 'gte' ? `${c[k]}` >= `${v}` : `${c[k]}` === `${v}`)))
+                .map(pick);
+            }
+          }
+          for (const [k, up] of [...sorts].reverse()) data.sort((a, b) => (`${a[k]}` < `${b[k]}` ? -1 : `${a[k]}` > `${b[k]}` ? 1 : 0) * (up ? 1 : -1));
+          if (most != null) data = data.slice(0, most);
+        }
         else if (action.kind === 'update') {
           data = rowsOf().filter(matches).map((r) => Object.assign(r, action.values, { updated_at: stamp() })).map((r) => ({ ...r }));
         } else if (action.kind === 'delete') {
@@ -96,5 +134,7 @@ function query(table) {
 
 export const supabase = {
   from: (table) => query(table),
+  // No database functions here: a loader's rpc (its coach) is answered as refused.
+  rpc: async () => ({ data: null, error: { code: 'PGRST202', message: 'not in the stand-in' } }),
   auth: { getSession: async () => ({ data: { session: { user: { id: 'me' } } } }) },
 };

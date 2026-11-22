@@ -19,14 +19,16 @@ import { deviceZone } from '../time/index.js';
 import { newId, noteVersions, saveOrQueue } from '../syncQueue';
 import { nextVersion, planChangeKind } from './versions';
 import { pickDebriefWeek } from './debrief';
-import { CHECKIN_EXTRA_COLS, REVIEW_EXTRA_COLS, extrasReady } from './answerExtras';
+import { CHECKIN_EXTRA_COLS, REVIEW_EXTRA_COLS, extrasReady, isMissingColumn } from './answerExtras';
+import { ownProfileQuery, ownSettingsQuery } from '../sharedReads';
+import {
+  DAY_PLAN_COLS, DAY_PLAN_WITH, HABITS_WITH, OBJECTIVE_COLS, PLAN_COLS, RECOVERY_COLS, SPRINT_COLS, STRATEGY_COLS, TODO_COLS,
+  activePlanRead, allDebriefsRead, allSprintsRead, backlogRead, checkinsRead, dashboardReads, dayBefore, lastLogRead,
+  liveObjectivesRead, liveStrategiesRead, newestTwoRead, recoveriesRead, runningHabitsRead, runningTodosRead,
+  runningWinsFrom, strategyLinksRead, todoMovesRead, weekScoresRead, winsFromRead, workingPatternsRead,
+} from './pageReads';
 
-const PLAN_COLS = 'id, mission, status, major, minor, created_at, updated_at';
-const OBJECTIVE_COLS = 'id, plan_id, name, kind, unit, direction, start_value, start_set_on, target_value, by_when, due_on, reached_on, source, sort_order, archived_at, created_at, updated_at';
-const STRATEGY_COLS = 'id, plan_id, name, description, sort_order, archived_at';
 const HABIT_COLS = 'id, plan_id, strategy_id, name, measure, unit, target, target_per, limit_value, limit_per, direction, top_number, impact, sort_order, archived_at';
-const SPRINT_COLS = 'id, plan_id, number, label, start_on, length_weeks, standard, status, planned_end_on, actual_end_on, finished_at, updated_at';
-const RECOVERY_COLS = 'id, sprint_id, start_on, chosen_days, extended_days, ended_at, end_on, let_coach_know, updated_at';
 
 // Every row read with its updated_at tells the offline queue which version
 // this window shows, so a later change to it is based on that version and
@@ -58,6 +60,24 @@ export function deviceTimeZone() {
 }
 
 /**
+ * The person's own person_settings row, read with the one shared column
+ * list (sharedReads.js), or null. Not noted: no loader here ever noted it
+ * (the menu's own read does).
+ */
+async function ownSettingsRow(userId) {
+  const { data, error } = await ownSettingsQuery(userId);
+  if (error) throw error;
+  return data?.[0] || null;
+}
+
+/** The person's own profiles row, read with the one shared column list, or null. */
+async function ownProfileRow(userId) {
+  const { data, error } = await ownProfileQuery(userId);
+  if (error) throw error;
+  return data?.[0] || null;
+}
+
+/**
  * The person's settings, with their saved time zone kept in step with
  * the device they use: a day is the local day of the device they log
  * from (methods, "A day is the person's own local day"; rule 42), and the
@@ -65,7 +85,11 @@ export function deviceTimeZone() {
  * the saved one. Sent through the queue, only when it differs.
  */
 async function readSettings(userId, cols) {
-  const settings = await one(supabase.from('person_settings').select(cols).eq('user_id', userId).limit(1));
+  // One read of the row for every page and the menu (sharedReads.js), with
+  // only the columns asked for handed on. Not noted here, as before: the
+  // menu's own read notes the row's version.
+  const row = await ownSettingsRow(userId);
+  const settings = row ? Object.fromEntries(cols.split(',').map((c) => c.trim()).map((c) => [c, row[c] ?? null])) : null;
   const zone = deviceTimeZone();
   if (zone && settings?.time_zone !== zone && zone.length <= 64) {
     saveOrQueue(userId, { table: 'person_settings', kind: 'upsert', onConflict: 'user_id', values: { user_id: userId, time_zone: zone } }).catch(() => null);
@@ -111,8 +135,7 @@ export { loadMyCoach };
 
 /** The active plan's row only: enough for the header's My Mission pill. */
 export async function loadActivePlan(userId) {
-  return one(supabase.from('performance_plans').select(PLAN_COLS)
-    .eq('user_id', userId).eq('status', 'active').limit(1));
+  return one(activePlanRead(userId));
 }
 
 /**
@@ -168,8 +191,66 @@ export async function loadPlanPage(userId) {
  * not deleted. They wait there until they're planned into a week.
  */
 export function loadBacklogTodos(userId) {
-  return rows(supabase.from('todos').select('id, strategy_id, text, impact, sprint_id, planned_week, created_on, done_on, source, source_id, move_on, deleted_at, updated_at')
-    .eq('user_id', userId).is('sprint_id', null).is('done_on', null).is('deleted_at', null).order('created_at'));
+  return rows(backlogRead(userId));
+}
+
+// What a read brings inside another's rows (pageReads.js HABITS_WITH,
+// WINS_WITH, DAY_PLAN_WITH) is taken out again here, so every page gets the
+// rows it always had, and their versions are noted as their own tables'.
+function habitsApart(list) {
+  const sprintHabits = [];
+  const settings = [];
+  const logs = [];
+  for (const { sprint_habit_settings: st, habit_logs: lg, ...h } of list) {
+    sprintHabits.push(h);
+    settings.push(...(st || []));
+    logs.push(...(lg || []));
+  }
+  noteVersions('sprint_habit_settings', settings);
+  noteVersions('habit_logs', logs);
+  return { sprintHabits, settings, logs };
+}
+
+function winsApart(list) {
+  const wins = [];
+  const winLinks = [];
+  for (const { win_strategies: links, ...w } of list) {
+    wins.push(w);
+    winLinks.push(...(links || []));
+  }
+  return { wins, winLinks };
+}
+
+const todoMovesQuery = (userId) => rows(todoMovesRead(userId));
+const winsFromQuery = (userId, from) => rows(winsFromRead(userId, from)).then(winsApart);
+
+/**
+ * A sprint's rows once they are in: only that sprint's habits, their
+ * settings and logs from its start, its to-dos and its wins from its start
+ * with the Strategies they served (each read may bring a little more, so
+ * each is narrowed here exactly as the database would have).
+ */
+function sprintWeekFrom(sprint, got) {
+  const sprintHabits = got.sprintHabits.filter((h) => h.sprint_id === sprint.id);
+  const ids = new Set(sprintHabits.map((h) => h.id));
+  const wins = got.wins.filter((w) => w.local_date >= sprint.start_on);
+  const winIds = new Set(wins.map((w) => w.id));
+  return {
+    sprintHabits,
+    sprintSettings: got.settings.filter((x) => ids.has(x.sprint_habit_id)),
+    logs: got.logs.filter((l) => ids.has(l.sprint_habit_id) && l.local_date >= sprint.start_on),
+    todos: got.todos.filter((t) => t.sprint_id === sprint.id),
+    todoMoves: got.todoMoves,
+    wins,
+    winLinks: got.winLinks.filter((l) => winIds.has(l.win_id)),
+    backlogTodos: got.backlogTodos,
+  };
+}
+
+/** The sprint's wins from its start, when the read made before its start was known began later. */
+async function sprintWins(userId, sprint, got, winsFrom) {
+  if (!winsFrom || sprint.start_on >= winsFrom) return got;
+  return winsFromQuery(userId, sprint.start_on);
 }
 
 /**
@@ -180,26 +261,47 @@ export function loadBacklogTodos(userId) {
  * week higher than the sprint page and the database did (the functionality
  * tester, 14 Nov). `known.backlogTodos`: the list, when the caller has
  * already read it.
+ *
+ * Every read goes out at once (the scale check, fixer C): the settings and
+ * logs come inside their habits' read, instead of waiting for the ids.
+ * winLinks holds the links of these wins only (every page looks a win's
+ * Strategies up by its id).
  */
 export async function loadSprintWeekRows(userId, sprint, known = {}) {
-  const sprintHabits = await rows(supabase.from('sprint_habits')
-    .select('id, sprint_id, habit_id, strategy_id, name, sort_order').eq('sprint_id', sprint.id).order('sort_order'));
-  const ids = sprintHabits.map((h) => h.id);
   // Logs and wins from the sprint's start: a sprint stretched by Recovery
   // can run past its planned end, so no end is set.
-  const [settings, logs, todos, todoMoves, wins, winLinks, backlogTodos] = await Promise.all([
-    ids.length ? rows(supabase.from('sprint_habit_settings').select('*').in('sprint_habit_id', ids)) : [],
-    ids.length ? rows(supabase.from('habit_logs').select('id, sprint_habit_id, local_date, value, to_confirm, updated_at')
-      .in('sprint_habit_id', ids).gte('local_date', sprint.start_on)) : [],
-    rows(supabase.from('todos').select('id, strategy_id, text, impact, sprint_id, planned_week, created_on, done_on, source, source_id, move_on, deleted_at, updated_at')
+  const [habits, todos, todoMoves, wins, backlogTodos] = await Promise.all([
+    rows(supabase.from('sprint_habits').select(HABITS_WITH).eq('sprint_id', sprint.id)
+      .gte('habit_logs.local_date', sprint.start_on).order('sort_order')).then(habitsApart),
+    rows(supabase.from('todos').select(TODO_COLS)
       .eq('user_id', userId).eq('sprint_id', sprint.id).is('deleted_at', null)),
-    rows(supabase.from('todo_moves').select('todo_id, moved_on, from_sprint_id, from_week, to_sprint_id, to_week, created_at').eq('user_id', userId)),
-    rows(supabase.from('wins').select('id, what, local_date, impact, deleted_at, updated_at')
-      .eq('user_id', userId).gte('local_date', sprint.start_on).is('deleted_at', null)),
-    rows(supabase.from('win_strategies').select('win_id, strategy_id').eq('user_id', userId)),
+    todoMovesQuery(userId),
+    winsFromQuery(userId, sprint.start_on),
     known.backlogTodos || loadBacklogTodos(userId),
   ]);
-  return { sprintHabits, sprintSettings: settings, logs, todos, todoMoves, wins, winLinks, backlogTodos };
+  return sprintWeekFrom(sprint, { ...habits, todos, todoMoves, ...wins, backlogTodos });
+}
+
+/**
+ * The running sprint's week rows, read before the sprint itself is known
+ * (beside the read that finds it): its habits and to-dos through the
+ * person's running sprint (an embedded filter on sprints: one running
+ * sprint per person, sprints_one_running), the wins from WINS_WINDOW_DAYS
+ * ago. Hand the result and the sprint to runningWeekFor.
+ */
+function readRunningWeek(userId, winsFrom, backlogTodos) {
+  return Promise.all([
+    rows(runningHabitsRead(userId)).then(habitsApart),
+    rows(runningTodosRead(userId)),
+    todoMovesQuery(userId),
+    winsFromQuery(userId, winsFrom),
+    backlogTodos,
+  ]).then(([habits, todos, todoMoves, wins, backlog]) => ({ ...habits, todos, todoMoves, ...wins, backlogTodos: backlog }));
+}
+
+async function runningWeekFor(userId, sprint, got, winsFrom) {
+  const wins = await sprintWins(userId, sprint, { wins: got.wins, winLinks: got.winLinks }, winsFrom);
+  return sprintWeekFrom(sprint, { ...got, ...wins });
 }
 
 /**
@@ -455,7 +557,7 @@ export async function recordPlanVersion(userId, plan, { before, after, note = nu
 export async function loadSprintStart(userId) {
   const [plan, sprints, recoveries, personSettings, coach, fixedStandard] = await Promise.all([
     loadActivePlan(userId),
-    rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
+    loadAllSprints(userId),
     rows(supabase.from('recovery_periods').select(RECOVERY_COLS)
       .eq('user_id', userId).order('start_on')),
     readSettings(userId, 'time_zone, describes_you'),
@@ -606,34 +708,76 @@ export function saveTodoDone(userId, todoId, doneOn) {
  * sprint's debriefs (an unusual week is left out of the range, M0.5).
  */
 export async function loadSprintPage(userId) {
-  const [plan, sprint, recoveries, workingPatterns, personSettings, weekScores, profile, backlogTodos] = await Promise.all([
+  // Every read goes out at once (the scale check, fixer C: one round trip
+  // instead of three before the page shows). What used to wait for the
+  // running sprint is read through it on the database (readRunningWeek), or
+  // read for the person and narrowed here: their live objectives and
+  // Strategies (every plan's: a person has few), the links and every
+  // debrief. Those shared reads are the same address on Home and the
+  // dashboard, so readShare.js sends each once.
+  const winsFrom = runningWinsFrom();
+  const backlog = loadBacklogTodos(userId);
+  const [plan, sprint, recoveries, workingPatterns, personSettings, weekScores, profile, backlogTodos, liveObjectives, liveStrategies, links, allDebriefs, running] = await Promise.all([
     loadActivePlan(userId),
-    one(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).eq('status', 'running').limit(1)),
-    rows(supabase.from('recovery_periods').select(RECOVERY_COLS)
-      .eq('user_id', userId).order('start_on')),
-    rows(supabase.from('working_patterns').select('starts_on, days').eq('user_id', userId).order('starts_on')),
+    // Every sprint (the dashboard's and the debrief's own read, shared):
+    // the running one is found among them.
+    loadAllSprints(userId).then((list) => list.find((x) => x.status === 'running') || null),
+    rows(recoveriesRead(userId)),
+    rows(workingPatternsRead(userId)),
     readSettings(userId, 'time_zone, units'),
-    rows(supabase.from('week_scores').select('sprint_id, sprint_week, week_end, score, eligible, final')
-      .eq('user_id', userId).order('week_end')),
+    rows(weekScoresRead(userId)),
     // The first name, for "Welcome back, Sam" after a Recovery (M15).
-    one(supabase.from('profiles').select('first_name').eq('id', userId).limit(1)).catch(() => null),
-    loadBacklogTodos(userId),
+    ownProfileRow(userId).catch(() => null),
+    backlog,
+    loadLiveObjectives(userId),
+    loadLiveStrategies(userId),
+    loadStrategyLinks(userId),
+    loadAllDebriefs(userId),
+    readRunningWeek(userId, winsFrom, backlog),
   ]);
   // The Backlog (Tim, 13 Nov, 10:42): open to-dos with no week yet. With no
   // sprint running the plan's Strategies come too, to name each one's.
-  const planStrategies = !sprint && plan
-    ? await rows(supabase.from('plan_strategies').select(STRATEGY_COLS).eq('plan_id', plan.id).is('archived_at', null).order('sort_order'))
-    : [];
+  const planStrategies = !sprint && plan ? liveStrategies.filter((x) => x.plan_id === plan.id) : [];
   const base = { plan, sprint, recoveries, workingPatterns, personSettings, weekScores, firstName: profile?.first_name || '', backlogTodos, planStrategies };
   if (!sprint) return { ...base, objectives: [], strategies: [], links: [] };
-  const [objectives, strategies, links, debriefs, week] = await Promise.all([
-    rows(supabase.from('outcome_objectives').select('id').eq('plan_id', sprint.plan_id).is('archived_at', null)),
-    rows(supabase.from('plan_strategies').select(STRATEGY_COLS).eq('plan_id', sprint.plan_id).is('archived_at', null).order('sort_order')),
-    rows(supabase.from('strategy_objectives').select('strategy_id, objective_id').eq('user_id', userId)),
-    rows(supabase.from('weekly_debriefs').select('sprint_week, unusual, status').eq('sprint_id', sprint.id)),
-    loadSprintWeekRows(userId, sprint, { backlogTodos }),
-  ]);
-  return { ...base, objectives, strategies, links, debriefs, ...week };
+  const week = await runningWeekFor(userId, sprint, running, winsFrom);
+  return {
+    ...base,
+    objectives: liveObjectives.filter((o) => o.plan_id === sprint.plan_id).map((o) => ({ id: o.id })),
+    strategies: liveStrategies.filter((x) => x.plan_id === sprint.plan_id),
+    links,
+    debriefs: allDebriefs.filter((x) => x.sprint_id === sprint.id).map((x) => ({ sprint_week: x.sprint_week, unusual: x.unusual, status: x.status })),
+    ...week,
+  };
+}
+
+// Reads several loaders make of the same table, each with one select so
+// readShare.js can send it once per page (the scale check, fixer C). Each
+// caller narrows them to what it shows.
+
+/** Every live Outcome Objective of the person's (every plan's), in order. */
+export function loadLiveObjectives(userId) {
+  return rows(liveObjectivesRead(userId));
+}
+
+/** Every live Strategy of the person's (every plan's), in order. */
+export function loadLiveStrategies(userId) {
+  return rows(liveStrategiesRead(userId));
+}
+
+/** Which Strategies serve which objectives. */
+function loadStrategyLinks(userId) {
+  return rows(strategyLinksRead(userId));
+}
+
+/** Every sprint of the person's, by number. */
+function loadAllSprints(userId) {
+  return rows(allSprintsRead(userId));
+}
+
+/** Every weekly debrief's week, stress, unusual and status. */
+function loadAllDebriefs(userId) {
+  return rows(allDebriefsRead(userId));
 }
 
 /**
@@ -644,8 +788,8 @@ export async function loadSprintPage(userId) {
 export async function loadYearPage(userId) {
   const [page, sprints, allDebriefs] = await Promise.all([
     loadSprintPage(userId),
-    rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
-    rows(supabase.from('weekly_debriefs').select('sprint_id, sprint_week, status').eq('user_id', userId)),
+    loadAllSprints(userId),
+    loadAllDebriefs(userId).then((list) => list.map((x) => ({ sprint_id: x.sprint_id, sprint_week: x.sprint_week, status: x.status }))),
   ]);
   return { ...page, sprints, allDebriefs };
 }
@@ -663,15 +807,15 @@ export async function loadSprintReview(userId) {
   const page = await loadSprintPage(userId);
   const planId = page.sprint?.plan_id || page.plan?.id || null;
   const [sprints, planObjectives, figures, planHabits, latestVersion, checkins, profile, role, coach] = await Promise.all([
-    rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
+    loadAllSprints(userId),
     planId ? rows(supabase.from('outcome_objectives').select(OBJECTIVE_COLS).eq('plan_id', planId).is('archived_at', null).order('sort_order')) : [],
     rows(supabase.from('objective_figures').select('id, objective_id, value, recorded_on, created_at').eq('user_id', userId).order('recorded_on')),
     planId ? rows(supabase.from('habits').select(HABIT_COLS).eq('plan_id', planId).is('archived_at', null).order('sort_order')) : [],
     planId ? one(supabase.from('plan_versions').select('major, minor, kind, snapshot, created_at')
       .eq('plan_id', planId).order('major', { ascending: false }).order('minor', { ascending: false }).limit(1)) : null,
     rows(supabase.from('checkins').select('month, hardware_score').eq('user_id', userId).eq('status', 'finished').order('month')),
-    one(supabase.from('profiles').select('first_name').eq('id', userId).limit(1)),
-    one(supabase.from('person_settings').select('describes_you').eq('user_id', userId).limit(1)),
+    ownProfileRow(userId),
+    ownSettingsRow(userId),
     loadMyCoach().catch(() => null),
   ]);
   const plan = page.plan && page.plan.id === planId
@@ -839,7 +983,7 @@ export async function loadRecoveryPage(userId) {
     one(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).eq('status', 'running').limit(1)),
     rows(supabase.from('recovery_periods').select(RECOVERY_COLS).eq('user_id', userId).order('start_on')),
     readSettings(userId, 'time_zone'),
-    one(supabase.from('profiles').select('first_name').eq('id', userId).limit(1)),
+    ownProfileRow(userId),
     loadMyCoach().catch(() => null),
   ]);
   const open = recoveries.find((r) => !r.ended_at);
@@ -919,12 +1063,14 @@ export async function loadSleep(userId, localDate) {
 
 // ---------------------------------------------------------------- Daily plan
 
-const DAY_PLAN_COLS = 'id, user_id, local_date, sleep_hours, sleep_quality, sleep_to_confirm, grateful_for, way_of_being, biggest_risk, risk_response, status, finished_at, updated_at';
 
-function dayBefore(key, n) {
-  const [y, m, d] = key.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d - n)).toISOString().slice(0, 10); // a pure date sum, never "today"
+/** [the day plan's own row, its to-dos ({ todo_id, is_top }), its Strategies ({ strategy_id })], or [null, [], []]. */
+function planApart(row) {
+  if (!row) return [null, [], []];
+  const { day_plan_todos: todos, day_plan_strategies: strategies, ...plan } = row;
+  return [plan, todos || [], strategies || []];
 }
+
 
 /**
  * Everything Daily plan shows for one day (M5), as rows: the sprint page's
@@ -937,23 +1083,26 @@ function dayBefore(key, n) {
 export async function loadDayPlan(userId, date) {
   // The day's own rows don't wait for the sprint page's (the scale check:
   // one round trip less before the page shows); the reads are the same.
+  // And they go out in one round (fixer C): the day plan's to-dos and
+  // Strategies inside its read, the last review's Strategies inside
+  // its own read, and its day's Strategies with the days it can be.
   const dayPart = (async () => {
-    const [dayPlan, earlier, lastReview, role, coach] = await Promise.all([
-      one(supabase.from('day_plans').select(DAY_PLAN_COLS).eq('user_id', userId).eq('local_date', date).limit(1)),
+    const [planRow, earlier, reviewRow, role, coach, recentPlans] = await Promise.all([
+      one(supabase.from('day_plans').select(DAY_PLAN_WITH).eq('user_id', userId).eq('local_date', date).limit(1)),
       rows(supabase.from('day_plans').select('local_date, way_of_being').eq('user_id', userId)
         .lt('local_date', date).not('way_of_being', 'is', null).order('local_date', { ascending: false }).limit(30)),
-      one(supabase.from('day_reviews').select('id, local_date, tomorrow, on_my_mind').eq('user_id', userId).eq('status', 'finished')
+      one(supabase.from('day_reviews').select('id, local_date, tomorrow, on_my_mind, day_review_strategies(strategy_id, level)').eq('user_id', userId).eq('status', 'finished')
         .lt('local_date', date).gte('local_date', dayBefore(date, 3)).order('local_date', { ascending: false }).limit(1)),
-      one(supabase.from('person_settings').select('describes_you').eq('user_id', userId).limit(1)),
+      ownSettingsRow(userId),
       loadMyCoach().catch(() => null),
+      rows(supabase.from('day_plans').select('id, local_date, day_plan_strategies(strategy_id)').eq('user_id', userId)
+        .lt('local_date', date).gte('local_date', dayBefore(date, 3))),
     ]);
-    const [dayTodos, dayStrategies, reviewStrategies, reviewDayStrategies] = await Promise.all([
-      dayPlan ? rows(supabase.from('day_plan_todos').select('todo_id, is_top').eq('day_plan_id', dayPlan.id)) : [],
-      dayPlan ? rows(supabase.from('day_plan_strategies').select('strategy_id').eq('day_plan_id', dayPlan.id)) : [],
-      lastReview ? rows(supabase.from('day_review_strategies').select('strategy_id, level').eq('day_review_id', lastReview.id)) : [],
-      lastReview ? rows(supabase.from('day_plans').select('id, day_plan_strategies(strategy_id)').eq('user_id', userId).eq('local_date', lastReview.local_date).limit(1)) : [],
-    ]);
-    return { dayPlan, earlier, lastReview, role, coach, dayTodos, dayStrategies, reviewStrategies, reviewDayStrategies };
+    const [dayPlan, dayTodos, dayStrategies] = planApart(planRow);
+    const { day_review_strategies: reviewStrategies = [], ...lastReview } = reviewRow || {};
+    const reviewDay = reviewRow ? recentPlans.find((p) => p.local_date === reviewRow.local_date) : null;
+    const reviewDayStrategies = reviewDay ? [{ id: reviewDay.id, day_plan_strategies: reviewDay.day_plan_strategies || [] }] : [];
+    return { dayPlan, earlier, lastReview: reviewRow ? lastReview : null, role, coach, dayTodos, dayStrategies, reviewStrategies: reviewStrategies || [], reviewDayStrategies };
   })();
   const [page, { dayPlan, earlier, lastReview, role, coach, dayTodos, dayStrategies, reviewStrategies, reviewDayStrategies }] = await Promise.all([
     loadSprintPage(userId),
@@ -1026,14 +1175,34 @@ const reviewCols = async () => DAY_REVIEW_COLS + ((await extrasReady()) ? REVIEW
  * that day's review and the Strategies it says moved.
  */
 export async function loadDayReview(userId, date) {
-  const [plan, dayReview] = await Promise.all([
+  const [plan, { dayReview, reviewStrategies }] = await Promise.all([
     loadDayPlan(userId, date),
-    reviewCols().then((cols) => one(supabase.from('day_reviews').select(cols).eq('user_id', userId).eq('local_date', date).limit(1))),
+    readDayReviewWithStrategies(userId, date),
   ]);
-  const reviewStrategies = dayReview
-    ? await rows(supabase.from('day_review_strategies').select('strategy_id, level').eq('day_review_id', dayReview.id))
-    : [];
   return { ...plan, dayReview, reviewStrategies };
+}
+
+/**
+ * A day's review with the Strategies it says moved, in one read (fixer C:
+ * the Strategies inside the review's own read, and 040's way of being asked
+ * for at once instead of after a look; a database without 040's columns
+ * answers "no such column" and the review is read without them, as
+ * reviewCols would have).
+ */
+async function readDayReviewWithStrategies(userId, date) {
+  const read = (cols) => supabase.from('day_reviews').select(`${cols}, day_review_strategies(strategy_id, level)`)
+    .eq('user_id', userId).eq('local_date', date).limit(1);
+  let query = read(DAY_REVIEW_COLS + REVIEW_EXTRA_COLS);
+  let { data, error } = await query;
+  if (error && isMissingColumn(error)) {
+    query = read(DAY_REVIEW_COLS);
+    ({ data, error } = await query);
+  }
+  if (error) throw error;
+  const row = noted(query, data || [])[0] || null;
+  if (!row) return { dayReview: null, reviewStrategies: [] };
+  const { day_review_strategies: strategies, ...dayReview } = row;
+  return { dayReview, reviewStrategies: strategies || [] };
 }
 
 /**
@@ -1061,28 +1230,31 @@ export async function loadReviewWhich(userId, yesterday) {
  * (the next one's name in Recovery) and the coach.
  */
 export async function loadHomeDay(userId, date) {
+  // One round of reads (the scale check, fixer C). Today's row and the
+  // latest before it come in one read per table (the two newest up to
+  // today), which also says whether the day before was planned or reviewed.
+  // The plan's objectives and Strategies are the person's live ones, the
+  // sprint page's own reads (shared, readShare.js), narrowed to the plan.
   const yesterday = dayBefore(date, 1);
-  const latest = (table) => one(supabase.from(table).select('local_date').eq('user_id', userId)
-    .lt('local_date', date).order('local_date', { ascending: false }).limit(1));
-  const [dayPlan, dayReview, yesterdayPlan, yesterdayReview, lastLog, lastPlan, lastReview, plan, lastSprint, coach] = await Promise.all([
-    one(supabase.from('day_plans').select(DAY_PLAN_COLS).eq('user_id', userId).eq('local_date', date).limit(1)),
-    one(supabase.from('day_reviews').select('id, local_date, status, tomorrow, updated_at').eq('user_id', userId).eq('local_date', date).limit(1)),
-    one(supabase.from('day_plans').select('id').eq('user_id', userId).eq('local_date', yesterday).limit(1)),
-    one(supabase.from('day_reviews').select('id, tomorrow').eq('user_id', userId).eq('local_date', yesterday).eq('status', 'finished').limit(1)),
-    latest('habit_logs'),
-    latest('day_plans'),
-    latest('day_reviews'),
+  const [plans, reviews, lastLog, plan, lastSprint, coach, liveObjectives, liveStrategies] = await Promise.all([
+    // With today's to-dos and Strategies inside.
+    rows(newestTwoRead(userId, 'day_plans', date)),
+    rows(newestTwoRead(userId, 'day_reviews', date)),
+    one(lastLogRead(userId, date)),
     loadActivePlan(userId),
-    one(supabase.from('sprints').select('number').eq('user_id', userId).order('number', { ascending: false }).limit(1)),
+    // Every sprint, the sprint page's own read (shared): the highest number.
+    loadAllSprints(userId).then((list) => list[list.length - 1] || null),
     // The coach is only for the help list's last line: Home still shows without it.
     loadMyCoach().catch(() => null),
+    loadLiveObjectives(userId),
+    loadLiveStrategies(userId),
   ]);
-  const [dayTodos, dayStrategies, objectives, strategies] = await Promise.all([
-    dayPlan ? rows(supabase.from('day_plan_todos').select('todo_id, is_top').eq('day_plan_id', dayPlan.id)) : [],
-    dayPlan ? rows(supabase.from('day_plan_strategies').select('strategy_id').eq('day_plan_id', dayPlan.id)) : [],
-    plan ? rows(supabase.from('outcome_objectives').select('id').eq('plan_id', plan.id).is('archived_at', null)) : [],
-    plan ? rows(supabase.from('plan_strategies').select('id, name').eq('plan_id', plan.id).is('archived_at', null).order('sort_order')) : [],
-  ]);
+  const [dayPlan, dayTodos, dayStrategies] = planApart(plans.find((r) => r.local_date === date));
+  const lastPlan = plans.find((r) => r.local_date < date) || null;
+  const dayReview = reviews.find((r) => r.local_date === date) || null;
+  const lastReview = reviews.find((r) => r.local_date < date) || null;
+  const yesterdayPlan = lastPlan?.local_date === yesterday ? lastPlan : null;
+  const yesterdayReview = lastReview?.local_date === yesterday && lastReview.status === 'finished' ? lastReview : null;
   return {
     date,
     dayPlan,
@@ -1092,8 +1264,8 @@ export async function loadHomeDay(userId, date) {
     yesterday: { planned: Boolean(yesterdayPlan), reviewed: Boolean(yesterdayReview), tomorrow: yesterdayReview?.tomorrow || [] },
     lastActive: [lastLog?.local_date, lastPlan?.local_date, lastReview?.local_date].filter(Boolean),
     plan: plan ? { id: plan.id, mission: plan.mission || null } : null,
-    objectives: objectives.length,
-    strategies,
+    objectives: plan ? liveObjectives.filter((o) => o.plan_id === plan.id).length : 0,
+    strategies: plan ? liveStrategies.filter((x) => x.plan_id === plan.id).map((x) => ({ id: x.id, name: x.name })) : [],
     lastSprintNumber: lastSprint?.number || 0,
     coach,
   };
@@ -1138,36 +1310,51 @@ const DEBRIEF_COLS = 'id, user_id, sprint_id, sprint_week, stress, unusual, went
  * (debrief.js pickDebriefWeek); `sprint` is null when none is.
  */
 export async function loadDebrief(userId, { sprintId = null, week = null, today }) {
-  const [plan, sprints, recoveries, workingPatterns, personSettings, weekScores, allDebriefs, profile, coach] = await Promise.all([
+  // Two rounds of reads, not four (the scale check, fixer C): what needs
+  // only the person goes out first, with the objectives and Strategies of
+  // every plan (narrowed to the week's sprint's plan below), and each
+  // review's Strategies come inside the reviews' own read.
+  const [plan, sprints, recoveries, workingPatterns, personSettings, weekScores, allDebriefs, profile, coach, liveObjectives, figures, liveStrategies, links] = await Promise.all([
     loadActivePlan(userId),
-    rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
+    loadAllSprints(userId),
     rows(supabase.from('recovery_periods').select(RECOVERY_COLS).eq('user_id', userId).order('start_on')),
     rows(supabase.from('working_patterns').select('starts_on, days').eq('user_id', userId).order('starts_on')),
     readSettings(userId, 'time_zone, units'),
     rows(supabase.from('week_scores').select('sprint_id, sprint_week, week_end, score, eligible, final').eq('user_id', userId).order('week_end')),
-    rows(supabase.from('weekly_debriefs').select('sprint_id, sprint_week, unusual, status').eq('user_id', userId)),
-    one(supabase.from('profiles').select('first_name').eq('id', userId).limit(1)).catch(() => null),
+    loadAllDebriefs(userId).then((list) => list.map((x) => ({ sprint_id: x.sprint_id, sprint_week: x.sprint_week, unusual: x.unusual, status: x.status }))),
+    ownProfileRow(userId).catch(() => null),
     // The coach is for the share switch and the who-sees words: a debrief still shows without it.
     loadMyCoach().catch(() => null),
+    loadLiveObjectives(userId),
+    rows(supabase.from('objective_figures').select('id, objective_id, value, recorded_on, sprint_id, sprint_week, created_at').eq('user_id', userId).order('recorded_on')),
+    loadLiveStrategies(userId),
+    loadStrategyLinks(userId),
   ]);
   const base = { plan, sprints, recoveries, workingPatterns, personSettings, weekScores, allDebriefs, firstName: profile?.first_name || '', coach };
   const which = sprintId && week ? { sprintId, week: Number(week) } : pickDebriefWeek(sprints, recoveries, today);
   const sprint = which ? sprints.find((s) => s.id === which.sprintId) || null : null;
   if (!sprint) return { ...base, sprint: null, week: null };
-  const [objectives, figures, strategies, links, debrief, weekRows, dayReviews] = await Promise.all([
-    rows(supabase.from('outcome_objectives').select(OBJECTIVE_COLS).eq('plan_id', sprint.plan_id).is('archived_at', null).order('sort_order')),
-    rows(supabase.from('objective_figures').select('id, objective_id, value, recorded_on, sprint_id, sprint_week, created_at').eq('user_id', userId).order('recorded_on')),
-    rows(supabase.from('plan_strategies').select(STRATEGY_COLS).eq('plan_id', sprint.plan_id).is('archived_at', null).order('sort_order')),
-    rows(supabase.from('strategy_objectives').select('strategy_id, objective_id').eq('user_id', userId)),
+  const [debrief, weekRows, reviewRows] = await Promise.all([
     one(supabase.from('weekly_debriefs').select(DEBRIEF_COLS).eq('sprint_id', sprint.id).eq('sprint_week', which.week).limit(1)),
     loadSprintWeekRows(userId, sprint),
-    rows(supabase.from('day_reviews').select('id, local_date, went_well, differently, status').eq('user_id', userId).gte('local_date', sprint.start_on)),
+    rows(supabase.from('day_reviews').select('id, local_date, went_well, differently, status, day_review_strategies(day_review_id, strategy_id, level)')
+      .eq('user_id', userId).gte('local_date', sprint.start_on)),
   ]);
-  const ids = dayReviews.map((r) => r.id);
-  const reviewStrategies = ids.length
-    ? await rows(supabase.from('day_review_strategies').select('day_review_id, strategy_id, level').in('day_review_id', ids))
-    : [];
-  return { ...base, sprint, week: which.week, objectives, figures, strategies, links, debrief, dayReviews, reviewStrategies, ...weekRows };
+  const dayReviews = reviewRows.map(({ day_review_strategies: _s, ...r }) => r);
+  const reviewStrategies = reviewRows.flatMap((r) => r.day_review_strategies || []);
+  return {
+    ...base,
+    sprint,
+    week: which.week,
+    objectives: liveObjectives.filter((o) => o.plan_id === sprint.plan_id),
+    figures,
+    strategies: liveStrategies.filter((x) => x.plan_id === sprint.plan_id),
+    links,
+    debrief,
+    dayReviews,
+    reviewStrategies,
+    ...weekRows,
+  };
 }
 
 /** A week's debrief row made once, with its id from the device, so its to-dos can name it straight away. */
@@ -1222,7 +1409,7 @@ export async function loadCheckinPage(userId) {
     checkinCols().then((cols) => rows(supabase.from('checkins').select(cols).eq('user_id', userId).order('month', { ascending: false }))),
     loadMyCoach().catch(() => null),
     rows(supabase.from('sharing_switches').select('part, is_on').eq('user_id', userId).eq('part', 'checkin')),
-    one(supabase.from('person_settings').select('describes_you').eq('user_id', userId).limit(1)).catch(() => null),
+    ownSettingsRow(userId).catch(() => null),
     supabase.rpc('my_coach_notes').then(({ data, error }) => (error ? [] : data || []), () => []),
   ]);
   return {
@@ -1249,41 +1436,29 @@ export async function loadCheckinPage(userId) {
  */
 export async function loadDashboard(userId, today) {
   // The dashboard's own reads go out with the sprint page's, not after them
-  // (the scale check: one round trip less). The plan's objectives need the
-  // plan, found here with the same two reads the sprint page makes (shared,
-  // readShare.js), and read again in the rare case the page found another.
-  const since = dayBefore(today, 16 * 7);
-  const objectivesFor = (planId) => (planId
-    ? rows(supabase.from('outcome_objectives').select(OBJECTIVE_COLS).eq('plan_id', planId).is('archived_at', null).order('sort_order'))
-    : Promise.resolve([]));
-  const earlyPlanId = Promise.all([
-    loadActivePlan(userId),
-    one(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).eq('status', 'running').limit(1)),
-  ]).then(([plan, sprint]) => sprint?.plan_id || plan?.id || null);
-  const earlyObjectives = earlyPlanId.then(objectivesFor);
-  const [page, early, earlyId, sprints, weekScores, figures, dayPlans, dayReviews, allDebriefs, checkins, breathing, controlChecks, lifeChecks, coach, sharing] = await Promise.all([
+  // (the scale check). The plan's objectives come from the person's live
+  // objectives, the same read the sprint page makes (shared, readShare.js),
+  // narrowed to the plan once the page has found it.
+  // Each read is written in pageReads.js, which also sends them as the app opens.
+  const r = dashboardReads(userId, today);
+  const [page, liveObjectives, sprints, weekScores, figures, dayPlans, dayReviews, allDebriefs, checkins, breathing, controlChecks, lifeChecks, coach, sharing] = await Promise.all([
     loadSprintPage(userId),
-    earlyObjectives,
-    earlyPlanId,
-    rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
-    rows(supabase.from('week_scores').select('sprint_id, sprint_week, week_end, score, strategy_scores, eligible, final')
-      .eq('user_id', userId).order('week_end')),
-    rows(supabase.from('objective_figures').select('id, objective_id, value, recorded_on, created_at').eq('user_id', userId).order('recorded_on')),
-    rows(supabase.from('day_plans').select('local_date, sleep_hours, sleep_quality, sleep_to_confirm, way_of_being')
-      .eq('user_id', userId).gte('local_date', since).order('local_date').limit(400)),
-    rows(supabase.from('day_reviews').select('local_date, way_of_being_rating, status')
-      .eq('user_id', userId).gte('local_date', since).order('local_date').limit(400)),
-    rows(supabase.from('weekly_debriefs').select('sprint_id, sprint_week, stress, unusual, status').eq('user_id', userId)),
-    rows(supabase.from('checkins').select('id, kind, month, status, answers, hardware_score, software_score, area_scores, finished_at')
-      .eq('user_id', userId).eq('status', 'finished').order('month')),
-    rows(supabase.from('breathing_sessions').select('date').eq('user_id', userId).gte('date', `${since}T00:00:00Z`).limit(1000)).catch(() => []),
-    rows(supabase.from('emotional_control_checks').select('local_date, line').eq('user_id', userId).gte('local_date', since).limit(1000)).catch(() => []),
-    rows(supabase.from('wheel_of_life_checkins').select('id, checkin_at, checkin_date, scores, areas').eq('user_id', userId).order('checkin_at')).catch(() => []),
+    loadLiveObjectives(userId),
+    loadAllSprints(userId),
+    rows(r.weekScores),
+    rows(r.figures),
+    rows(r.dayPlans),
+    rows(r.dayReviews),
+    loadAllDebriefs(userId),
+    rows(r.checkins),
+    rows(r.breathing).catch(() => []),
+    rows(r.controlChecks).catch(() => []),
+    rows(r.lifeChecks).catch(() => []),
     loadMyCoach().catch(() => null),
-    rows(supabase.from('sharing_switches').select('part, is_on').eq('user_id', userId).eq('part', 'checkin')).catch(() => []),
+    rows(r.sharing).catch(() => []),
   ]);
   const planId = page.sprint?.plan_id || page.plan?.id || null;
-  const planObjectives = planId === earlyId ? early : await objectivesFor(planId);
+  const planObjectives = planId ? liveObjectives.filter((o) => o.plan_id === planId) : [];
   return {
     ...page,
     // The frozen weeks with their Strategy scores (the sprint page reads them without).
@@ -1326,15 +1501,16 @@ async function allRows(page) {
 
 export async function loadPatternRows(userId, today) {
   const since = dayBefore(today, 26 * 7);
-  const [sprints, recoveries, workingPatterns, debriefs, links, figures, wins, winLinks, dayPlans, dayPlanTodos, dayReviews, todoMoves] = await Promise.all([
-    rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
+  const [sprints, recoveries, workingPatterns, debriefs, links, figures, { wins, winLinks }, dayPlans, dayPlanTodos, dayReviews, todoMoves] = await Promise.all([
+    loadAllSprints(userId),
     rows(supabase.from('recovery_periods').select(RECOVERY_COLS).eq('user_id', userId).order('start_on')),
     rows(supabase.from('working_patterns').select('starts_on, days').eq('user_id', userId).order('starts_on')),
-    rows(supabase.from('weekly_debriefs').select('sprint_id, sprint_week, stress, unusual, status').eq('user_id', userId)),
+    loadAllDebriefs(userId),
     rows(supabase.from('strategy_objectives').select('strategy_id, objective_id').eq('user_id', userId)),
     rows(supabase.from('objective_figures').select('id, objective_id, value, recorded_on, created_at').eq('user_id', userId).order('recorded_on')),
-    rows(supabase.from('wins').select('id, what, local_date, impact, deleted_at, updated_at').eq('user_id', userId).gte('local_date', since).is('deleted_at', null)),
-    rows(supabase.from('win_strategies').select('win_id, strategy_id').eq('user_id', userId)),
+    // The wins with the Strategies each served (the sprint page's own read
+    // of the same 26 weeks, shared on the dashboard).
+    winsFromQuery(userId, since),
     rows(supabase.from('day_plans').select('id, local_date, sleep_hours, sleep_quality, sleep_to_confirm')
       .eq('user_id', userId).gte('local_date', since).order('local_date').limit(400)),
     // Only the last 26 weeks' days, every row, page by page: with no limit
@@ -1399,7 +1575,7 @@ export async function loadPatternRows(userId, today) {
 
 /** Only the check-ins, for Home's line and the saved lists. */
 export async function loadCheckins(userId) {
-  return rows(supabase.from('checkins').select('id, kind, month, status, answers, finished_at, updated_at').eq('user_id', userId).order('month', { ascending: false }));
+  return rows(checkinsRead(userId));
 }
 
 /** A month's check-in row made once, with its id from the device, so a to-do added from its results can name it at once, offline too. */

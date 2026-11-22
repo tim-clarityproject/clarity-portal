@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { AuthContext } from './AuthContext';
 import { supabase } from '../lib/supabase';
+import { ownProfileQuery } from '../lib/sharedReads';
 import { MISSION_CHANGED } from '../lib/missionEvents';
 import { onPlanChanged } from '../lib/performance/planChanged';
 import { readCache } from '../lib/pageCache';
@@ -79,11 +80,8 @@ export function MissionProvider({ children }) {
           .is('archived_at', null)
           .order('created_at', { ascending: false })
           .limit(1),
-        supabase
-          .from('profiles')
-          .select('show_mission_in_header')
-          .eq('id', forUser)
-          .limit(1),
+        // The shared read of the person's own row (sharedReads.js).
+        ownProfileQuery(forUser),
       ]);
       if (seq !== readSeq.current || userIdRef.current !== forUser) return;
       if (missionResult.error) throw missionResult.error;

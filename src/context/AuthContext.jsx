@@ -1,5 +1,6 @@
 import { createContext, useEffect, useState } from 'react';
 import { supabase, auth } from '../lib/supabase';
+import { ownProfileQuery } from '../lib/sharedReads';
 import { hasAgreed } from '../lib/signIn/terms';
 import { justSignedOut, noteSessionEnded, noteSignedOut } from '../lib/signIn/addresses';
 import { isCoachPlace } from '../lib/signIn/coachAuth';
@@ -166,11 +167,10 @@ export function AuthProvider({ children }) {
             // box is ticked. It no longer depends on a flag left on the
             // device, which a link opened elsewhere never had.
             const justConfirmedEmail = hasAgreed(session.user);
-            const { data: existing, error: readError } = await supabase
-              .from('profiles')
-              .select('email, first_name, last_name, terms_accepted')
-              .eq('id', session.user.id)
-              .maybeSingle();
+            // The shared read of the person's own row (sharedReads.js), so
+            // the header's and the pages' reads of it are one request.
+            const { data: profileRows, error: readError } = await ownProfileQuery(session.user.id);
+            const existing = profileRows?.[0] || null;
 
             if (readError) {
               console.error('[AuthContext] Profile read error:', readError);

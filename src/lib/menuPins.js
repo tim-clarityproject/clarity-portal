@@ -1,5 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react';
-import { supabase } from './supabase';
+import { ownSettingsQuery } from './sharedReads';
 import { readCache, writeCache } from './pageCache';
 import { noteVersions, onSuperseded, saveOrQueue, waitingToSend, whenSent } from './syncQueue';
 import { cleanPins, MAX_PINS } from './navigation';
@@ -57,8 +57,8 @@ function subscribe(fn) {
 }
 
 async function readServerRow(userId) {
-  const { data, error } = await supabase.from('person_settings')
-    .select('user_id, page_preferences, updated_at').eq('user_id', userId).limit(1);
+  // The shared read of the person's settings row (sharedReads.js).
+  const { data, error } = await ownSettingsQuery(userId);
   if (error) throw error;
   noteVersions('person_settings', data);
   const prefs = data?.[0]?.page_preferences;
