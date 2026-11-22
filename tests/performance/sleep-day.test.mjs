@@ -55,3 +55,29 @@ test('with the sleep on the plan’s day the save is unchanged', () => {
   assert.deepEqual(plan, row);
   assert.equal(sleep, null);
 });
+
+// Recovery's Sleep panel (break-it tester, item C): opened before midnight
+// and saved after, the whole answer shown moves to the new day, the hours
+// not changed included, at their saved value.
+import { sleepPanelSend } from '../../src/lib/performance/index.js';
+
+test('Recovery’s sleep on its own day sends only what changed', () => {
+  const sent = sleepPanelSend({
+    hours: 14, quality: 'poor', touched: { hours: false, quality: true }, savedHas: { hours: true, quality: true }, raw: { hours: 16, quality: 'good' },
+  });
+  assert.deepEqual(sent, { hours: null, quality: 'poor' });
+});
+
+test('Recovery’s sleep saved after midnight moves the whole answer, unchanged hours included', () => {
+  const sent = sleepPanelSend({
+    hours: 7.5, quality: 'poor', touched: { hours: false, quality: true }, savedHas: { hours: true, quality: true }, raw: { hours: 7.5, quality: 'good' }, moving: true,
+  });
+  assert.deepEqual(sent, { hours: 7.5, quality: 'poor' });
+  // An older answer above 14 moves at its saved value, not the 14 it shows as.
+  const old = sleepPanelSend({
+    hours: 14, quality: null, touched: {}, savedHas: { hours: true }, raw: { hours: 16 }, moving: true,
+  });
+  assert.deepEqual(old, { hours: 16, quality: null });
+  // A new answer typed after midnight moves as typed.
+  assert.deepEqual(sleepPanelSend({ hours: 6, quality: 'fair', touched: { hours: true, quality: true }, moving: true }), { hours: 6, quality: 'fair' });
+});

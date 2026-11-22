@@ -46,6 +46,7 @@ import {
   SLEEP_MAX_HOURS,
   SLEEP_QUALITY_OPTIONS,
   SLEEP_SUGGESTED_LINE,
+  sleepPanelSend,
 } from '../../lib/performance';
 import { useDraft } from '../../lib/drafts';
 import { friendlyError } from '../../lib/friendlyError';
@@ -465,6 +466,7 @@ function SleepPanel({ open, onClose, userId, today, saved, onSaved }) {
   const touched = useRef({ hours: false, quality: false });
   // Which answers came from a saved night (not from the person, just now).
   const savedHas = useRef({ hours: false, quality: false });
+  const savedRaw = useRef({ hours: null, quality: null });
   const savedRef = useRef(saved);
   useEffect(() => { savedRef.current = saved; });
 
@@ -473,6 +475,7 @@ function SleepPanel({ open, onClose, userId, today, saved, onSaved }) {
     let live = true;
     touched.current = { hours: false, quality: false };
     savedHas.current = { hours: false, quality: false };
+    savedRaw.current = { hours: null, quality: null };
     // The page's own copy first (it is there offline too), then the server's.
     const fill = (row) => {
       if (!row) return;
@@ -481,10 +484,12 @@ function SleepPanel({ open, onClose, userId, today, saved, onSaved }) {
       // it is only sent again if the person changes the hours.
       if (Number.isFinite(h) && !touched.current.hours) {
         savedHas.current.hours = true;
+        savedRaw.current.hours = h;
         setHours(Math.max(0, Math.min(SLEEP_MAX_HOURS, h)));
       }
       if (row.sleep_quality && !touched.current.quality) {
         savedHas.current.quality = true;
+        savedRaw.current.quality = row.sleep_quality;
         setQuality(row.sleep_quality);
       }
     };
@@ -502,16 +507,16 @@ function SleepPanel({ open, onClose, userId, today, saved, onSaved }) {
     }
     setBusy(true);
     try {
-      // Only what the person answered or changed is sent, so an answer
-      // shown from before is never rewritten (or cut to 14).
-      const sent = {
-        hours: touched.current.hours || !savedHas.current.hours ? hours : null,
-        quality: touched.current.quality || !savedHas.current.quality ? quality : null,
-      };
       // The day it is saved on (the question is about last night): a panel
       // opened before midnight and saved after belongs to the new day
-      // (tidy pass, item 4; the Daily plan's sleepSaveDay).
-      const day = localToday() > today ? localToday() : today;
+      // (tidy pass, item 4; the Daily plan's sleepSaveDay), and the whole
+      // answer shown moves with it. On its own day only what the person
+      // answered or changed is sent (sleepPanelSend).
+      const now = localToday();
+      const day = now > today ? now : today;
+      const sent = sleepPanelSend({
+        hours, quality, touched: touched.current, savedHas: savedHas.current, raw: savedRaw.current, moving: day !== today,
+      });
       const r = await saveSleep(userId, day, sent);
       toast.show(r?.status === 'queued' ? 'Will sync' : 'Saved');
       onSaved?.({ local_date: day, sleep_hours: sent.hours, sleep_quality: sent.quality });

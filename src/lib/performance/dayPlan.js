@@ -399,3 +399,25 @@ export function splitPlanSave(values, planDate, sleepDay) {
   }
   return { plan, sleep: Object.keys(moved).length ? { date: sleepDay, values: moved } : null };
 }
+
+/**
+ * What Recovery's Sleep panel sends (tidy pass, item 4). On the panel's own
+ * day only what the person answered or changed is sent, so an answer shown
+ * from before is never rewritten (or an older one above 14 cut to 14). When
+ * the save moves to a later day (opened before midnight, saved after), the
+ * whole answer shown moves with it, as the Daily plan's splitPlanSave moves
+ * every sleep column: an hours answer shown but not changed is copied too,
+ * at its saved value (`raw`), not the 14 it may show as.
+ */
+export function sleepPanelSend({ hours, quality, touched = {}, savedHas = {}, raw = {}, moving = false }) {
+  if (moving) {
+    return {
+      hours: !touched.hours && savedHas.hours && raw.hours != null ? raw.hours : hours,
+      quality: !touched.quality && savedHas.quality && raw.quality ? raw.quality : quality,
+    };
+  }
+  return {
+    hours: touched.hours || !savedHas.hours ? hours : null,
+    quality: touched.quality || !savedHas.quality ? quality : null,
+  };
+}
