@@ -163,6 +163,15 @@ const leadsAs = async (page, size, layout) => {
   await settle(page, 600);
 };
 const LEADS_SHEET = 'Name,Email,Company,Deal size,Lead source\nDana Whitfield,dana@example.invalid,Kestrel Group,"£12,000",Referral\nAmy Cole,amy.cole@example.invalid,Northfield Logistics,,\nElena Ruiz,,,,\nGrace Liu,grace.liu@example.invalid,Quillmark,4.5k,Chemistry Call\nGrace Again,grace.liu@example.invalid,,,\n,nobody@example.invalid,,,';
+/** Opens More on a client's page, then Suggest a question (run 7). */
+async function suggestPanel(page) {
+  // The fold remembers it was open on the screen before.
+  const more = page.getByRole('button', { name: 'More', exact: true });
+  if ((await more.getAttribute('aria-expanded')) !== 'true') { await more.click(); await settle(page, 300); }
+  await page.getByRole('button', { name: 'Suggest a question', exact: true }).click();
+  await settle(page, 700);
+}
+
 const LEAD_SCREENS = [
   ['leads-board', '/coach/leads', null, { full: true, expects: ['lead-board', 'lead-waiting'] }],
   ['leads-list', '/coach/leads', (page, size) => leadsAs(page, size, 'List'), { full: true, expects: ['lead-waiting'] }],
@@ -518,6 +527,15 @@ export const GROUPS = [
   // Run 4, Leads: the owner's alone, device first (052 isn't on the test project). M11's seed, then the same with 300 more
   // leads; an associate who opens Leads lands on their own Today and finds no lead in the menu or in search.
   { name: 'leads', at: TUE, roles: ['owner'], seed: () => seedWithCrm({ accounts: true, network: false }), screens: LEAD_SCREENS },
+  // Run 7, your own questions: Suggest a question on a client's page (More), for a client with an account; device first
+  // (055 isn't on the test project, so the panel is as it is before 055). Empty, then with a rating chosen.
+  {
+    name: 'own-questions', at: TUE, seed: () => seedWithCrm({ accounts: true, network: false }),
+    screens: [
+      ['client-sam-suggest', `/coach/clients/${ID.sam}`, suggestPanel, { expects: ['panel'] }],
+      ['client-sam-suggest-rating', `/coach/clients/${ID.sam}`, async (page) => { await suggestPanel(page); await page.locator('.ds-dialog').getByRole('textbox').first().fill('How often did I listen before I spoke today?'); await page.locator('.ds-dialog').getByRole('radio', { name: 'A rating' }).or(page.locator('.ds-dialog').getByRole('button', { name: 'A rating' })).first().click(); await settle(page, 500); }, { expects: ['panel'] }],
+    ],
+  },
   {
     name: 'leads-many', at: TUE, roles: ['owner'], seed: withManyLeads,
     screens: [
