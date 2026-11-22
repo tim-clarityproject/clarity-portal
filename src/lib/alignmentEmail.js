@@ -2,6 +2,8 @@
 // The browser never says WHO the email goes to: the server decides from the
 // session. The access code is sent only to prove the request is genuine.
 
+import { apiFetch } from './readShare';
+
 /**
  * @param {{token: string, email: string, code: string, kind: 'link'|'complete'|'code'}} args
  *   code: the guest's new access code after Only you (045), to their own address.
@@ -11,7 +13,7 @@
  */
 export async function requestAlignmentEmail({ token, email, code, kind }) {
   try {
-    const res = await fetch('/api/alignment-email', {
+    const res = await apiFetch('/api/alignment-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, email, code, kind }),

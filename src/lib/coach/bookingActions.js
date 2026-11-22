@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import { forgetSharedReads } from '../readShare';
+import { apiFetch } from '../readShare';
 import { isBookingKey } from './calendar';
 
 // Booking's questions to the database (Phase 6a run 3; migration 051). The
@@ -68,9 +68,7 @@ export const cancelMySession = (sessionId, lateOk = false) => ask('my_session_ca
  */
 export async function askBookingEmail(guestKey, kind = 'booked') {
   try {
-    const res = await fetch('/api/booking-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guestKey, kind }) });
-    // The server wrote to the database: reads shared a moment ago (readShare.js) are forgotten, so the next load sees it.
-    forgetSharedReads();
+    const res = await apiFetch('/api/booking-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guestKey, kind }) });
     const answer = await res.json().catch(() => null);
     return { sent: answer?.sent === true };
   } catch {

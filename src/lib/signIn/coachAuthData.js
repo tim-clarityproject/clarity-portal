@@ -14,6 +14,7 @@
 //     Recovery codes row says CODES_NOT_YET's first line.
 //   - The owner's reset answers "not yet" (the server asks 053 first).
 import { coachAuthStop, readRecoveryCode, RECOVERY_CODE_COUNT } from './coachAuth';
+import { apiFetch } from '../readShare';
 
 const NOT_YET_KEY = 'clarity-coach-auth-not-yet';
 const NOT_YET_MS = 60 * 60 * 1000;
@@ -260,7 +261,7 @@ export async function spendRecoveryCode(supabase, typed, opts = {}) {
 
 // ---------------------------------------------------------------- the server
 
-async function postReset(body, { token, fetchImpl = globalThis.fetch } = {}) {
+async function postReset(body, { token, fetchImpl = apiFetch } = {}) {
   let res;
   try {
     res = await fetchImpl('/api/coach-auth-reset', {

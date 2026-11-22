@@ -146,3 +146,25 @@ export function shareReads(send) {
     }
   };
 }
+
+/**
+ * fetch for the portal's own server (/api/…): every call there that isn't a
+ * GET or HEAD may write to the database (an email sent and logged, a guest's
+ * copy claimed, a coach invited, a calendar connected, an authenticator
+ * reset), so the kept reads are forgotten before it is sent and again when
+ * it is answered, as for a write sent through the database's own client.
+ * Every client call to /api goes through here (fixer D, 22 Nov), so a page
+ * that reads straight after one never gets an answer from before it.
+ * @param {RequestInfo | URL} input
+ * @param {RequestInit} [init]
+ */
+export async function apiFetch(input, init = {}) {
+  const method = String(init.method || 'GET').toUpperCase();
+  const writes = method !== 'GET' && method !== 'HEAD';
+  if (writes) forgetSharedReads();
+  try {
+    return await globalThis.fetch(input, init);
+  } finally {
+    if (writes) forgetSharedReads();
+  }
+}

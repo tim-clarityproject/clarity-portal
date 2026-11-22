@@ -3,7 +3,9 @@
 // and other filters never get a shared answer.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { shareReads, forgetSharedReads } from '../../src/lib/readShare.js';
+import { apiFetch, shareReads, forgetSharedReads } from '../../src/lib/readShare.js';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 const BASE = 'http://db.example/rest/v1';
 const auth = (who) => ({ Authorization: `Bearer ${who}`, apikey: 'k', Accept: 'application/json' });
@@ -109,4 +111,74 @@ test('a function that only reads (my_coach) keeps the kept reads; any other func
   await f(`${BASE}/rpc/my_coachx`, { method: 'POST', headers: auth('ann'), body: '{}' });
   await f(url, { method: 'GET', headers: auth('ann') });
   assert.equal(n, 4);
+});
+
+// Fixer D (22 Nov): the portal's own server writes too (an email sent and logged, a guest's copy claimed, a coach
+// invited, a calendar connected): every client call to /api goes through apiFetch, which forgets the kept reads.
+test('a POST to /api forgets the kept reads, before it is sent and when it is answered; a GET to /api keeps them', async () => {
+  forgetSharedReads();
+  const s = server();
+  const f = shareReads(s.send);
+  const url = `${BASE}/coach_sessions?select=*`;
+  const realFetch = globalThis.fetch;
+  const seen = [];
+  try {
+    globalThis.fetch = async (input, init = {}) => {
+      // While the server is writing, a read already sees nothing kept.
+      await f(url, { method: 'GET', headers: auth('ann') });
+      seen.push({ url: String(input), method: init.method || 'GET', dbCalls: s.calls.length });
+      return new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'application/json' } });
+    };
+    await f(url, { method: 'GET', headers: auth('ann') });
+    assert.equal(s.calls.length, 1);
+    const res = await apiFetch('/api/coach-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    assert.equal((await res.json()).ok, true);
+    assert.equal(seen[0].dbCalls, 2, 'the read made while the /api call was on its way went to the database');
+    await f(url, { method: 'GET', headers: auth('ann') });
+    assert.equal(s.calls.length, 3, 'the read after the /api call went to the database');
+    // A GET to /api writes nothing: the kept read stays.
+    await apiFetch('/api/something', { method: 'GET' });
+    const before = s.calls.length;
+    await f(url, { method: 'GET', headers: auth('ann') });
+    assert.equal(s.calls.length, before, 'a GET to /api kept the kept read');
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test('a failed /api call still forgets the kept reads', async () => {
+  forgetSharedReads();
+  const s = server();
+  const f = shareReads(s.send);
+  const url = `${BASE}/profiles?select=first_name`;
+  const realFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => { throw new TypeError('Failed to fetch'); };
+    await f(url, { method: 'GET', headers: auth('ann') });
+    await assert.rejects(apiFetch('/api/guest-copy', { method: 'POST', body: '{}' }));
+    await f(url, { method: 'GET', headers: auth('ann') });
+    assert.equal(s.calls.length, 2);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test('every client call to /api goes through apiFetch', () => {
+  const root = new URL('../../src/', import.meta.url).pathname;
+  const files = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = join(dir, name);
+      if (statSync(full).isDirectory()) { if (name !== 'serviceWorker') walk(full); } else if (/\.(js|jsx)$/.test(name)) files.push(full);
+    }
+  };
+  walk(root);
+  const raw = [];
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8');
+    // A plain fetch whose address is /api/… (or a path variable given to a plain fetch in a file that names /api/).
+    if (/(?<![A-Za-z])fetch\(\s*['"`]\/api\//.test(text)) raw.push(file.slice(root.length));
+    if (/['"`]\/api\//.test(text) && /(?<![A-Za-z.])fetch\(\s*path\b/.test(text)) raw.push(file.slice(root.length));
+  }
+  assert.deepEqual(raw, []);
 });

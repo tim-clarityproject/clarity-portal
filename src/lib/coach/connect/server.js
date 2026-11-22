@@ -3,6 +3,7 @@
 // from index.js so the choosing and the sync stay free of the database
 // client and are unit-tested.
 import { supabase } from '../../supabase';
+import { apiFetch } from '../../readShare';
 import { loadAdapters, loadEmailAdapters } from './index.js';
 
 /**
@@ -16,7 +17,7 @@ async function post(path, body) {
     const { data } = await supabase.auth.getSession();
     const token = data?.session?.access_token;
     if (!token) return { ok: false, reason: 'no_answer' };
-    const res = await fetch(path, {
+    const res = await apiFetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),

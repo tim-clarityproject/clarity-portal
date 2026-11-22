@@ -4,6 +4,8 @@
 // sends from a preview or a developer's machine, and then answers
 // { sent: false }.
 
+import { apiFetch } from '../readShare';
+
 /**
  * @param {string} visit the visit key from guest_open
  * @returns {Promise<{sent: boolean, limit?: boolean}>} never throws; `limit`
@@ -11,7 +13,7 @@
  */
 export async function sendGuestCopy(visit) {
   try {
-    const res = await fetch('/api/guest-copy', {
+    const res = await apiFetch('/api/guest-copy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ visit }),
@@ -33,7 +35,7 @@ export async function sendGuestCopy(visit) {
  */
 export async function sendGuestCode(visit) {
   try {
-    const res = await fetch('/api/guest-copy', {
+    const res = await apiFetch('/api/guest-copy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ visit, kind: 'code' }),
