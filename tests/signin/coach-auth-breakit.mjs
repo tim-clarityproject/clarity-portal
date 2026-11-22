@@ -775,21 +775,15 @@ if (PARTS.includes('newcodes')) {
   const a = await codesOnPage(d.page);
   const b = await codesOnPage(t2.page);
   pass(`${tag}: two sets made, one after the other`, world.madeSets === 2 && a.length === 10 && b.length === 10 && a.join() !== b.join(), `${world.madeSets} sets`);
-  // Which tab's set is in force: the one made last.
-  const firstTab = await (async () => {
-    const other = await device(world, { width: 400, mode: 'light' });
-    await signIn(other.page, world);
-    await waitPath(other.page, /\/code$/);
-    await other.page.goto(`${APP}/coach/sign-in/help`);
-    await useRecovery(other.page, a[0]);
-    const aWorks = (await waitPath(other.page, /\/in$/, 8000)) === '/coach/sign-in/in';
-    await other.ctx.close();
-    return aWorks ? 'b' : 'a'; // the tab whose codes don't work
-  })();
+  // Which tab's set is in force: the one made last. Read from the database,
+  // not by using a code: since run 7 a recovery code ends the coach's other
+  // sign-ins (055; sign-in rule 24), which would sign both tabs out.
+  const firstTab = world.inForce(a[0]) ? 'b' : 'a'; // the tab whose codes don't work
+  pass(`${tag}: exactly one tab's set is in force`, world.inForce(a[0]) !== world.inForce(b[0]));
   const stalePage = firstTab === 'a' ? d.page : t2.page;
   const livePage = firstTab === 'a' ? t2.page : d.page;
   const staleCodes = firstTab === 'a' ? a : b;
-  pass(`${tag}: one set wins: the other tab's codes don't work`, world.left() === 9 || world.left() === 10, `${world.left()} left`);
+  pass(`${tag}: one set wins: the other tab's codes don't work`, world.left() === 10 && staleCodes.every((c) => !world.inForce(c)), `${world.left()} left`);
   await stalePage.getByRole('checkbox', { name: 'I’ve saved them somewhere safe' }).click();
   await press(stalePage, 'Open the coach portal');
   const said = await waitMessage(stalePage);

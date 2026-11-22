@@ -148,6 +148,9 @@ export function makeWorld(o = {}) {
   }
   Object.defineProperty(world, 'codes', { get: () => world.codeRows.map((r) => ({ code: r.plain, used: Boolean(r.usedAt) })) });
   world.left = () => world.codeRows.filter((r) => !r.usedAt).length;
+  // Whether a code is in the set in force, without using it (a test's look
+  // at the database: using one ends the coach's other sign-ins, 055).
+  world.inForce = (code) => { const plain = plainOf(code); return world.codeRows.some((r) => !r.usedAt && timingSafeEqual(hashOf(plain, r.salt), r.hash)); };
   world.codeFor = (key, at = Date.now()) => totp(key, at);
   Object.defineProperty(world, 'goodCode', {
     get: () => {
