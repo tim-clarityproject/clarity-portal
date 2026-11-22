@@ -508,9 +508,13 @@ function SleepPanel({ open, onClose, userId, today, saved, onSaved }) {
         hours: touched.current.hours || !savedHas.current.hours ? hours : null,
         quality: touched.current.quality || !savedHas.current.quality ? quality : null,
       };
-      const r = await saveSleep(userId, today, sent);
+      // The day it is saved on (the question is about last night): a panel
+      // opened before midnight and saved after belongs to the new day
+      // (tidy pass, item 4; the Daily plan's sleepSaveDay).
+      const day = localToday() > today ? localToday() : today;
+      const r = await saveSleep(userId, day, sent);
       toast.show(r?.status === 'queued' ? 'Will sync' : 'Saved');
-      onSaved?.({ local_date: today, sleep_hours: sent.hours, sleep_quality: sent.quality });
+      onSaved?.({ local_date: day, sleep_hours: sent.hours, sleep_quality: sent.quality });
       onClose();
     } catch (e) {
       toast.error(friendlyError(e, 'That didn’t save. Check your connection and try again.'));

@@ -55,8 +55,10 @@ import {
   nightBefore,
   WIND_DOWN_SOURCES,
   thingKey,
+  sleepSaveDay,
   sleepToConfirm,
   sleepWords,
+  splitPlanSave,
   isDayKey,
 } from '../../lib/performance';
 import { leadUpOn, noteLeadUp, peakTodoSource, usePeakMoments } from '../../lib/peakMoments/store';
@@ -292,7 +294,18 @@ function PlanFlow({ userId, date, today, loaded }) {
     return creating.current;
   };
 
-  const answersOp = (a, extra = {}) => dayPlanAnswersOp(userId, date, { ...answersToRow(a), ...extra });
+  // The day the sleep answer last changed on this page: an answer given
+  // after midnight on a plan opened the day before belongs to the day it is
+  // saved on (the question is about last night); the rest keeps its day.
+  const sleepChangedOn = useRef(null);
+  const sleepDay = () => sleepSaveDay({ planDate: date, openedOn: today, changedOn: sleepChangedOn.current });
+  const answersSplit = (a, extra = {}) => splitPlanSave({ ...answersToRow(a), ...extra }, date, sleepDay());
+  const answersOp = (a, extra = {}) => dayPlanAnswersOp(userId, date, answersSplit(a, extra).plan);
+  // The moved sleep answer's own save, on its day's row (none when it stays).
+  const sleepOp = (a, extra = {}) => {
+    const moved = answersSplit(a, extra).sleep;
+    return moved ? dayPlanAnswersOp(userId, moved.date, moved.values) : null;
+  };
 
   const sendAnswers = (extra = {}) => {
     clearTimeout(timer.current);
@@ -303,7 +316,9 @@ function PlanFlow({ userId, date, today, loaded }) {
       await ensurePlan();
       // The device's copy of the page learns the answers too, so the
       // next visit shows them at once, offline as well.
-      setData((d) => ({ ...d, dayPlan: { ...(d.dayPlan || {}), ...answersToRow(a), ...extra } }));
+      setData((d) => ({ ...d, dayPlan: { ...(d.dayPlan || {}), ...answersSplit(a, extra).plan } }));
+      const moved = sleepOp(a, extra);
+      if (moved) await saveOrQueue(userId, moved);
       const r = await saveOrQueue(userId, extra.status === 'finished' ? { ...answersOp(a, extra), newestWins: true } : answersOp(a, extra)) // Finish: newest choice wins;
       // Saved, with nothing newer typed: the draft goes, so a reload shows
       // the saved row, never older typing over another window's newer save.
@@ -324,6 +339,7 @@ function PlanFlow({ userId, date, today, loaded }) {
 
   const change = (patch) => {
     typedYet.current = true;
+    if ('hours' in patch || 'quality' in patch) sleepChangedOn.current = localToday();
     setAnswers((a) => ({ ...a, ...patch }));
   };
 
@@ -343,6 +359,8 @@ function PlanFlow({ userId, date, today, loaded }) {
   useEffect(() => {
     const onHide = () => {
       if (!waiting.current || !planId.current) return;
+      const moved = sleepOp(waiting.current);
+      if (moved) keepForLater(userId, moved);
       keepForLater(userId, answersOp(waiting.current));
       waiting.current = null;
       clearTimeout(timer.current);
@@ -354,7 +372,11 @@ function PlanFlow({ userId, date, today, loaded }) {
         clearTimeout(timer.current);
         const a = waiting.current;
         waiting.current = null;
-        ensurePlan().then(() => saveOrQueue(userId, answersOp(a))).catch(() => null);
+        const moved = sleepOp(a);
+        ensurePlan().then(async () => {
+          if (moved) await saveOrQueue(userId, moved);
+          return saveOrQueue(userId, answersOp(a));
+        }).catch(() => null);
       }
     };
     // Once, for the page's life.

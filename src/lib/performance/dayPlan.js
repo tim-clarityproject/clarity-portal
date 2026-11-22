@@ -364,3 +364,38 @@ export function ifItHappens(response) {
   const t = (response || '').trim();
   return t ? `If it happens, ${lowerFirst(t)}` : '';
 }
+
+/**
+ * The day a Daily plan's sleep answer belongs to (tidy pass, item 4). The
+ * question is about last night, so an answer given after midnight on a plan
+ * opened the day before belongs to the day it is saved on: the reverse of
+ * the Daily review's 04:00 rule. The rest of the plan keeps its day. A past
+ * day's plan opened on purpose (its address names that day) keeps its own
+ * sleep. `changedOn` is the person's own day when the sleep answer last
+ * changed (localToday), or none when it hasn't changed on this page.
+ */
+export function sleepSaveDay({ planDate, openedOn, changedOn }) {
+  if (!changedOn || planDate !== openedOn) return planDate;
+  return changedOn > planDate ? changedOn : planDate;
+}
+
+const SLEEP_COLUMNS = ['sleep_hours', 'sleep_quality', 'sleep_to_confirm'];
+
+/**
+ * A Daily plan save split by day: the plan's own columns for the plan's day,
+ * and, when the sleep answer belongs to a later day (sleepSaveDay), its
+ * columns for that day on their own. Blank sleep answers are left out of the
+ * moved part, so they never wipe one already saved there.
+ * Returns { plan, sleep } where sleep is null or { date, values }.
+ */
+export function splitPlanSave(values, planDate, sleepDay) {
+  if (!sleepDay || sleepDay === planDate) return { plan: values, sleep: null };
+  const plan = {};
+  const moved = {};
+  for (const [k, v] of Object.entries(values)) {
+    if (SLEEP_COLUMNS.includes(k)) {
+      if (v != null && v !== '') moved[k] = v;
+    } else plan[k] = v;
+  }
+  return { plan, sleep: Object.keys(moved).length ? { date: sleepDay, values: moved } : null };
+}
