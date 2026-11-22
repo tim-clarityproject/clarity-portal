@@ -6,6 +6,7 @@ import { lockPage, returnFocus, trapTab, unlockPage } from './pageLock';
 import { themeProps, useThemeScope } from './themeScope';
 import { PANEL_MS, POPUP_MS, prefersReducedMotion } from './timing';
 import useIsPhone from './useIsPhone';
+import { toastOffsetFor } from './toastAbove';
 import './design.css';
 
 // What opens from a box: the drop-down's list and the calendar
@@ -114,6 +115,28 @@ export default function Popover({
   }, [open, mounted, shown]);
 
   const active = open && mounted;
+
+  // On a phone it is a sheet fixed over the screen's foot: while it is open, toasts rise above its top, so a toast
+  // never covers its buttons (Jump to a date's days; fixer D, 22 Nov, the coach UI tester's cal-jump at 400). Its
+  // layout height, not its box on screen, which may still be sliding into place. What was there before comes back.
+  useLayoutEffect(() => {
+    const sheet = sheetRef.current;
+    if (!active || !isPhone || !sheet) return undefined;
+    const root = document.documentElement;
+    const before = root.style.getPropertyValue('--ds-toast-offset');
+    const measure = () => {
+      if (!sheet.offsetHeight) return;
+      root.style.setProperty('--ds-toast-offset', `${toastOffsetFor(window.innerHeight, window.innerHeight - sheet.offsetHeight)}px`);
+    };
+    measure();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    observer?.observe(sheet);
+    return () => {
+      observer?.disconnect();
+      if (before) root.style.setProperty('--ds-toast-offset', before);
+      else root.style.removeProperty('--ds-toast-offset');
+    };
+  }, [active, isPhone]);
 
   // Escape, focus in and back out, and on phone the page lock.
   useLayoutEffect(() => {
