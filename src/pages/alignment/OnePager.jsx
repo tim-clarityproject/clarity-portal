@@ -37,7 +37,8 @@ function EditButton({ label, onClick }) {
 
 // The sort direction: the one chevron (Tim, 26 Oct), down for high to
 // low and up for low to high.
-const Arrow = ({ up }) => <Chevron direction={up ? 'up' : 'down'} size="sm" beside="capitals" className="al-dir" />;
+// Beside the table's capitals, or (beside="words") the Sort by switch's words, in DM Sans since 22 Nov (rule 4a).
+const Arrow = ({ up, beside = 'capitals' }) => <Chevron direction={up ? 'up' : 'down'} size="sm" beside={beside} className="al-dir" />;
 
 function ProjectCards({ onEmailLink, onCreateAccount, email }) {
   const emailNote = {
@@ -149,7 +150,7 @@ export default function OnePager({ draft, onEmailLink, onCreateAccount, onEdit, 
                   onClick={() => pick(f.id)}
                 >
                   {f.label}
-                  {showArrow && <Arrow up={sort.d > 0} />}
+                  {showArrow && <Arrow up={sort.d > 0} beside="words" />}
                 </button>
               );
             })}
