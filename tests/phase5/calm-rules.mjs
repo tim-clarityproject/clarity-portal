@@ -58,6 +58,7 @@ import { join } from 'node:path';
 import { chevronsOff, measureChevrons } from './chevrons.mjs';
 import { outlinedEdges } from './edges.mjs';
 import { overlappingTaps } from './taps.mjs';
+import { toastCovers } from './toasts.mjs';
 import { checkReveals } from './reveals.mjs';
 import { questionsBeforeCharts } from './summary-order.mjs';
 import { buttonProblems, chevronOnlyFolds, controlsFamily, doubledRules, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
@@ -568,6 +569,9 @@ for (const width of PAGES.length ? WIDTHS : []) {
         // Two chart dots that sit close share part of their 44px tap circles: a chart's marks are where the answers put them (as the Health Check's own suites accept).
         const shared = (await page.evaluate(overlappingTaps)).filter((o) => !/^hc-dot .* \+ hc-dot /.test(o));
         pass(`${tag}: no two tap areas overlap`, shared.length === 0, shared.slice(0, 6).join('; '));
+        // A toast never covers a link or button fixed to the screen (tidy pass item 2).
+        const covered = await page.evaluate(toastCovers);
+        pass(`${tag}: a toast covers no button or link`, covered.length === 0, covered.slice(0, 4).join('; '));
         const early = await page.evaluate(questionsBeforeCharts);
         pass(`${tag}: Questions to start with never come before a chart`, early.length === 0, early.slice(0, 4).join('; '));
         // A pop-up holds one short line; longer explanations open in the side panel (Tim, 16 Nov, 23:31).
@@ -730,6 +734,8 @@ if (HC_ONLY) {
           pass(`${tag}: every outlined edge reaches 3 to 1`, edges.length === 0, edges.slice(0, 4).join('; '));
           const overlaps = (await page.evaluate(overlappingTaps)).filter((o) => !/^hc-dot .* \+ hc-dot /.test(o));
           pass(`${tag}: no two tap areas overlap`, overlaps.length === 0, overlaps.slice(0, 4).join('; '));
+          const covered = await page.evaluate(toastCovers);
+          pass(`${tag}: a toast covers no button or link`, covered.length === 0, covered.slice(0, 4).join('; '));
           // The summary opens with the visuals and the questions come last (Tim, 13 Nov; rule 29ar).
           const early = await page.evaluate(questionsBeforeCharts);
           pass(`${tag}: Questions to start with never come before a chart`, early.length === 0, early.slice(0, 4).join('; '));
@@ -1097,6 +1103,8 @@ if (COACH_AUTH) {
           pass(`${tag}: every outlined edge reaches 3 to 1`, lowEdges.length === 0, lowEdges.slice(0, 6).join('; '));
           const shared = await page.evaluate(overlappingTaps);
           pass(`${tag}: no two tap areas overlap`, shared.length === 0, shared.slice(0, 6).join('; '));
+          const covered = await page.evaluate(toastCovers);
+          pass(`${tag}: a toast covers no button or link`, covered.length === 0, covered.slice(0, 4).join('; '));
           const pops = await page.evaluate(checkPopups);
           pass(`${tag}: every pop-up is one short line, and no ⓘ sits in a list row (${pops.checked} read)`, pops.problems.length === 0, pops.problems.slice(0, 4).join('; '));
           // M26's own titles, word for word (sign-in rule 2; the run's prompt: "exactly as M26 draws and words

@@ -3,6 +3,7 @@ import {
   AddButton, Button, Chip, ChipRow, DatePicker, Dropdown, IconButton, InlineChoice, SlidePanel, SwitchRow, TextBox, TextField, useIsPhone, useToast,
 } from '../../components/design';
 import keepWords from '../../components/design/keepWords';
+import { useToastAbove } from '../../components/design/toastAbove';
 import { keyOf, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { addDays, clean, cut, dayWords, minutesWords } from '../../lib/coach/model';
 import {
@@ -189,6 +190,9 @@ export function TodoBulkBar({ picks }) {
   // Something chosen that has since gone (ticked or deleted elsewhere) is let go.
   const stale = picks.ids.length !== chosen.length;
   useEffect(() => { if (stale) picks.ids.filter((id) => !chosen.some((t) => t.id === id)).forEach((id) => picks.pick(id, false)); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [stale]);
+  // Toasts ("Completed", "Deleted" with Undo) rise above the bar, never over its buttons (tidy pass item 2).
+  const barRef = useRef(null);
+  useToastAbove(barRef, chosen.length > 0);
   if (!chosen.length) return null;
   const then = (work) => { setMenu(null); work(); picks.clear(); };
   const lists = todoLists.filter((l) => !l.finished_at);
@@ -196,7 +200,7 @@ export function TodoBulkBar({ picks }) {
     <button type="button" className="cc-bulk-btn" ref={ref(key)} aria-haspopup={onClick ? undefined : 'menu'} aria-expanded={onClick ? undefined : menu === key} onClick={onClick || (() => setMenu(key))}>{label}</button>
   );
   return (
-    <div className="cc-bulk cc-todo-bulk" role="toolbar" aria-label={`${chosen.length} chosen`}>
+    <div ref={barRef} className="cc-bulk cc-todo-bulk" role="toolbar" aria-label={`${chosen.length} chosen`}>
       <span className="cc-bulk-n" aria-live="polite">{chosen.length} chosen</span>
       <span className="cc-todo-bulk-acts">
         {button('date', 'Date')}

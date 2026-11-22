@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AddButton, Button, IconButton, InlineChoice, PageHeader, SearchField, useIsPhone, useToast } from '../../components/design';
+import { useToastAbove } from '../../components/design/toastAbove';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { keyOf, newId, removeRow, saveRow, saveRows } from '../../lib/coach/store';
 import { fieldValue, fieldWords } from '../../lib/coach/model';
@@ -99,6 +100,9 @@ export default function Leads() {
   const [picked, setPicked] = useState({});
   const pickedLeads = open.filter((l) => picked[l.id]);
   const picking = pickedLeads.length > 0;
+  // While choosing, toasts rise above the select-several bar, never over its buttons (tidy pass item 2).
+  const bulkRef = useRef(null);
+  useToastAbove(bulkRef, picking);
   const pick = (id, on) => setPicked((p) => { const n = { ...p }; if (on) n[id] = true; else delete n[id]; return n; });
   const hold = useRef(null);
   const holdStart = (id) => { if (!isPhone) return; clearTimeout(hold.current); hold.current = setTimeout(() => { hold.current = 'held'; pick(id, true); }, HOLD_MS); };
@@ -430,7 +434,7 @@ export default function Leads() {
         </div>
 
         {picking && (
-          <div className="cc-bulk" role="toolbar" aria-label={`${pickedLeads.length} chosen`}>
+          <div ref={bulkRef} className="cc-bulk" role="toolbar" aria-label={`${pickedLeads.length} chosen`}>
             <span className="cc-bulk-n" aria-live="polite">{pickedLeads.length} chosen</span>
             {tags.length > 0 && <button type="button" className="cc-bulk-btn" ref={ref('tag')} aria-haspopup="menu" aria-expanded={menu === 'tag'} onClick={() => setMenu('tag')}>Tag</button>}
             {pickedLeads.length === 2 && <button type="button" className="cc-bulk-btn" onClick={() => { setMergePair({ a: leadOf(pickedLeads[0].id), b: leadOf(pickedLeads[1].id) }); setPicked({}); }}>Merge</button>}

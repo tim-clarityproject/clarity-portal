@@ -40,6 +40,7 @@ import { mkdirSync } from 'node:fs';
 import { buttonProblems, chevronOnlyFolds, controlsFamily, doubledRules, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
 import { outlinedEdges } from '../phase5/edges.mjs';
 import { overlappingTaps } from '../phase5/taps.mjs';
+import { toastCovers } from '../phase5/toasts.mjs';
 import { checkPopups } from '../phase5/popups.mjs';
 import { chevronsOff, measureChevrons } from '../phase5/chevrons.mjs';
 import { APP, makeReport } from './shared.mjs';
@@ -275,6 +276,9 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
   // area over its neighbour's is the one overlap that is meant. Nothing else may overlap, and no dot may overlap anything else.
   const overlaps = (await page.evaluate(overlappingTaps)).filter((o) => !/^cc-net-dot .* \+ cc-net-dot /.test(o));
   report.pass(`${tag}: no two tap areas overlap`, overlaps.length === 0, overlaps.slice(0, 4).join('; '));
+  // A toast never covers a button or link fixed to the screen: the select-several bar, the session bar, a panel's foot (tidy pass item 2).
+  const covered = await page.evaluate(toastCovers);
+  report.pass(`${tag}: a toast covers no button or link`, covered.length === 0, covered.slice(0, 4).join('; '));
   const pops = await page.evaluate(checkPopups);
   report.pass(`${tag}: every pop-up is one short line (${pops.checked} read)`, pops.problems.length === 0, pops.problems.slice(0, 3).join('; '));
   // A drop-down showing "UK" is read as capitals by the checker (its value is two capital letters): the
