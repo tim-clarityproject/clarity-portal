@@ -73,3 +73,12 @@ export function clearPanelDraft(userId, key) {
   memory.delete(key);
   if (userId) clearDraft(userId, NAME(key));
 }
+
+/**
+ * The draft key of a tool's add-to-do panel (ToolTodoPanel): the tool, the
+ * saved item it came from and, where a tool has several next steps, which
+ * one, so one step's draft never shows in another step's panel.
+ */
+export function toolTodoDraftKey(source, sourceId = null, item = null) {
+  return `tool-todo:${source}:${sourceId || 'none'}${item ? `:${item}` : ''}`;
+}

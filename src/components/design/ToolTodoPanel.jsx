@@ -3,6 +3,7 @@ import { AddTodoPanel } from './TodoPanels';
 import useToolTodo from './useToolTodo';
 import { TODO_WHERE } from '../../lib/performance/sprintPage';
 import { needsConnection } from '../../lib/friendlyError';
+import { toolTodoDraftKey } from '../../lib/panelDraft';
 
 // The add panel every tool opens for a next step (M10 "Add to-do" with
 // its "Where should it go?"; Tim, 13 Nov, 10:42): what needs doing, which
@@ -18,6 +19,8 @@ import { needsConnection } from '../../lib/friendlyError';
 //     startWhere="backlog"                  optional: 'week', 'backlog' or 'none'
 //     source="get_unstuck"                  todos.source ('other_tool' when left out)
 //     sourceId={decisionId}                 the saved item it came from, if any
+//     item={act.id}                         optional: which of the tool's next steps this panel is
+//                                           for, so one step's draft never shows in another's panel
 //     onDone={({ where, id, text, strategyId, impact }) => …}
 //     onUndone={({ where, id }) => …}      the toast's Undo was pressed
 //     todoIds={[id, …]}                     optional: to-dos the tool made earlier
@@ -39,7 +42,7 @@ const NO_STRATEGY = [
   'Your plan has no Strategies yet, so there’s nothing to add this to.',
 ];
 
-export default function ToolTodoPanel({ open, onClose, startText = '', startStrategyId = null, startWhere, source = 'other_tool', sourceId = null, onDone, onUndone, todoIds = null, onPlaces }) {
+export default function ToolTodoPanel({ open, onClose, startText = '', startStrategyId = null, startWhere, source = 'other_tool', sourceId = null, item = null, onDone, onUndone, todoIds = null, onPlaces }) {
   const todo = useToolTodo();
   const onPlacesRef = useRef(onPlaces);
   useEffect(() => { onPlacesRef.current = onPlaces; });
@@ -103,7 +106,7 @@ export default function ToolTodoPanel({ open, onClose, startText = '', startStra
       notice={notice}
       onAdd={done}
       // Closed without adding, what was typed is offered again next time (tidy pass item 3).
-      draftKey={`tool-todo:${source}:${sourceId || 'none'}`}
+      draftKey={toolTodoDraftKey(source, sourceId, item)}
     />
   );
 }

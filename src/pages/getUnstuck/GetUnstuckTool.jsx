@@ -318,6 +318,7 @@ export default function GetUnstuckTool({
           startWhere={addingAct?.where || undefined}
           source={TODO_SOURCE}
           sourceId={sourceId}
+          item={addingAct?.id || null}
           todoIds={todoIds}
           onPlaces={onPlaces}
           onDone={({ where, id, text, strategyId }) => {

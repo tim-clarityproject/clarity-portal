@@ -2,7 +2,7 @@
 // used by the shared panel through src/components/design/usePanelDraft.js).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { clearPanelDraft, fieldEntry, fieldsToRestore, hasTyping, keepPanelDraft, readPanelDraft, sameFields } from '../../src/lib/panelDraft.js';
+import { clearPanelDraft, fieldEntry, fieldsToRestore, hasTyping, keepPanelDraft, readPanelDraft, sameFields, toolTodoDraftKey } from '../../src/lib/panelDraft.js';
 
 const opened = [fieldEntry(0, 'What needs doing?', ''), fieldEntry(1, 'Notes', '')];
 
@@ -44,4 +44,11 @@ test('signed out, a draft lasts for the visit; clearing it after a save lets it 
   // No key, nothing kept.
   keepPanelDraft(null, null, fields);
   assert.equal(readPanelDraft(null, null), null);
+});
+
+test('a tool with several next steps keeps one draft per step (the functionality tester, 22 Nov)', () => {
+  assert.equal(toolTodoDraftKey('get_unstuck', 'd1'), 'tool-todo:get_unstuck:d1');
+  assert.equal(toolTodoDraftKey('get_unstuck', null), 'tool-todo:get_unstuck:none');
+  assert.notEqual(toolTodoDraftKey('get_unstuck', 'd1', 'act-1'), toolTodoDraftKey('get_unstuck', 'd1', 'act-2'));
+  assert.equal(toolTodoDraftKey('get_unstuck', null, 'act-1'), 'tool-todo:get_unstuck:none:act-1');
 });
