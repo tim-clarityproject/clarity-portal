@@ -185,7 +185,7 @@ export default function WheelAreas() {
                     <span>{areaName(a)}</span>
                     <small>Past scores kept</small>
                   </div>
-                  <button type="button" className="wol-rest" disabled={pending} onClick={() => toggle(a.key, true)}>Restore</button>
+                  <button type="button" className="ds-btn ds-btn--outline wol-rest" disabled={pending} onClick={() => toggle(a.key, true)}>Restore</button>
                 </div>
               ))}
             </div>

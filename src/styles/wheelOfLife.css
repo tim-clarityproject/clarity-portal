@@ -432,28 +432,9 @@
 }
 
 .ui-root .wol-rest {
+  /* The shared outlined button (ds-btn--outline: src/styles/buttons.css);
+     the Nekst pill is retired (Tim, 22 Nov: one controls family). */
   justify-self: end;
-  min-height: 40px !important;
-  padding: 0 14px !important;
-  background: transparent;
-  border: 1px solid var(--btn-line);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-size: var(--fs-button) !important;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--text);
-  transition: border-color var(--dur) var(--ease);
-}
-
-.ui-root .wol-rest:hover {
-  border-color: var(--coral);
-}
-
-.ui-root .wol-rest:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
 }
 
 .ui-root .wol-rest:disabled {
@@ -1722,8 +1703,7 @@
   .ui-root .wol-stp button,
   .ui-root .wol-clr,
   .ui-root .wol-qlink,
-  .ui-root .wol-ib,
-  .ui-root .wol-rest {
+  .ui-root .wol-ib {
     transition: none !important;
   }
 }

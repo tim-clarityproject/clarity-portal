@@ -328,8 +328,9 @@ export function controlsFamily({ phone, scale = 1 }) {
   // chart's marks; calendar days and week boxes; tick boxes; the phone bar and the menu's crosshair; the My Mission
   // pill (its own part in the design reference's colours, "Surface: Tiles, Mission pill", which expands smoothly, rule 10);
   // Merge into one's cells, which sit in a comparison table under its two column heads (answer boxes, not a switch);
-  // a week's day boxes, each day its own (the week grid, rule 26e).
-  const OWN = '.hdr-mis, .ds-mission-pill, .cc-merge-choice, .ds-logweek-days, .ds-logweek-yn, .ds-floating-orb, .ds-fab, .ds-breathe, [class*="orb"], [role=gridcell], [role=checkbox], .ds-check-box, .ds-week-box, .ds-bar, .ds-bar-menu, .hdr-menu, svg, .hc-dot, .cc-net-dot, [class*="-dot"], .ds-chart, .ds-chip, [role=tab], .ds-utabs, .cc-utabs, .ds-answer, .ds-rows, .ds-field, .ds-dd, .ds-text, input, select, textarea, .ds-stepper, [class*="stepper"]';
+  // a week's day boxes, each day its own (the week grid, rule 26e); Continue with Google, which is Google's own
+  // button in their light and dark versions, never redrawn (sign-in rule 17; M26).
+  const OWN = '.ds-google, .hdr-mis, .ds-mission-pill, .cc-merge-choice, .ds-logweek-days, .ds-logweek-yn, .ds-floating-orb, .ds-fab, .ds-breathe, [class*="orb"], [role=gridcell], [role=checkbox], .ds-check-box, .ds-week-box, .ds-bar, .ds-bar-menu, .hdr-menu, svg, .hc-dot, .cc-net-dot, [class*="-dot"], .ds-chart, .ds-chip, [role=tab], .ds-utabs, .cc-utabs, .ds-answer, .ds-rows, .ds-field, .ds-dd, .ds-text, input, select, textarea, .ds-stepper, [class*="stepper"]';
 
   // 1. The old pill toggle, by name.
   for (const el of document.querySelectorAll('.ui-root .seg, .ui-root .segw')) if (vis(el)) out.push(`${name(el)}: the retired round pill toggle (.seg)`);
@@ -396,7 +397,11 @@ export function controlsFamily({ phone, scale = 1 }) {
     const box = seg.parentElement;
     const left = box.getBoundingClientRect().left + (parseFloat(getComputedStyle(box).paddingLeft) || 0);
     const off = seg.getBoundingClientRect().left - left;
-    if (Math.abs(off) > 1) out.push(`toggle ${name(seg)}: ${Math.round(off)}px from its box's left edge`);
+    // A centred layout (Breathe) centres it, a right-aligned one puts it on the right: anything else is pushed along.
+    const room = box.clientWidth - (parseFloat(getComputedStyle(box).paddingLeft) || 0) - (parseFloat(getComputedStyle(box).paddingRight) || 0) - seg.getBoundingClientRect().width;
+    const align = getComputedStyle(box).textAlign;
+    const meant = align === 'center' ? room / 2 : /right|end/.test(align) ? room : 0;
+    if (Math.abs(off - meant) > 1) out.push(`toggle ${name(seg)}: ${Math.round(off)}px from its box's left edge`);
   }
 
   // 2b. Underlined tabs are underlined: a tab drawn as a round pill (filled or edged), or a tab strip with round

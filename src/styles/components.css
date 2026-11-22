@@ -3674,11 +3674,13 @@ span.tc-editable:focus-visible {
 .ui-root .breathe-meta-link {
   all: unset;
   cursor: pointer;
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: calc(10 * var(--u, 1px));
+  /* A quiet text link in DM Sans, sentence case: no Nekst inside any
+     control (Tim, 22 Nov: one controls family). */
+  font-family: var(--font-body);
+  font-weight: var(--fw-btn);
+  text-transform: none;
+  letter-spacing: var(--ls-btn);
+  font-size: var(--fs-btn);
   color: var(--text-2);
   min-height: var(--tap-min);
   display: inline-flex;
