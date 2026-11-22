@@ -213,7 +213,7 @@ function QuestionForm({ userId, role, question, isNew = false, onDelete, onDone 
       clearTimeout(timer.current);
       if (hasWords(latest.current.wording)) saveQuestion(userId, { ...question, ...latest.current, wording: cleanWording(latest.current.wording).trim() }).catch(() => null);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Clicking away closes it (an empty new one is simply not kept).
   useEffect(() => {

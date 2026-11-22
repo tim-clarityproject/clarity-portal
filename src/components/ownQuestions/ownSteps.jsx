@@ -120,7 +120,7 @@ function WrittenAnswer({ userId, q, when, saved }) {
       clearTimeout(timer.current);
       send(latest.current);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <TextBox
       ariaLabel="Your answer"
