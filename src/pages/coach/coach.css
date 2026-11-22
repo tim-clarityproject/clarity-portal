@@ -721,7 +721,11 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root.cc-app .ds-page-title-row, .ui-root.cc-public .ds-page-title-row { min-width: 0; }
 .ui-root.cc-app .ds-page-title-row, .ui-root.cc-public .ds-page-title-row { white-space: normal; }
 /* A title here is a name someone typed, so even its last word may break (the shared title keeps a last word whole). */
-.ui-root.cc-app .ds-page-title :is(span, .ds-keep, .ds-title-end), .ui-root.cc-public .ds-page-title :is(span, .ds-keep, .ds-title-end) { white-space: normal !important; overflow-wrap: anywhere; }
+.ui-root.cc-app .ds-page-title :is(span, .ds-keep), .ui-root.cc-public .ds-page-title :is(span, .ds-keep) { white-space: normal !important; overflow-wrap: anywhere; }
+/* …but the last word and its ⓘ or eye stay together (tidy pass item 1): the
+   two move to the next line as one, and only a last word wider than the
+   whole line breaks inside it. */
+.ui-root.cc-app .ds-page-title .ds-title-end, .ui-root.cc-public .ds-page-title .ds-title-end { display: inline-block; max-width: 100%; white-space: normal !important; overflow-wrap: anywhere; }
 
 /* An older phone rule pads every plain button and sets its size up to 768px (mobile.css). The coach
    portal's own buttons keep the padding and the size written for them above, at every width: rows start on

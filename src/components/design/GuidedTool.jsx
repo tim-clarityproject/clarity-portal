@@ -12,7 +12,7 @@ import { STEP_PREFIX } from './guideDraft';
 import useKeepScroll from './useKeepScroll';
 import useViewportFit from './useViewportFit';
 import Chevron from './Chevron';
-import keepWords, { titleWithAside } from './keepWords';
+import keepWords, { endWithIcon, titleWithAside } from './keepWords';
 import useInfoToggle from './useInfoToggle';
 import { inSentence } from '../../lib/performance/words.js';
 import './design.css';
@@ -238,11 +238,10 @@ function StepHead({ step, headingRef, positionId, role }) {
       </Heading>
       {step.nudges?.map((line, n) => (
         <p key={line} className="ds-guide-nudge ds-guide-rv ds-guide-rv--2">
-          {line}
-          {step.nudgeInfo?.explain && n === step.nudges.length - 1 && (
+          {/* The ⓘ wrapped with the nudge's last word, never on a line of its own (tidy pass item 1). */}
+          {endWithIcon(line, step.nudgeInfo && n === step.nudges.length - 1 && (step.nudgeInfo.explain ? (
             <ExplainInfo explain={step.nudgeInfo.explain} label={step.nudgeInfo.label} className="ds-guide-i ds-guide-i--end" />
-          )}
-          {step.nudgeInfo && !step.nudgeInfo.explain && n === step.nudges.length - 1 && (
+          ) : (
             <button
               type="button"
               className="ds-guide-i ds-guide-i--end"
@@ -254,7 +253,7 @@ function StepHead({ step, headingRef, positionId, role }) {
             >
               <InfoIcon />
             </button>
-          )}
+          )))}
         </p>
       ))}
       {step.nudgeInfo && !step.nudgeInfo.explain && <InfoPop id={nudgeInfoId} open={nudgeOpen} anchorRef={nudgeButtonRef} panelRef={nudgePanelRef} lines={step.nudgeInfo.text} />}

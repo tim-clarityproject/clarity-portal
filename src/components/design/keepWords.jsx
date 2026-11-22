@@ -61,3 +61,23 @@ export function titleWithAside(title, aside) {
     </>
   );
 }
+
+/**
+ * A sentence with an icon at its end (a nudge's ⓘ, rule 25): the icon is
+ * wrapped with the sentence's last word, so it never drops to a line of its
+ * own at a large text size or on a narrow phone (tidy pass item 1). With no
+ * icon, or words that aren't a plain string, the words as they are with the
+ * icon after them, still joined.
+ */
+export function endWithIcon(words, icon) {
+  if (!icon) return words;
+  if (typeof words !== 'string') return <span className="ds-title-end">{words}{icon}</span>;
+  const text = words.trim();
+  const at = text.lastIndexOf(' ');
+  return (
+    <>
+      {at >= 0 && keepWords(`${text.slice(0, at)} `)}
+      <span className="ds-title-end">{keepWords(text.slice(at + 1))}{icon}</span>
+    </>
+  );
+}
