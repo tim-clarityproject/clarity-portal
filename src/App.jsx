@@ -32,19 +32,38 @@ import { loadWithReload } from './lib/loadWithReload';
 // keeps every part on the device (vite.config.js), so all of it works offline.
 const PAGE_FALLBACK = <div className="ui-root" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />;
 const ALL_PAGES = [];
-function page(factory, name) {
+// Pages that follow one another within moments, a family: when one of them is
+// asked for, the rest are too, so a move between them never waits for its
+// part. The sign-in screens are one (the coach's code, You're in, the lost
+// authenticator, set-up and the codes come straight after the password): while
+// the next one's part was still coming, the screen before it stayed on show
+// with the new address (fixer D, 22 Nov).
+const FAMILIES = new Map();
+function page(factory, name, family = null) {
   // Once its part has loaded the page shows straight away, never through
   // Suspense: React holds back what a Suspense boundary reveals by up to
   // 300 ms, which would hold up the first screen and every move.
   let Loaded = null;
   let loading = null;
-  const load = () => {
-    loading = loading || loadWithReload(factory).then((m) => {
-      Loaded = name ? m[name] : m.default;
-      return m;
-    });
-    loading.catch(() => { loading = null; });
-    return loading;
+  // `quiet`: asked for ahead of time (the opening page, the family, the idle
+  // preload). A part that doesn't arrive then is simply asked for again when
+  // the page shows. Only a page being shown reloads the app for a part that
+  // won't load (loadWithReload: a deploy since the tab opened); a preload
+  // that failed offline used to reload whatever page was open (fixer D, 22 Nov).
+  const load = (quiet = false) => {
+    if (!loading) {
+      loading = factory().then((m) => {
+        Loaded = name ? m[name] : m.default;
+        return m;
+      });
+      loading.catch(() => { loading = null; });
+    }
+    if (family && !family.asked) {
+      family.asked = true;
+      for (const other of family.pages) if (other !== Page) other.preload().catch(() => {});
+    }
+    const now = loading;
+    return quiet ? now : loadWithReload(() => now);
   };
   const Lazy = lazy(() => load().then(() => ({ default: Loaded })));
   function Page(props) {
@@ -58,10 +77,16 @@ function page(factory, name) {
       </Suspense>
     );
   }
-  Page.preload = load;
+  Page.preload = () => load(true);
   ALL_PAGES.push(Page);
+  if (family) family.pages.push(Page);
   return Page;
 }
+function family(name) {
+  if (!FAMILIES.has(name)) FAMILIES.set(name, { asked: false, pages: [] });
+  return FAMILIES.get(name);
+}
+const SIGN_IN = family('signIn');
 
 // A few seconds after the first screen, when the device is idle, every
 // other page's part is loaded too, one at a time, so moving to it never waits. They come
@@ -142,20 +167,20 @@ const Dashboard = page(() => import('./pages/performance/Dashboard'));
 const PersonalOperatingPlanArchived = page(() => import('./pages/PersonalOperatingPlanArchived'));
 const PersonalOperatingPlanArchivedOne = page(() => import('./pages/PersonalOperatingPlanArchivedOne'));
 const MissionProgressReviewDetail = page(() => import('./pages/MissionProgressReviewDetail'));
-const SignIn = page(() => import('./pages/signin/SignIn'));
-const CreateAccount = page(() => import('./pages/signin/CreateAccount'));
-const CheckEmail = page(() => import('./pages/signin/CheckEmail'));
-const EmailConfirmed = page(() => import('./pages/signin/EmailConfirmed'));
-const ForgotPassword = page(() => import('./pages/signin/ForgotPassword'));
-const NewPassword = page(() => import('./pages/signin/NewPassword'));
-const Invite = page(() => import('./pages/signin/Invite'));
-const GoogleReturn = page(() => import('./pages/signin/GoogleReturn'));
-const BeforeYouStart = page(() => import('./pages/signin/BeforeYouStart'));
-const CoachCode = page(() => import('./pages/signin/CoachCode'));
-const CoachCodes = page(() => import('./pages/signin/CoachAuth'), 'CoachCodes');
-const CoachIn = page(() => import('./pages/signin/CoachAuth'), 'CoachIn');
-const CoachLost = page(() => import('./pages/signin/CoachAuth'), 'CoachLost');
-const CoachSetUp = page(() => import('./pages/signin/CoachAuth'), 'CoachSetUp');
+const SignIn = page(() => import('./pages/signin/SignIn'), null, SIGN_IN);
+const CreateAccount = page(() => import('./pages/signin/CreateAccount'), null, SIGN_IN);
+const CheckEmail = page(() => import('./pages/signin/CheckEmail'), null, SIGN_IN);
+const EmailConfirmed = page(() => import('./pages/signin/EmailConfirmed'), null, SIGN_IN);
+const ForgotPassword = page(() => import('./pages/signin/ForgotPassword'), null, SIGN_IN);
+const NewPassword = page(() => import('./pages/signin/NewPassword'), null, SIGN_IN);
+const Invite = page(() => import('./pages/signin/Invite'), null, SIGN_IN);
+const GoogleReturn = page(() => import('./pages/signin/GoogleReturn'), null, SIGN_IN);
+const BeforeYouStart = page(() => import('./pages/signin/BeforeYouStart'), null, SIGN_IN);
+const CoachCode = page(() => import('./pages/signin/CoachCode'), null, SIGN_IN);
+const CoachCodes = page(() => import('./pages/signin/CoachAuth'), 'CoachCodes', SIGN_IN);
+const CoachIn = page(() => import('./pages/signin/CoachAuth'), 'CoachIn', SIGN_IN);
+const CoachLost = page(() => import('./pages/signin/CoachAuth'), 'CoachLost', SIGN_IN);
+const CoachSetUp = page(() => import('./pages/signin/CoachAuth'), 'CoachSetUp', SIGN_IN);
 const AccountEmail = page(() => import('./pages/signin/AccountPages'), 'AccountEmail');
 const AccountPassword = page(() => import('./pages/signin/AccountPages'), 'AccountPassword');
 const SignInSecurity = page(() => import('./pages/signin/SignInSecurity'));
