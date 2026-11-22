@@ -1,0 +1,148 @@
+/* Your own questions (mock-up "Your own questions", version 3; Phase 6a
+   run 7). Every value from tokens.css. */
+
+/* ---------------------------------------------------------------- My Account */
+.ui-root .oq-tool {
+  padding: var(--space-px18) 0 var(--space-px6);
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+.ui-root .oq-tool:last-child { border-bottom: 0; }
+
+.ui-root .oq-tool-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-px12);
+}
+.ui-root .oq-tool-name {
+  margin: 0;
+  font-size: var(--fs-text);
+  color: var(--text);
+}
+.ui-root .oq-places {
+  font-size: var(--fs-meta);
+  color: var(--placeholder);
+  white-space: nowrap;
+}
+
+.ui-root .oq-row {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-px12) 0;
+}
+.ui-root .oq-row-q {
+  display: block;
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: 1.45;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.ui-root .oq-row-k {
+  display: block;
+  margin: var(--space-px2) 0 0;
+  font-size: var(--fs-meta);
+  color: var(--placeholder);
+}
+.ui-root .oq-row:hover .oq-row-q { color: var(--coral-text); }
+.ui-root .oq-row:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+  border-radius: var(--space-px6);
+}
+
+.ui-root .oq-open {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-px18);
+  padding: var(--space-px14) 0 var(--space-px18);
+}
+.ui-root .oq-hint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+.ui-root .oq-flabel {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+.ui-root .oq-scale { margin-top: var(--space-px18); }
+.ui-root .oq-rowend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.ui-root .oq-sugg,
+.ui-root .oq-stray { padding: var(--space-px14) 0 var(--space-3); }
+.ui-root .oq-sugg-by {
+  margin: 0 0 var(--space-px6);
+  font-size: var(--fs-meta);
+  color: var(--placeholder);
+}
+.ui-root .oq-sugg-acts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-px10);
+  flex-wrap: wrap;
+}
+.ui-root .oq-replace { margin-top: var(--space-px10); }
+.ui-root .oq-replace-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+@media (max-width: 599px) {
+  .ui-root .oq-sugg-acts { flex-direction: column; align-items: stretch; }
+}
+
+/* ---------------------------------------------------------------- in the tools and summaries */
+.ui-root .oq-answers { margin-top: var(--space-px28); }
+.ui-root .oq-answer {
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+.ui-root .oq-answer-q {
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+.ui-root .oq-answer-a {
+  margin: 0;
+  font-size: var(--fs-text);
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ui-root .oq-read {
+  margin-top: var(--space-2);
+  padding: var(--space-2) 0 0;
+}
+.ui-root .oq-read-day {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+/* ---------------------------------------------------------------- Home */
+.ui-root .oq-home { margin-top: var(--space-2); }
+
+/* ---------------------------------------------------------------- the coach's Suggest a question panel */
+.ui-root .oq-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.ui-root .oq-hint--flat { margin: 0; }

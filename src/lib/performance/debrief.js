@@ -310,6 +310,8 @@ export function debriefView(d, { today }) {
     window: { ...window, closesOnText: dayName(window.closesOn, today) },
     weekDone,
     range: weekRange(wk, today),
+    // The week's working days (M0.3), for the summary's own questions (run 7).
+    workingDays: r.workingDays || [],
     days,
     groups,
     wins: todos.wins,

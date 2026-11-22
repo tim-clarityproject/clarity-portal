@@ -64,6 +64,7 @@ import { LEAD_UP_MAX, LEAD_UP_SUGGESTIONS, countdownLine, leadUpFor, leadUpQuest
 import { PATH as TRAVEL_PATH, travelToday } from '../../lib/travel/model';
 import { useTravelPlans } from '../../lib/travel/store';
 import '../peakMoments/peakMoments.css';
+import { useOwnToolSteps } from '../../components/ownQuestions/ownSteps';
 import './performance.css';
 
 // Daily plan (mock-up M5, version 19, approved by Tim on 23 Oct; read in
@@ -608,6 +609,9 @@ function PlanFlow({ userId, date, today, loaded }) {
   // The day's own list, and the Backlog's to-dos in their fold (no sprint running).
   const dayOptions = (view?.options || []).filter((o) => o.group !== 'backlog');
   const backlogOptions = (view?.options || []).filter((o) => o.group === 'backlog');
+  // A person's own questions come last, just before the summary (run 7).
+  const own = useOwnToolSteps(userId, 'daily_plan', { date });
+
   const steps = [
     {
       key: 'sleep',
@@ -807,6 +811,7 @@ function PlanFlow({ userId, date, today, loaded }) {
         </div>
       ),
     },
+    ...own.steps,
     {
       key: 'summary',
       name: 'Your day',
@@ -847,6 +852,7 @@ function PlanFlow({ userId, date, today, loaded }) {
                 <Stat label="Performance score this week so far" value={view.score.value} good={view.score.good} />
               </div>
             )}
+            {own.summary}
           </div>
         );
       },

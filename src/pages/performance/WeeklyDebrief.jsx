@@ -70,6 +70,7 @@ import {
 } from '../../lib/performance';
 import { debriefPattern, patternCardWords } from '../../lib/performance/patterns';
 import { usePatterns } from './usePatterns';
+import { useOwnToolSteps } from '../../components/ownQuestions/ownSteps';
 import './performance.css';
 
 // The Weekly performance debrief (mock-up M1, R.debrief, read in full with
@@ -647,6 +648,10 @@ function DebriefFlow({ userId, today, loaded, view }) {
     />
   );
 
+  // A person's own questions come last, just before the summary (run 7);
+  // the summary also gathers the week's answers to their daily ones.
+  const own = useOwnToolSteps(userId, 'weekly_debrief', { sprintId, week, workingDays: view.workingDays });
+
   const steps = [
     {
       key: 'numbers',
@@ -812,6 +817,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
         </div>
       )),
     },
+    ...own.steps,
     {
       key: 'summary',
       name: 'Summary',
@@ -845,6 +851,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
               onAct={(a) => navigate(a.to, a.state ? { state: a.state } : undefined)}
             />
           )}
+          {own.summary}
         </div>
       ),
     },

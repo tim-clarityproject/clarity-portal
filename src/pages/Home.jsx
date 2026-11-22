@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import DesignHeader from '../components/DesignHeader';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import useCoachingNews from './coaching/useCoachingNews';
+import HomeOwnSuggestion from '../components/ownQuestions/HomeOwnSuggestion';
 import { useStartChat } from '../components/coach/startChat';
 import {
   AddButton,
@@ -410,6 +411,9 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
           link={cardLink}
         />
       )}
+      {/* One quiet link, shown once, under the suggested card: the question
+          the coach suggested (run 7). It opens Settings at the suggestion. */}
+      {person !== 'recovery' && <HomeOwnSuggestion userId={userId} />}
       <QuietLines
         items={quiet.map((q) => ({
           key: q.key,

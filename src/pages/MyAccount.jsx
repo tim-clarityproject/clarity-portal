@@ -10,6 +10,7 @@ import DesignHeader from '../components/DesignHeader';
 import PersonalGoalModal from '../components/PersonalGoalModal';
 import { SignOutLink, useSignOut } from '../components/SignOut';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
+import OwnQuestionsSection from '../components/ownQuestions/OwnQuestionsSection';
 import { useCoachName, PageHeader, Button, ColourModeChoice, Section, SwitchRow, useToast, SleepTargetEditor, SleepTargetLink, useSleepTarget, keepWords } from '../components/design';
 import './performance/performance.css';
 import { DashboardCustomise } from './performance/DashboardCustomise';
@@ -341,6 +342,9 @@ export default function MyAccount() {
           </div>
           <DashboardCustomise open={customising} onClose={() => setCustomising(false)} />
         </Section>
+
+        {/* Your own questions (run 7, mock-up version 3): set here and nowhere else. */}
+        <OwnQuestionsSection userId={user?.id} />
 
         {/* Sign out, as in the menu (Tim, 5 Nov): the same quiet link,
             sending anything waiting first. */}

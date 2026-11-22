@@ -62,6 +62,8 @@ import './design.css';
 //   info may also be { explain }: "Why we ask" in the side panel,
 //   required, nextLabel, skippable (for the last step), bare,
 //   eye:       the screen's eye (WhoSees), shown beside the question.
+//   skipLabel: this step's own word for the quiet skip under one-tap
+//              answers ("Skip this one" on a person's own question; run 7),
 //   oneTap:    a one-answer question (Tim, 5 Nov, 10:23): the chosen answer
 //              shows as selected for a moment (ONE_TAP_MS), then the step
 //              moves itself on with tool.next(); no Next button. Back keeps
@@ -694,7 +696,7 @@ export default function GuidedTool({
                   </div>
                 )}
                 {!hasNext && showSkip && (
-                  <button type="button" className="ds-guide-skip ds-guide-skip--body" onClick={skip}>{skipLabel}</button>
+                  <button type="button" className="ds-guide-skip ds-guide-skip--body" onClick={skip}>{step.skipLabel || skipLabel}</button>
                 )}
               </>
             )}

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import SuggestQuestionPanel from './SuggestQuestionPanel';
 import { AddButton, Button, Dropdown, InlineChoice, PageHeader, SearchField, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
@@ -572,8 +573,9 @@ export default function ClientPage() {
                 <div className="cc-field"><SwitchRow label="Frequent traveller" note={`Session emails say the calendar invite moves with ${first}.`} checked={profile.frequent_traveller === true} onChange={(on) => save({ frequent_traveller: on })} /></div>
                 {profile.status !== 'past' && <div className="cc-field"><SwitchRow label="Paused" note="A paused client stays in your list, in the board’s Paused column." checked={profile.status === 'paused'} onChange={(on) => save({ status: on ? 'paused' : 'active' })} /></div>}
               </Fold>
-              <Fold title="More" open={Boolean(folds.more)} onToggle={() => toggle('more')} summary="View as client, close, export or delete">
+              <Fold title="More" open={Boolean(folds.more)} onToggle={() => toggle('more')} summary="Suggest a question, view as client, close, export or delete">
                 <div className="cc-links">
+                  {profile.user_id && profile.status !== 'past' && <TextLink onClick={() => setPanel('question')}>Suggest a question</TextLink>}
                   {profile.user_id && (!viewAsk || viewAsk.state === 'no') && <TextLink onClick={askToView}>Ask to view {possessive(first)} portal</TextLink>}
                   {profile.status === 'past'
                     ? <TextLink onClick={() => save({ status: 'active', ended_on: null }, `${first} is back in your clients`).then(() => setEngDraft(draftFrom(null)))}>Start a new engagement</TextLink>
@@ -595,6 +597,7 @@ export default function ClientPage() {
       </div>
 
       <EngagementPanel draft={engDraft} setDraft={setEngDraft} profile={profile} />
+      {profile.user_id && <SuggestQuestionPanel open={panel === 'question'} onClose={() => setPanel(null)} clientUserId={profile.user_id} first={first} />}
       <AboutPanel open={panel === 'about'} onClose={() => setPanel(null)} profile={profile} about={about} />
       <TagsPanel profile={panel === 'tags' ? profile : null} onClose={() => setPanel(null)} />
       <FieldPanel draft={field} setDraft={setField} />

@@ -82,6 +82,7 @@ import {
   whereQuestion,
 } from '../../lib/performance';
 import { leadUpByDay, noteLeadUp, usePeakMoments } from '../../lib/peakMoments/store';
+import { useOwnToolSteps } from '../../components/ownQuestions/ownSteps';
 import './performance.css';
 
 // Daily review (mock-up M5, version 19, approved by Tim on 23 Oct; read
@@ -585,6 +586,10 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     if (Boolean(peakRow.done_on) !== done) tickTodo({ id: peakRow.id }, done);
   };
 
+  // A person's own questions come last, just before the summary (run 7):
+  // none at all for someone who hasn't added one.
+  const own = useOwnToolSteps(userId, 'daily_review', { date });
+
   const steps = [
     {
       key: 'do',
@@ -792,6 +797,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
         </div>
       ),
     },
+    ...own.steps,
     {
       key: 'summary',
       name: 'Your day',
@@ -821,6 +827,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
                 <Stat label="Performance score this week so far" value={view.score.value} good={view.score.good} />
               </div>
             )}
+            {own.summary}
           </div>
         );
       },
