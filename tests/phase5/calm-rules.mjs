@@ -60,7 +60,7 @@ import { outlinedEdges } from './edges.mjs';
 import { overlappingTaps } from './taps.mjs';
 import { checkReveals } from './reveals.mjs';
 import { questionsBeforeCharts } from './summary-order.mjs';
-import { buttonProblems, chevronOnlyFolds, doubledRules, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
+import { buttonProblems, chevronOnlyFolds, controlsFamily, doubledRules, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
 import { checkPopups } from './popups.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
@@ -546,6 +546,9 @@ for (const width of PAGES.length ? WIDTHS : []) {
         pass(`${tag}: boxes side by side are one height (button check)`, uneven.length === 0, uneven.slice(0, 4).join('; '));
         const nekst = await page.evaluate(nekstInControls);
         pass(`${tag}: no Nekst inside any control (button check)`, nekst.length === 0, nekst.slice(0, 5).join('; '));
+        // One controls family (Tim, 22 Nov; design reference 22 Nov): the gliding switch is the one toggle, the quiet precision switch, no pills, buttons 40px (44px on a phone) with 8px corners, no Nekst, one coral button.
+        const family = await page.evaluate(controlsFamily, { phone, scale: SCALE });
+        pass(`${tag}: one controls family (button check; ${family.toggles} toggles read)`, family.problems.length === 0, family.problems.slice(0, 5).join('; '));
         const sides = await page.evaluate(sideLines);
         pass(`${tag}: no thick coloured side line (button check)`, sides.length === 0, sides.slice(0, 5).join('; '));
         const doubled = await page.evaluate(doubledRules);
@@ -711,6 +714,9 @@ if (HC_ONLY) {
           pass(`${tag}: boxes side by side are one height (button check)`, uneven.length === 0, uneven.slice(0, 4).join('; '));
           const nekst = await page.evaluate(nekstInControls);
           pass(`${tag}: no Nekst inside any control (button check)`, nekst.length === 0, nekst.slice(0, 5).join('; '));
+          // One controls family (Tim, 22 Nov; design reference 22 Nov): the gliding switch is the one toggle, the quiet precision switch, no pills, buttons 40px (44px on a phone) with 8px corners, no Nekst, one coral button.
+          const family = await page.evaluate(controlsFamily, { phone, scale: SCALE });
+          pass(`${tag}: one controls family (button check; ${family.toggles} toggles read)`, family.problems.length === 0, family.problems.slice(0, 5).join('; '));
           const sides = await page.evaluate(sideLines);
           pass(`${tag}: no thick coloured side line (button check)`, sides.length === 0, sides.slice(0, 5).join('; '));
           const doubled = await page.evaluate(doubledRules);
@@ -1074,6 +1080,9 @@ if (COACH_AUTH) {
           pass(`${tag}: boxes side by side are one height (button check)`, uneven.length === 0, uneven.slice(0, 4).join('; '));
           const nekst = await page.evaluate(nekstInControls);
           pass(`${tag}: no Nekst inside any control (button check)`, nekst.length === 0, nekst.slice(0, 5).join('; '));
+          // One controls family (Tim, 22 Nov; design reference 22 Nov): the gliding switch is the one toggle, the quiet precision switch, no pills, buttons 40px (44px on a phone) with 8px corners, no Nekst, one coral button.
+          const family = await page.evaluate(controlsFamily, { phone, scale: SCALE });
+          pass(`${tag}: one controls family (button check; ${family.toggles} toggles read)`, family.problems.length === 0, family.problems.slice(0, 5).join('; '));
           const sides = await page.evaluate(sideLines);
           pass(`${tag}: no thick coloured side line (button check)`, sides.length === 0, sides.slice(0, 5).join('; '));
           const doubled = await page.evaluate(doubledRules);

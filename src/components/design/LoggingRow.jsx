@@ -118,17 +118,21 @@ function MoreButton({ label, onClick }) {
   );
 }
 
-// Small pressed buttons in a row (M1 .seg and .rate): No and Yes, or 1 to
-// 5. Tapping the chosen one again clears it, so a day can go back to not
-// logged. 44px each.
+// Small pressed buttons in a row (M1 .seg and .rate): No and Yes, or Poor
+// to Excellent. Tapping the chosen one again clears it, so a day can go
+// back to not logged. Since 22 Nov the gliding switch's look (Tim: the
+// gliding switch is the one toggle; the round pill toggle is retired):
+// the soft grey track with 8px corners and the chosen option raised, in
+// the controls family's size (src/styles/buttons.css), each option in a
+// 44px tap area.
 function PressRow({ options, value, onChange, label, className = '' }) {
   return (
-    <span className={`ds-log-press ${className}`.trim()} role="group" aria-label={label}>
+    <span className={`ds-seg ds-log-press ${className}`.trim()} role="group" aria-label={label}>
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
-          className="ds-log-press-btn"
+          className="ds-seg-btn ds-log-press-btn"
           aria-pressed={value === o.value}
           aria-label={o.aria}
           onClick={() => onChange(value === o.value ? null : o.value)}

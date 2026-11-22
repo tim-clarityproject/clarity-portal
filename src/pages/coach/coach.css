@@ -91,9 +91,13 @@ body:has(> #root .ui-root.cc-app) {
   box-sizing: border-box;
   justify-self: center;
   width: 100%;
+  position: relative;
   max-width: var(--cc-search-max);
-  min-height: var(--tap-min);
-  border-radius: var(--radius-pill);
+  /* In the header's row of controls it takes the controls' height and
+     8px corners, never a pill (design reference 22 Nov, Controls in a row:
+     one controls family; Tim, 22 Nov); its tap area stays 44px. */
+  min-height: var(--btn-h);
+  border-radius: var(--radius-btn);
   background: var(--raised);
   padding: 0 var(--space-px22);
   display: flex;
@@ -101,6 +105,10 @@ body:has(> #root .ui-root.cc-app) {
   font-size: var(--fs-secondary);
   color: var(--placeholder);
   transition: color var(--dur) var(--ease);
+}
+.ui-root .cc-search::after { content: ''; position: absolute; left: 0; right: 0; top: calc(50% - var(--tap-min) / 2); height: var(--tap-min); }
+@media (max-width: 600px) {
+  .ui-root .cc-search { min-height: var(--btn-h-phone); }
 }
 @media (hover: hover) {
   .ui-root .cc-search:hover { color: var(--text-2); }

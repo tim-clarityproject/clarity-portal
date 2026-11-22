@@ -37,7 +37,7 @@
 //   sideways scroll, nothing cut off, boxes still level).
 // It ends with one COUNT line for each role, size and mode.
 import { mkdirSync } from 'node:fs';
-import { buttonProblems, chevronOnlyFolds, doubledRules, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
+import { buttonProblems, chevronOnlyFolds, controlsFamily, doubledRules, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
 import { outlinedEdges } from '../phase5/edges.mjs';
 import { overlappingTaps } from '../phase5/taps.mjs';
 import { checkPopups } from '../phase5/popups.mjs';
@@ -259,6 +259,9 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
   report.pass(`${tag}: boxes side by side are one height`, uneven.length === 0, uneven.slice(0, 4).join('; '));
   const nekst = await page.evaluate(nekstInControls);
   report.pass(`${tag}: no Nekst inside any control`, nekst.length === 0, nekst.slice(0, 4).join('; '));
+  // One controls family (Tim, 22 Nov; design reference 22 Nov; tests/buttons/buttons-check.mjs controlsFamily).
+  const family = await page.evaluate(controlsFamily, { phone, scale: 1 });
+  report.pass(`${tag}: one controls family (${family.toggles} toggles read)`, family.problems.length === 0, family.problems.slice(0, 4).join('; '));
   const sides = await page.evaluate(sideLines);
   report.pass(`${tag}: no thick coloured side line`, sides.length === 0, sides.slice(0, 4).join('; '));
   const doubled = await page.evaluate(doubledRules);

@@ -368,20 +368,25 @@
 }
 
 .ui-root .al-seg {
+  /* The gliding switch (Tim, 22 Nov: the one toggle; design reference 22
+     Nov, Controls): a soft grey track with 8px corners and the chosen
+     answer raised on a tile with 6px corners, never a coral pill. Each
+     answer holds its figure over its word, so it is two lines tall. */
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 2px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  padding: 3px;
+  gap: 0;
+  border-radius: var(--radius-btn);
+  background: var(--seg-track);
+  padding: var(--seg-pad);
 }
 
 .ui-root .al-seg button {
   all: unset;
   cursor: pointer;
+  position: relative;
   box-sizing: border-box;
-  min-height: 50px;
-  border-radius: var(--radius-pill);
+  min-height: var(--field-h);
+  border-radius: var(--radius-seg-tile);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -392,19 +397,17 @@
 }
 
 .ui-root .al-seg button b {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--fs-small);
+  font-family: var(--font-body);
+  font-weight: var(--fw-btn);
+  font-size: var(--fs-btn);
   line-height: 1;
   color: var(--text);
   transition: color var(--dur) var(--ease);
 }
 
 .ui-root .al-seg button span {
-  font-family: var(--font-display);
-  font-size: var(--fs-tab);
-  letter-spacing: var(--ls-label);
-  text-transform: uppercase;
+  font-family: var(--font-body);
+  font-size: var(--fs-note);
   line-height: 1;
 }
 
@@ -413,17 +416,18 @@
 }
 
 .ui-root .al-seg button:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: 1px;
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
 }
 
 .ui-root .al-seg button[aria-checked="true"] {
-  background: var(--coral);
-  color: var(--on-coral);
+  background: var(--seg-tile);
+  box-shadow: var(--seg-shadow);
+  color: var(--text);
 }
 
 .ui-root .al-seg button[aria-checked="true"] b {
-  color: var(--on-coral);
+  color: var(--text);
 }
 
 .ui-root .al-score {
@@ -1305,56 +1309,78 @@
 
 /* ---- sort pills: separate outlined pills, as in the approved mock-up ---- */
 .ui-root .al-sorts {
-  display: flex;
-  gap: var(--space-2);
-  overflow-x: auto;
-  scrollbar-width: none;
+  /* Sort by: the gliding switch (Tim, 22 Nov: the one toggle; the round
+     pills in Nekst capitals with a coral chosen pill are retired), its
+     size and words from the controls family. Options that don't fit wrap
+     onto another row inside the track, the rows far enough apart that
+     their 44px tap areas never overlap. */
+  display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
+  gap: calc(var(--tap-min) - var(--btn-h) + 2 * var(--seg-pad)) 0;
   margin: var(--space-3) 0 0;
-  padding-bottom: 2px;
-}
-
-.ui-root .al-sorts::-webkit-scrollbar {
-  display: none;
+  padding: var(--seg-pad);
+  border-radius: var(--radius-btn);
+  background: var(--seg-track);
+  box-sizing: border-box;
 }
 
 .ui-root .al-sort {
   all: unset;
   cursor: pointer;
+  position: relative;
   flex: none;
   box-sizing: border-box;
-  min-height: var(--tap-min) !important;
-  padding: 0 var(--space-3) !important;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--fs-tab) !important;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  min-height: calc(var(--btn-h) - 2 * var(--seg-pad)) !important;
+  padding: 0 var(--btn-pad-x) !important;
+  border-radius: var(--radius-seg-tile);
+  font-family: var(--font-body);
+  font-weight: var(--fw-btn);
+  font-size: var(--fs-btn) !important;
+  letter-spacing: var(--ls-btn);
+  text-transform: none;
   white-space: nowrap;
   color: var(--text-2);
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  transition: color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+
+/* Its 44px tap area. */
+.ui-root .al-sort::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - var(--tap-min) / 2);
+  height: var(--tap-min);
+}
+
+@media (max-width: 600px) {
+  .ui-root .al-sorts {
+    row-gap: calc(var(--tap-min) - var(--btn-h-phone) + 2 * var(--seg-pad));
+  }
+
+  .ui-root .al-sort {
+    min-height: calc(var(--btn-h-phone) - 2 * var(--seg-pad)) !important;
+  }
 }
 
 .ui-root .al-sort:hover {
   color: var(--text);
-  border-color: var(--btn-line);
 }
 
 .ui-root .al-sort:focus-visible {
-  outline: 2px solid var(--coral-text);
-  outline-offset: 2px;
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: calc(-1 * var(--focus-w));
 }
 
-/* The chosen pill is filled coral with black text, as in the approved mock-up
-   (the arrow takes the same colour). It follows the hover rule so it stays filled. */
+/* The chosen sort is the raised tile, its arrow in the same colour. */
 .ui-root .al-sort[aria-pressed="true"] {
-  background: var(--coral);
-  border-color: var(--coral);
-  color: var(--on-coral);
+  background: var(--seg-tile);
+  box-shadow: var(--seg-shadow);
+  color: var(--text);
 }
 
 @media (prefers-reduced-motion: reduce) {

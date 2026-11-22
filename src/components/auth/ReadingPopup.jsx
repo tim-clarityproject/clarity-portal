@@ -166,47 +166,56 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
           margin: 0 !important;
         }
 
+        /* Underlined tabs (design reference 22 Nov, Controls in a row,
+           and tabs): the three documents are parts of the one panel, so
+           they are underlined tabs in the controls family's words, DM Sans
+           16px. The round pill strip with Nekst capitals and a coral
+           chosen tab is retired (Tim, 22 Nov). */
         .reading-popup-tabs {
           display: flex;
-          gap: 2px;
-          margin: 12px 20px 0;
-          padding: 3px;
-          /* A segmented control's outer edge takes the edges colour (rule 8a; break-it, 12 Nov). */
-          border: 1px solid var(--field-line);
-          border-radius: 999px;
+          gap: var(--space-3);
+          margin: var(--space-px12) var(--space-px20) 0;
+          padding: 0;
+          border-bottom: var(--line-w) solid var(--line);
+          overflow-x: auto;
+          scrollbar-width: none;
           flex-shrink: 0;
         }
 
         .ui-root .reading-popup-tab {
-          flex: 1;
-          min-width: 0;
-          min-height: 44px !important;
-          padding: 6px 4px !important;
-          border-radius: 999px;
-          border: none;
-          background: transparent;
-          font-family: var(--font-display);
-          font-weight: 400;
-          /* Spaced capitals in a third of a phone's width: they grow by at
-             most a quarter with a reader's larger text (--u-big), and a
-             word is never split across lines. */
-          font-size: calc(10 * var(--u-big, 1px)) !important;
-          overflow-wrap: normal;
-          word-break: normal;
-          hyphens: none;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
+          all: unset;
+          box-sizing: border-box;
+          flex: none;
+          min-width: var(--tap-min);
+          min-height: var(--tap-min) !important;
+          padding: 0 !important;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-family: var(--font-body);
+          font-weight: var(--fw-btn);
+          font-size: var(--fs-btn) !important;
+          letter-spacing: var(--ls-btn);
+          text-transform: none;
+          white-space: nowrap;
           color: var(--text-2);
           cursor: pointer;
-          white-space: normal;
-          line-height: 1.3;
-          text-align: center;
-          transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+          box-shadow: inset 0 calc(-1 * var(--focus-w)) 0 transparent;
+          transition: color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+        }
+
+        .ui-root .reading-popup-tab:hover {
+          color: var(--text);
+        }
+
+        .ui-root .reading-popup-tab:focus-visible {
+          outline: var(--focus-w) solid var(--coral-text);
+          outline-offset: calc(-1 * var(--focus-w));
         }
 
         .ui-root .reading-popup-tab.active {
-          background: var(--coral);
-          color: var(--on-coral);
+          color: var(--text);
+          box-shadow: inset 0 calc(-1 * var(--focus-w)) 0 var(--text);
         }
 
         .reading-popup-body {

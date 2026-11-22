@@ -531,9 +531,16 @@
 }
 
 .ui-root .wol-scale {
+  /* The gliding switch (Tim, 22 Nov: the one toggle; design reference 22
+     Nov, Controls): a soft grey track with 8px corners and the chosen
+     answer raised on a tile with 6px corners, never coral; the controls
+     family's height and words (src/styles/buttons.css). */
   display: grid;
   grid-template-columns: repeat(11, minmax(0, 1fr));
-  gap: 6px;
+  gap: 0;
+  padding: var(--seg-pad);
+  border-radius: var(--radius-btn);
+  background: var(--seg-track);
   margin-top: var(--space-5);
 }
 
@@ -542,32 +549,42 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 56px !important;
+  min-height: calc(var(--btn-h) - 2 * var(--seg-pad)) !important;
   padding: 0 !important;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-input);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-seg-tile);
   cursor: pointer;
-  font-family: var(--font-display);
-  font-size: calc(15 * var(--u, 1px)) !important;
+  font-size: var(--fs-btn) !important;
+  font-weight: var(--fw-btn);
   font-variant-numeric: tabular-nums;
-  color: var(--text);
-  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  color: var(--text-2);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+/* Its 44px tap area: as tall as the track's rows allow without reaching the next row. */
+.ui-root .wol-scale button::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - var(--tap-min) / 2);
+  height: var(--tap-min);
 }
 
 .ui-root .wol-scale button:hover {
-  border-color: var(--btn-line);
+  color: var(--text);
 }
 
 .ui-root .wol-scale button:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
 }
 
 .ui-root .wol-scale button[aria-checked="true"] {
-  background: var(--coral);
-  border-color: var(--coral);
-  color: var(--on-coral);
+  background: var(--seg-tile);
+  box-shadow: var(--seg-shadow);
+  color: var(--text);
 }
 
 /* last check-in's score: a small dot under the number */
@@ -584,7 +601,7 @@
 }
 
 .ui-root .wol-scale button.wol-prev[aria-checked="true"]::after {
-  background: var(--on-coral);
+  background: var(--text);
 }
 
 .ui-root .wol-ends {
@@ -672,14 +689,14 @@
     font-size: calc(18 * var(--u, 1px));
   }
 
-  /* rows of 6 and 5, every target at least 44px */
+  /* rows of 6 and 5 inside the track, every target at least 44px */
   .ui-root .wol-scale {
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: var(--space-2);
+    row-gap: var(--space-px6);
   }
 
   .ui-root .wol-scale button {
-    min-height: 52px !important;
+    min-height: calc(var(--btn-h-phone) - 2 * var(--seg-pad)) !important;
   }
 }
 
@@ -887,57 +904,51 @@
 }
 
 .ui-root .wol-seg {
+  /* How the wheel is drawn: the gliding switch (Tim, 22 Nov: the one
+     toggle; the Nekst capitals with a coral underline are retired), its
+     size and words from the controls family. */
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 14px;
-  line-height: 1;
+  max-width: 100%;
+  min-height: var(--btn-h);
+  padding: var(--seg-pad);
+  border-radius: var(--radius-btn);
+  background: var(--seg-track);
 }
 
 .ui-root .wol-seg button {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 0 !important;
-  padding: 0 !important;
+  justify-content: center;
+  gap: var(--space-px6);
+  min-height: calc(var(--btn-h) - 2 * var(--seg-pad)) !important;
+  padding: 0 var(--btn-pad-x) !important;
   background: transparent;
   border: 0;
+  border-radius: var(--radius-seg-tile);
   cursor: pointer;
-  font-family: var(--font-display);
-  font-size: var(--fs-button) !important;
-  line-height: 1;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--placeholder);
-  transition: color var(--dur) var(--ease);
+  font-size: var(--fs-btn) !important;
+  font-weight: var(--fw-btn);
+  line-height: var(--lh-btn);
+  color: var(--text-2);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
-/* a 44px tap area around each word */
+/* a 44px tap area round each option */
 .ui-root .wol-seg button::before {
   content: "";
   position: absolute;
-  left: -8px;
-  right: -8px;
-  top: -17px;
-  bottom: -17px;
-}
-
-.ui-root .wol-seg button::after {
-  content: "";
-  position: absolute;
   left: 0;
-  right: 0.2em;
-  bottom: -7px;
-  height: 1px;
-  background: var(--coral);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--dur) var(--ease);
+  right: 0;
+  top: calc(50% - var(--tap-min) / 2);
+  height: var(--tap-min);
 }
 
 .ui-root .wol-seg button svg {
-  width: 11px;
-  height: 11px;
+  width: var(--space-px12);
+  height: var(--space-px12);
   fill: none;
   stroke: currentColor;
   stroke-width: 1.1;
@@ -950,8 +961,8 @@
 }
 
 .ui-root .wol-seg button:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
 }
 
 .ui-root .wol-seg button:disabled {
@@ -960,17 +971,14 @@
 }
 
 .ui-root .wol-seg button[aria-pressed="true"] {
-  color: var(--coral);
+  background: var(--seg-tile);
+  box-shadow: var(--seg-shadow);
+  color: var(--text);
 }
 
-.ui-root .wol-seg button[aria-pressed="true"]::after {
-  transform: scaleX(1);
-}
-
+/* The old dividers between the words: the track's options need none. */
 .ui-root .wol-seg i {
-  width: 1px;
-  height: 10px;
-  background: var(--line);
+  display: none;
 }
 
 .ui-root .wol-panel {
@@ -1559,8 +1567,8 @@
 }
 
 @media (max-width: 768px) {
-  .ui-root .wol-seg { gap: 9px; }
-  .ui-root .wol-seg button { letter-spacing: 0.14em; }
+  .ui-root .wol-seg { min-height: var(--btn-h-phone); }
+  .ui-root .wol-seg button { min-height: calc(var(--btn-h-phone) - 2 * var(--seg-pad)) !important; }
   .ui-root .wol-seg button svg { display: none; }
 
   .ui-root .wol-stats {
@@ -1629,8 +1637,7 @@
     animation: none !important;
   }
 
-  .ui-root .wol-seg button,
-  .ui-root .wol-seg button::after {
+  .ui-root .wol-seg button {
     transition: none !important;
   }
 }

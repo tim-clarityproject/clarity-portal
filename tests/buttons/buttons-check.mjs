@@ -259,3 +259,222 @@ export function chevronOnlyFolds() {
   }
   return [...new Set(out)];
 }
+
+// One controls family (Tim, 22 Nov; design reference 22 Nov, "Controls" and
+// "Controls in a row, and tabs"), read on the page as it is drawn. Run in the
+// page: page.evaluate(controlsFamily, { phone, scale }). It gives one line
+// per problem and fails:
+//
+//   - a round pill toggle: the old `.seg`, or any choice between views or
+//     answers (options side by side, pressed or checked) drawn with round
+//     ends, without the gliding switch's soft grey track, with an edge round
+//     it, or with its chosen option filled coral. The gliding switch is the
+//     one toggle: 8px corners on its track, the chosen option a raised tile
+//     with 6px corners, 40px high (44px on a phone; taller only when larger
+//     words wrap, or to match a box beside it in the same row);
+//   - an on or off switch that isn't the quiet precision switch: 40 by 24,
+//     mint when on (never coral);
+//   - a pill inside any control: a button, link or option with words, drawn
+//     with an edge or a fill and round ends (chips have 6px corners);
+//   - a button of the wrong height or corners: anything drawn as a button
+//     (an edge or a fill, words on one line) that isn't 40px high (44px on a
+//     phone) with 8px corners, at the standard text size;
+//   - Nekst inside any control (as nekstInControls);
+//   - a second coral button on the screen's top layer, whatever its class:
+//     anything that can be pressed and is filled coral, but a chosen state.
+//
+// Underlined tabs (role tab) move between parts of a page and are left to
+// themselves; tick boxes, day boxes, answer rows, chips, form boxes, cards
+// and tiles are other parts with their own rules.
+export function controlsFamily({ phone, scale = 1 }) {
+  const out = [];
+  const vis = (el) => {
+    const b = el.getBoundingClientRect();
+    if (!(b.width > 0 && b.height > 0)) return false;
+    if (el.closest('[hidden],[inert],[aria-hidden=true]')) return false;
+    for (let p = el; p && p !== document.documentElement; p = p.parentElement) {
+      const st = getComputedStyle(p);
+      if (st.display === 'none' || st.visibility === 'hidden' || Number(st.opacity) < 0.05) return false;
+    }
+    return true;
+  };
+  const cls = (el) => String(el.className?.baseVal ?? el.className ?? '').split(' ').filter(Boolean)[0] || el.tagName.toLowerCase();
+  const words = (el) => (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
+  const name = (el) => `${cls(el)} "${(words(el) || el.getAttribute('aria-label') || '').slice(0, 28)}"`;
+  const clear = (c) => !c || /rgba\(0, 0, 0, 0\)|transparent/.test(c);
+  const near = (a, b, tol = 0.6) => Math.abs(a - b) <= tol;
+  // A colour token read as the browser draws it.
+  const probe = document.createElement('span');
+  probe.style.display = 'none';
+  (document.querySelector('.ui-root') || document.body).appendChild(probe);
+  const colour = (value) => { probe.style.color = ''; probe.style.color = value; return getComputedStyle(probe).color; };
+  const token = (el, t) => colour(getComputedStyle(el).getPropertyValue(t).trim() || 'transparent');
+  const root = document.querySelector('.ui-root') || document.body;
+  const corals = new Set([token(root, '--coral'), token(root, '--coral-hover'), 'rgb(255, 111, 92)'].filter((c) => !clear(c)));
+  const edged = (st) => ['Top', 'Right', 'Bottom', 'Left'].every((s) => parseFloat(st[`border${s}Width`]) > 0 && st[`border${s}Style`] !== 'none' && !clear(st[`border${s}Color`]));
+  const hairline = (st) => /inset/.test(st.boxShadow) && /0px 0px 0px 1px/.test(st.boxShadow);
+  const drawn = (st) => edged(st) || !clear(st.backgroundColor) || hairline(st);
+  const round = (el, st, b) => parseFloat(st.borderTopLeftRadius) >= b.height / 2 - 0.5 || /%/.test(st.borderTopLeftRadius) && parseFloat(st.borderTopLeftRadius) >= 50;
+  const lineCount = (el, fs) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const mids = [...range.getClientRects()].filter((r) => r.width > 1 && r.height > 1).map((r) => r.top + r.height / 2).sort((x, y) => x - y);
+    return mids.reduce((n, t, i) => (i && t - mids[i - 1] > fs * 0.6 ? n + 1 : n), mids.length ? 1 : 0);
+  };
+  const want = phone ? 44 : 40;
+  // The top layer: an open panel, dialog or the phone's menu, else the page.
+  const top = [...document.querySelectorAll('[role=dialog], [aria-modal=true], .ds-guide--fullscreen, .ds-tmenu')].filter(vis).pop() || document.body;
+  // Parts with their own rules (each kept by its own check): the floating Breathe pill holds the orb (rule 4a); a
+  // chart's marks; calendar days and week boxes; tick boxes; the phone bar and the menu's crosshair; the My Mission
+  // pill (its own part in the design reference's colours, "Surface: Tiles, Mission pill", which expands smoothly, rule 10);
+  // Merge into one's cells, which sit in a comparison table under its two column heads (answer boxes, not a switch);
+  // a week's day boxes, each day its own (the week grid, rule 26e).
+  const OWN = '.hdr-mis, .ds-mission-pill, .cc-merge-choice, .ds-logweek-days, .ds-logweek-yn, .ds-floating-orb, .ds-fab, .ds-breathe, [class*="orb"], [role=gridcell], [role=checkbox], .ds-check-box, .ds-week-box, .ds-bar, .ds-bar-menu, .hdr-menu, svg, .hc-dot, .cc-net-dot, [class*="-dot"], .ds-chart, .ds-chip, [role=tab], .ds-utabs, .cc-utabs, .ds-answer, .ds-rows, .ds-field, .ds-dd, .ds-text, input, select, textarea, .ds-stepper, [class*="stepper"]';
+
+  // 1. The old pill toggle, by name.
+  for (const el of document.querySelectorAll('.ui-root .seg, .ui-root .segw')) if (vis(el)) out.push(`${name(el)}: the retired round pill toggle (.seg)`);
+
+  // 2. Every choice between views or answers: options side by side, pressed or checked.
+  const OPTION = 'button[aria-pressed], [role=radio]:not(input), button[aria-checked]:not([role=switch]):not([role=checkbox])';
+  const groups = new Map();
+  for (const opt of top.querySelectorAll(OPTION)) {
+    if (!vis(opt) || opt.closest(OWN) || opt.matches(OWN)) continue;
+    const g = opt.closest('[role=radiogroup], [role=group], [role=toolbar]') || opt.parentElement;
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(opt);
+  }
+  let toggles = 0;
+  for (const [g, opts] of groups) {
+    if (opts.length < 2) continue;
+    const boxes = opts.map((o) => o.getBoundingClientRect());
+    // Side by side: at least two options on one line. Stacked answer rows are rows, not a switch.
+    const sideBySideOpts = boxes.some((b, i) => boxes.some((c, j) => j !== i && Math.abs(b.top - c.top) < 2));
+    if (!sideBySideOpts) continue;
+    // Words in each: a row of day squares or colour swatches is not a switch.
+    if (opts.some((o) => words(o).length === 0)) continue;
+    toggles += 1;
+    const track = g.matches('[role=radiogroup], [role=group], [role=toolbar], .ds-seg') ? g : opts[0].parentElement;
+    const ts = getComputedStyle(track);
+    const tb = track.getBoundingClientRect();
+    const bad = [];
+    if (round(track, ts, tb)) bad.push('round ends on its track');
+    for (const o of opts) {
+      const os = getComputedStyle(o);
+      const ob = o.getBoundingClientRect();
+      if (ob.height >= 20 && round(o, os, ob) && (drawn(os) || o.matches('[aria-pressed=true], [aria-checked=true]'))) { bad.push(`a round option (${words(o).slice(0, 16)})`); break; }
+    }
+    if (clear(ts.backgroundColor)) bad.push('no soft grey track');
+    if (edged(ts)) bad.push('an edge round its track');
+    const chosen = opts.find((o) => o.matches('[aria-pressed=true], [aria-checked=true]'));
+    if (chosen) {
+      const cs = getComputedStyle(chosen);
+      if (corals.has(cs.backgroundColor)) bad.push('its chosen option filled coral');
+      if (/Nekst/.test(cs.fontFamily)) bad.push('its words in Nekst');
+    }
+    if (scale === 1) {
+      if (!near(parseFloat(ts.borderTopLeftRadius) || 0, 8)) bad.push(`track corners ${ts.borderTopLeftRadius}, not 8px`);
+      const tile = track.querySelector(':scope > .ds-seg-tile');
+      const tileEl = tile && vis(tile) ? tile : chosen;
+      if (tileEl && !clear(getComputedStyle(tileEl).backgroundColor) && !near(parseFloat(getComputedStyle(tileEl).borderTopLeftRadius) || 0, 6)) bad.push(`chosen tile corners ${getComputedStyle(tileEl).borderTopLeftRadius}, not 6px`);
+      const wraps = opts.some((o) => lineCount(o, parseFloat(getComputedStyle(o).fontSize)) > 1 || o.querySelector('small, .ds-answer-note'));
+      // Options on more than one row inside the track (five words on a phone): each option is then one row's height.
+      const rows = new Set(boxes.map((b) => Math.round(b.top))).size;
+      const pad = parseFloat(ts.paddingTop) || 0;
+      const rowsOk = rows > 1 && boxes.every((b) => near(b.height, want - 2 * pad, 0.6));
+      // Taller only to match a box beside it in the same row (boxes side by side are one height).
+      const beside = [...(track.parentElement?.parentElement?.querySelectorAll('.ds-field, .ds-dd, input, select, .ds-btn') || [])]
+        .filter((x) => vis(x) && !track.contains(x) && Math.abs(x.getBoundingClientRect().top - tb.top) < 2)
+        .some((x) => near(x.getBoundingClientRect().height, tb.height, 1));
+      if (!wraps && !beside && !rowsOk && !near(tb.height, want, 0.6)) bad.push(`${Math.round(tb.height * 10) / 10}px high, not ${want}`);
+    }
+    if (bad.length) out.push(`toggle ${name(track)}: not the gliding switch: ${bad.join(', ')}`);
+  }
+
+  // 2a. The shared switch starts on its box's left edge: its hidden measuring copy never pushes it along (the lead, 22 Nov).
+  for (const seg of top.querySelectorAll('.ds-inline > .ds-seg:not(.ds-seg-measure)')) {
+    if (!vis(seg)) continue;
+    const box = seg.parentElement;
+    const left = box.getBoundingClientRect().left + (parseFloat(getComputedStyle(box).paddingLeft) || 0);
+    const off = seg.getBoundingClientRect().left - left;
+    if (Math.abs(off) > 1) out.push(`toggle ${name(seg)}: ${Math.round(off)}px from its box's left edge`);
+  }
+
+  // 2b. Underlined tabs are underlined: a tab drawn as a round pill (filled or edged), or a tab strip with round
+  // ends, is the retired pill toggle in a tab's clothes.
+  for (const tab of top.querySelectorAll('[role=tab]')) {
+    if (!vis(tab)) continue;
+    const st = getComputedStyle(tab);
+    const b = tab.getBoundingClientRect();
+    if (round(tab, st, b) && (drawn(st) || corals.has(st.backgroundColor))) { out.push(`tab ${name(tab)}: a round pill, not an underlined tab or the gliding switch`); continue; }
+    if (tab.matches('[aria-selected=true]') && corals.has(st.backgroundColor)) out.push(`tab ${name(tab)}: chosen filled coral`);
+    const list = tab.closest('[role=tablist]');
+    if (list) {
+      const ls = getComputedStyle(list);
+      if (round(list, ls, list.getBoundingClientRect()) && (edged(ls) || !clear(ls.backgroundColor))) out.push(`tabs ${name(list)}: a round pill strip`);
+    }
+  }
+
+  // 3. On or off switches: the quiet precision switch.
+  const mint = new Set([token(root, '--good'), token(root, '--mint'), token(root, '--mint-text')].filter((c) => !clear(c)));
+  for (const sw of top.querySelectorAll('[role=switch]')) {
+    if (!vis(sw)) continue;
+    const st = getComputedStyle(sw);
+    const b = sw.getBoundingClientRect();
+    const bad = [];
+    if (scale === 1 && (!near(b.width, 40) || !near(b.height, 24))) bad.push(`${Math.round(b.width)} by ${Math.round(b.height)}, not 40 by 24`);
+    if (sw.getAttribute('aria-checked') === 'true') {
+      // In forced colours the switch takes the system's colours (rule 8b).
+      if (!matchMedia('(forced-colors: active)').matches && !mint.has(st.backgroundColor)) bad.push(`on, but ${st.backgroundColor}, not mint`);
+    }
+    if (corals.has(st.backgroundColor)) bad.push('coral');
+    if (bad.length) out.push(`switch ${name(sw)}: ${bad.join(', ')}`);
+  }
+
+  // 4. Pills and buttons of the wrong size: anything with words that can be pressed and is drawn as a box.
+  const PRESS = 'button, a[href], [role=button], [role=option], [role=radio]:not(input), [role=menuitem]';
+  let coral = [];
+  for (const el of top.querySelectorAll(PRESS)) {
+    if (!vis(el) || el.matches(OWN) || el.closest(OWN) || el.matches('[role=switch]')) continue;
+    const st = getComputedStyle(el);
+    const b = el.getBoundingClientRect();
+    const w = words(el);
+    const on = el.matches('[aria-pressed=true], [aria-checked=true], [aria-selected=true], [aria-current]:not([aria-current=false])');
+    if (corals.has(st.backgroundColor) && !on && !el.disabled && el.getAttribute('aria-disabled') !== 'true' && w) coral.push(el);
+    if (!w || w.length > 60 || el.matches('.ds-seg-btn')) continue;
+    if (!drawn(st) || b.height > 60 || b.height < 20) continue;
+    // A link inside a sentence, a whole row or card that opens something, is not a button.
+    if (b.width > 480) continue;
+    if (round(el, st, b) && !on) { out.push(`${name(el)}: a pill (round ends) inside a control`); continue; }
+    if (scale !== 1) continue;
+    const fs = parseFloat(st.fontSize);
+    if (lineCount(el, fs) > 1) continue;
+    // A button by its look: a hairline or a fill with words in the button family's size.
+    const looksLikeButton = (hairline(st) || corals.has(st.backgroundColor) || (edged(st) && b.height < 52)) && near(fs, 16, 1.5);
+    if (!looksLikeButton) continue;
+    const r = parseFloat(st.borderTopLeftRadius) || 0;
+    const bad = [];
+    if (!near(r, 8)) bad.push(`corners ${st.borderTopLeftRadius}, not 8px`);
+    if (!near(b.height, want, 0.6)) bad.push(`${Math.round(b.height * 10) / 10}px high, not ${want}`);
+    if (bad.length) out.push(`button ${name(el)}: ${bad.join(', ')}`);
+  }
+  if (coral.length > 1) out.push(`${coral.length} coral buttons on one screen: ${coral.slice(0, 4).map(name).join(', ')}`);
+
+  // 5. No Nekst inside any control (as nekstInControls, so this one check holds the whole family).
+  const CONTROLS = 'button, [role=button], [role=radio], [role=checkbox], [role=switch], [role=option], [role=tab], [role=gridcell], input, select, textarea, .ds-chip';
+  for (const el of document.querySelectorAll(CONTROLS)) {
+    const b = el.getBoundingClientRect();
+    if (!(b.width > 0 && b.height > 0) || el.closest('[hidden],[inert],[aria-hidden=true]')) continue;
+    if (el.closest('h1, h2, h3, .ds-collapse-head, .dash-colb, .dash-fold-h, .ds-guide-title, .ds-page-title-row') || el.querySelector('h1, h2, h3')) continue;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (!n.textContent.trim()) continue;
+      const host = n.parentElement;
+      if (host.closest('.ds-sr, [aria-hidden=true]')) continue;
+      const cs = getComputedStyle(host);
+      if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      if (/^"?Nekst/.test(cs.fontFamily) && parseFloat(cs.fontSize) < 24) { out.push(`${cls(el)} "${n.textContent.trim().slice(0, 24)}": Nekst inside a control`); break; }
+    }
+  }
+  probe.remove();
+  return { problems: [...new Set(out)], toggles };
+}

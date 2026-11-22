@@ -173,6 +173,12 @@
   white-space: normal !important;
 }
 
+/* The hidden measuring copy (InlineChoice) stays out of the flow, so the
+   switch itself always starts on the content's left edge. */
+.ui-root .ds-seg.ds-seg-measure:not(#_) {
+  position: absolute;
+}
+
 @media (max-width: 600px) {
   .ui-root .ds-seg:not(#_) { min-height: var(--btn-h-phone); }
   .ui-root .ds-seg-btn:not(#_) { min-height: calc(var(--btn-h-phone) - 2 * var(--seg-pad)) !important; }
