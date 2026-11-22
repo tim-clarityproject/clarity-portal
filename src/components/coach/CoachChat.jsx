@@ -1,11 +1,14 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { Choice, CoachContext, Popup, useToast } from '../design';
+import { Choice } from '../design/Choice';
+import { CoachContext } from '../design/coachContext';
+import { Popup } from '../design/Dialogs';
+import { useToast } from '../design/toastContext';
 import { openingMessage } from '../../content/coach';
 import { chatWays, openChat, rememberApp } from '../../lib/contactCoach';
 import { isNetworkError } from '../../lib/connection';
 import { readCache, writeCache } from '../../lib/pageCache';
-import { loadMyCoach } from '../../lib/performance/api';
+import { loadMyCoach } from '../../lib/performance/myCoach';
 import { needsConnection } from '../../lib/friendlyError';
 import { StartChatContext } from './startChat';
 

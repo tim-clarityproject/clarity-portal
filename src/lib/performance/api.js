@@ -14,6 +14,7 @@
 // says so when it can't.
 
 import { supabase } from '../supabase';
+import { loadMyCoach } from './myCoach';
 import { deviceZone } from '../time/index.js';
 import { newId, noteVersions, saveOrQueue } from '../syncQueue';
 import { nextVersion, planChangeKind } from './versions';
@@ -104,42 +105,9 @@ async function zoneInStep() {
   }
 }
 
-/**
- * The person's own coach (my_coach), or null. Online only. contactWays
- * are the coach's allowed ways to be reached ('email', 'whatsapp',
- * 'imessage'; coaches.contact_ways), with the mobile they use.
- */
-export async function loadMyCoach() {
-  // One read per visit (Tim, 10 Nov: a page load was asking 8 or more
-  // times, once for the header and once for each page's own loader). The
-  // answer in flight, or already back, is reused for the same person until
-  // the portal is next opened; a read that didn't work is forgotten, so
-  // the next caller tries again.
-  const { data: auth } = await supabase.auth.getSession();
-  const userId = auth?.session?.user?.id || null;
-  if (coachVisit.userId !== userId || !coachVisit.promise) {
-    coachVisit.userId = userId;
-    const promise = readMyCoach();
-    coachVisit.promise = promise;
-    promise.catch(() => { if (coachVisit.promise === promise) coachVisit.promise = null; });
-  }
-  return coachVisit.promise;
-}
-
-const coachVisit = { userId: null, promise: null };
-
-async function readMyCoach() {
-  const { data, error } = await supabase.rpc('my_coach');
-  if (error) throw error;
-  const c = Array.isArray(data) ? data[0] : data;
-  return c ? {
-    id: c.coach_id,
-    firstName: c.first_name,
-    awayUntil: c.away_until,
-    mobile: c.mobile || null,
-    contactWays: Array.isArray(c.contact_ways) ? c.contact_ways : [],
-  } : null;
-}
+// The person's own coach: in myCoach.js, so the header's Chat button can
+// load it without this whole file (the scale check, step 3).
+export { loadMyCoach };
 
 /** The active plan's row only: enough for the header's My Mission pill. */
 export async function loadActivePlan(userId) {
@@ -967,21 +935,29 @@ function dayBefore(key, n) {
  * the plan's Strategies and to-dos that have no sprint.
  */
 export async function loadDayPlan(userId, date) {
-  const page = await loadSprintPage(userId);
-  const [dayPlan, earlier, lastReview, role, coach] = await Promise.all([
-    one(supabase.from('day_plans').select(DAY_PLAN_COLS).eq('user_id', userId).eq('local_date', date).limit(1)),
-    rows(supabase.from('day_plans').select('local_date, way_of_being').eq('user_id', userId)
-      .lt('local_date', date).not('way_of_being', 'is', null).order('local_date', { ascending: false }).limit(30)),
-    one(supabase.from('day_reviews').select('id, local_date, tomorrow, on_my_mind').eq('user_id', userId).eq('status', 'finished')
-      .lt('local_date', date).gte('local_date', dayBefore(date, 3)).order('local_date', { ascending: false }).limit(1)),
-    one(supabase.from('person_settings').select('describes_you').eq('user_id', userId).limit(1)),
-    loadMyCoach().catch(() => null),
-  ]);
-  const [dayTodos, dayStrategies, reviewStrategies, reviewDayStrategies] = await Promise.all([
-    dayPlan ? rows(supabase.from('day_plan_todos').select('todo_id, is_top').eq('day_plan_id', dayPlan.id)) : [],
-    dayPlan ? rows(supabase.from('day_plan_strategies').select('strategy_id').eq('day_plan_id', dayPlan.id)) : [],
-    lastReview ? rows(supabase.from('day_review_strategies').select('strategy_id, level').eq('day_review_id', lastReview.id)) : [],
-    lastReview ? rows(supabase.from('day_plans').select('id, day_plan_strategies(strategy_id)').eq('user_id', userId).eq('local_date', lastReview.local_date).limit(1)) : [],
+  // The day's own rows don't wait for the sprint page's (the scale check:
+  // one round trip less before the page shows); the reads are the same.
+  const dayPart = (async () => {
+    const [dayPlan, earlier, lastReview, role, coach] = await Promise.all([
+      one(supabase.from('day_plans').select(DAY_PLAN_COLS).eq('user_id', userId).eq('local_date', date).limit(1)),
+      rows(supabase.from('day_plans').select('local_date, way_of_being').eq('user_id', userId)
+        .lt('local_date', date).not('way_of_being', 'is', null).order('local_date', { ascending: false }).limit(30)),
+      one(supabase.from('day_reviews').select('id, local_date, tomorrow, on_my_mind').eq('user_id', userId).eq('status', 'finished')
+        .lt('local_date', date).gte('local_date', dayBefore(date, 3)).order('local_date', { ascending: false }).limit(1)),
+      one(supabase.from('person_settings').select('describes_you').eq('user_id', userId).limit(1)),
+      loadMyCoach().catch(() => null),
+    ]);
+    const [dayTodos, dayStrategies, reviewStrategies, reviewDayStrategies] = await Promise.all([
+      dayPlan ? rows(supabase.from('day_plan_todos').select('todo_id, is_top').eq('day_plan_id', dayPlan.id)) : [],
+      dayPlan ? rows(supabase.from('day_plan_strategies').select('strategy_id').eq('day_plan_id', dayPlan.id)) : [],
+      lastReview ? rows(supabase.from('day_review_strategies').select('strategy_id, level').eq('day_review_id', lastReview.id)) : [],
+      lastReview ? rows(supabase.from('day_plans').select('id, day_plan_strategies(strategy_id)').eq('user_id', userId).eq('local_date', lastReview.local_date).limit(1)) : [],
+    ]);
+    return { dayPlan, earlier, lastReview, role, coach, dayTodos, dayStrategies, reviewStrategies, reviewDayStrategies };
+  })();
+  const [page, { dayPlan, earlier, lastReview, role, coach, dayTodos, dayStrategies, reviewStrategies, reviewDayStrategies }] = await Promise.all([
+    loadSprintPage(userId),
+    dayPart,
   ]);
   const planStrategies = page.planStrategies || [];
   let looseTodos = [];
@@ -1272,14 +1248,26 @@ export async function loadCheckinPage(userId) {
  * sharing switch. Reads only: nothing here writes.
  */
 export async function loadDashboard(userId, today) {
-  const page = await loadSprintPage(userId);
-  const planId = page.sprint?.plan_id || page.plan?.id || null;
+  // The dashboard's own reads go out with the sprint page's, not after them
+  // (the scale check: one round trip less). The plan's objectives need the
+  // plan, found here with the same two reads the sprint page makes (shared,
+  // readShare.js), and read again in the rare case the page found another.
   const since = dayBefore(today, 16 * 7);
-  const [sprints, weekScores, planObjectives, figures, dayPlans, dayReviews, allDebriefs, checkins, breathing, controlChecks, lifeChecks, coach, sharing] = await Promise.all([
+  const objectivesFor = (planId) => (planId
+    ? rows(supabase.from('outcome_objectives').select(OBJECTIVE_COLS).eq('plan_id', planId).is('archived_at', null).order('sort_order'))
+    : Promise.resolve([]));
+  const earlyPlanId = Promise.all([
+    loadActivePlan(userId),
+    one(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).eq('status', 'running').limit(1)),
+  ]).then(([plan, sprint]) => sprint?.plan_id || plan?.id || null);
+  const earlyObjectives = earlyPlanId.then(objectivesFor);
+  const [page, early, earlyId, sprints, weekScores, figures, dayPlans, dayReviews, allDebriefs, checkins, breathing, controlChecks, lifeChecks, coach, sharing] = await Promise.all([
+    loadSprintPage(userId),
+    earlyObjectives,
+    earlyPlanId,
     rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
     rows(supabase.from('week_scores').select('sprint_id, sprint_week, week_end, score, strategy_scores, eligible, final')
       .eq('user_id', userId).order('week_end')),
-    planId ? rows(supabase.from('outcome_objectives').select(OBJECTIVE_COLS).eq('plan_id', planId).is('archived_at', null).order('sort_order')) : [],
     rows(supabase.from('objective_figures').select('id, objective_id, value, recorded_on, created_at').eq('user_id', userId).order('recorded_on')),
     rows(supabase.from('day_plans').select('local_date, sleep_hours, sleep_quality, sleep_to_confirm, way_of_being')
       .eq('user_id', userId).gte('local_date', since).order('local_date').limit(400)),
@@ -1294,6 +1282,8 @@ export async function loadDashboard(userId, today) {
     loadMyCoach().catch(() => null),
     rows(supabase.from('sharing_switches').select('part, is_on').eq('user_id', userId).eq('part', 'checkin')).catch(() => []),
   ]);
+  const planId = page.sprint?.plan_id || page.plan?.id || null;
+  const planObjectives = planId === earlyId ? early : await objectivesFor(planId);
   return {
     ...page,
     // The frozen weeks with their Strategy scores (the sprint page reads them without).

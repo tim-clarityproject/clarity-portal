@@ -1,7 +1,9 @@
 import { useCallback, useContext, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { DesktopMenu, PhoneBar, TileMenu, useCoachName, usePhoneBarHidden } from './design';
+import { DesktopMenu, PhoneBar, TileMenu } from './design/Navigation';
+import { useCoachName } from './design/coachContext';
+import { usePhoneBarHidden } from './design/phoneBar';
 import { isNavPhone } from './design/pageLock';
 import { areaOf, DESKTOP_MENU, menuAreas, menuCurrent, TOOLS } from '../lib/navigation';
 import { usePins } from '../lib/menuPins';

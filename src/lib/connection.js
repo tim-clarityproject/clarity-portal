@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { shareReads } from './readShare';
 
 // Whether the device has a connection, known as fast as possible (Tim,
 // 26 Oct: a calm offline message within 2 seconds; lists used to take
@@ -85,7 +86,7 @@ export function isNetworkError(error) {
  * fetch, but it fails at once when the device is offline, gives up on a
  * request that hangs, and keeps the connection state up to date.
  */
-export async function connectionFetch(input, init = {}) {
+async function sendWithConnection(input, init = {}) {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     set(false);
     throw new TypeError('Failed to fetch: the device is offline');
@@ -117,6 +118,12 @@ export async function connectionFetch(input, init = {}) {
     outer?.removeEventListener('abort', onOuterAbort);
   }
 }
+
+/**
+ * Supabase's fetch: sendWithConnection, with identical database reads made
+ * at the same moment sharing one request (readShare.js; the scale check).
+ */
+export const connectionFetch = shareReads(sendWithConnection);
 
 /** The connection, for a component: true online, false offline. */
 export function useOnline() {

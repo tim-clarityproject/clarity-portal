@@ -2,7 +2,9 @@ import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { queueState } from '../lib/syncQueue';
-import { Button, IconText, Sheet } from './design';
+import { Button } from './design/Button';
+import { IconText } from './design/IconText';
+import { Sheet } from './design/Dialogs';
 
 // Sign out (Tim, 5 Nov, 11:02: "easier to log out from the menu ...
 // classy"). A quiet "Sign out" at the very bottom of both menus, below a

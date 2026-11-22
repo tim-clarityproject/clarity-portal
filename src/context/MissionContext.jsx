@@ -65,7 +65,10 @@ export function MissionProvider({ children }) {
       const [planResult, missionResult, profileResult] = await Promise.all([
         supabase
           .from('performance_plans')
-          .select('id, mission')
+          // The same columns as the pages' own read of the active plan
+          // (loadActivePlan in performance/api.js), so the two share one
+          // request (readShare.js; the scale check).
+          .select('id, mission, status, major, minor, created_at, updated_at')
           .eq('user_id', forUser)
           .eq('status', 'active')
           .limit(1),

@@ -147,15 +147,133 @@ function healthCheckPage(buildId) {
   }
 }
 
+// The client pages' shared code in one part (the scale check, step 3). Each
+// page is its own part (App.jsx page()), and the code they share (the design
+// parts, the performance system, scores, time, own questions, peak moments,
+// travel) would otherwise come as some 35 small files, each a round trip on
+// a phone before the first screen. Anything the app's opening part already
+// holds stays there, so the opening download never grows.
+const CLIENT_CORE = /\/src\/(components\/(design|ownQuestions|ui)|lib\/(performance|scores|time|ownQuestions|peakMoments|travel))\//
+function clientCoreChunks() {
+  let opening = null // every module the opening part reaches by static imports
+  return {
+    // Only the modules named below: what they import stays where it was.
+    includeDependenciesRecursively: false,
+    groups: [{
+      name(id, ctx) {
+        if (!CLIENT_CORE.test(id)) return null
+        if (!opening) {
+          opening = new Set()
+          const main = findMain(ctx, id)
+          const queue = main ? [main] : []
+          while (queue.length) {
+            const m = queue.pop()
+            if (opening.has(m)) continue
+            opening.add(m)
+            for (const next of ctx.getModuleInfo(m)?.importedIds || []) queue.push(next)
+          }
+        }
+        return opening.has(id) ? null : 'client-core'
+      },
+    }],
+  }
+}
+// The app's opening module, found by walking up from any module.
+function findMain(ctx, from) {
+  const seen = new Set()
+  const queue = [from]
+  while (queue.length) {
+    const m = queue.pop()
+    if (seen.has(m)) continue
+    seen.add(m)
+    if (/\/src\/main(\.preview)?\.jsx$/.test(m)) return m
+    const info = ctx.getModuleInfo(m)
+    for (const up of [...(info?.importers || []), ...(info?.dynamicImporters || [])]) queue.push(up)
+  }
+  return null
+}
+
+// The opening page's part of the app, asked for by index.html itself (the
+// scale check, step 3). Each page is its own part (App.jsx page()), and the
+// app asks for the opening one as soon as its own code has run; on a phone
+// that is some 350 ms after the first files arrive. A few lines in <head>
+// name the opening page's files (from this build) for the address being
+// opened, so they come down alongside the app's own. The same list as
+// App.jsx's OPENING_PAGES; an address not named here loads as before.
+const OPENING = [
+  ['^/welcome$', 'src/pages/Home.jsx'],
+  ['^/daily-plan(/|$)', 'src/pages/performance/PlanMyDay.jsx'],
+  ['^/daily-review(/|$)', 'src/pages/performance/ReviewMyDay.jsx'],
+  ['^/performance-sprint/debrief(/|$)', 'src/pages/performance/WeeklyDebrief.jsx'],
+  ['^/performance-sprint$', 'src/pages/performance/PerformanceSprint.jsx'],
+  ['^/performance-plan$', 'src/pages/performance/PerformancePlan.jsx'],
+  ['^/dashboard$', 'src/pages/performance/Dashboard.jsx'],
+  ['^/monthly-review(/|$)', 'src/pages/performance/CheckIn.jsx'],
+  ['^/my-account$', 'src/pages/MyAccount.jsx'],
+  ['^/my-plans$', 'src/pages/MyPlans.jsx'],
+  ['^/my-reviews$', 'src/pages/MyReviews.jsx'],
+  ['^/breathe$', 'src/pages/BreathingPage.jsx'],
+  ['^/auth/login$', 'src/pages/signin/SignIn.jsx'],
+  ['^/coach/sign-in$', 'src/pages/signin/SignIn.jsx'],
+  ['^/coach/sign-in/code$', 'src/pages/signin/CoachCode.jsx'],
+  ['^/coach(/|$)', 'src/pages/coach/CoachApp.jsx'],
+]
+function openingPreload() {
+  return {
+    name: 'clarity-opening-preload',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        const bundle = ctx.bundle
+        if (!bundle) return html
+        const chunks = Object.values(bundle).filter((c) => c.type === 'chunk')
+        const byName = new Map(chunks.map((c) => [c.fileName, c]))
+        // The portal's page (index.html); the outside Health Check is built apart.
+        const entry = chunks.find((c) => c.isEntry && /\/index\.html$/.test(c.facadeModuleId || ''))
+        if (!entry) return html
+        // What index.html already loads.
+        const have = new Set()
+        const walk = (name, into) => {
+          if (into.has(name)) return
+          into.add(name)
+          for (const next of byName.get(name)?.imports || []) walk(next, into)
+        }
+        walk(entry.fileName, have)
+        const files = (modulePath) => {
+          const page = chunks.find((c) => (c.facadeModuleId || '').endsWith(`/${modulePath}`))
+          if (!page) return null
+          const js = new Set()
+          walk(page.fileName, js)
+          const list = [...js].filter((f) => !have.has(f))
+          return { js: list.map((f) => `/${f}`) }
+        }
+        const map = OPENING.map(([pattern, modulePath]) => [pattern, files(modulePath)]).filter(([, f]) => f)
+        const home = files('src/pages/Home.jsx')
+        const signIn = files('src/pages/signin/SignIn.jsx')
+        const code = `(function(){try{var m=${JSON.stringify(map)},h=${JSON.stringify(home)},s=${JSON.stringify(signIn)};`
+          + `var p=location.pathname.replace(/\\/+$/,'')||'/',f=null;`
+          + `if(p==='/'){f=localStorage.getItem('clarity-portal-auth')?h:s}else{for(var i=0;i<m.length;i++){if(new RegExp(m[i][0]).test(p)){f=m[i][1];break}}}`
+          + `if(!f)return;var add=function(rel,href){var l=document.createElement('link');l.rel=rel;l.href=href;l.crossOrigin='';document.head.appendChild(l)};`
+          // Its styles come with its code as before: asked for here they
+          // would hold up the app's own first paint.
+          + `f.js.forEach(function(x){add('modulepreload',x)})}catch(e){}})();`
+        return { html, tags: [{ tag: 'script', injectTo: 'head', children: code }] }
+      },
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ command }) => {
   const galleryEnabled = command === 'serve' || process.env.VERCEL_ENV === 'preview'
   const buildId = command === 'serve' ? 'dev' : (process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now()))
   return {
-    plugins: [react(), colourMode(), designGallery(galleryEnabled), buildVersion(buildId), serviceWorker(buildId, process.env.VERCEL_ENV === 'preview'), healthCheckPage(buildId)],
+    plugins: [react(), colourMode(), designGallery(galleryEnabled), buildVersion(buildId), serviceWorker(buildId, process.env.VERCEL_ENV === 'preview'), healthCheckPage(buildId), openingPreload()],
     // __CLARITY_LIVE__: true only in the live site's build. The coach portal
     // shows pages still to come, and takes test calls for the next-call bar,
     // everywhere else (previews, local builds), never on the live site.
     define: { __BUILD_ID__: JSON.stringify(buildId), __CLARITY_LIVE__: JSON.stringify(process.env.VERCEL_ENV === 'production') },
+    build: { rolldownOptions: { output: { codeSplitting: clientCoreChunks() } } },
   }
 })

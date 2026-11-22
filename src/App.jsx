@@ -1,5 +1,5 @@
-import { lazy, Suspense, useContext, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet, useNavigationType } from 'react-router-dom';
+import { lazy, Suspense, useContext, useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, matchPath, useLocation, useNavigate, Outlet, useNavigationType } from 'react-router-dom';
 import { diag } from './utils/diag';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { MissionProvider } from './context/MissionContext';
@@ -7,86 +7,203 @@ import { FormProvider } from './context/FormContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import './lib/debugStorage'; // Make debugging utilities available
-import { ConnectionNotice, Crosshair, FloatingOrb, ToastProvider, useToast } from './components/design';
+// Straight from each file, never the design index, so the opening part of
+// the app holds only what it uses (the scale check, step 3).
+import Crosshair from './components/design/Crosshair';
+import ConnectionNotice from './components/design/ConnectionNotice';
+import FloatingOrb from './components/design/FloatingOrb';
+import { ToastProvider } from './components/design/Toast';
+import { useToast } from './components/design/toastContext';
 import { startUpdateChecks } from './lib/appUpdate';
 import { startWarming } from './lib/warmDevice';
 import { CoachChatProvider } from './components/coach/CoachChat';
 import ProtectedLayout from './components/ProtectedLayout';
-import Home from './pages/Home';
-import About from './pages/About';
-import MyAccount from './pages/MyAccount';
-import MyJournal from './pages/MyJournal';
-import DailyJournal from './pages/DailyJournal';
-import DailyJournals from './pages/DailyJournals';
-import DailyJournalRead from './pages/DailyJournalRead';
-import MyReviews from './pages/MyReviews';
-import ReviewSummary from './pages/ReviewSummary';
-import ReviewPlan from './pages/ReviewPlan';
-import ReviewPlanSummary from './pages/ReviewPlanSummary';
-import DecisionSummary from './pages/DecisionSummary';
-import PlanMyDayStep1 from './pages/PlanMyDayStep1';
-import DailyPlanSummary from './pages/DailyPlanSummary';
-import MyPlans from './pages/MyPlans';
-import PlanMeeting from './pages/PlanMeeting';
-import MeetingSummary from './pages/MeetingSummary';
-import IfThenPlanning from './pages/IfThenPlanning';
-import IfThenPlanningSummary from './pages/IfThenPlanningSummary';
-import BreathingPage from './pages/BreathingPage';
-import BreathingSessionsSummary from './pages/BreathingSessionsSummary';
-import StopDoingAudit from './pages/StopDoingAudit';
-import StopDoingAuditSummary from './pages/StopDoingAuditSummary';
-import InversionStep1Goal from './pages/InversionStep1Goal';
-import InversionStep2Risks from './pages/InversionStep2Risks';
-import InversionStep3Plan from './pages/InversionStep3Plan';
-import InversionThinkingSummary from './pages/InversionThinkingSummary';
-import ToughConversationStep1Feedback from './pages/ToughConversationStep1Feedback';
-import ToughConversationSummary from './pages/ToughConversationSummary';
-import ToughConversationStep2Coaching from './pages/ToughConversationStep2Coaching';
-import EditPersonalDetails from './pages/EditPersonalDetails';
-import OnboardingMission from './pages/OnboardingMission';
-import PersonalOperatingPlan from './pages/PersonalOperatingPlan';
-import PersonalOperatingPlanEdit from './pages/PersonalOperatingPlanEdit';
-import PersonalOperatingPlanHistory from './pages/PersonalOperatingPlanHistory';
-import PersonalOperatingPlanHistoryVersion from './pages/PersonalOperatingPlanHistoryVersion';
-import PerformancePlan from './pages/performance/PerformancePlan';
-import PlanHistory from './pages/performance/PlanHistory';
-import PlanVersion from './pages/performance/PlanVersion';
-import PlanBuilder from './pages/performance/PlanBuilder';
-import SprintStart from './pages/performance/SprintStart';
-import SprintReview from './pages/performance/SprintReview';
-import SprintReviewRead from './pages/performance/SprintReviewRead';
-import RecoveryStart, { RecoveryCheckIn, RecoveryToday } from './pages/performance/Recovery';
-import SprintYear from './pages/performance/SprintYear';
-import WeeklyDebrief from './pages/performance/WeeklyDebrief';
-import PerformanceSprint from './pages/performance/PerformanceSprint';
-import PlanMyDay from './pages/performance/PlanMyDay';
-import ReviewMyDay from './pages/performance/ReviewMyDay';
-import SleepWindDown from './pages/performance/SleepWindDown';
-import CheckIn from './pages/performance/CheckIn';
-import Dashboard from './pages/performance/Dashboard';
-import PersonalOperatingPlanArchived from './pages/PersonalOperatingPlanArchived';
-import PersonalOperatingPlanArchivedOne from './pages/PersonalOperatingPlanArchivedOne';
-import MissionProgressReviewDetail from './pages/MissionProgressReviewDetail';
-import SignIn from './pages/signin/SignIn';
-import CreateAccount from './pages/signin/CreateAccount';
-import CheckEmail from './pages/signin/CheckEmail';
-import EmailConfirmed from './pages/signin/EmailConfirmed';
-import ForgotPassword from './pages/signin/ForgotPassword';
-import NewPassword from './pages/signin/NewPassword';
-import Invite from './pages/signin/Invite';
-import GoogleReturn from './pages/signin/GoogleReturn';
-import BeforeYouStart from './pages/signin/BeforeYouStart';
-import CoachCode from './pages/signin/CoachCode';
-import { CoachCodes, CoachIn, CoachLost, CoachSetUp } from './pages/signin/CoachAuth';
-import { AccountEmail, AccountPassword } from './pages/signin/AccountPages';
-import SignInSecurity from './pages/signin/SignInSecurity';
-import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 import ScrollToTop from './components/ScrollToTop';
-import HubPage from './pages/hubs/HubPage';
 import { claimOutsideWork } from './lib/guest/claim';
 import { HEALTH_CHECKS_MOVED } from './lib/guest/claimRules';
 import { GET_UNSTUCK_STEPS, MOVED, MOVED_UNDER, tabTitle } from './lib/navigation';
 import { loadWithReload } from './lib/loadWithReload';
+
+// Every page is its own part of the app (the scale check, step 3: the app
+// was one 1.7 MB file, read before anything showed). A page's part loads
+// when it is first shown, and the part for the address the app opens on is
+// asked for at once (preloadOpeningPage, below), alongside signing in, so
+// the first screen never waits for it in turn. The service worker still
+// keeps every part on the device (vite.config.js), so all of it works offline.
+const PAGE_FALLBACK = <div className="ui-root" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />;
+const ALL_PAGES = [];
+function page(factory, name) {
+  // Once its part has loaded the page shows straight away, never through
+  // Suspense: React holds back what a Suspense boundary reveals by up to
+  // 300 ms, which would hold up the first screen and every move.
+  let Loaded = null;
+  let loading = null;
+  const load = () => {
+    loading = loading || loadWithReload(factory).then((m) => {
+      Loaded = name ? m[name] : m.default;
+      return m;
+    });
+    loading.catch(() => { loading = null; });
+    return loading;
+  };
+  const Lazy = lazy(() => load().then(() => ({ default: Loaded })));
+  function Page(props) {
+    // Decided once, when the page first shows, so it never swaps between
+    // the two (which would start the page again and lose what's on it).
+    const [Ready] = useState(() => Loaded);
+    if (Ready) return <Ready {...props} />;
+    return (
+      <Suspense fallback={PAGE_FALLBACK}>
+        <Lazy {...props} />
+      </Suspense>
+    );
+  }
+  Page.preload = load;
+  ALL_PAGES.push(Page);
+  return Page;
+}
+
+// A few seconds after the first screen, when the device is idle, every
+// other page's part is loaded too, one at a time, so moving to it never waits. They come
+// from the device after the first visit (the service worker keeps them).
+let preloadingAll = false;
+function preloadAllPagesWhenIdle() {
+  if (preloadingAll || typeof window === 'undefined') return;
+  preloadingAll = true;
+  const idle = (fn) => (typeof window.requestIdleCallback === 'function'
+    ? window.requestIdleCallback(fn, { timeout: 3000 })
+    : window.setTimeout(fn, 200));
+  let i = 0;
+  const next = () => {
+    if (i >= ALL_PAGES.length) return;
+    const one = ALL_PAGES[i];
+    i += 1;
+    one.preload().catch(() => {}).finally(() => idle(next));
+  };
+  // After the first screen's own reads and the device's copies (warmDevice
+  // starts at 4 s), so on a slow phone it never competes with them.
+  window.setTimeout(() => idle(next), 6000);
+}
+
+const Home = page(() => import('./pages/Home'));
+const About = page(() => import('./pages/About'));
+const MyAccount = page(() => import('./pages/MyAccount'));
+const MyJournal = page(() => import('./pages/MyJournal'));
+const DailyJournal = page(() => import('./pages/DailyJournal'));
+const DailyJournals = page(() => import('./pages/DailyJournals'));
+const DailyJournalRead = page(() => import('./pages/DailyJournalRead'));
+const MyReviews = page(() => import('./pages/MyReviews'));
+const ReviewSummary = page(() => import('./pages/ReviewSummary'));
+const ReviewPlan = page(() => import('./pages/ReviewPlan'));
+const ReviewPlanSummary = page(() => import('./pages/ReviewPlanSummary'));
+const DecisionSummary = page(() => import('./pages/DecisionSummary'));
+const PlanMyDayStep1 = page(() => import('./pages/PlanMyDayStep1'));
+const DailyPlanSummary = page(() => import('./pages/DailyPlanSummary'));
+const MyPlans = page(() => import('./pages/MyPlans'));
+const PlanMeeting = page(() => import('./pages/PlanMeeting'));
+const MeetingSummary = page(() => import('./pages/MeetingSummary'));
+const IfThenPlanning = page(() => import('./pages/IfThenPlanning'));
+const IfThenPlanningSummary = page(() => import('./pages/IfThenPlanningSummary'));
+const BreathingPage = page(() => import('./pages/BreathingPage'));
+const BreathingSessionsSummary = page(() => import('./pages/BreathingSessionsSummary'));
+const StopDoingAudit = page(() => import('./pages/StopDoingAudit'));
+const StopDoingAuditSummary = page(() => import('./pages/StopDoingAuditSummary'));
+const InversionStep1Goal = page(() => import('./pages/InversionStep1Goal'));
+const InversionStep2Risks = page(() => import('./pages/InversionStep2Risks'));
+const InversionStep3Plan = page(() => import('./pages/InversionStep3Plan'));
+const InversionThinkingSummary = page(() => import('./pages/InversionThinkingSummary'));
+const ToughConversationStep1Feedback = page(() => import('./pages/ToughConversationStep1Feedback'));
+const ToughConversationSummary = page(() => import('./pages/ToughConversationSummary'));
+const ToughConversationStep2Coaching = page(() => import('./pages/ToughConversationStep2Coaching'));
+const EditPersonalDetails = page(() => import('./pages/EditPersonalDetails'));
+const OnboardingMission = page(() => import('./pages/OnboardingMission'));
+const PersonalOperatingPlan = page(() => import('./pages/PersonalOperatingPlan'));
+const PersonalOperatingPlanEdit = page(() => import('./pages/PersonalOperatingPlanEdit'));
+const PersonalOperatingPlanHistory = page(() => import('./pages/PersonalOperatingPlanHistory'));
+const PersonalOperatingPlanHistoryVersion = page(() => import('./pages/PersonalOperatingPlanHistoryVersion'));
+const PerformancePlan = page(() => import('./pages/performance/PerformancePlan'));
+const PlanHistory = page(() => import('./pages/performance/PlanHistory'));
+const PlanVersion = page(() => import('./pages/performance/PlanVersion'));
+const PlanBuilder = page(() => import('./pages/performance/PlanBuilder'));
+const SprintStart = page(() => import('./pages/performance/SprintStart'));
+const SprintReview = page(() => import('./pages/performance/SprintReview'));
+const SprintReviewRead = page(() => import('./pages/performance/SprintReviewRead'));
+const RecoveryStart = page(() => import('./pages/performance/Recovery'));
+const RecoveryCheckIn = page(() => import('./pages/performance/Recovery'), 'RecoveryCheckIn');
+const RecoveryToday = page(() => import('./pages/performance/Recovery'), 'RecoveryToday');
+const SprintYear = page(() => import('./pages/performance/SprintYear'));
+const WeeklyDebrief = page(() => import('./pages/performance/WeeklyDebrief'));
+const PerformanceSprint = page(() => import('./pages/performance/PerformanceSprint'));
+const PlanMyDay = page(() => import('./pages/performance/PlanMyDay'));
+const ReviewMyDay = page(() => import('./pages/performance/ReviewMyDay'));
+const SleepWindDown = page(() => import('./pages/performance/SleepWindDown'));
+const CheckIn = page(() => import('./pages/performance/CheckIn'));
+const Dashboard = page(() => import('./pages/performance/Dashboard'));
+const PersonalOperatingPlanArchived = page(() => import('./pages/PersonalOperatingPlanArchived'));
+const PersonalOperatingPlanArchivedOne = page(() => import('./pages/PersonalOperatingPlanArchivedOne'));
+const MissionProgressReviewDetail = page(() => import('./pages/MissionProgressReviewDetail'));
+const SignIn = page(() => import('./pages/signin/SignIn'));
+const CreateAccount = page(() => import('./pages/signin/CreateAccount'));
+const CheckEmail = page(() => import('./pages/signin/CheckEmail'));
+const EmailConfirmed = page(() => import('./pages/signin/EmailConfirmed'));
+const ForgotPassword = page(() => import('./pages/signin/ForgotPassword'));
+const NewPassword = page(() => import('./pages/signin/NewPassword'));
+const Invite = page(() => import('./pages/signin/Invite'));
+const GoogleReturn = page(() => import('./pages/signin/GoogleReturn'));
+const BeforeYouStart = page(() => import('./pages/signin/BeforeYouStart'));
+const CoachCode = page(() => import('./pages/signin/CoachCode'));
+const CoachCodes = page(() => import('./pages/signin/CoachAuth'), 'CoachCodes');
+const CoachIn = page(() => import('./pages/signin/CoachAuth'), 'CoachIn');
+const CoachLost = page(() => import('./pages/signin/CoachAuth'), 'CoachLost');
+const CoachSetUp = page(() => import('./pages/signin/CoachAuth'), 'CoachSetUp');
+const AccountEmail = page(() => import('./pages/signin/AccountPages'), 'AccountEmail');
+const AccountPassword = page(() => import('./pages/signin/AccountPages'), 'AccountPassword');
+const SignInSecurity = page(() => import('./pages/signin/SignInSecurity'));
+const LegalDocumentPage = page(() => import('./pages/legal/LegalDocumentPage'));
+const HubPage = page(() => import('./pages/hubs/HubPage'));
+
+// The page the app opens on, asked for straight away (see page() above).
+// Only the pages people open the app on; any other page loads as it shows.
+const OPENING_PAGES = [
+  ['/welcome', () => Home],
+  ['/daily-plan/*', () => PlanMyDay],
+  ['/daily-review/*', () => ReviewMyDay],
+  ['/performance-sprint/debrief/*', () => WeeklyDebrief],
+  ['/performance-sprint', () => PerformanceSprint],
+  ['/performance-plan', () => PerformancePlan],
+  ['/dashboard', () => Dashboard],
+  ['/monthly-review/*', () => CheckIn],
+  ['/my-account', () => MyAccount],
+  ['/my-plans', () => MyPlans],
+  ['/my-reviews', () => MyReviews],
+  ['/breathe', () => BreathingPage],
+  ['/auth/login', () => SignIn],
+  ['/coach/sign-in', () => SignIn],
+  ['/coach/sign-in/code', () => CoachCode],
+  // The coach portal, already its own part (CoachApp, below).
+  ['/coach/*', () => ({ preload: () => import('./pages/coach/CoachApp') })],
+];
+function preloadOpeningPage() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const path = window.location.pathname.replace(/\/+$/, '') || '/';
+    let found = null;
+    if (path === '/') {
+      // Signed in on this device: Home; otherwise the sign-in page.
+      found = window.localStorage.getItem('clarity-portal-auth') ? Home : SignIn;
+    } else {
+      const hit = OPENING_PAGES.find(([pattern]) => matchPath(pattern, path));
+      found = hit ? hit[1]() : null;
+    }
+    // Waited for (briefly) before the first screen, so it shows without
+    // Suspense's hold-back; a part that doesn't load is left to the page.
+    return found ? found.preload().catch(() => {}) : null;
+  } catch {
+    return null; // the page loads as it shows
+  }
+}
+const openingPage = preloadOpeningPage();
+const OPENING_WAIT_MS = 4000;
 
 // Strategic Alignment Health Check: a standalone page for people with no
 // portal account. Lazy-loaded so none of it is in the portal's main bundle.
@@ -197,9 +314,20 @@ function AppContent() {
   const location = useLocation();
   const navigationType = useNavigationType();
   const toast = useToast();
+  // The opening page's part of the app (preloadOpeningPage): the opening
+  // screen stays until it is here, at most OPENING_WAIT_MS.
+  const [openingReady, setOpeningReady] = useState(() => !openingPage);
+  useEffect(() => {
+    if (openingReady) return undefined;
+    const timer = window.setTimeout(() => setOpeningReady(true), OPENING_WAIT_MS);
+    openingPage.finally(() => setOpeningReady(true));
+    return () => window.clearTimeout(timer);
+  }, [openingReady]);
 
   // The key pages' data kept on the device, once per visit (warmDevice.js).
   useEffect(() => { startWarming(user?.id ?? null); }, [user?.id]);
+  // Every page's part of the app, once the first screen is up (page() above).
+  useEffect(() => { if (!isLoading) preloadAllPagesWhenIdle(); }, [isLoading]);
 
   // Boot diagnostics
   useEffect(() => {
@@ -255,16 +383,28 @@ function AppContent() {
   // teams (M7's one-off tip), so it has no toast of its own.
   const claimFor = user?.id && user.email_confirmed_at ? user.id : null;
   useEffect(() => {
-    if (!claimFor) return;
-    claimOutsideWork(claimFor).then((moved) => {
-      if (moved.guest > 0) toast.show('Your plan has moved into My Plans.');
-      if (moved.healthChecks > 0) window.dispatchEvent(new window.Event(HEALTH_CHECKS_MOVED));
-    });
+    if (!claimFor) return undefined;
+    // Asked just after the first screen's own reads (2 seconds, then when
+    // the device is idle): the claim is a write, and a write makes the reads
+    // the first screen's loaders share be asked again (readShare.js).
+    let live = true;
+    const claim = () => {
+      if (!live) return;
+      claimOutsideWork(claimFor).then((moved) => {
+        if (moved.guest > 0) toast.show('Your plan has moved into My Plans.');
+        if (moved.healthChecks > 0) window.dispatchEvent(new window.Event(HEALTH_CHECKS_MOVED));
+      });
+    };
+    const timer = window.setTimeout(() => {
+      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(claim, { timeout: 2000 });
+      else claim();
+    }, 2000);
+    return () => { live = false; window.clearTimeout(timer); };
     // Once per sign-in.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claimFor]);
 
-  if (isLoading) {
+  if (isLoading || !openingReady) {
     // The opening screen: the turning crosshair on the page colour, the
     // same as the one index.html shows before the app has loaded (Tim,
     // 26 Oct), so the hand-over is seamless.

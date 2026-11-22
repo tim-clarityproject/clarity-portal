@@ -1,15 +1,6 @@
 import { readCache, writeCache } from './pageCache';
 import { isOnline, subscribeOnline } from './connection';
 import { changesMade, readQuietly, waitingToSend, whenSent } from './syncQueue';
-import { loadSavedPlans, loadSavedReviews, SAVED_PLANS_CACHE, SAVED_REVIEWS_CACHE } from './savedItemsApi';
-import { loadActivePlan, loadCheckinPage, loadCheckins, loadDashboard, loadDayPlan, loadDayReview, loadDebrief, loadHomeDay, loadPatternRows, loadPlanPage, loadSprintPage } from './performance/api';
-import { DASHBOARD_CACHE } from './performance/dashboard';
-import { PATTERNS_CACHE } from './performance/patterns';
-import { PLAN_CACHE, SPRINT_CACHE } from './performance/hooks';
-import { localToday } from './performance/rows';
-import { addDayKey } from './performance/dayPlan';
-import { moveAnswerExtras } from './performance/answerExtras';
-import { REVIEW_EARLY_HOURS } from './performance/dayReview';
 
 // The key pages are on the device before they are needed (Phase 4 step 8,
 // "Works on a flight"): Today, the plan, the sprint, Daily plan, Review
@@ -31,8 +22,40 @@ import { REVIEW_EARLY_HOURS } from './performance/dayReview';
 
 const START_AFTER_MS = 4000;
 const FRESH_MS = 10 * 60 * 1000;
+// On the coach portal's pages a coach isn't using their own client pages,
+// and those reads (about 110) would queue behind the coach's own (the scale
+// check, step 3). The warming waits until they are on a client page again,
+// looking every COACH_WAIT_MS, then runs as usual, one read at a time.
+const COACH_WAIT_MS = 30 * 1000;
 
-function pages(userId) {
+function onCoachPages() {
+  if (typeof window === 'undefined') return false;
+  const path = window.location?.pathname || '';
+  return path === '/coach' || path.startsWith('/coach/');
+}
+
+// The pages' own loaders are fetched only when the warming starts, so none
+// of them is in the part of the app that opens first (the scale check).
+async function pages(userId) {
+  const [
+    { loadSavedPlans, loadSavedReviews, SAVED_PLANS_CACHE, SAVED_REVIEWS_CACHE },
+    { loadActivePlan, loadCheckinPage, loadCheckins, loadDashboard, loadDayPlan, loadDayReview, loadDebrief, loadHomeDay, loadPatternRows, loadPlanPage, loadSprintPage },
+    { DASHBOARD_CACHE },
+    { PATTERNS_CACHE },
+    { PLAN_CACHE, SPRINT_CACHE },
+    { localToday },
+    { addDayKey },
+    { REVIEW_EARLY_HOURS },
+  ] = await Promise.all([
+    import('./savedItemsApi'),
+    import('./performance/api'),
+    import('./performance/dashboard'),
+    import('./performance/patterns'),
+    import('./performance/hooks'),
+    import('./performance/rows'),
+    import('./performance/dayPlan'),
+    import('./performance/dayReview'),
+  ]);
   const now = new Date();
   const today = localToday(undefined, now);
   const list = [
@@ -66,8 +89,9 @@ let warmed = null; // whose device was warmed this visit
 let running = null;
 
 async function warm(userId) {
-  for (const [name, load] of pages(userId)) {
+  for (const [name, load] of await pages(userId)) {
     if (warmed !== userId || !isOnline()) return;
+    if (onCoachPages()) return 'coach';
     const had = readCache(userId, name);
     if (had?.at && Date.now() - had.at < FRESH_MS) continue;
     try {
@@ -101,6 +125,10 @@ export function startWarming(userId) {
   warmed = userId;
   const go = () => {
     if (warmed !== userId || running) return;
+    if (onCoachPages()) {
+      window.setTimeout(go, COACH_WAIT_MS);
+      return;
+    }
     if (!isOnline()) {
       // Opened offline: once, when the connection comes back.
       stopOnline = subscribeOnline((on) => {
@@ -113,7 +141,12 @@ export function startWarming(userId) {
     }
     // First, anything still kept on this device that migration 040 now
     // holds with its row (answerExtras.js), then the pages' copies.
-    running = moveAnswerExtras(userId).catch(() => 0).then(() => warm(userId)).finally(() => { running = null; });
+    running = import('./performance/answerExtras').then(({ moveAnswerExtras }) => moveAnswerExtras(userId)).catch(() => 0).then(() => warm(userId))
+      .then((stopped) => {
+        // Stopped because a coach opened their portal: carry on later.
+        if (stopped === 'coach') window.setTimeout(go, COACH_WAIT_MS);
+      })
+      .finally(() => { running = null; });
   };
   window.setTimeout(() => {
     if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(go, { timeout: 4000 });
