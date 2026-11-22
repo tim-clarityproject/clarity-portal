@@ -2479,6 +2479,16 @@
   padding-right: var(--space-3);
 }
 
+/* A panel whose last part is a button under its own words (the coach's
+   Filter panels: Save as a view, after which "View saved" or a view's
+   "Deleted" shows) keeps a toast's room under it, so a toast raised above
+   the panel's foot never covers that button when the body is too short to
+   scroll it clear (the break-it tester, Phase 9 tidy 1). The toast sits
+   max(safe area, 16px) + 16px above the foot: that, its 44px and 16px clear. */
+.ui-root .ds-panel--toast-room .ds-dialog-body {
+  padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--space-3)) + var(--space-3) + var(--tap-min) + var(--space-3));
+}
+
 /* The small choice panel (Sheet): a short dialog in the middle on a
    laptop, a panel rising from the bottom on a phone (M4 v46 .bs). */
 .ui-root .ds-choice-sheet {

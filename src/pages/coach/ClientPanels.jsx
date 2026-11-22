@@ -335,6 +335,7 @@ export function FilterPanel({ open, onClose, list, setList, count }) {
       open={open}
       onClose={onClose}
       title="Filter"
+      className="ds-panel--toast-room"
       footer={<div className="cc-panel-foot"><TextLink onClick={() => setList({ ...list, filters: { tag: [], status: [], organisation: null, coach: null, fields: {} }, viewId: null })}>Clear</TextLink><Button variant="primary" onClick={onClose}>Show {count} {count === 1 ? 'client' : 'clients'}</Button></div>}
     >
       {tags.length > 0 && (

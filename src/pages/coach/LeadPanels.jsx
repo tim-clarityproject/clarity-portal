@@ -566,7 +566,7 @@ export function LeadFilterPanel({ open, onClose, list, setList, count }) {
     done(() => saveRow(userId, 'coach_views', { ...v, favourite: !v.favourite }), v.favourite ? 'Taken out of the menu' : 'Added to the menu', () => saveRow(userId, 'coach_views', v));
   };
   return (
-    <SlidePanel open={open} onClose={onClose} title="Filter" footer={<div className="cc-panel-foot"><TextLink onClick={() => setList({ ...list, filters: EMPTY_LEAD_FILTERS, viewId: null })}>Clear</TextLink><Button variant="primary" onClick={onClose}>Show {count} {count === 1 ? 'lead' : 'leads'}</Button></div>}>
+    <SlidePanel open={open} onClose={onClose} title="Filter" className="ds-panel--toast-room" footer={<div className="cc-panel-foot"><TextLink onClick={() => setList({ ...list, filters: EMPTY_LEAD_FILTERS, viewId: null })}>Clear</TextLink><Button variant="primary" onClick={onClose}>Show {count} {count === 1 ? 'lead' : 'leads'}</Button></div>}>
       {tags.length > 0 && (
         <div className="cc-field"><span className="cc-field-label">Tags</span>
           <ChipRow label="Tags">{tags.map((t) => <Chip key={t.id} pressed={(f.tag || []).includes(t.id)} onClick={() => toggle('tag', t.id)}>{t.name}</Chip>)}</ChipRow>
