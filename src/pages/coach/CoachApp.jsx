@@ -7,7 +7,7 @@ import { useSignOut } from '../../components/SignOut';
 import { getLocalDateKey } from '../../lib/dateFormatter';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { useCoachRole } from '../../lib/coach/role';
-import { rowsOf, saveRows, useCoachLoad, useCoachStore } from '../../lib/coach/store';
+import { findCalItems, fromTable, rowsOf, saveRows, useCoachLoad, useCoachStore } from '../../lib/coach/store';
 import { loadAdminClients, loadCoaches } from '../../lib/coach/actions';
 import { callForBar, favouriteViews, nextCallBar, searchResults, withRecent } from '../../lib/coach/model';
 import { COACH_PAGES, coachTitle, menuFor, SETTINGS_SECTIONS } from '../../lib/coach/navigation';
@@ -162,17 +162,17 @@ function Menu({ open, onClose, onSignOut }) {
     navRef.current?.querySelector('[aria-current="page"], button')?.focus({ preventScroll: true });
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+  // Worked out when the to-dos change, never as the menu opens (scale check, 22 Nov: opening took 0.3 s for the owner).
+  const todosToday = useMemo(() => todayTodos(todos, todayKey).work.length, [todos, todayKey]); // the working day only, as M11 counts it: After work sits apart
+  const lists = useMemo(() => todoLists.filter((l) => !l.finished_at), [todoLists]);
+  const menuBoards = useMemo(() => boardsFor(boards, { isOwner }), [boards, isOwner]);
+  const favourites = useMemo(() => favouriteViews(views).filter((v) => v.list !== 'leads' || isOwner), [views, isOwner]);
   if (!open) return null;
   const go = (to) => { onClose(); navigate(to); };
   // Boards: the owner's own under it; an associate has the page only once a board is shared with them.
-  const menuBoards = boardsFor(boards, { isOwner });
   const items = menuFor({ isOwner, live: LIVE, hasShared: menuBoards.length > 0 });
   const current = (to) => (to === '/coach' ? pathname === '/coach' : pathname === to || pathname.startsWith(`${to}/`));
-  const favourites = favouriteViews(views).filter((v) => v.list !== 'leads' || isOwner);
   // To-dos shows how many are for today, with the coach's own lists under it (M11's menu).
-  const today = todayTodos(todos, todayKey);
-  const todosToday = today.work.length; // the working day only, as M11 counts it: After work sits apart
-  const lists = todoLists.filter((l) => !l.finished_at);
   return (
     <>
       <div className="cc-scrim cc-scrim--menu" onClick={onClose} aria-hidden="true" />
@@ -255,10 +255,22 @@ function Search({ open, onClose }) {
     inputRef.current?.focus();
   }, [open, recentKey]);
 
-  const all = useMemo(() => {
-    const orgName = (id) => organisations.find((o) => o.id === id)?.name || '';
+  // The index is built once its data is there, quietly after the page has drawn, and again only when what it is
+  // built from changes: never as the box opens or as a letter is typed (scale check, 22 Nov: opening took 0.5 s on a
+  // laptop and 2.2 s on a phone for the owner, typing 0.7 s on a phone).
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (armed) return undefined;
+    if (open) { setArmed(true); return undefined; }
+    const idle = typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(() => setArmed(true), { timeout: 3000 }) : window.setTimeout(() => setArmed(true), 1500);
+    return () => (typeof window.cancelIdleCallback === 'function' ? window.cancelIdleCallback(idle) : window.clearTimeout(idle));
+  }, [open, armed]);
+  const people = useMemo(() => {
+    if (!armed) return [];
+    const orgNames = new Map(organisations.map((o) => [o.id, o.name]));
+    const orgName = (id) => orgNames.get(id) || '';
     const mine = new Set(clients.map((c) => c.id));
-    const people = [
+    return [
       ...clients.map((p) => ({ key: `c:${p.id}`, title: p.name, kind: p.status === 'past' ? 'Past client' : 'Client', also: `${orgName(p.organisation_id)} ${p.email || ''}`, to: `/coach/clients/${p.id}` })),
       // The owner finds associates' clients by name only, for admin.
       ...(isOwner ? admin.filter((a) => !mine.has(a.profile_id) && a.coach_id !== coach.id).map((a) => ({ key: `a:${a.profile_id}`, title: a.name, kind: `${a.coach_first_name}’s client`, admin: a.coach_first_name })) : []),
@@ -269,16 +281,16 @@ function Search({ open, onClose }) {
       ...(isOwner ? leadSearchItems(leads, leadStages) : []),
       // Boards: the owner's own; an associate finds only the ones shared with them.
       ...boardSearchItems(boards, { isOwner }),
-      // Network's people, the owner's alone: the few that match what is typed.
-      ...(isOwner ? network : []),
     ];
-    const pages = [
+  }, [armed, clients, groups, workshops, organisations, admin, isOwner, coach, leads, leadStages, boards]);
+  const fixed = useMemo(() => ({
+    pages: [
       ...menuFor({ isOwner, live: LIVE, hasShared: boardsFor(boards, { isOwner }).length > 0 }).map((i) => ({ key: `p:${i.key}`, title: i.label, kind: 'Page', to: i.to })),
       ...(isOwner ? [{ key: 'p:automations', title: 'Automations', kind: 'Page', to: '/coach/leads/automations' }] : []),
-      ...SETTINGS_SECTIONS.filter((s) => !s.owner || isOwner).map((s) => ({ key: `s:${s.key}`, title: s.label, kind: 'Settings', also: 'settings', to: `/coach/settings/${s.key}` })),
+      ...SETTINGS_SECTIONS.filter((x) => !x.owner || isOwner).map((x) => ({ key: `s:${x.key}`, title: x.label, kind: 'Settings', also: 'settings', to: `/coach/settings/${x.key}` })),
       { key: 'p:past', title: 'Past clients', kind: 'Page', to: '/coach/clients/past' },
-    ];
-    const actions = [
+    ],
+    actions: [
       { key: 'a:client', title: 'Add client', to: '/coach/clients', state: { open: 'add' } },
       { key: 'a:team', title: 'Add team', to: '/coach/clients', state: { open: 'team' } },
       { key: 'a:group', title: 'Add group', to: '/coach/clients?tab=groups', state: { open: 'group' } },
@@ -290,11 +302,33 @@ function Search({ open, onClose }) {
       { key: 'a:offer', title: 'Offer times by email', to: '/coach/calendar/offer' },
       { key: 'a:poll', title: 'Start a poll', to: '/coach/calendar/polls/new' },
       ...(coaches.length > 1 && isOwner ? [{ key: 'a:coach', title: 'Add coach', to: '/coach/settings/coaches', state: { open: 'coach' } }] : []),
-    ];
-    // Calendar items, found by title, person or note; each opens its own day.
-    const items = searchItems({ items: calItems, guests: calGuests, coachZone: coachZoneOf(settings, deviceZone()), todayKey });
-    return { people, pages, actions, recent, items };
-  }, [clients, groups, workshops, organisations, admin, isOwner, coaches, coach, recent, calItems, calGuests, settings, todayKey, leads, leadStages, boards, network]);
+    ],
+  }), [isOwner, boards, coaches]);
+  // Calendar items, found by title, person or note; each opens its own day. The weeks on the device, and as it is
+  // typed the database's own matches from the rest of the calendar (it is never read whole).
+  const coachZone = coachZoneOf(settings, deviceZone());
+  const localItems = useMemo(() => (armed ? searchItems({ items: calItems, guests: calGuests, coachZone, todayKey }) : []), [armed, calItems, calGuests, coachZone, todayKey]);
+  const [farItems, setFarItems] = useState([]);
+  useEffect(() => {
+    const typed = q.trim();
+    if (!open || typed.length < 2) { setFarItems([]); return undefined; }
+    let live = true;
+    const timer = setTimeout(() => {
+      findCalItems(typed).then((rows) => {
+        if (!live) return;
+        const here = new Set(calItems.map((i) => i.id));
+        setFarItems(searchItems({ items: rows.filter((r) => !here.has(r.id) && r.coach_id === coach.id), guests: calGuests, coachZone, todayKey }));
+      }).catch(() => { if (live) setFarItems([]); });
+    }, 200);
+    return () => { live = false; clearTimeout(timer); };
+  }, [q, open, calItems, calGuests, coach, coachZone, todayKey]);
+  const all = useMemo(() => ({
+    people: isOwner && network.length ? [...people, ...network] : people,
+    pages: fixed.pages,
+    actions: fixed.actions,
+    recent,
+    items: farItems.length ? [...localItems, ...farItems] : localItems,
+  }), [people, network, isOwner, fixed, recent, localItems, farItems]);
 
   const groupsShown = useMemo(() => searchResults(q, all), [q, all]);
   const flat = groupsShown.flatMap((g) => g.items);
@@ -362,8 +396,8 @@ function Bell({ open, onClose }) {
   const { userId, notifications, todayKey } = useCoachPortal();
   const navigate = useNavigate();
   const toast = useToast();
-  const sorted = [...notifications].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  const unread = sorted.filter((n) => !n.read_at);
+  const sorted = useMemo(() => [...notifications].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)), [notifications]);
+  const unread = useMemo(() => sorted.filter((n) => !n.read_at), [sorted]);
   const markRead = (rows, at) => saveRows(userId, rows.map((n) => ['coach_notifications', { ...n, read_at: at }])).catch(() => toast.error('That didn’t save. Check your connection and try again.'));
   const openOne = (n) => {
     if (!n.read_at) markRead([n], new Date().toISOString());
@@ -435,13 +469,24 @@ export default function CoachApp() {
   const reloadCoaches = useCallback(() => setTurn((n) => n + 1), []);
   const coachId = coach?.id || null;
   const isOwner = role.isOwner;
+  // The coaches and (the owner's) every coach's clients: once a visit, again when asked (reloadCoaches) and when the
+  // coach's own clients come or go (a client moved). Never again for each change to a client, nor when the device's
+  // copy first arrives (scale check, 22 Nov: 1,000 rows read twice on every page).
+  const profileCount = Object.keys(state.rows.client_profiles || {}).length;
+  const countSeen = useRef(null);
+  const [countTurn, setCountTurn] = useState(0);
+  useEffect(() => {
+    const before = countSeen.current;
+    countSeen.current = profileCount;
+    if (before !== null && before !== 0 && profileCount !== 0 && before !== profileCount) setCountTurn((n) => n + 1);
+  }, [profileCount]);
   useEffect(() => {
     if (!coachId) return undefined;
     let live = true;
     loadCoaches().then((list) => { if (live) setCoaches(list); }).catch(() => {});
     if (isOwner) loadAdminClients().then((list) => { if (live) setAdmin(list); }).catch(() => {});
     return () => { live = false; };
-  }, [coachId, isOwner, turn, state.rows.client_profiles]);
+  }, [coachId, isOwner, turn, countTurn]);
 
   const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState(false);
@@ -453,75 +498,86 @@ export default function CoachApp() {
   const value = useMemo(() => {
     if (!coach) return null;
     const mine = (rows) => rows.filter((r) => r.coach_id === coach.id);
-    const profiles = mine(rowsOf(state, 'client_profiles')).filter((p) => !p.merged_into);
+    // Each list is worked out once per change to its own table (store.js's fromTable), so a save to one table leaves
+    // every other list, and the pages' own memos built on them, as they were (scale check, 22 Nov).
+    const own = (table, then = null, name = '') => fromTable(state, table, `mine:${coach.id}${name}`, (rows) => (then ? then(mine(rows)) : mine(rows)));
+    const all = (table, then = null, name = '') => fromTable(state, table, `all${name}`, (rows) => (then ? then(rows) : rows));
     return {
       userId, coach, isOwner, state, todayKey, coaches, admin, reloadCoaches, reloadRole: role.reload,
-      clients: profiles,
-      groups: mine(rowsOf(state, 'coach_groups')),
-      workshops: mine(rowsOf(state, 'workshops')),
-      organisations: rowsOf(state, 'organisations'),
-      tags: mine(rowsOf(state, 'coach_tags')).sort((a, b) => (a.position || 0) - (b.position || 0) || a.name.localeCompare(b.name)),
-      fields: mine(rowsOf(state, 'coach_fields')).filter((f) => f.applies_to === 'client').sort((a, b) => (a.position || 0) - (b.position || 0) || a.name.localeCompare(b.name)),
+      clients: own('client_profiles', (rows) => rows.filter((p) => !p.merged_into), ':current'),
+      groups: own('coach_groups'),
+      workshops: own('workshops'),
+      organisations: all('organisations'),
+      tags: own('coach_tags', (rows) => rows.sort((a, b) => (a.position || 0) - (b.position || 0) || a.name.localeCompare(b.name)), ':sorted'),
+      fields: own('coach_fields', (rows) => rows.filter((f) => f.applies_to === 'client').sort((a, b) => (a.position || 0) - (b.position || 0) || a.name.localeCompare(b.name)), ':client'),
       // A lead's own fields (049's coach_fields with applies_to 'lead'): Sector, Value, Renewal date and the coach's own.
-      leadFields: mine(rowsOf(state, 'coach_fields')).filter((f) => f.applies_to === 'lead').sort((a, b) => (a.position || 0) - (b.position || 0) || a.name.localeCompare(b.name)),
-      views: mine(rowsOf(state, 'coach_views')),
-      notifications: mine(rowsOf(state, 'coach_notifications')),
+      leadFields: own('coach_fields', (rows) => rows.filter((f) => f.applies_to === 'lead').sort((a, b) => (a.position || 0) - (b.position || 0) || a.name.localeCompare(b.name)), ':lead'),
+      views: own('coach_views'),
+      notifications: own('coach_notifications'),
       settings: rowsOf(state, 'coach_settings').find((s) => s.coach_id === coach.id) || { coach_id: coach.id },
       // The coaching day (run 2): the coach's own to-dos, lists, days, weeks and sessions.
-      todos: mine(rowsOf(state, 'coach_todos')),
-      todoLists: mine(rowsOf(state, 'coach_todo_lists')).sort((a, b) => (a.position || 0) - (b.position || 0) || a.name.localeCompare(b.name)),
-      todoHeadings: mine(rowsOf(state, 'coach_todo_headings')).sort((a, b) => (a.position || 0) - (b.position || 0)),
-      days: mine(rowsOf(state, 'coach_days')),
-      weeks: mine(rowsOf(state, 'coach_weeks')),
-      sessions: mine(rowsOf(state, 'coach_sessions')),
-      sessionPeople: rowsOf(state, 'coach_session_people'),
-      sessionActions: mine(rowsOf(state, 'coach_session_actions')),
-      sessionNotes: mine(rowsOf(state, 'coach_session_notes')),
+      todos: own('coach_todos'),
+      todoLists: own('coach_todo_lists', (rows) => rows.sort((a, b) => (a.position || 0) - (b.position || 0) || a.name.localeCompare(b.name)), ':sorted'),
+      todoHeadings: own('coach_todo_headings', (rows) => rows.sort((a, b) => (a.position || 0) - (b.position || 0)), ':sorted'),
+      days: own('coach_days'),
+      weeks: own('coach_weeks'),
+      sessions: own('coach_sessions'),
+      sessionPeople: all('coach_session_people'),
+      sessionActions: own('coach_session_actions'),
+      sessionNotes: own('coach_session_notes'),
       // The calendar and booking (run 3; migration 051): the coach's own, kept on the device until 051 is there.
-      calItems: mine(rowsOf(state, 'coach_cal_items')),
-      calGuests: mine(rowsOf(state, 'coach_cal_guests')),
-      callTypes: mine(rowsOf(state, 'coach_call_types')).sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)),
-      openBlocks: mine(rowsOf(state, 'coach_open_blocks')),
-      polls: mine(rowsOf(state, 'coach_polls')),
-      pollPeople: mine(rowsOf(state, 'coach_poll_people')).sort((x, y) => (x.position || 0) - (y.position || 0)),
-      pollOptions: mine(rowsOf(state, 'coach_poll_options')),
-      pollVotes: rowsOf(state, 'coach_poll_votes'),
-      bookingLinks: mine(rowsOf(state, 'coach_booking_links')),
-      bookings: mine(rowsOf(state, 'coach_bookings')),
-      leads: mine(rowsOf(state, 'coach_leads')),
-      reminderSends: mine(rowsOf(state, 'coach_cal_reminder_sends')),
+      calItems: own('coach_cal_items'),
+      calGuests: own('coach_cal_guests'),
+      callTypes: own('coach_call_types', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)), ':sorted'),
+      openBlocks: own('coach_open_blocks'),
+      polls: own('coach_polls'),
+      pollPeople: own('coach_poll_people', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0)), ':sorted'),
+      pollOptions: own('coach_poll_options'),
+      pollVotes: all('coach_poll_votes'),
+      bookingLinks: own('coach_booking_links'),
+      bookings: own('coach_bookings'),
+      leads: own('coach_leads'),
+      reminderSends: own('coach_cal_reminder_sends'),
       // Leads, the CRM and Network's columns (run 4; migration 052): kept on the device until 052 is there. Network's
       // PEOPLE are never here: pages ask networkData.js for a page of them at a time.
-      leadStages: mine(rowsOf(state, 'coach_lead_stages')).sort((x, y) => (x.position || 0) - (y.position || 0) || String(x.created_at || '').localeCompare(String(y.created_at || ''))),
-      leadEvents: mine(rowsOf(state, 'coach_lead_events')),
-      automations: mine(rowsOf(state, 'coach_automations')).sort((x, y) => (x.position || 0) - (y.position || 0) || String(x.created_at || '').localeCompare(String(y.created_at || ''))),
-      automationRuns: mine(rowsOf(state, 'coach_automation_runs')),
+      leadStages: own('coach_lead_stages', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0) || String(x.created_at || '').localeCompare(String(y.created_at || ''))), ':sorted'),
+      leadEvents: own('coach_lead_events'),
+      automations: own('coach_automations', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0) || String(x.created_at || '').localeCompare(String(y.created_at || ''))), ':sorted'),
+      automationRuns: own('coach_automation_runs'),
       // The owner's boards; an associate is only ever handed the ones the owner has shared (read only).
-      boards: rowsOf(state, 'coach_boards').filter((b) => !b.archived_at && (b.coach_id === coach.id || b.shared === true)).sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)),
-      boardStages: rowsOf(state, 'coach_board_stages').sort((x, y) => (x.position || 0) - (y.position || 0)),
-      boardItems: rowsOf(state, 'coach_board_items').sort((x, y) => (x.position || 0) - (y.position || 0)),
-      emails: mine(rowsOf(state, 'coach_emails')),
-      emailLinks: mine(rowsOf(state, 'coach_email_links')),
-      emailWaiting: mine(rowsOf(state, 'coach_email_waiting')),
-      emailAddresses: mine(rowsOf(state, 'coach_email_addresses')),
-      checkIns: mine(rowsOf(state, 'client_check_ins')),
-      orgDeals: rowsOf(state, 'organisation_deals'),
-      orgGrowth: rowsOf(state, 'organisation_growth'),
-      networkColumns: mine(rowsOf(state, 'network_columns')).sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)),
+      boards: all('coach_boards', (rows) => rows.filter((b) => !b.archived_at && (b.coach_id === coach.id || b.shared === true)).sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)), ':shown'),
+      boardStages: all('coach_board_stages', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0)), ':sorted'),
+      boardItems: all('coach_board_items', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0)), ':sorted'),
+      emails: own('coach_emails'),
+      emailLinks: own('coach_email_links'),
+      emailWaiting: own('coach_email_waiting'),
+      emailAddresses: own('coach_email_addresses'),
+      checkIns: own('client_check_ins'),
+      orgDeals: all('organisation_deals'),
+      orgGrowth: all('organisation_growth'),
+      networkColumns: own('network_columns', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)), ':sorted'),
       now,
     };
   }, [coach, isOwner, state, todayKey, coaches, admin, userId, reloadCoaches, role.reload, now]);
 
+  // Worked out when what they come from changes, not each time the menu, search or the bell opens (scale check, 22 Nov).
+  const notificationsUnread = useMemo(() => (value ? value.notifications.filter((n) => !n.read_at).length : 0), [value?.notifications]);
+  // The next-call bar: the coach's own calls (sessions and calendar items); on previews the suites can add test calls.
+  const barCallsNow = useMemo(() => {
+    if (!value) return [];
+    const coachZone = coachZoneOf(value.settings, deviceZone());
+    return [
+      ...barCalls({ items: value.calItems, sessions: value.sessions, clients: value.clients, groups: value.groups, now, coachZone, settings: value.settings }),
+      ...(LIVE ? [] : testCalls()),
+    ];
+    // (pathname: test calls on previews are read again on each page, as they were.)
+  }, [value?.calItems, value?.sessions, value?.clients, value?.groups, value?.settings, now, pathname]);
+
   if (role.loading) return <Blank />;
   if (!coach) return <Navigate to="/welcome" replace />;
 
-  const unread = value.notifications.filter((n) => !n.read_at).length;
-  // The next-call bar: the coach's own calls (sessions and calendar items); on previews the suites can add test calls.
-  const coachZone = coachZoneOf(value.settings, deviceZone());
-  const calls = [
-    ...barCalls({ items: value.calItems, sessions: value.sessions, clients: value.clients, groups: value.groups, now, coachZone, settings: value.settings }),
-    ...(LIVE ? [] : testCalls()),
-  ];
+  const unread = notificationsUnread;
+  const calls = barCallsNow;
   const later = COACH_PAGES.filter((p) => p.later);
 
   return (

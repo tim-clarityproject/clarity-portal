@@ -592,6 +592,18 @@ export function callForBar(calls, now = new Date()) {
  * @param {{ people: object[], pages: object[], actions: object[], recent: object[] }} all each item { key, title, kind, ... }
  * @returns {{ label: string, items: object[] }[]}
  */
+// Each item's words in lower case, worked out once per item, not on every letter typed (scale check, 22 Nov).
+const loweredMemo = new WeakMap();
+function lowered(item) {
+  let hit = loweredMemo.get(item);
+  if (!hit || hit.source !== item.title || hit.also !== item.also) {
+    const title = String(item.title || '').toLowerCase();
+    hit = { source: item.title, also: item.also, title, hay: `${title} ${(item.also || '').toLowerCase()}` };
+    loweredMemo.set(item, hit);
+  }
+  return hit;
+}
+
 export function searchResults(query, { people = [], pages = [], actions = [], recent = [], items = [] } = {}) {
   const q = clean(query).toLowerCase();
   if (!q) {
@@ -599,8 +611,7 @@ export function searchResults(query, { people = [], pages = [], actions = [], re
   }
   const words = q.split(' ');
   const score = (item) => {
-    const title = item.title.toLowerCase();
-    const hay = `${title} ${(item.also || '').toLowerCase()}`;
+    const { title, hay } = lowered(item);
     if (!words.every((w) => hay.includes(w))) return 0;
     if (title === q) return 4;
     if (title.startsWith(q)) return 3;

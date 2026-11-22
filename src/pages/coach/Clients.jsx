@@ -86,6 +86,22 @@ export function PickTick({ on, name, onChange }) {
   );
 }
 
+// A long list draws its first rows at once and the rest straight after (scale check, 22 Nov): switching List, Board and
+// Table for the owner's 1,000 clients answered in 80 to 90 ms, close to the 100 ms a tap may take. The rows that
+// follow come in the next moment, before anyone could scroll to them.
+const FIRST_ROWS = 60;
+function useGrowing(total, resetKey) {
+  const [at, setAt] = useState({ key: resetKey, limit: FIRST_ROWS });
+  if (at.key !== resetKey) setAt({ key: resetKey, limit: FIRST_ROWS });
+  const limit = at.key === resetKey ? at.limit : FIRST_ROWS;
+  useEffect(() => {
+    if (limit >= total) return undefined;
+    const later = window.setTimeout(() => setAt((was) => (was.key === resetKey ? { key: resetKey, limit: total } : was)), 0);
+    return () => window.clearTimeout(later);
+  }, [limit, total, resetKey]);
+  return Math.min(limit, total);
+}
+
 export default function Clients() {
   const portal = useCoachPortal();
   const { userId, coach, isOwner, coaches, tags, fields, organisations, groups, workshops, views, state, todayKey, reloadCoaches } = portal;
@@ -225,8 +241,10 @@ export default function Clients() {
     setList({ ...list, viewId: null, filters: { ...list.filters, fields: { ...(list.filters.fields || {}), [c.field.id]: now.includes(value) ? now.filter((x) => x !== value) : [...now, value] } } });
   };
 
+  const drawn = useGrowing(shown.length, `${tab}:${layout}`);
+  const shownNow = drawn < shown.length ? shown.slice(0, drawn) : shown;
   const boardRef = useRef(null);
-  useEvenCards(boardRef, [layout, shown.length, shown.map((r) => r.profile.name).join('|')]);
+  useEvenCards(boardRef, [layout, shownNow.length, shownNow.map((r) => r.profile.name).join('|')]);
 
   // ---- the board: a card moves to another column (Phase 6a run 2). With a
   // mouse it is dragged; with the keyboard a focused card moves left and
@@ -348,7 +366,7 @@ export default function Clients() {
 
       {layout === 'list' && shown.length > 0 && (
         <div className={`cc-rows cc-fade${picking ? ' cc-picking' : ''}`} key="list">
-          {shown.map((r) => (
+          {shownNow.map((r) => (
             <div key={r.profile.id} className={`cc-pick-row${picked[r.profile.id] ? ' cc-pick-row--on' : ''}`} onPointerDown={() => holdStart(r.profile.id)} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd}>
               <PickTick on={Boolean(picked[r.profile.id])} name={r.profile.name} onChange={(on) => pick(r.profile.id, on)} />
               <Row title={r.profile.name} facts={facts(r)} when={when(r)} onClick={() => open(r)} />
@@ -361,11 +379,12 @@ export default function Clients() {
         <div className={`cc-board cc-fade${drag ? ' cc-board--dragging' : ''}`} ref={boardRef} key="board">
           {STAGES.map((s) => {
             const here = shown.filter((r) => r.stage === s.value);
+            const cards = drawn < shown.length ? shownNow.filter((r) => r.stage === s.value) : here;
             return (
               <section key={s.value} className={`cc-board-col${drag && drag.over === s.value && drag.row.stage !== s.value ? ' cc-board-col--over' : ''}`} data-stage={s.value} aria-label={`${s.label}, ${here.length}`}>
                 <div className="cc-board-head"><span>{s.label}</span><span>{here.length}</span></div>
                 <div className="cc-board-cards">
-                  {here.map((r) => (
+                  {cards.map((r) => (
                     <div key={r.profile.id} className={`cc-card${drag?.row.profile.id === r.profile.id ? ' cc-card--lifted' : ''}${(isPhone || touchFirst) && !r.admin ? ' cc-card--more' : ''}`}>
                       <button
                         type="button"
@@ -416,7 +435,7 @@ export default function Clients() {
               </tr>
             </thead>
             <tbody>
-              {shown.map((r) => (
+              {shownNow.map((r) => (
                 <tr key={r.profile.id} className={`cc-pick-row${picked[r.profile.id] ? ' cc-pick-row--on' : ''}`}>
                   <td>
                     <PickTick on={Boolean(picked[r.profile.id])} name={r.profile.name} onChange={(on) => pick(r.profile.id, on)} />

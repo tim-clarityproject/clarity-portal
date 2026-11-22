@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   AddButton, BottomBar, Button, DatePicker, Dropdown, IconButton, InlineChoice, PageHeader, TextBox, TextField, useAutosave, useIsPhone, useToast,
 } from '../../components/design';
-import { loadCoach, coachDayReadyNow, newId } from '../../lib/coach/store';
+import { loadCoach, coachDayReadyNow, ensureCalRange, newId } from '../../lib/coach/store';
 import { addDays, clean, cut, dayWords } from '../../lib/coach/model';
 import {
   ACTIONS_MAX, actionsOf, goesWords, instantFrom, NEEDS_NEW_TIME, NEEDS_RECAP, outcomeChoices, OUTCOMES, recapSentWords, SENT_LINE, sentWords,
@@ -57,6 +57,9 @@ export default function SessionPage() {
 
 function SessionBody({ session, who }) {
   const { userId, coach, sessionActions, sessionNotes, todayKey, now, calItems = [] } = useCoachPortal();
+  // An older session's calendar item may not be on the device yet (the calendar is read by the weeks shown).
+  const sessionDay = typeof session.starts_at === 'string' ? session.starts_at.slice(0, 10) : null;
+  useEffect(() => { if (sessionDay) ensureCalRange(userId, sessionDay, sessionDay); }, [userId, sessionDay]);
   const navigate = useNavigate();
   const toast = useToast();
   const say = useSay();

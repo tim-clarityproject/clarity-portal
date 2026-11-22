@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { connectionFetch, setProbeUrl } from './connection';
+import { setProbeUrl } from './connection';
+import { noRetryOnConnectionLoss } from './noRetry';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -65,7 +66,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   // Every request knows at once when the device is offline, and gives up
   // on one that hangs (src/lib/connection.js).
-  global: { fetch: connectionFetch },
+  global: { fetch: noRetryOnConnectionLoss },
 });
 if (supabaseUrl) setProbeUrl(`${supabaseUrl}/auth/v1/health`);
 

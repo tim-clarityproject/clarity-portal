@@ -84,7 +84,7 @@ globalThis.__db = {
       });
     };
     const chain = {
-      select: () => chain, limit: () => chain, order: () => chain,
+      select: () => chain, limit: () => chain, order: () => chain, range: () => chain, or: () => chain, lt: () => chain, gte: () => chain, // windows and pages (scale check): every row
       eq: (c, v) => { q.filters.push([c, [v]]); return chain; },
       in: (c, list) => { q.filters.push([c, list]); return chain; },
       maybeSingle: () => { q.single = true; return chain; },

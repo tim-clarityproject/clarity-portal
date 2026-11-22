@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, CalendarPopover, Chevron, InlineChoice, PageHeader, SwitchRow, useIsPhone } from '../../components/design';
 import {
@@ -6,7 +6,8 @@ import {
 } from '../../lib/coach/calendar';
 import { firstName } from '../../lib/coach/model';
 import { addDays } from '../../lib/time/index.js';
-import { MenuItem, PopMenu, TextLink, useNarrowerThan } from './parts';
+import { ensureCalRange } from '../../lib/coach/store';
+import { MenuItem, PopMenu, TextLink, useCoachPortal, useNarrowerThan } from './parts';
 import { CAL_HOOKS, CalMonth, CalSchedule, useCalendar } from './calendarParts';
 import { CalBoard, CalendarsPanel, useCalPanels, useSecondZone } from './calendarPanels';
 import { BookCallPanel, LinkPanel } from './BookCall';
@@ -51,6 +52,10 @@ export default function Calendar({ side = null }) {
   const setWeekends = (on) => cal.saveSettings({ calendars: { ...(cal.settings.calendars || {}), weekends: on } }, null);
 
   const range = useMemo(() => viewRange(view, day, { weekends }), [view, day, weekends]);
+  // The weeks shown are read from the database as the coach moves to them (with a few weeks either side): the
+  // calendar is never read whole (scale check, 22 Nov: two years passed the old 5,000-row cap and lost the rest).
+  const { userId: calUserId } = useCoachPortal();
+  useEffect(() => { ensureCalRange(calUserId, range.fromDay, range.toDay); }, [calUserId, range.fromDay, range.toDay]);
   const entries = useMemo(() => cal.entriesFor(range.fromDay, range.toDay), [cal, range]);
   const grid = view === 'day' || (view === 'week' && !isPhone); // a phone's week is the week's own list
 

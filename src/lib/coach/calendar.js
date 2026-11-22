@@ -444,6 +444,12 @@ export const MOVED_IN_GOOGLE = 'Moved in Google Calendar';
  * @returns {{ key: string, title: string, kind: string, also: string, to: string }[]}
  */
 export function searchItems({ items = [], guests = [], coachZone, todayKey }) {
+  // Each item's guests, gathered once (it looked through every guest for every item).
+  const guestsOf = new Map();
+  for (const g of guests) {
+    if (!guestsOf.has(g.item_id)) guestsOf.set(g.item_id, []);
+    guestsOf.get(g.item_id).push(g);
+  }
   return items.filter((i) => !i.removed && i.kind !== 'hold' && clean(i.title)).map((i) => {
     let at = new Date(i.starts_at);
     if (i.repeat_rule && wallClock(at, coachZone).date < todayKey) {
@@ -451,7 +457,7 @@ export function searchItems({ items = [], guests = [], coachZone, todayKey }) {
       if (next) at = next.startsAt;
     }
     const day = i.all_day && i.starts_on && !i.repeat_rule ? i.starts_on : wallClock(at, coachZone).date;
-    const who = guests.filter((g) => g.item_id === i.id).map((g) => `${g.name || ''} ${g.email || ''}`).join(' ');
+    const who = (guestsOf.get(i.id) || []).map((g) => `${g.name || ''} ${g.email || ''}`).join(' ');
     return { key: `i:${i.id}`, title: i.title, kind: i.all_day ? dayKeyWords(day) : `${dayKeyWords(day)}, ${wallClock(at, coachZone).time}`, also: `${who} ${i.notes || ''} ${i.location || ''}`, to: `/coach/calendar?view=day&day=${day}` };
   });
 }

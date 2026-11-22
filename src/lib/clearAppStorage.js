@@ -1,4 +1,5 @@
 import { DEVICE_PREFIXES } from './deviceStore';
+import { clearDeviceCopies } from './coach/deviceCopy';
 
 // Removes everything this app itself keeps in the browser for a
 // signed-in person: legacy tool autosaves and saved progress, cached
@@ -119,6 +120,9 @@ export function clearAppStorage({ deletedAccount = null, toolAnswersThere = fals
   } catch { /* storage blocked */ }
   try { clearFrom(window.localStorage); } catch { /* storage blocked */ }
   try { clearFrom(window.sessionStorage); } catch { /* storage blocked */ }
+  // The coach portal's large copy (IndexedDB, coach/deviceCopy.js): last data only, cleared like the rest. What
+  // hasn't reached the database is kept in localStorage (clarity-coach-local:), which this never clears.
+  clearDeviceCopies();
 }
 
 /**
@@ -129,4 +133,7 @@ export function clearAppStorage({ deletedAccount = null, toolAnswersThere = fals
 export function clearAfterSignOutElsewhere() {
   try { clearFrom(window.localStorage); } catch { /* storage blocked */ }
   try { clearFrom(window.sessionStorage); } catch { /* storage blocked */ }
+  // The coach portal's large copy (IndexedDB, coach/deviceCopy.js): last data only, cleared like the rest. What
+  // hasn't reached the database is kept in localStorage (clarity-coach-local:), which this never clears.
+  clearDeviceCopies();
 }

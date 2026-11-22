@@ -51,7 +51,7 @@ globalThis.__db = {
       return { data: [], error: null };
     };
     const chain = {
-      select: () => chain, order: () => chain,
+      select: () => chain, order: () => chain, range: () => chain, or: () => chain, lt: () => chain, gte: () => chain, // windows and pages (scale check): this stand-in answers every row
       limit: (n) => { q.max = n; return chain; },
       eq: (c, v) => { q.filters.push([c, v]); return chain; },
       upsert: (values) => { q.op = 'upsert'; q.values = values; return chain; },
