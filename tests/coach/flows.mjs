@@ -563,7 +563,9 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     // An organisation, and a group.
     await open(page, `/coach/organisations/${ID.kestrel}`);
     const org = (await text(page)).replace(/\n+/g, ' ');
-    pass('organisation: contacts with their roles, the people coached there and its group', /Dana Whitfield\s+Sponsor/.test(org) && /Lee Hart\s+Invoices contact/.test(org) && /Owen Price\s+Maya’s client/.test(org) && /Kestrel leadership team\s+Group of 3/.test(org), org.slice(0, 300));
+    // "Invoices", not "Invoices contact": run 4 (39e1044a) named the roles Sponsor, Buyer, HR, Participant and Invoices
+    // (CONTACT_ROLES in src/lib/coach/crm.js), and its own flows check that list; this line had kept the old word (fixer D, 22 Nov).
+    pass('organisation: contacts with their roles, the people coached there and its group', /Dana Whitfield\s+Sponsor/.test(org) && /Lee Hart\s+Invoices(?! contact)/.test(org) && /Owen Price\s+Maya’s client/.test(org) && /Kestrel leadership team\s+Group of 3/.test(org), org.slice(0, 300));
     pass('organisation: documents with their expiry, for the owner only', /Non-disclosure agreement\s+Expires on/.test(org) && /Master services agreement\s+No expiry date\./.test(org) && /Only you can see these\./.test(await page.locator('.cc-part', { hasText: 'Documents' }).locator('.ds-who').getAttribute('aria-label')));
     pass('organisation: Room to grow is worked out', /Room to grow/i.test(org) && /seats are free\./.test(org));
     await open(page, `/coach/groups/${ID.group}`);

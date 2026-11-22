@@ -85,7 +85,10 @@ const OBSERVE = () => {
   const start = () => {
     // The Breathe pill's orb moves all the time: its changes are not the page's data.
     const moving = (n) => { const el = n.nodeType === 1 ? n : n.parentElement; return Boolean(el?.closest?.('[class*="borb"]')); };
-    new MutationObserver((list) => { if (list.some((x) => !moving(x.target))) m.lastChange = performance.now(); }).observe(document, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'hidden', 'aria-busy', 'style'] });
+    // Nor are changes inside the page's head: the prefetch and modulepreload links route splitting adds as a
+    // page opens (fixer D) are code arriving, not data shown.
+    const inHead = (n) => n === document.head || Boolean(document.head?.contains(n));
+    new MutationObserver((list) => { if (list.some((x) => !moving(x.target) && !inHead(x.target))) m.lastChange = performance.now(); }).observe(document, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'hidden', 'aria-busy', 'style'] });
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 };

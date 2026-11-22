@@ -72,9 +72,17 @@ if (has('reach')) {
   }
   await open(page, `/coach/organisations/${ID.kestrel}`);
   pass('reach: an organisation’s page is closed to them', new URL(page.url()).pathname === '/coach/clients');
-  for (const path of ['/coach/business', '/coach/leads', '/coach/network', '/coach/boards']) {
+  for (const path of ['/coach/business', '/coach/leads', '/coach/network']) {
     await open(page, path);
     pass(`reach: ${path} is the owner’s`, new URL(page.url()).pathname === '/coach');
+  }
+  // Boards are open to an associate since run 4 (coach-portal rule 38: a board the owner shares is read only for them,
+  // and they see no other board), so /coach/boards is no longer sent to Today; with nothing shared it shows none and
+  // offers no New board (fixer D, 22 Nov: this line still expected run 1's "the owner's" and failed from run 4 on).
+  await open(page, '/coach/boards');
+  {
+    const words = await text(page);
+    pass('reach: /coach/boards shows an associate no board but a shared one, and no New board', /No board is shared with you yet\./.test(words) && (await button(page, 'New board').count()) === 0, words.slice(0, 200));
   }
   await open(page, '/coach/clients');
   await page.locator('.cc-pick-row', { hasText: 'Sam Okafor' }).hover();

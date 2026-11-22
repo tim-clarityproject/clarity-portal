@@ -22,6 +22,8 @@
 import { accountId, APP, clearDevice, coachContext, codesStandIn, ME, OTHER, readEnv, seedDevice, settle, standIn } from './shared.mjs';
 import { ADMIN_ROWS, DAY, ID, PRESSURE, seedClock, seedWithDay, SES } from './seed.mjs';
 import { clearCoaching, clientContext, clientStandIn, fromCoach } from './client.mjs';
+import { CAL_TABLES } from './cal-standin.mjs';
+import { CRM_TABLES } from './crm-standin.mjs';
 
 export const BREAK_PARTS = ['d-reach', 'd-twice', 'd-taps', 'd-500', 'd-tabs', 'd-offline', 'd-moved', 'd-odd', 'd-client'];
 
@@ -130,7 +132,22 @@ export async function runDayBreak({ browser, report, parts }) {
           const refused = store.calls.filter((c) => c.startsWith('refused'));
           pass(`${tag}: the database refused ${refusals === 0 ? 'nothing the page sent' : `only what it should (${refusals})`}`, refused.length === refusals, [...new Set(refused)].slice(0, 6).join('; '));
         }
-        if (there && !waiting) pass(`${tag}: nothing waits on the device`, !(await page.evaluate((id) => Boolean(localStorage.getItem(`clarity-coach-local:${id}`)), me)));
+        if (there && !waiting) {
+          // What waits on the device, by table. These parts' stand-in holds 049 and 050 only, so a row of a later
+          // migration's table (051's calendar, 052's CRM) rightly waits there until that table is there: since run 4,
+          // moving a client to Past clients suggests their check-ins (052's client_check_ins), and the app keeps
+          // them on the device until 052 runs, as it does for every table not yet there (fixer D, 22 Nov).
+          const notYet = [...CAL_TABLES, ...CRM_TABLES];
+          const unsent = await page.evaluate((id) => {
+            const s = JSON.parse(localStorage.getItem(`clarity-coach-local:${id}`) || 'null');
+            if (!s) return [];
+            const out = new Set();
+            for (const t of Object.keys(s.rows || {})) for (const k of Object.keys(s.rows[t] || {})) { const m = s.marks?.[t]?.[k]; if (!m?.sent || m.gone) out.add(t); }
+            return [...out];
+          }, me);
+          const stuck = unsent.filter((t) => !notYet.includes(t));
+          pass(`${tag}: nothing waits on the device`, stuck.length === 0, stuck.join(', '));
+        }
         const seen = errors.filter((e) => !(allow && allow.test(e)));
         pass(`${tag}: nothing in the console`, seen.length === 0, [...new Set(seen)].slice(0, 4).join(' | '));
         if (!keep) { await clearDevice(page, me); await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k.startsWith('clarity-queue:') || k.startsWith('clarity-sending:')) localStorage.removeItem(k); }); }
@@ -281,8 +298,15 @@ export async function runDayBreak({ browser, report, parts }) {
     // The second device knows nothing of it: it rewrites the recap and presses Send.
     await c.getByLabel('Recap for Hannah').fill('A third version, typed on another device.');
     await settle(c, 1700);
-    await press(c, 'Send the recap'); await settle(c, 1500);
-    pass(`${tag}: the second device’s press is answered “already sent”, and says so`, (await toast(c)) === 'This recap has already been sent.' && store.sends.filter((s) => s.answer === 'already_sent').length >= 1, `${await toast(c)}; ${JSON.stringify(store.sends.map((s) => s.answer))}`);
+    // Its typing is saved as a draft first, and that save's answer brings the sent recap back (050's lock), so the second
+    // device can already have turned read-only by itself, as the second tab may above (fixer D, 22 Nov: it did so at
+    // 4421ce3a too, before the scale check, so the press this line once made was no longer there to make).
+    if (await c.locator('.cc-ses-bar').count()) {
+      await press(c, 'Send the recap'); await settle(c, 1500);
+      pass(`${tag}: the second device’s press is answered “already sent”, and says so`, (await toast(c)) === 'This recap has already been sent.' && store.sends.filter((s) => s.answer === 'already_sent').length >= 1, `${await toast(c)}; ${JSON.stringify(store.sends.map((s) => s.answer))}`);
+    } else {
+      pass(`${tag}: the second device turns read-only by itself, its words never sent`, /The recap has been sent/.test(await words(c)) && !store.sends.some((x) => x.answer === 'sent' && x.recap === 'A third version, typed on another device.'), flat(await words(c)).slice(0, 160));
+    }
     pass(`${tag}: one “sent” in all, the rest “already sent”`, store.sends.filter((s) => s.answer === 'sent').length === 1 && store.sends.every((s) => ['sent', 'already_sent'].includes(s.answer)), JSON.stringify(store.sends.map((s) => s.answer)));
     pass(`${tag}: one email claim at most, and the server sent once`, store.claims.filter((x) => x.first).length === 1 && (store.api.answers || []).filter((x) => x.sent === true).length === 1, JSON.stringify([store.claims, store.api.answers]));
     pass(`${tag}: the second device then shows the session as it was sent`, /The recap has been sent/.test(await words(c)) && !/A third version/.test(await words(c)) && (await c.locator('.cc-ses-bar').count()) === 0, flat(await words(c)).slice(0, 200));
