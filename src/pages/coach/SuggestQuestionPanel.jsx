@@ -11,6 +11,7 @@ import {
   cleanWording,
   hasWords,
   hintFor,
+  suggestRefusal,
 } from '../../lib/ownQuestions/model';
 import { suggestQuestion } from '../../lib/ownQuestions/store';
 import '../../components/ownQuestions/ownQuestions.css';
@@ -51,7 +52,9 @@ export default function SuggestQuestionPanel({ open, onClose, clientUserId, firs
       toast.saved({ message: `Suggested to ${first}`, long: true });
       onClose();
     } catch (e) {
-      setProblem(friendlyError(e, 'That didn’t send. Check your connection and try again.'));
+      // A refusal says why (not your client now, the code needed again);
+      // anything else is the connection line.
+      setProblem(suggestRefusal(e, first) || friendlyError(e, 'That didn’t send. Check your connection and try again.'));
     } finally {
       setBusy(false);
     }

@@ -1,4 +1,4 @@
-import { ANSWER_MAX, cleanWording, isTool, scaleOf } from './model';
+import { ANSWER_MAX, cleanWording, cutAt, isTool, scaleOf } from './model';
 
 // Reading what a device kept (clarity-own-questions-local:<person>), so that
 // nothing kept by another version, or damaged, stops a page (run 7). Kept
@@ -41,7 +41,7 @@ export function tidyAnswer(a, key) {
     wording: cleanWording(a.wording),
     answerType,
     scale: answerType === 'rating' ? scaleOf(a.scale).key : null,
-    written: answerType === 'written' && typeof a.written === 'string' ? a.written.slice(0, ANSWER_MAX) : null,
+    written: answerType === 'written' && typeof a.written === 'string' ? cutAt(a.written, ANSWER_MAX) : null,
     yesNo: answerType === 'yes_no' && typeof a.yesNo === 'boolean' ? a.yesNo : null,
     rating: answerType === 'rating' && Number.isInteger(a.rating) && a.rating >= 1 && a.rating <= 5 ? a.rating : null,
     updatedAt: typeof a.updatedAt === 'string' ? a.updatedAt : null,

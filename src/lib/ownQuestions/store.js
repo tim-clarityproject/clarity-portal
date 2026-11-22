@@ -1,12 +1,12 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { supabase } from '../supabase';
-import { newId, saveOrQueue, waitingToSend } from '../syncQueue';
+import { newId, saveOrQueue, useQueueState, waitingToSend } from '../syncQueue';
 import { isMissingTable, tableReady } from '../performance/tableReady';
 import { parseDbTimestamp } from '../dateFormatter';
-import { deviceKey, readJson, writeJson } from '../deviceStore';
+import { deviceKey, writeJson } from '../deviceStore';
 import { addDayKey } from '../performance/dayPlan';
 import { localToday } from '../performance/rows';
-import { ANSWER_MAX, MAX_PER_TOOL, cleanWording, freePlace, hasWords, isTool, occasionOf } from './model';
+import { ANSWER_MAX, MAX_PER_TOOL, cleanWording, cutAt, freePlace, hasText, hasWords, isTool, occasionOf } from './model';
 import { tidyAnswer, tidyQuestion, tidyState } from './tidy';
 
 export { tidyState };
@@ -56,15 +56,42 @@ const iso = (v) => {
 const listeners = new Set();
 const cache = new Map();
 
+// The device's copy as it is now (undefined when storage can't be read).
+function rawOf(userId) {
+  try {
+    return window.localStorage.getItem(keyFor(userId));
+  } catch {
+    return undefined;
+  }
+}
+
+const parsed = (raw) => {
+  try {
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+// Always the device's own copy, never only this tab's memory of it: another
+// tab's change reaches this one's storage event a moment later, and a change
+// made here in that moment would otherwise put back what the other tab had
+// just changed (Replace in one tab and Not now in another brought a deleted
+// question back; the break-it tester, 22 Nov). Unchanged, it is the same
+// object, so pages draw only when something changed.
 function read(userId) {
   if (!userId) return EMPTY;
-  if (!cache.has(userId)) cache.set(userId, tidyState(readJson(keyFor(userId))));
-  return cache.get(userId);
+  const raw = rawOf(userId);
+  const had = cache.get(userId);
+  if (had && (raw === undefined || raw === had.raw)) return had.state;
+  const state = tidyState(parsed(raw));
+  cache.set(userId, { raw, state });
+  return state;
 }
 
 function write(userId, next) {
-  cache.set(userId, next);
   const ok = writeJson(keyFor(userId), next);
+  cache.set(userId, { raw: rawOf(userId), state: next });
   listeners.forEach((fn) => fn());
   return ok;
 }
@@ -79,7 +106,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
     if (!e.key || !e.key.startsWith('clarity-own-questions-local:')) return;
     const userId = e.key.slice('clarity-own-questions-local:'.length);
-    cache.set(userId, tidyState(readJson(e.key)));
+    cache.delete(userId);
     listeners.forEach((fn) => fn());
   });
 }
@@ -269,7 +296,10 @@ export async function saveQuestion(userId, question) {
   const live = Object.values(s.questions);
   let position = had && !had.deletedAt ? had.position : question.position;
   if (!had || had.deletedAt || had.refused) {
-    const others = live.filter((q) => q.id !== question.id);
+    // The question being replaced (Add it, Replace) never holds its place
+    // against its replacement, even when another tab's write in the same
+    // moment has put it back here (the break-it tester, 22 Nov).
+    const others = live.filter((q) => q.id !== question.id && q.id !== question.replacing);
     const free = freePlace(others, question.tool);
     if (free == null) return 'full';
     position = others.some((q) => q.tool === question.tool && !q.deletedAt && !q.refused && q.position === position) || !position ? free : position;
@@ -326,7 +356,7 @@ export async function saveAnswer(userId, question, when, value) {
   const s = read(userId);
   const had = s.answers[key];
   const now = new Date().toISOString();
-  const empty = value == null || (question.answerType === 'written' && !String(value).trim());
+  const empty = value == null || (question.answerType === 'written' && !hasText(value));
   if (empty) {
     if (!had) return 'device';
     if (!had.sent) {
@@ -353,7 +383,7 @@ export async function saveAnswer(userId, question, when, value) {
     wording: question.wording,
     answerType: question.answerType,
     scale: question.scale,
-    written: question.answerType === 'written' ? String(value).slice(0, ANSWER_MAX) : null,
+    written: question.answerType === 'written' ? cutAt(value, ANSWER_MAX) : null,
     yesNo: question.answerType === 'yes_no' ? Boolean(value) : null,
     rating: question.answerType === 'rating' ? Number(value) : null,
     updatedAt: now,
@@ -402,6 +432,8 @@ export async function decideSuggestion(userId, id, status) {
 export async function addSuggestion(userId, id, { replace = null } = {}) {
   const s = read(userId).suggestions[id];
   if (!s) return 'device';
+  // Nothing to add: never marked added with no question made.
+  if (!hasWords(s.wording)) return 'refused';
   if (replace) {
     const old = read(userId).questions[replace];
     if (old && !old.deletedAt) await deleteQuestion(userId, replace);
@@ -413,7 +445,14 @@ export async function addSuggestion(userId, id, { replace = null } = {}) {
     answerType: s.answerType,
     scale: s.scale,
     fromSuggestion: s.id,
+    replacing: replace,
   });
+  // Another tab writing in the same moment (Not now, say) may have put the
+  // replaced question back on this device: it is deleted again, as asked.
+  if (replace) {
+    const again = read(userId).questions[replace];
+    if (again && !again.deletedAt) await deleteQuestion(userId, replace);
+  }
   if (r === 'full' || r === 'refused') return r;
   await decideSuggestion(userId, id, 'added');
   return r;
@@ -489,6 +528,10 @@ export function moveOwnQuestions(userId) {
         moved += 1;
       } catch (error) {
         if (!NEVER.has(`${error?.code || ''}`)) return moved;
+        // Decided already (on another device: CC409): the table's choice
+        // stands, so this one is never sent again on every visit.
+        const cur = read(userId);
+        if (cur.suggestions[c.id]) write(userId, { ...cur, suggestions: { ...cur.suggestions, [c.id]: { ...cur.suggestions[c.id], unsent: false } } });
       }
     }
     return moved;
@@ -501,16 +544,31 @@ export async function refreshOwnQuestions(userId) {
   if (!userId || !(await ownReady())) return false;
   try {
     await moveOwnQuestions(userId);
-    const waitingBefore = waitingToSend(userId);
     const since = addDayKey(localToday(), -ANSWERS_DAYS);
-    const [qRes, aRes, sRes] = await Promise.all([
-      supabase.from(QUESTIONS_TABLE).select('*').eq('user_id', userId),
-      supabase.from(ANSWERS_TABLE).select('*').eq('user_id', userId).or(`on_date.gte.${since},tool.eq.weekly_debrief`),
-      supabase.from(SUGGESTIONS_TABLE).select('*').eq('user_id', userId).eq('status', 'waiting'),
-    ]);
-    if (qRes.error) throw qRes.error;
-    if (aRes.error) throw aRes.error;
-    if (waitingBefore || waitingToSend(userId)) return false;
+    // What the tables say is only put on the device when nothing changed
+    // there while they were being read (in this tab or another): a change
+    // sent meanwhile is newer than the read, and taking the read would put
+    // it back as it was (a question deleted by Replace came back while Not
+    // now was pressed in another tab; the break-it tester, 22 Nov). Then it
+    // is read again, up to three times.
+    let qRes;
+    let aRes;
+    let sRes;
+    let fresh = false;
+    for (let tries = 0; tries < 3 && !fresh; tries += 1) {
+      const before = rawOf(userId);
+      const waitingBefore = waitingToSend(userId);
+      [qRes, aRes, sRes] = await Promise.all([
+        supabase.from(QUESTIONS_TABLE).select('*').eq('user_id', userId),
+        supabase.from(ANSWERS_TABLE).select('*').eq('user_id', userId).or(`on_date.gte.${since},tool.eq.weekly_debrief`),
+        supabase.from(SUGGESTIONS_TABLE).select('*').eq('user_id', userId).eq('status', 'waiting'),
+      ]);
+      if (qRes.error) throw qRes.error;
+      if (aRes.error) throw aRes.error;
+      if (waitingBefore || waitingToSend(userId)) return false;
+      fresh = rawOf(userId) === before;
+    }
+    if (!fresh) return false;
     const s = read(userId);
     const questions = { ...s.questions };
     const qIds = new Set();
@@ -584,6 +642,22 @@ export function useOwnQuestions(userId) {
     refreshOwnQuestions(userId).finally(() => { if (live) setChecked(true); });
     return () => { live = false; };
   }, [userId]);
+  // Once what waited on the device has gone (back online), the tables are
+  // read again: a change the database refused on the way (a third question
+  // from another device, 'full') then shows as not kept straight away,
+  // rather than on the next visit (the break-it tester, 22 Nov).
+  const queue = useQueueState();
+  const hadWaiting = useRef(false);
+  useEffect(() => {
+    if (queue.waiting > 0) {
+      hadWaiting.current = true;
+      return;
+    }
+    if (hadWaiting.current && userId) {
+      hadWaiting.current = false;
+      refreshOwnQuestions(userId);
+    }
+  }, [queue.waiting, userId]);
   return { ...listOf(state), checked };
 }
 

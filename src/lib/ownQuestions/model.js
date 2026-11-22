@@ -93,11 +93,24 @@ export const exampleFor = (tool, role) => {
 // Characters nobody can see (as sign-in rule 38's cleanName): taken out, so
 // a question of only those is no question.
 const UNSEEN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F­​-‏‪-‮⁠-⁤﻿]/g;
+/**
+ * At most `max` UTF-16 units, never cutting an emoji or other wide
+ * character in half (a lone half reaches the database as a broken
+ * character; the break-it tester, 22 Nov).
+ */
+export function cutAt(text, max) {
+  const s = String(text ?? '');
+  if (s.length <= max) return s;
+  const end = s.charCodeAt(max - 1);
+  return s.slice(0, end >= 0xD800 && end <= 0xDBFF ? max - 1 : max);
+}
 /** The words as kept: unseen characters out, line breaks to spaces, at most 120. */
 export function cleanWording(text) {
-  return String(text || '').replace(UNSEEN, '').replace(/\s*[\r\n]+\s*/g, ' ').slice(0, WORDING_MAX);
+  return cutAt(String(text || '').replace(UNSEEN, '').replace(/\s*[\r\n]+\s*/g, ' '), WORDING_MAX);
 }
 export const hasWords = (text) => cleanWording(text).trim().length > 0;
+/** Whether a written answer holds anything to read (not only spaces, line breaks or unseen characters). */
+export const hasText = (text) => String(text ?? '').replace(UNSEEN, '').trim().length > 0;
 /** "101 of 120", only in the last 20. */
 export const countLine = (text) => {
   const n = cleanWording(text).length;
@@ -135,7 +148,7 @@ export const ratingScore = (rating) => (Number.isInteger(rating) && rating >= 1 
 /** Whether an answer holds something (a skipped question has none). */
 export function answered(a) {
   if (!a || a.gone) return false;
-  if (a.answerType === 'written') return typeof a.written === 'string' && a.written.trim().length > 0;
+  if (a.answerType === 'written') return typeof a.written === 'string' && hasText(a.written);
   if (a.answerType === 'yes_no') return typeof a.yesNo === 'boolean';
   if (a.answerType === 'rating') return Number.isInteger(a.rating) && a.rating >= 1 && a.rating <= 5;
   return false;
@@ -268,6 +281,25 @@ export const suggestedBy = (s) => `Suggested by ${String(s?.coachFirstName || ''
 export const homeSuggestionLine = (s) => `See the question ${String(s?.coachFirstName || '').trim() || 'your coach'} suggested`;
 
 /** A suggestion waits in its tool's place while there is one free; with 2 there, Add it offers Replace. */
+/**
+ * What the coach's Suggest a question panel says when the database says no
+ * (own_question_suggest): what happened, then what to do, never the raw
+ * text. Null for anything else (the panel's own connection line then).
+ */
+export function suggestRefusal(error, first) {
+  const code = `${error?.code || ''}`;
+  const name = String(first || '').trim() || 'This person';
+  if (code === '42501' && /6-digit code/i.test(`${error?.message || ''}`)) {
+    return 'That didn’t send, because this sign-in needs your 6-digit code again. Sign in again to carry on.';
+  }
+  if (code === '42501') return `That didn’t send, because ${name} isn’t your client now. Nothing reached them.`;
+  if (code === '22001') return `Questions can be up to ${WORDING_MAX} characters, so shorten it to carry on.`;
+  if (code === '22023') return 'Type the question to carry on.';
+  if (code === '23514') return 'That didn’t send, because something in it wasn’t right. Check the tool and how it’s answered, then try again.';
+  return null;
+}
+
+// One with no words left once cleaned (only invisible characters) is never shown.
 export const waitingSuggestions = (suggestions, tool) => (suggestions || [])
-  .filter((s) => s.status === 'waiting' && (!tool || s.tool === tool))
+  .filter((s) => s.status === 'waiting' && (!tool || s.tool === tool) && hasWords(s.wording))
   .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));

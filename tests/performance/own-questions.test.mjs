@@ -4,8 +4,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   COUNT_FROM, MAX_PER_TOOL, SCALES, TOOLS, WORDING_MAX, WORRY_LINE,
-  answerWords, answered, cleanWording, countLine, daySummaryRows, freePlace, hintFor, homeSuggestionLine,
-  kindLine, occasionOf, placesLine, questionsFor, ratingScore, scaleLabel, soundsLikeWorry, suggestedBy,
+  answerWords, answered, cleanWording, countLine, cutAt, daySummaryRows, freePlace, hasText, hintFor, homeSuggestionLine,
+  kindLine, occasionOf, placesLine, questionsFor, ratingScore, scaleLabel, soundsLikeWorry, suggestRefusal, suggestedBy,
   waitingSuggestions, weekSummaryRows,
 } from '../../src/lib/ownQuestions/model.js';
 import { tidyState } from '../../src/lib/ownQuestions/tidy.js';
@@ -167,8 +167,34 @@ test('the coach’s name always from the data', () => {
   assert.equal(suggestedBy({ coachFirstName: 'Maya' }), 'Suggested by Maya');
   assert.equal(homeSuggestionLine({ coachFirstName: 'Tim' }), 'See the question Tim suggested');
   assert.equal(suggestedBy({}), 'Suggested by your coach');
-  const s = [{ id: '2', tool: 'daily_review', status: 'waiting', createdAt: '2' }, { id: '1', tool: 'daily_review', status: 'waiting', createdAt: '1' }, { id: '3', tool: 'daily_review', status: 'not_now', createdAt: '0' }];
+  const s = [{ id: '2', tool: 'daily_review', status: 'waiting', createdAt: '2', wording: 'Two?' }, { id: '1', tool: 'daily_review', status: 'waiting', createdAt: '1', wording: 'One?' }, { id: '3', tool: 'daily_review', status: 'not_now', createdAt: '0', wording: 'Three?' }];
   assert.deepEqual(waitingSuggestions(s, 'daily_review').map((x) => x.id), ['1', '2']);
+});
+
+test('break-it: an emoji is never cut in half, and nothing invisible counts as words or an answer', () => {
+  const smile = '\u{1F600}';
+  assert.equal(cutAt(`${'a'.repeat(119)}${smile}`, 120), 'a'.repeat(119));
+  assert.equal(cutAt(`${'a'.repeat(118)}${smile}`, 120), `${'a'.repeat(118)}${smile}`);
+  assert.equal(cutAt('short', 120), 'short');
+  const kept = cleanWording(`${'a'.repeat(119)}${smile}b`);
+  assert.equal(kept, 'a'.repeat(119));
+  assert.ok(!/[\uD800-\uDBFF]$/.test(kept));
+  assert.equal(hasText('\u200b\ufeff \n'), false);
+  assert.equal(hasText(' \n\t'), false);
+  assert.equal(hasText('ok'), true);
+  assert.equal(answered({ answerType: 'written', written: '\u200b\u200b' }), false);
+  // A coach's suggestion with no words left once cleaned is never shown (Add it would add nothing).
+  assert.deepEqual(waitingSuggestions([{ id: 'x', tool: 'daily_plan', status: 'waiting', wording: '\u200b\u2060' }, { id: 'y', tool: 'daily_plan', status: 'waiting', wording: 'Real?' }]).map((x) => x.id), ['y']);
+});
+
+test('break-it: the coach’s panel says why the database said no, in plain words', () => {
+  assert.equal(suggestRefusal({ code: '42501', message: 'You can suggest a question only to your own client.' }, 'Sam'), 'That didn’t send, because Sam isn’t your client now. Nothing reached them.');
+  assert.equal(suggestRefusal({ code: '42501', message: 'Give your 6-digit code to carry on.' }, 'Sam'), 'That didn’t send, because this sign-in needs your 6-digit code again. Sign in again to carry on.');
+  assert.equal(suggestRefusal({ code: '22001' }, 'Sam'), 'Questions can be up to 120 characters, so shorten it to carry on.');
+  assert.equal(suggestRefusal({ code: '22023' }, 'Sam'), 'Type the question to carry on.');
+  assert.equal(suggestRefusal({ code: 'PGRST000' }, 'Sam'), null);
+  assert.equal(suggestRefusal(null, 'Sam'), null);
+  for (const code of ['42501', '22001', '22023', '23514']) assert.ok(!/fail/i.test(suggestRefusal({ code }, 'Sam')));
 });
 
 test('a damaged device copy still opens', () => {

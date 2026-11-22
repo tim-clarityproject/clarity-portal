@@ -309,7 +309,14 @@ as $$
 declare
   v_name text;
   v_id uuid;
-  v_words text := btrim(coalesce(p_wording, ''));
+  -- Cleaned as the app cleans a question (model.js cleanWording): line
+  -- breaks to a space, characters nobody can see taken out, then trimmed,
+  -- so a question of only those is no question and never reaches the client
+  -- as an empty suggestion (the break-it tester, 22 Nov).
+  v_words text := btrim(regexp_replace(regexp_replace(
+                    regexp_replace(coalesce(p_wording, ''), '\s*[\r\n]+\s*', ' ', 'g'),
+                    '[\x01-\x08\x0b\x0c\x0e-\x1f\x7f­​-‏‪-‮⁠-⁤﻿]', '', 'g'),
+                    '\t', ' ', 'g'));
 begin
   perform public._coach_code_needed();
   if p_client is null or not public.is_coach_of(p_client) then
