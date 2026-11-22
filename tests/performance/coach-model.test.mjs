@@ -46,19 +46,19 @@ test('Who’s invited: unseen characters from a web page never make a second per
   assert.deepEqual(r.people, [{ name: 'Dan Reid', email: 'dan@example.com' }]);
 });
 
-test('Add a team: a spreadsheet with a heading row, tabs or commas, quoted cells', () => {
+test('Add team: a spreadsheet with a heading row, tabs or commas, quoted cells', () => {
   const tabbed = parseTeam('First name\tLast name\tEmail\tRole\nDana\tWhitfield\tDana@Kestrel.co\tChief of staff\nFemi\tAdeyemi\tfemi@kestrel.co\t');
   assert.deepEqual(tabbed.map((r) => [r.name, r.email, r.job_title]), [['Dana Whitfield', 'dana@kestrel.co', 'Chief of staff'], ['Femi Adeyemi', 'femi@kestrel.co', '']]);
   const csv = parseTeam('Name,Email,Job title,Mobile\n"Liu, Grace",grace@kestrel.co,"Head of ""People""",+447700900111');
   assert.deepEqual(csv, [{ name: 'Liu, Grace', email: 'grace@kestrel.co', job_title: 'Head of "People"', mobile: '+447700900111', city: '' }]);
 });
 
-test('Add a team: a pasted list with no heading row', () => {
+test('Add team: a pasted list with no heading row', () => {
   const rows = parseTeam('Tom Barker <t.barker@kestrel.co>\nRavi Patel, r.patel@kestrel.co, Finance lead\nNo Email Person');
   assert.deepEqual(rows.map((r) => [r.name, r.email, r.job_title]), [['Tom Barker', 't.barker@kestrel.co', ''], ['Ravi Patel', 'r.patel@kestrel.co', 'Finance lead'], ['No Email Person', '', '']]);
 });
 
-test('Add a team: the preview finds duplicates, existing clients and seats left', () => {
+test('Add team: the preview finds duplicates, existing clients and seats left', () => {
   const rows = parseTeam('Name,Email\nA One,a@x.co\nA Again,A@x.co\nB Two,b@x.co\nC Three,c@x.co\n,d@x.co\nE Five,not-an-email');
   const p = teamPreview(rows, [{ email: 'b@x.co' }, { email: 'c@x.co', merged_into: 'gone' }], { seatsLeft: 1 });
   assert.deepEqual(p.rows.map((r) => r.state), ['new', 'duplicate', 'already', 'new', 'no_name', 'bad_email']);
@@ -253,7 +253,7 @@ test('one box finds people, pages and actions; recent items before anything is t
   const all = {
     people: [{ key: 'c:sam', title: 'Sam Okafor', kind: 'Client', also: 'Kestrel Group' }, { key: 'c:sami', title: 'Samira Khan', kind: 'Client' }, { key: 'c:owen', title: 'Owen Price', kind: 'Maya’s client' }],
     pages: [{ key: 'p:clients', title: 'Clients' }, { key: 'p:settings', title: 'Settings' }],
-    actions: [{ key: 'a:add', title: 'Add client' }, { key: 'a:team', title: 'Add a team' }],
+    actions: [{ key: 'a:add', title: 'Add client' }, { key: 'a:team', title: 'Add team' }],
     recent: [{ key: 'c:sam', title: 'Sam Okafor', kind: 'Client' }],
   };
   assert.deepEqual(searchResults('', all).map((g) => [g.label, g.items.length]), [['Recent', 1], ['Actions', 2]]);

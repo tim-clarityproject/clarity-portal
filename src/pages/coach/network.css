@@ -40,7 +40,7 @@
 .ui-root .cc-table.cc-net-table .cc-net-n { text-align: right; }
 .ui-root .cc-table.cc-net-table th.cc-net-n .cc-th { justify-content: flex-end; }
 .ui-root .cc-table.cc-net-table td.cc-net-n .cc-cell { justify-content: flex-end; margin-left: 0; margin-right: calc(-1 * var(--space-px6)); }
-.ui-root .cc-table.cc-net-table .cc-th { overflow: visible; }
+.ui-root .cc-table.cc-net-table .cc-th { overflow: visible; white-space: nowrap; }
 /* The older phone rule for plain buttons (mobile.css, !important, up to 768px) never reaches the headings:
    Network's table shows at every width, where the Leads and Clients tables only show at 1100px and wider. */
 .ui-root .cc-table.cc-net-table .cc-th { padding: 0 0 var(--space-1) !important; font-size: var(--fs-small) !important; }

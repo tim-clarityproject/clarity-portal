@@ -3,7 +3,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { needsConnection, isOffline } from '../../lib/friendlyError';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { peekNext, SIGN_IN_PATHS } from '../../lib/signIn/addresses';
+import { peekNext, rememberNext, SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import { CODE_SIX_DIGITS, DIDNT_SIGN_IN, TOO_MANY } from '../../lib/signIn/words';
 import {
   afterWrongCode, CODE_DIDNT_WORK, COACH_AUTH_PATHS, COACH_AUTH_WORDS, isCoachPlace, keepTries, lowCodesToldFor, noteLowCodesTold,
@@ -35,13 +35,28 @@ const WORDS = COACH_AUTH_WORDS.code;
 // The box reads "123 456", "123-456" and full-width digits as 123456
 // (CodeField's digitsOf).
 
+// Where to land after the code, when the tab has nowhere kept (the place
+// to land lives in the tab, so a code given in a new tab has none): a coach
+// lands in the coach portal, everyone else at Home (run 6, item 14).
+async function headForCoachPortal(account) {
+  if (peekNext()) return;
+  try {
+    const auth = await loadCoachAuth(supabase, account);
+    if (auth.isCoach === true) rememberNext('/coach');
+  } catch { /* Home, as before */ }
+}
+
 export default function CoachCode({ onDone }) {
   const { user, isLoading } = useContext(AuthContext);
   const navigate = useNavigate();
   const goIn = useEnter();
   const done = useRef(onDone);
   done.current = onDone;
-  const enter = useCallback((account) => (done.current ? done.current(account) : goIn(account)), [goIn]);
+  const enter = useCallback(async (account) => {
+    if (done.current) return done.current(account);
+    await headForCoachPortal(account);
+    return goIn(account);
+  }, [goIn]);
   const [factorId, setFactorId] = useState(null);
   const [code, setCode] = useState('');
   const [message, setMessage] = useState(null);
@@ -127,6 +142,7 @@ export default function CoachCode({ onDone }) {
       }
       keepTries(NO_WRONG_TRIES);
       leaving.current = true;
+      if (!done.current) await headForCoachPortal(user);
       if (await tellLowCodes()) return undefined;
       return enter(user);
     } finally {

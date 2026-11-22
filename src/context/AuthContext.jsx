@@ -1,13 +1,24 @@
 import { createContext, useEffect, useState } from 'react';
 import { supabase, auth } from '../lib/supabase';
 import { hasAgreed } from '../lib/signIn/terms';
-import { noteSignedOut } from '../lib/signIn/addresses';
+import { justSignedOut, noteSessionEnded, noteSignedOut } from '../lib/signIn/addresses';
+import { isCoachPlace } from '../lib/signIn/coachAuth';
 import { sessionManager } from '../lib/sessionManager';
 import { diag } from '../utils/diag';
 import { clearAfterSignOutElsewhere, clearAppStorage } from '../lib/clearAppStorage';
 import { startDraftsFor, stopDraftsFor } from '../lib/drafts';
 import { sendToolAnswersBeforeSignOut } from '../lib/toolAnswers';
 import { flush as flushQueue, queueState, retrySyncQueue, startSyncQueue, stopSyncQueue } from '../lib/syncQueue';
+
+// A sign-in that was on this device ended without Sign out being pressed
+// here or in another tab (the server refused its refresh), while the coach
+// portal was open: noted, so Coach sign in can say why (run 6, item 13).
+function noteIfEndedInCoachPortal() {
+  if (justSignedOut()) return;
+  try {
+    if (isCoachPlace(window.location.pathname)) noteSessionEnded();
+  } catch { /* nothing to note */ }
+}
 
 // The session kept on this device (supabase.js storageKey), read directly
 // so that being offline, or a sign-in refresh that fails for want of a
@@ -35,6 +46,7 @@ export function AuthProvider({ children }) {
       try {
         // DIAGNOSTIC: Check what's in localStorage at app launch
         const storedAuthToken = localStorage.getItem('clarity-portal-auth');
+        const hadSession = Boolean(storedSessionUser());
         console.log('[AuthContext] APP LAUNCH DIAGNOSTIC:');
         console.log('[AuthContext] - clarity-portal-auth token in localStorage?', !!storedAuthToken);
         if (storedAuthToken) {
@@ -80,6 +92,7 @@ export function AuthProvider({ children }) {
           // Genuinely signed out: nothing kept on the device is cleared
           // here; only a deliberate Sign out does that.
           console.log('[AuthContext] - No session. Error:', error?.message);
+          if (hadSession) noteIfEndedInCoachPortal();
           setUser(null);
         }
       } catch (error) {
@@ -127,6 +140,7 @@ export function AuthProvider({ children }) {
         // Signed out, here or in another tab: no more drafts for that person
         // from this tab, and what a page closing afterwards wrote is cleared.
         if (event === 'SIGNED_OUT' && prevUser?.id && !nextUser) {
+          noteIfEndedInCoachPortal();
           stopDraftsFor(prevUser.id);
           setTimeout(clearAfterSignOutElsewhere, 800);
         }

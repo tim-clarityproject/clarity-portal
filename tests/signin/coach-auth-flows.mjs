@@ -192,12 +192,18 @@ if (PARTS.includes('second')) {
     pass(`${tag}: and leaves no sign-in on the device`, !kept);
     await signIn(page, world);
     pass(`${tag}: signing in again there, the code is asked again`, (await waitPath(page, /\/code$/)) === '/coach/sign-in/code', path(page));
-    await giveCode(page, M26_KEY);
-    pass(`${tag}: and given, in again`, (await waitPath(page, /^\/coach$/)) === '/coach' && verifies(world) === 2, path(page));
-    // Sign out is Supabase's "global": every device's session ends. (Said, not judged: it was so before run 5.)
+    // Given in a new tab (the place to land is kept per tab, so that tab has none): it lands in the coach portal, not Home (run 6, item 14).
+    const codeTab = await ctx.newPage();
+    await codeTab.goto(`${APP}/coach/sign-in/code`);
+    await giveCode(codeTab, M26_KEY);
+    pass(`${tag}: and given in a new tab, that tab lands in the coach portal`, (await waitPath(codeTab, /^\/coach$/)) === '/coach' && verifies(world) === 2, path(codeTab));
+    await codeTab.close();
+    await page.reload();
+    pass(`${tag}: and the first tab, reloaded, is in again`, (await waitPath(page, /^\/coach$/)) === '/coach' && verifies(world) === 2, path(page));
+    // Sign out ends this device's sign-in only (sign-in rule 10; run 6, item 15): the first computer stays in.
     await first.page.reload();
     await sleep(2500);
-    console.log(`INFO  ${tag}: after Sign out on the second computer, the first computer's reload lands on ${path(first.page)}`);
+    pass(`${tag}: after Sign out on the second computer, the first computer is still in the coach portal`, path(first.page) === '/coach', path(first.page));
     pass(`${tag}: nothing reached anywhere but the stand-ins`, bad(world).length === 0, bad(world).join(', '));
     pass(`${tag}: no page errors`, [...errors, ...first.errors].length === 0, [...errors, ...first.errors].slice(0, 2).join(' | '));
     await ctx.close();

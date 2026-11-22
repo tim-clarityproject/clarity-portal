@@ -129,12 +129,16 @@ export async function runDay({ browser, report, parts }) {
         pass(`${tag}: no write was stopped on its way out (none was tried)`, blocked.length === 0, [...new Set(blocked)].slice(0, 5).join('; '));
         pass(`${tag}: nothing but a read reached the test project, and no email server was asked for real`, reached.length === 0, [...new Set(reached)].slice(0, 5).join('; '));
         if (there) {
-          const waiting = await page.evaluate((id) => {
+          // Only the tables this stand-in holds (049 and 050) are "there": a later migration's rows (052's
+          // client_check_ins, suggested when coaching ends) wait on the device by design until it runs
+          // (coach rule 10; run 6, item 58: the check counted them, so it failed on every build).
+          const waiting = await page.evaluate(([id, there]) => {
             const s = JSON.parse(localStorage.getItem(`clarity-coach-local:${id}`) || 'null');
             if (!s) return '';
             // What waits, by table and mark (never the rows' words), so a failure says where to look.
-            return Object.entries(s.marks || {}).flatMap(([t, m]) => Object.values(m).filter((x) => !x.sent).map((x) => `${t}${x.refused ? ' refused' : ''}${x.gone ? ' gone' : ''}`)).join('; ') || 'kept, all sent';
-          }, me);
+            return Object.entries(s.marks || {}).filter(([t]) => there.includes(t)).flatMap(([t, m]) => Object.values(m).filter((x) => !x.sent).map((x) => `${t}${x.refused ? ' refused' : ''}${x.gone ? ' gone' : ''}`)).join('; ')
+              || (Object.keys(s.marks || {}).some((t) => !there.includes(t)) ? '' : 'kept, all sent');
+          }, [me, Object.keys(store.rows)]);
           pass(`${tag}: everything reached the database, and nothing waits on the device`, !waiting, waiting);
           const refused = store.calls.filter((c) => c.startsWith('refused'));
           pass(`${tag}: the database refused nothing the page sent`, refused.length === refusals, [...new Set(refused)].slice(0, 5).join('; '));

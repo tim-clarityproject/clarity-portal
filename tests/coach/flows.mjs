@@ -193,7 +193,7 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
 
     // Add a team of five, from a pasted list with a duplicate and someone already here.
     await open(page, '/coach/clients');
-    await button(page, 'Add a team').click();
+    await button(page, 'Add team').click();
     await settle(page, 500);
     await panel(page).getByRole('button', { name: /^Add/ }).last().click();
     pass('add a team: pressed with nothing pasted, it says what’s missing', /Paste a list or choose a spreadsheet to carry on\./.test(await panel(page).innerText()));

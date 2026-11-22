@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {
   ESTIMATES, OTHER_ESTIMATES, estimateOk, estimateWords, todoSection, carriedWords, plannedWords, dueWords, checklistWords,
   todoFacts, sortTodos, todayTodos, upcomingGroups, somedayTodos, positionBetween, moveToDay, moveToSomeday, repeatWords,
-  repeatValue, nextRepeat, completeTodo, parseQuickAdd, quickAddChips, addedWords, workingDay, callsOn, dayLoad, overWords,
+  repeatValue, repeatChoices, fromFinishing, nextRepeat, completeTodo, parseQuickAdd, quickAddChips, addedWords, workingDay, callsOn, dayLoad, overWords,
   suggestMoves, moveState, weekStart, capacity, capacityFromTyped, todayOffer, sessionCounts, isLateCancellation,
   outcomeLine, withSessions, withHeldTyped, engagementToSave, leftWords, sessionRow, toWriteUp, recapNudges, lastSession, nextSession,
   whenWords, averageSince, prepLine, attentionRows, dayDone, weekDone, doneThisWeek, doneWords, openWords, positionAt, quickDays,
@@ -125,6 +125,36 @@ test('ticking a repeating to-do makes the next one, with its checklist unticked'
   assert.deepEqual(next.repeat_rule, { every: 'week' });
   assert.deepEqual(next.checklist, [{ text: 'a', done: false }]);
   assert.equal(completeTodo(todo('t1'), at(17), TODAY, 'x').next, null);
+});
+
+test('M11’s “2 weeks after I finish it”: the next one is counted from the day it is finished (run 6, item 12)', () => {
+  const rule = { every: 'week', interval: 2, from: 'done' };
+  assert.equal(fromFinishing(rule), true);
+  assert.equal(fromFinishing({ every: 'week', interval: 2 }), false);
+  assert.equal(repeatWords(rule, TODAY), '2 weeks after I finish it');
+  assert.equal(repeatWords({ every: 'day', from: 'done' }), '1 day after I finish it');
+  assert.equal(repeatWords({ every: 'month', interval: 3, from: 'done' }), '3 months after I finish it');
+  assert.equal(repeatValue(rule), 'week2done');
+  assert.ok(repeatChoices(null).some((r) => r.value === 'week2done' && r.label === '2 weeks after I finish it'), 'Repeats offers it, word for word as M11');
+  const odd = repeatChoices({ every: 'day', interval: 3, from: 'done' }, TODAY);
+  assert.equal(odd.at(-1).label, '3 days after I finish it', 'a quick add’s own rule shows in the drop-down');
+  assert.equal(odd.at(-1).value, repeatValue({ every: 'day', interval: 3, from: 'done' }));
+  // Planned for Thu 12 Nov, finished today (Tue 17 Nov): two weeks from today, not from the 12th.
+  assert.equal(nextRepeat(rule, '2026-11-12', TODAY), '2026-12-01');
+  // Finished early (planned for next Monday, ticked today): still two weeks from today.
+  assert.equal(nextRepeat(rule, '2026-11-23', TODAY), '2026-12-01');
+  assert.equal(nextRepeat({ ...rule, until: '2026-11-30' }, TODAY, TODAY), null, 'a rule that has stopped makes no next one');
+  const { done, next } = completeTodo(todo('t14', { repeat_rule: rule, planned_on: '2026-11-12' }), at(17, 10), TODAY, 'n14');
+  assert.equal(done.repeat_rule, null);
+  assert.deepEqual([next.planned_on, next.repeat_of], ['2026-12-01', 't14']);
+  assert.deepEqual(next.repeat_rule, rule, 'and the next keeps counting from its own finishing');
+  const ctx = { todayKey: TODAY, lists: [], tags: [], clients: [] };
+  const q = parseQuickAdd('Check in with Marcus 2 weeks after I finish it', ctx);
+  assert.deepEqual([q.title, q.planned_on, q.repeat_rule], ['Check in with Marcus', TODAY, rule]);
+  assert.deepEqual(parseQuickAdd('Water the plants every 3 days after done', ctx).repeat_rule, { every: 'day', interval: 3, from: 'done' });
+  assert.deepEqual(parseQuickAdd('Review the board pack every month after I finished it', ctx).repeat_rule, { every: 'month', from: 'done' });
+  assert.deepEqual(parseQuickAdd('Plan the offsite every 2 weeks', ctx).repeat_rule, { every: 'week', interval: 2 }, 'without “after”, the usual repeat');
+  assert.ok(quickAddChips(q, ctx).includes('2 weeks after I finish it'));
 });
 
 test('the quick add reads plain words', () => {

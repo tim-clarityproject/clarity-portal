@@ -1125,7 +1125,8 @@ export function parseCalQuickAdd(text, { todayKey, defaultDay = null } = {}) {
   const kind = /^(writing|write)\b/i.test(title) ? 'writing' : /^admin\b/i.test(title) ? 'admin' : /\b(coffee|lunch|breakfast|dinner|drinks?|catch[- ]up|call) with\b/i.test(title) ? 'connection' : 'own_time';
   return {
     title, day: read.planned_on || defaultDay || todayKey, from: allDay ? null : hhmm(from), to: allDay ? null : hhmm(Math.min(to, DAY_MINUTES) % DAY_MINUTES), minutes: allDay ? 0 : to - from, allDay, kind,
-    repeat_rule: read.repeat_rule,
+    // A calendar item is never finished, so "2 weeks after I finish it" reads as every 2 weeks here.
+    repeat_rule: read.repeat_rule ? (({ from: _from, ...rule }) => rule)(read.repeat_rule) : null,
   };
 }
 

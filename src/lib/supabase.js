@@ -89,8 +89,12 @@ export const auth = {
     return data;
   },
 
-  async signOut() {
-    const { error } = await supabase.auth.signOut();
+  // Sign out on this device only (sign-in rule 10: people stay signed in
+  // on their own devices; run 6, item 15). Other tabs on this device follow
+  // (Supabase's storage event, and rule 40's leftJustNow). Ending every
+  // session is the owner's Reset authenticator's alone, on the server.
+  async signOut({ scope = 'local' } = {}) {
+    const { error } = await supabase.auth.signOut({ scope });
     if (error) throw error;
   },
 

@@ -144,7 +144,7 @@ function cells(line) {
 }
 
 /**
- * "Add a team": rows from a spreadsheet (pasted, or a .csv file's text) or a
+ * "Add team": rows from a spreadsheet (pasted, or a .csv file's text) or a
  * pasted list. With a heading row its columns are read by name; without
  * one each line is read as "Who's invited?" reads it, with anything after
  * the email taken as the role.

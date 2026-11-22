@@ -63,6 +63,7 @@ export { ToastProvider } from './Toast';
 export { default as ConnectionNotice, OFFLINE_WORDS } from './ConnectionNotice';
 export { useToast, ERROR_MESSAGE } from './toastContext';
 export { SlidePanel, Popup, Sheet, DropPanel } from './Dialogs';
+export { useBackCloses } from './panelHistory';
 export { default as ObjectiveNumber, ObjectiveNumbers } from './ObjectiveNumber';
 export { default as ObjectiveCard, ObjectiveGrid } from './ObjectiveCard';
 export { default as AlignmentCheck } from './AlignmentCheck';

@@ -18,7 +18,7 @@ import './leftovers.css';
 // Clients (M11, version 3.6): people as a list, a board or a table (a
 // phone offers the list and the board), with groups and workshops beside
 // them as tabs. Sort, filter by anything, saved views, choosing several
-// (Tag, or Move to a coach, with Undo), Add client, Add a team, merge and
+// (Tag, or Move to a coach, with Undo), Add client, Add team, merge and
 // export. Past clients sit behind a quiet link at the bottom.
 
 const TABS = [{ value: 'people', label: 'People' }, { value: 'groups', label: 'Groups' }, { value: 'workshops', label: 'Workshops' }];
@@ -124,7 +124,7 @@ export default function Clients() {
   }, [wanted, views.length]);
 
   const [panel, setPanel] = useState(location.state?.open || null);
-  // An action chosen in search (Add client, Add a team…) opens its panel once.
+  // An action chosen in search (Add client, Add team…) opens its panel once.
   useEffect(() => {
     if (location.state?.open) { setPanel(location.state.open); navigate(location.pathname + location.search, { replace: true, state: null }); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -454,7 +454,7 @@ export default function Clients() {
 
       <div className="cc-add"><AddButton onClick={() => setPanel('add')}>Add client</AddButton></div>
       <div className="cc-acts">
-        <TextLink onClick={() => setPanel('team')}>Add a team</TextLink>
+        <TextLink onClick={() => setPanel('team')}>Add team</TextLink>
         {isPhone && <TextLink onClick={() => setPanel('export')}>Export</TextLink>}
         <TextLink onClick={() => navigate('/coach/clients/past')}>Past clients</TextLink>
       </div>

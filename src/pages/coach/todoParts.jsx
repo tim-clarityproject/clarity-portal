@@ -7,7 +7,7 @@ import { keyOf, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/sto
 import { addDays, clean, cut, dayWords, minutesWords } from '../../lib/coach/model';
 import {
   addedWords, checklistWords, doneWords, ESTIMATES, estimateWords, moveToDay, moveToSomeday, OTHER_ESTIMATES, OTHER_SUGGESTED, parseQuickAdd,
-  plannedWords, positionAt, quickAddChips, quickDays, repeatValue, REPEATS, timeWords, todoFacts, whenWords,
+  plannedWords, positionAt, quickAddChips, quickDays, repeatChoices, repeatValue, timeWords, todoFacts, whenWords,
 } from '../../lib/coach/day';
 import { deleteTodos, linksToAdd, removePairs, rowsForNew, saveTodos, tickRows, todoLinks } from '../../lib/coach/todoActions';
 import { MenuItem, MenuLabel, PopMenu, TextLink, useCoachPortal } from './parts';
@@ -709,10 +709,10 @@ export function TodoPanel({ id, onClose }) {
       <div className="cc-field">
         <Dropdown
           label="Repeats"
-          options={REPEATS.map((r) => ({ value: r.value, label: r.label }))}
+          options={repeatChoices(todo.repeat_rule, todo.planned_on).map((r) => ({ value: r.value, label: r.label }))}
           value={repeatValue(todo.repeat_rule)}
           onChange={(v) => {
-            const rule = REPEATS.find((r) => r.value === v)?.rule || null;
+            const rule = repeatChoices(todo.repeat_rule, todo.planned_on).find((r) => r.value === v)?.rule || null;
             // A repeat needs a day to count from: one with none starts today.
             change(rule && !todo.planned_on ? { ...moveToDay(todo, todayKey), repeat_rule: rule } : { repeat_rule: rule });
           }}

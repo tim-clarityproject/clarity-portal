@@ -95,7 +95,8 @@ const T_CLOSE3 = TIM('Close the day’s step 3 says the day once above the list 
 const T_GOALS = TIM('the guided close shows the goals without the start and now ratings');
 const T_GROUP = TIM('a group session has no single client’s brief, so its link is “Open”');
 const T_WHEN = TIM('When offers Today, Tomorrow, Another day (the date picker) and Someday, with After work as its own switch');
-const T_REPEATS = TIM('Repeats offers the general rules; “2 weeks after I finish it” (a repeat counted from finishing) is not built');
+const T_REPEATS = TIM('Repeats offers the general rules and “2 weeks after I finish it” (run 6); M11’s “Every Thursday” and “Monthly on the 1st” are its Every week and Every month');
+const T_REP_SEED = 'the seed’s to-dos have no repeat counted from finishing (“2 weeks after I finish it” is built: run 6)';
 const T_TAGS = TIM('tags stay on a phone’s rows');
 const T_SELECT = TIM('Done rows and a client page’s to-dos have no select or More');
 const T_TIME = TIM('under a day’s heading only the time shows (rule 29ap: no repeated line)');
@@ -173,7 +174,7 @@ const QUICK = {
 const SESSIONS = {
   changes: [
     seed(/^(Late cancellation|Waived|Three-way meeting|With (Dana Whitfield|Paul Garner|Ruth Adams|Kim Alvarez)|Goals shared|Thu 22 Oct|Thu 8 Oct|Mon 14 Sep|Thu 5 Nov|Recap sent|Coaching session|60 minutes)$/, null, 'each client’s sessions are the seed’s own; M11 gives every client the same four', { say: 'M11’s four sessions' }),
-    ['2 weeks after I finish it', null, T_REPEATS],
+    ['2 weeks after I finish it', null, T_REP_SEED],
     [/^name: Select /, null, T_SELECT, { on: 'd', say: 'Select on a client’s to-do' }],
   ],
   added: [
@@ -284,7 +285,7 @@ export const ROWS = [
   { name: 'To-dos, Today', m11: 'todos', built: 'm11-quick-add', builtOn: { p: 'todos-today' }, changes: QUICK.changes, added: [...QUICK.added, TAG_P] },
   { name: 'To-dos, Upcoming', m11: 'todos', clicks: ['set:tdview:up'], built: 'todos-upcoming', cut: TYPED, ...QUICK,
     changes: [...QUICK.changes, seed('Marketing', 'Business', 'issue 149 is on the seed’s Business list'), seed(/^MON 23 NOV$/, 'SAT 21 NOV', 'the seed counts its days on from the pinned day'),
-      [/^(2 weeks after I finish it|Monthly on the 1st)$/, null, T_REPEATS, { say: '2 weeks after I finish it, Monthly on the 1st' }],
+      [/^(2 weeks after I finish it|Monthly on the 1st)$/, null, `${T_REP_SEED}; ${T_REPEATS}`, { say: '2 weeks after I finish it, Monthly on the 1st' }],
       ['Planned for Wed 18 Nov, 10:00', '10:00', T_TIME], ['Fri 09:15', '09:15', T_TIME],
       seed('Planned for Tue 1 Dec', 'Planned for Sun 29 Nov', 'the seed’s to-do under Later is 12 days on from the pinned day')],
     added: [...QUICK.added, TAG_P, seeded(/^(Business|Every month)$/, 'the seed’s list and its monthly repeat'), [/^(10:00|09:15)$/, T_TIME, null, { who: 'associate', say: 'only the time' }]] },
@@ -299,8 +300,8 @@ export const ROWS = [
     changes: [...PANEL.changes, [/^(After work, today|Thu 19 Nov|Mon 23 Nov)$/, null, T_WHEN, { say: 'After work, today; Thu 19 Nov; Mon 23 Nov' }]],
     added: [...PANEL.added, AFTER_WORK, ['Another day', T_WHEN]], moved: [[/^(today|tomorrow|someday)$/, POPUP]] },
   { name: 'A to-do, Repeats opened', m11: 'todo', clicks: ['dd:tdrep'], part: 'sheet', built: 'm11-todo-repeats',
-    changes: [...PANEL.changes, [/^(Every Thursday|Monthly on the 1st|2 weeks after I finish it)$/, null, T_REPEATS, { say: 'Every Thursday, Monthly on the 1st, 2 weeks after I finish it' }]],
-    added: [...PANEL.added, AFTER_WORK, [/^(Every day|Every weekday|Every 2 weeks|Every month|Every year)$/, T_REPEATS, null, { say: 'Every day, Every weekday, Every 2 weeks, Every month, Every year' }]], moved: [[/^(never|every week)$/, POPUP]] },
+    changes: [...PANEL.changes, [/^(Every Thursday|Monthly on the 1st)$/, null, T_REPEATS, { say: 'Every Thursday, Monthly on the 1st' }]],
+    added: [...PANEL.added, AFTER_WORK, [/^(Every day|Every weekday|Every 2 weeks|Every month|Every year)$/, T_REPEATS, null, { say: 'Every day, Every weekday, Every 2 weeks, Every month, Every year' }]], moved: [[/^(never|every week|2 weeks after i finish it)$/, POPUP]] },
   { name: 'A to-do from a forwarded email', m11: 'todomail', part: 'sheet', built: 'todos-todo-email',
     changes: [['Add file', null, ATTACH], seed(/^Forwarded from Gmail$/, 'Forwarded by email', 'the seed’s email came through the copy-in address, not Gmail (run 4 built the Attachments line: crm.js todoEmailLine)'), seed('Forwarded from Gmail on Tue 17 Nov, 07:58.', null, 'the seed’s to-do has no notes')],
     added: [...PANEL.added, AFTER_WORK,

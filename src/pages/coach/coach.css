@@ -496,7 +496,8 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-table td:first-child { padding-left: 0; position: relative; overflow: visible; white-space: normal; }
 .ui-root .cc-table td small { display: block; font-size: var(--fs-small); color: var(--text-2); overflow-wrap: anywhere; }
 .ui-root .cc-table tr.cc-pick-row--on td { background: var(--raised); border-radius: 0; }
-.ui-root .cc-th { all: unset; cursor: pointer; box-sizing: border-box; min-height: var(--tap-min); min-width: var(--tap-min); max-width: 100%; display: inline-flex; align-items: flex-end; padding-bottom: var(--space-1); color: var(--text-2); font-size: var(--fs-small); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color var(--dur) var(--ease); }
+/* Rule 20: a heading is never cut short. It sits on one line at the standard text size and wraps between its words when the device's text is larger (run 6, item 2). */
+.ui-root .cc-th { all: unset; cursor: pointer; box-sizing: border-box; min-height: var(--tap-min); min-width: var(--tap-min); max-width: 100%; display: inline-flex; align-items: flex-end; padding-bottom: var(--space-1); color: var(--text-2); font-size: var(--fs-small); white-space: normal; overflow-wrap: break-word; text-wrap: balance; transition: color var(--dur) var(--ease); }
 .ui-root .cc-th--on { color: var(--text); text-decoration: underline; text-underline-offset: var(--space-1); }
 @media (hover: hover) {
   .ui-root .cc-th:hover { color: var(--coral-text); }
@@ -514,6 +515,8 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-cell--empty { color: var(--placeholder); }
 /* A detail typed over (a lead's or a client's email) wraps rather than being cut off when the text is large (twice the text size). */
 .ui-root .cc-detail--edit .cc-cell { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
+/* Rule 20: a table's cell text wraps and the row grows; nothing is cut short (run 6, item 2). Network's table sizes its columns to their words instead. */
+.ui-root .cc-table:not(.cc-net-table) .cc-cell { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; text-align: left; line-height: var(--lh-row); }
 @media (hover: hover) {
   .ui-root .cc-cell:hover { background: var(--raised); }
 }

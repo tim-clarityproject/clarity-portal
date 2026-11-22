@@ -104,13 +104,13 @@ if (has('taps')) {
   pass('double tap: Add client makes one client', store.rows.client_profiles.filter((p) => p.name === 'Dee Twice').length === 1);
 
   await open(page, '/coach/clients');
-  await button(page, 'Add a team').click();
+  await button(page, 'Add team').click();
   await settle(page, 400);
   await page.locator('#cc-team-paste').fill('Una One <una@example.invalid>\nDuo Two <duo@example.invalid>');
   await settle(page, 300);
   await panel(page).getByRole('button', { name: 'Add 2 clients' }).dblclick();
   await settle(page, 1200);
-  pass('double tap: Add a team makes each person once', store.rows.client_profiles.filter((p) => ['Una One', 'Duo Two'].includes(p.name)).length === 2);
+  pass('double tap: Add team makes each person once', store.rows.client_profiles.filter((p) => ['Una One', 'Duo Two'].includes(p.name)).length === 2);
 
   await open(page, `/coach/clients/${ID.marcus}`);
   await page.getByRole('button', { name: 'Clock in to Team performance check' }).dblclick();
@@ -179,7 +179,7 @@ if (has('paste')) {
   const { ctx, page, store, me, errors } = await session();
   const five = Array.from({ length: 500 }, (_, i) => `Person Number${i} <bulk${i}@example.invalid>`).join('\n');
   await open(page, '/coach/clients');
-  await button(page, 'Add a team').click();
+  await button(page, 'Add team').click();
   await settle(page, 400);
   const t0 = Date.now();
   await page.locator('#cc-team-paste').fill(`${five}\n${five}`);

@@ -56,7 +56,7 @@ export const SCREENS = [
   ['clients-filter', '/coach/clients', click('Filter')],
   ['clients-picked', '/coach/clients', async (page, size) => { if (size === 400) return 'skip'; await page.getByRole('button', { name: 'List', exact: true }).click(); await settle(page, 400); await page.getByRole('checkbox', { name: 'Select Sam Okafor' }).click({ force: true }); await page.getByRole('checkbox', { name: 'Select Leo Grant' }).click({ force: true }); await settle(page, 400); return null; }],
   ['clients-add', '/coach/clients', click('Add client')],
-  ['clients-team', '/coach/clients', async (page) => { await click('Add a team')(page); await page.locator('#cc-team-paste').fill('Name,Email,Role\nDana Whitfield,dana@example.invalid,Chief of staff\nSam Again,sam@example.invalid,\nGrace Liu,grace.liu@example.invalid,Partner\nGrace Twice,grace.liu@example.invalid,'); await settle(page, 400); }],
+  ['clients-team', '/coach/clients', async (page) => { await click('Add team')(page); await page.locator('#cc-team-paste').fill('Name,Email,Role\nDana Whitfield,dana@example.invalid,Chief of staff\nSam Again,sam@example.invalid,\nGrace Liu,grace.liu@example.invalid,Partner\nGrace Twice,grace.liu@example.invalid,'); await settle(page, 400); }],
   ['clients-export', '/coach/clients', async (page, size) => { if (size === 400) return 'skip'; await click('Export')(page); return null; }],
   ['clients-groups', '/coach/clients?tab=groups', null, { expects: ['tabs'] }],
   ['clients-workshops', '/coach/clients?tab=workshops', null, { expects: ['tabs'] }],

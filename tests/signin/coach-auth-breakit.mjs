@@ -663,7 +663,8 @@ if (PARTS.includes('stale')) {
     await sleep(4000);
     const at = path(d.page);
     pass(`${tag}: a refresh the reset refused never opens the coach portal`, !/^\/coach(\/(?!sign-in)|$)/.test(at) && (await d.page.evaluate(() => window.__coachShown)) === 0, at);
-    console.log(`INFO  ${tag}: it lands on ${at}, saying "${(await message(d.page)).slice(0, 80)}"`);
+    // Sign-in rule 24: Coach sign in, with the reason (run 6, item 13; it was the clients' Sign in, with none).
+    pass(`${tag}: it lands on Coach sign in and is told why`, at === '/coach/sign-in' && (await waitMessage(d.page)) === signedOutLine, `${at} "${(await message(d.page)).slice(0, 80)}"`);
     pass(`${tag}: no page errors`, d.errors.length === 0, d.errors.slice(0, 2).join(' | '));
     await d.ctx.close();
   }

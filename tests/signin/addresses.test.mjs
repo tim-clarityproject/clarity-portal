@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { returnAddress, safeNext, SIGN_IN_PATHS } from '../../src/lib/signIn/addresses.js';
+import { noteSessionEnded, returnAddress, safeNext, sessionEndedJustNow, SIGN_IN_PATHS } from '../../src/lib/signIn/addresses.js';
 
 test('Google comes back to this page’s own origin, whichever deployment it is', () => {
   assert.equal(returnAddress('google', 'https://portal.theclarityproject.co.uk'), 'https://portal.theclarityproject.co.uk/auth/google');
@@ -110,4 +110,13 @@ test('a sign-out counts for the other tabs for half a minute, and never from a m
   assert.equal(leftJustNow(String(now - 31000), now), false);
   assert.equal(leftJustNow(String(now + 5000), now), false);
   for (const bad of [null, '', 'soon', '0', '-5', 'NaN', '{}']) assert.equal(leftJustNow(bad, now), false, String(bad));
+});
+
+test('a sign-in the server ended in the coach portal is noted for a minute, for Coach sign in’s reason (run 6, item 13)', () => {
+  const t = 1_800_000_000_000;
+  assert.equal(sessionEndedJustNow(t), false);
+  noteSessionEnded(t);
+  assert.equal(sessionEndedJustNow(t + 5000), true);
+  assert.equal(sessionEndedJustNow(t + 61000), false);
+  assert.equal(sessionEndedJustNow(t - 1000), false, 'a clock put back never counts');
 });

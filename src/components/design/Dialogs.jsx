@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { IconButton } from './Button';
 import { pushLayer } from './layers';
+import { pushPanelEntry } from './panelHistory';
 import { isPhoneWidth, lockPage, openerOf, returnFocus, trapTab, unlockPage } from './pageLock';
 import { themeProps, useThemeScope } from './themeScope';
 import { PANEL_MS, POPUP_MS, prefersReducedMotion } from './timing';
@@ -11,7 +12,8 @@ import './design.css';
 // Panels; decisions: "Room to type", "Phone gestures"). Both:
 // - close with the rotated crosshair, Escape, or a tap outside;
 // - keep keyboard focus inside while open and return it afterwards;
-// - are full screen on phone, where a swipe down closes them;
+// - are full screen on phone, where a swipe down closes them, and so does
+//   the phone's Back (a panel or pop-up adds one history entry while open);
 // - render into document.body inside their own .ui-root (rule 17), with
 //   the page underneath made inert and unscrollable while open;
 // - dim the page underneath strongly in dark and lightly in light.
@@ -79,6 +81,8 @@ function Modal({ kind, open, onClose, title, titleAside = null, children, footer
     openedAtRef.current = performance.now();
     lockPage();
     const removeLayer = pushLayer(() => onCloseRef.current?.());
+    // Full screen on a phone: Back closes it, not the page (run 6, item 4).
+    const removeEntry = phoneForm && (kind === 'panel' || kind === 'popup') ? pushPanelEntry(() => onCloseRef.current?.()) : null;
     const target = initialFocusRef?.current || dialogRef.current;
     target?.focus({ preventScroll: true });
 
@@ -90,6 +94,7 @@ function Modal({ kind, open, onClose, title, titleAside = null, children, footer
 
     return () => {
       removeLayer();
+      removeEntry?.();
       if (foot) {
         if (previousOffset) html.style.setProperty('--ds-toast-offset', previousOffset);
         else html.style.removeProperty('--ds-toast-offset');

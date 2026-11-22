@@ -2,9 +2,9 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { justSignedOut, rememberNext } from '../lib/signIn/addresses';
+import { justSignedOut, rememberNext, sessionEndedJustNow, SIGN_IN_PATHS } from '../lib/signIn/addresses';
 import { goToStop, hasAuthenticator, signInStop } from '../lib/signIn/flow';
-import { isCoachPlace } from '../lib/signIn/coachAuth';
+import { isCoachPlace, SIGNED_OUT_BY_RESET } from '../lib/signIn/coachAuth';
 import { needsBeforeYouStart } from '../lib/signIn/terms';
 import { diag } from '../utils/diag';
 import { SitePhoneNav } from './SiteMenu';
@@ -61,14 +61,19 @@ export default function ProtectedLayout() {
       // there (Tim, 11 Nov): the path with its query and hash.
       // Not after a deliberate Sign out: the next person to sign in here
       // starts at Home, not on the page the last one left from.
-      navigate('/auth/login', {
-        state: justSignedOut() ? { fromDirect: true } : { returnTo: asked, fromDirect: true },
+      // A coach portal address goes to Coach sign in (sign-in rule 23), and
+      // a sign-in the server ended there (the owner's reset) says why
+      // (sign-in rule 24; run 6, item 13).
+      const coach = isCoachPlace(location.pathname);
+      const ended = coach && sessionEndedJustNow();
+      navigate(coach ? SIGN_IN_PATHS.coach : '/auth/login', {
+        state: justSignedOut() ? { fromDirect: true } : { returnTo: asked, fromDirect: true, ...(ended ? { message: SIGNED_OUT_BY_RESET } : {}) },
         replace: true
       });
     } else {
       console.log('[ProtectedLayout] User authenticated, rendering child routes');
     }
-  }, [isLoading, user, navigate, asked]);
+  }, [isLoading, user, navigate, asked, location.pathname]);
 
   // A stop someone still owes before the portal opens (src/lib/signIn/flow.js):
   // a Google account the portal has never seen must tick the box on Before

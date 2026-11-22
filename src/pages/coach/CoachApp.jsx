@@ -1,7 +1,8 @@
 import { Fragment, lazy, Suspense, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { BoldCrosshair, PageHeader, SlidePanel, useHidePhoneBar, useToast } from '../../components/design';
+import { BoldCrosshair, PageHeader, SlidePanel, useBackCloses, useHidePhoneBar, useToast } from '../../components/design';
+import { isPhoneWidth } from '../../components/design/pageLock';
 import { useSignOut } from '../../components/SignOut';
 import { getLocalDateKey } from '../../lib/dateFormatter';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
@@ -126,6 +127,8 @@ function Menu({ open, onClose, onSignOut }) {
   const navRef = useRef(null);
   // Network shows how many people are due a catch-up (the owner's alone; asked only while the menu is open).
   const due = menuCount(useNetworkCounts(open).data);
+  // On a phone the menu covers the page: Back closes it (run 6, item 4).
+  useBackCloses(open, onClose, isPhoneWidth());
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -201,6 +204,8 @@ function Search({ open, onClose }) {
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const recentKey = deviceKey('cache', userId, 'coach-recent');
+  // On a phone search covers the page: Back closes it (run 6, item 4).
+  useBackCloses(open, onClose, isPhoneWidth());
   const [recent, setRecent] = useState([]);
   // Network's people are never loaded whole: search asks for the few that match, as it is typed (the owner's alone).
   const [network, setNetwork] = useState([]);
@@ -248,7 +253,7 @@ function Search({ open, onClose }) {
     ];
     const actions = [
       { key: 'a:client', title: 'Add client', to: '/coach/clients', state: { open: 'add' } },
-      { key: 'a:team', title: 'Add a team', to: '/coach/clients', state: { open: 'team' } },
+      { key: 'a:team', title: 'Add team', to: '/coach/clients', state: { open: 'team' } },
       { key: 'a:group', title: 'Add group', to: '/coach/clients?tab=groups', state: { open: 'group' } },
       { key: 'a:workshop', title: 'Add workshop', to: '/coach/clients?tab=workshops', state: { open: 'workshop' } },
       { key: 'a:export', title: 'Export clients to a spreadsheet', to: '/coach/clients', state: { open: 'export' } },

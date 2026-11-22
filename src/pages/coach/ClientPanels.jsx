@@ -10,7 +10,7 @@ import {
 import { xlsxBytes } from '../../lib/coach/xlsx';
 import { TextLink, useCoachPortal } from './parts';
 
-// The Clients page's panels (M11, version 3.6): Add client, Add a team,
+// The Clients page's panels (M11, version 3.6): Add client, Add team,
 // Filter with saved views, Export to a spreadsheet, Merge into one, a
 // client's tags, Add group and Add workshop. Each is the shared side panel,
 // and no button is ever greyed out: pressed too early, it says what's missing.
@@ -128,7 +128,7 @@ export function AddClientPanel({ open, onClose, onAdded }) {
   );
 }
 
-// ---------------------------------------------------------------- Add a team
+// ---------------------------------------------------------------- Add team
 export function AddTeamPanel({ open, onClose }) {
   const { userId, coach, organisations, clients } = useCoachPortal();
   const done = useDone();
@@ -180,7 +180,7 @@ export function AddTeamPanel({ open, onClose }) {
     preview.unreadable ? `${preview.unreadable} ${preview.unreadable === 1 ? 'needs' : 'need'} a look first.` : null,
   ].filter(Boolean);
   return (
-    <SlidePanel open={open} onClose={onClose} title="Add a team" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>{preview.add ? `Add ${preview.add} ${preview.add === 1 ? 'client' : 'clients'}` : 'Add the team'}</Button></div>}>
+    <SlidePanel open={open} onClose={onClose} title="Add team" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>{preview.add ? `Add ${preview.add} ${preview.add === 1 ? 'client' : 'clients'}` : 'Add the team'}</Button></div>}>
       <div className="cc-field"><OrganisationChoice value={org} onChange={(v) => { setOrg(v); setProblem(null); }} newName={orgName} onNewName={(v) => { setOrgName(v); setProblem(null); }} /></div>
       <div className="cc-field">
         <label className="cc-field-label" htmlFor="cc-team-paste">Paste a list, or rows from a spreadsheet</label>

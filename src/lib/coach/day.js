@@ -181,18 +181,42 @@ export const REPEATS = [
   { value: 'week2', label: 'Every 2 weeks', rule: { every: 'week', interval: 2 } },
   { value: 'month', label: 'Every month', rule: { every: 'month' } },
   { value: 'year', label: 'Every year', rule: { every: 'year' } },
+  // M11's "2 weeks after I finish it": counted from the day it is ticked, not the day it was planned for.
+  { value: 'week2done', label: '2 weeks after I finish it', rule: { every: 'week', interval: 2, from: 'done' } },
 ];
+
+/** A repeat counted from the day the to-do is finished ("2 weeks after I finish it"), not from its planned day. */
+export const fromFinishing = (rule) => Boolean(rule && rule.every && rule.from === 'done');
 
 export function repeatValue(rule) {
   if (!rule || !rule.every) return 'never';
+  if (fromFinishing(rule)) {
+    const n = Number(rule.interval) || 1;
+    return rule.every === 'week' && n === 2 ? 'week2done' : `done:${rule.every}:${n}`;
+  }
   if (rule.every === 'week' && Number(rule.interval) === 2) return 'week2';
   return REPEATS.some((r) => r.value === rule.every) ? rule.every : 'never';
 }
 
-/** "Every Thursday", "Every 2 weeks", "Every weekday", "Every month". */
+/**
+ * The Repeats choices for a to-do: the usual list, and the to-do's own
+ * rule where the list hasn't got it (a quick add's "3 days after I finish
+ * it"), so the drop-down always shows what is set.
+ */
+export function repeatChoices(rule, plannedOn) {
+  const value = repeatValue(rule);
+  if (REPEATS.some((r) => r.value === value)) return REPEATS;
+  return [...REPEATS, { value, label: repeatWords(rule, plannedOn), rule }];
+}
+
+/** "Every Thursday", "Every 2 weeks", "Every weekday", "Every month", "2 weeks after I finish it". */
 export function repeatWords(rule, plannedOn) {
   if (!rule || !rule.every) return '';
   const n = Number(rule.interval) || 1;
+  if (fromFinishing(rule)) {
+    const unit = { day: 'day', weekday: 'weekday', week: 'week', month: 'month', year: 'year' }[rule.every] || 'week';
+    return `${n} ${unit}${n === 1 ? '' : 's'} after I finish it`;
+  }
   const d = fromDayKey(plannedOn);
   if (rule.every === 'day') return n > 1 ? `Every ${n} days` : 'Every day';
   if (rule.every === 'weekday') return 'Every weekday';
@@ -223,10 +247,17 @@ function stepRepeat(rule, key) {
 /**
  * The next day a repeating to-do comes round: after the day it was planned
  * for and after today, so one ticked late never comes back in the past.
- * Null when the rule has stopped (its "until" has passed) or there is none.
+ * A repeat counted from finishing ("2 weeks after I finish it") is counted
+ * from today, the day it is ticked. Null when the rule has stopped (its
+ * "until" has passed) or there is none.
  */
 export function nextRepeat(rule, plannedOn, todayKey) {
   if (!rule || !rule.every) return null;
+  if (fromFinishing(rule)) {
+    const next = stepRepeat(rule, todayKey);
+    if (!next || (rule.until && next > rule.until)) return null;
+    return next;
+  }
   const base = plannedOn || todayKey;
   let next = base;
   // A monthly rule keeps its own day of the month (31 Jan, 28 Feb, 31 Mar): each step starts from the first day.
@@ -304,6 +335,13 @@ export function parseQuickAdd(text, { todayKey, lists = [], tags = [], clients =
   take(/\s@([^\s#@!]+)/g, (_m, raw) => {
     const tag = tags.find((t) => sameName(t.name, raw));
     if (tag) out.tag_ids.push(tag.id); else out.new_tags.push(cut(clean(raw), 40));
+  });
+  // M11: "2 weeks after I finish it", "every 3 days after done", "every month after I finished".
+  take(/\s(?:every\s+(?:(\d+)\s+)?|(\d+)\s+)(day|week|month)s?\s+after\s+(?:i\s+)?(?:finish|finished|done)(?:\s+it)?(?=\s)/gi, (_m, a, b2, unit) => {
+    const n = Number(a || b2 || 1);
+    if (!(n >= 1 && n <= 52)) return false;
+    out.repeat_rule = { every: unit.toLowerCase(), ...(n > 1 ? { interval: n } : {}), from: 'done' };
+    return undefined;
   });
   take(/\severy (day|weekday|week|month|year|other week|2 weeks|sunday|monday|tuesday|wednesday|thursday|friday|saturday)(?=\s)/gi, (_m, w) => {
     const word = w.toLowerCase();

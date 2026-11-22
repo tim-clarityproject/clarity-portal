@@ -117,6 +117,18 @@ export function noteSignedOut(now = Date.now()) {
     window.localStorage.setItem(LEFT_KEY, String(now));
   } catch { /* the other tabs keep their page */ }
 }
+// A sign-in that ended without Sign out being pressed, while the coach
+// portal was open (the server let it go: the owner's Reset authenticator
+// ends every session; run 6, item 13). Kept for this page only, so the
+// redirect that follows can take them to Coach sign in with the reason.
+let endedAt = 0;
+export function noteSessionEnded(now = Date.now()) {
+  endedAt = now;
+}
+export function sessionEndedJustNow(now = Date.now()) {
+  return endedAt > 0 && now - endedAt >= 0 && now - endedAt < 60000;
+}
+
 export function justSignedOut(now = Date.now()) {
   if (leftAt > 0 && now - leftAt >= 0 && now - leftAt < 10000) return true;
   try {
