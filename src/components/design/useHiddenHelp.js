@@ -75,7 +75,10 @@ export default function useHiddenHelp() {
 
   const showAll = useCallback(() => {
     const before = hidden;
-    change(() => ({}));
+    // What this page showed as hidden is shown again: a hide made meanwhile on
+    // another device stays (and a change made again after an offline clash,
+    // menuPins.js, never wipes it).
+    change((h) => Object.keys(before).reduce((next, key) => withHelpShown(next, key), h));
     toast?.saved({ message: SHOWN_AGAIN_TOAST, long: true, onUndo: () => change((h) => ({ ...h, ...before })) });
   }, [change, toast, hidden]);
 

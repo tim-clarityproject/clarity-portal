@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import { supabase } from './supabase';
 import { readCache, writeCache } from './pageCache';
-import { noteVersions, saveOrQueue, waitingToSend, whenSent } from './syncQueue';
+import { noteVersions, onSuperseded, saveOrQueue, waitingToSend, whenSent } from './syncQueue';
 import { cleanPins, MAX_PINS } from './navigation';
 
 // Pinned tools (experience rule 9; M3): up to 3 tools at the top of the
@@ -26,6 +26,13 @@ const listeners = new Set();
 const lastRead = new Map();
 const snapshots = new Map();
 const reading = new Map(); // a read of the account's copy still on its way
+// Changes kept on the device to send later (offline), by person: each is
+// made again on top of the account's copy if, when it is sent, the account
+// has moved on (another device's change sent first) and the queue refuses
+// it as superseded. Without this, two devices offline at once lost the
+// second one's change (the break-it tester, Phase 9 tidy 1: one device hid
+// one explanation, the other another; only the first stayed hidden).
+const waiting = new Map();
 
 function read(userId) {
   const c = readCache(userId, CACHE)?.v;
@@ -49,13 +56,17 @@ function subscribe(fn) {
   return () => { listeners.delete(fn); };
 }
 
-async function readServer(userId) {
+async function readServerRow(userId) {
   const { data, error } = await supabase.from('person_settings')
     .select('user_id, page_preferences, updated_at').eq('user_id', userId).limit(1);
   if (error) throw error;
   noteVersions('person_settings', data);
   const prefs = data?.[0]?.page_preferences;
-  return prefs && typeof prefs === 'object' && !Array.isArray(prefs) ? prefs : {};
+  return { prefs: prefs && typeof prefs === 'object' && !Array.isArray(prefs) ? prefs : {}, at: data?.[0]?.updated_at || null };
+}
+
+async function readServer(userId) {
+  return (await readServerRow(userId)).prefs;
 }
 
 /**
@@ -71,6 +82,8 @@ export async function refreshPins(userId, { force = false } = {}) {
       await whenSent();
       const prefs = await readServer(userId);
       if (waitingToSend(userId)) return;
+      // Nothing waits: every change kept for later has landed (or been made again).
+      waiting.delete(userId);
       keep(userId, { pins: cleanPins(prefs.menu_pins), prefs });
     } catch {
       // Offline or refused: the device's copy stays.
@@ -85,12 +98,15 @@ export async function refreshPins(userId, { force = false } = {}) {
   }
 }
 
-function send(userId, prefs) {
+// `basedOn`: the version just read, when a change is made again on top of
+// it (the version book may not take a read made while a quiet one runs).
+function send(userId, prefs, basedOn = null) {
   return saveOrQueue(userId, {
     table: 'person_settings',
     kind: 'upsert',
     onConflict: 'user_id',
     values: { user_id: userId, page_preferences: prefs },
+    ...(basedOn ? { basedOn } : {}),
   });
 }
 
@@ -108,12 +124,39 @@ async function change(userId, apply) {
   if (result.status === 'superseded') {
     // Changed in another window or on another device since this one read
     // it: take theirs, then make this one change on top of it.
-    const merged = apply(await readServer(userId));
+    const latest = await readServerRow(userId);
+    const merged = apply(latest.prefs);
     keep(userId, { pins: cleanPins(merged.menu_pins), prefs: merged });
-    result = await send(userId, merged);
+    result = await send(userId, merged, latest.at);
   }
+  if (result.status === 'queued') waiting.set(userId, [...(waiting.get(userId) || []), apply]);
+  else waiting.delete(userId); // sent straight away: nothing older was still waiting
   return result.status === 'queued' ? 'queued' : 'saved';
 }
+
+// A kept change refused as superseded when it was finally sent: every
+// change still kept for that person is made again, in order, on top of the
+// account's latest copy, and sent. Each change is "set this to that" (pin
+// or unpin one tool, hide or show one explanation, a setting's value), so
+// making it again never doubles it.
+async function makeAgain(userId, list) {
+  try {
+    const latest = await readServerRow(userId);
+    const merged = list.reduce((prefs, apply) => apply(prefs), latest.prefs);
+    keep(userId, { pins: cleanPins(merged.menu_pins), prefs: merged });
+    const result = await send(userId, merged, latest.at);
+    if (result.status === 'queued') waiting.set(userId, [...list, ...(waiting.get(userId) || [])]);
+  } catch {
+    // Offline again, or refused: the account's copy stands; the next refresh shows it.
+  }
+}
+onSuperseded((error) => {
+  if (error?.table !== 'person_settings') return;
+  for (const [userId, list] of [...waiting]) {
+    waiting.delete(userId);
+    if (list.length) makeAgain(userId, list);
+  }
+});
 
 /**
  * Pins or unpins one tool. Resolves 'saved', 'queued' (kept on the device
