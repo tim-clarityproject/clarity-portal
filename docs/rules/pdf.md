@@ -1,0 +1,64 @@
+# PDF rules
+
+Moved from CLAUDE.md on 22 Nov 2026 (Phase 6a run 7, step 0), word for word. These rules apply exactly as they did there; CLAUDE.md points here.
+
+Tim's PDF rules (26 Oct). Every PDF follows all 33. They are built into the shared template in `src/lib/pdf` (pdfkit, with its own page layout step), so no tool draws its own PDF: a tool describes its document (see the top of `src/lib/pdf/render.js`) and the template does the rest. The one Download PDF button is `PdfDownload` (src/components/design).
+
+**Versions and paper**
+
+1. **Light and Dark for tools** (Tim, 08:59): every tool that makes a PDF offers Light (for printing) and Dark (for sharing on a phone). Same layout, content and page breaks; only the colours and the logo file change. Coaching agreements, sponsor agreements, quotes and the supplier pack are light only, because they are printed, signed and filed.
+2. **One button, then a choice:** one "Download PDF" button, which then offers "Light, for printing" and "Dark, for sharing".
+3. **Paper matches the client's country** (Tim, 09:20): US Letter for the US and Canada, A4 for everyone else. Margins about 19mm on every side, with the footer inside them. (One shared helper, `paperFor` in `src/lib/pdf/paper.js`: the person's country setting once My Account has one, then the device's region, then its time zone.)
+4. **No cover page** (Tim, 09:20): page 1 opens with the title block, then the content straight away.
+
+**On every page**
+
+5. **Title block (page 1):** the title in Nekst capitals, one or two lines; the 56px coral line; one grey line of details (organisation or person, date, type), each readable on its own ("Board or owner meeting", not "Board or owner").
+5a. **Titles people type are limited to 80 characters, so a PDF title always fits two lines.** (The meeting plan's title, with the note "Titles can be up to 80 characters."; `src/lib/titleLimit.js`. The title block still shrinks to fit for older saved titles.)
+6. **Updated, not version numbers** (Tim, 09:33): a tool PDF downloaded again after changes shows "Updated Mon 26 Oct 2026, 09:30" in its details line. Signed documents keep their reference and version number.
+7. **Running header from page 2** (Tim, 09:20): small and grey: the document name on the left, the organisation or person on the right.
+8. **Footer:** the real logo mark, the portal address as a working link, "Confidential: for [organisation or person]" when it holds a client's or team's own answers (Tim, 09:20), and "Page 2 of 4". A one-page PDF has no page number.
+9. **The bold crosshair in the footer** (Tim, 26 Oct, 16:13, replacing the logomark PNGs): every PDF footer carries the bold crosshair, the 2 times line version used on the website's menu button and Home Screen icon, black on light pages and white on dark pages, drawn from the same shared bold crosshair (`src/lib/boldCrosshair.js`), never redrawn or recoloured. Logo files are still never redrawn or recoloured in mock-ups.
+10. **No "Prepared by" panel** (Tim, 09:04). Who made it only shows where a signature is needed.
+
+**What goes in**
+
+11. **Blank answers are left out** (Tim, 09:33): the PDF shows only what was filled in, so it never looks half done. A section with nothing in it is left out with its heading.
+12. **Summary first:** page 1 starts with an At a glance panel of two to four items, each laid out the same way. **A summary or results PDF opens with its headline alone** (Tim, 13 Nov; Phase 8a follow-up, 17 Nov): the At a glance panel holds the one sentence the screen opens with, and the line under it where the screen has one, with no label and no figures beside it (the Health Check, the Team performance check). Tools with no headline (Get unstuck, the Emotional wash) keep their two to four items.
+13. **Contents list over 6 pages** (Tim, 09:33): a short list of sections with page numbers, under the At a glance panel.
+14. **No link back to the portal** (Tim, 09:33): the PDF stands on its own; the portal address in the footer is enough.
+
+**Type and colour**
+
+15. **Fonts:** Nekst for the title, section headings (capitals, slightly letter-spaced) and big numbers (Nekst Light at 22pt and above); DM Sans for everything else. Body text 10pt with generous line spacing, lines no longer than about 62 characters, nothing smaller than 8.5pt. Words are never hyphenated across lines.
+16. **Light colours:** white page, near-black text (#111110), grey for details (#636362), pale grey lines (#DCDCD9), light grey panels (#F4F4F3). **Dark colours:** black page, white text, grey details (#A3A3A0), dark lines (#262626), dark panels (#111110) with a thin edge so they hold on a dim phone. (These live in `src/lib/pdf/theme.js`, the one place a PDF colour is written.)
+17. **Green means good** (Tim, 26 Oct; was coral): what is at or above the standard is green, deep green #0B7A52 on light pages and mint #5FEFBB on dark pages (`good` in `src/lib/pdf/theme.js`); below the standard is grey. Coral is only the title line. Never coral or green text. Keys call it green ("Green: important and moving well").
+18. **Colour is never the only signal:** every bar has its value beside it and every chart has a key, so a black and white print still reads.
+19. **The writing rules apply** (as in this file): labels before numbers, UK spelling, dates like "Mon 26 Oct 2026", 24-hour times, no dashes, "Dr. Tim Dutton" and "The Clarity Project LTD" exactly so.
+
+**Parts**
+
+20. **Shared parts only:** title block, running header, footer, At a glance panel, contents list, section heading, text, table, bar chart, dot chart, list and signature block. No tool draws its own. (The dot chart, as in the Health Check: one dot per item on labelled axes, divided by lines at the middle of each axis, with no quadrant names, as on the results page; green filled dots only for the good area, grey outlines for the rest; each dot numbered, with names beside the dots only when none would touch a label, dot or line, otherwise a numbered list beside or under the chart, or after the chart's key and sentence when the names are too many to fit with it; a key and a sentence after it. Behind the dots, the same pale areas as the results page (Tim, 26 Oct, 16:14): a field of small dots, pale green where projects are important and moving well and the pale line colour everywhere else, never coral, pale enough for a black and white print; each project dot has the same soft halo as on the results page.)
+21. **Charts:** drawn to scale from zero, with the standard marked, values at the end of each bar, a key underneath, and a sentence after it saying what it means.
+22. **Tables:** thin lines between rows only, no boxes or fills, a grey header row, numbers lined up on the right.
+
+**Page breaks: nothing chopped** (Tim, 09:21 and 09:30)
+
+23. **Kept together, always:** a heading with at least three lines of what follows; a panel; a chart with its key and its sentence; a table row; a list item; a question with its answer's first three lines; the signature block.
+24. **Short sections move whole:** a section shorter than about a third of a page that won't fit in the space left moves to the next page whole.
+25. **Long sections split only at natural points:** between paragraphs, table rows or list items, never inside one.
+26. **Long answers split with three lines each side:** a client's long answer can carry on to the next page only between paragraphs, with at least three lines left behind and three carried over.
+27. **Tables that carry on:** the next page repeats the heading with ", continued" ("Projects ranked by alignment, continued") and the column names.
+28. **No stray lines:** never one or two lines alone at the top or bottom of a page, and a last page never holds just a line or two. Space at the end of a page is fine; content is never stretched to fill it.
+29. **Light and dark break in the same places,** and A4 and US Letter are each checked.
+
+**The file and checks**
+
+30. **Real and readable:** fonts embedded, text selectable and searchable, links that work; tagged for screen readers with the right reading order, a text description for every chart, the language set to English (UK), and a contents list (bookmarks) in every PDF (rule 33). Bookmarks, the file's title and copied heading text are whole words in sentence case, never split by letter-spacing. (See rule 33 for how spaced capitals are drawn; `tests/pdf/make-pdfs.mjs` checks every bookmark, title and heading.)
+30a. **No "…" anywhere in a PDF** (Tim, 26 Oct, 16:12): nothing is ever cut off. A long name wraps onto more lines instead: the footer's "Confidential: for [organisation]" line wraps upwards inside the footer and the running header's names wrap downwards, both bands growing to hold them inside the margins, with nothing overlapping; chart labels wrap or, for a single axis word, get smaller down to 8.5pt. `tests/pdf/make-pdfs.mjs` fails any PDF whose text holds "…", and checks the footer shows a long organisation name in full.
+30b. **Nothing unseen is drawn** (the break-it tester, 14 Nov): zero-width spaces, direction marks, the soft hyphen, the byte-order mark and control characters arrive with words copied from a web page or a chat, no font has a shape for them, and each drew as an empty box. They are taken out of every piece of a document's text before it is laid out (`seenSpec` and `seenText` in `src/lib/pdf/text.js`); a line break and a tab stay, and an emoji keeps its joiners. **Not built yet:** letters the PDF's fonts have no shapes for (Greek, Cyrillic, Hebrew, Arabic, Thai, Korean) still draw as empty boxes, and such a PDF does not pass veraPDF; Chinese and Japanese are drawn.
+31. **Named in words and small:** for example "Health Check, Northfield Logistics, 26 Oct 2026.pdf", with "(dark)" at the end of the dark one; the file's properties carry the same title and "Dr. Tim Dutton, The Clarity Project LTD" as author; a typical PDF is under 1 MB.
+32. **Stress-test pack before Tim sees it** (Tim, 09:30): every new or changed PDF is made with very short, very long and awkward content (long names, long answers, long tables, emoji, blank answers), in light and dark, on A4 and US Letter; every page break is checked against rules 23 to 29; Tim gets the pack to look through. Plus: open on a Mac and an iPhone, print a light page in black and white, and send the dark one through a chat app. Invented names only.
+33. **Whole words for every reader** (Tim, 28 Oct): spaced capitals (titles, section headings, panel headings) must copy, search, read aloud and appear in the contents list as whole words, in every PDF viewer. One run of text with the PDF's letter-spacing was not enough: viewers that guess word gaps from where letters sit split it ("O BJECTIVE", "AGAI N S T"), because the letter-spacing is close to the gap they read as a space. So the capitals are drawn with the font's own letter shapes, with the same spacing, and the written words (sentence case) lie over them as one invisible run of text without letter-spacing, stretched to the same width; their tags keep the written words too (`drawSpaced` in `src/lib/pdf/text.js`). Every PDF has a contents list (bookmarks): each section once, by its name as written, where it starts, never again for a table carried on, and the document's title when it has no sections; and a document title. The PDF pack reads every PDF a second way, with pdfminer (`pip3 install pdfminer.six`), which guesses gaps like those viewers, and fails if a heading's words come out split, a bookmark is missing, repeated or for a carried-on table.
+
+**How to check a PDF** (for rules 23 to 32): `node tests/pdf/make-pdfs.mjs <folder>` makes every PDF and the stress cases in light and dark, on A4 and US Letter, checks every page break and writes `break-report.txt`; add new documents there. Check the tags with veraPDF (`brew install verapdf`, then `verapdf --flavour ua1 --format text <folder>/*.pdf`; every file should say PASS). Fonts for PDFs are TTF or WOFF, never WOFF2: pdfkit cannot build in a WOFF2 font's letter shapes, so its text comes out blank.
