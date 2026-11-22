@@ -312,7 +312,8 @@ function hydrate(userId) {
   const gen = generation;
   const run = (async () => {
     if (!deviceCopyAvailable()) return;
-    const copy = await readCopy(userId);
+    // A copy that can't be read within a moment is skipped: the database's own load never waits on it.
+    const copy = await Promise.race([readCopy(userId), new Promise((r) => { setTimeout(() => r(null), 2000); })]);
     if (!copy || gen !== generation) return;
     const kept = tidyState({ rows: Object.fromEntries(Object.entries(copy).map(([t, v]) => [t, v?.rows])), marks: Object.fromEntries(Object.entries(copy).map(([t, v]) => [t, v?.marks])) });
     big.add(userId);
@@ -1063,9 +1064,18 @@ export async function findCalItems(typed, { max = 30 } = {}) {
  * Resolves true (loaded), false (049 not there yet) or null (offline), once
  * the FIRST reads are in; the LATER ones follow quietly (loadCoachLater).
  */
+const loadAgain = new Map();
 export function loadCoach(userId) {
   if (!userId) return Promise.resolve(null);
-  if (loading.has(userId)) return loading.get(userId);
+  // Asked again while a load is on its way (after a send, say): one more load follows it, so what changed since that
+  // load began is read too. Never more than one waits.
+  if (loading.has(userId)) {
+    if (!loadAgain.has(userId)) {
+      const gen = generation;
+      loadAgain.set(userId, loading.get(userId).catch(() => null).then(() => { loadAgain.delete(userId); return gen === generation ? loadCoach(userId) : null; }));
+    }
+    return loadAgain.get(userId);
+  }
   const gen = generation;
   const run = (async () => {
     const there = await coachReady();
@@ -1155,6 +1165,7 @@ export { newId };
 export function resetCoachStoreForTests() {
   generation += 1;
   loading.clear();
+  loadAgain.clear();
   calAsking.clear();
   cache.clear();
   rawSeen.clear();

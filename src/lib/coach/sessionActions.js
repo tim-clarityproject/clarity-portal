@@ -28,6 +28,7 @@
 // recap the tab shows to 054's session_send_recap(session, recap), which
 // sends nothing when the database holds another ('changed').
 import { supabase } from '../supabase';
+import { forgetSharedReads } from '../readShare';
 import { guardRows, noteVersions, onSuperseded, unguardRows } from '../syncQueue';
 import { coachDayReady, coachState, keyOf, loadCoach, newId, noteRows, removeRow, rowOf, rowsOf, saveRow, saveRows } from './store';
 import { actionsOf, ALREADY_SENT, lockedAction, lockedSession, moveSession, NEEDS_RECAP, newSession, SENT_LINE, sessionPeopleRows, sessionSent } from './day';
@@ -227,6 +228,8 @@ async function emailRecap(sessionId) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ kind: 'recap', sessionId }),
     });
+    // The server wrote to the database: reads shared a moment ago (readShare.js) are forgotten, so the next load sees it.
+    forgetSharedReads();
     const body = await res.json().catch(() => null);
     return res.ok && body?.sent === true;
   } catch {

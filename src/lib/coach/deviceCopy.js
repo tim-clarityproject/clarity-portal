@@ -19,6 +19,7 @@
 const DB_NAME = 'clarity-coach';
 const STORE = 'tables';
 let opening = null;
+const OPEN_WAIT_MS = 1500;
 
 const idb = () => {
   try {
@@ -46,14 +47,17 @@ function open() {
       try { req.result.createObjectStore(STORE); } catch { /* already there */ }
     };
     req.onsuccess = () => {
+      clearTimeout(wait);
       const db = req.result;
       // A Sign out in another tab deletes the database: let it go at once.
       db.onversionchange = () => { try { db.close(); } catch { /* closed */ } opening = null; };
       db.onclose = () => { opening = null; };
       resolve(db);
     };
-    req.onerror = () => { opening = null; resolve(null); };
+    req.onerror = () => { clearTimeout(wait); opening = null; resolve(null); };
     req.onblocked = () => { /* waits for the other tab to let go */ };
+    // Never waits long: a database held open elsewhere (a Sign out deleting it) means no copy this time.
+    const wait = setTimeout(() => { opening = null; resolve(null); }, OPEN_WAIT_MS);
   });
   return opening;
 }

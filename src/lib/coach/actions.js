@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { forgetSharedReads } from '../readShare';
 import { coachDayReady, coachReady, forgetRows, keyOf, loadCoach, newId, noteRows, removeRow, rowsOf, saveRow, saveRows } from './store';
 import { clean, mergedProfile } from './model';
 
@@ -73,6 +74,8 @@ export async function addCoach({ firstName, fullName, email }) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ firstName, fullName, email }),
     });
+    // The server wrote to the database: reads shared a moment ago (readShare.js) are forgotten, so the next load sees it.
+    forgetSharedReads();
   } catch {
     throw new Error('Adding a coach needs a connection, so try again when you’re back online.');
   }
@@ -141,6 +144,8 @@ export async function coachSend(body) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
     });
+    // The server wrote to the database: reads shared a moment ago (readShare.js) are forgotten, so the next load sees it.
+    forgetSharedReads();
     const answer = await res.json().catch(() => null);
     if (!answer || typeof answer !== 'object' || typeof answer.sent !== 'boolean') return { sent: false, reason: 'no_answer' };
     return { sent: answer.sent === true, people: Number(answer.people) || 0, reason: answer.sent ? null : (answer.reason || 'no_answer') };

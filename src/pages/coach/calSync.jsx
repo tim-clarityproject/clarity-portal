@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { forgetSharedReads } from '../../lib/readShare';
 import { deviceKey, readJson, removeKey, writeJson } from '../../lib/deviceStore';
 import { deviceZone } from '../../lib/time/index.js';
 import { coachState, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
@@ -246,6 +247,8 @@ async function fetchConnect(body) {
     const token = data?.session?.access_token;
     if (!token) return null;
     const res = await fetch('/api/coach-calendar-connect', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+    // The server wrote to the database: reads shared a moment ago (readShare.js) are forgotten, so the next load sees it.
+    forgetSharedReads();
     return await res.json().catch(() => null);
   } catch {
     return null;
