@@ -62,6 +62,7 @@ const HOME = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height
 const CALENDAR = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3.5v4M16 3.5v4" /></svg>;
 
 const LIVE = typeof __CLARITY_LIVE__ !== 'undefined' && __CLARITY_LIVE__;
+const later = COACH_PAGES.filter((p) => p.later);
 
 /** Today's day key, kept right when the day turns while the page is open. */
 function useToday() {
@@ -233,7 +234,12 @@ function Search({ open, onClose }) {
   // On a phone search covers the page: Back closes it (run 6, item 4).
   useBackCloses(open, onClose, isPhoneWidth());
   useFocusBack(open);
-  const [recent, setRecent] = useState([]);
+  // Read as the box opens, in the same render (a state set after opening drew it twice: scale check, 22 Nov).
+  const recent = useMemo(() => {
+    if (!open) return [];
+    const kept = readJson(recentKey);
+    return Array.isArray(kept) ? kept : [];
+  }, [open, recentKey]);
   // Network's people are never loaded whole: search asks for the few that match, as it is typed (the owner's alone).
   const [network, setNetwork] = useState([]);
   useEffect(() => {
@@ -248,12 +254,11 @@ function Search({ open, onClose }) {
   }, [q, open, isOwner, userId, todayKey]);
   // Each opening starts empty and takes the keyboard at once, before anything
   // can be typed: the first letter is never lost, nor added to the last search.
+  // The box is emptied as it closes, so it opens already empty, in one render.
   useLayoutEffect(() => {
-    if (!open) return;
-    setQ(''); setAt(0);
-    setRecent(Array.isArray(readJson(recentKey)) ? readJson(recentKey) : []);
+    if (!open) { setQ(''); setAt(0); return; }
     inputRef.current?.focus();
-  }, [open, recentKey]);
+  }, [open]);
 
   // The index is built once its data is there, quietly after the page has drawn, and again only when what it is
   // built from changes: never as the box opens or as a letter is typed (scale check, 22 Nov: opening took 0.5 s on a
@@ -449,6 +454,55 @@ function Blank() {
   return <div className="ui-root" role="status" aria-label="Loading" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />;
 }
 
+/**
+ * The frame round every page: the header, the call bar, the page, the phone bar, the menu, search and the bell. Its
+ * own state (which of the three is open) lives here, so opening one draws only this, never the page under it nor the
+ * calendar's sync and the automations (scale check, 22 Nov: 0.1 s of script on a slowed phone for the owner).
+ */
+function Frame({ pages, calls, now, unread }) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [menu, setMenu] = useState(false);
+  const [search, setSearch] = useState(false);
+  const [bell, setBell] = useState(false);
+  const signOut = useSignOut({ to: '/coach/sign-in' });
+  useEffect(() => { setMenu(false); setSearch(false); }, [pathname]);
+  const closeMenu = useCallback(() => setMenu(false), []);
+  const closeSearch = useCallback(() => setSearch(false), []);
+  const closeBell = useCallback(() => setBell(false), []);
+  return (
+    <div className="ui-root cc-app">
+      <header className="cc-header">
+        <div className="cc-header-in">
+          <button type="button" className="cc-round cc-round--mark" aria-expanded={menu} aria-label="Open the menu" onClick={() => setMenu(true)}>
+            <BoldCrosshair size={26} />
+          </button>
+          <button type="button" className="cc-search" aria-label="Search, or do anything" aria-haspopup="dialog" onClick={() => setSearch(true)}>
+            <span>Search or do anything</span>
+          </button>
+          <button type="button" className="cc-round" aria-label={unread ? `Notifications, ${unread} new` : 'Notifications'} aria-haspopup="dialog" onClick={() => setBell(true)}>
+            {BELL}
+            {unread > 0 && <span className="cc-count" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
+          </button>
+        </div>
+      </header>
+      <CallBar calls={calls} now={now} />
+      <main className="cc-main" id="cc-main">
+        {pages}
+      </main>
+      <nav className="cc-phonebar" aria-label="Clarity Coach">
+        <button type="button" className="cc-round" aria-label="Today" aria-current={pathname === '/coach' ? 'page' : undefined} onClick={() => { setMenu(false); navigate('/coach'); }}>{HOME}</button>
+        <button type="button" className="cc-round cc-round--mark" aria-label={menu ? 'Close the menu' : 'Menu'} aria-expanded={menu} onClick={() => setMenu((v) => !v)}><BoldCrosshair size={32} /></button>
+        <button type="button" className="cc-round" aria-label="Calendar" aria-current={pathname.startsWith('/coach/calendar') ? 'page' : undefined} onClick={() => { setMenu(false); navigate('/coach/calendar'); }}>{CALENDAR}</button>
+      </nav>
+      <Menu open={menu} onClose={closeMenu} onSignOut={signOut.start} />
+      <Search open={search} onClose={closeSearch} />
+      <Bell open={bell} onClose={closeBell} />
+      {signOut.choice}
+    </div>
+  );
+}
+
 export default function CoachApp() {
   const { user } = useContext(AuthContext);
   const role = useCoachRole();
@@ -488,11 +542,6 @@ export default function CoachApp() {
     return () => { live = false; };
   }, [coachId, isOwner, turn, countTurn]);
 
-  const [menu, setMenu] = useState(false);
-  const [search, setSearch] = useState(false);
-  const [bell, setBell] = useState(false);
-  const signOut = useSignOut({ to: '/coach/sign-in' });
-  useEffect(() => { setMenu(false); setSearch(false); }, [pathname]);
   useEffect(() => { document.title = coachTitle(pathname); }, [pathname]);
 
   const value = useMemo(() => {
@@ -573,12 +622,56 @@ export default function CoachApp() {
     // (pathname: test calls on previews are read again on each page, as they were.)
   }, [value?.calItems, value?.sessions, value?.clients, value?.groups, value?.settings, now, pathname]);
 
+  // The page itself is made once per owner or not: opening the menu, search or the bell re-renders this frame, and the
+  // page under them (Today, Clients…) used to be drawn again with it (scale check, 22 Nov). A page still follows the
+  // address and the coach's data through the router and CoachPortalContext.
+  const pages = useMemo(() => (
+    <Suspense fallback={null}>
+      <Routes>
+        <Route index element={<Today />} />
+        <Route path="clients" element={<Clients />} />
+        <Route path="clients/past" element={<PastClients />} />
+        <Route path="clients/:id" element={<ClientPage />} />
+        <Route path="groups/:id" element={<GroupPage />} />
+        <Route path="workshops/:id" element={<WorkshopPage />} />
+        <Route path="organisations/:id" element={isOwner ? <OrganisationPage /> : <Navigate to="/coach/clients" replace />} />
+        <Route path="todos" element={<Todos />} />
+        <Route path="todos/lists/:id" element={<TodoListPage />} />
+        <Route path="sessions/:id" element={<SessionPage />} />
+        <Route path="clients/:id/close" element={<ClosePage />} />
+        {/* Leads (run 4) are the owner's alone: an associate is sent to their own Today, whatever address they open. */}
+        <Route path="leads" element={isOwner ? <Leads /> : <Navigate to="/coach" replace />} />
+        <Route path="leads/cold" element={isOwner ? <ColdLeads /> : <Navigate to="/coach" replace />} />
+        <Route path="leads/automations" element={isOwner ? <Automations /> : <Navigate to="/coach" replace />} />
+        <Route path="leads/:id" element={isOwner ? <LeadPage /> : <Navigate to="/coach" replace />} />
+        {/* Boards (run 4): the owner's own; an associate opens only a board the owner has shared, and can't change it. */}
+        <Route path="network" element={isOwner ? <Network /> : <Navigate to="/coach" replace />} />
+        <Route path="boards" element={<Boards />} />
+        <Route path="boards/:id" element={<BoardPage />} />
+        <Route path="business/*" element={<Navigate to="/coach/finances" replace />} />
+        <Route path="calendar" element={<Calendar />} />
+        {/* Booking (run 3, step 4): Book a call is a side panel over the calendar; Offer times by email and a poll's times
+            are picked on the calendar itself; Open for calls and a poll are their own pages. */}
+        <Route path="calendar/book" element={<Calendar side="book" />} />
+        <Route path="calendar/offer" element={<Calendar side="offer" />} />
+        <Route path="calendar/polls/new" element={<Calendar side="poll" />} />
+        <Route path="calendar/open" element={<OpenForCalls />} />
+        <Route path="calendar/polls/:id" element={<PollPage />} />
+        <Route path="calendar/*" element={<Navigate to="/coach/calendar" replace />} />
+        {!LIVE && <Route path="renewals/:id" element={<ComingSoon title="Renewal" />} />}
+        <Route path="settings" element={<Settings />} />
+        <Route path="settings/:section" element={<Settings />} />
+        {!LIVE && later.filter((p) => !p.owner || isOwner).map((p) => <Route key={p.key} path={`${p.to.replace('/coach/', '')}/*`} element={<ComingSoon title={p.label} />} />)}
+        <Route path="*" element={<Navigate to="/coach" replace />} />
+      </Routes>
+    </Suspense>
+  ), [isOwner]);
+
   if (role.loading) return <Blank />;
   if (!coach) return <Navigate to="/welcome" replace />;
 
   const unread = notificationsUnread;
   const calls = barCallsNow;
-  const later = COACH_PAGES.filter((p) => p.later);
 
   return (
     <CoachPortalContext.Provider value={value}>
@@ -586,73 +679,7 @@ export default function CoachApp() {
       {/* Run 4: the automations nobody presses a button for, and emails arriving (both the owner's; neither ever sends anything). */}
       <AutomationWatch />
       <EmailSync />
-      <div className="ui-root cc-app">
-        <header className="cc-header">
-          <div className="cc-header-in">
-            <button type="button" className="cc-round cc-round--mark" aria-expanded={menu} aria-label="Open the menu" onClick={() => setMenu(true)}>
-              <BoldCrosshair size={26} />
-            </button>
-            <button type="button" className="cc-search" aria-label="Search, or do anything" aria-haspopup="dialog" onClick={() => setSearch(true)}>
-              <span>Search or do anything</span>
-            </button>
-            <button type="button" className="cc-round" aria-label={unread ? `Notifications, ${unread} new` : 'Notifications'} aria-haspopup="dialog" onClick={() => setBell(true)}>
-              {BELL}
-              {unread > 0 && <span className="cc-count" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
-            </button>
-          </div>
-        </header>
-        <CallBar calls={calls} now={now} />
-        <main className="cc-main" id="cc-main">
-          <Suspense fallback={null}>
-            <Routes>
-              <Route index element={<Today />} />
-              <Route path="clients" element={<Clients />} />
-              <Route path="clients/past" element={<PastClients />} />
-              <Route path="clients/:id" element={<ClientPage />} />
-              <Route path="groups/:id" element={<GroupPage />} />
-              <Route path="workshops/:id" element={<WorkshopPage />} />
-              <Route path="organisations/:id" element={isOwner ? <OrganisationPage /> : <Navigate to="/coach/clients" replace />} />
-              <Route path="todos" element={<Todos />} />
-              <Route path="todos/lists/:id" element={<TodoListPage />} />
-              <Route path="sessions/:id" element={<SessionPage />} />
-              <Route path="clients/:id/close" element={<ClosePage />} />
-              {/* Leads (run 4) are the owner's alone: an associate is sent to their own Today, whatever address they open. */}
-              <Route path="leads" element={isOwner ? <Leads /> : <Navigate to="/coach" replace />} />
-              <Route path="leads/cold" element={isOwner ? <ColdLeads /> : <Navigate to="/coach" replace />} />
-              <Route path="leads/automations" element={isOwner ? <Automations /> : <Navigate to="/coach" replace />} />
-              <Route path="leads/:id" element={isOwner ? <LeadPage /> : <Navigate to="/coach" replace />} />
-              {/* Boards (run 4): the owner's own; an associate opens only a board the owner has shared, and can't change it. */}
-              <Route path="network" element={isOwner ? <Network /> : <Navigate to="/coach" replace />} />
-              <Route path="boards" element={<Boards />} />
-              <Route path="boards/:id" element={<BoardPage />} />
-              <Route path="business/*" element={<Navigate to="/coach/finances" replace />} />
-              <Route path="calendar" element={<Calendar />} />
-              {/* Booking (run 3, step 4): Book a call is a side panel over the calendar; Offer times by email and a poll's times
-                  are picked on the calendar itself; Open for calls and a poll are their own pages. */}
-              <Route path="calendar/book" element={<Calendar side="book" />} />
-              <Route path="calendar/offer" element={<Calendar side="offer" />} />
-              <Route path="calendar/polls/new" element={<Calendar side="poll" />} />
-              <Route path="calendar/open" element={<OpenForCalls />} />
-              <Route path="calendar/polls/:id" element={<PollPage />} />
-              <Route path="calendar/*" element={<Navigate to="/coach/calendar" replace />} />
-              {!LIVE && <Route path="renewals/:id" element={<ComingSoon title="Renewal" />} />}
-              <Route path="settings" element={<Settings />} />
-              <Route path="settings/:section" element={<Settings />} />
-              {!LIVE && later.filter((p) => !p.owner || isOwner).map((p) => <Route key={p.key} path={`${p.to.replace('/coach/', '')}/*`} element={<ComingSoon title={p.label} />} />)}
-              <Route path="*" element={<Navigate to="/coach" replace />} />
-            </Routes>
-          </Suspense>
-        </main>
-        <nav className="cc-phonebar" aria-label="Clarity Coach">
-          <button type="button" className="cc-round" aria-label="Today" aria-current={pathname === '/coach' ? 'page' : undefined} onClick={() => { setMenu(false); navigate('/coach'); }}>{HOME}</button>
-          <button type="button" className="cc-round cc-round--mark" aria-label={menu ? 'Close the menu' : 'Menu'} aria-expanded={menu} onClick={() => setMenu((v) => !v)}><BoldCrosshair size={32} /></button>
-          <button type="button" className="cc-round" aria-label="Calendar" aria-current={pathname.startsWith('/coach/calendar') ? 'page' : undefined} onClick={() => { setMenu(false); navigate('/coach/calendar'); }}>{CALENDAR}</button>
-        </nav>
-        <Menu open={menu} onClose={() => setMenu(false)} onSignOut={signOut.start} />
-        <Search open={search} onClose={() => setSearch(false)} />
-        <Bell open={bell} onClose={() => setBell(false)} />
-        {signOut.choice}
-      </div>
+      <Frame pages={pages} calls={calls} now={now} unread={unread} />
       </CalSync>
     </CoachPortalContext.Provider>
   );
