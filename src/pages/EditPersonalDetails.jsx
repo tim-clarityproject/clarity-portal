@@ -1,5 +1,5 @@
 import { useEffect, useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useDraft } from '../lib/drafts';
@@ -11,6 +11,11 @@ import { limitName, NAME_MAX, NAME_TOO_LONG } from '../lib/nameLimit';
 
 export default function EditPersonalDetails() {
   const navigate = useNavigate();
+  // Back goes to the page that opened this one; opened on its own (a new tab,
+  // a bookmark), where there is nothing to step back to, it goes to My Account
+  // (the break-it tester, Phase 9 tidy 1: Back did nothing there).
+  const location = useLocation();
+  const goBack = () => (location.key !== 'default' ? navigate(-1) : navigate('/my-account'));
   const toast = useToast();
   const { user } = useContext(AuthContext);
   const [firstName, setFirstName] = useState('');
@@ -246,7 +251,7 @@ export default function EditPersonalDetails() {
         <div className="edit-profile-column">
           {/* The shared Back: chevron on the column's edge, 10px before its word (tidy pass item 17). */}
           <div className="edit-profile-back">
-            <BackLink onClick={() => navigate(-1)} />
+            <BackLink onClick={goBack} />
           </div>
 
           <PageHeader title="Edit Profile" info={pageText.editPersonalDetails} />
