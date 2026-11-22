@@ -30,3 +30,8 @@ export async function tableReady(table) {
   if (isNetworkError(error)) return null;
   return null; // anything else: don't guess, keep the device copy
 }
+
+/** Tests only: a new page load, which has looked at no table yet. */
+export function resetTableReadyForTests() {
+  known.clear();
+}

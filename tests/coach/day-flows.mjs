@@ -37,6 +37,7 @@ const YESTERDAY = '2026-11-16';
 const u = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 // Sessions these walks add to the seed: Priya's from yesterday and two of Hannah's, none written up.
 const EXTRA = { priya: u(6950), hannahNoShow: u(6951), hannahTyped: u(6952), view: u(6960), cover: u(6961) };
+const SAM_SPRINT = u(6970); // Sam's sprint (run 6, item 5): its own standard is 80
 
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const button = (page, name) => page.getByRole('button', { name, exact: true }).first();
@@ -98,7 +99,9 @@ export async function runDay({ browser, report, parts }) {
     if (shares) {
       await page.route('**/rest/v1/peak_moments*', (route) => read(user(route).includes(SES.samUser) ? SHARED.moments(SES.samUser) : [])(route));
       await page.route('**/rest/v1/session_prep*', (route) => read(user(route) === SES.samUser ? prep.now : null)(route));
-      await page.route('**/rest/v1/week_scores*', (route) => read(user(route) === SES.samUser ? SHARED.weekScores() : [])(route));
+      // Sam's weeks carry their sprint, whose own standard is 80 (run 6, item 5): the brief's bar is coloured by it, never by 85.
+      await page.route('**/rest/v1/week_scores*', (route) => read(user(route) === SES.samUser ? SHARED.weekScores().map((w) => ({ ...w, sprint_id: SAM_SPRINT })) : [])(route));
+      await page.route('**/rest/v1/sprints*', (route) => read(new URL(route.request().url()).searchParams.get('id')?.includes(SAM_SPRINT) ? [{ id: SAM_SPRINT, standard: 80 }] : [])(route));
       await page.route('**/rest/v1/peak_reviews*', (route) => read(user(route) === SES.samUser ? SHARED.reviews() : [])(route));
       await page.route('**/rest/v1/checkins*', (route) => read(user(route) === SES.priyaUser ? SHARED.checkins() : [])(route));
     } else {
@@ -318,6 +321,22 @@ export async function runDay({ browser, report, parts }) {
       const sent = t.store.calls.filter((c) => /^(POST|PATCH|DELETE) coach_(todos|days|tag_links)/.test(c));
       pass(`${tag}: the plan, the to-dos and the tag reached the database as the coach’s own rows`, sent.some((c) => c === 'POST coach_todos') && sent.some((c) => c === 'POST coach_days') && sent.some((c) => c === 'DELETE coach_days') && t.store.rows.coach_todos.every((r) => r.coach_id === ME), [...new Set(sent)].join(', '));
     }
+    // ---- run 6, item 12: M11's "2 weeks after I finish it", through the quick add, then ticked a day late
+    {
+      const title = 'Send the invoices';
+      await go(page, '/coach/todos');
+      await add(`${title} 2 weeks after I finish it`, ['Today', '2 weeks after I finish it'], 'Added to Today.');
+      const made = await byTitle(title);
+      pass(`${tag}: the repeat is kept as a rule counted from finishing`, JSON.stringify(made?.repeat_rule) === JSON.stringify({ every: 'week', interval: 2, from: 'done' }) && made.planned_on === TODAY, JSON.stringify(made?.repeat_rule));
+      await page.getByRole('checkbox', { name: `Mark “${title}” as done` }).first().click(); await settle(page, 900);
+      const all = (await t.rowsNow('coach_todos')).filter((r) => r.title === title);
+      const next = all.find((r) => !r.done_at);
+      // Ticked today (Tue 17 Nov): the next comes 2 weeks after the day it was finished, Tue 1 Dec.
+      pass(`${tag}: ticking it makes the next one, 2 weeks after the day it was finished, with the same rule`, all.length === 2 && all.some((r) => r.done_at) && next?.planned_on === '2026-12-01' && next.repeat_rule?.from === 'done', JSON.stringify(all.map((r) => [r.planned_on, Boolean(r.done_at)])));
+      await page.getByRole('tab', { name: 'Upcoming' }).click(); await settle(page, 600);
+      pass(`${tag}: the next one shows on Upcoming`, flat(await page.locator('#cc-todo-tab').innerText()).includes(title));
+      await page.getByRole('tab', { name: 'Today' }).click(); await settle(page, 400);
+    }
     await t.done();
   }
 
@@ -361,6 +380,9 @@ export async function runDay({ browser, report, parts }) {
       await row('done').click(); await settle(page, 700);
       b3 = await t.one('coach_session_actions', SES.b3);
       pass(`${tag}: and back to Not yet, saved again`, (await toast(page)) === 'Saved' && !b3?.done_at && (await row('not yet').count()) === 1, `${b3?.done_at}`);
+      const stat = dialog(page).locator('.cc-brief-stat');
+      const bar = { value: (await stat.locator('.ds-stat-value').innerText().catch(() => '')).trim(), below: await stat.locator('.ds-bar--below').count() };
+      pass(`${tag}: the brief's bar is coloured by Sam's own standard of 80, so an average of 81% has no grey "below" band (85 would have had one)`, bar.value === '81%' && bar.below === 0, JSON.stringify(bar));
       await closePanel(page);
     }
 

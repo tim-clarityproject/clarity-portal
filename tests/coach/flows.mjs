@@ -746,6 +746,25 @@ if (has('associate')) {
   // Clients on a phone: the list and the board only; press and hold to choose.
   await open(page, '/coach/clients');
   pass('associate: the list says “Your clients”, and shows only theirs', /Your clients/.test(await page.locator('.cc-toolbar-who').innerText()) && !/Maya’s client/.test(await text(page)));
+
+  // Run 6 (item 4): on a phone, Back closes a full-screen panel and stays on the page; a panel closed any other way
+  // leaves no step behind, so the next Back goes to the page before. The menu closes the same way.
+  {
+    const here = () => new URL(page.url()).pathname;
+    await button(page, 'Add client').first().click(); await settle(page, 600);
+    const opened = await panel(page).count();
+    await page.goBack(); await settle(page, 700);
+    pass('associate, phone: Back closes the full-screen Add client and stays on Clients', opened === 1 && (await page.locator('.ds-modal--shown').count()) === 0 && here() === '/coach/clients', `${opened} ${here()}`);
+    await page.locator('.cc-phonebar').getByRole('button', { name: 'Menu' }).click(); await settle(page, 500);
+    const menuOpen = await page.locator('.cc-menu').isVisible().catch(() => false);
+    await page.goBack(); await settle(page, 700);
+    pass('associate, phone: Back closes the menu and stays on Clients', menuOpen && !(await page.locator('.cc-menu').isVisible().catch(() => false)) && here() === '/coach/clients', `${menuOpen} ${here()}`);
+    await button(page, 'Add client').first().click(); await settle(page, 600);
+    await closePanel(page); await settle(page, 300);
+    await page.goBack(); await settle(page, 900);
+    pass('associate, phone: a panel closed with Escape leaves no step: Back goes to the page before', here() !== '/coach/clients', here());
+    await open(page, '/coach/clients');
+  }
   await button(page, 'View').click();
   await settle(page, 500);
   const views = await page.getByRole('menuitemcheckbox').allInnerTexts();

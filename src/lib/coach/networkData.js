@@ -184,6 +184,10 @@ const noteSeen = () => { try { window.localStorage.setItem(SEEN_KEY, '1'); } cat
  * nobody, the page is told so (code OFFLINE) and never shown an empty Network.
  */
 async function onDevice(userId) {
+  // A device that has seen 052 and holds nothing of Network's waiting asks the database at once, without first asking
+  // whether 052 is there (run 6, item 9): with no connection that look is tried again for several seconds, and Network
+  // stood empty meanwhile; ask() answers from the device's last copy straight away instead.
+  if (coachCrmReadyNow() === null && seen() && !networkWaiting(userId)) return false;
   const there = await networkReady();
   if (there === true) {
     noteSeen();

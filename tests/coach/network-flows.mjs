@@ -23,6 +23,8 @@
 //   net-import     a pasted sheet with odd columns: columns matched, duplicates first, Add anyway, Undo; an Excel file read in
 //                  the page; a file that can't be read said calmly; Export downloads every column
 //   net-today      Today's Keep in touch lines (people due, then past clients' check-ins), the menu's count, and search
+//   net-offline    049 to 052 there: a reload with no connection shows the device's last copy at once (run 6, item 9), never
+//                  an empty Network or "needs a connection the first time"; back online, a reload asks the database again
 //   net-associate  an associate opening Network lands on their own Today, with no Network in the menu or in search
 //   net-arrive     kept on the device before 052, then 049 to 052 arrive: Network's people move across once
 //
@@ -36,7 +38,7 @@ import { CRM, manyNetwork, networkDeviceSeed, networkSeed, seedClock, seedWithCr
 import { mapProblems, readMap, tableFrozen } from './net-rules.mjs';
 import { xlsxBytes, xlsxTable } from '../../src/lib/coach/xlsx.js';
 
-export const NETWORK_PARTS = ['net-actions', 'net-archive', 'net-table', 'net-many', 'net-map', 'net-person', 'net-import', 'net-today', 'net-associate', 'net-arrive'];
+export const NETWORK_PARTS = ['net-actions', 'net-archive', 'net-table', 'net-many', 'net-map', 'net-person', 'net-import', 'net-today', 'net-offline', 'net-associate', 'net-arrive'];
 const TUE = new Date(2026, 10, 17, 9, 0);
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
@@ -579,7 +581,7 @@ async function run() {
           // Odd columns: a name in two columns, headings nobody knows, a column for one of the owner's own, blanks, a rating out of range.
           const sheet = ['First Name;Surname;COMPANY_NAME;e-mail address;Their influence;Trust;Cadence;Last Contacted;Sector;Shoe size;;',
             'Dana;Whitfield;Kestrel Group;DANA.WHITFIELD@example.invalid;9;8;Monthly;12/10/2026;Logistics;7;;',
-            'Nell;Okoye;Harbour Lane;nell.okoye@example.invalid;6;11;Quarterly;1 Sep 2026;Property;5;;',
+            'Nell;Okoye;Harbour Lane;nell.okoye@example.invalid;6;11;Quarterly;"September 1, 2026";Property;5;;',
             ';;Nobody Ltd;;;;;;;;;',
             'sofia;marsh;Somewhere Else;;;;;;;;;',
             'Ravi;"Menon, Jr";Quillmark;ravi@example.invalid;10;0;every 2 months;not a date;;;;'].join('\n');
@@ -596,7 +598,7 @@ async function run() {
           let people = await a.peopleNow();
           const nell = people.find((p) => p.name === 'Nell Okoye');
           const ravi = people.find((p) => p.name === 'Ravi Menon, Jr');
-          pass(`${tag}: what could be read is kept (rhythm from “Quarterly”, the day from “1 Sep 2026”, the owner’s own Sector column), and what couldn’t is left blank (a rating of 11, “not a date”)`, nell?.organisation === 'Harbour Lane' && nell.influence === 6 && nell.trust == null && nell.rhythm_months === 3 && nell.last_spoke_on === '2026-09-01' && nell.own?.[CRM.colSector] === 'Property' && ravi?.influence === 10 && ravi.trust === 0 && ravi.rhythm_months === 2 && ravi.last_spoke_on == null, JSON.stringify(nell && [nell.trust, nell.rhythm_months, nell.last_spoke_on, nell.own]));
+          pass(`${tag}: what could be read is kept (rhythm from “Quarterly”, the day from “September 1, 2026”, a month name first (run 6, item 10), the owner’s own Sector column), and what couldn’t is left blank (a rating of 11, “not a date”)`, nell?.organisation === 'Harbour Lane' && nell.influence === 6 && nell.trust == null && nell.rhythm_months === 3 && nell.last_spoke_on === '2026-09-01' && nell.own?.[CRM.colSector] === 'Property' && ravi?.influence === 10 && ravi.trust === 0 && ravi.rhythm_months === 2 && ravi.last_spoke_on == null, JSON.stringify(nell && [nell.trust, nell.rhythm_months, nell.last_spoke_on, nell.own]));
           pass(`${tag}: someone with a rating missing is in no focus list until rated`, (await cellText(page, 'Nell Okoye', 5)) === '');
           await undo(page);
           people = await a.peopleNow();
@@ -680,6 +682,38 @@ async function run() {
         await page.keyboard.type('add someone'); await settle(page, 600);
         await page.locator('.cc-jump-item', { hasText: 'Add someone to your Network' }).click(); await settle(page, 1000);
         pass(`${tag}: “Add someone to your Network” in search opens its panel`, (await panelWords(page)).toLowerCase().includes('add to your network'));
+        await a.close();
+      }
+
+      // ---------------------------------------------------------------- offline after a reload, then back (run 6, item 9)
+      if (on('net-offline') && db === 'there') {
+        const tag = `net-offline, ${mode}`;
+        const a = await openAt({ db, tag, path: '/coach/network?tab=table' });
+        const { page, store } = a;
+        // The device says it is offline (navigator.onLine false) while the flag is set, as a phone with no signal does.
+        await page.addInitScript(() => { try { if (sessionStorage.getItem('f6-offline') === '1') Object.defineProperty(Navigator.prototype, 'onLine', { get: () => false, configurable: true }); } catch { /* */ } });
+        for (const tab of ['table', 'actions']) {
+          await go(page, `/coach/network?tab=${tab}`);
+          const online = await words(page);
+          const name = tab === 'table' ? (await rowNames(page))[0] : 'Sofia Marsh';
+          store.down = true;
+          await page.evaluate(() => sessionStorage.setItem('f6-offline', '1'));
+          await page.reload();
+          await page.waitForSelector('.cc-app', { timeout: 20000 });
+          const drawn = Date.now();
+          let shown = null;
+          try { await page.locator('.cc-main').getByText(name, { exact: true }).first().waitFor({ timeout: 10000 }); shown = Date.now() - drawn; } catch { /* checked below */ }
+          const offline = await words(page);
+          pass(`${tag}, ${tab}: after a reload with no connection the device copy shows as soon as the portal does (within 1.5 s), never an empty Network`, shown !== null && shown <= 1500, shown === null ? `never: ${offline.slice(0, 160)}` : `${shown} ms`);
+          pass(`${tag}, ${tab}: it never says it needs a connection the first time`, !/needs a connection the first time/.test(offline) && online.includes(name));
+          store.down = false;
+          await page.evaluate(() => sessionStorage.removeItem('f6-offline'));
+          const asked = store.calls.length;
+          await page.reload();
+          await page.waitForSelector('.cc-app', { timeout: 20000 });
+          await settle(page, 1300);
+          pass(`${tag}, ${tab}: back online, a reload asks the database again and shows the same people`, (await words(page)).includes(name) && store.calls.slice(asked).some((c) => /network_page/.test(c)), store.calls.slice(asked).filter((c) => /network/.test(c)).slice(0, 3).join('; '));
+        }
         await a.close();
       }
 

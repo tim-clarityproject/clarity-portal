@@ -157,6 +157,24 @@ async function run() {
         todos = (await a.rowsNow('coach_todos')).filter((t) => t.automation_id === mine?.id);
         pass(`${tag}: Undo takes the move and the automation's to-do back`, todos.length === 0 && (await a.rowsNow('coach_leads')).find((l) => l.id === CRM.amy)?.stage_id === CRM.stProp, `${todos.length} to-dos`);
 
+        // Run 6 (item 7): switched off, it runs nothing; switched on again, it runs once more.
+        await go(page, '/coach/leads/automations');
+        const mineSentence = 'When a lead moves to Deciding, add the to-do “Send the contract”, 2 days later.';
+        await page.getByRole('switch', { name: `On: ${mineSentence}` }).click(); await settle(page, 700);
+        pass(`${tag}: switched off: “Switched off”, and kept off`, /Switched off/.test(await toastText(page)) && (await a.rowsNow('coach_automations')).find((r) => r.id === mine?.id)?.active === false);
+        const runsBefore = (await a.rowsNow('coach_automation_runs')).filter((r) => r.automation_id === mine?.id).length;
+        await go(page, '/coach/leads');
+        await page.locator(`[data-card="${CRM.amy}"]`).focus();
+        await page.keyboard.press('ArrowRight'); await settle(page, 1600);
+        const offSaid = await toastText(page);
+        todos = (await a.rowsNow('coach_todos')).filter((t) => t.automation_id === mine?.id);
+        runs = (await a.rowsNow('coach_automation_runs')).filter((r) => r.automation_id === mine?.id);
+        pass(`${tag}: with it off, moving Amy to Deciding adds no to-do, claims no run, and the message says only the move`, offSaid.includes('Moved to Deciding.') && !offSaid.includes('automation') && todos.length === 0 && runs.length === runsBefore, `${offSaid} / ${todos.length} to-dos / ${runs.length - runsBefore} new runs`);
+        await undo(page);
+        await go(page, '/coach/leads/automations');
+        await page.getByRole('switch', { name: `On: ${mineSentence}` }).click(); await settle(page, 700);
+        pass(`${tag}: switched on again`, (await a.rowsNow('coach_automations')).find((r) => r.id === mine?.id)?.active === true);
+
         // One that moves a stage: a proposal opened once moves the lead to Deciding. The watch asks about it while the portal is
         // open; its own move then sets off the automation above (a follow-on), once.
         await go(page, '/coach/leads/automations');

@@ -25,6 +25,7 @@ const { CRM_TABLES, crmStandIn } = await import('../coach/crm-standin.mjs');
 const { ME, OTHER } = await import('../coach/shared.mjs');
 const data = await import('../../src/lib/coach/networkData.js');
 const { resetCoachStoreForTests } = await import('../../src/lib/coach/store.js');
+const { resetTableReadyForTests } = await import('../../src/lib/performance/tableReady.js');
 const { dueOn } = await import('../../src/lib/coach/network.js');
 
 const USER = 'account-1';
@@ -99,6 +100,7 @@ globalThis.__db = {
 /** A new page load: the modules forget what they remember; the device and the database stay as they are. */
 function reload() {
   resetCoachStoreForTests();
+  resetTableReadyForTests();
   data.resetNetworkDataForTests();
   for (const k of local.keys()) if (/not-yet$/.test(k)) local.removeItem(k);
 }
@@ -269,6 +271,22 @@ test('no connection: the last answer to the same question is shown; a device tha
   db.down = false;
   reload();
   assert.equal((await page()).total, live.total);
+});
+
+test('a reload with no connection, on a device that has seen 052: the device copy is the first answer, never after a look for 052 (run 6, item 9)', async () => {
+  const live = await page();
+  reload();
+  db.down = true;
+  db.calls = [];
+  const cold = await page();
+  assert.deepEqual([cold.stale, cold.total], [true, live.total]);
+  // The table check is tried again for seconds when there is no connection: Network never waits on it.
+  assert.deepEqual(db.calls, ['rpc network_page'], 'only Network\'s own question is asked');
+  db.down = false;
+  reload();
+  db.calls = [];
+  assert.equal((await page()).total, live.total);
+  assert.deepEqual(db.calls, ['rpc network_page'], 'online too, the answer comes in one question');
 });
 
 test('the device keeps at most ANSWERS_KEPT of Network\'s answers, the newest first', async () => {
