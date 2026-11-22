@@ -350,6 +350,8 @@ export const GROUPS = [
       ['todos-todo-foot', '/coach/todos', async (page) => { await page.locator(`[data-todo="${DAY.t3}"]`).click(); await settle(page, 600); await page.locator('.ds-dialog-body').evaluate((b) => { b.scrollTop = b.scrollHeight; }); await settle(page, 300); }, { expects: ['panel'] }],
       ['todos-todo-important', '/coach/todos', async (page) => { await page.locator(`[data-todo="${DAY.t1}"]`).click(); await settle(page, 600); }, { expects: ['panel', 'level'] }],
       ['todos-todo-day', '/coach/todos', async (page) => { await page.locator(`[data-todo="${DAY.t9}"]`).click(); await settle(page, 600); await pick(page, 'Deadline', 'Another day'); }, { expects: ['panel', 'level'] }],
+      // Run 6 (item 12): the Repeats menu open, with M11's last choice "2 weeks after I finish it".
+      ['todos-todo-repeat', '/coach/todos', async (page) => { await page.locator(`[data-todo="${DAY.t3}"]`).click(); await settle(page, 600); const box = page.locator('.ds-dialog').getByRole('combobox', { name: /^Repeats/ }).first(); await box.scrollIntoViewIfNeeded(); await box.click(); await settle(page, 1500); }, { expects: ['panel'] }],
       ['todos-todo-email', '/coach/todos', async (page) => { await page.locator(`[data-todo="${DAY.t11}"]`).click(); await settle(page, 600); await page.locator('.cc-todo-linked').last().scrollIntoViewIfNeeded(); await settle(page, 200); }, { expects: ['panel'] }],
       ['todos-picked', '/coach/todos', chooseTwo, { expects: ['bulk'] }],
       ['todos-picked-menu', '/coach/todos', async (page, size) => { await chooseTwo(page, size); await page.locator('.cc-todo-bulk').getByRole('button', { name: 'Move', exact: true }).click(); await settle(page, 400); }],
@@ -372,6 +374,22 @@ export const GROUPS = [
       ['session-sent', `/coach/sessions/${SES.sent}`, null, { full: true }],
       ['session-future', `/coach/sessions/${SES.future}`, null, { full: true }],
       ['session-group', `/coach/sessions/${SES.group1}`, null, { full: true }],
+      // Run 6 (item 3): the recap changed in another tab (the device's copy changed under the page, as another tab's save
+      // lands), then typed here: nothing is written over it, and the page says so with "Reload to see it".
+      ['session-changed', `/coach/sessions/${SES.write}`, async (page) => {
+        await page.evaluate((id) => {
+          const key = Object.keys(localStorage).find((k) => k.startsWith('clarity-coach-local:'));
+          const s = JSON.parse(localStorage.getItem(key));
+          s.rows.coach_sessions[id] = { ...s.rows.coach_sessions[id], recap: 'Written in the other tab.' };
+          const next = JSON.stringify(s);
+          localStorage.setItem(key, next);
+          window.dispatchEvent(new StorageEvent('storage', { key, newValue: next }));
+        }, SES.write);
+        await settle(page, 400);
+        const box = page.getByLabel(/^Recap for /).first();
+        await box.click(); await box.press('End'); await page.keyboard.type(' And one more line.');
+        await settle(page, 2600);
+      }, { full: true, expects: ['changed'] }],
       ['close', `/coach/clients/${ID.priya}/close`, null, { full: true }],
       ['client-sessions', `/coach/clients/${SES.hannah}`, async (page) => { await openFold(page, 'Sessions and recaps'); await openFold(page, 'To-dos'); }, { full: true }],
       ['client-add-session', `/coach/clients/${SES.hannah}`, async (page) => { await openFold(page, 'Sessions and recaps'); await page.locator('.ds-addrow', { hasText: 'Add session' }).first().click(); await settle(page, 500); }, { expects: ['panel', 'level'] }],
@@ -609,7 +627,10 @@ GROUPS.push({
 });
 
 // The sign-in pages, signed out: the coach header's rule for the body must change nothing on them.
-GROUPS.push({ name: 'signin', roles: ['signed-out'], root: '.ui-root', screens: [['sign-in', '/auth/login'], ['coach-sign-in', '/coach/sign-in']] });
+GROUPS.push({ name: 'signin', roles: ['signed-out'], root: '.ui-root', screens: [['sign-in', '/auth/login'], ['coach-sign-in', '/coach/sign-in'],
+  // Run 6 (item 13): Coach sign in after the server ended the sign-in (the owner's reset), with M26's reason, as ProtectedLayout
+  // sends it (the router's state, kept by the browser's history across the reload).
+  ['coach-sign-in-reset', '/coach/sign-in', async (page) => { await page.evaluate(() => { window.history.replaceState({ usr: { fromDirect: true, message: ['You’ve been signed out, because your authenticator was reset.', 'Sign in again to set it up.'] }, key: 'reset', idx: 0 }, ''); }); await page.reload(); await page.waitForSelector('.ui-root'); await settle(page, 900); }]] });
 
 const optionsOf = (opt) => (typeof opt === 'string' ? { roles: [opt] } : opt || {});
 const fulfil = (body) => (route) => (route.request().method() === 'GET' ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) }) : route.fallback());

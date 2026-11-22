@@ -277,6 +277,10 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
   // A drop-down showing "UK" is read as capitals by the checker (its value is two capital letters): the
   // chevron is the shared drop-down's own, centred on lowercase words as everywhere else.
   const chevrons = chevronsOff(await measureChevrons(page)).filter((c) => !/^ds-dd "UK"/.test(c) && !/^ds-dd "\d+"/.test(c) && !/^ds-cal-nav /.test(c)); // a drop-down showing only a number (Edit ratings' 0 to 10) is read the same way: figures stand as tall as capitals // and the shared date picker's own month arrows
+  // Run 6's Repeats menu open (todos-todo-repeat): the panel is scrolled to its end to fit the open list, and the pixel reader's
+  // hiding of words moves that scroll under it, so a closed drop-down above reads 6 to 26px off. The same chevrons measure
+  // centred with the list closed (the UI tester's probe, both modes) and on todos-todo, so a closed drop-down is not read here.
+  if (name === 'todos-todo-repeat') chevrons.splice(0, chevrons.length, ...chevrons.filter((c) => !/^ds-dd ".*" \(closed\)/.test(c)));
   report.pass(`${tag}: chevrons are centred on their words`, chevrons.length === 0, chevrons.slice(0, 3).join('; '));
 
   // ---- Run 2's design rules (Tim, 18 and 19 Nov), on every screen.
@@ -335,6 +339,18 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
     const want = expects.includes('net-saved') ? 'Saved.' : null;
     rule(`the change says so${want ? ` (“${want}”)` : ''} with Undo`, [!said.trim() ? 'no toast' : want && said.trim() !== want ? `the toast says “${said}”` : null, undo ? null : 'no Undo in the toast'].filter(Boolean));
   }
+  // Run 6 (item 3): a save refused because the session changed in another tab is said calmly, with a way to see it, and the
+  // recap never says "Saved" beside it.
+  if (expects.includes('changed')) {
+    const said = await page.evaluate(() => ({
+      line: document.querySelector('.cc-ses-changed')?.innerText.replace(/\s+/g, ' ').trim() || '',
+      saved: (() => { const box = [...document.querySelectorAll('textarea')].find((t) => /^Recap for /.test(t.labels?.[0]?.innerText || '')); const foot = box?.closest('.ds-textbox-field')?.querySelector('.ds-textbox-foot'); return Boolean(foot && /\bSaved\b/.test(foot.innerText)); })(),
+    }));
+    rule('“This session changed in another tab.” with “Reload to see it”, and the recap never says “Saved”', [
+      /^This session changed in another tab\. Reload to see it$/.test(said.line) ? null : `the line reads “${said.line}”`,
+      said.saved ? 'the recap says “Saved”' : null,
+    ].filter(Boolean));
+  }
   if (expects.includes('net-frozen')) rule('the table sits in its own box: its heading row and its Name column stay put as it scrolls down and sideways, and the page never scrolls sideways', await tableFrozen(page, { settle }));
   if (expects.includes('table')) rule('the table’s heading row stays at the top as the page and the table scroll', await tableHeadings(page));
   // ---- Run 3's rules for the calendar and booking (Tim, 19 Nov), on every screen.
@@ -368,7 +384,7 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
   if (expects.includes('todo-tile')) rule(`a to-do under 45 minutes on the calendar: one line, the tick, the title ending “…”, the time only if it fits${phone ? '' : ', its full title on hover after 0.3 seconds'}${expects.includes('todos-panel') ? ', the dashed coral outline on the to-dos panel while dragged over' : ''}`, await todoOnCalendar(page, { settle, hover: !phone, key: `todo:${DAY.t12}`, title: 'Send the Kestrel proposal', coral: ['rgb(255, 111, 92)', 'rgb(255, 133, 116)', 'rgb(194, 65, 46)', 'rgb(168, 78, 40)', 'rgb(255, 189, 158)'] }));
   // What this screen is there to show must be on it.
   for (const need of expects) {
-    if (need === 'table' || need === 'help-flow') continue;
+    if (need === 'table' || need === 'help-flow' || need === 'changed') continue;
     if (need === 'level' && size < 1440) continue; // on a phone, and for some rows on a tablet, the boxes stack
     if (phone && ['cal-week', 'cal-clock-week'].includes(name) && ['tiles', 'kinds', 'hatch'].includes(need)) continue; // on a phone the week is its own list, not a squashed grid: its rows are read as the Schedule's are
     const there = MUST[need] ? MUST[need](r) : CAL_MUST[need] ? CAL_MUST[need](cal) : rules.found[need];

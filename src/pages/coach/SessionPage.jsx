@@ -388,7 +388,7 @@ function SessionBody({ session, who }) {
               <>
                 <Part title="Recap">
                   <div className="cc-field">
-                    <TextBox label={`Recap for ${whom}`} value={recap} maxLength={12000} onChange={(v) => { setRecap(v); setRecapProblem(null); }} saveState={recapState} aria-invalid={recapProblem ? true : undefined} />
+                    <TextBox label={`Recap for ${whom}`} value={recap} maxLength={12000} onChange={(v) => { setRecap(v); setRecapProblem(null); }} saveState={changedElsewhere ? 'idle' : recapState} aria-invalid={recapProblem ? true : undefined} />
                     {recapProblem && <p className="cc-problem" role="alert">{recapProblem}</p>}
                   </div>
                 </Part>

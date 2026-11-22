@@ -120,6 +120,31 @@ export function CallBar({ calls, now }) {
   );
 }
 
+/**
+ * The menu and search cover the page on a phone and sit over it on a laptop: once closed (Back, Escape, the close button or
+ * the scrim), focus goes back to what opened them, as the shared panels do, unless it has moved to another page meanwhile or
+ * something else already took it (run 6, the UI tester: focus was left on the page's body).
+ */
+function useFocusBack(open) {
+  const { pathname } = useLocation();
+  const opener = useRef(null);
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    const from = document.activeElement;
+    const at = pathname;
+    opener.current = from && from !== document.body ? from : null;
+    return () => {
+      const el = opener.current;
+      setTimeout(() => {
+        const now = document.activeElement;
+        if (!el || !el.isConnected || window.location.pathname !== at) return;
+        if (!now || now === document.body || now === document.documentElement) el.focus({ preventScroll: true });
+      }, 0);
+    };
+    // Recorded once per opening: the address it opened on is read as it opens.
+  }, [open]);
+}
+
 function Menu({ open, onClose, onSignOut }) {
   const { isOwner, views, todos, todoLists, todayKey, boards } = useCoachPortal();
   const navigate = useNavigate();
@@ -129,6 +154,7 @@ function Menu({ open, onClose, onSignOut }) {
   const due = menuCount(useNetworkCounts(open).data);
   // On a phone the menu covers the page: Back closes it (run 6, item 4).
   useBackCloses(open, onClose, isPhoneWidth());
+  useFocusBack(open);
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -206,6 +232,7 @@ function Search({ open, onClose }) {
   const recentKey = deviceKey('cache', userId, 'coach-recent');
   // On a phone search covers the page: Back closes it (run 6, item 4).
   useBackCloses(open, onClose, isPhoneWidth());
+  useFocusBack(open);
   const [recent, setRecent] = useState([]);
   // Network's people are never loaded whole: search asks for the few that match, as it is typed (the owner's alone).
   const [network, setNetwork] = useState([]);
