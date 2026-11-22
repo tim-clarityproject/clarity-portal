@@ -978,7 +978,9 @@
    shared `.ds-seg` (src/styles/buttons.css); the five words wrap onto a
    second line inside the track on a phone rather than squeeze or push the
    page sideways. */
-.ui-root .ds-log-press--rate {
+/* .ds-seg (below) is one line: the five words' own class wins (the UI
+   tester, 22 Nov: on a 390px phone Excellent ran 16px out of its track). */
+.ui-root .ds-seg.ds-log-press--rate {
   flex-wrap: wrap;
 }
 
