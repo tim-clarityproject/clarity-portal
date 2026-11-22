@@ -57,6 +57,12 @@ export function readDraft(userId, name) {
   return copies(userId, name)[0] || null;
 }
 
+/** Writes this tab's copy of a draft (the shared panel's, src/lib/panelDraft.js). */
+export function writeDraft(userId, name, v) {
+  if (!userId || !name || stopped.has(userId)) return;
+  writeJson(deviceKey('draft', userId, `${name}~${thisTab()}`), { v, at: Date.now() });
+}
+
 /** Removes a draft: every tab's copy (it has been saved or discarded). */
 export function clearDraft(userId, name) {
   if (!userId) return;

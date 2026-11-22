@@ -41,7 +41,7 @@ export function AddLeadPanel({ open, onClose, onAdded }) {
   };
   const at = (key) => (problem?.at === key ? <Problem line={problem.error} /> : null);
   return (
-    <SlidePanel open={open} onClose={onClose} title="Add lead" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>Add lead</Button></div>}>
+    <SlidePanel open={open} onClose={onClose} title="Add lead" draftKey="lead:new" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>Add lead</Button></div>}>
       <div className="cc-field"><TextField label="Who is it?" value={f.name} maxLength={120} autoComplete="off" onChange={(e) => set({ name: e.target.value })} />{at('name')}</div>
       <div className="cc-field"><TextField label="What’s their email?" type="email" value={f.email} autoComplete="off" onChange={(e) => set({ email: e.target.value })} />{at('email')}</div>
       <div className="cc-field"><TextField label="Which organisation?" value={f.organisation} maxLength={120} autoComplete="off" onChange={(e) => set({ organisation: e.target.value })} /></div>
@@ -76,7 +76,7 @@ export function EditLeadPanel({ lead, onClose }) {
   const at = (key) => (problem?.at === key ? <Problem line={problem.error} /> : null);
   const cold = Boolean(lead.cold_at);
   return (
-    <SlidePanel open onClose={onClose} title="Edit details" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Save my edit</Button></div>}>
+    <SlidePanel open onClose={onClose} title="Edit details" draftKey={`lead-edit:${lead.id}`} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Save my edit</Button></div>}>
       <div className="cc-field"><TextField label="Name" value={f.name || ''} maxLength={120} autoComplete="off" onChange={(e) => set({ name: e.target.value })} />{at('name')}</div>
       <div className="cc-field"><TextField label="Organisation" value={f.organisation || ''} maxLength={120} autoComplete="off" onChange={(e) => set({ organisation: e.target.value })} /></div>
       <div className="cc-field"><TextField label="Role" value={f.job_title || ''} maxLength={120} autoComplete="off" onChange={(e) => set({ job_title: e.target.value })} /></div>
@@ -121,7 +121,7 @@ export function LogCallPanel({ lead, onClose }) {
     if (answer) onClose();
   };
   return (
-    <SlidePanel open onClose={onClose} title={`Log a call with ${firstName(lead.name) || 'this lead'}`} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Save the call</Button></div>}>
+    <SlidePanel open onClose={onClose} title={`Log a call with ${firstName(lead.name) || 'this lead'}`} draftKey={`lead-call:${lead.id}`} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Save the call</Button></div>}>
       <div className="cc-field"><TextBox label="How did it go?" value={f.how || ''} maxLength={6000} onChange={(v) => set({ how: v })} /></div>
       <div className="cc-field"><TextField label="What happens next?" value={f.next || ''} maxLength={200} autoComplete="off" onChange={(e) => set({ next: e.target.value })} /></div>
       <div className="cc-field"><Dropdown label="When?" options={days.map((d) => ({ value: d.value, label: d.label }))} value={f.when} onChange={(v) => set({ when: v })} /></div>
@@ -152,7 +152,7 @@ export function LeadNotePanel({ lead, onClose }) {
     if (answer) onClose();
   };
   return (
-    <SlidePanel open onClose={onClose} title="Add note" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Add my note</Button></div>}>
+    <SlidePanel open onClose={onClose} title="Add note" draftKey={`lead-note:${lead.id}`} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Add my note</Button></div>}>
       <div className="cc-field"><TextBox label={`What do you want to remember about ${firstName(lead.name) || 'this lead'}?`} value={text} maxLength={6000} onChange={(v) => { setText(v); setProblem(null); }} /></div>
       <Problem line={problem} />
     </SlidePanel>
@@ -191,7 +191,7 @@ export function ColdPanel({ lead, onClose, onDone }) {
     if (answer) { onClose(); onDone?.(); }
   };
   return (
-    <SlidePanel open onClose={onClose} title={`Mark ${firstName(lead.name) || 'this lead'} as cold`} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Mark as cold</Button></div>}>
+    <SlidePanel open onClose={onClose} title={`Mark ${firstName(lead.name) || 'this lead'} as cold`} draftKey={`lead-cold:${lead.id}`} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Mark as cold</Button></div>}>
       <div className="cc-field"><Dropdown label="What happened?" options={COLD_REASONS.map(([value, label]) => ({ value, label }))} value={f.reason} onChange={(v) => set({ reason: v })} /></div>
       {f.reason === 'else' && <div className="cc-field"><TextField label="What happened, in your words?" value={f.text} maxLength={300} autoComplete="off" onChange={(e) => set({ text: e.target.value })} /></div>}
       <div className="cc-field"><Dropdown label="When should you check in again?" options={COLD_CHECKS.map(([value, label]) => ({ value, label }))} value={f.check} onChange={(v) => set({ check: v })} /></div>
@@ -379,7 +379,7 @@ export function ImportLeadsPanel({ open, onClose }) {
   };
   const fieldOptions = [{ value: NONE, label: 'Leave out' }, ...LEAD_IMPORT_FIELDS.map((f) => ({ value: f.key, label: f.label }))];
   return (
-    <SlidePanel open={open} onClose={onClose} title="Import from a spreadsheet" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>{adding.length ? importButton(adding.length) : 'Add leads'}</Button></div>}>
+    <SlidePanel open={open} onClose={onClose} title="Import from a spreadsheet" draftKey="lead-import" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>{adding.length ? importButton(adding.length) : 'Add leads'}</Button></div>}>
       <div className="cc-field" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); readFile(e.dataTransfer?.files?.[0]); }}>
         <label className="cc-field-label" htmlFor="cc-lead-paste">Paste rows from a spreadsheet, or drop an Excel or CSV file here</label>
         <textarea id="cc-lead-paste" className="cc-paste" rows={5} value={text} placeholder={'Name, Email, Organisation\nDana Whitfield, dana@example.com, Kestrel Group'} onChange={(e) => { setText(e.target.value); setCells(null); setChosen({}); setAnyway({}); setProblem(null); }} />

@@ -107,7 +107,7 @@ export function AddClientPanel({ open, onClose, onAdded }) {
   };
   const at = (key) => (problem?.at === key ? <p className="cc-problem" role="alert">{problem.line}</p> : null);
   return (
-    <SlidePanel open={open} onClose={onClose} title="Add client" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>Add client</Button></div>}>
+    <SlidePanel open={open} onClose={onClose} title="Add client" draftKey="client:new" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>Add client</Button></div>}>
       <div className="cc-field"><TextField label="Name" value={f.name} maxLength={120} autoComplete="off" onChange={(e) => set({ name: e.target.value })} />{at('name')}</div>
       <div className="cc-field"><TextField label="Email" type="email" value={f.email} autoComplete="off" onChange={(e) => set({ email: e.target.value })} />{at('email')}</div>
       <div className="cc-field"><OrganisationChoice value={f.org} onChange={(v) => set({ org: v })} newName={f.orgName} onNewName={(v) => set({ orgName: v })} />{at('org')}</div>
@@ -180,7 +180,7 @@ export function AddTeamPanel({ open, onClose }) {
     preview.unreadable ? `${preview.unreadable} ${preview.unreadable === 1 ? 'needs' : 'need'} a look first.` : null,
   ].filter(Boolean);
   return (
-    <SlidePanel open={open} onClose={onClose} title="Add team" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>{preview.add ? `Add ${preview.add} ${preview.add === 1 ? 'client' : 'clients'}` : 'Add the team'}</Button></div>}>
+    <SlidePanel open={open} onClose={onClose} title="Add team" draftKey="team:new" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>{preview.add ? `Add ${preview.add} ${preview.add === 1 ? 'client' : 'clients'}` : 'Add the team'}</Button></div>}>
       <div className="cc-field"><OrganisationChoice value={org} onChange={(v) => { setOrg(v); setProblem(null); }} newName={orgName} onNewName={(v) => { setOrgName(v); setProblem(null); }} /></div>
       <div className="cc-field">
         <label className="cc-field-label" htmlFor="cc-team-paste">Paste a list, or rows from a spreadsheet</label>
@@ -426,7 +426,7 @@ export function AddGroupPanel({ open, onClose, onAdded }) {
     if (ok) { onClose(); onAdded?.(id); }
   };
   return (
-    <SlidePanel open={open} onClose={onClose} title="Add group" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>Add group</Button></div>}>
+    <SlidePanel open={open} onClose={onClose} title="Add group" draftKey="group:new" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>Add group</Button></div>}>
       <div className="cc-field"><TextField label="Name" value={name} maxLength={120} placeholder="e.g. Leadership team" onChange={(e) => { setName(e.target.value); setProblem(null); }} /></div>
       <div className="cc-field"><OrganisationChoice value={org} onChange={setOrg} newName={orgName} onNewName={setOrgName} /></div>
       {problem && <p className="cc-problem" role="alert">{problem}</p>}
@@ -474,7 +474,7 @@ export function AddWorkshopPanel({ open, onClose, onAdded }) {
     if (ok) { onClose(); onAdded?.(id); }
   };
   return (
-    <SlidePanel open={open} onClose={onClose} title="Add workshop" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>Add workshop</Button></div>}>
+    <SlidePanel open={open} onClose={onClose} title="Add workshop" draftKey="workshop:new" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>Add workshop</Button></div>}>
       <div className="cc-field"><TextField label="Title" value={f.title} maxLength={80} onChange={(e) => set({ title: e.target.value })} /></div>
       <div className="cc-field"><OrganisationChoice value={f.org} onChange={(v) => set({ org: v })} newName={f.orgName} onNewName={(v) => set({ orgName: v })} /></div>
       <div className="cc-field"><TextField label="Day" type="date" value={f.day} min={todayKey} onChange={(e) => set({ day: e.target.value })} /></div>

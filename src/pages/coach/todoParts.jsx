@@ -517,7 +517,7 @@ export function QuickAdd({ defaults, defaultDay = null, onAdded, boxRef }) {
 export function QuickAddPanel({ open, onClose, defaults, defaultDay = null }) {
   const boxRef = useRef(null);
   return (
-    <SlidePanel open={open} onClose={onClose} title="Add to-do" initialFocusRef={boxRef}>
+    <SlidePanel open={open} onClose={onClose} title="Add to-do" initialFocusRef={boxRef} draftKey="coach-todo:new">
       {open && <QuickAdd boxRef={boxRef} defaults={defaults} defaultDay={defaultDay} onAdded={onClose} />}
     </SlidePanel>
   );

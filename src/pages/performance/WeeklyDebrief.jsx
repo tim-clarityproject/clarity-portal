@@ -919,6 +919,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
         strategies={view.strategies}
         days={view.winDays}
         onAdd={addWin}
+        draftKey={`debrief:${key}:win`}
       />
       {view.nextWeek && (
         <AddTodoPanel
@@ -929,6 +930,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
           strategies={view.strategies}
           weeks={view.nextWeek.weekOptions}
           onAdd={addTodo}
+          draftKey={`debrief:${key}:todo`}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { IconButton } from './Button';
 import { pushLayer } from './layers';
@@ -6,6 +6,7 @@ import { pushPanelEntry } from './panelHistory';
 import { isPhoneWidth, lockPage, openerOf, returnFocus, trapTab, unlockPage } from './pageLock';
 import { themeProps, useThemeScope } from './themeScope';
 import { PANEL_MS, POPUP_MS, prefersReducedMotion } from './timing';
+import { usePanelDraft } from './usePanelDraft';
 import './design.css';
 
 // The slide-across panel and the centred pop-up (design reference:
@@ -19,11 +20,25 @@ import './design.css';
 // - dim the page underneath strongly in dark and lightly in light.
 
 const SWIPE_CLOSE_PX = 90;
+
+// A panel's own Cancel (or any button that only closes it) keeps its draft,
+// as the cross does: useDismissPanel() gives the panel's own close, or null
+// outside a panel (tidy pass item 3).
+const DismissContext = createContext(null);
+export function useDismissPanel() {
+  return useContext(DismissContext);
+}
 const KIND_CLASS = { panel: 'ds-panel', popup: 'ds-popup', sheet: 'ds-choice-sheet', drop: 'ds-choice-sheet ds-drop' };
 const DOUBLE_CLICK_MS = 400;
 
 // wide: a panel wide enough for a picture (M7b's Quick guide, 780px).
-function Modal({ kind, open, onClose, title, titleAside = null, children, footer, initialFocusRef, closeLabel = 'Close', wide = false, className = '' }) {
+// draftKey: a panel with boxes to type in keeps what was typed when it is
+//   closed with its cross, Escape, a tap outside, a swipe or the phone's
+//   Back, and puts it back ("Draft restored") when it opens again; its own
+//   button closing it (a save) lets the draft go (tidy pass item 3;
+//   src/lib/panelDraft.js). Name the thing being added or edited, e.g.
+//   `todo:new` or `todo:<id>`.
+function Modal({ kind, open, onClose, title, titleAside = null, children, footer, initialFocusRef, closeLabel = 'Close', wide = false, className = '', draftKey = null }) {
   const ms = kind === 'panel' ? PANEL_MS : POPUP_MS;
   const titleId = useId();
   const scope = useThemeScope();
@@ -70,6 +85,14 @@ function Modal({ kind, open, onClose, title, titleAside = null, children, footer
   }, [open, mounted, shown]);
 
   const active = open && mounted;
+  const draft = usePanelDraft({ draftKey, open, shown, bodyRef });
+  // Every way the panel closes itself keeps its draft first.
+  const dismissRef = useRef(null);
+  dismissRef.current = () => {
+    draft.dismiss();
+    onCloseRef.current?.();
+  };
+  const [dismissPanel] = useState(() => () => dismissRef.current());
   // When it opened: the second click of a double click on the button that
   // opened it must not land on the scrim and close it straight away.
   const openedAtRef = useRef(0);
@@ -80,9 +103,9 @@ function Modal({ kind, open, onClose, title, titleAside = null, children, footer
     const returnTo = openerOf(document.activeElement);
     openedAtRef.current = performance.now();
     lockPage();
-    const removeLayer = pushLayer(() => onCloseRef.current?.());
+    const removeLayer = pushLayer(() => dismissRef.current());
     // Full screen on a phone: Back closes it, not the page (run 6, item 4).
-    const removeEntry = phoneForm && (kind === 'panel' || kind === 'popup') ? pushPanelEntry(() => onCloseRef.current?.()) : null;
+    const removeEntry = phoneForm && (kind === 'panel' || kind === 'popup') ? pushPanelEntry(() => dismissRef.current()) : null;
     const target = initialFocusRef?.current || dialogRef.current;
     target?.focus({ preventScroll: true });
 
@@ -138,7 +161,7 @@ function Modal({ kind, open, onClose, title, titleAside = null, children, footer
     if (dy > SWIPE_CLOSE_PX) {
       // Carries on downwards from where the finger let go.
       el.style.transform = 'translateY(100%)';
-      onCloseRef.current?.();
+      dismissRef.current();
     } else {
       el.style.transform = '';
     }
@@ -163,7 +186,7 @@ function Modal({ kind, open, onClose, title, titleAside = null, children, footer
         onClick={() => {
           if (!open) return;
           if (performance.now() - openedAtRef.current < DOUBLE_CLICK_MS) return;
-          onCloseRef.current?.();
+          dismissRef.current();
         }}
       />
       <div
@@ -184,10 +207,12 @@ function Modal({ kind, open, onClose, title, titleAside = null, children, footer
         <div className="ds-dialog-head">
           {/* titleAside: the panel's eye, beside its title (rule 29d). */}
           <h2 id={titleId} className="ds-dialog-title">{title}{titleAside && <span className="ds-page-aside">{titleAside}</span>}</h2>
-          <IconButton label={closeLabel} onClick={() => onCloseRef.current?.()} />
+          <IconButton label={closeLabel} onClick={() => dismissRef.current()} />
         </div>
-        <div ref={bodyRef} className="ds-dialog-body">{children}</div>
-        {footer && <div className="ds-dialog-foot">{footer}</div>}
+        <DismissContext.Provider value={dismissPanel}>
+          <div ref={bodyRef} className="ds-dialog-body">{children}</div>
+          {footer && <div className="ds-dialog-foot">{footer}</div>}
+        </DismissContext.Provider>
       </div>
     </div>,
     document.body,

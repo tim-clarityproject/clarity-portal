@@ -51,7 +51,7 @@ export function AddPersonPanel({ open, onClose, onAdded }) {
     if (ok) { onClose(); onAdded?.(made.person); }
   };
   return (
-    <SlidePanel open={open} onClose={onClose} title={ADD_WORDS.title} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>{ADD_WORDS.button}</Button></div>}>
+    <SlidePanel open={open} onClose={onClose} title={ADD_WORDS.title} draftKey="network-person:new" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>{ADD_WORDS.button}</Button></div>}>
       <form noValidate onSubmit={(e) => { e.preventDefault(); add(); }}>
         <div className="cc-field"><TextField label={ADD_WORDS.who} value={f.name} maxLength={120} autoComplete="off" onChange={(e) => set({ name: e.target.value })} /><Problem line={problem} /></div>
         <div className="cc-field"><Dropdown label={ADD_WORDS.role} options={ROLES.map((r) => ({ value: r, label: r }))} value={f.role} onChange={(v) => set({ role: v })} /></div>
@@ -423,7 +423,7 @@ export function ImportPanel({ open, onClose }) {
   };
   const fieldOptions = [{ value: NONE, label: 'Leave out' }, ...NETWORK_IMPORT_FIELDS.map((f) => ({ value: f.key, label: f.label }))];
   return (
-    <SlidePanel open={open} onClose={onClose} title={IMPORT_WORDS.title} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>{adding.length ? importButtonWords(adding.length) : 'Add people'}</Button></div>}>
+    <SlidePanel open={open} onClose={onClose} title={IMPORT_WORDS.title} draftKey="network-import" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>{adding.length ? importButtonWords(adding.length) : 'Add people'}</Button></div>}>
       <div className={`cc-net-drop${over ? ' cc-net-drop--over' : ''}`} onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)} onDrop={(e) => { e.preventDefault(); setOver(false); readFile(e.dataTransfer?.files?.[0]); }}>
         <p>{NETWORK_IMPORT_DROP}</p>
         <Button variant="outline" onClick={() => fileRef.current?.click()}>{IMPORT_WORDS.choose}</Button>

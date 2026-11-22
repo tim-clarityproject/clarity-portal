@@ -590,6 +590,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
           strategies={strategies}
           weeks={view.weekOptions}
           onAdd={addTodo}
+          draftKey={`home-todo:${view?.sprintId || 'none'}`}
         />
       )}
     </>

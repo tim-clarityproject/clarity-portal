@@ -64,6 +64,7 @@ export default function SuggestQuestionPanel({ open, onClose, clientUserId, firs
       open={open}
       onClose={onClose}
       title="Suggest a question"
+      draftKey={`suggest-question:${clientUserId || 'none'}`}
       footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={send}>{`Suggest it to ${first}`}</Button></div>}
     >
       <div className="oq-panel">

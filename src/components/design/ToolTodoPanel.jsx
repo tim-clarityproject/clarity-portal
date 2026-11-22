@@ -102,6 +102,8 @@ export default function ToolTodoPanel({ open, onClose, startText = '', startStra
       where={todo.whereOptions}
       notice={notice}
       onAdd={done}
+      // Closed without adding, what was typed is offered again next time (tidy pass item 3).
+      draftKey={`tool-todo:${source}:${sourceId || 'none'}`}
     />
   );
 }

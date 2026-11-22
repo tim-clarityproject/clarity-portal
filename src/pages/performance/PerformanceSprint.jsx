@@ -438,6 +438,7 @@ export default function PerformanceSprint() {
             strategies={strategies}
             weeks={view.weekOptions}
             onAdd={addTodo}
+            draftKey={`sprint-todo:${view?.sprintId || 'none'}`}
           />
           <AddWinPanel
             open={panel === 'win'}
@@ -447,6 +448,7 @@ export default function PerformanceSprint() {
             strategies={strategies}
             days={view.winDays}
             onAdd={addWin}
+            draftKey={`sprint-win:${view?.sprintId || 'none'}`}
           />
           <MoveTodoPanel
             open={Boolean(movingTodo)}

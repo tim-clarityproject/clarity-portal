@@ -974,6 +974,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
         strategies={view.strategies}
         days={view.winDays.map((d) => ({ ...d, label: d.value === date ? 'Today' : d.label }))}
         onAdd={addWin}
+        draftKey={`${draftName(date)}:win`}
       />
     </div>
   );

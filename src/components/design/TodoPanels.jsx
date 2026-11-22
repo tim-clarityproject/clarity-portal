@@ -3,7 +3,7 @@ import { Button } from './Button';
 import { Choice, Dropdown } from './Choice';
 import MultiChoice from './MultiChoice';
 import TextBox from './TextBox';
-import { SlidePanel } from './Dialogs';
+import { SlidePanel, useDismissPanel } from './Dialogs';
 import { ErrorMessage } from './Status';
 import { IMPACT_OPTIONS, helpQuestion, moveQuestion } from './impact';
 import { BACKLOG_LINE, BACKLOG_VALUE, TODO_WHERE } from '../../lib/performance/sprintPage';
@@ -25,9 +25,11 @@ const nameOf = (strategies, id) => (strategies || []).find((s) => s.value === id
 // never: the button is never greyed out (a tool's add panel, as M9 and
 // M10 draw it): pressing it with something missing says what is needed.
 function Footer({ onCancel, onAdd, ready, label, never = false }) {
+  // Cancel closes it as the cross does, so what is typed is kept (tidy pass item 3).
+  const dismiss = useDismissPanel();
   return (
     <div className="ds-panel-actions">
-      <Button onClick={onCancel}>Cancel</Button>
+      <Button onClick={dismiss || onCancel}>Cancel</Button>
       <Button variant="primary" disabled={!never && !ready} onClick={onAdd}>{label}</Button>
     </div>
   );
@@ -65,7 +67,10 @@ export function TodoWhere({ value, onChange, options, label = 'Where should it g
 // notice: lines shown in place of the questions when nothing can be added
 // (the plan has no Strategy for a to-do to serve): the panel says so, and
 // its one button, "Done", closes it as "Don’t add it".
-export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, weeks, onAdd, todayNote, where, notice }) {
+// draftKey: keeps what is typed when the panel is closed without adding,
+// and puts it back next time (Dialogs' draftKey); for a page that doesn't
+// keep its own draft of the form.
+export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, weeks, onAdd, todayNote, where, notice, draftKey = null }) {
   const box = useRef(null);
   const set = (patch) => onFormChange({ ...form, ...patch });
   const today = Boolean(todayNote);
@@ -98,6 +103,7 @@ export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, we
       open={open}
       onClose={onClose}
       title="Add to-do"
+      draftKey={noStrategies ? null : draftKey}
       initialFocusRef={noStrategies ? undefined : box}
       footer={noStrategies
         ? <Button onClick={add}>Done</Button>
@@ -147,7 +153,7 @@ export const WIN_NEEDS = {
   day: 'Choose a day to carry on.',
 };
 
-export function AddWinPanel({ open, onClose, form, onFormChange, strategies, days, onAdd }) {
+export function AddWinPanel({ open, onClose, form, onFormChange, strategies, days, onAdd, draftKey = null }) {
   const box = useRef(null);
   const set = (patch) => onFormChange({ ...form, ...patch });
   const ready = Boolean(form.text.trim() && form.strategyIds.length && form.day);
@@ -170,6 +176,7 @@ export function AddWinPanel({ open, onClose, form, onFormChange, strategies, day
       open={open}
       onClose={onClose}
       title="Add unplanned win"
+      draftKey={draftKey}
       initialFocusRef={box}
       footer={<Footer onCancel={onClose} onAdd={add} ready={ready} never label="Add my win" />}
     >
