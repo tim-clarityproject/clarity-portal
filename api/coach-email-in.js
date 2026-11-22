@@ -132,9 +132,9 @@ export default async function handler(req, res) {
     // Only a sign-in that has given its 6-digit code (054).
     const noCode = codeRefusal(token, { ok: false });
     if (noCode) return reply(res, noCode.status, noCode.body);
-    const { data: coachRows, error: coachError } = await asCaller.from('coaches').select('id,active,role').eq('user_id', who.user.id).limit(1);
-    const coach = coachRows?.[0];
-    if (coachError || !coach || coach.active === false || coach.role !== 'owner') return reply(res, 404, { ok: false, message: 'That isn’t yours to use.' });
+    // The database's own check (054): the active owner, whose sign-in has given its code and didn't begin before a reset.
+    const { data: ownerId, error: coachError } = await asCaller.rpc('my_owner_coach_id');
+    if (coachError || typeof ownerId !== 'string' || !ownerId) return reply(res, 404, { ok: false, message: 'That isn’t yours to use.' });
     if (asked.kind === 'status') return reply(res, 200, { ok: true, copy_in: keys.copy_in, gmail: false, domain: keys.copy_in ? inboundDomain(env) : null });
     return reply(res, 200, { ok: false, reason: 'not_connected' });
   }

@@ -46,7 +46,9 @@
 //     a table reads empty (the restrictive rule) and a coach function is
 //     refused (42501); at aal2 they hold one invented client whose name is
 //     COACH_DATA_MARKER, so a test can see whether coach data ever reached
-//     the page. world.coachAnswers lists each answer: { path, aal, gave }.
+//     the page. A sign-in from before the coach's last reset answers as
+//     aal1 (054's coach_code_ok()). world.coachAnswers lists each answer:
+//     { path, aal, gave }.
 //   - `sqlReachesAuth: false`: a hosted database whose migration can't reach
 //     Supabase's own auth tables: 053 removes no factors or sessions, and
 //     the server's admin calls remove the factors (no admin call signs a
@@ -438,7 +440,8 @@ export function makeWorld(o = {}) {
     // ---- the coach portal's own data, as 054 makes the database answer it.
     const table = /\/rest\/v1\/([a-z_]+)$/.exec(path)?.[1];
     if (world.coachData && ((rpc && COACH_RPC.test(rpc)) || (!rpc && table && COACH_TABLE.test(table)))) {
-      const aal = claims?.aal === 'aal2' && session ? 'aal2' : 'aal1';
+      // 054's coach_code_ok(): aal2, and not a sign-in from before the coach's last reset (the break-it tester, 22 Nov).
+      const aal = claims?.aal === 'aal2' && session && sessionOk(claims) ? 'aal2' : 'aal1';
       if (aal !== 'aal2') {
         world.coachAnswers.push({ path, aal, gave: false });
         if (rpc) return json(route, { code: '42501', message: 'Give your 6-digit code to carry on.', details: null, hint: null }, 403);

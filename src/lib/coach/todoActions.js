@@ -7,7 +7,7 @@
 // A coach's own to-dos are never mixed with a client's: these are
 // coach_todos rows, never todos, day_plans or the Backlog.
 import { keyOf, newId, removeRow, saveRows } from './store';
-import { completeTodo, sortTodos } from './day';
+import { completeTodo, repeatId, sortTodos } from './day';
 import { clean, cut } from './model';
 
 const TODOS = 'coach_todos';
@@ -79,7 +79,8 @@ export function tickRows(todos, { nowIso, todayKey }) {
   const pairs = [];
   const made = [];
   for (const todo of todos) {
-    const { done, next } = completeTodo(todo, nowIso, todayKey, newId());
+    // The next one's id comes from this to-do and its day, so a second tab ticking it makes the same one, not another.
+    const { done, next } = completeTodo(todo, nowIso, todayKey, (day) => repeatId(todo.id, day));
     pairs.push([TODOS, done]);
     if (next) { pairs.push([TODOS, next]); made.push(next); }
   }

@@ -87,9 +87,9 @@ async function callerCoach(env, token) {
   const asCaller = asCallerClient(env, token);
   const { data: who, error } = await asCaller.auth.getUser(token);
   if (error || !who?.user?.id) return null;
-  const { data } = await asCaller.from('coaches').select('id,active').eq('user_id', who.user.id).limit(1);
-  const coach = data?.[0];
-  return coach && coach.active !== false ? coach : null;
+  // The database's own check (054): an active coach whose sign-in has given its code and didn't begin before a reset.
+  const { data, error: coachError } = await asCaller.rpc('my_coach_id');
+  return !coachError && typeof data === 'string' && data ? { id: data } : null;
 }
 
 export default async function handler(req, res) {

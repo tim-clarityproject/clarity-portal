@@ -590,3 +590,28 @@ test('the guided close: the engagement’s line, the scores at the start and now
   assert.equal(closeRows({ id: 'p' }, null, TODAY).engagement, null);
   assert.deepEqual(KEEPS.map((k) => k.label), ['Individual', 'Free']);
 });
+
+test('a repeat ticked in two tabs makes one next to-do, not two (the break-it tester, 22 Nov)', async () => {
+  const { repeatId } = await import('../../src/lib/coach/day.js');
+  // As todoActions.js's tickRows ticks (it reads the device's store, so it isn't loaded here).
+  const tickRows = ([x], { nowIso, todayKey }) => { const { next } = completeTodo(x, nowIso, todayKey, (day) => repeatId(x.id, day)); return { made: next ? [next] : [] }; };
+  const t = todo('8c0d7c7e-1b2a-4c3d-9e8f-0a1b2c3d4e5f', { repeat_rule: { every: 'week', interval: 2, from: 'done' } });
+  // The same stale to-do ticked in two tabs, a few seconds apart.
+  const a = tickRows([t], { nowIso: at(17, 10), todayKey: TODAY });
+  const b = tickRows([t], { nowIso: at(17, 11), todayKey: TODAY });
+  assert.equal(a.made.length, 1);
+  assert.equal(a.made[0].id, b.made[0].id, 'both tabs make the same next one');
+  assert.match(a.made[0].id, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  assert.equal(repeatId(t.id, '2026-12-01'), a.made[0].id);
+  assert.notEqual(repeatId(t.id, '2026-12-02'), a.made[0].id, 'another day, another one');
+  assert.notEqual(repeatId('another', '2026-12-01'), a.made[0].id, 'another to-do, another one');
+  // A daily repeat ticked every day for three years never makes an id it made before.
+  const seen = new Set([t.id]);
+  let cur = { ...t, repeat_rule: { every: 'day' } };
+  for (let i = 0; i < 1100; i += 1) {
+    const { next } = completeTodo(cur, at(17), cur.planned_on, (day) => repeatId(cur.id, day));
+    assert.ok(!seen.has(next.id), `step ${i}`);
+    seen.add(next.id);
+    cur = next;
+  }
+});

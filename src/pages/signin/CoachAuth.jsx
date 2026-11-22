@@ -310,6 +310,9 @@ export function CoachCodes() {
       // 21 Nov). New codes come only from Sign-in security, which holds them first.
       const now = await loadCoachAuth(supabase, user);
       if (!mounted.current) return;
+      // A sign-in from before the owner's reset is told so on Coach sign in,
+      // never passed on in (the break-it tester, 22 Nov: it landed on Home).
+      if (now.ready && now.sessionOk === false) { goToStop(supabase, navigate, 'signedOut'); return; }
       if (now.ready && now.codesSaved && now.codesTotal > 0) {
         if (fromSecurity) navigate(COACH_AUTH_PATHS.security, { replace: true });
         else goIn(user);

@@ -205,12 +205,13 @@ export default async function handler(req, res) {
   // Only a sign-in that has given its 6-digit code (054).
   const noCode = codeRefusal(token, { ok: false });
   if (noCode) return reply(res, noCode.status, noCode.body);
-  const [{ data: coachRows, error: coachError }, { data: mine, error: mineError }] = await Promise.all([
-    asCaller.from('coaches').select('id,active').eq('user_id', who.user.id).limit(1),
+  // The database's own check (054): an active coach whose sign-in has given its code and didn't begin before a reset.
+  const [{ data: coachId, error: coachError }, { data: mine, error: mineError }] = await Promise.all([
+    asCaller.rpc('my_coach_id'),
     asCaller.rpc('coach_connections_mine'),
   ]);
-  const coach = coachRows?.[0];
-  if (coachError || !coach || coach.active === false) return reply(res, 404, { ok: false, message: 'That isn’t yours to use.' });
+  const coach = typeof coachId === 'string' && coachId ? { id: coachId } : null;
+  if (coachError || !coach) return reply(res, 404, { ok: false, message: 'That isn’t yours to use.' });
   if (mineError && !isMissingFunction(mineError)) return reply(res, 502, { ok: false, reason: 'no_answer', message: DIDNT_WORK });
   const connected = (service) => (Array.isArray(mine) ? mine : []).some((c) => c.service === service && c.status === 'on');
   const status = { google_calendar: keys.google_calendar && connected('google_calendar'), zoom: keys.zoom, google_ready: keys.google_calendar };

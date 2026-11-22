@@ -272,8 +272,35 @@ export function nextRepeat(rule, plannedOn, todayKey) {
 }
 
 /**
+ * The id of a repeating to-do's next one, the same wherever it is made: the
+ * ticked to-do's id and the next one's day, hashed (128 bits, in a uuid's
+ * shape). Two tabs or two devices ticking the same to-do make one next
+ * to-do, saved twice, never two (the break-it tester, 22 Nov).
+ */
+export function repeatId(todoId, day) {
+  const text = `${todoId}>${day}`;
+  let h1 = 1779033703; let h2 = 3144134277; let h3 = 1013904242; let h4 = 2773480762;
+  for (let i = 0; i < text.length; i += 1) {
+    const k = text.charCodeAt(i);
+    h1 = h2 ^ Math.imul(h1 ^ k, 597399067);
+    h2 = h3 ^ Math.imul(h2 ^ k, 2869860233);
+    h3 = h4 ^ Math.imul(h3 ^ k, 951274213);
+    h4 = h1 ^ Math.imul(h4 ^ k, 2716044179);
+  }
+  h1 = Math.imul(h3 ^ (h1 >>> 18), 597399067);
+  h2 = Math.imul(h4 ^ (h2 >>> 22), 2869860233);
+  h3 = Math.imul(h1 ^ (h3 >>> 17), 951274213);
+  h4 = Math.imul(h2 ^ (h4 >>> 19), 2716044179);
+  h1 ^= h2 ^ h3 ^ h4; h2 ^= h1; h3 ^= h1; h4 ^= h1;
+  const hex = [h1, h2, h3, h4].map((h) => (h >>> 0).toString(16).padStart(8, '0')).join('');
+  const variant = ((parseInt(hex[16], 16) & 3) | 8).toString(16);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${variant}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+
+/**
  * Ticking a to-do. A repeating one makes the next (a new row, with its
- * checklist unticked); otherwise just the tick.
+ * checklist unticked); otherwise just the tick. `newId` is the next one's
+ * id, or a function of its day (repeatId).
  * @returns {{ done: object, next: object|null }}
  */
 export function completeTodo(todo, nowIso, todayKey, newId) {
@@ -281,7 +308,7 @@ export function completeTodo(todo, nowIso, todayKey, newId) {
   const day = nextRepeat(todo.repeat_rule, todo.planned_on, todayKey);
   if (!day) return { done, next: null };
   const next = {
-    ...todo, id: newId, done_at: null, planned_on: day, first_planned_on: null, repeat_of: todo.id,
+    ...todo, id: typeof newId === 'function' ? newId(day) : newId, done_at: null, planned_on: day, first_planned_on: null, repeat_of: todo.id,
     checklist: (todo.checklist || []).map((i) => ({ ...i, done: false })), created_at: nowIso, updated_at: nowIso,
   };
   return { done: { ...done, repeat_rule: null }, next };

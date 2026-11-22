@@ -11,7 +11,8 @@
 --   Supabase's own claim, (auth.jwt() ->> 'aal') = 'aal2'.
 --
 -- HOW (the standard Supabase way, in three parts)
---   1. One helper, public.coach_code_ok(): true when this sign-in is at aal2.
+--   1. One helper, public.coach_code_ok(): true when this sign-in is at aal2
+--      and didn't begin before the owner last reset its authenticator.
 --   2. The checks every coach rule and coach function already asks are made
 --      to ask it too, so nothing written in 026 to 053 has to change shape:
 --        is_coach(), is_owner(), is_coach_of(), my_coach_id(),
@@ -87,18 +88,38 @@ end
 $need$;
 
 -- ---------------------------------------------------------------- the helper
--- Whether this sign-in has given its 6-digit code (Supabase's aal2 claim).
--- Security invoker: it reads only the request's own claims.
+-- Whether this sign-in has given its 6-digit code (Supabase's aal2 claim),
+-- and didn't begin before the owner last reset this account's
+-- authenticator. A sign-in from before a reset keeps its aal2 claim: its
+-- access token lasts up to an hour, and where the database can't remove
+-- its session (rule 24's hosted caveat) a refresh carries aal2 on, so the
+-- reset alone wouldn't shut it out (the break-it tester, 22 Nov). It is
+-- judged as 053's sign-in screens judge it (_coach_auth_session_ok: the
+-- earliest "amr" time, then whether the session is still there), and only
+-- for an account that has been reset, so everyone else costs one lookup.
+-- Security definer, to read coach_authenticators whatever the caller's rules.
 create or replace function public.coach_code_ok()
 returns boolean
-language sql
+language plpgsql
 stable
+security definer
 set search_path = ''
 as $$
-  select coalesce((select auth.jwt()) ->> 'aal', '') = 'aal2';
+declare
+  v_reset timestamptz;
+begin
+  if coalesce((select auth.jwt()) ->> 'aal', '') <> 'aal2' then
+    return false;
+  end if;
+  select a.last_reset_at into v_reset from public.coach_authenticators a where a.user_id = (select auth.uid());
+  if v_reset is null then
+    return true;
+  end if;
+  return public._coach_auth_session_ok(v_reset);
+end;
 $$;
 comment on function public.coach_code_ok() is
-  'True when this sign-in has given its 6-digit code (aal2). Every coach rule and coach function asks it (054).';
+  'True when this sign-in has given its 6-digit code (aal2) and didn''t begin before a reset of its authenticator. Every coach rule and coach function asks it (054).';
 revoke all on function public.coach_code_ok() from public;
 grant execute on function public.coach_code_ok() to anon, authenticated, service_role;
 
