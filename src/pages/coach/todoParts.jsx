@@ -513,11 +513,15 @@ export function QuickAdd({ defaults, defaultDay = null, onAdded, boxRef }) {
   );
 }
 
-/** The quick add in the side panel (full screen on a phone); it closes once the to-do is added. */
+/**
+ * The quick add in the side panel (full screen on a phone); it closes once the to-do is added.
+ * Its draft is kept per client (a client's page adds for that client), so words typed on one
+ * client's page never come back on another's, or on Today.
+ */
 export function QuickAddPanel({ open, onClose, defaults, defaultDay = null }) {
   const boxRef = useRef(null);
   return (
-    <SlidePanel open={open} onClose={onClose} title="Add to-do" initialFocusRef={boxRef} draftKey="coach-todo:new">
+    <SlidePanel open={open} onClose={onClose} title="Add to-do" initialFocusRef={boxRef} draftKey={`coach-todo:${defaults?.profile_id || 'new'}`}>
       {open && <QuickAdd boxRef={boxRef} defaults={defaults} defaultDay={defaultDay} onAdded={onClose} />}
     </SlidePanel>
   );
