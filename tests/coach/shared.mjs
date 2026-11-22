@@ -218,6 +218,15 @@ export async function standIn(page, opts = {}) {
   await page.route(/\/rest\/v1\/rpc\/coach_(auth_state|authenticator_on|recovery_codes_make|recovery_codes_saved|recovery_code_use|authenticator_reset)(\?|$)/, (route) => route.fulfill({
     status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', details: null, hint: null, message: 'Could not find the function in the schema cache' }),
   }));
+  // The account claims (035's guest_claim, 044's alignment_claim) run once
+  // per sign-in and would move work in the test project as the coach-owner:
+  // answered here in every mode, strict or not, as "nothing moved" (the
+  // break-it tester, Phase 9 tidy 1: a non-strict walk let them through).
+  await page.route(/\/rest\/v1\/rpc\/(guest_claim|alignment_claim)(\?|$)/, (route) => {
+    const fn = new URL(route.request().url()).pathname.split('/rpc/')[1];
+    store.calls.push(`rpc ${fn} (answered here)`);
+    return route.fulfill({ status: 200, contentType: 'application/json', body: '0' });
+  });
   // Last, so it runs first: the page sees a coach with an authenticator who
   // has given its code (Phase 6a run 5), and the test project only ever sees
   // the real sign-in (tests/signin/aal2.mjs). No real authenticator is enrolled.
