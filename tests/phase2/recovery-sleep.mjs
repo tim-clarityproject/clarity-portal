@@ -417,7 +417,7 @@ if (part('chart')) {
       await page.locator('.ds-schart-bar').nth(4).focus();
       await still(page);
       const focusTip = await popUp(page);
-      pass(`${tag}: pop-up on keyboard focus`, focusTip?.lines?.[0] === 'Day 5, night of 2 Nov' && focusTip.lines[1] === 'Hours6.5 hours', focusTip?.lines?.join(' | '));
+      pass(`${tag}: pop-up on keyboard focus`, focusTip?.lines?.[0] === 'Day 5, night of 2 Nov' && focusTip.lines[1] === 'Hours6.5 hoursQualityGood', focusTip?.lines?.join(' | '));
       const next = f.bars[6].tip;
       pass(`${tag}: a day to come says so`, next?.title === 'Day 7, night of 4 Nov' && next.rows?.[0]?.[1] === 'To come', JSON.stringify(next));
       await page.keyboard.press('Escape');
