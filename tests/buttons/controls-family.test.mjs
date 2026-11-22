@@ -114,3 +114,8 @@ test('a tab drawn as a round pill fails', async () => {
   assert.match(r.problems.join('; '), /a round pill, not an underlined tab/);
   assert.match(r.problems.join('; '), /a round pill strip/);
 });
+
+test('an option running out of its track fails (five words that should wrap; UI tester, 22 Nov)', async () => {
+  const r = await check(`<div class="glide" role="radiogroup" aria-label="Focus" style="width:300px;display:flex;flex-wrap:nowrap">${['Poor', 'Fair', 'Good', 'Very good', 'Excellent'].map((w, i) => `<button role="radio" aria-checked="${i === 0}" style="flex:none">${w}</button>`).join('')}</div>`);
+  assert.match(r.problems.join('; '), /runs out of its track/);
+});

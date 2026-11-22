@@ -980,8 +980,11 @@
    page sideways. */
 /* .ds-seg (below) is one line: the five words' own class wins (the UI
    tester, 22 Nov: on a 390px phone Excellent ran 16px out of its track). */
-.ui-root .ds-seg.ds-log-press--rate {
+.ui-root .ds-seg.ds-log-press--rate:not(#_) {
   flex-wrap: wrap;
+  /* Rows far enough apart that their 44px tap areas never overlap (:not(#_) as
+     buttons.css sets the switch's gap to 0 with it). */
+  row-gap: max(0px, calc(var(--tap-min) - var(--btn-h-phone) + 2 * var(--seg-pad)));
 }
 
 /* The week view's day boxes and day Yes and No (M1 .wkd, .wkt). */

@@ -365,6 +365,9 @@ export function controlsFamily({ phone, scale = 1 }) {
       const ob = o.getBoundingClientRect();
       if (ob.height >= 20 && round(o, os, ob) && (drawn(os) || o.matches('[aria-pressed=true], [aria-checked=true]'))) { bad.push(`a round option (${words(o).slice(0, 16)})`); break; }
     }
+    // Every option inside its track: five words that don't fit wrap onto another row, never run out of it (UI tester, 22 Nov).
+    const out1 = opts.find((o, i) => boxes[i].right > tb.right + 1 || boxes[i].left < tb.left - 1);
+    if (out1) bad.push(`${words(out1).slice(0, 16)} runs out of its track`);
     if (clear(ts.backgroundColor)) bad.push('no soft grey track');
     if (edged(ts)) bad.push('an edge round its track');
     const chosen = opts.find((o) => o.matches('[aria-pressed=true], [aria-checked=true]'));
