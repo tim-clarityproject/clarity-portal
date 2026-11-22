@@ -963,6 +963,7 @@ function PlanFlow({ userId, date, today, loaded }) {
         strategies={view.strategies}
         todayNote={view.running ? 'It’s added to today and to this week’s sprint.' : 'It’s added to today and to your to-dos.'}
         onAdd={addTodo}
+        draftKey={`day-plan-todo:${date}`}
       />
     </div>
   );

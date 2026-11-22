@@ -1354,7 +1354,7 @@ function RulesOfFiveNovDemo() {
       />
       <p className="dr-small" aria-live="polite">{moved ? 'Moved on to the next screen.' : '\u00a0'}</p>
 
-      <p className="dr-small">Back at the top (rules 29o and 29t): the chevron on the content edge, 14px before the tool’s name</p>
+      <p className="dr-small">Back at the top (rules 29o and 29t): the chevron on the content edge, 10px before the tool’s name</p>
       <div className="ds-guide-bar dr-rules5-bar">
         <button type="button" className="ds-guide-back" aria-label="Back"><Chevron direction="left" size="sm" beside="capitals" /></button>
         <b className="ds-guide-name">Daily review</b>
@@ -1764,7 +1764,7 @@ function Gallery() {
           <>
             <p><b>One-answer questions move straight on (21):</b> the answer shows as chosen the instant it’s tapped, and the next screen follows after 150ms. Back keeps the answer. No Next button; several-answer, typed and slider questions keep Next.</p>
             <p><b>Back lives at the top (29o):</b> a chevron at the top left, beside the tool’s name, with close at the top right. The bottom bar shows only when the screen has a button.</p>
-            <p><b>Back chevrons line up (29t):</b> the chevron’s visible edge sits on the content’s left edge, 14px before its label. Its 44px tap area is invisible, and on hover only the chevron turns coral.</p>
+            <p><b>Back chevrons line up (29t):</b> the chevron’s visible edge sits on the content’s left edge, 10px (<code>--back-gap</code>) before its label. Its 44px tap area is invisible, and on hover only the chevron turns coral.</p>
             <p><b>Times use the squiggle (29q):</b> “~1 minute”, never “about a minute”.</p>
             <p><b>Notes under buttons (29v):</b> centred on the button, 10px below, in secondary grey, with no full stop. On a phone the button and its note run full width (ButtonNote).</p>
             <p><b>“high-performer”, “high-performers” and “high-performance” (29x)</b> always have their hyphen, and it never breaks across a line (keepWords keeps the word whole, because the fonts have no non-breaking hyphen).</p>
