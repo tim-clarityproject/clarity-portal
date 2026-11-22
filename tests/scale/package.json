@@ -1,0 +1,10 @@
+{
+  "name": "clarity-scale-check",
+  "private": true,
+  "type": "module",
+  "description": "The local stand-in for the scale and speed check (tests/scale/README.md). Kept apart from the app's own packages.",
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.17",
+    "@electric-sql/pglite-socket": "0.2.20"
+  }
+}
