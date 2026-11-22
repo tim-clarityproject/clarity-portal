@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import Collapsible from './Collapsible';
 import './design.css';
+import './tables.css';
 
 // "Show as a table" (graphs rule, START-HERE 53; Phase 5): every chart can
 // be read as words, so nothing depends on colour or on pointing. One

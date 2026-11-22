@@ -233,26 +233,30 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
       {formData.matrix && Object.keys(formData.matrix).length > 0 && formData.factors?.length > 0 && (
         <div style={{ marginTop: '32px' }}>
           <h2 style={{ fontSize: 'calc(16 * var(--u, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Strategic importance scores</h2>
-          <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px', overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '500px', fontSize: 'calc(13 * var(--u, 1px))' }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left', paddingBottom: '12px', borderBottom: '2px solid var(--quiet-line)', fontWeight: '600' }}>Project</th>
-                  <th style={{ textAlign: 'center', paddingBottom: '12px', borderBottom: '2px solid var(--quiet-line)', fontWeight: '600' }}>Score</th>
-                </tr>
-              </thead>
-              <tbody>
-                {formData.projects?.map((project, projectIdx) => {
-                  const score = formData.factors.reduce((sum, _, factorIdx) => sum + (formData.matrix[`${projectIdx}-${factorIdx}`] || 0), 0);
-                  return (
-                    <tr key={projectIdx}>
-                      <td style={{ paddingTop: '8px', paddingBottom: '8px', color: 'var(--text-2)' }}>{String.fromCharCode(65 + projectIdx)}. {project}</td>
-                      <td style={{ textAlign: 'center', paddingTop: '8px', paddingBottom: '8px', color: 'var(--text)' }}>{score}/{formData.factors.length * 3}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          {/* The heading row stays at the top and the Project column stays put
+              while the scores swipe inside the box on a phone (tidy pass, item 12). */}
+          <div style={{ backgroundColor: 'var(--raised)', padding: 'var(--space-3)', borderRadius: 'var(--space-2)', '--swipe-bg': 'var(--raised)' }}>
+            <div className="ds-swipe-box" tabIndex={0} role="region" aria-label="Strategic importance scores">
+              <table className="ds-swipe-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Project</th>
+                    <th scope="col" className="ds-swipe-n">Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {formData.projects?.map((project, projectIdx) => {
+                    const score = formData.factors.reduce((sum, _, factorIdx) => sum + (formData.matrix[`${projectIdx}-${factorIdx}`] || 0), 0);
+                    return (
+                      <tr key={projectIdx}>
+                        <td>{String.fromCharCode(65 + projectIdx)}. {project}</td>
+                        <td className="ds-swipe-n">{score}/{formData.factors.length * 3}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

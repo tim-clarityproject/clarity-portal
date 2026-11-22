@@ -1,0 +1,139 @@
+/* Tables everywhere (tidy pass, item 12; Tim, 19 to 22 Nov): every table's
+   heading row stays at the top while the page scrolls, and on a phone a
+   table that keeps its columns holds its first column still while the rest
+   swipes inside the table. The page never scrolls sideways.
+
+   Coach Network's table already does both in its own box (network.css).
+   Tables that become small cards on a phone (CLAUDE.md rule 20: Show as a
+   table, the year's table, the meeting summary's plan) keep their cards
+   there and get the sticky heading row while they are tables. The coach's
+   Clients, Leads and Board tables only show at 1100px and wider (cards
+   below), so they need only the heading row, held under the coach's
+   header.
+
+   Borders are drawn by the cells themselves (border-collapse: separate,
+   no spacing), so a heading's line moves with it while it sticks. */
+
+/* The portal's own rule (src/index.css) gives body `overflow-x: hidden`,
+   which makes body a scroll box that never scrolls, so a heading row inside
+   it could never stick. While a table is on screen body clips sideways
+   instead, which hides the same overflow without making a scroll box (as
+   the coach portal does, coach.css). */
+body:has(.ds-ctable, .year-tbl, .plan-table) {
+  overflow-x: clip;
+}
+
+/* ---------------------------------------------------------------- the client portal's tables: the page's top */
+.ui-root .ds-ctable,
+.ui-root .year-tbl,
+.ui-root .plan-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.ui-root .ds-ctable thead th,
+.ui-root .year-tbl thead th,
+.ui-root .plan-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg);
+}
+
+/* A fold clips what it holds while it opens; clip (not hidden) makes no
+   scroll box, so a heading row inside can stick to the page. */
+.ui-root .ds-collapse-body > div:has(.ds-ctable, .year-tbl, .plan-table) {
+  overflow: clip;
+}
+
+/* The meeting summary's table fits its column (fixed widths, rule 20), so
+   its holder needs no scroll box of its own, which would stop the heading
+   row sticking. */
+.ui-root .plan-table-wrap {
+  overflow: visible;
+}
+
+/* ---------------------------------------------------------------- the coach portal's tables: under the coach's header */
+.ui-root .cc-table:not(.cc-net-table) {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.ui-root .cc-table:not(.cc-net-table) thead th {
+  position: sticky;
+  top: calc(var(--cc-header-h) + env(safe-area-inset-top, 0px));
+  z-index: 2;
+  background: var(--bg);
+}
+
+/* ---------------------------------------------------------------- a table that swipes inside its own box */
+/* Its box scrolls both ways by itself, like Network's: the heading row
+   stays at its top and the first column at its left. */
+.ui-root .ds-swipe-box {
+  overflow: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  max-height: max(var(--cc-net-box-min), calc(100dvh - var(--cc-net-box-rest)));
+  outline: 0;
+}
+
+.ui-root .ds-swipe-box:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-swipe-table {
+  width: 100%;
+  min-width: var(--table-swipe-min);
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+}
+
+.ui-root .ds-swipe-table th,
+.ui-root .ds-swipe-table td {
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  background: var(--swipe-bg, var(--bg));
+}
+
+.ui-root .ds-swipe-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-weight: var(--fw-medium);
+  color: var(--text);
+  border-bottom: var(--line-w) solid var(--line);
+  white-space: nowrap;
+}
+
+.ui-root .ds-swipe-table td {
+  color: var(--text-2);
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ds-swipe-table th:first-child,
+.ui-root .ds-swipe-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: var(--table-first-w);
+  min-width: var(--table-first-w);
+  max-width: var(--table-first-w);
+  padding-left: 0;
+  white-space: normal;
+}
+
+.ui-root .ds-swipe-table thead th:first-child {
+  z-index: 3;
+}
+
+.ui-root .ds-swipe-table .ds-swipe-n {
+  text-align: right;
+  padding-right: 0;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
