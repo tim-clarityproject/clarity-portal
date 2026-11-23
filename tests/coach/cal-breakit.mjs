@@ -180,7 +180,6 @@ async function openAt({ role = 'owner', db = 'there', when = TUE, size = 1440, p
         const refused = store.calls.filter((c) => c.startsWith('refused'));
         pass(`${tag}: the database refused ${refusals === 0 ? 'nothing the page sent' : `only what it should (${refusals})`}`, refused.length === refusals, [...new Set(refused)].slice(0, 6).join('; '));
       }
-      if (process.env.H2DEBUG) console.log('H2DEBUG', await page.evaluate((id) => { const v = JSON.parse(localStorage.getItem(`clarity-coach-local:${id}`) || 'null'); if (!v) return 'none'; const out = []; for (const [t, rows] of Object.entries(v.rows || {})) for (const k of Object.keys(rows)) { const m = (v.marks || {})[t]?.[k]; if (!m?.sent || m.gone) out.push(`${t}:${k}:${JSON.stringify(m || null)}`); } return out.slice(0, 20).join(' | ') + ` partial=${v.partial}`; }, me).catch((e) => String(e)));
       if (there && !waiting) pass(`${tag}: nothing waits on the device`, !(await page.evaluate((id) => Boolean(localStorage.getItem(`clarity-coach-local:${id}`)), me).catch(() => true)));
       const seen = errors.filter((e) => !(allow && allow.test(e)));
       pass(`${tag}: no page error`, seen.length === 0, [...new Set(seen)].slice(0, 4).join(' | '));
