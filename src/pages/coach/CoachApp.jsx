@@ -7,7 +7,7 @@ import { useSignOut } from '../../components/SignOut';
 import { getLocalDateKey } from '../../lib/dateFormatter';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { useCoachRole } from '../../lib/coach/role';
-import { findCalItems, fromTable, rowsOf, saveRows, useCoachCopyShown, useCoachLoad, useCoachSomethingToShow, useCoachStore } from '../../lib/coach/store';
+import { findCalItems, fromTable, rowsOf, saveRows, sessionsOlder, useCoachCopyShown, useCoachLoad, useCoachSomethingToShow, useCoachStore } from '../../lib/coach/store';
 import { loadAdminClients, loadCoaches } from '../../lib/coach/actions';
 import { deviceCopyAvailable, readExtra, writeExtra } from '../../lib/coach/deviceCopy';
 import { callForBar, favouriteViews, nextCallBar, searchResults, withRecent } from '../../lib/coach/model';
@@ -604,6 +604,9 @@ export default function CoachApp() {
       weeks: own('coach_weeks'),
       sessions: own('coach_sessions'),
       sessionPeople: all('coach_session_people'),
+      // 057: what the database counted of the sessions not on the device yet (null once they all are): every count of
+      // sessions held takes it (day.js's withSessions), so it is whole from the first screen on.
+      sessionsOlder: sessionsOlder(state),
       sessionActions: own('coach_session_actions'),
       sessionNotes: own('coach_session_notes'),
       // The calendar and booking (run 3; migration 051): the coach's own, kept on the device until 051 is there.

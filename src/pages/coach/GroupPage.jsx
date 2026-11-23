@@ -19,7 +19,7 @@ export default function GroupPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { userId, state, groups, clients, organisations, sessions: allSessions, sessionPeople, todayKey, now } = useCoachPortal();
+  const { userId, state, groups, clients, organisations, sessions: allSessions, sessionPeople, sessionsOlder, todayKey, now } = useCoachPortal();
   const group = groups.find((g) => g.id === id) || null;
   const [adding, setAdding] = useState(false);
   const [f, setF] = useState({ profile: NONE, name: '', email: '', counts: 'group' });
@@ -33,7 +33,7 @@ export default function GroupPage() {
   const members = rowsOf(state, 'coach_group_members').filter((m) => m.group_id === group.id).sort((a, b) => a.name.localeCompare(b.name));
   const engagement = currentEngagement(rowsOf(state, 'engagements'), { groupId: group.id });
   // Sessions left follows each recorded session (day.js's withSessions).
-  const sessions = sessionsLeft(withSessions(engagement, allSessions, sessionPeople), rowsOf(state, 'engagement_packs'));
+  const sessions = sessionsLeft(withSessions(engagement, allSessions, sessionPeople, sessionsOlder), rowsOf(state, 'engagement_packs'));
   const mySessions = allSessions.filter((x) => x.group_id === group.id);
   const next = nextSession(mySessions, () => true, now);
   const org = organisations.find((o) => o.id === group.organisation_id);

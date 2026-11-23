@@ -63,7 +63,7 @@ function Section({ title, aside, headRef, children }) {
 }
 
 export default function Today() {
-  const { state, clients, groups, todos, sessions, sessionPeople, settings, todayKey, now, coach, isOwner, calItems, checkIns, organisations } = useCoachPortal();
+  const { state, clients, groups, todos, sessions, sessionPeople, sessionsOlder, settings, todayKey, now, coach, isOwner, calItems, checkIns, organisations } = useCoachPortal();
   const navigate = useNavigate();
   const isPhone = useIsPhone();
   const { day, week } = useDayRows();
@@ -79,7 +79,7 @@ export default function Today() {
 
   const abouts = rowsOf(state, 'client_about').filter((a) => a.coach_id === coach.id);
   const birthdays = birthdaysOn(abouts, clients, todayKey);
-  const nudge = recapNudgeLine({ sessions, clients, groups, now, todayKey });
+  const nudge = recapNudgeLine({ sessions, clients, groups, older: sessionsOlder, now, todayKey });
   // A clock-change week (time-zone-safeguards.md, rule 1): one quiet line from the Monday before, saying which calls move for the coach.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const clockLines = useMemo(() => clockChangeLines({ items: calItems, sessions, clients, now, coachZone: coachZoneOf(settings, deviceZone()) }), [calItems, sessions, clients, settings, todayKey]);
@@ -94,8 +94,8 @@ export default function Today() {
     engagements: rowsOf(state, 'engagements').filter((e) => e.coach_id === coach.id),
     packs: rowsOf(state, 'engagement_packs'),
     entries: rowsOf(state, 'time_entries'),
-    sessions, people: sessionPeople, now, todayKey,
-  }), [clients, state, coach.id, sessions, sessionPeople, now, todayKey]);
+    sessions, people: sessionPeople, older: sessionsOlder, now, todayKey,
+  }), [clients, state, coach.id, sessions, sessionPeople, sessionsOlder, now, todayKey]);
   const attentionShown = allAttention ? attention : attention.slice(0, ATTENTION_FIRST);
   const pressure = usePressure(clients, todayKey);
   // Keep in touch (run 4): past clients' check-ins that are due, one quiet line each (each coach's own). The people in

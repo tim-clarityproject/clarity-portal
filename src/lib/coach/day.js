@@ -614,11 +614,15 @@ export function outcomeLine(outcome, name, waived = false) {
  * held before sessions were recorded one by one, plus every recorded one
  * that counts (its own, and a group session's own-engagement members). The
  * database keeps sessions_held the same way once 050 is there.
+ * `older` (store.js's sessionsOlder): while a first load's older sessions
+ * aren't on the device yet, the database's count of those that count
+ * (057), so the count is the whole one from the first screen on.
  */
-export function withSessions(engagement, sessions = [], people = []) {
+export function withSessions(engagement, sessions = [], people = [], older = null) {
   if (!engagement) return engagement;
   const counted = sessions.filter((s) => s.engagement_id === engagement.id && sessionCounts(s)).length
-    + people.filter((sp) => sp.engagement_id === engagement.id && sessionCounts(sessions.find((s) => s.id === sp.session_id))).length;
+    + people.filter((sp) => sp.engagement_id === engagement.id && sessionCounts(sessions.find((s) => s.id === sp.session_id))).length
+    + (Number(older?.held?.[engagement.id]) || 0);
   // Before 050 (or before its row has come back) there is no base: the count kept so far is it.
   const known = engagement.sessions_held_base != null;
   const base = known ? Number(engagement.sessions_held_base) : (Number(engagement.sessions_held) || 0);
@@ -635,9 +639,9 @@ export function withSessions(engagement, sessions = [], people = []) {
  * 050, and before any count is typed) the kept count is the base, and the
  * row goes as it is.
  */
-export function engagementToSave(engagement, sessions = [], people = []) {
+export function engagementToSave(engagement, sessions = [], people = [], older = null) {
   if (!engagement || engagement.sessions_held_base == null) return engagement;
-  return { ...engagement, sessions_held: withSessions(engagement, sessions, people).sessions_held };
+  return { ...engagement, sessions_held: withSessions(engagement, sessions, people, older).sessions_held };
 }
 
 /** A count the coach types: the base moves so the total is what they typed. */
@@ -744,7 +748,7 @@ export const prepLine = (name, notedAt, todayKey) => `${firstName(name)} added t
  * Offer a renewal), time credit running low, and no next session booked.
  * @returns {{ key: string, profileId: string, name: string, line: string, action: string, to: string }[]}
  */
-export function attentionRows({ clients = [], engagements = [], packs = [], entries = [], sessions = [], people = [], now, todayKey }) {
+export function attentionRows({ clients = [], engagements = [], packs = [], entries = [], sessions = [], people = [], older = null, now, todayKey }) {
   const rows = [];
   const t = new Date(now).getTime();
   for (const c of clients.filter((p) => p.status !== 'past' && !p.merged_into)) {
@@ -761,7 +765,7 @@ export function attentionRows({ clients = [], engagements = [], packs = [], entr
       rows.push({ key: `r:${unsent.id}`, profileId: c.id, name: c.name, line: `${day === addDays(todayKey, -1) ? 'Yesterday’s' : possessive(dayWords(day, todayKey))} recap is ready to check.`, action: 'Check the recap', to: `/coach/sessions/${unsent.id}` });
     }
     const raw = engagements.find((e) => e.profile_id === c.id && e.status !== 'ended');
-    const engagement = withSessions(raw, sessions, people);
+    const engagement = withSessions(raw, sessions, people, older);
     const left = sessionsLeft(engagement, packs);
     if (left && left.total > 0 && left.left <= 2 && left.held > 0) {
       rows.push({ key: `l:${c.id}`, profileId: c.id, name: c.name, line: `${leftWords(engagement, packs)}.`.replace(/^(\d+ sessions? left)\.$/, `${first} has $1.`).replace(/^No sessions left\.$/, `${first} has no sessions left.`), short: leftWords(engagement, packs), action: 'Offer a renewal', to: `/coach/renewals/${c.id}`, later: true });
@@ -821,17 +825,20 @@ const nameOfSession = (s, clients, groups) => (s.group_id ? (groups || []).find(
 
 /**
  * The recap nudge's one quiet line: the oldest recap still unsent 24 hours
- * after its call, "and 2 more are waiting" when there are others.
+ * after its call, "and 2 more are waiting" when there are others. `older`
+ * (store.js's sessionsOlder): the recaps not sent among the sessions not on
+ * the device yet (057), counted in "more".
  * @returns {{ session: object, line: string, more: number }|null}
  */
-export function recapNudgeLine({ sessions = [], clients = [], groups = [], now, todayKey }) {
+export function recapNudgeLine({ sessions = [], clients = [], groups = [], older = null, now, todayKey }) {
   const waiting = recapNudges(sessions, now);
   if (!waiting.length) return null;
   const [first, ...rest] = waiting;
   const name = nameOfSession(first, clients, groups);
   const whose = first.group_id ? `The recap for ${name || 'the group'}` : `${possessive(firstName(name) || 'A client')} recap`;
-  const more = rest.length ? `, and ${rest.length} more ${rest.length === 1 ? 'is' : 'are'} waiting` : '';
-  return { session: first, more: rest.length, line: `${whose} from ${dayWords(toDayKey(new Date(first.starts_at)), todayKey)} hasn’t been sent yet${more}.` };
+  const others = rest.length + (Number(older?.nudges) || 0);
+  const more = others ? `, and ${others} more ${others === 1 ? 'is' : 'are'} waiting` : '';
+  return { session: first, more: others, line: `${whose} from ${dayWords(toDayKey(new Date(first.starts_at)), todayKey)} hasn’t been sent yet${more}.` };
 }
 
 /**

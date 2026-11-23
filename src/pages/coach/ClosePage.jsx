@@ -29,7 +29,7 @@ export default function ClosePage() {
   const navigate = useNavigate();
   const toast = useToast();
   const say = useSay();
-  const { userId, state, clients, sessions, sessionPeople, todayKey, now } = useCoachPortal();
+  const { userId, state, clients, sessions, sessionPeople, sessionsOlder, todayKey, now } = useCoachPortal();
   const profile = clients.find((p) => p.id === id) || null;
   const reviews = useReviews(profile?.user_id || null);
   const [brief, setBrief] = useState(null);
@@ -64,7 +64,7 @@ export default function ClosePage() {
     busy.current = true;
     try {
       // The engagement is saved with its count as it stands now, so ending it (or Undo) never moves the count.
-      const kept = engagementToSave(engagement, sessions, sessionPeople);
+      const kept = engagementToSave(engagement, sessions, sessionPeople, sessionsOlder);
       const rows = closeRows(profile, kept, todayKey);
       const pairs = [['client_profiles', rows.profile], ...(rows.engagement ? [['engagements', rows.engagement]] : [])];
       const before = [['client_profiles', profile], ...(kept ? [['engagements', kept]] : [])];

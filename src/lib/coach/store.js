@@ -102,7 +102,12 @@ export const TABLES = {
   organisation_deals: ['id'],
   organisation_growth: ['id'],
   network_columns: ['id'],
+  // Kept on the device only, never read or sent as a table (057): what the database said of the sessions it didn't
+  // send on a first load (sessionsOlder below). One row, key 'older'.
+  coach_sessions_older: ['key'],
 };
+// The device's own tables: never read from the database as a table, never sent.
+const DEVICE_ONLY = new Set(['coach_sessions_older']);
 // The tables of migration 050. Until Tim has run it they are kept on the
 // device only, exactly as every coach table was before 049: no error, and
 // what waits is moved across once the tables are there.
@@ -136,7 +141,7 @@ const CRM_COLUMNS = {
 const PARENT_COLUMNS = { coach_cal_items: ['series_id', 'travel_for'], coach_leads: ['merged_into'] };
 // Read from the database but never written by a plain save (the database
 // adds these rows itself, or a checked function does).
-const READ_ONLY = new Set(['activity_log', 'workshop_survey_answers', 'workshop_sends', 'coach_poll_votes', 'coach_bookings',
+const READ_ONLY = new Set(['coach_sessions_older', 'activity_log', 'workshop_survey_answers', 'workshop_sends', 'coach_poll_votes', 'coach_bookings',
   'coach_cal_reminder_sends', 'coach_email_addresses']);
 // Tables a coach may add to but never change: a save is sent as "add it
 // unless it is there" (a plain upsert would need the right to change rows).
@@ -203,6 +208,7 @@ const SHAPES = {
   organisation_deals: (r) => (isText(r.name) && isText(r.organisation_id) ? r : null),
   organisation_growth: (r) => (isText(r.title) && isText(r.organisation_id) ? r : null),
   network_columns: (r) => (isText(r.name) ? (Array.isArray(r.options ?? []) ? r : { ...r, options: [] }) : null),
+  coach_sessions_older: (r) => (r.whole === true ? r : (isObject(r.held) && Number.isFinite(r.nudges) ? r : null)),
 };
 
 /** What the device keeps, read so that nothing kept by another version stops a page. */
@@ -951,9 +957,11 @@ const loading = new Map();
 // 15 MB, and the calendar alone passed the old cap of 5,000 rows and quietly lost the rest. Now:
 //   - FIRST, before the page shows the database's data: every table in full but the ones below, the calendar from
 //     6 weeks back to 4 months ahead (with every repeating series and the stand-ins of its times), and the to-dos still
-//     open or done in the last 60 days. Sessions and their people stay whole: sessions held are counted from them.
+//     open or done in the last 60 days. Sessions and their people: with migration 057, those from the calendar's
+//     window on and the few older ones the first screens show, plus the database's count of the rest
+//     (coach_sessions_start, below); without it, whole, as before.
 //   - LATER, once the page has drawn, quietly and once a visit: the older to-dos, every session's notes, client notes,
-//     the activity log and the lead events.
+//     the activity log and the lead events, and (with 057) the older sessions and every session's people.
 //   - The calendar's other weeks are read as the coach moves to them (ensureCalRange), never all at once.
 // A read that fills its 5,000 rows goes on a page of 1,000 at a time until the table has no more, so nothing is ever
 // cut off unseen.
@@ -964,6 +972,7 @@ const CAL_BACK_DAYS = 42;
 const CAL_AHEAD_DAYS = 120;
 const TODO_DONE_DAYS = 60;
 const LATER_TABLES = new Set(['coach_session_notes', 'client_notes', 'activity_log', 'coach_lead_events']);
+const SESSION_TABLES = new Set(['coach_sessions', 'coach_session_people']);
 const iso = (ms) => new Date(ms).toISOString();
 const dayOf = (ms) => iso(ms).slice(0, 10);
 const instant = (v) => { const t = typeof v === 'string' ? Date.parse(v) : NaN; return Number.isNaN(t) ? null : t; };
@@ -984,11 +993,19 @@ export function calWindow(fromMs, toMs) {
   };
 }
 
-function plans(names, nowMs, tier) {
+function plans(names, nowMs, tier, { split = null } = {}) {
   const cut = nowMs - TODO_DONE_DAYS * DAY_MS;
   const out = [];
   for (const table of names) {
-    if (table === 'coach_cal_items') {
+    if (split != null && SESSION_TABLES.has(table)) {
+      // 057: the first tier's come from coach_sessions_start; the rest follow here (the older sessions, and every
+      // session's people, read whole: they are small, and whole they leave nothing to work out).
+      if (tier === 'later') {
+        out.push(table === 'coach_sessions'
+          ? { table, narrow: (q) => q.lt('starts_at', iso(split)), inScope: (r) => { const t = instant(r.starts_at); return t !== null && t < split; } }
+          : { table, narrow: null, inScope: null });
+      }
+    } else if (table === 'coach_cal_items') {
       if (tier === 'first') out.push({ table, ...calWindow(nowMs - CAL_BACK_DAYS * DAY_MS, nowMs + CAL_AHEAD_DAYS * DAY_MS) });
     } else if (table === 'coach_todos') {
       out.push(tier === 'first'
@@ -1151,12 +1168,134 @@ export function mergeLoaded(before, read, keep = null) {
   return next;
 }
 
+// ---------------------------------------------------------------- sessions on a first load (migration 057)
+
+// A coach's sessions held are counted on the device from their sessions (day.js's withSessions), so every session
+// was read before the first screen: 4,425 sessions and as many people for the owner, the biggest part of a first
+// visit. With 057 the database sends those from the calendar's window on, every one of a client whose page is open,
+// and the few older ones the first screens show (each client's oldest to write up, oldest recap not sent, latest
+// held), and COUNTS the rest: for each engagement the sessions it didn't send that count, and the recaps not sent
+// among them. The device keeps those counts in its own table, coach_sessions_older, one row:
+//   { key: 'older', whole: false, since, held: { [engagement]: n }, nudges: n, profiles: [ids] }  while the older
+//     sessions aren't here: a count is then the base, plus `held`, plus what is here (withSessions' `older`);
+//   { key: 'older', whole: true }  once every session is here (the later tier, or a read of them whole): the counts
+//     are worked out from the sessions alone, exactly as before.
+// So an engagement saved meanwhile carries the full count, never a partial one (050 would move its base).
+const START_NOT_YET_KEY = 'clarity-coach-start-not-yet';
+const OLDER = 'coach_sessions_older';
+const WHOLE_ROW = Object.freeze({ key: 'older', whole: true });
+let startReadyNow = null; // true: 057 answered; false: not there (remembered an hour); null: not asked yet
+const laterSplit = new Map(); // account -> where this visit's first load split the sessions (ms), when it did
+const wantProfiles = new Map(); // account -> Set of clients whose page wants all their sessions this visit
+
+const olderRowOf = (state) => state?.rows?.[OLDER]?.older || null;
+
+/** What the database said of the sessions that aren't on the device yet ({ held, nudges }), or null when they all are. */
+const olderMemo = new WeakMap();
+export function sessionsOlder(state) {
+  const row = olderRowOf(state);
+  if (!row || row.whole === true) return null;
+  let out = olderMemo.get(row);
+  if (!out) {
+    out = Object.freeze({ held: row.held || {}, nudges: Number(row.nudges) || 0 });
+    olderMemo.set(row, out);
+  }
+  return out;
+}
+
+function withOlderRow(state, row) {
+  const here = olderRowOf(state);
+  if (here && sameRow(here, row)) return state;
+  return {
+    rows: { ...state.rows, [OLDER]: { older: row } },
+    marks: { ...state.marks, [OLDER]: { older: { sent: true, gone: false, refused: false } } },
+  };
+}
+
+async function fetchSessionsStart(split, profiles) {
+  const { data, error } = await supabase.rpc('coach_sessions_start', { p_since: iso(split), p_profiles: profiles });
+  if (error) {
+    // Not there yet (before Tim runs 057): read whole, as before, and don't ask again for an hour.
+    if (error.code === 'PGRST202' || error.code === '42883' || error.status === 404) {
+      noteNotYet(true, START_NOT_YET_KEY);
+      startReadyNow = false;
+      return null;
+    }
+    throw error;
+  }
+  // Anything but the answer 057 gives (a stand-in that doesn't run it): read whole, as before.
+  if (!isObject(data) || !Array.isArray(data.sessions) || !Array.isArray(data.people) || !isObject(data.held)) return null;
+  startReadyNow = true;
+  return data;
+}
+
+const splitWanted = (dayThere) => (dayThere && startReadyNow !== false && !notYet(START_NOT_YET_KEY));
+
+/**
+ * coach_sessions_start's answer as reads of the two tables. While the older sessions aren't here it is the whole of
+ * what the device should hold (the rest is counted): it replaces every session and person sent, keeping only what
+ * waits here unsent. Once they are, it covers the window and the sessions it sent; older ones stay as they are.
+ */
+export function startReads(before, start, split) {
+  const sent = new Set(start.sessions.map((r) => r.id));
+  if (olderRowOf(before)?.whole !== true) {
+    return [['coach_sessions', { rows: start.sessions, inScope: null }], ['coach_session_people', { rows: start.people, inScope: null }]];
+  }
+  const recent = (r) => { const t = instant(r.starts_at); return t === null || t >= split; };
+  const covered = new Set(sent);
+  for (const r of Object.values(before.rows.coach_sessions || {})) if (recent(r)) covered.add(r.id);
+  return [
+    ['coach_sessions', { rows: start.sessions, inScope: (r) => sent.has(r.id) || recent(r) }],
+    ['coach_session_people', { rows: start.people, inScope: (r) => covered.has(r.session_id) }],
+  ];
+}
+
+/** The device's copy with coach_sessions_start's answer merged in, and its counts kept (pure, for the tests too). */
+export function mergeStart(before, start, split, profiles = [], keep = null) {
+  const next = mergeLoaded(before, new Map(startReads(before, start, split)), keep);
+  if (olderRowOf(before)?.whole === true) return next;
+  const held = {};
+  for (const [k, v] of Object.entries(start.held || {})) if (Number.isFinite(Number(v))) held[k] = Number(v);
+  return withOlderRow(next, { key: 'older', whole: false, since: iso(split), held, nudges: Number(start.nudges) || 0, profiles: [...profiles].sort() });
+}
+
+/**
+ * A client's page: every one of that client's sessions, at once. Nothing to do once every session is here; otherwise
+ * coach_sessions_start is asked again with the client named (every load this visit names them too).
+ */
+export async function ensureClientSessions(userId, profileId) {
+  if (!userId || !profileId) return false;
+  if (!wantProfiles.has(userId)) wantProfiles.set(userId, new Set());
+  const want = wantProfiles.get(userId);
+  const fresh = !want.has(profileId);
+  want.add(profileId);
+  if (loading.has(userId)) await loading.get(userId).catch(() => null);
+  const row = olderRowOf(read(userId));
+  if (!row || row.whole === true || !laterSplit.has(userId)) return true;
+  if (!fresh && (row.profiles || []).includes(profileId)) return true;
+  const split = laterSplit.get(userId);
+  const profiles = [...want];
+  const gen = generation;
+  const since = readBegins();
+  try {
+    const start = await fetchSessionsStart(split, profiles);
+    if (!start || gen !== generation) return false;
+    await hydrate(userId);
+    // Every session came in meanwhile (the later tier): nothing to add.
+    if (olderRowOf(read(userId))?.whole === true) return true;
+    write(userId, mergeStart(read(userId), start, split, profiles, touchedSince(userId, since)));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const calLoaded = new Map(); // account -> [[fromMs, toMs]] of the calendar read this visit
 const calAsking = new Map();
 const laterDone = new Set(); // accounts whose LATER tables have been read this visit
 
 function tablesThere(dayThere, calThere, crmThere) {
-  return Object.keys(TABLES).filter((t) => (dayThere || !DAY_TABLES.has(t)) && (calThere || !CAL_TABLES.has(t)) && (crmThere || !CRM_TABLES.has(t)));
+  return Object.keys(TABLES).filter((t) => !DEVICE_ONLY.has(t) && (dayThere || !DAY_TABLES.has(t)) && (calThere || !CAL_TABLES.has(t)) && (crmThere || !CRM_TABLES.has(t)));
 }
 
 const whenIdle = (fn) => {
@@ -1174,10 +1313,14 @@ export function loadCoachLater(userId) {
       try {
         const names = tablesThere(dayReadyNow === true, calReadyNow === true, crmReadyNow === true);
         const since = readBegins();
-        const db = await fetchPlans(plans(names, Date.now(), 'later'));
+        const split = laterSplit.get(userId) ?? null;
+        const db = await fetchPlans(plans(names, Date.now(), 'later', { split }));
         if (gen !== generation) { resolve(false); return; }
         await hydrate(userId);
-        write(userId, mergeLoaded(read(userId), db, touchedSince(userId, since)));
+        let next = mergeLoaded(read(userId), db, touchedSince(userId, since));
+        // Every session is here now: the counts are worked out from them alone again.
+        if (split != null && db.has('coach_sessions') && db.has('coach_session_people')) next = withOlderRow(next, WHOLE_ROW);
+        write(userId, next);
         resolve(true);
       } catch {
         laterDone.delete(userId); // tried again on the next load
@@ -1253,18 +1396,37 @@ export function loadCoach(userId, { again = false } = {}) {
     const calThere = dayThere && (await coachCalReady()) === true;
     const crmThere = calThere && (await coachCrmReady()) === true;
     const nowMs = Date.now();
-    const first = plans(tablesThere(dayThere, calThere, crmThere), nowMs, 'first');
+    // 057: the sessions are split at the calendar's window (see coach_sessions_start above).
+    let split = splitWanted(dayThere) ? nowMs - CAL_BACK_DAYS * DAY_MS : null;
+    const profiles = [...(wantProfiles.get(userId) || [])];
+    const first = plans(tablesThere(dayThere, calThere, crmThere), nowMs, 'first', { split });
     const since = readBegins();
     let db;
+    let start = null;
     try {
       // The device's own copy is read meanwhile, so what the database doesn't send now (the older weeks) is kept.
-      [db] = await Promise.all([fetchPlans(first), hydrate(userId)]);
+      [db, start] = await Promise.all([fetchPlans(first), split != null ? fetchSessionsStart(split, profiles) : null, hydrate(userId)]);
+      if (split != null && !start) {
+        // 057 isn't there (or didn't answer as it does): every session and person, whole, as before.
+        split = null;
+        for (const [t, v] of await fetchPlans(plans(['coach_sessions', 'coach_session_people'], nowMs, 'first'))) db.set(t, v);
+      }
     } catch {
       return null;
     }
     if (gen !== generation) return null;
     const waiting = waitingToSend(userId) > 0;
-    write(userId, mergeLoaded(read(userId), db, touchedSince(userId, since)));
+    const keep = touchedSince(userId, since);
+    let next = mergeLoaded(read(userId), db, keep);
+    if (start) {
+      next = mergeStart(next, start, split, profiles, keep);
+      laterSplit.set(userId, split);
+    } else if (dayThere) {
+      // Every session was read whole.
+      next = withOlderRow(next, WHOLE_ROW);
+      laterSplit.delete(userId);
+    }
+    write(userId, next);
     if (calThere) calLoaded.set(userId, [...(calLoaded.get(userId) || []), [nowMs - CAL_BACK_DAYS * DAY_MS, nowMs + CAL_AHEAD_DAYS * DAY_MS]]);
     if (!waiting) await moveAcross(userId);
     loadCoachLater(userId);
@@ -1354,6 +1516,8 @@ function letGo() {
   calLoaded.clear();
   laterDone.clear();
   touched.clear();
+  laterSplit.clear();
+  wantProfiles.clear();
 }
 onCopiesCleared(letGo);
 
@@ -1374,6 +1538,9 @@ export function resetCoachStoreForTests() {
   calLoaded.clear();
   laterDone.clear();
   touched.clear();
+  laterSplit.clear();
+  wantProfiles.clear();
+  startReadyNow = null;
   readyNow = null;
   dayReadyNow = null;
   calReadyNow = null;

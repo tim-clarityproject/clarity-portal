@@ -18,7 +18,7 @@ export function currentEngagement(engagements, { profileId, groupId }) {
 }
 
 export function useClientRows({ past = false } = {}) {
-  const { state, clients, admin, coach, isOwner, todayKey, coaches, sessions, sessionPeople } = useCoachPortal();
+  const { state, clients, admin, coach, isOwner, todayKey, coaches, sessions, sessionPeople, sessionsOlder } = useCoachPortal();
   return useMemo(() => {
     const engagements = rowsOf(state, 'engagements');
     const packs = rowsOf(state, 'engagement_packs');
@@ -27,7 +27,7 @@ export function useClientRows({ past = false } = {}) {
     const values = rowsOf(state, 'coach_field_values');
     const own = clients.filter((p) => (past ? p.status === 'past' : p.status !== 'past')).map((p) => {
       // Sessions left follows each recorded session (day.js's withSessions): the list, the board and the table read it here.
-      const engagement = withSessions(currentEngagement(engagements, { profileId: p.id }), sessions, sessionPeople);
+      const engagement = withSessions(currentEngagement(engagements, { profileId: p.id }), sessions, sessionPeople, sessionsOlder);
       return { profile: p, engagement, tags: links.filter((l) => l.item_id === p.id).map((l) => l.tag_id), stage: boardStage(p, engagement, packs, todayKey), nextAt: null, admin: false };
     });
     const mine = new Set(clients.map((p) => p.id));
@@ -38,5 +38,5 @@ export function useClientRows({ past = false } = {}) {
       return { profile, engagement, tags: [], stage: boardStage(profile, engagement, [], todayKey), nextAt: null, admin: true, coachName: who };
     }) : [];
     return { rows: [...own, ...theirs], packs, entries, values, engagements };
-  }, [state, clients, admin, coach, isOwner, todayKey, coaches, past, sessions, sessionPeople]);
+  }, [state, clients, admin, coach, isOwner, todayKey, coaches, past, sessions, sessionPeople, sessionsOlder]);
 }

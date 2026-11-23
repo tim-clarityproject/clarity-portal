@@ -396,6 +396,49 @@ async function standInRows(page, { role = 'owner', db = 'none', rows = {}, admin
       }
       return to.map((a) => ({ kind: w.survey_on ? 'follow_up_survey' : 'follow_up', attendee_name: a.name, attendee_email: a.email, survey_key: a.survey_key ?? null }));
     },
+    /**
+     * coach_sessions_start() (057): the coach's sessions from p_since on, every one of the clients named, and the older
+     * ones the first screens show (each client's and group's oldest to write up, oldest recap not sent, oldest with
+     * words, latest held; ties kept), their people, and for the rest each engagement's count and the recaps not sent.
+     * The coach's own only, as its SQL reads under the tables' own rules.
+     */
+    coach_sessions_start(uid, since, profiles = []) {
+      const t = (v) => Date.parse(v);
+      const cut = since == null ? -Infinity : t(since);
+      const mine = store.rows.coach_sessions.filter((x) => x.coach_id === ME);
+      const older = mine.filter((x) => t(x.starts_at) < cut);
+      const key = (x) => `${x.profile_id}|${x.group_id}`;
+      const firstOf = (list, better) => {
+        const best = new Map();
+        for (const x of list) { const k = key(x); if (!best.has(k) || better(t(x.starts_at), best.get(k))) best.set(k, t(x.starts_at)); }
+        return list.filter((x) => best.get(key(x)) === t(x.starts_at));
+      };
+      const worded = (x) => /[^\s]/.test(String(x.recap ?? '').replace(/[\u00A0\u00AD\u180E\u200B-\u200F\u2028-\u202E\u2060-\u2064\uFEFF]/g, ''));
+      const named = new Set(profiles || []);
+      const unsent = (x) => x.outcome === 'held' && !x.recap_sent_at;
+      const picked = new Set([
+        ...mine.filter((x) => t(x.starts_at) >= cut),
+        ...older.filter((x) => named.has(x.profile_id) || store.rows.coach_session_people.some((sp) => sp.session_id === x.id && named.has(sp.profile_id))),
+        ...firstOf(older.filter((x) => x.outcome == null), (a, b) => a < b),
+        ...firstOf(older.filter(unsent), (a, b) => a < b),
+        ...firstOf(older.filter((x) => unsent(x) && worded(x)), (a, b) => a < b),
+        ...firstOf(older.filter((x) => x.outcome === 'held'), (a, b) => a > b),
+      ].map((x) => x.id));
+      const rest = older.filter((x) => !picked.has(x.id));
+      const held = {};
+      for (const x of rest) if (x.engagement_id && counts(x)) held[x.engagement_id] = (held[x.engagement_id] || 0) + 1;
+      for (const sp of store.rows.coach_session_people) {
+        const x = rest.find((r) => r.id === sp.session_id);
+        if (x && sp.engagement_id && counts(x)) held[sp.engagement_id] = (held[sp.engagement_id] || 0) + 1;
+      }
+      return {
+        since: since == null ? '-infinity' : new Date(cut).toISOString(),
+        sessions: mine.filter((x) => picked.has(x.id)).map((x) => ({ ...x })),
+        people: store.rows.coach_session_people.filter((sp) => picked.has(sp.session_id)).map((sp) => ({ ...sp })),
+        held,
+        nudges: rest.filter(unsent).length,
+      };
+    },
     /** my_session_recaps(): the signed-in client's sent recaps, newest first, each with the actions ticked to send. */
     my_session_recaps(uid) {
       const own = new Set(myProfiles(uid).map((p) => p.id));
@@ -777,6 +820,7 @@ async function standInRows(page, { role = 'owner', db = 'none', rows = {}, admin
                 case 'session_recap_people': return json(route, store.fn.session_recap_people(uid, args.p_session));
                 case 'workshop_follow_up_claim': return json(route, store.fn.workshop_follow_up_claim(uid, args.p_workshop));
                 case 'my_session_recaps': return json(route, store.fn.my_session_recaps(uid));
+                case 'coach_sessions_start': return json(route, store.fn.coach_sessions_start(uid, args.p_since ?? null, args.p_profiles ?? []));
                 case 'my_session_action': store.fn.my_session_action(uid, args.p_action, args.p_done ?? null, args.p_placed ?? null); return route.fulfill({ status: 204 });
                 case 'my_view_asks': return json(route, store.fn.my_view_asks(uid));
                 case 'my_cover_asks': return json(route, store.fn.my_cover_asks(uid));

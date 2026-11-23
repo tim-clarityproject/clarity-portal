@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { zonePlace } from '../../lib/time';
 import { formatClockTime } from '../../lib/dateFormatter';
-import { coachReadyNow, keyOf, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
+import { coachReadyNow, ensureClientSessions, keyOf, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { deleteClient, inviteClient, inviteWords, moveClient, NEEDS_049 } from '../../lib/coach/actions';
 import {
   birthdaysOn, birthdayWords, clean, clockWords, dayWords, ENGAGEMENT_KINDS, fieldFromTyped, fieldValue, fieldWords, firstName,
@@ -54,7 +54,7 @@ function useDone() {
 
 // ---------------------------------------------------------------- the engagement panel
 export function EngagementPanel({ draft, setDraft, profile = null, group = null }) {
-  const { userId, coach, state, sessions: allSessions, sessionPeople } = useCoachPortal();
+  const { userId, coach, state, sessions: allSessions, sessionPeople, sessionsOlder } = useCoachPortal();
   const done = useDone();
   const [problem, setProblem] = useState(null);
   if (!draft) return <SlidePanel open={false} onClose={() => setDraft(null)} title="Engagement" />;
@@ -78,8 +78,8 @@ export function EngagementPanel({ draft, setDraft, profile = null, group = null 
       sessions_total: sessions, sessions_held: before?.sessions_held || 0, ...(before?.sessions_held_base != null ? { sessions_held_base: before.sessions_held_base } : {}),
       default_minutes: minutes, every_weeks: every, starts_on: draft.starts || null, ends_on: draft.ends || null,
       time_credit_minutes: creditHours == null ? null : Math.round(creditHours * 60), funded_by: clean(draft.funded).slice(0, 120) || null, status: 'active',
-    }, allSessions, sessionPeople);
-    if (await done(() => saveRow(userId, 'engagements', row), before ? 'Saved' : 'Engagement added', () => (before ? saveRow(userId, 'engagements', engagementToSave(before, allSessions, sessionPeople)) : removeRow(userId, 'engagements', row.id)))) setDraft(null);
+    }, allSessions, sessionPeople, sessionsOlder);
+    if (await done(() => saveRow(userId, 'engagements', row), before ? 'Saved' : 'Engagement added', () => (before ? saveRow(userId, 'engagements', engagementToSave(before, allSessions, sessionPeople, sessionsOlder)) : removeRow(userId, 'engagements', row.id)))) setDraft(null);
   };
   return (
     <SlidePanel open onClose={() => setDraft(null)} title={before ? 'Edit engagement' : 'Add engagement'} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>{before ? 'Save my edit' : 'Add engagement'}</Button></div>}>
@@ -146,9 +146,11 @@ export default function ClientPage() {
   const toast = useToast();
   const done = useDone();
   const portal = useCoachPortal();
-  const { userId, coach, isOwner, coaches, state, clients, organisations, tags, fields, settings, todayKey, reloadCoaches, sessions: allSessions, sessionPeople, todos } = portal;
+  const { userId, coach, isOwner, coaches, state, clients, organisations, tags, fields, settings, todayKey, reloadCoaches, sessions: allSessions, sessionPeople, sessionsOlder, todos } = portal;
   const { leads, leadEvents, emails, emailLinks, callTypes = [] } = portal;
   const profile = clients.find((p) => p.id === id) || null;
+  // Every one of this client's sessions at once, on a first visit to the device too (057: the older ones otherwise follow later).
+  useEffect(() => { if (id) ensureClientSessions(userId, id); }, [userId, id]);
 
   const foldsKey = deviceKey('cache', userId, 'coach-folds');
   const [folds, setFolds] = useState(() => readJson(foldsKey) || {});
@@ -225,12 +227,12 @@ export default function ClientPage() {
   const { engagement, packs, entries, notes, files, about, links, values, projects, requests } = data;
   // Sessions left follows each recorded session (day.js's withSessions); the kept row itself is never saved from here to change the count.
   const mySessions = allSessions.filter((x) => x.profile_id === profile.id);
-  const counted = withSessions(engagement, allSessions, sessionPeople);
+  const counted = withSessions(engagement, allSessions, sessionPeople, sessionsOlder);
   const sessions = sessionsLeft(counted, packs);
   const next = nextSession(mySessions, () => true, portal.now);
   const myTodos = sortTodos(todos.filter((t) => t.profile_id === profile.id && !t.done_at));
   // Saved for any reason but a typed count, the engagement carries the count as it stands now (never the one it was loaded with).
-  const asKept = (e) => engagementToSave(e, allSessions, sessionPeople);
+  const asKept = (e) => engagementToSave(e, allSessions, sessionPeople, sessionsOlder);
   const typeHeld = (total) => done(() => saveRow(userId, 'engagements', withHeldTyped(engagement, total, counted.sessions_recorded)), 'Saved', () => saveRow(userId, 'engagements', asKept(engagement)));
   const credit = timeCredit(engagement, packs, entries, now);
   const pinned = notes.filter((n) => n.pinned).slice(0, 3);
