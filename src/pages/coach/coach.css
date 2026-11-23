@@ -607,7 +607,7 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-notice:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--space-px6); }
 
 /* Everything: one timeline. */
-.ui-root .cc-timeline-bar { display: grid; grid-template-columns: minmax(0, 1fr) var(--cc-pop-min); gap: var(--space-px12); margin-top: var(--space-px22); align-items: end; }
+.ui-root .cc-timeline-bar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(var(--cc-pop-min), max-content); gap: var(--space-px12); margin-top: var(--space-px22); align-items: end; }
 .ui-root .cc-timeline-bar > * { margin: 0; }
 .ui-root .cc-timeline-row { display: grid; grid-template-columns: var(--cc-when-w) minmax(0, 1fr); gap: var(--space-3); padding: var(--space-px14) 0; border-bottom: var(--line-w) solid var(--line-soft); }
 .ui-root .cc-timeline-row > span { font-size: var(--fs-note); color: var(--text-2); }

@@ -108,6 +108,6 @@
 /* On a phone a card is its name and one grey line (M11's calm phone, .ph .lcard small.gl; tidy follow-up 3, run 6's 33):
    the parts sit side by side and the ones that don't fit are left out (useGreyLines). "Quiet for N days" is in the text
    colour there, with no pill. */
-.ui-root .cc-lead-card .cc-lead-line1 { display: flex; flex-wrap: wrap; gap: 0 var(--space-px14); margin-top: var(--space-px2); font-size: var(--fs-small); color: var(--text-2); line-height: var(--lh-row); }
+.ui-root .cc-lead-card .cc-lead-line1 { min-width: 0; display: flex; flex-wrap: wrap; gap: 0 var(--space-px14); margin-top: var(--space-px2); font-size: var(--fs-small); color: var(--text-2); line-height: var(--lh-row); }
 .ui-root .cc-lead-card .cc-lead-line1 .cc-lead-quiet { margin: 0; padding: 0; border: 0; border-radius: 0; font-size: inherit; color: var(--text); }
 .ui-root .cc-lead-card .cc-lead-line1 .cc-lead-ready { margin: 0; font-size: inherit; }
