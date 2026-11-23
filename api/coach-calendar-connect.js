@@ -20,8 +20,9 @@
 //   - The return address is built from the portal's own allow-list
 //     (_portalOrigin.js), never from the request's host, and must be saved
 //     exactly in Google Cloud: <the portal's address>/api/coach-calendar-connect
-//   - It asks Google for one thing only, the coach's calendar events
-//     (calendar.events), and keeps the token Google gives in
+//   - It asks Google for the coach's calendar events (calendar.events) and,
+//     from run 8, the list of their calendars, read only
+//     (calendar.calendarlist.readonly), and keeps the token Google gives in
 //     coach_connections.secret (migration 051), which is the server's alone:
 //     no person, the coach included, can read it. Nothing is logged.
 //
@@ -39,7 +40,9 @@ import { LIVE_ORIGIN, portalOrigin } from './_portalOrigin.js';
 
 export const config = { maxDuration: 15 };
 
-export const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+// The coach's calendar events (the main calendar is kept in step both ways), and, from run 8, the list of their
+// calendars, read only, so Settings, My calendars can offer each one's switch.
+export const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.calendarlist.readonly';
 export const STATE_MINUTES = 10;
 const BACK = '/coach/settings/calendars';
 const DIDNT_WORK = 'That didn’t work. Try again in a moment.';

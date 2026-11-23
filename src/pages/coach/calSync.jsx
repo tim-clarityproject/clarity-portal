@@ -7,6 +7,7 @@ import {
   calendarOfEvent, coachZoneOf, conflictWords, CONNECT_WORDS, MOVED_IN_GOOGLE, removedForSync, restoredForSync, seenMoved, SYNC_AFTER_SAVE_MS, SYNC_EVERY_MS, syncRowOver, syncWait, T,
 } from '../../lib/coach/calendar';
 import { chooseAdapters, googleStandIn, serverStatus, syncOnce, zoomOnce, zoomStandIn } from '../../lib/coach/connect/index.js';
+import { busyOnce, TG } from '../../lib/coach/googleBusy';
 import { askServer } from '../../lib/coach/connect/server.js';
 import { supabase } from '../../lib/supabase';
 import { TextLink, useCoachPortal } from './parts';
@@ -35,6 +36,7 @@ const LIVE = typeof __CLARITY_LIVE__ !== 'undefined' && __CLARITY_LIVE__;
 const NOTHING = Object.freeze({
   on: false, invites: false, zoom: false, status: {}, standIns: {}, conflicts: [], problem: null, lastAt: null,
   after: () => {}, setEditing: () => {}, removed: () => {}, restored: (rows) => rows, setStandIn: () => {}, connect: async () => null, disconnect: async () => false, refresh: () => {},
+  google: false, soon: () => {},
 });
 const CalSyncContext = createContext(NOTHING);
 
@@ -135,6 +137,23 @@ export function CalSync({ children }) {
       if (save.length) await saveRows(userId, save);
       for (const [table, id] of res.remove) await removeRow(userId, table, id);
 
+      // Run 8: the account's other calendars (Personal, Family, …), READ ONLY: their list, and the events of each one
+      // the coach has switched on, kept as busy times (googleBusy.js). Nothing is ever written to them.
+      let busyProblem = null;
+      if (google) {
+        const latestState = coachState(userId);
+        const mineNow = (table) => rowsOf(latestState, table).filter((r) => r.coach_id === coachId);
+        const busy = await busyOnce({ google, calendars: mineNow(TG.calendars), busyTimes: mineNow(TG.busy), coachId, coachZone: zone, now: new Date() });
+        // Busy times go before their calendars; calendars are saved before their busy times.
+        for (const [table, id] of busy.remove.filter(([t]) => t === TG.busy)) await removeRow(userId, table, id);
+        const calRows = busy.save.filter(([t]) => t === TG.calendars);
+        if (calRows.length) await saveRows(userId, calRows);
+        const busyRows = busy.save.filter(([t]) => t === TG.busy);
+        if (busyRows.length) await saveRows(userId, busyRows);
+        for (const [table, id] of busy.remove.filter(([t]) => t === TG.calendars)) await removeRow(userId, table, id);
+        busyProblem = busy.problem;
+      }
+
       // What this round was told to delete is done (unless it stopped part-way); anything noted since stays for the next.
       const after = readMeta(userId);
       const told = new Set(meta.removed.map((r) => r.id));
@@ -145,9 +164,9 @@ export function CalSync({ children }) {
         zoomSent: google ? after.zoomSent : res.sent,
       });
       setConflicts(res.conflicts || []);
-      setProblem(res.problem || null);
+      setProblem(res.problem || busyProblem || null);
       if (!res.problem) setLastAt(new Date().toISOString());
-      return !res.problem;
+      return !res.problem && !busyProblem;
     };
     let ok = false;
     try {
@@ -207,12 +226,16 @@ export function CalSync({ children }) {
     invites: realGoogle,
     zoom: useZoom,
     status, standIns, conflicts, problem, lastAt, after, setEditing, removed, restored,
+    /** Google Calendar is in use (the real one, or a stand-in on a build that isn't live): My calendars lists its calendars. */
+    google: useGoogle,
+    /** A round soon (a calendar was just switched on, so its busy times are read straight away). */
+    soon: () => { if (onRef.current) schedule(400); },
     /** Settings, My calendars, on a build that isn't live: a stand-in on or off. */
     setStandIn: (name, value) => {
       if (LIVE) return;
       const next = { ...standIns, [name]: value === true };
       writeJson(standKey(userId, 'on'), next);
-      if (!value) { removeKey(standKey(userId, name)); if (name === 'google') removeKey(metaKey(userId)); }
+      if (!value) { removeKey(standKey(userId, name)); if (name === 'google') { removeKey(metaKey(userId)); forgetGoogleCalendars(userId, coach.id); } }
       setStandIns(next);
     },
     /** Starts connecting the coach's own Google account: the address of Google's consent page, or null. */
@@ -224,11 +247,12 @@ export function CalSync({ children }) {
       const answer = await fetchConnect({ kind: 'disconnect' });
       if (answer?.ok !== true) return false;
       removeKey(metaKey(userId));
+      forgetGoogleCalendars(userId, coach.id);
       refresh();
       return true;
     },
     refresh,
-  }), [on, realGoogle, useZoom, status, standIns, conflicts, problem, lastAt, after, setEditing, removed, restored, userId, refresh]);
+  }), [on, realGoogle, useGoogle, useZoom, schedule, status, standIns, conflicts, problem, lastAt, after, setEditing, removed, restored, userId, coach.id, refresh]);
 
   // For the browser suites and a tester's console, never on the live site: the stand-ins and a round on demand.
   useEffect(() => {
@@ -238,6 +262,19 @@ export function CalSync({ children }) {
   }, [userId]);
 
   return <CalSyncContext.Provider value={api}>{children}</CalSyncContext.Provider>;
+}
+
+/**
+ * Google Calendar disconnected (or its stand-in switched off): the other calendars and their busy times go too, so
+ * nothing read from an account that is no longer connected keeps blocking a time (run 8).
+ */
+function forgetGoogleCalendars(userId, coachId) {
+  const state = coachState(userId);
+  const mine = (table) => rowsOf(state, table).filter((r) => r.coach_id === coachId);
+  (async () => {
+    for (const b of mine(TG.busy)) await removeRow(userId, TG.busy, b.id);
+    for (const c of mine(TG.calendars)) await removeRow(userId, TG.calendars, c.id);
+  })().catch(() => {});
 }
 
 /** Asks the portal's server about connecting Google (api/coach-calendar-connect.js), with the coach's own sign-in. */

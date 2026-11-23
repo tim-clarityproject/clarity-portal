@@ -10,6 +10,13 @@
 //        → { ok: true, events, syncToken }
 //   POST /api/coach-calendar  { service: 'google_calendar', kind: 'create' | 'update' | 'delete', id?, event?, invite? }
 //        → { ok: true, event? }
+//   POST /api/coach-calendar  { service: 'google_calendar', kind: 'calendars' }             (run 8; read only)
+//        → { ok: true, calendars: [{ id, summary, primary }] }   every calendar on the coach's account
+//   POST /api/coach-calendar  { service: 'google_calendar', kind: 'busy', calendarId, timeMin, timeMax }   (run 8; read only)
+//        → { ok: true, events }   one calendar's events in the window, one time each, trimmed to what makes a busy
+//          time (id, status, summary, start, end, transparency, and whether the coach declined)
+//        These two only ever READ (GET): the portal never writes to the coach's other calendars. Writing goes to the
+//        main calendar only ('primary', below), as since run 3.
 //   POST /api/coach-calendar  { service: 'zoom', kind: 'create' | 'update' | 'delete', id?, meeting? }
 //        → { ok: true, meeting?: { id, joinUrl } }
 //
@@ -47,7 +54,9 @@ import { asCallerClient, isMissingFunction, supabaseOf } from './_coachEmails.js
 
 export const config = { maxDuration: 30 };
 
-const GOOGLE_KINDS = ['list', 'create', 'update', 'delete'];
+const GOOGLE_KINDS = ['list', 'create', 'update', 'delete', 'calendars', 'busy'];
+/** The most events one busy read hands back (a calendar's 13 weeks). */
+export const BUSY_EVENTS_MAX = 2500;
 const ZOOM_KINDS = ['create', 'update', 'delete'];
 const BODY_MAX = 20000;
 const DIDNT_WORK = 'That didn’t work. Try again in a moment.';
@@ -68,6 +77,16 @@ export function askedFor(body) {
   const idOk = (id) => typeof id === 'string' && /^[A-Za-z0-9_\-@.]{1,1024}$/.test(id);
   const small = (v) => v && typeof v === 'object' && !Array.isArray(v) && JSON.stringify(v).length <= BODY_MAX;
   if (b.service === 'google_calendar' && GOOGLE_KINDS.includes(b.kind)) {
+    if (b.kind === 'calendars') return { service: b.service, kind: b.kind };
+    if (b.kind === 'busy') {
+      const when = (v) => typeof v === 'string' && v.length <= 40 && !Number.isNaN(new Date(v).getTime()) ? new Date(v).toISOString() : null;
+      const from = when(b.timeMin);
+      const to = when(b.timeMax);
+      const calOk = typeof b.calendarId === 'string' && b.calendarId.length >= 1 && b.calendarId.length <= 1024 && /^[^\s/?#]+$/.test(b.calendarId);
+      // At most 100 days in one read.
+      if (!calOk || !from || !to || to <= from || new Date(to) - new Date(from) > 100 * 86400000) return null;
+      return { service: b.service, kind: b.kind, calendarId: b.calendarId, timeMin: from, timeMax: to };
+    }
     if (b.kind === 'list') return b.syncToken == null || (typeof b.syncToken === 'string' && b.syncToken.length <= 2000) ? { service: b.service, kind: b.kind, syncToken: b.syncToken ?? null } : null;
     if (b.kind !== 'create' && !idOk(b.id)) return null;
     if (b.kind !== 'delete' && !small(b.event)) return null;
@@ -145,9 +164,56 @@ async function googleToken(env, coachId) {
   return j?.access_token || null;
 }
 
+/** One busy event as the browser is given it: what makes a busy time, nothing else (no guests, place, notes or link). */
+export function busyEventOut(e) {
+  const side = (v) => (v && typeof v === 'object' ? { ...(typeof v.dateTime === 'string' ? { dateTime: v.dateTime } : {}), ...(typeof v.date === 'string' ? { date: v.date } : {}) } : null);
+  const me = Array.isArray(e?.attendees) ? e.attendees.find((a) => a && a.self) : null;
+  return {
+    id: String(e?.id || ''), status: e?.status || 'confirmed', summary: typeof e?.summary === 'string' ? e.summary.slice(0, 300) : '',
+    start: side(e?.start), end: side(e?.end), ...(e?.transparency === 'transparent' ? { transparency: 'transparent' } : {}),
+    ...(me ? { attendees: [{ self: true, responseStatus: me.responseStatus || 'needsAction' }] } : {}),
+  };
+}
+
+/** Run 8: the account's calendars and one calendar's events, READ ONLY (GET only; never a write). */
+async function googleRead({ res, asked, headers }) {
+  if (asked.kind === 'calendars') {
+    const calendars = [];
+    let next = null;
+    for (let page = 0; page < 5; page += 1) {
+      const q = new URLSearchParams({ maxResults: '250', fields: 'items(id,summary,summaryOverride,primary),nextPageToken' });
+      if (next) q.set('pageToken', next);
+      const r = await fetch(`https://www.googleapis.com/calendar/v3/users/me/calendarList?${q}`, { method: 'GET', headers });
+      if (!r.ok) return reply(res, 502, { ok: false, reason: 'no_answer', message: DIDNT_WORK });
+      const j = await r.json();
+      for (const c of j.items || []) if (typeof c?.id === 'string') calendars.push({ id: c.id, summary: String(c.summaryOverride || c.summary || '').slice(0, 200), ...(c.primary ? { primary: true } : {}) });
+      if (!j.nextPageToken) return reply(res, 200, { ok: true, calendars: calendars.slice(0, 100) });
+      next = j.nextPageToken;
+    }
+    return reply(res, 200, { ok: true, calendars: calendars.slice(0, 100) });
+  }
+  const events = [];
+  let next = null;
+  for (let page = 0; page < 10 && events.length < BUSY_EVENTS_MAX; page += 1) {
+    const q = new URLSearchParams({
+      singleEvents: 'true', orderBy: 'startTime', maxResults: '250', timeMin: asked.timeMin, timeMax: asked.timeMax,
+      fields: 'items(id,status,summary,start,end,transparency,attendees(self,responseStatus)),nextPageToken',
+    });
+    if (next) q.set('pageToken', next);
+    const r = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(asked.calendarId)}/events?${q}`, { method: 'GET', headers });
+    if (!r.ok) return reply(res, 502, { ok: false, reason: 'no_answer', message: DIDNT_WORK });
+    const j = await r.json();
+    events.push(...(j.items || []).map(busyEventOut));
+    if (!j.nextPageToken) break;
+    next = j.nextPageToken;
+  }
+  return reply(res, 200, { ok: true, events: events.slice(0, BUSY_EVENTS_MAX) });
+}
+
 async function google({ env, res, asked, coachId }) {
   const token = await googleToken(env, coachId);
   if (!token) return reply(res, 200, { ok: false, reason: 'not_connected' });
+  if (asked.kind === 'calendars' || asked.kind === 'busy') return googleRead({ res, asked, headers: { Authorization: `Bearer ${token}` } });
   const base = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
   const updates = `sendUpdates=${asked.invite === false ? 'none' : 'all'}`;

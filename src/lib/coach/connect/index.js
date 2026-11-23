@@ -13,7 +13,7 @@ import { copyInStandIn, gmailStandIn, googleStandIn, zoomStandIn } from './stand
 import { copyInEmailAdapter, copyInOff } from './copyInEmail.js';
 import { gmailAdapter, gmailOff } from './gmail.js';
 
-export { copyInStandIn, gmailStandIn, googleStandIn, zoomStandIn, tabKeep, STAND_IN_DOMAIN } from './standIn.js';
+export { copyInStandIn, gmailStandIn, googleStandIn, zoomStandIn, tabKeep, STAND_IN_CALENDARS, STAND_IN_DOMAIN } from './standIn.js';
 export { addressesFor, copyInEmailAdapter, copyInOff, directionOf, keysOf, readInbound } from './copyInEmail.js';
 export { gmailAdapter, gmailOff, gmailOnce, tidyEmail } from './gmail.js';
 export { syncOnce, zoomOnce } from './sync.js';

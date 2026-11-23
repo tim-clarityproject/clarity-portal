@@ -71,7 +71,7 @@ export function BookCallPanel({ cal, open, onClose, start = null, onLink, onPoll
   const first = d.at ? new Date(d.at) : null;
   const series = useMemo(() => (first ? seriesStarts({ first, clientZone: zone, every: Number(d.often), count: Number(d.often) ? d.count : 1 }).starts : []), [d.at, zone, d.often, d.count]); // eslint-disable-line react-hooks/exhaustive-deps
   const starts = series.map((s, i) => (d.moved[i] ? new Date(d.moved[i]) : s));
-  const clashes = starts.length > 1 ? starts.map((s, i) => ({ i, clash: seriesClashes([s], minutes, { items: data.items, sessions: data.sessions, coachZone })[0] })).filter((c) => c.clash) : [];
+  const clashes = starts.length > 1 ? starts.map((s, i) => ({ i, clash: seriesClashes([s], minutes, { items: data.items, sessions: data.sessions, busy: data.busy, coachZone })[0] })).filter((c) => c.clash) : [];
   const fixTimes = d.fixing != null && starts[d.fixing]
     ? suggestTimes(bookSuggestions({ minutes, zone, coachZone, settings, data, now: new Date(Math.max(now.getTime(), starts[d.fixing].getTime() - 3 * 86400000)), days: 7 }), FIRST_TIMES) : [];
 
@@ -99,7 +99,7 @@ export function BookCallPanel({ cal, open, onClose, start = null, onLink, onPoll
     if (d.where === 'in_person' && !d.location.trim()) { setProblem('Type where it is to carry on.'); return; }
     if (clashes.length) { setProblem(clashes.length === 1 ? 'One call clashes. Choose another time for it to carry on.' : 'Some calls clash. Choose another time for each to carry on.'); return; }
     for (const s of starts) {
-      const line = callProblem({ start: s, minutes, clientZone: zone, coachZone, settings, items: data.items, sessions: data.sessions });
+      const line = callProblem({ start: s, minutes, clientZone: zone, coachZone, settings, items: data.items, sessions: data.sessions, busy: data.busy });
       if (line) { setProblem(starts.length > 1 ? `${dayKeyWords(wallClock(s, coachZone).date)}: ${line}` : line); return; }
     }
     busy.current = true;

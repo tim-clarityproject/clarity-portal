@@ -8,12 +8,13 @@ import { newId, rowsOf } from '../../lib/coach/store';
 import { blankTodo, lastPosition } from '../../lib/coach/todoActions';
 import { clean, cut, firstName } from '../../lib/coach/model';
 import {
-  allDayItem, ASSOCIATES_CALENDAR, associateLines, CAL_REPEATS, CALENDARS, calendarShown, calQuickAddChips, calRepeatValue, calRepeatWords, deleteEntry, duplicateEntry, editRepeat, guestRows, invited, INVITED_EXAMPLE,
+  allDayItem, ASSOCIATES_CALENDAR, associateLines, busyLines, CAL_REPEATS, CALENDARS, calendarShown, calQuickAddChips, calRepeatValue, calRepeatWords, deleteEntry, duplicateEntry, editRepeat, guestRows, invited, INVITED_EXAMPLE,
   gridColumnsMax, hoursWindow, INVITED_LABEL, ITEM_KINDS, joinLink, lengthLine, moveEntry, NEEDS_TITLE, newItem, nudgeEntry, parseCalQuickAdd, pickPeople, placeTodo, PLACES, QUICK_KINDS, QUICK_TITLE,
   quickAddPlan, quickSaveLabel, removeLabel, REPEAT_SCOPES, startingSecondZone, viewRange, repeatOk, REPLIES, replyWords, resizeEntry, spanWords, T, timesAt, typedTimes, undoOf,
 } from '../../lib/coach/calendar';
 import { TextLink } from './parts';
 import { MovedInGoogle, useCalSync, useConflictLine } from './calSync';
+import { GoogleCalendarSwitches } from './googleCalendars';
 import { CAL_HOOKS, CalGrid, gridPoint, TodosToPlace, useBeside, useCalendar } from './calendarParts';
 import { TodoPanel, useTodoActions } from './todoParts';
 
@@ -381,6 +382,8 @@ export function CalendarsPanel({ cal, open, onClose }) {
         </div>
       ))}
       <p className="cc-note">Other people only ever see these as busy.</p>
+      {/* Run 8: the account's other Google calendars, each with its switch (nothing here until Google Calendar is connected). */}
+      <GoogleCalendarSwitches inPanel />
       {cal.isOwner && (
         <div className="cc-field cc-todo-switch">
           <SwitchRow label={ASSOCIATES_CALENDAR.label} note={ASSOCIATES_CALENDAR.note} checked={calendarShown(cal.settings, ASSOCIATES_CALENDAR.value)} onChange={(on) => cal.saveSettings({ calendars: { ...cals, [ASSOCIATES_CALENDAR.value]: on } })} />
@@ -459,7 +462,7 @@ export function useCalPanels(cal, { days }) {
     create({ day: today ? cal.todayKey : days[0], fromMin, toMin: null, floating: false });
   };
   const open = (e) => {
-    if (e.type === 'assoc') { setTheirs(e); return; }
+    if (e.type === 'assoc' || e.type === 'busy') { setTheirs(e); return; }
     if (e.kind === 'hold') {
       const option = cal.pollOptions.find((o) => o.id === e.item?.poll_option_id);
       if (option) { navigate(CAL_HOOKS.poll(option.poll_id)); return; }
@@ -476,10 +479,11 @@ export function useCalPanels(cal, { days }) {
     if (e.type === 'open') { navigate(CAL_HOOKS.open); return; }
     setItem({ key: e.key, day: e.fromDay });
   };
-  // An associate's session is theirs: it never moves from here.
-  const move = (e, to) => (e.type === 'assoc' ? false : cal.run(moveEntry(e, to, cal.ctx)));
-  const resize = (e, to) => (e.type === 'assoc' ? false : cal.run(resizeEntry(e, to, cal.ctx)));
-  const nudge = (e, step) => (e.type === 'assoc' ? false : cal.run(nudgeEntry(e, step, cal.ctx)));
+  // An associate's session is theirs, and a busy time from Google is changed in Google (run 8): neither moves from here.
+  const fixedHere = (e) => e.type === 'assoc' || e.type === 'busy';
+  const move = (e, to) => (fixedHere(e) ? false : cal.run(moveEntry(e, to, cal.ctx)));
+  const resize = (e, to) => (fixedHere(e) ? false : cal.run(resizeEntry(e, to, cal.ctx)));
+  const nudge = (e, step) => (fixedHere(e) ? false : cal.run(nudgeEntry(e, step, cal.ctx)));
   const unplace = (e) => cal.run(deleteEntry(e, cal.ctx));
   const tick = (e) => (e.done ? todoActions.untick(e.todo) : todoActions.tick(e.todo));
   const place = (todo, at) => cal.run(placeTodo(todo, at, { data: cal.data }));
@@ -498,7 +502,7 @@ export function useCalPanels(cal, { days }) {
       {briefAsked && <Suspense fallback={null}><BriefPanel sessionId={briefId} joinHref={briefJoin} onClose={() => setBriefId(null)} aside={briefItem ? <TextLink onClick={() => { setBriefId(null); setItem(briefItem); }}>Edit the call</TextLink> : null} /></Suspense>}
       <TellPanel cal={cal} open={telling && Boolean(cal.tell)} onClose={() => setTelling(false)} />
       <SlidePanel open={Boolean(theirs)} onClose={() => setTheirs(null)} title={theirs?.title || 'A session'}>
-        {theirs && associateLines(theirs, cal.coachZone).map((line) => <p key={line} className="cc-quiet">{line}</p>)}
+        {theirs && (theirs.type === 'busy' ? busyLines(theirs, cal.coachZone) : associateLines(theirs, cal.coachZone)).map((line) => <p key={line} className="cc-quiet">{line}</p>)}
       </SlidePanel>
     </>
   );

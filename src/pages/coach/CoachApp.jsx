@@ -627,6 +627,9 @@ export default function CoachApp() {
       bookings: own('coach_bookings'),
       leads: own('coach_leads'),
       reminderSends: own('coach_cal_reminder_sends'),
+      // Your other Google calendars (run 8; migration 059): each with its switch, and the busy times of the ones switched on.
+      googleCalendars: own('coach_google_calendars', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0)), ':sorted'),
+      busyTimes: own('coach_busy_times'),
       // Leads, the CRM and Network's columns (run 4; migration 052): kept on the device until 052 is there. Network's
       // PEOPLE are never here: pages ask networkData.js for a page of them at a time.
       leadStages: own('coach_lead_stages', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0) || String(x.created_at || '').localeCompare(String(y.created_at || ''))), ':sorted'),

@@ -303,14 +303,15 @@ test('connecting Google: the state names the coach, runs out after 10 minutes an
   assert.equal(readState(state, '', t0), null);
 });
 
-test('connecting Google: the consent page asks for calendar events only, and comes back to the portal’s own address', () => {
+test('connecting Google: the consent page asks for calendar events and (run 8) the calendar list, read only, and comes back to the portal’s own address', () => {
   const origin = 'https://portal.theclarityproject.co.uk';
   assert.equal(returnAddress(origin), 'https://portal.theclarityproject.co.uk/api/coach-calendar-connect');
   const url = new URL(consentUrl({ clientId: 'an-id', origin, state: 's.t' }));
   assert.equal(`${url.origin}${url.pathname}`, 'https://accounts.google.com/o/oauth2/v2/auth');
   assert.deepEqual([url.searchParams.get('redirect_uri'), url.searchParams.get('scope'), url.searchParams.get('access_type'), url.searchParams.get('response_type'), url.searchParams.get('state')],
     [returnAddress(origin), GOOGLE_SCOPE, 'offline', 'code', 's.t']);
-  assert.equal(GOOGLE_SCOPE, 'https://www.googleapis.com/auth/calendar.events');
+  // Run 8: the list of the coach's calendars, read only, so My calendars can offer each one's switch.
+  assert.equal(GOOGLE_SCOPE, 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.calendarlist.readonly');
 });
 
 test('connecting Google never runs from a preview, needs the keys, and needs a sign-in', async () => {

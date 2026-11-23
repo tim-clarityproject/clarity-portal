@@ -3,6 +3,7 @@ import { InfoPop, useToast } from '../../components/design';
 import { deviceZone, addDays, dayKeyWords, wallClock } from '../../lib/time/index.js';
 import { forgetRows, loadCoach, newId, noteRows, removeRow, saveRow, saveRows } from '../../lib/coach/store';
 import { CHANGED_ELSEWHERE_CODE } from '../../lib/coach/model';
+import { activeBusy } from '../../lib/coach/googleBusy';
 import { estimateWords } from '../../lib/coach/day';
 import {
   bannerRows, calendarEntries, coachZoneOf, COLOURS, crowdedTiles, DRAG_STEP, entryLabel, entryLines, FULL_TITLE_AFTER_MS, hourLabels, hoursHandleWords, layoutDay, monthCell, monthGrid,
@@ -58,7 +59,10 @@ export function useCalendar() {
   const data = useMemo(() => ({
     items: p.calItems, guests: p.calGuests, sessions: p.sessions, todos: p.todos, openBlocks: p.openBlocks, polls: p.polls, pollPeople: p.pollPeople, pollOptions: p.pollOptions,
     bookingLinks: p.bookingLinks, bookings: p.bookings, clients: p.clients, groups: p.groups, callTypes: p.callTypes,
-  }), [p.calItems, p.calGuests, p.sessions, p.todos, p.openBlocks, p.polls, p.pollPeople, p.pollOptions, p.bookingLinks, p.bookings, p.clients, p.groups, p.callTypes]);
+    // Run 8: the busy times of the coach's other Google calendars switched on. They show as tiles and block Book a call,
+    // Offer times, polls and Open for calls here; the database blocks them for everyone outside (059).
+    busy: activeBusy(p.busyTimes, p.googleCalendars, p.coach.id),
+  }), [p.calItems, p.calGuests, p.sessions, p.todos, p.openBlocks, p.polls, p.pollPeople, p.pollOptions, p.bookingLinks, p.bookings, p.clients, p.groups, p.callTypes, p.busyTimes, p.googleCalendars, p.coach.id]);
   const last = useRef(null);
   const busy = useRef(false);
   const [tell, setTell] = useState(null);

@@ -98,6 +98,8 @@
 /* Life, personal and held items: a dashed outline on the page's own colour. */
 .ui-root .cc-cal-tile--life { --tile-bg: var(--bg); --tile-text: var(--cal-life-text); --tile-sub: var(--cal-life-text); box-shadow: none; border: var(--line-w) dashed var(--cal-life-edge); }
 .ui-root .cc-cal-tile--hold { --tile-bg: var(--bg); --tile-text: var(--cal-hold-text); --tile-sub: var(--cal-hold-text); box-shadow: none; border: var(--line-w) dashed var(--cal-hold-edge); }
+/* A busy time from one of the coach's other Google calendars (run 8): a soft fill with its title, no edge and no side line. */
+.ui-root .cc-cal-tile--busy { --tile-bg: var(--cal-busy); --tile-text: var(--cal-busy-text); --tile-sub: var(--cal-busy-sub); }
 /* Open times: outlined in mint, never coral. */
 .ui-root .cc-cal-tile--open { --tile-bg: var(--bg); --tile-text: var(--cal-open-text); --tile-sub: var(--cal-open-text); box-shadow: none; border: var(--line-w) solid var(--cal-open-edge); }
 /* A line that doesn't wholly fit is left out, never cut through by the tile's edge: the title keeps a whole number of its

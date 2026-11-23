@@ -112,6 +112,8 @@ export const COLOURS = Object.freeze({
   life: { className: 'cc-cal-tile--life', dashed: true, edged: false },
   hold: { className: 'cc-cal-tile--hold', dashed: true, edged: false },
   open: { className: 'cc-cal-tile--open', dashed: false, edged: false },
+  // A busy time from one of the coach's other Google calendars (run 8): a soft filled tile with its title, never moved here.
+  busy: { className: 'cc-cal-tile--busy', dashed: false, edged: false },
 });
 
 export const CALENDARS = [{ value: 'work', label: 'Work' }, { value: 'personal', label: 'Personal' }, { value: 'family', label: 'Family' }];
@@ -361,7 +363,7 @@ export function associateLines(e, coachZone) {
  * @returns {object[]} entries, earliest first: { key, type: 'item'|'session'|'todo'|'open', kind, colour, colourClass, dashed, title, sub,
  *   startsAt, endsAt, minutes, allDay, fromDay, toDay, oneLine, isCall, clientZone, clientWords, movedInGoogle, done, item, session, todo, block, booking, on, repeats }
  */
-export function calendarEntries({ items = [], sessions = [], todos = [], openBlocks = [], bookings = [], clients = [], groups = [], callTypes = [] } = {}, { fromDay, toDay, coachZone, settings = null, showTodos = true, showOpen = false }) {
+export function calendarEntries({ items = [], sessions = [], todos = [], openBlocks = [], bookings = [], clients = [], groups = [], callTypes = [], busy = [] } = {}, { fromDay, toDay, coachZone, settings = null, showTodos = true, showOpen = false }) {
   const from = instantAt(fromDay, '00:00', coachZone);
   const to = instantAt(addDays(toDay, 1), '00:00', coachZone);
   const out = [];
@@ -431,6 +433,7 @@ export function calendarEntries({ items = [], sessions = [], todos = [], openBlo
       }, coachZone));
     }
   }
+  out.push(...busyEntries(busy, { fromDay, toDay, coachZone }));
   if (showOpen) {
     for (const b of openBlocks) {
       const startsAt = new Date(b.starts_at);
@@ -441,6 +444,43 @@ export function calendarEntries({ items = [], sessions = [], todos = [], openBlo
   }
   return out.sort((a, b) => a.startsAt - b.startsAt || Number(b.allDay) - Number(a.allDay) || b.minutes - a.minutes || String(a.title).localeCompare(String(b.title)));
 }
+
+/**
+ * The busy times of the coach's other Google calendars that are switched on
+ * (googleBusy.js's activeBusy), as tiles: a soft fill with the event's title
+ * and the calendar's name under it. They can't be moved or changed here
+ * (`fixed`): they are changed in Google Calendar. Only the coach ever sees
+ * them; everyone else only learns that the time is busy (run 8).
+ * @param {{ id, title, starts_at, ends_at, all_day, calendar_name }[]} rows
+ */
+export function busyEntries(rows, { fromDay, toDay, coachZone }) {
+  const from = instantAt(fromDay, '00:00', coachZone);
+  const to = instantAt(addDays(toDay, 1), '00:00', coachZone);
+  const out = [];
+  for (const b of Array.isArray(rows) ? rows : []) {
+    const startsAt = new Date(b?.starts_at);
+    const endsAt = new Date(b?.ends_at);
+    if (!b?.id || Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || endsAt <= startsAt || !(startsAt < to && endsAt > from)) continue;
+    const allDay = b.all_day === true;
+    const first = allDay ? wallClock(startsAt, coachZone).date : null;
+    const last = allDay ? wallClock(new Date(endsAt.getTime() - 1), coachZone).date : null;
+    out.push(entry({
+      key: `busy:${b.id}`, type: 'busy', kind: 'busy', colour: 'busy', title: clean(b.title) || 'Busy', sub: clean(b.calendar_name) || 'Google',
+      startsAt, endsAt, allDay, ...(allDay ? { fromDay: first, toDay: last } : {}), busy: true, fixed: true, busyRow: b,
+    }, coachZone));
+  }
+  return out;
+}
+
+/** What a busy tile says when it is opened, one fact a line: when, its calendar, and where it is changed. */
+export function busyLines(e, coachZone) {
+  const when = e.allDay
+    ? (e.fromDay === e.toDay ? `${dayKeyWords(e.fromDay)}, all day` : `${dayKeyWords(e.fromDay)} to ${dayKeyWords(e.toDay)}`)
+    : `${zoneDayWords(e.startsAt, coachZone)}, ${spanWords(e.startsAt, e.endsAt, coachZone)}`;
+  return [when, `From your ${e.sub} calendar in Google`, BUSY_READ_ONLY];
+}
+/** A busy tile is read only here. */
+export const BUSY_READ_ONLY = 'Edit it in Google Calendar. Everyone else only sees that you’re busy.';
 
 /**
  * The words inside a tile, as M11 draws them. A client call in another zone
@@ -458,7 +498,7 @@ export function entryLines(e, { coachZone, narrow = false } = {}) {
   const span = spanWords(e.startsAt, e.endsAt, coachZone);
   let line;
   if (e.clientWords) line = narrow ? e.clientWords : `${start}, ${e.clientWords}`;
-  else if (e.colour === 'hold' || e.colour === 'life' || e.type === 'open') line = e.type === 'open' ? span : e.sub;
+  else if (e.colour === 'hold' || e.colour === 'life' || e.colour === 'busy' || e.type === 'open') line = e.type === 'open' ? span : e.sub;
   else if (narrow) line = e.sub || span;
   else line = e.sub ? `${e.sub}, ${span}` : span;
   return { title: e.title, line, time: start, oneLine: false, ...(e.movedInGoogle ? { moved: MOVED_IN_GOOGLE } : {}) };
@@ -1361,7 +1401,7 @@ export function bookingHoursOn(settings, day) {
  * with no calendar item yet. Free items and to-dos never block.
  * @returns {{ start: Date, end: Date, isCall: boolean, title: string, id: string }[]}
  */
-export function busySpans({ items = [], sessions = [], from, to, skipItemId = null }) {
+export function busySpans({ items = [], sessions = [], busy = [], from, to, skipItemId = null }) {
   const out = occurrences(items, from, to).filter((o) => o.item.busy !== false && o.item.id !== skipItemId)
     .map((o) => ({ start: o.startsAt, end: o.endsAt, isCall: CALL_KINDS.includes(o.item.kind), title: o.item.title, id: o.item.id }));
   const linked = new Set(items.map((i) => i.session_id).filter(Boolean));
@@ -1370,6 +1410,13 @@ export function busySpans({ items = [], sessions = [], from, to, skipItemId = nu
     const start = new Date(s.starts_at);
     const end = new Date(start.getTime() + (Number(s.minutes) || 60) * MIN);
     if (start < new Date(to) && end > new Date(from)) out.push({ start, end, isCall: true, title: 'a session', id: s.id });
+  }
+  // Run 8: the busy times of the coach's other Google calendars that are switched on. Never a call.
+  for (const b of Array.isArray(busy) ? busy : []) {
+    const start = new Date(b?.starts_at);
+    const end = new Date(b?.ends_at);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) continue;
+    if (start < new Date(to) && end > new Date(from)) out.push({ start, end, isCall: false, title: clean(b.title) || 'something busy', id: `busy:${b.id}` });
   }
   return out.sort((a, b) => a.start - b.start);
 }
@@ -1390,7 +1437,7 @@ export function busySpans({ items = [], sessions = [], from, to, skipItemId = nu
  * @returns {Date[]}
  */
 export function freeTimes({
-  source = 'hours', minutes, from, to, now, coachZone, clientZone = coachZone, bookerZone = clientZone, settings = null, items = [], sessions = [], openBlocks = [], away = [],
+  source = 'hours', minutes, from, to, now, coachZone, clientZone = coachZone, bookerZone = clientZone, settings = null, items = [], sessions = [], busy: googleBusy = [], openBlocks = [], away = [],
   callType = null, noticeHours = null, aheadWeeks = null, earlyAndLate = false, skipItemId = null,
 }) {
   if (!minutes || minutes < 15) return [];
@@ -1413,7 +1460,7 @@ export function freeTimes({
       if (h) windows.push([instantAt(d, h.from, coachZone).getTime(), instantAt(d, h.to, coachZone).getTime()]);
     }
   }
-  const busy = busySpans({ items, sessions, from: lo - DAY_MS, to: hi + DAY_MS, skipItemId });
+  const busy = busySpans({ items, sessions, busy: googleBusy, from: lo - DAY_MS, to: hi + DAY_MS, skipItemId });
   const calls = {};
   for (const o of busy) if (o.isCall) { const d = wallClock(o.start, coachZone).date; calls[d] = (calls[d] || 0) + 1; }
   const out = [];
@@ -1434,12 +1481,12 @@ export function freeTimes({
  * Why a start can't be booked on the coach's calendar, as one calm line, or
  * null when it can: used when the coach places a call by hand.
  */
-export function callProblem({ start, minutes, clientZone, coachZone, settings = null, items = [], sessions = [], skipItemId = null }) {
+export function callProblem({ start, minutes, clientZone, coachZone, settings = null, items = [], sessions = [], busy: googleBusy = [], skipItemId = null }) {
   const s = ms(start);
   const len = minutes * MIN;
   const limits = bookingLimits(settings);
   if (!onQuarterHour(s, clientZone)) return `Calls start on a quarter hour in ${zoneLabel(clientZone)}. Choose the nearest one.`;
-  const busy = busySpans({ items, sessions, from: s - DAY_MS, to: s + len + DAY_MS, skipItemId });
+  const busy = busySpans({ items, sessions, busy: googleBusy, from: s - DAY_MS, to: s + len + DAY_MS, skipItemId });
   const clash = busy.find((o) => o.start < s + len && o.end > s);
   if (clash) return `That overlaps ${clash.title}. Choose another time.`;
   const near = busy.find((o) => o.isCall && o.start < s + len + limits.gap * MIN && o.end > s - limits.gap * MIN);
@@ -1598,11 +1645,11 @@ export function seriesStarts({ first, clientZone, every = 0, count = 1 }) {
  * "Thu 17 Dec at 15:30 clashes with Supervision with Maya."
  * @returns {{ at: Date, with: string, words: string }[]}
  */
-export function seriesClashes(starts, minutes, { items = [], sessions = [], coachZone }) {
+export function seriesClashes(starts, minutes, { items = [], sessions = [], busy = [], coachZone }) {
   const out = [];
   for (const at of starts) {
     const s = ms(at);
-    const clash = busySpans({ items, sessions, from: s - DAY_MS, to: s + DAY_MS }).find((o) => o.start < s + minutes * MIN && o.end > s);
+    const clash = busySpans({ items, sessions, busy, from: s - DAY_MS, to: s + DAY_MS }).find((o) => o.start < s + minutes * MIN && o.end > s);
     if (clash) out.push({ at: new Date(s), with: clash.title, words: `${zoneDayWords(at, coachZone)} at ${wallClock(at, coachZone).time} clashes with ${clash.title}.` });
   }
   return out;
@@ -1690,7 +1737,7 @@ export function placeOpen({ block = null, starts_at, ends_at, call_type_id = blo
   const s = ms(starts_at);
   const e = ms(ends_at);
   if (!(e - s >= DRAG_STEP * MIN)) return refused('An open time is at least 15 minutes. Drag a little further.');
-  const busy = busySpans({ items: data.items || [], sessions: data.sessions || [], from: s, to: e }).find((o) => o.start < e && o.end > s);
+  const busy = busySpans({ items: data.items || [], sessions: data.sessions || [], busy: data.busy || [], from: s, to: e }).find((o) => o.start < e && o.end > s);
   if (busy) return refused(`That overlaps ${busy.title}.`);
   if (now != null && e <= ms(now)) return refused('That time has passed. Choose a later one.');
   if (now != null && e > openUntil(now, coachZone).getTime()) return refused('Open times go up to 4 weeks ahead. Choose a nearer week.');
@@ -2303,7 +2350,7 @@ export function bookWhoChoices({ clients = [], groups = [] }) {
  */
 export function bookSuggestions({ minutes, zone, coachZone, settings = null, data = {}, now, days = 14, earlyAndLate = false }) {
   return freeTimes({
-    source: 'hours', minutes, from: now, to: new Date(ms(now) + days * DAY_MS), now, coachZone, clientZone: zone, bookerZone: zone, settings, items: data.items || [], sessions: data.sessions || [],
+    source: 'hours', minutes, from: now, to: new Date(ms(now) + days * DAY_MS), now, coachZone, clientZone: zone, bookerZone: zone, settings, items: data.items || [], sessions: data.sessions || [], busy: data.busy || [],
     noticeHours: 1, aheadWeeks: Math.ceil(days / 7), earlyAndLate,
   });
 }
@@ -2343,7 +2390,7 @@ export function outsideHoursSuggestions({ minutes, zone, coachZone, settings = n
   for (const key of WEEK_KEYS) wide[key] = { from: OUTSIDE_HOURS_FROM, to: OUTSIDE_HOURS_TO };
   const all = freeTimes({
     source: 'hours', minutes, from: now, to: new Date(ms(now) + days * DAY_MS), now, coachZone, clientZone: zone, bookerZone: zone,
-    settings: { ...(settings || {}), booking_hours: wide }, items: data.items || [], sessions: data.sessions || [], noticeHours: 1, aheadWeeks: Math.ceil(days / 7),
+    settings: { ...(settings || {}), booking_hours: wide }, items: data.items || [], sessions: data.sessions || [], busy: data.busy || [], noticeHours: 1, aheadWeeks: Math.ceil(days / 7),
   });
   const best = {};
   for (const s of all) {
@@ -2384,7 +2431,7 @@ export function pickTime(starts, { day, startMin, minutes, coachZone, data = {},
   if (hit) return { starts: starts.filter((s) => s !== hit), problem: null };
   if (now != null && at <= new Date(now)) return { starts, problem: 'That time has passed. Pick a later one.' };
   if (starts.length >= max) return { starts, problem: max === POLL_MAX ? 'Up to 5 times in one poll.' : `Up to ${max} times at once.` };
-  const busy = busySpans({ items: data.items || [], sessions: data.sessions || [], from: at, to: new Date(end) }).find((o) => o.start < end && o.end > at);
+  const busy = busySpans({ items: data.items || [], sessions: data.sessions || [], busy: data.busy || [], from: at, to: new Date(end) }).find((o) => o.start < end && o.end > at);
   if (busy) return { starts, problem: `That overlaps ${busy.title}. Pick a free time.` };
   return { starts: [...starts, at].sort((a, b) => a - b), problem: null };
 }

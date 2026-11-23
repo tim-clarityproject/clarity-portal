@@ -19,6 +19,7 @@ import { useHiddenHelp } from './help';
 import BookingSettings from './BookingSettings';
 import { calendarShown, CONNECT_WORDS, connectionRows } from '../../lib/coach/calendar';
 import { useCalSync } from './calSync';
+import { GoogleCalendarSwitches } from './googleCalendars';
 import { EMAIL_SETTINGS, GMAIL_WORDS } from '../../lib/coach/crm';
 import { setEmailStandIn, useEmailAddresses } from './crmParts';
 import './crm.css';
@@ -421,6 +422,8 @@ function Calendars() {
         </div>
       ))}
       {sync.problem && <p className="cc-note" role="status">{sync.problem}</p>}
+      {/* Run 8: every calendar on the Google account, with a switch each (off until switched on). */}
+      <GoogleCalendarSwitches />
       {!LIVE_BUILD && (
         <>
           <SwitchRow label={CONNECT_WORDS.standInGoogle} note={CONNECT_WORDS.standInNote} checked={sync.standIns.google === true} onChange={(on) => sync.setStandIn('google', on)} />
