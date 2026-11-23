@@ -642,9 +642,15 @@ export function importantMarks() {
           if (ps.backgroundColor !== soft) bad.push(`its line is ${ps.backgroundColor}, not soft coral`);
           if (Math.abs(parseFloat(ps.left) || 0) > 0.5) bad.push('its line is not on its left edge');
           // The words' block: the line runs the full height of the item's words.
-          const range = document.createRange();
-          range.selectNodeContents(lineEl);
-          const rects = [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
+          // Its words as drawn: every text node but the screen reader's (.ds-sr sits out of the flow).
+          const rects = [];
+          const walk = document.createTreeWalker(lineEl, NodeFilter.SHOW_TEXT);
+          for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+            if (!n.textContent.trim() || n.parentElement.closest('.ds-sr')) continue;
+            const range = document.createRange();
+            range.selectNodeContents(n);
+            rects.push(...[...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0));
+          }
           if (rects.length) {
             const top = Math.min(...rects.map((r) => r.top));
             const bottom = Math.max(...rects.map((r) => r.bottom));
