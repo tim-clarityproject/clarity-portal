@@ -45,7 +45,7 @@ function PollStartPanel({ cal, open, start, onClose, onGo }) {
     onGo({ title: d.title.trim(), minutes: d.minutes, placeKind: d.where, people });
   };
   return (
-    <SlidePanel open={open} onClose={onClose} title="A poll" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" className="ds-panel-go" onClick={go}>Pick the times</Button></div>}>
+    <SlidePanel draftKey="cal-poll:new" open={open} onClose={onClose} title="A poll" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" className="ds-panel-go" onClick={go}>Pick the times</Button></div>}>
       <div className="cc-field"><TextBox lines="one" label="What’s it for?" value={d.title} maxLength={200} onChange={(v) => set({ title: v })} /></div>
       <div className="cc-field">
         <TextBox label={INVITED_LABEL} placeholder={INVITED_EXAMPLE} value={d.paste} maxLength={4000} onChange={(v) => set({ paste: v })} />

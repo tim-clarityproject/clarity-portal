@@ -104,7 +104,7 @@ export default function OpenForCalls() {
         <p className="cc-quiet">{openLine(type?.minutes || 30, type?.notice_hours ?? 24)}</p>
       </div>
 
-      <SlidePanel
+      <SlidePanel draftKey={`open-time:${edit?.block?.id || 'new'}`}
         open={Boolean(edit)}
         onClose={() => setEdit(null)}
         title={edit?.block ? 'Open time' : 'Add open time'}

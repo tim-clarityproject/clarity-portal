@@ -53,7 +53,7 @@ function CallTypePanel({ cal, type, onClose }) {
     } catch { setProblem(SAVE_PROBLEM); } finally { busy.current = false; }
   };
   return (
-    <SlidePanel open onClose={onClose} title={`${type.name} page`} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" className="ds-panel-go" onClick={save}>Save</Button></div>}>
+    <SlidePanel draftKey={`booking-page:${type.key || type.id}`} open onClose={onClose} title={`${type.name} page`} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" className="ds-panel-go" onClick={save}>Save</Button></div>}>
       <div className="cc-field"><TextBox lines="one" label="Name" value={d.name} maxLength={80} onChange={(v) => set({ name: v })} /></div>
       <div className="cc-field"><TextBox label="A line under the name" value={d.description || ''} maxLength={300} onChange={(v) => set({ description: v })} /></div>
       {CALL_TYPE_ROWS.map((r) => (

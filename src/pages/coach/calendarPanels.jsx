@@ -106,7 +106,7 @@ function QuickAdd({ cal, slot, floating, onClose, onMore }) {
     );
   }
   return (
-    <SlidePanel open={open} onClose={onClose} title="Add to calendar" initialFocusRef={boxRef}>
+    <SlidePanel draftKey="cal-add:new" open={open} onClose={onClose} title="Add to calendar" initialFocusRef={boxRef}>
       {open && <QuickAddBody cal={cal} slot={slot} onDone={onClose} onMore={onMore} boxRef={boxRef} />}
     </SlidePanel>
   );
@@ -401,7 +401,7 @@ function TellPanel({ cal, open, onClose }) {
   const client = cal.clients.find((c) => c.name === tell.name);
   const href = client?.email ? `mailto:${encodeURIComponent(client.email)}?subject=${encodeURIComponent(tell.subject)}&body=${encodeURIComponent(body)}` : null;
   return (
-    <SlidePanel
+    <SlidePanel draftKey={`cal-tell:${tell.name}:${tell.subject || ''}`}
       open={open}
       onClose={onClose}
       title={tell.name}

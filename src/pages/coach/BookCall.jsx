@@ -115,7 +115,7 @@ export function BookCallPanel({ cal, open, onClose, start = null, onLink, onPoll
   const name = client?.name || group?.name || d.name;
   const whenOptions = offered.map((s) => { const w = suggestionWords(s, { coachZone, clientZone: several ? null : zone, name }); return { value: s.toISOString(), label: w.when, hint: w.theirs || undefined, note: outside ? OUTSIDE_HOURS : undefined }; });
   return (
-    <SlidePanel
+    <SlidePanel draftKey="book-call:new"
       open={open}
       onClose={() => onClose()}
       title="Book a call"
@@ -256,7 +256,7 @@ export function LinkPanel({ cal, open, onClose, start = null }) {
   };
   const openLinks = cal.bookingLinks.filter((l) => linkState(l, cal.todayKey) === 'open').sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   return (
-    <SlidePanel
+    <SlidePanel draftKey="booking-link:new"
       open={open}
       onClose={onClose}
       title="Single-use link"
