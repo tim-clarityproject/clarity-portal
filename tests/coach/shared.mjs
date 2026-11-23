@@ -84,6 +84,30 @@ export function makeReport(name) {
 // ---------------------------------------------------------------- signing in
 const STATE_DIR = join(tmpdir(), 'clarity-coach-tests');
 
+/**
+ * True when a saved sign-in's token still has `margin` of life by the real clock (never printed).
+ *
+ * Why (UI tester, run 8, 23 Nov): a suite that pins the page's clock (book-flows, cal-breakit and sync-flows pin
+ * Tue 17 Nov) never lets Supabase refresh the saved token: by the pinned clock it is days from expiring. Once the
+ * real hour is up the test project refuses it, the authenticator read (listFactors) comes back empty, and the stand-in, which
+ * still says "a coach", sent the page to Set up your authenticator. The real app with no stand-in reads its coach
+ * row with the same refused token, can't tell, and makes no stop, so this was the tests' fault: an older saved
+ * sign-in is simply made afresh, by the machine's real clock. A suite runs inside 10 minutes, hence 20 minutes.
+ */
+export function savedSignInFresh(file, margin = 20 * 60 * 1000) {
+  try {
+    const state = JSON.parse(readFileSync(file, 'utf8'));
+    for (const origin of state.origins || []) {
+      for (const item of origin.localStorage || []) {
+        if (item.name !== 'clarity-portal-auth' && !/^sb-.*-auth-token$/.test(item.name)) continue;
+        const at = Number(JSON.parse(item.value)?.expires_at);
+        if (Number.isFinite(at)) return at * 1000 - Date.now() > margin;
+      }
+    }
+  } catch { /* made afresh */ }
+  return false;
+}
+
 /** A signed-in browser context for the test coach (the session is kept in the system's temporary folder, never printed). */
 export async function coachContext(browser, { size = 1440, theme = 'dark', fresh = false, reducedMotion = 'reduce' } = {}) {
   mkdirSync(STATE_DIR, { recursive: true });
@@ -92,7 +116,7 @@ export async function coachContext(browser, { size = 1440, theme = 'dark', fresh
   // .cc-app for ever (the "database there" timeouts).
   const file = join(STATE_DIR, `coach-owner-${new URL(APP).host.replace(/[^a-z0-9]+/gi, '-')}.json`);
   const opts = { viewport: SIZES[size] || size, colorScheme: theme, serviceWorkers: 'block', reducedMotion, hasTouch: size === 400 };
-  if (!fresh && existsSync(file)) return browser.newContext({ ...opts, storageState: file });
+  if (!fresh && existsSync(file) && savedSignInFresh(file)) return browser.newContext({ ...opts, storageState: file });
   const env = readEnv();
   const ctx = await browser.newContext(opts);
   const page = await ctx.newPage();
@@ -245,7 +269,7 @@ export async function standIn(page, opts = {}) {
 }
 
 /** Migration 059's tables (run 8): the stand-in answers them as a database without 059 does. */
-const TABLES_059 = ['coach_google_calendars', 'coach_busy_times'];
+export const TABLES_059 = ['coach_google_calendars', 'coach_busy_times'];
 
 async function standInRows(page, { role = 'owner', db = 'none', rows = {}, admin = [], day = false, cal = false, crm = false, strict = false, now: clock = () => new Date() } = {}) {
   const me = { id: ME, user_id: null, role: role === 'owner' ? 'owner' : 'coach', display_first_name: role === 'owner' ? 'Alex' : 'Maya', full_name: role === 'owner' ? 'Alex Morgan' : 'Maya Collins', email: null, mobile: null, contact_ways: ['email'], active: true, capacity_hours_week: 15, hourly_rate: role === 'owner' ? null : 100, rate_currency: 'GBP' };

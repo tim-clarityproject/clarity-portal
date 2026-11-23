@@ -43,7 +43,8 @@
 //   ROLES=owner,associate (owner by default; b-reach always walks both)
 //   SHOTS=<folder> keeps pictures of the crowded day and the big text.
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, makeReport, ME, OTHER, readEnv, seedDevice, settle, standIn } from './shared.mjs';
+import { coachRowsWaiting } from '../../src/lib/coach/copyWaiting.js';
+import { accountId, APP, clearDevice, coachContext, makeReport, ME, OTHER, readEnv, seedDevice, settle, standIn, TABLES_059 } from './shared.mjs';
 import { CAL, DAY, ID, seedClock, seedWithCal } from './seed.mjs';
 import { bookStore, guestStandIn } from './book-standin.mjs';
 import { addDays, instantAt, wallClock } from '../../src/lib/time/index.js';
@@ -180,7 +181,15 @@ async function openAt({ role = 'owner', db = 'there', when = TUE, size = 1440, p
         const refused = store.calls.filter((c) => c.startsWith('refused'));
         pass(`${tag}: the database refused ${refusals === 0 ? 'nothing the page sent' : `only what it should (${refusals})`}`, refused.length === refusals, [...new Set(refused)].slice(0, 6).join('; '));
       }
-      if (there && !waiting) pass(`${tag}: nothing waits on the device`, !(await page.evaluate((id) => Boolean(localStorage.getItem(`clarity-coach-local:${id}`)), me).catch(() => true)));
+      // 059's Google calendars and busy times (run 8) are kept on the device by design until 059 is there (coach rule 48),
+      // and the stand-in's "there" is 049 to 052: only another table's rows still waiting to be sent count (the app's own
+      // count, coachRowsWaiting; a copy written whole while those wait holds every table's sent rows too).
+      if (there && !waiting) {
+        const copy = await page.evaluate((id) => JSON.parse(localStorage.getItem(`clarity-coach-local:${id}`) || 'null'), me).catch(() => ({ overflow: 1 }));
+        const others = copy && { ...copy, rows: Object.fromEntries(Object.entries(copy.rows || {}).filter(([t]) => !TABLES_059.includes(t))) };
+        const left = others ? coachRowsWaiting(others) : 0;
+        pass(`${tag}: nothing waits on the device`, left === 0, `${left} rows`);
+      }
       const seen = errors.filter((e) => !(allow && allow.test(e)));
       pass(`${tag}: no page error`, seen.length === 0, [...new Set(seen)].slice(0, 4).join(' | '));
       await clearDevice(page, me).catch(() => {});

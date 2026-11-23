@@ -9,7 +9,7 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { APP, readEnv, SIZES } from './shared.mjs';
+import { APP, readEnv, savedSignInFresh, SIZES } from './shared.mjs';
 
 // One saved client sign-in per address the portal is served on, as the coach's (shared.mjs coachContext): one file for
 // every port loaded another port's sign-in, found no session on its own address and stood on the sign-in page (the
@@ -22,7 +22,8 @@ const json = (route, body, status = 200) => route.fulfill({ status, contentType:
 export async function clientContext(browser, { size, theme, reducedMotion = 'reduce' }) {
   mkdirSync(join(tmpdir(), 'clarity-coach-tests'), { recursive: true });
   const opts = { viewport: SIZES[size] || size, colorScheme: theme, serviceWorkers: 'block', reducedMotion, hasTouch: size === 400 };
-  if (existsSync(CLIENT_STATE)) return browser.newContext({ ...opts, storageState: CLIENT_STATE });
+  // An older saved sign-in is made afresh: a pinned page clock never refreshes it (savedSignInFresh, shared.mjs).
+  if (existsSync(CLIENT_STATE) && savedSignInFresh(CLIENT_STATE)) return browser.newContext({ ...opts, storageState: CLIENT_STATE });
   const env = readEnv();
   const ctx = await browser.newContext(opts);
   const page = await ctx.newPage();
