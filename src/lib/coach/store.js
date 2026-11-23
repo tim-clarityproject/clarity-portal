@@ -239,6 +239,8 @@ let generation = 0; // a test's reset: answers that arrive after it are dropped
 const BIG_ROWS = 2000;
 const big = new Set(); // the accounts whose copy is in IndexedDB this visit
 const hydrating = new Map(); // account -> the read of its IndexedDB copy
+const hydrated = new Set(); // the accounts whose IndexedDB copy has been read (or skipped) this visit
+const firstDone = new Set(); // the accounts whose first load this visit has answered (or couldn't be made)
 const persisted = new Map(); // account -> { rows: { [table]: object }, marks: { [table]: object } } as last written there
 const copyTimers = new Map();
 
@@ -310,6 +312,11 @@ function hydrate(userId) {
   if (!userId) return Promise.resolve();
   if (hydrating.has(userId)) return hydrating.get(userId);
   const gen = generation;
+  const done = () => {
+    if (gen !== generation || hydrated.has(userId)) return;
+    hydrated.add(userId);
+    listeners.forEach((fn) => fn());
+  };
   const run = (async () => {
     if (!deviceCopyAvailable()) return;
     // A copy that can't be read within a moment is skipped: the database's own load never waits on it.
@@ -322,10 +329,38 @@ function hydrate(userId) {
     const now = cache.get(userId);
     const next = now && totalRows(now) ? overlay(kept, now) : kept;
     cache.set(userId, next);
+    hydrated.add(userId);
     listeners.forEach((fn) => fn());
-  })().catch(() => {});
+  })().catch(() => {}).finally(done);
   hydrating.set(userId, run);
   return run;
+}
+
+/**
+ * Whether the device's copy has had its chance to show: read from IndexedDB (or none there, or too slow to wait
+ * for). Until then the portal shows its blank page, never its empty states for a moment before the copy (UI
+ * tester, scale check: a warm Today drew "No calls today" and a capacity of 0 for 0.3 s, then jumped).
+ */
+function copyShown(userId) {
+  if (!userId || !deviceCopyAvailable()) return true;
+  read(userId);
+  return hydrated.has(userId);
+}
+export function useCoachCopyShown(userId) {
+  return useSyncExternalStore(subscribe, () => copyShown(userId), () => true);
+}
+
+/**
+ * Whether there is anything to show yet: rows on the device, or the first load has answered. A first visit on a
+ * device has neither for a second or two (3 s on a slowed phone at Tim's scale): the portal then shows the turning
+ * crosshair, never "You have no clients here yet." until the rows arrive (UI tester, scale check).
+ */
+function somethingToShow(userId) {
+  if (!userId || firstDone.has(userId)) return true;
+  return totalRows(read(userId)) > 0;
+}
+export function useCoachSomethingToShow(userId) {
+  return useSyncExternalStore(subscribe, () => somethingToShow(userId), () => true);
 }
 
 const anyUnsent = (state) => Object.keys(state.rows).some((table) => unsentPart(table, state.rows[table], state.marks[table]) !== null);
@@ -1106,7 +1141,10 @@ export function loadCoach(userId, { again = false } = {}) {
     if (!waiting) await moveAcross(userId);
     loadCoachLater(userId);
     return true;
-  })().finally(() => { loading.delete(userId); });
+  })().finally(() => {
+    loading.delete(userId);
+    if (gen === generation && !firstDone.has(userId)) { firstDone.add(userId); listeners.forEach((fn) => fn()); }
+  });
   loading.set(userId, run);
   return run;
 }
@@ -1178,6 +1216,8 @@ export function resetCoachStoreForTests() {
   rawSeen.clear();
   big.clear();
   hydrating.clear();
+  hydrated.clear();
+  firstDone.clear();
   persisted.clear();
   calLoaded.clear();
   laterDone.clear();

@@ -111,6 +111,45 @@ export async function writeTables(userId, tables) {
   });
 }
 
+// Two lists the frame reads beside the tables, kept so a warm visit shows them at once (UI tester, scale
+// check: the owner's Clients showed "Your clients" and her own 300, then "Everyone" and all 1,000 a moment
+// later, every row moving down): the coaches, and the owner's admin facts for every client (about 0.4 MB at
+// 1,000 clients). Key "<coach's account>#<name>", outside the tables' "<account>|" range, so readCopy and
+// removeCopy never see them; a Sign out deletes them with the rest of the database.
+const extraKey = (userId, name) => `${userId}#${name}`;
+
+/** One kept list, or null. Never throws. */
+export async function readExtra(userId, name) {
+  const db = await open();
+  if (!db || !userId) return null;
+  return new Promise((resolve) => {
+    try {
+      const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(extraKey(userId, name));
+      req.onsuccess = () => resolve(req.result ?? null);
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+/** Keeps one list. Resolves true when kept; never throws. */
+export async function writeExtra(userId, name, value) {
+  const db = await open();
+  if (!db || !userId) return false;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(value, extraKey(userId, name));
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+      tx.onabort = () => resolve(false);
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
 /** Removes this coach's copy (the copy is small enough for localStorage again). */
 export async function removeCopy(userId) {
   const db = await open();

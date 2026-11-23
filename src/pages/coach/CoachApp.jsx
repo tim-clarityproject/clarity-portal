@@ -1,14 +1,15 @@
 import { Fragment, lazy, Suspense, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { BoldCrosshair, PageHeader, SlidePanel, useBackCloses, useHidePhoneBar, useToast } from '../../components/design';
+import { BoldCrosshair, Loading, PageHeader, SlidePanel, useBackCloses, useHidePhoneBar, useToast } from '../../components/design';
 import { isPhoneWidth } from '../../components/design/pageLock';
 import { useSignOut } from '../../components/SignOut';
 import { getLocalDateKey } from '../../lib/dateFormatter';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { useCoachRole } from '../../lib/coach/role';
-import { findCalItems, fromTable, rowsOf, saveRows, useCoachLoad, useCoachStore } from '../../lib/coach/store';
+import { findCalItems, fromTable, rowsOf, saveRows, useCoachCopyShown, useCoachLoad, useCoachSomethingToShow, useCoachStore } from '../../lib/coach/store';
 import { loadAdminClients, loadCoaches } from '../../lib/coach/actions';
+import { deviceCopyAvailable, readExtra, writeExtra } from '../../lib/coach/deviceCopy';
 import { callForBar, favouriteViews, nextCallBar, searchResults, withRecent } from '../../lib/coach/model';
 import { COACH_PAGES, coachTitle, menuFor, SETTINGS_SECTIONS } from '../../lib/coach/navigation';
 import { testCalls } from '../../lib/coach/calls';
@@ -459,7 +460,7 @@ function Blank() {
  * own state (which of the three is open) lives here, so opening one draws only this, never the page under it nor the
  * calendar's sync and the automations (scale check, 22 Nov: 0.1 s of script on a slowed phone for the owner).
  */
-function Frame({ pages, calls, now, unread }) {
+function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [menu, setMenu] = useState(false);
@@ -471,7 +472,7 @@ function Frame({ pages, calls, now, unread }) {
   const closeSearch = useCallback(() => setSearch(false), []);
   const closeBell = useCallback(() => setBell(false), []);
   return (
-    <div className="ui-root cc-app">
+    <div className={`ui-root cc-app${hold ? ' cc-hold' : ''}`} inert={hold || undefined} aria-busy={hold || undefined}>
       <header className="cc-header">
         <div className="cc-header-in">
           <button type="button" className="cc-round cc-round--mark" aria-expanded={menu} aria-label="Open the menu" onClick={() => setMenu(true)}>
@@ -487,7 +488,8 @@ function Frame({ pages, calls, now, unread }) {
         </div>
       </header>
       <CallBar calls={calls} now={now} />
-      <main className="cc-main" id="cc-main">
+      <main className={`cc-main${firstLoad ? ' cc-main--first' : ''}`} id="cc-main" aria-busy={firstLoad || undefined}>
+        {firstLoad && <Loading label="Loading Clarity Coach" className="ds-loading--page" />}
         {pages}
       </main>
       <nav className="cc-phonebar" aria-label="Clarity Coach">
@@ -513,6 +515,8 @@ export default function CoachApp() {
   useHidePhoneBar(true); // the client portal's own phone bar steps back here
 
   const state = useCoachStore(coach ? userId : null);
+  const copyShown = useCoachCopyShown(coach ? userId : null);
+  const somethingToShow = useCoachSomethingToShow(coach ? userId : null);
   useCoachLoad(coach ? userId : null);
   const todayKey = useToday();
   const now = useNow();
@@ -534,13 +538,41 @@ export default function CoachApp() {
     countSeen.current = profileCount;
     if (before !== null && before !== 0 && profileCount !== 0 && before !== profileCount) setCountTurn((n) => n + 1);
   }, [profileCount]);
+  // The two lists as this device last had them, shown with the device's copy and replaced by each load
+  // (deviceCopy.js readExtra): a warm visit never shows "Your clients" and then "Everyone" (UI tester, scale check).
+  const listsFresh = useRef({ coaches: false, admin: false });
+  const [listsShown, setListsShown] = useState(() => !deviceCopyAvailable());
+  useEffect(() => {
+    if (!coachId || !userId) return undefined;
+    let live = true;
+    const enough = window.setTimeout(() => { if (live) setListsShown(true); }, 1500);
+    Promise.all([readExtra(userId, 'coaches'), isOwner ? readExtra(userId, 'admin') : null]).then(([keptCoaches, keptAdmin]) => {
+      if (!live) return;
+      if (Array.isArray(keptCoaches) && !listsFresh.current.coaches) setCoaches(keptCoaches);
+      if (Array.isArray(keptAdmin) && !listsFresh.current.admin) setAdmin(keptAdmin);
+      setListsShown(true);
+    });
+    return () => { live = false; window.clearTimeout(enough); };
+  }, [userId, coachId, isOwner]);
   useEffect(() => {
     if (!coachId) return undefined;
     let live = true;
-    loadCoaches().then((list) => { if (live) setCoaches(list); }).catch(() => {});
-    if (isOwner) loadAdminClients().then((list) => { if (live) setAdmin(list); }).catch(() => {});
+    loadCoaches().then((list) => {
+      if (!live) return;
+      listsFresh.current.coaches = true;
+      setCoaches(list);
+      writeExtra(userId, 'coaches', list);
+    }).catch(() => {});
+    if (isOwner) {
+      loadAdminClients().then((list) => {
+        if (!live) return;
+        listsFresh.current.admin = true;
+        setAdmin(list);
+        writeExtra(userId, 'admin', list);
+      }).catch(() => {});
+    }
     return () => { live = false; };
-  }, [coachId, isOwner, turn, countTurn]);
+  }, [coachId, isOwner, turn, countTurn, userId]);
 
   useEffect(() => { document.title = coachTitle(pathname); }, [pathname]);
 
@@ -679,7 +711,9 @@ export default function CoachApp() {
       {/* Run 4: the automations nobody presses a button for, and emails arriving (both the owner's; neither ever sends anything). */}
       <AutomationWatch />
       <EmailSync />
-      <Frame pages={pages} calls={calls} now={now} unread={unread} />
+      {/* The device's copy first (IndexedDB, read in a moment): until it is in, the frame and the page are drawn
+          unseen (their parts still load), never empty for an instant before it (UI tester, scale check). */}
+      <Frame pages={pages} calls={calls} now={now} unread={unread} hold={!copyShown || !listsShown} firstLoad={!somethingToShow} />
       </CalSync>
     </CoachPortalContext.Provider>
   );

@@ -12,6 +12,14 @@
   display: flex;
   flex-direction: column;
 }
+/* A first visit on a device, before its first rows: the turning crosshair in place of the page's empty states. */
+.ui-root .cc-main--first > :not(.ds-loading) {
+  display: none;
+}
+/* Until the device's copy is in (a moment): the page colour alone, nothing empty drawn on it. */
+.ui-root.cc-app.cc-hold > * {
+  visibility: hidden;
+}
 
 /* The header (and a table's heading row, a Settings list) stays at the top
    as the page scrolls. The portal's own rule (src/index.css) gives body
