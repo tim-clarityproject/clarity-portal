@@ -611,6 +611,8 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-timeline-row > span { font-size: var(--fs-note); color: var(--text-2); }
 .ui-root .cc-timeline-row b { font-weight: var(--fw-regular); font-size: var(--fs-body); overflow-wrap: anywhere; }
 .ui-root .cc-timeline-row p { margin: var(--space-px3) 0 0; font-size: var(--fs-secondary); color: var(--text-2); line-height: var(--lh-box); overflow-wrap: anywhere; }
+/* On a phone: the title, then one grey line holding the date and the row's lines (M11 .ph .tlxr small.gl; tidy follow-up 3, run 6's 33). */
+.ui-root .cc-timeline-line { display: flex; flex-wrap: wrap; gap: 0 var(--space-px14); margin-top: var(--space-px2); font-size: var(--fs-note); color: var(--text-2); line-height: var(--lh-box); }
 
 /* A tick list (attendance): the shared tick box, then the words. */
 .ui-root .cc-tickrow { display: flex; align-items: center; gap: var(--space-px12); min-height: var(--field-h); border-bottom: var(--line-w) solid var(--line-soft); font-size: var(--fs-body); }

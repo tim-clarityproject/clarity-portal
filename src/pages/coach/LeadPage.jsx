@@ -5,7 +5,7 @@ import { newId } from '../../lib/coach/store';
 import { clean, fieldValue, fieldWords, firstName, isEmail, quickContacts } from '../../lib/coach/model';
 import { mobileForLinks } from '../../lib/coach/network';
 import { bookingLines, cameFromRow, coldRows, discoveryRows, isWonLead, LEAD_GONE, leadCard, leadOwnFields, leadTimeline, readiness, whereTitle } from '../../lib/coach/crm';
-import { Back, Detail, EditCell, InlineLink, Part, TextLink, useCoachPortal } from './parts';
+import { Back, Detail, EditCell, InlineLink, Part, TextLink, TimelineRow, useCoachPortal } from './parts';
 import { useLeadActions, useLeadData, useStartStages } from './leadParts';
 import { ColdPanel, EditLeadPanel, EmailPanel, LeadNotePanel, LogCallPanel, WherePanel } from './LeadPanels';
 import { TagsPanel } from './ClientPanels';
@@ -118,10 +118,7 @@ export default function LeadPage() {
           <div className="cc-lead-tl">
             {timeline.map((row) => {
               const email = row.emailId ? emails.find((e) => e.id === row.emailId) || null : null;
-              const inner = <><span>{row.when}</span><div><b>{row.title}</b>{row.tag && <p>{row.tag}</p>}{row.lines.map((line) => <p key={line}>{line}</p>)}</div></>;
-              return email
-                ? <button key={row.id} type="button" className="cc-timeline-row cc-lead-mail" onClick={() => setMail(email)}>{inner}</button>
-                : <div key={row.id} className="cc-timeline-row">{inner}</div>;
+              return <TimelineRow key={row.id} when={row.when} title={row.title} lines={[row.tag, ...row.lines]} className={email ? 'cc-lead-mail' : ''} onClick={email ? () => setMail(email) : undefined} />;
             })}
           </div>
         </Part>

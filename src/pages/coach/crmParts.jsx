@@ -12,7 +12,7 @@ import { directionOf, readInbound } from '../../lib/coach/connect/copyInEmail.js
 import { gmailOnce } from '../../lib/coach/connect/gmail.js';
 import { chooseEmailAdapters, emailStatus } from '../../lib/coach/connect/index.js';
 import { askEmailServer } from '../../lib/coach/connect/server.js';
-import { useCoachPortal } from './parts';
+import { TimelineRow, useCoachPortal } from './parts';
 import { EmailPanel } from './LeadPanels';
 
 // What step 3's pages share (Phase 6a run 4): running automations for the
@@ -280,10 +280,7 @@ export function EmailRows({ rows }) {
   return (
     <>
       {rows.map((r) => (
-        <button key={r.id} type="button" className="cc-timeline-row cc-lead-mail" onClick={() => setOpenId(r.emailId)}>
-          <span>{r.when}</span>
-          <div><b>{r.title}</b><p>{r.tag}</p></div>
-        </button>
+        <TimelineRow key={r.id} when={r.when} title={r.title} lines={[r.tag]} className="cc-lead-mail" onClick={() => setOpenId(r.emailId)} />
       ))}
       <EmailPanel email={openId ? emails.find((e) => e.id === openId) || null : null} onClose={() => setOpenId(null)} />
     </>

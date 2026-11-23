@@ -1,5 +1,5 @@
 import { createContext, forwardRef, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { Button, DisclosureArrow, EyeIcon, InfoPop, Popover, useInfoToggle } from '../../components/design';
+import { Button, DisclosureArrow, EyeIcon, InfoPop, Popover, useInfoToggle, useIsPhone } from '../../components/design';
 import { BackLink } from '../../components/ui/DiscardLink';
 
 // The coach portal's own small parts (Phase 6a run 1; M11, version 3.6),
@@ -72,13 +72,75 @@ export function Fold({ title, summary, eye, open, onToggle, children }) {
   );
 }
 
+/**
+ * On a phone a row is at most two lines: its title, then one grey line (M11's
+ * calm phone, Tim's 18 Nov phone rule 5; tidy follow-up 3, run 6's 33). Every
+ * `[data-grey-line]` inside `rootRef` is a grey line of parts: while it wraps,
+ * the part with the highest `data-drop` goes first (the last of them when
+ * several share it), until one part is left. A part with no `data-drop` is
+ * dropped after every numbered one. Parts come back whenever the words or the
+ * width change, and nothing is trimmed on a wider screen.
+ */
+export function useGreyLines(rootRef, on) {
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof window === 'undefined') return undefined;
+    const parts = (line) => [...line.children].filter((c) => c.tagName === 'SPAN');
+    const wraps = (el) => {
+      const cs = getComputedStyle(el);
+      const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.45;
+      return el.offsetHeight > lh * 1.5;
+    };
+    let frame = 0;
+    const trim = () => {
+      frame = 0;
+      for (const line of root.querySelectorAll('[data-grey-line]')) {
+        const all = parts(line);
+        all.forEach((p) => { if (p.dataset.trimmed) { p.style.display = ''; delete p.dataset.trimmed; } });
+        if (!on) continue;
+        let guard = all.length;
+        while (guard-- > 0 && wraps(line)) {
+          const shown = all.filter((p) => !p.dataset.trimmed);
+          if (shown.length < 2) break;
+          const rank = (p) => (p.dataset.drop == null ? 0 : Number(p.dataset.drop) + 1);
+          const top = Math.max(...shown.map(rank));
+          const go = shown.filter((p) => rank(p) === top).pop();
+          go.dataset.trimmed = '1';
+          go.style.display = 'none';
+        }
+      }
+    };
+    const later = () => { if (!frame) frame = requestAnimationFrame(trim); };
+    trim();
+    const watch = new window.MutationObserver(later);
+    watch.observe(root, { childList: true, subtree: true, characterData: true });
+    window.addEventListener('resize', later);
+    return () => { watch.disconnect(); window.removeEventListener('resize', later); if (frame) cancelAnimationFrame(frame); };
+  }, [rootRef, on]);
+}
+
+/**
+ * One line of a timeline: when at the left, the title, then its quiet lines. On a phone the date joins the one grey line
+ * under the title (M11's calm phone, .tlxr; tidy follow-up 3, run 6's 33), and what doesn't fit is left out from the end.
+ * `onClick` makes the whole row a button.
+ */
+export function TimelineRow({ when, title, lines = [], onClick, className = '' }) {
+  const isPhone = useIsPhone();
+  const words = lines.filter(Boolean);
+  const inner = isPhone
+    ? <div><b>{title}</b><small className="cc-timeline-line" data-grey-line>{when && <span>{when}</span>}{words.map((line, i) => <span key={`${i}:${line}`}>{line}</span>)}</small></div>
+    : <><span>{when}</span><div><b>{title}</b>{words.map((line, i) => <p key={`${i}:${line}`}>{line}</p>)}</div></>;
+  const cls = `cc-timeline-row${className ? ` ${className}` : ''}`;
+  return onClick ? <button type="button" className={cls} onClick={onClick}>{inner}</button> : <div className={cls}>{inner}</div>;
+}
+
 /** A list row that opens something: a name, quiet facts under it, and when at the right. */
 export function Row({ title, facts = [], when, onClick, label }) {
   const inner = (
     <>
       <span>
         <b>{title}</b>
-        {facts.filter(Boolean).length > 0 && <small>{facts.filter(Boolean).map((f) => <span key={f}>{f}</span>)}</small>}
+        {facts.filter(Boolean).length > 0 && <small data-grey-line>{facts.filter(Boolean).map((f) => <span key={f}>{f}</span>)}</small>}
       </span>
       <span className="cc-row-when">{when}</span>
     </>

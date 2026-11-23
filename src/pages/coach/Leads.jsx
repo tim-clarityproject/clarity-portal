@@ -235,7 +235,21 @@ export default function Leads() {
     const to = stageBesideLead(stages, { stage_id: card.stageId }, e.key === 'ArrowLeft' ? -1 : 1);
     if (to) moveTo(card.id, to.id, { keepFocus: true });
   };
-  const cardWords = (c) => (
+  // On a phone a card is its name and one grey line (M11's calm phone; tidy follow-up 3, run 6's 33): the value and
+  // opened go first when it doesn't fit, then the organisation, then from the end.
+  const cardWords = (c) => (isPhone ? (
+    <>
+      <b>{c.name}</b>
+      <small className="cc-lead-line1" data-grey-line>
+        {c.sub && <span data-drop="1">{c.sub}</span>}
+        {c.valueWords && <span data-drop="2">{c.valueWords}</span>}
+        {c.opened && <span data-drop="2">{c.opened}</span>}
+        {c.next.line && <span>{c.next.line}</span>}
+        {c.quiet && <span className="cc-lead-quiet">{c.quiet}</span>}
+        {c.ready && <span className={`cc-lead-ready${c.isReady ? ' cc-lead-ready--ok' : ''}`}>{c.ready}</span>}
+      </small>
+    </>
+  ) : (
     <>
       <b>{c.name}</b>
       {c.sub && <small>{c.sub}</small>}
@@ -244,7 +258,7 @@ export default function Leads() {
       {c.quiet && <span className="cc-lead-quiet">{c.quiet}</span>}
       {c.ready && <span className={`cc-lead-ready${c.isReady ? ' cc-lead-ready--ok' : ''}`}>{c.ready}</span>}
     </>
-  );
+  ));
   const touchMenus = isPhone || touchFirst;
   const moreButton = (c, cls = '') => (
     <button type="button" className={`cc-round cc-lead-more${cls}`} ref={ref(`row:${c.id}`)} aria-haspopup="menu" aria-expanded={menu === `row:${c.id}` || menu === `stage:${c.id}`} aria-label={`More for ${c.name}`} onClick={() => setMenu(`row:${c.id}`)}>{MORE}</button>

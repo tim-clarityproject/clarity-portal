@@ -1,7 +1,7 @@
 import { Fragment, lazy, Suspense, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { BoldCrosshair, Loading, PageHeader, SlidePanel, useBackCloses, useHidePhoneBar, useToast } from '../../components/design';
+import { BoldCrosshair, Loading, PageHeader, SlidePanel, useBackCloses, useHidePhoneBar, useIsPhone, useToast } from '../../components/design';
 import { isPhoneWidth } from '../../components/design/pageLock';
 import { useSignOut } from '../../components/SignOut';
 import { getLocalDateKey } from '../../lib/dateFormatter';
@@ -22,7 +22,7 @@ import { networkPageOf } from '../../lib/coach/networkData';
 import { menuCount, NETWORK_SEARCH_ACTIONS, networkSearchItems, searchQuery } from '../../lib/coach/network';
 import { useNetworkCounts } from './networkParts';
 import { deviceZone } from '../../lib/time/index.js';
-import { CoachPortalContext, InlineLink, TextLink, useCoachPortal } from './parts';
+import { CoachPortalContext, InlineLink, TextLink, useCoachPortal, useGreyLines } from './parts';
 import { CalSync } from './calSync';
 import { AutomationWatch, EmailSync } from './crmParts';
 import './coach.css';
@@ -471,6 +471,9 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
   const closeMenu = useCallback(() => setMenu(false), []);
   const closeSearch = useCallback(() => setSearch(false), []);
   const closeBell = useCallback(() => setBell(false), []);
+  // On a phone every grey line under a row stays one line (tidy follow-up 3, run 6's 33).
+  const mainRef = useRef(null);
+  useGreyLines(mainRef, useIsPhone());
   return (
     <div className={`ui-root cc-app${hold ? ' cc-hold' : ''}`} inert={hold || undefined} aria-busy={hold || undefined}>
       <header className="cc-header">
@@ -488,7 +491,7 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
         </div>
       </header>
       <CallBar calls={calls} now={now} />
-      <main className={`cc-main${firstLoad ? ' cc-main--first' : ''}`} id="cc-main" aria-busy={firstLoad || undefined}>
+      <main ref={mainRef} className={`cc-main${firstLoad ? ' cc-main--first' : ''}`} id="cc-main" aria-busy={firstLoad || undefined}>
         {firstLoad && <Loading label="Loading Clarity Coach" className="ds-loading--page" />}
         {pages}
       </main>

@@ -17,7 +17,7 @@ import { carriedTimeline, emailsOn, leadTimeline } from '../../lib/coach/crm';
 import { EmailRows } from './crmParts';
 import './leads.css';
 import { engagementToSave, heldWords, lengthPlace, nextSession, openWords, sortTodos, whenWords, withHeldTyped, withSessions } from '../../lib/coach/day';
-import { Back, Detail, EditCell, Eye, Fold, InlineLink, Line, TextLink, useCoachPortal, useEverySecond, Part } from './parts';
+import { Back, Detail, EditCell, Eye, Fold, InlineLink, Line, TextLink, TimelineRow, useCoachPortal, useEverySecond, Part } from './parts';
 import { AddSessionPanel, SessionRows } from './sessionParts';
 import { QuickAddPanel, TodoList, TodoPanel } from './todoParts';
 import { currentEngagement } from './clientData';
@@ -404,16 +404,10 @@ export default function ClientPage() {
             </div>
             {timelineRows.length === 0 && carried.length === 0 && <p className="cc-quiet">{q || kind !== 'all' ? 'Nothing matches.' : `Nothing is on ${possessive(first)} timeline yet.`}</p>}
             {timelineRows.map(({ item: i, mail }) => (mail ? <EmailRows key={mail.id} rows={[mail]} /> : (
-              <div key={i.id} className="cc-timeline-row">
-                <span>{dayWords((i.day || String(i.at)).slice(0, 10), todayKey)}</span>
-                <div><b>{i.title}</b><p>{i.line}</p></div>
-              </div>
+              <TimelineRow key={i.id} when={dayWords((i.day || String(i.at)).slice(0, 10), todayKey)} title={i.title} lines={[i.line]} />
             )))}
             {carried.map((r) => (
-              <div key={r.id} className="cc-timeline-row">
-                <span>{r.when}</span>
-                <div><b>{r.title}</b>{r.tag && <p>{r.tag}</p>}{r.lines.map((line) => <p key={line}>{line}</p>)}</div>
-              </div>
+              <TimelineRow key={r.id} when={r.when} title={r.title} lines={[r.tag, ...r.lines]} />
             ))}
           </div>
         )}
