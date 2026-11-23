@@ -209,7 +209,7 @@ test('nothing is cut off: 6,500 rows come whole (one read, then pages in key ord
   assert.equal(db.reads.filter((r) => r.table === 'coach_todos' && r.or).length, 1, 'a small table: one read, as before');
   assert.deepEqual(store.rowsOf(state, 'coach_todos').map((t) => t.id).sort(), ['t-open', 't-recent'], 'first: open and lately done');
   assert.deepEqual(store.rowsOf(state, 'coach_cal_items').map((t) => t.id).sort(), ['c-now', 'c-series'], 'first: the weeks around now, and every series');
-  assert.equal(store.rowsOf(state, 'client_notes').length, 0, 'client notes come later');
+  assert.equal(store.rowsOf(state, 'client_notes').length, 1, 'client notes come with the first load (tidy follow-up 3, scale check 3)');
   // Later, once the page has drawn: the older to-dos and the notes.
   assert.equal(await store.loadCoachLater('acct'), false, 'already on its way: asked once a visit');
   await new Promise((r) => { setTimeout(r, 150); });
