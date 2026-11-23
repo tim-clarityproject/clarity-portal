@@ -298,7 +298,7 @@ export const ROWS = [
   { name: 'A to-do', m11: 'todo', part: 'sheet', built: 'todos-todo', changes: PANEL.changes, added: [...PANEL.added, AFTER_WORK] },
   { name: 'A to-do, When I’ll do it opened', m11: 'todo', clicks: ['dd:tdw'], part: 'sheet', built: 'm11-todo-when',
     changes: PANEL.changes,
-    added: [...PANEL.added, AFTER_WORK, ['Another day', T_WHEN]], moved: [[/^(today|tomorrow|someday)$/, POPUP]] },
+    added: [...PANEL.added, AFTER_WORK, ['Another day', T_WHEN]], moved: [[/^(today|tomorrow|someday|after work, today|thu 19 nov|mon 23 nov)$/, POPUP]] },
   { name: 'A to-do, Repeats opened', m11: 'todo', clicks: ['dd:tdrep'], part: 'sheet', built: 'm11-todo-repeats',
     changes: [...PANEL.changes, [/^(Every Thursday|Monthly on the 1st)$/, null, T_REPEATS, { say: 'Every Thursday, Monthly on the 1st' }]],
     added: [...PANEL.added, AFTER_WORK, [/^(Every day|Every weekday|Every 2 weeks|Every month|Every year)$/, T_REPEATS, null, { say: 'Every day, Every weekday, Every 2 weeks, Every month, Every year' }]], moved: [[/^(never|every week|2 weeks after i finish it)$/, POPUP]] },
