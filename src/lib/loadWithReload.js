@@ -15,7 +15,10 @@ const WINDOW_MS = 30000;
 // signing in came back to Home).
 let leaving = false;
 if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => { leaving = true; });
+  // A page that asks "Leave this page?" (the Health Check while answers wait) may be kept: then it isn't leaving, and
+  // a stale file later this visit must still reload (break-it tester, scale check step 4). A page really going away
+  // never runs the timer.
+  window.addEventListener('beforeunload', () => { leaving = true; window.setTimeout(() => { leaving = false; }, 3000); });
   window.addEventListener('pagehide', () => { leaving = true; });
   window.addEventListener('pageshow', () => { leaving = false; });
 }
