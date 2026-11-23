@@ -3,7 +3,7 @@ import { supabase } from '../supabase';
 import { newId, saveOrQueue, waitingToSend } from '../syncQueue';
 import { tableReady } from '../performance/tableReady';
 import { deviceKey, readJson, removeKey, writeJson } from '../deviceStore';
-import { deviceCopyAvailable, readCopy, writeTables } from './deviceCopy';
+import { deviceCopyAvailable, onCopiesCleared, readCopy, writeTables } from './deviceCopy';
 
 // Where the coach portal's data is kept (migration 049; Phase 6a run 1).
 //
@@ -302,6 +302,7 @@ function read(userId) {
   if (!userId) return EMPTY;
   if (!cache.has(userId)) {
     cache.set(userId, tidyState(readJson(localKey(userId)) || readJson(cacheKey(userId))));
+    if (deviceCopyAvailable()) copyChannel(); // another tab's changes to a large copy are heard from the start
     hydrate(userId);
   }
   return cache.get(userId);
@@ -372,16 +373,29 @@ function copyChannel() {
     channel = typeof globalThis.BroadcastChannel === 'function' ? new globalThis.BroadcastChannel('clarity-coach-copy') : false;
     // Another tab's change, for a large copy (the storage event only carries what waits to be sent).
     if (channel) {
+      // Only the rows that tab changed, row by row: a whole table in place of this tab's let a load finishing in the
+      // other tab take away a to-do just added here (break-it tester, scale check step 4).
       channel.onmessage = (e) => {
-        const { userId, tables } = e.data || {};
-        if (!userId || !tables || !cache.has(userId)) return;
+        const { userId, changes } = e.data || {};
+        if (!userId || !changes || typeof changes !== 'object' || !cache.has(userId)) return;
         const now = cache.get(userId);
         const next = { rows: { ...now.rows }, marks: { ...now.marks } };
-        for (const [t, v] of Object.entries(tables)) {
-          if (!TABLES[t]) continue;
-          if (v) { next.rows[t] = v.rows; next.marks[t] = v.marks; } else { delete next.rows[t]; delete next.marks[t]; }
+        for (const [t, v] of Object.entries(changes)) {
+          if (!TABLES[t] || !v || typeof v !== 'object') continue;
+          const rows = { ...(next.rows[t] || {}) };
+          const marks = { ...(next.marks[t] || {}) };
+          for (const [k, row] of Object.entries(v.rows || {})) {
+            if (k === '__proto__') continue;
+            if (row) { rows[k] = row; if (v.marks?.[k]) marks[k] = v.marks[k]; } else { delete rows[k]; delete marks[k]; }
+          }
+          // Only this table is tidied (every other table stays as it was, so it isn't written again here).
+          const one = tidyState({ rows: { [t]: rows }, marks: { [t]: marks } });
+          next.rows[t] = one.rows[t] || {};
+          next.marks[t] = one.marks[t] || {};
         }
-        cache.set(userId, tidyState(next));
+        const tidy = next;
+        touchDifferences(userId, now, tidy);
+        cache.set(userId, tidy);
         listeners.forEach((fn) => fn());
       };
     }
@@ -402,15 +416,37 @@ function changedTables(userId, state) {
   return out;
 }
 
-function flushCopy(userId) {
+function flushCopy(userId, token) {
+  // Only the write still asked for: a Sign out since has let it go (onCopiesCleared, below).
+  if (copyTimers.get(userId) !== token) return;
   copyTimers.delete(userId);
   const state = cache.get(userId);
   if (!state || !big.has(userId)) return;
   const tables = changedTables(userId, state);
   if (!Object.keys(tables).length) return;
+  const was = persisted.get(userId) || { rows: {}, marks: {} };
   persisted.set(userId, { rows: { ...state.rows }, marks: { ...state.marks } });
   writeTables(userId, tables);
-  try { copyChannel()?.postMessage({ userId, tables }); } catch { /* another tab reads it next time */ }
+  try { copyChannel()?.postMessage({ userId, changes: changedRows(was, tables) }); } catch { /* another tab reads it next time */ }
+}
+
+/** Of each changed table, only the rows (and marks) that differ from what was last written: { [table]: { rows: { key: row | null }, marks } }. */
+function changedRows(was, tables) {
+  const out = {};
+  for (const [t, now] of Object.entries(tables)) {
+    const beforeRows = was.rows[t] || {};
+    const beforeMarks = was.marks[t] || {};
+    const rows = {};
+    const marks = {};
+    const nowRows = now?.rows || {};
+    const nowMarks = now?.marks || {};
+    for (const k of Object.keys(nowRows)) {
+      if (nowRows[k] !== beforeRows[k] || nowMarks[k] !== beforeMarks[k]) { rows[k] = nowRows[k]; if (nowMarks[k]) marks[k] = nowMarks[k]; }
+    }
+    for (const k of Object.keys(beforeRows)) if (!Object.prototype.hasOwnProperty.call(nowRows, k)) rows[k] = null;
+    if (Object.keys(rows).length) out[t] = { rows, marks };
+  }
+  return out;
 }
 
 // The copy is written after the page has drawn (a save never waits for it), and at once when the page is hidden.
@@ -418,10 +454,12 @@ function scheduleCopy(userId) {
   if (copyTimers.has(userId)) return;
   const later = typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function'
     ? (fn) => window.requestIdleCallback(fn, { timeout: 1000 }) : (fn) => setTimeout(fn, 200);
-  copyTimers.set(userId, later(() => flushCopy(userId)));
+  const token = {};
+  copyTimers.set(userId, token);
+  later(() => flushCopy(userId, token));
 }
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  const flushAll = () => { for (const userId of [...copyTimers.keys()]) flushCopy(userId); };
+  const flushAll = () => { for (const [userId, token] of [...copyTimers]) flushCopy(userId, token); };
   window.addEventListener('pagehide', flushAll);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAll(); });
 }
@@ -474,7 +512,10 @@ if (typeof window !== 'undefined') {
     if (now == null) return;
     const raw = parseRaw(now);
     // A large copy's waiting rows: laid over this tab's copy, never in place of it.
-    cache.set(userId, raw?.partial ? overlay(read(userId), tidyState(raw)) : tidyState(raw));
+    const before = cache.get(userId);
+    const after = raw?.partial ? overlay(read(userId), tidyState(raw)) : tidyState(raw);
+    touchDifferences(userId, before, after);
+    cache.set(userId, after);
     listeners.forEach((fn) => fn());
   });
 }
@@ -543,6 +584,7 @@ export function coachState(userId) {
       || JSON.stringify(part.marks[t]?.[k]) !== JSON.stringify(before.marks[t]?.[k])));
     if (!differs) return before;
     const fresh = overlay(before, part);
+    touchDifferences(userId, before, fresh);
     cache.set(userId, fresh);
     listeners.forEach((fn) => fn());
     return fresh;
@@ -550,6 +592,7 @@ export function coachState(userId) {
   const fresh = tidyState(parsed);
   const before = cache.get(userId);
   if (before && JSON.stringify(before) === JSON.stringify(fresh)) return before;
+  touchDifferences(userId, before, fresh);
   cache.set(userId, fresh);
   listeners.forEach((fn) => fn());
   return fresh;
@@ -557,6 +600,48 @@ export function coachState(userId) {
 
 /** Is anything here still waiting to reach the database? */
 export const coachWaiting = (userId) => anyUnsent(read(userId));
+
+// ---------------------------------------------------------------- rows changed while a read was on its way
+
+// A load takes 1 to 4 seconds at Tim's scale (the first tier on a phone, the later tier, a week of the calendar), and
+// its rows are the database's as they were when it was ASKED. A row added, changed or deleted here (or heard from
+// another tab) after that is newer than what the read brings: the merge leaves it as it is, so a to-do added while
+// the page loads never vanishes, a deleted one never comes back and an edited note never goes back to its old words
+// (break-it tester, scale check step 4). The next load brings the database's copy as before.
+let touchSeq = 0;
+const touched = new Map(); // account -> { last, rows: Map("table\u0000key" -> seq) }
+const TOUCH_MAX = 5000;
+function touch(userId, table, k) {
+  if (!userId) return;
+  let t = touched.get(userId);
+  if (!t) { t = { last: 0, rows: new Map() }; touched.set(userId, t); }
+  touchSeq += 1;
+  const id = `${table}\u0000${k}`;
+  t.rows.delete(id);
+  t.rows.set(id, touchSeq);
+  t.last = touchSeq;
+  if (t.rows.size > TOUCH_MAX) t.rows.delete(t.rows.keys().next().value);
+}
+/** Where a read begins: rows touched after this are kept as they are when it is merged. */
+const readBegins = () => touchSeq;
+/** (table, key) => whether that row was touched here after `since`; null when nothing was. */
+function touchedSince(userId, since) {
+  const t = touched.get(userId);
+  if (!t || t.last <= since) return null;
+  return (table, k) => (t.rows.get(`${table}\u0000${k}`) || 0) > since;
+}
+/** Another tab's copy has replaced this tab's: the rows that differ count as touched here. */
+function touchDifferences(userId, before, after) {
+  if (!before) return;
+  for (const table of new Set([...Object.keys(before.rows), ...Object.keys(after.rows)])) {
+    const a = before.rows[table] || {};
+    const b = after.rows[table] || {};
+    if (a === b && before.marks[table] === after.marks[table]) continue;
+    for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+      if (!sameRow(a[k], b[k]) || !sameMark(before.marks[table]?.[k], after.marks[table]?.[k])) touch(userId, table, k);
+    }
+  }
+}
 
 function setRow(state, table, row, mark) {
   const k = keyOf(table, row);
@@ -577,6 +662,7 @@ function dropRow(state, table, k) {
 function mark(userId, table, k, change) {
   const state = read(userId);
   if (!state.rows[table]?.[k]) return;
+  touch(userId, table, k);
   write(userId, { rows: state.rows, marks: { ...state.marks, [table]: { ...(state.marks[table] || {}), [k]: { ...(state.marks[table]?.[k] || {}), ...change } } } });
 }
 
@@ -586,6 +672,7 @@ function settle(userId, table, sentRow, dbRow) {
   const k = keyOf(table, sentRow);
   const here = state.rows[table]?.[k];
   if (here && here.updated_at !== sentRow.updated_at) return; // changed here again since: that change is still to go
+  touch(userId, table, k);
   write(userId, setRow(state, table, dbRow, { sent: true }));
 }
 
@@ -784,6 +871,7 @@ export async function saveRow(userId, table, row) {
   if (!userId || !TABLES[table]) throw new Error(`Not a coach table: ${table}`);
   const stamped = { ...row, updated_at: new Date().toISOString() };
   if (!stamped.created_at) stamped.created_at = stamped.updated_at;
+  touch(userId, table, keyOf(table, stamped));
   write(userId, setRow(read(userId), table, stamped));
   if (READ_ONLY.has(table)) return 'device';
   if (!(await tableThere(table))) return 'device';
@@ -795,7 +883,7 @@ export async function saveRows(userId, pairs) {
   let state = read(userId);
   const now = new Date().toISOString();
   const stamped = pairs.map(([table, row]) => [table, { ...row, updated_at: now, created_at: row.created_at || now }]);
-  for (const [table, row] of stamped) state = setRow(state, table, row);
+  for (const [table, row] of stamped) { touch(userId, table, keyOf(table, row)); state = setRow(state, table, row); }
   write(userId, state);
   if ((await coachReady()) !== true) return 'device';
   let worst = 'saved';
@@ -819,6 +907,7 @@ export async function removeRow(userId, table, key) {
   const row = state.rows[table]?.[key];
   if (!row) return null;
   const wasSent = state.marks[table]?.[key]?.sent === true;
+  touch(userId, table, key);
   if (!wasSent) {
     write(userId, dropRow(state, table, key));
     // It may be on its way in the queue: its delete follows it there.
@@ -830,7 +919,7 @@ export async function removeRow(userId, table, key) {
   try {
     const match = Object.fromEntries(TABLES[table].map((c) => [c, row[c]]));
     const answer = await saveOrQueue(userId, { table, kind: 'delete', match });
-    if (answer.status === 'saved' && read(userId).marks[table]?.[key]?.gone) write(userId, dropRow(read(userId), table, key));
+    if (answer.status === 'saved' && read(userId).marks[table]?.[key]?.gone) { touch(userId, table, key); write(userId, dropRow(read(userId), table, key)); }
   } catch (error) {
     if (!NEVER.has(error?.code)) throw error;
     // Refused: it is still in the database, so it shows again.
@@ -843,14 +932,14 @@ export async function removeRow(userId, table, key) {
 /** Takes rows off the device only (what a checked function has already deleted in the database). */
 export function forgetRows(userId, pairs) {
   let state = read(userId);
-  for (const [table, key] of pairs) if (state.rows[table]?.[key]) state = dropRow(state, table, key);
+  for (const [table, key] of pairs) if (state.rows[table]?.[key]) { touch(userId, table, key); state = dropRow(state, table, key); }
   write(userId, state);
 }
 
 /** Puts rows on the device as the database has them (what a checked function has just written). */
 export function noteRows(userId, pairs) {
   let state = read(userId);
-  for (const [table, row] of pairs) state = setRow(state, table, row, { sent: true });
+  for (const [table, row] of pairs) { touch(userId, table, keyOf(table, row)); state = setRow(state, table, row, { sent: true }); }
   write(userId, state);
 }
 
@@ -925,6 +1014,26 @@ async function fetchTable(table, narrow) {
   if ((first.data || []).length < FIRST_READ) return first.data || [];
   const out = [];
   const seen = new Set();
+  const key = TABLES[table] || ['id'];
+  if (key.length === 1) {
+    // Page after page from the last key read (never by place in the list): a row deleted by another device while the
+    // pages are read moved every later row back by one, and the row at each page's edge was skipped until the next
+    // load (break-it tester, scale check step 4).
+    for (let last = null; ;) {
+      let p = supabase.from(table).select('*');
+      if (narrow) p = narrow(p);
+      if (last != null) p = p.gt(key[0], last);
+      const { data, error } = await p.order(key[0], { ascending: true }).limit(PAGE);
+      if (error) throw error;
+      const rows = data || [];
+      for (const r of rows) {
+        const k = keyOf(table, r);
+        if (!seen.has(k)) { seen.add(k); out.push(r); }
+      }
+      if (rows.length < PAGE || rows[rows.length - 1]?.[key[0]] == null) return out;
+      last = rows[rows.length - 1][key[0]];
+    }
+  }
   for (let from = 0; ; from += PAGE) {
     let p = supabase.from(table).select('*');
     if (narrow) p = narrow(p);
@@ -979,17 +1088,23 @@ function sameRow(a, b) {
  * weeks of the calendar, say) are kept as they are. Rows and the table that haven't changed are handed back as they
  * were, so the pages that show them don't work them out again.
  */
-export function mergeTable(table, beforeRows = {}, beforeMarks = {}, dbRows = [], inScope = null) {
+export function mergeTable(table, beforeRows = {}, beforeMarks = {}, dbRows = [], inScope = null, keepHere = null) {
   const rows = {};
   const marks = {};
   for (const row of dbRows) {
     const k = keyOf(table, row);
+    if (keepHere && keepHere(k)) continue; // changed here after the read was asked: the device's copy (or its absence) stands
     rows[k] = row;
     marks[k] = { sent: true, gone: false, refused: false };
   }
   for (const k of Object.keys(beforeRows)) {
     const row = beforeRows[k];
     const m = beforeMarks[k] || {};
+    if (keepHere && keepHere(k)) {
+      rows[k] = row;
+      if (beforeMarks[k]) marks[k] = beforeMarks[k];
+      continue;
+    }
     const inDb = Object.prototype.hasOwnProperty.call(rows, k);
     if (inScope && !inDb && !inScope(row)) {
       // Not covered by this read: kept as it was.
@@ -1021,11 +1136,14 @@ export function mergeTable(table, beforeRows = {}, beforeMarks = {}, dbRows = []
   return { rows, marks };
 }
 
-/** The device's copy brought up to date with what was read: { [table]: { rows, inScope } }. Pure, for the tests too. */
-export function mergeLoaded(before, read) {
+/**
+ * The device's copy brought up to date with what was read: { [table]: { rows, inScope } }. `keep(table, key)`: rows
+ * changed here after the read was asked, left as they are. Pure, for the tests too.
+ */
+export function mergeLoaded(before, read, keep = null) {
   const next = { rows: { ...before.rows }, marks: { ...before.marks } };
   for (const [table, { rows, inScope }] of read) {
-    const merged = mergeTable(table, before.rows[table], before.marks[table], rows, inScope);
+    const merged = mergeTable(table, before.rows[table], before.marks[table], rows, inScope, keep ? (k) => keep(table, k) : null);
     if (!Object.keys(merged.rows).length && !before.rows[table]) continue;
     next.rows[table] = merged.rows;
     next.marks[table] = merged.marks;
@@ -1055,10 +1173,11 @@ export function loadCoachLater(userId) {
     whenIdle(async () => {
       try {
         const names = tablesThere(dayReadyNow === true, calReadyNow === true, crmReadyNow === true);
+        const since = readBegins();
         const db = await fetchPlans(plans(names, Date.now(), 'later'));
         if (gen !== generation) { resolve(false); return; }
         await hydrate(userId);
-        write(userId, mergeLoaded(read(userId), db));
+        write(userId, mergeLoaded(read(userId), db, touchedSince(userId, since)));
         resolve(true);
       } catch {
         laterDone.delete(userId); // tried again on the next load
@@ -1083,10 +1202,11 @@ export function ensureCalRange(userId, fromDay, toDay) {
   if (calAsking.has(key)) return calAsking.get(key);
   const gen = generation;
   const w = calWindow(span[0], span[1]);
+  const since = readBegins();
   const run = fetchTable('coach_cal_items', w.narrow).then(async (rows) => {
     if (gen !== generation) return false;
     await hydrate(userId);
-    write(userId, mergeLoaded(read(userId), new Map([['coach_cal_items', { rows, inScope: w.inScope }]])));
+    write(userId, mergeLoaded(read(userId), new Map([['coach_cal_items', { rows, inScope: w.inScope }]]), touchedSince(userId, since)));
     calLoaded.set(userId, [...(calLoaded.get(userId) || []), span]);
     return true;
   }).catch(() => false).finally(() => { calAsking.delete(key); });
@@ -1134,6 +1254,7 @@ export function loadCoach(userId, { again = false } = {}) {
     const crmThere = calThere && (await coachCrmReady()) === true;
     const nowMs = Date.now();
     const first = plans(tablesThere(dayThere, calThere, crmThere), nowMs, 'first');
+    const since = readBegins();
     let db;
     try {
       // The device's own copy is read meanwhile, so what the database doesn't send now (the older weeks) is kept.
@@ -1143,7 +1264,7 @@ export function loadCoach(userId, { again = false } = {}) {
     }
     if (gen !== generation) return null;
     const waiting = waitingToSend(userId) > 0;
-    write(userId, mergeLoaded(read(userId), db));
+    write(userId, mergeLoaded(read(userId), db, touchedSince(userId, since)));
     if (calThere) calLoaded.set(userId, [...(calLoaded.get(userId) || []), [nowMs - CAL_BACK_DAYS * DAY_MS, nowMs + CAL_AHEAD_DAYS * DAY_MS]]);
     if (!waiting) await moveAcross(userId);
     loadCoachLater(userId);
@@ -1213,9 +1334,13 @@ export function useCoachLoad(userId) {
 
 export { newId };
 
-// For tests: forget what this module remembers.
-export function resetCoachStoreForTests() {
+// A Sign out (or one in another tab) has cleared the device's copies: everything this tab holds in memory goes too,
+// with the copy writes waiting for an idle moment and the loads still on their way (their answers are dropped), so
+// nothing puts the signed-out coach's copy back on the device. What waits to be sent stays in localStorage
+// (clarity-coach-local:), which a Sign out never clears.
+function letGo() {
   generation += 1;
+  copyTimers.clear();
   loading.clear();
   loadAgain.clear();
   calAsking.clear();
@@ -1228,6 +1353,27 @@ export function resetCoachStoreForTests() {
   persisted.clear();
   calLoaded.clear();
   laterDone.clear();
+  touched.clear();
+}
+onCopiesCleared(letGo);
+
+// For tests: forget what this module remembers.
+export function resetCoachStoreForTests() {
+  generation += 1;
+  copyTimers.clear();
+  loading.clear();
+  loadAgain.clear();
+  calAsking.clear();
+  cache.clear();
+  rawSeen.clear();
+  big.clear();
+  hydrating.clear();
+  hydrated.clear();
+  firstDone.clear();
+  persisted.clear();
+  calLoaded.clear();
+  laterDone.clear();
+  touched.clear();
   readyNow = null;
   dayReadyNow = null;
   calReadyNow = null;

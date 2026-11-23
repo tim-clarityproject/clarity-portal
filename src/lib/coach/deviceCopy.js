@@ -64,6 +64,17 @@ function open() {
 
 const prefix = (userId) => `${userId}|`;
 
+// Kept only while that account is still signed in on this device: a page's load answered just after a Sign out
+// never puts the copy back (break-it tester, scale check step 4). Storage that can't be read doesn't stop it.
+function stillSignedIn(userId) {
+  try {
+    const raw = globalThis.localStorage?.getItem('clarity-portal-auth');
+    return Boolean(raw) && raw.includes(String(userId));
+  } catch {
+    return true;
+  }
+}
+
 /** Every table kept for this coach: { [table]: { rows, marks } }, or null when nothing is kept (or it can't be read). */
 export async function readCopy(userId) {
   const db = await open();
@@ -93,7 +104,7 @@ export async function readCopy(userId) {
 /** Keeps these tables ({ [table]: { rows, marks } | null to remove }). Resolves true when kept. */
 export async function writeTables(userId, tables) {
   const db = await open();
-  if (!db || !userId) return false;
+  if (!db || !userId || !stillSignedIn(userId)) return false;
   return new Promise((resolve) => {
     try {
       const tx = db.transaction(STORE, 'readwrite');
@@ -136,7 +147,7 @@ export async function readExtra(userId, name) {
 /** Keeps one list. Resolves true when kept; never throws. */
 export async function writeExtra(userId, name, value) {
   const db = await open();
-  if (!db || !userId) return false;
+  if (!db || !userId || !stillSignedIn(userId)) return false;
   return new Promise((resolve) => {
     try {
       const tx = db.transaction(STORE, 'readwrite');
@@ -166,8 +177,22 @@ export async function removeCopy(userId) {
   });
 }
 
+const clearedListeners = new Set();
+/**
+ * Told when a Sign out clears the copies (store.js): what this tab still holds in memory, a write waiting for the
+ * page to be idle and a load still on its way, is let go, so none of it puts the copy back once the person has
+ * signed out (break-it tester, scale check step 4).
+ */
+export function onCopiesCleared(fn) {
+  clearedListeners.add(fn);
+  return () => { clearedListeners.delete(fn); };
+}
+
 /** A Sign out: every coach's copy on this device goes (clearAppStorage.js). Never throws. */
 export function clearDeviceCopies() {
+  for (const fn of clearedListeners) {
+    try { fn(); } catch { /* the rest still go */ }
+  }
   const factory = idb();
   if (!factory) return;
   try {

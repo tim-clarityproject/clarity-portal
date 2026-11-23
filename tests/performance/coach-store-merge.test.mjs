@@ -35,13 +35,14 @@ globalThis.__db = {
       select: () => chain,
       order: () => chain,
       eq: (c, v) => { q.tests.push((r) => r[c] === v); return chain; },
+      gt: (c, v) => { q.after = v; q.tests.push((r) => String(r[c]) > String(v)); return chain; },
       lt: (c, v) => { q.tests.push((r) => r[c] != null && at(r[c]) < at(v)); return chain; },
       gte: (c, v) => { q.tests.push((r) => r[c] != null && at(r[c]) >= at(v)); return chain; },
       or: (expr) => { q.or = expr; return chain; },
       limit: (n) => { q.max = n; return chain; },
       range: (a, b) => { q.from = a; q.to = b; return chain; },
       then: (ok, bad) => Promise.resolve().then(() => {
-        db.reads.push({ table, or: q.or || null, from: q.from });
+        db.reads.push({ table, or: q.or || null, from: q.from, after: q.after || null });
         let rows = [...(db.rows[table] || [])].sort((x, y) => String(x.id).localeCompare(String(y.id)));
         if (q.or && table === 'coach_todos') {
           const cut = at(/done_at\.gte\."([^"]+)"/.exec(q.or)[1]);
@@ -204,7 +205,7 @@ test('nothing is cut off: 6,500 rows come whole (one read, then pages in key ord
   let state = store.coachState('acct');
   assert.equal(store.rowsOf(state, 'client_profiles').length, 6500, 'every client, past the old cap of 5,000');
   assert.equal(new Set(store.rowsOf(state, 'client_profiles').map((p) => p.id)).size, 6500, 'each once');
-  assert.deepEqual(db.reads.filter((r) => r.table === 'client_profiles').map((r) => r.from).slice(-8), [0, 0, 1000, 2000, 3000, 4000, 5000, 6000], 'one read of 5,000, then pages of 1,000');
+  assert.deepEqual(db.reads.filter((r) => r.table === 'client_profiles').map((r) => r.after).slice(-8), [null, null, 'p00999', 'p01999', 'p02999', 'p03999', 'p04999', 'p05999'], 'one read of 5,000, then pages of 1,000, each after the last key read');
   assert.equal(db.reads.filter((r) => r.table === 'coach_todos' && r.or).length, 1, 'a small table: one read, as before');
   assert.deepEqual(store.rowsOf(state, 'coach_todos').map((t) => t.id).sort(), ['t-open', 't-recent'], 'first: open and lately done');
   assert.deepEqual(store.rowsOf(state, 'coach_cal_items').map((t) => t.id).sort(), ['c-now', 'c-series'], 'first: the weeks around now, and every series');
