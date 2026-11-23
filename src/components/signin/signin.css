@@ -100,6 +100,10 @@
   word-spacing: normal;
   text-wrap: balance;
   color: var(--text);
+  /* Spaced capitals carry their spacing after the last letter too: the same
+     space before the first keeps the title's letters on the column's middle
+     (sign-in rule 49, as the name above it). */
+  padding-left: var(--ls-page-title);
 }
 
 /* ---------- Lines of words ---------- */
@@ -296,6 +300,16 @@
 
 .ui-root .si-p + .si-terms { margin-top: var(--space-px14); }
 
+/* On a page with no boxes (Save your recovery codes, Before you start) the
+   tick box and its words are centred as one group, from the box's own edge
+   to the last letter (sign-in rule 49): the row keeps the margin that puts
+   the tap area's invisible part outside it, and holds its two columns in
+   its middle. */
+.ui-root .si-terms--centred {
+  grid-template-columns: var(--tap-min) minmax(0, max-content);
+  justify-content: center;
+}
+
 /* When the words wrap (a narrow phone, a reader's larger text), "terms"
    can be on the first or last line: the row grows to hold its 44px tap
    area, so it never reaches the box above or the button underneath. One
@@ -439,6 +453,7 @@
 /* A long email address in a message wraps inside the box, at any text
    size, and never runs out of its side. */
 .ui-root .si-err > span {
+  flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -661,11 +676,26 @@
   color: var(--text-2);
 }
 
+/* The key and its copy icon run as one line of words, centred, so when a
+   reader's larger text wraps the key, the icon stays beside its last group
+   and every line is centred (sign-in rule 49). */
 .ui-root .si-kv {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-px2);
+  display: block;
+  text-align: center;
 }
+
+.ui-root .si-kv .si-cpy {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-inline-start: var(--space-px2);
+}
+
+/* The key or Download and its copy icon are centred as one group, from the
+   words' first letter to the icon's visible edge: the icon's 44px tap area
+   reaches past its drawing, so that part is taken off its outer side (the
+   tap area itself stays 44px; sign-in rule 49). */
+.ui-root .si-kv .si-cpy,
+.ui-root .si-rcact .si-cpy { margin-inline-end: var(--si-cpy-trim); }
 
 .ui-root .si-key {
   font-weight: var(--fw-regular);
@@ -718,7 +748,10 @@
 /* The ten recovery codes, in two columns. */
 .ui-root .si-rc {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* The two columns as wide as their codes, centred in the box, so the space
+     inside it is the same on the left and the right (sign-in rule 49). */
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  justify-content: center;
   gap: var(--space-px14) var(--space-4);
   margin: var(--space-px18) 0 0;
   padding: var(--si-rc-pad-y) var(--si-rc-pad-x);

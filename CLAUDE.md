@@ -10,7 +10,7 @@ Push `feature/performance-overhaul` after every commit, never `main`. **A previe
 
 CLAUDE.md holds the rules every task needs. Each area's full rules live in its own file, moved word for word on 22 Nov 2026 (run 7, step 0); they apply exactly as before, and "sign-in rule 38", "Health Check rule 12", "coach rule 16" and so on refer to the numbered rules in these files. **Before building, changing or testing anything in an area, read its file in full.**
 
-- `docs/rules/sign-in.md`: Sign-in pages, the coach authenticator and My Account’s Password and Email pages (M26): 48 rules.
+- `docs/rules/sign-in.md`: Sign-in pages, the coach authenticator and My Account’s Password and Email pages (M26): 50 rules (49: one alignment per page, each row centred as a group).
 - `docs/rules/get-unstuck-timer-guests.md`: Get unstuck, the shared Timer and guest pages (M9): 21 rules.
 - `docs/rules/team-check.md`: Team performance check and the Visual tools’ shared parts (M10): 14 rules.
 - `docs/rules/emotional-wash.md`: Emotional wash (M10): 12 rules.

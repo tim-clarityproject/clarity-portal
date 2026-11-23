@@ -216,6 +216,11 @@
   --ls-si-code: 0.06em;       /* the set-up key and the recovery codes */
   --lh-si-step: 1.5;
   --si-cpy-icon: 18px;        /* the copy icon, in its 44px tap area */
+  /* The copy icon's drawing spans 15 of its 24 units, so its visible edge is this
+     far inside its 44px tap area; a word and the icon centred as one group take
+     it off the icon's outer side (sign-in rule 49). */
+  --si-cpy-ink: calc(var(--si-cpy-icon) * 15 / 24);
+  --si-cpy-trim: calc((var(--si-cpy-ink) - var(--tap-min)) / 2);
 
   /* Radii (--radius-input 12px, --radius-card 16px and --radius-pill
      are defined above) */

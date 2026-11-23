@@ -18,7 +18,8 @@ const MARK_SIZE = 32;
 /** "Back to sign in": above the column, at its left edge, clear of a phone's notch. */
 export function BackTo({ to = SIGN_IN_PATHS.signIn, state, children = 'Back to sign in' }) {
   return (
-    <Link className="si-back" to={to} state={state}>
+    // Set on the content's left edge on purpose (rule 29t), so the centring check passes it by.
+    <Link className="si-back" to={to} state={state} data-align="start">
       <Chevron direction="left" size="sm" beside="words" />
       <span>{children}</span>
     </Link>
@@ -175,7 +176,8 @@ export function Message({ lines }) {
   return (
     <div className="si-err" role="alert">
       <b aria-hidden="true">!</b>
-      <span>{list.map((line) => <span key={line}>{line}</span>)}</span>
+      {/* The words fill the box beside the "!", set on the left: the box's two sides keep equal padding (rule 49). */}
+      <span data-align="start">{list.map((line) => <span key={line}>{line}</span>)}</span>
     </div>
   );
 }
@@ -183,11 +185,14 @@ export function Message({ lines }) {
 /**
  * The one tick box: "I’m 18 or over and I agree to the terms.", where
  * "terms" opens the one terms panel with all three legal documents.
+ * Under a form's boxes it lines up with their left edge (rule 5, marked so
+ * for the centring check); `centred` on a page with no boxes (Before you
+ * start), where the box and its words are centred as one group (rule 49).
  */
-export function TermsRow({ checked, onChange }) {
+export function TermsRow({ checked, onChange, centred = false }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="si-terms">
+    <div className={centred ? 'si-terms si-terms--centred' : 'si-terms'} data-align={centred ? undefined : 'start'}>
       <button
         type="button"
         role="checkbox"
@@ -290,10 +295,14 @@ export function keepSixDigit(text) {
   return parts.flatMap((part, i) => (i ? [<span key={i} className="si-nowrap">6-digit</span>, part] : [part]));
 }
 
-/** A tick box row in the sign-in pages' own shape (the shared 18px box, a 44px tap area). */
+/**
+ * A tick box row in the sign-in pages' own shape (the shared 18px box, a
+ * 44px tap area), the box and its words centred as one group (rule 49: its
+ * one page, Save your recovery codes, has no boxes).
+ */
 export function TickRow({ checked, onChange, label, children }) {
   return (
-    <div className="si-terms">
+    <div className="si-terms si-terms--centred">
       <button type="button" role="checkbox" className="ds-check-box" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}>
         <span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>

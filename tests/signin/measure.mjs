@@ -14,6 +14,9 @@
 //   - the tick box: 18px, a 1.5px edge, 5px corners, a 12px tick, a 44px
 //     tap area, and its row lined up with the boxes' left edge;
 //   - "6-digit" on one line; boxes 16px or more; every outlined edge 3 to 1;
+//   - one alignment per page, each row centred as a group with its icon or
+//     tick box, and boxes even inside (rule 49; tests/signin/centring.mjs;
+//     every screen at twice the text size too: centring-pages.mjs);
 //   - the spacing rule of 19 Nov, 21:25 (Phase 6a run 5), read from the
 //     page's own boxes (tests/signin/spacing.mjs): title to its first line
 //     12px, line to line 12px, text to a box, list or button 24px, box to
@@ -36,6 +39,7 @@ import { APP, MOCKUP, SAM, guard, makeChecks, sleep, testEnv } from './shared.mj
 import { SCREENS } from './screens.mjs';
 import { COACH_SCREENS } from './coachScreens.mjs';
 import { ruleProblems, spacingRule } from './spacing.mjs';
+import { centredGroups, centringProblems } from './centring.mjs';
 import { overlappingTaps } from '../phase5/taps.mjs';
 import { outlinedEdges } from '../phase5/edges.mjs';
 import { chevronsOff, measureChevrons } from '../phase5/chevrons.mjs';
@@ -168,6 +172,7 @@ function parts() {
       // whole pixels of its own screen when asked what it drew, so the
       // drawn edge is only checked for being there on all four sides.
       tap: r(box), square: r(sq), edge: [st.borderTopWidth, st.borderRightWidth, st.borderBottomWidth, st.borderLeftWidth].map(parseFloat), written: st.getPropertyValue('--line-w-strong').trim(), corners: parseFloat(st.borderTopLeftRadius), tick: r(tick),
+      centred: Boolean(box.closest('.si-terms--centred')),
       boxLeft: Math.min(...[...col.querySelectorAll('.si-inp')].filter(vis).map((i) => i.getBoundingClientRect().left)),
     };
   }
@@ -284,6 +289,11 @@ for (const mode of MODES) {
       if (got?.linksApart) pass(`${tag}: stacked links are at least 28px apart`, got.linksApart.every((v) => v >= 28), JSON.stringify(got.linksApart));
       if (mode === MODES[0] && got) table.push(`${screen.name} ${width}: ${Object.entries(got).map(([k, v]) => `${k} ${JSON.stringify(v)}`).join(', ')}`);
 
+      // One alignment per page, each row centred as a group, boxes even inside (rule 49).
+      const centring = await page.evaluate(centredGroups, { root: screen.acct ? '.si-col--account' : '.si-col' });
+      const offCentre = centringProblems(centring);
+      pass(`${tag}: each row ${centring.align === 'centre' ? 'centred as a group' : 'on the column’s left edge'}, and boxes even inside`, offCentre.length === 0, offCentre.slice(0, 4).join('; '));
+
       // Tap areas, edges, boxes.
       const shared = await page.evaluate(overlappingTaps);
       pass(`${tag}: no two tap areas overlap`, shared.length === 0, shared.slice(0, 4).join('; '));
@@ -300,7 +310,8 @@ for (const mode of MODES) {
         pass(`${tag}: the tick box is 18px with a 1.5px edge, 5px corners and a 12px tick, in a 44px tap area`,
           near(t.square.width, 18) && near(t.square.height, 18) && t.written === '1.5px' && t.edge.every((e) => e >= 1 && e <= 1.5) && near(t.corners, 5) && near(t.tick.width, 12) && near(t.tick.height, 12) && near(t.tap.width, 44) && near(t.tap.height, 44),
           JSON.stringify({ square: [t.square.width, t.square.height], edgeWritten: t.written, edgeDrawn: t.edge, corners: t.corners, tick: [t.tick.width, t.tick.height], tap: [t.tap.width, t.tap.height] }));
-        if (Number.isFinite(t.boxLeft)) pass(`${tag}: the tick box lines up with the boxes’ left edge`, Math.abs(t.square.x - t.boxLeft) <= 0.5, `${t.square.x.toFixed(2)} (boxes ${t.boxLeft.toFixed(2)})`);
+        // Centred with its words on a page with no boxes (rule 49): read by the centring check below.
+        if (t.centred) { /* centred as one group */ } else if (Number.isFinite(t.boxLeft)) pass(`${tag}: the tick box lines up with the boxes’ left edge`, Math.abs(t.square.x - t.boxLeft) <= 0.5, `${t.square.x.toFixed(2)} (boxes ${t.boxLeft.toFixed(2)})`);
         else pass(`${tag}: the tick box lines up with the column’s left edge`, Math.abs(t.square.x - p.col.x) <= 0.5, `${t.square.x.toFixed(2)} (column ${p.col.x.toFixed(2)})`);
       }
       if (p.six) {

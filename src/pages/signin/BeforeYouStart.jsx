@@ -99,7 +99,7 @@ export default function BeforeYouStart({ onDone, account = null }) {
   return (
     <SignInPage title="Before you start" onSubmit={submit}>
       <Line>You’re signing in as <strong>{user.email}</strong>.</Line>
-      <TermsRow checked={ticked} onChange={tick} />
+      <TermsRow checked={ticked} onChange={tick} centred />
       <Message lines={message} />
       <MainButton>Create my account</MainButton>
       {startedWithGoogle(user) ? <Alt><TextLink onClick={another}>Use a different Google account</TextLink></Alt> : null}
