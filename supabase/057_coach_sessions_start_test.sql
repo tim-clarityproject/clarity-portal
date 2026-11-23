@@ -32,10 +32,22 @@
 --   list naming each check that failed. Everything it makes is undone.
 -- =============================================================================
 create or replace function pg_temp.c_as(p uuid, p_aal text) returns void language plpgsql as $f$
+declare sid uuid := gen_random_uuid();
 begin
+  -- A made-up sign-in is written to auth.sessions where that table exists, as a real one is: once a coach has a reset
+  -- or a recovery code on record, 055 refuses a session id that isn't there (the hosted test project has the table).
+  perform set_config('role', 'none', true);
+  perform set_config('request.jwt.claims', '', true);
+  if to_regclass('auth.sessions') is not null and p is not null then
+    begin
+      execute 'insert into auth.sessions (id, user_id, created_at, updated_at) values ($1, $2, $3, $3)' using sid, p, now();
+    exception when others then
+      raise notice '057: this database doesn''t let the test write auth.sessions (%)', sqlerrm;
+    end;
+  end if;
   perform set_config('request.jwt.claims', json_build_object('sub', p, 'role', 'authenticated', 'aal', p_aal,
     'amr', json_build_array(json_build_object('method', 'password', 'timestamp', floor(extract(epoch from now()))::bigint)),
-    'iat', floor(extract(epoch from now()))::bigint, 'session_id', gen_random_uuid())::text, true);
+    'iat', floor(extract(epoch from now()))::bigint, 'session_id', sid)::text, true);
   perform set_config('role', 'authenticated', true);
 end $f$;
 create or replace function pg_temp.c_admin() returns void language plpgsql as $f$
