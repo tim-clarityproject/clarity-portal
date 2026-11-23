@@ -11,7 +11,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { APP, readEnv, SIZES } from './shared.mjs';
 
-const CLIENT_STATE = join(tmpdir(), 'clarity-coach-tests', 'client.json');
+// One saved client sign-in per address the portal is served on, as the coach's (shared.mjs coachContext): one file for
+// every port loaded another port's sign-in, found no session on its own address and stood on the sign-in page (the
+// break-it tester's d-client, 23 Nov, served on 4371 after a run on another port).
+const CLIENT_STATE = join(tmpdir(), 'clarity-coach-tests', `client-${new URL(APP).host.replace(/[^a-z0-9]+/gi, '-')}.json`);
 const uid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
