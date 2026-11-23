@@ -41,6 +41,8 @@ export const PERSONAL_KINDS = [
   'checkin-doing', // a monthly review's "what I'm doing" (CheckIn.jsx)
   'checkin-nothing', // a monthly review's "nothing to add" (CheckIn.jsx)
   'home', // Home's own small copies (Home.jsx)
+  'coach-local', // a coach's copy, with what hasn't reached the database (coach/store.js); sent first by signOutCopies.js
+  'coach-network-local', // a coach's Network kept on the device before 052 (coach/networkData.js); sent first the same way
 ];
 const PERSONAL_PREFIXES = PERSONAL_KINDS.map((kind) => `clarity-${kind}:`);
 
@@ -141,7 +143,7 @@ export function clearAppStorage({ deletedAccount = null, toolAnswersThere = fals
   try { clearFrom(window.localStorage); } catch { /* storage blocked */ }
   try { clearFrom(window.sessionStorage); } catch { /* storage blocked */ }
   // The coach portal's large copy (IndexedDB, coach/deviceCopy.js): last data only, cleared like the rest. What
-  // hasn't reached the database is kept in localStorage (clarity-coach-local:), which this never clears.
+  // hasn't reached the database (clarity-coach-local:) was sent first (signOutCopies.js) and is cleared too.
   clearDeviceCopies();
 }
 
@@ -154,6 +156,6 @@ export function clearAfterSignOutElsewhere() {
   try { clearFrom(window.localStorage); } catch { /* storage blocked */ }
   try { clearFrom(window.sessionStorage); } catch { /* storage blocked */ }
   // The coach portal's large copy (IndexedDB, coach/deviceCopy.js): last data only, cleared like the rest. What
-  // hasn't reached the database is kept in localStorage (clarity-coach-local:), which this never clears.
+  // hasn't reached the database (clarity-coach-local:) was sent first (signOutCopies.js) and is cleared too.
   clearDeviceCopies();
 }

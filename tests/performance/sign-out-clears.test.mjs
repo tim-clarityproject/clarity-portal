@@ -47,8 +47,6 @@ const NOT_PERSONAL = {
   'clarity-guest:': 'a guest’s visit to a link in this tab (sessionStorage), not an account',
   'clarity-share:': 'a guest’s sharing choice for this visit (sessionStorage), not an account',
   'clarity-tool-answers-local:': 'checks and washes set aside on purpose until 043 (clearAppStorage.js)',
-  'clarity-coach-local:': 'a coach’s changes not yet in the database (coach/store.js): sent on the next visit',
-  'clarity-coach-network-local:': 'a coach’s Network changes not yet in the database (coach/networkData.js)',
   'clarity-coach': 'the coach portal’s IndexedDB copy, cleared by clearDeviceCopies',
   'clarity-app-': 'the service worker’s copy of the app’s own files',
   'clarity-on-demand': 'the service worker’s copy of fonts used once',
@@ -115,7 +113,9 @@ test('own questions’ wording, the day’s plan order, peak moments and travel 
   for (const prefix of DEVICE_PREFIXES) assert.equal(isAppOwnedKey(`${prefix}u1:x`), true, prefix);
   // Device settings stay.
   assert.equal(isAppOwnedKey('clarity-colour-mode'), false);
-  assert.equal(isAppOwnedKey('clarity-coach-local:u1'), false, 'a coach’s unsent changes are kept until they are sent');
+  // A coach's copies too (tidy follow-up 3): what waits is sent first, or the coach chose Sign out anyway.
+  assert.equal(isAppOwnedKey('clarity-coach-local:u1'), true, 'a coach’s copy is cleared once what waits has been sent');
+  assert.equal(isAppOwnedKey('clarity-coach-network-local:u1'), true, 'a coach’s Network copy from before 052 too');
 });
 
 test('every key listed as kept is still in the code (no stale reasons)', () => {
@@ -140,4 +140,37 @@ test('Sign out waits for own copies that haven’t reached the account, never fo
   assert.equal(copiesWaiting('u1'), 4, 'question b, its answer, the suggestion’s choice and moment m1');
   assert.equal(copiesWaiting('someone-else'), 0);
   assert.equal(copiesWaiting(null), 0);
+});
+
+test('a coach’s waiting changes are counted for Sign out, and sent across first (tidy follow-up 3, the scale check’s 5)', async () => {
+  const store = new Map();
+  globalThis.window = globalThis.window || {};
+  globalThis.window.localStorage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
+  const { coachRowsWaiting, networkRowsWaiting } = await import('../../src/lib/coach/copyWaiting.js');
+  const copy = {
+    rows: { coach_todos: { a: { id: 'a' }, b: { id: 'b' }, c: { id: 'c' }, d: { id: 'd' } }, activity_log: { x: { id: 'x' } } },
+    marks: { coach_todos: { a: { sent: true }, b: { sent: false }, c: { sent: true, gone: true }, d: { sent: false, refused: true } } },
+  };
+  assert.equal(coachRowsWaiting(copy), 2, 'b not sent, c a removal still to send; a sent, d refused; the activity log is only read');
+  assert.equal(coachRowsWaiting(null), 0);
+  assert.equal(networkRowsWaiting({ people: { p1: {}, p2: {} }, gives: { g1: {} }, ratings: [{}] }), 4);
+  assert.equal(networkRowsWaiting('nonsense'), 0);
+  const { copiesWaiting, sendCopiesBeforeSignOut } = await import('../../src/lib/signOutCopies.js');
+  store.set('clarity-coach-local:c1', JSON.stringify(copy));
+  store.set('clarity-coach-network-local:c1', JSON.stringify({ people: { p1: {} }, gives: {}, ratings: [] }));
+  assert.equal(copiesWaiting('c1'), 3, 'two coach rows and one Network person, so "Some changes haven’t synced yet." covers them');
+  // Send first: the coach store's own load is asked for (it sends what waits, parents first); offline here, it can't,
+  // so what waits is still counted and nothing is lost.
+  const { waiting } = await sendCopiesBeforeSignOut('c1', { loadCoach: async () => { throw new Error('offline'); } });
+  assert.equal(waiting, 3);
+  // Online: the load sends them (here it empties the copy as the store does once all is in) and nothing waits.
+  const asked = [];
+  const sent = await sendCopiesBeforeSignOut('c1', { loadCoach: async (id, opts) => { asked.push([id, opts]); store.delete('clarity-coach-local:c1'); store.delete('clarity-coach-network-local:c1'); return true; } });
+  assert.deepEqual(asked, [['c1', { again: true }]], 'the coach store’s load is asked for once, as a load again');
+  assert.equal(sent.waiting, 0);
+  // Nothing waiting: the coach store isn't loaded at all.
+  const none = [];
+  await sendCopiesBeforeSignOut('c1', { loadCoach: async (id) => { none.push(id); } });
+  assert.deepEqual(none, []);
+  assert.equal(copiesWaiting('a-client'), 0, 'a client with no coach copy waits for nothing');
 });

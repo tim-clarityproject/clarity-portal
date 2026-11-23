@@ -1,4 +1,5 @@
 import { deviceKey, readJson } from './deviceStore';
+import { coachRowsWaiting, networkRowsWaiting } from './coach/copyWaiting';
 
 // Before a deliberate Sign out (tidy follow-up 3, the scale check's 5):
 // Sign out clears every copy the portal keeps on the device for the person,
@@ -34,14 +35,17 @@ export function copiesWaiting(userId) {
   const moments = values(peak.moments).filter(waits);
   const reviews = values(peak.reviews).filter(waits);
   const plans = values(travel.plans).filter(waits);
-  return ownQuestions.length + ownAnswers.length + choices.length + moments.length + reviews.length + plans.length;
+  // A coach's own copies (coach/store.js and coach/networkData.js): what hasn't reached the database.
+  const coach = coachRowsWaiting(readJson(deviceKey('coach-local', userId))) + networkRowsWaiting(readJson(deviceKey('coach-network-local', userId)));
+  return ownQuestions.length + ownAnswers.length + choices.length + moments.length + reviews.length + plans.length + coach;
 }
 
 /**
  * Sends across what of the person's own copies still waits, then says how
- * many still wait. Never throws. Resolves { waiting }.
+ * many still wait. Never throws. Resolves { waiting }. (`loadCoach` is for
+ * the unit test: the coach store's own load otherwise.)
  */
-export async function sendCopiesBeforeSignOut(userId) {
+export async function sendCopiesBeforeSignOut(userId, { loadCoach = null } = {}) {
   if (!userId) return { waiting: 0 };
   const quietly = async (load) => { try { await load(); } catch { /* tried again by the stores on the next visit */ } };
   await quietly(async () => (await import('./ownQuestions/store')).moveOwnQuestions(userId));
@@ -55,5 +59,10 @@ export async function sendCopiesBeforeSignOut(userId) {
   // The Daily review's way of being and a monthly review's extras: moved
   // to their rows where the rows are there (cleared with the rest).
   await quietly(async () => (await import('./performance/answerExtras')).moveAnswerExtras(userId));
+  // A coach's waiting changes (and Network's from before 052): one more load sends them across, parents first
+  // (coach/store.js moveAcross). Only when there are some, so a client's Sign out never loads the coach store.
+  if (coachRowsWaiting(readJson(deviceKey('coach-local', userId))) + networkRowsWaiting(readJson(deviceKey('coach-network-local', userId))) > 0) {
+    await quietly(async () => (loadCoach || (await import('./coach/store')).loadCoach)(userId, { again: true }));
+  }
   return { waiting: copiesWaiting(userId) };
 }

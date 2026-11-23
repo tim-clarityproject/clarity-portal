@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { supabase } from '../supabase';
 import { newId, saveOrQueue, waitingToSend } from '../syncQueue';
+import { READ_ONLY_TABLES } from './copyWaiting';
 import { tableReady } from '../performance/tableReady';
 import { deviceKey, readJson, removeKey, writeJson } from '../deviceStore';
 import { deviceCopyAvailable, onCopiesCleared, readCopy, writeTables } from './deviceCopy';
@@ -18,7 +19,8 @@ import { deviceCopyAvailable, onCopiesCleared, readCopy, writeTables } from './d
 // The device copy:
 //   - clarity-coach-local:<coach's account> while anything on it has not
 //     reached the database (before 049, or a save that waits). A Sign out
-//     never clears it, because it is then the only copy there is.
+//     sends what waits first, and asks before leaving anything unsent
+//     (signOutCopies.js), then clears it (tidy follow-up 3, scale check 5).
 //   - clarity-cache:<coach's account>:coach once the database holds
 //     everything: a Sign out clears it like every other page's last data.
 // It carries the account's id, so nobody else signing in here is shown it.
@@ -141,8 +143,7 @@ const CRM_COLUMNS = {
 const PARENT_COLUMNS = { coach_cal_items: ['series_id', 'travel_for'], coach_leads: ['merged_into'] };
 // Read from the database but never written by a plain save (the database
 // adds these rows itself, or a checked function does).
-const READ_ONLY = new Set(['coach_sessions_older', 'activity_log', 'workshop_survey_answers', 'workshop_sends', 'coach_poll_votes', 'coach_bookings',
-  'coach_cal_reminder_sends', 'coach_email_addresses']);
+const READ_ONLY = READ_ONLY_TABLES; // copyWaiting.js, so Sign out can count what waits without this module
 // Tables a coach may add to but never change: a save is sent as "add it
 // unless it is there" (a plain upsert would need the right to change rows).
 const ADD_ONLY = new Set(['client_files', 'client_view_requests', 'coach_automation_runs', 'coach_email_links']);
@@ -1515,8 +1516,8 @@ export { newId };
 
 // A Sign out (or one in another tab) has cleared the device's copies: everything this tab holds in memory goes too,
 // with the copy writes waiting for an idle moment and the loads still on their way (their answers are dropped), so
-// nothing puts the signed-out coach's copy back on the device. What waits to be sent stays in localStorage
-// (clarity-coach-local:), which a Sign out never clears.
+// nothing puts the signed-out coach's copy back on the device. What waited to be sent was sent first, or the coach chose
+// "Sign out anyway" (signOutCopies.js).
 function letGo() {
   generation += 1;
   copyTimers.clear();

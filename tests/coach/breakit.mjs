@@ -310,7 +310,7 @@ if (has('offline')) {
   pass('offline: a note is kept at once and says it will sync', /Written with no signal\./.test(await text(page)) && /Will sync|Note added/.test(await toastText(page)), await toastText(page));
   pass('offline: nothing reached the database', !store.rows.client_notes.some((n) => n.body === 'Written with no signal.'));
   const kept = await page.evaluate((id) => /Written with no signal/.test(localStorage.getItem(`clarity-coach-local:${id}`) || ''), me);
-  pass('offline: while it waits it is kept where a Sign out leaves it', kept);
+  pass('offline: while it waits it is kept on the device (a Sign out sends it first, or asks: tidy follow-up 3)', kept);
   await button(page, 'Details').click();
   await page.getByRole('button', { name: /^City, London\. Edit$/ }).click();
   await page.locator('.cc-cell-input').fill('Bristol');
