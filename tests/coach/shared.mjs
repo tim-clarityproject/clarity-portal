@@ -94,6 +94,13 @@ export async function coachContext(browser, { size = 1440, theme = 'dark', fresh
   const ctx = await browser.newContext(opts);
   const page = await ctx.newPage();
   await page.route('**/api/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"sent":false}' }));
+  // 053 is real on the test project now (23 Nov): its state is answered as standIn answers it, so the fresh sign-in isn't
+  // sent on to save recovery codes the test coach never made (tidy follow-up 3), and nothing of 053 is written.
+  await page.route(/\/rest\/v1\/rpc\/coach_(auth_state|authenticator_on|recovery_codes_make|recovery_codes_saved|recovery_code_use|authenticator_reset)(\?|$)/, (route) => route.fulfill({
+    status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', details: null, hint: null, message: 'Could not find the function in the schema cache' }),
+  }));
+  // The account claims run once per sign-in: answered here as "nothing moved", as standIn does.
+  await page.route(/\/rest\/v1\/rpc\/(guest_claim|alignment_claim)(\?|$)/, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '0' }));
   // Since Phase 6a run 5 the coach portal opens only for a coach who has set
   // up an authenticator and given its code: the test coach is shown to the
   // page as one (a stand-in factor, the level raised), and no real

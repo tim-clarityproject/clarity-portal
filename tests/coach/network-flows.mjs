@@ -38,7 +38,7 @@ import { CRM, manyNetwork, networkDeviceSeed, networkSeed, seedClock, seedWithCr
 import { mapProblems, readMap, tableFrozen } from './net-rules.mjs';
 import { xlsxBytes, xlsxTable } from '../../src/lib/coach/xlsx.js';
 
-export const NETWORK_PARTS = ['net-actions', 'net-archive', 'net-table', 'net-many', 'net-map', 'net-person', 'net-import', 'net-today', 'net-offline', 'net-associate', 'net-arrive'];
+export const NETWORK_PARTS = ['net-actions', 'net-archive', 'net-table', 'net-many', 'net-map', 'net-person', 'net-merge', 'net-import', 'net-today', 'net-offline', 'net-associate', 'net-arrive'];
 const TUE = new Date(2026, 10, 17, 9, 0);
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
@@ -564,6 +564,35 @@ async function run() {
         await press(page, 'Open the lead', dialog(page));
         await settle(page, 900);
         pass(`${tag}: Open the lead opens it in Leads`, page.url().endsWith(`/coach/leads/${lead?.id}`) && (await words(page)).toLowerCase().includes('david stark'), page.url().slice(-50));
+        await a.close();
+      }
+
+      // ---------------------------------------------------------------- Merge into one (tidy follow-up 3, run 6's 36)
+      if (on('net-merge')) {
+        const tag = `net-merge, ${mode}`;
+        const a = await openAt({ db, tag, path: `/coach/network?person=${CRM.david}` });
+        const { page } = a;
+        await press(page, 'Merge with someone', dialog(page));
+        let text = await panelWords(page);
+        pass(`${tag}: Merge with someone asks who is the same person, with a search`, has(text, ['Merge into one', 'David Stark', 'Who is the same person?', 'Back']));
+        await press(page, 'Merge into one', dialog(page));
+        pass(`${tag}: pressed before choosing, it says what is needed (never greyed out)`, (await panelWords(page)).includes('Choose who to merge with to carry on.'));
+        await dialog(page).getByLabel('Search your Network', { exact: true }).fill('Sofia');
+        await settle(page, 700);
+        await dialog(page).getByRole('button', { name: /^Sofia Marsh/ }).first().click();
+        await settle(page, 900);
+        text = await panelWords(page);
+        pass(`${tag}: the two side by side, choosing where they differ`, has(text, ['Choose what to keep where they differ.', 'Name', 'David Stark', 'Sofia Marsh', 'Organisation', 'Citadel', 'Nothing is lost.']) && await dialog(page).getByRole('radiogroup', { name: 'Name' }).count() === 1);
+        await dialog(page).getByRole('radiogroup', { name: 'Phone' }).getByRole('radio', { name: '+1 617 555 0122' }).click();
+        await press(page, 'Merge into one', dialog(page));
+        await settle(page, 900);
+        pass(`${tag}: “Merged into David Stark.”, with Undo`, (await toastText(page)) === 'Merged into David Stark.' && await page.locator('.ds-toast').getByRole('button', { name: 'Undo' }).count() === 1, await toastText(page));
+        let people = await a.peopleNow();
+        pass(`${tag}: Sofia is merged into David, who keeps the phone chosen`, people.find((p) => p.id === CRM.sofia)?.merged_into === CRM.david && people.find((p) => p.id === CRM.david)?.phone === '+1 617 555 0122', JSON.stringify(people.filter((p) => [CRM.sofia, CRM.david].includes(p.id)).map((p) => [p.name, p.merged_into, p.phone])));
+        await undo(page);
+        await settle(page, 900);
+        people = await a.peopleNow();
+        pass(`${tag}: Undo puts both back as they were`, !people.find((p) => p.id === CRM.sofia)?.merged_into && people.find((p) => p.id === CRM.david)?.phone === '+1 212 555 0147', JSON.stringify(people.filter((p) => [CRM.sofia, CRM.david].includes(p.id)).map((p) => [p.name, p.merged_into, p.phone])));
         await a.close();
       }
 
