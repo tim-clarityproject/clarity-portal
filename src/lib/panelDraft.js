@@ -69,6 +69,17 @@ export function typedFields(fields = [], opened = []) {
   });
 }
 
+/**
+ * The kept fields with no box to go back into when the panel opened: a box
+ * that shows only after a choice (Book a call's "Their name" once "Someone
+ * else" is chosen). They wait, go back in when their box appears, and are
+ * kept again if the panel closes before it does (the functionality tester,
+ * tidy follow-up 3).
+ */
+export function fieldsWaiting(kept = [], now = []) {
+  return (kept || []).filter((f) => f && String(f.v || '').trim() && !now.some((n) => n.label === f.label));
+}
+
 export function keepPanelDraft(userId, key, fields) {
   if (!key) return;
   if (!userId) { memory.set(key, fields); return; }

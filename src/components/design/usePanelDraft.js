@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useLayoutEffect, useRef } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { announceDraftRestored } from '../../lib/drafts';
-import { clearPanelDraft, fieldEntry, fieldsToRestore, hasTyping, keepPanelDraft, readPanelDraft, typedFields } from '../../lib/panelDraft';
+import { clearPanelDraft, fieldEntry, fieldsToRestore, fieldsWaiting, hasTyping, keepPanelDraft, readPanelDraft, typedFields } from '../../lib/panelDraft';
 
 // The shared panel's draft (tidy pass item 3; the rules are in
 // src/lib/panelDraft.js). Modal calls it with the panel's `draftKey`; with
@@ -46,6 +46,7 @@ export function usePanelDraft({ draftKey, open, shown, bodyRef }) {
   const userRef = useRef(userId);
   const opened = useRef(null); // the boxes as the panel opened, before any draft went back in
   const dismissed = useRef(false);
+  const waiting = useRef([]); // kept fields whose box shows only after a choice (fieldsWaiting)
   const openRef = useRef(open);
   useLayoutEffect(() => {
     keyRef.current = draftKey;
@@ -58,8 +59,10 @@ export function usePanelDraft({ draftKey, open, shown, bodyRef }) {
     const root = bodyRef.current;
     if (!key || !root || !opened.current) return;
     const now = readFields(root);
-    // Only the boxes typed in are kept (typedFields), never the others' values as the panel opened.
-    if (hasTyping(now, opened.current)) keepPanelDraft(userRef.current, key, typedFields(now, opened.current));
+    // Only the boxes typed in are kept (typedFields), never the others' values as the panel opened; with them, what
+    // still waits for a box that hasn't shown this time.
+    const still = fieldsWaiting(waiting.current, now);
+    if (hasTyping(now, opened.current) || still.length) keepPanelDraft(userRef.current, key, [...typedFields(now, opened.current), ...still]);
     else clearPanelDraft(userRef.current, key);
   }, [bodyRef]);
 
@@ -72,6 +75,7 @@ export function usePanelDraft({ draftKey, open, shown, bodyRef }) {
     const start = readFields(root);
     opened.current = start;
     const kept = readPanelDraft(userId, draftKey);
+    waiting.current = kept ? fieldsWaiting(kept, start) : [];
     if (!kept) return;
     const back = fieldsToRestore(kept, start);
     if (!back.length) return;
@@ -88,11 +92,32 @@ export function usePanelDraft({ draftKey, open, shown, bodyRef }) {
     const onInput = () => { clearTimeout(timer); timer = setTimeout(flush, SAVE_AFTER_MS); };
     const now = () => flush();
     const onHide = () => { if (document.visibilityState === 'hidden') flush(); };
+    // A box that shows only after a choice: what was kept for it goes back in, once, into an empty box.
+    let placing = false;
+    const appeared = new MutationObserver(() => {
+      if (placing || !waiting.current.length) return;
+      const els = boxes(root);
+      const now = els.map((el, n) => fieldEntry(n, labelOf(el), el.value));
+      const back = [];
+      waiting.current = waiting.current.filter((f) => {
+        const at = now.findIndex((n) => n.label === f.label && !n.v);
+        if (at < 0) return true;
+        back.push([els[at], f.v]);
+        return false;
+      });
+      if (!back.length) return;
+      placing = true;
+      back.forEach(([el, v]) => put(el, v));
+      placing = false;
+      announceDraftRestored();
+    });
+    appeared.observe(root, { childList: true, subtree: true });
     root.addEventListener('input', onInput);
     window.addEventListener('pagehide', now);
     document.addEventListener('visibilitychange', onHide);
     return () => {
       clearTimeout(timer);
+      appeared.disconnect();
       root.removeEventListener('input', onInput);
       window.removeEventListener('pagehide', now);
       document.removeEventListener('visibilitychange', onHide);

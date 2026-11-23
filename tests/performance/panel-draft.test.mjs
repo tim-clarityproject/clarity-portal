@@ -68,3 +68,13 @@ test('only the boxes typed in are kept, so an untouched box takes no old value b
   // A box emptied on purpose is typing too.
   assert.deepEqual(typedFields([fieldEntry(0, 'Name', ''), editOpened[1]], editOpened), [fieldEntry(0, 'Name', '')]);
 });
+
+test('typing for a box that shows only after a choice waits for it, and is kept if the panel closes first (functionality tester, tidy follow-up 3)', async () => {
+  const { fieldsWaiting } = await import('../../src/lib/panelDraft.js');
+  const kept = [fieldEntry(0, 'Their name', 'Priya Shah'), fieldEntry(1, 'Who’s invited?', ''), fieldEntry(2, 'Where is it?', 'The office')];
+  // Book a call opens with only "Where is it?" showing: the name waits; the empty invitees box is nothing to wait for.
+  assert.deepEqual(fieldsWaiting(kept, [fieldEntry(0, 'Where is it?', '')]).map((f) => f.label), ['Their name']);
+  // Once "Someone else" is chosen its box is there: nothing waits.
+  assert.deepEqual(fieldsWaiting(kept, [fieldEntry(0, 'Their name', ''), fieldEntry(1, 'Where is it?', '')]), []);
+  assert.deepEqual(fieldsWaiting(null, []), []);
+});
