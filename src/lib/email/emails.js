@@ -224,6 +224,55 @@ export function sessionInOneHourEmail({ coach, zoomLink, preferencesLink }) {
   };
 }
 
+// ---------------------------------------------------------------- group-call reminders (Phase 6a run 8, item 1)
+// A group call's two reminders, one email to each guest at their own
+// address (api/coach-reminders.js; migration 059's group claim): the same
+// moments, switches and template as a single call's. Nothing in them names or
+// shows another guest; the group's name is the only "who". Times in the
+// READER's zone with its place's name; the 1-hour one never gives a clock time.
+const groupFooter = (coach, groupName, preferencesLink) => [
+  groupName ? `You get session reminders as a member of ${groupName}, coached by ${coach}.` : `You get session reminders as one of ${possessive(coach)} coaching clients.`,
+  EMAIL_SIGN_OFF,
+  preferencesLink ? { label: 'Choose which emails to get', href: preferencesLink } : null,
+].filter(Boolean);
+
+/**
+ * The day before a group call, at 18:00 the reader's own time.
+ * @param {{ coach: string, groupName?: string, at: Date|string, zone: string, frequentTraveller?: boolean, prepLink?: string|null, zoomLink?: string|null, preferencesLink?: string|null, now?: Date }} o
+ */
+export function groupSessionTomorrowEmail({ coach, groupName = '', at, zone, frequentTraveller = false, prepLink = null, zoomLink = null, preferencesLink = null, now = new Date() }) {
+  const group = oneLine(groupName);
+  const day = relativeDayWords(at, zone, now);
+  return {
+    brand: 'portal',
+    subject: `Your group coaching session with ${coach} is ${day === 'tomorrow' || day === 'today' ? day : `on ${day}`} at ${timeWords(at, zone)}`,
+    blocks: [
+      { type: 'heading', text: day === 'tomorrow' ? 'What would make tomorrow’s group session useful?' : 'What would make your group session useful?' },
+      { type: 'text', text: `Your group coaching session with ${coach} is ${sessionWhenWords(at, zone, now)}.` },
+      group ? { type: 'details', rows: [['Group', group]] } : null,
+      frequentTraveller ? { type: 'text', text: 'Travelling? Your calendar invite moves with you.', quiet: true } : null,
+      prepLink ? { type: 'button', label: 'Start my prep', href: prepLink, time: '~2 minutes' } : null,
+      zoomLink ? { type: 'link', label: 'Join on Zoom', href: zoomLink } : null,
+    ],
+    footer: { lines: groupFooter(coach, group, preferencesLink) },
+  };
+}
+
+/** One hour before a group call: no clock time at all, so it can't be wrong. */
+export function groupSessionInOneHourEmail({ coach, groupName = '', zoomLink = null, preferencesLink = null }) {
+  const group = oneLine(groupName);
+  return {
+    brand: 'portal',
+    subject: `Your group coaching session with ${coach} starts in 1 hour`,
+    blocks: [
+      { type: 'heading', text: `Your group coaching session with ${coach} starts in 1 hour.` },
+      group ? { type: 'details', rows: [['Group', group]] } : null,
+      zoomLink ? { type: 'button', label: 'Join on Zoom', href: zoomLink } : null,
+    ],
+    footer: { lines: groupFooter(coach, group, preferencesLink) },
+  };
+}
+
 // ---------------------------------------------------------------- the session recap (Phase 6a run 2)
 /** The most actions one recap email lists, and the most characters of the recap it carries. */
 export const RECAP_EMAIL_ACTIONS_MAX = 30;

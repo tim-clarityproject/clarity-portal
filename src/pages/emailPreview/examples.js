@@ -7,6 +7,7 @@ import {
   sessionTomorrowEmail, sessionInOneHourEmail, leadingIdeasClientEmail, leadingIdeasPublicEmail,
   confirmEmailEmail, resetPasswordEmail, changeEmailEmail, inviteEmail, guestPlanCopyEmail,
   workshopTomorrowEmail, workshopInOneHourEmail, workshopFollowUpEmail, sessionRecapEmail, clientInviteEmail, bookingConfirmedEmail, callTomorrowEmail, callInOneHourEmail,
+  groupSessionTomorrowEmail, groupSessionInOneHourEmail,
 } from '../../lib/email/emails.js';
 import { instantAt } from '../../lib/time/index.js';
 
@@ -110,6 +111,20 @@ export const EMAIL_EXAMPLES = [
     from: 'From The Clarity Portal, to Sam',
     sends: 'Sent only from the live site, once, by the scheduled job (api/coach-reminders.js) 1 hour before, when its switch is on (after migration 051). It never gives a clock time.',
     doc: () => sessionInOneHourEmail({ coach: 'Tim', zoomLink: ZOOM, preferencesLink: PREFERENCES }),
+  },
+  {
+    key: 'group-session-tomorrow',
+    name: 'Group session tomorrow',
+    from: 'From The Clarity Portal, to Jordan (one email to each guest)',
+    sends: 'Sent only from the live site, once to each guest at their own address, by the scheduled job (api/coach-reminders.js) from 18:00 the day before in that guest’s own time, when its switch is on (after migration 059). No other guest is named or shown. Shown for a guest in New York with an account (so Start my prep).',
+    doc: () => groupSessionTomorrowEmail({ coach: 'Tim', groupName: 'Northfield leadership team', at: instantAt('2026-11-11', '15:00', 'Europe/London'), zone: 'America/New_York', prepLink: `${PORTAL}/coaching`, zoomLink: ZOOM, preferencesLink: PREFERENCES, now: NOW }),
+  },
+  {
+    key: 'group-session-one-hour',
+    name: 'Group session in 1 hour',
+    from: 'From The Clarity Portal, to Jordan (one email to each guest)',
+    sends: 'Sent only from the live site, once to each guest at their own address, by the scheduled job (api/coach-reminders.js) 1 hour before, when its switch is on (after migration 059). It never gives a clock time.',
+    doc: () => groupSessionInOneHourEmail({ coach: 'Tim', groupName: 'Northfield leadership team', zoomLink: ZOOM, preferencesLink: PREFERENCES }),
   },
   {
     key: 'booking-confirmed',

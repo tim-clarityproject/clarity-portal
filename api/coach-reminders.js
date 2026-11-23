@@ -23,8 +23,20 @@
 // link to move or cancel. Both are the one shared email template. Times are
 // in the reader's own zone with its city's name.
 //
+// A group call (Phase 6a run 8, item 1; migration 059) gets the same two
+// reminders, at the same moments in EACH guest's own time and under the same
+// switches: 059's cal_group_reminders_coming lists one row a guest (the
+// group's members as they are now, so one who has left gets nothing; never a
+// call cancelled or moved). Each guest is claimed on their own
+// (cal_group_reminder_claim: call, kind, time and guest's address, one insert
+// against a unique key, which also checks again that they are still in the
+// group and the call still on at that time, and answers the address the
+// claim was made for), and each gets their own email with only their own
+// address in To, never a list, CC or BCC. Before 059 is on the database no
+// group reminder goes at all, rather than risk one going twice.
+//
 // Answers (nothing is logged, and no address or name is sent back):
-//   200 { sent: 2 }                         two reminders went
+//   200 { sent: 2 }                         two reminders went (single and group calls together)
 //   200 { sent: 0, reason: 'preview' }      this deployment never sends
 //   200 { sent: 0, reason }                 'setup' (no email provider or server key yet),
 //                                           'not_ready' (migration 051 isn't there yet)
@@ -38,7 +50,7 @@ import { maySend, oneAddress } from './_guestEmails.js';
 import { UUID, canSend, emailFrom, isMissingFunction, sendWithResend, supabaseOf } from './_coachEmails.js';
 import { portalOrigin } from './_portalOrigin.js';
 import { isScheduler } from './workshop-emails.js';
-import { callInOneHourEmail, callTomorrowEmail, sessionInOneHourEmail, sessionTomorrowEmail } from '../src/lib/email/emails.js';
+import { callInOneHourEmail, callTomorrowEmail, groupSessionInOneHourEmail, groupSessionTomorrowEmail, sessionInOneHourEmail, sessionTomorrowEmail } from '../src/lib/email/emails.js';
 import { remindersToSend } from '../src/lib/coach/calendar.js';
 
 export const config = { maxDuration: 60 };
@@ -85,6 +97,61 @@ export function reminderEmail(r, { origin, hasAccount = false, callName = null, 
     : sessionTomorrowEmail({ coach, at: r.occurrence_at, zone: r.readerZone, frequentTraveller: r.frequent_traveller === true, prepLink: hasAccount ? `${origin}/coaching` : null, zoomLink, preferencesLink: null, now }));
 }
 
+/**
+ * The group reminders to send this moment (059's rows, one a guest): the due
+ * ones by the same rule as a single call's, each guest's moment in their own
+ * zone, one a call, a kind, a time and an address, at most `max`.
+ */
+export function dueGroupReminders(rows, now, max = SENDS_MAX) {
+  const seen = new Set();
+  const out = [];
+  if (max <= 0) return out;
+  for (const row of remindersToSend(rows, now)) {
+    const to = oneAddress(row.person_email).toLowerCase();
+    if (!to || !UUID.test(String(row.item_id)) || !UUID.test(String(row.member_id || ''))) continue;
+    const at = new Date(row.occurrence_at).toISOString();
+    const key = `${row.item_id}|${row.kind}|${at}|${to}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ ...row, to, occurrence_at: at });
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+/**
+ * The email one guest's group reminder carries: about the call and the group
+ * only, never another guest.
+ * @param {object} r a due group row   @param {{ origin: string, now?: Date }} with
+ */
+export function groupReminderEmail(r, { origin, now = new Date() }) {
+  const coach = r.coach_first_name || 'your coach';
+  const zoomLink = (r.place_kind || 'zoom') === 'zoom' ? linkOr(r.meeting_link) : null;
+  return emailFrom(r.kind === 'hour_before'
+    ? groupSessionInOneHourEmail({ coach, groupName: r.group_name || '', zoomLink, preferencesLink: null })
+    : groupSessionTomorrowEmail({ coach, groupName: r.group_name || '', at: r.occurrence_at, zone: r.readerZone, frequentTraveller: r.frequent_traveller === true,
+      prepLink: r.has_account === true ? `${origin}/coaching` : null, zoomLink, preferencesLink: null, now }));
+}
+
+/** Sends the due group reminders, each guest claimed first; resolves how many went. Before 059, none. */
+async function sendGroupReminders(admin, env, { now, origin, room }) {
+  if (room <= 0) return 0;
+  const { data: rows, error } = await admin.rpc('cal_group_reminders_coming', { p_now: now.toISOString() });
+  if (error) return 0; // 059 isn't there yet, or the database didn't answer: nothing goes, so nothing can go twice
+  let sent = 0;
+  for (const r of dueGroupReminders(rows, now, room)) {
+    // Claimed first, for this guest alone: null when another run has it, or they have left, or the call is off.
+    const { data: claimed, error: claimError } = await admin.rpc('cal_group_reminder_claim', { p_item: r.item_id, p_member: r.member_id, p_kind: r.kind, p_occurrence: r.occurrence_at });
+    const to = claimError || typeof claimed !== 'string' ? '' : oneAddress(claimed).toLowerCase();
+    if (!to) continue;
+    try {
+      await sendWithResend(env, { to, ...groupReminderEmail(r, { origin, now }) });
+      sent += 1;
+    } catch { /* the others still go */ }
+  }
+  return sent;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') return reply(res, 405, { sent: 0 });
   const env = process.env;
@@ -99,7 +166,7 @@ export default async function handler(req, res) {
   const { data: coming, error } = await admin.rpc('cal_reminders_coming', { p_now: now.toISOString() });
   if (error) return isMissingFunction(error) ? reply(res, 200, { sent: 0, reason: 'not_ready' }) : reply(res, 502, { sent: 0 });
   const due = dueReminders(coming, now);
-  if (!due.length) return reply(res, 200, { sent: 0 });
+  const origin = portalOrigin(req.headers, env);
 
   // Who has an account (so "Start my prep" has somewhere to open): read with the server's key, for these calls only.
   const withAccount = new Set();
@@ -112,7 +179,6 @@ export default async function handler(req, res) {
     for (const i of items || []) if (signedUp.has(i.profile_id)) withAccount.add(i.id);
   }
   const open = anon ? createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } }) : null;
-  const origin = portalOrigin(req.headers, env);
 
   let sent = 0;
   for (const r of due) {
@@ -130,5 +196,7 @@ export default async function handler(req, res) {
       sent += 1;
     } catch { /* the others still go */ }
   }
+  // Group calls: one email to each guest, within the same run's limit.
+  sent += await sendGroupReminders(admin, env, { now, origin, room: SENDS_MAX - due.length });
   return reply(res, 200, { sent });
 }
