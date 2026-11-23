@@ -34,7 +34,8 @@ export function googleStandIn({ now = () => new Date(), keep = null } = {}) {
   if (!Array.isArray(state.calendars)) state.calendars = STAND_IN_CALENDARS.map((c) => ({ ...c }));
   if (!state.other || typeof state.other !== 'object') state.other = {};
   if (!Array.isArray(state.asked)) state.asked = [];
-  const ask = (what, calendarId = 'primary') => { state.asked.push({ what, calendarId }); if (state.asked.length > 500) state.asked.splice(0, state.asked.length - 500); };
+  // Kept with the rest (between page loads too), so a test reading the calendar afresh sees every call made.
+  const ask = (what, calendarId = 'primary') => { state.asked.push({ what, calendarId }); if (state.asked.length > 500) state.asked.splice(0, state.asked.length - 500); save(); };
   const save = () => { try { keep?.write?.(state); } catch { /* the device is full: the stand-in carries on in memory */ } };
   const stamp = (event, by) => {
     state.rev += 1;

@@ -41,6 +41,35 @@ const movedInGoogle = async (page) => {
   return session;
 };
 
+/**
+ * Run 8, item 2: the Google stand-in switched on with Family's School play and Personal's Physio "in Google" on the
+ * Wednesday, and Family switched on in Settings, My calendars, so its busy time is read. Ends on Settings, My calendars.
+ */
+const withBusyCalendars = async (page) => {
+  if (!page.url().includes('/coach/settings/calendars')) { await page.goto(`${APP}/coach/settings/calendars`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 900); }
+  const standin = page.getByRole('switch', { name: 'Use a stand-in Google Calendar' });
+  if ((await standin.getAttribute('aria-checked')) !== 'true') { await standin.click(); await settle(page, 900); }
+  await page.evaluate(() => {
+    const g = window.__clarityCalSync.google();
+    const fam = 'family.standin@group.calendar.example';
+    if (!g.asked().some((a) => a.what === 'busy')) {
+      g.inGoogle.addTo(fam, { summary: 'School play', start: { dateTime: '2026-11-18T10:30:00Z' }, end: { dateTime: '2026-11-18T11:30:00Z' } });
+      g.inGoogle.addTo('personal.standin@group.calendar.example', { summary: 'Physio', start: { dateTime: '2026-11-18T14:00:00Z' }, end: { dateTime: '2026-11-18T15:00:00Z' } });
+    }
+  });
+  await page.evaluate(() => window.__clarityCalSync.round()); await settle(page, 1200);
+  const family = page.getByRole('group', { name: 'From Google Calendar' }).getByRole('switch', { name: 'Family' });
+  if ((await family.getAttribute('aria-checked')) !== 'true') { await family.click(); await settle(page, 800); }
+  // Two rounds: the first reads the list and the switch; the second settles anything still in flight.
+  await page.evaluate(() => window.__clarityCalSync.round()); await settle(page, 1500);
+  await page.evaluate(() => window.__clarityCalSync.round()); await settle(page, 1200);
+};
+
+/** Two rounds on the page being shown, so it shows what "Google" holds now. */
+const busyRoundsHere = async (page) => {
+  for (let i = 0; i < 2; i += 1) { await page.evaluate(() => window.__clarityCalSync.round()); await settle(page, 1200); }
+};
+
 const click = (name, role = 'button') => async (page) => { await page.getByRole(role, { name, exact: true }).first().click(); await settle(page, 500); };
 export const SCREENS = [
   ['today', '/coach'],
@@ -511,6 +540,19 @@ export const GROUPS = [
         await page.waitForSelector('.cc-ses', { timeout: 10000 }); await settle(page, 600);
       }, { full: true }],
       ['sync-settings-standins', '/coach/settings/calendars', async (page) => { await page.getByRole('switch', { name: 'Use a stand-in Google Calendar' }).click(); await page.getByRole('switch', { name: 'Use a stand-in Zoom' }).click(); await settle(page, 2500); }, { full: true }],
+      // Run 8, item 2: every calendar on the Google account with its switch, and a calendar switched on as busy tiles.
+      ['busy-settings', '/coach/settings/calendars', async (page) => { await withBusyCalendars(page); }, { full: true }],
+      ['busy-week', '/coach/calendar?view=week&day=2026-11-18', async (page, size) => {
+        await withBusyCalendars(page);
+        await page.goto(`${APP}/coach/calendar?view=${size === 400 ? 'day' : 'week'}&day=2026-11-18`); await page.waitForSelector('.cc-cal', { timeout: 20000 }); await settle(page, 900);
+        await busyRoundsHere(page);
+      }, { full: true, expects: ['tiles'] }],
+      ['busy-open', '/coach/calendar?view=schedule&day=2026-11-18', async (page) => {
+        await withBusyCalendars(page);
+        await page.goto(`${APP}/coach/calendar?view=schedule&day=2026-11-18`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 900);
+        await busyRoundsHere(page);
+        await page.locator('.cc-sched-row', { hasText: 'School play' }).first().click(); await settle(page, 700);
+      }, { expects: ['panel'] }],
     ],
   },
   // The next-call bar at its other states (run 3, step 6): coral from 5 minutes before, "starting now", and until 10 minutes in.

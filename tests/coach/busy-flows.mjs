@@ -20,7 +20,7 @@ import { accountId, APP, clearDevice, coachContext, makeReport, seedDevice, sett
 import { seedClock, seedWithCal } from './seed.mjs';
 import { instantAt } from '../../src/lib/time/index.js';
 
-export const BUSY_PARTS = ['busy-list', 'busy-show', 'busy-block', 'busy-readonly'];
+export const BUSY_PARTS = ['busy-list', 'busy-show', 'busy-block', 'busy-readonly', 'busy-fresh'];
 const TUE = new Date(2026, 10, 17, 12, 22);
 const LON = 'Europe/London';
 const WED = '2026-11-18';
@@ -129,6 +129,29 @@ async function run() {
         pass(`${tag}: switching Family on says what it does, with Undo`, toast.includes('Family shows on your calendar and blocks those times.') && /Undo/.test(toast), toast);
         await page.locator('.ds-toast').last().getByRole('button', { name: 'Undo' }).click(); await settle(page, 900);
         pass(`${tag}: Undo switches it off again`, (await group.getByRole('switch', { name: 'Family' }).getAttribute('aria-checked')) === 'false');
+        await t.done();
+      }
+
+      if (has('busy-fresh')) {
+        // "Google" started again (another device, a cleared browser): its events come back under new ids. What the device
+        // kept from before goes, and each event shows once.
+        const t = await openAt({ role, db, tag: `${tag}, fresh` });
+        const { page } = t;
+        await round(page);
+        await switchFamily(page, true);
+        await page.evaluate((id) => localStorage.removeItem(`clarity-cache:${id}:coach-standin-google`), t.me);
+        await go(page, '/coach/settings/calendars');
+        await page.evaluate(([fam, a, b]) => {
+          const g = window.__clarityCalSync.google();
+          g.createEvent({ summary: 'Something on Work first', start: { dateTime: a }, end: { dateTime: b } });
+          g.inGoogle.addTo(fam, { summary: 'School play', start: { dateTime: a }, end: { dateTime: b } });
+        }, [FAMILY, at(WED, '10:30'), at(WED, '11:30')]);
+        await round(page);
+        await round(page);
+        const busy = await t.rowsNow('coach_busy_times');
+        pass(`${tag}: after "Google" starts again, each event is kept once`, busy.length === 1, JSON.stringify(busy.map((b) => b.event_id)));
+        await go(page, `/coach/calendar?view=week&day=${WED}`);
+        pass(`${tag}: and shows once`, (await busyTile(page, 'School play').count()) === 1, String(await busyTile(page, 'School play').count()));
         await t.done();
       }
 

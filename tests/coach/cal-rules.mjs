@@ -24,6 +24,8 @@ export const TILE = {
     dark: { bg: ['rgb(28, 72, 56)', 'rgba(95, 239, 187, 0.3)'], text: 'rgb(213, 250, 236)' }, // mint at 30% on the black page
     light: { bg: ['rgb(205, 249, 232)'], text: 'rgb(11, 90, 61)' },
   },
+  // Run 8: a busy time from another Google calendar, a soft fill with no edge.
+  busy: { dark: { bg: ['rgb(34, 34, 33)'], text: 'rgb(220, 218, 211)' }, light: { bg: ['rgb(239, 237, 232)'], text: 'rgb(17, 17, 16)' } },
   mint: { dark: 'rgb(95, 239, 187)', light: 'rgb(11, 122, 82)' },
   coral: ['rgb(255, 111, 92)', 'rgb(255, 189, 158)', 'rgb(168, 78, 40)', 'rgb(194, 65, 46)'],
 };
@@ -51,7 +53,7 @@ export function readCalRules(o) {
   const behind = (el) => { for (let p = el.parentElement; p; p = p.parentElement) { const c = rgba(getComputedStyle(p).backgroundColor); if (c[3] >= 0.99) return c; } return o.theme === 'dark' ? [0, 0, 0, 1] : [249, 248, 245, 1]; };
   /** How see-through a part is, with everything it sits in. */
   const opacity = (el) => { let a = 1; for (let p = el; p && p !== document.documentElement; p = p.parentElement) a *= Number(getComputedStyle(p).opacity); return a; };
-  const KINDS = ['client', 'chemistry', 'connection', 'admin', 'writing', 'other', 'life', 'hold', 'open'];
+  const KINDS = ['client', 'chemistry', 'connection', 'admin', 'writing', 'other', 'life', 'hold', 'open', 'busy'];
   const kindOf = (el) => KINDS.find((k) => el.classList.contains(`cc-cal-tile--${k}`)) || null;
   const grey = ([r, g, b]) => Math.max(r, g, b) - Math.min(r, g, b) <= 12;
   const same = (c, list) => list.some((x) => { const [a, b] = [rgba(c), rgba(x)]; return a.every((v, i) => Math.abs(v - b[i]) < (i === 3 ? 0.01 : 0.6)); });
@@ -66,7 +68,7 @@ export function readCalRules(o) {
     const kind = kindOf(t);
     const cs = getComputedStyle(t);
     const name = `${kind || 'no kind'} “${words(t)}”`;
-    if (!kind) { out.colours.push(`${name}: a tile with none of the nine colours`); continue; }
+    if (!kind) { out.colours.push(`${name}: a tile with none of the ten colours`); continue; }
     const bg = cs.backgroundColor;
     const dashedAll = ['Top', 'Right', 'Bottom', 'Left'].every((s) => cs[`border${s}Style`] === 'dashed' && parseFloat(cs[`border${s}Width`]) >= 1);
     const want = o.tile[kind] ? (o.tile[kind].bg ? o.tile[kind] : o.tile[kind][o.theme]) : null;
@@ -87,6 +89,11 @@ export function readCalRules(o) {
     if (kind === 'life' || kind === 'hold') {
       if (!dashedAll) out.colours.push(`${name}: its outline isn’t dashed all the way round (${cs.borderTopStyle})`);
       if (!same(bg, [`rgb(${behind(t).slice(0, 3).join(', ')})`]) && rgba(bg)[3] > 0.01) out.colours.push(`${name}: it has a fill (${bg})`);
+    }
+    if (kind === 'busy') {
+      // A soft fill, never an outline or a side line (run 8; CLAUDE.md 4a).
+      if (rgba(bg)[3] < 0.99) out.colours.push(`${name}: a busy time has no fill (${bg})`);
+      if (['Top', 'Right', 'Bottom', 'Left'].some((side) => parseFloat(cs[`border${side}Width`]) > 0 && cs[`border${side}Style`] !== 'none')) out.colours.push(`${name}: a busy time has an edge or a side line`);
     }
     if (kind === 'open') {
       const edge = cs.borderTopColor;
@@ -177,7 +184,7 @@ export function readCalRules(o) {
     const b = s.getBoundingClientRect();
     const row = s.closest('.cc-sched-row');
     const name = `${kind || 'no kind'} square${row ? ` “${words(row.querySelector('.cc-sched-words') || row, 22)}”` : ''}`;
-    if (!kind) { out.squares.push(`${name}: none of the nine colours`); continue; }
+    if (!kind) { out.squares.push(`${name}: none of the ten colours`); continue; }
     if (Math.abs(b.width - 10) > 0.5 || Math.abs(b.height - 10) > 0.5) out.squares.push(`${name}: ${b.width.toFixed(1)} by ${b.height.toFixed(1)}`);
     const edge = { style: cs.borderTopStyle, width: parseFloat(cs.borderTopWidth) };
     if (kind === 'life' || kind === 'hold') {
@@ -189,7 +196,7 @@ export function readCalRules(o) {
       if (kind === 'open') { if (!same(cs.borderTopColor, [mint]) && !same(cs.backgroundColor, [mint])) out.squares.push(`${name}: an Open time’s square isn’t mint`); continue; }
       // Grey and pale squares have a 1px edge: the three greys and the soft mint. (Peach and mint are the tiles' full
       // colours and are told by their colour, in light mode too, so they carry none.)
-      const pale = ['connection', 'admin', 'writing', 'other'].includes(kind);
+      const pale = ['connection', 'admin', 'writing', 'other', 'busy'].includes(kind);
       if (pale && !(edge.style === 'solid' && Math.abs(edge.width - 1) < 0.01)) out.squares.push(`${name}: a grey or pale square with no 1px edge`);
       if (edge.style === 'dashed') out.squares.push(`${name}: a dashed square on an item that isn’t held or life`);
     }

@@ -964,7 +964,7 @@
   --cal-hold-text: #FFFFFF;
   --cal-open-edge: #5FEFBB;
   --cal-open-text: #5FEFBB;
-  --cal-busy: #1C1C1B;              /* a busy time from another Google calendar (run 8): a soft fill */
+  --cal-busy: #222221;              /* a busy time from another Google calendar (run 8): a soft fill */
   --cal-busy-text: #DCDAD3;
   --cal-busy-sub: #A3A3A0;
   --cal-hatch: #2B2B2A;             /* out-of-hours hatching, under the tiles */

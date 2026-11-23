@@ -113,7 +113,7 @@ export const COLOURS = Object.freeze({
   hold: { className: 'cc-cal-tile--hold', dashed: true, edged: false },
   open: { className: 'cc-cal-tile--open', dashed: false, edged: false },
   // A busy time from one of the coach's other Google calendars (run 8): a soft filled tile with its title, never moved here.
-  busy: { className: 'cc-cal-tile--busy', dashed: false, edged: false },
+  busy: { className: 'cc-cal-tile--busy', dashed: false, edged: true }, // `edged`: its Schedule square has the 1px edge the pale ones have
 });
 
 export const CALENDARS = [{ value: 'work', label: 'Work' }, { value: 'personal', label: 'Personal' }, { value: 'family', label: 'Family' }];
