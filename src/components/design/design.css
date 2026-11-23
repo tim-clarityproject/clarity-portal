@@ -2008,16 +2008,35 @@
   border-color: var(--coral-soft-text);
 }
 
-/* Where there's no tick box: a small soft coral box before the title. */
-.ui-root .ds-important-mark {
-  display: inline-block;
-  box-sizing: border-box;
-  width: var(--important-mark);
-  height: var(--important-mark);
-  margin-right: var(--space-2);
-  border: var(--important-line) solid var(--coral-soft-text);
-  border-radius: var(--radius-bar);
-  vertical-align: baseline;
+/* Where there's no tick box (Tim, 18 Nov, 12:30): the thin soft coral line
+   at the item's left edge, the full height of its words, and nothing else
+   (no box, no bold, no coral word). 2px in --coral-soft-text, so it is never
+   one of the thick coloured side lines (rule 4a); the words start
+   --important-gap after it. Put .ds-important on the block that holds the
+   item's words. */
+.ui-root .ds-important {
+  position: relative;
+  display: block;
+  padding-left: calc(var(--important-line) + var(--important-gap));
+}
+
+.ui-root .ds-important::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--important-line);
+  border-radius: calc(var(--important-line) / 2);
+  background: var(--coral-soft-text);
+}
+
+/* Windows high-contrast mode (rule 8b): the line keeps showing, in the system's text colour. */
+@media (forced-colors: active) {
+  .ui-root .ds-important::before {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
 }
 
 .ui-root .ds-check-box[aria-checked='true'] > span {
@@ -3739,8 +3758,8 @@
 
 /* Back (rules 29o and 29t, Tim, 5 Nov): the chevron alone at the top left,
    beside the tool's name. Its 44px tap area is invisible: the negative
-   margins put the chevron's visible edge on the bar's content edge, 14px
-   (the bar's gap) before the name. On hover only the chevron turns coral,
+   margins put the chevron's visible edge on the bar's content edge,
+   --back-gap (10px; Tim, 18 Nov, follow-up 1) before the name. On hover only the chevron turns coral,
    with nothing filled behind it. */
 .ui-root .ds-guide-back {
   all: unset;
@@ -4013,8 +4032,11 @@
 .ui-root .ds-guide--calm .ds-guide-back {
   grid-column: 1;
   /* The chevron's visible edge on the content's left edge, and the name
-     14px from that edge (M9; rule 29t). */
-  margin: 0 calc(var(--back-gap) - (var(--tap-min) + var(--guide-chev)) / 2 + var(--chev-left-inset) * 0.875) 0 calc((var(--guide-chev) - var(--tap-min)) / 2 - var(--chev-left-inset) * 0.875);
+     --back-gap (10px; Tim, 18 Nov, follow-up 1) after the chevron's
+     visible right edge (M9; rule 29t). The 14px chevron stands at the
+     left of its 16px line, centred in the 44px button, and its strokes
+     sit the insets times 14/16 inside its square. */
+  margin: 0 calc(var(--back-gap) - (var(--tap-min) + var(--who-icon)) / 2 + var(--guide-chev) - var(--chev-right-inset) * 0.875) 0 calc((var(--guide-chev) - var(--tap-min)) / 2 - var(--chev-left-inset) * 0.875);
 }
 
 .ui-root .ds-guide--calm .ds-guide-back .ds-chevron {

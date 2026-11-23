@@ -572,7 +572,7 @@ const DEMO_STRATEGIES = [{ value: 's1', label: 'Maintain my availability to do g
 
 function TodosDemo() {
   const toast = useToast();
-  const [done, setDone] = useState({ a: false, b: true });
+  const [done, setDone] = useState({ a: false, b: true, c: false });
   const [panel, setPanel] = useState(null);
   const [todo, setTodo] = useState({ text: '', strategyId: null, impact: 2, week: 4 });
   const [win, setWin] = useState({ text: '', strategyIds: [], impact: 2, day: 'we' });
@@ -584,9 +584,15 @@ function TodosDemo() {
       <TodoList label="To-dos this week">
         <TodoRow text="Book a physio assessment" strategyName="Maintain my availability to do good work" tags={['rolled over from week 3']} done={done.a} onToggle={(x) => setDone((d) => ({ ...d, a: x }))} onMove={() => setPanel('move')} />
         <TodoRow text="Ask Evan for an introduction to Harbour" strategyName="Grow through referrals" done={done.b} onToggle={(x) => setDone((d) => ({ ...d, b: x }))} />
+        <TodoRow important text="Call Evan before 09:00 about the referral" strategyName="Grow through referrals" done={done.c} onToggle={(x) => setDone((d) => ({ ...d, c: x }))} />
         <TodoRow text="Update my LinkedIn profile" strategyName="Grow through referrals" tags={['moved to week 5']} disabled />
         <TodoRow win text="Spoke at a breakfast event and two people asked about coaching" strategyName="Grow through referrals" winTag="Unplanned win, Tue" />
       </TodoList>
+      {/* Important where there is no tick box (Tim, 18 Nov, 12:30): the thin soft coral line at its left edge, as the Daily plan's summary shows the highest priority. */}
+      <div className="dr-stack">
+        <span className="ds-important">1. Call Evan before 09:00 about the referral<span className="ds-sr">, highest priority</span></span>
+        <span>2. Training sessions</span>
+      </div>
       <div className="dr-row">
         <AddButton onClick={() => setPanel('todo')}>Add to-do</AddButton>
         <AddButton onClick={() => setPanel('win')}>Add unplanned win</AddButton>
@@ -1848,6 +1854,7 @@ function Gallery() {
             <p><New /><b>Every row in one list looks alike</b>: the tick, the words, the Strategy and its tags in grey, and Move.</p>
             <p>A to-do moved out after its week started keeps its place with its tick off, because it counts as not done that week.</p>
             <p>A win is always ticked mint, tagged “Unplanned win” and its day.</p>
+            <p><New /><b>Important</b> (Tim, 18 Nov): on a tick box, the box’s 2px soft coral edge, with the words unchanged. Where there’s no tick box (12:30), the thin soft coral line at the item’s left edge, 2px and the full height of its words (<code>.ds-important</code>). Nothing else marks it: no box, no bold, no coral word.</p>
             <p>The add panels keep one order: what, which Strategy, how much, then when.</p>
           </>
         )} />

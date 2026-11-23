@@ -536,15 +536,17 @@
 }
 
 /* Back above a page with no guided bar (M7b .bkl, as the sign-in pages'
-   Back): the chevron's visible edge on the content's left edge, 14px
-   before its label (rule 29t); only the chevron and the word turn coral. */
+   Back): the chevron's visible edge on the content's left edge, 10px
+   (--back-gap; Tim, 18 Nov, follow-up 1) before its label (rule 29t); only
+   the chevron and the word turn coral. */
 .ui-root .hc-back {
   all: unset;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  /* The chevron's line is 16px wide and starts 5px before its visible edge. */
-  gap: calc(var(--back-gap) - (var(--who-icon) - var(--chev-left-inset)));
+  /* The chevron's line is 16px wide and its strokes end --chev-right-inset
+     before the line does, so the label is --back-gap after them. */
+  gap: calc(var(--back-gap) - var(--chev-right-inset));
   min-height: var(--tap-min) !important;
   padding: 0 !important;
   margin-left: calc(-1 * var(--chev-left-inset));

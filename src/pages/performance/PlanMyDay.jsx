@@ -855,14 +855,13 @@ function PlanFlow({ userId, date, today, loaded }) {
                 { label: 'How you want to be', value: answers.way.trim(), step: stepIndex('be') },
                 {
                   label: 'To-dos',
-                  value: view.ordered.map((o, i) => (
-                    <>
-                      {/* The highest priority: a small soft coral box before the title (Tim, 18 Nov, follow-up 1). */}
-                      {i === 0 && <span className="ds-important-mark" aria-hidden="true" />}
+                  value: view.ordered.map((o, i) => (i === 0 ? (
+                    // The highest priority, with no tick box here: the thin soft coral line at its left edge (Tim, 18 Nov, 12:30).
+                    <span className="ds-important">
                       {`${i + 1}. ${o.label}`}
-                      {i === 0 && <span className="ds-sr">, highest priority</span>}
-                    </>
-                  )),
+                      <span className="ds-sr">, highest priority</span>
+                    </span>
+                  ) : `${i + 1}. ${o.label}`)),
                   step: stepIndex('do'),
                 },
                 { label: 'Strategies of the day', value: view.dayStrategies.map((id) => strategyName.get(id)), step: stepIndex('strategy') },

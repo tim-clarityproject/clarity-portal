@@ -296,7 +296,7 @@ try {
             const bb = await backChevron(b.page, { button: '.hc-back', label: '.hc-back', content: '.ds-page-title' });
             const say = (x) => (x ? `edge ${x.edge.toFixed(2)}, label ${x.gap.toFixed(2)} after` : 'not found');
             pass(`${tag}: Back’s chevron has its visible edge where M7’s is`, Boolean(mb && bb) && Math.abs(mb.edge - bb.edge) <= 0.5, `M7 ${say(mb)}; built ${say(bb)}`);
-            if (mb && bb && Math.abs(mb.gap - bb.gap) > 0.5) note(`${tag}: Back’s label is ${bb.gap.toFixed(2)}px after the chevron (M7 ${mb.gap.toFixed(2)}): the portal’s Back puts its label 14px after the chevron (rule 29t), as M7b’s comparison accepts`);
+            if (mb && bb && Math.abs(mb.gap - bb.gap) > 0.5) note(`${tag}: Back’s label is ${bb.gap.toFixed(2)}px after the chevron (M7 ${mb.gap.toFixed(2)}): the portal’s Back puts its label 10px after the chevron (rule 29t, --back-gap; Tim, 18 Nov, follow-up 1), as M7b’s comparison accepts`);
           }
           if (['offer', 'offer2'].includes(screen)) {
             // While the row offers the Quick guide, the title's play icon hides (Tim, 14 Nov, 10:19).

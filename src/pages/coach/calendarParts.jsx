@@ -540,8 +540,11 @@ export function TodosToPlace({ cal, panelRef, over = false, onOpen, onDrag, firs
       <div className="cc-cal-todos-list">
         {list.map((t) => (
           <button key={t.id} type="button" data-todo={t.id} className={`cc-cal-todo${t.important ? ' cc-cal-todo--important' : ''}`} onPointerDown={(e) => start(e, t)} onClick={(e) => { if (e.detail === 0) onOpen(t); }} aria-label={`${t.title}${t.important ? ', important' : ''}${t.minutes ? `, ${estimateWords(t.minutes)}` : ''}`}>
-            <b>{t.important && <i className="ds-important-mark" aria-hidden="true" />}{t.title}</b>
-            {t.minutes ? <small>{estimateWords(t.minutes)}</small> : null}
+            {/* Important, with no tick box here: the thin soft coral line at the left edge of its words (Tim, 18 Nov, 12:30). */}
+            <span className={`cc-cal-todo-words${t.important ? ' ds-important' : ''}`}>
+              <b>{t.title}</b>
+              {t.minutes ? <small>{estimateWords(t.minutes)}</small> : null}
+            </span>
           </button>
         ))}
       </div>

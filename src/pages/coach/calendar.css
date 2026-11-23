@@ -160,6 +160,7 @@
 .ui-root .cc-cal-todos-title { margin: 0 0 var(--space-px10); font-family: var(--font-body); font-weight: var(--fw-regular); font-size: var(--fs-note); color: var(--text-2); min-height: var(--space-px22); }
 .ui-root .cc-cal-todos-list { display: grid; gap: var(--space-2); align-content: start; }
 .ui-root .cc-cal-todo { all: unset; cursor: grab; box-sizing: border-box; display: block; width: 100%; min-height: var(--tap-min); padding: var(--space-px10) var(--space-px12); border-radius: var(--cc-card-radius); border: var(--line-w) solid var(--field-line); font-family: var(--font-body); touch-action: pan-y; user-select: none; -webkit-user-select: none; transition: border-color var(--dur) var(--ease); }
+.ui-root .cc-cal-todo-words { display: block; }
 .ui-root .cc-cal-todo b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-note); line-height: var(--lh-cal-tile); color: var(--text); overflow-wrap: anywhere; }
 .ui-root .cc-cal-todo small { display: block; margin-top: var(--space-px2); font-size: var(--fs-min); color: var(--text-2); }
 @media (hover: hover) { .ui-root .cc-cal-todo:hover { border-color: var(--text-2); } }

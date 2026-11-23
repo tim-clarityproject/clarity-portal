@@ -87,10 +87,13 @@ export default function AuthShell({
            back control here is a real <button> when there is no backTo
            route, so it needs the same .ui-root-scoped !important override
            as every other button in this design system). */
+        /* Back's chevron 10px (--back-gap) from its words, measured from its
+           strokes, which end --chev-right-inset inside its 16px square
+           (Tim, 18 Nov, follow-up 1; rule 29t). */
         .ui-root .auth-back {
           display: inline-flex;
           align-items: center;
-          gap: var(--icon-gap);
+          gap: calc(var(--back-gap) - var(--chev-right-inset));
           min-height: 44px !important;
           padding: 0 !important;
           font-family: var(--font-body);

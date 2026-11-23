@@ -176,10 +176,18 @@ export function nekstInControls() {
 
 // No thick coloured side lines (Tim, 18 Nov, follow-up 1): no card, row or
 // calendar block has a left (or right) edge 2px or more that its other
-// edges don't share, and no bar 2px or more drawn down its side. Run in
-// the page: page.evaluate(sideLines).
+// edges don't share, and no bar 2px or more drawn down its side. The one
+// exception is Important where there is no tick box (Tim, 18 Nov, 12:30):
+// the thin soft coral line, exactly 2px in --coral-soft-text, drawn by
+// `.ds-important` (importantMarks checks it is that line and nothing else);
+// a thicker one, another colour, or the line on anything else still fails.
+// Run in the page: page.evaluate(sideLines).
 export function sideLines() {
   const out = [];
+  const probe = document.createElement('span');
+  probe.style.display = 'none';
+  (document.querySelector('.ui-root') || document.body).appendChild(probe);
+  const soft = (el) => { probe.style.color = ''; probe.style.color = getComputedStyle(el).getPropertyValue('--coral-soft-text').trim() || 'transparent'; return getComputedStyle(probe).color; };
   for (const el of document.querySelectorAll('.ui-root *')) {
     const b = el.getBoundingClientRect();
     if (!(b.width > 0 && b.height > 0) || b.height < 20) continue;
@@ -194,9 +202,14 @@ export function sideLines() {
       if (ps.content === 'none' || ps.position !== 'absolute' || ps.display === 'none') continue;
       const w = parseFloat(ps.width) || 0;
       const h = parseFloat(ps.height) || 0;
-      if (w >= 2 && w <= 6 && h >= 20 && h > b.height * 0.5 && !/rgba\(0, 0, 0, 0\)|transparent/.test(ps.backgroundColor) && Number(ps.opacity) > 0.05 && !/scaleY\(0\)|matrix\(1, 0, 0, 0,/.test(ps.transform)) out.push(`${String(el.className?.baseVal ?? el.className ?? '').split(' ')[0] || el.tagName.toLowerCase()}${which} a ${w}px bar down its side`);
+      if (w >= 2 && w <= 6 && h >= 20 && h > b.height * 0.5 && !/rgba\(0, 0, 0, 0\)|transparent/.test(ps.backgroundColor) && Number(ps.opacity) > 0.05 && !/scaleY\(0\)|matrix\(1, 0, 0, 0,/.test(ps.transform)) {
+        // Important's thin line: 2px, soft coral, on the left of an item marked important.
+        const importantLine = which === '::before' && el.matches('.ds-important') && Math.abs(w - 2) < 0.05 && ps.backgroundColor === soft(el) && Math.abs(parseFloat(ps.left) || 0) < 0.5;
+        if (!importantLine) out.push(`${String(el.className?.baseVal ?? el.className ?? '').split(' ')[0] || el.tagName.toLowerCase()}${which} a ${w}px bar down its side`);
+      }
     }
   }
+  probe.remove();
   return [...new Set(out)];
 }
 
@@ -488,4 +501,176 @@ export function controlsFamily({ phone, scale = 1 }) {
   }
   probe.remove();
   return { problems: [...new Set(out)], toggles };
+}
+
+// Back's chevron is 10px from its words (Tim, 18 Nov, follow-up 1; rule 29t,
+// `--back-gap`), on every page: the client portal, the coach portal and the
+// outside pages. Every Back chevron (a chevron pointing left in a control
+// that goes back: its class or label says Back, or it is a back link) is
+// read as drawn: its visible right edge (the square's right side less the
+// strokes' measured inset, `--chev-right-inset`, scaled to the chevron's
+// size; the square is found from the chevron's box without its turn and
+// shift) to the left of its label's first letter, which is the control's own
+// words or, for a chevron alone (a guided tool's Back), the words just after
+// it on its row. Each must be 10px within 0.5px. Run in the page:
+// page.evaluate(backGaps). Gives { problems, checked }.
+export function backGaps() {
+  const out = [];
+  let checked = 0;
+  const vis = (el) => {
+    const b = el.getBoundingClientRect();
+    if (!(b.width > 0 && b.height > 0)) return false;
+    if (el.closest('[hidden],[inert]')) return false;
+    for (let p = el; p && p !== document.documentElement; p = p.parentElement) {
+      const st = getComputedStyle(p);
+      if (st.display === 'none' || st.visibility === 'hidden' || Number(st.opacity) < 0.05) return false;
+    }
+    return true;
+  };
+  const cls = (el) => String(el.className?.baseVal ?? el.className ?? '').split(' ').filter(Boolean)[0] || el.tagName.toLowerCase();
+  // The first letter's left edge among the text nodes of `scope` that start after x.
+  const firstLetter = (scope, x) => {
+    const walk = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      if (!n.textContent.trim() || n.parentElement.closest('.ds-sr, [aria-hidden=true]')) continue;
+      const r = document.createRange();
+      const at = n.textContent.search(/\S/);
+      r.setStart(n, at);
+      r.setEnd(n, at + 1);
+      const box = [...r.getClientRects()].find((q) => q.width > 0);
+      if (box && box.left > x) return box.left;
+    }
+    return null;
+  };
+  for (const ch of document.querySelectorAll('.ds-chevron--left')) {
+    if (!vis(ch)) continue;
+    const host = ch.closest('a, button, [role=button], [role=link]');
+    if (!host) continue;
+    const said = `${host.getAttribute('aria-label') || ''} ${(host.innerText || '').trim()}`.trim();
+    const backish = /back/i.test(String(host.className?.baseVal ?? host.className ?? '')) || /^back\b/i.test(said);
+    // Calendar arrows, "Previous week" and the like step through dates; they aren't Back.
+    if (!backish || /^previous\b|^earlier\b/i.test(said)) continue;
+    // The chevron's square as laid out: its box's centre less its shift (the turn keeps the centre).
+    const st = getComputedStyle(ch);
+    const m = /matrix\(([^)]+)\)/.exec(st.transform);
+    const shift = m ? Number(m[1].split(',')[4]) || 0 : 0;
+    const box = ch.getBoundingClientRect();
+    const size = ch.offsetWidth || parseFloat(st.width);
+    const centre = box.left + box.width / 2 - shift;
+    const inset = (parseFloat(st.getPropertyValue('--chev-right-inset')) || 5.5) * (size / 16);
+    const inkRight = centre + size / 2 - inset;
+    // The label: the control's own words, or (a chevron alone) the words after it on its row.
+    let left = (host.innerText || '').trim() ? firstLetter(host, inkRight) : null;
+    if (left == null) {
+      for (let sib = host.nextElementSibling; sib && left == null; sib = sib.nextElementSibling) {
+        if (!vis(sib)) continue;
+        const sb = sib.getBoundingClientRect();
+        if (sb.top > box.bottom || sb.bottom < box.top) break; // another row
+        left = firstLetter(sib, inkRight);
+      }
+    }
+    if (left == null) continue;
+    checked += 1;
+    const gap = left - inkRight;
+    if (Math.abs(gap - 10) > 0.5) out.push(`${cls(host)} "${said.slice(0, 28)}": its label is ${gap.toFixed(2)}px from the chevron, not 10px`);
+  }
+  return { problems: [...new Set(out)], checked };
+}
+
+// Important (Tim, 18 Nov, follow-up 1, and 12:30): an important item with a
+// tick box shows it only as that box's 2px soft coral edge (--coral-soft-text),
+// its title unchanged; one without a tick box shows only the thin soft coral
+// line at its left edge (`.ds-important`: a 2px bar in --coral-soft-text the
+// full height of its words). Neither shows any other mark: no small box (the
+// retired `.ds-important-mark`), no bold, no coral or soft coral words, no
+// dot. An item is important when it carries `.ds-important` or a class ending
+// `--important`. Run in the page: page.evaluate(importantMarks). Gives
+// { problems, checked }.
+export function importantMarks() {
+  const out = [];
+  let checked = 0;
+  const vis = (el) => {
+    const b = el.getBoundingClientRect();
+    if (!(b.width > 0 && b.height > 0)) return false;
+    if (el.closest('[hidden],[inert]')) return false;
+    for (let p = el; p && p !== document.documentElement; p = p.parentElement) {
+      const st = getComputedStyle(p);
+      if (st.display === 'none' || st.visibility === 'hidden' || Number(st.opacity) < 0.05) return false;
+    }
+    return true;
+  };
+  const cls = (el) => String(el.className?.baseVal ?? el.className ?? '').split(' ').filter(Boolean)[0] || el.tagName.toLowerCase();
+  const name = (el) => `${cls(el)} "${(el.innerText || el.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim().slice(0, 28)}"`;
+  const probe = document.createElement('span');
+  probe.style.display = 'none';
+  (document.querySelector('.ui-root') || document.body).appendChild(probe);
+  const colour = (value) => { probe.style.color = ''; probe.style.color = value; return getComputedStyle(probe).color; };
+  const root = document.querySelector('.ui-root') || document.body;
+  const tok = (el, t) => colour(getComputedStyle(el).getPropertyValue(t).trim() || 'transparent');
+  const near = (a, b, tol = 0.05) => Math.abs(a - b) <= tol;
+  const TICK = '[role=checkbox], .ds-check-box, .cc-cal-tick';
+  // The retired small box, wherever it is.
+  for (const el of document.querySelectorAll('.ds-important-mark')) if (vis(el)) out.push(`${name(el.parentElement || el)}: the small soft coral box (.ds-important-mark), not the thin line`);
+  const items = [...document.querySelectorAll('.ds-important, [class*="--important"]')].filter((el) => vis(el) && !el.parentElement?.closest('.ds-important, [class*="--important"]'));
+  for (const item of items) {
+    checked += 1;
+    const soft = tok(item, '--coral-soft-text');
+    const corals = new Set([soft, tok(root, '--coral'), tok(root, '--coral-text'), tok(root, '--coral-soft'), 'rgb(255, 111, 92)'].filter((c) => !/rgba\(0, 0, 0, 0\)|transparent/.test(c)));
+    const bad = [];
+    const tick = [...item.querySelectorAll(TICK)].find(vis);
+    const lineEl = item.matches('.ds-important') ? item : item.querySelector('.ds-important');
+    if (tick) {
+      // The tick box's own drawn square: the box itself or the span that draws it.
+      const drawnBox = [...tick.querySelectorAll(':scope > span'), tick].find((e) => parseFloat(getComputedStyle(e).borderTopWidth) > 0) || tick;
+      const ts = getComputedStyle(drawnBox);
+      const ticked = tick.getAttribute('aria-checked') === 'true';
+      if (!ticked) {
+        if (!['Top', 'Right', 'Bottom', 'Left'].every((s) => near(parseFloat(ts[`border${s}Width`]), 2))) bad.push(`its tick box edge is ${ts.borderTopWidth}, not 2px`);
+        if (ts.borderTopColor !== soft) bad.push(`its tick box edge is ${ts.borderTopColor}, not soft coral`);
+      }
+      if (lineEl) bad.push('a soft coral line as well as the tick box edge');
+    } else {
+      // The thin line: .ds-important's ::before, 2px, soft coral, on the left, the full height of the words.
+      if (!lineEl) bad.push('no thin soft coral line at its left edge');
+      else {
+        const ps = getComputedStyle(lineEl, '::before');
+        const lb = lineEl.getBoundingClientRect();
+        const h = parseFloat(ps.height) || 0;
+        if (ps.content === 'none' || ps.display === 'none') bad.push('no thin soft coral line at its left edge');
+        else {
+          if (!near(parseFloat(ps.width) || 0, 2)) bad.push(`its line is ${ps.width} wide, not 2px`);
+          if (ps.backgroundColor !== soft) bad.push(`its line is ${ps.backgroundColor}, not soft coral`);
+          if (Math.abs(parseFloat(ps.left) || 0) > 0.5) bad.push('its line is not on its left edge');
+          // The words' block: the line runs the full height of the item's words.
+          const range = document.createRange();
+          range.selectNodeContents(lineEl);
+          const rects = [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
+          if (rects.length) {
+            const top = Math.min(...rects.map((r) => r.top));
+            const bottom = Math.max(...rects.map((r) => r.bottom));
+            if (h < bottom - top - 1 || h > lb.height + 1) bad.push(`its line is ${h.toFixed(1)}px high, not the full ${(bottom - top).toFixed(1)}px of its words`);
+          }
+        }
+      }
+    }
+    // Nothing else: no small box, no bold, no coral word, no dot.
+    for (const el of item.querySelectorAll('*')) {
+      if (!vis(el) || el.closest(TICK) || el.closest('.ds-sr')) continue;
+      const st = getComputedStyle(el);
+      const b = el.getBoundingClientRect();
+      const edged = ['Top', 'Right', 'Bottom', 'Left'].every((s) => parseFloat(st[`border${s}Width`]) > 0 && st[`border${s}Style`] !== 'none');
+      const small = b.width <= 14 && b.height <= 14;
+      if (small && ((edged && corals.has(st.borderTopColor)) || corals.has(st.backgroundColor))) { bad.push(`a small ${corals.has(st.backgroundColor) ? 'dot' : 'box'} (${cls(el)})`); continue; }
+      const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+      if (!own) continue;
+      if (corals.has(st.color)) bad.push(`a coral word ("${el.textContent.trim().slice(0, 16)}")`);
+    }
+    // No bold: the item's words weigh what the same part's other items do (a plain title is 400 or 500).
+    const words = [...item.querySelectorAll('*'), item].filter((el) => !el.closest('.ds-sr') && [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()));
+    const heavy = words.find((el) => Number(getComputedStyle(el).fontWeight) >= 600);
+    if (heavy) bad.push(`bold words ("${heavy.textContent.trim().slice(0, 16)}", ${getComputedStyle(heavy).fontWeight})`);
+    if (bad.length) out.push(`${name(item)}: ${[...new Set(bad)].join(', ')}`);
+  }
+  probe.remove();
+  return { problems: [...new Set(out)], checked };
 }

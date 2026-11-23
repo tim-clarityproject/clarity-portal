@@ -21,7 +21,7 @@
 import { createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { buttonProblems, chevronOnlyFolds, doubledRules, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
+import { backGaps, buttonProblems, chevronOnlyFolds, doubledRules, importantMarks, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
 import { outlinedEdges } from '../phase5/edges.mjs';
 import { overlappingTaps } from '../phase5/taps.mjs';
 import { checkPopups } from '../phase5/popups.mjs';
@@ -103,6 +103,11 @@ async function check(page, tag, { size, theme, root = '.cc-app', background = tr
   report.pass(`${tag}: no Nekst inside any control`, nekst.length === 0, nekst.slice(0, 4).join('; '));
   const sides = await page.evaluate(sideLines);
   report.pass(`${tag}: no thick coloured side line`, sides.length === 0, sides.slice(0, 4).join('; '));
+  // Back's chevron 10px from its words, and Important only as the soft coral tick box edge or the thin line (tidy pass follow-up 1; Tim, 18 Nov, and 12:30).
+  const backs = await page.evaluate(backGaps);
+  report.pass(`${tag}: Back's chevron is 10px from its words (${backs.checked} read)`, backs.problems.length === 0, backs.problems.slice(0, 4).join('; '));
+  const imp = await page.evaluate(importantMarks);
+  report.pass(`${tag}: Important is the soft coral tick box edge or the thin line, and nothing else (${imp.checked} read)`, imp.problems.length === 0, imp.problems.slice(0, 4).join('; '));
   const doubled = await page.evaluate(doubledRules);
   report.pass(`${tag}: no line under a heading over rows with their own lines`, doubled.length === 0, doubled.slice(0, 4).join('; '));
   const folds = await page.evaluate(chevronOnlyFolds);

@@ -61,7 +61,7 @@ import { overlappingTaps } from './taps.mjs';
 import { toastCovers } from './toasts.mjs';
 import { checkReveals } from './reveals.mjs';
 import { questionsBeforeCharts } from './summary-order.mjs';
-import { buttonProblems, chevronOnlyFolds, controlsFamily, doubledRules, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
+import { backGaps, buttonProblems, chevronOnlyFolds, controlsFamily, doubledRules, importantMarks, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
 import { checkPopups } from './popups.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
@@ -552,6 +552,11 @@ for (const width of PAGES.length ? WIDTHS : []) {
         pass(`${tag}: one controls family (button check; ${family.toggles} toggles read)`, family.problems.length === 0, family.problems.slice(0, 5).join('; '));
         const sides = await page.evaluate(sideLines);
         pass(`${tag}: no thick coloured side line (button check)`, sides.length === 0, sides.slice(0, 5).join('; '));
+        // Back's chevron 10px from its words, and Important only as the soft coral tick box edge or the thin line (tidy pass follow-up 1; Tim, 18 Nov, and 12:30).
+        const backs = await page.evaluate(backGaps);
+        pass(`${tag}: Back's chevron is 10px from its words (button check; ${backs.checked} read)`, backs.problems.length === 0, backs.problems.slice(0, 4).join('; '));
+        const imp = await page.evaluate(importantMarks);
+        pass(`${tag}: Important is the soft coral tick box edge or the thin line, and nothing else (button check; ${imp.checked} read)`, imp.problems.length === 0, imp.problems.slice(0, 4).join('; '));
         const doubled = await page.evaluate(doubledRules);
         pass(`${tag}: no line under a heading over rows with their own lines (button check)`, doubled.length === 0, doubled.slice(0, 4).join('; '));
         const folds = await page.evaluate(chevronOnlyFolds);
@@ -723,6 +728,11 @@ if (HC_ONLY) {
           pass(`${tag}: one controls family (button check; ${family.toggles} toggles read)`, family.problems.length === 0, family.problems.slice(0, 5).join('; '));
           const sides = await page.evaluate(sideLines);
           pass(`${tag}: no thick coloured side line (button check)`, sides.length === 0, sides.slice(0, 5).join('; '));
+          // Back's chevron 10px from its words, and Important only as the soft coral tick box edge or the thin line (tidy pass follow-up 1; Tim, 18 Nov, and 12:30).
+          const backs = await page.evaluate(backGaps);
+          pass(`${tag}: Back's chevron is 10px from its words (button check; ${backs.checked} read)`, backs.problems.length === 0, backs.problems.slice(0, 4).join('; '));
+          const imp = await page.evaluate(importantMarks);
+          pass(`${tag}: Important is the soft coral tick box edge or the thin line, and nothing else (button check; ${imp.checked} read)`, imp.problems.length === 0, imp.problems.slice(0, 4).join('; '));
           const doubled = await page.evaluate(doubledRules);
           pass(`${tag}: no line under a heading over rows with their own lines (button check)`, doubled.length === 0, doubled.slice(0, 4).join('; '));
           const folds = await page.evaluate(chevronOnlyFolds);
@@ -1091,6 +1101,11 @@ if (COACH_AUTH) {
           pass(`${tag}: one controls family (button check; ${family.toggles} toggles read)`, family.problems.length === 0, family.problems.slice(0, 5).join('; '));
           const sides = await page.evaluate(sideLines);
           pass(`${tag}: no thick coloured side line (button check)`, sides.length === 0, sides.slice(0, 5).join('; '));
+          // Back's chevron 10px from its words, and Important only as the soft coral tick box edge or the thin line (tidy pass follow-up 1; Tim, 18 Nov, and 12:30).
+          const backs = await page.evaluate(backGaps);
+          pass(`${tag}: Back's chevron is 10px from its words (button check; ${backs.checked} read)`, backs.problems.length === 0, backs.problems.slice(0, 4).join('; '));
+          const imp = await page.evaluate(importantMarks);
+          pass(`${tag}: Important is the soft coral tick box edge or the thin line, and nothing else (button check; ${imp.checked} read)`, imp.problems.length === 0, imp.problems.slice(0, 4).join('; '));
           const doubled = await page.evaluate(doubledRules);
           pass(`${tag}: no line under a heading over rows with their own lines (button check)`, doubled.length === 0, doubled.slice(0, 4).join('; '));
           const folds = await page.evaluate(chevronOnlyFolds);
