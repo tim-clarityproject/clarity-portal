@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { AddButton, Button, IconButton, InlineChoice, PageHeader, SearchField, useIsPhone, useToast } from '../../components/design';
+import { AddButton, Button, IconButton, InlineChoice, Loading, PageHeader, SearchField, useIsPhone, useToast } from '../../components/design';
 import { useToastAbove } from '../../components/design/toastAbove';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
-import { keyOf, newId, removeRow, saveRow, saveRows } from '../../lib/coach/store';
+import { keyOf, newId, removeRow, saveRow, saveRows, useCoachFirstLoaded } from '../../lib/coach/store';
 import { fieldValue, fieldWords } from '../../lib/coach/model';
 import {
   BOARD_FOLD, dismissWaiting, EMPTY_LEAD_FILTERS, headingWords, LEAD_LAYOUTS, LEAD_ROW_MENU, leadBoard, leadCard, leadCountWords, leadDuplicates, leadFilterCount, leadFromWaiting,
@@ -36,6 +36,7 @@ const FILTER_KEYS = { stage: 'stage', next: 'next', last: 'last', value: 'value'
 export default function Leads() {
   const portal = useCoachPortal();
   const { userId, coach, tags, leadFields, views, emails, emailWaiting, settings, todayKey } = portal;
+  const loaded = useCoachFirstLoaded(userId);
   useStartStages();
   const data = useLeadData();
   const { stages, open, all, ctx, values } = data;
@@ -304,7 +305,7 @@ export default function Leads() {
       <div className={`cc-col${wide ? ' cc-col--wide' : ''}`}>
         <PageHeader title="Leads" />
         {toolbar}
-        {open.length === 0 && <p className="cc-quiet">{LEADS_EMPTY}</p>}
+        {open.length === 0 && (loaded ? <p className="cc-quiet">{LEADS_EMPTY}</p> : <Loading label="Loading your leads" />)}
         {open.length > 0 && filtered.length === 0 && <p className="cc-quiet">{LEADS_NO_MATCH}</p>}
 
         {layout === 'board' && stages.length > 0 && (open.length === 0 || filtered.length > 0) && (

@@ -451,8 +451,10 @@ function ComingSoon({ title }) {
   );
 }
 
+// While the coach's role is asked for: the same turning crosshair and words the frame shows next, so there is never a
+// plain page between the crosshair and "Loading Clarity Coach" (scale check point 3; tidy follow-up 3).
 function Blank() {
-  return <div className="ui-root" role="status" aria-label="Loading" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />;
+  return <div className="ui-root cc-app"><main className="cc-main cc-main--first" aria-busy="true"><Loading label="Loading Clarity Coach" className="ds-loading--page" /></main></div>;
 }
 
 /**

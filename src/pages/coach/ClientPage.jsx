@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { zonePlace } from '../../lib/time';
 import { formatClockTime } from '../../lib/dateFormatter';
-import { coachReadyNow, ensureClientSessions, keyOf, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
+import { coachReadyNow, ensureClientSessions, keyOf, newId, removeRow, rowsOf, saveRow, saveRows, useCoachFirstLoaded } from '../../lib/coach/store';
 import { deleteClient, inviteClient, inviteWords, moveClient, NEEDS_049 } from '../../lib/coach/actions';
 import {
   birthdaysOn, birthdayWords, clean, clockWords, dayWords, ENGAGEMENT_KINDS, fieldFromTyped, fieldValue, fieldWords, firstName,
@@ -148,6 +148,7 @@ export default function ClientPage() {
   const portal = useCoachPortal();
   const { userId, coach, isOwner, coaches, state, clients, organisations, tags, fields, settings, todayKey, reloadCoaches, sessions: allSessions, sessionPeople, sessionsOlder, todos } = portal;
   const { leads, leadEvents, emails, emailLinks, callTypes = [] } = portal;
+  const loaded = useCoachFirstLoaded(userId);
   const profile = clients.find((p) => p.id === id) || null;
   // Every one of this client's sessions at once, on a first visit to the device too (057: the older ones otherwise follow later).
   useEffect(() => { if (id) ensureClientSessions(userId, id); }, [userId, id]);
@@ -482,7 +483,7 @@ export default function ClientPage() {
                 )}
                 {!engagement && <p className="cc-quiet">Add an engagement to count sessions against it.</p>}
               </Fold>
-              <Fold title="Private notes" eye={<Eye sentence="Only you can see these." />} open={Boolean(folds.notes)} onToggle={() => toggle('notes')} summary={`${notes.length} ${notes.length === 1 ? 'note' : 'notes'}${pinned.length ? `, ${pinned.length} pinned` : ''}`}>
+              <Fold title="Private notes" eye={<Eye sentence="Only you can see these." />} open={Boolean(folds.notes)} onToggle={() => toggle('notes')} summary={!notes.length && !loaded ? '' : `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}${pinned.length ? `, ${pinned.length} pinned` : ''}`}>
                 {notes.map((n) => (
                   <Line key={n.id} title={n.pinned ? 'Pinned' : dayWords(n.noted_on, todayKey)} small={n.body}>
                     <span className="cc-line-actions">

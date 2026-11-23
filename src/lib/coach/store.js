@@ -366,6 +366,15 @@ function somethingToShow(userId) {
   if (!userId || firstDone.has(userId)) return true;
   return totalRows(read(userId)) > 0;
 }
+/**
+ * Whether this visit's first load has answered (or couldn't be made). Until it has, a page shown from the device's copy
+ * says nothing is there only once it knows: Leads' empty line and a client's notes count wait for it (scale check
+ * point 3; tidy follow-up 3).
+ */
+export function useCoachFirstLoaded(userId) {
+  return useSyncExternalStore(subscribe, () => !userId || firstDone.has(userId), () => true);
+}
+
 export function useCoachSomethingToShow(userId) {
   return useSyncExternalStore(subscribe, () => somethingToShow(userId), () => true);
 }
@@ -960,7 +969,7 @@ const loading = new Map();
 //     open or done in the last 60 days. Sessions and their people: with migration 057, those from the calendar's
 //     window on and the few older ones the first screens show, plus the database's count of the rest
 //     (coach_sessions_start, below); without it, whole, as before.
-//   - LATER, once the page has drawn, quietly and once a visit: the older to-dos, every session's notes, client notes,
+//   - LATER, once the page has drawn, quietly and once a visit: the older to-dos, every session's notes,
 //     the activity log and the lead events, and (with 057) the older sessions and every session's people.
 //   - The calendar's other weeks are read as the coach moves to them (ensureCalRange), never all at once.
 // A read that fills its 5,000 rows goes on a page of 1,000 at a time until the table has no more, so nothing is ever
@@ -971,7 +980,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const CAL_BACK_DAYS = 42;
 const CAL_AHEAD_DAYS = 120;
 const TODO_DONE_DAYS = 60;
-const LATER_TABLES = new Set(['coach_session_notes', 'client_notes', 'activity_log', 'coach_lead_events']);
+// client_notes come with the first load (scale check point 3; tidy follow-up 3): a client's page never says "0 notes" while they are on their way.
+const LATER_TABLES = new Set(['coach_session_notes', 'activity_log', 'coach_lead_events']);
 const SESSION_TABLES = new Set(['coach_sessions', 'coach_session_people']);
 const iso = (ms) => new Date(ms).toISOString();
 const dayOf = (ms) => iso(ms).slice(0, 10);
