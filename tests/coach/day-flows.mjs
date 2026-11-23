@@ -614,7 +614,7 @@ export async function runDay({ browser, report, parts }) {
     await press(page, 'Finish the review');
     await settle(page, 600);
     pass(`${tag}: Finish the review says “Review saved”, and the week keeps the rating and what was typed`, (await toast(page)) === 'Review saved' && (await week())?.review?.change === 'Leave Thursday afternoon clear for writing.' && Boolean((await week())?.reviewed_at) && (await week())?.energy === 'good', `${await toast(page)} ${JSON.stringify((await week())?.review)}`);
-    // (With the day still unplanned, the one offer left is Plan my day: day.js's todayOffer has no midday end for it.)
+    // (Friday afternoon: Plan my day isn't offered after 12:00, so with both done no offer is left.)
     pass(`${tag}: a reviewed week isn’t offered its review or its rating again, and never two offers at once`, (await page.locator('.ds-offer').count()) <= 1 && !/Weekly review|Rate my energy/.test(await page.locator('.ds-offer').innerText().catch(() => '')), await page.locator('.ds-offer').innerText().catch(() => 'none'));
     pass(`${tag}: the week is the coach’s own row`, (await week())?.coach_id === ME);
     await t.done();

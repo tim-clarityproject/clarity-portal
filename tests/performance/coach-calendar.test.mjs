@@ -400,6 +400,16 @@ test('two time columns: the choices, the zone it starts on, and the hour labels 
   assert.equal(cal.startingSecondZone({ ...data, now: at('2026-11-17', '08:00'), coachZone: LON }), 'America/Chicago');
   assert.equal(cal.startingSecondZone({ ...data, now: at('2026-11-18', '08:00'), coachZone: LON, settings: { second_time_zone: 'Asia/Dubai' } }), 'Asia/Dubai');
   assert.equal(cal.startingSecondZone({ items: [], now: at('2026-11-18', '08:00'), coachZone: LON }), NY);
+  // Once the coach has chosen on the calendar, it opens on that choice, a client call outside the UK or not (tidy follow-up 3, run 6's 21).
+  const chose = { second_time_zone: 'Asia/Singapore', calendars: { weekends: false, second_zone_chosen: true } };
+  assert.equal(cal.startingSecondZone({ ...data, now: at('2026-11-17', '08:00'), coachZone: LON, settings: chose }), 'Asia/Singapore');
+  assert.equal(cal.startingSecondZone({ ...data, now: at('2026-11-17', '08:00'), coachZone: LON, settings: { second_time_zone: 'Asia/Singapore' } }), 'America/Chicago', 'Settings’ own default still gives way to the next call');
+  assert.equal(cal.startingSecondZone({ ...data, now: at('2026-11-17', '08:00'), coachZone: LON, settings: { ...chose, second_time_zone: null } }), 'America/Chicago', 'a choice taken off the list falls back to the next call');
+  assert.equal(cal.startingSecondZone({ ...data, now: at('2026-11-17', '08:00'), coachZone: LON, settings: { ...chose, second_time_zone: LON } }), 'America/Chicago', 'never the coach’s own zone');
+  // The Schedule is headed from its first day (run 6's 20).
+  assert.equal(cal.scheduleTitle('2026-11-17', '2026-11-17'), 'From today');
+  assert.equal(cal.scheduleTitle('2026-11-24', '2026-11-17'), 'From Tue 24 Nov');
+  assert.equal(cal.viewRange('schedule', '2026-11-24').title, 'From Tue 24 Nov');
   assert.equal(cal.zoneColumnLabel('America/Chicago'), 'Chicago');
   assert.equal(cal.zoneColumnLabel(LON), 'UK');
   // An ordinary day: 08:00 UK is 02:00 in Chicago.

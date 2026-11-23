@@ -100,6 +100,31 @@ test('Book a call’s suggestions: a quarter hour in the client’s own time (In
   assert.equal(wallClock(starts[0], LON).time >= '09:00', true);
 });
 
+test('a client with no working hour in common (Sydney in a UK winter): the nearest early or late time each working day, outside your hours (tidy follow-up 3, run 6’s 22)', () => {
+  const SYD = 'Australia/Sydney';
+  const data = { items: [], sessions: [] };
+  assert.deepEqual(cal.bookSuggestions({ minutes: 60, zone: SYD, coachZone: LON, data, now: NOW, days: 7 }), [], 'nothing inside the working day');
+  const near = cal.outsideHoursSuggestions({ minutes: 60, zone: SYD, coachZone: LON, data, now: NOW, days: 7 });
+  assert.ok(near.length >= 4, `one a working day: ${near.length}`);
+  const days = near.map((s) => wallClock(s, LON).date);
+  assert.equal(new Set(days).size, days.length, 'at most one a day');
+  for (const s of near) {
+    const mine = wallClock(s, LON);
+    assert.ok(mine.weekday <= 5, 'only on working days');
+    // 08:00 to 09:00 UK is 19:00 to 20:00 in Sydney: the hour just before the working day starts. Today's 08:00 has
+    // passed, so today's nearest is the late one: 20:00 UK, 07:00 the next morning in Sydney.
+    assert.equal(mine.time, mine.date === '2026-11-17' ? '20:00' : '08:00', `the nearest early or late time: ${mine.date} ${mine.time}`);
+    const theirs = wallClock(s, SYD);
+    assert.ok(theirs.time >= '07:00' && wallClock(new Date(s.getTime() + 60 * MIN), SYD).time <= '20:00', `sociable in Sydney: ${theirs.time}`);
+  }
+  // A call at 08:00 on Wednesday moves that day's suggestion off it (the gap kept): the next nearest is earlier still.
+  const busy = { items: [item('i9', 'Sam Okafor', '2026-11-18', '08:00', '09:00', { kind: 'client_call' })], sessions: [] };
+  const wed = cal.outsideHoursSuggestions({ minutes: 60, zone: SYD, coachZone: LON, data: busy, now: NOW, days: 7 }).find((s) => wallClock(s, LON).date === '2026-11-18');
+  assert.ok(!wed || wallClock(new Date(wed.getTime() + 75 * MIN), LON).time <= '08:00', `clear of Sam's call by the gap: ${wed && wallClock(wed, LON).time}`);
+  assert.ok(!wed || wallClock(wed, LON).time >= '06:00', 'never before 06:00 on your own clock');
+  assert.equal(cal.OUTSIDE_HOURS, 'Outside your hours');
+});
+
 test('a typed day and time is on the coach’s own clock, and both clocks are said with both days when they differ', () => {
   assert.equal(cal.typedStart({ day: '2026-11-19', time: '15:30', coachZone: LON }).start.toISOString(), '2026-11-19T15:30:00.000Z');
   assert.equal(cal.typedStart({ day: '', time: '15:30', coachZone: LON }).problem, 'Choose a day and a time to carry on.');

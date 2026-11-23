@@ -355,6 +355,30 @@ test('Today’s one offer: never two at once', () => {
   assert.equal(offer(20, 13, { week: { energy: 'good' } }), 'review');
   assert.equal(offer(20, 13, { week: { energy: 'good', reviewed_at: at(20, 12) }, day: { planned_at: at(20, 8) } }), null);
   assert.equal(offer(17, 16, { settings: { working_hours: { tue: { from: '07:00', to: '15:00' } } }, day: { planned_at: at(17, 8) } }), 'close', 'an early finish never offers the close before 16:00');
+  // Plan my day only until 12:00, and only on a working day (tidy follow-up 3, run 6's 13).
+  assert.equal(offer(17, 11), 'plan', 'still offered at 11:00');
+  assert.equal(offer(17, 12), null, 'not from 12:00');
+  assert.equal(offer(17, 0), 'plan', 'just after midnight it is the new day’s morning');
+  assert.equal(offer(21, 9), null, 'never on a Saturday, a day off');
+  assert.equal(offer(17, 9, { settings: { working_hours: { mon: { from: '09:00', to: '17:00' } } } }), null, 'nor on a weekday the coach doesn’t work');
+});
+
+test('a cover coach’s short list on Today: the clients they cover, with the dates (tidy follow-up 3, run 6’s 14)', async () => {
+  const { coveringRows } = await import('../../src/lib/coach/day.js');
+  const coaches = [{ coach_id: 'tim', first_name: 'Tim' }, { coach_id: 'maya', first_name: 'Maya' }];
+  const covers = [
+    { id: 'c1', coach_id: 'tim', cover_coach_id: 'maya', profile_id: 'p1', starts_on: '2026-11-16', ends_on: '2026-11-20', client_agreed_at: '2026-11-10T10:00:00Z' },
+    { id: 'c2', coach_id: 'tim', cover_coach_id: 'maya', profile_id: 'p2', starts_on: '2026-12-21', ends_on: '2027-01-03', client_agreed_at: null },
+    { id: 'c3', coach_id: 'tim', cover_coach_id: 'maya', profile_id: 'p3', starts_on: '2026-11-01', ends_on: '2026-11-10', client_agreed_at: '2026-10-30T10:00:00Z' },
+    { id: 'c4', coach_id: 'maya', cover_coach_id: 'tim', profile_id: 'p4', starts_on: '2026-11-16', ends_on: '2026-11-20', client_agreed_at: '2026-11-10T10:00:00Z' },
+  ];
+  const rows = coveringRows({ covers, coachId: 'maya', profiles: [{ id: 'p1', name: 'Sam Okafor' }], coaches, todayKey: TODAY });
+  assert.deepEqual(rows.map((r) => [r.title, ...r.facts]), [
+    ['Sam Okafor', 'Mon 16 Nov to Fri 20 Nov, for Tim', 'Covering now'],
+    ['One of Tim’s clients', 'Mon 21 Dec to Sun 3 Jan 2027, for Tim', 'Waiting for the client to agree'],
+  ], 'a cover that is over, and anyone else’s, are left out; a name the database hasn’t given yet says whose client it is');
+  assert.equal(rows[0].label, 'Sam Okafor, Mon 16 Nov to Fri 20 Nov, for Tim. Covering now.');
+  assert.deepEqual(coveringRows({ covers, coachId: 'nobody', profiles: [], coaches, todayKey: TODAY }), []);
 });
 
 test('the day’s and the week’s summaries', () => {

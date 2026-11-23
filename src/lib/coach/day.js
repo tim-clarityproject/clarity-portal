@@ -3,7 +3,7 @@
 // Pure functions only, as model.js: nothing here reads the database, the
 // device or the clock by itself, so every rule is a unit test
 // (tests/performance/coach-day.test.mjs).
-import { addDays, clean, cut, dayWords, firstName, fromDayKey, minutesWords, possessive, sessionsLeft, timeCredit, toDayKey } from './model.js';
+import { addDays, clean, coverState, cut, dayWords, firstName, fromDayKey, minutesWords, possessive, rangeWords, sessionsLeft, timeCredit, toDayKey } from './model.js';
 import { DEFAULT_STANDARD, m7IsValidStandard, m7WeekColour } from '../scores/m7.js';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -554,7 +554,9 @@ export const energyWord = (value) => ENERGY.find((e) => e.value === value)?.labe
  * Today's one offer row (never two at once): Close the day in the evening
  * (from the working day's end, or 17:00); on a Friday afternoon Rate my
  * energy until it is rated, then the Weekly review until it is done; in the
- * morning Plan my day until it is planned. Null when there is none, or it
+ * morning Plan my day until it is planned, only until 12:00 and only on a
+ * working day (Settings, Working hours; tidy follow-up 3, run 6's 13). Null
+ * when there is none, or it
  * was put off with Not now (kept for the visit by the page).
  * @param {{ now: Date, todayKey: string, day?: object, week?: object, settings?: object, putOff?: string[] }} a
  */
@@ -568,9 +570,38 @@ export function todayOffer({ now, todayKey, day = null, week = null, settings = 
   if (mins >= evening) return !day?.closed_at && !off.has('close') ? 'close' : null;
   if (friday && mins >= 12 * 60 && !week?.energy && !off.has('energy')) return 'energy';
   if (friday && !week?.reviewed_at && (planned || day?.plan_skipped || mins >= 12 * 60) && !off.has('review')) return 'review';
-  if (!planned && !day?.plan_skipped && !off.has('plan')) return 'plan';
+  if (hours && mins < 12 * 60 && !planned && !day?.plan_skipped && !off.has('plan')) return 'plan';
   if (friday && !week?.reviewed_at && !off.has('review')) return 'review';
   return null;
+}
+
+// ---------------------------------------------------------------- cover, as the cover coach sees it
+
+const COVER_WORDS = { waiting: 'Waiting for the client to agree', before: 'Agreed', on: 'Covering now' };
+
+/**
+ * Today's short list for a cover coach (tidy follow-up 3, run 6's 14): each
+ * client they cover for another coach that isn't over yet, soonest first,
+ * with the dates and where it stands. The client's name shows only once the
+ * database lets the cover coach read it (between the dates, after the
+ * client agreed: 049's covers_profile); before that the row says whose
+ * client it is. The covering coach's own cover only: never the owner's
+ * view of everyone's (that is Settings, Away and cover).
+ * @returns {{ id, name, coach, title, facts: string[], label, state }[]}
+ */
+export function coveringRows({ covers = [], coachId, profiles = [], coaches = [], todayKey }) {
+  const coachName = (id) => firstName(coaches.find((c) => c.coach_id === id)?.first_name || coaches.find((c) => c.coach_id === id)?.full_name || '') || 'another coach';
+  return covers
+    .filter((c) => c && c.cover_coach_id === coachId && coverState(c, todayKey) !== 'over')
+    .sort((a, b) => String(a.starts_on).localeCompare(String(b.starts_on)) || String(a.id).localeCompare(String(b.id)))
+    .map((c) => {
+      const state = coverState(c, todayKey);
+      const profile = profiles.find((p) => p.id === c.profile_id) || null;
+      const coach = coachName(c.coach_id);
+      const name = profile?.name ? clean(profile.name) : `One of ${possessive(coach)} clients`;
+      const dates = `${rangeWords(c.starts_on, c.ends_on, todayKey)}, for ${coach}`;
+      return { id: c.id, name, coach, state, title: name, facts: [dates, COVER_WORDS[state]], label: `${name}, ${dates}. ${COVER_WORDS[state]}.` };
+    });
 }
 
 export const OFFERS = {

@@ -503,10 +503,17 @@ export function viewRange(view, day, { weekends = false } = {}) {
     const [y, m] = partsOf(day);
     return { fromDay: days[0], toDay: days[days.length - 1], days, title: `${LONG_MONTHS[m - 1]} ${y}` };
   }
-  if (view === 'schedule') { const days = run(day, SCHEDULE_DAYS); return { fromDay: day, toDay: days[days.length - 1], days, title: daysTitle(mondayOf(day), addDays(mondayOf(day), weekends ? 6 : 4)) }; }
+  if (view === 'schedule') { const days = run(day, SCHEDULE_DAYS); return { fromDay: day, toDay: days[days.length - 1], days, title: scheduleTitle(day) }; }
   const days = run(mondayOf(day), weekends ? 7 : 5);
   return { fromDay: days[0], toDay: days[days.length - 1], days, title: daysTitle(days[0], days[days.length - 1]) };
 }
+
+/**
+ * The Schedule's heading: it lists from its first day, so it says so,
+ * "From today" (tidy follow-up 3, run 6's 20), or "From Mon 30 Nov" once
+ * Next has moved it on.
+ */
+export const scheduleTitle = (day, todayKey = null) => (day === todayKey ? 'From today' : `From ${dayKeyWords(day)}`);
 
 /** The day a view moves to with Previous (-1) or Next (1): a day (skipping a hidden weekend), a week or a month on. */
 export function stepView(view, day, direction, { weekends = false } = {}) {
@@ -666,11 +673,16 @@ export function secondZoneChoices(settings, coachZone) {
 }
 
 /**
- * The zone the second column starts on: the next client call outside the
+ * The zone the second column starts on: the coach's own choice once they
+ * have made one on the calendar (`calendars.second_zone_chosen`, kept with
+ * the zone in their settings; Tim, 18 Nov, 13:00, made to remember in tidy
+ * follow-up 3, run 6's 21); before that, the next client call outside the
  * coach's own zone; with none coming, the one chosen in Settings; otherwise
  * New York.
  */
 export function startingSecondZone({ items = [], sessions = [], clients = [], settings = null, now, coachZone }) {
+  const chosen = settings?.second_time_zone;
+  if (settings?.calendars?.second_zone_chosen === true && isZone(chosen) && !sameZone(chosen, coachZone)) return chosen;
   const from = new Date(now);
   const coming = calendarEntries({ items, sessions, clients }, { fromDay: wallClock(from, coachZone).date, toDay: addDays(wallClock(from, coachZone).date, 60), coachZone, showTodos: false })
     .find((e) => e.isCall && e.kind === 'client_call' && e.clientZone && e.endsAt > from);
@@ -2125,7 +2137,7 @@ export function morningSendAt(now, readerZone) {
 export const dayBeforeWords = (startsAt, readerZone, coachFirstName) => `Your call with ${coachFirstName || 'your coach'} is tomorrow at ${timeWords(startsAt, readerZone)}.`;
 /** What the 1-hour email says: never a clock time. */
 export const hourBeforeWords = (coachFirstName) => `Your call with ${coachFirstName || 'your coach'} starts in 1 hour.`;
-export const REMINDER_SWITCHES = [{ key: 'remind_24', label: 'Email 24 hours before', startsOn: true }, { key: 'remind_1', label: 'Email 1 hour before', startsOn: false }];
+export const REMINDER_SWITCHES = [{ key: 'remind_24', label: 'Email the day before', startsOn: true }, { key: 'remind_1', label: 'Email 1 hour before', startsOn: false }];
 
 // ---------------------------------------------------------------- booking: what its pages show (run 3, step 4)
 
@@ -2206,6 +2218,48 @@ export function bookSuggestions({ minutes, zone, coachZone, settings = null, dat
     source: 'hours', minutes, from: now, to: new Date(ms(now) + days * DAY_MS), now, coachZone, clientZone: zone, bookerZone: zone, settings, items: data.items || [], sessions: data.sessions || [],
     noticeHours: 1, aheadWeeks: Math.ceil(days / 7), earlyAndLate,
   });
+}
+
+/** How far past the working day the nearest early or late time may reach, on the coach's own clock. */
+export const OUTSIDE_HOURS_FROM = '06:00';
+export const OUTSIDE_HOURS_TO = '22:00';
+export const OUTSIDE_HOURS = 'Outside your hours';
+
+/**
+ * When no time in the coach's working hours falls inside the client's
+ * 07:00 to 20:00 (a Sydney client in a UK winter), the nearest early or late
+ * time on each working day instead: just before the day starts or just
+ * after it ends, never before 06:00 or after 22:00 on the coach's clock,
+ * and with every other booking rule (busy, the gap, the calls a day, a
+ * quarter hour and 07:00 to 20:00 where the client is). Book a call marks
+ * each "Outside your hours" (tidy follow-up 3, run 6's 22).
+ * @returns {Date[]} earliest first, at most one a day
+ */
+export function outsideHoursSuggestions({ minutes, zone, coachZone, settings = null, data = {}, now, days = 14 }) {
+  const wide = {};
+  const edges = {};
+  for (let d = wallClock(new Date(now), coachZone).date, i = 0; i <= days; d = addDays(d, 1), i += 1) {
+    const h = bookingHoursOn(settings, d);
+    if (!h) continue;
+    edges[d] = { from: instantAt(d, h.from, coachZone).getTime(), to: instantAt(d, h.to, coachZone).getTime() };
+  }
+  for (const key of WEEK_KEYS) wide[key] = { from: OUTSIDE_HOURS_FROM, to: OUTSIDE_HOURS_TO };
+  const all = freeTimes({
+    source: 'hours', minutes, from: now, to: new Date(ms(now) + days * DAY_MS), now, coachZone, clientZone: zone, bookerZone: zone,
+    settings: { ...(settings || {}), booking_hours: wide }, items: data.items || [], sessions: data.sessions || [], noticeHours: 1, aheadWeeks: Math.ceil(days / 7),
+  });
+  const best = {};
+  for (const s of all) {
+    const d = wallClock(s, coachZone).date;
+    const e = edges[d];
+    if (!e) continue; // only on the coach's working days
+    const start = s.getTime();
+    const end = start + minutes * MIN;
+    const gap = end <= e.from ? e.from - end : start >= e.to ? start - e.to : null;
+    if (gap == null) continue; // inside the working day (never here when nothing inside was free)
+    if (!best[d] || gap < best[d].gap) best[d] = { at: s, gap };
+  }
+  return Object.values(best).map((b) => b.at).sort((a, b) => a - b);
 }
 
 /** A typed day and time on the coach's own clock as a start, or a calm line. */

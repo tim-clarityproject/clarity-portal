@@ -526,12 +526,19 @@ export function CalBoard({ cal, panels, days, entries, win, otherZone, onOtherZo
   );
 }
 
-/** The second time column: the one chosen here, otherwise where the next client call outside the coach's own zone is. */
+/**
+ * The second time column: where the next client call outside the coach's own zone is, until the coach chooses one here;
+ * from then on the one they chose, remembered in their own settings (on the device at once, then through the offline
+ * queue, so every device opens on it: calendar.js's startingSecondZone).
+ */
 export function useSecondZone(cal) {
   const [picked, setPicked] = useState(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const starting = useMemo(() => startingSecondZone({ items: cal.calItems, sessions: cal.sessions, clients: cal.clients, settings: cal.settings, now: cal.now, coachZone: cal.coachZone }), [cal.calItems, cal.sessions, cal.clients, cal.settings, cal.todayKey, cal.coachZone]);
-  return [picked || starting, (zone) => { setPicked(zone); cal.saveSettings({ second_time_zone: zone }, null); }];
+  return [picked || starting, (zone) => {
+    setPicked(zone);
+    cal.saveSettings({ second_time_zone: zone, calendars: { ...(cal.settings.calendars || {}), second_zone_chosen: true } }, null);
+  }];
 }
 
 /** To-dos as a calendar (M11's "todocal"): this week with the to-dos to place beside it. */

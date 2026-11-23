@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, CalendarPopover, Chevron, InlineChoice, PageHeader, SwitchRow, useIsPhone } from '../../components/design';
 import {
-  CAL_VIEWS, HIDE_TODOS, HOURS_HELP, HOURS_SAVED, hoursToSave, hoursWindow, OFFER_TIMES, SHOW_TODOS, startingView, stepView, viewRange, workingHours,
+  CAL_VIEWS, HIDE_TODOS, HOURS_HELP, HOURS_SAVED, hoursToSave, hoursWindow, OFFER_TIMES, scheduleTitle, SHOW_TODOS, startingView, stepView, viewRange, workingHours,
 } from '../../lib/coach/calendar';
 import { firstName } from '../../lib/coach/model';
 import { addDays } from '../../lib/time/index.js';
@@ -88,7 +88,8 @@ export default function Calendar({ side = null }) {
     setHours(null);
     if (JSON.stringify(next.working_hours) !== JSON.stringify(hoursToSave(workingHours(cal.settings)).working_hours)) await cal.saveSettings(next, HOURS_SAVED);
   };
-  const title = view === 'schedule' || view === 'week' ? viewRange('week', day, { weekends }).title : range.title;
+  // The Schedule lists from its first day, so it is headed "From today" (tidy follow-up 3, run 6's 20).
+  const title = view === 'schedule' ? scheduleTitle(day, cal.todayKey) : view === 'week' ? viewRange('week', day, { weekends }).title : range.title;
 
   const nav = (
     <div className="cc-cal-nav">

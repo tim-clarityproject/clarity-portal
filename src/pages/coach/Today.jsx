@@ -4,7 +4,7 @@ import { AddButton, OfferRow, PageHeader, useIsPhone } from '../../components/de
 import { birthdaysOn, dayWords, possessive } from '../../lib/coach/model';
 import { rowsOf } from '../../lib/coach/store';
 import {
-  ATTENTION_FIRST, attentionRows, callLength, callsOn, clockTime, dayLoad, OFFERS, recapNudgeLine, todayOffer, todayTodos,
+  ATTENTION_FIRST, attentionRows, callLength, callsOn, clockTime, coveringRows, dayLoad, OFFERS, recapNudgeLine, todayOffer, todayTodos,
 } from '../../lib/coach/day';
 import { usePressure } from '../../lib/coach/dayData';
 import { clockChangeLines, coachZoneOf } from '../../lib/coach/calendar';
@@ -26,7 +26,8 @@ import './today.css';
 // quiet lines (a birthday, a recap still unsent a day after its call), the
 // one offer row (Plan my day, Close the day, the Weekly review, Rate my
 // energy), today's calls, the coach's own to-dos with the over-full line,
-// who needs attention (coaching facts only), Keep in touch (past clients'
+// who needs attention (coaching facts only), the clients the coach covers
+// for another coach with the dates (tidy follow-up 3), Keep in touch (past clients'
 // check-ins that are due: run 4), the pressure forecast (shared
 // work peak moments in the next 7 days) and capacity. The owner's Finances
 // line waits for Phase 6b; an associate's Supervision and Your hours and
@@ -63,7 +64,7 @@ function Section({ title, aside, headRef, children }) {
 }
 
 export default function Today() {
-  const { state, clients, groups, todos, sessions, sessionPeople, sessionsOlder, settings, todayKey, now, coach, isOwner, calItems, checkIns, organisations } = useCoachPortal();
+  const { state, clients, groups, todos, sessions, sessionPeople, sessionsOlder, settings, todayKey, now, coach, coaches, isOwner, calItems, checkIns, organisations } = useCoachPortal();
   const navigate = useNavigate();
   const isPhone = useIsPhone();
   const { day, week } = useDayRows();
@@ -97,6 +98,8 @@ export default function Today() {
     sessions, people: sessionPeople, older: sessionsOlder, now, todayKey,
   }), [clients, state, coach.id, sessions, sessionPeople, sessionsOlder, now, todayKey]);
   const attentionShown = allAttention ? attention : attention.slice(0, ATTENTION_FIRST);
+  // The clients this coach covers for another coach, with the dates (tidy follow-up 3, run 6's 14).
+  const covering = useMemo(() => coveringRows({ covers: rowsOf(state, 'coach_cover'), coachId: coach.id, profiles: rowsOf(state, 'client_profiles'), coaches, todayKey }), [state, coach.id, coaches, todayKey]);
   const pressure = usePressure(clients, todayKey);
   // Keep in touch (run 4): past clients' check-ins that are due, one quiet line each (each coach's own). The people in
   // Network who are due a catch-up join this same section (`due`: network.js's todayDueQuery, the owner's alone).
@@ -192,6 +195,14 @@ export default function Today() {
             {attention.length > ATTENTION_FIRST && (
               <div className="cc-acts cc-today-more"><TextLink aria-expanded={allAttention} onClick={() => setAllAttention((v) => !v)}>{allAttention ? 'Show fewer' : `Show all ${attention.length}`}</TextLink></div>
             )}
+          </Section>
+        )}
+
+        {covering.length > 0 && (
+          <Section title="Covering">
+            <div className="cc-rows cc-today-rows" role="list" aria-label="Clients you’re covering">
+              {covering.map((r) => <div key={r.id} role="listitem" aria-label={r.label}><Row title={r.title} facts={r.facts} /></div>)}
+            </div>
           </Section>
         )}
 

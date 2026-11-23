@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { coachCalReadyNow, coachState, loadCoach, newId, noteRows, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { firstName } from '../../lib/coach/model';
 import {
-  anchorZone, BOOK_KINDS, BOOK_PATHS, BOOK_WITH_SOMEONE_ELSE, bookCallLabel, bookCallPlan, BOOKING_LENGTHS, BOOKING_WORDS, bookSuggestions, bookWhenWords, bookWhoChoices, callProblem,
+  anchorZone, BOOK_KINDS, BOOK_PATHS, BOOK_WITH_SOMEONE_ELSE, bookCallLabel, bookCallPlan, BOOKING_LENGTHS, BOOKING_WORDS, bookSuggestions, OUTSIDE_HOURS, outsideHoursSuggestions, bookWhenWords, bookWhoChoices, callProblem,
   CLASH_ACTION, holidayLineFor, HOW_OFTEN, invited, INVITED_EXAMPLE, INVITED_LABEL, linkCopiedWords, LINK_PURPOSES, linkState, LINK_STATE_WORDS, newLink, PLACES, publicLink, SERIES_MAX,
   seriesClashes, seriesStarts, startingCallTypes, suggestedLengthLine, suggestionWords, suggestTimes, TRAVEL_HELP, TRAVEL_LABEL, typedStart,
 } from '../../lib/coach/calendar';
@@ -62,7 +62,10 @@ export function BookCallPanel({ cal, open, onClose, start = null, onLink, onPoll
   const zone = several ? anchorZone({ booker: group ? null : { time_zone: coachZone }, organisation, coachZone }) : anchorZone({ client, coachZone });
   const read = invited(d.paste);
 
-  const free = useMemo(() => (open && d.who ? bookSuggestions({ minutes, zone, coachZone, settings, data, now }) : []), [open, d.who, minutes, zone, coachZone, settings, data, now]);
+  const inHours = useMemo(() => (open && d.who ? bookSuggestions({ minutes, zone, coachZone, settings, data, now }) : []), [open, d.who, minutes, zone, coachZone, settings, data, now]);
+  // A client with no time in common with the working day (Sydney in a UK winter): the nearest early or late times, marked as outside your hours.
+  const outside = !inHours.length && Boolean(client) && !several;
+  const free = useMemo(() => (outside && open ? outsideHoursSuggestions({ minutes, zone, coachZone, settings, data, now }) : inHours), [outside, inHours, open, minutes, zone, coachZone, settings, data, now]);
   const offered = useMemo(() => suggestTimes(free, d.more), [free, d.more]);
   const first = d.at ? new Date(d.at) : null;
   const series = useMemo(() => (first ? seriesStarts({ first, clientZone: zone, every: Number(d.often), count: Number(d.often) ? d.count : 1 }).starts : []), [d.at, zone, d.often, d.count]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -110,7 +113,7 @@ export function BookCallPanel({ cal, open, onClose, start = null, onLink, onPoll
 
   const who = bookWhoChoices({ clients: data.clients, groups: data.groups });
   const name = client?.name || group?.name || d.name;
-  const whenOptions = offered.map((s) => { const w = suggestionWords(s, { coachZone, clientZone: several ? null : zone, name }); return { value: s.toISOString(), label: w.when, hint: w.theirs || undefined }; });
+  const whenOptions = offered.map((s) => { const w = suggestionWords(s, { coachZone, clientZone: several ? null : zone, name }); return { value: s.toISOString(), label: w.when, hint: w.theirs || undefined, note: outside ? OUTSIDE_HOURS : undefined }; });
   return (
     <SlidePanel
       open={open}
@@ -151,6 +154,7 @@ export function BookCallPanel({ cal, open, onClose, start = null, onLink, onPoll
           {whenOptions.length > 0
             ? <InlineChoice label="When?" form="rows" tick options={whenOptions} value={d.at} onChange={(v) => set({ at: v, moved: {}, fixing: null })} />
             : <p className="cc-quiet">No free times in the next 2 weeks. Choose your own time.</p>}
+          {outside && whenOptions.length > 0 && <p className="cc-note">None of your working hours suits {firstName(name) || 'them'} where they are, so these are your nearest early and late times.</p>}
           <div className="cc-acts">
             {offered.length < free.length && offered.length >= d.more && <TextLink onClick={() => set({ more: d.more + 6 })}>Show more times</TextLink>}
             <TextLink onClick={() => set({ own: true })}>Choose my own time</TextLink>
