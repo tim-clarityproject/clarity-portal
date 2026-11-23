@@ -2308,6 +2308,15 @@ export function bookSuggestions({ minutes, zone, coachZone, settings = null, dat
   });
 }
 
+/**
+ * Whether none of the coach's working hours in the next fortnight falls
+ * inside the client's 07:00 to 20:00, on the working hours alone: a coach
+ * who is simply booked solid still shares hours with a New York client, so
+ * that client is never offered times outside the coach's hours (tidy
+ * follow-up 3, run 6's 22).
+ */
+export const noSharedHours = ({ minutes, zone, coachZone, settings = null, now, days = 14 }) => bookSuggestions({ minutes, zone, coachZone, settings, data: {}, now, days }).length === 0;
+
 /** How far past the working day the nearest early or late time may reach, on the coach's own clock. */
 export const OUTSIDE_HOURS_FROM = '06:00';
 export const OUTSIDE_HOURS_TO = '22:00';

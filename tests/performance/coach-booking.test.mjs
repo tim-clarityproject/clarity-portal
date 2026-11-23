@@ -123,6 +123,17 @@ test('a client with no working hour in common (Sydney in a UK winter): the neare
   assert.ok(!wed || wallClock(new Date(wed.getTime() + 75 * MIN), LON).time <= '08:00', `clear of Sam's call by the gap: ${wed && wallClock(wed, LON).time}`);
   assert.ok(!wed || wallClock(wed, LON).time >= '06:00', 'never before 06:00 on your own clock');
   assert.equal(cal.OUTSIDE_HOURS, 'Outside your hours');
+  assert.equal(cal.noSharedHours({ minutes: 60, zone: SYD, coachZone: LON, now: NOW, days: 7 }), true, 'Sydney shares no hour');
+});
+
+test('a client who shares working hours is never offered times outside them, even when the coach is booked solid (tidy follow-up 3, run 6’s 22)', () => {
+  const solid = [];
+  for (let i = 0; i < 16; i += 1) {
+    const day = new Date(Date.UTC(2026, 10, 17 + i)).toISOString().slice(0, 10);
+    solid.push(item(`s${i}`, 'Busy', day, '07:00', '21:00'));
+  }
+  assert.deepEqual(cal.bookSuggestions({ minutes: 60, zone: NY, coachZone: LON, data: { items: solid, sessions: [] }, now: NOW }), [], 'nothing free this fortnight');
+  assert.equal(cal.noSharedHours({ minutes: 60, zone: NY, coachZone: LON, now: NOW }), false, 'New York still shares the working afternoon');
 });
 
 test('a typed day and time is on the coach’s own clock, and both clocks are said with both days when they differ', () => {

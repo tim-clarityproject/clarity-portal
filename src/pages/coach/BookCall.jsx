@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { coachCalReadyNow, coachState, loadCoach, newId, noteRows, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { firstName } from '../../lib/coach/model';
 import {
-  anchorZone, BOOK_KINDS, BOOK_PATHS, BOOK_WITH_SOMEONE_ELSE, bookCallLabel, bookCallPlan, BOOKING_LENGTHS, BOOKING_WORDS, bookSuggestions, OUTSIDE_HOURS, outsideHoursSuggestions, bookWhenWords, bookWhoChoices, callProblem,
+  anchorZone, BOOK_KINDS, BOOK_PATHS, BOOK_WITH_SOMEONE_ELSE, bookCallLabel, bookCallPlan, BOOKING_LENGTHS, BOOKING_WORDS, bookSuggestions, noSharedHours, OUTSIDE_HOURS, outsideHoursSuggestions, bookWhenWords, bookWhoChoices, callProblem,
   CLASH_ACTION, holidayLineFor, HOW_OFTEN, invited, INVITED_EXAMPLE, INVITED_LABEL, linkCopiedWords, LINK_PURPOSES, linkState, LINK_STATE_WORDS, newLink, PLACES, publicLink, SERIES_MAX,
   seriesClashes, seriesStarts, startingCallTypes, suggestedLengthLine, suggestionWords, suggestTimes, TRAVEL_HELP, TRAVEL_LABEL, typedStart,
 } from '../../lib/coach/calendar';
@@ -64,7 +64,8 @@ export function BookCallPanel({ cal, open, onClose, start = null, onLink, onPoll
 
   const inHours = useMemo(() => (open && d.who ? bookSuggestions({ minutes, zone, coachZone, settings, data, now }) : []), [open, d.who, minutes, zone, coachZone, settings, data, now]);
   // A client with no time in common with the working day (Sydney in a UK winter): the nearest early or late times, marked as outside your hours.
-  const outside = !inHours.length && Boolean(client) && !several;
+  // Decided on the working hours alone: a client who shares hours with a coach booked solid gets no times outside them.
+  const outside = useMemo(() => !inHours.length && Boolean(client) && !several && open && noSharedHours({ minutes, zone, coachZone, settings, now }), [inHours, client, several, open, minutes, zone, coachZone, settings, now]);
   const free = useMemo(() => (outside && open ? outsideHoursSuggestions({ minutes, zone, coachZone, settings, data, now }) : inHours), [outside, inHours, open, minutes, zone, coachZone, settings, data, now]);
   const offered = useMemo(() => suggestTimes(free, d.more), [free, d.more]);
   const first = d.at ? new Date(d.at) : null;
