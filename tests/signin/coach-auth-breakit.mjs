@@ -319,6 +319,11 @@ if (PARTS.includes('skip')) {
       const shown = await d.page.evaluate(() => window.__coachShown);
       pass(`Skip (${label}): ${go} opened by its address doesn't open the coach portal`, path(d.page) !== '/coach' && shown === 0, `${path(d.page)}, ${shown}`);
     }
+    // Tidy follow-up 3 (run 6's question 4): You're in typed before the code goes straight to Enter your code.
+    if (label === 'the code owed') {
+      await d.page.goto(`${APP}/coach/sign-in/in`);
+      pass('You’re in typed before the code: straight to Enter your code', /\/code$/.test(await waitPath(d.page, /\/code$/)), path(d.page));
+    }
     // Sign-in security (not a coach portal address).
     await d.page.goto(`${APP}/my-account/sign-in-security`);
     await sleep(2500);

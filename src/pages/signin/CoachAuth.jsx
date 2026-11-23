@@ -503,6 +503,24 @@ export function CoachLost() {
  * 6-digit code at 2 or fewer codes (once per sign-in): the low-codes line
  * and "Open the coach portal".
  */
+/**
+ * True when this sign-in has an authenticator but hasn't given its 6-digit
+ * code yet (aal1 with aal2 next); undefined while asking. Not asked (false)
+ * when `ask` is off.
+ */
+function useCodeOwed(userId, ask) {
+  const [owed, setOwed] = useState(undefined);
+  useEffect(() => {
+    if (!ask || !userId) return undefined;
+    let live = true;
+    supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      .then(({ data }) => { if (live) setOwed(data?.nextLevel === 'aal2' && data?.currentLevel !== 'aal2'); })
+      .catch(() => { if (live) setOwed(false); });
+    return () => { live = false; };
+  }, [userId, ask]);
+  return ask ? owed : false;
+}
+
 export function CoachIn() {
   const { user, out } = useSignedIn();
   const location = useLocation();
@@ -513,11 +531,20 @@ export function CoachIn() {
   const othersEnded = location.state?.othersEnded === true;
   const W = COACH_AUTH_WORDS.in;
   const coach = useIsCoach(user?.id || null);
+  // Typed before the 6-digit code was given (Claude's answer to run 6's
+  // question 4, tidy follow-up 3): straight on to Enter your code. A sign-in
+  // that came here from a recovery code or the code itself carries its state.
+  const arrived = Number.isFinite(left) || Number.isFinite(low);
+  const codeOwed = useCodeOwed(user?.id || null, !arrived && coach === true);
 
   if (out) return <Navigate to={SIGN_IN_PATHS.coach} replace />;
   if (coach === false) return toHome;
   // Asking whether this is a coach: nothing of the screen shows until it's known.
   if (coach === undefined) return null;
+  if (!arrived) {
+    if (codeOwed === undefined) return null;
+    if (codeOwed) return <Navigate to={COACH_AUTH_PATHS.code} replace />;
+  }
 
   if (Number.isFinite(low)) {
     return (
