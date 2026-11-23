@@ -1313,7 +1313,9 @@ export function loadCoachLater(userId) {
         const names = tablesThere(dayReadyNow === true, calReadyNow === true, crmReadyNow === true);
         const since = readBegins();
         const split = laterSplit.get(userId) ?? null;
-        const db = await fetchPlans(plans(names, Date.now(), 'later', { split }));
+        // The older sessions last: what pages show from the later tier (a client's notes) isn't kept waiting behind them.
+        const later = plans(names, Date.now(), 'later', { split });
+        const db = await fetchPlans([...later.filter((x) => !SESSION_TABLES.has(x.table)), ...later.filter((x) => SESSION_TABLES.has(x.table))]);
         if (gen !== generation) { resolve(false); return; }
         await hydrate(userId);
         let next = mergeLoaded(read(userId), db, touchedSince(userId, since));
