@@ -225,7 +225,7 @@ export const ROWS = [
   net({ name: 'Network: the archive', m11: 'narchv', built: 'net-archive' }),
   net({ name: 'Network: one person, with contact, given and asked', m11: 'kitp', part: 'sheet', built: 'net-person',
     changes: [['Network', null, 'the panel has no “Network” kicker above the role (builder E’s decision)']],
-    added: [['iMessage', `${IMSG}: David’s is +1`]] }),
+    added: [['iMessage', `${IMSG}: David’s is +1`], ['Merge with someone', 'Merge, as Leads has it, with Undo (tidy follow-up 3, run 6’s 36)']] }),
   net({ name: 'Network: one person, with ratings', m11: 'netrate', part: 'sheet', built: 'net-person-ratings' }),
   net({ name: 'Network: the map, Where to focus', m11: 'netmap', built: 'net-many-map' }),
   net({ name: 'Network: How to read the map', m11: 'nhowp', part: 'sheet', built: 'net-map-help' }),
