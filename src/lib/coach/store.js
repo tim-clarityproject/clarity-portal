@@ -1267,12 +1267,11 @@ export async function ensureClientSessions(userId, profileId) {
   if (!userId || !profileId) return false;
   if (!wantProfiles.has(userId)) wantProfiles.set(userId, new Set());
   const want = wantProfiles.get(userId);
-  const fresh = !want.has(profileId);
   want.add(profileId);
   if (loading.has(userId)) await loading.get(userId).catch(() => null);
   const row = olderRowOf(read(userId));
   if (!row || row.whole === true || !laterSplit.has(userId)) return true;
-  if (!fresh && (row.profiles || []).includes(profileId)) return true;
+  if ((row.profiles || []).includes(profileId)) return true; // the last load brought them (a page opened on this client)
   const split = laterSplit.get(userId);
   const profiles = [...want];
   const gen = generation;
