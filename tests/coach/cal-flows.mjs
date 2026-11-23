@@ -143,6 +143,12 @@ async function run() {
       pass(`${tag}: one choice for the second column: the seven cities`, ['New York', 'Chicago', 'Los Angeles', 'Denver', 'Toronto', 'Dubai', 'Singapore'].every((c) => choices.some((x) => x.includes(c))), choices.join(', '));
       await page.getByRole('menuitemcheckbox', { name: 'New York' }).click(); await settle(page, 600);
       pass(`${tag}: switched to New York, 08:00 in the UK is 03:00 there`, (await first()).join() === '03:00,08:00' && (await page.locator('.cc-cal-zone').first().textContent()) === 'New York');
+      // The choice is remembered (Tim, 18 Nov, 13:00; tidy follow-up 3, run 6's 21): kept in the coach's settings, and the
+      // calendar opens on it again although the next client call outside the UK is still in Chicago.
+      const chose = (await t.rowsNow('coach_settings'))[0];
+      pass(`${tag}: the choice is kept in the coach's own settings`, chose?.second_time_zone === 'America/New_York' && chose?.calendars?.second_zone_chosen === true, JSON.stringify({ zone: chose?.second_time_zone, calendars: chose?.calendars }));
+      await go(page, '/coach/calendar?view=week');
+      pass(`${tag}: and the calendar opens on New York next time, not the next client's Chicago`, (await page.locator('.cc-cal-zone').first().textContent()) === 'New York');
       pass(`${tag}: a client call shows the client's own time inside its block`, /9:45 am Chicago/.test(await tile(page, D.tue, 'Jordan Reyes').textContent()));
       await page.getByRole('switch', { name: 'Weekends' }).click(); await settle(page, 700);
       pass(`${tag}: Weekends on shows seven days`, (await heads()) === 7 && (await text()).includes('16 to 22 Nov'));
