@@ -3820,8 +3820,11 @@
   outline-offset: calc((var(--who-icon) - var(--tap-min)) / 2);
 }
 
-/* Skip on a screen that moves straight on: quietly under the answers. */
-.ui-root .ds-guide-skip--body {
+/* Skip on a screen that moves straight on: quietly under the answers, its
+   words on the content's left edge in every guided tool (tidy follow-up 3,
+   run 7's 1). Doubled class so it wins over the later .ds-guide-skip rule,
+   whose 10px side padding used to push it in. */
+.ui-root .ds-guide-skip.ds-guide-skip--body {
   margin-top: var(--space-3);
   padding: 0 !important;
 }
