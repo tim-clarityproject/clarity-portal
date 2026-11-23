@@ -5,7 +5,7 @@ import {
 import keepWords from '../../components/design/keepWords';
 import { useToastAbove } from '../../components/design/toastAbove';
 import { keyOf, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
-import { addDays, clean, cut, dayWords, minutesWords } from '../../lib/coach/model';
+import { addDays, clean, cut, dayWords, minutesWords, suggestedDays } from '../../lib/coach/model';
 import {
   addedWords, checklistWords, doneWords, ESTIMATES, estimateWords, moveToDay, moveToSomeday, OTHER_ESTIMATES, OTHER_SUGGESTED, parseQuickAdd,
   plannedWords, positionAt, quickAddChips, quickDays, repeatChoices, repeatValue, timeWords, todoFacts, whenWords,
@@ -40,6 +40,7 @@ const NEEDS_WORDS = 'Type what needs doing to carry on.';
 const HOLD_MS = 450;
 const NONE = '__none__';
 const PICK = '__pick__';
+const AFTER_WORK = '__after_work__';
 const OTHER = 'other';
 const TICK = <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
 const DOTS = <svg className="cc-todo-dots" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5.5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="18.5" cy="12" r="1.5" /></svg>;
@@ -534,21 +535,39 @@ export function QuickAddPanel({ open, onClose, defaults, defaultDay = null }) {
 /**
  * A day chosen from Today, Tomorrow, another day or none. "Another day"
  * asks the panel for the calendar (`onPick`), which sits under the two
- * boxes so they stay level.
+ * boxes so they stay level. With `suggest` (When I'll do it), M11 seq 77's
+ * menu: Today, "After work, today", Tomorrow, then the suggested days
+ * (`suggestedDays`: "Thu 19 Nov", "Mon 23 Nov") before Another day
+ * (tidy follow-up 3, run 6's 8). `afterWork` is whether the to-do sits in
+ * After work; choosing "After work, today" sends `{ afterWork: true }`.
  */
-function DayChoice({ label, value, noneLabel, picking, onPick, onChange }) {
+function DayChoice({ label, value, noneLabel, picking, onPick, onChange, suggest = false, afterWork = false }) {
   const { todayKey } = useCoachPortal();
   const tomorrow = addDays(todayKey, 1);
+  const extra = suggest ? suggestedDays(todayKey) : [];
   const options = [
     { value: todayKey, label: 'Today' },
+    ...(suggest ? [{ value: AFTER_WORK, label: 'After work, today' }] : []),
     { value: tomorrow, label: 'Tomorrow' },
-    ...(value && value !== todayKey && value !== tomorrow ? [{ value, label: dayWords(value, todayKey) }] : []),
+    ...extra.map((k) => ({ value: k, label: dayWords(k, todayKey) })),
+    ...(value && value !== todayKey && value !== tomorrow && !extra.includes(value) ? [{ value, label: dayWords(value, todayKey) }] : []),
     { value: PICK, label: 'Another day' },
     { value: NONE, label: noneLabel },
   ];
+  const shown = picking ? PICK : suggest && afterWork && value === todayKey ? AFTER_WORK : value || NONE;
   return (
     <div className="cc-daychoice">
-      <Dropdown label={label} options={options} value={picking ? PICK : value || NONE} onChange={(v) => { if (v === PICK) { onPick(true); return; } onPick(false); onChange(v === NONE ? null : v); }} />
+      <Dropdown
+        label={label}
+        options={options}
+        value={shown}
+        onChange={(v) => {
+          if (v === PICK) { onPick(true); return; }
+          onPick(false);
+          if (v === AFTER_WORK) onChange(todayKey, { afterWork: true });
+          else onChange(v === NONE ? null : v);
+        }}
+      />
     </div>
   );
 }
@@ -638,7 +657,8 @@ export function TodoPanel({ id, onClose }) {
     if (next !== (timeWords(todo.planned_time) || null)) change({ planned_time: next });
   };
 
-  const setWhen = (k) => change(k ? moveToDay(todo, k) : { ...moveToSomeday(todo), after_work: false });
+  // "After work, today" puts it in After work; any other day from the menu takes it out (the switch below still sets it for a later day).
+  const setWhen = (k, how) => change(k ? { ...moveToDay(todo, k), ...(how ? { after_work: Boolean(how.afterWork) } : todo.after_work && k === todayKey ? { after_work: false } : {}) } : { ...moveToSomeday(todo), after_work: false });
   const setDue = (k) => change({ due_on: k });
   const lists = todoLists.filter((l) => !l.finished_at || l.id === todo.list_id);
   const headings = todoHeadings.filter((h) => h.list_id === todo.list_id);
@@ -667,7 +687,7 @@ export function TodoPanel({ id, onClose }) {
       <div className="cc-field cc-todo-switch"><SwitchRow label="Important" checked={Boolean(todo.important)} onChange={(on) => change({ important: on })} /></div>
 
       <div className="cc-field cc-two cc-todo-two">
-        <DayChoice label="When I’ll do it" value={day} noneLabel="Someday" picking={picking === 'when'} onPick={(on) => setPicking(on ? 'when' : null)} onChange={setWhen} />
+        <DayChoice label="When I’ll do it" suggest afterWork={Boolean(todo.after_work)} value={day} noneLabel="Someday" picking={picking === 'when'} onPick={(on) => setPicking(on ? 'when' : null)} onChange={setWhen} />
         <DayChoice label="Deadline" value={todo.due_on} noneLabel="No deadline" picking={picking === 'due'} onPick={(on) => setPicking(on ? 'due' : null)} onChange={setDue} />
       </div>
       {picking && (

@@ -94,7 +94,7 @@ const T_REVIEW = TIM('the weekly review’s step 3 lists what was done under its
 const T_CLOSE3 = TIM('Close the day’s step 3 says the day once above the list (rule 29ap) and shows each estimate');
 const T_GOALS = TIM('the guided close shows the goals without the start and now ratings');
 const T_GROUP = TIM('a group session has no single client’s brief, so its link is “Open”');
-const T_WHEN = TIM('When offers Today, Tomorrow, Another day (the date picker) and Someday, with After work as its own switch');
+const T_WHEN = 'When offers M11’s days (tidy follow-up 3, run 6’s 8), with Another day (the date picker) added and After work also its own switch for a later day';
 const T_REPEATS = TIM('Repeats offers the general rules and “2 weeks after I finish it” (run 6); M11’s “Every Thursday” and “Monthly on the 1st” are its Every week and Every month');
 const T_REP_SEED = 'the seed’s to-dos have no repeat counted from finishing (“2 weeks after I finish it” is built: run 6)';
 const T_TAGS = TIM('tags stay on a phone’s rows');
@@ -297,7 +297,7 @@ export const ROWS = [
     added: [...QUICK.added, TAG_P, seeded(/^(Tue 17 Nov|Yesterday|Mon 16 Nov)$/, 'the day the seed’s to-dos were done'), [/^name: Mark “.+” as not done$/, 'a ticked box’s name says what pressing it does', null, { say: 'Mark … as not done' }]] },
   { name: 'A to-do', m11: 'todo', part: 'sheet', built: 'todos-todo', changes: PANEL.changes, added: [...PANEL.added, AFTER_WORK] },
   { name: 'A to-do, When I’ll do it opened', m11: 'todo', clicks: ['dd:tdw'], part: 'sheet', built: 'm11-todo-when',
-    changes: [...PANEL.changes, [/^(After work, today|Thu 19 Nov|Mon 23 Nov)$/, null, T_WHEN, { say: 'After work, today; Thu 19 Nov; Mon 23 Nov' }]],
+    changes: PANEL.changes,
     added: [...PANEL.added, AFTER_WORK, ['Another day', T_WHEN]], moved: [[/^(today|tomorrow|someday)$/, POPUP]] },
   { name: 'A to-do, Repeats opened', m11: 'todo', clicks: ['dd:tdrep'], part: 'sheet', built: 'm11-todo-repeats',
     changes: [...PANEL.changes, [/^(Every Thursday|Monthly on the 1st)$/, null, T_REPEATS, { say: 'Every Thursday, Monthly on the 1st' }]],

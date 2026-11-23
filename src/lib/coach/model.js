@@ -67,6 +67,22 @@ export function dayWords(key, todayKey) {
   return d.getFullYear() === thisYear ? base : `${base} ${d.getFullYear()}`;
 }
 
+/**
+ * The suggested days in a to-do's When menu after Today and Tomorrow (M11
+ * seq 77: on Tue 17 Nov, "Thu 19 Nov" and "Mon 23 Nov"; tidy follow-up 3,
+ * run 6's 8): the first working day after tomorrow, then next week's
+ * Monday, each once and never Today or Tomorrow again.
+ */
+export function suggestedDays(todayKey) {
+  const today = fromDayKey(todayKey);
+  if (!today) return [];
+  const tomorrow = addDays(todayKey, 1);
+  let next = addDays(todayKey, 2);
+  while ([0, 6].includes(fromDayKey(next).getDay())) next = addDays(next, 1);
+  const monday = addDays(todayKey, ((8 - today.getDay()) % 7) || 7);
+  return [...new Set([next, monday])].filter((k) => k !== todayKey && k !== tomorrow).sort();
+}
+
 /** "Mon 21 Dec to Sun 3 Jan", or the one day. */
 export function rangeWords(from, to, todayKey) {
   if (!from) return '';

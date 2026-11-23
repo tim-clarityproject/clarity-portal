@@ -11,7 +11,7 @@ import {
   sortOptions, viewFromList, listFromView, favouriteViews, canFavourite, mergePlan, mergeValues, mergedProfile,
   likelyDuplicates, nextCallBar, callForBar, searchResults, withRecent, quickContacts, birthdaysOn, birthdayNote,
   gettingStarted, exportRows, toCsv, workshopCounts, registrationStatus, workshopEmailRows, viewAskState, stageMove, stageBeside, boardStage as boardStageOf, parseHours, START_ZONES, dayWords, rangeWords,
-  addDays, timeline, possessive, cut,
+  addDays, timeline, possessive, cut, suggestedDays,
 } from '../../src/lib/coach/model.js';
 import { parseQuickAdd } from '../../src/lib/coach/day.js';
 import { xlsxBytes } from '../../src/lib/coach/xlsx.js';
@@ -455,4 +455,11 @@ test('typed text is cut to its limit without ever ending on half of an emoji (th
   assert.ok(whole(parsed.title) && parsed.title.length === 299, 'the quick add’s 300-character title drops the emoji that would be cut');
   assert.equal(parseQuickAdd(`#${'x'.repeat(79)}🎉 call`, { todayKey: '2026-11-17' }).new_list?.length <= 80, true);
   assert.equal(parseQuickAdd('\u200B\u200B\u200E\u2060', { todayKey: '2026-11-17' }).title, '', 'only unseen characters is no title');
+});
+
+test('a to-do’s When menu suggests M11 seq 77’s days (tidy follow-up 3, run 6’s 8)', () => {
+  assert.deepEqual(suggestedDays('2026-11-17').map((k) => dayWords(k, '2026-11-17')), ['Thu 19 Nov', 'Mon 23 Nov'], 'M11’s Tuesday: Thu 19 Nov and Mon 23 Nov');
+  assert.deepEqual(suggestedDays('2026-11-20'), ['2026-11-23'], 'a Friday: the Monday once');
+  assert.deepEqual(suggestedDays('2026-11-22'), ['2026-11-24'], 'a Sunday: never Tomorrow again');
+  assert.deepEqual(suggestedDays('not a day'), []);
 });
