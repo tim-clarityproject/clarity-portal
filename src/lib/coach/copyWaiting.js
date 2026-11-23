@@ -25,7 +25,9 @@ export function coachRowsWaiting(copy) {
       if ((!m?.sent || m.gone) && !m?.refused) n += 1;
     }
   }
-  return n;
+  // A large copy whose waiting rows didn't fit here keeps only their count (store.js write); the rows are in IndexedDB.
+  const over = Number(obj(copy).overflow);
+  return n + (Number.isFinite(over) && over > 0 ? Math.floor(over) : 0);
 }
 
 /** Network kept on the device before 052 (clarity-coach-network-local:): every person, give and rating there waits. */

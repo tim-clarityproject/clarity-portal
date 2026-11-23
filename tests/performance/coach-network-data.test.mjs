@@ -298,3 +298,15 @@ test('the device keeps at most ANSWERS_KEPT of Network\'s answers, the newest fi
   assert.ok(!kept.some(([k]) => /p_today/.test(k)), 'kept without their day');
 });
 
+
+test('where IndexedDB can\'t be used, the kept answers fit localStorage\'s share: the oldest go first, the newest always stays (break-it tester, tidy follow-up 3)', () => {
+  const answer = (i, n) => [`page:${i}`, { total: 5000, rows: Array.from({ length: n }, (_, j) => ({ id: `p${i}-${j}`, name: 'x'.repeat(400) })) }];
+  const twelvePages = Array.from({ length: 12 }, (_, i) => answer(i, 50));
+  const kept = data.answersWithin(twelvePages);
+  assert.ok(JSON.stringify(kept).length <= data.ANSWERS_CHARS, 'within the share');
+  assert.ok(kept.length >= 1 && kept.length < 12);
+  assert.deepEqual(kept.map((x) => x[0]), twelvePages.slice(0, kept.length).map((x) => x[0]), 'the newest first, in order');
+  const huge = [answer('huge', 2000), answer('next', 1)];
+  assert.deepEqual(data.answersWithin(huge).map((x) => x[0]), ['page:huge'], 'the newest stays even when it is over the share alone');
+  assert.deepEqual(data.answersWithin([]), []);
+});

@@ -153,6 +153,11 @@ test('a coach’s waiting changes are counted for Sign out, and sent across firs
   };
   assert.equal(coachRowsWaiting(copy), 2, 'b not sent, c a removal still to send; a sent, d refused; the activity log is only read');
   assert.equal(coachRowsWaiting(null), 0);
+  // A large copy whose waiting rows didn't fit in localStorage keeps only their count there; the rows are in IndexedDB
+  // (store.js write; break-it tester, tidy follow-up 3: 5,000 leads imported before 052).
+  assert.equal(coachRowsWaiting({ rows: {}, marks: {}, partial: true, overflow: 5000 }), 5000);
+  assert.equal(coachRowsWaiting({ ...copy, overflow: 3 }), 5);
+  assert.equal(coachRowsWaiting({ rows: {}, overflow: 'junk' }) + coachRowsWaiting({ rows: {}, overflow: -4 }), 0);
   assert.equal(networkRowsWaiting({ people: { p1: {}, p2: {} }, gives: { g1: {} }, ratings: [{}] }), 4);
   assert.equal(networkRowsWaiting('nonsense'), 0);
   const { copiesWaiting, sendCopiesBeforeSignOut } = await import('../../src/lib/signOutCopies.js');

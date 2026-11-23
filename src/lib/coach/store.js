@@ -1,7 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { supabase } from '../supabase';
 import { newId, saveOrQueue, waitingToSend } from '../syncQueue';
-import { READ_ONLY_TABLES } from './copyWaiting';
+import { coachRowsWaiting, READ_ONLY_TABLES } from './copyWaiting';
 import { tableReady } from '../performance/tableReady';
 import { deviceKey, readJson, removeKey, writeJson } from '../deviceStore';
 import { deviceCopyAvailable, onCopiesCleared, readCopy, writeTables } from './deviceCopy';
@@ -496,13 +496,25 @@ function write(userId, next) {
     const part = asCache ? null : unsentState(next);
     if (part) {
       const raw = JSON.stringify({ ...part, partial: true });
-      try { window.localStorage.setItem(localKey(userId), raw); rawSeen.set(userId, raw); ok = true; } catch { ok = false; }
+      try {
+        window.localStorage.setItem(localKey(userId), raw); rawSeen.set(userId, raw); ok = true;
+      } catch {
+        // Too much waiting to fit in localStorage (5,000 leads imported before 052; break-it tester, tidy follow-up
+        // 3): the older waiting part kept there would be laid over IndexedDB's newer copy at the next visit, row by
+        // row, and bring back older words. In its place goes only how many rows wait (`overflow`), so a Sign out
+        // still counts them (copyWaiting.js), and IndexedDB, which holds the whole copy with its marks, is written at
+        // once rather than when the page is idle.
+        ok = false;
+        const marker = JSON.stringify({ rows: {}, marks: {}, partial: true, overflow: coachRowsWaiting(part) });
+        try { window.localStorage.setItem(localKey(userId), marker); rawSeen.set(userId, marker); } catch { removeKey(localKey(userId)); }
+      }
     } else {
       removeKey(localKey(userId));
       ok = true;
     }
     removeKey(cacheKey(userId));
     scheduleCopy(userId);
+    if (ok === false) flushCopy(userId, copyTimers.get(userId));
   }
   listeners.forEach((fn) => fn());
   return ok;

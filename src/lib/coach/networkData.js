@@ -6,6 +6,7 @@ import { readCache, writeCache } from '../pageCache';
 import { getLocalDateKey } from '../dateFormatter';
 import { newId, saveOrQueue } from '../syncQueue';
 import { beforeMoveAcross, coachCrmReady, coachCrmReadyNow } from './store';
+import { deviceCopyAvailable, onCopiesCleared, readExtra, writeExtra } from './deviceCopy';
 import { focusOf, importRow, mergedPerson, networkCounts, networkDuplicates, networkMap, networkPage, RATINGS, withWorkedOut } from './network.js';
 
 // Where Network's people are read and kept (migration 052; Phase 6a run 4).
@@ -128,27 +129,65 @@ const lastAnswers = new Map();
 const offlineError = () => Object.assign(new Error('Network needs a connection.'), { code: 'OFFLINE' });
 
 // The last answers, kept on the device too (run 6, item 9), as the coach
-// store keeps its last data shown (clarity-cache:<account>:…): a reload with
-// no connection shows Network as it was last seen here, marked stale, and
-// only a device that has never opened it says it needs a connection. The
-// questions are kept without their day (yesterday's answer beats none), at
-// most ANSWERS_KEPT of them, the newest first; a Sign out clears them with
-// the rest of the account's copies.
+// store keeps its last data shown: a reload with no connection shows
+// Network as it was last seen here, marked stale, and only a device that
+// has never opened it says it needs a connection. The questions are kept
+// without their day (yesterday's answer beats none), at most ANSWERS_KEPT
+// of them, the newest first; a Sign out clears them with the rest of the
+// account's copies.
+//
+// Where (break-it tester, tidy follow-up 3): twelve pages of 50 and the
+// map's 150 came to 465,000 characters, most of localStorage's room for the
+// whole portal, so like the coach store's large copy they are kept in
+// IndexedDB (deviceCopy.js, the extra "coach-network"; a Sign out deletes
+// that database). Only where IndexedDB can't be used are they kept in
+// localStorage (clarity-cache:<account>:coach-network), and there no more
+// than ANSWERS_CHARS: the oldest answers go first, the newest always stays.
 const ANSWERS_CACHE = 'coach-network';
 export const ANSWERS_KEPT = 24;
+export const ANSWERS_CHARS = 200000;
 const dayless = (key) => key.replace(/,?"p_today":"[^"]*"/, '');
-function keptAnswer(userId, key) {
-  const kept = readCache(userId, ANSWERS_CACHE)?.v;
-  const hit = Array.isArray(kept) ? kept.find((x) => Array.isArray(x) && x[0] === dayless(key)) : null;
+const answersHeld = new Map(); // account -> Promise of the kept list, as last read or written on this device
+onCopiesCleared(() => answersHeld.clear());
+const listOf = (v) => (Array.isArray(v) ? v.filter((x) => Array.isArray(x) && typeof x[0] === 'string') : []);
+function answersOf(userId) {
+  if (!answersHeld.has(userId)) {
+    answersHeld.set(userId, (async () => {
+      const kept = deviceCopyAvailable() ? await readExtra(userId, ANSWERS_CACHE) : null;
+      return Array.isArray(kept) ? listOf(kept) : listOf(readCache(userId, ANSWERS_CACHE)?.v);
+    })());
+  }
+  return answersHeld.get(userId);
+}
+/** The kept answers trimmed to fit localStorage's share: the oldest go first, the newest always stays. */
+export function answersWithin(list, chars = ANSWERS_CHARS) {
+  const out = [];
+  let size = 2;
+  for (const item of list) {
+    const n = JSON.stringify(item).length + 1;
+    if (out.length && size + n > chars) break;
+    out.push(item);
+    size += n;
+  }
+  return out;
+}
+async function keptAnswer(userId, key) {
+  if (!userId) return null;
+  const hit = (await answersOf(userId)).find((x) => x[0] === dayless(key));
   return hit ? { data: hit[1] } : null;
 }
 function keepAnswer(userId, key, data) {
   if (!userId) return;
-  try {
-    const kept = readCache(userId, ANSWERS_CACHE)?.v;
-    const rest = (Array.isArray(kept) ? kept : []).filter((x) => Array.isArray(x) && x[0] !== dayless(key));
-    writeCache(userId, ANSWERS_CACHE, [[dayless(key), data], ...rest].slice(0, ANSWERS_KEPT));
-  } catch { /* no room on the device: the answer is still shown */ }
+  // One after another: two answers arriving together each build on the other's list.
+  const next = answersOf(userId).then((before) => [[dayless(key), data], ...before.filter((x) => x[0] !== dayless(key))].slice(0, ANSWERS_KEPT));
+  answersHeld.set(userId, next);
+  next.then(async (list) => {
+    if (deviceCopyAvailable() && await writeExtra(userId, ANSWERS_CACHE, list)) {
+      removeKey(deviceKey('cache', userId, ANSWERS_CACHE)); // an older visit's copy there
+      return;
+    }
+    writeCache(userId, ANSWERS_CACHE, answersWithin(list));
+  }).catch(() => { /* no room on the device: the answer is still shown */ });
 }
 const staleOf = (last) => (last && typeof last === 'object' && !Array.isArray(last) ? { ...last, stale: true } : last);
 
@@ -163,12 +202,12 @@ async function ask(key, fn, userId = null) {
     const { data, error } = await fn();
     if (error) throw error;
     lastAnswers.set(key, data);
-    keepAnswer(userId, key, data);
+    keepAnswer(userId, key, data); // after the page has its answer: never waited for
     return data;
   } catch (error) {
     if (error?.code || !isNetworkError(error)) throw error;
     if (lastAnswers.has(key)) return staleOf(lastAnswers.get(key));
-    const kept = keptAnswer(userId, key);
+    const kept = await keptAnswer(userId, key);
     if (!kept) throw offlineError();
     return staleOf(kept.data);
   }
@@ -583,6 +622,7 @@ export async function saveEmailBody(userId, coachId, emailId, body) {
 export function resetNetworkDataForTests() {
   cache.clear();
   lastAnswers.clear();
+  answersHeld.clear();
   moving.clear();
   version = 0;
 }

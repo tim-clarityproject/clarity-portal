@@ -24,7 +24,7 @@
 //              A into B then B into C; a lead already won
 //   r-sheet    spreadsheets with odd columns (no heading row, the same heading
 //              twice, 60 columns, a BOM, semicolons, quoted new lines, emoji,
-//              right-to-left names, 5 MB, 5,000 rows, formulas, ratings of
+//              right-to-left names, 9.9 MB, 5,000 rows, formulas, ratings of
 //              11, -1 and "high", dates in three styles), an .xlsx read, a
 //              damaged one and older formats said calmly, an empty file; the
 //              export's cells made safe
@@ -63,6 +63,7 @@ import { ACTIONS, automationLoop, automationProblem, CHAIN_MAX, csvTable, hasHea
 import { cellChange, importRows, NETWORK_IMPORT_FIELDS, networkSheetRows, typedRhythm } from '../../src/lib/coach/network.js';
 import { mapProblems, readMap } from './net-rules.mjs';
 import { toCsv } from '../../src/lib/coach/model.js';
+import { coachRowsWaiting } from '../../src/lib/coach/copyWaiting.js';
 import { xlsxBytes, xlsxTable } from '../../src/lib/coach/xlsx.js';
 
 export const CRM_BREAK_PARTS = ['r-reach', 'r-many', 'r-tabs', 'r-offline', 'r-merge', 'r-sheet', 'r-loop', 'r-odd'];
@@ -167,10 +168,27 @@ async function openAt({ role = 'owner', db = 'there', path = '/coach', tag, rows
     if (role === 'owner' && network) await seedNetworkDevice(page, me, people ? { people, gives: [], ratings: [] } : networkDeviceSeed());
   }
   if (path) await go(page, path);
-  const deviceRows = (table, p = page) => p.evaluate(([id, t]) => {
+  // The device's rows: localStorage's copy laid over IndexedDB's (a large copy is kept there since the scale check, and
+  // what waits to be sent with it when it no longer fits in localStorage; store.js write).
+  const deviceRows = (table, p = page) => p.evaluate(async ([id, t]) => {
     const kept = JSON.parse(localStorage.getItem(`clarity-coach-local:${id}`) || localStorage.getItem(`clarity-cache:${id}:coach`) || '{}');
-    const marks = kept.marks?.[t] || {};
-    return Object.entries(kept.rows?.[t] || {}).filter(([k]) => !marks[k]?.gone).map(([, r]) => r);
+    const big = await new Promise((resolve) => {
+      try {
+        const req = indexedDB.open('clarity-coach', 1);
+        req.onupgradeneeded = () => { try { req.result.createObjectStore('tables'); } catch { /* there */ } };
+        req.onerror = () => resolve(null);
+        req.onsuccess = () => {
+          try {
+            const get = req.result.transaction('tables', 'readonly').objectStore('tables').get(`${id}|${t}`);
+            get.onsuccess = () => { resolve(get.result || null); req.result.close(); };
+            get.onerror = () => { resolve(null); req.result.close(); };
+          } catch { resolve(null); req.result.close(); }
+        };
+      } catch { resolve(null); }
+    });
+    const rows = { ...(big?.rows || {}), ...(kept.rows?.[t] || {}) };
+    const marks = { ...(big?.marks || {}), ...(kept.marks?.[t] || {}) };
+    return Object.entries(rows).filter(([k]) => !marks[k]?.gone).map(([, r]) => r);
   }, [me, table]);
   const devicePeople = () => page.evaluate((id) => Object.values(JSON.parse(localStorage.getItem(`clarity-coach-network-local:${id}`) || '{"people":{}}').people || {}), me);
   const deviceGives = () => page.evaluate((id) => Object.values(JSON.parse(localStorage.getItem(`clarity-coach-network-local:${id}`) || '{"gives":{}}').gives || {}), me);
@@ -708,7 +726,9 @@ PARTS['r-sheet'] = async () => {
     const people = importRows(networkSheetRows(net.slice(1), ncols).rows, { today: '2026-11-17' });
     const by = Object.fromEntries(people.map((p) => [p.name, p]));
     pass(`${tag}: ratings of 11, -1, “high” and 10.5 are left blank (so on no list until rated), 0 and 10 kept`, [by['A One'].influence, by['A One'].trust, by['A One'].value_delivery, by['A One'].what_you_get].every((x) => x == null) && by['B Two'].what_you_get === 10 && by['C Three'].influence === 0);
-    pass(`${tag}: dates in three styles (12/10/2025 day first, 2025-10-12, 12 October 2025) are read; “Oct 12 2025” is left blank, not guessed`, by['A One'].last_spoke_on === '2025-10-12' && by['B Two'].last_spoke_on === '2025-10-12' && by['C Three'].last_spoke_on === '2025-10-12' && by['D Four'].last_spoke_on == null, JSON.stringify(people.map((p) => p.last_spoke_on)));
+    // “Oct 12 2025” was once left blank; run 6, step 2 (5063e6ed) reads a month's name in either order on purpose,
+    // since a name can't be mistaken for a day (network.js typedDay). Only a figure-only date is read day first.
+    pass(`${tag}: dates in four styles (12/10/2025 day first, 2025-10-12, 12 October 2025, Oct 12 2025) are read`, by['A One'].last_spoke_on === '2025-10-12' && by['B Two'].last_spoke_on === '2025-10-12' && by['C Three'].last_spoke_on === '2025-10-12' && by['D Four'].last_spoke_on === '2025-10-12', JSON.stringify(people.map((p) => p.last_spoke_on)));
     pass(`${tag}: rhythms “quarterly”, “3” and “90 days” are three months; 0 is no rhythm`, [by['A One'], by['B Two'], by['C Three']].every((p) => p.rhythm_months === 3) && by['D Four'].rhythm_months == null);
     const big = `Name,Email\n${Array.from({ length: 5000 }, (_, i) => `Person ${i},p${i}@example.invalid`).join('\n')}`;
     const t0 = Date.now(); const b = lead(big); const plan = leadImportPlan(b.rows.rows, []); const ms = Date.now() - t0;
@@ -728,7 +748,9 @@ PARTS['r-sheet'] = async () => {
     let threw = 0;
     for (const broken of [xb.slice(0, 120), new Uint8Array(4000), new TextEncoder().encode('PK not really a workbook')]) { try { await xlsxTable(broken); } catch { threw += 1; } }
     pass(`${tag}: a damaged workbook is refused (the page says it calmly), never read as rubbish`, threw === 3);
-    pass(`${tag}: older formats (.xls, .numbers, .ods) are said calmly with what to do; a 5 MB file is too big for Leads`, ['a.xls', 'a.numbers', 'a.ods'].every((n) => /can’t be read here\. Save it as Excel \(\.xlsx\) or CSV/.test(importFileProblem(n, 100))) && /too big/.test(importFileProblem('a.csv', 5 * 1024 * 1024)) && importFileProblem('a.xlsx', 1000) === '');
+    // Leads and Network share one 8 MB limit since run 6, item 10 (model.js IMPORT_FILE_MAX: room for 5,000 rows
+    // with notes), so 5 MB is no longer too big; 9 MB is. A file just under the limit is read.
+    pass(`${tag}: older formats (.xls, .numbers, .ods) are said calmly with what to do; a 9 MB file is too big for Leads, 5 MB isn't`, ['a.xls', 'a.numbers', 'a.ods'].every((n) => /can’t be read here\. Save it as Excel \(\.xlsx\) or CSV/.test(importFileProblem(n, 100))) && /too big/.test(importFileProblem('a.csv', 9 * 1024 * 1024)) && importFileProblem('a.csv', 5 * 1024 * 1024) === '' && importFileProblem('a.xlsx', 1000) === '');
   }
   // Then the panels, with real files.
   const dir = mkdtempSync(join(tmpdir(), 'crm-breakit-'));
@@ -737,7 +759,8 @@ PARTS['r-sheet'] = async () => {
     const workbook = file('leads.xlsx', xlsxBytes([['Full name', 'Company', 'E-mail', 'Deal value'], ['Imo Reyes', 'Arden Vale', 'imo.reyes@example.invalid', 12000], ['😀 Nell Okoye', 'Harbour Lane', '', ''], ['محمد علي', 'Quillmark', '', ''], ['=cmd|calc', '@evil', '', '']], 'Leads'));
     const damaged = file('damaged.xlsx', xlsxBytes([['Name'], ['Ann']]).slice(0, 150));
     const empty = file('empty.csv', '');
-    const big = file('big.csv', `Name,Email,Notes\n${Array.from({ length: 52000 }, (_, i) => `Person ${i},p${i}@example.invalid,${'x'.repeat(60)}`).join('\n')}`);
+    // Over the shared 8 MB limit (run 6, item 10): 52,000 rows of about 190 characters, about 9.9 MB.
+    const big = file('big.csv', `Name,Email,Notes\n${Array.from({ length: 52000 }, (_, i) => `Person ${i},p${i}@example.invalid,${'x'.repeat(160)}`).join('\n')}`);
     const many = file('many.csv', `Name,Email\n${Array.from({ length: 5000 }, (_, i) => `Person ${i},p${i}@example.invalid`).join('\n')}`);
     const xls = file('old.xls', 'not a workbook'); const numbers = file('sheet.numbers', 'x'); const ods = file('sheet.ods', 'x');
     {
@@ -760,7 +783,7 @@ PARTS['r-sheet'] = async () => {
         pass(`${tag}: ${f.split('.').pop()} is said calmly: save it as Excel or CSV`, text.includes('That kind of spreadsheet can’t be read here. Save it as Excel (.xlsx) or CSV, or copy the rows and paste them.'), text.slice(0, 160));
       }
       text = await choose(big);
-      pass(`${tag}: a 5 MB file is too big, said calmly`, text.includes('That file is too big. Split it, or paste the rows instead.'), text.slice(0, 160));
+      pass(`${tag}: a 9.9 MB file is too big, said calmly`, text.includes('That file is too big. Split it, or paste the rows instead.'), text.slice(0, 160));
       text = await choose(empty);
       const emptySaid = text;
       pass(`${tag}: an empty file says it has no rows, as soon as it is chosen`, text.includes('That file has no rows to add. Check it and try again.'), emptySaid.slice(0, 160));
@@ -771,7 +794,12 @@ PARTS['r-sheet'] = async () => {
       const t1 = Date.now();
       await press(page, 'Add 5,000 leads', dialog(page)); await settle(page, 1200);
       const added = (await a.rowsNow('coach_leads')).filter((l) => /^Person \d+$/.test(l.name)).length;
-      pass(`${tag}: and added on the device in one go (${added}, ${Date.now() - t1} ms)`, added === 5000, String(added));
+      const after = added === 5000 ? '' : `${flat(await panelWords(page)).slice(0, 200)} | toast: ${await toastText(page).catch(() => '')} | kept: ${await page.evaluate(() => Object.keys(localStorage).map((k) => `${k.replace(/[0-9a-f-]{36}/, '<id>')} ${localStorage.getItem(k).length}`).join(', '))}`;
+      pass(`${tag}: and added on the device in one go (${added}, ${Date.now() - t1} ms)`, added === 5000, `${added} ${after}`);
+      // Too many waiting rows for localStorage: they are kept in IndexedDB, and localStorage still says how many wait, so
+      // a Sign out counts them ("Some changes haven't synced yet.") instead of clearing them without a word.
+      const waitingCount = coachRowsWaiting(await page.evaluate((id) => JSON.parse(localStorage.getItem(`clarity-coach-local:${id}`) || 'null'), a.me));
+      pass(`${tag}: a Sign out would count all 5,000 as still waiting (${waitingCount})`, waitingCount >= 5000, String(waitingCount));
       await a.close();
     }
     {
@@ -786,7 +814,7 @@ PARTS['r-sheet'] = async () => {
       pass(`${tag}: semicolons and a byte-order mark: four people to add`, text.includes('Add 4 people'), text.slice(0, 200));
       await press(page, 'Add 4 people', dialog(page)); await settle(page, 1200);
       const ppl = Object.fromEntries((await a.peopleNow()).filter((p) => ['Ada Byrne', 'Ben Cole', 'Cy Dunn', 'Di Eyre'].includes(p.name)).map((p) => [p.name, p]));
-      pass(`${tag}: kept as the rules read them (ratings of 11, -1, “high”, 10.5 blank; three date styles; the owner’s own Sector column)`, ppl['Ada Byrne']?.influence == null && ppl['Ada Byrne']?.last_spoke_on === '2025-10-12' && ppl['Ben Cole']?.what_you_get === 10 && ppl['Cy Dunn']?.last_spoke_on === '2025-10-12' && ppl['Di Eyre']?.last_spoke_on == null && ppl['Ada Byrne']?.own?.[CRM.colSector] === 'Health', JSON.stringify(Object.values(ppl).map((p) => [p.name, p.influence, p.last_spoke_on])));
+      pass(`${tag}: kept as the rules read them (ratings of 11, -1, “high”, 10.5 blank; four date styles, Oct 12 2025 read as run 6 step 2 decided; the owner’s own Sector column)`, ppl['Ada Byrne']?.influence == null && ppl['Ada Byrne']?.last_spoke_on === '2025-10-12' && ppl['Ben Cole']?.what_you_get === 10 && ppl['Cy Dunn']?.last_spoke_on === '2025-10-12' && ppl['Di Eyre']?.last_spoke_on === '2025-10-12' && ppl['Ada Byrne']?.own?.[CRM.colSector] === 'Health', JSON.stringify(Object.values(ppl).map((p) => [p.name, p.influence, p.last_spoke_on])));
       for (const f of [damaged, numbers]) {
         text = await choose(f);
         pass(`${tag}: ${f.split('/').pop()} is said calmly`, /can’t be read here/.test(text), text.slice(0, 160));
@@ -795,7 +823,7 @@ PARTS['r-sheet'] = async () => {
       pass(`${tag}: an empty file says it has no rows, as soon as it is chosen`, text.includes('That file has no rows to add. Check it and try again.'), text.slice(0, 160));
       text = await choose(big);
       if (!/too big/.test(text)) { await dialog(page).getByRole('button', { name: /^Add [\d,]+ (people|person)$|^Add people$/ }).last().click(); await settle(page, 900); text = flat(await panelWords(page)); }
-      pass(`${tag}: a 5 MB file of 52,000 rows: too many at once, said calmly, nobody added`, /up to 5,000 people at a time|too big/.test(text) && !(await a.peopleNow()).some((p) => p.name === 'Person 1'), text.slice(0, 200));
+      pass(`${tag}: a 9.9 MB file of 52,000 rows: too many at once, said calmly, nobody added`, /up to 5,000 people at a time|too big/.test(text) && !(await a.peopleNow()).some((p) => p.name === 'Person 1'), text.slice(0, 200));
       await page.keyboard.press('Escape'); await settle(page, 400);
       const t0 = Date.now();
       const importsBefore = a.store.calls.filter((c) => /network_import/.test(c)).length;
