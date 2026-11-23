@@ -168,6 +168,12 @@ if (PARTS.includes('coach')) {
   try {
     // Signed in here, not from the coach suites' saved sign-in (that one is for their own server).
     await page.route('**/api/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"sent":false}' }));
+    // 053 is real on the test project now: its state is answered as the coach suites' own sign-in answers it (coachContext), so
+    // the sign-in isn't sent on to save recovery codes the test coach never made, and nothing of 053 is written.
+    await page.route(/\/rest\/v1\/rpc\/coach_(auth_state|authenticator_on|recovery_codes_make|recovery_codes_saved|recovery_code_use|authenticator_reset)(\?|$)/, (route) => route.fulfill({
+      status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', details: null, hint: null, message: 'Could not find the function in the schema cache' }),
+    }));
+    await page.route(/\/rest\/v1\/rpc\/(guest_claim|alignment_claim)(\?|$)/, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '0' }));
     await asAal2(page, { host: TEST_HOST, totpKey: env.TEST_COACH_OWNER_TOTP_KEY || null });
     await page.goto(`${APP}/coach/sign-in`);
     await page.getByLabel('Email').fill(env.TEST_COACH_OWNER_EMAIL);

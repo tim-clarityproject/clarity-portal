@@ -360,18 +360,19 @@ export async function measureChevrons(page) {
     let drawn = c.letter && !c.block ? await strokeMiddle(page, c.letter, 0, view) : null;
     if (drawn == null && c.probe && !c.block) {
       // A plain x in the words' place, read from its pixels, then the words put back exactly as they were.
-      const probe = await page.evaluate((n) => {
+      // (A capital H beside capitals, so their middle is the capitals' middle, not the x-height's.)
+      const probe = await page.evaluate(([n, caps]) => {
         const holder = document.querySelector(`[data-chev-words="${n}"]`);
         const node = holder && [...holder.childNodes].find((t) => t.nodeType === 3 && t.textContent.trim());
         if (!node) return null;
         window.__chevWords = { node, text: node.textContent };
-        node.textContent = 'x';
+        node.textContent = caps ? 'H' : 'x';
         const one = document.createRange();
         one.setStart(node, 0);
         one.setEnd(node, 1);
         const r = one.getClientRects()[0];
         return r && r.width > 2 ? { x: r.left, y: r.top, width: r.width, height: r.height } : null;
-      }, i);
+      }, [i, c.capitals]);
       if (probe) drawn = await strokeMiddle(page, probe, 0, view);
       await page.evaluate(() => { const w = window.__chevWords; if (w) { w.node.textContent = w.text; delete window.__chevWords; } });
     }
