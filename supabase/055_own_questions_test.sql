@@ -3,8 +3,10 @@
 -- Checks migration 055 (your own questions) for each role: the person, their
 -- coach with the 6-digit code, the same coach at password only (aal1),
 -- another coach, another client, and someone signed out. Run after 055.
--- Everything runs inside one transaction and is rolled back by the runner's
--- dry run; it ends with "055 CHECKS PASSED", or stops listing what failed.
+-- Everything it makes is undone at the end, wherever it runs (the SQL editor
+-- keeps what a test makes unless the test undoes it: before 23 Nov this test
+-- left its four invented people behind, which failed 055_recovery_codes_test's
+-- check 12). It ends with "055 CHECKS PASSED", or stops listing what failed.
 -- =============================================================================
 create or replace function pg_temp.t_as(p uuid, p_aal text default 'aal1') returns void language plpgsql as $f$
 begin
@@ -75,6 +77,7 @@ declare
   qd uuid := gen_random_uuid(); qr uuid := gen_random_uuid();
   s1 uuid; s2 uuid; v text;
 begin
+  begin
   perform pg_temp.t_admin();
   sam := pg_temp.t_user('sam'); ola := pg_temp.t_user('ola');
   tim_u := pg_temp.t_user('tim'); maya_u := pg_temp.t_user('maya');
@@ -241,6 +244,14 @@ begin
          and tablename in ('own_questions', 'own_question_answers', 'own_question_suggestions')$q$), '3');
   f := f || pg_temp.t_eq('5b recorded in the migration log', pg_temp.t_n(
     $q$select count(*) from public.migration_log where name = '055_own_questions'$q$), '1');
+
+    perform pg_temp.t_admin();
+    raise exception 'undo the test rows' using errcode = 'P0055';
+  exception when sqlstate 'P0055' then
+    perform pg_temp.t_admin();
+  end;
+  f := f || pg_temp.t_eq('5c everything the test made is undone',
+    (select count(*)::text from auth.users where email like 'p6a-test-%@example.invalid' and id in (sam, ola, tim_u, maya_u)), '0');
 
   if array_length(f, 1) > 0 then
     raise exception 'FAILED (% of the checks): %', array_length(f, 1), array_to_string(f, ' | ');
