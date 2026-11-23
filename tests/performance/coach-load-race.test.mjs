@@ -133,20 +133,18 @@ test('a to-do ticked while a load is on its way stays ticked', async () => {
   assert.equal(store.rowOf(store.coachState(USER), 'coach_todos', 't1').done_at, '2026-11-23T09:30:00.000Z');
 });
 
-test('the later tier arriving after the coach edited a note never puts the old words back', async () => {
+test('a note edited while the load that brings notes is on its way never gets its old words back', async () => {
   fresh();
-  // The note is on the device from an earlier visit (the later tier reads notes).
+  // Notes come with the first load (tidy follow-up 3, scale check 3; before, the later tier read them).
   await store.loadCoach(USER);
-  await pause(200);
-  assert.deepEqual(ids('client_notes'), ['n1']);
-  // A new visit: the later tier is held back while the coach edits the note.
-  store.resetCoachStoreForTests();
+  assert.deepEqual(ids('client_notes'), ['n1'], 'in as the first load resolves, not after');
   db.hold = (t) => t === 'client_notes';
-  await store.loadCoach(USER);
-  await pause(200);
+  const loading = store.loadCoach(USER, { again: true });
+  await pause();
   const n1 = store.rowOf(store.coachState(USER), 'client_notes', 'n1');
   await store.saveRow(USER, 'client_notes', { ...n1, body: 'Edited words' });
   release();
+  await loading;
   await pause(50);
   assert.equal(store.rowOf(store.coachState(USER), 'client_notes', 'n1').body, 'Edited words');
 });
