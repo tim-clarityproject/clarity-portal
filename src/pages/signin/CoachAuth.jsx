@@ -6,8 +6,8 @@ import { needsConnection, isOffline } from '../../lib/friendlyError';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import { CODE_SIX_DIGITS, DIDNT_SIGN_IN, TOO_MANY } from '../../lib/signIn/words';
 import {
-  afterWrongCode, CODE_DIDNT_WORK, CODES_DIDNT_MAKE, CODES_NOT_YET, CODES_REPLACED, codesFileName, codesFileText, codesForCopy,
-  COACH_AUTH_PATHS, COACH_AUTH_WORDS, COPY_DIDNT_GO, keepTries, keyInGroups, lostCodesLine, lowCodesLine, makeNewCodesLine,
+  afterWrongCode, authenticatorAddress, CODE_DIDNT_WORK, CODES_DIDNT_MAKE, CODES_NOT_YET, CODES_REPLACED, codesFileName, codesFileText, codesForCopy,
+  COACH_AUTH_PATHS, COACH_AUTH_WORDS, COPY_DIDNT_GO, enrolOptions, keepTries, keyInGroups, lostCodesLine, lowCodesLine, makeNewCodesLine,
   NO_WRONG_TRIES, plainKey, readTries, RECOVERY_DIDNT_WORK, SAVE_DIDNT_GO, SET_UP_DIDNT_START, SIGN_IN_DIDNT_GO,
   showRecoveryCode, TYPE_RECOVERY_CODE, usedCodeLine, waitSecondsLeft, waitWords,
 } from '../../lib/signIn/coachAuth';
@@ -177,14 +177,15 @@ export function CoachSetUp() {
         for (const f of (factors?.all || []).filter((x) => x.factor_type === 'totp' && x.status !== 'verified')) {
           await supabase.auth.mfa.unenroll({ factorId: f.id }).catch(() => null);
         }
-        const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: `Authenticator ${Date.now()}` });
+        // Named "The Clarity Portal" in the authenticator app, whatever address this is.
+        const { data, error } = await supabase.auth.mfa.enroll(enrolOptions());
         if (!live()) return;
         if (error || !data?.totp?.secret) {
           setProblem(isOffline(error) ? needsConnection(COACH_AUTH_WORDS.offline.setUp) : SET_UP_DIDNT_START);
           started.current = null;
           return;
         }
-        setFactor({ id: data.id, secret: data.totp.secret, uri: data.totp.uri });
+        setFactor({ id: data.id, secret: data.totp.secret, uri: authenticatorAddress(data.totp.uri, user?.email) });
       } catch (error) {
         if (live()) setProblem(isOffline(error) ? needsConnection(COACH_AUTH_WORDS.offline.setUp) : SET_UP_DIDNT_START);
         started.current = null;

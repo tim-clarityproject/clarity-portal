@@ -422,7 +422,14 @@ export function makeWorld(o = {}) {
       const at = new Date().toISOString();
       world.factors = [...world.factors, { id, factor_type: 'totp', status: 'unverified', friendly_name: body?.friendly_name || 'Authenticator', created_at: at, updated_at: at }];
       world.keys.set(id, key);
-      const uri = `otpauth://totp/The%20Clarity%20Portal:${encodeURIComponent(world.user.email)}?secret=${key}&issuer=The%20Clarity%20Portal`;
+      // As Supabase builds it: named after the issuer the page asks for, else
+      // after the Site URL's host (here the page's own), so a page that left
+      // the issuer out would show its address, as a preview's did (23 Nov).
+      let site = 'localhost';
+      try { site = new URL(req.headers().origin || req.headers().referer).host; } catch { /* localhost */ }
+      world.issuerAsked = body?.issuer ?? null;
+      const issuer = encodeURIComponent(body?.issuer || site);
+      const uri = `otpauth://totp/${issuer}:${encodeURIComponent(world.user.email)}?secret=${key}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`;
       // Supabase's own picture has a white box; the page must never use it.
       return json(route, { id, type: 'totp', friendly_name: body?.friendly_name, totp: { qr_code: '<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10" fill="#fff"/></svg>', secret: key, uri } });
     }

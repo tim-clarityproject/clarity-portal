@@ -243,6 +243,48 @@ export function keyInGroups(secret) {
   return (plainKey(secret).match(/.{1,4}/g) || []).join(' ');
 }
 
+/**
+ * The name an authenticator app shows above the code: always exactly this,
+ * whatever address the portal runs on (Tim, 23 Nov: a preview's address
+ * showed as "clarity-portal-app-git-feature-per…"). Supabase names it after
+ * its Site URL unless told.
+ */
+export const AUTHENTICATOR_ISSUER = 'The Clarity Portal';
+
+/** What set-up asks Supabase's enrolment for: its own TOTP factor, named for us. */
+export function enrolOptions(now = Date.now()) {
+  return { factorType: 'totp', friendlyName: `Authenticator ${now}`, issuer: AUTHENTICATOR_ISSUER };
+}
+
+/**
+ * The address the QR code carries, from Supabase's own: the same key and
+ * settings (algorithm, digits, period), with the label and the issuer
+ * always "The Clarity Portal" and the coach's email as the account name, so
+ * the app shows the same name however Supabase is set up. The key comes
+ * from the address itself, so the QR and the key shown in fours (from the
+ * same enrolment) always agree. Answers '' for anything that isn't a TOTP address.
+ */
+export function authenticatorAddress(uri, email) {
+  const m = /^otpauth:\/\/totp\/([^?]*)\?(.*)$/i.exec(String(uri ?? ''));
+  if (!m) return '';
+  const params = m[2].split('&').filter(Boolean).map((pair) => {
+    const i = pair.indexOf('=');
+    return i < 0 ? [pair, ''] : [pair.slice(0, i), pair.slice(i + 1)];
+  });
+  const secret = params.find(([k]) => k.toLowerCase() === 'secret');
+  if (!secret || !secret[1]) return '';
+  let account = String(email ?? '').trim();
+  if (!account) {
+    // No email to hand: the account name Supabase gave, after its own "issuer:".
+    let label = m[1];
+    try { label = decodeURIComponent(label); } catch { /* as it came */ }
+    account = label.includes(':') ? label.slice(label.indexOf(':') + 1) : label;
+  }
+  const enc = encodeURIComponent;
+  const rest = params.filter(([k]) => !['secret', 'issuer'].includes(k.toLowerCase())).map(([k, v]) => `${k}=${v}`);
+  return `otpauth://totp/${enc(AUTHENTICATOR_ISSUER)}:${enc(account)}?${[`secret=${secret[1]}`, `issuer=${enc(AUTHENTICATOR_ISSUER)}`, ...rest].join('&')}`;
+}
+
 // ---------------------------------------------------------------- recovery codes
 
 const NOT_CODE = new RegExp(`[^${CODE_ALPHABET}]`);

@@ -39,6 +39,7 @@ import { pathToFileURL } from 'node:url';
 import { APP, MOCKUP, makeChecks, sleep } from './shared.mjs';
 import { coachWorld, M26_CODES, M26_KEY } from './coachWorld.mjs';
 import { ruleProblems, spacingRule } from './spacing.mjs';
+import { centredGroups, centringProblems } from './centring.mjs';
 import { overlappingTaps } from '../phase5/taps.mjs';
 import { outlinedEdges } from '../phase5/edges.mjs';
 import { COACH_AUTH_WORDS, lowCodesLine, makeNewCodesLine, usedCodeLine } from '../../src/lib/signIn/coachAuth.js';
@@ -363,6 +364,10 @@ if (PARTS.includes('screens')) {
         pass(`${tag}: every outlined edge reaches 3 to 1`, edges.length === 0, edges.slice(0, 3).join('; '));
         const sideways = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
         pass(`${tag}: no sideways scroll`, sideways <= 0, `${sideways}px`);
+        // One alignment per page, each row centred as a group, boxes even inside (sign-in rule 49).
+        const centring = await page.evaluate(centredGroups, { root: s.acct ? '.si-col--account' : '.si-col' });
+        const offCentre = centringProblems(centring);
+        pass(`${tag}: each row ${centring.align === 'centre' ? 'centred as a group' : 'on the column’s left edge'}, and boxes even inside`, offCentre.length === 0, offCentre.slice(0, 4).join('; '));
         // A wrong code is Supabase's own 422, which the browser notes as a resource that didn't load.
         const own = errors.filter((e) => !(s.shot === 'coach-code-wait' && /status of 422/.test(e)));
         pass(`${tag}: no console errors`, own.length === 0, own.slice(0, 2).join(' | '));
@@ -372,6 +377,11 @@ if (PARTS.includes('screens')) {
           const qr = await readQr(page);
           const shownKey = (await page.locator('.si-key').innerText()).replace(/\s+/g, '');
           const secret = qr.text ? new URL(qr.text.replace('otpauth://', 'https://')).searchParams.get('secret') : null;
+          // The app shows "The Clarity Portal" whatever address this is (Tim, 23 Nov): the stand-in names
+          // the code after the page's own host unless the page asks for the issuer, as Supabase does.
+          const qrUrl = qr.text ? new URL(qr.text.replace('otpauth://', 'https://')) : null;
+          const label = qrUrl ? decodeURIComponent(qrUrl.pathname.replace(/^\//, '')) : '';
+          pass(`${tag}: the QR code names The Clarity Portal and the coach’s email, on ${new URL(APP).host}`, Boolean(qrUrl) && qrUrl.searchParams.get('issuer') === 'The Clarity Portal' && label === `The Clarity Portal:${world.user.email}` && world.issuerAsked === 'The Clarity Portal' && !qr.text.includes(new URL(APP).hostname), qrUrl ? `issuer "${qrUrl.searchParams.get('issuer')}", label "${label}", asked "${world.issuerAsked}"` : 'not read');
           pass(`${tag}: the QR code reads back as the typed key, with jsQR’s dontInvert`, Boolean(qr.text) && secret === shownKey && shownKey === M26_KEY, qr.text ? 'read, but not the same key' : 'not read');
           const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) <= 3);
           // The light page colour (#F9F8F5) under the dots in both modes; round it, the page itself, with no card or edge.
