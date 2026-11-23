@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { plainFirstName } from '../coachName';
 
 /**
  * The person's own coach (my_coach), or null. Online only. contactWays
@@ -30,7 +31,7 @@ async function readMyCoach() {
   const c = Array.isArray(data) ? data[0] : data;
   return c ? {
     id: c.coach_id,
-    firstName: c.first_name,
+    firstName: plainFirstName(c.first_name),
     awayUntil: c.away_until,
     mobile: c.mobile || null,
     contactWays: Array.isArray(c.contact_ways) ? c.contact_ways : [],

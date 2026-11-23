@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import { plainFirstName } from '../../lib/coachName';
 
 // The client's own coach: { firstName, mobile, contactWays } (e.g. "Tim",
 // "Adie"), for the who-sees label and "Chat to [first name]". The app
@@ -10,7 +11,10 @@ export const CoachContext = createContext(null);
 export function useCoach() {
   const coach = useContext(CoachContext);
   if (!coach) return null;
-  return typeof coach === 'string' ? { firstName: coach } : coach;
+  if (typeof coach === 'string') return plainFirstName(coach) ? { firstName: plainFirstName(coach) } : null;
+  // Never "Dr." before the name (src/lib/coachName.js).
+  const firstName = plainFirstName(coach.firstName);
+  return firstName === coach.firstName ? coach : { ...coach, firstName };
 }
 
 export function useCoachName(fromProp) {
