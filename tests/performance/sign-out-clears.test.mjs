@@ -174,3 +174,21 @@ test('a coach’s waiting changes are counted for Sign out, and sent across firs
   assert.deepEqual(none, []);
   assert.equal(copiesWaiting('a-client'), 0, 'a client with no coach copy waits for nothing');
 });
+
+test('a Daily review’s way of being or a monthly review’s extras still on the device are counted, so Sign out never drops them silently (functionality tester, tidy follow-up 3)', async () => {
+  const store = new Map();
+  globalThis.window = globalThis.window || {};
+  globalThis.window.localStorage = {
+    getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k),
+    get length() { return store.size; }, key: (i) => [...store.keys()][i] ?? null,
+  };
+  const { copiesWaiting } = await import('../../src/lib/signOutCopies.js');
+  assert.equal(copiesWaiting('u2'), 0);
+  store.set('clarity-day-review-local:u2:2026-11-22', JSON.stringify({ way: 'Calm', other: 1 }));
+  store.set('clarity-day-review-local:u2:2026-11-21', JSON.stringify({ other: 1 })); // moved across already: no way left
+  store.set('clarity-checkin-extras:u2:2026-11-01', JSON.stringify({ _drinks: { weekly: 4 } }));
+  store.set('clarity-checkin-extras:u2:2026-10-01', JSON.stringify({}));
+  store.set('clarity-day-review-local:u3:2026-11-22', JSON.stringify({ way: 'Someone else’s' }));
+  assert.equal(copiesWaiting('u2'), 2, 'the way of being and November’s drinks');
+  assert.equal(copiesWaiting('u3'), 1);
+});

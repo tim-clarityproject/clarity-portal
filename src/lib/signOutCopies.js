@@ -23,6 +23,34 @@ const values = (o) => (o && typeof o === 'object' && !Array.isArray(o) ? Object.
 // never sent again, so waiting can't help it).
 const waits = (x) => x && typeof x === 'object' && x.sent !== true && !x.refused;
 
+// The names kept under one kind for this person: clarity-<kind>:<person>:<name>.
+function namesOf(kind, userId) {
+  const prefix = `${deviceKey(kind, userId)}:`;
+  const out = [];
+  try {
+    const store = window.localStorage;
+    for (let i = 0; i < store.length; i += 1) {
+      const k = store.key(i);
+      if (k && k.startsWith(prefix)) out.push(k.slice(prefix.length));
+    }
+  } catch { /* storage blocked: nothing to count */ }
+  return out;
+}
+
+/**
+ * Answers kept on the device until their row can take them (answerExtras.js):
+ * a Daily review's way of being and a monthly review's drinks or trip. They
+ * leave the device only once moved across, so any still here is waiting.
+ */
+function extrasWaiting(userId) {
+  const ways = namesOf('day-review-local', userId).filter((d) => readJson(deviceKey('day-review-local', userId, d))?.way);
+  const months = namesOf('checkin-extras', userId).filter((m) => {
+    const v = readJson(deviceKey('checkin-extras', userId, m));
+    return v && typeof v === 'object' && (v._drinks != null || v._trip);
+  });
+  return ways.length + months.length;
+}
+
 /** How many of the person's own copies on this device haven't reached the account. Pure reads. */
 export function copiesWaiting(userId) {
   if (!userId) return 0;
@@ -37,7 +65,7 @@ export function copiesWaiting(userId) {
   const plans = values(travel.plans).filter(waits);
   // A coach's own copies (coach/store.js and coach/networkData.js): what hasn't reached the database.
   const coach = coachRowsWaiting(readJson(deviceKey('coach-local', userId))) + networkRowsWaiting(readJson(deviceKey('coach-network-local', userId)));
-  return ownQuestions.length + ownAnswers.length + choices.length + moments.length + reviews.length + plans.length + coach;
+  return ownQuestions.length + ownAnswers.length + choices.length + moments.length + reviews.length + plans.length + coach + extrasWaiting(userId);
 }
 
 /**
