@@ -529,9 +529,10 @@ if (typeof window !== 'undefined') {
     const raw = parseRaw(now);
     // A large copy's waiting rows: laid over this tab's copy, never in place of it.
     const before = cache.get(userId);
-    const after = raw?.partial ? overlay(read(userId), tidyState(raw)) : tidyState(raw);
+    const { state: after, kept } = keepSent(before, raw?.partial ? overlay(read(userId), tidyState(raw)) : tidyState(raw));
     touchDifferences(userId, before, after);
-    cache.set(userId, after);
+    // What this tab had already sent is written back as sent, so it never waits on the device for good.
+    if (kept) write(userId, after); else cache.set(userId, after);
     listeners.forEach((fn) => fn());
   });
 }
@@ -605,13 +606,41 @@ export function coachState(userId) {
     listeners.forEach((fn) => fn());
     return fresh;
   }
-  const fresh = tidyState(parsed);
   const before = cache.get(userId);
+  const { state: fresh, kept } = keepSent(before, tidyState(parsed));
   if (before && JSON.stringify(before) === JSON.stringify(fresh)) return before;
   touchDifferences(userId, before, fresh);
-  cache.set(userId, fresh);
+  if (kept) write(userId, fresh); else cache.set(userId, fresh);
   listeners.forEach((fn) => fn());
   return fresh;
+}
+
+/**
+ * Another tab's whole copy over this tab's: a row it still marks as waiting that this tab has already sent, exactly as
+ * it is there, keeps this tab's "sent". Two tabs saving at the same moment each wrote their copy, and the later one
+ * carried the other's row as still waiting after it had reached the database, so it waited on the device for good
+ * (the calendar's break-it tester, two tabs dragging open times at once). Returns the copy and whether it changed.
+ */
+function keepSent(before, after) {
+  if (!before) return { state: after, kept: false };
+  let kept = false;
+  const marks = { ...after.marks };
+  for (const t of Object.keys(after.rows)) {
+    const was = before.marks[t];
+    const wasRows = before.rows[t];
+    if (!was || !wasRows) continue;
+    let one = null;
+    for (const [k, row] of Object.entries(after.rows[t])) {
+      const m = after.marks[t]?.[k];
+      if (m?.sent || m?.refused || m?.gone) continue;
+      const b = was[k];
+      if (!b?.sent || b.gone || !wasRows[k] || JSON.stringify(wasRows[k]) !== JSON.stringify(row)) continue;
+      one ||= { ...(after.marks[t] || {}) };
+      one[k] = b;
+    }
+    if (one) { marks[t] = one; kept = true; }
+  }
+  return kept ? { state: { rows: after.rows, marks }, kept } : { state: after, kept };
 }
 
 /** Is anything here still waiting to reach the database? */
