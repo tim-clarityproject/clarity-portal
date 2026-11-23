@@ -244,6 +244,9 @@ export async function standIn(page, opts = {}) {
   return store;
 }
 
+/** Migration 059's tables (run 8): the stand-in answers them as a database without 059 does. */
+const TABLES_059 = ['coach_google_calendars', 'coach_busy_times'];
+
 async function standInRows(page, { role = 'owner', db = 'none', rows = {}, admin = [], day = false, cal = false, crm = false, strict = false, now: clock = () => new Date() } = {}) {
   const me = { id: ME, user_id: null, role: role === 'owner' ? 'owner' : 'coach', display_first_name: role === 'owner' ? 'Alex' : 'Maya', full_name: role === 'owner' ? 'Alex Morgan' : 'Maya Collins', email: null, mobile: null, contact_ways: ['email'], active: true, capacity_hours_week: 15, hourly_rate: role === 'owner' ? null : 100, rate_currency: 'GBP' };
   const other = { id: OTHER, user_id: randomUUID(), role: role === 'owner' ? 'coach' : 'owner', display_first_name: role === 'owner' ? 'Maya' : 'Alex', full_name: role === 'owner' ? 'Maya Collins' : 'Alex Morgan', email: null, mobile: null, contact_ways: ['email'], active: true, capacity_hours_week: 15, hourly_rate: role === 'owner' ? 100 : null, rate_currency: 'GBP' };
@@ -573,6 +576,7 @@ async function standInRows(page, { role = 'owner', db = 'none', rows = {}, admin
         localStorage.setItem('clarity-coach-day-not-yet', String(Date.now()));
         localStorage.setItem('clarity-coach-cal-not-yet', String(Date.now()));
         localStorage.setItem('clarity-coach-crm-not-yet', String(Date.now()));
+        localStorage.setItem('clarity-coach-059-not-yet', String(Date.now()));
       } catch { /* blocked */ }
     });
     await page.route('**/rest/v1/**', (route) => {
@@ -855,7 +859,8 @@ async function standInRows(page, { role = 'owner', db = 'none', rows = {}, admin
       // 050 isn't there: its tables answer as a database without them does, and the test project is never asked.
       // 051's connections are the server's alone: no person reads or writes a row.
       if (calSim && table === 'coach_connections') return refused(route, '42501', 'permission denied for table coach_connections');
-      if (DAY_TABLES.includes(table) || CAL_TABLES.includes(table) || CRM_TABLES.includes(table) || table === 'coach_connections') return json(route, { code: 'PGRST205', details: null, hint: null, message: `Could not find the table 'public.${table}' in the schema cache` }, 404);
+      // 059 (run 8): not there in the stand-in, so the page keeps its Google calendars and busy times on the device.
+      if (DAY_TABLES.includes(table) || CAL_TABLES.includes(table) || CRM_TABLES.includes(table) || TABLES_059.includes(table) || table === 'coach_connections') return json(route, { code: 'PGRST205', details: null, hint: null, message: `Could not find the table 'public.${table}' in the schema cache` }, 404);
       if (strict && method !== 'GET' && method !== 'HEAD') { store.calls.push(`blocked ${method} ${table}`); return route.abort('blockedbyclient'); }
       // Not strict: a write to a table the stand-in doesn't hold (the portal's own settings, say) is still never sent to the
       // test project; it is answered here as saved, with what was sent (the break-it tester, Phase 9 tidy 1).

@@ -104,6 +104,10 @@ export const TABLES = {
   organisation_deals: ['id'],
   organisation_growth: ['id'],
   network_columns: ['id'],
+  // Google calendars read for busy times (migration 059; Phase 6a run 8): each calendar on the coach's Google account with
+  // its switch, and the busy times read from the ones switched on. The coach's alone; the owner never reads them.
+  coach_google_calendars: ['id'],
+  coach_busy_times: ['id'],
   // Kept on the device only, never read or sent as a table (057): what the database said of the sessions it didn't
   // send on a first load (sessionsOlder below). One row, key 'older'.
   coach_sessions_older: ['key'],
@@ -128,6 +132,9 @@ const CAL_TABLES = new Set(['coach_call_types', 'coach_polls', 'coach_poll_peopl
 const CRM_TABLES = new Set(['coach_lead_stages', 'coach_lead_events', 'coach_automations', 'coach_automation_runs', 'coach_boards',
   'coach_board_stages', 'coach_board_items', 'coach_emails', 'coach_email_links', 'coach_email_waiting', 'coach_email_addresses',
   'client_check_ins', 'organisation_deals', 'organisation_growth', 'network_columns']);
+// The tables of migration 059 (Google calendars for busy times; run 8). Until Tim has run it they are kept on the
+// device only, in the same way.
+const BUSY_TABLES = new Set(['coach_google_calendars', 'coach_busy_times']);
 // Columns only migration 052 adds to an older table: left out of a save until it is there. A row that holds one is
 // then only PART sent: it stays marked unsent, so the device's copy stays in front and the whole row goes once 052 is there.
 const CRM_COLUMNS = {
@@ -157,6 +164,7 @@ const NOT_YET_KEY = 'clarity-coach-not-yet';
 const DAY_NOT_YET_KEY = 'clarity-coach-day-not-yet';
 const CAL_NOT_YET_KEY = 'clarity-coach-cal-not-yet';
 const CRM_NOT_YET_KEY = 'clarity-coach-crm-not-yet';
+const NOT_YET_059_KEY = 'clarity-coach-059-not-yet';
 const NOT_YET_MS = 60 * 60 * 1000;
 const LOCAL = 'coach-local';
 
@@ -869,9 +877,40 @@ export async function coachCrmReady() {
 }
 export const coachCrmReadyNow = () => crmReadyNow;
 
+let ready059Now = null;
+let asking059 = null;
+
+/**
+ * Whether migration 059 is there (run 8: Google calendars for busy times,
+ * and the keep-in-touch automation): true, false (not yet) or null (can't be
+ * told). Asked only once 052 is there (059 follows 058), and "not yet" is
+ * remembered for an hour, as above. It looks for coach_google_calendars.
+ */
+export async function coach059Ready() {
+  if (ready059Now === true) return true;
+  if ((await coachCrmReady()) !== true) return coachCrmReadyNow() === false ? false : null;
+  if (notYet(NOT_YET_059_KEY)) { ready059Now = false; return false; }
+  if (!asking059) {
+    asking059 = (async () => {
+      try {
+        const there = await tableReady('coach_google_calendars');
+        if (there === false) noteNotYet(true, NOT_YET_059_KEY);
+        if (there === true) noteNotYet(false, NOT_YET_059_KEY);
+        if (there !== null) ready059Now = there;
+        return there;
+      } catch {
+        return null;
+      }
+    })().finally(() => { asking059 = null; });
+  }
+  return asking059;
+}
+export const coach059ReadyNow = () => ready059Now;
+
 /** Is this table's home in the database yet? */
 async function tableThere(table) {
   if ((await coachReady()) !== true) return false;
+  if (BUSY_TABLES.has(table)) return (await coach059Ready()) === true;
   if (CRM_TABLES.has(table)) return (await coachCrmReady()) === true;
   if (CAL_TABLES.has(table)) return (await coachCalReady()) === true;
   return DAY_TABLES.has(table) ? (await coachDayReady()) === true : true;
@@ -1345,8 +1384,9 @@ const calLoaded = new Map(); // account -> [[fromMs, toMs]] of the calendar read
 const calAsking = new Map();
 const laterDone = new Set(); // accounts whose LATER tables have been read this visit
 
-function tablesThere(dayThere, calThere, crmThere) {
-  return Object.keys(TABLES).filter((t) => !DEVICE_ONLY.has(t) && (dayThere || !DAY_TABLES.has(t)) && (calThere || !CAL_TABLES.has(t)) && (crmThere || !CRM_TABLES.has(t)));
+function tablesThere(dayThere, calThere, crmThere, there059 = false) {
+  return Object.keys(TABLES).filter((t) => !DEVICE_ONLY.has(t) && (dayThere || !DAY_TABLES.has(t)) && (calThere || !CAL_TABLES.has(t)) && (crmThere || !CRM_TABLES.has(t))
+    && (there059 || !BUSY_TABLES.has(t)));
 }
 
 const whenIdle = (fn) => {
@@ -1362,7 +1402,7 @@ export function loadCoachLater(userId) {
   return new Promise((resolve) => {
     whenIdle(async () => {
       try {
-        const names = tablesThere(dayReadyNow === true, calReadyNow === true, crmReadyNow === true);
+        const names = tablesThere(dayReadyNow === true, calReadyNow === true, crmReadyNow === true, ready059Now === true);
         const since = readBegins();
         const split = laterSplit.get(userId) ?? null;
         // The older sessions last: what pages show from the later tier (a client's notes) isn't kept waiting behind them.
@@ -1448,6 +1488,7 @@ export function loadCoach(userId, { again = false } = {}) {
     const dayThere = (await coachDayReady()) === true;
     const calThere = dayThere && (await coachCalReady()) === true;
     const crmThere = calThere && (await coachCrmReady()) === true;
+    const there059 = crmThere && (await coach059Ready()) === true;
     const nowMs = Date.now();
     // 057: the sessions are split at the calendar's window (see coach_sessions_start above).
     let split = splitWanted(dayThere) ? nowMs - CAL_BACK_DAYS * DAY_MS : null;
@@ -1458,7 +1499,7 @@ export function loadCoach(userId, { again = false } = {}) {
       wantProfiles.get(userId).add(opening[1].toLowerCase());
     }
     const profiles = [...(wantProfiles.get(userId) || [])];
-    const first = plans(tablesThere(dayThere, calThere, crmThere), nowMs, 'first', { split });
+    const first = plans(tablesThere(dayThere, calThere, crmThere, there059), nowMs, 'first', { split });
     const since = readBegins();
     let db;
     let start = null;
@@ -1603,5 +1644,6 @@ export function resetCoachStoreForTests() {
   readyNow = null;
   dayReadyNow = null;
   calReadyNow = null;
+  ready059Now = null;
   crmReadyNow = null;
 }
