@@ -134,7 +134,9 @@ export const ROWS = [
   // ---- Leads
   { name: 'Leads, the board', m11: 'leads', built: 'leads-board', ...OWNER, ...LEADS_PAGE,
     added: [...LEADS_PAGE.added, seeded('4', 'New holds the seed’s two Chris Doyles as well as Elena and Jack, so its count is 4 where M11’s is 2')],
-    changes: [...LEADS_PAGE.changes, [/^name: .+, .+, (New|Call booked|Proposal sent|Deciding|Won)$/, null, SPOKEN, { say: 'a card’s spoken name' }]] },
+    changes: [...LEADS_PAGE.changes, [/^name: .+, .+, (New|Call booked|Proposal sent|Deciding|Won)$/, null, SPOKEN, { say: 'a card’s spoken name' }],
+      // A phone card is its name and one grey line (tidy follow-up 3, run 6's 33): M11 fits the organisation beside a call's line on its frame; the built card, inside its stage's own padding, is a little narrower, so the organisation is the part left out.
+      [/^(Harbour City FC|Vale Health|Kestrel Group)$/, null, TIM('on a phone a card’s one grey line leaves out the organisation when it and the next step don’t both fit; M11’s wider card fits both for Ruth, Nadia and Chris Lowe'), { on: 'p', say: 'the organisation beside a call on a phone card' }]] },
   { name: 'Leads as a list', m11: 'leadsl', built: 'leads-list', ...OWNER, ...LEADS_PAGE,
     changes: [...LEADS_PAGE.changes, ['name: More for Leo Grant', null, 'a won lead has become a client: its row opens the client and has no More (builder C’s report: More is Edit details, Edit stage, Log a call, Select, Mark as cold, none of which apply)', { on: 'd', say: 'More for Leo Grant, on a laptop (a phone’s list shows no More on its rows)' }]] },
   { name: 'Leads as a table', m11: 'leadst', built: 'leads-table', ...OWNER, on: 'd', ...LEADS_PAGE,
