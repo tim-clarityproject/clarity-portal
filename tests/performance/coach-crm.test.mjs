@@ -463,7 +463,7 @@ test('a to-do automation adds its to-do on the right day, pointing at the lead a
   const steps = crm.automationSteps(crm.stageEvent(AMY, 's-prop', 'move-1'), actx([A1, A2, A3]));
   assert.equal(steps.length, 1);
   const { run, todo, move, follow } = steps[0];
-  assert.deepEqual([run.automation_id, run.event_key, run.lead_id, run.todo_id === todo.id], ['a1', 'stage:amy:s-prop:move-1', 'amy', true]);
+  assert.deepEqual([run.automation_id, run.event_key, run.lead_id, run.todo_id === todo.id], ['a1', 'stage:amy:s-prop', 'amy', true]);
   assert.deepEqual([todo.title, todo.planned_on, todo.lead_id, todo.automation_id, todo.coach_id], ['Follow up on the proposal', '2026-11-20', 'amy', 'a1', ME]);
   assert.deepEqual([move, follow], [null, null]);
   // The day before a booked call counts from the call's own day, and is never before today.
@@ -499,8 +499,28 @@ test('a stage-move automation moves the lead, writes its line, and its move can 
   assert.deepEqual(done, { ran: 2, todos: 1, moves: 1 });
   assert.deepEqual([io.leads[0].stage_id, io.moves[0].event.title, io.moves[0].event.detail, io.moves[0].event.data.automation_id], ['s-dec', 'Moved to Deciding', 'By an automation.', 'm1']);
   assert.deepEqual(io.todos.map((t) => [t.title, t.planned_on]), [['Send the agreement', '2026-11-18']]);
-  // The follow-on's run is claimed under the FIRST event's key.
-  assert.deepEqual(io.runs.map((r) => [r.automation_id, r.event_key]), [['m1', 'stage:ruth:s-prop:mv-9'], ['m2', 'stage:ruth:s-prop:mv-9>chain']]);
+  // Each run is claimed under its own lead and stage, the follow-on's too (tidy follow-up 3, run 6's 30).
+  assert.deepEqual(io.runs.map((r) => [r.automation_id, r.event_key]), [['m1', 'stage:ruth:s-prop'], ['m2', 'stage:ruth:s-dec']]);
+});
+
+test('an automation runs once for each lead and stage: a lead that leaves a stage and comes back runs nothing again (run 6’s 30)', async () => {
+  const note = auto('once', 'lead_stage', { trigger_stage_id: 's-prop', todo_title: 'Follow up on the proposal', todo_days: 1 });
+  const io = fakeIo([{ ...RUTH, stage_id: 's-prop' }]);
+  const first = await crm.runAutomations(crm.stageEvent(RUTH, 's-prop', 'mv-1'), { ...actx([note], io.leads), leadsNow: () => io.leads }, io);
+  assert.deepEqual([first.ran, io.todos.length], [1, 1]);
+  // Moved on to Deciding, then back to Proposal sent by hand: a new move, the same lead and stage, so nothing runs.
+  const back = await crm.runAutomations(crm.stageEvent(RUTH, 's-prop', 'mv-2'), { ...actx([note], io.leads), leadsNow: () => io.leads }, io);
+  assert.deepEqual([back.ran, io.todos.length, io.refused], [0, 1, 1]);
+  // Another lead reaching the same stage is its own: it runs for them.
+  const amy = await crm.runAutomations(crm.stageEvent(AMY, 's-prop', 'mv-3'), { ...actx([note], [AMY]), leadsNow: () => [AMY] }, io);
+  assert.deepEqual([amy.ran, io.todos.length], [1, 2]);
+  // Reached by another automation's move (a chain), it is the same lead and stage: still once.
+  const mover = auto('mover', 'lead_stage', { trigger_stage_id: 's-dec', action: 'stage', to_stage_id: 's-prop' });
+  const io2 = fakeIo([{ ...RUTH, stage_id: 's-prop' }]);
+  await crm.runAutomations(crm.stageEvent(RUTH, 's-prop', 'mv-4'), { ...actx([note, mover], io2.leads), leadsNow: () => io2.leads }, io2);
+  io2.leads = io2.leads.map((l) => ({ ...l, stage_id: 's-dec' }));
+  await crm.runAutomations(crm.stageEvent(RUTH, 's-dec', 'mv-5'), { ...actx([note, mover], io2.leads), leadsNow: () => io2.leads }, io2);
+  assert.deepEqual([io2.moves.length, io2.todos.length], [1, 1], 'moved back to Proposal sent by the automation, and the to-do is not added a second time');
 });
 
 test('THE LOOP GUARD: two automations that move a lead back and forth run once each and stop', async () => {

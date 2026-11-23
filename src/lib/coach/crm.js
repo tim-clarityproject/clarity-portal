@@ -1186,8 +1186,15 @@ export function automationProblem(a, { stages = [] } = {}) {
 // is unique on automation and event_key), so two tabs, a reload or a retry
 // can never run one twice.
 
-/** A lead reached a stage. `moveId`: the id of the move's own timeline line, so the same lead reaching the same stage later is a new event. */
-export const stageEvent = (lead, stageId, moveId) => ({ trigger: 'lead_stage', key: `stage:${lead.id}:${stageId}:${moveId}`, leadId: lead.id, stageId });
+/**
+ * A lead reached a stage. An automation runs ONCE for each lead and stage
+ * (tidy follow-up 3, run 6's 30): a lead that leaves a stage and comes back
+ * never runs that stage's automations again, so the key names only the lead
+ * and the stage. (`moveId`, the move's own timeline line, is kept for the
+ * callers and no longer part of the key.)
+ */
+// eslint-disable-next-line no-unused-vars
+export const stageEvent = (lead, stageId, moveId) => ({ trigger: 'lead_stage', key: `stage:${lead.id}:${stageId}`, leadId: lead.id, stageId });
 /** A proposal has now been opened `count` times. Once for each automation, lead and proposal. */
 export const openedEvent = (lead, proposalName, count) => ({ trigger: 'proposal_opened', key: `opened:${lead.id}:${lower(clean(proposalName)).slice(0, 80)}`, leadId: lead.id, count });
 /** A lead has been quiet for `days`. Once for each automation and quiet spell (it starts again after the next contact). */
@@ -1224,9 +1231,10 @@ export const CHAIN_MAX = 5;
  *    this chain (`ran`). An automation runs AT MOST ONCE in a chain, so an
  *    automation's own stage move never sets off another automation more
  *    than once for each lead and event: A (to Deciding) and B (back to
- *    Proposal sent) run once each and stop. A follow-on run is claimed
- *    under the ROOT event's key ("<root>>chain"), so the database's own
- *    rule holds the same line across tabs and reloads;
+ *    Proposal sent) run once each and stop. A stage event's run is claimed
+ *    under its lead and stage ("stage:<lead>:<stage>"), chained or not, so
+ *    the database's own rule holds the same line across tabs and reloads,
+ *    and a lead never runs one stage's automation twice;
  *  - a chain stops after CHAIN_MAX moves whatever happens.
  * @param {object} event stageEvent(), openedEvent() and the rest, or a follow-on from `follow`
  * @param {{ automations: object[], leads?: object[], stages?: object[], coachId: string, newId: () => string, nowIso: string, todayKey: string }} ctx
@@ -1244,7 +1252,10 @@ export function automationSteps(event, { automations = [], leads = [], stages = 
   for (const a of matching) {
     if (ran.has(a.id)) continue; // once in a chain, never again
     if (a.action !== 'todo' && a.action !== 'stage') continue; // nothing else exists
-    const run = { id: newId(), automation_id: a.id, coach_id: coachId, event_key: cut(chained ? `${root}>chain` : event.key, 200), lead_id: event.leadId || null, profile_id: event.profileId || null, todo_id: null, ran_at: nowIso };
+    // A stage event is claimed under its own lead and stage, chained or not, so each automation runs once for each lead
+    // and stage however the lead got there (run 6's 30); any other follow-on under the first event's key.
+    const key = event.trigger === 'lead_stage' ? event.key : chained ? `${root}>chain` : event.key;
+    const run = { id: newId(), automation_id: a.id, coach_id: coachId, event_key: cut(key, 200), lead_id: event.leadId || null, profile_id: event.profileId || null, todo_id: null, ran_at: nowIso };
     if (a.action === 'todo') {
       const base = event.trigger === 'call_booked' && event.day ? event.day : todayKey;
       const on = addDays(base, Math.round(Number(a.todo_days) || 0));
