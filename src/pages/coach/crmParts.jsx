@@ -3,9 +3,10 @@ import { AuthContext } from '../../context/AuthContext';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { coachCrmReady, coachState, forgetRows, loadCoach, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { emailAddressesStart, logEmail } from '../../lib/coach/crmData';
-import { networkDuplicatesOf, saveEmailBody } from '../../lib/coach/networkData';
+import { networkDuplicatesOf, networkPageOf, saveEmailBody, useNetworkVersion } from '../../lib/coach/networkData';
+import { dueNowQuery } from '../../lib/coach/network';
 import {
-  alreadyRan, automationMatches, checkInsToSuggest, claimed, crmProblem, emailLogPlan, endedEvent, openingEvents, runAutomations, todoFromEmail,
+  alreadyRan, automationMatches, CATCH_UP, catchUpEvents, checkInsToSuggest, claimed, crmProblem, emailLogPlan, endedEvent, openingEvents, runAutomations, todoFromEmail,
 } from '../../lib/coach/crm';
 import { copyInStandIn, gmailStandIn, STAND_IN_DOMAIN } from '../../lib/coach/connect/standIn.js';
 import { directionOf, readInbound } from '../../lib/coach/connect/copyInEmail.js';
@@ -75,27 +76,44 @@ export function useRunAutomations() {
   }, [userId, coachId, todayKey]);
 }
 
+const WATCHED = ['lead_quiet', 'proposal_opened', 'call_booked', CATCH_UP];
+
+/**
+ * Everyone due a catch-up today or before, for the keep-in-touch automation
+ * (run 8's 3): Network's Due now (read as its Actions tab reads it, up to
+ * 200, most overdue first) and past clients' check-ins on the device. A
+ * Network that can't be read now gives no one; it is asked again next time.
+ */
+async function catchUpsNow(userId, mine, todayKey) {
+  const network = await networkPageOf(userId, dueNowQuery(todayKey, { all: true })).then((page) => page?.rows || []).catch(() => []);
+  return catchUpEvents({ network, checkIns: mine('client_check_ins'), profiles: mine('client_profiles'), todayKey });
+}
+
 /**
  * The automations nobody presses a button for, asked about while the
- * owner's portal is open: leads that have gone quiet, proposals opened and
- * calls booked that are still to come. Each event is claimed before it
+ * owner's portal is open: leads that have gone quiet, proposals opened,
+ * calls booked that are still to come, and people due a catch-up (the
+ * keep-in-touch automation, only while it is switched on). Each event is claimed before it
  * runs, so a reload, a second tab or asking again runs nothing twice.
  * Mounted once by CoachApp; it shows nothing.
  */
 export function AutomationWatch() {
-  const { userId, isOwner, coach, automations, leads, leadEvents, bookings, todayKey } = useCoachPortal();
+  const { userId, isOwner, coach, automations, leads, leadEvents, bookings, checkIns, clients, todayKey } = useCoachPortal();
+  const networkVersion = useNetworkVersion();
   const run = useRunAutomations();
   const busy = useRef(false);
   const again = useRef(false);
   const loaded = useRef(false);
   const signature = useMemo(() => JSON.stringify([
     todayKey,
-    automations.filter((a) => a.active && ['lead_quiet', 'proposal_opened', 'call_booked'].includes(a.trigger)).map((a) => [a.id, a.trigger, a.trigger_count, a.call_type_key, a.action, a.to_stage_id]),
+    automations.filter((a) => a.active && WATCHED.includes(a.trigger)).map((a) => [a.id, a.trigger, a.trigger_count, a.call_type_key, a.action, a.to_stage_id]),
     leads.map((l) => [l.id, l.last_contact_on, l.booking_id, l.stage_id, Boolean(l.cold_at), Boolean(l.merged_into)]),
     leadEvents.filter((e) => e.kind === 'proposal_opened').length,
     bookings.map((b) => [b.id, b.status, b.starts_at]),
-  ]), [todayKey, automations, leads, leadEvents, bookings]);
-  const watching = isOwner && automations.some((a) => a.active && ['lead_quiet', 'proposal_opened', 'call_booked'].includes(a.trigger));
+    ...(automations.some((a) => a.active && a.trigger === CATCH_UP)
+      ? [networkVersion, checkIns.map((c) => [c.id, c.due_on, Boolean(c.done_at), Boolean(c.skipped_at)]), clients.map((p) => [p.id, p.status, p.name])] : []),
+  ]), [todayKey, automations, leads, leadEvents, bookings, checkIns, clients, networkVersion]);
+  const watching = isOwner && automations.some((a) => a.active && WATCHED.includes(a.trigger));
   useEffect(() => {
     if (!watching) return undefined;
     const round = async () => {
@@ -110,7 +128,12 @@ export function AutomationWatch() {
         const active = mine('coach_automations');
         const events = openingEvents({ leads: mine('coach_leads'), stages: mine('coach_lead_stages'), events: mine('coach_lead_events'), bookings: mine('coach_bookings'), todayKey })
           .filter((event) => active.some((a) => automationMatches(a, event)));
-        for (const event of events) await run(event);
+        if (active.some((a) => a.active && a.trigger === CATCH_UP)) events.push(...await catchUpsNow(userId, mine, todayKey));
+        for (const event of events) {
+          // Switched off since this round began (here or in another tab): nothing more runs.
+          if (!mine('coach_automations').some((a) => automationMatches(a, event))) continue;
+          await run(event);
+        }
       } finally {
         busy.current = false;
         if (again.current) { again.current = false; setTimeout(round, 400); }

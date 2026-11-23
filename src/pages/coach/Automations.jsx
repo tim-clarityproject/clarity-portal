@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AddButton, Button, Dropdown, PageHeader, SlidePanel, TextField, useToast } from '../../components/design';
 import { newId, removeRow, saveRow } from '../../lib/coach/store';
 import {
-  ACTIONS, AUTOMATION_HELP, AUTOMATION_WORDS, automationSavePlan, automationSentence, automationSwitch, blankAutomation, countChoices, ranWords, todoDayChoices, TRIGGERS,
+  ACTIONS, AUTOMATION_HELP, AUTOMATION_WORDS, automationSavePlan, automationSentence, automationSwitch, blankAutomation, CATCH_UP, CATCH_UP_HELP, countChoices,
+  keepInTouchAutomation, ranWords, todoDayChoices, TRIGGERS,
 } from '../../lib/coach/crm';
 import { Back, TextLink, useCoachPortal } from './parts';
 import { useStartStages } from './leadParts';
@@ -18,7 +19,10 @@ import './crm.css';
 // that would send a lead round in a circle is refused, calmly. The rules
 // and words are crm.js's; the automations themselves run from Leads (a
 // stage move, Won), the guided close (coaching ends) and crmParts.jsx's
-// watch (a quiet lead, a proposal opened, a call booked).
+// watch (a quiet lead, a proposal opened, a call booked, someone due a
+// catch-up). The keep-in-touch automation (run 8's 3: "Catch up with [first
+// name]") is always listed, OFF until the coach switches it on; switching it
+// on (or saving it) is what first saves it.
 
 const NONE = '__any__';
 
@@ -33,6 +37,12 @@ export default function Automations() {
   const busy = useRef(false);
   const ctx = { stages, callTypes };
   const isNew = draft ? !automations.some((a) => a.id === draft.id) : false;
+  // The keep-in-touch automation: the saved one, or one not saved yet, switched off, with an id kept for this visit.
+  const keepId = useMemo(() => newId(), []);
+  const keep = keepInTouchAutomation(automations, { id: keepId, coachId: coach.id });
+  const keepSaved = automations.some((a) => a.id === keep.id);
+  const listed = keepSaved ? automations : [...automations, keep];
+  const isKeep = draft?.trigger === CATCH_UP;
   useEffect(() => { setProblem(null); }, [draft?.id]);
   // "Add automation" chosen in search opens its panel once.
   const location = useLocation();
@@ -74,7 +84,8 @@ export default function Automations() {
     setLine(null);
     try {
       const status = await saveRow(userId, 'coach_automations', plan.automation);
-      toast.saved({ message: status === 'queued' ? 'Will sync' : plan.toast, long: true, onUndo: () => saveRow(userId, 'coach_automations', a).catch((e) => toast.error(calm(e))) });
+      const saved = automations.some((x) => x.id === a.id);
+      toast.saved({ message: status === 'queued' ? 'Will sync' : plan.toast, long: true, onUndo: () => (saved ? saveRow(userId, 'coach_automations', a) : removeRow(userId, 'coach_automations', a.id)).catch((e) => toast.error(calm(e))) });
     } catch (e) { toast.error(calm(e)); }
   };
 
@@ -87,7 +98,7 @@ export default function Automations() {
         <PageHeader title={AUTOMATION_WORDS.title} />
         {automations.length === 0 && <p className="cc-quiet">{AUTOMATION_WORDS.none}</p>}
         <div className="cc-rows cc-auto-rows">
-          {automations.map((a) => {
+          {listed.map((a) => {
             const sentence = automationSentence(a, ctx);
             return (
               <div key={a.id} className="cc-auto-row">
@@ -108,17 +119,19 @@ export default function Automations() {
       <SlidePanel draftKey={`automation:${isNew ? 'new' : draft?.id}`}
         open={Boolean(draft)}
         onClose={() => setDraft(null)}
-        title={isNew ? AUTOMATION_WORDS.add : AUTOMATION_WORDS.edit}
+        title={isNew && !isKeep ? AUTOMATION_WORDS.add : AUTOMATION_WORDS.edit}
         footer={draft ? <div className="cc-panel-foot">{isNew ? <span /> : <TextLink onClick={remove}>Delete</TextLink>}<Button variant="primary" onClick={save}>Save</Button></div> : null}
       >
         {draft && (
           <>
-            <div className="cc-field"><Dropdown label={AUTOMATION_WORDS.when} options={TRIGGERS.map((t) => ({ value: t.value, label: t.label }))} value={draft.trigger} onChange={setTrigger} /></div>
+            {/* One keep-in-touch automation a coach: it is its own row in the list, never a second one from here. */}
+            <div className="cc-field"><Dropdown label={AUTOMATION_WORDS.when} options={TRIGGERS.filter((t) => (isKeep ? t.value === CATCH_UP : t.value !== CATCH_UP)).map((t) => ({ value: t.value, label: t.label }))} value={draft.trigger} onChange={setTrigger} /></div>
+            {isKeep && <p className="cc-note">{CATCH_UP_HELP}</p>}
             {trigger.needs === 'stage' && <div className="cc-field"><Dropdown label={AUTOMATION_WORDS.stage} options={stages.map((s) => ({ value: s.id, label: s.name }))} value={draft.trigger_stage_id} onChange={(v) => set({ trigger_stage_id: v })} /></div>}
             {trigger.needs === 'count' && <div className="cc-field"><Dropdown label={draft.trigger === 'lead_quiet' ? AUTOMATION_WORDS.days : AUTOMATION_WORDS.times} options={countChoices(draft.trigger)} value={draft.trigger_count ?? trigger.suggested} onChange={(v) => set({ trigger_count: v })} /></div>}
             {trigger.needs === 'call' && <div className="cc-field"><Dropdown label={AUTOMATION_WORDS.call} options={[{ value: NONE, label: AUTOMATION_WORDS.anyCall }, ...callTypes.map((c) => ({ value: c.key, label: c.name }))]} value={draft.call_type_key || NONE} onChange={(v) => set({ call_type_key: v === NONE ? null : v })} /></div>}
-            <div className="cc-field"><Dropdown label={AUTOMATION_WORDS.then} options={ACTIONS} value={draft.action} onChange={(v) => set({ action: v, to_stage_id: v === 'stage' ? draft.to_stage_id || openStages.find((s) => s.id !== draft.trigger_stage_id)?.id || null : null })} /></div>
-            {draft.action === 'todo' && (
+            {!isKeep && <div className="cc-field"><Dropdown label={AUTOMATION_WORDS.then} options={ACTIONS} value={draft.action} onChange={(v) => set({ action: v, to_stage_id: v === 'stage' ? draft.to_stage_id || openStages.find((s) => s.id !== draft.trigger_stage_id)?.id || null : null })} /></div>}
+            {draft.action === 'todo' && !isKeep && (
               <>
                 <div className="cc-field"><TextField label={AUTOMATION_WORDS.todo} value={draft.todo_title || ''} maxLength={300} placeholder={AUTOMATION_WORDS.todoExample} autoComplete="off" onChange={(e) => set({ todo_title: e.target.value })} /></div>
                 <div className="cc-field"><Dropdown label={AUTOMATION_WORDS.todoWhen} options={todoDayChoices(draft.trigger)} value={Number(draft.todo_days) || 0} onChange={(v) => set({ todo_days: v })} /></div>

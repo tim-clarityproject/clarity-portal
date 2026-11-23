@@ -12,7 +12,7 @@
 // header; the functions here that do the same are for the device-first
 // copy, before 052 is there.
 import { addDays, CHANGED_ELSEWHERE_CODE, clean, IMPORT_FILE_MAX, cut, dayWords, firstName, fromDayKey, isEmail, parsePeople, possessive, quickContacts, safeCell, toCsv, toDayKey } from './model.js';
-import { mobileForLinks, monthsOn, typedDay } from './network.js';
+import { dueOn, mobileForLinks, monthsOn, typedDay } from './network.js';
 
 const lower = (v) => String(v ?? '').toLowerCase();
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o || {}, k);
@@ -1088,7 +1088,18 @@ export const TRIGGERS = [
   { value: 'call_booked', label: 'A call is booked', needs: 'call' },
   { value: 'lead_won', label: 'A lead is won', needs: null },
   { value: 'coaching_ended', label: 'Coaching ends', needs: null },
+  // Run 8's 3, keep in touch: a Network person's catch-up (network.js dueOn) or a past client's 3, 6 or 12 month
+  // check-in falls due. It only ever adds one to-do, "Catch up with [first name]", due that day. One a coach.
+  { value: 'catch_up_due', label: 'Someone is due a catch-up', needs: null, fixed: true },
 ];
+/** The keep-in-touch automation's trigger (run 8's 3). */
+export const CATCH_UP = 'catch_up_due';
+/** What the keep-in-touch automation's to-do is saved as; each to-do it adds names the person (catchUpTitle). */
+export const CATCH_UP_TITLE = 'Catch up with [first name]';
+/** "Catch up with Sam": the first name from the person's own name. */
+export const catchUpTitle = (name) => (firstName(name) ? `Catch up with ${firstName(name)}` : 'Catch up with someone you’re due to see');
+/** Under the keep-in-touch automation in its panel. */
+export const CATCH_UP_HELP = 'It works for people in your Network with a catch-up rhythm, and past clients’ 3, 6 and 12 month check-ins. It never sends anything.';
 /** The ONLY two things an automation can do. Nothing here sends, tags or emails, and the table can't hold anything else. */
 export const ACTIONS = [{ value: 'todo', label: 'Add a to-do' }, { value: 'stage', label: 'Move the lead to a stage' }];
 export const AUTOMATION_HELP = 'Automations add to-dos and move stages. They never send anything.';
@@ -1122,7 +1133,9 @@ export function automationSentence(a, { stages = [], callTypes = [] } = {}) {
     call_booked: call ? `${/^[aeiou]/i.test(call) ? 'an' : 'a'} ${call} is booked` : 'a call is booked',
     lead_won: 'a lead is won',
     coaching_ended: 'coaching ends',
+    catch_up_due: 'someone is due a catch-up',
   }[a.trigger] || 'this happens';
+  if (a.trigger === CATCH_UP) return `When ${when}, add the to-do “${CATCH_UP_TITLE}”, due that day.`;
   const then = a.action === 'stage'
     ? `move the lead to ${stageName(stages, a.to_stage_id) || 'a stage'}`
     : `add the to-do “${clean(a.todo_title)}”, ${daysLaterWords(a.todo_days)}`;
@@ -1147,6 +1160,8 @@ export const blankAutomation = ({ id, coachId, stages = [], position = 0 }) => (
 /** An automation tidied for saving: only what its trigger and action use is kept. */
 export function tidyAutomation(a) {
   const t = TRIGGERS.find((x) => x.value === a.trigger) || TRIGGERS[0];
+  // The keep-in-touch automation is always the same to-do, due on the catch-up's own day.
+  if (t.value === CATCH_UP) return { ...a, trigger: CATCH_UP, trigger_stage_id: null, trigger_count: null, call_type_key: null, action: 'todo', todo_title: CATCH_UP_TITLE, todo_days: 0, to_stage_id: null };
   const todo = a.action !== 'stage';
   return {
     ...a, trigger: t.value,
@@ -1170,6 +1185,7 @@ export function automationProblem(a, { stages = [] } = {}) {
   const t = TRIGGERS.find((x) => x.value === a.trigger);
   if (!t) return 'Choose what starts it to carry on.';
   if (!ACTIONS.some((x) => x.value === a.action)) return 'Choose what it does to carry on.';
+  if (a.trigger === CATCH_UP && a.action !== 'todo') return 'A catch-up adds a to-do. Choose Add a to-do instead.';
   if (t.needs === 'stage' && !stageOf(stages, a.trigger_stage_id)) return 'Choose a stage to carry on.';
   if (a.action === 'todo') return clean(a.todo_title) ? '' : 'Type the to-do to carry on.';
   const to = stageOf(stages, a.to_stage_id);
@@ -1202,6 +1218,55 @@ export const quietEvent = (lead, days) => ({ trigger: 'lead_quiet', key: `quiet:
 /** A call was booked. `day`: the call's own day, which "the day before" counts from. */
 export const bookedEvent = (lead, booking) => ({ trigger: 'call_booked', key: `booking:${booking.id}`, leadId: lead?.id ?? null, callTypeKey: booking.call_type_key || lead?.call_type_key || null, day: booking.day || null });
 export const wonEvent = (lead) => ({ trigger: 'lead_won', key: `won:${lead.id}`, leadId: lead.id });
+/**
+ * Someone is due a catch-up (run 8's 3): a Network person (`kind` 'network', their catch-up day from network.js
+ * dueOn) or a past client (`kind` 'client', a 3, 6 or 12 month check-in's day). ONCE for each person and due day:
+ * the key names both, so a reload, a second tab or asking again adds nothing more, and the next catch-up (a new
+ * due day) is a new event.
+ */
+export const catchUpEvent = ({ kind, id, name, dueOn }) => ({
+  trigger: CATCH_UP, key: `catchup:${kind === 'client' ? 'client' : 'network'}:${id}:${dueOn}`, leadId: null,
+  profileId: kind === 'client' ? id : null, networkPersonId: kind === 'client' ? null : id, name: clean(name), dueOn,
+});
+
+/**
+ * Everyone due a catch-up today or before (never one still to come): Network people whose catch-up day has come
+ * (rows as network_page answers, with `due_on`; archived or merged people never), and past clients with a 3, 6 or
+ * 12 month check-in not done or skipped. A person is one event for each due day; a client's soonest check-in only.
+ * @param {{ network?: object[], checkIns?: object[], profiles?: object[], todayKey: string }} o
+ * @returns {object[]} catchUpEvent()s, the most overdue first
+ */
+export function catchUpEvents({ network = [], checkIns = [], profiles = [], todayKey }) {
+  const out = [];
+  const seen = new Set();
+  for (const p of network || []) {
+    if (!p?.id || p.archived_at || p.merged_into) continue;
+    const due = p.due_on ?? dueOn(p);
+    if (!due || due > todayKey || seen.has(`n:${p.id}`)) continue;
+    seen.add(`n:${p.id}`);
+    out.push(catchUpEvent({ kind: 'network', id: p.id, name: p.name, dueOn: due }));
+  }
+  const people = new Map((profiles || []).filter((p) => p && !p.merged_into && p.status === 'past').map((p) => [p.id, p]));
+  const dueChecks = (checkIns || []).filter((c) => c && !c.done_at && !c.skipped_at && c.due_on && c.due_on <= todayKey && people.has(c.profile_id))
+    .sort((a, b) => a.due_on.localeCompare(b.due_on) || a.months - b.months);
+  for (const c of dueChecks) {
+    if (seen.has(`c:${c.profile_id}`)) continue;
+    seen.add(`c:${c.profile_id}`);
+    out.push(catchUpEvent({ kind: 'client', id: c.profile_id, name: people.get(c.profile_id).name, dueOn: c.due_on }));
+  }
+  return out.sort((a, b) => a.dueOn.localeCompare(b.dueOn) || a.key.localeCompare(b.key));
+}
+
+/**
+ * The keep-in-touch automation as the Automations page lists it: the coach's own when there is one, otherwise one
+ * not saved yet and switched OFF (it's off until the coach switches it on; switching it on saves it).
+ */
+export function keepInTouchAutomation(automations, { id, coachId }) {
+  const there = (automations || []).find((a) => a.trigger === CATCH_UP);
+  if (there) return there;
+  return tidyAutomation({ id, coach_id: coachId, trigger: CATCH_UP, active: false, position: (automations || []).length });
+}
+
 export const endedEvent = (profile) => ({ trigger: 'coaching_ended', key: `ended:${profile.id}:${profile.ended_on || ''}`, leadId: null, profileId: profile.id, name: profile.name });
 
 /** Every open lead that is quiet now, as events (the app asks while the owner's portal is open). */
@@ -1256,6 +1321,16 @@ export function automationSteps(event, { automations = [], leads = [], stages = 
     // and stage however the lead got there (run 6's 30); any other follow-on under the first event's key.
     const key = event.trigger === 'lead_stage' ? event.key : chained ? `${root}>chain` : event.key;
     const run = { id: newId(), automation_id: a.id, coach_id: coachId, event_key: cut(key, 200), lead_id: event.leadId || null, profile_id: event.profileId || null, todo_id: null, ran_at: nowIso };
+    if (a.action === 'todo' && event.trigger === CATCH_UP) {
+      // "Catch up with Sam", due on the catch-up's own day (an overdue one is planned for today and stays due when it was).
+      const plannedOn = event.dueOn && event.dueOn > todayKey ? event.dueOn : todayKey;
+      const todo = { ...leadTodo({ id: newId(), lead: { id: null, coach_id: coachId }, title: catchUpTitle(event.name), plannedOn, automationId: a.id }),
+        due_on: event.dueOn || plannedOn, profile_id: event.profileId || null, ...(event.networkPersonId ? { network_person_id: event.networkPersonId } : {}) };
+      run.todo_id = todo.id;
+      ran.add(a.id);
+      steps.push({ automation: a, run, todo, move: null, follow: null });
+      continue;
+    }
     if (a.action === 'todo') {
       const base = event.trigger === 'call_booked' && event.day ? event.day : todayKey;
       const on = addDays(base, Math.round(Number(a.todo_days) || 0));
@@ -2050,6 +2125,7 @@ export function automationSavePlan(draft, { automations = [], stages = [] } = {}
   const problem = automationProblem(tidy, { stages }) || automationLoop(tidy, automations, stages);
   if (problem) return { error: problem };
   const isNew = !(automations || []).some((x) => x.id === tidy.id);
+  if (tidy.trigger === CATCH_UP && (automations || []).some((x) => x.trigger === CATCH_UP && x.id !== tidy.id)) return { error: 'You have this automation already. Switch it on in the list.' };
   return { automation: isNew ? { ...tidy, position: Math.max(-1, ...(automations || []).map((x) => Number(x.position) || 0)) + 1 } : tidy, toast: isNew ? AUTOMATION_WORDS.added : AUTOMATION_WORDS.saved };
 }
 

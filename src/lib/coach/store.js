@@ -154,6 +154,14 @@ const READ_ONLY = READ_ONLY_TABLES; // copyWaiting.js, so Sign out can count wha
 // Tables a coach may add to but never change: a save is sent as "add it
 // unless it is there" (a plain upsert would need the right to change rows).
 const ADD_ONLY = new Set(['client_files', 'client_view_requests', 'coach_automation_runs', 'coach_email_links']);
+// Rows 059 makes room for in a table that is already there (run 8's 3, the keep-in-touch automation): 052 refuses
+// the trigger 'catch_up_due', so until 059 is there the automation and its runs ("catchup:..." keys) stay on the
+// device only, quietly, unsent, and go across once it is (moveAcross). Its to-dos are plain to-dos and go at once.
+const HELD_UNTIL_059 = {
+  coach_automations: (row) => row?.trigger === 'catch_up_due',
+  coach_automation_runs: (row) => String(row?.event_key || '').startsWith('catchup:'),
+};
+const heldUntil059 = async (table, row) => Boolean(HELD_UNTIL_059[table]?.(row)) && (await coach059Ready()) !== true;
 // Tables a coach may only mark: the one column a save may change.
 const MARK_ONLY = { coach_notifications: ['read_at'] };
 // Columns the database fills in; never sent with a save.
@@ -934,6 +942,7 @@ const heldBack = (table, row) => crmReadyNow !== true && Boolean(CRM_COLUMNS[tab
 
 async function send(userId, table, row) {
   const k = keyOf(table, row);
+  if (await heldUntil059(table, row)) return 'device'; // kept here, unsent, until 059 is there
   try {
     const op = MARK_ONLY[table]
       ? { table, kind: 'update', values: Object.fromEntries(MARK_ONLY[table].map((c) => [c, row[c] ?? null])), match: Object.fromEntries(TABLES[table].map((c) => [c, row[c]])) }
