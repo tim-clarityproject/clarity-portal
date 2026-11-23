@@ -32,6 +32,44 @@ export function helpKeyFor(explain, own = null) {
   return key ? key.slice(0, MAX_KEY) : null;
 }
 
+// Each explanation's fixed name (tidy follow-up 3, tidy 1's 5), so hidden
+// help stays hidden when a panel is retitled. Before, help was hidden under
+// a key made from the panel's title; each fixed name lists the titles it
+// was once hidden under, and a saved copy is moved across when it is read
+// (migrateHidden), so anything already hidden stays hidden. One old title
+// can stand for two explanations ("How to read the chart", the Health
+// Check's results and its comparison): both stay hidden.
+export const HELP_KEYS = Object.freeze({
+  'hc-how-kept': ['How your answers are kept'],
+  'hc-success-factor': ['What is a Success Factor?'],
+  'hc-chart': ['How to read the chart'],
+  'hc-compare-chart': ['How to read the chart'],
+  'peak-moment': ['What’s a peak moment?'],
+  'checkin-hardware-score': ['How your Hardware score is worked out'],
+  'checkin-software-score': ['How your Software score is worked out'],
+  'checkin-hardware-software': ['What are hardware and software?'],
+  'checkin-why-alcohol': ['Why we ask about alcohol'],
+  'checkin-why-mood': ['Why we ask about mood and energy'],
+  'checkin-why-health': ['Why we ask about health'],
+});
+
+/** A saved copy with any title-made key moved to the fixed names it stands for. Pure: the old copy is never changed. */
+export function migrateHidden(raw) {
+  const hidden = cleanHidden(raw);
+  const old = new Set();
+  for (const [key, titles] of Object.entries(HELP_KEYS)) {
+    for (const title of titles) {
+      const was = helpKeyFor({ title });
+      if (was && was !== key && hidden[was]) {
+        hidden[key] = true;
+        old.add(was);
+      }
+    }
+  }
+  for (const was of old) if (!HELP_KEYS[was]) delete hidden[was];
+  return hidden;
+}
+
 export const isHelpHidden = (hidden, key) => Boolean(key) && cleanHidden(hidden)[key] === true;
 export const withHelpHidden = (hidden, key) => (key ? { ...cleanHidden(hidden), [key]: true } : cleanHidden(hidden));
 export function withHelpShown(hidden, key) {

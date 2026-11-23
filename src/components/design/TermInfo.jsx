@@ -12,14 +12,16 @@ import './design.css';
 //
 // explain: instead of lines, a longer explanation that opens in the side
 // panel (Explain.jsx; Tim, 16 Nov: a pop-up holds one short line only).
-export default function TermInfo({ children, lines = [], label, explain }) {
+// helpKey: its fixed name, which "Don’t show me this again" hides it under
+// (src/lib/hiddenHelp.js, HELP_KEYS).
+export default function TermInfo({ children, lines = [], label, explain, helpKey = null }) {
   const id = useId();
   const { open, buttonRef, panelRef, buttonProps } = useInfoToggle();
   if (explain) {
     return (
       <span className="ds-term">
         {children}
-        <ExplainInfo explain={explain} label={label || `About ${typeof children === 'string' ? children : 'this'}`} />
+        <ExplainInfo explain={explain} helpKey={helpKey} label={label || `About ${typeof children === 'string' ? children : 'this'}`} />
       </span>
     );
   }
@@ -50,13 +52,14 @@ export default function TermInfo({ children, lines = [], label, explain }) {
 //          { heading }, { bullets })
 //   label: what a screen reader hears for the ⓘ
 //   explain: a longer explanation for the side panel, instead of lines
-export function SentenceInfo({ children, lines = [], label, explain }) {
+//   helpKey: its fixed name, for "Don’t show me this again" (HELP_KEYS)
+export function SentenceInfo({ children, lines = [], label, explain, helpKey = null }) {
   const id = useId();
   const { open, buttonRef, panelRef, buttonProps } = useInfoToggle();
   const text = typeof children === 'string' ? children.trim() : null;
   const at = text ? text.lastIndexOf(' ') : -1;
   const button = explain ? (
-    <ExplainInfo explain={explain} label={label || explain.title} className="ds-guide-i ds-guide-i--end" />
+    <ExplainInfo explain={explain} helpKey={helpKey} label={label || explain.title} className="ds-guide-i ds-guide-i--end" />
   ) : (
     <button
       type="button"

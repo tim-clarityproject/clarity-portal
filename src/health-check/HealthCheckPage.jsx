@@ -540,7 +540,7 @@ function Page() {
             {openError && <div className="ds-guest-problem"><ErrorMessage>{openError}</ErrorMessage></div>}
             {['sent', 'unsent', 'waiting'].includes(newCode) && <p className="ds-guest-sentence"><Button variant="text" onClick={resendCode}>{newCode === 'unsent' ? 'Send it again' : 'Didn’t get it? Send it again'}</Button></p>}
             <p className="ds-guest-sentence">
-              <SentenceInfo explain={HOW_KEPT} label="How your answers are kept">{shared === false ? 'Only you will see your answers.' : `Only you and ${coachName || 'your coach'} will see your answers.`}</SentenceInfo>
+              <SentenceInfo explain={HOW_KEPT} helpKey="hc-how-kept" label="How your answers are kept">{shared === false ? 'Only you will see your answers.' : `Only you and ${coachName || 'your coach'} will see your answers.`}</SentenceInfo>
             </p>
             <Button variant="primary" type="submit" className="hc-wide-btn" aria-busy={opening || undefined}>{ret ? 'Pick up where you left off' : 'Start the Health Check'}</Button>
           </form>

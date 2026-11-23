@@ -37,8 +37,8 @@ export function InfoListDemo() {
   return (
     <div className="dr-stack">
       <p><SentenceInfo lines={['It’s how much a project helps the Success Factors.']} label="What strategic importance means">Strategic importance</SentenceInfo></p>
-      <p><SentenceInfo explain={SUCCESS_FACTOR_EXPLAIN} label="What is a Success Factor?">Success Factors</SentenceInfo></p>
-      <p><ExplainLink explain={chartExplain(50)}>How to read the chart</ExplainLink></p>
+      <p><SentenceInfo explain={SUCCESS_FACTOR_EXPLAIN} helpKey="hc-success-factor" label="What is a Success Factor?">Success Factors</SentenceInfo></p>
+      <p><ExplainLink explain={chartExplain(50)} helpKey="hc-chart">How to read the chart</ExplainLink></p>
     </div>
   );
 }

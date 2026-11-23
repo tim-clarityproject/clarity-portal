@@ -3,7 +3,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { refreshPins, updatePreference, usePreferences } from '../../lib/menuPins';
 import {
   DEVICE_HIDDEN_HELP_KEY, HIDDEN_HELP_PREFERENCE, HIDDEN_HELP_TOAST, SHOWN_AGAIN_TOAST,
-  cleanHidden, hiddenHelpCount, isHelpHidden, withHelpHidden, withHelpShown,
+  hiddenHelpCount, isHelpHidden, migrateHidden, withHelpHidden, withHelpShown,
 } from '../../lib/hiddenHelp';
 import { ToastContext } from './toastContext';
 
@@ -26,16 +26,16 @@ function deviceHidden() {
   try { raw = window.localStorage.getItem(DEVICE_HIDDEN_HELP_KEY); } catch { /* blocked */ }
   if (raw !== deviceRaw) {
     deviceRaw = raw;
-    try { deviceSnapshot = cleanHidden(raw ? JSON.parse(raw) : {}); } catch { deviceSnapshot = {}; }
+    try { deviceSnapshot = migrateHidden(raw ? JSON.parse(raw) : {}); } catch { deviceSnapshot = {}; }
   }
   return deviceSnapshot;
 }
 function writeDevice(next) {
   try {
-    window.localStorage.setItem(DEVICE_HIDDEN_HELP_KEY, JSON.stringify(cleanHidden(next)));
+    window.localStorage.setItem(DEVICE_HIDDEN_HELP_KEY, JSON.stringify(migrateHidden(next)));
     thisVisitOnly.value = null;
   } catch {
-    thisVisitOnly.value = cleanHidden(next);
+    thisVisitOnly.value = migrateHidden(next);
   }
   try { window.dispatchEvent(new CustomEvent(EVENT)); } catch { /* old browser */ }
 }
@@ -52,7 +52,9 @@ export default function useHiddenHelp() {
   const toast = useContext(ToastContext);
   const prefs = usePreferences(userId);
   const device = useSyncExternalStore(watchDevice, deviceHidden, noDevice);
-  const hidden = userId ? cleanHidden(prefs?.[HIDDEN_HELP_PREFERENCE]) : device;
+  // Read with any title-made key moved to its fixed name (migrateHidden), and
+  // saved that way with the next change.
+  const hidden = userId ? migrateHidden(prefs?.[HIDDEN_HELP_PREFERENCE]) : device;
   // The account's copy, read quietly (at most every half a minute).
   useEffect(() => { if (userId) refreshPins(userId); }, [userId]);
 
@@ -63,7 +65,7 @@ export default function useHiddenHelp() {
       writeDevice(update(deviceHidden()));
       return;
     }
-    updatePreference(userId, HIDDEN_HELP_PREFERENCE, (old) => update(cleanHidden(old)))
+    updatePreference(userId, HIDDEN_HELP_PREFERENCE, (old) => update(migrateHidden(old)))
       .catch(() => toast?.error('That didn’t save. Check your connection and try again.'));
   }, [userId, toast]);
 

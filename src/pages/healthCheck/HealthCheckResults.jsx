@@ -124,7 +124,7 @@ export default function HealthCheckResults({ draft, asOf, theirs = false, sort =
         {anyPlotted
           ? <HealthCheckChart rows={rows} line={line} phone={phone} lit={lit} was={was} />
           : <p className="hc-chart-empty">The chart shows each project once its progress is rated.</p>}
-        {anyPlotted && <div className="hc-chart-explain"><ExplainLink explain={chartExplain(line)}>How to read the chart</ExplainLink></div>}
+        {anyPlotted && <div className="hc-chart-explain"><ExplainLink explain={chartExplain(line)} helpKey="hc-chart">How to read the chart</ExplainLink></div>}
       </ResultsSection>
       <ResultsSection row title="Projects" action={edit('projects', 'Edit the list of projects')} className="hc-projects">
         <div className="hc-ctl">

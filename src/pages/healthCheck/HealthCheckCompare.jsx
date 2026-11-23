@@ -50,7 +50,7 @@ export default function HealthCheckCompare({ model, options, onPick, talk = null
       </ResultsSection>
       <ResultsSection row title="How projects moved" className="hc-chart-section">
         <HealthCheckChart rows={rows} line={model.line} phone={phone} was={model.was} notes={model.notes} />
-        <div className="hc-chart-explain"><ExplainLink explain={chartExplain(model)}>How to read the chart</ExplainLink></div>
+        <div className="hc-chart-explain"><ExplainLink explain={chartExplain(model)} helpKey="hc-compare-chart">How to read the chart</ExplainLink></div>
       </ResultsSection>
       <ResultsSection row rows title="How progress moved">
         {moved.map((m) => (

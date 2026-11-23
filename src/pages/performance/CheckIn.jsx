@@ -426,7 +426,7 @@ function CheckinFlow({ userId, today, month, loaded }) {
       name: 'Start',
       question: 'What would make coaching useful for you?',
       nudges: ['Let’s start with 5 questions about that.', 'Then your first Hardware and Software review.'],
-      nudgeInfo: { label: 'What are hardware and software?', explain: HARDWARE_SOFTWARE_EXPLAIN },
+      nudgeInfo: { label: 'What are hardware and software?', explain: HARDWARE_SOFTWARE_EXPLAIN, helpKey: 'checkin-hardware-software' },
       nextLabel: 'Start with my goals',
       render: () => <WhoSeesFold coach={coach} sharing={sharing} />,
     }
@@ -474,7 +474,7 @@ function CheckinFlow({ userId, today, month, loaded }) {
     // M12 draws "Hardware · Sleep"; no dots between items (26 Oct rule 5),
     // so the two are separate labels, 20px apart.
     label: <AreaLabel label={q.label} />,
-    info: q.why ? { explain: whyExplain(q.why, sharing ? coach : null) } : undefined,
+    info: q.why ? { explain: whyExplain(q.why, sharing ? coach : null), helpKey: `checkin-why-${q.why}` } : undefined,
     question: q.question,
     nudges: q.trip ? [TRIP_NUDGE] : q.nudges,
     // One answer moves on by itself, with no Next (Tim, 5 Nov, 10:23); the drinks keep Next.
@@ -709,10 +709,10 @@ function Results({ userId, today, kind, coach, results, points, goals, note, spr
       {note && coach && <NotePanel label={`From ${coach}`} className="ck-note">{note}</NotePanel>}
       <StatGroup className="ck-scores">
         {r.hardware && (
-          <Stat panel label={<TermInfo explain={SCORE_EXPLAIN.hardware} label="About the Hardware score">Hardware score</TermInfo>} value={String(r.hardware.value)} unit="/100" note={r.compared ? <ChangeNote change={r.hardware.change} /> : undefined} />
+          <Stat panel label={<TermInfo explain={SCORE_EXPLAIN.hardware} helpKey="checkin-hardware-score" label="About the Hardware score">Hardware score</TermInfo>} value={String(r.hardware.value)} unit="/100" note={r.compared ? <ChangeNote change={r.hardware.change} /> : undefined} />
         )}
         {r.software && (
-          <Stat panel label={<TermInfo explain={SCORE_EXPLAIN.software} label="About the Software score">Software score</TermInfo>} value={String(r.software.value)} unit="/100" note={r.compared ? <ChangeNote change={r.software.change} /> : undefined} />
+          <Stat panel label={<TermInfo explain={SCORE_EXPLAIN.software} helpKey="checkin-software-score" label="About the Software score">Software score</TermInfo>} value={String(r.software.value)} unit="/100" note={r.compared ? <ChangeNote change={r.software.change} /> : undefined} />
         )}
       </StatGroup>
 

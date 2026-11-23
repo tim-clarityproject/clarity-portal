@@ -28,8 +28,9 @@ import './design.css';
 // opened by ExplainLink or ExplainInfo ends with "Don’t show me this
 // again", which hides the link or ⓘ that opens it, with Undo; My Account,
 // Appearance has "Hidden help" with "Show it again" (useHiddenHelp,
-// src/lib/hiddenHelp.js). Each is hidden under its `helpKey`, or a key made
-// from its title. A panel with its own action (M21's caffeine link, the
+// src/lib/hiddenHelp.js). Each is hidden under its fixed name, `helpKey`
+// (HELP_KEYS: so a retitled panel stays hidden; tidy follow-up 3), or, for
+// one without, a key made from its title. A panel with its own action (M21's caffeine link, the
 // coach portal's HelpLink) keeps that one link instead; `helpKey={false}`
 // leaves it out.
 

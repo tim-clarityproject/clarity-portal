@@ -432,7 +432,7 @@ export default function HealthCheckTool({
       render: () => (
         <>
           {mark(at('csf'))}
-          <p className="hc-flab"><SentenceInfo explain={SUCCESS_FACTOR_EXPLAIN} label="What is a Success Factor?">Success Factors</SentenceInfo></p>
+          <p className="hc-flab"><SentenceInfo explain={SUCCESS_FACTOR_EXPLAIN} helpKey="hc-success-factor" label="What is a Success Factor?">Success Factors</SentenceInfo></p>
           <RowList
             rows={draft.csfs.map((x) => x.text)}
             onChange={setList('csfs')}

@@ -211,7 +211,7 @@ function StepHead({ step, headingRef, positionId, role }) {
       {(step.label || step.info) && (
         <div className="ds-guide-label ds-guide-rv">
           {step.label && <span>{step.label}</span>}
-          {step.info?.explain && <ExplainInfo explain={step.info.explain} label="Why we ask" className="ds-guide-i" />}
+          {step.info?.explain && <ExplainInfo explain={step.info.explain} helpKey={step.info.helpKey} label="Why we ask" className="ds-guide-i" />}
           {step.info && !step.info.explain && (
             <button
               type="button"
@@ -242,7 +242,7 @@ function StepHead({ step, headingRef, positionId, role }) {
         <p key={line} className="ds-guide-nudge ds-guide-rv ds-guide-rv--2">
           {/* The ⓘ wrapped with the nudge's last word, never on a line of its own (tidy pass item 1). */}
           {endWithIcon(line, step.nudgeInfo && n === step.nudges.length - 1 && (step.nudgeInfo.explain ? (
-            <ExplainInfo explain={step.nudgeInfo.explain} label={step.nudgeInfo.label} className="ds-guide-i ds-guide-i--end" />
+            <ExplainInfo explain={step.nudgeInfo.explain} helpKey={step.nudgeInfo.helpKey} label={step.nudgeInfo.label} className="ds-guide-i ds-guide-i--end" />
           ) : (
             <button
               type="button"

@@ -139,7 +139,7 @@ function PeakList() {
       <DesignHeader />
       <div className="plan-page ipp-page peak-page">
         <PageHeader title={TOOL_NAME} aside={eye} />
-        <ExplainLink explain={EXPLAIN} className="peak-explain">What’s a peak moment?</ExplainLink>
+        <ExplainLink explain={EXPLAIN} helpKey="peak-moment" className="peak-explain">What’s a peak moment?</ExplainLink>
         {view.empty ? (
           <div className="ds-empty peak-calm">
             <h2 className="ds-empty-title">When do you next need to be at your best?</h2>
