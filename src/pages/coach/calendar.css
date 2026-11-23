@@ -109,6 +109,11 @@
 @media (hover: hover) { .ui-root .cc-cal:not(.cc-cal--hours) .cc-cal-tile:hover { opacity: var(--cal-hover); } }
 .ui-root .cc-cal-tile:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--line-w); z-index: 3; opacity: 1; }
 
+/* "+N more": where more tiles overlap than fit side by side, the rest fold into one quiet tile that lists them (tidy follow-up 3). */
+.ui-root .cc-cal-col > .cc-cal-more { --tile-bg: var(--bg); --tile-text: var(--text-2); display: flex; align-items: flex-start; box-shadow: inset 0 0 0 var(--line-w) var(--field-line); cursor: pointer; }
+.ui-root .cc-cal-col > .cc-cal-more .cc-cal-title { white-space: nowrap; text-overflow: clip; }
+@media (hover: hover) { .ui-root .cc-cal-col > .cc-cal-more:hover { --tile-text: var(--text); box-shadow: inset 0 0 0 var(--line-w) var(--text-2); opacity: 1; } }
+
 /* Under 45 minutes: one line. The tick, the title ending with "…", then the start time only if it fits. */
 .ui-root .cc-cal-tile--one { display: flex; align-items: center; padding-block: 0; padding-inline: var(--space-px6); font-size: var(--fs-cal-sub); line-height: var(--lh-cal-one); white-space: nowrap; }
 .ui-root .cc-cal-one { display: flex; align-items: center; gap: var(--space-px6); min-width: 0; flex: 1; }

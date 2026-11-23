@@ -1,7 +1,8 @@
 // Clarity Coach: a call's two reminders to the client, sent when they are
-// due (Phase 6a run 3, step 6; migration 051). Run by Vercel's scheduler
-// every 15 minutes (vercel.json "crons": a go-live step, not added yet),
-// never by a page:
+// due (Phase 6a run 3, step 6; migration 051). Asked every 15 minutes by
+// the database's own scheduler (migration 058: pg_cron's job
+// clarity-reminders, through pg_net, with the secret and the live address
+// from Supabase Vault; never a Vercel cron), never by a page:
 //   GET /api/coach-reminders   Authorization: Bearer <CRON_SECRET>
 //
 // Only the live site sends (maySend), and only when called with the
@@ -14,8 +15,9 @@
 //   - the day before, from 18:00 to 21:00 in the READER's own time;
 //   - 1 hour before (60 to 30 minutes before), which never gives a clock time.
 //
-// Each reminder is claimed FIRST (cal_reminder_claim, which records it and
-// answers false when it had already gone), so two runs never both send it;
+// Each reminder is claimed FIRST (cal_reminder_claim: one insert against a
+// unique key, "on conflict do nothing", which answers false when it had
+// already gone), so two runs that overlap never both send it;
 // only then is anyone emailed. A client gets the session reminder; someone
 // who booked on a booking page gets the booked-call reminder with their own
 // link to move or cancel. Both are the one shared email template. Times are

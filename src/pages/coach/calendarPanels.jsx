@@ -8,8 +8,8 @@ import { newId, rowsOf } from '../../lib/coach/store';
 import { blankTodo, lastPosition } from '../../lib/coach/todoActions';
 import { clean, cut, firstName } from '../../lib/coach/model';
 import {
-  allDayItem, CAL_REPEATS, CALENDARS, calendarShown, calQuickAddChips, calRepeatValue, calRepeatWords, deleteEntry, duplicateEntry, editRepeat, guestRows, invited, INVITED_EXAMPLE,
-  hoursWindow, INVITED_LABEL, ITEM_KINDS, joinLink, lengthLine, moveEntry, NEEDS_TITLE, newItem, nudgeEntry, parseCalQuickAdd, pickPeople, placeTodo, PLACES, QUICK_KINDS, QUICK_TITLE,
+  allDayItem, ASSOCIATES_CALENDAR, associateLines, CAL_REPEATS, CALENDARS, calendarShown, calQuickAddChips, calRepeatValue, calRepeatWords, deleteEntry, duplicateEntry, editRepeat, guestRows, invited, INVITED_EXAMPLE,
+  gridColumnsMax, hoursWindow, INVITED_LABEL, ITEM_KINDS, joinLink, lengthLine, moveEntry, NEEDS_TITLE, newItem, nudgeEntry, parseCalQuickAdd, pickPeople, placeTodo, PLACES, QUICK_KINDS, QUICK_TITLE,
   quickAddPlan, quickSaveLabel, removeLabel, REPEAT_SCOPES, startingSecondZone, viewRange, repeatOk, REPLIES, replyWords, resizeEntry, spanWords, T, timesAt, typedTimes, undoOf,
 } from '../../lib/coach/calendar';
 import { TextLink } from './parts';
@@ -252,7 +252,7 @@ function ItemPanel({ cal, entry, fresh, days, onClose }) {
   const act = async (plan) => { if (busy.current) return; busy.current = true; const ok = await cal.run(plan); busy.current = false; if (ok) onClose(); };
   const kinds = Object.entries(ITEM_KINDS).filter(([k]) => (k !== 'hold' && k !== 'client_call') || k === d.kind).map(([value, k]) => ({ value, label: k.label }));
   return (
-    <SlidePanel
+    <SlidePanel draftKey={`cal-item:${e?.id || 'new'}`}
       open={open}
       onClose={onClose}
       title={e ? e.title : 'Add to calendar'}
@@ -381,6 +381,11 @@ export function CalendarsPanel({ cal, open, onClose }) {
         </div>
       ))}
       <p className="cc-note">Other people only ever see these as busy.</p>
+      {cal.isOwner && (
+        <div className="cc-field cc-todo-switch">
+          <SwitchRow label={ASSOCIATES_CALENDAR.label} note={ASSOCIATES_CALENDAR.note} checked={calendarShown(cal.settings, ASSOCIATES_CALENDAR.value)} onChange={(on) => cal.saveSettings({ calendars: { ...cals, [ASSOCIATES_CALENDAR.value]: on } })} />
+        </div>
+      )}
     </SlidePanel>
   );
 }
@@ -431,6 +436,7 @@ export function useCalPanels(cal, { days }) {
   const [briefJoin, setBriefJoin] = useState(null);
   const [briefItem, setBriefItem] = useState(null); // the call's own calendar item, for "Edit the call"
   const [telling, setTelling] = useState(false);
+  const [theirs, setTheirs] = useState(null); // an associate's session, opened by the owner: what it is, never more
 
   const entry = useMemo(() => {
     if (!item) return null;
@@ -453,6 +459,7 @@ export function useCalPanels(cal, { days }) {
     create({ day: today ? cal.todayKey : days[0], fromMin, toMin: null, floating: false });
   };
   const open = (e) => {
+    if (e.type === 'assoc') { setTheirs(e); return; }
     if (e.kind === 'hold') {
       const option = cal.pollOptions.find((o) => o.id === e.item?.poll_option_id);
       if (option) { navigate(CAL_HOOKS.poll(option.poll_id)); return; }
@@ -469,9 +476,10 @@ export function useCalPanels(cal, { days }) {
     if (e.type === 'open') { navigate(CAL_HOOKS.open); return; }
     setItem({ key: e.key, day: e.fromDay });
   };
-  const move = (e, to) => cal.run(moveEntry(e, to, cal.ctx));
-  const resize = (e, to) => cal.run(resizeEntry(e, to, cal.ctx));
-  const nudge = (e, step) => cal.run(nudgeEntry(e, step, cal.ctx));
+  // An associate's session is theirs: it never moves from here.
+  const move = (e, to) => (e.type === 'assoc' ? false : cal.run(moveEntry(e, to, cal.ctx)));
+  const resize = (e, to) => (e.type === 'assoc' ? false : cal.run(resizeEntry(e, to, cal.ctx)));
+  const nudge = (e, step) => (e.type === 'assoc' ? false : cal.run(nudgeEntry(e, step, cal.ctx)));
   const unplace = (e) => cal.run(deleteEntry(e, cal.ctx));
   const tick = (e) => (e.done ? todoActions.untick(e.todo) : todoActions.tick(e.todo));
   const place = (todo, at) => cal.run(placeTodo(todo, at, { data: cal.data }));
@@ -489,6 +497,9 @@ export function useCalPanels(cal, { days }) {
       <TodoPanel id={todoId} onClose={() => setTodoId(null)} />
       {briefAsked && <Suspense fallback={null}><BriefPanel sessionId={briefId} joinHref={briefJoin} onClose={() => setBriefId(null)} aside={briefItem ? <TextLink onClick={() => { setBriefId(null); setItem(briefItem); }}>Edit the call</TextLink> : null} /></Suspense>}
       <TellPanel cal={cal} open={telling && Boolean(cal.tell)} onClose={() => setTelling(false)} />
+      <SlidePanel open={Boolean(theirs)} onClose={() => setTheirs(null)} title={theirs?.title || 'A session'}>
+        {theirs && associateLines(theirs, cal.coachZone).map((line) => <p key={line} className="cc-quiet">{line}</p>)}
+      </SlidePanel>
     </>
   );
   return { slot, create, add, open, move, resize, nudge, unplace, tick, place, openTodo: (t) => setTodoId(t.id), openTell: () => setTelling(true), node };
@@ -502,7 +513,7 @@ export function useCalPanels(cal, { days }) {
  * back onto the panel. The Calendar and To-dos as a calendar both use it.
  * @param {{ cal, panels, days, entries, win, otherZone, onOtherZone?, hours?, onHours?, todosOpen?: boolean, narrow?: boolean }} props
  */
-export function CalBoard({ cal, panels, days, entries, win, otherZone, onOtherZone, hours = null, onHours, todosOpen = false, narrow = false }) {
+export function CalBoard({ cal, panels, days, entries, win, otherZone, onOtherZone, hours = null, onHours, todosOpen = false, narrow = false, maxColumns = Infinity }) {
   const navigate = useNavigate();
   const phone = useIsPhone();
   const panelRef = useRef(null);
@@ -520,7 +531,7 @@ export function CalBoard({ cal, panels, days, entries, win, otherZone, onOtherZo
       <CalGrid
         days={days} entries={entries} cal={cal} win={win} otherZone={otherZone} onOtherZone={onOtherZone} onZoneList={() => navigate('/coach/settings/zones')}
         slot={panels.slot?.floating ? panels.slot : null} hours={hours} onHours={onHours} onCreate={panels.create} onOpen={panels.open} onMove={panels.move} onResize={panels.resize} onNudge={panels.nudge}
-        onTick={panels.tick} onUnplace={panels.unplace} dropRef={todosOpen ? panelRef : null} onOverPanel={setOver} incoming={incoming} narrow={narrow || todosOpen}
+        onTick={panels.tick} onUnplace={panels.unplace} dropRef={todosOpen ? panelRef : null} onOverPanel={setOver} incoming={incoming} narrow={narrow || todosOpen} maxColumns={maxColumns}
       />
     </div>
   );
@@ -553,7 +564,7 @@ export function TodosCalendar() {
   const [zone, setZone] = useSecondZone(cal);
   return (
     <>
-      <CalBoard cal={cal} panels={panels} days={range.days} entries={entries} win={win} otherZone={zone} onOtherZone={setZone} todosOpen narrow={narrow} />
+      <CalBoard cal={cal} panels={panels} days={range.days} entries={entries} win={win} otherZone={zone} onOtherZone={setZone} todosOpen narrow={narrow} maxColumns={gridColumnsMax({ view: narrow ? 'day' : 'week', phone: narrow, narrow: true })} />
       {panels.node}
     </>
   );

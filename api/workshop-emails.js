@@ -1,11 +1,14 @@
 // Clarity Coach: a workshop's two reminders, sent when they are due
-// (Phase 6a run 2). Run by Vercel's scheduler every 15 minutes
-// (vercel.json "crons"), never by a page:
+// (Phase 6a run 2). Asked every 15 minutes by the database's own scheduler
+// (migration 058: pg_cron's job clarity-reminders, through pg_net, with the
+// secret and the live address from Supabase Vault; never a Vercel cron),
+// never by a page:
 //   GET /api/workshop-emails   Authorization: Bearer <CRON_SECRET>
 //
 // Only the live site sends (maySend), and only when called with the
-// scheduler's own secret (Vercel sends CRON_SECRET as the Authorization
-// header; without one set, nothing runs). It then asks the database, with
+// scheduler's own secret (058's job sends CRON_SECRET, kept in Vault as
+// clarity_cron_secret, as the Authorization header; without one set,
+// nothing runs). It then asks the database, with
 // the server's key, which reminders are due and haven't gone (migration
 // 050's workshop_emails_due: the day-before reminder from 07:00 the day
 // before in the workshop's own time zone, when its switch is on; the 1-hour
@@ -44,7 +47,7 @@ const HOME_ZONE = 'Europe/London'; // as workshop_emails_due reads a workshop wi
 
 const reply = (res, status, body) => { res.status(status).setHeader('Cache-Control', 'no-store'); res.json(body); };
 
-/** Whether the caller is Vercel's scheduler: its secret, compared without leaking where it differs. */
+/** Whether the caller is the scheduler (058's pg_cron job): its secret, compared without leaking where it differs. */
 export function isScheduler(header, secret) {
   if (typeof secret !== 'string' || secret.length < 16) return false;
   const given = Buffer.from(String(header || ''));

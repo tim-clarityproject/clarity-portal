@@ -345,7 +345,7 @@ PARTS['b-repeat'] = async (role) => {
 };
 
 // ================================================================ 9. awkward things
-// ODD=titles,times,length,guests,crowd,thousand,damaged,midnight,bar,big,back,handles,address narrows it.
+// ODD=titles,times,length,guests,crowd,assoc,thousand,damaged,midnight,bar,big,back,handles,address narrows it.
 PARTS['b-odd'] = async (role) => {
   const odd = (name) => !process.env.ODD || process.env.ODD.split(',').includes(name);
   const broke = (page) => page.evaluate(() => !document.querySelector('.cc-app') || /hit a problem/i.test(document.body.innerText));
@@ -516,21 +516,39 @@ PARTS['b-odd'] = async (role) => {
         return { n: list.length, overlaps, min: Math.round(Math.min(...widths) * 10) / 10, out: rects.filter((r) => r.left < col.left - 1 || r.right > col.right + 1).length, readable, wide: document.documentElement.scrollWidth - window.innerWidth };
       }, word);
       const day = await read();
+      // "+N more" (tidy follow-up 3, run 6's 19): a laptop's Day view keeps every tile side by side; a phone's day shows 3 and folds the rest.
+      const more = () => page.evaluate(() => [...document.querySelectorAll('.cc-cal-more')].map((el) => ({ words: el.textContent.trim(), label: el.getAttribute('aria-label') || '', h: Math.round(el.getBoundingClientRect().height) })));
+      const phone = size < 600;
       if (SHOTS) await page.screenshot({ path: `${SHOTS}/crowd-day-${size}.png` }).catch(() => {});
       console.log(`  COUNT odd, ${size}px: 40 items at 10:00 on one day, in the Day view: ${day.n} tiles, the narrowest ${day.min}px wide, ${day.readable} with room for a word, ${day.overlaps} overlapping.`);
-      // 40 at once is past what a grid can show (see the report): each still has its tile and nothing scrolls sideways; the Schedule is where they read.
-      pass(`${tag}: 40 items at the same time each get a tile, and nothing scrolls sideways`, day.n === 40 && day.wide <= 1 && day.min > 0, JSON.stringify(day));
+      const dayMore = await more();
+      if (phone) {
+        pass(`${tag}: on a phone 3 of the 40 sit side by side and the other 37 fold into “+37 more”, nothing scrolls sideways`, day.n === 3 && day.overlaps === 0 && day.out === 0 && dayMore.length === 1 && dayMore[0].words === '+37 more' && day.wide <= 1, JSON.stringify({ day, dayMore }));
+      } else {
+        pass(`${tag}: 40 items at the same time each get a tile in a laptop's Day view, and nothing scrolls sideways`, day.n === 40 && day.wide <= 1 && day.min > 0 && dayMore.length === 0, JSON.stringify(day));
+      }
       await t.go('/coach/calendar?view=day&day=2026-11-24');
       const eight = await read('Eight');
-      pass(`${tag}: 8 items at the same time sit side by side inside the day, none over another's tap area`, eight.n === 8 && eight.overlaps === 0 && eight.out === 0, JSON.stringify(eight));
+      const eightMore = await more();
+      pass(`${tag}: 8 items at the same time sit side by side inside the day${phone ? ' (3, then “+5 more”)' : ''}, none over another's tap area`, eight.n === (phone ? 3 : 8) && eight.overlaps === 0 && eight.out === 0 && (phone ? eightMore[0]?.words === '+5 more' : eightMore.length === 0), JSON.stringify({ eight, eightMore }));
       if (size === 1440) {
         await t.go('/coach/calendar?view=week&day=2026-11-24');
         const eightWeek = await read('Eight');
-        pass(`${tag}: and in the week too`, eightWeek.n === 8 && eightWeek.overlaps === 0 && eightWeek.out === 0, JSON.stringify(eightWeek));
+        const weekMore = await more();
+        pass(`${tag}: and in the week 3 sit side by side, then “+5 more”`, eightWeek.n === 3 && eightWeek.overlaps === 0 && eightWeek.out === 0 && weekMore.length === 1 && weekMore[0].words === '+5 more', JSON.stringify({ eightWeek, weekMore }));
       }
       await t.go('/coach/calendar?view=day&day=2026-11-25');
-      pass(`${tag}: each of the 40 says what it is to a screen reader, and opens from the keyboard`, (await page.locator('[data-cal-key][aria-label^="Overlap 17,"]').count()) === 1);
-      await page.locator('[data-cal-key][aria-label^="Overlap 17,"]').focus(); await page.keyboard.press('Enter'); await settle(page, 700);
+      if (phone) {
+        const btn = page.locator('.cc-cal-more').first();
+        pass(`${tag}: “+37 more” says what it is to a screen reader and opens a list of the rest`, /^37 more at 10:00\. Show them$/.test((await btn.getAttribute('aria-label')) || ''));
+        await btn.click(); await settle(page, 500);
+        const listed = await page.locator('.cc-pop [role="menuitem"]').count();
+        pass(`${tag}: the list has all 37`, listed === 37, `${listed}`);
+        await page.locator('.cc-pop [role="menuitem"]', { hasText: /^10:00 Overlap 17$/ }).click(); await settle(page, 700);
+      } else {
+        pass(`${tag}: each of the 40 says what it is to a screen reader, and opens from the keyboard`, (await page.locator('[data-cal-key][aria-label^="Overlap 17,"]').count()) === 1);
+        await page.locator('[data-cal-key][aria-label^="Overlap 17,"]').focus(); await page.keyboard.press('Enter'); await settle(page, 700);
+      }
       pass(`${tag}: (Overlap 17 opens its own panel)`, (await dialog(page).locator('.ds-dialog-title').textContent().catch(() => '')) === 'Overlap 17');
       await closePanel(page);
       await t.go('/coach/calendar?view=schedule&day=2026-11-25');
@@ -540,12 +558,47 @@ PARTS['b-odd'] = async (role) => {
       if (size === 1440) {
         await t.go('/coach/calendar?view=week&day=2026-11-25');
         const week = await read();
+        const weekMore = await more();
         if (SHOTS) await page.screenshot({ path: `${SHOTS}/crowd-week-${size}.png` }).catch(() => {});
-        console.log(`  COUNT odd, ${size}px: the same day in the Week view: the narrowest tile is ${week.min}px wide, ${week.readable} of 40 have room for a word, ${week.overlaps} overlapping.`);
-        pass(`${tag}: in the week the 40 are all still there`, week.n === 40 && week.min > 0 && week.wide <= 1, JSON.stringify(week));
+        console.log(`  COUNT odd, ${size}px: the same day in the Week view: ${week.n} tiles, the narrowest ${week.min}px wide, ${week.readable} with room for a word, then ${weekMore.map((m) => m.words).join(', ')}.`);
+        pass(`${tag}: in the week 3 of the 40 show, with “+37 more” for the rest`, week.n === 3 && week.overlaps === 0 && week.readable === 3 && weekMore.length === 1 && weekMore[0].words === '+37 more' && week.wide <= 1, JSON.stringify({ week, weekMore }));
         await t.go('/coach/calendar?view=month&day=2026-11-25');
         const cell = flat(await page.locator('.cc-month-cell', { has: page.locator('b', { hasText: /^25$/ }) }).textContent());
         pass(`${tag}: the month says how many more there are`, /\d+ more/.test(cell), cell.slice(0, 80));
+      }
+      await t.done({ refusals: 0 });
+    }
+  }
+
+  // ---- an associate's sessions on the owner's calendar, and nothing else of theirs (tidy follow-up 3, run 6's 25; 058)
+  if (odd('assoc')) {
+    for (const size of [1440, 400]) {
+      const tag = `odd, an associate's sessions, ${role}, ${size}px`;
+      const t = await openAt({ role, tag, size, path: `/coach/calendar?view=${size < 600 ? 'day' : 'week'}&day=${D.wed}`, change: (rows) => {
+        rows.client_profiles.push({ id: u(9801), coach_id: OTHER, name: 'Priya Shah', email: 'priya.058@example.invalid', status: 'active', created_at: at('2026-10-01', '09:00') });
+        rows.coach_sessions.push({ id: u(9802), coach_id: OTHER, profile_id: u(9801), group_id: null, engagement_id: null, kind: 'coaching', starts_at: at(D.wed, '15:00'), minutes: 60, place: 'Leeds office', outcome: null, waived: false, recap: 'Private words', created_at: at('2026-11-01', '09:00'), updated_at: at('2026-11-01', '09:00') });
+        rows.coach_sessions.push({ id: u(9803), coach_id: OTHER, profile_id: u(9801), group_id: null, engagement_id: null, kind: 'coaching', starts_at: at(D.wed, '17:00'), minutes: 60, place: null, outcome: 'moved', waived: false, created_at: at('2026-11-01', '09:00'), updated_at: at('2026-11-01', '09:00') });
+        rows.coach_cal_items.push(seedItem(u(9804), 'Dentist 058', D.wed, '12:00', '13:00', { coach_id: OTHER }));
+      } });
+      const { page } = t;
+      const theirs = page.locator(`[data-cal-day="${D.wed}"] [data-cal-key^="assoc:"]`);
+      const label = (await theirs.first().getAttribute('aria-label').catch(() => '')) || '';
+      const text = await words(page);
+      if (role === 'owner') {
+        pass(`${tag}: the owner sees Maya's session with Priya: the time, the client and the kind`, (await theirs.count()) === 1 && /^Priya Shah, Wed 18 Nov, 15:00 to 16:00, Maya, Coaching session$/.test(label), `${await theirs.count()}: ${label}`);
+        pass(`${tag}: never Maya's own calendar items, a moved session, a place or a recap`, !/Dentist 058|Leeds office|Private words/.test(text) && (await page.locator('[data-cal-key="assoc:' + u(9803) + '"]').count()) === 0);
+        const box = await theirs.first().boundingBox();
+        await page.mouse.move(box.x + box.width / 2, box.y + 6); await page.mouse.down(); await page.mouse.move(box.x + box.width / 2, box.y + 120, { steps: 6 }); await page.mouse.up(); await settle(page, 700);
+        pass(`${tag}: it can't be dragged: nothing is saved and it stays at 15:00`, !(await t.rowsNow('coach_sessions')).some((x) => x.id === u(9802) && x.starts_at !== at(D.wed, '15:00')) && /15:00 to 16:00/.test((await theirs.first().getAttribute('aria-label')) || ''));
+        await closePanel(page);
+        await theirs.first().focus(); await page.keyboard.press('ArrowDown'); await settle(page, 500);
+        pass(`${tag}: nor moved with the arrow keys`, /15:00 to 16:00/.test((await theirs.first().getAttribute('aria-label')) || ''));
+        await page.keyboard.press('Enter'); await settle(page, 700);
+        const panel = flat(await dialog(page).innerText().catch(() => ''));
+        pass(`${tag}: opening it says only what it is, with nothing to edit`, /Priya Shah/.test(panel) && /Wed 18 Nov, 15:00 to 16:00/.test(panel) && /Coaching session with Maya/.test(panel) && (await dialog(page).locator('input, textarea, .ds-btn--primary').count()) === 0, panel.slice(0, 160));
+        await closePanel(page);
+      } else {
+        pass(`${tag}: an associate sees nothing of anyone else's sessions or calendar`, (await theirs.count()) === 0 && !/Priya Shah|Dentist 058/.test(text), `${await theirs.count()}`);
       }
       await t.done({ refusals: 0 });
     }

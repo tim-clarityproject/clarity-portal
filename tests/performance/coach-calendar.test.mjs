@@ -356,6 +356,46 @@ test('a day’s column: overlaps side by side, all-day and several-day items in 
   assert.deepEqual(open.open.map((o) => [o.startMin, o.endMin]), [[840, 960]]);
 });
 
+test('a crowded day: past the most side by side, the rest fold into “+N more”, and none is lost (tidy follow-up 3, run 6’s 19)', () => {
+  const data = { items: [], sessions: [], clients: [] };
+  for (let i = 0; i < 40; i += 1) data.items.push(item(`o${i}`, `Overlap ${i + 1}`, '2026-11-25', '10:00', '11:00'));
+  data.items.push(item('late', 'Later on', '2026-11-25', '15:00', '16:00'));
+  data.items.push(item('two1', 'Two at once', '2026-11-25', '12:00', '13:00'), item('two2', 'Two at once too', '2026-11-25', '12:30', '13:00'));
+  const day = cal.layoutDay(view(data, '2026-11-25', '2026-11-25'), '2026-11-25', LON);
+  const crowd = cal.crowdedTiles(day.tiles, 4);
+  const crowded = crowd.tiles.filter((t) => t.entry.title.startsWith('Overlap'));
+  assert.equal(crowded.length, 3, 'three tiles side by side');
+  assert.ok(crowded.every((t) => t.columns === 4 && t.column < 3));
+  assert.equal(crowd.more.length, 1);
+  assert.deepEqual([crowd.more[0].words, crowd.more[0].column, crowd.more[0].columns, crowd.more[0].startMin, crowd.more[0].endMin], ['+37 more', 3, 4, 600, 660]);
+  const all = new Set([...crowd.tiles.map((t) => t.entry.key), ...crowd.more.flatMap((m) => m.entries.map((e) => e.key))]);
+  assert.equal(all.size, day.tiles.length, 'every tile is either shown or listed');
+  assert.ok(crowd.tiles.some((t) => t.entry.key === 'late' && t.columns === 1), 'a tile on its own keeps the full width');
+  assert.equal(crowd.tiles.filter((t) => t.entry.title.startsWith('Two at once')).length, 2, 'two at once still sit side by side');
+  assert.deepEqual(cal.crowdedTiles(day.tiles, Infinity), { tiles: day.tiles, more: [] }, 'a laptop’s day keeps every tile');
+  assert.deepEqual([cal.gridColumnsMax({ view: 'week' }), cal.gridColumnsMax({ view: 'week', narrow: true }), cal.gridColumnsMax({ view: 'day', phone: true }), cal.gridColumnsMax({ view: 'day' })], [4, 3, 4, Infinity]);
+});
+
+test('the owner sees an associate’s coaching sessions, and nothing else of their calendar (tidy follow-up 3, run 6’s 25)', () => {
+  const rows = [
+    { id: 'a1', coach_id: 'maya', coach_first_name: 'Maya', starts_at: at('2026-11-17', '10:00'), minutes: 60, kind: 'coaching', client_name: 'Sam Okafor' },
+    { id: 'a2', coach_id: 'maya', coach_first_name: 'Maya Collins', starts_at: at('2026-11-18', '14:00'), minutes: 90, kind: 'group', client_name: 'Kestrel team' },
+    { id: 'a3', coach_id: 'maya', coach_first_name: 'Maya', starts_at: at('2026-12-01', '10:00'), minutes: 60, kind: 'coaching', client_name: 'Out of range' },
+    { id: null, starts_at: 'nonsense' },
+  ];
+  const es = cal.associateEntries(rows, { fromDay: '2026-11-16', toDay: '2026-11-20', coachZone: LON });
+  assert.deepEqual(es.map((e) => [e.key, e.title, e.sub, e.minutes, e.colour, e.busy, e.fixed]), [
+    ['assoc:a1', 'Sam Okafor', 'Maya, Coaching session', 60, 'other', false, true],
+    ['assoc:a2', 'Kestrel team', 'Maya, Group session', 90, 'other', false, true],
+  ]);
+  assert.deepEqual(cal.associateLines(es[0], LON), ['Tue 17 Nov, 10:00 to 11:00', 'Coaching session with Maya']);
+  assert.deepEqual(cal.associateEntries(rows, { fromDay: '2026-11-16', toDay: '2026-11-20', coachZone: LON, settings: { calendars: { associates: false } } }), [], 'the owner’s switch hides them');
+  // They lay out beside the owner's own, and never count as busy for booking (busySpans reads only the owner's own rows).
+  const day = cal.layoutDay([...view({ items: [item('mine', 'My call', '2026-11-17', '10:00', '11:00', { kind: 'client_call' })], sessions: [], clients: [] }, '2026-11-17', '2026-11-17'), ...es], '2026-11-17', LON);
+  assert.equal(day.tiles.length, 2);
+  assert.ok(day.tiles.every((t) => t.columns === 2));
+});
+
 test('the views: day, week with or without weekends, month and the Schedule', () => {
   assert.deepEqual(cal.viewRange('week', '2026-11-17'), { fromDay: '2026-11-16', toDay: '2026-11-20', days: ['2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20'], title: '16 to 20 Nov' });
   assert.equal(cal.viewRange('week', '2026-11-17', { weekends: true }).title, '16 to 22 Nov');

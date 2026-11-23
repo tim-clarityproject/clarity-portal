@@ -17,7 +17,7 @@ export const CAL_KEYS = { coach_poll_votes: ['option_id', 'person_id'] };
 /** 051's functions: answered by the stand-in with `cal`, and as "no such function" without it (the test project is never asked). */
 export const CAL_FUNCTIONS = ['booking_page', 'booking_free_times', 'booking_make', 'booking_mine', 'booking_move_times', 'booking_move', 'booking_cancel',
   'poll_page', 'poll_vote', 'my_booking_times', 'my_sessions_coming', 'my_session_book', 'my_session_move', 'my_session_cancel',
-  'coach_call_types_start', 'coach_connections_mine', 'cal_reminders_coming', 'cal_reminder_claim'];
+  'coach_call_types_start', 'coach_connections_mine', 'cal_reminders_coming', 'cal_reminder_claim', 'coach_associate_sessions'];
 
 const MIN = 60000;
 const HOUR = 3600000;
@@ -455,6 +455,21 @@ export function calStandIn({ store, ME, me, clock, no }) {
         questions: [], place_kind: 'zoom', page_key: randomUUID(), active: true, makes_lead: true, position, created_at: stamp(), updated_at: stamp() });
       for (const t of [type('chemistry', 'Chemistry Call', 24, 4, 0), type('connection', 'Connection Call', 48, 2, 1)]) if (!rows.coach_call_types.some((x) => x.coach_id === ME && x.key === t.key)) rows.coach_call_types.push(t);
       return rows.coach_call_types.filter((x) => x.coach_id === ME).sort((a, b) => (a.position - b.position) || String(a.created_at).localeCompare(String(b.created_at)));
+    },
+    /**
+     * coach_associate_sessions(p_from, p_to) (058): the owner's view of associates' sessions, only their time, length,
+     * kind, client name and coach's first name; at most 63 days and 2,000; moved and late-cancelled left out. Anyone
+     * but the owner gets nothing.
+     */
+    coach_associate_sessions(uid, from, to) {
+      if (me.role !== 'owner' || !from || !to || ms(to) <= ms(from)) return [];
+      const hi = Math.min(ms(to), ms(from) + 63 * DAY_MS);
+      const nameOf = (x) => rows.client_profiles?.find((p) => p.id === x.profile_id)?.name ?? rows.coach_groups?.find((g) => g.id === x.group_id)?.name ?? null;
+      return (rows.coach_sessions || [])
+        .filter((x) => x.coach_id !== ME && ms(x.starts_at) >= ms(from) && ms(x.starts_at) < hi && (!x.outcome || x.outcome === 'held' || x.outcome === 'no_show'))
+        .sort((a, b) => ms(a.starts_at) - ms(b.starts_at) || String(a.id).localeCompare(String(b.id)))
+        .slice(0, 2000)
+        .map((x) => ({ id: x.id, coach_id: x.coach_id, coach_first_name: firstNameOf(x.coach_id), starts_at: x.starts_at, minutes: x.minutes, kind: x.kind, client_name: nameOf(x) }));
     },
     /** coach_connections_mine(): the status of the coach's own connections, never a token (store.connections: a test sets it). */
     coach_connections_mine() {

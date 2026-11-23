@@ -809,6 +809,7 @@ async function standInRows(page, { role = 'owner', db = 'none', rows = {}, admin
                 my_session_cancel: () => store.fn.my_session_cancel(uid, a.p_session, a.p_late_ok ?? false),
                 coach_call_types_start: () => store.fn.coach_call_types_start(uid),
                 coach_connections_mine: () => store.fn.coach_connections_mine(uid),
+                coach_associate_sessions: () => store.fn.coach_associate_sessions(uid, a.p_from, a.p_to),
               };
               return json(route, answers[fn]());
             } catch (e) {

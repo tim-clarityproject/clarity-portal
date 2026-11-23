@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, CalendarPopover, Chevron, InlineChoice, PageHeader, SwitchRow, useIsPhone } from '../../components/design';
 import {
-  CAL_VIEWS, HIDE_TODOS, HOURS_HELP, HOURS_SAVED, hoursToSave, hoursWindow, OFFER_TIMES, scheduleTitle, SHOW_TODOS, startingView, stepView, viewRange, workingHours,
+  associateEntries, CAL_VIEWS, gridColumnsMax, HIDE_TODOS, HOURS_HELP, HOURS_SAVED, hoursToSave, hoursWindow, OFFER_TIMES, scheduleTitle, SHOW_TODOS, startingView, stepView, viewRange, workingHours,
 } from '../../lib/coach/calendar';
 import { firstName } from '../../lib/coach/model';
-import { addDays } from '../../lib/time/index.js';
+import { addDays, instantAt } from '../../lib/time/index.js';
 import { ensureCalRange } from '../../lib/coach/store';
+import { keptAssociateSessions, loadAssociateSessions } from '../../lib/coach/associateSessions';
 import { MenuItem, PopMenu, TextLink, useCoachPortal, useNarrowerThan } from './parts';
 import { CAL_HOOKS, CalMonth, CalSchedule, useCalendar } from './calendarParts';
 import { CalBoard, CalendarsPanel, useCalPanels, useSecondZone } from './calendarPanels';
@@ -54,9 +55,20 @@ export default function Calendar({ side = null }) {
   const range = useMemo(() => viewRange(view, day, { weekends }), [view, day, weekends]);
   // The weeks shown are read from the database as the coach moves to them (with a few weeks either side): the
   // calendar is never read whole (scale check, 22 Nov: two years passed the old 5,000-row cap and lost the rest).
-  const { userId: calUserId } = useCoachPortal();
+  const { userId: calUserId, isOwner } = useCoachPortal();
   useEffect(() => { ensureCalRange(calUserId, range.fromDay, range.toDay); }, [calUserId, range.fromDay, range.toDay]);
-  const entries = useMemo(() => cal.entriesFor(range.fromDay, range.toDay), [cal, range]);
+  // The owner also sees each associate's coaching sessions, and nothing else of their calendars (058; run 6's 25).
+  const [assoc, setAssoc] = useState(() => (isOwner ? keptAssociateSessions(calUserId) : []));
+  useEffect(() => {
+    if (!isOwner) return undefined;
+    let live = true;
+    const from = instantAt(range.fromDay, '00:00', cal.coachZone);
+    const to = instantAt(addDays(range.toDay, 1), '00:00', cal.coachZone);
+    loadAssociateSessions(calUserId, from, to).then((rows) => { if (live && rows) setAssoc(rows); }).catch(() => {});
+    return () => { live = false; };
+  }, [isOwner, calUserId, range.fromDay, range.toDay, cal.coachZone]);
+  const theirs = useMemo(() => (isOwner ? associateEntries(assoc, { fromDay: range.fromDay, toDay: range.toDay, coachZone: cal.coachZone, settings: cal.settings }) : []), [isOwner, assoc, range, cal.coachZone, cal.settings]);
+  const entries = useMemo(() => [...cal.entriesFor(range.fromDay, range.toDay), ...theirs], [cal, range, theirs]);
   const grid = view === 'day' || (view === 'week' && !isPhone); // a phone's week is the week's own list
 
   const [hours, setHours] = useState(null); // the working hours while they are being edited
@@ -137,7 +149,7 @@ export default function Calendar({ side = null }) {
         )}
 
         <div className="cc-fade" key={`${view}:${grid}`}>
-          {grid && <CalBoard cal={cal} panels={board} days={range.days} entries={shown} win={win} otherZone={zone} onOtherZone={setZone} hours={hours} onHours={setHours} todosOpen={todosOpen && !hours && !isPhone && !pick} narrow={view !== 'day' && (tablet || range.days.length > 5)} />}
+          {grid && <CalBoard cal={cal} panels={board} days={range.days} entries={shown} win={win} otherZone={zone} onOtherZone={setZone} hours={hours} onHours={setHours} todosOpen={todosOpen && !hours && !isPhone && !pick} narrow={view !== 'day' && (tablet || range.days.length > 5)} maxColumns={gridColumnsMax({ view, phone: isPhone, narrow: tablet || range.days.length > 5 || (todosOpen && !isPhone) })} />}
           {!grid && view !== 'month' && <CalSchedule days={range.days} entries={entries} cal={cal} onOpen={panels.open} />}
           {view === 'month' && <CalMonth day={day} entries={entries} cal={cal} weekends={weekends} phone={isPhone} onDay={(d) => go({ view: 'day', day: d })} />}
         </div>

@@ -5,7 +5,7 @@ import { forgetRows, loadCoach, newId, noteRows, removeRow, saveRow, saveRows } 
 import { CHANGED_ELSEWHERE_CODE } from '../../lib/coach/model';
 import { estimateWords } from '../../lib/coach/day';
 import {
-  bannerRows, calendarEntries, coachZoneOf, COLOURS, DRAG_STEP, entryLabel, entryLines, FULL_TITLE_AFTER_MS, hourLabels, hoursHandleWords, layoutDay, monthCell, monthGrid,
+  bannerRows, calendarEntries, coachZoneOf, COLOURS, crowdedTiles, DRAG_STEP, entryLabel, entryLines, FULL_TITLE_AFTER_MS, hourLabels, hoursHandleWords, layoutDay, monthCell, monthGrid,
   moveHours, nowLine, nudgeHours, outOfHours, hoursToSave, scheduleDays, secondZoneChoices, snapMinutes, TODOS_TO_PLACE, todosToPlace, weekKeyOf, zoneColumnLabel,
 } from '../../lib/coach/calendar';
 import { MenuItem, PopMenu, TICK, useCoachPortal } from './parts';
@@ -163,13 +163,14 @@ export const tileClass = (e, extra = '') => `cc-cal-tile ${e.colourClass}${e.one
  * to resize; press and hold on a phone. Arrow keys move a focused tile.
  * @param {{ days: string[], entries: object[], cal: object, win: object, otherZone: string, onOtherZone?: (zone) => void, onZoneList?: () => void,
  *   slot?: { day, fromMin, toMin }|null, hours?: object|null, onHours?: (hours) => void, onCreate, onOpen, onMove, onResize, onNudge, onTick, onUnplace,
- *   dropRef?: object, incoming?: { day, startMin, minutes, title }|null, narrow?: boolean }} props
+ *   dropRef?: object, incoming?: { day, startMin, minutes, title }|null, narrow?: boolean, maxColumns?: number }} props
+ *   `maxColumns`: how many tiles sit side by side before the rest fold into "+N more" (calendar.js's gridColumnsMax).
  *   `hours`: workingHours()'s shape while the working hours are being edited (events dim, a handle at each day's start and finish).
  *   `incoming`: a to-do being dragged in from the to-dos panel. `dropRef`: the to-dos panel, where a placed to-do is dragged back to.
  */
 export function CalGrid({
   days, entries, cal, win, otherZone, onOtherZone, onZoneList, slot = null, hours = null, onHours, onCreate, onOpen, onMove, onResize, onNudge, onTick, onUnplace,
-  dropRef = null, onOverPanel, incoming = null, narrow = false, label = 'Calendar',
+  dropRef = null, onOverPanel, incoming = null, narrow = false, label = 'Calendar', maxColumns = Infinity,
 }) {
   const { coachZone, settings, now, todayKey } = cal;
   const cols = useRef({});
@@ -178,6 +179,8 @@ export function CalGrid({
   const [drag, setDrag] = useState(null); // { mode, key?, day, startMin, endMin, over? }
   const [zoneMenu, setZoneMenu] = useState(false);
   const zoneBtn = useRef(null);
+  const [moreOpen, setMoreOpen] = useState(null); // the "+N more" whose list is open: { key, day, entries }
+  const moreBtn = useRef(null);
   const span = win.toMin - win.fromMin;
   const pct = (min) => `${((Math.min(win.toMin, Math.max(win.fromMin, min)) - win.fromMin) / span) * 100}%`;
   const high = (a, b) => `${((Math.min(win.toMin, b) - Math.max(win.fromMin, a)) / span) * 100}%`;
@@ -409,6 +412,7 @@ export function CalGrid({
         <div className="cc-cal-times" aria-hidden="true">{labels.map((l) => <div key={l.hour} className="cc-cal-hour">{l.coach}</div>)}</div>
         {days.map((day) => {
           const lay = layoutDay(entries, day, coachZone);
+          const crowd = crowdedTiles(lay.tiles, maxColumns);
           const off = outOfHours(shownSettings, day).filter((s) => s.toMin > win.fromMin && s.fromMin < win.toMin);
           return (
             <div
@@ -421,7 +425,27 @@ export function CalGrid({
               {off.map((s) => <svg key={s.fromMin} className="cc-cal-off" style={{ top: pct(s.fromMin), height: high(s.fromMin, s.toMin) }} aria-hidden="true"><rect width="100%" height="100%" fill="url(#cc-cal-hatch)" /></svg>)}
               {labels.map((l) => <div key={l.hour} className="cc-cal-hl" />)}
               {line && line.day === day && line.minutes >= win.fromMin && line.minutes <= win.toMin && <div className="cc-cal-now" style={{ top: pct(line.minutes) }} role="img" aria-label={`Now, ${line.time}`} />}
-              {lay.tiles.map((t) => tile(t, day))}
+              {crowd.tiles.map((t) => tile(t, day))}
+              {crowd.more.map((m) => {
+                if (m.endMin <= win.fromMin || m.startMin >= win.toMin) return null;
+                const width = 100 / m.columns;
+                const open = moreOpen?.key === m.key;
+                return (
+                  <button
+                    key={m.key}
+                    type="button"
+                    className="cc-cal-tile cc-cal-tile--fixed cc-cal-more"
+                    style={{ top: pct(m.startMin), height: high(m.startMin, m.endMin), left: `calc(${m.column * width}% + var(--cal-tile-gap))`, width: `calc(${width}% - 2 * var(--cal-tile-gap))` }}
+                    aria-haspopup="menu"
+                    aria-expanded={open}
+                    aria-label={`${m.entries.length} more at ${wallClock(m.entries[0].startsAt, coachZone).time}. Show them`}
+                    onPointerDown={(ev) => ev.stopPropagation()}
+                    onClick={(ev) => { moreBtn.current = ev.currentTarget; setMoreOpen(open ? null : { key: m.key, day, entries: m.entries }); }}
+                  >
+                    <span className="cc-cal-title">{m.words}</span>
+                  </button>
+                );
+              })}
               {ghost(day)}
               {editing && hours[weekKeyOf(day)] && [handle(day, 'from'), handle(day, 'to')]}
               {editing && !hours[weekKeyOf(day)] && <button type="button" className="cc-cal-sethours ds-link" onClick={() => onHours?.(moveHours(hours, weekKeyOf(day), 'from', 540))}>Set hours</button>}
@@ -430,6 +454,11 @@ export function CalGrid({
         })}
       </div>
       <InfoPop id={tipId} open={Boolean(tip)} anchorRef={tipAnchor} panelRef={tipPanel} lines={tip ? [tip] : []} />
+      <PopMenu open={Boolean(moreOpen)} onClose={() => setMoreOpen(null)} anchorRef={moreBtn} title={moreOpen ? dayKeyWords(moreOpen.day) : ''}>
+        {(moreOpen?.entries || []).map((e) => (
+          <MenuItem key={e.key} onClick={() => { const el = moreBtn.current; setMoreOpen(null); onOpen?.(e, el); }}>{`${wallClock(e.startsAt, coachZone).time} ${e.title}`}</MenuItem>
+        ))}
+      </PopMenu>
       {onOtherZone && (
         <PopMenu open={zoneMenu} onClose={() => setZoneMenu(false)} anchorRef={zoneBtn} title="Second time column">
           {secondZoneChoices(settings, coachZone).map((z) => <MenuItem key={z.value} checked={z.value === otherZone} onClick={() => { setZoneMenu(false); onOtherZone(z.value); }}>{z.label}</MenuItem>)}

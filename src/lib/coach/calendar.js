@@ -20,7 +20,7 @@ import {
   hourBeforeReminderAt, dayWords as zoneDayWords, timeWords, EARLY_AND_LATE_LABEL, GAP_MINUTES, zoneCountry,
 } from '../time/index.js';
 import { clean, cut, firstName, minutesWords, parsePeople } from './model.js';
-import { SENT_LINE, SESSION_LENGTHS, WEEK_KEYS, isLateCancellation, isLink, newSession, parseQuickAdd, workingDay } from './day.js';
+import { SENT_LINE, SESSION_KINDS, SESSION_LENGTHS, WEEK_KEYS, isLateCancellation, isLink, newSession, parseQuickAdd, workingDay } from './day.js';
 
 const MIN = 60000;
 const HOUR = 3600000;
@@ -115,6 +115,8 @@ export const COLOURS = Object.freeze({
 });
 
 export const CALENDARS = [{ value: 'work', label: 'Work' }, { value: 'personal', label: 'Personal' }, { value: 'family', label: 'Family' }];
+/** The owner's own show switch for associates' sessions (058), beside My calendars: on unless switched off. */
+export const ASSOCIATES_CALENDAR = { value: 'associates', label: 'Associates’ sessions', note: 'Their coaching sessions only' };
 /** Whether one of My calendars is shown (each has a show switch; on unless switched off). */
 export const calendarShown = (settings, key) => settings?.calendars?.[key] !== false;
 export const PLACES = [{ value: 'zoom', label: 'Zoom' }, { value: 'in_person', label: 'In person' }, { value: 'phone', label: 'Phone' }];
@@ -313,6 +315,39 @@ const entry = (base, coachZone) => {
     ...base,
   };
 };
+
+/**
+ * The owner's view of associates' coaching sessions (058's
+ * coach_associate_sessions; Tim's answer to run 6's 25): each as a grey tile
+ * that can't be moved, titled with the client's (or group's) name, with
+ * the coach's first name and the kind of session under it. Nothing else of
+ * an associate's calendar is ever drawn. Never busy for the owner's own
+ * booking. Left out when the owner switches "Associates’ sessions" off.
+ * @param {{ id, coach_id, coach_first_name, starts_at, minutes, kind, client_name }[]} rows
+ */
+export function associateEntries(rows, { fromDay, toDay, coachZone, settings = null }) {
+  if (!calendarShown(settings, ASSOCIATES_CALENDAR.value)) return [];
+  const from = instantAt(fromDay, '00:00', coachZone);
+  const to = instantAt(addDays(toDay, 1), '00:00', coachZone);
+  const out = [];
+  for (const r of Array.isArray(rows) ? rows : []) {
+    const startsAt = new Date(r?.starts_at);
+    const minutes = SESSION_LENGTHS.includes(Number(r?.minutes)) ? Number(r.minutes) : 60;
+    if (!r?.id || Number.isNaN(startsAt.getTime()) || startsAt >= to || startsAt.getTime() + minutes * MIN <= from.getTime()) continue;
+    const coach = firstName(r.coach_first_name || '') || 'An associate';
+    out.push(entry({
+      key: `assoc:${r.id}`, type: 'assoc', kind: 'assoc', colour: 'other', title: clean(r.client_name || '') || 'A client',
+      sub: `${coach}, ${SESSION_KINDS[r.kind] || SESSION_KINDS.other}`, startsAt, endsAt: new Date(startsAt.getTime() + minutes * MIN),
+      busy: false, fixed: true, assoc: { coach, kind: SESSION_KINDS[r.kind] || SESSION_KINDS.other },
+    }, coachZone));
+  }
+  return out.sort((a, b) => a.startsAt - b.startsAt);
+}
+
+/** What an associate's session says when it is opened: when, then its kind and whose it is ("Coaching session with Maya"). */
+export function associateLines(e, coachZone) {
+  return [`${zoneDayWords(e.startsAt, coachZone)}, ${spanWords(e.startsAt, e.endsAt, coachZone)}`, `${e.assoc.kind} with ${e.assoc.coach}`];
+}
 
 /**
  * Everything to draw between two of the coach's days: calendar items (each
@@ -573,6 +608,58 @@ export function layoutDay(entries, day, coachZone) {
   }
   if (cluster.length) close();
   return { banners: todays.filter(isBanner), tiles, open: todays.filter((e) => e.type === 'open').map(piece) };
+}
+
+/**
+ * How many side by side before the rest fold into "+N more" (tidy follow-up
+ * 3, run 6's 19, as Google Calendar does): 4 in a week of 5 days, 3 in a
+ * narrower week (7 days, or a tablet), and 4 in a phone's day. A laptop's
+ * Day view has the room, so it keeps every tile side by side.
+ */
+export function gridColumnsMax({ view, phone = false, narrow = false }) {
+  if (view === 'day') return phone ? 4 : Infinity;
+  return narrow ? 3 : 4;
+}
+
+/**
+ * A day's tiles with no more than `max` side by side: where a run of
+ * overlapping tiles needs more columns, the first max - 1 keep theirs and
+ * the rest fold into one "+N more" in the last column, one for each run of
+ * the folded tiles that overlap, from the first one's start to the last
+ * one's end. Nothing is lost: each folded entry is listed in its "+N more".
+ * @param {ReturnType<typeof layoutDay>['tiles']} tiles
+ * @returns {{ tiles: object[], more: { key: string, startMin: number, endMin: number, column: number, columns: number, entries: object[], words: string }[] }}
+ */
+export function crowdedTiles(tiles, max = Infinity) {
+  if (!Number.isFinite(max) || max < 2) return { tiles, more: [] };
+  const sorted = [...tiles].sort((a, b) => a.startMin - b.startMin || b.endMin - a.endMin);
+  const clusters = [];
+  let end = -1;
+  for (const t of sorted) {
+    if (!clusters.length || t.startMin >= end) { clusters.push([]); end = -1; }
+    clusters[clusters.length - 1].push(t);
+    end = Math.max(end, t.endMin);
+  }
+  const shown = [];
+  const more = [];
+  for (const c of clusters) {
+    if (c[0].columns <= max) { shown.push(...c); continue; }
+    const folded = [];
+    for (const t of c) (t.column < max - 1 ? shown.push({ ...t, columns: max }) : folded.push(t));
+    let run = null;
+    for (const t of folded) {
+      if (run && t.startMin < run.endMin) { run.pieces.push(t); run.endMin = Math.max(run.endMin, t.endMin); continue; }
+      run = { startMin: t.startMin, endMin: t.endMin, pieces: [t] };
+      more.push(run);
+    }
+  }
+  return {
+    tiles: shown,
+    more: more.map((r) => ({
+      key: `more:${r.pieces[0].entry.key}`, startMin: r.startMin, endMin: r.endMin, column: max - 1, columns: max,
+      entries: r.pieces.map((t) => t.entry), words: `+${r.pieces.length} more`,
+    })),
+  };
 }
 
 /**
