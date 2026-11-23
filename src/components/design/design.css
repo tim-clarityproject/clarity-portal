@@ -3827,6 +3827,10 @@
 .ui-root .ds-guide-skip.ds-guide-skip--body {
   margin-top: var(--space-3);
   padding: 0 !important;
+  /* With no side padding the word alone is narrower than a tap: the button
+     keeps 44px across, its word still on the left edge (UI tester, tidy
+     follow-up 3). */
+  min-width: var(--tap-min);
 }
 
 .ui-root .ds-guide-skip {

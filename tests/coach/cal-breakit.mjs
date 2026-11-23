@@ -583,6 +583,7 @@ PARTS['b-odd'] = async (role) => {
       } });
       const { page } = t;
       const theirs = page.locator(`[data-cal-day="${D.wed}"] [data-cal-key^="assoc:"]`);
+      if (SHOTS) await page.screenshot({ path: `${SHOTS}/assoc-${role}-${size}.png` }).catch(() => {});
       const label = (await theirs.first().getAttribute('aria-label').catch(() => '')) || '';
       const text = await words(page);
       if (role === 'owner') {
@@ -598,6 +599,7 @@ PARTS['b-odd'] = async (role) => {
         await page.keyboard.press('Enter'); await settle(page, 700);
         const panel = flat(await dialog(page).innerText().catch(() => ''));
         const edits = await dialog(page).locator('input, textarea, .ds-btn--primary').evaluateAll((els) => els.filter((el) => el.getBoundingClientRect().width > 0).map((el) => `${el.tagName.toLowerCase()}.${el.className}`));
+        if (SHOTS) await page.screenshot({ path: `${SHOTS}/assoc-panel-${size}.png` }).catch(() => {});
         pass(`${tag}: opening it says only what it is, with nothing to edit`, (await dialog(page).locator('.cc-quiet').allTextContents()).join('|') === 'Wed 18 Nov, 15:00 to 16:00|Priya Shah|Coaching session|Maya’s session' && edits.length === 0, `${panel.slice(0, 160)} ${edits.join(' ')}`);
         await closePanel(page);
       } else {
