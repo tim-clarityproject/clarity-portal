@@ -172,7 +172,9 @@ export const ROWS = [
   { name: 'Automations', m11: 'auto', built: 'automations', ...OWNER,
     changes: [[/^(When a lead is won, keep in touch every 3 months\.|Ran 1 time in November)$/, null, 'an automation only adds a to-do or moves a stage (the prompt), so “keep in touch” isn’t one; the seed has five automations (builder A’s decision 2)', { say: 'When a lead is won, keep in touch every 3 months.' }],
       ['Automations add to-dos, move stages, add tags and keep people in touch. They never send anything.', 'Automations add to-dos and move stages. They never send anything.', 'the prompt: automations only ever create to-dos or move stages']],
-    added: [[/^name: (Edit|On): When .+$/, 'each sentence opens it, and each switch is named for its automation', null, { say: 'Edit: When …, On: When …' }]] },
+    added: [[/^name: (Edit|On): When .+$/, 'each sentence opens it, and each switch is named for its automation', null, { say: 'Edit: When …, On: When …' }],
+      // Run 8's prompt, item 3 (not in M11): keep in touch, one more kind, always listed and off until switched on.
+      [/^When someone is due a catch-up, add the to-do “Catch up with \[first name\]”, due that day\.$/, 'run 8’s prompt (item 3): the keep-in-touch automation, always listed, off until the coach switches it on', null, { say: 'When someone is due a catch-up, add the to-do “Catch up with [first name]”, due that day.' }]] },
   { name: 'Automations: add one', m11: 'autoed', part: 'sheet', built: 'automations-add', ...OWNER },
   // ---- Boards
   { name: 'Boards', m11: 'boards', built: 'boards', ...OWNER },
