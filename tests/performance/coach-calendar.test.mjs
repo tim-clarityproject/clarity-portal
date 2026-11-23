@@ -385,10 +385,10 @@ test('the owner sees an associate’s coaching sessions, and nothing else of the
   ];
   const es = cal.associateEntries(rows, { fromDay: '2026-11-16', toDay: '2026-11-20', coachZone: LON });
   assert.deepEqual(es.map((e) => [e.key, e.title, e.sub, e.minutes, e.colour, e.busy, e.fixed]), [
-    ['assoc:a1', 'Sam Okafor', 'Maya, Coaching session', 60, 'other', false, true],
-    ['assoc:a2', 'Kestrel team', 'Maya, Group session', 90, 'other', false, true],
+    ['assoc:a1', 'Sam Okafor', 'Coaching session, Maya', 60, 'other', false, true],
+    ['assoc:a2', 'Kestrel team', 'Group session, Maya', 90, 'other', false, true],
   ]);
-  assert.deepEqual(cal.associateLines(es[0], LON), ['Tue 17 Nov, 10:00 to 11:00', 'Coaching session with Maya']);
+  assert.deepEqual(cal.associateLines(es[0], LON), ['Tue 17 Nov, 10:00 to 11:00', 'Sam Okafor', 'Coaching session', 'Maya’s session']);
   assert.deepEqual(cal.associateEntries(rows, { fromDay: '2026-11-16', toDay: '2026-11-20', coachZone: LON, settings: { calendars: { associates: false } } }), [], 'the owner’s switch hides them');
   // They lay out beside the owner's own, and never count as busy for booking (busySpans reads only the owner's own rows).
   const day = cal.layoutDay([...view({ items: [item('mine', 'My call', '2026-11-17', '10:00', '11:00', { kind: 'client_call' })], sessions: [], clients: [] }, '2026-11-17', '2026-11-17'), ...es], '2026-11-17', LON);

@@ -180,6 +180,7 @@ async function openAt({ role = 'owner', db = 'there', when = TUE, size = 1440, p
         const refused = store.calls.filter((c) => c.startsWith('refused'));
         pass(`${tag}: the database refused ${refusals === 0 ? 'nothing the page sent' : `only what it should (${refusals})`}`, refused.length === refusals, [...new Set(refused)].slice(0, 6).join('; '));
       }
+      if (process.env.H2DEBUG) console.log('H2DEBUG', await page.evaluate((id) => { const v = JSON.parse(localStorage.getItem(`clarity-coach-local:${id}`) || 'null'); if (!v) return 'none'; const out = []; for (const [t, rows] of Object.entries(v.rows || {})) for (const k of Object.keys(rows)) { const m = (v.marks || {})[t]?.[k]; if (!m?.sent || m.gone) out.push(`${t}:${k}:${JSON.stringify(m || null)}`); } return out.slice(0, 20).join(' | ') + ` partial=${v.partial}`; }, me).catch((e) => String(e)));
       if (there && !waiting) pass(`${tag}: nothing waits on the device`, !(await page.evaluate((id) => Boolean(localStorage.getItem(`clarity-coach-local:${id}`)), me).catch(() => true)));
       const seen = errors.filter((e) => !(allow && allow.test(e)));
       pass(`${tag}: no page error`, seen.length === 0, [...new Set(seen)].slice(0, 4).join(' | '));
@@ -586,7 +587,8 @@ PARTS['b-odd'] = async (role) => {
       const label = (await theirs.first().getAttribute('aria-label').catch(() => '')) || '';
       const text = await words(page);
       if (role === 'owner') {
-        pass(`${tag}: the owner sees Maya's session with Priya: the time, the client and the kind`, (await theirs.count()) === 1 && /^Priya Shah, Wed 18 Nov, 15:00 to 16:00, Maya, Coaching session$/.test(label), `${await theirs.count()}: ${label}`);
+        pass(`${tag}: the owner sees Maya's session with Priya: the time, the client's name, the kind and whose it is`, (await theirs.count()) === 1 && /^Priya Shah, Wed 18 Nov, 15:00 to 16:00, Coaching session, Maya$/.test(label), `${await theirs.count()}: ${label}`);
+        pass(`${tag}: the tile reads the client's name, then the kind and Maya`, /Priya Shah/.test(await theirs.first().innerText()) && /Coaching session, Maya/.test(await theirs.first().innerText()), flat(await theirs.first().innerText()));
         pass(`${tag}: never Maya's own calendar items, a moved session, a place or a recap`, !/Dentist 058|Leeds office|Private words/.test(text) && (await page.locator('[data-cal-key="assoc:' + u(9803) + '"]').count()) === 0);
         const box = await theirs.first().boundingBox();
         await page.mouse.move(box.x + box.width / 2, box.y + 6); await page.mouse.down(); await page.mouse.move(box.x + box.width / 2, box.y + 120, { steps: 6 }); await page.mouse.up(); await settle(page, 700);
@@ -597,7 +599,7 @@ PARTS['b-odd'] = async (role) => {
         await page.keyboard.press('Enter'); await settle(page, 700);
         const panel = flat(await dialog(page).innerText().catch(() => ''));
         const edits = await dialog(page).locator('input, textarea, .ds-btn--primary').evaluateAll((els) => els.filter((el) => el.getBoundingClientRect().width > 0).map((el) => `${el.tagName.toLowerCase()}.${el.className}`));
-        pass(`${tag}: opening it says only what it is, with nothing to edit`, /Priya Shah/i.test(panel) && /Wed 18 Nov, 15:00 to 16:00/.test(panel) && /Coaching session with Maya/.test(panel) && edits.length === 0, `${panel.slice(0, 160)} ${edits.join(' ')}`);
+        pass(`${tag}: opening it says only what it is, with nothing to edit`, (await dialog(page).locator('.cc-quiet').allTextContents()).join('|') === 'Wed 18 Nov, 15:00 to 16:00|Priya Shah|Coaching session|Maya’s session' && edits.length === 0, `${panel.slice(0, 160)} ${edits.join(' ')}`);
         await closePanel(page);
       } else {
         pass(`${tag}: an associate sees nothing of anyone else's sessions or calendar`, (await theirs.count()) === 0 && !/Priya Shah|Dentist 058/.test(text), `${await theirs.count()}`);

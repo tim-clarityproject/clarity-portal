@@ -320,7 +320,8 @@ const entry = (base, coachZone) => {
  * The owner's view of associates' coaching sessions (058's
  * coach_associate_sessions; Tim's answer to run 6's 25): each as a grey tile
  * that can't be moved, titled with the client's (or group's) name, with
- * the coach's first name and the kind of session under it. Nothing else of
+ * the kind of session and the coach's first name under it ("Coaching
+ * session, Maya"). Nothing else of
  * an associate's calendar is ever drawn. Never busy for the owner's own
  * booking. Left out when the owner switches "Associates’ sessions" off.
  * @param {{ id, coach_id, coach_first_name, starts_at, minutes, kind, client_name }[]} rows
@@ -337,16 +338,16 @@ export function associateEntries(rows, { fromDay, toDay, coachZone, settings = n
     const coach = firstName(r.coach_first_name || '') || 'An associate';
     out.push(entry({
       key: `assoc:${r.id}`, type: 'assoc', kind: 'assoc', colour: 'other', title: clean(r.client_name || '') || 'A client',
-      sub: `${coach}, ${SESSION_KINDS[r.kind] || SESSION_KINDS.other}`, startsAt, endsAt: new Date(startsAt.getTime() + minutes * MIN),
-      busy: false, fixed: true, assoc: { coach, kind: SESSION_KINDS[r.kind] || SESSION_KINDS.other },
+      sub: `${SESSION_KINDS[r.kind] || SESSION_KINDS.other}, ${coach}`, startsAt, endsAt: new Date(startsAt.getTime() + minutes * MIN),
+      busy: false, fixed: true, assoc: { coach, kind: SESSION_KINDS[r.kind] || SESSION_KINDS.other, client: clean(r.client_name || '') || 'A client' },
     }, coachZone));
   }
   return out.sort((a, b) => a.startsAt - b.startsAt);
 }
 
-/** What an associate's session says when it is opened: when, then its kind and whose it is ("Coaching session with Maya"). */
+/** What an associate's session says when it is opened, one fact a line: when, the client or group, the kind, and whose session it is. */
 export function associateLines(e, coachZone) {
-  return [`${zoneDayWords(e.startsAt, coachZone)}, ${spanWords(e.startsAt, e.endsAt, coachZone)}`, `${e.assoc.kind} with ${e.assoc.coach}`];
+  return [`${zoneDayWords(e.startsAt, coachZone)}, ${spanWords(e.startsAt, e.endsAt, coachZone)}`, e.assoc.client, e.assoc.kind, `${e.assoc.coach}’s session`];
 }
 
 /**
