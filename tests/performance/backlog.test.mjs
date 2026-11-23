@@ -264,7 +264,7 @@ test('offline: the add and the plan-in wait on the device in order, then both la
   await q.flush(ME);
   const row = fake.db.tables.todos.find((x) => x.id === 'b2');
   assert.deepEqual([row.sprint_id, row.planned_week], ['sp', 3]);
-  assert.deepEqual(q.queueState(ME), { waiting: 0, failed: 0 });
+  assert.deepEqual(q.queueState(ME), { waiting: 0, failed: 0, quiet: 0 });
 });
 
 // The break-it tester, 14 Nov: a tool went on saying "It’s in this week’s

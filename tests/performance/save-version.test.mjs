@@ -105,7 +105,7 @@ test('offline changes to one row chain: each waits on the device and all land in
   setOnline(true);
   await q.flush(ME);
   assert.equal(row('todos', 't4').planned_week, 6);
-  assert.deepEqual(q.queueState(ME), { waiting: 0, failed: 0 });
+  assert.deepEqual(q.queueState(ME), { waiting: 0, failed: 0, quiet: 0 });
   assert.equal(heard.length, 0);
 });
 
@@ -118,7 +118,7 @@ test('a queued save whose row moved on meanwhile is taken off the device and ann
   setOnline(true);
   await q.flush(ME);
   assert.equal(row('todos', 't5').planned_week, 7);
-  assert.deepEqual(q.queueState(ME), { waiting: 0, failed: 0 }, 'not kept to replace the newer one, not set aside as refused');
+  assert.deepEqual(q.queueState(ME), { waiting: 0, failed: 0, quiet: 0 }, 'not kept to replace the newer one, not set aside as refused');
   assert.equal(heard.length, 1);
 });
 
@@ -203,4 +203,20 @@ test('a save that lands while the device is being warmed still moves the version
   await q.flush(ME);
   assert.equal(row('todos', 't11').text, 'Draft the Harbour case study');
   assert.equal(heard.length, 0);
+});
+
+test('an own question refused as a third (23505) is set aside quietly: its own row explains it, so no general notice (tidy follow-up 3)', async () => {
+  setOnline(false);
+  q.keepForLater(ME, { table: 'own_questions', kind: 'upsert', onConflict: 'id', values: { id: 'oq3', user_id: ME, tool: 'daily_plan', position: 3 } });
+  q.keepForLater(ME, { table: 'todos', kind: 'upsert', onConflict: 'id', values: { id: 't23505', user_id: ME, text: 'Clash' } });
+  fake.db.down = { code: '23505', status: 409, message: 'duplicate key value violates unique constraint' };
+  setOnline(true);
+  await q.flush(ME);
+  fake.db.down = null;
+  assert.deepEqual(q.queueState(ME), { waiting: 0, failed: 1, quiet: 1 }, 'the to-do counts as refused for the notice; the own question only as quiet');
+  assert.equal(q.explainsItsOwnRefusal({ table: 'own_questions' }, { code: '23505' }), true);
+  assert.equal(q.explainsItsOwnRefusal({ table: 'own_questions' }, { code: '42501' }), false, 'any other refusal of an own question still gets the notice');
+  assert.equal(q.explainsItsOwnRefusal({ table: 'own_question_answers' }, { code: '23505' }), false);
+  q.dismissFailed(ME);
+  assert.deepEqual(q.queueState(ME), { waiting: 0, failed: 0, quiet: 0 });
 });

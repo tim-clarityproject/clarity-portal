@@ -647,7 +647,8 @@ export function flush(userId = currentUser, { now = false } = {}) {
           retryLater(userId, error);
           break;
         }
-        write(userId, read(userId).map((x) => (x.qid === item.qid ? { ...x, failed: true } : x)));
+        const quiet = explainsItsOwnRefusal(item, error);
+        write(userId, read(userId).map((x) => (x.qid === item.qid ? { ...x, failed: true, ...(quiet ? { quiet: true } : {}) } : x)));
       }
     }
   })().finally(() => {
@@ -674,6 +675,17 @@ function sessionLater(userId) {
     // Hidden: showing the tab again tries once.
     if (userId === currentUser && isOnline() && !tabHidden() && waitingToSend(userId)) flush(userId);
   }, wait);
+}
+
+// Refusals a page explains in its own words, so the general "One change
+// didn't save" notice stays away (tidy follow-up 3, run 7's 5): a person's
+// own question refused because the tool already has its two (23505, a
+// third sent offline from another tab or device) shows as its own stray
+// row in My Account, and saving again can't help. Set aside as failed like
+// any refusal, so nothing is retried, but counted as `quiet`.
+const EXPLAINED_REFUSALS = { own_questions: new Set(['23505']) };
+export function explainsItsOwnRefusal(item, error) {
+  return !!EXPLAINED_REFUSALS[item?.table]?.has(`${error?.code || ''}`);
 }
 
 /** Who is signed in: their waiting saves are sent on every reconnect. */
@@ -752,16 +764,23 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
   });
 }
 
-/** How many saves are waiting, and how many the server refused. */
+/**
+ * How many saves are waiting, how many the server refused (`failed`), and
+ * how many of those a page explains itself (`quiet`, not in `failed`).
+ */
 export function queueState(userId = currentUser) {
   const items = read(userId);
-  return { waiting: items.filter((x) => !x.failed).length, failed: items.filter((x) => x.failed).length };
+  return {
+    waiting: items.filter((x) => !x.failed).length,
+    failed: items.filter((x) => x.failed && !x.quiet).length,
+    quiet: items.filter((x) => x.failed && x.quiet).length,
+  };
 }
 
-let snapshot = { waiting: 0, failed: 0 };
+let snapshot = { waiting: 0, failed: 0, quiet: 0 };
 function getSnapshot() {
   const next = queueState();
-  if (next.waiting !== snapshot.waiting || next.failed !== snapshot.failed) snapshot = next;
+  if (next.waiting !== snapshot.waiting || next.failed !== snapshot.failed || next.quiet !== snapshot.quiet) snapshot = next;
   return snapshot;
 }
 

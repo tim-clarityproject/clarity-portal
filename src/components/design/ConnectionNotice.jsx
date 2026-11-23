@@ -15,24 +15,28 @@ export const OFFLINE_WORDS = 'You’re offline. What you do is kept on this devi
 
 export default function ConnectionNotice() {
   const online = useOnline();
-  const { waiting, failed } = useQueueState();
+  const { waiting, failed, quiet } = useQueueState();
   const toast = useToast();
   const hadWaiting = useRef(false);
   const shownFailed = useRef(0);
+  const seenQuiet = useRef(0);
 
   useEffect(() => onDraftRestored(() => toast.show('Draft restored')), [toast]);
 
   useEffect(() => {
     if (waiting > 0) {
+      // How many quiet refusals there were when the sending began.
+      if (!hadWaiting.current) seenQuiet.current = quiet;
       hadWaiting.current = true;
       return;
     }
     if (hadWaiting.current && online) {
       hadWaiting.current = false;
-      // "Saved" only when nothing was refused on the way.
-      if (failed <= shownFailed.current) toast.show('Saved');
+      // "Saved" only when nothing was refused on the way, not even a
+      // refusal the page explains itself (an own question's stray row).
+      if (failed <= shownFailed.current && quiet <= seenQuiet.current) toast.show('Saved');
     }
-  }, [waiting, online, failed, toast]);
+  }, [waiting, online, failed, quiet, toast]);
 
   useEffect(() => {
     if (failed > shownFailed.current) {
@@ -42,6 +46,16 @@ export default function ConnectionNotice() {
     }
     shownFailed.current = failed;
   }, [failed, toast]);
+
+  // A refusal its page explains (tidy follow-up 3, run 7's 5): no notice
+  // here, and set aside the same way once its page has had its moment.
+  useEffect(() => {
+    if (quiet > 0) {
+      const t = setTimeout(dismissFailed, 8000);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [quiet]);
 
   if (online && waiting === 0) return null;
   return createPortal(
