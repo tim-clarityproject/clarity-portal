@@ -87,7 +87,10 @@ const STATE_DIR = join(tmpdir(), 'clarity-coach-tests');
 /** A signed-in browser context for the test coach (the session is kept in the system's temporary folder, never printed). */
 export async function coachContext(browser, { size = 1440, theme = 'dark', fresh = false, reducedMotion = 'reduce' } = {}) {
   mkdirSync(STATE_DIR, { recursive: true });
-  const file = join(STATE_DIR, 'coach-owner.json');
+  // One saved sign-in per address the portal is served on: suites served on different ports at the same time (two helpers,
+  // 23 Nov) shared one file, so a run loaded another port's sign-in, found no session on its own address and waited on
+  // .cc-app for ever (the "database there" timeouts).
+  const file = join(STATE_DIR, `coach-owner-${new URL(APP).host.replace(/[^a-z0-9]+/gi, '-')}.json`);
   const opts = { viewport: SIZES[size] || size, colorScheme: theme, serviceWorkers: 'block', reducedMotion, hasTouch: size === 400 };
   if (!fresh && existsSync(file)) return browser.newContext({ ...opts, storageState: file });
   const env = readEnv();

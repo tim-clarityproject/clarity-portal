@@ -109,8 +109,20 @@ export async function runDay({ browser, report, parts }) {
       for (const t of ['session_prep', 'week_scores', 'peak_reviews', 'checkins']) await page.route(`**/rest/v1/${t}*`, read(t === 'session_prep' ? null : []));
     }
     const codes = await codesStandIn(page);
+    const heard = [];
+    if (process.env.DIAG_DIR) page.on('console', (m) => heard.push(`console ${m.type()}: ${m.text().replace(/eyJ[\w.-]+/g, '<token>').slice(0, 200)}`));
+    if (process.env.DIAG_DIR) page.on('response', (res) => { const u = new URL(res.url()); if (/\/(rest|auth)\/v1\//.test(u.pathname)) heard.push(`${res.request().method()} ${u.pathname.replace(/\/(rest|auth)\/v1/, '')} ${res.status()}`); });
     await page.goto(`${APP}/coach`);
-    await page.waitForSelector('.cc-app', { timeout: 20000 });
+    await page.waitForSelector('.cc-app', { timeout: 20000 }).catch(async (e) => {
+      // DIAG_DIR: what the page shows when the coach portal never opens (no tokens; the stand-in's own call list).
+      if (process.env.DIAG_DIR) {
+        const { writeFileSync } = await import('node:fs');
+        const text = await page.locator('body').innerText().catch(() => '');
+        writeFileSync(`${process.env.DIAG_DIR}/${tag || 'open'}-${role}-${size}.txt`, [`url ${new URL(page.url()).pathname}`, `errors ${errors.join(' | ')}`, `calls ${(store?.calls || []).slice(-40).join(' | ')}`, `heard ${heard.join(' | ')}`, '---', text.slice(0, 1500)].join('\n'));
+        await page.screenshot({ path: `${process.env.DIAG_DIR}/${tag || 'open'}-${role}-${size}.png` }).catch(() => {});
+      }
+      throw e;
+    });
     const me = await accountId(page);
     await page.evaluate((t) => localStorage.setItem('clarity-colour-mode', t), theme);
     await clearDevice(page, me);
