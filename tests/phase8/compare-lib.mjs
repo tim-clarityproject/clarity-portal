@@ -24,15 +24,18 @@ export const NEW_BAR = 'the new 34px button leaves the bar as tall as its 44px t
 //     difference (`FIELD`);
 //   - a segmented switch is a quiet track (8px corners, no edge) with plain 16px words and a raised
 //     tile for the chosen one (`SEG`); chips have 6px corners;
-//   - Back's chevron is 10px from the tool's name, 4px nearer than the mock-ups' 14px (`BACK`);
+//   - Back's chevron is 10px from the tool's name, measured from the chevron's strokes (`BACK`): the
+//     mock-ups put the name 14px after the chevron's square, which is where 10px from its strokes
+//     lands, so the name keeps the mock-up's place (tidy pass follow-up 1, 23 Nov: the shift of 4px
+//     read the 14px as from the strokes and left the name about 5px from them);
 //   - a section heading over rows with their own lines has no line under it (`NO_LINE`);
 //   - an Add has no "a" or "an", and "Add my to-do" is "Add to-do" (`ADD_WORDS`).
 export const FIELD = 'text inputs and drop-downs are 56px, 52px on a phone (Tim, 18 Nov, follow-up 1)';
 export const SEG = 'a segmented switch is a quiet track with plain 16px words and a raised tile for the chosen one (Tim, 18 Nov, follow-up 1)';
-export const BACK = 'Back’s chevron is 10px from the name, 4px nearer than the mock-up’s 14px (Tim, 18 Nov, follow-up 1)';
+export const BACK = 'Back’s chevron is 10px from the name, measured from its strokes (Tim, 18 Nov, follow-up 1)';
 export const NO_LINE = 'no line under a section heading over rows with their own lines (Tim, 18 Nov, follow-up 1)';
 export const ADD_WORDS = 'no “a” or “an” in an Add, and “Add my to-do” is “Add to-do” (Tim, 18 Nov, follow-up 1)';
-const BACK_SHIFT = 4;
+const BACK_SHIFT = 0;
 const SEG_PAD = 3;
 const fieldH = (phone) => (phone ? 52 : 56);
 /** An Add's words as follow-up 1 has them. */
