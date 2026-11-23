@@ -17,9 +17,9 @@ import { ownEntry } from '../peakMoments/model';
 // sync" while it waits), whatever waits on the device is moved across once,
 // and a load brings the device's copy up to date with the tables.
 //
-// The device copy is clarity-travel-plans-local:<person>, which Sign out
-// never clears (it isn't one of deviceStore's prefixes), because until 048
-// it is the only copy there is. It carries the person's id.
+// The device copy is clarity-travel-plans-local:<person>. It carries the
+// person's id. Sign out sends across what still waits in it, then clears it
+// (tidy follow-up 3: signOutCopies.js, clearAppStorage.js).
 //
 //   { plans: { [id]: plan }, ticks: { [planId]: { [day]: { [step]: true } } } }
 //

@@ -18,10 +18,10 @@ import { cleanMomentName, ownEntry, tidyMoment, tidyRepeat } from './model';
 // device's copy up to date with the tables, so another device's moments
 // show here.
 //
-// The device copy is clarity-peak-moments-local:<person>, which a Sign out
-// never clears (like the Daily plan's habits before 039: clearAppStorage.js),
-// because until 048 it is the only copy there is. It carries the person's
-// id, so nobody else signing in here is shown it.
+// The device copy is clarity-peak-moments-local:<person>. It carries the
+// person's id, so nobody else signing in here is shown it. Sign out sends
+// across what still waits in it, then clears it (tidy follow-up 3:
+// signOutCopies.js, clearAppStorage.js).
 //
 //   { moments: { [id]: moment }, reviews: { ['id:YYYY-MM-DD']: review },
 //     leadUps: { ['id:YYYY-MM-DD']: { [day]: { text, todoId, did } } },

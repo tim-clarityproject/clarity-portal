@@ -22,10 +22,10 @@ export { tidyState };
 // whatever waits on the device from before is moved across once (questions
 // before their answers), and a load brings the device's copy up to date.
 //
-// The device copy is clarity-own-questions-local:<person>, which a Sign
-// out never clears (like the peak moments' copy: clearAppStorage.js), so
-// nothing waiting for 055 is lost. It carries the person's id, so nobody
-// else signing in here is shown it.
+// The device copy is clarity-own-questions-local:<person>. It carries the
+// person's id, so nobody else signing in here is shown it. Sign out sends
+// across what still waits in it, then clears it (tidy follow-up 3:
+// signOutCopies.js, clearAppStorage.js).
 //
 //   { questions: { [id]: question }, answers: { ['question:occasion']: answer },
 //     suggestions: { [id]: suggestion } }

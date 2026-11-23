@@ -15,9 +15,12 @@ test('Sign out clears every copy that carries the person’s id, and where a gui
   ]) assert.equal(isAppOwnedKey(key), true, key);
 });
 
-test('Sign out keeps answers that wait on the device for their migration (they carry the person’s id)', () => {
+// Tidy follow-up 3 (the scale check's 5): these were kept while their
+// migrations waited; Sign out now sends across what waits (signOutCopies.js)
+// and clears every saved copy, the day's plan order included.
+test('Sign out clears the copies that once waited for their migration (sent across first)', () => {
   for (const key of [`clarity-day-plan-local:${SAM}:2026-11-10`, `clarity-day-review-local:${SAM}:2026-11-10`, `clarity-checkin-extras:${SAM}:2026-11-01`]) {
-    assert.equal(isAppOwnedKey(key), false, key);
+    assert.equal(isAppOwnedKey(key), true, key);
   }
 });
 

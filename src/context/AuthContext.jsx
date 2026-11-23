@@ -9,6 +9,7 @@ import { diag } from '../utils/diag';
 import { clearAfterSignOutElsewhere, clearAppStorage } from '../lib/clearAppStorage';
 import { startDraftsFor, stopDraftsFor } from '../lib/drafts';
 import { sendToolAnswersBeforeSignOut } from '../lib/toolAnswers';
+import { copiesWaiting, sendCopiesBeforeSignOut } from '../lib/signOutCopies';
 import { flush as flushQueue, queueState, retrySyncQueue, startSyncQueue, stopSyncQueue } from '../lib/syncQueue';
 
 // A sign-in that was on this device ended without Sign out being pressed
@@ -307,8 +308,15 @@ export function AuthProvider({ children }) {
     ]);
     if (!force) {
       await Promise.race([flushQueue(), new Promise((resolve) => { setTimeout(resolve, 20000); })]);
+      // The person's own copies (own questions, peak moments, travel plans
+      // and the rest) go across too, once the queue has gone, since Sign
+      // out clears them all (signOutCopies.js; tidy follow-up 3).
+      const copies = await Promise.race([
+        sendCopiesBeforeSignOut(user?.id).catch(() => ({ waiting: copiesWaiting(user?.id) })),
+        new Promise((resolve) => { setTimeout(() => resolve({ waiting: copiesWaiting(user?.id) }), 20000); }),
+      ]);
       const { waiting } = queueState();
-      if (waiting + tools.waiting > 0) return { pending: waiting + tools.waiting };
+      if (waiting + tools.waiting + copies.waiting > 0) return { pending: waiting + tools.waiting + copies.waiting };
     }
     setIsLoading(true);
     try {

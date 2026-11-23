@@ -25,10 +25,35 @@ const EXACT_KEYS = [
   'pendingSignupName',
 ];
 
+// The person's own copies kept beside the page copies (tidy follow-up 3,
+// the scale check's 5: Sign out clears every saved copy on the device):
+// clarity-<kind>:<person>[:<name>], made by deviceKey. Sign out first sends
+// across whatever of them still waits (signOutCopies.js), so nothing is
+// lost unless the person chooses "Sign out anyway".
+export const PERSONAL_KINDS = [
+  'own-questions-local', // your own questions' wording and answers (ownQuestions/store.js)
+  'peak-moments-local', // peak moments and their reviews (peakMoments/store.js)
+  'travel-plans-local', // travel plans and their ticks (travel/store.js)
+  'day-plan-local', // the day's plan: habits chosen and the order (dayPlanHabits.js)
+  'day-review-local', // the Daily review's way of being (answerExtras.js, ReviewMyDay.jsx)
+  'checkin-extras', // a monthly review's drinks and trip (answerExtras.js)
+  'checkin-added', // what a monthly review added to the plan (CheckIn.jsx)
+  'checkin-doing', // a monthly review's "what I'm doing" (CheckIn.jsx)
+  'checkin-nothing', // a monthly review's "nothing to add" (CheckIn.jsx)
+  'home', // Home's own small copies (Home.jsx)
+];
+const PERSONAL_PREFIXES = PERSONAL_KINDS.map((kind) => `clarity-${kind}:`);
+
 export function isAppOwnedKey(key) {
   if (EXACT_KEYS.includes(key)) return true;
   // Page copies, drafts and saves waiting to be sent (deviceStore.js).
   if (DEVICE_PREFIXES.some((prefix) => key.startsWith(prefix))) return true;
+  // The person's own copies (PERSONAL_KINDS above).
+  if (PERSONAL_PREFIXES.some((prefix) => key.startsWith(prefix))) return true;
+  // Typing kept until the server has it (useAutosave.js: ds-draft:<key>).
+  if (key.startsWith('ds-draft:')) return true;
+  // A coach's weekly review typed on Today (coach/todayParts.jsx, this tab).
+  if (key.startsWith('clarity-coach-review-draft:')) return true;
   // Where a guided tool was left, and a change from its summary still
   // open (GuidedTool.jsx; the key holds the person's id and the day).
   if (key.startsWith('ds-guide:')) return true;
@@ -39,11 +64,6 @@ export function isAppOwnedKey(key) {
   // The mark that this tab has asked for a guest's or an outside Health
   // Check's work (claimRules.js): the next sign-in here asks again.
   if (key.startsWith('clarity-guest-claim:')) return true;
-  // Not cleared: answers that wait on the device until their migration has
-  // run (clarity-day-plan-local:, clarity-day-review-local:,
-  // clarity-checkin-extras:; dayStore.js, answerExtras.js). They carry the
-  // person's id, so nobody else is shown them, and clearing them could lose
-  // an answer that has nowhere else to live yet.
   // Journal, plan-edit and other drafts: clarity-<thing>-draft-<id>.
   if (key.startsWith('clarity-') && key.includes('-draft-')) return true;
   // Older per-tool saves, <toolType>-autosave / -progress, still on some devices.
