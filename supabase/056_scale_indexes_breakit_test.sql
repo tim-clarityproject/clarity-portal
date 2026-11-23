@@ -27,11 +27,27 @@
 --   It ends with the notice 056 BREAK-IT CHECKS PASSED, or stops with FAILED
 --   and a list naming each check that failed.
 -- =============================================================================
+-- A sign-in. On a hosted project Supabase keeps every sign-in in auth.sessions,
+-- and once a coach has a reset or a recovery code on record 055 refuses a
+-- sign-in that isn't there (so a made-up session id reads nothing at all, and
+-- an update finds no row to refuse: 3c and 7a/7b on the test project, 23 Nov).
+-- So the sign-in is written there too wherever that table exists; the stand-in
+-- has none. It is undone with everything else at the end.
 create or replace function pg_temp.b_as(p uuid, p_aal text, p_at timestamptz default now()) returns void language plpgsql as $f$
+declare sid uuid := gen_random_uuid();
 begin
+  perform set_config('role', 'none', true);
+  perform set_config('request.jwt.claims', '', true);
+  if to_regclass('auth.sessions') is not null and p is not null then
+    begin
+      execute 'insert into auth.sessions (id, user_id, created_at, updated_at) values ($1, $2, $3, $3)' using sid, p, p_at;
+    exception when others then
+      raise notice '056 break-it: this database doesn''t let the test write auth.sessions (%), so 3c and 7a/7b can''t be checked here', sqlerrm;
+    end;
+  end if;
   perform set_config('request.jwt.claims', json_build_object('sub', p, 'role', 'authenticated', 'aal', p_aal,
     'amr', json_build_array(json_build_object('method', 'password', 'timestamp', floor(extract(epoch from p_at))::bigint)),
-    'iat', floor(extract(epoch from p_at))::bigint, 'session_id', gen_random_uuid())::text, true);
+    'iat', floor(extract(epoch from p_at))::bigint, 'session_id', sid)::text, true);
   perform set_config('role', 'authenticated', true);
 end $f$;
 create or replace function pg_temp.b_anon() returns void language plpgsql as $f$
