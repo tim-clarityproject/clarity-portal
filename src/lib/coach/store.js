@@ -735,9 +735,16 @@ async function tableThere(table) {
 
 // ---------------------------------------------------------------- saving
 
+// Columns only the database's own functions set. 049's client_profiles_guard refuses a plain save that carries
+// user_id even unchanged, because an upsert is checked as an insert before it becomes an update: every save of a
+// client whose account is linked was refused (scale check, step 4). The account is linked only by accepting the
+// invite, so a save never sends it.
+const SET_BY_DB = { client_profiles: ['user_id'] };
 const forDb = (table, row) => Object.fromEntries(Object.entries(row).filter(([c]) => !DB_ONLY.includes(c)
+  && !SET_BY_DB[table]?.includes(c)
   && !(dayReadyNow !== true && DAY_COLUMNS[table]?.includes(c))
   && !(crmReadyNow !== true && CRM_COLUMNS[table]?.includes(c))));
+export const rowForDb = forDb;
 /** Does this row hold something of 052's that the database can't take yet? */
 const heldBack = (table, row) => crmReadyNow !== true && Boolean(CRM_COLUMNS[table]?.some((c) => row[c] != null && !(c === 'currency' && row[c] === 'GBP')
   && !(c === 'crm' && Object.keys(row[c] || {}).length === 0)));
