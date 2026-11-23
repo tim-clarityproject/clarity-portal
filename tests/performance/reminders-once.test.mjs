@@ -7,7 +7,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import reminders from '../../api/coach-reminders.js';
-import workshopEmails from '../../api/workshop-emails.js';
+import workshopEmails, { isScheduler } from '../../api/workshop-emails.js';
 
 const SECRET = 'a-long-enough-secret-for-the-test';
 const LIVE = {
@@ -97,5 +97,33 @@ test('a preview asks nothing and sends nothing, even with every key and the righ
       assert.deepEqual([r.code, r.body], [200, { sent: 0, reason: 'preview' }]);
       assert.deepEqual(stand.asked, [], 'nothing asked of the database or the email provider');
     }
+  }
+});
+
+test('only the scheduler\'s exact header is let in (break-it tester, tidy follow-up 3)', () => {
+  const ok = `Bearer ${SECRET}`;
+  assert.equal(isScheduler(ok, SECRET), true);
+  assert.equal(isScheduler(ok, `${SECRET}\n`), true, 'a secret pasted into Vercel with a new line at its end is the same secret');
+  assert.equal(isScheduler(ok, `  ${SECRET} `), true);
+  for (const header of [undefined, null, '', 'Bearer', 'Bearer ', SECRET, `bearer ${SECRET}`, `Bearer  ${SECRET}`, `Bearer ${SECRET} `, `Bearer ${SECRET}x`,
+    `Bearer ${SECRET.slice(0, -1)}`, `Basic ${SECRET}`, [ok], { toString: () => ok }, `Bearer ${SECRET.replace('a', 'á')}`, `Bearer ${'x'.repeat(5000)}`]) {
+    assert.equal(isScheduler(header, SECRET), false, `refused: ${JSON.stringify(String(header)).slice(0, 40)}`);
+  }
+  for (const secret of [undefined, null, '', 'short', '               ', 12345678901234567890, `   short   \n`]) {
+    assert.equal(isScheduler(`Bearer ${secret}`, secret), false, `no usable secret set: ${JSON.stringify(secret)}`);
+    assert.equal(isScheduler('Bearer ', secret), false);
+  }
+});
+
+test('a wrong or missing secret on the live site asks the database nothing and sends nothing', async () => {
+  for (const handler of [reminders, workshopEmails]) {
+    for (const authorization of [undefined, 'Bearer wrong', `Bearer ${SECRET}x`]) {
+      const stand = standIn({ coming: [], due: [] });
+      const r = await withStandIn(stand, LIVE, () => { const out = res(); return handler({ method: 'GET', headers: authorization ? { authorization } : {}, query: {} }, out).then(() => out); });
+      assert.deepEqual([r.code, r.body?.sent, stand.asked.length, stand.emails.length], [401, 0, 0, 0]);
+    }
+    const stand = standIn();
+    const r = await withStandIn(stand, { ...LIVE, CRON_SECRET: '' }, () => { const out = res(); return handler({ method: 'GET', headers: { authorization: 'Bearer ' }, query: {} }, out).then(() => out); });
+    assert.deepEqual([r.code, stand.asked.length], [401, 0], 'no secret set on the live site: nobody is the scheduler');
   }
 });

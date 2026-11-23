@@ -49,9 +49,12 @@ const reply = (res, status, body) => { res.status(status).setHeader('Cache-Contr
 
 /** Whether the caller is the scheduler (058's pg_cron job): its secret, compared without leaking where it differs. */
 export function isScheduler(header, secret) {
-  if (typeof secret !== 'string' || secret.length < 16) return false;
-  const given = Buffer.from(String(header || ''));
-  const wanted = Buffer.from(`Bearer ${secret}`);
+  // A secret pasted into Vercel with a new line or a space at an end is the same secret (058 refuses one with spaces
+  // in Vault, so the scheduler never sends them); without this every run was answered 401 without a word.
+  const kept = typeof secret === 'string' ? secret.trim() : '';
+  if (kept.length < 16 || typeof header !== 'string') return false;
+  const given = Buffer.from(header);
+  const wanted = Buffer.from(`Bearer ${kept}`);
   return given.length === wanted.length && timingSafeEqual(given, wanted);
 }
 
