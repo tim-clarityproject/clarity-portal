@@ -655,6 +655,10 @@ export function leftWords(engagement, packs) {
 }
 
 const ended = (s) => new Date(s.starts_at).getTime() + (Number(s.minutes) || 0) * 60000;
+// Oldest first (or newest first), sessions at the same moment in the order of their ids: the same pick whichever order
+// they came in (a first load sends some older sessions before the rest arrive; 057).
+const byStart = (a, b) => (new Date(a.starts_at) - new Date(b.starts_at)) || String(a.id).localeCompare(String(b.id));
+const byStartNewest = (a, b) => (new Date(b.starts_at) - new Date(a.starts_at)) || String(a.id).localeCompare(String(b.id));
 
 /** A session's row on the client's page: its name, its quiet facts and its day. */
 export function sessionRow(session, todayKey) {
@@ -669,23 +673,23 @@ export function sessionRow(session, todayKey) {
 }
 
 /** Sessions that have ended and haven't been written up, oldest first. */
-export const toWriteUp = (sessions, now) => (sessions || []).filter((s) => !s.outcome && ended(s) <= new Date(now).getTime()).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+export const toWriteUp = (sessions, now) => (sessions || []).filter((s) => !s.outcome && ended(s) <= new Date(now).getTime()).sort(byStart);
 
 export const RECAP_NUDGE_HOURS = 24;
 /** Recaps still unsent 24 hours after a call that went ahead (the quiet line on Today), oldest first. */
 export function recapNudges(sessions, now) {
   const limit = new Date(now).getTime() - RECAP_NUDGE_HOURS * 60 * 60 * 1000;
-  return (sessions || []).filter((s) => s.outcome === 'held' && !s.recap_sent_at && ended(s) <= limit).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  return (sessions || []).filter((s) => s.outcome === 'held' && !s.recap_sent_at && ended(s) <= limit).sort(byStart);
 }
 
 /** The last session with someone that happened before a moment, and the next one after it. */
 export function lastSession(sessions, match, before) {
   const t = new Date(before).getTime();
-  return (sessions || []).filter((s) => match(s) && s.outcome === 'held' && new Date(s.starts_at).getTime() < t).sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at))[0] || null;
+  return (sessions || []).filter((s) => match(s) && s.outcome === 'held' && new Date(s.starts_at).getTime() < t).sort(byStartNewest)[0] || null;
 }
 export function nextSession(sessions, match, after) {
   const t = new Date(after).getTime();
-  return (sessions || []).filter((s) => match(s) && !s.outcome && ended(s) > t).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))[0] || null;
+  return (sessions || []).filter((s) => match(s) && !s.outcome && ended(s) > t).sort(byStart)[0] || null;
 }
 
 /** "Today, 12:30", "Tomorrow, 09:00", "Thu 19 Nov, 16:00" on the device's own clock. */
@@ -759,7 +763,7 @@ export function attentionRows({ clients = [], engagements = [], packs = [], entr
       const day = toDayKey(new Date(waiting.starts_at));
       rows.push({ key: `w:${waiting.id}`, profileId: c.id, name: c.name, line: `${day === todayKey ? 'Today’s' : day === addDays(todayKey, -1) ? 'Yesterday’s' : `${possessive(dayWords(day, todayKey))}`} session is ready to write up.`, action: 'Write it up', to: `/coach/sessions/${waiting.id}` });
     }
-    const unsent = mine.filter((s) => s.outcome === 'held' && !s.recap_sent_at && clean(s.recap)).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))[0];
+    const unsent = mine.filter((s) => s.outcome === 'held' && !s.recap_sent_at && clean(s.recap)).sort(byStart)[0];
     if (unsent && unsent !== waiting) {
       const day = toDayKey(new Date(unsent.starts_at));
       rows.push({ key: `r:${unsent.id}`, profileId: c.id, name: c.name, line: `${day === addDays(todayKey, -1) ? 'Yesterday’s' : possessive(dayWords(day, todayKey))} recap is ready to check.`, action: 'Check the recap', to: `/coach/sessions/${unsent.id}` });
