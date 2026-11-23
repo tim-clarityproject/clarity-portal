@@ -113,7 +113,7 @@ begin
     raise notice '058: pg_net isn''t on this database, so no reminder address was asked.';
     return 0;
   end if;
-  v_base := regexp_replace(v_base, '/+$', '');
+  v_base := lower(regexp_replace(v_base, '/+$', '')); -- a host in capitals (Portal.TheClarityProject.co.uk) is the same address
   if v_base !~ '^https://[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$'
      or char_length(coalesce(p_secret, '')) < 16 or p_secret ~ '\s' then
     raise notice '058: the live address or the secret in Vault isn''t usable, so no reminder address was asked.';

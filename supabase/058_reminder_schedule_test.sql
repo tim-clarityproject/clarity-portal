@@ -139,6 +139,10 @@ begin
                public._reminder_jobs_send(null, null)), '00000');
       execute 'select count(*)::text from net.http_request_queue where id > $1' into v using queued_before;
       f := f || pg_temp.r_eq('3d and nothing was queued for them', v, '0');
+      execute 'select coalesce(max(id), 0) from net.http_request_queue' into queued_before;
+      f := f || pg_temp.r_eq('3e a host typed with capitals and an ending slash is the same address', public._reminder_jobs_send(' https://Example.Invalid/ ', 'test-secret-058-abcdefgh')::text, '2');
+      execute 'select string_agg(url, '','' order by id) from net.http_request_queue where id > $1' into v using queued_before;
+      f := f || pg_temp.r_eq('3f asked in small letters', v, 'https://example.invalid/api/coach-reminders,https://example.invalid/api/workshop-emails');
     else
       f := f || pg_temp.r_eq('3a without pg_net nothing is asked', public._reminder_jobs_send('https://example.invalid', 'test-secret-058-abcdefgh')::text, '0');
     end if;
