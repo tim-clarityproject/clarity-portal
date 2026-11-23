@@ -2008,34 +2008,48 @@
   border-color: var(--coral-soft-text);
 }
 
-/* Where there's no tick box (Tim, 18 Nov, 12:30): the thin soft coral line
-   at the item's left edge, the full height of its words, and nothing else
-   (no box, no bold, no coral word). 2px in --coral-soft-text, so it is never
-   one of the thick coloured side lines (rule 4a); the words start
-   --important-gap after it. Put .ds-important on the block that holds the
-   item's words. */
-.ui-root .ds-important {
-  position: relative;
-  display: block;
-  padding-left: calc(var(--important-line) + var(--important-gap));
+/* Where there's no tick box (Tim, 18 Nov, 12:55; buttons-followup-1.md
+   point 5): a small soft coral box before the title, drawn exactly as the
+   Important tick box's own square (the same 18px, its 2px --coral-soft-text
+   edge, its 5px corners, no fill). Never a line down the item's side
+   (rule 4a: no coloured side lines anywhere). The title is unchanged, and
+   the titles around it keep their line: a row without the box keeps the
+   box's space (.ds-mark-space), as rows without Important keep a grey tick
+   box. Markup: <span class="ds-mark-row ds-mark-row--important"><span
+   class="ds-important-mark" aria-hidden="true"></span><span>words</span>
+   </span>, and <span class="ds-mark-space" aria-hidden="true"></span> in
+   place of the box on the other rows. */
+.ui-root .ds-mark-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--important-mark-gap);
 }
 
-.ui-root .ds-important::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: var(--important-line);
-  border-radius: calc(var(--important-line) / 2);
-  background: var(--coral-soft-text);
+.ui-root .ds-mark-row > :last-child {
+  min-width: 0;
 }
 
-/* Windows high-contrast mode (rule 8b): the line keeps showing, in the system's text colour. */
+.ui-root .ds-important-mark,
+.ui-root .ds-mark-space {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--checkbox-box);
+  height: var(--checkbox-box);
+  /* Centred on the first line of the words. */
+  margin-top: calc((1lh - var(--checkbox-box)) / 2);
+}
+
+.ui-root .ds-important-mark {
+  border: var(--important-line) solid var(--coral-soft-text);
+  border-radius: var(--radius-box);
+  background: none;
+}
+
+/* Windows high-contrast mode (rule 8b): the box keeps showing, in the system's text colour. */
 @media (forced-colors: active) {
-  .ui-root .ds-important::before {
+  .ui-root .ds-important-mark {
     forced-color-adjust: none;
-    background: CanvasText;
+    border-color: CanvasText;
   }
 }
 

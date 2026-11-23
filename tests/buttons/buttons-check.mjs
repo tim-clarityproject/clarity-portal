@@ -174,22 +174,14 @@ export function nekstInControls() {
   return [...new Set(out)];
 }
 
-// No thick coloured side lines (Tim, 18 Nov, follow-up 1): no card, row or
-// calendar block has a left (or right) edge 2px or more that its other
-// edges don't share, and no bar 2px or more drawn down its side. The one
-// exception is Important where there is no tick box (Tim, 18 Nov, 12:30):
-// the thin soft coral line, exactly 2px in --coral-soft-text, drawn by
-// `.ds-important` or inside an item marked important (a class ending
-// `--important`) whose tick box is hidden (importantMarks checks it is that
-// line and nothing else);
-// a thicker one, another colour, or the line on anything else still fails.
+// No coloured side lines (Tim, 18 Nov, follow-up 1, and 12:55): no card,
+// row or calendar block has a left (or right) edge 2px or more that its
+// other edges don't share, and no bar 2px or more drawn down its side, with
+// no exception (Important where there's no tick box is a small soft coral
+// box before the title, never a line: importantMarks).
 // Run in the page: page.evaluate(sideLines).
 export function sideLines() {
   const out = [];
-  const probe = document.createElement('span');
-  probe.style.display = 'none';
-  (document.querySelector('.ui-root') || document.body).appendChild(probe);
-  const soft = (el) => { probe.style.color = ''; probe.style.color = getComputedStyle(el).getPropertyValue('--coral-soft-text').trim() || 'transparent'; return getComputedStyle(probe).color; };
   for (const el of document.querySelectorAll('.ui-root *')) {
     const b = el.getBoundingClientRect();
     if (!(b.width > 0 && b.height > 0) || b.height < 20) continue;
@@ -205,13 +197,10 @@ export function sideLines() {
       const w = parseFloat(ps.width) || 0;
       const h = parseFloat(ps.height) || 0;
       if (w >= 2 && w <= 6 && h >= 20 && h > b.height * 0.5 && !/rgba\(0, 0, 0, 0\)|transparent/.test(ps.backgroundColor) && Number(ps.opacity) > 0.05 && !/scaleY\(0\)|matrix\(1, 0, 0, 0,/.test(ps.transform)) {
-        // Important's thin line: 2px, soft coral, on the left of an item marked important.
-        const importantLine = which === '::before' && (el.matches('.ds-important') || Boolean(el.closest('[class*="--important"]'))) && Math.abs(w - 2) < 0.05 && ps.backgroundColor === soft(el) && Math.abs(parseFloat(ps.left) || 0) < 0.5;
-        if (!importantLine) out.push(`${String(el.className?.baseVal ?? el.className ?? '').split(' ')[0] || el.tagName.toLowerCase()}${which} a ${w}px bar down its side`);
+        out.push(`${String(el.className?.baseVal ?? el.className ?? '').split(' ')[0] || el.tagName.toLowerCase()}${which} a ${w}px bar down its side`);
       }
     }
   }
-  probe.remove();
   return [...new Set(out)];
 }
 
@@ -579,15 +568,17 @@ export function backGaps() {
   return { problems: [...new Set(out)], checked };
 }
 
-// Important (Tim, 18 Nov, follow-up 1, and 12:30): an important item with a
-// tick box shows it only as that box's 2px soft coral edge (--coral-soft-text),
-// its title unchanged; one without a tick box shows only the thin soft coral
-// line at its left edge (`.ds-important`: a 2px bar in --coral-soft-text the
-// full height of its words). Neither shows any other mark: no small box (the
-// retired `.ds-important-mark`), no bold, no coral or soft coral words, no
-// dot. An item is important when it carries `.ds-important` or a class ending
-// `--important`. Run in the page: page.evaluate(importantMarks). Gives
-// { problems, checked }.
+// Important (Tim, 18 Nov, follow-up 1, and 12:55; buttons-followup-1.md
+// point 5): an important item with a tick box shows it only as that box's
+// 2px soft coral edge (--coral-soft-text), its title unchanged; one without
+// a tick box shows a small soft coral box before its title, drawn exactly as
+// that tick box's square (`.ds-important-mark`: --checkbox-box square, a 2px
+// --coral-soft-text edge all round, the tick box's --radius-box corners, no
+// fill), its title lined up with the titles around it. Neither shows
+// anything else: no coloured line down its side, no bold, no coral or soft
+// coral words, no dot. An item is important when it carries a class ending
+// `--important` or holds a `.ds-important-mark`. Run in the page:
+// page.evaluate(importantMarks). Gives { problems, checked }.
 export function importantMarks() {
   const out = [];
   let checked = 0;
@@ -609,74 +600,112 @@ export function importantMarks() {
   const colour = (value) => { probe.style.color = ''; probe.style.color = value; return getComputedStyle(probe).color; };
   const root = document.querySelector('.ui-root') || document.body;
   const tok = (el, t) => colour(getComputedStyle(el).getPropertyValue(t).trim() || 'transparent');
+  const px = (el, t) => { probe.style.width = ''; probe.style.width = getComputedStyle(el).getPropertyValue(t).trim() || '0px'; probe.style.display = 'block'; const w = parseFloat(getComputedStyle(probe).width) || 0; probe.style.display = 'none'; probe.style.width = ''; return w; };
   const near = (a, b, tol = 0.05) => Math.abs(a - b) <= tol;
+  const clear = (c) => /rgba\(0, 0, 0, 0\)|transparent/.test(c);
   const TICK = '[role=checkbox], .ds-check-box, .cc-cal-tick';
-  // The retired small box, wherever it is.
-  for (const el of document.querySelectorAll('.ds-important-mark')) if (vis(el)) out.push(`${name(el.parentElement || el)}: the small soft coral box (.ds-important-mark), not the thin line`);
-  const items = [...document.querySelectorAll('.ds-important, [class*="--important"]')].filter((el) => vis(el) && !el.parentElement?.closest('.ds-important, [class*="--important"]'));
+  const SIDES = ['Top', 'Right', 'Bottom', 'Left'];
+  // The words as drawn: every text node but the screen reader's (.ds-sr sits out of the flow).
+  const textRects = (el) => {
+    const rects = [];
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      if (!n.textContent.trim() || n.parentElement.closest('.ds-sr') || n.parentElement.closest(TICK) || !vis(n.parentElement)) continue;
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      rects.push(...[...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0));
+    }
+    return rects;
+  };
+  const firstLine = (rects) => { if (!rects.length) return null; const top = Math.min(...rects.map((r) => r.top)); const line = rects.filter((r) => r.top - top < 2); return { left: Math.min(...line.map((r) => r.left)), top: Math.min(...line.map((r) => r.top)), bottom: Math.max(...line.map((r) => r.bottom)) }; };
+  const items = new Set();
+  for (const el of document.querySelectorAll('[class*="--important"]')) if (vis(el) && !el.parentElement?.closest('[class*="--important"]')) items.add(el);
+  for (const m of document.querySelectorAll('.ds-important-mark')) if (vis(m) && !m.closest('[class*="--important"]')) items.add(m.parentElement || m);
   for (const item of items) {
     checked += 1;
     const soft = tok(item, '--coral-soft-text');
-    const corals = new Set([soft, tok(root, '--coral'), tok(root, '--coral-text'), tok(root, '--coral-soft'), 'rgb(255, 111, 92)'].filter((c) => !/rgba\(0, 0, 0, 0\)|transparent/.test(c)));
+    const corals = new Set([soft, tok(root, '--coral'), tok(root, '--coral-text'), tok(root, '--coral-soft'), 'rgb(255, 111, 92)'].filter((c) => !clear(c)));
     const bad = [];
     const tick = [...item.querySelectorAll(TICK)].find(vis);
-    // The line: .ds-important, or a part of the item that draws a bar down its left (a row whose tick box is hidden).
-    const bar = (e) => { if (!vis(e)) return false; const ps = getComputedStyle(e, '::before'); return ps.content !== 'none' && ps.display !== 'none' && ps.position === 'absolute' && (parseFloat(ps.width) || 0) > 0 && (parseFloat(ps.width) || 0) <= 6 && !/rgba\(0, 0, 0, 0\)|transparent/.test(ps.backgroundColor); };
-    const lineEl = item.matches('.ds-important') ? item : item.querySelector('.ds-important') || [item, ...item.querySelectorAll('*')].find(bar);
+    const parts = [item, ...item.querySelectorAll('*')].filter((el) => vis(el) && !el.closest(TICK) && !el.closest('.ds-sr'));
+    // A box: the shared mark, or any part with a coral or soft coral edge all round.
+    const boxes = parts.filter((el) => el !== item && (el.matches('.ds-important-mark') || (SIDES.every((s) => parseFloat(getComputedStyle(el)[`border${s}Width`]) > 0 && getComputedStyle(el)[`border${s}Style`] !== 'none') && corals.has(getComputedStyle(el).borderTopColor))));
+    // No coloured line down its side: a narrow coloured bar (a part or its ::before or ::after), or an edge on one side only.
+    for (const el of parts) {
+      const st = getComputedStyle(el);
+      const l = parseFloat(st.borderLeftWidth) || 0;
+      const r = parseFloat(st.borderRightWidth) || 0;
+      const t = parseFloat(st.borderTopWidth) || 0;
+      if ((l > t + 0.5 && !clear(st.borderLeftColor) && st.borderLeftStyle !== 'none') || (r > t + 0.5 && !clear(st.borderRightColor) && st.borderRightStyle !== 'none')) bad.push(`a coloured line down its side (${cls(el)})`);
+      const b = el.getBoundingClientRect();
+      if (b.width <= 6 && b.height >= 10 && b.height >= 3 * b.width && !clear(st.backgroundColor)) bad.push(`a coloured line down its side (${cls(el)})`);
+      for (const which of ['::before', '::after']) {
+        const ps = getComputedStyle(el, which);
+        if (ps.content === 'none' || ps.display === 'none' || clear(ps.backgroundColor) || Number(ps.opacity) < 0.05) continue;
+        const w = parseFloat(ps.width) || 0;
+        const h = parseFloat(ps.height) || 0;
+        if (w > 0 && w <= 6 && (h >= 10 || (ps.position === 'absolute' && ps.top !== 'auto' && ps.bottom !== 'auto'))) bad.push(`a coloured line down its side (${cls(el)}${which})`);
+      }
+    }
     if (tick) {
       // The tick box's own drawn square: the box itself or the span that draws it.
       const drawnBox = [...tick.querySelectorAll(':scope > span'), tick].find((e) => parseFloat(getComputedStyle(e).borderTopWidth) > 0) || tick;
       const ts = getComputedStyle(drawnBox);
       const ticked = tick.getAttribute('aria-checked') === 'true';
       if (!ticked) {
-        if (!['Top', 'Right', 'Bottom', 'Left'].every((s) => near(parseFloat(ts[`border${s}Width`]), 2))) bad.push(`its tick box edge is ${ts.borderTopWidth}, not 2px`);
+        if (!SIDES.every((s) => near(parseFloat(ts[`border${s}Width`]), 2))) bad.push(`its tick box edge is ${ts.borderTopWidth}, not 2px`);
         if (ts.borderTopColor !== soft) bad.push(`its tick box edge is ${ts.borderTopColor}, not soft coral`);
       }
-      if (lineEl) bad.push('a soft coral line as well as the tick box edge');
+      if (boxes.length) bad.push('a soft coral box as well as the tick box edge');
+    } else if (!boxes.length) {
+      bad.push('no small soft coral box before its title');
     } else {
-      // The thin line: .ds-important's ::before, 2px, soft coral, on the left, the full height of the words.
-      if (!lineEl) bad.push('no thin soft coral line at its left edge');
-      else {
-        const ps = getComputedStyle(lineEl, '::before');
-        const lb = lineEl.getBoundingClientRect();
-        const h = parseFloat(ps.height) || 0;
-        if (ps.content === 'none' || ps.display === 'none') bad.push('no thin soft coral line at its left edge');
-        else {
-          if (!near(parseFloat(ps.width) || 0, 2)) bad.push(`its line is ${ps.width} wide, not 2px`);
-          if (ps.backgroundColor !== soft) bad.push(`its line is ${ps.backgroundColor}, not soft coral`);
-          if (Math.abs(parseFloat(ps.left) || 0) > 0.5) bad.push('its line is not on its left edge');
-          // The words' block: the line runs the full height of the item's words.
-          // Its words as drawn: every text node but the screen reader's (.ds-sr sits out of the flow).
-          const rects = [];
-          const walk = document.createTreeWalker(lineEl, NodeFilter.SHOW_TEXT);
-          for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-            if (!n.textContent.trim() || n.parentElement.closest('.ds-sr')) continue;
-            const range = document.createRange();
-            range.selectNodeContents(n);
-            rects.push(...[...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0));
-          }
-          if (rects.length) {
-            const top = Math.min(...rects.map((r) => r.top));
-            const bottom = Math.max(...rects.map((r) => r.bottom));
-            if (h < bottom - top - 1 || h > lb.height + 1) bad.push(`its line is ${h.toFixed(1)}px high, not the full ${(bottom - top).toFixed(1)}px of its words`);
-          }
+      // Drawn exactly as the Important tick box's square.
+      const box = boxes[0];
+      const st = getComputedStyle(box);
+      const bb = box.getBoundingClientRect();
+      const size = px(root, '--checkbox-box') || 18;
+      const radius = px(root, '--radius-box') || 5;
+      if (!near(bb.width, size, 0.5) || !near(bb.height, size, 0.5)) bad.push(`its box is ${bb.width.toFixed(1)} by ${bb.height.toFixed(1)}px, not the tick box's ${size}px`);
+      if (!SIDES.every((s) => near(parseFloat(st[`border${s}Width`]), 2))) bad.push(`its box edge is ${st.borderTopWidth}, not 2px`);
+      if (!SIDES.every((s) => st[`border${s}Color`] === soft)) bad.push(`its box edge is ${st.borderTopColor}, not soft coral`);
+      if (!near(parseFloat(st.borderTopLeftRadius) || 0, radius, 0.5)) bad.push(`its box corners are ${st.borderTopLeftRadius}, not the tick box's ${radius}px`);
+      if (!clear(st.backgroundColor)) bad.push(`its box is filled (${st.backgroundColor})`);
+      // Before the title, on its first line.
+      const line = firstLine(textRects(item));
+      if (line) {
+        if (bb.right > line.left + 0.5) bad.push('its box is not before its title');
+        const mid = (bb.top + bb.bottom) / 2;
+        if (mid < line.top - 1 || mid > line.bottom + 1) bad.push('its box is not on its title\'s first line');
+      }
+      // The titles around it line up with its title: the same distance in from each row's own edge.
+      let branch = item;
+      for (let depth = 0; depth < 3 && branch.parentElement; depth += 1, branch = branch.parentElement) {
+        const sibs = [...branch.parentElement.children].filter((c) => c !== branch && cls(c) === cls(branch) && vis(c));
+        if (!sibs.length) continue;
+        const mine = firstLine(textRects(branch));
+        if (!mine) break;
+        const myIn = mine.left - branch.getBoundingClientRect().left;
+        for (const sib of sibs) {
+          const theirs = firstLine(textRects(sib));
+          if (!theirs) continue;
+          const theirIn = theirs.left - sib.getBoundingClientRect().left;
+          if (Math.abs(theirIn - myIn) > 1) { bad.push(`its title starts ${(myIn - theirIn).toFixed(1)}px from the titles around it`); break; }
         }
+        break;
       }
     }
-    // Nothing else: no small box, no bold, no coral word, no dot.
-    for (const el of item.querySelectorAll('*')) {
-      if (!vis(el) || el.closest(TICK) || el.closest('.ds-sr')) continue;
+    // Nothing else: no dot, no coral word.
+    for (const el of parts) {
+      if (boxes.includes(el)) continue;
       const st = getComputedStyle(el);
       const b = el.getBoundingClientRect();
-      const edged = ['Top', 'Right', 'Bottom', 'Left'].every((s) => parseFloat(st[`border${s}Width`]) > 0 && st[`border${s}Style`] !== 'none');
-      const small = b.width <= 14 && b.height <= 14;
-      if (small && ((edged && corals.has(st.borderTopColor)) || corals.has(st.backgroundColor))) { bad.push(`a small ${corals.has(st.backgroundColor) ? 'dot' : 'box'} (${cls(el)})`); continue; }
+      if (b.width <= 14 && b.height <= 14 && corals.has(st.backgroundColor)) { bad.push(`a small dot (${cls(el)})`); continue; }
       const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
-      if (!own) continue;
-      if (corals.has(st.color)) bad.push(`a coral word ("${el.textContent.trim().slice(0, 16)}")`);
+      if (own && corals.has(st.color)) bad.push(`a coral word ("${el.textContent.trim().slice(0, 16)}")`);
     }
-    // No bold: the item's words weigh what the same part's other items do (a plain title is 400 or 500).
-    const words = [...item.querySelectorAll('*'), item].filter((el) => !el.closest('.ds-sr') && [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()));
+    // No bold: a plain title is 400 or 500.
+    const words = parts.filter((el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()));
     const heavy = words.find((el) => Number(getComputedStyle(el).fontWeight) >= 600);
     if (heavy) bad.push(`bold words ("${heavy.textContent.trim().slice(0, 16)}", ${getComputedStyle(heavy).fontWeight})`);
     if (bad.length) out.push(`${name(item)}: ${[...new Set(bad)].join(', ')}`);

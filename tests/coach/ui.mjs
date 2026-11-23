@@ -6,7 +6,7 @@
 //   - every tap area 44px or more, and no two overlap; no sideways scroll;
 //   - every button in the controls family, one coral button a screen;
 //   - boxes, choices and cards side by side are one height;
-//   - no Nekst inside a control, no thick coloured side line, no line
+//   - no Nekst inside a control, no coloured side line, no line
 //     under a heading over rows with their own lines, folds open from the
 //     whole heading row;
 //   - every outlined edge reaches 3 to 1; pop-ups are one short line;
@@ -264,12 +264,12 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
   const family = await page.evaluate(controlsFamily, { phone, scale: 1 });
   report.pass(`${tag}: one controls family (${family.toggles} toggles read)`, family.problems.length === 0, family.problems.slice(0, 4).join('; '));
   const sides = await page.evaluate(sideLines);
-  report.pass(`${tag}: no thick coloured side line`, sides.length === 0, sides.slice(0, 4).join('; '));
-  // Back's chevron 10px from its words, and Important only as the soft coral tick box edge or the thin line (tidy pass follow-up 1; Tim, 18 Nov, and 12:30).
+  report.pass(`${tag}: no coloured side line`, sides.length === 0, sides.slice(0, 4).join('; '));
+  // Back's chevron 10px from its words, and Important only as the soft coral tick box edge or the small soft coral box before the title (tidy pass follow-ups 1 and 2; Tim, 18 Nov, 12:55).
   const backs = await page.evaluate(backGaps);
   report.pass(`${tag}: Back's chevron is 10px from its words (${backs.checked} read)`, backs.problems.length === 0, backs.problems.slice(0, 4).join('; '));
   const imp = await page.evaluate(importantMarks);
-  report.pass(`${tag}: Important is the soft coral tick box edge or the thin line, and nothing else (${imp.checked} read)`, imp.problems.length === 0, imp.problems.slice(0, 4).join('; '));
+  report.pass(`${tag}: Important is the soft coral tick box edge or the small soft coral box, and nothing else (${imp.checked} read)`, imp.problems.length === 0, imp.problems.slice(0, 4).join('; '));
   const doubled = await page.evaluate(doubledRules);
   report.pass(`${tag}: no line under a heading over rows with their own lines`, doubled.length === 0, doubled.slice(0, 4).join('; '));
   const folds = await page.evaluate(chevronOnlyFolds);

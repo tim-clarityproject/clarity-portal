@@ -588,10 +588,10 @@ function TodosDemo() {
         <TodoRow text="Update my LinkedIn profile" strategyName="Grow through referrals" tags={['moved to week 5']} disabled />
         <TodoRow win text="Spoke at a breakfast event and two people asked about coaching" strategyName="Grow through referrals" winTag="Unplanned win, Tue" />
       </TodoList>
-      {/* Important where there is no tick box (Tim, 18 Nov, 12:30): the thin soft coral line at its left edge, as the Daily plan's summary shows the highest priority. */}
+      {/* Important where there is no tick box (Tim, 18 Nov, 12:55): the small soft coral box before the title, drawn as the tick box's square, as the Daily plan's summary shows the highest priority; the next title keeps the box's space. */}
       <div className="dr-stack">
-        <span className="ds-important">1. Call Evan before 09:00 about the referral<span className="ds-sr">, highest priority</span></span>
-        <span>2. Training sessions</span>
+        <span className="ds-mark-row ds-mark-row--important"><span className="ds-important-mark" aria-hidden="true" /><span>1. Call Evan before 09:00 about the referral<span className="ds-sr">, highest priority</span></span></span>
+        <span className="ds-mark-row"><span className="ds-mark-space" aria-hidden="true" /><span>2. Training sessions</span></span>
       </div>
       <div className="dr-row">
         <AddButton onClick={() => setPanel('todo')}>Add to-do</AddButton>
@@ -1854,7 +1854,7 @@ function Gallery() {
             <p><New /><b>Every row in one list looks alike</b>: the tick, the words, the Strategy and its tags in grey, and Move.</p>
             <p>A to-do moved out after its week started keeps its place with its tick off, because it counts as not done that week.</p>
             <p>A win is always ticked mint, tagged “Unplanned win” and its day.</p>
-            <p><New /><b>Important</b> (Tim, 18 Nov): on a tick box, the box’s 2px soft coral edge, with the words unchanged. Where there’s no tick box (12:30), the thin soft coral line at the item’s left edge, 2px and the full height of its words (<code>.ds-important</code>). Nothing else marks it: no box, no bold, no coral word.</p>
+            <p><New /><b>Important</b> (Tim, 18 Nov): on a tick box, the box’s 2px soft coral edge, with the words unchanged. Where there’s no tick box (12:55), a small soft coral box before the title, drawn exactly as that tick box’s square: 18px, a 2px soft coral edge, no fill (<code>.ds-important-mark</code>); the titles around it keep its space, so they line up. Nothing else marks it: no coloured side line, no bold, no coral word.</p>
             <p>The add panels keep one order: what, which Strategy, how much, then when.</p>
           </>
         )} />

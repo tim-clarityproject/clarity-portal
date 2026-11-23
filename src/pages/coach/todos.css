@@ -114,18 +114,18 @@
 .ui-root .cc-todo-linked span { font-size: var(--fs-secondary); margin-top: var(--space-2); }
 
 /* ---------------------------------------------------------------- phone */
-@media (forced-colors: active) {
-  .ui-root .cc-picking .cc-pick-row .cc-todo.ds-todo--important .ds-todo-open::before { forced-color-adjust: none; background: CanvasText; }
-}
+/* Important's small box (or its space) waits in every row, shown only while choosing several on a phone. */
+.ui-root .cc-todo-mark { display: none; }
 @media (max-width: 600px) {
   .ui-root .cc-todo-bar { margin-top: var(--space-px22); }
   .ui-root .cc-qadd-go .ds-btn { width: 100%; }
   /* Once choosing has begun the round tick takes the tick box's place. */
   .ui-root .cc-picking .cc-pick-row .cc-todo.ds-todo { grid-template-columns: minmax(0, 1fr); }
   .ui-root .cc-picking .cc-pick-row .cc-todo .ds-check-box { display: none; }
-  /* With its tick box gone, Important is the thin soft coral line at the words' left edge, as .ds-important draws it (Tim, 18 Nov, 12:30). */
-  .ui-root .cc-picking .cc-pick-row .cc-todo.ds-todo--important .ds-todo-open { position: relative; padding-left: calc(var(--important-line) + var(--important-gap)) !important; }
-  .ui-root .cc-picking .cc-pick-row .cc-todo.ds-todo--important .ds-todo-open::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: var(--important-line); border-radius: calc(var(--important-line) / 2); background: var(--coral-soft-text); }
+  /* With its tick box gone, Important is the small soft coral box before the title, drawn as the tick box's square (.ds-important-mark; Tim, 18 Nov, 12:55); while a list holds one, its other rows keep the box's space, so the titles line up. */
+  .ui-root .cc-picking:has(.ds-todo--important) .cc-pick-row .cc-todo .ds-todo-open { display: grid; grid-template-columns: var(--checkbox-box) minmax(0, 1fr); column-gap: var(--important-mark-gap); }
+  .ui-root .cc-picking:has(.ds-todo--important) .cc-pick-row .cc-todo .ds-todo-open > :not(.cc-todo-mark) { grid-column: 2; }
+  .ui-root .cc-picking:has(.ds-todo--important) .cc-pick-row .cc-todo .cc-todo-mark { display: block; grid-column: 1; grid-row: 1; align-self: start; font-size: var(--fs-text); line-height: var(--lh-text); }
   .ui-root .cc-todo-row { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
   .ui-root .cc-bulk.cc-todo-bulk { display: grid; grid-template-columns: minmax(0, 1fr) auto; width: calc(100% - 2 * var(--space-3)); max-width: none; border-radius: var(--cc-col-radius); padding: var(--space-1) var(--space-px6) var(--space-px6) var(--space-3); }
   .ui-root .cc-todo-bulk .cc-bulk-n { align-self: center; }

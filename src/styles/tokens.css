@@ -240,7 +240,7 @@
   --addrow-cross: 12px;      /* the cross: two 1.5px lines */
   --addrow-gap: 14px;        /* from the cross's square to the words */
   --important-line: 2px;     /* the highest priority's soft coral edge (Tim, 18 Nov, follow-up 1) */
-  --important-gap: var(--space-2); /* where there's no tick box: from the thin soft coral line to the words (Tim, 18 Nov, 12:30) */
+  --important-mark-gap: var(--space-px12); /* where there's no tick box: from the small soft coral box to the title (Tim, 18 Nov, 12:55) */
   --chip-h: 40px;
   --seg-h: 40px;             /* pills, as M6 */
   --cross-sm: 14px;          /* never smaller than this */

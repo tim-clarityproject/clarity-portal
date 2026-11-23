@@ -125,11 +125,11 @@ for (const signedIn of [true, false]) {
           const r = await page.evaluate(controlsFamily, { phone, scale: 1 });
           toggles += r.toggles;
           pass(`${tag}: one controls family (${r.toggles} toggles read)`, r.problems.length === 0, r.problems.slice(0, 5).join('; '));
-          // Back's chevron 10px from its words, and Important only as the soft coral tick box edge or the thin line (tidy pass follow-up 1).
+          // Back's chevron 10px from its words, and Important only as the soft coral tick box edge or the small soft coral box before the title (tidy pass follow-ups 1 and 2).
           const backs = await page.evaluate(backGaps);
           pass(`${tag}: Back's chevron is 10px from its words (${backs.checked} read)`, backs.problems.length === 0, backs.problems.slice(0, 4).join('; '));
           const imp = await page.evaluate(importantMarks);
-          pass(`${tag}: Important is the soft coral tick box edge or the thin line, and nothing else (${imp.checked} read)`, imp.problems.length === 0, imp.problems.slice(0, 4).join('; '));
+          pass(`${tag}: Important is the soft coral tick box edge or the small soft coral box, and nothing else (${imp.checked} read)`, imp.problems.length === 0, imp.problems.slice(0, 4).join('; '));
         } catch (e) {
           pass(`${tag}: opened`, false, String(e.message).split('\n')[0].slice(0, 160));
         }

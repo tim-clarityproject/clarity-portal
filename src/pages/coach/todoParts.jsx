@@ -241,6 +241,8 @@ export function CoachTodoRow({ todo, facts = [], tagNames = [], done = false, pi
           <span>{TICK}</span>
         </button>
         <button type="button" className="ds-todo-open cc-todo-open" data-todo={todo.id} onClick={onOpen} {...openProps}>
+          {/* Shown only while choosing several on a phone, when the tick box steps aside: Important's small soft coral box, or its space (todos.css). */}
+          <span className={`cc-todo-mark ${important ? 'ds-important-mark' : 'ds-mark-space'}`} aria-hidden="true" />
           <span className="ds-todo-text">{keepWords(todo.title)}{important && <span className="ds-sr">, important</span>}</span>
           {(facts.length > 0 || tagNames.length > 0) && (
             <span className="ds-todo-line">
