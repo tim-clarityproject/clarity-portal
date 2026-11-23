@@ -426,10 +426,11 @@ export default function Leads() {
 
         {layout !== 'board' && <div className="cc-add"><AddButton onClick={() => setPanel('add')}>Add lead</AddButton></div>}
         <div className="cc-acts">
+          {/* M11's order: Automations second (tidy follow-up 3, run 6's 31). */}
           <TextLink onClick={() => setPanel('stages')}>Edit stages</TextLink>
+          <TextLink onClick={() => navigate('/coach/leads/automations')}>Automations</TextLink>
           <TextLink onClick={() => setPanel('import')}>Import from a spreadsheet</TextLink>
           <TextLink onClick={() => setPanel('export')}>Export</TextLink>
-          <TextLink onClick={() => navigate('/coach/leads/automations')}>Automations</TextLink>
           <TextLink onClick={() => navigate('/coach/leads/cold')}>Cold leads</TextLink>
         </div>
 

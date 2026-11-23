@@ -214,7 +214,7 @@ export const ROWS = [
   { name: 'Today, a Tuesday morning', m11: 'today:tue', built: 'today-tue', ...today() },
   { name: 'Today, Who needs attention shown in full', m11: 'today:tue', clicks: ['more:att'], sections: ['Who needs attention'], built: 'today-attention-all', ...OWNER, ...today() },
   { name: 'Today, a to-do’s More menu', m11: 'today:tue', clicks: ['rm:todo:t9'], sections: ['To-dos'], built: 'm11-today-more', on: 'd', ...OWNER,
-    changes: [['Label', 'Tag', TIM('“Tag” is the portal’s word everywhere (M11’s own bulk bar says Tag)')]],
+    changes: [['Label', 'Tag', '“Tag” everywhere, never “Label” (tidy follow-up 3, run 6’s 11; M11’s own bulk bar says Tag)']],
     moved: [[/^(edit|date|tag|select|delete)$/, POPUP]] },
   { name: 'Today is 45 minutes over', m11: 'today:tue', clicks: ['sheet:overday'], part: 'sheet', built: 'today-over', ...OWNER,
     changes: [seed(/^(6 hours 45 minutes|09:00 to 18:30|9 hours 30 minutes)$/, null, 'M11’s own figures don’t come to 45 minutes over; the seed’s do: 4 hours 30 minutes of calls and 3 hours 30 minutes of to-dos in a day of 09:30 to 16:45', { say: 'the panel’s figures' })],
