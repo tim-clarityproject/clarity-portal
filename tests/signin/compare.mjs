@@ -84,6 +84,10 @@ function allowed(kind, what, screen, phone) {
   // Back's box starts at the chevron's own square, so its visible edge
   // lands on the content edge (measured in tests/signin/measure.mjs).
   if (kind === 'back' && (what === 'left' || what === 'width')) return 12;
+  // Before you start: the tick box and its words are centred as one group on a page with no boxes (Tim, 23 Nov 2026,
+  // sign-in rule 49, si-terms--centred), where M26 draws them on the column's left edge: they move right together
+  // (about 30px on both widths); their sizes and the rows above and below are held to M26's.
+  if (screen === 'google-new' && ['box', 'link'].includes(kind) && what === 'left') return 32;
   // Words are as wide as their font draws them: M26 loads DM Sans from
   // Google, the portal carries its own copy.
   if (['link', 'show', 'saved'].includes(kind) && (what === 'left' || what === 'width')) return 3;
@@ -232,6 +236,10 @@ const COACH_MEANT = {
   // A side panel from the menu, the coach portal's shared part (the design reference wins): no Back "Coaches",
   // and its foot reads left to right, the quiet Keep it before the coral Reset it at the right.
   'acct-reset': { added: [], gone: ['Coaches'], swap: ['Reset it', 'Keep it'] },
+  // A recovery code ends the coach's other sign-ins, and You're in says so (Phase 6a run 7, step 3; coach rule of 22 Nov).
+  'auth-in': { added: ['Your other sign-ins have ended.'], gone: [] },
+  // The stood-in authenticator was set up on the test's own day, 2 Nov 2026 (coachWorld.mjs), where M26 draws 2 Dec.
+  'acct-security': { added: ['Authenticator app on since Mon 2 Nov'], gone: ['Authenticator app on since Wed 2 Dec'] },
 };
 const COACH_WORDS = [
   { key: 'coach-code', go: '/coach/sign-in/code', world: { factor: 'verified' }, wait: '.si-field' },
