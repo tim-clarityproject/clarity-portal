@@ -6,7 +6,7 @@ import { formatUkDate } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import pageText from '../content/pageText';
-import { Loading, PageHeader, Button, ChartTips, tipProps } from '../components/design';
+import { Loading, PageHeader, Button } from '../components/design';
 import SavedItemActions from '../components/SavedItemActions';
 
 // Types with their own dedicated, design-system summary page now - an
@@ -23,14 +23,15 @@ const REDIRECT_ROUTE = {
   'strategic-alignment': '/strategic-alignment',
 };
 
+// A saved Health Check (strategic-alignment) never shows here: it is sent
+// on to its own tool above (tidy follow-up 3 took out the old summary part
+// that could never show).
 const TYPE_LABEL = {
   grow: 'Get unstuck',
-  'strategic-alignment': 'Strategic alignment',
 };
 
 const EDIT_ROUTE = {
   grow: '/get-unstuck',
-  'strategic-alignment': '/goal-setting',
 };
 
 export default function DecisionSummary() {
@@ -39,8 +40,6 @@ export default function DecisionSummary() {
   const { user } = useContext(AuthContext);
   const [decision, setDecision] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedProjectIdx, setSelectedProjectIdx] = useState(null);
-  const [hoveredQuadrant, setHoveredQuadrant] = useState(null);
   const decisionId = location.state?.decisionId;
 
   useEffect(() => {
@@ -147,22 +146,7 @@ export default function DecisionSummary() {
           </div>
         )}
 
-        {/* Strategic alignment: kept as its existing content/visualisation
-            (scatter plot + tables) rather than forced into the shared
-            two-column layout - see build summary point 4. Not reachable
-            from the hub (Coming soon), but already-saved rows must stay
-            openable. */}
-        {toolType === 'strategic-alignment' && (
-          <StrategicAlignmentBody
-            formData={formData}
-            selectedProjectIdx={selectedProjectIdx}
-            setSelectedProjectIdx={setSelectedProjectIdx}
-            hoveredQuadrant={hoveredQuadrant}
-            setHoveredQuadrant={setHoveredQuadrant}
-          />
-        )}
-
-        {toolType !== 'grow' && toolType !== 'strategic-alignment' && (
+        {toolType !== 'grow' && (
           <div className="plan-sum">
             <div className="plan-sum-row">
               <p className="plan-sum-label">Details</p>
@@ -185,197 +169,5 @@ export default function DecisionSummary() {
         <SavedItemActions />
       </div>
     </div>
-  );
-}
-
-function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProjectIdx, hoveredQuadrant, setHoveredQuadrant }) {
-  return (
-    <>
-      {formData.risks?.length > 0 && (
-        <div style={{ marginTop: '32px' }}>
-          <h2 style={{ fontSize: 'calc(16 * var(--u, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>How it could go wrong</h2>
-          <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px' }}>
-            {formData.risks.map((risk, idx) => (
-              <div key={idx} style={{ marginBottom: idx < formData.risks.length - 1 ? '12px' : 0, color: 'var(--text-2)', fontSize: 'calc(14 * var(--u, 1px))' }}>
-                <span>{idx + 1}.</span> {risk}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {formData.factors?.length > 0 && (
-        <div style={{ marginTop: '32px' }}>
-          <h2 style={{ fontSize: 'calc(16 * var(--u, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Critical success factors</h2>
-          <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px' }}>
-            {formData.factors.map((factor, idx) => (
-              <div key={idx} style={{ marginBottom: idx < formData.factors.length - 1 ? '12px' : 0, color: 'var(--text-2)', fontSize: 'calc(14 * var(--u, 1px))' }}>
-                <span>{String.fromCharCode(65 + idx)}.</span> {factor}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {formData.projects?.length > 0 && (
-        <div style={{ marginTop: '32px' }}>
-          <h2 style={{ fontSize: 'calc(16 * var(--u, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Projects / lines of effort</h2>
-          <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px' }}>
-            {formData.projects.map((project, idx) => (
-              <div key={idx} style={{ marginBottom: idx < formData.projects.length - 1 ? '12px' : 0, color: 'var(--text-2)', fontSize: 'calc(14 * var(--u, 1px))' }}>
-                <span>{String.fromCharCode(65 + idx)}.</span> {project}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {formData.matrix && Object.keys(formData.matrix).length > 0 && formData.factors?.length > 0 && (
-        <div style={{ marginTop: '32px' }}>
-          <h2 style={{ fontSize: 'calc(16 * var(--u, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Strategic importance scores</h2>
-          {/* The heading row stays at the top and the Project column stays put
-              while the scores swipe inside the box on a phone (tidy pass, item 12). */}
-          <div style={{ backgroundColor: 'var(--raised)', padding: 'var(--space-3)', borderRadius: 'var(--space-2)', '--swipe-bg': 'var(--raised)' }}>
-            <div className="ds-swipe-box" tabIndex={0} role="region" aria-label="Strategic importance scores">
-              <table className="ds-swipe-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Project</th>
-                    <th scope="col" className="ds-swipe-n">Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {formData.projects?.map((project, projectIdx) => {
-                    const score = formData.factors.reduce((sum, _, factorIdx) => sum + (formData.matrix[`${projectIdx}-${factorIdx}`] || 0), 0);
-                    return (
-                      <tr key={projectIdx}>
-                        <td>{String.fromCharCode(65 + projectIdx)}. {project}</td>
-                        <td className="ds-swipe-n">{score}/{formData.factors.length * 3}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {formData.progress && Object.keys(formData.progress).length > 0 && (
-        <div style={{ marginTop: '32px' }}>
-          <h2 style={{ fontSize: 'calc(16 * var(--u, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Progress status</h2>
-          <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px' }}>
-            {formData.projects?.map((project, idx) => {
-              const progress = formData.progress[idx] || 0;
-              const progressLabels = ['Not started', 'Planning', 'In progress', 'Near complete', 'Completed'];
-              return (
-                <div key={idx} style={{ marginBottom: idx < formData.projects.length - 1 ? '16px' : 0 }}>
-                  <div style={{ fontSize: 'calc(13 * var(--u, 1px))', color: 'var(--text-2)', marginBottom: '6px' }}>{String.fromCharCode(65 + idx)}. {project}</div>
-                  <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--label)' }}>{progressLabels[progress] || 'Not set'}, {progress}/5</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {formData.factors?.length > 0 && formData.projects?.length > 0 && (
-        <div style={{ marginTop: '48px', marginBottom: '32px' }}>
-          <h2 style={{ fontSize: 'calc(20 * var(--u-big, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '32px', textAlign: 'center' }}>
-            Are you allocating your resources appropriately?
-          </h2>
-
-          <ChartTips>
-          <svg viewBox="0 0 850 600" width="100%" style={{ backgroundColor: 'var(--raised)', display: 'block', margin: '0 auto', marginBottom: '32px', maxWidth: '100%', height: 'auto' }} onClick={(e) => { if (!e.target.closest('[data-tip]')) setSelectedProjectIdx(null); }}>
-            {(() => {
-              const svgWidth = 850, svgHeight = 600;
-              const topPadding = 60, bottomPadding = 80, leftPadding = 90, rightPadding = 130;
-              const plotWidth = svgWidth - leftPadding - rightPadding;
-              const plotHeight = svgHeight - topPadding - bottomPadding;
-              const midX = leftPadding + plotWidth / 2;
-              const midY = topPadding + plotHeight / 2;
-              const maxImportance = formData.factors.length * 3;
-              const scaleX = (progressValue) => leftPadding + ((progressValue - 1) / 4) * plotWidth;
-              const scaleY = (importanceValue) => svgHeight - bottomPadding - (importanceValue / (maxImportance + 2)) * plotHeight;
-
-              const projectData = formData.projects.map((project, projectIdx) => {
-                const projectProgress = formData.progress ? (formData.progress[projectIdx] || 0) : 0;
-                const importance = formData.factors.reduce((sum, _, factorIdx) => sum + (formData.matrix?.[`${projectIdx}-${factorIdx}`] || 0), 0);
-                return { name: project, progress: projectProgress + 1, importance };
-              });
-
-              return (
-                <g>
-                  <rect x={leftPadding} y={topPadding} width={plotWidth / 2} height={plotHeight / 2} fill="var(--label)" opacity={hoveredQuadrant === 'topLeft' ? '0.15' : '0.08'} />
-                  <rect x={midX} y={topPadding} width={plotWidth / 2} height={plotHeight / 2} fill="var(--good)" opacity={hoveredQuadrant === 'topRight' ? '0.2' : '0.12'} />
-                  <rect x={leftPadding} y={midY} width={plotWidth / 2} height={plotHeight / 2} fill="var(--label)" opacity={hoveredQuadrant === 'bottomLeft' ? '0.15' : '0.08'} />
-                  <rect x={midX} y={midY} width={plotWidth / 2} height={plotHeight / 2} fill="var(--label)" opacity={hoveredQuadrant === 'bottomRight' ? '0.12' : '0.05'} />
-                  <line x1={leftPadding} y1={midY} x2={svgWidth - rightPadding} y2={midY} stroke="var(--text-2)" strokeWidth="2" />
-                  <line x1={midX} y1={topPadding} x2={midX} y2={svgHeight - bottomPadding} stroke="var(--text-2)" strokeWidth="2" />
-                  {[1, 2, 3, 4, 5].map((tick) => (
-                    <g key={`x-${tick}`}>
-                      <line x1={scaleX(tick)} y1={midY} x2={scaleX(tick)} y2={midY + 6} stroke="var(--text-2)" strokeWidth="1" />
-                      <text x={scaleX(tick)} y={midY + 22} textAnchor="middle" fontSize="12" fill="var(--text)" fontWeight="500">{tick}</text>
-                    </g>
-                  ))}
-                  {[1, 2, 3, 4, 5].map((tick) => {
-                    const val = Math.round((tick / 5) * (maxImportance + 2));
-                    return val <= maxImportance ? (
-                      <g key={`y-${tick}`}>
-                        <line x1={leftPadding - 6} y1={scaleY(val)} x2={leftPadding} y2={scaleY(val)} stroke="var(--text-2)" strokeWidth="1" />
-                        <text x={leftPadding - 12} y={scaleY(val) + 4} textAnchor="end" fontSize="12" fill="var(--text)" fontWeight="500">{val}</text>
-                      </g>
-                    ) : null;
-                  })}
-                  <text x={svgWidth / 2} y={svgHeight - 20} textAnchor="middle" fontSize="12" fill="var(--text-2)" fontWeight="500">Project progress</text>
-                  <text x={20} y={svgHeight / 2} textAnchor="middle" fontSize="12" fill="var(--text-2)" fontWeight="500" transform={`rotate(-90 20 ${svgHeight / 2})`}>Strategic importance</text>
-                  {projectData.map((project, idx) => {
-                    const x = scaleX(project.progress);
-                    const y = scaleY(project.importance);
-                    const isSelected = selectedProjectIdx === idx;
-                    // The name sits under its dot, kept inside the chart's edges.
-                    const half = (project.name.length * 6.5) / 2;
-                    const labelX = Math.min(svgWidth - 4 - half, Math.max(4 + half, x));
-                    return (
-                      <g
-                        key={idx}
-                        {...tipProps({ title: project.name, sub: ['Project'], rows: [['Progress', `${project.progress} of 5`], ['Strategic importance', `${project.importance} of 5`]] })}
-                        onClick={() => setSelectedProjectIdx(isSelected ? null : idx)}
-                      >
-                        <circle cx={x} cy={y} r={isSelected ? 8 : 6} fill="var(--text)" stroke={isSelected ? 'var(--coral-text)' : 'none'} strokeWidth="2" opacity={isSelected ? 1 : 0.7} style={{ cursor: 'pointer' }} />
-                        <text x={labelX} y={y + 16} textAnchor="middle" fontSize={isSelected ? '12' : '11'} fill={isSelected ? 'var(--coral-text)' : 'var(--text)'} fontWeight={isSelected ? '700' : '500'}>{project.name}</text>
-                      </g>
-                    );
-                  })}
-                </g>
-              );
-            })()}
-          </svg>
-          </ChartTips>
-
-          <div style={{ padding: '24px', backgroundColor: 'var(--raised)', borderRadius: '12px', border: '1px solid var(--line)' }}>
-            <h3 style={{ fontSize: 'calc(14 * var(--u, 1px))', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>What does each quadrant mean?</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
-              <div style={{ padding: '12px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px' }} onMouseEnter={() => setHoveredQuadrant('topLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
-                <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resources to these projects?</div>
-                <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, low progress</div>
-              </div>
-              <div style={{ padding: '12px', backgroundColor: 'var(--mint-tint)', borderRadius: '8px' }} onMouseEnter={() => setHoveredQuadrant('topRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
-                <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
-                <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, high progress</div>
-              </div>
-              <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px' }} onMouseEnter={() => setHoveredQuadrant('bottomLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
-                <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
-                <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, low progress</div>
-              </div>
-              <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px' }} onMouseEnter={() => setHoveredQuadrant('bottomRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
-                <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
-                <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, high progress</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
   );
 }
