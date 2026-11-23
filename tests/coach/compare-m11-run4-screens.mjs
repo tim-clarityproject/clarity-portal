@@ -90,6 +90,8 @@ const LEADS_PAGE = {
   added: [DOYLES, ...LEAD_DATES_ADDED,
     [/^(Chris Doyle may be in here twice\.|Review|Head coach, rugby|Opened (3 times|once)|Still to find out: when|£18,000|Brightwater Capital|Quiet for 19 days|Ready to decide|Search leads|Book a Chemistry Call|Chemistry Call|Follow up on the proposal|Send workshop dates|Check in on the decision)$/, PHONE_CARDS, null, { on: 'p', say: 'a card’s other lines on a phone' }],
     [/^name: More for .+$/, MORE_TOUCH, null, { on: 'p', say: 'More for Amy Cole, on a phone' }]],
+  // Automations is second in the foot row now, as M11 has it (tidy follow-up 3, run 6's 31): nothing is moved.
+  moved: [],
 };
 
 /** An associate's row: M11 draws Maya the owner's screen; the built portal gives her her own page instead. */
