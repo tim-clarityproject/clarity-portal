@@ -99,6 +99,7 @@ export const ROWS = [
     changes: [
       [/^(MON 16 NOV|15:30|17:00|14:00|18:00|Swimming with Esme|Family|Hannah Wells|Mia and Paul|Held for a poll)$/, null, TIM(SCHED), { say: 'Monday’s rows' }],
       NETWORK,
+      ['16 to 20 Nov', 'From today', 'the Schedule runs on from today, so it is headed “From today”, not a week’s dates (tidy follow-up 3, run 6’s 20)'],
     ],
     added: [
       [new RegExp(`^${D.toUpperCase()} \\d+ (NOV|DEC)$`), TIM(SCHED), null, { say: 'the days after Friday' }],
@@ -211,6 +212,7 @@ export const ROWS = [
     changes: [
       ['Second time zone', 'Time zones', 'the prompt names this section Time zones, with the editable list (run 1)', { on: 'd' }],
       ['Text messages', null, 'nothing in the portal sends a text message (builder D’s report)'],
+      ['Email 24 hours before', 'Email the day before', 'the switch says when the email goes: the day before (tidy follow-up 3, run 6’s 26)'],
       ['Your call with Tim is tomorrow at 9:00 your time.', 'is tomorrow at 09:00 UK time.', 'an email gives a clock time with its place, never “your time” (time zone rule 4; Emails rule 7); the test’s coaches are called Alex and Maya'],
       [/^(Join on Zoom|Reschedule|Cancel)$/, null, '“What the email says” is the one line; the email’s own buttons are in the email (builder D’s report; the template is in /email-preview)', { say: 'the email’s Join on Zoom, Reschedule and Cancel' }],
     ],
