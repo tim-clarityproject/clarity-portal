@@ -179,7 +179,9 @@ export function nekstInControls() {
 // edges don't share, and no bar 2px or more drawn down its side. The one
 // exception is Important where there is no tick box (Tim, 18 Nov, 12:30):
 // the thin soft coral line, exactly 2px in --coral-soft-text, drawn by
-// `.ds-important` (importantMarks checks it is that line and nothing else);
+// `.ds-important` or inside an item marked important (a class ending
+// `--important`) whose tick box is hidden (importantMarks checks it is that
+// line and nothing else);
 // a thicker one, another colour, or the line on anything else still fails.
 // Run in the page: page.evaluate(sideLines).
 export function sideLines() {
@@ -204,7 +206,7 @@ export function sideLines() {
       const h = parseFloat(ps.height) || 0;
       if (w >= 2 && w <= 6 && h >= 20 && h > b.height * 0.5 && !/rgba\(0, 0, 0, 0\)|transparent/.test(ps.backgroundColor) && Number(ps.opacity) > 0.05 && !/scaleY\(0\)|matrix\(1, 0, 0, 0,/.test(ps.transform)) {
         // Important's thin line: 2px, soft coral, on the left of an item marked important.
-        const importantLine = which === '::before' && el.matches('.ds-important') && Math.abs(w - 2) < 0.05 && ps.backgroundColor === soft(el) && Math.abs(parseFloat(ps.left) || 0) < 0.5;
+        const importantLine = which === '::before' && (el.matches('.ds-important') || Boolean(el.closest('[class*="--important"]'))) && Math.abs(w - 2) < 0.05 && ps.backgroundColor === soft(el) && Math.abs(parseFloat(ps.left) || 0) < 0.5;
         if (!importantLine) out.push(`${String(el.className?.baseVal ?? el.className ?? '').split(' ')[0] || el.tagName.toLowerCase()}${which} a ${w}px bar down its side`);
       }
     }
@@ -618,7 +620,9 @@ export function importantMarks() {
     const corals = new Set([soft, tok(root, '--coral'), tok(root, '--coral-text'), tok(root, '--coral-soft'), 'rgb(255, 111, 92)'].filter((c) => !/rgba\(0, 0, 0, 0\)|transparent/.test(c)));
     const bad = [];
     const tick = [...item.querySelectorAll(TICK)].find(vis);
-    const lineEl = item.matches('.ds-important') ? item : item.querySelector('.ds-important');
+    // The line: .ds-important, or a part of the item that draws a bar down its left (a row whose tick box is hidden).
+    const bar = (e) => { if (!vis(e)) return false; const ps = getComputedStyle(e, '::before'); return ps.content !== 'none' && ps.display !== 'none' && ps.position === 'absolute' && (parseFloat(ps.width) || 0) > 0 && (parseFloat(ps.width) || 0) <= 6 && !/rgba\(0, 0, 0, 0\)|transparent/.test(ps.backgroundColor); };
+    const lineEl = item.matches('.ds-important') ? item : item.querySelector('.ds-important') || [item, ...item.querySelectorAll('*')].find(bar);
     if (tick) {
       // The tick box's own drawn square: the box itself or the span that draws it.
       const drawnBox = [...tick.querySelectorAll(':scope > span'), tick].find((e) => parseFloat(getComputedStyle(e).borderTopWidth) > 0) || tick;

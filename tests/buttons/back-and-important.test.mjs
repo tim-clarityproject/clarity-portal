@@ -134,3 +134,12 @@ test('Important: a tick box without its soft coral edge, or with the line as wel
   await load(TODO(true).replace('<span class="ds-todo-text">', '<span class="ds-todo-text ds-important">'));
   assert.match((await tab.evaluate(importantMarks)).problems.join('; '), /a soft coral line as well as the tick box edge/);
 });
+
+test('Important: a row whose tick box is hidden (choosing several on a phone) needs the thin line', async () => {
+  const hide = '.ui-root .ds-check-box { display: none; }';
+  await load(TODO(true), hide);
+  assert.match((await tab.evaluate(importantMarks)).problems.join('; '), /no thin soft coral line at its left edge/);
+  await load(TODO(true), `${hide} .ui-root .ds-todo--important .ds-todo-words { position: relative; display: block; padding-left: 10px; } .ui-root .ds-todo--important .ds-todo-words::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--coral-soft-text); }`);
+  assert.deepEqual((await tab.evaluate(importantMarks)).problems, []);
+  assert.deepEqual(await tab.evaluate(sideLines), []);
+});
