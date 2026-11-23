@@ -9,7 +9,7 @@ import { useEscapeLayer, pushLayer } from './layers';
 import { lockPage, openerOf, returnFocus, trapTab, unlockPage } from './pageLock';
 import { SaveStatus } from './Status';
 import { themeProps, useThemeScope } from './themeScope';
-import { STEP_PREFIX } from './guideDraft';
+import { STEP_PREFIX, openStepIndex } from './guideDraft';
 import useKeepScroll from './useKeepScroll';
 import useViewportFit from './useViewportFit';
 import { useHidePhoneBar } from './phoneBar';
@@ -333,6 +333,18 @@ export default function GuidedTool({
     const left = Number.isInteger(saved?.index) && saved.index >= 0 ? saved.index : 0;
     return asked >= 0 ? asked : Math.min(left, steps.length - 1);
   });
+  // Until the person moves, the step asked for stays the one shown by its
+  // key, even when steps arrive before it after the first render (own
+  // questions before a finished tool's summary).
+  const openedOn = useRef(!changeLeft && initialStep ? initialStep : null);
+  const stepKeys = steps.map((s) => s.key).join('\n');
+  useLayoutEffect(() => {
+    if (!openedOn.current) return;
+    const at = openStepIndex(steps, openedOn.current, index);
+    if (at !== index) setIndex(at);
+    // Only when the steps themselves change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepKeys]);
   const [skipped, setSkipped] = useState(() => new Set(Array.isArray(saved?.skipped) ? saved.skipped : []));
   // "Change" on a summary (Tim, 5 Nov, 10:41): only that question opens,
   // and moving on from it goes straight back to the summary, with the
@@ -446,6 +458,7 @@ export default function GuidedTool({
     if (how !== 'jump' && now - lastMove.current < NEXT_GUARD_MS) return;
     const target = Math.max(0, Math.min(steps.length - 1, to));
     if (target === i) return;
+    openedOn.current = null;
     lastMove.current = now;
     setDirection(target > i ? 'forward' : 'back');
     setIndex(target);
