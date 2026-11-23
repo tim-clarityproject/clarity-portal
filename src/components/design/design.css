@@ -9101,15 +9101,17 @@
   margin-top: var(--space-6);
 }
 
-/* !important: src/styles/mobile.css sizes every h2 on phones. */
+/* !important: src/styles/mobile.css sizes every h2 on phones. Sentence
+   case in DM Sans (tidy follow-up 3, scale check's 4): six words are too
+   many for Nekst capitals (3 at most, calm-rules). */
 .ui-root .ds-carryon-title {
   margin: 0 !important;
-  font-family: var(--font-display);
-  font-weight: var(--fw-regular);
-  font-size: var(--fs-hub-group) !important;
+  font-family: var(--font-body);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-text) !important;
   line-height: var(--lh-title);
-  letter-spacing: var(--ls-hub-group);
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
   color: var(--text);
 }
 
