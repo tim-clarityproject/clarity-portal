@@ -201,6 +201,19 @@ async function run() {
         await go(page, '/coach/leads/automations'); await settle(page, 4000);
         pass(`${tag}: opened again, nothing runs twice`, (await a.rowsNow('coach_automation_runs')).filter((r) => r.automation_id === mover?.id).length === 1 && (await a.rowsNow('coach_todos')).filter((t) => t.automation_id === mine?.id).length === 1);
         pass(`${tag}: Tom, already in Deciding, wasn't moved and got no line`, (await a.rowsNow('coach_lead_events')).filter((e) => e.lead_id === CRM.tom && e.kind === 'stage' && e.data?.by === mover?.id).length === 0);
+        // Once for each lead and stage (tidy follow-up 3, run 6's 30; the functionality tester): Amy moved by hand back to
+        // Proposal sent, then to Deciding again, runs “Send the contract” nothing more.
+        await go(page, '/coach/leads');
+        await page.locator(`[data-card="${CRM.amy}"]`).focus();
+        await page.keyboard.press('ArrowLeft'); await settle(page, 1600);
+        const backSaid = await toastText(page);
+        await page.locator(`[data-card="${CRM.amy}"]`).focus();
+        await page.keyboard.press('ArrowRight'); await settle(page, 1600);
+        const againSaid = await toastText(page);
+        pass(`${tag}: Amy moved back to Proposal sent and on to Deciding again by hand`, backSaid.includes('Moved to Proposal sent.') && againSaid.includes('Moved to Deciding.') && (await a.rowsNow('coach_leads')).find((l) => l.id === CRM.amy)?.stage_id === CRM.stDeciding, `${backSaid} / ${againSaid}`);
+        pass(`${tag}: reaching Deciding a second time runs “Send the contract” nothing more: still one to-do and one run`,
+          (await a.rowsNow('coach_todos')).filter((t) => t.automation_id === mine?.id).length === 1 && (await a.rowsNow('coach_automation_runs')).filter((r) => r.automation_id === mine?.id).length === 1 && !againSaid.includes('automation'), againSaid);
+        await go(page, '/coach/leads/automations');
 
         // One that would loop is refused, calmly, when saved and when switched on.
         const addMove = async (from, to) => { await press(page, 'Add automation'); d = dialog(page); await choose(page, 'Which stage?', from, d); await choose(page, 'Then', 'Move the lead to a stage', d); await choose(page, 'Which stage does it move to?', to, d); await press(page, 'Save', d); };
