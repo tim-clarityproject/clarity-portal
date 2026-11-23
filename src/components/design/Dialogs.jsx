@@ -127,9 +127,15 @@ function Modal({ kind, open, onClose, title, titleAside = null, children, footer
     // (UI tester, scale check: a toast at the screen's foot covered "Mute the voice").
     const above = !foot && phoneForm && kind === 'panel' ? dialogRef.current?.querySelector('[data-toast-above]') : null;
     const aboveTop = above ? above.getBoundingClientRect().top : 0;
+    // A footerless sheet on a phone, its choices down to the screen's foot (the
+    // coach's "How was your energy this week?"): toasts rise above the sheet,
+    // as they do above a phone drop-down (Popover). Its layout height, as it
+    // may still be rising into place (UI tester, scale check: "Excellent").
+    const sheetHeight = !foot && phoneForm && (kind === 'sheet' || kind === 'drop') ? dialogRef.current?.offsetHeight || 0 : 0;
     const ownOffset = foot ? `${foot.getBoundingClientRect().height}px`
       : above && aboveTop > 0 ? `${toastOffsetFor(window.innerHeight, aboveTop)}px`
-        : (phoneForm && kind === 'panel' ? '0px' : null);
+        : sheetHeight > 0 ? `${toastOffsetFor(window.innerHeight, window.innerHeight - sheetHeight)}px`
+          : (phoneForm && kind === 'panel' ? '0px' : null);
     if (ownOffset) html.style.setProperty('--ds-toast-offset', ownOffset);
 
     return () => {
