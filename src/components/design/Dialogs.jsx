@@ -8,6 +8,7 @@ import { themeProps, useThemeScope } from './themeScope';
 import { PANEL_MS, POPUP_MS, prefersReducedMotion } from './timing';
 import { usePanelDraft } from './usePanelDraft';
 import { useHidePhoneBar } from './phoneBar';
+import { toastOffsetFor } from './toastAbove';
 import './design.css';
 
 // The slide-across panel and the centred pop-up (design reference:
@@ -121,7 +122,14 @@ function Modal({ kind, open, onClose, title, titleAside = null, children, footer
     const html = document.documentElement;
     const foot = dialogRef.current?.querySelector('.ds-dialog-foot');
     const previousOffset = html.style.getPropertyValue('--ds-toast-offset');
-    const ownOffset = foot ? `${foot.getBoundingClientRect().height}px` : (phoneForm && kind === 'panel' ? '0px' : null);
+    // A footerless one whose last controls stay at its foot (the Quick guide's
+    // video controls) marks them data-toast-above: toasts rise 16px above them
+    // (UI tester, scale check: a toast at the screen's foot covered "Mute the voice").
+    const above = !foot && phoneForm && kind === 'panel' ? dialogRef.current?.querySelector('[data-toast-above]') : null;
+    const aboveTop = above ? above.getBoundingClientRect().top : 0;
+    const ownOffset = foot ? `${foot.getBoundingClientRect().height}px`
+      : above && aboveTop > 0 ? `${toastOffsetFor(window.innerHeight, aboveTop)}px`
+        : (phoneForm && kind === 'panel' ? '0px' : null);
     if (ownOffset) html.style.setProperty('--ds-toast-offset', ownOffset);
 
     return () => {

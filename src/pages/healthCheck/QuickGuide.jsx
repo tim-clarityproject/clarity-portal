@@ -273,7 +273,7 @@ function Player({ inline, autoPlay, onWatched, onOpenPanel, inside = false }) {
         )}
       </div>
       <div className="hc-capbar" aria-live="polite">{caption}</div>
-      <div className="hc-vcontrols">
+      <div className="hc-vcontrols" data-toast-above={inline ? undefined : ''}>
         <button type="button" className="hc-vbtn" aria-label={playing ? 'Pause' : 'Play'} onClick={toggle}>{playing ? PAUSE : PLAY}</button>
         <button type="button" className="hc-vbtn" aria-label="Replay" onClick={replay}>{REPLAY}</button>
         <button type="button" className="hc-vbtn" aria-label={muted ? 'Turn the voice on' : 'Mute the voice'} onClick={mute}>{muted ? MUTED : SOUND}</button>
