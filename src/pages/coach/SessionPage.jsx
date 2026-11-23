@@ -108,6 +108,8 @@ function SessionBody({ session, who }) {
   // Changed meanwhile in another tab: nothing is written over it, and the page says so.
   const unlessLocked = (error) => {
     if (error?.code === 'changed') { setChangedElsewhere(true); return null; }
+    // Sent from another device meanwhile: the page shows the recap as it was sent, and says why the words typed here didn't go.
+    if (error?.code === 'already_sent') { toast.show(error.message); return null; }
     if (error?.code !== 'locked') throw error;
     return null;
   };
@@ -229,7 +231,7 @@ function SessionBody({ session, who }) {
   };
   const setLength = (v) => {
     if (Number(v) === session.minutes) return;
-    saveSession(userId, { ...latest.current, minutes: Number(v) }).catch((e) => { if (e?.code === 'changed') setChangedElsewhere(true); else if (e?.code !== 'locked') toast.error(); });
+    saveSession(userId, { ...latest.current, minutes: Number(v) }).catch((e) => { if (e?.code === 'changed' || e?.code === 'already_sent') unlessLocked(e); else if (e?.code !== 'locked') toast.error(); });
   };
 
   // ---- send the recap: once

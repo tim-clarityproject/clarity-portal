@@ -46,6 +46,7 @@ const kept = (userId, id) => rowOf(coachState(userId), SESSIONS, id);
 export const CHANGED_ELSEWHERE = 'This session changed in another tab.';
 const changed = () => { const e = new Error(CHANGED_ELSEWHERE); e.code = 'changed'; return e; };
 const textOf = (v) => (typeof v === 'string' && v.trim() ? v : null);
+const alreadySent = () => { const e = new Error(ALREADY_SENT); e.code = 'already_sent'; return e; };
 
 /**
  * Has the recap changed since this tab read it? `base` is the recap as this
@@ -112,6 +113,11 @@ export async function saveSession(userId, next, { base } = {}) {
   if (!check.ok) throw locked();
   if (recapChangedSince(base, before?.recap, next.recap)) throw changed();
   const status = await saveRow(userId, SESSIONS, check.row);
+  // Sent from another device while this one was typing: the database keeps the recap as it was sent, and the words
+  // typed here can't go. The page says so, instead of losing them quietly (fixer D's leftover; break-it tester, scale
+  // check step 4).
+  const after = kept(userId, next.id);
+  if (!sessionSent(before) && sessionSent(after) && textOf(after?.recap) !== textOf(next.recap)) throw alreadySent();
   if (status === 'superseded') throw changed();
   return status;
 }
