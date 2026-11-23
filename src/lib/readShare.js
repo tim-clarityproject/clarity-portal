@@ -57,6 +57,20 @@ export function forgetSharedReads() {
   kept.clear();
 }
 
+// Another tab's save is never heard here as a write, so a kept answer could show a page from before it: a tab
+// opened again within the moment, or refreshed when the other tab's device copy changed. Showing the tab, another
+// tab changing what this device keeps (the storage event every save there makes), the page coming back from the
+// browser's cache and the connection coming back each forget the kept answers (break-it tester, scale check step 4).
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  try {
+    window.addEventListener('storage', forgetSharedReads);
+    window.addEventListener('pageshow', (e) => { if (e.persisted) forgetSharedReads(); }); // back from the cache, never the first load
+    window.addEventListener('online', forgetSharedReads);
+    const doc = typeof document !== 'undefined' ? document : null;
+    doc?.addEventListener('visibilitychange', () => { if (doc.visibilityState === 'visible') forgetSharedReads(); });
+  } catch { /* nothing to listen to: every read stays within its moment */ }
+}
+
 function urlOf(input) {
   if (typeof input === 'string') return input;
   if (input instanceof URL) return input.toString();

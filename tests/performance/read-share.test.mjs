@@ -182,3 +182,41 @@ test('every client call to /api goes through apiFetch', () => {
   }
   assert.deepEqual(raw, []);
 });
+
+test('another tab’s change, showing the tab again and coming back from the browser’s cache forget the kept reads (break-it tester)', async () => {
+  // A fresh copy of the module with a window to listen to.
+  const win = new EventTarget();
+  const doc = new EventTarget();
+  doc.visibilityState = 'visible';
+  const had = { window: globalThis.window, document: globalThis.document };
+  globalThis.window = win;
+  globalThis.document = doc;
+  let mod;
+  try {
+    mod = await import(`../../src/lib/readShare.js?tabs=${Date.now()}`);
+  } finally {
+    globalThis.window = had.window;
+    globalThis.document = had.document;
+  }
+  const s = server();
+  const f = mod.shareReads(s.send);
+  const url = `${BASE}/todos?select=id&user_id=eq.1`;
+  const read = async () => (await (await f(url, { method: 'GET', headers: auth('ann') })).json()).n;
+  assert.equal(await read(), 1);
+  assert.equal(await read(), 1, 'kept for a moment');
+  win.dispatchEvent(new Event('storage'));
+  assert.equal(await read(), 2, 'another tab saved: read again');
+  const shown = new Event('visibilitychange');
+  doc.visibilityState = 'hidden';
+  doc.dispatchEvent(shown);
+  assert.equal(await read(), 2, 'hiding the tab keeps them');
+  doc.visibilityState = 'visible';
+  doc.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(await read(), 3, 'the tab shown again: read again');
+  win.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: false }));
+  assert.equal(await read(), 3, 'the first load’s pageshow keeps the opening reads');
+  win.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+  assert.equal(await read(), 4, 'back from the browser’s cache: read again');
+  win.dispatchEvent(new Event('online'));
+  assert.equal(await read(), 5, 'the connection back: read again');
+});
