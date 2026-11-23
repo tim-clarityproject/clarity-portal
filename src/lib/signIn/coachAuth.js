@@ -276,9 +276,14 @@ export function authenticatorAddress(uri, email) {
   let account = String(email ?? '').trim();
   if (!account) {
     // No email to hand: the account name Supabase gave, after its own "issuer:".
-    let label = m[1];
-    try { label = decodeURIComponent(label); } catch { /* as it came */ }
-    account = label.includes(':') ? label.slice(label.indexOf(':') + 1) : label;
+    const plain = (v) => { try { return decodeURIComponent(v); } catch { return v; } };
+    const label = plain(m[1]);
+    // Supabase's label is "<issuer>:<account>", and its issuer is the Site URL's host, which can carry a port
+    // ("localhost:5361"): that whole issuer comes off, never just up to its first colon (break-it tester, tidy
+    // follow-up 3). Without an issuer to match, the account is after the last colon (an email has none).
+    const issuer = plain(params.find(([k]) => k.toLowerCase() === 'issuer')?.[1] || '');
+    account = issuer && label.startsWith(`${issuer}:`) ? label.slice(issuer.length + 1)
+      : label.includes(':') ? label.slice(label.lastIndexOf(':') + 1) : label;
   }
   const enc = encodeURIComponent;
   const rest = params.filter(([k]) => !['secret', 'issuer'].includes(k.toLowerCase())).map(([k, v]) => `${k}=${v}`);

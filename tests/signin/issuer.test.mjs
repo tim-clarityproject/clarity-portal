@@ -54,3 +54,14 @@ test('anything that is not a TOTP address with a key gives nothing', () => {
   assert.equal(authenticatorAddress('https://example.com/?secret=ABC', EMAIL), '');
   assert.equal(authenticatorAddress('otpauth://totp/x:y?issuer=x', EMAIL), '');
 });
+
+test('on odd addresses (an IP, a port, punycode) the app still shows "The Clarity Portal" and the right account (break-it tester, tidy follow-up 3)', () => {
+  const read = (uri, email) => { const u = new URL(authenticatorAddress(uri, email)); return [decodeURIComponent(u.pathname).replace(/^\//, ""), u.searchParams.get('issuer'), u.searchParams.get('secret')]; };
+  assert.deepEqual(read('otpauth://totp/192.168.1.20:tess@example.com?secret=ABCD&issuer=192.168.1.20', 'tess@example.com'), ['The Clarity Portal:tess@example.com', 'The Clarity Portal', 'ABCD']);
+  assert.deepEqual(read('otpauth://totp/xn--bcher-kva.example:tess@example.com?secret=ABCD&issuer=xn--bcher-kva.example', null), ['The Clarity Portal:tess@example.com', 'The Clarity Portal', 'ABCD']);
+  // A Site URL with a port: the issuer "localhost:5361" comes off whole, so the account isn't "5361:tess@…".
+  assert.deepEqual(read('otpauth://totp/localhost%3A5361:tess%40example.com?secret=ABCD&issuer=localhost%3A5361', ''), ['The Clarity Portal:tess@example.com', 'The Clarity Portal', 'ABCD']);
+  assert.deepEqual(read('otpauth://totp/127.0.0.1:4371:tess@example.com?secret=ABCD', null), ['The Clarity Portal:tess@example.com', 'The Clarity Portal', 'ABCD']);
+  assert.deepEqual(read('otpauth://totp/x?secret=ABCD', 'a+b@example.com'), ['The Clarity Portal:a+b@example.com', 'The Clarity Portal', 'ABCD']);
+  assert.equal(authenticatorAddress('otpauth://totp/%E0%A4%A?secret=ABCD', null).startsWith('otpauth://totp/The%20Clarity%20Portal:'), true, 'a damaged label is kept as it came');
+});
