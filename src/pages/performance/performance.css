@@ -1741,6 +1741,10 @@
   margin-top: var(--space-2);
 }
 
+/* Still on its way (the first visit on a device): keeps its place unseen. */
+.ui-root .account-pending {
+  visibility: hidden;
+}
 .ui-root .account-row {
   display: flex;
   flex-wrap: wrap;

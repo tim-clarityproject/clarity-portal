@@ -22,6 +22,10 @@ export function MissionProvider({ children }) {
   const userId = user?.id || null;
   const [mission, setMission] = useState('');
   const [showInHeader, setShowInHeader] = useState(true);
+  // Whether the Mission is known yet: from the device's copy, a read, or a
+  // read that couldn't be made. Until then the pill and My Account show no
+  // words, never "no Mission yet" for a moment (UI tester, scale check).
+  const [known, setKnown] = useState(false);
   // One Mission (Tim, 5 Nov): with an Individual Performance Plan, its
   // Mission is the only one, read here and changed only on the plan (Edit
   // my mission), so the header, My Account and every other page show the
@@ -45,6 +49,8 @@ export function MissionProvider({ children }) {
       setMission('');
       setShowInHeader(true);
       setPlanId(null);
+      // Nobody signed in yet: known once their own read answers.
+      setKnown(false);
       return;
     }
 
@@ -54,6 +60,7 @@ export function MissionProvider({ children }) {
     if (head?.id) {
       setPlanId(head.id);
       setMission(head.mission || '');
+      setKnown(true);
     }
 
     try {
@@ -91,9 +98,12 @@ export function MissionProvider({ children }) {
       setMission(plan ? plan.mission || '' : missionResult.data?.[0]?.title || '');
       const visible = profileResult.data?.[0]?.show_mission_in_header;
       if (visible !== null && visible !== undefined) setShowInHeader(visible);
+      setKnown(true);
     } catch (error) {
       // Keep what is showing and try again shortly.
       console.error('Error fetching mission:', error);
+      // Shown as no Mission only once it can't be read: offline, or after the last try.
+      if (seq === readSeq.current && (attempt >= RETRY_MS.length || (typeof navigator !== 'undefined' && navigator.onLine === false))) setKnown(true);
       if (seq === readSeq.current && attempt < RETRY_MS.length) {
         retryTimer.current = setTimeout(() => read(attempt + 1), RETRY_MS[attempt]);
       }
@@ -202,7 +212,7 @@ export function MissionProvider({ children }) {
   };
 
   return (
-    <MissionContext.Provider value={{ mission, hasPlan: Boolean(planId), showInHeader, setShowInHeader, updateMission, updateShowInHeader, refetchMission: fetchMission }}>
+    <MissionContext.Provider value={{ mission, missionKnown: known, hasPlan: Boolean(planId), showInHeader, setShowInHeader, updateMission, updateShowInHeader, refetchMission: fetchMission }}>
       {children}
     </MissionContext.Provider>
   );

@@ -26,7 +26,7 @@ export default function MyAccount() {
   const { user, logout, isLoading } = useContext(AuthContext);
   // The mission shown here is the same one the header pill shows (the
   // missions table, through MissionContext), never a separate copy.
-  const { mission: personalGoal, hasPlan, showInHeader, updateShowInHeader } = useContext(MissionContext);
+  const { mission: personalGoal, missionKnown, hasPlan, showInHeader, updateShowInHeader } = useContext(MissionContext);
   const coachName = useCoachName();
   const startChat = useStartChat();
   // Coaches only: the authenticator and recovery codes (Phase 6a run 5).
@@ -232,7 +232,11 @@ export default function MyAccount() {
     }
   }, [location.hash]);
 
-  const fullName = firstName || lastName ? `${firstName} ${lastName}`.trim() : 'Your Name';
+  // While the name and the Mission are still on their way (the first visit on
+  // this device), their rows keep their place with no words, never "Your Name"
+  // or "isn't written yet" for a moment (UI tester, scale check).
+  const fullName = firstName || lastName ? `${firstName} ${lastName}`.trim() : loading ? '\u00a0' : 'Your Name';
+  const missionPending = !personalGoal && !missionKnown;
 
   // The calm layout (design reference version 28; Tim's rules of 5 Nov, and
   // Claude's call of 10 Nov that My Account gets it before go-live): one
@@ -297,9 +301,9 @@ export default function MyAccount() {
         <Section id="mission-section" title="My Mission" className="ipp-section account-section">
           <div className="account-row">
             <div className="account-row-text">
-              <p className="account-row-title">{keepWords(personalGoal || 'Your Mission isn’t written yet.')}</p>
+              <p className="account-row-title">{missionPending ? '\u00a0' : keepWords(personalGoal || 'Your Mission isn’t written yet.')}</p>
             </div>
-            <Button variant="text" onClick={editMission}>{personalGoal ? 'Edit my Mission' : 'Write my Mission'}</Button>
+            <Button variant="text" className={missionPending ? 'account-pending' : ''} onClick={editMission}>{personalGoal ? 'Edit my Mission' : 'Write my Mission'}</Button>
           </div>
           <SwitchRow
             label="Show my Mission at the top of every page"

@@ -227,8 +227,27 @@ function preloadOpeningPage() {
     return null; // the page loads as it shows
   }
 }
-const openingPage = preloadOpeningPage();
 const OPENING_WAIT_MS = 4000;
+// The two faces the first screen's words are set in (preloaded by index.html,
+// vite.config.js openingPreload): waited for with the page's part, at most
+// OPENING_FONTS_MS, so a first visit never draws its words in the fallback
+// font and then swaps them (UI tester, scale check).
+const OPENING_FONTS_MS = 1500;
+function openingFonts() {
+  try {
+    if (typeof document === 'undefined' || !document.fonts?.load) return null;
+    const both = Promise.all([document.fonts.load('400 16px "DM Sans"'), document.fonts.load('400 16px "Nekst"')]).catch(() => {});
+    return Promise.race([both, new Promise((done) => { window.setTimeout(done, OPENING_FONTS_MS); })]);
+  } catch {
+    return null;
+  }
+}
+const openingPage = (() => {
+  const part = preloadOpeningPage();
+  if (!part) return null;
+  const fonts = openingFonts();
+  return fonts ? Promise.all([part, fonts]) : part;
+})();
 
 // Strategic Alignment Health Check: a standalone page for people with no
 // portal account. Lazy-loaded so none of it is in the portal's main bundle.

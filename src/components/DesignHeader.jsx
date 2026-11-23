@@ -66,13 +66,13 @@ function useFitsTwoLines(ref) {
 }
 
 // The pill's label and words. `none`: no mission yet.
-function PillWords({ text, none }) {
+function PillWords({ text, none, pending = false }) {
   const ref = useRef(null);
   const fits = useFitsTwoLines(ref);
   return (
     <>
       <span className="hdr-mis-label">My Mission</span>
-      <span ref={ref} className={`hdr-mis-text${fits ? '' : ' hdr-mis-text--long'}`} aria-hidden={!fits && !none ? 'true' : undefined}>
+      <span ref={ref} className={`hdr-mis-text${fits ? '' : ' hdr-mis-text--long'}${pending ? ' hdr-mis-text--pending' : ''}`} aria-hidden={pending || (!fits && !none) ? 'true' : undefined}>
         {keepWords(text)}
       </span>
       {!fits && !none && <span className="ds-sr">, open to read it in full</span>}
@@ -84,7 +84,7 @@ export default function DesignHeader({ className = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const startChat = useStartChat();
-  const { mission: oldMission, showInHeader } = useContext(MissionContext);
+  const { mission: oldMission, missionKnown, showInHeader } = useContext(MissionContext);
   const { user } = useContext(AuthContext);
   const activePlanLoad = useActivePlan(user?.id);
   const activePlan = activePlanLoad.data;
@@ -163,6 +163,10 @@ export default function DesignHeader({ className = '' }) {
 
   const showPill = showInHeader;
   const hasMission = Boolean(mission);
+  // Not known yet on this device (the first visit): the pill keeps its place
+  // with no words, rather than "Add your Mission" for a moment before the
+  // real one (UI tester, scale check).
+  const missionPending = !hasMission && !activePlan && (activePlanLoad.loading || !missionKnown);
 
   return (
     <div className={`ui-root ${className}`.trim()}>
@@ -233,6 +237,9 @@ export default function DesignHeader({ className = '' }) {
         }
         .ui-root .hdr-mis--none .hdr-mis-text {
           color: var(--placeholder);
+        }
+        .ui-root .hdr-mis-text--pending {
+          visibility: hidden;
         }
         /* The narrowest phones: "My Mission" alone, or with no mission
            the grey words alone. */
@@ -409,8 +416,8 @@ export default function DesignHeader({ className = '' }) {
                 </div>
               </div>
             ) : (
-              <button type="button" className="hdr-mis hdr-mis--none" onClick={openMissionStep}>
-                <PillWords text={NO_MISSION} none />
+              <button type="button" className="hdr-mis hdr-mis--none" onClick={missionPending ? undefined : openMissionStep} aria-busy={missionPending || undefined}>
+                <PillWords text={NO_MISSION} none pending={missionPending} />
               </button>
             )}
           </div>
@@ -434,10 +441,11 @@ export default function DesignHeader({ className = '' }) {
             <button
               type="button"
               className={`hdr-mis${hasMission ? '' : ' hdr-mis--none'}`}
-              onClick={!hasMission ? openMissionStep : activePlan ? openPlanPanel : () => navigate('/personal-operating-plan')}
+              onClick={missionPending ? undefined : !hasMission ? openMissionStep : activePlan ? openPlanPanel : () => navigate('/personal-operating-plan')}
               aria-haspopup={activePlan && hasMission ? 'dialog' : undefined}
+              aria-busy={missionPending || undefined}
             >
-              <PillWords key={hasMission ? mission : ''} text={hasMission ? mission : NO_MISSION} none={!hasMission} />
+              <PillWords key={hasMission ? mission : ''} text={hasMission ? mission : NO_MISSION} none={!hasMission} pending={missionPending} />
             </button>
           ) : <span />}
 

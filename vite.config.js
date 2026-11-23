@@ -258,7 +258,15 @@ function openingPreload() {
           // Its styles come with its code as before: asked for here they
           // would hold up the app's own first paint.
           + `f.js.forEach(function(x){add('modulepreload',x)})}catch(e){}})();`
-        return { html, tags: [{ tag: 'script', injectTo: 'head', children: code }] }
+        // The two faces every first screen sets its words in (DM Sans, and
+        // Nekst for the title), asked for with the page itself: without this
+        // the browser found them only once the first words were drawn, so on
+        // a first visit the words showed in the fallback font and then
+        // changed (font-display: swap; UI tester, scale check).
+        const dmSans = Object.values(bundle).find((a) => a.type === 'asset' && /^assets\/dm-sans-latin-opsz-normal-[^/]+\.woff2$/.test(a.fileName))
+        const fonts = [dmSans && `/${dmSans.fileName}`, '/fonts/Nekst-Regular.woff2'].filter(Boolean)
+          .map((href) => ({ tag: 'link', injectTo: 'head', attrs: { rel: 'preload', href, as: 'font', type: 'font/woff2', crossorigin: '' } }))
+        return { html, tags: [...fonts, { tag: 'script', injectTo: 'head', children: code }] }
       },
     },
   }
