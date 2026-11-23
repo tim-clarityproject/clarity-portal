@@ -199,8 +199,13 @@ function collect(only = null) {
         if (letter) break;
       }
     }
+    // No plain letter ("Today": its o sits under the T's bar, its a beside the y's tail): the words' own line is marked, so
+    // the measuring can read a plain x drawn in their place for a moment (tidy follow-up 3, scale check point 7: the font's
+    // measures alone were up to 0.73px from where the letters are really drawn, which pixel snapping decides).
+    if (!letter && node) line.parent.setAttribute('data-chev-words', String(only));
     out.push({
       letter,
+      probe: !letter && Boolean(node),
       label: name,
       beside,
       square,
@@ -352,11 +357,28 @@ export async function measureChevrons(page) {
       continue;
     }
     // The words' middle as drawn (one letter's own pixels), or from the font's measures when no plain letter is there.
-    const drawn = c.letter && !c.block ? await strokeMiddle(page, c.letter, 0, view) : null;
+    let drawn = c.letter && !c.block ? await strokeMiddle(page, c.letter, 0, view) : null;
+    if (drawn == null && c.probe && !c.block) {
+      // A plain x in the words' place, read from its pixels, then the words put back exactly as they were.
+      const probe = await page.evaluate((n) => {
+        const holder = document.querySelector(`[data-chev-words="${n}"]`);
+        const node = holder && [...holder.childNodes].find((t) => t.nodeType === 3 && t.textContent.trim());
+        if (!node) return null;
+        window.__chevWords = { node, text: node.textContent };
+        node.textContent = 'x';
+        const one = document.createRange();
+        one.setStart(node, 0);
+        one.setEnd(node, 1);
+        const r = one.getClientRects()[0];
+        return r && r.width > 2 ? { x: r.left, y: r.top, width: r.width, height: r.height } : null;
+      }, i);
+      if (probe) drawn = await strokeMiddle(page, probe, 0, view);
+      await page.evaluate(() => { const w = window.__chevWords; if (w) { w.node.textContent = w.text; delete window.__chevWords; } });
+    }
     const wordsMiddle = drawn ?? c.wordsMiddle;
     out.push({ n: i, label: c.label, off: middle - wordsMiddle, block: Boolean(c.block), lines: c.lines, read: c.block ? 'block' : drawn == null ? 'measures' : 'pixels', capitals: c.capitals, state: c.state, font: c.font, chevEm: c.chevEm, dir: c.dir, line: c.line });
   }
-  await page.evaluate(() => { for (const el of document.querySelectorAll('[data-chev-n]')) el.removeAttribute('data-chev-n'); document.getElementById('chev-quiet-style')?.remove(); });
+  await page.evaluate(() => { for (const el of document.querySelectorAll('[data-chev-n], [data-chev-words]')) { el.removeAttribute('data-chev-n'); el.removeAttribute('data-chev-words'); } document.getElementById('chev-quiet-style')?.remove(); });
   out.skipped = skipped;
   return out;
 }
