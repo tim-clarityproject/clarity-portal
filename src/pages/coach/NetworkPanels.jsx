@@ -397,7 +397,7 @@ export function ColumnsPanel({ open, onClose, adding = false }) {
   };
   if (add) {
     return (
-      <SlidePanel open={open} onClose={onClose} title={COLUMNS_WORDS.add} footer={<div className="cc-panel-foot">{adding ? <span /> : <TextLink onClick={() => { setAdd(false); setProblem(null); }}>Cancel</TextLink>}<Button variant="primary" onClick={make}>{COLUMNS_WORDS.add}</Button></div>}>
+      <SlidePanel draftKey="network-column:new" open={open} onClose={onClose} title={COLUMNS_WORDS.add} footer={<div className="cc-panel-foot">{adding ? <span /> : <TextLink onClick={() => { setAdd(false); setProblem(null); }}>Cancel</TextLink>}<Button variant="primary" onClick={make}>{COLUMNS_WORDS.add}</Button></div>}>
         <form noValidate onSubmit={(e) => { e.preventDefault(); make(); }}>
           <div className="cc-field"><TextField label={COLUMNS_WORDS.name} value={f.name} maxLength={40} autoComplete="off" onChange={(e) => { setF((v) => ({ ...v, name: e.target.value })); setProblem(null); }} /><Problem line={problem} /></div>
           <div className="cc-field"><Dropdown label={COLUMNS_WORDS.kind} options={COLUMNS_WORDS.kinds.map(([value, label]) => ({ value, label }))} value={f.kind} onChange={(v) => setF((x) => ({ ...x, kind: v }))} /></div>

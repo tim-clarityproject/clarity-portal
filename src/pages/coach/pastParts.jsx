@@ -50,7 +50,7 @@ export function CheckInPanel({ checkInId, onClose }) {
     onClose();
   };
   return (
-    <SlidePanel
+    <SlidePanel draftKey={`past-checkin:${checkInId}`}
       open
       onClose={onClose}
       title={profile.name}

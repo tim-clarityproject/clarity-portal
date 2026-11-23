@@ -274,7 +274,7 @@ export default function OrganisationPage() {
         </Part>
       </div>
 
-      <SlidePanel
+      <SlidePanel draftKey={`org-contact:${id}:${contact && contacts.some((c) => c.id === contact.id) ? contact.id : 'new'}`}
         open={Boolean(contact)}
         onClose={() => setContact(null)}
         title={contact && contacts.some((c) => c.id === contact.id) ? 'Edit details' : 'Add someone'}
@@ -301,7 +301,7 @@ export default function OrganisationPage() {
         )}
       </SlidePanel>
 
-      <SlidePanel
+      <SlidePanel draftKey={`org-deal:${id}:${deal && orgDeals.some((d) => d.id === deal.id) ? deal.id : 'new'}`}
         open={Boolean(deal)}
         onClose={() => setDeal(null)}
         title={deal && orgDeals.some((d) => d.id === deal.id) ? ACCOUNT_WORDS.editDeal : ACCOUNT_WORDS.addDeal}
@@ -352,7 +352,7 @@ export default function OrganisationPage() {
         )}
       </SlidePanel>
 
-      <SlidePanel open={Boolean(doc)} onClose={() => setDoc(null)} title="Add document" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={saveDoc}>Add document</Button></div>}>
+      <SlidePanel draftKey={`org-doc:${id}`} open={Boolean(doc)} onClose={() => setDoc(null)} title="Add document" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={saveDoc}>Add document</Button></div>}>
         {doc && (
           <>
             <div className="cc-field"><TextField label="Name" value={doc.name} maxLength={200} placeholder="e.g. Non-disclosure agreement" onChange={(e) => { setDoc({ ...doc, name: e.target.value }); setProblem(null); }} /></div>

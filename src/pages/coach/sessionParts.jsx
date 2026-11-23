@@ -108,7 +108,7 @@ export function AddSessionPanel({ open, onClose, profile = null, group = null, e
   };
 
   return (
-    <SlidePanel open={open} onClose={onClose} title="Add session" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" className="ds-panel-go" onClick={add}>Add session</Button></div>}>
+    <SlidePanel draftKey={`session:new:${engagement?.id || profile?.id || group?.id || 'none'}`} open={open} onClose={onClose} title="Add session" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" className="ds-panel-go" onClick={add}>Add session</Button></div>}>
       <div className="cc-field cc-two cc-ses-two">
         <DatePicker label="Which day?" value={day} min={addDays(todayKey, -730)} max={addDays(todayKey, 730)} placeholder="Choose a day" format={(k) => dayWords(k, todayKey)} onChange={(k) => { setDay(k); setProblem(null); }} />
         <TextField label="What time?" type="time" step={900} value={time} onChange={(e) => { setTime(e.target.value); setProblem(null); }} />

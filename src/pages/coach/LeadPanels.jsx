@@ -168,7 +168,7 @@ export function WherePanel({ lead, onClose }) {
   if (!lead) return <SlidePanel open={false} onClose={onClose} title="Where they are" />;
   const save = async () => { if (await actions.discovery(lead, f)) onClose(); };
   return (
-    <SlidePanel open onClose={onClose} title={whereTitle(lead)} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Save my edit</Button></div>}>
+    <SlidePanel draftKey={`lead-where:${lead.id}`} open onClose={onClose} title={whereTitle(lead)} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Save my edit</Button></div>}>
       {QUALIFY.map((q) => (
         <div key={q.key} className="cc-field"><TextField label={q.question} value={f[q.key] || ''} maxLength={600} autoComplete="off" onChange={(e) => setF({ ...f, [q.key]: e.target.value })} /></div>
       ))}
@@ -278,7 +278,7 @@ export function StagesPanel({ open, onClose }) {
     } catch (e) { setProblem({ error: calm(e) }); } finally { busy.current = false; }
   };
   return (
-    <SlidePanel open={open} onClose={onClose} title="Edit stages" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Save my edit</Button></div>}>
+    <SlidePanel draftKey="lead-stages" open={open} onClose={onClose} title="Edit stages" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Save my edit</Button></div>}>
       <div className="cc-stage-head" aria-hidden="true"><span>Stage</span><span>Likely to win</span></div>
       <div className="cc-stage-rows" ref={rowsRef}>
         {draft.map((s, i) => {

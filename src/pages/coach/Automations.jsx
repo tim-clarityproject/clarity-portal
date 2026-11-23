@@ -105,7 +105,7 @@ export default function Automations() {
         <p className="cc-note cc-auto-help">{AUTOMATION_HELP}</p>
       </div>
 
-      <SlidePanel
+      <SlidePanel draftKey={`automation:${isNew ? 'new' : draft?.id}`}
         open={Boolean(draft)}
         onClose={() => setDraft(null)}
         title={isNew ? AUTOMATION_WORDS.add : AUTOMATION_WORDS.edit}

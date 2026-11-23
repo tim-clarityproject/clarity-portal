@@ -27,7 +27,7 @@ export default function NameNote({ profile, reason, onClose }) {
   const first = firstName(profile.name);
   const email = quickContacts(profile, { subject: `Happy birthday, ${first}`, body: note }).find((c) => c.key === 'email');
   return (
-    <SlidePanel
+    <SlidePanel draftKey={`name-note:${profile.id}`}
       open
       onClose={onClose}
       title={profile.name}

@@ -82,7 +82,7 @@ export function EngagementPanel({ draft, setDraft, profile = null, group = null 
     if (await done(() => saveRow(userId, 'engagements', row), before ? 'Saved' : 'Engagement added', () => (before ? saveRow(userId, 'engagements', engagementToSave(before, allSessions, sessionPeople, sessionsOlder)) : removeRow(userId, 'engagements', row.id)))) setDraft(null);
   };
   return (
-    <SlidePanel open onClose={() => setDraft(null)} title={before ? 'Edit engagement' : 'Add engagement'} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>{before ? 'Save my edit' : 'Add engagement'}</Button></div>}>
+    <SlidePanel draftKey={`engagement:${before?.id || `new:${profile?.id || group?.id || 'none'}`}`} open onClose={() => setDraft(null)} title={before ? 'Edit engagement' : 'Add engagement'} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>{before ? 'Save my edit' : 'Add engagement'}</Button></div>}>
       <div className="cc-field"><Dropdown label="Kind" options={ENGAGEMENT_KINDS} value={draft.kind} onChange={(v) => set({ kind: v })} /></div>
       <div className="cc-field"><TextField label="Name" value={draft.name} maxLength={120} placeholder="e.g. 6-month coaching" onChange={(e) => set({ name: e.target.value })} /></div>
       <div className="cc-field cc-two">
@@ -126,7 +126,7 @@ function AboutPanel({ open, onClose, profile, about }) {
   };
   const first = firstName(profile.name);
   return (
-    <SlidePanel open={open} onClose={onClose} title={`About ${first}`} titleAside={<Eye sentence="Only you can see this." />} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Save my edit</Button></div>}>
+    <SlidePanel draftKey={`about:${profile?.id}`} open={open} onClose={onClose} title={`About ${first}`} titleAside={<Eye sentence="Only you can see this." />} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Save my edit</Button></div>}>
       <div className="cc-field cc-two">
         <TextField label="Birthday, day" inputMode="numeric" value={f.day || ''} onChange={(e) => { setF({ ...f, day: e.target.value }); setProblem(null); }} />
         <Dropdown label="Month" placeholder="Choose a month" options={months} value={f.month || null} onChange={(v) => { setF({ ...f, month: v }); setProblem(null); }} />
@@ -656,7 +656,7 @@ function PackPanel({ open, onClose, engagement }) {
     if (await done(() => saveRow(userId, 'engagement_packs', row), 'Pack added', () => removeRow(userId, 'engagement_packs', row.id))) onClose();
   };
   return (
-    <SlidePanel open={open} onClose={onClose} title="Add session pack" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>Add the pack</Button></div>}>
+    <SlidePanel draftKey={`session-pack:${engagement?.id || 'new'}`} open={open} onClose={onClose} title="Add session pack" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>Add the pack</Button></div>}>
       <div className="cc-field cc-two">
         <TextField label="Sessions" inputMode="numeric" value={sessions} onChange={(e) => { setSessions(e.target.value); setProblem(null); }} />
         <TextField label="Or hours of time credit" inputMode="decimal" value={hours} onChange={(e) => { setHours(e.target.value); setProblem(null); }} />

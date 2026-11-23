@@ -320,7 +320,7 @@ export default function BoardPage() {
         </PopMenu>
       </div>
 
-      <SlidePanel
+      <SlidePanel draftKey={`board-card:${id}:${card?.isNew ? 'new' : card?.id}`}
         open={Boolean(card)}
         onClose={() => setCard(null)}
         title={card?.isNew ? BOARD_WORDS.newCard : cardItem?.title || 'Card'}
@@ -350,7 +350,7 @@ export default function BoardPage() {
         )}
       </SlidePanel>
 
-      <SlidePanel
+      <SlidePanel draftKey={`board-edit:${id}`}
         open={Boolean(edit)}
         onClose={() => setEdit(null)}
         title={BOARD_WORDS.edit}

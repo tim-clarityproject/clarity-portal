@@ -98,7 +98,7 @@ export default function GroupPage() {
           <TextLink onClick={() => done(async () => { for (const m of members) await removeRow(userId, 'coach_group_members', m.id); await removeRow(userId, 'coach_groups', group.id); return 'saved'; }, 'Deleted', async () => { await saveRow(userId, 'coach_groups', group); for (const m of members) await saveRow(userId, 'coach_group_members', m); }).then((ok) => { if (ok) navigate('/coach/clients?tab=groups'); })}>Delete this group</TextLink>
         </div>
       </div>
-      <SlidePanel open={adding} onClose={() => setAdding(false)} title="Add member" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>Add member</Button></div>}>
+      <SlidePanel draftKey={`group-member:${id}`} open={adding} onClose={() => setAdding(false)} title="Add member" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={add}>Add member</Button></div>}>
         <div className="cc-field"><Dropdown label="One of your clients" options={[{ value: NONE, label: 'Someone who isn’t a client' }, ...free.map((p) => ({ value: p.id, label: p.name })).sort((a, b) => a.label.localeCompare(b.label))]} value={f.profile} onChange={(v) => { setF({ ...f, profile: v }); setProblem(null); }} /></div>
         {f.profile === NONE ? (
           <>

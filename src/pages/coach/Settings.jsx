@@ -224,7 +224,7 @@ function CoverPanel({ draft, setDraft, others }) {
     setDraft(null);
   };
   return (
-    <SlidePanel open onClose={() => setDraft(null)} title="Add cover" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Add cover</Button></div>}>
+    <SlidePanel draftKey="cover:new" open onClose={() => setDraft(null)} title="Add cover" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={save}>Add cover</Button></div>}>
       <div className="cc-field"><Dropdown label="Cover coach" options={others.map((c) => ({ value: c.coach_id, label: c.full_name || c.first_name }))} value={draft.cover_coach_id} onChange={(v) => set({ cover_coach_id: v })} /></div>
       <div className="cc-field"><Dropdown label="Client" placeholder="Choose a client" options={clients.filter((p) => p.status !== 'past').map((p) => ({ value: p.id, label: p.name })).sort((a, b) => a.label.localeCompare(b.label))} value={draft.profile_id} onChange={(v) => set({ profile_id: v })} /></div>
       <div className="cc-field cc-two">
@@ -528,7 +528,7 @@ export function FieldPanel({ draft, setDraft, appliesTo = 'client' }) {
     setDraft(null);
   };
   return (
-    <SlidePanel
+    <SlidePanel draftKey={`field:${isNew ? `new:${appliesTo}` : draft?.id}`}
       open
       onClose={() => setDraft(null)}
       title={isNew ? 'Add field' : 'Edit field'}
@@ -769,7 +769,7 @@ function Coaches() {
         )}
       </SlidePanel>
 
-      <SlidePanel open={adding} onClose={() => setAdding(false)} title="Add coach" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" aria-busy={busy || undefined} onClick={add}>Send the invite</Button></div>}>
+      <SlidePanel draftKey="coach:new" open={adding} onClose={() => setAdding(false)} title="Add coach" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" aria-busy={busy || undefined} onClick={add}>Send the invite</Button></div>}>
         <div className="cc-field"><TextField label="First name" value={form.firstName} maxLength={60} autoComplete="off" onChange={(e) => { setForm({ ...form, firstName: e.target.value }); setProblem(null); }} /></div>
         <div className="cc-field"><TextField label="Full name" value={form.fullName} maxLength={120} autoComplete="off" onChange={(e) => { setForm({ ...form, fullName: e.target.value }); setProblem(null); }} /></div>
         <div className="cc-field"><TextField label="Email" type="email" value={form.email} autoComplete="off" onChange={(e) => { setForm({ ...form, email: e.target.value }); setProblem(null); }} /></div>

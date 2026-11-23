@@ -58,7 +58,7 @@ export default function Boards() {
         {isOwner && <div className="cc-acts cc-board-new"><Button variant="outline" onClick={() => { setProblem(null); setDraft({ name: '', template: 'blank' }); }}>{BOARD_WORDS.add}</Button></div>}
       </div>
 
-      <SlidePanel open={Boolean(draft)} onClose={() => setDraft(null)} title={BOARD_WORDS.add} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={make}>{BOARD_WORDS.make}</Button></div>}>
+      <SlidePanel draftKey="board:new" open={Boolean(draft)} onClose={() => setDraft(null)} title={BOARD_WORDS.add} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={make}>{BOARD_WORDS.make}</Button></div>}>
         {draft && (
           <>
             <div className="cc-field">

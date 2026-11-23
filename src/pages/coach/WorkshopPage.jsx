@@ -244,7 +244,7 @@ export default function WorkshopPage() {
         <div className="cc-soft"><span className="cc-soft-label">What each person gets</span><p>{workshop.follow_up || 'Thank you for coming.'}</p></div>
       </SlidePanel>
 
-      <SlidePanel open={panel === 'attendees'} onClose={() => setPanel(null)} title="Add attendees" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={addAttendees}>{fresh.length ? `Add ${fresh.length} ${fresh.length === 1 ? 'person' : 'people'}` : 'Add attendees'}</Button></div>}>
+      <SlidePanel draftKey={`workshop-attendees:${id}`} open={panel === 'attendees'} onClose={() => setPanel(null)} title="Add attendees" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={addAttendees}>{fresh.length ? `Add ${fresh.length} ${fresh.length === 1 ? 'person' : 'people'}` : 'Add attendees'}</Button></div>}>
         <div className="cc-field">
           <label className="cc-field-label" htmlFor="cc-attendees">Who’s invited?</label>
           <textarea id="cc-attendees" className="cc-paste" rows={8} value={pasted} placeholder="Paste names and emails, e.g. Dan Reid <dan@example.com>" onChange={(e) => { setPasted(e.target.value); setProblem(null); }} />
@@ -257,7 +257,7 @@ export default function WorkshopPage() {
         )}
       </SlidePanel>
 
-      <SlidePanel
+      <SlidePanel draftKey={`workshop-question:${id}:${question && (workshop.questions || []).some((x) => x.id === question.id) ? question.id : 'new'}`}
         open={Boolean(question)}
         onClose={() => setQuestion(null)}
         title={question && (workshop.questions || []).some((x) => x.id === question.id) ? 'Edit question' : 'Add question'}
