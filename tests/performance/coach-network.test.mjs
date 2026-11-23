@@ -575,3 +575,20 @@ test('Today’s Keep in touch: one quiet line each for the people due and the ch
   assert.deepEqual(net.menuCount({ due: 1139 }), { count: '1,139', spoken: '1,139 due a catch-up' });
   assert.deepEqual(net.menuCount({ due: 0 }), { count: '', spoken: '' });
 });
+
+test('Merge into one for two Network people: the rows to choose from, and what network_merge is sent (tidy follow-up 3, run 6’s 36)', async () => {
+  const net = await import('../../src/lib/coach/network.js');
+  const a = { id: 'p1', name: 'David Stark', organisation: 'Citadel', role: 'Sponsor', email: 'david@example.invalid', phone: null, notes: '' };
+  const b = { id: 'p2', name: 'Dave Stark', organisation: 'citadel', role: 'Referrer', email: null, phone: '+44 7700 900123', notes: 'Met at the summit.' };
+  const plan = net.networkMergePlan(a, b);
+  assert.deepEqual(plan.map((r) => [r.key, r.choose]), [['name', true], ['organisation', false], ['role', true], ['email', false], ['phone', false], ['notes', false]]);
+  assert.deepEqual([plan[1].one, plan[3].one, plan[4].one], ['Citadel', 'david@example.invalid', '+44 7700 900123'], 'one value where only one has it, or both say the same');
+  assert.equal(net.networkMergePlan(a, a), null);
+  assert.equal(net.networkMergePlan(a, null), null);
+  assert.deepEqual(net.networkMergeValues({ name: 'b', role: 'a' }), { name: true });
+  assert.deepEqual(net.networkMergeValues({}), {});
+  assert.equal(net.mergedPersonWords({ name: 'David Stark' }), 'Merged into David Stark.');
+  // The device's own merge keeps the chosen fields and fills the gaps from the one merged away.
+  const merged = net.mergedPerson(a, b, net.networkMergeValues({ role: 'b' }));
+  assert.deepEqual([merged.name, merged.role, merged.email, merged.phone], ['David Stark', 'Referrer', 'david@example.invalid', '+44 7700 900123']);
+});

@@ -971,6 +971,7 @@ export function ratingHistory(ratings, rating, today) {
 export const PERSON_WORDS = {
   contact: 'Contact', editContact: 'Edit contact details', howItIs: 'How it is', editRatings: 'Edit ratings', howOften: 'How often?', notNow: 'Not now, in 2 weeks', stop: 'Stop keeping in touch',
   moveToLeads: 'Move to Leads', openLead: 'Open the lead', archive: 'Archive', restore: 'Restore', noEmail: 'Add', noPhone: 'Add', archivedNote: 'Archived. Their history is kept.',
+  merge: 'Merge with someone',
 };
 /** "You last spoke on Tue 17 Nov.", or "You haven’t spoken yet." */
 export const lastSpokeLine = (p, today) => (p?.last_spoke_on ? `You last spoke ${p.last_spoke_on === today ? 'today' : `on ${dayWords(p.last_spoke_on, today)}`}.` : 'You haven’t spoken yet.');
@@ -1200,3 +1201,40 @@ export const PERSON_GONE = 'This person isn’t in your Network any more.';
 export const MAP_LABEL = 'Your Network by influence and trust';
 /** Actions' "Show more" once Show all has more than a page to show. */
 export const moreWords = (shown, total) => (total > shown ? `Show ${count(Math.min(ACTIONS_ALL, total - shown))} more` : '');
+
+// ---------------------------------------------------------------- Merge (tidy follow-up 3, run 6's 36)
+// "Merge into one", as Leads has it: choose the other person, then what to keep where the two differ. What was given and
+// asked, to-dos, leads and emails all move to the one kept (052's network_merge), and Undo puts both back as they were.
+
+/** The fields "Merge into one" compares, in order. */
+export const NETWORK_MERGE_FIELDS = [['name', 'Name'], ['organisation', 'Organisation'], ['role', 'Role'], ['email', 'Email'], ['phone', 'Phone'], ['notes', 'Notes']];
+export const NETWORK_MERGE_WORDS = {
+  title: 'Merge into one',
+  who: 'Who is the same person?', // Claude's: the first step's question
+  search: 'Search your Network',
+  none: 'No one else in your Network matches.',
+  intro: 'Choose what to keep where they differ.',
+  nothingLost: 'What you’ve given and asked, to-dos, leads and emails all move to the one kept. Nothing is lost.',
+  button: 'Merge into one',
+  back: 'Back',
+  choose: 'Choose who to merge with to carry on.',
+};
+/** The toast after a merge: "Merged into David Stark." */
+export const mergedPersonWords = (kept) => `Merged into ${kept?.name || 'one'}.`;
+/**
+ * The rows of "Merge into one" for two Network people: a row for each field either has; where they differ the coach
+ * chooses (`choose`, with `a` and `b`), otherwise the one value (`one`). Null for the same person or none.
+ */
+export function networkMergePlan(a, b) {
+  if (!a || !b || a.id === b.id) return null;
+  return NETWORK_MERGE_FIELDS.map(([key, label]) => {
+    const x = clean(a[key] ?? '');
+    const y = clean(b[key] ?? '');
+    if (!x && !y) return null;
+    if (key !== 'name' && (!x || !y || lower(x) === lower(y))) return { key, label, choose: false, one: x || y };
+    if (key === 'name' && lower(x) === lower(y)) return { key, label, choose: false, one: x };
+    return { key, label, choose: true, a: x, b: y };
+  }).filter(Boolean);
+}
+/** `choices` ({ field: 'a' | 'b' }) as network_merge's p_values: the fields taken from the one merged away. */
+export const networkMergeValues = (choices) => Object.fromEntries(Object.entries(choices || {}).filter(([, v]) => v === 'b').map(([k]) => [k, true]));

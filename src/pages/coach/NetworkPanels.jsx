@@ -1,21 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AddButton, Button, Checkbox, Dropdown, InlineChoice, SlidePanel, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
+import { AddButton, Button, Checkbox, Dropdown, InlineChoice, SearchField, SlidePanel, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
 import { newId, removeRow, saveRow, saveRows } from '../../lib/coach/store';
 import { logActivity } from '../../lib/coach/actions';
 import { toCsv } from '../../lib/coach/model';
 import { canReadXlsx, xlsxBytes, xlsxTable } from '../../lib/coach/xlsx';
 import { csvTable, emailsOn, EXPORT_FORMATS, EXPORT_HELP, exportName, hasHeadingRow, leadFromNetwork, leadOfPerson, matchColumns, sameId } from '../../lib/coach/crm';
 import {
-  archiveNetwork, importNetwork, networkDuplicatesOf, networkPageOf, networkPerson, removeNetworkGive, removeNetworkPeople, removeNetworkPerson, restoreNetwork, saveNetworkGive, saveNetworkPerson,
+  archiveNetwork, importNetwork, mergeNetwork, networkDuplicatesOf, networkPageOf, networkPerson, removeNetworkGive, removeNetworkPeople, removeNetworkPerson, restoreNetwork, saveNetworkGive, saveNetworkPerson, unmergeNetwork,
 } from '../../lib/coach/networkData';
 import {
   ADD_RHYTHMS, ADD_WORDS, ARCHIVED_ONE, archivePlan, columnProblem, COLUMNS_WORDS, columnSwitches, contactChange, duplicateLine, exportChoices, exportQueries, exportRows, GIVE_WORDS, giveAskLine, giveCounts, giveDays,
   giveRows, howItIs, IMPORT_WORDS, importButtonWords, importedToast, importFileKind, importRows, importSummary, isNarrowed, lastSpokeLine, NETWORK_IMPORT_DROP, NETWORK_IMPORT_FIELDS, NETWORK_IMPORT_HELP, networkProblem,
   networkSheetRows, newColumn, newGive, newPerson, NO_RHYTHM, notNow, PANEL_WORDS, PERSON_GONE, PERSON_WORDS, personContacts, personSub, RATING_CHOICES, RATING_WORDS, ratingHistory, ratingOutOf, RATINGS, RATINGS_HELP,
   ratingsChange, READY_BUTTONS, readyQuery, readyRow, RESTORED, RHYTHMS, rhythmWords, ROLES, spokeLabel, spokeToday, spotPeople, spotTitle, stopKeeping, TABLE_WORDS, withColumnShown,
+  mergedPersonWords, NETWORK_MERGE_WORDS, networkMergePlan, networkMergeValues,
 } from '../../lib/coach/network';
-import { Part, TextLink, useCoachPortal } from './parts';
+import { Part, Row, TextLink, useCoachPortal } from './parts';
 import { EmailRows } from './crmParts';
 import { useStartStages } from './leadParts';
 import { Problem, useNetworkActions, useNetworkAsk } from './networkParts';
@@ -71,12 +72,16 @@ export function PersonPanel({ id, onClose }) {
   const toast = useToast();
   const navigate = useNavigate();
   const found = useNetworkAsk(id ? () => networkPerson(userId, id) : null, [id, userId]);
-  const [sub, setSub] = useState(null); // 'contact' | 'ratings' | 'gave' | 'asked'
+  const [sub, setSub] = useState(null); // 'contact' | 'ratings' | 'gave' | 'asked' | 'merge'
   const [draft, setDraft] = useState({});
   const [problem, setProblem] = useState(null);
   const busy = useRef(false);
   useEffect(() => { setSub(null); setProblem(null); }, [id]);
   const person = found.data?.person?.id === id ? found.data.person : null; // never an earlier person's answer
+  // Merge into one (tidy follow-up 3, run 6's 36): who to merge with, found by search, then that person's own record.
+  const mergeQ = sub === 'merge' ? draft.q || '' : null;
+  const others = useNetworkAsk(mergeQ !== null && !draft.other ? () => networkPageOf(userId, { search: mergeQ, limit: 8 }) : null, [mergeQ, draft.other, userId]);
+  const other = useNetworkAsk(sub === 'merge' && draft.other ? () => networkPerson(userId, draft.other) : null, [sub, draft.other, userId]);
   const gives = person ? found.data.gives || [] : [];
   const ratings = person ? found.data.ratings || [] : [];
   const back = () => { setSub(null); setProblem(null); };
@@ -85,6 +90,7 @@ export function PersonPanel({ id, onClose }) {
     if (kind === 'contact') setDraft({ email: person.email || '', phone: person.phone || '' });
     if (kind === 'ratings') setDraft(Object.fromEntries(RATINGS.map((k) => [k, person[k] == null ? NONE : String(person[k])])));
     if (kind === 'gave' || kind === 'asked') setDraft({ kind: null, note: '', day: todayKey });
+    if (kind === 'merge') setDraft({ q: '', other: null, choices: {} });
     setSub(kind);
   };
   const set = (patch) => { setDraft((d) => ({ ...d, ...patch })); setProblem(null); };
@@ -152,6 +158,61 @@ export function PersonPanel({ id, onClose }) {
         )}
       </>
     );
+  } else if (person && sub === 'merge') {
+    const W = NETWORK_MERGE_WORDS;
+    title = W.title;
+    const b = draft.other && other.data?.person?.id === draft.other ? other.data.person : null;
+    if (!draft.other) {
+      const found2 = (others.data?.rows || []).filter((r) => r.id !== person.id && !r.merged_into);
+      footer = <div className="cc-panel-foot"><TextLink onClick={back}>{W.back}</TextLink><Button variant="primary" onClick={() => setProblem(W.choose)}>{W.button}</Button></div>;
+      body = (
+        <>
+          <p className="cc-net-who">{person.name}</p>
+          <p className="cc-quiet">{W.who}</p>
+          <div className="cc-field"><SearchField label={W.search} placeholder={W.search} value={draft.q || ''} onChange={(v) => set({ q: v })} /></div>
+          <div className="cc-rows">
+            {found2.map((r) => <Row key={r.id} title={r.name} facts={[personSub(r)]} onClick={() => set({ other: r.id, choices: {} })} />)}
+          </div>
+          {!others.loading && found2.length === 0 && <p className="cc-quiet">{W.none}</p>}
+          <Problem line={problem} />
+        </>
+      );
+    } else {
+      const plan = networkMergePlan(person, b) || [];
+      const choices = draft.choices || {};
+      const merge = async () => {
+        if (busy.current || !b) return;
+        busy.current = true;
+        let mergeId = null;
+        const ok = await act({
+          run: async () => { mergeId = await mergeNetwork(userId, person.id, b.id, networkMergeValues(choices)); return 'saved'; },
+          message: mergedPersonWords({ name: choices.name === 'b' ? b.name : person.name }),
+          undo: () => unmergeNetwork(userId, mergeId),
+        });
+        busy.current = false;
+        if (ok) back();
+      };
+      footer = <div className="cc-panel-foot"><TextLink onClick={() => set({ other: null, choices: {} })}>{W.back}</TextLink><Button variant="primary" onClick={merge}>{W.button}</Button></div>;
+      body = !b ? <p className="cc-quiet">{other.loading ? '' : other.error ? networkProblem(other.error) : PERSON_GONE}</p> : (
+        <>
+          <p className="cc-quiet">{W.intro}</p>
+          <div className="cc-merge-head" aria-hidden="true"><span /><span>{person.name}</span><span>{b.name}</span></div>
+          {plan.map((row) => (
+            <div key={row.key} className="cc-merge-row" role={row.choose ? 'radiogroup' : undefined} aria-label={row.choose ? row.label : undefined}>
+              <span className="cc-merge-label">{row.label}</span>
+              {row.choose ? (
+                <>
+                  <button type="button" role="radio" className="cc-merge-choice" aria-checked={(choices[row.key] || 'a') === 'a'} onClick={() => set({ choices: { ...choices, [row.key]: 'a' } })}>{row.a}</button>
+                  <button type="button" role="radio" className="cc-merge-choice" aria-checked={choices[row.key] === 'b'} onClick={() => set({ choices: { ...choices, [row.key]: 'b' } })}>{row.b}</button>
+                </>
+              ) : <span className="cc-merge-one">{row.one}</span>}
+            </div>
+          ))}
+          <p className="cc-note">{W.nothingLost}</p>
+          <Problem line={problem} />
+        </>
+      );
+    }
   } else if (person && (sub === 'gave' || sub === 'asked')) {
     const words = GIVE_WORDS[sub];
     title = words.log;
@@ -236,6 +297,7 @@ export function PersonPanel({ id, onClose }) {
 
         <div className="cc-acts cc-net-end">
           <TextLink onClick={move}>{lead ? PERSON_WORDS.openLead : PERSON_WORDS.moveToLeads}</TextLink>
+          {!archived && <TextLink onClick={() => open('merge')}>{PERSON_WORDS.merge}</TextLink>}
           {archived ? <TextLink onClick={restore}>{PERSON_WORDS.restore}</TextLink> : <TextLink onClick={archive}>{PERSON_WORDS.archive}</TextLink>}
         </div>
       </>
