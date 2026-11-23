@@ -213,8 +213,11 @@ begin
     f := f || pg_temp.t_eq('4j and is a coach, of Sam, with her coach id', concat_ws('/', public.is_coach(), public.is_coach_of(sam_u), public.my_coach_id() = maya_c, public.coach_owns_profile(p_sam)), 't/t/t/t');
     f := f || pg_temp.t_eq('4k changes her to-do', pg_temp.t_rows(format('update public.coach_todos set title = ''Changed'' where id = %L', todo_m)), '1');
     f := f || pg_temp.t_eq('4l reads what Sam shares (the Mission, on by default)', public.may_see(sam_u, 'mission')::text, 'true');
+    -- The coach list names every active coach to every coach (049, names only), so
+    -- on a database with real coaches (the test project) only this test's three are
+    -- counted, as 049's test 2u does.
     f := f || pg_temp.t_eq('4o the coach functions answer her at aal2',
-      concat_ws('/', (select count(*) from public.coach_list()), (select count(*) from public.coach_client_list()),
+      concat_ws('/', (select count(*) from public.coach_list() where coach_id in (tess_c, maya_c, nina_c)), (select count(*) from public.coach_client_list()),
                 public.client_file_path_ok(p_sam::text || '/x.pdf'), pg_temp.t_rows('select public.coach_save_details(''Maya'', null, null, null)')),
       '3/1/t/1');
 
