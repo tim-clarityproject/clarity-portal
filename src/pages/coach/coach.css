@@ -758,3 +758,9 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-round { padding: 0 !important; }
 .ui-root .cc-cell { padding: 0 var(--space-px6) !important; font-size: inherit !important; }
 .ui-root .cc-bulk-btn { padding: 0 var(--space-px12) !important; }
+
+/* On a phone a grey line under a row is one line (M11's calm phone; tidy follow-up 3, run 6's 33): useGreyLines leaves out
+   the parts that don't fit, and the one part left, when it is still too long, ends with an ellipsis rather than wrapping. */
+@media (max-width: 600px) {
+  .ui-root [data-grey-line] > span { min-width: 0; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+}

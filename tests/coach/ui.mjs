@@ -116,6 +116,9 @@ function measure(appSelector) {
     fail: /\bfail(ed|s|ure)?\b/i.test(text),
     purpose: /\b(your|my) (purpose|mission)\b/.test(text),
     text,
+    phone: window.innerWidth < 600,
+    // On a phone each lead card is its name and one grey line (tidy follow-up 3, run 6's 33): how many lines each shows.
+    cardLines: [...document.querySelectorAll('.cc-lead-card .cc-lead-line1')].filter(vis).map((l) => Math.round(l.getBoundingClientRect().height / (parseFloat(getComputedStyle(l).lineHeight) || 18))),
   };
 }
 
@@ -150,7 +153,10 @@ const MUST = {
   'capacity-row': (r) => /Capacity/i.test(r.text) && r.text.includes('Coaching hours each week'),
   'hidden-help': (r) => r.text.includes('Hidden help') && r.text.includes('Nothing is hidden.'),
   // Run 4, Leads.
-  'lead-board': (r) => ['£31,500', '£15,750 likely', 'No value yet', 'Opened 3 times', 'Quiet for 19 days', 'Still to find out: when', 'Ready to decide'].every((w) => r.text.includes(w)),
+  // On a phone a card is its name and one grey line (M11's calm phone; tidy follow-up 3): the parts that don't fit are left out.
+  'lead-board': (r) => (r.phone
+    ? ['£31,500', '£15,750 likely', 'No value yet'].every((w) => r.text.includes(w)) && r.cardLines.length > 0 && r.cardLines.every((n) => n === 1)
+    : ['£31,500', '£15,750 likely', 'No value yet', 'Opened 3 times', 'Quiet for 19 days', 'Still to find out: when', 'Ready to decide'].every((w) => r.text.includes(w))),
   'lead-waiting': (r) => r.text.includes('You emailed Sarah Kent, who isn’t in the portal yet.') && r.text.includes('Chris Doyle may be in here twice.'),
   'lead-page': (r) => ['Nearly there. Still to find out: when.', 'Referred by', 'Hannah Wells', 'Leadership Accelerator. Opened 3 times.', 'Not known yet'].every((w) => r.text.includes(w)),
   // Run 4, step 3: Automations, Boards, emails logged, past clients' check-ins, the account map.
