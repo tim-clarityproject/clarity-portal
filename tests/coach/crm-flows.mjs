@@ -13,6 +13,9 @@
 //                when saved and when switched on; nothing can be chosen but a to-do or a stage
 //   crm-watch    with the portal open: a quiet lead, a proposal opened three times and a call booked each add their to-do
 //                once, and opening again adds nothing
+//   crm-keep     keep in touch (run 8's 3): listed and off until switched on; switched on, a past client due a check-in
+//                today gets one "Catch up with Ben", due today, and tomorrow's gets nothing yet; a reload and a second tab
+//                add nothing; before 059 the automation and its run stay on the device; switched off, nothing more runs
 //   crm-ended    coaching ends: the "when coaching ends" to-do and the 3, 6 and 12 month check-ins, with Undo
 //   crm-board    New board from a template; a card added, moved with the arrow keys, typed over in the table; Edit this board
 //                (a stage taken out with its cards moved, one added, shared) with Undo; Delete the board with Undo
@@ -31,7 +34,7 @@ import { CAL, CRM, ID, seedClock, seedWithCrm } from './seed.mjs';
 import { withSharedBoard } from './screens.mjs';
 import { addDays } from '../../src/lib/time/index.js';
 
-export const CRM_PARTS = ['crm-auto', 'crm-watch', 'crm-ended', 'crm-board', 'crm-shared', 'crm-email', 'crm-past', 'crm-map'];
+export const CRM_PARTS = ['crm-auto', 'crm-watch', 'crm-keep', 'crm-ended', 'crm-board', 'crm-shared', 'crm-email', 'crm-past', 'crm-map'];
 const TUE = new Date(2026, 10, 17, 9, 0);
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
@@ -248,6 +251,44 @@ async function run() {
         pass(`${tag}: Delete: “Deleted”, with Undo`, /Deleted/.test(await toastText(page)) && !(await words(page)).includes('Send the contract and the invoice'));
         await undo(page);
         pass(`${tag}: Undo brings it back`, (await words(page)).includes('Send the contract and the invoice'));
+        await a.close();
+      }
+
+      if (on('crm-keep')) {
+        const tag = `crm-keep, ${mode}`;
+        // Ben's 3-month check-in is due today (M11's Tuesday); Leah's 12-month one is still to come.
+        const rows = seedWithCrm({ accounts: true, network: false });
+        rows.client_check_ins = rows.client_check_ins.map((c) => (c.id === CRM.ciBen ? { ...c, due_on: '2026-11-17' } : c));
+        const a = await openAt({ db, tag, path: '/coach/leads/automations', rows });
+        const { page } = a;
+        const SENTENCE = 'When someone is due a catch-up, add the to-do “Catch up with [first name]”, due that day.';
+        const sw = () => page.getByRole('switch', { name: `On: ${SENTENCE}` });
+        const catchUps = async () => (await a.rowsNow('coach_todos')).filter((t) => /^Catch up with /.test(t.title || ''));
+        const keepRuns = async () => (await a.deviceRows('coach_automation_runs')).filter((r) => String(r.event_key).startsWith('catchup:'));
+        pass(`${tag}: Automations lists keep in touch as one sentence, Off, its switch off`, (await words(page)).includes(SENTENCE) && await sw().count() === 1 && await sw().getAttribute('aria-checked') === 'false', await sw().count());
+        await settle(page, 2500);
+        pass(`${tag}: off, it adds nothing`, (await catchUps()).length === 0);
+        await sw().click(); await settle(page, 600);
+        pass(`${tag}: switched on: “Switched on”`, /Switched on/.test(await toastText(page)) && await sw().getAttribute('aria-checked') === 'true');
+        await settle(page, 3500);
+        let made = await catchUps();
+        pass(`${tag}: Ben (due today) gets one “Catch up with Ben”, due today, on Ben; Leah (still to come) gets nothing`,
+          made.length === 1 && made[0].title === 'Catch up with Ben' && made[0].due_on === '2026-11-17' && made[0].planned_on === '2026-11-17' && made[0].profile_id === CRM.ben,
+          JSON.stringify(made.map((t) => [t.title, t.due_on, t.planned_on])));
+        pass(`${tag}: its run is claimed once, for Ben and that day`, (await keepRuns()).map((r) => r.event_key).join() === `catchup:client:${CRM.ben}:2026-11-17`, (await keepRuns()).map((r) => r.event_key).join());
+        if (a.there) {
+          pass(`${tag}: before 059 the automation and its run stay on the device (the database never sees catch_up_due)`,
+            !(a.store.rows.coach_automations || []).some((r) => r.trigger === 'catch_up_due') && !(a.store.rows.coach_automation_runs || []).some((r) => String(r.event_key).startsWith('catchup:')));
+        }
+        await go(page, '/coach/leads/automations'); await settle(page, 3500);
+        const second = await a.ctx.newPage();
+        await second.goto(`${APP}/coach/leads/automations`); await second.waitForSelector('.cc-app', { timeout: 20000 }); await settle(second, 4000);
+        await second.close();
+        made = await catchUps();
+        pass(`${tag}: a reload and a second tab add nothing more`, made.length === 1 && (await keepRuns()).length === 1, `${made.length} to-dos, ${(await keepRuns()).length} runs`);
+        pass(`${tag}: still on after the reload`, await sw().getAttribute('aria-checked') === 'true');
+        await sw().click(); await settle(page, 600);
+        pass(`${tag}: switched off: “Switched off”, and it reads Off`, /Switched off/.test(await toastText(page)) && await sw().getAttribute('aria-checked') === 'false');
         await a.close();
       }
 
