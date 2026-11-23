@@ -555,6 +555,8 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-setpane { min-width: 0; }
 .ui-root .cc-setpane .cc-small-label { margin: var(--space-px30) 0 var(--space-1); }
 .ui-root .cc-setpane .cc-small-label:first-child { margin-top: var(--space-1); }
+/* Run 8 (UI tester): Google's group opens its own box, so its label is that box's first child but not the pane's; it keeps the pane's space above, as Connections does. */
+.ui-root .cc-setpane .cc-gcals > .cc-small-label:first-child { margin-top: var(--space-px30); }
 .ui-root .cc-setrow { display: grid; grid-template-columns: var(--cc-label-w) minmax(0, 1fr) auto; gap: var(--space-1) var(--space-px20); align-items: center; min-height: var(--cc-setrow-h); padding: var(--space-2) 0; border-bottom: var(--line-w) solid var(--line-soft); }
 .ui-root .cc-setrow-label { font-size: var(--fs-body); color: var(--text); overflow-wrap: anywhere; }
 .ui-root .cc-setrow-value { font-size: var(--fs-secondary); color: var(--text-2); min-width: 0; overflow-wrap: anywhere; }

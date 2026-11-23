@@ -20,6 +20,7 @@ import BookingSettings from './BookingSettings';
 import { calendarShown, CONNECT_WORDS, connectionRows } from '../../lib/coach/calendar';
 import { useCalSync } from './calSync';
 import { GoogleCalendarSwitches } from './googleCalendars';
+import { CALENDAR_GROUPS } from '../../lib/coach/googleBusy';
 import { EMAIL_SETTINGS, GMAIL_WORDS } from '../../lib/coach/crm';
 import { setEmailStandIn, useEmailAddresses } from './crmParts';
 import './crm.css';
@@ -406,6 +407,8 @@ function Calendars() {
   const rows = connectionRows({ live: LIVE_BUILD, status: sync.status, standIns: sync.standIns });
   return (
     <>
+      {/* Run 8 (UI tester): the portal's own Work, Personal and Family, named apart from Google's own calendars below. */}
+      <p className="cc-small-label">{CALENDAR_GROUPS.portal}</p>
       <SwitchRow label="Work" note="Titles for you, Busy to everyone else" checked={calendarShown(settings, 'work')} onChange={(on) => set('work', on)} />
       <SwitchRow label="Personal" note="Titles for you, Busy to everyone else" checked={calendarShown(settings, 'personal')} onChange={(on) => set('personal', on)} />
       <SwitchRow label="Family" note="Titles for you, Busy to everyone else" checked={calendarShown(settings, 'family')} onChange={(on) => set('family', on)} />

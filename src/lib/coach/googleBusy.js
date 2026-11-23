@@ -223,8 +223,11 @@ export async function busyOnce({ google, calendars = [], busyTimes = [], coachId
 }
 
 /** The words of My calendars' Google part and of a busy tile. */
+/** The two groups in My calendars (Settings and the calendar's panel): the portal's own calendars, then Google's. */
+export const CALENDAR_GROUPS = Object.freeze({ portal: 'In the portal', google: 'From Google Calendar' });
+
 export const BUSY_WORDS = Object.freeze({
-  heading: 'From Google Calendar',
+  heading: CALENDAR_GROUPS.google,
   main: 'Kept in step with this calendar both ways',
   note: 'Shows as busy to everyone else',
   off: 'Switch a calendar on to show its events here and keep those times free of bookings.',

@@ -70,6 +70,13 @@ const busyRoundsHere = async (page) => {
   for (let i = 0; i < 2; i += 1) { await page.evaluate(() => window.__clarityCalSync.round()); await settle(page, 1200); }
 };
 
+/** Keep in touch (run 8's 3) switched on in Automations, once; it then adds its catch-up to-dos while the page is open. */
+const keepInTouchOn = async (page) => {
+  if (!page.url().includes('/coach/leads/automations')) { await page.goto(`${APP}/coach/leads/automations`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 900); }
+  const sw = page.getByRole('switch', { name: /^On: When someone is due a catch-up/ });
+  if ((await sw.getAttribute('aria-checked')) !== 'true') await sw.click();
+  await settle(page, 3500);
+};
 const click = (name, role = 'button') => async (page) => { await page.getByRole(role, { name, exact: true }).first().click(); await settle(page, 500); };
 export const SCREENS = [
   ['today', '/coach'],
@@ -553,6 +560,18 @@ export const GROUPS = [
         await busyRoundsHere(page);
         await page.locator('.cc-sched-row', { hasText: 'School play' }).first().click(); await settle(page, 700);
       }, { expects: ['panel'] }],
+      // The UI tester, run 8: the same busy time in the Month view, and Book a call with it switched on.
+      ['busy-month', '/coach/calendar?view=month&day=2026-11-18', async (page) => {
+        await withBusyCalendars(page);
+        await page.goto(`${APP}/coach/calendar?view=month&day=2026-11-18`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 900);
+        await busyRoundsHere(page);
+      }, { full: true }],
+      ['busy-book', '/coach/calendar/book', async (page) => {
+        await withBusyCalendars(page);
+        await page.goto(`${APP}/coach/calendar/book`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 900);
+        await busyRoundsHere(page);
+        await pick(page, 'Who is it with', 'Sam Okafor'); await settle(page, 400);
+      }, { expects: ['panel'] }],
     ],
   },
   // The next-call bar at its other states (run 3, step 6): coral from 5 minutes before, "starting now", and until 10 minutes in.
@@ -603,6 +622,16 @@ export const GROUPS = [
   // account map, the owner's, device first (052 isn't on the test project). Then an associate, who sees only the board the
   // owner has shared, can't change it, and has no Automations.
   { name: 'crm', at: TUE, roles: ['owner'], seed: () => seedWithCrm({ accounts: true, network: false }), screens: CRM_SCREENS },
+  // Run 8's 3 (the UI tester): keep in touch switched on, with Ben's 3-month check-in due today (as crm-flows' crm-keep), and
+  // the "Catch up with Ben" to-do it adds on Today. The switch stays on, so the to-do screen comes second.
+  {
+    name: 'keep', at: TUE, roles: ['owner'],
+    seed: () => { const rows = seedWithCrm({ accounts: true, network: false }); rows.client_check_ins = rows.client_check_ins.map((c) => (c.id === CRM.ciBen ? { ...c, due_on: '2026-11-17' } : c)); return rows; },
+    screens: [
+      ['automations-keep-on', '/coach/leads/automations', keepInTouchOn, { full: true }],
+      ['today-catch-up', '/coach', async (page) => { await keepInTouchOn(page); await page.goto(`${APP}/coach`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 1500); }, { full: true }],
+    ],
+  },
   {
     name: 'crm-associate', at: TUE, roles: ['associate'], seed: withSharedBoard,
     screens: [

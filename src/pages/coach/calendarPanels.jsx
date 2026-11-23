@@ -15,6 +15,7 @@ import {
 import { TextLink } from './parts';
 import { MovedInGoogle, useCalSync, useConflictLine } from './calSync';
 import { GoogleCalendarSwitches } from './googleCalendars';
+import { CALENDAR_GROUPS } from '../../lib/coach/googleBusy';
 import { CAL_HOOKS, CalGrid, gridPoint, TodosToPlace, useBeside, useCalendar } from './calendarParts';
 import { TodoPanel, useTodoActions } from './todoParts';
 
@@ -376,6 +377,7 @@ export function CalendarsPanel({ cal, open, onClose }) {
   const lines = { work: 'Your coaching and your own time', personal: 'Shown with titles to you', family: 'Shown with titles to you' };
   return (
     <SlidePanel open={open} onClose={onClose} title="My calendars">
+      <p className="cc-small-label">{CALENDAR_GROUPS.portal}</p>
       {CALENDARS.map((c) => (
         <div key={c.value} className="cc-field cc-todo-switch">
           <SwitchRow label={c.label} note={lines[c.value]} checked={calendarShown(cal.settings, c.value)} onChange={(on) => cal.saveSettings({ calendars: { ...cals, [c.value]: on } })} />
