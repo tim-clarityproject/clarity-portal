@@ -1,4 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { toastReaches } from './toastAbove';
 import { createPortal } from 'react-dom';
 import { IconButton } from './Button';
 import InfoIcon from './InfoIcon';
@@ -418,10 +419,7 @@ export default function GuidedTool({
     const html = document.documentElement;
     const before = html.style.getPropertyValue('--ds-toast-offset');
     const place = () => {
-      const b = button.getBoundingClientRect();
-      const middle = window.innerWidth / 2;
-      const under = b.left <= middle && b.right >= middle;
-      if (under) html.style.setProperty('--ds-toast-offset', `${Math.max(0, Math.round(foot.getBoundingClientRect().height) - 16)}px`);
+      if (toastReaches(foot)) html.style.setProperty('--ds-toast-offset', `${Math.max(0, Math.round(foot.getBoundingClientRect().height) - 16)}px`);
       else if (before) html.style.setProperty('--ds-toast-offset', before);
       else html.style.removeProperty('--ds-toast-offset');
     };

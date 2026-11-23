@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
+import { toastReaches } from './toastAbove';
 import { useHidePhoneBar } from './phoneBar';
 import './design.css';
 
@@ -21,10 +22,7 @@ export default function BottomBar({ children, className = '' }) {
     const measure = () => {
       const h = el.getBoundingClientRect().height;
       root.style.setProperty('--bottom-bar-h', `${h}px`);
-      const button = el.querySelector('button, a');
-      const b = button?.getBoundingClientRect();
-      const middle = window.innerWidth / 2;
-      if (b && b.left <= middle && b.right >= middle) root.style.setProperty('--ds-toast-offset', `${Math.max(0, Math.round(h) - 16)}px`);
+      if (toastReaches(el)) root.style.setProperty('--ds-toast-offset', `${Math.max(0, Math.round(h) - 16)}px`);
       else if (before) root.style.setProperty('--ds-toast-offset', before);
       else root.style.removeProperty('--ds-toast-offset');
     };

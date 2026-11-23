@@ -11,6 +11,25 @@ export function toastOffsetFor(viewportHeight, barTop) {
   return Math.max(0, Math.round(viewportHeight - barTop - 16));
 }
 
+// Whether a toast, centred along the foot of the screen, would reach a
+// control in this bar: any button or link within the middle band a toast
+// takes ("Deleted" with Undo and wider), which grows with the text size. Only
+// the bar's first control crossing the very middle was asked before; at twice
+// the text size a toast reached "Download my PDF" and "Finish my plan" either
+// side of the middle (UI tester, scale check).
+export const TOAST_HALF_REM = 10;
+export function toastReaches(container, width = window.innerWidth) {
+  if (!container) return false;
+  let rem = 16;
+  try { rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16; } catch { /* default */ }
+  const middle = width / 2;
+  const half = Math.min(middle, TOAST_HALF_REM * rem);
+  return [...container.querySelectorAll('button, a')].some((el) => {
+    const b = el.getBoundingClientRect();
+    return b.width > 0 && b.right >= middle - half && b.left <= middle + half;
+  });
+}
+
 export function useToastAbove(ref, active = true) {
   useLayoutEffect(() => {
     const el = ref.current;
