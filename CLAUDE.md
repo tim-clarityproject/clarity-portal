@@ -4,7 +4,7 @@
 
 ## Pushing and previews (Tim, 23 Nov 2026)
 
-Push `feature/performance-overhaul` after every commit, never `main`. **A preview builds only when the latest commit message contains `[preview]`** (`ignoreCommand` in `vercel.json`, `scripts/vercel-ignore.sh`), because Vercel's free team has 10 GB of deployment storage; production builds from `main` always. **Make exactly one commit marked `[preview]` at the end of each run**, after its report is written and every test has run, so Tim gets one preview per run. Helpers and testers never write `[preview]`.
+Push `feature/performance-overhaul` after every commit, never `main`. **A preview builds only when the latest commit message contains `[preview]`** (`ignoreCommand` in `vercel.json`, `scripts/vercel-ignore.sh`), because Vercel's free team has 10 GB of deployment storage; production builds from `main` always. **Make exactly one commit marked `[preview]` at the end of each run**, after its report is written and every test has run, so Tim gets one preview per run. Helpers and testers never write `[preview]`, and no other commit message may contain it, not even when describing this rule (the commit that added the rule named it and so built a preview).
 
 ## Rules kept in docs/rules (read the file before touching its area)
 
