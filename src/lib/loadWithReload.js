@@ -8,6 +8,19 @@
 const KEY = 'clarity-chunk-reload-at';
 const WINDOW_MS = 30000;
 
+// The page is going away (a link to another address, a typed address, a
+// reload): the browser stops its loads, and a part stopped that way is not a
+// stale file. Reloading then would take the person back to the page they were
+// leaving (the UI tester, scale check: opening the Journal straight after
+// signing in came back to Home).
+let leaving = false;
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => { leaving = true; });
+  window.addEventListener('pagehide', () => { leaving = true; });
+  window.addEventListener('pageshow', () => { leaving = false; });
+}
+const LEAVING_WAIT_MS = 300;
+
 /**
  * @template T
  * @param {() => Promise<T>} factory e.g. () => import('./Page')
@@ -24,7 +37,17 @@ export function loadWithReload(factory) {
       // do not reload. Report the original failure.
       throw error;
     }
-    window.location.reload();
-    return new Promise(() => {}); // the page is going away
+    // A moment first: a part stopped because the page is leaving fails just
+    // before (or as) the browser says so.
+    return new Promise((resolve, reject) => {
+      window.setTimeout(() => {
+        if (leaving) {
+          try { sessionStorage.removeItem(KEY); } catch { /* none */ }
+          reject(error);
+          return;
+        }
+        window.location.reload(); // the page is going away
+      }, LEAVING_WAIT_MS);
+    });
   });
 }
