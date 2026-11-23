@@ -2,6 +2,10 @@
 
 **Working folder (from 26 Oct):** `~/code/clarity-portal`, outside OneDrive, so syncing never touches `.git` or `node_modules` mid-change. Start Claude Code there with `cd ~/code/clarity-portal && claude`. GitHub is the backup. The old copy under OneDrive (`Client Portal/clarity-portal`) is a fallback for one week only; never work in it.
 
+## Pushing and previews (Tim, 23 Nov 2026)
+
+Push `feature/performance-overhaul` after every commit, never `main`. **A preview builds only when the latest commit message contains `[preview]`** (`ignoreCommand` in `vercel.json`, `scripts/vercel-ignore.sh`), because Vercel's free team has 10 GB of deployment storage; production builds from `main` always. **Make exactly one commit marked `[preview]` at the end of each run**, after its report is written and every test has run, so Tim gets one preview per run. Helpers and testers never write `[preview]`.
+
 ## Rules kept in docs/rules (read the file before touching its area)
 
 CLAUDE.md holds the rules every task needs. Each area's full rules live in its own file, moved word for word on 22 Nov 2026 (run 7, step 0); they apply exactly as before, and "sign-in rule 38", "Health Check rule 12", "coach rule 16" and so on refer to the numbered rules in these files. **Before building, changing or testing anything in an area, read its file in full.**
