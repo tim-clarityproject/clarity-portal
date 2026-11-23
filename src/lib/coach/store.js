@@ -1398,6 +1398,12 @@ export function loadCoach(userId, { again = false } = {}) {
     const nowMs = Date.now();
     // 057: the sessions are split at the calendar's window (see coach_sessions_start above).
     let split = splitWanted(dayThere) ? nowMs - CAL_BACK_DAYS * DAY_MS : null;
+    // A client's page opened first (a reload, a link): their sessions come with the first load, not in a second one.
+    const opening = typeof window !== 'undefined' ? /^\/coach\/clients\/([0-9a-f-]{36})(?:[/?#]|$)/i.exec(window.location?.pathname || '') : null;
+    if (opening) {
+      if (!wantProfiles.has(userId)) wantProfiles.set(userId, new Set());
+      wantProfiles.get(userId).add(opening[1].toLowerCase());
+    }
     const profiles = [...(wantProfiles.get(userId) || [])];
     const first = plans(tablesThere(dayThere, calThere, crmThere), nowMs, 'first', { split });
     const since = readBegins();
