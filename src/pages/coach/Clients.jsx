@@ -31,9 +31,9 @@ const HOLD_MS = 450;
 const DRAG_START = 6; // how far the mouse moves, in px, before a press becomes a drag
 
 const BASE_COLUMNS = [
-  { key: 'next', label: 'Next session', sorts: [['next', 'Soonest first']] },
+  { key: 'next', label: 'Next session', sorts: [['next', 'Soonest first']], date: true },
   { key: 'left', label: 'Sessions to go', sorts: [['left', 'Fewest first'], ['leftz', 'Most first']] },
-  { key: 'last', label: 'Last contact', sorts: [['last', 'Longest ago first'], ['lastz', 'Most recent first']] },
+  { key: 'last', label: 'Last contact', sorts: [['last', 'Longest ago first'], ['lastz', 'Most recent first']], date: true },
 ];
 
 function fieldSorts(f) {
@@ -429,7 +429,7 @@ export default function Clients() {
               <tr>
                 <th scope="col"><button type="button" className={`cc-th${list.sort.startsWith('name') ? ' cc-th--on' : ''}`} ref={ref('col:name')} aria-haspopup="menu" aria-expanded={menu === 'col:name'} onClick={() => setMenu('col:name')}>Name</button></th>
                 {visible.map((c) => (
-                  <th key={c.key} scope="col"><button type="button" className={`cc-th${c.sorts.some(([v]) => v === list.sort) || (c.field && (list.filters.fields?.[c.field.id] || []).length) ? ' cc-th--on' : ''}`} ref={ref(`col:${c.key}`)} aria-haspopup="menu" aria-expanded={menu === `col:${c.key}`} onClick={() => setMenu(`col:${c.key}`)}>{c.label}</button></th>
+                  <th key={c.key} scope="col" className={c.date || c.field?.kind === 'date' ? 'cc-th-date' : undefined}><button type="button" className={`cc-th${c.sorts.some(([v]) => v === list.sort) || (c.field && (list.filters.fields?.[c.field.id] || []).length) ? ' cc-th--on' : ''}`} ref={ref(`col:${c.key}`)} aria-haspopup="menu" aria-expanded={menu === `col:${c.key}`} onClick={() => setMenu(`col:${c.key}`)}>{c.label}</button></th>
                 ))}
                 <th scope="col" className="cc-th-add"><button type="button" className="cc-round" aria-label="Add field" onClick={() => setField({ id: newId(), name: '', kind: 'text', optionsText: '' })}><span className="ds-addrow-mark" aria-hidden="true" /></button></th>
               </tr>

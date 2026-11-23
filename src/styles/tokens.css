@@ -909,7 +909,8 @@
   /* Tables everywhere (tidy pass, item 12; Tim, 19 to 22 Nov): the heading row stays at the top, and a table that swipes keeps its first column */
   --table-swipe-min: 500px;     /* a table that keeps its columns on a phone and swipes inside its box */
   --table-first-w: 168px;       /* that table's first column, which stays put */
-  --cc-net-rate-cols: 6;        /* a rating's small menu: 0 to 10 on two rows */
+  --cc-th-date: calc(150 * var(--u)); /* a date column in the Clients and Leads tables: "Wed 18 Nov 2026" and "Renewal date" on one line, at any text size */
+  --cc-net-rate-w: 120px;       /* a rating's menu: 0 to 10 as a list, each with room for the tick */
   --cc-net-card-radius: 18px;   /* the Ready to archive? card */
   --cc-net-dot-line: 1.25px;    /* an outlined dot on the map */
   --cc-net-dash: 2.2px;         /* Rebalance?'s dashes */

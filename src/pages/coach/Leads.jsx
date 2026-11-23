@@ -381,7 +381,7 @@ export default function Leads() {
                 <tr>
                   <th scope="col"><button type="button" className={`cc-th${list.sort.startsWith('name') ? ' cc-th--on' : ''}`} ref={ref('col:name')} aria-haspopup="menu" aria-expanded={menu === 'col:name'} onClick={() => setMenu('col:name')}>Name</button></th>
                   {visible.map((c) => (
-                    <th key={c.key} scope="col"><button type="button" className={`cc-th${c.sorts.some(([v]) => v === list.sort) || chosenIn(c) ? ' cc-th--on' : ''}`} ref={ref(`col:${c.key}`)} aria-haspopup="menu" aria-expanded={menu === `col:${c.key}`} onClick={() => setMenu(`col:${c.key}`)}>{headingWords(c.label, chosenIn(c) || '')}</button></th>
+                    <th key={c.key} scope="col" className={c.key === 'last' || c.field?.kind === 'date' ? 'cc-th-date' : undefined}><button type="button" className={`cc-th${c.sorts.some(([v]) => v === list.sort) || chosenIn(c) ? ' cc-th--on' : ''}`} ref={ref(`col:${c.key}`)} aria-haspopup="menu" aria-expanded={menu === `col:${c.key}`} onClick={() => setMenu(`col:${c.key}`)}>{headingWords(c.label, chosenIn(c) || '')}</button></th>
                   ))}
                   <th scope="col" className="cc-th-add"><button type="button" className="cc-round" aria-label="Add field" onClick={() => setField({ id: newId(), name: '', kind: 'text', optionsText: '' })}><span className="ds-addrow-mark" aria-hidden="true" /></button></th>
                 </tr>

@@ -508,6 +508,8 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-table th { text-align: left; font-weight: var(--fw-regular); padding: 0 var(--space-2); border-bottom: var(--line-w) solid var(--line); vertical-align: bottom; height: var(--field-h); }
 .ui-root .cc-table th:first-child { width: var(--cc-th-name); padding-left: 0; }
 .ui-root .cc-table th.cc-th-add { width: var(--cc-th-add); }
+/* A date's column is wide enough for its date and its heading on one line, and grows with the text size, so no date or heading breaks mid-word (tidy follow-up 3, run 6's 6). */
+.ui-root .cc-table th.cc-th-date { width: var(--cc-th-date); }
 .ui-root .cc-table td { padding: var(--space-px6) var(--space-2); border-bottom: var(--line-w) solid var(--line-soft); vertical-align: middle; overflow-wrap: anywhere; }
 .ui-root .cc-table td:first-child { padding-left: 0; position: relative; overflow: visible; white-space: normal; }
 .ui-root .cc-table td small { display: block; font-size: var(--fs-small); color: var(--text-2); overflow-wrap: anywhere; }

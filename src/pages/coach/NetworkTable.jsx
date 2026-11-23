@@ -5,7 +5,7 @@ import {
   archivedLink, cellChange, cellLabel, cellTyped, cellWords, cleared, headingLabel, networkProblem, NETWORK_LOAD_PROBLEM, onlyChoices, RATING_CHOICES, rhythmChoices, rowAfter, TABLE_START, TABLE_WORDS, tableColumns,
   tableCount, tableFoot, tableQuery, withOnly, withSort,
 } from '../../lib/coach/network';
-import { Back, EditCell, MenuItem, MenuLabel, PopMenu, TextLink, useCoachPortal } from './parts';
+import { Back, EditCell, MenuItem, MenuLabel, PopMenu, TextLink, TICK, useCoachPortal } from './parts';
 
 // Network's table (M11 seq 77: "Network: Table", "…changing a rating", "…a
 // column menu", "…the archive"): a spreadsheet in its own box, so its
@@ -174,7 +174,8 @@ export default function NetworkTable({ archived, onArchive, onOpen, onPanel, cou
       <PopMenu open={Boolean(rated && rated.edit === 'rating')} onClose={() => setMenu(null)} anchorRef={anchor(menu || '')} title={rated?.label || 'Rating'}>
         {rated && rated.edit === 'rating' && (
           <div className="cc-net-rate">
-            {RATING_CHOICES.map((n) => <button key={n} type="button" role="menuitemradio" aria-checked={person[rated.key] === n} className="cc-pop-item cc-net-rate-n" onClick={() => { setMenu(null); save(person, rated, n); }}>{n}</button>)}
+            {/* The chosen number has the tick, as every drop-down (tidy follow-up 3, run 7's 8). */}
+            {RATING_CHOICES.map((n) => <button key={n} type="button" role="menuitemradio" aria-checked={person[rated.key] === n} className="cc-pop-item cc-net-rate-n" onClick={() => { setMenu(null); save(person, rated, n); }}><span>{n}</span>{person[rated.key] === n && TICK}</button>)}
           </div>
         )}
       </PopMenu>
