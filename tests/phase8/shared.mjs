@@ -417,12 +417,17 @@ export const SEEDED_TODO = '99999999-9999-4999-8999-999999999999';
 export async function withSeededTodo(context) {
   await context.route(/\/rest\/v1\/todos\?/, async (route) => {
     const req = route.request();
-    const sprint = /sprint_id=eq\.([0-9a-f-]{36})/.exec(req.url())?.[1];
-    if (req.method() !== 'GET' || !sprint) return route.fallback();
+    // The sprint's own read (sprint_id=eq.…), or since the scale check (fixer C, pageReads.js runningTodosRead)
+    // the running sprint's to-dos read in one round with the sprint joined (sprints!inner).
+    const asked = /sprint_id=eq\.([0-9a-f-]{36})/.exec(req.url())?.[1];
+    const joined = /sprints(%21|!)inner/.test(req.url());
+    if (req.method() !== 'GET' || (!asked && !joined)) return route.fallback();
     const res = await route.fetch();
     let rows = null;
     try { rows = await res.json(); } catch { /* not rows */ }
     if (!res.ok() || !Array.isArray(rows)) return route.fulfill({ response: res });
+    const sprint = asked || rows.find((r) => r.sprint_id)?.sprint_id;
+    if (!sprint) return route.fulfill({ response: res });
     const row = { id: SEEDED_TODO, strategy_id: rows[0]?.strategy_id ?? null, text: EW.step, impact: 2, sprint_id: sprint, planned_week: 1, created_on: '2026-01-01', done_on: null, source: 'other_tool', source_id: null, move_on: null, deleted_at: null, updated_at: new Date().toISOString() };
     return route.fulfill({ response: res, json: [...rows.filter((r) => r.id !== SEEDED_TODO), row] });
   });
