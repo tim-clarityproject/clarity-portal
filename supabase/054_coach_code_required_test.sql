@@ -111,6 +111,7 @@ declare
     'coach_auth_state',                                                -- the sign-in screens, before the code
     'my_coach', 'my_coach_invites', 'my_cover_asks', 'my_session_recaps',
     'my_sessions_coming', 'my_suggestions', 'my_view_asks',            -- a client's own coaching
+    'own_suggestion_coach_current',                                    -- 058: whether a client's own coach still coaches them
     -- coach functions that ask a gated check (is_owner, is_coach, my_coach_id, my_owner_coach_id) first
     'client_add_for', 'client_move', 'coach_admin_clients', 'coach_list', 'coach_profile_decide',
     'coach_switch', 'coach_save_capacity', 'coach_email_addresses_start'];
