@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as cal from '../../src/lib/coach/calendar.js';
 import {
-  activeBusy, BUSY_WORDS, busyDiff, busyOnce, busyRowsFrom, calendarRowsFrom, eventIsBusy, eventSpan, stableId, TG,
+  activeBusy, BUSY_WORDS, busyDiff, busyOnce, busyRowsFrom, calendarRowsFrom, eventIsBusy, eventSpan, overlaps, stableId, TG,
 } from '../../src/lib/coach/googleBusy.js';
 import { googleCalendarAdapter } from '../../src/lib/coach/connect/googleCalendar.js';
 import { googleStandIn, STAND_IN_CALENDARS } from '../../src/lib/coach/connect/index.js';
@@ -108,7 +108,6 @@ test('an all-day event runs midnight to midnight on the coach’s clock; an unti
   const rows = busyRowsFrom([
     { id: 'a', start: { date: '2026-11-24' }, end: { date: '2026-11-25' } },
     { id: 'b', summary: 'Backwards', start: { dateTime: iso('2026-11-24', '12:00') }, end: { dateTime: iso('2026-11-24', '11:00') } },
-    { id: 'c', summary: 'Too long', start: { date: '2026-11-01' }, end: { date: '2027-01-01' } },
     { id: 'd', summary: 'No times' },
     { id: 'a', summary: 'Same id again', start: { date: '2026-11-25' }, end: { date: '2026-11-26' } },
     { summary: 'No id', start: { date: '2026-11-24' }, end: { date: '2026-11-25' } },
@@ -289,4 +288,25 @@ test('the server: the two read kinds are shaped strictly, and only ever read', (
   for (const r of reads) assert.match(r, /method: 'GET'/);
   assert.match(source, /const base = 'https:\/\/www\.googleapis\.com\/calendar\/v3\/calendars\/primary\/events';/);
   assert.equal([...source.matchAll(/method: '(POST|PATCH|PUT|DELETE)'[^;]*asked\.calendarId/g)].length, 0);
+});
+
+test('a long event is kept, in pieces of at most 31 days, cut to the window read (run 8 break-it tester: it was left out, so those days were free)', async () => {
+  const win = { from: at('2026-11-22', '08:00'), to: at('2027-02-22', '08:00') };
+  const rows = busyRowsFrom([
+    { id: 'leave', summary: 'Sabbatical', start: { date: '2026-11-01' }, end: { date: '2027-06-01' } },
+    { id: 'sec', summary: 'Secondment', start: { dateTime: iso('2026-10-01', '09:00') }, end: { dateTime: iso('2026-11-27', '17:00') } },
+  ], { id: 'cal' }, { coachId: ME, coachZone: LON, window: win });
+  const leave = rows.filter((r) => r.title === 'Sabbatical');
+  assert.deepEqual(leave.map((r) => r.event_id), ['leave', 'leave#2', 'leave#3']);
+  assert.equal(leave[0].starts_at, win.from.toISOString());
+  assert.equal(leave.at(-1).ends_at, win.to.toISOString());
+  for (let i = 1; i < leave.length; i += 1) assert.equal(leave[i].starts_at, leave[i - 1].ends_at, 'the pieces meet, with no free gap');
+  for (const r of rows) assert.ok(new Date(r.ends_at) - new Date(r.starts_at) <= 31 * 86400000, 'each piece at most 31 days (059)');
+  assert.deepEqual(rows.filter((r) => r.title === 'Secondment').map((r) => [r.starts_at, r.ends_at]), [[win.from.toISOString(), iso('2026-11-27', '17:00')]]);
+  assert.equal(new Set(rows.map((r) => r.id)).size, rows.length, 'one row each piece');
+  // Through a whole round: the long event blocks a booking next week.
+  const google = { listCalendars: async () => [{ id: 'main', primary: true }, { id: 'fam' }], listBusy: async () => [{ id: 'leave', summary: 'Sabbatical', start: { date: '2026-11-01' }, end: { date: '2027-06-01' } }] };
+  const round = await busyOnce({ google, calendars: [{ id: 'f1', coach_id: ME, google_id: 'fam', busy_on: true, is_main: false, name: 'Family', position: 1 }], busyTimes: [], coachId: ME, coachZone: LON, now: NOW });
+  const kept = round.save.filter(([t]) => t === 'coach_busy_times').map(([, r]) => r);
+  assert.ok(kept.some((r) => overlaps(r, at('2026-12-02', '10:00'), at('2026-12-02', '11:00'))), 'next week is busy');
 });

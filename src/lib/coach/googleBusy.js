@@ -128,29 +128,46 @@ export function eventSpan(event, coachZone) {
   return { start, end, allDay: false };
 }
 
+/** The most pieces one long event is kept as (a read is 92 days: three of 31 days, and one more for its edges). */
+const PIECES_MAX = 4;
+
 /**
  * The busy times one calendar's events make: its title and times only,
  * nothing else of the event (no guests, place, notes or link). Events that
- * don't make the coach busy, have no usable times, or run over 31 days are
- * left out; the earliest 2,000 are kept.
+ * don't make the coach busy or have no usable times are left out; the
+ * earliest 2,000 are kept.
+ *
+ * A long event (leave, a secondment, a sabbatical) is cut to the window read,
+ * when one is given, and kept in pieces of at most 31 days (059 keeps a busy
+ * time to 31 days), the second piece's event id ending "#2" and so on: the
+ * run 8 break-it tester found an event of more than 31 days, or one that
+ * began weeks ago and runs into next week, left out altogether, so those
+ * days were offered on booking pages.
  * @param {object[]} events Google's events (single times: recurring ones arrive one time each)
  * @param {{ id: string }} calendar the coach_google_calendars row
+ * @param {{ coachId: string, coachZone: string, window?: { from: Date, to: Date } }} o
  */
-export function busyRowsFrom(events, calendar, { coachId, coachZone }) {
+export function busyRowsFrom(events, calendar, { coachId, coachZone, window: win = null }) {
   const out = [];
   const seen = new Set();
+  const lo = win ? ms(win.from) : -Infinity;
+  const hi = win ? ms(win.to) : Infinity;
   for (const e of Array.isArray(events) ? events : []) {
     const eventId = typeof e?.id === 'string' ? e.id : '';
-    if (!eventId || eventId.length > 1024 || seen.has(eventId) || !eventIsBusy(e)) continue;
+    if (!eventId || eventId.length > 1000 || seen.has(eventId) || !eventIsBusy(e)) continue;
     const span = eventSpan(e, coachZone);
-    const a = span.start.getTime();
-    const z = span.end.getTime();
-    if (!Number.isFinite(a) || !Number.isFinite(z) || z <= a || z - a > LONGEST_MS) continue;
+    const a = Math.max(span.start.getTime(), lo);
+    const z = Math.min(span.end.getTime(), hi);
+    if (!Number.isFinite(a) || !Number.isFinite(z) || z <= a) continue;
     seen.add(eventId);
-    out.push({
-      id: busyRowId(calendar.id, eventId), coach_id: coachId, calendar_id: calendar.id, event_id: eventId,
-      title: clean(e.summary).slice(0, TITLE_MAX) || 'Busy', starts_at: span.start.toISOString(), ends_at: span.end.toISOString(), all_day: span.allDay,
-    });
+    const title = clean(e.summary).slice(0, TITLE_MAX) || 'Busy';
+    for (let n = 0, from = a; n < PIECES_MAX && from < z; n += 1, from += LONGEST_MS) {
+      const pieceId = n === 0 ? eventId : `${eventId}#${n + 1}`;
+      out.push({
+        id: busyRowId(calendar.id, pieceId), coach_id: coachId, calendar_id: calendar.id, event_id: pieceId,
+        title, starts_at: new Date(from).toISOString(), ends_at: new Date(Math.min(z, from + LONGEST_MS)).toISOString(), all_day: span.allDay,
+      });
+    }
   }
   return out.sort((x, y) => ms(x.starts_at) - ms(y.starts_at)).slice(0, BUSY_PER_CALENDAR);
 }
@@ -209,7 +226,7 @@ export async function busyOnce({ google, calendars = [], busyTimes = [], coachId
         continue;
       }
       const events = await google.listBusy({ calendarId: c.google_id, timeMin: win.from.toISOString(), timeMax: win.to.toISOString() });
-      const wanted = busyRowsFrom(events, c, { coachId, coachZone }).slice(0, Math.max(0, room));
+      const wanted = busyRowsFrom(events, c, { coachId, coachZone, window: win }).slice(0, Math.max(0, room));
       room -= wanted.length;
       const d = busyDiff(kept, wanted);
       for (const r of d.save) out.save.push([TG.busy, r]);
