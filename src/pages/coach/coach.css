@@ -381,6 +381,12 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-fold-head h2 > .ds-who { margin: calc(-1 * var(--space-px10)) 0 calc(-1 * var(--space-px10)) var(--space-px2); }
 .ui-root .cc-fold-sum { font-size: var(--fs-note); color: var(--text-2); text-align: right; pointer-events: none; overflow-wrap: anywhere; }
 .ui-root .cc-fold-mark { pointer-events: none; display: inline-flex; color: var(--text-2); }
+/* A closed fold's summary that hasn't come yet (rule 49): the quiet turning crosshair in its place, never "None". */
+.ui-root .cc-fold-loading { display: inline-flex; justify-content: flex-end; align-items: center; }
+/* The agreement's full text in its side panel (Phase 6b run 1): each section's title, then its sentences. */
+.ui-root .cc-agreement-text section + section { margin-top: var(--space-3); }
+.ui-root .cc-agreement-text h3 { margin: 0 0 var(--space-1); font-size: var(--fs-text); font-weight: var(--fw-medium); line-height: var(--lh-text); color: var(--text); }
+.ui-root .cc-agreement-text p { margin: var(--space-1) 0 0; font-size: var(--fs-secondary); line-height: var(--lh-text); color: var(--text-2); }
 @media (hover: hover) {
   .ui-root .cc-fold-head:hover .cc-fold-btn { color: var(--coral-text); }
 }

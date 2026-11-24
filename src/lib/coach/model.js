@@ -888,13 +888,19 @@ export const notificationOn = (settings, key) => settings?.notifications?.[key] 
 // ---------------------------------------------------------------- Everything (the timeline)
 
 export const TIMELINE_KINDS = [
+  // M11 B4's order (Everything, Sessions, Notes, Emails, Files, Payments, To-dos, Library) for those that are here, with
+  // Payments (Phase 6b run 1) after Files; Time and Engagement, which M11 doesn't list, stay last.
   { value: 'all', label: 'Everything' }, { value: 'note', label: 'Notes' }, { value: 'file', label: 'Files' },
-  { value: 'time', label: 'Time' }, { value: 'engagement', label: 'Engagement' },
+  { value: 'payment', label: 'Payments' }, { value: 'time', label: 'Time' }, { value: 'engagement', label: 'Engagement' },
 ];
 
-/** One timeline in date order, newest first, filtered by kind and searched. */
-export function timeline({ notes = [], files = [], entries = [], engagements = [], projects = [] }, { kind = 'all', q = '' } = {}, now = new Date()) {
+/**
+ * One timeline in date order, newest first, filtered by kind and searched. `more`: items already in this shape from
+ * elsewhere (agreements.js's moneyTimeline: settled invoices and signed agreements; Phase 6b run 1).
+ */
+export function timeline({ notes = [], files = [], entries = [], engagements = [], projects = [], more = [] }, { kind = 'all', q = '' } = {}, now = new Date()) {
   const items = [
+    ...more,
     ...notes.map((n) => ({ id: `n:${n.id}`, kind: 'note', at: n.created_at || `${n.noted_on}T12:00:00`, day: n.noted_on, title: n.pinned ? 'Pinned note' : 'Private note', line: `Note, ${n.body}` })),
     ...files.map((f) => ({ id: `f:${f.id}`, kind: 'file', at: f.created_at, title: f.name, line: `File, added by ${f.added_by === 'client' ? 'them' : 'you'}` })),
     ...entries.filter((e) => e.ended_at).map((e) => ({ id: `t:${e.id}`, kind: 'time', at: e.started_at, title: (projects.find((p) => p.id === e.project_id)?.name) || 'Time', line: `Time, ${minutesWords(minutesBetween(e.started_at, e.ended_at || now))}` })),

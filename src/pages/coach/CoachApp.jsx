@@ -695,6 +695,12 @@ export default function CoachApp() {
       checkIns: own('client_check_ins'),
       orgDeals: all('organisation_deals'),
       orgGrowth: all('organisation_growth'),
+      // Agreements, invoices and payments (Phase 6b run 1; migration 061): the coach's own agreements and versions, and
+      // the invoices and payments the server writes (the owner reads every coach's, for Who needs attention).
+      agreements: own('agreements'),
+      agreementVersions: own('agreement_versions'),
+      invoices: all('invoices'),
+      payments: all('payments'),
       networkColumns: own('network_columns', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)), ':sorted'),
       now,
     };

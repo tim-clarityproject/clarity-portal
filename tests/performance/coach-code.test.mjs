@@ -38,7 +38,7 @@ test('a refusal is a calm 403 in the function\'s own shape', () => {
 test('every server function that acts on a coach\'s own sign-in asks for the code', () => {
   const dir = new URL('../../api/', import.meta.url);
   // Functions with no coach sign-in: a guest's key, the schedulers' secret, the inbound-email secret, the Health Check.
-  const noCoachSignIn = new Set(['alignment-email.js', 'booking-email.js', 'guest-copy.js', 'coach-reminders.js', 'workshop-emails.js']);
+  const noCoachSignIn = new Set(['alignment-email.js', 'booking-email.js', 'guest-copy.js', 'coach-reminders.js', 'workshop-emails.js', 'billing-nightly.js', 'stripe-webhook.js']);
   const asked = [];
   for (const name of readdirSync(dir).filter((n) => n.endsWith('.js') && !n.startsWith('_'))) {
     const src = readFileSync(new URL(name, dir), 'utf8');
@@ -48,7 +48,7 @@ test('every server function that acts on a coach\'s own sign-in asks for the cod
     assert.match(src, /from '\.\/_coachCode\.js'/, `${name} imports the code check`);
     assert.match(src, /\b(codeRefusal|codeGiven)\(token/, `${name} asks it about the caller's token`);
   }
-  assert.deepEqual(asked.sort(), ['coach-auth-reset.js', 'coach-calendar-connect.js', 'coach-calendar.js', 'coach-email-in.js', 'coach-invite.js', 'coach-send.js']);
+  assert.deepEqual(asked.sort(), ['coach-auth-reset.js', 'coach-billing.js', 'coach-calendar-connect.js', 'coach-calendar.js', 'coach-email-in.js', 'coach-invite.js', 'coach-send.js']);
 });
 
 test('the recovery route stays open before the code, and only it', () => {

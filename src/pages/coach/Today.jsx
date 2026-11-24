@@ -64,7 +64,7 @@ function Section({ title, aside, headRef, children }) {
 }
 
 export default function Today() {
-  const { state, clients, groups, todos, sessions, sessionPeople, sessionsOlder, settings, todayKey, now, coach, coaches, isOwner, calItems, checkIns, organisations, partial, whole } = useCoachPortal();
+  const { state, clients, groups, todos, sessions, sessionPeople, sessionsOlder, settings, todayKey, now, coach, coaches, isOwner, calItems, checkIns, organisations, partial, whole, invoices, admin } = useCoachPortal();
   const navigate = useNavigate();
   const isPhone = useIsPhone();
   const { day, week } = useDayRows();
@@ -99,7 +99,9 @@ export default function Today() {
     packs: rowsOf(state, 'engagement_packs'),
     entries: rowsOf(state, 'time_entries'),
     sessions, people: sessionPeople, older: sessionsOlder, now, todayKey,
-  }), [clients, state, coach.id, sessions, sessionPeople, sessionsOlder, now, todayKey]);
+    // Overdue invoices (Phase 6b run 1; 061): the coach's own, and for the owner every associate's, on the payer's clock.
+    invoices, coachId: coach.id, isOwner, admin, organisations, coaches, coachZone: coachZoneOf(settings, deviceZone()),
+  }), [clients, state, coach.id, sessions, sessionPeople, sessionsOlder, now, todayKey, invoices, isOwner, admin, organisations, coaches, settings]);
   const attentionShown = allAttention ? attention : attention.slice(0, ATTENTION_FIRST);
   // The clients this coach covers for another coach, with the dates (tidy follow-up 3, run 6's 14).
   const covering = useMemo(() => (partial ? [] : coveringRows({ covers: rowsOf(state, 'coach_cover'), coachId: coach.id, profiles: rowsOf(state, 'client_profiles'), coaches, todayKey })), [state, coach.id, coaches, todayKey, partial]);
@@ -191,7 +193,7 @@ export default function Today() {
                 <div key={r.key} className="cc-today-att" role="listitem">
                   <b>{r.name}</b>
                   <small>{r.line}</small>
-                  {(!r.later || !LIVE) && <TextLink onClick={() => navigate(r.to)}>{r.action}</TextLink>}
+                  {r.to && r.action && (!r.later || !LIVE) && <TextLink onClick={() => navigate(r.to, r.state ? { state: r.state } : undefined)}>{r.action}</TextLink>}
                 </div>
               ))}
             </div>

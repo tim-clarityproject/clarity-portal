@@ -7,8 +7,8 @@ import { getLocalDateKey } from '../dateFormatter';
 export const DAY_MS = 24 * 60 * 60 * 1000;
 /** The sessions' split (057): the calendar's window starts 6 weeks back. */
 export const CAL_BACK_DAYS = 42;
-/** The tables that say each coach migration is there (049, 050, 051, 052, 059), in order. */
-export const PROBE_TABLES = ['client_profiles', 'coach_todos', 'coach_cal_items', 'coach_lead_stages', 'coach_google_calendars'];
+/** The tables that say each coach migration is there (049, 050, 051, 052, 059, 061), in order. */
+export const PROBE_TABLES = ['client_profiles', 'coach_todos', 'coach_cal_items', 'coach_lead_stages', 'coach_google_calendars', 'agreements'];
 export const SCREEN_NOT_YET_KEY = 'clarity-coach-screen-not-yet';
 
 /** Which page's first screen an address opens on: 'today', 'clients', 'client', 'calendar', or null (any other page). */

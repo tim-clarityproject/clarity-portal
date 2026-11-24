@@ -1,12 +1,12 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import SuggestQuestionPanel from './SuggestQuestionPanel';
-import { AddButton, Button, Dropdown, InlineChoice, Loading, PageHeader, SearchField, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
+import { AddButton, Button, Crosshair, Dropdown, InlineChoice, Loading, PageHeader, SearchField, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { zonePlace } from '../../lib/time';
 import { formatClockTime } from '../../lib/dateFormatter';
-import { coachReadyNow, ensureClientSessions, keyOf, newId, removeRow, rowsOf, saveRow, saveRows, useCoachFirstLoaded } from '../../lib/coach/store';
+import { coach061ReadyNow, coachReadyNow, ensureClientSessions, keyOf, newId, removeRow, rowsOf, saveRow, saveRows, useCoachFirstLoaded } from '../../lib/coach/store';
 import { deleteClient, inviteClient, inviteWords, moveClient, NEEDS_049 } from '../../lib/coach/actions';
 import {
   birthdaysOn, birthdayWords, clean, clockWords, dayWords, ENGAGEMENT_KINDS, fieldFromTyped, fieldValue, fieldWords, firstName,
@@ -21,6 +21,10 @@ import { Back, Detail, EditCell, Eye, Fold, InlineLink, Line, TextLink, Timeline
 import { AddSessionPanel, SessionRows } from './sessionParts';
 import { QuickAddPanel, TodoList, TodoPanel } from './todoParts';
 import { currentEngagement } from './clientData';
+import { agreementFold, agreementSections, moneyTimeline } from '../../lib/coach/agreements';
+import { signingWords } from '../../lib/billing/agreementText';
+import { coachZoneOf } from '../../lib/coach/calendar';
+import { deviceZone } from '../../lib/time';
 import { TagsPanel } from './ClientPanels';
 import { FieldPanel } from './Settings';
 import NameNote from './NameNote';
@@ -147,7 +151,7 @@ export default function ClientPage() {
   const done = useDone();
   const portal = useCoachPortal();
   const { userId, coach, isOwner, coaches, state, clients, organisations, tags, fields, settings, todayKey, reloadCoaches, sessions: allSessions, sessionPeople, sessionsOlder, todos } = portal;
-  const { leads, leadEvents, emails, emailLinks, callTypes = [], partial } = portal;
+  const { leads, leadEvents, emails, emailLinks, callTypes = [], partial, agreements = [], agreementVersions = [], invoices = [], payments = [] } = portal;
   const loaded = useCoachFirstLoaded(userId);
   const profile = clients.find((p) => p.id === id) || null;
   // Every one of this client's sessions at once, on a first visit to the device too (057: the older ones otherwise follow later).
@@ -181,6 +185,15 @@ export default function ClientPage() {
     navigate(location.pathname, { replace: true, state: null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state?.open]);
+  // Today's "View the invoice" (Phase 6b run 1): Everything, showing Payments.
+  useEffect(() => {
+    const show = location.state?.show;
+    if (!show) return;
+    if (location.state?.view === 'all') setView('all');
+    if (TIMELINE_KINDS.some((k) => k.value === show)) setKind(show);
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.show]);
 
   const data = useMemo(() => {
     if (!profile) return null;
@@ -368,7 +381,13 @@ export default function ClientPage() {
     return true;
   };
 
-  const everything = timeline({ notes, files, entries: entries.filter((t) => data.engagements.some((e) => e.id === t.engagement_id)), engagements: data.engagements, projects: rowsOf(state, 'engagement_projects') }, { kind, q }, now);
+  const coachZone = coachZoneOf(settings, deviceZone());
+  // Agreements, settled invoices and payments (Phase 6b run 1; 061). A first visit's first screen doesn't carry them
+  // (060): until the rest is in, the Agreement fold shows the loading crosshair, never nothing (rule 49).
+  const money = moneyTimeline({ invoices, payments, agreements, versions: agreementVersions, profileId: profile.id, zone: coachZone });
+  const fold = agreementFold({ agreements, versions: agreementVersions, profileId: profile.id, engagement, contacts: rowsOf(state, 'organisation_contacts'), organisation: org, credit, zone: coachZone, todayKey });
+  const agreementLoading = Boolean(partial) && coach061ReadyNow() !== false;
+  const everything = timeline({ notes, files, entries: entries.filter((t) => data.engagements.some((e) => e.id === t.engagement_id)), engagements: data.engagements, projects: rowsOf(state, 'engagement_projects'), more: money }, { kind, q }, now);
   // A client who was a lead keeps the lead's timeline (Won carries it over without copying: crm.js's carriedTimeline). It
   // is older than anything on the client's own, so it follows it.
   const carried = kind === 'all' ? leadTimeline(carriedTimeline(leadEvents, leads, profile.id), { emails, todayKey, callNames: Object.fromEntries(callTypes.map((t) => [t.key, t.name])) }).filter((r) => !clean(q) || `${r.title} ${r.lines.join(' ')}`.toLowerCase().includes(clean(q).toLowerCase())) : [];
@@ -526,6 +545,22 @@ export default function ClientPage() {
                 <div className="cc-acts"><TextLink onClick={() => fileRef.current?.click()}>Add file</TextLink></div>
                 <input ref={fileRef} className="cc-hidden-file" type="file" multiple tabIndex={-1} aria-hidden="true" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
               </Fold>
+              {(fold || agreementLoading) && (
+                <Fold
+                  title="Agreement"
+                  open={Boolean(folds.agr)}
+                  onToggle={() => toggle('agr')}
+                  summary={fold && !agreementLoading ? fold.summary : <span className="cc-fold-loading" role="status" aria-label="Loading the agreement"><Crosshair size="sm" tone="grey" spin /></span>}
+                >
+                  {agreementLoading && <Loading label="Loading the agreement" />}
+                  {!agreementLoading && fold && (
+                    <>
+                      {fold.rows.map((r) => <Detail key={r.label} label={r.label}>{r.value}</Detail>)}
+                      <div className="cc-acts"><TextLink onClick={() => setPanel('agreement')}>Open the agreement</TextLink></div>
+                    </>
+                  )}
+                </Fold>
+              )}
               <Fold title="Engagement" open={Boolean(folds.eng)} onToggle={() => toggle('eng')} summary={engagementWords}>
                 {engagement ? (
                   <>
@@ -606,6 +641,7 @@ export default function ClientPage() {
       <AddSessionPanel open={panel === 'session'} onClose={() => setPanel(null)} profile={profile} engagement={engagement} />
       <QuickAddPanel open={panel === 'todo'} onClose={() => setPanel(null)} defaults={{ profile_id: profile.id }} />
       <TodoPanel id={openTodo} onClose={() => setOpenTodo(null)} />
+      <AgreementPanel open={panel === 'agreement' && Boolean(fold)} onClose={() => setPanel(null)} version={fold?.version || null} profile={profile} coach={coach} />
       {briefAsked && <Suspense fallback={null}><BriefPanel sessionId={briefId} onClose={() => setBriefId(null)} /></Suspense>}
       <SlidePanel
         open={panel === 'invite'}
@@ -627,6 +663,27 @@ export default function ClientPage() {
         {deleteProblem && <p className="cc-problem" role="alert">{deleteProblem}</p>}
       </SlidePanel>
     </div>
+  );
+}
+
+/**
+ * The agreement's full text in the side panel (Phase 6b run 1): its sections as signed. M11's "Open the agreement"
+ * downloads the signed PDF; until the agreement's PDF exists (src/lib/pdf/docs/agreement.js), it opens here instead.
+ */
+function AgreementPanel({ open, onClose, version, profile, coach }) {
+  const sections = version ? agreementSections(version, { clientName: profile.name, clientEmail: profile.email || '', coachName: coach.full_name || coach.display_first_name || '' }) : [];
+  return (
+    <SlidePanel open={open} onClose={onClose} title={signingWords('').pdfTitle}>
+      {sections.length === 0 && <p className="cc-quiet">The full text of this agreement isn’t here yet.</p>}
+      <div className="cc-agreement-text">
+        {sections.map((c) => (
+          <section key={c.key}>
+            {c.title && <h3>{c.title}</h3>}
+            {c.paragraphs.map((line, i) => <p key={`${c.key}:${i}`}>{line}</p>)}
+          </section>
+        ))}
+      </div>
+    </SlidePanel>
   );
 }
 

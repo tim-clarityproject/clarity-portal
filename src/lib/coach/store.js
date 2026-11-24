@@ -110,6 +110,17 @@ export const TABLES = {
   // its switch, and the busy times read from the ones switched on. The coach's alone; the owner never reads them.
   coach_google_calendars: ['id'],
   coach_busy_times: ['id'],
+  // Agreements, invoices and payments (migration 061; Phase 6b run 1). A coach's own agreements and versions, and the
+  // invoices, payments, credit notes and reminders the server writes (the owner reads every coach's: Who needs attention).
+  agreements: ['id'],
+  agreement_versions: ['id'],
+  agreement_change_requests: ['id'],
+  invoices: ['id'],
+  payments: ['id'],
+  credit_notes: ['id'],
+  expenses: ['id'],
+  invoice_reminders: ['id'],
+  invoice_reminder_pauses: ['id'],
   // Kept on the device only, never read or sent as a table (057): what the database said of the sessions it didn't
   // send on a first load (sessionsOlder below). One row, key 'older'.
   coach_sessions_older: ['key'],
@@ -137,6 +148,11 @@ const CRM_TABLES = new Set(['coach_lead_stages', 'coach_lead_events', 'coach_aut
 // The tables of migration 059 (Google calendars for busy times; run 8). Until Tim has run it they are kept on the
 // device only, in the same way.
 const BUSY_TABLES = new Set(['coach_google_calendars', 'coach_busy_times']);
+// The tables of migration 061 (agreements, invoices and payments; Phase 6b run 1). Until Tim has run it they are left
+// out of every read, and kept on the device only, in the same way. Invoices, payments, credit notes, reminders and
+// (for now) change requests are only ever read: the server writes them (copyWaiting.js READ_ONLY_TABLES).
+const BILLING_TABLES = new Set(['agreements', 'agreement_versions', 'agreement_change_requests', 'invoices', 'payments', 'credit_notes',
+  'expenses', 'invoice_reminders', 'invoice_reminder_pauses']);
 // Columns only migration 052 adds to an older table: left out of a save until it is there. A row that holds one is
 // then only PART sent: it stays marked unsent, so the device's copy stays in front and the whole row goes once 052 is there.
 const CRM_COLUMNS = {
@@ -175,6 +191,7 @@ const DAY_NOT_YET_KEY = 'clarity-coach-day-not-yet';
 const CAL_NOT_YET_KEY = 'clarity-coach-cal-not-yet';
 const CRM_NOT_YET_KEY = 'clarity-coach-crm-not-yet';
 const NOT_YET_059_KEY = 'clarity-coach-059-not-yet';
+const NOT_YET_061_KEY = 'clarity-coach-061-not-yet';
 const NOT_YET_MS = 60 * 60 * 1000;
 const LOCAL = 'coach-local';
 
@@ -786,7 +803,7 @@ function noteNotYet(missing, key = NOT_YET_KEY) {
 
 let asking = null;
 
-// The five "is this migration there yet?" looks (049, 050, 051, 052, 059) are asked side by side, once a visit, not one
+// The "is this migration there yet?" looks (049, 050, 051, 052, 059, and 061 since Phase 6b run 1) are asked side by side, once a visit, not one
 // after another (coach first screen run: five round trips in a row held a first visit up by about 0.35 s on a slowed
 // phone). Each level still decides only once the level before it is there, exactly as before.
 const probes = new Map();
@@ -802,8 +819,8 @@ function probe(table) {
 }
 /** Starts every look that the device doesn't already know the answer to, all at once. */
 export function startProbes() {
-  const keys = [NOT_YET_KEY, DAY_NOT_YET_KEY, CAL_NOT_YET_KEY, CRM_NOT_YET_KEY, NOT_YET_059_KEY];
-  const known = [readyNow, dayReadyNow, calReadyNow, crmReadyNow, ready059Now];
+  const keys = [NOT_YET_KEY, DAY_NOT_YET_KEY, CAL_NOT_YET_KEY, CRM_NOT_YET_KEY, NOT_YET_059_KEY, NOT_YET_061_KEY];
+  const known = [readyNow, dayReadyNow, calReadyNow, crmReadyNow, ready059Now, ready061Now];
   PROBE_TABLES.forEach((t, i) => { if (known[i] !== true && !notYet(keys[i])) probe(t); });
 }
 
@@ -951,9 +968,40 @@ export async function coach059Ready() {
 }
 export const coach059ReadyNow = () => ready059Now;
 
+let ready061Now = null;
+let asking061 = null;
+
+/**
+ * Whether migration 061 is there (Phase 6b run 1: agreements, invoices and
+ * payments): true, false (not yet) or null (can't be told). Asked only once
+ * 059 is there (061 needs 049 to 060), and "not yet" is remembered for an
+ * hour, as above. It looks for agreements.
+ */
+export async function coach061Ready() {
+  if (ready061Now === true) return true;
+  if ((await coach059Ready()) !== true) return coach059ReadyNow() === false ? false : null;
+  if (notYet(NOT_YET_061_KEY)) { ready061Now = false; return false; }
+  if (!asking061) {
+    asking061 = (async () => {
+      try {
+        const there = await probe('agreements');
+        if (there === false) noteNotYet(true, NOT_YET_061_KEY);
+        if (there === true) noteNotYet(false, NOT_YET_061_KEY);
+        if (there !== null) ready061Now = there;
+        return there;
+      } catch {
+        return null;
+      }
+    })().finally(() => { asking061 = null; });
+  }
+  return asking061;
+}
+export const coach061ReadyNow = () => ready061Now;
+
 /** Is this table's home in the database yet? */
 async function tableThere(table) {
   if ((await coachReady()) !== true) return false;
+  if (BILLING_TABLES.has(table)) return (await coach061Ready()) === true;
   if (BUSY_TABLES.has(table)) return (await coach059Ready()) === true;
   if (CRM_TABLES.has(table)) return (await coachCrmReady()) === true;
   if (CAL_TABLES.has(table)) return (await coachCalReady()) === true;
@@ -1429,9 +1477,9 @@ const calLoaded = new Map(); // account -> [[fromMs, toMs]] of the calendar read
 const calAsking = new Map();
 const laterDone = new Set(); // accounts whose LATER tables have been read this visit
 
-function tablesThere(dayThere, calThere, crmThere, there059 = false) {
+function tablesThere(dayThere, calThere, crmThere, there059 = false, there061 = false) {
   return Object.keys(TABLES).filter((t) => !DEVICE_ONLY.has(t) && (dayThere || !DAY_TABLES.has(t)) && (calThere || !CAL_TABLES.has(t)) && (crmThere || !CRM_TABLES.has(t))
-    && (there059 || !BUSY_TABLES.has(t)));
+    && (there059 || !BUSY_TABLES.has(t)) && (there061 || !BILLING_TABLES.has(t)));
 }
 
 const whenIdle = (fn) => {
@@ -1447,7 +1495,7 @@ export function loadCoachLater(userId) {
   return new Promise((resolve) => {
     whenIdle(async () => {
       try {
-        const names = tablesThere(dayReadyNow === true, calReadyNow === true, crmReadyNow === true, ready059Now === true);
+        const names = tablesThere(dayReadyNow === true, calReadyNow === true, crmReadyNow === true, ready059Now === true, ready061Now === true);
         const since = readBegins();
         const split = laterSplit.get(userId) ?? null;
         // The older sessions last: what pages show from the later tier (a client's notes) isn't kept waiting behind them.
@@ -1642,6 +1690,9 @@ export function loadCoach(userId, { again = false } = {}) {
     const calThere = dayThere && (await coachCalReady()) === true;
     const crmThere = calThere && (await coachCrmReady()) === true;
     const there059 = crmThere && (await coach059Ready()) === true;
+    // 061's agreements and invoices are small: they come with the first load (060's first screen doesn't carry them, so
+    // a page drawn from a first screen alone shows its crosshair where they go until this load is in: rule 49).
+    const there061 = there059 && (await coach061Ready()) === true;
     const nowMs = Date.now();
     // 057: the sessions are split at the calendar's window (see coach_sessions_start above).
     let split = splitWanted(dayThere) ? nowMs - CAL_BACK_DAYS * DAY_MS : null;
@@ -1673,7 +1724,7 @@ export function loadCoach(userId, { again = false } = {}) {
         if (gen !== generation) return null;
       }
     }
-    const first = plans(tablesThere(dayThere, calThere, crmThere, there059), nowMs, 'first', { split });
+    const first = plans(tablesThere(dayThere, calThere, crmThere, there059, there061), nowMs, 'first', { split });
     const since = readBegins();
     let db;
     let start = null;
@@ -1841,5 +1892,6 @@ export function resetCoachStoreForTests() {
   dayReadyNow = null;
   calReadyNow = null;
   ready059Now = null;
+  ready061Now = null;
   crmReadyNow = null;
 }

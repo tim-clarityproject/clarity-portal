@@ -5,7 +5,10 @@
 
 /** Tables the coach only reads: never sent, so never waiting (store.js READ_ONLY). */
 export const READ_ONLY_TABLES = new Set(['coach_sessions_older', 'activity_log', 'workshop_survey_answers', 'workshop_sends', 'coach_poll_votes', 'coach_bookings',
-  'coach_cal_reminder_sends', 'coach_email_addresses']);
+  'coach_cal_reminder_sends', 'coach_email_addresses',
+  // 061 (Phase 6b run 1): only the server writes invoices, payments, credit notes and reminders; a change request is
+  // the client's (the coach answering one isn't built yet).
+  'invoices', 'payments', 'credit_notes', 'invoice_reminders', 'agreement_change_requests']);
 
 const obj = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 

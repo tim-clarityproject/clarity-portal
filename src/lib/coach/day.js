@@ -5,6 +5,7 @@
 // (tests/performance/coach-day.test.mjs).
 import { addDays, clean, coverState, cut, dayWords, firstName, fromDayKey, minutesWords, possessive, rangeWords, sessionsLeft, timeCredit, toDayKey } from './model.js';
 import { DEFAULT_STANDARD, m7IsValidStandard, m7WeekColour } from '../scores/m7.js';
+import { overdueRows } from './agreements.js';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -798,10 +799,14 @@ export const prepLine = (name, notedAt, todayKey) => `${firstName(name)} added t
 /**
  * Who needs attention: coaching facts only, never flags from portal use.
  * A session to write up, a recap to send, 2 sessions or fewer left (with
- * Offer a renewal), time credit running low, and no next session booked.
- * @returns {{ key: string, profileId: string, name: string, line: string, action: string, to: string }[]}
+ * Offer a renewal), time credit running low, and no next session booked;
+ * then invoices overdue on the payer's own clock (Phase 6b run 1; M11 B1:
+ * agreements.js's overdueRows), the coach's own, then for the owner every
+ * associate's, after every row above, which keep their order.
+ * @returns {{ key: string, profileId: string, name: string, line: string, action: string, to: string, state?: object }[]}
  */
-export function attentionRows({ clients = [], engagements = [], packs = [], entries = [], sessions = [], people = [], older = null, now, todayKey }) {
+export function attentionRows({ clients = [], engagements = [], packs = [], entries = [], sessions = [], people = [], older = null, now, todayKey,
+  invoices = [], coachId = null, isOwner = false, admin = [], organisations = [], coaches = [], coachZone = null }) {
   const rows = [];
   const t = new Date(now).getTime();
   // Each client's own sessions, gathered once (they were searched for again for every client; coach first screen run).
@@ -836,6 +841,7 @@ export function attentionRows({ clients = [], engagements = [], packs = [], entr
       rows.push({ key: `n:${c.id}`, profileId: c.id, name: c.name, line: 'No next session is booked.', action: `Open ${possessive(first)} page`, to: `/coach/clients/${c.id}` });
     }
   }
+  if (invoices.length) rows.push(...overdueRows({ invoices, coachId, isOwner, clients, admin, organisations, coaches, now, coachZone }));
   return rows;
 }
 

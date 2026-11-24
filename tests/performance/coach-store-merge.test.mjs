@@ -233,3 +233,13 @@ test('nothing is cut off: 6,500 rows come whole (one read, then pages in key ord
   await store.loadCoach('acct');
   assert.ok(!store.rowsOf(store.coachState('acct'), 'coach_todos').some((t) => t.id === 't-open'));
 });
+
+test('061’s tables are coach tables, parents before their parts (Phase 6b run 1)', () => {
+  for (const t of ['agreements', 'agreement_versions', 'agreement_change_requests', 'invoices', 'payments', 'credit_notes', 'expenses', 'invoice_reminders', 'invoice_reminder_pauses']) {
+    assert.deepEqual(TABLES[t], ['id'], t);
+  }
+  const order = Object.keys(TABLES);
+  assert.ok(order.indexOf('agreements') < order.indexOf('agreement_versions'), 'an agreement before its versions');
+  assert.ok(order.indexOf('invoices') < order.indexOf('payments') && order.indexOf('invoices') < order.indexOf('credit_notes') && order.indexOf('invoices') < order.indexOf('invoice_reminders'), 'an invoice before its parts');
+  assert.ok(order.indexOf('coach_sessions_older') === order.length - 1, 'the device’s own row stays last');
+});
