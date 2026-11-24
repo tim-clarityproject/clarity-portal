@@ -454,7 +454,7 @@ function Bell({ open, onClose }) {
       open={open}
       onClose={onClose}
       title="Notifications"
-      footer={unread.length > 0 ? <div className="cc-panel-foot"><TextLink onClick={all}>Mark all as read</TextLink></div> : null}
+      footer={!partial && unread.length > 0 ? <div className="cc-panel-foot"><TextLink onClick={all}>Mark all as read</TextLink></div> : null}
     >
       {/* A first visit holds only the notifications not read yet until the rest is in: the list waits for it. */}
       {partial && <Loading label="Loading your notifications" />}
