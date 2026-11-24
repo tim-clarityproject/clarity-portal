@@ -376,6 +376,33 @@ export const GROUPS = [
     init: () => { try { sessionStorage.setItem('clarity-coach-test-finances', '1'); } catch { /* blocked */ } },
     screens: [['today-finances', '/coach', null, { expects: ['finances'] }]],
   },
+  // Finances (Phase 6b run 2; M11 C3 to C9): the owner's alone, every tab and its main panels, on the device's own data.
+  {
+    name: 'finances', at: TUE, roles: ['owner'],
+    screens: [
+      ['fin-overview', '/coach/finances', null, { full: true, expects: ['tabs'] }],
+      ['fin-overview-help', '/coach/finances', async (page) => { await page.getByRole('button', { name: 'How to read the chart' }).click(); await settle(page, 600); }, { expects: ['panel', 'explain'] }],
+      ['fin-overview-total', '/coach/finances', async (page) => { await page.getByRole('button', { name: 'Running total' }).click(); await settle(page, 400); }, { full: true }],
+      ['fin-targets', '/coach/finances', async (page) => { await page.getByRole('button', { name: 'Edit targets' }).first().click(); await settle(page, 600); }, { expects: ['panel'] }],
+      ['fin-money', '/coach/finances/money', null, { full: true, expects: ['tabs'] }],
+      ['fin-money-year', '/coach/finances/money', async (page) => { await page.getByRole('button', { name: 'This year' }).click(); await settle(page, 400); }, { full: true }],
+      ['fin-bank-payment', '/coach/finances/money', async (page) => { await page.getByRole('button', { name: 'Add bank payment' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+      ['fin-export', '/coach/finances/money', async (page) => { await page.getByRole('button', { name: 'Export to a spreadsheet' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+      ['fin-cash', '/coach/finances/cash-flow', null, { full: true, expects: ['tabs'] }],
+      ['fin-cash-12', '/coach/finances/cash-flow', async (page) => { await page.getByRole('button', { name: '12 months' }).click(); await page.getByRole('button', { name: 'Include likely deals' }).click(); await settle(page, 400); }, { full: true }],
+      ['fin-outgoing', '/coach/finances/cash-flow', async (page) => { await page.getByRole('button', { name: 'Add recurring outgoing' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+      ['fin-one-off', '/coach/finances/cash-flow', async (page) => { await page.getByRole('button', { name: 'Add one-off cost' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+      ['fin-cash-settings', '/coach/finances/cash-flow', async (page) => { await page.locator('.fin-row', { hasText: 'Keep cash above' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+      ['fin-invoices', '/coach/finances/invoices', null, { full: true, expects: ['tabs'] }],
+      ['fin-invoice-new', '/coach/finances/invoices', async (page) => { await page.getByRole('button', { name: 'New invoice' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+      ['fin-pricing', '/coach/finances/pricing', null, { full: true, expects: ['tabs'] }],
+      ['fin-sweep', '/coach/finances/pricing', async (page) => { await page.getByRole('button', { name: 'Update all prices' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+      ['fin-discount', '/coach/finances/pricing', async (page) => { await page.getByRole('button', { name: 'Add discount' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+      ['fin-other', '/coach/finances/other', null, { full: true, expects: ['tabs'] }],
+      ['fin-deadline', '/coach/finances/other', async (page) => { await page.getByRole('button', { name: 'Add deadline' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+      ['fin-year-export', '/coach/finances/other', async (page) => { await page.locator('.fin-row', { hasText: 'Export the financial year' }).click(); await settle(page, 600); }, { expects: ['panel'] }],
+    ],
+  },
   {
     name: 'todos', at: TUE,
     screens: [

@@ -51,6 +51,11 @@ export const HELP_KEYS = Object.freeze({
   'checkin-why-alcohol': ['Why we ask about alcohol'],
   'checkin-why-mood': ['Why we ask about mood and energy'],
   'checkin-why-health': ['Why we ask about health'],
+  // Finances (Phase 6b run 2): the months chart, each month and running total, and VAT's What counts. New, so no older
+  // title to move across (the Health Check's own "How to read the chart" stays its own).
+  'finance-chart': [],
+  'finance-chart-total': [],
+  'finance-vat-counts': [],
 });
 
 /** A saved copy with any title-made key moved to the fixed names it stands for. Pure: the old copy is never changed. */

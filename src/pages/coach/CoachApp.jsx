@@ -71,6 +71,7 @@ const SessionPage = part(() => import('./SessionPage'));
 const ClosePage = part(() => import('./ClosePage'));
 const Calendar = part(() => import('./Calendar'));
 const Leads = part(() => import('./Leads'));
+const LeadReports = part(() => import('./LeadReports'));
 const LeadPage = part(() => import('./LeadPage'));
 const ColdLeads = part(() => import('./ColdLeads'));
 const Automations = part(() => import('./Automations'));
@@ -79,6 +80,7 @@ const BoardPage = part(() => import('./BoardPage'));
 const Network = part(() => import('./Network'));
 const OpenForCalls = part(() => import('./OpenForCalls'));
 const PollPage = part(() => import('./PollPage'));
+const Finances = part(() => import('./Finances'));
 const BriefPanel = lazy(() => import('./Brief').then((m) => ({ default: m.BriefPanel || m.default })));
 
 // The first screen's page for the address the portal opens on (Today, Clients, a client's page or the calendar).
@@ -701,6 +703,22 @@ export default function CoachApp() {
       agreementVersions: own('agreement_versions'),
       invoices: all('invoices'),
       payments: all('payments'),
+      creditNotes: all('credit_notes'),
+      invoiceReminders: all('invoice_reminders'),
+      reminderPauses: own('invoice_reminder_pauses'),
+      // Finances (Phase 6b run 2; migration 062): the owner's alone; an associate's store holds only their own statements.
+      financeSettings: own('finance_settings', (rows) => rows[0] || null, ':one'),
+      financeTargets: own('finance_targets'),
+      financeSectors: own('finance_sectors', (rows) => rows.filter((r) => !r.archived).sort((x, y) => (x.position || 0) - (y.position || 0)), ':sorted'),
+      outgoingGroups: own('finance_outgoing_groups', (rows) => rows.filter((r) => !r.archived).sort((x, y) => (x.position || 0) - (y.position || 0)), ':sorted'),
+      outgoings: own('finance_outgoings'),
+      bankChecks: own('bank_balance_checks'),
+      deadlines: own('company_deadlines', (rows) => rows.sort((x, y) => String(x.due_on).localeCompare(String(y.due_on))), ':sorted'),
+      packages: own('pricing_packages', (rows) => rows.filter((r) => !r.archived).sort((x, y) => (x.position || 0) - (y.position || 0)), ':sorted'),
+      priceChanges: own('pricing_changes', (rows) => rows.sort((x, y) => String(y.created_at || '').localeCompare(String(x.created_at || ''))), ':sorted'),
+      discounts: own('discounts', (rows) => rows.filter((r) => !r.archived), ':shown'),
+      purchaseOrders: own('purchase_orders'),
+      statements: all('associate_statements'),
       networkColumns: own('network_columns', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)), ':sorted'),
       now,
     };
@@ -738,6 +756,7 @@ export default function CoachApp() {
         <Route path="clients/:id/close" element={<ClosePage />} />
         {/* Leads (run 4) are the owner's alone: an associate is sent to their own Today, whatever address they open. */}
         <Route path="leads" element={isOwner ? <Leads /> : <Navigate to="/coach" replace />} />
+        <Route path="leads/reports" element={isOwner ? <LeadReports /> : <Navigate to="/coach" replace />} />
         <Route path="leads/cold" element={isOwner ? <ColdLeads /> : <Navigate to="/coach" replace />} />
         <Route path="leads/automations" element={isOwner ? <Automations /> : <Navigate to="/coach" replace />} />
         <Route path="leads/:id" element={isOwner ? <LeadPage /> : <Navigate to="/coach" replace />} />
@@ -746,6 +765,9 @@ export default function CoachApp() {
         <Route path="boards" element={<Boards />} />
         <Route path="boards/:id" element={<BoardPage />} />
         <Route path="business/*" element={<Navigate to="/coach/finances" replace />} />
+        {/* Finances (Phase 6b run 2) are the owner's alone: an associate is sent to their own Today, as M11 does. */}
+        <Route path="finances" element={isOwner ? <Finances /> : <Navigate to="/coach" replace />} />
+        <Route path="finances/:tab" element={isOwner ? <Finances /> : <Navigate to="/coach" replace />} />
         <Route path="calendar" element={<Calendar />} />
         {/* Booking (run 3, step 4): Book a call is a side panel over the calendar; Offer times by email and a poll's times
             are picked on the calendar itself; Open for calls and a poll are their own pages. */}

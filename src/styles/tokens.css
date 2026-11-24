@@ -1058,3 +1058,26 @@
   --glance-label-w: 150px;          /* At a glance: the label column on a laptop (M13 .agl) */
   --billing-bar-w: 200px;           /* Invested so far: the bar before the total (M13 .pbr) */
 }
+
+/* Finances (Phase 6b run 2; M11 C3 to C9): the months chart, By sector's slim bars and the cash flow's line.
+   Sizes only, the same in both modes; colours are the shared tokens (mint for a month that reached its target,
+   --below for one under it, the soft coral edge for the minimum, the text colour for this month). */
+.ui-root {
+  --fin-chart-h: 200px;             /* the months chart (M11 .bzc) */
+  --fin-chart-h-phone: 150px;
+  --fin-chart-gap: 10px;            /* between its bars */
+  --fin-chart-gap-phone: 5px;
+  --fin-chart-label-w: 96px;        /* room at the right for the line's label ("Minimum £2,000") */
+  --fin-bar-radius: 4px;            /* a bar's top corners */
+  --fin-dash: 1px;                  /* dashed and dotted lines */
+  --fin-dash-array: 5 4;            /* the forecast and projected lines, dashed (M11 .ln) */
+  --fin-below-edge: 1.5px;          /* a month under the minimum: its soft coral outline */
+  --fin-track-h: 10px;              /* By sector's slim bar (M11 .bzh .t) */
+  --fin-track-radius: 5px;
+  --fin-sector-name-w: 150px;       /* By sector's name column on a laptop */
+  --fin-money-col: 110px;           /* a figure column (Paid, To come; In, Out, Cash) */
+  --fin-price-col: 130px;           /* Pricing's two lined-up columns */
+  --fin-line-h: 200px;              /* the cash flow's line chart */
+  --fin-dot: 4px;                   /* a point's radius on it */
+  --fin-stat-min: 180px;            /* the figures' smallest column */
+}

@@ -623,7 +623,26 @@ const AG = {
   'Coaching agreement, not signed yet': agreementPdf({ version: agreementVersion({ status: 'sent', client_signed_at: null, signed_name: null, signed_email: null, fingerprint: null }) }),
 };
 
-const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU, ...TC, ...EW, ...AG };
+// ---- an associate's monthly statement (Phase 6b run 2, step 5): light only on the site, both here so every break is checked ----
+const { associateStatementPdf } = await load('/src/lib/pdf/docs/associateStatement.js');
+const ST_LINES = [
+  { label: 'Coaching hours', detail: '22 hours at £100', value: '£2,200' },
+  { label: 'Late cancellations that count', detail: 'Paid as delivered', value: 'Included' },
+];
+const statementFacts = (over = {}) => ({
+  name: 'Maya Collins', monthWords: 'November 2026', readyOn: new Date(2026, 10, 30, 12), paidOn: null, hours: '22 hours', pay: '£2,200', rate: '£100/hr', lines: ST_LINES, ...over,
+});
+const ST = {
+  'Monthly statement': associateStatementPdf(statementFacts()),
+  'Monthly statement, paid, no-shows counted': associateStatementPdf(statementFacts({
+    paidOn: new Date(2026, 11, 3, 12), hours: '23.5 hours', pay: '£2,350',
+    lines: [...ST_LINES.map((l, i) => (i ? l : { ...l, detail: '23.5 hours at £100', value: '£2,350' })), { label: 'No-shows that count', detail: 'Paid as delivered', value: 'Included' }],
+  })),
+  'Monthly statement, long name and emoji': associateStatementPdf(statementFacts({ name: `${LONG_NAME} 🚀`, monthWords: 'September 2027' })),
+  'Monthly statement, no hours yet': associateStatementPdf(statementFacts({ hours: '0 hours', pay: '£0', lines: [{ label: 'Coaching hours', detail: '0 hours at £100', value: '£0' }] })),
+};
+
+const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU, ...TC, ...EW, ...AG, ...ST };
 
 // ---- dot charts: dots stay in their own area, and how many touch ----------------------
 // A dot is in its own area when it is on the same side of both centre lines

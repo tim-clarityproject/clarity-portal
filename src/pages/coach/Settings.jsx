@@ -16,6 +16,7 @@ import { COACH_AUTH_WORDS, resetWords } from '../../lib/signIn/coachAuth';
 import { resetCoachAuthenticator } from '../../lib/signIn/coachAuthData';
 import './coachAuth.css';
 import { useHiddenHelp } from './help';
+import { AssociateSection, usePayData } from './AssociatePay';
 import BookingSettings from './BookingSettings';
 import { calendarShown, CONNECT_WORDS, connectionRows } from '../../lib/coach/calendar';
 import { useCalSync } from './calSync';
@@ -628,6 +629,7 @@ function TagsAndFields() {
 // ---------------------------------------------------------------- Coaches (owner)
 function Coaches() {
   const { coach, coaches, admin, reloadCoaches } = useCoachPortal();
+  const finance = usePayData();
   const location = useLocation();
   const saved = useSaved();
   const toast = useToast();
@@ -719,6 +721,10 @@ function Coaches() {
         <MenuItem onClick={() => { setResetting(more); setMore(null); setResetProblem(null); }}>{COACH_AUTH_WORDS.reset.menu}</MenuItem>
       </PopMenu>
       <div className="cc-add"><AddButton onClick={() => setAdding(true)}>Add coach</AddButton></div>
+      {/* Each associate's hours and pay this month (Phase 6b run 2, step 5; M11 C12), once Finances' data is here. */}
+      {finance.ready && others.filter((c) => c.active && c.role !== 'owner' && (c.hourly_rate != null || finance.statements.some((s) => s.associate_id === c.coach_id))).map((c) => (
+        <AssociateSection key={`pay:${c.coach_id}`} associate={c} onOpenClients={() => setOpen(c.coach_id)} />
+      ))}
 
       <SlidePanel open={Boolean(chosen)} onClose={() => setOpen(null)} title={chosen ? chosen.full_name || chosen.first_name : ''}>
         {chosen && (

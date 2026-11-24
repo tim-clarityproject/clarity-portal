@@ -150,7 +150,8 @@ const CAL_MUST = {
   zones: () => true, early: () => true, 'hours-edit': () => true, 'todo-tile': () => true, 'todos-panel': () => true, 'phone-cal': () => true,
 };
 const MUST = {
-  finances: (r) => r.text.includes('November £2,300 of £5,000'),
+  // Today's Finances line (Phase 6b run 2): this month's name and what came in, from the device's own rows.
+  finances: (r) => /\b(January|February|March|April|May|June|July|August|September|October|November|December) £[\d,]+/.test(r.text),
   'capacity-row': (r) => /Capacity/i.test(r.text) && r.text.includes('Coaching hours each week'),
   'hidden-help': (r) => r.text.includes('Hidden help') && r.text.includes('Nothing is hidden.'),
   // Run 4, Leads.

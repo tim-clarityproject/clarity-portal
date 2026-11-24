@@ -1,0 +1,35 @@
+/* The people side of the money (Phase 6b run 2; M11 C10 to C13): an associate's hours and pay in Settings and on
+   their Today, Clients' Renewals and Leads' reports. Every value is a token (CLAUDE.md design rule 2). */
+
+/* ---------------------------------------------------------------- figures (M11 .stats) */
+.ui-root .cc-pay-figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4) var(--space-6); align-items: start; margin-top: var(--space-px20); }
+.ui-root .cc-pay-figures .ds-stat-value, .ui-root .cc-pay-figures .ds-unit { white-space: nowrap; }
+.ui-root .cc-rep-figures { display: flex; flex-wrap: wrap; gap: var(--space-px22) var(--space-5); }
+.ui-root .cc-today-part .cc-pay-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* A section with a quiet word at the right of its heading (M11 .bzr), hidden on a phone. */
+.ui-root .cc-pay-head { justify-content: space-between; flex-wrap: nowrap; gap: var(--space-3); }
+.ui-root .cc-pay-head .ds-section-title { min-width: 0; }
+.ui-root .cc-pay-aside { flex: none; font-size: var(--fs-meta); color: var(--text-2); white-space: nowrap; }
+.ui-root .cc-pay-part { margin-top: var(--space-6); }
+.ui-root .cc-tabs + .cc-pay-part.ds-section { border-top: 0; padding-top: 0; }
+.ui-root .cc-pay-rows { margin-top: var(--space-2); }
+.ui-root .cc-pay-acts { margin-top: var(--space-2); }
+.ui-root .cc-pay-note { margin-top: var(--space-px12); }
+
+/* ---------------------------------------------------------------- slim bars (M11 .bzh) */
+.ui-root .cc-rep-bars { display: grid; gap: var(--space-px14); margin-top: var(--space-px18); }
+.ui-root .cc-rep-bar { display: grid; grid-template-columns: minmax(0, var(--cc-label-w)) minmax(0, 1fr) var(--cc-when-w); gap: var(--space-4); align-items: center; font-size: var(--fs-secondary); }
+.ui-root .cc-rep-bar-name { overflow-wrap: anywhere; }
+.ui-root .cc-rep-bar-value { text-align: right; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ui-root .cc-rep-bar .ds-bar { width: 100%; height: var(--space-px10); border-radius: var(--space-px6); background: var(--line); }
+.ui-root .cc-rep-bar .ds-bar > span { background: var(--text); border-radius: var(--space-px6); }
+.ui-root .cc-rep-note { margin-top: var(--space-px12); }
+
+@media (max-width: 600px) {
+  .ui-root .cc-pay-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-3); }
+  .ui-root .cc-pay-figures .cc-pay-hours { grid-column: 1 / -1; }
+  .ui-root .cc-pay-aside { display: none; }
+  .ui-root .cc-rep-bar { grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); }
+  .ui-root .cc-rep-bar .ds-bar { grid-column: 1 / -1; order: 3; }
+}

@@ -14,6 +14,7 @@ import { useClientRows } from './clientData';
 import { AddClientPanel, AddGroupPanel, AddTeamPanel, AddWorkshopPanel, ExportPanel, FilterPanel, MergePanel } from './ClientPanels';
 import { FieldPanel } from './Settings';
 import { UnderTabs } from './todoParts';
+import RenewalsTab from './Renewals';
 import './leftovers.css';
 
 // Clients (M11, version 3.6): people as a list, a board or a table (a
@@ -23,6 +24,8 @@ import './leftovers.css';
 // export. Past clients sit behind a quiet link at the bottom.
 
 const TABS = [{ value: 'people', label: 'People' }, { value: 'groups', label: 'Groups' }, { value: 'workshops', label: 'Workshops' }];
+// Renewals (Phase 6b run 2; M11 C11) is the owner's alone: an associate has no Renewals tab.
+const OWNER_TABS = [...TABS, { value: 'renewals', label: 'Renewals' }];
 const LAYOUTS = [{ value: 'list', label: 'List' }, { value: 'board', label: 'Board' }, { value: 'table', label: 'Table' }];
 const EMPTY_FILTERS = { tag: [], status: [], organisation: null, coach: null, fields: {} };
 const START = { layout: 'list', sort: 'next', filters: EMPTY_FILTERS, hidden: [], viewId: null };
@@ -111,7 +114,8 @@ export default function Clients() {
   const isPhone = useIsPhone();
   const touchFirst = useTouchFirst();
   const [params, setParams] = useSearchParams();
-  const tab = TABS.some((t) => t.value === params.get('tab')) ? params.get('tab') : 'people';
+  const tabs = isOwner ? OWNER_TABS : TABS;
+  const tab = tabs.some((t) => t.value === params.get('tab')) ? params.get('tab') : 'people';
 
   const listKey = deviceKey('cache', userId, 'coach-clients-list');
   const [list, setListState] = useState(() => ({ ...START, ...(readJson(listKey) || {}) }));
@@ -506,7 +510,7 @@ export default function Clients() {
       <div className={`cc-col${wide ? ' cc-col--wide' : ''}`}>
         <PageHeader title="Clients" />
         {/* Underlined tabs move between parts of a page; the gliding switch only changes how the same thing is shown (Tim, 18 Nov). */}
-        <div className="cc-tabs"><UnderTabs label="Clients" tabs={TABS} value={tab} onChange={(v) => setParams(v === 'people' ? {} : { tab: v }, { replace: true })} /></div>
+        <div className="cc-tabs"><UnderTabs label="Clients" tabs={tabs} value={tab} onChange={(v) => setParams(v === 'people' ? {} : { tab: v }, { replace: true })} /></div>
         {/* The owner's list holds every coach's clients: until that list is here (a first visit) it says it's loading,
             never the owner's own clients alone with their count (coach first screen run). */}
         {tab === 'people' && (adminReady ? people : <Loading label="Loading your clients" />)}
@@ -523,6 +527,7 @@ export default function Clients() {
           </>
         )}
         {/* A first visit's first screen has no workshops: the tab waits for the rest. */}
+        {tab === 'renewals' && <RenewalsTab />}
         {tab === 'workshops' && partial && <Loading label="Loading your workshops" />}
         {tab === 'workshops' && !partial && (
           <>

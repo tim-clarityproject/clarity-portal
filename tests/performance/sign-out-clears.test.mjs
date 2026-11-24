@@ -42,7 +42,6 @@ const NOT_PERSONAL = {
   'clarity-coach-low-codes-told': 'that this sign-in was told its recovery codes are low',
   'clarity-coach-offer-off': 'Today’s offer hidden for the day (sessionStorage)',
   'clarity-coach-test-calls': 'the coach portal’s test stand-in, never on the live site',
-  'clarity-coach-test-finances': 'the coach portal’s test stand-in, never on the live site',
   'clarity-portal-auth': 'the sign-in library’s own session, removed by its own sign-out',
   'clarity-guest:': 'a guest’s visit to a link in this tab (sessionStorage), not an account',
   'clarity-share:': 'a guest’s sharing choice for this visit (sessionStorage), not an account',

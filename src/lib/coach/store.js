@@ -6,7 +6,7 @@ import { tableReady } from '../performance/tableReady';
 import { deviceKey, readJson, removeKey, writeJson } from '../deviceStore';
 import { deviceCopyAvailable, onCopiesCleared, readCopy, writeTables } from './deviceCopy';
 import { getLocalDateKey } from '../dateFormatter';
-import { PROBE_TABLES, SCREEN_NOT_YET_KEY, screenKindOf, screenRead, screenWindow, takeCoachOpening } from './earlyScreen';
+import { openingRole, PROBE_TABLES, SCREEN_NOT_YET_KEY, screenKindOf, screenRead, screenWindow, takeCoachOpening } from './earlyScreen';
 
 // Where the coach portal's data is kept (migration 049; Phase 6a run 1).
 //
@@ -121,6 +121,23 @@ export const TABLES = {
   expenses: ['id'],
   invoice_reminders: ['id'],
   invoice_reminder_pauses: ['id'],
+  // Finances (migration 062; Phase 6b run 2): the owner's alone, with the 6-digit code. The settings are one row a
+  // coach (keyed by coach_id) and each month's target one row a month, so two tabs or devices always write the same
+  // row. An associate never loads these, except their own monthly statements (associate_statements).
+  finance_settings: ['coach_id'],
+  finance_targets: ['coach_id', 'month'],
+  finance_sectors: ['id'],
+  finance_outgoing_groups: ['id'],
+  finance_outgoings: ['id'],
+  bank_balance_checks: ['id'],
+  company_deadlines: ['id'],
+  pricing_packages: ['id'],
+  pricing_changes: ['id'],
+  discounts: ['id'],
+  proposals: ['id'],
+  supplier_pack_items: ['id'],
+  purchase_orders: ['id'],
+  associate_statements: ['id'],
   // Kept on the device only, never read or sent as a table (057): what the database said of the sessions it didn't
   // send on a first load (sessionsOlder below). One row, key 'older'.
   coach_sessions_older: ['key'],
@@ -153,6 +170,20 @@ const BUSY_TABLES = new Set(['coach_google_calendars', 'coach_busy_times']);
 // (for now) change requests are only ever read: the server writes them (copyWaiting.js READ_ONLY_TABLES).
 const BILLING_TABLES = new Set(['agreements', 'agreement_versions', 'agreement_change_requests', 'invoices', 'payments', 'credit_notes',
   'expenses', 'invoice_reminders', 'invoice_reminder_pauses']);
+// The tables of migration 062 (Finances; Phase 6b run 2). Until Tim has run it they are left out of every read and
+// kept on the device only, in the same way. The owner's alone: an associate's loads leave every one of them out but
+// their own statements (FINANCE_ASSOCIATE), which the database answers with their own rows only.
+export const FINANCE_TABLES = new Set(['finance_settings', 'finance_targets', 'finance_sectors', 'finance_outgoing_groups', 'finance_outgoings',
+  'bank_balance_checks', 'company_deadlines', 'pricing_packages', 'pricing_changes', 'discounts', 'proposals', 'supplier_pack_items',
+  'purchase_orders', 'associate_statements']);
+const FINANCE_ASSOCIATE = new Set(['associate_statements']);
+/** Whether this account is the owner, from the role this device last read (role.js keeps it) or the app's opening read. */
+function ownerHere(userId) {
+  const kept = readJson(deviceKey('cache', userId, 'coach-role'));
+  if (kept && 'coach' in kept) return kept.coach?.role === 'owner';
+  const early = openingRole(userId);
+  return early ? early.role === 'owner' : false;
+}
 // Columns only migration 052 adds to an older table: left out of a save until it is there. A row that holds one is
 // then only PART sent: it stays marked unsent, so the device's copy stays in front and the whole row goes once 052 is there.
 const CRM_COLUMNS = {
@@ -192,6 +223,7 @@ const CAL_NOT_YET_KEY = 'clarity-coach-cal-not-yet';
 const CRM_NOT_YET_KEY = 'clarity-coach-crm-not-yet';
 const NOT_YET_059_KEY = 'clarity-coach-059-not-yet';
 const NOT_YET_061_KEY = 'clarity-coach-061-not-yet';
+const NOT_YET_062_KEY = 'clarity-coach-062-not-yet';
 const NOT_YET_MS = 60 * 60 * 1000;
 const LOCAL = 'coach-local';
 
@@ -822,6 +854,8 @@ export function startProbes() {
   const keys = [NOT_YET_KEY, DAY_NOT_YET_KEY, CAL_NOT_YET_KEY, CRM_NOT_YET_KEY, NOT_YET_059_KEY, NOT_YET_061_KEY];
   const known = [readyNow, dayReadyNow, calReadyNow, crmReadyNow, ready059Now, ready061Now];
   PROBE_TABLES.forEach((t, i) => { if (known[i] !== true && !notYet(keys[i])) probe(t); });
+  // 062 (Finances) is looked for beside them, but only by the owner's portal (coach062Ready).
+  if (ready062Now !== true && !notYet(NOT_YET_062_KEY) && ownerAsked) probe('finance_settings');
 }
 
 /**
@@ -998,9 +1032,41 @@ export async function coach061Ready() {
 }
 export const coach061ReadyNow = () => ready061Now;
 
+let ready062Now = null;
+let asking062 = null;
+let ownerAsked = false;
+
+/**
+ * Whether migration 062 is there (Phase 6b run 2: Finances): true, false (not yet) or null (can't be told). Asked
+ * only once 061 is there (062 needs 049 to 061), and "not yet" is remembered for an hour, as above. The owner's
+ * portal looks for finance_settings; an associate's for associate_statements, so it never asks for the owner's tables.
+ */
+export async function coach062Ready(owner = ownerAsked) {
+  if (ready062Now === true) return true;
+  if ((await coach061Ready()) !== true) return coach061ReadyNow() === false ? false : null;
+  if (notYet(NOT_YET_062_KEY)) { ready062Now = false; return false; }
+  if (!asking062) {
+    asking062 = (async () => {
+      try {
+        // The owner looks for finance_settings; an associate for their own statements, never the owner's tables.
+        const there = await probe(owner ? 'finance_settings' : 'associate_statements');
+        if (there === false) noteNotYet(true, NOT_YET_062_KEY);
+        if (there === true) noteNotYet(false, NOT_YET_062_KEY);
+        if (there !== null) ready062Now = there;
+        return there;
+      } catch {
+        return null;
+      }
+    })().finally(() => { asking062 = null; });
+  }
+  return asking062;
+}
+export const coach062ReadyNow = () => ready062Now;
+
 /** Is this table's home in the database yet? */
 async function tableThere(table) {
   if ((await coachReady()) !== true) return false;
+  if (FINANCE_TABLES.has(table)) return (await coach062Ready()) === true;
   if (BILLING_TABLES.has(table)) return (await coach061Ready()) === true;
   if (BUSY_TABLES.has(table)) return (await coach059Ready()) === true;
   if (CRM_TABLES.has(table)) return (await coachCrmReady()) === true;
@@ -1477,9 +1543,10 @@ const calLoaded = new Map(); // account -> [[fromMs, toMs]] of the calendar read
 const calAsking = new Map();
 const laterDone = new Set(); // accounts whose LATER tables have been read this visit
 
-function tablesThere(dayThere, calThere, crmThere, there059 = false, there061 = false) {
+function tablesThere(dayThere, calThere, crmThere, there059 = false, there061 = false, there062 = false, owner = false) {
   return Object.keys(TABLES).filter((t) => !DEVICE_ONLY.has(t) && (dayThere || !DAY_TABLES.has(t)) && (calThere || !CAL_TABLES.has(t)) && (crmThere || !CRM_TABLES.has(t))
-    && (there059 || !BUSY_TABLES.has(t)) && (there061 || !BILLING_TABLES.has(t)));
+    && (there059 || !BUSY_TABLES.has(t)) && (there061 || !BILLING_TABLES.has(t))
+    && (!FINANCE_TABLES.has(t) || (there062 && (owner || FINANCE_ASSOCIATE.has(t)))));
 }
 
 const whenIdle = (fn) => {
@@ -1495,7 +1562,7 @@ export function loadCoachLater(userId) {
   return new Promise((resolve) => {
     whenIdle(async () => {
       try {
-        const names = tablesThere(dayReadyNow === true, calReadyNow === true, crmReadyNow === true, ready059Now === true, ready061Now === true);
+        const names = tablesThere(dayReadyNow === true, calReadyNow === true, crmReadyNow === true, ready059Now === true, ready061Now === true, ready062Now === true, ownerHere(userId));
         const since = readBegins();
         const split = laterSplit.get(userId) ?? null;
         // The older sessions last: what pages show from the later tier (a client's notes) isn't kept waiting behind them.
@@ -1693,6 +1760,11 @@ export function loadCoach(userId, { again = false } = {}) {
     // 061's agreements and invoices are small: they come with the first load (060's first screen doesn't carry them, so
     // a page drawn from a first screen alone shows its crosshair where they go until this load is in: rule 49).
     const there061 = there059 && (await coach061Ready()) === true;
+    // 062's Finances are small too, and come with the first load: every table for the owner, and for an associate only
+    // their own monthly statements (FINANCE_ASSOCIATE). Asked only once 061 is there.
+    const owner = ownerHere(userId);
+    if (owner) ownerAsked = true;
+    const there062 = there061 && (await coach062Ready(owner)) === true;
     const nowMs = Date.now();
     // 057: the sessions are split at the calendar's window (see coach_sessions_start above).
     let split = splitWanted(dayThere) ? nowMs - CAL_BACK_DAYS * DAY_MS : null;
@@ -1724,7 +1796,7 @@ export function loadCoach(userId, { again = false } = {}) {
         if (gen !== generation) return null;
       }
     }
-    const first = plans(tablesThere(dayThere, calThere, crmThere, there059, there061), nowMs, 'first', { split });
+    const first = plans(tablesThere(dayThere, calThere, crmThere, there059, there061, there062, owner), nowMs, 'first', { split });
     const since = readBegins();
     let db;
     let start = null;
@@ -1893,5 +1965,7 @@ export function resetCoachStoreForTests() {
   calReadyNow = null;
   ready059Now = null;
   ready061Now = null;
+  ready062Now = null;
+  ownerAsked = false;
   crmReadyNow = null;
 }

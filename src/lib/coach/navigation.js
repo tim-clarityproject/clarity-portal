@@ -8,7 +8,7 @@
 
 export const COACH_MENU = [
   { key: 'today', label: 'Today', to: '/coach' },
-  { key: 'finances', label: 'Finances', to: '/coach/finances', owner: true, later: true },
+  { key: 'finances', label: 'Finances', to: '/coach/finances', owner: true },
   { key: 'todos', label: 'To-dos', to: '/coach/todos' },
   { key: 'clients', label: 'Clients', to: '/coach/clients' },
   { key: 'leads', label: 'Leads', to: '/coach/leads', owner: true },
@@ -47,6 +47,7 @@ const TITLES = [
   ['/coach/clients/past', 'Past clients'],
   ['/coach/leads/cold', 'Cold leads'],
   ['/coach/leads/automations', 'Automations'],
+  ['/coach/leads/reports', 'Lead reports'],
   ['/coach/leads', 'Leads'],
   ['/coach/network', 'Network'],
   ['/coach/boards', 'Boards'],
@@ -61,6 +62,7 @@ const TITLES = [
   ['/coach/calendar/open', 'Open for calls'],
   ['/coach/calendar/polls', 'Poll'],
   ['/coach/calendar', 'Calendar'],
+  ['/coach/finances', 'Finances'],
   ...COACH_MENU.filter((i) => i.later).map((i) => [i.to, i.label]),
 ];
 

@@ -10,6 +10,8 @@ import {
   callLength, capacity, carriedWords, dayDone, dayLine, dayLoad, doneWords, dueWords, ENERGY, estimateWords, freeStarts,
   movedWords, moveState, moveToDay, overWords, planChanges, plannedWords, suggestMoves, timeWords, todayTodos, upcomingGroups, weekDone, weekStart,
 } from '../../lib/coach/day';
+import { financeModel } from '../../lib/coach/financeData';
+import { keptAssociateSessions } from '../../lib/coach/associateSessions';
 import { Eye, InlineLink, Line, TextLink, useCoachPortal } from './parts';
 import './today.css';
 
@@ -32,36 +34,43 @@ const SHOW_FIRST = 12;
 const NO_TIME = '__none__';
 const TICK = <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
 
-// ---------------------------------------------------------------- the Finances line (owner only; Phase 6b)
+// ---------------------------------------------------------------- the Finances line (owner only; Phase 6b run 2)
 
-/** Finances arrive with Phase 6b: until then Today never shows its line on its own. */
-export const FINANCES_READY = false;
-/** M11's own invented figures, for the design only. */
-export const FINANCES_EXAMPLE = { month: 'November', soFar: 2300, target: 5000, note: 'Cash dips in May' };
-/** A test's switch, never read by the live site: this tab's "clarity-coach-test-finances" set to 1. */
-export function financesShown() {
-  if (FINANCES_READY) return true;
-  if (LIVE) return false;
-  try { return window.sessionStorage.getItem('clarity-coach-test-finances') === '1'; } catch { return false; }
-}
+/** Finances are built (Phase 6b run 2): the owner's Today shows its line. */
+export const FINANCES_READY = true;
+/** Kept for the suites that switched the line on before Finances existed; it is always on for the owner now. */
+export function financesShown() { return FINANCES_READY; }
 
 /** "£2,300": whole pounds with the thousands marked. */
 export const moneyWords = (amount, symbol = '£') => `${symbol}${Math.round(Number(amount) || 0).toLocaleString('en-GB')}`;
 
 /**
- * Today's Finances line, under the date: "November £2,300 of £5,000", then one quiet note.
- * @param {{ month: string, soFar: number, target: number, note?: string, onOpen?: () => void }} props
+ * Today's Finances line, under the date (M11 C1): "November £2,300 of £5,000", then one quiet note ("Cash dips in May",
+ * or "1 overdue"). Its words are src/lib/finance's todayFinanceLine; it opens Finances → Cash flow.
+ * @param {{ line: { figure: string, urgent: string|null, aria: string }, onOpen?: () => void }} props
  */
-export function FinancesLine({ month, soFar, target, note, onOpen }) {
-  const words = `${month} ${moneyWords(soFar)} of ${moneyWords(target)}`;
+export function FinancesLine({ line, onOpen }) {
   const inner = (
     <>
-      <span>{keepWords(words)}</span>
-      {note && <span>{note}</span>}
+      <span>{keepWords(line.figure)}</span>
+      {line.urgent && <span>{line.urgent}</span>}
     </>
   );
   if (!onOpen) return <p className="cc-today-fin">{inner}</p>;
-  return <button type="button" className="cc-today-fin cc-today-fin--open" aria-label={`Finances. ${words}.${note ? ` ${note}.` : ''}`} onClick={onOpen}>{inner}</button>;
+  return <button type="button" className="cc-today-fin cc-today-fin--open" aria-label={line.aria} onClick={onOpen}>{inner}</button>;
+}
+
+/** The owner's line, worked out from the coach store's rows (financeData.js's financeModel; the cash flow's chosen months). */
+export function TodayFinances() {
+  const portal = useCoachPortal();
+  const navigate = useNavigate();
+  const { todayKey, financeSettings, userId } = portal;
+  const months = [3, 6, 12].includes(Number(financeSettings?.cash_months)) ? Number(financeSettings.cash_months) : 6;
+  const line = useMemo(() => financeModel({ ...portal, associateSessions: keptAssociateSessions(userId) }, { today: todayKey, months, nowMs: Date.now() }).line,
+    // Worked out again only when what it reads changes.
+    [financeSettings, portal.payments, portal.creditNotes, portal.invoices, portal.agreementVersions, portal.orgDeals, portal.coaches, portal.statements,
+      portal.outgoings, portal.deadlines, portal.financeTargets, todayKey, months, userId]);
+  return <FinancesLine line={line} onOpen={() => navigate('/coach/finances/cash-flow')} />;
 }
 
 // ---------------------------------------------------------------- small shared parts

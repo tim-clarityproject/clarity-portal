@@ -12,10 +12,11 @@ import { deviceZone } from '../../lib/time/index.js';
 import { InlineLink, Row, TextLink, useCoachPortal } from './parts';
 import { QuickAddPanel, TodoBulkBar, TodoList, TodoPanel, useTodoPicks } from './todoParts';
 import {
-  CallRow, CapacityFigures, ClosePanel, EnergyPanel, FINANCES_EXAMPLE, FinancesLine, financesShown, MovePanel, OverLine, OverPanel, PlanPanel,
+  CallRow, CapacityFigures, TodayFinances, ClosePanel, EnergyPanel, MovePanel, OverLine, OverPanel, PlanPanel,
   ReviewPanel, useCallWords, useDayRows,
 } from './todayParts';
 import NameNote from './NameNote';
+import { YourHoursAndPay } from './AssociatePay';
 import { checkInsDue, checkInsOn } from '../../lib/coach/crm';
 import { networkPath, TODAY_KEEP_IN_TOUCH, todayKeepInTouch } from '../../lib/coach/network';
 import { useNetworkDue } from './networkParts';
@@ -134,7 +135,8 @@ export default function Today() {
     <div className="cc-page">
       <div className="cc-col">
         <PageHeader title="Today" meta={[dayWords(todayKey, todayKey)]} />
-        {isOwner && financesShown() && <FinancesLine {...FINANCES_EXAMPLE} onOpen={LIVE ? undefined : () => navigate('/coach/finances')} />}
+        {/* The owner's Finances line (Phase 6b run 2; M11 C1): waits unshown while only a first screen is here (rule 49). */}
+        {isOwner && !partial && <TodayFinances />}
         {birthdays.map((p) => (
           <p key={p.id} className="cc-quiet">
             It’s <InlineLink onClick={() => setNote(p)}>{possessive(p.name)}</InlineLink> birthday today.
@@ -241,6 +243,13 @@ export default function Today() {
         <Section title="Capacity" aside={<TextLink aria-label="Edit capacity" onClick={() => navigate('/coach/settings/hours')}>Edit</TextLink>}>
           <CapacityFigures sessions={sessions} target={coach.capacity_hours_week} todayKey={todayKey} />
         </Section>
+
+        {/* An associate's own hours and pay this month, never a business figure (Phase 6b run 2, step 5; M11 C13). */}
+        {!isOwner && (
+          <Section title="Your hours and pay">
+            <YourHoursAndPay />
+          </Section>
+        )}
 
         <NameNote profile={note} reason="It’s their birthday today." onClose={() => setNote(null)} />
       </div>

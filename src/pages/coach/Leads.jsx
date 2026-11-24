@@ -304,6 +304,8 @@ export default function Leads() {
     <div className="cc-page">
       <div className={`cc-col${wide ? ' cc-col--wide' : ''}`}>
         <PageHeader title="Leads" />
+        {/* The quiet Reports link under the title (Phase 6b run 2; M11 C10's note): Leads is the owner's alone. */}
+        <p className="cc-quiet cc-rep-link"><TextLink onClick={() => navigate('/coach/leads/reports')}>Reports</TextLink></p>
         {toolbar}
         {open.length === 0 && (loaded ? <p className="cc-quiet">{LEADS_EMPTY}</p> : <Loading label="Loading your leads" />)}
         {open.length > 0 && filtered.length === 0 && <p className="cc-quiet">{LEADS_NO_MATCH}</p>}

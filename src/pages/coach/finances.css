@@ -1,0 +1,185 @@
+/* Finances (Phase 6b run 2; mock-up M11 C3 to C9, .bzn, .bzc, .bzh, .bzpr). Every value is a token: sizes are
+   tokens.css's --fin-* and the shared ones; colours are the shared colour tokens. Phone is 600px and under.
+   Panels are drawn outside the page (their own .ui-root), so nothing a panel shows leans on .fin-page. */
+
+.ui-root .fin-tabs { margin-top: var(--space-px18); }
+.ui-root .fin-tabs .cc-utabs { width: 100%; }
+
+/* A section heading with something quiet at its right; the line under it (M11 draws one, then rows with their own). */
+.ui-root .fin-part { margin-top: var(--space-6); }
+.ui-root .fin-head { justify-content: space-between; flex-wrap: nowrap; gap: var(--space-3); min-height: var(--tap-min); }
+.ui-root .fin-head-aside { font-size: var(--fs-note); color: var(--text-2); text-align: right; min-width: 0; }
+.ui-root .fin-head-aside .ds-link, .ui-root .fin-head-aside .ds-explain-link { font-size: var(--fs-secondary); }
+
+/* The figures: three on Overview, four on Money and Cash flow, one beside VAT (M11 .bzs4: equal columns). */
+.ui-root .fin-stats { margin-top: var(--space-5); gap: var(--space-4) var(--space-5); }
+.ui-root .fin-stats--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ui-root .fin-stats--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ui-root .fin-stats--1 { grid-template-columns: minmax(0, 1fr); margin-top: var(--space-3); }
+.ui-root .fin-stats .ds-stat { min-width: 0; }
+.ui-root .fin-stats .ds-stat-value { overflow-wrap: anywhere; }
+.ui-root .fin-stats .ds-unit { display: inline-block; overflow-wrap: normal; }
+
+/* A row with a figure at its right. */
+.ui-root .fin-row-words { min-width: 0; }
+.ui-root .fin-row-value { font-size: var(--fs-note); color: var(--text-2); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ui-root .fin-row .ds-link { justify-self: end; }
+
+/* Controls above a chart or a list: the gliding switch, a drop-down and a quiet link, in one row (M11 .bzctl). */
+.ui-root .fin-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); margin-top: var(--space-px18); }
+.ui-root .fin-ctl .ds-choice { margin: 0; }
+.ui-root .fin-ctl-dd { min-width: var(--fin-stat-min); }
+/* "Which income" is the drop-down's name for a screen reader; M11 shows no label above it. */
+.ui-root .fin-ctl-dd .ds-label-row { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ui-root .fin-ctl .ds-link { min-height: var(--tap-min); }
+.ui-root .fin-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ---------------------------------------------------------------- the months chart (M11 .bzc) */
+.ui-root .fin-chart-wrap { display: block; margin-top: var(--space-6); }
+.ui-root .fin-chart {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--fin-chart-gap);
+  align-items: end;
+  height: var(--fin-chart-h);
+}
+.ui-root .fin-chart--labelled { padding-right: var(--fin-chart-label-w); }
+.ui-root .fin-bar { position: relative; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; cursor: pointer; outline: none; }
+.ui-root .fin-bar:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--fin-bar-radius); }
+.ui-root .fin-bar i { display: block; flex: none; border-radius: var(--fin-bar-radius) var(--fin-bar-radius) 0 0; }
+.ui-root .fin-bar-paid { background: var(--below); }
+.ui-root .fin-bar--reached .fin-bar-paid { background: var(--good); }
+.ui-root .fin-bar--current .fin-bar-paid { background: var(--text); }
+.ui-root .fin-bar--current.fin-bar--reached .fin-bar-paid { background: var(--good); }
+/* A finished month under the minimum: a soft coral outline, so it stands out without red (M11 .b.low). */
+.ui-root .fin-bar--low .fin-bar-paid { background: transparent; box-shadow: inset 0 0 0 var(--fin-below-edge) var(--coral-soft-text); }
+.ui-root .fin-bar-projected { background: transparent; border: var(--fin-dash) dashed var(--text-2); border-bottom: 0; box-sizing: border-box; }
+.ui-root .fin-bar-projected + .fin-bar-paid { border-radius: 0; }
+.ui-root .fin-bar-target { position: absolute; left: 0; right: 0; border-top: var(--fin-dash) dashed var(--text-2); pointer-events: none; }
+.ui-root .fin-chart-line { position: absolute; left: 0; right: 0; border-top: var(--fin-dash) dotted var(--coral-soft-text); pointer-events: none; }
+.ui-root .fin-chart-line--target { border-top-style: solid; border-top-color: var(--line); }
+.ui-root .fin-chart-line span { position: absolute; right: 0; top: var(--space-px2); width: var(--fin-chart-label-w); font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); text-align: right; }
+.ui-root .fin-chart-lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.ui-root .fin-chart--labelled .fin-chart-lines { width: calc(100% - var(--fin-chart-label-w)); }
+.ui-root .fin-chart--running .fin-bar { background: transparent; }
+.ui-root .fin-line { fill: none; stroke-width: var(--line-w-strong); }
+.ui-root .fin-line--paid { stroke: var(--text); }
+.ui-root .fin-line--projected { stroke: var(--text); stroke-dasharray: var(--fin-dash-array); }
+.ui-root .fin-line--target { stroke: var(--text-2); stroke-width: var(--line-w); }
+.ui-root .fin-chart-x { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--fin-chart-gap); margin-top: var(--space-2); font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .fin-chart--labelled + .fin-chart-x { padding-right: var(--fin-chart-label-w); }
+.ui-root .fin-chart-x span { text-align: center; min-width: 0; }
+.ui-root .fin-chart-note { margin-top: var(--space-3); }
+
+/* ---------------------------------------------------------------- the cash flow's line (M11 C6) */
+.ui-root .fin-cash-wrap { display: block; margin-top: var(--space-6); }
+.ui-root .fin-cash { position: relative; height: var(--fin-line-h); margin-inline: var(--space-1); }
+.ui-root .fin-keep { position: absolute; left: 0; right: 0; border-top: var(--fin-dash) dotted var(--coral-soft-text); pointer-events: none; }
+.ui-root .fin-keep span { position: absolute; left: 0; top: var(--space-1); font-size: var(--fs-note); color: var(--text-2); white-space: nowrap; }
+.ui-root .fin-dot {
+  position: absolute;
+  width: calc(var(--fin-dot) * 2);
+  height: calc(var(--fin-dot) * 2);
+  margin: calc(var(--fin-dot) * -1) 0 0 calc(var(--fin-dot) * -1);
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 var(--line-w-strong) var(--text);
+  cursor: pointer;
+}
+.ui-root .fin-dot::after { content: ''; position: absolute; inset: calc(var(--tap-min) / -2 + var(--fin-dot)); }
+.ui-root .fin-dot--now { background: var(--text); }
+.ui-root .fin-dot:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); }
+.ui-root .fin-cash-x { position: relative; height: var(--space-5); margin: var(--space-3) var(--space-1) 0; font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .fin-cash-x span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.ui-root .fin-cash-x span:first-child { transform: none; }
+.ui-root .fin-cash-x span:last-child { transform: translateX(-100%); }
+
+/* The forecast's table: the month, then In, Out and Cash in lined-up columns (rule 20: no squashing). */
+.ui-root .fin-table { margin-top: var(--space-4); }
+.ui-root .fin-trow { display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, var(--fin-money-col)); gap: var(--space-2); align-items: center; min-height: var(--tap-min); padding: var(--space-px6) 0; border-bottom: var(--line-w) solid var(--line-soft); font-size: var(--fs-text); font-variant-numeric: tabular-nums; }
+.ui-root .fin-trow > span { text-align: right; min-width: 0; overflow-wrap: anywhere; }
+.ui-root .fin-trow > span:first-child { text-align: left; }
+.ui-root .fin-trow b { display: block; font-weight: var(--fw-regular); }
+.ui-root .fin-trow small { display: block; font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .fin-trow--head { min-height: 0; border-bottom: 0; font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .fin-quiet-fig { color: var(--text-2); }
+
+/* ---------------------------------------------------------------- By sector (M11 .bzh) */
+.ui-root .fin-sector-head, .ui-root .fin-sector {
+  display: grid;
+  grid-template-columns: var(--fin-sector-name-w) minmax(0, 1fr) var(--fin-money-col) var(--fin-money-col);
+  gap: var(--space-3);
+  align-items: center;
+}
+.ui-root .fin-sector-head { margin-top: var(--space-3); font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .fin-sector-head span, .ui-root .fin-sector-fig { text-align: right; font-variant-numeric: tabular-nums; }
+.ui-root .fin-sector { min-height: var(--tap-min); padding: var(--space-px6) 0; border-bottom: var(--line-w) solid var(--line-soft); font-size: var(--fs-text); }
+.ui-root .fin-sector-name { min-width: 0; overflow-wrap: anywhere; }
+.ui-root .fin-sector-fig--come { color: var(--text-2); }
+.ui-root .fin-track { position: relative; display: flex; height: var(--fin-track-h); border-radius: var(--fin-track-radius); background: var(--line); overflow: hidden; }
+.ui-root .fin-track i { display: block; height: 100%; flex: none; }
+.ui-root .fin-track-paid { background: var(--text); border-radius: var(--fin-track-radius) 0 0 var(--fin-track-radius); }
+.ui-root .fin-track-come { box-sizing: border-box; border: var(--fin-dash) dashed var(--text-2); border-left: 0; border-radius: 0 var(--fin-track-radius) var(--fin-track-radius) 0; }
+
+/* ---------------------------------------------------------------- Pricing's two lined-up columns (M11 .bzpr) */
+.ui-root .fin-price-head { display: grid; grid-template-columns: minmax(0, 1fr) var(--fin-price-col) var(--fin-price-col); gap: var(--space-3); margin-top: var(--space-3); font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .fin-price-head span { text-align: right; }
+.ui-root .fin-price-row { grid-template-columns: minmax(0, 1fr) var(--fin-price-col) var(--fin-price-col); }
+.ui-root .fin-price { text-align: right; font-size: var(--fs-text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ui-root .fin-price--quiet { color: var(--text-2); }
+
+/* ---------------------------------------------------------------- Invoices' search, 40px, beside Filter (M11) */
+.ui-root .fin-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); align-items: start; margin-top: var(--space-px18); }
+.ui-root .fin-search .ds-search .ds-search-input:not(#_) { min-height: var(--btn-h); height: var(--btn-h); }
+@media (max-width: 600px) { .ui-root .fin-search .ds-search .ds-search-input:not(#_) { min-height: var(--btn-h-phone); height: var(--btn-h-phone); } }
+/* "Showing everything." only while a filter is applied (the line is the filter's own). */
+.ui-root .fin-search:not(.fin-search--applied) .ds-filter-line { display: none; }
+
+/* ---------------------------------------------------------------- panels */
+.ui-root .fin-meta { margin-top: 0; white-space: pre-wrap; }
+.ui-root .fin-months { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-px12); }
+.ui-root .fin-months .ds-textbox-field { margin: 0; }
+.ui-root .fin-small-head { margin: var(--space-5) 0 0; font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .fin-who { position: relative; }
+.ui-root .fin-who-list { margin-top: var(--space-1); border: var(--line-w) solid var(--line); border-radius: var(--radius-field); background: var(--card); overflow: hidden; }
+.ui-root .fin-who-item { all: unset; box-sizing: border-box; display: flex; justify-content: space-between; gap: var(--space-3); width: 100%; min-height: var(--tap-min); padding: var(--space-2) var(--space-3); cursor: pointer; font-size: var(--fs-text); }
+.ui-root .fin-who-item small { font-size: var(--fs-note); color: var(--text-2); }
+@media (hover: hover) { .ui-root .fin-who-item:hover { color: var(--coral-text); } }
+.ui-root .fin-who-item:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: calc(var(--focus-w) * -1); }
+.ui-root .fin-drop { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; }
+.ui-root .fin-drop.cc-drop { display: flex; margin-top: 0; }
+.ui-root .fin-drop:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); }
+.ui-root .fin-receipt { min-height: var(--tap-min); }
+.ui-root .fin-foot-btn { margin-top: var(--space-5); }
+.ui-root .fin-footnote { margin-top: var(--space-3); }
+
+@media (max-width: 600px) {
+  .ui-root .fin-hide-phone { display: none; }
+  .ui-root .fin-stats--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ui-root .fin-stats--3 > :nth-child(3) { grid-column: 1 / -1; }
+  .ui-root .fin-stats--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ui-root .fin-ctl > .ds-choice, .ui-root .fin-ctl > .ds-seg, .ui-root .fin-ctl-dd { flex: 1 1 100%; }
+  .ui-root .fin-chart { height: var(--fin-chart-h-phone); gap: var(--fin-chart-gap-phone); padding-right: 0; }
+  .ui-root .fin-chart-lines, .ui-root .fin-chart--labelled .fin-chart-lines { width: 100%; }
+  .ui-root .fin-chart-line span { display: none; }
+  .ui-root .fin-chart-x, .ui-root .fin-chart--labelled + .fin-chart-x { gap: var(--fin-chart-gap-phone); padding-right: 0; }
+  .ui-root .fin-sector { grid-template-columns: minmax(0, 1fr) auto auto; row-gap: var(--space-2); }
+  .ui-root .fin-sector .fin-track { grid-column: 1 / -1; order: 3; }
+  .ui-root .fin-trow { grid-template-columns: minmax(0, 1fr) repeat(3, auto); gap: var(--space-3); }
+  .ui-root .fin-price-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .ui-root .fin-price-row .fin-price { grid-column: 2; }
+  .ui-root .fin-months { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* The rest of this month sits right beside Today: on a phone only Today is labelled there. */
+  .ui-root .fin-cash-x span:nth-child(2) { display: none; }
+  .ui-root .fin-search { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .fin-foot-btn .ds-btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .fin-bar i { transition: none; }
+}
+@media (forced-colors: active) {
+  .ui-root .fin-bar-paid, .ui-root .fin-track-paid { forced-color-adjust: none; background: CanvasText; }
+  .ui-root .fin-bar--low .fin-bar-paid { background: Canvas; box-shadow: inset 0 0 0 var(--fin-below-edge) CanvasText; }
+}
