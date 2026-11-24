@@ -239,6 +239,8 @@ comment on table public.invoices is
 create index if not exists invoices_coach_idx on public.invoices (coach_id, status, due_on);
 create index if not exists invoices_profile_idx on public.invoices (profile_id);
 create index if not exists invoices_agreement_idx on public.invoices (agreement_id);
+-- One invoice for each instalment of an agreement, however often the server is asked (two tabs, a retry, the nightly round).
+create unique index if not exists invoices_one_per_instalment on public.invoices (agreement_id, kind, instalment_n) where agreement_id is not null and instalment_n is not null and status <> 'void';
 
 create table if not exists public.payments (
   id               uuid primary key default gen_random_uuid(),
