@@ -1277,15 +1277,17 @@ export function catchUpAdded(todos, event) {
 /**
  * The day the keep-in-touch automation was last switched on: each switch-on is kept as one of its own runs,
  * `keep-in-touch:on:<day>` (claimed once a day, so two tabs make one), on every device through the database. A
- * keep-in-touch automation with none (switched on before this rule) counts from the day it was made.
+ * keep-in-touch automation with none (switched on before this rule) counts from the day it was made, or from today when
+ * that isn't known either (a row made on this device, its switch-on row still on its way).
  */
 export const keepInTouchOnKey = (day) => `keep-in-touch:on:${day}`;
 export const isSwitchedOnRun = (r) => typeof r?.event_key === 'string' && r.event_key.startsWith('keep-in-touch:on:');
-export function keepInTouchSince(automation, runs) {
+export function keepInTouchSince(automation, runs, todayKey = null) {
   if (!automation) return null;
   const days = (runs || []).filter((r) => r.automation_id === automation.id && isSwitchedOnRun(r)).map((r) => r.event_key.slice('keep-in-touch:on:'.length)).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
   if (days.length) return days.at(-1);
-  return dayOfInstant(automation.created_at) || null;
+  // Its switch-on row isn't here (not sent yet, or refused): never everyone already overdue, so today.
+  return dayOfInstant(automation.created_at) || todayKey || null;
 }
 
 /** The keep-in-touch automation's own id, the same in every tab and on every device, so two never make two (run 8 break-it tester). */

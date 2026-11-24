@@ -215,3 +215,8 @@ test('the day it was switched on: the latest switch-on kept among its runs, else
   assert.equal(crm.keepInTouchSince(null, runs), null);
   assert.equal(crm.ranWords(keep, runs, TODAY), 'Ran 1 time in November');
 });
+
+test('a keep-in-touch automation whose switch-on day isn\'t here yet counts from today, never from the start', () => {
+  const keep = { ...keepOn(), created_at: undefined };
+  assert.equal(crm.keepInTouchSince(keep, [], TODAY), TODAY);
+});

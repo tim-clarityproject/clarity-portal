@@ -132,7 +132,7 @@ export function AutomationWatch() {
         if (keep) {
           // Only what falls due from the day it was switched on, and past clients only while check-ins are suggested (run 8's 3 and 4).
           const settingsNow = mine('coach_settings')[0] || null;
-          const since = keepInTouchSince(keep, mine('coach_automation_runs'));
+          const since = keepInTouchSince(keep, mine('coach_automation_runs'), todayKey);
           events.push(...(await catchUpsNow(userId, mine, todayKey, { since, clientCheckIns: checkInsOn(settingsNow) })).filter((e) => !catchUpAdded(mine('coach_todos'), e)));
         }
         for (const event of events) {

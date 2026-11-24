@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SlidePanel, Stat, StatGroup } from '../../components/design';
+import { Loading, SlidePanel, Stat, StatGroup } from '../../components/design';
 import { rowsOf } from '../../lib/coach/store';
 import { firstName, possessive } from '../../lib/coach/model';
 import { averageSince, belowStandard, comingUp, fromLastTime, isLink, lastSession, lengthPlace, prepLine, sharedReview, standardSince, whenWords } from '../../lib/coach/day';
@@ -27,7 +27,14 @@ import './sessions.css';
 
 const PIN = <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 1.5l5 5-2.2.7-2.6 2.6.3 3.2-1 1L5.5 10.5 1.5 14.5M5.5 10.5L2 7l1-1 3.2.3 2.6-2.6z" /></svg>;
 
-function BriefBody({ session, client }) {
+// A first visit's first screen holds no notes (the client's pinned ones, the coach's from last time): the brief waits
+// for the rest, never shown without them (coach first screen run; functionality tester).
+function BriefBody(props) {
+  const { partial } = useCoachPortal();
+  return partial ? <Loading label="Loading the brief" /> : <BriefContent {...props} />;
+}
+
+function BriefContent({ session, client }) {
   const { userId, coach, state, sessions, sessionActions, sessionNotes, settings, todayKey } = useCoachPortal();
   const say = useSay();
   const first = firstName(client.name);

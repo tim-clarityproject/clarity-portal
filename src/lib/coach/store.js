@@ -382,9 +382,12 @@ export function useCoachCopyShown(userId) {
  * crosshair, never "You have no clients here yet." until the rows arrive (UI tester, scale check).
  */
 function somethingToShow(userId) {
-  if (!userId || firstDone.has(userId) || partial.has(userId)) return true;
-  // A copy left by a first screen alone (closed before the rest came) isn't whole: the crosshair until this visit's own.
+  if (!userId || partial.has(userId)) return true;
+  // A copy left by a first screen alone (closed before the rest came) isn't whole, even after a load that couldn't be
+  // made: the crosshair until this visit's own first screen or whole load (its waiting rows alone once showed as the
+  // day, "No calls today" and 0 hours: the functionality tester).
   if (copyMarkOf(userId) === 'screen') return false;
+  if (firstDone.has(userId)) return true;
   return totalRows(read(userId)) > 0;
 }
 /**
@@ -1707,8 +1710,18 @@ export function loadCoach(userId, { again = false } = {}) {
     if (gen === generation && !firstDone.has(userId)) { firstDone.add(userId); listeners.forEach((fn) => fn()); }
   });
   loading.set(userId, run);
+  // While this device holds only a first screen (or a copy left by one), a load that couldn't be made is tried again,
+  // a little later each time: the page waits on its crosshairs meanwhile, never on a half copy (functionality tester).
+  run.then((done) => {
+    if (gen !== generation || done === true || done === false) { if (done === true) retries.delete(userId); return; }
+    if (!partial.has(userId) && copyMarkOf(userId) !== 'screen') return;
+    const n = (retries.get(userId) || 0) + 1;
+    retries.set(userId, n);
+    if (n <= 8) setTimeout(() => { if (gen === generation) loadCoach(userId); }, Math.min(30000, 1500 * 2 ** (n - 1)));
+  }, () => {});
   return run;
 }
+const retries = new Map(); // account -> loads tried again while only a first screen is here
 
 const movers = new Set();
 /**
@@ -1776,6 +1789,7 @@ function letGo() {
   partial.clear();
   copyMark.clear();
   probes.clear();
+  retries.clear();
   copyTimers.clear();
   loading.clear();
   loadAgain.clear();
@@ -1801,6 +1815,7 @@ export function resetCoachStoreForTests() {
   partial.clear();
   copyMark.clear();
   probes.clear();
+  retries.clear();
   copyTimers.clear();
   loading.clear();
   loadAgain.clear();
