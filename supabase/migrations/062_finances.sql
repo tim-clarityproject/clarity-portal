@@ -287,6 +287,20 @@ begin
   end if;
 end
 $c$;
+-- A one-off invoice may be in euros and due on receipt (M11's New invoice): the three money tables take EUR, and an
+-- invoice's terms may be 0 days. Agreements stay in pounds or dollars.
+do $c$
+begin
+  alter table public.invoices drop constraint if exists invoices_currency_check;
+  alter table public.invoices add constraint invoices_currency_check check (currency in ('GBP', 'USD', 'EUR'));
+  alter table public.invoices drop constraint if exists invoices_terms_days_check;
+  alter table public.invoices add constraint invoices_terms_days_check check (terms_days between 0 and 120);
+  alter table public.payments drop constraint if exists payments_currency_check;
+  alter table public.payments add constraint payments_currency_check check (currency in ('GBP', 'USD', 'EUR'));
+  alter table public.credit_notes drop constraint if exists credit_notes_currency_check;
+  alter table public.credit_notes add constraint credit_notes_currency_check check (currency in ('GBP', 'USD', 'EUR'));
+end
+$c$;
 alter table public.invoices add column if not exists sector text check (char_length(sector) <= 40);
 alter table public.invoices add column if not exists purchase_order_id uuid references public.purchase_orders (id) on delete set null;
 alter table public.invoices add column if not exists proposal_id uuid references public.proposals (id) on delete set null;

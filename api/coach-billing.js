@@ -29,11 +29,34 @@ export const config = { maxDuration: 60 };
 const reply = (res, status, body) => { res.status(status).setHeader('Cache-Control', 'no-store'); res.json(body); };
 const DIDNT_WORK = 'That didn’t work. Try again in a moment.';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const KINDS = ['draft', 'send', 'paid_by_hand', 'refund', 'credit', 'send_reminder'];
+const KINDS = ['draft', 'send', 'paid_by_hand', 'refund', 'credit', 'send_reminder', 'bank_payment', 'one_off'];
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const SECTOR = (s) => (typeof s === 'string' && s.trim().length >= 1 && s.trim().length <= 40 ? s.trim() : null);
 
 export function askedFor(body) {
   const b = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   if (!KINDS.includes(b.kind)) return null;
+  // Finances (run 2, owner only): a payment made straight to the bank, and a one-off invoice. Each names who it's from
+  // or for: a client, an organisation, or (a bank payment only) a name typed in.
+  if (b.kind === 'bank_payment' || b.kind === 'one_off') {
+    const amount = Number(b.amount);
+    if (!Number.isInteger(amount) || amount <= 0 || amount > 100000000) return null;
+    const profileId = UUID.test(String(b.profileId || '')) ? String(b.profileId).toLowerCase() : null;
+    const organisationId = UUID.test(String(b.organisationId || '')) ? String(b.organisationId).toLowerCase() : null;
+    const payerName = typeof b.payerName === 'string' && b.payerName.trim() ? b.payerName.trim().slice(0, 160) : null;
+    if (!profileId && !organisationId && !(b.kind === 'bank_payment' && payerName)) return null;
+    const whatFor = typeof b.whatFor === 'string' ? b.whatFor.trim().slice(0, 200) : '';
+    if (b.kind === 'bank_payment') {
+      if (!DAY.test(String(b.arrivedOn || ''))) return null;
+      const receipt = typeof b.receiptPath === 'string' && /^[\w./-]{1,500}$/.test(b.receiptPath) && !b.receiptPath.includes('..') ? b.receiptPath : null;
+      return { kind: b.kind, amount, profileId, organisationId, payerName, whatFor: whatFor || null, arrivedOn: String(b.arrivedOn), sector: SECTOR(b.sector), receiptPath: receipt };
+    }
+    if (!whatFor) return null;
+    const currency = ['GBP', 'USD', 'EUR'].includes(b.currency) ? b.currency : null;
+    const due = ['in_14', 'in_30', 'on_receipt'].includes(b.due) ? b.due : null;
+    if (!currency || !due) return null;
+    return { kind: b.kind, amount, profileId, organisationId, whatFor, currency, due, sector: SECTOR(b.sector), send: b.send === true };
+  }
   const idKey = b.kind === 'draft' ? 'agreementId' : b.kind === 'send_reminder' ? 'reminderId' : 'invoiceId';
   if (!UUID.test(String(b[idKey] || ''))) return null;
   const out = { kind: b.kind, id: String(b[idKey]).toLowerCase() };
@@ -67,7 +90,63 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
     return { name: finance?.name || terms.fundedBy, email: finance?.email || '', zone: profile?.time_zone || null, profile };
   }
 
+  const ownerOnly = () => { if (coach.role !== 'owner') { const e = new Error('Only the owner can do that.'); e.status = 403; throw e; } };
+
+  /** Who a one-off invoice or a bank payment is from: the coach's own client or an organisation, never anyone else's. */
+  async function whoFor(asked) {
+    if (asked.profileId) {
+      const { data: p } = await server.from('client_profiles').select('id, name, email, time_zone, organisation_id, sector').eq('id', asked.profileId).maybeSingle();
+      if (!p) { const e = new Error('That client isn’t here.'); e.status = 404; throw e; }
+      return { profile: p, name: p.name, email: p.email, zone: p.time_zone, sector: p.sector, organisationId: p.organisation_id };
+    }
+    if (asked.organisationId) {
+      const { data: o } = await server.from('organisations').select('id, name, sector').eq('id', asked.organisationId).maybeSingle();
+      if (!o) { const e = new Error('That organisation isn’t here.'); e.status = 404; throw e; }
+      const { data: contacts } = await server.from('organisation_contacts').select('*').eq('organisation_id', o.id);
+      const finance = (contacts || []).find((c) => /finance|invoice/i.test(`${c.role || ''} ${c.roles || ''}`)) || (contacts || [])[0] || null;
+      return { organisation: o, name: finance?.name || o.name, email: finance?.email || '', zone: null, sector: o.sector, organisationId: o.id };
+    }
+    return { name: asked.payerName, email: '', zone: null, sector: null, organisationId: null };
+  }
+
   return {
+    /** Add bank payment (owner): a payment made straight to the bank, counted on the day it arrived, marked Added by you. */
+    async bankPayment(asked) {
+      ownerOnly();
+      const who = await whoFor(asked);
+      // Noon in London on the day it arrived, so the day never moves whichever zone reads it.
+      const paidAt = new Date(`${asked.arrivedOn}T12:00:00Z`).toISOString();
+      const { data, error } = await server.from('payments').insert({
+        coach_id: coach.id, amount_minor: asked.amount, currency: 'GBP', landed_gbp_minor: asked.amount, added_by_coach: true, paid_at: paidAt,
+        profile_id: who.profile?.id || null, organisation_id: who.organisationId || null, payer_name: who.organisation?.name || who.profile?.name || asked.payerName,
+        sector: asked.sector || who.sector || null, what_for: asked.whatFor, receipt_path: asked.receiptPath,
+      }).select('id').maybeSingle();
+      if (error) throw error;
+      return { id: data?.id || null };
+    },
+
+    /** New invoice (owner): a one-off invoice in Stripe, saved as a draft or sent at once; due in 14 or 30 days or on receipt. */
+    async oneOff(asked) {
+      ownerOnly();
+      const who = await whoFor(asked);
+      const days = asked.due === 'in_14' ? 14 : asked.due === 'in_30' ? 30 : 0;
+      const { data: number } = await server.rpc('next_invoice_number');
+      const idem = `one_off:${coach.id}:number:${number}`;
+      const customer = await stripe.customer({ name: who.name, email: who.email, metadata: { profile_id: who.profile?.id || '', organisation_id: who.organisationId || '' } }, `${idem}:customer`);
+      const lines = [{ description: asked.whatFor, amount: asked.amount }];
+      const inv = await stripe.draftInvoice({ customer: customer.id, currency: asked.currency, daysUntilDue: Math.max(days, 1), lines,
+        metadata: { portal_number: `CLARITY-${number}`, kind: 'one_off' } }, idem);
+      const { data: row, error } = await server.from('invoices').insert({
+        coach_id: coach.id, profile_id: who.profile?.id || null, organisation_id: who.organisationId || null, number, stripe_invoice_id: inv.id,
+        stripe_customer_id: customer.id, kind: 'one_off', status: 'draft', currency: asked.currency, lines, total_minor: asked.amount, terms_days: days,
+        settles_to: who.organisation ? 'organisation' : 'client', payer_name: who.name, payer_email: who.email || null, payer_zone: who.zone || null,
+        sector: asked.sector || who.sector || null,
+      }).select('id').maybeSingle();
+      if (error) { await stripe.void(inv.id).catch(() => {}); throw error; }
+      if (asked.send) await this.send(row.id);
+      return { id: row.id, number: `CLARITY-${number}`, status: asked.send ? 'sent' : 'draft' };
+    },
+
     /** The agreement's invoices due by today that aren't drafted yet, drafted in Stripe and kept here; never sent. */
     async draft(agreementId) {
       const agreement = await mine('agreements', agreementId);
@@ -229,15 +308,18 @@ export default async function handler(req, res, env = process.env) {
   if (!url || !anon || !token) return reply(res, 401, { ok: false, message: 'Sign in again to carry on.' });
   const noCode = codeRefusal(token, { ok: false });
   if (noCode) return reply(res, noCode.status, noCode.body);
-  if (!keyAllowed(env.STRIPE_SECRET_KEY || '') || !env.SUPABASE_SERVICE_ROLE_KEY) return reply(res, 200, { ok: false, reason: 'not_connected' });
+  // A payment straight to the bank needs no Stripe; everything else does.
+  if (!env.SUPABASE_SERVICE_ROLE_KEY || (asked.kind !== 'bank_payment' && !keyAllowed(env.STRIPE_SECRET_KEY || ''))) return reply(res, 200, { ok: false, reason: 'not_connected' });
   const asCaller = asCallerClient(env, token);
   const { data: who, error: whoError } = await asCaller.auth.getUser(token);
   if (whoError || !who?.user?.id) return reply(res, 401, { ok: false, message: 'Sign in again to carry on.' });
   const { data: coach } = await asCaller.from('coaches').select('id, role, active, user_id').eq('user_id', who.user.id).maybeSingle();
   if (!coach?.active) return reply(res, 403, { ok: false, message: 'Only a coach can do that.' });
   const server = createClient(url, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-  const b = billing({ server, stripe: stripeApi(env.STRIPE_SECRET_KEY), coach });
+  const b = billing({ server, stripe: asked.kind === 'bank_payment' ? null : stripeApi(env.STRIPE_SECRET_KEY), coach });
   try {
+    if (asked.kind === 'bank_payment') return reply(res, 200, { ok: true, ...(await b.bankPayment(asked)) });
+    if (asked.kind === 'one_off') return reply(res, 200, { ok: true, ...(await b.oneOff(asked)) });
     if (asked.kind === 'draft') return reply(res, 200, { ok: true, ...(await b.draft(asked.id)) });
     if (asked.kind === 'send') return reply(res, 200, { ok: true, ...(await b.send(asked.id)) });
     if (asked.kind === 'paid_by_hand') return reply(res, 200, { ok: true, ...(await b.paidByHand(asked.id)) });

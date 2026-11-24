@@ -14,7 +14,8 @@ import { addDays, dayIn, daysBetween, dayKeyWords, isZone } from '../time/index.
 // - No late fees or interest, ever, and a missed instalment never pauses coaching sessions by itself.
 // - A discount is never a cheaper price: it is its own named line under the full price.
 
-export const CURRENCIES = Object.freeze({ GBP: { symbol: '£', name: 'pounds' }, USD: { symbol: '$', name: 'dollars' } });
+// Euros are for a one-off invoice only (M11's New invoice); agreements stay in pounds or dollars.
+export const CURRENCIES = Object.freeze({ GBP: { symbol: '£', name: 'pounds' }, USD: { symbol: '$', name: 'dollars' }, EUR: { symbol: '€', name: 'euros' } });
 export const FIRST_INVOICE_NUMBER = 1201;
 export const TERMS_DAYS = Object.freeze({ person: 14, organisation: 30 });
 /** Days overdue at which a reminder is drafted (draft-2-emails.md), and how long after the 14-day one it asks for. */

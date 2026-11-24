@@ -296,3 +296,35 @@ test('break-it tester, 6b run 1: a draft whose save failed is drafted again with
   assert.deepEqual(await b.draft('a-ben'), { drafted: 1 });
   assert.equal(new Set(keys).size, 2, 'each try its own key');
 });
+
+test('Finances (run 2): Add bank payment and New invoice are the owner\'s alone, and name who they\'re from or for', async () => {
+  const { askedFor } = await import('../../api/coach-billing.js');
+  const now = { value: new Date('2026-11-19T10:00:00Z') };
+  const { db, stripe } = world(now);
+  db.tables.organisations = [{ id: 'o-north', name: 'Northfield Logistics', sector: 'Business' }];
+  db.tables.organisation_contacts = [{ organisation_id: 'o-north', name: 'Femi Ade', email: 'femi@example.invalid', role: 'Finance' }];
+  const owner = billing({ server: db, stripe, coach: OTHER, now: () => now.value });
+  const assoc = billing({ server: db, stripe, coach: COACH, now: () => now.value });
+  const pay = askedFor({ kind: 'bank_payment', amount: 120000, organisationId: '11111111-1111-4111-8111-111111111111', arrivedOn: '2026-11-19', sector: 'Business', whatFor: 'CLARITY-1212' });
+  assert.equal(pay.kind, 'bank_payment');
+  assert.equal(askedFor({ kind: 'bank_payment', amount: 120000, arrivedOn: '2026-11-19' }), null, 'nobody named');
+  assert.equal(askedFor({ kind: 'bank_payment', amount: -5, payerName: 'X', arrivedOn: '2026-11-19' }), null, 'negative');
+  assert.equal(askedFor({ kind: 'bank_payment', amount: 5, payerName: 'X', arrivedOn: '2026-11-19', receiptPath: '../etc/passwd' }).receiptPath, null, 'a path that climbs out is dropped');
+  await assert.rejects(assoc.bankPayment({ ...pay, organisationId: 'o-north' }), /Only the owner/);
+  await owner.bankPayment({ ...pay, organisationId: 'o-north' });
+  const [p] = db.tables.payments;
+  assert.deepEqual([p.added_by_coach, p.amount_minor, p.landed_gbp_minor, p.payer_name, p.sector, p.paid_at.slice(0, 10), p.invoice_id ?? null], [true, 120000, 120000, 'Northfield Logistics', 'Business', '2026-11-19', null]);
+  const inv = askedFor({ kind: 'one_off', amount: 94000, organisationId: '11111111-1111-4111-8111-111111111111', whatFor: 'Team Workshop, November', currency: 'EUR', due: 'on_receipt' });
+  assert.equal(inv.currency, 'EUR');
+  assert.equal(askedFor({ kind: 'one_off', amount: 94000, organisationId: '11111111-1111-4111-8111-111111111111', whatFor: '', currency: 'GBP', due: 'in_30' }), null, 'what it is for is needed');
+  await assert.rejects(assoc.oneOff({ ...inv, organisationId: 'o-north' }), /Only the owner/);
+  const made = await owner.oneOff({ ...inv, organisationId: 'o-north', currency: 'GBP', due: 'in_30' });
+  assert.match(made.number, /^CLARITY-\d+$/);
+  const row = db.tables.invoices.find((i) => i.id === made.id);
+  assert.deepEqual([row.status, row.kind, row.terms_days, row.settles_to, row.payer_email, row.sector], ['draft', 'one_off', 30, 'organisation', 'femi@example.invalid', 'Business']);
+  assert.equal(stripe.state.sent.length, 0, 'Save as a draft sends nothing');
+  const sent = await owner.oneOff({ ...inv, organisationId: 'o-north', send: true, currency: 'GBP', due: 'on_receipt' });
+  assert.equal(sent.status, 'sent');
+  const s = db.tables.invoices.find((i) => i.id === sent.id);
+  assert.equal(s.due_on, s.issued_on, 'on receipt: due the day it goes');
+});
