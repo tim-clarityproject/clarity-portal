@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
-  AddButton, Button, DatePicker, Dropdown, ExplainLink, PageHeader, SegmentedControl, SlidePanel, Stat, StatGroup, TextField, useIsPhone, useToast,
+  AddButton, Button, DatePicker, Dropdown, ExplainLink, InlineChoice, PageHeader, SegmentedControl, SlidePanel, Stat, StatGroup, TextField, useIsPhone, useToast,
 } from '../../components/design';
 import { newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { dayKeyWords } from '../../lib/time/index.js';
@@ -14,10 +14,10 @@ import {
 import { toCsv } from '../../lib/finance/csv.js';
 import { xlsxBytes } from '../../lib/coach/xlsx';
 import {
-  associateSessionsForForecast, dayWordsFrom, invoiceTitle, needsYouRows, percentFromTyped, pipelineLine, poundsFromTyped, renewalsSoon, typedPounds,
+  associateSessionsForForecast, dayWordsFrom, invoiceTitle, needsYouRows, percentFromTyped, pipelineLine, poundsFromTyped, typedPounds,
 } from '../../lib/coach/financeData';
+import { renewals, renewalsLine } from '../../lib/coach/associatePay';
 import { coachBilling, uploadReceipt } from '../../lib/coach/financeActions';
-import { keptAssociateSessions } from '../../lib/coach/associateSessions';
 import { UnderTabs } from './todoParts';
 import { Line, TextLink, useCoachPortal } from './parts';
 import {
@@ -71,17 +71,29 @@ export default function Finances() {
 
 // ---------------------------------------------------------------- Overview (M11 C4)
 
+/** How to read the chart, with the minimum's own figure (M11: "Your minimum, £2,000/month."). */
+const chartHelp = (mode, minimumMinor) => (mode === 'running' ? CHART_HELP.running : {
+  title: 'How to read the chart',
+  terms: [
+    { term: 'Dashed line over each bar', meaning: 'That month’s own target.' },
+    { term: 'Mint bar', meaning: 'The month reached its target.' },
+    { term: 'Grey bar', meaning: ['Below the target.', minimumMinor > 0 ? `An outline means below your ${poundsWords(minimumMinor)} minimum.` : 'An outline means below your minimum.'] },
+    { term: 'Dashed outline', meaning: 'Projected income, from signed agreements, repeating income and drafted invoices.' },
+    { term: 'Dotted line', meaning: minimumMinor > 0 ? `Your minimum, ${rateWords(minimumMinor, 'month')}.` : 'Your minimum each month.' },
+  ],
+});
+
+/** A monthly figure in whole pounds, as M11 shows them ("£1,050/month"); the sums underneath stay exact. */
+const monthlyWords = (minor) => rateWords(Math.round((Number(minor) || 0) / 100) * 100, 'month');
+
+/** A box's figure for editing, as M11 shows it: "£5,000" ("£5,000.50" with pence); '' for none. Typing either works. */
+const poundsBox = (minor) => {
+  if (minor == null || minor === '') return '';
+  const n = Number(minor);
+  return `£${(n / 100).toLocaleString('en-GB', { minimumFractionDigits: n % 100 ? 2 : 0, maximumFractionDigits: 2 })}`;
+};
+
 const CHART_HELP = {
-  month: {
-    title: 'How to read the chart',
-    terms: [
-      { term: 'Dashed line over each bar', meaning: 'That month’s own target.' },
-      { term: 'Mint bar', meaning: 'The month reached its target.' },
-      { term: 'Grey bar', meaning: ['Below the target.', 'An outline means below your minimum.'] },
-      { term: 'Dashed outline', meaning: 'Projected income, from signed agreements, repeating income and drafted invoices.' },
-      { term: 'Dotted line', meaning: 'Your minimum each month.' },
-    ],
-  },
   running: {
     title: 'How to read the chart',
     terms: [
@@ -112,7 +124,9 @@ function Overview() {
   if (!yearHasTargets && (financeTargets || []).length) needs.push({ key: 'targets', title: 'This year’s targets aren’t set yet.', small: 'Last year’s are ready to copy and check.', link: 'Check the targets', open: 'targets' });
   if (bankCheckDue({ settings, today: todayKey })) needs.push({ key: 'bank', title: `Check your bank balance for ${monthName(todayKey)}.`, link: 'Check the balance', to: '/coach/finances/cash-flow?bank=1' });
   const pipe = pipelineLine(leads, leadStages);
-  const renew = renewalsSoon({ engagements: rowsOf(fin.state, 'engagements'), admin: fin.admin, versions: fin.agreementVersions, today: todayKey });
+  // The same renewals as Clients' Renewals tab (one function), so the two counts and amounts always agree.
+  const renew = renewalsLine(renewals({ today: todayKey, admin: fin.admin, coachId: fin.coach.id, engagements: rowsOf(fin.state, 'engagements'),
+    agreements: fin.agreements, versions: fin.agreementVersions, orgDeals: fin.orgDeals, organisations: fin.organisations }));
   const repeatingMonthly = model.repeating.reduce((a, r) => a + r.amount_minor, 0);
   const sectorOptions = [{ value: 'all', label: 'All income' }, ...sectors.map((s) => ({ value: s, label: s }))];
   const month = rows.month;
@@ -125,7 +139,7 @@ function Overview() {
         <Stat label="Cash in 6 months" value={poundsWords(model.cash6.end)} />
       </StatGroup>
 
-      <FinPart title={chart.title} asideHide={false} aside={<ExplainLink explain={CHART_HELP[mode === 'running' ? 'running' : 'month']} helpKey={mode === 'running' ? 'finance-chart-total' : 'finance-chart'}>How to read the chart</ExplainLink>}>
+      <FinPart title={chart.title} asideHide={false} aside={<ExplainLink explain={chartHelp(mode, Number(settings.minimum_minor) || 0)} helpKey={mode === 'running' ? 'finance-chart-total' : 'finance-chart'}>How to read the chart</ExplainLink>}>
         <div className="fin-ctl">
           <SegmentedControl label="Show" options={[{ value: 'month', label: 'Each month' }, { value: 'running', label: 'Running total' }]} value={mode} onChange={setMode} />
           <div className="fin-ctl-dd"><Dropdown label="Which income" options={sectorOptions} value={sector} onChange={setSector} /></div>
@@ -153,7 +167,7 @@ function Overview() {
 
       <FinPart title="Coming in">
         <FigRow title="Pipeline" facts={pipe.facts} value={pipe.figure} onClick={() => navigate('/coach/leads/reports')} label={`Pipeline, ${pipe.figure}. Open lead reports`} />
-        <FigRow title="Renewals in the next 90 days" facts={renew.facts} value={renew.figure} onClick={() => navigate('/coach/clients/renewals')} label={`Renewals in the next 90 days${renew.figure ? `, ${renew.figure}` : ''}. Open renewals`} />
+        <FigRow title="Renewals in the next 90 days" facts={renew.facts} value={renew.figure} onClick={() => navigate('/coach/clients?tab=renewals')} label={`Renewals in the next 90 days, ${renew.facts[0]}, ${renew.figure}. Open renewals`} />
         <FigRow title="Repeating income" facts={['Portal seats and memberships']} value={repeatingMonthly ? rateWords(repeatingMonthly, 'month') : '£0/month'} />
       </FinPart>
 
@@ -178,8 +192,8 @@ function TargetsPanel({ open, onClose }) {
     const have = targetsByMonth(financeTargets, fy.months);
     // A new year with none set starts from last year's, month for month, for Tim to check.
     const copied = Object.values(have).every((v) => !v) ? Object.fromEntries(copyToNewYear({ targets: financeTargets, fromYear: fy.label - 1, toYear: fy.label, startMonth: Number(settings.year_start_month) || 5 }).map((r) => [monthKey(r.month), r.target_minor])) : {};
-    const each = Object.fromEntries(fy.months.map((m) => [m, typedPounds(have[m] || copied[m] || '')]));
-    setForm({ mode: settings.targets_mode === 'same' ? 'same' : 'each', each, same: typedPounds(have[fy.months[0]] || copied[fy.months[0]] || ''), minimum: typedPounds(settings.minimum_minor) });
+    const each = Object.fromEntries(fy.months.map((m) => [m, poundsBox(have[m] || copied[m] || '')]));
+    setForm({ mode: settings.targets_mode === 'same' ? 'same' : 'each', each, same: poundsBox(have[fy.months[0]] || copied[fy.months[0]] || ''), minimum: poundsBox(settings.minimum_minor) });
     setProblem(null);
     // Read once as the panel opens.
   }, [open]);
@@ -210,7 +224,7 @@ function TargetsPanel({ open, onClose }) {
   return (
     <SlidePanel open={open} onClose={onClose} title="Edit targets" draftKey="fin-targets"
       footer={<div className="cc-panel-foot"><TextLink onClick={onClose}>Cancel</TextLink><Button variant="primary" onClick={save}>Save</Button></div>}>
-      <div className="cc-field"><SegmentedControl label="Each month’s target" options={[{ value: 'each', label: 'Set each month' }, { value: 'same', label: 'Same every month' }]} value={form.mode} onChange={(v) => setForm({ ...form, mode: v })} /></div>
+      <div className="cc-field"><InlineChoice label="Each month’s target" options={[{ value: 'each', label: 'Set each month' }, { value: 'same', label: 'Same every month' }]} value={form.mode} onChange={(v) => setForm({ ...form, mode: v })} semantics="radio" /></div>
       {form.mode === 'each' ? (
         <>
           <div className="cc-field fin-months">{fy.months.map((m) => <div key={m}>{box(monthName(m), form.each[m], (v) => setForm((f) => ({ ...f, each: { ...f.each, [m]: v } })))}</div>)}</div>
@@ -380,7 +394,7 @@ function ExportPanel({ open, onClose, period, months }) {
   return (
     <SlidePanel open={open} onClose={onClose} title="Export to a spreadsheet" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={go}>Download</Button></div>}>
       <div className="cc-field"><Dropdown label="What to export" options={options} value={what} onChange={setWhat} /></div>
-      <div className="cc-field"><SegmentedControl label="Format" options={[{ value: 'xlsx', label: 'Excel' }, { value: 'csv', label: 'CSV' }]} value={format} onChange={setFormat} /></div>
+      <div className="cc-field"><InlineChoice label="Format" options={[{ value: 'xlsx', label: 'Excel' }, { value: 'csv', label: 'CSV' }]} value={format} onChange={setFormat} semantics="radio" /></div>
       <p className="cc-note">Every payment and refund, with the currency, the rate it landed at and where each client lives.</p>
     </SlidePanel>
   );
@@ -399,7 +413,8 @@ function CashFlow() {
   const [panel, setPanel] = useState(() => (params.get('bank') === '1' ? { kind: 'bank' } : null));
   useEffect(() => { if (params.get('bank')) setParams({}, { replace: true }); }, [params, setParams]);
   const cash = model.cash;
-  const monthly = (model.associates || []).map((a) => ({ name: a.name, monthlyMinor: threeMonthAverage({ coachId: a.coach_id, rateMinor: a.hourly_rate_minor, sessions: associateSessionsForForecast(keptAssociateSessions(userId), Date.now()), month: monthKey(todayKey) }) }));
+  // Each associate at their 3-month average, from the same read of their sessions as the forecast (useFinance).
+  const monthly = (model.associates || []).map((a) => ({ name: a.name, monthlyMinor: threeMonthAverage({ coachId: a.coach_id, rateMinor: a.hourly_rate_minor, sessions: associateSessionsForForecast(fin.associateSessions, Date.now()), month: monthKey(todayKey), noShowsPaid: settings.no_shows_paid }) }));
   const list = outgoingRows({ outgoings, today: todayKey, associates: monthly });
   const fy = financialYear(todayKey, model.startMonth);
   const oneOffs = (outgoings || []).filter((o) => o.every === 'once' && o.starts_on >= fy.start).sort((a, b) => a.starts_on.localeCompare(b.starts_on));
@@ -435,8 +450,8 @@ function CashFlow() {
         {cash.notInPounds > 0 && <p className="cc-note">Money in other currencies is left out until it lands in pounds.</p>}
       </FinPart>
 
-      <FinPart title="Recurring outgoings" aside={rateWords(list.total, 'month')}>
-        {list.rows.map((r) => <FigRow key={r.group} title={r.group} facts={[r.names]} value={rateWords(r.monthly, 'month')} onClick={() => setPanel({ kind: 'group', group: r.group })} label={`${r.group}, ${rateWords(r.monthly, 'month')}`} />)}
+      <FinPart title="Recurring outgoings" aside={monthlyWords(list.total)}>
+        {list.rows.map((r) => <FigRow key={r.group} title={r.group} facts={[r.names]} value={monthlyWords(r.monthly)} onClick={() => setPanel({ kind: 'group', group: r.group })} label={`${r.group}, ${monthlyWords(r.monthly)}`} />)}
         <div className="cc-add"><AddButton onClick={() => setPanel({ kind: 'outgoing' })}>Add recurring outgoing</AddButton></div>
       </FinPart>
 
@@ -470,7 +485,7 @@ function GroupPanel({ panel, rows, onClose, onOpen, onAdd }) {
     <SlidePanel open onClose={onClose} title={panel.group} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={onClose}>Done</Button></div>}>
       {(row?.items || []).map((it) => {
         const o = mine.find((x) => x.name === it.name);
-        return <FigRow key={it.name} title={it.name} value={rateWords(it.monthly, 'month')} onClick={o ? () => onOpen(o.id) : undefined} label={o ? `Edit ${it.name}` : undefined} />;
+        return <FigRow key={it.name} title={it.name} value={monthlyWords(it.monthly)} onClick={o ? () => onOpen(o.id) : undefined} label={o ? `Edit ${it.name}` : undefined} />;
       })}
       <div className="cc-add"><AddButton onClick={onAdd}>Add recurring outgoing</AddButton></div>
     </SlidePanel>

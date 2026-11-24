@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, ChartTips, Dropdown, InlineChoice, Sheet, SlidePanel, Stat, TextBox, tipProps, useIsPhone, useToast } from '../../components/design';
+import { Button, ChartTips, Chevron, Dropdown, InlineChoice, Sheet, SlidePanel, Stat, TextBox, tipProps, useIsPhone, useToast } from '../../components/design';
 import keepWords from '../../components/design/keepWords';
 import { deviceZone, isZone } from '../../lib/time';
 import { callPlaceWords } from '../../lib/coach/calendar';
@@ -10,8 +10,7 @@ import {
   callLength, capacity, carriedWords, dayDone, dayLine, dayLoad, doneWords, dueWords, ENERGY, estimateWords, freeStarts,
   movedWords, moveState, moveToDay, overWords, planChanges, plannedWords, suggestMoves, timeWords, todayTodos, upcomingGroups, weekDone, weekStart,
 } from '../../lib/coach/day';
-import { financeModel } from '../../lib/coach/financeData';
-import { keptAssociateSessions } from '../../lib/coach/associateSessions';
+import { useFinance } from './financeParts';
 import { Eye, InlineLink, Line, TextLink, useCoachPortal } from './parts';
 import './today.css';
 
@@ -50,27 +49,27 @@ export const moneyWords = (amount, symbol = '£') => `${symbol}${Math.round(Numb
  * @param {{ line: { figure: string, urgent: string|null, aria: string }, onOpen?: () => void }} props
  */
 export function FinancesLine({ line, onOpen }) {
+  // It ends with the small chevron when it opens Finances (M11 C1), kept on the line with the last words.
+  const arrow = onOpen ? <Chevron direction="right" size="sm" beside="words" className="cc-today-fin-chev" /> : null;
   const inner = (
     <>
-      <span>{keepWords(line.figure)}</span>
-      {line.urgent && <span>{line.urgent}</span>}
+      <span className={line.urgent ? undefined : 'cc-today-fin-last'}>{keepWords(line.figure)}{!line.urgent && arrow}</span>
+      {line.urgent && <span className="cc-today-fin-last">{line.urgent}{arrow}</span>}
     </>
   );
   if (!onOpen) return <p className="cc-today-fin">{inner}</p>;
   return <button type="button" className="cc-today-fin cc-today-fin--open" aria-label={line.aria} onClick={onOpen}>{inner}</button>;
 }
 
-/** The owner's line, worked out from the coach store's rows (financeData.js's financeModel; the cash flow's chosen months). */
+/**
+ * The owner's line, worked out exactly as Finances works out its own figures (financeParts.jsx's useFinance: the same
+ * rows, the same associates' sessions read the same way, the cash flow's chosen months), so Today's line never differs
+ * before and after Finances has been opened (UI tester, run 2).
+ */
 export function TodayFinances() {
-  const portal = useCoachPortal();
   const navigate = useNavigate();
-  const { todayKey, financeSettings, userId } = portal;
-  const months = [3, 6, 12].includes(Number(financeSettings?.cash_months)) ? Number(financeSettings.cash_months) : 6;
-  const line = useMemo(() => financeModel({ ...portal, associateSessions: keptAssociateSessions(userId) }, { today: todayKey, months, nowMs: Date.now() }).line,
-    // Worked out again only when what it reads changes.
-    [financeSettings, portal.payments, portal.creditNotes, portal.invoices, portal.agreementVersions, portal.orgDeals, portal.coaches, portal.statements,
-      portal.outgoings, portal.deadlines, portal.financeTargets, todayKey, months, userId]);
-  return <FinancesLine line={line} onOpen={() => navigate('/coach/finances/cash-flow')} />;
+  const { model } = useFinance();
+  return <FinancesLine line={model.line} onOpen={() => navigate('/coach/finances/cash-flow')} />;
 }
 
 // ---------------------------------------------------------------- small shared parts

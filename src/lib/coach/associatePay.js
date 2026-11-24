@@ -45,11 +45,13 @@ export function fromStatement(row) {
  * An associate's month: from its saved statement when there is one, otherwise from their sessions (when the
  * device holds them), otherwise unknown.
  * @param {{ associateId: string, rateMinor: number|null, month: string, statements?: object[], sessions?: object[],
- *   noShowsPaid?: boolean, zone?: string }} a
+ *   noShowsPaid?: boolean, zone?: string, monthMinutes?: object|null, nowMs?: number }} a
+ *   sessions: the associate's own (with their outcomes), or the owner's view of them (058: no outcome, so an ended one
+ *   counts as held); nowMs: now, for that rule
  * @returns {{ from: 'statement'|'sessions'|null, delivered: object|null, statement: object|null, readyOn: string,
  *   paidOn: string|null, lines: { label: string, detail: string, value: string }[] }}
  */
-export function associatePay({ associateId, rateMinor, month, statements = [], sessions = [], noShowsPaid = false, zone, monthMinutes = null }) {
+export function associatePay({ associateId, rateMinor, month, statements = [], sessions = [], noShowsPaid = false, zone, monthMinutes = null, nowMs = 0 }) {
   const m = monthKey(month);
   const statement = (statements || []).find((s) => s && s.associate_id === associateId && sameMonth(s.month, m)) || null;
   const readyOn = statement?.ready_on ? String(statement.ready_on).slice(0, 10) : monthDays(m).last;
@@ -66,7 +68,8 @@ export function associatePay({ associateId, rateMinor, month, statements = [], s
       late_cancel_minutes: monthMinutes.late_cancel_minutes, no_show_minutes: noShowsPaid ? monthMinutes.no_show_minutes : 0 });
     from = 'minutes';
   } else if (rateMinor != null && theirs.length) {
-    delivered = associateMonth({ coachId: associateId, rateMinor, sessions: theirs, month: m, zone, noShowsPaid });
+    // A past session with no outcome yet counts as held until it's marked otherwise (062's rule, the forecast's).
+    delivered = associateMonth({ coachId: associateId, rateMinor, sessions: theirs, month: m, zone, noShowsPaid, nowMs });
     from = 'sessions';
   }
   const savedLines = Array.isArray(statement?.lines) ? statement.lines.filter((l) => l && l.label) : [];
@@ -196,6 +199,15 @@ export function renewals({ today, admin = [], coachId, engagements = [], agreeme
     .sort((x, y) => x.title.localeCompare(y.title));
 
   return { rows, totalMinor, totalWords: totalMinor > 0 ? poundsWords(totalMinor) : '', repeating };
+}
+
+/**
+ * Overview's Coming in row for the same renewals (M11 C4: "3 engagements" "£27,120"), so the Overview's count and the
+ * Renewals tab always agree: one count, a thousands comma, and the amount (£0 when none is priced yet).
+ */
+export function renewalsLine(data) {
+  const n = data?.rows?.length || 0;
+  return { count: n, facts: [n === 1 ? '1 engagement' : `${n.toLocaleString('en-GB')} engagements`], figure: poundsWords(data?.totalMinor || 0) };
 }
 
 // ---------------------------------------------------------------- Leads: reports (owner)

@@ -8,6 +8,8 @@ import { toNearestHundredPounds } from './words.js';
 // Checked by tests/performance/finance-cashflow.test.mjs.
 
 export const OUTGOING_GROUPS = Object.freeze(['Associates', 'Software', 'Marketing', 'Travel', 'Training and supervision', 'Insurance and professional fees', 'Your pay', 'Tax']);
+/** The order Recurring outgoings lists its groups in (M11 C6): Your pay first, then Associates, then the rest. */
+export const OUTGOING_LIST_ORDER = Object.freeze(['Your pay', 'Associates', 'Insurance and professional fees', 'Training and supervision', 'Marketing', 'Software', 'Travel', 'Tax']);
 const STEP = { month: 1, quarter: 3, year: 12 };
 const PER_MONTH = { month: 1, quarter: 3, year: 12 };
 const pad = (n) => String(n).padStart(2, '0');
@@ -50,7 +52,7 @@ export function monthlyAverage(o) {
 export const stillRunning = (o, today) => o.every !== 'once' && (!o.ends_on || o.ends_on >= today);
 
 /**
- * Recurring outgoings by group, as the list shows them: each group's names (the most first) and its monthly average,
+ * Recurring outgoings by group, in M11's order (OUTGOING_LIST_ORDER, then any other group), as the list shows them: each group's names (the most first) and its monthly average,
  * with each associate as an Associates line at their 3-month average.
  * @param {{ outgoings: object[], today: string, associates?: { name: string, monthlyMinor: number }[] }} a
  * @returns {{ rows: { group: string, names: string, monthly: number, items: { name: string, monthly: number }[] }[], total: number }}
@@ -64,7 +66,7 @@ export function outgoingRows({ outgoings, today, associates = [] }) {
   };
   for (const a of associates || []) if (a.monthlyMinor > 0) add('Associates', a.name, a.monthlyMinor);
   for (const o of outgoings || []) if (stillRunning(o, today)) add(o.group_name || 'Other', o.name, monthlyAverage(o));
-  const order = (g) => { const i = OUTGOING_GROUPS.indexOf(g); return i < 0 ? OUTGOING_GROUPS.length : i; };
+  const order = (g) => { const i = OUTGOING_LIST_ORDER.indexOf(g); return i < 0 ? OUTGOING_LIST_ORDER.length : i; };
   const rows = [...groups.entries()].sort((a, b) => order(a[0]) - order(b[0])).map(([group, items]) => {
     const sorted = [...items].sort((a, b) => b.monthly - a.monthly);
     return { group, names: sorted.map((i) => i.name).join(', '), monthly: sorted.reduce((a, i) => a + i.monthly, 0), items: sorted };

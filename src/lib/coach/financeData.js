@@ -104,6 +104,22 @@ export const invoiceWho = (inv, names = {}) => (inv?.organisation_id && names.or
 const left = (inv) => Math.max(0, Number(inv.total_minor) - Number(inv.paid_minor || 0));
 const dueOf = (inv, today) => inv.due_on || addDays(today, Number(inv.terms_days) || 14);
 
+/**
+ * A draft's due day, said the same way on its row and in its panel (M11 C7): a draft made from a signed agreement has
+ * its day ("Tue 1 Dec", "From the signed agreement"); a one-off draft has no day until it's sent, so both say
+ * "30 days after it’s sent" (its terms), never a day worked out from today that would move.
+ * @returns {{ row: string, value: string, fact: string|null }} row "Due Tue 1 Dec" | "Due 30 days after it’s sent"
+ */
+export function draftDue(inv, today) {
+  if (inv?.due_on) {
+    const day = dayWordsFrom(inv.due_on, today);
+    return { row: `Due ${day}`, value: day, fact: inv.agreement_id ? 'From the signed agreement' : null };
+  }
+  const n = Number(inv?.terms_days) || 14;
+  const words = n === 1 ? '1 day after it’s sent' : `${n} days after it’s sent`;
+  return { row: `Due ${words}`, value: words, fact: null };
+}
+
 /** "7 days overdue", "1 day overdue". */
 export const overdueWords = (dueOn, today) => { const d = Math.max(1, daysBetween(dueOn, today)); return d === 1 ? '1 day overdue' : `${d} days overdue`; };
 
@@ -120,7 +136,7 @@ export function invoiceGroups({ invoices = [], today, names = {}, q = '', who = 
     if (!inv || inv.status === 'void' || inv.waived_at) continue;
     const row = { id: inv.id, invoice: inv, title: invoiceTitle(inv), number: invoiceNo(inv), who: invoiceWho(inv, names), amount: moneyWords(inv.status === 'paid' ? Number(inv.total_minor) : left(inv) || Number(inv.total_minor), inv.currency || 'GBP') };
     let group;
-    if (inv.status === 'draft') { group = 'waiting'; row.when = `Due ${dayWordsFrom(dueOf(inv, today), today)}`; row.sort = dueOf(inv, today); }
+    if (inv.status === 'draft') { group = 'waiting'; row.when = draftDue(inv, today).row; row.sort = dueOf(inv, today); }
     else if (inv.status === 'sent' && left(inv) > 0) {
       const due = dueOf(inv, today);
       if (due < today) { group = 'overdue'; row.when = overdueWords(due, today); row.sort = due; }

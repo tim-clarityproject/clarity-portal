@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  AddButton, Button, Chip, ChipRow, DatePicker, Dropdown, ExplainLink, FilterButton, SearchField, SegmentedControl, SlidePanel, Stat, StatGroup, TextField, useToast,
+  AddButton, Button, Chip, ChipRow, DatePicker, Dropdown, ExplainLink, FilterButton, InlineChoice, SearchField, SlidePanel, Stat, StatGroup, TextField, useToast,
 } from '../../components/design';
 import { newId, removeRow, saveRow, saveRows } from '../../lib/coach/store';
 import { dayKeyWords } from '../../lib/time/index.js';
@@ -48,7 +48,9 @@ export function InvoicesTab() {
   const open = (row, group) => {
     if (group === 'waiting') setPanel({ kind: 'draft', id: row.id });
     else if (group === 'overdue') setPanel({ kind: 'overdue', id: row.id });
+    // Sent and paid: Stripe's own page for the invoice when it has one, otherwise its facts in a panel.
     else if (/^https:\/\//.test(row.invoice.hosted_url || '')) window.open(row.invoice.hosted_url, '_blank', 'noopener');
+    else setPanel({ kind: 'view', id: row.id });
   };
   return (
     <>
@@ -65,8 +67,7 @@ export function InvoicesTab() {
       {GROUPS.map(([key, title]) => (groups[key].length > 0 && (
         <FinPart key={key} title={key === 'paid' && (q || applied) ? 'Paid' : title}>
           {groups[key].map((r) => {
-            const opens = key === 'waiting' || key === 'overdue' || /^https:\/\//.test(r.invoice.hosted_url || '');
-            return <FigRow key={r.id} title={r.title} facts={[r.number, r.who, r.when]} value={r.amount} onClick={opens ? () => open(r, key) : undefined} label={opens ? `${r.title}, ${r.amount}, ${r.when}` : undefined} />;
+            return <FigRow key={r.id} title={r.title} facts={[r.number, r.who, r.when]} value={r.amount} onClick={() => open(r, key)} label={`${r.title}, ${r.amount}, ${r.when}`} />;
           })}
         </FinPart>
       )))}
@@ -145,7 +146,7 @@ function SweepPanel({ open, onClose, done }) {
   return (
     <SlidePanel open={open} onClose={onClose} title="Update all prices"
       footer={<div className="cc-panel-foot"><TextLink onClick={onClose}>Cancel</TextLink><Button variant="primary" onClick={save}>{plan ? plan.button : 'Update prices'}</Button></div>}>
-      <div className="cc-field"><SegmentedControl label="By how much?" options={SWEEP_OPTIONS} value={by} onChange={(v) => { setBy(v); setProblem(null); }} /></div>
+      <div className="cc-field"><InlineChoice label="By how much?" options={SWEEP_OPTIONS} value={by} onChange={(v) => { setBy(v); setProblem(null); }} semantics="radio" /></div>
       {by === 'other' && <div className="cc-field"><TextField label="Percentage" inputMode="decimal" value={other} placeholder="%" autoComplete="off" onChange={(e) => { setOther(e.target.value); setProblem(null); }} /></div>}
       <div className="cc-field"><Dropdown label="From when?" options={[{ value: nextJan, label: dayKeyWords(nextJan, { year: true }) }, { value: nextYear, label: dayKeyWords(nextYear, { year: true }) }].filter((o, i, a) => a.findIndex((x) => x.value === o.value) === i)} value={from} onChange={setFrom} /></div>
       {plan && (
@@ -220,7 +221,7 @@ function DiscountPanel({ panel, onClose, done, userId, coachId }) {
     <SlidePanel open onClose={onClose} title={before ? 'Edit discount' : 'Add discount'} draftKey={`fin-discount:${before?.id || 'new'}`}
       footer={<div className="cc-panel-foot">{before ? <TextLink onClick={remove}>Delete</TextLink> : <TextLink onClick={onClose}>Cancel</TextLink>}<Button variant="primary" onClick={save}>{before ? 'Save my edit' : 'Add discount'}</Button></div>}>
       <div className="cc-field"><TextField label="What do you call it?" value={form.name} maxLength={80} placeholder="Such as Returning client" autoComplete="off" onChange={(e) => { setForm({ ...form, name: e.target.value }); setProblem(null); }} /></div>
-      <div className="cc-field"><SegmentedControl label="How much off?" options={[{ value: 'percent', label: 'A percentage' }, { value: 'amount', label: 'A fixed amount' }]} value={form.kind} onChange={(v) => setForm({ ...form, kind: v, value: '' })} /></div>
+      <div className="cc-field"><InlineChoice label="How much off?" options={[{ value: 'percent', label: 'A percentage' }, { value: 'amount', label: 'A fixed amount' }]} value={form.kind} onChange={(v) => setForm({ ...form, kind: v, value: '' })} semantics="radio" /></div>
       <div className="cc-field"><TextField label={form.kind === 'percent' ? 'Percentage' : 'Amount'} inputMode="decimal" value={form.value} placeholder={form.kind === 'percent' ? '%' : '£'} autoComplete="off" onChange={(e) => { setForm({ ...form, value: e.target.value }); setProblem(null); }} /></div>
       <div className="cc-field"><Dropdown label="Which packages?" options={[{ value: 'all', label: 'All packages' }, { value: 'some', label: 'Choose packages' }]} value={form.all ? 'all' : 'some'} onChange={(v) => setForm({ ...form, all: v === 'all' })} /></div>
       {!form.all && (
@@ -346,7 +347,7 @@ function YearExportPanel({ label, onClose }) {
   };
   return (
     <SlidePanel open={label != null} onClose={onClose} title="Export the financial year" footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={go}>Download</Button></div>}>
-      <div className="cc-field"><SegmentedControl label="Format" options={[{ value: 'xlsx', label: 'Excel' }, { value: 'csv', label: 'CSV' }]} value={format} onChange={setFormat} /></div>
+      <div className="cc-field"><InlineChoice label="Format" options={[{ value: 'xlsx', label: 'Excel' }, { value: 'csv', label: 'CSV' }]} value={format} onChange={setFormat} semantics="radio" /></div>
       <p className="cc-note">Every invoice and payment, with the currency, the rate it landed at and where each client lives.</p>
     </SlidePanel>
   );

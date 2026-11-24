@@ -23,10 +23,13 @@
   /* An older phone rule pads every button and sets its size (mobile.css). */
   padding: 0 !important;
 }
+.ui-root .cc-today-fin-last { display: inline-flex; align-items: baseline; gap: var(--space-2); }
+.ui-root .cc-today-fin-last .ds-chevron-line { color: var(--text-2); }
 .ui-root .cc-today-fin--open { cursor: pointer; transition: color var(--dur) var(--ease); -webkit-tap-highlight-color: transparent; }
 @media (hover: hover) {
-  .ui-root .cc-today-fin--open:hover { color: var(--coral-text); }
+  .ui-root .cc-today-fin--open:hover, .ui-root .cc-today-fin--open:hover .cc-today-fin-last .ds-chevron-line { color: var(--coral-text); }
 }
+.ui-root .cc-today-fin--open:focus-visible .cc-today-fin-last .ds-chevron-line { color: var(--coral-text); }
 .ui-root .cc-today-fin--open:focus-visible { color: var(--coral-text); outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--space-1); }
 
 /* A quiet line with its own link: the recap still to send. */

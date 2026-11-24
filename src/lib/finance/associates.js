@@ -4,15 +4,35 @@ import { addMonths, monthDays, monthKey, monthName } from './year.js';
 import { hoursWords } from './words.js';
 
 // Associates' pay (Phase 6b run 2, step 5). An associate is paid their hourly rate for the coaching hours they
-// delivered each month: sessions held, late cancellations (they count as delivered and are paid), and no-shows only
-// when Tim chooses (finance settings' no_shows_paid). A cancelled session is never paid. Each month's pay goes out the
+// delivered each month: sessions held, late cancellations (they count as delivered and are paid) unless waived, and
+// no-shows only when Tim chooses (finance settings' no_shows_paid). A cancelled or moved session is never paid. A past
+// session with no outcome written yet counts as held until it's marked otherwise (the one rule everywhere: 062's
+// associate_month_minutes, the forecast, Settings, Coaches, the associate's own Today and their statement; UI tester,
+// run 2): "past" is once it has ended, its start plus its minutes at or before `nowMs`. Each month's pay goes out the
 // month after. Where nothing is booked for a month ahead, the forecast uses the associate's average of the last 3
 // complete months. Checked by tests/performance/finance-associates.test.mjs.
 
-/** Whether a session's outcome is paid as delivered. A session not held yet (outcome null) isn't delivered. */
+/** Whether an outcome is paid as delivered. An outcome not written yet (null) isn't, on its own: see sessionCounts. */
 export function countsAsDelivered(outcome, noShowsPaid = false) {
   if (outcome === 'held' || outcome === 'late_cancel') return true;
   return outcome === 'no_show' && Boolean(noShowsPaid);
+}
+
+/** Whether a session has ended by `nowMs` (its start plus its minutes). */
+export const sessionEnded = (s, nowMs = 0) => {
+  const start = Date.parse(s?.starts_at);
+  return Number.isFinite(start) && start + Math.max(0, Number(s.minutes) || 0) * 60000 <= Number(nowMs || 0);
+};
+
+/**
+ * Whether one session is paid as delivered: held; or no outcome yet and already ended (it counts as held until it's
+ * marked otherwise); a late cancellation unless waived; a no-show only when Tim pays them; cancelled or moved never.
+ */
+export function sessionCounts(s, { noShowsPaid = false, nowMs = 0 } = {}) {
+  if (!s) return false;
+  if (s.outcome == null || s.outcome === '') return sessionEnded(s, nowMs);
+  if (s.outcome === 'late_cancel' && s.waived) return false;
+  return countsAsDelivered(s.outcome, noShowsPaid);
 }
 
 const theirs = (sessions, coachId, month, zone) => (sessions || [])
@@ -20,17 +40,18 @@ const theirs = (sessions, coachId, month, zone) => (sessions || [])
 
 /**
  * An associate's delivered month.
- * @param {{ coachId: string, rateMinor: number, sessions: object[], month: string, zone?: string, noShowsPaid?: boolean }} a
+ * @param {{ coachId: string, rateMinor: number, sessions: object[], month: string, zone?: string, noShowsPaid?: boolean, nowMs?: number }} a
+ *   nowMs: the moment a session with no outcome yet counts as held once it has ended by (0: none of them do)
  * @returns {{ month: string, minutes: number, payMinor: number, lateCancels: number, noShows: number, hours: string, words: string }}
  *   words "22 hours at £100"
  */
-export function associateMonth({ coachId, rateMinor, sessions, month, zone, noShowsPaid = false }) {
+export function associateMonth({ coachId, rateMinor, sessions, month, zone, noShowsPaid = false, nowMs = 0 }) {
   const m = monthKey(month);
   let minutes = 0;
   let lateCancels = 0;
   let noShows = 0;
   for (const s of theirs(sessions, coachId, m, zone)) {
-    if (!countsAsDelivered(s.outcome, noShowsPaid)) continue;
+    if (!sessionCounts(s, { noShowsPaid, nowMs })) continue;
     minutes += Math.max(0, Number(s.minutes) || 0);
     if (s.outcome === 'late_cancel') lateCancels += 1;
     if (s.outcome === 'no_show') noShows += 1;
@@ -54,7 +75,7 @@ export function threeMonthAverage({ coachId, rateMinor, sessions, month, zone, n
 export function expectedPay({ coachId, rateMinor, sessions, month, fromMonth, zone, noShowsPaid = false }) {
   const m = monthKey(month);
   const mine = theirs(sessions, coachId, m, zone);
-  const minutes = mine.filter((s) => s.outcome == null || countsAsDelivered(s.outcome, noShowsPaid))
+  const minutes = mine.filter((s) => s.outcome == null || (!(s.outcome === 'late_cancel' && s.waived) && countsAsDelivered(s.outcome, noShowsPaid)))
     .reduce((a, s) => a + Math.max(0, Number(s.minutes) || 0), 0);
   if (minutes > 0) return { month: m, payMinor: Math.round((minutes * Number(rateMinor)) / 60), from: 'booked' };
   return { month: m, payMinor: threeMonthAverage({ coachId, rateMinor, sessions, month: fromMonth, zone, noShowsPaid }), from: 'average' };

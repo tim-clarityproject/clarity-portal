@@ -4,7 +4,10 @@
 /* ---------------------------------------------------------------- figures (M11 .stats) */
 .ui-root .cc-pay-figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4) var(--space-6); align-items: start; margin-top: var(--space-px20); }
 .ui-root .cc-pay-figures .ds-stat-value, .ui-root .cc-pay-figures .ds-unit { white-space: nowrap; }
+/* Lead reports' four figures in one row on a laptop (M11 C10), each kept whole: one wraps to the next row rather than
+   breaking its number. */
 .ui-root .cc-rep-figures { display: flex; flex-wrap: wrap; gap: var(--space-px22) var(--space-5); }
+.ui-root .cc-rep-figures > .ds-stat { flex: 1 1 0; min-width: min-content; }
 .ui-root .cc-today-part .cc-pay-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 /* A section with a quiet word at the right of its heading (M11 .bzr), hidden on a phone. */
@@ -29,6 +32,7 @@
 @media (max-width: 600px) {
   .ui-root .cc-pay-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-3); }
   .ui-root .cc-pay-figures .cc-pay-hours { grid-column: 1 / -1; }
+  .ui-root .cc-rep-figures > .ds-stat { flex: 1 1 calc(50% - var(--space-5)); }
   .ui-root .cc-pay-aside { display: none; }
   .ui-root .cc-rep-bar { grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); }
   .ui-root .cc-rep-bar .ds-bar { grid-column: 1 / -1; order: 3; }

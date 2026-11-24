@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Button, PdfDownload, SlidePanel, Stat } from '../../components/design';
 import { moneyWords as minorWords, rateWords as minorRateWords } from '../../lib/billing/money.js';
-import { payLabels } from '../../lib/finance/associates.js';
+import { associateMonth, payLabels } from '../../lib/finance/associates.js';
 import { monthKey } from '../../lib/finance/year.js';
 import { poundsWords } from '../../lib/finance/words.js';
 import { associatePay, hoursFigure, payWords, rateMinorOf, statementFacts, theirClientsPaid } from '../../lib/coach/associatePay';
 import { rowsOf } from '../../lib/coach/store';
 import { Row, useCoachPortal } from './parts';
+import { useAssociateSessions } from './financeParts';
 import './pay.css';
 
 // An associate's hours and pay (Phase 6b run 2, step 5; M11 C12 and C13).
@@ -15,7 +16,8 @@ import './pay.css';
 //   this month, Their clients and the Monthly statement with its Preview panel. Supervision and Documents aren't built.
 // - Today (an associate): Your hours and pay, their own figures only, with Download my <Month> statement (a light PDF).
 // The owner reads the month from its saved statement (062's associate_statements, through usePayData below),
-// or from the associate's sessions when the device holds them; an associate reads their own sessions and rate.
+// 062's associate_month_minutes, or the owner's view of the associate's sessions (058); an associate reads their own
+// sessions and rate. Everywhere a past session with no outcome yet counts as held until it's marked otherwise.
 
 const sessionsOf = (state) => rowsOf(state, 'coach_sessions');
 
@@ -74,17 +76,21 @@ export function StatementPanel({ open, onClose, title, lines = [], note }) {
  * lists their clients.
  */
 export function AssociateSection({ associate, onOpenClients }) {
-  const { state, todayKey, admin, payments, invoices } = useCoachPortal();
+  const { userId, state, todayKey, admin, payments, invoices } = useCoachPortal();
   const finance = usePayData();
   const [preview, setPreview] = useState(false);
   const month = monthKey(todayKey);
   const name = associate.full_name || associate.first_name;
   const rateMinor = rateMinorOf(associate);
   const minutes = useMonthMinutes(month, finance.ready);
+  // Before 062's associate_month_minutes is there, or offline: the owner's view of their sessions (058, the same read
+  // as Finances' forecast), an ended one counting as held, so the figures still show rather than vanish.
+  const assoc = useAssociateSessions(userId);
   const pay = useMemo(() => associatePay({
-    associateId: associate.coach_id, rateMinor, month, statements: finance.statements, sessions: sessionsOf(state),
-    noShowsPaid: Boolean(finance.settings?.no_shows_paid), monthMinutes: minutes.find((r) => r.coach_id === associate.coach_id) || null,
-  }), [associate.coach_id, rateMinor, month, finance.statements, finance.settings, state, minutes]);
+    associateId: associate.coach_id, rateMinor, month, statements: finance.statements,
+    sessions: [...sessionsOf(state), ...assoc.map((r) => ({ coach_id: r.coach_id, starts_at: r.starts_at, minutes: r.minutes, outcome: null }))],
+    noShowsPaid: Boolean(finance.settings?.no_shows_paid), monthMinutes: minutes.find((r) => r.coach_id === associate.coach_id) || null, nowMs: Date.now(),
+  }), [associate.coach_id, rateMinor, month, finance.statements, finance.settings, state, minutes, assoc]);
   const theirs = useMemo(() => (admin || []).filter((a) => a.coach_id === associate.coach_id && a.status !== 'past'), [admin, associate.coach_id]);
   const paid = useMemo(() => theirClientsPaid({ payments, invoices, profileIds: theirs.map((a) => a.profile_id), month }), [payments, invoices, theirs, month]);
   const labels = payLabels(month);
@@ -120,12 +126,17 @@ export function YourHoursAndPay() {
   const finance = usePayData();
   const month = monthKey(todayKey);
   const rateMinor = rateMinorOf(coach);
+  // A past session with no outcome written yet counts as held until it's marked otherwise (062's rule, the forecast's
+  // and Settings, Coaches'), so these hours agree with what Tim sees; the statement PDF reads the same figures.
   const pay = useMemo(() => associatePay({
     associateId: coach.id, rateMinor, month, statements: finance.statements.filter((s) => s.associate_id === coach.id), sessions: sessions || [],
-  }), [coach.id, rateMinor, month, finance.statements, sessions]);
+    noShowsPaid: Boolean(finance.settings?.no_shows_paid), nowMs: Date.now(),
+  }), [coach.id, rateMinor, month, finance.statements, finance.settings, sessions]);
   const labels = payLabels(month);
   // With no sessions this month yet, the month is 0 hours (and £0 once there is a rate): never another coach's figure.
-  const minutes = pay.delivered ? pay.delivered.minutes : 0;
+  // Hours are known without a rate: the same rule, counted at £0 (pay shows only once there is a rate or a statement).
+  const minutes = pay.delivered ? pay.delivered.minutes
+    : associateMonth({ coachId: coach.id, rateMinor: 0, sessions: sessions || [], month, noShowsPaid: Boolean(finance.settings?.no_shows_paid), nowMs: Date.now() }).minutes;
   const payMinor = pay.delivered ? pay.delivered.payMinor : 0;
   const known = rateMinor != null || pay.from === 'statement';
   const getDocument = async () => {

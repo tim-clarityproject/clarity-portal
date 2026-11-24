@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, ChartTips, Dropdown, InlineChoice, SlidePanel, SwitchRow, TextField, tipProps, useIsPhone, useToast } from '../../components/design';
+import { AddButton, Button, ChartTips, Dropdown, InlineChoice, SlidePanel, SwitchRow, TextField, tipProps, useIsPhone, useToast } from '../../components/design';
 import { newId, removeRow, saveRow } from '../../lib/coach/store';
-import { keptAssociateSessions, loadAssociateSessions } from '../../lib/coach/associateSessions';
-import { financeModel, invoiceTitle, invoiceWho, overdueWords, poundsFromTyped, reminderLines, dayWordsFrom } from '../../lib/coach/financeData';
+import { keptAssociateSessions, loadFinanceAssociateSessions } from '../../lib/coach/associateSessions';
+import { draftDue, financeModel, invoiceNo, invoiceTitle, invoiceWho, overdueWords, poundsFromTyped, reminderLines, dayWordsFrom } from '../../lib/coach/financeData';
 import { coachBilling, receiptProblem } from '../../lib/coach/financeActions';
 import { moneyWords } from '../../lib/billing/money';
 import { DEFAULT_SECTORS } from '../../lib/finance/index.js';
@@ -12,8 +12,6 @@ import { TextLink, useCoachPortal } from './parts';
 // line, a row with a figure at its right, who an invoice or payment is for, a receipt, and the invoice panels
 // (a draft waiting to send, an overdue one, a new one), which Overview and Invoices both open. Every sum is
 // src/lib/finance's (through financeData.js); nothing here works a figure out.
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** The settings row as the page uses it: the database's, or 062's defaults until it is there. */
 export function settingsOf(row, coachId) {
@@ -35,18 +33,27 @@ export function useNames() {
 }
 
 /** Everything Finances shows, worked out once per change to the rows it reads. */
+/**
+ * Associates' booked and held sessions (058's owner view: time and length only), 3 months back to a year ahead, for
+ * their pay in the forecast: the device's copy at once, then the database's. Finances, Today's Finances line and
+ * Settings, Coaches all read them here, so their figures always agree (UI tester, run 2).
+ */
+export function useAssociateSessions(userId, enabled = true) {
+  const [assoc, setAssoc] = useState(() => (enabled ? keptAssociateSessions(userId) : []));
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let live = true;
+    setAssoc(keptAssociateSessions(userId));
+    loadFinanceAssociateSessions(userId).then((rows) => { if (live && rows) setAssoc(rows); }).catch(() => {});
+    return () => { live = false; };
+  }, [userId, enabled]);
+  return assoc;
+}
+
 export function useFinance({ includeLikely = false } = {}) {
   const portal = useCoachPortal();
   const { userId, coach, todayKey } = portal;
-  const [assoc, setAssoc] = useState(() => keptAssociateSessions(userId));
-  // Associates' booked and held sessions (058's owner view: time and length only), 3 months back to a year ahead, for
-  // their pay in the forecast.
-  useEffect(() => {
-    let live = true;
-    const now = Date.now();
-    loadAssociateSessions(userId, now - 100 * DAY_MS, now + 400 * DAY_MS).then((rows) => { if (live && rows) setAssoc(rows); }).catch(() => {});
-    return () => { live = false; };
-  }, [userId]);
+  const assoc = useAssociateSessions(userId);
   const settings = useMemo(() => settingsOf(portal.financeSettings, coach.id), [portal.financeSettings, coach.id]);
   const months = [3, 6, 12].includes(Number(settings.cash_months)) ? Number(settings.cash_months) : 6;
   const model = useMemo(() => financeModel({ ...portal, financeSettings: settings, associateSessions: assoc }, { today: todayKey, months, includeLikely, nowMs: Date.now() }),
@@ -54,7 +61,7 @@ export function useFinance({ includeLikely = false } = {}) {
       portal.deadlines, portal.leads, portal.leadStages, portal.financeTargets, assoc, todayKey, months, includeLikely]);
   const names = useNames();
   const sectors = (portal.financeSectors || []).length ? portal.financeSectors.map((s) => s.name) : [...DEFAULT_SECTORS];
-  return { ...portal, settings, months, model, names, sectors };
+  return { ...portal, settings, months, model, names, sectors, associateSessions: assoc };
 }
 
 /** Save, then the toast with Undo for 10 seconds (coach rule 5); the calm line when it can't. */
@@ -241,10 +248,12 @@ export function ReceiptField({ file, onChange }) {
       {file ? (
         <div className="cc-line fin-receipt"><span><b>{file.name}</b></span><TextLink onClick={() => onChange(null)}>Remove</TextLink></div>
       ) : (
-        <button type="button" className={`cc-drop fin-drop${over ? ' cc-drop--over' : ''}`} onClick={() => ref.current?.click()}
+        // The shared add row (M11 draws the drop row as one: the coral cross, the words in the secondary grey), which
+        // also takes a file dropped on it.
+        <AddButton className={`fin-drop${over ? ' fin-drop--over' : ''}`} onClick={() => ref.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)} onDrop={(e) => { e.preventDefault(); setOver(false); take(e.dataTransfer?.files?.[0]); }}>
           {isPhone ? 'Take a photo or choose a file' : 'Drop a file here, or choose one'}
-        </button>
+        </AddButton>
       )}
       <input ref={ref} className="cc-hidden-file" type="file" accept="image/*,application/pdf" tabIndex={-1} aria-hidden="true" onChange={(e) => { take(e.target.files?.[0]); e.target.value = ''; }} />
       {problem && <p className="cc-problem" role="alert">{problem}</p>}
@@ -268,7 +277,8 @@ const CURRENCY_OPTIONS = [{ value: 'GBP', label: 'Pounds' }, { value: 'USD', lab
 const DUE_OPTIONS = [{ value: 'in_14', label: 'In 14 days' }, { value: 'in_30', label: 'In 30 days' }, { value: 'on_receipt', label: 'On receipt' }];
 
 /**
- * The invoice panels (M11 C7): `panel` is { kind: 'new' } | { kind: 'draft', id } | { kind: 'overdue', id }.
+ * The invoice panels (M11 C7): `panel` is { kind: 'new' } | { kind: 'draft', id } | { kind: 'overdue', id } | { kind: 'view', id }
+ * (a sent or paid one with no Stripe page yet).
  * New invoice and Send in Stripe ask the server (coach-billing 'one_off' and 'send'); Send a reminder now sends the
  * newest reminder drafted for it ('send_reminder'); Pause reminders keeps 061's pause for the client or organisation.
  */
@@ -334,9 +344,22 @@ export function InvoicePanels({ panel, onClose }) {
         footer={<div className="cc-panel-foot"><TextLink onClick={onClose}>Not now</TextLink><Button variant="primary" onClick={() => ask({ kind: 'send', invoiceId: inv.id }, 'Sent in Stripe. It shows under Sent and due.')}>Send in Stripe</Button></div>}>
         <p className="cc-quiet fin-meta">{[who, inv.payer_name && inv.payer_name !== who ? `Invoices go to ${inv.payer_name}` : null].filter(Boolean).join('   ')}</p>
         <FigRow title="Amount" value={moneyWords(Number(inv.total_minor), inv.currency || 'GBP')} />
-        <FigRow title="Due" facts={[inv.agreement_id ? 'From the signed agreement' : null]} value={inv.due_on ? dayWordsFrom(inv.due_on, todayKey) : `${Number(inv.terms_days) || 0} days after it’s sent`} />
+        <FigRow title="Due" facts={[draftDue(inv, todayKey).fact]} value={draftDue(inv, todayKey).value} />
         {inv.po_number && <FigRow title="PO number" facts={['On the invoice']} value={inv.po_number} />}
         {general}
+      </SlidePanel>
+    );
+  }
+  // A sent or paid invoice with no Stripe page yet (the row opens Stripe's page when there is one): its facts, read only.
+  if (panel.kind === 'view') {
+    const paidOn = inv.paid_at ? String(inv.paid_at).slice(0, 10) : null;
+    return (
+      <SlidePanel open onClose={onClose} title={invoiceTitle(inv)} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={onClose}>Done</Button></div>}>
+        <p className="cc-quiet fin-meta">{who}</p>
+        {invoiceNo(inv) && <FigRow title="Invoice" value={invoiceNo(inv)} />}
+        <FigRow title="Amount" value={moneyWords(Number(inv.total_minor), inv.currency || 'GBP')} />
+        {inv.status === 'paid' && paidOn ? <FigRow title="Paid" value={dayWordsFrom(paidOn, todayKey)} />
+          : inv.due_on ? <FigRow title="Due" value={dayWordsFrom(inv.due_on, todayKey)} /> : null}
       </SlidePanel>
     );
   }
