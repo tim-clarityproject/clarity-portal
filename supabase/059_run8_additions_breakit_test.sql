@@ -357,6 +357,31 @@ begin
     -- Names with HTML are kept as typed (the email escapes them: group-reminders.test.mjs).
     f := f || pg_temp.g_eq('2n names with HTML come back as typed', (select r.group_name from public.cal_group_reminders_coming(now()) r where r.member_id = m4 and r.kind = 'hour_before'), 'Kestrel <b>team</b>');
 
+    -- ---------------------------------------------------------------- 3. busy times, every way in
+    insert into public.coach_google_calendars (id, coach_id, google_id, name, busy_on) values (gen_random_uuid(), c, 'fam.t059@group.calendar.example', 'Family', true);
+    insert into public.coach_busy_times (coach_id, calendar_id, event_id, title, starts_at, ends_at)
+      select c, g.id, 'e1', '<script>School play</script>', now() + interval '1 day', now() + interval '1 day 1 hour' from public.coach_google_calendars g where g.coach_id = c;
+    update public.coaches set role = 'owner' where id = c2;
+    perform pg_temp.g_as(u2, 'aal2');
+    f := f || pg_temp.g_eq('3a another coach (the owner, with the code) reads none, joined or alone', concat_ws('/',
+      pg_temp.g_n('select count(*)::text from public.coach_busy_times'),
+      pg_temp.g_n('select count(*)::text from public.coach_google_calendars g join public.coach_busy_times b on b.calendar_id = g.id'),
+      pg_temp.g_n('select count(*)::text from public.coach_busy_times b join public.coaches k on k.id = b.coach_id')), '0/0/0');
+    f := f || pg_temp.g_eq('3b nor reaches the free-times worker or the server''s lists', concat_ws('/',
+      pg_temp.g_n(format('select count(*)::text from public._cal_free_times(%L, ''hours'', 60, 0, 0, 0, 12, 5, now(), now() + interval ''7 days'', null, null, now())', c)),
+      pg_temp.g_n('select count(*)::text from public.cal_group_reminders_coming(now())')), 'error 42501/error 42501');
+    f := f || pg_temp.g_eq('3c nor changes them', concat_ws('/',
+      pg_temp.g_rows(format('update public.coach_busy_times set title = ''x'' where coach_id = %L', c)),
+      pg_temp.g_rows(format('delete from public.coach_google_calendars where coach_id = %L', c))), '0/0');
+    perform pg_temp.g_as(u, 'aal1');
+    f := f || pg_temp.g_eq('3d the coach before the code: none', pg_temp.g_n('select count(*)::text from public.coach_busy_times'), '0');
+    perform pg_temp.g_as(u, 'aal2');
+    f := f || pg_temp.g_eq('3e the coach with the code: their own, title as typed', pg_temp.g_n('select string_agg(title, '','') from public.coach_busy_times'), '<script>School play</script>');
+    perform pg_temp.g_anon();
+    f := f || pg_temp.g_eq('3f anyone signed out: refused', concat_ws('/',
+      pg_temp.g_n('select count(*)::text from public.coach_busy_times'), pg_temp.g_n('select count(*)::text from public.coach_google_calendars')), 'error 42501/error 42501');
+    perform pg_temp.g_admin();
+
     raise exception 'undo the test rows' using errcode = 'P0860';
   exception when sqlstate 'P0860' then
     perform pg_temp.g_admin();
