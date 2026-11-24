@@ -106,6 +106,7 @@ declare
   q bigint := 0;
   good text := 'k058-secret-abcdefghij';
   long_secret text := repeat('k058', 1000);
+  url_id uuid; secret_id uuid;
   tess_u uuid; maya_u uuid; ravi_u uuid; sam_u uuid; ann_u uuid; tess_c uuid; maya_c uuid; ravi_c uuid;
   p_sam uuid := gen_random_uuid(); p_ann uuid := gen_random_uuid(); p_leo uuid := gen_random_uuid();
   s_m uuid := gen_random_uuid(); s_r uuid := gen_random_uuid(); s_none uuid := gen_random_uuid(); s_t uuid := gen_random_uuid();
@@ -188,22 +189,28 @@ begin
     if has_vault and has_net then
       execute 'select count(*)::integer from vault.decrypted_secrets where name in ($1, $2)' into n using 'clarity_cron_secret', 'clarity_live_url';
       if n = 0 and to_regclass('vault.secrets') is not null and exists (select 1 from information_schema.columns where table_schema = 'vault' and table_name = 'secrets' and column_name = 'created_at') then
-        execute 'select vault.create_secret($1, $2)' using 'https://example.invalid', 'clarity_live_url';
-        execute 'select vault.create_secret($1, $2)' using good, 'clarity_cron_secret';
+        execute 'select vault.create_secret($1, $2)' into url_id using 'https://example.invalid', 'clarity_live_url';
+        execute 'select vault.create_secret($1, $2)' into secret_id using good, 'clarity_cron_secret';
         execute 'select coalesce(max(id), 0) from net.http_request_queue' into q;
         -- ---------------------------------------------------------------- 4. two runs at once
         f := f || pg_temp.k_eq('4a two runs together each ask the two addresses (each reminder is still claimed once, 050 and 051)',
           concat(public.run_reminder_jobs(), public.run_reminder_jobs()), '22');
         execute 'select count(*)::text from net.http_request_queue where id > $1 and headers ->> ''Authorization'' = ''Bearer '' || $2' into v using q, good;
         f := f || pg_temp.k_eq('4b four calls, each with the secret read from Vault', v, '4');
-        -- An address in Vault that isn't usable: nothing.
-        execute 'update vault.secrets set secret = $1 where name = $2' using 'http://example.invalid', 'clarity_live_url';
-        f := f || pg_temp.k_eq('4c an http address in Vault: the job asks nothing', public.run_reminder_jobs()::text, '0');
-        execute 'update vault.secrets set secret = $1 where name = $2' using '', 'clarity_live_url';
-        f := f || pg_temp.k_eq('4d an empty address in Vault: nothing', public.run_reminder_jobs()::text, '0');
-        execute 'update vault.secrets set secret = $1 where name = $2' using 'https://example.invalid', 'clarity_live_url';
-        execute 'update vault.secrets set secret = $1 where name = $2' using 'short', 'clarity_cron_secret';
-        f := f || pg_temp.k_eq('4e a short secret in Vault: nothing', public.run_reminder_jobs()::text, '0');
+        -- An address in Vault that isn't usable: nothing. Changed through Vault's own vault.update_secret (hosted Supabase
+        -- refuses a direct write to vault.secrets, 42501, test project 24 Nov). Where even that is refused, 4c to 4e are
+        -- skipped with a NOTE; the secrets made above are still undone with everything else (P0858 below).
+        begin
+          execute 'select vault.update_secret($1, $2)' using url_id, 'http://example.invalid';
+          f := f || pg_temp.k_eq('4c an http address in Vault: the job asks nothing', public.run_reminder_jobs()::text, '0');
+          execute 'select vault.update_secret($1, $2)' using url_id, '';
+          f := f || pg_temp.k_eq('4d an empty address in Vault: nothing', public.run_reminder_jobs()::text, '0');
+          execute 'select vault.update_secret($1, $2)' using url_id, 'https://example.invalid';
+          execute 'select vault.update_secret($1, $2)' using secret_id, 'short';
+          f := f || pg_temp.k_eq('4e a short secret in Vault: nothing', public.run_reminder_jobs()::text, '0');
+        exception when insufficient_privilege or undefined_function then
+          raise notice '058 break-it: NOTE for Tim: Vault''s secrets can''t be changed here (%), so 4c to 4e (an unusable address or secret in Vault) were skipped. 2a and 2b check the same values without Vault.', sqlerrm;
+        end;
       else
         raise notice '058 break-it: Vault already holds clarity_cron_secret or clarity_live_url here (or isn''t the stand-in''s shape), so the job wasn''t run.';
       end if;
