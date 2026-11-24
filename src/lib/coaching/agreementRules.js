@@ -176,7 +176,10 @@ const PNG = /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
 /** A drawn signature 061 keeps: a PNG data URL of 200 to 300,000 characters. */
 export const isSignatureImage = (s) => typeof s === 'string' && s.length >= SIG_MIN && s.length <= SIG_MAX && PNG.test(s);
 /** A full name 061 signs with: 3 to 160 characters once trimmed. */
-export const nameOk = (s) => text(s).length >= 3 && String(s).length <= 160;
+// As sign_agreement: invisible and direction marks taken out, at least one letter, no markup (break-it tester).
+const INVISIBLE = /[\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF\u00AD]/g;
+export const cleanName = (s) => String(s ?? '').replace(INVISIBLE, '').trim();
+export const nameOk = (s) => { const n = cleanName(s); return n.length >= 3 && n.length <= 160 && /\p{L}/u.test(n) && !/[<>{}]/.test(n); };
 
 export const NEEDS = Object.freeze({
   draw: 'Draw your signature to carry on.',

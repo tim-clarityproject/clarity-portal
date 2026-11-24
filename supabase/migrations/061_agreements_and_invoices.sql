@@ -113,25 +113,64 @@ comment on table public.agreement_versions is
 create index if not exists agreement_versions_agreement_idx on public.agreement_versions (agreement_id, version);
 
 -- A version is fixed once sent: only its signing (sign_agreement), its PDF's place and being superseded may change it.
+-- A coach writing directly (the role authenticated; the client's signing runs inside sign_agreement as its owner) can
+-- never write the client's signing record, never start a version as signed, never move a version backwards, and never
+-- delete one that was sent (break-it tester, 6b run 1).
 create or replace function public.agreement_versions_guard()
 returns trigger
 language plpgsql
 set search_path = ''
 as $$
+declare
+  v_person boolean := current_user = 'authenticated';
 begin
-  if tg_op = 'UPDATE' then
+  if tg_op = 'DELETE' then
+    if v_person and old.status <> 'draft' then
+      raise exception 'A version that has been sent is kept. Make a new version instead.' using errcode = '23514';
+    end if;
+    return old;
+  end if;
+  if v_person and (tg_op = 'INSERT' or new.coach_signature_id is distinct from old.coach_signature_id)
+     and new.coach_signature_id is not null
+     and not exists (select 1 from public.signatures s where s.id = new.coach_signature_id and s.user_id = (select auth.uid())) then
+    raise exception 'Sign with your own signature.' using errcode = '42501';
+  end if;
+  if tg_op = 'INSERT' then
+    if v_person and (new.status not in ('draft', 'sent') or new.client_signed_at is not null or new.client_signature_id is not null
+         or new.signed_name is not null or new.signed_email is not null or new.signed_user_id is not null or new.fingerprint is not null) then
+      raise exception 'Only the client signs their agreement.' using errcode = '42501';
+    end if;
+  else
     new.agreement_id := old.agreement_id; new.coach_id := old.coach_id; new.version := old.version;
     if old.status in ('sent', 'signed', 'superseded') and (new.terms is distinct from old.terms or new.clauses is distinct from old.clauses
          or new.currency is distinct from old.currency or new.fx_rate is distinct from old.fx_rate or new.fx_at is distinct from old.fx_at
          or new.total_minor is distinct from old.total_minor or new.funded_by is distinct from old.funded_by) then
-      raise exception 'A version that has been sent can''t change. Make a new version instead.' using errcode = '23514';
+      raise exception 'A version that has been sent can’t change. Make a new version instead.' using errcode = '23514';
     end if;
     if old.status = 'signed' and new.status <> 'signed' and new.status <> 'superseded' then
       raise exception 'A signed version stays signed.' using errcode = '23514';
     end if;
+    if old.status = 'superseded' and new.status <> 'superseded' then
+      raise exception 'A version that has been replaced stays replaced.' using errcode = '23514';
+    end if;
     if old.client_signed_at is not null and (new.client_signed_at is distinct from old.client_signed_at or new.signed_name is distinct from old.signed_name
-         or new.signed_email is distinct from old.signed_email or new.fingerprint is distinct from old.fingerprint) then
+         or new.signed_email is distinct from old.signed_email or new.fingerprint is distinct from old.fingerprint
+         or new.client_signature_id is distinct from old.client_signature_id or new.signed_user_id is distinct from old.signed_user_id) then
       raise exception 'A signing record never changes.' using errcode = '23514';
+    end if;
+    if v_person then
+      if new.client_signed_at is distinct from old.client_signed_at or new.client_signature_id is distinct from old.client_signature_id
+         or new.signed_name is distinct from old.signed_name or new.signed_email is distinct from old.signed_email
+         or new.signed_user_id is distinct from old.signed_user_id or new.fingerprint is distinct from old.fingerprint then
+        raise exception 'Only the client signs their agreement.' using errcode = '42501';
+      end if;
+      if not (new.status = old.status or (old.status = 'draft' and new.status = 'sent') or (old.status = 'sent' and new.status = 'superseded')) then
+        raise exception 'Only the client signs their agreement.' using errcode = '42501';
+      end if;
+      if old.status <> 'draft' and (new.coach_signed_at is distinct from old.coach_signed_at or new.coach_signature_id is distinct from old.coach_signature_id
+           or new.sent_at is distinct from old.sent_at) then
+        raise exception 'A version that has been sent can’t change. Make a new version instead.' using errcode = '23514';
+      end if;
     end if;
   end if;
   new.updated_at := now();
@@ -139,7 +178,48 @@ begin
 end;
 $$;
 drop trigger if exists agreement_versions_guard on public.agreement_versions;
-create trigger agreement_versions_guard before insert or update on public.agreement_versions for each row execute function public.agreement_versions_guard();
+create trigger agreement_versions_guard before insert or update or delete on public.agreement_versions for each row execute function public.agreement_versions_guard();
+
+-- The agreement itself: a coach writing directly never marks it signed, never moves it to another client once a
+-- version has been sent, and never deletes one that has been sent (every version is kept).
+create or replace function public.agreements_guard()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_person boolean := current_user = 'authenticated';
+  v_sent boolean;
+begin
+  if not v_person then
+    return case when tg_op = 'DELETE' then old else new end;
+  end if;
+  if tg_op = 'DELETE' then
+    if exists (select 1 from public.agreement_versions v where v.agreement_id = old.id and v.status <> 'draft') then
+      raise exception 'An agreement that has been sent is kept.' using errcode = '23514';
+    end if;
+    return old;
+  end if;
+  if tg_op = 'INSERT' then
+    if new.status not in ('draft', 'sent') then
+      raise exception 'Only the client signs their agreement.' using errcode = '42501';
+    end if;
+    return new;
+  end if;
+  if new.status = 'signed' and old.status <> 'signed' then
+    raise exception 'Only the client signs their agreement.' using errcode = '42501';
+  end if;
+  new.coach_id := old.coach_id;
+  select exists (select 1 from public.agreement_versions v where v.agreement_id = old.id and v.status <> 'draft') into v_sent;
+  if v_sent then
+    new.profile_id := old.profile_id; new.organisation_id := old.organisation_id; new.kind := old.kind;
+  end if;
+  new.updated_at := now();
+  return new;
+end;
+$$;
+drop trigger if exists agreements_guard on public.agreements;
+create trigger agreements_guard before insert or update or delete on public.agreements for each row execute function public.agreements_guard();
 
 -- The document's fingerprint: SHA-256 of its terms and clauses as stored.
 create or replace function public.agreement_fingerprint(p_version uuid)
@@ -150,7 +230,13 @@ security definer
 set search_path = ''
 as $$
   select encode(sha256(convert_to(v.terms::text || '|' || v.clauses::text || '|' || v.currency || '|' || coalesce(v.fx_rate::text, ''), 'UTF8')), 'hex')
-  from public.agreement_versions v where v.id = p_version;
+  from public.agreement_versions v
+  join public.agreements a on a.id = v.agreement_id
+  left join public.client_profiles p on p.id = a.profile_id
+  where v.id = p_version
+    -- The client's own or the coach's own only (break-it tester); the server and sign_agreement read any.
+    and (coalesce(nullif(current_setting('role', true), 'none'), session_user) not in ('authenticated', 'anon')
+         or p.user_id = (select auth.uid()) or v.coach_id = (select public.my_coach_id()));
 $$;
 revoke all on function public.agreement_fingerprint(uuid) from public, anon;
 grant execute on function public.agreement_fingerprint(uuid) to authenticated, service_role;
@@ -276,6 +362,28 @@ create table if not exists public.credit_notes (
 );
 create index if not exists credit_notes_invoice_idx on public.credit_notes (invoice_id);
 
+-- Never more refunded and credited than was settled on the invoice, checked with the invoice locked, so a refund and a
+-- credit pressed at the same moment can't both pass (break-it tester, 6b run 1).
+create or replace function public.credit_notes_within_paid()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_paid bigint;
+  v_before bigint;
+begin
+  select i.paid_minor into v_paid from public.invoices i where i.id = new.invoice_id for update;
+  select coalesce(sum(c.amount_minor), 0) into v_before from public.credit_notes c where c.invoice_id = new.invoice_id and c.id <> new.id;
+  if v_before + new.amount_minor > coalesce(v_paid, 0) then
+    raise exception 'That’s more than was settled on this invoice.' using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists credit_notes_within_paid on public.credit_notes;
+create trigger credit_notes_within_paid before insert or update of amount_minor, invoice_id on public.credit_notes for each row execute function public.credit_notes_within_paid();
+
 create table if not exists public.expenses (
   id            uuid primary key default gen_random_uuid(),
   coach_id      uuid not null references public.coaches (id) on delete restrict,
@@ -337,6 +445,7 @@ create table if not exists public.portal_subscriptions (
   first_invested_at       timestamptz,
   current_period_end      timestamptz,
   cancelled_at            timestamptz,
+  stripe_updated_at       timestamptz,
   created_at              timestamptz not null default now(),
   updated_at              timestamptz not null default now()
 );
@@ -377,6 +486,33 @@ begin
     execute format('drop policy if exists "Coach alone" on public.%I', t);
     execute format('create policy "Coach alone" on public.%I for all to authenticated using (coach_id = (select public.my_coach_id())) with check (coach_id = (select public.my_coach_id()))', t);
   end loop;
+  -- An agreement only for the coach's own client (or an organisation they can see), a version only on their own
+  -- agreement (break-it tester, 6b run 1: an associate could send one to the owner's client).
+  execute 'drop policy if exists "Coach alone" on public.agreements';
+  execute 'drop policy if exists "Coach alone, read" on public.agreements';
+  execute 'create policy "Coach alone, read" on public.agreements for select to authenticated using (coach_id = (select public.my_coach_id()))';
+  execute 'drop policy if exists "Coach alone, remove" on public.agreements';
+  execute 'create policy "Coach alone, remove" on public.agreements for delete to authenticated using (coach_id = (select public.my_coach_id()))';
+  execute 'drop policy if exists "Coach alone, own client" on public.agreements';
+  execute 'create policy "Coach alone, own client" on public.agreements for insert to authenticated with check (coach_id = (select public.my_coach_id())
+     and (profile_id is null or exists (select 1 from public.client_profiles p where p.id = profile_id and p.coach_id = (select public.my_coach_id())))
+     and (organisation_id is null or exists (select 1 from public.organisations o where o.id = organisation_id)))';
+  execute 'drop policy if exists "Coach alone, own client, change" on public.agreements';
+  execute 'create policy "Coach alone, own client, change" on public.agreements for update to authenticated using (coach_id = (select public.my_coach_id()))
+     with check (coach_id = (select public.my_coach_id())
+     and (profile_id is null or exists (select 1 from public.client_profiles p where p.id = profile_id and p.coach_id = (select public.my_coach_id())))
+     and (organisation_id is null or exists (select 1 from public.organisations o where o.id = organisation_id)))';
+  execute 'drop policy if exists "Coach alone" on public.agreement_versions';
+  execute 'drop policy if exists "Coach alone, read" on public.agreement_versions';
+  execute 'create policy "Coach alone, read" on public.agreement_versions for select to authenticated using (coach_id = (select public.my_coach_id()))';
+  execute 'drop policy if exists "Coach alone, remove" on public.agreement_versions';
+  execute 'create policy "Coach alone, remove" on public.agreement_versions for delete to authenticated using (coach_id = (select public.my_coach_id()))';
+  execute 'drop policy if exists "Coach alone, own agreement" on public.agreement_versions';
+  execute 'create policy "Coach alone, own agreement" on public.agreement_versions for insert to authenticated with check (coach_id = (select public.my_coach_id())
+     and exists (select 1 from public.agreements a where a.id = agreement_id and a.coach_id = (select public.my_coach_id())))';
+  execute 'drop policy if exists "Coach alone, own agreement, change" on public.agreement_versions';
+  execute 'create policy "Coach alone, own agreement, change" on public.agreement_versions for update to authenticated using (coach_id = (select public.my_coach_id()))
+     with check (coach_id = (select public.my_coach_id()))';
   execute 'grant select, update on public.agreement_change_requests to authenticated';
   execute 'drop policy if exists "Coach alone" on public.agreement_change_requests';
   execute 'create policy "Coach alone" on public.agreement_change_requests for select to authenticated using (coach_id = (select public.my_coach_id()))';
@@ -414,10 +550,16 @@ begin
       'currency', case when v.funded_by is null then v.currency end,
       'fx_rate', case when v.funded_by is null then v.fx_rate end, 'fx_at', case when v.funded_by is null then v.fx_at end,
       'total_minor', case when v.funded_by is null then v.total_minor end,
-      'terms', case when v.funded_by is null then v.terms else v.terms - array['investment', 'rate', 'instalments', 'discounts', 'total_minor', 'fees', 'payment'] end,
+      -- Funded: only the terms on this list are shown, so no money key, named or not, ever reaches them (break-it tester).
+      'terms', case when v.funded_by is null then v.terms
+               else (select coalesce(jsonb_object_agg(k, val), '{}'::jsonb) from jsonb_each(v.terms) as e(k, val)
+                     where k = any (array['coaching', 'sessions', 'minutes', 'place', 'rhythm', 'startsOn', 'endsOn', 'ongoing', 'goals',
+                                          'contactWays', 'clientName', 'clientEmail', 'coachName', 'coachFirst', 'coachEmail', 'fundedBy',
+                                          'expensesAllowed', 'sponsor'])) end,
       'clauses', case when v.funded_by is null then v.clauses
                  else (select coalesce(jsonb_agg(c), '[]'::jsonb) from jsonb_array_elements(v.clauses) c where coalesce(c->>'money', 'false') <> 'true') end,
-      'changes', v.changes, 'signed_name', v.signed_name, 'signed_email', v.signed_email, 'fingerprint', v.fingerprint
+      'changes', v.changes, 'signed_name', v.signed_name, 'signed_email', v.signed_email, 'fingerprint', v.fingerprint,
+      'client_signature_id', v.client_signature_id
     ) order by a.created_at desc, v.version desc)
     from public.agreements a
     join public.client_profiles p on p.id = a.profile_id
@@ -451,10 +593,9 @@ begin
     ) order by i.number desc)
     from public.invoices i
     join public.client_profiles p on p.id = i.profile_id
-    left join public.agreements a on a.id = i.agreement_id
-    left join public.agreement_versions v on v.agreement_id = a.id and v.version = a.current_version
+    -- Decided by who settles this invoice, never by a newer version (break-it tester: a funded version sent later hid
+    -- what the client still owed).
     where p.user_id = v_user and i.settles_to = 'client' and i.status in ('sent', 'paid') and i.number is not null
-      and coalesce(v.funded_by, '') = ''
   ), '[]'::jsonb);
 end;
 $$;
@@ -478,38 +619,41 @@ declare
   v_sig record;
   v_now timestamptz := now();
   v_print text;
+  v_name text;
 begin
   if v_user is null then raise exception 'Sign in to carry on.' using errcode = '42501'; end if;
   select u.email, u.email_confirmed_at into v_email, v_confirmed from auth.users u where u.id = v_user;
   if v_confirmed is null then raise exception 'Confirm your email address to sign.' using errcode = '42501'; end if;
-  select ver.*, a.current_version, a.profile_id as a_profile, a.kind as a_kind, p.user_id as client_user
+  select ver.*, a.current_version, a.profile_id as a_profile, a.kind as a_kind, p.user_id as client_user, a.coach_id as a_coach, p.coach_id as p_coach
     into v
     from public.agreement_versions ver
     join public.agreements a on a.id = ver.agreement_id
     join public.client_profiles p on p.id = a.profile_id
     where ver.id = p_version
     for update of ver;
-  if not found or v.client_user is distinct from v_user or v.a_kind <> 'coaching' then
-    raise exception 'That agreement isn''t yours to sign.' using errcode = '42501';
+  if not found or v.client_user is distinct from v_user or v.a_kind <> 'coaching' or v.a_coach is distinct from v.p_coach then
+    raise exception 'That agreement isn’t yours to sign.' using errcode = '42501';
   end if;
   if v.status = 'signed' then
     raise exception 'This agreement is already signed.' using errcode = 'CC409';
   end if;
   if v.status <> 'sent' or v.coach_signed_at is null or v.version <> v.current_version then
-    raise exception 'This version can''t be signed. Open the newest one.' using errcode = 'CC409';
+    raise exception 'This version can’t be signed. Open the newest one.' using errcode = 'CC409';
   end if;
   v_print := public.agreement_fingerprint(p_version);
   if p_fingerprint is distinct from v_print then
     raise exception 'This agreement changed since you opened it. Open it again to read the newest version.' using errcode = 'CC409';
   end if;
-  if char_length(btrim(coalesce(p_name, ''))) < 3 or char_length(p_name) > 160 then
+  -- A real name: invisible and direction marks taken out, at least one letter, no markup (break-it tester).
+  v_name := btrim(regexp_replace(coalesce(p_name, ''), '[' || U&'\200B-\200F\202A-\202E\2060-\2069\FEFF\00AD' || ']', '', 'g'));
+  if char_length(v_name) < 3 or char_length(v_name) > 160 or v_name !~ '[[:alpha:]]' or v_name ~ '[<>{}]' then
     raise exception 'Type your full name to sign.' using errcode = '22023';
   end if;
   select * into v_sig from public.signatures s where s.id = p_signature and s.user_id = v_user;
   if not found then raise exception 'Use your signature to sign.' using errcode = '22023'; end if;
 
   update public.agreement_versions set status = 'signed', client_signed_at = v_now, client_signature_id = v_sig.id,
-    signed_name = btrim(p_name), signed_email = v_email, signed_user_id = v_user, fingerprint = v_print
+    signed_name = v_name, signed_email = v_email, signed_user_id = v_user, fingerprint = v_print
   where id = p_version;
   update public.agreement_versions set status = 'superseded' where agreement_id = v.agreement_id and id <> p_version and status in ('sent', 'signed');
   update public.agreements set status = 'signed', updated_at = v_now where id = v.agreement_id;
@@ -539,9 +683,9 @@ begin
   select ver.id, ver.coach_id, ver.status, p.user_id into v
     from public.agreement_versions ver join public.agreements a on a.id = ver.agreement_id join public.client_profiles p on p.id = a.profile_id
     where ver.id = p_version;
-  if not found or v.user_id is distinct from v_user then raise exception 'That agreement isn''t yours.' using errcode = '42501'; end if;
-  if v.status <> 'sent' then raise exception 'This version can''t be changed now.' using errcode = 'CC409'; end if;
-  if char_length(btrim(coalesce(p_words, ''))) = 0 then raise exception 'Write what you''d like changed to carry on.' using errcode = '22023'; end if;
+  if not found or v.user_id is distinct from v_user then raise exception 'That agreement isn’t yours.' using errcode = '42501'; end if;
+  if v.status <> 'sent' then raise exception 'This version can’t be changed now.' using errcode = 'CC409'; end if;
+  if char_length(btrim(coalesce(p_words, ''))) = 0 then raise exception 'Write what you’d like changed to carry on.' using errcode = '22023'; end if;
   insert into public.agreement_change_requests (version_id, coach_id, clause_key, words, asked_by)
   values (p_version, v.coach_id, left(coalesce(nullif(btrim(p_clause), ''), 'general'), 60), left(btrim(p_words), 2000), v_user)
   returning id into v_id;

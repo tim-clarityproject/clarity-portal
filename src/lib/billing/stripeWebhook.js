@@ -60,34 +60,52 @@ export function invoiceChange(event, row) {
   // Paid outside Stripe (the coach's "Add a payment made to your bank") already made its payment row, added by the
   // coach: Stripe's own "paid" for it, which carries the full amount, never adds a second (functionality tester, 6b run 1).
   const paidNow = (event.type === 'invoice.paid' || event.type === 'invoice.payment_succeeded') && Number(inv.amount_paid) > 0
-    && inv.paid_out_of_band !== true;
+    && inv.paid_out_of_band !== true
+    // Only in the invoice's own currency: a payment in any other is never kept as pounds or dollars (break-it tester).
+    && String(inv.currency || '').toUpperCase() === String(row.currency || 'GBP');
   const payment = paidNow ? {
     invoice_id: row.id, coach_id: row.coach_id, stripe_id: String(inv.payment_intent || inv.charge || `${inv.id}:paid`),
-    amount_minor: Number(inv.amount_paid), currency: String(inv.currency || '').toUpperCase() === 'USD' ? 'USD' : 'GBP',
+    amount_minor: Number(inv.amount_paid), currency: row.currency === 'USD' ? 'USD' : 'GBP',
     method: inv.payment_settings?.payment_method_types?.[0] || null, paid_at: patch.paid_at || at, added_by_coach: false,
   } : null;
   return { invoice: Object.keys(patch).length ? patch : null, payment };
 }
 
-/** A refund message: the credit note row to keep (refund through Stripe), unique by Stripe's refund id. */
-export function refundRow(event, invoice) {
+/**
+ * A refund message: the credit note row to keep for a refund made in Stripe itself. Since Stripe's API of Nov 2022 a
+ * charge no longer lists its refunds, so the amount is what the charge says is refunded in all (amount_refunded) less
+ * the refunds already kept (a refund made through the portal is kept before Stripe is asked, so it adds nothing here);
+ * in the invoice's own currency, never more than was settled (break-it tester, 6b run 1).
+ */
+export function refundRow(event, invoice, notes = []) {
   const ch = event?.data?.object;
   if (!ch || event.type !== 'charge.refunded' || !invoice) return null;
-  const refund = (ch.refunds?.data || [])[0];
-  if (!refund?.id || !(Number(refund.amount) > 0)) return null;
-  return { invoice_id: invoice.id, coach_id: invoice.coach_id, kind: 'refund', amount_minor: Number(refund.amount),
-    currency: String(refund.currency || ch.currency || '').toUpperCase() === 'USD' ? 'USD' : 'GBP', stripe_id: refund.id, reason: refund.reason || null };
+  if (String(ch.currency || '').toUpperCase() !== String(invoice.currency || 'GBP')) return null;
+  const refunded = Number(ch.amount_refunded) || (ch.refunds?.data || []).reduce((n, r) => n + (Number(r.amount) || 0), 0);
+  const kept = notes.filter((n) => n.kind === 'refund').reduce((n, c) => n + Number(c.amount_minor || 0), 0);
+  const credited = notes.reduce((n, c) => n + Number(c.amount_minor || 0), 0);
+  const amount = Math.min(refunded - kept, Number(invoice.paid_minor || 0) - credited);
+  if (!(amount > 0)) return null;
+  return { invoice_id: invoice.id, coach_id: invoice.coach_id, kind: 'refund', amount_minor: amount, currency: invoice.currency === 'USD' ? 'USD' : 'GBP',
+    stripe_id: `${ch.id}:refunded:${refunded}`, reason: 'Refunded in Stripe' };
 }
 
-/** A subscription message: the portal level row to keep (Individual or Executive by the price's own name). */
-export function subscriptionRow(event, userId) {
+/**
+ * A subscription message: the portal level row to keep (Individual or Executive by the price's own name). A message
+ * older than the last one kept changes nothing, cancelled is final, and the person never changes once kept (`was`,
+ * the row as it stands; break-it tester, 6b run 1).
+ */
+export function subscriptionRow(event, userId, was = null) {
   const sub = event?.data?.object;
   if (!sub || sub.object !== 'subscription' || !userId) return null;
+  const at = new Date((Number(event.created) || 0) * 1000).toISOString();
+  if (was?.status === 'cancelled') return null;
+  if (was?.stripe_updated_at && at < new Date(was.stripe_updated_at).toISOString()) return null;
   const level = sub.metadata?.level === 'executive' ? 'executive' : sub.metadata?.level === 'individual' ? 'individual' : null;
   if (!level) return null;
   const status = event.type === 'customer.subscription.deleted' || sub.status === 'canceled' ? 'cancelled'
     : sub.cancel_at_period_end ? 'cancelling' : sub.status === 'past_due' ? 'past_due' : 'active';
-  return { user_id: userId, level, source: 'self', stripe_subscription_id: sub.id, status,
+  return { user_id: was?.user_id || userId, level, source: 'self', stripe_subscription_id: sub.id, status, stripe_updated_at: at,
     current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
     cancelled_at: status === 'cancelled' ? new Date((Number(event.created) || 0) * 1000).toISOString() : null };
 }

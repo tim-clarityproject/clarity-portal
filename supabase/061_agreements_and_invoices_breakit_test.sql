@@ -14,6 +14,12 @@
 --   without the code reading their own (nothing); an associate reading the
 --   owner's agreements and invoices (nothing); anyone signed in taking an
 --   invoice number, reading Stripe's messages or writing a subscription.
+--   The second round (24 Nov): a coach writing a client's signing record,
+--   adding a version already signed, marking an agreement signed, deleting
+--   what was sent, moving a version backwards, sending to another coach's
+--   client; fingerprints of someone else's version; names of only
+--   invisible marks or with markup; the signature used; invoices hidden by a
+--   later funded version; more credited than settled.
 --   It ends with the notice 061 BREAK-IT CHECKS PASSED, or stops with FAILED.
 --   Everything it makes is undone.
 -- =============================================================================
@@ -134,6 +140,38 @@ begin
     f := f || pg_temp.k_eq('3d Maya can''t mark an invoice paid', pg_temp.k_try(format('update public.invoices set status = ''paid'' where id = %L returning ''changed''', inv)), 'ok');
     perform pg_temp.k_admin();
     f := f || pg_temp.k_eq('3e and it stays as it was', (select status from public.invoices where id = inv), 'sent');
+
+    -- 4. the second break-it round (24 Nov): only the client signs, a version only moves forward, nothing sent is
+    --    deleted, an agreement only for one's own client, fingerprints only of one's own, real names, the signature
+    --    used, invoices by who settles them, and never more credited than settled.
+    perform pg_temp.k_as(maya_u, 'aal2');
+    f := f || pg_temp.k_eq('4a Maya can''t write Sam''s signing record', pg_temp.k_try(format('update public.agreement_versions set status = ''signed'', client_signed_at = now(), signed_name = ''Sam Reid'', signed_email = ''x@example.invalid'', fingerprint = %L, client_signature_id = %L where id = %L returning ''changed''', repeat('a', 64), s_sam, v_sam)), 'error 42501');
+    f := f || pg_temp.k_eq('4b Maya can''t add a version already signed', pg_temp.k_try(format('insert into public.agreement_versions (agreement_id, coach_id, version, status, coach_signed_at, sent_at, client_signed_at, signed_name, signed_email, fingerprint) values (%L, %L, 9, ''signed'', now(), now(), now(), ''Sam Reid'', ''x@example.invalid'', %L) returning ''added''', a_sam, maya_c, repeat('a', 64))), 'error 42501');
+    f := f || pg_temp.k_eq('4c Maya can''t mark an agreement signed', pg_temp.k_try(format('update public.agreements set status = ''signed'' where id = %L returning ''changed''', a_sam)), 'error 42501');
+    f := f || pg_temp.k_eq('4d Maya can''t delete a version that was sent', pg_temp.k_try(format('delete from public.agreement_versions where id = %L returning ''gone''', v_sam)), 'error 23514');
+    f := f || pg_temp.k_eq('4e Maya can''t delete an agreement that was sent', pg_temp.k_try(format('delete from public.agreements where id = %L returning ''gone''', a_sam)), 'error 23514');
+    f := f || pg_temp.k_eq('4f Maya replaces Ben''s version 1', pg_temp.k_try(format('update public.agreement_versions set status = ''superseded'' where id = %L returning ''changed''', v_ben)), 'changed');
+    f := f || pg_temp.k_eq('4g and can''t bring it back as a draft', pg_temp.k_try(format('update public.agreement_versions set status = ''draft'' where id = %L returning ''changed''', v_ben)), 'error 23514');
+    f := f || pg_temp.k_eq('4h Maya can''t make an agreement for Tess''s client', pg_temp.k_try(format('insert into public.agreements (coach_id, profile_id) values (%L, %L) returning ''added''', maya_c, p_tia)), 'error 42501');
+    f := f || pg_temp.k_eq('4i Maya can''t add a version to Tess''s agreement', pg_temp.k_try(format('insert into public.agreement_versions (agreement_id, coach_id, version, status) values (%L, %L, 5, ''draft'') returning ''added''', a_tia, maya_c)), 'error 42501');
+    f := f || pg_temp.k_eq('4j Maya gets no fingerprint of Tess''s version', pg_temp.k_try(format('select public.agreement_fingerprint(%L)', v_tia)), 'ok');
+    perform pg_temp.k_as(sam_u, 'aal1');
+    f := f || pg_temp.k_eq('4k Sam gets no fingerprint of Ben''s version', pg_temp.k_try(format('select public.agreement_fingerprint(%L)', v_ben)), 'ok');
+    f := f || pg_temp.k_eq('4l Sam signing with only invisible marks', pg_temp.k_try(format('select public.sign_agreement(%L, %L, %L, public.agreement_fingerprint(%L))::text', v_sam, chr(8203) || chr(8203) || chr(8203) || chr(8238), s_sam, v_sam)), 'error 22023');
+    f := f || pg_temp.k_eq('4m Sam signing with markup', pg_temp.k_try(format('select public.sign_agreement(%L, ''<b>Sam</b>'', %L, public.agreement_fingerprint(%L))::text', v_sam, s_sam, v_sam)), 'error 22023');
+    f := f || pg_temp.k_eq('4n Sam signs, a direction mark taken out of his name', pg_temp.k_try(format('select (public.sign_agreement(%L, %L, %L, public.agreement_fingerprint(%L)) ? ''signed_at'')::text', v_sam, 'Sam ' || chr(8207) || 'Reid', s_sam, v_sam)), 'true');
+    f := f || pg_temp.k_eq('4o my_agreements names the signature used', pg_temp.k_try('select (select x->>''client_signature_id'' from jsonb_array_elements(public.my_agreements()) x where x->>''status'' = ''signed'' limit 1)'), s_sam::text);
+    perform pg_temp.k_admin();
+    f := f || pg_temp.k_eq('4p the stored name', (select signed_name from public.agreement_versions where id = v_sam), 'Sam Reid');
+    insert into public.invoices (coach_id, profile_id, number, status, total_minor, settles_to) values (maya_c, p_sam, public.next_invoice_number(), 'sent', 1000, 'client');
+    update public.agreement_versions set status = 'sent', funded_by = 'Larkfield K061', coach_signed_at = now(), sent_at = now() where id = v_draft;
+    update public.agreements set current_version = 2 where id = a_sam;
+    perform pg_temp.k_as(sam_u, 'aal1');
+    f := f || pg_temp.k_eq('4q a funded version sent later doesn''t hide what Sam still owes', pg_temp.k_try('select jsonb_array_length(public.my_invoices())::text'), '1');
+    perform pg_temp.k_admin();
+    update public.invoices set status = 'paid', paid_minor = 1000 where id = inv;
+    insert into public.credit_notes (invoice_id, coach_id, kind, amount_minor, currency) values (inv, tess_c, 'credit', 600, 'GBP');
+    f := f || pg_temp.k_eq('4r never more credited than settled', pg_temp.k_try(format('insert into public.credit_notes (invoice_id, coach_id, kind, amount_minor, currency) values (%L, %L, ''refund'', 600, ''GBP'') returning ''added''', inv, tess_c)), 'error 23514');
 
     perform pg_temp.k_admin();
     raise exception 'undo the test rows' using errcode = 'P0061';

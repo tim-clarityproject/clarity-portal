@@ -208,3 +208,91 @@ test('the handler: a reminder Resend refuses is let go and the coach is told it 
     assert.equal(went, 0);
   } finally { globalThis.fetch = real; }
 });
+
+test('break-it tester, 6b run 1: a database error while handling a message is thrown, never marked handled, and the retry lands', async () => {
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const { db, stripe, b } = world(now);
+  await b.draft('a-ben');
+  await b.send(db.tables.invoices[0].id);
+  await deliver(db, stripe);
+  const paid = stripe.settle(db.tables.invoices[0].stripe_invoice_id);
+  stripe.state.events.splice(0);
+  const from = db.from;
+  db.from = (table) => {
+    const q = from(table);
+    if (table !== 'payments') return q;
+    const upsert = q.upsert;
+    q.upsert = (...a) => { upsert(...a); return { select: () => q, then: (res) => res({ data: null, error: { code: '57014', message: 'timeout' } }) }; };
+    return q;
+  };
+  await assert.rejects(handleEvent(db, paid));
+  db.from = from;
+  assert.equal(db.tables.stripe_events.find((e) => e.id === paid.id).handled_at ?? null, null, 'not marked handled');
+  assert.equal(await handleEvent(db, paid), 'handled');
+  assert.equal(db.tables.payments.length, 1);
+  assert.equal(db.tables.invoices[0].status, 'paid');
+});
+
+test('break-it tester, 6b run 1: subscription messages out of order never bring back a cancelled level, nor move it to someone else', async () => {
+  const db = fakeDb({});
+  const ev = (id, type, created, extra = {}) => ({ id, type, created, data: { object: { id: 'sub_1', object: 'subscription', status: 'active', cancel_at_period_end: false, metadata: { user_id: 'u-ana', level: 'executive' }, ...extra } } });
+  await handleEvent(db, ev('e1', 'customer.subscription.created', 100));
+  await handleEvent(db, ev('e3', 'customer.subscription.deleted', 300, { status: 'canceled' }));
+  await handleEvent(db, ev('e2', 'customer.subscription.updated', 200, { cancel_at_period_end: true }));
+  await handleEvent(db, ev('e0', 'customer.subscription.updated', 150));
+  assert.equal(db.tables.portal_subscriptions[0].status, 'cancelled');
+  const db2 = fakeDb({});
+  await handleEvent(db2, ev('f1', 'customer.subscription.created', 100));
+  await handleEvent(db2, ev('f2', 'customer.subscription.updated', 200, { metadata: { user_id: 'u-other', level: 'executive' } }));
+  assert.equal(db2.tables.portal_subscriptions[0].user_id, 'u-ana');
+});
+
+test('break-it tester, 6b run 1: a refund made in Stripe (a charge with no refunds list) gets its credit note once; one through the portal adds none', async () => {
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const { db, stripe, b } = world(now);
+  await b.draft('a-ben');
+  const id = db.tables.invoices[0].id;
+  await b.send(id);
+  stripe.settle(db.tables.invoices[0].stripe_invoice_id);
+  await deliver(db, stripe);
+  await b.refundOrCredit(id, 'refund', 100000, 'Two sessions not used');
+  await deliver(db, stripe);
+  assert.equal(db.tables.credit_notes.length, 1, 'the portal refund is kept once');
+  const inStripe = { id: 'evt_dash', type: 'charge.refunded', created: 1, data: { object: { id: 'ch_1', object: 'charge', invoice: db.tables.invoices[0].stripe_invoice_id, currency: 'gbp', amount_refunded: 150000 } } };
+  await handleEvent(db, inStripe);
+  await handleEvent(db, { ...inStripe, id: 'evt_dash_again' });
+  assert.deepEqual(db.tables.credit_notes.map((c) => c.amount_minor), [100000, 50000]);
+});
+
+test('break-it tester, 6b run 1: a refund and a credit pressed at once never return more than was settled', async () => {
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const { db, stripe, b } = world(now);
+  await b.draft('a-ben');
+  const id = db.tables.invoices[0].id;
+  await b.send(id);
+  stripe.settle(db.tables.invoices[0].stripe_invoice_id);
+  await deliver(db, stripe);
+  const both = await Promise.allSettled([b.refundOrCredit(id, 'refund', 300000), b.refundOrCredit(id, 'credit', 300000)]);
+  assert.equal(both.filter((r) => r.status === 'fulfilled').length, 1);
+  assert.equal(db.tables.credit_notes.reduce((n, c) => n + c.amount_minor, 0), 300000);
+});
+
+test('break-it tester, 6b run 1: a draft whose save failed is drafted again with a new key, not refused by Stripe', async () => {
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const { db, stripe, b } = world(now);
+  const keys = [];
+  const draftInvoice = stripe.draftInvoice;
+  stripe.draftInvoice = (x, idem) => { keys.push(idem); return draftInvoice(x, idem); };
+  const from = db.from;
+  let fail = true;
+  db.from = (table) => {
+    const q = from(table);
+    if (table === 'invoices' && fail) { const ins = q.insert; q.insert = (v) => { fail = false; ins({ ...v, number: null, stripe_invoice_id: null, agreement_id: null }); return { then: (res) => res({ data: null, error: { code: '57014' } }) }; }; }
+    return q;
+  };
+  assert.deepEqual(await b.draft('a-ben'), { drafted: 0 });
+  db.from = from;
+  db.tables.invoices = [];
+  assert.deepEqual(await b.draft('a-ben'), { drafted: 1 });
+  assert.equal(new Set(keys).size, 2, 'each try its own key');
+});

@@ -49,27 +49,32 @@ export async function handleEvent(server, event) {
     const { data: was } = await server.from('stripe_events').select('handled_at').eq('id', event.id).maybeSingle();
     if (was?.handled_at) return 'already';
   }
+  // Every database answer is checked: an error is thrown, so the message isn't marked handled and Stripe (or the
+  // nightly catch-up) tries again; only a real "no such invoice" counts as handled (break-it tester, 6b run 1).
+  const must = async (q) => { const r = await q; if (r?.error) throw r.error; return r; };
   if (obj.object === 'invoice' && obj.id) {
-    const { data: row } = await server.from('invoices').select('*').eq('stripe_invoice_id', obj.id).maybeSingle();
+    const { data: row } = await must(server.from('invoices').select('*').eq('stripe_invoice_id', obj.id).maybeSingle());
     if (row) {
       const change = invoiceChange(event, row);
-      if (change.payment) await server.from('payments').upsert(change.payment, { onConflict: 'stripe_id', ignoreDuplicates: true });
-      if (change.invoice) await server.from('invoices').update({ ...change.invoice, updated_at: new Date().toISOString() }).eq('id', row.id);
+      if (change.payment) await must(server.from('payments').upsert(change.payment, { onConflict: 'stripe_id', ignoreDuplicates: true }));
+      if (change.invoice) await must(server.from('invoices').update({ ...change.invoice, updated_at: new Date().toISOString() }).eq('id', row.id));
       // Paid: the overdue reminders drafted for it go at once (they would ask for what's settled).
-      if (change.invoice?.status === 'paid') await server.from('invoice_reminders').delete().eq('invoice_id', row.id).is('sent_at', null);
+      if (change.invoice?.status === 'paid') await must(server.from('invoice_reminders').delete().eq('invoice_id', row.id).is('sent_at', null));
     }
   } else if (event.type === 'charge.refunded' && obj.invoice) {
-    const { data: row } = await server.from('invoices').select('*').eq('stripe_invoice_id', obj.invoice).maybeSingle();
-    const credit = refundRow(event, row);
-    if (credit) await server.from('credit_notes').upsert(credit, { onConflict: 'stripe_id', ignoreDuplicates: true });
-  } else if (obj.object === 'subscription' && obj.metadata?.user_id) {
-    const sub = subscriptionRow(event, obj.metadata.user_id);
-    if (sub) await server.from('portal_subscriptions').upsert({ ...sub, updated_at: new Date().toISOString() }, { onConflict: 'stripe_subscription_id' });
+    const { data: row } = await must(server.from('invoices').select('*').eq('stripe_invoice_id', obj.invoice).maybeSingle());
+    const { data: notes } = row ? await must(server.from('credit_notes').select('amount_minor, kind').eq('invoice_id', row.id)) : { data: [] };
+    const credit = refundRow(event, row, notes || []);
+    if (credit) await must(server.from('credit_notes').upsert(credit, { onConflict: 'stripe_id', ignoreDuplicates: true }));
+  } else if (obj.object === 'subscription' && obj.id && obj.metadata?.user_id) {
+    const { data: was } = await must(server.from('portal_subscriptions').select('user_id, status, stripe_updated_at').eq('stripe_subscription_id', obj.id).maybeSingle());
+    const sub = subscriptionRow(event, was?.user_id || obj.metadata.user_id, was);
+    if (sub) await must(server.from('portal_subscriptions').upsert({ ...sub, updated_at: new Date().toISOString() }, { onConflict: 'stripe_subscription_id' }));
   } else {
-    await server.from('stripe_events').update({ handled_at: new Date().toISOString() }).eq('id', event.id);
+    await must(server.from('stripe_events').update({ handled_at: new Date().toISOString() }).eq('id', event.id));
     return 'ignored';
   }
-  await server.from('stripe_events').update({ handled_at: new Date().toISOString() }).eq('id', event.id);
+  await must(server.from('stripe_events').update({ handled_at: new Date().toISOString() }).eq('id', event.id));
   return 'handled';
 }
 

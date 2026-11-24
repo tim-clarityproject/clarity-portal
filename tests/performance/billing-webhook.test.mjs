@@ -47,9 +47,13 @@ test('out of order: an older "sent" after "paid" changes nothing; "paid" after "
 });
 
 test('a refund keeps a credit note row by Stripe\'s refund id; a subscription keeps its level', () => {
-  const r = refundRow({ type: 'charge.refunded', data: { object: { currency: 'gbp', refunds: { data: [{ id: 're_1', amount: 50000, currency: 'gbp' }] } } } }, row());
-  assert.deepEqual([r.kind, r.amount_minor, r.stripe_id, r.currency], ['refund', 50000, 're_1', 'GBP']);
-  assert.equal(refundRow({ type: 'charge.refunded', data: { object: { refunds: { data: [] } } } }, row()), null);
+  // As Stripe sends it since Nov 2022: no refunds list, the charge's amount_refunded in all (break-it tester).
+  const paidRow = { ...row(), paid_minor: 300000, currency: 'GBP' };
+  const r = refundRow({ type: 'charge.refunded', data: { object: { id: 'ch_1', currency: 'gbp', amount_refunded: 50000 } } }, paidRow);
+  assert.deepEqual([r.kind, r.amount_minor, r.stripe_id, r.currency], ['refund', 50000, 'ch_1:refunded:50000', 'GBP']);
+  assert.equal(refundRow({ type: 'charge.refunded', data: { object: { id: 'ch_1', currency: 'gbp', amount_refunded: 50000 } } }, paidRow, [{ kind: 'refund', amount_minor: 50000 }]), null, 'already kept');
+  assert.equal(refundRow({ type: 'charge.refunded', data: { object: { id: 'ch_1', currency: 'eur', amount_refunded: 50000 } } }, paidRow), null, 'another currency');
+  assert.equal(refundRow({ type: 'charge.refunded', data: { object: { refunds: { data: [] } } } }, paidRow), null);
   const s = subscriptionRow({ type: 'customer.subscription.updated', created: T('2026-11-24T10:00:00Z'), data: { object: { object: 'subscription', id: 'sub_1', status: 'active', cancel_at_period_end: true, metadata: { level: 'executive' }, current_period_end: T('2026-12-24T10:00:00Z') } } }, 'u1');
   assert.deepEqual([s.level, s.status, s.stripe_subscription_id], ['executive', 'cancelling', 'sub_1']);
   assert.equal(subscriptionRow({ type: 'customer.subscription.updated', data: { object: { object: 'subscription', id: 'sub_2', metadata: { level: 'platinum' } } } }, 'u1'), null, 'a level nobody sells is never kept');

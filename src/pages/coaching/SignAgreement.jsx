@@ -62,7 +62,8 @@ export default function SignAgreement() {
   const data = useMemo(() => tidyAgreements(raw), [raw]);
   const fingerprint = typeof raw?.fingerprint === 'string' ? raw.fingerprint : null;
   const version = data.agreements.find((v) => v.id === versionId) || null;
-  const coachFirst = myCoach?.firstName || (typeof version?.terms?.coachFirst === 'string' ? version.terms.coachFirst : '') || '';
+  // The coach who sent this agreement first (its own terms), then the client's coach now (break-it tester).
+  const coachFirst = (typeof version?.terms?.coachFirst === 'string' ? version.terms.coachFirst : '') || myCoach?.firstName || '';
   const words = signingWords(coachFirst || 'Your coach');
 
   // The saved signature (the newest drawn one), offered first.

@@ -92,7 +92,9 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
       };
       for (const p of due) {
         const { data: number } = await server.rpc('next_invoice_number');
-        const idem = `agreement:${agreement.id}:instalment:${p.n}`;
+        // The number is part of the key: a retry after a failed save takes a new number, so it is a new request to Stripe
+        // and never Stripe's "same key, other parameters" refusal (break-it tester, 6b run 1).
+        const idem = `agreement:${agreement.id}:instalment:${p.n}:number:${number}`;
         const customer = await customerFor(agreement, payer, idem);
         const inv = await stripe.draftInvoice({ customer: customer.id, currency: version.currency, daysUntilDue: p.termsDays, lines: p.lines, poNumber: p.poNumber,
           metadata: { portal_number: `CLARITY-${number}`, agreement_id: agreement.id, instalment: String(p.n) } }, idem);
@@ -138,18 +140,28 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
       const { data: notes } = await server.from('credit_notes').select('amount_minor').eq('invoice_id', inv.id);
       const left = inv.paid_minor - (notes || []).reduce((n, c) => n + Number(c.amount_minor), 0);
       if (inv.status !== 'paid' || amount > left) { const e = new Error('That’s more than was settled on this invoice.'); e.status = 409; throw e; }
-      const idem = `${kind}:${inv.id}:${amount}:${(notes || []).length}`;
-      let stripeId = null;
+      let pay = null;
       if (kind === 'refund') {
-        const { data: pay } = await server.from('payments').select('stripe_id, added_by_coach').eq('invoice_id', inv.id).order('paid_at').limit(1).maybeSingle();
+        ({ data: pay } = await server.from('payments').select('stripe_id, added_by_coach').eq('invoice_id', inv.id).order('paid_at').limit(1).maybeSingle());
         if (!pay?.stripe_id || pay.added_by_coach) { const e = new Error('This was settled to your bank, so refund it from there and add it as a credit.'); e.status = 409; throw e; }
-        stripeId = (await stripe.refund({ paymentIntent: pay.stripe_id, amount }, idem)).id;
-      } else {
-        stripeId = (await stripe.creditNote({ invoice: inv.stripe_invoice_id, amount, memo: reason || 'Credit' }, idem)).id;
       }
-      const { data: note } = await server.from('credit_notes').upsert({ invoice_id: inv.id, coach_id: coach.id, kind, amount_minor: amount, currency: inv.currency, stripe_id: stripeId, reason },
-        { onConflict: 'stripe_id', ignoreDuplicates: true }).select('number').maybeSingle();
-      return { kind, number: note?.number || null };
+      // The credit note is kept first, with the invoice locked by the database's own check (never more than was settled),
+      // so a refund and a credit pressed at once can't both pass; Stripe is asked only once it's kept, and if Stripe
+      // refuses, it goes again (break-it tester, 6b run 1).
+      const { data: note, error: keepError } = await server.from('credit_notes')
+        .insert({ invoice_id: inv.id, coach_id: coach.id, kind, amount_minor: amount, currency: inv.currency, reason }).select('id, number').maybeSingle();
+      if (keepError || !note) { const e = new Error('That’s more than was settled on this invoice.'); e.status = 409; throw e; }
+      const idem = `${kind}:${note.id}`;
+      try {
+        const stripeId = kind === 'refund'
+          ? (await stripe.refund({ paymentIntent: pay.stripe_id, amount }, idem)).id
+          : (await stripe.creditNote({ invoice: inv.stripe_invoice_id, amount, memo: reason || 'Credit' }, idem)).id;
+        await server.from('credit_notes').update({ stripe_id: stripeId }).eq('id', note.id);
+      } catch (err) {
+        await server.from('credit_notes').delete().eq('id', note.id);
+        throw err;
+      }
+      return { kind, number: note.number || null };
     },
 
     /** The nightly round's part for this coach: reminders due at 3, 7 and 14 days, drafted once each, never sent. */

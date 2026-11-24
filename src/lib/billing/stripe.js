@@ -53,7 +53,18 @@ export function stripeApi(key, fetcher = globalThis.fetch) {
     void: (id) => call('POST', `/invoices/${id}/void`),
     refund: ({ paymentIntent, amount }, idem) => call('POST', '/refunds', { payment_intent: paymentIntent, amount }, idem),
     creditNote: ({ invoice, amount, memo }, idem) => call('POST', '/credit_notes', { invoice, lines: [{ type: 'custom_line_item', unit_amount: amount, quantity: 1, description: memo || 'Credit' }] }, idem),
-    events: ({ since }) => call('GET', `/events?limit=100&created[gte]=${Math.floor(new Date(since).getTime() / 1000)}`),
+    // Every page of them, not only the first 100 (break-it tester, 6b run 1); at most 50 pages a night.
+    events: async ({ since }) => {
+      const all = [];
+      let after = null;
+      for (let page = 0; page < 50; page += 1) {
+        const r = await call('GET', `/events?limit=100&created[gte]=${Math.floor(new Date(since).getTime() / 1000)}${after ? `&starting_after=${encodeURIComponent(after)}` : ''}`);
+        all.push(...(r.data || []));
+        if (!r.has_more || !r.data?.length) break;
+        after = r.data.at(-1).id;
+      }
+      return { data: all };
+    },
     checkout: ({ priceId, customerEmail, userId, level, successUrl, cancelUrl }) => call('POST', '/checkout/sessions', {
       mode: 'subscription', line_items: [{ price: priceId, quantity: 1 }], customer_email: customerEmail, success_url: successUrl, cancel_url: cancelUrl,
       subscription_data: { metadata: { user_id: userId, level } },

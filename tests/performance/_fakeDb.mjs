@@ -30,6 +30,12 @@ export function fakeDb(seed = {}) {
         out = [];
         for (const v of [values].flat()) {
           const row = defaults(table, v);
+          // 061's credit_notes_within_paid: never more refunded and credited than was settled on the invoice.
+          if (table === 'credit_notes') {
+            const inv = (t.invoices || []).find((i) => i.id === row.invoice_id);
+            const before = rows.filter((c) => c.invoice_id === row.invoice_id).reduce((n, c) => n + Number(c.amount_minor), 0);
+            if (before + Number(row.amount_minor) > Number(inv?.paid_minor || 0)) return { data: null, error: { code: '23514', message: 'more than was settled' } };
+          }
           if (clash(table, row, rows)) {
             if (op === 'upsert' && opts.ignoreDuplicates) continue;
             if (op === 'upsert') { const hit = rows.find((r) => (UNIQUE[table] || []).some((keys) => keys.every((k) => r[k] === row[k]))); Object.assign(hit, v); out.push(hit); continue; }

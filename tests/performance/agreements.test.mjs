@@ -221,3 +221,13 @@ test('functionality tester, 6b run 1: a due day already gone reads "was due"', a
   assert.match(dueLine(inv, '2026-11-10'), /^It’s due on /);
   assert.match(billingLine([inv], '2026-11-24'), /^Invoice CLARITY-1208 was due on /);
 });
+
+test('break-it tester, 6b run 1: a name of only invisible marks, or with markup, isn\'t a name; letters in any script are', async () => {
+  const { nameOk, cleanName } = await import('../../src/lib/coaching/agreementRules.js');
+  assert.equal(nameOk('​​​‮'), false);
+  assert.equal(nameOk('<b>Sam</b>'), false);
+  assert.equal(nameOk('123'), false);
+  assert.equal(nameOk('Sam Reid'), true);
+  assert.equal(nameOk('שלום כהן'), true);
+  assert.equal(cleanName('Sam ‏Reid'), 'Sam Reid');
+});
