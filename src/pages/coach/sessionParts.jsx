@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button, DatePicker, Dropdown, InlineChoice, SlidePanel, TextField, useToast } from '../../components/design';
 import { rowsOf, saveRows } from '../../lib/coach/store';
 import { addDays, dayWords, firstName } from '../../lib/coach/model';
+import { coachZoneOf } from '../../lib/coach/calendar';
+import { deviceZone, isZone } from '../../lib/time/index.js';
 import { instantFrom, oneRecapWords, SESSION_KINDS, SESSION_LENGTHS, sessionRow, toWriteUp } from '../../lib/coach/day';
 import { addSession } from '../../lib/coach/sessionActions';
 import { removePairs } from '../../lib/coach/todoActions';
@@ -77,7 +79,7 @@ export function SessionRows({ sessions, people = 0, label }) {
  * @param {{ open: boolean, onClose: () => void, profile?: object, group?: object, engagement?: object }} props
  */
 export function AddSessionPanel({ open, onClose, profile = null, group = null, engagement = null }) {
-  const { userId, coach, state, todayKey } = useCoachPortal();
+  const { userId, coach, state, todayKey, settings } = useCoachPortal();
   const say = useSay();
   const [day, setDay] = useState('');
   const [time, setTime] = useState('');
@@ -99,6 +101,8 @@ export function AddSessionPanel({ open, onClose, profile = null, group = null, e
         made = await addSession(userId, {
           coachId: coach.id, profileId: profile?.id || null, groupId: group?.id || null, engagementId: engagement?.id || null,
           kind: group ? 'group' : kind, startsAt, minutes: Number(minutes),
+          // Its call on the calendar (so it gets its reminders): the client's own zone, or the coach's for a group (as Book a call).
+          title: group?.name || profile?.name || '', zone: (!group && isZone(profile?.time_zone)) ? profile.time_zone : coachZoneOf(settings, deviceZone()),
           members: group ? rowsOf(state, 'coach_group_members').filter((m) => m.group_id === group.id) : [], engagements: rowsOf(state, 'engagements'),
         });
         return 'saved';

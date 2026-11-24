@@ -33,6 +33,7 @@ import { guardRows, noteVersions, onSuperseded, unguardRows } from '../syncQueue
 import { coachDayReady, coachState, keyOf, loadCoach, newId, noteRows, removeRow, rowOf, rowsOf, saveRow, saveRows } from './store';
 import { actionsOf, ALREADY_SENT, lockedAction, lockedSession, moveSession, NEEDS_RECAP, newSession, SENT_LINE, sessionPeopleRows, sessionSent } from './day';
 import { clean } from './model';
+import { sessionCallItem } from './calendar';
 
 const SESSIONS = 'coach_sessions';
 const PEOPLE = 'coach_session_people';
@@ -151,9 +152,13 @@ export async function removeAction(userId, action) {
  * @param {{ coachId: string, profileId?: string, groupId?: string, engagementId?: string, kind?: string, startsAt: string, minutes: number, members?: object[], engagements?: object[] }} a
  * @returns {Promise<{ session: object, pairs: [string, object][] }>} the pairs for Undo (removeSession)
  */
-export async function addSession(userId, { members = [], engagements = [], ...what }) {
+export async function addSession(userId, { members = [], engagements = [], title = '', zone = null, ...what }) {
   const session = newSession({ id: newId(), ...what });
-  const pairs = [[SESSIONS, session], ...(session.group_id ? sessionPeopleRows(session.id, members, engagements).map((p) => [PEOPLE, p]) : [])];
+  // Its own call on the calendar, as Book a call makes one (run 8's 6; Claude's call, 24 Nov): the reminders go from the
+  // calendar's calls, so a session added here without one got none, single or group. Anchored to `zone` (the client's
+  // own, or the coach's for a group), with no guests, so nothing is sent by adding it.
+  const item = sessionCallItem(session, { id: newId(), title, zone });
+  const pairs = [[SESSIONS, session], ...(session.group_id ? sessionPeopleRows(session.id, members, engagements).map((p) => [PEOPLE, p]) : []), ...(item ? [[ITEMS, item]] : [])];
   await saveRows(userId, pairs);
   return { session, pairs };
 }
@@ -171,6 +176,14 @@ export async function removeSession(userId, session) {
       gone.push([table, row]);
       await removeRow(userId, table, keyOf(table, row)).catch(() => null);
     }
+  }
+  // Its call on the calendar (and that call's travel time) goes with it, so no reminder goes for a session deleted
+  // (run 8's 6). Undo saves them again with the rest.
+  const items = rowsOf(state, ITEMS);
+  const calls = items.filter((i) => i.session_id === session.id);
+  for (const row of [...items.filter((i) => calls.some((c) => c.id === i.travel_for)), ...calls]) {
+    gone.push([ITEMS, row]);
+    await removeRow(userId, ITEMS, row.id).catch(() => null);
   }
   await removeRow(userId, SESSIONS, session.id);
   return gone;

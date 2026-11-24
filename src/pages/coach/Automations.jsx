@@ -4,7 +4,7 @@ import { AddButton, Button, Dropdown, PageHeader, SlidePanel, TextField, useToas
 import { newId, removeRow, saveRow } from '../../lib/coach/store';
 import {
   ACTIONS, AUTOMATION_HELP, AUTOMATION_WORDS, automationSavePlan, automationSentence, automationSwitch, blankAutomation, CATCH_UP, CATCH_UP_HELP, countChoices,
-  keepInTouchAutomation, keepInTouchId, ranWords, todoDayChoices, TRIGGERS,
+  keepInTouchAutomation, keepInTouchId, keepInTouchOnKey, ranWords, todoDayChoices, TRIGGERS,
 } from '../../lib/coach/crm';
 import { Back, TextLink, useCoachPortal } from './parts';
 import { useStartStages } from './leadParts';
@@ -83,6 +83,14 @@ export default function Automations() {
     if (plan.error) { setLine({ id: a.id, words: plan.error }); return; }
     setLine(null);
     try {
+      // Keep in touch counts only catch-ups that fall due from the day it is switched on (run 8's 3; Claude's call,
+      // 24 Nov): the day is kept as one of its own runs, before it is on, so its first round already knows it.
+      if (on && a.trigger === CATCH_UP) {
+        const mark = { id: newId(), automation_id: a.id, coach_id: coach.id, event_key: keepInTouchOnKey(todayKey), lead_id: null, profile_id: null, todo_id: null, ran_at: new Date().toISOString() };
+        if (!automationRuns.some((r) => r.automation_id === a.id && r.event_key === mark.event_key)) {
+          await saveRow(userId, 'coach_automation_runs', mark).catch((e) => { if (e?.code !== '23505') throw e; }); // switched on twice today: one is enough
+        }
+      }
       const status = await saveRow(userId, 'coach_automations', plan.automation);
       const saved = automations.some((x) => x.id === a.id);
       toast.saved({ message: status === 'queued' ? 'Will sync' : plan.toast, long: true, onUndo: () => (saved ? saveRow(userId, 'coach_automations', a) : removeRow(userId, 'coach_automations', a.id)).catch((e) => toast.error(calm(e))) });

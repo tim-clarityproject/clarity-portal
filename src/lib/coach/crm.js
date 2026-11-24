@@ -1100,7 +1100,7 @@ export const CATCH_UP_TITLE = 'Catch up with [first name]';
 /** "Catch up with Sam": the first name from the person's own name. */
 export const catchUpTitle = (name) => (firstName(name) ? `Catch up with ${firstName(name)}` : 'Catch up with someone you’re due to see');
 /** Under the keep-in-touch automation in its panel. */
-export const CATCH_UP_HELP = 'It works for people in your Network with a catch-up rhythm, and past clients’ 3, 6 and 12 month check-ins. It never sends anything.';
+export const CATCH_UP_HELP = 'It works for people in your Network with a catch-up rhythm, and past clients’ 3, 6 and 12 month check-ins. It counts catch-ups due from the day you switch it on. It never sends anything.';
 /** The ONLY two things an automation can do. Nothing here sends, tags or emails, and the table can't hold anything else. */
 export const ACTIONS = [{ value: 'todo', label: 'Add a to-do' }, { value: 'stage', label: 'Move the lead to a stage' }];
 export const AUTOMATION_HELP = 'Automations add to-dos and move stages. They never send anything.';
@@ -1147,7 +1147,7 @@ export function automationSentence(a, { stages = [], callTypes = [] } = {}) {
 export function ranWords(a, runs, todayKey) {
   if (!a.active) return 'Off';
   const month = String(todayKey).slice(0, 7);
-  const n = (runs || []).filter((r) => r.automation_id === a.id && dayOfInstant(r.ran_at)?.slice(0, 7) === month).length;
+  const n = (runs || []).filter((r) => r.automation_id === a.id && !isSwitchedOnRun(r) && dayOfInstant(r.ran_at)?.slice(0, 7) === month).length;
   const name = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][Number(month.slice(5, 7)) - 1];
   return n ? `Ran ${plural(n, 'time')} in ${name}` : `Hasn’t run in ${name}`;
 }
@@ -1234,21 +1234,25 @@ export const catchUpEvent = ({ kind, id, name, dueOn }) => ({
  * Everyone due a catch-up today or before (never one still to come): Network people whose catch-up day has come
  * (rows as network_page answers, with `due_on`; archived or merged people never), and past clients with a 3, 6 or
  * 12 month check-in not done or skipped. A person is one event for each due day; a client's soonest check-in only.
- * @param {{ network?: object[], checkIns?: object[], profiles?: object[], todayKey: string }} o
+ * Run 8's points 3 and 4 (Claude's calls, 24 Nov): only catch-ups that fall due from the day the automation was
+ * switched on (`since`, keepInTouchSince), never everyone already overdue then; and past clients only while "Suggest
+ * check-ins at 3, 6 and 12 months" is on (`clientCheckIns`, crm.js's checkInsOn).
+ * @param {{ network?: object[], checkIns?: object[], profiles?: object[], todayKey: string, since?: string|null, clientCheckIns?: boolean }} o
  * @returns {object[]} catchUpEvent()s, the most overdue first
  */
-export function catchUpEvents({ network = [], checkIns = [], profiles = [], todayKey }) {
+export function catchUpEvents({ network = [], checkIns = [], profiles = [], todayKey, since = null, clientCheckIns = true }) {
   const out = [];
   const seen = new Set();
+  const counts = (due) => Boolean(due) && due <= todayKey && (!since || due >= since);
   for (const p of network || []) {
     if (!p?.id || p.archived_at || p.merged_into) continue;
     const due = p.due_on ?? dueOn(p);
-    if (!due || due > todayKey || seen.has(`n:${p.id}`)) continue;
+    if (!counts(due) || seen.has(`n:${p.id}`)) continue;
     seen.add(`n:${p.id}`);
     out.push(catchUpEvent({ kind: 'network', id: p.id, name: p.name, dueOn: due }));
   }
-  const people = new Map((profiles || []).filter((p) => p && !p.merged_into && p.status === 'past').map((p) => [p.id, p]));
-  const dueChecks = (checkIns || []).filter((c) => c && !c.done_at && !c.skipped_at && c.due_on && c.due_on <= todayKey && people.has(c.profile_id))
+  const people = new Map(clientCheckIns ? (profiles || []).filter((p) => p && !p.merged_into && p.status === 'past').map((p) => [p.id, p]) : []);
+  const dueChecks = (checkIns || []).filter((c) => c && !c.done_at && !c.skipped_at && counts(c.due_on) && people.has(c.profile_id))
     .sort((a, b) => a.due_on.localeCompare(b.due_on) || a.months - b.months);
   for (const c of dueChecks) {
     if (seen.has(`c:${c.profile_id}`)) continue;
@@ -1268,6 +1272,20 @@ export function catchUpAdded(todos, event) {
   if (event?.trigger !== CATCH_UP || !event.dueOn) return false;
   return (todos || []).some((t) => t && t.automation_id && t.due_on === event.dueOn
     && ((event.networkPersonId && t.network_person_id === event.networkPersonId) || (event.profileId && t.profile_id === event.profileId)));
+}
+
+/**
+ * The day the keep-in-touch automation was last switched on: each switch-on is kept as one of its own runs,
+ * `keep-in-touch:on:<day>` (claimed once a day, so two tabs make one), on every device through the database. A
+ * keep-in-touch automation with none (switched on before this rule) counts from the day it was made.
+ */
+export const keepInTouchOnKey = (day) => `keep-in-touch:on:${day}`;
+export const isSwitchedOnRun = (r) => typeof r?.event_key === 'string' && r.event_key.startsWith('keep-in-touch:on:');
+export function keepInTouchSince(automation, runs) {
+  if (!automation) return null;
+  const days = (runs || []).filter((r) => r.automation_id === automation.id && isSwitchedOnRun(r)).map((r) => r.event_key.slice('keep-in-touch:on:'.length)).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  if (days.length) return days.at(-1);
+  return dayOfInstant(automation.created_at) || null;
 }
 
 /** The keep-in-touch automation's own id, the same in every tab and on every device, so two never make two (run 8 break-it tester). */

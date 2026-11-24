@@ -404,7 +404,7 @@ function Calendars() {
       if (await sync.disconnect()) toast.show(CONNECT_WORDS.disconnected); else toast.error('That didn’t work. Try again in a moment.');
     }
   };
-  const rows = connectionRows({ live: LIVE_BUILD, status: sync.status, standIns: sync.standIns });
+  const rows = connectionRows({ live: LIVE_BUILD, status: sync.status, standIns: sync.standIns, reconnect: sync.reconnect });
   return (
     <>
       {/* Run 8 (UI tester): the portal's own Work, Personal and Family, named apart from Google's own calendars below. */}
@@ -424,7 +424,7 @@ function Calendars() {
           {(told === row.key || row.value === 'Connected') && <p className="cc-note cc-connect-note" role="status">{row.line}</p>}
         </div>
       ))}
-      {sync.problem && <p className="cc-note" role="status">{sync.problem}</p>}
+      {sync.problem && !sync.reconnect && <p className="cc-note" role="status">{sync.problem}</p>}
       {/* Run 8: every calendar on the Google account, with a switch each (off until switched on). */}
       <GoogleCalendarSwitches />
       {!LIVE_BUILD && (

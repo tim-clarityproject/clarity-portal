@@ -6,7 +6,7 @@ import { emailAddressesStart, logEmail } from '../../lib/coach/crmData';
 import { networkDuplicatesOf, networkPageOf, saveEmailBody, useNetworkVersion } from '../../lib/coach/networkData';
 import { dueNowQuery } from '../../lib/coach/network';
 import {
-  alreadyRan, automationMatches, CATCH_UP, catchUpAdded, catchUpEvents, checkInsToSuggest, claimed, crmProblem, emailLogPlan, endedEvent, openingEvents, runAutomations, todoFromEmail,
+  alreadyRan, automationMatches, CATCH_UP, catchUpAdded, catchUpEvents, checkInsOn, checkInsToSuggest, claimed, crmProblem, emailLogPlan, endedEvent, keepInTouchSince, openingEvents, runAutomations, todoFromEmail,
 } from '../../lib/coach/crm';
 import { copyInStandIn, gmailStandIn, STAND_IN_DOMAIN } from '../../lib/coach/connect/standIn.js';
 import { directionOf, readInbound } from '../../lib/coach/connect/copyInEmail.js';
@@ -84,9 +84,9 @@ const WATCHED = ['lead_quiet', 'proposal_opened', 'call_booked', CATCH_UP];
  * 200, most overdue first) and past clients' check-ins on the device. A
  * Network that can't be read now gives no one; it is asked again next time.
  */
-async function catchUpsNow(userId, mine, todayKey) {
+async function catchUpsNow(userId, mine, todayKey, { since = null, clientCheckIns = true } = {}) {
   const network = await networkPageOf(userId, dueNowQuery(todayKey, { all: true })).then((page) => page?.rows || []).catch(() => []);
-  return catchUpEvents({ network, checkIns: mine('client_check_ins'), profiles: mine('client_profiles'), todayKey });
+  return catchUpEvents({ network, checkIns: mine('client_check_ins'), profiles: mine('client_profiles'), todayKey, since, clientCheckIns });
 }
 
 /**
@@ -98,7 +98,7 @@ async function catchUpsNow(userId, mine, todayKey) {
  * Mounted once by CoachApp; it shows nothing.
  */
 export function AutomationWatch() {
-  const { userId, isOwner, coach, automations, leads, leadEvents, bookings, checkIns, clients, todayKey } = useCoachPortal();
+  const { userId, isOwner, coach, automations, leads, leadEvents, bookings, checkIns, clients, todayKey, settings } = useCoachPortal();
   const networkVersion = useNetworkVersion();
   const run = useRunAutomations();
   const busy = useRef(false);
@@ -111,8 +111,8 @@ export function AutomationWatch() {
     leadEvents.filter((e) => e.kind === 'proposal_opened').length,
     bookings.map((b) => [b.id, b.status, b.starts_at]),
     ...(automations.some((a) => a.active && a.trigger === CATCH_UP)
-      ? [networkVersion, checkIns.map((c) => [c.id, c.due_on, Boolean(c.done_at), Boolean(c.skipped_at)]), clients.map((p) => [p.id, p.status, p.name])] : []),
-  ]), [todayKey, automations, leads, leadEvents, bookings, checkIns, clients, networkVersion]);
+      ? [networkVersion, checkInsOn(settings), checkIns.map((c) => [c.id, c.due_on, Boolean(c.done_at), Boolean(c.skipped_at)]), clients.map((p) => [p.id, p.status, p.name])] : []),
+  ]), [todayKey, automations, leads, leadEvents, bookings, checkIns, clients, networkVersion, settings]);
   const watching = isOwner && automations.some((a) => a.active && WATCHED.includes(a.trigger));
   useEffect(() => {
     if (!watching) return undefined;
@@ -128,7 +128,13 @@ export function AutomationWatch() {
         const active = mine('coach_automations');
         const events = openingEvents({ leads: mine('coach_leads'), stages: mine('coach_lead_stages'), events: mine('coach_lead_events'), bookings: mine('coach_bookings'), todayKey })
           .filter((event) => active.some((a) => automationMatches(a, event)));
-        if (active.some((a) => a.active && a.trigger === CATCH_UP)) events.push(...(await catchUpsNow(userId, mine, todayKey)).filter((e) => !catchUpAdded(mine('coach_todos'), e)));
+        const keep = active.find((a) => a.active && a.trigger === CATCH_UP);
+        if (keep) {
+          // Only what falls due from the day it was switched on, and past clients only while check-ins are suggested (run 8's 3 and 4).
+          const settingsNow = mine('coach_settings')[0] || null;
+          const since = keepInTouchSince(keep, mine('coach_automation_runs'));
+          events.push(...(await catchUpsNow(userId, mine, todayKey, { since, clientCheckIns: checkInsOn(settingsNow) })).filter((e) => !catchUpAdded(mine('coach_todos'), e)));
+        }
         for (const event of events) {
           // Switched off since this round began (here or in another tab): nothing more runs.
           if (!mine('coach_automations').some((a) => automationMatches(a, event))) continue;

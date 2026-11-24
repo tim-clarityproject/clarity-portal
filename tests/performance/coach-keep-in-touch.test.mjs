@@ -182,3 +182,36 @@ test('odd names: none, emoji first, very long; the to-do stays within 300 charac
   assert.equal(db.todos.length, 1);
   assert.ok([...db.todos[0].title].length <= 300 && !/[\uD800-\uDBFF]$/.test(db.todos[0].title), 'within 300 and never half an emoji');
 });
+
+// Claude's calls on run 8's points 3 and 4 (24 Nov 2026).
+test('switched on today: only catch-ups that fall due from today count, never everyone already overdue', () => {
+  const checkIns = crm.checkInsFor(BEN, { coachId: ME, newId });
+  const all = crm.catchUpEvents({ network: [PRIYA, HANNAH], checkIns, profiles: [BEN], todayKey: TODAY });
+  assert.deepEqual(all.map((e) => e.name).sort(), ['Ben Ortiz', 'Hannah Wells', 'Priya Shah']);
+  const fromToday = crm.catchUpEvents({ network: [PRIYA, HANNAH], checkIns, profiles: [BEN], todayKey: TODAY, since: TODAY });
+  assert.deepEqual(fromToday.map((e) => e.name).sort(), ['Ben Ortiz', 'Priya Shah']); // Hannah was overdue since 1 Oct
+  // Ollie falls due tomorrow, after the switch: he counts then.
+  assert.deepEqual(crm.catchUpEvents({ network: [OLLIE, HANNAH], todayKey: '2026-11-24', since: TODAY }).map((e) => e.name), ['Ollie Grant']);
+});
+
+test('"Suggest check-ins at 3, 6 and 12 months" switched off stops past clients\' catch-ups too, never Network\'s', () => {
+  const checkIns = crm.checkInsFor(BEN, { coachId: ME, newId });
+  const off = crm.catchUpEvents({ network: [PRIYA], checkIns, profiles: [BEN], todayKey: TODAY, clientCheckIns: false });
+  assert.deepEqual(off.map((e) => e.name), ['Priya Shah']);
+  assert.equal(crm.checkInsOn({ crm: { suggest_check_ins: false } }), false);
+  assert.equal(crm.checkInsOn({}), true);
+});
+
+test('the day it was switched on: the latest switch-on kept among its runs, else the day it was made; never counted as a run', () => {
+  const keep = { ...keepOn(), created_at: '2026-11-02T10:00:00Z' };
+  const runs = [
+    { automation_id: keep.id, event_key: crm.keepInTouchOnKey('2026-11-10'), ran_at: '2026-11-10T09:00:00Z' },
+    { automation_id: keep.id, event_key: crm.keepInTouchOnKey('2026-11-20'), ran_at: '2026-11-20T09:00:00Z' },
+    { automation_id: keep.id, event_key: 'catchup:network:np-priya:2026-11-23', ran_at: '2026-11-23T09:00:00Z' },
+    { automation_id: 'someone-else', event_key: crm.keepInTouchOnKey('2026-11-22'), ran_at: '2026-11-22T09:00:00Z' },
+  ];
+  assert.equal(crm.keepInTouchSince(keep, runs), '2026-11-20');
+  assert.equal(crm.keepInTouchSince(keep, []), '2026-11-02');
+  assert.equal(crm.keepInTouchSince(null, runs), null);
+  assert.equal(crm.ranWords(keep, runs, TODAY), 'Ran 1 time in November');
+});

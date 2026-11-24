@@ -184,6 +184,10 @@ async function googleRead({ res, asked, headers }) {
       const q = new URLSearchParams({ maxResults: '250', fields: 'items(id,summary,summaryOverride,primary),nextPageToken' });
       if (next) q.set('pageToken', next);
       const r = await fetch(`https://www.googleapis.com/calendar/v3/users/me/calendarList?${q}`, { method: 'GET', headers });
+      // Connected before 059, the account never gave the calendar list's permission (calendar.calendarlist.readonly):
+      // Google refuses with 403. The coach is asked to connect again rather than told Google didn't answer (run 8's 5;
+      // Claude's call, 24 Nov).
+      if (r.status === 403 && /insufficient|scope|permission/i.test(await r.text().catch(() => ''))) return reply(res, 200, { ok: false, reason: 'reconnect' });
       if (!r.ok) return reply(res, 502, { ok: false, reason: 'no_answer', message: DIDNT_WORK });
       const j = await r.json();
       for (const c of j.items || []) if (typeof c?.id === 'string') calendars.push({ id: c.id, summary: String(c.summaryOverride || c.summary || '').slice(0, 200), ...(c.primary ? { primary: true } : {}) });

@@ -310,3 +310,23 @@ test('a long event is kept, in pieces of at most 31 days, cut to the window read
   const kept = round.save.filter(([t]) => t === 'coach_busy_times').map(([, r]) => r);
   assert.ok(kept.some((r) => overlaps(r, at('2026-12-02', '10:00'), at('2026-12-02', '11:00'))), 'next week is busy');
 });
+
+// Claude's call on run 8's point 5 (24 Nov 2026): a coach who connected Google before 059 is asked to connect again.
+test('connected before 059: Google refuses the calendar list, and the coach sees "Connect Google Calendar again", never "didn’t answer"', async () => {
+  // The adapter as the browser uses it, with the server's answer for that refusal.
+  const google = googleCalendarAdapter(async () => ({ ok: false, reason: 'reconnect' }));
+  const round = await busyOnce({ google, calendars: [], busyTimes: [], coachId: ME, coachZone: LON, now: NOW });
+  assert.equal(round.reconnect, true);
+  assert.equal(round.problem, BUSY_WORDS.reconnect);
+  assert.deepEqual([round.save, round.remove], [[], []], 'nothing kept on the device is touched');
+  // Any other trouble stays "didn't answer", read again soon.
+  const other = await busyOnce({ google: googleCalendarAdapter(async () => ({ ok: false, reason: 'no_answer' })), calendars: [], busyTimes: [], coachId: ME, coachZone: LON, now: NOW });
+  assert.deepEqual([other.reconnect, other.problem], [false, BUSY_WORDS.problem]);
+  // Settings, My calendars: the row offers it, and it starts Google's own consent again.
+  const [row] = cal.connectionRows({ live: true, status: { google_calendar: true, google_ready: true }, reconnect: true });
+  assert.deepEqual([row.value, row.action, row.does], ['Connected', 'Connect Google Calendar again', 'connect']);
+  assert.equal(cal.connectionRows({ live: true, status: { google_calendar: true, google_ready: true } })[0].action, 'Disconnect Google Calendar');
+  // The server turns Google's 403 for a missing permission into that answer, by its own code.
+  const source = readFileSync(new URL('../../api/coach-calendar.js', import.meta.url), 'utf8');
+  assert.match(source, /if \(r\.status === 403 && \/insufficient\|scope\|permission\/i\.test\([^\n]*\) return reply\(res, 200, \{ ok: false, reason: 'reconnect' \}\);/);
+});

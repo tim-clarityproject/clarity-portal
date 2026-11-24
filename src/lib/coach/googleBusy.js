@@ -203,10 +203,10 @@ export function activeBusy(busyTimes = [], calendars = [], coachId = null) {
  * @param {object} a
  * @param {{ listCalendars?: Function, listBusy?: Function }} a.google the adapter (real or stand-in)
  * @param {object[]} a.calendars the coach's coach_google_calendars rows   @param {object[]} a.busyTimes their coach_busy_times rows
- * @returns {Promise<{ save: [string, object][], remove: [string, string][], calendars: object[], problem: string|null }>}
+ * @returns {Promise<{ save: [string, object][], remove: [string, string][], calendars: object[], problem: string|null, reconnect: boolean }>}
  */
 export async function busyOnce({ google, calendars = [], busyTimes = [], coachId, coachZone, now }) {
-  const out = { save: [], remove: [], calendars: calendars || [], problem: null };
+  const out = { save: [], remove: [], calendars: calendars || [], problem: null, reconnect: false };
   if (!google || typeof google.listCalendars !== 'function' || typeof google.listBusy !== 'function' || !coachId) return out;
   const mineBusy = (busyTimes || []).filter((b) => b && b.coach_id === coachId);
   try {
@@ -233,8 +233,10 @@ export async function busyOnce({ google, calendars = [], busyTimes = [], coachId
       for (const r of d.remove) out.remove.push([TG.busy, r.id]);
     }
     for (const r of plan.remove) out.remove.push([TG.calendars, r.id]);
-  } catch {
-    out.problem = BUSY_WORDS.problem;
+  } catch (e) {
+    // Connected before 059: the account must give the new permission once (run 8's 5).
+    out.reconnect = e?.code === 'reconnect';
+    out.problem = out.reconnect ? BUSY_WORDS.reconnect : BUSY_WORDS.problem;
   }
   return out;
 }
@@ -252,6 +254,8 @@ export const BUSY_WORDS = Object.freeze({
   none: 'Your Google calendars show here once Google Calendar is connected.',
   reading: 'Your Google calendars show here after the next sync.',
   problem: 'Google Calendar didn’t answer, so your other calendars may be out of date. They’ll be read again soon.',
+  reconnect: 'Google Calendar needs you to connect it again before your other calendars can show here.',
+  reconnectAction: 'Connect Google Calendar again',
   on: (name) => `${name} shows on your calendar and blocks those times.`,
   offSaved: (name) => `${name} no longer shows or blocks times.`,
 });

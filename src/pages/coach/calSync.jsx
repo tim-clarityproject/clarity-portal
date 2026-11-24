@@ -34,7 +34,7 @@ import './calSync.css';
 
 const LIVE = typeof __CLARITY_LIVE__ !== 'undefined' && __CLARITY_LIVE__;
 const NOTHING = Object.freeze({
-  on: false, invites: false, zoom: false, status: {}, standIns: {}, conflicts: [], problem: null, lastAt: null,
+  on: false, invites: false, zoom: false, status: {}, standIns: {}, conflicts: [], problem: null, lastAt: null, reconnect: false,
   after: () => {}, setEditing: () => {}, removed: () => {}, restored: (rows) => rows, setStandIn: () => {}, connect: async () => null, disconnect: async () => false, refresh: () => {},
   google: false, soon: () => {},
 });
@@ -73,6 +73,8 @@ export function CalSync({ children }) {
   const [standIns, setStandIns] = useState(() => (LIVE ? {} : readJson(standKey(userId, 'on')) || {}));
   const [conflicts, setConflicts] = useState([]);
   const [problem, setProblem] = useState(null);
+  // Connected before 059: Google needs the coach to connect once more (run 8's 5); Settings offers it.
+  const [reconnect, setReconnect] = useState(false);
   const [lastAt, setLastAt] = useState(null);
   const editing = useRef(null);
   const running = useRef(false);
@@ -160,6 +162,7 @@ export function CalSync({ children }) {
         if (busyRows.length) await saveRows(userId, busyRows);
         for (const [table, id] of busy.remove.filter(([t]) => t === TG.calendars)) await removeRow(userId, table, id);
         busyProblem = busy.problem;
+        setReconnect(busy.reconnect === true);
       }
 
       // What this round was told to delete is done (unless it stopped part-way); anything noted since stays for the next.
@@ -241,7 +244,7 @@ export function CalSync({ children }) {
     /** Guests really get invites: the real Google Calendar is connected. */
     invites: realGoogle,
     zoom: useZoom,
-    status, standIns, conflicts, problem, lastAt, after, setEditing, removed, restored,
+    status, standIns, conflicts, problem, lastAt, after, setEditing, removed, restored, reconnect,
     /** Google Calendar is in use (the real one, or a stand-in on a build that isn't live): My calendars lists its calendars. */
     google: useGoogle,
     /** A round soon (a calendar was just switched on, so its busy times are read straight away). */
@@ -268,7 +271,7 @@ export function CalSync({ children }) {
       return true;
     },
     refresh,
-  }), [on, realGoogle, useGoogle, useZoom, schedule, status, standIns, conflicts, problem, lastAt, after, setEditing, removed, restored, userId, coach.id, refresh]);
+  }), [on, realGoogle, useGoogle, useZoom, schedule, status, standIns, conflicts, problem, lastAt, after, setEditing, removed, restored, userId, coach.id, refresh, reconnect]);
 
   // For the browser suites and a tester's console, never on the live site: the stand-ins and a round on demand.
   useEffect(() => {

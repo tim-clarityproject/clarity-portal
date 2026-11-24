@@ -959,6 +959,22 @@ export function newItem({ id, coachId, kind = 'other', calendar = 'work', title,
   };
 }
 
+/**
+ * A session's own call on the calendar, as Book a call makes one (run 8's 6; Claude's call, 24 Nov): a session added
+ * from a client's or a group's page gets it, so its reminders go (they go from the calendar's calls). Anchored to
+ * `zone` (the client's own, or the coach's for a group); no guests, so adding it sends nothing. Null without a zone.
+ */
+export function sessionCallItem(session, { id, title = '', zone }) {
+  if (!session?.id || !isZone(zone)) return null;
+  const starts = ms(session.starts_at);
+  if (!Number.isFinite(starts)) return null;
+  return newItem({
+    id, coachId: session.coach_id, kind: 'client_call', title: title || 'Call', starts_at: iso(starts), ends_at: iso(starts + (Number(session.minutes) || 60) * MIN), time_zone: zone,
+    place_kind: session.place ? 'in_person' : 'zoom', location: session.place || null,
+    profile_id: session.group_id ? null : session.profile_id || null, group_id: session.group_id || null, session_id: session.id,
+  });
+}
+
 /** An all-day item, or one over several days (travel, a conference): its first and last day, in its anchor zone. */
 export function allDayItem({ firstDay, lastDay = firstDay, zone, ...rest }) {
   const last = lastDay < firstDay ? firstDay : lastDay;
@@ -2638,12 +2654,19 @@ export function zoomWork(items = [], sent = {}) {
 
 /**
  * Settings, My calendars: the two connections as rows.
- * @param {{ live: boolean, status?: { google_calendar?: boolean, zoom?: boolean, google_ready?: boolean }, standIns?: { google?: boolean, zoom?: boolean } }} a
+ * @param {{ live: boolean, status?: { google_calendar?: boolean, zoom?: boolean, google_ready?: boolean }, standIns?: { google?: boolean, zoom?: boolean }, reconnect?: boolean }} a
  *   `status`: the server's own answer; `google_ready`: the keys are set, so the coach can connect their account.
  * @returns {{ key: 'google'|'zoom', label: string, value: string, action: string|null, does: 'connect'|'disconnect'|'explain'|null, line: string }[]}
  */
-export function connectionRows({ live, status = {}, standIns = {} }) {
+export function connectionRows({ live, status = {}, standIns = {}, reconnect = false }) {
   const google = status.google_calendar === true;
+  // Connected before 059 (run 8's 5; Claude's call, 24 Nov): Google needs the coach once more for the calendar list.
+  if (google && reconnect && live) {
+    return [
+      { key: 'google', label: 'Google Calendar', value: 'Connected', action: 'Connect Google Calendar again', does: status.google_ready === true ? 'connect' : 'explain', line: 'Google Calendar needs you to connect it again before your other calendars can show here.' },
+      ...connectionRows({ live, status, standIns }).filter((r) => r.key !== 'google'),
+    ];
+  }
   const zoom = status.zoom === true;
   return [
     {
