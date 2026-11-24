@@ -1112,13 +1112,35 @@ export function sessionPeopleRows(sessionId, members = [], engagements = []) {
  * yet written up, is made at that time with the same people.
  * @returns {{ moved: object, made: object, people: object[] }}
  */
-export function moveSession(session, newStartsAt, newId, people = []) {
+export function moveSession(session, newStartsAt, newId, people = [], items = []) {
   const made = newSession({ id: newId, coachId: session.coach_id, profileId: session.profile_id, groupId: session.group_id, engagementId: session.engagement_id, kind: session.kind, startsAt: newStartsAt, minutes: session.minutes, place: session.place });
   return {
     moved: { ...session, outcome: 'moved', waived: false, moved_to: newStartsAt },
     made,
     people: people.filter((p) => p.session_id === session.id).map((p) => ({ session_id: newId, profile_id: p.profile_id, engagement_id: p.engagement_id || null })),
+    items: callMovedWithSession(items, session, made),
   };
+}
+
+/**
+ * The calendar's call for a session written up as Moved goes with it to the
+ * new time and the new session, with its travel time either side (run 8's
+ * functionality tester, 23 Nov): left where it was, the old time stayed busy
+ * on the calendar, a client's reminders still went for the old time, and
+ * nothing at all went for the new one (a group's included), where the
+ * database's own move for a client (051's my_booking_move) does the same.
+ * A call with no calendar item, or one of a repeat's own rows, moves nothing.
+ * @returns {object[]} the coach_cal_items rows to save, the call first
+ */
+export function callMovedWithSession(items, session, made) {
+  const call = (items || []).find((i) => i && i.session_id === session.id && !i.removed && !i.repeat_rule && !i.all_day);
+  const to = new Date(made?.starts_at).getTime();
+  const from = new Date(call?.starts_at).getTime();
+  if (!call || Number.isNaN(to) || Number.isNaN(from)) return [];
+  const shift = to - from;
+  const at = (v) => new Date(new Date(v).getTime() + shift).toISOString();
+  return [{ ...call, session_id: made.id, starts_at: at(call.starts_at), ends_at: at(call.ends_at) },
+    ...(items || []).filter((t) => t && t.travel_for === call.id && !t.removed).map((t) => ({ ...t, starts_at: at(t.starts_at), ends_at: at(t.ends_at) }))];
 }
 
 /** "7 held", "1 held": the Sessions and recaps fold when it is closed. */

@@ -38,6 +38,7 @@ const SESSIONS = 'coach_sessions';
 const PEOPLE = 'coach_session_people';
 const ACTIONS = 'coach_session_actions';
 const NOTES = 'coach_session_notes';
+const ITEMS = 'coach_cal_items';
 
 const locked = () => { const e = new Error(SENT_LINE); e.code = 'locked'; return e; };
 const kept = (userId, id) => rowOf(coachState(userId), SESSIONS, id);
@@ -200,10 +201,15 @@ export async function moveSessionTo(userId, session, newStartsAt) {
   // Sent from another device since this page loaded: the database would keep the session as it was sent, yet the new
   // session would still be made. So the database is asked first, and the page then shows the session as sent.
   if (await sentElsewhere(userId, session.id)) throw locked();
-  const { moved, made, people } = moveSession({ ...before, ...session }, newStartsAt, newId(), rowsOf(state, PEOPLE));
-  const status = await saveRows(userId, [[SESSIONS, { ...moved, written_up_at: moved.written_up_at || new Date().toISOString() }], [SESSIONS, made], ...people.map((p) => [PEOPLE, p])]);
+  // The calendar's call (and its travel time) goes with it to the new time and the new session (day.js callMovedWithSession).
+  const wasItems = rowsOf(state, ITEMS);
+  const { moved, made, people, items } = moveSession({ ...before, ...session }, newStartsAt, newId(), rowsOf(state, PEOPLE), wasItems);
+  const itemsBefore = items.map((i) => wasItems.find((x) => x.id === i.id)).filter(Boolean);
+  const putItemsBack = async () => { if (itemsBefore.length) await saveRows(userId, itemsBefore.map((i) => [ITEMS, i])).catch(() => null); };
+  const status = await saveRows(userId, [[SESSIONS, { ...moved, written_up_at: moved.written_up_at || new Date().toISOString() }], [SESSIONS, made], ...people.map((p) => [PEOPLE, p]), ...items.map((i) => [ITEMS, i])]);
   if (status === 'superseded') {
     // Changed in another tab since this one read it: the new time isn't made either.
+    await putItemsBack();
     for (const p of people) await removeRow(userId, PEOPLE, keyOf(PEOPLE, p)).catch(() => null);
     await removeRow(userId, SESSIONS, made.id).catch(() => null);
     throw changed();
@@ -211,6 +217,7 @@ export async function moveSessionTo(userId, session, newStartsAt) {
   return {
     made,
     undo: async () => {
+      await putItemsBack();
       for (const p of people) await removeRow(userId, PEOPLE, keyOf(PEOPLE, p)).catch(() => null);
       await removeRow(userId, SESSIONS, made.id).catch(() => null);
       await saveRow(userId, SESSIONS, before).catch(() => null);

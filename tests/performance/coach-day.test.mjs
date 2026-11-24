@@ -569,6 +569,30 @@ test('a moved session makes a new one at the new time with the same people, and 
   assert.equal(newSession({ id: 'x', coachId: 'c', profileId: 'p', startsAt: at(16), minutes: 45 }).minutes, 60, 'only 30, 60 or 90 minutes');
 });
 
+test('a session written up as Moved takes its calendar call and travel time to the new time and the new session (run 8, functionality tester)', () => {
+  const { moveSession, newSession, callMovedWithSession } = day5;
+  const s = newSession({ id: 's', coachId: 'c', groupId: 'g', startsAt: at(16, 14), minutes: 60 });
+  const hour = 3600000;
+  const iso = (v) => new Date(v).toISOString();
+  const call = { id: 'i', session_id: 's', starts_at: iso(at(16, 14)), ends_at: iso(new Date(at(16, 14)).getTime() + hour), removed: false, repeat_rule: null, group_id: 'g', meeting_link: 'https://zoom.example/j/1' };
+  const there = { id: 't1', travel_for: 'i', starts_at: iso(new Date(at(16, 14)).getTime() - hour / 2), ends_at: iso(at(16, 14)) };
+  const back = { id: 't2', travel_for: 'i', starts_at: call.ends_at, ends_at: iso(new Date(call.ends_at).getTime() + hour / 2) };
+  const other = { id: 'o', session_id: 'x', starts_at: iso(at(16, 9)), ends_at: iso(at(16, 10)) };
+  const { made, items } = moveSession(s, iso(at(19, 16)), 'n', [], [other, call, there, back]);
+  assert.deepEqual(items.map((i) => [i.id, i.session_id ?? null, i.starts_at, i.ends_at]), [
+    ['i', 'n', iso(at(19, 16)), iso(new Date(at(19, 16)).getTime() + hour)],
+    ['t1', null, iso(new Date(at(19, 16)).getTime() - hour / 2), iso(at(19, 16))],
+    ['t2', null, iso(new Date(at(19, 16)).getTime() + hour), iso(new Date(at(19, 16)).getTime() + 1.5 * hour)],
+  ]);
+  assert.equal(items[0].meeting_link, call.meeting_link, 'the call keeps everything else it had');
+  assert.equal(made.id, 'n');
+  // No calendar item, a deleted one, or a repeat's own row: nothing moves.
+  assert.deepEqual(callMovedWithSession([], s, made), []);
+  assert.deepEqual(callMovedWithSession([{ ...call, removed: true }], s, made), []);
+  assert.deepEqual(callMovedWithSession([{ ...call, repeat_rule: { freq: 'weekly' } }], s, made), []);
+  assert.deepEqual(moveSession(s, iso(at(19, 16)), 'n', []).items, [], 'called as before: nothing more');
+});
+
 test('the brief: from last time, coming up and the debrief after a big moment', () => {
   const { fromLastTime, comingUp, sharedReview, heldWords } = day5;
   const last = { id: 's' };
