@@ -138,3 +138,73 @@ test('the nightly round: the next instalment drafted on its day, a reminder draf
   assert.deepEqual([again.invoices, again.caughtUp], [0, 0], 'a second round drafts and handles nothing twice');
   assert.equal(db.tables.payments.length, 1);
 });
+
+test('functionality tester, 6b run 1: paid by hand then Stripe\'s own out-of-band "paid" with the full amount adds no second payment', async () => {
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const { db, stripe, b } = world(now);
+  await b.draft('a-ben');
+  const id = db.tables.invoices[0].id;
+  await b.send(id);
+  await deliver(db, stripe);
+  await b.paidByHand(id);
+  const last = stripe.state.events.at(-1);
+  assert.equal(last.data.object.paid_out_of_band, true);
+  assert.equal(last.data.object.amount_paid, 300000, 'as real Stripe: the full amount');
+  await deliver(db, stripe);
+  assert.equal(db.tables.payments.length, 1);
+  assert.equal(db.tables.payments.reduce((a, p) => a + p.amount_minor, 0), 300000);
+});
+
+test('functionality tester, 6b run 1: one Stripe customer for every instalment of an agreement', async () => {
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const { db, stripe, b } = world(now);
+  await b.draft('a-ben');
+  now.value = new Date('2027-01-01T12:00:00Z');
+  await b.draft('a-ben');
+  now.value = new Date('2027-02-01T12:00:00Z');
+  await b.draft('a-ben');
+  assert.equal(db.tables.invoices.length, 3);
+  assert.equal(stripe.state.customers.size, 1);
+  assert.equal(new Set(db.tables.invoices.map((i) => i.stripe_customer_id)).size, 1);
+});
+
+test('functionality tester, 6b run 1: a reminder with no address is refused before it is claimed; one that didn\'t go is let go', async () => {
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const { db, stripe, b } = world(now);
+  await b.draft('a-ben');
+  const id = db.tables.invoices[0].id;
+  await b.send(id);
+  await deliver(db, stripe);
+  now.value = new Date('2026-12-18T09:00:00Z');
+  await b.draftReminders();
+  const rem = db.tables.invoice_reminders[0];
+  const email = db.tables.invoices[0].payer_email;
+  db.tables.invoices[0].payer_email = null;
+  assert.deepEqual(await b.reminderToSend(rem.id), { noAddress: true });
+  assert.equal(db.tables.invoice_reminders[0].sent_at ?? null, null, 'not claimed');
+  db.tables.invoices[0].payer_email = email;
+  const r = await b.reminderToSend(rem.id);
+  assert.ok(r.reminder);
+  await b.releaseReminder(rem.id);
+  assert.equal(db.tables.invoice_reminders[0].sent_at, null, 'let go, so it waits to be sent again');
+  assert.ok((await b.reminderToSend(rem.id)).reminder);
+});
+
+test('the handler: a reminder Resend refuses is let go and the coach is told it didn\'t send', async () => {
+  const { sendReminder } = await import('../../api/coach-billing.js');
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const { db, stripe, b } = world(now);
+  db.tables.coaches = [{ id: COACH.id, display_first_name: 'Maya' }];
+  await b.draft('a-ben');
+  await b.send(db.tables.invoices[0].id);
+  await deliver(db, stripe);
+  now.value = new Date('2026-12-18T09:00:00Z');
+  await b.draftReminders();
+  const r = await b.reminderToSend(db.tables.invoice_reminders[0].id);
+  const real = globalThis.fetch;
+  globalThis.fetch = async () => new Response('{}', { status: 500 });
+  try {
+    const went = await sendReminder({ RESEND_API_KEY: 're_test_invented', EMAIL_FROM: 'Invented <x@example.invalid>' }, db, COACH, r).catch(() => 0);
+    assert.equal(went, 0);
+  } finally { globalThis.fetch = real; }
+});

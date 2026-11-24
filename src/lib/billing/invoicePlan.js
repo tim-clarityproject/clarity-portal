@@ -1,4 +1,4 @@
-import { feeLines, instalments, moneyWords, termsDays } from './money.js';
+import { feeLines, instalments, termsDays } from './money.js';
 
 // Which invoices an agreement makes, and when (Phase 6b run 1, step 4): plain rules shared by the server
 // (api/coach-billing.js drafts them in Stripe) and its nightly round, checked by tests/performance/billing-plan.test.mjs.
@@ -32,11 +32,16 @@ export function invoicesFor(terms, { signedDay }) {
       lines: [{ description: what, amount: fees.full }, ...fees.lines.map((l) => ({ description: l.name, amount: l.amount }))] }];
   }
   const firstDay = terms.firstInstalmentOn && terms.firstInstalmentOn > signedDay ? terms.firstInstalmentOn : signedDay;
-  const discounted = fees.lines.length ? ` (${moneyWords(fees.full, currency)}, less ${fees.lines.map((l) => l.name).join(' and ')})` : '';
-  return instalments({ total: fees.total, count, firstDay }).map((i) => ({
-    n: i.n, of: count, day: i.day, total: i.amount, termsDays: days, settlesTo, poNumber,
-    lines: [{ description: `${what}, instalment ${i.n} of ${count}${i.n === 1 ? discounted : ''}`, amount: i.amount }],
-  }));
+  // Each instalment carries its share of the full price, then each discount's share as its own named line under it
+  // (a discount is always its own line; functionality tester, 6b run 1). Every column is split exactly, so the
+  // instalments add up to the discounted total to the penny.
+  const fullShares = instalments({ total: fees.full, count, firstDay });
+  const offShares = fees.lines.map((l) => (l.amount ? instalments({ total: -l.amount, count, firstDay }) : null));
+  return fullShares.map((i, k) => {
+    const lines = [{ description: `${what}, instalment ${i.n} of ${count}`, amount: i.amount }];
+    fees.lines.forEach((l, j) => { if (offShares[j]) lines.push({ description: l.name, amount: -offShares[j][k].amount }); });
+    return { n: i.n, of: count, day: i.day, total: lines.reduce((a, l) => a + l.amount, 0), termsDays: days, settlesTo, poNumber, lines };
+  });
 }
 
 /** The invoices due to be drafted by `today` that aren't drafted yet (by their place: n), the soonest first. */

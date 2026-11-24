@@ -23,7 +23,7 @@ test('in full: the full price with each discount its own line under it', () => {
   assert.equal(one.total, 1530000);
   const inst = invoicesFor({ ...T, discounts: [{ name: 'Returning client, 15% off', percent: 15 }] }, { signedDay: '2026-12-01' });
   assert.equal(inst.reduce((n, x) => n + x.total, 0), 1530000);
-  assert.equal(inst[0].lines[0].description, '6-month coaching, instalment 1 of 6 (£18,000, less Returning client, 15% off)');
+  assert.deepEqual(inst[0].lines, [{ description: '6-month coaching, instalment 1 of 6', amount: 300000 }, { description: 'Returning client, 15% off', amount: -45000 }]);
 });
 
 test('funded: the organisation settles, on 30 days, with its purchase order; pro bono makes none', () => {
@@ -38,4 +38,17 @@ test('a late cancellation for a pay-per-session client, and expenses at cost', (
   assert.equal(l.lines[0].description, 'Coaching session, cancelled with less than 24 hours’ notice, Thu 26 Nov');
   assert.equal(lateCancelInvoice({ rateMinor: 0 }), null);
   assert.deepEqual(expenseLines([{ description: 'Train to Leeds', spent_on: '2026-11-20', amount_minor: 8450 }, { description: 'Hotel', spent_on: '2026-11-20', amount_minor: 12000, invoice_id: 'x' }]), [{ description: 'Train to Leeds, 2026-11-20', amount: 8450 }]);
+});
+
+test('functionality tester, 6b run 1: every instalment shows each discount as its own named line, and they add up exactly', async () => {
+  const { invoicesFor } = await import('../../src/lib/billing/invoicePlan.js');
+  const plan = invoicesFor({ total_minor: 1800000, currency: 'GBP', instalments: 6, coaching: '6-month coaching', discounts: [{ name: 'Returning client, 15% off', percent: 15 }] }, { signedDay: '2026-12-01' });
+  assert.equal(plan.length, 6);
+  for (const p of plan) {
+    assert.deepEqual(p.lines.map((l) => l.description), [`6-month coaching, instalment ${p.n} of 6`, 'Returning client, 15% off']);
+    assert.equal(p.total, p.lines.reduce((a, l) => a + l.amount, 0));
+  }
+  assert.equal(plan.reduce((a, p) => a + p.total, 0), 1530000);
+  const odd = invoicesFor({ total_minor: 1000000, currency: 'GBP', instalments: 3, discounts: [{ name: 'Founding client', amount: 100 }] }, { signedDay: '2026-12-01' });
+  assert.equal(odd.reduce((a, p) => a + p.total, 0), 999900);
 });

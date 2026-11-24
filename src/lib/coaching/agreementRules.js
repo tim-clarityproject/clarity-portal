@@ -277,7 +277,8 @@ export function invoiceStatus(inv, todayKey = getLocalDateKey()) {
 export function billingLine(invoices, todayKey = getLocalDateKey()) {
   const next = nextInvoice(invoices);
   if (!next) return '';
-  return next.dueOn ? `Invoice ${next.number} is due on ${dayWords(next.dueOn, todayKey)}.` : `Invoice ${next.number} is ready to settle.`;
+  if (!next.dueOn) return `Invoice ${next.number} is ready to settle.`;
+  return `Invoice ${next.number} ${next.dueOn < todayKey ? 'was' : 'is'} due on ${dayWords(next.dueOn, todayKey)}.`;
 }
 
 export const BILLING = Object.freeze({
@@ -295,7 +296,8 @@ export const BILLING = Object.freeze({
 });
 
 export const fundsLine = (org) => `${org} funds your coaching.`;
-export const dueLine = (inv, todayKey = getLocalDateKey()) => (inv?.dueOn ? `It’s due on ${dayWords(inv.dueOn, todayKey)}.` : '');
+// A day already gone reads in the past ("It was due on Tue 17 Nov."; functionality tester, 6b run 1).
+export const dueLine = (inv, todayKey = getLocalDateKey()) => (inv?.dueOn ? `${inv.dueOn < todayKey ? 'It was' : 'It’s'} due on ${dayWords(inv.dueOn, todayKey)}.` : '');
 
 /**
  * Everything Billing draws. A funded client gets only who funds it (no amount, no invoice); a

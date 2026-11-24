@@ -81,11 +81,5 @@
   ],
   "env": {
     "CANONICAL_DOMAIN": "portal.theclarityproject.co.uk"
-  },
-  "crons": [
-    {
-      "path": "/api/billing-nightly",
-      "schedule": "15 3 * * *"
-    }
-  ]
+  }
 }

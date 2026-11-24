@@ -57,7 +57,10 @@ export function invoiceChange(event, row) {
   }
   if (newer && inv.hosted_invoice_url && /^https:\/\//.test(inv.hosted_invoice_url)) patch.hosted_url = inv.hosted_invoice_url;
   if (newer) patch.stripe_updated_at = at;
-  const paidNow = (event.type === 'invoice.paid' || event.type === 'invoice.payment_succeeded') && Number(inv.amount_paid) > 0;
+  // Paid outside Stripe (the coach's "Add a payment made to your bank") already made its payment row, added by the
+  // coach: Stripe's own "paid" for it, which carries the full amount, never adds a second (functionality tester, 6b run 1).
+  const paidNow = (event.type === 'invoice.paid' || event.type === 'invoice.payment_succeeded') && Number(inv.amount_paid) > 0
+    && inv.paid_out_of_band !== true;
   const payment = paidNow ? {
     invoice_id: row.id, coach_id: row.coach_id, stripe_id: String(inv.payment_intent || inv.charge || `${inv.id}:paid`),
     amount_minor: Number(inv.amount_paid), currency: String(inv.currency || '').toUpperCase() === 'USD' ? 'USD' : 'GBP',

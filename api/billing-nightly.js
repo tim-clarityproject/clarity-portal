@@ -1,5 +1,5 @@
-// The nightly billing round (Phase 6b run 1, steps 4 to 6), once a day from Vercel's own schedule (vercel.json crons,
-// the live site only), with the scheduler's secret:
+// The nightly billing round (Phase 6b run 1, steps 4 to 6), once a day from the database's own scheduler (061's pg_cron
+// job clarity-billing-nightly at 03:15 UTC, as 058; never a Vercel cron, coach-portal rule 22), with the scheduler's secret:
 //
 //   GET /api/billing-nightly   Authorization: Bearer <CRON_SECRET>
 //

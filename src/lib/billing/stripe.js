@@ -106,7 +106,7 @@ export function stripeStandIn({ secret = 'whsec_stand_in_0000000000', now = () =
       inv.status = 'paid'; inv.amount_paid = inv.amount_due; inv.status_transitions = { paid_at: t() };
       return emit('invoice.paid', inv);
     },
-    markPaidByHand: async (invId) => { const inv = s.invoices.get(invId); inv.status = 'paid'; inv.amount_paid = 0; return structuredClone(emit('invoice.paid', inv).data.object); },
+    markPaidByHand: async (invId) => { const inv = s.invoices.get(invId); inv.status = 'paid'; inv.amount_paid = inv.amount_due; inv.paid_out_of_band = true; return structuredClone(emit('invoice.paid', inv).data.object); },
     void: async (invId) => { const inv = s.invoices.get(invId); inv.status = 'void'; emit('invoice.voided', inv); return structuredClone(inv); },
     refund: async ({ paymentIntent, amount }) => {
       const inv = [...s.invoices.values()].find((i) => i.payment_intent === paymentIntent);

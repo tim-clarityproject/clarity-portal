@@ -80,15 +80,25 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
       const { data: have } = await server.from('invoices').select('instalment_n, status').eq('agreement_id', agreement.id).eq('kind', 'instalment');
       const due = dueToDraft(planned, (have || []).filter((i) => i.status !== 'void').map((i) => i.instalment_n), today(payer.zone));
       let drafted = 0;
+      // One Stripe customer for the agreement's payer, reused by every instalment (a Bacs Direct Debit belongs to one).
+      let known = null;
+      const customerFor = async (ag, who, idem) => {
+        if (known) return known;
+        const { data: before } = await server.from('invoices').select('stripe_customer_id, payer_email').eq('agreement_id', ag.id);
+        const same = (before || []).find((i) => i.stripe_customer_id && String(i.payer_email || '').toLowerCase() === String(who.email || '').toLowerCase());
+        known = same ? { id: same.stripe_customer_id }
+          : await stripe.customer({ name: who.name, email: who.email, metadata: { profile_id: ag.profile_id } }, `${idem}:customer`);
+        return known;
+      };
       for (const p of due) {
         const { data: number } = await server.rpc('next_invoice_number');
         const idem = `agreement:${agreement.id}:instalment:${p.n}`;
-        const customer = await stripe.customer({ name: payer.name, email: payer.email, metadata: { profile_id: agreement.profile_id } }, `${idem}:customer`);
+        const customer = await customerFor(agreement, payer, idem);
         const inv = await stripe.draftInvoice({ customer: customer.id, currency: version.currency, daysUntilDue: p.termsDays, lines: p.lines, poNumber: p.poNumber,
           metadata: { portal_number: `CLARITY-${number}`, agreement_id: agreement.id, instalment: String(p.n) } }, idem);
         const { error } = await server.from('invoices').insert({
           coach_id: coach.id, agreement_id: agreement.id, profile_id: agreement.profile_id, organisation_id: payer.profile?.organisation_id || null,
-          number, stripe_invoice_id: inv.id, kind: 'instalment', status: 'draft', currency: version.currency, lines: p.lines, total_minor: p.total,
+          number, stripe_invoice_id: inv.id, stripe_customer_id: customer.id, kind: 'instalment', status: 'draft', currency: version.currency, lines: p.lines, total_minor: p.total,
           terms_days: p.termsDays, po_number: p.poNumber, settles_to: p.settlesTo, payer_name: payer.name, payer_email: payer.email, payer_zone: payer.zone, instalment_n: p.n,
         });
         // Asked twice at once: the database keeps one (one invoice for each instalment); the other draft is voided in Stripe.
@@ -164,12 +174,19 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
       if (rem.sent_at) return { already: true };
       const inv = await mine('invoices', rem.invoice_id);
       if (inv.status !== 'sent') return { settled: true };
+      // Nobody to send it to, or no page to settle on: refused before it's claimed, so it stays waiting (functionality tester).
+      if (!inv.payer_email || !/^https:\/\//.test(inv.hosted_url || '')) return { noAddress: true };
       const at = now();
       const by = rem.stage === 14 ? settleBy(at, inv.payer_zone) : null;
       const { data: claimed } = await server.from('invoice_reminders').update({ sent_at: at.toISOString(), settle_by: by?.day || null })
         .eq('id', rem.id).is('sent_at', null).select('id');
       if (!claimed?.length) return { already: true };
       return { reminder: rem, invoice: inv, settleBy: by };
+    },
+
+    /** Nothing went (the email service refused it): the claim is let go, so the reminder waits to be sent again. */
+    async releaseReminder(reminderId) {
+      await server.from('invoice_reminders').update({ sent_at: null, settle_by: null }).eq('id', reminderId).eq('coach_id', coach.id);
     },
   };
 }
@@ -216,7 +233,13 @@ export default async function handler(req, res, env = process.env) {
     // Only the live site ever sends: a preview claims nothing, so a reminder pressed there is still waiting on the live site.
     if (!maySend(env) || !canSend(env)) return reply(res, 200, { ok: false, reason: 'preview' });
     const r = await b.reminderToSend(asked.id);
-    if (r.reminder) await sendReminder(env, server, coach, r);
+    if (r.noAddress) return reply(res, 409, { ok: false, message: 'This invoice has no email address to send a reminder to, so add one and try again.' });
+    let went = 0;
+    if (r.reminder) went = await sendReminder(env, server, coach, r).catch(() => 0);
+    if (r.reminder && !went) {
+      await b.releaseReminder(r.reminder.id);
+      return reply(res, 502, { ok: false, message: 'That reminder didn’t send. Check your connection and try again.' });
+    }
     return reply(res, 200, { ok: true, sent: Boolean(r.reminder), already: Boolean(r.already), settled: Boolean(r.settled) });
   } catch (e) {
     return reply(res, e?.status || 502, { ok: false, message: e?.status ? e.message : DIDNT_WORK });

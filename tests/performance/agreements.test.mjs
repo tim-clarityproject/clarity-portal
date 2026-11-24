@@ -213,3 +213,11 @@ test('tidied twice is the same as tidied once (UI tester, 6b run 1: a second pas
   assert.equal(twice.invoices[0].totalMinor, 300000);
   assert.equal(twice.invoices[0].dueOn, '2026-11-17');
 });
+
+test('functionality tester, 6b run 1: a due day already gone reads "was due"', async () => {
+  const { dueLine, billingLine } = await import('../../src/lib/coaching/agreementRules.js');
+  const inv = { id: 'x', number: 'CLARITY-1208', status: 'sent', dueOn: '2026-11-17', totalMinor: 300000, paidMinor: 0, currency: 'GBP' };
+  assert.match(dueLine(inv, '2026-11-24'), /^It was due on /);
+  assert.match(dueLine(inv, '2026-11-10'), /^It’s due on /);
+  assert.match(billingLine([inv], '2026-11-24'), /^Invoice CLARITY-1208 was due on /);
+});

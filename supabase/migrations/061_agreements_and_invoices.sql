@@ -208,6 +208,7 @@ create table if not exists public.invoices (
   organisation_id    uuid references public.organisations (id) on delete set null,
   number             integer unique check (number >= 1201),
   stripe_invoice_id  text unique check (char_length(stripe_invoice_id) <= 200),
+  stripe_customer_id text check (char_length(stripe_customer_id) <= 200),
   kind               text not null default 'instalment' check (kind in ('instalment', 'one_off', 'expenses', 'late_cancel')),
   status             text not null default 'draft' check (status in ('draft', 'sent', 'paid', 'void', 'uncollectible')),
   currency           text not null default 'GBP' check (currency in ('GBP', 'USD')),
@@ -634,5 +635,63 @@ begin
   end loop;
 end
 $rules$;
+
+-- ---------------------------------------------------------------- the payer's one Stripe customer
+-- Each instalment reuses the customer its agreement's payer already has in Stripe (a Bacs Direct Debit belongs to one
+-- customer), kept on the invoice it was drafted for (functionality tester, 6b run 1).
+alter table public.invoices add column if not exists stripe_customer_id text check (char_length(stripe_customer_id) <= 200);
+
+-- ---------------------------------------------------------------- the nightly billing round, from the database's scheduler
+-- Coach-portal rule 22: scheduled work is asked for by the database's own scheduler (pg_cron and pg_net, as 058), never
+-- a Vercel cron. Once a day at 03:15 UTC it asks the live site's /api/billing-nightly with the same secret and address
+-- from Vault as 058 (clarity_cron_secret, clarity_live_url). The round drafts only, never sends, and handles each Stripe
+-- message once, so a second ask the same night does nothing twice. Nothing at all without pg_cron, pg_net or Vault.
+create or replace function public.run_billing_nightly()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_secret text;
+  v_base text;
+begin
+  if to_regclass('vault.decrypted_secrets') is null or to_regnamespace('net') is null then
+    raise notice '061: Vault or pg_net isn''t on this database, so the billing round wasn''t asked for.';
+    return 0;
+  end if;
+  execute 'select (select decrypted_secret from vault.decrypted_secrets where name = $1 order by created_at desc limit 1),
+                  (select decrypted_secret from vault.decrypted_secrets where name = $2 order by created_at desc limit 1)'
+    into v_secret, v_base using 'clarity_cron_secret', 'clarity_live_url';
+  v_base := lower(regexp_replace(btrim(coalesce(v_base, '')), '/+$', ''));
+  if v_base !~ '^https://[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$'
+     or char_length(coalesce(v_secret, '')) < 16 or v_secret ~ '\s' then
+    raise notice '061: clarity_cron_secret or clarity_live_url isn''t usable in Vault, so the billing round wasn''t asked for.';
+    return 0;
+  end if;
+  execute 'select net.http_get(url := $1, headers := $2, timeout_milliseconds := $3)'
+    using v_base || '/api/billing-nightly', jsonb_build_object('Authorization', 'Bearer ' || v_secret), 290000;
+  return 1;
+end;
+$$;
+comment on function public.run_billing_nightly() is
+  'Run by pg_cron once a day at 03:15 UTC (061): asks the live site''s /api/billing-nightly with the secret and address from Vault. Drafts only; never sends.';
+revoke all on function public.run_billing_nightly() from public, anon, authenticated, service_role;
+
+do $$
+declare
+  v_id bigint;
+begin
+  if to_regnamespace('cron') is null or to_regprocedure('cron.schedule(text,text,text)') is null then
+    raise notice '061: pg_cron isn''t on this database, so the billing round isn''t scheduled here.';
+    return;
+  end if;
+  for v_id in execute 'select jobid from cron.job where jobname = $1' using 'clarity-billing-nightly' loop
+    execute 'select cron.unschedule($1::bigint)' using v_id;
+  end loop;
+  execute 'select cron.schedule($1, $2, $3)' using 'clarity-billing-nightly', '15 3 * * *', 'select public.run_billing_nightly()';
+  raise notice '061: the billing round runs once a day at 03:15 UTC (cron job clarity-billing-nightly).';
+end
+$$;
 
 select public.record_migration(61, '061_agreements_and_invoices');
