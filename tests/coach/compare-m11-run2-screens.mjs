@@ -286,7 +286,10 @@ export const ROWS = [
   { name: 'To-dos, Upcoming', m11: 'todos', clicks: ['set:tdview:up'], built: 'todos-upcoming', cut: TYPED, ...QUICK,
     changes: [...QUICK.changes, seed('Marketing', 'Business', 'issue 149 is on the seed’s Business list'), seed(/^MON 23 NOV$/, 'SAT 21 NOV', 'the seed counts its days on from the pinned day'),
       [/^(2 weeks after I finish it|Monthly on the 1st)$/, null, `${T_REP_SEED}; ${T_REPEATS}`, { say: '2 weeks after I finish it, Monthly on the 1st' }],
-      ['Planned for Wed 18 Nov, 10:00', '10:00', T_TIME], ['Fri 09:15', '09:15', T_TIME],
+      // The owner's: M11's Maya has her own to-dos, so the associate's two times are her additions below. (Left open to
+      // everyone, these two put "10:00" and "09:15" among what the built screen says instead, so the associate's addition was
+      // never reached and a run of both roles failed it as out of date: run 8's functionality tester.)
+      ['Planned for Wed 18 Nov, 10:00', '10:00', T_TIME, OWNER], ['Fri 09:15', '09:15', T_TIME, OWNER],
       seed('Planned for Tue 1 Dec', 'Planned for Sun 29 Nov', 'the seed’s to-do under Later is 12 days on from the pinned day')],
     added: [...QUICK.added, TAG_P, seeded(/^(Business|Every month)$/, 'the seed’s list and its monthly repeat'), [/^(10:00|09:15)$/, T_TIME, null, { who: 'associate', say: 'only the time' }]] },
   { name: 'To-dos, Someday', m11: 'todos', clicks: ['set:tdview:some'], built: 'todos-someday', cut: TYPED, ...QUICK },
