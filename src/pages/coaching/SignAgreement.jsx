@@ -7,6 +7,7 @@ import {
   TextField, useCoach, useToast,
 } from '../../components/design';
 import { useCachedLoad, writeCache } from '../../lib/pageCache';
+import { useDraft } from '../../lib/drafts';
 import { getLocalDateKey } from '../../lib/dateFormatter';
 import { signingWords } from '../../lib/billing/agreementText';
 import {
@@ -81,6 +82,18 @@ export default function SignAgreement() {
   const busy = useRef(false);
   const toolRef = useRef(null);
 
+  // The typed name, the tick and Type instead are kept on the device as a draft, so a reload or a closed tab mid-sign
+  // brings them back (rule 0e; break-it tester, 6b run 1). A drawing is kept by Use this signature (saved to the account).
+  const { clear: clearDraft } = useDraft({
+    userId, name: `agreement-sign:${versionId}`, ready: Boolean(version),
+    value: { name, ticked, typed: chosen === 'typed' },
+    onRestore: (d) => {
+      if (typeof d?.name === 'string') setName(d.name);
+      if (d?.ticked === true) setTicked(true);
+      if (d?.typed === true) setChosen('typed');
+    },
+  });
+
   useEffect(() => {
     let live = true;
     loadSavedSignature(userId).then((row) => { if (live && row) setSaved((s) => s || row.image); }).catch(() => { /* drawn afresh */ });
@@ -123,6 +136,7 @@ export default function SignAgreement() {
     busy.current = false;
     setSending(false);
     if (res.ok) {
+      clearDraft();
       setSigned({ signedAt: res.signedAt, name: name.trim(), signature: res.signature, fingerprint: res.fingerprint });
       toast.show('Signed');
       // The device's copies learn it at once, so My coaching and Home show it signed.
