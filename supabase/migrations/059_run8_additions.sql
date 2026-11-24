@@ -376,7 +376,8 @@ as $$
       and not public._coach_away_on(c.id, p_now)
       and not exists (select 1 from public.coach_cal_group_reminder_sends r
                       where r.item_id = i.id and r.kind = k.kind and r.occurrence_at = o.starts_at
-                        and r.address_key = public._group_reminder_key(coalesce(p.email, m.email)))
+                        -- by address, and by guest: one whose address changed after theirs went gets it once (the break-it tester)
+                        and (r.address_key = public._group_reminder_key(coalesce(p.email, m.email)) or r.member_id = m.id))
   ) x
   -- One address once: a member with a client profile first (their own zone is known), then the earliest added.
   order by x.item_id, x.kind, x.occurrence_at, public._group_reminder_key(x.person_email), x.no_profile, x.member_created, x.member_id
@@ -417,6 +418,11 @@ begin
   end if;
   if (case p_kind when 'day_before' then coalesce(((select st.booking -> 'remind_24' from public.coach_settings st where st.coach_id = v_coach) #>> '{}'), 'true') = 'false'
                   else coalesce(((select st.booking -> 'remind_1' from public.coach_settings st where st.coach_id = v_coach) #>> '{}'), 'false') <> 'true' end) then
+    return null;
+  end if;
+  -- A guest whose address changed since theirs went (the break-it tester): still once.
+  if exists (select 1 from public.coach_cal_group_reminder_sends r
+             where r.item_id = p_item and r.kind = p_kind and r.occurrence_at = p_occurrence and r.member_id = p_member) then
     return null;
   end if;
   insert into public.coach_cal_group_reminder_sends (item_id, coach_id, kind, occurrence_at, member_id, address_key)

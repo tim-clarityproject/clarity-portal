@@ -238,3 +238,72 @@ test('the day-before email: Start my prep only for a guest with an account, the 
   const inPerson = groupReminderEmail({ ...row, place_kind: 'in_person' }, { origin, now });
   assert.doesNotMatch(inPerson.text, /Join on Zoom|zoom\.example/);
 });
+
+// ---------------------------------------------------------------- the run 8 break-it tester: Resend's pace, and the most urgent first
+
+test('a reminder Resend refuses for its rate (429) is tried again and goes once; any other refusal is never tried again', async () => {
+  const at = inFifty();
+  for (const [status, wanted, tries] of [[429, 1, 2], [500, 0, 1], [422, 0, 1]]) {
+    const stand = standIn({ group: [guest(1, 'Ann Ito', 'ann@example.com', NY, { occurrence_at: at })] });
+    let calls = 0;
+    const inner = stand.fetch;
+    stand.fetch = async (input, init) => {
+      if (String(input?.url || input).startsWith('https://api.resend.com/')) {
+        calls += 1;
+        if (calls === 1) return new Response('{}', { status, headers: { 'Retry-After': '1' } });
+      }
+      return inner(input, init);
+    };
+    const r = await withStandIn(stand, LIVE, () => ask());
+    assert.deepEqual([r.body.sent, calls], [wanted, tries], `status ${status}`);
+  }
+});
+
+test('sends keep to Resend\'s pace: never two closer than half a second by default', async () => {
+  const at = inFifty();
+  const stand = standIn({ group: three(at) });
+  const times = [];
+  const inner = stand.fetch;
+  stand.fetch = async (input, init) => { if (String(input?.url || input).startsWith('https://api.resend.com/')) times.push(Date.now()); return inner(input, init); };
+  const r = await withStandIn(stand, LIVE, () => ask());
+  assert.equal(r.body.sent, 3);
+  for (let i = 1; i < times.length; i += 1) assert.ok(times[i] - times[i - 1] >= 480, `gap ${times[i] - times[i - 1]} ms`);
+});
+
+test('over the 200 a run sends, the 1-hour reminders go first and the rest wait unclaimed for the next run: nothing lost, nothing twice', async () => {
+  const soon = inFifty();
+  // 150 day-before reminders due now (18:00 to 21:00 in each one's own zone) and 150 one-hour ones.
+  const now = new Date();
+  const zones = Intl.supportedValuesOf('timeZone').filter((z) => /^(Europe|America|Asia|Pacific|Australia|Africa|Atlantic)\//.test(z));
+  const zone = zones.find((z) => { const h = Number(new Intl.DateTimeFormat('en-GB', { timeZone: z, hour: '2-digit', hourCycle: 'h23' }).format(now)); return h >= 18 && h < 20; });
+  assert.ok(zone, 'some zone is between 18:00 and 20:00 now');
+  const tomorrowNoon = new Date(now.getTime() + 18 * 3600000).toISOString(); // tomorrow in that zone (18:00 + 18 hours is 12:00 to 14:00 the next day)
+  const DAY = '22222222-2222-4222-8222-222222222222';
+  const group = [
+    ...Array.from({ length: 150 }, (_, n) => guest(1000 + n, `Day ${n}`, `day${n}@example.com`, zone, { item_id: DAY, kind: 'day_before', occurrence_at: tomorrowNoon })),
+    ...Array.from({ length: 150 }, (_, n) => guest(2000 + n, `Hour ${n}`, `hour${n}@example.com`, LON, { occurrence_at: soon })),
+  ];
+  assert.equal(dueGroupReminders(group, now, 1000).length, 300);
+  const stand = standIn({ group });
+  // As 059 does, what has been claimed is no longer listed.
+  const gone = new Set();
+  const inner = stand.fetch;
+  stand.fetch = async (input, init = {}) => {
+    const url = String(input?.url || input);
+    if (url.includes('/rpc/cal_group_reminders_coming')) return new Response(JSON.stringify(group.filter((g) => !gone.has(g.member_id))), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const answer = await inner(input, init);
+    if (url.includes('/rpc/cal_group_reminder_claim') && (await answer.clone().json())) gone.add(JSON.parse(init.body).p_member);
+    return answer;
+  };
+  const env = { ...LIVE, RESEND_PER_SECOND: '50' };
+  const first = await withStandIn(stand, env, () => ask());
+  assert.equal(first.body.sent, 200);
+  const firstTo = stand.emails.map((e) => e.to[0]);
+  assert.equal(firstTo.filter((t) => t.startsWith('hour')).length, 150, 'every 1-hour reminder went on the first run');
+  // The next run: the stand-in's claims are kept, so only the 100 left go, and nobody twice.
+  const second = await withStandIn(stand, env, () => ask());
+  assert.equal(second.body.sent, 100);
+  const all = stand.emails.map((e) => e.to[0]);
+  assert.equal(new Set(all).size, 300);
+  assert.equal(all.length, 300);
+});

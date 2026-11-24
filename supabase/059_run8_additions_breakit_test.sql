@@ -301,6 +301,62 @@ begin
     delete from public.coach_away where coach_id = c;
     update public.coach_settings set time_zone = 'Europe/London' where coach_id = c;
 
+    -- ---------------------------------------------------------------- 2. group reminders, tried hard
+    t_call := now() + interval '50 minutes';
+    update public.coach_cal_items set starts_at = t_call, ends_at = t_call + interval '1 hour' where id = it_g;
+    -- One address in two groups whose calls are at the same time: one email for each call, never two for one.
+    insert into public.coach_group_members (id, group_id, profile_id, name, email) values (m2, grp2, null, 'Ann again', 'ann.t059@example.invalid');
+    insert into public.coach_cal_items (id, coach_id, kind, title, starts_at, ends_at, time_zone, group_id) values
+      (it_g2, c, 'client_call', 'Osprey', t_call, t_call + interval '1 hour', 'Europe/London', grp2);
+    f := f || pg_temp.g_eq('2a one address in two groups at the same time: one reminder for each call', (select string_agg(r.title || ':' || r.person_email, ',' order by r.title)
+      from public.cal_group_reminders_coming(now()) r where r.coach_id = c and r.kind = 'hour_before'), 'Kestrel:ann.t059@example.invalid,Osprey:ann.t059@example.invalid');
+    f := f || pg_temp.g_eq('2b each claimed once', concat_ws('/',
+      coalesce(public.cal_group_reminder_claim(it_g, m1, 'hour_before', t_call), 'none'), coalesce(public.cal_group_reminder_claim(it_g2, m2, 'hour_before', t_call), 'none'),
+      coalesce(public.cal_group_reminder_claim(it_g, m1, 'hour_before', t_call), 'none'), coalesce(public.cal_group_reminder_claim(it_g2, m2, 'hour_before', t_call), 'none')),
+      'ann.t059@example.invalid/ann.t059@example.invalid/none/none');
+    -- A guest whose address changes after theirs went: not again, to the new address.
+    update public.coach_group_members set email = 'ann.new.t059@example.invalid' where id = m1;
+    f := f || pg_temp.g_eq('2c an address changed after the reminder went: not listed again', (select count(*)::text
+      from public.cal_group_reminders_coming(now()) r where r.coach_id = c and r.kind = 'hour_before' and r.item_id = it_g), '0');
+    f := f || pg_temp.g_eq('2d and its claim is refused', coalesce(public.cal_group_reminder_claim(it_g, m1, 'hour_before', t_call), 'none'), 'none');
+    -- Someone new given the old address of a guest who has had theirs: still once for that address.
+    insert into public.coach_group_members (id, group_id, profile_id, name, email) values (m3, grp, null, 'Ann''s assistant', 'ann.t059@example.invalid');
+    f := f || pg_temp.g_eq('2e a new guest at an address that already had it: nothing', coalesce(public.cal_group_reminder_claim(it_g, m3, 'hour_before', t_call), 'none'), 'none');
+    -- A guest with a zone nobody knows: listed with it, so the server falls back to the call's own (calendar.js).
+    insert into public.coach_group_members (id, group_id, profile_id, name, email) values (m4, grp, null, 'Zed', 'zed.t059@example.invalid');
+    f := f || pg_temp.g_eq('2f a guest with no profile is in the call''s own zone', (select r.person_zone
+      from public.cal_group_reminders_coming(now()) r where r.member_id = m4 and r.kind = 'hour_before'), 'Europe/London');
+    -- The switch turned off between listing and claiming: refused.
+    update public.coach_settings set booking = '{"remind_24": true, "remind_1": false}' where coach_id = c;
+    f := f || pg_temp.g_eq('2g the 1-hour switch turned off mid-run: the claim is refused', coalesce(public.cal_group_reminder_claim(it_g, m4, 'hour_before', t_call), 'none'), 'none');
+    update public.coach_settings set booking = '{"remind_24": true, "remind_1": true}' where coach_id = c;
+    -- The coach made inactive mid-run: refused.
+    update public.coaches set active = false where id = c;
+    f := f || pg_temp.g_eq('2h a coach no longer active: the claim is refused', coalesce(public.cal_group_reminder_claim(it_g, m4, 'hour_before', t_call), 'none'), 'none');
+    update public.coaches set active = true where id = c;
+    -- Another coach's item with this coach's member: refused.
+    f := f || pg_temp.g_eq('2i a member of another call''s group: refused', coalesce(public.cal_group_reminder_claim(it_g2, m4, 'hour_before', t_call), 'none'), 'none');
+    -- A kind nobody knows, and the time a minute off: refused.
+    f := f || pg_temp.g_eq('2j a kind nobody knows, or a time a minute off: refused', concat_ws('/',
+      coalesce(public.cal_group_reminder_claim(it_g, m4, 'week_before', t_call), 'none'),
+      coalesce(public.cal_group_reminder_claim(it_g, m4, 'hour_before', t_call + interval '1 minute'), 'none')), 'none/none');
+    -- Nobody but the server: a coach, a client and someone signed out can't list or claim, even with the code.
+    perform pg_temp.g_as(u, 'aal2');
+    f := f || pg_temp.g_eq('2k the coach can''t claim or list, even with the code', concat_ws('/',
+      pg_temp.g_n(format('select public.cal_group_reminder_claim(%L, %L, ''hour_before'', %L)', it_g, m4, t_call)),
+      pg_temp.g_n('select count(*)::text from public.cal_group_reminders_coming(now())'),
+      pg_temp.g_n('select count(*)::text from public.cal_reminders_coming(now())'),
+      pg_temp.g_n(format('select public._coach_away_on(%L, now())::text', c))), 'error 42501/error 42501/error 42501/error 42501');
+    perform pg_temp.g_anon();
+    f := f || pg_temp.g_eq('2l nor anyone signed out', concat_ws('/',
+      pg_temp.g_n(format('select public.cal_group_reminder_claim(%L, %L, ''hour_before'', %L)', it_g, m4, t_call)),
+      pg_temp.g_n('select count(*)::text from public.cal_group_reminders_coming(now())')), 'error 42501/error 42501');
+    perform pg_temp.g_admin();
+    f := f || pg_temp.g_eq('2m the sends table holds no address', (select count(*)::text from public.coach_cal_group_reminder_sends
+      where coach_id = c and (address_key like '%@%' or address_key !~ '^[0-9a-f]{64}$')), '0');
+    -- Names with HTML are kept as typed (the email escapes them: group-reminders.test.mjs).
+    f := f || pg_temp.g_eq('2n names with HTML come back as typed', (select r.group_name from public.cal_group_reminders_coming(now()) r where r.member_id = m4 and r.kind = 'hour_before'), 'Kestrel <b>team</b>');
+
     raise exception 'undo the test rows' using errcode = 'P0860';
   exception when sqlstate 'P0860' then
     perform pg_temp.g_admin();

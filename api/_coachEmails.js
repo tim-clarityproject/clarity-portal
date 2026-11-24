@@ -41,13 +41,30 @@ export function emailFrom(doc) {
   return { subject, html, text, attachments: imagesFor(images, EMAIL_IMAGE_BASE64) };
 }
 
-export async function sendWithResend(env, { to, subject, html, text, attachments }) {
-  const r = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.RESEND_API_KEY}` },
-    body: JSON.stringify({ from: fromAddress(env), to: [to], subject, html, text, attachments }),
-  });
-  if (!r.ok) throw new Error('send');
+/**
+ * Sends one email. Resend refuses more than its rate (2 a second unless the
+ * account's limit is raised) with 429, and a 429 means it was NOT taken, so
+ * it is tried again after Retry-After (at most 2 seconds), twice at most
+ * (the run 8 break-it tester: a reminder is claimed before it is sent, so a
+ * 429 left as it was lost that guest's reminder for good). Any other refusal,
+ * or no answer, is never tried again: it may have gone.
+ */
+export async function sendWithResend(env, { to, subject, html, text, attachments }, { tries = 3, wait = (ms) => new Promise((r) => { setTimeout(r, ms); }) } = {}) {
+  for (let attempt = 1; ; attempt += 1) {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.RESEND_API_KEY}` },
+      body: JSON.stringify({ from: fromAddress(env), to: [to], subject, html, text, attachments }),
+    });
+    if (r.ok) return;
+    if (r.status !== 429 || attempt >= tries) {
+      const e = new Error('send');
+      e.status = r.status;
+      throw e;
+    }
+    const after = Number(r.headers?.get?.('retry-after'));
+    await wait(Number.isFinite(after) && after > 0 ? Math.min(after * 1000, 2000) : 1000);
+  }
 }
 
 /**

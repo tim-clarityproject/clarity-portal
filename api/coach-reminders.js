@@ -35,6 +35,11 @@
 // address in To, never a list, CC or BCC. Before 059 is on the database no
 // group reminder goes at all, rather than risk one going twice.
 //
+// Sends go at Resend's pace (RESEND_PER_SECOND, 2 a second unless the
+// account's limit is raised; a 429 is tried again, as it was not taken), the
+// 1-hour reminders first, and no claim starts after 45 seconds: what is left
+// stays unclaimed and goes on the next run (the run 8 break-it tester).
+//
 // Answers (nothing is logged, and no address or name is sent back):
 //   200 { sent: 2 }                         two reminders went (single and group calls together)
 //   200 { sent: 0, reason: 'preview' }      this deployment never sends
@@ -56,6 +61,18 @@ import { remindersToSend } from '../src/lib/coach/calendar.js';
 export const config = { maxDuration: 60 };
 
 const SENDS_MAX = 200; // one run never sends more: the rest go on the next
+const BUDGET_MS = 45000; // no claim starts after this, so the run ends well inside its 60 seconds and never stops between a claim and its send
+/** Resend's own pace (2 a second unless the account's limit is raised: RESEND_PER_SECOND), as the time between two sends. */
+export const paceOf = (env) => 1000 / Math.min(50, Math.max(1, Number(env?.RESEND_PER_SECOND) || 2));
+const pause = (ms) => new Promise((r) => { setTimeout(r, ms); });
+/**
+ * The most urgent first: every 1-hour reminder (its window is 30 minutes)
+ * before any day-before one (3 hours), then the soonest call (the run 8
+ * break-it tester: a group of 200 at its 1-hour moment no longer waits
+ * behind day-before reminders that still have hours to go).
+ */
+export const mostUrgentFirst = (a, b) => (a.kind === 'hour_before' ? 0 : 1) - (b.kind === 'hour_before' ? 0 : 1)
+  || String(a.occurrence_at).localeCompare(String(b.occurrence_at));
 const reply = (res, status, body) => { res.status(status).setHeader('Cache-Control', 'no-store'); res.json(body); };
 const linkOr = (v) => (/^https:\/\/[^\s<>"]+$/.test(String(v || '')) ? v : null);
 
@@ -66,7 +83,7 @@ const linkOr = (v) => (/^https:\/\/[^\s<>"]+$/.test(String(v || '')) ? v : null)
 export function dueReminders(rows, now) {
   const seen = new Set();
   const out = [];
-  for (const row of remindersToSend(rows, now)) {
+  for (const row of [...remindersToSend(rows, now)].sort(mostUrgentFirst)) {
     const to = oneAddress(row.person_email);
     const at = new Date(row.occurrence_at).toISOString();
     const key = `${row.item_id}|${row.kind}|${at}`;
@@ -106,7 +123,7 @@ export function dueGroupReminders(rows, now, max = SENDS_MAX) {
   const seen = new Set();
   const out = [];
   if (max <= 0) return out;
-  for (const row of remindersToSend(rows, now)) {
+  for (const row of [...remindersToSend(rows, now)].sort(mostUrgentFirst)) {
     const to = oneAddress(row.person_email).toLowerCase();
     if (!to || !UUID.test(String(row.item_id)) || !UUID.test(String(row.member_id || ''))) continue;
     const at = new Date(row.occurrence_at).toISOString();
@@ -133,23 +150,25 @@ export function groupReminderEmail(r, { origin, now = new Date() }) {
       prepLink: r.has_account === true ? `${origin}/coaching` : null, zoomLink, preferencesLink: null, now }));
 }
 
-/** Sends the due group reminders, each guest claimed first; resolves how many went. Before 059, none. */
-async function sendGroupReminders(admin, env, { now, origin, room }) {
-  if (room <= 0) return 0;
+/** The due group rows (059), or none before 059 or when the database didn't answer: nothing goes, so nothing can go twice. */
+async function groupRowsDue(admin, now) {
   const { data: rows, error } = await admin.rpc('cal_group_reminders_coming', { p_now: now.toISOString() });
-  if (error) return 0; // 059 isn't there yet, or the database didn't answer: nothing goes, so nothing can go twice
-  let sent = 0;
-  for (const r of dueGroupReminders(rows, now, room)) {
-    // Claimed first, for this guest alone: null when another run has it, or they have left, or the call is off.
-    const { data: claimed, error: claimError } = await admin.rpc('cal_group_reminder_claim', { p_item: r.item_id, p_member: r.member_id, p_kind: r.kind, p_occurrence: r.occurrence_at });
-    const to = claimError || typeof claimed !== 'string' ? '' : oneAddress(claimed).toLowerCase();
-    if (!to) continue;
-    try {
-      await sendWithResend(env, { to, ...groupReminderEmail(r, { origin, now }) });
-      sent += 1;
-    } catch { /* the others still go */ }
-  }
-  return sent;
+  return error ? [] : dueGroupReminders(rows, now);
+}
+
+/**
+ * One sender for the run, at Resend's pace: never two sends closer than
+ * `pace` ms (the run 8 break-it tester: 200 sent as fast as they could go
+ * met Resend's 2 a second, and each refused one had already been claimed).
+ */
+function pacedSender(env, pace) {
+  let last = 0;
+  return async (email) => {
+    const wait = last + pace - Date.now();
+    if (wait > 0) await pause(wait);
+    last = Date.now();
+    await sendWithResend(env, email);
+  };
 }
 
 export default async function handler(req, res) {
@@ -180,8 +199,26 @@ export default async function handler(req, res) {
   }
   const open = anon ? createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } }) : null;
 
+  // Single and group calls together, the most urgent first, at most SENDS_MAX, each claimed just before it goes.
+  const tasks = [...due.map((r) => ({ r, group: false })), ...(await groupRowsDue(admin, now)).map((r) => ({ r, group: true }))]
+    .sort((a, b) => mostUrgentFirst(a.r, b.r)).slice(0, SENDS_MAX);
+  const send = pacedSender(env, paceOf(env));
+  const started = now.getTime();
   let sent = 0;
-  for (const r of due) {
+  for (const { r, group } of tasks) {
+    // Out of time: the rest stay unclaimed, so the next run sends them.
+    if (Date.now() - started > BUDGET_MS) break;
+    if (group) {
+      // Claimed first, for this guest alone: null when another run has it, or they have left, or the call is off.
+      const { data: claimed, error: claimError } = await admin.rpc('cal_group_reminder_claim', { p_item: r.item_id, p_member: r.member_id, p_kind: r.kind, p_occurrence: r.occurrence_at });
+      const to = claimError || typeof claimed !== 'string' ? '' : oneAddress(claimed).toLowerCase();
+      if (!to) continue;
+      try {
+        await send({ to, ...groupReminderEmail(r, { origin, now }) });
+        sent += 1;
+      } catch { /* the others still go */ }
+      continue;
+    }
     // Claimed first: false when another run has it, so nobody is emailed twice.
     const { data: mine, error: claimError } = await admin.rpc('cal_reminder_claim', { p_item: r.item_id, p_kind: r.kind, p_occurrence: r.occurrence_at, p_people: 1 });
     if (claimError || mine !== true) continue;
@@ -192,11 +229,9 @@ export default async function handler(req, res) {
       callName = booked?.call_name || null;
     }
     try {
-      await sendWithResend(env, { to: r.to, ...reminderEmail(r, { origin, hasAccount: withAccount.has(r.item_id), callName, now }) });
+      await send({ to: r.to, ...reminderEmail(r, { origin, hasAccount: withAccount.has(r.item_id), callName, now }) });
       sent += 1;
     } catch { /* the others still go */ }
   }
-  // Group calls: one email to each guest, within the same run's limit.
-  sent += await sendGroupReminders(admin, env, { now, origin, room: SENDS_MAX - due.length });
   return reply(res, 200, { sent });
 }
