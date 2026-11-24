@@ -11,7 +11,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import reminders, { dueGroupReminders, groupReminderEmail } from '../../api/coach-reminders.js';
-import { instantAt } from '../../src/lib/time/index.js';
+import { instantAt, timeWords } from '../../src/lib/time/index.js';
 
 const SECRET = 'a-long-enough-secret-for-the-test';
 const LIVE = {
@@ -125,15 +125,16 @@ test('the day before goes at 18:00 in each guest\'s own time, across the US cloc
   assert.equal(dee.readerZone, LON);
 });
 
-test('the 1-hour reminder goes 60 to 30 minutes before for everyone, with no clock time', () => {
+test('the 1-hour reminder goes 60 to 30 minutes before for everyone, with its clock time in each guest’s own zone (draft-2)', () => {
   const at = instantAt('2026-11-02', '15:00', LON);
   const rows = three(at.toISOString());
   assert.equal(dueGroupReminders(rows, new Date(at - 61 * 60000)).length, 0);
   assert.equal(dueGroupReminders(rows, new Date(at - 60 * 60000)).length, 3);
   assert.equal(dueGroupReminders(rows, new Date(at - 30 * 60000)).length, 0);
-  const email = groupReminderEmail(dueGroupReminders(rows, new Date(at - 50 * 60000))[0], { origin: 'https://portal.theclarityproject.co.uk' });
-  assert.equal(email.subject, 'Your group coaching session with Tim starts in 1 hour');
-  assert.doesNotMatch(`${email.subject}\n${email.text}`, /\d{1,2}:\d{2}/, 'no clock time anywhere');
+  const due = dueGroupReminders(rows, new Date(at - 50 * 60000));
+  const email = groupReminderEmail(due[0], { origin: 'https://portal.theclarityproject.co.uk' });
+  assert.equal(email.subject, `Your group coaching session with Tim starts at ${timeWords(at, due[0].readerZone)}`);
+  assert.ok(email.text.includes(`Your group coaching session with Tim starts at ${timeWords(at, due[0].readerZone)}.`));
 });
 
 test('one row a call, kind, time and address; a row with no usable address or ids is left out', () => {
@@ -228,11 +229,12 @@ test('the day-before email: Start my prep only for a guest with an account, the 
   const origin = 'https://portal.theclarityproject.co.uk';
   const plain = groupReminderEmail(row, { origin, now });
   assert.match(plain.subject, /^Your group coaching session with Tim is tomorrow at 15:00 UK time$/);
-  assert.doesNotMatch(plain.text, /Start my prep|Travelling\?/);
+  assert.doesNotMatch(plain.text, /Start my 2-minute prep|Travelling\?/);
   assert.match(plain.text, /Join on Zoom/);
   assert.match(plain.text, /Group: Kestrel team/);
   const full = groupReminderEmail({ ...row, has_account: true, frequent_traveller: true }, { origin, now });
-  assert.match(full.text, /Start my prep/);
+  assert.match(full.text, /Start my 2-minute prep/);
+  assert.match(full.text, /What would make it really useful for you\?/);
   assert.match(full.text, /https:\/\/portal\.theclarityproject\.co\.uk\/coaching/);
   assert.match(full.text, /Travelling\? Your calendar invite moves with you\./);
   const inPerson = groupReminderEmail({ ...row, place_kind: 'in_person' }, { origin, now });

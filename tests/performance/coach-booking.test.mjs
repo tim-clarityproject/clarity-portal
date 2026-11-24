@@ -11,7 +11,7 @@ import * as cal from '../../src/lib/coach/calendar.js';
 import { instantAt, onQuarterHour, wallClock } from '../../src/lib/time/index.js';
 import { bookingConfirmedEmail } from '../../src/lib/email/emails.js';
 import { renderEmail } from '../../src/lib/email/template.js';
-import { claimMoment, emailFor, readRequest } from '../../api/booking-email.js';
+import { claimMoment, emailFor, minutesOf, readRequest } from '../../api/booking-email.js';
 
 const LON = 'Europe/London';
 const NY = 'America/New_York';
@@ -245,13 +245,19 @@ test('a client’s own session is said in their own time, and moving one inside 
   assert.equal(cal.lateLine(at('2026-11-19', '15:00'), NOW, 'move'), null);
 });
 
-test('the confirmation email gives the time in the reader’s own zone (12-hour for the US, 24-hour elsewhere), with their own link to move or cancel', () => {
-  const us = renderEmail(bookingConfirmedEmail({ name: 'Grace Liu', callName: 'Chemistry Call', coach: 'Tim', at: at('2026-11-18', '11:30', NY), zone: NY, mineLink: 'https://portal.theclarityproject.co.uk/book/mine/k', now: NOW }));
-  assert.equal(us.subject, 'Booked: Chemistry Call with Tim, Wed 18 Nov, 11:30 am New York time');
-  assert.match(us.text, /tomorrow, Wed 18 Nov, at 11:30 am New York time/);
+test('the confirmation email gives the time in the reader’s own zone (12-hour for the US, 24-hour elsewhere), in draft-2’s words, with their own link to rearrange or cancel', () => {
+  const us = renderEmail(bookingConfirmedEmail({ name: 'Grace Liu', callName: 'Chemistry Call', coach: 'Tim', at: at('2026-11-18', '11:30', NY), zone: NY, minutes: 30, mineLink: 'https://portal.theclarityproject.co.uk/book/mine/k', now: NOW }));
+  assert.equal(us.subject, 'Your Chemistry Call with Tim is booked for Wed 18 Nov');
+  assert.ok(us.text.includes('Your Chemistry Call with Tim is booked for Wed 18 Nov at 11:30 am New York time, for 30 minutes on Zoom.'));
+  assert.ok(us.text.includes('Rearrange:') && us.text.includes('Cancel:'));
+  assert.doesNotMatch(us.text, /prep/, 'no prep is offered to someone who booked on a booking page');
+  const coaching = renderEmail(bookingConfirmedEmail({ callName: 'Coaching session', coach: 'Tim', at: at('2026-11-26', '15:00'), zone: LON, minutes: 60, zoomLink: 'https://zoom.us/j/1', mineLink: 'https://portal.theclarityproject.co.uk/book/mine/k' }));
+  assert.equal(coaching.subject, 'Your coaching session with Tim is booked for Thu 26 Nov');
+  assert.ok(coaching.text.includes('Your coaching session with Tim is booked for Thu 26 Nov at 15:00 UK time, for 60 minutes on Zoom.'));
   assert.match(us.text, /https:\/\/portal\.theclarityproject\.co\.uk\/book\/mine\/k/);
   const uk = renderEmail(bookingConfirmedEmail({ name: 'Nadia Osei', callName: 'Connection Call', coach: 'Tim', at: at('2026-11-24', '14:15'), zone: LON, mineLink: 'https://portal.theclarityproject.co.uk/book/mine/k', moved: true, now: NOW }));
-  assert.equal(uk.subject, 'Moved: Connection Call with Tim, Tue 24 Nov, 14:15 UK time');
+  assert.equal(uk.subject, 'Your Connection Call has moved to Tue 24 Nov at 14:15 UK time');
+  assert.ok(uk.text.includes('Your Connection Call with Tim is now on Tue 24 Nov at 14:15 UK time.'));
   assert.doesNotMatch(uk.text, /\bEST\b|\bGMT\b|\bBST\b/);
 });
 
@@ -266,5 +272,8 @@ test('the email server takes only a guest’s own key, claims one send for each 
   assert.equal(claimMoment({ ...booking, status: 'cancelled' }, 'booked'), null);
   const email = emailFor({ booking, callName: 'Chemistry Call', coach: 'Tim', zoomLink: 'javascript:alert(1)', origin: 'https://portal.theclarityproject.co.uk', kind: 'booked', now: NOW });
   assert.match(email.text, /9:15 am New York time/);
+  assert.equal(minutesOf('2026-11-23T14:15:00Z', '2026-11-23T15:15:00Z'), 60);
+  assert.equal(minutesOf('2026-11-23T14:15:00Z', null), null);
+  assert.match(emailFor({ booking: { ...booking, ends_at: '2026-11-23T14:45:00Z' }, callName: 'Chemistry Call', coach: 'Tim', origin: 'https://portal.theclarityproject.co.uk', kind: 'booked', now: NOW }).text, /for 30 minutes on Zoom\./);
   assert.doesNotMatch(email.html, /javascript:/);
 });

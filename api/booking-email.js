@@ -47,10 +47,17 @@ export function claimMoment(booking, kind) {
   return at && !Number.isNaN(new Date(at).getTime()) ? new Date(at).toISOString() : null;
 }
 
+/** The call's length in whole minutes, or null when its end isn't known. */
+export function minutesOf(startsAt, endsAt) {
+  const m = Math.round((new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60000);
+  return Number.isInteger(m) && m > 0 && m <= 24 * 60 ? m : null;
+}
+
 /** The email for a booking, from the database's own rows. */
 export function emailFor({ booking, callName, coach, zoomLink, origin, kind, now = new Date() }) {
   return emailFrom(bookingConfirmedEmail({
     name: booking.name, callName, coach, at: booking.starts_at, zone: isZone(booking.time_zone) ? booking.time_zone : 'Europe/London', placeKind: booking.place_kind || 'zoom',
+    minutes: minutesOf(booking.starts_at, booking.ends_at),
     zoomLink: /^https:\/\/[^\s<>"]+$/.test(String(zoomLink || '')) ? zoomLink : null, mineLink: `${origin}/book/mine/${booking.guest_key}`, moved: kind === 'moved', now,
   }));
 }

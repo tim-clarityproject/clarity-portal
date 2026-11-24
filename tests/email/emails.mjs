@@ -19,8 +19,9 @@
 //   - the plain-text version reads properly: the same words in the same
 //     order as the HTML, every address written out, no HTML left in it;
 //   - times follow the time zone rules: a place name after every clock
-//     time, 12-hour for the US reader, none at all in the 1-hour reminder,
-//     and the travel line only for a frequent traveller.
+//     time, 12-hour for the US reader, the 1-hour reminder's own clock time
+//     in the reader's zone (draft-2, 23 Nov), and the travel line only for a
+//     frequent traveller.
 //
 // It also saves a screenshot of each email at both widths into the folder
 // given (Tim's screens folder), and opens the hidden test page itself.
@@ -132,16 +133,17 @@ for (const example of EMAIL_EXAMPLES) {
 // ---- the time zone rules in the reminders
 const text = (key) => renderEmail(EMAIL_EXAMPLES.find((e) => e.key === key).doc()).text;
 const subject = (key) => renderEmail(EMAIL_EXAMPLES.find((e) => e.key === key).doc()).subject;
-pass('reminder, Chicago: a 12-hour time with the city, in the subject and the body', subject('session-tomorrow') === 'Your coaching session with Jess is tomorrow at 10:00 am Chicago time' && text('session-tomorrow').includes('Your coaching session with Jess is tomorrow, Wed 11 Nov, at 10:00 am Chicago time.'), subject('session-tomorrow'));
-pass('reminder, the UK: a 24-hour time with "UK time"', subject('session-tomorrow-uk') === 'Your coaching session with Tim is tomorrow at 15:00 UK time' && text('session-tomorrow-uk').includes('tomorrow, Wed 11 Nov, at 15:00 UK time.'), subject('session-tomorrow-uk'));
+pass('reminder, Chicago: a 12-hour time with the city, in the subject and the body', subject('session-tomorrow') === 'Your coaching session with Jess is tomorrow at 10:00 am Chicago time' && text('session-tomorrow').includes('Your coaching session with Jess is tomorrow at 10:00 am Chicago time.'), subject('session-tomorrow'));
+pass('reminder, the UK: a 24-hour time with "UK time"', subject('session-tomorrow-uk') === 'Your coaching session with Tim is tomorrow at 15:00 UK time' && text('session-tomorrow-uk').includes('Your coaching session with Tim is tomorrow at 15:00 UK time.'), subject('session-tomorrow-uk'));
 pass('reminder: the travel line only for a frequent traveller', text('session-tomorrow').includes('Travelling? Your calendar invite moves with you.') && !text('session-tomorrow-uk').includes('Travelling?'));
-pass('the 1-hour reminder never gives a clock time', !/\d{1,2}:\d{2}|\b(am|pm)\b| time\b/.test(`${subject('session-one-hour')} ${text('session-one-hour').split('----')[0]}`), text('session-one-hour'));
+pass('the 1-hour reminder gives its clock time with the place’s name (draft-2)', subject('session-one-hour') === 'Your coaching session with Tim starts at 15:00 UK time' && text('session-one-hour').includes('Your coaching session with Tim starts at 15:00 UK time.'), subject('session-one-hour'));
+pass('every clock time in every email has its place’s name after it', EMAIL_EXAMPLES.every((e) => { const r = renderEmail(e.doc()); return [...`${r.subject}\n${r.text}`.matchAll(/\b\d{1,2}:\d{2}(?!(?: am| pm)? [A-Z][A-Za-z ]* time)/g)].length === 0; }));
 pass('no email writes a zone in letters or a date in numbers', EMAIL_EXAMPLES.every((e) => { const r = renderEmail(e.doc()); return !/\b(EST|EDT|CST|CDT|PST|PDT|BST|GMT|UTC)\b|\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/.test(`${r.subject} ${r.text}`); }));
 {
   // The reader's own day decides "tomorrow": a Sydney Monday 08:00 session, read in Sydney on Sunday.
   const at = instantAt('2026-11-16', '08:00', 'Australia/Sydney');
   const d = renderEmail(sessionTomorrowEmail({ coach: 'Tim', at, zone: 'Australia/Sydney', prepLink: 'https://portal.theclarityproject.co.uk/welcome', zoomLink: 'https://zoom.us/j/0', preferencesLink: 'https://portal.theclarityproject.co.uk/my-account', now: instantAt('2026-11-15', '07:00', 'Australia/Sydney') }));
-  pass('reminder, Sydney: "tomorrow" is the reader’s own tomorrow, in Sydney time', d.subject === 'Your coaching session with Tim is tomorrow at 08:00 Sydney time' && d.text.includes('tomorrow, Mon 16 Nov, at 08:00 Sydney time.'), d.subject);
+  pass('reminder, Sydney: "tomorrow" is the reader’s own tomorrow, in Sydney time', d.subject === 'Your coaching session with Tim is tomorrow at 08:00 Sydney time' && d.text.includes('Your coaching session with Tim is tomorrow at 08:00 Sydney time.'), d.subject);
 }
 
 // ---- the hidden test page

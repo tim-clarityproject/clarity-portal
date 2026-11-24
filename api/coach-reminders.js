@@ -13,7 +13,8 @@
 // while the coach is away, never one already sent), and decides the moment
 // here with the calendar's own rule (calendar.js's remindersToSend):
 //   - the day before, from 18:00 to 21:00 in the READER's own time;
-//   - 1 hour before (60 to 30 minutes before), which never gives a clock time.
+//   - 1 hour before (60 to 30 minutes before), with its clock time in the
+//     reader's own zone (draft-2's words, 23 Nov).
 //
 // Each reminder is claimed FIRST (cal_reminder_claim: one insert against a
 // unique key, "on conflict do nothing", which answers false when it had
@@ -21,7 +22,7 @@
 // only then is anyone emailed. A client gets the session reminder; someone
 // who booked on a booking page gets the booked-call reminder with their own
 // link to move or cancel. Both are the one shared email template. Times are
-// in the reader's own zone with its city's name.
+// in the reader's own zone with its city's name, in draft-2's words.
 //
 // A group call (Phase 6a run 8, item 1; migration 059) gets the same two
 // reminders, at the same moments in EACH guest's own time and under the same
@@ -105,11 +106,11 @@ export function reminderEmail(r, { origin, hasAccount = false, callName = null, 
   if (r.guest_key) {
     const mineLink = UUID.test(String(r.guest_key)) ? `${origin}/book/mine/${r.guest_key}` : null;
     return emailFrom(r.kind === 'hour_before'
-      ? callInOneHourEmail({ callName, coach: r.coach_first_name || null, zoomLink, mineLink })
+      ? callInOneHourEmail({ callName, coach: r.coach_first_name || null, at: r.occurrence_at, zone: r.readerZone, zoomLink, mineLink })
       : callTomorrowEmail({ name: r.person_name || '', callName, coach: r.coach_first_name || null, at: r.occurrence_at, zone: r.readerZone, placeKind: r.place_kind || 'zoom', zoomLink, mineLink, now }));
   }
   return emailFrom(r.kind === 'hour_before'
-    ? sessionInOneHourEmail({ coach, zoomLink, preferencesLink: null })
+    ? sessionInOneHourEmail({ coach, at: r.occurrence_at, zone: r.readerZone, zoomLink, preferencesLink: null })
     // "Start my prep" opens the client's own Coaching page, so it is only offered to someone with an account.
     : sessionTomorrowEmail({ coach, at: r.occurrence_at, zone: r.readerZone, frequentTraveller: r.frequent_traveller === true, prepLink: hasAccount ? `${origin}/coaching` : null, zoomLink, preferencesLink: null, now }));
 }
@@ -145,7 +146,7 @@ export function groupReminderEmail(r, { origin, now = new Date() }) {
   const coach = r.coach_first_name || 'your coach';
   const zoomLink = (r.place_kind || 'zoom') === 'zoom' ? linkOr(r.meeting_link) : null;
   return emailFrom(r.kind === 'hour_before'
-    ? groupSessionInOneHourEmail({ coach, groupName: r.group_name || '', zoomLink, preferencesLink: null })
+    ? groupSessionInOneHourEmail({ coach, groupName: r.group_name || '', at: r.occurrence_at, zone: r.readerZone, zoomLink, preferencesLink: null })
     : groupSessionTomorrowEmail({ coach, groupName: r.group_name || '', at: r.occurrence_at, zone: r.readerZone, frequentTraveller: r.frequent_traveller === true,
       prepLink: r.has_account === true ? `${origin}/coaching` : null, zoomLink, preferencesLink: null, now }));
 }

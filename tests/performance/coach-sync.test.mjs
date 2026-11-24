@@ -216,7 +216,7 @@ test('the day-before reminder goes from 18:00 to 21:00 the client’s own time, 
   assert.deepEqual(cal.remindersToSend('nonsense', new Date()), []);
 });
 
-test('the reminders server function: one send a call and a kind, the right email, never a clock time in the 1-hour one', () => {
+test('the reminders server function: one send a call and a kind, the right email, the 1-hour one with its clock time in the reader’s zone (draft-2)', () => {
   const now = at('2026-11-17', '18:30', NY);
   const rows = [coming(), coming(), coming({ item_id: UID(2), person_email: 'Grace Liu <grace@example.com>, x@example.com' }), coming({ item_id: 'not-an-id' })];
   const due = dueReminders(rows, now);
@@ -225,31 +225,31 @@ test('the reminders server function: one send a call and a kind, the right email
   const origin = 'https://portal.theclarityproject.co.uk';
   const client = reminderEmail(due[0], { origin, hasAccount: true, now: new Date(now) });
   assert.match(client.subject, /^Your coaching session with Tim is tomorrow at 9:00 am New York time$/);
-  assert.match(client.text, /Start my prep/);
+  assert.match(client.text, /Start my 2-minute prep/);
+  assert.match(client.text, /What would make it really useful for you\?/);
   assert.match(client.text, /https:\/\/portal\.theclarityproject\.co\.uk\/coaching/);
   assert.match(client.text, /Join on Zoom/);
   assert.doesNotMatch(client.text, /Choose which emails to get/, 'its page doesn’t exist yet');
   // Someone without an account has nothing to prepare in; an in-person call has no Zoom link.
   const noAccount = reminderEmail({ ...due[0], place_kind: 'in_person', meeting_link: null }, { origin, hasAccount: false, now: new Date(now) });
-  assert.doesNotMatch(noAccount.text, /Start my prep|Join on Zoom/);
+  assert.doesNotMatch(noAccount.text, /Start my 2-minute prep|Join on Zoom/);
   // A UK reader: 24-hour, "UK time".
   const uk = reminderEmail(cal.remindersToSend([coming({ occurrence_at: at('2026-11-18', '15:00'), person_zone: LON, time_zone: LON })], at('2026-11-17', '18:30'))[0], { origin, hasAccount: true, now: new Date(at('2026-11-17', '18:30')) });
   assert.match(uk.subject, /tomorrow at 15:00 UK time$/);
 
   const hour = reminderEmail({ ...due[0], kind: 'hour_before' }, { origin });
-  assert.equal(hour.subject, 'Your coaching session with Tim starts in 1 hour');
-  assert.doesNotMatch(`${hour.subject}\n${hour.text}`, /\d{1,2}[:.]\d{2}/, 'the 1-hour reminder never gives a clock time');
+  assert.equal(hour.subject, 'Your coaching session with Tim starts at 9:00 am New York time');
+  assert.ok(hour.text.includes('Your coaching session with Tim starts at 9:00 am New York time.'));
 
   // Someone who booked on a booking page: their own words, and their own link to move or cancel.
   const key = UID(77);
   const guest = cal.remindersToSend([coming({ guest_key: key, person_name: 'Grace Liu' })], now)[0];
   const booked = reminderEmail(guest, { origin, callName: 'Chemistry Call', now: new Date(now) });
-  assert.match(booked.subject, /^Chemistry Call with Tim is tomorrow at 9:00 am New York time$/);
+  assert.match(booked.subject, /^Your Chemistry Call with Tim is tomorrow at 9:00 am New York time$/);
   assert.match(booked.text, new RegExp(`${origin}/book/mine/${key}`));
-  assert.doesNotMatch(booked.text, /coaching session|Start my prep/);
+  assert.doesNotMatch(booked.text, /coaching session|prep/);
   const bookedHour = reminderEmail({ ...guest, kind: 'hour_before' }, { origin });
-  assert.equal(bookedHour.subject, 'Your call with Tim starts in 1 hour');
-  assert.doesNotMatch(`${bookedHour.subject}\n${bookedHour.text}`, /\d{1,2}[:.]\d{2}/);
+  assert.equal(bookedHour.subject, 'Your call with Tim starts at 9:00 am New York time');
 });
 
 test('the reminder templates stand with their links left out, and still refuse a link that isn’t https', () => {

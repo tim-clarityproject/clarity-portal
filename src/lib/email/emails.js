@@ -11,36 +11,89 @@
 // only, nothing sends them yet (booking and Kit come in Phase 6a): the
 // session reminders and Leading Ideas.
 //
+// The coaching session emails, the welcome, the Health Check link and the
+// guest's copy of their Health Check use the words Tim approved on 23 Nov
+// 2026 (draft-2-emails.md), word for word; names, days and times come from
+// the data. Anything personal comes from the coach, written as "I" and
+// signed with their first name; reminders and notices come from The Clarity
+// Portal. The billing and agreement emails are in billingEmails.js.
+//
 // Times in an email follow src/lib/time (time-zone-safeguards.md): in the
 // reader's own zone with a city or country name, 12-hour for readers in
-// the US and Canada, dates in words. The 1-hour reminder never gives a
-// clock time, so it can never be wrong.
+// the US and Canada, dates in words. The 1-hour reminder gives its clock
+// time too (draft-2, 23 Nov, which is newer than the 10 Nov note that it
+// never did), worked out in the reader's own zone.
 import { EMAIL_SIGN_OFF, oneLine } from './template.js';
-import { sessionWhenWords, timeWords, relativeDayWords, whenWords } from '../time/index.js';
+import { sessionWhenWords, timeWords, relativeDayWords, dayWords } from '../time/index.js';
 
 const possessive = (name) => `${name}’s`;
+/** "Hi Sam," from a name, or "Hello," when there is none. */
+export const greeting = (name) => { const first = oneLine(name).split(' ')[0]; return first ? `Hi ${first},` : 'Hello,'; };
+/** A coach's sign-off: their first name, alone on the last line (draft-2: "Tim"). */
+const signedBy = (coach) => ({ type: 'text', text: oneLine(coach).slice(0, 60) || 'Your coach' });
+/** "on Zoom", "in person", "by phone". */
+const placeWords = (kind) => (kind === 'in_person' ? 'in person' : kind === 'phone' ? 'by phone' : 'on Zoom');
+/** "tomorrow at 15:00 UK time", "today at …", "on Thu 26 Nov at …": the reader's own day and clock. */
+const dayAndTime = (at, zone, now) => {
+  const day = relativeDayWords(at, zone, now);
+  return `${day === 'today' || day === 'tomorrow' ? day : `on ${day}`} at ${timeWords(at, zone)}`;
+};
 
 // ---------------------------------------------------------------- Health Check
 /**
- * To the person who did the Health Check ("Email my link"): their results,
- * with the email address and access code that open them (Tim, 10 Nov,
- * 13:31: so they can copy them instead of searching for them). It never
- * carries a "Talk it through with Tim" link or any booking link (Tim, 10
- * Nov, 23:53: people only get the Health Check when a call or a workshop is
- * already arranged).
+ * The copy of a guest's answers: to the person who did the Health Check
+ * ("Email my link"), from the coach, in draft-2's words ("Copy of a guest's
+ * answers", 23 Nov). The sign-in box keeps their link, the email address
+ * and the access code that open them (Tim, 10 Nov, 13:31: so they can copy
+ * them instead of searching for them). It never carries a "Talk it through
+ * with Tim" link or any booking link (Tim, 10 Nov, 23:53).
+ * The PDF the words name is attached by the sender.
+ * @param {object} o
+ * @param {string} o.link, o.email, o.code
+ * @param {string} [o.organisation]
+ * @param {string} [o.firstName]   the person's first name, when it is known ("Hello," without it)
+ * @param {string} [o.coachFirst]  the first name of the coach who made the link
+ * @param {string} [o.dateText]    kept for older callers; draft-2's words have no date
  */
-export function healthCheckResultsEmail({ link, organisation, dateText, email, code }) {
+export function healthCheckResultsEmail({ link, organisation, email, code, firstName = '', coachFirst = 'Tim' }) {
   const org = oneLine(organisation);
   return {
     brand: 'portal',
     subject: org ? `Your Health Check results for ${org}` : 'Your Health Check results',
     blocks: [
-      { type: 'heading', text: 'Your Health Check results are ready.' },
-      { type: 'text', text: org ? `${org}, ${dateText}.` : `${dateText}.` },
-      { type: 'button', label: 'Open my results', href: link },
+      { type: 'heading', text: greeting(firstName) },
+      { type: 'text', text: 'Thanks for completing the Health Check.' },
+      { type: 'text', text: 'Your results are attached as a PDF, and you can open them again with your link and code for 30 days.' },
+      { type: 'link', label: 'Your link', href: link },
       { type: 'details', rows: [['Email', email], ['Access code', code]] },
+      { type: 'text', text: 'If you’d like to talk them through, reply and we’ll find a time.' },
+      signedBy(coachFirst),
     ],
     footer: { lines: ['You asked for this link at the end of your Health Check.', EMAIL_SIGN_OFF] },
+  };
+}
+
+/**
+ * The Health Check link a coach sends (draft-2's "Health Check link", 23
+ * Nov), from the coach: the link and its code. Nothing sends it yet: a
+ * coach shares the link from the coach portal today.
+ * @param {{ firstName?: string, coachFirst: string, link: string, code: string }} o
+ */
+export function healthCheckLinkEmail({ firstName = '', coachFirst, link, code }) {
+  const coach = oneLine(coachFirst).slice(0, 60);
+  return {
+    brand: 'portal',
+    subject: coach ? `Your Strategic Alignment Health Check from ${coach}` : 'Your Strategic Alignment Health Check',
+    blocks: [
+      { type: 'heading', text: greeting(firstName) },
+      { type: 'text', text: 'Here’s the Health Check we talked about.' },
+      { type: 'text', text: 'It takes ~15 minutes, and it gives your team one shared picture of where your time, energy and resource are going.' },
+      { type: 'link', label: 'Your link', href: link },
+      { type: 'details', rows: [['Your code', oneLine(code)]] },
+      { type: 'text', text: 'The link works for 30 days, and only you and I see your answers.' },
+      signedBy(coach),
+    ],
+    footer: { lines: [`You get this because ${coach || 'a coach'} sent you a Health Check link.`, EMAIL_SIGN_OFF] },
   };
 }
 
@@ -178,9 +231,94 @@ export function guestEmailCodeEmail({ toolName = 'Get unstuck', code }) {
   };
 }
 
-// ---------------------------------------------------------------- session reminders (templates only)
+// ---------------------------------------------------------------- coaching sessions (draft-2, 23 Nov)
+// From The Clarity Portal, in the client's own time zone: the day and the
+// clock in the READER's zone with its place's name (12-hour for the US and
+// Canada). The words are draft-2's "Coaching sessions", word for word.
+const sessionFooter = (coach, preferencesLink) => [`You get this as one of ${possessive(coach)} coaching clients.`, EMAIL_SIGN_OFF, preferencesLink ? { label: 'Choose which emails to get', href: preferencesLink } : null].filter(Boolean);
+const PREP_LINE = 'The day before, you’ll be offered a short prep of ~2 minutes, so the time is as useful as it can be.';
+const USEFUL = 'What would make it really useful for you?';
+
 /**
- * The day before a coaching session, sent in the reader's own morning.
+ * Booked, as a document: "Your coaching session with Tim is booked for Thu 26 Nov at 15:00 UK time, for 60 minutes on
+ * Zoom." `what` is "coaching session", or a booked call's own name. Join on Zoom is the one coral button; Rearrange and
+ * Cancel are quiet links (one coral button at most, Emails rule 4). The prep line only where a prep is offered.
+ */
+function bookedDoc({ brand, what, coach, at, zone, minutes, placeKind, zoomLink, rearrangeLink, cancelLink, prep, footer }) {
+  const withWho = coach ? ` with ${coach}` : '';
+  const day = dayWords(at, zone);
+  const length = Number.isInteger(minutes) && minutes > 0 ? `, for ${minutes} minutes` : '';
+  return {
+    brand,
+    subject: `Your ${what}${withWho} is booked for ${day}`,
+    blocks: [
+      { type: 'heading', text: `Your ${what}${withWho} is booked for ${day} at ${timeWords(at, zone)}${length} ${placeWords(placeKind)}.` },
+      prep ? { type: 'text', text: PREP_LINE } : null,
+      zoomLink ? { type: 'button', label: 'Join on Zoom', href: zoomLink } : null,
+      rearrangeLink ? { type: 'link', label: 'Rearrange', href: rearrangeLink } : null,
+      cancelLink ? { type: 'link', label: 'Cancel', href: cancelLink } : null,
+    ],
+    footer: { lines: footer },
+  };
+}
+
+/** Moved, as a document: "Your coaching session has moved to Fri 27 Nov at 10:00 UK time". */
+function movedDoc({ brand, what, coach, at, zone, zoomLink, rearrangeLink, footer }) {
+  const withWho = coach ? ` with ${coach}` : '';
+  const when = `${dayWords(at, zone)} at ${timeWords(at, zone)}`;
+  return {
+    brand,
+    subject: `Your ${what} has moved to ${when}`,
+    blocks: [
+      { type: 'heading', text: `Your ${what}${withWho} is now on ${when}.` },
+      zoomLink ? { type: 'button', label: 'Join on Zoom', href: zoomLink } : null,
+      rearrangeLink ? { type: 'link', label: 'Rearrange', href: rearrangeLink } : null,
+    ],
+    footer: { lines: footer },
+  };
+}
+
+/**
+ * A client's coaching session is booked (draft-2's "Booked"). Nothing sends it yet: sessions a coach books for a client
+ * have no sender, and a session booked on a booking page is bookingConfirmedEmail.
+ * @param {{ coach: string, at: Date|string, zone: string, minutes?: number, placeKind?: string, zoomLink?: string|null,
+ *   rearrangeLink?: string|null, cancelLink?: string|null, prep?: boolean, preferencesLink?: string|null }} o
+ */
+export function sessionBookedEmail({ coach, at, zone, minutes = null, placeKind = 'zoom', zoomLink = null, rearrangeLink = null, cancelLink = null, prep = true, preferencesLink = null }) {
+  const name = oneLine(coach) || 'your coach';
+  return bookedDoc({ brand: 'portal', what: 'coaching session', coach: name, at, zone, minutes, placeKind, zoomLink, rearrangeLink, cancelLink, prep, footer: sessionFooter(name, preferencesLink) });
+}
+
+/** A client's coaching session has moved (draft-2's "Moved"). Nothing sends it yet. */
+export function sessionMovedEmail({ coach, at, zone, zoomLink = null, rearrangeLink = null, preferencesLink = null }) {
+  const name = oneLine(coach) || 'your coach';
+  return movedDoc({ brand: 'portal', what: 'coaching session', coach: name, at, zone, zoomLink, rearrangeLink, footer: sessionFooter(name, preferencesLink) });
+}
+
+/**
+ * A coaching session is cancelled (draft-2's "Cancelled"), with the late-cancellation line when it was cancelled with
+ * less than 24 hours' notice. Nothing sends it yet.
+ * @param {{ coach: string, at: Date|string, zone: string, late?: boolean, bookLink?: string|null, preferencesLink?: string|null }} o
+ */
+export function sessionCancelledEmail({ coach, at, zone, late = false, bookLink = null, preferencesLink = null }) {
+  const name = oneLine(coach) || 'your coach';
+  const day = dayWords(at, zone);
+  return {
+    brand: 'portal',
+    subject: `Your coaching session on ${day} is cancelled`,
+    blocks: [
+      { type: 'heading', text: `Your coaching session with ${name} on ${day} at ${timeWords(at, zone)} is cancelled.` },
+      late ? { type: 'text', text: 'It was cancelled with less than 24 hours’ notice, so it counts as used.' } : null,
+      bookLink ? { type: 'text', text: 'When you’re ready, you can book another time here.' } : null,
+      bookLink ? { type: 'button', label: 'Book a coaching session', href: bookLink } : null,
+    ],
+    footer: { lines: sessionFooter(name, preferencesLink) },
+  };
+}
+
+/**
+ * The day before a coaching session (draft-2's "24 hours before"), sent by api/coach-reminders.js from 18:00 the day
+ * before in the reader's own time.
  * @param {object} o
  * @param {string} o.coach          the coach's first name
  * @param {Date|string} o.at        the session's instant
@@ -190,19 +328,18 @@ export function guestEmailCodeEmail({ toolName = 'Get unstuck', code }) {
  * @param {Date} [o.now]
  */
 export function sessionTomorrowEmail({ coach, at, zone, frequentTraveller = false, prepLink, zoomLink, preferencesLink, now = new Date() }) {
-  const day = relativeDayWords(at, zone, now);
-  const when = sessionWhenWords(at, zone, now);
+  const line = `Your coaching session with ${coach} is ${dayAndTime(at, zone, now)}`;
   return {
     brand: 'portal',
-    subject: `Your coaching session with ${coach} is ${day === 'tomorrow' || day === 'today' ? day : `on ${day}`} at ${timeWords(at, zone)}`,
+    subject: line,
     blocks: [
-      { type: 'heading', text: day === 'tomorrow' ? 'What would make tomorrow’s coaching session useful?' : 'What would make your coaching session useful?' },
-      { type: 'text', text: `Your coaching session with ${coach} is ${when}.` },
+      { type: 'heading', text: `${line}.` },
       // Only for people the coach has marked as a frequent traveller (Tim, 13:25); everyone else never sees it.
       frequentTraveller ? { type: 'text', text: 'Travelling? Your calendar invite moves with you.', quiet: true } : null,
-      prepLink ? { type: 'button', label: 'Start my prep', href: prepLink, time: '~2 minutes' } : null,
-      // A session in person has no Zoom link, and the link is left out rather than sent empty.
-      zoomLink ? { type: 'link', label: 'Join on Zoom', href: zoomLink } : null,
+      { type: 'text', text: USEFUL },
+      prepLink ? { type: 'button', label: 'Start my 2-minute prep', href: prepLink } : null,
+      // A session in person has no Zoom link, and the link is left out rather than sent empty. With no prep it is the button.
+      zoomLink ? (prepLink ? { type: 'link', label: 'Join on Zoom', href: zoomLink } : { type: 'button', label: 'Join on Zoom', href: zoomLink }) : null,
     ],
     footer: { lines: reminderFooter(coach, preferencesLink) },
   };
@@ -210,14 +347,17 @@ export function sessionTomorrowEmail({ coach, at, zone, frequentTraveller = fals
 
 // "Choose which emails to get" needs its page first (Emails, rule 8): until a link is given it is left out.
 const reminderFooter = (coach, preferencesLink) => [`You get session reminders as one of ${possessive(coach)} coaching clients.`, EMAIL_SIGN_OFF, preferencesLink ? { label: 'Choose which emails to get', href: preferencesLink } : null].filter(Boolean);
+/** "starts at 15:00 UK time" in the reader's zone; with no time given (an older caller), "starts in 1 hour". */
+const startsAt = (at, zone) => (at && zone ? `starts at ${timeWords(at, zone)}` : 'starts in 1 hour');
 
-/** One hour before: no clock time at all, so it can't be wrong (Tim, 13:23). */
-export function sessionInOneHourEmail({ coach, zoomLink, preferencesLink }) {
+/** One hour before (draft-2's "1 hour before"): its clock time in the reader's own zone. */
+export function sessionInOneHourEmail({ coach, at = null, zone = null, zoomLink, preferencesLink }) {
+  const line = `Your coaching session with ${coach} ${startsAt(at, zone)}`;
   return {
     brand: 'portal',
-    subject: `Your coaching session with ${coach} starts in 1 hour`,
+    subject: line,
     blocks: [
-      { type: 'heading', text: `Your coaching session with ${coach} starts in 1 hour.` },
+      { type: 'heading', text: `${line}.` },
       zoomLink ? { type: 'button', label: 'Join on Zoom', href: zoomLink } : null,
     ],
     footer: { lines: reminderFooter(coach, preferencesLink) },
@@ -227,9 +367,9 @@ export function sessionInOneHourEmail({ coach, zoomLink, preferencesLink }) {
 // ---------------------------------------------------------------- group-call reminders (Phase 6a run 8, item 1)
 // A group call's two reminders, one email to each guest at their own
 // address (api/coach-reminders.js; migration 059's group claim): the same
-// moments, switches and template as a single call's. Nothing in them names or
-// shows another guest; the group's name is the only "who". Times in the
-// READER's zone with its place's name; the 1-hour one never gives a clock time.
+// moments, switches, template and words as a single call's (draft-2), as a
+// group coaching session. Nothing in them names or shows another guest; the
+// group's name is the only "who". Times in the READER's zone with its place's name.
 const groupFooter = (coach, groupName, preferencesLink) => [
   groupName ? `You get session reminders as a member of ${groupName}, coached by ${coach}.` : `You get session reminders as one of ${possessive(coach)} coaching clients.`,
   EMAIL_SIGN_OFF,
@@ -242,30 +382,31 @@ const groupFooter = (coach, groupName, preferencesLink) => [
  */
 export function groupSessionTomorrowEmail({ coach, groupName = '', at, zone, frequentTraveller = false, prepLink = null, zoomLink = null, preferencesLink = null, now = new Date() }) {
   const group = oneLine(groupName);
-  const day = relativeDayWords(at, zone, now);
+  const line = `Your group coaching session with ${coach} is ${dayAndTime(at, zone, now)}`;
   return {
     brand: 'portal',
-    subject: `Your group coaching session with ${coach} is ${day === 'tomorrow' || day === 'today' ? day : `on ${day}`} at ${timeWords(at, zone)}`,
+    subject: line,
     blocks: [
-      { type: 'heading', text: day === 'tomorrow' ? 'What would make tomorrow’s group session useful?' : 'What would make your group session useful?' },
-      { type: 'text', text: `Your group coaching session with ${coach} is ${sessionWhenWords(at, zone, now)}.` },
+      { type: 'heading', text: `${line}.` },
       group ? { type: 'details', rows: [['Group', group]] } : null,
       frequentTraveller ? { type: 'text', text: 'Travelling? Your calendar invite moves with you.', quiet: true } : null,
-      prepLink ? { type: 'button', label: 'Start my prep', href: prepLink, time: '~2 minutes' } : null,
-      zoomLink ? { type: 'link', label: 'Join on Zoom', href: zoomLink } : null,
+      { type: 'text', text: USEFUL },
+      prepLink ? { type: 'button', label: 'Start my 2-minute prep', href: prepLink } : null,
+      zoomLink ? (prepLink ? { type: 'link', label: 'Join on Zoom', href: zoomLink } : { type: 'button', label: 'Join on Zoom', href: zoomLink }) : null,
     ],
     footer: { lines: groupFooter(coach, group, preferencesLink) },
   };
 }
 
-/** One hour before a group call: no clock time at all, so it can't be wrong. */
-export function groupSessionInOneHourEmail({ coach, groupName = '', zoomLink = null, preferencesLink = null }) {
+/** One hour before a group call: its clock time in the reader's own zone. */
+export function groupSessionInOneHourEmail({ coach, groupName = '', at = null, zone = null, zoomLink = null, preferencesLink = null }) {
   const group = oneLine(groupName);
+  const line = `Your group coaching session with ${coach} ${startsAt(at, zone)}`;
   return {
     brand: 'portal',
-    subject: `Your group coaching session with ${coach} starts in 1 hour`,
+    subject: line,
     blocks: [
-      { type: 'heading', text: `Your group coaching session with ${coach} starts in 1 hour.` },
+      { type: 'heading', text: `${line}.` },
       group ? { type: 'details', rows: [['Group', group]] } : null,
       zoomLink ? { type: 'button', label: 'Join on Zoom', href: zoomLink } : null,
     ],
@@ -273,67 +414,65 @@ export function groupSessionInOneHourEmail({ coach, groupName = '', zoomLink = n
   };
 }
 
-// ---------------------------------------------------------------- the session recap (Phase 6a run 2)
-/** The most actions one recap email lists, and the most characters of the recap it carries. */
+// ---------------------------------------------------------------- the session summary (Phase 6a run 2; draft-2's "Summary ready")
+/** The most actions one recap lists, and the most characters of the recap kept (the client reads it in the portal). */
 export const RECAP_EMAIL_ACTIONS_MAX = 30;
 export const RECAP_EMAIL_MAX = 12000;
 
 /**
- * A session's recap, to the client (or each member of a group), sent only
- * when their coach presses Send the recap (api/coach-send.js; migration
- * 050's session_send_recap decides it goes once). The recap is the coach's
- * own typed words, shown as text, a paragraph at a time; the actions are the
- * ones the coach ticked to send. The address it goes to is never passed in
- * here: the server takes it from the database.
+ * A session's summary is ready, to the client (or each member of a group), sent only when their coach presses Send the
+ * recap (api/coach-send.js; migration 050's session_send_recap decides it goes once). Draft-2's words: the email says
+ * the summary is ready, and the summary itself (the coach's words and the ticked actions) is read on the client's
+ * Coaching page, never carried in the email. The address it goes to is never passed in here.
  * @param {object} o
  * @param {string} o.origin      the portal's own address (api/_portalOrigin.js)
  * @param {string} o.coach       the coach's first name
- * @param {string} o.dateText    the session's day in words, "Mon 16 Nov 2026"
- * @param {string} o.recap
- * @param {string[]} [o.actions] the ticked actions' words
+ * @param {Date|string} [o.at]   the session's instant, and the reader's zone: "today's" when it was today for them
+ * @param {string} [o.zone]
+ * @param {string} [o.dateText]  the session's day in words ("Mon 16 Nov 2026"), for a session on another day
+ * @param {Date} [o.now]
  */
-export function sessionRecapEmail({ origin, coach, dateText, recap, actions = [] }) {
+export function sessionRecapEmail({ origin, coach, at = null, zone = null, dateText = '', now = new Date() }) {
   const name = oneLine(coach).slice(0, 60) || 'your coach';
   const day = oneLine(dateText);
-  const paragraphs = String(recap || '').slice(0, RECAP_EMAIL_MAX).split(/\n\s*\n/).map(oneLine).filter(Boolean);
-  const steps = (Array.isArray(actions) ? actions : []).map((a) => oneLine(a).slice(0, 300)).filter(Boolean).slice(0, RECAP_EMAIL_ACTIONS_MAX);
+  const today = !(at && zone) || relativeDayWords(at, zone, now) === 'today';
   return {
     brand: 'portal',
-    subject: `Your session recap from ${name}${day ? `, ${day}` : ''}`,
+    subject: 'Your coaching session summary is ready',
     blocks: [
-      { type: 'heading', text: 'Your session recap' },
-      { type: 'text', text: day ? `From ${name}, after your session on ${day}.` : `From ${name}.`, quiet: true },
-      ...paragraphs.map((text) => ({ type: 'text', text })),
-      ...(steps.length ? [{ type: 'label', text: steps.length === 1 ? 'Your action' : 'Your actions' }, ...steps.map((step, i) => ({ type: 'note', text: steps.length > 1 ? `${i + 1}. ${step}` : step }))] : []),
-      { type: 'button', label: 'Open my portal', href: `${origin}/welcome` },
+      { type: 'heading', text: today || !day ? `Your summary from today’s coaching session with ${name} is ready.` : `Your summary from your coaching session with ${name} on ${day} is ready.` },
+      { type: 'text', text: 'It has what you talked about and the actions you agreed.' },
+      { type: 'button', label: 'Read my summary', href: `${origin}/coaching` },
     ],
     footer: { lines: [`You get this because ${name} is your coach.`, EMAIL_SIGN_OFF] },
   };
 }
 
-// ---------------------------------------------------------------- the invite to the portal (Phase 6a run 2)
+// ---------------------------------------------------------------- the welcome (Phase 6a run 2; draft-2's "Welcome")
 /**
- * A coach invites a client to the portal: sent only when the coach presses
- * "Invite" on the client's page (api/coach-send.js, kind 'invite'), and
- * only from the live site. The button opens the portal's own Create your
- * account page; once the person has an account with this email address,
- * their Coaching page offers the invite to accept (049's my_coach_invites).
- * The address it goes to is never passed in here: the server takes it from
- * the database.
+ * When a coach sets up a client's account: from the coach, signed with their first name, sent only when the coach
+ * presses "Invite" on the client's page (api/coach-send.js, kind 'invite'), and only from the live site. The button
+ * opens `link` when the sender gives one, otherwise the portal's own Create your account page (where the password is
+ * chosen); once the person has an account with this email address, their Coaching page offers the invite to accept
+ * (049's my_coach_invites). The address it goes to is never passed in here.
  * @param {object} o
- * @param {string} o.origin  the portal's own address (api/_portalOrigin.js)
- * @param {string} o.coach   the coach's first name
+ * @param {string} o.origin       the portal's own address (api/_portalOrigin.js)
+ * @param {string} o.coach        the coach's first name
+ * @param {string} [o.firstName]  the client's first name ("Hello," without it)
+ * @param {string|null} [o.link]  the set-password link, when there is one
  */
-export function clientInviteEmail({ origin, coach }) {
+export function clientInviteEmail({ origin, coach, firstName = '', link = null }) {
   const name = oneLine(coach).slice(0, 60);
   return {
     brand: 'portal',
-    subject: name ? `${name} has invited you to The Clarity Portal` : 'You’re invited to The Clarity Portal',
+    subject: name ? `${name} has set up your Clarity Portal account` : 'Your coach has set up your Clarity Portal account',
     blocks: [
-      { type: 'heading', text: 'You’re invited to The Clarity Portal' },
-      { type: 'text', text: `${name || 'Your coach'} has invited you to work together in The Clarity Portal, your personal performance tool.` },
-      { type: 'text', text: 'Create your account with this email address, then open the invite from Home.', quiet: true },
-      { type: 'button', label: 'Create my account', href: `${origin}/auth/sign-up` },
+      { type: 'heading', text: greeting(firstName) },
+      { type: 'text', text: 'I’ve set up your account on The Clarity Portal, where we’ll plan, track and review your progress together.' },
+      { type: 'text', text: 'It takes ~2 minutes to set your password.' },
+      { type: 'button', label: 'Set my password', href: link || `${origin}/auth/sign-up` },
+      { type: 'text', text: 'The link works for 7 days.' },
+      signedBy(name),
     ],
     footer: { lines: [`You get this because ${name || 'your coach'} added this email address as a client in The Clarity Portal.`, EMAIL_SIGN_OFF] },
   };
@@ -520,72 +659,70 @@ export function inviteEmail({ link }) {
 }
 
 // ---------------------------------------------------------------- a call booked through a booking page (Phase 6a run 3)
-// To the person who booked: the time in THEIR own zone with its city's
-// name (12-hour for the US and Canada), the day in words, one button to
-// move or cancel (their own link), and the Zoom link when the call has one.
-// It goes from the business (the person may have no account). Sent only by
-// api/booking-email.js, from the live site, once for each time booked.
+// To the person who booked: draft-2's "Booked" and "Moved" words, with the
+// call's own name ("Your Chemistry Call with Tim is booked for …"; a
+// coaching session reads exactly as draft-2), the time in THEIR own zone
+// with its city's name (12-hour for the US and Canada), the day in words,
+// Join on Zoom when the call has a link, and Rearrange and Cancel on their
+// own page. It goes from the business (the person may have no account, so
+// no prep is offered). Sent only by api/booking-email.js, from the live
+// site, once for each time booked.
+/** "coaching session" for a coaching session, otherwise the call's own name, or "call". */
+const callWords = (callName) => { const c = oneLine(callName); return !c ? 'call' : /^coaching session$/i.test(c) ? 'coaching session' : c; };
+const bookedFooter = (call) => [`You get this because you booked ${call === 'call' ? 'a call' : call}.`, EMAIL_SIGN_OFF];
 
 /**
- * @param {{ name: string, callName: string, coach?: string, at: Date|string, zone: string, placeKind?: string, zoomLink?: string, mineLink: string, moved?: boolean, now?: Date }} booking
+ * @param {{ name?: string, callName: string, coach?: string, at: Date|string, zone: string, minutes?: number, placeKind?: string, zoomLink?: string, mineLink: string, moved?: boolean, now?: Date }} booking
  */
-export function bookingConfirmedEmail({ name, callName, coach, at, zone, placeKind = 'zoom', zoomLink = null, mineLink, moved = false, now = new Date() }) {
-  const call = oneLine(callName) || 'Your call';
-  const withWho = coach ? ` with ${oneLine(coach)}` : '';
-  return {
-    brand: 'project',
-    subject: `${moved ? 'Moved' : 'Booked'}: ${call}${withWho}, ${whenWords(at, zone)}`,
-    blocks: [
-      { type: 'heading', text: moved ? 'Your call has moved.' : 'You’re booked.' },
-      { type: 'text', text: `${oneLine(name).split(' ')[0] || 'Hello'}, your ${call}${withWho} is ${sessionWhenWords(at, zone, now)}.` },
-      { type: 'details', rows: [['When', whenWords(at, zone)], ['Where', placeKind === 'in_person' ? 'In person' : placeKind === 'phone' ? 'By phone' : 'Zoom']] },
-      { type: 'button', label: 'Move or cancel', href: mineLink },
-      zoomLink ? { type: 'link', label: 'Join on Zoom', href: zoomLink } : null,
-    ],
-    footer: { lines: [`You get this because you booked ${call}.`, EMAIL_SIGN_OFF] },
-  };
+export function bookingConfirmedEmail({ callName, coach, at, zone, minutes = null, placeKind = 'zoom', zoomLink = null, mineLink, moved = false }) {
+  const what = callWords(callName);
+  const who = coach ? oneLine(coach) : '';
+  const footer = bookedFooter(what);
+  return moved
+    ? movedDoc({ brand: 'project', what, coach: who, at, zone, zoomLink, rearrangeLink: mineLink, footer })
+    : bookedDoc({ brand: 'project', what, coach: who, at, zone, minutes, placeKind, zoomLink, rearrangeLink: mineLink, cancelLink: mineLink, prep: false, footer });
 }
 
 // ---------------------------------------------------------------- reminders for a call someone booked (Phase 6a run 3, step 6)
 // To the person who booked a call on a booking page (they may have no
 // account, so there is no prep and nothing to sign in to): the day before
-// at 18:00 their own time, and 1 hour before. Times are in THEIR zone with
-// its city's name; the 1-hour one never gives a clock time. Sent only by
-// api/coach-reminders.js, from the live site, once each.
+// at 18:00 their own time, and 1 hour before, in draft-2's words with the
+// call's own name. Times are in THEIR zone with its city's name. Sent only
+// by api/coach-reminders.js, from the live site, once each.
 
 /**
  * @param {{ name?: string, callName: string, coach?: string, at: Date|string, zone: string, placeKind?: string, zoomLink?: string, mineLink?: string, now?: Date }} call
  */
-export function callTomorrowEmail({ name = '', callName, coach, at, zone, placeKind = 'zoom', zoomLink = null, mineLink = null, now = new Date() }) {
-  const call = oneLine(callName);
+export function callTomorrowEmail({ callName, coach, at, zone, zoomLink = null, mineLink = null, now = new Date() }) {
+  const what = callWords(callName);
   const withWho = coach ? ` with ${oneLine(coach)}` : '';
-  const day = relativeDayWords(at, zone, now);
+  const line = `Your ${what}${withWho} is ${dayAndTime(at, zone, now)}`;
   return {
     brand: 'project',
-    subject: `${call || 'Your call'}${withWho} is ${day === 'tomorrow' || day === 'today' ? day : `on ${day}`} at ${timeWords(at, zone)}`,
+    subject: line,
     blocks: [
-      { type: 'heading', text: day === 'tomorrow' ? 'Your call is tomorrow.' : 'Your call is coming up.' },
-      { type: 'text', text: `${oneLine(name).split(' ')[0] || 'Hello'}, your ${call || 'call'}${withWho} is ${sessionWhenWords(at, zone, now)}.` },
-      { type: 'details', rows: [['When', whenWords(at, zone)], ['Where', placeKind === 'in_person' ? 'In person' : placeKind === 'phone' ? 'By phone' : 'Zoom']] },
-      mineLink ? { type: 'button', label: 'Move or cancel', href: mineLink } : null,
-      zoomLink ? { type: 'link', label: 'Join on Zoom', href: zoomLink } : null,
+      { type: 'heading', text: `${line}.` },
+      { type: 'text', text: USEFUL },
+      zoomLink ? { type: 'button', label: 'Join on Zoom', href: zoomLink } : null,
+      mineLink ? { type: 'link', label: 'Rearrange', href: mineLink } : null,
     ],
-    footer: { lines: [`You get this because you booked ${call || 'a call'}.`, EMAIL_SIGN_OFF] },
+    footer: { lines: bookedFooter(what) },
   };
 }
 
-/** One hour before a booked call: no clock time at all, so it can't be wrong. */
-export function callInOneHourEmail({ callName, coach, zoomLink = null, mineLink = null }) {
-  const call = oneLine(callName);
+/** One hour before a booked call: its clock time in the reader's own zone. */
+export function callInOneHourEmail({ callName, coach, at = null, zone = null, zoomLink = null, mineLink = null }) {
+  const what = callWords(callName);
   const withWho = coach ? ` with ${oneLine(coach)}` : '';
+  const line = `Your ${what}${withWho} ${startsAt(at, zone)}`;
   return {
     brand: 'project',
-    subject: `${call || 'Your call'}${withWho} starts in 1 hour`,
+    subject: line,
     blocks: [
-      { type: 'heading', text: `${call || 'Your call'}${withWho} starts in 1 hour.` },
+      { type: 'heading', text: `${line}.` },
       zoomLink ? { type: 'button', label: 'Join on Zoom', href: zoomLink } : null,
-      !zoomLink && mineLink ? { type: 'link', label: 'Move or cancel', href: mineLink } : null,
+      !zoomLink && mineLink ? { type: 'link', label: 'Rearrange', href: mineLink } : null,
     ],
-    footer: { lines: [`You get this because you booked ${call || 'a call'}.`, EMAIL_SIGN_OFF] },
+    footer: { lines: bookedFooter(what) },
   };
 }

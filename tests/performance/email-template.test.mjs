@@ -15,7 +15,6 @@ test('what people type is shown as text, never as markup, in an email', () => {
   assert.ok(!r.html.includes('<script>alert'));
   assert.ok(r.html.includes('A &amp; B &lt;script&gt;alert(1)&lt;/script&gt; Ltd'));
   assert.ok(r.html.includes('&lt;b&gt;1&lt;/b&gt;'));
-  assert.ok(r.text.includes('A & B <script>alert(1)</script> Ltd, Tue 10 Nov 2026.'));
   assert.equal(r.subject, 'Your Health Check results for A & B <script>alert(1)</script> Ltd');
   assert.ok(!r.subject.includes('\n'));
 });
@@ -43,14 +42,17 @@ test('the sign-off, and no postal address, on every portal email', () => {
   assert.ok(!renderEmail(healthCheckFinishedNoteEmail({ organisation: 'X', dateText: 'Tue 10 Nov 2026' })).text.includes('Access code'));
 });
 
-test('the travel line shows only for a frequent traveller, and the 1-hour reminder has no clock time', () => {
+test('the travel line shows only for a frequent traveller, and the 1-hour reminder gives its clock time in the reader’s zone (draft-2)', () => {
   const base = { coach: 'Tim', at: instantAt('2026-11-11', '10:00', 'America/New_York'), zone: 'America/New_York', prepLink: 'https://p', zoomLink: 'https://z', preferencesLink: 'https://c', now: new Date('2026-11-10T15:00:00Z') };
   assert.ok(!renderEmail(sessionTomorrowEmail(base)).text.includes('Travelling?'));
   assert.ok(!renderEmail(sessionTomorrowEmail({ ...base, frequentTraveller: false })).html.includes('Travelling?'));
   assert.ok(renderEmail(sessionTomorrowEmail({ ...base, frequentTraveller: true })).text.includes('Travelling? Your calendar invite moves with you.'));
   assert.equal(renderEmail(sessionTomorrowEmail(base)).subject, 'Your coaching session with Tim is tomorrow at 10:00 am New York time');
-  const hour = renderEmail(sessionInOneHourEmail({ coach: 'Tim', zoomLink: 'https://z', preferencesLink: 'https://c' }));
-  assert.doesNotMatch(`${hour.subject} ${hour.text}`, /\d{1,2}:\d{2}| am\b| pm\b/);
+  const hour = renderEmail(sessionInOneHourEmail({ ...base }));
+  assert.equal(hour.subject, 'Your coaching session with Tim starts at 10:00 am New York time');
+  assert.ok(hour.text.includes('Your coaching session with Tim starts at 10:00 am New York time.'));
+  const uk = renderEmail(sessionInOneHourEmail({ ...base, zone: 'Europe/London' }));
+  assert.equal(uk.subject, 'Your coaching session with Tim starts at 15:00 UK time');
 });
 
 test('Leading Ideas for a client has no button and nothing to answer', () => {
@@ -92,7 +94,7 @@ test('a subject stays one line, and the plain text gains no footer or link line,
     healthCheckResultsEmail({ link: 'https://example.invalid/health-check/t', organisation: fake, dateText: 'Tue 10 Nov 2026', email: fake, code: fake }),
     healthCheckFinishedForCoachEmail({ link: 'https://example.invalid/health-check/t', organisation: fake, email: fake, code: fake, finishedText: fake, objective: fake, summary }),
     healthCheckFinishedNoteEmail({ organisation: fake, dateText: fake }),
-    sessionInOneHourEmail({ coach: fake, zoomLink: 'https://z.example/', preferencesLink: 'https://c.example/' }),
+    sessionInOneHourEmail({ coach: fake, at: instantAt('2026-11-11', '10:00', 'Europe/London'), zone: 'Europe/London', zoomLink: 'https://z.example/', preferencesLink: 'https://c.example/' }),
     leadingIdeasClientEmail({ issue: fake, theme: fake, quote: fake, by: fake, question: fake, tailoredLine: fake, shareLink: 'https://s.example/', portalLink: 'https://p.example/', preferencesLink: 'https://c.example/' }),
   ];
   for (const doc of emails) {

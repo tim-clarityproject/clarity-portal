@@ -59,8 +59,10 @@ const DIDNT_SEND = 'That didn’t send. Try again in a moment.';
 const reply = (res, status, body) => { res.status(status).setHeader('Cache-Control', 'no-store'); res.json(body); };
 
 /** What Resend is given for one person: the subject, both versions and the inline image. */
-export function recapEmail({ origin, coach, dateText, recap, actions }) {
-  return emailFrom(sessionRecapEmail({ origin, coach, dateText, recap, actions }));
+// Draft-2's "Summary ready": the email says the summary is ready, and the recap and its actions are read on the
+// client's Coaching page, never carried in the email (recap and actions are taken and left out).
+export function recapEmail({ origin, coach, at = null, zone = null, dateText, now = new Date() }) {
+  return emailFrom(sessionRecapEmail({ origin, coach, at, zone, dateText, now }));
 }
 
 /** The request's kind and the id it names, or null when it is the wrong shape. */
@@ -106,7 +108,9 @@ async function sendRecap({ env, req, res, asCaller, userId, id }) {
     // Only ever one of the portal's own addresses, never the request's host.
     origin: portalOrigin(req.headers, env),
     coach,
-    dateText: dayWords(session.starts_at, zone, { year: true }),
+    at: session.starts_at,
+    zone,
+    dateText: dayWords(session.starts_at, zone),
     recap: session.recap,
     actions: (actions || []).map((a) => a.title),
   });
@@ -118,7 +122,7 @@ async function sendRecap({ env, req, res, asCaller, userId, id }) {
 // ---------------------------------------------------------------- Invite to the portal
 async function sendInvite({ env, req, res, asCaller, userId, id }) {
   // The coach's own client only: the database's rules let nobody else read the profile.
-  const { data: profile, error: profileError } = await asCaller.from('client_profiles').select('id,email,user_id,merged_into').eq('id', id).maybeSingle();
+  const { data: profile, error: profileError } = await asCaller.from('client_profiles').select('id,name,email,user_id,merged_into').eq('id', id).maybeSingle();
   if (profileError) return reply(res, 502, { sent: false, message: DIDNT_SEND });
   if (!profile || profile.merged_into) return reply(res, 404, { sent: false, message: 'That client isn’t yours.' });
   if (profile.user_id) return reply(res, 200, { sent: false, reason: 'has_account' });
@@ -132,7 +136,7 @@ async function sendInvite({ env, req, res, asCaller, userId, id }) {
     if (inviteError.code === '42501') return reply(res, 404, { sent: false, message: 'That client isn’t yours.' });
     return reply(res, isMissingFunction(inviteError) ? 200 : 502, isMissingFunction(inviteError) ? { sent: false, reason: 'not_ready' } : { sent: false, message: DIDNT_SEND });
   }
-  const email = emailFrom(clientInviteEmail({ origin: portalOrigin(req.headers, env), coach: await coachName(asCaller, userId) }));
+  const email = emailFrom(clientInviteEmail({ origin: portalOrigin(req.headers, env), coach: await coachName(asCaller, userId), firstName: String(profile.name || '').trim().split(/\s+/)[0] || '' }));
   const went = await sendEach(env, [{ email: to }], () => email);
   if (!went) return reply(res, 502, { sent: false, message: DIDNT_SEND });
   return reply(res, 200, { sent: true, people: 1 });

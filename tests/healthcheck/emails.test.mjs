@@ -139,9 +139,12 @@ test('the person’s email shows their email address and access code; the coach�
   assert.ok(person.text.includes('Access code: 482913'));
   for (const part of [coach.subject, coach.html, coach.text]) assert.ok(!/482913|Access code/.test(part), 'the coach’s email never carries a code');
   assert.equal(person.subject, 'Your Health Check results for Quillmark');
-  assert.ok(person.text.includes('Your Health Check results are ready.'));
-  assert.ok(person.text.includes('Quillmark, Tue 10 Nov 2026.'));
-  assert.ok(person.text.includes('Open my results'));
+  // Draft-2's "Copy of a guest's answers" (23 Nov), from the coach.
+  assert.ok(person.text.includes('Thanks for completing the Health Check.'));
+  assert.ok(person.text.includes('Your results are attached as a PDF, and you can open them again with your link and code for 30 days.'));
+  assert.ok(person.text.includes('Your link:\nhttps://example.invalid/health-check/test-token-not-real'));
+  assert.ok(person.text.includes('If you’d like to talk them through, reply and we’ll find a time.'));
+  assert.ok(/\nTim\n\n----/.test(person.text), 'signed by the coach');
   assert.ok(coach.text.includes('Open the results'));
   assert.ok(coach.text.includes('You made this Health Check link.'));
 });

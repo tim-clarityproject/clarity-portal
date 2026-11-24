@@ -1,14 +1,18 @@
 // Every email, with invented people only, for the hidden test page
 // (/email-preview, local development and previews only) and the checks in
 // tests/email. The names and figures are the mock-up's own
-// (email-template.html): Northfield Logistics, Jordan, Sam, Jess, Tim.
+// (email-template.html): Northfield Logistics, Jordan, Sam, Jess, Tim; and
+// draft-2's (23 Nov): Sam, Priya, CLARITY-1243, £3,000.
 import {
   healthCheckFinishedForCoachEmail, healthCheckResultsEmail, healthCheckNewCodeEmail, guestEmailCodeEmail, healthCheckFinishedNoteEmail,
   sessionTomorrowEmail, sessionInOneHourEmail, leadingIdeasClientEmail, leadingIdeasPublicEmail,
   confirmEmailEmail, resetPasswordEmail, changeEmailEmail, inviteEmail, guestPlanCopyEmail,
   workshopTomorrowEmail, workshopInOneHourEmail, workshopFollowUpEmail, sessionRecapEmail, clientInviteEmail, bookingConfirmedEmail, callTomorrowEmail, callInOneHourEmail,
-  groupSessionTomorrowEmail, groupSessionInOneHourEmail,
+  groupSessionTomorrowEmail, groupSessionInOneHourEmail, healthCheckLinkEmail, sessionBookedEmail, sessionMovedEmail, sessionCancelledEmail,
 } from '../../lib/email/emails.js';
+import {
+  invoiceReminderEmail, agreementReadyEmail, agreementChangeAskedEmail, agreementSignedEmail, sponsorAgreementEmail,
+} from '../../lib/email/billingEmails.js';
 import { instantAt } from '../../lib/time/index.js';
 
 const PORTAL = 'https://portal.theclarityproject.co.uk';
@@ -17,6 +21,9 @@ const HEALTH_CHECK = `${PORTAL}/health-check/invented-example-link`;
 const PREFERENCES = `${PORTAL}/my-account`;
 const ZOOM = 'https://zoom.us/j/0000000000';
 const NOW = new Date('2026-11-10T15:00:00Z'); // Tue 10 Nov 2026
+// Stripe's own page for an invoice (invented).
+const STRIPE = 'https://invoice.stripe.com/i/acct_invented/test_invented';
+const reminder = { firstName: 'Sam', number: 'CLARITY-1243', amountWords: '£3,000', dueDayWords: 'Mon 16 Nov', coachFirst: 'Tim', settleLink: STRIPE };
 
 const leadingIdeas = {
   issue: 32,
@@ -52,10 +59,17 @@ export const EMAIL_EXAMPLES = [
   },
   {
     key: 'health-check-person',
-    name: 'Health Check results, to the person',
-    from: 'From The Clarity Portal, to Jordan',
-    sends: 'Sent today, when the person asks for their link.',
-    doc: () => healthCheckResultsEmail({ link: HEALTH_CHECK, organisation: 'Northfield Logistics', dateText: 'Tue 10 Nov 2026', email: 'jordan@northfield.example', code: '482913' }),
+    name: 'Copy of a guest’s answers (Health Check results), to the person',
+    from: 'From Tim (The Clarity Portal), to Priya',
+    sends: 'Sent today, when the person asks for their link. Draft-2’s words; the PDF it names is attached by the sender.',
+    doc: () => healthCheckResultsEmail({ link: HEALTH_CHECK, organisation: 'Northfield Logistics', firstName: 'Priya', coachFirst: 'Tim', email: 'priya@northfield.example', code: 'K7MPQ2' }),
+  },
+  {
+    key: 'health-check-link',
+    name: 'Health Check link, from the coach',
+    from: 'From Tim (The Clarity Portal), to Priya',
+    sends: 'Nothing sends it yet: a coach shares the link from the coach portal today.',
+    doc: () => healthCheckLinkEmail({ firstName: 'Priya', coachFirst: 'Tim', link: HEALTH_CHECK, code: 'K7MPQ2' }),
   },
   {
     key: 'health-check-new-code',
@@ -109,8 +123,8 @@ export const EMAIL_EXAMPLES = [
     key: 'session-one-hour',
     name: 'Session in 1 hour',
     from: 'From The Clarity Portal, to Sam',
-    sends: 'Sent only from the live site, once, by the scheduled job (api/coach-reminders.js) 1 hour before, when its switch is on (after migration 051). It never gives a clock time.',
-    doc: () => sessionInOneHourEmail({ coach: 'Tim', zoomLink: ZOOM, preferencesLink: PREFERENCES }),
+    sends: 'Sent only from the live site, once, by the scheduled job (api/coach-reminders.js) 1 hour before, when its switch is on (after migration 051). Its clock time is in the reader’s own zone (draft-2).',
+    doc: () => sessionInOneHourEmail({ coach: 'Tim', at: instantAt('2026-11-26', '15:00', 'Europe/London'), zone: 'Europe/London', zoomLink: ZOOM, preferencesLink: PREFERENCES }),
   },
   {
     key: 'group-session-tomorrow',
@@ -123,15 +137,15 @@ export const EMAIL_EXAMPLES = [
     key: 'group-session-one-hour',
     name: 'Group session in 1 hour',
     from: 'From The Clarity Portal, to Jordan (one email to each guest)',
-    sends: 'Sent only from the live site, once to each guest at their own address, by the scheduled job (api/coach-reminders.js) 1 hour before, when its switch is on (after migration 059). It never gives a clock time.',
-    doc: () => groupSessionInOneHourEmail({ coach: 'Tim', groupName: 'Northfield leadership team', zoomLink: ZOOM, preferencesLink: PREFERENCES }),
+    sends: 'Sent only from the live site, once to each guest at their own address, by the scheduled job (api/coach-reminders.js) 1 hour before, when its switch is on (after migration 059). Its clock time is in that guest’s own zone.',
+    doc: () => groupSessionInOneHourEmail({ coach: 'Tim', groupName: 'Northfield leadership team', at: instantAt('2026-11-11', '15:00', 'Europe/London'), zone: 'America/New_York', zoomLink: ZOOM, preferencesLink: PREFERENCES }),
   },
   {
     key: 'booking-confirmed',
     name: 'A call booked through a booking page',
     from: 'From The Clarity Project, to the person who booked',
     sends: 'Sent only from the live site, once for each time booked (api/booking-email.js claims the send in the database first; after migration 051). The time is in the reader’s own zone: 12-hour for the US and Canada.',
-    doc: () => bookingConfirmedEmail({ name: 'Grace Liu', callName: 'Chemistry Call', coach: 'Tim', at: instantAt('2026-11-18', '11:30', 'America/New_York'), zone: 'America/New_York', zoomLink: ZOOM, mineLink: `${PORTAL}/book/mine/3f1c0a52-7b1e-4c0a-9a57-2d0f6b1c8e11`, now: NOW }),
+    doc: () => bookingConfirmedEmail({ name: 'Grace Liu', callName: 'Chemistry Call', coach: 'Tim', at: instantAt('2026-11-18', '11:30', 'America/New_York'), zone: 'America/New_York', minutes: 30, zoomLink: ZOOM, mineLink: `${PORTAL}/book/mine/3f1c0a52-7b1e-4c0a-9a57-2d0f6b1c8e11`, now: NOW }),
   },
   {
     key: 'booking-moved',
@@ -151,8 +165,8 @@ export const EMAIL_EXAMPLES = [
     key: 'call-one-hour',
     name: 'A booked call in 1 hour',
     from: 'From The Clarity Project, to the person who booked',
-    sends: 'Sent only from the live site, once, by the scheduled job (api/coach-reminders.js) 1 hour before, when its switch is on. It never gives a clock time.',
-    doc: () => callInOneHourEmail({ callName: 'Chemistry Call', coach: 'Tim', zoomLink: ZOOM }),
+    sends: 'Sent only from the live site, once, by the scheduled job (api/coach-reminders.js) 1 hour before, when its switch is on. Its clock time is in the reader’s own zone.',
+    doc: () => callInOneHourEmail({ callName: 'Chemistry Call', coach: 'Tim', at: instantAt('2026-11-11', '11:30', 'America/New_York'), zone: 'America/New_York', zoomLink: ZOOM }),
   },
   {
     key: 'workshop-tomorrow',
@@ -177,23 +191,94 @@ export const EMAIL_EXAMPLES = [
   },
   {
     key: 'session-recap',
-    name: 'Session recap',
-    from: 'From The Clarity Portal, to Hannah',
-    sends: 'Sent only from the live site, once, when the coach presses Send the recap (after migration 050). Never from a preview, and never by itself.',
-    doc: () => sessionRecapEmail({
-      origin: PORTAL,
-      coach: 'Tim',
-      dateText: 'Mon 16 Nov 2026',
-      recap: 'Thanks for today, Hannah.\n\nWe looked at the pricing launch and where your time goes in the week before it. You named two things only you can do: the investor call and the pricing story for the sales team.\n\nYou’re handing the rest of the launch plan to Femi, with a 15-minute check-in each morning.',
-      actions: ['Hand the launch plan to Femi by Wednesday', 'Book a 15-minute check-in each morning'],
-    }),
+    name: 'Coaching session summary ready',
+    from: 'From The Clarity Portal, to Sam',
+    sends: 'Sent only from the live site, once, when the coach presses Send the recap (after migration 050). Never from a preview, and never by itself. The summary itself is read on the client’s Coaching page.',
+    doc: () => sessionRecapEmail({ origin: PORTAL, coach: 'Tim', at: instantAt('2026-11-10', '10:00', 'Europe/London'), zone: 'Europe/London', dateText: 'Tue 10 Nov', now: NOW }),
   },
   {
     key: 'client-invite',
-    name: 'Invite to the portal',
-    from: 'From The Clarity Portal, to Leo',
+    name: 'Welcome, when a coach sets up a client’s account',
+    from: 'From Tim (The Clarity Portal), to Sam',
     sends: 'Sent only from the live site, when the coach presses Invite on a client’s page. Never from a preview, and never by itself.',
-    doc: () => clientInviteEmail({ origin: PORTAL, coach: 'Tim' }),
+    doc: () => clientInviteEmail({ origin: PORTAL, coach: 'Tim', firstName: 'Sam' }),
+  },
+  {
+    key: 'session-booked',
+    name: 'Coaching session booked',
+    from: 'From The Clarity Portal, to Sam',
+    sends: 'Nothing sends it yet (a session a coach books for a client has no sender; one booked on a booking page is “A call booked through a booking page”).',
+    doc: () => sessionBookedEmail({ coach: 'Tim', at: instantAt('2026-11-26', '15:00', 'Europe/London'), zone: 'Europe/London', minutes: 60, zoomLink: ZOOM, rearrangeLink: `${PORTAL}/coaching`, cancelLink: `${PORTAL}/coaching` }),
+  },
+  {
+    key: 'session-moved',
+    name: 'Coaching session moved',
+    from: 'From The Clarity Portal, to Sam',
+    sends: 'Nothing sends it yet.',
+    doc: () => sessionMovedEmail({ coach: 'Tim', at: instantAt('2026-11-27', '10:00', 'Europe/London'), zone: 'Europe/London', zoomLink: ZOOM, rearrangeLink: `${PORTAL}/coaching` }),
+  },
+  {
+    key: 'session-cancelled',
+    name: 'Coaching session cancelled, late',
+    from: 'From The Clarity Portal, to Sam',
+    sends: 'Nothing sends it yet. Shown for a late cancellation, with its extra line.',
+    doc: () => sessionCancelledEmail({ coach: 'Tim', at: instantAt('2026-11-26', '15:00', 'Europe/London'), zone: 'Europe/London', late: true, bookLink: `${PORTAL}/coaching` }),
+  },
+  {
+    key: 'invoice-reminder-3',
+    name: 'Overdue invoice, 3 days',
+    from: 'From Tim (The Clarity Portal), to Sam',
+    sends: 'Drafted in Needs you at 3 days overdue; sent only when the coach presses Send.',
+    doc: () => invoiceReminderEmail({ ...reminder, stage: 3 }),
+  },
+  {
+    key: 'invoice-reminder-7',
+    name: 'Overdue invoice, 7 days, to an organisation',
+    from: 'From Tim (The Clarity Portal), to Priya, the organisation’s finance contact',
+    sends: 'Drafted in Needs you at 7 days overdue; sent only when the coach presses Send. For an organisation, with its purchase order.',
+    doc: () => invoiceReminderEmail({ ...reminder, stage: 7, firstName: 'Priya', coachee: 'Sam Reid', poNumber: 'PO-7781' }),
+  },
+  {
+    key: 'invoice-reminder-14',
+    name: 'Overdue invoice, 14 days',
+    from: 'From Tim (The Clarity Portal), to Sam',
+    sends: 'Drafted in Needs you at 14 days overdue; sent only when the coach presses Send. The settle-by day is worked out when it goes: 7 days later.',
+    doc: () => invoiceReminderEmail({ ...reminder, stage: 14, settleByWords: 'Fri 4 Dec' }),
+  },
+  {
+    key: 'agreement-ready',
+    name: 'Coaching agreement ready to sign',
+    from: 'From Tim (The Clarity Portal), to Sam',
+    sends: 'Sent only when the coach presses Send on a signed agreement.',
+    doc: () => agreementReadyEmail({ firstName: 'Sam', coachFirst: 'Tim', link: `${PORTAL}/coaching` }),
+  },
+  {
+    key: 'agreement-change',
+    name: 'A change asked for on an agreement',
+    from: 'From The Clarity Portal, to Tim',
+    sends: 'Sent when a client asks for a change to a part of their agreement.',
+    doc: () => agreementChangeAskedEmail({ clientFirst: 'Sam', sectionNumber: 4, sectionTitle: 'Rearranging and cancelling', words: 'Could the notice be 12 hours for early morning coaching sessions?', link: `${PORTAL}/coach` }),
+  },
+  {
+    key: 'agreement-signed',
+    name: 'Coaching agreement signed',
+    from: 'From Tim (The Clarity Portal), to Sam',
+    sends: 'Sent when the client signs, with their copy attached by the sender. The first session line only when one is booked.',
+    doc: () => agreementSignedEmail({ firstName: 'Sam', coachFirst: 'Tim', firstSession: { at: instantAt('2027-01-04', '10:00', 'Europe/London'), zone: 'Europe/London', placeKind: 'zoom' } }),
+  },
+  {
+    key: 'agreement-signed-funded',
+    name: 'Coaching agreement signed, an organisation-funded client',
+    from: 'From Tim (The Clarity Portal), to Sam',
+    sends: 'The same email as anyone’s: no agreement email ever carries money. Shown with no first session booked yet.',
+    doc: () => agreementSignedEmail({ firstName: 'Sam', coachFirst: 'Tim' }),
+  },
+  {
+    key: 'sponsor-agreement',
+    name: 'Sponsor agreement',
+    from: 'From Tim (The Clarity Portal), to Priya, the sponsor',
+    sends: 'Sent only when the coach presses Send, with the PDF signed on the coach’s side attached by the sender.',
+    doc: () => sponsorAgreementEmail({ sponsorFirst: 'Priya', coachee: 'Sam Reid', coachFirst: 'Tim' }),
   },
   {
     key: 'leading-ideas-client',
