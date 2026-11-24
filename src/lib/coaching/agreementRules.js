@@ -327,7 +327,11 @@ export function showsBilling({ agreements = [], invoices = [] } = {}) {
 /** The page copy's shape, whatever the device or the database answers. */
 export function tidyAgreements(data) {
   const d = data && typeof data === 'object' ? data : {};
+  // Already tidied (the loader tidies, and pages tidy what they're handed): handed back as it is, never tidied twice,
+  // which read the camel-case fields as missing and lost every amount, day and funder (UI tester, 6b run 1).
+  if (d.tidied === true) return d;
   return {
+    tidied: true,
     ready: d.ready === true,
     agreements: agreementRows(d.agreements),
     invoices: invoiceRows(d.invoices),

@@ -129,3 +129,13 @@
 .ui-root .billing-acts { justify-content: flex-start; margin-top: var(--space-px18); }
 .ui-root .billing-line { margin: var(--space-4) 0 0; font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text); }
 .ui-root .billing-line--quiet { margin-top: var(--space-1); color: var(--text-2); }
+
+/* The signing button's longer words ("Sign with my saved signature") wrap onto centred lines at twice the text size,
+   never running out of the footer (rule 4a; UI tester, 6b run 1). */
+.ui-root .ds-guide--calm .ds-btn.ds-guide-next.agree-sign {
+  white-space: normal;
+  min-width: 0;
+  max-width: 100%;
+  text-align: center;
+  text-wrap: balance;
+}

@@ -40,7 +40,7 @@ test('versions from my_agreements(): tidied, anything that can’t be drawn left
   assert.equal(v.totalMinor, 200000);
   assert.equal(v.currency, 'GBP');
   assert.deepEqual(agreementRows(null), []);
-  assert.deepEqual(tidyAgreements(undefined), { ready: false, agreements: [], invoices: [] });
+  assert.deepEqual(tidyAgreements(undefined), { tidied: true, ready: false, agreements: [], invoices: [] });
 });
 
 test('the version ready to sign is the sent, current, unsigned one; signed ones are rows, newest first', () => {
@@ -200,4 +200,16 @@ test('the signed PDF finds the signature it was signed with', () => {
   assert.equal(signatureFor(v, sigs).id, id(8));
   assert.equal(signatureFor({ ...v, signatureId: id(7) }, sigs).id, id(7));
   assert.equal(signatureFor({ ...v, signedAt: null }, sigs), null);
+});
+
+test('tidied twice is the same as tidied once (UI tester, 6b run 1: a second pass lost every amount, day and funder)', async () => {
+  const { tidyAgreements } = await import('../../src/lib/coaching/agreementRules.js');
+  const raw = { ready: true, agreements: [{ id: '11111111-1111-4111-8111-111111111111', agreement_id: '22222222-2222-4222-8222-222222222222', version: 1, status: 'signed', current: true,
+    sent_at: '2026-09-04T09:00:00Z', client_signed_at: '2026-09-07T10:00:00Z', coach_signed_at: '2026-09-04T09:00:00Z', funded_by: null, currency: 'GBP', total_minor: 1800000, terms: {}, clauses: [] }],
+  invoices: [{ id: '33333333-3333-4333-8333-333333333333', number: 'CLARITY-1243', status: 'sent', currency: 'GBP', total_minor: 300000, paid_minor: 0, due_on: '2026-11-17', hosted_url: 'https://invoice.stripe.example/1' }] };
+  const once = tidyAgreements(raw);
+  const twice = tidyAgreements(once);
+  assert.deepEqual(twice, once);
+  assert.equal(twice.invoices[0].totalMinor, 300000);
+  assert.equal(twice.invoices[0].dueOn, '2026-11-17');
 });

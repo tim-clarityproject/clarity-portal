@@ -259,7 +259,7 @@ export default function SignAgreement() {
         </div>
       ),
       foot: (
-        <button type="button" className="ds-btn ds-btn--primary ds-guide-next" aria-busy={sending || undefined} onClick={sign}>
+        <button type="button" className="ds-btn ds-btn--primary ds-guide-next agree-sign" aria-busy={sending || undefined} onClick={sign}>
           {mode === 'saved' ? words.savedSign : words.sign}
         </button>
       ),

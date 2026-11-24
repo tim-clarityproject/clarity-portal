@@ -103,7 +103,7 @@ export function EngagementPanel({ draft, setDraft, profile = null, group = null 
       </div>
       <div className="cc-field"><TextField label="Funded by" value={draft.funded} maxLength={120} placeholder="e.g. Their organisation" onChange={(e) => set({ funded: e.target.value })} /></div>
       {problem && <p className="cc-problem" role="alert">{problem}</p>}
-      <p className="cc-note">Agreements, signatures and invoices come later. This is the record the portal counts sessions and time against.</p>
+      <p className="cc-note">This is the record the portal counts sessions and time against. The signed agreement is in the Agreement fold.</p>
     </SlidePanel>
   );
 }
