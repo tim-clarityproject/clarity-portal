@@ -415,12 +415,15 @@ export async function runDay({ browser, report, parts }) {
     pass(`${tag}: a call that has ended opens as “It went ahead”, 60 minutes`, (await page.getByRole('combobox', { name: /^What happened/ }).innerText()).includes('It went ahead') && /60 minutes/.test(await page.locator('.cc-ses-long [aria-checked=true], .cc-ses-long [aria-pressed=true]').first().innerText().catch(() => '')));
     const RECAP = 'Thanks for today, Priya.\n\nWe looked at the theatre list and what you take home from it. You chose the two handovers that matter most.';
     await page.getByLabel('Recap for Priya').fill(RECAP);
-    for (const title of ['Hand the Thursday list to Dr Osei', 'Block 30 minutes after each list', 'Read the handover checklist']) {
-      await page.locator('.ds-addrow', { hasText: 'Add action' }).click(); await settle(page, 300);
+    for (const [i, title] of ['Hand the Thursday list to Dr Osei', 'Block 30 minutes after each list', 'Read the handover checklist'].entries()) {
+      await page.locator('.ds-addrow', { hasText: 'Add action' }).click();
+      // Typed only once the new box has the cursor: on a slow phone run the keys could reach Add action itself first,
+      // and the space in "Hand the" pressed it again (an empty fourth box, the words a box out; run 8's flaky day-calls).
+      await page.waitForFunction((label) => document.activeElement?.getAttribute('aria-label') === label, `Action ${i + 1}`, { timeout: 5000 }).catch(() => {});
       await page.keyboard.type(title);
       await settle(page, 200);
     }
-    await page.locator('.cc-ses-act').nth(1).locator('.cc-ses-where').click(); await settle(page, 200); // the second goes to the Backlog
+    await page.getByRole('button', { name: '“Block 30 minutes after each list”: goes to this week. Switch it' }).click(); await settle(page, 200); // the second goes to the Backlog
     await page.getByRole('checkbox', { name: 'Send “Read the handover checklist” to Priya' }).click(); await settle(page, 200); // the third isn't sent
     await page.getByLabel('Focus').fill('Leading the theatre list.');
     await page.getByLabel('Insight').fill('Priya plans best out loud.');
