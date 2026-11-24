@@ -86,7 +86,7 @@ export default function GuestLink() {
           <GuestTitle>{TOOL_NAME}</GuestTitle>
           <div className="ds-error ds-guest-problem" role="alert">
             <span className="ds-error-mark" aria-hidden="true">!</span>
-            <span>{GUEST_WORDS.wrongLink}</span>
+            <span data-align="start">{GUEST_WORDS.wrongLink}</span>
           </div>
         </GuestFrame>
       </div>

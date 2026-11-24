@@ -4437,6 +4437,11 @@
 .ui-root .ds-guest--message .ds-guest-top-row { justify-content: center; }
 .ui-root .ds-guest--message .ds-guest-top-row > * { margin-inline-start: 0; }
 .ui-root .ds-guest--message .ds-guest-col { text-align: center; }
+/* Spaced capitals carry their spacing after the last letter: the same before the first keeps a title on the middle. */
+.ui-root .ds-guest--message .ds-guest-title { padding-left: var(--ls-page-title); }
+/* A message's box keeps its words on the left beside its "!", filling the box, so its two sides keep equal padding. */
+.ui-root .ds-guest--message .ds-error { text-align: left; }
+.ui-root .ds-guest--message .ds-error > span:last-child { flex: 1 1 auto; }
 .ui-root .ds-guest--message .ds-guest-legal { justify-content: center; }
 
 .ui-root .ds-guest-col {
