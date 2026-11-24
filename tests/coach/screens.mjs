@@ -909,6 +909,31 @@ export async function picture(page, path, full = false) {
   await page.screenshot({ path });
   if (high > was.height) { await page.setViewportSize(was); await settle(page, 250); }
   await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), at);
+  await steady(page);
+}
+
+/**
+ * Waits until the screen stands still: its fonts loaded, and the scroll, the page's height and every chevron's place the
+ * same for 4 frames running (at most 180 frames). A check that reads pixels (the chevrons' centring) reads the screen as
+ * it stands; read while a window just made smaller was still laying out, a client page's "Clients" chevron was read 1.5px
+ * off on one run in several (run 8's functionality tester).
+ */
+export async function steady(page) {
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    const frame = () => new Promise((r) => { requestAnimationFrame(() => r()); });
+    const look = () => JSON.stringify([window.scrollY, document.documentElement.scrollHeight,
+      ...[...document.querySelectorAll('.ds-chevron, .ui-back-link')].slice(0, 40).map((e) => { const b = e.getBoundingClientRect(); return [b.top, b.left, b.height]; })]);
+    // Counted in frames, not by the clock: the page's clock is pinned.
+    let last = look();
+    let same = 0;
+    for (let n = 0; same < 4 && n < 180; n += 1) {
+      await frame();
+      const now = look();
+      same = now === last ? same + 1 : 0;
+      last = now;
+    }
+  });
 }
 
 /** Opens one screen by its name on a page already signed in and standing in (for the M11 comparison). */
