@@ -42,6 +42,9 @@
 --   email server's alone. coach_code_tables() gains the three tables.
 --
 -- OLDER THINGS IT TOUCHES
+--   public.cal_reminders_coming(...) (051): made again, word for word, but
+--     "never while the coach is away" is now the coach's own day, not the
+--     UTC date (_coach_away_on; the group reminders use the same).
 --   public.coach_code_tables() (054): made again with three more rows.
 --   public._cal_free_times(...) (051): made again, word for word, with the
 --     busy times of switched-on calendars added to what is busy.
@@ -191,6 +194,57 @@ create policy "Coach alone" on public.coach_busy_times for all to authenticated
   with check (coach_id = (select public.my_coach_id())
               and exists (select 1 from public.coach_google_calendars g where g.id = calendar_id and g.coach_id = (select public.my_coach_id())));
 
+-- ---------------------------------------------------------------- a coach away, on their own day (run 8, break-it tester)
+-- "Never while the coach is away" (coach rule 34) is the coach's own day: the
+-- days away are dates on the coach's calendar, in the coach's own zone
+-- (051's _cal_coach_zone: Settings' zone, else London). 051 read the moment
+-- as a UTC date, so a coach in Los Angeles away until Friday still had
+-- reminders go on Friday evening their time (already Saturday in UTC), and
+-- one in Auckland away from Saturday had them go on Saturday morning there.
+create or replace function public._coach_away_on(p_coach uuid, p_at timestamptz)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from public.coach_away a
+                 where a.coach_id = p_coach
+                   and (p_at at time zone public._cal_coach_zone(p_coach))::date between a.starts_on and a.ends_on);
+$$;
+revoke all on function public._coach_away_on(uuid, timestamptz) from public, anon, authenticated;
+
+-- 051's cal_reminders_coming made again, word for word, but for the days
+-- away, now on the coach's own day (above).
+create or replace function public.cal_reminders_coming(p_now timestamptz default now())
+returns table (item_id uuid, coach_id uuid, kind text, occurrence_at timestamptz, ends_at timestamptz, time_zone text, title text,
+               place_kind text, meeting_link text, location text, coach_first_name text,
+               person_name text, person_email text, person_zone text, frequent_traveller boolean, guest_key uuid)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select i.id, i.coach_id, k.kind, o.starts_at, o.ends_at, i.time_zone, i.title, i.place_kind, i.meeting_link, i.location,
+         c.display_first_name,
+         coalesce(p.name, b.name), coalesce(p.email, b.email), coalesce(p.time_zone, b.time_zone, i.time_zone),
+         coalesce(p.frequent_traveller, false), b.guest_key
+  from public.coaches c
+  cross join lateral public._cal_occurrences(c.id, p_now, p_now + interval '36 hours') o
+  join public.coach_cal_items i on i.id = o.item_id
+  left join public.client_profiles p on p.id = i.profile_id
+  left join public.coach_bookings b on b.item_id = i.id and b.status = 'booked'
+  cross join (values ('day_before'), ('hour_before')) k(kind)
+  where c.active and o.is_call and o.starts_at > p_now
+    and coalesce(p.email, b.email) is not null
+    and (case k.kind when 'day_before' then coalesce(((select s.booking -> 'remind_24' from public.coach_settings s where s.coach_id = c.id) #>> '{}'), 'true') <> 'false'
+                     else coalesce(((select s.booking -> 'remind_1' from public.coach_settings s where s.coach_id = c.id) #>> '{}'), 'false') = 'true' end)
+    and not public._coach_away_on(c.id, p_now)
+    and not exists (select 1 from public.coach_cal_reminder_sends r where r.item_id = i.id and r.kind = k.kind and r.occurrence_at = o.starts_at);
+$$;
+revoke all on function public.cal_reminders_coming(timestamptz) from public, anon, authenticated;
+grant execute on function public.cal_reminders_coming(timestamptz) to service_role;
+
 -- ---------------------------------------------------------------- group-call reminders (run 8, item 1; helper 1, for 059)
 -- A group call gets the same two reminders as a single call (the day before
 -- at 18:00 and 1 hour before, each in every guest's own time zone, with the
@@ -319,7 +373,7 @@ as $$
       and coalesce(p.email, m.email) is not null
       and (case k.kind when 'day_before' then coalesce(((select st.booking -> 'remind_24' from public.coach_settings st where st.coach_id = c.id) #>> '{}'), 'true') <> 'false'
                        else coalesce(((select st.booking -> 'remind_1' from public.coach_settings st where st.coach_id = c.id) #>> '{}'), 'false') = 'true' end)
-      and not exists (select 1 from public.coach_away a where a.coach_id = c.id and (p_now at time zone 'UTC')::date between a.starts_on and a.ends_on)
+      and not public._coach_away_on(c.id, p_now)
       and not exists (select 1 from public.coach_cal_group_reminder_sends r
                       where r.item_id = i.id and r.kind = k.kind and r.occurrence_at = o.starts_at
                         and r.address_key = public._group_reminder_key(coalesce(p.email, m.email)))
@@ -355,6 +409,10 @@ begin
   left join public.client_profiles p on p.id = m.profile_id
   where i.id = p_item;
   if v_email is null or v_email = '' then
+    return null;
+  end if;
+  -- Never while the coach is away, on the coach's own day (the run 8 break-it tester).
+  if public._coach_away_on(v_coach, now()) then
     return null;
   end if;
   if (case p_kind when 'day_before' then coalesce(((select st.booking -> 'remind_24' from public.coach_settings st where st.coach_id = v_coach) #>> '{}'), 'true') = 'false'

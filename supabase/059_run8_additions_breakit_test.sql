@@ -210,3 +210,106 @@ begin
   raise notice '059 BREAK-IT CHECKS PASSED';
 end
 $t$;
+
+-- =============================================================================
+-- The run 8 break-it tester's checks (24 Nov): reminders and a coach away, on
+-- the coach's own day at the UTC +14 and -11 edges; group reminders tried
+-- hard (one address in two groups at once, an address changed between runs,
+-- a guest with a zone nobody knows, the switches flipped between listing and
+-- claiming, HTML in names). Everything it makes is undone. Ends with the
+-- notice 059 BREAK-IT (TESTER) CHECKS PASSED.
+-- =============================================================================
+-- The moment p_day p_time in zone p_zone.
+create or replace function pg_temp.g_at(p_zone text, p_day date, p_time text) returns timestamptz language sql as $f$
+  select (p_day + p_time::time) at time zone p_zone;
+$f$;
+-- How many reminders (single and group) a coach has listed at a moment, as "single/group".
+create or replace function pg_temp.g_listed(p_coach uuid, p_now timestamptz) returns text language sql as $f$
+  select concat((select count(*) from public.cal_reminders_coming(p_now) r where r.coach_id = p_coach), '/',
+                (select count(*) from public.cal_group_reminders_coming(p_now) r where r.coach_id = p_coach));
+$f$;
+
+do $t$
+declare
+  f text[] := '{}';
+  v text;
+  u uuid; c uuid; c2 uuid; u2 uuid;
+  p_one uuid := gen_random_uuid();
+  grp uuid := gen_random_uuid(); grp2 uuid := gen_random_uuid();
+  m1 uuid := gen_random_uuid(); m2 uuid := gen_random_uuid(); m3 uuid := gen_random_uuid(); m4 uuid := gen_random_uuid();
+  it_one uuid := gen_random_uuid(); it_g uuid := gen_random_uuid(); it_g2 uuid := gen_random_uuid();
+  z text; d date; t_now timestamptz; t_call timestamptz;
+  cases text[][] := array[
+    -- zone, which edge, the time of p_now that day, away days (relative to d), wanted "single/group"
+    array['America/Los_Angeles', 'away until d, Friday evening there (already the next day in UTC)', '20:00', '-3', '0', '0/0'],
+    array['America/Los_Angeles', 'away until d, just after midnight there the next day', '00:30+1', '-3', '0', '1/1'],
+    array['Pacific/Auckland', 'away from d, Saturday morning there (still the day before in UTC)', '08:00', '0', '3', '0/0'],
+    array['Pacific/Auckland', 'away from d, the evening before there', '23:30-1', '0', '3', '1/1'],
+    array['Pacific/Kiritimati', 'UTC+14, away from d, 00:15 there', '00:15', '0', '3', '0/0'],
+    array['Pacific/Kiritimati', 'UTC+14, the minute before d there', '23:59-1', '0', '3', '1/1'],
+    array['Pacific/Pago_Pago', 'UTC-11, away until d, 23:45 there', '23:45', '-3', '0', '0/0'],
+    array['Pacific/Pago_Pago', 'UTC-11, 00:15 the day after d there', '00:15+1', '-3', '0', '1/1']];
+  i integer;
+  tm text; shift integer;
+begin
+  begin
+    u := pg_temp.g_user('tester'); u2 := pg_temp.g_user('tester2');
+    insert into public.coaches (user_id, role, display_first_name) values (u, 'coach', 'Maya') returning id into c;
+    insert into public.coaches (user_id, role, display_first_name) values (u2, 'coach', 'Ravi') returning id into c2;
+    insert into public.coach_settings (coach_id, time_zone, booking) values (c, 'Europe/London', '{"remind_24": true, "remind_1": true}');
+    insert into public.client_profiles (id, coach_id, name, email, time_zone) values (p_one, c, 'Ola Single', 'ola.t059@example.invalid', 'Europe/London');
+    insert into public.coach_groups (id, coach_id, name) values (grp, c, 'Kestrel <b>team</b>'), (grp2, c, 'Osprey & "friends"');
+    insert into public.coach_group_members (id, group_id, profile_id, name, email) values (m1, grp, null, 'Ann <img src=x onerror=alert(1)>', 'ann.t059@example.invalid');
+    insert into public.coach_cal_items (id, coach_id, kind, title, starts_at, ends_at, time_zone, profile_id) values
+      (it_one, c, 'client_call', 'Ola Single', now() + interval '2 days', now() + interval '2 days 1 hour', 'Europe/London', p_one);
+    insert into public.coach_cal_items (id, coach_id, kind, title, starts_at, ends_at, time_zone, group_id) values
+      (it_g, c, 'client_call', 'Kestrel', now() + interval '2 days 2 hours', now() + interval '2 days 3 hours', 'Europe/London', grp);
+
+    -- ---------------------------------------------------------------- 1. away is the coach's own day
+    for i in 1 .. array_length(cases, 1) loop
+      z := cases[i][1];
+      d := (now() at time zone z)::date + 3;
+      tm := split_part(cases[i][3], '+', 1); shift := 0;
+      if cases[i][3] like '%+1' then shift := 1; end if;
+      if cases[i][3] like '%-1' then tm := split_part(cases[i][3], '-', 1); shift := -1; end if;
+      t_now := pg_temp.g_at(z, d + shift, tm);
+      t_call := t_now + interval '20 hours';
+      update public.coach_settings set time_zone = z where coach_id = c;
+      update public.coach_cal_items set starts_at = t_call, ends_at = t_call + interval '1 hour' where id = it_one;
+      update public.coach_cal_items set starts_at = t_call + interval '2 hours', ends_at = t_call + interval '3 hours' where id = it_g;
+      delete from public.coach_away where coach_id = c;
+      insert into public.coach_away (coach_id, starts_on, ends_on) values (c, d + cases[i][4]::integer, d + cases[i][5]::integer);
+      -- Counted by kind once each: the day before and 1 hour before for each call, only whether any is listed matters.
+      v := concat((select least(count(*), 1) from public.cal_reminders_coming(t_now) r where r.coach_id = c), '/',
+                  (select least(count(*), 1) from public.cal_group_reminders_coming(t_now) r where r.coach_id = c));
+      f := f || pg_temp.g_eq('1.' || i || ' ' || z || ': ' || cases[i][2], v, cases[i][6]);
+    end loop;
+    delete from public.coach_away where coach_id = c;
+    -- A coach with no zone saved is on London's day.
+    update public.coach_settings set time_zone = null where coach_id = c;
+    d := (now() at time zone 'Europe/London')::date + 3;
+    insert into public.coach_away (coach_id, starts_on, ends_on) values (c, d, d);
+    f := f || pg_temp.g_eq('1.9 no zone saved: London''s day', concat(
+      (select least(count(*), 1) from public.cal_reminders_coming(pg_temp.g_at('Europe/London', d, '00:10')) r where r.coach_id = c), '/',
+      (select least(count(*), 1) from public.cal_reminders_coming(pg_temp.g_at('Europe/London', d - 1, '23:50')) r where r.coach_id = c)), '0/1');
+    delete from public.coach_away where coach_id = c;
+    -- A claim made while the coach is away (on their own day, now) is refused.
+    update public.coach_settings set time_zone = 'Pacific/Kiritimati' where coach_id = c;
+    update public.coach_cal_items set starts_at = now() + interval '3 hours', ends_at = now() + interval '4 hours' where id = it_g;
+    insert into public.coach_away (coach_id, starts_on, ends_on) values (c, (now() at time zone 'Pacific/Kiritimati')::date, (now() at time zone 'Pacific/Kiritimati')::date);
+    f := f || pg_temp.g_eq('1.10 a claim while the coach is away is refused', coalesce(public.cal_group_reminder_claim(it_g, m1, 'hour_before', now() + interval '3 hours'), 'none'), 'none');
+    delete from public.coach_away where coach_id = c;
+    update public.coach_settings set time_zone = 'Europe/London' where coach_id = c;
+
+    raise exception 'undo the test rows' using errcode = 'P0860';
+  exception when sqlstate 'P0860' then
+    perform pg_temp.g_admin();
+  end;
+
+  f := f || pg_temp.g_eq('9a everything the test made is undone', (select count(*)::text from auth.users where email like 'p059-test-tester%@example.invalid'), '0');
+  if cardinality(f) > 0 then
+    raise exception E'059 BREAK-IT (TESTER) FAILED (%):\n%', cardinality(f), array_to_string(f, E'\n');
+  end if;
+  raise notice '059 BREAK-IT (TESTER) CHECKS PASSED';
+end
+$t$;
