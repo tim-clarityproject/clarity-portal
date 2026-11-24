@@ -59,13 +59,28 @@ function timeParts(time) {
   return [Number(m[1]), Number(m[2])];
 }
 
+// Each instant's clock in each zone, remembered for a while (coach first screen run: the calendar asked the same few
+// thousand again on every draw, 0.3 s of a slowed phone's return visit). A copy goes out each time, so a caller that
+// changes its answer never changes the next one.
+const clocks = new Map();
+const CLOCKS_MAX = 20000;
 /**
  * The wall clock in a zone at an instant.
  * @returns {{ date: 'YYYY-MM-DD', time: 'HH:MM', year, month, day, hour, minute, weekday: 1..7 (Monday 1) }}
  */
 export function wallClock(instant, zone) {
+  const at = toDate(instant);
+  const key = `${at.getTime()}|${zone}`;
+  const hit = clocks.get(key);
+  if (hit) return { ...hit };
+  const made = clockOf(at, zone);
+  if (clocks.size >= CLOCKS_MAX) clocks.clear();
+  clocks.set(key, made);
+  return { ...made };
+}
+function clockOf(at, zone) {
   const parts = {};
-  for (const p of formatFor(mustBeZone(zone)).formatToParts(toDate(instant))) parts[p.type] = p.value;
+  for (const p of formatFor(mustBeZone(zone)).formatToParts(at)) parts[p.type] = p.value;
   const year = Number(parts.year);
   const month = Number(parts.month);
   const day = Number(parts.day);

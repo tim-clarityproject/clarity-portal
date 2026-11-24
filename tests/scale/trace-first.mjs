@@ -40,12 +40,27 @@ await context.addInitScript(() => {
   const look = () => {
     const main = document.querySelector('.cc-main');
     if (main && m.frame == null && document.querySelector('.cc-header')) m.frame = performance.now();
-    if (main && m.ready == null && main.getAttribute('data-first-screen') === 'ready' && main.querySelector('.cc-page') && !main.querySelector('[data-first-wait]')) m.ready = performance.now();
+    // The page drawn with its data: no turning crosshair over the page, the frame not held, a page inside, nothing on it
+    // still waiting for the first screen. The same test for a build from before this run (it has no data-first-screen).
+    if (main && m.ready == null && !main.classList.contains('cc-main--first') && !main.closest('.cc-hold') && main.querySelector('.cc-page') && !main.querySelector('[data-first-wait]')) m.ready = performance.now();
   };
-  const start = () => new MutationObserver(look).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-first-screen', 'class'] });
+  const start = () => new MutationObserver(look).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-first-screen', 'class', 'inert'] });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 });
 const page = await context.newPage();
+// Requests to the database in flight, so the return visit starts once the first has gone quiet (as timing.mjs waits).
+const inflight = { n: 0, last: Date.now() };
+page.on('request', (r) => { if (r.url().startsWith(API)) inflight.n += 1; });
+const ended = (r) => { if (r.url().startsWith(API)) { inflight.n = Math.max(0, inflight.n - 1); inflight.last = Date.now(); } };
+page.on('requestfinished', ended);
+page.on('requestfailed', ended);
+async function quiet(limit = 60000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < limit) {
+    await page.waitForTimeout(250);
+    if (inflight.n === 0 && Date.now() - inflight.last > 2500) return;
+  }
+}
 const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(String(e.message).slice(0, 300)));
 page.on('console', (m) => { if (m.type() === 'error') pageErrors.push(`console: ${m.text().slice(0, 300)}`); });
@@ -119,7 +134,26 @@ if (PROFILE) {
   console.log(`profile: ${Math.round(total)} ms sampled`);
   for (const [k, ms] of [...self].sort((a, b) => b[1] - a[1]).slice(0, 30)) console.log(`  ${String(Math.round(ms)).padStart(5)} ms  ${k.slice(0, 120)}`);
 }
+if (args.includes('--warm')) await quiet();
+if (args.includes('--profile-warm')) {
+  cdpProfiler = await context.newCDPSession(page);
+  await cdpProfiler.send('Profiler.enable');
+  await cdpProfiler.send('Profiler.setSamplingInterval', { interval: 500 });
+  await cdpProfiler.send('Profiler.start');
+}
 const out = args.includes('--warm') ? await visit() : cold;
+if (args.includes('--profile-warm')) {
+  const { profile } = await cdpProfiler.send('Profiler.stop');
+  const byId = new Map(profile.nodes.map((n) => [n.id, n]));
+  const self = new Map();
+  profile.samples.forEach((id, i) => {
+    const f = byId.get(id).callFrame;
+    const k = `${f.functionName || '(anon)'} ${String(f.url).replace(/^.*\/assets\//, '')}:${f.lineNumber}`;
+    self.set(k, (self.get(k) || 0) + (profile.timeDeltas[i + 1] || 0) / 1000);
+  });
+  for (const [k, v] of [...self].sort((x, y) => y[1] - x[1]).slice(0, 18)) console.log(`  ${String(Math.round(v)).padStart(5)} ms  ${k.slice(0, 110)}`);
+}
+if (out !== cold) console.log(`first visit: fcp ${Math.round(cold.trace.fcp)}  frame ${Math.round(cold.trace.frame)}  first screen ${cold.trace.ready == null ? 'never marked' : Math.round(cold.trace.ready)}`);
 if (pageErrors.length) console.log(`page errors: ${[...new Set(pageErrors)].slice(0, 5).join(' | ')}`);
 if (out.marks?.length) console.log(`marks: ${[...new Set(out.marks)].join(' ')}`);
 console.log(`fcp ${Math.round(out.trace.fcp)}  frame ${Math.round(out.trace.frame)}  first screen ${out.trace.ready == null ? 'never marked' : Math.round(out.trace.ready)}`);

@@ -7,7 +7,7 @@ import {
 import { firstName } from '../../lib/coach/model';
 import { addDays, instantAt } from '../../lib/time/index.js';
 import { ensureCalRange, takeScreenAssociates } from '../../lib/coach/store';
-import { keepAssociateSessions, keptAssociateSessions, loadAssociateSessions } from '../../lib/coach/associateSessions';
+import { associateSessionsKept, keepAssociateSessions, keptAssociateSessions, loadAssociateSessions } from '../../lib/coach/associateSessions';
 import { MenuItem, PopMenu, TextLink, useCoachPortal, useNarrowerThan } from './parts';
 import { CAL_HOOKS, CalMonth, CalSchedule, useCalendar } from './calendarParts';
 import { CalBoard, CalendarsPanel, useCalPanels, useSecondZone } from './calendarPanels';
@@ -61,7 +61,7 @@ export default function Calendar({ side = null }) {
   const [assoc, setAssoc] = useState(() => (isOwner ? keptAssociateSessions(calUserId) : []));
   // On a device that has never had them (a first visit), the owner's calendar waits for the associates' sessions before
   // it draws its days, so no day shows one call fewer for a moment (coach first screen run: "44 more" then "45 more").
-  const [assocIn, setAssocIn] = useState(() => !isOwner || cal.whole !== false || assoc.length > 0);
+  const [assocIn, setAssocIn] = useState(() => !isOwner || associateSessionsKept(calUserId));
   useEffect(() => {
     if (!isOwner) return undefined;
     let live = true;

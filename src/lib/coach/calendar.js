@@ -368,12 +368,16 @@ export function calendarEntries({ items = [], sessions = [], todos = [], openBlo
   const to = instantAt(addDays(toDay, 1), '00:00', coachZone);
   const out = [];
   const timed = items.filter((i) => !i.all_day);
+  // Each item's booking found once, not by searching every booking for every item (coach first screen run): the first
+  // that isn't cancelled, as before.
+  const bookingOf = new Map();
+  for (const b of bookings) if (b.status !== 'cancelled' && b.item_id != null && !bookingOf.has(b.item_id)) bookingOf.set(b.item_id, b);
   for (const o of occurrences(timed, from, to)) {
     const i = o.item;
     if (!calendarShown(settings, i.calendar || 'work')) continue;
     const colour = colourOf(i);
     const isCall = CALL_KINDS.includes(i.kind);
-    const booking = bookings.find((b) => b.item_id === i.id && b.status !== 'cancelled') || null;
+    const booking = bookingOf.get(i.id) || null;
     const type = booking ? callTypes.find((t) => t.id === booking.call_type_id) : null;
     const clientZone = isCall && isZone(i.time_zone) && !sameZone(i.time_zone, coachZone) ? i.time_zone : null;
     const sub = i.kind === 'hold' ? 'Held for a poll'

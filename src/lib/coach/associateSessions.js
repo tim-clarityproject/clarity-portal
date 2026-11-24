@@ -21,6 +21,11 @@ export function keptAssociateSessions(userId) {
   } catch { return []; }
 }
 
+/** Whether this device has ever kept them (even none): a return visit shows them at once, as before. */
+export function associateSessionsKept(userId) {
+  try { return window.localStorage.getItem(KEY(userId)) != null; } catch { return false; }
+}
+
 /**
  * The sessions from `from` to `to` (instants), merged into what the device
  * had for those weeks: the answer replaces every kept row in its range.
