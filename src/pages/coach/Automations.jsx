@@ -4,7 +4,7 @@ import { AddButton, Button, Dropdown, PageHeader, SlidePanel, TextField, useToas
 import { newId, removeRow, saveRow } from '../../lib/coach/store';
 import {
   ACTIONS, AUTOMATION_HELP, AUTOMATION_WORDS, automationSavePlan, automationSentence, automationSwitch, blankAutomation, CATCH_UP, CATCH_UP_HELP, countChoices,
-  keepInTouchAutomation, keepInTouchId, keepInTouchOnKey, ranWords, todoDayChoices, TRIGGERS,
+  keepInTouchAutomation, keepInTouchId, keepInTouchOnKey, noteKeepInTouchOn, ranWords, todoDayChoices, TRIGGERS,
 } from '../../lib/coach/crm';
 import { Back, TextLink, useCoachPortal } from './parts';
 import { useStartStages } from './leadParts';
@@ -83,6 +83,9 @@ export default function Automations() {
     if (plan.error) { setLine({ id: a.id, words: plan.error }); return; }
     setLine(null);
     try {
+      // The day it is switched on is noted on this device first, so a slow save never lets its first round count from an
+      // older day (the break-it tester); the run below keeps it for every device.
+      if (on && a.trigger === CATCH_UP) noteKeepInTouchOn(a.id, todayKey);
       const status = await saveRow(userId, 'coach_automations', plan.automation);
       // Keep in touch counts only catch-ups that fall due from the day it is switched on (run 8's 3; Claude's call,
       // 24 Nov): the day is kept as one of its own runs, once it is on (the database takes a run only for an automation

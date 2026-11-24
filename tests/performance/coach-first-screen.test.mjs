@@ -65,3 +65,12 @@ test('the zone check answers the same, asked once or many times', () => {
   for (let i = 0; i < 3; i += 1) assert.deepEqual(names.map((n) => isZone(n)), first);
   assert.deepEqual(first, [true, true, true, true, false, false, false, false, false, false, true, true]);
 });
+
+test('a calendar day far from today reads only its own weeks, inside 060\'s 400 days (break-it tester)', () => {
+  const now = Date.parse('2026-11-24T09:30:00Z');
+  for (const ask of ['?view=month&day=1900-01-01', '?day=2028-06-15']) {
+    const [from, to] = screenWindow('calendar', now, ask, '2026-11-24');
+    assert.ok(to - from <= 400 * DAY_MS, ask);
+    assert.ok(to < now - DAY_MS || from > now + 8 * DAY_MS, `${ask}: its own weeks only`);
+  }
+});

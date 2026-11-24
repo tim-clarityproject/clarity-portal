@@ -1282,9 +1282,20 @@ export function catchUpAdded(todos, event) {
  */
 export const keepInTouchOnKey = (day) => `keep-in-touch:on:${day}`;
 export const isSwitchedOnRun = (r) => typeof r?.event_key === 'string' && r.event_key.startsWith('keep-in-touch:on:');
+const ON_NOTE = (id) => `clarity-cache:${id}:coach-keep-on`; // a device cache key, so Sign out clears it
+/** The day keep in touch was switched on here, noted before its save (cleared with the device's other coach notes). */
+export function noteKeepInTouchOn(id, day) {
+  try { globalThis.localStorage?.setItem(ON_NOTE(id), day); } catch { /* the run row keeps it */ }
+}
+function notedOn(id) {
+  try { const d = globalThis.localStorage?.getItem(ON_NOTE(id)); return /^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d : null; } catch { return null; }
+}
 export function keepInTouchSince(automation, runs, todayKey = null) {
   if (!automation) return null;
-  const days = (runs || []).filter((r) => r.automation_id === automation.id && isSwitchedOnRun(r)).map((r) => r.event_key.slice('keep-in-touch:on:'.length)).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  const days = (runs || []).filter((r) => r.automation_id === automation.id && isSwitchedOnRun(r)).map((r) => r.event_key.slice('keep-in-touch:on:'.length)).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d));
+  const noted = notedOn(automation.id);
+  if (noted) days.push(noted);
+  days.sort();
   if (days.length) return days.at(-1);
   // Its switch-on row isn't here (not sent yet, or refused): never everyone already overdue, so today.
   return dayOfInstant(automation.created_at) || todayKey || null;

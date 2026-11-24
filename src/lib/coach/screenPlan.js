@@ -58,7 +58,10 @@ export function screenWindow(kind, nowMs, search = '', todayKey = getLocalDateKe
   const to = ranges.map((r) => r[1]).sort().at(-1);
   // As store.js's ensureCalRange reads a view: two days before it and three after, so every zone sees whole days. The
   // next-call bar's own days (a day back, eight on) are always in it too, whichever weeks the calendar opens on.
-  return [Math.min(keyMs(from) - 2 * DAY_MS, nowMs - DAY_MS), Math.max(keyMs(to) + 3 * DAY_MS, nowMs + 8 * DAY_MS)];
+  const own = [keyMs(from) - 2 * DAY_MS, keyMs(to) + 3 * DAY_MS];
+  const both = [Math.min(own[0], nowMs - DAY_MS), Math.max(own[1], nowMs + 8 * DAY_MS)];
+  // A day far from today (a link to 1900, say): the weeks shown alone, inside 060's 400 days (the break-it tester).
+  return both[1] - both[0] > 390 * DAY_MS ? own : both;
 }
 
 /** The clients a page's address names (a client's page wants every one of that client's sessions with its first screen). */

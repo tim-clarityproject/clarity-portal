@@ -1565,8 +1565,11 @@ function screenAnswer({ data, error }) {
 async function fetchScreen(userId, kind, { nowMs, split, profiles }) {
   const early = takeCoachOpening(userId, kind);
   if (early && early.profiles.join() === profiles.join()) {
-    const got = screenAnswer(await early.answer);
+    // An opening that went wrong (a 503, or a sign-in still waiting for its code) is asked again below, once; one that
+    // says 060 isn't there is not (the break-it tester).
+    const got = await Promise.resolve(early.answer).then(screenAnswer).catch(() => undefined);
     if (got) return { ...got, split: early.split, from: early.from, to: early.to };
+    if (got === null) return null;
   }
   const [from, to] = screenWindow(kind, nowMs, window.location?.search);
   const got = screenAnswer(await screenRead({ kind, from, to, todayKey: getLocalDateKey(), split, profiles }));
