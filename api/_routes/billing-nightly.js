@@ -11,8 +11,8 @@
 // Environment variables (Vercel, Production): CRON_SECRET, STRIPE_SECRET_KEY (test mode, sk_test_…), SUPABASE_SERVICE_ROLE_KEY.
 import { isScheduler } from './workshop-emails.js';
 import { billing } from './coach-billing.js';
-import { handleEvent, serverClient } from './stripe-webhook.js';
-import { keyAllowed, stripeApi } from '../src/lib/billing/stripe.js';
+import { handleEvent, serverClient } from '../stripe-webhook.js';
+import { keyAllowed, stripeApi } from '../../src/lib/billing/stripe.js';
 
 export const config = { maxDuration: 300 };
 const reply = (res, status, body) => { res.status(status).setHeader('Cache-Control', 'no-store'); res.json(body); };

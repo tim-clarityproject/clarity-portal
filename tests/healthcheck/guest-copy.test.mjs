@@ -1,5 +1,5 @@
 // Guest links: the copy of a guest's plan that is emailed to them
-// (api/guest-copy.js, migration 042). Runs the real handler with the
+// (api/_routes/guest-copy.js, migration 042). Runs the real handler with the
 // database and the email provider stood in for (fetch is replaced), so
 // nothing is ever sent. It checks that only the live site sends, that a
 // preview or a developer's machine asks nobody anything, and that the
@@ -8,7 +8,7 @@
 // Run with npm run test:healthcheck.
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import handler from '../../api/guest-copy.js';
+import handler from '../../api/_routes/guest-copy.js';
 import { COPY_STEPS_MAX, copyContent, maySend, oneAddress } from '../../api/_guestEmails.js';
 import { GOAL_MAX, ROW_MAX } from '../../src/lib/getUnstuck/model.js';
 

@@ -49,10 +49,10 @@
 // webhook points at <the portal's address>/api/coach-email-in.
 import { createClient } from '@supabase/supabase-js';
 import { timingSafeEqual } from 'node:crypto';
-import { maySend } from './_guestEmails.js';
-import { codeRefusal } from './_coachCode.js';
-import { asCallerClient, isMissingFunction, supabaseOf } from './_coachEmails.js';
-import { directionOf, readInbound } from '../src/lib/coach/connect/copyInEmail.js';
+import { maySend } from '../_guestEmails.js';
+import { codeRefusal } from '../_coachCode.js';
+import { asCallerClient, isMissingFunction, supabaseOf } from '../_coachEmails.js';
+import { directionOf, readInbound } from '../../src/lib/coach/connect/copyInEmail.js';
 
 export const config = { maxDuration: 15 };
 

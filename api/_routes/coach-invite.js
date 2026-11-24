@@ -14,9 +14,9 @@
 // Needs SUPABASE_URL (or VITE_SUPABASE_URL), SUPABASE_ANON_KEY (or
 // VITE_SUPABASE_ANON_KEY) and SUPABASE_SERVICE_ROLE_KEY in Vercel.
 import { createClient } from '@supabase/supabase-js';
-import { codeRefusal } from './_coachCode.js';
-import { maySend, oneAddress } from './_guestEmails.js';
-import { portalOrigin } from './_portalOrigin.js';
+import { codeRefusal } from '../_coachCode.js';
+import { maySend, oneAddress } from '../_guestEmails.js';
+import { portalOrigin } from '../_portalOrigin.js';
 
 const reply = (res, status, body) => { res.status(status).setHeader('Cache-Control', 'no-store'); res.json(body); };
 const clean = (v, max) => String(v ?? '').replace(/[\u0000-\u001F\u007F​-‏‪-‮⁠-⁤﻿]/g, '').replace(/\s+/g, ' ').trim().slice(0, max);

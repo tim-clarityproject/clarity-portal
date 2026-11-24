@@ -296,7 +296,7 @@ function forgetGoogleCalendars(userId, coachId) {
   })().catch(() => {});
 }
 
-/** Asks the portal's server about connecting Google (api/coach-calendar-connect.js), with the coach's own sign-in. */
+/** Asks the portal's server about connecting Google (api/_routes/coach-calendar-connect.js), with the coach's own sign-in. */
 async function fetchConnect(body) {
   try {
     const { data } = await supabase.auth.getSession();

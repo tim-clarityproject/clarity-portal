@@ -37,7 +37,7 @@ export function googleCalendarAdapter(ask) {
     async createEvent(event, { invite = true } = {}) { return (await call({ kind: 'create', event, invite })).event; },
     async updateEvent(id, event, { invite = true } = {}) { return (await call({ kind: 'update', id, event, invite })).event; },
     async deleteEvent(id, { invite = true } = {}) { await call({ kind: 'delete', id, invite }); },
-    // Run 8: the account's other calendars, READ ONLY (the server only ever reads them: api/coach-calendar.js).
+    // Run 8: the account's other calendars, READ ONLY (the server only ever reads them: api/_routes/coach-calendar.js).
     async listCalendars() { const a = await call({ kind: 'calendars' }); return Array.isArray(a.calendars) ? a.calendars : []; },
     async listBusy({ calendarId, timeMin, timeMax }) { const a = await call({ kind: 'busy', calendarId, timeMin, timeMax }); return Array.isArray(a.events) ? a.events : []; },
   };

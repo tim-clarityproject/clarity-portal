@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { CODE_NEEDED, codeGiven, codeRefusal, tokenAal, tokenClaims } from '../../api/_coachCode.js';
-import { RESET_WORDS } from '../../api/coach-auth-reset.js';
+import { RESET_WORDS } from '../../api/_routes/coach-auth-reset.js';
 
 // Stand-in tokens in Supabase's shape (header.payload.signature); never signed.
 const token = (claims) => `h.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.s`;
@@ -36,7 +36,8 @@ test('a refusal is a calm 403 in the function\'s own shape', () => {
 });
 
 test('every server function that acts on a coach\'s own sign-in asks for the code', () => {
-  const dir = new URL('../../api/', import.meta.url);
+  // The handlers live in api/_routes/ since the functions were joined (24 Nov); the stripe webhook stays in api/.
+  const dir = new URL('../../api/_routes/', import.meta.url);
   // Functions with no coach sign-in: a guest's key, the schedulers' secret, the inbound-email secret, the Health Check.
   const noCoachSignIn = new Set(['alignment-email.js', 'booking-email.js', 'guest-copy.js', 'coach-reminders.js', 'workshop-emails.js', 'billing-nightly.js', 'stripe-webhook.js']);
   const asked = [];
@@ -45,14 +46,14 @@ test('every server function that acts on a coach\'s own sign-in asks for the cod
     const readsCallerToken = /req\.headers\??\.authorization/.test(src) && /(auth\.getUser\(token\)|rpc\('is_owner'\))/.test(src);
     if (!readsCallerToken || noCoachSignIn.has(name)) continue;
     asked.push(name);
-    assert.match(src, /from '\.\/_coachCode\.js'/, `${name} imports the code check`);
+    assert.match(src, /from '\.\.\/_coachCode\.js'/, `${name} imports the code check`);
     assert.match(src, /\b(codeRefusal|codeGiven)\(token/, `${name} asks it about the caller's token`);
   }
   assert.deepEqual(asked.sort(), ['coach-auth-reset.js', 'coach-billing.js', 'coach-calendar-connect.js', 'coach-calendar.js', 'coach-email-in.js', 'coach-invite.js', 'coach-send.js']);
 });
 
 test('the recovery route stays open before the code, and only it', () => {
-  const src = readFileSync(new URL('../../api/coach-auth-reset.js', import.meta.url), 'utf8');
+  const src = readFileSync(new URL('../../api/_routes/coach-auth-reset.js', import.meta.url), 'utf8');
   const recovered = src.indexOf("if (kind === 'recovered')");
   const check = src.indexOf('if (!codeGiven(token))');
   assert.ok(recovered > 0 && check > recovered, 'the code is asked only after the recovered route');

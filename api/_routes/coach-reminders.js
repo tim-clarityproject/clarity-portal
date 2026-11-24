@@ -52,12 +52,12 @@
 // SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, COACH_EMAIL_FROM (or
 // GUEST_EMAIL_FROM), and the Supabase URL and anon key the app already has.
 import { createClient } from '@supabase/supabase-js';
-import { maySend, oneAddress } from './_guestEmails.js';
-import { UUID, canSend, emailFrom, isMissingFunction, sendWithResend, supabaseOf } from './_coachEmails.js';
-import { portalOrigin } from './_portalOrigin.js';
+import { maySend, oneAddress } from '../_guestEmails.js';
+import { UUID, canSend, emailFrom, isMissingFunction, sendWithResend, supabaseOf } from '../_coachEmails.js';
+import { portalOrigin } from '../_portalOrigin.js';
 import { isScheduler } from './workshop-emails.js';
-import { callInOneHourEmail, callTomorrowEmail, groupSessionInOneHourEmail, groupSessionTomorrowEmail, sessionInOneHourEmail, sessionTomorrowEmail } from '../src/lib/email/emails.js';
-import { remindersToSend } from '../src/lib/coach/calendar.js';
+import { callInOneHourEmail, callTomorrowEmail, groupSessionInOneHourEmail, groupSessionTomorrowEmail, sessionInOneHourEmail, sessionTomorrowEmail } from '../../src/lib/email/emails.js';
+import { remindersToSend } from '../../src/lib/coach/calendar.js';
 
 export const config = { maxDuration: 60 };
 

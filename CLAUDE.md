@@ -26,6 +26,8 @@ CLAUDE.md holds the rules every task needs. Each area's full rules live in its o
 - `docs/rules/own-questions.md`: Your own questions in the Daily plan, Daily review and weekly debrief, and coach suggestions (run 7): 11 rules.
 - `docs/rules/go-live.md`: Go-live notes: what each migration from 021 to 054 does, its test, its order and what Vercel needs.
 
+**Server functions (Tim, 24 Nov 2026: Vercel's Hobby plan takes at most 12, no paid plans):** `api/` holds at most 10; the handlers live in `api/_routes/` and four routers serve them (`api/coach.js`, `api/guest.js`, `api/scheduled.js`, and `api/stripe-webhook.js` alone for its raw body), each old address rewritten to its router in `vercel.json` (`?__route=`, `api/_router.js`). A new address joins a router, never a new file; `scripts/check-api-functions.mjs` stops the build and `tests/performance/api-functions.test.mjs` fails otherwise.
+
 **Always true, whichever file holds the detail:** times on screen only through `formatClockTime` or `formatDayMonthTime` (rule 19) and zones only through `src/lib/time` (time-zones.md); every email only through `src/lib/email/template.js` (emails.md); every PDF only through `src/lib/pdf` (pdf.md); saved lists are `HistoryList` rows (list-rows.md); a new migration gets its go-live note in go-live.md and its line in `supabase/MIGRATION_LOG.md`, unticked; a sign-in or coach page follows sign-in.md and coach-portal.md, and nothing there is ever sent from anywhere but the live site.
 
 

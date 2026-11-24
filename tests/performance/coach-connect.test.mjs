@@ -6,7 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { chooseAdapters, deviceStandIns, googleStandIn, loadAdapters, resetStandInsForTests, serverStatus, syncOnce, zoomStandIn } from '../../src/lib/coach/connect/index.js';
 import * as cal from '../../src/lib/coach/calendar.js';
-import handler, { askedFor, keysSet, zoomMeetingBody } from '../../api/coach-calendar.js';
+import handler, { askedFor, keysSet, zoomMeetingBody } from '../../api/_routes/coach-calendar.js';
 import { instantAt, wallClock } from '../../src/lib/time/index.js';
 
 const LON = 'Europe/London';

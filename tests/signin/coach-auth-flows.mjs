@@ -5,7 +5,7 @@
 // world per story that behaves as the real ones do (coachWorld.mjs: each
 // device its own session, real TOTP codes worked out here from the key the
 // page shows, recovery codes kept hashed, the reset clearing factors, codes
-// and sessions, and the real api/coach-auth-reset.js run as the live site
+// and sessions, and the real api/_routes/coach-auth-reset.js run as the live site
 // would). Nothing reaches the test project but the owner's own read-only
 // sign-in in part "reset" (the coach portal's stand-ins, tests/coach). No
 // real authenticator is enrolled, no email is sent, and no key, code,
@@ -45,7 +45,7 @@ import { APP, makeChecks, sleep, TEST_REF } from './shared.mjs';
 import { claimsOf, makeWorld, M26_CODES, M26_KEY, MAYA, MAYA_PASSWORD } from './coachWorld.mjs';
 import { totp } from './totp.mjs';
 import { codesLeftSummary, COACH_AUTH_WORDS, lowCodesLine, RECOVERY_DIDNT_WORK, SIGNED_OUT_BY_RECOVERY, SIGNED_OUT_BY_RESET, usedCodeLine, CODE_DIDNT_WORK } from '../../src/lib/signIn/coachAuth.js';
-import { RESET_WORDS } from '../../api/coach-auth-reset.js';
+import { RESET_WORDS } from '../../api/_routes/coach-auth-reset.js';
 
 const PARTS = (process.env.PARTS || 'first,second,lost,others,newcodes,reset,hosted,low,client').split(',');
 const SIZES = (process.env.SIZES || '1440,400').split(',').map(Number);

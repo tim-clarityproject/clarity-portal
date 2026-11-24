@@ -10,7 +10,7 @@
 // (059's group-reminder test).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import reminders, { dueGroupReminders, groupReminderEmail } from '../../api/coach-reminders.js';
+import reminders, { dueGroupReminders, groupReminderEmail } from '../../api/_routes/coach-reminders.js';
 import { instantAt, timeWords } from '../../src/lib/time/index.js';
 
 const SECRET = 'a-long-enough-secret-for-the-test';

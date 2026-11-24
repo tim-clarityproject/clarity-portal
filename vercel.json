@@ -2,6 +2,58 @@
   "ignoreCommand": "bash scripts/vercel-ignore.sh",
   "rewrites": [
     {
+      "source": "/api/billing-nightly",
+      "destination": "/api/scheduled?__route=billing-nightly"
+    },
+    {
+      "source": "/api/coach-reminders",
+      "destination": "/api/scheduled?__route=coach-reminders"
+    },
+    {
+      "source": "/api/workshop-emails",
+      "destination": "/api/scheduled?__route=workshop-emails"
+    },
+    {
+      "source": "/api/coach-billing",
+      "destination": "/api/coach?__route=coach-billing"
+    },
+    {
+      "source": "/api/coach-calendar",
+      "destination": "/api/coach?__route=coach-calendar"
+    },
+    {
+      "source": "/api/coach-calendar-connect",
+      "destination": "/api/coach?__route=coach-calendar-connect"
+    },
+    {
+      "source": "/api/coach-send",
+      "destination": "/api/coach?__route=coach-send"
+    },
+    {
+      "source": "/api/coach-invite",
+      "destination": "/api/coach?__route=coach-invite"
+    },
+    {
+      "source": "/api/coach-auth-reset",
+      "destination": "/api/coach?__route=coach-auth-reset"
+    },
+    {
+      "source": "/api/coach-email-in",
+      "destination": "/api/coach?__route=coach-email-in"
+    },
+    {
+      "source": "/api/alignment-email",
+      "destination": "/api/guest?__route=alignment-email"
+    },
+    {
+      "source": "/api/booking-email",
+      "destination": "/api/guest?__route=booking-email"
+    },
+    {
+      "source": "/api/guest-copy",
+      "destination": "/api/guest?__route=guest-copy"
+    },
+    {
       "source": "/health-check/(.*)",
       "destination": "/health-check.html"
     },

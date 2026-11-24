@@ -42,7 +42,7 @@
 //   - coach_authenticator_reset is 053's (the owner only, 42501 otherwise;
 //     aal2; never their own; codes, factors and every session go, recorded);
 //   - with `live: true`, /api/coach-auth-reset runs the real server
-//     (api/coach-auth-reset.js) as the live site would, with Supabase and
+//     (api/_routes/coach-auth-reset.js) as the live site would, with Supabase and
 //     its admin calls answered by this world; otherwise it answers as a
 //     preview does (nothing changes).
 //   - `coachData: true` (run 6, migration 054): the coach portal's own
@@ -60,7 +60,7 @@
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import { APP, TEST_REF } from './shared.mjs';
 import { totp } from './totp.mjs';
-import { makeHandler } from '../../api/coach-auth-reset.js';
+import { makeHandler } from '../../api/_routes/coach-auth-reset.js';
 import { CODE_ALPHABET } from '../../src/lib/signIn/coachAuth.js';
 
 const b64u = (text) => Buffer.from(text, 'utf8').toString('base64url');
@@ -298,7 +298,7 @@ export function makeWorld(o = {}) {
     return err(404, 'PGRST202', 'Could not find the function in the schema cache');
   };
 
-  // ---- the server: the real api/coach-auth-reset.js, with Supabase answered by this world.
+  // ---- the server: the real api/_routes/coach-auth-reset.js, with Supabase answered by this world.
   const serverClient = (url, key, opts = {}) => {
     const bearer = String(opts?.global?.headers?.Authorization || '').replace(/^Bearer\s+/i, '');
     const claims = claimsOf(bearer);

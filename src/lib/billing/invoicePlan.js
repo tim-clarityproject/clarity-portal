@@ -1,7 +1,7 @@
 import { feeLines, instalments, termsDays } from './money.js';
 
 // Which invoices an agreement makes, and when (Phase 6b run 1, step 4): plain rules shared by the server
-// (api/coach-billing.js drafts them in Stripe) and its nightly round, checked by tests/performance/billing-plan.test.mjs.
+// (api/_routes/coach-billing.js drafts them in Stripe) and its nightly round, checked by tests/performance/billing-plan.test.mjs.
 // Nothing here sends: every invoice starts as a draft that waits for the coach's Send.
 //
 // - Paid in full: one invoice at signing, the full price with each discount as its own line under it.

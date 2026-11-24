@@ -1,5 +1,5 @@
-// Clarity Coach: what its email functions share (api/coach-send.js and
-// api/workshop-emails.js). The file name starts with an underscore so
+// Clarity Coach: what its email functions share (api/_routes/coach-send.js and
+// api/_routes/workshop-emails.js). The file name starts with an underscore so
 // Vercel does not publish it as a route.
 import { createClient } from '@supabase/supabase-js';
 import { EMAIL_IMAGE_BASE64 } from './_emailImages.js';

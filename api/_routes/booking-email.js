@@ -6,7 +6,7 @@
 // The browser sends only the guest's own key. Everything in the email (who
 // it goes to, the call, its time and zone, the coach's first name) is read
 // here from the database with the server's key: nothing a visitor types is
-// ever trusted as an address. As api/coach-send.js and api/guest-copy.js:
+// ever trusted as an address. As api/_routes/coach-send.js and api/_routes/guest-copy.js:
 //   - it sends only from the live site (maySend): a preview or a developer's
 //     machine answers { sent: false, reason: 'preview' } and asks nothing;
 //   - the send is CLAIMED in the database before it goes (051's
@@ -22,11 +22,11 @@
 // RESEND_API_KEY and COACH_EMAIL_FROM (or GUEST_EMAIL_FROM), as the other
 // coach emails.
 import { createClient } from '@supabase/supabase-js';
-import { maySend, oneAddress } from './_guestEmails.js';
-import { canSend, emailFrom, isMissingFunction, isMissingTable, sendWithResend, supabaseOf, UUID } from './_coachEmails.js';
-import { portalOrigin } from './_portalOrigin.js';
-import { bookingConfirmedEmail } from '../src/lib/email/emails.js';
-import { isZone } from '../src/lib/time/index.js';
+import { maySend, oneAddress } from '../_guestEmails.js';
+import { canSend, emailFrom, isMissingFunction, isMissingTable, sendWithResend, supabaseOf, UUID } from '../_coachEmails.js';
+import { portalOrigin } from '../_portalOrigin.js';
+import { bookingConfirmedEmail } from '../../src/lib/email/emails.js';
+import { isZone } from '../../src/lib/time/index.js';
 
 export const config = { maxDuration: 15 };
 

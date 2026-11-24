@@ -475,7 +475,7 @@ function Page() {
     setLinkMail({ status: 'sending' });
     const r = await requestAlignmentEmail({ token, email: creds.email, code: creds.code, kind: 'link' });
     mailBusy.current = false;
-    // A preview never sends (api/alignment-email.js), so it claims nothing.
+    // A preview never sends (api/_routes/alignment-email.js), so it claims nothing.
     if (r.ok && r.sent === false) { setLinkMail({ status: 'idle' }); return; }
     setLinkMail({ status: r.ok ? 'sent' : (r.error === 'limit' ? 'limit' : 'error'), to: creds.email });
   };

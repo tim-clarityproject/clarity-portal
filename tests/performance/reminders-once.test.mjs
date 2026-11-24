@@ -6,8 +6,8 @@
 // email provider.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import reminders from '../../api/coach-reminders.js';
-import workshopEmails, { isScheduler } from '../../api/workshop-emails.js';
+import reminders from '../../api/_routes/coach-reminders.js';
+import workshopEmails, { isScheduler } from '../../api/_routes/workshop-emails.js';
 
 const SECRET = 'a-long-enough-secret-for-the-test';
 const LIVE = {

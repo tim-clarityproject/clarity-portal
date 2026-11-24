@@ -14,16 +14,16 @@
 //
 // Environment variables (Vercel): STRIPE_SECRET_KEY (sk_test_…), SUPABASE_SERVICE_ROLE_KEY, the Supabase URL and anon key.
 import { createClient } from '@supabase/supabase-js';
-import { codeRefusal } from './_coachCode.js';
-import { asCallerClient, canSend, emailFrom, sendEach, supabaseOf } from './_coachEmails.js';
-import { maySend } from './_guestEmails.js';
-import { invoiceReminderEmail } from '../src/lib/email/billingEmails.js';
-import { dayKeyWords } from '../src/lib/time/index.js';
-import { moneyWords } from '../src/lib/billing/money.js';
-import { stripeApi, keyAllowed } from '../src/lib/billing/stripe.js';
-import { dueToDraft, invoicesFor } from '../src/lib/billing/invoicePlan.js';
-import { addDays, dayIn, isZone } from '../src/lib/time/index.js';
-import { reminderDue, settleBy } from '../src/lib/billing/money.js';
+import { codeRefusal } from '../_coachCode.js';
+import { asCallerClient, canSend, emailFrom, sendEach, supabaseOf } from '../_coachEmails.js';
+import { maySend } from '../_guestEmails.js';
+import { invoiceReminderEmail } from '../../src/lib/email/billingEmails.js';
+import { dayKeyWords } from '../../src/lib/time/index.js';
+import { moneyWords } from '../../src/lib/billing/money.js';
+import { stripeApi, keyAllowed } from '../../src/lib/billing/stripe.js';
+import { dueToDraft, invoicesFor } from '../../src/lib/billing/invoicePlan.js';
+import { addDays, dayIn, isZone } from '../../src/lib/time/index.js';
+import { reminderDue, settleBy } from '../../src/lib/billing/money.js';
 
 export const config = { maxDuration: 60 };
 const reply = (res, status, body) => { res.status(status).setHeader('Cache-Control', 'no-store'); res.json(body); };

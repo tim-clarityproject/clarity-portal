@@ -9,7 +9,7 @@ import { chooseEmailAdapters, copyInStandIn, deviceEmailStandIns, emailStatus, g
 import { addressesFor, copyInEmailAdapter, copyInOff, directionOf, keysOf, readInbound } from '../../src/lib/coach/connect/copyInEmail.js';
 import { gmailAdapter, gmailOff, tidyEmail } from '../../src/lib/coach/connect/gmail.js';
 import { emailBelongs } from '../../src/lib/coach/crm.js';
-import handler, { askedFor, hasSecret, inboundDomain, keysSet } from '../../api/coach-email-in.js';
+import handler, { askedFor, hasSecret, inboundDomain, keysSet } from '../../api/_routes/coach-email-in.js';
 
 const DOMAIN = 'in.example.invalid';
 const LOG = 'log.alex.7kx2m4qa';

@@ -28,8 +28,8 @@
 // Needs SUPABASE_URL (or VITE_SUPABASE_URL), SUPABASE_ANON_KEY (or
 // VITE_SUPABASE_ANON_KEY) and SUPABASE_SERVICE_ROLE_KEY in Vercel.
 import { createClient } from '@supabase/supabase-js';
-import { maySend } from './_guestEmails.js';
-import { codeGiven } from './_coachCode.js';
+import { maySend } from '../_guestEmails.js';
+import { codeGiven } from '../_coachCode.js';
 
 /** The words this function answers with (Claude's, in the portal's pattern: what happened, then what to do). */
 export const RESET_WORDS = {

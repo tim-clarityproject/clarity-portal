@@ -4,7 +4,7 @@
 // some of them twice.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { billing } from '../../api/coach-billing.js';
+import { billing } from '../../api/_routes/coach-billing.js';
 import { handleEvent } from '../../api/stripe-webhook.js';
 import { stripeStandIn } from '../../src/lib/billing/stripe.js';
 import { fakeDb } from './_fakeDb.mjs';
@@ -121,7 +121,7 @@ test('a portal subscription started and cancelled, through Stripe\'s messages', 
 });
 
 test('the nightly round: the next instalment drafted on its day, a reminder drafted, and a message that never arrived caught up', async () => {
-  const { nightlyRound } = await import('../../api/billing-nightly.js');
+  const { nightlyRound } = await import('../../api/_routes/billing-nightly.js');
   const now = { value: new Date('2026-12-01T12:00:00Z') };
   const { db, stripe, b } = world(now);
   db.tables.coaches = [{ id: COACH.id, role: 'coach', active: true }];
@@ -191,7 +191,7 @@ test('functionality tester, 6b run 1: a reminder with no address is refused befo
 });
 
 test('the handler: a reminder Resend refuses is let go and the coach is told it didn\'t send', async () => {
-  const { sendReminder } = await import('../../api/coach-billing.js');
+  const { sendReminder } = await import('../../api/_routes/coach-billing.js');
   const now = { value: new Date('2026-12-01T12:00:00Z') };
   const { db, stripe, b } = world(now);
   db.tables.coaches = [{ id: COACH.id, display_first_name: 'Maya' }];
@@ -298,7 +298,7 @@ test('break-it tester, 6b run 1: a draft whose save failed is drafted again with
 });
 
 test('Finances (run 2): Add bank payment and New invoice are the owner\'s alone, and name who they\'re from or for', async () => {
-  const { askedFor } = await import('../../api/coach-billing.js');
+  const { askedFor } = await import('../../api/_routes/coach-billing.js');
   const now = { value: new Date('2026-11-19T10:00:00Z') };
   const { db, stripe } = world(now);
   db.tables.organisations = [{ id: 'o-north', name: 'Northfield Logistics', sector: 'Business' }];

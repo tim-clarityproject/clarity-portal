@@ -1,5 +1,5 @@
 // Guest links: asks the server to email the guest a copy of their plan
-// (api/guest-copy.js). The browser sends only its visit key: the server
+// (api/_routes/guest-copy.js). The browser sends only its visit key: the server
 // learns who to email, and what the plan says, from the database. It never
 // sends from a preview or a developer's machine, and then answers
 // { sent: false }.

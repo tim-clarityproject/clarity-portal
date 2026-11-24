@@ -3,10 +3,10 @@
 // function here says what the email says; the template decides how it
 // looks, and makes the plain-text version from the same words.
 //
-// Sent today: the three Health Check emails (api/alignment-email.js) and
+// Sent today: the three Health Check emails (api/_routes/alignment-email.js) and
 // the sign-in emails Supabase sends (their templates are made from
 // these by scripts/make-email-templates.mjs, for Tim to paste into
-// Supabase). The guest's copy of a plan (api/guest-copy.js) is sent only
+// Supabase). The guest's copy of a plan (api/_routes/guest-copy.js) is sent only
 // from the live site, once migrations 035 and 042 have run. Templates
 // only, nothing sends them yet (booking and Kit come in Phase 6a): the
 // session reminders and Leading Ideas.
@@ -132,7 +132,7 @@ export function healthCheckFinishedForCoachEmail({ link, organisation, email, fi
  * To the guest only, when they choose Only you (migration 045): the new
  * access code that now opens their answers. The old one, which the coach
  * was given with the link, stops working. The address comes from the
- * database, never the browser (api/alignment-email.js).
+ * database, never the browser (api/_routes/alignment-email.js).
  */
 export function healthCheckNewCodeEmail({ link, organisation, email, code }) {
   const org = oneLine(organisation);
@@ -177,7 +177,7 @@ export function healthCheckFinishedNoteEmail({ organisation, dateText }) {
  * account, which the plan moves into. It never carries a booking link.
  * What was typed is shown as text, each answer on one line.
  * The address it goes to is never passed in here: the server takes it from
- * the database (api/guest-copy.js).
+ * the database (api/_routes/guest-copy.js).
  * @param {object} o
  * @param {string} o.origin       the portal's own address (api/_portalOrigin.js)
  * @param {string} [o.toolName]   "Get unstuck"
@@ -317,7 +317,7 @@ export function sessionCancelledEmail({ coach, at, zone, late = false, bookLink 
 }
 
 /**
- * The day before a coaching session (draft-2's "24 hours before"), sent by api/coach-reminders.js from 18:00 the day
+ * The day before a coaching session (draft-2's "24 hours before"), sent by api/_routes/coach-reminders.js from 18:00 the day
  * before in the reader's own time.
  * @param {object} o
  * @param {string} o.coach          the coach's first name
@@ -366,7 +366,7 @@ export function sessionInOneHourEmail({ coach, at = null, zone = null, zoomLink,
 
 // ---------------------------------------------------------------- group-call reminders (Phase 6a run 8, item 1)
 // A group call's two reminders, one email to each guest at their own
-// address (api/coach-reminders.js; migration 059's group claim): the same
+// address (api/_routes/coach-reminders.js; migration 059's group claim): the same
 // moments, switches, template and words as a single call's (draft-2), as a
 // group coaching session. Nothing in them names or shows another guest; the
 // group's name is the only "who". Times in the READER's zone with its place's name.
@@ -421,7 +421,7 @@ export const RECAP_EMAIL_MAX = 12000;
 
 /**
  * A session's summary is ready, to the client (or each member of a group), sent only when their coach presses Send the
- * recap (api/coach-send.js; migration 050's session_send_recap decides it goes once). Draft-2's words: the email says
+ * recap (api/_routes/coach-send.js; migration 050's session_send_recap decides it goes once). Draft-2's words: the email says
  * the summary is ready, and the summary itself (the coach's words and the ticked actions) is read on the client's
  * Coaching page, never carried in the email. The address it goes to is never passed in here.
  * @param {object} o
@@ -451,7 +451,7 @@ export function sessionRecapEmail({ origin, coach, at = null, zone = null, dateT
 // ---------------------------------------------------------------- the welcome (Phase 6a run 2; draft-2's "Welcome")
 /**
  * When a coach sets up a client's account: from the coach, signed with their first name, sent only when the coach
- * presses "Invite" on the client's page (api/coach-send.js, kind 'invite'), and only from the live site. The button
+ * presses "Invite" on the client's page (api/_routes/coach-send.js, kind 'invite'), and only from the live site. The button
  * opens `link` when the sender gives one, otherwise the portal's own Create your account page (where the password is
  * chosen); once the person has an account with this email address, their Coaching page offers the invite to accept
  * (049's my_coach_invites). The address it goes to is never passed in here.
@@ -665,7 +665,7 @@ export function inviteEmail({ link }) {
 // with its city's name (12-hour for the US and Canada), the day in words,
 // Join on Zoom when the call has a link, and Rearrange and Cancel on their
 // own page. It goes from the business (the person may have no account, so
-// no prep is offered). Sent only by api/booking-email.js, from the live
+// no prep is offered). Sent only by api/_routes/booking-email.js, from the live
 // site, once for each time booked.
 /** "coaching session" for a coaching session, otherwise the call's own name, or "call". */
 const callWords = (callName) => { const c = oneLine(callName); return !c ? 'call' : /^coaching session$/i.test(c) ? 'coaching session' : c; };
@@ -688,7 +688,7 @@ export function bookingConfirmedEmail({ callName, coach, at, zone, minutes = nul
 // account, so there is no prep and nothing to sign in to): the day before
 // at 18:00 their own time, and 1 hour before, in draft-2's words with the
 // call's own name. Times are in THEIR zone with its city's name. Sent only
-// by api/coach-reminders.js, from the live site, once each.
+// by api/_routes/coach-reminders.js, from the live site, once each.
 
 /**
  * @param {{ name?: string, callName: string, coach?: string, at: Date|string, zone: string, placeKind?: string, zoomLink?: string, mineLink?: string, now?: Date }} call

@@ -13,7 +13,7 @@ import {
 } from '../../src/lib/coach/googleBusy.js';
 import { googleCalendarAdapter } from '../../src/lib/coach/connect/googleCalendar.js';
 import { googleStandIn, STAND_IN_CALENDARS } from '../../src/lib/coach/connect/index.js';
-import { askedFor, busyEventOut } from '../../api/coach-calendar.js';
+import { askedFor, busyEventOut } from '../../api/_routes/coach-calendar.js';
 import { instantAt } from '../../src/lib/time/index.js';
 
 const LON = 'Europe/London';
@@ -282,7 +282,7 @@ test('the server: the two read kinds are shaped strictly, and only ever read', (
   ]) assert.equal(askedFor({ service: 'google_calendar', kind: 'busy', ...bad }), null, JSON.stringify(bad).slice(0, 80));
   // Read only, by its own code: every request for the calendar list or another calendar's events is a GET, and every
   // write goes to the main calendar ('primary') only.
-  const source = readFileSync(new URL('../../api/coach-calendar.js', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../../api/_routes/coach-calendar.js', import.meta.url), 'utf8');
   const reads = [...source.matchAll(/fetch\(`https:\/\/www\.googleapis\.com\/calendar\/v3\/(users\/me\/calendarList|calendars\/\$\{encodeURIComponent\(asked\.calendarId\)\}\/events)[^;]*/g)].map((m) => m[0]);
   assert.equal(reads.length, 2);
   for (const r of reads) assert.match(r, /method: 'GET'/);
@@ -327,6 +327,6 @@ test('connected before 059: Google refuses the calendar list, and the coach sees
   assert.deepEqual([row.value, row.action, row.does], ['Connected', 'Connect Google Calendar again', 'connect']);
   assert.equal(cal.connectionRows({ live: true, status: { google_calendar: true, google_ready: true } })[0].action, 'Disconnect Google Calendar');
   // The server turns Google's 403 for a missing permission into that answer, by its own code.
-  const source = readFileSync(new URL('../../api/coach-calendar.js', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../../api/_routes/coach-calendar.js', import.meta.url), 'utf8');
   assert.match(source, /if \(r\.status === 403 && \/insufficient\|scope\|permission\/i\.test\([^\n]*\) return reply\(res, 200, \{ ok: false, reason: 'reconnect' \}\);/);
 });

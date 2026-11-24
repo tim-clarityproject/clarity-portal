@@ -5,7 +5,7 @@
 //   POST /api/coach-calendar  { kind: 'status' }
 //        → { ok: true, google_calendar: boolean, zoom: boolean, google_ready: boolean }
 //          google_ready: Google's keys are set, so the coach can connect
-//          their own account (api/coach-calendar-connect.js)
+//          their own account (api/_routes/coach-calendar-connect.js)
 //   POST /api/coach-calendar  { service: 'google_calendar', kind: 'list', syncToken? }
 //        → { ok: true, events, syncToken }
 //   POST /api/coach-calendar  { service: 'google_calendar', kind: 'create' | 'update' | 'delete', id?, event?, invite? }
@@ -35,7 +35,7 @@
 // nothing is logged.
 //
 // A coach connects their own Google account from Settings, My calendars
-// (api/coach-calendar-connect.js: Google's consent page and the return that
+// (api/_routes/coach-calendar-connect.js: Google's consent page and the return that
 // stores the token; the row's status is then 'on'). Until a coach has, Google
 // stays not connected even with the keys set. Zoom needs no consent screen:
 // it uses the company's own Server-to-Server app. The calls to Google and
@@ -48,9 +48,9 @@
 //   SUPABASE_SERVICE_ROLE_KEY                                   already there for the other server functions
 // and the Supabase URL and anon key the app already has.
 import { createClient } from '@supabase/supabase-js';
-import { maySend } from './_guestEmails.js';
-import { codeRefusal } from './_coachCode.js';
-import { asCallerClient, isMissingFunction, supabaseOf } from './_coachEmails.js';
+import { maySend } from '../_guestEmails.js';
+import { codeRefusal } from '../_coachCode.js';
+import { asCallerClient, isMissingFunction, supabaseOf } from '../_coachEmails.js';
 
 export const config = { maxDuration: 30 };
 

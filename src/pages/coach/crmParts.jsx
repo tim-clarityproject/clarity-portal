@@ -269,7 +269,7 @@ export function EmailSync() {
             const made = todoFromEmail(read.email, { id: newId(), coachId, todos: mine('coach_todos'), nowIso: new Date().toISOString() });
             if (made.todo) { await saveRow(userId, 'coach_todos', made.todo); out.todos += 1; }
           } else {
-            // Which way it went, as the server decides it for the real address (api/coach-email-in.js): from the owner it was sent, from anyone else it came in.
+            // Which way it went, as the server decides it for the real address (api/_routes/coach-email-in.js): from the owner it was sent, from anyone else it came in.
             const answer = await log({ ...read.email, direction: directionOf(read.email, own), source: 'copy_in' });
             if (answer.new) out.logged += 1;
             out.waiting += answer.waiting || 0;

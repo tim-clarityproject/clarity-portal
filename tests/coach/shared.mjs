@@ -524,7 +524,7 @@ async function standInRows(page, { role = 'owner', db = 'none', rows = {}, admin
 
   await page.route('**/api/**', (r) => { store.calls.push(`api ${new URL(r.request().url()).pathname}`); return json(r, { ok: true, sent: false }); });
   if (db === 'there' && day) {
-    // The email server (api/coach-send.js), answered as it answers and never sending: a preview ({ live: false }) says so
+    // The email server (api/_routes/coach-send.js), answered as it answers and never sending: a preview ({ live: false }) says so
     // before it asks the database anything; the live site reads with the coach's own sign-in and claims the send first.
     await page.route('**/api/coach-send', (route) => {
       if (store.down) return route.abort('internetdisconnected');

@@ -34,10 +34,10 @@
 // ALIGNMENT_EMAIL_FROM), and the Supabase URL the app already has.
 import { createClient } from '@supabase/supabase-js';
 import { timingSafeEqual } from 'node:crypto';
-import { maySend } from './_guestEmails.js';
-import { UUID, canSend, emailFrom, isMissingFunction, onePerAddress, sendEach, supabaseOf } from './_coachEmails.js';
-import { workshopInOneHourEmail, workshopTomorrowEmail } from '../src/lib/email/emails.js';
-import { isZone } from '../src/lib/time/index.js';
+import { maySend } from '../_guestEmails.js';
+import { UUID, canSend, emailFrom, isMissingFunction, onePerAddress, sendEach, supabaseOf } from '../_coachEmails.js';
+import { workshopInOneHourEmail, workshopTomorrowEmail } from '../../src/lib/email/emails.js';
+import { isZone } from '../../src/lib/time/index.js';
 
 export const config = { maxDuration: 60 };
 

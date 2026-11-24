@@ -41,12 +41,12 @@
 // Environment variables (Vercel): RESEND_API_KEY, COACH_EMAIL_FROM (or
 // GUEST_EMAIL_FROM, or ALIGNMENT_EMAIL_FROM), and the Supabase URL and anon
 // key the app already has.
-import { maySend, oneAddress } from './_guestEmails.js';
-import { codeRefusal } from './_coachCode.js';
-import { portalOrigin } from './_portalOrigin.js';
-import { UUID, asCallerClient, canSend, emailFrom, isMissingFunction, isMissingTable, onePerAddress, sendEach, supabaseOf } from './_coachEmails.js';
-import { clientInviteEmail, sessionRecapEmail, workshopFollowUpEmail } from '../src/lib/email/emails.js';
-import { dayWords, isZone } from '../src/lib/time/index.js';
+import { maySend, oneAddress } from '../_guestEmails.js';
+import { codeRefusal } from '../_coachCode.js';
+import { portalOrigin } from '../_portalOrigin.js';
+import { UUID, asCallerClient, canSend, emailFrom, isMissingFunction, isMissingTable, onePerAddress, sendEach, supabaseOf } from '../_coachEmails.js';
+import { clientInviteEmail, sessionRecapEmail, workshopFollowUpEmail } from '../../src/lib/email/emails.js';
+import { dayWords, isZone } from '../../src/lib/time/index.js';
 
 // A workshop's follow-up can go to a full room, two at a time.
 export const config = { maxDuration: 60 };

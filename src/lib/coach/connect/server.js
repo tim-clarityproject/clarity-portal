@@ -1,5 +1,5 @@
 // The app's own way of asking the portal's server about Google Calendar and
-// Zoom (api/coach-calendar.js), with the coach's own sign-in. Kept apart
+// Zoom (api/_routes/coach-calendar.js), with the coach's own sign-in. Kept apart
 // from index.js so the choosing and the sync stay free of the database
 // client and are unit-tested.
 import { supabase } from '../../supabase';

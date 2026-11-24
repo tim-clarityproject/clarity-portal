@@ -282,7 +282,7 @@ The copy script doesn't copy these. They need setting up separately before the m
 
 - **Edge Function `delete-user`** (`supabase/functions/delete-user/index.ts`). This is the **Delete account** button on My Account. Until it is deployed to clarity-portal-test, that button fails in the previews. Nothing else depends on it. It can be deployed from the project folder with the Supabase command-line tool, `supabase functions deploy delete-user --project-ref gqtqljngeenqzxneucoc`, after `supabase login`. It needs no extra secrets: Supabase gives every function its own project URL and service key.
 - **Scheduled jobs**: the code has none, so nothing is needed. If the copy shows that live has the `pg_cron` extension, it is copied as an extension only, with no jobs.
-- **Health-check emails** (`api/alignment-email.js` on Vercel). These use `RESEND_API_KEY`, `ALIGNMENT_EMAIL_FROM` and `ALIGNMENT_NOTIFY_TO`. If these are set for Preview, finishing a test health check in a preview sends a real completion email to the `ALIGNMENT_NOTIFY_TO` addresses.
+- **Health-check emails** (`api/_routes/alignment-email.js` on Vercel). These use `RESEND_API_KEY`, `ALIGNMENT_EMAIL_FROM` and `ALIGNMENT_NOTIFY_TO`. If these are set for Preview, finishing a test health check in a preview sends a real completion email to the `ALIGNMENT_NOTIFY_TO` addresses.
 
 ## The second invented test person (10 Nov)
 

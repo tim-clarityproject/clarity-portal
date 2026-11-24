@@ -33,10 +33,10 @@
 //   GOOGLE_CALENDAR_CLIENT_ID, GOOGLE_CALENDAR_CLIENT_SECRET, SUPABASE_SERVICE_ROLE_KEY
 import { createClient } from '@supabase/supabase-js';
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { maySend } from './_guestEmails.js';
-import { codeRefusal } from './_coachCode.js';
-import { asCallerClient, supabaseOf, UUID } from './_coachEmails.js';
-import { LIVE_ORIGIN, portalOrigin } from './_portalOrigin.js';
+import { maySend } from '../_guestEmails.js';
+import { codeRefusal } from '../_coachCode.js';
+import { asCallerClient, supabaseOf, UUID } from '../_coachEmails.js';
+import { LIVE_ORIGIN, portalOrigin } from '../_portalOrigin.js';
 
 export const config = { maxDuration: 15 };
 

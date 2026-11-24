@@ -639,7 +639,7 @@ function Coaches() {
   const others = coaches.filter((c) => c.coach_id !== coach.id);
   // Reset authenticator (Phase 6a run 5; M26 seq 7, "Tim resets an
   // associate's authenticator"): the owner only, never their own, through
-  // the server (api/coach-auth-reset.js: the service key never reaches the
+  // the server (api/_routes/coach-auth-reset.js: the service key never reaches the
   // browser). It can't be put back, so the panel asks first and the toast
   // has no Undo (like deleting a client's data).
   const [more, setMore] = useState(null);

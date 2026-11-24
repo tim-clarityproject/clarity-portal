@@ -37,8 +37,8 @@
 // ALIGNMENT_EMAIL_FROM), SUPABASE_SERVICE_ROLE_KEY, and the Supabase URL
 // the app already has (SUPABASE_URL or VITE_SUPABASE_URL).
 
-import { COPY_TOOLS, copyContent, guestCodeEmail, maySend, oneAddress, planCopyEmail } from './_guestEmails.js';
-import { portalOrigin } from './_portalOrigin.js';
+import { COPY_TOOLS, copyContent, guestCodeEmail, maySend, oneAddress, planCopyEmail } from '../_guestEmails.js';
+import { portalOrigin } from '../_portalOrigin.js';
 
 const VISIT = /^[0-9a-f]{64}$/;
 

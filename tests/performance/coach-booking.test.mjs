@@ -11,7 +11,7 @@ import * as cal from '../../src/lib/coach/calendar.js';
 import { instantAt, onQuarterHour, wallClock } from '../../src/lib/time/index.js';
 import { bookingConfirmedEmail } from '../../src/lib/email/emails.js';
 import { renderEmail } from '../../src/lib/email/template.js';
-import { claimMoment, emailFor, minutesOf, readRequest } from '../../api/booking-email.js';
+import { claimMoment, emailFor, minutesOf, readRequest } from '../../api/_routes/booking-email.js';
 
 const LON = 'Europe/London';
 const NY = 'America/New_York';

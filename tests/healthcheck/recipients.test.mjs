@@ -6,7 +6,7 @@
 // Run with npm run test:healthcheck.
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import handler from '../../api/alignment-email.js';
+import handler from '../../api/_routes/alignment-email.js';
 import { completionRecipients, finishedEmail, ownerList } from '../../api/_alignmentEmails.js';
 
 const OWNER = 'owner@example.invalid';

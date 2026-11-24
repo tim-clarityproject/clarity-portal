@@ -7,12 +7,12 @@
 // anyone's data. Everything is a stand-in: nothing leaves this process.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import send from '../../api/coach-send.js';
-import invite from '../../api/coach-invite.js';
-import calendar from '../../api/coach-calendar.js';
-import connect from '../../api/coach-calendar-connect.js';
-import emailIn from '../../api/coach-email-in.js';
-import reset from '../../api/coach-auth-reset.js';
+import send from '../../api/_routes/coach-send.js';
+import invite from '../../api/_routes/coach-invite.js';
+import calendar from '../../api/_routes/coach-calendar.js';
+import connect from '../../api/_routes/coach-calendar-connect.js';
+import emailIn from '../../api/_routes/coach-email-in.js';
+import reset from '../../api/_routes/coach-auth-reset.js';
 
 const DB = 'https://db.example.invalid';
 const COACH_ID = '11111111-1111-4111-8111-111111111111';

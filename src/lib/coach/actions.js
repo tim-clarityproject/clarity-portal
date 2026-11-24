@@ -127,7 +127,7 @@ export async function addClientFor(coachId, profile) {
 }
 
 /**
- * Asks the server to send one of the coach's emails (api/coach-send.js),
+ * Asks the server to send one of the coach's emails (api/_routes/coach-send.js),
  * with the coach's own sign-in. Resolves the server's answer ({ sent,
  * people, reason }); anything that isn't an answer (offline, no server on a
  * developer's machine) reads as { sent: false, reason: 'no_answer' }.

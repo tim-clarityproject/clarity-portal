@@ -1,6 +1,6 @@
 // The coach authenticator (Phase 6a run 5): the rules and words
 // (src/lib/signIn/coachAuth.js), the data calls with Supabase stood in
-// (coachAuthData.js), and the server's reset (api/coach-auth-reset.js) with
+// (coachAuthData.js), and the server's reset (api/_routes/coach-auth-reset.js) with
 // Supabase stood in. The database's own rules (a code used once, the
 // hashing, who may reset whom) are proved by supabase/053_coach_authenticator_test.sql.
 // Nothing here reaches a network, and nothing is sent.
@@ -16,7 +16,7 @@ import {
   coachSignInStop, forgetCoachAuthReady, loadCoachAuth, makeRecoveryCodes, markCodesSaved, noteAuthenticatorOn,
   resetCoachAuthenticator, spendRecoveryCode,
 } from '../../src/lib/signIn/coachAuthData.js';
-import { makeHandler, RECOVERED_FOR_MS, RESET_WORDS } from '../../api/coach-auth-reset.js';
+import { makeHandler, RECOVERED_FOR_MS, RESET_WORDS } from '../../api/_routes/coach-auth-reset.js';
 
 const CODES = ['k7q2-9fmd', 'x3vp-r8tn', 'b6wh-2jcq', 'm9ze-t4ra', 'p2nd-7wkf', 'c8yt-3hsm', 'r5gq-6vbe', 'h4mj-9xpd', 'w7tc-2nzk', 'f3rb-8qyh'];
 

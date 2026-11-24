@@ -46,7 +46,7 @@ import {
   CODE_DIDNT_WORK, CODES_REPLACED, COACH_AUTH_WORDS, RECOVERY_DIDNT_WORK, SIGNED_OUT_BY_RESET, TYPE_RECOVERY_CODE, usedCodeLine, waitWords, plainKey, keyInGroups, codesLeftSummary,
 } from '../../src/lib/signIn/coachAuth.js';
 import { CODE_SIX_DIGITS } from '../../src/lib/signIn/words.js';
-import { RESET_WORDS } from '../../api/coach-auth-reset.js';
+import { RESET_WORDS } from '../../api/_routes/coach-auth-reset.js';
 
 const ALL = 'reuse,twotabs,sixtabs,wait,recwait,skip,back,server,offline,resetoffline,stale,typed,sixletters,file,newcodes,secrets,sw,text';
 const PARTS = (process.env.PARTS || ALL).split(',');

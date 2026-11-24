@@ -30,7 +30,7 @@
 // lockout and at most 3 emails an hour.
 // The coach's completion email never carries the access code (follow-up 1).
 //
-// It sends only from the live site (maySend, as api/guest-copy.js): on a
+// It sends only from the live site (maySend, as api/_routes/guest-copy.js): on a
 // preview or a developer's machine it answers { ok: true, sent: false }
 // without asking the database or the email provider anything, so a test
 // there can never email a person.
@@ -42,10 +42,10 @@
 
 import {
   linkEmail, completeEmail, newCodeEmail, completionSummary, completionRecipients, finishedEmail, ownerList, ukDate, ukDateTime,
-} from './_alignmentEmails.js';
-import { parseDbTimestamp } from '../src/lib/dateFormatter.js';
-import { portalOrigin } from './_portalOrigin.js';
-import { maySend } from './_guestEmails.js';
+} from '../_alignmentEmails.js';
+import { parseDbTimestamp } from '../../src/lib/dateFormatter.js';
+import { portalOrigin } from '../_portalOrigin.js';
+import { maySend } from '../_guestEmails.js';
 
 const KINDS = ['link', 'complete', 'code'];
 
