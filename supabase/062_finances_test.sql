@@ -132,6 +132,17 @@ begin
     f := f || pg_temp.k_eq('5a a bank payment names who paid', pg_temp.k_try(format('insert into public.payments (coach_id, amount_minor, currency, added_by_coach) values (%L, 120000, ''GBP'', true) returning ''added''', tess_c)), 'error 23514');
     f := f || pg_temp.k_eq('5b with a payer it is kept', pg_temp.k_try(format('insert into public.payments (coach_id, amount_minor, currency, added_by_coach, payer_name, sector, what_for) values (%L, 120000, ''GBP'', true, ''Northfield K062'', ''Business'', ''CLARITY-1212'') returning ''added''', tess_c)), 'added');
 
+    -- 6. an associate's month for the owner: minutes only, the owner only, with the code
+    insert into public.coach_sessions (coach_id, profile_id, starts_at, minutes, outcome) values
+      (maya_c, p_sam, '2026-11-03 10:00+00', 60, 'held'), (maya_c, p_sam, '2026-11-04 10:00+00', 60, 'late_cancel'), (maya_c, p_sam, '2026-11-05 10:00+00', 30, 'no_show'),
+      (maya_c, p_sam, '2026-12-01 00:30+00', 60, 'held'), (maya_c, p_sam, '2026-10-31 23:30+00', 60, 'held');
+    perform pg_temp.k_as(tess_u, 'aal2');
+    f := f || pg_temp.k_eq('6a Tess reads Maya''s November minutes', pg_temp.k_try(format('select held_minutes || ''/'' || late_cancel_minutes || ''/'' || no_show_minutes || ''/'' || sessions from public.associate_month_minutes(''2026-11-01'') where coach_id = %L', maya_c)), '60/60/30/3');
+    perform pg_temp.k_as(tess_u, 'aal1');
+    f := f || pg_temp.k_eq('6b not without the code', pg_temp.k_try('select count(*)::text from public.associate_month_minutes(''2026-11-01'')'), '0');
+    perform pg_temp.k_as(maya_u, 'aal2');
+    f := f || pg_temp.k_eq('6c not for an associate', pg_temp.k_try('select count(*)::text from public.associate_month_minutes(''2026-11-01'')'), '0');
+
     perform pg_temp.k_admin();
     raise exception 'undo the test rows' using errcode = 'P0062';
   exception when sqlstate 'P0062' then

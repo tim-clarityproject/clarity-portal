@@ -357,6 +357,38 @@ $$;
 revoke all on function public.proposal_open(text) from public;
 grant execute on function public.proposal_open(text) to anon, authenticated, service_role;
 
+-- ---------------------------------------------------------------- an associate's month, for the owner's statement
+-- The owner can't read an associate's sessions (050), so each associate's delivered minutes for a month come from here:
+-- held, late cancellations (counted as delivered unless waived) and no-shows (the owner decides whether they're paid),
+-- in Europe/London months. Numbers only: never a client, a note or a time. The owner only, with the 6-digit code.
+create or replace function public.associate_month_minutes(p_month date)
+returns table (coach_id uuid, held_minutes integer, late_cancel_minutes integer, no_show_minutes integer, sessions integer)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.coach_code_ok() or not coalesce(public.is_owner(), false) or p_month is null or extract(day from p_month) <> 1 then
+    return;
+  end if;
+  return query
+    select s.coach_id,
+      coalesce(sum(s.minutes) filter (where s.outcome = 'held'), 0)::integer,
+      coalesce(sum(s.minutes) filter (where s.outcome = 'late_cancel' and not coalesce(s.waived, false)), 0)::integer,
+      coalesce(sum(s.minutes) filter (where s.outcome = 'no_show'), 0)::integer,
+      count(*) filter (where s.outcome in ('held', 'late_cancel', 'no_show'))::integer
+    from public.coach_sessions s
+    join public.coaches c on c.id = s.coach_id
+    where c.role <> 'owner'
+      and s.starts_at >= (p_month::timestamp at time zone 'Europe/London')
+      and s.starts_at < ((p_month + interval '1 month')::timestamp at time zone 'Europe/London')
+    group by s.coach_id;
+end;
+$$;
+revoke all on function public.associate_month_minutes(date) from public, anon;
+grant execute on function public.associate_month_minutes(date) to authenticated, service_role;
+
 -- ---------------------------------------------------------------- the owner's starting lists
 -- Each owner starts with the sectors and outgoing groups M11 draws, and the settings' defaults; nothing is added twice.
 insert into public.finance_settings (coach_id)
