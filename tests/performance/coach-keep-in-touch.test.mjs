@@ -148,3 +148,37 @@ test('off until the coach switches it on; switched off stops it; one a coach', (
   assert.equal(crm.automationMatches(on.automation, crm.wonEvent({ id: 'l1' })), false);
   assert.equal(crm.automationMatches({ id: 'w', trigger: 'lead_won', action: 'todo', active: true }, ev), false);
 });
+
+// ---------------------------------------------------------------- the run 8 break-it tester
+test('deleted and made again, or made twice in two tabs: still one catch-up to-do for each person and due day', async () => {
+  const db = fakeDb();
+  const events = crm.catchUpEvents({ network: [PRIYA, HANNAH], todayKey: TODAY });
+  const first = keepOn();
+  for (const e of events) await crm.runAutomations(e, ctx([first]), db.io());
+  assert.equal(db.todos.length, 2);
+  // Deleted (its runs go with it, as the database's cascade does), then switched on again as a new row.
+  db.runs.length = 0;
+  const again = { ...keepOn(), id: 'a-keep-2' };
+  const left = events.filter((e) => !crm.catchUpAdded(db.todos, e));
+  assert.equal(left.length, 0, 'the to-dos already there stop it');
+  for (const e of left) await crm.runAutomations(e, ctx([again]), db.io());
+  // Two keep-in-touch automations switched on at once (two tabs): one to-do for an event, not two.
+  const db2 = fakeDb();
+  for (const e of events) await crm.runAutomations(e, ctx([first, { ...again, position: 9 }]), db2.io());
+  assert.equal(db2.todos.length, 2);
+  // A new due day is a new catch-up.
+  assert.equal(crm.catchUpAdded(db.todos, { ...events[0], dueOn: '2027-02-23' }), false);
+  // Every tab makes the same id for it.
+  assert.equal(crm.keepInTouchId(ME), crm.keepInTouchId(ME));
+  assert.notEqual(crm.keepInTouchId(ME), crm.keepInTouchId('coach-2'));
+});
+
+test('odd names: none, emoji first, very long; the to-do stays within 300 characters', async () => {
+  const long = 'A'.repeat(400);
+  const names = [['', 'Catch up with someone you’re due to see'], ['   ', 'Catch up with someone you’re due to see'], ['🦊 Sam', 'Catch up with 🦊'], ['Zoë-Ann  O’Neil', 'Catch up with Zoë-Ann']];
+  for (const [name, want] of names) assert.equal(crm.catchUpTitle(name), want);
+  const db = fakeDb();
+  await crm.runAutomations(crm.catchUpEvents({ network: [person('np-long', `${'😀'.repeat(200)}${long}`, { last_spoke_on: '2026-08-23' })], todayKey: TODAY })[0], ctx([keepOn()]), db.io());
+  assert.equal(db.todos.length, 1);
+  assert.ok([...db.todos[0].title].length <= 300 && !/[\uD800-\uDBFF]$/.test(db.todos[0].title), 'within 300 and never half an emoji');
+});

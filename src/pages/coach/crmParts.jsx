@@ -6,7 +6,7 @@ import { emailAddressesStart, logEmail } from '../../lib/coach/crmData';
 import { networkDuplicatesOf, networkPageOf, saveEmailBody, useNetworkVersion } from '../../lib/coach/networkData';
 import { dueNowQuery } from '../../lib/coach/network';
 import {
-  alreadyRan, automationMatches, CATCH_UP, catchUpEvents, checkInsToSuggest, claimed, crmProblem, emailLogPlan, endedEvent, openingEvents, runAutomations, todoFromEmail,
+  alreadyRan, automationMatches, CATCH_UP, catchUpAdded, catchUpEvents, checkInsToSuggest, claimed, crmProblem, emailLogPlan, endedEvent, openingEvents, runAutomations, todoFromEmail,
 } from '../../lib/coach/crm';
 import { copyInStandIn, gmailStandIn, STAND_IN_DOMAIN } from '../../lib/coach/connect/standIn.js';
 import { directionOf, readInbound } from '../../lib/coach/connect/copyInEmail.js';
@@ -128,7 +128,7 @@ export function AutomationWatch() {
         const active = mine('coach_automations');
         const events = openingEvents({ leads: mine('coach_leads'), stages: mine('coach_lead_stages'), events: mine('coach_lead_events'), bookings: mine('coach_bookings'), todayKey })
           .filter((event) => active.some((a) => automationMatches(a, event)));
-        if (active.some((a) => a.active && a.trigger === CATCH_UP)) events.push(...await catchUpsNow(userId, mine, todayKey));
+        if (active.some((a) => a.active && a.trigger === CATCH_UP)) events.push(...(await catchUpsNow(userId, mine, todayKey)).filter((e) => !catchUpAdded(mine('coach_todos'), e)));
         for (const event of events) {
           // Switched off since this round began (here or in another tab): nothing more runs.
           if (!mine('coach_automations').some((a) => automationMatches(a, event))) continue;

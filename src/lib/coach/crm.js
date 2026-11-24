@@ -13,6 +13,7 @@
 // copy, before 052 is there.
 import { addDays, CHANGED_ELSEWHERE_CODE, clean, IMPORT_FILE_MAX, cut, dayWords, firstName, fromDayKey, isEmail, parsePeople, possessive, quickContacts, safeCell, toCsv, toDayKey } from './model.js';
 import { dueOn, mobileForLinks, monthsOn, typedDay } from './network.js';
+import { stableId } from './googleBusy.js';
 
 const lower = (v) => String(v ?? '').toLowerCase();
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o || {}, k);
@@ -1258,6 +1259,21 @@ export function catchUpEvents({ network = [], checkIns = [], profiles = [], toda
 }
 
 /**
+ * Whether a catch-up to-do is already there for this person and due day, from any keep-in-touch automation, even one
+ * since deleted (the run 8 break-it tester: deleting the automation took its runs with it, so switching a new one on
+ * added "Catch up with Sam" again for everyone still due; and two tabs switching it on at once made two automations,
+ * each adding its own). A to-do the automation added keeps its automation_id, the person and the due day.
+ */
+export function catchUpAdded(todos, event) {
+  if (event?.trigger !== CATCH_UP || !event.dueOn) return false;
+  return (todos || []).some((t) => t && t.automation_id && t.due_on === event.dueOn
+    && ((event.networkPersonId && t.network_person_id === event.networkPersonId) || (event.profileId && t.profile_id === event.profileId)));
+}
+
+/** The keep-in-touch automation's own id, the same in every tab and on every device, so two never make two (run 8 break-it tester). */
+export const keepInTouchId = (coachId) => stableId(`keep-in-touch|${coachId}`);
+
+/**
  * The keep-in-touch automation as the Automations page lists it: the coach's own when there is one, otherwise one
  * not saved yet and switched OFF (it's off until the coach switches it on; switching it on saves it).
  */
@@ -1322,6 +1338,7 @@ export function automationSteps(event, { automations = [], leads = [], stages = 
     const key = event.trigger === 'lead_stage' ? event.key : chained ? `${root}>chain` : event.key;
     const run = { id: newId(), automation_id: a.id, coach_id: coachId, event_key: cut(key, 200), lead_id: event.leadId || null, profile_id: event.profileId || null, todo_id: null, ran_at: nowIso };
     if (a.action === 'todo' && event.trigger === CATCH_UP) {
+      if (steps.some((x) => x.todo)) continue; // one catch-up to-do for each person and day, however many keep-in-touch automations are on
       // "Catch up with Sam", due on the catch-up's own day (an overdue one is planned for today and stays due when it was).
       const plannedOn = event.dueOn && event.dueOn > todayKey ? event.dueOn : todayKey;
       const todo = { ...leadTodo({ id: newId(), lead: { id: null, coach_id: coachId }, title: catchUpTitle(event.name), plannedOn, automationId: a.id }),

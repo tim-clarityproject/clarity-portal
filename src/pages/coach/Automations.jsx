@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AddButton, Button, Dropdown, PageHeader, SlidePanel, TextField, useToast } from '../../components/design';
 import { newId, removeRow, saveRow } from '../../lib/coach/store';
 import {
   ACTIONS, AUTOMATION_HELP, AUTOMATION_WORDS, automationSavePlan, automationSentence, automationSwitch, blankAutomation, CATCH_UP, CATCH_UP_HELP, countChoices,
-  keepInTouchAutomation, ranWords, todoDayChoices, TRIGGERS,
+  keepInTouchAutomation, keepInTouchId, ranWords, todoDayChoices, TRIGGERS,
 } from '../../lib/coach/crm';
 import { Back, TextLink, useCoachPortal } from './parts';
 import { useStartStages } from './leadParts';
@@ -37,8 +37,8 @@ export default function Automations() {
   const busy = useRef(false);
   const ctx = { stages, callTypes };
   const isNew = draft ? !automations.some((a) => a.id === draft.id) : false;
-  // The keep-in-touch automation: the saved one, or one not saved yet, switched off, with an id kept for this visit.
-  const keepId = useMemo(() => newId(), []);
+  // The keep-in-touch automation: the saved one, or one not saved yet, switched off, with the coach's own id for it (every tab the same).
+  const keepId = keepInTouchId(coach.id);
   const keep = keepInTouchAutomation(automations, { id: keepId, coachId: coach.id });
   const keepSaved = automations.some((a) => a.id === keep.id);
   const listed = keepSaved ? automations : [...automations, keep];

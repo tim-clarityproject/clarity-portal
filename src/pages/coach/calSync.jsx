@@ -146,7 +146,11 @@ export function CalSync({ children }) {
         const busy = await busyOnce({ google, calendars: mineNow(TG.calendars), busyTimes: mineNow(TG.busy), coachId, coachZone: zone, now: new Date() });
         // Busy times go before their calendars; calendars are saved before their busy times.
         for (const [table, id] of busy.remove.filter(([t]) => t === TG.busy)) await removeRow(userId, table, id);
-        const calRows = busy.save.filter(([t]) => t === TG.calendars);
+        // A switch flipped while Google was being read is the coach's newest choice: the round never puts the old one back
+        // (the run 8 break-it tester: a calendar renamed in Google in the same round switched Family off again).
+        const switchNow = new Map(rowsOf(coachState(userId), TG.calendars).filter((r) => r.coach_id === coachId).map((r) => [r.id, r.busy_on === true]));
+        const calRows = busy.save.filter(([t]) => t === TG.calendars)
+          .map(([t, r]) => [t, !r.is_main && switchNow.has(r.id) ? { ...r, busy_on: switchNow.get(r.id) } : r]);
         if (calRows.length) await saveRows(userId, calRows);
         const busyRows = busy.save.filter(([t]) => t === TG.busy);
         if (busyRows.length) await saveRows(userId, busyRows);
