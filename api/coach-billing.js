@@ -15,7 +15,11 @@
 // Environment variables (Vercel): STRIPE_SECRET_KEY (sk_test_…), SUPABASE_SERVICE_ROLE_KEY, the Supabase URL and anon key.
 import { createClient } from '@supabase/supabase-js';
 import { codeRefusal } from './_coachCode.js';
-import { asCallerClient, supabaseOf } from './_coachEmails.js';
+import { asCallerClient, canSend, emailFrom, sendEach, supabaseOf } from './_coachEmails.js';
+import { maySend } from './_guestEmails.js';
+import { invoiceReminderEmail } from '../src/lib/email/billingEmails.js';
+import { dayKeyWords } from '../src/lib/time/index.js';
+import { moneyWords } from '../src/lib/billing/money.js';
 import { stripeApi, keyAllowed } from '../src/lib/billing/stripe.js';
 import { dueToDraft, invoicesFor } from '../src/lib/billing/invoicePlan.js';
 import { addDays, dayIn, isZone } from '../src/lib/time/index.js';
@@ -170,6 +174,23 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
   };
 }
 
+/** The reminder email, from the coach, in the shared template, to whoever settles the invoice, with Stripe's own link. */
+export async function sendReminder(env, server, coach, { reminder, invoice, settleBy: by }) {
+  if (!invoice.payer_email || !/^https:\/\//.test(invoice.hosted_url || '')) return 0;
+  const { data: me } = await server.from('coaches').select('display_first_name').eq('id', coach.id).maybeSingle();
+  let coachee = null;
+  if (invoice.settles_to === 'organisation' && invoice.profile_id) {
+    const { data: p } = await server.from('client_profiles').select('name').eq('id', invoice.profile_id).maybeSingle();
+    coachee = p?.name || null;
+  }
+  const doc = invoiceReminderEmail({
+    stage: reminder.stage, firstName: String(invoice.payer_name || '').split(/\s+/)[0] || '', number: `CLARITY-${invoice.number}`,
+    amountWords: moneyWords(invoice.total_minor - invoice.paid_minor, invoice.currency), dueDayWords: dayKeyWords(invoice.due_on),
+    settleByWords: by?.words || null, coachFirst: me?.display_first_name || '', settleLink: invoice.hosted_url, coachee, poNumber: invoice.po_number,
+  });
+  return sendEach(env, [{ email: invoice.payer_email }], () => emailFrom(doc));
+}
+
 export default async function handler(req, res, env = process.env) {
   if (req.method !== 'POST') return reply(res, 405, { ok: false, message: DIDNT_WORK });
   const asked = askedFor(req.body);
@@ -192,8 +213,10 @@ export default async function handler(req, res, env = process.env) {
     if (asked.kind === 'send') return reply(res, 200, { ok: true, ...(await b.send(asked.id)) });
     if (asked.kind === 'paid_by_hand') return reply(res, 200, { ok: true, ...(await b.paidByHand(asked.id)) });
     if (asked.kind === 'refund' || asked.kind === 'credit') return reply(res, 200, { ok: true, ...(await b.refundOrCredit(asked.id, asked.kind, asked.amount, asked.reason)) });
+    // Only the live site ever sends: a preview claims nothing, so a reminder pressed there is still waiting on the live site.
+    if (!maySend(env) || !canSend(env)) return reply(res, 200, { ok: false, reason: 'preview' });
     const r = await b.reminderToSend(asked.id);
-    // The email itself goes through the shared template from the coach (api/_billingEmails.js), only on the live site.
+    if (r.reminder) await sendReminder(env, server, coach, r);
     return reply(res, 200, { ok: true, sent: Boolean(r.reminder), already: Boolean(r.already), settled: Boolean(r.settled) });
   } catch (e) {
     return reply(res, e?.status || 502, { ok: false, message: e?.status ? e.message : DIDNT_WORK });
