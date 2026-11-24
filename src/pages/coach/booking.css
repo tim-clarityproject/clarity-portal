@@ -60,6 +60,8 @@
 .ui-root .cc-book-after .ds-link, .ui-root .cc-book-toggles .ds-link, .ui-root .cc-book-more .ds-link { min-height: var(--tap-min); min-width: var(--tap-min); display: inline-flex; align-items: center; }
 .ui-root .cc-book-move { margin-top: var(--space-4); padding-top: var(--space-1); border-top: var(--line-w) solid var(--line); }
 .ui-root .cc-poll-ticks { display: grid; gap: var(--space-1); margin-top: var(--space-px18); }
+/* The tick box itself, not its 44px tap area, on the page's one left edge (sign-in rule 49, as the sign-in pages' tick box). */
+.ui-root .cc-poll-ticks .ds-check { margin-inline-start: calc((var(--checkbox-box) - var(--tap-min)) / 2); }
 
 /* "Show my calendar": the free times beside the visitor's own day, on one clock. */
 .ui-root .cc-book-both { margin-top: var(--space-px18); }

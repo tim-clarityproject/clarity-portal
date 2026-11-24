@@ -82,7 +82,7 @@ export default function GuestLink() {
   if (!token) {
     return (
       <div className="ui-root">
-        <GuestFrame>
+        <GuestFrame message>
           <GuestTitle>{TOOL_NAME}</GuestTitle>
           <div className="ds-error ds-guest-problem" role="alert">
             <span className="ds-error-mark" aria-hidden="true">!</span>
@@ -448,7 +448,7 @@ function Guest({ token }) {
   if (phase === 'deleted') {
     return (
       <div className="ui-root">
-        <GuestFrame>
+        <GuestFrame message>
           <h1 className="ds-guest-question">Your answers have been deleted.</h1>
           <p className="ds-guest-sub">You can close this page now.</p>
         </GuestFrame>

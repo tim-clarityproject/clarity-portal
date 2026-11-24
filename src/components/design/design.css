@@ -4379,7 +4379,10 @@
   margin-top: var(--space-1);
 }
 
-/* ---------- Guest pages: the bold crosshair alone, centred (M9 .gtop) ---------- */
+/* ---------- Guest pages: the bold crosshair alone in the bar (M9 .gtop) ----------
+   One left edge (Tim, 23 Nov 2026, 17:40; sign-in rule 49): the crosshair's
+   drawing is on the column's left edge, as everything under it is; a short
+   message page (.ds-guest--message) is centred throughout. */
 
 .ui-root .ds-guest {
   display: flex;
@@ -4408,6 +4411,33 @@
   flex: 1;
   width: 100%;
 }
+
+/* The bar holds a column as wide as the page's, so the crosshair lines up with it. */
+.ui-root .ds-guest-top-in {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--guide-calm-max);
+  margin: 0 auto;
+  padding-inline: var(--guide-calm-pad);
+}
+
+.ui-root .ds-guest-top-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+/* The crosshair's drawing, not its square or its 44px tap area, on the edge. */
+.ui-root .ds-guest-top-row > svg,
+.ui-root .ds-guide-top > svg { margin-inline-start: calc(-1 * var(--guest-mark) * var(--bold-cross-ink-in)); }
+
+.ui-root .ds-guest-top-row > .ds-guest-mark,
+.ui-root .ds-guide-top > .ds-guest-mark { margin-inline-start: calc((var(--guest-mark) - var(--tap-min)) / 2 - var(--guest-mark) * var(--bold-cross-ink-in)); }
+
+.ui-root .ds-guest--message .ds-guest-top-row { justify-content: center; }
+.ui-root .ds-guest--message .ds-guest-top-row > * { margin-inline-start: 0; }
+.ui-root .ds-guest--message .ds-guest-col { text-align: center; }
+.ui-root .ds-guest--message .ds-guest-legal { justify-content: center; }
 
 .ui-root .ds-guest-col {
   box-sizing: border-box;
@@ -4479,7 +4509,7 @@
 
 .ui-root .ds-guest-legal {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
   gap: 0 var(--space-4);
   margin-top: var(--space-px18);
@@ -4571,6 +4601,10 @@
 
   .ui-root .ds-guest-col {
     padding: var(--space-px22) var(--space-3) var(--space-px40);
+  }
+
+  .ui-root .ds-guest-top-in {
+    padding-inline: var(--space-3);
   }
 
   .ui-root .ds-btn-note--beside {
@@ -10961,14 +10995,17 @@
 
 /* A guided step with its own top in place of the bar (M7b's results: the
    bold crosshair alone, centred, as on a guest page). */
+/* The results' bar (the outside Health Check): its crosshair on the left edge
+   of the page's column, as the calm bar's parts are (one left edge, sign-in
+   rule 49). */
 .ui-root .ds-guide-top {
   flex: none;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   box-sizing: content-box;
   height: var(--guide-bar-h);
-  padding-top: env(safe-area-inset-top, 0px);
+  padding: env(safe-area-inset-top, 0px) max(var(--guide-calm-pad), calc((100% - var(--guide-calm-max)) / 2 + var(--guide-calm-pad))) 0;
   border-bottom: var(--line-w) solid var(--line);
 }
 
@@ -10977,6 +11014,7 @@
     height: auto;
     padding-top: max(var(--space-3), env(safe-area-inset-top, 0px));
     padding-bottom: var(--space-px6);
+    padding-inline: var(--space-3);
     border-bottom: 0;
   }
 }

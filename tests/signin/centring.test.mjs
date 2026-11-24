@@ -152,3 +152,10 @@ test('a part outside the column on its edge (the crosshair in the bar above) is 
   await page.setContent(page0('<p>Strategic Alignment Health Check</p>').replace('<div class="col">', `<div class="top" style="width:358px;margin:0 auto;display:flex">${MARK}</div><div class="col" data-align="start">`));
   assert.deepEqual(centringProblems(await page.evaluate(centredGroups, { root: '.col', also: '.top .mark' })), []);
 });
+
+test('a table’s heading row starts where the table does, over an empty corner cell; words set in without one fail', async () => {
+  const head = (first) => `<div style="display:grid;grid-template-columns:44px 1fr 1fr">${first}<span>Free times</span><span>Your calendar</span></div><div style="display:grid;grid-template-columns:44px 1fr 1fr"><span>09:00</span><span>Open</span><span>Busy</span></div>`;
+  assert.deepEqual(await start(head('<span></span>')), []);
+  const bad = await start('<div style="display:grid;grid-template-columns:1fr 1fr;padding-left:44px"><span>Free times</span><span>Your calendar</span></div>');
+  assert.equal(bad.length, 1, bad.join('\n'));
+});

@@ -63,6 +63,7 @@ import { checkReveals } from './reveals.mjs';
 import { questionsBeforeCharts } from './summary-order.mjs';
 import { backGaps, buttonProblems, chevronOnlyFolds, controlsFamily, doubledRules, importantMarks, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
 import { checkPopups } from './popups.mjs';
+import { centredGroups, centringProblems } from '../signin/centring.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
@@ -587,6 +588,12 @@ for (const width of PAGES.length ? WIDTHS : []) {
         pass(`${tag}: no old names`, !old, old?.[0]);
         pass(`${tag}: the background and text match the ${mode} setting`, r.theme === mode && r.background === BACKGROUND[mode] && (r.textColour == null || r.textColour === TEXT[mode]), `${r.theme} ${r.background} ${r.textColour}`);
         pass(`${tag}: the menu button sits over nothing`, r.over.length === 0, r.over.slice(0, 3).join('; '));
+        // One left edge (sign-in rule 49; Tim, 23 Nov 2026, 17:40): a guest's pages, the crosshair in the bar included.
+        if ((act || '').startsWith('guest:')) {
+          const al = await page.evaluate(centredGroups, { root: '.ds-guest-col', column: 'children', also: '.ds-guest-top-row' });
+          const off = centringProblems(al);
+          pass(`${tag}: one left edge, the crosshair in the bar included (sign-in rule 49; ${al.rows.length} rows, ${al.align === 'centre' ? 'a message, centred' : 'on the left edge'})`, off.length === 0, off.slice(0, 4).join('; '));
+        }
         pass(`${tag}: no console errors`, errors.length === 0, errors.slice(0, 2).join(' | '));
         if (out && mode === 'light') await page.screenshot({ path: join(out, `${name}-${width === 1280 ? '1280' : width === 390 ? '390x844' : width}.png`), fullPage: true });
         // Anything that opens on the same page keeps your place (Tim, 13
@@ -759,6 +766,14 @@ if (HC_ONLY) {
               return [top('.ds-headline'), top('.hc-chart svg'), head('Projects'), top('.hc-objective'), head('Success Factors'), head('Questions to start with'), ...(own ? [head('Keep your results')] : [])];
             }, screen === 'results');
             pass(`${tag}: the headline, the chart, Projects, the Objective, the Success Factors, the questions${screen === 'results' ? ', then Keep your results' : ''}`, order.every((y, i) => y != null && (i === 0 || y > order[i - 1])), order.map((y) => (y == null ? 'missing' : Math.round(y))).join(', '));
+          }
+          // One left edge (sign-in rule 49; Tim, 23 Nov 2026, 17:40): the page's own screens and the results, the
+          // crosshair in the bar above included. On a report the chart's drawing is its own (tests/healthcheck/centring.mjs).
+          if (layer === '.ds-guest' || screen === 'results') {
+            const al = await page.evaluate(centredGroups, screen === 'results' ? { root: '.hc-results .ds-guide-page', also: '.ds-guide-top' } : { root: '.ds-guest-col', column: 'children', also: '.ds-guest-top-row' });
+            if (/results|report/.test(screen)) al.rows = al.rows.filter((x) => !/^svg “/.test(x.name));
+            const off = centringProblems(al);
+            pass(`${tag}: one left edge, the crosshair in the bar included (sign-in rule 49; ${al.rows.length} rows)`, off.length === 0, off.slice(0, 4).join('; '));
           }
           pass(`${tag}: no console errors`, b.problems.length === 0, b.problems.slice(0, 2).join(' | '));
           pass(`${tag}: nothing asked of an outside address`, b.session.outside.length === 0, [...new Set(b.session.outside)].slice(0, 3).join(' | '));

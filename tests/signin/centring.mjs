@@ -256,14 +256,28 @@ export function centredGroups(arg) {
     out.boxes.push({ name: name(el), spaceLeft: round(spaceLeft), spaceRight: round(spaceRight), ok: Math.abs(spaceLeft - spaceRight) <= tolerance });
   };
   // A note under its button is centred on that button (rule 29v), whatever the page's alignment.
+  // A note is words: a link or button after a button is an action of its own, on the page's edge.
   const buttonAbove = (el) => {
+    if (el.matches('a, button, [role=button], [role=link]')) return null;
     let prev = el.previousElementSibling;
     while (prev && !shown(prev)) prev = prev.previousElementSibling;
     return prev && prev.matches('button, .si-btn, .ui-btn-primary, .ui-btn-ghost') && el.parentElement !== col ? prev : null;
   };
+  // A table's heading row starts with an empty corner over the row numbers or the
+  // hours (a grid whose first cell draws nothing): its words stand over their own
+  // columns, and the row starts where the table does (rule 20).
+  const tableHead = (el) => {
+    if (!/grid/.test(cs(el).display)) return false;
+    const first = [...el.children].find((k) => inFlow(k) && !unseen(k));
+    return Boolean(first) && !inkOf(first);
+  };
   for (const el of rows) {
-    const ink = inkOf(el);
+    let ink = inkOf(el);
     if (!ink) continue;
+    if (tableHead(el)) {
+      const r = el.getBoundingClientRect();
+      ink = { ...ink, left: r.left + parseFloat(cs(el).borderLeftWidth) + parseFloat(cs(el).paddingLeft) };
+    }
     const mid = (ink.left + ink.right) / 2;
     const above = buttonAbove(el);
     const ab = above?.getBoundingClientRect();

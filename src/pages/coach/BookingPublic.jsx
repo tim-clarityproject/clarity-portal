@@ -33,17 +33,20 @@ const DAY_MS = 86400000;
 const DAYS_SHOWN = 5;
 const failed = () => (navigator.onLine === false ? NO_CONNECTION : NO_ANSWER);
 
-function Frame({ children }) {
+// One left edge (Tim, 23 Nov 2026, 17:40; sign-in rule 49): a page with a form or
+// a list is on the column's left edge; a short message (a title, a line or two and
+// at most its one button and link) is centred throughout (`message`).
+function Frame({ children, message = false }) {
   return (
-    <div className="ui-root cc-public cc-book">
-      <div className="cc-page"><div className="cc-col">
+    <div className={`ui-root cc-public cc-book${message ? ' cc-public--message' : ''}`}>
+      <div className="cc-page"><div className="cc-col" data-align={message ? 'centre' : 'start'}>
         <div className="cc-public-brand"><BoldCrosshair size={22} /><span>The Clarity Project</span></div>
         {children}
       </div></div>
     </div>
   );
 }
-const Calm = ({ title, children }) => <Frame><PageHeader title={title} /><p className="cc-quiet" role="status">{children}</p></Frame>;
+const Calm = ({ title, children }) => <Frame message><PageHeader title={title} /><p className="cc-quiet" role="status">{children}</p></Frame>;
 
 /** Add to calendar: the call as an .ics file made here in the page. */
 function AddToCalendar({ uid, title, startsAt, endsAt, location = '', description = '' }) {
@@ -177,7 +180,7 @@ export function BookingPage() {
   useEffect(() => { document.title = data?.name ? `${data.name}, The Clarity Project` : 'The Clarity Project'; }, [data]);
   const holiday = useHolidayLine(chosen, zone);
 
-  if (page === undefined) return <Frame><div role="status" aria-label="Loading" /></Frame>;
+  if (page === undefined) return <Frame message><div role="status" aria-label="Loading" /></Frame>;
   if (!page.there) return <Calm title="Book a call">{BOOKING_WORDS.not_ready}</Calm>;
   if (page.down) return <Calm title="Book a call">{failed()}</Calm>;
   if (!data) return <Calm title="Book a call">{BOOKING_WORDS.not_found}</Calm>;
@@ -186,7 +189,7 @@ export function BookingPage() {
   if (booked) {
     const title = who ? `${data.name} ${who.toLowerCase()}` : data.name;
     return (
-      <Frame>
+      <Frame message>
         <PageHeader title={data.name} meta={meta} />
         <p className="cc-book-done" role="status">You’re booked for {bookedWhenWords(booked.starts_at, booked.time_zone)}.</p>
         {emailed && <p className="cc-quiet">A confirmation is on its way to your email.</p>}
@@ -198,7 +201,7 @@ export function BookingPage() {
       </Frame>
     );
   }
-  if (!isOpen) return <Frame><PageHeader title={data.name} meta={meta} /><p className="cc-quiet" role="status">{bookingWords(data.state)}</p></Frame>;
+  if (!isOpen) return <Frame message><PageHeader title={data.name} meta={meta} /><p className="cc-quiet" role="status">{bookingWords(data.state)}</p></Frame>;
 
   const questions = (Array.isArray(data.questions) ? data.questions : []).filter((q) => questionLabel(q));
   const at = (k) => (problem?.at === k ? <p className="cc-problem" role="alert">{problem.line}</p> : null);
@@ -279,7 +282,7 @@ export function BookingMine() {
   useEffect(() => { document.title = b?.call_name ? `${b.call_name}, The Clarity Project` : 'The Clarity Project'; }, [b]);
   const holiday = useHolidayLine(chosen, b?.time_zone);
 
-  if (mine === undefined) return <Frame><div role="status" aria-label="Loading" /></Frame>;
+  if (mine === undefined) return <Frame message><div role="status" aria-label="Loading" /></Frame>;
   if (!mine.there) return <Calm title="Your call">{BOOKING_WORDS.not_ready}</Calm>;
   if (mine.down) return <Calm title="Your call">{failed()}</Calm>;
   if (!b) return <Calm title="Your call">{BOOKING_WORDS.not_found}</Calm>;
@@ -288,9 +291,9 @@ export function BookingMine() {
   const meta = [who, callPlaceLine(b.minutes, b.place_kind)].filter(Boolean);
   const title = who ? `${b.call_name} ${who.toLowerCase()}` : b.call_name;
   const head = <PageHeader title={b.call_name} meta={meta} />;
-  if (b.status !== 'booked') return <Frame>{head}<p className="cc-quiet" role="status">{said || BOOKING_WORDS.cancelled}</p></Frame>;
+  if (b.status !== 'booked') return <Frame message>{head}<p className="cc-quiet" role="status">{said || BOOKING_WORDS.cancelled}</p></Frame>;
   const when = <p className="cc-book-done" role="status">{said ? `${said} ` : ''}Your call is on {bookedWhenWords(b.starts_at, zone)}.</p>;
-  if (b.past) return <Frame>{head}{when}</Frame>;
+  if (b.past) return <Frame message>{head}{when}</Frame>;
 
   const startMove = async () => {
     setMode('move'); setChosen(null); setProblem(null); setStarts(null);
@@ -376,7 +379,7 @@ export function PollVote() {
   }, [key]);
   const p = page?.data || null;
   useEffect(() => { document.title = p?.title ? `${p.title}, The Clarity Project` : 'The Clarity Project'; }, [p]);
-  if (page === undefined) return <Frame><div role="status" aria-label="Loading" /></Frame>;
+  if (page === undefined) return <Frame message><div role="status" aria-label="Loading" /></Frame>;
   if (!page.there) return <Calm title="Times for a call">{BOOKING_WORDS.not_ready}</Calm>;
   if (page.down) return <Calm title="Times for a call">{failed()}</Calm>;
   if (!p) return <Calm title="Times for a call">{BOOKING_WORDS.not_found}</Calm>;
@@ -384,14 +387,14 @@ export function PollVote() {
   const head = <PageHeader title={p.title} meta={meta} />;
   if (p.status === 'confirmed' && p.confirmed) {
     return (
-      <Frame>
+      <Frame message>
         {head}
         <p className="cc-book-done" role="status">It’s confirmed for {bookedWhenWords(p.confirmed.starts_at, zone)}.</p>
         <div className="cc-acts cc-book-after"><AddToCalendar uid={`${key}-poll`} title={p.title} startsAt={p.confirmed.starts_at} endsAt={p.confirmed.ends_at} location={p.place_kind === 'zoom' ? 'Zoom' : ''} /></div>
       </Frame>
     );
   }
-  if (p.status !== 'open') return <Frame>{head}<p className="cc-quiet" role="status">This poll has closed. Ask {p.coach_first_name || 'whoever sent it'} for a new one.</p></Frame>;
+  if (p.status !== 'open') return <Frame message>{head}<p className="cc-quiet" role="status">This poll has closed. Ask {p.coach_first_name || 'whoever sent it'} for a new one.</p></Frame>;
   const send = async (e) => {
     e.preventDefault();
     if (busy.current) return;

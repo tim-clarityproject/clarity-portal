@@ -631,6 +631,13 @@ body:has(> #root .ui-root.cc-app) {
 
 /* The public pages (a workshop's registration and survey). */
 .ui-root .cc-public { min-height: 100dvh; background: var(--bg); color: var(--text); font-family: var(--font-body); }
+/* One left edge (Tim, 23 Nov 2026, 17:40; sign-in rule 49): the public pages' forms and lists are on the column's
+   left edge, as the brand above them; a short message state is centred throughout, its spaced capitals given the
+   same space before the first letter as after the last, so the letters sit on the middle. */
+.ui-root.cc-public--message .cc-col { text-align: center; }
+.ui-root.cc-public--message :is(.cc-public-brand, .ds-page-meta, .cc-acts) { justify-content: center; }
+.ui-root.cc-public--message .ds-page-title { padding-left: var(--ls-page-title); }
+.ui-root.cc-public--message .cc-public-brand > span { padding-left: var(--ls-menu-label); }
 .ui-root .cc-public-brand { display: flex; align-items: center; gap: var(--space-px10); margin-bottom: var(--space-px28); font-family: var(--font-display); text-transform: uppercase; letter-spacing: var(--ls-menu-label); font-size: var(--fs-label); color: var(--text-2); }
 
 /* A tablet: no room outside the row for the round tick, so it sits inside

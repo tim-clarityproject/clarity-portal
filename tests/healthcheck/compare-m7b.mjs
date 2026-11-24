@@ -330,6 +330,13 @@ ALLOW.push(
 // area), so every part below the chart on the results and the example report sits 44px lower than M7b draws it.
 const EXPLAIN = 'the quiet link “How to read the chart” under the chart (Tim, 16 Nov, 23:31: what a chart’s marks mean opens in the side panel) puts everything below the chart 44px lower; M7b has an ⓘ on the chart’s heading instead';
 ALLOW.push(['results|*|top', EXPLAIN], ['example|*|top', EXPLAIN]);
+// One left edge (Tim, 23 Nov 2026, 17:40; sign-in rule 49): M7b centres the crosshair in the bar and the links under
+// the email and code form. Every page with a form or a list now has one left edge, so the crosshair's drawing sits on
+// the column's left edge (its 28px square 1.11px further out, --bold-cross-ink-in) and the links start on it, each
+// line of them from the edge. Only their left edge moves; tests/healthcheck/centring.mjs holds them to the edge within 1px.
+const ONE_EDGE = 'one left edge (Tim, 23 Nov 2026, 17:40; sign-in rule 49): on a page with a form or a list the crosshair’s drawing and the links start on the column’s left edge, where M7b centres them (held to the edge by tests/healthcheck/centring.mjs)';
+ALLOW.push(...['welcome', 'signin', 'ret', 'results', 'example'].map((sc) => [`${sc}|the bold crosshair|left`, ONE_EDGE]));
+ALLOW.push(...['signin', 'ret'].flatMap((sc) => ['link 1', 'link 2', 'link 3'].map((l) => [`${sc}|${l}|left`, ONE_EDGE])));
 const ALLOWED = new Map(ALLOW);
 const allowed = (screen0, part, what) => { const screen = screen0.startsWith('pop:') ? '*' : screen0; return allowedFor(screen, part, what); };
 const allowedFor = (screen, part, what) => ALLOWED.get(`${screen}|${part}|${what}`) || ALLOWED.get(`*|${part}|${what}`) || ALLOWED.get(`${screen}|*|${what}`) || ALLOWED.get(`*|*|${what}`);

@@ -587,7 +587,7 @@ function Page() {
   if (phase === 'boot') {
     return (
       <div className="ui-root">
-        <GuestFrame {...frame}><div className="hc-loading"><Loading label="Loading" /></div></GuestFrame>
+        <GuestFrame message {...frame}><div className="hc-loading"><Loading label="Loading" /></div></GuestFrame>
       </div>
     );
   }

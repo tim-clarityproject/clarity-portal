@@ -51,6 +51,7 @@ import { settle } from './shared.mjs';
 import { actionsProblems, dotStyleProblems, mapCard, mapProblems, nearestWins, netTabProblems, readActions, readDotStyles, readFloatingMenus, readClipped, readLeadRules, readMap, readNetTabs, readTableRows, tableFrozen } from './net-rules.mjs';
 import { toastText } from './shared.mjs';
 import { DAY } from './seed.mjs';
+import { centredGroups, centringProblems } from '../signin/centring.mjs';
 
 const OUT = process.argv[2] || null;
 if (OUT) mkdirSync(OUT, { recursive: true });
@@ -228,6 +229,10 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
     report.pass(`${tag}: at twice the text size, boxes side by side still line up`, rules.level.length === 0, rules.level.slice(0, 4).join('; '));
     report.pass(`${tag}: at twice the text size, the tabs keep to their own strip`, rules.tabs.length === 0, rules.tabs.slice(0, 4).join('; '));
     report.pass(`${tag}: at twice the text size, figures stay on an equal grid`, rules.figures.length === 0, rules.figures.slice(0, 4).join('; '));
+    if (group === 'public' || group === 'signin') {
+      const al = await page.evaluate(centredGroups, { root: group === 'public' ? '.cc-col' : '.si-col' });
+      report.pass(`${tag}: at twice the text size, one left edge (sign-in rule 49; ${al.align === 'centre' ? 'a message, centred' : 'on the left edge'})`, centringProblems(al).length === 0, centringProblems(al).slice(0, 4).join('; '));
+    }
     await picture(page, `twice-${name}.${role}.${size}.${theme}`, false);
     return;
   }
@@ -384,6 +389,12 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
   rule(`the Schedule’s square is 10px, the tile’s colour, edged or dashed as it should be, before the time (${cal.found.squares} read)`, cal.squares);
   rule('no key hint (⌘, Ctrl, Cmd, Esc, Shift) is shown or spoken', cal.keys);
   rule(`a call’s block gives the client’s own time with a city, 12-hour for the US and Canada (${cal.found.clientTimes} read)`, cal.clientTime);
+  // One left edge (Tim, 23 Nov 2026, 17:40; sign-in rule 49): a page with a form or a list is on the column's left
+  // edge, the brand above it included; a short message is centred throughout; never a mix.
+  if (group === 'public' || group === 'signin') {
+    const al = await page.evaluate(centredGroups, { root: group === 'public' ? '.cc-col' : '.si-col' });
+    rule(`one left edge, or a short message centred throughout (sign-in rule 49; ${al.rows.length} rows ${al.align === 'centre' ? 'centred' : 'on the left edge'})`, centringProblems(al));
+  }
   if (group === 'public') {
     const book = await page.evaluate(readBooking, { theme, coral: ['rgb(255, 111, 92)', 'rgb(255, 133, 116)', 'rgb(240, 96, 78)'] });
     rule('the booking page follows the device’s light or dark', book.device);

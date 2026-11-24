@@ -19,7 +19,8 @@ export default class PageError extends Component {
     if (!this.state.failed) return this.props.children;
     return (
       <div className="ui-root" role="alert">
-        <GuestFrame narrow="wide">
+        {/* A short message page: centred throughout (sign-in rule 49, one left edge). */}
+        <GuestFrame narrow="wide" message>
           <div>
           <GuestTitle>Strategic Alignment Health Check</GuestTitle>
           <p className="hc-lead">This page didn’t load properly.</p>

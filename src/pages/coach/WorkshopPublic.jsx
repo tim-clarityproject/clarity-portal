@@ -16,10 +16,13 @@ import './coach.css';
 const NOT_OPEN = 'This page isn’t open at the moment. Ask whoever sent you the link.';
 const NO_CONNECTION = 'This needs a connection, so try again when you’re back online.';
 
-function Frame({ children }) {
+// One left edge (Tim, 23 Nov 2026, 17:40; sign-in rule 49): the registration and
+// survey forms are on the column's left edge; a short message (a title and one
+// line) is centred throughout (`message`).
+function Frame({ children, message = false }) {
   return (
-    <div className="ui-root cc-public">
-      <div className="cc-page"><div className="cc-col">
+    <div className={`ui-root cc-public${message ? ' cc-public--message' : ''}`}>
+      <div className="cc-page"><div className="cc-col" data-align={message ? 'centre' : 'start'}>
         <div className="cc-public-brand"><BoldCrosshair size={22} /><span>The Clarity Project</span></div>
         {children}
       </div></div>
@@ -43,8 +46,8 @@ export function WorkshopRegister() {
   }, [key]);
   useEffect(() => { document.title = page?.title ? `${page.title}, The Clarity Project` : 'The Clarity Project'; }, [page]);
 
-  if (page === undefined) return <Frame><div role="status" aria-label="Loading" /></Frame>;
-  if (!page) return <Frame><PageHeader title="Workshop" /><p className="cc-quiet">{NOT_OPEN}</p></Frame>;
+  if (page === undefined) return <Frame message><div role="status" aria-label="Loading" /></Frame>;
+  if (!page) return <Frame message><PageHeader title="Workshop" /><p className="cc-quiet">{NOT_OPEN}</p></Frame>;
   const meta = [workshopWhen(page), [page.organisation, page.place].filter(Boolean).join(', ')];
   if (result) {
     const line = {
@@ -53,9 +56,9 @@ export function WorkshopRegister() {
       already_registered: 'You already have a place with that email.',
       already_waiting: 'You’re already on the waiting list with that email.',
     }[result];
-    return <Frame><PageHeader title={page.title} meta={meta} /><p className="cc-quiet" role="status">{line}</p></Frame>;
+    return <Frame message><PageHeader title={page.title} meta={meta} /><p className="cc-quiet" role="status">{line}</p></Frame>;
   }
-  if (!page.open) return <Frame><PageHeader title={page.title} meta={meta} /><p className="cc-quiet">Registration isn’t open at the moment.</p></Frame>;
+  if (!page.open) return <Frame message><PageHeader title={page.title} meta={meta} /><p className="cc-quiet">Registration isn’t open at the moment.</p></Frame>;
 
   const questions = Array.isArray(page.questions) ? page.questions : [];
   const register = async (e) => {
@@ -117,9 +120,9 @@ export function WorkshopSurvey() {
     loadWorkshopSurvey(key).then((s) => { if (live) setSurvey(s || null); }).catch(() => { if (live) setSurvey(null); });
     return () => { live = false; };
   }, [key]);
-  if (survey === undefined) return <Frame><div role="status" aria-label="Loading" /></Frame>;
-  if (!survey) return <Frame><PageHeader title="Survey" /><p className="cc-quiet">{NOT_OPEN}</p></Frame>;
-  if (sent || survey.done) return <Frame><PageHeader title={survey.title} /><p className="cc-quiet" role="status">Thank you. Your answers are in.</p></Frame>;
+  if (survey === undefined) return <Frame message><div role="status" aria-label="Loading" /></Frame>;
+  if (!survey) return <Frame message><PageHeader title="Survey" /><p className="cc-quiet">{NOT_OPEN}</p></Frame>;
+  if (sent || survey.done) return <Frame message><PageHeader title={survey.title} /><p className="cc-quiet" role="status">Thank you. Your answers are in.</p></Frame>;
   const questions = Array.isArray(survey.questions) ? survey.questions : [];
   const send = async (e) => {
     e.preventDefault();
