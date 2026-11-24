@@ -637,7 +637,9 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root.cc-public--message .cc-col { text-align: center; }
 .ui-root.cc-public--message :is(.cc-public-brand, .ds-page-meta, .cc-acts) { justify-content: center; }
 .ui-root.cc-public--message .ds-page-title { padding-left: var(--ls-page-title); }
-.ui-root.cc-public--message .cc-public-brand > span { padding-left: var(--ls-menu-label); }
+/* The crosshair's drawing on the left edge; on a message, the words' trailing spacing given again before the crosshair. */
+.ui-root.cc-public .cc-public-brand > svg { margin-inline-start: calc(-1 * var(--cc-brand-mark) * var(--bold-cross-ink-in)); }
+.ui-root.cc-public--message .cc-public-brand > svg { margin-inline-start: calc(var(--ls-menu-label) - var(--cc-brand-mark) * var(--bold-cross-ink-in)); }
 .ui-root .cc-public-brand { display: flex; align-items: center; gap: var(--space-px10); margin-bottom: var(--space-px28); font-family: var(--font-display); text-transform: uppercase; letter-spacing: var(--ls-menu-label); font-size: var(--fs-label); color: var(--text-2); }
 
 /* A tablet: no room outside the row for the round tick, so it sits inside

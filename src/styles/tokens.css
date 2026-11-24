@@ -567,7 +567,8 @@
      crosshair on a page's left edge is moved out by its size times this, and its
      visible edge lands on the edge (one left edge, sign-in rule 49). */
   --bold-cross-ink-in: calc(7.348 / 185);
-  --guest-mark: 28px;        /* the outside pages' crosshair in the bar above the column (M7b, M9) */
+  --guest-mark: 28px;
+  --cc-brand-mark: 22px;     /* the crosshair in the coach portal's public pages' brand row */        /* the outside pages' crosshair in the bar above the column (M7b, M9) */
   --breathe-h: 60px;         /* the floating Breathe button (breathe-orb.html, 29 Oct: 60px pill, 44px orb) */
   --breathe-orb: 44px;
   --breathe-pad-l: 7px;      /* breathe-orb.html .fab: 0 22px 0 7px, so the orb sits evenly inside the pill */
