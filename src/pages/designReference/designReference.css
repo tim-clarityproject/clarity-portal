@@ -454,14 +454,14 @@
   position: static;
 }
 
-/* Sign in */
+/* Sign in: one left edge, the mark and the name included (sign-in rule 49; Tim, 23 Nov 2026, 17:40). */
 .ui-root .dr-signin {
   display: grid;
-  justify-items: center;
+  justify-items: start;
   gap: var(--space-2);
   max-width: 360px;
   margin-inline: auto;
-  text-align: center;
+  text-align: left;
 }
 
 .ui-root .dr-signin-brand {
