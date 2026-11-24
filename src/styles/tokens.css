@@ -1039,3 +1039,22 @@
   --cal-hatch: #DCDAD3;
   --cal-now: #111110;
 }
+
+/* Signing an agreement (Phase 6b run 1, M13 A3 to A8): the signature box, the saved
+   signature, the At a glance panel and Billing's figures. Sizes only, the same in both
+   modes; the box, edges and surface are the shared colour tokens. */
+.ui-root {
+  --sig-pad-h: 150px;               /* the signature box (M13 .pad) */
+  --sig-base-inset: 24px;           /* the line to sign above, in from each side */
+  --sig-base-bottom: 40px;          /* the line, up from the box's foot */
+  --sig-hint-bottom: 12px;          /* "Sign above the line", up from the foot */
+  --sig-saved-w: 180px;             /* a saved signature in its box (M13 .sigbox svg) */
+  --sig-saved-h: 60px;
+  --sig-ink-w: 2;                   /* the pen's width in px, read by SignaturePad */
+  /* The ink of the saved picture: near-black whatever the mode, because a signature is
+     printed on the light PDF (PDF rule 1). On screen it is shown through a mask in the
+     text colour, so it reads in dark and light alike. */
+  --sig-ink-saved: #111110;
+  --glance-label-w: 150px;          /* At a glance: the label column on a laptop (M13 .agl) */
+  --billing-bar-w: 200px;           /* Invested so far: the bar before the total (M13 .pbr) */
+}

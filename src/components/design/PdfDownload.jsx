@@ -17,8 +17,9 @@ import { isOffline, needsConnection } from '../../lib/friendlyError';
  * @param {'left'|'right'} [props.align]
  * @param {string} [props.className]
  * @param {string} [props.label] the button's words ("Download my PDF" on a guest's end page, M9)
+ * @param {boolean} [props.lightOnly] a signed document (an agreement): light only, so no choice (PDF rule 1)
  */
-export default function PdfDownload({ getDocument, variant = 'outline', placement = 'up', align = 'left', className = '', label = 'Download PDF' }) {
+export default function PdfDownload({ getDocument, variant = 'outline', placement = 'up', align = 'left', className = '', label = 'Download PDF', lightOnly = false }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -50,15 +51,15 @@ export default function PdfDownload({ getDocument, variant = 'outline', placemen
       <Button
         ref={buttonRef}
         variant={variant}
-        aria-haspopup="dialog"
-        aria-expanded={open}
+        aria-haspopup={lightOnly ? undefined : 'dialog'}
+        aria-expanded={lightOnly ? undefined : open}
         aria-busy={busy || undefined}
         disabled={busy}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => (lightOnly ? choose('light') : setOpen((o) => !o))}
       >
         {busy ? 'Making your PDF' : label}
       </Button>
-      <PdfChoice
+      {!lightOnly && <PdfChoice
         open={open}
         onClose={() => setOpen(false)}
         onChoose={choose}
@@ -66,7 +67,7 @@ export default function PdfDownload({ getDocument, variant = 'outline', placemen
         returnFocusRef={buttonRef}
         placement={placement}
         align={align}
-      />
+      />}
       {message && <p className="ds-pdfmessage" role="alert">{message}</p>}
     </div>
   );

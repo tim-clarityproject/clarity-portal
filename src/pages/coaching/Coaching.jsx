@@ -2,7 +2,8 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import { Button, Checkbox, LoadError, PageHeader, Section, TextBox, ToolTodoPanel, useCoach, useToast } from '../../components/design';
+import { Button, Checkbox, Chevron, List, ListRow, LoadError, PageHeader, Section, TextBox, ToolTodoPanel, useCoach, useToast } from '../../components/design';
+import { savePdf, PDF_ERROR } from '../../components/design/pdfSave';
 import { useCachedLoad } from '../../lib/pageCache';
 import { useDraft } from '../../lib/drafts';
 import { formatClockTime, formatSavedDate, getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
@@ -13,7 +14,13 @@ import {
   markAction, markCoachingSeen, noteCoachingPlaced, placedLine, readCoachingNotNow, readCoachingPlaced, savePrep, tidyCoaching, withAction,
 } from '../../lib/coaching';
 import '../performance/performance.css';
+import {
+  SIGNED_PDF, billingLine, readyLine, readyToSign, rowDay, showsBilling, signedVersions, versionTitle,
+} from '../../lib/coaching/agreements';
+import { isOffline, needsConnection } from '../../lib/friendlyError';
 import CoachingSessions from './CoachingSessions';
+import MySignature from './MySignature';
+import { agreementDocument, useAgreements } from './agreementData';
 import './coaching.css';
 
 // Coaching (Phase 6a run 2): the client's side of working with a coach, on
@@ -32,6 +39,11 @@ import './coaching.css';
 //                     with its actions: a tick for done, and "Add to this
 //                     week" or "Add to my backlog" through the one shared
 //                     add panel
+//   Agreement     (Phase 6b run 1, M13 A2) the version ready to sign, with
+//                 "Sign my agreement", then each signed version as a row
+//                 that downloads its signed PDF (light only)
+//   More          My signature (M13 A7's side panel), and Billing for a
+//                 self-funded client, with the next invoice that's due
 // With nothing from a coach nothing links here, and the page says one line.
 // It reads and answers only through the database's own checked functions
 // (src/lib/coaching.js), and is quiet until migrations 049 and 050 have run.
@@ -55,6 +67,24 @@ export default function Coaching() {
   const [placed, setPlaced] = useState(() => readCoachingPlaced(userId));
   const asks = useMemo(() => coachAsks(data, { now, today, notNow: closedOnly(notNow) }), [data, now, today, notNow]);
   const busy = useRef(false); // one request per press
+  // Agreements and invoices (061), from the device first.
+  const { data: deals } = useAgreements(userId);
+  const ready = readyToSign(deals.agreements);
+  const signedRows = signedVersions(deals.agreements);
+  const billing = showsBilling(deals);
+  const [signatureOpen, setSignatureOpen] = useState(false);
+  const making = useRef(false); // one PDF at a time
+  const downloadSigned = async (version) => {
+    if (making.current) return;
+    making.current = true;
+    try {
+      await savePdf(() => agreementDocument({ userId, version }), 'light');
+    } catch (e) {
+      toast.error(isOffline(e) ? needsConnection('This PDF') : PDF_ERROR);
+    } finally {
+      making.current = false;
+    }
+  };
 
   // Opening the page is what makes a recap no longer new on Home.
   const shown = !loading && !error;
@@ -148,7 +178,8 @@ export default function Coaching() {
   const showPrep = data.day && (Boolean(myCoach) || Boolean(data.prep));
   // Their own sessions: booking, moving and cancelling, for someone with a coach (run 3).
   const showSessions = Boolean(myCoach);
-  const empty = coachingEmpty(data, { now, today, notNow: closedOnly(notNow) }) && !showPrep && !showSessions;
+  const hasAgreements = deals.agreements.length > 0 || billing;
+  const empty = coachingEmpty(data, { now, today, notNow: closedOnly(notNow) }) && !showPrep && !showSessions && !hasAgreements;
   const day = (key) => dayKeyWords(key, { year: !thisYear(key, today) });
 
   let body;
@@ -211,6 +242,33 @@ export default function Coaching() {
           </Section>
         )}
 
+        {(ready || signedRows.length > 0) && (
+          <Section title="Agreement" className="ipp-section coaching-section agree-section">
+            {ready && (
+              <div className="agree-ready">
+                <p className="coaching-ask-line agree-ready-line">{readyLine(ready.version)}</p>
+                <div className="coaching-acts agree-ready-acts">
+                  <Button variant="primary" onClick={() => navigate(`/coaching/agreement/${ready.id}`)}>Sign my agreement</Button>
+                </div>
+              </div>
+            )}
+            {signedRows.length > 0 && (
+              <List label="Signed agreements" className="agree-rows">
+                {signedRows.map((v) => (
+                  <ListRow
+                    key={v.id}
+                    title={versionTitle(v.version)}
+                    type={SIGNED_PDF}
+                    date={rowDay(v.signedAt, today)}
+                    aria-label={`${versionTitle(v.version)}, signed PDF, ${rowDay(v.signedAt, today)}. Download it.`}
+                    onClick={() => downloadSigned(v)}
+                  />
+                ))}
+              </List>
+            )}
+          </Section>
+        )}
+
         {showPrep && (
           <Section title="For next time" className="ipp-section coaching-section">
             <form noValidate onSubmit={(e) => { e.preventDefault(); keepPrep(); }}>
@@ -256,6 +314,17 @@ export default function Coaching() {
             </div>
           </Section>
         )}
+
+        {hasAgreements && (
+          <Section title="More" className="ipp-section coaching-section agree-more">
+            <List label="More">
+              <ListRow title="My signature" date={<Chevron direction="right" size="sm" />} aria-haspopup="dialog" onClick={() => setSignatureOpen(true)} />
+              {billing && (
+                <ListRow title="Billing" type={billingLine(deals.invoices, today) || undefined} date={<Chevron direction="right" size="sm" />} onClick={() => navigate('/coaching/billing')} />
+              )}
+            </List>
+          </Section>
+        )}
       </>
     );
   }
@@ -267,6 +336,7 @@ export default function Coaching() {
         <PageHeader title="Coaching" />
         {body}
       </div>
+      <MySignature open={signatureOpen} onClose={() => setSignatureOpen(false)} userId={userId} />
       <ToolTodoPanel
         open={Boolean(adding)}
         onClose={() => setAdding(null)}

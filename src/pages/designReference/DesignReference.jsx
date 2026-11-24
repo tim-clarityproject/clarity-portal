@@ -94,6 +94,7 @@ import {
 } from '../../components/design';
 import { ONE_TAP_MS } from '../../components/design/GuidedTool';
 import { GallerySection, New } from './galleryKit';
+import { SigningDemo } from './SigningDemos';
 import { contrast, startingValue, usePretendServer, ViewContext, useGalleryView } from './galleryUtils';
 import SprintTool from './SprintTool';
 import { FiguresDemo, NoteSwitchDemo, RowsDemo, ScaleLevelDemo, SummaryDemo } from './DailyPartsDemos';
@@ -2191,6 +2192,14 @@ function Gallery() {
             <p>No key: each line is named at its right end with its latest score, months run along the bottom, and a small ring under a month marks long-haul travel. Every dot and ring has the shared pop-up.</p>
             <p>Show as a table sits under every chart, closed until opened, so nothing depends on colour or on pointing. Under about 600px each row becomes a small card.</p>
             <p>With one month, the empty frame says when the graph starts.</p>
+          </>
+        )} />
+
+        <GallerySection id="c88" title="Signing an agreement: At a glance, the signature box and a saved signature" demo={SigningDemo} rules={(
+          <>
+            <p><New /><b>At a glance</b> (M13 A3; the wording’s Main points): the soft surface, a label in grey and its value on each row, a fine line between; one column on a phone. A funded client’s has Funded by and never an amount.</p>
+            <p><b>The signature box</b> (<code>SignaturePad</code>; M13 A4 and A7): draw with a finger, a pen, a mouse or a trackpad above the line, in the text colour; Clear and Type instead at the left, Use this signature at the right (full width on a phone). Type instead is how a keyboard user signs. The picture kept is drawn again in dark ink, because it is printed on the light PDF: a PNG of 200 to 300,000 characters (061).</p>
+            <p><b>A saved signature</b> (<code>SavedSignature</code>): its box with Draw a new signature beside it. The dark ink shows through a mask in the text colour, so it reads in both modes.</p>
           </>
         )} />
 

@@ -61,3 +61,71 @@
   .ui-root .coaching-times { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ui-root .coaching-acts--links .ds-btn { width: auto; }
 }
+
+/* ---- Agreements, signing and Billing (Phase 6b run 1, M13 A2 to A8). Every value is a token. */
+
+/* My coaching, Agreement: the version ready to sign, then the signed versions' rows. */
+.ui-root .agree-ready { margin-bottom: var(--space-3); }
+.ui-root .agree-ready-acts { justify-content: flex-start; margin-top: var(--space-3); }
+.ui-root .agree-rows { margin-top: var(--space-1); }
+
+/* At a glance (M13 .agl): the soft surface, a label and its value on each row, a fine line between. */
+.ui-root .agree-glance {
+  margin: 0;
+  padding: var(--space-px6) var(--space-px22);
+  border-radius: var(--radius-suggest);
+  background: var(--raised);
+}
+.ui-root .agree-glance-row {
+  display: grid;
+  grid-template-columns: var(--glance-label-w) minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-px12) 0;
+  border-bottom: var(--line-w) solid var(--line);
+}
+.ui-root .agree-glance-row:last-child { border-bottom: 0; }
+.ui-root .agree-glance dt { font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .agree-glance dd { margin: 0; font-size: var(--fs-body); line-height: var(--lh-text); color: var(--text); overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .ui-root .agree-glance-row { grid-template-columns: minmax(0, 1fr); }
+}
+.ui-root .agree-read { margin-top: var(--space-2); }
+
+/* The full agreement in the side panel: each section's number and title, then its paragraphs. */
+.ui-root .agree-full-section + .agree-full-section { margin-top: var(--space-4); }
+.ui-root .agree-full-title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-body);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+}
+.ui-root .agree-full-text { margin: 0; font-size: var(--fs-note); line-height: var(--lh-statement); color: var(--text-2); }
+.ui-root .agree-full-text + .agree-full-text { margin-top: var(--space-2); }
+
+/* Signing: the signature, the name, the tick box, the record line, then any problem. */
+.ui-root .agree-name { margin-top: var(--space-px18); }
+.ui-root .agree-tick { margin-top: var(--space-px18); }
+.ui-root .agree-note { margin: var(--space-px18) 0 0; font-size: var(--fs-option); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .agree-failure { margin-top: var(--space-px18); }
+
+/* Signed (M13 A5): the line, then Download PDF. */
+.ui-root .agree-line { margin: 0; font-size: var(--fs-option); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .agree-signed .ds-pdfmenu { margin-top: var(--space-px18); }
+
+/* My signature's panel (M13 A7). */
+.ui-root .agree-mysig-area { margin-top: var(--space-px18); }
+
+/* Billing (M13 A8): two figures, the invoices, then Settle my invoice. */
+.ui-root .billing-stats { margin-top: var(--space-4); }
+.ui-root .billing-progress { display: flex; align-items: center; gap: var(--space-px10); margin-top: var(--space-px12); }
+.ui-root .billing-progress .ds-bar { width: var(--billing-bar-w); margin-top: 0; }
+.ui-root .billing-total { font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .billing-settled { color: var(--mint-text); }
+.ui-root .billing-offline { margin-top: var(--space-px18); }
+.ui-root .billing-acts { justify-content: flex-start; margin-top: var(--space-px18); }
+.ui-root .billing-line { margin: var(--space-4) 0 0; font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text); }
+.ui-root .billing-line--quiet { margin-top: var(--space-1); color: var(--text-2); }

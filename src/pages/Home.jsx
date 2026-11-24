@@ -5,6 +5,9 @@ import { AuthContext } from '../context/AuthContext';
 import DesignHeader from '../components/DesignHeader';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import useCoachingNews from './coaching/useCoachingNews';
+import { useAgreementWaiting } from './coaching/agreementData';
+import { rowDay, versionTitle } from '../lib/coaching/agreementRules';
+import { signingWords } from '../lib/billing/agreementText';
 import HomeOwnSuggestion from '../components/ownQuestions/HomeOwnSuggestion';
 import { useStartChat } from '../components/coach/startChat';
 import {
@@ -15,6 +18,8 @@ import {
   Collapsible,
   DayFocus,
   HelpList,
+  List,
+  ListRow,
   Loading,
   MiniDial,
   OfferRow,
@@ -185,6 +190,8 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   const [notNow, addNotNow] = useDeviceList(userId, 'quiet-not-now');
   // Something new from their coach (an invite, a request, cover, a recap): one quiet line to the Coaching page.
   const coachingNew = useCoachingNews(userId, { today, now });
+  // A coaching agreement waiting to be signed (Phase 6b run 1, M13 A1): one row until it's signed.
+  const agreementWaiting = useAgreementWaiting(userId);
   // A peak moment's Not now (M18): "We’ll ask again tomorrow.", so it is kept with today's date.
   const [peakNotNow, addPeakNotNow] = useDeviceList(userId, 'peak-not-now');
   const peak = usePeakMoments(userId);
@@ -423,6 +430,20 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
           onDismiss: q.dismissable ? () => { addNotNow(q.key); toast.show('We won’t ask again.'); } : undefined,
         }))}
       />
+
+      {/* From your coaching (M13 A1): the agreement waiting to be signed, gone once signed. */}
+      {agreementWaiting && (
+        <Section title="From your coaching" className="ipp-section home-section home-coaching">
+          <List label="From your coaching">
+            <ListRow
+              title={versionTitle(agreementWaiting.version)}
+              type={signingWords('').homeLine}
+              date={rowDay(agreementWaiting.sentAt, today)}
+              onClick={() => go(`/coaching/agreement/${agreementWaiting.id}`)}
+            />
+          </List>
+        </Section>
+      )}
 
       {tripOffer && tripOfferState.show && person !== 'recovery' && (
         <OfferRow

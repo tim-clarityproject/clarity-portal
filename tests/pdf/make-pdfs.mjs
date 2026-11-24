@@ -28,6 +28,9 @@ const [{ renderPdf }, { PAPER }, { samplePdf }, { healthCheckPdf }, { meetingPla
   load('/src/lib/pdf/docs/emotionalWash.js'),
 ]);
 const { draftFromData } = await load('/src/pages/alignment/alignmentFlow.js');
+const [{ agreementPdf }, { agreementRows }, { clauses: agreementClauses }] = await Promise.all([
+  load('/src/lib/pdf/docs/agreement.js'), load('/src/lib/coaching/agreementRules.js'), load('/src/lib/billing/agreementText.js'),
+]);
 
 const file = (p) => new Uint8Array(readFileSync(join(root, p)));
 const fs = 'node_modules/@fontsource/';
@@ -567,7 +570,60 @@ EW['Emotional wash, hostile'] = emotionalWashPdf({
   }),
 });
 
-const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU, ...TC, ...EW };
+// ---- coaching agreements (Phase 6b run 1): light only on the site, both here so every break is checked ----
+// A drawn signature as the pad saves it: a PNG of dark ink on nothing, made here with zlib.
+const { deflateSync, crc32 } = await import('node:zlib');
+function signaturePng(w = 240, h = 70) {
+  const raw = Buffer.alloc((w * 4 + 1) * h);
+  for (let x = 4; x < w - 4; x += 0.25) {
+    const y = h / 2 + Math.sin(x / 11) * (h / 3.2) * Math.cos(x / 37);
+    for (let dy = -1; dy <= 1; dy += 1) {
+      const px = Math.round(x); const py = Math.round(y + dy);
+      if (py < 0 || py >= h) continue;
+      const o = py * (w * 4 + 1) + 1 + px * 4;
+      raw[o] = 17; raw[o + 1] = 17; raw[o + 2] = 16; raw[o + 3] = 255;
+    }
+  }
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+    const td = Buffer.concat([Buffer.from(type), data]);
+    const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td) >>> 0);
+    return Buffer.concat([len, td, crc]);
+  };
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 6;
+  const png = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+  return `data:image/png;base64,${png.toString('base64')}`;
+}
+const AG_TERMS = {
+  coaching: '6-month coaching, with a momentum phase', sessions: 16, minutes: 60, place: 'Zoom', rhythm: 'weekly for 6 weeks, then every 2 weeks',
+  startsOn: '2027-01-04', endsOn: '2027-07-02', currency: 'GBP', total_minor: 1800000, instalments: 6, goals: 'lead the merger well and keep the team steady',
+  clientName: 'Sam Carter', clientEmail: 'sam@example.invalid', coachName: 'Dr. Tim Dutton', coachFirst: 'Tim',
+};
+const agreementVersion = (over = {}, terms = AG_TERMS) => agreementRows([{
+  id: '00000000-0000-4000-8000-000000000001', agreement_id: '00000000-0000-4000-8000-000000000002', reference: 'CLARITY-AG-0001', version: 1,
+  status: 'signed', current: true, sent_at: '2026-12-01T09:00:00Z', coach_signed_at: '2026-12-01T08:58:00Z', client_signed_at: '2026-12-02T18:40:00Z',
+  funded_by: null, currency: 'GBP', total_minor: terms.total_minor ?? null, terms, clauses: agreementClauses({ ...terms, fundedBy: over.funded_by || null }),
+  signed_name: terms.clientName, signed_email: terms.clientEmail, fingerprint: 'a3f1c09e7b2d4e5f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f', ...over,
+}])[0];
+const LONG_NAME = 'Alexandra Konstantinopoulou-Montgomery-Fairweather';
+const AG = {
+  'Coaching agreement, self-funded, drawn': agreementPdf({ version: agreementVersion(), signature: { kind: 'drawn', image: signaturePng() } }),
+  'Coaching agreement, funded, typed': agreementPdf({
+    version: agreementVersion({ funded_by: 'Northfield Logistics', total_minor: null, currency: null }, { ...AG_TERMS, total_minor: undefined, instalments: undefined, clientName: 'Priya Shah', clientEmail: 'priya@example.invalid' }),
+    signature: { kind: 'typed', typed_name: 'Priya Shah' },
+  }),
+  'Coaching agreement, long names and emoji': agreementPdf({
+    version: agreementVersion({}, { ...AG_TERMS, clientName: LONG_NAME, clientEmail: 'alexandra.konstantinopoulou-montgomery@a-very-long-organisation-name.example.invalid', goals: `${para(3)} 🚀`, contactWays: 'email, WhatsApp or the portal’s chat' }),
+    signature: { kind: 'drawn', image: signaturePng(300, 90) },
+  }),
+  'Coaching agreement, ongoing in dollars': agreementPdf({
+    version: agreementVersion({ currency: 'USD' }, { ...AG_TERMS, ongoing: true, sessions: 24, startsOn: null, endsOn: null, currency: 'USD', total_minor: 2400000, instalments: 12 }),
+    signature: { kind: 'drawn', image: signaturePng() },
+  }),
+  'Coaching agreement, not signed yet': agreementPdf({ version: agreementVersion({ status: 'sent', client_signed_at: null, signed_name: null, signed_email: null, fingerprint: null }) }),
+};
+
+const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU, ...TC, ...EW, ...AG };
 
 // ---- dot charts: dots stay in their own area, and how many touch ----------------------
 // A dot is in its own area when it is on the same side of both centre lines

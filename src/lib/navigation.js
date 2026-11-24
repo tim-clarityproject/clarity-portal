@@ -428,6 +428,8 @@ const PAGE_NAMES = [
   ['/performance-plan/history', 'Version history'],
   ['/performance-sprint/year', 'View your year'],
   ['/coaching', 'Coaching'],
+  ['/coaching/agreement', 'Coaching agreement'],
+  ['/coaching/billing', 'Billing'],
   ['/peak-moments', 'Peak moments'],
   ['/peak-moments/add', 'Add peak moment'],
   ['/peak-moments/edit', 'Edit this peak moment'],

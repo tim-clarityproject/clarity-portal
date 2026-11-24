@@ -1,0 +1,97 @@
+/* The signature box and a saved signature (Phase 6b run 1; M13 A4 and A7: "built from the
+   surface, edges and box tokens"). Every value is a token. */
+
+.ui-root .ds-sig-label {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-label-row);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+/* M13 .pad: 150px high, the box colour, the edges colour (rule 8a), the field's corners. */
+.ui-root .ds-sig-pad {
+  position: relative;
+  height: var(--sig-pad-h);
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-field);
+  background: var(--card);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ui-root .ds-sig-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  cursor: crosshair;
+  touch-action: none;
+  color: var(--text); /* the ink on screen */
+}
+.ui-root .ds-sig-base {
+  position: absolute;
+  left: var(--sig-base-inset);
+  right: var(--sig-base-inset);
+  bottom: var(--sig-base-bottom);
+  height: var(--line-w);
+  background: var(--line);
+  pointer-events: none;
+}
+.ui-root .ds-sig-hint {
+  position: absolute;
+  left: var(--sig-base-inset);
+  bottom: var(--sig-hint-bottom);
+  font-size: var(--fs-small);
+  line-height: var(--lh-text);
+  color: var(--placeholder);
+  pointer-events: none;
+}
+
+/* Clear and Type instead at the left, Use this signature at the right (M13 .padrow). */
+.ui-root .ds-sig-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-px12);
+  margin-top: var(--space-px10);
+}
+.ui-root .ds-sig-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-px18);
+}
+@media (max-width: 600px) {
+  /* "Use this signature" drops to its own full-width line on a phone (M13). */
+  .ui-root .ds-sig-use { width: 100%; }
+}
+
+/* A saved signature in its box, with "Draw a new signature" at its right (M13 .sigbox). */
+.ui-root .ds-sig-saved-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-px20);
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-field);
+  background: var(--card);
+}
+/* The picture is dark ink; it shows through a mask in the text colour, so it reads in both modes. */
+.ui-root .ds-sig-saved {
+  display: block;
+  width: var(--sig-saved-w);
+  max-width: 100%;
+  height: var(--sig-saved-h);
+  background: var(--text);
+  -webkit-mask: var(--sig-src) left center / contain no-repeat;
+  mask: var(--sig-src) left center / contain no-repeat;
+}
+@media (forced-colors: active) {
+  .ui-root .ds-sig-saved { forced-color-adjust: none; background: CanvasText; }
+  .ui-root .ds-sig-canvas { forced-color-adjust: none; color: CanvasText; }
+}
+
+.ui-root .ds-sig { width: 100%; }

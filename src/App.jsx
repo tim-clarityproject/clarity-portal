@@ -257,6 +257,8 @@ const TeamCheck = lazy(() => loadWithReload(() => import('./pages/teamCheck/Team
 const HealthCheckInside = lazy(() => loadWithReload(() => import('./pages/healthCheckInside/HealthCheckInside')));
 const EmotionalWash = lazy(() => loadWithReload(() => import('./pages/emotionalWash/EmotionalWash')));
 const Coaching = lazy(() => loadWithReload(() => import('./pages/coaching/Coaching')));
+const SignAgreement = lazy(() => loadWithReload(() => import('./pages/coaching/SignAgreement')));
+const Billing = lazy(() => loadWithReload(() => import('./pages/coaching/Billing')));
 const PeakMoments = lazy(() => loadWithReload(() => import('./pages/peakMoments/PeakMoments')));
 const TravelPlan = lazy(() => loadWithReload(() => import('./pages/travelPlan/TravelPlan')));
 const GuestLink = lazy(() => loadWithReload(() => import('./pages/guest/GuestLink')));
@@ -697,6 +699,9 @@ function AppContent() {
           {/* Peak moments (M18, Phase 8b): the list, Add, Edit and the review after. */}
           <Route path="/peak-moments/*" element={lazyPage(PeakMoments)} />
           <Route path="/coaching" element={lazyPage(Coaching)} />
+          {/* Signing a coaching agreement and Billing (Phase 6b run 1, M13 A3 to A8). */}
+          <Route path="/coaching/agreement/:versionId" element={lazyPage(SignAgreement)} />
+          <Route path="/coaching/billing" element={lazyPage(Billing)} />
           <Route path="/travel-plan/*" element={lazyPage(TravelPlan)} />
           {GET_UNSTUCK_STEPS.map((path) => (
             <Route key={path} path={path} element={<MovedTo to="/get-unstuck" />} />

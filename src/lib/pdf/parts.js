@@ -837,31 +837,74 @@ function dotsBlock(L, b, parent, maxH) {
     : [])];
 }
 
-/** Signature block for agreements: a signature, name and date line for each person. */
+/**
+ * Signature block for agreements: for each person a signature line, then a line for each fact.
+ * A party: { role, name?, date? } (a signature, name and date line to sign by hand), and for a
+ * signing record kept in the portal (Phase 6b run 1):
+ *   rows:      [[caption, value]] in place of Name and Date; long values wrap within the column
+ *   image:     a drawn signature (a PNG data URL, dark ink), drawn on the signature line
+ *   imageAlt:  its description for screen readers
+ *   typed:     a typed signature: the name, written on the signature line
+ *   signature: false leaves the signature line out (a signer whose signature isn't readable here)
+ * Each column stands on its own, so two parties may differ in height.
+ */
+const SIG_SPACE = 44; // room for a drawn signature above its line
 function signatureBlock(L, b, parent) {
   const { ts } = L;
   const parties = b.parties.slice(0, 4);
   const colW = (L.contentW - COL_GAP * 2) / 2;
-  const partyH = STYLES.label.lh + 3 * (32 + STYLES.small.lh);
+  const shown = (pt) => pt.signature !== false;
+  const sigH = (pt) => (pt.image || pt.typed ? SIG_SPACE : 32);
+  const plans = parties.map((pt) => {
+    const rows = (pt.rows || [['Name', pt.name || ''], ['Date', pt.date || '']]).map(([caption, value]) => ({
+      caption,
+      lines: blank(value) ? [] : ts.wrap(String(value), STYLES.body, colW),
+    }));
+    const rowH = (r) => Math.max(32, r.lines.length * STYLES.body.lh + 10);
+    const h = STYLES.label.lh + (shown(pt) ? sigH(pt) + STYLES.small.lh : 0) + rows.reduce((s, r) => s + rowH(r) + STYLES.small.lh, 0);
+    return { pt, rows, rowH, h };
+  });
   const rowsN = Math.ceil(parties.length / 2);
-  const h = rowsN * partyH + (rowsN - 1) * SPACE.block;
+  const gridH = Array.from({ length: rowsN }, (_, r) => Math.max(...plans.slice(r * 2, r * 2 + 2).map((p) => p.h)));
+  const h = gridH.reduce((s, x) => s + x, 0) + (rowsN - 1) * SPACE.block;
   const sect = tagNode('Div', parent);
+  const lineAt = (ctx, px, py) => ctx.artifact(() => ctx.doc.moveTo(px, py).lineTo(px + colW, py).lineWidth(0.75).stroke(ctx.t.detail));
+  const caption = (ctx, words, px, py) => ctx.mark(tagNode('P', sect), () => ts.draw(words, px, py + 3 + ts.baseline(STYLES.small), STYLES.small, ctx.t.detail));
   return [{
     kind: 'signature',
     h,
     gap: 0,
     lines: ATOMIC,
     draw(ctx, x, y) {
-      parties.forEach((pt, i) => {
+      plans.forEach(({ pt, rows, rowH }, i) => {
+        const r = Math.floor(i / 2);
         const px = x + (i % 2) * (colW + COL_GAP * 2);
-        let py = y + Math.floor(i / 2) * (partyH + SPACE.block);
+        let py = y + gridH.slice(0, r).reduce((s, v) => s + v, 0) + r * SPACE.block;
         ctx.mark(tagNode('P', sect), () => ts.draw(pt.role, px, py + ts.baseline(STYLES.label), STYLES.label, ctx.t.text));
         py += STYLES.label.lh;
-        [['Signature', ''], ['Name', pt.name || ''], ['Date', pt.date || '']].forEach(([caption, value]) => {
-          py += 32;
-          if (value) ctx.mark(tagNode('P', sect), () => ts.draw(value, px, py - 6, STYLES.body, ctx.t.text));
-          ctx.artifact(() => ctx.doc.moveTo(px, py).lineTo(px + colW, py).lineWidth(0.75).stroke(ctx.t.detail));
-          ctx.mark(tagNode('P', sect), () => ts.draw(caption, px, py + 3 + ts.baseline(STYLES.small), STYLES.small, ctx.t.detail));
+        if (shown(pt)) {
+          py += sigH(pt);
+          if (pt.image) {
+            const fig = tagNode('Figure', sect, { alt: pt.imageAlt || `Signature of ${pt.name || pt.role}` });
+            // Drawn as signed: dark ink on no background, fitted to the space above the line.
+            ctx.mark(fig, () => ctx.doc.image(pt.image, px, py - SIG_SPACE + 2, { fit: [Math.min(colW, 200), SIG_SPACE - 6], align: 'left', valign: 'bottom' }));
+          } else if (pt.typed) {
+            ctx.mark(tagNode('P', sect), () => ts.draw(String(pt.typed), px, py - 6, STYLES.glanceText, ctx.t.text));
+          }
+          lineAt(ctx, px, py);
+          caption(ctx, 'Signature', px, py);
+          py += STYLES.small.lh;
+        }
+        rows.forEach((row) => {
+          py += rowH(row);
+          const n = row.lines.length;
+          if (n) {
+            ctx.mark(tagNode('P', sect), () => row.lines.forEach((line, k) => (
+              ts.draw(line, px, py - 6 - (n - 1 - k) * STYLES.body.lh, STYLES.body, ctx.t.text)
+            )));
+          }
+          lineAt(ctx, px, py);
+          caption(ctx, row.caption, px, py);
           py += STYLES.small.lh;
         });
       });
