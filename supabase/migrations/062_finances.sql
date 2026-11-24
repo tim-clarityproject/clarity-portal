@@ -359,7 +359,7 @@ grant execute on function public.proposal_open(text) to anon, authenticated, ser
 
 -- ---------------------------------------------------------------- an associate's month, for the owner's statement
 -- The owner can't read an associate's sessions (050), so each associate's delivered minutes for a month come from here:
--- held, late cancellations (counted as delivered unless waived) and no-shows (the owner decides whether they're paid),
+-- held (or past with no outcome yet), late cancellations (counted as delivered unless waived) and no-shows (the owner decides whether they're paid),
 -- in Europe/London months. Numbers only: never a client, a note or a time. The owner only, with the 6-digit code.
 create or replace function public.associate_month_minutes(p_month date)
 returns table (coach_id uuid, held_minutes integer, late_cancel_minutes integer, no_show_minutes integer, sessions integer)
@@ -374,10 +374,12 @@ begin
   end if;
   return query
     select s.coach_id,
-      coalesce(sum(s.minutes) filter (where s.outcome = 'held'), 0)::integer,
+      -- A past session with no outcome written yet counts as held until it's marked otherwise (the same rule as the
+      -- forecast and the associate's own Today; UI tester, run 2).
+      coalesce(sum(s.minutes) filter (where s.outcome = 'held' or (s.outcome is null and s.starts_at + make_interval(mins => s.minutes) <= now())), 0)::integer,
       coalesce(sum(s.minutes) filter (where s.outcome = 'late_cancel' and not coalesce(s.waived, false)), 0)::integer,
       coalesce(sum(s.minutes) filter (where s.outcome = 'no_show'), 0)::integer,
-      count(*) filter (where s.outcome in ('held', 'late_cancel', 'no_show'))::integer
+      count(*) filter (where s.outcome in ('held', 'late_cancel', 'no_show') or (s.outcome is null and s.starts_at + make_interval(mins => s.minutes) <= now()))::integer
     from public.coach_sessions s
     join public.coaches c on c.id = s.coach_id
     where c.role <> 'owner'

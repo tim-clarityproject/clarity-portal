@@ -135,9 +135,10 @@ begin
     -- 6. an associate's month for the owner: minutes only, the owner only, with the code
     insert into public.coach_sessions (coach_id, profile_id, starts_at, minutes, outcome) values
       (maya_c, p_sam, '2026-11-03 10:00+00', 60, 'held'), (maya_c, p_sam, '2026-11-04 10:00+00', 60, 'late_cancel'), (maya_c, p_sam, '2026-11-05 10:00+00', 30, 'no_show'),
-      (maya_c, p_sam, '2026-12-01 00:30+00', 60, 'held'), (maya_c, p_sam, '2026-10-31 23:30+00', 60, 'held');
+      (maya_c, p_sam, '2026-12-01 00:30+00', 60, 'held'), (maya_c, p_sam, '2026-10-31 23:30+00', 60, 'held'), (maya_c, p_sam, '2026-11-06 10:00+00', 30, 'moved');
+    insert into public.coach_sessions (coach_id, profile_id, starts_at, minutes) values (maya_c, p_sam, '2026-11-02 10:00+00', 30);
     perform pg_temp.k_as(tess_u, 'aal2');
-    f := f || pg_temp.k_eq('6a Tess reads Maya''s November minutes', pg_temp.k_try(format('select held_minutes || ''/'' || late_cancel_minutes || ''/'' || no_show_minutes || ''/'' || sessions from public.associate_month_minutes(''2026-11-01'') where coach_id = %L', maya_c)), '60/60/30/3');
+    f := f || pg_temp.k_eq('6a Tess reads Maya''s November minutes', pg_temp.k_try(format('select held_minutes || ''/'' || late_cancel_minutes || ''/'' || no_show_minutes || ''/'' || sessions from public.associate_month_minutes(''2026-11-01'') where coach_id = %L', maya_c)), '90/60/30/4');
     perform pg_temp.k_as(tess_u, 'aal1');
     f := f || pg_temp.k_eq('6b not without the code', pg_temp.k_try('select count(*)::text from public.associate_month_minutes(''2026-11-01'')'), '0');
     perform pg_temp.k_as(maya_u, 'aal2');
