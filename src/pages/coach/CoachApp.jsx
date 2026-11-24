@@ -7,7 +7,7 @@ import { useSignOut } from '../../components/SignOut';
 import { getLocalDateKey } from '../../lib/dateFormatter';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { useCoachRole } from '../../lib/coach/role';
-import { findCalItems, fromTable, rowsOf, saveRows, sessionsOlder, useCoachCopyShown, useCoachLoad, useCoachSomethingToShow, useCoachStore } from '../../lib/coach/store';
+import { findCalItems, fromTable, rowsOf, saveRows, screenKindOf, sessionsOlder, useCoachCopyShown, useCoachLoad, useCoachPartial, useCoachSomethingToShow, useCoachStore } from '../../lib/coach/store';
 import { loadAdminClients, loadCoaches } from '../../lib/coach/actions';
 import { deviceCopyAvailable, readExtra, writeExtra } from '../../lib/coach/deviceCopy';
 import { callForBar, favouriteViews, nextCallBar, searchResults, withRecent } from '../../lib/coach/model';
@@ -34,29 +34,58 @@ import './coach.css';
 // (the bold crosshair menu button, one search box, the bell), the slim
 // next-call bar's slot, the menu, the phone bar, search and the bell.
 
-const Today = lazy(() => import('./Today'));
-const Clients = lazy(() => import('./Clients'));
-const ClientPage = lazy(() => import('./ClientPage'));
-const PastClients = lazy(() => import('./PastClients'));
-const GroupPage = lazy(() => import('./GroupPage'));
-const WorkshopPage = lazy(() => import('./WorkshopPage'));
-const OrganisationPage = lazy(() => import('./OrganisationPage'));
-const Settings = lazy(() => import('./Settings'));
-const Todos = lazy(() => import('./Todos'));
-const TodoListPage = lazy(() => import('./TodoListPage'));
-const SessionPage = lazy(() => import('./SessionPage'));
-const ClosePage = lazy(() => import('./ClosePage'));
-const Calendar = lazy(() => import('./Calendar'));
-const Leads = lazy(() => import('./Leads'));
-const LeadPage = lazy(() => import('./LeadPage'));
-const ColdLeads = lazy(() => import('./ColdLeads'));
-const Automations = lazy(() => import('./Automations'));
-const Boards = lazy(() => import('./Boards'));
-const BoardPage = lazy(() => import('./BoardPage'));
-const Network = lazy(() => import('./Network'));
-const OpenForCalls = lazy(() => import('./OpenForCalls'));
-const PollPage = lazy(() => import('./PollPage'));
+// Each page shows straight away once its part has loaded, never through Suspense: React holds back what a Suspense
+// boundary reveals by up to 300 ms, which held a coach's first screen up (coach first screen run; App.jsx's page() does
+// the same for the client pages). The page the address opens on is asked for as soon as this file arrives (below).
+function part(load) {
+  let Loaded = null;
+  let asked = null;
+  const get = () => {
+    if (!asked) {
+      asked = load().then((m) => { Loaded = m.default; return m; });
+      asked.catch(() => { asked = null; });
+    }
+    return asked;
+  };
+  const Lazy = lazy(get);
+  function Page(props) {
+    // Decided once, when the page first shows, so it never swaps between the two (which would start it again).
+    const [Ready] = useState(() => Loaded);
+    return Ready ? <Ready {...props} /> : <Lazy {...props} />;
+  }
+  Page.preload = get;
+  return Page;
+}
+
+const Today = part(() => import('./Today'));
+const Clients = part(() => import('./Clients'));
+const ClientPage = part(() => import('./ClientPage'));
+const PastClients = part(() => import('./PastClients'));
+const GroupPage = part(() => import('./GroupPage'));
+const WorkshopPage = part(() => import('./WorkshopPage'));
+const OrganisationPage = part(() => import('./OrganisationPage'));
+const Settings = part(() => import('./Settings'));
+const Todos = part(() => import('./Todos'));
+const TodoListPage = part(() => import('./TodoListPage'));
+const SessionPage = part(() => import('./SessionPage'));
+const ClosePage = part(() => import('./ClosePage'));
+const Calendar = part(() => import('./Calendar'));
+const Leads = part(() => import('./Leads'));
+const LeadPage = part(() => import('./LeadPage'));
+const ColdLeads = part(() => import('./ColdLeads'));
+const Automations = part(() => import('./Automations'));
+const Boards = part(() => import('./Boards'));
+const BoardPage = part(() => import('./BoardPage'));
+const Network = part(() => import('./Network'));
+const OpenForCalls = part(() => import('./OpenForCalls'));
+const PollPage = part(() => import('./PollPage'));
 const BriefPanel = lazy(() => import('./Brief').then((m) => ({ default: m.BriefPanel || m.default })));
+
+// The first screen's page for the address the portal opens on (Today, Clients, a client's page or the calendar).
+if (typeof window !== 'undefined') {
+  const opening = { today: Today, clients: Clients, client: ClientPage, calendar: Calendar }[screenKindOf(window.location.pathname)];
+  opening?.preload().catch(() => {});
+}
 
 const BELL = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" /></svg>;
 const HOME = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg>;
@@ -224,7 +253,7 @@ function Menu({ open, onClose, onSignOut }) {
 
 /** One box finds people, pages and actions as it is typed, with recent items before anything is typed. */
 function Search({ open, onClose }) {
-  const { userId, isOwner, clients, groups, workshops, organisations, admin, coaches, coach, calItems, calGuests, settings, todayKey, leads, leadStages, boards } = useCoachPortal();
+  const { userId, isOwner, clients, groups, workshops, organisations, admin, adminReady, coaches, coach, calItems, calGuests, settings, todayKey, leads, leadStages, boards, partial } = useCoachPortal();
   const navigate = useNavigate();
   const toast = useToast();
   const [q, setQ] = useState('');
@@ -364,8 +393,11 @@ function Search({ open, onClose }) {
       <div className="cc-jump" role="dialog" aria-modal="true" aria-label="Search">
         <input ref={inputRef} className="cc-jump-input" type="search" aria-label="Search or type an action" placeholder="Search or type an action" autoComplete="off" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} role="combobox" aria-expanded="true" aria-controls="cc-jump-list" />
         <div className="cc-jump-list" id="cc-jump-list" ref={listRef} role="listbox" aria-label="Results">
-          {groupsShown.length === 0 && <p className="cc-jump-none">Nothing matches “{q.trim()}”.</p>}
-          {groupsShown.map((g) => (
+          {/* Only a first screen is here yet (a first visit): what was typed is looked for once the rest is in, never
+              "Nothing matches" for someone whose row hasn't arrived (coach first screen run). */}
+          {(partial || !adminReady) && q.trim() && <Loading label="Loading your search" />}
+          {!((partial || !adminReady) && q.trim()) && groupsShown.length === 0 && <p className="cc-jump-none">Nothing matches “{q.trim()}”.</p>}
+          {!((partial || !adminReady) && q.trim()) && groupsShown.map((g) => (
             <div key={g.label} role="group" aria-label={g.label}>
               <p className="cc-jump-label">{g.label}</p>
               {g.items.map((item) => {
@@ -399,7 +431,7 @@ function whenWords(at, todayKey) {
 
 /** The bell: a side panel list, with Mark all as read. */
 function Bell({ open, onClose }) {
-  const { userId, notifications, todayKey } = useCoachPortal();
+  const { userId, notifications, todayKey, partial } = useCoachPortal();
   const navigate = useNavigate();
   const toast = useToast();
   const sorted = useMemo(() => [...notifications].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)), [notifications]);
@@ -424,8 +456,10 @@ function Bell({ open, onClose }) {
       title="Notifications"
       footer={unread.length > 0 ? <div className="cc-panel-foot"><TextLink onClick={all}>Mark all as read</TextLink></div> : null}
     >
-      {sorted.length === 0 && <p className="cc-quiet">Nothing new. Bookings, agreements and anything else that needs you will show here.</p>}
-      {sorted.map((n) => (
+      {/* A first visit holds only the notifications not read yet until the rest is in: the list waits for it. */}
+      {partial && <Loading label="Loading your notifications" />}
+      {!partial && sorted.length === 0 && <p className="cc-quiet">Nothing new. Bookings, agreements and anything else that needs you will show here.</p>}
+      {!partial && sorted.map((n) => (
         <button key={n.id} type="button" className={`cc-notice${n.read_at ? '' : ' cc-notice--new'}`} onClick={() => openOne(n)} aria-label={`${n.read_at ? '' : 'New. '}${n.title}`}>
           <span className="cc-notice-dot" aria-hidden="true" />
           <span>
@@ -493,7 +527,8 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
         </div>
       </header>
       <CallBar calls={calls} now={now} />
-      <main ref={mainRef} className={`cc-main${firstLoad ? ' cc-main--first' : ''}`} id="cc-main" aria-busy={firstLoad || undefined}>
+      {/* data-first-screen: the page is drawn with its data (timed by tests/scale/trace-first.mjs and timing.mjs). */}
+      <main ref={mainRef} className={`cc-main${firstLoad ? ' cc-main--first' : ''}`} id="cc-main" aria-busy={firstLoad || undefined} data-first-screen={!firstLoad && !hold ? 'ready' : undefined}>
         {firstLoad && <Loading label="Loading Clarity Coach" className="ds-loading--page" />}
         {pages}
       </main>
@@ -522,12 +557,18 @@ export default function CoachApp() {
   const state = useCoachStore(coach ? userId : null);
   const copyShown = useCoachCopyShown(coach ? userId : null);
   const somethingToShow = useCoachSomethingToShow(coach ? userId : null);
+  // A first visit draws the page's own first screen before the rest of the data (store.js, 060): the kind of page
+  // whose first screen alone is here, or null.
+  const partial = useCoachPartial(coach ? userId : null);
   useCoachLoad(coach ? userId : null);
   const todayKey = useToday();
   const now = useNow();
 
   const [coaches, setCoaches] = useState([]);
   const [admin, setAdmin] = useState([]);
+  // Whether the owner's list of every coach's clients is here (kept on the device, or read this visit): until it is,
+  // Clients and search say they're loading rather than show the owner's own clients as everyone (coach first screen run).
+  const [adminIn, setAdminIn] = useState(false);
   const [turn, setTurn] = useState(0);
   const reloadCoaches = useCallback(() => setTurn((n) => n + 1), []);
   const coachId = coach?.id || null;
@@ -554,7 +595,7 @@ export default function CoachApp() {
     Promise.all([readExtra(userId, 'coaches'), isOwner ? readExtra(userId, 'admin') : null]).then(([keptCoaches, keptAdmin]) => {
       if (!live) return;
       if (Array.isArray(keptCoaches) && !listsFresh.current.coaches) setCoaches(keptCoaches);
-      if (Array.isArray(keptAdmin) && !listsFresh.current.admin) setAdmin(keptAdmin);
+      if (Array.isArray(keptAdmin) && !listsFresh.current.admin) { setAdmin(keptAdmin); setAdminIn(true); }
       setListsShown(true);
     });
     return () => { live = false; window.clearTimeout(enough); };
@@ -568,16 +609,23 @@ export default function CoachApp() {
       setCoaches(list);
       writeExtra(userId, 'coaches', list);
     }).catch(() => {});
-    if (isOwner) {
-      loadAdminClients().then((list) => {
-        if (!live) return;
-        listsFresh.current.admin = true;
-        setAdmin(list);
-        writeExtra(userId, 'admin', list);
-      }).catch(() => {});
-    }
     return () => { live = false; };
-  }, [coachId, isOwner, turn, countTurn, userId]);
+  }, [coachId, turn, countTurn, userId]);
+  // Every coach's clients (the owner's): with Clients' first screen, otherwise once the page has drawn with the rest.
+  const whole = somethingToShow && !partial;
+  const adminNow = isOwner && (whole || screenKindOf(pathname) === 'clients');
+  useEffect(() => {
+    if (!coachId || !adminNow) return undefined;
+    let live = true;
+    loadAdminClients().then((list) => {
+      if (!live) return;
+      listsFresh.current.admin = true;
+      setAdmin(list);
+      setAdminIn(true);
+      writeExtra(userId, 'admin', list);
+    }).catch(() => {});
+    return () => { live = false; };
+  }, [coachId, adminNow, turn, countTurn, userId]);
 
   useEffect(() => { document.title = coachTitle(pathname); }, [pathname]);
 
@@ -589,7 +637,7 @@ export default function CoachApp() {
     const own = (table, then = null, name = '') => fromTable(state, table, `mine:${coach.id}${name}`, (rows) => (then ? then(mine(rows)) : mine(rows)));
     const all = (table, then = null, name = '') => fromTable(state, table, `all${name}`, (rows) => (then ? then(rows) : rows));
     return {
-      userId, coach, isOwner, state, todayKey, coaches, admin, reloadCoaches, reloadRole: role.reload,
+      userId, coach, isOwner, state, todayKey, coaches, admin, adminReady: !isOwner || adminIn, reloadCoaches, reloadRole: role.reload, partial, whole,
       clients: own('client_profiles', (rows) => rows.filter((p) => !p.merged_into), ':current'),
       groups: own('coach_groups'),
       workshops: own('workshops'),
@@ -650,7 +698,7 @@ export default function CoachApp() {
       networkColumns: own('network_columns', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)), ':sorted'),
       now,
     };
-  }, [coach, isOwner, state, todayKey, coaches, admin, userId, reloadCoaches, role.reload, now]);
+  }, [coach, isOwner, state, todayKey, coaches, admin, adminIn, userId, reloadCoaches, role.reload, now, partial, whole]);
 
   // Worked out when what they come from changes, not each time the menu, search or the bell opens (scale check, 22 Nov).
   const notificationsUnread = useMemo(() => (value ? value.notifications.filter((n) => !n.read_at).length : 0), [value?.notifications]);
@@ -720,11 +768,12 @@ export default function CoachApp() {
     <CoachPortalContext.Provider value={value}>
       <CalSync>
       {/* Run 4: the automations nobody presses a button for, and emails arriving (both the owner's; neither ever sends anything). */}
-      <AutomationWatch />
-      <EmailSync />
+      {!partial && <AutomationWatch />}
+      {!partial && <EmailSync />}
       {/* The device's copy first (IndexedDB, read in a moment): until it is in, the frame and the page are drawn
           unseen (their parts still load), never empty for an instant before it (UI tester, scale check). */}
-      <Frame pages={pages} calls={calls} now={now} unread={unread} hold={!copyShown || !listsShown} firstLoad={!somethingToShow} />
+      {/* While only one page's first screen is here, any other page shows the crosshair until the rest is in. */}
+      <Frame pages={pages} calls={calls} now={now} unread={unread} hold={!copyShown || !listsShown} firstLoad={!somethingToShow || Boolean(partial && screenKindOf(pathname) !== partial)} />
       </CalSync>
     </CoachPortalContext.Provider>
   );

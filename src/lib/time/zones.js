@@ -217,6 +217,10 @@ const COUNTRY_WORDS = {
   ZA: 'South Africa',
 };
 
+// Each name's answer, once a visit: the device's zone list doesn't change while the page is open, and making an
+// Intl.DateTimeFormat for every call was the coach portal's slowest single step on a slowed phone (0.6 s of a first
+// visit to Today: coach first screen run).
+const zoneAnswers = new Map();
 /**
  * Whether this is a real place-name zone the device knows. Offsets
  * ("-05:00", "UTC+1", "GMT-5") and letters ("EST", "PST", "BST") are never
@@ -225,6 +229,14 @@ const COUNTRY_WORDS = {
  */
 export function isZone(zone) {
   if (typeof zone !== 'string' || !zone) return false;
+  let known = zoneAnswers.get(zone);
+  if (known === undefined) {
+    known = zoneCheck(zone);
+    if (zoneAnswers.size < 2000) zoneAnswers.set(zone, known);
+  }
+  return known;
+}
+function zoneCheck(zone) {
   if (zone !== 'UTC' && zone !== 'Etc/UTC' && !/^[A-Za-z_]+\/[A-Za-z0-9_+\-/]+$/.test(zone)) return false;
   if (/^Etc\/GMT/i.test(zone)) return false;
   // A place name is written as the tz database writes it ("America/New_York").

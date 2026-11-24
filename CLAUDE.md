@@ -17,7 +17,7 @@ CLAUDE.md holds the rules every task needs. Each area's full rules live in its o
 - `docs/rules/health-check.md`: The Strategic Alignment Health Check, outside (M7b) and inside the portal (M7): rules 1 to 21 and 13a.
 - `docs/rules/peak-moments.md`: Peak moments (M18): 6 rules.
 - `docs/rules/travel-plan.md`: Travel plan (M21): 8 rules.
-- `docs/rules/coach-portal.md`: Clarity Coach, the coach portal (M11, runs 1 to 8): 48 rules.
+- `docs/rules/coach-portal.md`: Clarity Coach, the coach portal (M11, runs 1 to 8): 49 rules (49: a first visit draws the page's own first screen first; 24 Nov).
 - `docs/rules/pdf.md`: PDF rules 1 to 33 (Tim, 26 Oct) and how to check a PDF.
 - `docs/rules/list-rows.md`: List row guidelines (My Plans, My Reviews, My Journals) and filters.
 - `docs/rules/emails.md`: Emails: the one shared template, always light, footers, Health Check emails, the sign-in templates, /email-preview: 10 rules.

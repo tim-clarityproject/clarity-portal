@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Button, CalendarPopover, Chevron, InlineChoice, PageHeader, SwitchRow, useIsPhone } from '../../components/design';
+import { Button, CalendarPopover, Chevron, InlineChoice, Loading, PageHeader, SwitchRow, useIsPhone } from '../../components/design';
 import {
   associateEntries, CAL_VIEWS, gridColumnsMax, HIDE_TODOS, HOURS_HELP, HOURS_SAVED, hoursToSave, hoursWindow, OFFER_TIMES, scheduleTitle, SHOW_TODOS, startingView, stepView, viewRange, workingHours,
 } from '../../lib/coach/calendar';
 import { firstName } from '../../lib/coach/model';
 import { addDays, instantAt } from '../../lib/time/index.js';
-import { ensureCalRange } from '../../lib/coach/store';
-import { keptAssociateSessions, loadAssociateSessions } from '../../lib/coach/associateSessions';
+import { ensureCalRange, takeScreenAssociates } from '../../lib/coach/store';
+import { keepAssociateSessions, keptAssociateSessions, loadAssociateSessions } from '../../lib/coach/associateSessions';
 import { MenuItem, PopMenu, TextLink, useCoachPortal, useNarrowerThan } from './parts';
 import { CAL_HOOKS, CalMonth, CalSchedule, useCalendar } from './calendarParts';
 import { CalBoard, CalendarsPanel, useCalPanels, useSecondZone } from './calendarPanels';
@@ -59,14 +59,23 @@ export default function Calendar({ side = null }) {
   useEffect(() => { ensureCalRange(calUserId, range.fromDay, range.toDay); }, [calUserId, range.fromDay, range.toDay]);
   // The owner also sees each associate's coaching sessions, and nothing else of their calendars (058; run 6's 25).
   const [assoc, setAssoc] = useState(() => (isOwner ? keptAssociateSessions(calUserId) : []));
+  // On a device that has never had them (a first visit), the owner's calendar waits for the associates' sessions before
+  // it draws its days, so no day shows one call fewer for a moment (coach first screen run: "44 more" then "45 more").
+  const [assocIn, setAssocIn] = useState(() => !isOwner || cal.whole !== false || assoc.length > 0);
   useEffect(() => {
     if (!isOwner) return undefined;
     let live = true;
     const from = instantAt(range.fromDay, '00:00', cal.coachZone);
     const to = instantAt(addDays(range.toDay, 1), '00:00', cal.coachZone);
-    loadAssociateSessions(calUserId, from, to).then((rows) => { if (live && rows) setAssoc(rows); }).catch(() => {});
+    loadAssociateSessions(calUserId, from, to).then((rows) => { if (live && rows) setAssoc(rows); }).catch(() => {}).finally(() => { if (live) setAssocIn(true); });
     return () => { live = false; };
   }, [isOwner, calUserId, range.fromDay, range.toDay, cal.coachZone]);
+  // A first visit's calendar first screen brings them itself (060): shown with it, without waiting for the read above.
+  useEffect(() => {
+    if (assocIn || !cal.partial) return;
+    const got = takeScreenAssociates(calUserId);
+    if (got) { setAssoc(keepAssociateSessions(calUserId, got.from, got.to, got.rows)); setAssocIn(true); }
+  }, [assocIn, cal.partial, calUserId]);
   const theirs = useMemo(() => (isOwner ? associateEntries(assoc, { fromDay: range.fromDay, toDay: range.toDay, coachZone: cal.coachZone, settings: cal.settings }) : []), [isOwner, assoc, range, cal.coachZone, cal.settings]);
   const entries = useMemo(() => [...cal.entriesFor(range.fromDay, range.toDay), ...theirs], [cal, range, theirs]);
   const grid = view === 'day' || (view === 'week' && !isPhone); // a phone's week is the week's own list
@@ -148,11 +157,12 @@ export default function Calendar({ side = null }) {
           <p className="cc-quiet cc-cal-tell"><span>A note to {firstName(cal.tell.name)} is drafted.</span> <TextLink onClick={panels.openTell}>Open the note</TextLink></p>
         )}
 
-        <div className="cc-fade" key={`${view}:${grid}`}>
+        {!assocIn && <div data-first-wait=""><Loading label="Loading your calendar" /></div>}
+        {assocIn && <div className="cc-fade" key={`${view}:${grid}`}>
           {grid && <CalBoard cal={cal} panels={board} days={range.days} entries={shown} win={win} otherZone={zone} onOtherZone={setZone} hours={hours} onHours={setHours} todosOpen={todosOpen && !hours && !isPhone && !pick} narrow={view !== 'day' && (tablet || range.days.length > 5)} maxColumns={gridColumnsMax({ view, phone: isPhone, narrow: tablet || range.days.length > 5 || (todosOpen && !isPhone) })} />}
           {!grid && view !== 'month' && <CalSchedule days={range.days} entries={entries} cal={cal} onOpen={panels.open} />}
           {view === 'month' && <CalMonth day={day} entries={entries} cal={cal} weekends={weekends} phone={isPhone} onDay={(d) => go({ view: 'day', day: d })} />}
-        </div>
+        </div>}
 
         {!hours && (
           <div className="cc-acts cc-cal-foot">

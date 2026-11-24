@@ -5,6 +5,8 @@ import { coachRowsWaiting, READ_ONLY_TABLES } from './copyWaiting';
 import { tableReady } from '../performance/tableReady';
 import { deviceKey, readJson, removeKey, writeJson } from '../deviceStore';
 import { deviceCopyAvailable, onCopiesCleared, readCopy, writeTables } from './deviceCopy';
+import { getLocalDateKey } from '../dateFormatter';
+import { PROBE_TABLES, SCREEN_NOT_YET_KEY, screenKindOf, screenRead, screenWindow, takeCoachOpening } from './earlyScreen';
 
 // Where the coach portal's data is kept (migration 049; Phase 6a run 1).
 //
@@ -380,7 +382,9 @@ export function useCoachCopyShown(userId) {
  * crosshair, never "You have no clients here yet." until the rows arrive (UI tester, scale check).
  */
 function somethingToShow(userId) {
-  if (!userId || firstDone.has(userId)) return true;
+  if (!userId || firstDone.has(userId) || partial.has(userId)) return true;
+  // A copy left by a first screen alone (closed before the rest came) isn't whole: the crosshair until this visit's own.
+  if (copyMarkOf(userId) === 'screen') return false;
   return totalRows(read(userId)) > 0;
 }
 /**
@@ -498,6 +502,14 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 
 function write(userId, next) {
   cache.set(userId, next);
+  if (partial.has(userId)) {
+    // Only a first screen (see "the first screen" below): never kept as the device's copy, only what waits to be sent.
+    const part = unsentState(next);
+    let ok = true;
+    if (part) ok = writeJson(localKey(userId), { ...part, partial: true });
+    listeners.forEach((fn) => fn());
+    return ok;
+  }
   // While something here hasn't reached the database it is kept where a
   // Sign out leaves it; once everything has, it is only the last data shown.
   const asCache = readyNow === true && !anyUnsent(next);
@@ -771,6 +783,27 @@ function noteNotYet(missing, key = NOT_YET_KEY) {
 
 let asking = null;
 
+// The five "is this migration there yet?" looks (049, 050, 051, 052, 059) are asked side by side, once a visit, not one
+// after another (coach first screen run: five round trips in a row held a first visit up by about 0.35 s on a slowed
+// phone). Each level still decides only once the level before it is there, exactly as before.
+const probes = new Map();
+function probe(table) {
+  if (!probes.has(table)) {
+    probes.set(table, tableReady(table).catch(() => null).then((there) => {
+      // An answer that couldn't be told (offline) is asked again next time.
+      if (there === null) probes.delete(table);
+      return there;
+    }));
+  }
+  return probes.get(table);
+}
+/** Starts every look that the device doesn't already know the answer to, all at once. */
+export function startProbes() {
+  const keys = [NOT_YET_KEY, DAY_NOT_YET_KEY, CAL_NOT_YET_KEY, CRM_NOT_YET_KEY, NOT_YET_059_KEY];
+  const known = [readyNow, dayReadyNow, calReadyNow, crmReadyNow, ready059Now];
+  PROBE_TABLES.forEach((t, i) => { if (known[i] !== true && !notYet(keys[i])) probe(t); });
+}
+
 /**
  * Whether 049's tables are there: true, false (not yet), or null when it
  * can't be told (offline). "Not yet" is remembered for an hour, so the
@@ -782,7 +815,7 @@ export async function coachReady() {
   if (!asking) {
     asking = (async () => {
       try {
-        const there = await tableReady('client_profiles');
+        const there = await probe('client_profiles');
         if (there === false) noteNotYet(true);
         if (there === true) noteNotYet(false);
         if (there !== null) readyNow = there;
@@ -813,7 +846,7 @@ export async function coachDayReady() {
   if (!askingDay) {
     askingDay = (async () => {
       try {
-        const there = await tableReady('coach_todos');
+        const there = await probe('coach_todos');
         if (there === false) noteNotYet(true, DAY_NOT_YET_KEY);
         if (there === true) noteNotYet(false, DAY_NOT_YET_KEY);
         if (there !== null) dayReadyNow = there;
@@ -842,7 +875,7 @@ export async function coachCalReady() {
   if (!askingCal) {
     askingCal = (async () => {
       try {
-        const there = await tableReady('coach_cal_items');
+        const there = await probe('coach_cal_items');
         if (there === false) noteNotYet(true, CAL_NOT_YET_KEY);
         if (there === true) noteNotYet(false, CAL_NOT_YET_KEY);
         if (there !== null) calReadyNow = there;
@@ -871,7 +904,7 @@ export async function coachCrmReady() {
   if (!askingCrm) {
     askingCrm = (async () => {
       try {
-        const there = await tableReady('coach_lead_stages');
+        const there = await probe('coach_lead_stages');
         if (there === false) noteNotYet(true, CRM_NOT_YET_KEY);
         if (there === true) noteNotYet(false, CRM_NOT_YET_KEY);
         if (there !== null) crmReadyNow = there;
@@ -901,7 +934,7 @@ export async function coach059Ready() {
   if (!asking059) {
     asking059 = (async () => {
       try {
-        const there = await tableReady('coach_google_calendars');
+        const there = await probe('coach_google_calendars');
         if (there === false) noteNotYet(true, NOT_YET_059_KEY);
         if (there === true) noteNotYet(false, NOT_YET_059_KEY);
         if (there !== null) ready059Now = there;
@@ -1470,6 +1503,110 @@ export async function findCalItems(typed, { max = 30 } = {}) {
   return (data || []).map((r) => (SHAPES.coach_cal_items ? SHAPES.coach_cal_items(r) : r)).filter(Boolean);
 }
 
+// ---------------------------------------------------------------- the first screen (coach first screen run; migration 060)
+
+// On a device with nothing of the coach's on it yet, Today, Clients, a client's page and the calendar read their own
+// first screen first, in one answer (060's coach_first_screen: only the coach's own rows that page draws first), draw
+// it, and only then read everything else exactly as before. Until everything else is in, the account is `partial`:
+// each page shows what came with its first screen and the quiet loading crosshair in every other spot, never a 0 or
+// "You have no …" (usePartial below). A partial copy is never kept on the device as if it were whole: only what waits
+// to be sent is, and the device remembers that its copy isn't whole yet ('screen'), so the next visit reads the first
+// screen again. Return visits (a whole copy here) show the device's copy at once, as before, and never come this way.
+let screenReadyNow = null; // true: 060 answered; false: not there (remembered an hour); null: not asked yet
+const partial = new Map(); // account -> the page kind whose first screen alone it holds this visit
+const copyMark = new Map(); // account -> 'whole' | 'screen' | null, read once a visit
+const copyMarkKey = (userId) => deviceKey('cache', userId, 'coach-copy');
+function copyMarkOf(userId) {
+  if (!copyMark.has(userId)) {
+    let v = null;
+    try { v = window.localStorage.getItem(copyMarkKey(userId)); } catch { v = null; }
+    copyMark.set(userId, v === 'whole' || v === 'screen' ? v : null);
+  }
+  return copyMark.get(userId);
+}
+function setCopyMark(userId, v) {
+  copyMark.set(userId, v);
+  try { window.localStorage.setItem(copyMarkKey(userId), v); } catch { /* asked again next visit */ }
+}
+
+export { screenKindOf, screenWindow };
+
+/** coach_first_screen's answer as reads of its tables, with its sessions; null when 060 isn't there (or answered oddly). */
+function screenAnswer({ data, error }) {
+  if (error) {
+    // Not there yet (before Tim runs 060): the page loads as before, and isn't asked again for an hour.
+    if (error.code === 'PGRST202' || error.code === '42883' || error.status === 404) {
+      noteNotYet(true, SCREEN_NOT_YET_KEY);
+      screenReadyNow = false;
+      return null;
+    }
+    throw error;
+  }
+  const start = data?.start;
+  if (!isObject(data) || !isObject(data.tables) || !isObject(start) || !Array.isArray(start.sessions) || !Array.isArray(start.people) || !isObject(start.held)) return null;
+  screenReadyNow = true;
+  const associates = Array.isArray(data.associates) ? data.associates.filter((r) => isObject(r) && r.id) : null;
+  const tables = new Map();
+  for (const [table, rows] of Object.entries(data.tables)) {
+    // Only the tables the store keeps; never anything removed by this read (it adds what it brings, nothing more).
+    if (!TABLES[table] || DEVICE_ONLY.has(table) || !Array.isArray(rows)) continue;
+    tables.set(table, { rows: rows.filter(isObject), inScope: NOTHING_COVERED });
+  }
+  return { tables, start, associates };
+}
+
+/**
+ * The page's first screen: the one sent as the app opened (earlyScreen.js) when it was for this account, page and
+ * clients, otherwise asked now. Resolves { tables, start, split } or null.
+ */
+async function fetchScreen(userId, kind, { nowMs, split, profiles }) {
+  const early = takeCoachOpening(userId, kind);
+  if (early && early.profiles.join() === profiles.join()) {
+    const got = screenAnswer(await early.answer);
+    if (got) return { ...got, split: early.split, from: early.from, to: early.to };
+  }
+  const [from, to] = screenWindow(kind, nowMs, window.location?.search);
+  const got = screenAnswer(await screenRead({ kind, from, to, todayKey: getLocalDateKey(), split, profiles }));
+  return got ? { ...got, split, from, to } : null;
+}
+const NOTHING_COVERED = () => false;
+// The owner's calendar's first screen also brings associates' sessions (058): kept here for associateSessions.js.
+const screenAssociates = new Map();
+/** The associates' sessions a calendar's first screen brought, once: { rows, from, to } or null. */
+export function takeScreenAssociates(userId) {
+  const got = screenAssociates.get(userId) || null;
+  screenAssociates.delete(userId);
+  return got;
+}
+
+/** Whether a first screen is wanted here: 060 not known to be missing, and no whole copy on the device. */
+async function screenWanted(userId, kind) {
+  if (!kind || screenReadyNow === false || notYet(SCREEN_NOT_YET_KEY)) return false;
+  const mark = copyMarkOf(userId);
+  if (mark === 'whole') return false;
+  if (mark === 'screen') return true;
+  // Nothing said either way (a device from before this run): the IndexedDB copy, if any, is looked at first.
+  await hydrate(userId);
+  return totalRows(read(userId)) === 0;
+}
+
+/** Waits for the page to draw what was just written (a frame, then a turn), at most a quarter of a second. */
+const afterPaint = () => new Promise((resolve) => {
+  let done = false;
+  const go = () => { if (!done) { done = true; resolve(); } };
+  try { window.requestAnimationFrame(() => setTimeout(go, 0)); } catch { /* no frames: the timer below */ }
+  setTimeout(go, 250);
+});
+
+/**
+ * While this visit holds only a page's first screen (the rest is on its way): that page's kind ('today', 'clients',
+ * 'client', 'calendar'); null once everything is here, and on every return visit. See the section above.
+ */
+export function coachPartialNow(userId) { return (userId && partial.get(userId)) || null; }
+export function useCoachPartial(userId) {
+  return useSyncExternalStore(subscribe, () => coachPartialNow(userId), () => null);
+}
+
 /**
  * Brings the device's copy up to date. Before 049: nothing to do. With it:
  * the tables' rows replace everything the device has marked as sent, what
@@ -1492,6 +1629,7 @@ export function loadCoach(userId, { again = false } = {}) {
   }
   const gen = generation;
   const run = (async () => {
+    startProbes();
     const there = await coachReady();
     if (there !== true) return there;
     const dayThere = (await coachDayReady()) === true;
@@ -1508,13 +1646,34 @@ export function loadCoach(userId, { again = false } = {}) {
       wantProfiles.get(userId).add(opening[1].toLowerCase());
     }
     const profiles = [...(wantProfiles.get(userId) || [])];
+    // The page's own first screen first (060), on a device with no whole copy: drawn before anything else is read.
+    let screenStart = null;
+    const kind = typeof window !== 'undefined' ? screenKindOf(window.location?.pathname) : null;
+    if (split != null && there059 && await screenWanted(userId, kind)) {
+      const sinceScreen = readBegins();
+      const got = await fetchScreen(userId, kind, { nowMs, split, profiles }).catch(() => null);
+      if (got && gen === generation) {
+        // The opening's answer was asked a moment earlier: its split is the one every later read follows.
+        split = got.split;
+        const keepScreen = touchedSince(userId, sinceScreen);
+        await hydrate(userId);
+        const next = mergeStart(mergeLoaded(read(userId), got.tables, keepScreen), got.start, split, profiles, keepScreen);
+        if (got.associates) screenAssociates.set(userId, { rows: got.associates, from: got.from, to: got.to });
+        partial.set(userId, kind);
+        setCopyMark(userId, 'screen');
+        write(userId, next);
+        screenStart = got.start;
+        await afterPaint();
+        if (gen !== generation) return null;
+      }
+    }
     const first = plans(tablesThere(dayThere, calThere, crmThere, there059), nowMs, 'first', { split });
     const since = readBegins();
     let db;
     let start = null;
     try {
       // The device's own copy is read meanwhile, so what the database doesn't send now (the older weeks) is kept.
-      [db, start] = await Promise.all([fetchPlans(first), split != null ? fetchSessionsStart(split, profiles) : null, hydrate(userId)]);
+      [db, start] = await Promise.all([fetchPlans(first), split != null ? (screenStart || fetchSessionsStart(split, profiles)) : null, hydrate(userId)]);
       if (split != null && !start) {
         // 057 isn't there (or didn't answer as it does): every session and person, whole, as before.
         split = null;
@@ -1535,6 +1694,9 @@ export function loadCoach(userId, { again = false } = {}) {
       next = withOlderRow(next, WHOLE_ROW);
       laterSplit.delete(userId);
     }
+    // Everything the first load reads is here: the copy is whole, and is kept on the device as before.
+    partial.delete(userId);
+    setCopyMark(userId, 'whole');
     write(userId, next);
     if (calThere) calLoaded.set(userId, [...(calLoaded.get(userId) || []), [nowMs - CAL_BACK_DAYS * DAY_MS, nowMs + CAL_AHEAD_DAYS * DAY_MS]]);
     if (!waiting) await moveAcross(userId);
@@ -1611,6 +1773,9 @@ export { newId };
 // "Sign out anyway" (signOutCopies.js).
 function letGo() {
   generation += 1;
+  partial.clear();
+  copyMark.clear();
+  probes.clear();
   copyTimers.clear();
   loading.clear();
   loadAgain.clear();
@@ -1633,6 +1798,9 @@ onCopiesCleared(letGo);
 // For tests: forget what this module remembers.
 export function resetCoachStoreForTests() {
   generation += 1;
+  partial.clear();
+  copyMark.clear();
+  probes.clear();
   copyTimers.clear();
   loading.clear();
   loadAgain.clear();
@@ -1650,6 +1818,7 @@ export function resetCoachStoreForTests() {
   laterSplit.clear();
   wantProfiles.clear();
   startReadyNow = null;
+  screenReadyNow = null;
   readyNow = null;
   dayReadyNow = null;
   calReadyNow = null;

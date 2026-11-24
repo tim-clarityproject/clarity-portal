@@ -64,7 +64,7 @@ function Section({ title, aside, headRef, children }) {
 }
 
 export default function Today() {
-  const { state, clients, groups, todos, sessions, sessionPeople, sessionsOlder, settings, todayKey, now, coach, coaches, isOwner, calItems, checkIns, organisations } = useCoachPortal();
+  const { state, clients, groups, todos, sessions, sessionPeople, sessionsOlder, settings, todayKey, now, coach, coaches, isOwner, calItems, checkIns, organisations, partial, whole } = useCoachPortal();
   const navigate = useNavigate();
   const isPhone = useIsPhone();
   const { day, week } = useDayRows();
@@ -78,8 +78,11 @@ export default function Today() {
   const [allAttention, setAllAttention] = useState(false);
   const [off, putOff] = usePutOff(todayKey);
 
+  // A first visit draws Today's calls, to-dos, Who needs attention and capacity from its first screen (store.js, 060);
+  // the quiet lines and sections drawn from the rest (birthdays, Covering, Keep in touch) follow once it is in, so none
+  // shows a partial list for a moment (coach first screen run).
   const abouts = rowsOf(state, 'client_about').filter((a) => a.coach_id === coach.id);
-  const birthdays = birthdaysOn(abouts, clients, todayKey);
+  const birthdays = partial ? [] : birthdaysOn(abouts, clients, todayKey);
   const nudge = recapNudgeLine({ sessions, clients, groups, older: sessionsOlder, now, todayKey });
   // A clock-change week (time-zone-safeguards.md, rule 1): one quiet line from the Monday before, saying which calls move for the coach.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -99,14 +102,14 @@ export default function Today() {
   }), [clients, state, coach.id, sessions, sessionPeople, sessionsOlder, now, todayKey]);
   const attentionShown = allAttention ? attention : attention.slice(0, ATTENTION_FIRST);
   // The clients this coach covers for another coach, with the dates (tidy follow-up 3, run 6's 14).
-  const covering = useMemo(() => coveringRows({ covers: rowsOf(state, 'coach_cover'), coachId: coach.id, profiles: rowsOf(state, 'client_profiles'), coaches, todayKey }), [state, coach.id, coaches, todayKey]);
+  const covering = useMemo(() => (partial ? [] : coveringRows({ covers: rowsOf(state, 'coach_cover'), coachId: coach.id, profiles: rowsOf(state, 'client_profiles'), coaches, todayKey })), [state, coach.id, coaches, todayKey, partial]);
   const pressure = usePressure(clients, todayKey);
   // Keep in touch (run 4): past clients' check-ins that are due, one quiet line each (each coach's own). The people in
   // Network who are due a catch-up join this same section (`due`: network.js's todayDueQuery, the owner's alone).
   const [checkInId, setCheckInId] = useState(null);
-  const dueCheckIns = useMemo(() => (checkInsOn(settings) ? checkInsDue(checkIns, clients.filter((p) => p.status === 'past'), { todayKey, organisations }) : []), [settings, checkIns, clients, todayKey, organisations]);
-  const networkDue = useNetworkDue();
-  const keep = todayKeepInTouch({ due: networkDue, checkIns: dueCheckIns.slice(0, TODAY_KEEP_IN_TOUCH), today: todayKey });
+  const dueCheckIns = useMemo(() => (!partial && checkInsOn(settings) ? checkInsDue(checkIns, clients.filter((p) => p.status === 'past'), { todayKey, organisations }) : []), [settings, checkIns, clients, todayKey, organisations, partial]);
+  const networkDue = useNetworkDue(whole);
+  const keep = partial ? null : todayKeepInTouch({ due: networkDue, checkIns: dueCheckIns.slice(0, TODAY_KEEP_IN_TOUCH), today: todayKey });
 
   const close = () => setPanel(null);
   // Choose what to move opens from the over-full panel, whose own opener is the line's link. When it closes,

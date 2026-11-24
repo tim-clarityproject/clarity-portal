@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { AddButton, Button, IconButton, InlineChoice, PageHeader, SearchField, useIsPhone, useToast } from '../../components/design';
+import { AddButton, Button, IconButton, InlineChoice, Loading, PageHeader, SearchField, useIsPhone, useToast } from '../../components/design';
 import { useToastAbove } from '../../components/design/toastAbove';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { keyOf, newId, removeRow, rowsOf, saveRow } from '../../lib/coach/store';
@@ -104,7 +104,7 @@ function useGrowing(total, resetKey) {
 
 export default function Clients() {
   const portal = useCoachPortal();
-  const { userId, coach, isOwner, coaches, tags, fields, organisations, groups, workshops, views, state, todayKey, reloadCoaches } = portal;
+  const { userId, coach, isOwner, coaches, tags, fields, organisations, groups, workshops, views, state, todayKey, reloadCoaches, partial, adminReady } = portal;
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
@@ -507,7 +507,9 @@ export default function Clients() {
         <PageHeader title="Clients" />
         {/* Underlined tabs move between parts of a page; the gliding switch only changes how the same thing is shown (Tim, 18 Nov). */}
         <div className="cc-tabs"><UnderTabs label="Clients" tabs={TABS} value={tab} onChange={(v) => setParams(v === 'people' ? {} : { tab: v }, { replace: true })} /></div>
-        {tab === 'people' && people}
+        {/* The owner's list holds every coach's clients: until that list is here (a first visit) it says it's loading,
+            never the owner's own clients alone with their count (coach first screen run). */}
+        {tab === 'people' && (adminReady ? people : <Loading label="Loading your clients" />)}
         {tab === 'groups' && (
           <>
             {groups.length === 0 && <p className="cc-quiet">You have no groups yet. A group is a team you coach together.</p>}
@@ -520,7 +522,9 @@ export default function Clients() {
             <div className="cc-add"><AddButton onClick={() => setPanel('group')}>Add group</AddButton></div>
           </>
         )}
-        {tab === 'workshops' && (
+        {/* A first visit's first screen has no workshops: the tab waits for the rest. */}
+        {tab === 'workshops' && partial && <Loading label="Loading your workshops" />}
+        {tab === 'workshops' && !partial && (
           <>
             {workshops.length === 0 && <p className="cc-quiet">You have no workshops yet.</p>}
             <div className="cc-rows cc-fade">

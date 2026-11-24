@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import SuggestQuestionPanel from './SuggestQuestionPanel';
-import { AddButton, Button, Dropdown, InlineChoice, PageHeader, SearchField, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
+import { AddButton, Button, Dropdown, InlineChoice, Loading, PageHeader, SearchField, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { zonePlace } from '../../lib/time';
@@ -147,7 +147,7 @@ export default function ClientPage() {
   const done = useDone();
   const portal = useCoachPortal();
   const { userId, coach, isOwner, coaches, state, clients, organisations, tags, fields, settings, todayKey, reloadCoaches, sessions: allSessions, sessionPeople, sessionsOlder, todos } = portal;
-  const { leads, leadEvents, emails, emailLinks, callTypes = [] } = portal;
+  const { leads, leadEvents, emails, emailLinks, callTypes = [], partial } = portal;
   const loaded = useCoachFirstLoaded(userId);
   const profile = clients.find((p) => p.id === id) || null;
   // Every one of this client's sessions at once, on a first visit to the device too (057: the older ones otherwise follow later).
@@ -403,11 +403,14 @@ export default function ClientPage() {
               <SearchField label={`Search ${possessive(first)} history`} placeholder={`Search ${possessive(first)} history`} value={q} onChange={setQ} />
               <Dropdown label="Show" options={TIMELINE_KINDS} value={kind} onChange={setKind} />
             </div>
-            {timelineRows.length === 0 && carried.length === 0 && <p className="cc-quiet">{q || kind !== 'all' ? 'Nothing matches.' : `Nothing is on ${possessive(first)} timeline yet.`}</p>}
-            {timelineRows.map(({ item: i, mail }) => (mail ? <EmailRows key={mail.id} rows={[mail]} /> : (
+            {/* The timeline holds emails and a lead's history, which a first visit's first screen doesn't: it waits for the
+                rest (coach first screen run). */}
+            {partial && <Loading label={`Loading ${possessive(first)} timeline`} />}
+            {!partial && timelineRows.length === 0 && carried.length === 0 && <p className="cc-quiet">{q || kind !== 'all' ? 'Nothing matches.' : `Nothing is on ${possessive(first)} timeline yet.`}</p>}
+            {!partial && timelineRows.map(({ item: i, mail }) => (mail ? <EmailRows key={mail.id} rows={[mail]} /> : (
               <TimelineRow key={i.id} when={dayWords((i.day || String(i.at)).slice(0, 10), todayKey)} title={i.title} lines={[i.line]} />
             )))}
-            {carried.map((r) => (
+            {!partial && carried.map((r) => (
               <TimelineRow key={r.id} when={r.when} title={r.title} lines={[r.tag, ...r.lines]} />
             ))}
           </div>

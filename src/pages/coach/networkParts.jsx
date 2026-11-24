@@ -45,9 +45,9 @@ export function useNetworkCounts(on = true) {
 }
 
 /** Today's people due a catch-up (the three most overdue, and how many in all): the owner's alone. */
-export function useNetworkDue() {
+export function useNetworkDue(enabled = true) {
   const { userId, isOwner, todayKey } = useCoachPortal();
-  const asks = isOwner && userId;
+  const asks = enabled && isOwner && userId;
   return useNetworkAsk(asks ? () => networkPageOf(userId, todayDueQuery(todayKey)) : null, [asks, userId, todayKey]).data;
 }
 

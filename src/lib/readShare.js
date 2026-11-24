@@ -37,7 +37,11 @@ const NO_BODY = new Set([101, 204, 205, 304]);
 // Postgres refuses a write from a STABLE function), called as POST: they
 // are sent as they are (never shared) and, unlike any other POST, don't
 // make the kept reads forgotten. Any function not named here does.
-const READ_ONLY_RPCS = new Set(['my_coach', 'my_coach_invites', 'my_session_recaps', 'my_view_asks', 'my_cover_asks']);
+// The coach portal's opening reads (049's coach_list and coach_admin_clients, 052's network_page, 053's and 055's
+// coach_auth_state, 057's coach_sessions_start, 060's coach_first_screen) are STABLE too: sent as the portal opens, they
+// no longer make the role and migration reads sent beside them be forgotten (coach first screen run).
+const READ_ONLY_RPCS = new Set(['my_coach', 'my_coach_invites', 'my_session_recaps', 'my_view_asks', 'my_cover_asks',
+  'coach_list', 'coach_admin_clients', 'network_page', 'coach_auth_state', 'coach_sessions_start', 'coach_first_screen']);
 
 function readOnlyRpc(method, url) {
   if (method !== 'POST') return false;

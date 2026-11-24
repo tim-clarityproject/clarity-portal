@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { apiFetch } from '../../lib/readShare';
 import { deviceKey, readJson, removeKey, writeJson } from '../../lib/deviceStore';
 import { deviceZone } from '../../lib/time/index.js';
-import { coachState, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
+import { coachPartialNow, coachState, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import {
   calendarOfEvent, coachZoneOf, conflictWords, CONNECT_WORDS, MOVED_IN_GOOGLE, removedForSync, restoredForSync, seenMoved, SYNC_AFTER_SAVE_MS, SYNC_EVERY_MS, syncRowOver, syncWait, T,
 } from '../../lib/coach/calendar';
@@ -98,7 +98,8 @@ export function CalSync({ children }) {
       setStatus({ ...s, google_ready: answer?.ok === true && answer.google_ready === true });
     }).catch(() => {});
   }, []);
-  useEffect(() => { refresh(); }, [refresh, userId]);
+  // Asked once the page has drawn with all its data (coach first screen run): never ahead of a first screen's own read.
+  useEffect(() => { if (p.whole) refresh(); }, [refresh, userId, p.whole]);
 
   const schedule = useCallback((ms) => {
     clearTimeout(timer.current);
@@ -108,6 +109,9 @@ export function CalSync({ children }) {
   const round = useCallback(async () => {
     const w = wiring.current;
     if (!w.useGoogle && !w.useZoom) return;
+    // Only a first screen here so far (a first visit; store.js): a round compares the whole calendar with Google's, so
+    // it waits for the rest, and runs once it is in (the effect below).
+    if (coachPartialNow(userId)) { again.current = true; return; }
     if (document.visibilityState === 'hidden' || (typeof navigator !== 'undefined' && navigator.onLine === false)) return; // a hidden tab never asks; coming back does
     if (running.current) { again.current = true; return; }
     running.current = true;
@@ -196,6 +200,14 @@ export function CalSync({ children }) {
     window.addEventListener('online', shown);
     return () => { clearTimeout(timer.current); document.removeEventListener('visibilitychange', shown); window.removeEventListener('online', shown); };
   }, [on, schedule]);
+
+  // The rest of a first visit's data has come in (store.js's partial): a round held back for it runs now.
+  const wasPartial = useRef(p.partial);
+  useEffect(() => {
+    const was = wasPartial.current;
+    wasPartial.current = p.partial;
+    if (was && !p.partial && on) schedule(400);
+  }, [p.partial, on, schedule]);
 
   const onRef = useRef(on);
   onRef.current = on;

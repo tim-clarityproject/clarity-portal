@@ -216,6 +216,12 @@ const OPENING = [
   ['^/auth/login$', 'src/pages/signin/SignIn.jsx'],
   ['^/coach/sign-in$', 'src/pages/signin/SignIn.jsx'],
   ['^/coach/sign-in/code$', 'src/pages/signin/CoachCode.jsx'],
+  // The coach portal, with the page each first screen draws (coach first screen run): Today, Clients, a client's page
+  // and the calendar come with the portal's own part, so neither waits for the other.
+  ['^/coach$', ['src/pages/coach/CoachApp.jsx', 'src/pages/coach/Today.jsx']],
+  ['^/coach/clients$', ['src/pages/coach/CoachApp.jsx', 'src/pages/coach/Clients.jsx']],
+  ['^/coach/clients/[0-9a-fA-F-]{36}$', ['src/pages/coach/CoachApp.jsx', 'src/pages/coach/ClientPage.jsx']],
+  ['^/coach/calendar$', ['src/pages/coach/CoachApp.jsx', 'src/pages/coach/Calendar.jsx']],
   ['^/coach(/|$)', 'src/pages/coach/CoachApp.jsx'],
 ]
 function openingPreload() {
@@ -240,11 +246,13 @@ function openingPreload() {
           for (const next of byName.get(name)?.imports || []) walk(next, into)
         }
         walk(entry.fileName, have)
-        const files = (modulePath) => {
-          const page = chunks.find((c) => (c.facadeModuleId || '').endsWith(`/${modulePath}`))
-          if (!page) return null
+        const files = (modulePaths) => {
           const js = new Set()
-          walk(page.fileName, js)
+          for (const modulePath of [modulePaths].flat()) {
+            const page = chunks.find((c) => (c.facadeModuleId || '').endsWith(`/${modulePath}`))
+            if (!page) return null
+            walk(page.fileName, js)
+          }
           const list = [...js].filter((f) => !have.has(f))
           return { js: list.map((f) => `/${f}`) }
         }

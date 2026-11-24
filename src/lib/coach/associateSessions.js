@@ -31,6 +31,14 @@ export async function loadAssociateSessions(userId, from, to) {
   if (!userId || (await coachReady()) !== true) return null;
   const { data, error } = await supabase.rpc('coach_associate_sessions', { p_from: new Date(from).toISOString(), p_to: new Date(to).toISOString() });
   if (error || !Array.isArray(data)) return null;
+  return keepAssociateSessions(userId, from, to, data);
+}
+
+/**
+ * Sessions read for `from` to `to` (the read above, or a calendar's first screen: store.js's takeScreenAssociates), kept
+ * on the device in place of every kept row in that range. Returns the device's rows.
+ */
+export function keepAssociateSessions(userId, from, to, data) {
   const lo = new Date(from).getTime();
   const hi = new Date(to).getTime();
   const inRange = (r) => { const t = new Date(r.starts_at).getTime(); return t >= lo && t < hi; };

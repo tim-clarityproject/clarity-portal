@@ -206,7 +206,7 @@ const OPENING_PAGES = [
   ['/coach/sign-in', () => SignIn],
   ['/coach/sign-in/code', () => CoachCode],
   // The coach portal, already its own part (CoachApp, below).
-  ['/coach/*', () => ({ preload: () => import('./pages/coach/CoachApp') })],
+  ['/coach/*', () => ({ preload: coachAppPart })],
 ];
 function preloadOpeningPage() {
   if (typeof window === 'undefined') return null;
@@ -265,7 +265,20 @@ const TravelPlan = lazy(() => loadWithReload(() => import('./pages/travelPlan/Tr
 const GuestLink = lazy(() => loadWithReload(() => import('./pages/guest/GuestLink')));
 // Clarity Coach, the coach portal (Phase 6a): its own lazy-loaded part, so
 // none of it is in a client's bundle. The two public workshop pages too.
-const CoachApp = lazy(() => loadWithReload(() => import('./pages/coach/CoachApp')));
+// Once its part has loaded (asked for as the app opens on a coach portal address) it shows straight away, never
+// through Suspense, as page() does for the client pages: React holds back what a Suspense boundary reveals by up to
+// 300 ms, which held a coach's first screen up by about 0.3 s (coach first screen run). It isn't among the pages every
+// visit preloads when idle (page()'s ALL_PAGES): a client never downloads the coach portal.
+let CoachAppLoaded = null;
+function coachAppPart() {
+  return import('./pages/coach/CoachApp').then((m) => { CoachAppLoaded = m.default; return m; });
+}
+const CoachAppLazy = lazy(() => loadWithReload(coachAppPart));
+function CoachApp() {
+  // Decided once, when it first shows, so it never swaps between the two.
+  const [Ready] = useState(() => CoachAppLoaded);
+  return Ready ? <Ready /> : lazyPage(CoachAppLazy);
+}
 const WorkshopRegister = lazy(() => loadWithReload(() => import('./pages/coach/WorkshopPublic').then((m) => ({ default: m.WorkshopRegister }))));
 // The booking pages (Phase 6a run 3): a call type's page, a single-use link, a guest's own booking and a poll.
 const BookingPage = lazy(() => loadWithReload(() => import('./pages/coach/BookingPublic').then((m) => ({ default: m.BookingPage }))));
@@ -602,7 +615,7 @@ function AppContent() {
         <Route element={<ProtectedLayout />}>
           {/* Clarity Coach (Phase 6a): open only to coach accounts (CoachApp
               sends anyone else to their own Home). */}
-          <Route path="/coach/*" element={lazyPage(CoachApp)} />
+          <Route path="/coach/*" element={<CoachApp />} />
           <Route path="/about" element={<About />} />
           <Route path="/welcome" element={<Home />} />
           {/* The hub pages (M3, Phase 4 step 1), and the old section pages

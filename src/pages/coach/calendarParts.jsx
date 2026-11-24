@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { InfoPop, useToast } from '../../components/design';
+import { InfoPop, Loading, useToast } from '../../components/design';
 import { deviceZone, addDays, dayKeyWords, wallClock } from '../../lib/time/index.js';
 import { forgetRows, loadCoach, newId, noteRows, removeRow, saveRow, saveRows } from '../../lib/coach/store';
 import { CHANGED_ELSEWHERE_CODE } from '../../lib/coach/model';
@@ -570,8 +570,11 @@ export function TodosToPlace({ cal, panelRef, over = false, onOpen, onDrag, firs
   return (
     <aside ref={panelRef} className={`cc-cal-todos${over ? ' cc-cal-todos--over' : ''}`} aria-label={TODOS_TO_PLACE}>
       <h2 className="cc-cal-todos-title">{TODOS_TO_PLACE}</h2>
-      {list.length === 0 && <p className="cc-quiet">Every to-do has a time.</p>}
-      <div className="cc-cal-todos-list">
+      {/* A first visit's first screen holds only the to-dos placed in the weeks shown: the list waits for the rest
+          (coach first screen run), never "Every to-do has a time." for a moment. */}
+      {cal.partial && <Loading label="Loading your to-dos" />}
+      {!cal.partial && list.length === 0 && <p className="cc-quiet">Every to-do has a time.</p>}
+      {!cal.partial && <div className="cc-cal-todos-list">
         {list.map((t) => (
           <button key={t.id} type="button" data-todo={t.id} className={`cc-cal-todo${t.important ? ' cc-cal-todo--important' : ''}`} onPointerDown={(e) => start(e, t)} onClick={(e) => { if (e.detail === 0) onOpen(t); }} aria-label={`${t.title}${t.important ? ', important' : ''}${t.minutes ? `, ${estimateWords(t.minutes)}` : ''}`}>
             {/* Important, with no tick box here: the small soft coral box before its title (Tim, 18 Nov, 12:55); while one shows, the others keep its space, so the titles line up. */}
@@ -584,8 +587,8 @@ export function TodosToPlace({ cal, panelRef, over = false, onOpen, onDrag, firs
             </span>
           </button>
         ))}
-      </div>
-      {all.length > first && <div className="cc-acts"><button type="button" className="ds-link" aria-expanded={every} onClick={() => setEvery((v) => !v)}>{every ? 'Show fewer' : `Show all ${all.length}`}</button></div>}
+      </div>}
+      {!cal.partial && all.length > first && <div className="cc-acts"><button type="button" className="ds-link" aria-expanded={every} onClick={() => setEvery((v) => !v)}>{every ? 'Show fewer' : `Show all ${all.length}`}</button></div>}
     </aside>
   );
 }

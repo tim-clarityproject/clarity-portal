@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { supabase } from '../supabase';
 import { deviceKey, readJson, writeJson } from '../deviceStore';
+import { openingRole } from './earlyScreen';
 
 // Who is signed in, as a coach (public.coaches, migration 026): the owner
 // (Tim), an associate, or not a coach at all. The coach area opens only for
@@ -29,7 +30,10 @@ export function useCoachRole() {
   const userId = user?.id || null;
   const [state, setState] = useState(() => {
     const kept = userId ? readJson(keyFor(userId)) : null;
-    return kept ? { loading: false, coach: kept.coach } : { loading: true, coach: null };
+    if (kept) return { loading: false, coach: kept.coach };
+    // A first visit on this device: the answer the app's opening read already has (earlyScreen.js), if it is in.
+    const early = userId ? openingRole(userId) : undefined;
+    return early !== undefined ? { loading: false, coach: early } : { loading: true, coach: null };
   });
   const [turn, setTurn] = useState(0);
   useEffect(() => {
