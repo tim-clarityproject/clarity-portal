@@ -649,10 +649,28 @@ export function outcomeLine(outcome, name, waived = false) {
  * aren't on the device yet, the database's count of those that count
  * (057), so the count is the whole one from the first screen on.
  */
+// Each engagement's sessions that count (its own, and its members' of group sessions), worked out once per change to
+// the sessions or their people and kept for those two lists (coach first screen run: counting them again for every
+// engagement, every client and every draw took most of a second of the owner's return visit on a slowed phone).
+const countMemo = new WeakMap(); // sessions -> WeakMap(people -> Map(engagement id -> count))
+function countsByEngagement(sessions, people) {
+  let byPeople = countMemo.get(sessions);
+  if (!byPeople) { byPeople = new WeakMap(); countMemo.set(sessions, byPeople); }
+  let counts = byPeople.get(people);
+  if (!counts) {
+    counts = new Map();
+    const add = (id) => { if (id != null) counts.set(id, (counts.get(id) || 0) + 1); };
+    const byId = new Map();
+    for (const s of sessions) { if (s && !byId.has(s.id)) byId.set(s.id, s); if (s && sessionCounts(s)) add(s.engagement_id); }
+    for (const sp of people) if (sp && sp.engagement_id != null && sessionCounts(byId.get(sp.session_id))) add(sp.engagement_id);
+    byPeople.set(people, counts);
+  }
+  return counts;
+}
+
 export function withSessions(engagement, sessions = [], people = [], older = null) {
   if (!engagement) return engagement;
-  const counted = sessions.filter((s) => s.engagement_id === engagement.id && sessionCounts(s)).length
-    + people.filter((sp) => sp.engagement_id === engagement.id && sessionCounts(sessions.find((s) => s.id === sp.session_id))).length
+  const counted = (countsByEngagement(sessions || [], people || []).get(engagement.id) || 0)
     + (Number(older?.held?.[engagement.id]) || 0);
   // Before 050 (or before its row has come back) there is no base: the count kept so far is it.
   const known = engagement.sessions_held_base != null;
@@ -786,8 +804,11 @@ export const prepLine = (name, notedAt, todayKey) => `${firstName(name)} added t
 export function attentionRows({ clients = [], engagements = [], packs = [], entries = [], sessions = [], people = [], older = null, now, todayKey }) {
   const rows = [];
   const t = new Date(now).getTime();
+  // Each client's own sessions, gathered once (they were searched for again for every client; coach first screen run).
+  const byClient = new Map();
+  for (const s of sessions) { if (!byClient.has(s.profile_id)) byClient.set(s.profile_id, []); byClient.get(s.profile_id).push(s); }
   for (const c of clients.filter((p) => p.status !== 'past' && !p.merged_into)) {
-    const mine = sessions.filter((s) => s.profile_id === c.id);
+    const mine = byClient.get(c.id) || [];
     const first = firstName(c.name);
     const waiting = toWriteUp(mine, now)[0];
     if (waiting) {
