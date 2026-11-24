@@ -108,6 +108,7 @@ declare
   -- here with its reason.
   direct_ok text[] := array[
     'booking_mine', 'booking_page', 'poll_page',                       -- public pages: the coach's first name only
+    'proposal_open',                                                   -- 062: a proposal's share link, its own words and the coach's first name
     'coach_auth_state',                                                -- the sign-in screens, before the code
     'my_coach', 'my_coach_invites', 'my_cover_asks', 'my_session_recaps',
     'my_sessions_coming', 'my_suggestions', 'my_view_asks',            -- a client's own coaching
