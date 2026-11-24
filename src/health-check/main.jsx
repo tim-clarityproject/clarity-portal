@@ -17,8 +17,8 @@ keepPlaceOnReveal();
 // the Health Check (mock-up M7b version 51), built from the portal's shared
 // parts, so it loads the portal's styles and fonts (src/globalStyles.js) and
 // follows the device's light or dark (src/lib/colourMode/boot.js): no
-// sign-in, menu or Breathe button. The portal keeps its own /health-check
-// route for now, so rolling back is only the vercel.json line.
+// sign-in, menu or Breathe button. The portal's own older copy of the page and
+// its /health-check route were deleted on 24 Nov (Tim): this is the only one.
 
 // Reloads once if a tab opened before a deploy asks for a file that has gone.
 const HealthCheck = lazy(() => loadWithReload(() => import('./HealthCheckPage')));

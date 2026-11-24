@@ -1,6 +1,7 @@
 // Strategic Alignment Health Check: chart layout. A direct port of the
 // mock-up's chart() geometry (dot field, point separation, label placement),
-// with the drawing left to AlignmentChart.jsx. Pure and DOM-free except for
+// with the drawing left to whoever draws it (the PDF; AlignmentChart.jsx went with the portal's older Health Check,
+// 24 Nov). Pure and DOM-free except for
 // the optional text measuring function passed in.
 
 import { healthCheckState } from '../../lib/alignmentScore.js';

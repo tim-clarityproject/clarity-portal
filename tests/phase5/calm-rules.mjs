@@ -22,8 +22,8 @@
 //     closed (Tim, 11 Nov, 14:36; tests/phase5/chevrons.mjs), read at twice
 //     the pixels a point (an ordinary phone or laptop screen); one beside
 //     a name with a line under it is centred on the two together, within
-//     1px; the portal's own (older) Health Check route is measured too
-//     (Tim, 12 Nov; CHEV_PARTS=pages,health-check,old-route runs a part);
+//     1px (CHEV_PARTS=pages,health-check runs a part; the portal's older
+//     Health Check route, measured from 12 Nov, was deleted on 24 Nov);
 //   - every outlined edge reaches 3 to 1 against what it sits on (Tim, 12
 //     Nov; tests/phase5/edges.mjs);
 //   - no two tap areas overlap, so nothing that can be tapped shares its
@@ -38,8 +38,8 @@
 //     coach's saved read-only sign-in; ONLY=^coach-auth runs them alone;
 //
 //   - the outside Health Check follows the device, light or dark (Tim, 10
-//     Nov, 23:22): its own page on every screen (M7b version 51), and the
-//     portal's own route; with ONLY=^health-check nothing signs in.
+//     Nov, 23:22): its own page on every screen (M7b version 51); with
+//     ONLY=^health-check nothing signs in.
 //
 // It also saves a light screenshot of every page at both widths into the
 // folder given (Tim's screens folder), named by page.
@@ -49,7 +49,7 @@
 //
 //   node --import ./tests/scores/register.mjs tests/phase5/calm-rules.mjs [folder for screenshots]
 import { GUEST_TOKEN, GUEST_VISIT, M10, M9, m10Wash } from '../phase8/shared.mjs';
-import { STEPS as HC_STEPS, appPage as hcPage, kestrel as hcKestrel, signIn as hcSignIn } from '../healthcheck/hc-shared.mjs';
+import { STEPS as HC_STEPS, appPage as hcPage, signIn as hcSignIn } from '../healthcheck/hc-shared.mjs';
 import { IDS as HC_IDS, m7Rows } from '../healthcheck/inside-shared.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, readFileSync } from 'node:fs';
@@ -624,11 +624,9 @@ for (const width of PAGES.length ? WIDTHS : []) {
 // invented answers and the two database calls answered here, so nothing is
 // read or saved anywhere: the welcome screen, signing in, the first question
 // and the results, at both sizes, on a device set to light and one set to
-// dark. Then the portal's own /health-check route, which must follow the
-// device too, even when the portal on this device is set the other way.
+// dark. Then another page, which keeps the portal's own choice even when the
+// device is set the other way.
 const HC_ONLY = !ONLY || ONLY.test('health-check');
-// The mock-up's own invented answers (Kestrel Group), for the portal's own older route below.
-const hcAnswers = (complete) => (complete ? hcKestrel() : {});
 const HC_DIALOG = '[role=dialog]:not(.ds-guide)';
 const HC_DONE = { complete: true, step: { screen: 'done' } };
 const hcRows = (p) => p.locator('button.hc-prow').first().waitFor({ timeout: 15000 });
@@ -783,28 +781,20 @@ if (HC_ONLY) {
         }
         if (b) await b.ctx.close();
       }
-      // The portal's own /health-check route (kept for rolling back): the device's mode, not the portal's saved choice.
+      // The portal's own older /health-check route was deleted on 24 Nov (Tim's answer to the one-left-edge report's
+      // point 1): Vercel serves the outside page above for every /health-check address. Any other page still follows
+      // the portal's saved choice (set the other way here), whatever the device says.
       const context = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, locale: 'en-GB', colorScheme: mode });
       try {
         await context.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => route.abort());
         await context.addInitScript((other) => { try { localStorage.setItem('clarity-colour-mode', other); } catch { /* blocked */ } }, mode === 'light' ? 'dark' : 'light');
         const page = await context.newPage();
-        await page.goto(`${APP}/health-check/tok-calm-rules-0000000000000000000000000000`);
-        await page.waitForFunction(() => document.documentElement.getAttribute('data-theme'), null, { timeout: 15000 });
-        const got = await page.evaluate(() => ({ theme: document.documentElement.getAttribute('data-theme'), background: getComputedStyle(document.documentElement).backgroundColor }));
-        pass(`health-check, the portal's own route ${width}px ${mode}: follows the device, not the portal's saved choice`, got.theme === mode && got.background === BACKGROUND[mode], `${got.theme} ${got.background}`);
-        // Typed with capitals, the app opens the same page: it follows the device too (break-it tester, 11 Nov).
-        await page.goto(`${APP}/Health-Check/tok-calm-rules-0000000000000000000000000000`);
-        await page.waitForFunction(() => document.documentElement.getAttribute('data-theme'), null, { timeout: 15000 });
-        const capitals = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
-        pass(`health-check, the portal's own route ${width}px ${mode}: the same with capitals in the address`, capitals === mode, capitals);
-        // Any other page still follows the saved choice (set the other way here).
         await page.goto(`${APP}/auth/login`);
         await page.waitForFunction(() => document.documentElement.getAttribute('data-theme'), null, { timeout: 15000 });
         const elsewhere = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
         pass(`health-check ${width}px ${mode}: every other page keeps the saved choice`, elsewhere === (mode === 'light' ? 'dark' : 'light'), elsewhere);
       } catch (e) {
-        pass(`health-check, the portal's own route ${width}px ${mode}: opened`, false, e.message.split('\n')[0]);
+        pass(`health-check ${width}px ${mode}: another page opened`, false, e.message.split('\n')[0]);
       }
       await context.close();
     }
@@ -820,8 +810,8 @@ if (HC_ONLY) {
 // on every page in scope at both sizes, with every fold and drop-down opened
 // in turn, and on the outside Health Check.
 const CHEVRONS = !ONLY || ONLY.test('chevrons');
-// CHEV_PARTS=pages,health-check,old-route runs some of it (all three unless told).
-const CHEV_PARTS = (process.env.CHEV_PARTS || 'pages,health-check,old-route').split(',');
+// CHEV_PARTS=pages,health-check runs some of it (both unless told).
+const CHEV_PARTS = (process.env.CHEV_PARTS || 'pages,health-check').split(',');
 if (CHEVRONS) {
   for (const width of [1280, 390]) {
     const phone = width < 600;
@@ -967,46 +957,6 @@ if (CHEVRONS) {
       if (hc) await hc.ctx.close();
     }
 
-    // The portal's own /health-check route (the older page, kept for rolling
-    // back; Tim, 12 Nov): Back beside its word, and the results' sort arrows.
-    const old = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, deviceScaleFactor: 2, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: 'light', reducedMotion: 'reduce' });
-    if (CHEV_PARTS.includes('old-route')) try {
-      await old.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => {
-        const url = route.request().url();
-        const json = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
-        if (url.endsWith('/rpc/alignment_open')) return json({ ok: true, status: 'complete', current_step: null, data: hcAnswers(true), version: 1, updated_at: '2026-10-27 09:30:00.123', completed_at: '2026-10-27 09:30:00', client_label: 'Kestrel Group', coach_name: 'Tim' });
-        if (url.endsWith('/rpc/alignment_save')) return json({ ok: true, version: 2, updated_at: '2026-10-27 10:00:00', status: 'complete' });
-        return route.abort();
-      });
-      await old.route('**/api/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
-      const page3 = await old.newPage();
-      await page3.goto(`${APP}/health-check/tok-calm-rules-0000000000000000000000000000`);
-      await page3.locator('input[type=email]').waitFor({ timeout: 20000 });
-      await page3.locator('input[type=email]').fill('sam.example@invented.test');
-      await page3.locator('.al-otp-input').fill('ABC234');
-      await page3.locator('form button[type=submit]').click();
-      await page3.locator('.al-foot .ui-back-link').waitFor({ timeout: 15000 });
-      await page3.evaluate(() => document.fonts.ready);
-      await sleep(900);
-      const list = await measureChevrons(page3);
-      const back = list.filter((c) => c.label.startsWith('ui-back-link'));
-      pass(`chevrons, the portal's own Health Check route ${width}px: Back's chevron is centred on its word`, back.length === 1 && chevronsOff(back).length === 0, back.length ? chevronsOff(back).join('; ') : 'Back was not found');
-      pass(`chevrons, the portal's own Health Check route ${width}px: every chevron beside words is centred on them (${list.length})`, chevronsOff(list).length === 0, chevronsOff(list).slice(0, 4).join('; '));
-      // Its results table sorts by a heading or a pill, whose arrow then shows beside the words.
-      const sorter = page3.locator('.al-hb, .fpills-btn').first();
-      if (await sorter.count()) {
-        await sorter.click({ timeout: 3000 }).catch(() => null);
-        await sleep(500);
-        const sorted = (await measureChevrons(page3));
-        const arrows = sorted.filter((c) => !c.label.startsWith('ui-back-link'));
-        pass(`chevrons, the portal's own Health Check route ${width}px: the sort arrow is centred on its words (${arrows.length})`, chevronsOff(arrows).length === 0, chevronsOff(arrows).join('; '));
-        if (process.env.CHEV_SHOW) console.log(`old route sorted ${width}: ${sorted.map((c) => `${c.label} ${c.off.toFixed(2)} ${c.capitals ? 'caps' : 'lower'} ${c.font}`).join(' | ')} || skipped: ${sorted.skipped.map((s) => `${s.label}: ${s.why}`).join(' | ')}`);
-      } else if (process.env.CHEV_SHOW) console.log(`old route ${width}: no sort heading or pill on this screen`);
-      if (process.env.CHEV_SHOW) console.log(`old route ${width}: ${list.map((c) => `${c.label} ${c.off.toFixed(2)}`).join(' | ')} || skipped: ${list.skipped.map((s) => `${s.label}: ${s.why}`).join(' | ')}`);
-    } catch (e) {
-      pass(`chevrons, the portal's own Health Check route ${width}px: measured`, false, e.message.split('\n')[0]);
-    }
-    await old.close();
   }
 }
 

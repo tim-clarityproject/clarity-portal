@@ -249,9 +249,6 @@ const openingPage = (() => {
   return fonts ? Promise.all([part, fonts]) : part;
 })();
 
-// Strategic Alignment Health Check: a standalone page for people with no
-// portal account. Lazy-loaded so none of it is in the portal's main bundle.
-const HealthCheck = lazy(() => loadWithReload(() => import('./pages/alignment/HealthCheck')));
 
 // Wheel of Life (Review section, inside the portal). Lazy-loaded, like the
 // Health Check, so its pages and styles stay out of the main bundle.
@@ -600,16 +597,8 @@ function AppContent() {
             src/pages/legal/LegalDocumentPage.jsx. */}
         <Route path="/legal/:doc" element={<LegalDocumentPage />} />
 
-        {/* Strategic Alignment Health Check: public, no login, no redirects
-            for a logged-in portal user. Never nested under ProtectedLayout. */}
-        <Route
-          path="/health-check/:token"
-          element={(
-            <Suspense fallback={<div className="ui-root" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />}>
-              <HealthCheck />
-            </Suspense>
-          )}
-        />
+        {/* The outside Health Check (/health-check/<token>) is its own page, health-check.html, which Vercel serves for
+            every /health-check address; the portal's own older copy was deleted on 24 Nov (Tim). */}
 
         {/* PROTECTED ROUTES - ALL routes here require valid session */}
         <Route element={<ProtectedLayout />}>
