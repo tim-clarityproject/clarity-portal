@@ -1,9 +1,11 @@
 // The sign-in pages, measured (M26; Tim's audit of 11 Nov, 22:57 to
 // 23:04), on every one of the 21 screens, dark and light, at 1280 wide
 // and at 390 by 844:
-//   - the bold crosshair and the name: the name's middle on the
-//     crosshair's middle (within 0.5px), and both in the same place on
-//     every page;
+//   - the bold crosshair and the name: on a form or list page both on the
+//     column's left edge, read from their drawn pixels (within 1px); on a
+//     short message page the name's middle on the crosshair's middle
+//     (within 0.5px), both in the middle of the column; and both in the same
+//     place on every page of the same kind (sign-in rule 49, one left edge);
 //   - "Back to sign in": the chevron's visible edge on the content's left
 //     edge, 10px before its label, and clear of the phone's notch;
 //   - the spacing rhythm, read the same way on the page and on M26 itself:
@@ -14,9 +16,10 @@
 //   - the tick box: 18px, a 1.5px edge, 5px corners, a 12px tick, a 44px
 //     tap area, and its row lined up with the boxes' left edge;
 //   - "6-digit" on one line; boxes 16px or more; every outlined edge 3 to 1;
-//   - one alignment per page, each row centred as a group with its icon or
-//     tick box, and boxes even inside (rule 49; tests/signin/centring.mjs;
-//     every screen at twice the text size too: centring-pages.mjs);
+//   - one left edge (rule 49; tests/signin/centring.mjs; every screen at
+//     twice the text size too: centring-pages.mjs): every row of a form or
+//     list page on the column's left edge, every row of a message page
+//     centred as a group, and no page a mix;
 //   - the spacing rule of 19 Nov, 21:25 (Phase 6a run 5), read from the
 //     page's own boxes (tests/signin/spacing.mjs): title to its first line
 //     12px, line to line 12px, text to a box, list or button 24px, box to
@@ -152,7 +155,7 @@ function parts() {
   const col = document.querySelector('.si-col');
   const vis = (el) => { const b = el.getBoundingClientRect(); return b.width > 0 && b.height > 0; };
   const r = (el) => { const b = el.getBoundingClientRect(); return { x: b.left, y: b.top, width: b.width, height: b.height, right: b.right, bottom: b.bottom }; };
-  const out = { col: r(col), sideways: document.documentElement.scrollWidth - innerWidth };
+  const out = { col: r(col), message: col.dataset.align === 'centre', sideways: document.documentElement.scrollWidth - innerWidth };
   const mark = col.querySelector('.si-mark svg');
   const brand = col.querySelector('.si-brand');
   if (mark && brand) { out.mark = r(mark); out.brand = r(brand); }
@@ -172,7 +175,6 @@ function parts() {
       // whole pixels of its own screen when asked what it drew, so the
       // drawn edge is only checked for being there on all four sides.
       tap: r(box), square: r(sq), edge: [st.borderTopWidth, st.borderRightWidth, st.borderBottomWidth, st.borderLeftWidth].map(parseFloat), written: st.getPropertyValue('--line-w-strong').trim(), corners: parseFloat(st.borderTopLeftRadius), tick: r(tick),
-      centred: Boolean(box.closest('.si-terms--centred')),
       boxLeft: Math.min(...[...col.querySelectorAll('.si-inp')].filter(vis).map((i) => i.getBoundingClientRect().left)),
     };
   }
@@ -240,15 +242,20 @@ for (const mode of MODES) {
         const name = await ink(page, { x: p.col.x, y: p.brand.y, width: p.col.width, height: p.brand.height + 2 });
         const cx = (cross.left + cross.right) / 2;
         const nx = (name.left + name.right) / 2;
-        pass(`${tag}: the name’s middle is on the crosshair’s middle (within 0.5px)`, Math.abs(cx - nx) <= 0.5, `crosshair ${cx.toFixed(2)}, name ${nx.toFixed(2)}`);
-        pass(`${tag}: both are in the middle of the column`, Math.abs(cx - (p.col.x + p.col.width / 2)) <= 0.5, `${cx.toFixed(2)} in a column centred on ${(p.col.x + p.col.width / 2).toFixed(2)}`);
+        if (p.message) {
+          pass(`${tag}: the name’s middle is on the crosshair’s middle (within 0.5px)`, Math.abs(cx - nx) <= 0.5, `crosshair ${cx.toFixed(2)}, name ${nx.toFixed(2)}`);
+          pass(`${tag}: both are in the middle of the column`, Math.abs(cx - (p.col.x + p.col.width / 2)) <= 0.5, `${cx.toFixed(2)} in a column centred on ${(p.col.x + p.col.width / 2).toFixed(2)}`);
+        } else {
+          // One left edge (rule 49): the crosshair's drawn edge and the name's first letter on the column's left edge.
+          pass(`${tag}: the crosshair and the name are on the column’s left edge (within 1px)`, Math.abs(cross.left - p.col.x) <= 1 && Math.abs(name.left - p.col.x) <= 1, `crosshair ${cross.left.toFixed(2)}, name ${name.left.toFixed(2)}, column ${p.col.x.toFixed(2)}`);
+        }
         pass(`${tag}: the crosshair is 32px`, Math.abs(p.mark.width - 32) < 0.1 && Math.abs(p.mark.height - 32) < 0.1, `${p.mark.width} by ${p.mark.height}`);
-        const key = `${width} ${mode}`;
+        const key = `${width} ${mode} ${p.message ? 'message' : 'form'}`;
         const here = { crossTop: cross.top, crossLeft: cross.left, nameTop: name.top, nameLeft: name.left };
         if (!same[key]) same[key] = { first: screen.name, at: here };
         const off = Object.keys(here).filter((k) => Math.abs(here[k] - same[key].at[k]) > 0.5);
         pass(`${tag}: the crosshair and the name are in the same place as on ${same[key].first}`, off.length === 0, off.map((k) => `${k} ${here[k].toFixed(2)} (there ${same[key].at[k].toFixed(2)})`).join('; '));
-        if (mode === MODES[0]) table.push(`${screen.name} ${width}: crosshair centre ${cx.toFixed(2)}, name centre ${nx.toFixed(2)}`);
+        if (mode === MODES[0]) table.push(`${screen.name} ${width}: crosshair ${cross.left.toFixed(2)} to ${cross.right.toFixed(2)}, name ${name.left.toFixed(2)} to ${name.right.toFixed(2)}`);
       }
 
       // Back.
@@ -289,7 +296,7 @@ for (const mode of MODES) {
       if (got?.linksApart) pass(`${tag}: stacked links are at least 28px apart`, got.linksApart.every((v) => v >= 28), JSON.stringify(got.linksApart));
       if (mode === MODES[0] && got) table.push(`${screen.name} ${width}: ${Object.entries(got).map(([k, v]) => `${k} ${JSON.stringify(v)}`).join(', ')}`);
 
-      // One alignment per page, each row centred as a group, boxes even inside (rule 49).
+      // One left edge (rule 49): a form or list page's rows on the column's left edge, a message page's centred.
       const centring = await page.evaluate(centredGroups, { root: screen.acct ? '.si-col--account' : '.si-col' });
       const offCentre = centringProblems(centring);
       pass(`${tag}: each row ${centring.align === 'centre' ? 'centred as a group' : 'on the column’s left edge'}, and boxes even inside`, offCentre.length === 0, offCentre.slice(0, 4).join('; '));
@@ -310,8 +317,7 @@ for (const mode of MODES) {
         pass(`${tag}: the tick box is 18px with a 1.5px edge, 5px corners and a 12px tick, in a 44px tap area`,
           near(t.square.width, 18) && near(t.square.height, 18) && t.written === '1.5px' && t.edge.every((e) => e >= 1 && e <= 1.5) && near(t.corners, 5) && near(t.tick.width, 12) && near(t.tick.height, 12) && near(t.tap.width, 44) && near(t.tap.height, 44),
           JSON.stringify({ square: [t.square.width, t.square.height], edgeWritten: t.written, edgeDrawn: t.edge, corners: t.corners, tick: [t.tick.width, t.tick.height], tap: [t.tap.width, t.tap.height] }));
-        // Centred with its words on a page with no boxes (rule 49): read by the centring check below.
-        if (t.centred) { /* centred as one group */ } else if (Number.isFinite(t.boxLeft)) pass(`${tag}: the tick box lines up with the boxes’ left edge`, Math.abs(t.square.x - t.boxLeft) <= 0.5, `${t.square.x.toFixed(2)} (boxes ${t.boxLeft.toFixed(2)})`);
+        if (Number.isFinite(t.boxLeft)) pass(`${tag}: the tick box lines up with the boxes’ left edge`, Math.abs(t.square.x - t.boxLeft) <= 0.5, `${t.square.x.toFixed(2)} (boxes ${t.boxLeft.toFixed(2)})`);
         else pass(`${tag}: the tick box lines up with the column’s left edge`, Math.abs(t.square.x - p.col.x) <= 0.5, `${t.square.x.toFixed(2)} (column ${p.col.x.toFixed(2)})`);
       }
       if (p.six) {

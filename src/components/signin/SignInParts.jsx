@@ -18,8 +18,8 @@ const MARK_SIZE = 32;
 /** "Back to sign in": above the column, at its left edge, clear of a phone's notch. */
 export function BackTo({ to = SIGN_IN_PATHS.signIn, state, children = 'Back to sign in' }) {
   return (
-    // Set on the content's left edge on purpose (rule 29t), so the centring check passes it by.
-    <Link className="si-back" to={to} state={state} data-align="start">
+    // On the content's left edge (rule 29t): the same edge as every row of a form page (rule 49).
+    <Link className="si-back" to={to} state={state}>
       <Chevron direction="left" size="sm" beside="words" />
       <span>{children}</span>
     </Link>
@@ -34,8 +34,12 @@ export function BackTo({ to = SIGN_IN_PATHS.signIn, state, children = 'Back to s
  * @param {boolean} [core] "Clarity drives performance." (Sign in only)
  * @param {boolean|object} [back] true for "Back to sign in", or BackTo's props
  * @param {function} [onSubmit] the page's form: Enter in a box sends it
+ * @param {boolean} [message] a short message page (no boxes, no list:
+ *   Check your email, You're in, Signing you in), centred throughout; every
+ *   other page puts everything on the column's left edge (sign-in rule 49,
+ *   one left edge). A page with no form is a message page unless it says not.
  */
-export function SignInPage({ title, core = false, back = false, onSubmit, children }) {
+export function SignInPage({ title, core = false, back = false, onSubmit, message = !onSubmit, children }) {
   const Brand = title ? 'div' : 'h1';
   // With a form to send, the column itself is the form, so every part
   // stays a direct child and the spacing rules read the same on every page.
@@ -44,7 +48,7 @@ export function SignInPage({ title, core = false, back = false, onSubmit, childr
   return (
     <div className="ui-root si-root">
       <main className="si-frame">
-        <Col className="si-col" {...formProps}>
+        <Col className={message ? 'si-col si-col--message' : 'si-col'} data-align={message ? 'centre' : 'start'} {...formProps}>
           {back ? <BackTo {...(back === true ? {} : back)} /> : null}
           <div className="si-mark"><BoldCrosshair size={MARK_SIZE} /></div>
           <Brand className="si-brand">The Clarity Portal</Brand>
@@ -176,7 +180,7 @@ export function Message({ lines }) {
   return (
     <div className="si-err" role="alert">
       <b aria-hidden="true">!</b>
-      {/* The words fill the box beside the "!", set on the left: the box's two sides keep equal padding (rule 49). */}
+      {/* The words fill the box beside the "!", set on the left: on a message page the box's two sides keep equal padding (rule 49). */}
       <span data-align="start">{list.map((line) => <span key={line}>{line}</span>)}</span>
     </div>
   );
@@ -184,15 +188,14 @@ export function Message({ lines }) {
 
 /**
  * The one tick box: "I’m 18 or over and I agree to the terms.", where
- * "terms" opens the one terms panel with all three legal documents.
- * Under a form's boxes it lines up with their left edge (rule 5, marked so
- * for the centring check); `centred` on a page with no boxes (Before you
- * start), where the box and its words are centred as one group (rule 49).
+ * "terms" opens the one terms panel with all three legal documents. The box
+ * itself lines up with the boxes' left edge, the page's one left edge
+ * (rules 5 and 49).
  */
-export function TermsRow({ checked, onChange, centred = false }) {
+export function TermsRow({ checked, onChange }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={centred ? 'si-terms si-terms--centred' : 'si-terms'} data-align={centred ? undefined : 'start'}>
+    <div className="si-terms">
       <button
         type="button"
         role="checkbox"
@@ -278,7 +281,8 @@ export function QrCode({ value, label }) {
   }, [value]);
   const quiet = 4;
   return (
-    <div className="si-qr" role="img" aria-label={label}>
+    // The quiet zone's share of the square, so the page can start the dots on its left edge (signin.css).
+    <div className="si-qr" role="img" aria-label={label} style={cells && cells.n ? { '--si-qr-quiet': quiet / (cells.n + quiet * 2) } : undefined}>
       {cells && cells.n ? (
         <svg viewBox={`${-quiet} ${-quiet} ${cells.n + quiet * 2} ${cells.n + quiet * 2}`} shapeRendering="crispEdges" aria-hidden="true">
           <rect className="si-qr-bg" x={-quiet} y={-quiet} width={cells.n + quiet * 2} height={cells.n + quiet * 2} />
@@ -297,12 +301,11 @@ export function keepSixDigit(text) {
 
 /**
  * A tick box row in the sign-in pages' own shape (the shared 18px box, a
- * 44px tap area), the box and its words centred as one group (rule 49: its
- * one page, Save your recovery codes, has no boxes).
+ * 44px tap area), the box on the page's one left edge (rule 49).
  */
 export function TickRow({ checked, onChange, label, children }) {
   return (
-    <div className="si-terms si-terms--centred">
+    <div className="si-terms">
       <button type="button" role="checkbox" className="ds-check-box" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}>
         <span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>

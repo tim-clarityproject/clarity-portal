@@ -209,6 +209,11 @@
      The same values as light mode's --bg and --text, so light mode is unchanged. */
   --si-qr-paper: #F9F8F5;
   --si-qr-ink: #000000;
+  /* 1 where the code's quiet zone is the page's own colour (light), so the code
+     is moved out by its quiet zone and its dots start on the left edge (sign-in
+     rule 49); 0 where the light square shows on the dark page, whose own edge is
+     then on the left edge. */
+  --si-qr-pull: 0;
   --si-step-in: 32px;         /* a set-up step's words, after its number */
   --si-rc-pad-y: 20px;        /* the recovery codes' box */
   --si-rc-pad-x: 22px;
@@ -216,11 +221,6 @@
   --ls-si-code: 0.06em;       /* the set-up key and the recovery codes */
   --lh-si-step: 1.5;
   --si-cpy-icon: 18px;        /* the copy icon, in its 44px tap area */
-  /* The copy icon's drawing spans 15 of its 24 units, so its visible edge is this
-     far inside its 44px tap area; a word and the icon centred as one group take
-     it off the icon's outer side (sign-in rule 49). */
-  --si-cpy-ink: calc(var(--si-cpy-icon) * 15 / 24);
-  --si-cpy-trim: calc((var(--si-cpy-ink) - var(--tap-min)) / 2);
 
   /* Radii (--radius-input 12px, --radius-card 16px and --radius-pill
      are defined above) */
@@ -562,6 +562,12 @@
   --mission-pill-h: 50px;    /* the My Mission pill in the desktop header (M2) */
   --mission-pill-max: 520px; /* its widest (breathe-orb.html .d .mis), so two lines stay readable */
   --bold-cross-bar: 36px;
+  /* The bold crosshair's drawing starts this far inside its square (7.35 of the
+     drawing's 185 units: the end of its left arm, src/lib/boldCrosshair.js), so a
+     crosshair on a page's left edge is moved out by its size times this, and its
+     visible edge lands on the edge (one left edge, sign-in rule 49). */
+  --bold-cross-ink-in: calc(7.348 / 185);
+  --guest-mark: 28px;        /* the outside pages' crosshair in the bar above the column (M7b, M9) */
   --breathe-h: 60px;         /* the floating Breathe button (breathe-orb.html, 29 Oct: 60px pill, 44px orb) */
   --breathe-orb: 44px;
   --breathe-pad-l: 7px;      /* breathe-orb.html .fab: 0 22px 0 7px, so the orb sits evenly inside the pill */
@@ -744,6 +750,7 @@
 :root[data-theme="light"] .ui-root:not([data-theme="dark"]),
 .ui-root[data-theme="light"] {
   --bg: #F9F8F5;
+  --si-qr-pull: 1;           /* the QR code's quiet zone is the page's colour here */
   --surface: #FFFFFF;        /* boxes (the old name for --card) */
   --card: #FFFFFF;
   --raised: #EFEDE8;

@@ -39,22 +39,36 @@
   }
 }
 
+/* One left edge (Tim, 23 Nov 2026, 17:40; sign-in rule 49): a page with a
+   form, a list, a box to type in or numbered steps puts everything on the
+   column's left edge, the crosshair and the name included, and the column
+   sits in the middle of the screen. A short message page (Check your email,
+   You're in, Signing you in) is centred throughout (.si-col--message). */
 .ui-root .si-col {
   position: relative;
   box-sizing: border-box;
   max-width: var(--si-col);
   margin-inline: auto;
   padding: var(--space-px10) 0;
-  text-align: center;
+  text-align: left;
 }
+
+.ui-root .si-col.si-col--message { text-align: center; }
 
 /* ---------- The bold crosshair and the name, in the same place on every page ---------- */
 
 .ui-root .si-mark {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   margin-bottom: var(--space-px14);
 }
+
+/* The crosshair's drawing starts a little inside its square: the square is
+   moved out by that much, so the drawing itself is on the left edge. */
+.ui-root .si-mark svg { margin-inline-start: calc(-1 * var(--si-mark) * var(--bold-cross-ink-in)); }
+
+.ui-root .si-col--message .si-mark { justify-content: center; }
+.ui-root .si-col--message .si-mark svg { margin-inline-start: 0; }
 
 .ui-root .si-brand {
   margin: 0 !important;
@@ -73,11 +87,8 @@
   word-spacing: normal;
   overflow-wrap: normal;
   color: var(--text);
-  /* Spaced capitals carry their spacing after the last letter too: the
-     same space before the first keeps the name's middle on the
-     crosshair's middle. Nekst capitals sit high on their line, so the
-     name is nudged down without moving anything under it. */
-  padding-left: var(--ls-si-brand);
+  /* Nekst capitals sit high on their line, so the name is nudged down
+     without moving anything under it. */
   position: relative;
   top: var(--si-brand-nudge);
 }
@@ -100,11 +111,14 @@
   word-spacing: normal;
   text-wrap: balance;
   color: var(--text);
-  /* Spaced capitals carry their spacing after the last letter too: the same
-     space before the first keeps the title's letters on the column's middle
-     (sign-in rule 49, as the name above it). */
-  padding-left: var(--ls-page-title);
 }
+
+/* On a message page, spaced capitals carry their spacing after the last
+   letter too: the same space before the first keeps the name's and the
+   title's letters on the column's middle, and the name's middle on the
+   crosshair's. */
+.ui-root .si-col--message .si-brand { padding-left: var(--ls-si-brand); }
+.ui-root .si-col--message .si-ttl { padding-left: var(--ls-page-title); }
 
 /* ---------- Lines of words ---------- */
 
@@ -299,16 +313,6 @@
 }
 
 .ui-root .si-p + .si-terms { margin-top: var(--space-px14); }
-
-/* On a page with no boxes (Save your recovery codes, Before you start) the
-   tick box and its words are centred as one group, from the box's own edge
-   to the last letter (sign-in rule 49): the row keeps the margin that puts
-   the tap area's invisible part outside it, and holds its two columns in
-   its middle. */
-.ui-root .si-terms--centred {
-  grid-template-columns: var(--tap-min) minmax(0, max-content);
-  justify-content: center;
-}
 
 /* When the words wrap (a narrow phone, a reader's larger text), "terms"
    can be on the first or last line: the row grows to hold its 44px tap
@@ -649,7 +653,7 @@
 
 .ui-root .si-qr {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   margin: var(--space-4) 0 0;
 }
 
@@ -660,6 +664,11 @@
   height: var(--si-qr);
 }
 
+/* Where the quiet zone is the page's own colour (light mode), the code is
+   moved out by it, so its dots start on the left edge (sign-in rule 49).
+   --si-qr-quiet is the quiet zone's share of the square, set by QrCode. */
+.ui-root .si-qr svg { margin-inline-start: calc(-1 * var(--si-qr) * var(--si-qr-quiet, 0) * var(--si-qr-pull)); }
+
 /* Dark dots on the light page colour in both modes (the UI tester, run 5): the
    code alone, its quiet zone included, with no card or edge round it. */
 .ui-root .si-qr-bg { fill: var(--si-qr-paper); }
@@ -669,19 +678,18 @@
   margin-top: var(--space-px20);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-px2);
   font-size: var(--fs-note);
   line-height: var(--lh-text);
   color: var(--text-2);
 }
 
-/* The key and its copy icon run as one line of words, centred, so when a
-   reader's larger text wraps the key, the icon stays beside its last group
-   and every line is centred (sign-in rule 49). */
+/* The key and its copy icon run as one line of words on the left edge, so
+   when a reader's larger text wraps the key, the icon stays beside its
+   last group (sign-in rule 49). */
 .ui-root .si-kv {
   display: block;
-  text-align: center;
 }
 
 .ui-root .si-kv .si-cpy {
@@ -689,13 +697,6 @@
   vertical-align: middle;
   margin-inline-start: var(--space-px2);
 }
-
-/* The key or Download and its copy icon are centred as one group, from the
-   words' first letter to the icon's visible edge: the icon's 44px tap area
-   reaches past its drawing, so that part is taken off its outer side (the
-   tap area itself stays 44px; sign-in rule 49). */
-.ui-root .si-kv .si-cpy,
-.ui-root .si-rcact .si-cpy { margin-inline-end: var(--si-cpy-trim); }
 
 .ui-root .si-key {
   font-weight: var(--fw-regular);
@@ -745,13 +746,11 @@
   outline-offset: calc(-1 * var(--space-1));
 }
 
-/* The ten recovery codes, in two columns. */
+/* The ten recovery codes, in two columns, starting on the box's own left
+   edge as M26 draws them (sign-in rule 49: one left edge). */
 .ui-root .si-rc {
   display: grid;
-  /* The two columns as wide as their codes, centred in the box, so the space
-     inside it is the same on the left and the right (sign-in rule 49). */
-  grid-template-columns: repeat(2, minmax(0, max-content));
-  justify-content: center;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-px14) var(--space-4);
   margin: var(--space-px18) 0 0;
   padding: var(--si-rc-pad-y) var(--si-rc-pad-x);
@@ -772,7 +771,7 @@
 .ui-root .si-rcact {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: var(--space-px20);
   margin-top: var(--space-px18);
   font-size: var(--fs-secondary);

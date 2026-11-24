@@ -47,7 +47,19 @@ function readParts({ root, map, loose = false }) {
     else if (kind === 'box') text = el.closest('[role=checkbox]')?.getAttribute('aria-checked') || '';
     else if (kind === 'mark' || kind === 'chev' || kind === 'spin') text = '';
     else text = clean(el.innerText);
+    // A link's place in its line: how far the line's first letter is from the
+    // column's left edge (one left edge, sign-in rule 49, moves the line, and
+    // the link with it).
+    let lineLeft = null;
+    const line = kind === 'link' ? el.closest('.alt, .si-alt') : null;
+    if (line) {
+      const rg = document.createRange();
+      rg.selectNodeContents(line);
+      const same = [...rg.getClientRects()].filter((q) => q.width > 0 && q.bottom > r.top + 1 && q.top < r.bottom - 1);
+      if (same.length) lineLeft = +(Math.min(...same.map((q) => q.left)) - base.left).toFixed(2);
+    }
     parts.push({
+      lineLeft,
       kind,
       text,
       top: +(r.top - base.top).toFixed(2),
@@ -59,7 +71,7 @@ function readParts({ root, map, loose = false }) {
       tag: el.tagName,
     });
   }
-  return { parts, colWidth: +base.width.toFixed(2), colTop: +base.top.toFixed(2), colLeft: +base.left.toFixed(2), sideways: document.documentElement.scrollWidth - innerWidth };
+  return { parts, align: col.dataset?.align || null, colWidth: +base.width.toFixed(2), colTop: +base.top.toFixed(2), colLeft: +base.left.toFixed(2), sideways: document.documentElement.scrollWidth - innerWidth };
 }
 
 const MOCK_MAP = {
@@ -84,10 +96,6 @@ function allowed(kind, what, screen, phone) {
   // Back's box starts at the chevron's own square, so its visible edge
   // lands on the content edge (measured in tests/signin/measure.mjs).
   if (kind === 'back' && (what === 'left' || what === 'width')) return 12;
-  // Before you start: the tick box and its words are centred as one group on a page with no boxes (Tim, 23 Nov 2026,
-  // sign-in rule 49, si-terms--centred), where M26 draws them on the column's left edge: they move right together
-  // (about 30px on both widths); their sizes and the rows above and below are held to M26's.
-  if (screen === 'google-new' && ['box', 'link'].includes(kind) && what === 'left') return 32;
   // Words are as wide as their font draws them: M26 loads DM Sans from
   // Google, the portal carries its own copy.
   if (['link', 'show', 'saved'].includes(kind) && (what === 'left' || what === 'width')) return 3;
@@ -115,6 +123,24 @@ function withSpacingRule(parts, key) {
   return parts.map((x) => {
     if (steps.length && x.kind === steps[0][0]) shift += steps.shift()[1];
     return shift ? { ...x, top: x.top + shift } : x;
+  });
+}
+
+// One left edge (Tim, 23 Nov 2026, 17:40; sign-in rule 49): M26 centres the
+// crosshair and the lines of words under the button on every page. On a page
+// with a form or a list (`data-align="start"` on the column) they move to the
+// column's left edge: the crosshair's drawing on the edge (its square moved
+// out by --bold-cross-ink-in), and each link with its line, which now starts
+// on the edge. Nothing else moves, so everything else is still held to M26's
+// place. A short message page (Check your email, Signing you in) stays
+// centred, as M26 draws it.
+const MARK_INK_IN = 32 * 7.348 / 185;
+function withOneLeftEdge(parts, align) {
+  if (align !== 'start') return parts;
+  return parts.map((x) => {
+    if (x.kind === 'mark') return { ...x, left: +(-MARK_INK_IN).toFixed(2) };
+    if (x.kind === 'link' && x.lineLeft != null) return { ...x, left: +(x.left - x.lineLeft).toFixed(2) };
+    return x;
   });
 }
 
@@ -184,6 +210,7 @@ for (const mode of MODES) {
       // Its boxes, at follow-up 1's 56px (52px on a phone): what's below them moves by the difference.
       want.parts = withNewFields(want.parts, { phone, isField: (x) => x.kind === 'inp' });
       want.parts = withSpacingRule(want.parts, screen.key);
+      want.parts = withOneLeftEdge(want.parts, got.align);
       pass(`${tag}: no page error`, errors.length === 0, errors[0]);
       pass(`${tag}: no sideways scroll`, got.sideways <= 0, `${got.sideways}px`);
       // M26 sets its buttons in capitals; since 18 Nov the portal's buttons are sentence case

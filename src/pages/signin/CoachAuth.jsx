@@ -472,7 +472,8 @@ export function CoachLost() {
   const ready = auth?.ready === true;
   const line = lostCodesLine({ ownerFirstName: auth?.ownerFirstName, isOwner: auth?.isOwner });
   return (
-    <SignInPage title={W.title} onSubmit={submit} back={{ to: COACH_AUTH_PATHS.code, children: W.back }}>
+    // With no codes yet it is the line alone, a short message page; with its box, a form (sign-in rule 49).
+    <SignInPage title={W.title} onSubmit={submit} message={!ready} back={{ to: COACH_AUTH_PATHS.code, children: W.back }}>
       {auth === null ? <Wait>{' '}</Wait> : (
         <>
           {ready ? (
@@ -549,7 +550,7 @@ export function CoachIn() {
 
   if (Number.isFinite(low)) {
     return (
-      <SignInPage title={COACH_AUTH_WORDS.low.title} onSubmit={(e) => { e.preventDefault(); goIn(user); }}>
+      <SignInPage message title={COACH_AUTH_WORDS.low.title} onSubmit={(e) => { e.preventDefault(); goIn(user); }}>
         <Line>{lowCodesLine(low)}</Line>
         <MainButton>{COACH_AUTH_WORDS.low.button}</MainButton>
       </SignInPage>
@@ -558,7 +559,7 @@ export function CoachIn() {
   // Opened with nothing to say (a reload): on to whatever is owed.
   if (!Number.isFinite(left)) {
     return (
-      <SignInPage title={W.title} onSubmit={(e) => { e.preventDefault(); goIn(user); }}>
+      <SignInPage message title={W.title} onSubmit={(e) => { e.preventDefault(); goIn(user); }}>
         <Line>{W.setUpLine}</Line>
         <MainButton>{W.button}</MainButton>
       </SignInPage>
@@ -566,7 +567,8 @@ export function CoachIn() {
   }
   const more = makeNewCodesLine(left);
   return (
-    <SignInPage title={W.title} onSubmit={(e) => { e.preventDefault(); navigate(COACH_AUTH_PATHS.setUp, { replace: true }); }}>
+    // You're in is a short message page, centred throughout (sign-in rule 49).
+    <SignInPage message title={W.title} onSubmit={(e) => { e.preventDefault(); navigate(COACH_AUTH_PATHS.setUp, { replace: true }); }}>
       <Line>{usedCodeLine(left)}</Line>
       {othersEnded ? <Line>{W.othersEnded}</Line> : null}
       <Line>{W.setUpLine}</Line>

@@ -1,25 +1,39 @@
-// One alignment per page, each row centred as a group (Tim, 23 Nov 2026;
-// sign-in rule 49). On a centred page (every sign-in page, the coach
-// authenticator's screens, the outside Health Check's centred screens)
-// each row of the page's main column is centred as one group: its words,
-// icons and tick boxes together, read from what is drawn (text from its own
-// letters, an icon from its drawing, a box from its edge), never from the
-// element's full width. Exempt: a numbered list, a form field (a box and
-// its label), and anything marked `data-align="start"`, which is how a page
-// says its one alignment puts that part on the left (Back, a form's tick
-// row). A drawn box (an edge all round, a fill or a hairline shadow) is its
-// own group, and what it holds has equal space left and right inside it.
-// On a left-aligned page (My Account's) every row starts on the column's
-// left edge instead.
+// One left edge (Tim, 23 Nov 2026, 17:40; sign-in rule 49, which replaces
+// the morning's "one alignment per page, each row centred as a group").
+// A page with a form, a list, a box to type in, numbered steps or more than
+// a few lines puts everything on the column's left edge: the logo or
+// crosshair, the title, the text, the boxes, the buttons, the tick box rows,
+// the links and the small print, and Back, which sits on the same edge.
+// A short message page (no boxes, no list: "Check your email", "You're in")
+// is centred throughout. Never a mix.
+//
+// Each row of the page's main column is read from what is drawn (text from
+// its own letters, an icon from its drawing, a chevron from its visible
+// edge, a box from its edge, a numbered step from its number), never from
+// the element's full width:
+//   - a form or list page (`data-align="start"`): a row fails when its left
+//     edge is more than 1px off the column's left edge;
+//   - a message page (`data-align="centre"`): a row fails when its middle is
+//     more than 1px off the column's middle, a drawn box fails when what it
+//     holds has more space on one side than the other, and the page fails
+//     when it holds a box to type in, a tick box or a list (it is then a
+//     form or list page, and centring it is the mix the rule forbids).
+// A full-width button is a drawn box on the column's edge; its words are
+// centred inside it, which is not part of the rule. A note under its button
+// is centred on that button (rule 29v), on either kind of page. On a
+// message page Back keeps its place at the top left (rule 29t), and
+// anything marked `data-align="start"` (a message's own lines inside its
+// box) is passed by.
 //
 // Run in the page:
 //   const found = await page.evaluate(centredGroups, { root: '.si-col' });
 //   centringProblems(found)  // one line per row or box that is off
 // `align` ('centre' or 'start') is read from the column's `data-align`,
-// otherwise from its text-align; pass it to say it outright.
+// otherwise from its text-align; pass it to say it outright. `also` names
+// parts outside the column that sit on its edge too (the outside pages'
+// crosshair in the bar above the column).
 //
-// Fixtures: tests/signin/centring.test.mjs (Tim's four faults and their
-// fixed forms).
+// Fixtures: tests/signin/centring.test.mjs.
 
 export const TOLERANCE = 1;
 
@@ -27,13 +41,17 @@ export const TOLERANCE = 1;
 export function centredGroups(arg) {
   const opts = typeof arg === 'string' ? { root: arg } : (arg || {});
   const tolerance = opts.tolerance ?? 1;
+  const BACK = '.si-back, .hc-backrow, .hc-back, .ds-guide-back, .ui-back-link';
   const col = document.querySelector(opts.root || '.si-col');
   if (!col) return { align: null, rows: [], boxes: [], skipped: [] };
   const cs = (el) => getComputedStyle(el);
   const round = (v) => +v.toFixed(2);
   const clear = (c) => !c || c === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(c);
   const colStyle = cs(col);
-  const align = opts.align || col.dataset.align || (colStyle.textAlign === 'center' ? 'centre' : 'start');
+  let pageColour = null;
+  for (let e = col; e && !pageColour; e = e.parentElement) if (!clear(cs(e).backgroundColor)) pageColour = cs(e).backgroundColor;
+  const said = opts.align || col.dataset.align;
+  const align = said ? (/^cent/.test(said) ? 'centre' : 'start') : (colStyle.textAlign === 'center' ? 'centre' : 'start');
   const cr = col.getBoundingClientRect();
   let inner = {
     left: cr.left + parseFloat(colStyle.borderLeftWidth) + parseFloat(colStyle.paddingLeft),
@@ -111,8 +129,48 @@ export function centredGroups(arg) {
         return;
       }
       if (node.nodeType !== 1 || unseen(node)) return;
+      // A chevron is a mask on a square: its visible edges are inside the square
+      // (--chev-left-inset and --chev-right-inset for a 16px one, as backGaps reads them).
+      if (node.classList?.contains('ds-chevron')) {
+        const st = cs(node);
+        const m = /matrix\(([^)]+)\)/.exec(st.transform);
+        const shift = m ? Number(m[1].split(',')[4]) || 0 : 0;
+        const b = node.getBoundingClientRect();
+        const size = node.offsetWidth || b.width;
+        const mid = b.left + b.width / 2 - shift;
+        const k = size / 16;
+        const inL = (parseFloat(st.getPropertyValue('--chev-left-inset')) || 5) * k;
+        const inR = (parseFloat(st.getPropertyValue('--chev-right-inset')) || 5.5) * k;
+        if (node.classList.contains('ds-chevron--left')) add({ left: mid - size / 2 + inL, right: mid + size / 2 - inR, top: b.top, bottom: b.bottom });
+        else if (node.classList.contains('ds-chevron--right')) add({ left: mid - size / 2 + inR, right: mid + size / 2 - inL, top: b.top, bottom: b.bottom });
+        else add(b);
+        return;
+      }
+      // What a part draws before or after itself: a numbered step's number
+      // (set at its own left), or a line drawn as a filled box ("or"'s two
+      // lines, which reach the part's own edges).
+      if (!(node instanceof SVGElement)) {
+        const b = node.getBoundingClientRect();
+        const st = cs(node);
+        for (const which of ['::before', '::after']) {
+          const ps = getComputedStyle(node, which);
+          if (!ps.content || ps.content === 'none' || ps.content === 'normal' || ps.display === 'none') continue;
+          const words = ps.content !== '""' && ps.content !== "''";
+          const filled = !clear(ps.backgroundColor);
+          if (!words && !filled) continue;
+          if (ps.position === 'absolute' && ps.left !== 'auto') {
+            const l = b.left + parseFloat(st.borderLeftWidth) + parseFloat(ps.left);
+            add({ left: l, right: l + Math.max(1, parseFloat(ps.width) || 0), top: b.top, bottom: b.bottom });
+          } else if (filled && ps.position !== 'absolute') {
+            add({ left: b.left + parseFloat(st.borderLeftWidth) + parseFloat(st.paddingLeft), right: b.right - parseFloat(st.borderRightWidth) - parseFloat(st.paddingRight), top: b.top, bottom: b.bottom });
+          }
+        }
+      }
       if (node instanceof SVGSVGElement) {
-        const shapes = [...node.querySelectorAll('path, rect, circle, ellipse, line, polyline, polygon, text, use, image')].filter((x) => cs(x).display !== 'none' && cs(x).visibility !== 'hidden');
+        // A shape filled in the page's own colour with no line round it isn't seen
+        // (the QR code's quiet zone in light mode).
+        const unseenShape = (x) => { const st = cs(x); return st.fill === pageColour && (!st.stroke || st.stroke === 'none'); };
+        const shapes = [...node.querySelectorAll('path, rect, circle, ellipse, line, polyline, polygon, text, use, image')].filter((x) => cs(x).display !== 'none' && cs(x).visibility !== 'hidden' && !unseenShape(x));
         if (shapes.length) shapes.forEach((x) => add(x.getBoundingClientRect()));
         else add(node.getBoundingClientRect());
         return;
@@ -132,21 +190,27 @@ export function centredGroups(arg) {
   const numbered = (el) => el.tagName === 'OL' && (cs(el).listStyleType !== 'none'
     || [...el.children].some((li) => /counter/.test(getComputedStyle(li, '::before').content)));
   const exemptWhy = (el) => {
+    // On a form or list page every part is on the one left edge: nothing is passed by.
+    if (align === 'start') return null;
     const marked = el.closest('[data-align="start"]');
     if (marked && marked !== col && col.contains(marked)) return 'marked left';
     if (numbered(el)) return 'numbered list';
     // Back sits with its chevron on the content's left edge (rule 29t), measured by the chevron suites.
-    if (el.matches('.si-back, .hc-back, .ds-guide-back, .ui-back-link, .hc-backrow')) return 'Back';
+    if (el.matches(BACK)) return 'Back';
     return null;
   };
   // A box and its label: only a part that holds nothing else is passed by as one.
-  const formField = (el) => el.matches('label, input, select, textarea')
+  const formField = (el) => align === 'centre' && plainField(el);
+  const plainField = (el) => el.matches('label, input, select, textarea')
     || Boolean(el.querySelector('input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea'));
 
   // The rows: the column's parts, opened up while they stack one above another.
   const rows = [];
   const skipped = [];
   const gather = (el) => {
+    // Back sits above the column's first row (on the sign-in pages it is placed
+    // there on its own), on the same left edge as everything else.
+    if (align === 'start' && el.matches(BACK) && shown(el)) { rows.push(el); return; }
     if (!inFlow(el) || !shown(el)) return;
     const why = exemptWhy(el);
     if (why) { skipped.push(`${name(el)} (${why})`); return; }
@@ -165,8 +229,20 @@ export function centredGroups(arg) {
     else rows.push(el);
   };
   [...col.children].forEach(gather);
+  // Parts outside the column that sit on its edge (the crosshair in the bar above it).
+  if (opts.also) for (const el of document.querySelectorAll(opts.also)) if (shown(el) && !col.contains(el)) rows.push(el);
 
-  const out = { align, col: { left: round(inner.left), right: round(inner.right), centre: round(centre) }, rows: [], boxes: [], skipped };
+  // A message page holds no box to type in, no tick box and no list.
+  const formOrList = [];
+  if (align === 'centre') {
+    for (const el of col.querySelectorAll('input:not([type=hidden]), select, textarea, [role=checkbox], ol, ul')) {
+      if (!shown(el)) continue;
+      if (/^(OL|UL)$/.test(el.tagName) && [...el.children].filter(shown).length < 2) continue;
+      formOrList.push(name(el));
+    }
+  }
+
+  const out = { align, col: { left: round(inner.left), right: round(inner.right), centre: round(centre) }, rows: [], boxes: [], skipped, formOrList };
   const boxesSeen = new Set();
   const checkBox = (el) => {
     if (boxesSeen.has(el) || el.matches('input, select, textarea, button.ds-google')) return;
@@ -193,8 +269,9 @@ export function centredGroups(arg) {
     const ab = above?.getBoundingClientRect();
     const off = above ? mid - (ab.left + ab.right) / 2 : (align === 'centre' ? mid - centre : ink.left - inner.left);
     out.rows.push({ name: name(el), left: round(ink.left), right: round(ink.right), centre: round(mid), off: round(off), ok: Math.abs(off) <= tolerance });
-    // Every drawn box in the row (the row itself included) holds its content in its middle.
+    // On a message page every drawn box in the row (the row itself included) holds its content in its middle.
     // (A mark holding one icon alone, such as a play button's disc, is left to the icon's own drawing.)
+    if (align !== 'centre') continue;
     const iconOnly = (b) => !b.textContent.trim() && b.children.length === 1 && b.firstElementChild instanceof SVGSVGElement;
     for (const b of [el, ...el.querySelectorAll('*')]) if (!(b instanceof SVGElement) && shown(b) && drawn(b) && b.children.length + b.textContent.trim().length > 0 && !iconOnly(b)) checkBox(b);
   }
@@ -206,6 +283,7 @@ export function centringProblems(found) {
   if (!found || !found.align) return ['no column found'];
   const how = found.align === 'centre' ? `from the column’s centre ${found.col.centre}` : `from the column’s left edge ${found.col.left}`;
   return [
+    ...(found.formOrList || []).map((x) => `${x}: a centred message page holds a box, a tick box or a list, so it must be on one left edge`),
     ...found.rows.filter((r) => !r.ok).map((r) => `${r.name} is ${r.off}px ${how} (ink ${r.left} to ${r.right})`),
     ...found.boxes.filter((b) => !b.ok).map((b) => `${b.name}: ${b.spaceLeft}px inside on the left, ${b.spaceRight}px on the right`),
   ];
