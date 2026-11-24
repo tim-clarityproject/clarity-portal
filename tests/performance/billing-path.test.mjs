@@ -119,3 +119,22 @@ test('a portal subscription started and cancelled, through Stripe\'s messages', 
   await deliver(db, stripe);
   assert.equal(db.tables.portal_subscriptions[0].status, 'cancelling');
 });
+
+test('the nightly round: the next instalment drafted on its day, a reminder drafted, and a message that never arrived caught up', async () => {
+  const { nightlyRound } = await import('../../api/billing-nightly.js');
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const { db, stripe, b } = world(now);
+  db.tables.coaches = [{ id: COACH.id, role: 'coach', active: true }];
+  await b.draft('a-ben');
+  await b.send(db.tables.invoices[0].id);
+  now.value = new Date('2026-12-30T10:00:00Z');
+  stripe.settle(db.tables.invoices[0].stripe_invoice_id); // Stripe's "paid" is never delivered to the webhook
+  now.value = new Date('2027-01-01T04:00:00Z');
+  const r = await nightlyRound({ server: db, stripe, now: () => now.value });
+  assert.equal(r.invoices, 1, 'instalment 2 of 6 drafted on 1 Jan');
+  assert.equal(db.tables.invoices[0].status, 'paid', 'caught up from Stripe\'s own record');
+  assert.ok(r.caughtUp >= 1);
+  const again = await nightlyRound({ server: db, stripe, now: () => now.value });
+  assert.deepEqual([again.invoices, again.caughtUp], [0, 0], 'a second round drafts and handles nothing twice');
+  assert.equal(db.tables.payments.length, 1);
+});
