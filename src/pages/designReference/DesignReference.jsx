@@ -1914,7 +1914,7 @@ function Gallery() {
 
         <GallerySection id="c69" title="Guest pages" demo={CalmCardDemo} rules={(
           <>
-            <p><New /><b>A tool without an account, through a coach’s link</b> (M9): <code>GuestFrame</code> shows the bold crosshair alone, centred.</p>
+            <p><New /><b>A tool without an account, through a coach’s link</b> (M9): <code>GuestFrame</code> shows the bold crosshair alone in the bar, on the column’s left edge like everything under it (one left edge, sign-in rule 49); a short message page (<code>message</code>) is centred throughout.</p>
             <p>The start asks for the email and one access code box, with the tool’s time beside the button (under it on a phone).</p>
             <p>The end has the calm card: one sentence, a quieter one, and “Create my free account”. Never a booking link.</p>
           </>
