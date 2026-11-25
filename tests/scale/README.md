@@ -24,6 +24,8 @@ cd ../.. && VERCEL_ENV=production VITE_SUPABASE_URL=http://127.0.0.1:54400 VITE_
   npx vite build --outDir <scratch>/dist-local --emptyOutDir && node tests/phase4/serve-build.mjs <scratch>/dist-local 4317 &
 ```
 
+**Alex's practice (part 6, Polish 1).** `seed/06-polish-practice.sql` gives the owner test coach, Alex Morgan, an invented practice to judge the coach portal by: 28 clients (active, pay-as-you-go, paused, archived, two still deciding and Robin Ellery, a brand-new client with no plan, `local-new-client@example.com`), 3 organisations (Halden Freight needs a purchase order), a year of invoices and payments, 065's agreement kinds, 12 leads, 40 Network people, a month of calendar with three sessions today, and to-dos. It is written by `seed/06-polish-practice.mjs` (edit that, then run it); its dates move to the day it runs, so rebuild the snapshot on the day. It needs Alex as the owner, so use a base without parts 1 to 4: `node seed.mjs --from $P/base.tar --to $P/polish-seeded.tar --only 5,6`. Every row's id starts `5eed0600-`; `node db.mjs --from in.tar --dump out.tar seed/remove-06-polish.sql` takes it all out (named so seed.mjs never runs it).
+
 The stand-in's GoTrue takes the one password for every seeded person, and any six-digit code from a coach with an authenticator (challenge and verify), so coaches reach aal2 as on Supabase. `seed.mjs` rewrites `seed-counts.json`; keep the scale run's copy. Every tool here refuses a hosted target (tests/hosted-guard.mjs); `run.mjs` (the old hosted scale test) is retired.
 
 ## Run it
