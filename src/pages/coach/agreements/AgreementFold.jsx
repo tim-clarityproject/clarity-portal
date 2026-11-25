@@ -18,7 +18,7 @@ export default function AgreementFold({ profileId, name, first, fold, loading, o
   const navigate = useNavigate();
   const { state, agreements = [], agreementVersions = [], invoices = [], isOwner, coaches = [] } = useCoachPortal();
   const ownerFirst = isOwner ? 'you' : coaches.find((c) => c.role === 'owner')?.first_name || 'your practice’s owner';
-  const [open, setOpen] = useState(false);
+  const [opened, setOpen] = useState(null);
   const quotes = rowsOf(state, 'agreement_quotes');
   const opens = rowsOf(state, 'agreement_link_opens');
   const model = useMemo(() => foldModel({ agreements, versions: agreementVersions, quotes, opens, invoices, profileId, first: first || name, ownerFirst, now: new Date() }),
@@ -28,13 +28,17 @@ export default function AgreementFold({ profileId, name, first, fold, loading, o
   const agr = model.agreement;
   const signed = Boolean(model.version?.client_signed_at);
   const summary = model.summary || fold?.summary || '';
+  // Open from the start once something has gone to them, so Sent, Opened, Signed and Settled show (M28 s-sent).
+  const open = opened ?? model.rows.length > 0;
+  // While a version or a quote waits for them, there's nothing new to start (M28 s-sent has no New agreement).
+  const waiting = Boolean(model.version && !signed && model.rows.length > 0);
   const openIt = () => {
     if (!agr) return;
     if (agr.status === 'draft' && !model.quote) navigate(`/coach/agreements/${agr.id}/edit`);
     else navigate(`/coach/agreements/${agr.id}`);
   };
   return (
-    <Fold title="Agreement" open={open} onToggle={() => setOpen((o) => !o)} summary={summary}>
+    <Fold title="Agreement" open={open} onToggle={() => setOpen(!open)} summary={summary}>
       <div className="ab-fold">
       <p className="ab-say">{model.line}</p>
       {model.rows.length > 0 && (
@@ -47,7 +51,7 @@ export default function AgreementFold({ profileId, name, first, fold, loading, o
       )}
       {signed && fold?.rows?.map((r) => <Detail key={r.label} label={r.label}>{r.value}</Detail>)}
       <div className="ab-acts">
-        <Button variant="primary" onClick={() => navigate(`/coach/agreements/new?for=client:${profileId}`)}>New agreement</Button>
+        {!waiting && <Button variant="primary" onClick={() => navigate(`/coach/agreements/new?for=client:${profileId}`)}>New agreement</Button>}
         {agr && <Button variant="outline" onClick={openIt}>{`${possessive(who)} agreement`}</Button>}
       </div>
       <div className="ab-acts">

@@ -80,7 +80,7 @@ CLAUDE.md holds the rules every task needs. Each area's full rules live in its o
 
 19. **Database timestamps are UTC with no time-zone ending on the live database.** Always read a saved created_at/updated_at (or similar) through parseDbTimestamp (src/lib/dateFormatter.js) before turning it into a Date, formatting it, sorting it or comparing it - never new Date(value) directly. Never use toISOString().split('T')[0] to get "today"'s date; use getLocalDateKey instead, which is built from the device's own getFullYear/getMonth/getDate. Times are shown on a 24 hour clock with no am or pm (07:53, 19:26) in the device's local time, always through formatClockTime or formatDayMonthTime in src/lib/dateFormatter.js - nothing formats a time on its own.
 
-20. **Tables and grids must never squash.** Use fixed column widths, keep headings to one line, let cell text wrap (overflow-wrap: anywhere) and let rows grow to fit their content - never let a column crush its text or force a sideways scroll. Stack into cards under ~600px instead of shrinking a table.
+20. **Tables and grids must never squash.** Use fixed column widths, keep headings to one line, let cell text wrap (overflow-wrap: anywhere) and let rows grow to fit their content - never let a column crush its text or force a sideways scroll. Stack into cards under ~600px instead of shrinking a table. A label column is never narrower than its longest word: `brokenWords` in `tests/buttons/buttons-check.mjs` fails any plain word of four or more letters drawn across two lines (run 3, 25 Nov).
 
 21. **No swear words anywhere.** Not in product text, not in file names, not in code comments, not in variable or component names. If one is ever found, rename/reword it immediately.
 

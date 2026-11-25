@@ -43,16 +43,17 @@
 
 /* ---- a still list of label and line (M28 .lr.st2) and its quiet right-hand word (.ld) */
 .ui-root .ny-list { list-style: none; margin: 0; padding: 0; border-top: var(--line-w) solid var(--line); }
-.ui-root .ny-li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: center; padding: var(--space-px14) 0; border-bottom: var(--line-w) solid var(--line); }
-.ui-root .ny-li-t { display: block; font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .ny-li { display: grid; grid-template-columns: minmax(min-content, 1fr) minmax(0, max-content); gap: var(--space-1) var(--space-3); align-items: center; padding: var(--space-px14) 0; border-bottom: var(--line-w) solid var(--line); }
+.ui-root .ny-li-t { display: block; font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); overflow-wrap: break-word; }
 .ui-root .ny-li-m { display: block; font-size: var(--fs-small); line-height: var(--lh-text); color: var(--placeholder); overflow-wrap: anywhere; }
 .ui-root .ny-li-d { font-size: var(--fs-note); color: var(--text-2); text-align: right; overflow-wrap: anywhere; }
+.ui-root .ny-li-t--file { overflow-wrap: anywhere; }
 .ui-root .ny-li-d--done { color: var(--mint-text); }
 .ui-root .ny-li .ds-link { min-height: var(--tap-min); }
 
 /* ---- the agreement's actions (M28 s-agr .list of .lr buttons) */
 .ui-root .ny-actions { border-top: var(--line-w) solid var(--line); }
-.ui-root .ny-action { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-1) var(--space-3); width: 100%; min-height: var(--tap-min); padding: var(--space-px14) 0; border: 0; border-bottom: var(--line-w) solid var(--line); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ui-root .ny-action { display: grid; grid-template-columns: minmax(min-content, 1fr) minmax(0, max-content); align-items: center; gap: var(--space-1) var(--space-3); width: 100%; min-height: var(--tap-min); padding: var(--space-px14) 0; border: 0; border-bottom: var(--line-w) solid var(--line); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .ui-root .ny-action:hover .ny-li-t, .ui-root .ny-action:focus-visible .ny-li-t { color: var(--coral-text); }
 .ui-root .ny-action:focus-visible { outline: var(--focus-w) solid var(--coral); outline-offset: var(--space-px2); }
 .ui-root .ny-action .ny-li-t { transition: color var(--dur-fast) var(--ease); }
@@ -71,6 +72,9 @@
 .ui-root .cc-field + .ny-happened { margin-top: var(--space-px22); }
 
 @media (max-width: 600px) {
+  /* A label and its value stack on a phone: the label keeps the row's width and the value wraps under it (rule 20). */
+  .ui-root .ny-li, .ui-root .ny-action { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .ny-li-d { text-align: left; }
   .ui-root .ny-two { grid-template-columns: minmax(0, 1fr); }
   .ui-root .ny-pdf { height: calc(var(--space-7) * 7); }
 }
@@ -86,3 +90,17 @@
 .ui-root .ny-gap { margin-top: var(--space-2); }
 .ui-root .ag-points + .ny-actions { border-top: 0; }
 .ui-root .ny-page > .ds-switchrow + .ds-switchrow:not(#_), .ui-root .ny-page > .ds-switchrow + div > .ds-switchrow { margin-top: 0; }
+
+/* mobile.css (max-width 768px) forces padding and font-size on every button with !important; the agreement's action rows
+   keep their own, so they start on the content's left edge (design.css's note). */
+@media (max-width: 768px) {
+  .ui-root button.ny-action:not(#_) { padding: var(--space-px14) 0 !important; font-size: inherit !important; }
+}
+
+/* On a phone every button of the run 3 panels and pages runs full width, one under another (M28's .phone .btn, .ghost and
+   .acts; CLAUDE.md rule 29v; the coach portal's own .cc-acts on a phone), 12px apart as M28's .acts, never 4px. */
+@media (max-width: 600px) {
+  .ui-root .ny-foot > .ds-btn { flex: 1 1 100%; }
+  .ui-root .ny-foot > span:empty { display: none; }
+  .ui-root .cc-acts:has(> .ds-btn ~ .ds-btn) { row-gap: var(--space-px12); }
+}

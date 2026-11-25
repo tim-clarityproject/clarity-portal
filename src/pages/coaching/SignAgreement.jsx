@@ -151,7 +151,7 @@ export default function SignAgreement() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page ipp-page coaching-page cl-page">
+        <div className="plan-page ipp-page coaching-page cl-page" data-align="centre">
           <div className="cl-msg" role="status">
             <p className="cl-say">{askedLine(coachFirst)}</p>
             <Button variant="text" onClick={() => setAsked({ clauseKey: asked.clauseKey })}>{BACK_TO_AGREEMENT}</Button>

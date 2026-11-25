@@ -36,8 +36,8 @@
 
 /* ---- A coaching session checked off (M28 .lr in usedList) */
 .ui-root .ag-sessions { list-style: none; margin: 0; padding: 0; border-top: var(--line-w) solid var(--line); }
-.ui-root .ag-session { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-1) var(--space-3); width: 100%; min-height: var(--tap-min); padding: var(--space-px14) 0; border: 0; border-bottom: var(--line-w) solid var(--line-soft); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
-.ui-root .ag-session-title { display: block; font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); transition: color var(--dur-fast) var(--ease); }
+.ui-root .ag-session { display: grid; grid-template-columns: minmax(min-content, 1fr) minmax(0, max-content); align-items: center; gap: var(--space-1) var(--space-3); width: 100%; min-height: var(--tap-min); padding: var(--space-px14) 0; border: 0; border-bottom: var(--line-w) solid var(--line-soft); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ui-root .ag-session-title { display: block; overflow-wrap: break-word; font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); transition: color var(--dur-fast) var(--ease); }
 .ui-root .ag-session-meta { display: block; font-size: var(--fs-small); line-height: var(--lh-text); color: var(--placeholder); }
 .ui-root .ag-session-act { font-size: var(--fs-note); color: var(--text-2); white-space: nowrap; }
 .ui-root .ag-session-act--due { border: var(--line-w) solid var(--field-line); border-radius: var(--radius-btn); padding: var(--space-px2) var(--space-px10); color: var(--text); }
@@ -59,4 +59,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ui-root .ag-contents-link, .ui-root .ag-session-title { transition: none; }
+}
+
+/* mobile.css (max-width 768px) forces padding and font-size on every button with !important; the contents' links and the
+   session rows keep their own, so they start on the content's left edge (design.css's note). */
+@media (max-width: 768px) {
+  .ui-root button.ag-contents-link:not(#_) { padding: 0 !important; font-size: var(--fs-secondary) !important; }
+  .ui-root button.ag-session:not(#_) { padding: var(--space-px14) 0 !important; font-size: inherit !important; }
 }

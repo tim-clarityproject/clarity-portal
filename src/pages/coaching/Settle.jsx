@@ -124,7 +124,7 @@ export default function Settle() {
         ) : bacs ? (
           <>
             <PageHeader title={BACS.title} />
-            <p className="cl-hint">{view.rest}</p>
+            {view.rest && <p className="cl-hint">{view.rest}</p>}
             <p className="cl-say">{BACS.line}</p>
             {real ? <div ref={nodeRef} className="cl-element" /> : <div className="cl-stripe">{answer ? STAND_IN_BACS : ' '}</div>}
             {problem && <ErrorMessage>{problem}</ErrorMessage>}
@@ -137,7 +137,7 @@ export default function Settle() {
           <>
             <PageHeader title={view.title} />
             <p className="cl-amount">{view.amount}</p>
-            <p className="cl-hint">{view.rest}</p>
+            {view.rest && <p className="cl-hint">{view.rest}</p>}
             {real ? (
               <div>
                 <span className="cl-field-label">{SETTLE_QUESTION}</span>

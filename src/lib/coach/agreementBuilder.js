@@ -555,7 +555,11 @@ export const sendWords = ({ kind, first, sendAs = 'agreement' }) => (sendAs === 
 export function foldModel({ agreements = [], versions = [], quotes = [], opens = [], invoices = [], profileId, first, ownerFirst = 'Tim', now = new Date() }) {
   const theirs = agreements.filter((a) => a.profile_id === profileId && (a.kind || 'coaching') === 'coaching')
     .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
-  const current = theirs.find((a) => !['ended', 'ended_not_renewed', 'cancelled', 'expired'].includes(a.status)) || null;
+  const live = theirs.filter((a) => !['ended', 'ended_not_renewed', 'cancelled', 'expired'].includes(a.status));
+  // The one that has gone out (sent or signed) wins over newer drafts beside it (UI finding 7: s-sent showed a draft).
+  const out = (a) => versions.some((v) => v.agreement_id === a.id && (v.status === 'sent' || v.status === 'signed'
+    || quotes.some((q) => q.version_id === v.id && q.status !== 'draft' && q.status !== 'withdrawn')));
+  const current = live.find(out) || live[0] || null;
   const last = theirs.find((a) => ['ended', 'ended_not_renewed'].includes(a.status)) || null;
   const empty = { agreement: null, version: null, quote: null, head: '', rows: [], title: '', sentLine: '', expiry: '', waitingApproval: false };
   if (!current) {

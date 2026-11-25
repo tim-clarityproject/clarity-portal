@@ -44,12 +44,12 @@
 
 /* ---- Lists (M28 .list .lr): a title, one quiet line, something at the right */
 .ui-root .ab-rows { border-top: var(--line-w) solid var(--line); }
-.ui-root .ab-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: center; width: 100%; min-height: var(--tap-min); padding: var(--space-px14) 0; border: 0; border-bottom: var(--line-w) solid var(--line); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ui-root .ab-row { display: grid; grid-template-columns: minmax(min-content, 1fr) minmax(0, max-content); gap: var(--space-1) var(--space-3); align-items: center; width: 100%; min-height: var(--tap-min); padding: var(--space-px14) 0; border: 0; border-bottom: var(--line-w) solid var(--line); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .ui-root .ab-row--still { cursor: default; }
 .ui-root .ab-row-words { min-width: 0; }
-.ui-root .ab-row-words b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); overflow-wrap: anywhere; transition: color var(--dur-fast) var(--ease); }
+.ui-root .ab-row-words b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); overflow-wrap: break-word; transition: color var(--dur-fast) var(--ease); }
 .ui-root .ab-row-words small { display: block; margin-top: var(--space-px2); font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
-.ui-root .ab-row-aside { font-size: var(--fs-note); color: var(--text-2); white-space: nowrap; text-align: right; }
+.ui-root .ab-row-aside { font-size: var(--fs-note); color: var(--text-2); text-align: right; overflow-wrap: break-word; }
 .ui-root .ab-row-aside--done { color: var(--good); }
 .ui-root button.ab-row:hover .ab-row-words b, .ui-root button.ab-row:focus-visible .ab-row-words b { color: var(--coral-text); }
 .ui-root button.ab-row:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--space-px6); }
@@ -113,3 +113,25 @@
 .ui-root .ab-settings .ab-rows, .ui-root .ab-settings .ab-hint + .ab-rows { border-top: 0; }
 .ui-root .ab-settings .ab-hint { margin: var(--space-2) 0; }
 .ui-root .ab-settings .ds-link, .ui-root .ab-settings .ab-quiet { margin-top: var(--space-3); }
+
+/* mobile.css (max-width 768px) forces padding and font-size on every button with !important; the builder's rows keep their
+   own (design.css's note: the same property with !important at a higher specificity). */
+@media (max-width: 768px) {
+  .ui-root button.ab-row:not(#_) { padding: var(--space-px14) 0 !important; font-size: inherit !important; }
+}
+
+/* On a phone the builder's buttons run full width, one under another, 12px apart (M28's .phone .acts; rule 29v). */
+@media (max-width: 600px) {
+  .ui-root .ab-acts > .ds-btn { flex: 1 1 100%; }
+}
+
+/* The preview's "Ask for a change" under each clause, as the client sees it; nothing to press here. */
+.ui-root .ab-ask-shown { margin: 0; }
+.ui-root .ab-ask-shown .ds-link, .ui-root .ab-ask-shown .ds-link:hover { cursor: default; color: var(--text-2); }
+
+/* Under the tabs row the form and "As [name] sees it" start 22px below its full-width line (M28's .xr-tabs margin and
+   .scr > * + *), so the panel never sits on the line; the first part's own line would double it, so it goes. */
+.ui-root .ab-toc + .ab-split { margin-top: var(--space-px22); }
+.ui-root .ab-toc + .ab-split #ab-coaching { border-top: 0; padding-top: 0; }
+/* A row's Edit link (Check before sending) ends on the row's right edge; its 44px tap area reaches left. */
+.ui-root .ab-row-aside .ds-link { justify-content: flex-end; }

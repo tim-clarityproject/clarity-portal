@@ -2,10 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, InlineChoice, Loading, PageHeader, SwitchRow, TextBox, TextField, useToast } from '../../../components/design';
 import { openPo, profileForm, profileRow } from '../../../lib/agreements/duringAgreement';
+import { moneyText, toMinor } from '../../../lib/agreements/currency';
 import { keyOf, newId, removeRow, rowsOf, saveRow } from '../../../lib/coach/store';
 import { Back, TextLink, useCoachPortal } from '../parts';
 import { Problem } from '../needsYou/panels';
 import '../needsYou/needsyou.css';
+
+/** "300" as "£300"; anything that isn't a figure stays as typed. */
+const rateShown = (typed) => { const n = parseFloat(String(typed ?? '').replace(/[^\d.]/g, '')); return Number.isFinite(n) && n > 0 ? moneyText(toMinor(n, 'GBP'), 'GBP') : (typed ?? ''); };
 
 // An organisation's billing (Phase 6b run 3, Group D; M28 s-org-billing: /coach/organisations/:id/billing; brief items
 // 25, 28, 30 and 34), the owner's: set once per organisation, then every invoice follows it. Their legal name, billing
@@ -40,6 +44,8 @@ export default function OrgBilling() {
   const [form, setForm] = useState(() => profileForm(row, org));
   const [poNumber, setPoNumber] = useState(po?.number || '');
   const [problem, setProblem] = useState(null);
+  // The rate shows as money (£300, as every money box: builderParts' MoneyField) until it is typed in (UI finding 7).
+  const [rateFocus, setRateFocus] = useState(false);
   const seen = useRef(row?.updated_at ?? null);
   // Another tab's or device's save shows here, unless a box is being typed in.
   useEffect(() => {
@@ -102,7 +108,7 @@ export default function OrgBilling() {
         {form.needsPo && <TextField label="What’s the purchase order?" value={poNumber} maxLength={80} autoComplete="off" onChange={(e) => setPoNumber(e.target.value)} onBlur={savePo} />}
         <TextField label="Do they have a reference?" value={form.reference} placeholder="e.g. a cost centre or project" maxLength={160} autoComplete="off" onChange={(e) => set({ reference: e.target.value })} onBlur={leave} />
         <div>
-          <TextField label="What’s your hourly rate for them?" inputMode="decimal" value={form.rate} placeholder="£" autoComplete="off" onChange={(e) => set({ rate: e.target.value })} onBlur={leave} />
+          <TextField label="What’s your hourly rate for them?" inputMode="decimal" value={rateFocus ? form.rate : rateShown(form.rate)} placeholder="e.g. £300" autoComplete="off" onFocus={() => setRateFocus(true)} onChange={(e) => set({ rate: e.target.value })} onBlur={() => { setRateFocus(false); leave(); }} />
           {at('rate')}
         </div>
         <InlineChoice label="When do they settle?" options={TERMS} value={Number(form.terms)} onChange={(v) => set({ terms: v }, true)} semantics="radio" />

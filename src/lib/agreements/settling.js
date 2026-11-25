@@ -94,8 +94,10 @@ export function restLine(t, choice = t?.choice ?? 'upfront', chosen) {
     const fee = rateText(Number(t.retainer?.feeMinor) || 0, 'month', c);
     return retainerUpfront(t, choice) ? `Then ${fee} from month 7.` : `Then ${fee}, invoiced as agreed.`;
   }
-  if (k === 'oneoff') return t.oneoff?.settle === 'after' ? 'The rest is invoiced as agreed.' : 'Nothing more to settle.';
-  if (k === 'hours') return 'Nothing more to settle.';
+  // M28's "The rest is invoiced as agreed." where something follows; where nothing does (a one-off or a block of hours
+  // settled in full), no line at all (UI finding 7).
+  if (k === 'oneoff') return t.oneoff?.settle === 'after' ? 'The rest is invoiced as agreed.' : '';
+  if (k === 'hours') return '';
   if (k === 'team') return 'The rest is invoiced as agreed.';
   const pf = planTotal(t, chosen);
   if (upfrontActive(t, choice)) return `Nothing more to settle. You saved ${moneyText(saving(pf), c)}.`;

@@ -59,6 +59,7 @@ function AgreementClauses() {
         key={key} heading={`${clause.number}. ${clause.title}`} who={party.name} label={`What should it say for ${first}?`}
         start={clause.paragraphs} standardParagraphs={std.paragraphs} status={d.status}
         editedLine={`Edited for ${first}. Your standard wording stays as it is unless you choose otherwise.`}
+        onlyEdited
         back={() => navigate(`/coach/agreements/${id}/clauses`)}
         primary={{
           words: `Just for ${first}`,
@@ -175,12 +176,14 @@ function StandardWording() {
  * Edit a clause (M28 s-clause): a box for each paragraph with its reason under it, the line saying it is edited, the
  * choice "Use this wording for everyone from now on?" and Go back to the standard wording.
  */
-function ClauseEditor({ heading, who, label, start, standardParagraphs, editedLine, back, primary, everyone = null, reset = null, readOnly = false, status = 'idle' }) {
+function ClauseEditor({ heading, who, label, start, standardParagraphs, editedLine, back, primary, everyone = null, reset = null, readOnly = false, status = 'idle', onlyEdited = false }) {
   const [paragraphs, setParagraphs] = useState(() => start.map((p) => ({ text: p.text, why: p.why || null })));
   const [problem, setProblem] = useState(null);
   useEffect(() => { setProblem(null); }, [paragraphs]);
   const differs = differsFrom(paragraphs, standardParagraphs);
   const empty = paragraphs.some((p) => !String(p.text || '').trim());
+  // An agreement's clause offers its choices only once it differs from the standard wording (M28 s-clause; UI finding 7).
+  const offer = !readOnly && (!onlyEdited || differs);
   const run = (action) => async () => {
     if (empty) { setProblem('Write each paragraph, or go back to the standard wording.'); return; }
     await action.run(paragraphs);
@@ -201,7 +204,7 @@ function ClauseEditor({ heading, who, label, start, standardParagraphs, editedLi
         ))}
         {!readOnly && differs && <Hint>{editedLine}</Hint>}
         {problem && <ErrorMessage>{problem}</ErrorMessage>}
-        {!readOnly && primary && everyone && (
+        {offer && primary && everyone && (
           <div className="ab-panel">
             <p className="ab-say">Use this wording for everyone from now on?</p>
             <div className="ab-acts">
@@ -210,8 +213,8 @@ function ClauseEditor({ heading, who, label, start, standardParagraphs, editedLi
             </div>
           </div>
         )}
-        {!readOnly && primary && !everyone && <div className="ab-acts"><Button variant="primary" onClick={run(primary)}>{primary.words}</Button></div>}
-        {!readOnly && reset && <TextLink onClick={async () => { const back2 = await reset.run(); if (back2) setParagraphs(back2.map((p) => ({ text: p.text, why: p.why || null }))); }}>{reset.words}</TextLink>}
+        {offer && primary && !everyone && <div className="ab-acts"><Button variant="primary" onClick={run(primary)}>{primary.words}</Button></div>}
+        {offer && reset && <TextLink onClick={async () => { const back2 = await reset.run(); if (back2) setParagraphs(back2.map((p) => ({ text: p.text, why: p.why || null }))); }}>{reset.words}</TextLink>}
         {readOnly && <Hint>Your practice’s owner sets the standard wording.</Hint>}
       </div>
     </div>

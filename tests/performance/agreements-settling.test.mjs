@@ -25,6 +25,10 @@ test('the settle step’s title and what follows', () => {
   assert.equal(s.restLine(sam('deposit'), 'plan'), 'Then 5 monthly instalments of £2,140, collected the same way.');
   assert.equal(s.restLine(sam('equal'), 'plan'), 'Then 5 more monthly instalments of £2,550, collected the same way.');
   assert.equal(s.restLine(sam('equal'), 'upfront'), 'Nothing more to settle. You saved £765.');
+  // Nothing follows a one-off or a block of hours settled in full, so nothing is said (UI finding 7).
+  assert.equal(s.restLine({ kind: 'oneoff', oneoff: { totalMinor: 150000, settle: 'full' } }), '');
+  assert.equal(s.restLine({ kind: 'oneoff', oneoff: { totalMinor: 150000, settle: 'after' } }), 'The rest is invoiced as agreed.');
+  assert.equal(s.restLine({ kind: 'hours', hours: { blockMinor: 200000, rateMinor: 15000 } }), '');
   assert.equal(s.payTitle(sam('delivered'), 'plan'), 'First coaching session');
   assert.equal(s.investmentWords(sam('equal'), 'plan'), '£15,300, in 6 monthly instalments of £2,550');
   assert.equal(s.investmentWords(sam('delivered'), 'plan'), '£15,300, invoiced as delivered at £956.25 a coaching session');

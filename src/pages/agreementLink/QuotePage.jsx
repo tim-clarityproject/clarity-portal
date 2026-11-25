@@ -122,6 +122,7 @@ export default function QuotePage() {
             <span>{e.amount}</span>
           </div>
         ))}
+        {rows.upfront && <div className="cl-qline"><span>{rows.upfront.label}</span><span>{rows.upfront.amount}</span></div>}
         <div className="cl-qline cl-qline--total"><span>In all</span><span>{rows.inAll}</span></div>
         <p className="cl-hint">{rows.hint}</p>
         <SettleChoice terms={terms} value={choice} onChange={setChoice} chosenExtras={chosen} />

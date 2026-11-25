@@ -35,4 +35,11 @@ test('ticking a £2,500 visit day on £15,300 makes £17,800, and the settling o
   assert.deepEqual(rows.lines.map((l) => [l.label, l.amount]), [['6-month coaching, 16 coaching sessions', '£18,000'], ['Returning client, 15% off', '−£2,700']]);
   assert.deepEqual(rows.extras.map((e) => e.chosen), [false, true]);
   assert.equal(rows.inAll, '£17,800');
+  assert.equal(rows.upfront, null, 'no up-front line while the plan is chosen');
+});
+
+test('up front chosen puts its 5% off on its own line before In all (UI finding 4)', () => {
+  const rows = q.quoteRows(sam, ['visit'], 'upfront');
+  assert.deepEqual(rows.upfront, { label: 'Up front, 5% off', amount: '−£890' });
+  assert.equal(rows.inAll, '£16,910');
 });

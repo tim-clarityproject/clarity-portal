@@ -34,7 +34,7 @@ export function quotePdf({ number, terms: t, clauses = [], sentDay, validUntil, 
   const sees = selfFunded(t);
   const investment = sees ? [
     { type: 'table', title: 'Your investment', columns: [{ label: 'What', width: 6 }, { label: 'Amount', width: 2, align: 'right' }],
-      rows: [...q.lines.map((l) => [l.label, l.amount]), ...q.extras.map((e) => [`Option: ${e.label}`, e.amount]), ['In all', q.inAll]] },
+      rows: [...q.lines.map((l) => [l.label, l.amount]), ...q.extras.map((e) => [`Option: ${e.label}`, e.amount]), ...(q.upfront ? [[q.upfront.label, q.upfront.amount]] : []), ['In all', q.inAll]] },
     { type: 'text', text: q.hint },
     q.extras.length ? { type: 'text', tone: 'detail', text: 'Options are added only when you choose them on your quote.' } : null,
   ].filter(Boolean) : [];

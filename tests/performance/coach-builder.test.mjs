@@ -211,6 +211,11 @@ test('the client page’s fold: none, a draft, waiting for approval, sent, opene
   assert.equal(quote.head, 'Quote Q-0042');
   assert.equal(quote.line, 'Quote Q-0042 is with Sam.');
   assert.equal(quote.rows.length, 2);
+  // A newer draft beside the one that went out never hides it (UI finding 7).
+  const later = { ...a, id: 'a2', created_at: '2026-11-25T11:00:00Z' };
+  const both = b.foldModel({ agreements: [later, { ...a, status: 'sent' }], versions: [{ ...v, id: 'v2', agreement_id: 'a2' }, sent], profileId: sam.id, first: 'Sam', now });
+  assert.equal(both.line, 'Version 1 is waiting for Sam to sign.');
+  assert.equal(both.agreement.id, 'a1');
 });
 
 test('start days are Mondays; extras fall back to M28’s four', () => {

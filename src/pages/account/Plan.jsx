@@ -37,7 +37,7 @@ export default function Plan() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/my-account')} label="My Account" /></div>
         <PageHeader title={PLAN_WORDS.title} />
         {error && !data && !loading ? <LoadError>The page didn’t load. Check your connection and try again.</LoadError> : (
-          <div className="cl-plans">
+          <div className="cl-plans-box"><div className="cl-plans">
             {PLANS.map((p) => (
               <div key={p.level} className="cl-plan">
                 <h2 className="cl-plan-name">{p.name}</h2>
@@ -48,7 +48,7 @@ export default function Plan() {
                     : <Button variant={p.level === 'executive' ? 'primary' : 'outline'} onClick={() => choose(p.level)}>{chooseWords(p.level)}</Button>}
               </div>
             ))}
-          </div>
+          </div></div>
         )}
         {said && <p className="cl-hint" role="status">{said}</p>}
         <p className="cl-say">{PLAN_WORDS.refund}</p>

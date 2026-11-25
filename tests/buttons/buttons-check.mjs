@@ -730,3 +730,50 @@ export function importantMarks() {
   probe.remove();
   return { problems: [...new Set(out)], checked };
 }
+
+// Never squash (CLAUDE.md rule 20; Phase 6b run 3, UI finding 1: a label
+// column crushed to "supplie / r portal", one letter a line at twice the
+// text size). A column is never narrower than its longest word, so no
+// plain word is ever broken across lines. Run in the page:
+// page.evaluate(brokenWords). It reads every word of four letters or more
+// (letters only, so an email address, a web address, a file name or a
+// figure, which may wrap anywhere, is left alone) in every visible text on
+// the page and gives one line for each word drawn on more than one line.
+export function brokenWords() {
+  const vis = (el) => {
+    const b = el.getBoundingClientRect();
+    if (!(b.width > 0 || b.height > 0)) return false; // a column crushed to nothing still draws its words
+    if (el.closest('[hidden],[inert],[aria-hidden=true]')) return false;
+    for (let p = el; p && p !== document.documentElement; p = p.parentElement) {
+      const st = getComputedStyle(p);
+      if (st.display === 'none' || st.visibility === 'hidden' || Number(st.opacity) < 0.05) return false;
+    }
+    return true;
+  };
+  const seen = new Map();
+  const out = [];
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const el = n.parentElement;
+    if (!el || !el.closest('.ui-root') || el.closest('script,style,svg,textarea,input')) continue;
+    if (!seen.has(el)) seen.set(el, vis(el));
+    if (!seen.get(el)) continue;
+    const text = n.nodeValue;
+    // A word is a run of letters standing on its own: not part of a longer token with an @, a dot, a slash, a digit or
+    // a hyphen in it (those may wrap where they can).
+    for (const m of text.matchAll(/[^\s]+/g)) {
+      const token = m[0].replace(/^[("“‘']+|[)"”’'.,;:!?…]+$/g, '');
+      if (!/^\p{L}{4,}$/u.test(token)) continue;
+      const start = m.index + m[0].indexOf(token);
+      const r = document.createRange();
+      r.setStart(n, start);
+      r.setEnd(n, start + token.length);
+      const tops = new Set([...r.getClientRects()].filter((b) => b.width > 0).map((b) => Math.round(b.top)));
+      if (tops.size > 1) {
+        const cls = String(el.className?.baseVal ?? el.className ?? '').split(' ')[0] || el.tagName.toLowerCase();
+        out.push(`${cls}: "${token}" is broken across ${tops.size} lines (${Math.round(el.getBoundingClientRect().width)}px wide)`);
+      }
+    }
+  }
+  return [...new Set(out)];
+}

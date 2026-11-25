@@ -98,3 +98,14 @@ test('Give money back: settled invoices less what went back already', () => {
   assert.equal(list[0].left_minor, 255000);
   assert.equal(d.paidOn(invoices, 'a1'), 300000);
 });
+
+test('a new invoice shows the month of the newest row first, ticked, with older rows behind Show older (UI finding 7)', async () => {
+  const { invoicePeriod, olderWords } = await import('../../src/lib/agreements/duringAgreement.js');
+  const rows = [{ key: 'a', day: '2026-09-28' }, { key: 'b', day: '2026-10-30' }, { key: 'c', day: '2026-11-03' }, { key: 'd', day: '2026-11-17' }];
+  const p = invoicePeriod(rows);
+  assert.equal(p.month, '2026-11');
+  assert.deepEqual(p.recent.map((r) => r.key), ['c', 'd']);
+  assert.deepEqual(p.older.map((r) => r.key), ['a', 'b']);
+  assert.deepEqual(invoicePeriod([]), { month: null, recent: [], older: [] });
+  assert.equal(olderWords(2), 'Show 2 older');
+});

@@ -47,7 +47,7 @@ export default function InvoicePreview({ open, onClose, body, onSend }) {
   };
   return (
     <SlidePanel open={open} onClose={onClose} title="The invoice PDF" wide
-      footer={<div className="cc-panel-foot"><TextLink onClick={download}>Download the PDF</TextLink><Button variant="primary" onClick={onSend}>Send to their finance team</Button></div>}>
+      footer={<div className="cc-panel-foot ny-foot"><TextLink onClick={download}>Download the PDF</TextLink><Button variant="primary" onClick={onSend}>Send to their finance team</Button></div>}>
       <div className="ny-panel">
         {!made && <Loading label="Making the PDF" />}
         {made?.problem && <Problem>{made.problem}</Problem>}

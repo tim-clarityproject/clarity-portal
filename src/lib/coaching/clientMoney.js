@@ -149,19 +149,20 @@ export function welcomeLine({ coachFirst, settled = null }) {
 
 /**
  * The first day a coaching session can be booked, said under Book your first coaching session: the start date, or the
- * day after the 14 days when that is later and the start-now box wasn't ticked (065's booking guard says the same).
+ * day after the 14 days when that is later and the start-now box wasn't ticked (065's booking guard says the same), and
+ * never a day before today (UI finding 7: a start already passed read "From Mon 16 Nov 2026").
  */
-export function firstSessionLine({ terms, signedDay = null, startNow = false }) {
+export function firstSessionLine({ terms, signedDay = null, startNow = false, today = null }) {
   const starts = DAY.test(terms?.startsOn || '') ? terms.startsOn : null;
   const guard = signedDay && DAY.test(signedDay) && coolingApplies(terms) ? bookableFrom(signedDay, Boolean(startNow)) : null;
-  const from = [starts, guard].filter(Boolean).sort().pop();
+  const from = [starts, guard, DAY.test(today || '') && (starts || guard) ? today : null].filter(Boolean).sort().pop();
   return from ? `From ${dayKeyWords(from, { year: true })}` : 'Whenever suits you both';
 }
 
 /** The welcome's list (M28's three rows), with where each goes. */
-export function welcomeRows({ terms, signedDay = null, startNow = false }) {
+export function welcomeRows({ terms, signedDay = null, startNow = false, today = null }) {
   return [
-    { key: 'book', title: 'Book your first coaching session', meta: firstSessionLine({ terms, signedDay, startNow }) },
+    { key: 'book', title: 'Book your first coaching session', meta: firstSessionLine({ terms, signedDay, startNow, today }) },
     { key: 'pack', title: 'Your welcome pack', meta: 'Getting started with the portal, ~6 minutes' },
     { key: 'signed', title: 'Your signed agreement and receipt', meta: 'In your email, and in My Account, Coaching' },
   ];

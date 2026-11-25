@@ -40,7 +40,7 @@ function useAsk(onClose) {
     } finally { busy.current = false; }
   };
 }
-const foot = (left, button) => <div className="cc-panel-foot">{left || <span />}{button}</div>;
+const foot = (left, button) => <div className="cc-panel-foot ny-foot">{left || <span />}{button}</div>;
 
 function Extend({ a, name, end, onClose }) {
   const options = end ? extendOptions(end) : [];

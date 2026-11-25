@@ -3,6 +3,7 @@ import { Loading } from '../../../components/design';
 import AgreementView from '../../../components/agreements/AgreementView';
 import { readerView } from '../../../lib/coach/agreementBuilder';
 import { mainPoints, resolveChoice } from '../../../lib/agreements/clauses';
+import { ASK_CHANGE } from '../../../lib/coaching/clientMoney';
 import { Back } from '../parts';
 import { useAgreementDraft } from './builderParts';
 
@@ -26,11 +27,15 @@ export default function Preview() {
       <div className="cc-col ab-page">
         {back}
         <p className="ab-bsent">As {d.party.first || 'they'} will see it.</p>
-        <AgreementView points={view.points} clauses={view.clauses} idPrefix="pv" />
+        {/* "Ask for a change" under each clause as the client sees it while it waits to be signed; here it does nothing (UI finding 7). */}
+        <AgreementView points={view.points} clauses={view.clauses} idPrefix="pv" after={d.draft ? askShown : undefined} />
       </div>
     </div>
   );
 }
+
+/** The client's "Ask for a change", drawn as their quiet link and doing nothing in the coach's preview. */
+const askShown = () => <p className="ab-ask-shown"><span className="ds-link">{ASK_CHANGE}</span></p>;
 
 /** A version as it was sent: its stored clauses (the choice made, once signed), never worked out again. */
 function sentView(version) {

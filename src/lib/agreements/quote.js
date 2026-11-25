@@ -2,7 +2,7 @@ import { addDays, daysBetween, dayKeyWords } from '../time/index.js';
 import { moneyText } from './currency.js';
 import { discountLines, extras, planTotal, sessions, subtotal } from './pricing.js';
 import { firstPayment, investmentWords, settleOptions } from './settling.js';
-import { finalTotal } from './upfront.js';
+import { UPFRONT_PERCENT, finalTotal, saving, upfrontActive } from './upfront.js';
 
 // Quotes (brief items 19 to 21; M28's s-check "How should it go?", s-sent, s-q-client). A quote has its own number
 // (Q-0001 upwards, never reused: 065's quote_take_number), is valid for 14, 30 or 60 days, and is built from the same
@@ -50,6 +50,9 @@ export function quoteRows(t, chosen = t?.extrasChosen || [], choice = t?.choice 
       ...discountLines(t).map((d) => ({ label: d.label, amount: moneyText(d.amount, c) })),
     ],
     extras: extras(t, chosen).map((e) => ({ key: e.key, label: e.title, amount: moneyText(e.priceMinor || 0, c), chosen: e.chosen })),
+    // Up front's 5% off on its own line under the extras, as each discount has its own (brief item 3; UI finding 4):
+    // £10,480 with up front chosen reads "Up front, 5% off  −£524", then In all £9,956.
+    upfront: upfrontActive(t, choice) ? { label: `Up front, ${UPFRONT_PERCENT}% off`, amount: moneyText(-saving(planTotal(t, chosen)), c) } : null,
     inAll: moneyText(finalTotal(t, choice, chosen), c),
     hint: `${investmentWords(t, choice, chosen).replace(/^./, (x) => x.toUpperCase())}. The first ${moneyText(firstPayment(t, choice, chosen), c)} is settled when you sign.`,
   };

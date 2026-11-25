@@ -37,7 +37,7 @@
 //   sideways scroll, nothing cut off, boxes still level).
 // It ends with one COUNT line for each role, size and mode.
 import { mkdirSync } from 'node:fs';
-import { backGaps, buttonProblems, chevronOnlyFolds, controlsFamily, doubledRules, importantMarks, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
+import { backGaps, brokenWords, buttonProblems, chevronOnlyFolds, controlsFamily, doubledRules, importantMarks, nekstInControls, sideBySide, sideLines } from '../buttons/buttons-check.mjs';
 import { outlinedEdges } from '../phase5/edges.mjs';
 import { overlappingTaps } from '../phase5/taps.mjs';
 import { toastCovers } from '../phase5/toasts.mjs';
@@ -230,6 +230,9 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
     report.pass(`${tag}: at twice the text size, boxes side by side still line up`, rules.level.length === 0, rules.level.slice(0, 4).join('; '));
     report.pass(`${tag}: at twice the text size, the tabs keep to their own strip`, rules.tabs.length === 0, rules.tabs.slice(0, 4).join('; '));
     report.pass(`${tag}: at twice the text size, figures stay on an equal grid`, rules.figures.length === 0, rules.figures.slice(0, 4).join('; '));
+    // Never squash (CLAUDE.md rule 20; Phase 6b run 3, UI finding 1): no column narrower than its longest word.
+    const broken2 = await page.evaluate(brokenWords);
+    report.pass(`${tag}: at twice the text size, no word is broken across lines`, broken2.length === 0, broken2.slice(0, 4).join('; '));
     if (group === 'public' || group === 'signin') {
       const al = await page.evaluate(centredGroups, { root: group === 'public' ? '.cc-col' : '.si-col' });
       report.pass(`${tag}: at twice the text size, one left edge (sign-in rule 49; ${al.align === 'centre' ? 'a message, centred' : 'on the left edge'})`, centringProblems(al).length === 0, centringProblems(al).slice(0, 4).join('; '));
@@ -268,6 +271,8 @@ const problems = await walk(async (page, { name, role, size, theme, run, root, e
   report.pass(`${tag}: Mission keeps its capital`, !r.purpose);
   const btns = await page.evaluate(buttonProblems, { phone, scale: 1 });
   report.pass(`${tag}: every button in the controls family, its words whole, one coral button (${btns.checked} read)`, btns.problems.length === 0, btns.problems.slice(0, 4).join('; '));
+  const broken = await page.evaluate(brokenWords);
+  report.pass(`${tag}: no word is broken across lines (rule 20)`, broken.length === 0, broken.slice(0, 4).join('; '));
   const uneven = await page.evaluate(sideBySide);
   report.pass(`${tag}: boxes side by side are one height`, uneven.length === 0, uneven.slice(0, 4).join('; '));
   const nekst = await page.evaluate(nekstInControls);

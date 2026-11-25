@@ -389,6 +389,19 @@ export function orgInvoiceRows({ organisationId, clients = [], sessions = [], en
   const after = invoicedAt.length ? Math.max(...invoicedAt) : -Infinity;
   return out.filter((r) => r.at > after).sort((a, b) => a.at - b.at);
 }
+/**
+ * The invoice's period (UI finding 7: on a busy practice every row since the last invoice showed, all ticked): the
+ * calendar month of the newest row logged. Its rows show and start ticked; anything older waits behind "Show older",
+ * unticked, so a month's invoice is a month's work unless the coach adds more. Rows keep orgInvoiceRows' order.
+ */
+export function invoicePeriod(rows = []) {
+  if (!rows.length) return { month: null, recent: [], older: [] };
+  const month = rows.map((r) => String(r.day).slice(0, 7)).sort().pop();
+  return { month, recent: rows.filter((r) => String(r.day).slice(0, 7) === month), older: rows.filter((r) => String(r.day).slice(0, 7) !== month) };
+}
+/** "Show 12 older" for the fold of rows before the invoice's month. */
+export const olderWords = (n) => `Show ${n} older`;
+
 /** A row's day on the invoice: "Tue 3 Nov", with the year when it isn't this one. */
 export const rowDay = (day, today) => dayKeyWords(day, { year: Boolean(today) && day.slice(0, 4) !== today.slice(0, 4) });
 /** "1.5 hours" or "1 hour" on a row (M28's hrs). */

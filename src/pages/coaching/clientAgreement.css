@@ -81,12 +81,21 @@
 
 /* ---- Your plan (M28 s-levels): three cards, their parts lined up across */
 .ui-root .cl-plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto auto 1fr auto; gap: 0 var(--space-px14); }
-.ui-root .cl-plan { display: grid; grid-row: span 4; grid-template-rows: subgrid; gap: var(--space-px10); align-content: start; border: var(--line-w) solid var(--line); border-radius: var(--radius-card); padding: var(--space-px20); }
+.ui-root .cl-plan { display: grid; grid-row: span 4; grid-template-rows: subgrid; gap: var(--space-px10); align-content: start; border: var(--line-w) solid var(--line); border-radius: var(--radius-card); padding: var(--space-3); }
 .ui-root .cl-plan-name { margin: 0; font-family: var(--font-display); font-weight: var(--fw-regular); text-transform: uppercase; letter-spacing: var(--ls-section-title); font-size: var(--fs-note); color: var(--text); }
 .ui-root .cl-plan-price { margin: 0; font-family: var(--font-display); font-weight: var(--fw-light); font-size: var(--fs-title-desktop); line-height: var(--lh-cal-one); color: var(--text); }
 .ui-root .cl-plan-line { margin: 0; font-size: var(--fs-secondary); line-height: var(--lh-text); color: var(--text-2); }
 .ui-root .cl-plan-cur { align-self: end; display: flex; align-items: center; min-height: var(--btn-h); margin: 0; font-size: var(--fs-secondary); color: var(--mint-text); }
 .ui-root .cl-plan .ds-btn { width: 100%; align-self: end; }
+
+/* The three cards sit side by side only while each card's Choose fits on one line (UI finding 3): the query is in the
+   box's own em, so a larger text size, which needs wider cards, puts them one under another as on a phone. 16px in at
+   each side (M28's 20px left "Choose Individual" 2px short of one line in the 640px column). */
+.ui-root .cl-plans-box { container-type: inline-size; }
+@container (max-width: 35em) {
+  .ui-root .cl-plans { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: var(--space-px14); }
+  .ui-root .cl-plan { grid-row: auto; grid-template-rows: none; padding: var(--space-px20); }
+}
 
 /* ---- A tool on the free plan (M28 s-locked) */
 .ui-root .cl-tiles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-px14); }
@@ -105,7 +114,10 @@
   .ui-root .cl-plans { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: var(--space-px14); }
   .ui-root .cl-plan { grid-row: auto; grid-template-rows: none; }
   .ui-root .cl-cover { padding: var(--space-px20); }
-  .ui-root .cl-acts > .ds-btn--primary { flex: 1 1 100%; }
+  /* Every button full width, one under another (M28's .phone .acts; rule 29v), Download PDF's included. */
+  .ui-root .cl-acts > .ds-btn, .ui-root .cl-acts > .ds-pdfmenu { flex: 1 1 100%; }
+  .ui-root .cl-acts > .ds-pdfmenu { align-items: stretch; }
+  .ui-root .cl-acts > .ds-pdfmenu > .ds-btn { width: 100%; }
 }
 
 @media (forced-colors: active) {
@@ -127,3 +139,9 @@
 /* Inside the portal the page's side padding sits within its width, so the column itself is M28's 640px */
 .ui-root .plan-page.cl-page { max-width: calc(var(--guide-page-max) + 2 * var(--page-x-desktop)); }
 .ui-root .cl-link .ag-contents ol { padding: 0; }
+
+/* mobile.css (max-width 768px) forces padding and font-size on every button with !important; the tiles keep their own
+   (design.css's note). */
+@media (max-width: 768px) {
+  .ui-root button.cl-tile:not(#_) { padding: var(--space-px18) var(--space-px20) !important; font-size: inherit !important; }
+}

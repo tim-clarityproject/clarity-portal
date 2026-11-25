@@ -47,7 +47,7 @@ export default function Welcome() {
   }
 
   const signedDay = version.signedAt ? getLocalDateKey(parseDbTimestamp(version.signedAt)) : null;
-  const rows = welcomeRows({ terms, signedDay, startNow: version.startNow });
+  const rows = welcomeRows({ terms, signedDay, startNow: version.startNow, today: getLocalDateKey(new Date()) });
   const steps = stepsFor(terms);
   const book = () => navigate('/coaching');
   const open = async (key) => {

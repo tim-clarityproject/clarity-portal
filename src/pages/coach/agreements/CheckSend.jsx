@@ -90,8 +90,9 @@ export default function CheckSend() {
         {diffs.length === 0 ? <p className="ab-say">{NOTHING_LINE}</p> : (
           <div className="ab-rows">
             {diffs.map((r) => (
-              <ListRow key={`${r.label}-${r.detail}`} title={r.label} line={r.detail} aside="Edit" label={`Edit ${r.label}`}
-                onClick={() => navigate(r.where === 'clause' ? `/coach/agreements/${id}/clauses/${r.clauseKey}` : `/coach/agreements/${id}/edit`)} />
+              // A still row with Edit as the underlined text link beside it (M28's unusual(): .ld.lk).
+              <ListRow key={`${r.label}-${r.detail}`} still title={r.label} line={r.detail}
+                aside={<Button variant="text" aria-label={`Edit ${r.label}`} onClick={() => navigate(r.where === 'clause' ? `/coach/agreements/${id}/clauses/${r.clauseKey}` : `/coach/agreements/${id}/edit`)}>Edit</Button>} />
             ))}
           </div>
         )}

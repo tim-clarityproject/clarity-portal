@@ -13,7 +13,7 @@ import { sessionsToInvoice } from '../../../lib/agreements/delivered';
 import { mainPoints } from '../../../lib/agreements/clauses';
 import { calendarLink } from '../../../components/agreements/SessionCheckRow';
 import {
-  dayOfStamp, hoursState, perSessionMinor, penceFrom, priceFromOptions, versionInForce, waitingReminder,
+  dayOfStamp, hoursState, perSessionMinor, priceFromOptions, versionInForce, waitingReminder,
 } from '../../../lib/agreements/duringAgreement';
 import { firstPaymentReminderEmail, signReminderEmail } from '../../../lib/email/agreementEmails';
 import { invoiceReminderEmail } from '../../../lib/email/billingEmails';
@@ -21,6 +21,7 @@ import { dayIn, dayKeyWords } from '../../../lib/time/index.js';
 import { keyOf, loadCoach, newId, removeRow, rowsOf, saveChange, saveRow } from '../../../lib/coach/store';
 import { doneRow } from '../../../lib/agreements/needsYou';
 import { TextLink, useCoachPortal } from '../parts';
+import { MoneyField } from '../agreements/builderParts';
 import './needsyou.css';
 
 // Group D's Needs you panels (Phase 6b run 3; M28 s-n-delivered, s-n-signrem, s-n-hours, s-n-assoc, s-n-po, s-n-renew,
@@ -132,7 +133,7 @@ export function useNeedsYouActs() {
 }
 
 function Foot({ left, children }) {
-  return <div className="cc-panel-foot">{left || <span />}{children}</div>;
+  return <div className="cc-panel-foot ny-foot">{left || <span />}{children}</div>;
 }
 
 // ---------------------------------------------------------------- the panels
@@ -326,7 +327,7 @@ function ApprovalBody({ item, close }) {
         <p className="ny-meta">{`Made by ${item.title.replace(/ made an agreement for you to approve$/, '')}`}</p>
         <h3 className="ny-sec">What’s different</h3>
         {rows.length ? (
-          <ul className="ny-list">{rows.map((r) => <li key={r.label} className="ny-li"><span className="ny-li-t">{r.label}</span><span className="ny-li-m">{r.detail}</span></li>)}</ul>
+          <ul className="ny-list">{rows.map((r) => <li key={r.label} className="ny-li"><span><span className="ny-li-t">{r.label}</span><span className="ny-li-m">{r.detail}</span></span></li>)}</ul>
         ) : <p className="ny-say">Nothing. It uses your standard wording and package.</p>}
         <Points label="The agreement" rows={[{ label: 'Coaching', value: t.coaching || '' }, ...points]} />
         {asking && <div className="cc-field"><TextBox label={`What should ${coachFirst} change?`} value={note} onChange={(v) => { setNote(v); setProblem(null); }} maxLength={2000} /></div>}
@@ -418,12 +419,13 @@ function PriceBody({ item, close }) {
   const fee = Number(t.retainer?.feeMinor) || 0;
   const due = item.key.split(':')[2] || p.todayKey;
   const options = priceFromOptions(due);
-  const [typed, setTyped] = useState(() => String(Math.round(fee * 1.1 / 10000) * 100));
+  // The new price as money (£3,300, as every money box shows it: builderParts' MoneyField), in minor units.
+  const [priceMinor, setPriceMinor] = useState(() => Math.round(fee * 1.1 / 10000) * 10000);
   const [from, setFrom] = useState(options[0]?.value);
   const [problem, setProblem] = useState(null);
   const name = p.clients.find((x) => x.id === a?.profile_id)?.name || '';
-  const pence = penceFrom(typed);
-  const valid = pence != null && !Number.isNaN(pence) && pence > 0;
+  const pence = Number(priceMinor) || 0;
+  const valid = pence > 0;
   const points = fill('price', { from, price: valid ? pence : null, currency: c }, rowsOf(p.state, 'talking_points').filter((r) => r.coach_id === p.coach.id));
   const go = () => {
     if (!valid) { setProblem('Type the new monthly price, like 3,300.'); return; }
@@ -437,7 +439,7 @@ function PriceBody({ item, close }) {
       <>
         <p className="ny-meta">{`${t.coaching || 'Monthly retainer'}, ${rateText(fee, 'month', c)} since ${dayKeyWords(t.priceSince || t.startsOn || due, { year: true }).replace(/^[A-Z][a-z]{2} \d{1,2} /, '')}`}</p>
         <div className="cc-field cc-two ny-two">
-          <TextField label="What’s the new price?" inputMode="decimal" value={typed} autoComplete="off" onChange={(e) => { setTyped(e.target.value); setProblem(null); }} />
+          <MoneyField label="What’s the new price?" value={priceMinor} currency={c} onChange={(v) => { setPriceMinor(v); setProblem(null); }} />
           <Dropdown label="From when?" options={options} value={from} onChange={setFrom} />
         </div>
         {valid && fee > 0 && <p className="ny-hint">{priceLine(fee, pence, p.todayKey, from)}</p>}

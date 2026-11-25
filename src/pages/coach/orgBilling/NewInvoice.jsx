@@ -4,7 +4,7 @@ import { AddButton, Button, Checkbox, Loading, PageHeader, TextField, useToast }
 import { ask } from '../../../lib/agreements/askClient';
 import { moneyText } from '../../../lib/agreements/currency';
 import { evidenceHint, introLine, pageCount, pageWords, problems, rate as rateFor, totalLine } from '../../../lib/agreements/orgInvoice';
-import { billTo, openPo, orgInvoiceRows, penceFrom, rowDay, rowHours } from '../../../lib/agreements/duringAgreement';
+import { billTo, invoicePeriod, olderWords, openPo, orgInvoiceRows, penceFrom, rowDay, rowHours } from '../../../lib/agreements/duringAgreement';
 import { uploadReceipt } from '../../../lib/coach/financeActions';
 import { coachZoneOf } from '../../../lib/coach/calendar';
 import { loadCoach, newId, removeRow, rowsOf, saveRow } from '../../../lib/coach/store';
@@ -40,6 +40,11 @@ export default function NewInvoice() {
   const evidence = rowsOf(p.state, 'invoice_evidence').filter((e) => e.organisation_id === id && !e.invoice_id).sort((a, b) => (a.position || 0) - (b.position || 0));
   const sponsor = p.agreements.map((a) => (a.organisation_id === id ? rowsOf(p.state, 'agreement_versions').find((v) => v.agreement_id === a.id && v.status === 'signed') : null)).find(Boolean);
   const [ticked, setTicked] = useState({});
+  const [showOlder, setShowOlder] = useState(false);
+  const period = useMemo(() => invoicePeriod(all), [all]);
+  const olderKeys = useMemo(() => new Set(period.older.map((r) => r.key)), [period]);
+  // The invoice's month starts ticked; older rows start unticked (invoicePeriod).
+  const isTicked = (key) => (key in ticked ? ticked[key] : !olderKeys.has(key));
   const [poNumber, setPoNumber] = useState(null);
   const [supplier, setSupplier] = useState(null);
   const [reference, setReference] = useState(null);
@@ -59,7 +64,7 @@ export default function NewInvoice() {
   const ref = reference ?? profile?.their_reference ?? '';
   const typedPence = typedRate == null ? null : penceFrom(typedRate);
   const rateMinor = rateFor(profile, sponsor?.terms, Number.isNaN(typedPence) ? null : typedPence);
-  const rows = all.map((r) => ({ ...r, key: r.key })).filter((r) => ticked[r.key] !== false);
+  const rows = all.filter((r) => isTicked(r.key));
   const pages = pageCount({ timesheet: Boolean(profile?.timesheet), attachments: evidence.length });
   const body = {
     organisationId: id, sessionIds: rows.filter((r) => r.kind === 'session').map((r) => r.id), entryIds: rows.filter((r) => r.kind === 'entry').map((r) => r.id),
@@ -101,6 +106,12 @@ export default function NewInvoice() {
     } catch { toast.error('That didn’t save. Check your connection and try again.'); }
   };
   const pageOf = (i) => 2 + (profile?.timesheet ? 1 : 0) + i;
+  const line = (r) => (
+    <div key={r.key} className="ny-qrow">
+      <Checkbox checked={isTicked(r.key)} onChange={(on) => { setTicked((was) => ({ ...was, [r.key]: on })); setProblem(null); }}>{`${rowDay(r.day, p.todayKey)}, ${r.what}`}</Checkbox>
+      <span className="ny-qrow-h">{rowHours(r.minutes)}</span>
+    </div>
+  );
 
   return (
     <div className="cc-page">
@@ -119,16 +130,17 @@ export default function NewInvoice() {
         <p className="ny-hint">{introLine(rateMinor, c)}</p>
         {all.length === 0 ? <p className="ny-say">Nothing is logged since the last invoice.</p> : (
           <div role="group" aria-label="What it’s for">
-            {all.map((r) => (
-              <div key={r.key} className="ny-qrow">
-                <Checkbox checked={ticked[r.key] !== false} onChange={(on) => { setTicked((was) => ({ ...was, [r.key]: on })); setProblem(null); }}>{`${rowDay(r.day, p.todayKey)}, ${r.what}`}</Checkbox>
-                <span className="ny-qrow-h">{rowHours(r.minutes)}</span>
-              </div>
-            ))}
+            {period.recent.map(line)}
+            {period.older.length > 0 && (
+              <>
+                <div className="cc-acts"><TextLink aria-expanded={showOlder} aria-controls="ny-older" onClick={() => setShowOlder((v) => !v)}>{showOlder ? 'Hide older' : olderWords(period.older.length)}</TextLink></div>
+                <div id="ny-older" hidden={!showOlder}>{showOlder && period.older.map(line)}</div>
+              </>
+            )}
           </div>
         )}
         {rows.length > 0 && <p className="ny-hint">{totalLine(rows, rateMinor, profile?.terms_days || 30, c)}</p>}
-        <TextField label="What’s your hourly rate for this invoice?" inputMode="decimal" value={typedRate ?? (rateMinor ? String(rateMinor / 100) : '')} placeholder="£" autoComplete="off" onChange={(e) => setTypedRate(e.target.value)} />
+        <TextField label="What’s your hourly rate for this invoice?" inputMode="decimal" value={typedRate ?? (rateMinor ? moneyText(rateMinor, c) : '')} placeholder="e.g. £300" autoComplete="off" onChange={(e) => setTypedRate(e.target.value)} />
         {profile?.timesheet && (
           <>
             <h2 className="ny-sec">Timesheet page</h2>
@@ -140,7 +152,7 @@ export default function NewInvoice() {
           <ul className="ny-list" aria-label="Attached pages">
             {evidence.map((e, i) => (
               <li key={e.id} className="ny-li">
-                <span><span className="ny-li-t">{e.file_name}</span><span className="ny-li-m">{`Added as page ${pageOf(i)}`}</span></span>
+                <span><span className="ny-li-t ny-li-t--file">{e.file_name}</span><span className="ny-li-m">{`Added as page ${pageOf(i)}`}</span></span>
                 <TextLink onClick={() => removeFile(e)} aria-label={`Remove ${e.file_name}`}>Remove</TextLink>
               </li>
             ))}
