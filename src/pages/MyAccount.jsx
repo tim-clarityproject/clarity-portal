@@ -8,10 +8,14 @@ import { clearAppStorage } from '../lib/clearAppStorage';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import DesignHeader from '../components/DesignHeader';
 import PersonalGoalModal from '../components/PersonalGoalModal';
-import { SignOutLink, useSignOut } from '../components/SignOut';
+import { useSignOut } from '../components/SignOut';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import OwnQuestionsSection from '../components/ownQuestions/OwnQuestionsSection';
-import { useCoachName, PageHeader, Button, ColourModeChoice, Section, SwitchRow, useToast, SleepTargetEditor, SleepTargetLink, useSleepTarget, keepWords, useHiddenHelp } from '../components/design';
+import { useCoachName, Button, Chevron, ColourModeChoice, MoreLink, PageOpening, Row, Rows, SectionTabs, SwitchRow, useToast, SleepTargetEditor, useSleepTarget, keepWords, useHiddenHelp } from '../components/design';
+import { ACCOUNT_LINE } from '../content/pageLines/client';
+import { useClientPreparing } from '../lib/clientPreparing';
+import AccountCoaching from './account/AccountCoaching';
+import './account/account.css';
 import { hiddenHelpWords } from '../lib/hiddenHelp';
 import './performance/performance.css';
 import { DashboardCustomise } from './performance/DashboardCustomise';
@@ -19,7 +23,19 @@ import { SLEEP_SUGGESTED_LINE, rangeWords } from '../lib/performance/sleepChart'
 import { useStartChat } from '../components/coach/startChat';
 import { useCoachRole } from '../lib/coach/role';
 import { COACH_AUTH_PATHS, COACH_AUTH_WORDS } from '../lib/signIn/coachAuth';
-import MyAccountMoney from './account/MyAccountMoney';
+
+// My Account's underlined tabs (Polish 1; example-pages-25nov.html "My Account"): one section at a
+// time, the chosen one kept in the address (?tab=), so Back from a page it opened returns to it.
+export const ACCOUNT_TABS = Object.freeze([
+  { key: 'profile', label: 'Profile' },
+  { key: 'coaching', label: 'Coaching' },
+  { key: 'mission', label: 'Mission' },
+  { key: 'look', label: 'Look' },
+  { key: 'settings', label: 'Settings' },
+  { key: 'questions', label: 'Questions' },
+]);
+// Older links into the one long page land on their tab.
+const HASH_TABS = { '#mission-section': 'mission', '#own-questions': 'questions', '#settings': 'settings' };
 
 export default function MyAccount() {
   const navigate = useNavigate();
@@ -52,15 +68,12 @@ export default function MyAccount() {
   const [archivedMissionsCount, setArchivedMissionsCount] = useState(0);
   const [loadingArchivedMissions, setLoadingArchivedMissions] = useState(false);
 
-  // Handle scrolling to sections when navigated with state.scrollTo
-  useEffect(() => {
-    if (location.state?.scrollTo) {
-      const element = document.getElementById(location.state.scrollTo);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
-  }, [location.state?.scrollTo]);
+  // The brand-new client's two-item menu (src/lib/clientPreparing.js), when My Account is opened first.
+  useClientPreparing(user?.id);
+  const asked = new URLSearchParams(location.search).get('tab');
+  const fromLink = HASH_TABS[location.hash] || (location.state?.scrollTo === 'mission-section' ? 'mission' : null);
+  const tab = ACCOUNT_TABS.some((t) => t.key === asked) ? asked : (fromLink || 'profile');
+  const chooseTab = (key) => navigate({ pathname: location.pathname, search: key === 'profile' ? '' : `?tab=${key}` }, { replace: true });
 
   // Handle opening Edit Mission pop-up from header link
   useEffect(() => {
@@ -220,19 +233,6 @@ export default function MyAccount() {
     });
   };
 
-  // Handle hash-based scrolling to sections
-  useEffect(() => {
-    if (location.hash) {
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        const element = document.querySelector(location.hash);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-    }
-  }, [location.hash]);
-
   // While the name and the Mission are still on their way (the first visit on
   // this device), their rows keep their place with no words, never "Your Name"
   // or "isn't written yet" for a moment (UI tester, scale check).
@@ -249,141 +249,102 @@ export default function MyAccount() {
     // Mission panel, so it reads the same everywhere.
     ? navigate('/performance-plan', { state: { openPart: 'mission' } })
     : setShowGoalModal(true));
+  const tabs = ACCOUNT_TABS;
+  const panes = {
+    profile: (
+      <div className="acct-pane">
+        <Rows label="Your details">
+          <Row name="Your name" value={fullName} onClick={() => navigate('/edit-profile')} />
+          {/* The email once (Polish 1). Someone who signs in with Google changes it there. */}
+          <Row name="Your email" value={user?.email || ''} onClick={signsInWithGoogle(user) ? undefined : () => navigate('/my-account/email')} />
+        </Rows>
+        {/* How they sign in (M26; Tim, 11 Nov). Someone who signs in with Google has no Password page, and is told so instead. */}
+        {signsInWithGoogle(user)
+          ? <p className="acct-line">{YOU_SIGN_IN_WITH_GOOGLE}</p>
+          : <div className="acct-link"><MoreLink onClick={() => navigate('/my-account/password')}>Change my password</MoreLink></div>}
+        {coachRow ? <div className="acct-link"><MoreLink onClick={() => navigate(COACH_AUTH_PATHS.security)}>{COACH_AUTH_WORDS.security.linkButton}</MoreLink></div> : null}
+        {/* Sign out, a real button sending anything waiting first (Tim, 5 Nov), then Delete my account. */}
+        <div className="acct-foot">
+          <Button variant="outline" onClick={signOutFlow.start} disabled={signOutFlow.busy} aria-busy={signOutFlow.busy || undefined}>Sign out</Button>
+          <Button variant="text" className="acct-delete" onClick={handleDeleteAccount} disabled={isDeleting}>
+            {isDeleting ? 'Deleting my account' : 'Delete my account'}
+          </Button>
+        </div>
+        {signOutFlow.choice}
+        {deleteError && <p className="plan-save-error" role="alert">{deleteError}</p>}
+      </div>
+    ),
+    coaching: <AccountCoaching userId={user?.id} coachName={coachName} startChat={startChat} />,
+    mission: (
+      <div className="acct-pane" id="mission-section">
+        <Rows label="My Mission">
+          <Row
+            name={missionPending ? ' ' : keepWords(personalGoal || 'Your Mission isn’t written yet.')}
+            value={personalGoal ? 'Edit my Mission' : 'Write my Mission'}
+            onClick={editMission}
+            className={missionPending ? 'account-pending' : ''}
+          />
+        </Rows>
+        <SwitchRow
+          label="Show my Mission at the top of every page"
+          checked={Boolean(showInHeader)}
+          onChange={handleToggleGoalVisibility}
+        />
+      </div>
+    ),
+    look: (
+      <div className="acct-pane">
+        <ColourModeChoice />
+      </div>
+    ),
+    settings: (
+      <div className="acct-pane">
+        <Rows label="Settings">
+          <Row
+            name="Sleep target"
+            sub={sleepTarget.own ? undefined : SLEEP_SUGGESTED_LINE}
+            value={rangeWords(sleepTarget)}
+            onClick={() => setSleepEditing((v) => !v)}
+          />
+        </Rows>
+        {sleepEditing && (
+          <div className="account-sleep-target">
+            <SleepTargetEditor id="account-sleep-target" target={sleepTarget} onChange={changeSleepTarget} />
+          </div>
+        )}
+        <Rows>
+          <Row name="Customise my dashboard" value={<Chevron direction="right" />} onClick={() => setCustomising(true)} />
+          {/* Only when there is one: a section with nothing in it stays hidden. */}
+          {!loadingArchivedMissions && archivedMissionsCount > 0 && (
+            <Row name={`Open my archived plans (${archivedMissionsCount})`} value={<Chevron direction="right" />} onClick={() => navigate('/personal-operating-plan-archived')} />
+          )}
+          <Row name="About The Clarity Portal" value={<Chevron direction="right" />} onClick={() => navigate('/about')} />
+          {/* Hidden help (tidy pass, item 13): only once an explanation has been hidden. */}
+          {hiddenHelp.count > 0 && (
+            <Row name="Hidden help" sub={hiddenHelpWords(hiddenHelp.count)} value="Show it again" onClick={hiddenHelp.showAll} />
+          )}
+        </Rows>
+        <DashboardCustomise open={customising} onClose={() => setCustomising(false)} />
+      </div>
+    ),
+    questions: (
+      <div className="acct-pane acct-pane--questions">
+        {/* Your own questions (run 7, mock-up version 3): set here and nowhere else. */}
+        <OwnQuestionsSection userId={user?.id} />
+      </div>
+    ),
+  };
+
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page ipp-page account-page">
-        <PageHeader title="My Account" />
+      <div className="account-page">
+        <PageOpening title="My Account" line={ACCOUNT_LINE} />
         <EmailVerificationBanner />
-
-        <Section title="Profile" className="ipp-section account-section">
-          <div className="account-row">
-            <div className="account-row-text">
-              <p className="account-row-title">{fullName}</p>
-              <p className="account-row-note">{user?.email}</p>
-            </div>
-            <Button variant="text" onClick={() => navigate('/edit-profile')}>Edit my profile</Button>
-          </div>
-          {/* How they sign in (M26; Tim, 11 Nov). Someone who signs in with
-              Google has no Password page, and is told so instead. */}
-          {signsInWithGoogle(user) ? (
-            <div className="account-row">
-              <div className="account-row-text">
-                <p className="account-row-title">{YOU_SIGN_IN_WITH_GOOGLE}</p>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="account-row">
-                <div className="account-row-text">
-                  <p className="account-row-title">Email</p>
-                  <p className="account-row-note">{user?.email}</p>
-                </div>
-                <Button variant="text" onClick={() => navigate('/my-account/email')}>Edit my email</Button>
-              </div>
-              <div className="account-row">
-                <div className="account-row-text">
-                  <p className="account-row-title">Password</p>
-                </div>
-                <Button variant="text" onClick={() => navigate('/my-account/password')}>Edit my password</Button>
-              </div>
-            </>
-          )}
-          {coachRow ? (
-            <div className="account-row">
-              <div className="account-row-text">
-                <p className="account-row-title">{COACH_AUTH_WORDS.security.link}</p>
-              </div>
-              <Button variant="text" onClick={() => navigate(COACH_AUTH_PATHS.security)}>{COACH_AUTH_WORDS.security.linkButton}</Button>
-            </div>
-          ) : null}
-        </Section>
-
-        <Section id="mission-section" title="My Mission" className="ipp-section account-section">
-          <div className="account-row">
-            <div className="account-row-text">
-              <p className="account-row-title">{missionPending ? '\u00a0' : keepWords(personalGoal || 'Your Mission isn’t written yet.')}</p>
-            </div>
-            <Button variant="text" className={missionPending ? 'account-pending' : ''} onClick={editMission}>{personalGoal ? 'Edit my Mission' : 'Write my Mission'}</Button>
-          </div>
-          <SwitchRow
-            label="Show my Mission at the top of every page"
-            checked={Boolean(showInHeader)}
-            onChange={handleToggleGoalVisibility}
-          />
-        </Section>
-
-        <Section title="Appearance" className="ipp-section account-section">
-          <div className="account-choice">
-            <ColourModeChoice />
-          </div>
-          {/* Hidden help (tidy pass, item 13): only once an explanation has been hidden. */}
-          {hiddenHelp.count > 0 && (
-            <div className="account-row account-row--help">
-              <div className="account-row-text">
-                <p className="account-row-title">Hidden help</p>
-                <p className="account-row-note">{hiddenHelpWords(hiddenHelp.count)}</p>
-              </div>
-              <Button variant="text" onClick={hiddenHelp.showAll}>Show it again</Button>
-            </div>
-          )}
-        </Section>
-
-        <Section title="Settings" className="ipp-section account-section">
-          <div className="account-row account-row--sleep">
-            <div className="account-row-text">
-              <p className="account-row-title">Sleep target range</p>
-              <p className="account-row-note">{rangeWords(sleepTarget)}</p>
-              {!sleepTarget.own && <p className="account-row-note">{SLEEP_SUGGESTED_LINE}</p>}
-            </div>
-            <SleepTargetLink open={sleepEditing} onToggle={() => setSleepEditing((v) => !v)} controls="account-sleep-target" />
-          </div>
-          {sleepEditing && (
-            <div className="account-sleep-target">
-              <SleepTargetEditor id="account-sleep-target" target={sleepTarget} onChange={changeSleepTarget} />
-            </div>
-          )}
-          <div className="account-links">
-            <Button variant="text" onClick={() => setCustomising(true)}>Customise my dashboard</Button>
-            {/* Only when there is one: a section with nothing in it stays hidden. */}
-            {!loadingArchivedMissions && archivedMissionsCount > 0 && (
-              <Button variant="text" onClick={() => navigate('/personal-operating-plan-archived')}>
-                {`Open my archived plans (${archivedMissionsCount})`}
-              </Button>
-            )}
-            <Button variant="text" onClick={() => navigate('/about')}>About The Clarity Portal</Button>
-            {/* Chat to the coach: in the header on desktop, here on phone. */}
-            {coachName && startChat && (
-              <Button variant="text" className="account-phone-only" onClick={startChat}>{`Chat to ${coachName}`}</Button>
-            )}
-          </div>
-          <DashboardCustomise open={customising} onClose={() => setCustomising(false)} />
-        </Section>
-
-        {/* Phase 6b run 3: Group C's Coaching, Invoices, Your plan and Block of hours rows (M28 s-acct). */}
-        <MyAccountMoney userId={user?.id} />
-
-        {/* Your own questions (run 7, mock-up version 3): set here and nowhere else. */}
-        <OwnQuestionsSection userId={user?.id} />
-
-        {/* Sign out, as in the menu (Tim, 5 Nov): the same quiet link,
-            sending anything waiting first. */}
-        <div className="account-signout">
-          <SignOutLink onSignOut={signOutFlow.start} busy={signOutFlow.busy} />
+        <SectionTabs tabs={tabs} value={tab} onChange={chooseTab} label="My Account" className="acct-tabs" />
+        <div role="tabpanel" aria-label={tabs.find((t) => t.key === tab)?.label} className="acct-panel">
+          {panes[tab]}
         </div>
-        {signOutFlow.choice}
-
-        <Section title="Delete my account" className="ipp-section account-section">
-          <div className="account-row">
-            <div className="account-row-text">
-              <p className="account-row-note">This removes your account and everything in it, for good.</p>
-            </div>
-            <Button variant="text" onClick={handleDeleteAccount} disabled={isDeleting}>
-              {isDeleting ? 'Deleting my account' : 'Delete my account'}
-            </Button>
-          </div>
-          {deleteError && <p className="plan-save-error" role="alert">{deleteError}</p>}
-        </Section>
       </div>
 
       <DeleteDialog

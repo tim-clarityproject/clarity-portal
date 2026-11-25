@@ -133,8 +133,6 @@ export default function CreateAccount() {
 
   return (
     <SignInPage title="Create your account" onSubmit={submit}>
-      <ContinueWithGoogle onClick={google} />
-      <OrLine />
       <Field label="First name" type="text" name="given-name" autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} maxLength={80} />
       {at('name')}
       <EmailField value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -144,6 +142,8 @@ export default function CreateAccount() {
       <TermsRow checked={ticked} onChange={tick} />
       {at('terms')}
       <MainButton>Create my account</MainButton>
+      <OrLine />
+      <ContinueWithGoogle onClick={google} />
       <Alt>Already have an account? <TextLink to={SIGN_IN_PATHS.signIn}>Sign in</TextLink></Alt>
     </SignInPage>
   );

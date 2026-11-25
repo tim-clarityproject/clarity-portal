@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loading } from '../../../components/design';
+import { Card, Loading, Row, Rows } from '../../../components/design';
 import { supabase } from '../../../lib/supabase';
 import { coachZoneOf } from '../../../lib/coach/calendar';
 import { rowsOf } from '../../../lib/coach/store';
 import { deviceZone } from '../../../lib/time/index.js';
 import { EMPTY_LINE, visible } from '../../../lib/agreements/needsYou';
 import { needsYouItems } from '../../../lib/agreements/duringAgreement';
-import { Row, useCoachPortal } from '../parts';
+import { useCoachPortal } from '../parts';
 import { NeedsYouPanel } from './panels';
 import './needsyou.css';
 
@@ -21,7 +21,10 @@ import './needsyou.css';
 // waiting for Send is here instead, never in both (duringAgreement.overdueInNeedsYou; the lead's line in Today.jsx).
 // While only the first screen is here the section waits on its own crosshair: never a 0 or "nothing" (coach rule 49).
 
-export default function NeedsYou({ todayKey, partial }) {
+const NyTitle = (props) => <h2 {...props} id="ny-title" />;
+
+// Polish 1 (25 Nov): drawn as the reference's card with its rows; `onCount` tells Today's opening line how many there are.
+export default function NeedsYou({ todayKey, partial, onCount }) {
   const p = useCoachPortal();
   const navigate = useNavigate();
   const [open, setOpen] = useState(null);
@@ -68,23 +71,19 @@ export default function NeedsYou({ todayKey, partial }) {
     return visible(named, rowsOf(p.state, 'needs_you_done').filter((r) => r.coach_id === p.coach.id), todayKey);
   }, [partial, p.coach.id, p.isOwner, todayKey, p.now, zone, agreementsAll, versionsAll, p.sessions, p.state, p.invoices, p.invoiceReminders, p.reminderPauses, p.clients, p.organisations, p.coaches, p.admin, waiting, fxToday]);
 
+  useEffect(() => { onCount?.(partial ? null : items.length); }, [onCount, partial, items.length]);
   const openItem = (i) => {
     if (i.kind === 'portal') { navigate(`/coach/invoices/${i.data.invoiceId}`); return; }
     setOpen(i);
   };
   return (
-    <section className="ds-section cc-part cc-today-part ny-section" aria-labelledby="ny-title">
-      <div className="ds-section-head cc-today-head"><h2 className="ds-section-title" id="ny-title">Needs you</h2></div>
+    <Card label="Needs you" className="cc-part ny-section" aria-labelledby="ny-title" labelAs={NyTitle}>
       {partial ? <Loading label="Loading what needs you" /> : items.length === 0 ? <p className="cc-quiet">{EMPTY_LINE}</p> : (
-        <div className="cc-rows ny-rows" role="list" aria-label="Needs you">
-          {items.map((i) => (
-            <div key={i.key} role="listitem">
-              <Row title={i.title} facts={[i.line]} when={i.when} onClick={() => openItem(i)} label={[i.title, i.line, i.when].filter(Boolean).join(', ')} />
-            </div>
-          ))}
-        </div>
+        <Rows className="ny-rows">
+          {items.map((i) => <Row key={i.key} name={i.title} sub={i.line} value={i.when} onClick={() => openItem(i)} />)}
+        </Rows>
       )}
       <NeedsYouPanel item={open} onClose={() => setOpen(null)} />
-    </section>
+    </Card>
   );
 }

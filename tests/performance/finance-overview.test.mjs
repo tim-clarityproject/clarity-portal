@@ -149,4 +149,10 @@ test('Today’s Finances line: this month against its target, low cash first, th
   const calm = f.todayFinanceLine({ today: TODAY, lines, targets, cashShort: null, overdueCount: f.overdueCount(invoices, TODAY) });
   assert.equal(calm.text, 'November £2,300 of £5,000 · 1 overdue');
   assert.equal(f.todayFinanceLine({ today: TODAY, lines, targets: [], overdueCount: 0 }).text, 'November £2,300');
+  // Polish 1: the figure's two halves for Today's This month card ("£2,300" over "of £5,000"); no target, no second half.
+  assert.equal(line.paid, '£2,300');
+  assert.equal(line.target, '£5,000');
+  const untargeted = f.todayFinanceLine({ today: TODAY, lines, targets: [], overdueCount: 0 });
+  assert.equal(untargeted.paid, '£2,300');
+  assert.equal(untargeted.target, null);
 });

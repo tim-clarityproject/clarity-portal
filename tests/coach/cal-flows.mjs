@@ -150,11 +150,12 @@ async function run() {
       await go(page, '/coach/calendar?view=week');
       pass(`${tag}: and the calendar opens on New York next time, not the next client's Chicago`, (await page.locator('.cc-cal-zone').first().textContent()) === 'New York');
       pass(`${tag}: a client call shows the client's own time inside its block`, /9:45 am Chicago/.test(await tile(page, D.tue, 'Jordan Reyes').textContent()));
-      await page.getByRole('switch', { name: 'Weekends' }).click(); await settle(page, 700);
+      // Polish 1 (25 Nov): Weekends is a quiet link in the calendar's foot ("Show weekends" / "Hide weekends"), no switch.
+      await press(page, 'Show weekends');
       pass(`${tag}: Weekends on shows seven days`, (await heads()) === 7 && (await text()).includes('16 to 22 Nov'));
       const kept = (await t.rowsNow('coach_settings'))[0];
       pass(`${tag}: the Weekends switch is kept in Settings' calendars`, kept?.calendars?.weekends === true);
-      await page.getByRole('switch', { name: 'Weekends' }).click(); await settle(page, 700);
+      await press(page, 'Hide weekends');
       pass(`${tag}: the now line is drawn on today`, (await page.locator(`[data-cal-day="${D.tue}"] .cc-cal-now`).count()) === 1 && (await page.locator('.cc-cal-now').count()) === 1);
       pass(`${tag}: outside working hours is hatched under the tiles`, (await page.locator('.cc-cal-off').count()) >= 5);
       await press(page, 'My calendars');
@@ -420,21 +421,22 @@ async function run() {
     }
 
     if (has('cal-month')) {
+      // Polish 1 (25 Nov; rule 17): Month and Week are one switch; the month is a plain grid with a dot under each day
+      // with something on, and the chosen day's list under it with its date as a small grey label.
       await press(page, 'Month');
-      pass(`${tag}: the month shows November`, (await text()).includes('November 2026') && (await page.locator('.cc-month-cell').count()) >= 25);
-      await page.locator('.cc-month-cell', { has: page.locator('b', { hasText: /^19$/ }) }).click(); await settle(page, 800);
-      pass(`${tag}: a month's day opens that day`, (await text()).includes('Thu 19 Nov') && (await page.locator('.cc-cal-day').count()) === 1);
-      await press(page, 'Next');
-      pass(`${tag}: Next steps a day`, (await text()).includes('Fri 20 Nov'));
+      pass(`${tag}: the month shows November as a plain grid`, (await text()).includes('November 2026') && (await page.locator('.ds-cal-day').count()) >= 35 && (await page.locator('.ds-cal-day--has').count()) >= 5);
+      pass(`${tag}: today is the filled circle`, (await page.locator('.ds-cal-day--today').getAttribute('aria-label')) === 'Tuesday 17 November, something on');
+      await page.getByRole('button', { name: /^Thursday 19 November/ }).click(); await settle(page, 800);
+      pass(`${tag}: a month's day shows its list under the grid`, (await page.locator('.cc-cal-dayname').textContent()) === 'Thursday 19 November' && new URL(page.url()).searchParams.get('day') === D.thu && (await page.locator('.ds-cal-day--sel').count()) === 1);
+      pass(`${tag}: the day's list opens an item as its tile would`, (await page.locator('.cc-cal-daylist .ds-li').count()) >= 1);
+      await press(page, 'Next month');
+      pass(`${tag}: Next steps a month`, (await text()).includes('December 2026'));
       await press(page, 'Today');
-      pass(`${tag}: Today comes back`, (await text()).includes('Tue 17 Nov'));
-      await press(page, 'Schedule');
+      pass(`${tag}: Today comes back`, (await text()).includes('November 2026') && (await page.locator('.cc-cal-dayname').textContent()) === 'Tuesday 17 November');
+      await go(page, '/coach/calendar?view=schedule');
       const rows = await page.locator('.cc-sched-row').count();
       const first = await page.locator('.cc-sched-day').first().textContent();
-      pass(`${tag}: the Schedule lists what's next from today, each with a square of its colour`, rows > 10 && first === 'Today, Tue 17 Nov' && (await page.locator('.cc-sched-square').count()) === rows, `${rows} ${first}`);
-      await page.locator('.cc-cal-range').click(); await settle(page, 500);
-      await page.locator('[data-key="2026-11-25"]').click(); await settle(page, 700);
-      pass(`${tag}: the mini month jumps to a date`, new URL(page.url()).searchParams.get('day') === '2026-11-25', page.url().split('?')[1]);
+      pass(`${tag}: the Schedule (its own address) lists what's next from today, each with a square of its colour`, rows > 10 && first === 'Today, Tue 17 Nov' && (await page.locator('.cc-sched-square').count()) === rows, `${rows} ${first}`);
       await go(page, '/coach/calendar?view=week');
       await page.getByRole('button', { name: 'Search, or do anything' }).click();
       await page.keyboard.type('Lighthouse'); await settle(page, 500);
@@ -454,13 +456,14 @@ async function run() {
     const t = await openAt({ role, size: 400, db, path: '/coach/calendar', tag });
     const { page } = t;
     const text = () => page.evaluate(() => document.querySelector('.cc-app').innerText);
-    pass(`${tag}: the phone opens on the Schedule`, (await page.locator('.cc-sched-row').count()) > 5 && (await page.locator('.cc-cal').count()) === 0);
+    // Polish 1 (25 Nov): a phone opens on the month too, the chosen day's list under it.
+    pass(`${tag}: the phone opens on the month, with today's list`, (await page.locator('.ds-cal-day').count()) >= 35 && (await page.locator('.cc-cal').count()) === 0 && (await page.locator('.cc-cal-dayname').textContent()) === 'Tuesday 17 November');
+    await page.goto(page.url().replace(/\/coach\/calendar.*$/, '/coach/calendar?view=schedule')); await page.waitForSelector('.cc-app'); await settle(page, 1000);
     const square = page.locator('.cc-sched-row', { hasText: 'Parents’ evening' }).first().locator('.cc-sched-square');
     pass(`${tag}: a 10px square of each tile's colour sits before the time, dashed for a family item`, (await square.evaluate((el) => { const b = el.getBoundingClientRect(); return Math.round(b.width) === 10 && Math.round(b.height) === 10 && getComputedStyle(el).borderTopStyle === 'dashed'; })));
     pass(`${tag}: no header menu button's hamburger, and Book a call is the one coral button`, (await page.locator('.cc-cal-page .ds-btn--primary').count()) === 1);
-    await press(page, 'View');
-    await page.getByRole('menuitemcheckbox', { name: 'Day', exact: true }).click(); await settle(page, 800);
-    pass(`${tag}: View chooses the day, with both time columns`, (await page.locator('.cc-cal-day').count()) === 1 && (await page.locator('.cc-cal-zone').count()) === 2);
+    await page.goto(page.url().replace(/\/coach\/calendar.*$/, '/coach/calendar?view=day')); await page.waitForSelector('.cc-app'); await settle(page, 1000);
+    pass(`${tag}: the day (its own address) has both time columns, with both time columns`, (await page.locator('.cc-cal-day').count()) === 1 && (await page.locator('.cc-cal-zone').count()) === 2);
     pass(`${tag}: nothing scrolls sideways`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
     await press(page, 'Add to calendar');
     pass(`${tag}: Add to calendar opens a full-screen panel`, (await dialog(page).evaluate((el) => el.getBoundingClientRect().width >= window.innerWidth - 2)));
@@ -487,12 +490,10 @@ async function run() {
     const row = await t.one('coach_cal_items', CAL.priyaTue);
     pass(`${tag}: then drags it: an hour earlier`, same(row.starts_at, at(D.tue, '16:00')), row.starts_at);
     await undo(page);
-    await press(page, 'View');
-    await page.getByRole('menuitemcheckbox', { name: 'Week', exact: true }).click(); await settle(page, 800);
+    await press(page, 'Week');
     pass(`${tag}: a phone's week is the week's own list, never a squashed grid`, (await page.locator('.cc-cal').count()) === 0 && (await page.locator('.cc-sched-day').first().textContent()) === 'Mon 16 Nov');
-    await press(page, 'View');
-    await page.getByRole('menuitemcheckbox', { name: 'Month', exact: true }).click(); await settle(page, 800);
-    pass(`${tag}: the month fits a phone`, (await page.locator('.cc-month-cell').count()) >= 25 && await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+    await press(page, 'Month');
+    pass(`${tag}: the month fits a phone`, (await page.locator('.ds-cal-day').count()) >= 35 && await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
     await t.done();
   }
 

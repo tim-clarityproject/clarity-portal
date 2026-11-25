@@ -357,6 +357,15 @@ export async function measureChevrons(page) {
       continue;
     }
     // The words' middle as drawn (one letter's own pixels), or from the font's measures when no plain letter is there.
+    // An underline is not part of the letters (Polish 1: links that open more are underlined, the reference's .lk, and
+    // the line under the letter was read as its lowest stroke, putting the x-height's middle 2px low): it is left
+    // undrawn while the letters are read, which moves nothing.
+    await page.evaluate(() => {
+      const st = document.createElement('style');
+      st.id = 'chev-no-underline';
+      st.textContent = '* { text-decoration-color: transparent !important; }';
+      document.head.appendChild(st);
+    });
     let drawn = c.letter && !c.block ? await strokeMiddle(page, c.letter, 0, view) : null;
     if (drawn == null && c.probe && !c.block) {
       // A plain x in the words' place, read from its pixels, then the words put back exactly as they were.
@@ -376,6 +385,7 @@ export async function measureChevrons(page) {
       if (probe) drawn = await strokeMiddle(page, probe, 0, view);
       await page.evaluate(() => { const w = window.__chevWords; if (w) { w.node.textContent = w.text; delete window.__chevWords; } });
     }
+    await page.evaluate(() => document.getElementById('chev-no-underline')?.remove());
     const wordsMiddle = drawn ?? c.wordsMiddle;
     out.push({ n: i, label: c.label, off: middle - wordsMiddle, block: Boolean(c.block), lines: c.lines, read: c.block ? 'block' : drawn == null ? 'measures' : 'pixels', capitals: c.capitals, state: c.state, font: c.font, chevEm: c.chevEm, dir: c.dir, line: c.line });
   }

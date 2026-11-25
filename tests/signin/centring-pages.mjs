@@ -1,5 +1,6 @@
-// One alignment per page, each row centred as a group (sign-in rule 49;
-// Tim, 23 Nov 2026), on every sign-in and account screen, client and
+// One alignment per page (sign-in rule 49; since polish 1 the 25 Nov
+// reference's centred sign-in pages, their forms marked data-form="centred",
+// and My Account's pages on one left edge), on every sign-in and account screen, client and
 // coach (SCREENS and COACH_SCREENS, as measure.mjs opens them), dark and
 // light, at 1280 and at 390 by 844, at the standard text size and at twice
 // it. The check itself is tests/signin/centring.mjs (`centredGroups`).

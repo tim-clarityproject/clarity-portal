@@ -53,7 +53,6 @@
 .ui-root .cc-today-rows .cc-row { padding: var(--space-px12) 0 !important; }
 
 /* ---------------------------------------------------------------- a call's row (M11 .vr.t3) */
-.ui-root .cc-today-calls { margin-top: var(--space-2); }
 .ui-root .cc-today-call {
   all: unset;
   box-sizing: border-box;
@@ -90,19 +89,6 @@
 .ui-root .cc-today-over + .cc-add { margin-top: 0; }
 
 /* ---------------------------------------------------------------- who needs attention (M11 .ar) */
-.ui-root .cc-today-atts { margin-top: var(--space-2); }
-.ui-root .cc-today-att {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space-px2) var(--space-3);
-  align-items: center;
-  min-height: var(--cc-row-h);
-  padding: var(--space-px10) 0;
-  border-bottom: var(--line-w) solid var(--line-soft);
-}
-.ui-root .cc-today-att b { grid-column: 1; grid-row: 1; align-self: end; font-weight: var(--fw-regular); font-size: var(--fs-text); line-height: var(--lh-row); overflow-wrap: anywhere; }
-.ui-root .cc-today-att small { grid-column: 1; grid-row: 2; align-self: start; font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
-.ui-root .cc-today-att .ds-link { grid-column: 2; grid-row: 1 / span 2; justify-content: flex-end; min-width: var(--tap-min); text-align: right; }
 .ui-root .cc-today-more { margin-top: var(--space-1); }
 
 /* ---------------------------------------------------------------- figures on an equal grid */
@@ -177,10 +163,6 @@
   .ui-root .cc-today-call { grid-template-columns: minmax(var(--cc-time-w), max-content) minmax(0, 1fr); }
   .ui-root .cc-today-len { display: inline; }
   .ui-root .cc-today-call-len { display: none; }
-  .ui-root .cc-today-att { row-gap: 0; }
-  .ui-root .cc-today-att b { align-self: center; }
-  .ui-root .cc-today-att .ds-link { grid-row: 1; align-self: center; }
-  .ui-root .cc-today-att small { grid-column: 1 / -1; }
   .ui-root .cc-today-figures { gap: var(--space-4) var(--space-3); }
   /* "17 of 15" stays whole: the small "2 over" goes under it. */
   .ui-root .cc-today-cap--over .ds-unit { display: block; margin: var(--space-px6) 0 0; }
@@ -194,3 +176,29 @@
   .ui-root .cc-today-shape-bar i { forced-color-adjust: none; background: CanvasText; }
   .ui-root .cc-today-cap .ds-bar > span { forced-color-adjust: none; background: CanvasText; }
 }
+
+/* ---------------------------------------------------------------- polish 1 (25 Nov): the example's Coach Today
+   The frame gives the page its padding on a laptop (48/56px), so the older column's own padding and width go; on a
+   phone the page keeps its 20px sides. The opening, the cards, rows and figure are the shared ones (Blocks). */
+.ui-root .cc-page.cc-today-page { padding-block: 0; }
+.ui-root .cc-today-page > .cc-col.cc-today-col { max-width: none; margin: 0; padding-inline: 0; }
+.ui-root .cc-today-quiet { margin: calc(-1 * var(--space-3)) 0 var(--space-4); }
+.ui-root .cc-today-quiet > .cc-quiet { margin: 0; }
+.ui-root .cc-today-col > .cc-today-offer { margin: 0 0 var(--card-gap); }
+.ui-root .cc-today-month .ds-fig { margin: var(--space-1) 0; }
+.ui-root .cc-today-month-note { margin: 0 0 var(--space-3); font-size: var(--fs-meta); line-height: 1.55; color: var(--text-2); }
+.ui-root .ds-card > .cc-today-more { margin-top: var(--space-2); }
+.ui-root .ds-card > .cc-quiet { margin: 0; }
+.ui-root .cc-today-todos .cc-todos { margin-top: 0; }
+@media (max-width: 1023px) {
+  .ui-root .cc-today-page > .cc-col.cc-today-col { padding-inline: var(--space-px20); }
+  .ui-root .cc-page.cc-today-page { padding-block: var(--space-4) var(--space-6); }
+}
+/* View all and + Add together at the right of To-dos' label, their 44px tap areas reaching out without moving it. */
+.ui-root .cc-today-heads { display: inline-flex; align-items: center; gap: var(--space-4); margin: calc(var(--space-px14) * -1) 0; }
+.ui-root .cc-today-heads > :is(.ds-more, .ds-addrow) { min-height: var(--tap-min) !important; }
+.ui-root .cc-today-attrow .ds-li-value .ds-link { min-height: var(--tap-min); margin-block: calc(-1 * var(--space-px12)); }
+/* A 44px tap area for the short head links on a phone ("Edit", "+ Add"). */
+.ui-root .cc-today-week .ds-card-head > .ds-more, .ui-root .cc-today-heads > .ds-addrow { min-width: var(--tap-min); justify-content: flex-end; }
+/* A card's last row ends the card's padding (no space under it), so one that opens something keeps a 44px tap area. */
+.ui-root .cc-today-col .ds-card > .ds-rows-list:last-child > .ds-li--go:last-child { min-height: var(--tap-min); }

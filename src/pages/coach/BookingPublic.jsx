@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { BoldCrosshair, Button, Checkbox, Dropdown, InlineChoice, PageHeader, TextBox, TextField } from '../../components/design';
+import { BoldCrosshair, Button, Checkbox, Chevron, Dropdown, MonthGrid, MoreLink, PageOpening, TextBox, TextField } from '../../components/design';
+import { dayTitle, monthTitle } from '../../components/design/Blocks';
+import { getLocalDateKey } from '../../lib/dateFormatter';
+import { BOOKING, bookingLine } from '../../content/pageLines/coach';
 import { clockWords, deviceZone, zoneLabel } from '../../lib/time/index.js';
 import { clean, isEmail } from '../../lib/coach/model';
 import {
@@ -30,23 +33,26 @@ import './booking.css';
 const NO_CONNECTION = 'This needs a connection, so try again when you’re back online.';
 const NO_ANSWER = 'That didn’t go through. Try again in a moment.';
 const DAY_MS = 86400000;
-const DAYS_SHOWN = 5;
 const failed = () => (navigator.onLine === false ? NO_CONNECTION : NO_ANSWER);
 
 // One left edge (Tim, 23 Nov 2026, 17:40; sign-in rule 49): a page with a form or
 // a list is on the column's left edge; a short message (a title, a line or two and
 // at most its one button and link) is centred throughout (`message`).
-function Frame({ children, message = false }) {
+// Polish 1 (25 Nov; the example's booking page): one 480px column, the real crosshair
+// at its top (28px; 40px and centred on a message such as "You're booked"), then the
+// shared page opening.
+function Frame({ children, message = false, mark = true }) {
   return (
-    <div className={`ui-root cc-public cc-book${message ? ' cc-public--message' : ''}`}>
-      <div className="cc-page"><div className="cc-col" data-align={message ? 'centre' : 'start'}>
-        <div className="cc-public-brand"><BoldCrosshair size={22} /><span>The Clarity Project</span></div>
+    <div className={`ui-root cc-public cc-book${message ? ' cc-public--message cc-book--message' : ''}`}>
+      <main className="cc-book-col" data-align={message ? 'centre' : 'start'}>
+        {mark && <span className="cc-book-mark" aria-hidden="true"><BoldCrosshair size={message ? 40 : 28} /></span>}
+        <span className="ds-sr">The Clarity Project</span>
         {children}
-      </div></div>
+      </main>
     </div>
   );
 }
-const Calm = ({ title, children }) => <Frame message><PageHeader title={title} /><p className="cc-quiet" role="status">{children}</p></Frame>;
+const Calm = ({ title, children }) => <Frame message><PageOpening title={title} /><p className="cc-quiet" role="status">{children}</p></Frame>;
 
 /** Add to calendar: the call as an .ics file made here in the page. */
 function AddToCalendar({ uid, title, startsAt, endsAt, location = '', description = '' }) {
@@ -61,20 +67,26 @@ function AddToCalendar({ uid, title, startsAt, endsAt, location = '', descriptio
   return <Button variant="outline" onClick={save}>Add to calendar</Button>;
 }
 
+const monthOf = (key) => `${key.slice(0, 7)}-01`;
+const stepMonth = (key, by) => { const [y, m] = key.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 + by, 1)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`; };
+
 /**
- * The days with a free time and that day's times, in the visitor's own
- * zone. `starts` is every free start the database gave.
+ * The days with a free time and that day's times, in the visitor's own zone (polish 1, rule 17; the example's
+ * booking page): the month as a plain grid, days with no free time faded, the chosen day outlined; under it the
+ * day's name as a small grey label and its free times as answer boxes. `starts` is every free start the database gave.
  */
 function TimePicker({ starts, zone, minutes, chosen, onChoose, earlyLate, setEarlyLate, visitor = null }) {
   const [dayKey, setDayKey] = useState(null);
-  const [from, setFrom] = useState(0);
+  const [month, setMonth] = useState(null);
   const [mine, setMine] = useState(false);
   const [events, setEvents] = useState([]);
   const kept = useMemo(() => sociableStarts(starts, zone, minutes, earlyLate), [starts, zone, minutes, earlyLate]);
   const days = useMemo(() => freeDays(kept.shown, zone), [kept, zone]);
   const day = days.find((d) => d.day === dayKey) || days[0] || null;
-  const shownDays = days.slice(from, from + DAYS_SHOWN);
-  useEffect(() => { if (day && !shownDays.some((d) => d.day === day.day)) setFrom(Math.max(0, Math.floor(days.indexOf(day) / DAYS_SHOWN) * DAYS_SHOWN)); }, [day, days, shownDays]);
+  const free = useMemo(() => new Set(days.map((d) => d.day)), [days]);
+  const shownMonth = month || (day ? monthOf(day.day) : monthOf(getLocalDateKey()));
+  const firstMonth = days.length ? monthOf(days[0].day) : shownMonth;
+  const lastMonth = days.length ? monthOf(days[days.length - 1].day) : shownMonth;
   useEffect(() => {
     let live = true;
     if (!mine || !visitor || !day) { setEvents([]); return undefined; }
@@ -93,20 +105,35 @@ function TimePicker({ starts, zone, minutes, chosen, onChoose, earlyLate, setEar
     );
   }
   const time = (s) => (
-    <button key={s.getTime()} type="button" role="radio" aria-checked={chosen?.getTime() === s.getTime()} className="ds-answer cc-book-time" onClick={() => onChoose(s)}>{clockWords(s, zone)}</button>
+    <button key={s.getTime()} type="button" role="radio" aria-checked={chosen?.getTime() === s.getTime()} className="ds-answer ds-answer--box cc-book-time" onClick={() => onChoose(s)}>{clockWords(s, zone)}</button>
   );
   const lay = mine && visitor ? visitorDay({ starts: day.starts, events, zone, minutes }) : null;
   const pct = (m) => `${((m - lay.fromMin) / (lay.toMin - lay.fromMin)) * 100}%`;
+  const goMonth = (by) => {
+    const next = stepMonth(shownMonth, by);
+    setMonth(next);
+    const first = days.find((d) => monthOf(d.day) === next);
+    if (first) { setDayKey(first.day); onChoose(null); }
+  };
   return (
     <>
-      <div className="cc-seg cc-book-days"><InlineChoice ariaLabel="Day" form="pills" options={shownDays.map((d) => ({ value: d.day, label: d.label }))} value={day.day} onChange={(v) => { setDayKey(v); onChoose(null); }} /></div>
-      {(from > 0 || from + DAYS_SHOWN < days.length) && (
-        <div className="cc-acts cc-book-more">
-          {from > 0 && <button type="button" className="ds-link" onClick={() => { setFrom(from - DAYS_SHOWN); setDayKey(days[from - DAYS_SHOWN].day); onChoose(null); }}>Earlier days</button>}
-          {from + DAYS_SHOWN < days.length && <button type="button" className="ds-link" onClick={() => { setFrom(from + DAYS_SHOWN); setDayKey(days[from + DAYS_SHOWN].day); onChoose(null); }}>Later days</button>}
+      <div className="cc-book-monthbar">
+        <h2 className="ds-q">{monthTitle(shownMonth)}</h2>
+        <div className="cc-book-monthnav">
+          <button type="button" className="ds-btn ds-btn--outline ds-btn--square" aria-label="Previous month" disabled={shownMonth <= firstMonth} onClick={() => goMonth(-1)}><Chevron direction="left" /></button>
+          <button type="button" className="ds-btn ds-btn--outline ds-btn--square" aria-label="Next month" disabled={shownMonth >= lastMonth} onClick={() => goMonth(1)}><Chevron direction="right" /></button>
         </div>
-      )}
-      {!lay && <div className="cc-book-times" role="radiogroup" aria-label={`Times on ${day.title}, ${zoneLabel(zone)}`}>{day.starts.map(time)}</div>}
+      </div>
+      <MonthGrid
+        month={shownMonth}
+        today={getLocalDateKey()}
+        selected={day.day}
+        available={(k) => free.has(k)}
+        onSelect={(k) => { if (free.has(k)) { setDayKey(k); onChoose(null); } }}
+        label={`${monthTitle(shownMonth)}. ${BOOKING.dayLabel}`}
+      />
+      <div className="ds-open-label cc-book-dayname">{dayTitle(day.day)}</div>
+      {!lay && <div className="ds-choices cc-book-times" role="radiogroup" aria-label={`Times on ${day.title}, ${zoneLabel(zone)}`}>{day.starts.map(time)}</div>}
       {lay && (
         <div className="cc-book-both" style={{ '--book-hours': lay.hours.length }}>
           <div className="cc-book-both-head"><span /><span>Free times</span><span>{visitor.label}</span></div>
@@ -126,6 +153,20 @@ function TimePicker({ starts, zone, minutes, chosen, onChoose, earlyLate, setEar
         {(kept.hidden > 0 || earlyLate) && toggle}
       </div>
     </>
+  );
+}
+
+/** "Times are in New York time." with a quiet link that opens the time zone's drop-down. */
+function ZoneLine({ zone, onZone }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="cc-book-zoneline">
+      <p className="cc-book-note">
+        {BOOKING.zoneLine(zoneLabel(zone))}{' '}
+        {!open && <button type="button" className="ds-link cc-book-zonelink" aria-expanded={false} onClick={() => setOpen(true)}>{BOOKING.zoneEdit}</button>}
+      </p>
+      {open && <div className="cc-field cc-book-zone"><Dropdown label="Your time zone" options={visitorZones(deviceZone(), [zone])} value={zone} onChange={onZone} /></div>}
+    </div>
   );
 }
 
@@ -158,6 +199,7 @@ export function BookingPage() {
   const [problem, setProblem] = useState(null);
   const [booked, setBooked] = useState(null);
   const [emailed, setEmailed] = useState(false);
+  const [step, setStep] = useState('time'); // 'time', then 'details' (the example's two screens)
   const busy = useRef(false);
   const visitor = useMemo(() => visitorCalendar(), []);
   const data = page?.data || null;
@@ -188,27 +230,26 @@ export function BookingPage() {
   const meta = [who, callPlaceLine(data.minutes, data.place_kind)].filter(Boolean);
   if (booked) {
     const title = who ? `${data.name} ${who.toLowerCase()}` : data.name;
+    // "You're booked": a centred short message (sign-in rule 49), its one button and one link.
     return (
       <Frame message>
-        <PageHeader title={data.name} meta={meta} />
-        <p className="cc-book-done" role="status">You’re booked for {bookedWhenWords(booked.starts_at, booked.time_zone)}.</p>
-        {emailed && <p className="cc-quiet">A confirmation is on its way to your email.</p>}
+        <PageOpening title={BOOKING.bookedTitle} line={`${bookedWhenWords(booked.starts_at, booked.time_zone)}. ${emailed ? 'The details are on their way to your email.' : 'Keep this page’s link to move or cancel later.'}`} />
+        <span className="ds-sr" role="status">You’re booked for {bookedWhenWords(booked.starts_at, booked.time_zone)}.</span>
         <div className="cc-acts cc-book-after">
           <AddToCalendar uid={booked.guest_key} title={title} startsAt={booked.starts_at} endsAt={booked.ends_at} location={data.place_kind === 'zoom' ? 'Zoom' : ''} />
           <a className="ds-link" href={BOOK_PATHS.mine(booked.guest_key)}>Move or cancel this call</a>
         </div>
-        <p className="cc-note">Keep this page’s link to move or cancel later.</p>
       </Frame>
     );
   }
-  if (!isOpen) return <Frame message><PageHeader title={data.name} meta={meta} /><p className="cc-quiet" role="status">{bookingWords(data.state)}</p></Frame>;
+  if (!isOpen) return <Frame message><PageOpening label={meta.join(', ')} title={data.name} /><p className="cc-quiet" role="status">{bookingWords(data.state)}</p></Frame>;
 
   const questions = (Array.isArray(data.questions) ? data.questions : []).filter((q) => questionLabel(q));
   const at = (k) => (problem?.at === k ? <p className="cc-problem" role="alert">{problem.line}</p> : null);
   const book = async (e) => {
     e.preventDefault();
     if (busy.current) return;
-    if (!chosen) { setProblem({ at: 'form', line: BOOKING_WORDS.pick }); return; }
+    if (!chosen) { setStep('time'); setProblem({ at: 'times', line: BOOKING_WORDS.pick }); return; }
     if (!clean(name)) { setProblem({ at: 'name', line: BOOKING_WORDS.name }); return; }
     if (!isEmail(clean(email).toLowerCase())) { setProblem({ at: 'email', line: BOOKING_WORDS.email }); return; }
     const missing = questions.find((q) => q.required && !clean(answers[q.id]));
@@ -224,6 +265,7 @@ export function BookingPage() {
         askBookingEmail(answer.data.guest_key, 'booked').then((r) => setEmailed(r.sent));
       } else if (status === 'taken') {
         setChosen(null);
+        setStep('time');
         setProblem({ at: 'times', line: bookingWords('taken') });
         loadTimes();
       } else setProblem({ at: ['name', 'email'].includes(status) ? status : 'form', line: bookingWords(status) });
@@ -231,21 +273,17 @@ export function BookingPage() {
       setProblem({ at: 'form', line: failed() });
     } finally { busy.current = false; }
   };
-  return (
-    <Frame>
-      <PageHeader title={data.name} meta={meta} />
-      {data.description && <p className="cc-quiet">{data.description}</p>}
-      <div className="cc-field cc-book-zone"><Dropdown label="Your time zone" options={visitorZones(deviceZone(), [zone])} value={zone} onChange={(z) => { setZone(z); setChosen(null); setProblem(null); }} /></div>
-      {starts === null ? <div role="status" aria-label="Loading" /> : (
-        <TimePicker starts={starts} zone={zone} minutes={data.minutes} chosen={chosen} onChoose={(s) => { setChosen(s); setProblem(null); }} earlyLate={earlyLate} setEarlyLate={(v) => { setEarlyLate(v); setChosen(null); }} visitor={visitor} />
-      )}
-      {at('times')}
-      {chosen && (
+  const label = data.coach_first_name ? `With ${data.coach_first_name}` : null;
+
+  if (step === 'details' && chosen) {
+    return (
+      <Frame mark={false}>
+        <MoreLink back className="cc-book-back" onClick={() => { setStep('time'); setProblem(null); }}>{BOOKING.back}</MoreLink>
+        <PageOpening label={<span className="cc-book-when" role="status">{bothTimes(chosen, zone, data.coach_time_zone || zone)}</span>} title={BOOKING.detailsTitle} line={BOOKING.detailsLine(data.coach_first_name)} />
+        {holiday && <p className="cc-book-read" role="status">{holiday}</p>}
         <form className="cc-book-form" onSubmit={book} noValidate>
-          <p className="cc-book-when" role="status">{bothTimes(chosen, zone, data.coach_time_zone || zone)}</p>
-          {holiday && <p className="cc-book-read" role="status">{holiday}</p>}
-          <div className="cc-field"><TextField label="Your name" value={name} autoComplete="name" maxLength={120} onChange={(e) => { setName(e.target.value); setProblem(null); }} />{at('name')}</div>
-          <div className="cc-field"><TextField label="Your email" type="email" value={email} autoComplete="email" onChange={(e) => { setEmail(e.target.value); setProblem(null); }} />{at('email')}</div>
+          <div className="cc-field"><TextField label={BOOKING.name} value={name} autoComplete="name" maxLength={120} onChange={(e) => { setName(e.target.value); setProblem(null); }} />{at('name')}</div>
+          <div className="cc-field"><TextField label={BOOKING.email} type="email" value={email} autoComplete="email" onChange={(e) => { setEmail(e.target.value); setProblem(null); }} />{at('email')}</div>
           {questions.map((q) => (
             <div key={q.id} className="cc-field">
               {q.kind === 'short'
@@ -255,11 +293,23 @@ export function BookingPage() {
             </div>
           ))}
           {at('form')}
-          <div className="cc-acts"><Button variant="primary" type="submit">{bookButtonWords(chosen, zone)}</Button></div>
+          <Button variant="primary" type="submit" className="cc-book-go">Book my call</Button>
         </form>
+      </Frame>
+    );
+  }
+
+  return (
+    <Frame>
+      <PageOpening label={label} title={data.name} line={bookingLine({ minutes: data.minutes, zoom: data.place_kind === 'zoom', description: data.description })} />
+      {starts === null ? <div role="status" aria-label="Loading" /> : (
+        <TimePicker starts={starts} zone={zone} minutes={data.minutes} chosen={chosen} onChoose={(s) => { setChosen(s); setProblem(null); }} earlyLate={earlyLate} setEarlyLate={(v) => { setEarlyLate(v); setChosen(null); }} visitor={visitor} />
       )}
-      {!chosen && at('form')}
-      <p className="cc-quiet cc-book-foot">{bookingFootLine(data.notice_hours ?? 24, ahead)}</p>
+      <ZoneLine zone={zone} onZone={(z) => { setZone(z); setChosen(null); setProblem(null); }} />
+      {at('times')}
+      {at('form')}
+      {starts && starts.length > 0 && <Button variant="primary" className="cc-book-go" onClick={() => { if (!chosen) { setProblem({ at: 'times', line: BOOKING_WORDS.pick }); return; } setProblem(null); setStep('details'); }}>{BOOKING.continue}</Button>}
+      <p className="cc-book-note cc-book-foot">{bookingFootLine(data.notice_hours ?? 24, ahead)}</p>
     </Frame>
   );
 }
@@ -290,7 +340,7 @@ export function BookingMine() {
   const who = b.coach_first_name ? `With ${b.coach_first_name}` : null;
   const meta = [who, callPlaceLine(b.minutes, b.place_kind)].filter(Boolean);
   const title = who ? `${b.call_name} ${who.toLowerCase()}` : b.call_name;
-  const head = <PageHeader title={b.call_name} meta={meta} />;
+  const head = <PageOpening label={meta.join(', ')} title={b.call_name} />;
   if (b.status !== 'booked') return <Frame message>{head}<p className="cc-quiet" role="status">{said || BOOKING_WORDS.cancelled}</p></Frame>;
   const when = <p className="cc-book-done" role="status">{said ? `${said} ` : ''}Your call is on {bookedWhenWords(b.starts_at, zone)}.</p>;
   if (b.past) return <Frame message>{head}{when}</Frame>;
@@ -384,7 +434,7 @@ export function PollVote() {
   if (page.down) return <Calm title="Times for a call">{failed()}</Calm>;
   if (!p) return <Calm title="Times for a call">{BOOKING_WORDS.not_found}</Calm>;
   const meta = [p.coach_first_name ? `With ${p.coach_first_name}` : null, callPlaceLine(p.minutes, p.place_kind)].filter(Boolean);
-  const head = <PageHeader title={p.title} meta={meta} />;
+  const head = <PageOpening label={meta.join(', ')} title={p.title} />;
   if (p.status === 'confirmed' && p.confirmed) {
     return (
       <Frame message>

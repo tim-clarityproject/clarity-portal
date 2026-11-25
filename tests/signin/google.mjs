@@ -80,10 +80,11 @@ const profileWrites = (calls) => calls.filter((c) => c.path?.endsWith('/rest/v1/
   const v = await visit({ who: 'fresh' });
   const { page, state, calls } = v;
   await page.goto(`${APP}/auth/login`);
-  await page.waitForSelector('.si-col .ds-google');
+  await page.waitForSelector('.si-col .si-google');
   const box = await google(page).boundingBox();
   const emailBox = await page.locator('input[type=email]').boundingBox();
-  pass('Sign in: Continue with Google sits above Email', box.y + box.height < emailBox.y, `${box.y} then ${emailBox.y}`);
+  // The 25 Nov example (polish 1, rule 22): Continue with Google under Sign in and "or" (rule 17's "above email" gives way on look).
+  pass('Sign in: Continue with Google sits under Email and the Sign in button', box.y > emailBox.y + emailBox.height, `${box.y} after ${emailBox.y}`);
   await google(page).click();
   await page.waitForURL(/\/auth\/before-you-start$/, { timeout: 20000 });
   const a = state.authorize[0] || {};
@@ -128,9 +129,10 @@ const profileWrites = (calls) => calls.filter((c) => c.path?.endsWith('/rest/v1/
   const v = await visit({ who: 'fresh' });
   const { page, state } = v;
   await page.goto(`${APP}/auth/sign-up`);
-  await page.waitForSelector('.si-col .ds-google');
-  const order = await page.evaluate(() => [...document.querySelectorAll('.si-col .ds-google, .si-col .si-field label')].map((el) => el.innerText.trim()));
-  pass('Create my account: Google above First name, Email, Password', JSON.stringify(order) === JSON.stringify(['Continue with Google', 'First name', 'Email', 'Password']), order.join(' | '));
+  await page.waitForSelector('.si-col .si-google');
+  const order = await page.evaluate(() => [...document.querySelectorAll('.si-col .si-google, .si-col .si-field label')].map((el) => el.innerText.trim()));
+  // The 25 Nov example's order (polish 1, rule 22): the boxes, then "or" and Continue with Google under the main button.
+  pass('Create my account: First name, Email, Password, then Continue with Google', JSON.stringify(order) === JSON.stringify(['First name', 'Email', 'Password', 'Continue with Google']), order.join(' | '));
   await google(page).click();
   await sleep(500);
   pass('Continue with Google without the tick says “Tick the box to carry on.”', (await message(page)) === '! Tick the box to carry on.', await message(page));
@@ -184,7 +186,7 @@ for (const from of ['/auth/login', '/auth/sign-up']) {
   if (from === '/auth/sign-up') await page.getByRole('checkbox').click();
   await google(page).click();
   await page.waitForURL(new RegExp(`${from}$`), { timeout: 20000 });
-  await page.waitForSelector('.si-col .ds-google');
+  await page.waitForSelector('.si-col .si-google');
   await sleep(400);
   pass(`cancelled at Google from ${from}: back on that page`, path(page) === from);
   pass(`cancelled at Google from ${from}: no message`, (await page.locator('.si-err').count()) === 0, await message(page));
@@ -210,7 +212,7 @@ for (const [name, opts] of [['Google answers with an error', { back: 'miss' }], 
   const v = await visit({ who: 'fresh', phone: true });
   const { page, state } = v;
   await page.goto(`${APP}/auth/login`);
-  await page.waitForSelector('.si-col .ds-google');
+  await page.waitForSelector('.si-col .si-google');
   await sleep(300);
   await v.ctx.setOffline(true);
   await sleep(300);
@@ -251,7 +253,7 @@ for (const [name, opts] of [['Google answers with an error', { back: 'miss' }], 
   // Ticked on Create my account, then Google left with the browser's own
   // Back, so the tick was never used. Minutes later, Sign in with Google.
   await page.goto(`${APP}/auth/sign-up`);
-  await page.waitForSelector('.si-col .ds-google');
+  await page.waitForSelector('.si-col .si-google');
   await page.evaluate(() => {
     sessionStorage.setItem('clarity-sign-in-tick', new Date(Date.now() - 60 * 1000).toISOString());
     sessionStorage.setItem('clarity-sign-in-google-from', '/auth/sign-up');
@@ -265,7 +267,7 @@ for (const [name, opts] of [['Google answers with an error', { back: 'miss' }], 
   // Held at Before you start, they go back to Sign in to use their email
   // instead: the page works, and the half-finished sign-in is let go.
   await page.goto(`${APP}/auth/login`);
-  await page.waitForSelector('.si-col .ds-google');
+  await page.waitForSelector('.si-col .si-google');
   await sleep(1500);
   pass('someone held at Before you start who opens Sign in stays on Sign in', path(page) === '/auth/login', path(page));
   pass('the half-finished Google sign-in is let go on this device', state.letGo === 1 && !(await page.evaluate(() => Boolean(localStorage.getItem('clarity-portal-auth')))), String(state.letGo));
@@ -292,7 +294,7 @@ for (const [name, opts] of [['Google answers with an error', { back: 'miss' }], 
   await v.ctx.close();
 }
 
-// ---------------------------------------------------------------- Google's own button
+// ---------------------------------------------------------------- Continue with Google's button (25 Nov reference)
 for (const mode of ['dark', 'light']) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, colorScheme: mode });
   await ctx.addInitScript((m) => { try { localStorage.setItem('clarity-colour-mode', m); } catch { /* the device's */ } }, mode);
@@ -301,12 +303,20 @@ for (const mode of ['dark', 'light']) {
   await page.goto(`${APP}/auth/login`);
   const g = await google(page).evaluate((el) => {
     const st = getComputedStyle(el);
-    return { bg: st.backgroundColor, edge: st.borderTopColor, text: st.color, font: st.fontFamily.split(',')[0].replace(/"/g, ''), weight: st.fontWeight, height: el.getBoundingClientRect().height, fills: [...el.querySelectorAll('svg path')].map((p) => p.getAttribute('fill')) };
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--btn-line)';
+    el.closest('.ui-root').appendChild(probe);
+    const line = getComputedStyle(probe).color;
+    probe.style.color = 'var(--text)';
+    const text = getComputedStyle(probe).color;
+    probe.remove();
+    const gl = el.querySelector('svg').getBoundingClientRect();
+    return { bg: st.backgroundColor, edge: st.boxShadow, line, words: st.color, text, font: st.fontFamily.split(',')[0].replace(/"/g, ''), weight: st.fontWeight, height: el.getBoundingClientRect().height, g: [gl.width, gl.height], fills: [...el.querySelectorAll('svg path')].map((p) => p.getAttribute('fill')) };
   });
-  const want = mode === 'dark' ? { bg: 'rgb(19, 19, 20)', edge: 'rgb(142, 145, 143)', text: 'rgb(227, 227, 227)' } : { bg: 'rgb(255, 255, 255)', edge: 'rgb(116, 119, 117)', text: 'rgb(31, 31, 31)' };
-  pass(`Google’s button, ${mode}: Google’s own ${mode} version`, g.bg === want.bg && g.edge === want.edge && g.text === want.text, JSON.stringify(g));
-  pass(`Google’s button, ${mode}: their four-colour G, never recoloured`, JSON.stringify(g.fills) === JSON.stringify(['#EA4335', '#4285F4', '#FBBC05', '#34A853']), g.fills.join(','));
-  pass(`Google’s button, ${mode}: Roboto Medium, 44px high`, g.font === 'Roboto' && g.weight === '500' && Math.abs(g.height - 44) < 0.6, `${g.font} ${g.weight} ${g.height}`);
+  // Since polish 1 (the 25 Nov reference, rule 22): a quiet outlined button, the boxes' height, with Google's own four-colour G at 18px before the words.
+  pass(`Google’s button, ${mode}: a quiet outlined button (no fill, the buttons' hairline, the text colour)`, g.bg === 'rgba(0, 0, 0, 0)' && g.edge.includes(g.line) && g.words === g.text, JSON.stringify(g));
+  pass(`Google’s button, ${mode}: their four-colour G at 18px, never recoloured`, JSON.stringify(g.fills) === JSON.stringify(['#EA4335', '#4285F4', '#FBBC05', '#34A853']) && g.g.every((v) => Math.abs(v - 18) < 0.1), `${g.fills.join(',')} ${g.g.join(' by ')}`);
+  pass(`Google’s button, ${mode}: DM Sans, 56px high like the boxes`, g.font === 'DM Sans' && Math.abs(g.height - 56) < 0.6, `${g.font} ${g.weight} ${g.height}`);
   await ctx.close();
 }
 

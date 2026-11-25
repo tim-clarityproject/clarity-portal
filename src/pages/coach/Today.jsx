@@ -1,18 +1,20 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AddButton, Loading, OfferRow, PageHeader, useIsPhone, useToast } from '../../components/design';
-import { birthdaysOn, dayWords, possessive } from '../../lib/coach/model';
+import { AddLink, Button, Card, Loading, MoreLink, OfferRow, PageOpening, Row, Rows, useIsPhone, useToast } from '../../components/design';
+import { dayTitle } from '../../components/design/Blocks';
+import { COACH_TODAY, coachTodayLine, openSessionWords } from '../../content/pageLines/coach';
+import { birthdaysOn, firstName, possessive } from '../../lib/coach/model';
 import { loadCoach, rowsOf } from '../../lib/coach/store';
 import {
-  ATTENTION_FIRST, attentionRows, callLength, callsOn, clockTime, coveringRows, dayLoad, OFFERS, recapNudgeLine, todayOffer, todayTodos,
+  ATTENTION_FIRST, attentionRows, callsOn, clockTime, coveringRows, dayLoad, OFFERS, recapNudgeLine, todayOffer, todayTodos,
 } from '../../lib/coach/day';
 import { usePressure } from '../../lib/coach/dayData';
 import { clockChangeLines, coachZoneOf } from '../../lib/coach/calendar';
 import { deviceZone } from '../../lib/time/index.js';
-import { InlineLink, Row, TextLink, useCoachPortal } from './parts';
+import { InlineLink, TextLink, useCoachPortal } from './parts';
 import { QuickAddPanel, TodoBulkBar, TodoList, TodoPanel, useTodoPicks } from './todoParts';
 import {
-  CallRow, CapacityFigures, TodayFinances, ClosePanel, EnergyPanel, MovePanel, OverLine, OverPanel, PlanPanel,
+  ThisMonthCard, ThisWeekRows, ClosePanel, EnergyPanel, MovePanel, OverLine, OverPanel, PlanPanel,
   ReviewPanel, useCallWords, useDayRows,
 } from './todayParts';
 import NameNote from './NameNote';
@@ -56,15 +58,6 @@ function usePutOff(todayKey) {
     return next;
   });
   return [off, putOff];
-}
-
-function Section({ title, aside, headRef, children }) {
-  return (
-    <section className="ds-section cc-part cc-today-part">
-      <div className="ds-section-head cc-today-head"><h2 className="ds-section-title" ref={headRef} tabIndex={headRef ? -1 : undefined}>{title}</h2>{aside}</div>
-      {children}
-    </section>
-  );
 }
 
 export default function Today() {
@@ -153,136 +146,160 @@ export default function Today() {
     return () => cancelAnimationFrame(frame);
   }, [panel]);
   const openBrief = (id) => { setBriefAsked(true); setBriefId(id); };
+  const openCall = (s, w) => (w.group ? w.to && navigate(w.to) : openBrief(s.id));
+
+  // The page opening (polish 1, rule 12; the example's Coach Today): the date, TODAY, one line, and the next session's
+  // main button. The line waits while only the first screen is here, so it never counts what hasn't come yet (rule 49).
+  const [needsCount, setNeedsCount] = useState(null);
+  const nowMs = now instanceof Date ? now.getTime() : Number(now) || Date.now();
+  // The next session still to come: today's, else the next one booked (never a cancelled or moved one).
+  const nextCall = useMemo(() => {
+    const ends = (x) => new Date(x.starts_at).getTime() + (Number(x.minutes) || 60) * 60000;
+    return calls.find((x) => ends(x) > nowMs)
+      || [...(sessions || [])].filter((x) => x.starts_at && ends(x) > nowMs && (!x.outcome || x.outcome === 'held')).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))[0]
+      || null;
+  }, [calls, sessions, nowMs]);
+  const nextWords = nextCall ? callWords(nextCall) : null;
+  const line = partial || needsCount === null ? null : coachTodayLine({ sessions: calls.length, needs: needsCount });
+  const action = nextCall && nextWords ? (
+    <Button variant="primary" onClick={() => openCall(nextCall, nextWords)}>
+      {openSessionWords({ first: firstName(nextWords.name), group: nextWords.group ? nextWords.name : null })}
+    </Button>
+  ) : null;
+
+  const needsCard = <NeedsYou todayKey={todayKey} partial={partial} onCount={setNeedsCount} />;
+  const sessionsCard = (
+    <Card label={COACH_TODAY.sessionsLabel} className="cc-part cc-today-sessions">
+      {calls.length === 0 ? <p className="cc-quiet">{COACH_TODAY.sessionsNone}</p> : (
+        <Rows label="Today’s calls" className="cc-today-calls">
+          {calls.map((s) => {
+            const w = callWords(s);
+            return <Row key={s.id} name={w.name} value={[clockTime(s.starts_at), w.facts[w.facts.length - 1]].filter(Boolean).join(', ')} onClick={() => openCall(s, w)} />;
+          })}
+        </Rows>
+      )}
+    </Card>
+  );
+  const todosCard = (
+    <Card
+      label={COACH_TODAY.todosLabel}
+      className="cc-part cc-today-todos"
+      add={(
+        <span className="cc-today-heads">
+          <MoreLink small onClick={() => navigate('/coach/todos')} aria-label="View all to-dos">{COACH_TODAY.todosAll}</MoreLink>
+          <AddLink label="Add to-do" expanded={panel === 'add'} onClick={() => setPanel('add')} />
+        </span>
+      )}
+    >
+      <h3 className="ds-sr" ref={todosRef} tabIndex={-1}>{COACH_TODAY.todosLabel}</h3>
+      {today.work.length === 0 && today.afterWork.length === 0 && <p className="cc-quiet">{COACH_TODAY.todosNone}</p>}
+      {today.work.length > 0 && <TodoList todos={today.work} view="today" label="To-dos" picks={picks} onOpen={setOpenId} reorder dropPatch={{ after_work: false }} />}
+      <OverLine over={load.over} onOpen={() => setPanel('over')} />
+      {today.afterWork.length > 0 && (
+        <>
+          <h3 className="cc-todo-group">After work</h3>
+          <TodoList todos={today.afterWork} view="today" label="After work" picks={picks} onOpen={setOpenId} reorder dropPatch={{ after_work: true }} />
+        </>
+      )}
+    </Card>
+  );
+  const attentionCard = (attention.length > 0 || partial) && (
+    <Card label={COACH_TODAY.attentionLabel} className="cc-part cc-today-attention">
+      {/* While only the first screen is here the list waits on its crosshair: overdue invoices come with the rest
+          and go first, so rows drawn now would be pushed out (coach rule 49; functionality tester, follow-up 5). */}
+      {partial ? <Loading label="Loading who needs attention" /> : (
+        <Rows className="cc-today-atts">
+          {attentionShown.map((r) => {
+            const act = r.reminderId ? <TextLink onClick={() => sendAgain(r.reminderId)}>{r.action}</TextLink>
+              : r.to && r.action && (!r.later || !LIVE) ? <TextLink onClick={() => navigate(r.to, r.state ? { state: r.state } : undefined)}>{r.action}</TextLink> : null;
+            return <Row key={r.key} name={r.name} sub={r.line} value={act} className="cc-today-attrow" />;
+          })}
+        </Rows>
+      )}
+      {/* The count waits while only the first screen is here: overdue invoices (061) and every coach's clients come
+          with the rest, so "Show all" would count up a moment later (first screen check, Phase 6b run 2). */}
+      {attention.length > ATTENTION_FIRST && !partial && (
+        <div className="cc-acts cc-today-more"><TextLink aria-expanded={allAttention} onClick={() => setAllAttention((v) => !v)}>{allAttention ? 'Show fewer' : `Show all ${countFigure(attention.length)}`}</TextLink></div>
+      )}
+    </Card>
+  );
 
   return (
-    <div className="cc-page">
-      <div className="cc-col">
-        <PageHeader title="Today" meta={[dayWords(todayKey, todayKey)]} />
-        {/* The owner's Finances line (Phase 6b run 2; M11 C1): waits unshown while only a first screen is here (rule 49). */}
-        {isOwner && !partial && <TodayFinances />}
-        {birthdays.map((p) => (
-          <p key={p.id} className="cc-quiet">
-            It’s <InlineLink onClick={() => setNote(p)}>{possessive(p.name)}</InlineLink> birthday today.
-          </p>
-        ))}
-        {clockLines.map((line) => <p key={line} className="cc-quiet">{line}</p>)}
-        {nudge && (
-          <p className="cc-quiet cc-today-recap">
-            <span>{nudge.line}</span>
-            <TextLink onClick={() => navigate(`/coach/sessions/${nudge.session.id}`)}>Send the recap</TextLink>
-          </p>
+    <div className="cc-page cc-today-page">
+      <div className="cc-col cc-today-col">
+        <PageOpening label={dayTitle(todayKey)} title="Today" line={line} action={action} />
+        {(birthdays.length > 0 || clockLines.length > 0 || nudge) && (
+          <div className="cc-today-quiet">
+            {birthdays.map((p) => (
+              <p key={p.id} className="cc-quiet">
+                It’s <InlineLink onClick={() => setNote(p)}>{possessive(p.name)}</InlineLink> birthday today.
+              </p>
+            ))}
+            {clockLines.map((l) => <p key={l} className="cc-quiet">{l}</p>)}
+            {nudge && (
+              <p className="cc-quiet cc-today-recap">
+                <span>{nudge.line}</span>
+                <TextLink onClick={() => navigate(`/coach/sessions/${nudge.session.id}`)}>Send the recap</TextLink>
+              </p>
+            )}
+          </div>
         )}
 
         {offer && <OfferRow className="cc-today-offer" action={OFFERS[offer].title} detail={OFFERS[offer].time} onTake={() => setPanel(offer)} onNotNow={() => putOff(offer)} />}
 
-        <Section title="Calls">
-          {calls.length === 0 && <p className="cc-quiet">No calls today.</p>}
-          {calls.length > 0 && (
-            <div className="cc-today-calls" role="list" aria-label="Today’s calls">
-              {calls.map((s) => {
-                const w = callWords(s);
-                const length = callLength(s);
-                return (
-                  <CallRow
-                    key={s.id}
-                    time={clockTime(s.starts_at)}
-                    name={w.name}
-                    facts={w.facts}
-                    length={length}
-                    label={`${clockTime(s.starts_at)}, ${w.name}, ${[...w.facts, length].join(', ')}. ${w.group ? 'Open the group' : 'Open the brief'}`}
-                    onOpen={() => (w.group ? w.to && navigate(w.to) : openBrief(s.id))}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </Section>
-
-        <Section title="To-dos" headRef={todosRef} aside={<TextLink onClick={() => navigate('/coach/todos')}>View all to-dos</TextLink>}>
-          {today.work.length === 0 && today.afterWork.length === 0 && <p className="cc-quiet">Nothing is planned for today.</p>}
-          {today.work.length > 0 && <TodoList todos={today.work} view="today" label="To-dos" picks={picks} onOpen={setOpenId} reorder dropPatch={{ after_work: false }} />}
-          <OverLine over={load.over} onOpen={() => setPanel('over')} />
-          {today.afterWork.length > 0 && (
-            <>
-              <h3 className="cc-todo-group">After work</h3>
-              <TodoList todos={today.afterWork} view="today" label="After work" picks={picks} onOpen={setOpenId} reorder dropPatch={{ after_work: true }} />
-            </>
-          )}
-          <div className="cc-add"><AddButton onClick={() => setPanel('add')}>Add to-do</AddButton></div>
-        </Section>
-
-        {/* Phase 6b run 3: Group D's Needs you, every drafted next step, above Who needs attention (risk 11). */}
-        <NeedsYou todayKey={todayKey} partial={partial} />
-        {(attention.length > 0 || partial) && (
-          <Section title="Who needs attention">
-            {/* While only the first screen is here the list waits on its crosshair: overdue invoices come with the rest
-                and go first, so rows drawn now would be pushed out (coach rule 49; functionality tester, follow-up 5). */}
-            {partial ? <Loading label="Loading who needs attention" /> : (
-            <div className="cc-today-atts" role="list" aria-label="Who needs attention">
-              {attentionShown.map((r) => (
-                <div key={r.key} className="cc-today-att" role="listitem">
-                  <b>{r.name}</b>
-                  <small>{r.line}</small>
-                  {r.reminderId && <TextLink onClick={() => sendAgain(r.reminderId)}>{r.action}</TextLink>}
-                  {r.to && r.action && (!r.later || !LIVE) && <TextLink onClick={() => navigate(r.to, r.state ? { state: r.state } : undefined)}>{r.action}</TextLink>}
-                </div>
-              ))}
-            </div>
+        {/* Two columns on a laptop (the example's .cols): what needs the coach and today's work on the left, the month,
+            the week and the quieter lists on the right. On a phone the right column comes first, as the example draws. */}
+        <div className="ds-cols ds-cols--needs-first cc-today-cols">
+          <div>
+            {needsCard}
+            {sessionsCard}
+            {todosCard}
+            {attentionCard}
+            {covering.length > 0 && (
+              <Card label="Covering" className="cc-part">
+                <Rows label="Clients you’re covering">
+                  {covering.map((r) => <Row key={r.id} name={r.title} sub={r.facts.filter(Boolean).join(', ')} />)}
+                </Rows>
+              </Card>
             )}
-            {/* The count waits while only the first screen is here: overdue invoices (061) and every coach's clients come
-                with the rest, so "Show all" would count up a moment later (first screen check, Phase 6b run 2). */}
-            {attention.length > ATTENTION_FIRST && partial && <Loading label="Loading who needs attention" />}
-            {attention.length > ATTENTION_FIRST && !partial && (
-              <div className="cc-acts cc-today-more"><TextLink aria-expanded={allAttention} onClick={() => setAllAttention((v) => !v)}>{allAttention ? 'Show fewer' : `Show all ${countFigure(attention.length)}`}</TextLink></div>
+          </div>
+          <div>
+            {/* The owner's month (Phase 6b run 2; M11 C1): waits unshown while only a first screen is here (rule 49). */}
+            {isOwner && !partial && <ThisMonthCard />}
+            <Card label={COACH_TODAY.weekLabel} className="cc-part cc-today-week" link={{ children: COACH_TODAY.weekEdit, 'aria-label': 'Edit capacity', onClick: () => navigate('/coach/settings/hours') }}>
+              <ThisWeekRows sessions={sessions} target={coach.capacity_hours_week} todayKey={todayKey} />
+            </Card>
+            {/* An associate's own hours and pay this month, never a business figure (Phase 6b run 2, step 5; M11 C13). */}
+            {!isOwner && (
+              <Card label="Your hours and pay" className="cc-part">
+                <YourHoursAndPay />
+              </Card>
             )}
-          </Section>
-        )}
-
-        {covering.length > 0 && (
-          <Section title="Covering">
-            <div className="cc-rows cc-today-rows" role="list" aria-label="Clients you’re covering">
-              {covering.map((r) => <div key={r.id} role="listitem" aria-label={r.label}><Row title={r.title} facts={r.facts} /></div>)}
-            </div>
-          </Section>
-        )}
-
-        {keep && (
-          <Section title={keep.title}>
-            {keep.people.length > 0 && (
-              <div className="cc-rows cc-today-rows">
-                {keep.people.map((p) => <Row key={p.id} title={p.name} facts={[p.sub]} label={`${p.line} Open`} onClick={() => navigate(networkPath({ person: p.id }))} />)}
-              </div>
+            {keep && (
+              <Card label={keep.title} className="cc-part cc-today-keep">
+                {keep.people.length > 0 && (
+                  <Rows>
+                    {keep.people.map((p) => <Row key={p.id} name={p.name} sub={p.sub} onClick={() => navigate(networkPath({ person: p.id }))} />)}
+                  </Rows>
+                )}
+                {keep.more && <div className="cc-acts cc-today-more"><TextLink onClick={() => navigate(networkPath())}>{keep.more}</TextLink></div>}
+                {keep.checkIns.length > 0 && (
+                  <Rows>
+                    {keep.checkIns.map((c) => <Row key={c.id} name={c.name} sub={c.sub} value={c.when} onClick={() => setCheckInId(c.id)} />)}
+                  </Rows>
+                )}
+                {dueCheckIns.length > keep.checkIns.length && <div className="cc-acts cc-today-more"><TextLink onClick={() => navigate('/coach/clients/past')}>Show all {countFigure(dueCheckIns.length)} check-ins</TextLink></div>}
+              </Card>
             )}
-            {keep.more && <div className="cc-acts cc-today-more"><TextLink onClick={() => navigate(networkPath())}>{keep.more}</TextLink></div>}
-            {keep.checkIns.length > 0 && (
-              <div className="cc-rows cc-today-rows">
-                {keep.checkIns.map((c) => <Row key={c.id} title={c.name} facts={[c.sub]} when={c.when} label={`${c.line} Open the note`} onClick={() => setCheckInId(c.id)} />)}
-              </div>
+            {pressure.length > 0 && (
+              <Card label="Pressure forecast" className="cc-part">
+                <Rows>
+                  {pressure.map((r) => <Row key={r.key} name={r.name} sub={isPhone ? r.short : r.moment} value={r.when} onClick={() => navigate(`/coach/clients/${r.profileId}`)} />)}
+                </Rows>
+              </Card>
             )}
-            {dueCheckIns.length > keep.checkIns.length && <div className="cc-acts cc-today-more"><TextLink onClick={() => navigate('/coach/clients/past')}>Show all {countFigure(dueCheckIns.length)} check-ins</TextLink></div>}
-          </Section>
-        )}
-
-        {pressure.length > 0 && (
-          <Section title="Pressure forecast">
-            <div className="cc-rows cc-today-rows">
-              {pressure.map((r) => (
-                <Row key={r.key} title={r.name} facts={[isPhone ? r.short : r.moment]} when={r.when} label={`${r.name}, ${r.moment}, ${r.when}`} onClick={() => navigate(`/coach/clients/${r.profileId}`)} />
-              ))}
-            </div>
-          </Section>
-        )}
-
-        <Section title="Capacity" aside={<TextLink aria-label="Edit capacity" onClick={() => navigate('/coach/settings/hours')}>Edit</TextLink>}>
-          <CapacityFigures sessions={sessions} target={coach.capacity_hours_week} todayKey={todayKey} />
-        </Section>
-
-        {/* An associate's own hours and pay this month, never a business figure (Phase 6b run 2, step 5; M11 C13). */}
-        {!isOwner && (
-          <Section title="Your hours and pay">
-            <YourHoursAndPay />
-          </Section>
-        )}
+          </div>
+        </div>
 
         <NameNote profile={note} reason="It’s their birthday today." onClose={() => setNote(null)} />
       </div>

@@ -125,7 +125,12 @@
      the fill went the same way, leaving the tick in the page's colour on
      the page, so ticked and unticked looked the same. The shape takes the
      system's text colour and the tick the page's. */
-  .ui-root .ds-answer--pick[aria-pressed='true'] .ds-pick-mark,
+  .ui-root .ds-answer--pick[aria-pressed='true'] .ds-pick-mark {
+    forced-color-adjust: none;
+    background-color: CanvasText !important;
+    border-color: CanvasText !important;
+    color: Canvas !important;
+  }
   .ui-root .ds-check-box[aria-checked='true'] > span,
   .ui-root .ds-win-tick,
   .ui-root .ds-planstep--done .ds-planstep-mark {
@@ -133,7 +138,6 @@
     background-color: CanvasText !important;
     border-color: CanvasText !important;
   }
-  .ui-root .ds-answer--pick[aria-pressed='true'] .ds-pick-mark svg,
   .ui-root .ds-check-box[aria-checked='true'] svg,
   .ui-root .ds-win-tick svg,
   .ui-root .ds-planstep--done .ds-planstep-mark svg {
@@ -980,20 +984,21 @@
   }
 }
 
-/* No and Yes, or Poor to Excellent (M1 .seg and .rate): the gliding
-   switch's look since 22 Nov (Tim: the round pill toggle is retired). The
-   track, the options' size and words and the raised chosen option are the
-   shared `.ds-seg` (src/styles/buttons.css); the five words wrap onto a
-   second line inside the track on a phone rather than squeeze or push the
-   page sideways. */
-/* .ds-seg (below) is one line: the five words' own class wins (the UI
-   tester, 22 Nov: on a 390px phone Excellent ran 16px out of its track). */
-.ui-root .ds-seg.ds-log-press--rate:not(#_) {
-  flex-wrap: wrap;
-  /* Rows far enough apart that their 44px tap areas never overlap (:not(#_) as
-     buttons.css sets the switch's gap to 0 with it). */
-  row-gap: max(0px, calc(var(--tap-min) - var(--btn-h-phone) + 2 * var(--seg-pad)));
+/* No and Yes (M1 .seg): the joined switch (.ds-seg, src/styles/buttons.css).
+   Poor to Excellent (M1 .rate): answer boxes since Polish 1 (25 Nov
+   reference rule 7; blocks.css .ds-choices), on their own full-width line
+   under the name, so no word wraps inside a control. */
+.ui-root .ds-log-entry:has(> .ds-log-rate) {
+  flex: 1 1 100%;
+  display: block;
 }
+
+.ui-root .ds-log.ds-log--more:has(.ds-log-rate) {
+  grid-template-columns: minmax(0, 1fr) var(--tap-min);
+  grid-template-areas: "n m" "c c" "b b";
+}
+
+.ui-root .ds-choices.ds-log-rate { display: grid; }
 
 /* The week view's day boxes and day Yes and No (M1 .wkd, .wkt). */
 .ui-root .ds-logweek-days {
@@ -1522,14 +1527,15 @@
   outline-offset: var(--space-px2);
 }
 
-/* Field label, as the mock-up's "What needs doing?" */
+/* Field label, as the mock-up's "What needs doing?": 16px in the text
+   colour, 8px over its control (25 Nov reference .field label). */
 .ui-root .ds-field-label {
   display: block;
-  margin-bottom: var(--space-px10);
-  font-size: var(--fs-label-row);
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-text);
   line-height: var(--lh-text);
   letter-spacing: normal;
-  color: var(--text-2);
+  color: var(--text);
 }
 
 /* The big text box in panels (the shared AutoGrowTextarea, skinned). */
@@ -1567,7 +1573,7 @@
   justify-content: space-between;
   align-items: flex-end;
   gap: var(--space-px12);
-  margin: 0 0 var(--space-px10);
+  margin: 0 0 var(--space-2); /* 8px over its control (25 Nov reference .field label) */
   letter-spacing: normal;
 }
 
@@ -1578,9 +1584,9 @@
 .ui-root .ds-label-row-text {
   min-width: 0;
   font-family: var(--font-body);
-  font-size: var(--fs-label-row) !important;
+  font-size: var(--fs-text) !important;
   line-height: var(--lh-text);
-  color: var(--text-2);
+  color: var(--text);
   overflow-wrap: break-word;
 }
 
@@ -7756,10 +7762,17 @@
 
 .ui-root .ds-stepper-value--wide { min-width: calc(2 * var(--space-5)); }
 
-/* The Do list's rows (M5 pk): a second line and a circle that fills. */
+/* The Do list's rows (25 Nov example .pick): a 24px square on the left
+   that holds the order number once chosen, then the name and its second
+   line; a chosen row keeps the page colour with the text colour's edge. */
 .ui-root .ds-answer--pick {
-  justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-px14);
+}
+
+.ui-root .ds-answer.ds-answer--pick[aria-pressed='true'] {
+  background: transparent;
+  border-color: var(--text);
+  color: var(--text);
 }
 
 .ui-root .ds-pick-words {
@@ -7767,6 +7780,7 @@
   grid-template-columns: minmax(0, 1fr); /* a long word wraps instead of widening the row */
   gap: var(--space-px2);
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .ui-root .ds-pick-name {
@@ -7776,33 +7790,22 @@
 
 .ui-root .ds-pick-mark {
   flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--space-4);
-  height: var(--space-4);
+  display: grid;
+  place-items: center;
+  width: var(--checkbox-box);
+  height: var(--checkbox-box);
   box-sizing: border-box;
-  border-radius: 50%;
-  border: var(--line-w-strong) solid var(--field-line);
-}
-
-.ui-root .ds-pick-mark svg {
-  width: var(--tick-size);
-  height: var(--tick-size);
-  fill: none;
-  stroke: var(--on-text);
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0;
+  border-radius: var(--radius-box);
+  border: var(--line-w) solid var(--field-line);
+  font-size: var(--fs-meta);
+  line-height: 1;
+  color: var(--main-fg);
 }
 
 .ui-root .ds-answer--pick[aria-pressed='true'] .ds-pick-mark {
   background: var(--text);
   border-color: var(--text);
 }
-
-.ui-root .ds-answer--pick[aria-pressed='true'] .ds-pick-mark svg { opacity: 1; }
 
 /* Full: the rest grey out until one is unchosen (Tim, 23 Oct). */
 .ui-root .ds-answer.ds-answer--full,
@@ -11261,25 +11264,31 @@
   border-radius: var(--radius-offer);
 }
 
+/* The button is the action's one line; its box is the 44px tap area, centred
+   on that line (negative margins, so the row's rhythm is the words'). */
 .ui-root .ds-offer-take {
   all: unset;
   cursor: pointer;
   box-sizing: border-box;
-  flex: 1;
+  align-self: flex-start;
+  max-width: 100%;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: var(--space-px14);
   /* !important: the older phone rules give every button its own padding and height. */
-  min-height: var(--offer-h) !important;
+  min-height: var(--tap-min) !important;
+  margin-block: calc((var(--fs-text) * var(--lh-text) - var(--tap-min)) / 2);
   padding: 0 !important;
   border-radius: var(--radius-input);
+  white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
 }
 
+.ui-root .ds-offer-take b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
 /* No circle or icon (Tim, 18 Nov, follow-up 1): on hover the title is underlined, as a link. */
 @media (hover: hover) {
-  .ui-root .ds-offer-take:hover .ds-offer-words b {
+  .ui-root .ds-offer-take:hover b {
     text-decoration: underline;
     text-underline-offset: var(--space-1);
     text-decoration-color: var(--quiet-line);
@@ -11292,10 +11301,13 @@
 }
 
 .ui-root .ds-offer-words {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: var(--space-px2);
   min-width: 0;
+  min-height: var(--offer-h);
   line-height: var(--lh-text);
 }
 
@@ -11332,7 +11344,7 @@
     margin-left: auto;
   }
 
-  .ui-root .ds-offer--two .ds-offer-take {
+  .ui-root .ds-offer--two .ds-offer-words {
     flex-basis: 100%;
   }
 }

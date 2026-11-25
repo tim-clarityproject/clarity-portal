@@ -7,6 +7,7 @@ import { CODES_DIDNT_MAKE, CODES_NOT_YET, codesLeftSummary, COACH_AUTH_PATHS, CO
 import { loadCoachAuth, makeRecoveryCodes } from '../../lib/signIn/coachAuthData';
 import { CodeField, keepSixDigit, Line, MainButton, Message, Note, TextLink, Wait } from '../../components/signin/SignInParts';
 import { AccountPage } from './AccountPages';
+import { SIGN_IN_LINES } from '../../content/pageLines/signin';
 import { checkSixDigits, holdCodes } from './CoachAuth';
 import { goToStop } from '../../lib/signIn/flow';
 
@@ -51,14 +52,15 @@ function SecurityPage() {
     setAsking((now) => (now === what ? null : what));
   };
 
-  const carryOn = async (e) => {
-    e.preventDefault();
+  // `typed`: the six digits, when the sixth goes in by itself (polish 1, rule 23).
+  const carryOn = async (e, typed) => {
+    e?.preventDefault?.();
     if (busy.current || !asking) return undefined;
     setMessage(null);
     if (!auth?.factor) return setMessage(needsConnection(COACH_AUTH_WORDS.offline.security));
     busy.current = true;
     try {
-      const wrong = await checkSixDigits(auth.factor.id, code, COACH_AUTH_WORDS.offline.security);
+      const wrong = await checkSixDigits(auth.factor.id, typed ?? code, COACH_AUTH_WORDS.offline.security);
       if (wrong) { setCode(''); return setMessage(wrong); }
       if (asking === 'newPhone') return navigate(COACH_AUTH_PATHS.setUp, { state: { mode: 'newPhone' } });
       if (isOffline()) return setMessage(needsConnection(COACH_AUTH_WORDS.offline.security));
@@ -78,7 +80,7 @@ function SecurityPage() {
 
   const offline = auth && auth.isCoach === null;
   return (
-    <AccountPage title={W.title} onSubmit={carryOn}>
+    <AccountPage title={W.title} line={SIGN_IN_LINES.security} onSubmit={carryOn}>
       {auth === null ? <Wait>{' '}</Wait> : null}
       {offline ? <Line>{needsConnection(COACH_AUTH_WORDS.offline.security)}</Line> : null}
       {auth && !offline ? (
@@ -101,7 +103,7 @@ function SecurityPage() {
           {asking ? (
             <>
               <Line id={STEP_ID}>{keepSixDigit(W.currentCodeLine)}</Line>
-              <CodeField label={COACH_AUTH_WORDS.code.label} value={code} onDigits={setCode} />
+              <CodeField label={COACH_AUTH_WORDS.code.label} value={code} onDigits={(d) => { setCode(d); if (d) setMessage(null); }} onComplete={(d) => carryOn(null, d)} wrong={Boolean(message)} describedBy={STEP_ID} />
               <Message lines={message} />
               <div className="si-bwrap"><MainButton>{W.currentCodeButton}</MainButton></div>
             </>

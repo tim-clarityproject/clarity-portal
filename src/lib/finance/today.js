@@ -10,7 +10,7 @@ import { poundsWords } from './words.js';
 /**
  * @param {{ today: string, lines: object[], targets?: object[], cashShort?: string|null, overdueCount?: number }} a
  *   cashShort is the cash flow's todayShort ("Cash dips in May"), null when cash stays above the level Tim keeps
- * @returns {{ figure: string, urgent: string|null, text: string, aria: string }} text "November £2,300 of £5,000 · 1 overdue";
+ * @returns {{ figure: string, paid: string, target: string|null, urgent: string|null, text: string, aria: string }} text "November £2,300 of £5,000 · 1 overdue";
  *   aria "Finances. November £2,300 of £5,000. Cash dips in May."
  */
 export function todayFinanceLine({ today, lines, targets = [], cashShort = null, overdueCount = 0 }) {
@@ -21,6 +21,9 @@ export function todayFinanceLine({ today, lines, targets = [], cashShort = null,
   const urgent = cashShort || (overdueCount > 0 ? `${overdueCount} overdue` : null);
   return {
     figure,
+    // The figure's two halves on their own, for Today's This month card (polish 1: "£8,450 of £12,000").
+    paid: poundsWords(paid),
+    target: target > 0 ? poundsWords(target) : null,
     urgent,
     text: urgent ? `${figure} · ${urgent}` : figure,
     aria: `Finances. ${figure}.${urgent ? ` ${urgent.charAt(0).toUpperCase()}${urgent.slice(1)}.` : ''}`,

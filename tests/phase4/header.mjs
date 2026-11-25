@@ -7,11 +7,13 @@
 //
 //   node --import ./tests/scores/register.mjs tests/phase4/header.mjs [folder for screenshots]
 //
-// 1. The pill at 320, 360, 390 and 1280 wide, with the real mission, a
-//    1,000-character one and none: never "…" (no text-overflow: ellipsis,
-//    no "…" character), at most two lines, "My Mission" alone when it
-//    doesn't fit or under 360px, no sideways scroll, and it opens the full
-//    text. With no mission: grey "Add your Mission when you’re ready".
+// 1. My Mission at 320, 360, 390 and 1280 wide, with the real mission, a
+//    1,000-character one and none. Since Polish 1 (25 Nov reference .mission;
+//    replaces the two-line pill) it is one 40px box with a thin line in the
+//    frame's header: "My Mission" then the Mission on one line, ending with
+//    an ellipsis when it doesn't fit (the reference's own text-overflow), no
+//    sideways scroll, and it opens the full text. With no mission: grey
+//    "Add your Mission when you’re ready".
 // 2. With no mission, the pill opens the new plan's mission step, on a
 //    phone and on desktop, never the old Personal Operating Plan page.
 // 3. The notch: safe-area insets emulated through Chromium's DevTools
@@ -27,8 +29,9 @@
 //    a breath with reduced motion.
 // 6. Chat to [coach]: with one way (opens it), two ways (a small list),
 //    no coach, a coach with no way the portal can open, and offline.
-// 7. Measured against M2 and M3 (and breathe-orb.html, newer, for the
-//    button); approved differences are listed as NOTE.
+// 7. Measured against the 25 Nov reference (.mission, .phonehead; Polish 1
+//    replaced M2 and M3's header): the box 40px high with 14px sides, 13px
+//    words, 12px corners and a 1px line; on a phone the crosshair beside it.
 //
 // The header doesn't depend on the day or the time, so the clock isn't
 // fixed and the seed isn't changed.
@@ -158,37 +161,32 @@ async function open(page, route = '/welcome') {
   await until(async () => (await page.locator('.ds-loading').count()) === 0, 20000);
   await sleep(400);
 }
-const pillSel = (width) => (width < 769 ? '.hdr-phone .hdr-mis' : '.hdr-desktop .hdr-mis');
+// Polish 1: My Mission is the frame header's box on every width (DesignHeader's .hdr-mbox).
+const pillSel = () => '.hdr-frame .hdr-mbox';
 
-// Everything about the pill as laid out.
+// Everything about the box as laid out.
 function readPill(page, sel) {
   return page.evaluate((s) => {
     const pill = document.querySelector(s);
     if (!pill) return null;
-    const words = pill.querySelector('.hdr-mis-text');
-    const label = pill.querySelector('.hdr-mis-label');
+    const words = pill.querySelector('b');
     const cs = words ? getComputedStyle(words) : null;
-    const line = cs ? Number.parseFloat(cs.lineHeight) : 0;
-    const pad = cs ? Number.parseFloat(cs.paddingTop) + Number.parseFloat(cs.paddingBottom) : 0;
-    const hdr = document.querySelector('.hdr');
-    const ellipsis = [...hdr.querySelectorAll('*')].some((e) => getComputedStyle(e).textOverflow === 'ellipsis');
+    const hdr = pill.closest('.hdr');
     const pr = pill.getBoundingClientRect();
+    const frameMain = document.querySelector('.ds-frame-main');
     return {
-      wordsShown: Boolean(words) && cs.visibility !== 'hidden' && words.getBoundingClientRect().height > 0,
-      labelShown: Boolean(label) && getComputedStyle(label).display !== 'none',
-      lines: words && line ? Math.round((words.getBoundingClientRect().height - pad) / line) : 0,
-      clipped: words ? words.scrollHeight > words.clientHeight + 1 && cs.visibility !== 'hidden' : false,
-      sideways: words ? words.scrollWidth > words.clientWidth + 1 && cs.visibility !== 'hidden' : false,
+      wordsShown: Boolean(words) && cs.visibility !== 'hidden' && words.getBoundingClientRect().width > 0,
+      labelShown: /^My Mission/.test(pill.textContent.trim()),
+      oneLine: words ? Math.abs(words.getBoundingClientRect().height - parseFloat(cs.lineHeight || words.getBoundingClientRect().height)) < 2 || words.getBoundingClientRect().height < 24 : true,
+      cut: words ? words.scrollWidth > words.clientWidth + 1 : false,
+      ellipsisWhenCut: words ? cs.textOverflow === 'ellipsis' : false,
       text: words ? words.textContent : '',
       colour: cs ? cs.color : '',
       grey: getComputedStyle(pill.closest('.ui-root')).getPropertyValue('--placeholder').trim(),
-      hasDots: (hdr.innerText || '').includes('…'),
-      ellipsis,
       pageSideways: document.documentElement.scrollWidth > window.innerWidth,
-      pillRight: pr.right,
       pillHeight: pr.height,
-      hdrBottom: hdr.getBoundingClientRect().bottom,
-      pillBottom: pr.bottom,
+      inside: hdr ? pr.bottom <= hdr.getBoundingClientRect().bottom + 0.5 || (frameMain && pr.bottom <= frameMain.getBoundingClientRect().bottom) : false,
+      inRow: pr.right <= window.innerWidth + 0.5 && pr.left >= -0.5,
     };
   }, sel);
 }
@@ -211,24 +209,21 @@ if (part(1)) {
         const sel = pillSel(width);
         await page.waitForSelector(sel, { timeout: 15000 });
         if (mission === null) await until(async () => (await page.locator(sel).innerText()).includes(NO_MISSION), 10000);
-        if (mission === LONG) await until(async () => (await page.locator(`${sel} .hdr-mis-text`).textContent()) === LONG, 10000);
+        if (mission === LONG) await until(async () => (await page.locator(`${sel} b`).textContent()) === LONG, 10000);
         const p = await readPill(page, sel);
         const at = `${width}px, ${kind}`;
-        pass(`pill ${at}: no "…" character`, !p.hasDots);
-        pass(`pill ${at}: no text-overflow ellipsis in the header`, !p.ellipsis);
-        pass(`pill ${at}: no sideways scroll`, !p.pageSideways);
-        pass(`pill ${at}: the words aren't clipped`, !p.clipped && !p.sideways);
-        pass(`pill ${at}: at most two lines`, !p.wordsShown || p.lines <= 2, `${p.lines} lines`);
-        pass(`pill ${at}: inside the header`, p.pillBottom <= p.hdrBottom + 0.5);
+        pass(`My Mission ${at}: a 40px box`, Math.abs(p.pillHeight - 40) < 0.5, `${p.pillHeight}`);
+        pass(`My Mission ${at}: no sideways scroll, and the box stays on the screen`, !p.pageSideways && p.inRow, JSON.stringify(p));
+        pass(`My Mission ${at}: one line, ending with "…" when it doesn't fit`, p.oneLine && (!p.cut || p.ellipsisWhenCut), JSON.stringify(p));
+        pass(`My Mission ${at}: inside the header`, p.inside);
+        pass(`My Mission ${at}: "My Mission" first`, p.labelShown);
         if (mission === null) {
-          pass(`pill ${at}: "${NO_MISSION}" shows`, p.wordsShown && p.text === NO_MISSION, JSON.stringify(p));
-          pass(`pill ${at}: in grey (--placeholder)`, p.colour === hexToRgb(p.grey), `${p.colour} vs ${p.grey}`);
-          pass(`pill ${at}: ${width < 360 ? 'the grey words alone' : 'with the label'}`, p.labelShown === (width >= 360));
+          pass(`My Mission ${at}: "${NO_MISSION}" shows`, p.wordsShown && p.text === NO_MISSION, JSON.stringify(p));
+          pass(`My Mission ${at}: in grey (--placeholder)`, p.colour === hexToRgb(p.grey), `${p.colour} vs ${p.grey}`);
         } else if (mission === LONG) {
-          pass(`pill ${at}: "My Mission" alone`, p.labelShown && !p.wordsShown, JSON.stringify(p));
+          pass(`My Mission ${at}: the long Mission is cut with "…"`, p.cut && p.ellipsisWhenCut, JSON.stringify(p));
         } else {
-          pass(`pill ${at}: ${width < 360 ? '"My Mission" alone' : 'the mission shows, or the label alone if it needs more than two lines'}`,
-            width < 360 ? p.labelShown && !p.wordsShown : p.labelShown && (p.wordsShown || p.lines === 0));
+          pass(`My Mission ${at}: the Mission shows`, p.wordsShown && p.text.length > 0, JSON.stringify(p));
         }
         await shot(page, `pill-${width}-${kind.replace(/\W+/g, '')}`);
 
@@ -439,8 +434,10 @@ if (part(5)) {
 }
 
 // ---------------------------------------------------------------- 6: Chat to [coach]
+// Polish 1 (25 Nov reference, the lead's call): inside the frame, Chat sits at the laptop panel's top right beside My
+// Mission (DesignHeader's .hdr-frame-chat), out of the page's flow; the older .hdr-desktop header isn't drawn there.
 async function chatButton(page) {
-  return page.locator('.hdr-desktop .ds-chat');
+  return page.locator('.hdr-frame-chat .ds-chat');
 }
 if (part(6)) {
   {
@@ -451,11 +448,12 @@ if (part(6)) {
       await until(async () => (await b.count()) === 1, 10000);
       pass('chat, one way: "Chat to Adie"', (await b.innerText()).trim() === 'Chat to Adie', await b.innerText());
       const pos = await page.evaluate(() => {
-        const r = document.querySelector('.hdr-desktop .ds-chat').getBoundingClientRect();
-        const h = document.querySelector('.hdr-desktop').getBoundingClientRect();
-        return { right: h.right - r.right, top: r.top - h.top, bottom: h.bottom - r.bottom, height: r.height };
+        const r = document.querySelector('.hdr-frame-chat .ds-chat').getBoundingClientRect();
+        const h = document.querySelector('.ds-frame-main').getBoundingClientRect();
+        const pad = parseFloat(getComputedStyle(document.querySelector('.ds-frame-main')).paddingRight);
+        return { right: h.right - r.right, pad, top: r.top - h.top, height: r.height };
       });
-      pass('chat: top right of the desktop header', pos.right <= 29 && pos.top > 0 && pos.bottom > 0, JSON.stringify(pos));
+      pass('chat: top right of the laptop panel, on its padding', Math.abs(pos.right - pos.pad) <= 1 && pos.top > 0 && pos.top < pos.pad, JSON.stringify(pos));
       pass('chat: a 44px tap area', pos.height >= 44, `${pos.height}`);
       note('Chat: 44px tall with a coral edge on hover, as breathe-orb.html (29 Oct); M2 draws it 40px with a grey hover edge.');
       await b.click();
@@ -525,12 +523,12 @@ if (part(6)) {
     const { context, page } = await newContext({ width: 1280, coach: { name: 'Adie', ways: ['whatsapp'] } });
     try {
       await open(page);
-      await until(async () => (await page.locator('.hdr-desktop .ds-chat').count()) === 1, 10000);
+      await until(async () => (await page.locator('.hdr-frame-chat .ds-chat').count()) === 1, 10000);
       const again = await context.newPage();
       await again.route('**/rest/v1/rpc/my_coach*', (route) => route.abort('internetdisconnected'));
       await open(again);
       await sleep(1500);
-      pass('chat, coach not reachable: the device’s copy still shows the button', (await again.locator('.hdr-desktop .ds-chat').count()) === 1);
+      pass('chat, coach not reachable: the device’s copy still shows the button', (await again.locator('.hdr-frame-chat .ds-chat').count()) === 1);
     } finally {
       await context.close();
     }
@@ -539,7 +537,8 @@ if (part(6)) {
     // A phone: in My Account, not the header.
     const { context, page } = await newContext({ width: 390, coach: { name: 'Adie', ways: ['whatsapp'] } });
     try {
-      await open(page, '/my-account');
+      // Polish 1: My Account's Coaching tab holds it (one section at a time).
+      await open(page, '/my-account?tab=coaching');
       pass('chat, phone: not in the header', (await page.locator('.hdr .ds-chat:visible').count()) === 0);
       pass('chat, phone: in My Account', Boolean(await until(async () => (await page.locator('.account-page').getByRole('button', { name: 'Chat to Adie' }).count()) === 1, 10000)));
     } finally {
@@ -548,54 +547,41 @@ if (part(6)) {
   }
 }
 
-// ---------------------------------------------------------------- 7: against M2 and M3
+// ---------------------------------------------------------------- 7: against the 25 Nov reference
 if (part(7)) {
   for (const [width, mode] of [[1280, 'dark'], [1280, 'light'], [390, 'dark'], [390, 'light']]) {
     const { context, page } = await newContext({ width, mode, coach: { name: 'Tim', ways: ['whatsapp'] } });
     try {
       await open(page);
-      const m = await page.evaluate((w) => {
+      await page.waitForSelector('.hdr-frame .hdr-mbox', { timeout: 15000 });
+      const m = await page.evaluate(() => {
         const px = (v) => Math.round(Number.parseFloat(v) * 10) / 10;
-        const hdr = document.querySelector(w < 769 ? '.hdr-phone' : '.hdr-desktop');
-        const pill = hdr.querySelector('.hdr-mis');
-        const hs = getComputedStyle(hdr);
-        const ps = getComputedStyle(pill);
-        const ls = getComputedStyle(pill.querySelector('.hdr-mis-label'));
-        const ts = getComputedStyle(pill.querySelector('.hdr-mis-text'));
+        const box = document.querySelector('.hdr-frame .hdr-mbox');
+        const bs = getComputedStyle(box);
+        const menu = document.querySelector('.hdr-frame .hdr-frame-menu');
+        const menuShown = Boolean(menu) && getComputedStyle(menu).display !== 'none' && menu.getBoundingClientRect().width > 0;
         return {
-          height: px(hdr.getBoundingClientRect().height),
-          pad: [hs.paddingTop, hs.paddingRight, hs.paddingBottom, hs.paddingLeft].map(px),
-          pillMin: px(ps.minHeight),
-          pillPadX: px(ps.paddingLeft),
-          radius: ps.borderRadius,
-          labelSize: px(ls.fontSize),
-          labelFamily: ls.fontFamily,
-          textSize: px(ts.fontSize),
-          border: hs.borderBottomWidth,
+          height: px(box.getBoundingClientRect().height),
+          padX: [px(bs.paddingLeft), px(bs.paddingRight)],
+          size: px(bs.fontSize),
+          radius: px(bs.borderTopLeftRadius),
+          line: px(bs.borderTopWidth),
+          family: bs.fontFamily,
+          menuShown,
         };
-      }, width);
+      });
       const at = `${width}px ${mode}`;
-      if (width > 768) {
-        pass(`M2 ${at}: header 79px high`, Math.abs(m.height - 79) < 1, `${m.height}`);
-        pass(`M2 ${at}: 28px side padding`, m.pad[1] === 28 && m.pad[3] === 28, JSON.stringify(m.pad));
-        pass(`M2 ${at}: a line under the header`, m.border === '1px');
-        pass(`M2 ${at}: mission 15px`, m.textSize === 15, `${m.textSize}`);
-      } else {
-        pass(`M2 ${at}: phone header padding 22, 18, 10`, m.pad[0] === 22 && m.pad[1] === 18 && m.pad[2] === 10 && m.pad[3] === 18, JSON.stringify(m.pad));
-        pass(`M2 ${at}: mission 14px`, m.textSize === 14, `${m.textSize}`);
-      }
-      pass(`M2 ${at}: pill at least 50px`, m.pillMin >= 50, `${m.pillMin}`);
-      pass(`M2 ${at}: pill 22px side padding`, m.pillPadX === 22, `${m.pillPadX}`);
-      // No Nekst inside a control (Tim, 18 Nov, follow-up 1): the pill's label is DM Sans.
-      pass(`M2 ${at}: label in DM Sans`, /DM Sans/.test(m.labelFamily) && !/Nekst/.test(m.labelFamily), m.labelFamily);
-      note(`M2 ${at}: label ${m.labelSize}px (M2 9.5px in Nekst; DM Sans since follow-up 1).`);
-      await shot(page, `m2-header-${width}-${mode}`);
+      pass(`reference ${at}: My Mission is 40px high`, m.height === 40, `${m.height}`);
+      pass(`reference ${at}: 14px in at each side`, m.padX[0] === 14 && m.padX[1] === 14, JSON.stringify(m.padX));
+      pass(`reference ${at}: 13px words in DM Sans`, m.size === 13 && /DM Sans/.test(m.family) && !/Nekst/.test(m.family), `${m.size} ${m.family}`);
+      pass(`reference ${at}: 12px corners and a 1px line`, m.radius === 12 && m.line === 1, JSON.stringify(m));
+      pass(`reference ${at}: ${width < 1024 ? 'the crosshair beside it opens the menu' : 'no crosshair in the header (the menu is the frame\'s column)'}`, m.menuShown === (width < 1024), JSON.stringify(m));
+      await shot(page, `reference-header-${width}-${mode}`);
     } finally {
       await context.close();
     }
   }
-  note('Pill: up to two lines and "My Mission" alone when longer, where M2 and M3 cut one line with "…" (the Mission pill decision).');
-  note('Phone top bar: inside the safe area (the notch rule, 30 Oct), where M2 and M3 draw a fixed 22px top.');
+  note('My Mission: one line with "…" when it doesn\'t fit, as the 25 Nov reference draws it (replaces the two-line pill); its edge keeps rule 8a\'s 3 to 1 (--field-line), where the reference draws --line (the lead\'s call).');
 }
 
 console.log(results.join('\n'));

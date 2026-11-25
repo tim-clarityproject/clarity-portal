@@ -230,16 +230,34 @@
   --space-px40: 40px;
   --si-col: 360px;            /* the sign-in column */
   --si-col-account: 520px;    /* My Account's Password and Email pages */
-  --si-top: 96px;             /* from the top of the page to the column */
-  --si-top-phone: 104px;      /* on a phone: clear of the notch, with Back above */
-  --si-back-rise: 52px;       /* "Back to sign in" sits this far above the column */
-  --si-mark: 32px;            /* the bold crosshair */
+  /* Polish 1 (25 Nov reference and example pages; sign-in rules 1 to 5, 23).
+     --si-top replaces 96px and --si-mark 32px; the older --si-top-phone,
+     --si-back-rise, --si-brand-nudge and --ls-si-brand were dropped. */
+  --si-top: max(80px, 11vh);  /* about 11% of the window down, at least 80px (.outer3) */
+  --si-mark: 40px;            /* the crosshair at the top (.mk.big) */
+  --si-foot-pad: var(--space-px40);
+  --si-mid-pad: var(--space-6); /* the form's room above and below, in the middle */
+  --si-gap: var(--space-px12);  /* between every part of the form (.signin gap) */
+  --si-title-after: var(--space-px20); /* the title's own room under it (.signin .t1) */
+  --si-btn-h: var(--field-h);   /* sign-in buttons the height of its boxes: 56px, 52px on a phone */
+  --si-g: var(--space-px18);    /* Google's G */
+  --si-g-gap: var(--space-px12);
+  --ls-si-foot: 0.2em;          /* THE CLARITY PORTAL at the foot (.foot) */
+  --lh-si-title: 1.2;           /* the title's line (.t1) */
+  --si-code-w: 48px;            /* a code square (.code input); 44px on a phone */
+  --si-code-gap: var(--space-2);
+  --fs-si-code: calc(24 * var(--u-big));
+  --si-moment-mark: 96px;       /* the sign-in moment's crosshair (.mk2) */
+  --si-moment-slide: 34px;      /* each half starts this far out, in the drawing's units */
+  --dur-si-lock: 800ms;         /* the halves lock together */
+  --dur-si-mark-in: 300ms;      /* the mark fades in as they slide */
+  --dur-si-hold: 500ms;
+  --dur-si-out: 450ms;          /* the mark fades and eases down, the portal fades and rises */
+  --si-moment-sink: 0.96;
   --si-show-room: 76px;       /* room in a password box for "Show" */
   --fs-si-title: calc(24 * var(--u-big));
   --fs-si-btn: calc(16 * var(--u));
-  --ls-si-brand: 0.2em;
   --ls-si-btn: 0.14em;
-  --si-brand-nudge: 0.1em;    /* Nekst capitals sit high on their line */
   /* The coach authenticator's screens (M26 seq 7; Phase 6a run 5). */
   --si-qr: 200px;             /* the QR code, its quiet zone included (M26 draws a shorter code at 168px; the real set-up address needs more modules) */
   /* The QR code's own square, its quiet zone included, in both modes: the light
@@ -881,6 +899,7 @@
     --card-pad: 20px;        /* 25 Nov reference: a card's padding on a phone */
     --card-row-y: 12px;
     --fs-page-title: calc(22 * var(--u-big)); /* page titles 22px on a phone (rule 1) */
+    --si-code-w: 44px;       /* a code square on a phone */
   }
 }
 

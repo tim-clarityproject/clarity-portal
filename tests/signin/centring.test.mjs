@@ -159,3 +159,20 @@ test('a table’s heading row starts where the table does, over an empty corner 
   const bad = await start('<div style="display:grid;grid-template-columns:1fr 1fr;padding-left:44px"><span>Free times</span><span>Your calendar</span></div>');
   assert.equal(bad.length, 1, bad.join('\n'));
 });
+
+test('the 25 Nov reference’s centred form (polish 1, rule 22): a column marked data-form="centred" may hold boxes; its rows are centred, its tick box row keeps its own edge', async () => {
+  const form = async (body) => {
+    await page.setContent(page0(body).replace('<div class="col">', '<div class="col" data-align="centre" data-form="centred">'));
+    return centringProblems(await page.evaluate(centredGroups, { root: '.col' }));
+  };
+  const TERMS = `<div class="terms" data-align="start">${TICK}<span>I’m 18 or over and I agree to the terms.</span></div>`;
+  // Spaced capitals carry their spacing before the first letter too (signin.css), so the title's letters sit on the middle.
+  const CENTRED_TITLE = TITLE.replace('text-transform:uppercase', 'text-transform:uppercase;padding-left:0.12em');
+  assert.deepEqual(await form(`${CENTRED_TITLE}${FIELD}${TERMS}<button class="btn">Sign in</button><p>New here? <a href="#">Create an account</a></p>`), []);
+  // A line set on the left in that column is still off its centre.
+  const off = await form(`${TITLE}${FIELD}<button class="btn">Sign in</button><p style="text-align:left">New here? <a href="#">Create an account</a></p>`);
+  assert.ok(off.some((p) => /New here/.test(p)), off.join('\n'));
+  // Without the mark, the same form on a centred column is still the mix rule 49 forbids elsewhere.
+  const unmarked = await check(`${TITLE}${FIELD}<button class="btn">Sign in</button>`);
+  assert.ok(unmarked.some((p) => /holds a box/.test(p)), unmarked.join('\n'));
+});

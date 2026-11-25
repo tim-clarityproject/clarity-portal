@@ -133,7 +133,8 @@ test('after 5 wrong codes in a row, 30 seconds, said calmly', () => {
 // ---------------------------------------------------------------- words
 
 test('M26’s words, the owner named from the data, and they and them', () => {
-  assert.equal(COACH_AUTH_WORDS.code.lines[1], 'You’re only asked on a new phone or computer.');
+  // Enter your code's line is the 25 Nov example's since polish 1 (rule 23): the code goes in by itself.
+  assert.deepEqual(COACH_AUTH_WORDS.code.lines, ['From your authenticator app. It goes in by itself.']);
   assert.equal(COACH_AUTH_WORDS.setUp.cantScan, 'Can’t scan it? Type this key instead:');
   assert.equal(COACH_AUTH_WORDS.codes.tick, 'I’ve saved them somewhere safe.');
   assert.equal(COACH_AUTH_WORDS.security.makeNewNote, 'Making new codes stops the old ones working.');

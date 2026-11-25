@@ -43,7 +43,9 @@ const want = (list, expected) => JSON.stringify(list.map((b) => [b.label, b.auto
   await page.waitForURL(/\/auth\/login$/);
   await ready(page);
   const words = await text(page);
-  pass('Sign in: “Clarity drives performance.” under the name', words.includes('THE CLARITY PORTAL Clarity drives performance.'), words.slice(0, 80));
+  // The 25 Nov reference (polish 1, rule 22) wins over M26 here: the title "Sign in" first, THE CLARITY PORTAL at the foot, no core line.
+  const foot = await text(page, '.si-brand');
+  pass('Sign in: its title first, THE CLARITY PORTAL at the foot (25 Nov reference)', /^SIGN IN\b/.test(words) && foot === 'THE CLARITY PORTAL' && !/clarity drives performance/i.test(words), `${words.slice(0, 40)} | ${foot}`);
   pass('Sign in: no “Remember me”, no emailed sign-in link, no footer', !/remember me|sign-in link|magic|terms of service|privacy/i.test(words) && (await page.locator('footer, .legal-footer-links').count()) === 0, words);
   const b = await boxes(page);
   pass('Sign in: Email is username, Password is current-password, each tied to its label', want(b, [['Email', 'username'], ['Password', 'current-password']]), JSON.stringify(b));
@@ -311,10 +313,12 @@ for (const address of ['/auth/confirmed', '/auth/mission', '/email-confirmation'
   const { page, calls, answers } = v;
   await signedIn(page, v.o);
   await page.goto(`${APP}/my-account`);
-  await page.getByRole('button', { name: 'Edit my password' }).waitFor({ timeout: 20000 });
+  // Polish 1 (25 Nov reference, My Account's Profile tab): the email is a row that opens the Email page, and the
+  // password is "Change my password" (the reference's words, which replaced "Edit my password").
+  await page.getByRole('button', { name: 'Change my password' }).waitFor({ timeout: 20000 });
   const acct = (await page.locator('.account-page').innerText()).replace(/\s+/g, ' ');
-  pass('My Account: Email and Password, each with Edit (never Change)', acct.includes('Edit my email') && acct.includes('Edit my password') && !/\bchange\b/i.test(acct.split('Appearance')[0]), acct.slice(0, 260));
-  await page.getByRole('button', { name: 'Edit my password' }).click();
+  pass('My Account: Your email as a row, and Change my password', acct.includes('Your email') && acct.includes(SAM.email) && acct.includes('Change my password'), acct.slice(0, 260));
+  await page.getByRole('button', { name: 'Change my password' }).click();
   await page.waitForURL(/\/my-account\/password$/);
   await page.waitForSelector('.si-col--account');
   pass('Password: one h1', (await page.locator('h1').allInnerTexts()).join('|').toLowerCase() === 'password');
@@ -338,10 +342,10 @@ for (const address of ['/auth/confirmed', '/auth/mission', '/email-confirmation'
   await page.waitForSelector('.ds-status--saved');
   pass('saved: “Saved” beside the button, and the boxes clear', (await page.locator('.si-pw input').nth(0).inputValue()) === '' && (await page.locator('.si-pw input').nth(1).inputValue()) === '');
   pass('still signed in, on the same page', path(page) === '/my-account/password');
-  await page.getByRole('link', { name: 'My Account' }).click();
-  await page.waitForURL(/\/my-account$/);
+  await page.locator('.si-back').click();
+  await page.waitForURL(/\/my-account(\?|$)/);
   // Email
-  await page.getByRole('button', { name: 'Edit my email' }).click();
+  await page.getByRole('button', { name: /^Your email/ }).click();
   await page.waitForURL(/\/my-account\/email$/);
   await page.waitForSelector('.si-col--account');
   pass('Email: the box starts with their email', (await page.locator('input[type=email]').inputValue()) === SAM.email);
@@ -369,7 +373,7 @@ for (const address of ['/auth/confirmed', '/auth/mission', '/email-confirmation'
   await v.page.getByText('You sign in with Google.').waitFor({ timeout: 20000 }).catch(() => null);
   const acct = (await v.page.locator('.account-page').innerText()).replace(/\s+/g, ' ');
   pass('someone who signs in with Google: My Account says “You sign in with Google.”', acct.includes('You sign in with Google.'), acct.slice(0, 200));
-  pass('and offers no Password page', !acct.includes('Edit my password'));
+  pass('and offers no Password page', !acct.includes('Change my password'));
   await v.page.goto(`${APP}/my-account/password`);
   await v.page.waitForURL(/\/my-account$/, { timeout: 15000 }).catch(() => null);
   pass('the Password address sends them back to My Account', path(v.page) === '/my-account', path(v.page));
@@ -385,11 +389,12 @@ for (const address of ['/auth/confirmed', '/auth/mission', '/email-confirmation'
   await page.locator('.si-pw input').fill('harbourlane42');
   const colour = (sel, prop = 'color') => page.locator(sel).first().evaluate((el, p) => getComputedStyle(el)[p], prop);
   for (const [name, sel, prop, hoverSel] of [
-    ['the Google button', '.si-col .ds-google', 'borderTopColor', '.si-col .ds-google'],
+    // The 25 Nov reference: Continue with Google is a quiet outlined button (.si-google); links soften on hover.
+    ['the Google button', '.si-col .si-google', 'boxShadow', '.si-col .si-google'],
     ['the tick box', '.ds-check-box > span', 'borderTopColor', '.ds-check-box'],
     ['Show', '.si-show', 'color', '.si-show'],
-    ['a text link', '.si-alt .si-link', 'color', '.si-alt .si-link'],
-    ['the terms link', '.si-terms .si-link', 'color', '.si-terms .si-link'],
+    ['a text link', '.si-alt .si-link', 'opacity', '.si-alt .si-link'],
+    ['the terms link', '.si-terms .si-link', 'opacity', '.si-terms .si-link'],
   ]) {
     await page.mouse.move(2, 2);
     await sleep(350);
@@ -409,13 +414,13 @@ for (const address of ['/auth/confirmed', '/auth/mission', '/email-confirmation'
     const f = await page.evaluate(() => { const el = document.activeElement; if (!el || el === document.body) return null; const st = getComputedStyle(el); return { what: el.className.toString().split(' ')[0] + (el.closest('.si-terms') && el.classList.contains('si-link') ? ' terms' : ''), ring: st.outlineStyle !== 'none' && parseFloat(st.outlineWidth) >= 2, edge: st.borderTopColor }; });
     if (f) rings[f.what] = f;
   }
-  for (const [name, key] of [['the Google button', 'ds-google'], ['the tick box', 'ds-check-box'], ['Show', 'si-show'], ['a text link', 'si-link'], ['the terms link', 'si-link terms'], ['the coral button', 'si-btn']]) {
+  for (const [name, key] of [['the Google button', 'si-google'], ['the tick box', 'ds-check-box'], ['Show', 'si-show'], ['a text link', 'si-link'], ['the terms link', 'si-link terms'], ['the main button', 'si-btn']]) {
     pass(`keyboard focus shows on ${name}`, Boolean(rings[key]?.ring), JSON.stringify(rings[key] || Object.keys(rings)));
   }
-  // Since 18 Nov (rule 4a, follow-up 1) a text field takes the stronger grey edge on focus, never coral.
-  const strongerGrey = await page.evaluate(() => { const el = document.querySelector('.si-inp'); return el ? getComputedStyle(el).getPropertyValue('--text-2').trim() : ''; });
+  // The 25 Nov reference (.box:focus): a box's edge turns the text colour on focus, never coral.
+  const strongerGrey = await page.evaluate(() => { const el = document.querySelector('.si-inp'); return el ? getComputedStyle(el).getPropertyValue('--text').trim() : ''; });
   const toRgb = (hex) => { const m = /^#([0-9a-f]{6})$/i.exec(hex); return m ? `rgb(${parseInt(m[1].slice(0, 2), 16)}, ${parseInt(m[1].slice(2, 4), 16)}, ${parseInt(m[1].slice(4), 16)})` : hex; };
-  pass('keyboard focus shows on a box (its edge turns the stronger grey)', Boolean(rings['si-inp']) && rings['si-inp'].edge === toRgb(strongerGrey), JSON.stringify({ ...rings['si-inp'], want: strongerGrey }));
+  pass('keyboard focus shows on a box (its edge turns the text colour)', Boolean(rings['si-inp']) && rings['si-inp'].edge === toRgb(strongerGrey), JSON.stringify({ ...rings['si-inp'], want: strongerGrey }));
   // Space ticks the box from the keyboard.
   await page.getByRole('checkbox').focus();
   await page.keyboard.press('Space');

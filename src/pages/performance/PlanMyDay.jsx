@@ -3,7 +3,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import {
-  AddButton,
+  AddLink,
+  CardHead,
   AddTodoPanel,
   Button,
   Chip,
@@ -12,12 +13,14 @@ import {
   Collapsible,
   GuidedSummary,
   GuidedTool,
+  InlineChoice,
+  useSleepTarget,
+  Counter,
   Loading,
   MultiChoice,
   NotePanel,
   PageHeader,
   Stat,
-  Stepper,
   TextBox,
   WhoSees,
   clearGuideDraft,
@@ -68,6 +71,10 @@ import { useTravelPlans } from '../../lib/travel/store';
 import '../peakMoments/peakMoments.css';
 import { useOwnToolSteps } from '../../components/ownQuestions/ownSteps';
 import './performance.css';
+import './stepFrame.css';
+import StepFrame from './StepFrame';
+import { DAILY_PLAN } from '../../content/pageLines/client';
+import { rangeWords } from '../../lib/performance/sleepChart';
 
 // Daily plan (mock-up M5, version 19, approved by Tim on 23 Oct; read in
 // full with its notes). One guided tool, one question per screen on phone
@@ -633,30 +640,33 @@ function PlanFlow({ userId, date, today, loaded }) {
   const backlogOptions = (view?.options || []).filter((o) => o.group === 'backlog');
   // A person's own questions come last, just before the summary (run 7).
   const own = useOwnToolSteps(userId, 'daily_plan', { date });
+  // The sleep target (My Account, Settings): an empty counter shows its middle, in half hours.
+  const [sleepTarget] = useSleepTarget();
+  const targetHours = Math.round(((sleepTarget.from + sleepTarget.to) / 2) * 2) / 2;
 
   const steps = [
     {
       key: 'sleep',
       name: 'Sleep',
       question: 'How did you sleep last night?',
+      // Empty, the counter shows the sleep target's middle in half hours (Polish 1); Next keeps what it shows.
+      onNext: () => { if (answers.hours == null) change({ hours: targetHours }); },
       render: () => (
         <div className="day-narrow">
-          <div className="ds-label-row">
-            <span className="ds-label-row-text">Total hours</span>
+          <div className="sf-field">
+            <span className="sf-label" id="day-hours-label">How many hours?</span>
+            <Counter
+              label="How many hours?"
+              value={answers.hours ?? targetHours}
+              onChange={(hours) => change({ hours })}
+              min={0}
+              max={SLEEP_MAX_HOURS}
+              step={0.5}
+              lessLabel="Half an hour less"
+              moreLabel="Half an hour more"
+            />
+            {answers.hours == null && <p className="sf-note">{`Your sleep target is ${rangeWords(sleepTarget)}. Change it if last night was different.`}</p>}
           </div>
-          <Stepper
-            label="Total hours"
-            value={answers.hours}
-            onChange={(hours) => change({ hours })}
-            min={0}
-            max={SLEEP_MAX_HOURS}
-            step={0.5}
-            startFrom={7}
-            lessLabel="Half an hour less"
-            moreLabel="Half an hour more"
-            format={(v) => `${v}`}
-            unit="hours"
-          />
           {odd && (
             <div className="day-confirm">
               <p>{`Is ${hoursWords(answers.hours)} right?`}</p>
@@ -671,8 +681,8 @@ function PlanFlow({ userId, date, today, loaded }) {
               </Button>
             </div>
           )}
-          <div className="day-gap">
-            <Choice label="Quality" form="rows" options={SLEEP_QUALITY_OPTIONS} value={answers.quality} onChange={(quality) => change({ quality })} />
+          <div className="sf-field">
+            <InlineChoice label="How well?" form="boxes" options={SLEEP_QUALITY_OPTIONS} value={answers.quality} onChange={(quality) => change({ quality })} />
           </div>
         </div>
       ),
@@ -742,6 +752,7 @@ function PlanFlow({ userId, date, today, loaded }) {
               onOpen={() => navigate(travelDay.view.short ? `${TRAVEL_PATH}/${travelDay.plan.id}` : `${TRAVEL_PATH}/${travelDay.plan.id}/day/${date}`, { state: { from: location.pathname } })}
             />
           )}
+          <CardHead label="Your to-dos" add={<AddLink label="Add to-do" onClick={() => setPanel(true)} />} as="h2" />
           {dayOptions.length ? (
             <MultiChoice
               variant="pick"
@@ -775,7 +786,6 @@ function PlanFlow({ userId, date, today, loaded }) {
           {view.note && (
             <NotePanel className="day-note" label={view.note.label} after="If it needs doing, add it as a to-do.">{view.note.text}</NotePanel>
           )}
-          <AddButton className="day-add" onClick={() => setPanel(true)}>Add to-do</AddButton>
         </div>
       )),
     },
@@ -905,7 +915,7 @@ function PlanFlow({ userId, date, today, loaded }) {
 
   const close = () => {
     if (waiting.current) sendAnswers();
-    if (!view.finished) toast.show('Saved as a draft, so you can continue from Home for 24 hours.');
+    if (!view.finished) toast.show(DAILY_PLAN.closed);
     else {
       // Looking at a finished one never makes it part-way again (Tim, 5
       // Nov): any change is already sent, so the device forgets the step
@@ -944,13 +954,10 @@ function PlanFlow({ userId, date, today, loaded }) {
   }
 
   return (
-    <div className="ui-root plan-builder-wait">
-      <GuidedTool
-        name={date === today ? 'Daily plan' : `Daily plan, ${dayName(date, today)}`}
+    <div className="ui-root plan-builder-wait sf-page">
+      <StepFrame
+        name={date === today ? DAILY_PLAN.name : `${DAILY_PLAN.name}, ${dayName(date, today)}`}
         steps={steps}
-        progress="percent"
-        skipLabel="Skip"
-        finishLabel="Set my day"
         saveState={save}
         draftKey={stepKey(userId, date)}
         initialStep={view.finished || date < today ? 'summary' : undefined}

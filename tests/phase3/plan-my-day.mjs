@@ -10,8 +10,13 @@
 // Daily review is written as the client (its list and its note), and an
 // earlier plan's way of being, so "recently" has something.
 //
-// A full play-through from the first screen to Set my day at 1280px,
-// 700px, 390px and 360px, in dark and light. On every screen: one coral
+// A full play-through from the first screen to Finish at 1280px,
+// 700px, 390px and 360px, in dark and light. Since Polish 1 (25 Nov) the
+// tool is in focus mode (src/pages/performance/StepFrame.jsx on ToolFrame;
+// example-pages-25nov.html "Tool: Plan my day"): × and "Step n of m" in
+// the bar, the black main button (coral is for mistakes only), Finish on
+// the summary, controls 40px on a laptop and 44px on a phone. On every
+// screen: one main
 // button, 44px tap areas, no sideways scroll, the writing rules and the
 // eye. At 1280px dark, the saved rows are checked too: the day's row, its
 // to-dos (one from last night's list, one added in the panel) and the top,
@@ -147,15 +152,16 @@ async function signedIn({ width, mode }) {
   return { context, page };
 }
 
-const heading = async (page) => (await page.locator('.ds-guide-question, .ds-guide-title').first().textContent()).trim();
-const body = (page) => page.locator('.ds-guide-body');
+// The question's own words (the eye beside it is left out).
+const heading = async (page) => page.locator('.ds-tool-q').first().evaluate((el) => [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim());
+const body = (page) => page.locator('.ds-tool-step-body');
 
 // Next: tapped until the question changes (a tap in the first moment
 // after a move is ignored on purpose, so it is tried again).
 async function next(page) {
   const before = await heading(page);
   for (let i = 0; i < 6; i += 1) {
-    await page.locator('.ds-guide-next').click();
+    await page.locator('.ds-tool-foot .ds-btn--primary').click();
     const moved = await until(async () => (await heading(page)) !== before, 1200);
     if (moved) return;
   }
@@ -164,10 +170,10 @@ async function next(page) {
 
 async function openPlan(page, path = '/daily-plan') {
   await page.goto(`${APP}${path}`);
-  await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+  await page.waitForSelector('.ds-tool-q', { timeout: 30000 });
 }
 
-// One screen: one coral button, 44px tap areas, no sideways scroll, the writing rules, the eye.
+// One screen: one main button (no coral but a mistake), 40px controls (44px on a phone), no sideways scroll, the writing rules, the eye.
 async function checkScreen(page, tag, { eye = true, oneTap = false } = {}) {
   // Away from any button, and once any hover fade has settled.
   await page.mouse.move(1, 1);
@@ -176,9 +182,9 @@ async function checkScreen(page, tag, { eye = true, oneTap = false } = {}) {
     Promise.all(document.getAnimations().map((a) => a.finished.catch(() => null))),
     new Promise((r) => { setTimeout(r, 3000); }),
   ]));
-  await until(() => page.evaluate((list) => [...document.querySelectorAll('.ds-guide-next')].some((b) => list.includes(getComputedStyle(b).backgroundColor)), CORAL), 3000);
   const facts = await page.evaluate(() => {
-    const root = document.querySelector('.ds-guide');
+    const root = document.querySelector('.ds-tool');
+    const phone = window.innerWidth < 600;
     const shown = (el) => {
       const r = el.getBoundingClientRect();
       if (!r.width || !r.height) return false;
@@ -188,19 +194,21 @@ async function checkScreen(page, tag, { eye = true, oneTap = false } = {}) {
     };
     const all = [...root.querySelectorAll('*')].filter(shown);
     const coral = all.filter((el) => ['rgb(255, 111, 92)', 'rgb(194, 65, 46)', 'rgb(224, 83, 63)', 'rgb(255, 138, 122)'].includes(getComputedStyle(el).backgroundColor)).length;
-    const coralText = all.filter((el) => el.matches('.ds-guide-page *') && !el.closest('button') && ['rgb(255, 111, 92)', 'rgb(194, 65, 46)'].includes(getComputedStyle(el).color) && el.textContent.trim()).map((el) => el.textContent.trim().slice(0, 30));
+    const mains = all.filter((el) => el.matches('.ds-btn--primary')).length;
+    const coralText = all.filter((el) => el.matches('.ds-tool *') && !el.closest('button') && ['rgb(255, 111, 92)', 'rgb(194, 65, 46)'].includes(getComputedStyle(el).color) && el.textContent.trim()).map((el) => el.textContent.trim().slice(0, 30));
     const small = [...root.querySelectorAll('button, [role=radio], [role=checkbox], [role=switch], input, textarea')]
       .filter(shown)
-      .filter((el) => !el.closest('.ds-textbox-measure'))
+      // A counter's minus and plus sit inside its 40px (44px) box: the box is the control (the reference's .count).
+      .filter((el) => !el.closest('.ds-textbox-measure, .ds-count'))
       .map((el) => {
         const r = el.getBoundingClientRect();
         // A button's tap area may be wider than its look (padding or ::before); measure the element.
         return { w: Math.round(r.width), h: Math.round(r.height), what: (el.getAttribute('aria-label') || el.textContent || el.tagName).trim().slice(0, 30) };
       })
-      .filter((b) => b.w < 44 || b.h < 44);
-    const page = root.querySelector('.ds-guide-page');
+      .filter((b) => b.h < (phone ? 44 : 40) - 0.5);
+    const page = root.querySelector('.ds-tool-step-body');
     // Sentences only: labels without a full stop are allowed (26 Oct rule 9).
-    const lines = [...page.querySelectorAll('.ds-guide-question, .ds-guide-nudge, .day-sgh, .day-quiet p, .day-quiet-line, .ds-note p, .day-confirm p, .ds-panel-note')]
+    const lines = [...page.querySelectorAll('.ds-tool-q, .ds-tool-hint, .day-sgh, .day-quiet p, .day-quiet-line, .ds-note p, .day-confirm p, .ds-panel-note')]
       .filter(shown).map((el) => el.textContent.trim());
     // What a person sees (screen-reader words such as "Who can see this:" left out).
     const copy = page.cloneNode(true);
@@ -212,25 +220,27 @@ async function checkScreen(page, tag, { eye = true, oneTap = false } = {}) {
     copy.remove();
     return {
       coral,
+      mains,
       coralText,
       small,
       lines,
       text,
       sideways: document.documentElement.scrollWidth - window.innerWidth,
-      scrollSideways: (() => { const s = root.querySelector('.ds-guide-scroll'); return s ? s.scrollWidth - s.clientWidth : 0; })(),
+      scrollSideways: 0,
       // The eye alone (Tim, 5 Nov): its words are for screen readers and the pop-up.
       eye: [...root.querySelectorAll('.ds-who')].filter(shown).map((e) => (e.getAttribute('aria-label') || e.querySelector('[aria-label]')?.getAttribute('aria-label') || e.textContent).trim()),
     };
   });
-  // A one-answer screen has no Next (Tim, 5 Nov), so no coral button there.
-  if (oneTap) pass(`${tag}: no coral button on a one-answer screen`, facts.coral === 0, `${facts.coral}`);
-  else pass(`${tag}: one coral button`, facts.coral === 1, `${facts.coral}`);
+  // A one-answer screen has no Next (Tim, 5 Nov), so no main button there. Nothing is coral (Polish 1: coral is for mistakes).
+  pass(`${tag}: nothing coral`, facts.coral === 0, `${facts.coral}`);
+  if (oneTap) pass(`${tag}: no main button on a one-answer screen`, facts.mains === 0, `${facts.mains}`);
+  else pass(`${tag}: one main button`, facts.mains === 1, `${facts.mains}`);
   pass(`${tag}: nothing coral is a label or a figure`, facts.coralText.length === 0, facts.coralText.join(' | '));
-  pass(`${tag}: 44px tap areas`, facts.small.length === 0, JSON.stringify(facts.small));
+  pass(`${tag}: controls 40px (44px on a phone)`, facts.small.length === 0, JSON.stringify(facts.small));
   pass(`${tag}: no sideways scroll`, facts.sideways <= 0 && facts.scrollSideways <= 0, `${facts.sideways} ${facts.scrollSideways}`);
   const text = facts.text.replace(/\d{1,2}:\d{2}/g, '');
   pass(`${tag}: no colons or brackets in its words`, !/[:()[\]]/.test(text), (text.match(/.{0,20}[:()[\]].{0,20}/) || [''])[0]);
-  pass(`${tag}: no banned words`, !/\bmissed\b|\bfail(ed)?\b|\bstep \d+ of\b|\babout \d+ minutes?\b|\btap\b|\bclick\b|\bpurpose\b|…/i.test(facts.text), facts.text.slice(0, 80));
+  pass(`${tag}: no banned words`, !/\bmissed\b|\bfail(ed)?\b|\babout \d+ minutes?\b|\btap\b|\bclick\b|\bpurpose\b|…/i.test(facts.text), facts.text.slice(0, 80));
   // "This was your plan" is the summary's heading, as the review's "This was your day" (part 5, 10 Nov).
   const bad = facts.lines.filter((l) => !/[.?!]$/.test(l) && l !== 'This was your plan');
   pass(`${tag}: every sentence ends with a full stop or a question mark`, bad.length === 0, bad.join(' | '));
@@ -243,12 +253,16 @@ const shot = async (page, name) => { if (out) await page.screenshot({ path: `${o
 async function playThrough(page, tag, { deep = false } = {}) {
   await openPlan(page);
   // 1. Sleep
-  pass(`${tag}: opens on Sleep, with no time on the first screen (10 Nov)`, (await heading(page)) === 'How did you sleep last night?' && !/~\d+ minutes/.test(await page.locator('.ds-guide').innerText()));
-  pass(`${tag}: the % complete bar, never a step count`, await page.locator('.ds-guide-pct').isVisible());
+  pass(`${tag}: opens on Sleep, with no time on the first screen (10 Nov)`, (await heading(page)) === 'How did you sleep last night?' && !/~\d+ minutes/.test(await page.locator('.ds-tool').innerText()));
+  // Focus mode (Polish 1, rule 21): the progress line and "Step 1 of 8" in the bar.
+  pass(`${tag}: the progress line and Step 1 of n`, await page.locator('.ds-tool-prog').isVisible() && /^Step 1 of \d+$/.test((await page.locator('.ds-tool-step').innerText()).trim().split('\n').pop()));
+  pass(`${tag}: How many hours? and How well?`, (await page.getByText('How many hours?', { exact: true }).count()) > 0 && (await page.getByText('How well?', { exact: true }).count()) > 0);
   await checkScreen(page, `${tag} sleep`);
   await shot(page, `${tag}-1-sleep`);
+  // Empty, the counter shows the sleep target's middle (7 to 9 hours: 8), in half hours (Polish 1).
+  pass(`${tag}: the empty counter shows the sleep target`, (await page.locator('.ds-count span').first().textContent()).trim() === '8');
   await page.getByRole('button', { name: 'Half an hour more' }).click();
-  pass(`${tag}: the first press starts from 7 hours`, (await page.locator('.ds-stepper-value').textContent()).trim() === '7.5');
+  pass(`${tag}: the first press adds half an hour to the target`, (await page.locator('.ds-count span').first().textContent()).trim() === '8½');
   // Sleep quality is the five words (Tim, 10 Nov): "Very good" saves the key 'good', as "Good" did.
   await page.getByRole('radio', { name: 'Very good', exact: true }).click();
   await next(page);
@@ -260,7 +274,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
   if (deep) {
     // A refresh mid-step: the step and the typing come back.
     await page.reload();
-    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    await page.waitForSelector('.ds-tool-q', { timeout: 30000 });
     pass(`${tag}: a refresh mid-step stays on the step`, (await heading(page)) === 'What’s one thing you’re grateful for today?', await heading(page));
     const kept = await until(async () => (await body(page).locator('textarea').first().inputValue()) === 'Breakfast with my daughter before school.', 8000);
     pass(`${tag}: a refresh mid-step restores the draft`, Boolean(kept), await body(page).locator('textarea').first().inputValue());
@@ -288,7 +302,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await pick('Training sessions').click();
   // No limit of three (Tim, 16 Nov): nothing greys out and there is no count or nudge.
   pass(`${tag}: three chosen, nothing greys out, no nudge or count`, (await page.locator('.ds-answer--pick[aria-pressed="true"]').count()) === 3 && !(await page.locator('.ds-answer--pick', { hasText: 'Reflective notes' }).isDisabled())
-    && (await page.locator('.ds-guide-nudge, .ds-pick-count').count()) === 0);
+    && (await page.locator('.ds-tool-hint, .ds-pick-count').count()) === 0);
   await shot(page, `${tag}-4-do`);
   // Add a to-do from the panel: no "Which week?", and it joins today too (no limit).
   await page.getByRole('button', { name: 'Add to-do' }).click();
@@ -327,11 +341,11 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await checkScreen(page, `${tag} summary`, { eye: false });
   await shot(page, `${tag}-8-summary`);
   const summary = await page.locator('.ds-guide-summary').innerText();
-  for (const words of ['7.5 hours, very good', 'Breakfast with my daughter before school.', 'Decisive', '1. Draft the Harbour case study', 'Highest priority', NIGHT, 'Training sessions', 'Grow through referrals', 'If it happens, block 11:00 to 12:00']) {
+  for (const words of ['8.5 hours, very good', 'Breakfast with my daughter before school.', 'Decisive', '1. Draft the Harbour case study', NIGHT, 'Training sessions', 'Grow through referrals', 'If it happens, block 11:00 to 12:00']) {
     pass(`${tag}: the summary shows "${words}"`, summary.includes(words));
   }
-  const tagColour = await page.locator('.day-tag').evaluate((el) => getComputedStyle(el).color);
-  pass(`${tag}: Highest priority is never coral`, !CORAL.includes(tagColour), tagColour);
+  // The highest priority is the small box before its title, never a coral word (Tim, 18 Nov, 12:55).
+  pass(`${tag}: the highest priority is marked with the small box`, (await page.locator('.ds-guide-summary .ds-important-mark').count()) === 1);
   if (deep) {
     const v = sprintPageView(await rowsNow(), { today });
     const shown = (await page.locator('.day-score .ds-stat-value').textContent()).trim();
@@ -339,15 +353,15 @@ async function playThrough(page, tag, { deep = false } = {}) {
     const good = await page.locator('.day-score .ds-stat-value').evaluate((el) => el.classList.contains('ds-stat-value--good'));
     pass(`${tag}: the score is mint only at or above the standard`, good === v.soFar.good);
   }
-  // Set my day: tapped until it goes (a tap in the first moment after a move is ignored on purpose).
+  // Finish (Polish 1; it was Set my day): tapped until it goes (a tap in the first moment after a move is ignored on purpose).
   const gone = await until(async () => {
     if (/performance-sprint/.test(page.url())) return true;
-    await page.getByRole('button', { name: 'Set my day' }).click({ timeout: 2000 }).catch(() => null);
+    await page.getByRole('button', { name: 'Finish' }).click({ timeout: 2000 }).catch(() => null);
     return /performance-sprint/.test(page.url()) || page.waitForURL(/performance-sprint/, { timeout: 1500 }).then(() => true, () => false);
   }, 15000);
-  if (!gone) throw new Error('Set my day did not go back');
+  if (!gone) throw new Error('Finish did not go back');
   const set = await until(async () => (await page.getByText('Your day is set, and your to-dos are in this week’s sprint.').count()) > 0, 8000);
-  pass(`${tag}: Set my day says so and goes back`, Boolean(set));
+  pass(`${tag}: Finish says so and goes back`, Boolean(set));
   const row = await until(async () => {
     const r = (await db.from('day_plans').select('*').eq('user_id', me).eq('local_date', today)).data?.[0];
     return r?.status === 'finished' ? r : null;
@@ -365,7 +379,7 @@ for (const [width, mode] of sizes) {
   try {
     const row = await playThrough(page, tag, { deep });
     if (deep) {
-      pass('saved: sleep, gratitude, way of being and risk', Number(row.sleep_hours) === 7.5 && row.sleep_quality === 'good' && row.grateful_for === 'Breakfast with my daughter before school.'
+      pass('saved: sleep, gratitude, way of being and risk', Number(row.sleep_hours) === 8.5 && row.sleep_quality === 'good' && row.grateful_for === 'Breakfast with my daughter before school.'
         && row.way_of_being === 'Decisive' && row.biggest_risk.startsWith('Back-to-back') && row.risk_response.startsWith('Block 11:00'), JSON.stringify(row));
       const todos = (await db.from('todos').select('*').eq('user_id', me).in('source', ['review_my_day', 'plan_my_day'])).data;
       const night = todos.find((t) => t.text === NIGHT);

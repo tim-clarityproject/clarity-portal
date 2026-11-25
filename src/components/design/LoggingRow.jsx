@@ -144,6 +144,28 @@ function PressRow({ options, value, onChange, label, className = '' }) {
   );
 }
 
+// A daily rating's five words, Poor to Excellent, as answer boxes (25 Nov
+// reference rule 7: four or more options are answer boxes, .choices): a row
+// of boxes on a laptop, one per line on a phone, so a word never wraps
+// inside a control. Tapping the chosen one again clears it, as before.
+function RateBoxes({ value, onChange, label, className = '' }) {
+  return (
+    <span className={`ds-choices ds-log-rate ds-log-press--rate ${className}`.trim()} role="group" aria-label={label}>
+      {RATINGS.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          className="ds-answer ds-answer--box"
+          aria-pressed={value === o.value}
+          onClick={() => onChange(value === o.value ? null : o.value)}
+        >
+          <span>{o.label}</span>
+        </button>
+      ))}
+    </span>
+  );
+}
+
 // A tick box on its own (a weekly yes or no): fills mint when done.
 function TickBox({ checked, onChange, label }) {
   return (
@@ -191,7 +213,7 @@ export function LoggingRow({
   let entry;
   if (kind === 'stepper') entry = <Stepper value={value} onChange={onChange} min={min} max={max} label={label} />;
   else if (kind === 'yesno') entry = <PressRow options={YES_NO} value={value} onChange={onChange} label={label} />;
-  else if (kind === 'rating') entry = <PressRow options={RATINGS} value={value} onChange={onChange} label={label} className="ds-log-press--rate" />;
+  else if (kind === 'rating') entry = <RateBoxes value={value} onChange={onChange} label={label} />;
   else if (kind === 'tick') entry = <TickBox checked={Boolean(value)} onChange={onChange} label={label} />;
   else entry = <NumberField value={value} onChange={onChange} unit={unit} decimals={decimals} label={label} {...inputProps} />;
   return (
@@ -249,12 +271,11 @@ function RatingDays({ name, days, values, onChange, dashEmpty }) {
         </div>
       </ChartTips>
       {day && (
-        <PressRow
-          options={RATINGS}
+        <RateBoxes
           value={stepOf(values[day.key])}
           onChange={(v) => onChange(day.key, v)}
           label={`${name}, ${day.full}`}
-          className="ds-log-press--rate ds-logweek-rate-choose"
+          className="ds-logweek-rate-choose"
         />
       )}
     </>

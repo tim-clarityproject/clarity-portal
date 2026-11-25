@@ -1,0 +1,144 @@
+/* Home (Polish 1, example-pages-25nov.html "Home"): the page opening, then two columns on a
+   laptop (Log today and Today on the left; What needs you and Upcoming on the right); on a
+   phone What needs you and Upcoming first (ds-cols--needs-first). The cards, rows and controls
+   are the shared blocks (blocks.css); this file only places them. Every value is a token. */
+
+.ui-root .home-page {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* Under 1024px the frame gives no padding: the page gives the example's 24px top and 20px sides. */
+@media (max-width: 1023px) {
+  .ui-root .home-page {
+    padding: var(--space-4) var(--page-x-phone) var(--space-px64);
+  }
+}
+
+/* The opening's main button with its second way out beside it ("Not tonight", "Not now"). */
+.ui-root .home-act {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-px20);
+}
+
+@media (max-width: 600px) {
+  .ui-root .home-act { flex-direction: column; align-items: stretch; gap: var(--space-1); }
+  .ui-root .home-act > .ds-btn { width: 100%; }
+  .ui-root .home-act > .ds-more { justify-content: center; }
+}
+
+/* Log today: its label row holds the save state and "View your week" on the right. */
+.ui-root .home-log-right {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: calc(var(--space-px14) * -1) 0;
+}
+
+.ui-root .home-log .ds-card-head > .ds-label:focus { outline: none; }
+
+/* Log today's habit rows sit as the card's control rows: hairlines between, none above the first. */
+.ui-root .home-log .ds-log {
+  padding: var(--card-row-y) 0;
+  border-top: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .home-log .ds-card-head + .ds-log,
+.ui-root .home-log .ds-card-head + .sprint-dayoff + .ds-log {
+  border-top: 0;
+  padding-top: var(--space-px6);
+}
+
+.ui-root .home-log .home-fold {
+  border-top: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .home-log > :last-child { padding-bottom: 0; }
+
+/* A plain sentence inside a card (the day's done, the plan's first steps). */
+.ui-root .home-card-line {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-text);
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.ui-root .home-help {
+  margin-top: var(--space-2);
+}
+
+
+.ui-root .home-qa-more {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+/* Kept from M2 (Phase 4 step 2): the quiet lines, the plan's links, the This week fold, Recovery. */
+.ui-root .home-line {
+  margin: var(--space-px14) 0 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .home-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-5);
+  margin-top: var(--space-px10);
+}
+
+/* "This week" folds as one row: the name on the left, its line in grey on the right (rule 14), one line. */
+.ui-root .home-fold-head {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+/* "This week" is a row name (500, 16px), its line small and grey (rule 1). */
+.ui-root .home-fold-title {
+  display: inline;
+  white-space: nowrap;
+  font-size: var(--fs-text);
+  font-weight: var(--fw-medium);
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.ui-root .home-fold-line {
+  display: inline;
+  white-space: nowrap;
+  font-size: var(--fs-meta);
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.ui-root .home-recovery { margin-top: var(--space-5); }
+
+.ui-root .home-todos { margin-top: var(--space-2); }
+
+/* A row's name at 500 (rule 1), and every number box the same width whatever its unit
+   ("steps", "litres"): the unit keeps one width (the Home fault of 25 Nov). */
+.ui-root .home-log .ds-log-name { font-weight: var(--fw-medium); }
+.ui-root .home-log .ds-num-unit { min-width: 6ch; text-align: right; }
+
+/* Log today's number boxes are one control height with the switches and counters beside them
+   (40px on a laptop, 44px on a phone; the reference's .numbox), not the older 44px-plus field. */
+.ui-root .home-log .ds-num {
+  box-sizing: border-box;
+  height: var(--btn-h);
+  min-height: 0;
+}
+.ui-root .home-log .ds-num input.ds-num-input { min-height: 0 !important; height: 100%; }
+
+@media (max-width: 600px) {
+  .ui-root .home-log .ds-num { height: var(--btn-h-phone); }
+}
+

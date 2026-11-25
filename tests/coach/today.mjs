@@ -27,6 +27,8 @@ const OUT = process.argv[2] || null;
 if (OUT) mkdirSync(OUT, { recursive: true });
 const report = makeReport('Coach portal, Today');
 const BACKGROUND = { dark: 'rgb(0, 0, 0)', light: 'rgb(249, 248, 245)' };
+// Polish 1 (25 Nov): on a laptop the portal sits in the frame's panel, with the page background as a margin around it.
+const FRAME_MARGIN = { dark: 'rgb(17, 17, 16)', light: 'rgb(239, 237, 232)' };
 const TUE = new Date(2026, 10, 17, 9, 0);
 const EVE = new Date(2026, 10, 17, 18, 45);
 const FRI = new Date(2026, 10, 13, 13, 30);
@@ -77,7 +79,7 @@ const STATES = {
       ['review-5', async (page) => { await press(page, 'Next'); await page.locator('.ds-dialog textarea').fill('Leave Thursday afternoon clear for writing.'); await settle(page, 200); }, { then: closePanel }],
     ],
   },
-  cap: { at: TUE, role: 'owner', seed: { over: true }, screens: [['page', async (page) => { await page.locator('.cc-today-figures').scrollIntoViewIfNeeded(); await settle(page, 200); }, { full: true }]] },
+  cap: { at: TUE, role: 'owner', seed: { over: true }, screens: [['page', async (page) => { await page.locator('.cc-today-week').scrollIntoViewIfNeeded(); await settle(page, 200); }, { full: true }]] },
   associate: { at: TUE, role: 'associate', screens: [['page', null, { full: true }]] },
 };
 
@@ -124,7 +126,7 @@ async function check(page, tag, { size, theme }) {
   await page.evaluate(() => document.fonts.ready);
   await page.mouse.move(2, 2);
   const r = await page.evaluate(measure);
-  report.pass(`${tag}: the page follows the chosen mode`, r.theme === theme && r.background === BACKGROUND[theme], `${r.theme} ${r.background}`);
+  report.pass(`${tag}: the page follows the chosen mode`, r.theme === theme && [BACKGROUND[theme], FRAME_MARGIN[theme]].includes(r.background), `${r.theme} ${r.background}`);
   report.pass(`${tag}: every tap area is 44px or more`, r.small.length === 0, r.small.slice(0, 5).join('; '));
   report.pass(`${tag}: no sideways scroll`, r.sideways <= 0, `${r.sideways}px`);
   report.pass(`${tag}: no keyboard shortcut is shown`, r.shortcuts === 0, `${r.shortcuts}`);
@@ -238,10 +240,10 @@ async function flows() {
   await page.reload(); await page.waitForSelector('.cc-app'); await settle(page, 1000);
   report.pass('flow: and it stays hidden for the visit', !/Plan my day/.test(await words(page)));
   // A call's row opens the brief; a group's row its page.
-  await page.locator('.cc-today-call--open').first().click(); await settle(page, 700);
+  await page.locator('.cc-today-calls .ds-li--go').first().click(); await settle(page, 700);
   report.pass('flow: a client’s call opens the brief', await page.locator('.ds-dialog').count() === 1);
   await closePanel(page);
-  await page.locator('.cc-today-call--open').nth(1).click(); await settle(page, 700);
+  await page.locator('.cc-today-calls .ds-li--go').nth(1).click(); await settle(page, 700);
   report.pass('flow: a group’s call opens the group', /\/coach\/groups\//.test(page.url()), page.url().replace(/^.*\/coach/, '/coach'));
   await t.done('flow, Tuesday');
 
@@ -351,10 +353,13 @@ seedClock(null);
 const has = (key, words, what) => { if (said[key] != null) report.pass(what, said[key].toLowerCase().includes(words.toLowerCase()), `“${words}” not found`); };
 has('tue page', 'Today is 45 minutes over.', 'Tuesday: the over-full line reads as M11');
 has('tue page', '9:45 am Chicago', 'Tuesday: a client in another time zone shows their own time and city');
-has('tue page', 'Group of 3', 'Tuesday: a group’s row says how many are in it');
-has('tue page', 'Self-funded', 'Tuesday: a client with no organisation is Self-funded');
+// Polish 1 (25 Nov; the example's Coaching sessions card): a call's row is its name with its time and place, so the
+// organisation, "Self-funded" and "Group of 3" stay in the brief and the group's page, no longer on Today's row.
+has('tue page', 'Kestrel leadership team', 'Tuesday: a group’s call is on Today by the group’s name');
 has('tue page', 'hasn’t been sent yet.', 'Tuesday: the recap nudge shows');
-has('tue page', 'November £2,300 of £5,000', 'Tuesday: the Finances line shows through the test’s switch');
+// The test's finance switch went when Finances became real (59a002bf): the stand-in holds no invoices or targets, so the
+// card shows the month's figure from the real model ("£0", "Settled so far."); its shape is what's checked here.
+if (said['tue page'] != null) report.pass('Tuesday: the owner’s This month card shows the month’s figure and the Finances link (polish 1)', /THIS MONTH\s*(\n|.)*?£[\d,]+/i.test(said['tue page']) && /Settled so far\.|overdue|Cash dips/i.test(said['tue page']), (said['tue page'].match(/THIS MONTH[\s\S]{0,80}/i) || [''])[0]);
 has('tue page', 'Plan my day', 'Tuesday morning offers Plan my day');
 has('tue page', '11 of 15', 'Tuesday: capacity reads 11 of 15');
 has('tue page', 'Board meeting', 'Tuesday: the pressure forecast shows a shared work moment');
@@ -370,5 +375,5 @@ has('fri review-1', 'Step 1 of 5', 'the Weekly review counts its steps');
 has('fri review-4', '15 calls, the busiest on Tuesday and Thursday.', 'the Weekly review gives next week’s shape');
 has('cap page', '17 of 15', 'a week over capacity reads 17 of 15');
 has('cap page', '2 over', 'a week over capacity says how far');
-if (said['associate page'] != null) report.pass('an associate never sees the Finances line', !/£2,300/.test(said['associate page']));
+if (said['associate page'] != null) report.pass('an associate never sees the This month card', !/THIS MONTH|Settled so far/i.test(said['associate page']));
 report.done();

@@ -59,7 +59,7 @@ const browser = await chromium.launch();
 const path = (page) => new URL(page.url()).pathname;
 const words = (page, sel = '.si-col') => page.locator(sel).first().innerText().then((t) => t.replace(/\s+/g, ' ').trim()).catch(() => '');
 const squash = (t) => String(t).replace(/\s+/g, '').toLowerCase();
-const message = (page) => page.locator('.si-err').first().innerText().then((t) => t.replace(/\s+/g, ' ').replace(/^! /, '').trim()).catch(() => '');
+const message = (page) => page.locator('.si-err, .si-code-msg:not(:empty)').first().innerText().then((t) => t.replace(/\s+/g, ' ').replace(/^! /, '').trim()).catch(() => '');
 const tapButton = (page, name) => page.getByRole('button', { name, exact: true }).click();
 
 async function open(world, { width = 1440, mode = 'dark' } = {}) {
@@ -176,7 +176,7 @@ function lowText(root) {
   };
   const low = [];
   for (const el of col.querySelectorAll('*')) {
-    if (el.closest('svg, .ds-google, :disabled, [aria-disabled="true"]')) continue;
+    if (el.closest('svg, .ds-google, .si-google, :disabled, [aria-disabled="true"]')) continue;
     const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
     if (!own) continue;
     const b = el.getBoundingClientRect();
@@ -197,7 +197,7 @@ function lowText(root) {
 }
 
 const SCREENS = [
-  { key: 'coach-code', name: 'Enter your code', world: { factor: 'verified', aal: 'aal1' }, go: '/coach/sign-in/code' },
+  { key: 'coach-code', name: 'Enter your code', world: { factor: 'verified', aal: 'aal1' }, go: '/coach/sign-in/code', wait: '.si-code-sq' },
   { key: 'auth-setup', name: 'Set up your authenticator', world: { factor: 'none', aal: 'aal1', codesMade: false, codesSaved: false }, go: '/coach/sign-in/set-up', wait: '.si-qr svg' },
   { key: 'auth-codes', name: 'Save your recovery codes', world: { factor: 'verified', aal: 'aal2', codesSaved: false }, go: '/coach/sign-in/recovery-codes', wait: '.si-rc li' },
   { key: 'auth-lost', name: 'Lost your authenticator app', world: { factor: 'verified', aal: 'aal1' }, go: '/coach/sign-in/help', wait: '.si-field' },
@@ -232,10 +232,10 @@ const SCREENS = [
     noMock: true,
     world: { factor: 'verified', aal: 'aal1', codesLeft: 2 },
     go: '/coach',
+    wait: '.si-code-sq',
     then: async (page, world) => {
       await page.waitForURL(/\/coach\/sign-in\/code$/, { timeout: 15000 });
-      await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode);
-      await tapButton(page, 'Sign in');
+      await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode); /* goes in by itself on the sixth digit (polish 1, rule 23) */
       await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
       await page.getByText('recovery codes left').waitFor({ timeout: 10000 });
     },
@@ -249,10 +249,10 @@ const SCREENS = [
     noMock: true,
     world: { factor: 'verified', aal: 'aal1' },
     go: '/coach/sign-in/code',
+    wait: '.si-code-sq',
     then: async (page) => {
       for (let i = 1; i <= 5; i += 1) {
-        await page.getByRole('textbox', { name: 'Code', exact: true }).fill(`00000${i}`);
-        await tapButton(page, 'Sign in');
+        await page.getByRole('textbox', { name: 'Code', exact: true }).fill(`00000${i}`); /* goes in by itself on the sixth digit (polish 1, rule 23) */
         await sleep(350);
       }
       await page.getByText('That was 5 wrong codes in a row.').waitFor({ timeout: 10000 });
@@ -284,10 +284,10 @@ const SCREENS = [
     noMock: true,
     world: { factor: 'verified', aal: 'aal1', codesLeft: n },
     go: '/coach',
+    wait: '.si-code-sq',
     then: async (page, world) => {
       await page.waitForURL(/\/coach\/sign-in\/code$/, { timeout: 15000 });
-      await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode);
-      await tapButton(page, 'Sign in');
+      await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode); /* goes in by itself on the sixth digit (polish 1, rule 23) */
       await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
       await page.getByText('Make new codes in My Account').waitFor({ timeout: 10000 });
     },
@@ -311,6 +311,9 @@ const SCREENS = [
 if (PARTS.includes('screens')) {
   const mock = {};
   for (const s of SCREENS) if (!s.noMock) mock[s.key] = await m26Lines(s.key);
+  // Where the 25 Nov reference wins (polish 1, rule 23): Enter your code has the example's one line and no
+  // button (the sixth digit sends it), so M26's two lines and its Sign in are not looked for.
+  if (mock['coach-code']) mock['coach-code'] = mock['coach-code'].filter((l) => !/^(Open your authenticator app for the 6.digit code\.|You’re only asked on a new phone or computer\.|Sign in)$/.test(l)).concat([]);
   for (const mode of MODES) {
     for (const width of SIZES) {
       for (const s of SCREENS) {
@@ -330,7 +333,8 @@ if (PARTS.includes('screens')) {
           await ctx.close();
           continue;
         }
-        const root = s.acct ? '.si-col--account' : '.si-col';
+        // Back sits over the column (in .si-mid) since polish 1, so the words are read from there.
+        const root = s.acct ? '.si-col--account' : '.si-mid';
         if (OUT) await page.screenshot({ path: `${OUT}/${s.shot || s.key}.${width}.${mode}${SUFFIX}.png`, fullPage: true });
         if (s.expect) {
           const built = squash(await words(page, root));
@@ -353,9 +357,9 @@ if (PARTS.includes('screens')) {
           pass(`${tag}: M26’s words, in M26’s order`, missing.length === 0, missing.slice(0, 3).join(' | '));
         }
         // The spacing rule, from the page's own boxes.
-        const rule = await page.evaluate(spacingRule, root);
+        const rule = await page.evaluate(spacingRule, s.acct ? root : '.si-col');
         // Sign-in security at rest is rows and one line, which the rule doesn't name.
-        pass(`${tag}: the spacing rule (12, 12, 24, 18, 18; lines at 1.55)`, ruleProblems(rule).length === 0 && (rule.gaps.length > 0 || (s.acct && !s.then)), `${ruleProblems(rule).join('; ')} (${rule.gaps.length} gaps read)`);
+        pass(`${tag}: the spacing (the 25 Nov reference: 32 under the title, 12 between parts; lines at 1.55)`, ruleProblems(rule).length === 0 && (rule.gaps.length > 0 || (s.acct && !s.then)), `${ruleProblems(rule).join('; ')} (${rule.gaps.length} gaps read)`);
         const low = await page.evaluate(lowTaps, root);
         pass(`${tag}: every tap area is 44px`, low.length === 0, low.slice(0, 4).join('; '));
         const shared = await page.evaluate(overlappingTaps);
@@ -408,7 +412,7 @@ if (PARTS.includes('screens')) {
 // ---------------------------------------------------------------- part 2: the flows
 async function signInAsMaya(page) {
   await page.goto(`${APP}/coach/sign-in`);
-  await page.waitForSelector('.si-col .ds-google');
+  await page.waitForSelector('.si-col .si-google');
   await page.locator('input[type=email]').fill('maya.collins@harbourlane.co');
   await page.locator('.si-pw input').fill('lighthouse-keeper-77');
   await tapButton(page, 'Sign in');
@@ -439,12 +443,10 @@ if (PARTS.includes('flows')) {
     const shownKey = (await page.locator('.si-key').innerText().catch(() => '')).replace(/\s+/g, '');
     pass(`${tag}: and copies the key as typed into an app (no spaces)`, Boolean(copied) && copied === shownKey && /^[A-Z2-7]+$/.test(copied));
     // A wrong code, then the right one.
-    await page.getByRole('textbox', { name: 'Code', exact: true }).fill('111111');
-    await tapButton(page, 'Turn it on');
+    await page.getByRole('textbox', { name: 'Code', exact: true }).fill('111111'); /* goes in by itself on the sixth digit (polish 1, rule 23) */
     await page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
     pass(`${tag}: a wrong code: “That code didn’t work. Check the time on your phone and try again.”`, (await message(page)) === 'That code didn’t work. Check the time on your phone and try again.', await message(page));
-    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode);
-    await tapButton(page, 'Turn it on');
+    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode); /* goes in by itself on the sixth digit (polish 1, rule 23) */
     await page.waitForURL(/\/coach\/sign-in\/recovery-codes$/, { timeout: 20000 }).catch(() => null);
     pass(`${tag}: Turn it on leads to Save your recovery codes`, path(page) === '/coach/sign-in/recovery-codes', path(page));
     await page.waitForSelector('.si-rc li', { timeout: 15000 }).catch(() => null);
@@ -466,8 +468,7 @@ if (PARTS.includes('flows')) {
     await page.waitForURL(/\/coach\/sign-in\/set-up$/, { timeout: 15000 }).catch(() => null);
     pass(`${tag}: Back returns to set-up`, path(page) === '/coach/sign-in/set-up', path(page));
     await page.waitForSelector('.si-qr svg', { timeout: 15000 }).catch(() => null);
-    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode);
-    await tapButton(page, 'Turn it on');
+    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode); /* goes in by itself on the sixth digit (polish 1, rule 23) */
     await page.waitForURL(/\/coach\/sign-in\/recovery-codes$/, { timeout: 20000 }).catch(() => null);
     await page.waitForSelector('.si-rc li', { timeout: 15000 }).catch(() => null);
     pass(`${tag}: set up again, the same codes show (none made again) and one authenticator is left`, world.madeSets === 2 && world.factors.filter((f) => f.status === 'verified').length === 1, `${world.madeSets} sets, ${world.factors.length} factors`);
@@ -487,23 +488,22 @@ if (PARTS.includes('flows')) {
     await signInAsMaya(page);
     await page.waitForURL(/\/coach\/sign-in\/code$/, { timeout: 20000 }).catch(() => null);
     pass('Second computer: the code follows the password', path(page) === '/coach/sign-in/code', path(page));
+    await page.waitForSelector('.si-code-sq', { timeout: 15000 }).catch(() => null);
     const lines = await words(page);
-    pass('Second computer: “You’re only asked on a new phone or computer.”', lines.includes('You’re only asked on a new phone or computer.'), lines.slice(0, 160));
+    // The 25 Nov example's line replaced M26's two (polish 1, rule 23).
+    pass('Second computer: “From your authenticator app. It goes in by itself.”', lines.includes('From your authenticator app. It goes in by itself.'), lines.slice(0, 160));
     // Five wrong codes in a row: a calm wait, and even the right code waits.
     for (let i = 1; i <= 5; i += 1) {
-      await page.getByRole('textbox', { name: 'Code', exact: true }).fill(`00000${i}`);
-      await tapButton(page, 'Sign in');
+      await page.getByRole('textbox', { name: 'Code', exact: true }).fill(`00000${i}`); /* goes in by itself on the sixth digit (polish 1, rule 23) */
       await sleep(400);
     }
     pass('Second computer: after 5 wrong codes: “That was 5 wrong codes in a row. Wait 30 seconds, then try again.”', (await message(page)) === 'That was 5 wrong codes in a row. Wait 30 seconds, then try again.', await message(page));
-    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode);
-    await tapButton(page, 'Sign in');
+    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode); /* goes in by itself on the sixth digit (polish 1, rule 23) */
     await sleep(400);
     pass('Second computer: during the wait even the right code waits, said calmly', /^Wait \d+ seconds?, then try again\.$/.test(await message(page)) && path(page) === '/coach/sign-in/code', await message(page));
     // The wait is over (the device's count is moved on, as 30 seconds would; kept on the device since the break-it tester, 21 Nov).
     await page.evaluate(() => localStorage.removeItem('clarity-sign-in-code-tries'));
-    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode);
-    await tapButton(page, 'Sign in');
+    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode); /* goes in by itself on the sixth digit (polish 1, rule 23) */
     await page.waitForURL(/\/coach$/, { timeout: 20000 }).catch(() => null);
     pass('Second computer: the right code opens the coach portal', path(page) === '/coach', path(page));
     await ctx.close();
@@ -527,6 +527,7 @@ if (PARTS.includes('flows')) {
     await page.getByLabel('Recovery code').fill('K7Q2 9FMD');
     await tapButton(page, 'Sign in');
     await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 }).catch(() => null);
+    await page.getByText('That recovery code is now used.').waitFor({ timeout: 10000 }).catch(() => null);
     const inWords = await words(page);
     pass('Lost phone: You’re in: “That recovery code is now used. You have 9 left.”', inWords.includes('That recovery code is now used. You have 9 left.'), inWords.slice(0, 200));
     pass('Lost phone: You’re in: “Your other sign-ins have ended.”', inWords.includes('Your other sign-ins have ended.'), inWords.slice(0, 200));
@@ -535,8 +536,7 @@ if (PARTS.includes('flows')) {
     await page.waitForURL(/\/coach\/sign-in\/set-up$/, { timeout: 15000 }).catch(() => null);
     await page.waitForSelector('.si-qr svg', { timeout: 15000 }).catch(() => null);
     pass('Lost phone: Set it up opens set-up with a new key', path(page) === '/coach/sign-in/set-up' && world.enrolled === 1, path(page));
-    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode);
-    await tapButton(page, 'Turn it on');
+    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode); /* goes in by itself on the sixth digit (polish 1, rule 23) */
     await page.waitForURL(/\/coach$/, { timeout: 20000 }).catch(() => null);
     pass('Lost phone: the new phone set up, the coach portal opens (the codes were saved already)', path(page) === '/coach', path(page));
     await ctx.close();
@@ -572,12 +572,10 @@ if (PARTS.includes('flows')) {
     await page.goto(`${APP}/my-account/sign-in-security`);
     await page.waitForSelector('.si-srow', { timeout: 20000 });
     await page.getByRole('button', { name: 'Make new codes' }).click();
-    await page.getByRole('textbox', { name: 'Code', exact: true }).fill('999999');
-    await tapButton(page, 'Carry on');
+    await page.getByRole('textbox', { name: 'Code', exact: true }).fill('999999'); /* goes in by itself on the sixth digit (polish 1, rule 23) */
     await page.waitForSelector('.si-err', { timeout: 10000 }).catch(() => null);
     pass('Make new codes needs a current code: a wrong one is refused', world.madeSets === 0 && /didn’t work/.test(await message(page)), await message(page));
-    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode);
-    await tapButton(page, 'Carry on');
+    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode); /* goes in by itself on the sixth digit (polish 1, rule 23) */
     await page.waitForURL(/\/coach\/sign-in\/recovery-codes$/, { timeout: 15000 }).catch(() => null);
     await page.waitForSelector('.si-rc li', { timeout: 10000 }).catch(() => null);
     pass('Make new codes: a new set, shown once', world.madeSets === 1 && (await page.locator('.si-rc li').count()) === 10);
@@ -588,12 +586,10 @@ if (PARTS.includes('flows')) {
     pass('Make new codes: back on Sign-in security, “10 of 10 left”', (await words(page, '.si-col--account')).includes('10 of 10 left'), (await words(page, '.si-col--account')).slice(0, 200));
     const old = world.factors.find((f) => f.status === 'verified')?.id;
     await page.getByRole('button', { name: 'Set up on a new phone' }).click();
-    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode);
-    await tapButton(page, 'Carry on');
+    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode); /* goes in by itself on the sixth digit (polish 1, rule 23) */
     await page.waitForURL(/\/coach\/sign-in\/set-up$/, { timeout: 15000 }).catch(() => null);
     await page.waitForSelector('.si-qr svg', { timeout: 15000 }).catch(() => null);
-    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode);
-    await tapButton(page, 'Turn it on');
+    await page.getByRole('textbox', { name: 'Code', exact: true }).fill(world.goodCode); /* goes in by itself on the sixth digit (polish 1, rule 23) */
     await page.waitForURL(/\/my-account\/sign-in-security$/, { timeout: 15000 }).catch(() => null);
     const left = world.factors.filter((f) => f.status === 'verified');
     pass('New phone: the new authenticator is on and the old phone’s is taken off', left.length === 1 && left[0].id !== old, `${left.length} on`);
@@ -605,16 +601,16 @@ if (PARTS.includes('flows')) {
   // Offline: one calm line on each screen (with a picture of each, 1440 and 400, dark and light).
   const OFFLINE_SIZES = [[1440, 'dark'], [400, 'light'], [1440, 'light'], [400, 'dark']];
   for (const [go, setUp, press, line, shot, width, mode] of [
-    ['/coach/sign-in/code', { factor: 'verified' }, async (p) => { await p.getByRole('textbox', { name: 'Code', exact: true }).fill('123456'); await tapButton(p, 'Sign in'); }, 'Signing in needs a connection, so try again when you’re back online.', 'coach-code'],
+    ['/coach/sign-in/code', { factor: 'verified' }, async (p) => { await p.getByRole('textbox', { name: 'Code', exact: true }).fill('123456'); /* goes in by itself on the sixth digit (polish 1, rule 23) */ }, 'Signing in needs a connection, so try again when you’re back online.', 'coach-code'],
     ['/coach/sign-in/help', { factor: 'verified' }, async (p) => { await p.getByLabel('Recovery code').fill('k7q2-9fmd'); await tapButton(p, 'Sign in'); }, 'Signing in needs a connection, so try again when you’re back online.', 'auth-lost'],
     ['/coach/sign-in/set-up', { factor: 'none', codesMade: false, codesSaved: false }, null, 'Setting up your authenticator needs a connection, so try again when you’re back online.', 'auth-setup'],
     ['/coach/sign-in/recovery-codes', { factor: 'verified', aal: 'aal2', codesSaved: false }, null, 'Making your recovery codes needs a connection, so try again when you’re back online.', 'auth-codes'],
-    ['/my-account/sign-in-security', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, async (p) => { await p.getByRole('button', { name: 'Make new codes' }).click(); await p.getByRole('textbox', { name: 'Code', exact: true }).fill('123456'); await tapButton(p, 'Carry on'); }, 'Sign-in security needs a connection, so try again when you’re back online.', 'acct-security'],
+    ['/my-account/sign-in-security', { factor: 'verified', aal: 'aal2', codesLeft: 9 }, async (p) => { await p.getByRole('button', { name: 'Make new codes' }).click(); await p.getByRole('textbox', { name: 'Code', exact: true }).fill('123456'); /* goes in by itself on the sixth digit (polish 1, rule 23) */ }, 'Sign-in security needs a connection, so try again when you’re back online.', 'acct-security'],
   ].flatMap((row) => OFFLINE_SIZES.map(([w, m]) => [...row, w, m]))) {
     const { ctx, page, world, errors } = await open(setUp, { width, mode });
     if (press) {
       await page.goto(`${APP}${go}`);
-      await page.waitForSelector('.si-field, .si-srow', { timeout: 15000 });
+      await page.waitForSelector('.si-field, .si-srow, .si-code-sq', { timeout: 15000 });
       world.down = true;
       await ctx.setOffline(true);
       await press(page);

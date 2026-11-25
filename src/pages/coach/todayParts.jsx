@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Card, Figure, MoreLink, Row, Rows } from '../../components/design';
 import { Button, ChartTips, Chevron, Dropdown, InlineChoice, Sheet, SlidePanel, Stat, TextBox, tipProps, useIsPhone, useToast } from '../../components/design';
 import keepWords from '../../components/design/keepWords';
 import { deviceZone, isZone } from '../../lib/time';
@@ -14,6 +15,7 @@ import { useFinance } from './financeParts';
 import { Eye, InlineLink, Line, TextLink, useCoachPortal } from './parts';
 import './today.css';
 import { countFigure } from '../../lib/coach/numbers';
+import { COACH_TODAY, monthNote } from '../../content/pageLines/coach';
 
 // Today's panels (Phase 6a run 2, step 3; M11): Plan my day, the over-full
 // day, Choose what to move, Close the day, the Weekly review and Rate my
@@ -71,6 +73,36 @@ export function TodayFinances() {
   const navigate = useNavigate();
   const { model } = useFinance();
   return <FinancesLine line={model.line} onOpen={() => navigate('/coach/finances/cash-flow')} />;
+}
+
+/**
+ * Today's This month card (polish 1; the example's Coach Today): the month's settled figure against its target, as a
+ * 24px light figure, one sentence under it and a link to Finances. Its words are the same todayFinanceLine as before,
+ * so it never differs from Finances itself.
+ */
+export function ThisMonthCard() {
+  const navigate = useNavigate();
+  const { model } = useFinance();
+  const line = model.line;
+  return (
+    <Card label={COACH_TODAY.monthLabel} className="cc-part cc-today-month">
+      <span className="ds-sr">{line.aria}</span>
+      <div aria-hidden="true"><Figure value={line.paid} unit={line.target ? `of ${line.target}` : undefined} /></div>
+      <p className="cc-today-month-note">{monthNote(line.urgent)}</p>
+      <MoreLink onClick={() => navigate('/coach/finances/cash-flow')}>{COACH_TODAY.monthLink}</MoreLink>
+    </Card>
+  );
+}
+
+/** This week's rows: coaching hours against the coach's own target ("17 of 15, 2 over") and the calls. */
+export function ThisWeekRows({ sessions, target, todayKey }) {
+  const cap = capacity(sessions, target, todayKey);
+  return (
+    <Rows>
+      <Row name={COACH_TODAY.weekHours} value={<><span className="ds-sr">{cap.spoken}.</span><span aria-hidden="true">{cap.overWords ? `${cap.words}, ${cap.overWords}` : cap.words}</span></>} />
+      <Row name={COACH_TODAY.weekCalls} value={countFigure(cap.calls)} />
+    </Rows>
+  );
 }
 
 // ---------------------------------------------------------------- small shared parts

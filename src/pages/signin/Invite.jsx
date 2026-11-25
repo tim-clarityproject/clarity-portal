@@ -156,15 +156,15 @@ export default function Invite() {
   return (
     <SignInPage title={names.first ? `Welcome, ${names.first}` : 'Welcome'} onSubmit={submit}>
       <Line>{names.coach ? `${names.coach} has set up your account.` : 'Your coach has set up your account.'}</Line>
-      <ContinueWithGoogle onClick={google} />
-      {at('google')}
-      <OrLine />
       <EmailField value={user?.email || ''} readOnly />
       <PasswordField autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
       {at('password')}
       <TermsRow checked={ticked} onChange={tick} />
       {at('terms')}
       <MainButton>Set my password</MainButton>
+      <OrLine />
+      <ContinueWithGoogle onClick={google} />
+      {at('google')}
     </SignInPage>
   );
 }

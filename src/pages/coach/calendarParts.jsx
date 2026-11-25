@@ -337,7 +337,7 @@ export function CalGrid({
         role="button"
         tabIndex={0}
         data-cal-key={e.key}
-        className={tileClass(e, `${moving && drag.mode === 'move' ? ' cc-cal-tile--lifted' : ''}${drag?.mode === 'held' && drag.key === e.key ? ' cc-cal-tile--held' : ''}${fixed(e) ? ' cc-cal-tile--fixed' : ''}`)}
+        className={tileClass(e, `${moving && drag.mode === 'move' ? ' cc-cal-tile--lifted' : ''}${drag?.mode === 'held' && drag.key === e.key ? ' cc-cal-tile--held' : ''}${fixed(e) ? ' cc-cal-tile--fixed' : ''}${t.columns >= 4 ? ' cc-cal-tile--slim' : ''}`)}
         style={{ top: pct(startMin), height: high(startMin, endMin), left: `calc(${t.column * width}% + var(--cal-tile-gap))`, width: `calc(${width}% - 2 * var(--cal-tile-gap))` }}
         aria-label={entryLabel(e, coachZone)}
         onPointerDown={(ev) => { if (ev.target.closest('.cc-cal-tick, .cc-cal-grip')) return; if (fixed(e)) return; ev.stopPropagation(); begin(ev, { mode: 'move', entry: e, day, start0: wallMin(e.startsAt, coachZone), grabMin: minAt(day, ev.clientY) }); }}
@@ -450,7 +450,7 @@ export function CalGrid({
                   <button
                     key={m.key}
                     type="button"
-                    className="cc-cal-tile cc-cal-tile--fixed cc-cal-more"
+                    className={`cc-cal-tile cc-cal-tile--fixed cc-cal-more${m.columns >= 4 ? ' cc-cal-tile--slim' : ''}`}
                     style={{ top: pct(m.startMin), height: high(m.startMin, m.endMin), left: `calc(${m.column * width}% + var(--cal-tile-gap))`, width: `calc(${width}% - 2 * var(--cal-tile-gap))` }}
                     aria-haspopup="menu"
                     aria-expanded={open}

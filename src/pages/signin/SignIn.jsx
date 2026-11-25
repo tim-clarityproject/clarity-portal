@@ -11,8 +11,9 @@ import { CLOCK_LOOKS_WRONG, DIDNT_SIGN_IN, EMAIL_LINK_OVER_SIGNED_OUT, GOOGLE_DI
 import { Alt, ContinueWithGoogle, EmailField, MainButton, Message, Note, OrLine, PasswordField, SignInPage, TextLink } from '../../components/signin/SignInParts';
 import useEnter, { useAlreadyIn } from '../../components/signin/useEnter';
 
-// Sign in (M26: "Sign in" and "Sign in, details don’t match"). Continue
-// with Google sits above email. People always stay signed in on their own
+// Sign in (M26: "Sign in" and "Sign in, details don’t match"; the 25 Nov
+// example page draws it: Email and Password with their names inside, Sign
+// in, "or", Continue with Google, Forgotten your password?). People always stay signed in on their own
 // devices, so there is no "Remember me". After signing in they land where
 // their link pointed, otherwise Home.
 //
@@ -145,15 +146,15 @@ export default function SignIn({ coach = false }) {
   };
 
   return (
-    <SignInPage core={!coach} title={coach ? 'Coach sign in' : undefined} onSubmit={submit}>
+    <SignInPage title={coach ? 'Coach sign in' : 'Sign in'} onSubmit={submit}>
       {clockOut ? <Note>{CLOCK_LOOKS_WRONG}</Note> : null}
       {oneOpened ? <Note>{ONE_LINK_OPENED}</Note> : null}
-      <ContinueWithGoogle onClick={google} />
-      <OrLine />
       <EmailField value={email} onChange={(e) => setEmail(e.target.value)} />
       <PasswordField value={password} onChange={(e) => setPassword(e.target.value)} />
       <Message lines={message} />
       <MainButton>Sign in</MainButton>
+      <OrLine />
+      <ContinueWithGoogle onClick={google} />
       <Alt><TextLink to={SIGN_IN_PATHS.forgot} state={{ email: email.trim(), coach }}>Forgotten your password?</TextLink></Alt>
       {coach ? null : <Alt>New here? <TextLink to={SIGN_IN_PATHS.create}>Create my account</TextLink></Alt>}
     </SignInPage>

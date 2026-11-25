@@ -171,7 +171,20 @@ async function home(page) {
   await sleep(600);
 }
 const text = async (page, sel) => ((await page.locator(sel).count()) ? (await page.locator(sel).first().innerText()).trim() : '');
-const cardQuestion = (page) => text(page, '.ds-suggest-question');
+// Polish 1 (25 Nov reference, rule 12): the suggestion for now is the page opening's one main button,
+// with no card, question or time. Its words stand for the card's question these checks were written for.
+const ASKS = {
+  'Start my daily plan': 'Ready to plan your day?',
+  'Log today': 'Ready to log today?',
+  'Start my daily review': 'Ready to review your day?',
+  'Start my wind down': 'Ready to wind down?',
+  'Start my debrief': 'How did this week go?',
+  'Start my monthly review': 'Your monthly review is ready.',
+  'Start my first review': 'Ready for your first review?',
+  'Plan what’s next': 'Ready for what comes next?',
+  'Build my plan': 'Ready to build your plan?',
+};
+const cardQuestion = async (page) => { const b = await text(page, '.ds-open-act .ds-btn--primary'); return ASKS[b] || b; };
 const title = async (page) => (await text(page, '.home-page .ds-page-title')).toLowerCase();
 const at = (page, day, time, zone = LONDON) => page.clock.setSystemTime(zoneInstant(zone, day, time));
 async function homeAt(page, day, time, zone = LONDON) {
@@ -196,10 +209,10 @@ if (part(1)) {
   const { context, page } = await signedIn({ day: THU, time: '08:30' });
   try {
     pass('morning: "Ready to plan your day?"', (await cardQuestion(page)) === 'Ready to plan your day?', await cardQuestion(page));
-    pass('morning: ~4 minutes', (await text(page, '.ds-suggest-time')) === '~4 minutes');
+    results.push('NOTE  morning: no time beside the button (the 25 Nov reference opens with the button alone)');
     pass('morning: the greeting', (await title(page)).startsWith('good morning'), await title(page));
     pass('morning: one coral button on Home', (await page.locator('.home-page .ds-btn--primary').count()) === 1);
-    pass('morning: Daily plan is the coral button', /daily plan/i.test(await text(page, '.ds-suggest .ds-btn--primary')));
+    pass('morning: Daily plan is the coral button', /daily plan/i.test(await text(page, '.ds-open-act .ds-btn--primary')));
     // Declutter (Tim, 5 Nov): no line saying the to-dos will show here.
     pass('morning: no "to-dos show here" line', (await page.locator('.home-today', { hasText: 'Your to-dos for today show here' }).count()) === 0);
     await shot(page, 'moment-morning');
@@ -207,14 +220,16 @@ if (part(1)) {
     await homeAt(page, THU, '13:00');
     // The one card takes turns (Tim, 5 Nov): after Daily plan's morning a due
     // monthly review has its turn in place of "Ready to log today?".
-    const checkinTurn = (await cardQuestion(page)) === 'Your monthly review is ready.';
+    // A due review (the monthly one, or the First review on an account with none finished) has the turn.
+    const turnAsk = await cardQuestion(page);
+    const checkinTurn = ['Your monthly review is ready.', 'Ready for your first review?'].includes(turnAsk);
     if (checkinTurn) results.push('NOTE  midday: this month’s check-in is due, so it has the card’s turn (Tim, 5 Nov)');
     pass('midday: "Ready to log today?" or the due check-in', checkinTurn || (await cardQuestion(page)) === 'Ready to log today?', await cardQuestion(page));
-    pass('midday: no line saying when the review is suggested (calm layout, 10 Nov)', !(await text(page, '.ds-suggest')).includes('suggested from'));
-    pass('midday: no to-do count (UNDEFINED)', !/to-dos done so far/.test(await text(page, '.ds-suggest')));
+    pass('midday: no line saying when the review is suggested (calm layout, 10 Nov)', !(await text(page, '.ds-open')).includes('suggested from'));
+    pass('midday: no to-do count (UNDEFINED)', !/to-dos done so far/.test(await text(page, '.ds-open')));
     pass('midday: the greeting', (await title(page)).startsWith('good afternoon'), await title(page));
     if (!checkinTurn) {
-      await page.locator('.ds-suggest .ds-btn--primary').click();
+      await page.locator('.ds-open-act .ds-btn--primary').click();
       pass('midday: Log today brings Log today into view', Boolean(await until(async () => {
         const box = await page.locator('#log-today').boundingBox();
         return box && box.y < 300 && box.y > -50;
@@ -223,22 +238,21 @@ if (part(1)) {
     await shot(page, 'moment-midday');
 
     await homeAt(page, THU, '16:30');
-    pass('16:30: still the afternoon card (review from 17:00, M2)', (await cardQuestion(page)) === (checkinTurn ? 'Your monthly review is ready.' : 'Ready to log today?'), await cardQuestion(page));
+    pass('16:30: still the afternoon card (review from 17:00, M2)', (await cardQuestion(page)) === (checkinTurn ? turnAsk : 'Ready to log today?'), await cardQuestion(page));
     await homeAt(page, THU, '17:30');
     pass('17:30: "Ready to review your day?"', (await cardQuestion(page)) === 'Ready to review your day?', await cardQuestion(page));
-    pass('17:30: ~5 minutes', (await text(page, '.ds-suggest-time')) === '~5 minutes');
+    results.push('NOTE  17:30: no time beside the button (25 Nov reference)');
     pass('17:30: the greeting', (await title(page)).startsWith('good evening'), await title(page));
     await shot(page, 'moment-evening');
 
     await homeAt(page, THU, '20:59');
-    pass('20:59: no wind down yet', (await text(page, '.ds-suggest-label')) !== 'Sleep wind down');
+    pass('20:59: no wind down yet', (await cardQuestion(page)) !== 'Ready to wind down?');
     await homeAt(page, THU, '21:00');
     pass('21:00: "Ready to wind down?"', (await cardQuestion(page)) === 'Ready to wind down?', await cardQuestion(page));
-    pass('21:00: the card says Sleep wind down', (await text(page, '.ds-suggest-label')) === 'Sleep wind down');
-    pass('21:00: ~6 minutes', (await text(page, '.ds-suggest-time')) === '~6 minutes');
-    pass('21:00: Start my wind down and Not tonight', /start my wind down/i.test(await text(page, '.ds-suggest .ds-btn--primary')) && (await page.locator('.ds-suggest .ds-link', { hasText: 'Not tonight' }).count()) === 1);
+    results.push('NOTE  21:00: the button names the wind down; no card label or time (25 Nov reference)');
+    pass('21:00: Start my wind down and Not tonight', /start my wind down/i.test(await text(page, '.ds-open-act .ds-btn--primary')) && (await page.locator('.ds-open-act .ds-more', { hasText: 'Not tonight' }).count()) === 1);
     await shot(page, 'moment-2100');
-    await page.locator('.ds-suggest .ds-link', { hasText: 'Not tonight' }).click();
+    await page.locator('.ds-open-act .ds-more', { hasText: 'Not tonight' }).click();
     pass('Not tonight: says so', Boolean(await until(async () => (await page.locator('text=You can wind down tomorrow evening.').count()) > 0, 5000)));
     pass('Not tonight: the review takes the card', Boolean(await until(async () => (await cardQuestion(page)) === 'Ready to review your day?', 5000)), await cardQuestion(page));
     await homeAt(page, '2026-10-23', '00:30');
@@ -278,7 +292,7 @@ if (part(1)) {
     pass('after midnight: "Ready to wind down?"', (await cardQuestion(late.page)) === 'Ready to wind down?', await cardQuestion(late.page));
     pass('after midnight: the greeting stays the evening', (await title(late.page)).startsWith('good evening'), await title(late.page));
     await homeAt(late.page, '2026-10-23', '03:30');
-    pass('03:30: no wind down, nothing to suggest', (await late.page.locator('.ds-suggest').count()) === 0, await cardQuestion(late.page));
+    pass('03:30: no wind down, nothing to suggest', (await late.page.locator('.ds-open-act .ds-btn--primary').count()) === 0, await cardQuestion(late.page));
   } finally {
     await late.context.close();
   }
@@ -311,33 +325,32 @@ if (part(3)) {
   try {
     // Wed 21 Oct: week 3's debrief is open until today.
     pass('debrief ready: "How did this week go?"', (await cardQuestion(c.page)) === 'How did this week go?', await cardQuestion(c.page));
-    pass('debrief ready: open until today', (await text(c.page, '.ds-suggest')).includes('Your debrief is open until Wed 21 Oct.'));
-    pass('debrief ready: Start my debrief', /start my debrief/i.test(await text(c.page, '.ds-suggest .ds-btn--primary')));
+    results.push('NOTE  debrief ready: "open until" was the card\'s line; the 25 Nov opening has one line about what needs you');
+    pass('debrief ready: Start my debrief', /start my debrief/i.test(await text(c.page, '.ds-open-act .ds-btn--primary')));
     await homeAt(c.page, FIXED_TODAY, '08:30');
     pass('debrief day mornings stay Daily plan', (await cardQuestion(c.page)) === 'Ready to plan your day?', await cardQuestion(c.page));
     await shot(c.page, 'state-debrief');
 
-    // The line is a quiet link into the sprint (Tim, 3 Nov): "Sprint 1, week 4 of 8".
-    pass('mid-sprint: the mini dial reads "View your week" (10 Nov)', /View your week/.test(await text(c.page, '.ds-mdial')) && /week 4 of 8/.test(await c.page.locator('.ds-mdial').getAttribute('aria-label')), await text(c.page, '.ds-mdial'));
-    pass('mid-sprint: the week line', (await text(c.page, '.ds-weekline')).startsWith('Performance score this week'));
-    const good = await c.page.locator('.ds-weekline-figure--good').count();
-    const fig = await c.page.locator('.ds-weekline-figure').evaluate((el) => getComputedStyle(el).color).catch(() => '');
-    const coral = await c.page.evaluate(() => getComputedStyle(document.querySelector('.ui-root')).getPropertyValue('--coral').trim());
-    pass('mid-sprint: the week figure is never coral', !fig.includes('255, 111, 92') && coral !== '', `${fig} ${good}`);
-    await c.page.locator('.ds-mdial').click();
-    pass('the mini dial opens the sprint', Boolean(await landsOn(c.page, '/performance-sprint')));
+    // Polish 1: the mini dial and the week line went (the 25 Nov example): Log today's "View your week"
+    // and its "Performance score this week" row take you into the sprint.
+    pass('mid-sprint: Log today has View your week', (await c.page.locator('#log-today .ds-more', { hasText: 'View your week' }).count()) === 1);
+    pass('mid-sprint: the week’s score is a row in Log today', (await text(c.page, '#log-today .home-score')).startsWith('Performance score this week'));
+    const fig = await c.page.locator('#log-today .home-score .ds-li-value').evaluate((el) => getComputedStyle(el).color).catch(() => '');
+    pass('mid-sprint: the week figure is never coral', !fig.includes('255, 111, 92'), fig);
+    await c.page.locator('#log-today .ds-more', { hasText: 'View your week' }).click();
+    pass('View your week opens the sprint', Boolean(await landsOn(c.page, '/performance-sprint')));
     await home(c.page);
-    await c.page.locator('.ds-weekline').click();
-    pass('the week line opens the sprint', Boolean(await landsOn(c.page, '/performance-sprint')));
+    await c.page.locator('#log-today .home-score').click();
+    pass('the week’s score opens the sprint', Boolean(await landsOn(c.page, '/performance-sprint')));
 
     await homeAt(c.page, '2026-10-30', '10:00');
     pass('coming back after a gap: "Good to see you"', (await title(c.page)).startsWith('good to see you'), await title(c.page));
-    pass('coming back after a gap: "Let’s start with this week."', (await text(c.page, '.home-welcome')) === 'Let’s start with this week.');
+    pass('coming back after a gap: "Let’s start with this week."', (await text(c.page, '.ds-open-line')).endsWith('Let’s start with this week.'), await text(c.page, '.ds-open-line'));
     await homeAt(c.page, '2026-10-23', '10:00');
     pass('no gap two days on: the usual greeting', (await title(c.page)).startsWith('good morning'), await title(c.page));
 
     // Help behind one button.
-    await c.page.locator('.home-help .ds-btn').click();
+    await c.page.locator('.home-help .ds-more').click();
     await c.page.waitForSelector('.ds-helplist-row', { timeout: 5000 });
     const rows = await c.page.locator('.ds-helplist-situation').allInnerTexts();
     pass('help: the five situations in M2’s order', ['I’m under pressure', 'I’ve got a hard conversation coming up', 'I’m stuck on a decision', 'I want a meeting to go well', 'I need a moment to reset'].every((s, i) => rows[i] === s), rows.join(' | '));
@@ -374,7 +387,7 @@ if (part(4) || part(5)) {
       const box = page.getByLabel('Water today').first();
       await box.fill('1.5');
       await box.blur();
-      pass('Home: logging Water shows Saved', Boolean(await until(async () => /Saved/.test(await text(page, '.home-log-head')), 10000)), await text(page, '.home-log-head'));
+      pass('Home: logging Water shows Saved', Boolean(await until(async () => /Saved/.test(await text(page, '#log-today .ds-card-head')), 10000)), await text(page, '#log-today .ds-card-head'));
       pass('Home: the log is in the database', Boolean(await until(async () => (await waterLog(THU)) === 1.5, 15000)), String(await waterLog(THU)));
       await page.goto(`${APP}/performance-sprint`);
       await page.waitForSelector('#log-today', { timeout: 30000 });
@@ -387,11 +400,13 @@ if (part(4) || part(5)) {
     }
     if (part(5)) {
       await home(page);
-      await page.locator('.home-add').click();
-      await page.waitForSelector('.ds-panel textarea, .ds-panel input', { timeout: 5000 });
+      // Polish 1 (rule 10): "+ Add" on Today opens Quick Add; the Strategy and the week appear once something is typed.
+      await page.locator('.home-today .ds-addlink').click();
+      await page.waitForSelector('.ds-qa input', { timeout: 5000 });
       await page.getByLabel('What needs doing?').fill(TODO_TEXT);
-      await page.locator('.ds-panel').getByText('Grow through referrals', { exact: true }).click();
-      await page.locator('.ds-panel').getByRole('button', { name: 'Add to-do' }).click();
+      await page.locator('.ds-qa').getByText('Choose a Strategy').click();
+      await page.getByRole('option', { name: 'Grow through referrals' }).click();
+      await page.locator('.ds-qa .ds-btn--primary').click();
       pass('Home: Add a to-do says it was added', Boolean(await until(async () => (await page.locator('text=Added to this week.').count()) > 0, 10000)));
       const saved = await until(async () => {
         const { data } = await db.from('todos').select('id, planned_week, deleted_at').eq('user_id', me).eq('text', TODO_TEXT);
@@ -416,27 +431,16 @@ if (part(6) || part(7)) {
     try {
       if (part(6)) {
         // Log today: on Home itself (no tap), and through the menu in two.
-        pass(`${tag}: Log today is on Home`, (await page.locator('#log-today .home-log-title').count()) === 1);
-        // The slim desktop menu (option A, 9 Nov) has no Log today: it is on Home.
-        if (width < 769) {
-          await page.locator('.ds-bar-menu').click();
-          await page.locator('#site-tile-menu').getByRole('button', { name: 'Log today', exact: true }).click();
-          pass(`${tag}: the menu’s Log today (2 taps) lands on Home’s Log today`, Boolean(await until(async () => {
-            const box = await page.locator('#log-today').boundingBox();
-            return path(page) === '/welcome' && box && box.y < 400 && box.y > -50;
-          }, 8000)), path(page));
-        } else {
-          await page.getByRole('button', { name: 'Menu', exact: true }).click();
-          pass(`${tag}: the slim menu has no Log today`, (await page.locator('#site-menu').getByRole('button', { name: 'Log today', exact: true }).count()) === 0);
-          await page.keyboard.press('Escape');
-        }
+        pass(`${tag}: Log today is on Home`, (await page.locator('#log-today #home-log-title').count()) === 1);
+        // Polish 1: the menu (FRAME_MENU) has no Log today and no phone bar; Log today is on Home itself.
+        pass(`${tag}: the menu has no Log today`, (await page.locator('.ds-frame-side, .ds-pmenu').getByText('Log today', { exact: true }).count()) === 0);
         for (const [label, to] of [['Daily plan', '/daily-plan'], ['Daily review', '/daily-review']]) {
           await home(page);
-          await page.locator('.home-links .ds-link', { hasText: label }).click();
+          await page.locator('.home-today .ds-li', { hasText: label }).first().click();
           pass(`${tag}: ${label} in one tap`, Boolean(await landsOn(page, to)), path(page));
         }
         await home(page);
-        await page.locator('.home-add').click();
+        await page.locator('.home-today .ds-addlink').click();
         pass(`${tag}: Add a to-do opens in one tap`, Boolean(await until(async () => (await page.getByLabel('What needs doing?').count()) > 0, 5000)));
         await page.keyboard.press('Escape');
       }
@@ -472,7 +476,9 @@ async function phoneChecks(page, tag) {
   const small = await page.evaluate(() => {
     const bad = [];
     for (const el of document.querySelectorAll('.home-page button, .home-page a, .home-page input')) {
-      const r = el.getBoundingClientRect();
+      // A number box's input and a counter's minus and plus sit inside their 44px box: the box is the control (Polish 1, the reference's .numbox and .count).
+      const box = el.closest('.ds-num, .ds-numbox, .ds-stepper, .ds-count') || el;
+      const r = box.getBoundingClientRect();
       if (!r.width || !r.height || getComputedStyle(el).visibility === 'hidden' || el.closest('[inert]')) continue;
       // A button's tap area is its box with the invisible 44px ::after laid round it (Tim, 18 Nov).
       const af = getComputedStyle(el, '::after');
@@ -517,7 +523,7 @@ const PARTS = {
     ['card label', '#dk .page .hs > small', '.ds-suggest-label', ['fs', 'color']],
     ['card question', '#dk .page .hs h3', '.ds-suggest-question', ['fs', 'color']],
     ['card time', '#dk .page .hs .hsl', '.ds-suggest-time', ['fs', 'color']],
-    ['card button', '#dk .page .hs .btn', '.ds-suggest .ds-btn--primary', ['h', 'bg'], 'Every button is 40px high on a laptop and 44px on a phone, in a 44px tap area (Tim, 18 Nov, follow-up 1); M2 drew 50px and 48px pills.'],
+    ['card button', '#dk .page .hs .btn', '.ds-open-act .ds-btn--primary', ['h', 'bg'], 'Every button is 40px high on a laptop and 44px on a phone, in a 44px tap area (Tim, 18 Nov, follow-up 1); M2 drew 50px and 48px pills.'],
     ['mini dial', '#dk .page .hd2 svg', '.ds-mdial svg', ['w']],
     ['mini dial date', '#dk .page .hd2 b', '.ds-mdial-date', ['fs', 'color']],
     ['mini dial week', '#dk .page .hd2 span span', '.ds-mdial-line', ['fs', 'color']],
@@ -530,7 +536,7 @@ const PARTS = {
     ['card (phone)', '#ph .page .hs', '.ds-suggest', ['pt', 'pl', 'radius']],
     ['card question (phone)', '#ph .page .hs h3', '.ds-suggest-question', ['fs']],
     // Widths follow each frame's page width, so only heights are compared; both buttons are full width.
-    ['card button (phone)', '#ph .page .hs .btn', '.ds-suggest .ds-btn--primary', ['h'], 'Every button is 40px high on a laptop and 44px on a phone, in a 44px tap area (Tim, 18 Nov, follow-up 1); M2 drew 50px and 48px pills.'],
+    ['card button (phone)', '#ph .page .hs .btn', '.ds-open-act .ds-btn--primary', ['h'], 'Every button is 40px high on a laptop and 44px on a phone, in a 44px tap area (Tim, 18 Nov, follow-up 1); M2 drew 50px and 48px pills.'],
     ['help button (phone)', '#ph .page .hhelp .ghost', '.home-help .ds-btn', ['h'], 'Every button is 40px high on a laptop and 44px on a phone, in a 44px tap area (Tim, 18 Nov, follow-up 1); M2 drew 50px and 48px pills.'],
   ],
 };
@@ -555,7 +561,10 @@ function compare(view, mode, what, mock, app, fields, known) {
   }
   pass(`M2 ${view} ${mode}: ${what} matches (${fields.join(', ')})`, diffs.length === 0, diffs.join('; '));
 }
-if (part(9)) {
+// Part 9 measured Home against M2 (Phase 4). Polish 1 (25 Nov) rebuilt Home to example-pages-25nov.html, which
+// replaces M2 where they differ (no suggestion card, mini dial or week line): it runs only when asked (ONLY=9),
+// and the side by side with the 25 Nov example is the Polish run's own (polish/a3/sbs.mjs).
+if (ONLY?.has('9')) {
   const file = join(MOCKS, 'm2-home.html');
   if (!existsSync(file)) {
     pass('M2 found', false, file);
@@ -592,7 +601,7 @@ if (part(9)) {
       for (const [what, , , fields, known] of PARTS.phone) compare('phone', mode, what, mock[what], appPhone[what], fields, known);
       const full = await ph.page.evaluate(() => {
         const card = document.querySelector('.ds-suggest').getBoundingClientRect();
-        const btn = document.querySelector('.ds-suggest .ds-btn--primary').getBoundingClientRect();
+        const btn = document.querySelector('.ds-open-act .ds-btn--primary').getBoundingClientRect();
         return Math.abs(card.width - 40 - btn.width) < 1;
       });
       pass(`M2 phone ${mode}: the card's button is full width, as M2`, full);
@@ -610,9 +619,9 @@ if (part(3)) {
   const lw = await signedIn({ day: THU, time: '13:00' });
   try {
     pass('last week: "Ready for what comes next?"', (await cardQuestion(lw.page)) === 'Ready for what comes next?', await cardQuestion(lw.page));
-    pass('last week: Go straight into the next sprint, or take a Recovery week first.', (await text(lw.page, '.ds-suggest')).includes('Go straight into the next sprint, or take a Recovery week first.'));
-    pass('last week: Plan what’s next', /plan what’s next/i.test(await text(lw.page, '.ds-suggest .ds-btn--primary')));
-    pass('last week: the mini dial says week 8 of 8', /week 8 of 8/.test(await lw.page.locator('.ds-mdial').getAttribute('aria-label')), await text(lw.page, '.ds-mdial'));
+    results.push('NOTE  last week: the card\'s two lines went with the card (25 Nov reference); the button says Plan what’s next');
+    pass('last week: Plan what’s next', /plan what’s next/i.test(await text(lw.page, '.ds-open-act .ds-btn--primary')));
+    pass('last week: Log today still opens the sprint', (await lw.page.locator('#log-today .ds-more', { hasText: 'View your week' }).count()) === 1);
     await shot(lw.page, 'state-last-week');
   } finally {
     await lw.context.close();
@@ -624,7 +633,7 @@ if (part(3)) {
   try {
     pass('Recovery: the banner', Boolean(await until(async () => /You’re in recovery until/.test(await text(rc.page, '.home-recovery')), 15000)), await text(rc.page, '.home-recovery'));
     pass('Recovery: What would help you recharge today?', (await text(rc.page, '.home-recovery')).includes('What would help you recharge today?'));
-    pass('Recovery: no Today and no week line', (await rc.page.locator('.home-today').count()) === 0 && (await rc.page.locator('.ds-weekline').count()) === 0);
+    pass('Recovery: no Today and no week line', (await rc.page.locator('.home-today').count()) === 0 && (await rc.page.locator('#log-today, .home-score').count()) === 0);
     pass('Recovery: Daily plan isn’t suggested', !/plan your day|review your day/.test(await cardQuestion(rc.page)), await cardQuestion(rc.page));
     await shot(rc.page, 'state-recovery');
     await homeAt(rc.page, FIXED_TODAY, '21:30');
@@ -640,25 +649,25 @@ if (part(3)) {
     pass('new, no coach: "Ready to build your plan?"', (await cardQuestion(nn.page)) === 'Ready to build your plan?', await cardQuestion(nn.page));
     pass('new, no coach: the plan’s four steps', (await nn.page.locator('.ds-planstep').count()) === 4);
     pass('new, no coach: My Mission is next', (await text(nn.page, '.ds-planstep--next .ds-planstep-name')) === 'My Mission');
-    pass('new, no coach: the date, no dial', (await nn.page.locator('.ds-mdial').count()) === 0 && (await text(nn.page, '.ds-page-meta')) === 'Wed 21 Oct');
+    pass('new, no coach: the date over the title (25 Nov reference)', (await text(nn.page, '.ds-open-label')).toLowerCase() === 'wednesday 21 october', await text(nn.page, '.ds-open-label'));
     pass('new, no coach: no Log today', (await nn.page.locator('#log-today').count()) === 0);
     // The quiet lines: the mission's, and (Phase 5) the monthly review's while this month's is due.
     const quiets = await nn.page.locator('.ds-quiet').allInnerTexts();
-    const q = quiets.find((t) => t.includes('mission')) || '';
+    const q = quiets.find((t) => /mission/i.test(t)) || '';
     // M2: it appears once two weeks after joining, so it depends on when the test account was made.
     const joinedDays = Math.floor((zoneInstant(LONDON, FIXED_TODAY, '10:00') - new Date(signIn.user.created_at)) / 86400000);
     pass(`new, no coach: "Ready to add your Mission?" ${joinedDays >= 14 ? 'shows' : 'waits'} (${joinedDays} days after joining)`, joinedDays >= 14 ? q.includes('Ready to add your Mission?') : !q, q);
-    pass('new, no coach: any other quiet line is the monthly review’s (Phase 5)', quiets.filter((t) => !t.includes('mission')).every((t) => t.includes('Your monthly review is ready.')), quiets.join(' | '));
+    pass('new, no coach: any other quiet line is the monthly review’s (Phase 5)', quiets.filter((t) => !/mission/i.test(t)).every((t) => t.includes('Your monthly review is ready.')), quiets.join(' | '));
     if (q) {
-      await nn.page.locator('.ds-quiet', { hasText: 'mission' }).getByRole('button', { name: 'Not now' }).click();
-      pass('new, no coach: Not now hides it', Boolean(await until(async () => (await nn.page.locator('.ds-quiet', { hasText: 'mission' }).count()) === 0, 5000)));
+      await nn.page.locator('.ds-quiet', { hasText: /mission/i }).getByRole('button', { name: 'Not now' }).click();
+      pass('new, no coach: Not now hides it', Boolean(await until(async () => (await nn.page.locator('.ds-quiet', { hasText: /mission/i }).count()) === 0, 5000)));
     }
-    await nn.page.locator('.home-help .ds-btn').click();
+    await nn.page.locator('.home-help .ds-more').click();
     await nn.page.waitForSelector('.ds-helplist-row', { timeout: 5000 });
     pass('new, no coach: no Chat line in help', (await nn.page.locator('.ds-helplist-row', { hasText: 'Something else?' }).count()) === 0);
     await nn.page.keyboard.press('Escape');
     await shot(nn.page, 'state-new-no-coach');
-    await nn.page.locator('.ds-suggest .ds-btn--primary').click();
+    await nn.page.locator('.ds-open-act .ds-btn--primary').click();
     pass('new, no coach: Build my plan opens the builder', Boolean(await landsOn(nn.page, '/performance-plan/build')));
   } finally {
     await nn.context.close();
@@ -671,10 +680,10 @@ if (part(3)) {
     const { data: hadCheckin } = await db.from('checkins').select('id').eq('user_id', me).eq('status', 'finished').limit(1);
     if (hadCheckin?.length) results.push('NOTE  coaching client: the account has a finished check-in, so no First review card');
     else pass('coaching client: the card is the First review (Phase 5)', (await cardQuestion(nc.page)) === 'Ready for your first review?', await cardQuestion(nc.page));
-    pass('coaching client: "You’ll build your plan with your coach in your first session."', (await text(nc.page, '.home-section')).includes('You’ll build your plan with your coach in your first session.'));
+    pass('coaching client: "You’ll build your plan with your coach in your first session."', (await text(nc.page, '.home-plan')).includes('You’ll build your plan with your coach in your first session.'));
     pass('coaching client: Start on my own', (await nc.page.locator('.home-links .ds-link', { hasText: 'Start on my own' }).count()) === 1);
-    pass('coaching client: no mission quiet line', (await nc.page.locator('.ds-quiet', { hasText: 'mission' }).count()) === 0);
-    await nc.page.locator('.home-help .ds-btn').click();
+    pass('coaching client: no mission quiet line', (await nc.page.locator('.ds-quiet', { hasText: /mission/i }).count()) === 0);
+    await nc.page.locator('.home-help .ds-more').click();
     await nc.page.waitForSelector('.ds-helplist-row', { timeout: 5000 });
     pass('coaching client: "Something else? Chat to Tim"', (await nc.page.locator('.ds-helplist-row', { hasText: 'Something else?' }).innerText()).includes('Chat to Tim'));
     await nc.page.keyboard.press('Escape');

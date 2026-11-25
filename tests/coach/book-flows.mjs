@@ -129,7 +129,7 @@ async function run() {
 
     // ---- one call, anchored to the client's own zone
     await go('/coach/calendar/book');
-    pass(`${tag}: Book a call is a side panel over the calendar`, (await dialog(page).locator('.ds-dialog-title').textContent()) === 'Book a call' && (await page.locator('.cc-cal').count()) === 1);
+    pass(`${tag}: Book a call is a side panel over the calendar`, (await dialog(page).locator('.ds-dialog-title').textContent()) === 'Book a call' && (await page.locator('.cc-cal, .ds-cal').count()) === 1);
     await book();
     pass(`${tag}: its button is never greyed out, and says what is missing`, (await dialog(page).locator('.cc-problem').textContent().catch(() => '')) === 'Choose who it’s with to carry on.');
     await pick(dialog(page), page, 'Who is it with', 'Jordan Reyes');
@@ -331,6 +331,15 @@ async function run() {
     return { page, ctx, errors, open, words: () => page.locator('.cc-public').textContent() };
   };
 
+  // Polish 1 (25 Nov; the example's booking page): the time zone sits behind "Change the time zone" under the times,
+  // and a chosen time goes on with Continue to Your details (two screens), as the example draws.
+  const zoneTo = async (page, city) => {
+    const link = page.getByRole('button', { name: 'Change the time zone', exact: true });
+    if (await link.count()) { await link.click(); await settle(page, 300); }
+    await pick(page, page, 'Your time zone', city);
+  };
+  const carryOn = async (page) => { await page.locator('.cc-book-go').first().click(); await settle(page, 500); };
+
   async function guests(role) {
     const tag = `a guest (${role}'s pages)`;
     const t = await coachPage({ role, db: 'there', tag: `${tag}, the coach`, holiday: true });
@@ -341,12 +350,13 @@ async function run() {
     const a = await guestPage(store);
     await a.open(`/book/${CAL.chemKey}`);
     const start = await a.words();
-    pass(`${tag}: the Chemistry Call page shows its own call only`, /Chemistry Call/.test(start) && !/Connection Call/.test(start) && /30 minutes, Zoom/.test(start) && /With Alex|With Maya/.test(start));
+    pass(`${tag}: the Chemistry Call page shows its own call only`, /Chemistry Call/.test(start) && !/Connection Call/.test(start) && /30-minute call on Zoom/.test(start) && /With Alex|With Maya/.test(start));
     pass(`${tag}: it never shows the calendar`, !/Training|Sam Okafor|Dentist|Swimming/.test(start));
-    await pick(a.page, a.page, 'Your time zone', 'New York');
+    await zoneTo(a.page, 'New York');
     const firstTime = a.page.locator('.cc-book-time').first();
     pass(`${tag}: times are in the visitor's own zone, 12-hour for the US, with the city's name`, /^\d{1,2}:\d{2} (am|pm)$/.test((await firstTime.textContent()).trim()) && /New York time/.test(await a.page.locator('.cc-book-times').getAttribute('aria-label')));
     await firstTime.click(); await settle(a.page, 400);
+    await carryOn(a.page);
     pass(`${tag}: both clocks show once a time is chosen`, /am New York time · \d{2}:\d{2} UK time/.test(await a.page.locator('.cc-book-when').textContent()));
     await a.page.locator('.cc-book-form .ds-btn--primary').click(); await settle(a.page, 300);
     pass(`${tag}: the button is never greyed out: it asks for a name`, (await a.page.locator('.cc-book-form .cc-problem').first().textContent()) === 'Type your name to carry on.');
@@ -372,7 +382,7 @@ async function run() {
     // ---- two guests racing for one time
     const b = await guestPage(store);
     const c = await guestPage(store, { theme: 'dark' });
-    for (const g of [b, c]) { await g.open(`/book/${CAL.chemKey}`); await g.page.locator('.cc-book-time').first().click(); await settle(g.page, 300); await g.page.getByLabel('What would you like from the call?').fill('A first conversation.'); }
+    for (const g of [b, c]) { await g.open(`/book/${CAL.chemKey}`); await g.page.locator('.cc-book-time').first().click(); await settle(g.page, 300); await carryOn(g.page); await g.page.getByLabel('What would you like from the call?').fill('A first conversation.'); }
     const same = (await b.page.locator('.cc-book-when').textContent()) === (await c.page.locator('.cc-book-when').textContent());
     await b.page.getByLabel('Your name').fill('Owen Hart'); await b.page.getByLabel('Your email').fill('owen@example.invalid');
     await c.page.getByLabel('Your name').fill('Ines Duarte'); await c.page.getByLabel('Your email').fill('ines@example.invalid');
@@ -397,17 +407,18 @@ async function run() {
     // ---- early and late times, and a public holiday said first
     await a.open(`/book/${CAL.connKey}`);
     pass(`${tag}: the Connection Call page never shows the Chemistry Call`, /Connection Call/.test(await a.words()) && !/Chemistry Call/.test(await a.words()));
-    await pick(a.page, a.page, 'Your time zone', 'Sydney');
+    await zoneTo(a.page, 'Sydney');
     const hiddenFirst = await a.page.locator('.cc-book-time').allTextContents();
     await a.page.getByRole('button', { name: 'Show early and late times', exact: true }).click(); await settle(a.page, 400);
-    const every = await a.page.locator('.ds-seg-btn, .cc-book-days [role=radio]').count();
+    const every = await a.page.locator('.ds-cal-day:not(:disabled), .cc-book-time').count();
     pass(`${tag}: only 07:00 to 20:00 the visitor's time shows until they ask for early and late times`, hiddenFirst.every((x) => { const [h] = x.trim().split(':').map(Number); return h >= 7 && h < 20; }) && every > 0 && (await a.page.getByRole('button', { name: 'Hide early and late times', exact: true }).count()) === 1);
     await a.open(`/book/${CAL.chemKey}`);
-    await pick(a.page, a.page, 'Your time zone', 'New York');
-    const thu = a.page.locator('.cc-book-days').getByRole('radio', { name: 'Thu 26', exact: true });
-    if (await thu.count()) {
+    await zoneTo(a.page, 'New York');
+    const thu = a.page.getByRole('button', { name: /^Thursday 26 November/ });
+    if (await thu.count() && await thu.isEnabled()) {
       await thu.click(); await settle(a.page, 300);
-      await a.page.locator('.cc-book-time').first().click(); await settle(a.page, 900);
+      await a.page.locator('.cc-book-time').first().click(); await settle(a.page, 300);
+      await carryOn(a.page); await settle(a.page, 600);
       pass(`${tag}: a public holiday where the visitor is says so before they book`, /That’s Thanksgiving in the US\./.test(await a.words()), (await a.words()).slice(0, 300));
     } else pass(`${tag}: Thanksgiving's free time is offered`, false, 'Thu 26 is not among the days');
 
@@ -415,6 +426,7 @@ async function run() {
     await a.open(`/book/link/${CAL.linkDanaKey}`);
     pass(`${tag}: a single-use link opens with who it is for`, (await a.page.getByLabel('Your name').count()) === 0 && /Sponsor call/.test(await a.words()));
     await a.page.locator('.cc-book-time').first().click(); await settle(a.page, 300);
+    await carryOn(a.page);
     pass(`${tag}: its name is already filled in`, (await a.page.getByLabel('Your name').inputValue()) === 'Dana Whitfield');
     await a.page.getByLabel('Your email').fill('dana@example.invalid');
     await a.page.locator('.cc-book-form .ds-btn--primary').click(); await settle(a.page, 1000);

@@ -90,3 +90,32 @@
   .ui-root .cc-poll-row .ds-btn { width: 100%; }
   .ui-root .cc-book-after > .ds-btn { width: 100%; }
 }
+
+/* ---------------------------------------------------------------- polish 1 (25 Nov): the example's booking page
+   One 480px column (the example's .book: 56px above, 20px sides, 80px below), the real crosshair at its top, the
+   shared opening, month grid and answer boxes. Free times are three answer boxes to a row, laptop and phone (.times);
+   Continue and Book my call are the one main button, full width and as tall as the boxes (.btn.full.big). */
+.ui-root .cc-book-col { box-sizing: border-box; width: 100%; max-width: calc(var(--tool-max) - var(--space-7)); margin: 0 auto; padding: calc(var(--space-6) + var(--space-2)) var(--space-px20) var(--space-7); }
+.ui-root .cc-book-mark { display: block; margin: 0 0 var(--space-4); line-height: 0; color: var(--text); }
+.ui-root.cc-book--message .cc-book-col { min-height: 60vh; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+.ui-root.cc-book--message .cc-book-mark { margin: 0 auto var(--space-4); }
+.ui-root.cc-book--message .ds-open { margin-bottom: var(--space-4); }
+.ui-root.cc-book--message .cc-acts { justify-content: center; }
+.ui-root .cc-book-monthbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-px12); margin: calc(-1 * var(--space-2)) 0 var(--space-1); }
+.ui-root .cc-book-monthbar .ds-q { margin: 0; }
+.ui-root .cc-book-monthnav { display: flex; gap: var(--space-px12); }
+.ui-root .cc-book-dayname { margin-top: var(--space-4); }
+.ui-root .ds-choices.cc-book-times { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: none; margin: var(--space-2) 0 var(--space-4); }
+.ui-root .cc-book-note { margin: 0 0 var(--space-4); font-size: var(--fs-meta); line-height: 1.55; color: var(--text-2); }
+.ui-root .cc-book-zonelink:not(#_) { font-size: var(--fs-meta); }
+.ui-root .cc-book-zoneline .cc-book-zone { margin: calc(-1 * var(--space-2)) 0 var(--space-4); }
+.ui-root .ds-btn.cc-book-go:not(#_) { width: 100%; min-height: var(--field-h) !important; height: var(--field-h); }
+.ui-root .cc-book-foot { margin: var(--space-4) 0 0; }
+.ui-root .cc-book-back { margin: calc(-1 * var(--space-px12)) 0 var(--space-px12); }
+.ui-root .cc-book-form { margin-top: 0; padding-top: 0; border-top: 0; }
+.ui-root .cc-book-form .cc-field { margin: 0 0 var(--space-4); }
+@media (max-width: 600px) {
+  .ui-root .ds-choices.cc-book-times { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ui-root .ds-choices.cc-book-times .ds-answer.ds-answer--box { justify-content: center; min-height: var(--btn-h-phone) !important; height: var(--btn-h-phone); padding: 0 var(--space-1) !important; text-align: center; }
+}
+.ui-root .ds-open-label .cc-book-when { font-size: inherit; color: inherit; }

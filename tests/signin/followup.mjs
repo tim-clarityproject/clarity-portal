@@ -424,14 +424,15 @@ for (const [name, minutes] of [['2 hours fast', 120], ['6 minutes fast', 6], ['6
   const v = await visit();
   await v.page.clock.setFixedTime(new Date(Date.now() + minutes * 60 * 1000));
   await v.page.goto(`${APP}/auth/login`);
-  await v.page.waitForSelector('.si-col .ds-google');
+  await v.page.waitForSelector('.si-col .si-google');
   await v.page.locator('.si-note').first().waitFor({ timeout: 15000 }).catch(() => null);
   pass(`a clock ${name}: Sign in says so, word for word`, (await words(v.page, '.si-note')) === CLOCK, await words(v.page, '.si-note'));
   if (minutes === 120) {
     const note = await v.page.locator('.si-note').boundingBox();
     const g = await v.page.getByRole('button', { name: 'Continue with Google' }).boundingBox();
-    const core = await v.page.locator('.si-core').boundingBox();
-    pass('it sits above Continue with Google, under the core line', Boolean(note && g && core) && note.y >= core.y + core.height && note.y + note.height <= g.y, note && g ? `${note.y + note.height} then ${g.y}` : 'not found');
+    // Since polish 1 the page has no core line and Google sits under Sign in: the note opens the form, under the title.
+    const core = await v.page.locator('.si-ttl').boundingBox();
+    pass('it sits above Continue with Google, under the title', Boolean(note && g && core) && note.y >= core.y + core.height && note.y + note.height <= g.y, note && g ? `${note.y + note.height} then ${g.y}` : 'not found');
     const look = await v.page.locator('.si-note').evaluate((el) => {
       const s = getComputedStyle(el);
       const probe = document.createElement('span');
@@ -458,7 +459,7 @@ for (const [name, minutes] of [['right', 0], ['4 minutes fast', 4], ['4 minutes 
   const v = await visit();
   if (minutes) await v.page.clock.setFixedTime(new Date(Date.now() + minutes * 60 * 1000));
   await v.page.goto(`${APP}/auth/login`);
-  await v.page.waitForSelector('.si-col .ds-google');
+  await v.page.waitForSelector('.si-col .si-google');
   await sleep(2500);
   pass(`a clock that is ${name}: nothing is said`, (await v.page.locator('.si-note').count()) === 0, await words(v.page, '.si-note'));
   await v.ctx.close();
@@ -469,7 +470,7 @@ for (const [name, minutes] of [['right', 0], ['4 minutes fast', 4], ['4 minutes 
   await v.page.route('**/version.json*', (route) => route.abort());
   await v.page.clock.setFixedTime(new Date(Date.now() + 120 * 60 * 1000));
   await v.page.goto(`${APP}/auth/login`);
-  await v.page.waitForSelector('.si-col .ds-google');
+  await v.page.waitForSelector('.si-col .si-google');
   await sleep(2500);
   pass('when the server’s time can’t be read, nothing is said', (await v.page.locator('.si-note').count()) === 0);
   await v.ctx.close();
@@ -483,7 +484,7 @@ for (const [name, minutes] of [['right', 0], ['4 minutes fast', 4], ['4 minutes 
   const v = await visit();
   await edge(v.page);
   await v.page.goto(`${APP}/auth/login`);
-  await v.page.waitForSelector('.si-col .ds-google');
+  await v.page.waitForSelector('.si-col .si-google');
   await sleep(2500);
   pass('a right clock and a version file the edge has held for 11 minutes: nothing is said', (await v.page.locator('.si-note').count()) === 0, await words(v.page, '.si-note'));
   await v.ctx.close();
@@ -602,7 +603,7 @@ for (const [name, minutes] of [['right', 0], ['4 minutes fast', 4], ['4 minutes 
   let out = 0;
   v.answers['POST /auth/v1/logout'] = async () => { out += 1; return { status: 200, body: {} }; };
   await page.goto(`${APP}/auth/login`);
-  await page.waitForSelector('.si-col .ds-google');
+  await page.waitForSelector('.si-col .si-google');
   await press(page, 'Continue with Google');
   await page.locator('.si-err').first().waitFor({ timeout: 30000 }).catch(() => null);
   pass('a wrong Google account left on an unfinished invite, used from Sign in: back on Sign in with “That didn’t work.”', path(page) === '/auth/login' && (await message(page)) === '! That didn’t work. Try again, or use your email and password.', `${path(page)} ${await message(page)}`);
@@ -623,7 +624,7 @@ for (const [name, minutes] of [['right', 0], ['4 minutes fast', 4], ['4 minutes 
     await route.fulfill({ status: 200, headers: { date: new Date().toUTCString(), 'content-type': 'application/json' }, body: '{}' }).catch(() => null);
   });
   await v.page.goto(`${APP}/auth/login`);
-  await v.page.waitForSelector('.si-col .ds-google');
+  await v.page.waitForSelector('.si-col .si-google');
   // The page's own first question is answered first (a development build asks it twice).
   await sleep(2500);
   const first = asked;

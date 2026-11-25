@@ -48,6 +48,11 @@ export function designProblems({ phone = false, scale = 1 } = {}) {
   };
   const MISTAKE = '[role=alert], [aria-invalid=true], .ds-error, [class*="error"], [class*="-err"], [class*="problem"], .code.err, [data-mistake]';
   const BREATHE = '.ds-floating-orb, .ds-fab, .ds-breathe, [class*="borb"], [class*="orb-"], .ds-orb';
+  // A list row (the reference's .li, .li.go: a hairline above, no box), the coach's to-do rows and the calendar's
+  // Schedule rows (a phone's week) are rows, not boxed controls; the coach calendar's tiles are calendar events (coach
+  // rule 28: 4px corners, the peach client tile).
+  const ROWS = '.ds-li, .ds-todo-open, .cc-todo-row, .cc-sched-row';
+  const CAL_TILES = '.cc-cal-tile, .cc-cal-more';
   const textNodesOf = (el) => [...el.childNodes].filter((n) => n.nodeType === 3 && n.textContent.trim());
   const lines = (el, fs) => {
     const range = document.createRange();
@@ -89,7 +94,7 @@ export function designProblems({ phone = false, scale = 1 } = {}) {
 
   // Controls: anything you press or type into that is drawn as a box.
   const CTRL = 'button, a[href].ds-btn, [role=button], [role=radio]:not(input), [role=tab], input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea, .ds-count, .ds-numbox, .ds-stepper, .ds-seg, .hdr-mbox';
-  const OWN = `${BREATHE}, [role=switch], [role=checkbox], .ds-check-box, [role=gridcell] *, .ds-cal-day, .ds-tab, [role=tab], .ds-seg-btn, .seg > button, .ds-count > button, .ds-stepper-btn, .ds-numbox input, .ds-mi, .ds-mbtn, svg, [class*="-dot"], .ds-chart *, .ds-google`;
+  const OWN = `${BREATHE}, ${ROWS}, ${CAL_TILES}, ${CAL_TILES.replace(/, /g, ' *, ')} *, [role=switch], [role=checkbox], .ds-check-box, [role=gridcell] *, .ds-cal-day, .ds-tab, [role=tab], .ds-seg-btn, .seg > button, .ds-count > button, .ds-stepper-btn, .ds-numbox input, .ds-mi, .ds-mbtn, svg, [class*="-dot"], .ds-chart *, .ds-google`;
   const drawn = (st) => (parseFloat(st.borderTopWidth) > 0 && st.borderTopStyle !== 'none' && !clear(st.borderTopColor)) || !clear(st.backgroundColor) || (/inset/.test(st.boxShadow) && /0px 0px 0px 1px/.test(st.boxShadow));
   const controls = [...top.querySelectorAll(CTRL)].filter((el) => vis(el) && !el.matches(OWN) && !el.closest('.ds-count, .ds-numbox, .ds-seg') ? true : el.matches('.ds-seg, .ds-count, .ds-numbox') && vis(el));
   const boxed = controls.filter((el) => drawn(getComputedStyle(el)));
@@ -127,7 +132,7 @@ export function designProblems({ phone = false, scale = 1 } = {}) {
   // wrap: words on more than one line inside a control (at the standard size).
   if (scale === 1) {
     for (const el of controls) {
-      if (el.matches('textarea, input, select, .ds-answer:not(.ds-answer--box), [role=radio].ds-answer') || el.closest('.ds-rows')) continue;
+      if (el.matches('textarea, input, select, .ds-answer:not(.ds-answer--box), [role=radio].ds-answer') || el.closest(`.ds-rows, ${ROWS}, ${CAL_TILES}`)) continue;
       const w = words(el);
       if (!w || w.length > 60) continue;
       const fs = parseFloat(getComputedStyle(el).fontSize);
@@ -148,7 +153,7 @@ export function designProblems({ phone = false, scale = 1 } = {}) {
   // coral: a coral fill, words or edge that isn't a mistake.
   const corals = new Set();
   for (const el of top.querySelectorAll('*')) {
-    if (el.closest(`${MISTAKE}, ${BREATHE}, svg`) || !vis(el)) continue;
+    if (el.closest(`${MISTAKE}, ${BREATHE}, ${CAL_TILES}, svg`) || !vis(el)) continue;
     const st = getComputedStyle(el);
     const fill = isCoral(st.backgroundColor);
     const ink = textNodesOf(el).length && isCoral(st.color);

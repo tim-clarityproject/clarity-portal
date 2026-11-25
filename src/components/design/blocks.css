@@ -167,7 +167,7 @@
 
 @media (hover: hover) {
   .ui-root .ds-more:hover { color: var(--text); }
-  .ui-root .ds-more:hover > .ds-chevron--right { transform: translateX(2px); }
+  .ui-root .ds-more:hover .ds-chevron--right { transform: translateX(2px); }
 }
 
 .ui-root .ds-more:focus-visible {
@@ -242,7 +242,20 @@
   align-self: center;
 }
 
-.ui-root .ds-li--go { cursor: pointer; }
+.ui-root .ds-li--go { cursor: pointer; position: relative; }
+
+/* The last opening row in a card ends the card's padding (rule 13), so its
+   44px tap area reaches down into that padding: an invisible ::after, as
+   buttons have, without changing the drawn rhythm. */
+.ui-root .ds-card > .ds-li--go:last-child::after,
+.ui-root .ds-card > .ds-rows-list:last-child > .ds-li--go:last-child::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: max(100%, var(--tap-min));
+}
 
 @media (hover: hover) {
   .ui-root .ds-li--go:hover .ds-li-name {
@@ -290,6 +303,9 @@
   line-height: 1.55;
   color: var(--text);
 }
+
+/* With no next step after it, the sentence ends the card's padding. */
+.ui-root .ds-empty-note p:last-child { margin-bottom: 0; }
 
 /* ---------- Quick Add (.qa-inline, .qa-sheet, rule 10) ---------- */
 .ui-root .ds-qa {
@@ -683,7 +699,7 @@
 
 .ui-root .ds-tool-prog {
   height: var(--prog-h);
-  margin: 0 0 var(--space-6);
+  margin: 0 0 var(--space-px40); /* the example's .prog: 40px under */
   border-radius: var(--prog-h);
   background: var(--line);
 }
@@ -703,9 +719,17 @@
 .ui-root .ds-tool-q { margin-bottom: var(--space-px28); }
 
 .ui-root .ds-tool-hint {
-  margin: calc(-1 * var(--space-3)) 0 var(--space-px20);
+  /* 8px under the question (whose own 28px it takes back), 20px over the step. */
+  margin: calc(var(--space-2) - var(--space-px28)) 0 var(--space-px20);
   font-size: var(--fs-meta);
   color: var(--text-2);
+}
+
+/* Skip this step is a text link, underlined (the example's .lk). */
+.ui-root .ds-tool-foot .ds-tool-skip {
+  text-decoration: underline;
+  text-decoration-thickness: var(--line-w);
+  text-underline-offset: var(--space-1);
 }
 
 @keyframes ds-settle {

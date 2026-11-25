@@ -76,6 +76,18 @@ const pick = async (scope, page, label, option) => {
   await scope.getByRole('combobox', { name: new RegExp(`^${label}`) }).first().click(); await settle(page, 300);
   await page.getByRole('option', { name: option, exact: true }).click(); await settle(page, 400);
 };
+// Polish 1 (25 Nov; the example's booking page): the days are a month grid (each free day a button named
+// "Monday 23 November"), the time zone sits behind "Change the time zone", and a chosen time goes on with Continue.
+const freeDays = async (page) => (await page.locator('.cc-book-col .ds-cal-day:not([disabled])').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label'))))
+  .map((l) => `${l.slice(0, 3)} ${l.split(' ')[1]}`);
+const dayButton = (page, short) => page.locator('.cc-book-col .ds-cal-day:not([disabled])').filter({ has: page.locator('span', { hasText: new RegExp(`^${short.split(' ')[1]}$`) }) }).first();
+const zoneTo = async (page, city) => {
+  const link = page.getByRole('button', { name: 'Change the time zone', exact: true });
+  if (await link.count()) { await link.click(); await settle(page, 300); }
+  await pick(page, page, 'Your time zone', city);
+};
+const carryOn = async (page) => { await page.locator('.cc-book-go').first().click(); await settle(page, 500); };
+const backToTimes = async (page) => { const b = page.getByRole('button', { name: 'Change the time', exact: true }); if (await b.count()) { await b.click(); await settle(page, 400); } };
 const tile = (page, day, text) => page.locator(`[data-cal-day="${day}"] [data-cal-key]`, { hasText: text }).first();
 /** Where a minute of a day is on the grid (the UK column's own hours). */
 const point = (page, day, minutes) => page.evaluate(([d, m]) => {
@@ -190,7 +202,7 @@ async function run() {
     await pick(dialog(page), page, 'Who is it with', 'Mia Torres');
     await press(dialog(page), page, 'Choose my own time');
     await dialog(page).locator('.ds-date').click(); await settle(page, 400);
-    await page.locator('.ds-cal-day:not([disabled])', { hasText: /^19$/ }).first().click(); await settle(page, 400);
+    await page.locator('.ds-cal-day:not([disabled])', { hasText: /^19$/ }).last().click(); await settle(page, 400);
     await dialog(page).getByLabel('Starts').fill('12:30'); await settle(page, 400);
     const both = await dialog(page).locator('.cc-book-both-clocks').textContent().catch(() => '');
     pass(`${tag}: the chosen time shows both clocks: "12:30 UK time · 7:30 am New York time"`, both === 'Mon 19 Oct, 12:30 UK time · 7:30 am New York time', both);
@@ -251,17 +263,17 @@ async function run() {
     pass(`${tag}: Mon 19 Oct, Today: one quiet line says the UK's clocks go back on Sunday 25 Oct`, (said.match(/UK clocks go back on Sunday 25 Oct\./g) || []).length === 1);
     pass(`${tag}: and that Mia's Monday call moves from 12:30 to 11:30 UK time from Mon 26 Oct`, /Your calls with clients in other time zones stay at their usual time for them; for you, .*Mia’s Monday call moves from 12:30 to 11:30 UK time from Mon 26 Oct/.test(said), (said.match(/UK clocks go back[^\n]*/) || [''])[0]);
     pass(`${tag}: the line never uses letters for a zone`, !/\b(EST|EDT|GMT|BST|ET|PT|CST)\b/.test((said.match(/clocks go [^\n]*/) || [''])[0]));
-    let row = page.locator('.cc-today-call', { hasText: 'Mia Torres' }).first();
+    let row = page.locator('.cc-today-calls .ds-li', { hasText: 'Mia Torres' }).first();
     pass(`${tag}: Today's call row gives her own time 12-hour: "7:30 am New York"`, /12:30/.test(await row.textContent().catch(() => '')) && /7:30 am New York/.test(await row.textContent().catch(() => '')), await row.textContent().catch(() => ''));
     await t.setClock(new Date(2026, 9, 26, 9, 0), '/coach');
     said = await t.text();
     pass(`${tag}: Mon 26 Oct, Today: one quiet line says the US's clocks go back on Sunday 1 Nov`, (said.match(/US clocks go back on Sunday 1 Nov\./g) || []).length === 1 && !/UK clocks go back/.test(said));
     pass(`${tag}: and that Mia's Monday call moves from 11:30 to 12:30 UK time from Mon 2 Nov`, /Your calls with US clients stay at their usual time for them; for you, .*Mia’s Monday call moves from 11:30 to 12:30 UK time from Mon 2 Nov/.test(said), (said.match(/US clocks go back[^\n]*/) || [''])[0]);
-    row = page.locator('.cc-today-call', { hasText: 'Mia Torres' }).first();
+    row = page.locator('.cc-today-calls .ds-li', { hasText: 'Mia Torres' }).first();
     pass(`${tag}: that Monday her call is at 11:30 for Tim and still 7:30 am for her`, /11:30/.test(await row.textContent().catch(() => '')) && /7:30 am New York/.test(await row.textContent().catch(() => '')), await row.textContent().catch(() => ''));
     await t.setClock(new Date(2026, 10, 2, 9, 0), '/coach');
     said = await t.text();
-    row = page.locator('.cc-today-call', { hasText: 'Mia Torres' }).first();
+    row = page.locator('.cc-today-calls .ds-li', { hasText: 'Mia Torres' }).first();
     pass(`${tag}: Mon 2 Nov: back at 12:30, with no clock-change line left`, /12:30/.test(await row.textContent().catch(() => '')) && !/clocks go/.test(said), (said.match(/clocks go [^\n]*/) || [''])[0]);
     await t.done();
   }
@@ -284,7 +296,7 @@ async function run() {
     pass(`${tag}: no time in Tim's working day is between 07:00 and 20:00 in Sydney, and the panel says so calmly`, offers.length ? offers.every((o) => /\| (\w{3} \d+ Nov, )?\d\d:\d\d for Isla in Sydney$/.test(o)) : none, offers.join(' ; '));
     await press(dialog(page), page, 'Choose my own time');
     await dialog(page).locator('.ds-date').click(); await settle(page, 400);
-    await page.locator('.ds-cal-day:not([disabled])', { hasText: /^22$/ }).first().click(); await settle(page, 400);
+    await page.locator('.ds-cal-day:not([disabled])', { hasText: /^22$/ }).last().click(); await settle(page, 400);
     // A start off the quarter hour in her time never gets booked.
     await dialog(page).getByLabel('Starts').fill('21:10'); await settle(page, 400);
     const before = await t.count('coach_cal_items');
@@ -544,13 +556,13 @@ async function run() {
     await pick(dialog(page), page, 'Who is it with', 'Priya Nair');
     await press(dialog(page), page, 'Choose my own time');
     await dialog(page).locator('.ds-date').click(); await settle(page, 400);
-    await page.locator('.ds-cal-day:not([disabled])', { hasText: /^27$/ }).first().click(); await settle(page, 400);
+    await page.locator('.ds-cal-day:not([disabled])', { hasText: /^27$/ }).last().click(); await settle(page, 400);
     await dialog(page).getByLabel('Starts').fill('14:30'); await settle(page, 300);
     const itemsWas = (await mine('coach_cal_items')).length;
     await book(page);
     pass(`${tag}: a sixth call on a day that has 5 is refused calmly`, (await dialog(page).locator('.cc-problem[role=alert]').textContent().catch(() => '')) === 'That day already has 5 calls. Choose another day.' && (await mine('coach_cal_items')).length === itemsWas, await dialog(page).locator('.cc-problem[role=alert]').textContent().catch(() => ''));
     await dialog(page).locator('.ds-date').click(); await settle(page, 400);
-    await page.locator('.ds-cal-day:not([disabled])', { hasText: /^18$/ }).first().click(); await settle(page, 400);
+    await page.locator('.ds-cal-day:not([disabled])', { hasText: /^18$/ }).last().click(); await settle(page, 400);
     await dialog(page).getByLabel('Starts').fill('16:00'); await settle(page, 300);
     await book(page);
     pass(`${tag}: and one that ends as another call starts is refused, naming it: calls keep 15 minutes between them`, (await mine('coach_cal_items')).length === itemsWas && /^That’s within 15 minutes of Nora Ellis\. Choose a time with a gap either side\.$/.test((await dialog(page).locator('.cc-problem[role=alert]').textContent().catch(() => '')) || ''), await dialog(page).locator('.cc-problem[role=alert]').textContent().catch(() => ''));
@@ -563,8 +575,8 @@ async function run() {
       await g.open(`/book/${CAL.chemKey}`);
       const start = await g.words();
       pass(`${tag}: a guest's Chemistry Call page shows its own call only, and nothing of the calendar`, /Chemistry Call/i.test(start) && !/Connection Call/i.test(start) && !/Training|Sam Okafor|Client 1|Dentist|Swimming/.test(start));
-      await pick(g.page, g.page, 'Your time zone', 'Los Angeles');
-      const days = async () => (await g.page.locator('.cc-book-days [role=radio]').allTextContents()).map((d) => d.trim());
+      await zoneTo(g.page, 'Los Angeles');
+      const days = async () => freeDays(g.page);
       const first = await days();
       // Mon 23 Nov's block is 14:00 to 16:00 UK time: 6:00 to 8:00 am in Los Angeles, so only 7:00 am onwards shows at first.
       const shown = (await g.page.locator('.cc-book-time').allTextContents()).map((x) => x.trim());
@@ -574,14 +586,16 @@ async function run() {
       const all = (await g.page.locator('.cc-book-time').allTextContents()).map((x) => x.trim());
       pass(`${tag}: "Show early and late times" adds the ones before 07:00 her time`, all[0] === '6:00 am' && all.length > shown.length && !(await days()).includes('Fri 27'), all.join(','));
       // Thanksgiving, said before she books (Thu 26 Nov: 13:30 to 15:00 UK time is 5:30 to 7:00 am in Los Angeles).
-      const thu = g.page.locator('.cc-book-days').getByRole('radio', { name: 'Thu 26', exact: true });
-      if (await thu.count()) {
-        await thu.click(); await settle(g.page, 300);
-        await g.page.locator('.cc-book-time').first().click(); await settle(g.page, 900);
+      if ((await days()).includes('Thu 26')) {
+        await dayButton(g.page, 'Thu 26').click(); await settle(g.page, 300);
+        await g.page.locator('.cc-book-time').first().click(); await settle(g.page, 300);
+        await carryOn(g.page); await settle(g.page, 600);
         pass(`${tag}: a public holiday where the visitor is says so before they book`, /That’s Thanksgiving in the US\./.test(await g.words()), (await g.words()).slice(0, 300));
       } else pass(`${tag}: Thanksgiving's early times are offered once early and late times show`, false, (await days()).join(','));
-      await g.page.locator('.cc-book-days').getByRole('radio', { name: 'Mon 23', exact: true }).click(); await settle(g.page, 300);
+      await backToTimes(g.page);
+      await dayButton(g.page, 'Mon 23').click(); await settle(g.page, 300);
       await g.page.locator('.cc-book-time', { hasText: /^7:00 am$/ }).click(); await settle(g.page, 400);
+      await carryOn(g.page);
       pass(`${tag}: both clocks show once a time is chosen`, /7:00 am Los Angeles time · 15:00 UK time/.test(await g.page.locator('.cc-book-when').textContent()), await g.page.locator('.cc-book-when').textContent());
       await g.page.getByLabel('Your name').fill('Grace Liu');
       await g.page.getByLabel('Your email').fill('grace@example.invalid');
@@ -645,6 +659,7 @@ async function run() {
       const g = await guestPage(t.store, when);
       await g.open(`/book/link/${made.key}`);
       await g.page.locator('.cc-book-time').first().click(); await settle(g.page, 300);
+      await carryOn(g.page);
       pass(`${tag}: the link opens with the name already filled in`, (await g.page.getByLabel('Your name').inputValue()) === 'Priya Nair');
       await g.page.getByLabel('Your email').fill('priya@example.invalid');
       await g.page.locator('.cc-book-form .ds-btn--primary').click(); await settle(g.page, 1000);
@@ -759,7 +774,7 @@ async function run() {
       await g.open(`/book/${CAL.chemKey}`);
       const mon = (await g.page.locator('.cc-book-time').allTextContents()).map((x) => x.trim());
       pass(`${tag}: a booking page offers Monday only once the family item is over (from 15:00)`, mon.length > 0 && mon[0] === '15:00' && !mon.some((x) => x < '15:00'), mon.join(','));
-      await g.page.locator('.cc-book-days').getByRole('radio', { name: 'Fri 27', exact: true }).click(); await settle(g.page, 400);
+      await dayButton(g.page, 'Fri 27').click(); await settle(g.page, 400);
       const fri = (await g.page.locator('.cc-book-time').allTextContents()).map((x) => x.trim());
       pass(`${tag}: and Friday only once the personal one from Google is over (from 14:30)`, fri.length > 0 && fri[0] === '14:30', fri.join(','));
       pass(`${tag}: neither is ever named, on any day`, !/School play|Physio|Swimming|Dentist|Parents/.test(await g.words()));
@@ -787,7 +802,7 @@ async function run() {
     await t.setClock(new Date(2026, 9, 26, 9, 0), '/coach');
     const said = await t.text();
     pass(`${tag}: Today on Mon 26 Oct: the US clock-change line, with the day the call moves`, /US clocks go back on Sunday 1 Nov\./.test(said) && /Mia’s Monday call moves from 11:30 to 12:30 UK time from Mon 2 Nov/.test(said), (said.match(/US clocks go back[^\n]*/) || [''])[0]);
-    const row = page.locator('.cc-today-call', { hasText: 'Mia Torres' }).first();
+    const row = page.locator('.cc-today-calls .ds-li', { hasText: 'Mia Torres' }).first();
     pass(`${tag}: and her call's row: 11:30, "7:30 am New York"`, /11:30/.test(await row.textContent().catch(() => '')) && /7:30 am New York/.test(await row.textContent().catch(() => '')), await row.textContent().catch(() => ''));
     pass(`${tag}: Today fits the phone`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
     // The bar, from her own call.

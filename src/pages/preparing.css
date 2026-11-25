@@ -1,0 +1,7 @@
+/* A brand-new client (example "New client", .prep): the welcome alone, 64px from the top, 520px wide. */
+.ui-root .home-prep {
+  max-width: var(--si-col-account);
+  padding: var(--space-px64) 0;
+}
+
+.ui-root .home-prep .ds-open { margin-bottom: 0; }

@@ -7,8 +7,9 @@ import './design.css';
 // border), the height of a list row (56px inside, 76px overall), as wide as
 // its section. Never a big card with a sentence and a row of buttons.
 //
-//   Left, one button: the action as a verb and thing (17px medium) over
-//   one quiet detail (14px grey: the time as "~1 minute", or a few words).
+//   Left, one button: the action as a verb and thing (16px medium), with
+//   one quiet detail under it, outside the button (13px grey: the time as
+//   "~1 minute", or a few words; Polish 1, so the button's words never wrap).
 //   No circle and no icon (Tim, 18 Nov, follow-up 1): the title, the time
 //   and Not now, in the soft card.
 //   Right, the way out as quiet text links: "Not now", with "Don’t show
@@ -27,12 +28,13 @@ export default function OfferRow({
 }) {
   return (
     <div className={`ds-offer${never && !oneOff ? ' ds-offer--two' : ''} ${className}`.trim()}>
-      <button type="button" className="ds-offer-take" onClick={onTake}>
-        <span className="ds-offer-words">
+      {/* The detail sits outside the button (Polish 1): the button's words are the action alone, on one line. */}
+      <span className="ds-offer-words">
+        <button type="button" className="ds-offer-take" onClick={onTake}>
           <b>{action}</b>
-          {detail && <small>{detail}</small>}
-        </span>
-      </button>
+        </button>
+        {detail && <small>{detail}</small>}
+      </span>
       {oneOff ? (
         <IconButton label={closeLabel} onClick={onClose} className="ds-offer-close" />
       ) : (

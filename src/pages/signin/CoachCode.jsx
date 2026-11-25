@@ -10,7 +10,7 @@ import {
   NO_WRONG_TRIES, readTries, sessionKeyOf, shouldTellLowCodes, waitSecondsLeft, waitWords,
 } from '../../lib/signIn/coachAuth';
 import { loadCoachAuth } from '../../lib/signIn/coachAuthData';
-import { Alt, CodeField, keepSixDigit, Line, MainButton, Message, SignInPage, TextLink } from '../../components/signin/SignInParts';
+import { Alt, CodeField, CodeMessage, keepSixDigit, Line, SignInPage, TextLink } from '../../components/signin/SignInParts';
 import useEnter from '../../components/signin/useEnter';
 
 const WORDS = COACH_AUTH_WORDS.code;
@@ -110,16 +110,20 @@ export default function CoachCode({ onDone }) {
     }
   };
 
-  const submit = async (e) => {
-    e.preventDefault();
+  // `typed`: the six digits, when the sixth goes in by itself (polish 1, rule 23).
+  const submit = async (e, typed) => {
+    e?.preventDefault?.();
     if (busy.current) return undefined;
     setMessage(null);
-    const digits = code.replace(/\s+/g, '');
-    if (!/^\d{6}$/.test(digits)) return setMessage(CODE_SIX_DIGITS);
+    // Any refusal empties the squares, so the next six digits go in by
+    // themselves again (the same code included, after a wait).
+    const refuse = (words) => { setCode(''); return setMessage(words); };
+    const digits = String(typed ?? code).replace(/\s+/g, '');
+    if (!/^\d{6}$/.test(digits)) return refuse(CODE_SIX_DIGITS);
     // 5 wrong codes in a row: a calm 30 seconds before the next try.
     const wait = waitSecondsLeft(readTries());
-    if (wait) return setMessage(waitWords(wait));
-    if (isOffline()) return setMessage(needsConnection(COACH_AUTH_WORDS.offline.code));
+    if (wait) return refuse(waitWords(wait));
+    if (isOffline()) return refuse(needsConnection(COACH_AUTH_WORDS.offline.code));
     busy.current = true;
     try {
       // Pressed before the page had found the authenticator: find it now.
@@ -127,7 +131,7 @@ export default function CoachCode({ onDone }) {
       if (!id) {
         const { data: factors } = await supabase.auth.mfa.listFactors().catch(() => ({ data: null }));
         id = (factors?.totp || []).find((f) => f.status === 'verified')?.id || null;
-        if (!id) return setMessage(DIDNT_SIGN_IN);
+        if (!id) return refuse(DIDNT_SIGN_IN);
         setFactorId(id);
       }
       const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: id, code: digits }).catch((err) => ({ error: err }));
@@ -152,10 +156,16 @@ export default function CoachCode({ onDone }) {
 
   return (
     <SignInPage title={WORDS.title} onSubmit={submit}>
-      {WORDS.lines.map((line) => <Line key={line}>{keepSixDigit(line)}</Line>)}
-      <CodeField label={WORDS.label} value={code} onDigits={setCode} />
-      <Message lines={message} />
-      <MainButton>{WORDS.button}</MainButton>
+      {WORDS.lines.map((line) => <Line key={line} small>{keepSixDigit(line)}</Line>)}
+      <CodeField
+        label={WORDS.label}
+        value={code}
+        onDigits={(d) => { setCode(d); if (d) setMessage(null); }}
+        onComplete={(d) => submit(null, d)}
+        wrong={Boolean(message)}
+        describedBy="si-code-msg"
+      />
+      <CodeMessage id="si-code-msg" lines={message} />
       <Alt><TextLink to={SIGN_IN_PATHS.coachHelp}>{WORDS.lost}</TextLink></Alt>
     </SignInPage>
   );

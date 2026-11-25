@@ -1,0 +1,62 @@
+/* A guided tool in focus mode (StepFrame.jsx on A1's ToolFrame; Polish 1, rule 21). The frame,
+   bar, progress line, question and foot are ToolFrame's own (blocks.css); this file only places a
+   step's fields, its eye beside the question, the example and the save state. Every value is a token. */
+
+/* Under 1024px the frame gives no padding: the tool gives the example's 24px top and 20px sides. */
+/* The older tool page's own padding steps aside inside the frame (the frame places the column). */
+.ui-root .sf-page.plan-builder-wait { min-height: 0; padding: 0; }
+
+@media (max-width: 1023px) {
+  .ui-root .sf-page.plan-builder-wait {
+    padding: var(--space-px20) var(--page-x-phone) var(--space-px64);
+  }
+}
+
+.ui-root .sf-eye {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: var(--icon-title-gap);
+}
+
+/* A field: its question (16px) over its control, 24px between fields (.field). */
+.ui-root .sf-field { margin-bottom: var(--space-4); }
+.ui-root .sf-field:last-child { margin-bottom: 0; }
+
+.ui-root .sf-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-text);
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.ui-root .sf-note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-meta);
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.ui-root .sf-example { margin-bottom: var(--space-3); }
+
+.ui-root .sf-example-text {
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-text);
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.ui-root .sf-steps {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* The step's own label row (Your to-dos, + Add) sits on the step's column. */
+.ui-root .sf-tool .ds-card-head { margin-top: var(--space-1); }
+
+/* The step's column is the tool's own 560px (--tool-max): the older narrow column steps aside. */
+.ui-root .sf-tool .day-narrow { max-width: none; }
+
+/* Answer rows run the tool's whole column (.picks, .choices are 560px in the example). */
+.ui-root .sf-tool .ds-rows { max-width: none; }

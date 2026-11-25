@@ -12,10 +12,11 @@ import './design.css';
 // max: the most that can be chosen (M5: two Strategies of the day, three
 //      things to do today). Once it is reached the others grey out until
 //      one is unchosen (Tim, 23 Oct).
-// variant 'pick': the Do list in Daily plan (M5 .pk): each row has a
-//      second line (the option's `detail`, then its `tags` as separate
-//      grey words, never joined by dots) and a circle at the end that
-//      fills with a tick once chosen, so every row has the same layout.
+// variant 'pick': the Do list in Daily plan (M5 .pk; 25 Nov example .pick):
+//      each row starts with a 24px square that holds its order number
+//      once chosen (1, 2, 3), then the name with a second line (the
+//      option's `detail`, then its `tags` as separate grey words, never
+//      joined by dots); a chosen row takes the text colour's edge.
 // groups: named groups of rows (M19, Daily plan's "Carried over" then
 //      "This week"): [{ key, title }], each option naming its `group`.
 //      An empty group is left out with its heading. The rows stay one
@@ -48,6 +49,7 @@ export default function MultiChoice({ label, ariaLabel, hint, options, values, o
       >
         {pick ? (
           <>
+            <span className="ds-pick-mark" aria-hidden="true">{on ? values.indexOf(option.value) + 1 : ''}</span>
             <span className="ds-pick-words">
               <span className="ds-pick-name">{option.label}</span>
               {((option.detail && !option.onlyTags) || option.tags?.length > 0) && (
@@ -56,9 +58,6 @@ export default function MultiChoice({ label, ariaLabel, hint, options, values, o
                   {option.tags?.map((t) => <span key={t} className="ds-todo-tag">{t}</span>)}
                 </span>
               )}
-            </span>
-            <span className="ds-pick-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
             </span>
           </>
         ) : (

@@ -1,382 +1,160 @@
-// The sign-in pages beside their mock-up, M26 (version 4, approved by Tim
-// on 11 Nov; seq 7 since Phase 6a run 5, with the spacing rule of 19 Nov):
-// all 21 screens, dark and light, at 1280 wide and at 390 by
-// 844. For each screen the same parts must appear in the same order with
-// the same words, and each part must sit in the same place and be the
-// same size as M26 draws it, to within half a pixel. It also saves a
-// screenshot of every screen, named as M26's picker names them.
+// The sign-in pages beside the approved 25 Nov example pages (polish 1,
+// rules 22 and 23; ~/Downloads/clarity-phase-6a/example-pages-25nov.html),
+// which win over M26 on look: Sign in and Enter your code, the two screens
+// the example draws, dark and light, at 1280 by 800 and 390 by 844. Every
+// other sign-in and account screen is built from the same parts and
+// checked by measure.mjs, centring-pages.mjs and the lasting design check.
 //
-//   node tests/signin/compare.mjs [folder for screenshots]
-//   ONLY=signin,create  MODES=dark  SIZES=1280  narrow a run.
+// For each screen the same parts are read on both, in the same way: the
+// crosshair's size and its distance from the top of the screen, each part's
+// place measured from the title's top and from the column's left edge, its
+// size, and the type (the title's and the code's digits' size, THE CLARITY
+// PORTAL's size and spacing, and its distance from the foot). Any
+// difference over 2px fails, with the parts listed. (The example's page sits
+// under its own 44px bar, so its screen is measured from its section, and
+// its height is the section's: the form is in the middle of what is left.)
+// Until polish 1 this compared every screen with M26 seq 7 to half a pixel.
 //
-// TEST project only. No real email is sent and Google's own page is never
-// opened (tests/signin/shared.mjs answers those calls).
+//   APP_URL=http://localhost:<vite> LOCAL_SUPABASE_URL=http://localhost:<db> node --import ./tests/scores/register.mjs tests/signin/compare.mjs [folder for screenshots]
+//   ONLY=signin,coach-code  MODES=dark  SIZES=1280  narrow a run.
+//
+// No real email is sent and Google's own page is never opened (shared.mjs).
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { APP, MOCKUP, SAM, guard, makeChecks, sleep, testEnv } from './shared.mjs';
+import { SAM, guard, makeChecks, sleep, testEnv } from './shared.mjs';
 import { SCREENS } from './screens.mjs';
-import { withNewButtons, withNewFields } from '../buttons/expected.mjs';
 
+export const EXAMPLE = process.env.EXAMPLE || join(homedir(), 'Downloads', 'clarity-phase-6a', 'example-pages-25nov.html');
 const env = testEnv();
 const out = process.argv[2] || null;
 if (out) mkdirSync(out, { recursive: true });
 const ONLY = process.env.ONLY ? process.env.ONLY.split(',') : null;
 const MODES = (process.env.MODES || 'dark,light').split(',');
 const SIZES = (process.env.SIZES || '1280,390').split(',').map(Number);
+const TOLERANCE = 2;
 const { pass, done } = makeChecks();
 
-// Reads the parts of one sign-in column, in the order they appear, with
-// each part's place measured from the column's own top left corner.
-function readParts({ root, map, loose = false }) {
-  const col = document.querySelector(root);
-  if (!col) return null;
-  const base = col.getBoundingClientRect();
-  const clean = (t) => (t || '').replace(/[‑‐]/g, '-').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
-  const parts = [];
-  const all = [...col.querySelectorAll('*')];
-  for (const el of all) {
-    const kind = Object.keys(map).find((k) => el.matches(map[k]));
-    if (!kind) continue;
-    const r = el.getBoundingClientRect();
-    if (!r.width && !r.height) continue;
-    const st = getComputedStyle(el);
-    if (st.display === 'none' || st.visibility === 'hidden') continue;
-    let text = '';
-    if (kind === 'inp') text = loose ? (el.labels?.[0] ? 'labelled' : 'no label') : `${el.getAttribute('autocomplete') || ''}|${el.getAttribute('inputmode') || ''}|${el.getAttribute('placeholder') || ''}|${el.labels?.[0] ? 'labelled' : 'no label'}`;
-    else if (kind === 'box') text = el.closest('[role=checkbox]')?.getAttribute('aria-checked') || '';
-    else if (kind === 'mark' || kind === 'chev' || kind === 'spin') text = '';
-    else text = clean(el.innerText);
-    // A link's place in its line: how far the line's first letter is from the
-    // column's left edge (one left edge, sign-in rule 49, moves the line, and
-    // the link with it).
-    let lineLeft = null;
-    const line = kind === 'link' ? el.closest('.alt, .si-alt') : null;
-    if (line) {
-      const rg = document.createRange();
-      rg.selectNodeContents(line);
-      const same = [...rg.getClientRects()].filter((q) => q.width > 0 && q.bottom > r.top + 1 && q.top < r.bottom - 1);
-      if (same.length) lineLeft = +(Math.min(...same.map((q) => q.left)) - base.left).toFixed(2);
-    }
-    parts.push({
-      lineLeft,
-      kind,
-      text,
-      top: +(r.top - base.top).toFixed(2),
-      left: +(r.left - base.left).toFixed(2),
-      width: +r.width.toFixed(2),
-      height: +r.height.toFixed(2),
-      size: parseFloat(st.fontSize),
-      colour: st.color,
-      tag: el.tagName,
-    });
+// The parts of one screen, read in the page: each from the title's top and
+// the column's left edge. `sel` names each part on that page.
+function readScreen(sel) {
+  const q = (s) => (s ? [...document.querySelectorAll(s)].find((el) => { const b = el.getBoundingClientRect(); return b.width > 0 && b.height > 0; }) : null);
+  const box = (el) => { const b = el.getBoundingClientRect(); return { x: b.left, y: b.top, w: b.width, h: b.height, bottom: b.bottom }; };
+  const screen = box(q(sel.screen));
+  const title = box(q(sel.title));
+  const col = box(q(sel.col));
+  const parts = {};
+  for (const [name, s] of Object.entries(sel.parts)) {
+    const el = q(s);
+    if (!el) continue;
+    const b = box(el);
+    parts[name] = { top: +(b.y - title.y).toFixed(2), left: +(b.x - col.x).toFixed(2), width: +b.w.toFixed(2), height: +b.h.toFixed(2) };
   }
-  return { parts, align: col.dataset?.align || null, colWidth: +base.width.toFixed(2), colTop: +base.top.toFixed(2), colLeft: +base.left.toFixed(2), sideways: document.documentElement.scrollWidth - innerWidth };
+  const mark = box(q(sel.mark));
+  const foot = q(sel.foot);
+  const fs = foot ? getComputedStyle(foot) : null;
+  const ttl = getComputedStyle(q(sel.title));
+  const digit = sel.digit ? q(sel.digit) : null;
+  return {
+    parts,
+    mark: { size: +mark.w.toFixed(2), top: +(mark.y - screen.y).toFixed(2), middle: +(mark.x + mark.w / 2 - (screen.x + screen.w / 2)).toFixed(2) },
+    title: { size: parseFloat(ttl.fontSize), font: ttl.fontFamily.split(',')[0].replace(/"/g, ''), middle: +(title.x + title.w / 2 - (col.x + col.w / 2)).toFixed(2) },
+    foot: fs ? { size: parseFloat(fs.fontSize), spacing: parseFloat(fs.letterSpacing), fromBottom: +(screen.bottom - box(foot).bottom).toFixed(2), font: fs.fontFamily.split(',')[0].replace(/"/g, '') } : null,
+    digit: digit ? parseFloat(getComputedStyle(digit).fontSize) : null,
+    colWidth: +col.w.toFixed(2),
+  };
 }
 
-const MOCK_MAP = {
-  back: '.back', mark: '.mark svg', brand: '.brand', core: '.core', ttl: '.ttl, .ph3 h1', p: '.p', gbtn: '.gbtn', or: '.or',
-  label: '.field label', inp: '.inp', show: '.show', terms: '.terms', box: '.cb i', err: '.err', btn: '.btn', alt: '.alt', link: '.alt a, .terms a',
-  wait: '.wait', saved: '.saved',
+const EX = {
+  signin: { screen: '[data-page=signin]', col: '#f-signin', title: '#f-signin h1', mark: '[data-page=signin] .mk.big', foot: '[data-page=signin] .foot',
+    parts: { email: '#em', password: '#pw', button: '#go-code', or: '#f-signin .or', google: '#f-signin .ghost.big', g: '#f-signin .gg', forgot: '#f-signin .lk' } },
+  'coach-code': { screen: '[data-page=signin]', col: '#f-code', title: '#f-code h1', mark: '[data-page=signin] .mk.big', foot: '[data-page=signin] .foot', digit: '#code input',
+    parts: { line: '#f-code p.sm', square1: '#code input:nth-child(1)', square2: '#code input:nth-child(2)', square6: '#code input:nth-child(6)', lost: '#f-code .lk' } },
 };
-const APP_MAP = {
-  back: '.si-back', mark: '.si-mark svg', brand: '.si-brand', core: '.si-core', ttl: '.si-ttl, .si-account-title', p: '.si-p', gbtn: '.ds-google', or: '.si-or',
-  label: '.si-field label', inp: '.si-inp', show: '.si-show', terms: '.si-terms', box: '.ds-check-box > span', err: '.si-err', btn: '.si-btn', alt: '.si-alt', link: '.si-alt .si-link, .si-terms .si-link',
-  wait: '.si-wait', saved: '.ds-status--saved',
+const APP_SEL = {
+  signin: { screen: '.si-root', col: '.si-col', title: '.si-ttl', mark: '.si-mark svg', foot: '.si-brand',
+    parts: { email: '.si-field:nth-of-type(1) .si-inp', password: '.si-pw .si-inp', button: '.si-btn', or: '.si-or', google: '.si-google', g: '.si-g', forgot: '.si-alt' } },
+  'coach-code': { screen: '.si-root', col: '.si-col', title: '.si-ttl', mark: '.si-mark svg', foot: '.si-brand', digit: '.si-code-sq',
+    parts: { line: '.si-p', square1: '.si-code-sq:nth-child(1)', square2: '.si-code-sq:nth-child(2)', square6: '.si-code-sq:nth-child(6)', lost: '.si-alt' } },
+};
+// Where the build differs from the example on purpose, and why.
+const MEANT = {
+  // Kept from M26 (sign-in rule 13: "Password boxes say Show") and rule 7: "New here? Create my account" stays under
+  // Forgotten your password on the clients' page; the example draws neither. They add no part the example measures.
 };
 
-// Where a part's place is allowed to differ from M26's, and why.
-function allowed(kind, what, screen, phone) {
-  // Inside My Account the pages sit in the portal's own frame, which M26
-  // doesn't draw: on a phone its gutter is 20px a side where M26's sheet
-  // has 16px, so the column is 8px narrower. Heights and gaps still match.
-  if (screen.startsWith('acct-') && phone && (what === 'width' || what === 'left')) return 9;
-  // The name is nudged down 0.1em (Tim, 11 Nov: Nekst capitals sit high on their line).
-  if (kind === 'brand' && what === 'top') return 1.4;
-  // Back's box starts at the chevron's own square, so its visible edge
-  // lands on the content edge (measured in tests/signin/measure.mjs).
-  if (kind === 'back' && (what === 'left' || what === 'width')) return 12;
-  // Words are as wide as their font draws them: M26 loads DM Sans from
-  // Google, the portal carries its own copy.
-  if (['link', 'show', 'saved'].includes(kind) && (what === 'left' || what === 'width')) return 3;
-  if (kind === 'wait' && (what === 'width' || what === 'left')) return 3;
-  if (screen.startsWith('acct-') && kind === 'btn' && (what === 'width')) return 4;
-  return 0.6;
-}
-
-// The spacing rule of 19 Nov, 21:25 (Phase 6a run 5; the run's prompt wins
-// over M26): M26 seq 7 draws it on the sign-in pages, but My Account's
-// pages kept version 4's 22px from a box to the button, 17px from the
-// button to a link and 22px from the title to its first line. The rule
-// moves those parts (box to button 18, button to link 18, title to line
-// 12): from the first part of each kind named, everything below moves by
-// that much.
-const SPACING_RULE = {
-  'acct-password': [['btn', -4], ['alt', 1]],
-  'acct-password-saved': [['btn', -4], ['alt', 1]],
-  'acct-email': [['btn', -4]],
-  'acct-email-sent': [['p', -10], ['alt', 1]],
-};
-function withSpacingRule(parts, key) {
-  const steps = [...(SPACING_RULE[key] || [])];
-  let shift = 0;
-  return parts.map((x) => {
-    if (steps.length && x.kind === steps[0][0]) shift += steps.shift()[1];
-    return shift ? { ...x, top: x.top + shift } : x;
-  });
-}
-
-// One left edge (Tim, 23 Nov 2026, 17:40; sign-in rule 49): M26 centres the
-// crosshair and the lines of words under the button on every page. On a page
-// with a form or a list (`data-align="start"` on the column) they move to the
-// column's left edge: the crosshair's drawing on the edge (its square moved
-// out by --bold-cross-ink-in), and each link with its line, which now starts
-// on the edge. Nothing else moves, so everything else is still held to M26's
-// place. A short message page (Check your email, Signing you in) stays
-// centred, as M26 draws it.
-const MARK_INK_IN = 32 * 7.348 / 185;
-function withOneLeftEdge(parts, align) {
-  if (align !== 'start') return parts;
-  return parts.map((x) => {
-    if (x.kind === 'mark') return { ...x, left: +(-MARK_INK_IN).toFixed(2) };
-    if (x.kind === 'link' && x.lineLeft != null) return { ...x, left: +(x.left - x.lineLeft).toFixed(2) };
-    return x;
-  });
+async function exampleScreen(browser, key, width, mode) {
+  const ctx = await browser.newContext({ viewport: { width, height: width < 700 ? 844 : 800 }, colorScheme: mode });
+  const page = await ctx.newPage();
+  await page.goto(pathToFileURL(EXAMPLE).href);
+  await page.evaluate(([phone, theme, code]) => {
+    document.body.classList.remove('light', 'dark');
+    document.body.classList.add(theme);
+    document.body.classList.toggle('phone', phone);
+    window.dispatchEvent(new Event('resize'));
+    if (code) { document.querySelector('#f-signin').hidden = true; document.querySelector('#f-code').hidden = false; }
+  }, [width < 700, mode, key === 'coach-code']);
+  await page.evaluate(() => document.fonts.ready);
+  await sleep(200);
+  const found = await page.evaluate(readScreen, EX[key]);
+  if (out) await page.screenshot({ path: `${out}/example.${key}.${width}.${mode}.png` });
+  await ctx.close();
+  return found;
 }
 
 const browser = await chromium.launch();
-const calls = [];
+const table = [];
 for (const mode of MODES) {
-  // The mock-up, once per mode: both of its frames are on the page.
-  const mockCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 }, colorScheme: mode, locale: 'en-GB' });
-  const mock = await mockCtx.newPage();
-  await mock.goto(pathToFileURL(MOCKUP).href);
-  await mock.locator(`#mode button[data-m="${mode}"]`).click();
   for (const width of SIZES) {
     const phone = width < 700;
-    for (const screen of SCREENS) {
+    for (const screen of SCREENS.filter((s) => s.key in APP_SEL)) {
       if (ONLY && !ONLY.includes(screen.key)) continue;
       const tag = `${screen.name}, ${width}px ${mode}`;
-      await mock.locator(`#scrs .pick button[data-s="${screen.key}"]`).click();
-      if (screen.newer) await mock.evaluate(screen.newer, SAM.newEmail);
-      await sleep(80);
-      const want = await mock.evaluate(readParts, { root: phone ? '#ph' : '#dk', map: MOCK_MAP, loose: Boolean(screen.looseBox) });
-      const frameTop = await mock.evaluate((sel) => document.querySelector(sel).getBoundingClientRect().top, phone ? '.phone' : '.desk');
-
+      const want = await exampleScreen(browser, screen.key, width, mode);
       const answers = {};
-      // M26 draws its phone as a 390px frame with a 1px line round it, so
-      // the page inside is 388px wide: the parts are measured at that
-      // width, then the screenshot is taken at 390 by 844.
-      const ctx = await browser.newContext({
-        viewport: { width: phone ? width - 2 : width, height: phone ? 844 : 900 }, colorScheme: mode, locale: 'en-GB', timezoneId: 'Europe/London', hasTouch: phone, isMobile: phone,
-      });
+      const ctx = await browser.newContext({ viewport: { width, height: phone ? 844 : 800 }, colorScheme: mode, locale: 'en-GB', timezoneId: 'Europe/London', hasTouch: phone, isMobile: phone });
       await ctx.addInitScript((m) => { try { localStorage.setItem('clarity-colour-mode', m); } catch { /* the device's mode */ } }, mode);
-      await guard(ctx, calls, answers);
+      await guard(ctx, [], answers);
       const page = await ctx.newPage();
-      const errors = [];
-      page.on('pageerror', (e) => errors.push(e.message));
       try {
         await screen.open(page, { env, answers, SAM, phone, ctx });
-        await page.waitForSelector(screen.acct ? '.si-col--account' : '.si-col', { timeout: 20000 });
+        await page.waitForSelector(APP_SEL[screen.key].title, { timeout: 20000 });
         await page.evaluate(() => document.fonts.ready);
-        // The pointer away from the column, as measure.mjs does: a link that
-        // lands under the last press would be read in its hover colour.
         await page.mouse.move(1, 1);
-        await sleep(350);
+        await page.evaluate(() => document.activeElement?.blur?.());
+        await sleep(400);
       } catch (e) {
         pass(`${tag}: opens`, false, e.message.split('\n')[0]);
         await ctx.close();
         continue;
       }
-      const got = await page.evaluate(readParts, { root: '.si-col', map: APP_MAP, loose: Boolean(screen.looseBox) });
-      // M26's pill buttons, as the new buttons draw them (Tim, 18 Nov, follow-up 1; tests/buttons/expected.mjs): 40px
-      // high, 44px on a phone, 16px words; a button that hugs its words is their width plus 16px each side.
-      const boxWidth = Math.max(0, ...want.parts.filter((x) => x.kind === 'inp').map((x) => x.width));
-      const appButtons = got.parts.filter((x) => x.kind === 'btn');
-      const mockButtons = want.parts.filter((x) => x.kind === 'btn');
-      const words = !appButtons.length ? [] : await page.evaluate((texts) => {
-        const c = document.createElement('canvas').getContext('2d');
-        const st = getComputedStyle(document.querySelector('.si-col .si-btn'));
-        c.font = `${st.fontWeight} ${st.fontSize} ${st.fontFamily}`;
-        c.letterSpacing = st.letterSpacing;
-        return texts.map((t) => c.measureText(t).width);
-      }, appButtons.map((x) => x.text));
-      want.parts = withNewButtons(want.parts, {
-        phone,
-        isButton: (x) => x.kind === 'btn',
-        fills: (x) => !boxWidth || x.width >= boxWidth - 1,
-        wordsWidth: (x) => words[mockButtons.findIndex((m) => m.text === x.text && m.top === x.top)] ?? x.width,
-      });
-      // Its boxes, at follow-up 1's 56px (52px on a phone): what's below them moves by the difference.
-      want.parts = withNewFields(want.parts, { phone, isField: (x) => x.kind === 'inp' });
-      want.parts = withSpacingRule(want.parts, screen.key);
-      want.parts = withOneLeftEdge(want.parts, got.align);
-      pass(`${tag}: no page error`, errors.length === 0, errors[0]);
-      pass(`${tag}: no sideways scroll`, got.sideways <= 0, `${got.sideways}px`);
-      // M26 sets its buttons in capitals; since 18 Nov the portal's buttons are sentence case
-      // (Tim's Quiet precision), so a button's words are compared letter for letter, whatever the case.
-      const kinds = (list) => list.parts.map((p) => `${p.kind}${p.text ? ` "${p.kind === 'btn' ? p.text.toLowerCase() : p.text}"` : ''}`);
-      const same = JSON.stringify(kinds(want)) === JSON.stringify(kinds(got));
-      pass(`${tag}: the same parts, in the same order, with the same words`, same, same ? '' : `\n   M26: ${kinds(want).join(' | ')}\n   app: ${kinds(got).join(' | ')}`);
-      if (same) {
-        const off = [];
-        want.parts.forEach((w, i) => {
-          const g = got.parts[i];
-          for (const what of ['top', 'left', 'width', 'height']) {
-            if (Math.abs(w[what] - g[what]) > allowed(w.kind, what, screen.key, phone)) off.push(`${w.kind}${w.text ? ` "${w.text.slice(0, 24)}"` : ''} ${what} ${g[what]} (M26 ${w[what]})`);
-          }
-          if (w.kind !== 'box' && Math.abs(w.size - g.size) > 0.05) off.push(`${w.kind} text size ${g.size} (M26 ${w.size})`);
-        });
-        pass(`${tag}: every part where M26 draws it, within half a pixel (${want.parts.length} parts)`, off.length === 0, off.slice(0, 8).join('; '));
-        const colours = want.parts.filter((w, i) => w.colour !== got.parts[i].colour && !['mark', 'gbtn', 'inp', 'box'].includes(w.kind)).map((w) => `${w.kind} ${got.parts[want.parts.indexOf(w)].colour} (M26 ${w.colour})`);
-        pass(`${tag}: every part in M26's colour`, colours.length === 0, [...new Set(colours)].slice(0, 6).join('; '));
-        pass(`${tag}: the column is M26's width`, Math.abs(want.colWidth - got.colWidth) <= (screen.acct && phone ? 8.6 : 0.6), `${got.colWidth} (M26 ${want.colWidth})`);
-        if (!screen.acct) pass(`${tag}: the column starts where M26's does`, Math.abs((want.colTop - frameTop) - got.colTop) <= 1.1, `${got.colTop} (M26 ${(want.colTop - frameTop).toFixed(2)})`);
-      }
-      const h1 = await page.locator('.si-col h1, .si-col--account h1').count();
-      pass(`${tag}: one h1`, h1 === 1, `${h1}`);
-      if (phone) {
-        await page.setViewportSize({ width, height: 844 });
-        await sleep(150);
-        const wide = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
-        pass(`${tag}: no sideways scroll at 390`, wide <= 0, `${wide}px`);
-      }
-      if (out) await page.screenshot({ path: `${out}/${screen.name.replace(/[’']/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${width === 1280 ? '1280' : '390x844'}-${mode}.png` });
+      const got = await page.evaluate(readScreen, APP_SEL[screen.key]);
+      if (out) await page.screenshot({ path: `${out}/built.${screen.key}.${width}.${mode}.png` });
       await ctx.close();
-    }
-  }
-  await mockCtx.close();
-}
-// The coach authenticator's screens (Phase 6a run 5; M26 seq 7), word for
-// word: the run's prompt wins over M26, and the design reference over M26
-// for how a part looks, so their places aren't held to M26's (the QR, the
-// apps' rows and the reset's side panel are drawn differently on purpose;
-// measure.mjs and coach-auth.mjs measure the spacing rule on them). Every
-// line M26 draws must be there in M26's order, and nothing else may be,
-// apart from the differences listed in COACH_MEANT with why. Each screen is
-// stood in whole (coachWorld.mjs), and the owner's Reset is the test
-// coach's saved read-only sign-in with 049 to 053 and the server stood in.
-//   ONLY=coach-words runs this part alone.
-const COACH_MEANT = {
-  // The prompt: "Back returns to set-up" (M26 draws no Back here).
-  'auth-codes': { added: ['Back'], gone: [] },
-  // A side panel from the menu, the coach portal's shared part (the design reference wins): no Back "Coaches",
-  // and its foot reads left to right, the quiet Keep it before the coral Reset it at the right.
-  'acct-reset': { added: [], gone: ['Coaches'], swap: ['Reset it', 'Keep it'] },
-  // A recovery code ends the coach's other sign-ins, and You're in says so (Phase 6a run 7, step 3; coach rule of 22 Nov).
-  'auth-in': { added: ['Your other sign-ins have ended.'], gone: [] },
-  // The stood-in authenticator was set up on the test's own day, 2 Nov 2026 (coachWorld.mjs), where M26 draws 2 Dec.
-  'acct-security': { added: ['Authenticator app on since Mon 2 Nov'], gone: ['Authenticator app on since Wed 2 Dec'] },
-};
-const COACH_WORDS = [
-  { key: 'coach-code', go: '/coach/sign-in/code', world: { factor: 'verified' }, wait: '.si-field' },
-  { key: 'auth-setup', go: '/coach/sign-in/set-up', world: { factor: 'none', codesMade: false, codesSaved: false }, wait: '.si-qr svg' },
-  { key: 'auth-codes', go: '/coach/sign-in/recovery-codes', world: { factor: 'verified', aal: 'aal2', codesSaved: false }, wait: '.si-rc li' },
-  { key: 'auth-lost', go: '/coach/sign-in/help', world: { factor: 'verified' }, wait: '.si-field' },
-  {
-    key: 'auth-in', go: '/coach/sign-in/help', world: { factor: 'verified' }, wait: '.si-field',
-    then: async (page) => {
-      await page.getByLabel('Recovery code').fill('k7q2-9fmd');
-      await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-      await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
-      await page.getByText('That recovery code is now used.').waitFor({ timeout: 10000 });
-    },
-  },
-  { key: 'acct-security', go: '/my-account/sign-in-security', world: { factor: 'verified', aal: 'aal2', codesLeft: 9 }, wait: '.si-srow', root: '.si-col--account' },
-  { key: 'acct-reset', go: '/coach/settings/coaches', root: '[role=dialog]' },
-];
-if (!ONLY || ONLY.includes('coach-words')) {
-  const { coachWorld } = await import('./coachWorld.mjs');
-  // M26's lines for a screen: every element whose own words show, in order (the name and the mark left out).
-  const mockLines = (root) => {
-    const out = [];
-    const el = document.querySelector(root);
-    const walk = (n) => {
-      for (const c of n.children) {
-        const st = getComputedStyle(c);
-        if (st.display === 'none' || st.visibility === 'hidden' || c.matches('.brand, .mark, svg')) continue;
-        const own = [...c.childNodes].filter((x) => x.nodeType === 3).map((x) => x.textContent).join('').trim();
-        if (own) out.push(c.innerText.replace(/\s+/g, ' ').trim()); else walk(c);
-      }
-    };
-    walk(el);
-    return out;
-  };
-  const clean = (t) => t.replace(/[‑‐]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
-  for (const mode of MODES) {
-    const mockCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 }, colorScheme: mode, locale: 'en-GB' });
-    const mock = await mockCtx.newPage();
-    await mock.goto(pathToFileURL(MOCKUP).href);
-    await mock.locator(`#mode button[data-m="${mode}"]`).click();
-    for (const width of SIZES) {
-      const phone = width < 700;
-      for (const sc of COACH_WORDS) {
-        const tag = `${sc.key} (words), ${width}px ${mode}`;
-        await mock.locator(`#scrs .pick button[data-s="${sc.key}"]`).click();
-        await sleep(80);
-        const want = (await mock.evaluate(mockLines, phone ? '#ph' : '#dk')).map(clean);
-        let ctx;
-        try {
-          let page;
-          if (sc.world) {
-            ctx = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, colorScheme: mode, locale: 'en-GB', timezoneId: 'Europe/London', hasTouch: phone, isMobile: phone, serviceWorkers: 'block' });
-            await ctx.addInitScript((m) => { try { localStorage.setItem('clarity-colour-mode', m); } catch { /* the device's mode */ } }, mode);
-            await coachWorld(ctx, sc.world);
-            page = await ctx.newPage();
-          } else {
-            const { coachContext, standIn } = await import('../coach/shared.mjs');
-            ctx = await coachContext(browser, { size: phone ? 400 : 1440, theme: mode });
-            page = await ctx.newPage();
-            await standIn(page, { role: 'owner', db: 'none' });
-            await page.route('**/api/coach-auth-reset', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"ran":false}' }));
-          }
-          await page.goto(`${APP}${sc.go}`);
-          if (sc.wait) await page.waitForSelector(sc.wait, { timeout: 20000 });
-          if (sc.then) await sc.then(page);
-          if (sc.key === 'acct-reset') {
-            await page.getByRole('button', { name: /^More for / }).first().click({ timeout: 25000 });
-            await page.getByRole('menuitem', { name: 'Reset authenticator' }).click();
-            await page.getByRole('dialog', { name: /Reset .*authenticator/i }).waitFor({ timeout: 10000 });
-          }
-          await sleep(300);
-          const root = sc.root || '.si-col';
-          const got = (await page.evaluate(({ r }) => {
-            const el = document.querySelector(r);
-            const out = [];
-            const walk = (n) => {
-              for (const c of n.children) {
-                const st = getComputedStyle(c);
-                if (st.display === 'none' || st.visibility === 'hidden' || c.matches('.si-brand, .si-mark, svg, .ds-sr, .sr-only, [aria-hidden=true]')) continue;
-                const own = [...c.childNodes].filter((x) => x.nodeType === 3).map((x) => x.textContent).join('').trim();
-                if (own) out.push(c.innerText.replace(/\s+/g, ' ').trim()); else walk(c);
-              }
-            };
-            walk(el);
-            return out;
-          }, { r: root })).map(clean);
-          const meant = COACH_MEANT[sc.key] || { added: [], gone: [] };
-          let wantNow = want.filter((t) => t !== 'the clarity portal' && !meant.gone.map(clean).includes(t));
-          if (meant.swap) {
-            const [x, y] = meant.swap.map(clean);
-            wantNow = wantNow.map((t) => (t === x ? y : t === y ? x : t));
-          }
-          const gotNow = got.filter((t) => t !== 'the clarity portal' && !meant.added.map(clean).includes(t) && t !== 'close');
-          // Line by line, in order; a part may be split or joined differently (a step's number, a line's two halves).
-          const a = wantNow.join(' | ');
-          const b = gotNow.join(' | ');
-          const squash = (x) => x.replace(/[|\s]+/g, ' ').trim();
-          pass(`${tag}: M26’s words, in M26’s order, and nothing else`, squash(a) === squash(b), `\n   M26: ${a}\n   app: ${b}`);
-        } catch (e) {
-          pass(`${tag}: opens`, false, e.message.split('\n')[0]);
-        }
-        await ctx?.close();
-      }
-    }
-    await mockCtx.close();
-  }
-}
 
+      const off = [];
+      const near = (a, b) => Math.abs(a - b) <= TOLERANCE;
+      for (const [name, w] of Object.entries(want.parts)) {
+        const g = got.parts[name];
+        if (!g) { off.push(`${name} missing`); continue; }
+        for (const k of ['top', 'left', 'width', 'height']) if (!near(g[k], w[k])) off.push(`${name} ${k} ${g[k]} (example ${w[k]})`);
+        table.push(`${tag}: ${name} top ${g.top} (${w.top}), left ${g.left} (${w.left}), ${g.width} by ${g.height} (${w.width} by ${w.height})`);
+      }
+      pass(`${tag}: every part sits where the example puts it, within ${TOLERANCE}px`, off.length === 0, off.join('; '));
+      // The crosshair 11% of the screen down (at least 80px), on its middle; the example's screen is its section.
+      const wantTop = Math.max(80, 0.11 * (phone ? 844 : 800));
+      pass(`${tag}: the crosshair is ${want.mark.size}px, ${wantTop.toFixed(1)}px down, on the middle`, near(got.mark.size, want.mark.size) && Math.abs(got.mark.top - wantTop) <= 0.5 && Math.abs(got.mark.middle) <= 0.5, JSON.stringify({ got: got.mark, example: want.mark }));
+      pass(`${tag}: the title in ${want.title.font} at ${want.title.size}px, centred`, got.title.size === want.title.size && got.title.font === want.title.font && Math.abs(got.title.middle) <= 0.5, JSON.stringify({ got: got.title, example: want.title }));
+      pass(`${tag}: THE CLARITY PORTAL at the foot: ${want.foot.font} ${want.foot.size}px, spaced ${want.foot.spacing}px, ${want.foot.fromBottom}px from the bottom`, got.foot && got.foot.size === want.foot.size && near(got.foot.spacing, want.foot.spacing) && got.foot.font === want.foot.font && near(got.foot.fromBottom, want.foot.fromBottom), JSON.stringify({ got: got.foot, example: want.foot }));
+      pass(`${tag}: the column is the example’s width`, near(got.colWidth, want.colWidth), `${got.colWidth} (example ${want.colWidth})`);
+      if (want.digit) pass(`${tag}: the code’s digits are ${want.digit}px`, got.digit === want.digit, `${got.digit}`);
+    }
+  }
+}
 await browser.close();
-const blocked = calls.filter((c) => c.blocked && !/fonts\.(googleapis|gstatic)\.com|pwnedpasswords/.test(c.blocked));
-pass('no outside host was asked for anything', blocked.length === 0, [...new Set(blocked.map((c) => c.blocked))].slice(0, 4).join(', '));
+console.log('\nSIDE BY SIDE (built, then the example in brackets; px from the title’s top and the column’s left edge)');
+for (const line of table) console.log(`  ${line}`);
+if (Object.keys(MEANT).length) console.log(MEANT);
 done();

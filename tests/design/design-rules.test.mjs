@@ -125,3 +125,17 @@ test('scroll: a page wider than the window fails', async () => {
   const r = await check('<div style="width:1600px;height:10px"></div>');
   assert.match(r.problems.join('; '), /scroll: the page is \d+px wide at 1280px/);
 });
+
+test('rows: an opening list row (a hairline, no box) and its grey sub-line are a row, not a control', async () => {
+  const rows = '<section class="ds-card"><div class="ds-card-head"><h2 class="ds-label">What needs you</h2></div><button class="ds-li ds-li--go"><span class="ds-li-name">Sign your coaching agreement<span class="ds-li-sub">Sent by Robin on Monday</span></span><span class="ds-li-value">Fri 27 Nov</span></button></section>';
+  for (const phone of [false, true]) {
+    const r = await check(OPENING + rows + CONTROLS, { phone });
+    assert.ok(!rules(r).some((x) => ['radius', 'wrap', 'short'].includes(x)), `${phone ? 'phone' : 'laptop'}: ${r.problems.join('; ')}`);
+  }
+});
+
+test('calendar tiles: a coach calendar tile (4px corners, short, peach) is an event, not a control', async () => {
+  const tile = '<div style="position:relative;width:120px"><div class="cc-cal-tile" role="button" tabindex="0" style="border-radius:4px;height:22px;background:#FF6F5C;color:#000;font-size:13px;width:60px">Sam Carter, coaching session</div><button class="cc-cal-more" style="border-radius:4px;height:20px;font-size:13px;border:1px solid #999">2 more</button></div>';
+  const r = await check(CONTROLS + tile);
+  assert.ok(!rules(r).some((x) => ['radius', 'wrap', 'short', 'coral'].includes(x)), r.problems.join('; '));
+});

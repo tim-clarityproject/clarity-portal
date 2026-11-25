@@ -1,0 +1,51 @@
+/* My Account (Polish 1; example-pages-25nov.html "My Account"): the page opening, the underlined
+   tabs (SectionTabs) and one section at a time. The rows, cards, figure and controls are the shared
+   blocks; this file only places them. Every value is a token. */
+
+.ui-root .account-page {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .ui-root .account-page {
+    padding: var(--space-4) var(--page-x-phone) var(--space-px64);
+  }
+}
+
+/* The tabs sit 32px over the section (.tabs.acct). */
+.ui-root .acct-tabs { margin-bottom: var(--space-5); }
+
+/* One column for a section's own rows and fields (.qblock). */
+.ui-root .acct-pane { max-width: var(--tool-max); }
+.ui-root .acct-pane--questions { max-width: none; }
+
+.ui-root .acct-pane > .ds-rows-list + .ds-rows-list { margin-top: var(--space-4); }
+.ui-root .acct-pane > .ds-rows-list > .ds-li:first-child { border-top: 0; padding-top: 0; }
+
+.ui-root .acct-line {
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-text);
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.ui-root .acct-link { margin-top: var(--space-2); }
+
+/* Sign out (a real button) and Delete my account side by side (.row.gap.mt). */
+.ui-root .acct-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-px20);
+  margin-top: var(--space-5);
+}
+
+.ui-root .acct-pane .ds-switchrow { margin-top: var(--space-3); }
+.ui-root .acct-pane .account-sleep-target { margin: var(--space-3) 0; }
+
+/* Your coaching: the agreement's name as the card's question, its price as the figure, 16px to the rows. */
+.ui-root .acct-q { margin: 0 0 var(--space-1); }
+.ui-root .acct-fig { margin-bottom: var(--space-3); }
+.ui-root .acct-card-link { margin-top: var(--space-1); }
+

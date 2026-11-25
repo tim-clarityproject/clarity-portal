@@ -103,6 +103,25 @@
   .ui-root .ds-mi:hover { color: var(--text); }
 }
 
+/* A 40px row (the reference's .mi) with a 44px tap area: an invisible
+   ::after centred on it, as buttons have. On a laptop the rows sit 4px
+   apart, so neighbouring tap areas meet without overlapping (the drawn
+   rows stay 40px, the reference's). */
+@media (min-width: 1024px) {
+  .ui-root .ds-frame-side .ds-mgroup,
+  .ui-root .ds-frame-side .ds-mfoot { gap: var(--space-1); }
+}
+
+.ui-root .ds-mi { position: relative; }
+.ui-root .ds-mi::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: min(0px, calc((100% - var(--tap-min)) / 2));
+  height: max(100%, var(--tap-min));
+}
+
 .ui-root .ds-mi[aria-current='page'] {
   color: var(--text);
   font-weight: var(--fw-medium);
@@ -260,6 +279,24 @@
   display: none;
 }
 
+/* The tool's page column (the example's .app.focus .main): the panel's
+   middle 720px, 40px from the top on a laptop, 20px on a phone; the tool's
+   own 560px column (--tool-max) sits at its left. */
+.ui-root.ds-frame-root--focus .ds-frame-main {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--tool-frame-max);
+  margin: 0 auto;
+  padding-top: var(--space-px40);
+}
+
+@media (max-width: 1023px) {
+  .ui-root.ds-frame-root--focus .ds-frame-main {
+    max-width: none;
+    padding-top: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ui-root .ds-pmenu { animation: none; }
   .ui-root .ds-mbtn .ds-bold-cross { transition: none; }
@@ -290,7 +327,9 @@
   max-width: 100%;
   height: var(--mission-box-h);
   padding: 0 var(--space-px14);
-  border: var(--line-w) solid var(--line);
+  /* Box edges keep 3 to 1 (rule 8a; the lead's call, 25 Nov): the
+     reference draws --line, the portal's outlined boxes take --field-line. */
+  border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-control);
   font-family: var(--font-body);
   font-size: var(--fs-meta);
@@ -383,6 +422,9 @@
   height: auto;
   padding: 0;
 }
+
+/* The bell keeps its 44px square beside a long search box on a phone. */
+.ui-root .ds-frame .cc-header--frame .cc-round { flex: none; }
 
 .ui-root .ds-frame .cc-header--frame .cc-search {
   flex: 1 1 auto;

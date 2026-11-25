@@ -13,16 +13,20 @@ function entryKind(measure) {
   return 'number';
 }
 
-/** Log today: one habit, today (M1 hrow, day view). */
-export function DayRow({ habit: h, view, typed, onLog, onType, onLeave, onTick, onMore }) {
+/**
+ * Log today: one habit, today (M1 hrow, day view). `quiet`: Home's Log today card (Polish 1,
+ * example-pages-25nov.html): the name, its line and the control only, no bar and no chevron
+ * (the card's "View your week" opens the sprint).
+ */
+export function DayRow({ habit: h, view, typed, onLog, onType, onLeave, onTick, onMore, quiet = false }) {
   const kind = entryKind(h.measure);
   const day = view.today;
   const common = {
     name: h.name,
     detail: h.line,
     // The bar shows the same value as the line above it.
-    progress: h.lineBar ?? h.bar,
-    onMore,
+    progress: quiet ? undefined : (h.lineBar ?? h.bar),
+    onMore: quiet ? undefined : onMore,
     moreLabel: `${h.name}: week, target and impact`,
   };
   if (kind === 'number') {

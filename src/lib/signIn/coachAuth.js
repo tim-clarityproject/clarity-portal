@@ -13,6 +13,7 @@
 // CoachCode.jsx does.
 import { formatDocDate, formatFileDate, formatClockTime } from '../dateFormatter';
 import { CODE_SIX_DIGITS, DIDNT_SIGN_IN, DIDNT_SAVE } from './words';
+import { SIGN_IN_LINES } from '../../content/pageLines/signin.js';
 
 /** Codes in a set. */
 export const RECOVERY_CODE_COUNT = 10;
@@ -41,7 +42,8 @@ export const AUTHENTICATOR_APPS = [
 export const COACH_AUTH_WORDS = {
   code: {
     title: 'Enter your code',
-    lines: ['Open your authenticator app for the 6-digit code.', 'You’re only asked on a new phone or computer.'],
+    // The 25 Nov example's own line (polish 1, rule 23): the code goes in by itself.
+    lines: [SIGN_IN_LINES.code],
     label: 'Code',
     button: 'Sign in',
     lost: 'Lost your authenticator app?',

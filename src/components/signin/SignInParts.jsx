@@ -1,24 +1,25 @@
-import { forwardRef, useEffect, useId, useState } from 'react';
+import { forwardRef, useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import BoldCrosshair from '../design/BoldCrosshair';
 import Chevron from '../design/Chevron';
 import Crosshair from '../design/Crosshair';
-import { GoogleButton } from '../design/Brand';
 import ReadingPopup from '../auth/ReadingPopup';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import './signin.css';
 
-// The sign-in pages' shared parts (mock-up M26, version 4; Tim, 11 Nov).
-// Every page is built from these and nothing else, so the bold crosshair
-// and the name sit in the same place on every page, and every box,
-// button, link and message is the design reference's own.
+// The sign-in pages' shared parts (M26 for what they do; since polish 1
+// the 25 Nov design reference and example pages for how they look). Every
+// page is built from these and nothing else, so the crosshair and the name
+// sit in the same place on every page, and every box, button, link and
+// message is the reference's own.
 
-const MARK_SIZE = 32;
+// The crosshair at the top of every sign-in page (25 Nov reference: 40px).
+const MARK_SIZE = 40;
 
 /** "Back to sign in": above the column, at its left edge, clear of a phone's notch. */
 export function BackTo({ to = SIGN_IN_PATHS.signIn, state, children = 'Back to sign in' }) {
   return (
-    // On the content's left edge (rule 29t): the same edge as every row of a form page (rule 49).
+    // On the column's left edge (rule 29t).
     <Link className="si-back" to={to} state={state}>
       <Chevron direction="left" size="sm" beside="words" />
       <span>{children}</span>
@@ -27,43 +28,52 @@ export function BackTo({ to = SIGN_IN_PATHS.signIn, state, children = 'Back to s
 }
 
 /**
- * One sign-in page: the bold crosshair, THE CLARITY PORTAL, then one title
- * as the page's h1. Sign in alone has no title, so there the name is the
- * h1 and the core line follows it.
- * @param {string} [title] the one short title, word for word from M26
- * @param {boolean} [core] "Clarity drives performance." (Sign in only)
+ * One sign-in page, as the 25 Nov reference draws it (polish 1, rule 22):
+ * the crosshair near the top of the screen (about 11% of its height down,
+ * at least 80px), the form in the middle, and THE CLARITY PORTAL in Nekst
+ * at the foot. The title is the page's h1, in Nekst capitals, centred over
+ * the column; boxes and buttons span the column, and the lines and links
+ * under them are centred.
+ * @param {string} [title] the one short title ("Sign in", "Create your account")
+ * @param {boolean} [core] kept for older callers; the reference has no core line
  * @param {boolean|object} [back] true for "Back to sign in", or BackTo's props
  * @param {function} [onSubmit] the page's form: Enter in a box sends it
  * @param {boolean} [message] a short message page (no boxes, no list:
- *   Check your email, You're in, Signing you in), centred throughout; every
- *   other page puts everything on the column's left edge (sign-in rule 49,
- *   one left edge). A page with no form is a message page unless it says not.
+ *   Check your email, You're in, Signing you in). It reads the same; a page
+ *   with boxes says so on its column (`data-form="centred"`) for the checks
+ *   (tests/signin/centring.mjs).
  */
 export function SignInPage({ title, core = false, back = false, onSubmit, message = !onSubmit, children }) {
-  const Brand = title ? 'div' : 'h1';
+  // With no title (a page only saying "Signing you in"), the product's
+  // name at the foot is the page's one heading.
+  const Foot = title ? 'p' : 'h1';
   // With a form to send, the column itself is the form, so every part
-  // stays a direct child and the spacing rules read the same on every page.
+  // stays a direct child and the spacing reads the same on every page.
   const Col = onSubmit ? 'form' : 'div';
   const formProps = onSubmit ? { onSubmit, noValidate: true } : {};
   return (
     <div className="ui-root si-root">
       <main className="si-frame">
-        <Col className={message ? 'si-col si-col--message' : 'si-col'} data-align={message ? 'centre' : 'start'} {...formProps}>
+        <div className="si-mark" aria-hidden="true"><BoldCrosshair size={MARK_SIZE} /></div>
+        <div className="si-mid">
           {back ? <BackTo {...(back === true ? {} : back)} /> : null}
-          <div className="si-mark"><BoldCrosshair size={MARK_SIZE} /></div>
-          <Brand className="si-brand">The Clarity Portal</Brand>
-          {core ? <p className="si-core">Clarity drives performance.</p> : null}
-          {title ? <h1 className="si-ttl">{title}</h1> : null}
-          {children}
-        </Col>
+          {/* Centred throughout (the 25 Nov reference): a page with boxes says
+              so (data-form), and its lists and tick box rows keep their own
+              left edge inside the column (data-align="start" on each). */}
+          <Col className={message ? 'si-col si-col--message' : 'si-col'} data-align="centre" data-form={message ? undefined : 'centred'} {...formProps}>
+            {title ? <h1 className="si-ttl">{title}</h1> : null}
+            {children}
+          </Col>
+        </div>
+        <Foot className="si-brand">The Clarity Portal</Foot>
       </main>
     </div>
   );
 }
 
 /** A line of words under the title. */
-export function Line({ children, id }) {
-  return <p className="si-p" id={id}>{children}</p>;
+export function Line({ children, id, small = false }) {
+  return <p className={small ? 'si-p si-p--small' : 'si-p'} id={id}>{children}</p>;
 }
 
 /**
@@ -75,13 +85,15 @@ export function Note({ children }) {
 }
 
 /** A labelled box. The label is tied to its box. */
-export const Field = forwardRef(function Field({ label, id, className = '', ...rest }, ref) {
+export const Field = forwardRef(function Field({ label, id, className = '', placeholder, ...rest }, ref) {
   const autoId = useId();
   const fieldId = id || autoId;
+  // The name sits inside the box (polish 1, rule 22); the label stays for
+  // screen readers and password managers, tied to its box.
   return (
     <div className="si-field">
-      <label htmlFor={fieldId}>{label}</label>
-      <input ref={ref} id={fieldId} className={`si-inp ${className}`.trim()} {...rest} />
+      <label className="si-sr" htmlFor={fieldId}>{label}</label>
+      <input ref={ref} id={fieldId} className={`si-inp ${className}`.trim()} placeholder={placeholder ?? label} {...rest} />
     </div>
   );
 });
@@ -99,7 +111,6 @@ export const EmailField = forwardRef(function EmailField({ label = 'Email', auto
       autoCapitalize="none"
       autoCorrect="off"
       spellCheck={false}
-      placeholder="name@company.com"
       {...rest}
     />
   );
@@ -112,12 +123,13 @@ export const PasswordField = forwardRef(function PasswordField({ label = 'Passwo
   const [shown, setShown] = useState(false);
   return (
     <div className="si-field">
-      <label htmlFor={fieldId}>{label}</label>
+      <label className="si-sr" htmlFor={fieldId}>{label}</label>
       <div className="si-pw">
         <input
           ref={ref}
           id={fieldId}
           className="si-inp"
+          placeholder={label}
           type={shown ? 'text' : 'password'}
           name={autoComplete === 'new-password' ? 'new-password' : 'password'}
           autoComplete={autoComplete}
@@ -140,16 +152,37 @@ export const PasswordField = forwardRef(function PasswordField({ label = 'Passwo
   );
 });
 
-/** Continue with Google: Google's own button, in their light or dark version. */
-export function ContinueWithGoogle({ onClick }) {
-  return <GoogleButton onClick={onClick} />;
+// Google's own four-colour "G", never recoloured (Google's sign-in branding rules).
+function GoogleG() {
+  return (
+    <svg className="si-g" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
+}
+
+/**
+ * Continue with Google (polish 1, rule 22): Google's own four-colour G at
+ * 18px before the words, on a quiet outlined button the height of the boxes.
+ */
+export function ContinueWithGoogle({ onClick, children = 'Continue with Google' }) {
+  return (
+    <button type="button" className="si-google" onClick={onClick}>
+      {/* One line of words with the G before them, so at a reader's larger
+          text the lines wrap centred, the G on the first. */}
+      <span className="si-google-in"><GoogleG />{children}</span>
+    </button>
+  );
 }
 
 export function OrLine() {
   return <div className="si-or">or</div>;
 }
 
-/** The one coral button. Never greyed out: pressing it says what's missing. */
+/** The one main button (black in light, white in dark). Never greyed out: pressing it says what's missing. */
 export function MainButton({ children, type = 'submit', busy = false, ...rest }) {
   return (
     <button type={type} className="si-btn" aria-busy={busy || undefined} {...rest}>
@@ -195,7 +228,7 @@ export function Message({ lines }) {
 export function TermsRow({ checked, onChange }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="si-terms">
+    <div className="si-terms" data-align="start">
       <button
         type="button"
         role="checkbox"
@@ -305,7 +338,7 @@ export function keepSixDigit(text) {
  */
 export function TickRow({ checked, onChange, label, children }) {
   return (
-    <div className="si-terms">
+    <div className="si-terms" data-align="start">
       <button type="button" role="checkbox" className="ds-check-box" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}>
         <span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
@@ -320,40 +353,89 @@ export function TickRow({ checked, onChange, label, children }) {
 export const digitsOf = (text) => String(text ?? '').normalize('NFKC').replace(/\D+/g, '').slice(0, 6);
 
 /**
- * The 6-digit code's box: no example code in it, the one-time-code
- * autocomplete, and whatever is typed, pasted or put in at once read as
- * its six digits.
+ * The 6-digit code (polish 1, rule 23): six squares, one hidden input.
+ * The input carries autocomplete="one-time-code" and the numeric keypad,
+ * so a browser's or phone's own autofill still works; it lies over the
+ * squares, so tapping any square types into it. Typing moves on to the
+ * next square, Backspace goes back, and a paste fills all six. Whatever is
+ * typed, pasted or put in at once is read as its six digits ("123 456",
+ * "123-456" and full-width digits all read as 123456: sign-in rule 37).
+ * The sixth digit sends the code by itself (`onComplete`). `wrong` draws
+ * the squares' edges in the mistake colour until typing starts again.
  */
-export function CodeField({ label, value, onDigits, autoFocus = true }) {
+export function CodeField({ label, value, onDigits, onComplete, autoFocus = true, wrong = false, describedBy }) {
+  const autoId = useId();
+  const box = useRef(null);
+  const [focused, setFocused] = useState(false);
+  const digits = digitsOf(value);
+  const take = (next) => {
+    const d = digitsOf(next);
+    onDigits(d);
+    if (d.length === 6 && d !== digits) onComplete?.(d);
+  };
+  // The caret always sits after the last digit, so typing adds the next
+  // one and Backspace takes the last one off, wherever the square tapped.
+  const toEnd = () => {
+    const el = box.current;
+    if (!el) return;
+    const end = el.value.length;
+    try { el.setSelectionRange(end, end); } catch { /* not every input type allows it */ }
+  };
+  const current = Math.min(digits.length, 5);
   return (
-    <Field
-      label={label}
-      name="one-time-code"
-      inputMode="numeric"
-      autoComplete="one-time-code"
-      maxLength={6}
-      pattern="[0-9]*"
-      autoFocus={autoFocus}
-      value={value}
-      onChange={(e) => onDigits(digitsOf(e.target.value))}
-      // The box holds 6 characters, so a browser would cut "123 456" to
-      // "123 45" before the page saw it: a paste is read here instead.
-      onPaste={(e) => {
-        const pasted = e.clipboardData?.getData('text');
-        if (typeof pasted !== 'string') return;
-        e.preventDefault();
-        onDigits(digitsOf(pasted));
-      }}
-      // The same for several characters put in at once another way (a
-      // keyboard's own suggestion, a password manager).
-      onBeforeInput={(e) => {
-        if (typeof e.data !== 'string' || e.data.length < 2) return;
-        e.preventDefault();
-        const box = e.target;
-        const from = box.selectionStart ?? box.value.length;
-        const to = box.selectionEnd ?? box.value.length;
-        onDigits(digitsOf(`${box.value.slice(0, from)}${e.data}${box.value.slice(to)}`));
-      }}
-    />
+    <div className={`si-code${wrong ? ' si-code--wrong' : ''}`}>
+      <label className="si-sr" htmlFor={autoId}>{label}</label>
+      <input
+        ref={box}
+        id={autoId}
+        className="si-code-input"
+        name="one-time-code"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        maxLength={6}
+        pattern="[0-9]*"
+        autoFocus={autoFocus}
+        aria-describedby={describedBy}
+        aria-invalid={wrong || undefined}
+        value={digits}
+        onChange={(e) => take(e.target.value)}
+        onFocus={() => { setFocused(true); requestAnimationFrame(toEnd); }}
+        onBlur={() => setFocused(false)}
+        onClick={toEnd}
+        onKeyUp={toEnd}
+        // The box holds 6 characters, so a browser would cut "123 456" to
+        // "123 45" before the page saw it: a paste is read here instead.
+        onPaste={(e) => {
+          const pasted = e.clipboardData?.getData('text');
+          if (typeof pasted !== 'string') return;
+          e.preventDefault();
+          take(pasted);
+        }}
+        // The same for several characters put in at once another way (a
+        // keyboard's own suggestion, a password manager).
+        onBeforeInput={(e) => {
+          if (typeof e.data !== 'string' || e.data.length < 2) return;
+          e.preventDefault();
+          const el = e.target;
+          const from = el.selectionStart ?? el.value.length;
+          const to = el.selectionEnd ?? el.value.length;
+          take(`${el.value.slice(0, from)}${e.data}${el.value.slice(to)}`);
+        }}
+      />
+      <div className="si-code-squares" aria-hidden="true">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <span key={i} className={`si-code-sq${focused && i === current ? ' is-current' : ''}${digits[i] ? ' is-filled' : ''}`}>{digits[i] || ''}</span>
+        ))}
+      </div>
+    </div>
   );
+}
+
+/**
+ * What a code's answer says, under the squares (the 25 Nov reference: a
+ * small centred line). Words only, one line however many parts.
+ */
+export function CodeMessage({ lines, id }) {
+  const list = [...new Set((Array.isArray(lines) ? lines : [lines]).filter((line) => typeof line === 'string' && line))];
+  return <p className="si-code-msg" id={id} role="alert">{list.join(' ')}</p>;
 }

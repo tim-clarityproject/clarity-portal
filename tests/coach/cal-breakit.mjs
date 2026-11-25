@@ -328,7 +328,7 @@ PARTS['b-repeat'] = async (role) => {
 
   // ---- a series of 500: the page stays quick
   await t.go('/coach/calendar?view=week');
-  const quick = async (path) => { const a = Date.now(); await page.goto(`${APP}${path}`); await page.waitForSelector('[data-cal-key], .cc-month-cell, .cc-sched-row', { timeout: 20000 }); return Date.now() - a; };
+  const quick = async (path) => { const a = Date.now(); await page.goto(`${APP}${path}`); await page.waitForSelector('[data-cal-key], .ds-cal-day, .cc-sched-row', { timeout: 20000 }); return Date.now() - a; };
   const base = { week: await quick('/coach/calendar?view=week&day=2027-03-01'), month: await quick('/coach/calendar?view=month&day=2027-03-01') };
   await t.go('/coach/calendar?view=week');
   await press(page, page, 'Add to calendar');
@@ -573,8 +573,11 @@ PARTS['b-odd'] = async (role) => {
         console.log(`  COUNT odd, ${size}px: the same day in the Week view: ${week.n} tiles, the narrowest ${week.min}px wide, ${week.readable} with room for a word, then ${weekMore.map((m) => m.words).join(', ')}.`);
         pass(`${tag}: in the week 3 of the 40 show, with “+37 more” for the rest`, week.n === 3 && week.overlaps === 0 && week.readable === 3 && weekMore.some((m) => m.words === '+37 more') && week.wide <= 1, JSON.stringify({ week, weekMore }));
         await t.go('/coach/calendar?view=month&day=2026-11-25');
-        const cell = flat(await page.locator('.cc-month-cell', { has: page.locator('b', { hasText: /^25$/ }) }).textContent());
-        pass(`${tag}: the month says how many more there are`, /\d+ more/.test(cell), cell.slice(0, 80));
+        // Polish 1 (25 Nov; rule 17): the month is a plain grid with a dot under a day with something on, and the chosen
+        // day's whole list under it.
+        const dotted = await page.getByRole('button', { name: /^Wednesday 25 November, something on/ }).count();
+        const listed = await page.locator('.cc-cal-daylist .ds-li', { hasText: 'Overlap' }).count();
+        pass(`${tag}: the month marks the day and lists all 40 under the grid`, dotted === 1 && listed === 40, `${dotted} ${listed}`);
       }
       await t.done({ refusals: 0 });
     }
@@ -633,15 +636,15 @@ PARTS['b-odd'] = async (role) => {
     } });
     const { page } = t;
     const timed = async (path, sel) => { const a = Date.now(); await page.goto(`${APP}${path}`); await page.waitForSelector(sel, { timeout: 30000 }); return Date.now() - a; };
-    const month = await timed('/coach/calendar?view=month&day=2026-10-15', '.cc-month-cell');
-    const cells = await page.locator('.cc-month-cell small').count();
+    const month = await timed('/coach/calendar?view=month&day=2026-10-15', '.ds-cal-day');
+    const cells = await page.locator('.ds-cal-day--has').count();
     const week = await timed('/coach/calendar?view=week&day=2026-10-14', '[data-cal-key]');
     const weekTiles = await page.locator('[data-cal-key]').count();
     const sched = await timed('/coach/calendar?view=schedule&day=2026-10-14', '.cc-sched-row');
     const today = await timed('/coach/calendar?view=week', '[data-cal-key]');
-    const a = Date.now(); await page.getByRole('button', { name: 'Next', exact: true }).click(); await page.waitForFunction(() => /23 to 27 Nov/.test(document.querySelector('.cc-cal-range')?.textContent || ''), null, { timeout: 15000 }); const step = Date.now() - a;
+    const a = Date.now(); await page.getByRole('button', { name: 'Next week', exact: true }).click(); await page.waitForFunction(() => /23 to 27 Nov/.test(document.querySelector('.ds-calbar-title .ds-q')?.textContent || ''), null, { timeout: 15000 }); const step = Date.now() - a;
     console.log(`  (1,000 items in October: the month opens in ${month} ms, that week in ${week} ms with ${weekTiles} tiles, the Schedule in ${sched} ms, this week in ${today} ms, and Next takes ${step} ms)`);
-    pass(`${tag}: the month opens inside 4 seconds and says "more" in its cells`, month < 4000 && cells >= 20, `${month} ms, ${cells} cells with more`);
+    pass(`${tag}: the month opens inside 4 seconds and marks the days with something on`, month < 4000 && cells >= 20, `${month} ms, ${cells} days marked`);
     pass(`${tag}: a week of it opens inside 4 seconds, the Schedule too, and this week is as quick as ever`, week < 4000 && sched < 4000 && today < 4000 && step < 2000, JSON.stringify({ week, sched, today, step }));
     const size = await page.evaluate((id) => (localStorage.getItem(`clarity-cache:${id}:coach`) || '').length, t.me);
     console.log(`  (the device copy with 1,000 more items is ${Math.round(size / 1024)} KB)`);
@@ -734,7 +737,7 @@ PARTS['b-odd'] = async (role) => {
     const text = flat(await bar.first().textContent().catch(() => ''));
     console.log(`  COUNT odd: with two calls starting at 12:30 the bar reads “${text}”.`);
     pass(`${tag}: one bar, naming one call calmly with its own Join on Zoom`, (await bar.count()) === 1 && /(Sam Okafor|Priya Nair) in 8 minutes/.test(text) && (await bar.getByRole('link', { name: 'Join on Zoom' }).count()) <= 1, text);
-    pass(`${tag}: Today lists both calls at 12:30`, (await page.locator('.cc-today-call', { hasText: 'Sam Okafor' }).count()) >= 1 && (await page.locator('.cc-today-call', { hasText: 'Priya Nair' }).count()) >= 1);
+    pass(`${tag}: Today lists both calls at 12:30`, (await page.locator('.cc-today-calls .ds-li', { hasText: 'Sam Okafor' }).count()) >= 1 && (await page.locator('.cc-today-calls .ds-li', { hasText: 'Priya Nair' }).count()) >= 1);
     await t.go('/coach/calendar?view=day');
     const both = await page.evaluate(() => { const r = [...document.querySelectorAll('[data-cal-key]')].filter((el) => /Sam Okafor|Priya Nair/.test(el.textContent)).map((el) => el.getBoundingClientRect()); return r.length === 2 && (r[0].right <= r[1].left + 1 || r[1].right <= r[0].left + 1); });
     pass(`${tag}: the calendar draws them side by side`, both);
@@ -807,7 +810,8 @@ PARTS['b-odd'] = async (role) => {
         // Reached inside the portal, as a person does, so Back has somewhere of the portal's to go.
         if (size === 400) await page.locator('.cc-phonebar button').nth(2).click(); else { await page.getByRole('button', { name: 'Open the menu', exact: true }).click(); await settle(page, 400); await page.locator('.cc-menu-item', { hasText: /^Calendar/ }).first().click(); }
         await settle(page, 1000);
-        if (view === 'grid' && size === 400) { await press(page, page, 'View'); await page.getByRole('menuitemcheckbox', { name: 'Day', exact: true }).click(); await settle(page, 800); }
+        // Polish 1: the calendar opens on the month; a phone's day grid is its own address (?view=day).
+        if (view === 'grid') { await page.goto(page.url().replace(/\/coach\/calendar.*$/, `/coach/calendar?view=${size === 400 ? 'day' : 'week'}`)); await page.waitForSelector('.cc-app'); await settle(page, 800); }
       };
       const panels = [
         ['the quick add', 'grid', async () => { if (size === 400) await foot('Add to calendar').click(); else await press(page, page, 'Add to calendar'); await settle(page, 600); }],

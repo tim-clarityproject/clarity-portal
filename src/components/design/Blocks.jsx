@@ -84,7 +84,8 @@ export function MoreLink({ children, href, onClick, small = false, bare = false,
     <>
       {back && !bare && <Chevron direction="left" className="ds-more-back" />}
       <span>{children}</span>
-      {!back && !bare && <Chevron direction="right" />}
+      {/* Centred on the words' x-height (5e rule 29ao), not on the line box. */}
+      {!back && !bare && <Chevron direction="right" beside="words" />}
     </>
   );
   return (

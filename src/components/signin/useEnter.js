@@ -6,15 +6,18 @@ import { sessionManager } from '../../lib/sessionManager';
 import { peekNext, takeNext } from '../../lib/signIn/addresses';
 import { isCoachPlace } from '../../lib/signIn/coachAuth';
 import { goToStop, signInStop } from '../../lib/signIn/flow';
+import { playSignInMoment } from './signInMoment';
 
 /**
  * Lets someone in once they have proved who they are: first any stop
  * they still owe (the authenticator code, Before you start), then where
- * their link pointed, otherwise Home (Tim, 11 Nov).
+ * their link pointed, otherwise Home (Tim, 11 Nov). Going in plays the
+ * sign-in moment (polish 1, rule 24), once in a visit; `moment: false`
+ * for someone who was already signed in.
  */
 export default function useEnter() {
   const navigate = useNavigate();
-  return useCallback(async (user, { state } = {}) => {
+  return useCallback(async (user, { state, moment = true } = {}) => {
     try {
       const { data } = await supabase.auth.getSession();
       if (data?.session?.user) sessionManager.saveSessionMetadata(data.session);
@@ -23,7 +26,10 @@ export default function useEnter() {
     // run 5): the authenticator set up, its codes saved. Clients never.
     const stop = await signInStop(supabase, user, { coach: isCoachPlace(peekNext()) });
     if (stop) await goToStop(supabase, navigate, stop);
-    else navigate(takeNext(), { replace: true, state });
+    else {
+      if (moment) playSignInMoment();
+      navigate(takeNext(), { replace: true, state });
+    }
   }, [navigate]);
 }
 
@@ -51,7 +57,7 @@ export function useAlreadyIn(leaving) {
     leaving.current = true;
     (async () => {
       const halfIn = opened.current === user.id ? await signInStop(supabase, user, { coach: isCoachPlace(peekNext()) }) : null;
-      if (!halfIn) return enter(user);
+      if (!halfIn) return enter(user, { moment: false });
       try {
         await supabase.auth.signOut({ scope: 'local' });
       } catch { /* the page still works: signing in replaces it */ }

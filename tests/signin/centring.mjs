@@ -33,6 +33,11 @@
 // parts outside the column that sit on its edge too (the outside pages'
 // crosshair in the bar above the column).
 //
+// The 25 Nov reference (polish 1) centres the sign-in pages' forms: a column
+// marked `data-form="centred"` may hold boxes, a tick box and lists (each
+// list and tick box row marked `data-align="start"`); every other row is
+// centred on the column.
+//
 // Fixtures: tests/signin/centring.test.mjs.
 
 export const TOLERANCE = 1;
@@ -232,9 +237,13 @@ export function centredGroups(arg) {
   // Parts outside the column that sit on its edge (the crosshair in the bar above it).
   if (opts.also) for (const el of document.querySelectorAll(opts.also)) if (shown(el) && !col.contains(el)) rows.push(el);
 
-  // A message page holds no box to type in, no tick box and no list.
+  // A message page holds no box to type in, no tick box and no list. The
+  // sign-in pages of the 25 Nov reference (polish 1, rule 22) are a centred
+  // form on purpose: their column says so (`data-form="centred"`), its boxes
+  // span it, and its lists and tick box rows are marked to keep their own
+  // left edge (`data-align="start"`).
   const formOrList = [];
-  if (align === 'centre') {
+  if (align === 'centre' && col.dataset.form !== 'centred') {
     for (const el of col.querySelectorAll('input:not([type=hidden]), select, textarea, [role=checkbox], ol, ul')) {
       if (!shown(el)) continue;
       if (/^(OL|UL)$/.test(el.tagName) && [...el.children].filter(shown).length < 2) continue;

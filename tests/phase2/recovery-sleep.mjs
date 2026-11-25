@@ -540,13 +540,14 @@ if (part('target')) {
     f = await chartFacts(page);
     pass(`${tag}: still there after a reload`, ((phone ? f.strip?.text : f.side?.text) || '') === `Your target range ${pair} hours`, (phone ? f.strip?.text : f.side?.text));
     // The same control in My Account.
-    await page.goto(`${APP}/my-account`);
-    await page.waitForSelector('.account-row--sleep', { timeout: 15000 }).catch(() => {});
+    // Polish 1: My Account's Settings tab; the row "Sleep target" with the range, opening the same control.
+    await page.goto(`${APP}/my-account?tab=settings`);
+    const accRow = page.locator('.account-page .ds-li', { hasText: 'Sleep target' }).first();
+    await accRow.waitFor({ timeout: 15000 }).catch(() => {});
     await still(page);
-    const acc = await page.locator('.account-row--sleep').innerText().catch(() => '');
-    pass(`${tag}: My Account (Settings) shows it`, /Sleep target range/.test(acc) && acc.includes(`${pair} hours`), acc.replace(/\s+/g, ' '));
-    const accLink = page.locator('.account-row--sleep').getByRole('button', { name: 'Edit my target range' });
-    await (phone ? accLink.tap() : accLink.click());
+    const acc = await accRow.innerText().catch(() => '');
+    pass(`${tag}: My Account (Settings) shows it`, /Sleep target/.test(acc) && acc.includes(`${pair} hours`), acc.replace(/\s+/g, ' '));
+    await (phone ? accRow.tap() : accRow.click());
     await still(page);
     const accRows = await page.evaluate(() => [...document.querySelectorAll('.account-sleep-target .ds-starget-row')].length);
     pass(`${tag}: My Account opens the same control`, accRows === 2);

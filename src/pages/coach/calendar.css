@@ -111,6 +111,11 @@
 @media (hover: hover) { .ui-root .cc-cal:not(.cc-cal--hours) .cc-cal-tile:hover { opacity: var(--cal-hover); } }
 .ui-root .cc-cal-tile:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--line-w); z-index: 3; opacity: 1; }
 
+/* Four side by side (a laptop's week inside the frame, Polish 1): 4px inside each side instead of 8, so every title keeps
+   room for a word (the frame's menu column took ~410px of the week's width). */
+.ui-root .cc-cal-col > .cc-cal-tile.cc-cal-tile--slim { padding-inline: var(--space-1); }
+.ui-root .cc-cal-col > .cc-cal-tile.cc-cal-tile--slim:not(.cc-cal-tile--one):not(.cc-cal-tile--todo) { column-gap: calc(2 * var(--space-1)); }
+
 /* "+N more": where more tiles overlap than fit side by side, the rest fold into one quiet tile that lists them (tidy follow-up 3). */
 .ui-root .cc-cal-col > .cc-cal-more { --tile-bg: var(--bg); --tile-text: var(--text-2); display: flex; align-items: flex-start; box-shadow: inset 0 0 0 var(--line-w) var(--field-line); cursor: pointer; }
 .ui-root .cc-cal-col > .cc-cal-more .cc-cal-title { white-space: nowrap; text-overflow: clip; }
@@ -265,3 +270,32 @@
 .ui-root .cc-sched-row { padding: var(--space-px10) 0 !important; font-size: inherit !important; }
 .ui-root .cc-month-cell { padding: var(--space-px6) !important; font-size: inherit !important; }
 @media (max-width: 600px) { .ui-root .cc-month-cell { padding: var(--space-1) !important; } }
+
+/* ---------------------------------------------------------------- polish 1 (25 Nov): the example's Coach Calendar
+   The frame gives the page its padding on a laptop; on a phone the page keeps its 20px sides. The month's column is
+   the example's 560px (.calwrap); the week's grid keeps the wide page. The bar, grid, rows and drop-down are shared. */
+.ui-root .cc-page.cc-cal-pagewrap { padding-block: 0; }
+.ui-root .cc-cal-pagewrap > .cc-col.cc-cal-page { max-width: none; margin: 0; padding-inline: 0; }
+.ui-root .cc-cal-page:not(.cc-cal-page--wide) .cc-cal-main { max-width: var(--tool-max); }
+.ui-root .cc-cal-filter { width: calc(var(--space-7) * 2.5); flex: none; }
+.ui-root .cc-cal-filter .ds-label-row { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ui-root .cc-cal-filter .ds-choice { margin: 0; }
+.ui-root .cc-cal-filter .ds-dd:not(#_) { min-height: var(--btn-h) !important; height: var(--btn-h); }
+.ui-root .cc-cal-dayname { margin-top: var(--space-4); }
+.ui-root .cc-cal-dayname + .ds-rows-list > .ds-li:first-child { border-top: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-cal-dayempty { margin: 0; padding-block: var(--card-row-y); border-top: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-cal-main .cc-cal-hoursbar { margin-top: 0; margin-bottom: var(--space-3); }
+@media (max-width: 1023px) {
+  .ui-root .cc-cal-pagewrap > .cc-col.cc-cal-page { padding-inline: var(--space-px20); }
+  .ui-root .cc-page.cc-cal-pagewrap { padding-block: var(--space-4) var(--space-6); }
+  .ui-root .cc-cal-page:not(.cc-cal-page--wide) .cc-cal-main { max-width: none; }
+}
+@media (max-width: 600px) {
+  .ui-root .cc-cal-filter .ds-dd:not(#_) { min-height: var(--btn-h-phone) !important; height: var(--btn-h-phone); }
+  /* The month's name on its own line, the filter under it (the example's phone). */
+  .ui-root .cc-cal-main .ds-calbar-title { flex-wrap: wrap; }
+  .ui-root .cc-cal-main .ds-calbar-title > .ds-q { flex-basis: 100%; }
+}
+/* The second time column's place name stays on one line ("New York", polish 1's fault list), with no padding beside it so it fits the column; the day columns keep their width (crowded days). */
+.ui-root .cc-cal-zone-btn { white-space: nowrap; padding-inline: 0; }
+.ui-root .cc-cal-daylist > .ds-li--go { min-height: var(--tap-min); }

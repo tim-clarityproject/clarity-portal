@@ -40,7 +40,7 @@ const open = async ({ phone = false, width = phone ? 390 : 1280, answers = {}, f
   return { ctx, page, calls };
 };
 const path = (page) => new URL(page.url()).pathname;
-const message = (page) => page.locator('.si-err').innerText().then((t) => t.replace(/\s+/g, ' ').trim()).catch(() => '');
+const message = (page) => page.locator('.si-err, .si-code-msg:not(:empty)').first().innerText().then((t) => t.replace(/\s+/g, ' ').trim()).catch(() => '');
 const fill = async (page, who) => {
   await page.locator('input[type=email]').fill(env[`TEST_${who}_EMAIL`]);
   await page.locator('.si-pw input').fill(env[`TEST_${who}_PASSWORD`]);
@@ -53,14 +53,15 @@ try {
   {
     const { ctx, page } = await open();
     await page.goto(`${APP}/coach/sign-in`);
-    await page.waitForSelector('.si-col .ds-google');
+    await page.waitForSelector('.si-col .si-google');
     pass('Coach sign in has its own address, apart from the clients’ page', path(page) === '/coach/sign-in');
     pass('its one title is Coach sign in, as the h1', (await page.locator('h1').allInnerTexts()).join('|').toLowerCase() === 'coach sign in');
     const words = (await page.locator('.si-col').innerText()).replace(/\s+/g, ' ');
     pass('it has no Create my account link', !/create my account|new here/i.test(words), words.slice(0, 200));
     pass('“Clarity drives performance.” is on Sign in only', !/clarity drives performance/i.test(words));
-    const order = await page.evaluate(() => [...document.querySelectorAll('.si-col .ds-google, .si-col .si-field label, .si-col .si-btn, .si-col .si-alt')].map((el) => el.innerText.trim()));
-    pass('Continue with Google sits above email, then Sign in and Forgotten your password?', JSON.stringify(order) === JSON.stringify(['Continue with Google', 'Email', 'Password', 'Sign in', 'Forgotten your password?']), order.join(' | '));
+    const order = await page.evaluate(() => [...document.querySelectorAll('.si-col .si-google, .si-col .si-field label, .si-col .si-btn, .si-col .si-alt')].map((el) => el.innerText.trim()));
+    // The 25 Nov example's order (polish 1, rule 22; rule 17's "Google above email" gives way on look).
+    pass('Email and Password, then Sign in, Continue with Google and Forgotten your password?', JSON.stringify(order) === JSON.stringify(['Email', 'Password', 'Sign in', 'Continue with Google', 'Forgotten your password?']), order.join(' | '));
     await page.getByRole('link', { name: 'Forgotten your password?' }).click();
     await page.waitForURL(/\/forgot-password$/);
     await page.getByRole('link', { name: 'Back to sign in' }).click();
@@ -74,7 +75,7 @@ try {
     const asked = [];
     const { ctx, page } = await open({ answers: mfaStandIns(asked) });
     await page.goto(`${APP}/coach/sign-in`);
-    await page.waitForSelector('.si-col .ds-google');
+    await page.waitForSelector('.si-col .si-google');
     await fill(page, 'COACH_OWNER');
     await page.waitForURL(/\/coach\/sign-in\/set-up$/, { timeout: 30000 }).catch(() => null);
     pass('a coach with no authenticator is taken to set it up after the password', path(page) === '/coach/sign-in/set-up', path(page));
@@ -94,14 +95,15 @@ try {
     const asked = [];
     const { ctx, page } = await open({ answers: mfaStandIns(asked), factor: true });
     await page.goto(`${APP}/coach/sign-in`);
-    await page.waitForSelector('.si-col .ds-google');
+    await page.waitForSelector('.si-col .si-google');
     await fill(page, 'COACH_OWNER');
     await page.waitForURL(/\/coach\/sign-in\/code$/, { timeout: 30000 }).catch(() => null);
     pass('after the password, a coach with an authenticator is asked for the code', path(page) === '/coach/sign-in/code', path(page));
     await page.getByRole('heading', { name: 'Enter your code' }).waitFor({ timeout: 15000 }).catch(() => null);
     pass('its one title is Enter your code, as the h1', (await page.locator('h1').allInnerTexts()).join('|').toLowerCase() === 'enter your code');
     const words = (await page.locator('.si-col').innerText()).replace(/\s+/g, ' ');
-    pass('“You’re only asked on a new phone or computer.”', words.includes('You’re only asked on a new phone or computer.'), words.slice(0, 200));
+    // The 25 Nov example's line (polish 1, rule 23) replaced M26's two.
+    pass('“From your authenticator app. It goes in by itself.”', words.includes('From your authenticator app. It goes in by itself.'), words.slice(0, 200));
     const box = await codeBox(page).evaluate((el) => ({ mode: el.getAttribute('inputmode'), auto: el.getAttribute('autocomplete'), max: el.getAttribute('maxlength'), holder: el.getAttribute('placeholder'), value: el.value, size: parseFloat(getComputedStyle(el).fontSize) }));
     pass('the code box: numbers, one-time-code, 6 at most, tied to its label', box.mode === 'numeric' && box.auto === 'one-time-code' && box.max === '6', JSON.stringify(box));
     pass('the code box has no example code in it', !box.holder && box.value === '', JSON.stringify(box));
@@ -115,13 +117,13 @@ try {
     await page.getByRole('heading', { name: 'Enter your code' }).waitFor({ timeout: 15000 }).catch(() => null);
     await codeBox(page).fill('12a45');
     pass('the code box takes digits only', (await codeBox(page).inputValue()) === '1245');
-    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-    pass('fewer than 6 digits says what to enter', (await message(page)) === '! Enter the 6 digits from your authenticator app.', await message(page));
+    // No button since polish 1 (rule 23): Enter sends fewer than six; the sixth digit sends the code by itself.
+    await codeBox(page).press('Enter');
+    pass('fewer than 6 digits says what to enter', (await message(page)) === 'Enter the 6 digits from your authenticator app.', await message(page));
     await codeBox(page).fill('000000');
-    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await page.waitForSelector('.si-err');
+    await page.waitForSelector('.si-code-msg:not(:empty)');
     await sleep(300);
-    pass('a wrong code: “That code didn’t work. Check the time on your phone and try again.”', (await message(page)) === '! That code didn’t work. Check the time on your phone and try again.', await message(page));
+    pass('a wrong code: “That code didn’t work. Check the time on your phone and try again.”, and the squares empty', (await message(page)) === 'That code didn’t work. Check the time on your phone and try again.' && (await codeBox(page).inputValue()) === '', await message(page));
     pass('and stays on the page, signed in to nothing more', path(page) === '/coach/sign-in/code');
     pass('the code went to Supabase’s challenge and verify (stood in)', asked.includes('challenge') && asked.includes('verify'), asked.join(', '));
     pass('nothing was enrolled', !asked.includes('enrol'));
@@ -132,15 +134,16 @@ try {
   {
     const v = await open({ phone: true, answers: mfaStandIns([]), factor: true });
     await v.page.goto(`${APP}/auth/login`);
-    await v.page.waitForSelector('.si-col .ds-google');
+    await v.page.waitForSelector('.si-col .si-google');
     await fill(v.page, 'COACH_OWNER');
     await v.page.waitForURL(/\/coach\/sign-in\/code$/, { timeout: 30000 }).catch(() => null);
     pass('signing in on the clients’ page asks the coach for the code too', path(v.page) === '/coach/sign-in/code', path(v.page));
     for (const width of [390, 360, 320]) {
       await v.page.setViewportSize({ width, height: 844 });
       await sleep(150);
-      const one = await v.page.locator('.si-nowrap').first().evaluate((el) => ({ lines: el.getClientRects().length, text: el.textContent, wide: document.documentElement.scrollWidth - innerWidth }));
-      pass(`“6-digit” stays on one line at ${width}px`, one.lines === 1 && one.text === '6-digit' && one.wide <= 0, JSON.stringify(one));
+      // Since polish 1 Enter your code's line no longer says "6-digit" (the example's line): the six squares must fit instead.
+      const one = await v.page.evaluate(() => { const sq = [...document.querySelectorAll('.si-code-sq')]; const tops = new Set(sq.map((el) => Math.round(el.getBoundingClientRect().top))); return { squares: sq.length, rows: tops.size, wide: document.documentElement.scrollWidth - innerWidth }; });
+      pass(`the six code squares stay on one row at ${width}px`, one.squares === 6 && one.rows === 1 && one.wide <= 0, JSON.stringify(one));
     }
     // Lost your authenticator app? (053 isn't on the test project: the line alone, the owner unnamed.)
     await v.page.getByRole('link', { name: 'Lost your authenticator app?' }).click();
@@ -171,7 +174,7 @@ try {
     };
     const v = await open({ answers });
     await v.page.goto(`${APP}/coach/sign-in`);
-    await v.page.waitForSelector('.si-col .ds-google');
+    await v.page.waitForSelector('.si-col .si-google');
     await v.page.getByRole('button', { name: 'Continue with Google' }).click();
     await v.page.waitForURL(/\/coach\/sign-in\/code$/, { timeout: 30000 }).catch(() => null);
     pass('Continue with Google never skips the code', path(v.page) === '/coach/sign-in/code', path(v.page));

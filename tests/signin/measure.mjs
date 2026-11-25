@@ -1,44 +1,34 @@
-// The sign-in pages, measured (M26; Tim's audit of 11 Nov, 22:57 to
-// 23:04), on every one of the 21 screens, dark and light, at 1280 wide
-// and at 390 by 844:
-//   - the bold crosshair and the name: on a form or list page both on the
-//     column's left edge, read from their drawn pixels (within 1px); on a
-//     short message page the name's middle on the crosshair's middle
-//     (within 0.5px), both in the middle of the column; and both in the same
-//     place on every page of the same kind (sign-in rule 49, one left edge);
+// The sign-in pages, measured, on every one of their screens (screens.mjs
+// and coachScreens.mjs), dark and light, at 1280 wide and at 390 by 844.
+// Since polish 1 (the 25 Nov reference and example pages win over M26 on
+// look; every behaviour rule in docs/rules/sign-in.md stays):
+//   - the crosshair at the top, 40px, about 11% of the window down and at
+//     least 80px, and THE CLARITY PORTAL at the foot, both on the screen's
+//     middle (within 0.5px), read from their drawn pixels; the crosshair in
+//     the same place on every page;
 //   - "Back to sign in": the chevron's visible edge on the content's left
-//     edge, 10px before its label, and clear of the phone's notch;
-//   - the spacing rhythm, read the same way on the page and on M26 itself:
-//     under the name, title or core line, between boxes, above the
-//     button, and from the button to the first link;
+//     edge, 10px before its label, over the column above its title, and
+//     clear of the phone's notch;
+//   - the spacing, read from the page's own boxes (tests/signin/spacing.mjs):
+//     32px under the title, 12px between every other part, 24px from the
+//     code squares to the link under them; paragraphs at 1.55;
 //   - stacked text links at least 28px apart, and no two tap areas
 //     overlapping; every tap area 44px high;
-//   - the tick box: 18px, a 1.5px edge, 5px corners, a 12px tick, a 44px
-//     tap area, and its row lined up with the boxes' left edge;
+//   - the tick box: the shared 24px one (1px edge, 6px corners) in a 44px
+//     tap area, lined up with the boxes' left edge;
 //   - "6-digit" on one line; boxes 16px or more; every outlined edge 3 to 1;
-//   - one left edge (rule 49; tests/signin/centring.mjs; every screen at
-//     twice the text size too: centring-pages.mjs): every row of a form or
-//     list page on the column's left edge, every row of a message page
-//     centred as a group, and no page a mix;
-//   - the spacing rule of 19 Nov, 21:25 (Phase 6a run 5), read from the
-//     page's own boxes (tests/signin/spacing.mjs): title to its first line
-//     12px, line to line 12px, text to a box, list or button 24px, box to
-//     button 18px, button to link 18px, paragraphs at 1.55. M26 seq 7 draws
-//     it on the sign-in pages; where seq 7 differs (My Account's pages kept
-//     version 4's 22px under a title and 17px to a link), the rule wins and
-//     the difference is listed in MEANT.
+//   - centred throughout (tests/signin/centring.mjs, data-form="centred";
+//     every screen at twice the text size too: centring-pages.mjs), My
+//     Account's pages on one left edge.
+// (Until polish 1 this read M26 seq 7 beside each screen: the name beside
+// the crosshair at the top, one left edge on form pages, and the spacing
+// rule of 19 Nov.)
 //
-// Since Phase 6a run 5 it also measures the coach authenticator's screens
-// (COACH_SCREENS), stood in whole (tests/signin/coachWorld.mjs: nothing of
-// them reaches the test project), against M26 seq 7's own.
-//
-//   node tests/signin/measure.mjs
+//   APP_URL=http://localhost:<vite> LOCAL_SUPABASE_URL=http://localhost:<db> node --import ./tests/scores/register.mjs tests/signin/measure.mjs
 //   ONLY=signin,create  MODES=dark  SIZES=1280  narrow a run.
-//
-// TEST project only; no real email, and Google's own page is never opened.
+
 import { chromium } from 'playwright';
-import { pathToFileURL } from 'node:url';
-import { APP, MOCKUP, SAM, guard, makeChecks, sleep, testEnv } from './shared.mjs';
+import { SAM, guard, makeChecks, sleep, testEnv } from './shared.mjs';
 import { SCREENS } from './screens.mjs';
 import { COACH_SCREENS } from './coachScreens.mjs';
 import { ruleProblems, spacingRule } from './spacing.mjs';
@@ -58,7 +48,7 @@ const SCALE = 2;
 // that holds every pixel unlike the corner's (the page's colour).
 async function ink(page, box) {
   const clip = { x: Math.max(0, Math.floor(box.x)), y: Math.max(0, Math.floor(box.y)), width: Math.ceil(box.width), height: Math.ceil(box.height) };
-  const png = (await page.screenshot({ clip })).toString('base64');
+  const png = (await page.screenshot({ clip, fullPage: true })).toString('base64');
   const found = await page.evaluate(async (data) => {
     const img = new Image();
     img.src = `data:image/png;base64,${data}`;
@@ -137,29 +127,22 @@ function rhythm({ root, m }) {
   if (apart.length) out.linksApart = apart;
   return out;
 }
-const MOCK = { heads: '.brand, .core, .ttl, .ph3 h1', words: '.p, .alt, .core', field: '.field', btn: '.btn', link: '.alt a', terms: '.terms' };
-const BUILT = { heads: '.si-brand, .si-core, .si-ttl, .si-account-title', words: '.si-p, .si-alt, .si-core', field: '.si-field', btn: '.si-btn', link: '.si-alt .si-link', terms: '.si-terms' };
-
-// Where the build's spacing differs from M26 seq 7 on purpose: the spacing
-// rule of 19 Nov wins (the run's prompt). got = M26's + the difference.
-const MEANT = {
-  // Button to link 18px (seq 7 kept version 4's 17px on My Account's pages).
-  'acct-password': { buttonToLink: 1 },
-  'acct-password-saved': { buttonToLink: 1 },
-  // Title to its first line 12px (seq 7 kept version 4's 22px there).
-  'acct-email-sent': { underHead: -10 },
-};
+const BUILT = { heads: '.si-ttl, .si-account-open', words: '.si-p, .si-alt', field: '.si-field', btn: '.si-btn', link: '.si-alt .si-link', terms: '.si-terms' };
 
 // Everything else that is read from the page itself.
 function parts() {
   const col = document.querySelector('.si-col');
   const vis = (el) => { const b = el.getBoundingClientRect(); return b.width > 0 && b.height > 0; };
   const r = (el) => { const b = el.getBoundingClientRect(); return { x: b.left, y: b.top, width: b.width, height: b.height, right: b.right, bottom: b.bottom }; };
-  const out = { col: r(col), message: col.dataset.align === 'centre', sideways: document.documentElement.scrollWidth - innerWidth };
-  const mark = col.querySelector('.si-mark svg');
-  const brand = col.querySelector('.si-brand');
+  const out = { col: r(col), message: col.dataset.align === 'centre', sideways: document.documentElement.scrollWidth - innerWidth, height: innerHeight };
+  // Since polish 1 (the 25 Nov reference) the crosshair sits at the top of the screen and the name at its foot,
+  // outside the column; Back sits over the column, in the middle part.
+  const mark = document.querySelector('.si-mark svg');
+  const brand = document.querySelector('.si-brand');
   if (mark && brand) { out.mark = r(mark); out.brand = r(brand); }
-  const back = col.querySelector('.si-back');
+  const title = col.querySelector('.si-ttl, .si-account-open');
+  if (title) out.title = r(title);
+  const back = (col.closest('.si-mid') || col).querySelector('.si-back');
   if (back) {
     out.back = r(back);
     out.chev = r(back.querySelector('.ds-chevron'));
@@ -174,7 +157,7 @@ function parts() {
       // The edge as it is written (1.5px). A test browser rounds an edge to
       // whole pixels of its own screen when asked what it drew, so the
       // drawn edge is only checked for being there on all four sides.
-      tap: r(box), square: r(sq), edge: [st.borderTopWidth, st.borderRightWidth, st.borderBottomWidth, st.borderLeftWidth].map(parseFloat), written: st.getPropertyValue('--line-w-strong').trim(), corners: parseFloat(st.borderTopLeftRadius), tick: r(tick),
+      tap: r(box), square: r(sq), edge: [st.borderTopWidth, st.borderRightWidth, st.borderBottomWidth, st.borderLeftWidth].map(parseFloat), written: st.borderTopWidth, corners: parseFloat(st.borderTopLeftRadius), tick: r(tick),
       boxLeft: Math.min(...[...col.querySelectorAll('.si-inp')].filter(vis).map((i) => i.getBoundingClientRect().left)),
     };
   }
@@ -202,20 +185,11 @@ const browser = await chromium.launch();
 const same = {};
 const table = [];
 for (const mode of MODES) {
-  const mockCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 }, colorScheme: mode, locale: 'en-GB' });
-  const mock = await mockCtx.newPage();
-  await mock.goto(pathToFileURL(MOCKUP).href);
-  await mock.locator(`#mode button[data-m="${mode}"]`).click();
   for (const width of SIZES) {
     const phone = width < 700;
     for (const screen of [...SCREENS, ...COACH_SCREENS]) {
       if (ONLY && !ONLY.includes(screen.key)) continue;
       const tag = `${screen.name}, ${width}px ${mode}`;
-      await mock.locator(`#scrs .pick button[data-s="${screen.key}"]`).click();
-      if (screen.newer) await mock.evaluate(screen.newer, SAM.newEmail);
-      await sleep(60);
-      const want = await mock.evaluate(rhythm, { root: phone ? '#ph' : '#dk', m: MOCK });
-
       const answers = {};
       const ctx = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, deviceScaleFactor: SCALE, colorScheme: mode, locale: 'en-GB', timezoneId: 'Europe/London', hasTouch: phone, isMobile: phone });
       await ctx.addInitScript((m) => { try { localStorage.setItem('clarity-colour-mode', m); } catch { /* the device's mode */ } }, mode);
@@ -236,26 +210,25 @@ for (const mode of MODES) {
       const p = await page.evaluate(parts);
       const got = await page.evaluate(rhythm, { root: '.si-col', m: BUILT });
 
-      // The crosshair and the name.
-      if (p.mark) {
+      // The crosshair at the top and THE CLARITY PORTAL at the foot (polish 1, rule 22; the 25 Nov example):
+      // the crosshair 40px, about 11% of the window down and at least 80px, both on the window's middle.
+      if (p.mark && !screen.acct) {
         const cross = await ink(page, { x: p.mark.x - 2, y: p.mark.y - 2, width: p.mark.width + 4, height: p.mark.height + 4 });
-        const name = await ink(page, { x: p.col.x, y: p.brand.y, width: p.col.width, height: p.brand.height + 2 });
+        const name = await ink(page, { x: p.brand.x, y: p.brand.y, width: p.brand.width, height: p.brand.height + 2 });
         const cx = (cross.left + cross.right) / 2;
         const nx = (name.left + name.right) / 2;
-        if (p.message) {
-          pass(`${tag}: the name’s middle is on the crosshair’s middle (within 0.5px)`, Math.abs(cx - nx) <= 0.5, `crosshair ${cx.toFixed(2)}, name ${nx.toFixed(2)}`);
-          pass(`${tag}: both are in the middle of the column`, Math.abs(cx - (p.col.x + p.col.width / 2)) <= 0.5, `${cx.toFixed(2)} in a column centred on ${(p.col.x + p.col.width / 2).toFixed(2)}`);
-        } else {
-          // One left edge (rule 49): the crosshair's drawn edge and the name's first letter on the column's left edge.
-          pass(`${tag}: the crosshair and the name are on the column’s left edge (within 1px)`, Math.abs(cross.left - p.col.x) <= 1 && Math.abs(name.left - p.col.x) <= 1, `crosshair ${cross.left.toFixed(2)}, name ${name.left.toFixed(2)}, column ${p.col.x.toFixed(2)}`);
-        }
-        pass(`${tag}: the crosshair is 32px`, Math.abs(p.mark.width - 32) < 0.1 && Math.abs(p.mark.height - 32) < 0.1, `${p.mark.width} by ${p.mark.height}`);
-        const key = `${width} ${mode} ${p.message ? 'message' : 'form'}`;
-        const here = { crossTop: cross.top, crossLeft: cross.left, nameTop: name.top, nameLeft: name.left };
+        const mid = width / 2;
+        pass(`${tag}: the crosshair and the name are on the screen’s middle (within 0.5px)`, Math.abs(cx - mid) <= 0.5 && Math.abs(nx - mid) <= 0.5, `crosshair ${cx.toFixed(2)}, name ${nx.toFixed(2)}, middle ${mid}`);
+        pass(`${tag}: the crosshair is 40px`, Math.abs(p.mark.width - 40) < 0.1 && Math.abs(p.mark.height - 40) < 0.1, `${p.mark.width} by ${p.mark.height}`);
+        const top = Math.max(80, 0.11 * p.height);
+        pass(`${tag}: the crosshair is 11% of the window down, at least 80px`, Math.abs(p.mark.y - top) <= 0.5, `${p.mark.y.toFixed(2)} (want ${top.toFixed(2)})`);
+        pass(`${tag}: THE CLARITY PORTAL is at the foot, 40px from the bottom or below the form`, p.brand.bottom <= p.height - 39.5 || p.brand.y > p.col.bottom, `${p.brand.bottom.toFixed(1)} of ${p.height}`);
+        const key = `${width} ${mode}`;
+        const here = { crossTop: cross.top, crossLeft: cross.left };
         if (!same[key]) same[key] = { first: screen.name, at: here };
         const off = Object.keys(here).filter((k) => Math.abs(here[k] - same[key].at[k]) > 0.5);
-        pass(`${tag}: the crosshair and the name are in the same place as on ${same[key].first}`, off.length === 0, off.map((k) => `${k} ${here[k].toFixed(2)} (there ${same[key].at[k].toFixed(2)})`).join('; '));
-        if (mode === MODES[0]) table.push(`${screen.name} ${width}: crosshair ${cross.left.toFixed(2)} to ${cross.right.toFixed(2)}, name ${name.left.toFixed(2)} to ${name.right.toFixed(2)}`);
+        pass(`${tag}: the crosshair is in the same place as on ${same[key].first}`, off.length === 0, off.map((k) => `${k} ${here[k].toFixed(2)} (there ${same[key].at[k].toFixed(2)})`).join('; '));
+        if (mode === MODES[0]) table.push(`${screen.name} ${width}: crosshair ${cross.left.toFixed(2)} to ${cross.right.toFixed(2)} at ${p.mark.y.toFixed(2)}, name ${name.left.toFixed(2)} to ${name.right.toFixed(2)}`);
       }
 
       // Back.
@@ -264,10 +237,12 @@ for (const mode of MODES) {
         const chev = await ink(page, { x: p.back.x - 2, y: p.back.y, width: p.backLabelLeft - p.back.x - 1, height: p.back.height });
         pass(`${tag}: Back’s chevron has its visible edge on the content’s left edge`, chev && Math.abs(chev.left - p.col.x) <= 0.5, chev ? `${chev.left.toFixed(2)} (content edge ${p.col.x.toFixed(2)})` : 'no chevron seen');
         // 10px on every page (Tim, 18 Nov, follow-up 1; was 14px).
-        pass(`${tag}: 10px from the chevron to its label`, chev && Math.abs(p.backLabelLeft - chev.right - 10) <= 0.5, chev ? `${(p.backLabelLeft - chev.right).toFixed(2)}px` : '');
+        // Within 1px since polish 1: the fine chevron (the reference's .cv, a 1.6px line) is drawn with soft
+        // edges, and its faintest pixels fall under the reader's threshold, so its right edge reads up to 0.6px in.
+        pass(`${tag}: 10px from the chevron to its label`, chev && Math.abs(p.backLabelLeft - chev.right - 10) <= 1, chev ? `${(p.backLabelLeft - chev.right).toFixed(2)}px` : '');
         pass(`${tag}: Back’s tap area is 44px high`, p.back.height >= 43.5, `${p.back.height}`);
         if (!screen.acct) {
-          pass(`${tag}: Back sits at the top left, above the column`, p.back.bottom <= p.mark.y + 0.5 && Math.abs(p.back.x + 5 - p.col.x) <= 0.6, `Back ends ${p.back.bottom.toFixed(1)}, crosshair starts ${p.mark.y.toFixed(1)}`);
+          pass(`${tag}: Back sits over the column, above its title`, p.title && p.back.bottom <= p.title.y + 0.5, `Back ends ${p.back.bottom.toFixed(1)}, title starts ${p.title?.y.toFixed(1)}`);
           if (phone) pass(`${tag}: Back is clear of the phone’s notch (below 47px)`, p.back.y >= 47, `${p.back.y.toFixed(1)}px from the top`);
         }
         // Centred on its words, within 0.5px (rule 29ao): read at the phone and laptop sizes in this mode.
@@ -278,25 +253,15 @@ for (const mode of MODES) {
         if (mode === MODES[0]) table.push(`${screen.name} ${width}: Back chevron edge ${(chev.left - p.col.x).toFixed(2)}px from the content edge, ${(p.backLabelLeft - chev.right).toFixed(2)}px to its label`);
       }
 
-      // The spacing rhythm, against M26 read the same way.
-      const gaps = [];
-      for (const k of Object.keys(want || {})) {
-        const shift = MEANT[screen.key]?.[k] || 0;
-        const w = [].concat(want[k]).map((v) => v + shift); const g = [].concat(got?.[k] ?? []);
-        const ok = w.length === g.length && w.every((v, i) => Math.abs(v - g[i]) <= 0.5);
-        if (!ok) gaps.push(`${k} ${JSON.stringify(got?.[k])} (M26 ${JSON.stringify(want[k])})`);
-      }
-      const extra = Object.keys(got || {}).filter((k) => !(k in (want || {})));
-      pass(`${tag}: the spacing matches M26’s, read the same way`, gaps.length === 0 && extra.length === 0, [...gaps, ...extra.map((k) => `${k} only in the build`)].join('; '));
       // The spacing rule, from the page's own boxes.
       const rule = await page.evaluate(spacingRule, '.si-col');
-      pass(`${tag}: the spacing rule (title to line 12, line to line 12, text to a box, list or button 24, box to button 18, button to link 18; lines at 1.55)`, ruleProblems(rule).length === 0, ruleProblems(rule).join('; '));
+      pass(`${tag}: the spacing (the 25 Nov reference: 32px under the title, 12px between parts, 24px from the code squares to a link; lines at 1.55)`, ruleProblems(rule).length === 0, ruleProblems(rule).join('; '));
       if (mode === MODES[0]) table.push(`${screen.name} ${width}: rule ${rule.gaps.map((x) => `${x.key} ${x.gap}`).join(', ') || 'no pairs it names'}`);
       if (got?.betweenBoxes) pass(`${tag}: 12px between boxes`, got.betweenBoxes.every((v) => Math.abs(v - 12) <= 0.5), JSON.stringify(got.betweenBoxes));
       if (got?.linksApart) pass(`${tag}: stacked links are at least 28px apart`, got.linksApart.every((v) => v >= 28), JSON.stringify(got.linksApart));
       if (mode === MODES[0] && got) table.push(`${screen.name} ${width}: ${Object.entries(got).map(([k, v]) => `${k} ${JSON.stringify(v)}`).join(', ')}`);
 
-      // One left edge (rule 49): a form or list page's rows on the column's left edge, a message page's centred.
+      // Centred throughout (the 25 Nov reference; a form says so with data-form), My Account's pages on one left edge.
       const centring = await page.evaluate(centredGroups, { root: screen.acct ? '.si-col--account' : '.si-col' });
       const offCentre = centringProblems(centring);
       pass(`${tag}: each row ${centring.align === 'centre' ? 'centred as a group' : 'on the column’s left edge'}, and boxes even inside`, offCentre.length === 0, offCentre.slice(0, 4).join('; '));
@@ -314,8 +279,9 @@ for (const mode of MODES) {
       if (p.tick) {
         const t = p.tick;
         const near = (a, b) => Math.abs(a - b) <= 0.1;
-        pass(`${tag}: the tick box is 18px with a 1.5px edge, 5px corners and a 12px tick, in a 44px tap area`,
-          near(t.square.width, 18) && near(t.square.height, 18) && t.written === '1.5px' && t.edge.every((e) => e >= 1 && e <= 1.5) && near(t.corners, 5) && near(t.tick.width, 12) && near(t.tick.height, 12) && near(t.tap.width, 44) && near(t.tap.height, 44),
+        // The 25 Nov reference's tick box (.tick): 24px, a 1px edge, 6px corners, in a 44px tap area (the shared .ds-check-box).
+        pass(`${tag}: the tick box is the shared 24px one with a 1px edge and 6px corners, in a 44px tap area`,
+          near(t.square.width, 24) && near(t.square.height, 24) && t.written === '1px' && t.edge.every((e) => e >= 1 && e <= 1.5) && near(t.corners, 6) && t.tick.width > 0 && near(t.tap.width, 44) && near(t.tap.height, 44),
           JSON.stringify({ square: [t.square.width, t.square.height], edgeWritten: t.written, edgeDrawn: t.edge, corners: t.corners, tick: [t.tick.width, t.tick.height], tap: [t.tap.width, t.tap.height] }));
         if (Number.isFinite(t.boxLeft)) pass(`${tag}: the tick box lines up with the boxes’ left edge`, Math.abs(t.square.x - t.boxLeft) <= 0.5, `${t.square.x.toFixed(2)} (boxes ${t.boxLeft.toFixed(2)})`);
         else pass(`${tag}: the tick box lines up with the column’s left edge`, Math.abs(t.square.x - p.col.x) <= 0.5, `${t.square.x.toFixed(2)} (column ${p.col.x.toFixed(2)})`);
@@ -332,7 +298,6 @@ for (const mode of MODES) {
       await ctx.close();
     }
   }
-  await mockCtx.close();
 }
 await browser.close();
 console.log('\nMEASUREMENTS');

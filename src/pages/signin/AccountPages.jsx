@@ -10,6 +10,8 @@ import { emailChangeLink, emailChangeToSay, emailChangeWasSaid, landingFor } fro
 import { codeWasSwapped } from '../../lib/signIn/linkRules';
 import { isLeaked, LEAKED, refusedAsLeaked, refusedAsLong, refusedAsShort, TOO_LONG, TOO_SHORT, tooLong, tooShort } from '../../lib/signIn/password';
 import { CURRENT_NO_MATCH, DIDNT_SAVE, DIDNT_SEND, EMAIL_LINK_OVER, EMAIL_NOT_RIGHT, looksLikeEmail, ONE_LINK_OPENED, refusedAsSame, SAME_EMAIL, SAME_PASSWORD, TOO_MANY } from '../../lib/signIn/words';
+import { PageOpening } from '../../components/design';
+import { SIGN_IN_LINES } from '../../content/pageLines/signin';
 import { Alt, BackTo, EmailField, MainButton, Message, Note, PasswordField, TextLink } from '../../components/signin/SignInParts';
 
 // Inside My Account (M26): Password and Email, in the portal's own frame
@@ -18,16 +20,19 @@ import { Alt, BackTo, EmailField, MainButton, Message, Note, PasswordField, Text
 // with Google has no Password page: My Account says "You sign in with
 // Google." instead.
 
-export function AccountPage({ title, onSubmit, children }) {
+export function AccountPage({ title, line, onSubmit, children }) {
   const Col = onSubmit ? 'form' : 'div';
   const formProps = onSubmit ? { onSubmit, noValidate: true } : {};
+  // Every page opens the same way (polish 1, rule 12): Back to My Account,
+  // the Nekst title and one grey line, then the boxes, as the sign-in pages
+  // draw them (names inside, 56px, the one main button).
   return (
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page account-page">
         <Col className="si-col si-col--account" {...formProps}>
           <BackTo to="/my-account">My Account</BackTo>
-          <h1 className="si-account-title">{title}</h1>
+          <PageOpening title={title} line={line} className="si-account-open" />
           {children}
         </Col>
       </div>
@@ -113,7 +118,7 @@ function PasswordPage() {
   };
 
   return (
-    <AccountPage title="Password" onSubmit={submit}>
+    <AccountPage title="Password" line={SIGN_IN_LINES.password} onSubmit={submit}>
       <PasswordField label="Current password" autoComplete="current-password" value={current} onChange={typing(setCurrent)} />
       {at('current')}
       <PasswordField label="New password" autoComplete="new-password" value={next} onChange={typing(setNext)} />
@@ -273,8 +278,8 @@ function EmailPage() {
   }
 
   return (
-    <AccountPage title="Email" onSubmit={submit}>
-      <EmailField autoComplete="email" placeholder={undefined} value={email} onChange={(e) => { typed.current = true; setChanged(false); setEmail(e.target.value); }} />
+    <AccountPage title="Email" line={SIGN_IN_LINES.email} onSubmit={submit}>
+      <EmailField autoComplete="email" value={email} onChange={(e) => { typed.current = true; setChanged(false); setEmail(e.target.value); }} />
       {/* One of two links opened here by someone who isn't the account
           signed in on this device: it still says how the link went. */}
       {oneOpened ? <Note>{ONE_LINK_OPENED}</Note> : null}

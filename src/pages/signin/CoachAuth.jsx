@@ -198,8 +198,9 @@ export function CoachSetUp() {
   // Asking whether this is a coach: nothing of the screen shows until it's known.
   if (coach === undefined) return null;
 
-  const submit = async (e) => {
-    e.preventDefault();
+  // `typed`: the six digits, when the sixth goes in by itself (polish 1, rule 23).
+  const submit = async (e, typed) => {
+    e?.preventDefault?.();
     if (busy.current) return undefined;
     setMessage(null);
     if (!factor) {
@@ -209,7 +210,7 @@ export function CoachSetUp() {
     }
     busy.current = true;
     try {
-      const wrong = await checkSixDigits(factor.id, code, COACH_AUTH_WORDS.offline.setUp);
+      const wrong = await checkSixDigits(factor.id, typed ?? code, COACH_AUTH_WORDS.offline.setUp);
       if (wrong) { setCode(''); return setMessage(wrong); }
       // "On since": recorded by 053 (before it runs, Supabase's factor is enough).
       // A sign-in from before the owner's reset is let go (053 records nothing for it).
@@ -235,7 +236,7 @@ export function CoachSetUp() {
   return (
     <SignInPage title={W.title} onSubmit={submit} back={back || false}>
       {W.lines.map((line) => <Line key={line}>{keepSixDigit(line)}</Line>)}
-      <ol className="si-steps">
+      <ol className="si-steps" data-align="start">
         <li>
           {W.stepApp}
           <ul className="si-apps">
@@ -260,7 +261,7 @@ export function CoachSetUp() {
         </span>
       </div>
       {problem && !message ? <Message lines={problem} /> : null}
-      <CodeField label={W.label} value={code} onDigits={setCode} autoFocus={false} />
+      <CodeField label={W.label} value={code} onDigits={(d) => { setCode(d); if (d) setMessage(null); }} onComplete={(d) => submit(null, d)} wrong={Boolean(message)} autoFocus={false} />
       <Message lines={message} />
       <MainButton>{W.button}</MainButton>
     </SignInPage>
@@ -389,7 +390,7 @@ export function CoachCodes() {
       {set ? (
         <>
           {/* One list of ten, two to a row, read in order (as M26 draws them). */}
-          <ol className="si-rc" aria-label={W.listLabel}>
+          <ol className="si-rc" data-align="start" aria-label={W.listLabel}>
             {set.codes.map((c) => showRecoveryCode(c)).map((c) => <li key={c}>{c}</li>)}
           </ol>
           <div className="si-rcact">

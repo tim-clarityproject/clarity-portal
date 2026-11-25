@@ -2,7 +2,6 @@ import { useContext, useId, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import { BackLink } from '../../components/ui/DiscardLink';
 import {
   Button,
   ChartTable,
@@ -14,7 +13,7 @@ import {
   LoadError,
   Loading,
   ObjectiveNumbers,
-  PageHeader,
+  PageOpening,
   PatternCard,
   PerformanceSystem,
   RecoveryNotice,
@@ -38,12 +37,16 @@ import { localToday, openRecovery } from '../../lib/performance/rows';
 import { recoveryLead } from '../../lib/performance/recovery';
 import { tripsWords } from '../../lib/performance/checkin';
 import { SLEEP_SUGGESTED_LINE } from '../../lib/performance/sleepChart';
-import { dayName } from '../../lib/performance/sprintPage';
+import { dayName, sprintPageView } from '../../lib/performance/sprintPage';
 import { areaName } from '../../lib/wheelOfLife';
 import { wayRatingWord } from '../../lib/performance/words';
 import { patternsRow } from '../../lib/performance/patterns';
 import { DashboardCustomise, useDashboardPrefs, useFold } from './DashboardCustomise';
 import { usePatterns } from './usePatterns';
+import { DASHBOARD_LINE } from '../../content/pageLines/client';
+import { useClientPreparing } from '../../lib/clientPreparing';
+import Preparing from '../Preparing';
+import './dashboardCards.css';
 
 // The Individual Performance Dashboard (mock-up M4 v47, approved by Tim on
 // 26 Oct; Phase 5 step 2): the mirror. At a glance, what's improving and
@@ -107,6 +110,11 @@ export default function Dashboard() {
       throw e;
     }
   };
+  // A brand-new client whose coach hasn't set anything up yet (src/lib/clientPreparing.js).
+  const prep = useClientPreparing(userId);
+  const prepName = loaded.data?.firstName || '';
+  const sprintNow = useMemo(() => { try { return loaded.data ? sprintPageView(loaded.data, { today }) : null; } catch { return null; } }, [loaded.data, today]);
+  const weekLabel = sprintNow?.state === 'running' ? `Week ${sprintNow.current} of ${sprintNow.lengthWeeks}` : null;
   const go = (fix) => navigate(`${fix.to}${fix.hash || ''}`, fix.state ? { state: fix.state } : undefined);
 
   let body;
@@ -155,14 +163,20 @@ export default function Dashboard() {
   return (
     <div className="ui-root">
       <DesignHeader />
-      <main className="plan-page dash-page">
-        {phone && <div className="plan-back-row"><BackLink onClick={() => navigate('/personal')} label="Personal" /></div>}
-        {/* The eye once, beside the title (Tim, 5 Nov, 11:09). */}
-        <PageHeader
-          title={DASHBOARD_TITLE}
-          aside={view ? (coach ? <CoachSees parts={parts} coachName={coach} onToggle={(_k, on) => setShared(on)} /> : <WhoSees audience="me" />) : null}
-        />
-        {body}
+      <main className="dash-page">
+        {prep.preparing ? <Preparing firstName={prepName} coachName={prep.coachName} /> : (
+          <>
+            {/* The page opening (Polish 1, rule 12): the sprint's week, the title with the page's eye
+                once beside it (Tim, 5 Nov, 11:09), and its one line. */}
+            <PageOpening
+              label={weekLabel}
+              title={DASHBOARD_TITLE}
+              line={DASHBOARD_LINE}
+              aside={view ? (coach ? <CoachSees parts={parts} coachName={coach} onToggle={(_k, on) => setShared(on)} /> : <WhoSees audience="me" />) : null}
+            />
+            {body}
+          </>
+        )}
       </main>
       <PerformanceSystem open={system} onClose={() => setSystem(false)} />
       <DashboardCustomise open={customise} onClose={() => setCustomise(false)} />
@@ -184,8 +198,11 @@ function Hero({ hero, phone, navigate, state }) {
     );
   }
   const noFigure = hero.value === 'Not yet';
+  // In a card with its label (Polish 1, example "Dashboard", Your weeks): the figure in DM Sans 24px light.
   return (
-    <section className="dash-hero" aria-label={hero.label}>
+    <section className="ds-card dash-hero-card" aria-labelledby="dash-hero-title">
+      <h2 className="ds-label" id="dash-hero-title">Your weeks</h2>
+      <div className="dash-hero">
       <div className="dash-hero-num">
         <span className="dash-hero-label">{hero.label}</span>
         <span className="dash-hero-row">
@@ -212,6 +229,7 @@ function Hero({ hero, phone, navigate, state }) {
           )}
         </div>
       )}
+      </div>
     </section>
   );
 }

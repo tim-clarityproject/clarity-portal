@@ -1,21 +1,19 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BoldCrosshair, Loading, useBackCloses, useToast } from '../../components/design';
+import { Loading, useBackCloses, useToast } from '../../components/design';
 import { isPhoneWidth } from '../../components/design/pageLock';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { findCalItems } from '../../lib/coach/store';
-import { favouriteViews, searchResults, withRecent } from '../../lib/coach/model';
+import { searchResults, withRecent } from '../../lib/coach/model';
 import { menuFor, SETTINGS_SECTIONS } from '../../lib/coach/navigation';
-import { todayTodos } from '../../lib/coach/day';
 import { coachZoneOf, searchItems } from '../../lib/coach/calendar';
 import { boardSearchItems, boardsFor, LEAD_SEARCH_ACTIONS, leadSearchItems } from '../../lib/coach/crm';
 import { networkPageOf } from '../../lib/coach/networkData';
-import { menuCount, NETWORK_SEARCH_ACTIONS, networkSearchItems, searchQuery } from '../../lib/coach/network';
-import { useNetworkCounts } from './networkParts';
+import { NETWORK_SEARCH_ACTIONS, networkSearchItems, searchQuery } from '../../lib/coach/network';
 import { deviceZone } from '../../lib/time/index.js';
 import { useCoachPortal } from './parts';
 
-// The coach portal's menu and search (moved here from CoachApp.jsx in tidy follow-up 4, part 1, item 1): their own
+// The coach portal's search (the overlay menu was removed in Polish 1, Stage A: the frame's menu column replaced it; moved here from CoachApp.jsx in tidy follow-up 4, part 1, item 1): their own
 // part of the app, loaded once the frame has drawn (or the moment either is opened), so a first visit never waits for
 // search's index, the CRM's leads and boards, or Network's counts before the frame and the page show. Nothing in them
 // changed.
@@ -45,81 +43,6 @@ function useFocusBack(open) {
     };
     // Recorded once per opening: the address it opened on is read as it opens.
   }, [open]);
-}
-
-export function Menu({ open, onClose, onSignOut }) {
-  const { isOwner, views, todos, todoLists, todayKey, boards } = useCoachPortal();
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const navRef = useRef(null);
-  // Network shows how many people are due a catch-up (the owner's alone; asked only while the menu is open).
-  const due = menuCount(useNetworkCounts(open).data);
-  // On a phone the menu covers the page: Back closes it (run 6, item 4).
-  useBackCloses(open, onClose, isPhoneWidth());
-  useFocusBack(open);
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    navRef.current?.querySelector('[aria-current="page"], button')?.focus({ preventScroll: true });
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
-  // Worked out when the to-dos change, never as the menu opens (scale check, 22 Nov: opening took 0.3 s for the owner).
-  const todosToday = useMemo(() => todayTodos(todos, todayKey).work.length, [todos, todayKey]); // the working day only, as M11 counts it: After work sits apart
-  const lists = useMemo(() => todoLists.filter((l) => !l.finished_at), [todoLists]);
-  const menuBoards = useMemo(() => boardsFor(boards, { isOwner }), [boards, isOwner]);
-  const favourites = useMemo(() => favouriteViews(views).filter((v) => v.list !== 'leads' || isOwner), [views, isOwner]);
-  if (!open) return null;
-  const go = (to) => { onClose(); navigate(to); };
-  // Boards: the owner's own under it; an associate has the page only once a board is shared with them.
-  const items = menuFor({ isOwner, live: LIVE, hasShared: menuBoards.length > 0 });
-  const current = (to) => (to === '/coach' ? pathname === '/coach' : pathname === to || pathname.startsWith(`${to}/`));
-  // To-dos shows how many are for today, with the coach's own lists under it (M11's menu).
-  return (
-    <>
-      <div className="cc-scrim cc-scrim--menu" onClick={onClose} aria-hidden="true" />
-      <nav className="cc-menu" aria-label="Menu">
-        <div className="cc-menu-head">
-          <button type="button" className="cc-round cc-round--mark" aria-expanded="true" aria-label="Close the menu" onClick={onClose}>
-            <BoldCrosshair size={26} />
-          </button>
-        </div>
-        <div className="cc-menu-nav" ref={navRef}>
-          {items.filter((i) => i.key !== 'settings').map((i) => (i.key === 'boards' ? (
-            <Fragment key={i.key}>
-              <button type="button" className="cc-menu-item" aria-current={pathname === i.to ? 'page' : undefined} onClick={() => go(i.to)}>{i.label}</button>
-              {menuBoards.map((b) => (
-                <button key={b.id} type="button" className="cc-menu-item cc-menu-item--sub" aria-current={pathname === `/coach/boards/${b.id}` ? 'page' : undefined} onClick={() => go(`/coach/boards/${b.id}`)}>{b.name}</button>
-              ))}
-            </Fragment>
-          ) : i.key === 'network' ? (
-            <button key={i.key} type="button" className="cc-menu-item" aria-current={current(i.to) ? 'page' : undefined} aria-label={due.spoken ? `Network, ${due.spoken}` : undefined} onClick={() => go(i.to)}>
-              {i.label}{due.count && <span className="cc-menu-n" aria-hidden="true">{due.count}</span>}
-            </button>
-          ) : i.key !== 'todos' ? (
-            <button key={i.key} type="button" className="cc-menu-item" aria-current={current(i.to) ? 'page' : undefined} onClick={() => go(i.to)}>{i.label}</button>
-          ) : (
-            <Fragment key={i.key}>
-              <button type="button" className="cc-menu-item" aria-current={pathname === i.to ? 'page' : undefined} aria-label={todosToday ? `To-dos, ${todosToday} for today` : undefined} onClick={() => go(i.to)}>
-                {i.label}{todosToday > 0 && <span className="cc-menu-n" aria-hidden="true">{todosToday}</span>}
-              </button>
-              {lists.map((l) => (
-                <button key={l.id} type="button" className="cc-menu-item cc-menu-item--sub" aria-current={pathname === `/coach/todos/lists/${l.id}` ? 'page' : undefined} onClick={() => go(`/coach/todos/lists/${l.id}`)}>{l.name}</button>
-              ))}
-            </Fragment>
-          )))}
-          {favourites.length > 0 && <p className="cc-menu-label">Favourite views</p>}
-          {favourites.map((v) => (
-            <button key={v.id} type="button" className="cc-menu-item" onClick={() => go(`/coach/${v.list === 'leads' ? 'leads' : 'clients'}?view=${v.id}`)}>{v.name}</button>
-          ))}
-          <button type="button" className="cc-menu-item" aria-current={current('/coach/settings') ? 'page' : undefined} onClick={() => go('/coach/settings')}>Settings</button>
-        </div>
-        <div className="cc-menu-foot">
-          <button type="button" className="cc-menu-item cc-menu-item--out" onClick={() => { onClose(); onSignOut(); }}>Sign out</button>
-        </div>
-      </nav>
-    </>
-  );
 }
 
 /** One box finds people, pages and actions as it is typed, with recent items before anything is typed. */

@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { DesktopMenu, PhoneBar, TileMenu } from './design/Navigation';
 import PortalFrame from './design/Frame';
 import { usePortalPreparing } from '../lib/portalPreparing';
+import { useClientPreparing } from '../lib/clientPreparing';
 import { useCoachName } from './design/coachContext';
 import { usePhoneBarHidden } from './design/phoneBar';
 import { isNavPhone } from './design/pageLock';
@@ -176,6 +177,14 @@ export function SitePhoneNav() {
  * are any, are the menu's first group. A client whose portal is still being
  * prepared sees Home and My Account only (usePortalPreparing).
  */
+// "A brand-new client" (polish 1): the menu shows Home and My Account only while the coach hasn't
+// set anything up (src/lib/clientPreparing.js). Worked out here once the page has drawn, so a new
+// client who opens any page first gets the two-item menu, and the first screen never waits for it.
+function PreparingWatch({ userId }) {
+  useClientPreparing(userId);
+  return null;
+}
+
 export function ClientFrame({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -203,8 +212,15 @@ export function ClientFrame({ children }) {
     const idle = typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(() => refreshCoachRole(userId), { timeout: 5000 }) : window.setTimeout(() => refreshCoachRole(userId), 3000);
     return () => (typeof window.cancelIdleCallback === 'function' ? window.cancelIdleCallback(idle) : window.clearTimeout(idle));
   }, [userId]);
+  const [watchPreparing, setWatchPreparing] = useState(false);
+  useEffect(() => {
+    if (!userId) return undefined;
+    const idle = typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(() => setWatchPreparing(true), { timeout: 3000 }) : window.setTimeout(() => setWatchPreparing(true), 1500);
+    return () => (typeof window.cancelIdleCallback === 'function' ? window.cancelIdleCallback(idle) : window.clearTimeout(idle));
+  }, [userId]);
   return (
     <PortalFrame menu={{ ...menu, onGo, onSignOut: signOutFlow.start, signOutBusy: signOutFlow.busy }}>
+      {watchPreparing && userId && <PreparingWatch key={userId} userId={userId} />}
       {children}
       {signOutFlow.choice}
     </PortalFrame>

@@ -6,39 +6,46 @@ import DesignHeader from '../components/DesignHeader';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import useCoachingNews from './coaching/useCoachingNews';
 import { useAgreementWaiting } from './coaching/agreementData';
-import { rowDay, versionTitle } from '../lib/coaching/agreementRules';
-import { signingWords } from '../lib/billing/agreementText';
 import HomeOwnSuggestion from '../components/ownQuestions/HomeOwnSuggestion';
 import { useStartChat } from '../components/coach/startChat';
 import {
-  AddButton,
-  AddTodoPanel,
+  AddLink,
   Button,
+  Card,
   CarryOnList,
   Collapsible,
   DayFocus,
+  Dropdown,
+  Empty,
+  ErrorMessage,
   HelpList,
-  List,
-  ListRow,
   Loading,
-  MiniDial,
+  MoreLink,
   OfferRow,
-  PageHeader,
+  PageOpening,
   PerformanceSystem,
   PlanSteps,
+  QuickAdd,
   QuietLines,
+  Row,
   SaveStatus,
-  Section,
-  SuggestionCard,
   SystemLink,
   TodoList,
   TodoRow,
   TravelTodayCard,
-  WeekLine,
-  WhoSees,
+  dayTitle,
   useOffer,
   useToast,
 } from '../components/design';
+import { TODO_NEEDS } from '../components/design/TodoPanels';
+import { HOME, homeLine } from '../content/pageLines/client';
+import Preparing from './Preparing';
+import { comingSessions, homeNeeds, homeUpcoming, sessionWhen } from '../lib/performance/homeCards';
+import { loadMySessions } from '../lib/coach/bookingActions';
+import { useAgreements } from './coaching/agreementData';
+import { nextInvoice, showsBilling } from '../lib/coaching/agreementRules';
+import { useClientPreparing } from '../lib/clientPreparing';
+import { getLocalDateKey } from '../lib/dateFormatter';
 import { readCache, useCachedLoad } from '../lib/pageCache';
 import { useDraft } from '../lib/drafts';
 import { deviceKey, readJson, writeJson } from '../lib/deviceStore';
@@ -50,8 +57,9 @@ import { useRecoveryPage, useSprintPage } from '../lib/performance/hooks';
 import {
   addDayKey,
   checkinPrompt,
-  dayName,
   dayPicks,
+  EVENING_FROM,
+  TIMES,
   dayStrategyNames,
   homeGreeting,
   homePerson,
@@ -86,6 +94,7 @@ import { cleanOffer, offersFrom } from '../lib/offers';
 import { setTick, ticksOn, useTravelPlans } from '../lib/travel/store';
 import { deviceZone } from '../lib/time/index.js';
 import './performance/performance.css';
+import './home.css';
 
 // Home as Today (mock-up M2, approved by Tim on 23 Oct; Phase 4 step 2;
 // read in full with its notes and switches). Top to bottom: the greeting,
@@ -152,8 +161,14 @@ export default function Home() {
   const day = useCachedLoad({ userId, name: `home-day:${today}`, load: () => loadHomeDay(userId, today), deps: [today] });
   const view = useMemo(() => (sprint.data ? sprintPageView(sprint.data, { today }) : null), [sprint.data, today]);
 
+  // A brand-new client whose coach hasn't set anything up yet (polish 1): the welcome alone, and
+  // the menu shows Home and My Account only (src/lib/clientPreparing.js).
+  const prep = useClientPreparing(userId);
+
   let body;
-  if ((!sprint.data && sprint.loading) || (!day.data && day.loading)) {
+  if (prep.preparing) {
+    body = <Preparing firstName={sprint.data?.firstName || ''} coachName={prep.coachName} />;
+  } else if ((!sprint.data && sprint.loading) || (!day.data && day.loading)) {
     body = <Loading label="Loading your day" className="ds-loading--page" />;
   } else if (!sprint.data || !day.data) {
     // Nothing on the device yet and no connection: the plain Home still helps.
@@ -165,7 +180,7 @@ export default function Home() {
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page ipp-page home-page">
+      <div className="home-page">
         <EmailVerificationBanner />
         {body}
       </div>
@@ -383,46 +398,196 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
     : card?.notNow ? { label: 'Not now', onClick: () => { addPeakNotNow(`${today}|${card.notNow}`); toast.show('We’ll ask again tomorrow.'); } }
     : card?.link ? { label: card.link.label, onClick: () => go(card.link.to) } : null;
 
-  const dateText = dayName(today, today);
-  const sprintOn = person === 'sprint' && view && (view.state === 'running' || view.state === 'over');
+  const zone = deviceZone();
   const strategies = (d.strategies || []).map((s) => ({ value: s.id, label: s.name }));
   const hasPlan = person !== 'new';
 
+  // What needs you and Upcoming (Polish 1, example-pages-25nov.html): what's waiting on the
+  // person, and what's coming, from the reads the portal already makes (each from the device's
+  // copy first).
+  const coached = Boolean(coach);
+  const sessions = useCachedLoad({ userId: coached ? userId : null, name: 'home-sessions', load: () => loadMySessions() });
+  const coming = useMemo(() => comingSessions(sessions.data?.data, now), [sessions.data, now]);
+  const money = useAgreements(userId);
+  const invoice = showsBilling(money.data) ? nextInvoice(money.data.invoices) : null;
+  // A session's prep, from the Coaching page's own copy on the device (read again when its news changes).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const prepWritten = useMemo(() => Boolean(readCache(userId, 'coaching')?.v?.prep?.body), [userId, coachingNew, location.key]);
+  const needs = homeNeeds({
+    agreement: agreementWaiting ? { id: agreementWaiting.id, sentDay: agreementWaiting.sentAt ? getLocalDateKey(parseDbTimestamp(agreementWaiting.sentAt)) : null } : null,
+    invoice,
+    checkin: person !== 'new' || checkin?.first ? checkin : null,
+    sessions: coming,
+    prepWritten,
+    news: coachingNew,
+    today,
+    zone,
+    now,
+  });
+  const upcoming = homeUpcoming({ sessions: coming, sprint: running ? { name: view.name, endsOn: view.dates?.end } : null, today, zone, now });
+  const line = homeLine({ needs: needs.length, session: coming[0] ? sessionWhen(coming[0].starts_at, zone, now) : null, coached });
+
+  // Quick Add for Today (rule 10): the name first; the Strategy and the week once something is typed.
+  const [quickNeeds, setQuickNeeds] = useState(false);
+  const quickAdd = async () => {
+    const form = { ...todoForm, week: todoForm.week ?? view.current };
+    if (!form.text.trim() || !form.strategyId) { setQuickNeeds(true); return; }
+    setQuickNeeds(false);
+    await addTodo(form);
+  };
+  const quickOpen = panel === 'todo';
+  const openQuick = () => {
+    if (quickOpen) { setPanel(null); return; }
+    setTodoForm((f) => (f.text ? f : emptyTodo(view.current)));
+    setQuickNeeds(false);
+    setPanel('todo');
+  };
+
+  // The one main button is the suggestion for now (homeSuggestion); its second way out, if any, sits beside it.
+  const opening = (
+    <PageOpening
+      label={dayTitle(today)}
+      title={title}
+      line={(welcomeBack || comingBack) ? `${line} Let’s start with this week.` : line}
+      action={(cardAction || (cardLink && card?.action)) ? (
+        <div className="home-act">
+          {cardAction && <Button variant="primary" onClick={cardAction.onClick}>{cardAction.label}</Button>}
+          {cardAction && cardLink && <MoreLink bare onClick={cardLink.onClick}>{cardLink.label}</MoreLink>}
+        </div>
+      ) : null}
+    />
+  );
+
+  const needsCard = (
+    <Card label={HOME.needsLabel} link={{ children: HOME.needsAll, onClick: () => go('/coaching') }} className="home-needs">
+      {needs.length
+        ? needs.map((n) => <Row key={n.key} name={n.name} value={n.value} onClick={() => go(n.to)} />)
+        : <Empty>{HOME.needsNone}</Empty>}
+    </Card>
+  );
+  const upcomingCard = (
+    <Card label={HOME.upcomingLabel} link={coached ? { children: HOME.upcomingAll, onClick: () => go('/coaching') } : undefined} className="home-upcoming">
+      {upcoming.length
+        ? upcoming.map((u) => <Row key={u.key} name={u.name} value={u.value} />)
+        : <Empty>{HOME.upcomingNone}</Empty>}
+    </Card>
+  );
+
+  const todayCard = hasPlan && person !== 'recovery' ? (
+    <Card
+      label={HOME.todayLabel}
+      className="home-today"
+      add={running ? <AddLink label={HOME.addLabel} onClick={openQuick} expanded={quickOpen} controls="home-quick-add" /> : undefined}
+      quickAdd={running ? (
+        <QuickAdd id="home-quick-add" open={quickOpen} onClose={() => setPanel(null)} onAdd={quickAdd} label={HOME.addLabel}>
+          <input
+            className="ds-qa-box"
+            value={todoForm.text}
+            placeholder="What do you need to do?"
+            aria-label="What needs doing?"
+            autoComplete="off"
+            enterKeyHint="done"
+            autoFocus
+            onChange={(e) => setTodoForm((f) => ({ ...f, text: e.target.value }))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); quickAdd(); }
+              if (e.key === 'Escape') { e.preventDefault(); setPanel(null); }
+            }}
+          />
+          {quickNeeds && !todoForm.text.trim() && <div className="ds-panel-needs"><ErrorMessage>{TODO_NEEDS.text}</ErrorMessage></div>}
+          {(todoForm.text.trim() || quickNeeds) && (
+            <div className="home-qa-more">
+              <Dropdown label="Which Strategy does it serve?" options={strategies} value={todoForm.strategyId} onChange={(strategyId) => setTodoForm((f) => ({ ...f, strategyId }))} placeholder="Choose a Strategy" />
+              {quickNeeds && !todoForm.strategyId && <div className="ds-panel-needs"><ErrorMessage>{TODO_NEEDS.strategy}</ErrorMessage></div>}
+              <Dropdown label="Which week?" options={view.weekOptions} value={todoForm.week ?? view.current} onChange={(week) => setTodoForm((f) => ({ ...f, week }))} />
+            </div>
+          )}
+        </QuickAdd>
+      ) : null}
+    >
+      {running && dayPlanned && <DayFocus way={day.dayPlan?.way_of_being || ''} strategies={dayStrategyNames(day.dayStrategies || [], d.strategies || [])} />}
+      {/* Two taps from Home, always (experience rule 21). Planning after reviewing isn't offered for the
+          same day, and the done card has "Edit my review" (Tim, 5 Nov). */}
+      {!dayDone && <Row name="Daily plan" value={dayPlanned ? 'Done' : TIMES.planMyDay} onClick={() => go('/daily-plan')} />}
+      {card?.key !== 'done' && <Row name="Daily review" value={reviewed ? 'Done' : hour < EVENING_FROM ? 'This evening' : TIMES.reviewMyDay} onClick={() => go('/daily-review')} />}
+      {items.length > 0 && (
+        <TodoList label="Today’s to-dos" className="home-todos">
+          {items.map((x) => (x.kind === 'todo' ? (
+            <TodoRow
+              key={x.key}
+              text={x.text}
+              strategyName={x.strategyName}
+              important={x.top}
+              done={x.done}
+              onToggle={(done) => actions.toggleTodo(x.row, done)}
+            />
+          ) : (
+            <TodoRow
+              key={x.key}
+              text={x.text}
+              strategyName={x.strategyName}
+              important={x.top}
+              tags={[x.line]}
+              done={x.done}
+              plain={x.habit.measure !== 'yes_no_weekly'}
+              onToggle={(done) => actions.tickWeekly(x.habit, done)}
+            />
+          )))}
+        </TodoList>
+      )}
+    </Card>
+  ) : null;
+
+  const logCard = running && person !== 'recovery' ? (
+    <section ref={logRef} id="log-today" className="ds-card sprint-anchor home-log" aria-labelledby="home-log-title">
+      <div className="ds-card-head">
+        <h2 className="ds-label" id="home-log-title" tabIndex={-1}>{HOME.logLabel}</h2>
+        <span className="home-log-right">
+          <SaveStatus state={actions.save} />
+          <MoreLink small onClick={() => go('/performance-sprint')}>{HOME.logLink}</MoreLink>
+        </span>
+      </div>
+      {!view.todayIsWorking && (
+        <div className="sprint-dayoff">
+          <p>Today is a day off, so nothing is expected.</p>
+          <p>You can still log anything you did.</p>
+        </div>
+      )}
+      {daily.map((h) => (
+        <DayRow key={h.id} quiet habit={h} view={view} typed={actions.typed} onLog={actions.putLog} onType={actions.typeNumber} onLeave={actions.leaveNumber} onTick={actions.tickWeekly} />
+      ))}
+      {weekly.length > 0 && (
+        <div className="home-fold">
+          <Collapsible
+            summary={(
+              <span className="home-fold-head">
+                <span className="home-fold-title">This week</span>
+                <span className="home-fold-line">{weeklyFoldLine(weekly)}</span>
+              </span>
+            )}
+          >
+            <div className="sprint-habits">
+              {weekly.map((h) => (
+                <WeekRow key={h.id} habit={h} view={view} typed={actions.typed} onLog={actions.putLog} onType={actions.typeNumber} onLeave={actions.leaveNumber} onTick={actions.tickWeekly} onMore={() => go('/performance-sprint')} />
+              ))}
+            </div>
+          </Collapsible>
+        </div>
+      )}
+      {!view.habits.length && <Empty>This sprint has no habits to log.</Empty>}
+      {view.soFar && (
+        <Row name="Performance score this week" value={`${view.soFar.value}%${view.usualLine.ready ? `, usually ${view.usualLine.figure}` : ''}`} onClick={() => go('/performance-sprint')} className="home-score" />
+      )}
+    </section>
+  ) : null;
+
   return (
     <>
-      <PageHeader title={title} meta={sprintOn ? [] : [dateText]} />
-      {(welcomeBack || comingBack) && <p className="home-welcome">Let’s start with this week.</p>}
-      {sprintOn && (
-        <MiniDial
-          weeks={view.weeks}
-          dayInWeek={running ? view.dayInWeek : 6}
-          date={dateText}
-          // A quiet link into the sprint (Tim, 3 Nov); with no sprint
-          // running there is no link.
-          line={running ? 'View your week' : `Your ${view.name} has ended`}
-          link={running}
-          label={running ? `${dateText}, week ${view.current} of ${view.lengthWeeks}. View your week.` : `${dateText}. Your ${view.name} has ended. Open the Performance Sprint.`}
-          onClick={() => go('/performance-sprint')}
-        />
-      )}
-
-      {card && (
-        <SuggestionCard
-          className="home-suggest"
-          label={card.label}
-          question={card.question}
-          list={card.list}
-          lines={card.lines}
-          time={card.time}
-          action={cardAction}
-          link={cardLink}
-        />
-      )}
-      {/* One quiet link, shown once, under the suggested card: the question
-          the coach suggested (run 7). It opens Settings at the suggestion. */}
+      {opening}
+      {/* One quiet link, shown once, under the opening: the question the coach suggested (run 7). */}
       {person !== 'recovery' && <HomeOwnSuggestion userId={userId} />}
       <QuietLines
-        items={quiet.map((q) => ({
+        items={quiet.filter((q) => q.key !== 'coaching').map((q) => ({
           key: q.key,
           lines: q.lines,
           action: { label: q.action.label, onClick: () => go(q.action.to) },
@@ -430,20 +595,6 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
           onDismiss: q.dismissable ? () => { addNotNow(q.key); toast.show('We won’t ask again.'); } : undefined,
         }))}
       />
-
-      {/* From your coaching (M13 A1): the agreement waiting to be signed, gone once signed. */}
-      {agreementWaiting && (
-        <Section title="From your coaching" className="ipp-section home-section home-coaching">
-          <List label="From your coaching">
-            <ListRow
-              title={versionTitle(agreementWaiting.version)}
-              type={signingWords('').homeLine}
-              date={rowDay(agreementWaiting.sentAt, today)}
-              onClick={() => go(`/coaching/agreement/${agreementWaiting.id}`)}
-            />
-          </List>
-        </Section>
-      )}
 
       {tripOffer && tripOfferState.show && person !== 'recovery' && (
         <OfferRow
@@ -466,133 +617,47 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
         />
       )}
 
+      {/* The day's done: tomorrow's priorities, with Edit my review (Tim, 5 Nov). */}
+      {card && !card.action && (card.list?.length || card.lines?.length) ? (
+        <Card label={card.label || 'For now'} className="home-done">
+          {(card.list || []).map((item, i) => <Row key={`${i}:${item}`} name={item} />)}
+          {(card.lines || []).map((l) => <p key={l} className="home-card-line">{l}</p>)}
+          {cardLink && <MoreLink onClick={cardLink.onClick}>{cardLink.label}</MoreLink>}
+        </Card>
+      ) : null}
+
       {/* Recovery leads with what's true today (Tim, 5 Nov, 11:09). */}
       {person === 'recovery' && recovery && <p className="home-line home-recovery-line">{RECOVERY_NUMBERS_LINE}</p>}
       {person === 'recovery' && recovery && <RecoveryBasics userId={userId} today={today} />}
 
-      {person === 'new' && (
-        <Section title="Your plan" className="ipp-section home-section" eye={<WhoSees audience="me" />}>
-          {coach && <p className="home-line">You’ll build your plan with your coach in your first session.</p>}
-          <PlanSteps steps={steps} />
-          {/* M2: Start on my own (coaching clients), then How the system fits together. */}
-          <div className="home-links">
-            {coach && <Button variant="text" onClick={() => go('/performance-plan/build')}>Start on my own</Button>}
-            <SystemLink onClick={() => setSystemOpen(true)} />
-          </div>
-        </Section>
-      )}
-
-      <CarryOnList
-        items={carry.map((x) => ({ key: x.key, title: x.title, date: carryOnWhen(x.at, today), onClick: () => go(x.to) }))}
-      />
-
-      {hasPlan && person !== 'recovery' && (
-        <Section title="Today" className="ipp-section home-section home-today" eye={<WhoSees audience="me" />}>
-          {running && dayPlanned && (
-            <>
-              <DayFocus way={day.dayPlan?.way_of_being || ''} strategies={dayStrategyNames(day.dayStrategies || [], d.strategies || [])} />
-              {items.length > 0 && (
-                <TodoList label="Today’s to-dos" className="home-todos">
-                  {items.map((x) => (x.kind === 'todo' ? (
-                    <TodoRow
-                      key={x.key}
-                      text={x.text}
-                      strategyName={x.strategyName}
-                      important={x.top}
-                      done={x.done}
-                      onToggle={(done) => actions.toggleTodo(x.row, done)}
-                    />
-                  ) : (
-                    <TodoRow
-                      key={x.key}
-                      text={x.text}
-                      strategyName={x.strategyName}
-                      important={x.top}
-                      tags={[x.line]}
-                      done={x.done}
-                      plain={x.habit.measure !== 'yes_no_weekly'}
-                      onToggle={(done) => actions.tickWeekly(x.habit, done)}
-                    />
-                  )))}
-                </TodoList>
-              )}
-            </>
-          )}
-          {/* Two taps from Home, always (experience rule 21). */}
-          <div className="home-links">
-            {/* Planning after reviewing isn't offered for the same day, and
-                the done card has "Edit my review" (Tim, 5 Nov). */}
-            {card?.key !== 'plan' && !dayDone && <Button variant="text" onClick={() => go('/daily-plan')}>Daily plan</Button>}
-            {card?.key !== 'review' && card?.key !== 'done' && <Button variant="text" onClick={() => go('/daily-review')}>Daily review</Button>}
-          </div>
-          {running && (
-            <AddButton className="home-add" onClick={() => { setTodoForm((f) => (f.text ? f : emptyTodo(view.current))); setPanel('todo'); }}>
-              Add to-do
-            </AddButton>
-          )}
-
-          {running && (
-            <div ref={logRef} id="log-today" className="sprint-anchor home-log">
-              <div className="home-log-head">
-                <h3 className="home-log-title" tabIndex={-1}>Log today</h3>
-                <SaveStatus state={actions.save} />
+      <div className="ds-cols ds-cols--needs-first home-cols">
+        <div>
+          {logCard}
+          {todayCard}
+          {person === 'new' && (
+            <Card label="Your plan" className="home-plan">
+              {coach && <p className="home-card-line">You’ll build your plan with your coach in your first session.</p>}
+              <PlanSteps steps={steps} />
+              {/* M2: Start on my own (coaching clients), then How the system fits together. */}
+              <div className="home-links">
+                {coach && <Button variant="text" onClick={() => go('/performance-plan/build')}>Start on my own</Button>}
+                <SystemLink onClick={() => setSystemOpen(true)} />
               </div>
-              {!view.todayIsWorking && (
-                <div className="sprint-dayoff">
-                  <p>Today is a day off, so nothing is expected.</p>
-                  <p>You can still log anything you did.</p>
-                </div>
-              )}
-              {daily.length > 0 && (
-                <div className="sprint-habits">
-                  {daily.map((h) => (
-                    <DayRow key={h.id} habit={h} view={view} typed={actions.typed} onLog={actions.putLog} onType={actions.typeNumber} onLeave={actions.leaveNumber} onTick={actions.tickWeekly} onMore={() => go('/performance-sprint')} />
-                  ))}
-                </div>
-              )}
-              {weekly.length > 0 && (
-                <div className="home-fold">
-                  <Collapsible
-                    twoLines
-                    summary={(
-                      <span className="home-fold-head">
-                        <span className="home-fold-title">This week</span>
-                        <span className="home-fold-line">{weeklyFoldLine(weekly)}</span>
-                      </span>
-                    )}
-                  >
-                    <div className="sprint-habits">
-                      {weekly.map((h) => (
-                        <WeekRow key={h.id} habit={h} view={view} typed={actions.typed} onLog={actions.putLog} onType={actions.typeNumber} onLeave={actions.leaveNumber} onTick={actions.tickWeekly} onMore={() => go('/performance-sprint')} />
-                      ))}
-                    </div>
-                  </Collapsible>
-                </div>
-              )}
-              {!view.habits.length && <p className="ipp-muted sprint-gap">This sprint has no habits to log.</p>}
-            </div>
+            </Card>
           )}
-        </Section>
-      )}
-
-      {running && (
-        <div className="home-week">
-          <WeekLine
-            label="Performance score this week"
-            figure={view.soFar ? `${view.soFar.value}%` : null}
-            good={Boolean(view.soFar?.good)}
-            // Only a fact the figure can't show: the usual range once there is one (Tim, 5 Nov).
-            line={view.soFar
-              ? (view.usualLine.ready ? `${view.usualLine.lead}${view.usualLine.figure}${view.usualLine.end}` : null)
-              : 'Nothing is scored yet this week.'}
-            onClick={() => go('/performance-sprint')}
+          <CarryOnList
+            items={carry.map((x) => ({ key: x.key, title: x.title, date: carryOnWhen(x.at, today), onClick: () => go(x.to) }))}
           />
+          <div className="home-help">
+            <MoreLink onClick={() => setHelpOpen(true)}>Get help with something</MoreLink>
+          </div>
         </div>
-      )}
-
-      <div className="home-help">
-        <Button onClick={() => setHelpOpen(true)}>Get help with something</Button>
+        <div>
+          {needsCard}
+          {upcomingCard}
+        </div>
       </div>
+
       <HelpList
         open={helpOpen}
         onClose={() => setHelpOpen(false)}
@@ -601,19 +666,6 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
         onChat={() => { setHelpOpen(false); startChat?.(); }}
       />
       {person === 'new' && <PerformanceSystem open={systemOpen} onClose={() => setSystemOpen(false)} />}
-
-      {running && (
-        <AddTodoPanel
-          open={panel === 'todo'}
-          onClose={() => setPanel(null)}
-          form={{ ...todoForm, week: todoForm.week ?? view.current }}
-          onFormChange={setTodoForm}
-          strategies={strategies}
-          weeks={view.weekOptions}
-          onAdd={addTodo}
-          draftKey={`home-todo:${view?.sprintId || 'none'}`}
-        />
-      )}
     </>
   );
 }
