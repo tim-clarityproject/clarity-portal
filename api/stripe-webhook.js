@@ -8,10 +8,16 @@
 // invoice's status only ever moves on and paid is final (src/lib/billing/stripeWebhook.js). Nothing here sends
 // anything. With no secret set, every message is refused (400), so nothing unsigned is ever believed.
 //
-// Environment variables (Vercel): STRIPE_WEBHOOK_SECRET, SUPABASE_SERVICE_ROLE_KEY, and the Supabase URL the app has.
+// A payment Stripe settles is kept with the pounds that landed and Stripe's fee, read from its balance transaction
+// (Phase 6b run 2) when Stripe can be asked (STRIPE_SECRET_KEY, a test key); if it can't, the payment is still kept
+// without them (a payment in pounds as its own amount) and the nightly round fills them in (fillLanded).
+//
+// Environment variables (Vercel): STRIPE_WEBHOOK_SECRET, SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY (optional here),
+// and the Supabase URL the app has.
 import { createClient } from '@supabase/supabase-js';
 import { supabaseOf } from './_coachEmails.js';
-import { invoiceChange, refundRow, subscriptionRow, verifySignature } from '../src/lib/billing/stripeWebhook.js';
+import { invoiceChange, landedFrom, refundRow, subscriptionRow, verifySignature } from '../src/lib/billing/stripeWebhook.js';
+import { keyAllowed, stripeApi } from '../src/lib/billing/stripe.js';
 
 // Stripe signs the exact bytes, so the body is read as it came, never parsed first.
 export const config = { maxDuration: 30, api: { bodyParser: false } };
@@ -34,9 +40,10 @@ async function rawBodyOf(req) {
 /**
  * Acts on one message, exactly once (the claim in stripe_events), with the server's own key. Shared with the nightly
  * catch-up (api/stripe-catch-up.js), which hands it the messages Stripe kept, already signed by Stripe's own API.
+ * `stripe` (optional: the real API or the stand-in) is asked what a new payment landed as in pounds, and its fee.
  * @returns {Promise<'handled'|'already'|'ignored'>}
  */
-export async function handleEvent(server, event) {
+export async function handleEvent(server, event, stripe = null) {
   if (!event?.id || typeof event.type !== 'string') return 'ignored';
   const obj = event.data?.object || {};
   const { data: claimed, error: claimError } = await server.from('stripe_events')
@@ -56,7 +63,11 @@ export async function handleEvent(server, event) {
     const { data: row } = await must(server.from('invoices').select('*').eq('stripe_invoice_id', obj.id).maybeSingle());
     if (row) {
       const change = invoiceChange(event, row);
-      if (change.payment) await must(server.from('payments').upsert(change.payment, { onConflict: 'stripe_id', ignoreDuplicates: true }));
+      if (change.payment) {
+        const balance = stripe?.balanceFor ? await stripe.balanceFor(change.payment.stripe_id).catch(() => null) : null;
+        const payment = { ...change.payment, ...landedFrom(balance, change.payment) };
+        await must(server.from('payments').upsert(payment, { onConflict: 'stripe_id', ignoreDuplicates: true }));
+      }
       if (change.invoice) await must(server.from('invoices').update({ ...change.invoice, updated_at: new Date().toISOString() }).eq('id', row.id));
       // Paid: the overdue reminders drafted for it go at once (they would ask for what's settled).
       if (change.invoice?.status === 'paid') await must(server.from('invoice_reminders').delete().eq('invoice_id', row.id).is('sent_at', null));
@@ -78,6 +89,31 @@ export async function handleEvent(server, event) {
   return 'handled';
 }
 
+/**
+ * The nightly round's part: Stripe's payments of the last 30 days still without their fee (and so, for another
+ * currency, without the pounds that landed) are looked up again and filled in. Nothing else changes.
+ * @returns {Promise<number>} how many were filled in
+ */
+export async function fillLanded({ server, stripe, now = () => new Date(), days = 30 }) {
+  if (!stripe?.balanceFor) return 0;
+  const { data, error } = await server.from('payments').select('id, stripe_id, amount_minor, currency, landed_gbp_minor, fee_minor, paid_at, added_by_coach')
+    .eq('added_by_coach', false).is('fee_minor', null);
+  if (error) throw error;
+  const since = now().getTime() - days * 86400000;
+  let filled = 0;
+  for (const p of data || []) {
+    if (!p.stripe_id || !(Date.parse(p.paid_at) >= since)) continue;
+    const balance = await stripe.balanceFor(p.stripe_id).catch(() => null);
+    if (!balance) continue;
+    const got = landedFrom(balance, p);
+    if (got.fee_minor == null) continue;
+    const r = await server.from('payments').update({ landed_gbp_minor: got.landed_gbp_minor, fee_minor: got.fee_minor }).eq('id', p.id);
+    if (r?.error) throw r.error;
+    filled += 1;
+  }
+  return filled;
+}
+
 export function serverClient(env) {
   const { url } = supabaseOf(env);
   return createClient(url, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -93,7 +129,10 @@ export default async function handler(req, res, env = process.env) {
   try { event = JSON.parse(raw); } catch { return reply(res, 400, { ok: false }); }
   if (!env.SUPABASE_SERVICE_ROLE_KEY) return reply(res, 503, { ok: false });
   try {
-    const done = await handleEvent(serverClient(env), event);
+    // Stripe is asked what the payment landed as only with a test key; without one it is filled in at night.
+    let stripe = null;
+    try { stripe = keyAllowed(env.STRIPE_SECRET_KEY || '') ? stripeApi(env.STRIPE_SECRET_KEY) : null; } catch { stripe = null; }
+    const done = await handleEvent(serverClient(env), event, stripe);
     return reply(res, 200, { ok: true, done });
   } catch {
     // Stripe tries again later; the claim keeps it from being acted on twice.

@@ -5,10 +5,11 @@ import { moneyWords as minorWords, rateWords as minorRateWords } from '../../lib
 import { associateMonth, payLabels } from '../../lib/finance/associates.js';
 import { monthKey } from '../../lib/finance/year.js';
 import { poundsWords } from '../../lib/finance/words.js';
-import { associatePay, hoursFigure, payWords, rateMinorOf, statementFacts, theirClientsPaid } from '../../lib/coach/associatePay';
-import { rowsOf } from '../../lib/coach/store';
-import { Row, useCoachPortal } from './parts';
-import { useAssociateSessions } from './financeParts';
+import { associatePay, hoursFigure, paidStatementRow, payWords, rateMinorOf, statementFacts, theirClientsPaid } from '../../lib/coach/associatePay';
+import { newId, removeRow, rowsOf, saveRow } from '../../lib/coach/store';
+import { dayWordsFrom } from '../../lib/coach/financeData';
+import { Row, TextLink, useCoachPortal } from './parts';
+import { useAssociateSessions, useDone } from './financeParts';
 import './pay.css';
 
 // An associate's hours and pay (Phase 6b run 2, step 5; M11 C12 and C13).
@@ -54,8 +55,12 @@ function PayFigures({ label, children }) {
   return <div className="cc-pay-figures" role="group" aria-label={label}>{children}</div>;
 }
 
-/** Maya's November statement: its lines, the note, and Done (M11 C12). */
-export function StatementPanel({ open, onClose, title, lines = [], note }) {
+/**
+ * Maya's November statement: its lines, the note, and Done (M11 C12). The owner's panel also ends with "Mark as paid"
+ * (run 2's brief, step 5: he pays outside the portal, and Mark as paid records it on the cash flow), or, once marked,
+ * "Paid Tue 1 Dec".
+ */
+export function StatementPanel({ open, onClose, title, lines = [], note, paidWords = null, onMarkPaid = null }) {
   return (
     <SlidePanel
       open={open}
@@ -67,6 +72,8 @@ export function StatementPanel({ open, onClose, title, lines = [], note }) {
         {lines.map((l) => <Row key={l.label} title={l.label} facts={[l.detail]} when={l.value} />)}
       </div>
       {note && <p className="cc-note cc-pay-note">{note}</p>}
+      {paidWords && <p className="cc-note cc-pay-paid">{paidWords}</p>}
+      {!paidWords && onMarkPaid && <div className="cc-acts cc-pay-acts"><TextLink onClick={onMarkPaid}>Mark as paid</TextLink></div>}
     </SlidePanel>
   );
 }
@@ -76,8 +83,9 @@ export function StatementPanel({ open, onClose, title, lines = [], note }) {
  * lists their clients.
  */
 export function AssociateSection({ associate, onOpenClients }) {
-  const { userId, state, todayKey, admin, payments, invoices } = useCoachPortal();
+  const { userId, coach, state, todayKey, admin, payments, invoices } = useCoachPortal();
   const finance = usePayData();
+  const done = useDone();
   const [preview, setPreview] = useState(false);
   const month = monthKey(todayKey);
   const name = associate.full_name || associate.first_name;
@@ -96,6 +104,12 @@ export function AssociateSection({ associate, onOpenClients }) {
   const labels = payLabels(month);
   const words = payWords({ name, month, readyOn: pay.readyOn });
   const clients = associate.clients == null ? theirs.length : Number(associate.clients);
+  const markPaid = () => {
+    const before = pay.statement;
+    const row = paidStatementRow({ id: newId(), statement: before, ownerId: coach.id, associateId: associate.coach_id, month, pay, rateMinor,
+      minutesRow: minutes.find((r) => r.coach_id === associate.coach_id) || null, noShowsPaid: Boolean(finance.settings?.no_shows_paid), today: todayKey });
+    done(() => saveRow(userId, 'associate_statements', row), 'Saved.', () => (before ? saveRow(userId, 'associate_statements', before) : removeRow(userId, 'associate_statements', row.id)));
+  };
   const rateUnit = rateMinor != null ? minorRateWords(rateMinor, 'hour') : (pay.statement ? minorRateWords(Number(pay.statement.rate_minor) || 0, 'hour') : undefined);
 
   return (
@@ -115,7 +129,8 @@ export function AssociateSection({ associate, onOpenClients }) {
           ? <Row title="Monthly statement" facts={[words.statementRow]} when="Preview" label={`Monthly statement, ${words.statementRow}. Preview`} onClick={() => setPreview(true)} />
           : <Row title="Monthly statement" facts={[words.statementRow]} />}
       </div>
-      <StatementPanel open={preview} onClose={() => setPreview(false)} title={words.panelTitle} lines={pay.lines} note={words.panelNote} />
+      <StatementPanel open={preview} onClose={() => setPreview(false)} title={words.panelTitle} lines={pay.lines} note={words.panelNote}
+        paidWords={pay.paidOn ? `Paid ${dayWordsFrom(pay.paidOn, todayKey)}` : null} onMarkPaid={pay.delivered ? markPaid : null} />
     </section>
   );
 }

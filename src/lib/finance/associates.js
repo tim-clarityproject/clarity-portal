@@ -60,36 +60,69 @@ export function associateMonth({ coachId, rateMinor, sessions, month, zone, noSh
   return { month: m, minutes, payMinor, lateCancels, noShows, hours: hoursWords(minutes), words: `${hoursWords(minutes)} at ${moneyWords(Number(rateMinor))}` };
 }
 
-/** The average pay of the 3 complete months before `month`, in pence (rounded). */
-export function threeMonthAverage({ coachId, rateMinor, sessions, month, zone, noShowsPaid = false }) {
+/**
+ * An associate's delivered minutes for a month from 062's associate_month_minutes (the owner's only read of their
+ * outcomes): held (or ended with no outcome yet), late cancellations unless waived, and no-shows only when Tim pays
+ * them. `monthMinutes` is { 'YYYY-MM': rows } for the months read; null when that month wasn't read (then the caller
+ * falls back to 058's sessions). A month read with no row for the associate is 0 minutes.
+ * @returns {{ minutes: number, lateCancelMinutes: number, noShowMinutes: number }|null}
+ */
+export function minutesFromFunction({ coachId, month, monthMinutes, noShowsPaid = false }) {
+  const rows = monthMinutes?.[monthKey(month)];
+  if (!Array.isArray(rows)) return null;
+  const r = rows.find((x) => x && x.coach_id === coachId) || {};
+  const held = Math.max(0, Number(r.held_minutes) || 0);
+  const late = Math.max(0, Number(r.late_cancel_minutes) || 0);
+  const noShow = noShowsPaid ? Math.max(0, Number(r.no_show_minutes) || 0) : 0;
+  return { minutes: held + late + noShow, lateCancelMinutes: late, noShowMinutes: noShow };
+}
+
+const payOf = (minutes, rateMinor) => Math.round((minutes * Number(rateMinor)) / 60);
+
+/** A finished month's pay: from 062's minutes when that month was read, else from the sessions. */
+function deliveredPay({ coachId, rateMinor, sessions, month, zone, noShowsPaid, monthMinutes }) {
+  const fn = minutesFromFunction({ coachId, month, monthMinutes, noShowsPaid });
+  if (fn) return payOf(fn.minutes, rateMinor);
+  return associateMonth({ coachId, rateMinor, sessions, month, zone, noShowsPaid }).payMinor;
+}
+
+/** The average pay of the 3 complete months before `month`, in pence (rounded); 062's minutes where they were read. */
+export function threeMonthAverage({ coachId, rateMinor, sessions, month, zone, noShowsPaid = false, monthMinutes = null }) {
   let total = 0;
-  for (let k = 1; k <= 3; k += 1) total += associateMonth({ coachId, rateMinor, sessions, month: addMonths(month, -k), zone, noShowsPaid }).payMinor;
+  for (let k = 1; k <= 3; k += 1) total += deliveredPay({ coachId, rateMinor, sessions, month: addMonths(month, -k), zone, noShowsPaid, monthMinutes });
   return Math.round(total / 3);
 }
 
 /**
  * The pay a month is expected to come to: what's delivered so far plus what's booked (not cancelled) at the hourly
  * rate; a month with nothing delivered or booked uses the 3-month average from before `fromMonth` (this month).
- * @returns {{ month: string, payMinor: number, from: 'booked'|'average' }}
+ * With 062's minutes (`monthMinutes`): a month before `fromMonth` is exactly what the function says was delivered;
+ * this month is what it says so far plus 058's sessions still to come (no outcome: not yet held). Without them, 058's
+ * reading (sessions marked held once past) is used, quietly.
+ * @returns {{ month: string, payMinor: number, from: 'delivered'|'booked'|'average' }}
  */
-export function expectedPay({ coachId, rateMinor, sessions, month, fromMonth, zone, noShowsPaid = false }) {
+export function expectedPay({ coachId, rateMinor, sessions, month, fromMonth, zone, noShowsPaid = false, monthMinutes = null }) {
   const m = monthKey(month);
   const mine = theirs(sessions, coachId, m, zone);
-  const minutes = mine.filter((s) => s.outcome == null || (!(s.outcome === 'late_cancel' && s.waived) && countsAsDelivered(s.outcome, noShowsPaid)))
-    .reduce((a, s) => a + Math.max(0, Number(s.minutes) || 0), 0);
-  if (minutes > 0) return { month: m, payMinor: Math.round((minutes * Number(rateMinor)) / 60), from: 'booked' };
-  return { month: m, payMinor: threeMonthAverage({ coachId, rateMinor, sessions, month: fromMonth, zone, noShowsPaid }), from: 'average' };
+  const fn = m <= monthKey(fromMonth) ? minutesFromFunction({ coachId, month: m, monthMinutes, noShowsPaid }) : null;
+  if (fn && m < monthKey(fromMonth)) return { month: m, payMinor: payOf(fn.minutes, rateMinor), from: 'delivered' };
+  const minutes = fn
+    ? fn.minutes + mine.filter((s) => s.outcome == null).reduce((a, s) => a + Math.max(0, Number(s.minutes) || 0), 0)
+    : mine.filter((s) => s.outcome == null || (!(s.outcome === 'late_cancel' && s.waived) && countsAsDelivered(s.outcome, noShowsPaid)))
+      .reduce((a, s) => a + Math.max(0, Number(s.minutes) || 0), 0);
+  if (minutes > 0) return { month: m, payMinor: payOf(minutes, rateMinor), from: 'booked' };
+  return { month: m, payMinor: threeMonthAverage({ coachId, rateMinor, sessions, month: fromMonth, zone, noShowsPaid, monthMinutes }), from: 'average' };
 }
 
 /**
- * The monthly statement's lines (Maya's November statement, as M11 draws it).
+ * The monthly statement's lines (Maya's November statement, as M11 draws it): late cancellations that count are listed only
+ * when the month had some.
  * @returns {{ label: string, detail: string, value: string, amount: number|null }[]}
  */
 export function statementLines({ month: delivered, noShowsPaid = false }) {
-  const lines = [
-    { label: 'Coaching hours', detail: delivered.words, value: moneyWords(delivered.payMinor), amount: delivered.payMinor },
-    { label: 'Late cancellations that count', detail: 'Paid as delivered', value: 'Included', amount: null },
-  ];
+  const lines = [{ label: 'Coaching hours', detail: delivered.words, value: moneyWords(delivered.payMinor), amount: delivered.payMinor }];
+  // Only for a month that had some (functionality tester, run 2).
+  if (Number(delivered.lateCancels) > 0) lines.push({ label: 'Late cancellations that count', detail: 'Paid as delivered', value: 'Included', amount: null });
   if (noShowsPaid) lines.push({ label: 'No-shows that count', detail: 'Paid as delivered', value: 'Included', amount: null });
   return lines;
 }

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AddButton, Button, ChartTips, Dropdown, InlineChoice, SlidePanel, SwitchRow, TextField, tipProps, useIsPhone, useToast } from '../../components/design';
 import { newId, removeRow, saveRow } from '../../lib/coach/store';
+import { supabase } from '../../lib/supabase';
 import { keptAssociateSessions, loadFinanceAssociateSessions } from '../../lib/coach/associateSessions';
-import { draftDue, financeModel, invoiceNo, invoiceTitle, invoiceWho, overdueWords, poundsFromTyped, reminderLines, dayWordsFrom } from '../../lib/coach/financeData';
+import { draftDue, financeModel, invoiceNo, invoiceTitle, invoiceWho, overdueWords, paidDay, poundsFromTyped, reminderLines, dayWordsFrom } from '../../lib/coach/financeData';
 import { coachBilling, receiptProblem } from '../../lib/coach/financeActions';
 import { moneyWords } from '../../lib/billing/money';
-import { DEFAULT_SECTORS } from '../../lib/finance/index.js';
+import { addMonths, DEFAULT_SECTORS, financialYear, monthKey } from '../../lib/finance/index.js';
 import { TextLink, useCoachPortal } from './parts';
 
 // Finances' shared parts (Phase 6b run 2; M11 C4 to C9): the data every tab reads, the months chart, the cash flow's
@@ -50,15 +51,65 @@ export function useAssociateSessions(userId, enabled = true) {
   return assoc;
 }
 
+// 062's associate_month_minutes, by account and month, read at most once every 5 minutes (each Finances tab and Today
+// ask for the same months). In memory only: numbers, never a client or a time.
+const minutesRead = new Map();
+const MINUTES_FRESH_MS = 5 * 60 * 1000;
+
+/** The months whose delivered minutes Finances needs: this financial year so far, and the 3 before this month (the average). */
+export function minutesMonths(todayKey, startMonth) {
+  const now = monthKey(todayKey);
+  const fy = financialYear(todayKey, startMonth).months.filter((m) => m <= now);
+  return [...new Set([addMonths(now, -3), addMonths(now, -2), addMonths(now, -1), ...fy])].sort();
+}
+
+/**
+ * Each associate's delivered minutes for `months` from 062's associate_month_minutes (the owner with the code), as
+ * { 'YYYY-MM': rows }: only the months that answered, so a month that couldn't be read (offline, or 062 not there yet)
+ * quietly falls back to 058's reading of the sessions.
+ */
+export function useMonthMinutesMap(userId, months, enabled = true) {
+  const key = (months || []).join(',');
+  const [map, setMap] = useState(() => {
+    const out = {};
+    for (const m of months || []) { const hit = minutesRead.get(`${userId}#${m}`); if (hit?.rows) out[m] = hit.rows; }
+    return out;
+  });
+  useEffect(() => {
+    if (!enabled || !userId || !key) return undefined;
+    let live = true;
+    const now = Date.now();
+    Promise.all(key.split(',').map((m) => {
+      const k = `${userId}#${m}`;
+      const hit = minutesRead.get(k);
+      if (hit && now - hit.at < MINUTES_FRESH_MS) return hit.promise.then((rows) => [m, rows]);
+      const promise = Promise.resolve(supabase.rpc('associate_month_minutes', { p_month: `${m}-01` }))
+        .then(({ data, error }) => (!error && Array.isArray(data) ? data : null)).catch(() => null);
+      const entry = { at: now, promise, rows: hit?.rows ?? null };
+      minutesRead.set(k, entry);
+      promise.then((rows) => { if (rows) entry.rows = rows; else if (minutesRead.get(k) === entry) minutesRead.delete(k); });
+      return promise.then((rows) => [m, rows]);
+    })).then((pairs) => {
+      if (!live) return;
+      setMap(Object.fromEntries(pairs.filter(([, rows]) => Array.isArray(rows))));
+    });
+    return () => { live = false; };
+  }, [userId, key, enabled]);
+  return map;
+}
+
 export function useFinance({ includeLikely = false } = {}) {
   const portal = useCoachPortal();
   const { userId, coach, todayKey } = portal;
   const assoc = useAssociateSessions(userId);
   const settings = useMemo(() => settingsOf(portal.financeSettings, coach.id), [portal.financeSettings, coach.id]);
   const months = [3, 6, 12].includes(Number(settings.cash_months)) ? Number(settings.cash_months) : 6;
-  const model = useMemo(() => financeModel({ ...portal, financeSettings: settings, associateSessions: assoc }, { today: todayKey, months, includeLikely, nowMs: Date.now() }),
+  const startMonth = Number(settings.year_start_month) || 5;
+  const wanted = useMemo(() => minutesMonths(todayKey, startMonth), [todayKey, startMonth]);
+  const monthMinutes = useMonthMinutesMap(userId, wanted, Boolean(portal.isOwner));
+  const model = useMemo(() => financeModel({ ...portal, financeSettings: settings, associateSessions: assoc, monthMinutes }, { today: todayKey, months, includeLikely, nowMs: Date.now() }),
     [settings, portal.payments, portal.creditNotes, portal.invoices, portal.agreementVersions, portal.orgDeals, portal.coaches, portal.statements, portal.outgoings,
-      portal.deadlines, portal.leads, portal.leadStages, portal.financeTargets, assoc, todayKey, months, includeLikely]);
+      portal.deadlines, portal.leads, portal.leadStages, portal.financeTargets, assoc, monthMinutes, todayKey, months, includeLikely]);
   const names = useNames();
   const sectors = (portal.financeSectors || []).length ? portal.financeSectors.map((s) => s.name) : [...DEFAULT_SECTORS];
   return { ...portal, settings, months, model, names, sectors, associateSessions: assoc };
@@ -352,7 +403,7 @@ export function InvoicePanels({ panel, onClose }) {
   }
   // A sent or paid invoice with no Stripe page yet (the row opens Stripe's page when there is one): its facts, read only.
   if (panel.kind === 'view') {
-    const paidOn = inv.paid_at ? String(inv.paid_at).slice(0, 10) : null;
+    const paidOn = paidDay(inv);
     return (
       <SlidePanel open onClose={onClose} title={invoiceTitle(inv)} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={onClose}>Done</Button></div>}>
         <p className="cc-quiet fin-meta">{who}</p>

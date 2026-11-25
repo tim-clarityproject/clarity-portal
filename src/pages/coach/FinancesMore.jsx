@@ -10,7 +10,7 @@ import {
 import { toCsv } from '../../lib/finance/csv.js';
 import { xlsxBytes } from '../../lib/coach/xlsx';
 import {
-  dayWordsFrom, discountFor, discountWords, EVERY_WORDS, invoiceGroups, nextDeadlines, packageDetail, percentFromTyped, poundsFromTyped, priceWords, pricingSections, typedPounds,
+  coachIdOf, coachNameOf, dayWordsFrom, discountFor, discountWords, EVERY_WORDS, invoiceGroups, nextDeadlines, packageDetail, percentFromTyped, poundsFromTyped, priceWords, pricingSections, typedPounds,
 } from '../../lib/coach/financeData';
 import { TextLink, useCoachPortal } from './parts';
 import { download, FigRow, FinPart, InvoicePanels, useDone, useFinance } from './financeParts';
@@ -333,7 +333,7 @@ function YearExportPanel({ label, onClose }) {
     const people = Object.fromEntries(Object.entries(names.person).map(([id, name]) => [id, { name, country: (clients || []).find((c) => c.id === id)?.country || '' }]));
     const orgs = Object.fromEntries((organisations || []).map((o) => [o.id, { name: o.name, country: o.country || '' }]));
     const receipts = Object.fromEntries((payments || []).filter((p) => p.receipt_path).map((p) => [p.id, String(p.receipt_path).split('/').pop()]));
-    const nameOf = (id) => (coaches || []).find((c) => c.id === id)?.display_name || 'Associate';
+    const nameOf = (id) => coachNameOf((coaches || []).find((c) => coachIdOf(c) === id));
     const payouts = (statements || []).filter((s) => s.paid_on).map((s) => ({ name: nameOf(s.associate_id), amount_minor: Number(s.paid_minor ?? s.total_minor) || 0, paid_at: `${s.paid_on}T12:00:00Z` }));
     const exp = yearExport({ yearLabel: label, startMonth: model.startMonth, today: todayKey, lines: model.lines, invoices: fin.invoices || [], outgoings, deadlines, associatePayouts: payouts, people, organisations: orgs, receipts });
     const name = `finances-${exp.year.label}-to-${exp.year.label + 1}`;

@@ -27,6 +27,10 @@
 .ui-root .fin-row-words { min-width: 0; }
 .ui-root .fin-row-value { font-size: var(--fs-note); color: var(--text-2); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ui-root .fin-row .ds-link { justify-self: end; }
+/* A pounds figure with what was paid in another currency small and grey under it (M11 C5: "with the dollar amount small
+   and grey underneath"). */
+.ui-root .fin-fig-stack { display: inline-flex; flex-direction: column; align-items: flex-end; }
+.ui-root .fin-fig-original { font-size: var(--fs-small); color: var(--text-2); }
 
 /* Controls above a chart or a list: the gliding switch, a drop-down and a quiet link, in one row (M11 .bzctl). */
 .ui-root .fin-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); margin-top: var(--space-px18); }

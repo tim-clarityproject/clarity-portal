@@ -44,7 +44,8 @@ export function paymentPounds(p) {
  * @param {{ payments?: object[], creditNotes?: object[], invoices?: object[], zone?: string }} a
  * @returns {{ id, kind: 'payment'|'refund', day: string, month: string, pounds: number|null, pending: boolean,
  *   amount_minor: number, currency: string, rate: number|null, fee_minor: number, sector: string|null, invoice_id,
- *   profile_id, organisation_id, payment_id: string|null, added_by_coach: boolean, method: string|null }[]}
+ *   profile_id, organisation_id, payment_id: string|null, added_by_coach: boolean, method: string|null, payer_name: string|null,
+ *   what_for: string|null }[]}
  *   amount_minor and pounds are minus for a refund; payment_id is the refund's original payment. Sorted by day.
  */
 export function incomeLines({ payments = [], creditNotes = [], invoices = [], zone } = {}) {
@@ -60,6 +61,7 @@ export function incomeLines({ payments = [], creditNotes = [], invoices = [], zo
       invoice_id: p.invoice_id ?? null, profile_id: p.profile_id ?? i.profile_id ?? null,
       organisation_id: p.organisation_id ?? i.organisation_id ?? null, payment_id: null,
       added_by_coach: Boolean(p.added_by_coach), method: p.method ?? null, at: p.paid_at,
+      payer_name: p.payer_name ?? null, what_for: p.what_for ?? null,
     });
   }
   const paymentsOn = (invoiceId) => lines.filter((l) => l.kind === 'payment' && l.invoice_id === invoiceId);
@@ -160,21 +162,38 @@ export function sectorRows({ lines, months, toCome = [], sectors = DEFAULT_SECTO
 }
 
 /**
- * By client: pounds in the months for each client (a person's profile, or an organisation), the most first.
- * @returns {{ key: string, profile_id, organisation_id, pounds: number, addedByCoach: boolean }[]}
+ * By client: pounds in the months for each client (a person's profile, or an organisation), the most first. A payment
+ * made straight to the bank with no client or organisation is its payer's, by the name typed (one row per name).
+ * Payments in another currency keep their own amounts (`originals`, e.g. { USD: 216000 }) to show under the pounds.
+ * @returns {{ key: string, profile_id, organisation_id, payer_name: string|null, pounds: number, addedByCoach: boolean,
+ *   originals: Record<string, number>, whatFor: string|null }[]}
  */
 export function clientRows(lines, months) {
   const keep = inMonths(months);
   const rows = new Map();
   for (const l of lines || []) {
     if (!keep(l) || !counted(l)) continue;
-    const key = l.organisation_id ? `org:${l.organisation_id}` : l.profile_id ? `person:${l.profile_id}` : 'unknown';
-    const r = rows.get(key) || { key, profile_id: l.organisation_id ? null : l.profile_id, organisation_id: l.organisation_id || null, pounds: 0, addedByCoach: false };
+    const payer = String(l.payer_name || '').trim();
+    const key = l.organisation_id ? `org:${l.organisation_id}` : l.profile_id ? `person:${l.profile_id}` : payer ? `payer:${payer.toLowerCase()}` : 'unknown';
+    const r = rows.get(key) || { key, profile_id: l.organisation_id ? null : l.profile_id, organisation_id: l.organisation_id || null, payer_name: payer || null,
+      pounds: 0, addedByCoach: false, originals: {}, whatFor: null, latest: '' };
     r.pounds += l.pounds;
     r.addedByCoach = r.addedByCoach || l.added_by_coach;
+    if (l.currency && l.currency !== 'GBP') r.originals[l.currency] = (r.originals[l.currency] || 0) + Number(l.amount_minor);
+    if (l.kind === 'payment' && l.day >= r.latest) { r.latest = l.day; if (l.what_for) r.whatFor = l.what_for; }
     rows.set(key, r);
   }
-  return [...rows.values()].sort((a, b) => b.pounds - a.pounds);
+  return [...rows.values()].map(({ latest, ...r }) => r).sort((a, b) => b.pounds - a.pounds);
+}
+
+/** Payments still waiting for the pounds that landed, by currency: { count, words } ("1 payment in dollars is waiting…"). */
+export function waitingForPounds(lines) {
+  const waiting = (lines || []).filter((l) => l.kind === 'payment' && l.pending);
+  const n = waiting.length;
+  if (!n) return { count: 0, words: '' };
+  const currencies = new Set(waiting.map((l) => l.currency));
+  const inWhat = currencies.size === 1 ? ({ USD: 'dollars', EUR: 'euros' }[[...currencies][0]] || 'another currency') : 'other currencies';
+  return { count: n, words: n === 1 ? `1 payment in ${inWhat} is waiting for the amount that landed.` : `${n} payments in ${inWhat} are waiting for the amounts that landed.` };
 }
 
 /**

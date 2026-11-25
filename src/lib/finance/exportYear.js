@@ -1,6 +1,7 @@
 import { invoiceNumber } from '../billing/money.js';
 import { dayOnTimsClock, incomeIn } from './income.js';
 import { costsBetween, occurrences } from './outgoings.js';
+import { isTaxDeadline } from './cashflow.js';
 import { yearStarting, DEFAULT_YEAR_START_MONTH } from './year.js';
 import { toCsv } from './csv.js';
 
@@ -29,7 +30,9 @@ export function yearExport({ yearLabel, startMonth = DEFAULT_YEAR_START_MONTH, t
   const year = yearStarting(yearLabel, startMonth);
   const to = today && today < year.end ? today : year.end;
   const inv = new Map((invoices || []).map((i) => [i.id, i]));
-  const who = (l) => (l.organisation_id && organisations[l.organisation_id]) || (l.profile_id && people[l.profile_id]) || { name: '', country: '' };
+  // Who: the organisation or client when the payment is linked to one, else the payer's own name as it was typed (a
+  // payment made straight to the bank).
+  const who = (l) => (l.organisation_id && organisations[l.organisation_id]) || (l.profile_id && people[l.profile_id]) || { name: l.payer_name || '', country: '' };
   const rows = [];
   let payments = 0;
   let refunds = 0;
@@ -37,7 +40,7 @@ export function yearExport({ yearLabel, startMonth = DEFAULT_YEAR_START_MONTH, t
     if (l.day < year.start || l.day > year.end) continue;
     const i = inv.get(l.invoice_id) || {};
     const w = who(l);
-    const what = l.kind === 'refund' ? `Refund${l.number ? `, ${l.number}` : ''}` : (i.lines?.[0]?.description || (l.added_by_coach ? 'Paid to your bank' : ''));
+    const what = l.kind === 'refund' ? `Refund${l.number ? `, ${l.number}` : ''}` : (i.lines?.[0]?.description || l.what_for || (l.added_by_coach ? 'Paid to your bank' : ''));
     rows.push([l.day, l.kind === 'refund' ? 'Refund' : 'Payment', w.name || '', w.country || '', what, i.number ? invoiceNumber(Number(i.number)) : '',
       l.sector || '', pounds(l.amount_minor), l.currency, pounds(l.pounds), l.rate ? Math.round(l.rate * 10000) / 10000 : null,
       l.fee_minor ? pounds(l.fee_minor) : null, (l.id && receipts[l.id]) || '']);
@@ -48,7 +51,7 @@ export function yearExport({ yearLabel, startMonth = DEFAULT_YEAR_START_MONTH, t
   for (const d of deadlines || []) {
     if (!(Number(d.amount_minor) > 0)) continue;
     for (const day of occurrences({ every: d.every || 'once', starts_on: d.due_on, on_date: d.due_on }, year.start, to)) {
-      costs.push([day, 'Cost', d.name, '', 'Tax', '', '', -pounds(d.amount_minor), 'GBP', -pounds(d.amount_minor), null, null, '']);
+      costs.push([day, 'Cost', d.name, '', isTaxDeadline(d) ? 'Tax' : 'Company deadline', '', '', -pounds(d.amount_minor), 'GBP', -pounds(d.amount_minor), null, null, '']);
     }
   }
   for (const p of associatePayouts || []) {

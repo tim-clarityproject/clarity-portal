@@ -30,6 +30,22 @@ export function signatureFor(rawBody, secret, t = Math.floor(Date.now() / 1000))
 }
 
 const RANK = { draft: 0, sent: 1, uncollectible: 2, void: 3, paid: 4 };
+const CURRENCIES = ['GBP', 'USD', 'EUR'];
+/** An invoice's own currency as the money tables keep it (GBP, USD or EUR; 062), never another kept as pounds. */
+export const currencyOf = (row) => (CURRENCIES.includes(String(row?.currency || 'GBP').toUpperCase()) ? String(row?.currency || 'GBP').toUpperCase() : 'GBP');
+
+/**
+ * The pounds that landed and Stripe's fee for a payment, from Stripe's balance transaction (in the account's own
+ * currency, pounds): { landed_gbp_minor, fee_minor }. A balance transaction in any other currency, or none, gives
+ * nulls; then a payment in pounds landed as its own amount (its fee waits for the nightly round), and one in another
+ * currency waits for its pounds figure.
+ */
+export function landedFrom(balance, payment) {
+  const ok = balance && String(balance.currency || '').toLowerCase() === 'gbp' && Number.isInteger(Number(balance.amount)) && Number(balance.amount) >= 0;
+  const landed = ok ? Number(balance.amount) : (currencyOf(payment) === 'GBP' ? Number(payment.amount_minor) : null);
+  const fee = ok && Number.isInteger(Number(balance.fee)) && Number(balance.fee) >= 0 ? Number(balance.fee) : null;
+  return { landed_gbp_minor: landed, fee_minor: fee };
+}
 /** Stripe's invoice status in the portal's words. */
 export const statusOf = (stripeStatus) => ({ draft: 'draft', open: 'sent', paid: 'paid', void: 'void', uncollectible: 'uncollectible' }[stripeStatus] || null);
 
@@ -62,10 +78,10 @@ export function invoiceChange(event, row) {
   const paidNow = (event.type === 'invoice.paid' || event.type === 'invoice.payment_succeeded') && Number(inv.amount_paid) > 0
     && inv.paid_out_of_band !== true
     // Only in the invoice's own currency: a payment in any other is never kept as pounds or dollars (break-it tester).
-    && String(inv.currency || '').toUpperCase() === String(row.currency || 'GBP');
+    && String(inv.currency || '').toUpperCase() === currencyOf(row);
   const payment = paidNow ? {
     invoice_id: row.id, coach_id: row.coach_id, stripe_id: String(inv.payment_intent || inv.charge || `${inv.id}:paid`),
-    amount_minor: Number(inv.amount_paid), currency: row.currency === 'USD' ? 'USD' : 'GBP',
+    amount_minor: Number(inv.amount_paid), currency: currencyOf(row),
     method: inv.payment_settings?.payment_method_types?.[0] || null, paid_at: patch.paid_at || at, added_by_coach: false,
   } : null;
   return { invoice: Object.keys(patch).length ? patch : null, payment };
@@ -80,13 +96,13 @@ export function invoiceChange(event, row) {
 export function refundRow(event, invoice, notes = []) {
   const ch = event?.data?.object;
   if (!ch || event.type !== 'charge.refunded' || !invoice) return null;
-  if (String(ch.currency || '').toUpperCase() !== String(invoice.currency || 'GBP')) return null;
+  if (String(ch.currency || '').toUpperCase() !== currencyOf(invoice)) return null;
   const refunded = Number(ch.amount_refunded) || (ch.refunds?.data || []).reduce((n, r) => n + (Number(r.amount) || 0), 0);
   const kept = notes.filter((n) => n.kind === 'refund').reduce((n, c) => n + Number(c.amount_minor || 0), 0);
   const credited = notes.reduce((n, c) => n + Number(c.amount_minor || 0), 0);
   const amount = Math.min(refunded - kept, Number(invoice.paid_minor || 0) - credited);
   if (!(amount > 0)) return null;
-  return { invoice_id: invoice.id, coach_id: invoice.coach_id, kind: 'refund', amount_minor: amount, currency: invoice.currency === 'USD' ? 'USD' : 'GBP',
+  return { invoice_id: invoice.id, coach_id: invoice.coach_id, kind: 'refund', amount_minor: amount, currency: currencyOf(invoice),
     stripe_id: `${ch.id}:refunded:${refunded}`, reason: 'Refunded in Stripe' };
 }
 

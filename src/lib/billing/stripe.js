@@ -65,6 +65,18 @@ export function stripeApi(key, fetcher = globalThis.fetch) {
       }
       return { data: all };
     },
+    /**
+     * What a payment came to in the account's own currency: its balance transaction's amount and fee (pence), from a
+     * payment intent (its latest charge's) or a charge; null when Stripe has none yet.
+     */
+    balanceFor: async (id) => {
+      const ref = String(id || '');
+      let bt = null;
+      if (/^pi_[A-Za-z0-9]+$/.test(ref)) bt = (await call('GET', `/payment_intents/${ref}?expand%5B%5D=latest_charge.balance_transaction`))?.latest_charge?.balance_transaction;
+      else if (/^ch_[A-Za-z0-9]+$/.test(ref)) bt = (await call('GET', `/charges/${ref}?expand%5B%5D=balance_transaction`))?.balance_transaction;
+      else return null;
+      return bt && typeof bt === 'object' ? { amount: bt.amount, fee: bt.fee, currency: bt.currency } : null;
+    },
     checkout: ({ priceId, customerEmail, userId, level, successUrl, cancelUrl }) => call('POST', '/checkout/sessions', {
       mode: 'subscription', line_items: [{ price: priceId, quantity: 1 }], customer_email: customerEmail, success_url: successUrl, cancel_url: cancelUrl,
       subscription_data: { metadata: { user_id: userId, level } },
@@ -72,6 +84,9 @@ export function stripeApi(key, fetcher = globalThis.fetch) {
     cancelSubscription: (id) => call('POST', `/subscriptions/${id}`, { cancel_at_period_end: true }),
   };
 }
+
+/** The stand-in's fixed, invented rates: dollars or euros to the pound (never a real rate). */
+export const STAND_IN_RATES = Object.freeze({ GBP: 1, USD: 1.25, EUR: 1.16 });
 
 /**
  * The stand-in: Stripe in memory, for the tests and any build without a key. Every change makes the message Stripe
@@ -127,6 +142,19 @@ export function stripeStandIn({ secret = 'whsec_stand_in_0000000000', now = () =
       return re;
     },
     creditNote: async ({ invoice, amount, memo }) => { const cn = { id: id('cn'), invoice, amount, memo }; s.creditNotes.push(cn); return cn; },
+    /**
+     * A settled payment's balance transaction, as Stripe's would read: pounds at a fixed invented rate (STAND_IN_RATES,
+     * dollars or euros to the pound) and a fee of 1.5% + 20p. `state.balanceDown = true` makes Stripe unreachable.
+     */
+    balanceFor: async (ref) => {
+      if (s.balanceDown) throw Object.assign(new Error('Stripe didn’t answer.'), { code: 'stripe_503' });
+      const inv = [...s.invoices.values()].find((i) => i.payment_intent === ref && i.status === 'paid');
+      if (!inv) return null;
+      const rate = STAND_IN_RATES[String(inv.currency).toUpperCase()] || null;
+      if (!rate) return null;
+      const amount = Math.round(Number(inv.amount_paid) / rate);
+      return { amount, fee: Math.round(amount * 0.015) + 20, currency: 'gbp' };
+    },
     events: async ({ since }) => ({ data: s.events.filter((e) => e.created >= Math.floor(new Date(since).getTime() / 1000)) }),
     checkout: async ({ customerEmail, userId, level }) => {
       const sub = { id: id('sub'), object: 'subscription', status: 'active', cancel_at_period_end: false, metadata: { user_id: userId, level }, customer_email: customerEmail, current_period_end: t() + 30 * 86400 };

@@ -1,9 +1,10 @@
 import { poundsWords, percentOf } from './words.js';
 import { incomeIn } from './income.js';
-import { financialYear, monthKey, monthName, quarterOf, workingDaysLeft, workingDaysWords, yearStarting, DEFAULT_YEAR_START_MONTH } from './year.js';
+import { addMonths, financialYear, monthKey, monthName, quarterOf, workingDaysLeft, workingDaysWords, yearStarting, DEFAULT_YEAR_START_MONTH } from './year.js';
 
 // Targets (Phase 6b run 2, step 2): one target a month (finance targets' month 'YYYY-MM-01' and target_minor), set each
-// month or the same every month; a quarter's and a year's are the sums of their months. The £2,000 minimum is what
+// month or the same every month; a quarter's and a year's are the sums of their months. Edit targets writes only the
+// months it changed (targetsToSave), and a new year starts from last year's, copied once (newYearCopyRows). The £2,000 minimum is what
 // Tim needs to stand still, measured after associate pay. Checked by tests/performance/finance-targets.test.mjs.
 
 export const MAX_TARGET_MINOR = 100000000; // £1,000,000 a month, the same ceiling as an invoice in 061
@@ -71,6 +72,40 @@ export function raiseTargets(rows, percent) {
   const p = Number(percent);
   if (!Number.isFinite(p) || p <= -100 || p > 100) throw new Error('Raise targets by more than −100% and at most 100%.');
   return (rows || []).map((r) => ({ ...r, target_minor: checkTarget(Math.round((Number(r.target_minor) * (100 + p)) / 10000) * 100) }));
+}
+
+/**
+ * What Edit targets writes on Save: only the months that changed from what was saved when the panel opened (`start`,
+ * pence by 'YYYY-MM'), each its own row, so another tab's edit to a different month is never lost (newest wins per
+ * month). "Same every month" sets this month and the months after it, never a month gone by. A percentage raises this
+ * and later months (raiseTargets), after the figures typed.
+ * @param {{ mode: 'each'|'same', each?: Record<string, number>, same?: number|null, raise?: number|null, start: Record<string, number>,
+ *   yearLabel: number, today: string, startMonth?: number }} a  each: pence typed for each month of the year
+ * @returns {{ month: string, target_minor: number }[]} month as 'YYYY-MM-01'
+ */
+export function targetsToSave({ mode, each = {}, same = null, raise = null, start = {}, yearLabel, today, startMonth = DEFAULT_YEAR_START_MONTH }) {
+  const thisMonth = monthKey(today);
+  let rows = mode === 'same'
+    ? sameEveryMonth({ yearLabel, monthly: same, startMonth }).filter((r) => monthKey(r.month) >= thisMonth)
+    : yearStarting(yearLabel, startMonth).months.map((m) => ({ month: `${m}-01`, target_minor: checkTarget(each[m] ?? 0) }));
+  if (raise != null && Number(raise) !== 0) {
+    const by = new Map(raiseTargets(rows.filter((r) => monthKey(r.month) >= thisMonth), raise).map((r) => [monthKey(r.month), r]));
+    rows = rows.map((r) => by.get(monthKey(r.month)) || r);
+  }
+  return rows.filter((r) => (Number(start[monthKey(r.month)]) || 0) !== r.target_minor);
+}
+
+/**
+ * A new financial year with no targets copies last year's in, month for month, once (its rows, or [] when this year
+ * already has any, or last year had none).
+ * @returns {{ month: string, target_minor: number }[]}
+ */
+export function newYearCopyRows({ targets, today, startMonth = DEFAULT_YEAR_START_MONTH }) {
+  const fy = financialYear(today, startMonth);
+  const last = financialYear(`${addMonths(fy.months[0], -1)}-01`, startMonth);
+  if ((targets || []).some((t) => fy.months.includes(monthKey(t.month)))) return [];
+  if (!(targetFor(targets, last.months) > 0)) return [];
+  return copyToNewYear({ targets, fromYear: last.label, toYear: fy.label, startMonth });
 }
 
 /** "of £5,000" or, over it, "of £5,000, £900 over" (Overview's figure). */

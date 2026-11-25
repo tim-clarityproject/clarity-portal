@@ -3,7 +3,8 @@
 //
 //   POST /api/coach-billing  { kind: 'draft', agreementId }            the agreement's invoices due by today, as drafts
 //   POST /api/coach-billing  { kind: 'send', invoiceId }               the coach's Send: Stripe sends it, with its payment link
-//   POST /api/coach-billing  { kind: 'paid_by_hand', invoiceId }       "Add a payment made to your bank" (marked Added by you)
+//   POST /api/coach-billing  { kind: 'paid_by_hand', invoiceId, landedMinor? }   "Add a payment made to your bank" (marked Added by you);
+//                            landedMinor: what landed in pounds (pence), needed when the invoice isn't in pounds
 //   POST /api/coach-billing  { kind: 'refund' | 'credit', invoiceId, amount, reason? }   confirmed on screen first
 //   POST /api/coach-billing  { kind: 'send_reminder', reminderId }     the coach's Send on a drafted reminder
 //
@@ -24,6 +25,7 @@ import { stripeApi, keyAllowed } from '../../src/lib/billing/stripe.js';
 import { dueToDraft, invoicesFor } from '../../src/lib/billing/invoicePlan.js';
 import { addDays, dayIn, isZone } from '../../src/lib/time/index.js';
 import { reminderDue, settleBy } from '../../src/lib/billing/money.js';
+import { currencyOf } from '../../src/lib/billing/stripeWebhook.js';
 
 export const config = { maxDuration: 60 };
 const reply = (res, status, body) => { res.status(status).setHeader('Cache-Control', 'no-store'); res.json(body); };
@@ -33,7 +35,15 @@ const KINDS = ['draft', 'send', 'paid_by_hand', 'refund', 'credit', 'send_remind
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const SECTOR = (s) => (typeof s === 'string' && s.trim().length >= 1 && s.trim().length <= 40 ? s.trim() : null);
 
-export function askedFor(body) {
+/** Whether a 'YYYY-MM-DD' is a real calendar day (never 31 Feb). */
+export function realDay(day) {
+  if (!DAY.test(String(day || ''))) return false;
+  const [y, m, d] = String(day).split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+}
+
+export function askedFor(body, now = new Date()) {
   const b = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   if (!KINDS.includes(b.kind)) return null;
   // Finances (run 2, owner only): a payment made straight to the bank, and a one-off invoice. Each names who it's from
@@ -47,7 +57,8 @@ export function askedFor(body) {
     if (!profileId && !organisationId && !(b.kind === 'bank_payment' && payerName)) return null;
     const whatFor = typeof b.whatFor === 'string' ? b.whatFor.trim().slice(0, 200) : '';
     if (b.kind === 'bank_payment') {
-      if (!DAY.test(String(b.arrivedOn || ''))) return null;
+      // A real calendar day, and never after tomorrow on Tim's clock (London): money can't arrive in the future.
+      if (!realDay(b.arrivedOn) || String(b.arrivedOn) > addDays(dayIn('Europe/London', now), 1)) return null;
       const receipt = typeof b.receiptPath === 'string' && /^[\w./-]{1,500}$/.test(b.receiptPath) && !b.receiptPath.includes('..') ? b.receiptPath : null;
       return { kind: b.kind, amount, profileId, organisationId, payerName, whatFor: whatFor || null, arrivedOn: String(b.arrivedOn), sector: SECTOR(b.sector), receiptPath: receipt };
     }
@@ -60,6 +71,11 @@ export function askedFor(body) {
   const idKey = b.kind === 'draft' ? 'agreementId' : b.kind === 'send_reminder' ? 'reminderId' : 'invoiceId';
   if (!UUID.test(String(b[idKey] || ''))) return null;
   const out = { kind: b.kind, id: String(b[idKey]).toLowerCase() };
+  if (b.kind === 'paid_by_hand' && b.landedMinor != null && b.landedMinor !== '') {
+    const landed = Number(b.landedMinor);
+    if (!Number.isInteger(landed) || landed <= 0 || landed > 100000000) return null;
+    out.landedMinor = landed;
+  }
   if (b.kind === 'refund' || b.kind === 'credit') {
     const amount = Number(b.amount);
     if (!Number.isInteger(amount) || amount <= 0 || amount > 100000000) return null;
@@ -200,14 +216,22 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
       return { status: 'sent' };
     },
 
-    /** "Add a payment made to your bank": marked paid in Stripe (out of band) and here, Added by you. */
-    async paidByHand(invoiceId) {
+    /**
+     * "Add a payment made to your bank": marked paid in Stripe (out of band) and here, Added by you. An invoice in
+     * dollars or euros needs what landed in pounds, as the coach typed it (`landedMinor`, pence); one in pounds landed
+     * as its own amount.
+     */
+    async paidByHand(invoiceId, landedMinor = null) {
       const inv = await mine('invoices', invoiceId);
       if (inv.status === 'paid') return { status: 'paid' };
       if (inv.status !== 'sent') { const e = new Error('Only an invoice that has been sent can be settled.'); e.status = 409; throw e; }
+      const currency = currencyOf(inv);
+      const amount = inv.total_minor - inv.paid_minor;
+      if (currency !== 'GBP' && !(Number.isInteger(landedMinor) && landedMinor > 0)) { const e = new Error('Type what landed in pounds to carry on.'); e.status = 400; throw e; }
       await stripe.markPaidByHand(inv.stripe_invoice_id);
       const at = now().toISOString();
-      await server.from('payments').insert({ invoice_id: inv.id, coach_id: coach.id, amount_minor: inv.total_minor - inv.paid_minor, currency: inv.currency, added_by_coach: true, paid_at: at });
+      await server.from('payments').insert({ invoice_id: inv.id, coach_id: coach.id, amount_minor: amount, currency, landed_gbp_minor: currency === 'GBP' ? amount : landedMinor,
+        added_by_coach: true, paid_at: at });
       await server.from('invoices').update({ status: 'paid', paid_at: at, paid_minor: inv.total_minor, updated_at: at }).eq('id', inv.id);
       await server.from('invoice_reminders').delete().eq('invoice_id', inv.id).is('sent_at', null);
       return { status: 'paid' };
@@ -322,7 +346,7 @@ export default async function handler(req, res, env = process.env) {
     if (asked.kind === 'one_off') return reply(res, 200, { ok: true, ...(await b.oneOff(asked)) });
     if (asked.kind === 'draft') return reply(res, 200, { ok: true, ...(await b.draft(asked.id)) });
     if (asked.kind === 'send') return reply(res, 200, { ok: true, ...(await b.send(asked.id)) });
-    if (asked.kind === 'paid_by_hand') return reply(res, 200, { ok: true, ...(await b.paidByHand(asked.id)) });
+    if (asked.kind === 'paid_by_hand') return reply(res, 200, { ok: true, ...(await b.paidByHand(asked.id, asked.landedMinor ?? null)) });
     if (asked.kind === 'refund' || asked.kind === 'credit') return reply(res, 200, { ok: true, ...(await b.refundOrCredit(asked.id, asked.kind, asked.amount, asked.reason)) });
     // Only the live site ever sends: a preview claims nothing, so a reminder pressed there is still waiting on the live site.
     if (!maySend(env) || !canSend(env)) return reply(res, 200, { ok: false, reason: 'preview' });

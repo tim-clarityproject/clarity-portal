@@ -6,12 +6,13 @@
 // For every active coach: the instalments that have fallen due drafted in Stripe (never sent: they wait for the coach's
 // Send), and the overdue reminders drafted at 3, 7 and 14 days (never sent either). Then Stripe's catch-up: the last 3
 // days of its messages read back from Stripe and handled through the webhook's own rules, so a message that never
-// arrived still lands and one that did is found already claimed (stripe_events). Nothing here sends anything.
+// arrived still lands and one that did is found already claimed (stripe_events). Then any payment still without the
+// pounds that landed and Stripe's fee is looked up again (fillLanded). Nothing here sends anything.
 //
 // Environment variables (Vercel, Production): CRON_SECRET, STRIPE_SECRET_KEY (test mode, sk_test_…), SUPABASE_SERVICE_ROLE_KEY.
 import { isScheduler } from './workshop-emails.js';
 import { billing } from './coach-billing.js';
-import { handleEvent, serverClient } from '../stripe-webhook.js';
+import { fillLanded, handleEvent, serverClient } from '../stripe-webhook.js';
 import { keyAllowed, stripeApi } from '../../src/lib/billing/stripe.js';
 
 export const config = { maxDuration: 300 };
@@ -20,7 +21,7 @@ const CATCH_UP_DAYS = 3;
 
 /** One round, with the server's key and a Stripe (real or stand-in): what it drafted and caught up. */
 export async function nightlyRound({ server, stripe, now = () => new Date() }) {
-  const out = { invoices: 0, reminders: 0, caughtUp: 0, problems: 0 };
+  const out = { invoices: 0, reminders: 0, caughtUp: 0, landed: 0, problems: 0 };
   const { data: coaches } = await server.from('coaches').select('id, role, active').eq('active', true);
   for (const coach of coaches || []) {
     const b = billing({ server, stripe, coach, now });
@@ -34,8 +35,10 @@ export async function nightlyRound({ server, stripe, now = () => new Date() }) {
   const { data: events } = await stripe.events({ since });
   // Oldest first, as Stripe sent them; each is claimed once, whoever handles it first.
   for (const e of [...(events || [])].sort((x, y) => (x.created || 0) - (y.created || 0))) {
-    try { if ((await handleEvent(server, e)) === 'handled') out.caughtUp += 1; } catch { out.problems += 1; }
+    try { if ((await handleEvent(server, e, stripe)) === 'handled') out.caughtUp += 1; } catch { out.problems += 1; }
   }
+  // Payments still without the pounds that landed and Stripe's fee (Stripe couldn't be asked when they came in).
+  try { out.landed = await fillLanded({ server, stripe, now }); } catch { out.problems += 1; }
   return out;
 }
 

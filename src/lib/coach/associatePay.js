@@ -81,6 +81,23 @@ export function associatePay({ associateId, rateMinor, month, statements = [], s
   return { from, delivered, statement, readyOn, paidOn: statement?.paid_on ? String(statement.paid_on).slice(0, 10) : null, lines };
 }
 
+/**
+ * The month's statement row as Mark as paid saves it (062's associate_statements, one per associate and month): the
+ * hours, rate, the minutes that count, the total and its lines, paid today for the total. A statement already saved
+ * keeps its own figures and gains only when it was paid.
+ */
+export function paidStatementRow({ id, statement = null, ownerId, associateId, month, pay, rateMinor, minutesRow = null, noShowsPaid = false, today }) {
+  if (statement) return { ...statement, paid_on: today, paid_minor: Number(statement.total_minor) || 0 };
+  const minutes = pay.delivered?.minutes || 0;
+  const total = pay.delivered?.payMinor || 0;
+  return {
+    id, coach_id: ownerId, associate_id: associateId, month: `${monthKey(month)}-01`, hours: Math.round((minutes / 60) * 100) / 100,
+    rate_minor: rateMinor || 0, late_cancel_minutes: Number(minutesRow?.late_cancel_minutes) || 0,
+    no_show_minutes: noShowsPaid ? Number(minutesRow?.no_show_minutes) || 0 : 0, total_minor: total,
+    lines: (pay.lines || []).map(({ label, detail, value }) => ({ label, detail, value })), ready_on: pay.readyOn, paid_on: today, paid_minor: total,
+  };
+}
+
 /** What an associate's clients paid in a month, in pence (payments in pounds at the landed rate). */
 export function theirClientsPaid({ payments = [], invoices = [], profileIds = [], month, zone }) {
   let lines = [];

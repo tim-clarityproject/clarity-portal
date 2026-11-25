@@ -55,9 +55,12 @@ test('the tax pot grows at the share of each month’s profit, never below nothi
   const outgoings = [{ name: 'Salary', group_name: 'Your pay', amount_minor: 200000, every: 'month', starts_on: '2026-01-28' }];
   const deadlines = [
     { name: 'Corporation tax', due_on: '2027-02-01', every: 'year', amount_minor: null }, // no amount: the pot is paid
-    { name: 'Confirmation statement', due_on: '2027-03-14', every: 'year', amount_minor: 5000 },
+    { name: 'Confirmation statement', kind: 'confirmation_statement', due_on: '2027-03-14', every: 'year', amount_minor: 5000 }, // an ordinary cost
   ];
-  const cf = f.cashFlow({ today: TODAY, months: 6, settings: { ...base, tax_share_percent: 25, tax_pot_minor: 30000 }, invoices, outgoings, deadlines });
+  // The pot so far is worked out from 1 May: May's £3,200 in less £2,000 salary sets aside £300; every month since lost money.
+  const lines = f.incomeLines({ payments: [{ id: 'may', amount_minor: 320000, currency: 'GBP', paid_at: '2026-05-10T09:00:00' }] });
+  const cf = f.cashFlow({ today: TODAY, months: 6, settings: { ...base, tax_share_percent: 25 }, lines, invoices, outgoings, deadlines });
+  assert.equal(cf.taxPotNow, 30000);
   const pots = Object.fromEntries(cf.rows.map((r) => [r.label, r.taxPot]));
   // November: no money in, £2,000 out (a loss adds nothing). December: £4,000 in less £2,000 out → £500 set aside.
   // January: £1,000 less £2,000 → nothing. February: Corporation tax pays the whole pot (£300 + £500).

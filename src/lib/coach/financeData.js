@@ -1,9 +1,9 @@
 import { moneyWords, rateWords, invoiceNumber, REMINDER_DAYS } from '../billing/money.js';
-import { payReminderDue } from '../finance/associates.js';
+import { associateMonth, minutesFromFunction, payReminderDue } from '../finance/associates.js';
 import { monthName } from '../finance/year.js';
 import { addDays, daysBetween, dayKeyWords } from '../time/index.js';
 import {
-  addMonths, cashFlow, DEFAULT_YEAR_START_MONTH, financialYear, incomeLines, monthKey, overdueCount, perHourWords, poundsWords, todayFinanceLine,
+  addMonths, cashFlow, dayOnTimsClock, DEFAULT_YEAR_START_MONTH, financialYear, incomeLines, monthKey, overdueCount, perHourWords, poundsWords, todayFinanceLine,
 } from '../finance/index.js';
 import { leadValue } from './crm.js';
 
@@ -44,6 +44,24 @@ export function percentFromTyped(text, { min = 0, max = 100 } = {}) {
 
 /** Pence as the figure a box shows to edit ("1200", "1200.50"); '' for none. */
 export const typedPounds = (minor) => (minor == null || minor === '' ? '' : (Number(minor) % 100 ? (Number(minor) / 100).toFixed(2) : String(Number(minor) / 100)));
+
+/**
+ * Cash flow settings' Save: only the fields changed from when the panel opened, so saving one never fixes the other.
+ * "Keep cash above" left empty is null (the default, about 2 months of outgoings).
+ * @param {{ start: { tax: string, keep: string }, tax: string, keep: string }} a  the boxes' text, then and now
+ * @returns {{ change: object|null, problem: string|null }}
+ */
+export function cashSettingsChange({ start, tax, keep }) {
+  const share = percentFromTyped(tax);
+  const keepText = String(keep ?? '').trim();
+  const keepMinor = keepText === '' ? null : poundsFromTyped(keepText, { allowZero: true });
+  if (share == null) return { change: null, problem: 'Type a share from 0% to 100%.' };
+  if (keepText !== '' && keepMinor == null) return { change: null, problem: 'Type an amount, such as 3,600, or leave it empty.' };
+  const change = {};
+  if (String(tax ?? '').trim() !== String(start?.tax ?? '').trim()) change.tax_share_percent = share;
+  if (keepText !== String(start?.keep ?? '').trim()) change.keep_above_minor = keepMinor;
+  return { change: Object.keys(change).length ? change : null, problem: null };
+}
 
 /** Repeating income (Overview's Coming in, the forecast): each active monthly agreement with an organisation. */
 export function repeatingFrom(deals = []) {
@@ -123,12 +141,18 @@ export function draftDue(inv, today) {
 /** "7 days overdue", "1 day overdue". */
 export const overdueWords = (dueOn, today) => { const d = Math.max(1, daysBetween(dueOn, today)); return d === 1 ? '1 day overdue' : `${d} days overdue`; };
 
+/** The day an invoice was paid on Tim's own clock (src/lib/time through dayOnTimsClock), never paid_at's UTC date; null when unpaid. */
+export function paidDay(inv, zone) {
+  if (!inv?.paid_at) return null;
+  try { return dayOnTimsClock(inv.paid_at, zone); } catch { return null; }
+}
+
 /**
  * Invoices' four lists, as M11 draws them: Waiting to send (drafts), Overdue, Sent and due, Paid this month. A search
  * matches the title, the number, who it's for or the amount; filters by client (a profile or organisation key), status
- * and year (the financial year's label).
+ * and year (the financial year's label). "Paid this month" and every paid day are on Tim's own clock.
  */
-export function invoiceGroups({ invoices = [], today, names = {}, q = '', who = '', status = '', year = '', startMonth = DEFAULT_YEAR_START_MONTH }) {
+export function invoiceGroups({ invoices = [], today, names = {}, q = '', who = '', status = '', year = '', startMonth = DEFAULT_YEAR_START_MONTH, zone }) {
   const typed = String(q || '').trim().toLowerCase();
   const month = monthKey(today);
   const out = { waiting: [], overdue: [], sent: [], paid: [] };
@@ -141,13 +165,13 @@ export function invoiceGroups({ invoices = [], today, names = {}, q = '', who = 
       const due = dueOf(inv, today);
       if (due < today) { group = 'overdue'; row.when = overdueWords(due, today); row.sort = due; }
       else { group = 'sent'; row.when = `Due ${dayWordsFrom(due, today)}`; row.sort = due; }
-    } else if (inv.status === 'paid' && inv.paid_at && String(inv.paid_at).slice(0, 7) === month) {
-      group = 'paid'; row.when = `Paid ${dayWordsFrom(String(inv.paid_at).slice(0, 10), today)}`; row.sort = `~${String(inv.paid_at)}`;
+    } else if (inv.status === 'paid' && paidDay(inv, zone) && monthKey(paidDay(inv, zone)) === month) {
+      group = 'paid'; row.when = `Paid ${dayWordsFrom(paidDay(inv, zone), today)}`; row.sort = `~${String(inv.paid_at)}`;
     }
     if (!group) {
       // Paid before this month: shown only when searched or filtered for.
       if (!(typed || who || status || year) || inv.status !== 'paid') continue;
-      group = 'paid'; row.when = inv.paid_at ? `Paid ${dayWordsFrom(String(inv.paid_at).slice(0, 10), today)}` : 'Paid'; row.sort = `~${String(inv.paid_at || '')}`;
+      group = 'paid'; row.when = paidDay(inv, zone) ? `Paid ${dayWordsFrom(paidDay(inv, zone), today)}` : 'Paid'; row.sort = `~${String(inv.paid_at || '')}`;
     }
     if (who && who !== (inv.organisation_id ? `org:${inv.organisation_id}` : `person:${inv.profile_id}`)) continue;
     if (status && status !== group) continue;
@@ -214,7 +238,7 @@ export function needsYouRows({ cash = null, invoices = [], deadlines = [], today
   if (payReminderDue(today)) {
     for (const a of associatesToPay) rows.push({ key: `pay:${a.coach_id}`, title: `Pay ${a.first} for ${monthName(today)}.`, link: `View ${a.first}`, to: '/coach/settings/coaches' });
   }
-  if (targetsToCheck) rows.push({ key: 'targets', title: 'This year’s targets were copied from last year.', small: 'Check them, or raise them all by a percentage.', link: 'Check the targets', to: null });
+  if (targetsToCheck) rows.push({ key: 'targets', title: 'This year’s targets were copied from last year.', small: 'Check them, or raise them all by a percentage.', link: 'Check the targets', to: null, open: 'targets' });
   return rows;
 }
 
@@ -242,13 +266,19 @@ export function nextDeadlines(deadlines = [], today) {
 /** "Companies House, each year" style line for a deadline's repeat. */
 export const EVERY_WORDS = Object.freeze({ once: 'Once', month: 'Each month', quarter: 'Each quarter', year: 'Each year' });
 
+/** A coach list row's id: coach_list (049) gives `coach_id`; a coaches row has `id`. */
+export const coachIdOf = (c) => (c ? c.coach_id ?? c.id ?? null : null);
+/** A coach list row's name: "Maya Example", else their first name. */
+export const coachNameOf = (c) => (c && (c.full_name || c.display_name || c.first_name || c.display_first_name)) || 'Associate';
+
 /** Associate pay in the forecast: each associate with their hourly rate (their row, else their latest statement's). */
 export function associatesForForecast({ coaches = [], statements = [] }) {
-  return (coaches || []).filter((c) => c && c.role !== 'owner' && c.active !== false).map((c) => {
-    const latest = (statements || []).filter((s) => s.associate_id === c.id).sort((a, b) => String(b.month).localeCompare(String(a.month)))[0];
+  return (coaches || []).filter((c) => c && coachIdOf(c) && c.role !== 'owner' && c.active !== false).map((c) => {
+    const id = coachIdOf(c);
+    const latest = (statements || []).filter((s) => s.associate_id === id).sort((a, b) => String(b.month).localeCompare(String(a.month)))[0];
     // coaches.hourly_rate (049) is in pounds; else their latest statement's rate (the same rule as Settings, Coaches).
     const rate = (c.hourly_rate != null && Number.isFinite(Number(c.hourly_rate)) ? Math.round(Number(c.hourly_rate) * 100) : Number(latest?.rate_minor)) || 0;
-    return { coach_id: c.id, name: c.display_name || c.full_name || c.display_first_name || 'Associate', hourly_rate_minor: rate };
+    return { coach_id: id, name: coachNameOf(c), hourly_rate_minor: rate };
   }).filter((a) => a.hourly_rate_minor > 0);
 }
 
@@ -259,8 +289,31 @@ export const payoutsFrom = (statements = []) => (statements || []).filter((s) =>
 export const associateSessionsForForecast = (rows = [], nowMs = 0) => (rows || []).map((r) => ({ coach_id: r.coach_id, starts_at: r.starts_at, minutes: r.minutes, outcome: Date.parse(r.starts_at) < nowMs ? 'held' : null }));
 
 /**
+ * Each month's associate pay for the work delivered in it (the minimum is measured after it): a saved statement's
+ * total, else 062's associate_month_minutes for that month when read, else 058's sessions (an ended one as held).
+ * @returns {Record<string, number>} pence by 'YYYY-MM'
+ */
+export function associatePayByMonth({ associates = [], months = [], statements = [], monthMinutes = null, sessions = [], noShowsPaid = false, zone }) {
+  const out = {};
+  for (const m of months || []) {
+    const month = monthKey(m);
+    let total = 0;
+    for (const a of associates || []) {
+      const st = (statements || []).find((x) => x && x.associate_id === a.coach_id && monthKey(String(x.month).slice(0, 7)) === month);
+      if (st) { total += Number(st.total_minor) || 0; continue; }
+      const fn = minutesFromFunction({ coachId: a.coach_id, month, monthMinutes, noShowsPaid });
+      total += fn ? Math.round((fn.minutes * a.hourly_rate_minor) / 60)
+        : associateMonth({ coachId: a.coach_id, rateMinor: a.hourly_rate_minor, sessions, month, zone, noShowsPaid }).payMinor;
+    }
+    out[month] = total;
+  }
+  return out;
+}
+
+/**
  * Everything Finances reads, gathered once from the store's rows: the income lines, the cash flow for `months` ahead
- * and Today's line. `rows` holds the store's lists (CoachApp's context).
+ * and Today's line. `rows` holds the store's lists (CoachApp's context), and `monthMinutes` 062's associate minutes
+ * by month when read ({ 'YYYY-MM': rows }). Needs you and Today's line both follow the chosen months' cash flow.
  */
 export function financeModel(rows, { today, months = 6, includeLikely = false, nowMs = 0 } = {}) {
   const settings = rows.financeSettings || {};
@@ -269,13 +322,20 @@ export function financeModel(rows, { today, months = 6, includeLikely = false, n
   const versions = (rows.agreementVersions || []).filter((v) => v.status === 'signed' || v.client_signed_at);
   const repeating = repeatingFrom(rows.orgDeals);
   const associates = associatesForForecast({ coaches: rows.coaches, statements: rows.statements });
-  const cash = cashFlow({ today, months: [3, 6, 12].includes(months) ? months : 6, settings, lines, outgoings: rows.outgoings || [], deadlines: rows.deadlines || [],
-    invoices: rows.invoices || [], versions, repeating, leads: leadsForForecast(rows.leads, rows.leadStages), includeLikely, associates,
-    sessions: associateSessionsForForecast(rows.associateSessions, nowMs), associatePayouts: payoutsFrom(rows.statements) });
-  const today6 = months === 6 ? cash : cashFlow({ today, months: 6, settings, lines, outgoings: rows.outgoings || [], deadlines: rows.deadlines || [], invoices: rows.invoices || [], versions, repeating, associates,
-    sessions: associateSessionsForForecast(rows.associateSessions, nowMs), associatePayouts: payoutsFrom(rows.statements) });
-  const line = todayFinanceLine({ today, lines, targets: rows.financeTargets || [], cashShort: cash.todayShort, overdueCount: overdueCount(rows.invoices || [], today) });
-  return { settings, startMonth, lines, versions, repeating, associates, cash, cash6: today6, line };
+  const monthMinutes = rows.monthMinutes || null;
+  const sessions = associateSessionsForForecast(rows.associateSessions, nowMs);
+  const associatePayouts = payoutsFrom(rows.statements);
+  const common = { today, settings, lines, outgoings: rows.outgoings || [], deadlines: rows.deadlines || [], invoices: rows.invoices || [], versions, repeating,
+    associates, sessions, associatePayouts, monthMinutes };
+  const cash = cashFlow({ ...common, months: [3, 6, 12].includes(months) ? months : 6, leads: leadsForForecast(rows.leads, rows.leadStages), includeLikely });
+  const today6 = months === 6 && !includeLikely ? cash : cashFlow({ ...common, months: 6 });
+  // Needs you and Today's line name the same low-cash month: the chosen months' forecast, signed work only.
+  const chosen = includeLikely ? cashFlow({ ...common, months: [3, 6, 12].includes(months) ? months : 6 }) : cash;
+  const line = todayFinanceLine({ today, lines, targets: rows.financeTargets || [], cashShort: chosen.todayShort, overdueCount: overdueCount(rows.invoices || [], today) });
+  const fy = financialYear(today, startMonth);
+  const associatePay = associatePayByMonth({ associates, months: fy.months.filter((m) => m <= monthKey(today)), statements: rows.statements, monthMinutes, sessions,
+    noShowsPaid: Boolean(settings.no_shows_paid) });
+  return { settings, startMonth, lines, versions, repeating, associates, cash, cash6: today6, cashChosen: chosen, line, associatePay, monthMinutes };
 }
 
 /** A package's two prices in words: "£7,460", "£2,460/month"; '' for none. */

@@ -3,18 +3,19 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   AddButton, Button, DatePicker, Dropdown, ExplainLink, InlineChoice, PageHeader, SegmentedControl, SlidePanel, Stat, StatGroup, TextField, useIsPhone, useToast,
 } from '../../components/design';
-import { newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
+import { coach062ReadyNow, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
+import { refreshPins, updatePreference, usePreferences } from '../../lib/menuPins';
 import { dayKeyWords } from '../../lib/time/index.js';
 import { moneyWords, rateWords } from '../../lib/billing/money';
 import {
   addMonths, clientRows, copyToNewYear, financialYear, incomeChart, expectedIncome, monthKey, monthName, moneyFigures, ofWords, OUTGOING_GROUPS, poundsWords,
   proBono, sameEveryMonth, sameEveryMonthSums, sectorsFor, shareWords, stripeFees, targetRows, targetsByMonth, outgoingRows, threeMonthAverage, yearExport,
-  EXPORT_COLUMNS, yearStartWords, hoursWords, bankCheckDue,
+  EXPORT_COLUMNS, yearStartWords, hoursWords, bankCheckDue, newYearCheckDue, newYearCopyRows, targetsToSave, waitingForPounds,
 } from '../../lib/finance/index.js';
 import { toCsv } from '../../lib/finance/csv.js';
 import { xlsxBytes } from '../../lib/coach/xlsx';
 import {
-  associateSessionsForForecast, dayWordsFrom, invoiceTitle, needsYouRows, percentFromTyped, pipelineLine, poundsFromTyped, typedPounds,
+  associateSessionsForForecast, cashSettingsChange, dayWordsFrom, invoiceTitle, needsYouRows, percentFromTyped, pipelineLine, poundsFromTyped, typedPounds,
 } from '../../lib/coach/financeData';
 import { renewals, renewalsLine } from '../../lib/coach/associatePay';
 import { coachBilling, uploadReceipt } from '../../lib/coach/financeActions';
@@ -113,15 +114,17 @@ function Overview() {
   const [sector, setSector] = useState('all');
   const [showProjected, setShowProjected] = useState(true);
   const [panel, setPanel] = useState(null); // 'targets' | invoice panel
-  const rows = useMemo(() => targetRows({ today: todayKey, lines: model.lines, targets: financeTargets, minimumMinor: Number(settings.minimum_minor) || 0, startMonth: model.startMonth }), [model, financeTargets, settings.minimum_minor, todayKey]);
+  // The minimum is measured after associate pay: this month's for Your targets, each month's for the chart's outline.
+  const rows = useMemo(() => targetRows({ today: todayKey, lines: model.lines, targets: financeTargets, minimumMinor: Number(settings.minimum_minor) || 0,
+    associatePayMinor: model.associatePay?.[monthKey(todayKey)] || 0, startMonth: model.startMonth }), [model, financeTargets, settings.minimum_minor, todayKey]);
   const fy = financialYear(todayKey, model.startMonth);
   const expected = useMemo(() => expectedIncome({ today: todayKey, untilMonth: fy.months[11], invoices: fin.invoices || [], versions: model.versions, repeating: model.repeating }), [todayKey, fy.months, fin.invoices, model]);
   const chart = useMemo(() => incomeChart({ today: todayKey, lines: model.lines, expected, targets: financeTargets, minimumMinor: Number(settings.minimum_minor) || 0,
-    sector: sector === 'all' ? null : sector, mode, showProjected, startMonth: model.startMonth }), [todayKey, model, expected, financeTargets, settings.minimum_minor, sector, mode, showProjected]);
-  const yearHasTargets = (financeTargets || []).some((t) => fy.months.includes(monthKey(t.month)));
+    associatePay: model.associatePay || {}, sector: sector === 'all' ? null : sector, mode, showProjected, startMonth: model.startMonth }), [todayKey, model, expected, financeTargets, settings.minimum_minor, sector, mode, showProjected]);
+  const newYear = useNewYearTargets(fin, fy);
   const associatesToPay = (model.associates || []).map((a) => ({ coach_id: a.coach_id, first: String(a.name || 'your associate').split(/\s+/)[0] }));
-  const needs = needsYouRows({ cash: model.cash6, invoices: fin.invoices || [], deadlines: fin.deadlines || [], today: todayKey, names, targetsToCheck: false, associatesToPay });
-  if (!yearHasTargets && (financeTargets || []).length) needs.push({ key: 'targets', title: 'This year’s targets aren’t set yet.', small: 'Last year’s are ready to copy and check.', link: 'Check the targets', open: 'targets' });
+  // The same low-cash month as Today's line: the cash flow's chosen months (cash_months), signed work only.
+  const needs = needsYouRows({ cash: model.cashChosen || model.cash, invoices: fin.invoices || [], deadlines: fin.deadlines || [], today: todayKey, names, targetsToCheck: newYear.toCheck, associatesToPay });
   if (bankCheckDue({ settings, today: todayKey })) needs.push({ key: 'bank', title: `Check your bank balance for ${monthName(todayKey)}.`, link: 'Check the balance', to: '/coach/finances/cash-flow?bank=1' });
   const pipe = pipelineLine(leads, leadStages);
   // The same renewals as Clients' Renewals tab (one function), so the two counts and amounts always agree.
@@ -179,6 +182,34 @@ function Overview() {
   );
 }
 
+/**
+ * A new financial year (run 2's brief): when it has no targets and last year had, last year's are copied in, month for
+ * month, once, as a real save; then Needs you asks Tim to check them until he saves Edit targets. Whether they were
+ * copied and checked is kept with the account's page settings (finance_new_year: { year, copied_at, checked_at }).
+ * Copied only once the whole store has loaded with 062 there, so a stale device copy never writes over another
+ * device's targets.
+ */
+function useNewYearTargets(fin, fy) {
+  const { userId, coach, financeTargets, whole, todayKey } = fin;
+  const prefs = usePreferences(userId);
+  useEffect(() => { if (userId) refreshPins(userId); }, [userId]); // at most every half a minute
+  const copying = useRef(false);
+  const toCopy = newYearCopyRows({ targets: financeTargets, today: todayKey, startMonth: fin.model.startMonth });
+  useEffect(() => {
+    if (!whole || coach062ReadyNow() !== true || !toCopy.length || copying.current) return;
+    copying.current = true;
+    saveRows(userId, toCopy.map((r) => ['finance_targets', { coach_id: coach.id, month: r.month, target_minor: r.target_minor }]))
+      .then(() => updatePreference(userId, 'finance_new_year', () => ({ year: fy.label, copied_at: new Date().toISOString(), checked_at: null })))
+      .catch(() => { copying.current = false; });
+  }, [whole, toCopy.length, fy.label]);
+  const ny = prefs?.finance_new_year;
+  return { toCheck: Boolean(ny && Number(ny.year) === fy.label && newYearCheckDue({ copiedAt: ny.copied_at, checkedAt: ny.checked_at })) };
+}
+
+/** Edit targets saved: the new year's copied targets are checked. */
+const targetsChecked = (userId, yearLabel) => updatePreference(userId, 'finance_new_year', (was) => (was && Number(was.year) === yearLabel && !was.checked_at
+  ? { ...was, checked_at: new Date().toISOString() } : was)).catch(() => {});
+
 /** Edit targets (M11 C4): Set each month, or Same every month; the minimum; footnote; Cancel and Save. */
 function TargetsPanel({ open, onClose }) {
   const { userId, coach, todayKey, financeTargets, financeSettings } = useCoachPortal();
@@ -193,7 +224,9 @@ function TargetsPanel({ open, onClose }) {
     // A new year with none set starts from last year's, month for month, for Tim to check.
     const copied = Object.values(have).every((v) => !v) ? Object.fromEntries(copyToNewYear({ targets: financeTargets, fromYear: fy.label - 1, toYear: fy.label, startMonth: Number(settings.year_start_month) || 5 }).map((r) => [monthKey(r.month), r.target_minor])) : {};
     const each = Object.fromEntries(fy.months.map((m) => [m, poundsBox(have[m] || copied[m] || '')]));
-    setForm({ mode: settings.targets_mode === 'same' ? 'same' : 'each', each, same: poundsBox(have[fy.months[0]] || copied[fy.months[0]] || ''), minimum: poundsBox(settings.minimum_minor) });
+    const thisMonth = monthKey(todayKey);
+    const sameFrom = fy.months.find((m) => m >= thisMonth) || fy.months[0];
+    setForm({ mode: settings.targets_mode === 'same' ? 'same' : 'each', each, start: have, same: poundsBox(have[sameFrom] || copied[sameFrom] || ''), minimum: poundsBox(settings.minimum_minor), raise: '' });
     setProblem(null);
     // Read once as the panel opens.
   }, [open]);
@@ -205,20 +238,40 @@ function TargetsPanel({ open, onClose }) {
   const save = () => {
     const minimum = read(form.minimum);
     if (minimum == null) { setProblem('Type your minimum as an amount, such as 2,000.'); return; }
-    let rows;
-    if (form.mode === 'same') {
-      if (sameMinor == null) { setProblem('Type each month’s target as an amount, such as 5,000.'); return; }
-      rows = sameEveryMonth({ yearLabel: fy.label, monthly: sameMinor, startMonth: Number(settings.year_start_month) || 5 });
-    } else {
-      const bad = fy.months.find((m) => read(form.each[m]) == null);
-      if (bad) { setProblem(`Type ${monthName(bad)}’s target as an amount, such as 5,000.`); return; }
-      rows = fy.months.map((m) => ({ month: `${m}-01`, target_minor: read(form.each[m]) }));
+    let raise = null;
+    if (String(form.raise).trim()) {
+      raise = percentFromTyped(form.raise, { min: -99.99, max: 100 });
+      if (raise == null) { setProblem('Type the rise as a percentage, such as 3.'); return; }
     }
-    const before = (financeTargets || []).filter((t) => fy.months.includes(monthKey(t.month)));
+    if (form.mode === 'same' && sameMinor == null) { setProblem('Type each month’s target as an amount, such as 5,000.'); return; }
+    const bad = form.mode === 'each' && fy.months.find((m) => read(form.each[m]) == null);
+    if (bad) { setProblem(`Type ${monthName(bad)}’s target as an amount, such as 5,000.`); return; }
+    // Only the months changed here are written, each its own row (newest wins per month), so another tab's edit to a
+    // different month is never lost; Same every month never changes a month gone by.
+    let changed;
+    try {
+      changed = targetsToSave({ mode: form.mode, each: Object.fromEntries(fy.months.map((m) => [m, read(form.each[m])])), same: sameMinor, raise, start: form.start,
+        yearLabel: fy.label, today: todayKey, startMonth: Number(settings.year_start_month) || 5 });
+    } catch (error) { setProblem(error.message); return; }
+    const before = (financeTargets || []).filter((t) => changed.some((r) => monthKey(r.month) === monthKey(t.month)));
     const beforeSettings = settings;
-    const pairs = [['finance_settings', { ...settings, minimum_minor: minimum, targets_mode: form.mode }],
-      ...rows.map((r) => ['finance_targets', { ...(before.find((b) => monthKey(b.month) === monthKey(r.month)) || {}), coach_id: coach.id, month: r.month, target_minor: r.target_minor }])];
-    done(() => saveRows(userId, pairs), 'Saved.', () => saveRows(userId, [['finance_settings', beforeSettings], ...before.map((b) => ['finance_targets', b])])).then((ok) => { if (ok) onClose(); });
+    const settingsChanged = minimum !== Number(settings.minimum_minor) || form.mode !== settings.targets_mode;
+    const pairs = [...(settingsChanged ? [['finance_settings', { ...settings, minimum_minor: minimum, targets_mode: form.mode }]] : []),
+      ...changed.map((r) => ['finance_targets', { ...(before.find((b) => monthKey(b.month) === monthKey(r.month)) || {}), coach_id: coach.id, month: r.month, target_minor: r.target_minor }])];
+    const undo = async () => {
+      if (settingsChanged) await saveRow(userId, 'finance_settings', beforeSettings);
+      for (const r of changed) {
+        const was = before.find((b) => monthKey(b.month) === monthKey(r.month));
+        if (was) await saveRow(userId, 'finance_targets', was);
+        else await removeRow(userId, 'finance_targets', `${coach.id}|${r.month}`);
+      }
+    };
+    const work = async () => {
+      const status = pairs.length ? await saveRows(userId, pairs) : 'saved';
+      targetsChecked(userId, fy.label);
+      return status;
+    };
+    done(work, 'Saved.', undo).then((ok) => { if (ok) onClose(); });
   };
   const box = (label, value, onChange) => <TextField label={label} inputMode="decimal" value={value} placeholder="£" autoComplete="off" onChange={(e) => { onChange(e.target.value); setProblem(null); }} />;
   return (
@@ -237,6 +290,8 @@ function TargetsPanel({ open, onClose }) {
           <FigRow title="This financial year" value={sums ? poundsWords(sums.year) : ''} />
         </>
       )}
+      <div className="cc-field"><TextField label="Raise them all by a percentage" inputMode="decimal" value={form.raise} placeholder="%" autoComplete="off" onChange={(e) => { setForm({ ...form, raise: e.target.value }); setProblem(null); }} /></div>
+      <p className="cc-note">This month and the months after it, when you save.</p>
       <div className="cc-field">{box('Your minimum each month', form.minimum, (v) => setForm((f) => ({ ...f, minimum: v })))}</div>
       {problem && <p className="cc-problem" role="alert">{problem}</p>}
       <p className="cc-note">Today’s Finances line and the chart follow these.</p>
@@ -257,9 +312,10 @@ function Money() {
   const bySector = sectorsFor({ figures, lines: model.lines, sectors });
   const sectorMax = Math.max(1, ...bySector.map((s) => s.paid + s.toCome));
   const clients = clientRows(model.lines, figures.months);
-  // A client's line: what the newest payment in the period was for, or Paid to your bank and Added by you.
+  // A client's line: what the newest payment in the period was for, or what it was for as typed (else Paid to your
+  // bank) and Added by you.
   const forWhat = (c) => {
-    if (c.addedByCoach) return ['Paid to your bank', 'Added by you'];
+    if (c.addedByCoach) return [c.whatFor || 'Paid to your bank', 'Added by you'];
     const inv = (fin.invoices || []).filter((i) => (c.organisation_id ? i.organisation_id === c.organisation_id : i.profile_id === c.profile_id) && i.status === 'paid')
       .sort((a, b) => String(b.paid_at || '').localeCompare(String(a.paid_at || '')))[0];
     return [inv ? invoiceTitle(inv) : null];
@@ -274,6 +330,7 @@ function Money() {
   const hourly = rates.length ? Math.round(rates[Math.floor(rates.length / 2)]) : 0;
   const pro = proBono({ sessions: (fin.sessions || []).filter((s) => proBonoIds.has(s.engagement_id) || (!s.engagement_id && proBonoProfiles.has(s.profile_id))), hourlyRateMinor: hourly, from: fy.start, to: todayKey });
   const fees = stripeFees(model.lines, [monthKey(todayKey)]);
+  const waiting = waitingForPounds(model.lines);
   return (
     <>
       <div className="fin-ctl"><SegmentedControl label="Period" options={PERIODS} value={period} onChange={setPeriod} /></div>
@@ -302,7 +359,7 @@ function Money() {
       <FinPart title="By client">
         {clients.length === 0 && <p className="cc-quiet">Nothing has come in yet in this period.</p>}
         {clients.slice(0, 30).map((c) => (
-          <FigRow key={c.key} title={(c.organisation_id && names.org[c.organisation_id]) || (c.profile_id && names.person[c.profile_id]) || 'Paid to your bank'} facts={forWhat(c)} value={poundsWords(c.pounds)} />
+          <FigRow key={c.key} title={(c.organisation_id && names.org[c.organisation_id]) || (c.profile_id && names.person[c.profile_id]) || c.payer_name || 'Paid to your bank'} facts={forWhat(c)} value={<PoundsWithOriginal pounds={c.pounds} originals={c.originals} />} />
         ))}
         <div className="cc-add"><AddButton onClick={() => setPanel('bank')}>Add bank payment</AddButton></div>
         <div className="cc-acts"><TextLink onClick={() => setPanel('export')}>Export to a spreadsheet</TextLink></div>
@@ -310,12 +367,25 @@ function Money() {
 
       <FigRow title="Pro bono this year" facts={[`${hoursWords(pro.minutes)}, never counted towards targets`]} value={`Worth ${poundsWords(pro.worth)}`} />
       {fees > 0 && <p className="cc-note">{`Stripe took ${moneyWords(fees)} in fees this month.`}</p>}
-      <p className="cc-note fin-footnote">Payments in other currencies show in pounds at the rate they landed.</p>
+      <p className="cc-note fin-footnote">Payments in other currencies show in pounds at the rate they landed, with the amount paid underneath.</p>
+      {waiting.count > 0 && <p className="cc-note">{waiting.words}</p>}
       {figures.notInPounds > 0 && <p className="cc-note">{figures.notInPounds === 1 ? 'One invoice in another currency is left out until it lands in pounds.' : `${figures.notInPounds} invoices in other currencies are left out until they land in pounds.`}</p>}
 
       <BankPaymentPanel open={panel === 'bank'} onClose={() => setPanel(null)} sectors={sectors} />
       <ExportPanel open={panel === 'export'} onClose={() => setPanel(null)} period={period} months={figures.months} />
     </>
+  );
+}
+
+/** A pounds figure, with what was paid in another currency small and grey underneath ("$2,160"). */
+function PoundsWithOriginal({ pounds, originals = {} }) {
+  const other = Object.entries(originals || {}).filter(([, minor]) => minor);
+  if (!other.length) return poundsWords(pounds);
+  return (
+    <span className="fin-fig-stack">
+      <span>{poundsWords(pounds)}</span>
+      {other.map(([currency, minor]) => <small key={currency} className="fin-fig-original">{moneyWords(minor, currency)}</small>)}
+    </span>
   );
 }
 
@@ -414,7 +484,7 @@ function CashFlow() {
   useEffect(() => { if (params.get('bank')) setParams({}, { replace: true }); }, [params, setParams]);
   const cash = model.cash;
   // Each associate at their 3-month average, from the same read of their sessions as the forecast (useFinance).
-  const monthly = (model.associates || []).map((a) => ({ name: a.name, monthlyMinor: threeMonthAverage({ coachId: a.coach_id, rateMinor: a.hourly_rate_minor, sessions: associateSessionsForForecast(fin.associateSessions, Date.now()), month: monthKey(todayKey), noShowsPaid: settings.no_shows_paid }) }));
+  const monthly = (model.associates || []).map((a) => ({ name: a.name, monthlyMinor: threeMonthAverage({ coachId: a.coach_id, rateMinor: a.hourly_rate_minor, sessions: associateSessionsForForecast(fin.associateSessions, Date.now()), month: monthKey(todayKey), noShowsPaid: settings.no_shows_paid, monthMinutes: model.monthMinutes }) }));
   const list = outgoingRows({ outgoings, today: todayKey, associates: monthly });
   const fy = financialYear(todayKey, model.startMonth);
   const oneOffs = (outgoings || []).filter((o) => o.every === 'once' && o.starts_on >= fy.start).sort((a, b) => a.starts_on.localeCompare(b.starts_on));
@@ -461,7 +531,7 @@ function CashFlow() {
       </FinPart>
 
       <FinPart title="Settings">
-        <FigRow title="Tax pot" facts={['Set aside so far, paid out on each tax date']} value={poundsWords(cash.rows[0]?.taxPot || 0)} onClick={() => setPanel({ kind: 'settings' })} />
+        <FigRow title="Tax pot" facts={['Set aside so far, paid out on each tax date']} value={poundsWords(cash.taxPotNow || 0)} onClick={() => setPanel({ kind: 'settings' })} />
         <FigRow title="Your bank balance" facts={[settings.bank_checked_at ? `Checked ${dayWordsFrom(String(settings.bank_checked_at).slice(0, 10), todayKey)}` : 'Not checked yet']} value={settings.bank_balance_minor == null ? '' : poundsWords(settings.bank_balance_minor)} onClick={() => setPanel({ kind: 'bank' })} />
         <FigRow title="Set aside for tax" facts={['Of profit, each month']} value={`${Number(settings.tax_share_percent)}%`} onClick={() => setPanel({ kind: 'settings' })} />
         <FigRow title="Keep cash above" facts={[keepWords]} value={poundsWords(cash.keepAbove)} onClick={() => setPanel({ kind: 'settings' })} />
@@ -577,21 +647,28 @@ function CashSettingsPanel({ open, onClose, keepAbove }) {
   const { coach, financeSettings } = useCoachPortal();
   const saveSettings = useSaveSettings();
   const settings = settingsOf(financeSettings, coach.id);
-  const [form, setForm] = useState({ tax: '', keep: '' });
+  const [form, setForm] = useState({ tax: '', keep: '', start: { tax: '', keep: '' } });
   const [problem, setProblem] = useState(null);
-  useEffect(() => { if (open) { setForm({ tax: String(Number(settings.tax_share_percent)), keep: typedPounds(settings.keep_above_minor ?? keepAbove) }); setProblem(null); } }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    // "Keep cash above" shows only a level Tim set; empty is the default (about 2 months of outgoings).
+    const start = { tax: String(Number(settings.tax_share_percent)), keep: typedPounds(settings.keep_above_minor) };
+    setForm({ ...start, start });
+    setProblem(null);
+  }, [open]);
   const save = async () => {
-    const tax = percentFromTyped(form.tax);
-    const keep = poundsFromTyped(form.keep, { allowZero: true });
-    if (tax == null) { setProblem('Type a share from 0% to 100%.'); return; }
-    if (keep == null) { setProblem('Type an amount, such as 3,600.'); return; }
-    if (await saveSettings({ tax_share_percent: tax, keep_above_minor: keep })) onClose();
+    // Only what was changed here is saved: saving one never fixes the other.
+    const { change, problem: why } = cashSettingsChange({ start: form.start, tax: form.tax, keep: form.keep });
+    if (why) { setProblem(why); return; }
+    if (!change) { onClose(); return; }
+    if (await saveSettings(change)) onClose();
   };
   return (
     <SlidePanel open={open} onClose={onClose} title="Cash flow settings" draftKey="fin-cash-settings"
       footer={<div className="cc-panel-foot"><TextLink onClick={onClose}>Cancel</TextLink><Button variant="primary" onClick={save}>Save</Button></div>}>
       <div className="cc-field"><TextField label="Share of profit to set aside for tax" inputMode="decimal" value={form.tax} placeholder="%" autoComplete="off" onChange={(e) => { setForm({ ...form, tax: e.target.value }); setProblem(null); }} /></div>
-      <div className="cc-field"><TextField label="Keep cash above" inputMode="decimal" value={form.keep} placeholder="£" autoComplete="off" onChange={(e) => { setForm({ ...form, keep: e.target.value }); setProblem(null); }} /></div>
+      <div className="cc-field"><TextField label="Keep cash above" inputMode="decimal" value={form.keep} placeholder={poundsWords(keepAbove)} autoComplete="off" onChange={(e) => { setForm({ ...form, keep: e.target.value }); setProblem(null); }} /></div>
+      <p className="cc-note">Leave it empty to keep about 2 months of outgoings.</p>
       {problem && <p className="cc-problem" role="alert">{problem}</p>}
     </SlidePanel>
   );
