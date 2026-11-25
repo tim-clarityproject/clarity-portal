@@ -12,11 +12,14 @@
 // (Phase 6b run 2) when Stripe can be asked (STRIPE_SECRET_KEY, a test key); if it can't, the payment is still kept
 // without them (a payment in pounds as its own amount) and the nightly round fills them in (fillLanded).
 //
-// Environment variables (Vercel): STRIPE_WEBHOOK_SECRET, SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY (optional here),
+// Only a message's type and its object's id are used: the invoice, charge or subscription is read fresh from Stripe at
+// the code's own pinned version (2024-06-20), whatever version the webhook itself runs on (follow-up 5).
+//
+// Environment variables (Vercel): STRIPE_WEBHOOK_SECRET, SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY (needed: a test key),
 // and the Supabase URL the app has.
 import { createClient } from '@supabase/supabase-js';
 import { supabaseOf } from './_coachEmails.js';
-import { invoiceChange, landedFrom, refundRow, subscriptionRow, verifySignature } from '../src/lib/billing/stripeWebhook.js';
+import { freshEvent, invoiceChange, landedFrom, refundRow, subscriptionRow, verifySignature } from '../src/lib/billing/stripeWebhook.js';
 import { keyAllowed, stripeApi } from '../src/lib/billing/stripe.js';
 
 // Stripe signs the exact bytes, so the body is read as it came, never parsed first.
@@ -43,8 +46,15 @@ async function rawBodyOf(req) {
  * `stripe` (optional: the real API or the stand-in) is asked what a new payment landed as in pounds, and its fee.
  * @returns {Promise<'handled'|'already'|'ignored'>}
  */
-export async function handleEvent(server, event, stripe = null) {
-  if (!event?.id || typeof event.type !== 'string') return 'ignored';
+export async function handleEvent(server, given, stripe = null) {
+  if (!given?.id || typeof given.type !== 'string') return 'ignored';
+  // The message is used only for its type and its object's id: the object is read fresh from Stripe at the code's own
+  // version whenever Stripe can be asked (follow-up 5: the webhook now runs on 2025-04-30.basil).
+  const event = stripe?.retrieve ? await freshEvent(given, stripe) : given;
+  if (!event) {
+    await server.from('stripe_events').upsert({ id: given.id, type: given.type, object_id: given.data?.object?.id || null, handled_at: new Date().toISOString() }, { onConflict: 'id', ignoreDuplicates: true });
+    return 'ignored';
+  }
   const obj = event.data?.object || {};
   const { data: claimed, error: claimError } = await server.from('stripe_events')
     .upsert({ id: event.id, type: event.type, object_id: obj.id || null, stripe_at: event.created ? new Date(event.created * 1000).toISOString() : null },
@@ -129,9 +139,11 @@ export default async function handler(req, res, env = process.env) {
   try { event = JSON.parse(raw); } catch { return reply(res, 400, { ok: false }); }
   if (!env.SUPABASE_SERVICE_ROLE_KEY) return reply(res, 503, { ok: false });
   try {
-    // Stripe is asked what the payment landed as only with a test key; without one it is filled in at night.
+    // Every object is read fresh from Stripe (with a test key only), so without one nothing is acted on: Stripe tries
+    // the message again later, once the key is there (follow-up 5).
     let stripe = null;
     try { stripe = keyAllowed(env.STRIPE_SECRET_KEY || '') ? stripeApi(env.STRIPE_SECRET_KEY) : null; } catch { stripe = null; }
+    if (!stripe) return reply(res, 503, { ok: false });
     const done = await handleEvent(serverClient(env), event, stripe);
     return reply(res, 200, { ok: true, done });
   } catch {

@@ -175,9 +175,10 @@ function pacedSender(env, pace) {
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') return reply(res, 405, { sent: 0 });
   const env = process.env;
-  // Only the live site ever sends; a preview never asks the database anything.
-  if (!maySend(env)) return reply(res, 200, { sent: 0, reason: 'preview' });
+  // The scheduler's secret first, before anything else, on every deployment (follow-up 5): without it, 401 and nothing
+  // more is said. Then only the live site ever sends; a preview never asks the database anything.
   if (!isScheduler(req.headers.authorization, env.CRON_SECRET)) return reply(res, 401, { sent: 0 });
+  if (!maySend(env)) return reply(res, 200, { sent: 0, reason: 'preview' });
   const { url, anon } = supabaseOf(env);
   if (!url || !env.SUPABASE_SERVICE_ROLE_KEY || !canSend(env)) return reply(res, 200, { sent: 0, reason: 'setup' });
 

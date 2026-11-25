@@ -15,20 +15,22 @@ import { renderPdf } from '../src/lib/pdf/render.js';
 import { PAPER, paperFor, regionOf } from '../src/lib/pdf/paper.js';
 
 // The project's root: next to api/ (where Vercel keeps the included files), else the working folder.
+// Every file is in pdf-fonts/ (scripts/make-pdf-fonts.mjs copies them there from public/ and node_modules/, and the
+// build checks they still match), so vercel.json ships them with one short pattern.
 const HERE_ROOT = fileURLToPath(new URL('..', import.meta.url));
-const ROOT = existsSync(join(HERE_ROOT, 'public', 'fonts')) ? HERE_ROOT : process.cwd();
-const FS = 'node_modules/@fontsource/';
+const ROOT = existsSync(join(HERE_ROOT, 'pdf-fonts')) ? HERE_ROOT : process.cwd();
+const DIR = 'pdf-fonts/';
 
 export const FONT_FILES = Object.freeze({
-  Nekst: 'public/fonts/Nekst-Regular.ttf',
-  NekstLight: 'public/fonts/Nekst-Light.ttf',
-  DMSans: `${FS}dm-sans/files/dm-sans-latin-400-normal.woff`,
-  DMSansExt: `${FS}dm-sans/files/dm-sans-latin-ext-400-normal.woff`,
-  DMSansMedium: `${FS}dm-sans/files/dm-sans-latin-500-normal.woff`,
-  DMSansMediumExt: `${FS}dm-sans/files/dm-sans-latin-ext-500-normal.woff`,
+  Nekst: `${DIR}Nekst-Regular.ttf`,
+  NekstLight: `${DIR}Nekst-Light.ttf`,
+  DMSans: `${DIR}dm-sans-latin-400-normal.woff`,
+  DMSansExt: `${DIR}dm-sans-latin-ext-400-normal.woff`,
+  DMSansMedium: `${DIR}dm-sans-latin-500-normal.woff`,
+  DMSansMediumExt: `${DIR}dm-sans-latin-ext-500-normal.woff`,
 });
-const emojiFile = (key) => `${FS}noto-emoji/files/noto-emoji-${key.replace(/\D/g, '')}-400-normal.woff`;
-const cjkFile = (key) => `${FS}noto-sans-sc/files/noto-sans-sc-${key.replace(/\D/g, '')}-400-normal.woff`;
+const emojiFile = (key) => `${DIR}noto-emoji-${key.replace(/\D/g, '')}-400-normal.woff`;
+const cjkFile = (key) => `${DIR}noto-sans-sc-${key.replace(/\D/g, '')}-400-normal.woff`;
 
 const cache = new Map();
 /** A file's bytes, kept for the next PDF this instance makes. */
@@ -40,8 +42,8 @@ let ranges = null;
 function rangesOf() {
   if (!ranges) {
     ranges = {
-      emoji: JSON.parse(readFileSync(join(ROOT, `${FS}noto-emoji/unicode.json`), 'utf8')),
-      cjk: JSON.parse(readFileSync(join(ROOT, `${FS}noto-sans-sc/unicode.json`), 'utf8')),
+      emoji: JSON.parse(readFileSync(join(ROOT, `${DIR}noto-emoji-unicode.json`), 'utf8')),
+      cjk: JSON.parse(readFileSync(join(ROOT, `${DIR}noto-sans-sc-unicode.json`), 'utf8')),
     };
   }
   return ranges;
@@ -63,7 +65,7 @@ export function serverPdfAssets(spec) {
 }
 
 /** The glob vercel.json's includeFiles names for a router that makes PDFs (checked by tests/pdf/server-pdf.test.mjs). */
-export const PDF_INCLUDE_FILES = '{public/fonts/Nekst-Regular.ttf,public/fonts/Nekst-Light.ttf,node_modules/@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff,node_modules/@fontsource/dm-sans/files/dm-sans-latin-ext-400-normal.woff,node_modules/@fontsource/dm-sans/files/dm-sans-latin-500-normal.woff,node_modules/@fontsource/dm-sans/files/dm-sans-latin-ext-500-normal.woff,node_modules/@fontsource/noto-emoji/unicode.json,node_modules/@fontsource/noto-emoji/files/noto-emoji-*-400-normal.woff,node_modules/@fontsource/noto-sans-sc/unicode.json,node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-*-400-normal.woff}';
+export const PDF_INCLUDE_FILES = 'pdf-fonts/**';
 
 /**
  * The paper for a PDF made on the server (PDF rule 3, the one helper paperFor): what the server

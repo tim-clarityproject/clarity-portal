@@ -127,3 +127,34 @@ test('a wrong or missing secret on the live site asks the database nothing and s
     assert.deepEqual([r.code, stand.asked.length], [401, 0], 'no secret set on the live site: nobody is the scheduler');
   }
 });
+
+test('follow-up 5: the scheduled routes ask for CRON_SECRET before anything else, live or preview', async () => {
+  const routes = { reminders: (await import('../../api/_routes/coach-reminders.js')).default, workshops: (await import('../../api/_routes/workshop-emails.js')).default };
+  const keep = { ...process.env };
+  const call = async (fn, headers = {}) => {
+    const res = { code: 0, body: null, status(c) { this.code = c; return this; }, setHeader() { return this; }, json(b) { this.body = b; return this; } };
+    await fn({ method: 'GET', headers }, res);
+    return res;
+  };
+  try {
+    for (const vercelEnv of ['production', 'preview']) {
+      process.env.VERCEL_ENV = vercelEnv;
+      process.env.CRON_SECRET = 'invented-cron-secret-0123456789';
+      for (const [name, fn] of Object.entries(routes)) {
+        const none = await call(fn);
+        assert.deepEqual([none.code, none.body], [401, { sent: 0 }], `${name} on ${vercelEnv}, no secret: 401 and nothing more`);
+        assert.equal((await call(fn, { authorization: 'Bearer wrong-secret-0123456789' })).code, 401, `${name} on ${vercelEnv}, wrong secret`);
+      }
+      delete process.env.CRON_SECRET;
+      for (const fn of Object.values(routes)) assert.equal((await call(fn, { authorization: 'Bearer ' })).code, 401, 'no secret set: never let in');
+    }
+    // With the secret on a preview: it says so, and asks the database nothing.
+    process.env.VERCEL_ENV = 'preview';
+    process.env.CRON_SECRET = 'invented-cron-secret-0123456789';
+    const ok = await call(routes.reminders, { authorization: 'Bearer invented-cron-secret-0123456789' });
+    assert.deepEqual([ok.code, ok.body], [200, { sent: 0, reason: 'preview' }]);
+  } finally {
+    for (const k of Object.keys(process.env)) if (!(k in keep)) delete process.env[k];
+    Object.assign(process.env, keep);
+  }
+});

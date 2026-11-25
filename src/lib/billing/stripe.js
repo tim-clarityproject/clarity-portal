@@ -24,6 +24,10 @@ function form(obj, prefix = '', out = new URLSearchParams()) {
 }
 
 /** The real Stripe API, with a test key only. */
+/** What a webhook message names, and where it is read fresh (follow-up 5). */
+export const RETRIEVE_PATHS = Object.freeze({ invoice: 'invoices', charge: 'charges', subscription: 'subscriptions' });
+const OBJECT_ID = /^(in|ch|sub)_[A-Za-z0-9]{1,200}$/;
+
 export function stripeApi(key, fetcher = globalThis.fetch) {
   if (!keyAllowed(key)) throw new Error('Stripe is used in test mode only: set a test key (sk_test_…).');
   const call = async (method, path, body = null, idem = null) => {
@@ -47,6 +51,13 @@ export function stripeApi(key, fetcher = globalThis.fetch) {
         await call('POST', '/invoiceitems', { customer, invoice: inv.id, currency: currency.toLowerCase(), amount: l.amount, description: l.description }, idem && `${idem}:line:${i}`);
       }
       return call('GET', `/invoices/${inv.id}`);
+    },
+    // The object a webhook message is about, read fresh at this code's own pinned version (2024-06-20), so the shape
+    // of the message itself (Stripe's webhook may run on a newer version, such as 2025-04-30.basil) never matters.
+    retrieve: (kind, id) => {
+      const path = RETRIEVE_PATHS[kind];
+      if (!path || !OBJECT_ID.test(String(id || ''))) return Promise.reject(Object.assign(new Error('Not a Stripe object.'), { code: 'resource_missing' }));
+      return call('GET', `/${path}/${id}`);
     },
     // The draft's number and its portal number, set just before it is finalised (Stripe allows a number on a draft only).
     // Asked again for a draft that already has it, Stripe answers with the same invoice.
@@ -98,7 +109,7 @@ export const STAND_IN_RATES = Object.freeze({ GBP: 1, USD: 1.25, EUR: 1.16 });
 export function stripeStandIn({ secret = 'whsec_stand_in_0000000000', now = () => Date.now() } = {}) {
   let n = 0;
   const id = (p) => `${p}_standin${(n += 1)}`;
-  const s = { customers: new Map(), invoices: new Map(), refunds: [], creditNotes: [], subs: new Map(), events: [], sent: [] };
+  const s = { customers: new Map(), invoices: new Map(), charges: new Map(), refunds: [], creditNotes: [], subs: new Map(), events: [], sent: [] };
   const t = () => Math.floor(now() / 1000);
   const emit = (type, object) => {
     const event = { id: id('evt'), object: 'event', type, created: t(), data: { object: structuredClone(object) } };
@@ -107,6 +118,12 @@ export function stripeStandIn({ secret = 'whsec_stand_in_0000000000', now = () =
   };
   return {
     real: false, state: s,
+    /** As the real one: the object as it stands now, at the code's own version. */
+    retrieve: async (kind, objId) => {
+      const found = { invoice: s.invoices, charge: s.charges, subscription: s.subs }[kind]?.get(objId);
+      if (!found) throw Object.assign(new Error('No such object.'), { code: 'resource_missing' });
+      return structuredClone(found);
+    },
     /** A message as Stripe would post it: its body and its signature header. */
     delivery: (event) => { const body = JSON.stringify(event); return { body, signature: signatureFor(body, secret, event.created) }; },
     customer: async (c) => { const cu = { id: id('cus'), ...c }; s.customers.set(cu.id, cu); return cu; },
@@ -150,7 +167,9 @@ export function stripeStandIn({ secret = 'whsec_stand_in_0000000000', now = () =
       const inv = [...s.invoices.values()].find((i) => i.payment_intent === paymentIntent);
       const re = { id: id('re'), amount, currency: inv?.currency || 'gbp', payment_intent: paymentIntent };
       s.refunds.push(re);
-      emit('charge.refunded', { object: 'charge', id: id('ch'), invoice: inv?.id || null, currency: re.currency, refunds: { data: [re] } });
+      const ch = { object: 'charge', id: id('ch'), invoice: inv?.id || null, currency: re.currency, refunds: { data: [re] } };
+      s.charges.set(ch.id, ch);
+      emit('charge.refunded', ch);
       return re;
     },
     creditNote: async ({ invoice, amount, memo }) => { const cn = { id: id('cn'), invoice, amount, memo }; s.creditNotes.push(cn); return cn; },

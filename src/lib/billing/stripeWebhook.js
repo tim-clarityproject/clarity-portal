@@ -129,3 +129,33 @@ export function subscriptionRow(event, userId, was = null) {
     current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
     cancelled_at: status === 'cancelled' ? new Date((Number(event.created) || 0) * 1000).toISOString() : null };
 }
+
+/** The kind of object a message is about, from its type alone: 'invoice', 'charge', 'subscription', or null. */
+export function eventKind(type) {
+  const t = String(type || '');
+  if (t.startsWith('invoice.')) return 'invoice';
+  if (t.startsWith('charge.')) return 'charge';
+  if (t.startsWith('customer.subscription.')) return 'subscription';
+  return null;
+}
+
+/**
+ * A message as the code acts on it (follow-up 5): only its id, type, time and its object's id are taken from what
+ * Stripe sent; the object itself is read fresh from Stripe at the code's own pinned version (stripe.retrieve), so a
+ * webhook on a newer API version (2025-04-30.basil moved an invoice's payment and charge elsewhere) changes nothing.
+ * Answers null for an object Stripe no longer has (handled, nothing to do); a kind the code doesn't act on comes back
+ * as it is (it is only marked handled). Throws when Stripe can't be asked, so the message is tried again.
+ */
+export async function freshEvent(event, stripe) {
+  const kind = eventKind(event?.type);
+  const base = { id: event?.id, object: 'event', type: event?.type, created: event?.created };
+  if (!kind) return { ...base, data: { object: {} } };
+  const objectId = event?.data?.object?.id;
+  try {
+    const object = await stripe.retrieve(kind, objectId);
+    return { ...base, data: { object } };
+  } catch (e) {
+    if (e?.code === 'resource_missing') return null;
+    throw e;
+  }
+}

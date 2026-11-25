@@ -47,3 +47,8 @@ test('a router hands each address to its own handler with the query as sent, and
     assert.equal(r.code, 404, bad);
   }
 });
+
+test('every includeFiles in vercel.json is 256 characters or fewer (Vercel refuses longer; follow-up 5)', () => {
+  const v = JSON.parse(readFileSync(new URL('../../vercel.json', import.meta.url), 'utf8'));
+  for (const [name, f] of Object.entries(v.functions || {})) assert.ok(String(f.includeFiles ?? '').length <= 256, `${name}: ${String(f.includeFiles).length} characters`);
+});

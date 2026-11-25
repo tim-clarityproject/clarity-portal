@@ -2,10 +2,10 @@
   "ignoreCommand": "bash scripts/vercel-ignore.sh",
   "functions": {
     "api/guest.js": {
-      "includeFiles": "{public/fonts/Nekst-Regular.ttf,public/fonts/Nekst-Light.ttf,node_modules/@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff,node_modules/@fontsource/dm-sans/files/dm-sans-latin-ext-400-normal.woff,node_modules/@fontsource/dm-sans/files/dm-sans-latin-500-normal.woff,node_modules/@fontsource/dm-sans/files/dm-sans-latin-ext-500-normal.woff,node_modules/@fontsource/noto-emoji/unicode.json,node_modules/@fontsource/noto-emoji/files/noto-emoji-*-400-normal.woff,node_modules/@fontsource/noto-sans-sc/unicode.json,node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-*-400-normal.woff}"
+      "includeFiles": "pdf-fonts/**"
     },
     "api/coach.js": {
-      "includeFiles": "{public/fonts/Nekst-Regular.ttf,public/fonts/Nekst-Light.ttf,node_modules/@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff,node_modules/@fontsource/dm-sans/files/dm-sans-latin-ext-400-normal.woff,node_modules/@fontsource/dm-sans/files/dm-sans-latin-500-normal.woff,node_modules/@fontsource/dm-sans/files/dm-sans-latin-ext-500-normal.woff,node_modules/@fontsource/noto-emoji/unicode.json,node_modules/@fontsource/noto-emoji/files/noto-emoji-*-400-normal.woff,node_modules/@fontsource/noto-sans-sc/unicode.json,node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-*-400-normal.woff}"
+      "includeFiles": "pdf-fonts/**"
     }
   },
   "rewrites": [

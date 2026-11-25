@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -125,13 +125,15 @@ test('the server makes the Health Check and signed agreement PDFs with plain nod
   }
 });
 
-test('vercel.json ships the PDF fonts with both routers that make PDFs', async () => {
+test('vercel.json ships the PDF fonts with both routers that make PDFs: one folder, every file the loader reads in it', async () => {
   const { PDF_INCLUDE_FILES, FONT_FILES } = await import('../../api/_pdfAssets.js');
   const v = JSON.parse(readFileSync(join(ROOT, 'vercel.json'), 'utf8'));
   for (const fn of ['api/guest.js', 'api/coach.js']) assert.equal(v.functions?.[fn]?.includeFiles, PDF_INCLUDE_FILES, fn);
-  for (const path of Object.values(FONT_FILES)) assert.ok(PDF_INCLUDE_FILES.includes(path), path);
-  for (const part of ['noto-emoji/unicode.json', 'noto-emoji/files/noto-emoji-*-400-normal.woff', 'noto-sans-sc/unicode.json', 'noto-sans-sc/files/noto-sans-sc-*-400-normal.woff']) {
-    assert.ok(PDF_INCLUDE_FILES.includes(part), part);
+  assert.equal(PDF_INCLUDE_FILES, 'pdf-fonts/**');
+  for (const path of Object.values(FONT_FILES)) {
+    assert.ok(path.startsWith('pdf-fonts/'), path);
+    assert.ok(existsSync(join(ROOT, path)), path);
   }
-  assert.ok(!/woff2/.test(PDF_INCLUDE_FILES), 'never WOFF2 (pdfkit draws its text blank)');
+  for (const f of ['noto-emoji-unicode.json', 'noto-sans-sc-unicode.json', 'noto-emoji-0-400-normal.woff', 'noto-sans-sc-100-400-normal.woff']) assert.ok(existsSync(join(ROOT, 'pdf-fonts', f)), f);
+  assert.ok(!readdirSync(join(ROOT, 'pdf-fonts')).some((f) => /woff2$/.test(f)), 'never WOFF2 (pdfkit draws its text blank)');
 });
