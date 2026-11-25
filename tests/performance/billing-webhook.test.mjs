@@ -58,3 +58,20 @@ test('a refund keeps a credit note row by Stripe\'s refund id; a subscription ke
   assert.deepEqual([s.level, s.status, s.stripe_subscription_id], ['executive', 'cancelling', 'sub_1']);
   assert.equal(subscriptionRow({ type: 'customer.subscription.updated', data: { object: { object: 'subscription', id: 'sub_2', metadata: { level: 'platinum' } } } }, 'u1'), null, 'a level nobody sells is never kept');
 });
+
+test('Phase 6b run 3: a payment in any of 065\'s currencies is kept in its own, yen and dirhams included (zero-decimal as Stripe sends it)', async () => {
+  const { currencyOf, landedFrom } = await import('../../src/lib/billing/stripeWebhook.js');
+  const { CURRENCY_LIST, exponent } = await import('../../src/lib/agreements/currency.js');
+  for (const c of CURRENCY_LIST) assert.equal(currencyOf({ currency: c.toLowerCase() }), c, c);
+  // Yen has no minor unit: Stripe sends whole yen, as our total_minor keeps it.
+  assert.equal(exponent('JPY'), 0);
+  const yen = invoiceChange(ev('invoice.paid', 'paid', T('2026-11-25T09:00:00Z'), { amount_paid: 380000, currency: 'jpy' }), row({ currency: 'JPY', total_minor: 380000 }));
+  assert.equal(yen.invoice.status, 'paid');
+  assert.deepEqual([yen.payment.amount_minor, yen.payment.currency], [380000, 'JPY'], '¥380,000, never ¥3,800 or pounds');
+  const aed = invoiceChange(ev('invoice.paid', 'paid', T('2026-11-25T09:00:00Z'), { amount_paid: 1850000, currency: 'aed' }), row({ currency: 'AED', total_minor: 1850000 }));
+  assert.deepEqual([aed.payment.amount_minor, aed.payment.currency], [1850000, 'AED']);
+  // Paid in another currency than the invoice's: never kept.
+  assert.equal(invoiceChange(ev('invoice.paid', 'paid', T('2026-11-25T09:00:00Z'), { amount_paid: 380000, currency: 'usd' }), row({ currency: 'JPY' })).payment, null);
+  // A payment not in pounds waits for its pounds figure.
+  assert.deepEqual(landedFrom(null, yen.payment), { landed_gbp_minor: null, fee_minor: null });
+});

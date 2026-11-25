@@ -72,16 +72,17 @@ const asServer = (c) => c.apikey === SERVICE;
 test('signing: signed as the caller, then the PDF is made with both signatures and kept with the server key', async () => {
   let kept = null;
   const db = standIn({
-    sign_agreement: () => [200, { signed_at: '2026-12-02T18:40:00Z', fingerprint: 'a'.repeat(64), version: 1 }],
+    sign_agreement_v2: () => [200, { signed_at: '2026-12-02T18:40:00Z', fingerprint: 'a'.repeat(64), version: 1, start_now: true, settle_choice: 'plan', self_funded: true }],
     agreement_pdf_source: () => [200, SOURCE],
     agreement_signed_pdf_keep: (b) => { kept = b; return [200, { ok: true, pdf: b.p_pdf, file_name: b.p_file_name, sha256: 'f'.repeat(64) }]; },
   });
-  const r = await run(sign, { versionId: V, signatureId: SIG, name: 'Sam Carter', fingerprint: 'a'.repeat(64) }, db);
+  const r = await run(sign, { versionId: V, signatureId: SIG, name: 'Sam Carter', fingerprint: 'a'.repeat(64), startNow: true, choice: 'plan' }, db);
   assert.equal(r.code, 200);
-  assert.deepEqual(r.body, { ok: true, signed_at: '2026-12-02T18:40:00Z', fingerprint: 'a'.repeat(64), version: 1, pdf: true });
-  assert.deepEqual(db.calls.map((c) => c.name), ['sign_agreement', 'agreement_pdf_source', 'agreement_signed_pdf_keep']);
+  // Phase 6b run 3: sign_agreement_v2 records the start-now tick and the way of settling (065).
+  assert.deepEqual(r.body, { ok: true, signed_at: '2026-12-02T18:40:00Z', fingerprint: 'a'.repeat(64), version: 1, pdf: true, start_now: true, settle_choice: 'plan', self_funded: true });
+  assert.deepEqual(db.calls.map((c) => c.name), ['sign_agreement_v2', 'agreement_pdf_source', 'agreement_signed_pdf_keep']);
   assert.ok(asCaller(db.calls[0]), 'sign_agreement is asked as the caller, never with the server key');
-  assert.deepEqual(db.calls[0].body, { p_version: V, p_name: 'Sam Carter', p_signature: SIG, p_fingerprint: 'a'.repeat(64) });
+  assert.deepEqual(db.calls[0].body, { p_version: V, p_name: 'Sam Carter', p_signature: SIG, p_fingerprint: 'a'.repeat(64), p_start_now: true, p_choice: 'plan' });
   assert.ok(asServer(db.calls[1]) && asServer(db.calls[2]), 'the source and the keeping use the server key');
   const bytes = Buffer.from(kept.p_pdf, 'base64');
   assert.equal(bytes.subarray(0, 5).toString(), '%PDF-', 'a real PDF is kept');
@@ -92,27 +93,27 @@ test('signing: signed as the caller, then the PDF is made with both signatures a
 
 test('signing: a refusal comes back in the database\'s own words, and nothing else is asked', async () => {
   for (const [code, status] of [['CC409', 409], ['42501', 403], ['22023', 400]]) {
-    const db = standIn({ sign_agreement: () => [400, { code, message: 'This agreement is already signed.' }] });
+    const db = standIn({ sign_agreement_v2: () => [400, { code, message: 'This agreement is already signed.' }] });
     const r = await run(sign, { versionId: V, signatureId: SIG, name: 'Sam Carter', fingerprint: 'a'.repeat(64) }, db);
     assert.equal(r.code, status, code);
     assert.deepEqual(r.body, { ok: false, code, message: 'This agreement is already signed.' });
-    assert.deepEqual(db.calls.map((c) => c.name), ['sign_agreement'], 'no PDF for a refused signing');
+    assert.deepEqual(db.calls.map((c) => c.name), ['sign_agreement_v2'], 'no PDF for a refused signing');
   }
 });
 
 test('signing: the PDF failing (or no server key) never undoes the signing; the first download makes it', async () => {
   const db = standIn({
-    sign_agreement: () => [200, { signed_at: '2026-12-02T18:40:00Z', fingerprint: 'a'.repeat(64), version: 1 }],
+    sign_agreement_v2: () => [200, { signed_at: '2026-12-02T18:40:00Z', fingerprint: 'a'.repeat(64), version: 1 }],
     agreement_pdf_source: () => [500, { code: 'XX000', message: 'stand-in failure' }],
   });
   const r = await run(sign, { versionId: V, signatureId: SIG, name: 'Sam Carter', fingerprint: 'a'.repeat(64) }, db);
   assert.equal(r.code, 200);
   assert.equal(r.body.ok, true);
   assert.equal(r.body.pdf, false);
-  const db2 = standIn({ sign_agreement: () => [200, { signed_at: '2026-12-02T18:40:00Z', fingerprint: 'a'.repeat(64), version: 1 }] });
+  const db2 = standIn({ sign_agreement_v2: () => [200, { signed_at: '2026-12-02T18:40:00Z', fingerprint: 'a'.repeat(64), version: 1 }] });
   const r2 = await run(sign, { versionId: V, signatureId: SIG, name: 'Sam Carter', fingerprint: 'a'.repeat(64) }, db2, { service: null });
   assert.deepEqual([r2.code, r2.body.ok, r2.body.pdf], [200, true, false]);
-  assert.deepEqual(db2.calls.map((c) => c.name), ['sign_agreement']);
+  assert.deepEqual(db2.calls.map((c) => c.name), ['sign_agreement_v2']);
 });
 
 test('signing: the wrong shape, or no sign-in, asks nothing', async () => {

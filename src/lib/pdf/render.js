@@ -277,8 +277,10 @@ export async function renderPdf(given, { variant = 'light', paper = PAPER.A4, as
     link.end();
     ctx.artifact(() => {
       let right = MARGIN + contentW;
-      if (pages.length > 1) {
-        const num = `Page ${pi + 1} of ${pages.length}`;
+      // Pages added after the render (an invoice's evidence, appended with pdf-lib) count in the total.
+      const total = pages.length + Math.max(0, Number(spec.extraPages) || 0);
+      if (total > 1) {
+        const num = `Page ${pi + 1} of ${total}`;
         ts.draw(num, right, by, { ...s, features: ['tnum'] }, t.detail, 'right');
         right -= ts.width(num, s) + 16;
       }

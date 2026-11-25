@@ -370,7 +370,14 @@ begin
     f := f || pg_temp.r_eq('9c nor through the owner''s function', pg_temp.r_try(format('select public.agreement_approve(%L, true)::text', a_wait)), 'error 42501');
     perform pg_temp.r_as(tess_u, 'aal1');
     f := f || pg_temp.r_eq('9d the owner without her code reads nothing', pg_temp.r_try(format('select public.agreement_for_approval(%L)::text', a_wait)), 'error 42501');
+    f := f || pg_temp.r_eq('9d2 nor the list of those waiting', pg_temp.r_try('select public.agreements_waiting_approval()::text'), 'error 42501');
+    perform pg_temp.r_as(maya_u, 'aal2');
+    f := f || pg_temp.r_eq('9d3 an associate can''t read the list', pg_temp.r_try('select public.agreements_waiting_approval()::text'), 'error 42501');
     perform pg_temp.r_as(tess_u, 'aal2');
+    j := public.agreements_waiting_approval();
+    f := f || pg_temp.r_eq('9d4 the owner''s list of those waiting, with whose each is',
+      (select concat(count(*), '/', max(e ->> 'coach_first'), '/', max(e ->> 'client_name'), '/', max(e ->> 'version'), '/', bool_and(e ? 'asked_at' and e ? 'profile_id' and e ? 'coaching' and e ? 'coach_name'))
+         from jsonb_array_elements(j) e where e ->> 'agreement_id' = a_wait::text), '1/Maya/Sam R065/1/t');
     j := public.agreement_for_approval(a_wait);
     f := f || pg_temp.r_eq('9e the owner reads it, with whose it is', concat(j ->> 'coach_first', '/', j ->> 'client_name', '/', j ->> 'approval'), 'Maya/Sam R065/waiting');
     f := f || pg_temp.r_eq('9f asking for changes needs a note', pg_temp.r_try(format('select public.agreement_approve(%L, false)::text', a_wait)), 'error 22023');
@@ -378,6 +385,14 @@ begin
     perform pg_temp.r_as(maya_u, 'aal2');
     f := f || pg_temp.r_eq('9h approved, Maya sends it', pg_temp.r_try(format('update public.agreement_versions set status = ''sent'', sent_at = now() where id = %L returning ''sent''', v_wait)), 'sent');
     f := f || pg_temp.r_eq('9i the approval stays the owner''s', (select concat(approval, '/', approved_by = tess_c) from public.agreements where id = a_wait), 'approved/t');
+    f := f || pg_temp.r_eq('9j a coach never moves the end (ends_on is the server''s)',
+      pg_temp.r_try(format('update public.agreements set ends_on = ''2030-01-01'' where id = %L returning coalesce(ends_on::text, ''kept'')', a_wait)), 'kept');
+    perform pg_temp.r_as(tess_u, 'aal2');
+    f := f || pg_temp.r_eq('9k approved, it leaves the owner''s list',
+      (select count(*)::text from jsonb_array_elements(public.agreements_waiting_approval()) e where e ->> 'agreement_id' = a_wait::text), '0');
+    perform pg_temp.r_server();
+    update public.agreements set ends_on = '2030-01-01' where id = a_wait;
+    f := f || pg_temp.r_eq('9l the server moves it', (select ends_on::text from public.agreements where id = a_wait), '2030-01-01');
 
     -- ---------------------------------------------------------------- 10. hours, rates, the Fathom mark, sources, invoices
     perform pg_temp.r_as(tess_u, 'aal2');

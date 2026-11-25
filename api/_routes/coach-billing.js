@@ -8,6 +8,17 @@
 //   POST /api/coach-billing  { kind: 'refund' | 'credit', invoiceId, amount, reason? }   confirmed on screen first
 //   POST /api/coach-billing  { kind: 'send_reminder', reminderId }     the coach's Send on a drafted reminder
 //
+// Phase 6b run 3 (065; src/lib/agreements/asks.js's ASKS.billing, the same shapes):
+//   delivered_invoice { agreementId, sessionIds }   invoice from what's delivered (each session once: invoice_sources)
+//   top_up { agreementId }                          another block of hours at the same rate (Needs you at 80%)
+//   org_invoice_preview / org_invoice_send { organisationId, sessionIds, entryIds, poNumber, rateMinor, evidenceIds }
+//                                                   an organisation's one PDF (invoice, timesheet, evidence); Send numbers it,
+//                                                   finalises it in Stripe with its own bank transfer details, and emails it
+//                                                   from the coach with Reply-To the coach (live site only)
+//   mark_uploaded { invoiceId }                     put on their supplier portal too
+//   funding_details { organisationId }              the organisation's own Stripe bank transfer details
+//   updated_price { agreementId, newFeeMinor, fromDay, note }   a new version after a price review, coach-signed and sent
+//
 // Every ask is the coach's own (the sign-in is read as the caller, with the 6-digit code, 054), about their own
 // invoices only: the owner reads associates' invoices but never sends, settles or refunds them. Nothing is ever sent by
 // itself: a draft waits for Send, and so does a reminder. Stripe in test mode only in this run (src/lib/billing/stripe.js
@@ -28,12 +39,27 @@ import { addDays, dayIn, isZone } from '../../src/lib/time/index.js';
 import { reminderDue, settleBy } from '../../src/lib/billing/money.js';
 import { currencyOf } from '../../src/lib/billing/stripeWebhook.js';
 import { cleanName } from '../../src/lib/coaching/agreementRules.js';
+// Phase 6b run 3 (065)
+import { forStorage } from '../../src/lib/agreements/clauses.js';
+import { moneyText } from '../../src/lib/agreements/currency.js';
+import { lines as deliveredLines } from '../../src/lib/agreements/delivered.js';
+import { topUp as topUpInvoice } from '../../src/lib/agreements/hours.js';
+import { descriptionLine, dueOn as orgDueOn, minutesOf, problems as orgProblems, rate as orgRate, total as orgTotal } from '../../src/lib/agreements/orgInvoice.js';
+import { planTotal, sessions as sessionCount } from '../../src/lib/agreements/pricing.js';
+import { counts, isOver } from '../../src/lib/agreements/sessionOutcome.js';
+import { schedule as invoicesForAgreement } from '../../src/lib/agreements/settling.js';
+import { kindOf } from '../../src/lib/agreements/terms.js';
+import { noteBlocks, orgInvoiceEmail, updatedAgreementEmail } from '../../src/lib/email/agreementEmails.js';
+import { calm, sendAs, standardsFor } from './coach-agreements.js';
+import { portalOrigin } from '../_portalOrigin.js';
 
 export const config = { maxDuration: 60 };
 const reply = (res, status, body) => { res.status(status).setHeader('Cache-Control', 'no-store'); res.json(body); };
 const DIDNT_WORK = 'That didn’t work. Try again in a moment.';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const KINDS = ['draft', 'send', 'paid_by_hand', 'refund', 'credit', 'send_reminder', 'bank_payment', 'one_off'];
+const KINDS = ['draft', 'send', 'paid_by_hand', 'refund', 'credit', 'send_reminder', 'bank_payment', 'one_off',
+  'delivered_invoice', 'top_up', 'org_invoice_preview', 'org_invoice_send', 'mark_uploaded', 'funding_details', 'updated_price'];
+const IDS = (list, max = 200) => (Array.isArray(list) && list.length <= max && list.every((x) => UUID.test(String(x || ''))) ? [...new Set(list.map((x) => String(x).toLowerCase()))] : null);
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const RECEIPT = /^[0-9a-f-]{36}\/finances\/[a-z_]{1,20}\/[0-9a-f-]{36}-[A-Za-z0-9_.-]{1,120}$/;
 const SECTOR = (s) => (typeof s === 'string' && s.trim().length >= 1 && s.trim().length <= 40 ? s.trim() : null);
@@ -77,10 +103,46 @@ export function askedFor(body, now = new Date()) {
     if (!currency || !due) return null;
     return { kind: b.kind, amount, profileId, organisationId, whatFor, currency, due, sector: SECTOR(b.sector), send: b.send === true };
   }
+  if (b.kind === 'delivered_invoice' || b.kind === 'top_up') {
+    if (!UUID.test(String(b.agreementId || ''))) return null;
+    const sessionIds = b.kind === 'delivered_invoice' ? IDS(b.sessionIds, 60) : [];
+    if (!sessionIds || (b.kind === 'delivered_invoice' && !sessionIds.length)) return null;
+    return { kind: b.kind, agreementId: String(b.agreementId).toLowerCase(), sessionIds };
+  }
+  if (b.kind === 'org_invoice_send' && b.again === true) {
+    return UUID.test(String(b.invoiceId || '')) ? { kind: b.kind, again: true, invoiceId: String(b.invoiceId).toLowerCase() } : null;
+  }
+  if (b.kind === 'org_invoice_preview' || b.kind === 'org_invoice_send') {
+    if (!UUID.test(String(b.organisationId || ''))) return null;
+    const text = (v, n) => (typeof v === 'string' && !/[<>{}]/.test(v) ? v.trim().slice(0, n) : null);
+    const sessionIds = IDS(b.sessionIds || []);
+    const entryIds = IDS(b.entryIds || []);
+    const evidenceIds = IDS(b.evidenceIds || [], 20);
+    if (!sessionIds || !entryIds || !evidenceIds) return null;
+    const rateMinor = b.rateMinor == null || b.rateMinor === '' ? null : strictMinor(b.rateMinor);
+    if (b.rateMinor != null && b.rateMinor !== '' && rateMinor == null) return null;
+    const poNumber = typeof b.poNumber === 'string' ? b.poNumber.trim().slice(0, 80) : '';
+    if (/[<>{}]/.test(poNumber)) return null;
+    return { kind: b.kind, organisationId: String(b.organisationId).toLowerCase(), sessionIds, entryIds, evidenceIds, rateMinor, poNumber,
+      supplierNumber: text(b.supplierNumber, 80), reference: text(b.reference, 160) };
+  }
+  if (b.kind === 'funding_details') return UUID.test(String(b.organisationId || '')) ? { kind: b.kind, organisationId: String(b.organisationId).toLowerCase() } : null;
+  if (b.kind === 'updated_price') {
+    const fee = strictMinor(b.newFeeMinor);
+    if (!UUID.test(String(b.agreementId || '')) || fee == null || !realDay(b.fromDay)) return null;
+    return { kind: b.kind, agreementId: String(b.agreementId).toLowerCase(), newFeeMinor: fee, fromDay: String(b.fromDay),
+      note: typeof b.note === 'string' ? b.note.replace(/\r\n?/g, '\n').trim().slice(0, 1000) : '' };
+  }
   const idKey = b.kind === 'draft' ? 'agreementId' : b.kind === 'send_reminder' ? 'reminderId' : 'invoiceId';
   if (!UUID.test(String(b[idKey] || ''))) return null;
   const out = { kind: b.kind, id: String(b[idKey]).toLowerCase() };
   if (b.kind === 'send_reminder' && b.again === true) out.again = true;
+  // Phase 6b run 3 (Group D): the coach's edited reminder words, and a purchase order added on Send.
+  if (b.kind === 'send_reminder' && typeof b.text === 'string' && b.text.trim()) out.text = b.text.replace(/\r\n?/g, '\n').trim().slice(0, 4000);
+  if (b.kind === 'send' && b.poNumber != null && b.poNumber !== '') {
+    if (typeof b.poNumber !== 'string' || b.poNumber.trim().length > 80 || /[<>{}]/.test(b.poNumber)) return null;
+    out.poNumber = b.poNumber.trim();
+  }
   if (b.kind === 'paid_by_hand' && b.landedMinor != null && b.landedMinor !== '') {
     const landed = strictMinor(b.landedMinor);
     if (landed == null) return null;
@@ -99,7 +161,7 @@ export function askedFor(body, now = new Date()) {
  * The coach's own billing, with the server's key and Stripe. `coach` is the caller's own coach row; every invoice acted
  * on must be theirs. Shared by the handler, the nightly round and the tests (tests/performance/billing-path.test.mjs).
  */
-export function billing({ server, stripe, coach, now = () => new Date() }) {
+export function billing({ server, stripe, coach, now = () => new Date(), db = server, env = {}, origin = 'https://portal.theclarityproject.co.uk', send = sendAs }) {
   const today = (zone) => dayIn(isZone(zone) ? zone : 'Europe/London', now());
   const mine = async (table, id) => {
     const { data } = await server.from(table).select('*').eq('id', id).maybeSingle();
@@ -203,7 +265,16 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
       if (!version || version.status !== 'signed') return { drafted: 0 };
       const terms = { ...version.terms, total_minor: version.total_minor ?? version.terms?.total_minor, currency: version.currency, fundedBy: version.funded_by };
       const payer = await payerOf(agreement, terms);
-      const planned = invoicesFor(terms, { signedDay: dayIn(isZone(payer.zone) ? payer.zone : 'Europe/London', new Date(version.client_signed_at)) });
+      const signedDay = dayIn(isZone(payer.zone) ? payer.zone : 'Europe/London', new Date(version.client_signed_at));
+      // A version made by the builder (065: terms.kind) is settled as settling.js's schedule says, with the client's own
+      // choice; its first invoice is the first payment made at signing (api/_routes/agreement-settle.js), so the rest
+      // start at 2. A later instalment is collected by the Bacs Direct Debit set up after it, where there is one.
+      const planned = terms.kind
+        ? invoicesForAgreement(terms, { signedDay, choice: version.settle_choice || 'upfront', chosen: terms.extrasChosen || [] })
+          .filter((p) => p.n > 1 && p.amount > 0)
+          .map((p) => ({ n: p.n, of: p.of, day: p.day, total: p.amount, termsDays: Number(terms.dueDays) || 14, settlesTo: 'client', poNumber: null,
+            lines: [{ description: `${String(terms.coaching || 'Coaching').slice(0, 160)}, instalment ${p.n} of ${p.of}`, amount: p.amount }] }))
+        : invoicesFor(terms, { signedDay });
       const { data: have } = await server.from('invoices').select('instalment_n, status').eq('agreement_id', agreement.id).eq('kind', 'instalment');
       const due = dueToDraft(planned, (have || []).filter((i) => i.status !== 'void').map((i) => i.instalment_n), today(payer.zone));
       let drafted = 0;
@@ -222,8 +293,9 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
         // parameters" refusal (break-it tester, 6b run 1). The CLARITY- number waits for Send (follow-up 5, item 6).
         const idem = `agreement:${agreement.id}:instalment:${p.n}:${randomUUID()}`;
         const customer = await customerFor(agreement, payer, idem);
+        const bacs = terms.kind && version.currency === 'GBP' && stripe.bacsMethod ? await stripe.bacsMethod(customer.id).catch(() => null) : null;
         const inv = await stripe.draftInvoice({ customer: customer.id, currency: version.currency, daysUntilDue: p.termsDays, lines: p.lines, poNumber: p.poNumber,
-          metadata: { agreement_id: agreement.id, instalment: String(p.n) } }, idem);
+          metadata: { agreement_id: agreement.id, instalment: String(p.n) }, ...(bacs ? { automatic: true, defaultPaymentMethod: bacs, methods: ['bacs_debit', 'card'] } : {}) }, idem);
         const { error } = await server.from('invoices').insert({
           coach_id: coach.id, agreement_id: agreement.id, profile_id: agreement.profile_id, organisation_id: payer.profile?.organisation_id || null,
           stripe_invoice_id: inv.id, stripe_customer_id: customer.id, kind: 'instalment', status: 'draft', currency: version.currency, lines: p.lines, total_minor: p.total,
@@ -242,9 +314,15 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
      * never sent never takes a number, so the numbers have no gaps (follow-up 5, item 6). An older draft that already has
      * a number keeps it.
      */
-    async send(invoiceId) {
+    async send(invoiceId, { poNumber = null } = {}) {
       const inv = await mine('invoices', invoiceId);
       if (inv.status !== 'draft') return { status: inv.status, number: inv.number ? `CLARITY-${inv.number}` : null };
+      // A purchase order added on Send (Needs you's "Add and send invoice"): on the invoice here and on Stripe's.
+      if (poNumber && poNumber !== inv.po_number) {
+        await server.from('invoices').update({ po_number: poNumber }).eq('id', inv.id).eq('status', 'draft');
+        if (stripe.purchaseOrder) await stripe.purchaseOrder(inv.stripe_invoice_id, poNumber);
+        inv.po_number = poNumber;
+      }
       // One press at a time (064's send_claimed_at, held for at most 2 minutes): a second press while one is on its way
       // is told it's going, and never finalises or emails it again (break-it tester, follow-up 5).
       const claimedAt = now().toISOString();
@@ -341,6 +419,338 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
       return { kind, number: note.number || null };
     },
 
+    // ---------------------------------------------------------------- Phase 6b run 3 (065)
+
+    /** A signed agreement of the coach's, its current version and who settles it. */
+    async _signed(agreementId) {
+      const a = await mine('agreements', agreementId);
+      if (a.status !== 'signed') throw calm(409, 'Only a signed agreement can be invoiced.');
+      const { data: v } = await server.from('agreement_versions').select('*').eq('agreement_id', a.id).eq('version', a.current_version).maybeSingle();
+      const { data: signedV } = v?.status === 'signed' ? { data: v } : await server.from('agreement_versions').select('*').eq('agreement_id', a.id).eq('status', 'signed').order('version', { ascending: false }).limit(1).maybeSingle();
+      if (!signedV) throw calm(409, 'Only a signed agreement can be invoiced.');
+      const terms = { ...signedV.terms, fundedBy: signedV.funded_by };
+      return { a, v: signedV, terms, payer: await payerOf(a, terms), currency: signedV.currency || terms.currency || 'GBP' };
+    },
+
+    /** One invoice for a client's agreement, claimed on its sources first (never invoiced twice), drafted in Stripe and sent. */
+    async _invoiceAndSend({ a, v, payer, currency, kind, lines, termsDays, sources = [] }) {
+      const total = lines.reduce((x, l) => x + l.amount, 0);
+      if (!(total > 0)) throw calm(409, 'There’s nothing to invoice.');
+      const { data: row, error } = await server.from('invoices').insert({
+        coach_id: coach.id, agreement_id: a.id, profile_id: a.profile_id, organisation_id: payer.profile?.organisation_id || null, version_id: v.id,
+        kind, status: 'draft', currency, lines, total_minor: total, terms_days: Math.min(120, Math.max(1, termsDays || 14)),
+        settles_to: v.funded_by ? 'organisation' : 'client', payer_name: payer.name, payer_email: payer.email || null, payer_zone: payer.zone || null,
+      }).select('id').maybeSingle();
+      if (error || !row) throw error || new Error('invoice');
+      if (sources.length) {
+        const claimed = await server.from('invoice_sources').insert(sources.map((src) => ({ coach_id: coach.id, invoice_id: row.id, ...src })));
+        if (claimed.error) {
+          await server.from('invoice_sources').delete().eq('invoice_id', row.id);
+          await server.from('invoices').delete().eq('id', row.id);
+          throw calm(409, 'One of those coaching sessions is on an invoice already.');
+        }
+      }
+      try {
+        const idem = `${kind}:${row.id}`;
+        const { data: before } = await server.from('invoices').select('stripe_customer_id').eq('agreement_id', a.id);
+        const known = (before || []).find((i) => i.stripe_customer_id)?.stripe_customer_id;
+        const customer = known ? { id: known } : await stripe.customer({ name: payer.name, email: payer.email, metadata: { profile_id: a.profile_id || '' } }, `${idem}:customer`);
+        const inv = await stripe.draftInvoice({ customer: customer.id, currency, daysUntilDue: Math.max(1, termsDays || 14), lines, metadata: { agreement_id: a.id, kind } }, idem);
+        const kept = await server.from('invoices').update({ stripe_invoice_id: inv.id, stripe_customer_id: customer.id }).eq('id', row.id);
+        if (kept.error) { await stripe.void(inv.id).catch(() => {}); throw kept.error; }
+      } catch (e) {
+        await server.from('invoice_sources').delete().eq('invoice_id', row.id);
+        await server.from('invoices').delete().eq('id', row.id);
+        throw e;
+      }
+      const sent = await this.send(row.id);
+      const n = Number(String(sent.number || '').replace(/^CLARITY-/, '')) || null;
+      return { invoiceId: row.id, number: n, totalMinor: total, currency };
+    },
+
+    /** Invoice from what's delivered (M28 s-n-delivered): the ticked coaching sessions that happened (or count), each once. */
+    async deliveredInvoice({ agreementId, sessionIds }) {
+      const ctx = await this._signed(agreementId);
+      const { terms } = ctx;
+      const k = kindOf(terms);
+      if (!(k === 'sessions' && terms.settle === 'delivered') && !(k === 'retainer' && terms.retainer?.invoice === 'delivered')) {
+        throw calm(409, 'This agreement isn’t invoiced as delivered.');
+      }
+      const { data: rows } = await server.from('coach_sessions').select('*').in('id', sessionIds);
+      const list = (rows || []).filter((x) => x.coach_id === coach.id && x.profile_id === ctx.a.profile_id);
+      if (list.length !== sessionIds.length) throw notYours('coaching session');
+      if (list.some((x) => !counts(x) || !isOver(x, now().getTime()))) throw calm(409, 'Only coaching sessions that happened, or count as used, can be invoiced.');
+      const n = sessionCount(terms) || 1;
+      const per = k === 'retainer'
+        ? Number(terms.beyondRateMinor) || Math.round((Number(terms.retainer?.feeMinor) || 0) / 2)
+        : Math.floor(planTotal(terms, terms.extrasChosen || []) / n);
+      const lines = deliveredLines(list.sort((x, y) => Date.parse(x.starts_at) - Date.parse(y.starts_at)), per, ctx.payer.zone || 'Europe/London')
+        .map((l) => ({ description: l.description, amount: l.amount }));
+      return this._invoiceAndSend({ ...ctx, kind: 'delivered', lines, termsDays: Number(terms.dueDays) || 14,
+        sources: list.map((x) => ({ session_id: x.id, minutes: Number(x.minutes) || 60 })) });
+    },
+
+    /** Another block of hours at the same rate (M28 s-n-hours), one at a time. */
+    async topUp({ agreementId }) {
+      const ctx = await this._signed(agreementId);
+      if (kindOf(ctx.terms) !== 'hours') throw calm(409, 'Only a block of hours can be topped up.');
+      const { data: open } = await server.from('invoices').select('id, status').eq('agreement_id', ctx.a.id).eq('kind', 'top_up');
+      if ((open || []).some((i) => i.status === 'draft' || i.status === 'sent')) throw calm(409, 'A top-up invoice is already waiting to be settled.');
+      const t = topUpInvoice(ctx.terms);
+      return this._invoiceAndSend({ ...ctx, kind: 'top_up', lines: t.lines, termsDays: Number(ctx.terms.dueDays) || 14 });
+    },
+
+    /** What an organisation's invoice is made from, checked: its profile, the ticked rows, the rate, the PO, the evidence. */
+    async _orgInvoice(asked) {
+      ownerOnly();
+      if (!(await orgIsMine(asked.organisationId))) throw notYours('organisation');
+      const { data: org } = await server.from('organisations').select('id, name').eq('id', asked.organisationId).maybeSingle();
+      if (!org) throw notYours('organisation');
+      const { data: saved } = await server.from('org_billing_profiles').select('*').eq('coach_id', coach.id).eq('organisation_id', org.id).maybeSingle();
+      if (!saved) throw calm(409, `Set up ${org.name}’s billing first.`);
+      // This invoice's own supplier number and reference, where the coach typed them (Group D), else the profile's.
+      const profile = { ...saved, ...(asked.supplierNumber ? { supplier_number: asked.supplierNumber } : {}), ...(asked.reference ? { their_reference: asked.reference } : {}) };
+      const { data: people } = await server.from('client_profiles').select('id, name, organisation_id, coach_id').eq('organisation_id', org.id).eq('coach_id', coach.id);
+      const inOrg = new Map((people || []).map((p) => [p.id, p]));
+      const rows = [];
+      if (asked.sessionIds.length) {
+        const { data: ss } = await server.from('coach_sessions').select('*').in('id', asked.sessionIds);
+        for (const x of ss || []) {
+          if (x.coach_id !== coach.id || !inOrg.has(x.profile_id)) throw notYours('coaching session');
+          rows.push({ key: x.id, sessionId: x.id, day: dayIn('Europe/London', new Date(x.starts_at)), what: `Coaching session with ${inOrg.get(x.profile_id).name}`, minutes: Number(x.minutes) || 60 });
+        }
+        if ((ss || []).length !== asked.sessionIds.length) throw notYours('coaching session');
+      }
+      if (asked.entryIds.length) {
+        const { data: es } = await server.from('time_entries').select('*').in('id', asked.entryIds);
+        const engIds = [...new Set((es || []).map((e) => e.engagement_id))];
+        const { data: engs } = engIds.length ? await server.from('engagements').select('id, profile_id').in('id', engIds) : { data: [] };
+        const engProfile = new Map((engs || []).map((e) => [e.id, e.profile_id]));
+        for (const e of es || []) {
+          if (e.coach_id !== coach.id || !e.ended_at || !inOrg.has(engProfile.get(e.engagement_id))) throw notYours('time entry');
+          rows.push({ key: e.id, entryId: e.id, day: dayIn('Europe/London', new Date(e.started_at)), what: e.note || `Work for ${inOrg.get(engProfile.get(e.engagement_id)).name}`,
+            minutes: Math.max(0, Math.round((Date.parse(e.ended_at) - Date.parse(e.started_at)) / 60000)) });
+        }
+        if ((es || []).length !== asked.entryIds.length) throw notYours('time entry');
+      }
+      rows.sort((x, y) => x.day.localeCompare(y.day));
+      const { data: sponsor } = await server.from('agreements').select('id, current_version').eq('organisation_id', org.id).eq('coach_id', coach.id).eq('kind', 'sponsor').eq('status', 'signed').limit(1).maybeSingle();
+      const { data: sv } = sponsor ? await server.from('agreement_versions').select('terms').eq('agreement_id', sponsor.id).eq('version', sponsor.current_version).maybeSingle() : { data: null };
+      const rateMinor = orgRate(profile, sv?.terms, asked.rateMinor);
+      const { data: po } = await server.from('purchase_orders').select('number').eq('organisation_id', org.id).eq('coach_id', coach.id).eq('status', 'open').limit(1).maybeSingle();
+      const poNumber = asked.poNumber || po?.number || '';
+      let evidence = [];
+      if (asked.evidenceIds.length) {
+        const { data: ev } = await server.from('invoice_evidence').select('*').in('id', asked.evidenceIds);
+        if ((ev || []).length !== asked.evidenceIds.length || ev.some((x) => x.coach_id !== coach.id || x.organisation_id !== org.id)) throw notYours('attachment');
+        evidence = [...ev].sort((x, y) => x.position - y.position);
+      }
+      const problems = orgProblems({ orgName: org.name, profile, rows, poNumber, evidence });
+      const currency = profile.currency || 'GBP';
+      const total = orgTotal(rows, rateMinor);
+      const lines = rows.length ? [{
+        description: descriptionLine({ orgName: org.name, count: rows.length, firstDay: rows[0].day, lastDay: rows.at(-1).day, timesheet: profile.timesheet }),
+        minutes: minutesOf(rows), rateMinor, amount: total,
+      }] : [];
+      return { org, profile, rows, rateMinor, poNumber, evidence, problems, currency, total, lines };
+    },
+
+    /** The evidence's bytes from coach-files, each only from the coach's own folder. */
+    async _evidenceBytes(evidence) {
+      const out = [];
+      for (const ev of evidence) {
+        if (!coach.user_id || !String(ev.storage_path).startsWith(`${coach.user_id}/`)) continue;
+        const { data } = await server.storage.from('coach-files').download(ev.storage_path);
+        if (data) out.push({ bytes: new Uint8Array(await data.arrayBuffer()), name: ev.file_name });
+      }
+      return out;
+    },
+
+    async _orgPdf(o, { number = null, issuedOn, bank = null }) {
+      const { invoiceFile } = await import('../_agreementPdf.js');
+      return invoiceFile({
+        number, issuedOn, dueOn: orgDueOn(issuedOn, o.profile.terms_days), termsDays: o.profile.terms_days, orgName: o.org.name,
+        legalName: o.profile.legal_name, address: o.profile.billing_address, poNumber: o.poNumber || null, supplierNumber: o.profile.supplier_number,
+        theirReference: o.profile.their_reference, lines: o.lines, currency: o.currency, bank: bank || o.profile.bank_details || null,
+        timesheet: o.profile.timesheet ? o.rows.map((r) => ({ day: r.day, what: r.what, minutes: r.minutes })) : null,
+      }, await this._evidenceBytes(o.evidence));
+    },
+
+    /** The one PDF before Send (M28 s-inv-pdf): not numbered yet (numbers are taken at Send). */
+    async orgInvoicePreview(asked) {
+      const o = await this._orgInvoice(asked);
+      if (!o.rows.length) throw calm(409, o.problems[0]);
+      const pdf = await this._orgPdf(o, { issuedOn: today('Europe/London') });
+      return { pdf: Buffer.from(pdf.bytes).toString('base64'), fileName: pdf.fileName, pages: pdf.pages };
+    },
+
+    /** The organisation's own Stripe customer and its UK bank transfer details, made once and kept on the profile. */
+    async _orgCustomer(o) {
+      let customerId = o.profile.stripe_customer_id;
+      if (!customerId) {
+        const cu = await stripe.customer({ name: o.profile.legal_name || o.org.name, email: o.profile.invoices_email || undefined, metadata: { organisation_id: o.org.id } }, `org:${o.org.id}:${coach.id}:customer`);
+        customerId = cu.id;
+        await server.from('org_billing_profiles').update({ stripe_customer_id: customerId }).eq('id', o.profile.id).is('stripe_customer_id', null);
+        const { data: again } = await server.from('org_billing_profiles').select('stripe_customer_id').eq('id', o.profile.id).maybeSingle();
+        customerId = again?.stripe_customer_id || customerId;
+      }
+      let bank = o.profile.bank_details || null;
+      if (!bank?.accountNumber && o.currency === 'GBP' && stripe.fundingInstructions) {
+        bank = await stripe.fundingInstructions(customerId).catch(() => null);
+        if (bank) await server.from('org_billing_profiles').update({ bank_details: bank }).eq('id', o.profile.id);
+      }
+      return { customerId, bank };
+    },
+
+    /** The organisation's bank transfer details (funding_details). */
+    async fundingDetails({ organisationId }) {
+      ownerOnly();
+      if (!(await orgIsMine(organisationId))) throw notYours('organisation');
+      const { data: org } = await server.from('organisations').select('id, name').eq('id', organisationId).maybeSingle();
+      const { data: profile } = await server.from('org_billing_profiles').select('*').eq('coach_id', coach.id).eq('organisation_id', organisationId).maybeSingle();
+      if (!org || !profile) throw calm(409, 'Set up their billing first.');
+      if ((profile.currency || 'GBP') !== 'GBP') throw calm(409, 'Bank transfer details are for invoices in pounds.');
+      const { bank } = await this._orgCustomer({ org, profile, currency: 'GBP' });
+      if (!bank) throw calm(502, 'Stripe didn’t give the bank details yet. Try again in a moment.');
+      return { bankDetails: { accountName: bank.accountName, sortCode: bank.sortCode, accountNumber: bank.accountNumber } };
+    },
+
+    /**
+     * Send an organisation's invoice (M28 s-inv-sent): only when the profile's needs are met; its sources claimed first;
+     * numbered (064's one run), finalised in Stripe with the organisation's own bank transfer details and no Stripe email;
+     * the one PDF kept in coach-files and emailed from the coach, Reply-To the coach (live site only).
+     */
+    async orgInvoiceSend(asked) {
+      if (asked.again) return this._orgInvoiceAgain(asked.invoiceId);
+      const o = await this._orgInvoice(asked);
+      if (o.problems.length) throw calm(409, o.problems[0]);
+      if (!o.profile.invoices_email) throw calm(409, `Add ${o.org.name}’s invoices email first.`);
+      const termsDays = o.profile.terms_days || 30;
+      const { data: row, error } = await server.from('invoices').insert({
+        coach_id: coach.id, organisation_id: o.org.id, kind: 'org_hours', status: 'draft', currency: o.currency,
+        lines: o.lines.map((l) => ({ description: l.description, amount: l.amount })), total_minor: o.total, terms_days: termsDays,
+        po_number: o.poNumber || null, supplier_number: o.profile.supplier_number || null, their_reference: o.profile.their_reference || null,
+        timesheet: Boolean(o.profile.timesheet), settles_to: 'organisation', payer_name: o.profile.legal_name || o.org.name, payer_email: o.profile.invoices_email,
+      }).select('id').maybeSingle();
+      if (error || !row) throw error || new Error('invoice');
+      const claimed = await server.from('invoice_sources').insert(o.rows.map((r) => ({ coach_id: coach.id, invoice_id: row.id, session_id: r.sessionId || null, time_entry_id: r.entryId || null, minutes: r.minutes })));
+      if (claimed.error) {
+        await server.from('invoice_sources').delete().eq('invoice_id', row.id);
+        await server.from('invoices').delete().eq('id', row.id);
+        throw calm(409, 'One of those is on an invoice already.');
+      }
+      let customerId;
+      let bank;
+      let inv;
+      try {
+        ({ customerId, bank } = await this._orgCustomer(o));
+        inv = await stripe.draftInvoice({ customer: customerId, currency: o.currency, daysUntilDue: termsDays, lines: o.lines.map((l) => ({ description: l.description, amount: l.amount })),
+          poNumber: o.poNumber || null, metadata: { organisation_id: o.org.id, kind: 'org_hours' }, methods: o.currency === 'GBP' ? ['customer_balance'] : ['card'] }, `org_hours:${row.id}`);
+        const kept = await server.from('invoices').update({ stripe_invoice_id: inv.id, stripe_customer_id: customerId }).eq('id', row.id);
+        if (kept.error) { await stripe.void(inv.id).catch(() => {}); throw kept.error; }
+      } catch (e) {
+        await server.from('invoice_sources').delete().eq('invoice_id', row.id);
+        await server.from('invoices').delete().eq('id', row.id);
+        throw e;
+      }
+      const { data: number, error: numberError } = await server.rpc('invoice_take_number', { p_invoice: row.id });
+      if (numberError || !Number.isInteger(number)) throw calm(502, 'That didn’t send. Try again in a moment.');
+      await stripe.number(inv.id, `CLARITY-${number}`);
+      const fin = await stripe.finalize(inv.id);
+      const issued = today('Europe/London');
+      const due = orgDueOn(issued, termsDays);
+      const pdf = await this._orgPdf(o, { number, issuedOn: issued, bank });
+      const path = coach.user_id ? `${coach.user_id}/finances/invoices/${row.id}.pdf` : null;
+      if (path) await server.storage.from('coach-files').upload(path, pdf.bytes, { contentType: 'application/pdf', upsert: true }).catch(() => null);
+      const { data: me } = await server.from('coaches').select('display_first_name, email').eq('id', coach.id).maybeSingle();
+      const contact = await server.from('organisation_contacts').select('name, role, roles').eq('organisation_id', o.org.id);
+      const finance = (contact.data || []).find((c) => /finance|invoice/i.test(`${c.role || ''} ${c.roles || ''}`));
+      const outcome = await send(env, {
+        to: o.profile.invoices_email,
+        doc: orgInvoiceEmail({ firstName: finance?.name || '', coachFirst: me?.display_first_name || 'Tim', number: `CLARITY-${number}`, amountWords: moneyText(o.total, o.currency),
+          dueWords: dayKeyWords(due, { year: true }), orgName: o.org.name, poNumber: o.poNumber || null, fileName: pdf.fileName }),
+        fromName: me?.display_first_name || '', replyTo: me?.email || null,
+        files: [{ filename: pdf.fileName, content: Buffer.from(pdf.bytes).toString('base64') }],
+      });
+      const at = now().toISOString();
+      await server.from('invoices').update({ status: 'sent', sent_at: at, issued_on: issued, due_on: due, hosted_url: fin?.hosted_invoice_url || null,
+        pdf_path: path, bank_details: bank || null, ...(outcome === 'sent' ? { emailed_at: at } : {}), updated_at: at }).eq('id', row.id);
+      if (o.evidence.length) await server.from('invoice_evidence').update({ invoice_id: row.id }).in('id', o.evidence.map((e) => e.id)).eq('coach_id', coach.id);
+      return { invoiceId: row.id, number, fileName: pdf.fileName, sentTo: o.profile.invoices_email, dueOn: due, emailed: outcome === 'sent' };
+    },
+
+    /** Send again (M28 s-inv-sent): the same kept PDF, to the same address, from the coach. */
+    async _orgInvoiceAgain(invoiceId) {
+      ownerOnly();
+      const inv = await mine('invoices', invoiceId);
+      if (inv.kind !== 'org_hours' || !['sent', 'paid'].includes(inv.status) || !inv.pdf_path || !inv.payer_email) throw calm(409, 'This invoice can’t be sent again from here.');
+      if (inv.status === 'paid') throw calm(409, 'This invoice is settled already.');
+      const { data: file } = await server.storage.from('coach-files').download(inv.pdf_path);
+      if (!file) throw calm(502, 'The invoice’s PDF couldn’t be read. Try again in a moment.');
+      const { data: org } = await server.from('organisations').select('name').eq('id', inv.organisation_id).maybeSingle();
+      const { data: me } = await server.from('coaches').select('display_first_name, email').eq('id', coach.id).maybeSingle();
+      const fileName = `Invoice CLARITY-${inv.number}, ${org?.name || ''}, ${dayKeyWords(inv.issued_on, { year: true }).replace(/^[A-Z][a-z]{2} /, '')}.pdf`;
+      const outcome = await send(env, {
+        to: inv.payer_email,
+        doc: orgInvoiceEmail({ coachFirst: me?.display_first_name || 'Tim', number: `CLARITY-${inv.number}`, amountWords: moneyText(inv.total_minor, inv.currency),
+          dueWords: dayKeyWords(inv.due_on, { year: true }), orgName: org?.name || '', poNumber: inv.po_number, fileName }),
+        fromName: me?.display_first_name || '', replyTo: me?.email || null,
+        files: [{ filename: fileName, content: Buffer.from(await file.arrayBuffer()).toString('base64') }],
+      });
+      if (outcome === 'sent') await server.from('invoices').update({ emailed_at: now().toISOString() }).eq('id', inv.id);
+      return { invoiceId: inv.id, number: inv.number, fileName, sentTo: inv.payer_email, dueOn: inv.due_on, emailed: outcome === 'sent' };
+    },
+
+    /** Put on their supplier portal too (Needs you's Mark as uploaded). */
+    async markUploaded(invoiceId) {
+      const inv = await mine('invoices', invoiceId);
+      if (inv.portal_uploaded_at) return { uploadedAt: inv.portal_uploaded_at };
+      const at = now().toISOString();
+      await server.from('invoices').update({ portal_uploaded_at: at }).eq('id', inv.id).is('portal_uploaded_at', null);
+      return { uploadedAt: at };
+    },
+
+    /**
+     * After a price review (M28 s-n-price): a new version at the new fee from the day given, with the coach's short note,
+     * coach-signed with their newest saved signature and sent (both sign it again). As the caller wherever it can be.
+     */
+    async updatedPrice({ agreementId, newFeeMinor, fromDay, note }) {
+      const { data: a } = await db.from('agreements').select('*').eq('id', agreementId).maybeSingle();
+      if (!a || a.coach_id !== coach.id) throw notYours('agreement');
+      if (a.status !== 'signed') throw calm(409, 'Only a signed agreement can have its price updated.');
+      const { data: versions } = await db.from('agreement_versions').select('*').eq('agreement_id', a.id);
+      const signed = (versions || []).filter((v) => v.status === 'signed').sort((x, y) => y.version - x.version)[0];
+      if (!signed) throw calm(409, 'Only a signed agreement can have its price updated.');
+      if ((versions || []).some((v) => v.status === 'sent' && v.version > signed.version)) throw calm(409, 'A new version is already waiting to be signed.');
+      const t = structuredClone(signed.terms || {});
+      const k = kindOf(t);
+      if (k === 'retainer') t.retainer = { ...(t.retainer || {}), feeMinor: newFeeMinor };
+      else if (t.priceMode === 'monthly') t.monthlyMinor = newFeeMinor;
+      else if (t.priceMode === 'hourly') t.rateMinor = newFeeMinor;
+      else t.totalMinor = newFeeMinor;
+      t.priceFrom = fromDay;
+      t.startsOn = t.startsOn && t.startsOn > fromDay ? t.startsOn : fromDay;
+      const clauses = forStorage(t, { standards: await standardsFor(server, coach.id, k), overrides: signed.overrides || {} });
+      const version = Math.max(...(versions || []).map((v) => v.version)) + 1;
+      const made = await db.from('agreement_versions').insert({ agreement_id: a.id, coach_id: coach.id, version, status: 'draft', terms: t, clauses,
+        overrides: signed.overrides || {}, currency: signed.currency, fx_rate: signed.fx_rate, funded_by: signed.funded_by,
+        total_minor: k === 'retainer' ? newFeeMinor : planTotal(t, t.extrasChosen || []), personal_note: note || null }).select('*');
+      if (made.error) throw made.error.message && made.error.code ? calm(409, made.error.message) : made.error;
+      const v = made.data[0];
+      const { data: sig } = await db.from('signatures').select('id').eq('user_id', coach.user_id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (!sig) throw calm(409, 'Add your signature first, then send it.');
+      const sentAt = now().toISOString();
+      const sent = await db.from('agreement_versions').update({ status: 'sent', coach_signed_at: sentAt, coach_signature_id: sig.id, sent_at: sentAt, send_as: 'agreement',
+        expires_on: addDays(today('Europe/London'), Number(t.expiryDays) || 30) }).eq('id', v.id).eq('status', 'draft').select('id');
+      if (sent.error) throw calm(409, sent.error.message || DIDNT_WORK);
+      await db.from('agreements').update({ current_version: version }).eq('id', a.id);
+      const { data: p } = await server.from('client_profiles').select('name, email').eq('id', a.profile_id).maybeSingle();
+      const { data: me } = await server.from('coaches').select('display_first_name, email').eq('id', coach.id).maybeSingle();
+      const outcome = p?.email ? await send(env, { to: p.email, doc: updatedAgreementEmail({ firstName: String(p.name || '').split(' ')[0], coachFirst: me?.display_first_name || '',
+        note, link: `${origin}/coaching/agreement/${v.id}` }), fromName: t.coachName || me?.display_first_name || '', replyTo: me?.email || null }) : 'refused';
+      return { versionId: v.id, sentAt, emailed: outcome === 'sent' };
+    },
+
     /** The nightly round's part for this coach: reminders due at 3, 7 and 14 days, drafted once each, never sent. */
     async draftReminders() {
       const { data: invs } = await server.from('invoices').select('*').eq('coach_id', coach.id).eq('status', 'sent');
@@ -412,6 +822,12 @@ export async function sendReminder(env, server, coach, { reminder, invoice, sett
     amountWords: moneyWords(invoice.total_minor - invoice.paid_minor, invoice.currency), dueDayWords: dayKeyWords(invoice.due_on),
     settleByWords: by?.words || null, coachFirst: me?.display_first_name || '', settleLink: invoice.hosted_url, coachee, poNumber: invoice.po_number,
   });
+  // The coach's own words after Edit (Group D): they replace the drafted lines; the greeting, the button and the name stay.
+  if (typeof reminder.text === 'string' && reminder.text.trim()) {
+    const blocks = doc.blocks.filter(Boolean);
+    const edited = noteBlocks(reminder.text);
+    if (edited.length) doc.blocks = [blocks[0], ...edited, blocks.find((x) => x.type === 'button'), blocks.at(-1)];
+  }
   return sendOutcome(env, { to: invoice.payer_email, ...emailFrom(doc) }, options);
 }
 
@@ -430,20 +846,27 @@ export default async function handler(req, res, env = process.env) {
   if (!url || !anon || !token) return reply(res, 401, { ok: false, message: 'Sign in again to carry on.' });
   const noCode = codeRefusal(token, { ok: false });
   if (noCode) return reply(res, noCode.status, noCode.body);
-  // A payment straight to the bank needs no Stripe; everything else does.
-  if (!env.SUPABASE_SERVICE_ROLE_KEY || (asked.kind !== 'bank_payment' && !keyAllowed(env.STRIPE_SECRET_KEY || ''))) return reply(res, 200, { ok: false, reason: 'not_connected' });
+  // A payment straight to the bank, Mark as uploaded and a price review need no Stripe; everything else does.
+  const noStripe = ['bank_payment', 'mark_uploaded', 'updated_price', 'org_invoice_preview'].includes(asked.kind);
+  if (!env.SUPABASE_SERVICE_ROLE_KEY || (!noStripe && !keyAllowed(env.STRIPE_SECRET_KEY || ''))) return reply(res, 200, { ok: false, reason: 'not_connected' });
   const asCaller = asCallerClient(env, token);
   const { data: who, error: whoError } = await asCaller.auth.getUser(token);
   if (whoError || !who?.user?.id) return reply(res, 401, { ok: false, message: 'Sign in again to carry on.' });
   const { data: coach } = await asCaller.from('coaches').select('id, role, active, user_id').eq('user_id', who.user.id).maybeSingle();
   if (!coach?.active) return reply(res, 403, { ok: false, message: 'Only a coach can do that.' });
   const server = createClient(url, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-  const b = billing({ server, stripe: asked.kind === 'bank_payment' ? null : stripeApi(env.STRIPE_SECRET_KEY), coach });
+  const b = billing({ server, stripe: noStripe ? null : stripeApi(env.STRIPE_SECRET_KEY), coach, db: asCaller, env, origin: portalOrigin(req.headers || {}, env) });
   try {
+    const run065 = {
+      delivered_invoice: () => b.deliveredInvoice(asked), top_up: () => b.topUp(asked), org_invoice_preview: () => b.orgInvoicePreview(asked),
+      org_invoice_send: () => b.orgInvoiceSend(asked), mark_uploaded: () => b.markUploaded(asked.id), funding_details: () => b.fundingDetails(asked),
+      updated_price: () => b.updatedPrice(asked),
+    }[asked.kind];
+    if (run065) return reply(res, 200, { ok: true, ...(await run065()) });
     if (asked.kind === 'bank_payment') return reply(res, 200, { ok: true, ...(await b.bankPayment(asked)) });
     if (asked.kind === 'one_off') return reply(res, 200, { ok: true, ...(await b.oneOff(asked)) });
     if (asked.kind === 'draft') return reply(res, 200, { ok: true, ...(await b.draft(asked.id)) });
-    if (asked.kind === 'send') return reply(res, 200, { ok: true, ...(await b.send(asked.id)) });
+    if (asked.kind === 'send') return reply(res, 200, { ok: true, ...(await b.send(asked.id, { poNumber: asked.poNumber || null })) });
     if (asked.kind === 'paid_by_hand') return reply(res, 200, { ok: true, ...(await b.paidByHand(asked.id, asked.landedMinor ?? null)) });
     if (asked.kind === 'refund' || asked.kind === 'credit') return reply(res, 200, { ok: true, ...(await b.refundOrCredit(asked.id, asked.kind, asked.amount, asked.reason)) });
     // Only the live site ever sends: a preview claims nothing, so a reminder pressed there is still waiting on the live site.
@@ -452,7 +875,7 @@ export default async function handler(req, res, env = process.env) {
     if (r.noAddress) return reply(res, 409, { ok: false, message: 'This invoice has no email address to send a reminder to, so add one and try again.' });
     if (r.unsure) return reply(res, 409, { ok: false, unsure: true, message: REMINDER_UNSURE });
     if (!r.reminder) return reply(res, 200, { ok: true, sent: false, already: Boolean(r.already), settled: Boolean(r.settled) });
-    const outcome = await sendReminder(env, server, coach, r).catch(() => 'unsure');
+    const outcome = await sendReminder(env, server, coach, { ...r, reminder: { ...r.reminder, text: asked.text || null } }).catch(() => 'unsure');
     if (outcome === 'sent') {
       await b.reminderSent(r);
       return reply(res, 200, { ok: true, sent: true });
@@ -465,6 +888,6 @@ export default async function handler(req, res, env = process.env) {
     }
     return reply(res, 502, { ok: false, unsure: true, message: REMINDER_UNSURE });
   } catch (e) {
-    return reply(res, e?.status || 502, { ok: false, message: e?.status ? e.message : DIDNT_WORK });
+    return reply(res, e?.status || 502, { ok: false, ...(e?.calm ? { calm: true } : {}), message: e?.status ? e.message : DIDNT_WORK });
   }
 }

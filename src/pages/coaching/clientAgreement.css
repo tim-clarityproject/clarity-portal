@@ -1,0 +1,129 @@
+/* The client's agreement and money pages (Phase 6b run 3, Group C; M28 version 4: s-q-client, s-c-sign, s-c-change,
+   s-c-asked, s-c-pay, s-c-signed, s-s-sign, s-s-signed, s-h-client, s-payments, s-levels, s-cancel, s-locked). Every
+   value is a token (CLAUDE.md design rule 2); every page sits in .ui-root (rule 17). M28's column is 640px wide with
+   22px between its parts. */
+
+.ui-root .cl-page { max-width: var(--guide-page-max); }
+.ui-root .cl-page > * + *,
+.ui-root .cc-col.cl-link > * + * { margin-top: var(--space-px22); }
+.ui-root .cc-col.cl-link > .cc-public-brand + * { margin-top: 0; }
+
+/* ---- The cover: who it's prepared for and by, the title, the coach's own note (M28 .cover) */
+.ui-root .cl-cover { border: var(--line-w) solid var(--line); border-radius: var(--radius-offer); padding: var(--space-4); background: var(--card); }
+.ui-root .cl-cover > * { margin-top: 0; }
+.ui-root .cl-cover > * + * { margin-top: var(--space-px10); }
+.ui-root .cl-cap { margin-block-end: 0; margin-inline: 0; font-size: var(--fs-small); line-height: var(--lh-text); color: var(--placeholder); overflow-wrap: anywhere; }
+.ui-root .cl-cover-title { margin-block-end: 0; margin-inline: 0; font-family: var(--font-display); font-weight: var(--fw-regular); text-transform: uppercase; letter-spacing: var(--ls-section-title); font-size: var(--fs-title-guide-phone); line-height: var(--lh-title); color: var(--text); }
+.ui-root .cl-note { margin-block-end: 0; margin-inline: 0; font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .cl-bsent { margin-bottom: 0; font-size: var(--fs-body); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .cl-cover + .ag-steps { margin-top: var(--space-px22); }
+
+/* ---- Lines and small print (M28 .say, .hint) */
+.ui-root .cl-say { margin-block-end: 0; margin-inline: 0; font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text); text-wrap: pretty; }
+.ui-root .cl-hint { margin-block-end: 0; margin-inline: 0; font-size: var(--fs-secondary); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .cl-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-px12); }
+
+/* ---- A section heading where M28 draws .sec: the shared Section's line and Nekst title */
+.ui-root .cl-sec { margin-block-end: 0; }
+.ui-root .cl-sec .ds-section-body:empty { display: none; }
+
+/* ---- Ask for a change: the link under each clause and its box (M28 s-c-change) */
+.ui-root .cl-ask { margin-top: var(--space-1); }
+.ui-root .cl-ask-box { margin-top: var(--space-px10); display: flex; flex-direction: column; gap: var(--space-px18); }
+
+/* ---- The panel that replaces the signing block (M28 .panel) */
+.ui-root .cl-panel { border: var(--line-w) solid var(--line); border-radius: var(--radius-offer); background: var(--bg); padding: var(--space-4); }
+.ui-root .cl-panel > * + * { margin-top: var(--space-px18); }
+
+/* ---- The signing block (M28 .signblock) */
+.ui-root .cl-signblock > * + * { margin-top: var(--space-px18); }
+.ui-root .cl-signblock .ag-settle { margin-top: var(--space-px18); }
+
+/* ---- The signature box (M28 .sigbox): draw, the caption under the drawing, Clear and Type instead under the box */
+.ui-root .cl-sign-box > * + * { margin-top: var(--space-px18); }
+.ui-root .cl-sigbox { display: flex; flex-direction: column; gap: var(--space-px6); border: var(--line-w) solid var(--field-line); border-radius: var(--radius-field); background: var(--card); padding: var(--space-px18) var(--space-px20); }
+.ui-root .cl-sig-canvas { display: block; width: 100%; height: calc(var(--sig-pad-h) - var(--space-px30)); touch-action: none; cursor: crosshair; color: var(--text); user-select: none; -webkit-user-select: none; }
+.ui-root .cl-sig-typed { display: flex; align-items: center; min-height: calc(var(--sig-pad-h) - var(--space-px30)); font-size: var(--fs-number); font-style: italic; font-weight: var(--fw-light); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .cl-sig-cap { font-size: var(--fs-small); line-height: var(--lh-text); color: var(--placeholder); }
+
+/* ---- A centred message page (M28 .msg: s-c-asked, s-s-signed) */
+.ui-root .cl-msg { min-height: var(--loading-page-h, 420px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: var(--space-px12); }
+
+/* ---- Settle (M28 s-c-pay): the amount, the form's place */
+.ui-root .cl-amount { margin-block-end: 0; margin-inline: 0; font-family: var(--font-display); font-weight: var(--fw-light); font-size: var(--fs-amount); line-height: var(--lh-cal-one); color: var(--text); }
+.ui-root .cl-stripe { display: flex; align-items: center; min-height: var(--offer-h); border: var(--line-w) dashed var(--field-line); border-radius: var(--radius-field); padding: var(--space-px22) var(--space-px20); font-size: var(--fs-secondary); color: var(--text-2); }
+.ui-root .cl-element { min-height: var(--offer-h); }
+.ui-root .cl-field-label { display: block; margin: 0 0 var(--space-2); font-size: var(--fs-note); color: var(--text-2); }
+
+/* ---- The quote's table (M28 .qt): the package, discounts, the extras to tick, In all */
+.ui-root .cl-qt { margin: 0; }
+.ui-root .cl-qline { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-px12) 0; border-bottom: var(--line-w) solid var(--line-soft); font-size: var(--fs-body); line-height: var(--lh-row); color: var(--text); }
+.ui-root .cl-qline > span:last-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ui-root .cl-qline--total { border-bottom: 0; font-size: var(--fs-statement); }
+.ui-root .cl-qx { margin: var(--space-px14) 0 var(--space-px2); font-size: var(--fs-small); color: var(--placeholder); }
+.ui-root .cl-qrow { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); border-bottom: var(--line-w) solid var(--line-soft); font-size: var(--fs-body); color: var(--text); }
+.ui-root .cl-qrow > span:last-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ui-root .cl-qt .cl-hint { margin-top: var(--space-px10); }
+
+/* ---- Two boxes side by side (M28 .two: the sponsor's name and role) */
+.ui-root .cl-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); align-items: end; }
+
+/* ---- My Account, Invoices (M28 s-payments): Overdue is a word in an outline, never red */
+.ui-root .cl-due { display: inline-block; border: var(--line-w) solid var(--field-line); border-radius: var(--radius-btn); padding: var(--space-px2) var(--space-px10); font-size: var(--fs-note); color: var(--text); white-space: nowrap; }
+.ui-root .cl-inv-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-px12) var(--space-px20); padding: 0 0 var(--space-3); border-bottom: var(--line-w) solid var(--line); }
+.ui-root .cl-rows { margin: 0; }
+.ui-root .cl-rows .ds-row-date { white-space: nowrap; }
+.ui-root .cl-good { color: var(--mint-text); }
+
+/* ---- The block of hours (M28 s-h-client): the meter */
+.ui-root .cl-meter { height: var(--space-2); border-radius: var(--radius-pill); background: var(--seg-track); overflow: hidden; }
+.ui-root .cl-meter > i { display: block; height: 100%; border-radius: var(--radius-pill); background: var(--good); transition: width var(--dur-slow) var(--ease); }
+
+/* ---- Your plan (M28 s-levels): three cards, their parts lined up across */
+.ui-root .cl-plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto auto 1fr auto; gap: 0 var(--space-px14); }
+.ui-root .cl-plan { display: grid; grid-row: span 4; grid-template-rows: subgrid; gap: var(--space-px10); align-content: start; border: var(--line-w) solid var(--line); border-radius: var(--radius-card); padding: var(--space-px20); }
+.ui-root .cl-plan-name { margin: 0; font-family: var(--font-display); font-weight: var(--fw-regular); text-transform: uppercase; letter-spacing: var(--ls-section-title); font-size: var(--fs-note); color: var(--text); }
+.ui-root .cl-plan-price { margin: 0; font-family: var(--font-display); font-weight: var(--fw-light); font-size: var(--fs-title-desktop); line-height: var(--lh-cal-one); color: var(--text); }
+.ui-root .cl-plan-line { margin: 0; font-size: var(--fs-secondary); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .cl-plan-cur { align-self: end; display: flex; align-items: center; min-height: var(--btn-h); margin: 0; font-size: var(--fs-secondary); color: var(--mint-text); }
+.ui-root .cl-plan .ds-btn { width: 100%; align-self: end; }
+
+/* ---- A tool on the free plan (M28 s-locked) */
+.ui-root .cl-tiles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-px14); }
+.ui-root .cl-tile { box-sizing: border-box; display: flex; flex-direction: column; gap: var(--space-px6); min-height: var(--hub-tile-min-h); padding: var(--space-px18) var(--space-px20); border: var(--line-w) solid var(--line); border-radius: var(--radius-card); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ui-root .cl-tile-title { font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); transition: color var(--dur-fast) var(--ease); }
+.ui-root .cl-tile-meta { font-size: var(--fs-small); line-height: var(--lh-text); color: var(--placeholder); }
+.ui-root .cl-tile:hover .cl-tile-title, .ui-root .cl-tile:focus-visible .cl-tile-title { color: var(--coral-text); }
+.ui-root .cl-tile:focus-visible { outline: var(--focus-w) solid var(--coral); outline-offset: var(--space-px2); }
+.ui-root .cl-tile--locked { background: var(--raised); border-color: var(--raised); }
+.ui-root .cl-tile--locked .cl-tile-title { color: var(--text-2); }
+.ui-root .cl-locked-panel { margin-top: var(--space-px14); }
+.ui-root .cl-locked-title { margin: 0; font-family: var(--font-display); font-weight: var(--fw-regular); text-transform: uppercase; letter-spacing: var(--ls-page-title); font-size: var(--fs-page-title); line-height: var(--lh-title); color: var(--text); }
+
+@media (max-width: 600px) {
+  .ui-root .cl-two, .ui-root .cl-tiles { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .cl-plans { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: var(--space-px14); }
+  .ui-root .cl-plan { grid-row: auto; grid-template-rows: none; }
+  .ui-root .cl-cover { padding: var(--space-px20); }
+  .ui-root .cl-acts > .ds-btn--primary { flex: 1 1 100%; }
+}
+
+@media (forced-colors: active) {
+  .ui-root .cl-meter > i { forced-color-adjust: none; background: CanvasText; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .cl-meter > i, .ui-root .cl-tile-title { transition: none; }
+}
+
+/* One left edge (sign-in rule 49; M28 .tick's -13px): a tick box's square, not its 44px tap area, sits on the edge */
+.ui-root .cl-page .ds-check > .ds-check-box { margin-left: calc((var(--tap-min) - var(--checkbox-box)) / -2); }
+
+/* Lines start with no space above; the column's and a panel's rhythm (above) adds it between parts */
+.ui-root :where(.cl-say, .cl-hint, .cl-amount, .cl-cap, .cl-note, .cl-cover-title, .cl-bsent) { margin-top: 0; }
+/* M28's .hint sits straight under what it explains (its margin: 0 beats the column's rhythm) */
+.ui-root .cl-page > .cl-hint { margin-top: 0; }
+.ui-root .cl-page > .ds-list, .ui-root .cl-page > .ds-section { margin-top: var(--space-px22); }
+/* Inside the portal the page's side padding sits within its width, so the column itself is M28's 640px */
+.ui-root .plan-page.cl-page { max-width: calc(var(--guide-page-max) + 2 * var(--page-x-desktop)); }
+.ui-root .cl-link .ag-contents ol { padding: 0; }

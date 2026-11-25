@@ -62,7 +62,9 @@
       // A workshop's registration page and survey (Phase 6a) are outside the portal as well.
       || path.indexOf('/workshop/') === 0
       // The booking pages and a poll's page (Phase 6a run 3) too.
-      || path.indexOf('/book/') === 0 || path.indexOf('/poll/') === 0;
+      || path.indexOf('/book/') === 0 || path.indexOf('/poll/') === 0
+      // A quote's and a sponsor's signing pages (Phase 6b run 3).
+      || path.indexOf('/quote/') === 0 || path.indexOf('/sign/') === 0;
   }
 
   function resolve(c) {

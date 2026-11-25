@@ -1,7 +1,103 @@
-import { Loading } from '../../../components/design';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Button, ErrorMessage, Loading, PageHeader, SavedSignature, SignaturePad, TextBox, TextField, useToast } from '../../../components/design';
+import { kindOf } from '../../../lib/agreements/terms';
+import { quoteNumber } from '../../../lib/agreements/quote';
+import { sendWords } from '../../../lib/coach/agreementBuilder';
+import { Back, TextLink, useCoachPortal } from '../parts';
+import { Hint, useAgreementDraft } from './builderParts';
+import { useSavedSignature, useSend } from './useSend';
 
-// SignSend: Group B's page (Phase 6b run 3, plan section 6 B; M28 s-sign: /coach/agreements/:id/sign). A stub laid down by Group A so the
-// route, its title and its part exist; Group B replaces it, keeping the default export.
+// Sign and send (Phase 6b run 3, Group B; M28 s-sign; brief items 19, 22 and 31): /coach/agreements/:id/sign
+// (?as=quote&valid=30 for a quote). The coach's saved signature unless they draw or type a new one, and the personal
+// note from the package with the client's name filled in, editable before sending; it opens the email and the
+// agreement. The coach signs first; the client then gets the email to read and sign in the portal. An associate's
+// agreement is signed and waits for the owner's approval (risk 23).
+
 export default function SignSend() {
-  return <div className="cc-page"><div className="cc-col"><Loading label="Loading" /></div></div>;
+  const { id } = useParams();
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { isOwner, coach } = useCoachPortal();
+  const d = useAgreementDraft(id);
+  const send = useSend(d);
+  const saved = useSavedSignature(d.userId);
+  const [mode, setMode] = useState('saved'); // 'saved' | 'draw' | 'typed'
+  const [drawn, setDrawn] = useState(null);
+  const [typed, setTyped] = useState(coach?.full_name || '');
+  const [note, setNote] = useState(null);
+  const [problem, setProblem] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const sendAs = params.get('as') === 'quote' ? 'quote' : 'agreement';
+  const valid = Number(params.get('valid')) || 30;
+  useEffect(() => { if (saved === null) setMode('draw'); }, [saved]);
+  useEffect(() => { if (d.draft && note === null) setNote(d.draft.personal_note || ''); }, [d.draft, note]);
+
+  const { agreement, draft, party } = d;
+  if (!agreement || !draft || saved === undefined) {
+    return <div className="cc-page"><div className="cc-col"><Back to="Check before sending" onClick={() => navigate(`/coach/agreements/${id}/check`)} />{d.loading || saved === undefined ? <Loading label="Loading the agreement" /> : <p className="cc-quiet">There’s nothing waiting to be sent on this agreement.</p>}</div></div>;
+  }
+  const first = party.first || 'them';
+  const kind = kindOf(draft.terms || {});
+  const who = kind === 'team' ? 'the sponsor' : first;
+
+  const go = async () => {
+    if (mode === 'draw' && !drawn) { setProblem('Draw or type your new signature first.'); return; }
+    if (mode === 'typed' && String(typed).trim().length < 3) { setProblem('Type your full name to sign.'); return; }
+    setBusy(true);
+    setProblem(null);
+    const answer = await send({ sendAs, validDays: valid, personalNote: note ?? '', signature: mode === 'saved' ? { saved } : mode === 'draw' ? { drawn } : { typed } });
+    setBusy(false);
+    if (!answer.ok) { setProblem(answer.message); return; }
+    navigate(agreement.profile_id ? `/coach/clients/${agreement.profile_id}` : agreement.organisation_id ? `/coach/organisations/${agreement.organisation_id}` : '/coach/clients');
+    if (answer.waiting) toast.show(`Signed. It goes to ${who} once your practice’s owner approves it.`);
+    else if (sendAs === 'quote') toast.show(answer.quoteNumber ? `Quote ${quoteNumber(answer.quoteNumber)} signed and sent to ${first}` : `Quote signed and sent to ${first}`);
+    else toast.show(`Sent to ${who === first ? first : 'the sponsor'}`);
+  };
+
+  return (
+    <div className="cc-page">
+      <div className="cc-col ab-page">
+        <Back to="Check before sending" onClick={() => navigate(`/coach/agreements/${id}/check`)} />
+        <PageHeader title="Sign and send" meta={[party.name, `Version ${draft.version}`]} />
+        <p className="ab-say">
+          {sendAs === 'quote' ? `You sign first, then ${first} gets an email from you with the quote to read and accept.`
+            : kind === 'team' ? 'You sign first, then the sponsor gets an email link to sign, with no account needed.'
+              : `You sign first, then ${first} gets an email from you to read and sign it in the portal.`}
+        </p>
+        {mode === 'saved' && saved && (
+          <div className="ab-sigbox">
+            <SavedSignature image={saved.image} />
+            <p className="ab-cap">Your saved signature</p>
+            <TextLink onClick={() => setMode('draw')}>Draw a new signature</TextLink>
+          </div>
+        )}
+        {mode === 'draw' && (
+          drawn ? (
+            <div className="ab-sigbox">
+              <SavedSignature image={drawn} />
+              <p className="ab-cap">Your new signature</p>
+              <TextLink onClick={() => setDrawn(null)}>Draw it again</TextLink>
+            </div>
+          ) : (
+            <SignaturePad label="Draw your signature" onUse={(img) => { setDrawn(img); setProblem(null); }} onEmpty={() => setProblem('Draw or type your new signature first.')} onTypeInstead={() => setMode('typed')} />
+          )
+        )}
+        {mode === 'typed' && (
+          <div className="ab-sigbox">
+            <TextField label="Your typed signature" value={typed} maxLength={160} onChange={(e) => setTyped(e.target.value)} />
+            <TextLink onClick={() => setMode('draw')}>Draw instead</TextLink>
+          </div>
+        )}
+        <TextBox label={`What would you like to say to ${kind === 'team' ? 'the sponsor' : first}?`} value={note ?? ''} maxLength={1000} onChange={setNote} />
+        <Hint>From the package. It opens the email and the agreement.</Hint>
+        {problem && <ErrorMessage>{problem}</ErrorMessage>}
+        <div className="ab-acts">
+          <Button variant="primary" onClick={go} aria-busy={busy || undefined}>{sendAs === 'quote' ? 'Sign and send the quote' : sendWords({ kind, first })}</Button>
+        </div>
+        {!isOwner && <Hint>It goes once your practice’s owner approves it.</Hint>}
+      </div>
+    </div>
+  );
 }

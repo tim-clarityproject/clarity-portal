@@ -151,6 +151,7 @@
   --fs-glyph: calc(10 * var(--u));          /* Nekst inside the circled i and objective numbers (Nekst never below 10px) */
   --fs-minus: calc(20 * var(--u));          /* the stepper's minus sign */
   --fs-number: calc(32 * var(--u-big));         /* big numbers, Nekst Light (v3 stats) */
+  --fs-amount: calc(40 * var(--u-big));         /* an amount to settle, Nekst Light (M28 .amount; Phase 6b run 3) */
   --fs-number-sm: calc(16 * var(--u));      /* a tile's score */
   --fs-btn: calc(16 * var(--u));            /* every button, segmented switch and choice: DM Sans, sentence case, growing up to twice with the device's text size (Tim, 18 Nov, follow-up 1; src/styles/buttons.css) */
   --fw-btn: 400;
@@ -317,6 +318,10 @@
   --loading-page-h: 50dvh;   /* the space a whole page's loading crosshair sits in */
   --panel-w: 480px;          /* slide-across panel on desktop */
   --panel-w-calm: 460px;     /* the calm tools' side panel (M9, M10, M7, M7b .sheet) */
+  --ab-live-w: 320px;        /* the agreement builder's live view beside the form (M28 .live) */
+  --ab-blk-n: 96px;          /* a block's count box in the builder, laptop (M28) */
+  --ab-blk-n-phone: 72px;    /* the same on a phone */
+  --ab-sig-w: 220px;         /* a saved signature's width (M28) */
   --popup-w: 520px;          /* pop-up on desktop */
   --popup-top: max(48px, 12dvh); /* where the pop-up sits on desktop */
   --line-w: 1px;

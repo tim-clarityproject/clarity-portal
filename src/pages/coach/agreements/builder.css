@@ -1,1 +1,115 @@
-/* Group B's builder styles (Phase 6b run 3). Laid down by Group A; every value a token. */
+/* Group B's builder styles (Phase 6b run 3; M28 version 4: s-builder and the four other builders, s-start, s-packages,
+   s-library, s-clause, s-check, s-preview, s-sign, s-sent, the team and hours checks, s-say). Every value a token
+   (CLAUDE.md design rule 2); everything inside .ui-root (rule 17). M28's left lines on a small form (.sub) and a
+   reason (.cl-why) are left out: no side lines on any card or row (rule 4a; risk 3). */
+
+/* ---- The page: the form, and Sam's view beside it on a laptop (M28 .split, .live) */
+.ui-root .ab-split { display: block; }
+.ui-root .ab-form > * + * { margin-top: var(--space-px22); }
+.ui-root .ab-live { display: none; }
+@media (min-width: 1100px) {
+  .ui-root .ab-split { display: grid; grid-template-columns: minmax(0, 1fr) var(--ab-live-w); gap: var(--space-px36); align-items: start; }
+  .ui-root .ab-live { display: block; position: sticky; top: calc(var(--cc-header-h) + var(--space-3)); border: var(--line-w) solid var(--line); border-radius: var(--radius-card); padding: var(--space-px20); background: var(--card); }
+}
+.ui-root .ab-live-h { margin: 0 0 var(--space-px6); font-family: var(--font-display); font-size: var(--fs-label); letter-spacing: var(--ls-menu-label); text-transform: uppercase; color: var(--placeholder); }
+.ui-root .ab-live-t { margin: var(--space-px12) 0 0; font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text); }
+
+/* ---- The underlined tabs row that jumps to each part (M28 .xr-tabs.toc), kept at the top while the form scrolls */
+.ui-root .ab-toc { position: sticky; top: var(--cc-header-h); z-index: 5; background: var(--bg); margin-top: var(--space-4); }
+.ui-root .ab-sec { border-top: var(--line-w) solid var(--line); padding-top: var(--space-4); scroll-margin-top: calc(var(--cc-header-h) + var(--space-7)); }
+.ui-root .ab-sec-title { margin: 0; font-family: var(--font-display); font-weight: var(--fw-regular); text-transform: uppercase; letter-spacing: var(--ls-section-title); font-size: var(--fs-section-title); line-height: var(--lh-title); color: var(--text); }
+
+/* ---- Boxes side by side (M28 .two), the grey line under a part (.hint), a small form (.sub) */
+.ui-root .ab-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); align-items: end; }
+.ui-root .ab-two > * { min-width: 0; }
+@media (max-width: 600px) { .ui-root .ab-two { grid-template-columns: minmax(0, 1fr); } }
+.ui-root .ab-hint { margin: 0; font-size: var(--fs-secondary); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .ab-form > .ab-hint, .ui-root .ab-sub > .ab-hint { margin-top: var(--space-px10); }
+.ui-root .ab-sub { padding-left: var(--space-3); }
+.ui-root .ab-sub > * + * { margin-top: var(--space-3); }
+.ui-root .ab-acts { display: flex; flex-wrap: wrap; gap: var(--space-px12); align-items: center; }
+.ui-root .ab-label { margin: 0 0 var(--space-2); font-size: var(--fs-body); line-height: var(--lh-text); color: var(--text); }
+.ui-root .ab-say { margin: 0; font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text); text-wrap: pretty; }
+.ui-root .ab-quiet { margin: 0; font-size: var(--fs-body); line-height: var(--lh-text); color: var(--text-2); }
+
+/* ---- The blocks of coaching sessions (M28 .blk): count × length, Remove */
+.ui-root .ab-blk { display: grid; grid-template-columns: var(--ab-blk-n) var(--space-4) minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); margin-bottom: var(--space-px10); }
+.ui-root .ab-blk > * { min-width: 0; }
+.ui-root .ab-blk .ds-label-row { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.ui-root .ab-times { text-align: center; color: var(--text-2); font-size: var(--fs-body); }
+@media (max-width: 600px) {
+  .ui-root .ab-blk { grid-template-columns: var(--ab-blk-n-phone) var(--space-px18) minmax(0, 1fr); }
+  .ui-root .ab-blk .ab-rm { grid-column: 1 / -1; justify-self: start; }
+}
+
+/* ---- Lists (M28 .list .lr): a title, one quiet line, something at the right */
+.ui-root .ab-rows { border-top: var(--line-w) solid var(--line); }
+.ui-root .ab-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: center; width: 100%; min-height: var(--tap-min); padding: var(--space-px14) 0; border: 0; border-bottom: var(--line-w) solid var(--line); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ui-root .ab-row--still { cursor: default; }
+.ui-root .ab-row-words { min-width: 0; }
+.ui-root .ab-row-words b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); overflow-wrap: anywhere; transition: color var(--dur-fast) var(--ease); }
+.ui-root .ab-row-words small { display: block; margin-top: var(--space-px2); font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .ab-row-aside { font-size: var(--fs-note); color: var(--text-2); white-space: nowrap; text-align: right; }
+.ui-root .ab-row-aside--done { color: var(--good); }
+.ui-root button.ab-row:hover .ab-row-words b, .ui-root button.ab-row:focus-visible .ab-row-words b { color: var(--coral-text); }
+.ui-root button.ab-row:focus-visible { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--space-px6); }
+
+/* ---- Lines with Remove (M28 .disc .dl, the extras and the people) */
+.ui-root .ab-lines { border-top: var(--line-w) solid var(--line); }
+.ui-root .ab-line { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); padding: var(--space-1) 0; border-bottom: var(--line-w) solid var(--line-soft); min-height: var(--tap-min); }
+.ui-root .ab-line-end { display: inline-flex; align-items: center; gap: var(--space-3); }
+.ui-root .ab-amount { color: var(--text-2); font-variant-numeric: tabular-nums; font-size: var(--fs-body); }
+.ui-root .ab-empty { margin: 0; font-size: var(--fs-body); color: var(--text-2); padding: var(--space-px14) 0; border-bottom: var(--line-w) solid var(--line); }
+
+/* ---- Label over value (M28 .kv) in the live view, the checks and the fold */
+.ui-root .ab-kv { margin: 0; border-top: var(--line-w) solid var(--line); }
+.ui-root .ab-kv > div { display: grid; grid-template-columns: var(--glance-label-w) minmax(0, 1fr); gap: var(--space-1) var(--space-px20); padding: var(--space-px12) 0; border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .ab-kv dt { font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .ab-kv dd { margin: 0; font-size: var(--fs-body); line-height: var(--lh-text); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .ab-kv--compact > div { grid-template-columns: minmax(0, 1fr); padding: var(--space-2) 0; }
+.ui-root .ab-kv--compact dt { font-size: var(--fs-small); }
+@media (max-width: 600px) { .ui-root .ab-kv > div { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- The £ warning (M28 .err.fxw): soft, calm, never blocking */
+.ui-root .ab-warn { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-px6) var(--space-px10); padding: var(--space-px12) var(--space-3); border-radius: var(--radius-btn); background: var(--soft-tint, var(--raised)); color: var(--text); font-size: var(--fs-secondary); line-height: var(--lh-text); }
+
+/* ---- A clause's reason (M28 .cl-why) without its side line, and the clause editor */
+.ui-root .ab-why { margin: var(--space-2) 0 0; padding-left: var(--space-px12); font-size: var(--fs-note); line-height: var(--lh-text); color: var(--placeholder); }
+.ui-root .ab-panel { border: var(--line-w) solid var(--line); border-radius: var(--radius-card); background: var(--bg); padding: var(--space-4); }
+.ui-root .ab-panel > * + * { margin-top: var(--space-px18); }
+
+/* ---- Sign and send (M28 .sigbox) and the preview's line */
+.ui-root .ab-sigbox { border: var(--line-w) solid var(--field-line); border-radius: var(--radius-field); background: var(--card); padding: var(--space-px18) var(--space-px20); display: flex; flex-direction: column; gap: var(--space-px6); }
+.ui-root .ab-sigbox img { max-width: var(--ab-sig-w); max-height: var(--space-px64); object-fit: contain; }
+.ui-root .ab-cap { margin: 0; font-size: var(--fs-small); color: var(--placeholder); }
+.ui-root .ab-bsent { margin: 0 0 var(--space-px14); font-size: var(--fs-body); color: var(--text-2); }
+
+/* ---- What to say (M28 .panel.talk) */
+.ui-root .ab-talk { border: var(--line-w) solid var(--line); border-radius: var(--radius-card); padding: var(--space-4); margin-top: var(--space-3); }
+.ui-root .ab-talk > * + * { margin-top: var(--space-px10); }
+.ui-root .ab-talk-line { margin: 0; font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text); }
+.ui-root .ab-talk-tip { margin: 0; padding-top: var(--space-2); border-top: var(--line-w) solid var(--line-soft); font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); }
+
+/* ---- The page's parts stack with the M28 rhythm */
+.ui-root .ab-page > * + * { margin-top: var(--space-px22); }
+.ui-root .ab-page .ds-page-header + * { margin-top: var(--space-4); }
+.ui-root .ab-start-say { margin-top: var(--space-4); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ab-row-words b { transition: none; }
+}
+@media (forced-colors: active) {
+  .ui-root .ab-live, .ui-root .ab-panel, .ui-root .ab-talk { border-color: CanvasText; }
+}
+
+/* No line straight under a heading when rows with their own lines follow, and no doubled line after them (CLAUDE.md 4a). */
+.ui-root .ab-sec + .ab-rows, .ui-root .ab-sec + .ab-kv, .ui-root .ab-sec + .ab-lines { border-top: 0; }
+.ui-root .ab-rows + .ab-sec, .ui-root .ab-kv + .ab-sec, .ui-root .ab-lines + .ab-sec { border-top: 0; padding-top: var(--space-3); }
+.ui-root .ab-sec + .ab-rows, .ui-root .ab-sec + .ab-kv { margin-top: var(--space-3); }
+
+/* The client page's Agreement fold: its parts one under the other */
+.ui-root .ab-fold > * + * { margin-top: var(--space-3); }
+.ui-root .ab-fold-head { margin: 0; font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .ab-settings .ab-rows, .ui-root .ab-settings .ab-hint + .ab-rows { border-top: 0; }
+.ui-root .ab-settings .ab-hint { margin: var(--space-2) 0; }
+.ui-root .ab-settings .ds-link, .ui-root .ab-settings .ab-quiet { margin-top: var(--space-3); }

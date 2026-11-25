@@ -41,3 +41,15 @@ test('a route not built yet (501) answers with its stand-in, never on the live s
   const link = await a.askWith({ route: 'link', kind: 'quote_pdf', body: { token: 'x' }, send: reply(501, {}) });
   assert.equal(link.ok, true, 'a link ask needs no sign-in');
 });
+
+test('off the live site a plain 404 (no api/ here) answers with the stand-in; our own 404 and the live site do not', async () => {
+  const off = await a.askWith({ route: 'link', kind: 'quote_question', body: { token: 'x', text: 'Hi' }, send: async () => ({ status: 404, json: async () => { throw new Error('html'); } }) });
+  assert.equal(off.ok, true);
+  assert.equal(off.standIn, true);
+  const ours = await a.askWith({ route: 'agreements', kind: 'send', token: 't', send: reply(404, { ok: false, message: 'x' }) });
+  assert.equal(ours.ok, false);
+  assert.equal(ours.standIn, undefined);
+  const live = await a.askWith({ route: 'link', kind: 'quote_pdf', body: { token: 'x' }, send: reply(404, null), live: true });
+  assert.equal(live.ok, false);
+  assert.equal(live.standIn, undefined);
+});

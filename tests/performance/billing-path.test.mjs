@@ -440,3 +440,116 @@ test('break-it tester, follow-up 5: finalised but its email failed: never called
   assert.deepEqual([row.status, Boolean(row.sent_at), row.issued_on, row.due_on, /^https:/.test(row.hosted_url)], ['sent', true, '2026-12-01', '2026-12-15', true]);
   assert.equal(stripe.state.sent.length, 1);
 });
+
+// ---------------------------------------------------------------- Phase 6b run 3 (065): the first payment, Bacs, organisations
+import { settleApi } from '../../api/_routes/agreement-settle.js';
+import { fakeDb065, numberRpc } from './_fakeDb065.mjs';
+import { blankTerms as blank065 } from '../../src/lib/agreements/terms.js';
+
+const U = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+const C065 = { id: U(1), role: 'owner', active: true, user_id: U(2) };
+
+function world065() {
+  const t = { ...blank065('sessions'), coaching: '6-month coaching', totalMinor: 1800000, discounts: [{ type: 'returning', percent: 15 }], settle: 'deposit', clientName: 'Sam Reid' };
+  const numbers = numberRpc();
+  const db = fakeDb065({
+    coaches: [{ id: C065.id, user_id: C065.user_id, role: 'owner', display_first_name: 'Tim', email: 'tim@example.invalid', active: true }],
+    client_profiles: [{ id: U(10), coach_id: C065.id, name: 'Sam Reid', email: 'sam@example.invalid', time_zone: 'Europe/London', organisation_id: null },
+      { id: U(11), coach_id: C065.id, name: 'Dan Hughes', email: 'dan@example.invalid', time_zone: 'Europe/London', organisation_id: U(80), merged_into: null }],
+    agreements: [{ id: U(30), coach_id: C065.id, kind: 'coaching', profile_id: U(10), status: 'signed', current_version: 1 }],
+    agreement_versions: [{ id: U(31), agreement_id: U(30), coach_id: C065.id, version: 1, status: 'signed', terms: t, currency: 'GBP', funded_by: null,
+      client_signed_at: '2026-12-01T10:00:00Z', settle_choice: 'plan' }],
+    organisations: [{ id: U(80), name: 'Cymru Active', created_by: C065.user_id }],
+    org_billing_profiles: [{ id: U(81), coach_id: C065.id, organisation_id: U(80), legal_name: 'Cymru Active Cyf', billing_address: '1 Invented Street\nCardiff', invoices_email: 'finance@cymru.example.invalid',
+      supplier_number: 'SUP-77', needs_po: true, their_reference: 'Coaching 2026', hourly_rate_minor: 30000, currency: 'GBP', terms_days: 30, timesheet: true, evidence_required: true, supplier_portal: true }],
+    purchase_orders: [{ id: U(82), coach_id: C065.id, organisation_id: U(80), number: '4500918823', status: 'open' }],
+    coach_sessions: [3, 10, 17, 24].map((d, i) => ({ id: U(90 + i), coach_id: C065.id, profile_id: U(11), starts_at: `2026-11-${String(d).padStart(2, '0')}T10:00:00Z`, minutes: i % 2 ? 60 : 90, outcome: 'held' })),
+    invoice_evidence: [{ id: U(85), coach_id: C065.id, organisation_id: U(80), storage_path: `${C065.user_id}/finances/evidence/${U(86)}-hours.png`, file_name: 'hours.png', mime: 'image/png', bytes: 70, position: 0 }],
+  }, {
+    unique: { invoices: [['number'], ['stripe_invoice_id'], ['agreement_id', 'kind', 'instalment_n']], invoice_sources: [['session_id'], ['time_entry_id']], payments: [['stripe_id']], stripe_events: [['id']] },
+    rpc: { invoice_take_number: numbers },
+  });
+  // The evidence: a 1 by 1 PNG in the coach's own folder of coach-files.
+  db.files.set(`${C065.user_id}/finances/evidence/${U(86)}-hours.png`, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAAAAElFTkSuQmCC', 'base64'));
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const stripe = stripeStandIn({ now: () => now.value.getTime() });
+  const mails = [];
+  const b = billing({ server: db, stripe, coach: C065, now: () => now.value, env: { VERCEL_ENV: 'production' }, send: async (e, m) => { mails.push(m); return 'sent'; } });
+  return { db, stripe, b, now, mails, settle: settleApi({ server: db, stripe, now: () => now.value, env: { STRIPE_PUBLISHABLE_KEY: 'pk_test_standinonly0000' } }) };
+}
+const mineOf = (db) => ({ ...db.tables.agreement_versions[0], funded_by: null });
+const deliver065 = async (db, stripe) => { for (const e of stripe.state.events.splice(0)) await handleEvent(db, e, stripe); };
+
+test('the first payment at signing: £15,300 with a deposit → £4,600, card only, once, numbered, finalised with no Stripe email', async () => {
+  const { db, stripe, settle } = world065();
+  const s = await settle.start(mineOf(db));
+  assert.deepEqual([s.amountMinor, s.currency, s.publishableKey], [460000, 'GBP', 'pk_test_standinonly0000']);
+  assert.match(s.clientSecret, /^pi_.*_secret_/);
+  assert.equal((await settle.start(mineOf(db))).invoiceId, s.invoiceId, 'asked again: the same invoice');
+  const [inv] = db.tables.invoices;
+  assert.deepEqual([inv.kind, inv.number, inv.status, inv.version_id, inv.instalment_n], ['deposit', 1201, 'sent', U(31), 1]);
+  const st = stripe.state.invoices.get(inv.stripe_invoice_id);
+  assert.deepEqual([st.payment_settings.payment_method_types, st.number, st.status], [['card'], 'CLARITY-1201', 'open']);
+  assert.equal(stripe.state.sent.length, 0, 'Stripe’s own email isn’t sent: it is settled on the portal’s page');
+  assert.equal((await settle.state(mineOf(db))).settled, false);
+  stripe.payIntent(st.payment_intent);
+  await deliver065(db, stripe);
+  assert.deepEqual([(await settle.state(mineOf(db))).settled, db.tables.payments.length], [true, 1]);
+  assert.equal((await settle.start(mineOf(db))).settled, true, 'settled: no second payment asked for');
+});
+
+test('Bacs for the rest (pounds only): the later instalments are collected by Direct Debit, starting at 2', async () => {
+  const { db, stripe, settle, b, now } = world065();
+  await settle.start(mineOf(db));
+  stripe.payIntent(stripe.state.invoices.get(db.tables.invoices[0].stripe_invoice_id).payment_intent);
+  await deliver065(db, stripe);
+  const { clientSecret } = await settle.bacs(mineOf(db));
+  stripe.confirmSetup(clientSecret.split('_secret')[0]);
+  now.value = new Date('2027-01-02T12:00:00Z');
+  assert.deepEqual(await b.draft(U(30)), { drafted: 1 });
+  const second = db.tables.invoices.find((i) => i.instalment_n === 2);
+  const st = stripe.state.invoices.get(second.stripe_invoice_id);
+  assert.deepEqual([second.total_minor, st.collection_method, Boolean(st.default_payment_method)], [214000, 'charge_automatically', true], '5 × £2,140, by Direct Debit');
+  const euro = { ...mineOf(db), currency: 'EUR' };
+  db.tables.agreement_versions[0].currency = 'EUR';
+  await assert.rejects(settle.bacs(euro), /in pounds/);
+});
+
+test('an organisation: one PDF (invoice, timesheet, evidence), its own bank transfer details, emailed by the coach; a transfer settles it', async () => {
+  const { db, stripe, b, mails } = world065();
+  const ask = { organisationId: U(80), sessionIds: [U(90), U(91), U(92), U(93)], entryIds: [], evidenceIds: [], poNumber: '', rateMinor: null };
+  await assert.rejects(b.orgInvoiceSend(ask), /Add the screenshot of your hours first\. Cymru Active won’t accept the invoice without it\./);
+  const preview = await b.orgInvoicePreview({ ...ask, evidenceIds: [U(85)] });
+  assert.match(preview.fileName, /^Invoice draft, Cymru Active, 1 Dec 2026\.pdf$/);
+  assert.equal(db.tables.invoices?.length || 0, 0, 'a preview takes no number and makes no invoice');
+  const sent = await b.orgInvoiceSend({ ...ask, evidenceIds: [U(85)] });
+  assert.deepEqual([sent.number, sent.fileName, sent.sentTo, sent.dueOn], [1201, 'Invoice CLARITY-1201, Cymru Active, 1 Dec 2026.pdf', 'finance@cymru.example.invalid', '2026-12-31']);
+  const inv = db.tables.invoices[0];
+  assert.deepEqual([inv.kind, inv.total_minor, inv.po_number, inv.status, Boolean(inv.emailed_at), inv.bank_details.sortCode], ['org_hours', 150000, '4500918823', 'sent', true, '10-88-00'],
+    '1.5 + 1 + 1.5 + 1 = 5 hours at £300/hr = £1,500');
+  assert.equal(db.tables.org_billing_profiles[0].bank_details.accountNumber.length, 8, 'kept on the profile: the same account each time');
+  const st = stripe.state.invoices.get(inv.stripe_invoice_id);
+  assert.deepEqual([st.payment_settings.payment_method_types, st.number, stripe.state.sent.length], [['customer_balance'], 'CLARITY-1201', 0]);
+  assert.ok(db.files.has(inv.pdf_path), 'the one PDF is kept in coach-files');
+  const { PDFDocument } = await import('pdf-lib');
+  assert.ok((await PDFDocument.load(db.files.get(inv.pdf_path))).getPageCount() >= 2, 'the invoice and the evidence in one file');
+  assert.deepEqual([mails[0].to, mails[0].replyTo, mails[0].files[0].filename], ['finance@cymru.example.invalid', 'tim@example.invalid', sent.fileName]);
+  assert.ok(!/interest/i.test(JSON.stringify(mails[0].doc)), 'no late-payment interest, ever');
+  await assert.rejects(b.orgInvoiceSend({ ...ask, evidenceIds: [U(85)] }), /on an invoice already/, 'never invoiced twice');
+  await stripe.fundCashBalance(inv.stripe_customer_id, 150000);
+  await deliver065(db, stripe);
+  assert.equal(db.tables.invoices[0].status, 'paid', 'Stripe matches the transfer to its invoice');
+});
+
+test('one CLARITY- run for everything: the first payment, an organisation’s invoice and a top-up take the next numbers in turn', async () => {
+  const { db, settle, b } = world065();
+  await settle.start(mineOf(db));
+  await b.orgInvoiceSend({ organisationId: U(80), sessionIds: [U(90)], entryIds: [], evidenceIds: [U(85)], poNumber: '', rateMinor: null });
+  const t = { ...blank065('hours'), hours: { work: 'Health Check build', rateMinor: 15000, blockMinor: 200000, owner: 'client' } };
+  db.tables.agreements.push({ id: U(40), coach_id: C065.id, kind: 'coaching', profile_id: U(10), status: 'signed', current_version: 1 });
+  db.tables.agreement_versions.push({ id: U(41), agreement_id: U(40), coach_id: C065.id, version: 1, status: 'signed', terms: t, currency: 'GBP', funded_by: null });
+  const up = await b.topUp({ agreementId: U(40) });
+  assert.deepEqual(db.tables.invoices.map((i) => i.number), [1201, 1202, 1203]);
+  assert.equal(up.number, 1203);
+  await assert.rejects(b.topUp({ agreementId: U(40) }), /already waiting/);
+});

@@ -23,6 +23,7 @@ import { useNetworkDue } from './networkParts';
 import { CheckInPanel } from './pastParts';
 import './today.css';
 import NeedsYou from './needsYou/NeedsYou';
+import { attentionInvoices } from '../../lib/agreements/duringAgreement';
 import { countFigure } from '../../lib/coach/numbers';
 
 // Today (M11; Phase 6a run 2, step 3), top to bottom: the date and any
@@ -67,7 +68,7 @@ function Section({ title, aside, headRef, children }) {
 }
 
 export default function Today() {
-  const { state, clients, groups, todos, sessions, sessionPeople, sessionsOlder, settings, todayKey, now, coach, coaches, isOwner, calItems, checkIns, organisations, partial, whole, invoices, admin, invoiceReminders, userId } = useCoachPortal();
+  const { state, clients, groups, todos, sessions, sessionPeople, sessionsOlder, settings, todayKey, now, coach, coaches, isOwner, calItems, checkIns, organisations, partial, whole, invoices, admin, invoiceReminders, reminderPauses, userId } = useCoachPortal();
   const navigate = useNavigate();
   const isPhone = useIsPhone();
   const { day, week } = useDayRows();
@@ -103,9 +104,11 @@ export default function Today() {
     entries: rowsOf(state, 'time_entries'),
     sessions, people: sessionPeople, older: sessionsOlder, now, todayKey,
     // Overdue invoices (Phase 6b run 1; 061): the coach's own, and for the owner every associate's, on the payer's clock.
-    invoices, coachId: coach.id, isOwner, admin, organisations, coaches, coachZone: coachZoneOf(settings, deviceZone()),
+    // Not those Needs you lists (an overdue invoice whose reminder waits for Send; Phase 6b run 3, risk 11).
+    invoices: attentionInvoices(invoices, { reminders: invoiceReminders || [], pauses: reminderPauses || [], coachId: coach.id, today: todayKey }),
+    coachId: coach.id, isOwner, admin, organisations, coaches, coachZone: coachZoneOf(settings, deviceZone()),
     reminders: invoiceReminders || [],
-  }), [clients, state, coach.id, sessions, sessionPeople, sessionsOlder, now, todayKey, invoices, isOwner, admin, organisations, coaches, settings, invoiceReminders]);
+  }), [clients, state, coach.id, sessions, sessionPeople, sessionsOlder, now, todayKey, invoices, isOwner, admin, organisations, coaches, settings, invoiceReminders, reminderPauses]);
   const attentionShown = allAttention ? attention : attention.slice(0, ATTENTION_FIRST);
   // Send again, for one of the coach's own reminders whose sending couldn't be confirmed, once checked (follow-up 5).
   const toast = useToast();

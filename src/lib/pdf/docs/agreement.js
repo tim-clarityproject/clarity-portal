@@ -1,5 +1,7 @@
 import { formatDocDate, parseDbTimestamp } from '../../dateFormatter.js';
-import { pdfDetails, signingWords, PROVIDER } from '../../billing/agreementText.js';
+import { pdfDetails, signingWords, PROVIDER, isNewClause } from '../../billing/agreementText.js';
+import { mainPoints as newMainPoints, resolveChoice } from '../../agreements/clauses.js';
+import { canChoose } from '../../agreements/upfront.js';
 import { agreementSections, glanceRows, termsFor } from '../../coaching/agreementRules.js';
 import { dayIn, wallClock } from '../../time/instants.js';
 import { zoneLabel } from '../../time/zones.js';
@@ -51,7 +53,21 @@ const drawn = (sig, name) => ({
  * @param {string} [input.clientName] when the terms have none
  * @param {string} [input.timeZone] the zone its dates and times are read in (the UK's unless given)
  */
-export function agreementPdf({ version: v, signature = null, coachSignature = null, clientName = '', timeZone = ZONE }) {
+// Phase 6b run 3 (065): a version made by the builder stores its clauses as [{ key, number, title, paragraphs: [{ text,
+// why }], money, choices? }]. Each paragraph's reason goes under it in a quieter grey line (brief item 15; no side
+// line), the investment clause is the one the client chose (settle_choice), Main points are the new kinds' own, and the
+// signing record says whether "Start my coaching straight away" was ticked (with its time) and how it is settled. A
+// sponsor's agreement (signed by link) carries the sponsor's signature, role and purchase order.
+const reasonBlocks = (c) => (c.paragraphs || []).flatMap((p) => (typeof p === 'string'
+  ? [{ type: 'text', text: p }]
+  : [{ type: 'text', text: p?.text || '' }, p?.why ? { type: 'text', tone: 'detail', text: p.why } : null])).filter(Boolean);
+
+/**
+ * @param {Object} [input.raw] the version as stored or as my_agreements() gives it (065's start_now, start_now_at,
+ *   settle_choice, sponsor_*), for the new parts of the signing record
+ * @param {{ kind: 'drawn'|'typed', image?: string, typed_name?: string }|null} [input.sponsorSignature]
+ */
+export function agreementPdf({ version: v, signature = null, coachSignature = null, clientName = '', timeZone = ZONE, raw = null, sponsorSignature = null }) {
   const words = signingWords(oneLine(v?.terms?.coachFirst) || 'your coach');
   const t = termsFor(v);
   const client = oneLine(v.signedName) || oneLine(t.clientName) || oneLine(clientName);
@@ -61,13 +77,44 @@ export function agreementPdf({ version: v, signature = null, coachSignature = nu
   const date = dayIn(zone, parseDbTimestamp(v.signedAt || v.sentAt || new Date()));
   const fingerprint = printWords(v.fingerprint);
 
-  const main = glanceRows(v);
-  const sections = agreementSections(v).map((c) => ({
-    title: c.title ? `${c.number}. ${c.title}` : 'The coaching agreement',
-    blocks: c.paragraphs.map((p) => ({ type: 'text', text: p })),
-  }));
+  const newStyle = (v.clauses || []).some(isNewClause);
+  const sees = !v.fundedBy;
+  const choice = raw?.settle_choice || t.choice || null;
+  let main;
+  let sections;
+  if (newStyle) {
+    let n = 0;
+    const shown = resolveChoice(v.clauses, choice).filter((c) => c && (sees || !(c.money === true || c.money === 'true')))
+      .map((c) => ({ ...c, number: (n += 1) }));
+    main = newMainPoints({ ...t, coachName: t.coachName || coach }, { choice: choice || 'upfront', seesMoney: sees, clauses: shown });
+    sections = shown.map((c) => ({ title: `${c.number}. ${c.title}`, blocks: reasonBlocks(c) }));
+  } else {
+    main = glanceRows(v);
+    sections = agreementSections(v).map((c) => ({
+      title: c.title ? `${c.number}. ${c.title}` : 'The coaching agreement',
+      blocks: c.paragraphs.map((p) => ({ type: 'text', text: p })),
+    }));
+  }
+  // The signing record's new rows (065): the start-now tick for a self-funded client, and the way of settling chosen.
+  const startRow = raw && sees && raw.start_now != null
+    ? ['Start straight away', raw.start_now ? `Ticked, ${whenWords(raw.start_now_at, zone)}` : 'Not ticked'] : null;
+  const settleRow = raw && sees && raw.settle_choice && canChoose(t)
+    ? ['How it’s settled', raw.settle_choice === 'upfront' ? 'Up front, with 5% off' : 'As planned'] : null;
+  const sponsorParty = raw?.sponsor_signed_at ? {
+    role: 'Sponsor',
+    ...drawn(sponsorSignature, oneLine(raw.sponsor_name)),
+    imageAlt: `Signature of ${oneLine(raw.sponsor_name)}`,
+    rows: [
+      ['Name', oneLine(raw.sponsor_name)],
+      ['Role', oneLine(raw.sponsor_role)],
+      ['Email', oneLine(raw.sponsor_email)],
+      ['Purchase order', oneLine(raw.sponsor_po)],
+      ['Date and time', whenWords(raw.sponsor_signed_at, zone)],
+      ['Fingerprint', fingerprint],
+    ].filter(([, value]) => value),
+  } : null;
 
-  const record = v.signedAt ? [{
+  const record = (v.signedAt || sponsorParty) ? [{
     title: words.pdfRecord,
     blocks: [{
       type: 'signature',
@@ -82,7 +129,7 @@ export function agreementPdf({ version: v, signature = null, coachSignature = nu
             ['Fingerprint', fingerprint],
           ].filter(([, value]) => value),
         },
-        {
+        sponsorParty || {
           role: 'Client',
           ...drawn(signature, client),
           imageAlt: `Signature of ${client}`,
@@ -90,8 +137,10 @@ export function agreementPdf({ version: v, signature = null, coachSignature = nu
             ['Name', client],
             ['Verified email', oneLine(v.signedEmail)],
             ['Date and time', whenWords(v.signedAt, zone)],
+            startRow,
+            settleRow,
             ['Fingerprint', fingerprint],
-          ].filter(([, value]) => value),
+          ].filter((r) => r && r[1]),
         },
       ],
     }],

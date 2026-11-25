@@ -1,1 +1,88 @@
-/* Group D's Needs you and invoicing styles (Phase 6b run 3). Laid down by Group A; every value a token. */
+/* Group D's Needs you and during-the-agreement styles (Phase 6b run 3; M28 version 4: s-today, the Needs you panels,
+   s-agr, s-cal-session, s-h-log, s-org-billing, s-inv-new, s-inv-pdf, s-inv-sent). Every value is a token (CLAUDE.md
+   design rule 2) and every part sits inside .ui-root (rule 17). No side lines on any card or row (rule 4a); the meter is
+   mint, never coral (26 Oct rule 1). */
+
+/* ---- inside a panel or page: M28's screen rhythm (.scr > * + * { margin-top: 22px }) */
+.ui-root .ny-panel > * + *:not(#_), .ui-root .ny-page > * + *:not(#_) { margin-top: var(--space-px22); }
+.ui-root .ny-panel > .cc-acts:not(#_), .ui-root .ny-page > .cc-acts:not(#_) { margin-top: var(--space-px14); }
+.ui-root .ny-meta { display: flex; flex-wrap: wrap; gap: var(--space-px2) var(--space-px20); margin: 0; font-size: var(--fs-note); color: var(--text-2); }
+.ui-root .ny-meta > span { white-space: nowrap; }
+.ui-root .ny-say { margin: 0; font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text); text-wrap: pretty; }
+.ui-root .ny-hint { margin: 0; font-size: var(--fs-secondary); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .ny-sec { margin: 0; padding-top: var(--space-3); border-top: var(--line-w) solid var(--line); font-family: var(--font-display); font-weight: var(--fw-regular); font-size: var(--fs-section-title); letter-spacing: var(--ls-section-title); line-height: var(--lh-text); text-transform: uppercase; color: var(--text); }
+.ui-root .ny-sec + .ag-points, .ui-root .ny-sec + .ny-list, .ui-root .ny-sec + .ag-sessions { border-top: 0; margin-top: var(--space-2); }
+.ui-root .ny-points { margin-top: var(--space-px22); }
+.ui-root .ny-two { align-items: end; }
+
+/* ---- ticks (M28 .tick): the shared tick box, one row each */
+.ui-root .ny-ticks { display: flex; flex-direction: column; }
+.ui-root .ny-ticks .ds-check { min-height: var(--tap-min); }
+
+/* ---- the drafted email (M28 .mail) */
+.ui-root .ny-mail { border: var(--line-w) solid var(--line); border-radius: var(--radius-field); padding: var(--space-px18) var(--space-px20); background: var(--card); font-size: var(--fs-body); line-height: var(--lh-text); color: var(--text); }
+.ui-root .ny-mail p { margin: 0 0 var(--space-px10); overflow-wrap: anywhere; }
+.ui-root .ny-mail p:last-child { margin: 0; }
+.ui-root .ny-mail .ds-textbox-field { margin: 0 0 var(--space-px10); }
+.ui-root .ny-mail-subject { font-size: var(--fs-small); color: var(--placeholder); }
+.ui-root .ny-mail-button { display: inline-flex; align-items: center; min-height: var(--btn-h); padding: 0 var(--space-3); border-radius: var(--radius-btn); background: var(--raised); color: var(--text); font-size: var(--fs-secondary); }
+
+/* ---- talking points (M28 .panel.talk): for the coach to say, never sent */
+.ui-root .ny-talk { padding: var(--space-px18) var(--space-px20); border-radius: var(--radius-card); background: var(--raised); }
+.ui-root .ny-talk > * + * { margin-top: var(--space-px10); }
+.ui-root .ny-talk-label { margin: 0; font-size: var(--fs-small); color: var(--placeholder); }
+.ui-root .ny-talk-line { margin: 0; font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text); }
+.ui-root .ny-talk-tip { margin: 0; padding-top: var(--space-2); border-top: var(--line-w) solid var(--line-soft); font-size: var(--fs-note); color: var(--text-2); }
+
+/* ---- what the client typed (M28 .quote) */
+.ui-root .ny-quote { margin: 0; padding: var(--space-px18) var(--space-px20); border-radius: var(--radius-card); background: var(--raised); font-size: var(--fs-question-calm); line-height: var(--lh-text); color: var(--text); overflow-wrap: anywhere; }
+
+/* ---- a block's balance (M28 .meter) */
+.ui-root .ny-meter { height: var(--space-2); border-radius: var(--radius-pill); background: var(--raised); overflow: hidden; }
+.ui-root .ny-meter > i { display: block; width: var(--ny-fill, 0%); height: 100%; border-radius: var(--radius-pill); background: var(--good); transition: width var(--dur-slow) var(--ease); }
+
+/* ---- a still list of label and line (M28 .lr.st2) and its quiet right-hand word (.ld) */
+.ui-root .ny-list { list-style: none; margin: 0; padding: 0; border-top: var(--line-w) solid var(--line); }
+.ui-root .ny-li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: center; padding: var(--space-px14) 0; border-bottom: var(--line-w) solid var(--line); }
+.ui-root .ny-li-t { display: block; font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .ny-li-m { display: block; font-size: var(--fs-small); line-height: var(--lh-text); color: var(--placeholder); overflow-wrap: anywhere; }
+.ui-root .ny-li-d { font-size: var(--fs-note); color: var(--text-2); text-align: right; overflow-wrap: anywhere; }
+.ui-root .ny-li-d--done { color: var(--mint-text); }
+.ui-root .ny-li .ds-link { min-height: var(--tap-min); }
+
+/* ---- the agreement's actions (M28 s-agr .list of .lr buttons) */
+.ui-root .ny-actions { border-top: var(--line-w) solid var(--line); }
+.ui-root .ny-action { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-1) var(--space-3); width: 100%; min-height: var(--tap-min); padding: var(--space-px14) 0; border: 0; border-bottom: var(--line-w) solid var(--line); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ui-root .ny-action:hover .ny-li-t, .ui-root .ny-action:focus-visible .ny-li-t { color: var(--coral-text); }
+.ui-root .ny-action:focus-visible { outline: var(--focus-w) solid var(--coral); outline-offset: var(--space-px2); }
+.ui-root .ny-action .ny-li-t { transition: color var(--dur-fast) var(--ease); }
+
+/* ---- an organisation's invoice: the bill-to block, the lines and the PDF preview */
+.ui-root .ny-billto { margin: 0; font-size: var(--fs-body); line-height: var(--lh-text); color: var(--text); }
+.ui-root .ny-billto span { display: block; }
+.ui-root .ny-qrow { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); border-bottom: var(--line-w) solid var(--line-soft); font-size: var(--fs-body); }
+.ui-root .ny-qrow .ds-check { flex: 1; min-width: 0; }
+.ui-root .ny-qrow-h { flex: none; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.ui-root .ny-pdf { width: 100%; height: calc(var(--space-7) * 9); border: var(--line-w) solid var(--line); border-radius: var(--radius-box); background: var(--card); }
+
+/* ---- What happened? (M28 s-cal-session) */
+.ui-root .ny-happened { margin-top: var(--space-px22); }
+.ui-root .ny-happened .ds-choice { margin: 0; }
+.ui-root .cc-field + .ny-happened { margin-top: var(--space-px22); }
+
+@media (max-width: 600px) {
+  .ui-root .ny-two { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .ny-pdf { height: calc(var(--space-7) * 7); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ny-meter > i, .ui-root .ny-action .ny-li-t { transition: none; }
+}
+
+@media (forced-colors: active) {
+  .ui-root .ny-meter { forced-color-adjust: none; background: Canvas; border: var(--line-w) solid CanvasText; }
+  .ui-root .ny-meter > i { background: CanvasText; }
+}
+.ui-root .ny-gap { margin-top: var(--space-2); }
+.ui-root .ag-points + .ny-actions { border-top: 0; }
+.ui-root .ny-page > .ds-switchrow + .ds-switchrow:not(#_), .ui-root .ny-page > .ds-switchrow + div > .ds-switchrow { margin-top: 0; }

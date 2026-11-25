@@ -277,7 +277,7 @@ begin
       format('select public.client_invite_link(%L)', p_sam), format('select public.session_recap_readers(%L)', sess_m),
       format('select public.coach_admin_agreements(%L)', p_sam),
       format('select public.agreement_for_approval(%L)', gen_random_uuid()), format('select public.agreement_approve(%L, true)', gen_random_uuid()),
-      'select public.coach_fx_rates()',
+      'select public.coach_fx_rates()', 'select public.agreements_waiting_approval()',
       format('select public.session_recap_people(%L)', sess_m), format('select public.session_recap_email_claim(%L)', sess_m),
       format('select public.workshop_follow_up_claim(%L)', gen_random_uuid()),
       format('select public.client_delete(%L, ''Sam Invented'')', p_sam),

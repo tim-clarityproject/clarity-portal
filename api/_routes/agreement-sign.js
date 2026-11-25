@@ -1,5 +1,7 @@
 // A client signs a version of their coaching agreement (follow-up 5, item 4).
-//   POST /api/agreement-sign  { versionId, name, signatureId, fingerprint }
+//   POST /api/agreement-sign  { versionId, name, signatureId, fingerprint, startNow?, choice? }
+//   (Phase 6b run 3: signed with 065's sign_agreement_v2, which also records the "Start my coaching straight away" tick
+//   with its time for a self-funded client, and the way of settling where it is offered.)
 // with the client's own sign-in as the Authorization header.
 //
 // 1. Signs AS THE CALLER with sign_agreement (061), exactly as the browser did
@@ -32,7 +34,8 @@ export function signRequest(body) {
     && typeof b.signatureId === 'string' && UUID.test(b.signatureId)
     && typeof b.name === 'string' && b.name.length <= 400
     && (b.fingerprint == null || (typeof b.fingerprint === 'string' && b.fingerprint.length <= 64));
-  return ok ? { versionId: b.versionId, signatureId: b.signatureId, name: b.name, fingerprint: b.fingerprint ?? null } : null;
+  if (!ok || (b.startNow != null && typeof b.startNow !== 'boolean') || (b.choice != null && !['upfront', 'plan'].includes(b.choice))) return null;
+  return { versionId: b.versionId, signatureId: b.signatureId, name: b.name, fingerprint: b.fingerprint ?? null, startNow: b.startNow === true, choice: b.choice ?? null };
 }
 
 export default async function handler(req, res) {
@@ -46,8 +49,9 @@ export default async function handler(req, res) {
 
   let signed;
   try {
-    signed = await asCaller(env, token).rpc('sign_agreement', {
+    signed = await asCaller(env, token).rpc('sign_agreement_v2', {
       p_version: asked.versionId, p_name: asked.name, p_signature: asked.signatureId, p_fingerprint: asked.fingerprint,
+      p_start_now: asked.startNow, p_choice: asked.choice,
     });
   } catch {
     return reply(res, 502, { ok: false, message: '' });
@@ -64,5 +68,6 @@ export default async function handler(req, res) {
   if (server) {
     try { pdf = Boolean(await makeAndKeep(server, asked.versionId)); } catch { pdf = false; }
   }
-  return reply(res, 200, { ok: true, signed_at: d.signed_at || null, fingerprint: d.fingerprint || null, version: d.version ?? null, pdf });
+  return reply(res, 200, { ok: true, signed_at: d.signed_at || null, fingerprint: d.fingerprint || null, version: d.version ?? null, pdf,
+    start_now: d.start_now ?? null, settle_choice: d.settle_choice ?? null, self_funded: d.self_funded ?? null });
 }

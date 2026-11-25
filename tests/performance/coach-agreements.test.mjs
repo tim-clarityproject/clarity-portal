@@ -220,3 +220,25 @@ test('functionality tester, follow-up 5: a reminder that may have gone is its ow
   const needs = needsYouRows({ invoices: [inv, theirs], today: TODAY, reminders, nowMs: new Date(NOW).getTime(), coachId: TIM });
   assert.deepEqual(needs.filter((r) => r.reminderId).map((r) => r.reminderId), ['r-tim']);
 });
+
+test('Phase 6b run 3, risk 11: an overdue invoice Needs you lists (its reminder waiting for Send) is never also in Who needs attention', async () => {
+  const { attentionInvoices, overdueInNeedsYou } = await import('../../src/lib/agreements/duringAgreement.js');
+  const old = new Date(NOW - 10 * 60 * 1000).toISOString();
+  const waiting = { ...owed(), id: 'i-wait' };
+  const unsure = { ...owed(), id: 'i-unsure', number: 1250 };
+  const paused = { ...owed({ settles_to: 'client', organisation_id: null }), id: 'i-paused', number: 1251 };
+  const reminders = [
+    { id: 'r-wait', invoice_id: 'i-wait', coach_id: TIM, stage: 1, sending_at: null, sent_at: null },
+    { id: 'r-unsure', invoice_id: 'i-unsure', coach_id: TIM, stage: 1, sending_at: old, sent_at: null },
+    { id: 'r-paused', invoice_id: 'i-paused', coach_id: TIM, stage: 1, sending_at: null, sent_at: null },
+  ];
+  const pauses = [{ profile_id: leo.id }];
+  const facts = { reminders, pauses, coachId: TIM, today: TODAY };
+  assert.equal(overdueInNeedsYou(waiting, facts), true);
+  const kept = attentionInvoices([waiting, unsure, paused, mayas], facts);
+  assert.deepEqual(kept.map((i) => i.id), ['i-unsure', 'i-paused', 'i-owen'], 'Needs you has the waiting one; the rest stay');
+  const rows = attentionRows({ clients: [leo], sessions: [], now: NOW, todayKey: TODAY, invoices: kept, coachId: TIM, isOwner: true, admin: [mayaClient], organisations: [northfield, kestrel], coachZone: 'Europe/London', reminders });
+  assert.equal(rows.some((r) => r.key === 'o:i-wait'), false, 'not in both lists');
+  assert.deepEqual(rows.filter((r) => r.reminderId).map((r) => [r.reminderId, r.action]), [['r-unsure', 'Send again']], 'a reminder that may have gone stays here');
+  assert.ok(rows.some((r) => r.key === 'o:i-paused'), 'a paused payer’s overdue invoice stays here');
+});

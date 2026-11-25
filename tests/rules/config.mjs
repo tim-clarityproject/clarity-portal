@@ -223,6 +223,8 @@ export const FUNCTIONS = [
     note: 'A sponsor signs by their link: through the server only (065).' },
   { sig: 'session_mark_from_fathom(uuid)', ifExists: true, call: 'select public.session_mark_from_fathom(gen_random_uuid())', access: NOBODY,
     note: 'A Fathom summary marks a session as happened: the server only (065; wired in 6c).' },
+  { sig: 'agreements_waiting_approval()', ifExists: true, call: 'select public.agreements_waiting_approval()', access: NOBODY,
+    note: 'The associates\' agreements waiting for approval: the owner only, with her 6-digit code, which no test account has here (065).' },
   { sig: 'my_hours()', ifExists: true, call: 'select public.my_hours()', access: SIGNED_IN,
     note: 'A client\'s own blocks of hours; nothing for anyone signed out (065).' },
   { sig: 'alignment_list()', call: 'select count(*) from public.alignment_list()', access: NOBODY,

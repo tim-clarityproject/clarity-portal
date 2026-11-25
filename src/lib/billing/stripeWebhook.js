@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { CURRENCY_LIST } from '../agreements/currency.js';
 
 // Stripe's messages to the portal (Phase 6b run 1, step 5): the rules the webhook (api/stripe-webhook.js) and the
 // nightly round (api/_routes/billing-nightly.js) follow, with no database and no network, checked by
@@ -30,8 +31,11 @@ export function signatureFor(rawBody, secret, t = Math.floor(Date.now() / 1000))
 }
 
 const RANK = { draft: 0, sent: 1, uncollectible: 2, void: 3, paid: 4 };
-const CURRENCIES = ['GBP', 'USD', 'EUR'];
-/** An invoice's own currency as the money tables keep it (GBP, USD or EUR; 062), never another kept as pounds. */
+const CURRENCIES = CURRENCY_LIST;
+/**
+ * An invoice's own currency as the money tables keep it (any of 065's 15, src/lib/agreements/currency.js; 062 had GBP,
+ * USD and EUR). Stripe's amounts are in each currency's smallest unit, as ours are (whole yen for JPY), so nothing converts.
+ */
 export const currencyOf = (row) => (CURRENCIES.includes(String(row?.currency || 'GBP').toUpperCase()) ? String(row?.currency || 'GBP').toUpperCase() : 'GBP');
 
 /**

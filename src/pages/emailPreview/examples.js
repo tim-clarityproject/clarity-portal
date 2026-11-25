@@ -13,6 +13,10 @@ import {
 import {
   invoiceReminderEmail, agreementReadyEmail, agreementChangeAskedEmail, agreementSignedEmail, sponsorAgreementEmail,
 } from '../../lib/email/billingEmails.js';
+import {
+  readyToSignEmail, quoteEmail, signReminderEmail, firstPaymentReminderEmail, sponsorSignEmail, sponsorSignedCopyEmail,
+  teamMemberAgreementEmail, extendedEmail, pausedEmail, endingEmail, cancelledEmail, updatedAgreementEmail, orgInvoiceEmail, changeReplyEmail, quoteQuestionEmail,
+} from '../../lib/email/agreementEmails.js';
 import { instantAt } from '../../lib/time/index.js';
 
 const PORTAL = 'https://portal.theclarityproject.co.uk';
@@ -295,6 +299,112 @@ export const EMAIL_EXAMPLES = [
     from: 'From Tim (The Clarity Portal), to Priya, the sponsor',
     sends: 'Sent only when the coach presses Send, with the PDF signed on the coach’s side attached by the sender.',
     doc: () => sponsorAgreementEmail({ sponsorFirst: 'Priya', coachee: 'Sam Reid', coachFirst: 'Tim' }),
+  },
+  // ---- Phase 6b run 3 (M28 version 4): agreements, quotes, sponsors and organisations' invoices.
+  {
+    key: 'agreement-ready-note',
+    name: 'Ready to sign, with the package’s note',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Sam',
+    sends: 'Sent only when the coach presses Send, signed by the coach first. The note from the package opens it, with Sam’s name filled in (M28 s-c-email).',
+    doc: () => readyToSignEmail({ firstName: 'Sam', coachFirst: 'Tim', note: 'Sam, it was great to talk on Thursday. Here is everything we agreed, so we can start in January.', link: `${PORTAL}/coaching/agreement/invented-version` }),
+  },
+  {
+    key: 'agreement-quote',
+    name: 'Your coaching quote',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Sam',
+    sends: 'Sent only when the coach presses Send with “A quote” chosen. Its link opens the quote page with no account needed.',
+    doc: () => quoteEmail({ firstName: 'Sam', coachFirst: 'Tim', note: 'Sam, here is the coaching we talked about, with the visit day as an option.', link: `${PORTAL}/quote/invented-quote-link`, number: 'Q-0042', validUntilWords: 'Fri 25 Dec 2026' }),
+  },
+  {
+    key: 'agreement-sign-reminder',
+    name: 'Signing reminder',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Sam',
+    sends: 'Drafted at 3 and 7 days while the agreement isn’t signed; sent only when the coach presses Send (M28 s-n-signrem). Edit lets the coach change the words.',
+    doc: () => signReminderEmail({ firstName: 'Sam', coachFirst: 'Tim', link: `${PORTAL}/coaching/agreement/invented-version` }),
+  },
+  {
+    key: 'agreement-first-payment-reminder',
+    name: 'First invoice not settled yet',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Sam',
+    sends: 'Drafted 24 hours after signing when the first payment isn’t settled; sent only when the coach presses Send.',
+    doc: () => firstPaymentReminderEmail({ firstName: 'Sam', coachFirst: 'Tim', amountWords: '£4,600', link: `${PORTAL}/coaching/agreement/invented-version/settle` }),
+  },
+  {
+    key: 'sponsor-sign',
+    name: 'The sponsor’s email',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Priya, the sponsor',
+    sends: 'Sent only when the coach presses Send. The link works without an account (M28 s-s-email).',
+    doc: () => sponsorSignEmail({ sponsorFirst: 'Priya', orgName: 'Northfield Logistics', names: ['Sam Reid', 'Jo Bell', 'Ali Khan'], coachFirst: 'Tim', link: `${PORTAL}/sign/invented-sponsor-link` }),
+  },
+  {
+    key: 'sponsor-signed-copy',
+    name: 'The sponsor’s signed copy',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Priya, the sponsor',
+    sends: 'Sent as the sponsor signs, with the signed PDF attached.',
+    doc: () => sponsorSignedCopyEmail({ sponsorFirst: 'Priya', orgName: 'Northfield Logistics', coachFirst: 'Tim', fileName: 'Coaching agreement, Northfield Logistics, 25 Nov 2026.pdf' }),
+  },
+  {
+    key: 'team-member-agreement',
+    name: 'Each person’s own agreement, after the sponsor signs',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Jo',
+    sends: 'Sent once the sponsor has signed, one to each person. No money: the organisation funds it.',
+    doc: () => teamMemberAgreementEmail({ firstName: 'Jo', orgName: 'Northfield Logistics', coachFirst: 'Tim', link: `${PORTAL}/coaching/agreement/invented-version` }),
+  },
+  {
+    key: 'agreement-extended',
+    name: 'End date extended',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Sam',
+    sends: 'Sent when the coach extends the end date.',
+    doc: () => extendedEmail({ firstName: 'Sam', coachFirst: 'Tim', endWords: 'Fri 30 Jul 2027' }),
+  },
+  {
+    key: 'agreement-paused',
+    name: 'Coaching paused',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Sam',
+    sends: 'Sent when the coach pauses the coaching; the end date moves by the same time.',
+    doc: () => pausedEmail({ firstName: 'Sam', coachFirst: 'Tim', fromWords: 'Mon 1 Mar 2027', toWords: 'Fri 26 Mar 2027', endWords: 'Fri 30 Jul 2027' }),
+  },
+  {
+    key: 'agreement-ending',
+    name: 'Ending early',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Sam',
+    sends: 'Sent when the coach records the agreement ending early.',
+    doc: () => endingEmail({ firstName: 'Sam', coachFirst: 'Tim', endWords: 'Fri 26 Feb 2027', by: 'client' }),
+  },
+  {
+    key: 'agreement-cancelled-14',
+    name: 'Cancelled within 14 days',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Sam',
+    sends: 'Sent when the coach cancels within the 14 days, with the credit note attached.',
+    doc: () => cancelledEmail({ firstName: 'Sam', coachFirst: 'Tim', refundWords: '£3,643.75', creditNoteNumber: 'CLARITY-CN-0007', fileName: 'Credit note CLARITY-CN-0007, Sam Reid, 25 Nov 2026.pdf' }),
+  },
+  {
+    key: 'agreement-updated',
+    name: 'Updated agreement after a price review',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Sam',
+    sends: 'Sent only when the coach presses Send the updated agreement.',
+    doc: () => updatedAgreementEmail({ firstName: 'Sam', coachFirst: 'Tim', note: 'From January my fee is £3,300 a month.', link: `${PORTAL}/coaching/agreement/invented-version` }),
+  },
+  {
+    key: 'agreement-change-reply',
+    name: 'Reply to a change asked for',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Sam',
+    sends: 'Sent only when the coach presses Send on the reply, from the change’s Needs you panel.',
+    doc: () => changeReplyEmail({ firstName: 'Sam', coachFirst: 'Tim', reply: 'Thanks for asking. I’ve kept the 24 hours, and added that you can move a coaching session once a month with less notice.', link: `${PORTAL}/coaching/agreement/invented-version` }),
+  },
+  {
+    key: 'quote-question',
+    name: 'A question about a quote, to the coach',
+    from: 'From The Clarity Portal, to Tim',
+    sends: 'Sent when someone asks a question from their quote’s page (one a minute at most).',
+    doc: () => quoteQuestionEmail({ clientName: 'Sam Reid', number: 42, words: 'Could the visit day be in March rather than February?', link: `${PORTAL}/coach/agreements/invented-agreement` }),
+  },
+  {
+    key: 'org-invoice',
+    name: 'An organisation’s invoice',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to the finance team at Cymru Active',
+    sends: 'Sent only when the coach presses Send, with the one PDF attached: the invoice, the timesheet and the evidence.',
+    doc: () => orgInvoiceEmail({ coachFirst: 'Tim', number: 'CLARITY-1251', amountWords: '£1,500', dueWords: 'Fri 25 Dec 2026', orgName: 'Cymru Active', poNumber: '4500918823', fileName: 'Invoice CLARITY-1251, Cymru Active, 25 Nov 2026.pdf' }),
   },
   {
     key: 'leading-ideas-client',

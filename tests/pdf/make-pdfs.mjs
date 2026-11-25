@@ -647,7 +647,46 @@ const ST = {
   'Monthly statement, no hours yet': associateStatementPdf(statementFacts({ hours: '0 hours', pay: '£0', lines: [{ label: 'Coaching hours', detail: '0 hours at £100', value: '£0' }] })),
 };
 
-const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU, ...TC, ...EW, ...AG, ...ST };
+// ---- Phase 6b run 3 (065): invoices, quotes, credit notes and the builder's agreements (light only on the site) ----
+const [{ invoicePdf }, { quotePdf }, { creditNotePdf }, terms065, clauses065] = await Promise.all([
+  load('/src/lib/pdf/docs/invoice.js'), load('/src/lib/pdf/docs/quote.js'), load('/src/lib/pdf/docs/creditNote.js'),
+  load('/src/lib/agreements/terms.js'), load('/src/lib/agreements/clauses.js'),
+]);
+const T065 = {
+  ...terms065.blankTerms('sessions'), coaching: 'Leadership Accelerator, 6 months', clientName: 'Sam Reid', clientFirst: 'Sam', coachName: 'Dr. Tim Dutton', coachFirst: 'Tim',
+  totalMinor: 1800000, discounts: [{ type: 'returning', percent: 15 }], settle: 'deposit', startsOn: '2027-01-04', endsOn: '2027-07-02',
+  extrasOffered: [{ key: 'session', title: 'Extra coaching session', priceMinor: 75000 }, { key: 'visit', title: 'Visit day', priceMinor: 250000 }],
+};
+const TIMESHEET_80 = Array.from({ length: 80 }, (_, i) => ({ day: `2026-${String(9 + Math.floor(i / 28)).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
+  what: i % 9 === 0 ? `Coaching session with ${LONG_NAME}, including the follow-up notes and the plan for the next quarter` : `Coaching session with ${['Dan Hughes', 'Jo Bell', 'Ali Khan'][i % 3]}`, minutes: [60, 90, 120][i % 3] }));
+const INVOICE_BASE = {
+  number: 1251, issuedOn: '2026-11-25', dueOn: '2026-12-25', termsDays: 30, orgName: 'Cymru Active', legalName: 'Cymru Active Cyf', address: '1 Invented Street\nCardiff\nCF10 1AA',
+  poNumber: '4500918823', supplierNumber: 'SUP-77', theirReference: 'Coaching 2026', currency: 'GBP',
+  bank: { accountName: 'The Clarity Project LTD', sortCode: '10-88-00', accountNumber: '00012345' },
+  lines: [{ description: 'Coaching for Cymru Active, 4 coaching sessions, 3 to 24 Nov 2026 (timesheet on page 2)', minutes: 300, rateMinor: 30000, amount: 150000 }],
+  timesheet: [3, 10, 17, 24].map((d, i) => ({ day: `2026-11-${String(d).padStart(2, '0')}`, what: 'Coaching session with Dan Hughes', minutes: i % 2 ? 60 : 90 })),
+};
+const R3 = {
+  'Invoice, organisation, timesheet': invoicePdf(INVOICE_BASE),
+  'Invoice, long timesheet (stress)': invoicePdf({ ...INVOICE_BASE, orgName: `${LONG_NAME} Group 🚀`, timesheet: TIMESHEET_80, extraPages: 3,
+    lines: [{ description: `Coaching for ${LONG_NAME} Group, 80 coaching sessions, 1 Sep to 28 Nov 2026 (timesheet on page 2)`, minutes: 7200, rateMinor: 30000, amount: 3600000 }] }),
+  'Invoice, draft, no bank details, no timesheet': invoicePdf({ ...INVOICE_BASE, number: null, bank: null, timesheet: null, poNumber: null, supplierNumber: null, theirReference: null }),
+  'Quote, set sessions with extras': quotePdf({ number: 42, terms: T065, clauses: clauses065.forStorage(T065), sentDay: '2026-11-25', validUntil: '2026-12-25',
+    note: 'Sam, it was great to talk on Thursday.\n\nHere is the coaching we discussed, with the visit day as an option.', coachSignature: { kind: 'drawn', image: signaturePng(220, 64) } }),
+  'Quote, retainer, long note': quotePdf({ number: 9999, terms: { ...terms065.blankTerms('retainer'), coaching: 'Monthly coaching retainer', clientName: LONG_NAME, coachName: 'Dr. Tim Dutton',
+    retainer: { sessions: 'Up to 2 a month, 60 minutes each', feeMinor: 300000, invoice: 'monthly' }, startsOn: '2027-01-04' },
+  clauses: clauses065.forStorage({ ...terms065.blankTerms('retainer'), retainer: { sessions: 'Up to 2 a month', feeMinor: 300000, invoice: 'monthly' } }),
+  sentDay: '2026-11-25', validUntil: '2027-01-24', note: `${para(4)} 🚀`, coachSignature: { kind: 'typed', typed_name: 'Dr. Tim Dutton' } }),
+  'Credit note, refund': creditNotePdf({ number: 'CLARITY-CN-0007', issuedOn: '2026-11-25', payerName: 'Sam Reid', invoiceNumber: 'CLARITY-1252', amountMinor: 364375, kind: 'refund', reason: 'Cancelled within 14 days' }),
+  'Credit note, credit kept, long name': creditNotePdf({ number: 'CLARITY-CN-0123', issuedOn: '2026-11-25', payerName: LONG_NAME, invoiceNumber: 'CLARITY-1300', amountMinor: 150000, kind: 'credit', reason: para(2) }),
+  'Coaching agreement, builder version, start now and up front': agreementPdf({
+    version: agreementVersion({ clauses: clauses065.forStorage(T065), currency: 'GBP', total_minor: 1453500 }, { ...T065, total_minor: 1453500 }),
+    raw: { start_now: true, start_now_at: '2026-12-02T18:40:00Z', settle_choice: 'upfront' },
+    signature: { kind: 'drawn', image: signaturePng() }, coachSignature: { kind: 'drawn', image: signaturePng(220, 64) },
+  }),
+};
+
+const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU, ...TC, ...EW, ...AG, ...ST, ...R3 };
 
 // ---- dot charts: dots stay in their own area, and how many touch ----------------------
 // A dot is in its own area when it is on the same side of both centre lines
@@ -1074,6 +1113,29 @@ for (const [name, spec] of Object.entries(DOCS)) {
   }
   report.push(`Emotional wash (the summary's order, blanks and trashed thoughts left out, where each step is, no ratings)\n  ${problems.length ? `PROBLEMS:\n    ${problems.join('\n    ')}` : 'all checks pass'}`);
   if (problems.length) failed += 1;
+}
+
+// ---- the stress case's one file (brief item 29): an invoice with a long timesheet and two attachments, under 1 MB ----
+if (!only || 'Invoice, long timesheet (stress)'.includes(only)) {
+  const { PDFDocument } = await import('pdf-lib');
+  const { withEvidence } = await import('../../api/_agreementPdf.js');
+  const attached = await PDFDocument.create();
+  attached.addPage([595, 842]); attached.addPage([595, 842]);
+  const evidencePdf = await attached.save();
+  const evidencePng = Buffer.from(signaturePng(1200, 800).split(',')[1], 'base64');
+  for (const paper of [PAPER.A4, PAPER.LETTER]) {
+    const spec = R3['Invoice, long timesheet (stress)'];
+    const res = await renderPdf(spec, { variant: 'light', paper, assets: assetsFor(spec) });
+    const bytes = await withEvidence(res.bytes, [{ bytes: new Uint8Array(evidencePng) }, { bytes: evidencePdf }]);
+    const pages = (await PDFDocument.load(bytes)).getPageCount();
+    const fname = `Invoice, long timesheet with two attachments, ${paper.name}.pdf`;
+    writeFileSync(join(out, fname), bytes);
+    const problems = [];
+    if (pages !== res.pages + 3) problems.push(`expected ${res.pages} + 3 pages, got ${pages}`);
+    if (bytes.length > 1024 * 1024) problems.push(`${(bytes.length / 1024).toFixed(0)} KB is over 1 MB`);
+    if (problems.length) failed += 1;
+    report.push(`${fname}\n  ${pages} page(s) (${res.pages} of the invoice and timesheet, 1 image, 2 of a PDF), ${(bytes.length / 1024).toFixed(0)} KB${problems.length ? `\n  PROBLEMS:\n    ${problems.join('\n    ')}` : '\n  one file, under 1 MB'}`);
+  }
 }
 
 writeFileSync(join(out, 'break-report.txt'), `${report.join('\n')}\n`);

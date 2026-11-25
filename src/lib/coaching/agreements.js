@@ -167,7 +167,7 @@ async function signThroughServer({ versionId, name, signatureId, fingerprint }) 
 }
 
 const fromBase64 = (b64) => {
-  const raw = atob(b64);
+  const raw = globalThis.atob(b64);
   const out = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i += 1) out[i] = raw.charCodeAt(i);
   return out;
@@ -199,4 +199,96 @@ export async function loadSignedPdf(version) {
     throw e;
   }
   return { bytes: fromBase64(answer.body.pdf), fileName: answer.body.fileName || fallbackName(version) };
+}
+
+// ---------------------------------------------------------------- Phase 6b run 3 (065): Group C
+
+/**
+ * The client's agreement page records its first open, for the coach's Sent, Opened, Signed, Settled (065's
+ * agreement_mark_opened). Quiet whatever happens, and never shown to the client (agreements rule 6).
+ */
+export async function markOpened(versionId) {
+  if (!versionId || missing) return;
+  try { await supabase.rpc('agreement_mark_opened', { p_version: versionId }); } catch { /* quiet */ }
+}
+
+/**
+ * Asks for a change to one clause (061's ask_agreement_change). Signing then waits until the coach sends a new version
+ * (065's sign_agreement_v2 refuses meanwhile). Needs a connection.
+ * @returns {Promise<{ ok: true } | { ok: false, message: string }>}
+ */
+export async function askForChange({ versionId, clauseKey, words }) {
+  if (!isOnline()) return { ok: false, message: 'That didn’t send, because you’re offline. Try again when you’re back online.' };
+  const res = await supabase.rpc('ask_agreement_change', { p_version: versionId, p_clause: clauseKey || 'general', p_words: String(words || '').trim() });
+  if (res.error) {
+    if (res.error.code === '22023' || res.error.code === 'CC409' || res.error.code === '42501') return { ok: false, message: res.error.message };
+    return { ok: false, message: SIGN_PROBLEM_V2 };
+  }
+  return { ok: true, id: res.data };
+}
+
+const SIGN_PROBLEM_V2 = 'That didn’t send. Check your connection and try again.';
+
+/**
+ * Signs a version with 065's sign_agreement_v2: the start-now tick (self-funded only) and the way of settling where the
+ * client chooses. The signature is added first (drawn or typed), then the server signs as the person and keeps the PDF
+ * (/api/agreement-sign, Group E's, which takes startNow and choice); where no server answers (a developer's machine, the
+ * local stand-in) it signs with sign_agreement_v2 itself, and the first download makes the PDF.
+ * @param {{ userId: string, versionId: string, name: string, fingerprint: string|null, startNow?: boolean,
+ *   choice?: 'upfront'|'plan'|null, signature: { kind: 'drawn', image: string } | { kind: 'typed' } }} p
+ */
+export async function signAgreementV2({ userId, versionId, name, fingerprint, startNow = false, choice = null, signature }) {
+  if (!isOnline()) return { ok: false, ...signError(null, { online: false }) };
+  const fullName = String(name || '').trim();
+  if (!nameOk(fullName)) return { ok: false, kind: 'refused', lines: ['Type your full name to sign.'] };
+  const row = signature?.kind === 'typed'
+    ? { user_id: userId, kind: 'typed', typed_name: fullName }
+    : { user_id: userId, kind: 'drawn', image: signature?.image };
+  if (row.kind === 'drawn' && !isSignatureImage(row.image)) return { ok: false, kind: 'refused', lines: ['Draw or type your signature.'] };
+  try {
+    const added = await supabase.from('signatures').insert(row).select(SIG_COLUMNS).single();
+    if (added.error) return { ok: false, ...signError(added.error, { online: !isOffline(added.error) }) };
+    const body = { versionId, name: fullName, signatureId: added.data.id, fingerprint, startNow: Boolean(startNow), choice: choice || null };
+    const answer = await serverAnswer('/api/agreement-sign', body);
+    let res;
+    if (!answer) {
+      res = await supabase.rpc('sign_agreement_v2', {
+        p_version: versionId, p_name: fullName, p_signature: added.data.id, p_fingerprint: fingerprint, p_start_now: Boolean(startNow), p_choice: choice || null,
+      });
+    } else if (answer.body.ok) {
+      res = { data: answer.body };
+    } else {
+      res = { error: { code: answer.body.code || (answer.status >= 500 ? '' : String(answer.status)), message: answer.body.message || '' } };
+    }
+    if (res.error) return { ok: false, ...signError(res.error, { online: !isOffline(res.error) }) };
+    const d = res.data || {};
+    return {
+      ok: true, signedAt: d.signed_at || new Date().toISOString(), fingerprint: d.fingerprint || fingerprint, version: d.version,
+      startNow: d.start_now === true || (d.start_now == null && Boolean(startNow)), settleChoice: d.settle_choice ?? choice ?? null, signature: added.data,
+    };
+  } catch (error) {
+    return { ok: false, ...signError(error, { online: !isOffline(error) }) };
+  }
+}
+
+/** The client's blocks of hours (065's my_hours): [] before 065 or with none. Throws when the database didn't answer. */
+export async function loadHours(userId) {
+  if (!userId) return [];
+  const res = await supabase.rpc('my_hours');
+  if (res.error) {
+    if (notThere(res)) return [];
+    throw res.error;
+  }
+  return Array.isArray(res.data) ? res.data : [];
+}
+
+/** Their own portal level rows (061's portal_subscriptions, own rows only): [] before 061. */
+export async function loadSubscriptions(userId) {
+  if (!userId) return [];
+  const res = await supabase.from('portal_subscriptions').select('level,source,status,current_period_end,created_at').eq('user_id', userId);
+  if (res.error) {
+    if (notThere(res)) return [];
+    throw res.error;
+  }
+  return res.data || [];
 }

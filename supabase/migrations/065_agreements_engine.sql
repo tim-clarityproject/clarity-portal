@@ -116,6 +116,9 @@ alter table public.agreements add column if not exists paused_to date;
 alter table public.agreements add column if not exists ending_on date;
 alter table public.agreements add column if not exists ending_by text;
 alter table public.agreements add column if not exists team_parent_id uuid references public.agreements (id) on delete set null;
+-- The end a running agreement has now, moved by Extend or Pause without a new version (the server's alone; empty: the
+-- signed version's own terms.endsOn). An early end is ending_on with ending_by.
+alter table public.agreements add column if not exists ends_on date;
 create index if not exists agreements_team_parent_idx on public.agreements (team_parent_id);
 create index if not exists agreements_package_idx on public.agreements (package_id);
 do $c$
@@ -786,6 +789,7 @@ begin
     if new.approval not in ('not_needed', 'waiting') or new.approved_by is not null or new.approved_at is not null or new.approval_note is not null then
       raise exception 'The owner approves an agreement.' using errcode = '42501';
     end if;
+    new.ends_on := null; -- a moved end is the server's (Extend, Pause)
     return new;
   end if;
   if new.status = 'signed' and old.status <> 'signed' then
@@ -804,6 +808,7 @@ begin
     new.approval_note := old.approval_note;
   end if;
   new.coach_id := old.coach_id;
+  new.ends_on := old.ends_on; -- a moved end is the server's (Extend, Pause): a coach's copy never changes it
   select exists (select 1 from public.agreement_versions v where v.agreement_id = old.id and v.status <> 'draft') into v_sent;
   if v_sent then
     new.profile_id := old.profile_id; new.organisation_id := old.organisation_id; new.kind := old.kind; new.agreement_kind := old.agreement_kind;
@@ -1388,6 +1393,43 @@ end;
 $$;
 revoke all on function public.agreement_for_approval(uuid) from public, anon;
 grant execute on function public.agreement_for_approval(uuid) to authenticated;
+
+-- Every associate's agreement waiting for the owner's approval, newest first, for Needs you (the owner can't read an
+-- associate's agreements rows): the owner only, with her 6-digit code.
+create or replace function public.agreements_waiting_approval()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  r jsonb;
+begin
+  if not public.coach_code_ok() or not coalesce(public.is_owner(), false) then
+    raise exception 'Only the owner can do this.' using errcode = '42501';
+  end if;
+  select coalesce(jsonb_agg(x.j order by x.asked_at desc, x.id), '[]'::jsonb)
+    into r
+    from (
+      select a.id, a.updated_at as asked_at,
+             jsonb_build_object('agreement_id', a.id, 'coach_id', a.coach_id, 'coach_first', c.display_first_name,
+               'coach_name', coalesce(nullif(btrim(c.full_name), ''), c.display_first_name), 'profile_id', a.profile_id,
+               'client_name', coalesce(p.name, o.name), 'coaching', v.terms ->> 'coaching', 'version', v.version,
+               'asked_at', a.updated_at) as j
+        from public.agreements a
+        join public.coaches c on c.id = a.coach_id and c.role <> 'owner'
+        left join public.client_profiles p on p.id = a.profile_id
+        left join public.organisations o on o.id = a.organisation_id
+        left join lateral (select v2.version, v2.terms from public.agreement_versions v2
+                            where v2.agreement_id = a.id order by v2.version desc limit 1) v on true
+       where a.approval = 'waiting'
+    ) x;
+  return r;
+end;
+$$;
+revoke all on function public.agreements_waiting_approval() from public, anon;
+grant execute on function public.agreements_waiting_approval() to authenticated;
 
 create or replace function public.agreement_approve(p_agreement uuid, p_ok boolean, p_note text default null)
 returns jsonb

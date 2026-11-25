@@ -1,5 +1,6 @@
 import { PROVIDER, clauses as clausesFor, mainPoints } from '../billing/agreementText.js';
 import { moneyWords } from '../billing/money.js';
+import { CURRENCY_LIST } from '../agreements/currency.js';
 import { dayKeyWords } from '../time/index.js';
 import { formatClockTime, formatSavedDate, getLocalDateKey, parseDbTimestamp } from '../dateFormatter.js';
 
@@ -53,7 +54,7 @@ export function tidyVersion(raw) {
     signedAt: when(raw.client_signed_at),
     coachSignedAt: when(raw.coach_signed_at),
     fundedBy,
-    currency: fundedBy ? null : (raw.currency === 'USD' ? 'USD' : raw.currency === 'GBP' ? 'GBP' : null),
+    currency: fundedBy ? null : (CURRENCY_LIST.includes(raw.currency) ? raw.currency : null),
     totalMinor: fundedBy ? null : whole(raw.total_minor),
     terms,
     clauses: Array.isArray(raw.clauses) ? raw.clauses : [],
@@ -62,6 +63,17 @@ export function tidyVersion(raw) {
     fingerprint: /^[0-9a-f]{64}$/.test(raw.fingerprint || '') ? raw.fingerprint : null,
     // Not in 061's answer today: the PDF then finds the signature by its time (signatureFor).
     signatureId: isId(raw.client_signature_id) ? raw.client_signature_id : null,
+    // 065's additions (Phase 6b run 3, Group C): the kind, how it was sent, the coach's note, when it runs out, the
+    // change asked for and not answered yet, and what was chosen at signing. Never when it was opened (rule 6).
+    agreementKind: text(raw.agreement_kind) || null,
+    sendAs: raw.send_as === 'quote' ? 'quote' : 'agreement',
+    personalNote: text(raw.personal_note),
+    expiresOn: DAY.test(raw.expires_on || '') ? raw.expires_on : null,
+    changePending: raw.change_pending && typeof raw.change_pending === 'object' ? {
+      clauseKey: text(raw.change_pending.clause_key), title: text(raw.change_pending.title), askedAt: when(raw.change_pending.asked_at),
+    } : null,
+    startNow: raw.start_now === true,
+    settleChoice: raw.settle_choice === 'upfront' || raw.settle_choice === 'plan' ? raw.settle_choice : null,
   };
 }
 
@@ -234,11 +246,12 @@ export function tidyInvoice(raw) {
     id: raw.id,
     number,
     status,
-    currency: raw.currency === 'USD' ? 'USD' : 'GBP',
+    currency: CURRENCY_LIST.includes(raw.currency) ? raw.currency : 'GBP',
     totalMinor: Math.max(0, whole(raw.total_minor) || 0),
     paidMinor: Math.max(0, whole(raw.paid_minor) || 0),
     dueOn: DAY.test(raw.due_on || '') ? raw.due_on : null,
     paidAt: when(raw.paid_at),
+    paidDay: when(raw.paid_at) ? getLocalDateKey(parseDbTimestamp(raw.paid_at)) : null,
     hostedUrl: /^https:\/\/[^\s]+$/.test(hosted) ? hosted : null,
     kind: text(raw.kind),
   };

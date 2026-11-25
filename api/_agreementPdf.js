@@ -129,3 +129,139 @@ export async function makeAndKeep(server, versionId) {
   if (kept.error || !kept.data?.ok) throw new Error('keep');
   return kept.data;
 }
+
+// ---------------------------------------------------------------- Phase 6b run 3 (065): quotes, sponsors, invoices
+// The same template, made on the server: a quote's PDF (its private link's Download PDF), a sponsor's agreement (before
+// and after they sign by link), an organisation's invoice with its timesheet and the evidence appended (pdf-lib, one
+// file: brief item 27), and a credit note. All light (PDF rule 1). Appended evidence pages are the organisation's own
+// screenshots and PDFs, untagged (plan section 7's decision); the template's footer counts them in "Page 2 of 4".
+const docCode = () => Promise.all([
+  import('../src/lib/pdf/docs/quote.js'), import('../src/lib/pdf/docs/invoice.js'), import('../src/lib/pdf/docs/creditNote.js'),
+  import('../src/lib/pdf/docs/agreement.js'), import('../src/lib/coaching/agreementRules.js'), import('./_pdfAssets.js'), import('../src/lib/pdf/paper.js'),
+]).then(([q, i, c, a, rules, assets, paper]) => ({
+  quotePdf: q.quotePdf, invoicePdf: i.invoicePdf, creditNotePdf: c.creditNotePdf, agreementPdf: a.agreementPdf, tidyVersion: rules.tidyVersion,
+  makeServerPdf: assets.makeServerPdf, paperFor: paper.paperFor, PAPER: paper.PAPER,
+}));
+
+/** The paper for a reader in this zone (PDF rule 3, paperFor's order: no country or region known on the server). */
+export async function paperForZone(zone) {
+  const { paperFor } = await docCode();
+  return paperFor({ country: null, region: null, timeZone: typeof zone === 'string' ? zone : '' });
+}
+
+/** A light PDF from a document description: { bytes, fileName }. */
+export async function pdfFrom(spec, zone = 'Europe/London') {
+  const { makeServerPdf } = await docCode();
+  return makeServerPdf(spec, { paper: await paperForZone(zone) });
+}
+
+/** The quote's PDF from what quote_open gave its link (state 'open'), with the coach's signature (read by the server). */
+export async function quoteFile(open, { coachSignature = null, zone = 'Europe/London' } = {}) {
+  const { quotePdf } = await docCode();
+  const sentDay = String(open.sent_at || '').slice(0, 10) || String(open.valid_until || '');
+  const spec = quotePdf({ number: open.number, terms: { ...(open.terms || {}), currency: open.currency || open.terms?.currency }, clauses: open.clauses || [],
+    sentDay, validUntil: open.valid_until, note: open.personal_note || '', coachSignature: safeSignature(coachSignature, open.terms?.coachName) });
+  return pdfFrom(spec, zone);
+}
+
+/**
+ * A sponsor's agreement (kind 'sponsor'), read with the server's key once the link has been checked: unsigned (as the
+ * sponsor reads it, signed by the coach) or signed, with the sponsor's own signature. { bytes, fileName } or null.
+ */
+export async function sponsorFile(server, versionId) {
+  const { agreementPdf, tidyVersion } = await docCode();
+  const { data: v } = await server.from('agreement_versions').select('*').eq('id', versionId).maybeSingle();
+  if (!v) return null;
+  const { data: a } = await server.from('agreements').select('*').eq('id', v.agreement_id).maybeSingle();
+  if (!a || a.kind !== 'sponsor') return null;
+  const { data: org } = a.organisation_id ? await server.from('organisations').select('name').eq('id', a.organisation_id).maybeSingle() : { data: null };
+  const { data: coach } = await server.from('coaches').select('user_id').eq('id', v.coach_id).maybeSingle();
+  const { data: coachSig } = v.coach_signature_id ? await server.from('signatures').select('kind, image, typed_name, user_id').eq('id', v.coach_signature_id).maybeSingle() : { data: null };
+  const { data: sponsorSig } = await server.from('sponsor_signatures').select('image, typed_name').eq('version_id', v.id).maybeSingle();
+  const version = tidyVersion({ ...v, reference: a.reference, current: true, status: v.status === 'draft' ? 'sent' : v.status, client_signed_at: null });
+  if (!version) return null;
+  const sponsorSignature = sponsorSig ? (sponsorSig.image ? { kind: 'drawn', image: sponsorSig.image } : { kind: 'typed', typed_name: sponsorSig.typed_name }) : null;
+  const spec = agreementPdf({
+    version: { ...version, signedAt: null },
+    coachSignature: coachSig && coachSig.user_id === coach?.user_id ? safeSignature(coachSig, version.terms?.coachName) : null,
+    clientName: org?.name || version.terms?.orgName || '',
+    raw: v,
+    sponsorSignature: safeSignature(sponsorSignature, v.sponsor_name),
+  });
+  return pdfFrom({ ...spec, who: org?.name || spec.who }, 'Europe/London');
+}
+
+/** Whether the bytes start as a PNG, a JPEG or a PDF (never trusting the name or the stored type alone). */
+export function evidenceKind(bytes) {
+  const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || []);
+  if (b.length > 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'png';
+  if (b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'jpeg';
+  if (b.length > 4 && b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46) return 'pdf';
+  return null;
+}
+
+const MM = 72 / 25.4;
+
+/** How many pages the evidence will add: one an image, a PDF's own pages. Unreadable files add none. */
+export async function evidencePages(evidence) {
+  const { PDFDocument } = await import('pdf-lib');
+  let n = 0;
+  for (const e of evidence || []) {
+    const kind = evidenceKind(e.bytes);
+    if (kind === 'png' || kind === 'jpeg') n += 1;
+    else if (kind === 'pdf') {
+      try { n += (await PDFDocument.load(e.bytes, { ignoreEncryption: false })).getPageCount(); } catch { /* left out */ }
+    }
+  }
+  return n;
+}
+
+/**
+ * The one file (brief item 27): the template's pages, then each piece of evidence as its own page(s): an image placed at
+ * full width inside the 19mm margins on the same paper, a PDF's pages as they are. A file that can't be read is left out.
+ * @param {Uint8Array} bytes the template's PDF
+ * @param {{ bytes: Uint8Array, name?: string }[]} evidence
+ */
+export async function withEvidence(bytes, evidence = []) {
+  if (!evidence?.length) return bytes;
+  const { PDFDocument } = await import('pdf-lib');
+  const doc = await PDFDocument.load(bytes);
+  const [first] = doc.getPages();
+  const { width: W, height: H } = first.getSize();
+  for (const e of evidence) {
+    const kind = evidenceKind(e.bytes);
+    try {
+      if (kind === 'pdf') {
+        const src = await PDFDocument.load(e.bytes);
+        const pages = await doc.copyPages(src, src.getPageIndices());
+        pages.forEach((p) => doc.addPage(p));
+      } else if (kind === 'png' || kind === 'jpeg') {
+        const img = kind === 'png' ? await doc.embedPng(e.bytes) : await doc.embedJpg(e.bytes);
+        const page = doc.addPage([W, H]);
+        const m = 19 * MM;
+        const scale = Math.min((W - 2 * m) / img.width, (H - 2 * m) / img.height, 1.5);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        page.drawImage(img, { x: (W - w) / 2, y: H - m - h, width: w, height: h });
+      }
+    } catch { /* an unreadable file is left out, never breaking the invoice */ }
+  }
+  return doc.save();
+}
+
+/** An organisation's invoice: the template's pages with the evidence appended. { bytes, fileName, pages }. */
+export async function invoiceFile(input, evidence = [], zone = 'Europe/London') {
+  const { invoicePdf } = await docCode();
+  const extraPages = await evidencePages(evidence);
+  const made = await pdfFrom(invoicePdf({ ...input, extraPages }), zone);
+  const bytes = await withEvidence(made.bytes, evidence);
+  const { PDFDocument } = await import('pdf-lib');
+  const pages = (await PDFDocument.load(bytes)).getPageCount();
+  return { bytes, fileName: made.fileName, pages };
+}
+
+/** A credit note's PDF. */
+export async function creditNoteFile(input, zone = 'Europe/London') {
+  const { creditNotePdf } = await docCode();
+  return pdfFrom(creditNotePdf(input), zone);
+}

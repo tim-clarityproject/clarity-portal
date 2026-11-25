@@ -49,7 +49,7 @@ test('every server function that acts on a coach\'s own sign-in asks for the cod
     assert.match(src, /from '\.\.\/_coachCode\.js'/, `${name} imports the code check`);
     assert.match(src, /\b(codeRefusal|codeGiven)\(token/, `${name} asks it about the caller's token`);
   }
-  assert.deepEqual(asked.sort(), ['coach-auth-reset.js', 'coach-billing.js', 'coach-calendar-connect.js', 'coach-calendar.js', 'coach-email-in.js', 'coach-invite.js', 'coach-send.js']);
+  assert.deepEqual(asked.sort(), ['coach-agreements.js', 'coach-auth-reset.js', 'coach-billing.js', 'coach-calendar-connect.js', 'coach-calendar.js', 'coach-email-in.js', 'coach-invite.js', 'coach-send.js']);
 });
 
 test('the recovery route stays open before the code, and only it', () => {

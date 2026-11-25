@@ -20,37 +20,45 @@ export const ROUTES = Object.freeze({
  */
 export const ASKS = Object.freeze({
   agreements: {
-    send: { who: 'coach', body: 'agreementId, versionId, signatureId | newSignature { kind, image?, typedName? }, personalNote, sendAs: agreement|quote, validDays?', answer: 'sentAt, expiresOn, quoteId?, quoteNumber?, emailed' },
+    send: { who: 'coach', body: 'agreementId, versionId, signatureId | newSignature { kind, image?, typedName? }, personalNote, sendAs: agreement|quote, validDays?', answer: 'sentAt, expiresOn, quoteId?, quoteNumber?, validUntil?, emailed, already?' },
     reopen: { who: 'coach', body: 'versionId? | quoteId?, days?', answer: 'expiresOn? | validUntil?' },
     approve: { who: 'owner', body: 'agreementId', answer: 'sentAt, emailed' },
     ask_change: { who: 'owner', body: 'agreementId, note', answer: '' },
-    send_sign_reminder: { who: 'coach', body: 'versionId, reminder: sign_3|sign_7, subject?, text?', answer: 'sentAt' },
-    send_first_payment_reminder: { who: 'coach', body: 'versionId, subject?, text?', answer: 'sentAt' },
+    send_sign_reminder: { who: 'coach', body: 'versionId, reminder: sign_3|sign_7, subject?, text?, again?', answer: 'sentAt, already?' },
+    send_first_payment_reminder: { who: 'coach', body: 'versionId, subject?, text?', answer: 'sentAt, emailed' },
     extend: { who: 'coach', body: 'agreementId, endsOn', answer: 'endsOn, emailed' },
     pause: { who: 'coach', body: 'agreementId, from, to', answer: 'endsOn, emailed' },
     end_early: { who: 'coach', body: 'agreementId, endsOn, by: client|coach', answer: 'endingOn, emailed' },
     cancel_14: { who: 'coach', body: 'agreementId', answer: 'refundMinor, currency, creditNoteNumber, emailed' },
-    answer_change: { who: 'coach', body: 'requestIds, reply?', answer: '' },
-    sponsor_send: { who: 'coach', body: 'agreementId, versionId, sponsor { name, email, role }', answer: 'sentAt, expiresAt' },
+    answer_change: { who: 'coach', body: 'requestIds, reply?', answer: 'emailed?' },
+    sponsor_send: { who: 'coach', body: 'agreementId, versionId, sponsor { name, email, role }', answer: 'sentAt, expiresAt, emailed, link? (off the live site only)' },
     team_agreements: { who: 'coach', body: 'agreementId', answer: 'made' },
   },
   billing: {
+    // 061/062's own kinds (draft, paid_by_hand, refund, credit, bank_payment, one_off) keep their own callers; these two
+    // are listed for the fields run 3 added.
+    send: { who: 'coach', body: 'invoiceId, poNumber?', answer: '' },
+    send_reminder: { who: 'coach', body: 'reminderId, text?, again?', answer: 'already? | unsure? | settled? | noAddress?' },
     delivered_invoice: { who: 'coach', body: 'agreementId, sessionIds', answer: 'invoiceId, number, totalMinor, currency' },
     top_up: { who: 'coach', body: 'agreementId', answer: 'invoiceId, number, totalMinor, currency' },
-    org_invoice_preview: { who: 'coach', body: 'organisationId, sessionIds, entryIds, poNumber, rateMinor, evidenceIds', answer: 'pdf (base64), fileName, pages' },
-    org_invoice_send: { who: 'coach', body: 'organisationId, sessionIds, entryIds, poNumber, rateMinor, evidenceIds', answer: 'invoiceId, number, fileName, sentTo, dueOn' },
+    org_invoice_preview: { who: 'coach', body: 'organisationId, sessionIds, entryIds, poNumber, rateMinor, evidenceIds, supplierNumber?, reference?', answer: 'pdf (base64), fileName, pages' },
+    org_invoice_send: { who: 'coach', body: 'organisationId, sessionIds, entryIds, poNumber, rateMinor, evidenceIds, supplierNumber?, reference? | invoiceId, again: true', answer: 'invoiceId, number, fileName, sentTo, dueOn, emailed' },
     mark_uploaded: { who: 'coach', body: 'invoiceId', answer: 'uploadedAt' },
     funding_details: { who: 'coach', body: 'organisationId', answer: 'bankDetails { accountName, sortCode, accountNumber }' },
-    updated_price: { who: 'coach', body: 'agreementId, newFeeMinor, fromDay, note', answer: 'versionId, sentAt' },
+    updated_price: { who: 'coach', body: 'agreementId, newFeeMinor, fromDay, note', answer: 'versionId, sentAt, emailed' },
   },
   settle: {
-    start: { who: 'client', body: 'versionId', answer: 'clientSecret, invoiceId, amountMinor, currency, publishableKey?, standIn?' },
+    start: { who: 'client', body: 'versionId', answer: 'clientSecret, invoiceId, amountMinor, currency, publishableKey?, settled?, standIn?' },
     bacs: { who: 'client', body: 'versionId', answer: 'clientSecret' },
     state: { who: 'client', body: 'versionId', answer: 'settled, amountMinor, currency' },
+    invoice_pdf: { who: 'client', body: 'invoiceId', answer: 'pdf (base64), fileName' },
+    credit_notes: { who: 'client', body: '', answer: 'creditNotes [{ id, number, invoiceId, invoiceNumber, amountMinor, currency, kind, createdAt }]' },
+    credit_note_pdf: { who: 'client', body: 'creditNoteId', answer: 'pdf (base64), fileName' },
   },
   link: {
-    quote_accept: { who: 'link', body: 'token, extras, choice', answer: 'versionId, needsAccount' },
+    quote_accept: { who: 'link', body: 'token, extras, choice', answer: 'versionId, needsAccount, already?' },
     quote_pdf: { who: 'link', body: 'token', answer: 'pdf (base64), fileName' },
+    quote_question: { who: 'link', body: 'token, text', answer: 'emailed' },
     sponsor_pdf: { who: 'link', body: 'token', answer: 'pdf (base64), fileName' },
     sponsor_sign: { who: 'link', body: 'token, name, role, po, image?, typed?, fingerprint', answer: 'signedAt' },
   },
@@ -86,10 +94,12 @@ export const STAND_INS = Object.freeze({
     end_early: (b) => ({ endingOn: b.endsOn || null, emailed: false }),
     cancel_14: () => ({ refundMinor: 0, currency: 'GBP', creditNoteNumber: 'CLARITY-CN-0000', emailed: false }),
     answer_change: () => ({}),
-    sponsor_send: () => ({ sentAt: today(), expiresAt: null }),
+    sponsor_send: () => ({ sentAt: today(), expiresAt: null, emailed: false, link: null }),
     team_agreements: () => ({ made: 0 }),
   },
   billing: {
+    send: () => ({}),
+    send_reminder: () => ({}),
     delivered_invoice: () => ({ invoiceId: null, number: (standNumber += 1), totalMinor: 0, currency: 'GBP' }),
     top_up: () => ({ invoiceId: null, number: (standNumber += 1), totalMinor: 0, currency: 'GBP' }),
     org_invoice_preview: () => ({ pdf: STAND_PDF, fileName: 'Invoice preview.pdf', pages: 1 }),
@@ -102,10 +112,14 @@ export const STAND_INS = Object.freeze({
     start: () => ({ clientSecret: 'stand_in_secret', invoiceId: null, amountMinor: 0, currency: 'GBP', standIn: true }),
     bacs: () => ({ clientSecret: 'stand_in_secret', standIn: true }),
     state: () => ({ settled: false, amountMinor: 0, currency: 'GBP' }),
+    invoice_pdf: () => ({ pdf: STAND_PDF, fileName: 'Invoice.pdf' }),
+    credit_notes: () => ({ creditNotes: [] }),
+    credit_note_pdf: () => ({ pdf: STAND_PDF, fileName: 'Credit note.pdf' }),
   },
   link: {
     quote_accept: () => ({ versionId: null, needsAccount: true }),
     quote_pdf: () => ({ pdf: STAND_PDF, fileName: 'Quote.pdf' }),
+    quote_question: () => ({ emailed: false }),
     sponsor_pdf: () => ({ pdf: STAND_PDF, fileName: 'Agreement.pdf' }),
     sponsor_sign: () => ({ signedAt: today() }),
   },
@@ -153,6 +167,10 @@ export async function askWith({ route, kind, body = {}, token = null, send, live
   } catch {
     return { ok: false, message: WORDS.notReached };
   }
+  // Off the live site, a plain 404 (no answer of ours: the dev server and a local build serve no api/) is a route not
+  // built here, as 501 is.
+  const missing = status === 404 && !(answer && typeof answer === 'object' && typeof answer.ok === 'boolean');
+  if (missing && !live && standIn !== 'never') return stand();
   const calm = interpret(status, answer);
   if (!calm.ok && calm.notBuilt && !live && standIn !== 'never') return stand();
   return calm;

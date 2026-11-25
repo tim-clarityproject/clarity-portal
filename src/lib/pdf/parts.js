@@ -963,6 +963,7 @@ export function flatten(L, spec, contents, root) {
     if (!blocks.length) return; // a section with nothing in it is left out with its heading
     const heading = headingUnit(L, sec.title, tagNode('H2', sect, { actual: sec.title, title: sec.title }));
     heading.section = sections.length;
+    if (sec.newPage) heading.breakBefore = true; // a section that always starts its own page (an invoice's timesheet)
     const su = [heading, ...blocks.flat()];
     // the heading stays with at least three lines of what follows
     let after = 0;
