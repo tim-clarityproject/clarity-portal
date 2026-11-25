@@ -5,18 +5,20 @@
 import { apiFetch } from './readShare';
 
 /**
- * @param {{token: string, email: string, code: string, kind: 'link'|'complete'|'code'}} args
+ * @param {{token: string, email: string, code: string, kind: 'link'|'complete'|'code', timeZone?: string|null}} args
  *   code: the guest's new access code after Only you (045), to their own address.
- * @returns {Promise<{ok: boolean, sent?: boolean, error?: 'limit'|'already'|'private'|'invalid'|'failed'}>}
+ *   timeZone: the device's zone, sent only to choose the results PDF's paper (follow-up 5).
+ * @returns {Promise<{ok: boolean, sent?: boolean, error?: 'limit'|'already'|'private'|'expired'|'invalid'|'failed'}>}
+ *   expired: the results were open for 30 days, and that time has passed (064).
  *   sent: false on a preview or a developer's machine, which never send.
  *   private: the guest chose Only you (migration 044), so no coach email goes.
  */
-export async function requestAlignmentEmail({ token, email, code, kind }) {
+export async function requestAlignmentEmail({ token, email, code, kind, timeZone = null }) {
   try {
     const res = await apiFetch('/api/alignment-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, email, code, kind }),
+      body: JSON.stringify(timeZone ? { token, email, code, kind, timeZone } : { token, email, code, kind }),
     });
     const body = await res.json().catch(() => ({}));
     if (res.ok && body.ok) return { ok: true, sent: body.sent !== false };

@@ -103,3 +103,24 @@ test('break-it tester: an address id that isn\'t a real id is never named in the
   const { readFileSync } = await import('node:fs');
   assert.match(readFileSync(new URL('../../src/lib/coach/store.js', import.meta.url), 'utf8'), /ensureClientSessions\(userId, profileId\) \{\n[^]*?isRowId\(profileId\)/);
 });
+
+test('follow-up 5, item 15: at each sync a Mission a client stopped sharing is removed from the device, never shown offline', async () => {
+  const { refreshKeptShares, refreshedShares } = await import('../../src/lib/coach/clientShare.js');
+  const kept = { 'u-sam': { mission: 'Lead with calm', latest_week_score: 80 }, 'u-ola': { mission: 'Build the team', latest_week_score: null }, 'u-gone': { mission: 'Old', latest_week_score: null } };
+  const rows = [{ client_id: 'u-sam', mission: 'Lead with calm, always', latest_week_score: 82, total: 2 }, { client_id: 'u-ola', mission: null, latest_week_score: null, total: 2 }];
+  assert.deepEqual(refreshedShares(kept, rows), { 'u-sam': { mission: 'Lead with calm, always', latest_week_score: 82 } });
+  const rpc = async () => ({ data: rows, error: null });
+  assert.deepEqual(await refreshKeptShares(rpc, kept), { 'u-sam': { mission: 'Lead with calm, always', latest_week_score: 82 } });
+  assert.equal(await refreshKeptShares(async () => ({ data: null, error: { message: 'offline' } }), kept), null, 'offline: the copy is left as it was');
+  assert.equal(await refreshKeptShares(rpc, {}), null, 'nothing kept: nothing asked');
+});
+
+test('follow-up 5, item 12: the to-do panel\'s one drop-down: No estimate, then every 15 minutes to 8 hours, in full words', async () => {
+  const { estimateOptions, NO_ESTIMATE, estimateOk } = await import('../../src/lib/coach/day.js');
+  const o = estimateOptions();
+  assert.deepEqual(o[0], { value: NO_ESTIMATE, label: 'No estimate' });
+  assert.deepEqual(o.slice(1, 5).map((x) => x.label), ['15 minutes', '30 minutes', '45 minutes', '1 hour']);
+  assert.equal(o.at(-1).label, '8 hours');
+  assert.equal(o.length, 33);
+  assert.ok(o.slice(1).every((x) => estimateOk(Number(x.value))));
+});

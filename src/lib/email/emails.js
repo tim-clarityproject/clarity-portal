@@ -54,16 +54,36 @@ const dayAndTime = (at, zone, now) => {
  * @param {string} [o.firstName]   the person's first name, when it is known ("Hello," without it)
  * @param {string} [o.coachFirst]  the first name of the coach who made the link
  * @param {string} [o.dateText]    kept for older callers; draft-2's words have no date
+ * @param {boolean} [o.finished]   false: the Health Check isn't finished, so there are no results yet
+ *   (no PDF, and its link and code carry on with no end: 064)
+ * @param {boolean} [o.attached]   false: finished, but the PDF couldn't be made, so nothing says it's attached
  */
-export function healthCheckResultsEmail({ link, organisation, email, code, firstName = '', coachFirst = 'Tim' }) {
+export function healthCheckResultsEmail({ link, organisation, email, code, firstName = '', coachFirst = 'Tim', finished = true, attached = true }) {
   const org = oneLine(organisation);
+  if (!finished) {
+    return {
+      brand: 'portal',
+      subject: org ? `Your Health Check link for ${org}` : 'Your Health Check link',
+      blocks: [
+        { type: 'heading', text: greeting(firstName) },
+        { type: 'text', text: 'Here’s your link to the Health Check, so you can carry on where you left off.' },
+        { type: 'text', text: 'Your answers are saved, and your results will be ready when you finish.' },
+        { type: 'link', label: 'Your link', href: link },
+        { type: 'details', rows: [['Email', email], ['Access code', code]] },
+        signedBy(coachFirst),
+      ],
+      footer: { lines: ['You asked for this link during your Health Check.', EMAIL_SIGN_OFF] },
+    };
+  }
   return {
     brand: 'portal',
     subject: org ? `Your Health Check results for ${org}` : 'Your Health Check results',
     blocks: [
       { type: 'heading', text: greeting(firstName) },
       { type: 'text', text: 'Thanks for completing the Health Check.' },
-      { type: 'text', text: 'Your results are attached as a PDF, and you can open them again with your link and code for 30 days.' },
+      { type: 'text', text: attached
+        ? 'Your results are attached as a PDF, and you can open them again with your link and code for 30 days.'
+        : 'You can open your results again with your link and code for 30 days.' },
       { type: 'link', label: 'Your link', href: link },
       { type: 'details', rows: [['Email', email], ['Access code', code]] },
       { type: 'text', text: 'If you’d like to talk them through, reply and we’ll find a time.' },
@@ -423,7 +443,9 @@ export const RECAP_EMAIL_MAX = 12000;
  * A session's summary is ready, to the client (or each member of a group), sent only when their coach presses Send the
  * recap (api/_routes/coach-send.js; migration 050's session_send_recap decides it goes once). Draft-2's words: the email says
  * the summary is ready, and the summary itself (the coach's words and the ticked actions) is read on the client's
- * Coaching page, never carried in the email. The address it goes to is never passed in here.
+ * Coaching page, never carried in the email. Someone with no portal account to read it in (a group member who was
+ * never invited; follow-up 5, item 3) gets the summary in the email itself instead, with no "Read my summary" button.
+ * The address it goes to is never passed in here.
  * @param {object} o
  * @param {string} o.origin      the portal's own address (api/_portalOrigin.js)
  * @param {string} o.coach       the coach's first name
@@ -431,11 +453,30 @@ export const RECAP_EMAIL_MAX = 12000;
  * @param {string} [o.zone]
  * @param {string} [o.dateText]  the session's day in words ("Mon 16 Nov 2026"), for a session on another day
  * @param {Date} [o.now]
+ * @param {boolean} [o.inPortal] false: the reader has no account, so the recap and actions are in the email
+ * @param {string} [o.recap]     the coach's words, for a reader with no account
+ * @param {string[]} [o.actions] the ticked actions, for a reader with no account
  */
-export function sessionRecapEmail({ origin, coach, at = null, zone = null, dateText = '', now = new Date() }) {
+export function sessionRecapEmail({ origin, coach, at = null, zone = null, dateText = '', now = new Date(), inPortal = true, recap = '', actions = [] }) {
   const name = oneLine(coach).slice(0, 60) || 'your coach';
   const day = oneLine(dateText);
   const today = !(at && zone) || relativeDayWords(at, zone, now) === 'today';
+  const footer = { lines: [`You get this because ${name} is your coach.`, EMAIL_SIGN_OFF] };
+  if (!inPortal) {
+    // The coach's words, a paragraph each (a blank line between them in what was typed), and the actions agreed.
+    const paragraphs = String(recap || '').slice(0, RECAP_EMAIL_MAX).split(/\n\s*\n/).map((t) => oneLine(t)).filter(Boolean);
+    const todo = (Array.isArray(actions) ? actions : []).map((a) => oneLine(a)).filter(Boolean).slice(0, RECAP_EMAIL_ACTIONS_MAX);
+    return {
+      brand: 'portal',
+      subject: 'Your coaching session summary',
+      blocks: [
+        { type: 'heading', text: today || !day ? `Here’s your summary from today’s coaching session with ${name}.` : `Here’s your summary from your coaching session with ${name} on ${day}.` },
+        ...(paragraphs.length ? [{ type: 'label', text: 'What we talked about' }, ...paragraphs.map((text) => ({ type: 'text', text }))] : []),
+        ...(todo.length ? [{ type: 'label', text: todo.length === 1 ? 'The action you agreed' : 'The actions you agreed' }, ...todo.map((text) => ({ type: 'text', text }))] : []),
+      ],
+      footer,
+    };
+  }
   return {
     brand: 'portal',
     subject: 'Your coaching session summary is ready',
@@ -444,7 +485,7 @@ export function sessionRecapEmail({ origin, coach, at = null, zone = null, dateT
       { type: 'text', text: 'It has what you talked about and the actions you agreed.' },
       { type: 'button', label: 'Read my summary', href: `${origin}/coaching` },
     ],
-    footer: { lines: [`You get this because ${name} is your coach.`, EMAIL_SIGN_OFF] },
+    footer,
   };
 }
 

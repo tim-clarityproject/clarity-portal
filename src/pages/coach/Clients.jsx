@@ -180,7 +180,7 @@ export default function Clients() {
   const open = (r) => {
     if (hold.current === 'held') { hold.current = null; return; }
     if (picking && isPhone) { pick(r.profile.id, !picked[r.profile.id]); return; }
-    if (r.admin) { toast.show(`${r.profile.name} is ${r.coachName}’s client, so only ${r.coachName} opens their page.`); return; }
+    // An associate's client opens the owner's admin view (follow-up 5, item 10).
     navigate(`/coach/clients/${r.profile.id}`);
   };
   useEffect(() => { const onKey = (e) => { if (e.key === 'Escape' && picking) setPicked({}); }; document.addEventListener('keydown', onKey); return () => document.removeEventListener('keydown', onKey); }, [picking]);

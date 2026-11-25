@@ -1,13 +1,13 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  AddButton, Button, Chip, ChipRow, DatePicker, Dropdown, IconButton, InlineChoice, SlidePanel, SwitchRow, TextBox, TextField, useIsPhone, useToast,
+  AddButton, Button, Chip, ChipRow, DatePicker, Dropdown, IconButton, SlidePanel, SwitchRow, TextBox, TextField, useIsPhone, useToast,
 } from '../../components/design';
 import keepWords from '../../components/design/keepWords';
 import { useToastAbove } from '../../components/design/toastAbove';
 import { keyOf, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { addDays, clean, cut, dayWords, minutesWords, suggestedDays } from '../../lib/coach/model';
 import {
-  addedWords, checklistWords, doneWords, ESTIMATES, estimateWords, moveToDay, moveToSomeday, OTHER_ESTIMATES, OTHER_SUGGESTED, parseQuickAdd,
+  addedWords, checklistWords, doneWords, estimateOptions, moveToDay, moveToSomeday, NO_ESTIMATE, parseQuickAdd,
   plannedWords, positionAt, quickAddChips, quickDays, repeatChoices, repeatValue, timeWords, todoFacts, whenWords,
 } from '../../lib/coach/day';
 import { deleteTodos, linksToAdd, removePairs, rowsForNew, saveTodos, tickRows, todoLinks } from '../../lib/coach/todoActions';
@@ -42,7 +42,6 @@ const HOLD_MS = 450;
 const NONE = '__none__';
 const PICK = '__pick__';
 const AFTER_WORK = '__after_work__';
-const OTHER = 'other';
 const TICK = <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
 const DOTS = <svg className="cc-todo-dots" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5.5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="18.5" cy="12" r="1.5" /></svg>;
 const count = (n) => countWords(n, 'to-do');
@@ -664,8 +663,6 @@ export function TodoPanel({ id, onClose }) {
   const lists = todoLists.filter((l) => !l.finished_at || l.id === todo.list_id);
   const headings = todoHeadings.filter((h) => h.list_id === todo.list_id);
   const day = todo.planned_on && todo.planned_on < todayKey ? todayKey : todo.planned_on;
-  const estimate = todo.minutes == null ? '' : ESTIMATES.includes(todo.minutes) ? String(todo.minutes) : OTHER;
-  const others = [OTHER_SUGGESTED, ...OTHER_ESTIMATES.filter((m) => m !== OTHER_SUGGESTED)].map((m) => ({ value: String(m), label: minutesWords(m) }));
   const done = Boolean(todo.done_at);
 
   return (
@@ -721,21 +718,16 @@ export function TodoPanel({ id, onClose }) {
       </div>
 
       <div className="cc-field cc-todo-est">
-        {/* Answer rows on every size: in full words ("30 minutes") the five never fit on one line, even in the laptop panel: the estimates are full words now,
-            "30 minutes", never "30 min" (tidy follow-up 4, part 2, item 4), and a pill's words never wrap. */}
-        <InlineChoice
-          label="How long it takes"
-          options={[...ESTIMATES.map((m) => ({ value: String(m), label: estimateWords(m) })), { value: OTHER, label: 'Other' }]}
-          value={estimate}
-          onChange={(v) => {
-            // Other starts at 3 hours; the chosen one pressed again takes the estimate off.
-            if (v === OTHER) change({ minutes: estimate === OTHER ? null : OTHER_SUGGESTED });
-            else change({ minutes: String(todo.minutes) === v ? null : Number(v) });
-          }}
+        {/* One drop-down in the controls family, 40px high (44px on a phone; follow-up 5, item 12): the five answer rows
+            took the panel's height once the estimates were full words. Every 15 minutes from 15 minutes to 8 hours, in
+            order; "No estimate" takes it off. */}
+        <Dropdown
+          label="How long will it take?"
+          className="cc-todo-est-dd"
+          options={estimateOptions()}
+          value={todo.minutes == null ? NO_ESTIMATE : String(todo.minutes)}
+          onChange={(v) => change({ minutes: v === NO_ESTIMATE ? null : Number(v) })}
         />
-        {estimate === OTHER && (
-          <div className="cc-field"><Dropdown label="How long?" options={others} value={String(todo.minutes || OTHER_SUGGESTED)} onChange={(v) => change({ minutes: Number(v) })} /></div>
-        )}
       </div>
 
       <div className="cc-field">

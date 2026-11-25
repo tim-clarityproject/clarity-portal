@@ -146,11 +146,23 @@ export const COPY_DIDNT_GO = 'That didn’t copy. Select it and copy it yourself
 export const CODES_REPLACED = ['These codes stopped working, because newer ones were made in another window.', 'Reload this page for a new set, and save that one.'];
 /** A sign-in from before the owner's reset (Claude's): shown on Coach sign in. */
 export const SIGNED_OUT_BY_RESET = ['You’ve been signed out, because your authenticator was reset.', 'Sign in again to set it up.'];
+/**
+ * A sign-in whose refresh the server refused while the coach portal was open (follow-up 5, item 13): nothing says why
+ * (an owner's reset, a recovery code used elsewhere, or a sign-in that simply ran out all look the same from here), so
+ * it never claims the authenticator was reset. Coach sign in keeps the place they were on.
+ */
+export const SIGN_IN_AGAIN = ['Please sign in again.'];
 /** A sign-in ended because a recovery code was used on another one (Claude's, run 7): shown on Coach sign in. */
 export const SIGNED_OUT_BY_RECOVERY = ['You’ve been signed out, because one of your recovery codes was used to sign in elsewhere.', 'Sign in again to carry on.'];
-/** Why Coach sign in says a sign-in was ended: coach_auth_state's ended_by ('recovery', else the reset's words). */
+/**
+ * Why Coach sign in says a sign-in was ended: coach_auth_state's ended_by. Only 'reset' (begun before the owner's
+ * reset) says the authenticator was reset, and 'recovery' a recovery code; a sign-in that is simply gone ('session')
+ * or can't be told says "Please sign in again." (follow-up 5, item 13).
+ */
 export function signedOutWords(endedBy) {
-  return endedBy === 'recovery' ? SIGNED_OUT_BY_RECOVERY : SIGNED_OUT_BY_RESET;
+  if (endedBy === 'recovery') return SIGNED_OUT_BY_RECOVERY;
+  if (endedBy === 'reset') return SIGNED_OUT_BY_RESET;
+  return SIGN_IN_AGAIN;
 }
 /** The codes couldn't be made because 053 isn't there yet (Claude's). */
 export const CODES_NOT_YET = ['Recovery codes aren’t ready yet.', 'You can still sign in with your authenticator app.'];

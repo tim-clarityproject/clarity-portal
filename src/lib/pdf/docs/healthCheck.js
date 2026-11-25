@@ -1,10 +1,11 @@
-import { RESOURCE } from '../../../pages/alignment/alignmentFlow';
-import { importanceText } from '../../alignmentScore';
-import { PROGRESS_WORDS } from '../../../pages/alignment/chartLayout';
-import { formatDocDate, parseDbTimestamp } from '../../dateFormatter';
+import { RESOURCE } from '../../../pages/alignment/alignmentFlow.js';
+import { importanceText } from '../../alignmentScore.js';
+import { PROGRESS_WORDS } from '../../../pages/alignment/chartLayout.js';
+import { formatDocDate, parseDbTimestamp } from '../../dateFormatter.js';
+import { dayIn } from '../../time/instants.js';
 import {
   csfLevel, csfLevelName, headlineLine, headlineSentence, importanceLines, PROGS, RES, resultsModel, stateSentence, stateWords,
-} from '../../../health-check/words';
+} from '../../../health-check/words.js';
 
 // The Strategic Alignment Health Check as a document for the shared PDF template.
 
@@ -42,11 +43,16 @@ export function changedSince(updatedAt, completedAt) {
  * @param {string|null} [input.completedAt]
  * @param {string|null} [input.updatedAt] the last save; shown as "Updated" when after completion
  * @param {string|null} [input.organisation] the client's organisation, when known
+ * @param {string|null} [input.timeZone] made on the server (follow-up 5): the zone its dates are read in
+ *   (src/lib/time), so the date is the same whatever the server's own clock; the browser leaves it out
+ *   and uses the device's own day, as before
  */
-export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, organisation = null }) {
+export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, organisation = null, timeZone = null }) {
+  // On the server the day comes from the time library, in the zone given (as the emails' asOf does).
+  const day = timeZone ? dayIn(timeZone, completedAt ? parseDbTimestamp(completedAt) : new Date()) : null;
   // The Timing question counts from the Health Check's date: the completed
   // date, or today, as on the results page.
-  const asOf = completedAt ? parseDbTimestamp(completedAt) : new Date();
+  const asOf = day || (completedAt ? parseDbTimestamp(completedAt) : new Date());
   const model = resultsModel({ ...draft, csfs: draft.csfs || [], projects: draft.projects || [], ratings: draft.ratings || {} }, { asOf });
   const { rows, factors, line, headline, questions, gaps } = model;
   const n = rows.length;
@@ -68,9 +74,9 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
     title: 'Strategic Alignment Health Check',
     who: org,
     confidential: true,
-    details: [org, formatDocDate(completedAt || new Date()), 'Strategic Alignment Health Check'],
+    details: [org, formatDocDate(day || completedAt || new Date()), 'Strategic Alignment Health Check'],
     updatedAt: changedSince(updatedAt, completedAt) ? updatedAt : null,
-    date: completedAt || new Date(),
+    date: day || completedAt || new Date(),
     subject: 'Strategic Alignment Health Check results',
     // The headline alone, as on screen (PDF rule 12; Tim, 13 Nov; Phase 8a
     // follow-up, step 2): its one sentence, then what needs you under it.

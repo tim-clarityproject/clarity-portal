@@ -427,7 +427,7 @@ const PAGE_NAMES = [
   ['/performance-plan/edit', 'Edit my plan'],
   ['/performance-plan/history', 'Version history'],
   ['/performance-sprint/year', 'View your year'],
-  ['/coaching', 'Coaching'],
+  ['/coaching', 'My coaching'],
   ['/coaching/agreement', 'Coaching agreement'],
   ['/coaching/billing', 'Billing'],
   ['/peak-moments', 'Peak moments'],

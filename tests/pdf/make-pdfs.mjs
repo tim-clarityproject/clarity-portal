@@ -607,14 +607,19 @@ const agreementVersion = (over = {}, terms = AG_TERMS) => agreementRows([{
 }])[0];
 const LONG_NAME = 'Alexandra Konstantinopoulou-Montgomery-Fairweather';
 const AG = {
-  'Coaching agreement, self-funded, drawn': agreementPdf({ version: agreementVersion(), signature: { kind: 'drawn', image: signaturePng() } }),
+  // Follow-up 5: made on the server with both signatures (the coach's drawn or typed), times in a named zone.
+  'Coaching agreement, self-funded, drawn': agreementPdf({ version: agreementVersion(), signature: { kind: 'drawn', image: signaturePng() }, coachSignature: { kind: 'drawn', image: signaturePng(220, 64) } }),
   'Coaching agreement, funded, typed': agreementPdf({
     version: agreementVersion({ funded_by: 'Northfield Logistics', total_minor: null, currency: null }, { ...AG_TERMS, total_minor: undefined, instalments: undefined, clientName: 'Priya Shah', clientEmail: 'priya@example.invalid' }),
     signature: { kind: 'typed', typed_name: 'Priya Shah' },
+    coachSignature: { kind: 'typed', typed_name: 'Dr. Tim Dutton' },
+    timeZone: 'America/Chicago',
   }),
   'Coaching agreement, long names and emoji': agreementPdf({
     version: agreementVersion({}, { ...AG_TERMS, clientName: LONG_NAME, clientEmail: 'alexandra.konstantinopoulou-montgomery@a-very-long-organisation-name.example.invalid', goals: `${para(3)} 🚀`, contactWays: 'email, WhatsApp or the portal’s chat' }),
     signature: { kind: 'drawn', image: signaturePng(300, 90) },
+    coachSignature: { kind: 'drawn', image: signaturePng(300, 90) },
+    timeZone: 'Australia/Sydney',
   }),
   'Coaching agreement, ongoing in dollars': agreementPdf({
     version: agreementVersion({ currency: 'USD' }, { ...AG_TERMS, ongoing: true, sessions: 24, startsOn: null, endsOn: null, currency: 'USD', total_minor: 2400000, instalments: 12 }),

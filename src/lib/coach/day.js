@@ -26,6 +26,13 @@ export const OTHER_SUGGESTED = 180;
 export const estimateOk = (m) => m == null || (Number.isInteger(m) && m >= 15 && m <= 480 && m % 15 === 0);
 /** "15 minutes", "1 hour", "1 hour 30 minutes": full words, never "min" (tidy follow-up 4). Empty for none. */
 export const estimateWords = (m) => (m ? minutesWords(m) : '');
+/** The to-do panel's one drop-down (follow-up 5, item 12): its value for no estimate. */
+export const NO_ESTIMATE = 'none';
+/** "No estimate", then every 15 minutes from 15 minutes to 8 hours, in order, in full words. */
+export function estimateOptions() {
+  const all = [...ESTIMATES, ...OTHER_ESTIMATES].sort((a, b) => a - b);
+  return [{ value: NO_ESTIMATE, label: 'No estimate' }, ...all.map((m) => ({ value: String(m), label: estimateWords(m) }))];
+}
 
 // ---------------------------------------------------------------- where a to-do shows
 
@@ -801,15 +808,17 @@ export const prepLine = (name, notedAt, todayKey) => `${firstName(name)} added t
 /**
  * Who needs attention: coaching facts only, never flags from portal use.
  * A session to write up, a recap to send, 2 sessions or fewer left (with
- * Offer a renewal), time credit running low, and no next session booked;
- * then invoices overdue on the payer's own clock (Phase 6b run 1; M11 B1:
+ * Offer a renewal), time credit running low, and no next session booked.
+ * Invoices overdue on the payer's own clock (Phase 6b run 1; M11 B1:
  * agreements.js's overdueRows), the coach's own, then for the owner every
- * associate's, after every row above, which keep their order.
+ * associate's, come first, before the sessions to write up and the recaps
+ * (follow-up 5, item 9: money owed is the most pressing); the rest keep
+ * their order.
  * @returns {{ key: string, profileId: string, name: string, line: string, action: string, to: string, state?: object }[]}
  */
 export function attentionRows({ clients = [], engagements = [], packs = [], entries = [], sessions = [], people = [], older = null, now, todayKey,
   invoices = [], coachId = null, isOwner = false, admin = [], organisations = [], coaches = [], coachZone = null }) {
-  const rows = [];
+  const rows = invoices.length ? [...overdueRows({ invoices, coachId, isOwner, clients, admin, organisations, coaches, now, coachZone })] : [];
   const t = new Date(now).getTime();
   // Each client's own sessions, gathered once (they were searched for again for every client; coach first screen run).
   const byClient = new Map();
@@ -843,7 +852,6 @@ export function attentionRows({ clients = [], engagements = [], packs = [], entr
       rows.push({ key: `n:${c.id}`, profileId: c.id, name: c.name, line: 'No next session is booked.', action: `Open ${possessive(first)} page`, to: `/coach/clients/${c.id}` });
     }
   }
-  if (invoices.length) rows.push(...overdueRows({ invoices, coachId, isOwner, clients, admin, organisations, coaches, now, coachZone }));
   return rows;
 }
 

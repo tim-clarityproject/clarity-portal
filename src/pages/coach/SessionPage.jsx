@@ -2,9 +2,9 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { idFromAddress } from '../../lib/coach/address';
 import {
-  AddButton, BottomBar, Button, DatePicker, Dropdown, IconButton, InlineChoice, PageHeader, TextBox, TextField, useAutosave, useIsPhone, useToast,
+  AddButton, BottomBar, Button, DatePicker, Dropdown, ErrorMessage, IconButton, InlineChoice, Loading, PageHeader, TextBox, TextField, useAutosave, useIsPhone, useToast,
 } from '../../components/design';
-import { loadCoach, coachDayReadyNow, ensureCalRange, newId } from '../../lib/coach/store';
+import { loadCoach, coachDayReadyNow, ensureCalRange, newId, useCoachLoadState } from '../../lib/coach/store';
 import { addDays, clean, cut, dayWords } from '../../lib/coach/model';
 import {
   ACTIONS_MAX, actionsOf, goesWords, instantFrom, NEEDS_NEW_TIME, NEEDS_RECAP, outcomeChoices, OUTCOMES, recapSentWords, SENT_LINE, sentWords,
@@ -41,15 +41,29 @@ const paragraphs = (text) => String(text || '').split(/\n{2,}/).map((p) => p.tri
 export default function SessionPage() {
   const id = idFromAddress(useParams().id); // any case in the address (tidy follow-up 4)
   const navigate = useNavigate();
-  const { sessions } = useCoachPortal();
+  const { sessions, userId } = useCoachPortal();
   const whoOf = useSessionWho();
+  // Only a whole copy can say a session isn't here: while the rest of a first load is on its way the page waits, and
+  // when it couldn't be made it says so with Try again (follow-up 5, item 14).
+  const loadState = useCoachLoadState(userId);
+  const [trying, setTrying] = useState(false);
   const session = sessions.find((s) => s.id === id) || null;
   if (!session) {
+    const tryAgain = () => { setTrying(true); loadCoach(userId).catch(() => null).finally(() => setTrying(false)); };
     return (
       <div className="cc-page"><div className="cc-col">
         <Back onClick={() => navigate('/coach/clients')} />
         <PageHeader title="Session" />
-        <p className="cc-quiet">This session isn’t here any more.</p>
+        {loadState === 'whole' && <p className="cc-quiet">This session isn’t here any more.</p>}
+        {loadState === 'loading' && <Loading label="Loading the session" />}
+        {loadState === 'failed' && (trying ? <Loading label="Loading the session" /> : (
+          <div className="cc-role-problem">
+            <ErrorMessage>{typeof navigator !== 'undefined' && navigator.onLine === false
+              ? 'This session needs a connection the first time it opens on this device, so try again when you’re back online.'
+              : 'This session didn’t load. Check your connection and try again.'}</ErrorMessage>
+            <Button variant="primary" onClick={tryAgain}>Try again</Button>
+          </div>
+        ))}
       </div></div>
     );
   }

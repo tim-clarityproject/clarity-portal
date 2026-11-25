@@ -7,14 +7,17 @@ import { loadWithReload } from '../../lib/loadWithReload';
 export const PDF_ERROR = 'Your PDF wasn’t made. Check your connection and try again.';
 
 /**
- * @param {() => Object|Promise<Object>} getDocument the document description (src/lib/pdf/render.js)
+ * @param {() => Object|Promise<Object>} getDocument the document description (src/lib/pdf/render.js), or
+ *   { storedPdf: { bytes, fileName } } for a PDF already made and kept (a signed agreement's: 064), saved as it is
  * @param {'light'|'dark'} look
  * @returns {Promise<string>} the file name
  */
 export async function savePdf(getDocument, look) {
-  const [doc, { downloadPdf }] = await Promise.all([
-    getDocument(),
-    loadWithReload(() => import('../../lib/pdf/download')),
-  ]);
+  const doc = await getDocument();
+  if (doc?.storedPdf) {
+    const { savePdfFile } = await loadWithReload(() => import('../../lib/pdf/saveFile'));
+    return savePdfFile(doc.storedPdf.bytes, doc.storedPdf.fileName);
+  }
+  const { downloadPdf } = await loadWithReload(() => import('../../lib/pdf/download'));
   return downloadPdf(doc, look);
 }

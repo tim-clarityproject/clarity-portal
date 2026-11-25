@@ -185,13 +185,16 @@ test('an associate sees only their own overdue invoices', () => {
   assert.deepEqual(rows.map((r) => [r.name, r.line, r.to]), [['Owen Price', 'An invoice for £900 is 3 days overdue.', '/coach/clients/p-owen']]);
 });
 
-test('Who needs attention keeps its own rows in their order, then the overdue invoices', () => {
-  const before = attentionRows({ clients: [leo], engagements: [], sessions: [], now: NOW, todayKey: TODAY });
-  const after = attentionRows({ clients: [leo], engagements: [], sessions: [], now: NOW, todayKey: TODAY, invoices: [owed(), mayas], coachId: TIM, isOwner: true, admin: [mayaClient], organisations: [northfield, kestrel], coachZone: 'Europe/London' });
-  assert.deepEqual(after.slice(0, before.length), before);
-  assert.deepEqual(after.slice(before.length).map((r) => r.key), ['o:i-north', 'o:i-owen']);
+test('Who needs attention lists the overdue invoices first, before the recaps, then its own rows in their order (follow-up 5, item 9)', () => {
+  // Leo has a recap written and not sent yet.
+  const sessions = [{ id: 's-leo', profile_id: leo.id, starts_at: '2026-11-23T10:00:00Z', minutes: 60, outcome: 'held', recap: 'We agreed the plan.', recap_sent_at: null }];
+  const before = attentionRows({ clients: [leo], engagements: [], sessions, now: NOW, todayKey: TODAY });
+  assert.ok(before.some((r) => r.key === 'r:s-leo'), 'the recap row is there');
+  const after = attentionRows({ clients: [leo], engagements: [], sessions, now: NOW, todayKey: TODAY, invoices: [owed(), mayas], coachId: TIM, isOwner: true, admin: [mayaClient], organisations: [northfield, kestrel], coachZone: 'Europe/London' });
+  assert.deepEqual(after.slice(0, 2).map((r) => r.key), ['o:i-north', 'o:i-owen']);
+  assert.deepEqual(after.slice(2), before);
   // No invoices passed (before 061): exactly as before.
-  assert.deepEqual(attentionRows({ clients: [leo], now: NOW, todayKey: TODAY }), before);
+  assert.deepEqual(attentionRows({ clients: [leo], sessions, now: NOW, todayKey: TODAY }), before);
 });
 
 // ---------------------------------------------------------------- the store

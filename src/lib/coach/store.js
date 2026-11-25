@@ -1953,6 +1953,7 @@ export function loadCoach(userId, { again = false } = {}) {
     if (calThere) calLoaded.set(userId, [...(calLoaded.get(userId) || []), [nowMs - CAL_BACK_DAYS * DAY_MS, nowMs + CAL_AHEAD_DAYS * DAY_MS]]);
     if (!waiting) await moveAcross(userId);
     loadCoachLater(userId);
+    refreshShares(userId);
     return true;
   })().finally(() => {
     loading.delete(userId);
@@ -1962,6 +1963,9 @@ export function loadCoach(userId, { again = false } = {}) {
   // While this device holds only a first screen (or a copy left by one), a load that couldn't be made is tried again,
   // a little later each time: the page waits on its crosshairs meanwhile, never on a half copy (functionality tester).
   run.then((done) => {
+    // Whether the device's copy can be trusted to say something isn't there (useCoachLoadState).
+    const failedNow = gen === generation && done == null;
+    if (lastLoadFailed.get(userId) !== failedNow) { lastLoadFailed.set(userId, failedNow); listeners.forEach((fn) => fn()); }
     if (gen !== generation || done === true || done === false) { if (done === true) retries.delete(userId); return; }
     if (!partial.has(userId) && copyMarkOf(userId) !== 'screen') return;
     const n = (retries.get(userId) || 0) + 1;
@@ -1970,7 +1974,38 @@ export function loadCoach(userId, { again = false } = {}) {
   }, () => {});
   return run;
 }
+// What clients share, kept on the device by their pages (ClientPage's coach-client-shares): read again at each sync,
+// so a Mission a client stopped sharing is removed and never shows offline after (follow-up 5, item 15). Quiet: a
+// list that can't be read leaves the copy as it was.
+function refreshShares(userId) {
+  const key = deviceKey('cache', userId, 'coach-client-shares');
+  const kept = readJson(key);
+  if (!kept || typeof kept !== 'object' || !Object.keys(kept).length) return;
+  import('./clientShare.js').then(({ refreshKeptShares }) => refreshKeptShares((name, args) => supabase.rpc(name, args), kept)).then((fresh) => {
+    if (!fresh) return;
+    // Pages written meanwhile keep what they learnt: only entries this pass read are replaced or removed.
+    const now = readJson(key) || {};
+    const next = { ...now };
+    for (const id of Object.keys(kept)) { if (Object.hasOwn(fresh, id)) next[id] = fresh[id]; else if (JSON.stringify(now[id] ?? null) === JSON.stringify(kept[id] ?? null)) delete next[id]; }
+    writeJson(key, next);
+  }).catch(() => {});
+}
 const retries = new Map(); // account -> loads tried again while only a first screen is here
+const lastLoadFailed = new Map(); // account -> true when the latest load couldn't be made (offline, no answer)
+
+/**
+ * Whether a page may say something "isn't here any more" (follow-up 5, item 14): 'whole' once the device holds a whole
+ * copy; 'failed' while it holds less (a first screen, or nothing) and the latest load couldn't be made, so the page
+ * shows the calm error with Try again; 'loading' otherwise, so the page waits on its crosshair.
+ */
+export function coachLoadStateNow(userId) {
+  if (!userId) return 'loading';
+  if (copyMarkOf(userId) === 'whole' && !partial.has(userId)) return 'whole';
+  return lastLoadFailed.get(userId) ? 'failed' : 'loading';
+}
+export function useCoachLoadState(userId) {
+  return useSyncExternalStore(subscribe, () => coachLoadStateNow(userId), () => 'loading');
+}
 
 const movers = new Set();
 /**

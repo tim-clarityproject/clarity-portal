@@ -127,7 +127,9 @@ test('without dates there is no Timing question; the date counts in the UK', () 
 // ---------------------------------------------------------------- the shared template (Tim, 10 Nov)
 test('the person’s email shows their email address and access code; the coach’s shows the address and never a code (follow-up 1)', () => {
   const coach = render(saved());
-  const person = linkEmail({ origin: 'https://example.invalid', token: 'test-token-not-real', dateText: 'Tue 10 Nov 2026', clientLabel: 'Quillmark', email: 'someone@example.invalid', code: '482913' });
+  // With its results PDF (follow-up 5: the words say it is attached only when it is).
+  const pdf = { bytes: new TextEncoder().encode('%PDF-1.7 stand-in'), fileName: 'Health Check, Quillmark, 10 Nov 2026.pdf' };
+  const person = linkEmail({ origin: 'https://example.invalid', token: 'test-token-not-real', dateText: 'Tue 10 Nov 2026', clientLabel: 'Quillmark', email: 'someone@example.invalid', code: '482913', pdf });
   for (const e of [coach, person]) {
     for (const words of ['Email', 'someone@example.invalid']) {
       assert.ok(e.html.includes(words), `the HTML is missing "${words}"`);

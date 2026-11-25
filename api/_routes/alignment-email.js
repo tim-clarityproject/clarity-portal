@@ -35,13 +35,24 @@
 // without asking the database or the email provider anything, so a test
 // there can never email a person.
 //
+// 'link' (follow-up 5): a finished Health Check's email carries the results
+// PDF, made here, light, from the answers alignment_email_check handed back
+// for that session (the browser sends no answers; it may send its time zone,
+// which only chooses the paper, with the browser's Accept-Language). If the
+// PDF can't be made the email still goes, and then doesn't say a PDF is
+// attached. An unfinished one has no PDF and says it can be carried on.
+// Each 'link' email also keeps the results open for 30 more days (064:
+// results_emailed_at), undone with the send's record if the email doesn't go.
+// A finished Health Check past its 30 days answers 'expired' everywhere
+// (064, _alignment_auth), passed back as { ok: false, error: 'expired' }.
+//
 // Environment variables (Vercel): RESEND_API_KEY, ALIGNMENT_EMAIL_FROM,
 // ALIGNMENT_NOTIFY_TO, SUPABASE_SERVICE_ROLE_KEY (only to ask who made the
 // link), and the Supabase URL and anon key the app already has
 // (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY, or SUPABASE_URL / SUPABASE_ANON_KEY).
 
 import {
-  linkEmail, completeEmail, newCodeEmail, completionSummary, completionRecipients, finishedEmail, ownerList, ukDate, ukDateTime,
+  linkEmail, completeEmail, newCodeEmail, completionSummary, completionRecipients, finishedEmail, ownerList, resultsPdf, ukDate, ukDateTime,
 } from '../_alignmentEmails.js';
 import { parseDbTimestamp } from '../../src/lib/dateFormatter.js';
 import { portalOrigin } from '../_portalOrigin.js';
@@ -96,6 +107,8 @@ export default async function handler(req, res) {
 
   const body = req.body && typeof req.body === 'object' ? req.body : {};
   const { token, email, code, kind } = body;
+  // Only to choose the PDF's paper (serverPaper): a zone name, or nothing.
+  const timeZone = typeof body.timeZone === 'string' && /^[A-Za-z_+\-/0-9]{1,64}$/.test(body.timeZone) ? body.timeZone : null;
   if (
     typeof token !== 'string' || token.length < 8 || token.length > 128
     || typeof email !== 'string' || email.length > 254
@@ -118,6 +131,7 @@ export default async function handler(req, res) {
     }
     if (!fresh || !fresh.ok) {
       if (fresh?.error === 'limit') return reply(res, 429, { ok: false, error: 'limit' });
+      if (fresh?.error === 'expired') return reply(res, 200, { ok: false, error: 'expired' });
       return reply(res, 400, { ok: false, error: 'invalid' });
     }
     try {
@@ -142,6 +156,7 @@ export default async function handler(req, res) {
     if (check?.error === 'limit') return reply(res, 429, { ok: false, error: 'limit' });
     if (check?.error === 'already') return reply(res, 200, { ok: false, error: 'already' });
     if (check?.error === 'private') return reply(res, 200, { ok: false, error: 'private' });
+    if (check?.error === 'expired') return reply(res, 200, { ok: false, error: 'expired' });
     return reply(res, 400, { ok: false, error: 'invalid' });
   }
 
@@ -151,8 +166,15 @@ export default async function handler(req, res) {
 
   try {
     if (kind === 'link') {
+      const finished = check.status === 'complete';
+      let pdf = null;
+      if (finished) {
+        try {
+          pdf = await resultsPdf({ data: check.data, completedAt: check.completed_at, clientLabel: check.client_label, acceptLanguage: req.headers?.['accept-language'], timeZone });
+        } catch { pdf = null; /* the email still goes, and says nothing of a PDF */ }
+      }
       // The person's own email and the access code they just proved they hold (Tim, 10 Nov, 13:31).
-      await sendWithResend({ to: [check.respondent_email], ...linkEmail({ origin, token, dateText: ukDate(new Date()), clientLabel: check.client_label, email: check.respondent_email, code }) });
+      await sendWithResend({ to: [check.respondent_email], ...linkEmail({ origin, token, dateText: ukDate(new Date()), clientLabel: check.client_label, email: check.respondent_email, code, finished, pdf }) });
       return reply(res, 200, { ok: true, sent: true });
     }
 

@@ -10,14 +10,14 @@ Push `feature/performance-overhaul` after every commit, never `main`. **A previe
 
 CLAUDE.md holds the rules every task needs. Each area's full rules live in its own file, moved word for word on 22 Nov 2026 (run 7, step 0); they apply exactly as before, and "sign-in rule 38", "Health Check rule 12", "coach rule 16" and so on refer to the numbered rules in these files. **Before building, changing or testing anything in an area, read its file in full.**
 
-- `docs/rules/sign-in.md`: Sign-in pages, the coach authenticator and My Account’s Password and Email pages (M26): 50 rules (49: one left edge, every page with a form or list on the left and short messages centred; Tim, 23 Nov, 17:40).
+- `docs/rules/sign-in.md`: Sign-in pages, the coach authenticator and My Account’s Password and Email pages (M26): 51 rules (49: one left edge, every page with a form or list on the left and short messages centred; Tim, 23 Nov, 17:40; 51: follow-up 5, 25 Nov).
 - `docs/rules/get-unstuck-timer-guests.md`: Get unstuck, the shared Timer and guest pages (M9): 21 rules.
 - `docs/rules/team-check.md`: Team performance check and the Visual tools’ shared parts (M10): 14 rules.
 - `docs/rules/emotional-wash.md`: Emotional wash (M10): 12 rules.
 - `docs/rules/health-check.md`: The Strategic Alignment Health Check, outside (M7b) and inside the portal (M7): rules 1 to 21 and 13a.
 - `docs/rules/peak-moments.md`: Peak moments (M18): 6 rules.
 - `docs/rules/travel-plan.md`: Travel plan (M21): 8 rules.
-- `docs/rules/coach-portal.md`: Clarity Coach, the coach portal (M11, runs 1 to 8): 49 rules (49: a first visit draws the page's own first screen first; 24 Nov).
+- `docs/rules/coach-portal.md`: Clarity Coach, the coach portal (M11, runs 1 to 8): 50 rules (49: a first visit draws the page’s own first screen first; 24 Nov; 50: follow-up 5, 25 Nov).
 - `docs/rules/pdf.md`: PDF rules 1 to 33 (Tim, 26 Oct) and how to check a PDF.
 - `docs/rules/list-rows.md`: List row guidelines (My Plans, My Reviews, My Journals) and filters.
 - `docs/rules/emails.md`: Emails: the one shared template, always light, footers, Health Check emails, the sign-in templates, /email-preview: 10 rules.

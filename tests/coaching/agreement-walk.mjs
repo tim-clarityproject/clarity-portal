@@ -65,10 +65,40 @@ function world({ funded = false, missing = false } = {}) {
   };
 }
 
-/** Answers 061 from `w` (changed as the database would) and stops every other write. */
+/** sign_agreement as 061 answers it, changing `w` as the database would: [status, body]. */
+function signIn(w, args) {
+  w.signs.push(args);
+  const v = w.versions.find((x) => x.id === args.p_version);
+  if (!v) return [403, { code: '42501', message: 'That agreement isn’t yours to sign.' }];
+  if (v.status === 'signed') return [409, { code: 'CC409', message: 'This agreement is already signed.' }];
+  if (args.p_fingerprint !== PRINT) return [409, { code: 'CC409', message: 'This agreement changed since you opened it. Open it again to read the newest version.' }];
+  if (!w.signatures.some((s) => s.id === args.p_signature)) return [400, { code: '22023', message: 'Use your signature to sign.' }];
+  const at = new Date().toISOString();
+  Object.assign(v, { status: 'signed', client_signed_at: at, signed_name: args.p_name.trim(), signed_email: v.terms.clientEmail, fingerprint: PRINT });
+  return [200, { signed_at: at, fingerprint: PRINT, version: v.version }];
+}
+// A signed version's kept PDF (064), as the server keeps it at signing: a stand-in file with its name.
+const KEPT_PDF = Buffer.from('%PDF-1.7\n% a stand-in for the signed PDF the server keeps\n%%EOF\n').toString('base64');
+const keptName = (v) => `Coaching agreement, ${v.signed_name || v.terms.clientName}, 2 Dec 2026.pdf`;
+
+/** Answers 061 and 064 from `w` (changed as the database and the server would) and stops every other write. */
 async function standIn(context, w) {
   const blocked = [];
-  await context.route('**/api/**', (r) => { blocked.push(`api ${new URL(r.request().url()).pathname}`); return json(r, { ok: true, sent: false }); });
+  await context.route('**/api/**', (r) => {
+    const path = new URL(r.request().url()).pathname;
+    const body = (() => { try { return r.request().postDataJSON() || {}; } catch { return {}; } })();
+    // Follow-up 5: the client's Sign goes through the server, which signs as them and keeps the signed PDF.
+    if (path === '/api/agreement-sign' && !w.missing) {
+      const [status, answer] = signIn(w, { p_version: body.versionId, p_name: String(body.name || ''), p_signature: body.signatureId, p_fingerprint: body.fingerprint });
+      return json(r, status === 200 ? { ok: true, ...answer, pdf: true } : { ok: false, ...answer }, status);
+    }
+    if (path === '/api/agreement-pdf' && !w.missing) {
+      const v = w.versions.find((x) => x.id === body.versionId && x.client_signed_at);
+      return v ? json(r, { ok: true, pdf: KEPT_PDF, fileName: keptName(v) }) : json(r, { ok: false, error: 'not_signed' }, 409);
+    }
+    blocked.push(`api ${path}`);
+    return json(r, { ok: true, sent: false });
+  });
   await context.route('https://invoice.stripe.com/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<title>Stripe invoice</title>' }));
   await context.route('**/rest/v1/**', (route) => {
     const req = route.request();
@@ -79,20 +109,19 @@ async function standIn(context, w) {
     if (name.startsWith('rpc/')) {
       const fn = name.slice(4);
       if (fn === 'my_coach') return json(route, [{ coach_id: uid(900), first_name: 'Tim', away_until: null, mobile: null, contact_ways: ['email'] }]);
-      if (['my_agreements', 'my_invoices', 'agreement_fingerprint', 'sign_agreement'].includes(fn) && w.missing) return gone(fn);
+      if (['my_agreements', 'my_invoices', 'agreement_fingerprint', 'sign_agreement', 'agreement_signed_pdf'].includes(fn) && w.missing) return gone(fn);
       if (fn === 'my_agreements') return json(route, w.versions);
       if (fn === 'my_invoices') return json(route, w.invoices);
       if (fn === 'agreement_fingerprint') return json(route, w.versions.some((x) => x.id === args.p_version) ? PRINT : null);
       if (fn === 'sign_agreement') {
-        w.signs.push(args);
+        const [status, answer] = signIn(w, args);
+        return json(route, answer, status);
+      }
+      if (fn === 'agreement_signed_pdf') {
         const v = w.versions.find((x) => x.id === args.p_version);
-        if (!v) return json(route, { code: '42501', message: 'That agreement isn’t yours to sign.' }, 403);
-        if (v.status === 'signed') return json(route, { code: 'CC409', message: 'This agreement is already signed.' }, 409);
-        if (args.p_fingerprint !== PRINT) return json(route, { code: 'CC409', message: 'This agreement changed since you opened it. Open it again to read the newest version.' }, 409);
-        if (!w.signatures.some((s) => s.id === args.p_signature)) return json(route, { code: '22023', message: 'Use your signature to sign.' }, 400);
-        const at = new Date().toISOString();
-        Object.assign(v, { status: 'signed', client_signed_at: at, signed_name: args.p_name.trim(), signed_email: v.terms.clientEmail, fingerprint: PRINT });
-        return json(route, { signed_at: at, fingerprint: PRINT, version: v.version });
+        if (!v) return json(route, { code: '42501', message: 'That agreement isn’t yours.' }, 403);
+        if (!v.client_signed_at) return json(route, { ok: false, error: 'not_signed' });
+        return json(route, { ok: true, made: true, pdf: KEPT_PDF, file_name: keptName(v), sha256: 'f'.repeat(64) });
       }
       // The Coaching page's other functions (049 to 051) aren't there: it stays quiet about them.
       if (/^my_|^client_|^cover_/.test(fn)) return gone(fn);

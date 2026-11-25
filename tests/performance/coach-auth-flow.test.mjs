@@ -78,9 +78,12 @@ test('each stop has its address, and a reset sign-in is let go on Coach sign in'
   assert.equal(stopPath('code'), '/coach/sign-in/code');
   assert.equal(stopPath('before'), '/auth/before-you-start');
   const went = [];
-  await goToStop(supabase(), (to, o) => went.push([to, o]), 'signedOut');
+  await goToStop(supabase({ state: { session_ok: false, ended_by: 'reset' } }), (to, o) => went.push([to, o]), 'signedOut');
   assert.equal(went[0][0], '/coach/sign-in');
   assert.deepEqual(went[0][1].state, { message: SIGNED_OUT_BY_RESET, signOut: true });
+  // A sign-in that is simply gone says only "Please sign in again." (follow-up 5, item 13).
+  await goToStop(supabase({ state: { session_ok: false, ended_by: 'session' } }), (to, o) => went.push([to, o]), 'signedOut');
+  assert.deepEqual(went[1][1].state, { message: ['Please sign in again.'], signOut: true });
 });
 
 test('the coach portal’s addresses, never its sign-in pages', () => {

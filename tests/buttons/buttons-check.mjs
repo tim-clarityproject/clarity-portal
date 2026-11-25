@@ -122,12 +122,29 @@ export function sideBySide() {
       || !clear(st.backgroundColor) || /inset/.test(st.boxShadow);
   };
   const name = (el) => `${String(el.className?.baseVal ?? el.className ?? '').split(' ')[0] || el.tagName.toLowerCase()} "${(el.textContent || el.getAttribute('aria-label') || el.getAttribute('placeholder') || '').replace(/\s+/g, ' ').trim().slice(0, 20)}"`;
+  // A plain container (no edge, no fill) round one box is measured by that box (follow-up 5, item 16: a search box in
+  // a plain wrapper beside Filter got through). The box is the one boxed element inside it, found on every branch
+  // without looking inside a box; a container holding two or more boxes is a group of its own, not one box.
+  const placed = (el) => { const p = getComputedStyle(el).position; return p !== 'absolute' && p !== 'fixed'; };
+  const boxIn = (el) => {
+    if (boxed(el)) return el;
+    const found = [];
+    const walk = (n) => {
+      for (const c of n.children) {
+        if (found.length > 1) return;
+        if (!vis(c) || !placed(c)) continue;
+        if (boxed(c)) found.push(c); else walk(c);
+      }
+    };
+    walk(el);
+    return found.length === 1 ? found[0] : null;
+  };
   const out = [];
   for (const parent of document.querySelectorAll('.ui-root *')) {
     const st = getComputedStyle(parent);
     const flexRow = st.display.includes('flex') && !st.flexDirection.startsWith('column');
     if (!flexRow && !st.display.includes('grid')) continue;
-    const kids = [...parent.children].filter((k) => vis(k) && getComputedStyle(k).position !== 'absolute' && getComputedStyle(k).position !== 'fixed' && boxed(k));
+    const kids = [...parent.children].filter((k) => vis(k) && placed(k)).map(boxIn).filter(Boolean);
     if (kids.length < 2) continue;
     // Rows: boxes whose tops line up (within 1px) and who sit side by side.
     const rows = [];

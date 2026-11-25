@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { readCache, useCachedLoad, writeCache } from '../../lib/pageCache';
+import { loadAgreements, loadSignaturesBefore, loadSignedPdf, readyToSign, signatureFor, tidyAgreements } from '../../lib/coaching/agreements';
+import { isNotThere } from '../../lib/coachingRules';
 import { loadWithReload } from '../../lib/loadWithReload';
-import { loadAgreements, loadSignaturesBefore, readyToSign, signatureFor, tidyAgreements } from '../../lib/coaching/agreements';
 
 // The client's agreements and invoices on the device (Phase 6b run 1): one page copy shared by
 // My coaching, Billing and Home's row, shown at once and refreshed quietly (Smoothness). The
-// signature pictures are never kept in it: a signed PDF reads them when it is made.
+// signature pictures are never kept in it: the signed PDF is made on the server at signing, with
+// both signatures, and kept (follow-up 5, 064).
 
 export const AGREEMENTS_CACHE = 'coaching-agreements';
 
@@ -39,10 +41,19 @@ export function useAgreementWaiting(userId) {
 }
 
 /**
- * The document for a signed version's PDF (src/lib/pdf/docs/agreement.js), light only. The
- * client's signature is the one given (just signed) or read from their own signatures.
+ * A signed version's PDF, as it was made and kept at signing (follow-up 5, 064), for the shared
+ * Download PDF button (PdfDownload's getDocument): saved as it is, never made again here. Light
+ * only (PDF rule 1).
+ * Only until 064 has run on the database (agreement_signed_pdf isn't there yet), the PDF is made
+ * here as before, with the client's own signature alone.
+ * @param {{ userId?: string, version: { id: string, version?: number }, signature?: object|null }} p
  */
 export async function agreementDocument({ userId, version, signature = null }) {
+  try {
+    return { storedPdf: await loadSignedPdf(version) };
+  } catch (error) {
+    if (!isNotThere(error)) throw error;
+  }
   const [{ agreementPdf }, sig] = await Promise.all([
     loadWithReload(() => import('../../lib/pdf/docs/agreement')),
     signature ? Promise.resolve(signature) : loadSignaturesBefore(userId, version.signedAt).then((list) => signatureFor(version, list)),

@@ -39,7 +39,13 @@
 --   it says nothing but open or ended and the coach's first name.
 --   invoice_take_number: the server only.
 --
--- ORDER: after 061, 062 and 063. Safe to run twice. Test:
+--   6. The owner's admin view: coach_admin_agreements.
+--   7. The PDFs (items 2 and 4): a finished Health Check's results open for
+--      30 days after it was finished or last emailed, and each signed
+--      agreement version's PDF is kept as made at signing, with both
+--      signatures (its own header below says how).
+--
+-- ORDER: after 061, 062 and 063 (it needs 044 and 045 too). Safe to run twice. Test:
 --   supabase/064_followup_5_test.sql (064 CHECKS PASSED).
 -- =============================================================================
 
@@ -258,6 +264,642 @@ $$;
 revoke all on function public.session_recap_readers(uuid) from public, anon;
 grant execute on function public.session_recap_readers(uuid) to authenticated;
 
--- @@PDF_PART@@
+-- ---------------------------------------------------------------- 6. the owner's admin view of a client
+-- The owner opening an associate's client sees the admin facts (follow-up 5, item 10): with 049's coach_admin_clients
+-- (allocation and engagement) and the invoices the owner already reads, each agreement's business facts. Never its
+-- clauses, its signatures or anything of the coaching. The owner alone, with the 6-digit code (is_owner()).
+create or replace function public.coach_admin_agreements(p_profile uuid)
+returns table (agreement_id uuid, reference text, status text, version integer, coaching text, total_minor bigint,
+               currency text, funded_by text, sent_at timestamptz, client_signed_at timestamptz, created_at timestamptz)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not coalesce(public.is_owner(), false) then
+    raise exception 'Only the owner can do this.' using errcode = '42501';
+  end if;
+  return query
+  select a.id, a.reference, a.status, v.version, left(coalesce(v.terms->>'coaching', ''), 160), v.total_minor,
+         v.currency, v.funded_by, v.sent_at, v.client_signed_at, a.created_at
+  from public.agreements a
+  left join public.agreement_versions v on v.agreement_id = a.id and v.version = a.current_version
+  where a.profile_id = p_profile and a.kind = 'coaching'
+  order by a.created_at desc
+  limit 20;
+end;
+$$;
+revoke all on function public.coach_admin_agreements(uuid) from public, anon;
+grant execute on function public.coach_admin_agreements(uuid) to authenticated;
+
+-- ---------------------------------------------------------------- 7. the PDFs (items 2 and 4)
+-- =============================================================================
+-- 064, the PDF part (follow-up 5, items 2 and 4)
+--
+-- WHAT THIS PART DOES (plain English)
+--   A. The guest's Health Check copy (item 2)
+--      A finished outside Health Check's link and code open its results for
+--      30 days after the later of: when it was finished, and when its results
+--      were last emailed with "Email my link". After that every call made with
+--      the link, email and code answers {ok: false, error: 'expired'} with a
+--      calm message (alignment_open, alignment_save, alignment_set_sharing,
+--      alignment_email_check, alignment_email_failed: all through
+--      _alignment_auth; and alignment_new_code_to_send, the email server's).
+--      Only a correct email and code learn that it has closed; a wrong one is
+--      counted towards the lockout as before. An unfinished Health Check has
+--      no end, as before. The coach's own views (alignment_coach_answers,
+--      coach_links, the coach portal) are unchanged.
+--        1. alignment_sessions.results_open_from: when its 30 days start apart
+--           from emails. Set when it is finished (a trigger, so every way of
+--           finishing it counts); Health Checks already finished when this
+--           runs get now, so none closes the moment it runs.
+--        2. alignment_sessions.results_emailed_at (and _before, so a send the
+--           email provider refused is undone exactly, as link_emails is):
+--           set by alignment_email_check's 'link'.
+--        3. alignment_email_check: as 044, plus 2. It already hands the
+--           server the session's answers (data, completed_at, status,
+--           client_label) for 'link', which the server makes the PDF from.
+--   B. Signed agreements (item 4)
+--        4. agreement_signed_pdfs: each signed version's PDF, made by the
+--           server at the moment of signing with both signatures drawn, kept
+--           exactly as made. Insert only: a trigger refuses every update,
+--           delete and truncate, for every role (service_role too). Row
+--           security on, no rules and no table rights for anyone: it is
+--           reached only through the two functions below.
+--        5. agreement_signed_pdf(version): the stored PDF (base64) for that
+--           version's client, or the agreement's coach with the 6-digit code
+--           (coach_code_ok(), as 061 and 062's coach functions); 'made: false'
+--           while it waits to be made; 42501 for anyone else.
+--        6. agreement_pdf_source(version), the server's key only: what the PDF
+--           is made from, the version as my_agreements() gives it to the
+--           client (an organisation-funded client's without any amount), both
+--           signatures (the only place the coach's is read for the client's
+--           PDF, and only by the server), the client's name and the zone its
+--           times are read in.
+--        7. agreement_signed_pdf_keep(version, pdf, file name), the server's
+--           key only: keeps the first PDF made for a signed version and hands
+--           back whichever was kept first; a second is never stored.
+--
+-- Additive and safe to run twice: columns and tables only if missing,
+-- functions replaced with the same version, triggers and rules dropped and
+-- made again, the backfill only where nothing is set.
+-- Needs 044, 045 and 061 (it stops with a clear message without them).
+-- Checks: the PDF part's test (064's test file), then
+-- supabase/061_agreements_and_invoices_test.sql,
+-- supabase/054_coach_code_required_test.sql,
+-- supabase/044_guest_sharing_test.sql and
+-- supabase/045_health_check_new_code_test.sql.
+-- =============================================================================
+
+do $needs$
+begin
+  if to_regclass('public.alignment_sessions') is null
+     or not exists (select 1 from pg_catalog.pg_attribute
+                     where attrelid = 'public.alignment_sessions'::regclass and attname = 'new_code' and not attisdropped) then
+    raise exception '064 needs 045_health_check_new_code first.';
+  end if;
+  if to_regclass('public.agreement_versions') is null or to_regprocedure('public.sign_agreement(uuid,text,uuid,text)') is null
+     or to_regprocedure('public.coach_code_ok()') is null or to_regprocedure('public.my_coach_id()') is null then
+    raise exception '064 needs 061_agreements_and_invoices first.';
+  end if;
+end
+$needs$;
+
+-- =============================================================================
+-- A. The guest's Health Check copy: 30 days
+-- =============================================================================
+alter table public.alignment_sessions add column if not exists results_open_from timestamptz;
+alter table public.alignment_sessions add column if not exists results_emailed_at timestamptz;
+alter table public.alignment_sessions add column if not exists results_emailed_before timestamptz;
+
+comment on column public.alignment_sessions.results_open_from is
+  'When a finished Health Check''s 30 days start, apart from emails (064): when it was finished, or when 064 ran for one finished before. Its link and code open the results until 30 days after the later of this and results_emailed_at.';
+comment on column public.alignment_sessions.results_emailed_at is
+  'When the guest''s results were last emailed with "Email my link" (064). Each one keeps the results open for 30 days from then.';
+comment on column public.alignment_sessions.results_emailed_before is
+  'results_emailed_at before the last send, so a send the email provider refused is undone exactly (064, alignment_email_failed).';
+
+-- Still closed: reached only through the checked functions (018 to 045).
+alter table public.alignment_sessions enable row level security;
+revoke all on table public.alignment_sessions from public, anon, authenticated, service_role;
+
+-- When a finished Health Check's results close. Null: no end (not finished).
+create or replace function public._alignment_results_until(s public.alignment_sessions)
+returns timestamptz
+language sql
+stable
+set search_path = ''
+as $$
+  select case when s.status = 'complete'
+              then greatest(s.results_open_from, s.completed_at, s.results_emailed_at) + interval '30 days' end;
+$$;
+revoke all on function public._alignment_results_until(public.alignment_sessions) from public, anon, authenticated, service_role;
+
+-- Finishing starts the 30 days, however it is finished.
+create or replace function public.alignment_sessions_results_window()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.status = 'complete' and (tg_op = 'INSERT' or old.status is distinct from 'complete') then
+    new.results_open_from := greatest(coalesce(new.results_open_from, now()), now());
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.alignment_sessions_results_window() from public, anon, authenticated, service_role;
+drop trigger if exists alignment_sessions_results_window on public.alignment_sessions;
+create trigger alignment_sessions_results_window before insert or update of status on public.alignment_sessions
+  for each row execute function public.alignment_sessions_results_window();
+
+-- -----------------------------------------------------------------------------
+-- _alignment_auth: as 045, plus 'expired' for a finished Health Check past its
+-- 30 days, told only to the right email and code (the replaced code included)
+-- -----------------------------------------------------------------------------
+create or replace function public._alignment_auth(
+  p_token text,
+  p_email text,
+  p_code  text
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  s public.alignment_sessions;
+  v_replaced boolean := false;
+  v_closed boolean;
+begin
+  select * into s
+  from public.alignment_sessions
+  where token = coalesce(p_token, '')
+  for update;
+
+  if not found or s.link_disabled then
+    return jsonb_build_object(
+      'ok', false, 'error', 'invalid',
+      'message', 'Those details don’t match. Check the email and access code you were sent.');
+  end if;
+
+  if s.locked_until is not null and s.locked_until > now() then
+    return jsonb_build_object(
+      'ok', false, 'error', 'locked',
+      'message', 'Too many attempts. Please try again in a few minutes.');
+  end if;
+
+  v_closed := public._alignment_results_until(s) <= now();
+
+  if lower(btrim(coalesce(p_email, ''))) = s.respondent_email
+     and crypt(upper(btrim(coalesce(p_code, ''))), s.access_code_hash) = s.access_code_hash then
+    if s.failed_attempts <> 0 or s.locked_until is not null then
+      update public.alignment_sessions
+         set failed_attempts = 0, locked_until = null
+       where id = s.id;
+    end if;
+    -- 064: a finished Health Check's results are open for 30 days.
+    if v_closed then
+      return jsonb_build_object(
+        'ok', false, 'error', 'expired',
+        'message', 'These results were open for 30 days, and that time has passed. Ask the coach who sent you the link for a new one.');
+    end if;
+    return jsonb_build_object('ok', true, 'id', s.id);
+  end if;
+
+  -- The code that was just replaced, while the new one waits for the guest.
+  v_replaced := s.new_code is not null and s.replaced_code_hash is not null
+    and lower(btrim(coalesce(p_email, ''))) = s.respondent_email
+    and crypt(upper(btrim(coalesce(p_code, ''))), s.replaced_code_hash) = s.replaced_code_hash;
+
+  -- Wrong details (the replaced code included): count it, and lock for 15
+  -- minutes after 5 misses.
+  if s.failed_attempts + 1 >= 5 then
+    update public.alignment_sessions
+       set failed_attempts = 0, locked_until = now() + interval '15 minutes'
+     where id = s.id;
+  else
+    update public.alignment_sessions
+       set failed_attempts = failed_attempts + 1
+     where id = s.id;
+  end if;
+
+  if v_replaced and v_closed then
+    -- A new code for results that have closed would open nothing: say what happened instead.
+    return jsonb_build_object(
+      'ok', false, 'error', 'expired',
+      'message', 'These results were open for 30 days, and that time has passed. Ask the coach who sent you the link for a new one.');
+  end if;
+  if v_replaced then
+    return jsonb_build_object(
+      'ok', false, 'error', 'new_code',
+      'message', 'Your access code has changed. Check your email for the new one.');
+  end if;
+  return jsonb_build_object(
+    'ok', false, 'error', 'invalid',
+    'message', 'Those details don’t match. Check the email and access code you were sent.');
+end;
+$$;
+
+revoke all on function public._alignment_auth(text, text, text) from public, anon, authenticated, service_role;
+
+-- -----------------------------------------------------------------------------
+-- alignment_email_check: as 044, plus: a 'link' email keeps the results open
+-- for 30 days from now (and remembers the time before, for a refused send)
+-- -----------------------------------------------------------------------------
+create or replace function public.alignment_email_check(
+  p_token text,
+  p_email text,
+  p_code  text,
+  p_kind  text
+) returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  a      jsonb;
+  s      public.alignment_sessions;
+  recent jsonb;
+begin
+  if p_kind not in ('link', 'complete') then
+    return jsonb_build_object('ok', false, 'error', 'invalid');
+  end if;
+
+  a := public._alignment_auth(p_token, p_email, p_code);
+  if not (a ->> 'ok')::boolean then
+    return a;
+  end if;
+
+  select * into s from public.alignment_sessions where id = (a ->> 'id')::uuid;
+
+  if p_kind = 'link' then
+    select coalesce(jsonb_agg(e), '[]'::jsonb) into recent
+      from jsonb_array_elements_text(s.link_emails) as t(e)
+     where e::timestamptz > now() - interval '24 hours';
+
+    if jsonb_array_length(recent) >= 3 then
+      return jsonb_build_object('ok', false, 'error', 'limit');
+    end if;
+
+    update public.alignment_sessions
+       set link_emails = recent || to_jsonb(now()::text),
+           results_emailed_before = results_emailed_at,
+           results_emailed_at = now()
+     where id = s.id;
+  else
+    if s.status <> 'complete' then
+      return jsonb_build_object('ok', false, 'error', 'invalid');
+    end if;
+    -- Only you: nobody but the guest hears of it. Not marked as sent, so a
+    -- switch back to You and Tim can still send it, once.
+    if not s.shared_with_coach then
+      return jsonb_build_object('ok', false, 'error', 'private');
+    end if;
+    if s.notified_at is not null then
+      return jsonb_build_object('ok', false, 'error', 'already');
+    end if;
+
+    update public.alignment_sessions set notified_at = now() where id = s.id;
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'client_label', s.client_label,
+    'respondent_email', s.respondent_email,
+    'status', s.status,
+    'completed_at', s.completed_at,
+    'data', s.data,
+    'has_coach', s.coach_user_id is not null
+  );
+end;
+$$;
+
+revoke all on function public.alignment_email_check(text, text, text, text) from public;
+grant execute on function public.alignment_email_check(text, text, text, text) to anon, authenticated;
+
+-- -----------------------------------------------------------------------------
+-- alignment_email_failed: as 019, plus: a refused 'link' send no longer keeps
+-- the results open (results_emailed_at goes back to what it was)
+-- -----------------------------------------------------------------------------
+create or replace function public.alignment_email_failed(
+  p_token text,
+  p_email text,
+  p_code  text,
+  p_kind  text
+) returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  a jsonb;
+  s public.alignment_sessions;
+begin
+  a := public._alignment_auth(p_token, p_email, p_code);
+  if not (a ->> 'ok')::boolean then
+    return a;
+  end if;
+
+  select * into s from public.alignment_sessions where id = (a ->> 'id')::uuid;
+
+  if p_kind = 'complete' then
+    update public.alignment_sessions set notified_at = null where id = s.id;
+  elsif p_kind = 'link' and jsonb_array_length(s.link_emails) > 0 then
+    update public.alignment_sessions
+       set link_emails = link_emails - (jsonb_array_length(link_emails) - 1),
+           results_emailed_at = results_emailed_before
+     where id = s.id;
+  end if;
+
+  return jsonb_build_object('ok', true);
+end;
+$$;
+
+revoke all on function public.alignment_email_failed(text, text, text, text) from public;
+grant execute on function public.alignment_email_failed(text, text, text, text) to anon, authenticated;
+
+-- -----------------------------------------------------------------------------
+-- alignment_new_code_to_send (the email server only): as 045, plus 'expired'
+-- for results that have closed (no new code is sent for them)
+-- -----------------------------------------------------------------------------
+create or replace function public.alignment_new_code_to_send(
+  p_token text,
+  p_email text,
+  p_code  text
+) returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_role  text := coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', '');
+  s       public.alignment_sessions;
+  v_code  text := upper(btrim(coalesce(p_code, '')));
+  recent  jsonb;
+begin
+  -- the server (service role), or Tim in the SQL editor (no caller's claims)
+  if not (v_role = 'service_role' or (v_role = '' and (select auth.uid()) is null)) then
+    raise exception 'Only the email server can do this.' using errcode = '42501';
+  end if;
+
+  select * into s from public.alignment_sessions where token = coalesce(p_token, '') for update;
+  if not found or s.link_disabled then
+    return jsonb_build_object('ok', false, 'error', 'invalid');
+  end if;
+  -- The same lockout as every other call (018), so this can't be used to
+  -- guess a code: 5 misses lock the link for 15 minutes.
+  if s.locked_until is not null and s.locked_until > now() then
+    return jsonb_build_object('ok', false, 'error', 'locked');
+  end if;
+  if lower(btrim(coalesce(p_email, ''))) <> s.respondent_email
+     or not (extensions.crypt(v_code, s.access_code_hash) = s.access_code_hash
+             or (s.replaced_code_hash is not null and extensions.crypt(v_code, s.replaced_code_hash) = s.replaced_code_hash)) then
+    if s.failed_attempts + 1 >= 5 then
+      update public.alignment_sessions set failed_attempts = 0, locked_until = now() + interval '15 minutes' where id = s.id;
+    else
+      update public.alignment_sessions set failed_attempts = failed_attempts + 1 where id = s.id;
+    end if;
+    return jsonb_build_object('ok', false, 'error', 'invalid');
+  end if;
+  -- 064: results that have closed get no new code.
+  if public._alignment_results_until(s) <= now() then
+    return jsonb_build_object('ok', false, 'error', 'expired');
+  end if;
+  if s.new_code is null then
+    return jsonb_build_object('ok', false, 'error', 'invalid');
+  end if;
+
+  select coalesce(jsonb_agg(e), '[]'::jsonb) into recent
+    from jsonb_array_elements_text(s.new_code_emails) as t(e)
+   where e::timestamptz > now() - interval '1 hour';
+  if jsonb_array_length(recent) >= 3 then
+    return jsonb_build_object('ok', false, 'error', 'limit');
+  end if;
+  update public.alignment_sessions set new_code_emails = recent || to_jsonb(now()::text) where id = s.id;
+
+  return jsonb_build_object(
+    'ok', true,
+    'respondent_email', s.respondent_email,
+    'client_label', s.client_label,
+    'code', s.new_code
+  );
+end;
+$$;
+
+revoke all on function public.alignment_new_code_to_send(text, text, text) from public, anon, authenticated, service_role;
+grant execute on function public.alignment_new_code_to_send(text, text, text) to service_role;
+
+-- Health Checks finished before this ran: 30 days from now, never closed the
+-- moment it runs. Only where nothing is set, so a second run changes nothing.
+update public.alignment_sessions
+   set results_open_from = now()
+ where status = 'complete' and results_open_from is null;
+
+-- =============================================================================
+-- B. Signed agreements: the signed PDF, kept as it was made
+-- =============================================================================
+create table if not exists public.agreement_signed_pdfs (
+  version_id  uuid primary key references public.agreement_versions (id) on delete restrict,
+  pdf         bytea not null check (octet_length(pdf) between 1000 and 15000000),
+  sha256      text not null check (sha256 ~ '^[0-9a-f]{64}$'),
+  file_name   text not null check (char_length(file_name) between 5 and 200 and file_name ~ '\.pdf$'),
+  made_at     timestamptz not null default now()
+);
+comment on table public.agreement_signed_pdfs is
+  'Each signed agreement version''s PDF (064, follow-up 5), made by the server at the moment of signing with both signatures drawn, and kept exactly as made: insert only, never changed or removed. Read only through agreement_signed_pdf(); written only through agreement_signed_pdf_keep() (the server''s key).';
+
+alter table public.agreement_signed_pdfs enable row level security;
+revoke all on table public.agreement_signed_pdfs from public, anon, authenticated, service_role;
+
+-- What is stored is checked as it goes in: a PDF, its own fingerprint, and only for a signed version.
+create or replace function public.agreement_signed_pdfs_in()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if substring(new.pdf from 1 for 5) <> convert_to('%PDF-', 'UTF8') then
+    raise exception 'Only a PDF is kept here.' using errcode = '22023';
+  end if;
+  if not exists (select 1 from public.agreement_versions v where v.id = new.version_id and v.client_signed_at is not null) then
+    raise exception 'Only a signed version''s PDF is kept.' using errcode = '23514';
+  end if;
+  new.sha256 := encode(sha256(new.pdf), 'hex');
+  new.made_at := now();
+  return new;
+end;
+$$;
+revoke all on function public.agreement_signed_pdfs_in() from public, anon, authenticated, service_role;
+drop trigger if exists agreement_signed_pdfs_in on public.agreement_signed_pdfs;
+create trigger agreement_signed_pdfs_in before insert on public.agreement_signed_pdfs
+  for each row execute function public.agreement_signed_pdfs_in();
+
+-- Never changed, never removed: for every role, the server's key included.
+create or replace function public.agreement_signed_pdfs_kept()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  raise exception 'A signed agreement''s PDF is kept as it was made.' using errcode = '23514';
+end;
+$$;
+revoke all on function public.agreement_signed_pdfs_kept() from public, anon, authenticated, service_role;
+drop trigger if exists agreement_signed_pdfs_kept on public.agreement_signed_pdfs;
+create trigger agreement_signed_pdfs_kept before update or delete on public.agreement_signed_pdfs
+  for each row execute function public.agreement_signed_pdfs_kept();
+drop trigger if exists agreement_signed_pdfs_kept_all on public.agreement_signed_pdfs;
+create trigger agreement_signed_pdfs_kept_all before truncate on public.agreement_signed_pdfs
+  for each statement execute function public.agreement_signed_pdfs_kept();
+
+-- -----------------------------------------------------------------------------
+-- agreement_signed_pdf (signed in): the stored PDF, for that version's client
+-- or the agreement's coach with the 6-digit code
+-- -----------------------------------------------------------------------------
+create or replace function public.agreement_signed_pdf(p_version uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_user uuid := (select auth.uid());
+  v record;
+  k public.agreement_signed_pdfs;
+begin
+  if v_user is null then
+    raise exception 'Sign in to carry on.' using errcode = '42501';
+  end if;
+  select ver.id, ver.coach_id, ver.client_signed_at, a.kind, p.user_id as client_user
+    into v
+    from public.agreement_versions ver
+    join public.agreements a on a.id = ver.agreement_id
+    left join public.client_profiles p on p.id = a.profile_id
+   where ver.id = p_version;
+  -- The version's own client, or its coach with the 6-digit code (054), as 061 and 062's coach functions.
+  if not found or not (
+       (v.kind = 'coaching' and v.client_user is not null and v.client_user = v_user)
+       or (public.coach_code_ok() and v.coach_id = (select public.my_coach_id()))) then
+    raise exception 'That agreement isn’t yours.' using errcode = '42501';
+  end if;
+  if v.client_signed_at is null then
+    return jsonb_build_object('ok', false, 'error', 'not_signed');
+  end if;
+  select * into k from public.agreement_signed_pdfs where version_id = p_version;
+  if not found then
+    return jsonb_build_object('ok', true, 'made', false);
+  end if;
+  return jsonb_build_object('ok', true, 'made', true, 'pdf', encode(k.pdf, 'base64'), 'sha256', k.sha256,
+                            'file_name', k.file_name, 'made_at', k.made_at);
+end;
+$$;
+revoke all on function public.agreement_signed_pdf(uuid) from public, anon, service_role;
+grant execute on function public.agreement_signed_pdf(uuid) to authenticated;
+
+-- -----------------------------------------------------------------------------
+-- agreement_pdf_source (the server's key only): what a signed version's PDF is
+-- made from. The version as my_agreements() gives it to its client (061: an
+-- organisation-funded client's terms and clauses cut to the rows they see,
+-- with no amount), both signatures, the client's name, and the zone its times
+-- are read in (the client's saved zone, else the coach's, else the UK's).
+-- -----------------------------------------------------------------------------
+create or replace function public.agreement_pdf_source(p_version uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_role text := coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', '');
+  v public.agreement_versions;
+  a public.agreements;
+  p public.client_profiles;
+  v_zone text;
+begin
+  -- the server (service role), or Tim in the SQL editor (no caller's claims)
+  if not (v_role = 'service_role' or (v_role = '' and (select auth.uid()) is null)) then
+    raise exception 'Only the server can do this.' using errcode = '42501';
+  end if;
+  select * into v from public.agreement_versions where id = p_version;
+  if not found then
+    return jsonb_build_object('ok', false, 'error', 'invalid');
+  end if;
+  select * into a from public.agreements where id = v.agreement_id;
+  select * into p from public.client_profiles where id = a.profile_id;
+  if a.kind <> 'coaching' or p.id is null then
+    return jsonb_build_object('ok', false, 'error', 'invalid');
+  end if;
+  if v.client_signed_at is null then
+    return jsonb_build_object('ok', false, 'error', 'not_signed');
+  end if;
+  v_zone := coalesce(nullif(p.time_zone, ''), (select nullif(cs.time_zone, '') from public.coach_settings cs where cs.coach_id = v.coach_id), 'Europe/London');
+
+  return jsonb_build_object(
+    'ok', true,
+    'stored', exists (select 1 from public.agreement_signed_pdfs k where k.version_id = v.id),
+    'client_name', p.name,
+    'time_zone', v_zone,
+    -- my_agreements()' own shape and cut (061), word for word
+    'version', jsonb_build_object(
+      'id', v.id, 'agreement_id', a.id, 'reference', a.reference, 'version', v.version, 'status', v.status,
+      'current', v.version = a.current_version, 'sent_at', v.sent_at, 'client_signed_at', v.client_signed_at,
+      'coach_signed_at', v.coach_signed_at, 'funded_by', v.funded_by,
+      'currency', case when v.funded_by is null then v.currency end,
+      'fx_rate', case when v.funded_by is null then v.fx_rate end, 'fx_at', case when v.funded_by is null then v.fx_at end,
+      'total_minor', case when v.funded_by is null then v.total_minor end,
+      'terms', case when v.funded_by is null then v.terms
+               else (select coalesce(jsonb_object_agg(k, val), '{}'::jsonb) from jsonb_each(v.terms) as e(k, val)
+                     where k = any (array['coaching', 'sessions', 'minutes', 'place', 'rhythm', 'startsOn', 'endsOn', 'ongoing', 'goals',
+                                          'contactWays', 'clientName', 'clientEmail', 'coachName', 'coachFirst', 'coachEmail', 'fundedBy',
+                                          'expensesAllowed', 'sponsor'])) end,
+      'clauses', case when v.funded_by is null then v.clauses
+                 else (select coalesce(jsonb_agg(c), '[]'::jsonb) from jsonb_array_elements(v.clauses) c where coalesce(c->>'money', 'false') <> 'true') end,
+      'changes', v.changes, 'signed_name', v.signed_name, 'signed_email', v.signed_email, 'fingerprint', v.fingerprint,
+      'client_signature_id', v.client_signature_id),
+    -- The two signatures, drawn or typed. Only the server reads the coach's, to draw it on the PDF.
+    'client_signature', (select jsonb_build_object('kind', s.kind, 'image', s.image, 'typed_name', s.typed_name)
+                           from public.signatures s where s.id = v.client_signature_id and s.user_id = v.signed_user_id),
+    'coach_signature', (select jsonb_build_object('kind', s.kind, 'image', s.image, 'typed_name', s.typed_name)
+                          from public.signatures s join public.coaches c on c.user_id = s.user_id
+                         where s.id = v.coach_signature_id and c.id = v.coach_id)
+  );
+end;
+$$;
+revoke all on function public.agreement_pdf_source(uuid) from public, anon, authenticated, service_role;
+grant execute on function public.agreement_pdf_source(uuid) to service_role;
+
+-- -----------------------------------------------------------------------------
+-- agreement_signed_pdf_keep (the server's key only): keeps the first PDF made
+-- for a signed version, and hands back the one kept (a second is never stored)
+-- -----------------------------------------------------------------------------
+create or replace function public.agreement_signed_pdf_keep(p_version uuid, p_pdf text, p_file_name text)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  v_role text := coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', '');
+  k public.agreement_signed_pdfs;
+begin
+  if not (v_role = 'service_role' or (v_role = '' and (select auth.uid()) is null)) then
+    raise exception 'Only the server can do this.' using errcode = '42501';
+  end if;
+  if p_pdf is null or char_length(p_pdf) > 21000000 then
+    raise exception 'Only a PDF is kept here.' using errcode = '22023';
+  end if;
+  insert into public.agreement_signed_pdfs (version_id, pdf, sha256, file_name)
+  values (p_version, decode(p_pdf, 'base64'), repeat('0', 64), left(coalesce(p_file_name, ''), 200))
+  on conflict (version_id) do nothing;
+  select * into k from public.agreement_signed_pdfs where version_id = p_version;
+  return jsonb_build_object('ok', true, 'pdf', encode(k.pdf, 'base64'), 'sha256', k.sha256, 'file_name', k.file_name, 'made_at', k.made_at);
+end;
+$$;
+revoke all on function public.agreement_signed_pdf_keep(uuid, text, text) from public, anon, authenticated, service_role;
+grant execute on function public.agreement_signed_pdf_keep(uuid, text, text) to service_role;
 
 select public.record_migration(64, '064_followup_5');

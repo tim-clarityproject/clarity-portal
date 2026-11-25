@@ -130,6 +130,7 @@ function Page() {
   const [newCode, setNewCode] = useState('');
   const oldCodeRef = useRef(null); // the code the page had, only to ask for the new one again
   const leaveRef = useRef(() => {});
+  const expireRef = useRef(() => {}); // the results' 30 days have passed (064)
   // Who sees the answers (Tim, 14 Nov, 09:52): You and the coach unless the guest chose Only you.
   const [shared, setShared] = useState(() => openingChoice(keptChoice(shareId(token), shareStore()), null));
   const sharedRef = useRef(shared);
@@ -218,6 +219,7 @@ function Page() {
     const creds = credsRef.current;
     if (!creds) return { ok: false };
     const r = await setSharing(token, creds.email, creds.code, value);
+    if (!r.ok && r.error === 'expired') expireRef.current();
     if (r.ok && r.newCode) onNewCode(creds);
     // The answer to this page's own change was lost, and the code had changed.
     if (!r.ok && r.error === 'new_code') onReplaced(creds);
@@ -280,6 +282,21 @@ function Page() {
   }, [token, sendChoice]);
 
   // ---- opening the Health Check ----
+  // A finished Health Check's link and code open its results for 30 days after it was
+  // finished or its results were last emailed (064); after that every call answers
+  // 'expired', and the page says so calmly, with what to do.
+  const expire = useCallback(() => {
+    queueRef.current?.destroy();
+    queueRef.current = null;
+    credsRef.current = null;
+    store.del('sessionStorage', accessKey(token));
+    setCode('');
+    setOpenError('');
+    setPanel(null);
+    showPhase('expired');
+  }, [token, showPhase]);
+  expireRef.current = expire;
+
   const leave = useCallback((message) => {
     queueRef.current?.destroy();
     queueRef.current = null;
@@ -300,6 +317,7 @@ function Page() {
     const r = await requestAlignmentEmail({ token, email: old.email, code: old.code, kind: 'code' });
     resendBusy.current = false;
     if (r.ok) { toast.show('Sent'); if (r.sent !== false) setNewCode('sent'); }
+    else if (r.error === 'expired') { setNewCode(''); expireRef.current(); }
     else if (r.error === 'limit') toast.error('That’s as many as can be sent for now. Try again in an hour.');
     else toast.error();
   };
@@ -366,6 +384,7 @@ function Page() {
         // The code was replaced (045): unsaved answers stay on the device for
         // when the new code opens it.
         if (detail.error === 'new_code') onReplaced(credsRef.current);
+        else if (detail.error === 'expired') expireRef.current();
         else leave(detail.message);
       }
     });
@@ -404,6 +423,7 @@ function Page() {
     setOpening(false);
     if (!result.ok) {
       store.del('sessionStorage', accessKey(token));
+      if (result.error === 'expired') { expire(); return; }
       if (result.error === 'new_code') {
         // The replaced code: the new one is on its way to their email.
         oldCodeRef.current = { email: e.trim(), code: cleanCode(c) };
@@ -417,7 +437,7 @@ function Page() {
     setNewCode('');
     oldCodeRef.current = null;
     start(result.session, { email: e.trim(), code: cleanCode(c) });
-  }, [token, start]);
+  }, [token, start, expire]);
 
   // A reload in the same tab opens straight away.
   useEffect(() => {
@@ -473,8 +493,13 @@ function Page() {
     if (!creds || mailBusy.current) return;
     mailBusy.current = true;
     setLinkMail({ status: 'sending' });
-    const r = await requestAlignmentEmail({ token, email: creds.email, code: creds.code, kind: 'link' });
+    // The finished answers reach the database first, so the email carries the results PDF (follow-up 5).
+    await settledSave(queueRef.current);
+    let timeZone = null;
+    try { timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch { /* the PDF's paper then follows the browser's language alone */ }
+    const r = await requestAlignmentEmail({ token, email: creds.email, code: creds.code, kind: 'link', timeZone });
     mailBusy.current = false;
+    if (!r.ok && r.error === 'expired') { expire(); return; }
     // A preview never sends (api/_routes/alignment-email.js), so it claims nothing.
     if (r.ok && r.sent === false) { setLinkMail({ status: 'idle' }); return; }
     setLinkMail({ status: r.ok ? 'sent' : (r.error === 'limit' ? 'limit' : 'error'), to: creds.email });
@@ -579,6 +604,21 @@ function Page() {
           <GuestTitle headingRef={headingRef}>Example report</GuestTitle>
           <ExampleReport onEdit={() => toast.show('The example can’t be edited.')} />
           <div className="hc-end"><Button variant="primary" onClick={() => showPhase('signin')}>Start my Health Check</Button></div>
+        </GuestFrame>
+      </div>
+    );
+  }
+
+  if (phase === 'expired') {
+    return (
+      <div className="ui-root">
+        {/* A short message page: centred throughout (sign-in rule 49), as the page's own error screen. */}
+        <GuestFrame narrow="wide" message {...frame}>
+          <div>
+          <GuestTitle headingRef={headingRef}>Strategic Alignment Health Check</GuestTitle>
+          <p className="hc-lead">These results were open for 30 days, and that time has passed.</p>
+          <p className="hc-lead">{`If you kept your PDF, your results are in it. To check again, ask ${coachName || 'the coach who sent you the link'} for a new link.`}</p>
+          </div>
         </GuestFrame>
       </div>
     );

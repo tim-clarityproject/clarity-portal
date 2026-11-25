@@ -39,3 +39,33 @@ export async function findClientShare(rpc, clientId, name) {
   }
   return { known: true, shared: null };
 }
+
+/** The device's kept shares (`{ [clientUserId]: shared }`), as they stand after a whole list of what clients share now. */
+export function refreshedShares(kept, rows) {
+  const now = new Map((rows || []).map((r) => [String(r.client_id).toLowerCase(), shareOf(r)]));
+  const out = {};
+  for (const id of Object.keys(kept || {})) {
+    const shared = now.get(String(id).toLowerCase()) || null;
+    // Nothing shared any more (or no longer this coach's client): the kept copy goes, so it never shows offline.
+    if (shared && (shared.mission || shared.latest_week_score != null)) out[id] = shared;
+  }
+  return out;
+}
+
+/**
+ * At each sync (follow-up 5, item 15): what the device keeps of each client's shares is read again in one pass of
+ * the whole list, and what a client no longer shares is removed. Answers the new kept shares, or null when the list
+ * couldn't be read whole (offline): the device's copy is then left as it was.
+ */
+export async function refreshKeptShares(rpc, kept) {
+  if (!kept || !Object.keys(kept).length) return null;
+  const rows = [];
+  for (let offset = 0; offset < 100000; offset += PAGE) {
+    const { data, error } = await rpc('coach_client_list', { p_coach: null, p_search: null, p_organisation: null, p_limit: PAGE, p_offset: offset });
+    if (error) return null;
+    rows.push(...(data || []));
+    const total = Number(data?.[0]?.total) || 0;
+    if (!data?.length || offset + PAGE >= total) break;
+  }
+  return refreshedShares(kept, rows);
+}

@@ -1,4 +1,4 @@
-import { STYLES } from './text';
+import { STYLES } from './text.js';
 
 // The shared parts of every PDF (PDF rule 20): title block, At a glance panel,
 // contents list, section heading, text, question and answer, table, bar chart,

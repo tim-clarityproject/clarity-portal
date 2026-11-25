@@ -1,11 +1,11 @@
 import PDFDocument from 'pdfkit';
-import { createTypesetter, seenSpec, seenText, STYLES } from './text';
-import { flatten, tagNode } from './parts';
-import { layoutPages } from './layout';
-import { PAPER } from './paper';
-import { BOLD_CROSS_PATHS, BOLD_CROSS_STROKE, BOLD_CROSS_VIEWBOX } from '../boldCrosshair';
-import { PDF_THEMES, PDF_AUTHOR, PORTAL_ADDRESS, PORTAL_URL } from './theme';
-import { formatFileDate, formatUpdatedAt } from '../dateFormatter';
+import { createTypesetter, seenSpec, seenText, STYLES } from './text.js';
+import { flatten, tagNode } from './parts.js';
+import { layoutPages } from './layout.js';
+import { PAPER } from './paper.js';
+import { BOLD_CROSS_PATHS, BOLD_CROSS_STROKE, BOLD_CROSS_VIEWBOX } from '../boldCrosshair.js';
+import { PDF_THEMES, PDF_AUTHOR, PORTAL_ADDRESS, PORTAL_URL } from './theme.js';
+import { formatFileDate, formatUpdatedAt } from '../dateFormatter.js';
 
 // The shared PDF template. One document description in, a finished PDF out, in
 // the light or dark version and on A4 or US Letter. See CLAUDE.md, "PDF rules".

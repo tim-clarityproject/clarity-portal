@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { idFromAddress } from '../../lib/coach/address';
 import SuggestQuestionPanel from './SuggestQuestionPanel';
+import AdminClient from './AdminClient';
 import { AddButton, Button, Crosshair, Dropdown, InlineChoice, Loading, PageHeader, SearchField, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
@@ -247,6 +248,12 @@ export default function ClientPage() {
   const running = runningEntry(rowsOf(state, 'time_entries').filter((e) => e.coach_id === coach.id));
   const now = useEverySecond(Boolean(running));
 
+  // The owner opening an associate's client: the admin view (follow-up 5, item 10), never "isn't in your list".
+  const adminRow = !profile && isOwner ? (portal.admin || []).find((a) => a.profile_id === id) || null : null;
+  if (adminRow) return <AdminClient row={adminRow} />;
+  if (!profile && isOwner && !portal.adminReady) {
+    return <div className="cc-page"><div className="cc-col"><Loading label="Loading the client" /></div></div>;
+  }
   if (!profile || !data) {
     return (
       <div className="cc-page"><div className="cc-col">
@@ -582,7 +589,8 @@ export default function ClientPage() {
                   {!agreementLoading && fold && (
                     <>
                       {fold.rows.map((r) => <Detail key={r.label} label={r.label}>{r.value}</Detail>)}
-                      <div className="cc-acts"><TextLink onClick={() => setPanel('agreement')}>Open the agreement</TextLink></div>
+                      {/* Signed: the PDF kept at signing, both signatures on it (064); waiting: its text in the panel. */}
+                      <div className="cc-acts"><TextLink onClick={() => (fold.signed ? openSignedAgreement(fold.version, toast, () => setPanel('agreement')) : setPanel('agreement'))}>Open the agreement</TextLink></div>
                     </>
                   )}
                 </Fold>
@@ -698,9 +706,34 @@ export default function ClientPage() {
   );
 }
 
+let openingAgreement = false; // one PDF at a time
 /**
- * The agreement's full text in the side panel (Phase 6b run 1): its sections as signed. M11's "Open the agreement"
- * downloads the signed PDF; until the agreement's PDF exists (src/lib/pdf/docs/agreement.js), it opens here instead.
+ * M11's "Open the agreement" for a signed version: the signed PDF exactly as it was made and kept at signing, with
+ * the coach's and the client's signatures (follow-up 5, 064: agreement_signed_pdf, with the 6-digit code; made and
+ * kept by the server first if it wasn't). The code loads only when it is asked for.
+ */
+async function openSignedAgreement(version, toast, beforeMigration) {
+  if (openingAgreement || !version?.id) return;
+  openingAgreement = true;
+  const words = import('../../lib/friendlyError');
+  try {
+    const [{ loadSignedPdf }, { savePdfFile }] = await Promise.all([import('../../lib/coaching/agreements'), import('../../lib/pdf/saveFile')]);
+    const { bytes, fileName } = await loadSignedPdf(version);
+    savePdfFile(bytes, fileName);
+  } catch (e) {
+    // Only until 064 has run on the database: its text in the panel, as before.
+    if (e?.code === 'PGRST202' || e?.code === '42883') { beforeMigration(); return; }
+    const { isOffline, needsConnection } = await words.catch(() => ({ isOffline: () => false, needsConnection: null }));
+    // As the client's download says it (My coaching).
+    toast.error(needsConnection && (e?.offline || isOffline(e)) ? needsConnection('This PDF') : 'Your PDF wasn’t made. Check your connection and try again.');
+  } finally {
+    openingAgreement = false;
+  }
+}
+
+/**
+ * The agreement's full text in the side panel (Phase 6b run 1): its sections as sent, for a version waiting to be
+ * signed. A signed version opens its kept PDF instead (openSignedAgreement).
  */
 function AgreementPanel({ open, onClose, version, profile, coach }) {
   const sections = version ? agreementSections(version, { clientName: profile.name, clientEmail: profile.email || '', coachName: coach.full_name || coach.display_first_name || '' }) : [];

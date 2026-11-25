@@ -67,9 +67,37 @@ export function ukDateTime(value) {
  * the email address and access code that open them under the button (Tim,
  * 10 Nov, 13:31; this replaces the 28 Oct rule that the code is never in
  * it). It only ever goes to the address that did the Health Check.
+ * Follow-up 5: a finished Health Check's email carries its results PDF
+ * (`pdf`, from resultsPdf), and says so only when it does; an unfinished
+ * one says it can be carried on, and claims no PDF and no 30 days.
  */
-export function linkEmail({ origin, token, dateText, clientLabel, email, code }) {
-  return ready(healthCheckResultsEmail({ link: `${origin}/health-check/${token}`, organisation: clientLabel, dateText, email, code }));
+export function linkEmail({ origin, token, dateText, clientLabel, email, code, finished = true, pdf = null }) {
+  const made = ready(healthCheckResultsEmail({ link: `${origin}/health-check/${token}`, organisation: clientLabel, dateText, email, code, finished, attached: Boolean(finished && pdf) }));
+  if (finished && pdf) made.attachments = [...made.attachments, { filename: pdf.fileName, content: Buffer.from(pdf.bytes).toString('base64'), content_type: 'application/pdf' }];
+  return made;
+}
+
+/**
+ * The results PDF for the guest's own email (follow-up 5): the same document as the results
+ * page's Download (src/lib/pdf/docs/healthCheck.js), light, made on the server only from what the
+ * database handed back after the link, email and code were checked (alignment_email_check), never
+ * from anything the browser sends. Its dates are the UK's, as this email's are. Paper: serverPaper.
+ * @param {{ data: Object, completedAt: string|null, clientLabel: string|null, acceptLanguage?: string, timeZone?: string|null }} p
+ * @returns {Promise<{ bytes: Uint8Array, fileName: string }>}
+ */
+export async function resultsPdf({ data, completedAt, clientLabel, acceptLanguage = '', timeZone = null }) {
+  // Loaded only when a PDF is made, so the router's other addresses start as quickly as before.
+  const [{ healthCheckPdf }, { makeServerPdf, serverPaper }] = await Promise.all([
+    import('../src/lib/pdf/docs/healthCheck.js'), import('./_pdfAssets.js'),
+  ]);
+  const spec = healthCheckPdf({
+    draft: draftFromData(data && typeof data === 'object' ? data : {}),
+    completedAt: completedAt || data?.completedAt || null,
+    updatedAt: null,
+    organisation: clientLabel || null,
+    timeZone: UK,
+  });
+  return makeServerPdf(spec, { paper: serverPaper({ acceptLanguage, timeZone }) });
 }
 
 /** To the guest only (045): their new access code after choosing Only you. */

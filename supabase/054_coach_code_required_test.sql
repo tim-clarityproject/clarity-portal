@@ -109,6 +109,7 @@ declare
   direct_ok text[] := array[
     'booking_mine', 'booking_page', 'poll_page',                       -- public pages: the coach's first name only
     'proposal_open',                                                   -- 062: a proposal's share link, its own words and the coach's first name
+    'client_invite_link_state',                                        -- 064: a set-up link's state, open or ended, and the coach's first name
     'coach_auth_state',                                                -- the sign-in screens, before the code
     'my_coach', 'my_coach_invites', 'my_cover_asks', 'my_session_recaps',
     'my_sessions_coming', 'my_suggestions', 'my_view_asks',            -- a client's own coaching
@@ -272,6 +273,8 @@ begin
       'select public.coach_list()', 'select public.coach_admin_clients()', 'select public.coach_client_list()',
       'select public.coach_connections_mine()', 'select public.coach_call_types_start()',
       format('select public.client_invite(%L)', p_sam), format('select public.session_send_recap(%L)', sess_m),
+      format('select public.client_invite_link(%L)', p_sam), format('select public.session_recap_readers(%L)', sess_m),
+      format('select public.coach_admin_agreements(%L)', p_sam),
       format('select public.session_recap_people(%L)', sess_m), format('select public.session_recap_email_claim(%L)', sess_m),
       format('select public.workshop_follow_up_claim(%L)', gen_random_uuid()),
       format('select public.client_delete(%L, ''Sam Invented'')', p_sam),

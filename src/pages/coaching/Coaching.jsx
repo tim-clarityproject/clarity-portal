@@ -333,7 +333,7 @@ export default function Coaching() {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page coaching-page">
-        <PageHeader title="Coaching" />
+        <PageHeader title="My coaching" />
         {body}
       </div>
       <MySignature open={signatureOpen} onClose={() => setSignatureOpen(false)} userId={userId} />

@@ -429,7 +429,9 @@ test('a recovery code ends the other sign-ins: the words, and Supabase’s own s
   const { endOtherSignIns } = await import('../../src/lib/signIn/coachAuthData.js');
   assert.equal(W.in.othersEnded, 'Your other sign-ins have ended.');
   assert.deepEqual(signedOutWords('recovery'), SIGNED_OUT_BY_RECOVERY);
-  for (const by of ['reset', 'session', null, undefined]) assert.deepEqual(signedOutWords(by), SIGNED_OUT_BY_RESET);
+  assert.deepEqual(signedOutWords('reset'), SIGNED_OUT_BY_RESET);
+  // A sign-in that is simply gone, or can't be told, never says the authenticator was reset (follow-up 5, item 13).
+  for (const by of ['session', null, undefined]) assert.deepEqual(signedOutWords(by), ['Please sign in again.']);
   assert.ok(SIGNED_OUT_BY_RECOVERY.every((line) => !/\b(she|he|her|his|him)\b/i.test(line)));
   const asked = [];
   assert.equal(await endOtherSignIns({ auth: { signOut: async (o) => { asked.push(o); return { error: null }; } } }), true);
