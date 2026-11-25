@@ -1,7 +1,7 @@
 // The coach first screen run's lasting check: nothing on a first screen is wrong while the rest loads.
 //
 // For each coach (owner, associate), page (Today, Clients, a client's page, the calendar's week, month and the phone's
-// Schedule) and size, on the local stand-in (stack.mjs, with 060) and a production build (serve.mjs):
+// Schedule, and the owner's Finances: Overview, Money and Cash flow) and size, on the local stand-in (stack.mjs, with 060) and a production build (serve.mjs):
 //   1. a first visit: the page's words the moment its first screen is drawn (data-first-screen="ready"), with the
 //      quiet loading crosshairs' own labels left out;
 //   2. the same page once everything has come in (quiet for 2 s);
@@ -12,7 +12,7 @@
 // Muted, and nothing leaves this machine.
 //
 //   node --import ./tests/scores/register.mjs tests/scale/first-screen-check.mjs --app http://127.0.0.1:4320 \
-//     [--before http://127.0.0.1:4319] [--roles owner,associate] [--sizes phone,laptop] [--pages today,clients,client,week,month,schedule]
+//     [--before http://127.0.0.1:4319] [--roles owner,associate] [--sizes phone,laptop] [--pages today,clients,client,week,month,schedule,finances,money,cashflow]
 import { chromium } from 'playwright';
 import { createHash } from 'node:crypto';
 
@@ -35,6 +35,10 @@ const PAGES = {
   week: '/coach/calendar?view=week',
   month: '/coach/calendar?view=month',
   schedule: '/coach/calendar?view=schedule',
+  // The owner's Finances (Phase 6b run 2): Overview, Money and Cash flow (an associate is sent to Today).
+  finances: '/coach/finances',
+  money: '/coach/finances/money',
+  cashflow: '/coach/finances/cash-flow',
 };
 const ONLY = opt('pages', Object.keys(PAGES).join(',')).split(',');
 const SIZE = {

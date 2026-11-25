@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
-  AddButton, Button, DatePicker, Dropdown, ExplainLink, InlineChoice, PageHeader, SegmentedControl, SlidePanel, Stat, StatGroup, TextField, useIsPhone, useToast,
+  AddButton, Button, DatePicker, Dropdown, ExplainLink, InlineChoice, Loading, PageHeader, SegmentedControl, SlidePanel, Stat, StatGroup, TextField, useIsPhone, useToast,
 } from '../../components/design';
 import { coach062ReadyNow, newId, removeRow, rowNow, rowsOf, saveChange, saveChanges, saveRow, saveRows } from '../../lib/coach/store';
 import { SUPERSEDED_MESSAGE } from '../../lib/friendlyError';
@@ -43,6 +43,12 @@ export const FINANCE_TABS = [
   { value: 'pricing', label: 'Pricing' },
   { value: 'other', label: 'Other' },
 ];
+
+/**
+ * A first visit's first screen (coach rule 49): while associates' pay isn't known yet, the tab waits on the quiet
+ * crosshair (data-first-wait: the first screen isn't drawn until it goes), never on a figure that then changes.
+ */
+const FirstWait = () => <div data-first-wait=""><Loading label="Loading your finances" /></div>;
 
 export default function Finances() {
   const { tab: raw } = useParams();
@@ -135,6 +141,10 @@ function Overview() {
   const sectorOptions = [{ value: 'all', label: 'All income' }, ...sectors.map((s) => ({ value: s, label: s }))];
   const month = rows.month;
   const year = rows.year;
+  if (fin.waiting) return <FirstWait />;
+  // While only Finances' first screen is here (store.js's partial), the parts drawn from the rest (names, leads,
+  // renewals) show the quiet crosshair in their own spot.
+  const partial = Boolean(fin.partial);
   return (
     <>
       <StatGroup className="cc-stats fin-stats fin-stats--3">
@@ -159,7 +169,8 @@ function Overview() {
         ))}
       </FinPart>
 
-      {needs.length > 0 && (
+      {partial && <Loading label="Loading what needs you" />}
+      {!partial && needs.length > 0 && (
         <FinPart title="Needs you">
           {needs.map((n) => (
             <Line key={n.key} title={n.title} small={n.small}>
@@ -170,9 +181,13 @@ function Overview() {
       )}
 
       <FinPart title="Coming in">
-        <FigRow title="Pipeline" facts={pipe.facts} value={pipe.figure} onClick={() => navigate('/coach/leads/reports')} label={`Pipeline, ${pipe.figure}. Open lead reports`} />
-        <FigRow title="Renewals in the next 90 days" facts={renew.facts} value={renew.figure} onClick={() => navigate('/coach/clients?tab=renewals')} label={`Renewals in the next 90 days, ${renew.facts[0]}, ${renew.figure}. Open renewals`} />
-        <FigRow title="Repeating income" facts={['Portal seats and memberships']} value={repeatingMonthly ? rateWords(repeatingMonthly, 'month') : '£0/month'} />
+        {partial ? <Loading label="Loading what’s coming in" /> : (
+          <>
+            <FigRow title="Pipeline" facts={pipe.facts} value={pipe.figure} onClick={() => navigate('/coach/leads/reports')} label={`Pipeline, ${pipe.figure}. Open lead reports`} />
+            <FigRow title="Renewals in the next 90 days" facts={renew.facts} value={renew.figure} onClick={() => navigate('/coach/clients?tab=renewals')} label={`Renewals in the next 90 days, ${renew.facts[0]}, ${renew.figure}. Open renewals`} />
+            <FigRow title="Repeating income" facts={['Portal seats and memberships']} value={repeatingMonthly ? rateWords(repeatingMonthly, 'month') : '£0/month'} />
+          </>
+        )}
       </FinPart>
 
       {isPhone && <div className="fin-foot-btn"><Button variant="primary" onClick={() => setPanel({ kind: 'new' })}>New invoice</Button></div>}
@@ -340,6 +355,9 @@ function Money() {
   const pro = proBono({ sessions: (fin.sessions || []).filter((s) => proBonoIds.has(s.engagement_id) || (!s.engagement_id && proBonoProfiles.has(s.profile_id))), hourlyRateMinor: hourly, from: fy.start, to: todayKey });
   const fees = stripeFees(model.lines, [monthKey(todayKey)]);
   const waiting = waitingForPounds(model.lines);
+  if (fin.waiting) return <FirstWait />;
+  // While only Finances' first screen is here: clients' names and the sessions wait on the crosshair (rule 49).
+  const partial = Boolean(fin.partial);
   return (
     <>
       <div className="fin-ctl"><SegmentedControl label="Period" options={PERIODS} value={period} onChange={setPeriod} /></div>
@@ -366,15 +384,17 @@ function Money() {
       </FinPart>
 
       <FinPart title="By client">
-        {clients.length === 0 && <p className="cc-quiet">Nothing has come in yet in this period.</p>}
-        {clients.slice(0, 30).map((c) => (
+        {partial && <Loading label="Loading your clients" />}
+        {!partial && clients.length === 0 && <p className="cc-quiet">Nothing has come in yet in this period.</p>}
+        {!partial && clients.slice(0, 30).map((c) => (
           <FigRow key={c.key} title={(c.organisation_id && names.org[c.organisation_id]) || (c.profile_id && names.person[c.profile_id]) || c.payer_name || 'Paid to your bank'} facts={forWhat(c)} value={<PoundsWithOriginal pounds={c.pounds} originals={c.originals} />} />
         ))}
         <div className="cc-add"><AddButton onClick={() => setPanel('bank')}>Add bank payment</AddButton></div>
         <div className="cc-acts"><TextLink onClick={() => setPanel('export')}>Export to a spreadsheet</TextLink></div>
       </FinPart>
 
-      <FigRow title="Pro bono this year" facts={[`${hoursWords(pro.minutes)}, never counted towards targets`]} value={`Worth ${poundsWords(pro.worth)}`} />
+      {partial ? <Loading label="Loading your pro bono hours" />
+        : <FigRow title="Pro bono this year" facts={[`${hoursWords(pro.minutes)}, never counted towards targets`]} value={`Worth ${poundsWords(pro.worth)}`} />}
       {fees > 0 && <p className="cc-note">{`Stripe took ${moneyWords(fees)} in fees this month.`}</p>}
       <p className="cc-note fin-footnote">Payments in other currencies show in pounds at the rate they landed, with the amount paid underneath.</p>
       {waiting.count > 0 && <p className="cc-note">{waiting.words}</p>}
@@ -486,7 +506,9 @@ const EVERY_OPTIONS = [{ value: 'month', label: 'Each month' }, { value: 'quarte
 
 function CashFlow() {
   const [likely, setLikely] = useState(false);
-  const fin = useFinance({ includeLikely: likely });
+  // Likely deals come from the leads, which aren't here while only Finances' first screen is (rule 49).
+  const { partial } = useCoachPortal();
+  const fin = useFinance({ includeLikely: likely && !partial });
   const { model, todayKey, userId, settings, outgoings, outgoingGroups } = fin;
   const [params, setParams] = useSearchParams();
   const [panel, setPanel] = useState(() => (params.get('bank') === '1' ? { kind: 'bank' } : null));
@@ -503,6 +525,7 @@ function CashFlow() {
     .then((status) => { if (status === 'superseded') toast.error(SUPERSEDED_MESSAGE); }).catch(() => {});
   const groups = (outgoingGroups || []).length ? outgoingGroups.map((g) => g.name) : [...OUTGOING_GROUPS];
   const keepWords = settings.keep_above_minor == null ? 'About 2 months of outgoings' : 'The level you set';
+  if (fin.waiting) return <FirstWait />;
   return (
     <>
       <StatGroup className="cc-stats fin-stats fin-stats--4">

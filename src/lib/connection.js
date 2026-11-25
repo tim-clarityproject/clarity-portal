@@ -86,7 +86,29 @@ export function isNetworkError(error) {
  * fetch, but it fails at once when the device is offline, gives up on a
  * request that hangs, and keeps the connection state up to date.
  */
-async function sendWithConnection(input, init = {}) {
+// A read sent early for a first screen that mustn't hold up the sign-in check beside it is marked with this header
+// (earlyScreen.js); it never leaves the device: it becomes the browser's own low priority (Priority Hints), so with
+// only a few connections to the database open at once, the sign-in check is sent first (Phase 6b run 2).
+export const LOW_PRIORITY_HEADER = 'x-clarity-priority';
+function withPriority(init) {
+  const h = init.headers;
+  if (!h) return init;
+  if (typeof globalThis.Headers === 'function' && h instanceof globalThis.Headers) {
+    if (!h.has(LOW_PRIORITY_HEADER)) return init;
+    const headers = new globalThis.Headers(h);
+    headers.delete(LOW_PRIORITY_HEADER);
+    return { ...init, headers, priority: 'low' };
+  }
+  if (typeof h !== 'object' || Array.isArray(h)) return init;
+  const name = Object.keys(h).find((k) => k.toLowerCase() === LOW_PRIORITY_HEADER);
+  if (!name) return init;
+  const headers = { ...h };
+  delete headers[name];
+  return { ...init, headers, priority: 'low' };
+}
+
+async function sendWithConnection(input, given = {}) {
+  const init = withPriority(given);
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     set(false);
     throw new TypeError('Failed to fetch: the device is offline');

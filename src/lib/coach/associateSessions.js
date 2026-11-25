@@ -1,5 +1,7 @@
 import { supabase } from '../supabase';
 import { coachReady } from './store';
+import { takeFinanceOpening } from './earlyScreen';
+import { assocPieces, FINANCE_AHEAD_MS as AHEAD, FINANCE_BACK_MS as BACK } from './screenPlan';
 
 // The owner's view of associates' coaching sessions on the calendar (tidy
 // follow-up 3, run 6's 25; migration 058's coach_associate_sessions): only
@@ -37,20 +39,30 @@ export async function loadAssociateSessions(userId, from, to) {
   // 058 answers at most 63 days a call, so a longer range (Finances' forecast) is read in pieces, all or nothing.
   const lo = new Date(from).getTime();
   const hi = new Date(to).getTime();
-  const pieces = [];
-  for (let a = lo; a < hi; a += PIECE_MS) pieces.push([a, Math.min(hi, a + PIECE_MS)]);
-  const answers = await Promise.all(pieces.map(([a, b]) => supabase.rpc('coach_associate_sessions', { p_from: new Date(a).toISOString(), p_to: new Date(b).toISOString() })));
+  const answers = await Promise.all(assocPieces(lo, hi).map(([a, b]) => supabase.rpc('coach_associate_sessions', { p_from: new Date(a).toISOString(), p_to: new Date(b).toISOString() })));
   if (answers.some(({ data, error }) => error || !Array.isArray(data))) return null;
   return keepAssociateSessions(userId, from, to, answers.flatMap(({ data }) => data));
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const PIECE_MS = 60 * DAY_MS;
 // Finances (Overview, Cash flow, Settings, Coaches) and Today's Finances line all read the same range: 3 months back
 // (the 3-month average) to a year ahead (the forecast), so every figure that counts associates' pay agrees.
-export const FINANCE_BACK_MS = 100 * DAY_MS;
-export const FINANCE_AHEAD_MS = 400 * DAY_MS;
+export const FINANCE_BACK_MS = BACK;
+export const FINANCE_AHEAD_MS = AHEAD;
 let financeRead = { userId: null, at: 0, promise: null };
+
+/** The range's sessions as Finances' first screen read them while the app opened (earlyScreen.js), or null. */
+function fromOpening(userId) {
+  const early = takeFinanceOpening(userId, 'assoc');
+  if (!early) return null;
+  return Promise.resolve(early.answers).then(async (answers) => {
+    if (!Array.isArray(answers) || answers.some((r) => !r || r.error || !Array.isArray(r.data))) {
+      // Not answered as asked (offline, a 503, 058 not there): asked again as before.
+      return loadAssociateSessions(userId, early.from, early.to);
+    }
+    if ((await coachReady()) !== true) return null;
+    return keepAssociateSessions(userId, early.from, early.to, answers.flatMap(({ data }) => data));
+  });
+}
 
 /**
  * The finance range's sessions, read at most once every 5 minutes per account (every Finances tab and Today ask);
@@ -58,7 +70,7 @@ let financeRead = { userId: null, at: 0, promise: null };
  */
 export function loadFinanceAssociateSessions(userId, nowMs = Date.now()) {
   if (financeRead.userId === userId && financeRead.promise && nowMs - financeRead.at < 5 * 60 * 1000) return financeRead.promise;
-  const promise = loadAssociateSessions(userId, nowMs - FINANCE_BACK_MS, nowMs + FINANCE_AHEAD_MS).catch(() => null);
+  const promise = (fromOpening(userId) || loadAssociateSessions(userId, nowMs - FINANCE_BACK_MS, nowMs + FINANCE_AHEAD_MS)).catch(() => null);
   financeRead = { userId, at: nowMs, promise };
   promise.then((rows) => { if (!rows && financeRead.promise === promise) financeRead = { userId: null, at: 0, promise: null }; });
   return promise;

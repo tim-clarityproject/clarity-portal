@@ -39,9 +39,12 @@ const NO_BODY = new Set([101, 204, 205, 304]);
 // make the kept reads forgotten. Any function not named here does.
 // The coach portal's opening reads (049's coach_list and coach_admin_clients, 052's network_page, 053's and 055's
 // coach_auth_state, 057's coach_sessions_start, 060's coach_first_screen) are STABLE too: sent as the portal opens, they
-// no longer make the role and migration reads sent beside them be forgotten (coach first screen run).
+// no longer make the role and migration reads sent beside them be forgotten (coach first screen run). Finances' own
+// (058's coach_associate_sessions and 062's associate_month_minutes, both STABLE) likewise: sent with Finances' first
+// screen, they no longer make its table reads be read twice (Phase 6b run 2).
 const READ_ONLY_RPCS = new Set(['my_coach', 'my_coach_invites', 'my_session_recaps', 'my_view_asks', 'my_cover_asks',
-  'coach_list', 'coach_admin_clients', 'network_page', 'coach_auth_state', 'coach_sessions_start', 'coach_first_screen']);
+  'coach_list', 'coach_admin_clients', 'network_page', 'coach_auth_state', 'coach_sessions_start', 'coach_first_screen',
+  'coach_associate_sessions', 'associate_month_minutes']);
 
 function readOnlyRpc(method, url) {
   if (method !== 'POST') return false;

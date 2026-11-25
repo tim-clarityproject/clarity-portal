@@ -4,6 +4,7 @@ import { newId, removeRow, rowNow, saveChange, saveRow } from '../../lib/coach/s
 import { SUPERSEDED_MESSAGE } from '../../lib/friendlyError';
 import { supabase } from '../../lib/supabase';
 import { keptAssociateSessions, loadFinanceAssociateSessions } from '../../lib/coach/associateSessions';
+import { takeFinanceOpening } from '../../lib/coach/earlyScreen';
 import { amountProblem, draftDue, financeModel, invoiceNo, invoiceTitle, invoiceWho, overdueWords, paidDay, poundsFromTyped, reminderLines, dayWordsFrom, undoOf } from '../../lib/coach/financeData';
 import { coachBilling, receiptProblem } from '../../lib/coach/financeActions';
 import { moneyWords } from '../../lib/billing/money';
@@ -40,16 +41,19 @@ export function useNames() {
  * their pay in the forecast: the device's copy at once, then the database's. Finances, Today's Finances line and
  * Settings, Coaches all read them here, so their figures always agree (UI tester, run 2).
  */
-export function useAssociateSessions(userId, enabled = true) {
+export function useAssociateSessions(userId, enabled = true, { withAnswered = false } = {}) {
   const [assoc, setAssoc] = useState(() => (enabled ? keptAssociateSessions(userId) : []));
+  // Whether this visit's read has answered (or couldn't be made): Finances' first screen waits for it (rule 49).
+  const [answered, setAnswered] = useState(false);
   useEffect(() => {
     if (!enabled) return undefined;
     let live = true;
     setAssoc(keptAssociateSessions(userId));
-    loadFinanceAssociateSessions(userId).then((rows) => { if (live && rows) setAssoc(rows); }).catch(() => {});
+    loadFinanceAssociateSessions(userId).then((rows) => { if (live && rows) setAssoc(rows); }).catch(() => {})
+      .finally(() => { if (live) setAnswered(true); });
     return () => { live = false; };
   }, [userId, enabled]);
-  return assoc;
+  return withAnswered ? { rows: assoc, answered } : assoc;
 }
 
 // 062's associate_month_minutes, by account and month, read at most once every 5 minutes (each Finances tab and Today
@@ -69,18 +73,32 @@ export function minutesMonths(todayKey, startMonth) {
  * { 'YYYY-MM': rows }: only the months that answered, so a month that couldn't be read (offline, or 062 not there yet)
  * quietly falls back to 058's reading of the sessions.
  */
-export function useMonthMinutesMap(userId, months, enabled = true) {
+export function useMonthMinutesMap(userId, months, enabled = true, { withAnswered = false } = {}) {
   const key = (months || []).join(',');
   const [map, setMap] = useState(() => {
     const out = {};
     for (const m of months || []) { const hit = minutesRead.get(`${userId}#${m}`); if (hit?.rows) out[m] = hit.rows; }
     return out;
   });
+  // The months this visit's reads have answered for (or couldn't be read): Finances' first screen waits for them.
+  const [answeredKey, setAnsweredKey] = useState(null);
   useEffect(() => {
     if (!enabled || !userId || !key) return undefined;
     let live = true;
     const now = Date.now();
-    Promise.all(key.split(',').map((m) => {
+    // The months Finances' first screen asked for as the app opened (earlyScreen.js), once: their answers count here.
+    const early = takeFinanceOpening(userId, 'minutes');
+    const takeEarly = early ? Promise.resolve(early).then((byMonth) => {
+      if (!(byMonth instanceof Map)) return;
+      for (const [m, promise] of byMonth) {
+        const k = `${userId}#${m}`;
+        if (minutesRead.has(k)) continue;
+        const entry = { at: now, promise, rows: null };
+        minutesRead.set(k, entry);
+        promise.then((rows) => { if (rows) entry.rows = rows; else if (minutesRead.get(k) === entry) minutesRead.delete(k); });
+      }
+    }).catch(() => {}) : Promise.resolve();
+    takeEarly.then(() => Promise.all(key.split(',').map((m) => {
       const k = `${userId}#${m}`;
       const hit = minutesRead.get(k);
       if (hit && now - hit.at < MINUTES_FRESH_MS) return hit.promise.then((rows) => [m, rows]);
@@ -90,30 +108,34 @@ export function useMonthMinutesMap(userId, months, enabled = true) {
       minutesRead.set(k, entry);
       promise.then((rows) => { if (rows) entry.rows = rows; else if (minutesRead.get(k) === entry) minutesRead.delete(k); });
       return promise.then((rows) => [m, rows]);
-    })).then((pairs) => {
+    }))).then((pairs) => {
       if (!live) return;
       setMap(Object.fromEntries(pairs.filter(([, rows]) => Array.isArray(rows))));
+      setAnsweredKey(key);
     });
     return () => { live = false; };
   }, [userId, key, enabled]);
-  return map;
+  return withAnswered ? { map, answered: answeredKey === key } : map;
 }
 
 export function useFinance({ includeLikely = false } = {}) {
   const portal = useCoachPortal();
   const { userId, coach, todayKey } = portal;
-  const assoc = useAssociateSessions(userId);
+  const { rows: assoc, answered: assocIn } = useAssociateSessions(userId, true, { withAnswered: true });
   const settings = useMemo(() => settingsOf(portal.financeSettings, coach.id), [portal.financeSettings, coach.id]);
   const months = [3, 6, 12].includes(Number(settings.cash_months)) ? Number(settings.cash_months) : 6;
   const startMonth = Number(settings.year_start_month) || 5;
   const wanted = useMemo(() => minutesMonths(todayKey, startMonth), [todayKey, startMonth]);
-  const monthMinutes = useMonthMinutesMap(userId, wanted, Boolean(portal.isOwner));
+  const { map: monthMinutes, answered: minutesIn } = useMonthMinutesMap(userId, wanted, Boolean(portal.isOwner), { withAnswered: true });
   const model = useMemo(() => financeModel({ ...portal, financeSettings: settings, associateSessions: assoc, monthMinutes }, { today: todayKey, months, includeLikely, nowMs: Date.now() }),
     [settings, portal.payments, portal.creditNotes, portal.invoices, portal.agreementVersions, portal.orgDeals, portal.coaches, portal.statements, portal.outgoings,
       portal.deadlines, portal.leads, portal.leadStages, portal.financeTargets, assoc, monthMinutes, todayKey, months, includeLikely]);
   const names = useNames();
   const sectors = (portal.financeSectors || []).length ? portal.financeSectors.map((s) => s.name) : [...DEFAULT_SECTORS];
-  return { ...portal, settings, months, model, names, sectors, associateSessions: assoc };
+  // A first visit's first screen (store.js's partial 'finances'; coach rule 49): the figures wait for associates' pay to
+  // be known (the coach list, their sessions and each month's minutes), so none of them shows a figure that then changes.
+  const waiting = Boolean(portal.partial) && (!portal.coachesIn || !assocIn || (Boolean(portal.isOwner) && !minutesIn));
+  return { ...portal, settings, months, model, names, sectors, associateSessions: assoc, waiting };
 }
 
 /**

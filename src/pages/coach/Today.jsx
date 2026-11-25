@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AddButton, OfferRow, PageHeader, useIsPhone } from '../../components/design';
+import { AddButton, Loading, OfferRow, PageHeader, useIsPhone } from '../../components/design';
 import { birthdaysOn, dayWords, possessive } from '../../lib/coach/model';
 import { rowsOf } from '../../lib/coach/store';
 import {
@@ -199,7 +199,10 @@ export default function Today() {
                 </div>
               ))}
             </div>
-            {attention.length > ATTENTION_FIRST && (
+            {/* The count waits while only the first screen is here: overdue invoices (061) and every coach's clients come
+                with the rest, so "Show all" would count up a moment later (first screen check, Phase 6b run 2). */}
+            {attention.length > ATTENTION_FIRST && partial && <Loading label="Loading who needs attention" />}
+            {attention.length > ATTENTION_FIRST && !partial && (
               <div className="cc-acts cc-today-more"><TextLink aria-expanded={allAttention} onClick={() => setAllAttention((v) => !v)}>{allAttention ? 'Show fewer' : `Show all ${attention.length}`}</TextLink></div>
             )}
           </Section>

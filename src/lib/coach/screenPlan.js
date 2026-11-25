@@ -11,10 +11,14 @@ export const CAL_BACK_DAYS = 42;
 export const PROBE_TABLES = ['client_profiles', 'coach_todos', 'coach_cal_items', 'coach_lead_stages', 'coach_google_calendars', 'agreements'];
 export const SCREEN_NOT_YET_KEY = 'clarity-coach-screen-not-yet';
 
-/** Which page's first screen an address opens on: 'today', 'clients', 'client', 'calendar', or null (any other page). */
+/**
+ * Which page's first screen an address opens on: 'today', 'clients', 'client', 'calendar', 'finances' (the owner's
+ * Overview, Money and Cash flow), or null (any other page).
+ */
 export function screenKindOf(pathname = '') {
   const p = String(pathname).replace(/\/+$/, '');
   if (p === '/coach') return 'today';
+  if (/^\/coach\/finances(\/(money|cash-flow))?$/.test(p)) return 'finances';
   if (p === '/coach/clients') return 'clients';
   if (/^\/coach\/clients\/[0-9a-f-]{36}$/i.test(p)) return 'client';
   if (p === '/coach/calendar') return 'calendar';
@@ -68,4 +72,44 @@ export function screenWindow(kind, nowMs, search = '', todayKey = getLocalDateKe
 export function profilesOf(pathname = '') {
   const m = /^\/coach\/clients\/([0-9a-f-]{36})(?:[/?#]|$)/i.exec(String(pathname));
   return m ? [m[1].toLowerCase()] : [];
+}
+
+// ---------------------------------------------------------------- Finances' first screen (Phase 6b run 2)
+
+// What the owner's Finances (Overview, Money and Cash flow) draws first, read as the app opens and side by side: the
+// small tables its figures come from (062's settings, targets, sectors, outgoings, deadlines and statements; 061's
+// invoices, payments, credit notes and signed versions; 052's organisations' deals for repeating income). Each is the
+// owner's own plain read, under its table's own rules. What needs names, leads or the whole calendar waits.
+export const FINANCE_SCREEN_TABLES = ['finance_settings', 'finance_targets', 'finance_sectors', 'finance_outgoing_groups', 'finance_outgoings',
+  'company_deadlines', 'associate_statements', 'invoices', 'payments', 'credit_notes', 'agreement_versions', 'organisation_deals'];
+/** store.js's "062 isn't there yet" mark, remembered an hour. */
+export const FINANCE_NOT_YET_KEY = 'clarity-coach-062-not-yet';
+/** Associates' sessions for Finances: 3 months back (the 3-month average) to a year ahead (the forecast), in 058's pieces. */
+export const FINANCE_BACK_MS = 100 * DAY_MS;
+export const FINANCE_AHEAD_MS = 400 * DAY_MS;
+export const ASSOC_PIECE_MS = 60 * DAY_MS;
+/** The [from, to] instants of each of 058's reads that together cover from to to (it answers at most 63 days a call). */
+export function assocPieces(from, to) {
+  const out = [];
+  for (let a = from; a < to; a += ASSOC_PIECE_MS) out.push([a, Math.min(to, a + ASSOC_PIECE_MS)]);
+  return out;
+}
+
+const addMonth = (m, n) => {
+  const [y, mo] = m.split('-').map(Number);
+  const t = y * 12 + (mo - 1) + n;
+  return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`;
+};
+/**
+ * The months whose delivered minutes Finances reads (financeParts.jsx's minutesMonths, which it must match: checked by
+ * tests/performance/coach-first-screen.test.mjs): this financial year so far, and the 3 before this month.
+ */
+export function financeMinuteMonths(todayKey, startMonth = 5) {
+  const now = String(todayKey).slice(0, 7);
+  const s = Number(startMonth) >= 1 && Number(startMonth) <= 12 ? Number(startMonth) : 5;
+  const month = Number(now.slice(5, 7));
+  const back = (month - s + 12) % 12;
+  const fy = [];
+  for (let i = back; i >= 0; i -= 1) fy.push(addMonth(now, -i));
+  return [...new Set([addMonth(now, -3), addMonth(now, -2), addMonth(now, -1), ...fy])].sort();
 }

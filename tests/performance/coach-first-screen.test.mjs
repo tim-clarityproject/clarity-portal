@@ -4,7 +4,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { viewRange } from '../../src/lib/coach/calendar.js';
-import { DAY_MS, profilesOf, screenKindOf, screenWindow, viewDays } from '../../src/lib/coach/screenPlan.js';
+import { assocPieces, DAY_MS, financeMinuteMonths, profilesOf, screenKindOf, screenWindow, viewDays } from '../../src/lib/coach/screenPlan.js';
+import { addMonths, financialYear, monthKey } from '../../src/lib/finance/index.js';
 import { isZone } from '../../src/lib/time/index.js';
 
 const keyOf = (ms) => new Date(ms).toISOString().slice(0, 10);
@@ -37,7 +38,13 @@ test('the page an address opens on', () => {
   assert.equal(screenKindOf('/coach/clients'), 'clients');
   assert.equal(screenKindOf(`/coach/clients/${id}`), 'client');
   assert.equal(screenKindOf('/coach/calendar'), 'calendar');
-  for (const other of ['/coach/clients/past', `/coach/clients/${id}/close`, '/coach/todos', '/coach/leads', '/coach/calendar/book', '/coach/settings', '/welcome', '/coach/sign-in']) {
+  // The owner's Finances: Overview, Money and Cash flow (Phase 6b run 2); its other tabs load as before.
+  assert.equal(screenKindOf('/coach/finances'), 'finances');
+  assert.equal(screenKindOf('/coach/finances/'), 'finances');
+  assert.equal(screenKindOf('/coach/finances/money'), 'finances');
+  assert.equal(screenKindOf('/coach/finances/cash-flow'), 'finances');
+  for (const other of ['/coach/clients/past', `/coach/clients/${id}/close`, '/coach/todos', '/coach/leads', '/coach/calendar/book', '/coach/settings', '/welcome', '/coach/sign-in',
+    '/coach/finances/invoices', '/coach/finances/pricing', '/coach/finances/other', '/coach/finances/money/x', '/coach/financesx']) {
     assert.equal(screenKindOf(other), null, other);
   }
   assert.deepEqual(profilesOf(`/coach/clients/${id.toUpperCase()}`), [id]);
@@ -73,4 +80,30 @@ test('a calendar day far from today reads only its own weeks, inside 060\'s 400 
     assert.ok(to - from <= 400 * DAY_MS, ask);
     assert.ok(to < now - DAY_MS || from > now + 8 * DAY_MS, `${ask}: its own weeks only`);
   }
+});
+
+test('Finances\' first screen asks for the same months of minutes as the page (financeParts.jsx\'s minutesMonths)', () => {
+  // financeParts.jsx's own sum, from src/lib/finance (the page is JSX, so it is written out here as it is there).
+  const minutesMonths = (todayKey, startMonth) => {
+    const now = monthKey(todayKey);
+    const fy = financialYear(todayKey, startMonth).months.filter((m) => m <= now);
+    return [...new Set([addMonths(now, -3), addMonths(now, -2), addMonths(now, -1), ...fy])].sort();
+  };
+  const start = Date.parse('2025-12-01T00:00:00Z');
+  for (let d = 0; d < 800; d += 3) {
+    const day = new Date(start + d * DAY_MS).toISOString().slice(0, 10);
+    for (let s = 1; s <= 12; s += 1) assert.deepEqual(financeMinuteMonths(day, s), minutesMonths(day, s), `${day} from month ${s}`);
+  }
+});
+
+test('associates\' sessions for Finances are read in pieces 058 answers (at most 63 days), covering the range exactly', () => {
+  const from = Date.parse('2026-08-17T10:11:12Z');
+  const to = from + 500 * DAY_MS;
+  const pieces = assocPieces(from, to);
+  assert.equal(pieces[0][0], from);
+  assert.equal(pieces.at(-1)[1], to);
+  pieces.forEach(([a, b], i) => {
+    assert.ok(b > a && b - a <= 63 * DAY_MS);
+    if (i) assert.equal(a, pieces[i - 1][1]);
+  });
 });

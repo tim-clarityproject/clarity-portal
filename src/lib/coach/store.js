@@ -6,7 +6,8 @@ import { tableReady } from '../performance/tableReady';
 import { deviceKey, readJson, removeKey, writeJson } from '../deviceStore';
 import { deviceCopyAvailable, onCopiesCleared, readCopy, writeTables } from './deviceCopy';
 import { getLocalDateKey } from '../dateFormatter';
-import { openingRole, PROBE_TABLES, SCREEN_NOT_YET_KEY, screenKindOf, screenRead, screenWindow, takeCoachOpening } from './earlyScreen';
+import { openingRole, PROBE_TABLES, SCREEN_NOT_YET_KEY, screenKindOf, screenRead, screenWindow, takeCoachOpening, takeFinanceOpening } from './earlyScreen';
+import { FINANCE_SCREEN_TABLES } from './screenPlan';
 
 // Where the coach portal's data is kept (migration 049; Phase 6a run 1).
 //
@@ -1768,9 +1769,32 @@ export function takeScreenAssociates(userId) {
   return got;
 }
 
-/** Whether a first screen is wanted here: 060 not known to be missing, and no whole copy on the device. */
+/**
+ * Finances' first screen (the owner's, once 062 is there): its tables as the app's opening read them
+ * (earlyScreen.js), otherwise read now, side by side. A table that couldn't be read, or filled a whole read, is read
+ * again in full (fetchTable). Resolves a Map of reads, as screenAnswer's tables; throws when a read can't be made.
+ */
+async function fetchFinanceScreen(userId) {
+  const early = takeFinanceOpening(userId, 'tables');
+  const answers = early ? await Promise.resolve(early).catch(() => null) : null;
+  const got = new Map();
+  const again = [];
+  for (const table of FINANCE_SCREEN_TABLES) {
+    const a = Array.isArray(answers) ? answers.find(([t]) => t === table)?.[1] : null;
+    if (a && !a.error && Array.isArray(a.data) && a.data.length < FIRST_READ) got.set(table, a.data);
+    else again.push(table);
+  }
+  const rows = await Promise.all(again.map((t) => fetchTable(t)));
+  again.forEach((t, i) => got.set(t, rows[i]));
+  const tables = new Map();
+  for (const [table, list] of got) tables.set(table, { rows: (list || []).filter(isObject), inScope: NOTHING_COVERED });
+  return tables;
+}
+
+/** Whether a first screen is wanted here: 060 not known to be missing (062 for Finances), and no whole copy on the device. */
 async function screenWanted(userId, kind) {
-  if (!kind || screenReadyNow === false || notYet(SCREEN_NOT_YET_KEY)) return false;
+  if (!kind) return false;
+  if (kind !== 'finances' && (screenReadyNow === false || notYet(SCREEN_NOT_YET_KEY))) return false;
   const mark = copyMarkOf(userId);
   if (mark === 'whole') return false;
   if (mark === 'screen') return true;
@@ -1846,7 +1870,19 @@ export function loadCoach(userId, { again = false } = {}) {
     // The page's own first screen first (060), on a device with no whole copy: drawn before anything else is read.
     let screenStart = null;
     const kind = typeof window !== 'undefined' ? screenKindOf(window.location?.pathname) : null;
-    if (split != null && there059 && await screenWanted(userId, kind)) {
+    if (kind === 'finances' && there062 && owner && await screenWanted(userId, kind)) {
+      // The owner's Finances (Overview, Money, Cash flow): its own small tables first, drawn before anything else is read.
+      const sinceScreen = readBegins();
+      const tables = await fetchFinanceScreen(userId).catch(() => null);
+      if (tables && gen === generation) {
+        await hydrate(userId);
+        partial.set(userId, kind);
+        setCopyMark(userId, 'screen');
+        write(userId, mergeLoaded(read(userId), tables, touchedSince(userId, sinceScreen)));
+        await afterPaint();
+        if (gen !== generation) return null;
+      }
+    } else if (kind !== 'finances' && split != null && there059 && await screenWanted(userId, kind)) {
       const sinceScreen = readBegins();
       const got = await fetchScreen(userId, kind, { nowMs, split, profiles }).catch(() => null);
       if (got && gen === generation) {

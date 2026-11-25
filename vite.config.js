@@ -216,12 +216,14 @@ const OPENING = [
   ['^/auth/login$', 'src/pages/signin/SignIn.jsx'],
   ['^/coach/sign-in$', 'src/pages/signin/SignIn.jsx'],
   ['^/coach/sign-in/code$', 'src/pages/signin/CoachCode.jsx'],
-  // The coach portal, with the page each first screen draws (coach first screen run): Today, Clients, a client's page
-  // and the calendar come with the portal's own part, so neither waits for the other.
+  // The coach portal, with the page each first screen draws (coach first screen run): Today, Clients, a client's page,
+  // the calendar and Finances come with the portal's own part, so neither waits for the other.
   ['^/coach$', ['src/pages/coach/CoachApp.jsx', 'src/pages/coach/Today.jsx']],
   ['^/coach/clients$', ['src/pages/coach/CoachApp.jsx', 'src/pages/coach/Clients.jsx']],
   ['^/coach/clients/[0-9a-fA-F-]{36}$', ['src/pages/coach/CoachApp.jsx', 'src/pages/coach/ClientPage.jsx']],
   ['^/coach/calendar$', ['src/pages/coach/CoachApp.jsx', 'src/pages/coach/Calendar.jsx']],
+  // The owner's Finances (Overview, Money and Cash flow) likewise (Phase 6b run 2).
+  ['^/coach/finances(/money|/cash-flow)?$', ['src/pages/coach/CoachApp.jsx', 'src/pages/coach/Finances.jsx']],
   ['^/coach(/|$)', 'src/pages/coach/CoachApp.jsx'],
 ]
 function openingPreload() {

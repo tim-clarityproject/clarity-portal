@@ -9,6 +9,7 @@ import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { useCoachRole } from '../../lib/coach/role';
 import { findCalItems, fromTable, rowsOf, saveRows, screenKindOf, sessionsOlder, useCoachCopyShown, useCoachLoad, useCoachPartial, useCoachSomethingToShow, useCoachStore } from '../../lib/coach/store';
 import { loadAdminClients, loadCoaches } from '../../lib/coach/actions';
+import { takeFinanceOpening } from '../../lib/coach/earlyScreen';
 import { deviceCopyAvailable, readExtra, writeExtra } from '../../lib/coach/deviceCopy';
 import { callForBar, favouriteViews, nextCallBar, searchResults, withRecent } from '../../lib/coach/model';
 import { COACH_PAGES, coachTitle, menuFor, SETTINGS_SECTIONS } from '../../lib/coach/navigation';
@@ -83,9 +84,9 @@ const PollPage = part(() => import('./PollPage'));
 const Finances = part(() => import('./Finances'));
 const BriefPanel = lazy(() => import('./Brief').then((m) => ({ default: m.BriefPanel || m.default })));
 
-// The first screen's page for the address the portal opens on (Today, Clients, a client's page or the calendar).
+// The first screen's page for the address the portal opens on (Today, Clients, a client's page, the calendar or Finances).
 if (typeof window !== 'undefined') {
-  const opening = { today: Today, clients: Clients, client: ClientPage, calendar: Calendar }[screenKindOf(window.location.pathname)];
+  const opening = { today: Today, clients: Clients, client: ClientPage, calendar: Calendar, finances: Finances }[screenKindOf(window.location.pathname)];
   opening?.preload().catch(() => {});
 }
 
@@ -571,6 +572,9 @@ export default function CoachApp() {
   // Whether the owner's list of every coach's clients is here (kept on the device, or read this visit): until it is,
   // Clients and search say they're loading rather than show the owner's own clients as everyone (coach first screen run).
   const [adminIn, setAdminIn] = useState(false);
+  // Whether the coach list is here (kept on the device, or read this visit): Finances' first screen counts associates'
+  // pay from it, so it waits for it (coach rule 49).
+  const [coachesIn, setCoachesIn] = useState(false);
   const [turn, setTurn] = useState(0);
   const reloadCoaches = useCallback(() => setTurn((n) => n + 1), []);
   const coachId = coach?.id || null;
@@ -596,7 +600,7 @@ export default function CoachApp() {
     const enough = window.setTimeout(() => { if (live) setListsShown(true); }, 1500);
     Promise.all([readExtra(userId, 'coaches'), isOwner ? readExtra(userId, 'admin') : null]).then(([keptCoaches, keptAdmin]) => {
       if (!live) return;
-      if (Array.isArray(keptCoaches) && !listsFresh.current.coaches) setCoaches(keptCoaches);
+      if (Array.isArray(keptCoaches) && !listsFresh.current.coaches) { setCoaches(keptCoaches); setCoachesIn(true); }
       if (Array.isArray(keptAdmin) && !listsFresh.current.admin) { setAdmin(keptAdmin); setAdminIn(true); }
       setListsShown(true);
     });
@@ -605,12 +609,16 @@ export default function CoachApp() {
   useEffect(() => {
     if (!coachId) return undefined;
     let live = true;
-    loadCoaches().then((list) => {
+    // Finances' first screen asked for it as the app opened (earlyScreen.js): that answer, once, else read now.
+    const early = takeFinanceOpening(userId, 'coachList');
+    const read = early ? Promise.resolve(early).then((got) => (got && !got.error && Array.isArray(got.data) ? got.data : loadCoaches())) : loadCoaches();
+    read.then((list) => {
       if (!live) return;
       listsFresh.current.coaches = true;
       setCoaches(list);
+      setCoachesIn(true);
       writeExtra(userId, 'coaches', list);
-    }).catch(() => {});
+    }).catch(() => { if (live) setCoachesIn(true); });
     return () => { live = false; };
   }, [coachId, turn, countTurn, userId]);
   // Every coach's clients (the owner's): with Clients' first screen, otherwise once the page has drawn with the rest.
@@ -639,7 +647,7 @@ export default function CoachApp() {
     const own = (table, then = null, name = '') => fromTable(state, table, `mine:${coach.id}${name}`, (rows) => (then ? then(mine(rows)) : mine(rows)));
     const all = (table, then = null, name = '') => fromTable(state, table, `all${name}`, (rows) => (then ? then(rows) : rows));
     return {
-      userId, coach, isOwner, state, todayKey, coaches, admin, adminReady: !isOwner || adminIn, reloadCoaches, reloadRole: role.reload, partial, whole,
+      userId, coach, isOwner, state, todayKey, coaches, coachesIn, admin, adminReady: !isOwner || adminIn, reloadCoaches, reloadRole: role.reload, partial, whole,
       clients: own('client_profiles', (rows) => rows.filter((p) => !p.merged_into), ':current'),
       groups: own('coach_groups'),
       workshops: own('workshops'),
@@ -722,7 +730,7 @@ export default function CoachApp() {
       networkColumns: own('network_columns', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)), ':sorted'),
       now,
     };
-  }, [coach, isOwner, state, todayKey, coaches, admin, adminIn, userId, reloadCoaches, role.reload, now, partial, whole]);
+  }, [coach, isOwner, state, todayKey, coaches, coachesIn, admin, adminIn, userId, reloadCoaches, role.reload, now, partial, whole]);
 
   // Worked out when what they come from changes, not each time the menu, search or the bell opens (scale check, 22 Nov).
   const notificationsUnread = useMemo(() => (value ? value.notifications.filter((n) => !n.read_at).length : 0), [value?.notifications]);
