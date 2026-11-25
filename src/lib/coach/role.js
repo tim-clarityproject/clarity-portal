@@ -15,6 +15,8 @@ import { openingRole } from './earlyScreen';
 const keyFor = (userId) => deviceKey('cache', userId, 'coach-role');
 /** How long before a role read that got no answer is asked once more. */
 export const ROLE_RETRY_MS = 1000;
+/** How long a first visit waits for the role with no answer before saying it didn't load (Try again stays). */
+export const ROLE_GIVE_UP_MS = 6000;
 
 /** The signed-in person's coach row, or null when they aren't an active coach. */
 export async function loadCoachRole(userId) {
@@ -47,6 +49,9 @@ export function useCoachRole() {
     const again = () => new Promise((resolve, reject) => {
       timer = setTimeout(() => { if (live) loadCoachRole(userId).then(resolve, reject); else reject(new Error('gone')); }, ROLE_RETRY_MS);
     });
+    // The connection layer already retries a busy database, so two reads could take ~15 s: after ROLE_GIVE_UP_MS with
+    // no answer the calm error shows, and an answer that comes later still opens the portal (functionality tester).
+    const giveUp = setTimeout(() => { if (live) setState((s) => (s.loading ? { loading: false, coach: null, failed: true } : s)); }, ROLE_GIVE_UP_MS);
     loadCoachRole(userId).catch(again).then((coach) => {
       if (!live) return;
       writeJson(keyFor(userId), { coach });
@@ -57,7 +62,7 @@ export function useCoachRole() {
       // Home on a first visit (tidy follow-up 4, part 2, item 6).
       if (live) setState((s) => (s.loading ? { loading: false, coach: null, failed: true } : s));
     });
-    return () => { live = false; clearTimeout(timer); };
+    return () => { live = false; clearTimeout(timer); clearTimeout(giveUp); };
   }, [userId, turn]);
   // Another tab's fresh answer (capacity edited there, say) shows here too, with nothing asked of the database.
   useEffect(() => {
