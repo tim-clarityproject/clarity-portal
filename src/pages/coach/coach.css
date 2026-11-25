@@ -787,3 +787,6 @@ body:has(> #root .ui-root.cc-app) {
 @media (max-width: 600px) {
   .ui-root [data-grey-line] > span { min-width: 0; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 }
+
+/* The owner's admin view of a client (follow-up 5): a line's quiet facts side by side, 20px apart, wrapping. */
+.ui-root .cc-facts { display: flex; flex-wrap: wrap; column-gap: var(--icon-item-gap); }

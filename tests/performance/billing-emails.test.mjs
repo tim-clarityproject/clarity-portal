@@ -216,7 +216,7 @@ test('the summary ready email says "today’s" only when the session was today f
 
 test('the welcome, the Health Check link and the guest’s copy: from the coach, word for word', () => {
   const welcome = lines(clientInviteEmail({ origin: PORTAL, coach: 'Tim', firstName: 'Sam' }));
-  assert.equal(welcome.subject, 'Tim has set up your Clarity Portal account');
+  assert.equal(welcome.subject, 'Tim has set up your account on The Clarity Portal'); // CLAUDE.md rule 23 (UI tester, follow-up 5)
   assert.deepEqual(welcome.body, [
     'Hi Sam,',
     'I’ve set up your account on The Clarity Portal, where we’ll plan, track and review your progress together.',

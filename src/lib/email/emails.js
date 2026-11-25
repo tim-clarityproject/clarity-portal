@@ -456,8 +456,9 @@ export const RECAP_EMAIL_MAX = 12000;
  * @param {boolean} [o.inPortal] false: the reader has no account, so the recap and actions are in the email
  * @param {string} [o.recap]     the coach's words, for a reader with no account
  * @param {string[]} [o.actions] the ticked actions, for a reader with no account
+ * @param {string} [o.firstName] the reader's first name, for a reader with no account ("Hello," without it)
  */
-export function sessionRecapEmail({ origin, coach, at = null, zone = null, dateText = '', now = new Date(), inPortal = true, recap = '', actions = [] }) {
+export function sessionRecapEmail({ origin, coach, at = null, zone = null, dateText = '', now = new Date(), inPortal = true, recap = '', actions = [], firstName = '' }) {
   const name = oneLine(coach).slice(0, 60) || 'your coach';
   const day = oneLine(dateText);
   const today = !(at && zone) || relativeDayWords(at, zone, now) === 'today';
@@ -470,11 +471,13 @@ export function sessionRecapEmail({ origin, coach, at = null, zone = null, dateT
       brand: 'portal',
       subject: 'Your coaching session summary',
       blocks: [
-        { type: 'heading', text: today || !day ? `Here’s your summary from today’s coaching session with ${name}.` : `Here’s your summary from your coaching session with ${name} on ${day}.` },
+        { type: 'heading', text: greeting(firstName) },
+        { type: 'text', text: today || !day ? `Here’s your summary from today’s coaching session with ${name}.` : `Here’s your summary from your coaching session with ${name} on ${day}.` },
         ...(paragraphs.length ? [{ type: 'label', text: 'What we talked about' }, ...paragraphs.map((text) => ({ type: 'text', text }))] : []),
         ...(todo.length ? [{ type: 'label', text: todo.length === 1 ? 'The action you agreed' : 'The actions you agreed' }, ...todo.map((text) => ({ type: 'text', text }))] : []),
       ],
-      footer,
+      // Someone with no account may have come to a group's session only: the reason they get it says so.
+      footer: { lines: [`You get this because you were at a coaching session with ${name}.`, EMAIL_SIGN_OFF] },
     };
   }
   return {
@@ -506,7 +509,7 @@ export function clientInviteEmail({ origin, coach, firstName = '', link = null }
   const name = oneLine(coach).slice(0, 60);
   return {
     brand: 'portal',
-    subject: name ? `${name} has set up your Clarity Portal account` : 'Your coach has set up your Clarity Portal account',
+    subject: name ? `${name} has set up your account on The Clarity Portal` : 'Your coach has set up your account on The Clarity Portal',
     blocks: [
       { type: 'heading', text: greeting(firstName) },
       { type: 'text', text: 'I’ve set up your account on The Clarity Portal, where we’ll plan, track and review your progress together.' },

@@ -100,7 +100,7 @@
 .ui-root .cc-todo-est .ds-seg { max-width: 100%; }
 /* "How long will it take?" is one drop-down in the controls family (follow-up 5, item 12): 40px high with 8px corners,
    44px on a phone, growing taller only when a larger text size wraps its words. */
-.ui-root .cc-todo-est-dd .ds-dd:not(#_):not(#_) { min-height: var(--btn-h) !important; padding-top: var(--btn-pad-y); padding-bottom: var(--btn-pad-y); border-radius: var(--radius-btn); }
+.ui-root .cc-todo-est-dd .ds-dd:not(#_):not(#_) { min-height: var(--btn-h) !important; padding: var(--btn-pad-y) var(--btn-pad-x) !important; border-radius: var(--radius-btn) !important; font-size: var(--fs-btn); }
 @media (max-width: 600px) {
   .ui-root .cc-todo-est-dd .ds-dd:not(#_):not(#_) { min-height: var(--btn-h-phone) !important; }
 }

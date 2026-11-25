@@ -18,6 +18,8 @@
   line-height: var(--lh-text);
   color: var(--text-2);
 }
+/* On a message page (the results that have ended; follow-up 5) the narrower lines sit on the column's middle. */
+.ui-root .ds-guest--message .hc-lead { margin-inline: auto; }
 
 /* The ⓘ's 44px tap area sits 3px higher round its icon, so it ends at the
    first box's edge: the icon stays where M7b draws it, 8px above the box,

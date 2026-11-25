@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SIGN_IN_PATHS } from '../../lib/signIn/addresses';
 import { askCoachAgain, LINK_RUN_OUT } from '../../lib/signIn/words';
@@ -9,6 +10,8 @@ import { Line, MainButton, SignInPage } from '../../components/signin/SignInPart
 // sent again by the coach, so it says who to ask and has no button.
 export default function LinkNotWorking({ sendFrom = SIGN_IN_PATHS.forgot, state, coach = null }) {
   const navigate = useNavigate();
+  // Shown in place of another page (Create your account, for a set-up link that has ended): the tab says what shows.
+  useEffect(() => { document.title = 'Link not working, The Clarity Portal'; }, []);
   return (
     <SignInPage title="Link not working" back>
       <Line>{LINK_RUN_OUT}</Line>

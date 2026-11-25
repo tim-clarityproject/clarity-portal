@@ -172,11 +172,11 @@ test('never overdue: due today or later, settled, void, a draft, or nothing left
   assert.deepEqual(none({ number: null }), []);
 });
 
-test('the owner also sees an associate’s overdue invoice, by the client’s name, with no amount and no link', () => {
+test('the owner also sees an associate’s overdue invoice, by the client’s name, with no amount, opening the admin view (follow-up 5)', () => {
   const rows = overdueRows({ invoices: [mayas, owed()], coachId: TIM, isOwner: true, clients: [leo], admin: [mayaClient], organisations: [northfield, kestrel], now: NOW, coachZone: 'Europe/London' });
   assert.deepEqual(rows.map((r) => [r.name, r.line, r.to]), [
     ['Northfield Logistics', 'An invoice for £4,800 is 7 days overdue.', `/coach/clients/${leo.id}`],
-    ['Owen Price', 'An invoice for Maya’s client is 3 days overdue.', null],
+    ['Owen Price', 'An invoice for Maya’s client is 3 days overdue.', `/coach/clients/${mayaClient.profile_id}`],
   ]);
 });
 

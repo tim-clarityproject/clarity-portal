@@ -14,7 +14,8 @@ const dayOf = (at) => (at ? String(at).slice(0, 10) : null);
 /** The engagement's lines: its kind, sessions held of how many, time credit, and when it ends. */
 export function adminEngagementLines(row) {
   if (!row?.engagement_kind) return [];
-  const out = [{ title: 'Engagement', value: ENGAGEMENT_KINDS.find((k) => k.value === row.engagement_kind)?.label || 'Coaching' }];
+  // Its kind is the first row's own title (the section is already called Engagement).
+  const out = [{ title: ENGAGEMENT_KINDS.find((k) => k.value === row.engagement_kind)?.label || 'Coaching', value: '' }];
   if (Number(row.sessions_total) > 0) out.push({ title: 'Sessions', value: `${countWords(Number(row.sessions_held) || 0, 'session', 'sessions')} held of ${Number(row.sessions_total)}` });
   if (Number(row.time_credit_minutes) > 0) out.push({ title: 'Time credit', value: countWords(Math.round(Number(row.time_credit_minutes) / 60), 'hour', 'hours') });
   if (row.ends_on) out.push({ title: 'Ends', value: dayKeyWords(row.ends_on) });
@@ -29,7 +30,7 @@ export function adminAgreementLines(agreements = []) {
     return {
       key: a.agreement_id,
       title: a.coaching ? String(a.coaching) : 'Coaching agreement',
-      small: [a.reference, status, a.funded_by ? `Funded by ${a.funded_by}` : null].filter(Boolean).join('   '),
+      facts: [a.reference, status, a.funded_by ? `Funded by ${a.funded_by}` : null].filter(Boolean),
       value: Number.isFinite(Number(a.total_minor)) && a.total_minor != null ? moneyWords(Number(a.total_minor), a.currency === 'USD' ? 'USD' : 'GBP') : '',
     };
   });
@@ -47,6 +48,6 @@ export function adminInvoiceLines({ invoices = [], profileId, agreementIds = [],
         : i.status === 'draft' ? 'Waiting to send'
           : i.due_on && i.due_on < todayKey && left > 0 ? `Overdue since ${dayKeyWords(i.due_on)}`
             : i.due_on ? `Due ${dayKeyWords(i.due_on)}` : 'Sent';
-      return { key: i.id, title: invoiceNo(i) || invoiceTitle(i), small: [invoiceNo(i) ? invoiceTitle(i) : null, state].filter(Boolean).join('   '), value: moneyWords(Number(i.total_minor), i.currency || 'GBP') };
+      return { key: i.id, title: invoiceNo(i) || invoiceTitle(i), facts: [invoiceNo(i) ? invoiceTitle(i) : null, state].filter(Boolean), value: moneyWords(Number(i.total_minor), i.currency || 'GBP') };
     });
 }

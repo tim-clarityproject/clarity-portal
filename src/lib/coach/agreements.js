@@ -218,7 +218,9 @@ export function overdueRows({ invoices = [], coachId, isOwner = false, clients =
       const name = row?.name || org?.name || row?.organisation_name || text(inv.payer_name);
       const coachFirst = row?.coach_first_name || coaches.find((c) => c.coach_id === inv.coach_id)?.first_name || '';
       if (!name || !coachFirst) continue;
-      theirs.push({ key: `o:${inv.id}`, profileId: null, name, line: `An invoice for ${possessive(firstName(coachFirst))} client is ${dayText}.`, action: null, to: null, state: null, days });
+      // The owner's admin view of that client shows its invoices (follow-up 5, item 10).
+      const to = row?.profile_id ? `/coach/clients/${row.profile_id}` : null;
+      theirs.push({ key: `o:${inv.id}`, profileId: null, name, line: `An invoice for ${possessive(firstName(coachFirst))} client is ${dayText}.`, action: to ? 'View the invoice' : null, to, state: null, days });
     }
   }
   const byDays = (a, b) => b.days - a.days || a.name.localeCompare(b.name);

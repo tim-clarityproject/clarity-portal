@@ -617,7 +617,9 @@ function Page() {
           <div>
           <GuestTitle headingRef={headingRef}>Strategic Alignment Health Check</GuestTitle>
           <p className="hc-lead">These results were open for 30 days, and that time has passed.</p>
-          <p className="hc-lead">{`If you kept your PDF, your results are in it. To check again, ask ${coachName || 'the coach who sent you the link'} for a new link.`}</p>
+          {/* One sentence per line (26 Oct design rule 9). */}
+          <p className="hc-lead">If you kept your PDF, your results are in it.</p>
+          <p className="hc-lead">{`To see them again, ask ${coachName || 'the coach who sent you the link'} for a new Health Check.`}</p>
           </div>
         </GuestFrame>
       </div>

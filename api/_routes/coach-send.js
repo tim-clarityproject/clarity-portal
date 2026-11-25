@@ -68,8 +68,8 @@ const reply = (res, status, body) => { res.status(status).setHeader('Cache-Contr
 // client's Coaching page, never carried in the email (recap and actions are taken and left out).
 // Someone with no portal account (a group member never invited) gets the recap and its actions in the email itself
 // (follow-up 5, item 3): `inPortal` false.
-export function recapEmail({ origin, coach, at = null, zone = null, dateText, now = new Date(), inPortal = true, recap = '', actions = [] }) {
-  return emailFrom(sessionRecapEmail({ origin, coach, at, zone, dateText, now, inPortal, recap, actions }));
+export function recapEmail({ origin, coach, at = null, zone = null, dateText, now = new Date(), inPortal = true, recap = '', actions = [], firstName = '' }) {
+  return emailFrom(sessionRecapEmail({ origin, coach, at, zone, dateText, now, inPortal, recap, actions, firstName }));
 }
 
 /** Who a recap goes to: 064's session_recap_readers (with whether each reads it in the portal), else 050's people. */
@@ -130,9 +130,10 @@ async function sendRecap({ env, req, res, asCaller, userId, id }) {
     actions: (actions || []).map((a) => a.title),
   };
   const inPortal = recapEmail(made);
-  const inEmail = recapEmail({ ...made, inPortal: false });
   // has_account is true only for someone who reads their summaries in the portal; anyone else gets it in the email.
-  const went = await sendEach(env, to, (person) => (person.has_account === true ? inPortal : inEmail));
+  // In the email itself, each greeted by their first name (UI tester, follow-up 5).
+  const went = await sendEach(env, to, (person) => (person.has_account === true ? inPortal
+    : recapEmail({ ...made, inPortal: false, firstName: String(person.name || '').trim().split(/\s+/)[0] || '' })));
   if (!went) return reply(res, 502, { sent: false, message: DIDNT_SEND });
   return reply(res, 200, { sent: true, people: went });
 }

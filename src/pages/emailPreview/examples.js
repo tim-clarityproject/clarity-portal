@@ -208,7 +208,7 @@ export const EMAIL_EXAMPLES = [
     name: 'Coaching session summary, for someone with no account',
     from: 'From The Clarity Portal, to Priya, a group member with no account',
     sends: 'Sent with the summary ready email, to each person the recap goes to who has no portal account to read it in (follow-up 5): the coach’s words and the ticked actions are in the email, with no button.',
-    doc: () => sessionRecapEmail({ origin: PORTAL, coach: 'Tim', at: instantAt('2026-11-10', '10:00', 'Europe/London'), zone: 'Europe/London', dateText: 'Tue 10 Nov', now: NOW, inPortal: false,
+    doc: () => sessionRecapEmail({ origin: PORTAL, coach: 'Tim', at: instantAt('2026-11-10', '10:00', 'Europe/London'), zone: 'Europe/London', dateText: 'Tue 10 Nov', now: NOW, inPortal: false, firstName: 'Priya',
       recap: 'We looked at how the leadership team decides who owns each priority.\n\nYou agreed the weekly check-in is the place to raise anything that has stalled.',
       actions: ['Share the decision rights canvas with the team by Friday', 'Book the next team session for early December'] }),
   },

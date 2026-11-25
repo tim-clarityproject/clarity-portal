@@ -217,18 +217,20 @@ export function invoiceGroups({ invoices = [], today, names = {}, q = '', who = 
 export function reminderLines({ invoice, reminders = [], today }) {
   const mine = (reminders || []).filter((r) => r.invoice_id === invoice.id);
   const sent = mine.filter((r) => r.sent_at).sort((a, b) => String(a.sent_at).localeCompare(String(b.sent_at)));
-  // One marked as sending (064) may have gone: it is never offered as waiting; Needs you asks the coach to check it.
+  // One marked as sending (064) may have gone (follow-up 5): it is never offered as waiting, it counts towards the
+  // reminders that may have gone, and Send again (after a check) sends it, never a new one.
+  const unsure = mine.filter((r) => !r.sent_at && r.sending_at).sort((a, b) => String(a.sending_at).localeCompare(String(b.sending_at)));
   const waiting = mine.filter((r) => !r.sent_at && !r.sending_at).sort((a, b) => b.stage - a.stage)[0] || null;
-  const unsure = mine.filter((r) => !r.sent_at && r.sending_at);
   const lines = [];
-  if (unsure.length) lines.push(REMINDER_UNSURE_TITLE.replace(/\.$/, ''));
   if (sent.length) {
     const days = sent.map((r) => dayWordsFrom(String(r.sent_at).slice(0, 10), today));
     lines.push(`Sent ${days.length > 1 ? `${days.slice(0, -1).join(', ')} and ${days.at(-1)}` : days[0]}`);
-  } else lines.push('None sent yet');
+  } else if (!unsure.length) lines.push('None sent yet');
+  if (unsure.length) lines.push(`We couldn’t confirm the one of ${dayWordsFrom(String(unsure[0].sending_at).slice(0, 10), today)} went`);
+  const gone = sent.length + unsure.length;
   const last = invoice.due_on ? addDays(invoice.due_on, REMINDER_DAYS.at(-1)) : null;
-  if (last && sent.length < REMINDER_DAYS.length) lines.push(`${last >= today ? 'The last one goes on' : 'The last one was due on'} ${dayWordsFrom(last, today)}`);
-  return { lines, count: `${sent.length} of ${REMINDER_DAYS.length}`, waiting };
+  if (last && gone < REMINDER_DAYS.length) lines.push(`${last >= today ? 'The last one goes on' : 'The last one was due on'} ${dayWordsFrom(last, today)}`);
+  return { lines, count: `${sent.length} of ${REMINDER_DAYS.length}`, waiting, unsure: unsure[0] || null };
 }
 
 // ---------------------------------------------------------------- Needs you and Today's line

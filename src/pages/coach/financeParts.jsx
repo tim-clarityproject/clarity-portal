@@ -467,15 +467,18 @@ export function InvoicePanels({ panel, onClose }) {
     try { await navigator.clipboard.writeText(inv.hosted_url); toast.show('Copied.'); } catch { toast.error('That didn’t copy. Try again.'); }
   };
   const remindNow = () => {
+    // One that may have gone is sent again only through Send again, once checked: never a second one beside it.
+    if (rem.unsure) { ask({ kind: 'send_reminder', reminderId: rem.unsure.id, again: true }, 'Reminder sent, with the payment link.'); return; }
     if (!rem.waiting) { setProblem(`No reminder is waiting to send. ${rem.lines[1] ? `${rem.lines[1]}.` : ''}`.trim()); return; }
     ask({ kind: 'send_reminder', reminderId: rem.waiting.id }, 'Reminder sent, with the payment link.');
   };
   return (
     <SlidePanel open onClose={onClose} title={invoiceTitle(inv)}
-      footer={<div className="cc-panel-foot"><TextLink onClick={copyLink}>Copy the payment link</TextLink><Button variant="primary" onClick={remindNow}>Send a reminder now</Button></div>}>
+      footer={<div className="cc-panel-foot"><TextLink onClick={copyLink}>Copy the payment link</TextLink><Button variant="primary" onClick={remindNow}>{rem.unsure ? 'Send again' : 'Send a reminder now'}</Button></div>}>
       <p className="cc-quiet fin-meta">{[who, inv.due_on && inv.due_on < todayKey ? overdueWords(inv.due_on, todayKey) : null].filter(Boolean).join('   ')}</p>
       <FigRow title="Amount" facts={[inv.due_on ? `Due ${dayWordsFrom(inv.due_on, todayKey)}` : null]} value={moneyWords(Math.max(0, Number(inv.total_minor) - Number(inv.paid_minor || 0)), inv.currency || 'GBP')} />
       <FigRow title="Reminders" facts={rem.lines} value={rem.count} />
+      {rem.unsure && <p className="cc-note">Check before sending again.</p>}
       <SwitchRow label={`Pause reminders for ${firstWord}`} note="For when you’ve agreed a later date." checked={Boolean(pause)} onChange={togglePause} />
       {general}
     </SlidePanel>

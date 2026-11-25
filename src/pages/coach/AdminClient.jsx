@@ -7,6 +7,11 @@ import { adminAgreementLines, adminEngagementLines, adminInvoiceLines } from '..
 import { possessive } from '../../lib/coach/model';
 import { Back, Line, Part, useCoachPortal } from './parts';
 
+/** Quiet facts side by side, 20px apart with nothing between them (26 Oct design rule 5), wrapping on a phone. */
+function Facts({ items }) {
+  return <span className="cc-facts">{items.map((f) => <span key={f}>{f}</span>)}</span>;
+}
+
 /**
  * The owner's view of an associate's client (follow-up 5, item 10): who coaches them (with Move to a coach), their
  * engagement, their agreements and their invoices. Admin facts only (coach rule 9): never notes, About them, files,
@@ -71,13 +76,13 @@ export default function AdminClient({ row }) {
         {agreements === null && <Loading label="Loading the agreement" />}
         {agreements !== null && problem && <p className="cc-quiet" role="alert">The agreement didn’t load. Check your connection and try again.</p>}
         {agreements !== null && !problem && agreementLines.length === 0 && <p className="cc-quiet">{row.name} has no agreement yet.</p>}
-        {agreementLines.map((l) => <Line key={l.key} title={l.title} small={l.small}>{l.value}</Line>)}
+        {agreementLines.map((l) => <Line key={l.key} title={l.title} small={<Facts items={l.facts} />}>{l.value}</Line>)}
       </Part>
 
       <Part title="Invoices">
         {agreements === null ? <Loading label="Loading the invoices" />
           : invoiceLines.length === 0 ? <p className="cc-quiet">{row.name} has no invoices yet.</p>
-            : invoiceLines.map((l) => <Line key={l.key} title={l.title} small={l.small}>{l.value}</Line>)}
+            : invoiceLines.map((l) => <Line key={l.key} title={l.title} small={<Facts items={l.facts} />}>{l.value}</Line>)}
       </Part>
     </div></div>
   );
