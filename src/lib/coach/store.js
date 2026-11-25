@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from 'react';
+import { isRowId } from './address.js';
 import { supabase } from '../supabase';
 import { newId, saveOrQueue, waitingToSend } from '../syncQueue';
 import { coachRowsWaiting, READ_ONLY_TABLES } from './copyWaiting';
@@ -1583,7 +1584,9 @@ export function mergeStart(before, start, split, profiles = [], keep = null) {
  * coach_sessions_start is asked again with the client named (every load this visit names them too).
  */
 export async function ensureClientSessions(userId, profileId) {
-  if (!userId || !profileId) return false;
+  // Only a real id is ever named in the loads: an address with anything else (a copied full stop, a made-up id) would
+  // make every later load this visit fail (break-it tester, tidy follow-up 4).
+  if (!userId || !profileId || !isRowId(profileId)) return false;
   if (!wantProfiles.has(userId)) wantProfiles.set(userId, new Set());
   const want = wantProfiles.get(userId);
   want.add(profileId);

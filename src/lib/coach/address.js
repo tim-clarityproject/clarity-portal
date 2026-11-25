@@ -12,3 +12,6 @@ export function idFromAddress(raw) {
   const s = String(raw).trim();
   return UUID.test(s) ? s.toLowerCase() : String(raw);
 }
+
+/** Whether a value is a real row id (a lower-case uuid), the only kind ever named in the coach store's loads. */
+export const isRowId = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(String(v ?? ''));

@@ -88,12 +88,34 @@ const BriefPanel = lazy(() => import('./Brief').then((m) => ({ default: m.BriefP
 // The menu and search (frameParts.jsx), and the automations and emails arriving (crmParts.jsx, the owner's): their own
 // parts, asked for once the frame has drawn, so a first visit never waits for search's index, the CRM's code or
 // Network's counts before the frame and its page show (tidy follow-up 4, part 1, item 1).
+// A part that fails to arrive (offline, or a new version replacing the old files) never takes the page down: it is
+// simply not drawn, and is asked for again when the connection is back or the part is wanted again (break-it tester,
+// tidy follow-up 4: a menu chunk failing offline showed "This page hit a problem").
+// A browser remembers a failed code download for the page's whole life, so asking again can't bring it: once one has
+// failed, pressing what needs it reloads the page while online (the device keeps everything), never a crash.
+const kept = {};
+const failedParts = new Set();
+export const laterPartFailed = (key) => failedParts.has(key);
+function useLaterPart(key, load, want) {
+  const [mod, setMod] = useState(() => kept[key] || null);
+  useEffect(() => {
+    if (mod || !want) return undefined;
+    let live = true;
+    const ask = () => load().then((m) => { kept[key] = m; failedParts.delete(key); if (live) setMod(m); }).catch(() => { failedParts.add(key); });
+    ask();
+    window.addEventListener('online', ask);
+    return () => { live = false; window.removeEventListener('online', ask); };
+  }, [key, load, mod, want]);
+  return mod;
+}
 const frameParts = () => import('./frameParts');
-const Menu = lazy(() => frameParts().then((m) => ({ default: m.Menu })));
-const Search = lazy(() => frameParts().then((m) => ({ default: m.Search })));
+/** The automations and emails arriving, once their part is here (never a crash if it can't come). */
+function LaterCrm() {
+  const m = useLaterPart('crm', crmParts, true);
+  if (!m) return null;
+  return <><m.AutomationWatch /><m.EmailSync /></>;
+}
 const crmParts = () => import('./crmParts');
-const AutomationWatch = lazy(() => crmParts().then((m) => ({ default: m.AutomationWatch })));
-const EmailSync = lazy(() => crmParts().then((m) => ({ default: m.EmailSync })));
 
 /** True once the frame has drawn (a frame, then a turn), so what can wait is asked for only then. */
 function useAfterFrame() {
@@ -287,6 +309,7 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
   const [bell, setBell] = useState(false);
   const signOut = useSignOut({ to: '/coach/sign-in' });
   const afterFrame = useAfterFrame();
+  const frameMod = useLaterPart('frame', frameParts, (afterFrame && !firstLoad) || menu || search);
   useEffect(() => { setMenu(false); setSearch(false); }, [pathname]);
   const closeMenu = useCallback(() => setMenu(false), []);
   const closeSearch = useCallback(() => setSearch(false), []);
@@ -298,10 +321,10 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
     <div className={`ui-root cc-app${hold ? ' cc-hold' : ''}`} inert={hold || undefined} aria-busy={hold || undefined}>
       <header className="cc-header">
         <div className="cc-header-in">
-          <button type="button" className="cc-round cc-round--mark" aria-expanded={menu} aria-label="Open the menu" onClick={() => setMenu(true)}>
+          <button type="button" className="cc-round cc-round--mark" aria-expanded={menu} aria-label="Open the menu" onClick={() => { if (!frameMod && laterPartFailed('frame') && navigator.onLine) window.location.reload(); else setMenu(true); }}>
             <BoldCrosshair size={26} />
           </button>
-          <button type="button" className="cc-search" aria-label="Search, or do anything" aria-haspopup="dialog" onClick={() => setSearch(true)}>
+          <button type="button" className="cc-search" aria-label="Search, or do anything" aria-haspopup="dialog" onClick={() => { if (!frameMod && laterPartFailed('frame') && navigator.onLine) window.location.reload(); else setSearch(true); }}>
             <span>Search or do anything</span>
           </button>
           <button type="button" className="cc-round" aria-label={unread ? `Notifications, ${unread} new` : 'Notifications'} aria-haspopup="dialog" onClick={() => setBell(true)}>
@@ -322,8 +345,8 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
         <button type="button" className="cc-round" aria-label="Calendar" aria-current={pathname.startsWith('/coach/calendar') ? 'page' : undefined} onClick={() => { setMenu(false); navigate('/coach/calendar'); }}>{CALENDAR}</button>
       </nav>
       {/* Asked for once the frame has drawn with its page, or the moment one is opened before that. */}
-      {((afterFrame && !firstLoad) || menu) && <Suspense fallback={null}><Menu open={menu} onClose={closeMenu} onSignOut={signOut.start} /></Suspense>}
-      {((afterFrame && !firstLoad) || search) && <Suspense fallback={null}><Search open={search} onClose={closeSearch} /></Suspense>}
+      {((afterFrame && !firstLoad) || menu) && frameMod && <frameMod.Menu open={menu} onClose={closeMenu} onSignOut={signOut.start} />}
+      {((afterFrame && !firstLoad) || search) && frameMod && <frameMod.Search open={search} onClose={closeSearch} />}
       <Bell open={bell} onClose={closeBell} />
       {signOut.choice}
     </div>
@@ -590,8 +613,7 @@ export default function CoachApp() {
       <CalSync>
       {/* Run 4: the automations nobody presses a button for, and emails arriving (both the owner's; neither ever sends anything). */}
       {/* Once everything is in (never asked for while the first screen's own read is on its way). */}
-      {value.whole && <Suspense fallback={null}><AutomationWatch /></Suspense>}
-      {value.whole && <Suspense fallback={null}><EmailSync /></Suspense>}
+      {value.whole && <LaterCrm />}
       {/* The device's copy first (IndexedDB, read in a moment): until it is in, the frame and the page are drawn
           unseen (their parts still load), never empty for an instant before it (UI tester, scale check). */}
       {/* While only one page's first screen is here, any other page shows the crosshair until the rest is in. */}

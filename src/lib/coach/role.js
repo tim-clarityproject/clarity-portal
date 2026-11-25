@@ -35,7 +35,9 @@ export function useCoachRole() {
   const userId = user?.id || null;
   const [state, setState] = useState(() => {
     const kept = userId ? readJson(keyFor(userId)) : null;
-    if (kept) return { loading: false, coach: kept.coach };
+    // A kept coach row is used at once; a kept "not a coach" waits for the fresh read, so a coach switched back on is
+    // never sent to the clients' Home by an old answer (break-it tester, tidy follow-up 4).
+    if (kept?.coach) return { loading: false, coach: kept.coach };
     // A first visit on this device: the answer the app's opening read already has (earlyScreen.js), if it is in.
     const early = userId ? openingRole(userId) : undefined;
     return early !== undefined ? { loading: false, coach: early } : { loading: true, coach: null };

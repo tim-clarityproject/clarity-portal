@@ -94,3 +94,12 @@ test('capacity’s hours have a thousands comma too', async () => {
   const big = capacity(Array.from({ length: 700 }, (_, i) => ({ id: `b${i}`, profile_id: 'p', outcome: 'held', starts_at: '2026-11-24T09:00:00Z', ends_at: '2026-11-25T09:00:00Z', minutes: 1440 })), 15, '2026-11-25');
   if (big.overWords) assert.match(big.overWords, /^\d{1,3}(,\d{3})*(\.\d)? over$/);
 });
+
+test('break-it tester: an address id that isn\'t a real id is never named in the loads', async () => {
+  const { isRowId } = await import('../../src/lib/coach/address.js');
+  for (const bad of ['5252ade7-d473-00d7-3795-41370433daae.', 'a'.repeat(36), "x' or 1=1--", '-'.repeat(36), 'x'.repeat(5000), null]) assert.equal(isRowId(bad), false, String(bad).slice(0, 40));
+  assert.equal(isRowId('5252ade7-d473-00d7-3795-41370433daae'), true);
+  // store.js's ensureClientSessions asks isRowId before naming an id in its loads.
+  const { readFileSync } = await import('node:fs');
+  assert.match(readFileSync(new URL('../../src/lib/coach/store.js', import.meta.url), 'utf8'), /ensureClientSessions\(userId, profileId\) \{\n[^]*?isRowId\(profileId\)/);
+});

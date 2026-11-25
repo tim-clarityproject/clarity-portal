@@ -134,7 +134,7 @@ function fresh({ rpc = 'there' } = {}) {
   db.reads = [];
   const sessions = [];
   const people = [];
-  const clients = ['p1', 'p2', 'p3'];
+  const clients = ['00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000a2', '00000000-0000-4000-8000-0000000000a3'];
   clients.forEach((p, i) => {
     for (let n = -20; n <= 3; n += 1) {
       const d = n * 28 + i;
@@ -148,7 +148,7 @@ function fresh({ rpc = 'there' } = {}) {
   for (const n of [-12, -6, -1]) {
     const id = `g-${n}`;
     sessions.push({ id, coach_id: COACH, profile_id: null, group_id: 'g1', engagement_id: 'e-g1', kind: 'group', starts_at: at(n * 28 + 3), minutes: 90, outcome: 'held', waived: false, recap: 'The team.', recap_sent_at: null, moved_to: null });
-    people.push({ session_id: id, profile_id: 'p1', engagement_id: 'e-p1' }, { session_id: id, profile_id: 'p3', engagement_id: null });
+    people.push({ session_id: id, profile_id: '00000000-0000-4000-8000-0000000000a1', engagement_id: 'e-00000000-0000-4000-8000-0000000000a1' }, { session_id: id, profile_id: '00000000-0000-4000-8000-0000000000a3', engagement_id: null });
   }
   db.rows = {
     client_profiles: clients.map((id) => ({ id, coach_id: COACH, name: `Client ${id}`, status: 'active' })),
@@ -223,15 +223,15 @@ test('changes made before the older sessions arrive keep every count right', asy
     assert.ok(older());
     const one = (id) => store.rowOf(state(), 'coach_sessions', id);
     // An older one the first screens show (p2's session never written up) is written up as held.
-    const old = rows('coach_sessions').find((s) => s.profile_id === 'p2' && s.outcome == null && Date.parse(s.starts_at) < NOW - 60 * DAY);
+    const old = rows('coach_sessions').find((s) => s.profile_id === '00000000-0000-4000-8000-0000000000a2' && s.outcome == null && Date.parse(s.starts_at) < NOW - 60 * DAY);
     assert.ok(old, 'the oldest session to write up came in the first load');
     await store.saveRow(USER, 'coach_sessions', { ...old, outcome: 'held' });
     // A recent one is waived, one is moved to another engagement, and a new one is added.
-    const recentLate = rows('coach_sessions').find((s) => s.outcome === 'held' && Date.parse(s.starts_at) > NOW - 40 * DAY && s.profile_id === 'p1');
+    const recentLate = rows('coach_sessions').find((s) => s.outcome === 'held' && Date.parse(s.starts_at) > NOW - 40 * DAY && s.profile_id === '00000000-0000-4000-8000-0000000000a1');
     await store.saveRow(USER, 'coach_sessions', { ...recentLate, outcome: 'late_cancel', waived: true });
-    const recent = rows('coach_sessions').find((s) => s.outcome === 'held' && Date.parse(s.starts_at) > NOW - 40 * DAY && s.profile_id === 'p3');
-    await store.saveRow(USER, 'coach_sessions', { ...recent, engagement_id: 'e-p2' });
-    await store.saveRow(USER, 'coach_sessions', { id: 's-new', coach_id: COACH, profile_id: 'p1', group_id: null, engagement_id: 'e-p1', kind: 'coaching', starts_at: at(-2), minutes: 60, outcome: 'no_show', waived: false, recap: null, recap_sent_at: null, moved_to: null });
+    const recent = rows('coach_sessions').find((s) => s.outcome === 'held' && Date.parse(s.starts_at) > NOW - 40 * DAY && s.profile_id === '00000000-0000-4000-8000-0000000000a3');
+    await store.saveRow(USER, 'coach_sessions', { ...recent, engagement_id: 'e-00000000-0000-4000-8000-0000000000a2' });
+    await store.saveRow(USER, 'coach_sessions', { id: 's-new', coach_id: COACH, profile_id: '00000000-0000-4000-8000-0000000000a1', group_id: null, engagement_id: 'e-00000000-0000-4000-8000-0000000000a1', kind: 'coaching', starts_at: at(-2), minutes: 60, outcome: 'no_show', waived: false, recap: null, recap_sent_at: null, moved_to: null });
     // A group member taken off the newest group session.
     await store.removeRow(USER, 'coach_session_people', 'g--1|p1');
     // A session deleted.
@@ -251,9 +251,9 @@ test('an engagement saved before the older sessions arrive carries the whole cou
   try {
     await store.loadCoach(USER);
     const st = state();
-    const e = store.rowOf(st, 'engagements', 'e-p1');
+    const e = store.rowOf(st, 'engagements', 'e-00000000-0000-4000-8000-0000000000a1');
     const kept = day.engagementToSave({ ...e, name: 'Renamed' }, store.rowsOf(st, 'coach_sessions'), store.rowsOf(st, 'coach_session_people'), store.sessionsOlder(st));
-    assert.equal(kept.sessions_held, e.sessions_held_base + truth('e-p1'), 'the count it carries is the database\'s');
+    assert.equal(kept.sessions_held, e.sessions_held_base + truth('e-00000000-0000-4000-8000-0000000000a1'), 'the count it carries is the database\'s');
     // Without the database's counts it would have carried far fewer (what 050 would read as a typed count).
     const partial = day.engagementToSave({ ...e }, store.rowsOf(st, 'coach_sessions'), store.rowsOf(st, 'coach_session_people'));
     assert.ok(partial.sessions_held < kept.sessions_held);
@@ -268,15 +268,15 @@ test('a client\'s page brings all that client\'s sessions at once, and the count
   globalThis.window.requestIdleCallback = () => {};
   try {
     await store.loadCoach(USER);
-    const before = rows('coach_sessions').filter((s) => s.profile_id === 'p2').length;
-    assert.equal(await store.ensureClientSessions(USER, 'p2'), true);
-    assert.equal(rows('coach_sessions').filter((s) => s.profile_id === 'p2').length, db.rows.coach_sessions.filter((s) => s.profile_id === 'p2').length);
-    assert.ok(before < db.rows.coach_sessions.filter((s) => s.profile_id === 'p2').length);
+    const before = rows('coach_sessions').filter((s) => s.profile_id === '00000000-0000-4000-8000-0000000000a2').length;
+    assert.equal(await store.ensureClientSessions(USER, '00000000-0000-4000-8000-0000000000a2'), true);
+    assert.equal(rows('coach_sessions').filter((s) => s.profile_id === '00000000-0000-4000-8000-0000000000a2').length, db.rows.coach_sessions.filter((s) => s.profile_id === '00000000-0000-4000-8000-0000000000a2').length);
+    assert.ok(before < db.rows.coach_sessions.filter((s) => s.profile_id === '00000000-0000-4000-8000-0000000000a2').length);
     assert.deepEqual(shown(), shownWhole());
     // The next load names the client too.
     await store.loadCoach(USER, { again: true });
-    assert.deepEqual(db.calls.at(-1).args.p_profiles, ['p2']);
-    assert.equal(rows('coach_sessions').filter((s) => s.profile_id === 'p2').length, db.rows.coach_sessions.filter((s) => s.profile_id === 'p2').length);
+    assert.deepEqual(db.calls.at(-1).args.p_profiles, ['00000000-0000-4000-8000-0000000000a2']);
+    assert.equal(rows('coach_sessions').filter((s) => s.profile_id === '00000000-0000-4000-8000-0000000000a2').length, db.rows.coach_sessions.filter((s) => s.profile_id === '00000000-0000-4000-8000-0000000000a2').length);
     assert.deepEqual(shown(), shownWhole());
   } finally {
     globalThis.window.requestIdleCallback = realRIC;
