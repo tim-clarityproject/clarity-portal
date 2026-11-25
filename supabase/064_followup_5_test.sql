@@ -493,7 +493,13 @@ begin
       pg_temp.p_try(format('insert into public.agreement_signed_pdfs (version_id, pdf, sha256, file_name) values (%L, decode(%L, ''base64''), repeat(''0'', 64), ''x.pdf'') returning ''added''',
         v2, pg_temp.p_pdf('d'))),
       'error 23514');
-    f := f || pg_temp.p_eq('B3h the signed version can''t be removed from under its kept PDF', pg_temp.p_try(format('delete from public.agreement_versions where id = %L returning ''removed''', v1)), 'error 23001');
+    -- Postgres 18 (the PGlite stand-in) names a RESTRICT key's refusal 23001; 15 and 17 (Supabase) call the same
+    -- refusal 23503. Both block the delete, so the code is read as one, and the key itself must say RESTRICT.
+    f := f || pg_temp.p_eq('B3h the signed version can''t be removed from under its kept PDF',
+      concat(replace(pg_temp.p_try(format('delete from public.agreement_versions where id = %L returning ''removed''', v1)), '23001', '23503'), '/',
+             (select string_agg(c.confdeltype::text, ',') from pg_constraint c
+               where c.conrelid = 'public.agreement_signed_pdfs'::regclass and c.confrelid = 'public.agreement_versions'::regclass and c.contype = 'f')),
+      'error 23503/r');
 
     -- B4. who reads it
     perform pg_temp.p_as(ben_u, 'aal1');

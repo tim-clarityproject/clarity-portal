@@ -17,6 +17,7 @@ import {
   resetCoachAuthenticator, spendRecoveryCode,
 } from '../../src/lib/signIn/coachAuthData.js';
 import { makeHandler, RECOVERED_FOR_MS, RESET_WORDS } from '../../api/_routes/coach-auth-reset.js';
+import { TEST_SUPABASE_REF, mayChangeSignIn, onTestProject } from '../../api/_testProject.js';
 
 const CODES = ['k7q2-9fmd', 'x3vp-r8tn', 'b6wh-2jcq', 'm9ze-t4ra', 'p2nd-7wkf', 'c8yt-3hsm', 'r5gq-6vbe', 'h4mj-9xpd', 'w7tc-2nzk', 'f3rb-8qyh'];
 
@@ -313,7 +314,7 @@ async function ask(handler, { body, auth = AAL2, method = 'POST' } = {}) {
   return out;
 }
 
-const ENV_KEYS = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'VERCEL_ENV', 'VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'];
+const ENV_KEYS = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'VERCEL_ENV', 'VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'LIVE_SUPABASE_REF'];
 function withEnv(env, fn) {
   return async () => {
     const kept = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]));
@@ -363,6 +364,88 @@ test('the reset: on a preview or a developer’s machine nothing changes, after 
   assert.ok(!log.made.includes('service-stand-in'));
   assert.equal(out.headers['Cache-Control'], 'no-store');
 }));
+
+// A preview (or a developer's machine) may reset only on the TEST project (Tim, 25 Nov 2026; api/_testProject.js).
+const TEST_URL = `https://${TEST_SUPABASE_REF}.supabase.co`;
+const OTHER_URL = 'https://abcdefghijklmnopqrst.supabase.co'; // invented: stands for live, or any project that isn't test
+const jwtFor = (ref) => `h.${Buffer.from(JSON.stringify({ ref, role: 'service_role' })).toString('base64url')}.s`;
+const RESETS = async () => {
+  const { handler, log } = server({ coaches: COACHES, factors: [{ id: 'f1', user: MAYA_U, factor_type: 'totp', status: 'verified' }] });
+  const out = await ask(handler, { body: { kind: 'reset', coachId: MAYA_C } });
+  return { out, log, asked: log.rpc.some(([n]) => n === 'coach_authenticator_reset') };
+};
+const refusedHere = ({ out, log, asked }, why) => {
+  assert.deepEqual([out.status, out.body.ran, out.body.message], [200, false, RESET_WORDS.notLive], why);
+  assert.equal(asked, false, `${why}: the database isn't asked to change anything`);
+  assert.deepEqual(log.deleted, [], why);
+  assert.ok(!log.made.includes('service-stand-in'), `${why}: the service key is never used`);
+};
+
+test('the reset: production works as before, whatever its URL', withEnv({ ...LIVE, SUPABASE_URL: OTHER_URL }, async () => {
+  const r = await RESETS();
+  assert.deepEqual([r.out.status, r.out.body.ran, r.asked], [200, true, true]);
+}));
+
+test('the reset: a preview on the test project resets, and so does a developer machine on it', async () => {
+  for (const VERCEL_ENV of ['preview', 'development', undefined]) {
+    await withEnv({ SUPABASE_URL: TEST_URL, SUPABASE_SERVICE_ROLE_KEY: 'service-stand-in', ...(VERCEL_ENV ? { VERCEL_ENV } : {}) }, async () => {
+      const r = await RESETS();
+      assert.deepEqual([r.out.status, r.out.body.ran, r.asked, r.log.deleted], [200, true, true, ['f1']], `on ${VERCEL_ENV ?? 'a developer machine'}`);
+    })();
+  }
+  // The URL through VITE_SUPABASE_URL only, a trailing slash and capitals are the same project.
+  await withEnv({ VERCEL_ENV: 'preview', SUPABASE_URL: '', VITE_SUPABASE_URL: `${TEST_URL.toUpperCase()}/`, SUPABASE_SERVICE_ROLE_KEY: 'service-stand-in' }, async () => {
+    assert.equal((await RESETS()).out.body.ran, true);
+  })();
+  // A legacy JWT key that names the test project is fine.
+  await withEnv({ VERCEL_ENV: 'preview', SUPABASE_URL: TEST_URL, SUPABASE_SERVICE_ROLE_KEY: jwtFor(TEST_SUPABASE_REF) }, async () => {
+    const { handler } = server({ coaches: COACHES });
+    assert.equal((await ask(handler, { body: { kind: 'reset', coachId: MAYA_C } })).body.ran, true);
+  })();
+});
+
+test('the reset: a preview pointing at live (or any project that isn’t test) is refused', withEnv({ VERCEL_ENV: 'preview', SUPABASE_URL: OTHER_URL, SUPABASE_SERVICE_ROLE_KEY: 'service-stand-in' }, async () => {
+  refusedHere(await RESETS(), 'a preview on another project');
+}));
+
+test('the reset: whenever it can’t tell the test project, nothing changes', async () => {
+  const cases = {
+    'no URL at all': { SUPABASE_URL: '' },
+    'a stand-in host': { SUPABASE_URL: 'https://stand-in.invalid' },
+    'a custom domain': { SUPABASE_URL: 'https://db.example.com' },
+    'plain http': { SUPABASE_URL: `http://${TEST_SUPABASE_REF}.supabase.co` },
+    'the test ref inside another host': { SUPABASE_URL: `https://${TEST_SUPABASE_REF}.supabase.co.example.com` },
+    'a path after the host': { SUPABASE_URL: `${TEST_URL}/rest/v1` },
+    'the service key is another project’s': { SUPABASE_URL: TEST_URL, SUPABASE_SERVICE_ROLE_KEY: jwtFor('abcdefghijklmnopqrst') },
+    'the public key is another project’s': { SUPABASE_URL: TEST_URL, SUPABASE_ANON_KEY: jwtFor('abcdefghijklmnopqrst') },
+    'LIVE_SUPABASE_REF names this very project': { SUPABASE_URL: TEST_URL, LIVE_SUPABASE_REF: TEST_SUPABASE_REF },
+  };
+  for (const [why, env] of Object.entries(cases)) {
+    await withEnv({ VERCEL_ENV: 'preview', SUPABASE_SERVICE_ROLE_KEY: 'service-stand-in', ...env }, async () => {
+      if (!env.SUPABASE_URL) {
+        // With no URL at all the caller can't even be asked who they are: signed out, and nothing changes.
+        assert.equal((await RESETS()).out.status, 401, why);
+        assert.equal(mayChangeSignIn(process.env), false, why);
+        return;
+      }
+      refusedHere(await RESETS(), why);
+    })();
+  }
+  assert.equal(mayChangeSignIn(undefined), false);
+  assert.equal(onTestProject({}), false);
+});
+
+test('after a recovery code: a preview on the test project removes the lost phone; one on another project doesn’t', async () => {
+  const used = '2026-12-02T09:55:00Z';
+  const factors = [{ id: 'lost', user: MAYA_U, factor_type: 'totp', status: 'verified', created_at: '2026-10-01T09:00:00Z' }];
+  for (const [url, ran] of [[TEST_URL, true], [OTHER_URL, false]]) {
+    await withEnv({ VERCEL_ENV: 'preview', SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: 'service-stand-in' }, async () => {
+      const s = server({ caller: MAYA_U, state: { coach: true, recovered_at: used }, factors });
+      const out = await ask(s.handler, { auth: AAL1, body: { kind: 'recovered' } });
+      assert.deepEqual([out.status, out.body.ran, s.log.deleted], [200, ran, ran ? ['lost'] : []], url === TEST_URL ? 'test project' : 'another project');
+    })();
+  }
+});
 
 test('the reset on the live site: the database records it, and the admin calls remove the factors', withEnv(LIVE, async () => {
   const { handler, log } = server({ coaches: COACHES, factors: [{ id: 'f1', user: MAYA_U, factor_type: 'totp', status: 'verified' }, { id: 'f-own', user: OWNER, factor_type: 'totp', status: 'verified' }] });

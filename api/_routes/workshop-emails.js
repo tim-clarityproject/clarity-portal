@@ -27,7 +27,9 @@
 //   200 { sent: 0, reason: 'preview' }      this deployment never sends
 //   200 { sent: 0, reason }                 'setup' (no email provider or server key yet),
 //                                           'not_ready' (migration 050 isn't there yet)
-//   401 not the scheduler                   502 the database didn't answer
+//   401 { error: 'not_allowed' }            not the scheduler: no header, a wrong one, or CRON_SECRET
+//                                           unset or short on the server (never a body with sent in it)
+//   502 the database didn't answer
 //
 // Environment variables (Vercel): CRON_SECRET, SUPABASE_SERVICE_ROLE_KEY,
 // RESEND_API_KEY, COACH_EMAIL_FROM (or GUEST_EMAIL_FROM, or
@@ -46,6 +48,14 @@ const KINDS = ['day_before', 'hour_before'];
 const HOME_ZONE = 'Europe/London'; // as workshop_emails_due reads a workshop with no zone
 
 const reply = (res, status, body) => { res.status(status).setHeader('Cache-Control', 'no-store'); res.json(body); };
+
+/**
+ * The answer to anyone who isn't the scheduler, on every deployment: 401 with a body that plainly says it was refused,
+ * never one with `sent` in it (Tim, 25 Nov: `{"sent":0}` in a browser read as if the job had run and sent nothing).
+ * The same answer for no header, a wrong secret, and CRON_SECRET unset or too short on the server.
+ */
+export const NOT_ALLOWED = Object.freeze({ error: 'not_allowed' });
+export const WRONG_METHOD = Object.freeze({ error: 'method_not_allowed' });
 
 /** Whether the caller is the scheduler (058's pg_cron job): its secret, compared without leaking where it differs. */
 export function isScheduler(header, secret) {
@@ -81,11 +91,11 @@ export function reminderEmail(send, now = new Date()) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET' && req.method !== 'POST') return reply(res, 405, { sent: 0 });
+  if (req.method !== 'GET' && req.method !== 'POST') return reply(res, 405, { ...WRONG_METHOD });
   const env = process.env;
   // Only the live site ever sends; a preview never asks the database anything.
   // The scheduler's secret first, on every deployment (follow-up 5); then only the live site sends.
-  if (!isScheduler(req.headers.authorization, env.CRON_SECRET)) return reply(res, 401, { sent: 0 });
+  if (!isScheduler(req.headers?.authorization, env.CRON_SECRET)) return reply(res, 401, { ...NOT_ALLOWED });
   if (!maySend(env)) return reply(res, 200, { sent: 0, reason: 'preview' });
   const { url } = supabaseOf(env);
   if (!url || !env.SUPABASE_SERVICE_ROLE_KEY || !canSend(env)) return reply(res, 200, { sent: 0, reason: 'setup' });

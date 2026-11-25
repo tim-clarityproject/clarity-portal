@@ -120,7 +120,7 @@ test('a wrong or missing secret on the live site asks the database nothing and s
     for (const authorization of [undefined, 'Bearer wrong', `Bearer ${SECRET}x`]) {
       const stand = standIn({ coming: [], due: [] });
       const r = await withStandIn(stand, LIVE, () => { const out = res(); return handler({ method: 'GET', headers: authorization ? { authorization } : {}, query: {} }, out).then(() => out); });
-      assert.deepEqual([r.code, r.body?.sent, stand.asked.length, stand.emails.length], [401, 0, 0, 0]);
+      assert.deepEqual([r.code, r.body, stand.asked.length, stand.emails.length], [401, { error: 'not_allowed' }, 0, 0]);
     }
     const stand = standIn();
     const r = await withStandIn(stand, { ...LIVE, CRON_SECRET: '' }, () => { const out = res(); return handler({ method: 'GET', headers: { authorization: 'Bearer ' }, query: {} }, out).then(() => out); });
@@ -142,7 +142,7 @@ test('follow-up 5: the scheduled routes ask for CRON_SECRET before anything else
       process.env.CRON_SECRET = 'invented-cron-secret-0123456789';
       for (const [name, fn] of Object.entries(routes)) {
         const none = await call(fn);
-        assert.deepEqual([none.code, none.body], [401, { sent: 0 }], `${name} on ${vercelEnv}, no secret: 401 and nothing more`);
+        assert.deepEqual([none.code, none.body], [401, { error: 'not_allowed' }], `${name} on ${vercelEnv}, no secret: 401 and nothing more`);
         assert.equal((await call(fn, { authorization: 'Bearer wrong-secret-0123456789' })).code, 401, `${name} on ${vercelEnv}, wrong secret`);
       }
       delete process.env.CRON_SECRET;

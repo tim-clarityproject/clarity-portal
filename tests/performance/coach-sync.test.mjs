@@ -278,7 +278,7 @@ const ask = async (handler, { body = null, method = 'POST', env = {}, headers = 
 test('the reminders job never runs from a preview, and only for the scheduler', async () => {
   // No secret: 401 before anything else, on a preview too (follow-up 5); with it, a preview says so and asks nothing.
   let res = await ask(reminders, { method: 'GET' });
-  assert.deepEqual([res.code, res.body], [401, { sent: 0 }]);
+  assert.deepEqual([res.code, res.body], [401, { error: 'not_allowed' }]);
   res = await ask(reminders, { method: 'GET', env: { VERCEL_ENV: 'preview', CRON_SECRET: 'a-long-enough-secret-for-the-test' }, headers: { authorization: 'Bearer a-long-enough-secret-for-the-test' } });
   assert.deepEqual([res.code, res.body], [200, { sent: 0, reason: 'preview' }]);
   const live = { VERCEL_ENV: 'production', CRON_SECRET: 'a-long-enough-secret-for-the-test' };

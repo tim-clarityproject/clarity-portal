@@ -21,14 +21,17 @@
 //     up. 053 removes them itself where the database can.
 //
 // The service key never leaves the server, and nothing is sent: no email is
-// ever part of recovery. On a preview or a developer's machine nothing is
-// changed (maySend: production only), and the answer says so calmly
-// (ran: false), after the same checks.
+// ever part of recovery. It changes things on the live site, and on a preview
+// or a developer's machine only when that deployment's database is certainly
+// the TEST project (mayChangeSignIn in api/_testProject.js: the Supabase URL is
+// the test project's, and no key names another; Tim, 25 Nov 2026). Anywhere
+// else, or whenever it can't tell, nothing is changed and the answer says so
+// calmly (ran: false), after the same checks.
 //
 // Needs SUPABASE_URL (or VITE_SUPABASE_URL), SUPABASE_ANON_KEY (or
 // VITE_SUPABASE_ANON_KEY) and SUPABASE_SERVICE_ROLE_KEY in Vercel.
 import { createClient } from '@supabase/supabase-js';
-import { maySend } from '../_guestEmails.js';
+import { mayChangeSignIn } from '../_testProject.js';
 import { codeGiven } from '../_coachCode.js';
 
 /** The words this function answers with (Claude's, in the portal's pattern: what happened, then what to do). */
@@ -38,7 +41,7 @@ export const RESET_WORDS = {
   notThere: 'That coach isn’t here any more. Reload the page and try again.',
   self: 'You can’t reset your own authenticator. Use a recovery code, or a second phone set up in Sign-in security.',
   needsCode: 'Enter the 6-digit code from your authenticator app first, then try again.',
-  notLive: 'Resetting an authenticator only works on the live site, so nothing has changed here.',
+  notLive: 'Resetting an authenticator only works on the live site or the test database, so nothing has changed here.',
   notYet: 'This needs the database update for the authenticator first, so nothing has changed.',
   notSetUp: 'That didn’t work, because the server isn’t set up for it yet. Nothing has changed.',
   didntWork: 'That didn’t reset. Check your connection and try again.',
@@ -96,7 +99,7 @@ export function makeHandler({ createClient: make = createClient, now = () => Dat
       if (state?.coach !== true || !Number.isFinite(at) || now() - at > RECOVERED_FOR_MS || at - now() > 60 * 1000) {
         return reply(res, 403, { message: RESET_WORDS.notRecovered });
       }
-      if (!maySend(env)) return reply(res, 200, { ok: true, ran: false, message: RESET_WORDS.notLive });
+      if (!mayChangeSignIn(env)) return reply(res, 200, { ok: true, ran: false, message: RESET_WORDS.notLive });
       if (!env.SUPABASE_SERVICE_ROLE_KEY) return reply(res, 500, { message: RESET_WORDS.notSetUp });
       const admin = make(url, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
       // Only the lost phone's: a factor set up since the code was used stays.
@@ -118,7 +121,7 @@ export function makeHandler({ createClient: make = createClient, now = () => Dat
     if (!target || !target.active) return reply(res, 404, { message: RESET_WORDS.notThere });
     if (target.user_id === callerId || target.role === 'owner') return reply(res, 400, { message: RESET_WORDS.self });
 
-    if (!maySend(env)) return reply(res, 200, { ok: true, ran: false, message: RESET_WORDS.notLive });
+    if (!mayChangeSignIn(env)) return reply(res, 200, { ok: true, ran: false, message: RESET_WORDS.notLive });
     if (!env.SUPABASE_SERVICE_ROLE_KEY) return reply(res, 500, { message: RESET_WORDS.notSetUp });
 
     // The database's own check and record, asked as the owner.

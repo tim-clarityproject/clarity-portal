@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { AddButton, Button, Dropdown, InlineChoice, PageHeader, SearchField, SlidePanel, SwitchRow, TextField, useColourMode, useIsPhone, useToast } from '../../components/design';
+import { AddButton, Button, Dropdown, ErrorMessage, InlineChoice, PageHeader, SearchField, SlidePanel, SwitchRow, TextField, useColourMode, useIsPhone, useToast } from '../../components/design';
 import { zonePlace, isZone } from '../../lib/time';
 import { parseDbTimestamp, getLocalDateKey } from '../../lib/dateFormatter';
 import { newId, removeRow, rowsOf, saveRow, keyOf } from '../../lib/coach/store';
@@ -649,11 +649,14 @@ function Coaches() {
   const [moreAt, setMoreAt] = useState(null);
   const [resetting, setResetting] = useState(null);
   const [resetProblem, setResetProblem] = useState(null);
+  // "Nothing has changed here" (a deployment that may not reset: api/_testProject.js) isn't a problem: a quiet note.
+  const [resetNote, setResetNote] = useState(null);
   const [resetBusy, setResetBusy] = useState(false);
   const resetFor = others.find((c) => c.coach_id === resetting) || null;
   const reset = async () => {
     if (!resetFor || resetBusy) return;
     setResetProblem(null);
+    setResetNote(null);
     if (isOffline()) { setResetProblem(needsConnection(COACH_AUTH_WORDS.offline.reset)); return; }
     setResetBusy(true);
     try {
@@ -666,6 +669,7 @@ function Coaches() {
         return;
       }
       if (answer.status === 'offline') { setResetProblem(needsConnection(COACH_AUTH_WORDS.offline.reset)); return; }
+      if (answer.status === 'not_live' && answer.message) { setResetNote(answer.message); return; }
       setResetProblem(answer.message || needsConnection(COACH_AUTH_WORDS.offline.reset));
     } finally {
       setResetBusy(false);
@@ -719,7 +723,7 @@ function Coaches() {
         </div>
       ))}
       <PopMenu open={Boolean(more)} onClose={() => setMore(null)} anchorRef={{ current: moreAt }} title="More">
-        <MenuItem onClick={() => { setResetting(more); setMore(null); setResetProblem(null); }}>{COACH_AUTH_WORDS.reset.menu}</MenuItem>
+        <MenuItem onClick={() => { setResetting(more); setMore(null); setResetProblem(null); setResetNote(null); }}>{COACH_AUTH_WORDS.reset.menu}</MenuItem>
       </PopMenu>
       <div className="cc-add"><AddButton onClick={() => setAdding(true)}>Add coach</AddButton></div>
       {/* Each associate's hours and pay this month (Phase 6b run 2, step 5; M11 C12), once Finances' data is here. */}
@@ -777,7 +781,9 @@ function Coaches() {
         {resetText && (
           <>
             {resetText.lines.map((line) => <p key={line} className="cc-auth-line">{line}</p>)}
-            {resetProblem && <p className="cc-problem" role="alert">{resetProblem}</p>}
+            {/* The calm error the coach portal's panels use (ErrorMessage: the soft tint, never red). */}
+            {resetProblem && <ErrorMessage>{resetProblem}</ErrorMessage>}
+            {resetNote && !resetProblem && <p className="cc-note" role="status">{resetNote}</p>}
           </>
         )}
       </SlidePanel>

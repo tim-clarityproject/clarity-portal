@@ -17,7 +17,7 @@
 // All drafts: the coach sends each with Send, from Needs you.
 //
 // Environment variables (Vercel, Production): CRON_SECRET, STRIPE_SECRET_KEY (test mode, sk_test_…), SUPABASE_SERVICE_ROLE_KEY.
-import { isScheduler } from './workshop-emails.js';
+import { NOT_ALLOWED, WRONG_METHOD, isScheduler } from './workshop-emails.js';
 import { billing } from './coach-billing.js';
 import { fillLanded, handleEvent, serverClient } from '../stripe-webhook.js';
 import { keyAllowed, stripeApi } from '../../src/lib/billing/stripe.js';
@@ -126,8 +126,9 @@ export async function agreementsNightly({ server, now = () => new Date(), fetche
 }
 
 export default async function handler(req, res, env = process.env) {
-  if (req.method !== 'GET') return reply(res, 405, { ok: false });
-  if (!isScheduler(req.headers?.authorization, env.CRON_SECRET)) return reply(res, 401, { ok: false });
+  if (req.method !== 'GET') return reply(res, 405, { ...WRONG_METHOD });
+  // Anyone but the scheduler, on every deployment: 401 and a plain refusal (as coach-reminders and workshop-emails).
+  if (!isScheduler(req.headers?.authorization, env.CRON_SECRET)) return reply(res, 401, { ...NOT_ALLOWED });
   if (!env.SUPABASE_SERVICE_ROLE_KEY) return reply(res, 200, { ok: false, reason: 'not_connected' });
   try {
     const server = serverClient(env);

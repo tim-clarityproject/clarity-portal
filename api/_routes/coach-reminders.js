@@ -46,7 +46,9 @@
 //   200 { sent: 0, reason: 'preview' }      this deployment never sends
 //   200 { sent: 0, reason }                 'setup' (no email provider or server key yet),
 //                                           'not_ready' (migration 051 isn't there yet)
-//   401 not the scheduler                   502 the database didn't answer
+//   401 { error: 'not_allowed' }            not the scheduler: no header, a wrong one, or CRON_SECRET
+//                                           unset or short on the server (never a body with sent in it)
+//   502 the database didn't answer
 //
 // Environment variables (Vercel, Production): CRON_SECRET,
 // SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, COACH_EMAIL_FROM (or
@@ -55,7 +57,7 @@ import { createClient } from '@supabase/supabase-js';
 import { maySend, oneAddress } from '../_guestEmails.js';
 import { UUID, canSend, emailFrom, isMissingFunction, sendWithResend, supabaseOf } from '../_coachEmails.js';
 import { portalOrigin } from '../_portalOrigin.js';
-import { isScheduler } from './workshop-emails.js';
+import { NOT_ALLOWED, WRONG_METHOD, isScheduler } from './workshop-emails.js';
 import { callInOneHourEmail, callTomorrowEmail, groupSessionInOneHourEmail, groupSessionTomorrowEmail, sessionInOneHourEmail, sessionTomorrowEmail } from '../../src/lib/email/emails.js';
 import { remindersToSend } from '../../src/lib/coach/calendar.js';
 
@@ -173,11 +175,11 @@ function pacedSender(env, pace) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET' && req.method !== 'POST') return reply(res, 405, { sent: 0 });
+  if (req.method !== 'GET' && req.method !== 'POST') return reply(res, 405, { ...WRONG_METHOD });
   const env = process.env;
   // The scheduler's secret first, before anything else, on every deployment (follow-up 5): without it, 401 and nothing
   // more is said. Then only the live site ever sends; a preview never asks the database anything.
-  if (!isScheduler(req.headers.authorization, env.CRON_SECRET)) return reply(res, 401, { sent: 0 });
+  if (!isScheduler(req.headers?.authorization, env.CRON_SECRET)) return reply(res, 401, { ...NOT_ALLOWED });
   if (!maySend(env)) return reply(res, 200, { sent: 0, reason: 'preview' });
   const { url, anon } = supabaseOf(env);
   if (!url || !env.SUPABASE_SERVICE_ROLE_KEY || !canSend(env)) return reply(res, 200, { sent: 0, reason: 'setup' });
