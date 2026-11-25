@@ -245,7 +245,7 @@ test('the welcome, the Health Check link and the guest’s copy: from the coach,
   assert.deepEqual(copy.body, [
     'Hi Priya,',
     'Thanks for completing the Health Check.',
-    'Your results are attached as a PDF, and you can open them again with your link and code for 30 days.',
+    'Your results are attached as a PDF, and you can open them again at any time with your link and code.', // Tim, 25 Nov: results never close
     'Your link:',
     `${PORTAL}/health-check/abc`,
     'Email: priya@example.invalid',

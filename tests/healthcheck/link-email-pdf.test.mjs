@@ -1,7 +1,7 @@
 // The guest's own Health Check email (follow-up 5, item 2): "Email my link" on a finished Health
 // Check carries its results PDF, made on the server from what alignment_email_check handed back
 // (never from the browser), and only then says it is attached; an unfinished one carries no PDF
-// and says neither "attached" nor "30 days"; results past their 30 days answer 'expired'.
+// and says neither "attached" nor "30 days". Results never close (Tim, 25 Nov).
 // Every fetch is caught here (the database and the email provider are stand-ins): nothing is sent.
 // Run with npm run test:healthcheck (plain node: the server path loads as Vercel loads it).
 import { test } from 'node:test';
@@ -56,7 +56,7 @@ test('a finished Health Check\'s email carries its results PDF, and says so', as
   assert.equal(pdf.filename, 'Health Check, Quillmark, 26 Oct 2026.pdf');
   assert.equal(Buffer.from(pdf.content, 'base64').subarray(0, 5).toString(), '%PDF-');
   assert.ok(!pdf.disposition && !pdf.content_id, 'an attachment, not an inline image');
-  assert.match(sent[0].text, /Your results are attached as a PDF, and you can open them again with your link and code for 30 days\./);
+  assert.match(sent[0].text, /Your results are attached as a PDF, and you can open them again at any time with your link and code\./);
   assert.deepEqual(sent[0].to, ['guest@example.invalid']);
 });
 
@@ -79,11 +79,5 @@ test('if the PDF can\'t be made, the email still goes and says nothing of a PDF'
   const made = linkEmail({ origin: 'https://example.invalid', token: TOKEN, dateText: 'Mon 26 Oct 2026', clientLabel: 'Quillmark', email: 'guest@example.invalid', code: 'K7MPQ2', finished: true, pdf: null });
   assert.equal(made.attachments.filter((a) => a.content_type === 'application/pdf').length, 0);
   assert.doesNotMatch(made.text, /attached/);
-  assert.match(made.text, /You can open your results again with your link and code for 30 days\./);
-});
-
-test('results past their 30 days: nothing is sent, and the page is told why', async () => {
-  const { r, sent } = await ask({ ok: false, error: 'expired', message: 'These results were open for 30 days, and that time has passed.' });
-  assert.deepEqual([r.code, r.body], [200, { ok: false, error: 'expired' }]);
-  assert.equal(sent.length, 0);
+  assert.match(made.text, /You can open your results again at any time with your link and code\./);
 });

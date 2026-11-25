@@ -14,7 +14,7 @@ CLAUDE.md holds the rules every task needs. Each area's full rules live in its o
 - `docs/rules/get-unstuck-timer-guests.md`: Get unstuck, the shared Timer and guest pages (M9): 21 rules.
 - `docs/rules/team-check.md`: Team performance check and the Visual tools’ shared parts (M10): 14 rules.
 - `docs/rules/emotional-wash.md`: Emotional wash (M10): 12 rules.
-- `docs/rules/health-check.md`: The Strategic Alignment Health Check, outside (M7b) and inside the portal (M7): rules 1 to 21 and 13a.
+- `docs/rules/health-check.md`: The Strategic Alignment Health Check, outside (M7b) and inside the portal (M7): rules 1 to 22 and 13a.
 - `docs/rules/peak-moments.md`: Peak moments (M18): 6 rules.
 - `docs/rules/travel-plan.md`: Travel plan (M21): 8 rules.
 - `docs/rules/coach-portal.md`: Clarity Coach, the coach portal (M11, runs 1 to 8): 50 rules (49: a first visit draws the page’s own first screen first; 24 Nov; 50: follow-up 5, 25 Nov).

@@ -28,9 +28,9 @@
 --   6. coach_admin_agreements: Tess reads the business facts of Maya's
 --      client's agreement; Maya, a client and Tess without the code are
 --      refused.
---   7. The PDF part (its own block at the end): the Health Check's 30 days
---      and the signed agreements' kept PDFs; it ends with 064 PDF PART
---      CHECKS PASSED.
+--   7. The PDF part (its own block at the end): the Health Check's results
+--      still open however old, and the signed agreements' kept PDFs; it ends
+--      with 064 PDF PART CHECKS PASSED.
 --   It ends with the notice 064 CHECKS PASSED, or stops with FAILED and a
 --   list naming each check that failed. Everything it makes is undone.
 -- =============================================================================
@@ -272,17 +272,10 @@ $t$;
 -- local stand-in or the test project.
 --
 -- WHAT IT CHECKS
---   A. The guest's Health Check copy. An unfinished Health Check opens
---      however old it is. Finishing it starts its 30 days. Within them the
---      link and code open, save, switch and email; after them every one of
---      those answers 'expired' with a calm message, told only to the right
---      email and code (a wrong one is counted towards the lockout, the
---      replaced code is told 'expired' too), and the email server gets no
---      new code for it. "Email my link" keeps the results open for 30 days
---      from the send, and a send the email provider refused is undone
---      exactly. alignment_email_check still hands the server the answers for
---      the PDF. The coach's own read (alignment_coach_answers) is unchanged.
---      No finished Health Check is left without its start.
+--   A. The guest's Health Check copy. Results never close: a finished
+--      Health Check opens with its link and code 800 days on, its "Email my
+--      link" check hands the server the answers for the PDF, and no 30-day
+--      column is there.
 --   B. Signed agreements. A signed version's PDF waits to be made, is kept
 --      by the server's key only, once (a second is never stored), and never
 --      changed or removed (update, delete and truncate refused for the
@@ -362,9 +355,6 @@ begin
   perform pg_temp.p_admin();
   update public.alignment_sessions
      set completed_at = completed_at - make_interval(days => p_days),
-         results_open_from = results_open_from - make_interval(days => p_days),
-         results_emailed_at = results_emailed_at - make_interval(days => p_days),
-         results_emailed_before = results_emailed_before - make_interval(days => p_days),
          created_at = created_at - make_interval(days => p_days),
          link_emails = '[]'::jsonb
    where token = p_token;
@@ -396,104 +386,22 @@ declare
 begin
   begin
     -- ============================================================ A. the guest's Health Check copy
+    -- Results never close (Tim, 25 Nov): a finished Health Check opens with its link and code however old, and its
+    -- "Email my link" check hands the server the answers its PDF is made from.
     perform pg_temp.p_admin();
-    f := f || pg_temp.p_eq('A0 every finished Health Check has its start (none closes as 064 runs)',
-      (select count(*)::text from public.alignment_sessions where status = 'complete' and results_open_from is null), '0');
-    coach_u := pg_temp.p_user('coach');
-    insert into public.coaches (user_id, role, display_first_name) values (coach_u, 'coach', 'Adie');
-    l := public.create_alignment_session('064 test organisation', hc_email, (select upper(email) from auth.users where id = coach_u));
+    coach_u := pg_temp.p_user('hc-coach');
+    l := public.create_alignment_session('064 test organisation', hc_email, null);
     tok := l ->> 'token'; code := l ->> 'access_code';
-
-    -- A1. unfinished: no end, however old
     perform pg_temp.p_anon();
-    perform public.alignment_save(tok, hc_email, code, answers, '{"screen": "objective"}', 0, false);
-    perform pg_temp.p_age(tok, 400);
-    perform pg_temp.p_anon();
-    f := f || pg_temp.p_eq('A1a an unfinished Health Check opens, 400 days on', public.alignment_open(tok, hc_email, code) ->> 'ok', 'true');
-    perform pg_temp.p_admin();
-    f := f || pg_temp.p_eq('A1b it has no end', (select coalesce(public._alignment_results_until(s)::text, 'none') from public.alignment_sessions s where token = tok), 'none');
-
-    -- A2. finishing starts the 30 days
-    perform pg_temp.p_anon();
-    j := public.alignment_save(tok, hc_email, code, answers, '{"screen": "results"}', 1, true);
-    f := f || pg_temp.p_eq('A2a finished', j ->> 'status', 'complete');
-    perform pg_temp.p_admin();
-    f := f || pg_temp.p_eq('A2b its 30 days start as it is finished',
-      (select (results_open_from between now() - interval '1 minute' and now() + interval '1 minute')::text from public.alignment_sessions where token = tok), 'true');
-    perform pg_temp.p_age(tok, 29);
-    perform pg_temp.p_anon();
-    f := f || pg_temp.p_eq('A2c on day 29 it still opens', public.alignment_open(tok, hc_email, code) ->> 'ok', 'true');
-    f := f || pg_temp.p_eq('A2d a later save goes', public.alignment_save(tok, hc_email, code, answers, '{"screen": "results"}', 2, true) ->> 'ok', 'true');
-    perform pg_temp.p_admin();
-    f := f || pg_temp.p_eq('A2e ... and doesn''t move its start',
-      (select (results_open_from < now() - interval '28 days')::text from public.alignment_sessions where token = tok), 'true');
-
-    -- A3. after 30 days every call says it has closed
-    perform pg_temp.p_age(tok, 2);
-    perform pg_temp.p_anon();
-    j := public.alignment_open(tok, hc_email, code);
-    f := f || pg_temp.p_eq('A3a day 31: it doesn''t open, and says why', concat(j ->> 'ok', '/', j ->> 'error', '/', j ->> 'message'),
-      'false/expired/These results were open for 30 days, and that time has passed. Ask the coach who sent you the link for a new one.');
-    f := f || pg_temp.p_eq('A3b ... with nothing of the answers in its answer', (position('064 test' in j::text) = 0)::text, 'true');
-    f := f || pg_temp.p_eq('A3c ... nor saves', public.alignment_save(tok, hc_email, code, answers, '{"screen": "results"}', 3, true) ->> 'error', 'expired');
-    f := f || pg_temp.p_eq('A3d ... nor switches who sees it', public.alignment_set_sharing(tok, hc_email, code, false) ->> 'error', 'expired');
-    f := f || pg_temp.p_eq('A3e ... nor emails the results', public.alignment_email_check(tok, hc_email, code, 'link') ->> 'error', 'expired');
-    f := f || pg_temp.p_eq('A3f ... nor the coach''s completion email', public.alignment_email_check(tok, hc_email, code, 'complete') ->> 'error', 'expired');
-    f := f || pg_temp.p_eq('A3g a wrong code learns nothing of it', public.alignment_open(tok, hc_email, 'ZZZZZZ') ->> 'error', 'invalid');
-    perform pg_temp.p_admin();
-    f := f || pg_temp.p_eq('A3h ... and is counted towards the lockout; the right code wasn''t',
-      (select failed_attempts::text from public.alignment_sessions where token = tok), '1');
-    f := f || pg_temp.p_eq('A3i the answers and the choice are as they were',
-      (select concat(data ->> 'objective', '/', shared_with_coach) from public.alignment_sessions where token = tok), '064 test objective/t');
-    perform pg_temp.p_as(coach_u, 'aal2');
-    j := public.alignment_coach_answers(tok);
-    f := f || pg_temp.p_eq('A3j the coach''s own read is unchanged', concat(j ->> 'ok', '/', j ->> 'shared', '/', j -> 'data' ->> 'objective'), 'true/true/064 test objective');
-    perform pg_temp.p_unlock(tok);
-
-    -- A4. "Email my link" keeps it open for 30 days from the send; a refused send is undone exactly
-    perform pg_temp.p_admin();
-    l := public.create_alignment_session('064 test organisation 2', hc_email, null);
-    tok2 := l ->> 'token'; code2 := l ->> 'access_code';
-    perform pg_temp.p_anon();
-    perform public.alignment_save(tok2, hc_email, code2, answers, '{"screen": "results"}', 0, true);
-    perform pg_temp.p_age(tok2, 20);
-    perform pg_temp.p_anon();
-    j := public.alignment_email_check(tok2, hc_email, code2, 'link');
-    f := f || pg_temp.p_eq('A4a the results email is allowed, with the answers for the PDF',
-      concat(j ->> 'ok', '/', j ->> 'status', '/', j -> 'data' ->> 'objective', '/', (j ->> 'completed_at') is not null), 'true/complete/064 test objective/t');
-    perform pg_temp.p_age(tok2, 25);
-    perform pg_temp.p_anon();
-    f := f || pg_temp.p_eq('A4b 45 days after finishing, 25 after the email: it opens', public.alignment_open(tok2, hc_email, code2) ->> 'ok', 'true');
-    j := public.alignment_email_check(tok2, hc_email, code2, 'link');
-    f := f || pg_temp.p_eq('A4c a second email is allowed', j ->> 'ok', 'true');
-    perform public.alignment_email_failed(tok2, hc_email, code2, 'link');
-    perform pg_temp.p_admin();
-    f := f || pg_temp.p_eq('A4d the refused send is undone: back to the email before',
-      (select (results_emailed_at < now() - interval '24 days' and results_emailed_at > now() - interval '26 days')::text from public.alignment_sessions where token = tok2), 'true');
-    perform pg_temp.p_age(tok2, 6);
-    perform pg_temp.p_anon();
-    f := f || pg_temp.p_eq('A4e 31 days after the last email that went: closed', public.alignment_open(tok2, hc_email, code2) ->> 'error', 'expired');
-
-    -- A5. the replaced code (045) on closed results: 'expired', and no new code goes out
-    perform pg_temp.p_admin();
-    l := public.create_alignment_session('064 test organisation 3', hc_email, null);
-    tok3 := l ->> 'token'; code3 := l ->> 'access_code';
-    perform pg_temp.p_anon();
-    perform public.alignment_save(tok3, hc_email, code3, answers, '{"screen": "results"}', 0, true);
-    j := public.alignment_set_sharing(tok3, hc_email, code3, false);
-    f := f || pg_temp.p_eq('A5a Only you replaced the code', j ->> 'new_code', 'true');
-    perform pg_temp.p_age(tok3, 31);
-    perform pg_temp.p_anon();
-    f := f || pg_temp.p_eq('A5b the replaced code is told it has closed', public.alignment_open(tok3, hc_email, code3) ->> 'error', 'expired');
-    perform pg_temp.p_unlock(tok3); perform pg_temp.p_service();
-    f := f || pg_temp.p_eq('A5c the email server gets no new code for it', public.alignment_new_code_to_send(tok3, hc_email, code3) ->> 'error', 'expired');
-    perform pg_temp.p_admin();
-    select s.new_code into new_code from public.alignment_sessions s where s.token = tok3;
-    perform pg_temp.p_unlock(tok3); perform pg_temp.p_anon();
-    f := f || pg_temp.p_eq('A5d the new code, too, is told it has closed', public.alignment_open(tok3, hc_email, new_code) ->> 'error', 'expired');
-    perform pg_temp.p_anon();
-    f := f || pg_temp.p_eq('A5e someone signed out can''t ask when it closes',
-      pg_temp.p_try(format('select public._alignment_results_until(s)::text from public.alignment_sessions s where token = %L', tok3)), 'error 42501');
+    j := public.alignment_save(tok, hc_email, code, answers, '{"screen": "results"}', 0, true);
+    f := f || pg_temp.p_eq('A1 finished', j ->> 'status', 'complete');
+    perform pg_temp.p_age(tok, 800);
+    perform pg_temp.p_unlock(tok); perform pg_temp.p_anon();
+    f := f || pg_temp.p_eq('A2 800 days on, its results still open', public.alignment_open(tok, hc_email, code) ->> 'ok', 'true');
+    j := public.alignment_email_check(tok, hc_email, code, 'link');
+    f := f || pg_temp.p_eq('A3 Email my link is allowed, with the answers for the PDF', concat(j ->> 'ok', '/', j -> 'data' ->> 'objective'), 'true/064 test objective');
+    f := f || pg_temp.p_eq('A4 nothing of a 30-day close is left', (select count(*)::text from information_schema.columns
+      where table_schema = 'public' and table_name = 'alignment_sessions' and column_name in ('results_open_from', 'results_emailed_at', 'results_emailed_before')), '0');
     perform pg_temp.p_admin();
 
     -- ============================================================ B. signed agreements

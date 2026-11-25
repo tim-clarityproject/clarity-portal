@@ -61,14 +61,14 @@ export const EMAIL_EXAMPLES = [
     key: 'health-check-person',
     name: 'Copy of a guest’s answers (Health Check results), to the person',
     from: 'From Tim (The Clarity Portal), to Priya',
-    sends: 'Sent when the person asks for their link after finishing. Draft-2’s words; the results PDF is made on the server and attached (follow-up 5), and the link and code open the results for 30 days.',
+    sends: 'Sent when the person asks for their link after finishing. Draft-2’s words; the results PDF is made on the server and attached (follow-up 5), and the link and code open the results at any time.',
     doc: () => healthCheckResultsEmail({ link: HEALTH_CHECK, organisation: 'Northfield Logistics', firstName: 'Priya', coachFirst: 'Tim', email: 'priya@northfield.example', code: 'K7MPQ2' }),
   },
   {
     key: 'health-check-person-unfinished',
     name: 'A guest’s Health Check link, before it is finished',
     from: 'From Tim (The Clarity Portal), to Priya',
-    sends: 'Sent when the person asks for their link before finishing (follow-up 5): no PDF and no 30 days, as there are no results yet.',
+    sends: 'Sent when the person asks for their link before finishing (follow-up 5): no PDF, as there are no results yet.',
     doc: () => healthCheckResultsEmail({ link: HEALTH_CHECK, organisation: 'Northfield Logistics', firstName: 'Priya', coachFirst: 'Tim', email: 'priya@northfield.example', code: 'K7MPQ2', finished: false }),
   },
   {

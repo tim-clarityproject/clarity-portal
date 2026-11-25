@@ -69,7 +69,7 @@ export function ukDateTime(value) {
  * it). It only ever goes to the address that did the Health Check.
  * Follow-up 5: a finished Health Check's email carries its results PDF
  * (`pdf`, from resultsPdf), and says so only when it does; an unfinished
- * one says it can be carried on, and claims no PDF and no 30 days.
+ * one says it can be carried on, and claims no PDF. Results never close.
  */
 export function linkEmail({ origin, token, dateText, clientLabel, email, code, finished = true, pdf = null }) {
   const made = ready(healthCheckResultsEmail({ link: `${origin}/health-check/${token}`, organisation: clientLabel, dateText, email, code, finished, attached: Boolean(finished && pdf) }));

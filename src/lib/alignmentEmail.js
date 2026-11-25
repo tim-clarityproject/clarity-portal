@@ -8,8 +8,7 @@ import { apiFetch } from './readShare';
  * @param {{token: string, email: string, code: string, kind: 'link'|'complete'|'code', timeZone?: string|null}} args
  *   code: the guest's new access code after Only you (045), to their own address.
  *   timeZone: the device's zone, sent only to choose the results PDF's paper (follow-up 5).
- * @returns {Promise<{ok: boolean, sent?: boolean, error?: 'limit'|'already'|'private'|'expired'|'invalid'|'failed'}>}
- *   expired: the results were open for 30 days, and that time has passed (064).
+ * @returns {Promise<{ok: boolean, sent?: boolean, error?: 'limit'|'already'|'private'|'invalid'|'failed'}>}
  *   sent: false on a preview or a developer's machine, which never send.
  *   private: the guest chose Only you (migration 044), so no coach email goes.
  */

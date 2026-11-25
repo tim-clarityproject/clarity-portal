@@ -41,10 +41,7 @@
 // which only chooses the paper, with the browser's Accept-Language). If the
 // PDF can't be made the email still goes, and then doesn't say a PDF is
 // attached. An unfinished one has no PDF and says it can be carried on.
-// Each 'link' email also keeps the results open for 30 more days (064:
-// results_emailed_at), undone with the send's record if the email doesn't go.
-// A finished Health Check past its 30 days answers 'expired' everywhere
-// (064, _alignment_auth), passed back as { ok: false, error: 'expired' }.
+// Results never close (Tim, 25 Nov): the link and code open them at any time.
 //
 // Environment variables (Vercel): RESEND_API_KEY, ALIGNMENT_EMAIL_FROM,
 // ALIGNMENT_NOTIFY_TO, SUPABASE_SERVICE_ROLE_KEY (only to ask who made the
@@ -131,7 +128,6 @@ export default async function handler(req, res) {
     }
     if (!fresh || !fresh.ok) {
       if (fresh?.error === 'limit') return reply(res, 429, { ok: false, error: 'limit' });
-      if (fresh?.error === 'expired') return reply(res, 200, { ok: false, error: 'expired' });
       return reply(res, 400, { ok: false, error: 'invalid' });
     }
     try {
@@ -156,7 +152,6 @@ export default async function handler(req, res) {
     if (check?.error === 'limit') return reply(res, 429, { ok: false, error: 'limit' });
     if (check?.error === 'already') return reply(res, 200, { ok: false, error: 'already' });
     if (check?.error === 'private') return reply(res, 200, { ok: false, error: 'private' });
-    if (check?.error === 'expired') return reply(res, 200, { ok: false, error: 'expired' });
     return reply(res, 400, { ok: false, error: 'invalid' });
   }
 

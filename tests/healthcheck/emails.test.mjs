@@ -143,7 +143,7 @@ test('the person’s email shows their email address and access code; the coach�
   assert.equal(person.subject, 'Your Health Check results for Quillmark');
   // Draft-2's "Copy of a guest's answers" (23 Nov), from the coach.
   assert.ok(person.text.includes('Thanks for completing the Health Check.'));
-  assert.ok(person.text.includes('Your results are attached as a PDF, and you can open them again with your link and code for 30 days.'));
+  assert.ok(person.text.includes('Your results are attached as a PDF, and you can open them again at any time with your link and code.'));
   assert.ok(person.text.includes('Your link:\nhttps://example.invalid/health-check/test-token-not-real'));
   assert.ok(person.text.includes('If you’d like to talk them through, reply and we’ll find a time.'));
   assert.ok(/\nTim\n\n----/.test(person.text), 'signed by the coach');

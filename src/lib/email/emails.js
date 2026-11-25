@@ -82,8 +82,8 @@ export function healthCheckResultsEmail({ link, organisation, email, code, first
       { type: 'heading', text: greeting(firstName) },
       { type: 'text', text: 'Thanks for completing the Health Check.' },
       { type: 'text', text: attached
-        ? 'Your results are attached as a PDF, and you can open them again with your link and code for 30 days.'
-        : 'You can open your results again with your link and code for 30 days.' },
+        ? 'Your results are attached as a PDF, and you can open them again at any time with your link and code.'
+        : 'You can open your results again at any time with your link and code.' },
       { type: 'link', label: 'Your link', href: link },
       { type: 'details', rows: [['Email', email], ['Access code', code]] },
       { type: 'text', text: 'If you’d like to talk them through, reply and we’ll find a time.' },
