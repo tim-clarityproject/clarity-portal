@@ -252,11 +252,12 @@ export const OVERDUE_LINES = 3;
  * the next 2 weeks, and the year's targets to check after a new year copied them.
  * @returns {{ key: string, title: string, small?: string, link: string, to: string|null, invoiceId?: string }[]}
  */
-export function needsYouRows({ cash = null, invoices = [], deadlines = [], today, names = {}, targetsToCheck = false, associatesToPay = [], reminders = [], nowMs = Date.now() }) {
+export function needsYouRows({ cash = null, invoices = [], deadlines = [], today, names = {}, targetsToCheck = false, associatesToPay = [], reminders = [], nowMs = Date.now(), coachId = null }) {
   const rows = [];
   if (cash?.needsYou) rows.push({ key: 'cash', title: cash.needsYou, link: 'View the forecast', to: '/coach/finances/cash-flow' });
   // A reminder that may have gone: never sent again by itself; the coach checks, then presses Send again.
-  for (const r of unsureReminders(reminders, nowMs)) {
+  // Only the owner's own: an associate's is theirs to check and send again, from their Today (functionality tester).
+  for (const r of unsureReminders(reminders, nowMs).filter((x) => !coachId || x.coach_id === coachId)) {
     const inv = (invoices || []).find((i) => i.id === r.invoice_id);
     if (!inv || inv.status !== 'sent') continue;
     rows.push({ key: `rem:${r.id}`, title: REMINDER_UNSURE_TITLE, small: invoiceWho(inv, names) ? `Check before sending again. It was for ${invoiceWho(inv, names)}.` : 'Check before sending again.', link: 'Send again', to: null, reminderId: r.id });

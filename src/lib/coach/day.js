@@ -817,8 +817,20 @@ export const prepLine = (name, notedAt, todayKey) => `${firstName(name)} added t
  * @returns {{ key: string, profileId: string, name: string, line: string, action: string, to: string, state?: object }[]}
  */
 export function attentionRows({ clients = [], engagements = [], packs = [], entries = [], sessions = [], people = [], older = null, now, todayKey,
-  invoices = [], coachId = null, isOwner = false, admin = [], organisations = [], coaches = [], coachZone = null }) {
-  const rows = invoices.length ? [...overdueRows({ invoices, coachId, isOwner, clients, admin, organisations, coaches, now, coachZone })] : [];
+  invoices = [], coachId = null, isOwner = false, admin = [], organisations = [], coaches = [], coachZone = null, reminders = [] }) {
+  const rows = [];
+  // The coach's own reminders whose sending couldn't be confirmed (064's sending_at, 2 minutes on): checked, then
+  // Send again (follow-up 5, item 5). An associate has no Finances, so this is where they see them.
+  for (const r of reminders || []) {
+    if (!r || r.coach_id !== coachId || r.sent_at || !r.sending_at || new Date(now).getTime() - new Date(r.sending_at).getTime() < 2 * 60 * 1000) continue;
+    const inv = invoices.find((i) => i.id === r.invoice_id);
+    if (!inv || inv.status !== 'sent') continue;
+    const client = clients.find((c) => c.id === inv.profile_id) || null;
+    const org = organisations.find((o) => o.id === inv.organisation_id) || null;
+    const name = (inv.settles_to === 'organisation' && org?.name) || client?.name || org?.name || clean(inv.payer_name) || 'An invoice';
+    rows.push({ key: `ru:${r.id}`, profileId: client?.id || null, name, line: 'We couldn’t confirm a reminder went, so check before sending again.', action: 'Send again', to: null, reminderId: r.id });
+  }
+  if (invoices.length) rows.push(...overdueRows({ invoices, coachId, isOwner, clients, admin, organisations, coaches, now, coachZone }));
   const t = new Date(now).getTime();
   // Each client's own sessions, gathered once (they were searched for again for every client; coach first screen run).
   const byClient = new Map();

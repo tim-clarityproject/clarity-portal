@@ -134,7 +134,7 @@ function Overview() {
   const { userId, invoiceReminders } = useCoachPortal();
   const toast = useToast();
   const sending = useRef(false);
-  const needs = needsYouRows({ cash: model.cashChosen || model.cash, invoices: fin.invoices || [], deadlines: fin.deadlines || [], today: todayKey, names, targetsToCheck: newYear.toCheck, associatesToPay, reminders: invoiceReminders || [] });
+  const needs = needsYouRows({ cash: model.cashChosen || model.cash, invoices: fin.invoices || [], deadlines: fin.deadlines || [], today: todayKey, names, targetsToCheck: newYear.toCheck, associatesToPay, reminders: invoiceReminders || [], coachId: fin.coach?.id || null });
   // Send again, for a reminder whose sending couldn't be confirmed, once the coach has checked (follow-up 5, item 5).
   const sendAgain = async (reminderId) => {
     if (sending.current) return; // one request per press

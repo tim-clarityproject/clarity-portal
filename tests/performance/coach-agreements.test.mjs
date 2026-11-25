@@ -205,3 +205,18 @@ test('the store never sends what the server writes, and looks for 061 by its agr
   // An invoice read from the database never counts as waiting to be sent at Sign out.
   assert.equal(coachRowsWaiting({ rows: { invoices: { a: { id: 'a' } }, payments: { b: { id: 'b' } }, agreements: { c: { id: 'c' } } }, marks: {} }), 1);
 });
+
+test('functionality tester, follow-up 5: a reminder that may have gone is its own coach\'s to check, on Today; Needs you shows only the owner\'s own', async () => {
+  const { needsYouRows } = await import('../../src/lib/coach/financeData.js');
+  const inv = { ...owed(), id: 'i-unsure', coach_id: TIM };
+  const theirs = { ...mayas, id: 'i-maya' };
+  const old = new Date(new Date(NOW).getTime() - 10 * 60 * 1000).toISOString();
+  const reminders = [{ id: 'r-tim', invoice_id: 'i-unsure', coach_id: TIM, sending_at: old, sent_at: null },
+    { id: 'r-maya', invoice_id: 'i-maya', coach_id: MAYA, sending_at: old, sent_at: null }];
+  const tim = attentionRows({ clients: [leo], sessions: [], now: NOW, todayKey: TODAY, invoices: [inv, theirs], coachId: TIM, isOwner: true, admin: [mayaClient], organisations: [northfield, kestrel], coachZone: 'Europe/London', reminders });
+  assert.deepEqual(tim.filter((r) => r.reminderId).map((r) => [r.reminderId, r.action]), [['r-tim', 'Send again']]);
+  const maya = attentionRows({ clients: [{ id: 'p-owen', name: 'Owen Price', coach_id: MAYA, status: 'active' }], sessions: [], now: NOW, todayKey: TODAY, invoices: [theirs], coachId: MAYA, organisations: [], coachZone: 'Europe/London', reminders });
+  assert.deepEqual(maya.filter((r) => r.reminderId).map((r) => r.reminderId), ['r-maya']);
+  const needs = needsYouRows({ invoices: [inv, theirs], today: TODAY, reminders, nowMs: new Date(NOW).getTime(), coachId: TIM });
+  assert.deepEqual(needs.filter((r) => r.reminderId).map((r) => r.reminderId), ['r-tim']);
+});

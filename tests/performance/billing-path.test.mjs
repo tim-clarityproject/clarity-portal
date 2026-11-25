@@ -405,3 +405,14 @@ test('follow-up 5, item 8: an organisation the owner set up himself, tied to not
   await assert.rejects(owner.bankPayment({ ...pay, organisationId: 'o-else' }), /isn’t yours/, 'one he didn’t set up, tied to nothing of his, is refused');
   await assert.rejects(assoc.oneOff({ kind: 'one_off', amount: 50000, organisationId: 'o-own', whatFor: 'x', currency: 'GBP', due: 'in_30' }), /Only the owner/);
 });
+
+test('functionality tester, follow-up 5: two Sends at once on one draft: one goes, with one number, and both say it went', async () => {
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const { db, stripe, b } = world(now);
+  await b.draft('a-ben');
+  const id = db.tables.invoices[0].id;
+  const [one, two] = await Promise.all([b.send(id), b.send(id)]);
+  assert.deepEqual([one.status, two.status], ['sent', 'sent']);
+  assert.equal(one.number, two.number);
+  assert.equal(stripe.state.sent.length, 1, 'finalised and sent once');
+});

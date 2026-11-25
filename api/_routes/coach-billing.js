@@ -256,8 +256,17 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
         if (error || !Number.isInteger(data)) { const e = new Error('That didn’t send. Try again in a moment.'); e.status = 502; throw e; }
         number = data;
       }
-      await stripe.number(inv.stripe_invoice_id, `CLARITY-${number}`);
-      const sent = await stripe.send(inv.stripe_invoice_id);
+      let sent;
+      try {
+        await stripe.number(inv.stripe_invoice_id, `CLARITY-${number}`);
+        sent = await stripe.send(inv.stripe_invoice_id);
+      } catch (e) {
+        // Two presses at once: the other one finalised it. Stripe says so, and this press says it went (functionality
+        // tester, follow-up 5); anything else is a real refusal.
+        const now = stripe.retrieve ? await stripe.retrieve('invoice', inv.stripe_invoice_id).catch(() => null) : null;
+        if (now && now.status && now.status !== 'draft') return { status: 'sent', number: `CLARITY-${number}` };
+        throw e;
+      }
       const issued = today(inv.payer_zone);
       await server.from('invoices').update({ status: 'sent', sent_at: now().toISOString(), issued_on: issued, due_on: addDays(issued, inv.terms_days),
         hosted_url: sent.hosted_invoice_url || null, updated_at: now().toISOString() }).eq('id', inv.id).eq('status', 'draft');

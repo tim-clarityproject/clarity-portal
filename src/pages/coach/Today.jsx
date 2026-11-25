@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AddButton, Loading, OfferRow, PageHeader, useIsPhone } from '../../components/design';
+import { AddButton, Loading, OfferRow, PageHeader, useIsPhone, useToast } from '../../components/design';
 import { birthdaysOn, dayWords, possessive } from '../../lib/coach/model';
 import { rowsOf } from '../../lib/coach/store';
 import {
@@ -66,7 +66,7 @@ function Section({ title, aside, headRef, children }) {
 }
 
 export default function Today() {
-  const { state, clients, groups, todos, sessions, sessionPeople, sessionsOlder, settings, todayKey, now, coach, coaches, isOwner, calItems, checkIns, organisations, partial, whole, invoices, admin } = useCoachPortal();
+  const { state, clients, groups, todos, sessions, sessionPeople, sessionsOlder, settings, todayKey, now, coach, coaches, isOwner, calItems, checkIns, organisations, partial, whole, invoices, admin, invoiceReminders, userId } = useCoachPortal();
   const navigate = useNavigate();
   const isPhone = useIsPhone();
   const { day, week } = useDayRows();
@@ -103,8 +103,23 @@ export default function Today() {
     sessions, people: sessionPeople, older: sessionsOlder, now, todayKey,
     // Overdue invoices (Phase 6b run 1; 061): the coach's own, and for the owner every associate's, on the payer's clock.
     invoices, coachId: coach.id, isOwner, admin, organisations, coaches, coachZone: coachZoneOf(settings, deviceZone()),
-  }), [clients, state, coach.id, sessions, sessionPeople, sessionsOlder, now, todayKey, invoices, isOwner, admin, organisations, coaches, settings]);
+    reminders: invoiceReminders || [],
+  }), [clients, state, coach.id, sessions, sessionPeople, sessionsOlder, now, todayKey, invoices, isOwner, admin, organisations, coaches, settings, invoiceReminders]);
   const attentionShown = allAttention ? attention : attention.slice(0, ATTENTION_FIRST);
+  // Send again, for one of the coach's own reminders whose sending couldn't be confirmed, once checked (follow-up 5).
+  const toast = useToast();
+  const sending = useRef(false);
+  const sendAgain = async (reminderId) => {
+    if (sending.current) return; // one request per press
+    sending.current = true;
+    try {
+      const { coachBilling } = await import('../../lib/coach/financeActions');
+      const answer = await coachBilling(userId, { kind: 'send_reminder', reminderId, again: true });
+      if (answer.ok && answer.sent) toast.saved({ message: 'Reminder sent, with the payment link.' });
+      else if (answer.ok) toast.show('That reminder has already gone.');
+      else toast.error(answer.message || 'That reminder didn’t send. Check your connection and try again.');
+    } catch { toast.error('That reminder didn’t send. Check your connection and try again.'); } finally { sending.current = false; }
+  };
   // The clients this coach covers for another coach, with the dates (tidy follow-up 3, run 6's 14).
   const covering = useMemo(() => (partial ? [] : coveringRows({ covers: rowsOf(state, 'coach_cover'), coachId: coach.id, profiles: rowsOf(state, 'client_profiles'), coaches, todayKey })), [state, coach.id, coaches, todayKey, partial]);
   const pressure = usePressure(clients, todayKey);
@@ -189,17 +204,22 @@ export default function Today() {
           <div className="cc-add"><AddButton onClick={() => setPanel('add')}>Add to-do</AddButton></div>
         </Section>
 
-        {attention.length > 0 && (
+        {(attention.length > 0 || partial) && (
           <Section title="Who needs attention">
+            {/* While only the first screen is here the list waits on its crosshair: overdue invoices come with the rest
+                and go first, so rows drawn now would be pushed out (coach rule 49; functionality tester, follow-up 5). */}
+            {partial ? <Loading label="Loading who needs attention" /> : (
             <div className="cc-today-atts" role="list" aria-label="Who needs attention">
               {attentionShown.map((r) => (
                 <div key={r.key} className="cc-today-att" role="listitem">
                   <b>{r.name}</b>
                   <small>{r.line}</small>
+                  {r.reminderId && <TextLink onClick={() => sendAgain(r.reminderId)}>{r.action}</TextLink>}
                   {r.to && r.action && (!r.later || !LIVE) && <TextLink onClick={() => navigate(r.to, r.state ? { state: r.state } : undefined)}>{r.action}</TextLink>}
                 </div>
               ))}
             </div>
+            )}
             {/* The count waits while only the first screen is here: overdue invoices (061) and every coach's clients come
                 with the rest, so "Show all" would count up a moment later (first screen check, Phase 6b run 2). */}
             {attention.length > ATTENTION_FIRST && partial && <Loading label="Loading who needs attention" />}
