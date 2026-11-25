@@ -5,6 +5,8 @@ export const NO_MATCH = ['That email or password doesn’t match.', 'Try again, 
 export const GOOGLE_DIDNT_WORK = ['That didn’t work.', 'Try again, or use your email and password.'];
 export const ALREADY_AN_ACCOUNT = ['There’s already an account with this email.', 'Sign in, or reset your password.'];
 export const LINK_RUN_OUT = 'This link has run out or has already been used.';
+/** A coach's set-up link that has ended (follow-up 5, item 1: it works for 7 days). */
+export const askCoachAgain = (coach) => `Ask ${String(coach || '').trim() || 'your coach'} to send you a new one.`;
 
 // Tim's words of 13 Nov.
 export const CLOCK_LOOKS_WRONG = 'Your device’s clock looks wrong, which can sign you out. Set it to update automatically, then sign in again.';

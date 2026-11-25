@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { friendlyError, needsConnection, isOffline } from '../../lib/friendlyError';
@@ -10,6 +10,8 @@ import { termsRecord, TICK_THE_BOX } from '../../lib/signIn/terms';
 import { ADD_FIRST_NAME, ALREADY_AN_ACCOUNT, cleanName, EMAIL_NOT_RIGHT, GOOGLE_DIDNT_WORK, looksLikeEmail, TOO_MANY } from '../../lib/signIn/words';
 import { Alt, ContinueWithGoogle, EmailField, Field, MainButton, Message, OrLine, PasswordField, SignInPage, TermsRow, TextLink } from '../../components/signin/SignInParts';
 import useEnter, { useAlreadyIn } from '../../components/signin/useEnter';
+import { inviteTokenOf } from '../../lib/signIn/inviteLink';
+import LinkNotWorking from './LinkNotWorking';
 
 // Create my account (M26: "Create my account" and its three messages).
 // One page: First name, Email, Password and the one tick box. Google
@@ -33,6 +35,22 @@ export default function CreateAccount() {
   const leaving = useRef(false);
 
   useAlreadyIn(leaving);
+
+  // A coach's set-up link (the welcome email's "Set my password"; follow-up 5) works for 7 days: once it has ended,
+  // Link not working says who to ask for a new one. The page shows as usual while it is asked, and whenever the
+  // answer can't be had (no connection, or 064 not run yet).
+  const [invite, setInvite] = useState(null);
+  const hasInvite = searchParams.has('invite');
+  const inviteToken = inviteTokenOf(searchParams);
+  useEffect(() => {
+    if (!hasInvite) return undefined;
+    if (!inviteToken) { setInvite({ state: 'ended', coach: '' }); return undefined; }
+    let live = true;
+    Promise.resolve(supabase.rpc('client_invite_link_state', { p_token: inviteToken }))
+      .then(({ data, error }) => { if (live && !error && data && typeof data.state === 'string') setInvite(data); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [hasInvite, inviteToken]);
 
   const say = (at, lines) => {
     setMessage({ at, lines });
@@ -110,6 +128,8 @@ export default function CreateAccount() {
   };
 
   const at = (place) => (message?.at === place ? <Message lines={message.lines} /> : null);
+
+  if (invite?.state === 'ended') return <LinkNotWorking coach={invite.coach || ''} />;
 
   return (
     <SignInPage title="Create your account" onSubmit={submit}>

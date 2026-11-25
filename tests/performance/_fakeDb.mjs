@@ -1,5 +1,5 @@
 // Just enough of supabase-js's query builder over plain arrays for the billing tests, with 061's unique keys, the
-// invoice number sequence, and the one-invoice-per-instalment rule. Not a test itself (no .test. in its name).
+// invoice number counter (061's sequence, 064's invoice_take_number), and the one-invoice-per-instalment rule. Not a test itself (no .test. in its name).
 import { randomUUID } from 'node:crypto';
 
 const UNIQUE = {
@@ -17,6 +17,7 @@ export function fakeDb(seed = {}) {
     const r = { id: v.id || randomUUID(), created_at: new Date().toISOString(), ...v };
     if (table === 'credit_notes' && !r.number) r.number = `CLARITY-CN-${String((cnNo += 1)).padStart(4, '0')}`;
     if (table === 'invoices') { r.paid_minor ??= 0; r.status ??= 'draft'; }
+    if (table === 'invoice_reminders') { r.sent_at ??= null; r.sending_at ??= null; } // 064's column
     return r;
   };
   const q = (table) => {
@@ -68,6 +69,16 @@ export function fakeDb(seed = {}) {
   return {
     tables: t,
     from: q,
-    rpc: async (name) => (name === 'next_invoice_number' ? { data: (invoiceNo += 1), error: null } : { data: null, error: { code: 'PGRST202' } }),
+    // 064's invoice_take_number: the invoice's own number, or the next one given to it now (the same counter as 061's).
+    rpc: async (name, args = {}) => {
+      if (name === 'next_invoice_number') return { data: (invoiceNo += 1), error: null };
+      if (name === 'invoice_take_number') {
+        const inv = (t.invoices || []).find((i) => i.id === args.p_invoice);
+        if (!inv) return { data: null, error: { code: 'P0002', message: 'not there' } };
+        if (inv.number == null) inv.number = (invoiceNo += 1);
+        return { data: inv.number, error: null };
+      }
+      return { data: null, error: { code: 'PGRST202' } };
+    },
   };
 }

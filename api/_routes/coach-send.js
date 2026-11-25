@@ -56,13 +56,28 @@ const WORKSHOP_PEOPLE_MAX = 2000;
 const KINDS = { recap: 'sessionId', invite: 'profileId', workshop_follow_up: 'workshopId' };
 const DIDNT_SEND = 'That didn’t send. Try again in a moment.';
 
+/** A set-up link's token (064): 64 lower-case hex characters. */
+export const INVITE_TOKEN = /^[0-9a-f]{64}$/;
+/** The welcome email's set-up link: Create your account, carrying the link's own token. */
+export const inviteLink = (origin, token) => `${origin}/auth/sign-up?invite=${token}`;
+
 const reply = (res, status, body) => { res.status(status).setHeader('Cache-Control', 'no-store'); res.json(body); };
 
 /** What Resend is given for one person: the subject, both versions and the inline image. */
 // Draft-2's "Summary ready": the email says the summary is ready, and the recap and its actions are read on the
 // client's Coaching page, never carried in the email (recap and actions are taken and left out).
-export function recapEmail({ origin, coach, at = null, zone = null, dateText, now = new Date() }) {
-  return emailFrom(sessionRecapEmail({ origin, coach, at, zone, dateText, now }));
+// Someone with no portal account (a group member never invited) gets the recap and its actions in the email itself
+// (follow-up 5, item 3): `inPortal` false.
+export function recapEmail({ origin, coach, at = null, zone = null, dateText, now = new Date(), inPortal = true, recap = '', actions = [] }) {
+  return emailFrom(sessionRecapEmail({ origin, coach, at, zone, dateText, now, inPortal, recap, actions }));
+}
+
+/** Who a recap goes to: 064's session_recap_readers (with whether each reads it in the portal), else 050's people. */
+async function recapReaders(asCaller, sessionId) {
+  const readers = await asCaller.rpc('session_recap_readers', { p_session: sessionId });
+  if (!readers.error || !isMissingFunction(readers.error)) return readers;
+  const people = await asCaller.rpc('session_recap_people', { p_session: sessionId });
+  return { ...people, data: (people.data || []).map((p) => ({ ...p, has_account: true })) };
 }
 
 /** The request's kind and the id it names, or null when it is the wrong shape. */
@@ -87,7 +102,7 @@ async function sendRecap({ env, req, res, asCaller, userId, id }) {
 
   // Everything the email needs is read first, so nothing is claimed for an email that can't be made.
   const [{ data: people, error: peopleError }, { data: actions, error: actionsError }, coach, { data: profile }, { data: settings }] = await Promise.all([
-    asCaller.rpc('session_recap_people', { p_session: session.id }),
+    recapReaders(asCaller, session.id),
     asCaller.from('coach_session_actions').select('title,position').eq('session_id', session.id).eq('send', true).order('position', { ascending: true }).limit(60),
     coachName(asCaller, userId),
     session.profile_id ? asCaller.from('client_profiles').select('time_zone').eq('id', session.profile_id).maybeSingle() : Promise.resolve({ data: null }),
@@ -104,7 +119,7 @@ async function sendRecap({ env, req, res, asCaller, userId, id }) {
 
   // The session's day in words, on the reader's own calendar where it is known (a client's zone), otherwise the coach's.
   const zone = [profile?.time_zone, settings?.[0]?.time_zone, 'Europe/London'].find((z) => isZone(z));
-  const email = recapEmail({
+  const made = {
     // Only ever one of the portal's own addresses, never the request's host.
     origin: portalOrigin(req.headers, env),
     coach,
@@ -113,8 +128,11 @@ async function sendRecap({ env, req, res, asCaller, userId, id }) {
     dateText: dayWords(session.starts_at, zone),
     recap: session.recap,
     actions: (actions || []).map((a) => a.title),
-  });
-  const went = await sendEach(env, to, () => email);
+  };
+  const inPortal = recapEmail(made);
+  const inEmail = recapEmail({ ...made, inPortal: false });
+  // has_account is true only for someone who reads their summaries in the portal; anyone else gets it in the email.
+  const went = await sendEach(env, to, (person) => (person.has_account === true ? inPortal : inEmail));
   if (!went) return reply(res, 502, { sent: false, message: DIDNT_SEND });
   return reply(res, 200, { sent: true, people: went });
 }
@@ -129,14 +147,26 @@ async function sendInvite({ env, req, res, asCaller, userId, id }) {
   const to = oneAddress(profile.email).toLowerCase();
   if (!to) return reply(res, 200, { sent: false, reason: 'nobody' });
 
-  // The invite is recorded first (049's checked function: only the client's own coach), so the
-  // person's Coaching page has it to accept by the time the email arrives.
-  const { error: inviteError } = await asCaller.rpc('client_invite', { p_profile: profile.id });
-  if (inviteError) {
-    if (inviteError.code === '42501') return reply(res, 404, { sent: false, message: 'That client isn’t yours.' });
-    return reply(res, isMissingFunction(inviteError) ? 200 : 502, isMissingFunction(inviteError) ? { sent: false, reason: 'not_ready' } : { sent: false, message: DIDNT_SEND });
+  // The invite is recorded first (only the client's own coach), so the person's Coaching page has it to accept by the
+  // time the email arrives. 064's client_invite_link also makes the email's own set-up link, which ends after 7 days
+  // ("The link works for 7 days."), and ends every older one: Send it again is this same press.
+  const origin = portalOrigin(req.headers, env);
+  let link = null;
+  const { data: token, error: linkError } = await asCaller.rpc('client_invite_link', { p_profile: profile.id });
+  if (linkError) {
+    if (linkError.code === '42501') return reply(res, 404, { sent: false, message: 'That client isn’t yours.' });
+    if (linkError.code === 'CC409') return reply(res, 200, { sent: false, reason: 'has_account' });
+    if (!isMissingFunction(linkError)) return reply(res, 502, { sent: false, message: DIDNT_SEND });
+    // Before 064: the invite as 049 records it, and the email's button opens Create your account.
+    const { error: inviteError } = await asCaller.rpc('client_invite', { p_profile: profile.id });
+    if (inviteError) {
+      if (inviteError.code === '42501') return reply(res, 404, { sent: false, message: 'That client isn’t yours.' });
+      return reply(res, isMissingFunction(inviteError) ? 200 : 502, isMissingFunction(inviteError) ? { sent: false, reason: 'not_ready' } : { sent: false, message: DIDNT_SEND });
+    }
+  } else if (typeof token === 'string' && INVITE_TOKEN.test(token)) {
+    link = inviteLink(origin, token);
   }
-  const email = emailFrom(clientInviteEmail({ origin: portalOrigin(req.headers, env), coach: await coachName(asCaller, userId), firstName: String(profile.name || '').trim().split(/\s+/)[0] || '' }));
+  const email = emailFrom(clientInviteEmail({ origin, link, coach: await coachName(asCaller, userId), firstName: String(profile.name || '').trim().split(/\s+/)[0] || '' }));
   const went = await sendEach(env, [{ email: to }], () => email);
   if (!went) return reply(res, 502, { sent: false, message: DIDNT_SEND });
   return reply(res, 200, { sent: true, people: 1 });

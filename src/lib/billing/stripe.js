@@ -48,6 +48,9 @@ export function stripeApi(key, fetcher = globalThis.fetch) {
       }
       return call('GET', `/invoices/${inv.id}`);
     },
+    // The draft's number and its portal number, set just before it is finalised (Stripe allows a number on a draft only).
+    // Asked again for a draft that already has it, Stripe answers with the same invoice.
+    number: (id, portalNumber) => call('POST', `/invoices/${id}`, { number: portalNumber, metadata: { portal_number: portalNumber } }),
     send: async (id) => { await call('POST', `/invoices/${id}/finalize`, { auto_advance: false }); return call('POST', `/invoices/${id}/send`); },
     markPaidByHand: (id) => call('POST', `/invoices/${id}/pay`, { paid_out_of_band: true }),
     void: (id) => call('POST', `/invoices/${id}/void`),
@@ -113,6 +116,15 @@ export function stripeStandIn({ secret = 'whsec_stand_in_0000000000', now = () =
         custom_fields: poNumber ? [{ name: 'Purchase order', value: poNumber }] : null, hosted_invoice_url: null, payment_intent: null };
       s.invoices.set(inv.id, inv);
       emit('invoice.created', inv);
+      return structuredClone(inv);
+    },
+    number: async (invId, portalNumber) => {
+      const inv = s.invoices.get(invId);
+      if (!inv || inv.status !== 'draft') throw Object.assign(new Error('That invoice isn’t a draft.'), { code: 'invoice_not_draft' });
+      if ([...s.invoices.values()].some((o) => o.id !== invId && o.number === portalNumber)) throw Object.assign(new Error('That number is in use.'), { code: 'invoice_number_taken' });
+      inv.number = portalNumber;
+      inv.metadata = { ...inv.metadata, portal_number: portalNumber };
+      emit('invoice.updated', inv);
       return structuredClone(inv);
     },
     send: async (invId) => {

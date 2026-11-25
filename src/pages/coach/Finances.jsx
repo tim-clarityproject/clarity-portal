@@ -131,7 +131,21 @@ function Overview() {
   const newYear = useNewYearTargets(fin, fy);
   const associatesToPay = (model.associates || []).map((a) => ({ coach_id: a.coach_id, first: String(a.name || 'your associate').split(/\s+/)[0] }));
   // The same low-cash month as Today's line: the cash flow's chosen months (cash_months), signed work only.
-  const needs = needsYouRows({ cash: model.cashChosen || model.cash, invoices: fin.invoices || [], deadlines: fin.deadlines || [], today: todayKey, names, targetsToCheck: newYear.toCheck, associatesToPay });
+  const { userId, invoiceReminders } = useCoachPortal();
+  const toast = useToast();
+  const sending = useRef(false);
+  const needs = needsYouRows({ cash: model.cashChosen || model.cash, invoices: fin.invoices || [], deadlines: fin.deadlines || [], today: todayKey, names, targetsToCheck: newYear.toCheck, associatesToPay, reminders: invoiceReminders || [] });
+  // Send again, for a reminder whose sending couldn't be confirmed, once the coach has checked (follow-up 5, item 5).
+  const sendAgain = async (reminderId) => {
+    if (sending.current) return; // one request per press
+    sending.current = true;
+    try {
+      const answer = await coachBilling(userId, { kind: 'send_reminder', reminderId, again: true });
+      if (answer.ok && answer.sent) toast.saved({ message: 'Reminder sent, with the payment link.' });
+      else if (answer.ok) toast.show('That reminder has already gone.');
+      else toast.error(answer.message || 'That reminder didn’t send. Check your connection and try again.');
+    } finally { sending.current = false; }
+  };
   if (bankCheckDue({ settings, today: todayKey })) needs.push({ key: 'bank', title: `Check your bank balance for ${monthName(todayKey)}.`, link: 'Check the balance', to: '/coach/finances/cash-flow?bank=1' });
   const pipe = pipelineLine(leads, leadStages);
   // The same renewals as Clients' Renewals tab (one function), so the two counts and amounts always agree.
@@ -174,7 +188,7 @@ function Overview() {
         <FinPart title="Needs you">
           {needs.map((n) => (
             <Line key={n.key} title={n.title} small={n.small}>
-              <TextLink aria-label={`${n.link}: ${n.title}`} onClick={() => (n.invoiceId ? setPanel({ kind: 'overdue', id: n.invoiceId }) : n.open ? setPanel({ kind: n.open }) : navigate(n.to))}>{n.link}</TextLink>
+              <TextLink aria-label={`${n.link}: ${n.title}`} onClick={() => (n.reminderId ? sendAgain(n.reminderId) : n.invoiceId ? setPanel({ kind: 'overdue', id: n.invoiceId }) : n.open ? setPanel({ kind: n.open }) : navigate(n.to))}>{n.link}</TextLink>
             </Line>
           ))}
         </FinPart>

@@ -30,9 +30,10 @@ test('signed, drafted once, sent, settled (Stripe\'s message twice: one payment)
   assert.deepEqual(await b.draft('a-ben'), { drafted: 1 });
   assert.deepEqual(await b.draft('a-ben'), { drafted: 0 }, 'asked again: nothing more');
   const [inv] = db.tables.invoices;
-  assert.deepEqual([inv.number >= 1201, inv.status, inv.total_minor, inv.instalment_n], [true, 'draft', 300000, 1]);
+  assert.deepEqual([inv.number ?? null, inv.status, inv.total_minor, inv.instalment_n], [null, 'draft', 300000, 1], 'a draft has no number yet (follow-up 5)');
   assert.equal(stripe.state.sent.length, 0, 'nothing sends until Send');
-  assert.deepEqual(await b.send(inv.id), { status: 'sent' });
+  assert.deepEqual(await b.send(inv.id), { status: 'sent', number: 'CLARITY-1201' });
+  assert.equal(stripe.state.invoices.get(inv.stripe_invoice_id).number, 'CLARITY-1201', 'Stripe\'s invoice carries the number');
   const sent = db.tables.invoices[0];
   assert.deepEqual([sent.status, sent.issued_on, sent.due_on, /^https:\/\//.test(sent.hosted_url)], ['sent', '2026-12-01', '2026-12-15', true]);
   const paid = stripe.settle(inv.stripe_invoice_id);
@@ -60,7 +61,9 @@ test('an instalment missed: reminders drafted at 3, 7 and 14 days, once each; th
   const fourteen = db.tables.invoice_reminders.find((r) => r.stage === 14);
   const r = await b.reminderToSend(fourteen.id);
   assert.equal(r.settleBy.words, 'Tue 5 Jan');
-  assert.deepEqual(await b.reminderToSend(fourteen.id), { already: true }, 'pressed twice: sent once');
+  assert.deepEqual(await b.reminderToSend(fourteen.id), { unsure: true }, 'pressed twice while it goes: sent once');
+  await b.reminderSent(r);
+  assert.deepEqual(await b.reminderToSend(fourteen.id), { already: true }, 'pressed again once it went: sent once');
   stripe.settle(db.tables.invoices[0].stripe_invoice_id);
   await deliver(db, stripe);
   assert.deepEqual(db.tables.invoice_reminders.map((x) => x.stage), [14], 'the drafts not sent go the moment it is paid');
@@ -185,8 +188,10 @@ test('functionality tester, 6b run 1: a reminder with no address is refused befo
   db.tables.invoices[0].payer_email = email;
   const r = await b.reminderToSend(rem.id);
   assert.ok(r.reminder);
-  await b.releaseReminder(rem.id);
-  assert.equal(db.tables.invoice_reminders[0].sent_at, null, 'let go, so it waits to be sent again');
+  assert.ok(db.tables.invoice_reminders[0].sending_at, 'marked as sending before the email service is asked');
+  assert.deepEqual(await b.reminderToSend(rem.id), { unsure: true }, 'a second press never sends it twice');
+  await b.releaseReminder(r);
+  assert.deepEqual([db.tables.invoice_reminders[0].sent_at ?? null, db.tables.invoice_reminders[0].sending_at], [null, null], 'let go, so it waits to be sent again');
   assert.ok((await b.reminderToSend(rem.id)).reminder);
 });
 
@@ -204,8 +209,14 @@ test('the handler: a reminder Resend refuses is let go and the coach is told it 
   const real = globalThis.fetch;
   globalThis.fetch = async () => new Response('{}', { status: 500 });
   try {
-    const went = await sendReminder({ RESEND_API_KEY: 're_test_invented', EMAIL_FROM: 'Invented <x@example.invalid>' }, db, COACH, r).catch(() => 0);
-    assert.equal(went, 0);
+    const env = { RESEND_API_KEY: 're_test_invented', COACH_EMAIL_FROM: 'Invented <x@example.invalid>' };
+    assert.equal(await sendReminder(env, db, COACH, r), 'unsure', 'a server error: it may have gone (follow-up 5)');
+    globalThis.fetch = async () => new Response('{}', { status: 422 });
+    assert.equal(await sendReminder(env, db, COACH, r), 'refused', 'a refusal: it never went');
+    globalThis.fetch = async () => { throw new DOMException('timed out', 'TimeoutError'); };
+    assert.equal(await sendReminder(env, db, COACH, r), 'unsure', 'no answer in time: it may have gone');
+    globalThis.fetch = async () => new Response('{"id":"x"}', { status: 200 });
+    assert.equal(await sendReminder(env, db, COACH, r), 'sent');
   } finally { globalThis.fetch = real; }
 });
 
@@ -320,12 +331,77 @@ test('Finances (run 2): Add bank payment and New invoice are the owner\'s alone,
   assert.equal(askedFor({ kind: 'one_off', amount: 94000, organisationId: '11111111-1111-4111-8111-111111111111', whatFor: '', currency: 'GBP', due: 'in_30' }), null, 'what it is for is needed');
   await assert.rejects(assoc.oneOff({ ...inv, organisationId: 'o-north' }), /Only the owner/);
   const made = await owner.oneOff({ ...inv, organisationId: 'o-north', currency: 'GBP', due: 'in_30' });
-  assert.match(made.number, /^CLARITY-\d+$/);
+  assert.equal(made.number, null, 'a draft has no number until it is sent (follow-up 5)');
   const row = db.tables.invoices.find((i) => i.id === made.id);
   assert.deepEqual([row.status, row.kind, row.terms_days, row.settles_to, row.payer_email, row.sector], ['draft', 'one_off', 30, 'organisation', 'femi@example.invalid', 'Business']);
   assert.equal(stripe.state.sent.length, 0, 'Save as a draft sends nothing');
   const sent = await owner.oneOff({ ...inv, organisationId: 'o-north', send: true, currency: 'GBP', due: 'on_receipt' });
   assert.equal(sent.status, 'sent');
+  assert.match(sent.number, /^CLARITY-\d+$/);
   const s = db.tables.invoices.find((i) => i.id === sent.id);
   assert.equal(s.due_on, s.issued_on, 'on receipt: due the day it goes');
+});
+
+test('follow-up 5, item 6: numbers are given at Send, in order, with no gap from a draft that failed or was never sent', async () => {
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const { db, stripe, b } = world(now);
+  await b.draft('a-ben');
+  const first = db.tables.invoices[0];
+  // A second draft whose save fails (Stripe made it, the database refused): no number is used up.
+  const insert = db.from;
+  db.from = (table) => { const q = insert(table); if (table === 'invoices') q.insert = () => ({ select: () => ({ maybeSingle: async () => ({ data: null, error: { code: '23505' } }) }), then: (res) => res({ data: null, error: { code: '23505' } }) }); return q; };
+  now.value = new Date('2027-01-01T12:00:00Z');
+  await b.draft('a-ben').catch(() => {});
+  db.from = insert;
+  assert.equal(db.tables.invoices.length, 1);
+  // Stripe refuses the first Send: the number stays on the invoice, and the retry uses the same one.
+  const realSend = stripe.send;
+  stripe.send = async () => { throw Object.assign(new Error('Stripe didn’t answer.'), { code: 'stripe_500' }); };
+  await assert.rejects(b.send(first.id));
+  stripe.send = realSend;
+  assert.equal(db.tables.invoices[0].number, 1201, 'kept for the retry');
+  assert.deepEqual(await b.send(first.id), { status: 'sent', number: 'CLARITY-1201' });
+  await b.draft('a-ben');
+  const second = db.tables.invoices.find((i) => i.id !== first.id);
+  assert.equal(second.number ?? null, null);
+  assert.deepEqual(await b.send(second.id), { status: 'sent', number: 'CLARITY-1202' }, 'the next number, no gap');
+});
+
+test('follow-up 5, item 5: a reminder whose email gets no answer stays marked as sending; Send again only after a check', async () => {
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const { db, stripe, b } = world(now);
+  await b.draft('a-ben');
+  await b.send(db.tables.invoices[0].id);
+  await deliver(db, stripe);
+  now.value = new Date('2026-12-18T09:00:00Z');
+  await b.draftReminders();
+  const id = db.tables.invoice_reminders[0].id;
+  const r = await b.reminderToSend(id);
+  assert.ok(r.reminder && r.has064);
+  // No answer: nothing is let go and nothing marks it sent.
+  assert.deepEqual([db.tables.invoice_reminders[0].sent_at ?? null, Boolean(db.tables.invoice_reminders[0].sending_at)], [null, true]);
+  assert.deepEqual(await b.reminderToSend(id), { unsure: true }, 'never sent again by itself');
+  assert.deepEqual(await b.reminderToSend(id, { again: true }), { unsure: true }, 'not while a send could still be on its way');
+  now.value = new Date('2026-12-18T09:03:00Z');
+  const again = await b.reminderToSend(id, { again: true });
+  assert.ok(again.reminder, 'Send again, once checked');
+  await b.reminderSent(again);
+  assert.deepEqual([Boolean(db.tables.invoice_reminders[0].sent_at), db.tables.invoice_reminders[0].sending_at], [true, null]);
+  assert.deepEqual(await b.reminderToSend(id, { again: true }), { already: true });
+});
+
+test('follow-up 5, item 8: an organisation the owner set up himself, tied to nothing else, is still his to invoice and record a payment from', async () => {
+  const now = { value: new Date('2026-11-19T10:00:00Z') };
+  const { db, stripe } = world(now);
+  const tess = { ...OTHER, user_id: 'u-tess' };
+  db.tables.organisations = [{ id: 'o-own', name: 'Harbour Studio', sector: 'Business', created_by: 'u-tess' },
+    { id: 'o-else', name: 'Someone Else Ltd', sector: 'Business', created_by: 'u-other' }];
+  const owner = billing({ server: db, stripe, coach: tess, now: () => now.value });
+  const assoc = billing({ server: db, stripe, coach: { ...COACH, user_id: 'u-tess' }, now: () => now.value });
+  const pay = { kind: 'bank_payment', amount: 50000, arrivedOn: '2026-11-19', sector: 'Business', whatFor: 'Workshop' };
+  assert.ok((await owner.bankPayment({ ...pay, organisationId: 'o-own' })).id);
+  const made = await owner.oneOff({ kind: 'one_off', amount: 50000, organisationId: 'o-own', whatFor: 'Workshop', currency: 'GBP', due: 'in_30' });
+  assert.equal(made.status, 'draft');
+  await assert.rejects(owner.bankPayment({ ...pay, organisationId: 'o-else' }), /isn’t yours/, 'one he didn’t set up, tied to nothing of his, is refused');
+  await assert.rejects(assoc.oneOff({ kind: 'one_off', amount: 50000, organisationId: 'o-own', whatFor: 'x', currency: 'GBP', due: 'in_30' }), /Only the owner/);
 });

@@ -49,12 +49,14 @@ export function emailFrom(doc) {
  * 429 left as it was lost that guest's reminder for good). Any other refusal,
  * or no answer, is never tried again: it may have gone.
  */
-export async function sendWithResend(env, { to, subject, html, text, attachments }, { tries = 3, wait = (ms) => new Promise((r) => { setTimeout(r, ms); }) } = {}) {
+export async function sendWithResend(env, { to, subject, html, text, attachments }, { tries = 3, wait = (ms) => new Promise((r) => { setTimeout(r, ms); }), timeoutMs = 0, fetcher = globalThis.fetch } = {}) {
   for (let attempt = 1; ; attempt += 1) {
-    const r = await fetch('https://api.resend.com/emails', {
+    const r = await fetcher('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.RESEND_API_KEY}` },
       body: JSON.stringify({ from: fromAddress(env), to: [to], subject, html, text, attachments }),
+      // Given up on after timeoutMs: an email that may have gone (sendOutcome's 'unsure').
+      ...(timeoutMs > 0 ? { signal: AbortSignal.timeout(timeoutMs) } : {}),
     });
     if (r.ok) return;
     if (r.status !== 429 || attempt >= tries) {
@@ -64,6 +66,21 @@ export async function sendWithResend(env, { to, subject, html, text, attachments
     }
     const after = Number(r.headers?.get?.('retry-after'));
     await wait(Number.isFinite(after) && after > 0 ? Math.min(after * 1000, 2000) : 1000);
+  }
+}
+
+/**
+ * Sends one email and says what is known about it (follow-up 5, item 5): 'sent' (the provider took it), 'refused' (it
+ * answered no, 400 to 499, so it never went and may be sent again) or 'unsure' (no answer in time, or a server error:
+ * it may have gone, so it must never be sent again without someone checking first).
+ * @returns {Promise<'sent'|'refused'|'unsure'>}
+ */
+export async function sendOutcome(env, message, options = {}) {
+  try {
+    await sendWithResend(env, message, { timeoutMs: 15000, ...options });
+    return 'sent';
+  } catch (e) {
+    return Number.isInteger(e?.status) && e.status >= 400 && e.status < 500 ? 'refused' : 'unsure';
   }
 }
 

@@ -14,9 +14,10 @@
 // refuses a live key); with no key, every ask answers { ok: false, reason: 'not_connected' }. No late fees or interest.
 //
 // Environment variables (Vercel): STRIPE_SECRET_KEY (sk_test_…), SUPABASE_SERVICE_ROLE_KEY, the Supabase URL and anon key.
+import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { codeRefusal } from '../_coachCode.js';
-import { asCallerClient, canSend, emailFrom, sendEach, supabaseOf } from '../_coachEmails.js';
+import { asCallerClient, canSend, emailFrom, sendOutcome, supabaseOf } from '../_coachEmails.js';
 import { maySend } from '../_guestEmails.js';
 import { invoiceReminderEmail } from '../../src/lib/email/billingEmails.js';
 import { dayKeyWords } from '../../src/lib/time/index.js';
@@ -79,6 +80,7 @@ export function askedFor(body, now = new Date()) {
   const idKey = b.kind === 'draft' ? 'agreementId' : b.kind === 'send_reminder' ? 'reminderId' : 'invoiceId';
   if (!UUID.test(String(b[idKey] || ''))) return null;
   const out = { kind: b.kind, id: String(b[idKey]).toLowerCase() };
+  if (b.kind === 'send_reminder' && b.again === true) out.again = true;
   if (b.kind === 'paid_by_hand' && b.landedMinor != null && b.landedMinor !== '') {
     const landed = strictMinor(b.landedMinor);
     if (landed == null) return null;
@@ -175,21 +177,22 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
       ownerOnly();
       const who = await whoFor(asked);
       const days = asked.due === 'in_14' ? 14 : asked.due === 'in_30' ? 30 : 0;
-      const { data: number } = await server.rpc('next_invoice_number');
-      const idem = `one_off:${coach.id}:number:${number}`;
+      // A fresh key for each press: a draft has no number until it is sent (follow-up 5, item 6), so a retry is a new request.
+      const idem = `one_off:${coach.id}:${randomUUID()}`;
       const customer = await stripe.customer({ name: who.name, email: who.email, metadata: { profile_id: who.profile?.id || '', organisation_id: who.organisationId || '' } }, `${idem}:customer`);
       const lines = [{ description: asked.whatFor, amount: asked.amount }];
       const inv = await stripe.draftInvoice({ customer: customer.id, currency: asked.currency, daysUntilDue: Math.max(days, 1), lines,
-        metadata: { portal_number: `CLARITY-${number}`, kind: 'one_off' } }, idem);
+        metadata: { kind: 'one_off' } }, idem);
       const { data: row, error } = await server.from('invoices').insert({
-        coach_id: coach.id, profile_id: who.profile?.id || null, organisation_id: who.organisationId || null, number, stripe_invoice_id: inv.id,
+        coach_id: coach.id, profile_id: who.profile?.id || null, organisation_id: who.organisationId || null, stripe_invoice_id: inv.id,
         stripe_customer_id: customer.id, kind: 'one_off', status: 'draft', currency: asked.currency, lines, total_minor: asked.amount, terms_days: days,
         settles_to: who.organisation ? 'organisation' : 'client', payer_name: who.name, payer_email: who.email || null, payer_zone: who.zone || null,
         sector: asked.sector || who.sector || null,
       }).select('id').maybeSingle();
       if (error) { await stripe.void(inv.id).catch(() => {}); throw error; }
-      if (asked.send) await this.send(row.id);
-      return { id: row.id, number: `CLARITY-${number}`, status: asked.send ? 'sent' : 'draft' };
+      if (!asked.send) return { id: row.id, number: null, status: 'draft' };
+      const sent = await this.send(row.id);
+      return { id: row.id, number: sent.number || null, status: 'sent' };
     },
 
     /** The agreement's invoices due by today that aren't drafted yet, drafted in Stripe and kept here; never sent. */
@@ -215,16 +218,15 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
         return known;
       };
       for (const p of due) {
-        const { data: number } = await server.rpc('next_invoice_number');
-        // The number is part of the key: a retry after a failed save takes a new number, so it is a new request to Stripe
-        // and never Stripe's "same key, other parameters" refusal (break-it tester, 6b run 1).
-        const idem = `agreement:${agreement.id}:instalment:${p.n}:number:${number}`;
+        // A fresh key each time: a retry after a failed save is a new request to Stripe, never Stripe's "same key, other
+        // parameters" refusal (break-it tester, 6b run 1). The CLARITY- number waits for Send (follow-up 5, item 6).
+        const idem = `agreement:${agreement.id}:instalment:${p.n}:${randomUUID()}`;
         const customer = await customerFor(agreement, payer, idem);
         const inv = await stripe.draftInvoice({ customer: customer.id, currency: version.currency, daysUntilDue: p.termsDays, lines: p.lines, poNumber: p.poNumber,
-          metadata: { portal_number: `CLARITY-${number}`, agreement_id: agreement.id, instalment: String(p.n) } }, idem);
+          metadata: { agreement_id: agreement.id, instalment: String(p.n) } }, idem);
         const { error } = await server.from('invoices').insert({
           coach_id: coach.id, agreement_id: agreement.id, profile_id: agreement.profile_id, organisation_id: payer.profile?.organisation_id || null,
-          number, stripe_invoice_id: inv.id, stripe_customer_id: customer.id, kind: 'instalment', status: 'draft', currency: version.currency, lines: p.lines, total_minor: p.total,
+          stripe_invoice_id: inv.id, stripe_customer_id: customer.id, kind: 'instalment', status: 'draft', currency: version.currency, lines: p.lines, total_minor: p.total,
           terms_days: p.termsDays, po_number: p.poNumber, settles_to: p.settlesTo, payer_name: payer.name, payer_email: payer.email, payer_zone: payer.zone, instalment_n: p.n,
         });
         // Asked twice at once: the database keeps one (one invoice for each instalment); the other draft is voided in Stripe.
@@ -234,15 +236,32 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
       return { drafted };
     },
 
-    /** The coach's Send: Stripe finalises it and sends it with its payment link. */
+    /**
+     * The coach's Send: the invoice takes its CLARITY- number now (064's invoice_take_number, the same number again on a
+     * retry), Stripe's draft is given it, then Stripe finalises it and sends it with its payment link. A draft that is
+     * never sent never takes a number, so the numbers have no gaps (follow-up 5, item 6). An older draft that already has
+     * a number keeps it.
+     */
     async send(invoiceId) {
       const inv = await mine('invoices', invoiceId);
-      if (inv.status !== 'draft') return { status: inv.status };
+      if (inv.status !== 'draft') return { status: inv.status, number: inv.number ? `CLARITY-${inv.number}` : null };
+      let number = inv.number;
+      if (number == null) {
+        let { data, error } = await server.rpc('invoice_take_number', { p_invoice: inv.id });
+        // Before 064: 061's sequence, kept on the invoice before Stripe is asked, so a retry keeps the same number.
+        if (error && (error.code === 'PGRST202' || error.code === '42883')) {
+          ({ data, error } = await server.rpc('next_invoice_number'));
+          if (!error && Number.isInteger(data)) ({ error } = await server.from('invoices').update({ number: data }).eq('id', inv.id).is('number', null));
+        }
+        if (error || !Number.isInteger(data)) { const e = new Error('That didn’t send. Try again in a moment.'); e.status = 502; throw e; }
+        number = data;
+      }
+      await stripe.number(inv.stripe_invoice_id, `CLARITY-${number}`);
       const sent = await stripe.send(inv.stripe_invoice_id);
       const issued = today(inv.payer_zone);
       await server.from('invoices').update({ status: 'sent', sent_at: now().toISOString(), issued_on: issued, due_on: addDays(issued, inv.terms_days),
         hosted_url: sent.hosted_invoice_url || null, updated_at: now().toISOString() }).eq('id', inv.id).eq('status', 'draft');
-      return { status: 'sent' };
+      return { status: 'sent', number: `CLARITY-${number}` };
     },
 
     /**
@@ -312,32 +331,50 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
       return { drafted };
     },
 
-    /** The coach's Send on a reminder: the settle-by day is worked out now (7 days after it goes) for the 14-day one. */
-    async reminderToSend(reminderId) {
+    /**
+     * The coach's Send on a reminder: the settle-by day is worked out now (7 days after it goes) for the 14-day one.
+     * It is marked as sending (064's sending_at) before the email service is asked, so a second press can't send it
+     * twice. `again`: Needs you's Send again, for one whose sending couldn't be confirmed (follow-up 5, item 5), once
+     * the coach has checked. Before 064 the claim is sent_at itself, as 061 had it.
+     */
+    async reminderToSend(reminderId, { again = false } = {}) {
       const rem = await mine('invoice_reminders', reminderId);
       if (rem.sent_at) return { already: true };
+      const unsure = 'sending_at' in rem && rem.sending_at != null;
+      // Marked as sending and not confirmed: only Send again, and only once a send still on its way would have ended.
+      if (unsure && (!again || now().getTime() - new Date(rem.sending_at).getTime() < REMINDER_SETTLE_MS)) return { unsure: true };
       const inv = await mine('invoices', rem.invoice_id);
       if (inv.status !== 'sent') return { settled: true };
       // Nobody to send it to, or no page to settle on: refused before it's claimed, so it stays waiting (functionality tester).
       if (!inv.payer_email || !/^https:\/\//.test(inv.hosted_url || '')) return { noAddress: true };
       const at = now();
       const by = rem.stage === 14 ? settleBy(at, inv.payer_zone) : null;
-      const { data: claimed } = await server.from('invoice_reminders').update({ sent_at: at.toISOString(), settle_by: by?.day || null })
-        .eq('id', rem.id).is('sent_at', null).select('id');
+      const has064 = 'sending_at' in rem;
+      let q = server.from('invoice_reminders').update(has064 ? { sending_at: at.toISOString(), settle_by: by?.day || null } : { sent_at: at.toISOString(), settle_by: by?.day || null })
+        .eq('id', rem.id).is('sent_at', null);
+      q = !has064 ? q : unsure ? q.eq('sending_at', rem.sending_at) : q.is('sending_at', null);
+      const { data: claimed } = await q.select('id');
       if (!claimed?.length) return { already: true };
-      return { reminder: rem, invoice: inv, settleBy: by };
+      return { reminder: rem, invoice: inv, settleBy: by, at, has064 };
     },
 
-    /** Nothing went (the email service refused it): the claim is let go, so the reminder waits to be sent again. */
-    async releaseReminder(reminderId) {
-      await server.from('invoice_reminders').update({ sent_at: null, settle_by: null }).eq('id', reminderId).eq('coach_id', coach.id);
+    /** It went: marked sent (with 064, the sending mark is cleared). */
+    async reminderSent(r) {
+      if (!r.has064) return;
+      await server.from('invoice_reminders').update({ sent_at: r.at.toISOString(), sending_at: null }).eq('id', r.reminder.id).eq('coach_id', coach.id);
+    },
+
+    /** Nothing went (the email service said no): the claim is let go, so the reminder waits to be sent again. */
+    async releaseReminder(r) {
+      await server.from('invoice_reminders').update(r.has064 ? { sending_at: null, settle_by: null } : { sent_at: null, settle_by: null }).eq('id', r.reminder.id).eq('coach_id', coach.id);
     },
   };
 }
 
 /** The reminder email, from the coach, in the shared template, to whoever settles the invoice, with Stripe's own link. */
-export async function sendReminder(env, server, coach, { reminder, invoice, settleBy: by }) {
-  if (!invoice.payer_email || !/^https:\/\//.test(invoice.hosted_url || '')) return 0;
+/** @returns {Promise<'sent'|'refused'|'unsure'>} what is known about it (sendOutcome) */
+export async function sendReminder(env, server, coach, { reminder, invoice, settleBy: by }, options = {}) {
+  if (!invoice.payer_email || !/^https:\/\//.test(invoice.hosted_url || '')) return 'refused';
   const { data: me } = await server.from('coaches').select('display_first_name').eq('id', coach.id).maybeSingle();
   let coachee = null;
   if (invoice.settles_to === 'organisation' && invoice.profile_id) {
@@ -349,8 +386,14 @@ export async function sendReminder(env, server, coach, { reminder, invoice, sett
     amountWords: moneyWords(invoice.total_minor - invoice.paid_minor, invoice.currency), dueDayWords: dayKeyWords(invoice.due_on),
     settleByWords: by?.words || null, coachFirst: me?.display_first_name || '', settleLink: invoice.hosted_url, coachee, poNumber: invoice.po_number,
   });
-  return sendEach(env, [{ email: invoice.payer_email }], () => emailFrom(doc));
+  return sendOutcome(env, { to: invoice.payer_email, ...emailFrom(doc) }, options);
 }
+
+/** How long a reminder marked as sending may still be on its way (the send gives up after 15 seconds; the function after 60). */
+export const REMINDER_SETTLE_MS = 2 * 60 * 1000;
+
+/** Needs you's words for a reminder whose sending couldn't be confirmed (follow-up 5, item 5). */
+export const REMINDER_UNSURE = 'We couldn’t confirm that reminder went. Check before sending again.';
 
 export default async function handler(req, res, env = process.env) {
   if (req.method !== 'POST') return reply(res, 405, { ok: false, message: DIDNT_WORK });
@@ -379,15 +422,22 @@ export default async function handler(req, res, env = process.env) {
     if (asked.kind === 'refund' || asked.kind === 'credit') return reply(res, 200, { ok: true, ...(await b.refundOrCredit(asked.id, asked.kind, asked.amount, asked.reason)) });
     // Only the live site ever sends: a preview claims nothing, so a reminder pressed there is still waiting on the live site.
     if (!maySend(env) || !canSend(env)) return reply(res, 200, { ok: false, reason: 'preview' });
-    const r = await b.reminderToSend(asked.id);
+    const r = await b.reminderToSend(asked.id, { again: asked.again === true });
     if (r.noAddress) return reply(res, 409, { ok: false, message: 'This invoice has no email address to send a reminder to, so add one and try again.' });
-    let went = 0;
-    if (r.reminder) went = await sendReminder(env, server, coach, r).catch(() => 0);
-    if (r.reminder && !went) {
-      await b.releaseReminder(r.reminder.id);
+    if (r.unsure) return reply(res, 409, { ok: false, unsure: true, message: REMINDER_UNSURE });
+    if (!r.reminder) return reply(res, 200, { ok: true, sent: false, already: Boolean(r.already), settled: Boolean(r.settled) });
+    const outcome = await sendReminder(env, server, coach, r).catch(() => 'unsure');
+    if (outcome === 'sent') {
+      await b.reminderSent(r);
+      return reply(res, 200, { ok: true, sent: true });
+    }
+    // Refused: it never went, so it waits to be sent again. No answer: it may have gone, so it stays marked as
+    // sending, never let go by itself, and Needs you asks the coach to check first.
+    if (outcome === 'refused' || !r.has064) {
+      await b.releaseReminder(r);
       return reply(res, 502, { ok: false, message: 'That reminder didn’t send. Check your connection and try again.' });
     }
-    return reply(res, 200, { ok: true, sent: Boolean(r.reminder), already: Boolean(r.already), settled: Boolean(r.settled) });
+    return reply(res, 502, { ok: false, unsure: true, message: REMINDER_UNSURE });
   } catch (e) {
     return reply(res, e?.status || 502, { ok: false, message: e?.status ? e.message : DIDNT_WORK });
   }

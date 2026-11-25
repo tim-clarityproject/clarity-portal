@@ -6,6 +6,7 @@ import { AddButton, Button, Crosshair, Dropdown, InlineChoice, Loading, PageHead
 import { supabase } from '../../lib/supabase';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { zonePlace } from '../../lib/time';
+import { inviteLinkWords } from '../../lib/coach/inviteLink';
 import { formatClockTime } from '../../lib/dateFormatter';
 import { coach061ReadyNow, coachReadyNow, ensureClientSessions, keyOf, newId, removeRow, rowsOf, saveRow, saveRows, useCoachFirstLoaded } from '../../lib/coach/store';
 import { deleteClient, inviteClient, inviteWords, moveClient, NEEDS_049 } from '../../lib/coach/actions';
@@ -463,11 +464,12 @@ export default function ClientPage() {
           <div className="cc-fade" key="over">
             {shared?.mission && <div className="cc-soft"><span className="cc-soft-label">{possessive(first)} Mission</span><p>{shared.mission}</p></div>}
 
-            {!started.complete && profile.status !== 'past' && (
+            {(!started.complete || (profile.invited_at && !profile.user_id && profile.email)) && profile.status !== 'past' && (
               <Part title="Getting started">
                 {started.rows.map((r) => (
-                  <Line key={r.key} title={r.label} small={r.key === 'invited' && !profile.email && !r.done ? `Add ${possessive(first)} email first.` : null}>
-                    {r.done ? <span className="cc-line-state cc-line-state--good">Done</span>
+                  <Line key={r.key} title={r.label} small={r.key === 'invited' && !profile.email && !r.done ? `Add ${possessive(first)} email first.` : r.key === 'invited' ? inviteLinkWords(profile, { zone: coachZone }) : null}>
+                    {r.key === 'invited' && r.done && profile.invited_at && !profile.user_id && profile.email ? <TextLink onClick={() => setPanel('invite')}>Send it again</TextLink>
+                      : r.done ? <span className="cc-line-state cc-line-state--good">Done</span>
                       : r.key === 'engagement' ? <TextLink onClick={() => setEngDraft(draftFrom(null))}>Add engagement</TextLink>
                         : r.key === 'invited' ? <TextLink onClick={() => { if (!profile.email) { toggle('det'); return; } setPanel('invite'); }}>Invite to the portal</TextLink>
                           : <TextLink aria-label={`Tick ${r.label}`} onClick={() => save({ getting_started: { ...(profile.getting_started || {}), [r.key]: true } })}>Tick as done</TextLink>}
@@ -676,10 +678,10 @@ export default function ClientPage() {
       <SlidePanel
         open={panel === 'invite'}
         onClose={() => setPanel(null)}
-        title="Invite to the portal"
-        footer={<div className="cc-panel-foot"><TextLink onClick={() => setPanel(null)}>Not now</TextLink><Button variant="primary" onClick={invite}>Invite {first}</Button></div>}
+        title={profile.invited_at && !profile.user_id ? 'Send the invite again' : 'Invite to the portal'}
+        footer={<div className="cc-panel-foot"><TextLink onClick={() => setPanel(null)}>Not now</TextLink><Button variant="primary" onClick={invite}>{profile.invited_at && !profile.user_id ? 'Send it again' : `Invite ${first}`}</Button></div>}
       >
-        <p className="cc-quiet">{first} gets an email at {profile.email}, with a link to create their account.</p>
+        <p className="cc-quiet">{first} gets an email at {profile.email}, with a link to create their account. The link works for 7 days{profile.invited_at && !profile.user_id ? ', and the one sent before stops working' : ''}.</p>
         <p className="cc-note">When {first} accepts in The Clarity Portal, their account joins this page and you become their coach.</p>
       </SlidePanel>
       <SlidePanel

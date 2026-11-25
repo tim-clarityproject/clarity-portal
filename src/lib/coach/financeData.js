@@ -217,8 +217,11 @@ export function invoiceGroups({ invoices = [], today, names = {}, q = '', who = 
 export function reminderLines({ invoice, reminders = [], today }) {
   const mine = (reminders || []).filter((r) => r.invoice_id === invoice.id);
   const sent = mine.filter((r) => r.sent_at).sort((a, b) => String(a.sent_at).localeCompare(String(b.sent_at)));
-  const waiting = mine.filter((r) => !r.sent_at).sort((a, b) => b.stage - a.stage)[0] || null;
+  // One marked as sending (064) may have gone: it is never offered as waiting; Needs you asks the coach to check it.
+  const waiting = mine.filter((r) => !r.sent_at && !r.sending_at).sort((a, b) => b.stage - a.stage)[0] || null;
+  const unsure = mine.filter((r) => !r.sent_at && r.sending_at);
   const lines = [];
+  if (unsure.length) lines.push(REMINDER_UNSURE_TITLE.replace(/\.$/, ''));
   if (sent.length) {
     const days = sent.map((r) => dayWordsFrom(String(r.sent_at).slice(0, 10), today));
     lines.push(`Sent ${days.length > 1 ? `${days.slice(0, -1).join(', ')} and ${days.at(-1)}` : days[0]}`);
@@ -230,6 +233,15 @@ export function reminderLines({ invoice, reminders = [], today }) {
 
 // ---------------------------------------------------------------- Needs you and Today's line
 
+/** A reminder marked as sending this long ago with no word that it went may not have gone (follow-up 5, item 5). */
+export const REMINDER_UNSURE_MS = 2 * 60 * 1000;
+export const REMINDER_UNSURE_TITLE = 'We couldn’t confirm that reminder went.';
+
+/** Reminders marked as sending, with no word that they went, for long enough that no send is still on its way. */
+export function unsureReminders(reminders = [], nowMs = Date.now()) {
+  return (reminders || []).filter((r) => r && !r.sent_at && r.sending_at && nowMs - new Date(r.sending_at).getTime() >= REMINDER_UNSURE_MS);
+}
+
 /** Overdue invoices listed one by one on Needs you, up to this many. */
 export const OVERDUE_LINES = 3;
 
@@ -238,9 +250,15 @@ export const OVERDUE_LINES = 3;
  * the next 2 weeks, and the year's targets to check after a new year copied them.
  * @returns {{ key: string, title: string, small?: string, link: string, to: string|null, invoiceId?: string }[]}
  */
-export function needsYouRows({ cash = null, invoices = [], deadlines = [], today, names = {}, targetsToCheck = false, associatesToPay = [] }) {
+export function needsYouRows({ cash = null, invoices = [], deadlines = [], today, names = {}, targetsToCheck = false, associatesToPay = [], reminders = [], nowMs = Date.now() }) {
   const rows = [];
   if (cash?.needsYou) rows.push({ key: 'cash', title: cash.needsYou, link: 'View the forecast', to: '/coach/finances/cash-flow' });
+  // A reminder that may have gone: never sent again by itself; the coach checks, then presses Send again.
+  for (const r of unsureReminders(reminders, nowMs)) {
+    const inv = (invoices || []).find((i) => i.id === r.invoice_id);
+    if (!inv || inv.status !== 'sent') continue;
+    rows.push({ key: `rem:${r.id}`, title: REMINDER_UNSURE_TITLE, small: invoiceWho(inv, names) ? `Check before sending again. It was for ${invoiceWho(inv, names)}.` : 'Check before sending again.', link: 'Send again', to: null, reminderId: r.id });
+  }
   // Each overdue invoice on its own line, the longest overdue first; past OVERDUE_LINES of them, one line for them all.
   const overdue = (invoices || []).filter((inv) => inv.status === 'sent' && !inv.waived_at && inv.due_on && inv.due_on < today && left(inv) > 0)
     .sort((a, b) => String(a.due_on).localeCompare(String(b.due_on)));
