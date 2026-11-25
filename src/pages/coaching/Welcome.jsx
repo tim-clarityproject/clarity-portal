@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
@@ -6,7 +6,8 @@ import { Button, Chevron, List, ListRow, LoadError, Loading, PageHeader, Section
 import StepsMarker from '../../components/agreements/StepsMarker';
 import { savePdf } from '../../components/design/pdfSave';
 import { getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
-import { BOOK_FIRST, WHAT_NEXT, stepsFor, welcomeLine, welcomeRows, welcomeTitle } from '../../lib/coaching/clientMoney';
+import { BOOK_FIRST, WHAT_NEXT, afterSigning, stepsFor, welcomeLine, welcomeRows, welcomeTitle } from '../../lib/coaching/clientMoney';
+import { clientAsk } from '../../lib/coaching/clientAsk';
 import { agreementDocument, useAgreements } from './agreementData';
 import './coaching.css';
 import './clientAgreement.css';
@@ -32,6 +33,23 @@ export default function Welcome() {
   const version = data.agreements.find((v) => v.id === versionId) || null;
   const terms = useMemo(() => ({ ...(version?.terms || {}), fundedBy: version?.fundedBy || version?.terms?.fundedBy || null }), [version]);
   const coachFirst = (typeof terms.coachFirst === 'string' && terms.coachFirst) || myCoach?.firstName || '';
+  // Opened by its address: every step shows done only once the server says the first payment is settled (or there is
+  // nothing to settle at signing). Not signed: back to Read and sign; not settled: back to Settle (functionality
+  // tester, run 3, finding 12). A stand-in answer (off the live site) never sends anyone back.
+  const needsSettling = Boolean(version?.signedAt) && afterSigning(terms, version?.settleChoice, { amends: version?.amends }) === 'settle';
+  const [checked, setChecked] = useState(() => !needsSettling || typeof state?.settled === 'string');
+  useEffect(() => {
+    if (!version) return undefined;
+    if (!version.signedAt) { navigate(`/coaching/agreement/${versionId}`, { replace: true }); return undefined; }
+    if (checked) return undefined;
+    let live = true;
+    clientAsk('settle', 'state', { versionId }).then((a) => {
+      if (!live) return;
+      if (a.ok && !a.standIn && a.settled === false) navigate(`/coaching/agreement/${versionId}/settle`, { replace: true });
+      else setChecked(true);
+    });
+    return () => { live = false; };
+  }, [version, versionId, checked, navigate]);
 
   if (!version) {
     if (loading) return <div className="ui-root plan-builder-wait"><Loading label="Loading" /></div>;
@@ -46,6 +64,7 @@ export default function Welcome() {
     );
   }
 
+  if (!checked || !version.signedAt) return <div className="ui-root plan-builder-wait"><Loading label="Loading" /></div>;
   const signedDay = version.signedAt ? getLocalDateKey(parseDbTimestamp(version.signedAt)) : null;
   const rows = welcomeRows({ terms, signedDay, startNow: version.startNow, today: getLocalDateKey(new Date()) });
   const steps = stepsFor(terms);

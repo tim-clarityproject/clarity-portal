@@ -4,7 +4,7 @@ import { AddButton, Button, Checkbox, Loading, PageHeader, TextField, useToast }
 import { ask } from '../../../lib/agreements/askClient';
 import { moneyText } from '../../../lib/agreements/currency';
 import { evidenceHint, introLine, pageCount, pageWords, problems, rate as rateFor, totalLine } from '../../../lib/agreements/orgInvoice';
-import { billTo, invoicePeriod, olderWords, openPo, orgInvoiceRows, penceFrom, rowDay, rowHours } from '../../../lib/agreements/duringAgreement';
+import { scheduledProfiles, billTo, invoicePeriod, olderWords, openPo, orgInvoiceRows, penceFrom, rowDay, rowHours } from '../../../lib/agreements/duringAgreement';
 import { uploadReceipt } from '../../../lib/coach/financeActions';
 import { coachZoneOf } from '../../../lib/coach/calendar';
 import { loadCoach, newId, removeRow, rowsOf, saveRow } from '../../../lib/coach/store';
@@ -35,8 +35,8 @@ export default function NewInvoice() {
   const po = openPo(p.purchaseOrders, id);
   const all = useMemo(() => orgInvoiceRows({
     organisationId: id, clients: p.clients, sessions: p.sessions, entries: rowsOf(p.state, 'time_entries'), engagements: rowsOf(p.state, 'engagements'),
-    sources: rowsOf(p.state, 'invoice_sources'), zone, now: p.now,
-  }), [id, p.clients, p.sessions, p.state, zone, p.now]);
+    sources: rowsOf(p.state, 'invoice_sources'), zone, now: p.now, covered: scheduledProfiles(p.agreements, rowsOf(p.state, 'agreement_versions')),
+  }), [id, p.clients, p.sessions, p.state, p.agreements, zone, p.now]);
   const evidence = rowsOf(p.state, 'invoice_evidence').filter((e) => e.organisation_id === id && !e.invoice_id).sort((a, b) => (a.position || 0) - (b.position || 0));
   const sponsor = p.agreements.map((a) => (a.organisation_id === id ? rowsOf(p.state, 'agreement_versions').find((v) => v.agreement_id === a.id && v.status === 'signed') : null)).find(Boolean);
   const [ticked, setTicked] = useState({});

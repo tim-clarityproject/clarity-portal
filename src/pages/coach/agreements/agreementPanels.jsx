@@ -6,10 +6,13 @@ import { extendOptions, pauseMove } from '../../../lib/agreements/endDate';
 import { refund14, windowEnds } from '../../../lib/agreements/coolingOff';
 import { usedCount } from '../../../lib/agreements/sessionOutcome';
 import {
-  endEarlyOptions, endEarlySentence, paidOn, pauseFromOptions, pauseToOptions, penceFrom, perSessionMinor, settledInvoices,
+  endEarlyOptions, endEarlySentence, hoursState, paidOn, pauseFromOptions, pauseToOptions, penceFrom, perSessionMinor, settledInvoices,
 } from '../../../lib/agreements/duringAgreement';
 import { dayKeyWords } from '../../../lib/time/index.js';
-import { loadCoach } from '../../../lib/coach/store';
+import { futureSessionsPlan } from '../../../lib/coach/calendar';
+import { kindOf } from '../../../lib/agreements/terms';
+import { useCalendar } from '../calendarParts';
+import { loadCoach, rowsOf } from '../../../lib/coach/store';
 import { TextLink, useCoachPortal } from '../parts';
 import { Points, Problem } from '../needsYou/panels';
 import '../needsYou/needsyou.css';
@@ -34,7 +37,7 @@ function useAsk(onClose) {
     try {
       const answer = await fn();
       if (!answer?.ok) { setProblem(answer?.message || 'That didn’t work. Try again in a moment.'); return; }
-      toast.saved({ message: typeof message === 'function' ? message(answer) : message });
+      toast.saved({ message: typeof message === 'function' ? await message(answer) : message });
       loadCoach(userId, { again: true }).catch(() => {});
       onClose();
     } finally { busy.current = false; }
@@ -157,17 +160,41 @@ function Refund({ a, name, onClose }) {
   };
 }
 
-function Cancel14({ a, v, t, name, signed, sessions, onClose }) {
+function Cancel14({ a, v, t, name, signed, sessions, firstV, onClose }) {
   const p = useCoachPortal();
+  const cal = useCalendar();
   const [problem, setProblem] = useState(null);
+  const [delivered, setDelivered] = useState('');
   const run = useAsk(onClose);
   const c = t?.currency || 'GBP';
+  const k = kindOf(t);
+  // The first signing's tick and choice: a later signed version is an amendment (agreements rule 12).
+  const startNow = Boolean((firstV || v)?.start_now);
+  const per = k === 'sessions' || k === 'retainer' ? perSessionMinor(t, (firstV || v)?.settle_choice || 'plan') : 0;
   const paid = paidOn(p.invoices, a.id);
-  const had = usedCount(sessions);
-  const back = refund14({ paidMinor: paid, sessionsHad: had, perSessionMinor: perSessionMinor(t), startNow: Boolean(v?.start_now) });
+  const since = Date.parse((firstV || v)?.client_signed_at || 0);
+  const had = k === 'sessions' || k === 'retainer' ? usedCount((sessions || []).filter((s) => Date.parse(s.starts_at) >= since)) : 0;
+  const hoursMinor = k === 'hours' ? (() => {
+    const h = hoursState({ agreement: a, terms: t, entries: rowsOf(p.state, 'time_entries'), invoices: p.invoices });
+    const mins = h.log.filter((e) => Date.parse(e.started_at) >= since).reduce((m, e) => m + Math.max(0, Math.round((Date.parse(e.ended_at) - Date.parse(e.started_at)) / 60000)), 0);
+    return Math.round(mins * (Number(t.hours?.rateMinor) || 0) / 60);
+  })() : 0;
+  const typed = k === 'oneoff' ? penceFrom(delivered) : null;
+  const deliveredMinor = k === 'oneoff' ? (Number.isFinite(typed) ? typed : 0) : hoursMinor;
+  const back = startNow ? Math.max(0, refund14({ paidMinor: paid, sessionsHad: had, perSessionMinor: per, startNow }) - deliveredMinor) : paid;
   const first = firstOf(name);
-  const go = () => run(() => ask('agreements', 'cancel_14', { agreementId: a.id }),
-    (ans) => (Number(ans.refundMinor) > 0 ? `Cancelled. ${moneyText(Number(ans.refundMinor), ans.currency || c)} goes back to ${first}, with a credit note.` : `Cancelled. ${first} has an email.`), setProblem);
+  const ahead = futureSessionsPlan(a.profile_id, { data: cal.data, now: p.now });
+  const go = () => {
+    if (k === 'oneoff' && startNow && Number.isNaN(typed)) { setProblem('Type what was delivered in pounds, like 500.'); return; }
+    run(() => ask('agreements', 'cancel_14', { agreementId: a.id, ...(k === 'oneoff' && startNow && typed != null ? { deliveredMinor: typed } : {}) }),
+      async (ans) => {
+        // Coaching sessions still to come come off the calendar as its own Delete takes them; nothing is emailed about them.
+        let off = 0;
+        if (ahead.count) { const fresh = futureSessionsPlan(a.profile_id, { data: cal.data, now: Date.now() }); if (await cal.run(fresh.plan, { quiet: true })) off = fresh.count; }
+        const tell = off ? ` ${off} coaching ${off === 1 ? 'session' : 'sessions'} to come ${off === 1 ? 'is' : 'are'} off your calendar, so let ${first} know.` : '';
+        return Number(ans.refundMinor) > 0 ? `Cancelled. ${moneyText(Number(ans.refundMinor), ans.currency || c)} goes back to ${first}, with a credit note.${tell}` : `Cancelled. ${first} has an email.${tell}`;
+      }, setProblem);
+  };
   return {
     title: 'Cancel within 14 days',
     footer: foot(<TextLink onClick={onClose}>Keep the agreement</TextLink>, <Button variant="primary" onClick={go}>{back > 0 ? `Cancel and refund ${moneyText(back, c)}` : 'Cancel the agreement'}</Button>),
@@ -175,12 +202,14 @@ function Cancel14({ a, v, t, name, signed, sessions, onClose }) {
       <>
         <p className="ny-meta"><span>{name}</span></p>
         <p className="ny-say">{`${first} signed on ${dayKeyWords(signed, { year: true })}, so their 14 days to change their mind run to ${dayKeyWords(windowEnds(signed), { year: true })}.`}</p>
+        {k === 'oneoff' && startNow && <div className="cc-field"><TextField label="How much of the work has been delivered?" inputMode="decimal" value={delivered} autoComplete="off" onChange={(e) => { setDelivered(e.target.value); setProblem(null); }} /></div>}
         <Points label="What happens" rows={[
           { label: 'Settled so far', value: moneyText(paid, c) },
-          ...(v?.start_now ? [{ label: 'Coaching sessions had', value: `${had}, at ${moneyText(perSessionMinor(t), c)} each` }] : []),
+          ...(startNow && per ? [{ label: 'Coaching sessions had', value: `${had}, at ${moneyText(per, c)} each` }] : []),
+          ...(startNow && k === 'hours' ? [{ label: 'Hours logged', value: moneyText(hoursMinor, c) }] : []),
           { label: 'Goes back', value: moneyText(back, c) },
         ]} />
-        <p className="ny-hint">{back > 0 ? `Stripe returns it to ${first}’s card, with a credit note. Coaching sessions still to come are released, and ${first} gets an email.` : `${first} gets an email, and coaching sessions still to come are released.`}</p>
+        <p className="ny-hint">{`${back > 0 ? `Stripe returns it to ${first}’s card, with a credit note, and ${first} gets an email.` : `${first} gets an email.`}${ahead.count ? ` ${ahead.count} coaching ${ahead.count === 1 ? 'session' : 'sessions'} still to come ${ahead.count === 1 ? 'comes' : 'come'} off your calendar, with no email about ${ahead.count === 1 ? 'it' : 'them'}, so let ${first} know.` : ''}`}</p>
         <Problem>{problem}</Problem>
       </>
     ),

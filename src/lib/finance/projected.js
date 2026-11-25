@@ -1,14 +1,17 @@
 import { addDays } from '../time/index.js';
 import { invoicesFor } from '../billing/invoicePlan.js';
+import { agreementSchedule } from '../agreements/settling.js';
 import { addMonths, monthKey } from './year.js';
 import { dayOnTimsClock } from './income.js';
 
 // What's still to come (Phase 6b run 2): the money Finances expects but hasn't been paid, each on the day it is
 // expected to arrive. Shared by Money's four figures, the chart's projected parts and the cash flow.
 //
-// - Signed instalments not invoiced yet: run 1's invoicesFor on each signed version's terms, less the instalments that
-//   already have an invoice (any status: a voided one was stopped on purpose). Each arrives on its draft day plus its
-//   payment terms.
+// - Signed instalments not invoiced yet: for an agreement made by the builder (065: terms.kind), the one billing schedule
+//   (settling.js's agreementSchedule over all its signed versions, amendments and pauses included: agreements rule 12);
+//   for a version from before 065, run 1's invoicesFor. Less the instalments that already have an invoice, whatever its
+//   kind (a first payment or deposit too) and status (a voided one was stopped on purpose). Each arrives on its draft day
+//   plus its payment terms. A row that can't be read is left out quietly (onSkip hears of it), never a crash.
 // - Drafted and sent invoices: what's left on them (total less paid), on their due day; a draft with no due day yet is
 //   due its terms from today. A sent invoice past its due day is overdue: Money shows it, the projections leave it out.
 // - Repeating income (portal seats, memberships): each month after the current one. This month's is already an invoice.
@@ -30,23 +33,50 @@ const toPounds = (minor, currency, dollarsPerPound) => {
  *   amount_minor: number, currency: string, pounds: number|null, sector, profile_id, organisation_id }[]} day is when it's expected:
  *   its due day, or `today` when that has gone by and it still has no invoice
  */
-export function plannedInstalments({ versions = [], invoices = [], today = null, zone } = {}) {
-  const done = new Set((invoices || []).filter((i) => i.agreement_id && (i.kind ?? 'instalment') === 'instalment')
+export function plannedInstalments({ versions = [], invoices = [], today = null, zone, agreements = null, until = null, onSkip = null } = {}) {
+  const done = new Set((invoices || []).filter((i) => i.agreement_id && ['instalment', 'first_payment', 'deposit'].includes(i.kind ?? 'instalment'))
     .map((i) => `${i.agreement_id}#${i.instalment_n ?? 1}`));
+  const agreementOf = new Map((agreements || []).map((a) => [a.id, a]));
   const out = [];
+  const skip = (v, e) => { try { onSkip?.(v, e); } catch { /* never on a page */ } };
+  const push = (v, p, currency, fx) => {
+    if (done.has(`${v.agreement_id}#${p.n}`) || !(p.amount > 0)) return;
+    const due = addDays(p.day, p.termsDays);
+    const day = today && due < today ? today : due;
+    out.push({ kind: 'instalment', agreement_id: v.agreement_id, n: p.n, of: p.of, draft_on: p.day, due_on: due, day, month: monthKey(day),
+      amount_minor: p.amount, currency, pounds: toPounds(p.amount, currency, fx),
+      sector: v.sector ?? v.terms?.sector ?? null, profile_id: v.profile_id ?? null, organisation_id: v.organisation_id ?? null });
+  };
+  // 065's agreements: one schedule each, from all their signed versions (a superseded one is an amendment's first).
+  const byAgreement = new Map();
   for (const v of versions || []) {
-    if (!v || !v.client_signed_at || (v.status && v.status !== 'signed')) continue;
-    const currency = v.currency || v.terms?.currency || 'GBP';
-    const terms = { ...(v.terms || {}), currency, total_minor: v.terms?.total_minor ?? v.total_minor };
-    const signedDay = dayOnTimsClock(v.client_signed_at, zone);
-    for (const p of invoicesFor(terms, { signedDay })) {
-      if (done.has(`${v.agreement_id}#${p.n}`)) continue;
-      const due = addDays(p.day, p.termsDays);
-      const day = today && due < today ? today : due;
-      out.push({ kind: 'instalment', agreement_id: v.agreement_id, n: p.n, of: p.of, draft_on: p.day, due_on: due, day, month: monthKey(day),
-        amount_minor: p.total, currency, pounds: toPounds(p.total, currency, v.fx_rate ?? terms.fxRate),
-        sector: v.sector ?? terms.sector ?? null, profile_id: v.profile_id ?? null, organisation_id: v.organisation_id ?? null });
-    }
+    if (!v || !v.client_signed_at && !v.sponsor_signed_at) continue;
+    if (!v.terms?.kind) continue;
+    const list = byAgreement.get(v.agreement_id) || [];
+    list.push(v);
+    byAgreement.set(v.agreement_id, list);
+  }
+  const horizon = until || (today ? addDays(today, 400) : null);
+  for (const [agreementId, list] of byAgreement) {
+    try {
+      const a = agreementOf.get(agreementId) || null;
+      if (a && a.status !== 'signed') continue;
+      for (const p of agreementSchedule(list, { zone, until: horizon, agreement: a })) {
+        const v = list.find((x) => x.id === p.versionId) || list[0];
+        const currency = v.currency || p.terms.currency || 'GBP';
+        push(v, { ...p, termsDays: Number(p.terms.dueDays) || 14 }, currency, v.fx_rate ?? p.terms.fxRate);
+      }
+    } catch (e) { skip(list[0], e); }
+  }
+  // Versions from before 065: run 1's plan, as before.
+  for (const v of versions || []) {
+    if (!v || !v.client_signed_at || v.terms?.kind || (v.status && v.status !== 'signed')) continue;
+    try {
+      const currency = v.currency || v.terms?.currency || 'GBP';
+      const terms = { ...(v.terms || {}), currency, total_minor: v.terms?.total_minor ?? v.total_minor };
+      const signedDay = dayOnTimsClock(v.client_signed_at, zone);
+      for (const p of invoicesFor(terms, { signedDay })) push(v, { ...p, amount: p.total }, currency, v.fx_rate ?? terms.fxRate);
+    } catch (e) { skip(v, e); }
   }
   return out.sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
 }
@@ -121,10 +151,10 @@ export function likelyDeals({ leads = [], today }) {
  * Money, and the forecast doesn't count on it), as M11's figures do: November's £1,900 more projected is Due £1,200 and
  * Not invoiced yet £700, without the £940 overdue. Likely deals are separate (the cash flow's switch).
  */
-export function expectedIncome({ today, untilMonth, invoices = [], versions = [], repeating = [], rates = {}, zone }) {
+export function expectedIncome({ today, untilMonth, invoices = [], versions = [], repeating = [], rates = {}, zone, agreements = null }) {
   return [
     ...openInvoices({ invoices, today, rates }).filter((i) => i.kind !== 'overdue'),
-    ...plannedInstalments({ versions, invoices, today, zone }),
+    ...plannedInstalments({ versions, invoices, today, zone, agreements, until: untilMonth ? `${monthKey(untilMonth)}-31` : null }),
     ...repeatingIncome({ repeating, today, untilMonth }),
   ];
 }

@@ -78,8 +78,9 @@ test('signing: signed as the caller, then the PDF is made with both signatures a
   });
   const r = await run(sign, { versionId: V, signatureId: SIG, name: 'Sam Carter', fingerprint: 'a'.repeat(64), startNow: true, choice: 'plan' }, db);
   assert.equal(r.code, 200);
-  // Phase 6b run 3: sign_agreement_v2 records the start-now tick and the way of settling (065).
-  assert.deepEqual(r.body, { ok: true, signed_at: '2026-12-02T18:40:00Z', fingerprint: 'a'.repeat(64), version: 1, pdf: true, start_now: true, settle_choice: 'plan', self_funded: true });
+  // Phase 6b run 3: sign_agreement_v2 records the start-now tick and the way of settling (065), and says whether it was
+  // an amendment (agreements rule 12).
+  assert.deepEqual(r.body, { ok: true, signed_at: '2026-12-02T18:40:00Z', fingerprint: 'a'.repeat(64), version: 1, pdf: true, start_now: true, settle_choice: 'plan', self_funded: true, amends: false });
   assert.deepEqual(db.calls.map((c) => c.name), ['sign_agreement_v2', 'agreement_pdf_source', 'agreement_signed_pdf_keep']);
   assert.ok(asCaller(db.calls[0]), 'sign_agreement is asked as the caller, never with the server key');
   assert.deepEqual(db.calls[0].body, { p_version: V, p_name: 'Sam Carter', p_signature: SIG, p_fingerprint: 'a'.repeat(64), p_start_now: true, p_choice: 'plan' });

@@ -69,5 +69,5 @@ export default async function handler(req, res) {
     try { pdf = Boolean(await makeAndKeep(server, asked.versionId)); } catch { pdf = false; }
   }
   return reply(res, 200, { ok: true, signed_at: d.signed_at || null, fingerprint: d.fingerprint || null, version: d.version ?? null, pdf,
-    start_now: d.start_now ?? null, settle_choice: d.settle_choice ?? null, self_funded: d.self_funded ?? null });
+    start_now: d.start_now ?? null, settle_choice: d.settle_choice ?? null, self_funded: d.self_funded ?? null, amends: d.amends === true });
 }

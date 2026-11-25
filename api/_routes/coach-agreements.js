@@ -25,12 +25,11 @@ import { applies as coolingApplies, inWindow, refund14 } from '../../src/lib/agr
 import { forStorage } from '../../src/lib/agreements/clauses.js';
 import { moneyText } from '../../src/lib/agreements/currency.js';
 import { pauseMove } from '../../src/lib/agreements/endDate.js';
-import { sessions as sessionCount } from '../../src/lib/agreements/pricing.js';
 import { quoteNumber, validUntil, VALID_DAYS } from '../../src/lib/agreements/quote.js';
 import { counts, isOver } from '../../src/lib/agreements/sessionOutcome.js';
-import { firstPayment } from '../../src/lib/agreements/settling.js';
+import { firstPayment, firstSigning } from '../../src/lib/agreements/settling.js';
+import { perSession } from '../../src/lib/agreements/delivered.js';
 import { blankTerms, kindOf, selfFunded } from '../../src/lib/agreements/terms.js';
-import { finalTotal } from '../../src/lib/agreements/upfront.js';
 import {
   readyToSignEmail, quoteEmail, signReminderEmail, firstPaymentReminderEmail, sponsorSignEmail, teamMemberAgreementEmail,
   extendedEmail, pausedEmail, endingEmail, cancelledEmail, changeReplyEmail,
@@ -97,7 +96,14 @@ export function askedFor(body) {
     if (days != null && !VALID_DAYS.includes(days)) return null;
     return { kind: k, versionId, quoteId, days };
   }
-  if (k === 'approve' || k === 'cancel_14' || k === 'team_agreements') {
+  if (k === 'cancel_14') {
+    // A one-off's part delivered so far, as the coach says it (minor units), where coaching started inside the 14 days.
+    const agreementId = id(b.agreementId);
+    const d = b.deliveredMinor;
+    if (d != null && d !== '' && !(typeof d === 'number' && Number.isInteger(d) && d >= 0 && d <= 100000000)) return null;
+    return agreementId ? { kind: k, agreementId, deliveredMinor: d == null || d === '' ? null : d } : null;
+  }
+  if (k === 'approve' || k === 'team_agreements') {
     const agreementId = id(b.agreementId);
     return agreementId ? { kind: k, agreementId } : null;
   }
@@ -530,24 +536,47 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
       const { v, profile, c } = await this._current(a);
       const terms = { ...(v.terms || {}), fundedBy: v.funded_by };
       if (!coolingApplies(terms)) throw calm(409, 'The 14 days are only for clients who fund their own coaching.');
-      const zone = profile?.time_zone || LONDON;
-      const signedDay = dayIn(isZone(zone) ? zone : LONDON, new Date(v.client_signed_at));
+      const zone = isZone(profile?.time_zone) ? profile.time_zone : LONDON;
+      // The 14 days and the start-now tick go by the agreement's FIRST signing: a later signed version is an amendment
+      // and never starts them again (agreements rule 12).
+      const { data: allVersions } = await server.from('agreement_versions').select('*').eq('agreement_id', a.id);
+      const firstSigned = firstSigning(allVersions || [], zone);
+      if (!firstSigned) throw calm(409, 'Only a signed agreement can be changed this way.');
+      const signedDay = firstSigned.day;
+      const startNow = firstSigned.version.start_now === true;
       if (!inWindow(signedDay, today(zone))) throw calm(409, 'The 14 days to change their mind have passed.');
       const currency = v.currency || terms.currency || 'GBP';
       const { data: invs } = await server.from('invoices').select('*').eq('agreement_id', a.id);
-      const { data: notes } = await server.from('credit_notes').select('invoice_id, amount_minor');
+      const invIds = (invs || []).map((i) => i.id);
+      const { data: notes } = invIds.length ? await server.from('credit_notes').select('invoice_id, amount_minor').in('invoice_id', invIds) : { data: [] };
       const credited = (invId) => (notes || []).filter((n) => n.invoice_id === invId).reduce((s, n) => s + Number(n.amount_minor), 0);
       const paidInvs = (invs || []).filter((i) => i.status === 'paid' && i.coach_id === coach.id)
         .map((i) => ({ ...i, left: Number(i.paid_minor) - credited(i.id) })).filter((i) => i.left > 0)
         .sort((x, y) => String(y.paid_at || '').localeCompare(String(x.paid_at || '')));
       const paid = paidInvs.reduce((s, i) => s + i.left, 0);
+      const since = Date.parse(firstSigned.version.client_signed_at);
       const { data: sess } = a.profile_id ? await server.from('coach_sessions').select('*').eq('profile_id', a.profile_id).eq('coach_id', coach.id) : { data: [] };
-      const had = (sess || []).filter((s) => counts(s) && isOver(s, now().getTime()) && Date.parse(s.starts_at) >= Date.parse(v.client_signed_at)).length;
-      const n = sessionCount(terms) || 1;
-      const perSession = kindOf(terms) === 'sessions' ? Math.round(finalTotal(terms, v.settle_choice || 'plan') / n) : 0;
-      const refund = refund14({ paidMinor: paid, sessionsHad: had, perSessionMinor: perSession, startNow: v.start_now === true });
+      const had = (sess || []).filter((s) => (s.kind || 'coaching') === 'coaching' && counts(s) && isOver(s, now().getTime()) && Date.parse(s.starts_at) >= since).length;
+      // What was delivered, at the one per-session price (delivered.js): set sessions and a retainer, each session had;
+      // a block of hours, the hours logged at its rate; a one-off, the part the coach says was delivered (else nothing,
+      // so a full refund).
+      const k = kindOf(terms);
+      let perSessionPrice = 0;
+      let sessionsHad = had;
+      let deliveredExtra = 0;
+      if (k === 'sessions' || k === 'retainer') perSessionPrice = perSession(terms, firstSigned.version.settle_choice || 'plan');
+      if (k === 'hours') {
+        const { data: entries } = a.engagement_id ? await server.from('time_entries').select('started_at, ended_at').eq('engagement_id', a.engagement_id) : { data: [] };
+        const minutes = (entries || []).filter((e) => e.ended_at && Date.parse(e.started_at) >= since)
+          .reduce((m, e) => m + Math.max(0, Math.round((Date.parse(e.ended_at) - Date.parse(e.started_at)) / 60000)), 0);
+        deliveredExtra = Math.round(minutes * (Number(terms.hours?.rateMinor) || 0) / 60);
+        sessionsHad = 0;
+      }
+      if (k === 'oneoff') { deliveredExtra = Math.max(0, Number(asked.deliveredMinor) || 0); sessionsHad = 0; }
+      const refund = startNow ? Math.max(0, refund14({ paidMinor: paid, sessionsHad, perSessionMinor: perSessionPrice, startNow }) - deliveredExtra) : paid;
+      const perSessionMinor = perSessionPrice;
       const claim = await server.from('agreement_cancellations').insert({ coach_id: coach.id, agreement_id: a.id, version_id: v.id, asked_on: today(zone),
-        sessions_had: had, per_session_minor: perSession, paid_minor: paid, refund_minor: refund }).select('id');
+        sessions_had: had, per_session_minor: perSessionMinor, paid_minor: paid, refund_minor: refund }).select('id');
       if (claim.error) throw calm(409, 'This agreement is being cancelled already.');
       const cancelId = claim.data?.[0]?.id;
       let left = refund;

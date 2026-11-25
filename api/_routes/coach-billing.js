@@ -45,9 +45,11 @@ import { moneyText } from '../../src/lib/agreements/currency.js';
 import { lines as deliveredLines } from '../../src/lib/agreements/delivered.js';
 import { topUp as topUpInvoice } from '../../src/lib/agreements/hours.js';
 import { descriptionLine, dueOn as orgDueOn, minutesOf, problems as orgProblems, rate as orgRate, total as orgTotal } from '../../src/lib/agreements/orgInvoice.js';
-import { planTotal, sessions as sessionCount } from '../../src/lib/agreements/pricing.js';
+import { planTotal } from '../../src/lib/agreements/pricing.js';
 import { counts, isOver } from '../../src/lib/agreements/sessionOutcome.js';
-import { schedule as invoicesForAgreement } from '../../src/lib/agreements/settling.js';
+import { agreementSchedule } from '../../src/lib/agreements/settling.js';
+import { onSchedule, scheduledProfiles } from '../../src/lib/agreements/duringAgreement.js';
+import { deliveredToInvoice, perSession } from '../../src/lib/agreements/delivered.js';
 import { kindOf } from '../../src/lib/agreements/terms.js';
 import { noteBlocks, orgInvoiceEmail, updatedAgreementEmail } from '../../src/lib/email/agreementEmails.js';
 import { calm, sendAs, standardsFor } from './coach-agreements.js';
@@ -56,6 +58,7 @@ import { portalOrigin } from '../_portalOrigin.js';
 export const config = { maxDuration: 60 };
 const reply = (res, status, body) => { res.status(status).setHeader('Cache-Control', 'no-store'); res.json(body); };
 const DIDNT_WORK = 'That didn’t work. Try again in a moment.';
+const FIRST_KINDS = ['first_payment', 'deposit', 'instalment'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const KINDS = ['draft', 'send', 'paid_by_hand', 'refund', 'credit', 'send_reminder', 'bank_payment', 'one_off',
   'delivered_invoice', 'top_up', 'org_invoice_preview', 'org_invoice_send', 'mark_uploaded', 'funding_details', 'updated_price'];
@@ -257,49 +260,101 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
       return { id: row.id, number: sent.number || null, status: 'sent' };
     },
 
-    /** The agreement's invoices due by today that aren't drafted yet, drafted in Stripe and kept here; never sent. */
+    /**
+     * The organisation that settles an agreement funded by it (agreements rule 12): its billing profile's legal name,
+     * invoices email, payment terms and purchase order (the sponsor's, the terms', or the open one), else its finance
+     * contact with 30 days.
+     */
+    async _orgPayer(agreement, version) {
+      let orgId = agreement.organisation_id || null;
+      if (!orgId && agreement.profile_id) {
+        const { data: p } = await server.from('client_profiles').select('organisation_id').eq('id', agreement.profile_id).maybeSingle();
+        orgId = p?.organisation_id || null;
+      }
+      const { data: org } = orgId ? await server.from('organisations').select('id, name').eq('id', orgId).maybeSingle() : { data: null };
+      const { data: profile } = orgId ? await server.from('org_billing_profiles').select('*').eq('coach_id', coach.id).eq('organisation_id', orgId).maybeSingle() : { data: null };
+      const { data: contacts } = orgId ? await server.from('organisation_contacts').select('*').eq('organisation_id', orgId) : { data: [] };
+      const finance = (contacts || []).find((c) => /finance|invoice/i.test(`${c.role || ''} ${c.roles || ''}`)) || (contacts || [])[0] || null;
+      const { data: po } = orgId ? await server.from('purchase_orders').select('number').eq('organisation_id', orgId).eq('coach_id', coach.id).eq('status', 'open').limit(1).maybeSingle() : { data: null };
+      const t = version?.terms || {};
+      return {
+        name: profile?.legal_name || org?.name || version?.funded_by || '', email: profile?.invoices_email || finance?.email || '', zone: null,
+        organisationId: orgId, profile, termsDays: [14, 30, 60].includes(Number(profile?.terms_days)) ? Number(profile.terms_days) : 30,
+        poNumber: String(version?.sponsor_po || t.team?.poNumber || t.poNumber || po?.number || '').slice(0, 100) || null,
+      };
+    },
+
+    /**
+     * The agreement's invoices due by today that aren't drafted yet, drafted in Stripe and kept here; never sent. An
+     * agreement made by the builder (065: terms.kind) follows the one billing schedule (settling.js's agreementSchedule,
+     * agreements rule 12) over all its signed versions: an amendment's price from its day on, the numbers carrying on, a
+     * pause moving invoices on; a self-funded client's first is the first payment made at signing (agreement-settle.js),
+     * an organisation's first is drafted here on the signing day to the organisation, held for a PO where it needs one.
+     * While a newer version waits to be signed, the signed one keeps billing. Reminder pauses (061's
+     * invoice_reminder_pauses) pause reminders only: drafting goes on.
+     */
     async draft(agreementId) {
       const agreement = await mine('agreements', agreementId);
       if (agreement.status !== 'signed') return { drafted: 0 };
-      const { data: version } = await server.from('agreement_versions').select('*').eq('agreement_id', agreement.id).eq('version', agreement.current_version).maybeSingle();
+      const { data: all } = await server.from('agreement_versions').select('*').eq('agreement_id', agreement.id);
+      const signedAll = (all || []).filter((v) => v.client_signed_at || v.sponsor_signed_at).sort((x, y) => y.version - x.version);
+      if (!signedAll.length) return { drafted: 0 };
+      if (signedAll.some((v) => v.terms?.kind)) return this._draft065(agreement, all, signedAll[0]);
+      const version = (all || []).find((v) => v.version === agreement.current_version);
       if (!version || version.status !== 'signed') return { drafted: 0 };
       const terms = { ...version.terms, total_minor: version.total_minor ?? version.terms?.total_minor, currency: version.currency, fundedBy: version.funded_by };
       const payer = await payerOf(agreement, terms);
       const signedDay = dayIn(isZone(payer.zone) ? payer.zone : 'Europe/London', new Date(version.client_signed_at));
-      // A version made by the builder (065: terms.kind) is settled as settling.js's schedule says, with the client's own
-      // choice; its first invoice is the first payment made at signing (api/_routes/agreement-settle.js), so the rest
-      // start at 2. A later instalment is collected by the Bacs Direct Debit set up after it, where there is one.
-      const planned = terms.kind
-        ? invoicesForAgreement(terms, { signedDay, choice: version.settle_choice || 'upfront', chosen: terms.extrasChosen || [] })
-          .filter((p) => p.n > 1 && p.amount > 0)
-          .map((p) => ({ n: p.n, of: p.of, day: p.day, total: p.amount, termsDays: Number(terms.dueDays) || 14, settlesTo: 'client', poNumber: null,
-            lines: [{ description: `${String(terms.coaching || 'Coaching').slice(0, 160)}, instalment ${p.n} of ${p.of}`, amount: p.amount }] }))
-        : invoicesFor(terms, { signedDay });
+      const planned = invoicesFor(terms, { signedDay });
       const { data: have } = await server.from('invoices').select('instalment_n, status').eq('agreement_id', agreement.id).eq('kind', 'instalment');
       const due = dueToDraft(planned, (have || []).filter((i) => i.status !== 'void').map((i) => i.instalment_n), today(payer.zone));
+      return this._draftEach(agreement, version, payer, due.map((p) => ({ ...p, kind: 'instalment', versionId: null })), { bacsOk: false });
+    },
+
+    async _draft065(agreement, all, newest) {
+      const funded = Boolean(newest.funded_by || newest.terms?.fundedBy || newest.terms?.funder === 'org');
+      const payer = funded ? await this._orgPayer(agreement, newest) : await payerOf(agreement, { ...newest.terms, fundedBy: null });
+      const zone = isZone(payer.zone) ? payer.zone : 'Europe/London';
+      const day = today(zone);
+      const plan = agreementSchedule(all, { zone, until: day, agreement }).filter((p) => p.amount > 0 && (funded || p.n > 1));
+      const { data: have } = await server.from('invoices').select('instalment_n, status, kind').eq('agreement_id', agreement.id);
+      const taken = (have || []).filter((i) => i.status !== 'void' && i.instalment_n != null && FIRST_KINDS.includes(i.kind)).map((i) => i.instalment_n);
+      const due = dueToDraft(plan, taken, day).map((p) => ({
+        n: p.n, of: p.of, day: p.day, total: p.amount, kind: p.kind, versionId: p.versionId,
+        termsDays: funded ? payer.termsDays : Number(p.terms.dueDays) || 14, settlesTo: funded ? 'organisation' : 'client', poNumber: funded ? payer.poNumber : null,
+        lines: [{ description: p.line, amount: p.amount }], currency: newest.currency || p.terms.currency || 'GBP',
+      }));
+      return this._draftEach(agreement, newest, payer, due, { bacsOk: !funded, funded });
+    },
+
+    async _draftEach(agreement, version, payer, due, { bacsOk = false, funded = false } = {}) {
       let drafted = 0;
       // One Stripe customer for the agreement's payer, reused by every instalment (a Bacs Direct Debit belongs to one).
       let known = null;
       const customerFor = async (ag, who, idem) => {
         if (known) return known;
+        if (funded && who.profile?.stripe_customer_id) { known = { id: who.profile.stripe_customer_id }; return known; }
         const { data: before } = await server.from('invoices').select('stripe_customer_id, payer_email').eq('agreement_id', ag.id);
         const same = (before || []).find((i) => i.stripe_customer_id && String(i.payer_email || '').toLowerCase() === String(who.email || '').toLowerCase());
         known = same ? { id: same.stripe_customer_id }
-          : await stripe.customer({ name: who.name, email: who.email, metadata: { profile_id: ag.profile_id } }, `${idem}:customer`);
+          : await stripe.customer({ name: who.name, email: who.email || undefined, metadata: funded ? { organisation_id: who.organisationId || '' } : { profile_id: ag.profile_id || '' } }, `${idem}:customer`);
         return known;
       };
       for (const p of due) {
         // A fresh key each time: a retry after a failed save is a new request to Stripe, never Stripe's "same key, other
         // parameters" refusal (break-it tester, 6b run 1). The CLARITY- number waits for Send (follow-up 5, item 6).
         const idem = `agreement:${agreement.id}:instalment:${p.n}:${randomUUID()}`;
+        const currency = p.currency || version.currency;
         const customer = await customerFor(agreement, payer, idem);
-        const bacs = terms.kind && version.currency === 'GBP' && stripe.bacsMethod ? await stripe.bacsMethod(customer.id).catch(() => null) : null;
-        const inv = await stripe.draftInvoice({ customer: customer.id, currency: version.currency, daysUntilDue: p.termsDays, lines: p.lines, poNumber: p.poNumber,
-          metadata: { agreement_id: agreement.id, instalment: String(p.n) }, ...(bacs ? { automatic: true, defaultPaymentMethod: bacs, methods: ['bacs_debit', 'card'] } : {}) }, idem);
+        const bacs = bacsOk && currency === 'GBP' && stripe.bacsMethod ? await stripe.bacsMethod(customer.id).catch(() => null) : null;
+        const inv = await stripe.draftInvoice({ customer: customer.id, currency, daysUntilDue: p.termsDays, lines: p.lines, poNumber: p.poNumber,
+          metadata: { agreement_id: agreement.id, instalment: String(p.n) },
+          ...(bacs ? { automatic: true, defaultPaymentMethod: bacs, methods: ['bacs_debit', 'card'] } : funded && currency === 'GBP' ? { methods: ['customer_balance'] } : {}) }, idem);
         const { error } = await server.from('invoices').insert({
-          coach_id: coach.id, agreement_id: agreement.id, profile_id: agreement.profile_id, organisation_id: payer.profile?.organisation_id || null,
-          stripe_invoice_id: inv.id, stripe_customer_id: customer.id, kind: 'instalment', status: 'draft', currency: version.currency, lines: p.lines, total_minor: p.total,
-          terms_days: p.termsDays, po_number: p.poNumber, settles_to: p.settlesTo, payer_name: payer.name, payer_email: payer.email, payer_zone: payer.zone, instalment_n: p.n,
+          coach_id: coach.id, agreement_id: agreement.id, profile_id: agreement.profile_id || null, organisation_id: payer.organisationId || payer.profile?.organisation_id || null,
+          version_id: p.versionId || null, stripe_invoice_id: inv.id, stripe_customer_id: customer.id, kind: p.kind || 'instalment', status: 'draft', currency, lines: p.lines,
+          total_minor: p.total, terms_days: p.termsDays, po_number: p.poNumber, settles_to: p.settlesTo, payer_name: payer.name, payer_email: payer.email || null,
+          payer_zone: payer.zone || null, instalment_n: p.n,
         });
         // Asked twice at once: the database keeps one (one invoice for each instalment); the other draft is voided in Stripe.
         if (error) { await stripe.void(inv.id).catch(() => {}); continue; }
@@ -317,6 +372,14 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
     async send(invoiceId, { poNumber = null } = {}) {
       const inv = await mine('invoices', invoiceId);
       if (inv.status !== 'draft') return { status: inv.status, number: inv.number ? `CLARITY-${inv.number}` : null };
+      // An organisation that needs a purchase order: held until one is on it (Needs you's PO line; agreements rule 12).
+      if (inv.settles_to === 'organisation' && inv.organisation_id && !poNumber && !String(inv.po_number || '').trim()) {
+        const { data: prof } = await server.from('org_billing_profiles').select('needs_po').eq('coach_id', coach.id).eq('organisation_id', inv.organisation_id).maybeSingle();
+        if (prof?.needs_po) {
+          const { data: org } = await server.from('organisations').select('name').eq('id', inv.organisation_id).maybeSingle();
+          throw calm(409, `${org?.name || 'They'} needs a purchase order on the invoice. Add the PO number first.`);
+        }
+      }
       // A purchase order added on Send (Needs you's "Add and send invoice"): on the invoice here and on Stripe's.
       if (poNumber && poNumber !== inv.po_number) {
         await server.from('invoices').update({ po_number: poNumber }).eq('id', inv.id).eq('status', 'draft');
@@ -480,11 +543,16 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
       const list = (rows || []).filter((x) => x.coach_id === coach.id && x.profile_id === ctx.a.profile_id);
       if (list.length !== sessionIds.length) throw notYours('coaching session');
       if (list.some((x) => !counts(x) || !isOver(x, now().getTime()))) throw calm(409, 'Only coaching sessions that happened, or count as used, can be invoiced.');
-      const n = sessionCount(terms) || 1;
-      const per = k === 'retainer'
-        ? Number(terms.beyondRateMinor) || Math.round((Number(terms.retainer?.feeMinor) || 0) / 2)
-        : Math.floor(planTotal(terms, terms.extrasChosen || []) / n);
-      const lines = deliveredLines(list.sort((x, y) => Date.parse(x.starts_at) - Date.parse(y.starts_at)), per, ctx.payer.zone || 'Europe/London')
+      // The same list Needs you drafts from (delivered.js): never a session settled at signing, never one invoiced already.
+      const { data: around } = await server.from('coach_sessions').select('*').eq('coach_id', coach.id).eq('profile_id', ctx.a.profile_id);
+      const { data: srcs } = await server.from('invoice_sources').select('session_id, released_at').in('session_id', (around || []).map((x) => x.id).slice(0, 1000));
+      const zone = ctx.payer.zone || 'Europe/London';
+      const open = new Set(deliveredToInvoice({ terms, sessions: around || [], sources: srcs || [], profileId: ctx.a.profile_id, zone, now: now().getTime() }).map((x) => x.id));
+      const settledLive = new Set((srcs || []).filter((x) => !x.released_at).map((x) => x.session_id));
+      if (list.some((x) => settledLive.has(x.id))) throw calm(409, 'One of those coaching sessions is on an invoice already.');
+      if (list.some((x) => !open.has(x.id))) throw calm(409, 'One of those coaching sessions was settled when the agreement was signed.');
+      const per = perSession(terms);
+      const lines = deliveredLines(list.sort((x, y) => Date.parse(x.starts_at) - Date.parse(y.starts_at)), per, zone)
         .map((l) => ({ description: l.description, amount: l.amount }));
       return this._invoiceAndSend({ ...ctx, kind: 'delivered', lines, termsDays: Number(terms.dueDays) || 14,
         sources: list.map((x) => ({ session_id: x.id, minutes: Number(x.minutes) || 60 })) });
@@ -520,6 +588,13 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
           rows.push({ key: x.id, sessionId: x.id, day: dayIn('Europe/London', new Date(x.starts_at)), what: `Coaching session with ${inOrg.get(x.profile_id).name}`, minutes: Number(x.minutes) || 60 });
         }
         if ((ss || []).length !== asked.sessionIds.length) throw notYours('coaching session');
+        // A client whose organisation already settles their coaching on an agreement's own schedule: never invoiced by
+        // the hour too (agreements rule 12).
+        const who = [...new Set((ss || []).map((x) => x.profile_id))];
+        const { data: ags } = who.length ? await server.from('agreements').select('id, profile_id, status').in('profile_id', who).eq('coach_id', coach.id).eq('status', 'signed') : { data: [] };
+        const { data: avs } = (ags || []).length ? await server.from('agreement_versions').select('agreement_id, version, status, terms, funded_by, client_signed_at, sponsor_signed_at').in('agreement_id', ags.map((x) => x.id)) : { data: [] };
+        const covered = scheduledProfiles(ags || [], avs || []);
+        if ((ss || []).some((x) => onSchedule(covered, x.profile_id, dayIn('Europe/London', new Date(x.starts_at))))) throw calm(409, 'That coaching session is covered by its agreement, invoiced on its own schedule.');
       }
       if (asked.entryIds.length) {
         const { data: es } = await server.from('time_entries').select('*').in('id', asked.entryIds);
@@ -559,9 +634,11 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
     async _evidenceBytes(evidence) {
       const out = [];
       for (const ev of evidence) {
-        if (!coach.user_id || !String(ev.storage_path).startsWith(`${coach.user_id}/`)) continue;
-        const { data } = await server.storage.from('coach-files').download(ev.storage_path);
-        if (data) out.push({ bytes: new Uint8Array(await data.arrayBuffer()), name: ev.file_name });
+        // An attachment that can't be read stops the invoice, never quietly left out (functionality tester, run 3, finding 12).
+        if (!coach.user_id || !String(ev.storage_path).startsWith(`${coach.user_id}/`)) throw calm(409, `${ev.file_name || 'An attachment'} can’t be read. Remove it and add it again.`);
+        const { data } = await server.storage.from('coach-files').download(ev.storage_path).catch(() => ({ data: null }));
+        if (!data) throw calm(409, `${ev.file_name || 'An attachment'} can’t be read. Remove it and add it again.`);
+        out.push({ bytes: new Uint8Array(await data.arrayBuffer()), name: ev.file_name });
       }
       return out;
     },
@@ -625,6 +702,8 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
       const o = await this._orgInvoice(asked);
       if (o.problems.length) throw calm(409, o.problems[0]);
       if (!o.profile.invoices_email) throw calm(409, `Add ${o.org.name}’s invoices email first.`);
+      // Every attachment read before anything is numbered or sent: one that can't be read stops it, in calm words.
+      await this._evidenceBytes(o.evidence);
       const termsDays = o.profile.terms_days || 30;
       const { data: row, error } = await server.from('invoices').insert({
         coach_id: coach.id, organisation_id: o.org.id, kind: 'org_hours', status: 'draft', currency: o.currency,

@@ -1199,6 +1199,26 @@ export function deleteEntry(e, { data = {}, scope = 'one', newId, coachFirstName
   return plan(data, { remove: [...guests, ...parts, [T.items, i.id], ...sessionGone(e.session)], words: DELETED, tell });
 }
 
+/**
+ * Cancelling within 14 days (agreements rule 12): the client's coaching sessions still to come, each cancelled as the
+ * calendar's own Delete cancels one (its call, guests and travel time, and the session where nothing is written up),
+ * with no email sent by itself: the coach is told to let the client know. { count, plan }.
+ */
+export function futureSessionsPlan(profileId, { data = {}, now = Date.now() } = {}) {
+  const ahead = (data.sessions || []).filter((s) => s.profile_id === profileId && (s.kind || 'coaching') === 'coaching'
+    && Date.parse(s.starts_at) > now && !s.outcome && !s.recap_sent_at);
+  const remove = [];
+  for (const s of ahead) {
+    for (const i of (data.items || []).filter((x) => x.session_id === s.id)) {
+      remove.push(...(data.guests || []).filter((g) => g.item_id === i.id).map((g) => [T.guests, g.id]));
+      remove.push(...(data.items || []).filter((x) => x.travel_for === i.id).map((x) => [T.items, x.id]));
+      remove.push([T.items, i.id]);
+    }
+    remove.push([T.sessions, s.id]);
+  }
+  return { count: ahead.length, plan: plan(data, { remove, words: DELETED }) };
+}
+
 // ---------------------------------------------------------------- to-dos on the calendar
 
 /**

@@ -50,10 +50,13 @@ test('a retainer: the first month, or £17,100 for 6 months up front', () => {
   assert.equal(s.restLine(r, 'upfront'), 'Then £3,000/month from month 7.');
 });
 
-test('funded: nothing at signing, invoiced to the organisation', () => {
+test('funded: nothing at signing; the organisation is invoiced on the same schedule, with no 5% (agreements rule 12)', () => {
   const f = sam('equal', { funder: 'org', fundedBy: 'Northfield Logistics' });
   assert.equal(s.firstPayment(f), 0);
-  assert.deepEqual(s.schedule(f, { signedDay: '2026-11-25' }), []);
+  const plan = s.schedule(f, { signedDay: '2026-11-25' });
+  assert.equal(plan.length, 6);
+  assert.equal(plan[0].amount, 255000);
+  assert.equal(plan.reduce((a, x) => a + x.amount, 0), 1530000);
 });
 
 test('instalments add up to the penny, deposit first then monthly', () => {

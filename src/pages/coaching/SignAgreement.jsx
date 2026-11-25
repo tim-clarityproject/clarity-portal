@@ -209,7 +209,7 @@ export default function SignAgreement() {
     setFailure(null);
     setNeed(null);
     const res = await signAgreementV2({
-      userId, versionId, name, fingerprint, startNow: self && coolingApplies(terms) ? startNow : false,
+      userId, versionId, name, fingerprint, startNow: self && coolingApplies(terms) && !version.amends ? startNow : false,
       choice: shownChoice, signature: typed ? { kind: 'typed' } : { kind: 'drawn', image },
     });
     busy.current = false;
@@ -226,7 +226,7 @@ export default function SignAgreement() {
           if (raw?.tidied) writeCache(userId, `coaching-agreement:${versionId}`, { ...raw, agreements: patch(raw.agreements) });
         } catch { /* the next load brings it */ }
       }
-      const next = afterSigning({ ...terms, fundedBy: version.fundedBy || terms.fundedBy || null }, res.settleChoice || shownChoice);
+      const next = afterSigning({ ...terms, fundedBy: version.fundedBy || terms.fundedBy || null }, res.settleChoice || shownChoice, { amends: version.amends || res.amends });
       navigate(`/coaching/agreement/${versionId}/${next}`, { replace: true });
       return;
     }
@@ -255,7 +255,7 @@ export default function SignAgreement() {
       <div className="cl-signblock" id="sign-here">
         <Section title={SIGN_HEADING} className="cl-sec" />
         <Checkbox checked={agreed} onChange={(v) => { setAgreed(v); setNeed(null); }}>{AGREE_TICK}</Checkbox>
-        {self && coolingApplies(terms) && <Checkbox checked={startNow} onChange={setStartNow}>{START_NOW_LINE}</Checkbox>}
+        {self && coolingApplies(terms) && !version.amends && <Checkbox checked={startNow} onChange={setStartNow}>{START_NOW_LINE}</Checkbox>}
         <SettleChoice terms={{ ...terms, fundedBy: version.fundedBy || terms.fundedBy || null }} value={shownChoice} onChange={setChoice} chosenExtras={terms.extrasChosen} />
         <TextField label={FULL_NAME} autoComplete="name" value={name} maxLength={160} onChange={(e) => { setName(e.target.value); setNeed(null); }} />
         <SignBox ref={sigRef} name={name} onChange={() => setNeed(null)} />

@@ -26,11 +26,11 @@ export function periodMonths(period, today, startMonth = DEFAULT_YEAR_START_MONT
  * @returns {{ months: string[], paid: number, due: number, overdue: number, notInvoiced: number, notInPounds: number,
  *   toCome: object[] }} toCome is every expected item in the period, for By sector's "To come"
  */
-export function moneyFigures({ period, today, lines, invoices = [], versions = [], rates = {}, startMonth = DEFAULT_YEAR_START_MONTH, zone }) {
+export function moneyFigures({ period, today, lines, invoices = [], versions = [], agreements = null, rates = {}, startMonth = DEFAULT_YEAR_START_MONTH, zone }) {
   const months = periodMonths(period, today, startMonth);
   const end = monthDays(months.at(-1)).last;
   const open = openInvoices({ invoices, today, rates });
-  const planned = plannedInstalments({ versions, invoices, today, zone });
+  const planned = plannedInstalments({ versions, invoices, today, zone, agreements });
   let notInPounds = 0;
   const sum = (items) => items.reduce((a, i) => { if (i.pounds == null) { notInPounds += 1; return a; } return a + i.pounds; }, 0);
   const byEnd = (i) => i.day <= end;

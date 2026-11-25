@@ -90,12 +90,18 @@ export async function agreementsNightly({ server, now = () => new Date(), fetche
     // Signed over 24 hours ago (within the last 30 days), self-funded, and the first payment isn't settled.
     const since = new Date(now().getTime() - 30 * 86400000).toISOString();
     const before = new Date(now().getTime() - 86400000).toISOString();
-    const { data: signed } = await server.from('agreement_versions').select('id, coach_id, terms, funded_by, settle_choice, client_signed_at')
+    const { data: signed } = await server.from('agreement_versions').select('id, coach_id, agreement_id, version, terms, funded_by, settle_choice, client_signed_at')
       .eq('status', 'signed').is('funded_by', null).gte('client_signed_at', since).lte('client_signed_at', before);
     for (const v of signed || []) {
       if (!v.terms?.kind) continue; // 065's builder versions only: run 1's are invoiced as before
+      // An amendment (an earlier version was signed) makes no new first payment (agreements rule 12), and a running
+      // agreement only: never a cancelled or ended one.
+      const { data: ag } = await server.from('agreements').select('status').eq('id', v.agreement_id).maybeSingle();
+      if (ag?.status !== 'signed') continue;
+      const { data: earlier } = await server.from('agreement_versions').select('id').eq('agreement_id', v.agreement_id).lt('version', v.version).not('client_signed_at', 'is', null).limit(1);
+      if (earlier?.length) continue;
       if (!(firstPayment({ ...v.terms, fundedBy: null }, v.settle_choice || 'upfront', v.terms.extrasChosen || []) > 0)) continue;
-      const { data: invs } = await server.from('invoices').select('status, kind, instalment_n').eq('version_id', v.id);
+      const { data: invs } = await server.from('invoices').select('status, kind, instalment_n').eq('agreement_id', v.agreement_id);
       if ((invs || []).some((i) => FIRST_KINDS.includes(i.kind) && i.instalment_n === 1 && i.status === 'paid')) continue;
       if (await draft(v.coach_id, v.id, 'first_payment')) out.firstPayment += 1;
     }

@@ -367,7 +367,7 @@ export function financeModel(rows, { today, months = 6, includeLikely = false, n
   const monthMinutes = rows.monthMinutes || null;
   const sessions = associateSessionsForForecast(rows.associateSessions, nowMs);
   const associatePayouts = payoutsFrom(rows.statements);
-  const common = { today, settings, lines, outgoings: rows.outgoings || [], deadlines: rows.deadlines || [], invoices: rows.invoices || [], versions, repeating,
+  const common = { today, settings, lines, outgoings: rows.outgoings || [], deadlines: rows.deadlines || [], invoices: rows.invoices || [], versions, agreements: rows.agreements || null, repeating,
     associates, sessions, associatePayouts, monthMinutes };
   const cash = cashFlow({ ...common, months: [3, 6, 12].includes(months) ? months : 6, leads: leadsForForecast(rows.leads, rows.leadStages), includeLikely });
   const today6 = months === 6 && !includeLikely ? cash : cashFlow({ ...common, months: 6 });
@@ -377,7 +377,7 @@ export function financeModel(rows, { today, months = 6, includeLikely = false, n
   const fy = financialYear(today, startMonth);
   const associatePay = associatePayByMonth({ associates, months: fy.months.filter((m) => m <= monthKey(today)), statements: rows.statements, monthMinutes, sessions,
     noShowsPaid: Boolean(settings.no_shows_paid) });
-  return { settings, startMonth, lines, versions, repeating, associates, cash, cash6: today6, cashChosen: chosen, line, associatePay, monthMinutes };
+  return { settings, startMonth, lines, versions, agreements: rows.agreements || null, repeating, associates, cash, cash6: today6, cashChosen: chosen, line, associatePay, monthMinutes };
 }
 
 /** A package's two prices in words: "£7,460", "£2,460/month"; '' for none. */

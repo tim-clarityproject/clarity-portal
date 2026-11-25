@@ -1,9 +1,11 @@
-import { addDays } from '../time/index.js';
+import { addDays, dayIn, daysBetween } from '../time/index.js';
+import { parseDbTimestamp } from '../dateFormatter.js';
 import { instalments } from '../billing/money.js';
 import { moneyText, rateText, lowerFirst, roundDeposit } from './currency.js';
-import { planTotal, sessions } from './pricing.js';
+import { extrasTotal, planTotal, sessions } from './pricing.js';
 import { kindOf, selfFunded } from './terms.js';
 import { finalTotal, retainerUpfront, saving, sixUpFront, upfrontActive, UPFRONT_PERCENT } from './upfront.js';
+import { perSession, withoutExtras } from './delivered.js';
 
 // How an agreement is settled (brief items 4 and 8; M28's settleOpts, firstPay, payTitle and payRest). Four ways for
 // set sessions: in full up front; a deposit of 30% (rounded to the nearest £100) then 5 monthly instalments; 6 equal
@@ -38,7 +40,7 @@ export function settleOptions(t, chosen) {
     { value: 'full', label: `In full, up front, ${moneyText(offer ? Math.round(f * (100 - UPFRONT_PERCENT) / 100) : f, c)}${offer ? `, ${UPFRONT_PERCENT}% off` : ''}` },
     { value: 'deposit', label: `A deposit of ${moneyText(dep, c)}, then ${DEPOSIT_THEN} monthly instalments of ${moneyText(split(f - dep, DEPOSIT_THEN)[DEPOSIT_THEN - 1], c)}` },
     { value: 'equal', label: `${EQUAL_COUNT} monthly instalments of ${moneyText(split(f, EQUAL_COUNT)[EQUAL_COUNT - 1], c)}` },
-    { value: 'delivered', label: `As delivered, ${moneyText(split(f, n)[n - 1], c)} a coaching session` },
+    { value: 'delivered', label: `As delivered, ${moneyText(perSession(t), c)} a coaching session` },
   ];
 }
 
@@ -54,26 +56,58 @@ export function teamOptions(t) {
   ];
 }
 
-/** What is settled at signing (M28's firstPay), in minor units. A client funded by an organisation settles nothing. */
-export function firstPayment(t, choice = t?.choice ?? 'upfront', chosen) {
-  if (!selfFunded(t)) return 0;
+/**
+ * The first invoice's amount, however it is funded: for a self-funded client it is settled at signing; for one funded by
+ * an organisation it is the organisation's first invoice, drafted on the signing day (agreements rule 12). Ticked extras
+ * are settled with it for a retainer, a one-off and a block of hours (set sessions carry them in the plan's total; as
+ * delivered, each at its own price with the first session).
+ */
+export function firstAmount(t, choice = t?.choice ?? 'upfront', chosen) {
   const k = kindOf(t);
+  const ex = extrasTotal(t, chosen);
   if (k === 'retainer') {
     const fee = Number(t.retainer?.feeMinor) || 0;
-    return retainerUpfront(t, choice) ? sixUpFront(fee) : fee;
+    return (retainerUpfront(t, choice) ? sixUpFront(fee) : fee) + ex;
   }
   if (k === 'oneoff') {
     const total = Number(t.oneoff?.totalMinor) || 0;
-    return t.oneoff?.settle === 'after' ? roundDeposit(total * DEPOSIT_SHARE, cur(t)) : total;
+    return (t.oneoff?.settle === 'after' ? roundDeposit(total * DEPOSIT_SHARE, cur(t)) : total) + ex;
   }
-  if (k === 'hours') return Number(t.hours?.blockMinor) || 0;
-  if (k === 'team') return 0;
+  if (k === 'hours') return (Number(t.hours?.blockMinor) || 0) + ex;
+  if (k === 'team') {
+    const f = (Number(t.team?.totalMinor) || 0) + ex;
+    if (t.team?.settle === 'full') return f;
+    if (t.team?.settle === 'equal') return split(f, TEAM_THEN)[0];
+    return roundDeposit(f / 3, cur(t));
+  }
   const pf = planTotal(t, chosen);
   if (upfrontActive(t, choice)) return finalTotal(t, choice, chosen);
   if (t.settle === 'full') return pf;
   if (t.settle === 'deposit') return deposit(t, chosen);
-  if (t.settle === 'delivered') return split(pf, sessions(t) || 1)[0];
+  if (t.settle === 'delivered') return split(withoutExtras(t), sessions(t) || 1)[0] + ex;
   return split(pf, EQUAL_COUNT)[0];
+}
+
+/** What is settled at signing (M28's firstPay), in minor units. A client funded by an organisation settles nothing. */
+export function firstPayment(t, choice = t?.choice ?? 'upfront', chosen) {
+  if (!selfFunded(t)) return 0;
+  if (kindOf(t) === 'team') return 0;
+  return firstAmount(t, choice, chosen);
+}
+
+/**
+ * What the agreement is for in all, as its version's total_minor keeps it, with the client's choice and extras:
+ * set sessions their total (5% off up front), a retainer its first term (6 months, or 6 months up front), the rest
+ * their price; ticked extras on top where they aren't in the plan already.
+ */
+export function agreementTotal(t, choice = t?.choice ?? 'upfront', chosen) {
+  const k = kindOf(t);
+  const ex = extrasTotal(t, chosen);
+  if (k === 'retainer') { const fee = Number(t.retainer?.feeMinor) || 0; return (retainerUpfront(t, choice) ? sixUpFront(fee) : fee * 6) + ex; }
+  if (k === 'team') return (Number(t.team?.totalMinor) || 0) + ex;
+  if (k === 'oneoff') return (Number(t.oneoff?.totalMinor) || 0) + ex;
+  if (k === 'hours') return (Number(t.hours?.blockMinor) || 0) + ex;
+  return finalTotal(t, choice, chosen);
 }
 
 /** The settle step's title (M28's payTitle). */
@@ -148,43 +182,135 @@ export function investmentWords(t, choice = t?.choice ?? 'upfront', chosen) {
 }
 
 /**
- * The invoices an agreement makes, in order, from its signing day: [{ n, of, day, amount, kind }]. `kind` is the
- * invoice's own kind (065: first_payment, deposit, instalment). As delivered drafts one per coaching session after it
- * happens (delivered.js), so only its first is here. A retainer lists its first 6 months. Nothing for a client funded by
- * an organisation (the organisation is invoiced from its own profile).
+ * The invoices an agreement's terms make, in order, from its first signing day: [{ n, of, day, amount, kind }]. `kind`
+ * is the invoice's own kind (065: first_payment, deposit, instalment); `of` is null for a retainer, which renews in
+ * 6-month terms and goes on month after month (brief item 39) up to `until` (a day key; without it, its first term).
+ * As delivered drafts one invoice per coaching session after it happens (delivered.js), so only its first is here. A
+ * client funded by an organisation has the same schedule with no 5% (the organisation's invoices; agreements rule 12);
+ * a team programme M28's three ways. The first (n 1) is the first payment settled at signing when self-funded.
  */
-export function schedule(t, { signedDay, choice = t?.choice ?? 'upfront', chosen } = {}) {
-  if (!signedDay || !selfFunded(t)) return [];
+export function schedule(t, { signedDay, choice = t?.choice ?? 'upfront', chosen, until = null } = {}) {
+  if (!signedDay) return [];
   const k = kindOf(t);
-  const nextMonth = instalments({ total: 2, count: 2, firstDay: signedDay })[1].day;
+  const nextMonth = addMonths(signedDay, 1);
   const monthly = (total, count, from, startN, of, kind) => (total > 0
     ? instalments({ total, count, firstDay: from }).map((x, i) => ({ n: startN + i, of, day: x.day, amount: x.amount, kind: i === 0 && startN === 1 ? 'first_payment' : kind }))
     : []);
-  if (k === 'hours') return [{ n: 1, of: 1, day: signedDay, amount: firstPayment(t, choice), kind: 'first_payment' }];
+  const first = firstAmount(t, choice, chosen);
+  if (k === 'hours') return [{ n: 1, of: 1, day: signedDay, amount: first, kind: 'first_payment' }];
   if (k === 'oneoff') {
-    const total = Number(t.oneoff?.totalMinor) || 0;
-    if (t.oneoff?.settle !== 'after') return [{ n: 1, of: 1, day: signedDay, amount: total, kind: 'first_payment' }];
-    const dep = firstPayment(t, choice);
-    return [{ n: 1, of: 2, day: signedDay, amount: dep, kind: 'deposit' }, { n: 2, of: 2, day: t.oneoff?.on && t.oneoff.on > signedDay ? t.oneoff.on : signedDay, amount: total - dep, kind: 'instalment' }];
+    const total = (Number(t.oneoff?.totalMinor) || 0) + extrasTotal(t, chosen);
+    if (t.oneoff?.settle !== 'after') return [{ n: 1, of: 1, day: signedDay, amount: first, kind: 'first_payment' }];
+    return [{ n: 1, of: 2, day: signedDay, amount: first, kind: 'deposit' }, { n: 2, of: 2, day: t.oneoff?.on && t.oneoff.on > signedDay ? t.oneoff.on : signedDay, amount: total - first, kind: 'instalment' }];
   }
   if (k === 'retainer') {
     const fee = Number(t.retainer?.feeMinor) || 0;
-    if (retainerUpfront(t, choice)) {
-      const later = fee > 0 ? instalments({ total: fee * 6, count: 6, firstDay: addMonths(signedDay, 6) }).map((x, i) => ({ n: 2 + i, of: 7, day: x.day, amount: fee, kind: 'instalment' })) : [];
-      return [{ n: 1, of: 7, day: signedDay, amount: sixUpFront(fee), kind: 'first_payment' }, ...later];
+    const up = retainerUpfront(t, choice);
+    if (t.retainer?.invoice === 'delivered' && !up) return [{ n: 1, of: null, day: signedDay, amount: first, kind: 'first_payment' }];
+    // The first invoice covers 1 month (or 6 up front); then one a month, on the same day of the month, term after term.
+    const from = up ? 6 : 1;
+    const last = until || addMonths(signedDay, up ? 11 : 5);
+    const out = [{ n: 1, of: null, day: signedDay, amount: first, kind: 'first_payment' }];
+    for (let m = from, n = 2; fee > 0 && n <= 600; m += 1, n += 1) {
+      const day = addMonths(signedDay, m);
+      if (day > last) break;
+      out.push({ n, of: null, day, amount: fee, kind: 'instalment' });
     }
-    if (t.retainer?.invoice === 'delivered') return [{ n: 1, of: 1, day: signedDay, amount: fee, kind: 'first_payment' }];
-    return monthly(fee * 6, 6, signedDay, 1, 6, 'instalment').map((x) => ({ ...x, amount: fee }));
+    return out;
   }
-  if (k === 'team') return [];
+  if (k === 'team') {
+    const f = (Number(t.team?.totalMinor) || 0) + extrasTotal(t, chosen);
+    if (!(f > 0)) return [];
+    if (t.team?.settle === 'full') return [{ n: 1, of: 1, day: signedDay, amount: f, kind: 'first_payment' }];
+    if (t.team?.settle === 'equal') return monthly(f, TEAM_THEN, signedDay, 1, TEAM_THEN, 'instalment');
+    return [{ n: 1, of: 1 + TEAM_THEN, day: signedDay, amount: first, kind: 'deposit' }, ...monthly(f - first, TEAM_THEN, nextMonth, 2, 1 + TEAM_THEN, 'instalment')];
+  }
   const pf = planTotal(t, chosen);
-  if (upfrontActive(t, choice) || t.settle === 'full') return [{ n: 1, of: 1, day: signedDay, amount: firstPayment(t, choice, chosen), kind: 'first_payment' }];
+  if (upfrontActive(t, choice) || t.settle === 'full') return [{ n: 1, of: 1, day: signedDay, amount: first, kind: 'first_payment' }];
   if (t.settle === 'deposit') {
     const dep = deposit(t, chosen);
     return [{ n: 1, of: 1 + DEPOSIT_THEN, day: signedDay, amount: dep, kind: 'deposit' }, ...monthly(pf - dep, DEPOSIT_THEN, nextMonth, 2, 1 + DEPOSIT_THEN, 'instalment')];
   }
-  if (t.settle === 'delivered') return [{ n: 1, of: sessions(t) || 1, day: signedDay, amount: firstPayment(t, choice, chosen), kind: 'first_payment' }];
+  if (t.settle === 'delivered') return [{ n: 1, of: sessions(t) || 1, day: signedDay, amount: first, kind: 'first_payment' }];
   return monthly(pf, EQUAL_COUNT, signedDay, 1, EQUAL_COUNT, 'instalment');
+}
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+/** "December 2026" for a day key. */
+export const monthWords = (day) => `${MONTHS[Number(String(day).slice(5, 7)) - 1]} ${String(day).slice(0, 4)}`;
+
+/**
+ * An invoice's line from the schedule: "Leadership Sounding Board, December 2026" for a retainer's month (never "of 6":
+ * it renews), "…, the first 6 months" for its 6 months up front, "…, deposit", "…, instalment 3 of 6", or the name alone.
+ */
+export function scheduleLine(t, p, choice = t?.choice ?? 'upfront') {
+  const what = String(t?.coaching || t?.work || t?.hours?.work || 'Coaching').slice(0, 160);
+  if (kindOf(t) === 'retainer') {
+    if (p.n === 1 && retainerUpfront(t, choice)) return `${what}, the first 6 months`;
+    return `${what}, ${monthWords(p.day)}`;
+  }
+  if (p.kind === 'deposit') return `${what}, deposit`;
+  if (p.of > 1) return `${what}, instalment ${p.n} of ${p.of}`;
+  return what;
+}
+
+const stampOf = (v) => v?.client_signed_at || v?.sponsor_signed_at || null;
+const dayOfStamp = (stamp, zone) => (stamp ? dayIn(zone, parseDbTimestamp(stamp)) : null);
+const termsOfVersion = (v) => ({ ...(v.terms || {}), currency: v.currency || v.terms?.currency || 'GBP', fundedBy: v.funded_by ?? v.terms?.fundedBy ?? null });
+
+/** An agreement's signed versions, oldest first (a later one is an amendment of the first: agreements rule 12). */
+export function signedVersionsOf(versions) {
+  return (versions || []).filter((v) => v && stampOf(v)).sort((a, b) => (a.version || 0) - (b.version || 0));
+}
+/** The first signing of an agreement: the version and its day (the 14 days and the schedule count from it). */
+export function firstSigning(versions, zone = 'Europe/London') {
+  const v = signedVersionsOf(versions)[0] || null;
+  return v ? { version: v, day: dayOfStamp(stampOf(v), zone) } : null;
+}
+/** Whether a version is an amendment: an earlier version of the same agreement was signed. */
+export const isAmendment = (v, versions) => signedVersionsOf(versions).some((x) => x.id !== v?.id && (x.version || 0) < (v?.version || 0));
+
+/**
+ * The one billing schedule of a 065 agreement (agreements rule 12), from all its signed versions (superseded ones
+ * included): the first signing sets the shape (its kind, way of settling, the client's choice and the first day), and
+ * each later signed version is an amendment whose amounts apply to the invoices due from its effective day (its signing
+ * day, or the later day its new price starts, terms.priceFrom), the numbers carrying on. A pause (agreement.paused_from
+ * to paused_to) moves every invoice due from its start on by its length; an early end (ending_on with ending_by) stops
+ * those due after it; a cancelled one makes none. Each: { n, of, day, amount, kind, versionId, line, terms }.
+ * @param {object[]} versions the agreement's versions
+ * @param {{ zone?: string, until?: string|null, agreement?: object|null }} opts
+ */
+export function agreementSchedule(versions, { zone = 'Europe/London', until = null, agreement = null } = {}) {
+  const signed = signedVersionsOf(versions).filter((v) => v.terms?.kind);
+  if (!signed.length || agreement?.status === 'cancelled') return [];
+  const first = signed[0];
+  const firstDay = dayOfStamp(stampOf(first), zone);
+  const choice = first.settle_choice || 'upfront';
+  const plans = signed.map((v, i) => {
+    const t = termsOfVersion(v);
+    const signedDay = dayOfStamp(stampOf(v), zone);
+    const from = i === 0 ? firstDay : [signedDay, t.priceFrom].filter(Boolean).sort().pop();
+    return { v, t, from, plan: schedule(t, { signedDay: firstDay, choice, chosen: t.extrasChosen || [], until }) };
+  });
+  const paused = agreement?.paused_from && agreement?.paused_to && agreement.paused_to > agreement.paused_from
+    ? { from: agreement.paused_from, days: daysBetween(agreement.paused_from, agreement.paused_to) + 1 } : null;
+  const stop = agreement?.ending_on && agreement?.ending_by ? agreement.ending_on : null;
+  const out = [];
+  for (const p of plans[0].plan) {
+    let pick = plans[0];
+    let item = p;
+    for (const am of plans.slice(1)) {
+      if (p.n === 1 || p.day < am.from) continue;
+      const q = am.plan.find((x) => x.n === p.n);
+      if (q) { pick = am; item = { ...p, amount: q.amount, of: q.of }; }
+    }
+    const day = paused && p.n > 1 && item.day >= paused.from ? addDays(item.day, paused.days) : item.day;
+    if (stop && p.n > 1 && day > stop) continue;
+    if (until && kindOf(pick.t) === 'retainer' && day > until && p.n > 1) continue;
+    const at = { ...item, day };
+    out.push({ ...at, versionId: pick.v.id, terms: pick.t, line: scheduleLine(pick.t, at, choice) });
+  }
+  return out;
 }
 
 /** A day key some calendar months on (the month's last day when it is shorter). */

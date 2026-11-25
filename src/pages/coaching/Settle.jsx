@@ -57,9 +57,11 @@ export default function Settle() {
     asked.current = true;
     clientAsk('settle', bacs ? 'bacs' : 'start', { versionId }).then((a) => {
       if (!a.ok) { setProblem(a.message); return; }
+      // An amendment, or settled already: nothing to settle here, so straight on to Welcome.
+      if (a.amendment) { navigate(`/coaching/agreement/${versionId}/welcome`, { replace: true }); return; }
       setAnswer(a);
     });
-  }, [version, versionId, bacs]);
+  }, [version, versionId, bacs, navigate]);
 
   const real = Boolean(answer && !answer.standIn && answer.publishableKey && answer.clientSecret);
   useEffect(() => {

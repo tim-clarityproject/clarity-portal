@@ -76,11 +76,12 @@ test('it won’t send while a PO or evidence is missing, each in calm words (ite
 });
 
 test('Invoice sent’s rows, with their supplier portal and settled', () => {
-  const invoice = { number: 1251, payer_email: 'invoices@efl.example', due_on: '2026-12-25', status: 'sent', portal_uploaded_at: null };
-  const rows = d.sentRows({ invoice, profile: { supplier_portal: true }, today: '2026-11-25' });
+  const invoice = { number: 1251, payer_email: 'invoices@efl.example', due_on: '2026-12-25', issued_on: '2026-11-25', status: 'sent', portal_uploaded_at: null };
+  const rows = d.sentRows({ invoice, profile: { supplier_portal: true }, orgName: 'Elite Football League', today: '2026-11-25' });
   assert.deepEqual(rows.map((r) => [r.label, r.value]), [
     ['Sent to', 'invoices@efl.example'],
-    ['Attached', 'CLARITY-1251.pdf, one file'],
+    // The PDF's own name, as attached (functionality tester, run 3, finding 12).
+    ['Attached', 'Invoice CLARITY-1251, Elite Football League, 25 Nov 2026.pdf, one file'],
     ['Their supplier portal', 'Upload it there too, reminder in Needs you'],
     ['Due', 'Fri 25 Dec, by bank transfer'],
     ['Settled', 'Not yet'],

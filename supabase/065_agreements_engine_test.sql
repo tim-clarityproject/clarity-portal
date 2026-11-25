@@ -31,8 +31,10 @@
 --      server's, needs the PO where asked, happens once, and ends the link.
 --   9. Approval: an associate's waiting agreement isn't sent until the owner
 --      approves; only the owner approves.
---  10. my_hours, coach_fx_rates, the Fathom mark and who said what happened,
---      invoice sources once each, and invoices' new kinds.
+--  10. my_hours (with its top-ups), coach_fx_rates, the Fathom mark and who
+--      said what happened, invoice sources once each, and invoices' new kinds.
+--  12. An amendment (a later version signed): no start-now tick again, the
+--      first choice kept, and the 14 days go by the first signing.
 --   It ends with the notice 065 CHECKS PASSED, or stops with FAILED and a
 --   list naming each check that failed. Everything it makes is undone.
 -- =============================================================================
@@ -111,7 +113,7 @@ declare
   p_sam uuid := gen_random_uuid(); p_ben uuid := gen_random_uuid(); p_una uuid := gen_random_uuid();
   org uuid := gen_random_uuid(); eng_ben uuid := gen_random_uuid();
   sig_maya uuid; sig_tess uuid; sig_sam uuid; sig_ben uuid; sig_una uuid;
-  a_q uuid; v_q uuid; q1 uuid; q2 uuid; tok text; tok2 text;
+  a_q uuid; v_q uuid; q1 uuid; q2 uuid; tok text; tok2 text; v_amend uuid;
   a_sam uuid; v_sam uuid; a_una uuid; v_una uuid; a_ben uuid; v_ben uuid; a_spon uuid; v_spon uuid; a_wait uuid; v_wait uuid;
   sess uuid := gen_random_uuid();
   stok text := repeat('5', 64);
@@ -408,6 +410,12 @@ begin
     j := public.my_hours() -> 0;
     f := f || pg_temp.r_eq('10a my_hours: the block in minutes, the minutes used and each entry',
       concat(j ->> 'block_minutes', '/', j ->> 'used_minutes', '/', jsonb_array_length(j -> 'entries'), '/', j #>> '{entries,0,note}', '/', j ->> 'rate_minor'), '800/310/2/Question set, second draft/15000');
+    -- A top-up invoiced adds another block, as the coach's page counts it (functionality tester, run 3, finding 8).
+    perform pg_temp.r_server();
+    insert into public.invoices (coach_id, agreement_id, profile_id, kind, total_minor) values (tess_c, a_ben, p_ben, 'top_up', 200000);
+    perform pg_temp.r_as(ben_u, 'aal1');
+    j := public.my_hours() -> 0;
+    f := f || pg_temp.r_eq('10a2 my_hours counts each top-up in the block', concat(j ->> 'block_minutes', '/', j ->> 'top_ups'), '1600/1');
     perform pg_temp.r_as(sam_u, 'aal1');
     f := f || pg_temp.r_eq('10b another client has none', public.my_hours()::text, '[]');
     perform pg_temp.r_anon();
@@ -448,6 +456,38 @@ begin
     perform pg_temp.r_as(maya_u, 'aal2');
     f := f || pg_temp.r_eq('10p the coach reads her sources but writes none',
       concat((select count(*) from public.invoice_sources), '/', pg_temp.r_try('delete from public.invoice_sources returning ''gone''')), '2/error 42501');
+
+    -- ---------------------------------------------------------------- 12. an amendment (agreements rule 12)
+    -- A later version Sam signs (a price review, a change) never asks or records the start-now tick again, keeps the
+    -- way of settling first chosen, and never starts the 14 days again: they go by the first signing.
+    perform pg_temp.r_as(maya_u, 'aal2');
+    insert into public.agreement_versions (agreement_id, coach_id, version, status, terms, clauses, total_minor)
+      select agreement_id, coach_id, (select max(x.version) + 1 from public.agreement_versions x where x.agreement_id = a_q), 'draft', terms || '{"priceFrom":"2030-01-01"}'::jsonb, clauses, total_minor from public.agreement_versions where id = v_q
+      returning id into v_amend;
+    update public.agreement_versions set status = 'sent', coach_signed_at = now(), coach_signature_id = sig_maya, sent_at = now() where id = v_amend;
+    update public.agreements set current_version = (select version from public.agreement_versions where id = v_amend) where id = a_q;
+    perform pg_temp.r_as(sam_u, 'aal1');
+    j := public.sign_agreement_v2(v_amend, 'Sam R065', sig_sam, public.agreement_fingerprint(v_amend), true, 'upfront');
+    f := f || pg_temp.r_eq('12a an amendment records no tick and keeps the first choice',
+      concat(j ->> 'amends', '/', coalesce(j ->> 'start_now', 'none'), '/', j ->> 'settle_choice'), 'true/none/plan');
+    f := f || pg_temp.r_eq('12b my_agreements marks it an amendment, and the first not',
+      (select string_agg(x ->> 'amends', ',' order by (x ->> 'version')::int) from jsonb_array_elements(public.my_agreements()) x where x ->> 'agreement_id' = a_q::text), 'false,true');
+    perform pg_temp.r_as(maya_u, 'aal2');
+    f := f || pg_temp.r_eq('12c the 14 days still go by the first signing',
+      pg_temp.r_try(format('insert into public.coach_sessions (coach_id, profile_id, starts_at, minutes) values (%L, %L, now() + interval ''3 days'', 60) returning ''added''', maya_c, p_sam)), 'error 23514');
+    perform pg_temp.r_admin();
+    begin
+      -- The first signing moved 20 days back (the guard keeps a signing record fixed, so with triggers held).
+      perform set_config('session_replication_role', 'replica', true);
+      update public.agreement_versions set client_signed_at = now() - interval '20 days' where id = v_q;
+      perform set_config('session_replication_role', 'origin', true);
+      perform pg_temp.r_as(maya_u, 'aal2');
+      f := f || pg_temp.r_eq('12d once the first 14 days have passed, an amendment just signed blocks nothing',
+        pg_temp.r_try(format('insert into public.coach_sessions (coach_id, profile_id, starts_at, minutes) values (%L, %L, now() + interval ''2 days'', 60) returning ''added''', maya_c, p_sam)), 'added');
+    exception when insufficient_privilege then
+      raise notice '065: 12d needs to hold triggers, which this database doesn''t allow the test (%)', sqlerrm;
+    end;
+    perform pg_temp.r_admin();
 
     raise exception 'undo the test rows' using errcode = 'P0065';
   exception when sqlstate 'P0065' then

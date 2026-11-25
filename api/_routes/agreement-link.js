@@ -19,7 +19,7 @@ import { supabaseOf } from '../_coachEmails.js';
 import { maySend } from '../_guestEmails.js';
 import { portalOrigin } from '../_portalOrigin.js';
 import { forStorage } from '../../src/lib/agreements/clauses.js';
-import { finalTotal } from '../../src/lib/agreements/upfront.js';
+import { agreementTotal } from '../../src/lib/agreements/settling.js';
 import { quoteQuestionEmail, sponsorSignedCopyEmail } from '../../src/lib/email/agreementEmails.js';
 import { agreementsApi, sendAs, standardsFor } from './coach-agreements.js';
 
@@ -90,7 +90,8 @@ export function linkApi({ server, env = {}, origin = 'https://portal.theclarityp
       const kind = terms.kind || 'sessions';
       const standards = await standardsFor(server, quote.coach_id, kind);
       const clauses = forStorage(terms, { standards, overrides: v.overrides || {} });
-      const total = finalTotal(terms, asked.choice || 'upfront', asked.extras);
+      // Every kind's total with the ticked extras (settling.js's agreementTotal), never the sessions' sum alone (finding 9).
+      const total = agreementTotal(terms, asked.choice || 'upfront', asked.extras);
       const r = await server.rpc('quote_accept', { p_token: asked.token, p_extras: asked.extras, p_choice: asked.choice, p_clauses: clauses, p_total_minor: total });
       if (r.error) throw refusalOf(r.error);
       return { versionId: r.data, needsAccount: await this._needsAccount(r.data) };

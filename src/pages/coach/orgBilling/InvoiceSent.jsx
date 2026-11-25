@@ -27,7 +27,7 @@ export default function InvoiceSent() {
   const org = p.organisations.find((o) => o.id === inv.organisation_id) || null;
   const client = p.clients.find((c) => c.id === inv.profile_id) || null;
   const profile = rowsOf(p.state, 'org_billing_profiles').find((r) => r.organisation_id === inv.organisation_id && r.coach_id === p.coach.id) || null;
-  const rows = sentRows({ invoice: inv, profile, today: p.todayKey });
+  const rows = sentRows({ invoice: inv, profile, orgName: org?.name || '', today: p.todayKey });
   const settled = inv.status === 'paid';
   const once = async (fn) => { if (busy.current) return; busy.current = true; try { await fn(); } finally { busy.current = false; } };
 

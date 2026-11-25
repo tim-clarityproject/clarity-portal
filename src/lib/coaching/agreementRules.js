@@ -73,6 +73,8 @@ export function tidyVersion(raw) {
       clauseKey: text(raw.change_pending.clause_key), title: text(raw.change_pending.title), askedAt: when(raw.change_pending.asked_at),
     } : null,
     startNow: raw.start_now === true,
+    // An amendment of an agreement signed before (agreements rule 12): no start-now tick and nothing to settle at signing.
+    amends: raw.amends === true,
     settleChoice: raw.settle_choice === 'upfront' || raw.settle_choice === 'plan' ? raw.settle_choice : null,
   };
 }

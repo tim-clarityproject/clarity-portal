@@ -125,7 +125,7 @@ function Overview() {
   const rows = useMemo(() => targetRows({ today: todayKey, lines: model.lines, targets: financeTargets, minimumMinor: Number(settings.minimum_minor) || 0,
     associatePayMinor: model.associatePay?.[monthKey(todayKey)] || 0, startMonth: model.startMonth }), [model, financeTargets, settings.minimum_minor, todayKey]);
   const fy = financialYear(todayKey, model.startMonth);
-  const expected = useMemo(() => expectedIncome({ today: todayKey, untilMonth: fy.months[11], invoices: fin.invoices || [], versions: model.versions, repeating: model.repeating }), [todayKey, fy.months, fin.invoices, model]);
+  const expected = useMemo(() => expectedIncome({ today: todayKey, untilMonth: fy.months[11], invoices: fin.invoices || [], versions: model.versions, agreements: model.agreements, repeating: model.repeating }), [todayKey, fy.months, fin.invoices, model]);
   const chart = useMemo(() => incomeChart({ today: todayKey, lines: model.lines, expected, targets: financeTargets, minimumMinor: Number(settings.minimum_minor) || 0,
     associatePay: model.associatePay || {}, sector: sector === 'all' ? null : sector, mode, showProjected, startMonth: model.startMonth }), [todayKey, model, expected, financeTargets, settings.minimum_minor, sector, mode, showProjected]);
   const newYear = useNewYearTargets(fin, fy);
@@ -346,7 +346,7 @@ function Money() {
   const { model, todayKey, names, sectors, packages } = fin;
   const [period, setPeriod] = useState('month');
   const [panel, setPanel] = useState(null); // 'bank' | 'export'
-  const figures = useMemo(() => moneyFigures({ period, today: todayKey, lines: model.lines, invoices: fin.invoices || [], versions: model.versions, startMonth: model.startMonth }), [period, todayKey, model, fin.invoices]);
+  const figures = useMemo(() => moneyFigures({ period, today: todayKey, lines: model.lines, invoices: fin.invoices || [], versions: model.versions, agreements: model.agreements, startMonth: model.startMonth }), [period, todayKey, model, fin.invoices]);
   const bySector = sectorsFor({ figures, lines: model.lines, sectors });
   const sectorMax = Math.max(1, ...bySector.map((s) => s.paid + s.toCome));
   const clients = clientRows(model.lines, figures.months);

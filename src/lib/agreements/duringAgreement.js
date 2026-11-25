@@ -1,15 +1,16 @@
 import { addDays, dayIn, daysBetween, dayKeyWords, weekdayOf } from '../time/index.js';
 import { parseDbTimestamp, getLocalDateKey } from '../dateFormatter.js';
 import { at80, blockMinutes, used as usedMinutes } from './hours.js';
-import { sessionsToInvoice } from './delivered.js';
+import { deliveredToInvoice, perSession } from './delivered.js';
 import { fridayOnOrAfter } from './endDate.js';
 import { movedDown, fallSince, perUnit } from './fx.js';
 import {
   approvalItem, changeItem, deliveredItem, firstPaymentItem, fxItem, hoursItem, overdueItem, poItem, portalItem, priceItem, renewItem, signReminderItem,
 } from './needsYou.js';
-import { planTotal, sessions as sessionTotal } from './pricing.js';
+import { sessions as sessionTotal } from './pricing.js';
+import { fileName as orgFileName } from './orgInvoice.js';
 import { priceReviewDue, priceReviewShows, renewalShows, termEnds, TERM_MONTHS } from './renewals.js';
-import { addMonths } from './settling.js';
+import { addMonths, signedVersionsOf } from './settling.js';
 import { kindOf, selfFunded } from './terms.js';
 
 // During an agreement (Phase 6b run 3, Group D; M28 s-today, the Needs you panels, s-agr, s-cal-session, s-h-log,
@@ -21,6 +22,7 @@ import { kindOf, selfFunded } from './terms.js';
 const text = (v) => (typeof v === 'string' ? v.trim() : '');
 const dayOfStamp = (v) => (v ? getLocalDateKey(parseDbTimestamp(v)) : null);
 const firstWord = (name) => text(name).split(/\s+/)[0] || '';
+const FIRST_KINDS = ['first_payment', 'deposit', 'instalment'];
 
 // ---------------------------------------------------------------- an agreement's versions and sessions
 
@@ -35,6 +37,13 @@ export function versionInForce(versions, agreementId) {
 }
 export const isSigned = (v) => Boolean(v && (v.status === 'signed' || v.client_signed_at || v.sponsor_signed_at));
 export const signedDay = (v) => dayOfStamp(v?.client_signed_at || v?.sponsor_signed_at);
+/**
+ * The first signing of an agreement (agreements rule 12): a later signed version (a price review, an extension, a
+ * change) is an amendment, so the 14 days, the start-now tick and Cancel within 14 days always go by the first.
+ */
+export function firstSignedVersion(versions, agreementId) {
+  return signedVersionsOf((versions || []).filter((v) => v.agreement_id === agreementId))[0] || null;
+}
 
 /** "Version 1, signed" or "Version 2, not signed yet" (M28's agrStatus). */
 export function statusLine(agreement, version) {
@@ -72,16 +81,8 @@ export function agreementSessions({ agreement, terms, sessions = [], zone = 'Eur
 /** How many coaching sessions the agreement holds (set sessions only; a retainer's are a month's, not a total). */
 export const sessionsIn = (t) => (kindOf(t) === 'sessions' ? sessionTotal(t) : null);
 
-/**
- * One coaching session's price when invoiced as delivered: set sessions split evenly (the last of the even split, as
- * settling.js words it), a retainer at the rate beyond the package (risk 6, until Tim says), else its monthly fee.
- */
-export function perSessionMinor(t) {
-  const k = kindOf(t);
-  if (k === 'retainer') return Number(t?.beyondRateMinor) || Number(t?.retainer?.feeMinor) || 0;
-  const n = sessionTotal(t) || 1;
-  return Math.floor(planTotal(t) / n);
-}
+/** One coaching session's price (delivered.js's perSession, the one function: agreements rule 12). */
+export const perSessionMinor = (t, choice = 'plan') => perSession(t, choice);
 /** Whether its coaching sessions are invoiced after they happen. */
 export const invoicedAsDelivered = (t) => (kindOf(t) === 'retainer' ? t?.retainer?.invoice === 'delivered' : kindOf(t) === 'sessions' && t?.settle === 'delivered' && t?.choice !== 'upfront');
 
@@ -215,7 +216,7 @@ export function needsYouItems(f) {
 
     // As delivered: the coaching sessions since the last invoice, drafted for the coach to check and send.
     if (signed && invoicedAsDelivered(t)) {
-      const list = sessionsToInvoice({ sessions: f.sessions, sources: f.sources, profileId: a.profile_id, startsOn: t.startsOn, zone, now });
+      const list = deliveredToInvoice({ terms: t, sessions: f.sessions, sources: f.sources, profileId: a.profile_id, zone, now });
       if (list.length) {
         const per = perSessionMinor(t);
         const lastDay = dayIn(zone, new Date(list.at(-1).starts_at));
@@ -280,7 +281,9 @@ export function needsYouItems(f) {
       out.push({ ...it, ...(sentDay >= today ? { line: `Hasn’t signed version ${v.version || 1}, sent today` } : {}), key: `${it.key}:${sign.kind}`, data: { ...it.data, reminderId: sign.id, reminder: sign.kind, agreementId: a.id } });
     }
     const first = list.find((r) => r.kind === 'first_payment');
-    if (first && isSigned(v)) {
+    // Only while the agreement runs and its first invoice isn't settled (functionality tester, run 3, finding 7).
+    const firstSettled = (f.invoices || []).some((i) => i.agreement_id === a.id && (i.instalment_n ?? 1) === 1 && FIRST_KINDS.includes(i.kind) && i.status === 'paid');
+    if (first && isSigned(v) && a.status === 'signed' && !firstSettled) {
       const it = firstPaymentItem({ versionId, firstName: firstWord(name), day: dayOfStamp(first.drafted_at) || today, today });
       out.push({ ...it, data: { ...it.data, reminderId: first.id, agreementId: a.id } });
     }
@@ -362,14 +365,15 @@ export const notNowWords = (kind) => (kind === 'renew' || kind === 'price' || ki
  * last invoice, and the time logged on its engagements, none already on a live invoice. Oldest first.
  * Rows: { key, kind: 'session'|'entry', id, day, what, minutes }.
  */
-export function orgInvoiceRows({ organisationId, clients = [], sessions = [], entries = [], engagements = [], sources = [], zone = 'Europe/London', now = Date.now() }) {
+export function orgInvoiceRows({ organisationId, clients = [], sessions = [], entries = [], engagements = [], sources = [], zone = 'Europe/London', now = Date.now(), covered = null }) {
   const people = new Set(clients.filter((c) => c.organisation_id === organisationId).map((c) => c.id));
+
   const engs = new Set((engagements || []).filter((e) => e.organisation_id === organisationId || people.has(e.profile_id)).map((e) => e.id));
   const liveSessions = new Set((sources || []).filter((s) => s.session_id && !s.released_at).map((s) => s.session_id));
   const liveEntries = new Set((sources || []).filter((s) => s.time_entry_id && !s.released_at).map((s) => s.time_entry_id));
   const out = [];
   for (const s of sessions || []) {
-    if (!people.has(s.profile_id) || liveSessions.has(s.id)) continue;
+    if (!people.has(s.profile_id) || liveSessions.has(s.id) || onSchedule(covered, s.profile_id, dayIn(zone, new Date(s.starts_at)))) continue;
     if (!(s.outcome === 'held' || s.outcome === 'no_show' || (s.outcome === 'late_cancel' && !s.waived))) continue;
     if (Date.parse(s.starts_at) + (Number(s.minutes) || 60) * 60000 > now) continue;
     const who = clients.find((c) => c.id === s.profile_id)?.name || '';
@@ -389,6 +393,26 @@ export function orgInvoiceRows({ organisationId, clients = [], sessions = [], en
   const after = invoicedAt.length ? Math.max(...invoicedAt) : -Infinity;
   return out.filter((r) => r.at > after).sort((a, b) => a.at - b.at);
 }
+/**
+ * The clients whose coaching sessions an organisation already settles through an agreement's own schedule (agreements
+ * rule 12): a running 065 agreement it funds (priced, or a team member's under the team's). Their sessions never go on an
+ * hourly organisation invoice too, so nothing is invoiced twice.
+ */
+export function scheduledProfiles(agreements = [], versions = []) {
+  // { profile id → the day its agreement starts (sessions from then on are the agreement's), '' when it has none }
+  const out = new Map();
+  for (const a of agreements || []) {
+    if (a.status !== 'signed' || !a.profile_id) continue;
+    const v = versionInForce(versions, a.id);
+    if (!(v?.terms?.kind && isSigned(v) && !selfFunded({ ...v.terms, fundedBy: v.funded_by ?? v.terms.fundedBy }))) continue;
+    const from = v.terms.startsOn || signedDay(v) || '';
+    if (!out.has(a.profile_id) || from < out.get(a.profile_id)) out.set(a.profile_id, from);
+  }
+  return out;
+}
+/** Whether a session (its day) is one an organisation settles through its agreement's schedule (scheduledProfiles). */
+export const onSchedule = (covered, profileId, day) => Boolean(covered?.has?.(profileId)) && day >= (covered.get?.(profileId) ?? '');
+
 /**
  * The invoice's period (UI finding 7: on a busy practice every row since the last invoice showed, all ticked): the
  * calendar month of the newest row logged. Its rows show and start ticked; anything older waits behind "Show older",
@@ -450,10 +474,12 @@ export const openPo = (pos, organisationId) => (pos || []).filter((p) => p.organ
   .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0] || null;
 
 /** Invoice sent's rows (M28's invStatus): Sent to, Attached, [Their supplier portal], Due, Settled. */
-export function sentRows({ invoice, profile, pages = null, today }) {
+export function sentRows({ invoice, profile, orgName = '', pages = null, today }) {
+  // The PDF's own name, as it was attached (orgInvoice.fileName; functionality tester, run 3, finding 12).
+  const file = invoice.issued_on ? orgFileName({ number: invoice.number, orgName: orgName || invoice.payer_name || '', day: invoice.issued_on }) : `Invoice CLARITY-${invoice.number}.pdf`;
   const rows = [
     { label: 'Sent to', value: invoice.payer_email || profile?.invoices_email || '' },
-    { label: 'Attached', value: `CLARITY-${invoice.number}.pdf, one file${pages ? `, ${pages} ${pages === 1 ? 'page' : 'pages'}` : ''}` },
+    { label: 'Attached', value: `${file}, one file${pages ? `, ${pages} ${pages === 1 ? 'page' : 'pages'}` : ''}` },
     { label: 'Due', value: invoice.due_on ? `${dayKeyWords(invoice.due_on)}, by bank transfer` : '' },
     { label: 'Settled', value: invoice.status === 'paid' ? `${invoice.paid_at && dayOfStamp(invoice.paid_at) === today ? 'Today' : invoice.paid_at ? dayKeyWords(dayOfStamp(invoice.paid_at)) : 'Settled'}, by bank transfer` : 'Not yet', done: invoice.status === 'paid' },
   ];

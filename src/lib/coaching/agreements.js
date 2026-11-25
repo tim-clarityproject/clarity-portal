@@ -264,7 +264,7 @@ export async function signAgreementV2({ userId, versionId, name, fingerprint, st
     const d = res.data || {};
     return {
       ok: true, signedAt: d.signed_at || new Date().toISOString(), fingerprint: d.fingerprint || fingerprint, version: d.version,
-      startNow: d.start_now === true || (d.start_now == null && Boolean(startNow)), settleChoice: d.settle_choice ?? choice ?? null, signature: added.data,
+      startNow: d.start_now === true || (d.start_now == null && Boolean(startNow) && d.amends !== true), settleChoice: d.settle_choice ?? choice ?? null, amends: d.amends === true, signature: added.data,
     };
   } catch (error) {
     return { ok: false, ...signError(error, { online: !isOffline(error) }) };

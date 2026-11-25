@@ -854,6 +854,9 @@ as $$
       -- 065
       'agreement_kind', a.agreement_kind, 'send_as', v.send_as, 'personal_note', v.personal_note, 'expires_on', v.expires_on,
       'start_now', v.start_now, 'start_now_at', v.start_now_at, 'settle_choice', case when v.funded_by is null then v.settle_choice end,
+      -- An amendment: an earlier version of this agreement was signed, so nothing is settled at signing and the
+      -- start-now tick isn't asked again (agreements rule 12).
+      'amends', exists (select 1 from public.agreement_versions e where e.agreement_id = v.agreement_id and e.version < v.version and e.client_signed_at is not null),
       'change_pending', (select jsonb_build_object('clause_key', r.clause_key,
                                  'title', coalesce((select nullif(concat_ws('. ', c->>'number', c->>'title'), '')
                                                      from jsonb_array_elements(v.clauses) c where c->>'key' = r.clause_key limit 1), ''),
@@ -968,6 +971,8 @@ declare
   v_offered boolean;
   v_choice text;
   v_zone text;
+  v_first record;
+  v_amends boolean := false;
 begin
   if v_user is null then raise exception 'Sign in to carry on.' using errcode = '42501'; end if;
   select u.email, u.email_confirmed_at into v_email, v_confirmed from auth.users u where u.id = v_user;
@@ -1014,11 +1019,22 @@ begin
     and (coalesce(v.terms ->> 'kind', v.a_agreement_kind) = 'retainer'
          or (coalesce(v.terms ->> 'kind', v.a_agreement_kind) = 'sessions' and coalesce(v.terms ->> 'settle', 'equal') <> 'full'));
   v_choice := case when v_offered then coalesce(case when p_choice in ('upfront', 'plan') then p_choice end, 'upfront') end;
+  -- A later version of an agreement signed before (a price review, an extension, a change) is an amendment (agreements
+  -- rule 12): the 14 days and the start-now tick stay the first signing's, so nothing is asked or recorded again, and
+  -- the way of settling stays the one chosen first.
+  select f.start_now, f.settle_choice into v_first
+    from public.agreement_versions f
+    where f.agreement_id = v.agreement_id and f.id <> p_version and f.client_signed_at is not null
+    order by f.client_signed_at asc limit 1;
+  if found then
+    v_amends := true;
+    v_choice := case when v_offered then v_first.settle_choice end;
+  end if;
 
   update public.agreement_versions set status = 'signed', client_signed_at = v_now, client_signature_id = v_sig.id,
     signed_name = v_name, signed_email = v_email, signed_user_id = v_user, fingerprint = v_print,
-    start_now = case when v_self then coalesce(p_start_now, false) end,
-    start_now_at = case when v_self and coalesce(p_start_now, false) then v_now end,
+    start_now = case when v_self and not v_amends then coalesce(p_start_now, false) end,
+    start_now_at = case when v_self and not v_amends and coalesce(p_start_now, false) then v_now end,
     settle_choice = v_choice
   where id = p_version;
   update public.agreement_versions set status = 'superseded' where agreement_id = v.agreement_id and id <> p_version and status in ('sent', 'signed');
@@ -1026,8 +1042,9 @@ begin
   insert into public.coach_notifications (coach_id, kind, title, detail, item_kind, item_id)
   select v.coach_id, 'agreement', p.name || ' signed their agreement', left(coalesce(v.terms->>'coaching', ''), 240), 'client', p.id
   from public.client_profiles p where p.id = v.a_profile;
-  return jsonb_build_object('signed_at', v_now, 'fingerprint', v_print, 'version', v.version, 'start_now', case when v_self then coalesce(p_start_now, false) end,
-                            'settle_choice', v_choice, 'self_funded', v_self);
+  return jsonb_build_object('signed_at', v_now, 'fingerprint', v_print, 'version', v.version,
+                            'start_now', case when v_self and not v_amends then coalesce(p_start_now, false) end,
+                            'settle_choice', v_choice, 'self_funded', v_self, 'amends', v_amends);
 end;
 $$;
 revoke all on function public.sign_agreement_v2(uuid, text, uuid, text, boolean, text) from public, anon;
@@ -1338,8 +1355,12 @@ begin
   return coalesce((
     select jsonb_agg(jsonb_build_object(
       'agreement_id', a.id, 'version_id', v.id, 'work', coalesce(v.terms #>> '{hours,work}', v.terms ->> 'work'),
+      -- The block with each top-up invoiced (not voided), as the coach's page counts it (duringAgreement.hoursState).
       'block_minutes', case when coalesce((v.terms #>> '{hours,rateMinor}')::numeric, 0) > 0
-                            then floor((v.terms #>> '{hours,blockMinor}')::numeric * 60 / (v.terms #>> '{hours,rateMinor}')::numeric)::integer end,
+                            then floor((v.terms #>> '{hours,blockMinor}')::numeric
+                                       * (1 + (select count(*) from public.invoices ti where ti.agreement_id = a.id and ti.kind = 'top_up' and ti.status <> 'void'))
+                                       * 60 / (v.terms #>> '{hours,rateMinor}')::numeric)::integer end,
+      'top_ups', (select count(*)::integer from public.invoices ti where ti.agreement_id = a.id and ti.kind = 'top_up' and ti.status <> 'void'),
       'rate_minor', case when v.funded_by is null then (v.terms #>> '{hours,rateMinor}')::bigint end,
       'block_minor', case when v.funded_by is null then (v.terms #>> '{hours,blockMinor}')::bigint end,
       'currency', case when v.funded_by is null then v.currency end,
@@ -1538,14 +1559,18 @@ begin
   end if;
   if new.profile_id is not null and new.kind not in ('chemistry', 'other')
      and (tg_op = 'INSERT' or new.starts_at is distinct from old.starts_at or new.kind is distinct from old.kind or new.profile_id is distinct from old.profile_id) then
+    -- The agreement's FIRST signing decides (agreements rule 12): a later signed version is an amendment and never
+    -- starts the 14 days again.
     select p.name, v.client_signed_at, (v.client_signed_at at time zone coalesce(nullif(p.time_zone, ''), 'Europe/London'))::date + 15 as bookable,
            coalesce(nullif(p.time_zone, ''), 'Europe/London') as zone
       into w
       from public.agreements a
       join public.client_profiles p on p.id = a.profile_id
-      join public.agreement_versions v on v.agreement_id = a.id and v.version = a.current_version
+      join lateral (select f.* from public.agreement_versions f
+                     where f.agreement_id = a.id and f.client_signed_at is not null
+                     order by f.client_signed_at asc limit 1) v on true
      where a.profile_id = new.profile_id and a.kind = 'coaching' and a.status = 'signed'
-       and v.status = 'signed' and v.funded_by is null and v.start_now is false
+       and v.funded_by is null and v.start_now is false
        and v.client_signed_at > now() - interval '16 days'
      order by v.client_signed_at desc
      limit 1;

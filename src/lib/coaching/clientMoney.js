@@ -101,8 +101,9 @@ export function choiceFor(terms, settleChoice = null) {
 }
 
 /** Where signing leads: settling the first amount (self-funded with something to settle), else the welcome. */
-export function afterSigning(terms, choice) {
-  return selfFunded(terms) && firstPayment(terms, choice) > 0 ? 'settle' : 'welcome';
+export function afterSigning(terms, choice, { amends = false } = {}) {
+  // An amendment (a later version of an agreement signed before) settles nothing at signing (agreements rule 12).
+  return !amends && selfFunded(terms) && firstPayment(terms, choice) > 0 ? 'settle' : 'welcome';
 }
 
 /**

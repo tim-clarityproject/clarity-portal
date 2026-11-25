@@ -5,7 +5,7 @@ import { endHint, endOptions, sessionCount, suggestEnd } from '../agreements/end
 import { fxLine, fxLineMonthly, matchMyPrice, perUnit, underBy, underLine } from '../agreements/fx.js';
 import { blockMinutes } from '../agreements/hours.js';
 import { finLine, hourlyLine, planTotal, sessionsSummary } from '../agreements/pricing.js';
-import { firstPayment, settleOptions, teamOptions } from '../agreements/settling.js';
+import { agreementTotal, firstPayment, settleOptions, teamOptions } from '../agreements/settling.js';
 import { ALL_CLAUSE_KEYS, clauseKeys } from '../agreements/standardWording.js';
 import { agreementStatus, expiryLine, NOT_YET, sentLine, sentTitle } from '../agreements/status.js';
 import { blankTerms, KINDS, kindOf, personalNoteFor, selfFunded } from '../agreements/terms.js';
@@ -329,12 +329,7 @@ export const extraLine = (e, c = 'GBP') => [e.title, moneyText(e.priceMinor || 0
 
 /** The version's total_minor: what the agreement is for before the client's choice (in full keeps its 5% off). */
 export function totalMinor(t) {
-  const k = kindOf(t);
-  if (k === 'retainer') return (Number(t.retainer?.feeMinor) || 0) * 6;
-  if (k === 'team') return Number(t.team?.totalMinor) || 0;
-  if (k === 'oneoff') return Number(t.oneoff?.totalMinor) || 0;
-  if (k === 'hours') return Number(t.hours?.blockMinor) || 0;
-  return finalTotal(t, 'plan');
+  return agreementTotal(t, 'plan');
 }
 
 /** The amount the price warning reads (a set price only: a total for sessions, the fee, the team's or one-off's total). */

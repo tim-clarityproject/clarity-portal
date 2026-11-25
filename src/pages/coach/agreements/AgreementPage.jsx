@@ -9,7 +9,7 @@ import { balanceLine } from '../../../lib/agreements/hours';
 import { usedLine } from '../../../lib/agreements/sessionOutcome';
 import { kindOf } from '../../../lib/agreements/terms';
 import {
-  agreementSessions, agreementTitle, currentEnd, earlyEnd, endEarlyLine, hoursState, isSigned, sessionsIn, settledInvoices, signedDay, statusLine, versionInForce,
+  agreementSessions, agreementTitle, currentEnd, earlyEnd, endEarlyLine, firstSignedVersion, hoursState, isSigned, sessionsIn, settledInvoices, signedDay, statusLine, versionInForce,
 } from '../../../lib/agreements/duringAgreement';
 import { coachZoneOf } from '../../../lib/coach/calendar';
 import { rowsOf } from '../../../lib/coach/store';
@@ -58,7 +58,9 @@ export default function AgreementPage() {
   const points = k === 'team' ? teamPoints(shownTerms) : k === 'hours' ? hoursPoints(shownTerms)
     : mainPoints(shownTerms, { choice: v?.settle_choice || t.choice, seesMoney: true, clauses: v?.clauses, paused, endingOn: earlyEnd(a) });
   const today = p.todayKey;
-  const signDay = signedDay(v);
+  // The 14 days count from the agreement's FIRST signing; a later signed version is an amendment (agreements rule 12).
+  const firstV = firstSignedVersion(p.agreementVersions || [], a.id) || v;
+  const signDay = signedDay(firstV);
   const canCancel14 = live && offered({ terms: t, signedDay: signDay, today, cancelled: a.status === 'cancelled' });
   const canRefund = settledInvoices(p.invoices, a.id, p.creditNotes).length > 0;
   const total = sessionsIn(t);
@@ -71,7 +73,7 @@ export default function AgreementPage() {
     a.status !== 'cancelled' && { key: 'change', title: 'Make a change', line: 'A new version you both sign' },
     live && !earlyEnd(a) && { key: 'end', title: 'End early', line: endEarlyLine(t) },
     canRefund && { key: 'refund', title: 'Give money back', line: 'A refund or credit, with a credit note' },
-    canCancel14 && { key: 'cancel14', title: 'Cancel within 14 days', line: v?.start_now ? 'A refund, less the coaching sessions had' : 'A full refund, with a credit note' },
+    canCancel14 && { key: 'cancel14', title: 'Cancel within 14 days', line: firstV?.start_now ? 'A refund, less what was delivered' : 'A full refund, with a credit note' },
   ].filter(Boolean);
   const act = (key) => {
     if (key === 'change') { navigate(`/coach/agreements/${a.id}/edit`, { state: { newVersion: true } }); return; }
@@ -120,7 +122,7 @@ export default function AgreementPage() {
         )}
         {signed && <div className="cc-acts"><TextLink onClick={downloadPdf}>Download the signed PDF</TextLink></div>}
       </div>
-      <AgreementPanels panel={panel} onClose={() => setPanel(null)} a={a} v={v} t={t} name={name} end={end} today={today} signed={signDay} sessions={sessions} />
+      <AgreementPanels panel={panel} onClose={() => setPanel(null)} a={a} v={v} t={t} name={name} end={end} today={today} signed={signDay} sessions={sessions} firstV={firstV} />
     </div>
   );
 }

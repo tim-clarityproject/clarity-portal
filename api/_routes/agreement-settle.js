@@ -25,7 +25,7 @@ import { asCallerClient, supabaseOf } from '../_coachEmails.js';
 import { dayIn, isZone, addDays } from '../../src/lib/time/index.js';
 import { keyAllowed, stripeApi } from '../../src/lib/billing/stripe.js';
 import { invoiceChange } from '../../src/lib/billing/stripeWebhook.js';
-import { firstPayment, hasRest, schedule } from '../../src/lib/agreements/settling.js';
+import { firstPayment, hasRest, isAmendment, schedule, scheduleLine } from '../../src/lib/agreements/settling.js';
 import { selfFunded } from '../../src/lib/agreements/terms.js';
 
 export const config = { maxDuration: 30 };
@@ -114,11 +114,15 @@ export function settleApi({ server, stripe, now = () => new Date(), env = {} }) 
     const terms = { ...(v.terms || {}), fundedBy: v.funded_by };
     const choice = v.settle_choice || 'upfront';
     const zone = isZone(p?.time_zone) ? p.time_zone : 'Europe/London';
-    return { v, a, p, terms, choice, zone, currency: v.currency || terms.currency || 'GBP' };
+    // A later signed version (a price review, an extension, a change) is an amendment: nothing is settled at its
+    // signing, and the agreement's first payment stays the first signing's (agreements rule 12).
+    const { data: all } = await server.from('agreement_versions').select('id, version, client_signed_at, sponsor_signed_at').eq('agreement_id', a.id);
+    const amends = isAmendment(v, all || []);
+    return { v, a, p, terms, choice, zone, amends, currency: v.currency || terms.currency || 'GBP' };
   }
 
-  const firstOf = async (versionId) => {
-    const { data } = await server.from('invoices').select('*').eq('version_id', versionId).eq('instalment_n', 1);
+  const firstOf = async (ctx) => {
+    const { data } = await server.from('invoices').select('*').eq('agreement_id', ctx.a.id).eq('instalment_n', 1);
     return (data || []).filter((i) => FIRST_KINDS.includes(i.kind) && i.status !== 'void').sort((x, y) => String(x.created_at).localeCompare(String(y.created_at)))[0] || null;
   };
 
@@ -144,22 +148,22 @@ export function settleApi({ server, stripe, now = () => new Date(), env = {} }) 
     /** The first invoice (made once) and its payment's secret for the Payment Element. */
     async start(mine) {
       const ctx = await context(mine);
+      if (ctx.amends) return { clientSecret: null, invoiceId: null, amountMinor: 0, currency: ctx.currency, settled: true, amendment: true };
       const amount = firstPayment(ctx.terms, ctx.choice, ctx.terms.extrasChosen || []);
       if (!(amount > 0)) throw calm(409, 'There’s nothing to settle now.');
-      let row = await firstOf(ctx.v.id);
+      let row = await firstOf(ctx);
       if (row?.status === 'paid') return { clientSecret: null, invoiceId: row.id, amountMinor: Number(row.total_minor), currency: row.currency, settled: true };
       if (!row) {
         const signedDay = dayIn(ctx.zone, new Date(ctx.v.client_signed_at));
         const plan = schedule(ctx.terms, { signedDay, choice: ctx.choice, chosen: ctx.terms.extrasChosen || [] })[0];
         const kind = plan?.kind === 'deposit' ? 'deposit' : plan?.kind === 'instalment' ? 'instalment' : 'first_payment';
-        const what = String(ctx.terms.coaching || ctx.terms.work || ctx.terms.hours?.work || 'Coaching').slice(0, 160);
-        const lines = [{ description: plan && plan.of > 1 ? `${what}, ${kind === 'deposit' ? 'deposit' : `instalment 1 of ${plan.of}`}` : what, amount }];
+        const lines = [{ description: plan ? scheduleLine(ctx.terms, plan, ctx.choice) : String(ctx.terms.coaching || 'Coaching').slice(0, 160), amount }];
         const ins = await server.from('invoices').insert({
           coach_id: ctx.v.coach_id, agreement_id: ctx.a.id, profile_id: ctx.a.profile_id, version_id: ctx.v.id, kind, status: 'draft', currency: ctx.currency,
           lines, total_minor: amount, terms_days: 1, instalment_n: 1, settles_to: 'client', payer_name: ctx.p?.name || '', payer_email: ctx.p?.email || null, payer_zone: ctx.zone,
         }).select('*');
         // Pressed twice, or two tabs: the database keeps one first invoice (one per instalment); the other reads it.
-        row = ins.error ? await firstOf(ctx.v.id) : ins.data?.[0];
+        row = ins.error ? await firstOf(ctx) : ins.data?.[0];
         if (!row) throw calm(409, DIDNT_WORK);
       }
       if (!row.stripe_invoice_id) {
@@ -199,7 +203,7 @@ export function settleApi({ server, stripe, now = () => new Date(), env = {} }) 
       const ctx = await context(mine);
       if (ctx.currency !== 'GBP') throw calm(409, 'Direct Debit is for agreements in pounds.');
       if (!hasRest(ctx.terms, ctx.choice, ctx.terms.extrasChosen || [])) throw calm(409, 'There’s nothing more to settle.');
-      const row = await firstOf(ctx.v.id);
+      const row = await firstOf(ctx);
       if (!row?.stripe_customer_id) throw calm(409, 'Settle the first payment first.');
       const si = await stripe.setupIntent({ customer: row.stripe_customer_id, metadata: { agreement_id: ctx.a.id, version_id: ctx.v.id } }, `bacs:${ctx.v.id}:${Math.floor(now().getTime() / 600000)}`);
       return { clientSecret: si.client_secret };
@@ -208,7 +212,8 @@ export function settleApi({ server, stripe, now = () => new Date(), env = {} }) 
     /** Whether the first payment is settled. */
     async state(mine) {
       const ctx = await context(mine);
-      const row = await firstOf(ctx.v.id);
+      if (ctx.amends) return { settled: true, amountMinor: 0, currency: ctx.currency, amendment: true };
+      const row = await firstOf(ctx);
       if (!row) return { settled: false, amountMinor: firstPayment(ctx.terms, ctx.choice, ctx.terms.extrasChosen || []), currency: ctx.currency };
       let settled = row.status === 'paid';
       if (!settled && row.stripe_invoice_id && row.status === 'sent') {

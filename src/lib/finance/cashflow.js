@@ -113,7 +113,7 @@ export const bankCheckDue = ({ settings = {}, today, zone }) => !settings.bank_c
  *   todayReadout: string, notInPounds: number }}
  */
 export function cashFlow(a) {
-  const { today, months = 6, settings = {}, lines = [], outgoings = [], deadlines = [], invoices = [], versions = [], repeating = [],
+  const { today, months = 6, settings = {}, lines = [], outgoings = [], deadlines = [], invoices = [], versions = [], agreements = null, repeating = [],
     rates = {}, leads = [], includeLikely = false, associates = [], sessions = [], associatePayouts = [], monthMinutes = null, zone } = a;
   const startMonth = Number(settings.year_start_month) || DEFAULT_YEAR_START_MONTH;
   if (!HORIZONS.includes(months)) throw new Error('The cash flow looks 3, 6 or 12 months ahead.');
@@ -131,7 +131,7 @@ export function cashFlow(a) {
   const ins = periods.map(() => []);
   const outs = periods.map(() => []);
   let notInPounds = 0;
-  const income = [...expectedIncome({ today, untilMonth: lastMonth, invoices, versions, repeating, rates, zone }), ...(includeLikely ? likelyDeals({ leads, today }) : [])];
+  const income = [...expectedIncome({ today, untilMonth: lastMonth, invoices, versions, agreements, repeating, rates, zone }), ...(includeLikely ? likelyDeals({ leads, today }) : [])];
   for (const i of income) {
     if (i.pounds == null) { notInPounds += 1; continue; }
     const k = periodOf(i.day);

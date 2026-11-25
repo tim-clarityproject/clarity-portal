@@ -80,10 +80,11 @@ export function profilesOf(pathname = '') {
 
 // What the owner's Finances (Overview, Money and Cash flow) draws first, read as the app opens and side by side: the
 // small tables its figures come from (062's settings, targets, sectors, outgoings, deadlines and statements; 061's
-// invoices, payments, credit notes and signed versions; 052's organisations' deals for repeating income). Each is the
-// owner's own plain read, under its table's own rules. What needs names, leads or the whole calendar waits.
+// invoices, payments, credit notes, agreements and signed versions (065's one schedule reads an agreement's status, pause
+// and end: agreements rule 12); 052's organisations' deals for repeating income). Each is the owner's own plain read,
+// under its table's own rules. What needs names, leads or the whole calendar waits.
 export const FINANCE_SCREEN_TABLES = ['finance_settings', 'finance_targets', 'finance_sectors', 'finance_outgoing_groups', 'finance_outgoings',
-  'company_deadlines', 'associate_statements', 'invoices', 'payments', 'credit_notes', 'agreement_versions', 'organisation_deals'];
+  'company_deadlines', 'associate_statements', 'invoices', 'payments', 'credit_notes', 'agreements', 'agreement_versions', 'organisation_deals'];
 /** store.js's "062 isn't there yet" mark, remembered an hour. */
 export const FINANCE_NOT_YET_KEY = 'clarity-coach-062-not-yet';
 /** Associates' sessions for Finances: 3 months back (the 3-month average) to a year ahead (the forecast), in 058's pieces. */

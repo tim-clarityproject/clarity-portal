@@ -27,14 +27,16 @@ test('as delivered: the held and late-cancelled sessions since the last invoice,
   const items = d.needsYouItems({ coachId, today, now, agreements, versions: [v('v1', 'a1', t)], sessions, sources: [{ session_id: 's4', released_at: null }], clients });
   const it = items.find((i) => i.kind === 'delivered');
   assert.equal(it.title, 'Invoice ready for Jo Patel');
-  assert.equal(it.line, '2 coaching sessions since the last one, £1,500');
+  // The first session that counts (s1) was settled at signing, so only s2 is drafted (functionality tester, run 3, finding 4).
+  assert.equal(it.line, '1 coaching session since the last one, £750');
   assert.equal(d.perSessionMinor(t), 75000);
   // Up front chosen: nothing is invoiced as delivered.
   assert.equal(d.needsYouItems({ coachId, today, now, agreements, versions: [v('v1', 'a1', { ...t, choice: 'upfront' })], sessions, clients }).filter((i) => i.kind === 'delivered').length, 0);
 });
 
-test('a retainer as delivered is at the rate beyond the package (risk 6)', () => {
-  assert.equal(d.perSessionMinor({ kind: 'retainer', retainer: { feeMinor: 300000, invoice: 'delivered' }, beyondRateMinor: 75000 }), 75000);
+test('a retainer as delivered: its fee divided by the coaching sessions a month it states (agreements rule 12)', () => {
+  assert.equal(d.perSessionMinor({ kind: 'retainer', retainer: { feeMinor: 300000, invoice: 'delivered', sessions: 'Up to 2 a month, 60 minutes each' }, beyondRateMinor: 75000 }), 150000);
+  assert.equal(d.perSessionMinor({ kind: 'retainer', retainer: { feeMinor: 300000, invoice: 'delivered' } }), 300000);
   assert.equal(d.invoicedAsDelivered({ kind: 'retainer', retainer: { invoice: 'delivered' } }), true);
   assert.equal(d.invoicedAsDelivered({ kind: 'retainer', retainer: { invoice: 'monthly' } }), false);
 });
