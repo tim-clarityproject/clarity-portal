@@ -79,6 +79,18 @@ export function updateAllPrices({ packages = [], percent }) {
   return { packages: rows, preview, count, button: count === 1 ? 'Update 1 price' : `Update ${count} prices`, footnote: `${ROUNDING_RULE} Clients keep their price until they renew.` };
 }
 
+// 062's public.finance_name_says_charity, exactly: lower case, look-alike letters and digits read as Latin
+// (translate(..., 'асеорхуіıјѕνοτ401|!$@', 'aceopxyiijsvotaoliisa')), then letters only, then /ch?ar[il]t/.
+const LOOK_ALIKES = Array.from('асеорхуіıјѕνοτ401|!$@');
+const AS_LATIN = Array.from('aceopxyiijsvotaoliisa');
+const READ_AS = new Map(LOOK_ALIKES.map((c, i) => [c, AS_LATIN[i]]));
+
+/** Whether a name says charity however it is spelt (the same answer as the database's check on discounts). */
+export function nameSaysCharity(name) {
+  const latin = Array.from(String(name ?? '').toLowerCase()).map((c) => READ_AS.get(c) ?? c).join('');
+  return /ch?ar[il]t/.test(latin.replace(/[^a-z]/g, ''));
+}
+
 /**
  * A discount, checked: a name (never "charity"), a percentage (more than 0, at most 100) or a fixed amount (pence above
  * 0), and all packages or chosen ones.
@@ -88,7 +100,7 @@ export function checkDiscount({ name, percent = null, amount_minor = null, packa
   const n = String(name ?? '').replace(/\s+/g, ' ').trim();
   if (!n) throw new Error('Give the discount a name, such as Returning client.');
   if (n.length > 80) throw new Error('A discount’s name is at most 80 characters.');
-  if (/charit/i.test(n)) throw new Error('A discount is never called charity. Give it another name, such as Not-for-profit.');
+  if (nameSaysCharity(n)) throw new Error('A discount is never called charity. Give it another name, such as Not-for-profit.');
   if ((percent == null) === (amount_minor == null)) throw new Error('A discount is a percentage or a fixed amount.');
   if (percent != null && !(Number(percent) > 0 && Number(percent) <= 100)) throw new Error('A percentage is more than 0% and at most 100%.');
   if (amount_minor != null && !(Number.isInteger(Number(amount_minor)) && Number(amount_minor) > 0)) throw new Error('A fixed amount is more than £0.');

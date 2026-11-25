@@ -137,7 +137,9 @@ export const TABLES = {
   proposals: ['id'],
   supplier_pack_items: ['id'],
   purchase_orders: ['id'],
-  associate_statements: ['id'],
+  // One statement an associate and month (062's unique key), so two devices marking the same month paid write the
+  // same row (break-it tester, 6b run 2).
+  associate_statements: ['associate_id', 'month'],
   // Kept on the device only, never read or sent as a table (057): what the database said of the sessions it didn't
   // send on a first load (sessionsOlder below). One row, key 'older'.
   coach_sessions_older: ['key'],
@@ -1090,15 +1092,24 @@ export const rowForDb = forDb;
 const heldBack = (table, row) => crmReadyNow !== true && Boolean(CRM_COLUMNS[table]?.some((c) => row[c] != null && !(c === 'currency' && row[c] === 'GBP')
   && !(c === 'crm' && Object.keys(row[c] || {}).length === 0)));
 
-async function send(userId, table, row) {
+async function send(userId, table, row, { basedOn = null, fresh = false } = {}) {
   const k = keyOf(table, row);
   if (await heldUntil059(table, row)) return 'device'; // kept here, unsent, until 059 is there
   try {
+    // basedOn: "only if the database's row is still at this version" (syncQueue's performBased); fresh: only if there
+    // is no row yet, so a stale tab never writes over one another device made (saveChange below).
     const op = MARK_ONLY[table]
       ? { table, kind: 'update', values: Object.fromEntries(MARK_ONLY[table].map((c) => [c, row[c] ?? null])), match: Object.fromEntries(TABLES[table].map((c) => [c, row[c]])) }
-      : { table, kind: 'upsert', values: forDb(table, row), onConflict: TABLES[table].join(','), ...(ADD_ONLY.has(table) ? { ignoreDuplicates: true } : {}) };
+      : { table, kind: 'upsert', values: forDb(table, row), onConflict: TABLES[table].join(','), ...(ADD_ONLY.has(table) || fresh ? { ignoreDuplicates: true } : {}),
+        ...(basedOn && !MARK_ONLY[table] ? { basedOn } : {}) };
     const part = heldBack(table, row);
     const answer = await saveOrQueue(userId, op);
+    if (answer.status === 'saved' && fresh && !ADD_ONLY.has(table) && Array.isArray(answer.data) && !answer.data.some((r) => r && keyOf(table, r) === k)) {
+      // Nothing written: another tab or device made this row first. The device shows the database's, and the page says so.
+      const there = await rowThere(table, row);
+      if (there) settle(userId, table, row, there);
+      return 'superseded';
+    }
     if (answer.status === 'saved') {
       mark(userId, table, k, part ? { sent: false, refused: false, part: true } : { sent: true, refused: false, part: false });
       // The database's own copy (its updated_at, and anything its guards kept: a sent recap, a merge, Won or Cold)
@@ -1122,7 +1133,7 @@ async function send(userId, table, row) {
  * 'device' (kept on the device: 049 hasn't run yet). Rejects only when the
  * database answered with a real refusal; the row then stays on the device.
  */
-export async function saveRow(userId, table, row) {
+export async function saveRow(userId, table, row, sendAs = {}) {
   if (!userId || !TABLES[table]) throw new Error(`Not a coach table: ${table}`);
   const stamped = { ...row, updated_at: new Date().toISOString() };
   if (!stamped.created_at) stamped.created_at = stamped.updated_at;
@@ -1130,7 +1141,64 @@ export async function saveRow(userId, table, row) {
   write(userId, setRow(read(userId), table, stamped));
   if (READ_ONLY.has(table)) return 'device';
   if (!(await tableThere(table))) return 'device';
-  return send(userId, table, stamped);
+  return send(userId, table, stamped, sendAs);
+}
+
+/** The database's own copy of a row, by its key; null when it can't be read. */
+async function rowThere(table, row) {
+  try {
+    let q = supabase.from(table).select('*');
+    for (const c of TABLES[table]) q = q.eq(c, row[c]);
+    const { data, error } = await q.limit(1);
+    return error ? null : data?.[0] || null;
+  } catch {
+    return null;
+  }
+}
+
+/** The row as this device holds it now (another tab's saves included), by its key; null when there is none. */
+export function rowNow(userId, table, keyRow) {
+  return read(userId).rows[table]?.[keyOf(table, keyRow)] || null;
+}
+
+/**
+ * Saves only the columns a panel changed (`change`), put onto the row as this device holds it NOW, never the panel's
+ * older copy, so another tab's edit to other columns is kept (break-it tester, 6b run 2: Finances' settings and
+ * targets). `basedOn` is the row's updated_at as the panel opened it (null: there was no row; undefined: no check).
+ * When the row has moved on since, nothing is written and it resolves 'superseded' (the device shows the newest row;
+ * the page says SUPERSEDED_MESSAGE): here, when this device already holds the newer row, or in the database ("only if
+ * unchanged" since the version this device holds; "only if there is none" for a new row), when another device made it.
+ * Resolves 'saved', 'queued', 'device' or 'superseded'.
+ */
+export async function saveChange(userId, table, keyRow, change, { basedOn } = {}) {
+  if (!userId || !TABLES[table]) throw new Error(`Not a coach table: ${table}`);
+  const state = read(userId);
+  const k = keyOf(table, keyRow);
+  const now = state.rows[table]?.[k] || null;
+  if (basedOn !== undefined && (now?.updated_at ?? null) !== (basedOn ?? null)) return 'superseded';
+  const next = { ...(now || { id: newId() }), ...keyRow, ...change };
+  // The database's version is known only once the row has reached it (its updated_at is then the database's own).
+  const sent = Boolean(now) && state.marks[table]?.[k]?.sent === true;
+  return saveRow(userId, table, next, { basedOn: sent ? now.updated_at : null, fresh: !now });
+}
+
+/**
+ * Several saveChange steps ({ table, key, change, basedOn }) as one save: when any row has moved on here since its
+ * panel opened, none is written ('superseded'); otherwise each goes in turn, stopping at the first the database
+ * refuses as moved on. Resolves the weakest answer, as saveRows does.
+ */
+export async function saveChanges(userId, steps) {
+  const state = read(userId);
+  const stale = (steps || []).some(({ table, key, basedOn }) => basedOn !== undefined
+    && ((state.rows[table]?.[keyOf(table, key)]?.updated_at ?? null) !== (basedOn ?? null)));
+  if (stale) return 'superseded';
+  let worst = 'saved';
+  for (const { table, key, change, basedOn } of steps || []) {
+    const status = await saveChange(userId, table, key, change, { basedOn });
+    if (status === 'superseded') return 'superseded';
+    if (status !== 'saved') worst = status;
+  }
+  return worst;
 }
 
 /** Several rows at once, parents first; resolves the weakest of their answers. */

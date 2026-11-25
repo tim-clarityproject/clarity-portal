@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 // Stripe's messages to the portal (Phase 6b run 1, step 5): the rules the webhook (api/stripe-webhook.js) and the
-// nightly catch-up (api/stripe-catch-up.js) follow, with no database and no network, checked by
+// nightly round (api/_routes/billing-nightly.js) follow, with no database and no network, checked by
 // tests/performance/billing-webhook.test.mjs. Server only (node:crypto).
 //
 // - A message is believed only with Stripe's signature over its exact bytes, made with STRIPE_WEBHOOK_SECRET, at most
@@ -41,9 +41,13 @@ export const currencyOf = (row) => (CURRENCIES.includes(String(row?.currency || 
  * currency waits for its pounds figure.
  */
 export function landedFrom(balance, payment) {
-  const ok = balance && String(balance.currency || '').toLowerCase() === 'gbp' && Number.isInteger(Number(balance.amount)) && Number(balance.amount) >= 0;
-  const landed = ok ? Number(balance.amount) : (currencyOf(payment) === 'GBP' ? Number(payment.amount_minor) : null);
-  const fee = ok && Number.isInteger(Number(balance.fee)) && Number(balance.fee) >= 0 ? Number(balance.fee) : null;
+  const whole = (n) => typeof n === 'number' && Number.isInteger(n) && n >= 0;
+  // A balance transaction Stripe answered with that can't be read (no whole amount, or a fee larger than the amount)
+  // is unknown: nothing is guessed, and the nightly round asks again (break-it tester, 6b run 2).
+  if (balance && (!whole(balance.amount) || (whole(balance.fee) && balance.fee > balance.amount))) return { landed_gbp_minor: null, fee_minor: null };
+  const ok = balance && String(balance.currency || '').toLowerCase() === 'gbp';
+  const landed = ok ? balance.amount : (currencyOf(payment) === 'GBP' ? Number(payment.amount_minor) : null);
+  const fee = ok && whole(balance.fee) ? balance.fee : null;
   return { landed_gbp_minor: landed, fee_minor: fee };
 }
 /** Stripe's invoice status in the portal's words. */

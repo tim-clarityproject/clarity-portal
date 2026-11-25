@@ -39,7 +39,7 @@ async function rawBodyOf(req) {
 
 /**
  * Acts on one message, exactly once (the claim in stripe_events), with the server's own key. Shared with the nightly
- * catch-up (api/stripe-catch-up.js), which hands it the messages Stripe kept, already signed by Stripe's own API.
+ * round (api/_routes/billing-nightly.js), which hands it the messages Stripe kept, already signed by Stripe's own API.
  * `stripe` (optional: the real API or the stand-in) is asked what a new payment landed as in pounds, and its fee.
  * @returns {Promise<'handled'|'already'|'ignored'>}
  */

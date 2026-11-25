@@ -303,6 +303,7 @@ test('Finances (run 2): Add bank payment and New invoice are the owner\'s alone,
   const { db, stripe } = world(now);
   db.tables.organisations = [{ id: 'o-north', name: 'Northfield Logistics', sector: 'Business' }];
   db.tables.organisation_contacts = [{ organisation_id: 'o-north', name: 'Femi Ade', email: 'femi@example.invalid', role: 'Finance' }];
+  db.tables.organisation_deals = [{ id: 'd-north', organisation_id: 'o-north', name: 'Leadership programme' }]; // the owner's deal ties it to him
   const owner = billing({ server: db, stripe, coach: OTHER, now: () => now.value });
   const assoc = billing({ server: db, stripe, coach: COACH, now: () => now.value });
   const pay = askedFor({ kind: 'bank_payment', amount: 120000, organisationId: '11111111-1111-4111-8111-111111111111', arrivedOn: '2026-11-19', sector: 'Business', whatFor: 'CLARITY-1212' });

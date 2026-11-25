@@ -3,7 +3,8 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   AddButton, Button, DatePicker, Dropdown, ExplainLink, InlineChoice, PageHeader, SegmentedControl, SlidePanel, Stat, StatGroup, TextField, useIsPhone, useToast,
 } from '../../components/design';
-import { coach062ReadyNow, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
+import { coach062ReadyNow, newId, removeRow, rowNow, rowsOf, saveChange, saveChanges, saveRow, saveRows } from '../../lib/coach/store';
+import { SUPERSEDED_MESSAGE } from '../../lib/friendlyError';
 import { refreshPins, updatePreference, usePreferences } from '../../lib/menuPins';
 import { dayKeyWords } from '../../lib/time/index.js';
 import { moneyWords, rateWords } from '../../lib/billing/money';
@@ -15,7 +16,7 @@ import {
 import { toCsv } from '../../lib/finance/csv.js';
 import { xlsxBytes } from '../../lib/coach/xlsx';
 import {
-  associateSessionsForForecast, cashSettingsChange, dayWordsFrom, invoiceTitle, needsYouRows, percentFromTyped, pipelineLine, poundsFromTyped, typedPounds,
+  amountProblem, associateSessionsForForecast, cashSettingsChange, dayWordsFrom, invoiceTitle, needsYouRows, percentFromTyped, pipelineLine, poundsFromTyped, TOO_MUCH, typedPounds, undoOf,
 } from '../../lib/coach/financeData';
 import { renewals, renewalsLine } from '../../lib/coach/associatePay';
 import { coachBilling, uploadReceipt } from '../../lib/coach/financeActions';
@@ -226,7 +227,12 @@ function TargetsPanel({ open, onClose }) {
     const each = Object.fromEntries(fy.months.map((m) => [m, poundsBox(have[m] || copied[m] || '')]));
     const thisMonth = monthKey(todayKey);
     const sameFrom = fy.months.find((m) => m >= thisMonth) || fy.months[0];
-    setForm({ mode: settings.targets_mode === 'same' ? 'same' : 'each', each, start: have, same: poundsBox(have[sameFrom] || copied[sameFrom] || ''), minimum: poundsBox(settings.minimum_minor), raise: '' });
+    // What the panel opened with, and each row's version then: Save sends only what changed, onto the rows as they are
+    // by then, and is refused if one of them changed in another tab or device meanwhile (break-it tester, 6b run 2).
+    const bases = { settings: financeSettings?.updated_at ?? null,
+      months: Object.fromEntries(fy.months.map((m) => [m, (financeTargets || []).find((t) => monthKey(t.month) === m)?.updated_at ?? null])) };
+    setForm({ mode: settings.targets_mode === 'same' ? 'same' : 'each', each, start: have, same: poundsBox(have[sameFrom] || copied[sameFrom] || ''), minimum: poundsBox(settings.minimum_minor), raise: '',
+      startSettings: { minimum_minor: Number(settings.minimum_minor), targets_mode: settings.targets_mode }, bases });
     setProblem(null);
     // Read once as the panel opens.
   }, [open]);
@@ -253,22 +259,25 @@ function TargetsPanel({ open, onClose }) {
       changed = targetsToSave({ mode: form.mode, each: Object.fromEntries(fy.months.map((m) => [m, read(form.each[m])])), same: sameMinor, raise, start: form.start,
         yearLabel: fy.label, today: todayKey, startMonth: Number(settings.year_start_month) || 5 });
     } catch (error) { setProblem(error.message); return; }
-    const before = (financeTargets || []).filter((t) => changed.some((r) => monthKey(r.month) === monthKey(t.month)));
-    const beforeSettings = settings;
-    const settingsChanged = minimum !== Number(settings.minimum_minor) || form.mode !== settings.targets_mode;
-    const pairs = [...(settingsChanged ? [['finance_settings', { ...settings, minimum_minor: minimum, targets_mode: form.mode }]] : []),
-      ...changed.map((r) => ['finance_targets', { ...(before.find((b) => monthKey(b.month) === monthKey(r.month)) || {}), coach_id: coach.id, month: r.month, target_minor: r.target_minor }])];
+    // Only the settings and months changed here, each onto its row as it is now (never this panel's older copy), and
+    // none of them if one changed elsewhere since the panel opened; Undo puts back only those.
+    const settingsChange = {};
+    if (minimum !== form.startSettings.minimum_minor) settingsChange.minimum_minor = minimum;
+    if (form.mode !== form.startSettings.targets_mode) settingsChange.targets_mode = form.mode;
+    const settingsKey = { coach_id: coach.id };
+    const steps = [...(Object.keys(settingsChange).length ? [{ table: 'finance_settings', key: settingsKey, change: settingsChange, basedOn: form.bases.settings }] : []),
+      ...changed.map((r) => ({ table: 'finance_targets', key: { coach_id: coach.id, month: r.month }, change: { target_minor: r.target_minor }, basedOn: form.bases.months[monthKey(r.month)] ?? null }))];
     const undo = async () => {
-      if (settingsChanged) await saveRow(userId, 'finance_settings', beforeSettings);
+      if (Object.keys(settingsChange).length) await saveChange(userId, 'finance_settings', settingsKey, undoOf(settingsChange, form.startSettings));
       for (const r of changed) {
-        const was = before.find((b) => monthKey(b.month) === monthKey(r.month));
-        if (was) await saveRow(userId, 'finance_targets', was);
-        else await removeRow(userId, 'finance_targets', `${coach.id}|${r.month}`);
+        const key = { coach_id: coach.id, month: r.month };
+        if (form.bases.months[monthKey(r.month)] != null) await saveChange(userId, 'finance_targets', key, { target_minor: Number(form.start[monthKey(r.month)]) || 0 });
+        else if (rowNow(userId, 'finance_targets', key)) await removeRow(userId, 'finance_targets', `${coach.id}|${r.month}`);
       }
     };
     const work = async () => {
-      const status = pairs.length ? await saveRows(userId, pairs) : 'saved';
-      targetsChecked(userId, fy.label);
+      const status = steps.length ? await saveChanges(userId, steps) : 'saved';
+      if (status !== 'superseded') targetsChecked(userId, fy.label);
       return status;
     };
     done(work, 'Saved.', undo).then((ok) => { if (ok) onClose(); });
@@ -401,7 +410,7 @@ function BankPaymentPanel({ open, onClose, sectors }) {
   const add = async () => {
     const amount = poundsFromTyped(form.amount);
     if (!form.who) { setProblem({ at: 'who', words: 'Type who paid to carry on.' }); return; }
-    if (amount == null) { setProblem({ at: 'amount', words: 'Type an amount, such as 1,200.' }); return; }
+    if (amount == null) { setProblem({ at: 'amount', words: amountProblem(form.amount, '1,200') }); return; }
     if (busy.current) return;
     busy.current = true;
     try {
@@ -488,7 +497,10 @@ function CashFlow() {
   const list = outgoingRows({ outgoings, today: todayKey, associates: monthly });
   const fy = financialYear(todayKey, model.startMonth);
   const oneOffs = (outgoings || []).filter((o) => o.every === 'once' && o.starts_on >= fy.start).sort((a, b) => a.starts_on.localeCompare(b.starts_on));
-  const setMonths = (v) => saveRow(userId, 'finance_settings', { ...settings, cash_months: Number(v) }).catch(() => {});
+  const toast = useToast();
+  // Only how far ahead, onto the settings as they are now; refused (and said) when another device changed them since.
+  const setMonths = (v) => saveChange(userId, 'finance_settings', { coach_id: settings.coach_id }, { cash_months: Number(v) })
+    .then((status) => { if (status === 'superseded') toast.error(SUPERSEDED_MESSAGE); }).catch(() => {});
   const groups = (outgoingGroups || []).length ? outgoingGroups.map((g) => g.name) : [...OUTGOING_GROUPS];
   const keepWords = settings.keep_above_minor == null ? 'About 2 months of outgoings' : 'The level you set';
   return (
@@ -581,7 +593,7 @@ function OutgoingPanel({ panel, groups, onClose }) {
   const save = async () => {
     const amount = poundsFromTyped(form.amount);
     if (!form.name.trim()) { setProblem('Type what it is to carry on.'); return; }
-    if (amount == null) { setProblem('Type an amount, such as 95.'); return; }
+    if (amount == null) { setProblem(amountProblem(form.amount, '95')); return; }
     let receipt = before?.receipt_path || null;
     if (form.file) {
       try { receipt = await uploadReceipt(userId, form.file); } catch (error) { setProblem(error.message); return; }
@@ -621,16 +633,25 @@ function BankBalancePanel({ open, onClose }) {
   const settings = settingsOf(financeSettings, coach.id);
   const [typed, setTyped] = useState('');
   const [problem, setProblem] = useState(null);
-  useEffect(() => { if (open) { setTyped(typedPounds(settings.bank_balance_minor)); setProblem(null); } }, [open]);
+  const basedOn = useRef(null); // the settings' version as the panel opened
+  useEffect(() => { if (open) { setTyped(typedPounds(settings.bank_balance_minor)); setProblem(null); basedOn.current = financeSettings?.updated_at ?? null; } }, [open]);
   const save = async () => {
     const t = String(typed).trim();
     const minus = t.startsWith('-') || t.startsWith('−');
     const minor = poundsFromTyped(t.replace(/^[-−]/, ''), { allowZero: true });
-    if (minor == null) { setProblem('Type the balance as an amount, such as 4,200.'); return; }
+    if (minor == null) { setProblem(amountProblem(t.replace(/^[-−]/, ''), '4,200', { allowZero: true }) === TOO_MUCH ? TOO_MUCH : 'Type the balance as an amount, such as 4,200.'); return; }
     const balance = minus ? -minor : minor;
     const check = { id: newId(), coach_id: coach.id, balance_minor: balance, checked_on: todayKey };
-    const ok = await done(() => saveRows(userId, [['finance_settings', { ...settings, bank_balance_minor: balance, bank_checked_at: new Date().toISOString() }], ['bank_balance_checks', check]]), 'Saved.',
-      async () => { await saveRow(userId, 'finance_settings', settings); await removeRow(userId, 'bank_balance_checks', check.id); });
+    // Only the balance and when it was checked, onto the settings as they are now; nothing if they changed elsewhere since.
+    const key = { coach_id: coach.id };
+    const change = { bank_balance_minor: balance, bank_checked_at: new Date().toISOString() };
+    const was = settingsOf(rowNow(userId, 'finance_settings', key), coach.id);
+    const ok = await done(async () => {
+      const status = await saveChange(userId, 'finance_settings', key, change, { basedOn: basedOn.current });
+      if (status === 'superseded') return status;
+      await saveRow(userId, 'bank_balance_checks', check);
+      return status;
+    }, 'Saved.', async () => { await saveChange(userId, 'finance_settings', key, undoOf(change, was)); await removeRow(userId, 'bank_balance_checks', check.id); });
     if (ok) onClose();
   };
   return (
@@ -649,8 +670,10 @@ function CashSettingsPanel({ open, onClose, keepAbove }) {
   const settings = settingsOf(financeSettings, coach.id);
   const [form, setForm] = useState({ tax: '', keep: '', start: { tax: '', keep: '' } });
   const [problem, setProblem] = useState(null);
+  const basedOn = useRef(null); // the settings' version as the panel opened
   useEffect(() => {
     if (!open) return;
+    basedOn.current = financeSettings?.updated_at ?? null;
     // "Keep cash above" shows only a level Tim set; empty is the default (about 2 months of outgoings).
     const start = { tax: String(Number(settings.tax_share_percent)), keep: typedPounds(settings.keep_above_minor) };
     setForm({ ...start, start });
@@ -661,7 +684,7 @@ function CashSettingsPanel({ open, onClose, keepAbove }) {
     const { change, problem: why } = cashSettingsChange({ start: form.start, tax: form.tax, keep: form.keep });
     if (why) { setProblem(why); return; }
     if (!change) { onClose(); return; }
-    if (await saveSettings(change)) onClose();
+    if (await saveSettings(change, 'Saved.', { basedOn: basedOn.current })) onClose();
   };
   return (
     <SlidePanel open={open} onClose={onClose} title="Cash flow settings" draftKey="fin-cash-settings"

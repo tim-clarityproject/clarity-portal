@@ -34,6 +34,26 @@ export function poundsFromTyped(text, { max = 100000000, allowZero = false } = {
   return minor;
 }
 
+/** The money boxes' ceiling (an invoice's in 061, a target's in 062): £1,000,000. */
+export const AMOUNT_MAX_MINOR = 100000000;
+export const TOO_MUCH = 'That’s more than £1,000,000. Type a smaller amount.';
+
+/**
+ * What a money box says when what's typed can't be saved: over the ceiling says so (break-it tester, 6b run 2), and
+ * anything else asks for an amount like `example`. null when it's fine.
+ */
+export function amountProblem(text, example, { max = AMOUNT_MAX_MINOR, allowZero = false } = {}) {
+  if (poundsFromTyped(text, { max, allowZero }) != null) return null;
+  const unlimited = poundsFromTyped(text, { max: Number.MAX_SAFE_INTEGER, allowZero });
+  return unlimited != null && unlimited > max ? TOO_MUCH : `Type an amount, such as ${example}.`;
+}
+
+/**
+ * Only the columns a panel changed, as Undo puts them back: each changed column at what it was (`was`), so Undo never
+ * touches another tab's edit to the others.
+ */
+export const undoOf = (change, was = {}) => Object.fromEntries(Object.keys(change || {}).map((c) => [c, was?.[c] ?? null]));
+
 /** A percentage typed ("25", "25%", "2.5"); null when it isn't one from `min` to `max`. */
 export function percentFromTyped(text, { min = 0, max = 100 } = {}) {
   const t = String(text ?? '').replace(/[%\s]/g, '');
@@ -56,7 +76,7 @@ export function cashSettingsChange({ start, tax, keep }) {
   const keepText = String(keep ?? '').trim();
   const keepMinor = keepText === '' ? null : poundsFromTyped(keepText, { allowZero: true });
   if (share == null) return { change: null, problem: 'Type a share from 0% to 100%.' };
-  if (keepText !== '' && keepMinor == null) return { change: null, problem: 'Type an amount, such as 3,600, or leave it empty.' };
+  if (keepText !== '' && keepMinor == null) return { change: null, problem: amountProblem(keepText, '3,600', { allowZero: true }) === TOO_MUCH ? TOO_MUCH : 'Type an amount, such as 3,600, or leave it empty.' };
   const change = {};
   if (String(tax ?? '').trim() !== String(start?.tax ?? '').trim()) change.tax_share_percent = share;
   if (keepText !== String(start?.keep ?? '').trim()) change.keep_above_minor = keepMinor;

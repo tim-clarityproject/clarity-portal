@@ -207,6 +207,9 @@ const ROW_KEYS = {
   day_plan_habits: ['user_id', 'local_date'],
   wind_down_nights: ['user_id', 'night'],
   checkins: ['user_id', 'month'],
+  // The coach store's Finances rows found by their own key, for a save sent "only if unchanged" (store.js saveChange).
+  finance_settings: ['coach_id'],
+  finance_targets: ['coach_id', 'month'],
 };
 // Only the tables whose updated_at the database keeps itself (the p1_touch
 // trigger, server time). Older tables (decisions, journal_entries) write

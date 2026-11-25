@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AddButton, Button, ChartTips, Dropdown, InlineChoice, SlidePanel, SwitchRow, TextField, tipProps, useIsPhone, useToast } from '../../components/design';
-import { newId, removeRow, saveRow } from '../../lib/coach/store';
+import { newId, removeRow, rowNow, saveChange, saveRow } from '../../lib/coach/store';
+import { SUPERSEDED_MESSAGE } from '../../lib/friendlyError';
 import { supabase } from '../../lib/supabase';
 import { keptAssociateSessions, loadFinanceAssociateSessions } from '../../lib/coach/associateSessions';
-import { draftDue, financeModel, invoiceNo, invoiceTitle, invoiceWho, overdueWords, paidDay, poundsFromTyped, reminderLines, dayWordsFrom } from '../../lib/coach/financeData';
+import { amountProblem, draftDue, financeModel, invoiceNo, invoiceTitle, invoiceWho, overdueWords, paidDay, poundsFromTyped, reminderLines, dayWordsFrom, undoOf } from '../../lib/coach/financeData';
 import { coachBilling, receiptProblem } from '../../lib/coach/financeActions';
 import { moneyWords } from '../../lib/billing/money';
 import { addMonths, DEFAULT_SECTORS, financialYear, monthKey } from '../../lib/finance/index.js';
@@ -115,12 +116,16 @@ export function useFinance({ includeLikely = false } = {}) {
   return { ...portal, settings, months, model, names, sectors, associateSessions: assoc };
 }
 
-/** Save, then the toast with Undo for 10 seconds (coach rule 5); the calm line when it can't. */
+/**
+ * Save, then the toast with Undo for 10 seconds (coach rule 5); the calm line when it can't. A save refused because the
+ * row changed in another tab or device since (store.js saveChange) says so, and the page shows the newest row.
+ */
 export function useDone() {
   const toast = useToast();
   return async (work, message = 'Saved.', onUndo) => {
     try {
       const status = await work();
+      if (status === 'superseded') { toast.error(SUPERSEDED_MESSAGE); return false; }
       toast.saved({ message: status === 'queued' ? 'Will sync' : message, onUndo, long: true });
       return true;
     } catch (error) {
@@ -130,13 +135,18 @@ export function useDone() {
   };
 }
 
-/** Saves the settings row (062's one row a coach), Undo putting it back. */
+/**
+ * Saves only the settings a panel changed (062's one row a coach), onto the row as it is now, never the panel's older
+ * copy; refused when the row moved on since `basedOn` (its updated_at as the panel opened it). Undo puts back only
+ * those settings.
+ */
 export function useSaveSettings() {
-  const { userId, financeSettings, coach } = useCoachPortal();
+  const { userId, coach } = useCoachPortal();
   const done = useDone();
-  return (change, message = 'Saved.') => {
-    const before = settingsOf(financeSettings, coach.id);
-    return done(() => saveRow(userId, 'finance_settings', { ...before, ...change }), message, () => saveRow(userId, 'finance_settings', before));
+  return (change, message = 'Saved.', { basedOn } = {}) => {
+    const key = { coach_id: coach.id };
+    const was = settingsOf(rowNow(userId, 'finance_settings', key), coach.id);
+    return done(() => saveChange(userId, 'finance_settings', key, change, { basedOn }), message, () => saveChange(userId, 'finance_settings', key, undoOf(change, was)));
   };
 }
 
@@ -360,7 +370,7 @@ export function InvoicePanels({ panel, onClose }) {
     const amount = poundsFromTyped(form.amount);
     if (!form.who || form.who.kind === 'name') { setProblem({ at: 'who', words: 'Choose who it’s for to carry on.' }); return; }
     if (!form.what.trim()) { setProblem({ at: 'what', words: 'Type what it’s for to carry on.' }); return; }
-    if (amount == null) { setProblem({ at: 'amount', words: 'Type an amount, such as 1,200.' }); return; }
+    if (amount == null) { setProblem({ at: 'amount', words: amountProblem(form.amount, '1,200') }); return; }
     ask({ kind: 'one_off', amount, [form.who.kind === 'org' ? 'organisationId' : 'profileId']: form.who.id, whatFor: form.what.trim(), currency: form.currency, due: form.due, sector: form.who.sector || undefined, send },
       send ? 'Sent in Stripe. It shows under Sent and due.' : 'Saved.');
   };

@@ -26,6 +26,7 @@ import { dueToDraft, invoicesFor } from '../../src/lib/billing/invoicePlan.js';
 import { addDays, dayIn, isZone } from '../../src/lib/time/index.js';
 import { reminderDue, settleBy } from '../../src/lib/billing/money.js';
 import { currencyOf } from '../../src/lib/billing/stripeWebhook.js';
+import { cleanName } from '../../src/lib/coaching/agreementRules.js';
 
 export const config = { maxDuration: 60 };
 const reply = (res, status, body) => { res.status(status).setHeader('Cache-Control', 'no-store'); res.json(body); };
@@ -33,6 +34,7 @@ const DIDNT_WORK = 'That didn’t work. Try again in a moment.';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const KINDS = ['draft', 'send', 'paid_by_hand', 'refund', 'credit', 'send_reminder', 'bank_payment', 'one_off'];
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const RECEIPT = /^[0-9a-f-]{36}\/finances\/[a-z_]{1,20}\/[0-9a-f-]{36}-[A-Za-z0-9_.-]{1,120}$/;
 const SECTOR = (s) => (typeof s === 'string' && s.trim().length >= 1 && s.trim().length <= 40 ? s.trim() : null);
 
 /** Whether a 'YYYY-MM-DD' is a real calendar day (never 31 Feb). */
@@ -43,23 +45,29 @@ export function realDay(day) {
   return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
 }
 
+/** A whole number of pence sent as a JSON number, 1 to 100,000,000; never true, an array, "0x10" or "1e3". */
+export const strictMinor = (v) => (typeof v === 'number' && Number.isInteger(v) && v > 0 && v <= 100000000 ? v : null);
+
 export function askedFor(body, now = new Date()) {
   const b = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   if (!KINDS.includes(b.kind)) return null;
   // Finances (run 2, owner only): a payment made straight to the bank, and a one-off invoice. Each names who it's from
   // or for: a client, an organisation, or (a bank payment only) a name typed in.
   if (b.kind === 'bank_payment' || b.kind === 'one_off') {
-    const amount = Number(b.amount);
-    if (!Number.isInteger(amount) || amount <= 0 || amount > 100000000) return null;
+    const amount = strictMinor(b.amount);
+    if (amount == null) return null;
     const profileId = UUID.test(String(b.profileId || '')) ? String(b.profileId).toLowerCase() : null;
     const organisationId = UUID.test(String(b.organisationId || '')) ? String(b.organisationId).toLowerCase() : null;
-    const payerName = typeof b.payerName === 'string' && b.payerName.trim() ? b.payerName.trim().slice(0, 160) : null;
+    // A name of only invisible characters (zero-width, direction marks) is no name (agreementRules' cleanName).
+    const payerName = typeof b.payerName === 'string' && cleanName(b.payerName) ? cleanName(b.payerName).slice(0, 160) : null;
     if (!profileId && !organisationId && !(b.kind === 'bank_payment' && payerName)) return null;
     const whatFor = typeof b.whatFor === 'string' ? b.whatFor.trim().slice(0, 200) : '';
     if (b.kind === 'bank_payment') {
       // A real calendar day, and never after tomorrow on Tim's clock (London): money can't arrive in the future.
-      if (!realDay(b.arrivedOn) || String(b.arrivedOn) > addDays(dayIn('Europe/London', now), 1)) return null;
-      const receipt = typeof b.receiptPath === 'string' && /^[\w./-]{1,500}$/.test(b.receiptPath) && !b.receiptPath.includes('..') ? b.receiptPath : null;
+      // Never before 2000 either (062 keeps days between 2000 and 2100).
+      if (!realDay(b.arrivedOn) || String(b.arrivedOn) < '2000-01-01' || String(b.arrivedOn) > addDays(dayIn('Europe/London', now), 1)) return null;
+      // 062's shape for a receipt (uploadReceipt's): <account>/finances/<kind>/<uuid>-<name>, never climbing out.
+      const receipt = typeof b.receiptPath === 'string' && RECEIPT.test(b.receiptPath) && !b.receiptPath.includes('..') ? b.receiptPath : null;
       return { kind: b.kind, amount, profileId, organisationId, payerName, whatFor: whatFor || null, arrivedOn: String(b.arrivedOn), sector: SECTOR(b.sector), receiptPath: receipt };
     }
     if (!whatFor) return null;
@@ -72,13 +80,13 @@ export function askedFor(body, now = new Date()) {
   if (!UUID.test(String(b[idKey] || ''))) return null;
   const out = { kind: b.kind, id: String(b[idKey]).toLowerCase() };
   if (b.kind === 'paid_by_hand' && b.landedMinor != null && b.landedMinor !== '') {
-    const landed = Number(b.landedMinor);
-    if (!Number.isInteger(landed) || landed <= 0 || landed > 100000000) return null;
+    const landed = strictMinor(b.landedMinor);
+    if (landed == null) return null;
     out.landedMinor = landed;
   }
   if (b.kind === 'refund' || b.kind === 'credit') {
-    const amount = Number(b.amount);
-    if (!Number.isInteger(amount) || amount <= 0 || amount > 100000000) return null;
+    const amount = strictMinor(b.amount);
+    if (amount == null) return null;
     out.amount = amount;
     out.reason = typeof b.reason === 'string' ? b.reason.slice(0, 500) : null;
   }
@@ -108,16 +116,35 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
 
   const ownerOnly = () => { if (coach.role !== 'owner') { const e = new Error('Only the owner can do that.'); e.status = 403; throw e; } };
 
+  // One answer for "doesn't exist" and "isn't yours", so nothing can be learnt by asking (break-it tester, 6b run 2).
+  const notYours = (what) => { const e = new Error(`That ${what} isn’t yours.`); e.status = 403; return e; };
+  /**
+   * Whether an organisation is tied to the coach: one of their own clients works there, or one of their own leads,
+   * agreements or (the owner's alone, 052) the account map's deals names it, or the owner set it up himself (026).
+   */
+  async function orgIsMine(orgId) {
+    const has = async (q) => { const { data } = await q.limit(1); return Boolean(data?.length); };
+    if (await has(server.from('client_profiles').select('id').eq('organisation_id', orgId).eq('coach_id', coach.id).is('merged_into', null))) return true;
+    if (await has(server.from('coach_leads').select('id').eq('organisation_id', orgId).eq('coach_id', coach.id))) return true;
+    if (await has(server.from('agreements').select('id').eq('organisation_id', orgId).eq('coach_id', coach.id))) return true;
+    if (coach.role !== 'owner') return false;
+    if (await has(server.from('organisation_deals').select('id').eq('organisation_id', orgId))) return true;
+    // 026: only the owner sets an organisation up, so one he made is his.
+    return Boolean(coach.user_id) && has(server.from('organisations').select('id').eq('id', orgId).eq('created_by', coach.user_id));
+  }
+
   /** Who a one-off invoice or a bank payment is from: the coach's own client or an organisation, never anyone else's. */
   async function whoFor(asked) {
     if (asked.profileId) {
-      const { data: p } = await server.from('client_profiles').select('id, name, email, time_zone, organisation_id, sector').eq('id', asked.profileId).maybeSingle();
-      if (!p) { const e = new Error('That client isn’t here.'); e.status = 404; throw e; }
+      const { data: p } = await server.from('client_profiles').select('id, coach_id, merged_into, name, email, time_zone, organisation_id, sector').eq('id', asked.profileId).maybeSingle();
+      if (!p || p.coach_id !== coach.id || p.merged_into) throw notYours('client');
       return { profile: p, name: p.name, email: p.email, zone: p.time_zone, sector: p.sector, organisationId: p.organisation_id };
     }
     if (asked.organisationId) {
+      // Checked before anything about it is read back.
+      if (!(await orgIsMine(asked.organisationId))) throw notYours('organisation');
       const { data: o } = await server.from('organisations').select('id, name, sector').eq('id', asked.organisationId).maybeSingle();
-      if (!o) { const e = new Error('That organisation isn’t here.'); e.status = 404; throw e; }
+      if (!o) throw notYours('organisation');
       const { data: contacts } = await server.from('organisation_contacts').select('*').eq('organisation_id', o.id);
       const finance = (contacts || []).find((c) => /finance|invoice/i.test(`${c.role || ''} ${c.roles || ''}`)) || (contacts || [])[0] || null;
       return { organisation: o, name: finance?.name || o.name, email: finance?.email || '', zone: null, sector: o.sector, organisationId: o.id };
@@ -135,7 +162,9 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
       const { data, error } = await server.from('payments').insert({
         coach_id: coach.id, amount_minor: asked.amount, currency: 'GBP', landed_gbp_minor: asked.amount, added_by_coach: true, paid_at: paidAt,
         profile_id: who.profile?.id || null, organisation_id: who.organisationId || null, payer_name: who.organisation?.name || who.profile?.name || asked.payerName,
-        sector: asked.sector || who.sector || null, what_for: asked.whatFor, receipt_path: asked.receiptPath,
+        // A receipt only from the caller's own folder of coach-files (062 checks the shape; the folder is checked here).
+        sector: asked.sector || who.sector || null, what_for: asked.whatFor,
+        receipt_path: asked.receiptPath && coach.user_id && asked.receiptPath.startsWith(`${coach.user_id}/`) ? asked.receiptPath : null,
       }).select('id').maybeSingle();
       if (error) throw error;
       return { id: data?.id || null };

@@ -5,8 +5,8 @@ import { moneyWords as minorWords, rateWords as minorRateWords } from '../../lib
 import { associateMonth, payLabels } from '../../lib/finance/associates.js';
 import { monthKey } from '../../lib/finance/year.js';
 import { poundsWords } from '../../lib/finance/words.js';
-import { associatePay, hoursFigure, paidStatementRow, payWords, rateMinorOf, statementFacts, theirClientsPaid } from '../../lib/coach/associatePay';
-import { newId, removeRow, rowsOf, saveRow } from '../../lib/coach/store';
+import { associatePay, canMarkPaid, hoursFigure, paidStatementRow, payWords, rateMinorOf, statementFacts, theirClientsPaid } from '../../lib/coach/associatePay';
+import { keyOf, newId, removeRow, rowsOf, saveRow } from '../../lib/coach/store';
 import { dayWordsFrom } from '../../lib/coach/financeData';
 import { Row, TextLink, useCoachPortal } from './parts';
 import { useAssociateSessions, useDone } from './financeParts';
@@ -108,7 +108,8 @@ export function AssociateSection({ associate, onOpenClients }) {
     const before = pay.statement;
     const row = paidStatementRow({ id: newId(), statement: before, ownerId: coach.id, associateId: associate.coach_id, month, pay, rateMinor,
       minutesRow: minutes.find((r) => r.coach_id === associate.coach_id) || null, noShowsPaid: Boolean(finance.settings?.no_shows_paid), today: todayKey });
-    done(() => saveRow(userId, 'associate_statements', row), 'Saved.', () => (before ? saveRow(userId, 'associate_statements', before) : removeRow(userId, 'associate_statements', row.id)));
+    // One row an associate and month (the store keys it so), so two devices marking the same month write the same row.
+    done(() => saveRow(userId, 'associate_statements', row), 'Saved.', () => (before ? saveRow(userId, 'associate_statements', before) : removeRow(userId, 'associate_statements', keyOf('associate_statements', row))));
   };
   const rateUnit = rateMinor != null ? minorRateWords(rateMinor, 'hour') : (pay.statement ? minorRateWords(Number(pay.statement.rate_minor) || 0, 'hour') : undefined);
 
@@ -130,7 +131,7 @@ export function AssociateSection({ associate, onOpenClients }) {
           : <Row title="Monthly statement" facts={[words.statementRow]} />}
       </div>
       <StatementPanel open={preview} onClose={() => setPreview(false)} title={words.panelTitle} lines={pay.lines} note={words.panelNote}
-        paidWords={pay.paidOn ? `Paid ${dayWordsFrom(pay.paidOn, todayKey)}` : null} onMarkPaid={pay.delivered ? markPaid : null} />
+        paidWords={pay.paidOn ? `Paid ${dayWordsFrom(pay.paidOn, todayKey)}` : null} onMarkPaid={canMarkPaid(pay, todayKey) ? markPaid : null} />
     </section>
   );
 }

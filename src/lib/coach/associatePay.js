@@ -5,6 +5,7 @@ import { monthDays, monthKey, monthName } from '../finance/year.js';
 import { hoursWords, poundsWords } from '../finance/words.js';
 import { isOpenLead, isWonLead, leadValue, moneyWords, pipelineTotals, rateWords, stagesInOrder, stageTotals } from './crm.js';
 import { addDays, dayWords, firstName, possessive } from './model.js';
+import { dayIn } from '../time/index.js';
 
 // The people side of the money (Phase 6b run 2, steps 3 and 5; M11 C10 to C13): an associate's hours and pay in
 // Settings, Coaches and on their own Today, the monthly statement (its panel and its PDF), Clients' Renewals tab and
@@ -51,14 +52,18 @@ export function fromStatement(row) {
  * @returns {{ from: 'statement'|'sessions'|null, delivered: object|null, statement: object|null, readyOn: string,
  *   paidOn: string|null, lines: { label: string, detail: string, value: string }[] }}
  */
-export function associatePay({ associateId, rateMinor, month, statements = [], sessions = [], noShowsPaid = false, zone, monthMinutes = null, nowMs = 0 }) {
+export function associatePay({ associateId, rateMinor, month, statements = [], sessions = [], noShowsPaid = false, zone, monthMinutes = null, nowMs = 0, today = null }) {
   const m = monthKey(month);
   const statement = (statements || []).find((s) => s && s.associate_id === associateId && sameMonth(s.month, m)) || null;
   const readyOn = statement?.ready_on ? String(statement.ready_on).slice(0, 10) : monthDays(m).last;
   const theirs = (sessions || []).filter((s) => s && s.coach_id === associateId);
+  // The saved figures win once the month is over (Tim's clock) or it's paid; while the month runs, its sessions and
+  // minutes still count (break-it tester, 6b run 2). With no clock given, a saved statement wins as before.
+  const day = today || (nowMs ? dayIn('Europe/London', new Date(nowMs)) : null);
+  const statementWins = Boolean(statement) && (Boolean(statement.paid_on) || !day || day > monthDays(m).last);
   let delivered = null;
   let from = null;
-  if (statement) {
+  if (statementWins) {
     delivered = fromStatement(statement);
     from = 'statement';
   } else if (rateMinor != null && monthMinutes && monthMinutes.coach_id === associateId) {
@@ -72,26 +77,34 @@ export function associatePay({ associateId, rateMinor, month, statements = [], s
     delivered = associateMonth({ coachId: associateId, rateMinor, sessions: theirs, month: m, zone, noShowsPaid, nowMs });
     from = 'sessions';
   }
-  const savedLines = Array.isArray(statement?.lines) ? statement.lines.filter((l) => l && l.label) : [];
+  const savedLines = statementWins && Array.isArray(statement?.lines) ? statement.lines.filter((l) => l && l.label) : [];
   const lines = delivered
     ? (savedLines.length ? savedLines.map((l) => ({ label: String(l.label), detail: String(l.detail || ''), value: String(l.value || '') }))
-      : statementLines({ month: delivered, noShowsPaid: noShowsPaid || Boolean(statement && Number(statement.no_show_minutes) > 0) })
+      : statementLines({ month: delivered, noShowsPaid: noShowsPaid || Boolean(statementWins && Number(statement.no_show_minutes) > 0) })
         .map(({ label, detail, value }) => ({ label, detail, value })))
     : [];
   return { from, delivered, statement, readyOn, paidOn: statement?.paid_on ? String(statement.paid_on).slice(0, 10) : null, lines };
 }
 
 /**
+ * Whether Mark as paid is offered: from the statement's ready day (the month's last day, Tim's clock) onward, once
+ * there is a figure, and not once it's paid. Before that day the panel has nothing to press (break-it tester, 6b run 2).
+ */
+export const canMarkPaid = (pay, today) => Boolean(pay?.delivered) && !pay.paidOn && Boolean(today) && String(today) >= String(pay.readyOn || '9999');
+
+/**
  * The month's statement row as Mark as paid saves it (062's associate_statements, one per associate and month): the
- * hours, rate, the minutes that count, the total and its lines, paid today for the total. A statement already saved
- * keeps its own figures and gains only when it was paid.
+ * hours, rate, the minutes that count, the total and its lines, paid today for the total. A statement whose figures
+ * the page shows (pay.from 'statement') keeps them and gains only when it was paid; one saved while the month still
+ * ran takes the month's figures now, keeping its own id, so every device writes the same row.
  */
 export function paidStatementRow({ id, statement = null, ownerId, associateId, month, pay, rateMinor, minutesRow = null, noShowsPaid = false, today }) {
-  if (statement) return { ...statement, paid_on: today, paid_minor: Number(statement.total_minor) || 0 };
+  if (statement && (!pay || pay.from === 'statement')) return { ...statement, paid_on: today, paid_minor: Number(statement.total_minor) || 0 };
   const minutes = pay.delivered?.minutes || 0;
   const total = pay.delivered?.payMinor || 0;
   return {
-    id, coach_id: ownerId, associate_id: associateId, month: `${monthKey(month)}-01`, hours: Math.round((minutes / 60) * 100) / 100,
+    ...(statement ? { created_at: statement.created_at, updated_at: statement.updated_at } : {}),
+    id: statement?.id || id, coach_id: ownerId, associate_id: associateId, month: `${monthKey(month)}-01`, hours: Math.round((minutes / 60) * 100) / 100,
     rate_minor: rateMinor || 0, late_cancel_minutes: Number(minutesRow?.late_cancel_minutes) || 0,
     no_show_minutes: noShowsPaid ? Number(minutesRow?.no_show_minutes) || 0 : 0, total_minor: total,
     lines: (pay.lines || []).map(({ label, detail, value }) => ({ label, detail, value })), ready_on: pay.readyOn, paid_on: today, paid_minor: total,

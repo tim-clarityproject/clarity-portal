@@ -49,7 +49,7 @@ test('1. coach_list rows (coach_id): two associates, each with their own rate, n
 // ---------------------------------------------------------------- 2 and 3. pounds that landed, Stripe's fee, currencies
 
 function world(now) {
-  const db = fakeDb({ client_profiles: [{ id: UUID, name: 'Ann Client', email: 'ann@example.invalid', time_zone: 'America/New_York' }], coaches: [] });
+  const db = fakeDb({ client_profiles: [{ id: UUID, coach_id: OWNER.id, name: 'Ann Client', email: 'ann@example.invalid', time_zone: 'America/New_York' }], coaches: [] });
   const stripe = stripeStandIn({ now: () => now.value.getTime() });
   return { db, stripe, owner: billing({ server: db, stripe, coach: OWNER, now: () => now.value }) };
 }
