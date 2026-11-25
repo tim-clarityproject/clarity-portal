@@ -18,6 +18,8 @@ import './leads.css';
 import './crm.css';
 import './leftovers.css';
 import { countFigure } from '../../lib/coach/numbers';
+import { AgreementButtons } from './agreements/AgreementStart';
+import { OrgBillingLink } from './orgBilling/OrgBilling';
 
 // An organisation (M11, with version 3.6's account map), the owner's: Who's
 // who (contacts with their roles and when you last spoke or emailed, the
@@ -189,6 +191,9 @@ export default function OrganisationPage() {
           {seats > 0 && <Stat label="Seats in use" value={`${countFigure(withAccount)} of ${countFigure(seats)}`} bar={seats ? withAccount / seats : 0} />}
           {map.nextRenewal && <Stat label={ACCOUNT_WORDS.nextRenewal} value={map.nextRenewal} />}
         </StatGroup>
+        {/* Phase 6b run 3: Group B's New agreement and Send a quote; Group D's way to the organisation's billing. */}
+        <AgreementButtons kind="organisation" id={org.id} name={org.name} />
+        <OrgBillingLink organisationId={org.id} name={org.name} />
 
         <Part title="Who’s who">
           {map.whosWho.filter((w) => w.kind === 'contact').map((w) => {

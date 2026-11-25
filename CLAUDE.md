@@ -24,6 +24,7 @@ CLAUDE.md holds the rules every task needs. Each area's full rules live in its o
 - `docs/rules/time-zones.md`: Time zones: the one time library src/lib/time, saved times, series, labels, 12 or 24 hours, booking, clock changes, holidays, reminders: 10 rules.
 - `docs/rules/controls.md`: The one controls family: the gliding switch, the retired pill toggle and the lasting `controlsFamily` check (run 7): 7 rules.
 - `docs/rules/own-questions.md`: Your own questions in the Daily plan, Daily review and weekly debrief, and coach suggestions (run 7): 11 rules.
+- `docs/rules/agreements.md`: Agreements, quotes and invoicing (Phase 6b run 3, M28, migration 065): the rules in `src/lib/agreements/`, the wording, the 14 days, Opened, numbers, currencies, the server asks and the shared view parts.
 - `docs/rules/go-live.md`: Go-live notes: what each migration from 021 to 054 does, its test, its order and what Vercel needs.
 
 **Server functions (Tim, 24 Nov 2026: Vercel's Hobby plan takes at most 12, no paid plans):** `api/` holds at most 10; the handlers live in `api/_routes/` and four routers serve them (`api/coach.js`, `api/guest.js`, `api/scheduled.js`, and `api/stripe-webhook.js` alone for its raw body), each old address rewritten to its router in `vercel.json` (`?__route=`, `api/_router.js`). A new address joins a router, never a new file; `scripts/check-api-functions.mjs` stops the build and `tests/performance/api-functions.test.mjs` fails otherwise.

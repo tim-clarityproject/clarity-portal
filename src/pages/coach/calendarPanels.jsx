@@ -18,6 +18,7 @@ import { GoogleCalendarSwitches } from './googleCalendars';
 import { CALENDAR_GROUPS } from '../../lib/coach/googleBusy';
 import { CAL_HOOKS, CalGrid, gridPoint, TodosToPlace, useBeside, useCalendar } from './calendarParts';
 import { TodoPanel, useTodoActions } from './todoParts';
+import { CalendarDeepLink, opensWhatHappened, WhatHappened, WhatHappenedPanel } from './calendarWhatHappened';
 
 // The calendar's panels (Phase 6a run 3; M11): the quick add beside a new
 // item, one item in its side panel with More options, My calendars, the
@@ -269,6 +270,8 @@ function ItemPanel({ cal, entry, fresh, days, onClose }) {
       {conflict && <p className="cc-note" role="status">{conflict}</p>}
       {i && <MovedInGoogle item={cal.calItems.find((x) => x.id === i.id) || null} />}
       {e?.clientWords && <p className="cc-quiet">{firstName(e.title)}’s time: {e.clientWords}.</p>}
+      {/* Phase 6b run 3: Group D's "What happened?" for an item with a coaching session (M28 s-cal-session). */}
+      {e?.session && <WhatHappened cal={cal} entry={e} />}
       {link && <div className="cc-acts"><a className="ds-link" href={link} target="_blank" rel="noreferrer">Join on Zoom</a></div>}
       {!todo && <div className="cc-field"><TextBox lines="one" label="Title" value={d.title} maxLength={200} onChange={(v) => set({ title: v })} /></div>}
       {todo && <p className="cc-quiet">It’s one of your to-dos, so it shows on To-dos too.</p>}
@@ -442,6 +445,7 @@ export function useCalPanels(cal, { days }) {
   const [briefItem, setBriefItem] = useState(null); // the call's own calendar item, for "Edit the call"
   const [telling, setTelling] = useState(false);
   const [theirs, setTheirs] = useState(null); // an associate's session, opened by the owner: what it is, never more
+  const [happened, setHappened] = useState(null); // Phase 6b run 3: a coaching session's "What happened?" (Group D)
 
   const entry = useMemo(() => {
     if (!item) return null;
@@ -471,6 +475,7 @@ export function useCalPanels(cal, { days }) {
     }
     // A client call opens as run 2's rows do: the brief before it, its own page once it has happened.
     const s = e.session;
+    if (s && opensWhatHappened(e, cal.now)) { setHappened(e); return; }
     if (s) {
       const over = s.outcome || e.endsAt <= cal.now;
       const client = cal.clients.find((c) => c.id === s.profile_id);
@@ -500,6 +505,8 @@ export function useCalPanels(cal, { days }) {
         onMore={(draft) => { setSlot(null); if (draft.kind === 'todo' || draft.kind === 'call') { toast.show(draft.kind === 'todo' ? 'A to-do’s other details are on To-dos once it’s saved.' : 'Choose Book the call to carry on.'); return; } setFresh(draft); }}
       />
       <ItemPanel cal={cal} entry={entry} fresh={fresh} days={days} onClose={() => { setItem(null); setFresh(null); }} />
+      <WhatHappenedPanel cal={cal} entry={happened} onClose={() => setHappened(null)} />
+      <CalendarDeepLink cal={cal} open={open} />
       <TodoPanel id={todoId} onClose={() => setTodoId(null)} />
       {briefAsked && <Suspense fallback={null}><BriefPanel sessionId={briefId} joinHref={briefJoin} onClose={() => setBriefId(null)} aside={briefItem ? <TextLink onClick={() => { setBriefId(null); setItem(briefItem); }}>Edit the call</TextLink> : null} /></Suspense>}
       <TellPanel cal={cal} open={telling && Boolean(cal.tell)} onClose={() => setTelling(false)} />

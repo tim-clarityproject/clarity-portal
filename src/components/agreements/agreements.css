@@ -1,0 +1,62 @@
+/* The agreement's shared view parts (Phase 6b run 3; M28 version 4): Main points, contents, clauses with their reason
+   lines, the steps marker, the settle choice and a checked-off coaching session's row. Every value is a token
+   (CLAUDE.md design rule 2); every page sits in .ui-root (rule 17). The reason line is quieter grey text, indented,
+   with no side line (risk 3: M28 draws a 2px line; rule 4a: no coloured or side lines on any card or row). */
+
+/* ---- Main points: a label and its value on each row (M28 .kv) */
+.ui-root .ag-points { margin: 0; border-top: var(--line-w) solid var(--line); }
+.ui-root .ag-point { display: grid; grid-template-columns: var(--glance-label-w) minmax(0, 1fr); gap: var(--space-1) var(--space-px20); padding: var(--space-px12) 0; border-bottom: var(--line-w) solid var(--line-soft); }
+.ui-root .ag-point dt { font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .ag-point dd { margin: 0; font-size: var(--fs-body); line-height: var(--lh-text); color: var(--text); overflow-wrap: anywhere; }
+
+/* ---- Contents (M28 .contents): two columns on a laptop, one on a phone */
+.ui-root .ag-contents { margin-top: var(--space-4); border-top: var(--line-w) solid var(--line); padding-top: var(--space-3); }
+.ui-root .ag-contents-label { margin: 0; font-size: var(--fs-small); color: var(--placeholder); }
+.ui-root .ag-contents ol { list-style: none; margin: var(--space-px6) 0 0; padding: 0; columns: 2; column-gap: var(--space-4); }
+.ui-root .ag-contents li { break-inside: avoid; }
+.ui-root .ag-contents-link { display: inline-flex; align-items: center; min-height: var(--tap-min); padding: 0; border: 0; background: none; font: inherit; font-size: var(--fs-secondary); color: var(--text); text-align: left; cursor: pointer; transition: color var(--dur-fast) var(--ease); }
+.ui-root .ag-contents-link:hover, .ui-root .ag-contents-link:focus-visible { color: var(--coral-text); }
+.ui-root .ag-contents-link:focus-visible { outline: var(--focus-w) solid var(--coral); outline-offset: var(--space-px2); }
+
+/* ---- Clauses (M28 .clause): each with its number, its paragraphs and their reasons */
+.ui-root .ag-clause { margin-top: var(--space-4); border-top: var(--line-w) solid var(--line); padding-top: var(--space-px18); scroll-margin-top: var(--cc-header-h, var(--space-7)); }
+.ui-root .ag-clause-title { margin: 0 0 var(--space-px10); font-family: var(--font-body); font-size: var(--fs-text); font-weight: var(--fw-regular); line-height: var(--lh-row); letter-spacing: normal; text-transform: none; color: var(--text); }
+.ui-root .ag-para { margin: 0 0 var(--space-px10); font-size: var(--fs-body); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .ag-why { margin: calc(-1 * var(--space-1)) 0 var(--space-px10); padding-left: var(--space-px12); font-size: var(--fs-note); line-height: var(--lh-text); color: var(--placeholder); overflow-wrap: anywhere; }
+.ui-root .ag-clause-after:empty { display: none; }
+
+/* ---- The steps marker (M28 .steps3): Read, Sign, Settle. The current step in the text colour, done in mint, never coral */
+.ui-root .ag-steps { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-px22); font-size: var(--fs-note); color: var(--placeholder); }
+.ui-root .ag-step { display: flex; align-items: center; gap: var(--space-2); }
+.ui-root .ag-step-n { width: var(--space-px22); height: var(--space-px22); flex: none; border-radius: var(--radius-pill); border: var(--line-w) solid var(--field-line); display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-small); }
+.ui-root .ag-step--on { color: var(--text); }
+.ui-root .ag-step--on .ag-step-n { border-color: var(--text); color: var(--text); }
+.ui-root .ag-step--done { color: var(--text-2); }
+.ui-root .ag-step--done .ag-step-n { background: var(--good); border-color: var(--good); color: var(--on-good); }
+
+/* ---- A coaching session checked off (M28 .lr in usedList) */
+.ui-root .ag-sessions { list-style: none; margin: 0; padding: 0; border-top: var(--line-w) solid var(--line); }
+.ui-root .ag-session { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-1) var(--space-3); width: 100%; min-height: var(--tap-min); padding: var(--space-px14) 0; border: 0; border-bottom: var(--line-w) solid var(--line-soft); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ui-root .ag-session-title { display: block; font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); transition: color var(--dur-fast) var(--ease); }
+.ui-root .ag-session-meta { display: block; font-size: var(--fs-small); line-height: var(--lh-text); color: var(--placeholder); }
+.ui-root .ag-session-act { font-size: var(--fs-note); color: var(--text-2); white-space: nowrap; }
+.ui-root .ag-session-act--due { border: var(--line-w) solid var(--field-line); border-radius: var(--radius-btn); padding: var(--space-px2) var(--space-px10); color: var(--text); }
+.ui-root .ag-session:hover .ag-session-title, .ui-root .ag-session:focus-visible .ag-session-title { color: var(--coral-text); }
+.ui-root .ag-session:focus-visible { outline: var(--focus-w) solid var(--coral); outline-offset: var(--space-px2); }
+
+/* ---- The settle choice sits under its question like any other choice */
+.ui-root .ag-settle { margin-top: var(--space-4); }
+
+@media (max-width: 600px) {
+  .ui-root .ag-point { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); padding: var(--space-2) 0; }
+  .ui-root .ag-point dt { font-size: var(--fs-small); }
+  .ui-root .ag-contents ol { columns: 1; }
+}
+
+@media (forced-colors: active) {
+  .ui-root .ag-step--done .ag-step-n { forced-color-adjust: none; background: CanvasText; border-color: CanvasText; color: Canvas; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ag-contents-link, .ui-root .ag-session-title { transition: none; }
+}

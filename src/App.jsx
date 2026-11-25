@@ -258,7 +258,16 @@ const HealthCheckInside = lazy(() => loadWithReload(() => import('./pages/health
 const EmotionalWash = lazy(() => loadWithReload(() => import('./pages/emotionalWash/EmotionalWash')));
 const Coaching = lazy(() => loadWithReload(() => import('./pages/coaching/Coaching')));
 const SignAgreement = lazy(() => loadWithReload(() => import('./pages/coaching/SignAgreement')));
-const Billing = lazy(() => loadWithReload(() => import('./pages/coaching/Billing')));
+// Agreements, quotes and money (Phase 6b run 3; Group C's pages): settling and the welcome after signing, My Account's
+// invoices, block of hours and plan (/coaching/billing now goes to My Account, Invoices), and the two public link pages.
+const AgreementSettle = lazy(() => loadWithReload(() => import('./pages/coaching/Settle')));
+const AgreementWelcome = lazy(() => loadWithReload(() => import('./pages/coaching/Welcome')));
+const AccountInvoices = lazy(() => loadWithReload(() => import('./pages/account/Invoices')));
+const AccountHours = lazy(() => loadWithReload(() => import('./pages/account/Hours')));
+const AccountPlan = lazy(() => loadWithReload(() => import('./pages/account/Plan')));
+const AccountCancelPlan = lazy(() => loadWithReload(() => import('./pages/account/CancelPlan')));
+const QuotePage = lazy(() => loadWithReload(() => import('./pages/agreementLink/QuotePage')));
+const SponsorSign = lazy(() => loadWithReload(() => import('./pages/agreementLink/SponsorSign')));
 const PeakMoments = lazy(() => loadWithReload(() => import('./pages/peakMoments/PeakMoments')));
 const TravelPlan = lazy(() => loadWithReload(() => import('./pages/travelPlan/TravelPlan')));
 const GuestLink = lazy(() => loadWithReload(() => import('./pages/guest/GuestLink')));
@@ -552,6 +561,11 @@ function AppContent() {
         <Route path="/book/:key" element={lazyPage(BookingPage)} />
         <Route path="/poll/:key" element={lazyPage(PollVote)} />
 
+        {/* A quote's page and a sponsor's signing page (Phase 6b run 3; M28 s-q-client, s-s-sign): no account needed,
+            by the link's own token (065's quote_open and sponsor_link_open). */}
+        <Route path="/quote/:token" element={lazyPage(QuotePage)} />
+        <Route path="/sign/:token" element={lazyPage(SponsorSign)} />
+
         {/* Signing in and creating an account. */}
         <Route path="/auth/login" element={<SignIn />} />
         <Route path="/auth/sign-up" element={<CreateAccount />} />
@@ -664,6 +678,10 @@ function AppContent() {
           <Route path="/my-account/password" element={<AccountPassword />} />
           <Route path="/my-account/email" element={<AccountEmail />} />
           <Route path="/my-account/sign-in-security" element={<SignInSecurity />} />
+          <Route path="/my-account/invoices" element={lazyPage(AccountInvoices)} />
+          <Route path="/my-account/hours" element={lazyPage(AccountHours)} />
+          <Route path="/my-account/plan" element={lazyPage(AccountPlan)} />
+          <Route path="/my-account/plan/cancel" element={lazyPage(AccountCancelPlan)} />
           <Route path="/my-journal" element={<MyJournalRoute />} />
           <Route path="/daily-journal" element={<DailyJournal />} />
           <Route path="/daily-journals" element={<DailyJournals />} />
@@ -701,7 +719,10 @@ function AppContent() {
           <Route path="/coaching" element={lazyPage(Coaching)} />
           {/* Signing a coaching agreement and Billing (Phase 6b run 1, M13 A3 to A8). */}
           <Route path="/coaching/agreement/:versionId" element={lazyPage(SignAgreement)} />
-          <Route path="/coaching/billing" element={lazyPage(Billing)} />
+          <Route path="/coaching/agreement/:versionId/settle" element={lazyPage(AgreementSettle)} />
+          <Route path="/coaching/agreement/:versionId/welcome" element={lazyPage(AgreementWelcome)} />
+          {/* Billing is My Account, Invoices since Phase 6b run 3: the old address goes there with its query, hash and state. */}
+          <Route path="/coaching/billing" element={<MovedTo to="/my-account/invoices" />} />
           <Route path="/travel-plan/*" element={lazyPage(TravelPlan)} />
           {GET_UNSTUCK_STEPS.map((path) => (
             <Route key={path} path={path} element={<MovedTo to="/get-unstuck" />} />

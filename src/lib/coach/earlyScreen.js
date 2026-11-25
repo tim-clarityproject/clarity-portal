@@ -95,7 +95,11 @@ export function startCoachOpening(pathname = window.location.pathname, search = 
     const kind = screenKindOf(path);
     // Finances' first screen waits for the role (it is the owner's alone), so the role goes out first there, and the
     // looks once it has answered (they are needed only once the sign-in check has answered, well after).
-    const probes = () => { for (const table of PROBE_TABLES) supabase.from(table).select('id').limit(1).then(noop, noop); };
+    const probes = () => {
+      for (const table of PROBE_TABLES) supabase.from(table).select('id').limit(1).then(noop, noop);
+      // 065 (Phase 6b run 3), unless this device knows it isn't there yet (store.js's coach065Ready asks the same).
+      if (!recently('clarity-coach-065-not-yet')) supabase.from('agreement_extras').select('id').limit(1).then(noop, noop);
+    };
     if (kind === 'finances') roleAnswer.then(probes, probes); else probes();
     if (!kind) return 1;
     const mark = window.localStorage.getItem(`clarity-cache:${userId}:coach-copy`);

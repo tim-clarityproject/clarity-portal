@@ -125,3 +125,4 @@ export { PeakMomentList, PeakMomentRow, PeakWeekBars, PeakYearList } from './Pea
 export { BodyClockChart, MomentNumber, PlaceField, PLANE, TravelDayPanel, TravelDayRow, TravelSteps, TravelTodayCard } from './TravelPlan';
 export { default as useHiddenHelp } from './useHiddenHelp';
 export { default as SignaturePad, SavedSignature, signatureImage } from './SignaturePad';
+export { default as LockedTile } from './LockedTile';

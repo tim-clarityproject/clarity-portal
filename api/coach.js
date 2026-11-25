@@ -1,4 +1,4 @@
-// One function for 9 addresses (api/_router.js):
+// One function for 11 addresses (api/_router.js):
 // /api/coach-billing → api/_routes/coach-billing.js
 // /api/coach-calendar → api/_routes/coach-calendar.js
 // /api/coach-calendar-connect → api/_routes/coach-calendar-connect.js
@@ -8,6 +8,8 @@
 // /api/coach-email-in → api/_routes/coach-email-in.js
 // /api/agreement-sign → api/_routes/agreement-sign.js (a client signs; the signed PDF is made and kept)
 // /api/agreement-pdf → api/_routes/agreement-pdf.js (a signed agreement's kept PDF, for its client or coach)
+// /api/coach-agreements → api/_routes/coach-agreements.js (Phase 6b run 3: sending, reminders, changes, cancelling)
+// /api/agreement-settle → api/_routes/agreement-settle.js (Phase 6b run 3: the client's first payment at signing)
 import coachBilling from './_routes/coach-billing.js';
 import coachCalendar from './_routes/coach-calendar.js';
 import coachCalendarConnect from './_routes/coach-calendar-connect.js';
@@ -17,6 +19,8 @@ import coachAuthReset from './_routes/coach-auth-reset.js';
 import coachEmailIn from './_routes/coach-email-in.js';
 import agreementSign from './_routes/agreement-sign.js';
 import agreementPdf from './_routes/agreement-pdf.js';
+import coachAgreements from './_routes/coach-agreements.js';
+import agreementSettle from './_routes/agreement-settle.js';
 import { route } from './_router.js';
 
 export const config = { maxDuration: 60 };
@@ -31,4 +35,6 @@ export default route({
   'coach-email-in': coachEmailIn,
   'agreement-sign': agreementSign,
   'agreement-pdf': agreementPdf,
+  'coach-agreements': coachAgreements,
+  'agreement-settle': agreementSettle,
 });

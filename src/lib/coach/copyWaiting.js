@@ -8,7 +8,10 @@ export const READ_ONLY_TABLES = new Set(['coach_sessions_older', 'activity_log',
   'coach_cal_reminder_sends', 'coach_email_addresses',
   // 061 (Phase 6b run 1): only the server writes invoices, payments, credit notes and reminders; a change request is
   // the client's (the coach answering one isn't built yet).
-  'invoices', 'payments', 'credit_notes', 'invoice_reminders', 'agreement_change_requests']);
+  'invoices', 'payments', 'credit_notes', 'invoice_reminders', 'agreement_change_requests',
+  // 065 (Phase 6b run 3): first opens, signing and first-payment reminders, cancellations within 14 days and invoice
+  // sources are the server's to write.
+  'agreement_link_opens', 'agreement_reminders', 'agreement_cancellations', 'invoice_sources']);
 
 const obj = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 

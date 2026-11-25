@@ -33,6 +33,8 @@ export const SETTINGS_SECTIONS = [
   { key: 'hours', label: 'Working hours' },
   { key: 'zones', label: 'Time zones' },
   { key: 'calendars', label: 'My calendars' },
+  // Phase 6b run 3 (M28 s-packages): packages, standard wording, extras, your signature and talking points.
+  { key: 'agreements', label: 'Agreements' },
   { key: 'email', label: 'Email', owner: true, wired: false },
   { key: 'tags', label: 'Tags and fields' },
   { key: 'layouts', label: 'Note layouts', owner: true, wired: false },
@@ -43,7 +45,24 @@ export const SETTINGS_SECTIONS = [
 
 export const COACH_NAME = 'Clarity Coach';
 
+// Pages named by their address's end (Phase 6b run 3): read before TITLES, whose matches are by the start.
+const ENDINGS = [
+  [/^\/coach\/organisations\/[^/]+\/billing$/, 'Billing'],
+  [/^\/coach\/organisations\/[^/]+\/invoices\/new$/, 'New invoice'],
+  [/^\/coach\/agreements\/new$/, 'New agreement'],
+  [/^\/coach\/agreements\/[^/]+\/edit$/, 'Agreement builder'],
+  [/^\/coach\/agreements\/[^/]+\/clauses(\/[^/]+)?$/, 'Clauses'],
+  [/^\/coach\/agreements\/[^/]+\/check$/, 'Check before sending'],
+  [/^\/coach\/agreements\/[^/]+\/preview$/, 'Preview the agreement'],
+  [/^\/coach\/agreements\/[^/]+\/sign$/, 'Sign and send'],
+  [/^\/coach\/agreements\/[^/]+\/hours$/, 'Hours log'],
+  [/^\/coach\/settings\/agreements\/wording(\/.*)?$/, 'Standard wording'],
+];
+
 const TITLES = [
+  ['/coach/agreements', 'Agreement'],
+  ['/coach/what-to-say', 'What to say'],
+  ['/coach/invoices', 'Invoice'],
   ['/coach/clients/past', 'Past clients'],
   ['/coach/leads/cold', 'Cold leads'],
   ['/coach/leads/automations', 'Automations'],
@@ -70,6 +89,8 @@ const TITLES = [
 export function coachTitle(pathname) {
   const path = String(pathname || '').replace(/\/+$/, '');
   if (path === '/coach') return `Today, ${COACH_NAME}`;
+  const ending = ENDINGS.find(([re]) => re.test(path));
+  if (ending) return `${ending[1]}, ${COACH_NAME}`;
   const hit = TITLES.find(([p]) => path === p || path.startsWith(`${p}/`));
   return hit ? `${hit[1]}, ${COACH_NAME}` : COACH_NAME;
 }

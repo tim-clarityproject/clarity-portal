@@ -12,7 +12,8 @@ test('amounts and rates: £18,000, £3,000.50, $1,250, and rates with no spaces 
   assert.equal(m.rateWords(86000, 'month'), '£860/month');
   assert.equal(m.rateWords(20000, 'session', 'USD'), '$200/session');
   assert.equal(m.moneyWords(94000, 'EUR'), '€940', 'euros, for a one-off invoice (run 2)');
-  assert.throws(() => m.moneyWords(100, 'JPY'));
+  assert.equal(m.moneyWords(300000, 'JPY'), '¥300,000', 'yen has no minor unit (065: every currency an agreement may be in)');
+  assert.throws(() => m.moneyWords(100, 'XYZ'));
   assert.throws(() => m.rateWords(100, 'week'));
 });
 

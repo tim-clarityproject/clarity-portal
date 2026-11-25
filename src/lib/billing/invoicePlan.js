@@ -56,3 +56,10 @@ export function lateCancelInvoice({ rateMinor, coaching = 'Coaching session', se
 
 /** Expenses as their own invoice, or as lines for the next one: each at cost, named and dated. */
 export const expenseLines = (expenses) => (expenses || []).filter((e) => !e.invoice_id).map((e) => ({ description: `${e.description}, ${e.spent_on}`, amount: Number(e.amount_minor) }));
+
+// ---------------------------------------------------------------- Phase 6b run 3 (065)
+// The four ways of settling and the 5% up front (brief items 4, 8 and 37): a deposit then 5 monthly instalments, as
+// delivered, a retainer monthly or 6 months up front, a one-off after the work, a block of hours. Worked out in
+// src/lib/agreements/settling.js (schedule), shared with the quote, the signing block and the settle step, so the
+// invoices drafted always match what the client chose. Each: { n, of, day, amount, kind } with 065's invoice kinds.
+export { schedule as invoicesForAgreement, firstPayment } from '../agreements/settling.js';

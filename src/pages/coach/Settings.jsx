@@ -25,6 +25,7 @@ import { CALENDAR_GROUPS } from '../../lib/coach/googleBusy';
 import { EMAIL_SETTINGS, GMAIL_WORDS } from '../../lib/coach/crm';
 import { setEmailStandIn, useEmailAddresses } from './crmParts';
 import './crm.css';
+import AgreementSettings from './agreements/AgreementSettings';
 
 // Settings, two panes (M11, version 3.4): on a laptop the list of sections
 // on the left and the chosen one on the right; on a phone the list, and
@@ -831,7 +832,7 @@ function Look() {
   );
 }
 
-const PANES = { you: YourDetails, away: AwayAndCover, notifications: Notifications, booking: BookingSettings, hours: WorkingHours, zones: TimeZones, calendars: Calendars, email: Email, tags: TagsAndFields, layouts: NoteLayouts, coaches: Coaches, log: ActivityLog, look: Look };
+const PANES = { you: YourDetails, away: AwayAndCover, notifications: Notifications, booking: BookingSettings, hours: WorkingHours, zones: TimeZones, calendars: Calendars, agreements: AgreementSettings, email: Email, tags: TagsAndFields, layouts: NoteLayouts, coaches: Coaches, log: ActivityLog, look: Look };
 
 export default function Settings() {
   const { isOwner } = useCoachPortal();

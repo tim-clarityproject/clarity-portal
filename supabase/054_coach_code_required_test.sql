@@ -110,6 +110,7 @@ declare
     'booking_mine', 'booking_page', 'poll_page',                       -- public pages: the coach's first name only
     'proposal_open',                                                   -- 062: a proposal's share link, its own words and the coach's first name
     'client_invite_link_state',                                        -- 064: a set-up link's state, open or ended, and the coach's first name
+    'quote_open', 'sponsor_link_open',                                 -- 065: a quote's and a sponsor's signing link, the page's own words and figures and the coach's first name
     'coach_auth_state',                                                -- the sign-in screens, before the code
     'my_coach', 'my_coach_invites', 'my_cover_asks', 'my_session_recaps',
     'my_sessions_coming', 'my_suggestions', 'my_view_asks',            -- a client's own coaching
@@ -275,6 +276,8 @@ begin
       format('select public.client_invite(%L)', p_sam), format('select public.session_send_recap(%L)', sess_m),
       format('select public.client_invite_link(%L)', p_sam), format('select public.session_recap_readers(%L)', sess_m),
       format('select public.coach_admin_agreements(%L)', p_sam),
+      format('select public.agreement_for_approval(%L)', gen_random_uuid()), format('select public.agreement_approve(%L, true)', gen_random_uuid()),
+      'select public.coach_fx_rates()',
       format('select public.session_recap_people(%L)', sess_m), format('select public.session_recap_email_claim(%L)', sess_m),
       format('select public.workshop_follow_up_claim(%L)', gen_random_uuid()),
       format('select public.client_delete(%L, ''Sam Invented'')', p_sam),
@@ -352,6 +355,12 @@ begin
                              format('select public.workshop_page(%L)', gen_random_uuid()), format('select public.workshop_survey(%L)', gen_random_uuid())] loop
       f := f || pg_temp.t_eq('6a signed out: ' || q, (select case when x like 'error%' then x else 'ok' end from pg_temp.t_n(q) x), 'ok');
     end loop;
+    -- 065's two public pages (a quote's link, a sponsor's signing link), where 065 has run.
+    if to_regprocedure('public.quote_open(text)') is not null then
+      foreach q in array array[format('select public.quote_open(%L)', repeat('a', 64)), format('select public.sponsor_link_open(%L)', repeat('b', 64))] loop
+        f := f || pg_temp.t_eq('6b signed out: ' || q, (select case when x like 'error%' then x else 'ok' end from pg_temp.t_n(q) x), 'ok');
+      end loop;
+    end if;
 
     -- ---------------------------------------------------------------- 7. who sees what, at aal2, as before
     perform pg_temp.t_as(maya_u, 'aal2');

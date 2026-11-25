@@ -32,6 +32,7 @@ import { deviceZone } from '../../lib/time';
 import { TagsPanel } from './ClientPanels';
 import { FieldPanel } from './Settings';
 import NameNote from './NameNote';
+import AgreementFold from './agreements/AgreementFold';
 import { countFigure, countWords } from '../../lib/coach/numbers';
 
 // A client's page (M11: Sam, Leo, Marcus, Priya and Jordan). Overview is
@@ -589,6 +590,9 @@ export default function ClientPage() {
                 <div className="cc-acts"><TextLink onClick={() => fileRef.current?.click()}>Add file</TextLink></div>
                 <input ref={fileRef} className="cc-hidden-file" type="file" multiple tabIndex={-1} aria-hidden="true" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
               </Fold>
+              {/* Phase 6b run 3: Group B's fold (New agreement, Send a quote, Sent, Opened, Signed, Settled) around run 1's. */}
+              <AgreementFold profileId={id} name={profile?.name} first={first} fold={fold} loading={agreementLoading}
+                openAgreement={() => (fold?.signed ? openSignedAgreement(fold.version, toast, () => setPanel('agreement')) : setPanel('agreement'))}>
               {(fold || agreementLoading) && (
                 <Fold
                   title="Agreement"
@@ -606,6 +610,7 @@ export default function ClientPage() {
                   )}
                 </Fold>
               )}
+              </AgreementFold>
               {/* On a first visit the agreement is read with the rest: the folds after it wait with it, so its place
                   going when there is none never moves a fold drawn under it (tidy follow-up 4, part 2, item 1). */}
               {!agreementLoading && (

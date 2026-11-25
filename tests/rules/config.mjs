@@ -195,6 +195,12 @@ export const LOCKED_TABLES = [
     make: ({ n }) => `insert into public.migration_log (name) values ('rules-test-' || ${n})`,
     change: 'note = t.note',
   },
+  {
+    table: 'fx_reference_rates', // 065: the daily reference rates, the server's alone (read through coach_fx_rates)
+    ifExists: true,
+    make: ({ n }) => `insert into public.fx_reference_rates (day, currency, units_per_gbp, source) values (date '2000-01-01' + ${n}, 'EUR', 1.19, 'ECB')`,
+    change: 'units_per_gbp = t.units_per_gbp',
+  },
   ...PHASE1_LOCKED_TABLES,
   ...GUEST_LOCKED_TABLES,
 ];
@@ -203,6 +209,22 @@ export const LOCKED_TABLES = [
 // Functions the app (or anyone with the public key) could call directly.
 // `call` is a harmless call; inside the test everything is undone anyway.
 export const FUNCTIONS = [
+  // 065 (Phase 6b run 3): a quote's and a sponsor's link pages are open to anyone with a link; taking a quote number,
+  // accepting a quote, a sponsor's signing and the Fathom mark are the server's alone; a block of hours is a client's own.
+  { sig: 'quote_open(text)', ifExists: true, call: "select public.quote_open(repeat('a', 64))", access: ANYONE,
+    note: 'A quote\'s private link: its own words and figures only, the first open recorded (065).' },
+  { sig: 'sponsor_link_open(text)', ifExists: true, call: "select public.sponsor_link_open(repeat('b', 64))", access: ANYONE,
+    note: 'A sponsor\'s signing link: the sponsor agreement only (065).' },
+  { sig: 'quote_take_number(uuid)', ifExists: true, call: 'select public.quote_take_number(gen_random_uuid())', access: NOBODY,
+    note: 'Gives a quote its Q- number at Send: the server only (065).' },
+  { sig: 'quote_accept(text,text[],text,jsonb,bigint)', ifExists: true, call: "select public.quote_accept(repeat('a', 64), '{}', null, '[]', 0)", access: NOBODY,
+    note: 'Turns a quote into the agreement: the server only, which writes the wording (065).' },
+  { sig: 'sponsor_sign(text,text,text,text,text,text,text)', ifExists: true, call: "select public.sponsor_sign(repeat('b', 64), 'Rules Test', null, null, null, 'Rules Test', 'x')", access: NOBODY,
+    note: 'A sponsor signs by their link: through the server only (065).' },
+  { sig: 'session_mark_from_fathom(uuid)', ifExists: true, call: 'select public.session_mark_from_fathom(gen_random_uuid())', access: NOBODY,
+    note: 'A Fathom summary marks a session as happened: the server only (065; wired in 6c).' },
+  { sig: 'my_hours()', ifExists: true, call: 'select public.my_hours()', access: SIGNED_IN,
+    note: 'A client\'s own blocks of hours; nothing for anyone signed out (065).' },
   { sig: 'alignment_list()', call: 'select count(*) from public.alignment_list()', access: NOBODY,
     note: 'Lists every Health Check: Tim only, in the SQL editor (018).' },
   { sig: 'create_alignment_session(text,text)', call: "select public.create_alignment_session('Rules test', 'rules-test@example.invalid')", access: NOBODY,

@@ -142,6 +142,22 @@ export const TABLES = {
   // One statement an associate and month (062's unique key), so two devices marking the same month paid write the
   // same row (break-it tester, 6b run 2).
   associate_statements: ['associate_id', 'month'],
+  // Agreements, quotes and invoicing, the engine (migration 065; Phase 6b run 3). The coach's own extras, quotes,
+  // organisations' billing profiles and evidence, talking points and Needs you; the owner's standard wording (insert
+  // only); and what the server writes for the coach to read (first opens, signing and first-payment reminders,
+  // cancellations within 14 days, invoice sources). Talking points, Needs you, extras and billing profiles are one row
+  // a coach and key (065's unique keys), so two tabs or devices always write the same row.
+  agreement_clause_standards: ['id'],
+  agreement_extras: ['coach_id', 'key'],
+  agreement_quotes: ['id'],
+  agreement_link_opens: ['id'],
+  agreement_reminders: ['id'],
+  agreement_cancellations: ['id'],
+  org_billing_profiles: ['coach_id', 'organisation_id'],
+  invoice_evidence: ['id'],
+  invoice_sources: ['id'],
+  talking_points: ['coach_id', 'moment'],
+  needs_you_done: ['coach_id', 'item_key'],
   // Kept on the device only, never read or sent as a table (057): what the database said of the sessions it didn't
   // send on a first load (sessionsOlder below). One row, key 'older'.
   coach_sessions_older: ['key'],
@@ -181,6 +197,25 @@ export const FINANCE_TABLES = new Set(['finance_settings', 'finance_targets', 'f
   'bank_balance_checks', 'company_deadlines', 'pricing_packages', 'pricing_changes', 'discounts', 'proposals', 'supplier_pack_items',
   'purchase_orders', 'associate_statements']);
 const FINANCE_ASSOCIATE = new Set(['associate_statements']);
+// The tables of migration 065 (agreements, quotes and invoicing; Phase 6b run 3). Until Tim has run it they are left out
+// of every read and kept on the device only, in the same way. 065 needs 061 and 062, so it is looked for once 061 is
+// there (coach065Ready).
+export const AGREEMENT_TABLES = new Set(['agreement_clause_standards', 'agreement_extras', 'agreement_quotes', 'agreement_link_opens',
+  'agreement_reminders', 'agreement_cancellations', 'org_billing_profiles', 'invoice_evidence', 'invoice_sources', 'talking_points', 'needs_you_done']);
+// Columns only migration 065 adds to an older table: left out of a save until it is there (the row stays marked unsent,
+// so the device's copy stays in front and the whole row goes once 065 is there), as 052's CRM_COLUMNS.
+export const COLUMNS_065 = {
+  agreements: ['agreement_kind', 'package_id', 'approval', 'approval_note', 'approved_by', 'approved_at', 'paused_from', 'paused_to', 'ending_on',
+    'ending_by', 'team_parent_id'],
+  agreement_versions: ['overrides', 'send_as', 'personal_note', 'expires_on', 'start_now', 'start_now_at', 'settle_choice', 'sponsor_signed_at',
+    'sponsor_name', 'sponsor_role', 'sponsor_email', 'sponsor_po'],
+  pricing_packages: ['agreement_kind', 'defaults', 'personal_note'],
+  coach_sessions: ['outcome_source', 'outcome_at'],
+};
+// A 065 column holding its default (or nothing) is no change at all, so a row holding only that is sent whole as before.
+const DEFAULT_065 = { agreement_kind: 'sessions', approval: 'not_needed', send_as: 'agreement' };
+const isDefault065 = (c, v) => v == null || DEFAULT_065[c] === v || (c === 'overrides' && typeof v === 'object' && !Object.keys(v).length)
+  || (c === 'defaults' && typeof v === 'object' && !Object.keys(v).length);
 /** Whether this account is the owner, from the role this device last read (role.js keeps it) or the app's opening read. */
 function ownerHere(userId) {
   const kept = readJson(deviceKey('cache', userId, 'coach-role'));
@@ -206,7 +241,8 @@ const PARENT_COLUMNS = { coach_cal_items: ['series_id', 'travel_for'], coach_lea
 const READ_ONLY = READ_ONLY_TABLES; // copyWaiting.js, so Sign out can count what waits without this module
 // Tables a coach may add to but never change: a save is sent as "add it
 // unless it is there" (a plain upsert would need the right to change rows).
-const ADD_ONLY = new Set(['client_files', 'client_view_requests', 'coach_automation_runs', 'coach_email_links']);
+// 065's standard wording is insert only: a new standard is a new version, never a change to one (agreements link to it).
+const ADD_ONLY = new Set(['client_files', 'client_view_requests', 'coach_automation_runs', 'coach_email_links', 'agreement_clause_standards']);
 // Rows 059 makes room for in a table that is already there (run 8's 3, the keep-in-touch automation): 052 refuses
 // the trigger 'catch_up_due', so until 059 is there the automation and its runs ("catchup:..." keys) stay on the
 // device only, quietly, unsent, and go across once it is (moveAcross). Its to-dos are plain to-dos and go at once.
@@ -228,6 +264,7 @@ const CRM_NOT_YET_KEY = 'clarity-coach-crm-not-yet';
 const NOT_YET_059_KEY = 'clarity-coach-059-not-yet';
 const NOT_YET_061_KEY = 'clarity-coach-061-not-yet';
 const NOT_YET_062_KEY = 'clarity-coach-062-not-yet';
+export const NOT_YET_065_KEY = 'clarity-coach-065-not-yet';
 const NOT_YET_MS = 60 * 60 * 1000;
 const LOCAL = 'coach-local';
 
@@ -860,6 +897,8 @@ export function startProbes() {
   PROBE_TABLES.forEach((t, i) => { if (known[i] !== true && !notYet(keys[i])) probe(t); });
   // 062 (Finances) is looked for beside them, but only by the owner's portal (coach062Ready).
   if (ready062Now !== true && !notYet(NOT_YET_062_KEY) && ownerAsked) probe('finance_settings');
+  // 065 (agreements, quotes and invoicing) beside them too, for every coach (coach065Ready).
+  if (ready065Now !== true && !notYet(NOT_YET_065_KEY) && ready061Now === true) probe('agreement_extras');
 }
 
 /**
@@ -1067,9 +1106,39 @@ export async function coach062Ready(owner = ownerAsked) {
 }
 export const coach062ReadyNow = () => ready062Now;
 
+let ready065Now = null;
+let asking065 = null;
+
+/**
+ * Whether migration 065 is there (Phase 6b run 3: agreements, quotes and invoicing): true, false (not yet) or null
+ * (can't be told). Asked only once 061 is there (065 needs 061 to 064), and "not yet" is remembered for an hour, as
+ * above. It looks for agreement_extras, which every coach reads (their own).
+ */
+export async function coach065Ready() {
+  if (ready065Now === true) return true;
+  if ((await coach061Ready()) !== true) return coach061ReadyNow() === false ? false : null;
+  if (notYet(NOT_YET_065_KEY)) { ready065Now = false; return false; }
+  if (!asking065) {
+    asking065 = (async () => {
+      try {
+        const there = await probe('agreement_extras');
+        if (there === false) noteNotYet(true, NOT_YET_065_KEY);
+        if (there === true) noteNotYet(false, NOT_YET_065_KEY);
+        if (there !== null) ready065Now = there;
+        return there;
+      } catch {
+        return null;
+      }
+    })().finally(() => { asking065 = null; });
+  }
+  return asking065;
+}
+export const coach065ReadyNow = () => ready065Now;
+
 /** Is this table's home in the database yet? */
 async function tableThere(table) {
   if ((await coachReady()) !== true) return false;
+  if (AGREEMENT_TABLES.has(table)) return (await coach065Ready()) === true;
   if (FINANCE_TABLES.has(table)) return (await coach062Ready()) === true;
   if (BILLING_TABLES.has(table)) return (await coach061Ready()) === true;
   if (BUSY_TABLES.has(table)) return (await coach059Ready()) === true;
@@ -1088,11 +1157,13 @@ const SET_BY_DB = { client_profiles: ['user_id'] };
 const forDb = (table, row) => Object.fromEntries(Object.entries(row).filter(([c]) => !DB_ONLY.includes(c)
   && !SET_BY_DB[table]?.includes(c)
   && !(dayReadyNow !== true && DAY_COLUMNS[table]?.includes(c))
-  && !(crmReadyNow !== true && CRM_COLUMNS[table]?.includes(c))));
+  && !(crmReadyNow !== true && CRM_COLUMNS[table]?.includes(c))
+  && !(ready065Now !== true && COLUMNS_065[table]?.includes(c))));
 export const rowForDb = forDb;
 /** Does this row hold something of 052's that the database can't take yet? */
-const heldBack = (table, row) => crmReadyNow !== true && Boolean(CRM_COLUMNS[table]?.some((c) => row[c] != null && !(c === 'currency' && row[c] === 'GBP')
-  && !(c === 'crm' && Object.keys(row[c] || {}).length === 0)));
+const heldBack = (table, row) => (crmReadyNow !== true && Boolean(CRM_COLUMNS[table]?.some((c) => row[c] != null && !(c === 'currency' && row[c] === 'GBP')
+  && !(c === 'crm' && Object.keys(row[c] || {}).length === 0))))
+  || (ready065Now !== true && Boolean(COLUMNS_065[table]?.some((c) => !isDefault065(c, row[c]))));
 
 async function send(userId, table, row, { basedOn = null, fresh = false } = {}) {
   const k = keyOf(table, row);
@@ -1615,9 +1686,9 @@ const calLoaded = new Map(); // account -> [[fromMs, toMs]] of the calendar read
 const calAsking = new Map();
 const laterDone = new Set(); // accounts whose LATER tables have been read this visit
 
-function tablesThere(dayThere, calThere, crmThere, there059 = false, there061 = false, there062 = false, owner = false) {
+function tablesThere(dayThere, calThere, crmThere, there059 = false, there061 = false, there062 = false, owner = false, there065 = false) {
   return Object.keys(TABLES).filter((t) => !DEVICE_ONLY.has(t) && (dayThere || !DAY_TABLES.has(t)) && (calThere || !CAL_TABLES.has(t)) && (crmThere || !CRM_TABLES.has(t))
-    && (there059 || !BUSY_TABLES.has(t)) && (there061 || !BILLING_TABLES.has(t))
+    && (there059 || !BUSY_TABLES.has(t)) && (there061 || !BILLING_TABLES.has(t)) && (there065 || !AGREEMENT_TABLES.has(t))
     && (!FINANCE_TABLES.has(t) || (there062 && (owner || FINANCE_ASSOCIATE.has(t)))));
 }
 
@@ -1634,7 +1705,7 @@ export function loadCoachLater(userId) {
   return new Promise((resolve) => {
     whenIdle(async () => {
       try {
-        const names = tablesThere(dayReadyNow === true, calReadyNow === true, crmReadyNow === true, ready059Now === true, ready061Now === true, ready062Now === true, ownerHere(userId));
+        const names = tablesThere(dayReadyNow === true, calReadyNow === true, crmReadyNow === true, ready059Now === true, ready061Now === true, ready062Now === true, ownerHere(userId), ready065Now === true);
         const since = readBegins();
         const split = laterSplit.get(userId) ?? null;
         // The older sessions last: what pages show from the later tier (a client's notes) isn't kept waiting behind them.
@@ -1875,6 +1946,8 @@ export function loadCoach(userId, { again = false } = {}) {
     const owner = ownerHere(userId);
     if (owner) ownerAsked = true;
     const there062 = there061 && (await coach062Ready(owner)) === true;
+    // 065's agreement tables are small too, and come with the first load once it is there (needs 061 and 062).
+    const there065 = there061 && (await coach065Ready()) === true;
     const nowMs = Date.now();
     // 057: the sessions are split at the calendar's window (see coach_sessions_start above).
     let split = splitWanted(dayThere) ? nowMs - CAL_BACK_DAYS * DAY_MS : null;
@@ -1919,7 +1992,7 @@ export function loadCoach(userId, { again = false } = {}) {
         if (gen !== generation) return null;
       }
     }
-    const first = plans(tablesThere(dayThere, calThere, crmThere, there059, there061, there062, owner), nowMs, 'first', { split });
+    const first = plans(tablesThere(dayThere, calThere, crmThere, there059, there061, there062, owner, there065), nowMs, 'first', { split });
     const since = readBegins();
     let db;
     let start = null;
@@ -2124,6 +2197,7 @@ export function resetCoachStoreForTests() {
   ready059Now = null;
   ready061Now = null;
   ready062Now = null;
+  ready065Now = null;
   ownerAsked = false;
   crmReadyNow = null;
 }

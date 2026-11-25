@@ -12,6 +12,7 @@ import { ColdPanel, EditLeadPanel, EmailPanel, LeadNotePanel, LogCallPanel, Wher
 import { TagsPanel } from './ClientPanels';
 import { FieldPanel } from './Settings';
 import './leads.css';
+import { AgreementButtons } from './agreements/AgreementStart';
 
 // A lead's own page (M11 seq 77: "A lead", "A lead with emails", "A lead:
 // where they are"): who they are and how to reach them (Email and WhatsApp
@@ -103,6 +104,8 @@ export default function LeadPage() {
           {!won && !cold && <TextLink onClick={() => actions.won(lead)}>Mark as won</TextLink>}
           {!won && <TextLink onClick={() => navigate('/coach/calendar/book', { state: { title: lead.name } })}>Booking link</TextLink>}
         </div>
+        {/* Phase 6b run 3: Group B's Send a quote (a lead becomes a client first, risk 12). */}
+        <AgreementButtons kind="lead" id={lead.id} name={lead.name} />
 
         {!won && (
           <section className="ds-section cc-part">

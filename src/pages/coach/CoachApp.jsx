@@ -84,6 +84,20 @@ const Network = part(() => import('./Network'));
 const OpenForCalls = part(() => import('./OpenForCalls'));
 const PollPage = part(() => import('./PollPage'));
 const Finances = part(() => import('./Finances'));
+// Agreements, quotes and invoicing (Phase 6b run 3): Group B's starting, building and sending, Group D's agreement page,
+// hours log and organisations' invoicing.
+const AgreementStart = part(() => import('./agreements/AgreementStart'));
+const AgreementBuilder = part(() => import('./agreements/Builder'));
+const AgreementClauses = part(() => import('./agreements/Clauses'));
+const AgreementCheck = part(() => import('./agreements/CheckSend'));
+const AgreementPreview = part(() => import('./agreements/Preview'));
+const AgreementSign = part(() => import('./agreements/SignSend'));
+const AgreementPage = part(() => import('./agreements/AgreementPage'));
+const HoursLog = part(() => import('./agreements/HoursLog'));
+const WhatToSay = part(() => import('./agreements/WhatToSay'));
+const OrgBilling = part(() => import('./orgBilling/OrgBilling'));
+const NewInvoice = part(() => import('./orgBilling/NewInvoice'));
+const InvoiceSent = part(() => import('./orgBilling/InvoiceSent'));
 const BriefPanel = lazy(() => import('./Brief').then((m) => ({ default: m.BriefPanel || m.default })));
 // The menu and search (frameParts.jsx), and the automations and emails arriving (crmParts.jsx, the owner's): their own
 // parts, asked for once the frame has drawn, so a first visit never waits for search's index, the CRM's code or
@@ -583,6 +597,23 @@ export default function CoachApp() {
         {/* Finances (Phase 6b run 2) are the owner's alone: an associate is sent to their own Today, as M11 does. */}
         <Route path="finances" element={isOwner ? <Finances /> : <Navigate to="/coach" replace />} />
         <Route path="finances/:tab" element={isOwner ? <Finances /> : <Navigate to="/coach" replace />} />
+        {/* Agreements, quotes and invoicing (Phase 6b run 3; M28 version 4). Organisations' billing and invoices are the
+            owner's, as an organisation's page is. */}
+        <Route path="agreements/new" element={<AgreementStart />} />
+        <Route path="agreements/:id" element={<AgreementPage />} />
+        <Route path="agreements/:id/edit" element={<AgreementBuilder />} />
+        <Route path="agreements/:id/clauses" element={<AgreementClauses />} />
+        <Route path="agreements/:id/clauses/:key" element={<AgreementClauses />} />
+        <Route path="agreements/:id/check" element={<AgreementCheck />} />
+        <Route path="agreements/:id/preview" element={<AgreementPreview />} />
+        <Route path="agreements/:id/sign" element={<AgreementSign />} />
+        <Route path="agreements/:id/hours" element={<HoursLog />} />
+        <Route path="what-to-say" element={<WhatToSay />} />
+        <Route path="settings/agreements/wording/:kind" element={<AgreementClauses standard />} />
+        <Route path="settings/agreements/wording/:kind/:key" element={<AgreementClauses standard />} />
+        <Route path="organisations/:id/billing" element={isOwner ? <OrgBilling /> : <Navigate to="/coach/clients" replace />} />
+        <Route path="organisations/:id/invoices/new" element={isOwner ? <NewInvoice /> : <Navigate to="/coach/clients" replace />} />
+        <Route path="invoices/:id" element={<InvoiceSent />} />
         <Route path="calendar" element={<Calendar />} />
         {/* Booking (run 3, step 4): Book a call is a side panel over the calendar; Offer times by email and a poll's times
             are picked on the calendar itself; Open for calls and a poll are their own pages. */}

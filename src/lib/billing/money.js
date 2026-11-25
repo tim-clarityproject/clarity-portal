@@ -1,4 +1,5 @@
 import { addDays, dayIn, daysBetween, dayKeyWords, isZone } from '../time/index.js';
+import { CURRENCY, CURRENCY_LIST } from '../agreements/currency.js';
 
 // Money for coaching (Phase 6b run 1; Tim's money rules, 23 Nov 2026). Plain rules with no database or Stripe, shared by
 // the coach portal, the client's pages, the server and the PDFs, and checked by tests/performance/billing-money.test.mjs.
@@ -14,8 +15,13 @@ import { addDays, dayIn, daysBetween, dayKeyWords, isZone } from '../time/index.
 // - No late fees or interest, ever, and a missed instalment never pauses coaching sessions by itself.
 // - A discount is never a cheaper price: it is its own named line under the full price.
 
-// Euros are for a one-off invoice only (M11's New invoice); agreements stay in pounds or dollars.
-export const CURRENCIES = Object.freeze({ GBP: { symbol: '£', name: 'pounds' }, USD: { symbol: '$', name: 'dollars' }, EUR: { symbol: '€', name: 'euros' } });
+// Pounds, dollars and euros as run 1 and 2 write them; since Phase 6b run 3 (065) every currency an agreement may be in
+// (src/lib/agreements/currency.js: M28's 15, the ECB's list and the dirham), each with its own minor unit (yen has none).
+// The agreement screens write money through currency.js's moneyText ("US$1,250", as M28 does).
+export const CURRENCIES = Object.freeze({
+  ...Object.fromEntries(CURRENCY_LIST.map((c) => [c, { symbol: CURRENCY[c].symbol, name: CURRENCY[c].name, exponent: CURRENCY[c].exponent }])),
+  GBP: { symbol: '£', name: 'pounds', exponent: 2 }, USD: { symbol: '$', name: 'dollars', exponent: 2 }, EUR: { symbol: '€', name: 'euros', exponent: 2 },
+});
 export const FIRST_INVOICE_NUMBER = 1201;
 export const TERMS_DAYS = Object.freeze({ person: 14, organisation: 30 });
 /** Days overdue at which a reminder is drafted (draft-2-emails.md), and how long after the 14-day one it asks for. */
@@ -27,12 +33,13 @@ const currencyOf = (c) => (CURRENCIES[c] ? c : null);
 /** "£18,000", "£3,000.50", "$1,250": whole amounts with no pence, others with two places. Negative as "−£450". */
 export function moneyWords(minor, currency = 'GBP') {
   const c = currencyOf(currency);
-  if (!c || !Number.isFinite(Number(minor))) throw new Error('An amount needs whole minor units and a currency of GBP or USD.');
+  if (!c || !Number.isFinite(Number(minor))) throw new Error('An amount needs whole minor units and one of the currencies an agreement may be in.');
   const n = Math.round(Number(minor));
   const abs = Math.abs(n);
-  const whole = Math.floor(abs / 100);
-  const rest = abs % 100;
-  const text = `${CURRENCIES[c].symbol}${whole.toLocaleString('en-GB')}${rest ? `.${String(rest).padStart(2, '0')}` : ''}`;
+  const per = 10 ** CURRENCIES[c].exponent;
+  const whole = Math.floor(abs / per);
+  const rest = abs % per;
+  const text = `${CURRENCIES[c].symbol}${whole.toLocaleString('en-GB')}${rest ? `.${String(rest).padStart(CURRENCIES[c].exponent, '0')}` : ''}`;
   return n < 0 ? `−${text}` : text;
 }
 

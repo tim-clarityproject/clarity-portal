@@ -125,3 +125,14 @@ export const signingWords = (coachFirst) => Object.freeze({
 
 /** The PDF's details line: "[Client name], [date], reference [CLARITY-AG-0001], version [1]". */
 export const pdfDetails = ({ clientName, dayWords, reference, version }) => `${clientName}, ${dayWords}, reference ${reference}, version ${version}`;
+
+// ---------------------------------------------------------------- Phase 6b run 3 (065)
+// The five kinds' wording now lives in src/lib/agreements (standardWording.js, clauses.js): paragraphs with their
+// reasons, numbered with no gaps, the coach's own standards and each agreement's edits. A version made from 065 on
+// stores those clauses as sent (version.clauses: { key, number, title, paragraphs: [{ text, why }], money, choices? }),
+// and every page and PDF reads a version's own stored clauses. The functions above stay for versions written before
+// 065 (run 1's shape: paragraphs as plain strings), so nothing already sent or signed reads differently.
+export { buildClauses, forStorage, resolveChoice, clauseTitle, mainPoints as agreementMainPoints, teamPoints, hoursPoints } from '../agreements/clauses.js';
+export { STANDARD, clauseKeys } from '../agreements/standardWording.js';
+/** Whether a stored clause is 065's shape (paragraphs of { text, why }) rather than run 1's (plain strings). */
+export const isNewClause = (c) => Array.isArray(c?.paragraphs) && c.paragraphs.some((p) => p && typeof p === 'object' && 'text' in p);

@@ -70,6 +70,18 @@
       "destination": "/api/coach?__route=agreement-pdf"
     },
     {
+      "source": "/api/coach-agreements",
+      "destination": "/api/coach?__route=coach-agreements"
+    },
+    {
+      "source": "/api/agreement-settle",
+      "destination": "/api/coach?__route=agreement-settle"
+    },
+    {
+      "source": "/api/agreement-link",
+      "destination": "/api/guest?__route=agreement-link"
+    },
+    {
       "source": "/health-check/(.*)",
       "destination": "/health-check.html"
     },

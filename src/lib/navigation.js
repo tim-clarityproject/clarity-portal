@@ -430,6 +430,13 @@ const PAGE_NAMES = [
   ['/coaching', 'My coaching'],
   ['/coaching/agreement', 'Coaching agreement'],
   ['/coaching/billing', 'Billing'],
+  // Phase 6b run 3
+  ['/my-account/invoices', 'Invoices'],
+  ['/my-account/hours', 'Block of hours'],
+  ['/my-account/plan', 'Your plan'],
+  ['/my-account/plan/cancel', 'Cancel my plan'],
+  ['/quote', 'Your quote'],
+  ['/sign', 'Your agreement'],
   ['/peak-moments', 'Peak moments'],
   ['/peak-moments/add', 'Add peak moment'],
   ['/peak-moments/edit', 'Edit this peak moment'],

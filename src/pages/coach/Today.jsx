@@ -22,6 +22,7 @@ import { networkPath, TODAY_KEEP_IN_TOUCH, todayKeepInTouch } from '../../lib/co
 import { useNetworkDue } from './networkParts';
 import { CheckInPanel } from './pastParts';
 import './today.css';
+import NeedsYou from './needsYou/NeedsYou';
 import { countFigure } from '../../lib/coach/numbers';
 
 // Today (M11; Phase 6a run 2, step 3), top to bottom: the date and any
@@ -207,6 +208,8 @@ export default function Today() {
           <div className="cc-add"><AddButton onClick={() => setPanel('add')}>Add to-do</AddButton></div>
         </Section>
 
+        {/* Phase 6b run 3: Group D's Needs you, every drafted next step, above Who needs attention (risk 11). */}
+        <NeedsYou todayKey={todayKey} partial={partial} />
         {(attention.length > 0 || partial) && (
           <Section title="Who needs attention">
             {/* While only the first screen is here the list waits on its crosshair: overdue invoices come with the rest

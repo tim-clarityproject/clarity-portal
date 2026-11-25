@@ -19,6 +19,7 @@ import { SLEEP_SUGGESTED_LINE, rangeWords } from '../lib/performance/sleepChart'
 import { useStartChat } from '../components/coach/startChat';
 import { useCoachRole } from '../lib/coach/role';
 import { COACH_AUTH_PATHS, COACH_AUTH_WORDS } from '../lib/signIn/coachAuth';
+import MyAccountMoney from './account/MyAccountMoney';
 
 export default function MyAccount() {
   const navigate = useNavigate();
@@ -358,6 +359,9 @@ export default function MyAccount() {
           </div>
           <DashboardCustomise open={customising} onClose={() => setCustomising(false)} />
         </Section>
+
+        {/* Phase 6b run 3: Group C's Coaching, Invoices, Your plan and Block of hours rows (M28 s-acct). */}
+        <MyAccountMoney userId={user?.id} />
 
         {/* Your own questions (run 7, mock-up version 3): set here and nowhere else. */}
         <OwnQuestionsSection userId={user?.id} />

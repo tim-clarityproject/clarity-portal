@@ -59,6 +59,9 @@ const NETWORK_ONLY = [
   // The booking pages and a poll's page (Phase 6a run 3): outside the portal, and their free times are only ever fresh.
   /^\/book\//,
   /^\/poll\//,
+  // A quote's page and a sponsor's signing page (Phase 6b run 3): outside the portal, by their link, always fresh.
+  /^\/quote\//,
+  /^\/sign\//,
   /^\/design-reference(\/|$)/,
   /^\/email-preview(\/|$)/,
   /^\/auth\/callback(\/|$)/,
