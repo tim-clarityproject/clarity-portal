@@ -172,7 +172,7 @@ create table if not exists public.pricing_changes (
 create table if not exists public.discounts (
   id            uuid primary key default gen_random_uuid(),
   coach_id      uuid not null references public.coaches (id) on delete cascade,
-  name          text not null check (char_length(btrim(name)) between 1 and 80 and name !~* 'charit'),
+  name          text not null check (char_length(btrim(name)) between 1 and 80),
   percent       numeric(5, 2) check (percent is null or (percent > 0 and percent <= 100)),
   amount_minor  bigint check (amount_minor is null or amount_minor between 1 and 100000000),
   all_packages  boolean not null default true,
@@ -239,7 +239,7 @@ create table if not exists public.purchase_orders (
   finance_contact  text check (char_length(finance_contact) <= 160),
   invoice_email    text check (invoice_email is null or (char_length(invoice_email) <= 320 and invoice_email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$')),
   supplier_ref     text check (char_length(supplier_ref) <= 80),
-  portal_url       text check (portal_url is null or (char_length(portal_url) <= 500 and portal_url ~ '^https://')),
+  portal_url       text check (portal_url is null or (char_length(portal_url) <= 500 and portal_url ~ '^https://[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)+(:[0-9]{1,5})?(/[^\s"<>]*)?$')),
   status           text not null default 'open' check (status in ('open', 'closed')),
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now(),
@@ -345,14 +345,16 @@ begin
   end if;
   -- Open while sent or won, and not past its "valid until" day (London); each opening counted, and noted on its lead
   -- as "Opened your proposal" so the CRM's watch sees it (functionality tester, run 2).
-  update public.proposals set opens = opens + 1, last_opened_at = now()
+  -- Counted up to the column's limit (never an error), and noted on the lead at most once each half hour, so someone
+  -- reloading the page never floods the CRM or sets off its "opened" automation by themselves (break-it tester).
+  update public.proposals set opens = least(opens + 1, 1000000), last_opened_at = now()
   where share_token = p_token and status in ('sent', 'won')
     and (valid_until is null or valid_until >= (now() at time zone 'Europe/London')::date)
-  returning * into p;
+  returning *, (select pr.last_opened_at from public.proposals pr where pr.share_token = p_token) as was_opened_at into p;
   if not found then
     return null;
   end if;
-  if p.lead_id is not null then
+  if p.lead_id is not null and (p.was_opened_at is null or p.was_opened_at < now() - interval '30 minutes') then
     insert into public.coach_lead_events (coach_id, lead_id, kind, title, data)
     values (p.coach_id, p.lead_id, 'proposal_opened', 'Opened your proposal', jsonb_build_object('name', left(p.title, 200), 'proposal_id', p.id));
   end if;
@@ -397,6 +399,110 @@ end;
 $$;
 revoke all on function public.associate_month_minutes(date) from public, anon;
 grant execute on function public.associate_month_minutes(date) to authenticated, service_role;
+
+
+-- ---------------------------------------------------------------- the break-it tester's round (run 2, 25 Nov)
+-- Every 062 table moves updated_at on each change (049's p1_touch), so a stale tab's save is spotted and refused by the
+-- offline queue's "only if unchanged" check instead of silently undoing another device's edit.
+do $t$
+declare t text;
+begin
+  foreach t in array array['finance_settings', 'finance_targets', 'finance_outgoings', 'company_deadlines', 'pricing_packages',
+                           'discounts', 'proposals', 'supplier_pack_items', 'purchase_orders', 'associate_statements'] loop
+    execute format('drop trigger if exists %I on public.%I', t || '_touch', t);
+    execute format('create trigger %I before update on public.%I for each row execute function public.p1_touch()', t || '_touch', t);
+  end loop;
+end
+$t$;
+
+-- A discount is never called charity, however it is spelt: look-alike letters (Cyrillic, Greek, dotless i, digits)
+-- read as their Latin twins and everything but letters taken out before the check.
+create or replace function public.finance_name_says_charity(p_name text)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select regexp_replace(translate(lower(coalesce(p_name, '')), 'асеорхуіıјѕνοτ401|!$@', 'aceopxyiijsvotaoliisa'), '[^a-z]', '', 'g') ~ 'ch?ar[il]t';
+$$;
+do $c$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'discounts_never_charity') then
+    alter table public.discounts add constraint discounts_never_charity check (not public.finance_name_says_charity(name));
+  end if;
+  -- Receipts only in the coach's own folder of coach-files, as uploadReceipt names them.
+  if not exists (select 1 from pg_constraint where conname = 'finance_outgoings_receipt_path_ok') then
+    alter table public.finance_outgoings add constraint finance_outgoings_receipt_path_ok check (receipt_path is null
+      or receipt_path ~ '^[0-9a-f-]{36}/finances/[a-z_]{1,20}/[0-9a-f-]{36}-[A-Za-z0-9_.-]{1,120}$' and receipt_path !~ '\.\.');
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'payments_receipt_path_ok') then
+    alter table public.payments add constraint payments_receipt_path_ok check (receipt_path is null
+      or receipt_path ~ '^[0-9a-f-]{36}/finances/[a-z_]{1,20}/[0-9a-f-]{36}-[A-Za-z0-9_.-]{1,120}$' and receipt_path !~ '\.\.');
+  end if;
+  -- Days within reason (2000 to 2100), and a statement is never the owner's own.
+  if not exists (select 1 from pg_constraint where conname = 'associate_statements_days_ok') then
+    alter table public.associate_statements add constraint associate_statements_days_ok check (associate_id <> coach_id
+      and month between date '2000-01-01' and date '2100-12-01'
+      and (ready_on is null or ready_on between date '2000-01-01' and date '2100-12-31')
+      and (paid_on is null or paid_on between date '2000-01-01' and date '2100-12-31'));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'finance_targets_days_ok') then
+    alter table public.finance_targets add constraint finance_targets_days_ok check (month between date '2000-01-01' and date '2100-12-01');
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'finance_outgoings_days_ok') then
+    alter table public.finance_outgoings add constraint finance_outgoings_days_ok check (starts_on between date '2000-01-01' and date '2100-12-31'
+      and (ends_on is null or ends_on <= date '2100-12-31'));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'company_deadlines_days_ok') then
+    alter table public.company_deadlines add constraint company_deadlines_days_ok check (due_on between date '2000-01-01' and date '2100-12-31');
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'bank_balance_checks_days_ok') then
+    alter table public.bank_balance_checks add constraint bank_balance_checks_days_ok check (checked_on between date '2000-01-01' and date '2100-12-31');
+  end if;
+end
+$c$;
+
+-- A proposal only for the owner's own lead, client and agreement (never an associate's), and an organisation they see.
+drop policy if exists "Owner alone" on public.proposals;
+drop policy if exists "Owner alone, read" on public.proposals;
+create policy "Owner alone, read" on public.proposals for select to authenticated
+  using (coach_id = (select public.my_coach_id()) and coalesce((select public.is_owner()), false));
+drop policy if exists "Owner alone, remove" on public.proposals;
+create policy "Owner alone, remove" on public.proposals for delete to authenticated
+  using (coach_id = (select public.my_coach_id()) and coalesce((select public.is_owner()), false));
+drop policy if exists "Owner alone, own lead" on public.proposals;
+create policy "Owner alone, own lead" on public.proposals for insert to authenticated with check (
+  coach_id = (select public.my_coach_id()) and coalesce((select public.is_owner()), false)
+  and (lead_id is null or exists (select 1 from public.coach_leads l where l.id = lead_id and l.coach_id = (select public.my_coach_id())))
+  and (profile_id is null or exists (select 1 from public.client_profiles p where p.id = profile_id and p.coach_id = (select public.my_coach_id())))
+  and (agreement_id is null or exists (select 1 from public.agreements a where a.id = agreement_id and a.coach_id = (select public.my_coach_id())))
+  and (organisation_id is null or exists (select 1 from public.organisations o where o.id = organisation_id)));
+drop policy if exists "Owner alone, own lead, change" on public.proposals;
+create policy "Owner alone, own lead, change" on public.proposals for update to authenticated
+  using (coach_id = (select public.my_coach_id()) and coalesce((select public.is_owner()), false))
+  with check (
+  coach_id = (select public.my_coach_id()) and coalesce((select public.is_owner()), false)
+  and (lead_id is null or exists (select 1 from public.coach_leads l where l.id = lead_id and l.coach_id = (select public.my_coach_id())))
+  and (profile_id is null or exists (select 1 from public.client_profiles p where p.id = profile_id and p.coach_id = (select public.my_coach_id())))
+  and (agreement_id is null or exists (select 1 from public.agreements a where a.id = agreement_id and a.coach_id = (select public.my_coach_id())))
+  and (organisation_id is null or exists (select 1 from public.organisations o where o.id = organisation_id)));
+-- The share link is the database's own random token, never one the owner types.
+create or replace function public.proposals_token_guard()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if tg_op = 'UPDATE' then
+    new.share_token := old.share_token;
+  elsif current_user = 'authenticated' then
+    new.share_token := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists proposals_token_guard on public.proposals;
+create trigger proposals_token_guard before insert or update on public.proposals for each row execute function public.proposals_token_guard();
 
 -- ---------------------------------------------------------------- the owner's starting lists
 -- Each owner starts with the sectors and outgoing groups M11 draws, and the settings' defaults; nothing is added twice.
