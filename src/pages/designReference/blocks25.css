@@ -1,0 +1,96 @@
+/* The blocks gallery's own page layout (Blocks25.jsx): the reference page's
+   .ref, .sec, .lead, .field, .demo and .framedemo, so the shared parts sit
+   where the reference puts its own. Gallery only. */
+.ui-root.b25 {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+}
+
+.ui-root .b25-ref {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-5) 120px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .ui-root .b25-ref { padding: var(--space-5) var(--space-px20) 100px; }
+}
+
+.ui-root .b25-sec {
+  padding: var(--space-6) 0;
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .b25-sec > .ds-label { margin-bottom: var(--space-2); }
+
+.ui-root .b25-lead {
+  margin: 0 0 var(--space-px28);
+  color: var(--text-2);
+}
+
+.ui-root .b25-field { margin-bottom: var(--space-4); }
+
+.ui-root .b25-field > label,
+.ui-root .b25-q {
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.ui-root .b25-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-px12);
+}
+
+.ui-root .b25-mt { margin-top: var(--space-4); }
+.ui-root .b25-gap { height: var(--space-3); }
+.ui-root .b25-sm { font-size: var(--fs-meta); line-height: 1.5; color: var(--text-2); }
+
+.ui-root .b25-demo {
+  margin-bottom: var(--space-4);
+  padding: var(--space-px28);
+  border: var(--line-w) dashed var(--line);
+  border-radius: var(--radius-control);
+}
+
+.ui-root .b25-demo .ds-open { margin: 0; }
+
+.ui-root .b25-framedemo {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+}
+
+.ui-root .b25-fr {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  min-height: 420px;
+  overflow: hidden;
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-frame);
+  background: var(--card);
+}
+
+.ui-root .b25-side {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-px20) var(--space-px12);
+  border-right: var(--line-w) solid var(--line);
+}
+
+.ui-root .b25-side .ds-menu-mark { margin: var(--space-1) var(--space-2) var(--space-px20); width: 28px; height: 28px; }
+.ui-root .b25-frmain { padding: var(--space-px40); }
+
+@media (max-width: 600px) {
+  .ui-root .b25-fr { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .b25-side { display: none; }
+  .ui-root .b25-frmain { padding: var(--space-4) var(--space-px20); }
+}

@@ -34,16 +34,20 @@
   border: 0;
 }
 
-/* ---------- Crosshair: every plus, and (turned 45°) every close ---------- */
+/* ---------- Plus and close (25 Nov reference .x; polish 1, rules 9 and 10) ----------
+   A plus is two thin crossed lines (1.5px, the reference's .x), and turned
+   45 degrees it is the bare × that closes. Never the crosshair: the
+   crosshair is the brand mark (BoldCrosshair), and turns here only as the
+   loading spinner (.ds-cross--spin, drawn from the mark's own two paths). */
 
 .ui-root .ds-cross {
   display: inline-block;
   flex: none;
   width: var(--cross-sm);
   height: var(--cross-sm);
-  background-color: var(--coral-text);
-  -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
-  mask: url('/brand/crosshair_white.png') center / contain no-repeat;
+  background-color: var(--text-2);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M7 0v14M0 7h14' stroke='%23000' stroke-width='1.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M7 0v14M0 7h14' stroke='%23000' stroke-width='1.5'/%3E%3C/svg%3E") center / contain no-repeat;
   transition: transform var(--dur) var(--ease), background-color var(--dur) var(--ease);
 }
 
@@ -78,38 +82,30 @@
    use it; there is no other arrow. The disclosure arrow (ds-arrow) is
    this chevron pointing down, turning up while open. */
 
+/* The chevron (25 Nov reference .cv; polish 1, rule 8): the fine rounded
+   chevron in a 12px square, pointing right as drawn and turned for left,
+   down and up. Links that open more, Back, calendar previous and next, and
+   drop-downs (down, turning up while open). It replaces "→" everywhere. */
 .ui-root .ds-chevron {
   display: inline-block;
   flex: none;
   width: var(--arrow-size);
   height: var(--arrow-size);
   background-color: currentColor;
-  -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
-  mask: url('/brand/crosshair_white.png') center / contain no-repeat;
-  clip-path: polygon(0 0, 100% 0, 100% 100%);
-  transition: transform var(--dur-slow) var(--ease);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M4 1.5 8.5 6 4 10.5' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M4 1.5 8.5 6 4 10.5' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: transform var(--dur) var(--ease);
 }
 
 .ui-root .ds-chevron--sm {
-  width: var(--who-icon);
-  height: var(--who-icon);
+  width: var(--arrow-size);
+  height: var(--arrow-size);
 }
 
-.ui-root .ds-chevron--down {
-  transform: translateY(var(--arrow-shift)) rotate(-45deg);
-}
-
-.ui-root .ds-chevron--up {
-  transform: translateY(calc(-1 * var(--arrow-shift))) rotate(135deg);
-}
-
-.ui-root .ds-chevron--left {
-  transform: translateX(calc(-1 * var(--arrow-shift))) rotate(45deg);
-}
-
-.ui-root .ds-chevron--right {
-  transform: translateX(var(--arrow-shift)) rotate(-135deg);
-}
+.ui-root .ds-chevron--down { transform: rotate(90deg); }
+.ui-root .ds-chevron--up { transform: rotate(-90deg); }
+.ui-root .ds-chevron--left { transform: rotate(180deg); }
+.ui-root .ds-chevron--right { transform: none; }
 
 /* Windows high-contrast mode (forced colours; Tim, 12 Nov). The crosshair,
    the chevron and the ticks are a flat colour seen through a mask, and that
@@ -198,7 +194,7 @@
   --chev-nudge: 0.15px;
 }
 
-.ui-root .ds-chevron-line.ds-chevron-line--sm { width: var(--who-icon); }
+.ui-root .ds-chevron-line.ds-chevron-line--sm { width: var(--arrow-size); }
 
 /* Capitals: half the cap height (0.335em is Nekst's, for a browser without the cap unit). */
 .ui-root .ds-chevron-line.ds-chevron-line--caps { --chev-half: 0.335em; --chev-nudge: 0.38px; }
@@ -225,7 +221,7 @@
 
 /* Pointing down, the corner's strokes sit half a pixel lower in their
    square than pointing up (measured, 11 Nov): this evens them out. */
-.ui-root .ds-chevron-base > .ds-chevron.ds-chevron--down { translate: 0 calc(47.2% - var(--chev-half) + var(--chev-nudge)); }
+.ui-root .ds-chevron-base > .ds-chevron.ds-chevron--down { translate: 0 calc(50% - var(--chev-half) + var(--chev-nudge)); }
 
 /* No rounding (Tim, 12 Nov): the shift is the exact part-pixel amount, so
    the chevron stays within half a pixel of its words at every text size.
@@ -262,7 +258,7 @@
    whole screen pixels separately, so a reading can still be up to about
    half a pixel either way. */
 .ui-root .ds-chevron--block { translate: 0 calc(var(--chev-block-shift, 0px) + var(--chev-block-nudge, -0.15px)); }
-.ui-root .ds-chevron--block.ds-chevron--down { translate: 0 calc(-2.8% + var(--chev-block-shift, 0px) + var(--chev-block-nudge, -0.15px)); }
+.ui-root .ds-chevron--block.ds-chevron--down { translate: 0 calc(var(--chev-block-shift, 0px) + var(--chev-block-nudge, -0.15px)); }
 /* The week line on Home: a small label over the big figure. */
 .ui-root .ds-weekline-chevron.ds-chevron--block { --chev-block-nudge: -0.65px; --chev-block-shift: calc(0.1575 * var(--fs-meta) - 0.1725 * var(--fs-week-figure)); }
 
@@ -286,6 +282,9 @@
 }
 
 .ui-root .ds-cross--spin {
+  background-color: var(--text);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 185 185'%3E%3Cg fill='none' stroke='%23000' stroke-width='15' stroke-linejoin='round'%3E%3Cpath d='M89.5 4V68A14 14 0 0 0 103.5 82H169' transform='translate(2.65 -2.65)'/%3E%3Cpath d='M82 169V103.5A14 14 0 0 0 68 89.5H4' transform='translate(-2.65 2.65)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 185 185'%3E%3Cg fill='none' stroke='%23000' stroke-width='15' stroke-linejoin='round'%3E%3Cpath d='M89.5 4V68A14 14 0 0 0 103.5 82H169' transform='translate(2.65 -2.65)'/%3E%3Cpath d='M82 169V103.5A14 14 0 0 0 68 89.5H4' transform='translate(-2.65 2.65)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
   animation: ds-spin var(--dur-spin) var(--ease-spin) infinite;
 }
 
@@ -319,28 +318,23 @@
   gap: var(--space-px10);
   min-height: var(--btn-h) !important;
   padding: 0 var(--space-4) !important;
-  border-radius: var(--radius-pill);
-  font-family: var(--font-display);
+  border-radius: var(--radius-control);
+  font-family: var(--font-body);
   font-weight: var(--fw-regular);
   font-size: var(--fs-btn) !important;
   line-height: var(--lh-text);
   letter-spacing: var(--ls-btn);
-  text-transform: uppercase;
+  text-transform: none;
   text-align: center;
+  white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
 }
 
+/* The main button (src/styles/buttons.css holds its look): black in light, white in dark. */
 .ui-root .ds-btn--primary {
-  background: var(--coral);
-  color: var(--on-coral);
-  transition: background-color var(--dur) var(--ease);
-}
-
-/* Hover only where there is a mouse, so a tap never leaves it lit. */
-@media (hover: hover) {
-  .ui-root .ds-btn--primary:hover {
-    background: var(--coral-hover);
-  }
+  background: var(--main-bg);
+  color: var(--main-fg);
+  transition: opacity var(--dur) var(--ease);
 }
 
 .ui-root .ds-btn--primary:focus-visible {
@@ -355,13 +349,9 @@
   transition: border-color var(--dur) var(--ease);
 }
 
-.ui-root .ds-btn--outline:hover {
-  border-color: var(--coral-text);
-}
-
 .ui-root .ds-btn--outline:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
-  outline-offset: var(--space-px3);
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px2);
 }
 
 /* The add row (AddButton; Tim, 18 Nov): the list's full width, at least
@@ -370,33 +360,49 @@
    the text colour on hover and keyboard focus. No box and no outline.
    !important where src/styles/mobile.css pads and sizes every button on a
    phone. */
+/* "+ Add" (25 Nov reference .addbtn; polish 1, rule 10): 13px grey words,
+   a 10px plus (two 1.5px lines) then the underlined word, like "View all".
+   It sits at the right of a list's label (CardHead's `add`), and opens
+   Quick Add. AddButton draws this too, so every older add row now looks
+   like it wherever it still sits; the page helpers move each one up to its
+   list's label. A 44px tap area. */
 .ui-root .ds-addrow {
   all: unset;
   cursor: pointer;
   box-sizing: border-box;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  gap: var(--addrow-gap);
-  width: 100%;
-  min-height: var(--addrow-h) !important;
+  gap: var(--space-2);
+  min-height: var(--tap-min) !important;
   padding: 0 !important;
   font-family: var(--font-body);
-  font-size: var(--fs-addrow) !important;
+  font-size: var(--fs-meta) !important;
   font-weight: var(--fw-regular);
   line-height: var(--lh-tile);
   letter-spacing: normal;
   text-align: left;
+  white-space: nowrap;
   color: var(--text-2);
   transition: color var(--dur) var(--ease);
   -webkit-tap-highlight-color: transparent;
 }
 
+.ui-root .ds-addrow-words {
+  text-decoration: underline;
+  text-decoration-thickness: var(--line-w);
+  text-underline-offset: var(--space-1);
+}
+
+.ui-root .ds-addrow[aria-expanded='true'] {
+  color: var(--text);
+}
+
 .ui-root .ds-addrow-mark {
   position: relative;
   flex: none;
-  width: var(--addrow-box);
-  height: var(--addrow-box);
+  width: var(--add-plus);
+  height: var(--add-plus);
 }
 
 .ui-root .ds-addrow-mark::before,
@@ -405,10 +411,9 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: var(--addrow-cross);
+  width: var(--add-plus);
   height: var(--icon-line);
-  border-radius: var(--icon-line);
-  background: var(--coral-text);
+  background: currentColor;
   transform: translate(-50%, -50%);
 }
 
@@ -418,7 +423,7 @@
 
 .ui-root .ds-addrow:focus-visible {
   color: var(--text);
-  outline: var(--focus-w) solid var(--coral-text);
+  outline: var(--focus-w) solid var(--text);
   outline-offset: var(--space-px3);
   border-radius: var(--space-1);
 }
@@ -442,7 +447,7 @@
 
 .ui-root .ds-btn--primary[aria-disabled='true']:hover,
 .ui-root .ds-btn--primary:disabled:hover {
-  background: var(--coral);
+  background: var(--main-bg);
 }
 
 /* Text link, for minor actions. */
@@ -456,25 +461,24 @@
   min-height: var(--tap-min) !important;
   padding: 0 !important;
   font-family: var(--font-body);
-  font-size: var(--fs-secondary) !important;
+  font-size: var(--fs-text) !important;
   line-height: var(--lh-text);
   letter-spacing: normal;
-  color: var(--text-2);
+  color: var(--text);
   text-decoration: underline;
+  text-decoration-thickness: var(--line-w);
   text-underline-offset: var(--space-1);
-  text-decoration-color: var(--quiet-line);
   transition: color var(--dur) var(--ease);
   -webkit-tap-highlight-color: transparent;
 }
 
+/* A link that opens more: its chevron moves 2px on hover (25 Nov reference .lk:hover .cv). */
 @media (hover: hover) {
-  .ui-root .ds-link:hover {
-    color: var(--coral-text);
-  }
+  .ui-root .ds-link:hover .ds-chevron--right { transform: translateX(2px); }
 }
 
 .ui-root .ds-link:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
+  outline: var(--focus-w) solid var(--text);
   outline-offset: var(--space-px2);
   border-radius: var(--space-1);
 }
@@ -497,11 +501,11 @@
 }
 
 .ui-root .ds-icon-btn:hover .ds-cross--close {
-  background-color: var(--coral-text);
+  background-color: var(--text);
 }
 
 .ui-root .ds-icon-btn:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
+  outline: var(--focus-w) solid var(--text);
 }
 
 /* "How the system fits together": an icon with words (.ds-iconword--tap). */
@@ -545,7 +549,7 @@
 
 .ui-root .ds-page-header .ds-page-title {
   margin: 0 !important;
-  font-family: var(--font-display);
+  font-family: var(--font-brand);
   font-weight: var(--fw-regular);
   font-size: var(--fs-page-title) !important;
   line-height: var(--lh-title);
@@ -568,7 +572,7 @@
 .ui-root .ds-page-title-row {
   min-width: 0;
   white-space: nowrap;
-  font-family: var(--font-display);
+  font-family: var(--font-brand);
   font-size: var(--fs-page-title);
   line-height: var(--lh-title);
   letter-spacing: var(--ls-page-title);
@@ -599,9 +603,8 @@
   align-items: center;
   gap: var(--space-px2) var(--icon-item-gap);
   margin-top: var(--space-px10);
-  /* The meta line is words beside icons (design reference v15): 14px
-     in the secondary grey, items 20px apart. */
-  font-size: var(--fs-who);
+  /* The page's one grey line (25 Nov reference .lead): 16px grey. */
+  font-size: var(--fs-text);
   line-height: var(--lh-text);
   color: var(--text-2);
 }
@@ -652,7 +655,8 @@
   letter-spacing: var(--ls-section-title);
   word-spacing: normal;
   text-transform: uppercase;
-  color: var(--text);
+  /* A section label is DM Sans 13px spaced capitals in grey (25 Nov reference .t2). */
+  color: var(--text-2);
 }
 
 .ui-root .ds-section-line {
@@ -686,11 +690,11 @@
 .ui-root .ds-help-toggle:hover,
 .ui-root .ds-help-toggle:focus-visible,
 .ui-root .ds-help-toggle[aria-expanded='true'] {
-  color: var(--coral-text);
+  color: var(--text);
 }
 
 .ui-root .ds-help-toggle:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
+  outline: var(--focus-w) solid var(--text);
 }
 
 /* ---------- Stat ---------- */
@@ -816,12 +820,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.ui-root .ds-row:hover .ds-row-title {
-  color: var(--coral-text);
+@media (hover: hover) {
+  .ui-root .ds-row:hover .ds-row-title {
+    text-decoration: underline;
+    text-decoration-thickness: var(--line-w);
+    text-underline-offset: var(--space-1);
+  }
 }
 
 .ui-root .ds-row:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
+  outline: var(--focus-w) solid var(--text);
   outline-offset: var(--space-px2);
 }
 
@@ -1200,30 +1208,38 @@
   white-space: nowrap;
 }
 
-/* Stepper: minus, the count, the crosshair plus. */
+/* The counter (25 Nov reference .count): one box with the control radius,
+   40px high (44px on a phone), a 40px minus, the figure, a 40px plus. */
 .ui-root .ds-stepper {
   display: inline-flex;
   align-items: center;
+  box-sizing: border-box;
+  height: var(--btn-h);
   border: var(--line-w) solid var(--field-line);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-stepper { height: var(--btn-h-phone); }
 }
 
 .ui-root .ds-stepper-btn {
   all: unset;
   cursor: pointer;
   box-sizing: border-box;
-  width: var(--tap-min);
-  height: var(--tap-min);
-  min-height: var(--tap-min) !important;
+  width: var(--btn-h);
+  height: 100%;
+  min-height: 0 !important;
   padding: 0 !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-pill);
+  border-radius: 0;
   font-family: var(--font-body);
-  font-size: var(--fs-minus) !important;
+  font-size: var(--fs-text) !important;
   line-height: 1;
-  color: var(--text-2);
+  color: var(--text);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -1237,8 +1253,8 @@
 }
 
 .ui-root .ds-stepper-value {
-  min-width: var(--space-px28);
-  font-family: var(--font-display);
+  min-width: var(--space-5);
+  font-family: var(--font-body);
   font-weight: var(--fw-regular);
   font-size: var(--fs-text);
   line-height: 1;
@@ -1610,6 +1626,8 @@
   font-family: var(--font-body);
   font-size: var(--fs-text) !important;
   line-height: var(--lh-option);
+  /* Words never wrap inside a control (rule 7): a long choice ends with an ellipsis. */
+  white-space: nowrap;
   letter-spacing: normal;
   text-align: left;
   color: var(--text);
@@ -1619,7 +1637,8 @@
 
 .ui-root .ds-dd-value {
   min-width: 0;
-  overflow-wrap: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ui-root .ds-dd--empty .ds-dd-value {
@@ -1627,7 +1646,7 @@
 }
 
 .ui-root .ds-dd[aria-expanded='true'] {
-  border-color: var(--coral-text);
+  border-color: var(--text);
 }
 
 .ui-root .ds-dd:focus-visible {
@@ -1906,7 +1925,7 @@
   align-items: center;
   gap: var(--space-px12);
   width: 100%;
-  min-height: var(--row-min-h) !important;
+  min-height: var(--field-h) !important;
   padding: var(--space-px12) var(--row-pad-x) !important;
   /* The edges colour, so an answer at rest reaches 3 to 1 against the page in both modes (Tim, 11 Nov). */
   border: var(--line-w) solid var(--field-line);
@@ -1929,11 +1948,17 @@
   }
 }
 
+/* Chosen: filled with the text colour, its words in the page colour (25 Nov reference .choices button.on). */
 .ui-root .ds-answer[aria-checked='true'],
 .ui-root .ds-answer[aria-pressed='true'] {
-  border-color: var(--text);
-  color: var(--text);
-  background: var(--raised);
+  border-color: var(--main-bg);
+  color: var(--main-fg);
+  background: var(--main-bg);
+}
+
+.ui-root .ds-answer[aria-checked='true'] .ds-answer-note,
+.ui-root .ds-answer[aria-pressed='true'] .ds-answer-note {
+  color: var(--main-fg);
 }
 
 .ui-root .ds-answer:focus-visible {
@@ -1993,7 +2018,7 @@
   box-sizing: border-box;
   width: var(--checkbox-box);
   height: var(--checkbox-box);
-  border: var(--line-w-strong) solid var(--field-line);
+  border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-box);
   display: flex;
   align-items: center;
@@ -2054,17 +2079,16 @@
 }
 
 .ui-root .ds-check-box[aria-checked='true'] > span {
-  /* Ticked boxes fill mint (Tim, 26 Oct): bright mint with a black tick
-     in dark, deep green with a white tick in light. */
-  background: var(--good);
-  border-color: var(--good);
+  /* A ticked box fills with the text colour, its tick in the page colour (25 Nov reference .tick). */
+  background: var(--main-bg);
+  border-color: var(--main-bg);
 }
 
 .ui-root .ds-check-box svg {
   width: var(--tick-size);
   height: var(--tick-size);
   fill: none;
-  stroke: var(--on-good);
+  stroke: var(--main-fg);
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -2755,8 +2779,8 @@
   width: 21%;
   height: 21%;
   background-color: var(--o-cross);
-  -webkit-mask: url(/brand/crosshair_white.png) center / contain no-repeat;
-  mask: url(/brand/crosshair_white.png) center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 185 185'%3E%3Cg fill='none' stroke='%23000' stroke-width='15' stroke-linejoin='round'%3E%3Cpath d='M89.5 4V68A14 14 0 0 0 103.5 82H169' transform='translate(2.65 -2.65)'/%3E%3Cpath d='M82 169V103.5A14 14 0 0 0 68 89.5H4' transform='translate(-2.65 2.65)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 185 185'%3E%3Cg fill='none' stroke='%23000' stroke-width='15' stroke-linejoin='round'%3E%3Cpath d='M89.5 4V68A14 14 0 0 0 103.5 82H169' transform='translate(2.65 -2.65)'/%3E%3Cpath d='M82 169V103.5A14 14 0 0 0 68 89.5H4' transform='translate(-2.65 2.65)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
   transform: translate(-50%, -50%);
   transition: background-color var(--dur) var(--ease);
 }
@@ -2891,7 +2915,7 @@
 
 .ui-root .ds-error-mark {
   font-weight: var(--fw-medium);
-  color: var(--coral-soft-text);
+  color: var(--error-text);
 }
 
 /* ---------- Logo mark and Continue with Google ---------- */
@@ -3134,8 +3158,8 @@
   height: var(--switch-h);
   min-height: var(--switch-h) !important;
   padding: 0 !important;
-  border-radius: var(--radius-pill);
-  background: var(--outline);
+  border-radius: calc(var(--switch-h) / 2);
+  background: var(--line);
   transition: background-color var(--dur) var(--ease);
   -webkit-tap-highlight-color: transparent;
 }
@@ -3150,10 +3174,10 @@
 .ui-root .ds-switch::after {
   content: '';
   position: absolute;
-  top: var(--space-px3);
-  left: var(--space-px3);
-  width: calc(var(--switch-h) - 2 * var(--space-px3));
-  height: calc(var(--switch-h) - 2 * var(--space-px3));
+  top: var(--space-1);
+  left: var(--space-1);
+  width: calc(var(--switch-h) - 2 * var(--space-1));
+  height: calc(var(--switch-h) - 2 * var(--space-1));
   border-radius: 50%;
   background: var(--switch-knob);
   transition: transform var(--dur) var(--ease);
@@ -3788,7 +3812,7 @@
   min-height: 0 !important;
   padding: 0 !important;
   /* The name --back-gap from the chevron's ink, inside the bar's 14px gap (follow-up 1). */
-  margin: 0 calc((var(--who-icon) - var(--tap-min)) / 2 - var(--chev-right-inset) + var(--back-gap) - var(--space-px14)) 0 calc((var(--who-icon) - var(--tap-min)) / 2 - var(--chev-left-inset));
+  margin: 0 calc((var(--arrow-size) - var(--tap-min)) / 2 - var(--chev-right-inset) + var(--back-gap) - var(--space-px14)) 0 calc((var(--arrow-size) - var(--tap-min)) / 2 - var(--chev-left-inset));
   color: var(--text-2);
   transition: color var(--dur-fast) var(--ease);
   -webkit-tap-highlight-color: transparent;
@@ -3798,8 +3822,8 @@
 }
 
 .ui-root .ds-guide-back .ds-chevron {
-  width: var(--who-icon);
-  height: var(--who-icon);
+  width: var(--arrow-size);
+  height: var(--arrow-size);
 }
 
 /* Centred on the capitals of the tool's name beside it: the chevron's line
@@ -4813,7 +4837,7 @@
   line-height: var(--lh-box);
   letter-spacing: normal;
   color: var(--text);
-  caret-color: var(--coral-text);
+  caret-color: var(--text);
   transition: border-color var(--dur) var(--ease);
 }
 
@@ -5606,7 +5630,7 @@
 
 /* A save the server refused after it waited on the device. */
 .ui-root .ds-status--failed {
-  color: var(--coral-soft-text);
+  color: var(--error-text);
 }
 
 /* ==========================================================================

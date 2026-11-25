@@ -1,50 +1,35 @@
 /* ==========================================================================
-   Buttons: Quiet precision (Tim, 18 Nov 2026; decisions part 8, 09:45 and
-   12:00). One look for every button in the portal, the client portal and
-   the coach portal alike, written once here. The Nekst capital pills are
-   gone.
+   Buttons and controls: the 25 Nov design reference (polish 1, rules 4 to 7;
+   design-reference-25nov.html .btn, .ghost, .seg, .choices). It replaces
+   "Quiet precision" (18 Nov) wherever the two differ.
 
-   Follow-up 1 (Tim, 18 Nov, 15:57): buttons, segmented switches, form
-   choices (Zoom or In person, 30, 60 or 90 minutes, light or dark) and
-   filter buttons are one family. DM Sans 16px, sentence case, weight 400
-   (the coral main button 450), letter-spacing -0.005em; 40px high on a
-   laptop and 44px on a phone; 16px in at each side; 8px corners. Words
-   grow with the device's text size up to twice: a button then grows
-   taller and wraps onto centred lines, never cutting a word off. The tap
-   area stays 44px: an invisible ::after, 44px high and as wide as the
-   button, centred on it.
-   The main button (one per screen): flat coral with black text and a faint
-   top highlight; on hover, each mode's coral hover.
-   Other buttons: no fill, a 1px hairline drawn as an inset shadow in the
-   outline grey (#3C3C3B dark, #B9B7B1 light); on hover and keyboard focus
-   the hairline and the words turn the full text colour.
-   Pressing scales the button to 0.97 for 150ms; Reduce motion turns it off.
+   - One shape: every control has the box radius (--radius-control, 12px).
+   - One height per row: 40px on a laptop, 44px on a phone (--btn-h,
+     --btn-h-phone); boxes 56px and 52px (--field-h).
+   - The main button: solid black with white words in light, white with
+     black words in dark (--text on --on-text), DM Sans 16px at 500, 20px in
+     at each side; hover fades it a little. One per page, near the top.
+   - Every other button: no fill, a 1px line (--line) round it, the words
+     in the text colour, 18px in at each side; on hover and keyboard focus
+     the line turns the text colour.
+   - Coral is for mistakes only: no button is ever coral.
+   - Words never wrap inside a control at the standard text size; at larger
+     sizes a button grows taller and its words wrap onto centred lines,
+     never cut off (WCAG resize text).
+   - The tap area stays 44px: an invisible ::after, centred on the button.
+   - Pressing scales to 0.97 for 150ms; Reduce motion turns it off.
 
-   Why `:not(#_)`: older rules give every button its own size with
-   !important (src/styles/mobile.css on phones, and a page's own rules
-   that beat it at a higher specificity, as design.css's header explains).
-   `:not(#_)` matches every element and adds one id's weight, so the shape
-   and type below win over all of them without a page having to undo its
-   own rule. Only the shape and type are held this way: a page's colours,
-   widths and margins still apply. The colours and the tap area add the
-   element's type (`:is(button, a, label, span)`), just enough to beat the
-   shared button's own `all: unset` (design.css loads after this file),
-   so a page's own colour rule can still win.
-
-   The families: the shared Button (`.ds-btn--primary`, `.ds-btn--outline`)
-   and the older pages' (`.ui-btn-*`, `.auth-btn-*`, `.dng`), the sign-in
-   pages' coral button (`.si-btn`) and focus mode's Done. Not buttons in
-   this sense, and left as they are: text links, the segmented control,
-   steppers, chips, answer rows, icon buttons (the 44px round ones), the
-   floating Breathe pill (it holds the 44px breathing orb), Google's own
-   button and the add row (`.ds-addrow`, in design.css).
+   Why `:not(#_)`: older rules give buttons their own size with !important
+   (mobile.css, and page rules at higher specificity). `:not(#_)` adds one
+   id's weight so the shape and type below win over them all; colours,
+   widths and margins of a page still apply.
    ========================================================================== */
 
 .ui-root :is(.ds-btn--primary, .ds-btn--outline, .ui-btn-primary, .ui-btn-ghost, .auth-btn-primary, .auth-btn-ghost, .dng, .si-btn, .ds-focus-done):not(#_) {
   box-sizing: border-box;
   height: auto !important;
   min-height: var(--btn-h) !important;
-  padding: var(--btn-pad-y) var(--btn-pad-x) !important;
+  padding: var(--btn-pad-y) var(--btn-pad-x-outline) !important;
   border: 0 !important;
   border-radius: var(--radius-btn) !important;
   font-family: var(--font-body) !important;
@@ -62,6 +47,8 @@
 
 .ui-root :is(.ds-btn--primary, .ui-btn-primary, .auth-btn-primary, .si-btn):not(#_) {
   font-weight: var(--fw-btn-main) !important;
+  padding-left: var(--btn-pad-x-main) !important;
+  padding-right: var(--btn-pad-x-main) !important;
 }
 
 .ui-root :is(.ds-btn--primary, .ds-btn--outline, .ui-btn-primary, .ui-btn-ghost, .auth-btn-primary, .auth-btn-ghost, .dng, .si-btn, .ds-focus-done):is(button, a, label, span) {
@@ -88,23 +75,24 @@
   bottom: min(0px, calc(50% - var(--tap-min) / 2));
 }
 
-/* The main button. */
+/* The main button: black in light, white in dark. */
 .ui-root :is(.ds-btn--primary, .ui-btn-primary, .auth-btn-primary, .si-btn):is(button, a, label, span) {
-  background: var(--coral);
-  color: var(--on-coral);
-  box-shadow: var(--btn-highlight);
+  background: var(--main-bg);
+  color: var(--main-fg);
+  box-shadow: none;
 }
 
 @media (hover: hover) {
   .ui-root :is(.ds-btn--primary, .ui-btn-primary, .auth-btn-primary, .si-btn):is(button, a, label, span):hover {
-    background: var(--coral-hover);
+    background: var(--main-bg);
+    opacity: var(--main-hover-opacity);
   }
 }
 
 /* Every other button. */
 .ui-root :is(.ds-btn--outline, .ui-btn-ghost, .auth-btn-ghost, .ds-focus-done):is(button, a, label, span) {
   background: transparent;
-  color: var(--text-2);
+  color: var(--text);
   box-shadow: inset 0 0 0 var(--line-w) var(--btn-line);
 }
 
@@ -128,7 +116,7 @@
 
 /* A switched-off button doesn't light up. */
 .ui-root :is(.ds-btn--outline, .ui-btn-ghost, .auth-btn-ghost, .dng):is(button, a, label, span):is(:disabled, [aria-disabled='true']):hover {
-  color: var(--text-2);
+  color: var(--text);
   box-shadow: inset 0 0 0 var(--line-w) var(--btn-line);
 }
 
@@ -143,48 +131,54 @@
   }
 }
 
-/* ---------- Segmented switches and form choices (Tim, 18 Nov, follow-up 1) ----------
-   InlineChoice's pills (`.ds-seg`, `.ds-seg-btn`): the same family's size
-   and type, on a quiet grey surface with 8px corners. The chosen option is
-   a soft raised tile with 6px corners, in the card colour, with a very
-   faint shadow (`.ds-seg-tile`, which slides to the new option); the
-   others are plain text. Until the tile is placed (the first paint), the
-   chosen option draws its own tile. */
+/* ---------- The joined switch (25 Nov reference .seg; polish 1, rule 7) ----------
+   Two or three short options (No, Yes; Month, Week; Light, Dark, Match my
+   device): one box with the control radius and a 1px line, the options
+   side by side with a 1px line between them, the chosen one filled with the
+   text colour (black in light, white in dark) and its words in the page
+   colour; the others plain, in grey. Words never wrap inside it: InlineChoice
+   turns four or more options, or any that won't fit one line on a 360px
+   phone, into answer boxes. The old gliding tile (.ds-seg-tile) is kept in
+   the markup but no longer drawn. */
 .ui-root .ds-seg:not(#_) {
   position: relative;
+  display: inline-flex;
   min-height: var(--btn-h);
-  padding: var(--seg-pad) !important;
+  padding: 0 !important;
   gap: 0;
-  border: 0 !important;
-  border-radius: var(--radius-btn) !important;
-  background: var(--seg-track);
+  border: var(--line-w) solid var(--btn-line) !important;
+  border-radius: var(--radius-control) !important;
+  background: transparent;
+  overflow: hidden;
 }
 
 .ui-root .ds-seg-btn:not(#_) {
-  min-height: calc(var(--btn-h) - 2 * var(--seg-pad)) !important;
+  min-height: calc(var(--btn-h) - 2 * var(--line-w)) !important;
   padding: 0 var(--btn-pad-x) !important;
-  border-radius: var(--radius-seg-tile) !important;
+  border-radius: 0 !important;
   font-family: var(--font-body) !important;
   font-size: var(--fs-btn) !important;
   font-weight: var(--fw-btn) !important;
   line-height: var(--lh-btn) !important;
   letter-spacing: var(--ls-btn) !important;
   text-transform: none !important;
-  white-space: normal !important;
+  white-space: nowrap !important;
 }
 
-/* The hidden measuring copy (InlineChoice) stays out of the flow, so the
-   switch itself always starts on the content's left edge. */
+.ui-root .ds-seg-btn + .ds-seg-btn:not(#_) {
+  border-left: var(--line-w) solid var(--btn-line) !important;
+}
+
+/* The hidden measuring copy (InlineChoice) stays out of the flow. */
 .ui-root .ds-seg.ds-seg-measure:not(#_) {
   position: absolute;
 }
 
 @media (max-width: 600px) {
   .ui-root .ds-seg:not(#_) { min-height: var(--btn-h-phone); }
-  .ui-root .ds-seg-btn:not(#_) { min-height: calc(var(--btn-h-phone) - 2 * var(--seg-pad)) !important; }
+  .ui-root .ds-seg-btn:not(#_) { min-height: calc(var(--btn-h-phone) - 2 * var(--line-w)) !important; }
 }
 
-/* Equal widths on a phone keep their narrower sides. */
 .ui-root .ds-seg--equal .ds-seg-btn:not(#_) {
   padding: 0 var(--space-px6) !important;
 }
@@ -193,65 +187,45 @@
   z-index: 1;
   background: transparent;
   color: var(--text-2);
+  box-shadow: none;
 }
 
-.ui-root .ds-seg .ds-seg-btn:is([aria-pressed='true'], [aria-checked='true']) {
-  background: transparent;
-  color: var(--text);
-}
-
+.ui-root .ds-seg .ds-seg-btn:is([aria-pressed='true'], [aria-checked='true']),
 .ui-root .ds-seg:not(.ds-seg--placed) .ds-seg-btn:is([aria-pressed='true'], [aria-checked='true']) {
-  background: var(--seg-tile);
-  box-shadow: var(--seg-shadow);
+  background: var(--main-bg);
+  color: var(--main-fg);
+  box-shadow: none;
 }
 
 .ui-root .ds-seg .ds-seg-btn:is([aria-pressed='true'], [aria-checked='true']) .ds-answer-note {
-  color: var(--text-2);
+  color: var(--main-fg);
 }
 
 @media (hover: hover) {
-  .ui-root .ds-seg .ds-seg-btn:hover {
+  .ui-root .ds-seg .ds-seg-btn:not([aria-pressed='true'], [aria-checked='true']):hover {
     color: var(--text);
   }
 }
 
-/* Its 44px tap area: from the option's own box, at least 44px high. */
+/* Its 44px tap area. */
 .ui-root .ds-seg .ds-seg-btn::after {
   inset: auto 0;
-  top: min(calc(-1 * var(--seg-pad)), calc(50% - var(--tap-min) / 2));
-  bottom: min(calc(-1 * var(--seg-pad)), calc(50% - var(--tap-min) / 2));
+  top: min(0px, calc(50% - var(--tap-min) / 2));
+  bottom: min(0px, calc(50% - var(--tap-min) / 2));
 }
 
 .ui-root .ds-seg-tile {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 0;
-  border-radius: var(--radius-seg-tile);
-  background: var(--seg-tile);
-  box-shadow: var(--seg-shadow);
-  pointer-events: none;
-  transition: transform var(--dur-glide) var(--ease), width var(--dur-glide) var(--ease), height var(--dur-glide) var(--ease);
+  display: none;
 }
 
-.ui-root .ds-seg-tile[data-still] {
-  transition: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ui-root .ds-seg-tile {
-    transition: none;
-  }
-}
-
-/* Chips: 6px corners. */
+/* Chips: the one control shape. */
 .ui-root .ds-chip:not(#_) {
   border-radius: var(--radius-chip) !important;
 }
 
 /* ---------- Text inputs and drop-downs (Tim, 18 Nov, follow-up 1) ----------
-   One height, 56px on a laptop and 52px on a phone (--field-h), with 14px
-   corners: the shared one-line field, drop-down and figure box, the
+   One height, 56px on a laptop and 52px on a phone (--field-h), with the
+   control corners (12px): the shared one-line field, drop-down and figure box, the
    sign-in pages' boxes and the older pages' inputs. Larger words make them
    taller, never cut off. */
 .ui-root :is(.ds-field, .ds-dd, .ds-num--box, .si-inp, .auth-input, input.plan-input, select.plan-input):not(#_) {

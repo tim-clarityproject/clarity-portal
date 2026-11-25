@@ -27,6 +27,31 @@ export async function loadCoachRole(userId) {
 }
 
 /**
+ * A client opening a coach portal address (polish 1, "Menu and routing"): when this device already knows the person
+ * isn't a coach (its last answer, or the app's opening read), they go Home at once, with nothing blank. The role is
+ * asked again quietly as they go, so someone made a coach since is let in on their next visit.
+ */
+export function knownNotCoach(userId) {
+  if (!userId) return false;
+  const early = openingRole(userId);
+  if (early !== undefined) return early === null;
+  const kept = readJson(keyFor(userId));
+  return Boolean(kept && 'coach' in kept && kept.coach === null);
+}
+
+/** Has this device an answer about the person's coach role yet? */
+export function roleKnown(userId) {
+  if (!userId) return false;
+  const kept = readJson(keyFor(userId));
+  return Boolean(kept && 'coach' in kept);
+}
+
+export function refreshCoachRole(userId) {
+  if (!userId) return;
+  loadCoachRole(userId).then((coach) => writeJson(keyFor(userId), { coach })).catch(() => {});
+}
+
+/**
  * @returns {{ loading: boolean, coach: object|null, failed: boolean, isOwner: boolean, userId: string|null, reload: () => void, retry: () => void }}
  * `failed`: no answer twice and none kept on this device, so it isn't known whether this is a coach.
  */

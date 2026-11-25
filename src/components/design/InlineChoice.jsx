@@ -40,7 +40,14 @@ export default function InlineChoice({
   const labelId = useId();
   const refs = useRef([]);
   const signature = options.map((o) => `${o.label}${o.note || ''}`).join('\u0000');
-  const { form, isPhone, equal, boxRef, measureRef } = useInlineForm(forced, signature);
+  // The 25 Nov reference (polish 1, rule 7): two or three short options are a joined switch; four or more are separate
+  // answer boxes (a row on a laptop, one per line on a phone) when each is a short word or two, else full-width rows.
+  const many = options.length >= 4;
+  const short = options.every((o) => !o.hint && typeof o.label === 'string' && o.label.length <= 18);
+  // Two or three words this short always fit one line on a 360px phone: always the joined switch.
+  const tiny = !many && options.every((o) => !o.hint && !o.note && typeof o.label === 'string' && o.label.length <= 8);
+  const { form: measured, isPhone, equal, boxRef, measureRef } = useInlineForm(forced || (many ? (short ? 'boxes' : 'rows') : (tiny ? 'pills' : undefined)), signature);
+  const form = measured;
   const radio = semantics === 'radio';
   const selectedIndex = Math.max(0, options.findIndex((o) => o.value === value));
 
@@ -117,7 +124,7 @@ export default function InlineChoice({
         key={option.value}
         ref={(el) => { refs.current[i] = el; }}
         type="button"
-        className={form === 'pills' ? 'ds-seg-btn' : `ds-answer${tick ? ' ds-answer--tick' : ''}`}
+        className={form === 'pills' ? 'ds-seg-btn' : `ds-answer${form === 'boxes' ? ' ds-answer--box' : ''}${tick ? ' ds-answer--tick' : ''}`}
         {...stateProps}
         onClick={() => { onChange(option.value); onChoose?.(option.value); }}
         onFocus={() => { focused.current = i; }}
@@ -144,7 +151,7 @@ export default function InlineChoice({
     <div className={`ds-choice ${className}`.trim()}>
       {label && <FieldLabel label={label} id={labelId} who={who} coachName={coachName} />}
       <div ref={boxRef} className="ds-inline">
-        {!forced && (
+        {!forced && !many && !tiny && (
           <div ref={measureRef} className="ds-seg ds-seg-measure" aria-hidden="true">
             {options.map((option) => (
               <span key={option.value} className="ds-seg-measure-pill">
@@ -163,7 +170,7 @@ export default function InlineChoice({
               {buttons}
             </div>
           )
-          : <div key="rows" className="ds-rows" {...groupProps}>{buttons}</div>}
+          : <div key={form} className={form === 'boxes' ? 'ds-choices' : 'ds-rows'} {...groupProps}>{buttons}</div>}
       </div>
     </div>
   );

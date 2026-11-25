@@ -44,12 +44,14 @@ export function buttonProblems({ phone, scale = 1 }) {
     const fs = parseFloat(cs.fontSize);
     const bad = [];
     if (!/^"?DM Sans/.test(cs.fontFamily)) bad.push(`font ${cs.fontFamily.split(',')[0]}`);
-    const wantWeight = el.matches(PRIMARY) ? '450' : '400';
+    // The 25 Nov reference (polish 1): the main button 500, every other 400; 12px corners; 20px in (main) or 18px.
+    const wantWeight = el.matches(PRIMARY) ? '500' : '400';
     if (cs.fontWeight !== wantWeight) bad.push(`weight ${cs.fontWeight}, not ${wantWeight}`);
     if (cs.textTransform !== 'none') bad.push(`text-transform ${cs.textTransform}`);
     if (!near(parseFloat(cs.letterSpacing) || 0, -0.005 * fs, 0.05)) bad.push(`letter-spacing ${cs.letterSpacing}`);
-    if (cs.borderTopLeftRadius !== '8px') bad.push(`corners ${cs.borderTopLeftRadius}`);
-    if (cs.paddingLeft !== '16px' || cs.paddingRight !== '16px') bad.push(`sides ${cs.paddingLeft}/${cs.paddingRight}`);
+    if (cs.borderTopLeftRadius !== '12px') bad.push(`corners ${cs.borderTopLeftRadius}`);
+    const side = el.matches(PRIMARY) ? '20px' : '18px';
+    if (cs.paddingLeft !== side || cs.paddingRight !== side) bad.push(`sides ${cs.paddingLeft}/${cs.paddingRight}`);
     if (parseFloat(cs.borderTopWidth) > 0) bad.push(`a border of ${cs.borderTopWidth}`);
     // The words on one line: the text's own line boxes.
     const range = document.createRange();
@@ -69,7 +71,9 @@ export function buttonProblems({ phone, scale = 1 }) {
     }
     const filled = el.matches(PRIMARY);
     if (filled) {
-      if (!/inset/.test(cs.boxShadow) || !/rgba\(255, 255, 255, 0\.28\)/.test(cs.boxShadow)) bad.push(`no top highlight (${cs.boxShadow.slice(0, 40)})`);
+      // Solid in the text colour (black in light, white in dark), no highlight.
+      if (cs.backgroundColor !== getComputedStyle(document.querySelector('.ui-root') || document.body).color && !/rgb\((0, 0, 0|255, 255, 255)\)/.test(cs.backgroundColor)) bad.push(`filled ${cs.backgroundColor}, not the text colour`);
+      if (cs.boxShadow && cs.boxShadow !== 'none') bad.push(`a shadow (${cs.boxShadow.slice(0, 40)})`);
     } else {
       const fill = cs.backgroundColor;
       if (!/rgba\(0, 0, 0, 0\)|transparent/.test(fill)) bad.push(`filled ${fill}`);
@@ -77,18 +81,19 @@ export function buttonProblems({ phone, scale = 1 }) {
     }
     if (bad.length) out.push(`${name(el)}: ${bad.join(', ')}`);
   }
-  // One coral button per screen.
+  // One main button per screen.
   const coral = buttons.filter((el) => el.matches(PRIMARY) && !el.disabled);
-  if (coral.length > 1) out.push(`${coral.length} coral buttons: ${coral.slice(0, 4).map(name).join(', ')}`);
+  if (coral.length > 1) out.push(`${coral.length} main buttons: ${coral.slice(0, 4).map(name).join(', ')}`);
   // The add rows.
   for (const el of [...top.querySelectorAll('.ds-addrow')].filter(vis)) {
     const cs = getComputedStyle(el);
     const b = el.getBoundingClientRect();
     const mark = el.querySelector('.ds-addrow-mark')?.getBoundingClientRect();
     const bad = [];
-    if (b.height < 47.5) bad.push(`${Math.round(b.height)}px high`);
-    if (!mark || !near(mark.width, 18) || !near(mark.height, 18)) bad.push('no 18px square for its cross');
-    if (scale === 1 && cs.fontSize !== '16px') bad.push(`words ${cs.fontSize}`);
+    // "+ Add" (25 Nov reference .addbtn): a 44px tap area, a 10px plus, 13px words.
+    if (b.height < 43.5) bad.push(`${Math.round(b.height)}px high`);
+    if (!mark || !near(mark.width, 10) || !near(mark.height, 10)) bad.push('no 10px plus');
+    if (scale === 1 && cs.fontSize !== '13px') bad.push(`words ${cs.fontSize}`);
     if (parseFloat(cs.borderTopWidth) > 0 || (cs.boxShadow && cs.boxShadow !== 'none')) bad.push('a box round it');
     if (!/rgba\(0, 0, 0, 0\)|transparent/.test(cs.backgroundColor)) bad.push(`filled ${cs.backgroundColor}`);
     if (bad.length) out.push(`add row ${name(el)}: ${bad.join(', ')}`);
@@ -389,8 +394,8 @@ export function controlsFamily({ phone, scale = 1 }) {
     // Every option inside its track: five words that don't fit wrap onto another row, never run out of it (UI tester, 22 Nov).
     const out1 = opts.find((o, i) => boxes[i].right > tb.right + 1 || boxes[i].left < tb.left - 1);
     if (out1) bad.push(`${words(out1).slice(0, 16)} runs out of its track`);
-    if (clear(ts.backgroundColor)) bad.push('no soft grey track');
-    if (edged(ts)) bad.push('an edge round its track');
+    // The joined switch (25 Nov reference .seg): a 1px line round it, no grey track.
+    if (!edged(ts)) bad.push('no line round it');
     const chosen = opts.find((o) => o.matches('[aria-pressed=true], [aria-checked=true]'));
     if (chosen) {
       const cs = getComputedStyle(chosen);
@@ -398,10 +403,7 @@ export function controlsFamily({ phone, scale = 1 }) {
       if (/Nekst/.test(cs.fontFamily)) bad.push('its words in Nekst');
     }
     if (scale === 1) {
-      if (!near(parseFloat(ts.borderTopLeftRadius) || 0, 8)) bad.push(`track corners ${ts.borderTopLeftRadius}, not 8px`);
-      const tile = track.querySelector(':scope > .ds-seg-tile');
-      const tileEl = tile && vis(tile) ? tile : chosen;
-      if (tileEl && !clear(getComputedStyle(tileEl).backgroundColor) && !near(parseFloat(getComputedStyle(tileEl).borderTopLeftRadius) || 0, 6)) bad.push(`chosen tile corners ${getComputedStyle(tileEl).borderTopLeftRadius}, not 6px`);
+      if (!near(parseFloat(ts.borderTopLeftRadius) || 0, 12)) bad.push(`corners ${ts.borderTopLeftRadius}, not 12px`);
       const wraps = opts.some((o) => lineCount(o, parseFloat(getComputedStyle(o).fontSize)) > 1 || o.querySelector('small, .ds-answer-note'));
       // Options on more than one row inside the track (five words on a phone): each option is then one row's height.
       const rows = new Set(boxes.map((b) => Math.round(b.top))).size;
@@ -415,7 +417,7 @@ export function controlsFamily({ phone, scale = 1 }) {
         .some((x) => near(x.getBoundingClientRect().height, tb.height, 1));
       if (!wraps && !beside && !rowsOk && !near(tb.height, want, 0.6)) bad.push(`${Math.round(tb.height * 10) / 10}px high, not ${want}`);
     }
-    if (bad.length) out.push(`toggle ${name(track)}: not the gliding switch: ${bad.join(', ')}`);
+    if (bad.length) out.push(`toggle ${name(track)}: not the joined switch: ${bad.join(', ')}`);
   }
 
   // 2a. The shared switch starts on its box's left edge: its hidden measuring copy never pushes it along (the lead, 22 Nov).
@@ -453,7 +455,7 @@ export function controlsFamily({ phone, scale = 1 }) {
     const st = getComputedStyle(sw);
     const b = sw.getBoundingClientRect();
     const bad = [];
-    if (scale === 1 && (!near(b.width, 40) || !near(b.height, 24))) bad.push(`${Math.round(b.width)} by ${Math.round(b.height)}, not 40 by 24`);
+    if (scale === 1 && (!near(b.width, 52) || !near(b.height, 32))) bad.push(`${Math.round(b.width)} by ${Math.round(b.height)}, not 52 by 32`);
     if (sw.getAttribute('aria-checked') === 'true') {
       // In forced colours the switch takes the system's colours (rule 8b).
       if (!matchMedia('(forced-colors: active)').matches && !mint.has(st.backgroundColor)) bad.push(`on, but ${st.backgroundColor}, not mint`);
@@ -485,7 +487,7 @@ export function controlsFamily({ phone, scale = 1 }) {
     if (!looksLikeButton) continue;
     const r = parseFloat(st.borderTopLeftRadius) || 0;
     const bad = [];
-    if (!near(r, 8)) bad.push(`corners ${st.borderTopLeftRadius}, not 8px`);
+    if (!near(r, 12)) bad.push(`corners ${st.borderTopLeftRadius}, not 12px`);
     if (!near(b.height, want, 0.6)) bad.push(`${Math.round(b.height * 10) / 10}px high, not ${want}`);
     if (bad.length) out.push(`button ${name(el)}: ${bad.join(', ')}`);
   }
@@ -565,7 +567,7 @@ export function backGaps() {
     const box = ch.getBoundingClientRect();
     const size = ch.offsetWidth || parseFloat(st.width);
     const centre = box.left + box.width / 2 - shift;
-    const inset = (parseFloat(st.getPropertyValue('--chev-right-inset')) || 5.5) * (size / 16);
+    const inset = (parseFloat(st.getPropertyValue('--chev-right-inset')) || 3.2) * (size / 12); // the 25 Nov chevron's ink in its 12px square
     const inkRight = centre + size / 2 - inset;
     // The label: the control's own words, or (a chevron alone) the words after it on its row.
     let left = (host.innerText || '').trim() ? firstLetter(host, inkRight) : null;
@@ -641,7 +643,10 @@ export function importantMarks() {
   for (const item of items) {
     checked += 1;
     const soft = tok(item, '--coral-soft-text');
-    const corals = new Set([soft, tok(root, '--coral'), tok(root, '--coral-text'), tok(root, '--coral-soft'), 'rgb(255, 111, 92)'].filter((c) => !clear(c)));
+    // Since 25 Nov (polish 1: coral only for mistakes) the old coral names draw in the text colour: a word in the text
+    // colour is never "coral", so only real coral counts as a coral word or dot.
+    const textColour = getComputedStyle(item).color;
+    const corals = new Set([soft, tok(root, '--coral'), tok(root, '--coral-text'), tok(root, '--coral-soft'), 'rgb(255, 111, 92)', 'rgb(255, 189, 158)'].filter((c) => !clear(c) && c !== textColour && c !== tok(root, '--text') && c !== tok(root, '--text-2')));
     const bad = [];
     const tick = [...item.querySelectorAll(TICK)].find(vis);
     const parts = [item, ...item.querySelectorAll('*')].filter((el) => vis(el) && !el.closest(TICK) && !el.closest('.ds-sr'));

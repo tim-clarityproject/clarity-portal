@@ -53,7 +53,7 @@
 .ui-root .coaching-times .ds-answer { color: var(--text); background: var(--bg); }
 .ui-root .coaching-times .ds-answer[aria-checked='true'] { background: var(--surface); }
 .ui-root .coaching-late { margin: var(--space-px10) 0 0; font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text); }
-.ui-root .coaching-problem { margin: var(--space-px10) 0 0; font-size: var(--fs-note); color: var(--coral-text); }
+.ui-root .coaching-problem { margin: var(--space-px10) 0 0; font-size: var(--fs-note); color: var(--error-text); }
 .ui-root .coaching-book .coaching-acts { flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-px20); }
 .ui-root .coaching-acts--links { justify-content: flex-start; margin-top: var(--space-1); gap: var(--space-3); }
 @media (max-width: 600px) {

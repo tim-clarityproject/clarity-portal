@@ -975,7 +975,7 @@
 .ui-root .rec-problem {
   margin: 0;
   font-size: var(--fs-note);
-  color: var(--coral-soft-text);
+  color: var(--error-text);
 }
 
 /* The paused sprint and Welcome back (M15 .rsp): the dial beside its lines. */

@@ -3,11 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2" />
-    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=2" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png?v=2" />
+    <!-- The browser tab: the bare crosshair, black in a light browser and white in a dark one (polish 1, rule 26), with a 32px black PNG where SVG icons aren't read. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=3" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-tab-32.png?v=3" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
@@ -27,7 +25,7 @@
         var set = function (sel, attr, value) { var el = head.querySelector(sel); if (el) el.setAttribute(attr, value); };
         set('link[rel="manifest"]', 'href', '/coach-app/manifest.webmanifest');
         head.querySelectorAll('link[rel="icon"]').forEach(function (el) { el.parentNode.removeChild(el); });
-        [['icon', '/coach-app/favicon.ico', 'any', null], ['icon', '/coach-app/favicon.svg', null, 'image/svg+xml'], ['icon', '/coach-app/icon-192.png', '192x192', 'image/png']].forEach(function (i) {
+        [['icon', '/favicon.svg?v=3', null, 'image/svg+xml'], ['icon', '/favicon-tab-32.png?v=3', '32x32', 'image/png']].forEach(function (i) {
           var el = document.createElement('link'); el.rel = i[0]; el.href = i[1];
           if (i[2]) el.setAttribute('sizes', i[2]);
           if (i[3]) el.type = i[3];

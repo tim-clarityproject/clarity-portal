@@ -1,11 +1,14 @@
-import { useCallback, useContext, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { refreshCoachRole, roleKnown } from '../lib/coach/role';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { DesktopMenu, PhoneBar, TileMenu } from './design/Navigation';
+import PortalFrame from './design/Frame';
+import { usePortalPreparing } from '../lib/portalPreparing';
 import { useCoachName } from './design/coachContext';
 import { usePhoneBarHidden } from './design/phoneBar';
 import { isNavPhone } from './design/pageLock';
-import { areaOf, DESKTOP_MENU, menuAreas, menuCurrent, TOOLS } from '../lib/navigation';
+import { areaOf, DESKTOP_MENU, FRAME_MENU, menuAreas, menuCurrent, PREPARING_MENU, PRIVACY_PATH, TOOLS } from '../lib/navigation';
 import { usePins } from '../lib/menuPins';
 import { SignOutLink, useSignOut } from './SignOut';
 
@@ -163,5 +166,47 @@ export function SitePhoneNav() {
       <TileMenu open={open} onClose={close} buttonRef={buttonRef} areas={menu.areas.filter((a) => !a.desktopOnly)} pins={menu.pins} onGo={menu.onGo} onLogToday={menu.onLogToday} onBreathe={menu.onBreathe} signOut={menu.signOut} />
       {menu.signOutChoice}
     </div>
+  );
+}
+
+/**
+ * The client portal's frame (25 Nov reference; polish 1, rules 18 to 21):
+ * the menu column on a laptop and the crosshair's menu on a phone, round
+ * every signed-in client page (ProtectedLayout). Pinned tools, when there
+ * are any, are the menu's first group. A client whose portal is still being
+ * prepared sees Home and My Account only (usePortalPreparing).
+ */
+export function ClientFrame({ children }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useContext(AuthContext);
+  const { pins: pinKeys } = usePins(user?.id);
+  const preparing = usePortalPreparing();
+  const row = menuCurrent(location.pathname);
+  const signOutFlow = useSignOut();
+  const menu = useMemo(() => {
+    const source = preparing ? PREPARING_MENU : FRAME_MENU;
+    const mark = (items) => items.map((it) => ({ ...it, current: it.key === row }));
+    const pins = preparing ? [] : pinKeys.map((k) => ({ key: `pin-${k}`, name: TOOLS[k]?.name, to: TOOLS[k]?.to })).filter((p) => p.name && p.to);
+    return {
+      groups: [...(pins.length ? [pins] : []), ...source.groups.map(mark)],
+      foot: mark(source.foot),
+      privacyHref: PRIVACY_PATH,
+    };
+  }, [preparing, pinKeys, row]);
+  const onGo = useCallback((item) => navigate(item.to, { replace: alreadyOn(item.to) }), [navigate]);
+  // Once per device, quietly: whether this person is a coach, so a client who opens a coach portal address is sent
+  // Home at once (ProtectedLayout), never shown a blank page while it's asked.
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId || roleKnown(userId)) return undefined;
+    const idle = typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(() => refreshCoachRole(userId), { timeout: 5000 }) : window.setTimeout(() => refreshCoachRole(userId), 3000);
+    return () => (typeof window.cancelIdleCallback === 'function' ? window.cancelIdleCallback(idle) : window.clearTimeout(idle));
+  }, [userId]);
+  return (
+    <PortalFrame menu={{ ...menu, onGo, onSignOut: signOutFlow.start, signOutBusy: signOutFlow.busy }}>
+      {children}
+      {signOutFlow.choice}
+    </PortalFrame>
   );
 }

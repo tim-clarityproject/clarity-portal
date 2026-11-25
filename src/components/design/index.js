@@ -126,3 +126,6 @@ export { BodyClockChart, MomentNumber, PlaceField, PLANE, TravelDayPanel, Travel
 export { default as useHiddenHelp } from './useHiddenHelp';
 export { default as SignaturePad, SavedSignature, signatureImage } from './SignaturePad';
 export { default as LockedTile } from './LockedTile';
+// The 25 Nov design reference's blocks and frame (polish 1): COMPONENTS.md in the run's notes.
+export { PageOpening, Card, CardHead, Label, MoreLink, Row, Rows, Figure, Empty, AddLink, QuickAdd, Counter, NumberBox, ControlRow, SectionTabs, MonthGrid, CalendarBar, ToolFrame, monthDays, monthTitle, dayTitle } from './Blocks';
+export { default as PortalFrame, FrameMenu, MenuButton, useFrame, useFocusMode } from './Frame';

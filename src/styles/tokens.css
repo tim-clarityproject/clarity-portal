@@ -4,16 +4,21 @@
   --bg: #000000;
   --surface: #0B0B0B;
   --line: #262626;
-  --btn-line: #3C3C3B;     /* outlined buttons, brand grey (was #3A3A3A; same as --outline) */
+  --btn-line: #262626;     /* outlined buttons and joined switches: the reference's --line (25 Nov) */
   --text: #FFFFFF;
   --text-2: #A3A3A0;
-  --placeholder: #7F7F7C;
-  --coral: #FF6F5C;
-  --coral-soft: #FFBD9E;
+  --placeholder: #8A8A86;   /* 25 Nov reference --ph */
+  /* Coral is for mistakes only (25 Nov reference; polish 1, rule 6): a wrong code, a field to fix.
+     --error and --error-text carry it; every older coral name now draws in the text colour, so no
+     button, plus, tick, active tab or decoration is coral any more. */
+  --error: #FF6F5C;
+  --error-text: #FF6F5C;
+  --coral: var(--text);
+  --coral-soft: var(--text-2);
   --mint: #5FEFBB;
   --mint-soft: #89F3CD;
-  --on-coral: #000000;
-  --coral-text: #FF6F5C;
+  --on-coral: var(--on-text);
+  --coral-text: var(--text);
   --mint-text: #5FEFBB;
   /* Good (Tim, 26 Oct): the one colour for at or above the standard,
      rises, the live score at or above the standard, progress, week
@@ -44,7 +49,11 @@
   --wol-between: #4A4A49;   /* check-ins between first and latest (radar) */
 
   /* Fonts */
-  --font-display: 'Nekst', 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+  /* 25 Nov reference (polish 1, rule 2): Nekst only for page titles and the product's name (--font-brand).
+     --font-display, which every older rule used for figures, names and section headings, is DM Sans now,
+     so no figure, score or label can be set in Nekst again. */
+  --font-brand: 'Nekst', 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
   --font-body: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
 
   /* Text size follows the device's text-size setting (Claude's call,
@@ -60,29 +69,29 @@
   --u-big: min(var(--u), 1.25px);
 
   /* Font sizes */
-  --fs-greeting-phone: calc(26 * var(--u-big));
-  --fs-greeting-desktop: calc(46 * var(--u-big));
+  --fs-greeting-phone: calc(22 * var(--u-big));
+  --fs-greeting-desktop: calc(24 * var(--u-big));
   --fs-title-phone: calc(22 * var(--u-big));
-  --fs-title-desktop: calc(26 * var(--u-big));
-  --fs-overline: calc(11 * var(--u));
-  --fs-label: calc(11 * var(--u));
-  --fs-tab: calc(10 * var(--u));
-  --fs-button: calc(10 * var(--u));
-  --fs-section: calc(11 * var(--u));
+  --fs-title-desktop: calc(24 * var(--u-big));
+  --fs-overline: calc(13 * var(--u));
+  --fs-label: calc(13 * var(--u));
+  --fs-tab: calc(13 * var(--u));
+  --fs-button: calc(16 * var(--u));
+  --fs-section: calc(13 * var(--u));
   --fs-body: calc(16 * var(--u));
-  --fs-body-sub: calc(15 * var(--u));
+  --fs-body-sub: calc(16 * var(--u));
   --fs-small: calc(13 * var(--u));
   --fs-input: calc(16 * var(--u));
-  --fs-count: calc(64 * var(--u-big));
+  --fs-count: calc(24 * var(--u-big));
 
   /* Letter spacing */
-  --ls-greeting: 0.12em;
-  --ls-title: 0.10em;
-  --ls-overline: 0.22em;
+  --ls-greeting: 0.14em;
+  --ls-title: 0.14em;
+  --ls-overline: 0.14em;
   --ls-label: 0.08em;
-  --ls-tab: 0.06em;
-  --ls-button: 0.24em;
-  --ls-section: 0.22em;
+  --ls-tab: normal;
+  --ls-button: normal;
+  --ls-section: 0.14em;
 
   /* Spacing scale */
   --space-1: 4px;
@@ -100,9 +109,38 @@
   --header-h-desktop: 79px;
   --drawer-w: 300px;
   --tap-min: 44px;
-  --radius-input: 12px;
-  --radius-card: 16px;
-  --radius-pill: 999px;
+  --radius-input: var(--radius-control);
+  --radius-card: var(--radius-control);
+  --radius-pill: 999px;     /* kept only for the floating Breathe button (polish 1, rule 4) */
+  /* One shape (25 Nov reference --r): every control, box, card, choice, counter, the code squares and My Mission. */
+  --radius-control: 12px;
+  --radius-frame: 18px;      /* the laptop frame's panel (rule 18) */
+  /* The 25 Nov reference's blocks (polish 1, rules 12 to 21): src/components/design/Blocks.jsx. */
+  --card-pad: 24px;          /* a card's padding; its label sits exactly this far from the top and left */
+  --card-gap: 20px;          /* between cards */
+  --card-row-y: 14px;        /* a list row: 14px above and below, hairlines between */
+  --card-label-gap: 6px;     /* from the label to the first row (no line between) */
+  --open-gap: 32px;          /* under the page opening */
+  --frame-menu-w: 248px;     /* the laptop menu column */
+  --frame-margin: 24px;      /* the page background round the frame */
+  --frame-main-y: 48px;      /* the page inside the frame */
+  --frame-main-x: 56px;
+  --frame-main-bottom: 72px;
+  --tool-max: 560px;         /* a tool's one column (focus mode) */
+  --tool-frame-max: 720px;
+  --phead-mark: 24px;        /* the crosshair in the phone header */
+  --mission-box-h: 40px;     /* My Mission in the phone header: a 40px box, not a pill */
+  --qa-sheet-pad: 20px;
+  --fs-fig-unit: calc(16 * var(--u));
+  --fw-fig: 300;             /* a headline figure: DM Sans 24px light */
+  --cols-side: 340px;        /* the laptop's right column (Home, coach Today) */
+  --choice-min: 96px;        /* an answer box's least width in a row (.choices) */
+  --cal-cell-h: 58px;        /* a day in the month grid (.cal button) */
+  --cal-day-circle: 36px;    /* its number's circle: today filled, the chosen day outlined */
+  --prog-h: 2px;             /* a tool's progress line */
+  --dur-prog: 350ms;
+  --settle-rise: 8px;        /* a step settles in: a fade and an 8px rise */
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1); /* the reference's easing out (the sign-in moment, Quick Add, a step) */
 
   /* Motion */
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -133,7 +171,7 @@
      --mint-soft are defined above with the brand values. */
 
   /* Interface greys approved for readability on black */
-  --label: #7F7F7C;          /* labels and placeholders (same as --placeholder) */
+  --label: #8A8A86;          /* labels and placeholders (same as --placeholder) */
   --card: #0B0B0B;           /* inputs, toasts (same as --surface) */
   --line-soft: #1A1A1A;      /* the mock-up's quieter divider between logging rows */
   --field-line: #636362;     /* edges of fields you type into or choose from: brand grey,
@@ -142,29 +180,29 @@
 
   /* Type */
   --fs-page-title: calc(24 * var(--u-big));     /* v3 page header */
-  --fs-section-title: calc(16 * var(--u));  /* v3 section names */
-  --fs-text: calc(17 * var(--u));           /* body */
-  --fs-secondary: calc(15 * var(--u));
-  --fs-note: calc(14 * var(--u));           /* grey lines under stats, dates, chips */
+  --fs-section-title: calc(13 * var(--u));  /* v3 section names */
+  --fs-text: calc(16 * var(--u));           /* body */
+  --fs-secondary: calc(16 * var(--u));
+  --fs-note: calc(13 * var(--u));           /* grey lines under stats, dates, chips */
   --fs-meta: calc(13 * var(--u));           /* small labels; nothing below --fs-min */
-  --fs-min: calc(12 * var(--u));
+  --fs-min: calc(13 * var(--u));
   --fs-glyph: calc(10 * var(--u));          /* Nekst inside the circled i and objective numbers (Nekst never below 10px) */
   --fs-minus: calc(20 * var(--u));          /* the stepper's minus sign */
-  --fs-number: calc(32 * var(--u-big));         /* big numbers, Nekst Light (v3 stats) */
-  --fs-amount: calc(40 * var(--u-big));         /* an amount to settle, Nekst Light (M28 .amount; Phase 6b run 3) */
+  --fs-number: calc(24 * var(--u-big));         /* big numbers, Nekst Light (v3 stats) */
+  --fs-amount: calc(24 * var(--u-big));         /* an amount to settle, Nekst Light (M28 .amount; Phase 6b run 3) */
   --fs-number-sm: calc(16 * var(--u));      /* a tile's score */
   --fs-btn: calc(16 * var(--u));            /* every button, segmented switch and choice: DM Sans, sentence case, growing up to twice with the device's text size (Tim, 18 Nov, follow-up 1; src/styles/buttons.css) */
   --fw-btn: 400;
-  --fw-btn-main: 450;        /* the coral main button (DM Sans is variable, 100 to 1000) */
+  --fw-btn-main: 500;        /* the main button (25 Nov reference .btn: 500) */
   --fs-addrow: calc(16 * var(--u));         /* the add row's words (Tim, 18 Nov) */
   --lh-btn: 1.3;
-  --fs-empty-title: calc(19 * var(--u));
+  --fs-empty-title: calc(20 * var(--u));
   --fs-orb-cross: calc(11 * var(--u));
   --fw-light: 300;           /* Nekst Light for numbers 24px and up */
   --fw-regular: 400;
   --fw-medium: 500;
-  --ls-page-title: 0.1em;
-  --ls-section-title: 0.12em;
+  --ls-page-title: 0.14em;
+  --ls-section-title: 0.14em;
   --ls-btn: -0.005em;
   --lh-text: 1.55;
   --lh-title: 1.25;
@@ -197,9 +235,9 @@
   --si-back-rise: 52px;       /* "Back to sign in" sits this far above the column */
   --si-mark: 32px;            /* the bold crosshair */
   --si-show-room: 76px;       /* room in a password box for "Show" */
-  --fs-si-title: calc(22 * var(--u-big));
-  --fs-si-btn: calc(12 * var(--u));
-  --ls-si-brand: 0.22em;
+  --fs-si-title: calc(24 * var(--u-big));
+  --fs-si-btn: calc(16 * var(--u));
+  --ls-si-brand: 0.2em;
   --ls-si-btn: 0.14em;
   --si-brand-nudge: 0.1em;    /* Nekst capitals sit high on their line */
   /* The coach authenticator's screens (M26 seq 7; Phase 6a run 5). */
@@ -225,22 +263,28 @@
 
   /* Radii (--radius-input 12px, --radius-card 16px and --radius-pill
      are defined above) */
-  --radius-tile: 16px;
-  --radius-box: 5px;         /* the tick box square (Tim, 23 Oct) */
+  --radius-tile: var(--radius-control);
+  --radius-box: 6px;         /* the tick box square (Tim, 23 Oct) */
   --radius-bar: 2px;
 
   /* Component sizes */
   --btn-h: 40px;             /* every button, segmented switch and choice on a laptop (Tim, 18 Nov, follow-up 1); its tap area stays 44px */
   --btn-h-phone: 44px;       /* the same on a phone */
-  --btn-pad-x: 16px;         /* in from each side */
+  --btn-pad-x: 16px;         /* in from each side: a joined switch's options */
+  --btn-pad-x-main: 20px;    /* the main button (25 Nov reference .btn) */
+  --btn-pad-x-outline: 18px; /* every other button (25 Nov reference .ghost) */
+  --main-bg: var(--text);    /* the main button: black in light, white in dark */
+  --main-fg: var(--on-text);
+  --main-hover-opacity: 0.82;
   --btn-pad-y: 4px;          /* above and below, once a larger text size wraps the words */
-  --radius-btn: 8px;
-  --radius-seg-tile: 6px;    /* the chosen option's tile in a segmented switch */
-  --radius-chip: 6px;
+  --radius-btn: var(--radius-control);
+  --radius-seg-tile: 0px;    /* the chosen option's tile in a segmented switch */
+  --radius-chip: var(--radius-control);
   --seg-pad: 3px;            /* round the segmented switch's options, inside its surface */
   --dur-glide: 220ms;        /* the segmented switch's tile sliding to the new option (Tim, 18 Nov) */
-  --btn-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.28); /* the coral button's faint top highlight */
+  --btn-highlight: none;     /* the main button has no highlight (25 Nov reference .btn) */
   --btn-press: 0.97;         /* pressing scales a button this much, for --dur-fast */
+  --add-plus: 10px;          /* "+ Add": its 10px plus (25 Nov reference .addbtn .x) */
   --addrow-h: 48px;          /* the add row (Tim, 18 Nov): at least this high */
   --addrow-box: 18px;        /* the square its cross sits in */
   --addrow-cross: 12px;      /* the cross: two 1.5px lines */
@@ -253,15 +297,15 @@
   --cross-close: 18px;
   --cross-md: 22px;
   --cross-spin: 28px;
-  --arrow-size: 18px;        /* the disclosure arrow (half the crosshair) */
-  --arrow-shift: 22%;        /* keeps the half-crosshair centred as it turns */
+  --arrow-size: 12px;        /* the chevron (25 Nov reference .cv: a fine rounded chevron in a 12px square) */
+  --arrow-shift: 0%;
   --info-size: 16px;         /* the one "i", drawn like ⓘ */
   --info-gap: 6px;           /* from the last word of a sentence to its "i" */
   --back-gap: var(--space-px10);      /* from Back's chevron to its words, on every page (Tim, 18 Nov, follow-up 1; was 14px, rule 29t) */
   /* Where the left-pointing chevron's strokes sit inside its 16px square
      (measured from pixels, 5 Nov), so its visible edge can line up (29t). */
-  --chev-left-inset: 5px;
-  --chev-right-inset: 5.5px;
+  --chev-left-inset: 2.7px;  /* the 25 Nov chevron (.cv) pointing left in its 12px square: its ink from 2.7px to 8.8px */
+  --chev-right-inset: 3.2px;
   /* From a title's last letter to its eye or play icon: 12px, measured from
      the letter's own ink to the icon's visible edge (rule 29d, Tim, 5 Nov;
      M9 and M10, read from their pixels, 14 Nov). A letter's box ends about
@@ -304,8 +348,8 @@
   --page-info-lift: -0.088em; /* the page title's "i", from its line's middle up to the middle of the capitals (measured on Nekst) */
   --text-info-lift: -0.092em; /* an "i" at the end of a DM Sans sentence, from vertical-align middle up to the middle of the capitals (measured) */
   --onum-size: 22px;         /* circled objective numbers */
-  --checkbox-box: 18px;      /* one tick box size everywhere (Tim, 23 Oct: 22px felt too large) */
-  --tick-size: 12px;
+  --checkbox-box: 24px;      /* one tick box size everywhere (25 Nov reference .tick: 24px, 6px corners) */
+  --tick-size: 12px;         /* the tick inside the 24px box */
   --num-input-w: 104px;
   --bar-h: 4px;
   --bar-w: 200px;
@@ -331,31 +375,31 @@
   /* Room to breathe in boxes (Tim, 23 Oct): every text box and
      drop-down has 20px each side, 15px top and bottom, at least 58px of
      height and 14px corners; long choices wrap rather than squeeze. */
-  --box-pad-x: 20px;
+  --box-pad-x: 16px;         /* 25 Nov reference .box: 16px in */
   /* Text inputs and drop-downs are one height (Tim, 18 Nov, follow-up 1): 56px on a laptop,
      52px on a phone (below), 14px corners; the padding is what one line of typed words leaves. */
   --field-h: 56px;
   --box-pad-y: max(var(--space-1), calc((var(--field-h) - 2 * var(--line-w) - var(--fs-text) * var(--lh-box)) / 2));
   --box-min-h: var(--field-h);
-  --radius-field: 14px;
+  --radius-field: var(--radius-control);
   --lh-box: 1.45;            /* typed text */
   --lh-option: 1.35;         /* drop-down choices and their box */
   --fs-option: calc(16 * var(--u));         /* drop-down options */
   --option-min-h: 52px;
   --option-pad-y: 13px;
-  --fs-label-row: calc(15 * var(--u));      /* the question above a box (M6) */
+  --fs-label-row: calc(16 * var(--u));      /* the question above a box (M6) */
   /* Icons with words, one standard (Tim, 26 Oct): the eye, the "i" and
      any small icon beside words. 14px words in the secondary grey, the
      icon in a 16px square drawn with 1.5px lines in the colour of its
      words, 6px between them, 20px between items on one line. */
-  --fs-who: calc(14 * var(--u));            /* words beside an icon (was 13px) */
+  --fs-who: calc(13 * var(--u));            /* words beside an icon (was 13px) */
   --who-icon: 16px;          /* the icon's square (was 14px) */
   --icon-line: 1.5px;
   --icon-gap: 6px;
   --icon-item-gap: 20px;
-  --switch-w: 40px;          /* one switch everywhere (Tim, 18 Nov, follow-up 1): a 40 by 24px track, a round knob */
-  --switch-h: 24px;
-  --switch-knob: #FFFFFF;    /* white in both modes, as the mock-up */
+  --switch-w: 52px;          /* 25 Nov reference .sw-t: 52 by 32, a 24px knob */          /* one switch everywhere (Tim, 18 Nov, follow-up 1): a 40 by 24px track, a round knob */
+  --switch-h: 32px;
+  --switch-knob: var(--card);
   /* The chart pop-up (Tim, 26 Oct; M4 dashboard v46) */
   --tip-edge: 12px;          /* never closer than this to a screen edge */
   --tip-gap: 8px;            /* between the mark and the pop-up */
@@ -363,14 +407,14 @@
   --tip-card-min: 180px;     /* a pop-up laid out as a card: a title, then label and value rows */
   --info-pop-max-w: 300px;   /* an ⓘ's pop-up: a sentence or two, as the Health Check's */
   /* The Individual Performance Plan (M1, Phase 2) */
-  --fs-mission: calc(24 * var(--u-big));        /* the mission on its panel */
-  --fs-mission-phone: calc(20 * var(--u-big));
-  --fs-mission-panel: calc(20 * var(--u-big));  /* the mission in the My Mission panel */
-  --fs-objective-figure: calc(26 * var(--u-big)); /* an Outcome Objective's figure, Nekst */
-  --fs-objective-status: calc(20 * var(--u-big)); /* a milestone's Not yet or Done */
-  --fs-tile-title: calc(19 * var(--u));       /* a Strategy's name on its tile */
-  --fs-tile-figure: calc(22 * var(--u-big));    /* a Strategy's score on its tile, Nekst */
-  --fs-detail-title: calc(21 * var(--u-big));   /* a Strategy's name in its detail */
+  --fs-mission: calc(20 * var(--u));        /* the mission on its panel */
+  --fs-mission-phone: calc(20 * var(--u));
+  --fs-mission-panel: calc(20 * var(--u));  /* the mission in the My Mission panel */
+  --fs-objective-figure: calc(24 * var(--u-big)); /* an Outcome Objective's figure, Nekst */
+  --fs-objective-status: calc(16 * var(--u)); /* a milestone's Not yet or Done */
+  --fs-tile-title: calc(16 * var(--u));       /* a Strategy's name on its tile */
+  --fs-tile-figure: calc(24 * var(--u-big));    /* a Strategy's score on its tile, Nekst */
+  --fs-detail-title: calc(20 * var(--u));   /* a Strategy's name in its detail */
   --mission-panel-w: 560px;  /* the My Mission panel on desktop */
   --system-popup-w: 620px;   /* The Individual Performance System pop-up */
   --system-num: 24px;        /* the numbered circles in its chain */
@@ -381,13 +425,13 @@
   /* Words inside a dial's ring grow at most a quarter, like big display
      text, so they stay inside the ring at the largest text size. */
   --fs-dial-small: calc(13 * var(--u-big)); /* "Weeks" in its centre */
-  --fs-dial-label: calc(12 * var(--u-big)); /* "Performance score this week so far" in the running dial */
-  --fs-dial-big: calc(34 * var(--u-big));   /* the length in its centre, Nekst */
+  --fs-dial-label: calc(13 * var(--u-big)); /* "Performance score this week so far" in the running dial */
+  --fs-dial-big: calc(24 * var(--u-big));   /* the length in its centre, Nekst */
   --sprint-dial-running: 330px;       /* the Performance Sprint page's dial (M1 .dialw) */
   --sprint-dial-running-phone: 250px; /* M1's 224px, plus the room kept for the week numbers */
   --sprint-dial-centre-w: 46%;        /* the words in its middle stay inside the ring */
-  --fs-dial-score: calc(44 * var(--u-big));       /* this week's score in its middle, Nekst Light (M1 .dc) */
-  --fs-dial-score-phone: calc(32 * var(--u-big));
+  --fs-dial-score: calc(24 * var(--u-big));       /* this week's score in its middle, Nekst Light (M1 .dc) */
+  --fs-dial-score-phone: calc(24 * var(--u-big));
   --fs-dial-week: calc(16 * var(--u-big));        /* the week numbers round it, in the drawing's units */
   --sprint-dial-finished: 250px;       /* the end-of-sprint review's dial (M6 .dm2.big) */
   --sprint-dial-finished-phone: 210px;
@@ -429,12 +473,12 @@
   --travel-dot-gap: 10px;    /* the dot after a key moment's date (M21 .vr.ev) */
   --travel-dot: 6px;
   --travel-place-list-max: 312px; /* the place search's list scrolls past 6 (M21 .ddl.scroll) */
-  --fs-lens: calc(18 * var(--u-big));       /* a length tile's figure, Nekst (M6 .lens) */
+  --fs-lens: calc(16 * var(--u));       /* a length tile's figure, Nekst (M6 .lens) */
   --lens-min-h: 72px;
   --figure-box-w: 120px;     /* a figure box beside its words ("weeks", "%") */
   --fs-tip: calc(13 * var(--u));
-  --fs-tip-value: calc(14 * var(--u));      /* the value comes first, and larger (M4: 14px against 13px) */
-  --fs-tip-kind: calc(12 * var(--u));       /* "Outcome Objective 2", small, before a name */
+  --fs-tip-value: calc(16 * var(--u));      /* the value comes first, and larger (M4: 14px against 13px) */
+  --fs-tip-kind: calc(13 * var(--u));       /* "Outcome Objective 2", small, before a name */
   --fs-tip-title: calc(16 * var(--u));      /* a card pop-up's title: a name, or "2 people" */
   /* Charts drawn on screen (design reference v15, M4) */
   --chart-h: 120px;
@@ -448,9 +492,9 @@
   --ck-area-h: 46px;         /* one area's row (M12 .ar) */
   --band-mix: 14%;           /* the target range's faint mint band: this much mint, flat */
   /* The Individual Performance Dashboard (M4 v47) */
-  --fs-hero: calc(64 * var(--u-big));       /* "Performance score this sprint", Nekst Light (M4 .hxb 64px) */
+  --fs-hero: calc(24 * var(--u-big));       /* "Performance score this sprint", Nekst Light (M4 .hxb 64px) */
   --fs-glance: calc(24 * var(--u-big));     /* "+5" beside it, and the big figures in the two lists (M4 .hxd, .big) */
-  --fs-fold-figure: calc(20 * var(--u-big)); /* a fold row's figure (M4 .fv b 20px) */
+  --fs-fold-figure: calc(24 * var(--u-big)); /* a fold row's figure (M4 .fv b 20px) */
   --dash-max: 760px;         /* the page (M4 .page.dash) */
   --dash-hero-l: 300px;      /* the score's column beside the chart (M4 .hero) */
   --dash-hero-chart-h: 130px; /* the big chart (M4 herochart 130 high) */
@@ -470,13 +514,13 @@
   --dash-fold-min-h: 76px;   /* a fold row (M4 .mt .fold) */
   --dash-span-w: 440px;      /* the time switch on a laptop (M4 .d .segw) */
   --dash-lead-max: 54ch;     /* a section's lead lines (M4 .sec2 .lead) */
-  --radius-pattern: 18px;    /* a pattern card (M4 .pc 18px) */
-  --radius-offer: 18px;      /* the offer row (OfferRow; M7 .qg 18px) */
+  --radius-pattern: var(--radius-control);    /* a pattern card (M4 .pc 18px) */
+  --radius-offer: var(--radius-control);      /* the offer row (OfferRow; M7 .qg 18px) */
   --offer-h: 56px;           /* its button's height, a list row's (M7 .qgw) */
   --dial-size: 120px;
   --dial-w: 10px;
-  --fs-chart: calc(12 * var(--u));          /* labels inside a chart (the mock-ups use 11px; 12px keeps the "nothing below 12px" rule) */
-  --fs-unit: calc(13 * var(--u));           /* units beside a big figure: "7.1 hours" */
+  --fs-chart: calc(13 * var(--u));          /* labels inside a chart (the mock-ups use 11px; 12px keeps the "nothing below 12px" rule) */
+  --fs-unit: calc(16 * var(--u));           /* units beside a big figure: "7.1 hours" */
   --tick-option: 16px;       /* the tick beside the chosen option */
   --row-min-h: 54px;         /* full-width answer rows */
   --row-pad-x: 18px;
@@ -484,10 +528,10 @@
   --scale-max-w: 560px;      /* the 1 to 10 scale (M5 sc10) */
   --pop-max-h: 360px;        /* a drop-down list on desktop scrolls past this */
   --pop-gap: 8px;            /* between a box and its list */
-  --sheet-radius: 24px;      /* the phone panel's top corners */
+  --sheet-radius: 18px;      /* the phone panel's top corners */
   --grab-w: 40px;
   --grab-h: 4px;
-  --radius-sheet-desktop: 20px;
+  --radius-sheet-desktop: var(--radius-control);
 
   /* Guided tools (M6 set-up flows, version 21) */
   --guide-bar-h: 72px;
@@ -502,9 +546,9 @@
   --timer-ring: 64px;        /* the shared timer's ring (M9 .ring) */
   --guide-problem-max: 440px;
   --guest-narrow: 460px;     /* a guest page's column (M9 .narrow) */
-  --fs-question-calm: calc(22 * var(--u));
-  --fs-tool-name-calm: calc(11 * var(--u));
-  --ls-tool-name-calm: 0.16em;
+  --fs-question-calm: calc(20 * var(--u));
+  --fs-tool-name-calm: calc(13 * var(--u));
+  --ls-tool-name-calm: 0.14em;
   --space-px64: 64px;
   /* Results pages and people lists (M10 Visual tools, version 5.6; 14 Nov). */
   --row-h-people: 68px;      /* a person's row: a name with a line under it (M10 .pr, .trow) */
@@ -512,7 +556,7 @@
   --steprow-word-w: 170px;   /* the level in words, right of the steps */
   --fs-results-head: calc(13 * var(--u));   /* a results section's name, Nekst (M10 .sech) */
   --ls-results-head: 0.14em;
-  --fs-headline: calc(22 * var(--u));       /* the opening sentence (M10 .headl) */
+  --fs-headline: calc(20 * var(--u));       /* the opening sentence (M10 .headl) */
   --fs-headline-phone: calc(20 * var(--u));
   --headline-max: 34ch;
   --space-px44: 44px;
@@ -522,24 +566,24 @@
   /* The Emotional wash's parts (M10 Visual tools, version 5.6; 14 Nov). */
   --answer-col-min: 250px;   /* short answers side by side: a column's least width (M10 .ans.two) */
   --follow-box-min-h: 81px;  /* a follow-up's box: two lines (M10's rows="2") */
-  --fs-question: calc(24 * var(--u));       /* the question heading, DM Sans */
-  --fs-question-phone: calc(21 * var(--u));
+  --fs-question: calc(20 * var(--u));       /* the question heading, DM Sans */
+  --fs-question-phone: calc(20 * var(--u));
   --fs-rec-question: calc(20 * var(--u));   /* Recovery's daily question (M15 .rqh) */
-  --fs-title-guide-phone: calc(20 * var(--u-big)); /* a step's Nekst title on phone (M6) */
+  --fs-title-guide-phone: calc(20 * var(--u)); /* a step's Nekst title on phone (M6) */
   --lh-question: 1.3;
   --fs-nudge: calc(16 * var(--u));
-  --fs-tool-name: calc(12 * var(--u));      /* the tool's name in the top bar, Nekst */
+  --fs-tool-name: calc(13 * var(--u));      /* the tool's name in the top bar, Nekst */
   --ls-tool-name: 0.14em;
   --ls-back: 0.16em;
   --ls-btn-phone: var(--ls-btn);
   --steps-h: 36px;           /* the step list on desktop */
   --steps-h-phone: 28px;     /* the slim line on phone */
   --steps-line: 3px;
-  --fs-step-num: calc(11 * var(--u));
+  --fs-step-num: calc(13 * var(--u));
   --btn-h-tool: var(--btn-h); /* the tool's coral button: every button is one size (Tim, 18 Nov) */
   --nudge-max: 52ch;
   --example-max: 56ch;
-  --radius-example: 12px;
+  --radius-example: var(--radius-control);
   --cross-tool: 20px;        /* the close crosshair in the top bar */
   --cross-tip: 16px;
   --tip-close: 44px;        /* a full tap area (was 40px) */
@@ -549,17 +593,17 @@
   --dur-fade-still: 250ms;   /* the fade used instead of motion with reduced motion (not zeroed) */
 
   /* Steady text box and focus mode */
-  --fs-focus-question: calc(17 * var(--u));
+  --fs-focus-question: calc(20 * var(--u));
 
   /* The statement panel (writing rule 51) */
-  --fs-statement: calc(18 * var(--u));
-  --fs-statement-phone: calc(17 * var(--u));
+  --fs-statement: calc(20 * var(--u));
+  --fs-statement-phone: calc(20 * var(--u));
   --lh-statement: 1.45;
 
   /* Calendar */
   --cal-day-h: 44px;
-  --radius-day: 12px;
-  --fs-day: calc(15 * var(--u));
+  --radius-day: 50%;
+  --fs-day: calc(16 * var(--u));
   --cal-w: 360px;
 
   /* Bold crosshair (only four places) and the Breathe button */
@@ -584,8 +628,8 @@
   --breathe-cross: 8px;
   /* Breathe's words beside the orb (breathe-orb.html .bw2): the phase
      word 22px and the seconds left 56px Nekst Light */
-  --fs-bwords-word: calc(22 * var(--u-big));
-  --fs-bwords-count: calc(56 * var(--u-big));
+  --fs-bwords-word: calc(20 * var(--u));
+  --fs-bwords-count: calc(24 * var(--u-big));
   /* The orb's sizes (breathe-orb.html): Breathe 300px (164px on a phone),
      Sleep wind down 220px (190px on a phone) */
   --orb-tool: 300px;
@@ -603,25 +647,25 @@
      tile menu, the hub pages' tiles */
   --menu-w: 280px;           /* the slim desktop menu (menu-options.html, option A) */
   --ls-menu-area: 0.08em;    /* the hub pages' big tile names */
-  --fs-menu-row: calc(15 * var(--u));
-  --fs-menu-label: calc(10 * var(--u));     /* the quiet group labels (Nekst is never below 10px) */
-  --ls-menu-label: 0.16em;
-  --radius-menu-row: 10px;
+  --fs-menu-row: calc(16 * var(--u));
+  --fs-menu-label: calc(13 * var(--u));     /* the quiet group labels (Nekst is never below 10px) */
+  --ls-menu-label: 0.14em;
+  --radius-menu-row: 8px;
   --phone-bar-h: 74px;       /* the phone bar, above the safe area */
   --bar-btn-w: 56px;
   --bar-btn-h: 48px;
   --bar-icon: 26px;
-  --radius-menu-tile: 20px;
+  --radius-menu-tile: var(--radius-control);
   --menu-tile-min-h: 136px;
-  --fs-menu-tile: calc(18 * var(--u));
-  --radius-hub-tile: 18px;
+  --fs-menu-tile: calc(16 * var(--u));
+  --radius-hub-tile: var(--radius-control);
   --hub-tile-min-h: 148px;
   --hub-tile-big-min-h: 176px;
-  --fs-hub-tile: calc(19 * var(--u));
-  --fs-hub-tile-phone: calc(18 * var(--u));
-  --fs-hub-area: calc(20 * var(--u-big));
-  --fs-hub-area-phone: calc(19 * var(--u-big));
-  --fs-hub-group: calc(14 * var(--u));
+  --fs-hub-tile: calc(16 * var(--u));
+  --fs-hub-tile-phone: calc(16 * var(--u));
+  --fs-hub-area: calc(20 * var(--u));
+  --fs-hub-area-phone: calc(20 * var(--u));
+  --fs-hub-group: calc(13 * var(--u));
   --ls-hub-group: 0.14em;
   --hub-line-max: 42ch;
   --live-dot: 6px;
@@ -629,23 +673,23 @@
   --scrim-menu: rgba(0, 0, 0, 0.88); /* behind the phone menu: almost the page colour */
 
   /* Home as Today (M2, Phase 4 step 2) */
-  --radius-suggest: 20px;    /* the Suggested for now card (M2 .hs) */
-  --radius-dayfocus: 14px;   /* How you want to be today, Today's Strategy (M2 .hbe) */
+  --radius-suggest: var(--radius-control);    /* the Suggested for now card (M2 .hs) */
+  --radius-dayfocus: var(--radius-control);   /* How you want to be today, Today's Strategy (M2 .hbe) */
   --mdial-size: 52px;        /* the mini dial (M2 .hd2 svg) */
   --mdial-min-h: 56px;
-  --fs-week-figure: calc(26 * var(--u-big)); /* the week line's score, Nekst Light (M2 .hwk b) */
+  --fs-week-figure: calc(24 * var(--u-big)); /* the week line's score, Nekst Light (M2 .hwk b) */
   --fs-log-head: calc(13 * var(--u));        /* LOG TODAY beside Saving and Saved, Nekst (M2 .hlh h4) */
-  --fs-fold-head: calc(14 * var(--u));       /* THIS WEEK on the weekly habits' fold (M2 .fold .h) */
+  --fs-fold-head: calc(13 * var(--u));       /* THIS WEEK on the weekly habits' fold (M2 .fold .h) */
   --planstep-mark: 22px;
   --planstep-tick: 12px;
   --help-row-min-h: 62px;
   --suggest-line-max: 46ch;
 
   /* Sleep wind down and Work's done for today (M19, Phase 4 step 6) */
-  --fs-end-night: calc(30 * var(--u-big));       /* Sleep well (M19 .gn h2) */
-  --fs-end-night-phone: calc(24 * var(--u-big));
+  --fs-end-night: calc(24 * var(--u-big));       /* Sleep well (M19 .gn h2) */
+  --fs-end-night-phone: calc(22 * var(--u-big));
   --ls-end-night: 0.14em;
-  --fs-end-done: calc(28 * var(--u-big));        /* Work's done for today (M19 .wd h2) */
+  --fs-end-done: calc(24 * var(--u-big));        /* Work's done for today (M19 .wd h2) */
   --fs-end-done-phone: calc(22 * var(--u-big));
   --ls-end-done: 0.12em;
   --end-night-max: 420px;
@@ -698,7 +742,7 @@
   --outline: #3C3C3B;        /* outlined buttons (brand grey) */
   --quiet-line: #4A4A49;     /* link underlines, the current step, today in the calendar */
   --on-text: #000000;        /* words on a pill filled with the text colour */
-  --coral-soft-text: #FFBD9E; /* soft coral: something needs you, always with words */
+  --coral-soft-text: var(--text); /* was soft coral (needs you): the text colour now; status is said in words */
   --coral-soft-tint: rgba(255, 189, 158, 0.12); /* behind a calm error */
   --mint-tint: rgba(95, 239, 187, 0.12);
   --below: #636362;          /* weeks under the standard: neutral grey, never coral */
@@ -706,14 +750,14 @@
      below 50 a quieter grey (3.5 to 1 on the page), the single lowest coral. */
   --band-mid: #8F8D88;
   --band-low: #636362;
-  --band-lowest: var(--coral);
+  --band-lowest: var(--text);
   --to-come: #262626;        /* weeks to come on the dial */
   --dial-done: #7F7F7C;
   --paused-done: #4A4A49;    /* finished weeks on a paused dial: scores hidden, so neither mint nor grey (M15) */
   --day-off: #3A3A39;        /* past days in the calendar */
-  --coral-text-raised: #FF6F5C; /* coral words on the raised surface */
-  --coral-hover: #FF8A7A;    /* the coral button on hover: a slightly brighter coral, never like disabled */
-  --tick-edge: #FF6F5C;      /* the edge of a ticked tick box */
+  --coral-text-raised: var(--text);
+  --coral-hover: var(--text);
+  --tick-edge: var(--text);  /* a ticked box: filled with the text colour (25 Nov reference .tick) */
   --disabled-opacity: 0.35;  /* a disabled coral button */
   --toast-bg: #0B0B0B;
   --toast-text: #FFFFFF;
@@ -744,7 +788,7 @@
   font-family: var(--font-body);
   /* Text with no size of its own: 16px to 18px with the window, as the
      page root used to be, grown with the device's text size. */
-  font-size: clamp(calc(16 * var(--u)), calc(2vw + (var(--u) - 1px) * 16), calc(18 * var(--u)));
+  font-size: calc(16 * var(--u));
 }
 
 /* Light mode, inside .ui-root only (rule 17). On when the page is set to
@@ -766,22 +810,18 @@
   --line: #DCDAD3;
   --line-soft: #E9E7E1;
   --field-line: #858480;     /* box edges, 3.5 to 1 */
-  --btn-line: #B9B7B1;
+  --btn-line: #DCDAD3;
   --outline: #B9B7B1;
   --quiet-line: #B9B7B1;
   --text: #000000;
-  --text-2: #4A4A49;
-  --placeholder: #636362;
-  --label: #636362;
+  --text-2: #5A5A58;         /* 25 Nov reference --t2 */
+  --placeholder: #76766F;    /* 25 Nov reference --ph */
+  --label: #76766F;
   --on-text: #FFFFFF;
   /* --coral (#FF6F5C, buttons and ticks) and --on-coral (black) are the
      same in both modes. Coral and mint are too pale to read as text on
      off-white, so text, lines and numbers use deeper versions. */
-  --coral-text: #C2412E;
-  --coral-text-raised: #B93D2B; /* deeper on the raised surface in light, 4.8 to 1 */
-  --coral-hover: #E0533F;    /* a slightly deeper coral on hover in light, black text */
-  --tick-edge: #C2412E;      /* a ticked box's 1px deep coral edge: 3 to 1 on the page */
-  --coral-soft-text: #A84E28;
+  --error-text: #C2412E;     /* a mistake's words in light, 4.9 to 1 */
   --coral-soft-tint: #FFE7DB;
   --mint: #0B7A52;           /* the mint of light mode (Tim, 26 Oct): pale #5FEFBB never sits on off-white */
   --mint-text: #0B7A52;
@@ -797,7 +837,6 @@
   --below: #8F8D88;
   --band-mid: #6B6A67;        /* 5.1 to 1 on the page */
   --band-low: #8F8D88;        /* the quieter grey, 3.1 to 1 on the page */
-  --band-lowest: var(--coral-text);
   --to-come: #DCDAD3;
   --dial-done: #8F8D88;
   --paused-done: #B9B7B1;
@@ -839,6 +878,9 @@
 @media (max-width: 600px) {
   .ui-root {
     --field-h: 52px;
+    --card-pad: 20px;        /* 25 Nov reference: a card's padding on a phone */
+    --card-row-y: 12px;
+    --fs-page-title: calc(22 * var(--u-big)); /* page titles 22px on a phone (rule 1) */
   }
 }
 
@@ -875,10 +917,10 @@
   --cc-fold-h: 56px;            /* a fold's heading row */
   --cc-board-gap: 12px;
   --cc-board-col-min: 320px;
-  --cc-col-radius: 14px;
-  --cc-card-radius: 10px;
-  --cc-pop-radius: 14px;
-  --cc-pop-row-radius: 9px;
+  --cc-col-radius: var(--radius-control);
+  --cc-card-radius: var(--radius-control);
+  --cc-pop-radius: var(--radius-control);
+  --cc-pop-row-radius: 8px;
   --cc-pop-min: 220px;
   --cc-net-ctl-min: calc(220 * var(--u)); /* the map's Show and Find someone: grows with the text, so at large text each takes its own line */
   --cc-pop-max-h: 340px;
@@ -901,7 +943,7 @@
   --cc-phone-bar-h: 64px;
   --cc-dot: 7px;                /* an unread notification */
   --cc-undo-ms: 10000;          /* Undo stays for 10 seconds */
-  --fs-cc-count: calc(11 * var(--u));
+  --fs-cc-count: calc(13 * var(--u));
   --ls-cc-section: 0.14em;
   /* Today (Phase 6a run 2; M11 .vr.t3, .wk) */
   --cc-time-w: 64px;            /* a call's time, before its name */
@@ -929,11 +971,11 @@
   --table-first-w: 168px;       /* that table's first column, which stays put */
   --cc-th-date: calc(150 * var(--u)); /* a date column in the Clients and Leads tables: "Wed 18 Nov 2026" and "Renewal date" on one line, at any text size */
   --cc-net-rate-w: 120px;       /* a rating's menu: 0 to 10 as a list, each with room for the tick */
-  --cc-net-card-radius: 18px;   /* the Ready to archive? card */
+  --cc-net-card-radius: var(--radius-control);   /* the Ready to archive? card */
   --cc-net-dot-line: 1.25px;    /* an outlined dot on the map */
   --cc-net-dash: 2.2px;         /* Rebalance?'s dashes */
   --fs-cc-net-dot: calc(10 * var(--u-big)); /* how many share a spot, inside the dot (M11: fine 10px numbers) */
-  --fs-cc-code: calc(26 * var(--u-big)); /* an access code, shown once */
+  --fs-cc-code: calc(24 * var(--u-big)); /* an access code, shown once */
   --ls-cc-code: 0.12em;
 }
 
@@ -1012,7 +1054,7 @@
   --cal-mini-cell: 36px;
   --cal-hold-ms: 450;               /* press and hold to drag on a phone */
   --fs-cal-tile: calc(13 * var(--u));
-  --fs-cal-sub: calc(12 * var(--u));
+  --fs-cal-sub: calc(13 * var(--u));
   --lh-cal-tile: 1.3;
   --lh-cal-one: 1.1;                /* a one-line tile, a day's number */
   --cal-tick-stroke: 3;

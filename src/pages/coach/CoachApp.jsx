@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { BoldCrosshair, Button, ErrorMessage, Loading, PageHeader, SlidePanel, useHidePhoneBar, useIsPhone, useToast } from '../../components/design';
+import { Button, ErrorMessage, Loading, PageHeader, SlidePanel, useHidePhoneBar, useIsPhone, useToast } from '../../components/design';
 import { useOnline } from '../../lib/connection';
 import { useSignOut } from '../../components/SignOut';
 import { getLocalDateKey } from '../../lib/dateFormatter';
@@ -10,8 +10,9 @@ import { fromTable, rowsOf, saveRows, screenKindOf, sessionsOlder, useCoachCopyS
 import { loadAdminClients, loadCoaches } from '../../lib/coach/actions';
 import { takeFinanceOpening } from '../../lib/coach/earlyScreen';
 import { deviceCopyAvailable, readExtra, writeExtra } from '../../lib/coach/deviceCopy';
-import { callForBar, nextCallBar } from '../../lib/coach/model';
-import { COACH_PAGES, coachTitle } from '../../lib/coach/navigation';
+import { callForBar, favouriteViews, nextCallBar } from '../../lib/coach/model';
+import { COACH_PAGES, coachFrameMenu, coachTitle } from '../../lib/coach/navigation';
+import PortalFrame, { MenuButton } from '../../components/design/Frame';
 import { testCalls } from '../../lib/coach/calls';
 import { barCalls, coachZoneOf } from '../../lib/coach/calendar';
 // Network's people are moved across before anything that points at one (a lead's Referred by): the module says so to the
@@ -149,8 +150,6 @@ if (typeof window !== 'undefined') {
 }
 
 const BELL = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" /></svg>;
-const HOME = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg>;
-const CALENDAR = <svg className="cc-line-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3.5v4M16 3.5v4" /></svg>;
 
 const LIVE = typeof __CLARITY_LIVE__ !== 'undefined' && __CLARITY_LIVE__;
 const later = COACH_PAGES.filter((p) => p.later);
@@ -318,26 +317,36 @@ const ROLE_OFFLINE = 'Clarity Coach needs a connection the first time it opens o
 function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState(false);
   const [bell, setBell] = useState(false);
   const signOut = useSignOut({ to: '/coach/sign-in' });
   const afterFrame = useAfterFrame();
-  const frameMod = useLaterPart('frame', frameParts, (afterFrame && !firstLoad) || menu || search);
-  useEffect(() => { setMenu(false); setSearch(false); }, [pathname]);
-  const closeMenu = useCallback(() => setMenu(false), []);
+  const frameMod = useLaterPart('frame', frameParts, (afterFrame && !firstLoad) || search);
+  useEffect(() => { setSearch(false); }, [pathname]);
   const closeSearch = useCallback(() => setSearch(false), []);
   const closeBell = useCallback(() => setBell(false), []);
   // On a phone every grey line under a row stays one line (tidy follow-up 3, run 6's 33).
   const mainRef = useRef(null);
   useGreyLines(mainRef, useIsPhone());
+  // The menu (polish 1, rules 18 and 19): the frame's column on a laptop, the header's crosshair on a phone. Its rows
+  // are worked out from what's already here, never asked for as it draws.
+  const { isOwner, views, todoLists, boards } = useCoachPortal();
+  const menu = useMemo(() => {
+    const lists = (todoLists || []).filter((l) => !l.finished_at);
+    const favourites = favouriteViews(views || []).filter((v) => v.list !== 'leads' || isOwner);
+    const hasShared = !isOwner && (boards || []).length > 0;
+    return coachFrameMenu({ isOwner, live: LIVE, hasShared, pathname, lists, favourites });
+  }, [isOwner, views, todoLists, boards, pathname]);
+  const onGo = useCallback((item) => navigate(item.to), [navigate]);
   return (
-    <div className={`ui-root cc-app${hold ? ' cc-hold' : ''}`} inert={hold || undefined} aria-busy={hold || undefined}>
-      <header className="cc-header">
+    <PortalFrame
+      className={`cc-app${hold ? ' cc-hold' : ''}`}
+      rootProps={{ inert: hold || undefined, 'aria-busy': hold || undefined }}
+      menu={{ ...menu, onGo, onSignOut: signOut.start, signOutBusy: signOut.busy, privacyHref: '/legal/privacy' }}
+    >
+      <header className="cc-header cc-header--frame">
         <div className="cc-header-in">
-          <button type="button" className="cc-round cc-round--mark" aria-expanded={menu} aria-label="Open the menu" onClick={() => { if (!frameMod && laterPartFailed('frame') && navigator.onLine) window.location.reload(); else setMenu(true); }}>
-            <BoldCrosshair size={26} />
-          </button>
+          <MenuButton className="cc-frame-menu" />
           <button type="button" className="cc-search" aria-label="Search, or do anything" aria-haspopup="dialog" onClick={() => { if (!frameMod && laterPartFailed('frame') && navigator.onLine) window.location.reload(); else setSearch(true); }}>
             <span>Search or do anything</span>
           </button>
@@ -353,17 +362,11 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
         {firstLoad && <Loading label="Loading Clarity Coach" className="ds-loading--page" />}
         {pages}
       </main>
-      <nav className="cc-phonebar" aria-label="Clarity Coach">
-        <button type="button" className="cc-round" aria-label="Today" aria-current={pathname === '/coach' ? 'page' : undefined} onClick={() => { setMenu(false); navigate('/coach'); }}>{HOME}</button>
-        <button type="button" className="cc-round cc-round--mark" aria-label={menu ? 'Close the menu' : 'Menu'} aria-expanded={menu} onClick={() => setMenu((v) => !v)}><BoldCrosshair size={32} /></button>
-        <button type="button" className="cc-round" aria-label="Calendar" aria-current={pathname.startsWith('/coach/calendar') ? 'page' : undefined} onClick={() => { setMenu(false); navigate('/coach/calendar'); }}>{CALENDAR}</button>
-      </nav>
-      {/* Asked for once the frame has drawn with its page, or the moment one is opened before that. */}
-      {((afterFrame && !firstLoad) || menu) && frameMod && <frameMod.Menu open={menu} onClose={closeMenu} onSignOut={signOut.start} />}
+      {/* Search, asked for once the frame has drawn with its page, or the moment it is opened before that. */}
       {((afterFrame && !firstLoad) || search) && frameMod && <frameMod.Search open={search} onClose={closeSearch} />}
       <Bell open={bell} onClose={closeBell} />
       {signOut.choice}
-    </div>
+    </PortalFrame>
   );
 }
 

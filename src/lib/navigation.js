@@ -342,6 +342,23 @@ export const DESKTOP_MENU = {
   foot: [{ key: 'account', name: 'My Account', to: '/my-account' }],
 };
 
+/**
+ * The menu in the frame (25 Nov design reference "Frame and menu"; polish 1,
+ * rule 19): the same rows as DESKTOP_MENU, in groups separated by gaps, not
+ * names (Home; Dashboard, Plan, Reset, Review; Interpersonal, Strategic), and
+ * the foot's My Account. Sign out (a button) and Privacy are the frame's own.
+ * A client whose portal is still being prepared sees Home and My Account only.
+ */
+export const FRAME_MENU = {
+  groups: [DESKTOP_MENU.top, ...DESKTOP_MENU.groups.map((g) => g.items)],
+  foot: DESKTOP_MENU.foot,
+};
+export const PREPARING_MENU = {
+  groups: [DESKTOP_MENU.top],
+  foot: DESKTOP_MENU.foot,
+};
+export const PRIVACY_PATH = '/legal/privacy';
+
 const AREA_ROUTES = {
   home: ['/welcome'],
   personal: ['/dashboard'],

@@ -1,0 +1,426 @@
+/* The frame and the menu (25 Nov design reference "Frame and menu";
+   example-pages-25nov.html .app, .side, .mi, .phead, .pmenu; polish 1,
+   rules 18 to 21). Frame.jsx; every value is a token in tokens.css. */
+
+/* ---------- Laptop: one rounded panel with the page background round it ---------- */
+.ui-root.ds-frame-root {
+  min-height: 100dvh;
+  background: var(--raised);
+}
+
+.ui-root .ds-frame {
+  display: grid;
+  grid-template-columns: var(--frame-menu-w) minmax(0, 1fr);
+  min-height: calc(100dvh - 2 * var(--frame-margin));
+  margin: var(--frame-margin);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-frame);
+  /* The hairline between the menu and the page, the panel's full height. */
+  background: linear-gradient(var(--line), var(--line)) var(--frame-menu-w) 0 / var(--line-w) 100% no-repeat, var(--bg);
+}
+
+.ui-root .ds-frame-side {
+  position: sticky;
+  top: var(--frame-margin);
+  align-self: start;
+  box-sizing: border-box;
+  height: calc(100dvh - 2 * var(--frame-margin));
+  overflow: auto;
+  padding: var(--space-4) var(--space-px14) var(--space-px18);
+  border-radius: var(--radius-frame) 0 0 var(--radius-frame);
+}
+
+.ui-root .ds-frame-main {
+  position: relative;
+  min-width: 0;
+  padding: var(--frame-main-y) var(--frame-main-x) var(--frame-main-bottom);
+}
+
+/* Pages drawn inside the frame keep their own .ui-root, which paints the
+   page colour: inside the panel that is the panel's own colour, and a page
+   never needs the whole window's height of its own. */
+.ui-root .ds-frame-main .ui-root {
+  min-height: 0;
+}
+
+.ui-root .ds-frame-phead {
+  display: none;
+}
+
+/* ---------- The menu ---------- */
+.ui-root .ds-menu {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  font-family: var(--font-body);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-menu-mark {
+  display: block;
+  width: var(--bold-cross-menu);
+  height: var(--bold-cross-menu);
+  margin: var(--space-px2) var(--space-px10) var(--space-4);
+  color: var(--text);
+}
+
+.ui-root .ds-menu-mark .ds-bold-cross {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ui-root .ds-mgroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-root .ds-mgroup + .ds-mgroup {
+  margin-top: var(--space-px20);
+}
+
+.ui-root .ds-mi {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--btn-h);
+  padding: 0 var(--space-px12);
+  border-radius: var(--radius-menu-row);
+  font-family: var(--font-body);
+  font-size: var(--fs-text);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-tile);
+  color: var(--text-2);
+  text-decoration: none;
+  transition: color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+  .ui-root .ds-mi:hover { color: var(--text); }
+}
+
+.ui-root .ds-mi[aria-current='page'] {
+  color: var(--text);
+  font-weight: var(--fw-medium);
+}
+
+.ui-root .ds-mi:focus-visible,
+.ui-root .ds-mlegal:focus-visible {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: calc(-1 * var(--focus-w));
+}
+
+.ui-root .ds-mi:disabled {
+  cursor: default;
+  opacity: var(--disabled-opacity);
+}
+
+/* A count beside an item (the coach's To-dos for today): small and grey, in words' place. */
+.ui-root .ds-mi-n {
+  margin-left: auto;
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-regular);
+  color: var(--text-2);
+}
+
+.ui-root .ds-mfoot {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+  padding-top: var(--space-4);
+}
+
+.ui-root .ds-mlegal {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-px12);
+  font-size: var(--fs-meta);
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .ui-root .ds-mlegal:hover { color: var(--text); }
+}
+
+/* ---------- Phone (and narrow windows): edge to edge, the header holds the crosshair ---------- */
+.ui-root .ds-mbtn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  flex: none;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  display: grid;
+  place-items: center;
+  margin-left: calc(-1 * var(--space-px10));
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-mbtn .ds-bold-cross {
+  width: var(--phead-mark);
+  height: var(--phead-mark);
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .ds-mbtn[aria-expanded='true'] .ds-bold-cross {
+  transform: rotate(45deg);
+}
+
+.ui-root .ds-mbtn:focus-visible {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: calc(-1 * var(--focus-w));
+  border-radius: var(--radius-control);
+}
+
+.ui-root .ds-pmenu {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-menu);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: env(safe-area-inset-top, 0px) var(--space-px20) calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+  animation: ds-fade var(--dur) var(--ease);
+}
+
+.ui-root .ds-pmenu-head {
+  display: flex;
+  align-items: center;
+  min-height: calc(var(--tap-min) + 2 * var(--space-px14));
+  margin: 0 calc(-1 * var(--space-px20)) var(--space-px12);
+  padding: 0 var(--space-px20);
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-pmenu .ds-menu {
+  min-height: calc(100% - var(--tap-min) - 2 * var(--space-px14) - var(--space-px12));
+}
+
+.ui-root .ds-pmenu .ds-mi {
+  min-height: var(--tap-min);
+  padding: 0;
+}
+
+.ui-root .ds-pmenu .ds-mlegal {
+  padding: 0;
+}
+
+@media (max-width: 1023px) {
+  .ui-root.ds-frame-root {
+    background: var(--bg);
+  }
+  .ui-root .ds-frame {
+    display: block;
+    min-height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--bg);
+  }
+  .ui-root .ds-frame-side {
+    display: none;
+  }
+  .ui-root .ds-frame-main {
+    padding: 0;
+  }
+  /* The frame's own header, for a page without DesignHeader (which draws the crosshair beside My Mission). */
+  .ui-root .ds-frame-phead {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: var(--space-px14);
+    padding: calc(var(--space-px14) + env(safe-area-inset-top, 0px)) var(--space-px20) var(--space-px14);
+    border-bottom: var(--line-w) solid var(--line);
+    background: var(--bg);
+  }
+  .ui-root .ds-frame:has(.hdr-frame) .ds-frame-phead {
+    display: none;
+  }
+}
+
+/* ---------- Focus mode: inside a tool the menu goes (rule 21) ---------- */
+.ui-root.ds-frame-root--focus .ds-frame {
+  grid-template-columns: minmax(0, 1fr);
+  background: var(--bg);
+}
+
+.ui-root.ds-frame-root--focus .ds-frame-side,
+.ui-root.ds-frame-root--focus .ds-frame-phead,
+.ui-root.ds-frame-root--focus .hdr-frame {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-pmenu { animation: none; }
+  .ui-root .ds-mbtn .ds-bold-cross { transition: none; }
+}
+
+/* ---------- DesignHeader inside the frame (rule 20) ----------
+   Phone: a sticky row with the crosshair and My Mission as a 40px box with a
+   thin line (25 Nov reference .phonehead, .mission). Laptop: no crosshair (the
+   menu is the column); My Mission and Chat sit at the panel's top right, out
+   of the page's flow, so every page's opening keeps its place. */
+.ui-root.hdr-frame-root {
+  background: transparent;
+}
+
+.ui-root .hdr-frame {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ui-root .hdr-mbox:not(#_) {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  height: var(--mission-box-h);
+  padding: 0 var(--space-px14);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-control);
+  font-family: var(--font-body);
+  font-size: var(--fs-meta);
+  line-height: 1;
+  letter-spacing: normal;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .hdr-mbox b {
+  min-width: 0;
+  margin-left: var(--space-px6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: var(--fw-regular);
+  color: var(--text);
+}
+
+.ui-root .hdr-mbox--none b {
+  color: var(--placeholder);
+}
+
+.ui-root .hdr-mbox .hdr-mbox-pending {
+  visibility: hidden;
+}
+
+@media (hover: hover) {
+  .ui-root .hdr-mbox:hover { border-color: var(--text); }
+}
+
+.ui-root .hdr-mbox:focus-visible {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px2);
+}
+
+@media (min-width: 1024px) {
+  .ui-root .hdr-frame {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--frame-main-x);
+    z-index: 2;
+    max-width: 50%;
+  }
+  .ui-root .hdr-frame-menu {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .ui-root.hdr-frame-root {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .ui-root .hdr-frame {
+    gap: var(--space-px14);
+    padding: calc(var(--space-px14) + env(safe-area-inset-top, 0px)) var(--space-px20) var(--space-px14);
+    border-bottom: var(--line-w) solid var(--line);
+    background: var(--bg);
+  }
+  .ui-root .hdr-frame-chat {
+    display: none;
+  }
+}
+
+/* ---------- The coach portal in the frame ----------
+   CoachApp's root is the frame's root too (.cc-app): the page background
+   round the panel on a laptop. Search and the bell sit at the panel's top
+   right, out of the page's flow; on a phone they share the header row with
+   the crosshair. The old phone bar is gone (the crosshair opens the menu). */
+.ui-root.ds-frame-root.cc-app {
+  display: block;
+  background: var(--raised);
+}
+
+.ui-root .ds-frame .cc-header--frame {
+  position: static;
+  border-bottom: 0;
+  background: transparent;
+  padding-top: 0;
+}
+
+.ui-root .ds-frame .cc-header--frame .cc-header-in {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-px12);
+  height: auto;
+  padding: 0;
+}
+
+.ui-root .ds-frame .cc-header--frame .cc-search {
+  flex: 1 1 auto;
+  max-width: var(--cc-search-max);
+  border-radius: var(--radius-control);
+  background: transparent;
+  box-shadow: inset 0 0 0 var(--line-w) var(--line);
+}
+
+@media (min-width: 1024px) {
+  .ui-root .ds-frame .cc-header--frame {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--frame-main-x);
+    left: calc(var(--frame-main-x) + 40%);
+    z-index: 3;
+  }
+  .ui-root .ds-frame .cc-frame-menu {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .ui-root.ds-frame-root.cc-app {
+    background: var(--bg);
+  }
+  .ui-root .ds-frame .cc-header--frame {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    border-bottom: var(--line-w) solid var(--line);
+    background: var(--bg);
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .ui-root .ds-frame .cc-header--frame .cc-header-in {
+    padding: var(--space-px14) var(--space-px20);
+  }
+  .ui-root .ds-frame:has(.cc-header--frame) .ds-frame-phead {
+    display: none;
+  }
+}

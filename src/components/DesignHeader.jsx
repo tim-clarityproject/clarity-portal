@@ -11,6 +11,7 @@ import { onPlanChanged } from '../lib/performance/planChanged';
 import { SiteDesktopMenu } from './SiteMenu';
 import PlanMissionPanel from './PlanMissionPanel';
 import { isNavPhone } from './design/pageLock';
+import { MenuButton, useFrame } from './design/Frame';
 
 // The header (approved Home mock-up M2, version 3; decisions "Header").
 //
@@ -167,6 +168,38 @@ export default function DesignHeader({ className = '' }) {
   // with no words, rather than "Add your Mission" for a moment before the
   // real one (UI tester, scale check).
   const missionPending = !hasMission && !activePlan && (activePlanLoad.loading || !missionKnown);
+  const { inFrame } = useFrame();
+
+  // Inside the frame (polish 1, rules 18 to 20): on a phone the header holds
+  // the crosshair, which opens the frame's menu, and My Mission when it's
+  // switched on, as a 40px box with a thin line; on a laptop the menu is the
+  // frame's column, so My Mission and Chat sit quietly at the top right.
+  if (inFrame) {
+    const openMission = missionPending ? undefined : !hasMission ? openMissionStep : activePlan ? openPlanPanel : () => navigate('/personal-operating-plan');
+    return (
+      <div className={`ui-root hdr-frame-root ${className}`.trim()}>
+        <div className="hdr hdr-frame">
+          <MenuButton className="hdr-frame-menu" />
+          {showPill && (
+            <button
+              type="button"
+              className={`hdr-mbox${hasMission ? '' : ' hdr-mbox--none'}`}
+              onClick={openMission}
+              aria-haspopup={activePlan && hasMission ? 'dialog' : undefined}
+              aria-busy={missionPending || undefined}
+            >
+              My Mission
+              <b className={missionPending ? 'hdr-mbox-pending' : undefined}>{hasMission ? mission : NO_MISSION}</b>
+            </button>
+          )}
+          {startChat && <span className="hdr-frame-chat"><ChatButton onClick={startChat} /></span>}
+        </div>
+        {activePlan && planPanelUsed && (
+          <PlanMissionPanel open={planPanelOpen} onClose={() => setPlanPanelOpen(false)} />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`ui-root ${className}`.trim()}>

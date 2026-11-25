@@ -1,13 +1,14 @@
 import { useContext, useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { useLocation, useNavigate, Navigate, Outlet } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { justSignedOut, rememberNext, sessionEndedJustNow, SIGN_IN_PATHS } from '../lib/signIn/addresses';
 import { goToStop, hasAuthenticator, signInStop } from '../lib/signIn/flow';
 import { isCoachPlace, SIGN_IN_AGAIN } from '../lib/signIn/coachAuth';
 import { needsBeforeYouStart } from '../lib/signIn/terms';
+import { knownNotCoach, refreshCoachRole } from '../lib/coach/role';
 import { diag } from '../utils/diag';
-import { SitePhoneNav } from './SiteMenu';
+import { ClientFrame } from './SiteMenu';
 
 /** How often, at most, the coach portal asks again what a coach owes (a reset since, say). */
 const RECHECK_MS = 10 * 1000;
@@ -89,7 +90,10 @@ export default function ProtectedLayout() {
   // is asked the same way, so it never skips a stop. Clients' pages never
   // ask about any of this.
   const coachPlace = isCoachPlace(location.pathname);
-  const mayOwe = Boolean(user) && (coachPlace || hasAuthenticator(user) || needsBeforeYouStart(user));
+  // A client opening the coach portal goes Home at once (polish 1): never the coach checks, never a blank page.
+  const clientInCoachPlace = coachPlace && Boolean(user) && !isLoading && knownNotCoach(user.id);
+  useEffect(() => { if (clientInCoachPlace) refreshCoachRole(user?.id); }, [clientInCoachPlace, user?.id]);
+  const mayOwe = Boolean(user) && !clientInCoachPlace && (coachPlace || hasAuthenticator(user) || needsBeforeYouStart(user));
   // What was found, who it was found for, and for which part of the
   // portal: an answer for one account never opens the portal for the next
   // one to sign in on this tab, and a client page's answer never opens
@@ -145,16 +149,21 @@ export default function ProtectedLayout() {
     return null; // Redirect in progress
   }
 
+  if (clientInCoachPlace) return <Navigate to="/welcome" replace />;
+
   // Still checking what they owe, or on their way to it: nothing shows.
   if (!cleared) {
     return <div className="ui-root" role="status" aria-label="Loading" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />;
   }
 
-  // User authenticated - render the matched child route via Outlet
+  // User authenticated - render the matched child route via Outlet. The coach
+  // portal draws its own frame; every client page sits in the client frame
+  // (polish 1, rules 18 to 21: the menu column on a laptop, the crosshair's
+  // menu in the phone header; it replaced the phone bar).
+  if (coachPlace) return <Outlet />;
   return (
-    <>
+    <ClientFrame>
       <Outlet />
-      <SitePhoneNav />
-    </>
+    </ClientFrame>
   );
 }

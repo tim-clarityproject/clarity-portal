@@ -52,22 +52,23 @@
 
   /* ====== Typography ====== */
 
-  /* Reduce h1 font size on mobile */
-  h1 {
-    font-size: calc(28 * var(--u-big, 1px)) !important;
+  /* Older pages' headings on a phone, in the 25 Nov type scale (polish 1, rule 1: 22px titles, 16px below them).
+     The shared parts (ds-*, cc-*) set their own sizes and margins, so these leave them alone. */
+  h1:not([class*="ds-"]):not([class*="cc-"]) {
+    font-size: calc(22 * var(--u-big, 1px)) !important;
     margin: 16px 0 !important;
     scroll-margin-top: calc(var(--header-height, 56px) + 16px);
   }
 
   /* Reduce h2 font size on mobile */
-  h2 {
-    font-size: calc(18 * var(--u, 1px)) !important;
+  h2:not([class*="ds-"]):not([class*="cc-"]) {
+    font-size: calc(16 * var(--u, 1px)) !important;
     margin: 12px 0 8px !important;
     scroll-margin-top: calc(var(--header-height, 56px) + 16px);
   }
 
   /* Reduce h3 font size on mobile */
-  h3 {
+  h3:not([class*="ds-"]):not([class*="cc-"]) {
     font-size: calc(16 * var(--u, 1px)) !important;
     margin: 8px 0 4px !important;
     scroll-margin-top: calc(var(--header-height, 56px) + 16px);
@@ -81,14 +82,14 @@
   /* ====== Form Elements ====== */
 
   /* Ensure buttons meet minimum touch target size (44px) - exclude fixed action buttons */
-  button:not(.breathe-button) {
+  button:not(.breathe-button):not([class*="ds-"]):not([class*="cc-"]):not([class*="hdr-"]) {
     min-height: 44px;
     padding: 12px 16px !important;
-    font-size: calc(14 * var(--u, 1px)) !important;
+    font-size: calc(16 * var(--u, 1px)) !important;
   }
 
   /* Dropdown and select elements */
-  select, input {
+  select:not([class*="ds-"]), input:not([class*="ds-"]):not(.ds-numbox input) {
     min-height: 44px;
     padding: 12px 16px !important;
   }
@@ -113,8 +114,8 @@
   }
 
   /* Ensure form labels are readable */
-  label {
-    font-size: calc(14 * var(--u, 1px));
+  label:not([class*="ds-"]) {
+    font-size: calc(16 * var(--u, 1px));
   }
 
   /* Fix two-column form inputs on mobile - stack them */

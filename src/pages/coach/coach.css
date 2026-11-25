@@ -157,7 +157,7 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-role-problem { display: grid; justify-items: start; gap: var(--space-3); padding-block: var(--space-5); }
 .ui-root .cc-note { margin: var(--space-2) 0 0; font-size: var(--fs-note); color: var(--text-2); }
 .ui-root .cc-small-label { margin: var(--space-px22) 0 var(--space-px2); font-size: var(--fs-note); color: var(--text-2); }
-.ui-root .cc-problem { margin: var(--space-2) 0 0; font-size: var(--fs-note); color: var(--coral-text); }
+.ui-root .cc-problem { margin: var(--space-2) 0 0; font-size: var(--fs-note); color: var(--error-text); }
 
 /* A link inside a sentence (Tim, 18 Nov): the line's own colour, a quiet
    grey underline 4px below; the words turn coral on hover and keyboard

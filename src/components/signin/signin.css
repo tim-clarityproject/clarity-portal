@@ -449,7 +449,7 @@
 
 .ui-root .si-err b {
   font-weight: var(--fw-medium);
-  color: var(--coral-soft-text);
+  color: var(--error-text);
 }
 
 .ui-root .si-err span > span { display: block; }

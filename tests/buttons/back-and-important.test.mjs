@@ -61,11 +61,11 @@ test('Back: the old 14px gap fails, and so does 6px', async () => {
   await load(BACKLINK, '.ui-root .ui-back-link { gap: 14px; }');
   let r = await tab.evaluate(backGaps);
   assert.equal(r.problems.length, 1);
-  assert.match(r.problems[0], /"Back to Home": its label is 14\.00px from the chevron, not 10px/);
+  assert.match(r.problems[0], /"Back to Home": its label is 14\.0[01]px from the chevron, not 10px/);
   await load(GUIDE, '.ui-root .ds-guide-back { margin-right: -27.5px; }');
   r = await tab.evaluate(backGaps);
   assert.equal(r.problems.length, 1);
-  assert.match(r.problems[0], /ds-guide-back "Back": its label is 6\.\d\dpx from the chevron, not 10px/);
+  assert.match(r.problems[0], /ds-guide-back "Back": its label is [56]\.\d\dpx from the chevron, not 10px/);
 });
 
 test('Back: a calendar\'s Previous arrow is not a Back and is left alone', async () => {
@@ -81,8 +81,8 @@ const TODO = (important, extra = '') => `<div class="ds-todos" role="list"><div 
 const ROW = (important, words) => `<span class="ds-line" style="display:block"><span class="ds-mark-row${important ? ' ds-mark-row--important' : ''}"><span class="${important ? 'ds-important-mark' : 'ds-mark-space'}" aria-hidden="true"></span><span>${words}${important ? '<span class="ds-sr">, highest priority</span>' : ''}</span></span></span>`;
 const MARKED = (first = '1. Call Evan before 09:00') => `<div style="width:400px">${ROW(true, first)}${ROW(false, '2. Training sessions')}</div>`;
 // The old thin line of follow-up 1, at the item's left edge.
-const OLD_LINE = '<p style="width:400px"><span class="ds-old-line">1. Call Evan before 09:00<span class="ds-sr">, highest priority</span></span></p>';
-const OLD_LINE_CSS = '.ui-root .ds-old-line { position: relative; display: block; padding-left: 10px; } .ui-root .ds-old-line::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--coral-soft-text); }';
+const OLD_LINE = '<p style="width:400px;line-height:1.55"><span class="ds-old-line">1. Call Evan before 09:00<span class="ds-sr">, highest priority</span></span></p>';
+const OLD_LINE_CSS = '.ui-root .ds-old-line { position: relative; display: block; padding-left: 10px; } .ui-root .ds-old-line::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #FFBD9E; }';
 
 test('Important: the tick box\'s 2px soft coral edge, and the small soft coral box where there is no tick box, pass', async () => {
   await load(TODO(true) + MARKED());
@@ -109,29 +109,29 @@ test('Important: the old thin soft coral line at the left edge fails, in importa
   assert.match(all, /a coloured line down its side \(ds-old-line::before\)/);
   assert.match((await tab.evaluate(sideLines)).join('; '), /ds-old-line::before a 2px bar down its side/);
   // Beside the box as well, it still fails.
-  await load(MARKED(), '.ui-root .ds-mark-row--important { position: relative; padding-left: 10px; } .ui-root .ds-mark-row--important::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--coral-soft-text); }');
+  await load(MARKED(), '.ui-root .ds-mark-row--important { position: relative; padding-left: 10px; } .ui-root .ds-mark-row--important::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #FFBD9E; }');
   assert.match((await tab.evaluate(importantMarks)).problems.join('; '), /a coloured line down its side \(ds-mark-row::before\)/);
   // A soft coral left edge on the row.
-  await load(MARKED(), '.ui-root .ds-mark-row--important { border-left: 2px solid var(--coral-soft-text); }');
+  await load(MARKED(), '.ui-root .ds-mark-row--important { border-left: 2px solid #FFBD9E; }');
   assert.match((await tab.evaluate(importantMarks)).problems.join('; '), /a coloured line down its side \(ds-mark-row\)/);
 });
 
 test('sideLines fails every coloured side line, with no exception', async () => {
-  await load('<div class="ds-row ds-row--important" style="position:relative;height:40px;width:300px">Row</div>', '.ui-root .ds-row::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--coral-soft-text); }');
+  await load('<div class="ds-row ds-row--important" style="position:relative;height:40px;width:300px">Row</div>', '.ui-root .ds-row::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #FFBD9E; }');
   assert.match((await tab.evaluate(sideLines)).join('; '), /ds-row::before a 2px bar down its side/);
-  await load('<div class="ds-card" style="border-left:4px solid var(--coral);height:60px;width:300px">Card</div>');
+  await load('<div class="ds-card" style="border-left:4px solid #FF6F5C;height:60px;width:300px">Card</div>');
   assert.match((await tab.evaluate(sideLines)).join('; '), /ds-card 4px side edge/);
-  await load('<div class="ds-card" style="border-left:2px solid var(--coral-soft-text);height:60px;width:300px">Card</div>');
+  await load('<div class="ds-card" style="border-left:2px solid #FFBD9E;height:60px;width:300px">Card</div>');
   assert.match((await tab.evaluate(sideLines)).join('; '), /ds-card 2px side edge/);
 });
 
 test('Important: a box not drawn as the tick box fails (size, edge, colour, corners, fill)', async () => {
   const check = async (css, re) => { await load(MARKED(), css); assert.match((await tab.evaluate(importantMarks)).problems.join('; '), re); };
-  await check('.ui-root .ds-important-mark { width: 10px; height: 10px; }', /its box is 10\.0 by 10\.0px, not the tick box's 18px/);
+  await check('.ui-root .ds-important-mark { width: 10px; height: 10px; }', /its box is 10\.0 by 10\.0px, not the tick box's 24px/);
   await check('.ui-root .ds-important-mark { border-width: 1px; }', /its box edge is 1px, not 2px/);
-  await check('.ui-root .ds-important-mark { border-color: var(--coral); }', /its box edge is rgb\(255, 111, 92\), not soft coral/);
-  await check('.ui-root .ds-important-mark { border-radius: 50%; }', /its box corners are 50%, not the tick box's 5px/);
-  await check('.ui-root .ds-important-mark { background: var(--coral-soft-text); }', /its box is filled/);
+  await check('.ui-root .ds-important-mark { border-color: #FF6F5C; }', /its box edge is rgb\(255, 111, 92\), not soft coral/);
+  await check('.ui-root .ds-important-mark { border-radius: 50%; }', /its box corners are 50%, not the tick box's 6px/);
+  await check('.ui-root .ds-important-mark { background: #FFBD9E; }', /its box is filled/);
 });
 
 test('Important: the box after the title, or titles out of line, fail', async () => {
@@ -139,15 +139,15 @@ test('Important: the box after the title, or titles out of line, fail', async ()
   assert.match((await tab.evaluate(importantMarks)).problems.join('; '), /its box is not before its title/);
   // The rows without the box keep no space for it: their titles start further left.
   await load(MARKED(), '.ui-root .ds-mark-space { display: none; }');
-  assert.match((await tab.evaluate(importantMarks)).problems.join('; '), /its title starts 30\.0px from the titles around it/);
+  assert.match((await tab.evaluate(importantMarks)).problems.join('; '), /its title starts 36\.0px from the titles around it/);
 });
 
 test('Important: bold words, a coral word or a soft coral dot beside the box fail', async () => {
   await load(MARKED('<b style="font-weight:700">1. Call Evan</b>'));
   assert.match((await tab.evaluate(importantMarks)).problems.join('; '), /bold words \("1\. Call Evan", 700\)/);
-  await load(MARKED('<span style="color:var(--coral-soft-text)">Important</span> 1. Call Evan'));
+  await load(MARKED('<span style="color:#FFBD9E">Important</span> 1. Call Evan'));
   assert.match((await tab.evaluate(importantMarks)).problems.join('; '), /a coral word \("Important"\)/);
-  await load(MARKED('<i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--coral)"></i>1. Call Evan'));
+  await load(MARKED('<i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#FF6F5C"></i>1. Call Evan'));
   assert.match((await tab.evaluate(importantMarks)).problems.join('; '), /a small dot/);
 });
 
@@ -164,7 +164,7 @@ test('Important: a row whose tick box is hidden (choosing several on a phone) ne
   const hide = '.ui-root .ds-check-box { display: none; }';
   await load(TODO(true), hide);
   assert.match((await tab.evaluate(importantMarks)).problems.join('; '), /no small soft coral box before its title/);
-  await load(TODO(true), `${hide} .ui-root .ds-todo--important .ds-todo-words { position: relative; display: block; padding-left: 10px; } .ui-root .ds-todo--important .ds-todo-words::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--coral-soft-text); }`);
+  await load(TODO(true), `${hide} .ui-root .ds-todo--important .ds-todo-words { position: relative; display: block; padding-left: 10px; } .ui-root .ds-todo--important .ds-todo-words::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #FFBD9E; }`);
   assert.match((await tab.evaluate(importantMarks)).problems.join('; '), /a coloured line down its side/);
   assert.match((await tab.evaluate(sideLines)).join('; '), /ds-todo-words::before a 2px bar down its side/);
   // The coach list's own form (src/pages/coach/todoParts.jsx and todos.css): the box in the open button's first column.

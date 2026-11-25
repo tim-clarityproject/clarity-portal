@@ -1663,7 +1663,7 @@
 .ui-root .wol-ft-err {
   margin: 0 0 var(--space-3);
   font-size: var(--fs-small);
-  color: var(--coral-text);
+  color: var(--error-text);
   text-align: right;
 }
 

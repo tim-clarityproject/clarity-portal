@@ -1,3 +1,5 @@
+// Brought to the 25 Nov design reference (polish 1): the joined switch with a 1px line and 12px corners,
+// 12px corners on every control, a 52 by 32 switch.
 // The lasting controls check (Tim, 22 Nov; tests/buttons/buttons-check.mjs
 // controlsFamily) read on small pages of its own, so it is known to fail
 // what it should: a round pill toggle, Nekst inside a control, a control of
@@ -17,15 +19,17 @@ const STYLE = `
     background: #000; color: #fff; font-family: 'DM Sans', sans-serif; padding: 24px; }
   :where(.ui-root button) { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
     font-size: 16px; font-family: 'DM Sans', sans-serif; }
-  .btn { height: 40px; padding: 0 16px; border-radius: 8px; box-shadow: inset 0 0 0 1px #3C3C3B; }
-  .main { height: 40px; padding: 0 16px; border-radius: 8px; background: #FF6F5C; color: #000; }
-  .glide { display: inline-flex; padding: 3px; border-radius: 8px; background: #111110; height: 40px; box-sizing: border-box; }
-  .glide button { height: 34px; padding: 0 16px; border-radius: 6px; }
-  .glide button[aria-pressed=true] { background: #262626; }
+  .btn { height: 40px; padding: 0 18px; border-radius: 12px; box-shadow: inset 0 0 0 1px #262626; }
+  .main { height: 40px; padding: 0 20px; border-radius: 12px; background: #FF6F5C; color: #000; }
+  .glide { display: inline-flex; border-radius: 12px; border: 1px solid #262626; height: 40px; box-sizing: border-box; overflow: hidden; }
+  .glide button { height: 38px; padding: 0 16px; }
+  .glide button[aria-pressed=true], .glide button[aria-checked=true] { background: #fff; color: #000; }
+  .grey { display: inline-flex; padding: 3px; border-radius: 8px; background: #111110; height: 40px; box-sizing: border-box; }
+  .grey button { height: 34px; padding: 0 16px; border-radius: 6px; }
   .pilltoggle { display: inline-flex; padding: 3px; border-radius: 999px; border: 1px solid #636362; height: 40px; box-sizing: border-box; }
   .pilltoggle button { height: 32px; padding: 0 16px; border-radius: 999px; }
   .pilltoggle button[aria-pressed=true] { background: #fff; color: #000; }
-  .sw { width: 40px; height: 24px; border-radius: 999px; background: #3C3C3B; }
+  .sw { width: 52px; height: 32px; border-radius: 16px; background: #262626; }
   .sw[aria-checked=true] { background: #5FEFBB; }
 `;
 const page = (body) => `<!doctype html><html><head><style>${STYLE}</style></head><body><div class="ui-root">${body}</div></body></html>`;
@@ -44,19 +48,23 @@ async function check(body, { phone = false } = {}) {
   return tab.evaluate(controlsFamily, { phone, scale: 1 });
 }
 
-test('the gliding switch, an outlined button, one coral button and the switch pass', async () => {
+test('the joined switch, an outlined button, one main button and the switch pass', async () => {
   const r = await check(`${GLIDE}<button class="btn">Edit</button><button class="main">Save my plan</button>
     <button class="sw" role="switch" aria-checked="true" aria-label="Weekends"></button><button class="sw" role="switch" aria-checked="false" aria-label="Family"></button>`);
   assert.deepEqual(r.problems, []);
   assert.equal(r.toggles, 1);
 });
 
+test('the old soft grey track (the gliding switch of 22 Nov) fails', async () => {
+  const r = await check('<div class="grey" role="group" aria-label="Show"><button aria-pressed="true">Board</button><button aria-pressed="false">List</button></div>');
+  assert.match(r.problems.join('; '), /no line round it/);
+});
+
 test('a round pill toggle fails', async () => {
   const r = await check('<div class="pilltoggle" role="group" aria-label="Show"><button aria-pressed="true">Board</button><button aria-pressed="false">List</button></div>');
   assert.equal(r.problems.length, 1);
-  assert.match(r.problems[0], /not the gliding switch: round ends on its track/);
-  assert.match(r.problems[0], /no soft grey track/);
-  assert.match(r.problems[0], /an edge round its track/);
+  assert.match(r.problems[0], /not the joined switch: round ends on its track/);
+  assert.match(r.problems[0], /not the joined switch/);
 });
 
 test('the retired .seg fails by its name', async () => {
@@ -84,7 +92,7 @@ test('a button of the wrong height or corners fails', async () => {
   const r = await check('<button class="btn" style="height:34px">Edit</button><button class="btn" style="border-radius:14px">Delete</button>');
   const all = r.problems.join('; ');
   assert.match(all, /"Edit": 34px high, not 40/);
-  assert.match(all, /"Delete": corners 14px, not 8px/);
+  assert.match(all, /"Delete": corners 14px, not 12px/);
 });
 
 test('a pill inside a control fails', async () => {
@@ -97,10 +105,10 @@ test('a second coral button fails, whatever its class', async () => {
   assert.match(r.problems.join('; '), /2 coral buttons on one screen/);
 });
 
-test('a switch that is not 40 by 24, or not mint when on, fails', async () => {
-  const r = await check('<button class="sw" role="switch" aria-checked="true" aria-label="Big" style="width:52px;height:30px"></button><button class="sw" role="switch" aria-checked="true" aria-label="Coral" style="background:#FF6F5C"></button>');
+test('a switch that is not 52 by 32, or not mint when on, fails', async () => {
+  const r = await check('<button class="sw" role="switch" aria-checked="true" aria-label="Small" style="width:40px;height:24px"></button><button class="sw" role="switch" aria-checked="true" aria-label="Coral" style="background:#FF6F5C"></button>');
   const all = r.problems.join('; ');
-  assert.match(all, /"Big": 52 by 30, not 40 by 24/);
+  assert.match(all, /"Small": 40 by 24, not 52 by 32/);
   assert.match(all, /"Coral": on, but rgb\(255, 111, 92\), not mint, coral/);
 });
 

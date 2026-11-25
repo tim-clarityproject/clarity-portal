@@ -205,8 +205,8 @@ html:has(.ui-root) {
   width: 20px;
   height: 20px;
   background-color: currentColor;
-  -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
-  mask: url('/brand/crosshair_white.png') center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 185 185'%3E%3Cg fill='none' stroke='%23000' stroke-width='15' stroke-linejoin='round'%3E%3Cpath d='M89.5 4V68A14 14 0 0 0 103.5 82H169' transform='translate(2.65 -2.65)'/%3E%3Cpath d='M82 169V103.5A14 14 0 0 0 68 89.5H4' transform='translate(-2.65 2.65)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 185 185'%3E%3Cg fill='none' stroke='%23000' stroke-width='15' stroke-linejoin='round'%3E%3Cpath d='M89.5 4V68A14 14 0 0 0 103.5 82H169' transform='translate(2.65 -2.65)'/%3E%3Cpath d='M82 169V103.5A14 14 0 0 0 68 89.5H4' transform='translate(-2.65 2.65)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
   flex-shrink: 0;
 }
 
@@ -276,8 +276,8 @@ html:has(.ui-root) {
   width: 18px;
   height: 18px;
   background-color: var(--on-coral);
-  -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
-  mask: url('/brand/crosshair_white.png') center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 185 185'%3E%3Cg fill='none' stroke='%23000' stroke-width='15' stroke-linejoin='round'%3E%3Cpath d='M89.5 4V68A14 14 0 0 0 103.5 82H169' transform='translate(2.65 -2.65)'/%3E%3Cpath d='M82 169V103.5A14 14 0 0 0 68 89.5H4' transform='translate(-2.65 2.65)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 185 185'%3E%3Cg fill='none' stroke='%23000' stroke-width='15' stroke-linejoin='round'%3E%3Cpath d='M89.5 4V68A14 14 0 0 0 103.5 82H169' transform='translate(2.65 -2.65)'/%3E%3Cpath d='M82 169V103.5A14 14 0 0 0 68 89.5H4' transform='translate(-2.65 2.65)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
   animation: auth-btn-spin var(--dur-slow) linear infinite;
 }
 
@@ -465,13 +465,13 @@ html:has(.ui-root) {
 .ui-root .auth-input.error {
   /* The soft coral's own light value: the pale one is 1.6 to 1 on white,
      so a field with a problem lost its edge in light (break-it, 12 Nov). */
-  border-color: var(--coral-soft-text);
+  border-color: var(--error-text);
 }
 
 .auth-field-error {
   font-family: var(--font-body);
   font-size: calc(13 * var(--u, 1px));
-  color: var(--coral-soft);
+  color: var(--error-text);
   margin: 8px 0 0;
 }
 
@@ -1096,7 +1096,7 @@ html:has(.ui-root) {
 .ui-root .dng {
   border-radius: var(--radius-pill);
   background: transparent;
-  color: var(--coral-text);
+  color: var(--text);
   border: 1px solid var(--field-line);
   font-family: var(--font-display);
   font-weight: 400;
@@ -1112,12 +1112,12 @@ html:has(.ui-root) {
 .ui-root .dng:hover,
 .ui-root .dng:focus-visible {
   /* Never fainter than the edge at rest (see .ui-btn-ghost). */
-  border-color: var(--coral-text);
+  border-color: var(--text);
   background: var(--coral-soft-tint);
 }
 
 .ui-root .dng:focus-visible {
-  outline: 2px solid var(--coral);
+  outline: 2px solid var(--text);
   outline-offset: 2px;
 }
 
@@ -1710,7 +1710,7 @@ html:has(.ui-root) {
   margin: var(--space-3) 0 0;
   font-family: var(--font-body);
   font-size: var(--fs-small);
-  color: var(--coral-soft-text);
+  color: var(--error-text);
 }
 
 /* ---- Phone fixed Finish/Save-as-draft bar (shared, prompts 6-11) ---- */

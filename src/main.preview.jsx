@@ -8,6 +8,10 @@ const path = window.location.pathname.replace(/\/+$/, '')
 
 if (path === '/design-reference') {
   import('./pages/designReference/mount.jsx')
+} else if (path === '/design-reference/blocks') {
+  // The 25 Nov reference's blocks, built from the shared parts, for the
+  // side-by-side with design-reference-25nov.html (polish 1).
+  import('./pages/designReference/mountBlocks.jsx')
 } else if (path === '/email-preview') {
   // The hidden email test page (Tim, 10 Nov): every email with invented
   // people. Nothing links to it.

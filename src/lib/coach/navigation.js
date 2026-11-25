@@ -97,3 +97,32 @@ export function coachTitle(pathname) {
 
 /** The menu's pages for one coach: an associate never has the owner's pages, and has a shared page only when something there is shared with them. */
 export const menuFor = ({ isOwner, live = false, hasShared = false } = {}) => COACH_MENU.filter((i) => (!i.owner || isOwner) && (!i.later || !live) && (!i.shared || isOwner || hasShared));
+
+/**
+ * The coach portal's menu in the frame (25 Nov design reference and example pages, "Coach: Today"; polish 1, rule 19):
+ * groups separated by gaps, not names (Today, Calendar, To-dos; Clients, Leads, Network, Boards; Finances and the pages
+ * still to come), the coach's own to-do lists under To-dos and favourite views as a last group; Settings in the foot.
+ * `pathname` marks the page the coach is on.
+ */
+export const COACH_MENU_GROUPS = [['today', 'calendar', 'todos'], ['clients', 'leads', 'network', 'boards'], ['finances', 'leading-ideas', 'library']];
+
+export function coachFrameMenu({ isOwner, live = false, hasShared = false, pathname = '', lists = [], favourites = [] }) {
+  const items = menuFor({ isOwner, live, hasShared });
+  const current = (to) => (to === '/coach' ? pathname === '/coach' || pathname === '/coach/' : pathname === to || pathname.startsWith(`${to}/`));
+  const row = (i) => ({ key: i.key, name: i.label, to: i.to, current: i.key === 'todos' ? pathname === i.to : current(i.to) });
+  const placed = new Set(COACH_MENU_GROUPS.flat());
+  const groups = COACH_MENU_GROUPS.map((keys, n) => {
+    const rows = [];
+    const inGroup = items.filter((i) => keys.includes(i.key) || (n === COACH_MENU_GROUPS.length - 1 && !placed.has(i.key) && i.key !== 'settings'));
+    const at = (k) => (keys.includes(k) ? keys.indexOf(k) : keys.length);
+    inGroup.sort((a, b) => at(a.key) - at(b.key));
+    for (const i of inGroup) {
+      rows.push(row(i));
+      if (i.key === 'todos') lists.forEach((l) => rows.push({ key: `list-${l.id}`, name: l.name, to: `/coach/todos/lists/${l.id}`, current: pathname === `/coach/todos/lists/${l.id}` }));
+    }
+    return rows;
+  });
+  const fav = favourites.map((v) => ({ key: `view-${v.id}`, name: v.name, to: `/coach/${v.list === 'leads' ? 'leads' : 'clients'}?view=${v.id}` }));
+  const settings = items.find((i) => i.key === 'settings') || { key: 'settings', label: 'Settings', to: '/coach/settings' };
+  return { groups: fav.length ? [...groups, fav] : groups, foot: [row(settings)] };
+}
