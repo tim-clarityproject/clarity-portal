@@ -26,6 +26,7 @@
 //
 // Everything this test adds is deleted at the end, and any check-in rows
 // for the two months it uses are put back as they were.
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { checkExplainOpener } from '../explain-panel.mjs';
 import { chromium } from 'playwright';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -37,8 +38,8 @@ import {
 } from '../../src/lib/performance/checkin.js';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_REF = 'gqtqljngeenqzxneucoc';
-const TEST_HOST = `${TEST_REF}.supabase.co`;
+const TEST_REF = TARGET_HOST;
+const TEST_HOST = TARGET_HOST;
 const MOCK = process.env.M12 || join(homedir(), 'Downloads', 'clarity-phase-5', 'm12-check-in.html');
 const MOCK_FULL = join(homedir(), 'Downloads', 'clarity-phase-5', 'm12-check-in.html');
 const FONTS = join(process.cwd(), 'node_modules', '@fontsource', 'dm-sans', 'files');
@@ -66,7 +67,7 @@ async function until(fn, ms = 15000) {
 }
 
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }

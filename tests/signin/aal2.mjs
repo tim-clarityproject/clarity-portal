@@ -91,7 +91,7 @@ export async function asAal2(target, { host, factor = true, raise = true, totpKe
       const res = await route.fetch();
       const body = await res.json().catch(() => null);
       const up = res.ok() && new URL(req.url()).searchParams.get('grant_type') === 'password'
-        ? await upgradeWithCode({ base: `https://${host}`, apikey: req.headers().apikey, session: body, totpKey }).catch(() => null)
+        ? await upgradeWithCode({ base: new URL(req.url()).origin, apikey: req.headers().apikey, session: body, totpKey }).catch(() => null)
         : null;
       return route.fulfill({ status: res.status(), contentType: 'application/json', body: JSON.stringify(up || body) });
     });

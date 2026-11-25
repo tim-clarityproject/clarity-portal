@@ -5,6 +5,9 @@
 //   node --import ./tests/scores/register.mjs tests/scale/trace-first.mjs --role owner --page /coach [--size phone] [--warm]
 import { chromium } from 'playwright';
 import { createHash } from 'node:crypto';
+import { refuseHostedLoad } from '../hosted-guard.mjs';
+
+refuseHostedLoad('The first-visit trace');
 
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };

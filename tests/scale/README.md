@@ -13,6 +13,19 @@ Times The Clarity Portal's main pages at Tim's scale (1,000 clients, 15 coaches)
 - `offline-reload.mjs`: traces the coach portal reloading offline, step by step.
 - `report.mjs`: turns the results into the table in `BASELINE.md`.
 
+## The browser suites' stand-in (25 Nov 2026)
+
+Every browser suite runs here by default (tests/target.mjs; HOSTED=1 for the hosted test project, end-of-run smoke check only). Make a snapshot with the four standing accounts once, start it, and build the app against it:
+
+```bash
+node seed.mjs --from $P/base-0NN.tar --to $P/base-suites.tar --only 5     # seed/05-standing-accounts.sql
+POSTGREST_BIN=<path>/postgrest node stack.mjs --snapshot $P/base-suites.tar --port 54400 &
+cd ../.. && VERCEL_ENV=production VITE_SUPABASE_URL=http://127.0.0.1:54400 VITE_SUPABASE_ANON_KEY=<SCALE_PRINT_ANON=1 key> \
+  npx vite build --outDir <scratch>/dist-local --emptyOutDir && node tests/phase4/serve-build.mjs <scratch>/dist-local 4317 &
+```
+
+The stand-in's GoTrue takes the one password for every seeded person, and any six-digit code from a coach with an authenticator (challenge and verify), so coaches reach aal2 as on Supabase. `seed.mjs` rewrites `seed-counts.json`; keep the scale run's copy. Every tool here refuses a hosted target (tests/hosted-guard.mjs); `run.mjs` (the old hosted scale test) is retired.
+
 ## Run it
 
 ```bash

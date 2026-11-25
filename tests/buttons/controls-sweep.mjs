@@ -11,18 +11,19 @@
 //
 //   APP_URL=http://localhost:4327 node --import ./tests/scores/register.mjs tests/buttons/controls-sweep.mjs
 //   (ONLY=<regex on the page name>, WIDTHS=1280,390, MODES=dark,light narrow it)
+import { accountsText, TEST_HOST as TARGET_HOST, TEST_HOSTNAME as TARGET_HOSTNAME } from '../target.mjs';
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { backGaps, controlsFamily, importantMarks } from './buttons-check.mjs';
 
 const APP = (process.env.APP_URL || 'http://localhost:5173').replace(/\/$/, '');
-const TEST_REF = 'gqtqljngeenqzxneucoc';
+const TEST_REF = TARGET_HOST;
 const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
 const WIDTHS = (process.env.WIDTHS || '1280,390').split(',').map(Number);
 const MODES = (process.env.MODES || 'dark,light').split(',');
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }
@@ -95,7 +96,7 @@ for (const signedIn of [true, false]) {
           if (/\/api\//.test(url)) return route.abort();
           return route.fallback();
         }
-        if (!url.includes(`${TEST_REF}.supabase.co`)) return /fonts\.(googleapis|gstatic)\.com/.test(url) ? route.fallback() : route.abort();
+        if (!url.includes(TARGET_HOSTNAME)) return /fonts\.(googleapis|gstatic)\.com/.test(url) ? route.fallback() : route.abort();
         // Reads and signing in only: nothing is written.
         if (/\/auth\/v1\//.test(url)) return route.fallback();
         // Every call that isn't a plain read (functions too, which can write) is answered empty, never sent.

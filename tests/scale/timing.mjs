@@ -23,6 +23,9 @@
 // 1440 by 900 with no slowing.
 import { chromium } from 'playwright';
 import { appendFileSync } from 'node:fs';
+import { refuseHostedLoad } from '../hosted-guard.mjs';
+
+refuseHostedLoad('The scale timing run');
 
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };

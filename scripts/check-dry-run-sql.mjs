@@ -8,6 +8,7 @@
 // Usage: node scripts/check-dry-run-sql.mjs FILE...
 
 import fs from 'node:fs';
+import { isLoadSqlFile } from '../tests/hosted-guard.mjs';
 
 const FORBIDDEN = /^(commit|rollback|end|abort|begin|start\s+transaction|prepare\s+transaction|savepoint|release)\b/i;
 
@@ -79,6 +80,12 @@ function topLevelStatements(sql) {
 
 let bad = 0;
 for (const file of process.argv.slice(2)) {
+  // Large seeds and load tests never run on the hosted test project (Tim, 25 Nov 2026: over its free quota).
+  if (isLoadSqlFile(file)) {
+    console.log(`${file} is a large seed or load test: it runs on the local stand-in only (tests/scale/README.md), never on the hosted test project, so nothing was run.`);
+    bad += 1;
+    continue;
+  }
   const sql = fs.readFileSync(file, 'utf8');
   for (const s of topLevelStatements(sql)) {
     if (s.meta || FORBIDDEN.test(s.text)) {

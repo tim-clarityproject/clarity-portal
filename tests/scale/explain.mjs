@@ -6,6 +6,9 @@
 //   node tests/scale/explain.mjs --from <base-scale.tar> [--only name,...]
 import { openDb } from './db.mjs';
 import { createHash } from 'node:crypto';
+import { refuseHostedLoad } from '../hosted-guard.mjs';
+
+refuseHostedLoad('The scale EXPLAIN run');
 
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : null; };

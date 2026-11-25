@@ -15,6 +15,7 @@
 //   - before 047 the database holds three of the day's to-dos and the rest
 //     wait on the device, quietly (no error); after 047 it holds all six.
 // The seed is put back on the real today at the end.
+import { TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -22,7 +23,7 @@ import { FIXED_TODAY, seedFixed, seedForReal, fixClock } from '../phase2/fixed-d
 import { clientDb, readEnv } from '../phase8/shared.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_HOST = 'gqtqljngeenqzxneucoc.supabase.co';
+const TEST_HOST = TARGET_HOST;
 const out = process.argv[2] || null;
 if (out) mkdirSync(out, { recursive: true });
 const results = [];

@@ -2,13 +2,14 @@
 // invented test client, every other host and every email call blocked,
 // M9's own example answers, and stand-in answers for the guest functions
 // of migration 035 (and 042), shaped exactly as the SQL builds them.
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
 
 export const APP = process.env.APP_URL || 'http://localhost:5173';
-export const TEST_REF = 'gqtqljngeenqzxneucoc';
-export const TEST_HOST = `${TEST_REF}.supabase.co`;
+export const TEST_REF = TARGET_HOST;
+export const TEST_HOST = TARGET_HOST;
 export const M9_FILE = process.env.M9_FILE || `${homedir()}/Downloads/clarity-phase-8a/m9-get-unstuck.html`;
 export const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 
@@ -25,7 +26,7 @@ export async function until(fn, ms = 15000) {
 
 export function readEnv() {
   const env = {};
-  for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+  for (const line of accountsText().split('\n')) {
     const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
     if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
   }

@@ -42,6 +42,7 @@
 //    green); ways of being 6, 7, 7 average 7, green; the debrief's stress
 //    "A little", chosen in the app, is green.
 // Ends with the usual seeded plan and running sprint on the real today.
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -54,7 +55,7 @@ import {
 } from '../../src/lib/scores/index.js';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_REF = 'gqtqljngeenqzxneucoc';
+const TEST_REF = TARGET_HOST;
 const results = [];
 let failures = 0;
 const pass = (name, ok, detail = '') => {
@@ -62,7 +63,7 @@ const pass = (name, ok, detail = '') => {
   results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `: ${detail}` : ''}`);
 };
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }

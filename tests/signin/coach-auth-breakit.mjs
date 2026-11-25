@@ -37,6 +37,7 @@
 //                console, title, history, live regions
 //   sw           the service worker's cache never holds an answer from Supabase or /api/
 //   text         every screen at twice the text size, at 1440 and 400
+import { TEST_HOSTNAME as TARGET_HOSTNAME, DB_ORIGIN as TARGET_ORIGIN } from '../target.mjs';
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { APP, TEST_REF, makeChecks, sleep } from './shared.mjs';
@@ -423,9 +424,9 @@ if (PARTS.includes('server')) {
     const s = JSON.parse(localStorage.getItem('clarity-portal-auth') || '{}');
     const h = { 'Content-Type': 'application/json', Authorization: `Bearer ${s.access_token}` };
     const a = await fetch('/api/coach-auth-reset', { method: 'POST', headers: h, body: JSON.stringify({ kind: 'reset', coachId }) });
-    const b = await fetch(`https://${ref}.supabase.co/rest/v1/rpc/coach_authenticator_reset`, { method: 'POST', headers: h, body: JSON.stringify({ p_coach: coachId }) });
+    const b = await fetch(`${ref}/rest/v1/rpc/coach_authenticator_reset`, { method: 'POST', headers: h, body: JSON.stringify({ p_coach: coachId }) });
     return { server: a.status, db: b.status, code: (await b.json().catch(() => ({}))).code };
-  }, { coachId: ownerRow.id, ref: TEST_REF });
+  }, { coachId: ownerRow.id, ref: TARGET_ORIGIN });
   pass(`${tag}: from the associate's own page, the server says 403 and the database 42501`, viaPage.server === 403 && viaPage.code === '42501' && before() === was, JSON.stringify(viaPage));
   await d.ctx.close();
   // A client.
@@ -645,9 +646,9 @@ if (PARTS.includes('stale')) {
     const direct = await d.page.evaluate(async ({ ref }) => {
       const s = JSON.parse(localStorage.getItem('clarity-portal-auth') || '{}');
       const h = { 'Content-Type': 'application/json', Authorization: `Bearer ${s.access_token}` };
-      const call = async (fn, body = {}) => (await (await fetch(`https://${ref}.supabase.co/rest/v1/rpc/${fn}`, { method: 'POST', headers: h, body: JSON.stringify(body) })).json()).status;
+      const call = async (fn, body = {}) => (await (await fetch(`${ref}/rest/v1/rpc/${fn}`, { method: 'POST', headers: h, body: JSON.stringify(body) })).json()).status;
       return { make: await call('coach_recovery_codes_make'), on: await call('coach_authenticator_on', { p_factor: null }), saved: await call('coach_recovery_codes_saved') };
-    }, { ref: TEST_REF });
+    }, { ref: TARGET_ORIGIN });
     pass(`${tag}: the old sign-in can't make new codes, turn an authenticator on or tick, even calling 053 directly`, direct.make === 'signed_out' && direct.on === 'signed_out' && direct.saved === 'signed_out' && world.codeRows.length === 0 && !world.turnedOnAt, JSON.stringify(direct));
     // A token refreshed after the reset (a new iat, the old sign-in's amr).
     await d.page.evaluate(() => { const s = JSON.parse(localStorage.getItem('clarity-portal-auth')); s.expires_at = Math.floor(Date.now() / 1000) - 60; localStorage.setItem('clarity-portal-auth', JSON.stringify(s)); });
@@ -907,7 +908,7 @@ if (PARTS.includes('sw')) {
     return n;
   }, [key, ...codes]);
   pass(`${tag}: no kept file holds the key or a code`, holding === 0, `${holding}`);
-  pass(`${tag}: every request outside the portal was to the stood-in Supabase (none reached anywhere else)`, outside.every((h) => h === `${TEST_REF}.supabase.co`) && bad(world).length === 0, [...new Set(outside)].join(','));
+  pass(`${tag}: every request outside the portal was to the stood-in Supabase (none reached anywhere else)`, outside.every((h) => h === TARGET_HOSTNAME) && bad(world).length === 0, [...new Set(outside)].join(','));
   await d.ctx.close();
 }
 

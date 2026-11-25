@@ -28,6 +28,7 @@
 // are there. Part A writes only to the device, part B only to the
 // stand-in, part C only rows it deletes again. The clock is fixed (Wed 21
 // Oct 2026, 22:30 London, when Sprint 1 ran from Mon 12 Oct; now read from the seeded sprint, below).
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -35,8 +36,8 @@ import { createClient } from '@supabase/supabase-js';
 import { londonInstant } from '../phase2/fixed-day.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_REF = 'gqtqljngeenqzxneucoc';
-const TEST_HOST = `${TEST_REF}.supabase.co`;
+const TEST_REF = TARGET_HOST;
+const TEST_HOST = TARGET_HOST;
 const H1 = '11111111-1111-4111-8111-111111111111';
 const H2 = '22222222-2222-4222-8222-222222222222';
 const TABLES_039 = ['day_plan_habits', 'wind_down_nights'];
@@ -49,7 +50,7 @@ const pass = (name, ok, detail = '') => {
 };
 
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }

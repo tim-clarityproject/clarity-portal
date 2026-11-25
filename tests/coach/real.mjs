@@ -55,7 +55,7 @@ async function associateContext(browser) {
   await page.route('**/api/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"sent":false}' }));
   // After 054 the second test coach needs her real code too: Tim enrolled an authenticator on it (23 Nov) and keeps its
   // set-up key as TEST_COACH_TWO_TOTP_KEY (never printed; without it the page is shown the stand-in factor as before).
-  await asAal2(page, { host: new URL(env.TEST_SUPABASE_URL).host, totpKey: env.TEST_COACH_TWO_TOTP_KEY || null });
+  await asAal2(page, { host: new URL(env.TEST_SUPABASE_URL).hostname, totpKey: env.TEST_COACH_TWO_TOTP_KEY || null });
   const signIn = async () => {
     await page.goto(`${APP}/coach/sign-in`);
     await page.getByLabel('Email').fill(env.TEST_COACH_TWO_EMAIL);

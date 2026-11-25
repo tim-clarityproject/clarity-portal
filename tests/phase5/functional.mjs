@@ -7,6 +7,7 @@
 // H  where Review its Strategies and Make it easier this week land
 // R  Recovery (seed --reset --recovery, then seed --reset): no numbers asked for, the calm lines
 // Everything added is deleted; half-done check-in drafts for the two months are dropped.
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -16,7 +17,7 @@ import { QUESTIONS, checkinMonth, monthName } from '../../src/lib/performance/ch
 import { m13CheckinScores, m13Results } from '../../src/lib/scores/m13.js';
 
 const APP = 'http://localhost:5173';
-const TEST_HOST = 'gqtqljngeenqzxneucoc.supabase.co';
+const TEST_HOST = TARGET_HOST;
 const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
 const part = (n) => !ONLY || ONLY.has(n);
 const results = [];
@@ -26,8 +27,8 @@ const note = (s) => results.push(`NOTE  ${s}`);
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 async function until(fn, ms = 15000) { const end = Date.now() + ms; let v; while (Date.now() < end) { v = await fn().catch(() => null); if (v) return v; await sleep(250); } return v; }
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) { const m = /^([A-Z_]+)=(.*)$/.exec(line.trim()); if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, ''); }
-if (!env.TEST_SUPABASE_URL?.includes('gqtqljngeenqzxneucoc')) throw new Error('Not the test project.');
+for (const line of accountsText().split('\n')) { const m = /^([A-Z_]+)=(.*)$/.exec(line.trim()); if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, ''); }
+if (!env.TEST_SUPABASE_URL?.includes(TARGET_HOST)) throw new Error('Not the test project.');
 async function client(email, password) {
   const db = createClient(env.TEST_SUPABASE_URL, env.TEST_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
   const { data, error } = await db.auth.signInWithPassword({ email, password });

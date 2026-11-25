@@ -57,6 +57,7 @@
 //     Supabase's own auth tables: 053 removes no factors or sessions, and
 //     the server's admin calls remove the factors (no admin call signs a
 //     user out, so the sessions stay).
+import { TEST_HOSTNAME as TARGET_HOSTNAME } from '../target.mjs';
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import { APP, TEST_REF } from './shared.mjs';
 import { totp } from './totp.mjs';
@@ -382,7 +383,7 @@ export function makeWorld(o = {}) {
       return json(route, { ok: true, ran: false, message: 'Resetting an authenticator only works on the live site, so nothing has changed here.' });
     }
     if (app) return json(route, { ok: true, sent: false });
-    if (url.hostname !== `${TEST_REF}.supabase.co`) { world.calls.push(`blocked ${url.hostname}`); return route.abort(); }
+    if (url.hostname !== TARGET_HOSTNAME) { world.calls.push(`blocked ${url.hostname}`); return route.abort(); }
 
     // ---- Supabase's own sign-in.
     if (path.endsWith('/auth/v1/token') && method === 'POST') {

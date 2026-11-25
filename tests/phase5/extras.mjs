@@ -17,6 +17,7 @@
 // sprint), for this month, only when it has none; the way of being uses a
 // past day of the mid-sprint client's with no plan and no review. Both are
 // deleted at the end. Every email call and every other host is blocked.
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium } from 'playwright';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -26,7 +27,7 @@ import { checkinMonth } from '../../src/lib/performance/checkin.js';
 import { addDays } from '../../src/lib/scores/dates.js';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_HOST = 'gqtqljngeenqzxneucoc.supabase.co';
+const TEST_HOST = TARGET_HOST;
 const out = process.argv[2] || join(process.cwd(), 'tmp-phase5-extras');
 mkdirSync(out, { recursive: true });
 
@@ -39,8 +40,8 @@ const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 async function until(fn, ms = 15000) { const end = Date.now() + ms; let v; while (Date.now() < end) { v = await fn().catch(() => null); if (v) return v; await sleep(250); } return v; }
 
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) { const m = /^([A-Z_]+)=(.*)$/.exec(line.trim()); if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, ''); }
-if (!env.TEST_SUPABASE_URL?.includes('gqtqljngeenqzxneucoc')) throw new Error('Not the test project.');
+for (const line of accountsText().split('\n')) { const m = /^([A-Z_]+)=(.*)$/.exec(line.trim()); if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, ''); }
+if (!env.TEST_SUPABASE_URL?.includes(TARGET_HOST)) throw new Error('Not the test project.');
 async function client(email, password) {
   const db = createClient(env.TEST_SUPABASE_URL, env.TEST_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
   const { data, error } = await db.auth.signInWithPassword({ email, password });

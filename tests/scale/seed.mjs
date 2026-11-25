@@ -10,6 +10,9 @@ import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openDb } from './db.mjs';
+import { refuseHostedLoad } from '../hosted-guard.mjs';
+
+refuseHostedLoad('The scale seed');
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);

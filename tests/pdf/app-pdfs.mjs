@@ -7,6 +7,7 @@
 //
 // Needs the dev server running against the test database. The test account
 // comes from ~/.clarity-test-accounts.env and is never printed.
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium, webkit, devices } from 'playwright';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -15,13 +16,13 @@ import { join } from 'node:path';
 const out = process.argv[2];
 mkdirSync(out, { recursive: true });
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_HOST = 'gqtqljngeenqzxneucoc.supabase.co';
+const TEST_HOST = TARGET_HOST;
 const results = [];
 let wrongHost = false;
 
 function testAccount() {
   const env = {};
-  for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+  for (const line of accountsText().split('\n')) {
     const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
     if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
   }

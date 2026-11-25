@@ -172,6 +172,10 @@ Tim's rules of 26 Oct (design reference v15, M4 dashboard v46). Later phases fol
 
 Every browser a test starts is muted (Tim, 16 Nov): `tests/mute-audio.mjs`, loaded by `tests/scores/register.mjs` (Chromium `--mute-audio`, Firefox volume 0, WebKit media held at volume 0), and by `test:panels` and `test:typing`. A browser started any other way passes `--mute-audio` itself (`scripts/make-quick-guide.mjs` does).
 
+## Browser suites run on the local stand-in (Tim, 25 Nov 2026)
+
+The hosted test project (clarity-portal-test) went over Supabase's free quota (egress 7.7 of 5 GB, logs 6.9 of 1 GB in one cycle), almost all from suites and testers. **Every browser suite, tester and load test runs on the local stand-in by default** (`tests/scale/stack.mjs`; the four standing accounts from `tests/scale/seed/05-standing-accounts.sql`; the app built with `VITE_SUPABASE_URL=http://127.0.0.1:54400`). Suites get their accounts and database host only from `tests/target.mjs`; `HOSTED=1` points one at the hosted project, only for **the end-of-run smoke check** (`HOSTED=1 node --import ./tests/scores/register.mjs tests/smoke/hosted.mjs`: sign-in, one page per area, one PDF, nothing written) or a suite that truly needs real Supabase (`tests/coach/real-sign-in.mjs`), once, never in a loop. **Large seeds, scale runs and load tests never touch a hosted target**: `tests/hosted-guard.mjs` stops them (tests/scale's tools, and `scripts/dry-run-on-test.sh` refuses `tests/scale/` SQL), and `tests/performance/hosted-guard.test.mjs` fails a suite that reads the accounts file or names the hosted project itself. Put this in every tester's and helper's brief.
+
 ## Scores
 
 **Every score is built from `docs/scoring-methods.md`, one function per section in `src/lib/scores/`, and every worked example is a test** (`npm run test:scores`). The evidence behind each claim is in `docs/claims-register.md`.

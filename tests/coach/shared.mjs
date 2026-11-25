@@ -39,6 +39,7 @@
 //
 // No test here sends an email or a message: every /api/ call is answered
 // with a stand-in, and nothing is ever written to the test project.
+import { accountsText, TEST_HOST as TARGET_HOST, TEST_HOSTNAME as TARGET_HOSTNAME } from '../target.mjs';
 import { readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -48,11 +49,11 @@ import { CRM_FUNCTIONS, CRM_HOOKED, CRM_KEYS, CRM_TABLES, crmStandIn } from './c
 import { asAal2 } from '../signin/aal2.mjs';
 
 export const APP = (process.env.APP_URL || 'http://localhost:4317').replace(/\/$/, '');
-const TEST_REF = 'gqtqljngeenqzxneucoc';
+const TEST_REF = TARGET_HOST;
 
 export function readEnv() {
   const out = {};
-  for (const line of readFileSync(join(homedir(), '.clarity-test-accounts.env'), 'utf8').split('\n')) {
+  for (const line of accountsText().split('\n')) {
     const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
     if (m) out[m[1]] = m[2].replace(/^["']|["']$/g, '');
   }
@@ -133,7 +134,7 @@ export async function coachContext(browser, { size = 1440, theme = 'dark', fresh
   // page as one (a stand-in factor, the level raised), and no real
   // authenticator is ever enrolled (tests/signin/aal2.mjs).
   // After 054, a real code when Tim has given the test coach a real authenticator (item 57; never printed).
-  await asAal2(page, { host: `${TEST_REF}.supabase.co`, totpKey: env.TEST_COACH_OWNER_TOTP_KEY || null });
+  await asAal2(page, { host: TARGET_HOSTNAME, totpKey: env.TEST_COACH_OWNER_TOTP_KEY || null });
   await page.goto(`${APP}/coach/sign-in`);
   await page.getByLabel('Email').fill(env.TEST_COACH_OWNER_EMAIL);
   await page.getByLabel('Password', { exact: true }).fill(env.TEST_COACH_OWNER_PASSWORD);
@@ -264,7 +265,7 @@ export async function standIn(page, opts = {}) {
   // Last, so it runs first: the page sees a coach with an authenticator who
   // has given its code (Phase 6a run 5), and the test project only ever sees
   // the real sign-in (tests/signin/aal2.mjs). No real authenticator is enrolled.
-  await asAal2(page, { host: `${TEST_REF}.supabase.co` });
+  await asAal2(page, { host: TARGET_HOSTNAME });
   return store;
 }
 

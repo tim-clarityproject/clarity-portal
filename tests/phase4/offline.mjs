@@ -40,6 +40,7 @@
 // The clock is fixed (tests/phase2/fixed-day.mjs). The seed is built around
 // the fixed day; what the test adds is deleted, and the test client is put
 // back on the real today at the end (plan v3.2, Sprint 1).
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium, webkit } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, mkdirSync, readdirSync } from 'node:fs';
@@ -50,8 +51,8 @@ import { FIXED_TODAY, fixClock, fixedLabel, seedFixed, seedForReal } from '../ph
 import { proxyTo, serveBuild } from './serve-build.mjs';
 import { checkinMonth } from '../../src/lib/performance/checkin.js';
 
-const TEST_REF = 'gqtqljngeenqzxneucoc';
-const TEST_HOST = `${TEST_REF}.supabase.co`;
+const TEST_REF = TARGET_HOST;
+const TEST_HOST = TARGET_HOST;
 const PORT = Number(process.env.OFFLINE_PORT || 4175);
 const DB_PORT = PORT + 1;
 // The builds talk to the test database through a pass-through on this
@@ -74,7 +75,7 @@ const pass = (name, ok, detail = '') => {
 };
 
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }

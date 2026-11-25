@@ -15,16 +15,17 @@
 //
 // (It looked for .ds-page-info-toggle until 22 Nov, which no page has had
 // since the 5 Nov declutter, so it measured nothing.)
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium } from 'playwright';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_HOST = 'gqtqljngeenqzxneucoc.supabase.co';
+const TEST_HOST = TARGET_HOST;
 const [out = '/dev/null', w = '360,390,1280', m = 'dark', sc = '2,1', only] = process.argv.slice(2);
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) { const mm = /^([A-Z_]+)=(.*)$/.exec(line.trim()); if (mm) env[mm[1]] = mm[2].replace(/^['"]|['"]$/g, ''); }
-if (!env.TEST_SUPABASE_URL?.includes('gqtqljngeenqzxneucoc')) throw new Error('Not the test project.');
+for (const line of accountsText().split('\n')) { const mm = /^([A-Z_]+)=(.*)$/.exec(line.trim()); if (mm) env[mm[1]] = mm[2].replace(/^['"]|['"]$/g, ''); }
+if (!env.TEST_SUPABASE_URL?.includes(TARGET_HOST)) throw new Error('Not the test project.');
 const ROUTES = (only ? only.split(',') : readFileSync('src/App.jsx', 'utf8').match(/path="[^"]*"/g).map((s) => s.slice(6, -1)).filter((p) => !p.includes(':') && !p.includes('*')).concat(['/design-reference']));
 
 /** In the page: every title end with an icon, and whether the icon is on its word's last line. */

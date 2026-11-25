@@ -15,20 +15,21 @@
 //
 //   node --import ./tests/scores/register.mjs tests/phase0e/panel-drafts.mjs
 //   APP_URL=http://localhost:5207 to use another server; PARTS=client,coach.
+import { accountsText, TEST_HOST as TARGET_HOST, TEST_HOSTNAME as TARGET_HOSTNAME } from '../target.mjs';
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 
 const APP = (process.env.APP_URL || 'http://localhost:5173').replace(/\/$/, '');
-const TEST_HOST = 'gqtqljngeenqzxneucoc.supabase.co';
+const TEST_HOST = TARGET_HOST;
 const PARTS = (process.env.PARTS || 'client,coach').split(',');
 const results = [];
 let failures = 0;
 const pass = (name, ok, detail = '') => { if (!ok) failures += 1; results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${!ok && detail ? `: ${String(detail).slice(0, 200)}` : ''}`); };
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) { const m = /^([A-Z_]+)=(.*)$/.exec(line.trim()); if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, ''); }
-if (!env.TEST_SUPABASE_URL?.includes('gqtqljngeenqzxneucoc')) throw new Error('Not the test project.');
+for (const line of accountsText().split('\n')) { const m = /^([A-Z_]+)=(.*)$/.exec(line.trim()); if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, ''); }
+if (!env.TEST_SUPABASE_URL?.includes(TARGET_HOST)) throw new Error('Not the test project.');
 
 const browser = await chromium.launch({ args: ['--mute-audio'] });
 const writes = [];
@@ -174,7 +175,7 @@ if (PARTS.includes('coach')) {
       status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', details: null, hint: null, message: 'Could not find the function in the schema cache' }),
     }));
     await page.route(/\/rest\/v1\/rpc\/(guest_claim|alignment_claim)(\?|$)/, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '0' }));
-    await asAal2(page, { host: TEST_HOST, totpKey: env.TEST_COACH_OWNER_TOTP_KEY || null });
+    await asAal2(page, { host: TARGET_HOSTNAME, totpKey: env.TEST_COACH_OWNER_TOTP_KEY || null });
     await page.goto(`${APP}/coach/sign-in`);
     await page.getByLabel('Email').fill(env.TEST_COACH_OWNER_EMAIL);
     await page.getByLabel('Password', { exact: true }).fill(env.TEST_COACH_OWNER_PASSWORD);

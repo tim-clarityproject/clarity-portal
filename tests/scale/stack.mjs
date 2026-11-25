@@ -23,7 +23,8 @@
 // in the app's package.json. The secret below is for this local stand-in only.
 import { createServer, request as httpRequest } from 'node:http';
 import { spawn } from 'node:child_process';
-import { createHmac, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
+import { JWT_SECRET, PASSWORD, signJwt, ANON_KEY } from './local-keys.mjs';
 import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { PGlite } from '@electric-sql/pglite';
@@ -34,8 +35,7 @@ import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
 import { citext } from '@electric-sql/pglite/contrib/citext';
 import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
 
-export const JWT_SECRET = 'local-scale-check-only-not-a-real-secret-0123456789';
-export const PASSWORD = 'scale-pass-1234';
+export { JWT_SECRET, PASSWORD, signJwt, ANON_KEY };
 
 const args = process.argv.slice(2);
 const opt = (name, dflt) => { const i = args.indexOf(`--${name}`); return i >= 0 ? args[i + 1] : dflt; };
@@ -44,15 +44,6 @@ const PORT = Number(opt('port', 54400));
 const DB_PORT = PORT + 1;
 const PGRST_PORT = PORT + 2;
 const PGRST_BIN = process.env.POSTGREST_BIN || opt('postgrest');
-
-const b64u = (b) => Buffer.from(b).toString('base64url');
-export function signJwt(payload) {
-  const head = b64u(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const body = b64u(JSON.stringify(payload));
-  const sig = createHmac('sha256', JWT_SECRET).update(`${head}.${body}`).digest('base64url');
-  return `${head}.${body}.${sig}`;
-}
-export const ANON_KEY = signJwt({ role: 'anon', iss: 'scale-local', iat: 1763000000, exp: 2079000000 });
 
 if (!snapshot || !PGRST_BIN) {
   console.log('Usage: POSTGREST_BIN=<path> node tests/scale/stack.mjs --snapshot <file.tar> [--port 54400]');
@@ -146,6 +137,20 @@ async function gotrue(req, res, path, url) {
       return send(res, 200, sessionFor(people.get(s.email), s.aal, s.sid));
     }
     return send(res, 400, { error: 'unsupported_grant_type' });
+  }
+  // The authenticator's challenge and code (053, 054): a coach with an
+  // authenticator turned on gives any six-digit code and the sign-in becomes
+  // aal2, as Supabase's own verify does. The suites' standing coaches use it
+  // through tests/signin/aal2.mjs (tests/target.mjs gives them a stand-in key).
+  const mfa = /^\/factors\/([^/]+)\/(challenge|verify)$/.exec(path);
+  if (mfa && req.method === 'POST') {
+    const c = claimsOf(req);
+    const p = c && [...people.values()].find((x) => x.id === c.sub);
+    if (!p || !p.has_code) return send(res, 422, { code: 'mfa_factor_not_found', msg: 'no authenticator' });
+    if (mfa[2] === 'challenge') return send(res, 200, { id: randomUUID(), type: 'totp', expires_at: Math.floor(Date.now() / 1000) + 300 });
+    const body = JSON.parse(String(await readBody(req)) || '{}');
+    if (!/^\d{6}$/.test(String(body.code || ''))) return send(res, 422, { code: 'mfa_verification_failed', msg: 'Invalid TOTP code entered' });
+    return send(res, 200, sessionFor(p, 'aal2', c.session_id));
   }
   if (path === '/user') {
     const c = claimsOf(req);

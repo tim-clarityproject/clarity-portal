@@ -12,6 +12,7 @@
 // walked, stood in whole, by tests/signin/coach-auth.mjs.
 //
 //   node tests/signin/coach.mjs
+import { TEST_HOSTNAME as TARGET_HOSTNAME } from '../target.mjs';
 import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
 import { APP, TEST_REF, guard, makeChecks, sleep, testEnv } from './shared.mjs';
@@ -34,7 +35,7 @@ const open = async ({ phone = false, width = phone ? 390 : 1280, answers = {}, f
   const ctx = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: 'dark', hasTouch: phone, isMobile: phone });
   await guard(ctx, calls, answers);
   // An authenticator shown to the page (a stand-in factor), the level left at aal1.
-  if (factor) await asAal2(ctx, { host: `${TEST_REF}.supabase.co`, raise: false });
+  if (factor) await asAal2(ctx, { host: TARGET_HOSTNAME, raise: false });
   const page = await ctx.newPage();
   return { ctx, page, calls };
 };

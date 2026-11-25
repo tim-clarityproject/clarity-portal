@@ -16,6 +16,7 @@
 //
 // It only opens tools and presses Next or Back; any row a tool makes on
 // the way (none is expected) is listed and deleted at the end.
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium } from 'playwright';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -24,7 +25,7 @@ import { createClient } from '@supabase/supabase-js';
 import { motionRecorder, motionSeen } from './measure.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_HOST = 'gqtqljngeenqzxneucoc.supabase.co';
+const TEST_HOST = TARGET_HOST;
 const out = process.argv[2] || join(process.cwd(), 'tmp-back-and-taps');
 mkdirSync(out, { recursive: true });
 
@@ -35,8 +36,8 @@ const note = (s) => results.push(`NOTE  ${s}`);
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) { const m = /^([A-Z_]+)=(.*)$/.exec(line.trim()); if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, ''); }
-if (!env.TEST_SUPABASE_URL?.includes('gqtqljngeenqzxneucoc')) throw new Error('Not the test project.');
+for (const line of accountsText().split('\n')) { const m = /^([A-Z_]+)=(.*)$/.exec(line.trim()); if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, ''); }
+if (!env.TEST_SUPABASE_URL?.includes(TARGET_HOST)) throw new Error('Not the test project.');
 const startedAt = new Date().toISOString();
 
 const browser = await chromium.launch();

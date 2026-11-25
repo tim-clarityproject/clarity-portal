@@ -37,15 +37,16 @@
 // printed), it writes only what the app itself writes, through the same
 // rules every client has: no SQL, nothing a person couldn't do in the app.
 // The version snapshots use the app's own planSnapshot.
+import { accountsText, TEST_HOST as TARGET_HOST } from '../tests/target.mjs';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { planSnapshot } from '../src/lib/performance/versions.js';
 
-const TEST_REF = 'gqtqljngeenqzxneucoc';
+const TEST_REF = TARGET_HOST;
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }

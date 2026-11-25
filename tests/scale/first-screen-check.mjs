@@ -15,6 +15,9 @@
 //     [--before http://127.0.0.1:4319] [--roles owner,associate] [--sizes phone,laptop] [--pages today,clients,client,week,month,schedule,finances,money,cashflow]
 import { chromium } from 'playwright';
 import { createHash } from 'node:crypto';
+import { refuseHostedLoad } from '../hosted-guard.mjs';
+
+refuseHostedLoad('The first-screen check');
 
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };

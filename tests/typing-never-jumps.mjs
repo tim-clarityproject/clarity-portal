@@ -14,12 +14,13 @@
 // ENGINE=chromium runs it in Chrome's engine instead of Safari's.
 // The accounts come from ~/.clarity-test-accounts.env (never printed).
 
+import { accountsText, TEST_HOST as TARGET_HOST } from './target.mjs';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { chromium, devices, webkit } from 'playwright';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_REF = 'gqtqljngeenqzxneucoc';
+const TEST_REF = TARGET_HOST;
 const WORDS = 320;
 const MIDDLE_WORDS = 40;
 // A scroll that moves the other way by more than this counts as a jump.
@@ -27,7 +28,7 @@ const JUMP_PX = 2;
 
 function testAccount() {
   const env = {};
-  for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+  for (const line of accountsText().split('\n')) {
     const m = /^(?:export\s+)?([A-Z_]+)=(.*)$/.exec(line.trim());
     if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
   }

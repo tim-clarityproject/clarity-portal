@@ -18,13 +18,14 @@
 // Signed in as the test client (~/.clarity-test-accounts.env, never
 // printed), it writes only what the app itself writes, through the same
 // rules every client has.
+import { accountsText, TEST_HOST as TARGET_HOST } from '../tests/target.mjs';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
 
-const TEST_REF = 'gqtqljngeenqzxneucoc';
+const TEST_REF = TARGET_HOST;
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }

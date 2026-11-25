@@ -19,6 +19,7 @@
 //           with only the password would (aal1: nothing), then the same
 //           after the code is given (aal2: the stand-in's client), so the
 //           refusals above are the code's and not an empty stand-in
+import { DB_ORIGIN as TARGET_ORIGIN } from '../target.mjs';
 import { chromium } from 'playwright';
 import { APP, TEST_REF, makeChecks, sleep } from './shared.mjs';
 import { COACH_DATA_MARKER, makeWorld, OWNER } from './coachWorld.mjs';
@@ -29,7 +30,7 @@ const ADDRESSES = ['/coach', '/coach/clients', '/coach/leads', '/coach/network',
 const { pass, done } = makeChecks();
 const browser = await chromium.launch();
 const path = (page) => new URL(page.url()).pathname;
-const DB = `https://${TEST_REF}.supabase.co`;
+const DB = TARGET_ORIGIN;
 
 async function device(world, { aal = 'aal1' } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, colorScheme: 'dark', locale: 'en-GB', timezoneId: 'Europe/London', serviceWorkers: 'block' });

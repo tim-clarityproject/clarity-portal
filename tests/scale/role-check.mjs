@@ -5,6 +5,9 @@
 //
 //   node --import ./tests/scores/register.mjs tests/scale/role-check.mjs --app http://127.0.0.1:4320
 import { chromium } from 'playwright';
+import { refuseHostedLoad } from '../hosted-guard.mjs';
+
+refuseHostedLoad('The role check');
 
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };

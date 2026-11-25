@@ -1,11 +1,12 @@
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim()); if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }
-if (!env.TEST_SUPABASE_URL?.includes('gqtqljngeenqzxneucoc')) throw new Error('not test');
+if (!env.TEST_SUPABASE_URL?.includes(TARGET_HOST)) throw new Error('not test');
 async function as(e, p) { const c = createClient(env.TEST_SUPABASE_URL, env.TEST_SUPABASE_ANON_KEY, { auth: { persistSession: false } }); const { data, error } = await c.auth.signInWithPassword({ email: env[e], password: env[p] }); if (error) throw new Error(`${e} sign-in: ${error.message}`); return { c, id: data.user.id }; }
 const out = [];
 const C = await as('TEST_CLIENT_EMAIL', 'TEST_CLIENT_PASSWORD');

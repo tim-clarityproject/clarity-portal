@@ -2,19 +2,20 @@
 // every outside host and every call that would send an email is blocked
 // or answered here, so no real email is ever sent and Google's own page
 // is never opened.
+import { accountsText, TEST_HOST as TARGET_HOST, TEST_HOSTNAME as TARGET_HOSTNAME } from '../target.mjs';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 export const APP = process.env.APP_URL || 'http://localhost:5173';
-export const TEST_REF = 'gqtqljngeenqzxneucoc';
+export const TEST_REF = TARGET_HOST;
 // M26 seq 7 (19 Nov, 21:35): version 4's pages with the spacing rule of
 // 19 Nov, 21:25 and the coach authenticator's screens (Phase 6a run 5).
 export const MOCKUP = process.env.M26 || join(homedir(), 'Downloads', 'clarity-phase-6a', 'M26-sign-in-seq7.html');
 
 export function testEnv() {
   const env = {};
-  for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+  for (const line of accountsText().split('\n')) {
     const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
     if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
   }
@@ -40,7 +41,7 @@ export async function guard(context, calls = [], answers = {}) {
     const req = route.request();
     const url = new URL(req.url());
     const local = url.origin === new URL(APP).origin;
-    const test = url.hostname === `${TEST_REF}.supabase.co`;
+    const test = url.hostname === TARGET_HOSTNAME;
     if (local || url.protocol === 'data:' || url.protocol === 'blob:') return route.continue();
     if (!test) {
       calls.push({ blocked: `${url.origin}${url.pathname}` });

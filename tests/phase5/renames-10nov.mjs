@@ -16,14 +16,15 @@
 // fixed day; every other host and every email call is blocked.
 //
 //   node --import ./tests/scores/register.mjs tests/phase5/renames-10nov.mjs
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { FIXED_TODAY, seedFixed, seedForReal, fixClock, fixedLabel } from '../phase2/fixed-day.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_REF = 'gqtqljngeenqzxneucoc';
-const TEST_HOST = `${TEST_REF}.supabase.co`;
+const TEST_REF = TARGET_HOST;
+const TEST_HOST = TARGET_HOST;
 let failures = 0;
 let passes = 0;
 const pass = (name, ok, detail = '') => {
@@ -32,7 +33,7 @@ const pass = (name, ok, detail = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail && !ok ? `: ${detail}` : ''}`);
 };
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }

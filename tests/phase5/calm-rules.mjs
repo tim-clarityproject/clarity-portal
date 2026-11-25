@@ -48,6 +48,7 @@
 // other host and every email call is blocked. Nothing is saved.
 //
 //   node --import ./tests/scores/register.mjs tests/phase5/calm-rules.mjs [folder for screenshots]
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { GUEST_TOKEN, GUEST_VISIT, M10, M9, m10Wash } from '../phase8/shared.mjs';
 import { STEPS as HC_STEPS, appPage as hcPage, signIn as hcSignIn } from '../healthcheck/hc-shared.mjs';
 import { IDS as HC_IDS, m7Rows } from '../healthcheck/inside-shared.mjs';
@@ -66,8 +67,8 @@ import { checkPopups } from './popups.mjs';
 import { centredGroups, centringProblems } from '../signin/centring.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_REF = 'gqtqljngeenqzxneucoc';
-const TEST_HOST = `${TEST_REF}.supabase.co`;
+const TEST_REF = TARGET_HOST;
+const TEST_HOST = TARGET_HOST;
 const out = process.argv[2] || null;
 if (out) mkdirSync(out, { recursive: true });
 const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
@@ -90,7 +91,7 @@ const pass = (name, ok, detail = '') => {
   else { failures += 1; fails.push(`FAIL  ${name}${detail ? `: ${detail}` : ''}`); }
 };
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }

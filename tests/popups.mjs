@@ -27,13 +27,14 @@
 // fails on its own (Tim, 29 Oct). Every page is also checked for "Next
 // coaching session", hidden until the coach portal exists.
 // Exits 1 when a check fails.
+import { accountsText, TEST_HOST as TARGET_HOST } from './target.mjs';
 import { chromium } from 'playwright';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { appPage, signIn as signInHc } from './healthcheck/hc-shared.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_HOST = 'gqtqljngeenqzxneucoc.supabase.co';
+const TEST_HOST = TARGET_HOST;
 // ONLY=health-check runs the outside Health Check alone: nothing signs in and the test accounts are never read.
 const PORTAL = existsSync('src/components/design/ChartTips.jsx') && process.env.ONLY !== 'health-check';
 const out = process.argv[2] || null;
@@ -401,7 +402,7 @@ async function healthCheck(touch) {
 
 const env = {};
 if (PORTAL) {
-  for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+  for (const line of accountsText().split('\n')) {
     const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
     if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
   }

@@ -9,10 +9,14 @@
 // tests/scale/results.json.
 
 import { spawnSync } from 'node:child_process';
+import { refuseHostedLoad } from '../hosted-guard.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Retired 25 Nov 2026 (Tim: the hosted test project went over its free quota): this loaded 1,000 clients into the
+// hosted project, even if rolled back. The scale check runs on the local stand-in (README here).
+refuseHostedLoad('The hosted scale test (npm run test:scale)', { always: 'it runs on the hosted test project through scripts/dry-run-on-test.sh' });
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '../..');
 const MIGRATIONS = path.join(REPO, 'supabase/migrations');

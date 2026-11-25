@@ -23,6 +23,7 @@
 //
 //   node --import ./tests/scores/register.mjs tests/phase5/answers.mjs [folder for screenshots]
 //   SIZES=390 MODES=light …   one part of it
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
@@ -31,8 +32,8 @@ import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_REF = 'gqtqljngeenqzxneucoc';
-const TEST_HOST = `${TEST_REF}.supabase.co`;
+const TEST_REF = TARGET_HOST;
+const TEST_HOST = TARGET_HOST;
 const out = process.argv[2] || null;
 if (out) mkdirSync(out, { recursive: true });
 let failures = 0;
@@ -43,7 +44,7 @@ const pass = (name, ok, detail = '') => {
   else { failures += 1; fails.push(`FAIL  ${name}${detail ? `: ${String(detail).slice(0, 300)}` : ''}`); }
 };
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }

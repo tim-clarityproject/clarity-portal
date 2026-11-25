@@ -39,6 +39,7 @@
 //             sign-in from before it is still signed out after its token refreshes
 //   low       the 2-or-fewer line once after an ordinary sign-in, never twice in one
 //   client    a client signs in exactly as before and never sees any of this
+import { DB_ORIGIN as TARGET_ORIGIN } from '../target.mjs';
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { APP, makeChecks, sleep, TEST_REF } from './shared.mjs';
@@ -115,7 +116,7 @@ async function signOut(page) {
 const signedOutLine = SIGNED_OUT_BY_RESET.join(' ');
 const recoveryLine = SIGNED_OUT_BY_RECOVERY.join(' ');
 /** A coach table read with a sign-in's own token, as the page would: the marker row at aal2, nothing otherwise (054). */
-const readCoachData = (page, token) => page.evaluate(async ({ url, token }) => { try { const r = await fetch(url, { headers: { Authorization: `Bearer ${token}`, apikey: 'stand-in' } }); return await r.json(); } catch { return null; } }, { url: `https://${TEST_REF}.supabase.co/rest/v1/coach_todos?select=*`, token });
+const readCoachData = (page, token) => page.evaluate(async ({ url, token }) => { try { const r = await fetch(url, { headers: { Authorization: `Bearer ${token}`, apikey: 'stand-in' } }); return await r.json(); } catch { return null; } }, { url: `${TARGET_ORIGIN}/rest/v1/coach_todos?select=*`, token });
 const tokenOf = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('clarity-portal-auth') || '{}').access_token || null);
 
 // ---------------------------------------------------------------- 1. a new associate's first sign-in

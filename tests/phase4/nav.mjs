@@ -28,6 +28,7 @@
 //
 // The clock is fixed (tests/phase2/fixed-day.mjs) and nothing is seeded:
 // only the person's pins change, and they are put back at the end.
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium } from 'playwright';
 import { readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -36,8 +37,8 @@ import { createClient } from '@supabase/supabase-js';
 import { fixClock } from '../phase2/fixed-day.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_REF = 'gqtqljngeenqzxneucoc';
-const TEST_HOST = `${TEST_REF}.supabase.co`;
+const TEST_REF = TARGET_HOST;
+const TEST_HOST = TARGET_HOST;
 const MOCKS = process.env.MOCKUPS || join(homedir(), 'Downloads', 'clarity-phase-4');
 const FONTS = join(process.cwd(), 'node_modules', '@fontsource', 'dm-sans', 'files');
 // The portal's DM Sans (Phase 8a follow-up, 17 Nov): the variable font with optical sizes Google Fonts serves,
@@ -57,7 +58,7 @@ const pass = (name, ok, detail = '') => {
 };
 
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }

@@ -44,6 +44,7 @@
 // client is put back on the real today (plan v3.2, Sprint 1). Writes
 // report.txt (and screenshots) to the folder. Exits 1 when a rule check
 // fails or a wording line is left to check.
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium } from 'playwright';
 import { ADD_WORDS, newAddWords } from '../phase8/compare-lib.mjs';
 import { execFileSync } from 'node:child_process';
@@ -54,8 +55,8 @@ import { createClient } from '@supabase/supabase-js';
 import { FIXED_TODAY, seedFixed, seedForReal, londonInstant } from '../phase2/fixed-day.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_REF = 'gqtqljngeenqzxneucoc';
-const TEST_HOST = `${TEST_REF}.supabase.co`;
+const TEST_REF = TARGET_HOST;
+const TEST_HOST = TARGET_HOST;
 const MOCKS = process.env.MOCKUPS || join(homedir(), 'Downloads', 'clarity-phase-4');
 const FONTS = join(process.cwd(), 'node_modules', '@fontsource', 'dm-sans', 'files');
 // The portal's DM Sans (Phase 8a follow-up, 17 Nov): the variable font with optical sizes Google Fonts serves,
@@ -73,7 +74,7 @@ for (const f of ['m2-home.html', 'm3-hub-pages.html', 'm19-sleep-wind-down.html'
 }
 
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }

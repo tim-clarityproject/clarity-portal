@@ -15,14 +15,15 @@
 //
 // Signed in as the invented test client on the TEST database only; every
 // other host and every email call is blocked. Nothing is saved.
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { chevronsOff, measureChevrons } from './chevrons.mjs';
 const APP = 'http://localhost:5173';
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) { const m = line.match(/^([A-Z_]+)=(.*)$/); if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, ''); }
-if (!env.TEST_SUPABASE_URL?.includes('gqtqljngeenqzxneucoc')) throw new Error('Not the test project.');
+for (const line of accountsText().split('\n')) { const m = line.match(/^([A-Z_]+)=(.*)$/); if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, ''); }
+if (!env.TEST_SUPABASE_URL?.includes(TARGET_HOST)) throw new Error('Not the test project.');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const SIZES = (process.env.TEXT || '16,20,24,28,32').split(',').map(Number);
 const WIDTHS = (process.env.WIDTHS || '1280,390').split(',').map(Number);
@@ -38,7 +39,7 @@ for (const width of WIDTHS) {
   await context.route('**/*', (route) => {
     const url = route.request().url();
     if (/resend\.com|sendgrid|mailgun|postmarkapp|smtp/i.test(url)) return route.abort();
-    if (/supabase\.co/.test(url) && !url.includes('gqtqljngeenqzxneucoc')) return route.abort();
+    if (/supabase\.co/.test(url) && !url.includes(TARGET_HOST)) return route.abort();
     if (/\/functions\/v1\/|\/api\//.test(url)) return route.abort();
     if (/supabase\.co\/rest\/v1\//.test(url) && !/\/rpc\//.test(url) && !['GET', 'HEAD', 'OPTIONS'].includes(route.request().method())) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     return route.fallback();

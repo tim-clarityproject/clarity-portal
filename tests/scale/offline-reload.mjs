@@ -5,6 +5,9 @@
 //   node --import ./tests/scores/register.mjs tests/scale/offline-reload.mjs \
 //     --app http://127.0.0.1:4319 --api http://localhost:54400 [--who scale-coach-02@example.com] [--size laptop|phone]
 import { chromium } from 'playwright';
+import { refuseHostedLoad } from '../hosted-guard.mjs';
+
+refuseHostedLoad('The offline reload trace');
 
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };

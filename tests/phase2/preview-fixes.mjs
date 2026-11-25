@@ -36,12 +36,13 @@
 //              underlines in coral on hover and focus; nothing else moves.
 // 8. hyphens:  on the main pages at phone widths, no word is broken at its
 //              hyphen anywhere.
+import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium, webkit, devices } from 'playwright';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
-const TEST_HOST = 'gqtqljngeenqzxneucoc.supabase.co';
+const TEST_HOST = TARGET_HOST;
 const [out, shots] = process.argv.slice(2);
 if (shots) mkdirSync(shots, { recursive: true });
 const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
@@ -58,11 +59,11 @@ const pass = (name, ok, detail = '') => {
 const note = (s) => { results.push(`NOTE  ${s}`); console.log(`NOTE  ${s}`); };
 
 const env = {};
-for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8').split('\n')) {
+for (const line of accountsText().split('\n')) {
   const m = /^([A-Z_]+)=(.*)$/.exec(line.trim());
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }
-if (!env.TEST_SUPABASE_URL?.includes('gqtqljngeenqzxneucoc')) throw new Error('Not the test project.');
+if (!env.TEST_SUPABASE_URL?.includes(TARGET_HOST)) throw new Error('Not the test project.');
 
 // Wait until the page has drawn and nothing is moving.
 const still = (page) => page.evaluate(() => new Promise((done) => {

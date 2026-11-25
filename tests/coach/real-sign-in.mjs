@@ -16,11 +16,15 @@
 //   (APP_URL as the other coach suites: a test-project build, default :4317)
 import { chromium } from 'playwright';
 import { APP, accountId, makeReport, readEnv, settle, SIZES } from './shared.mjs';
+import { needsHosted } from '../target.mjs';
 import { asAal2 } from '../signin/aal2.mjs';
 
 const { pass, done } = makeReport('Coach portal, the real test coaches sign in with their real codes');
+// Real Supabase sign-in with the test coaches' real authenticators (TOTP keys), which the
+// local stand-in doesn't have: opt-in with HOSTED=1 (Tim, 25 Nov 2026).
+needsHosted(import.meta.url, 'it signs in with the test coaches\' real authenticators');
 const env = readEnv();
-const host = new URL(env.TEST_SUPABASE_URL).host;
+const host = new URL(env.TEST_SUPABASE_URL).hostname;
 // Reads the sign-in screens need; every other database write is refused before it leaves.
 const READ_RPC = /\/rest\/v1\/rpc\/(coach_code_ok|coach_auth_state|is_coach|is_owner|my_coach_id)(\?|$)/;
 
