@@ -343,11 +343,18 @@ begin
   if p_token is null or p_token !~ '^[0-9a-f]{64}$' then
     return null;
   end if;
+  -- Open while sent or won, and not past its "valid until" day (London); each opening counted, and noted on its lead
+  -- as "Opened your proposal" so the CRM's watch sees it (functionality tester, run 2).
   update public.proposals set opens = opens + 1, last_opened_at = now()
-  where share_token = p_token and status = 'sent'
+  where share_token = p_token and status in ('sent', 'won')
+    and (valid_until is null or valid_until >= (now() at time zone 'Europe/London')::date)
   returning * into p;
   if not found then
     return null;
+  end if;
+  if p.lead_id is not null then
+    insert into public.coach_lead_events (coach_id, lead_id, kind, title, data)
+    values (p.coach_id, p.lead_id, 'proposal_opened', 'Opened your proposal', jsonb_build_object('name', left(p.title, 200), 'proposal_id', p.id));
   end if;
   return jsonb_build_object('title', p.title, 'lines', p.lines, 'currency', p.currency, 'total_minor', p.total_minor,
     'valid_until', p.valid_until, 'sent_at', p.sent_at,

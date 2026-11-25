@@ -122,11 +122,22 @@ begin
     -- 4. the share link
     f := f || pg_temp.k_eq('4a a sent proposal opens by its link', pg_temp.k_try(format('select public.proposal_open(%L)->>''title''', tok)), 'Leadership Accelerator');
     f := f || pg_temp.k_eq('4b it gives nothing more than its own words', pg_temp.k_try(format('select (select string_agg(k, '','' order by k) from jsonb_object_keys(public.proposal_open(%L)) k)', tok)), 'coach_name,currency,lines,sent_at,title,total_minor,valid_until');
+    perform pg_temp.k_admin();
+    update public.proposals set valid_until = current_date - 1 where id = prop_draft;
+    perform pg_temp.k_anon();
     f := f || pg_temp.k_eq('4c a draft never opens', pg_temp.k_try(format('select public.proposal_open(%L)::text', tok_draft)), 'ok');
     f := f || pg_temp.k_eq('4d a made-up link opens nothing', pg_temp.k_try(format('select public.proposal_open(%L)::text', repeat('0', 64))), 'ok');
     f := f || pg_temp.k_eq('4e nor anything that isn''t a link', pg_temp.k_try('select public.proposal_open(''x'' || chr(39) || '' or 1=1'')::text'), 'ok');
     perform pg_temp.k_admin();
     f := f || pg_temp.k_eq('4f each opening is counted', (select opens::text from public.proposals where id = prop), '2');
+    update public.proposals set status = 'sent', valid_until = current_date - 1 where id = prop_draft;
+    perform pg_temp.k_anon();
+    f := f || pg_temp.k_eq('4g a proposal past its valid-until day never opens', pg_temp.k_try(format('select public.proposal_open(%L)::text', tok_draft)), 'ok');
+    perform pg_temp.k_admin();
+    update public.proposals set status = 'won' where id = prop;
+    perform pg_temp.k_anon();
+    f := f || pg_temp.k_eq('4h a won proposal still opens', pg_temp.k_try(format('select public.proposal_open(%L)->>''title''', tok)), 'Leadership Accelerator');
+    perform pg_temp.k_admin();
 
     -- 5. a payment straight to the bank: someone must have paid it
     f := f || pg_temp.k_eq('5a a bank payment names who paid', pg_temp.k_try(format('insert into public.payments (coach_id, amount_minor, currency, added_by_coach) values (%L, 120000, ''GBP'', true) returning ''added''', tess_c)), 'error 23514');
