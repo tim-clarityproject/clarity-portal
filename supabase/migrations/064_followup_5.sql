@@ -220,6 +220,10 @@ $$;
 revoke all on function public.invoice_take_number(uuid) from public, anon, authenticated;
 grant execute on function public.invoice_take_number(uuid) to service_role;
 
+-- One Send at a time: the server marks the invoice while it asks Stripe (cleared after; a mark older than 2 minutes is
+-- ignored), so two presses never finalise or email it twice (break-it tester, follow-up 5).
+alter table public.invoices add column if not exists send_claimed_at timestamptz;
+
 -- 061's next number, now from the same counter (a server from before this change asks it at draft time).
 create or replace function public.next_invoice_number()
 returns integer

@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { idFromAddress } from '../../lib/coach/address';
 import SuggestQuestionPanel from './SuggestQuestionPanel';
 import AdminClient from './AdminClient';
-import { AddButton, Button, Crosshair, Dropdown, InlineChoice, Loading, PageHeader, SearchField, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
+import { AddButton, Button, Crosshair, ErrorMessage, Dropdown, InlineChoice, Loading, PageHeader, SearchField, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { zonePlace } from '../../lib/time';
@@ -252,7 +252,18 @@ export default function ClientPage() {
   const adminRow = !profile && isOwner ? (portal.admin || []).find((a) => a.profile_id === id) || null : null;
   if (adminRow) return <AdminClient row={adminRow} />;
   if (!profile && isOwner && !portal.adminReady) {
-    return <div className="cc-page"><div className="cc-col"><Loading label="Loading the client" /></div></div>;
+    // Every coach's clients couldn't be read (offline, with no copy here): the calm error with Try again, never a
+    // crosshair for ever (break-it tester, follow-up 5).
+    return (
+      <div className="cc-page"><div className="cc-col">
+        {portal.adminFailed ? (
+          <div className="cc-role-problem">
+            <ErrorMessage>This client didn’t load. Check your connection and try again.</ErrorMessage>
+            <Button variant="primary" onClick={reloadCoaches}>Try again</Button>
+          </div>
+        ) : <Loading label="Loading the client" />}
+      </div></div>
+    );
   }
   if (!profile || !data) {
     return (

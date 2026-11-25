@@ -56,6 +56,35 @@ export function refusal(error) {
   return { status: 502, body: { ok: false, message: '' } };
 }
 
+/** The largest drawn signature drawn as a picture: anything bigger is written as the signer's name instead. */
+export const SIGNATURE_MAX = Object.freeze({ width: 2000, height: 1000 });
+
+/**
+ * A PNG's width and height from its header (IHDR), without decoding it, or null when it isn't a PNG.
+ * @param {string} image a data URL or plain base64
+ */
+export function pngSize(image) {
+  try {
+    const b64 = String(image || '').replace(/^data:image\/png;base64,/, '').slice(0, 64);
+    const head = Buffer.from(b64, 'base64');
+    if (head.length < 24 || head.readUInt32BE(0) !== 0x89504e47 || head.toString('latin1', 12, 16) !== 'IHDR') return null;
+    return { width: head.readUInt32BE(16), height: head.readUInt32BE(20) };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A signature the server will draw: a drawing only when it is a PNG no bigger than SIGNATURE_MAX (a huge one would
+ * take the server's memory; break-it tester, follow-up 5), otherwise the signer's name written on the line.
+ */
+export function safeSignature(sig, name) {
+  if (!sig || sig.kind !== 'drawn') return sig || null;
+  const size = pngSize(sig.image);
+  if (size && size.width > 0 && size.height > 0 && size.width <= SIGNATURE_MAX.width && size.height <= SIGNATURE_MAX.height) return sig;
+  return { kind: 'typed', typed_name: String(name || '').trim() || 'Signed' };
+}
+
 /**
  * The document for a signed version, from the server's source (064, agreement_pdf_source).
  * Exported for the tests: the same function makes the file the client and the coach download.
@@ -68,8 +97,8 @@ export async function signedDocument(source) {
   return {
     spec: agreementPdf({
       version,
-      signature: source.client_signature || null,
-      coachSignature: source.coach_signature || null,
+      signature: safeSignature(source.client_signature, version.signedName || source.client_name),
+      coachSignature: safeSignature(source.coach_signature, version.coachName || ''),
       clientName: typeof source.client_name === 'string' ? source.client_name : '',
       timeZone: zone,
     }),

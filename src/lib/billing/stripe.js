@@ -63,6 +63,8 @@ export function stripeApi(key, fetcher = globalThis.fetch) {
     // Asked again for a draft that already has it, Stripe answers with the same invoice.
     number: (id, portalNumber) => call('POST', `/invoices/${id}`, { number: portalNumber, metadata: { portal_number: portalNumber } }),
     send: async (id) => { await call('POST', `/invoices/${id}/finalize`, { auto_advance: false }); return call('POST', `/invoices/${id}/send`); },
+    /** The email of an invoice already finalised (an earlier Send whose email didn't go). */
+    email: (id) => call('POST', `/invoices/${id}/send`),
     markPaidByHand: (id) => call('POST', `/invoices/${id}/pay`, { paid_out_of_band: true }),
     void: (id) => call('POST', `/invoices/${id}/void`),
     refund: ({ paymentIntent, amount }, idem) => call('POST', '/refunds', { payment_intent: paymentIntent, amount }, idem),
@@ -160,6 +162,13 @@ export function stripeStandIn({ secret = 'whsec_stand_in_0000000000', now = () =
       const inv = s.invoices.get(invId);
       inv.status = 'paid'; inv.amount_paid = inv.amount_due; inv.status_transitions = { paid_at: t() };
       return emit('invoice.paid', inv);
+    },
+    email: async (invId) => {
+      const inv = s.invoices.get(invId);
+      if (!inv || inv.status !== 'open') throw Object.assign(new Error('That invoice isn’t open.'), { code: 'invoice_not_open' });
+      s.sent.push(inv.id);
+      emit('invoice.sent', inv);
+      return structuredClone(inv);
     },
     markPaidByHand: async (invId) => { const inv = s.invoices.get(invId); inv.status = 'paid'; inv.amount_paid = inv.amount_due; inv.paid_out_of_band = true; return structuredClone(emit('invoice.paid', inv).data.object); },
     void: async (invId) => { const inv = s.invoices.get(invId); inv.status = 'void'; emit('invoice.voided', inv); return structuredClone(inv); },

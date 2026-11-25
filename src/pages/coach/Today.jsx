@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AddButton, Loading, OfferRow, PageHeader, useIsPhone, useToast } from '../../components/design';
 import { birthdaysOn, dayWords, possessive } from '../../lib/coach/model';
-import { rowsOf } from '../../lib/coach/store';
+import { loadCoach, rowsOf } from '../../lib/coach/store';
 import {
   ATTENTION_FIRST, attentionRows, callLength, callsOn, clockTime, coveringRows, dayLoad, OFFERS, recapNudgeLine, todayOffer, todayTodos,
 } from '../../lib/coach/day';
@@ -116,7 +116,10 @@ export default function Today() {
       const { coachBilling } = await import('../../lib/coach/financeActions');
       const answer = await coachBilling(userId, { kind: 'send_reminder', reminderId, again: true });
       if (answer.ok && answer.sent) toast.saved({ message: 'Reminder sent, with the payment link.' });
+      else if (answer.ok && answer.settled) toast.show('That invoice has been settled, so no reminder is needed.');
       else if (answer.ok) toast.show('That reminder has already gone.');
+      // The row goes once the device's copy knows (break-it tester, follow-up 5).
+      if (answer.ok) loadCoach(userId, { again: true }).catch(() => {});
       else toast.error(answer.message || 'That reminder didn’t send. Check your connection and try again.');
     } catch { toast.error('That reminder didn’t send. Check your connection and try again.'); } finally { sending.current = false; }
   };

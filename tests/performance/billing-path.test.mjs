@@ -412,7 +412,31 @@ test('functionality tester, follow-up 5: two Sends at once on one draft: one goe
   await b.draft('a-ben');
   const id = db.tables.invoices[0].id;
   const [one, two] = await Promise.all([b.send(id), b.send(id)]);
-  assert.deepEqual([one.status, two.status], ['sent', 'sent']);
-  assert.equal(one.number, two.number);
+  assert.deepEqual([one.status, two.status].sort(), ['sending', 'sent'], 'the second is told it is on its way');
   assert.equal(stripe.state.sent.length, 1, 'finalised and sent once');
+  assert.equal(db.tables.invoices[0].send_claimed_at ?? null, null, 'the mark is cleared');
+});
+
+test('break-it tester, follow-up 5: finalised but its email failed: never called sent; Send again emails it and records it', async () => {
+  const now = { value: new Date('2026-12-01T12:00:00Z') };
+  const { db, stripe, b } = world(now);
+  await b.draft('a-ben');
+  const id = db.tables.invoices[0].id;
+  const realSend = stripe.send;
+  const realEmail = stripe.email;
+  // Stripe finalises it, then its email fails.
+  stripe.send = async (inv) => { const s = stripe.state.invoices.get(inv); s.status = 'open'; s.hosted_invoice_url = `https://invoice.stripe.example/${inv}`; throw Object.assign(new Error('Stripe didn’t answer.'), { code: 'stripe_500' }); };
+  stripe.email = async () => { throw Object.assign(new Error('no'), { code: 'stripe_500' }); };
+  await assert.rejects(b.send(id), /email didn’t go/, 'the press asks for the email once more, and says it didn’t go');
+  assert.equal(db.tables.invoices[0].status, 'draft', 'not recorded as sent');
+  stripe.send = realSend;
+  // Send again: the email fails once more: still not sent, and said so.
+  await assert.rejects(b.send(id), /email didn’t go/);
+  assert.equal(stripe.state.sent.length, 0);
+  // Then it goes: recorded with its days, so reminders and Overdue follow it.
+  stripe.email = realEmail;
+  assert.deepEqual(await b.send(id), { status: 'sent', number: 'CLARITY-1201' });
+  const row = db.tables.invoices[0];
+  assert.deepEqual([row.status, Boolean(row.sent_at), row.issued_on, row.due_on, /^https:/.test(row.hosted_url)], ['sent', true, '2026-12-01', '2026-12-15', true]);
+  assert.equal(stripe.state.sent.length, 1);
 });

@@ -24,7 +24,15 @@ export function fakeDb(seed = {}) {
     const rows = (t[table] ||= []);
     const where = [];
     let op = 'select'; let values = null; let opts = {}; let order = null; let lim = null; let wantRows = false;
-    const match = (r) => where.every(([k, v, how]) => (how === 'is' ? (r[k] ?? null) === v : r[k] === v));
+    // PostgREST's or=(a.is.null,a.lt.X), as far as the billing tests use it.
+    const orPart = (r, part) => {
+      const [k, op, ...rest] = part.split('.');
+      const v = rest.join('.');
+      if (op === 'is') return (r[k] ?? null) === null;
+      if (op === 'lt') return r[k] != null && String(r[k]) < v;
+      return String(r[k]) === v;
+    };
+    const match = (r) => where.every(([k, v, how]) => (how === 'or' ? v.split(',').some((p) => orPart(r, p)) : how === 'is' ? (r[k] ?? null) === v : r[k] === v));
     const run = () => {
       let out;
       if (op === 'insert' || op === 'upsert') {
@@ -59,6 +67,7 @@ export function fakeDb(seed = {}) {
       select() { if (op !== 'select') wantRows = true; return b; },
       eq(k, v) { where.push([k, v]); return b; },
       is(k, v) { where.push([k, v, 'is']); return b; },
+      or(expr) { where.push([null, expr, 'or']); return b; },
       order(k) { order = k; return b; },
       limit(n) { lim = n; return b; },
       maybeSingle() { const r = run(); return Promise.resolve({ data: r.error ? null : (r.data || [])[0] || null, error: r.error }); },

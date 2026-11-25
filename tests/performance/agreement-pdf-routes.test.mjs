@@ -161,3 +161,21 @@ test('both addresses join the coach router, with no new function in api/', async
   assert.match(src, /'agreement-sign': agreementSign/);
   assert.match(src, /'agreement-pdf': agreementPdf/);
 });
+
+test('break-it tester, follow-up 5: a huge drawn signature is written as the name, never drawn (the server\'s memory)', async () => {
+  const { pngSize, safeSignature } = await import('../../api/_agreementPdf.js');
+  const png = (w, h) => {
+    const b = Buffer.alloc(33);
+    b.writeUInt32BE(0x89504e47, 0); b.writeUInt32BE(0x0d0a1a0a, 4); b.writeUInt32BE(13, 8); b.write('IHDR', 12, 'latin1');
+    b.writeUInt32BE(w, 16); b.writeUInt32BE(h, 20);
+    return `data:image/png;base64,${b.toString('base64')}`;
+  };
+  assert.deepEqual(pngSize(png(600, 200)), { width: 600, height: 200 });
+  assert.equal(pngSize('not a png'), null);
+  const ok = { kind: 'drawn', image: png(600, 200) };
+  assert.equal(safeSignature(ok, 'Ben Carter'), ok);
+  assert.deepEqual(safeSignature({ kind: 'drawn', image: png(7000, 7000) }, 'Ben Carter'), { kind: 'typed', typed_name: 'Ben Carter' });
+  assert.deepEqual(safeSignature({ kind: 'drawn', image: 'garbage' }, 'Ben Carter'), { kind: 'typed', typed_name: 'Ben Carter' });
+  const typed = { kind: 'typed', typed_name: 'Ben Carter' };
+  assert.equal(safeSignature(typed, 'x'), typed);
+});

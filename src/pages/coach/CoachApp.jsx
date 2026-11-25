@@ -377,6 +377,7 @@ export default function CoachApp() {
   // Whether the owner's list of every coach's clients is here (kept on the device, or read this visit): until it is,
   // Clients and search say they're loading rather than show the owner's own clients as everyone (coach first screen run).
   const [adminIn, setAdminIn] = useState(false);
+  const [adminFailed, setAdminFailed] = useState(false); // the latest read of every coach's clients got no answer
   // Whether the coach list is here (kept on the device, or read this visit): Finances' first screen counts associates'
   // pay from it, so it waits for it (coach rule 49).
   const [coachesIn, setCoachesIn] = useState(false);
@@ -437,8 +438,9 @@ export default function CoachApp() {
       listsFresh.current.admin = true;
       setAdmin(list);
       setAdminIn(true);
+      setAdminFailed(false);
       writeExtra(userId, 'admin', list);
-    }).catch(() => {});
+    }).catch(() => { if (live) setAdminFailed(true); });
     return () => { live = false; };
   }, [coachId, adminNow, turn, countTurn, userId]);
 
@@ -452,7 +454,7 @@ export default function CoachApp() {
     const own = (table, then = null, name = '') => fromTable(state, table, `mine:${coach.id}${name}`, (rows) => (then ? then(mine(rows)) : mine(rows)));
     const all = (table, then = null, name = '') => fromTable(state, table, `all${name}`, (rows) => (then ? then(rows) : rows));
     return {
-      userId, coach, isOwner, state, todayKey, coaches, coachesIn, admin, adminReady: !isOwner || adminIn, reloadCoaches, reloadRole: role.reload, partial, whole,
+      userId, coach, isOwner, state, todayKey, coaches, coachesIn, admin, adminReady: !isOwner || adminIn, adminFailed, reloadCoaches, reloadRole: role.reload, partial, whole,
       clients: own('client_profiles', (rows) => rows.filter((p) => !p.merged_into), ':current'),
       groups: own('coach_groups'),
       workshops: own('workshops'),
@@ -535,7 +537,7 @@ export default function CoachApp() {
       networkColumns: own('network_columns', (rows) => rows.sort((x, y) => (x.position || 0) - (y.position || 0) || x.name.localeCompare(y.name)), ':sorted'),
       now,
     };
-  }, [coach, isOwner, state, todayKey, coaches, coachesIn, admin, adminIn, userId, reloadCoaches, role.reload, now, partial, whole]);
+  }, [coach, isOwner, state, todayKey, coaches, coachesIn, admin, adminIn, adminFailed, userId, reloadCoaches, role.reload, now, partial, whole]);
 
   // Worked out when what they come from changes, not each time the menu, search or the bell opens (scale check, 22 Nov).
   const notificationsUnread = useMemo(() => (value ? value.notifications.filter((n) => !n.read_at).length : 0), [value?.notifications]);

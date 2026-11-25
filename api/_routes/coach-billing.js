@@ -245,32 +245,49 @@ export function billing({ server, stripe, coach, now = () => new Date() }) {
     async send(invoiceId) {
       const inv = await mine('invoices', invoiceId);
       if (inv.status !== 'draft') return { status: inv.status, number: inv.number ? `CLARITY-${inv.number}` : null };
-      let number = inv.number;
-      if (number == null) {
-        let { data, error } = await server.rpc('invoice_take_number', { p_invoice: inv.id });
-        // Before 064: 061's sequence, kept on the invoice before Stripe is asked, so a retry keeps the same number.
-        if (error && (error.code === 'PGRST202' || error.code === '42883')) {
-          ({ data, error } = await server.rpc('next_invoice_number'));
-          if (!error && Number.isInteger(data)) ({ error } = await server.from('invoices').update({ number: data }).eq('id', inv.id).is('number', null));
-        }
-        if (error || !Number.isInteger(data)) { const e = new Error('That didn’t send. Try again in a moment.'); e.status = 502; throw e; }
-        number = data;
-      }
-      let sent;
+      // One press at a time (064's send_claimed_at, held for at most 2 minutes): a second press while one is on its way
+      // is told it's going, and never finalises or emails it again (break-it tester, follow-up 5).
+      const claimedAt = now().toISOString();
+      const claim = await server.from('invoices').update({ send_claimed_at: claimedAt }).eq('id', inv.id).eq('status', 'draft')
+        .or(`send_claimed_at.is.null,send_claimed_at.lt.${new Date(now().getTime() - 120000).toISOString()}`).select('id');
+      const claims = !claim.error; // before 064 there is no column: as before, with no claim
+      if (claims && !claim.data?.length) return { status: 'sending', number: inv.number ? `CLARITY-${inv.number}` : null };
       try {
-        await stripe.number(inv.stripe_invoice_id, `CLARITY-${number}`);
-        sent = await stripe.send(inv.stripe_invoice_id);
-      } catch (e) {
-        // Two presses at once: the other one finalised it. Stripe says so, and this press says it went (functionality
-        // tester, follow-up 5); anything else is a real refusal.
-        const now = stripe.retrieve ? await stripe.retrieve('invoice', inv.stripe_invoice_id).catch(() => null) : null;
-        if (now && now.status && now.status !== 'draft') return { status: 'sent', number: `CLARITY-${number}` };
-        throw e;
+        let number = inv.number;
+        if (number == null) {
+          let { data, error } = await server.rpc('invoice_take_number', { p_invoice: inv.id });
+          // Before 064: 061's sequence, kept on the invoice before Stripe is asked, so a retry keeps the same number.
+          if (error && (error.code === 'PGRST202' || error.code === '42883')) {
+            ({ data, error } = await server.rpc('next_invoice_number'));
+            if (!error && Number.isInteger(data)) ({ error } = await server.from('invoices').update({ number: data }).eq('id', inv.id).is('number', null));
+          }
+          if (error || !Number.isInteger(data)) { const e = new Error('That didn’t send. Try again in a moment.'); e.status = 502; throw e; }
+          number = data;
+        }
+        let sent;
+        try {
+          await stripe.number(inv.stripe_invoice_id, `CLARITY-${number}`);
+          sent = await stripe.send(inv.stripe_invoice_id);
+        } catch (e) {
+          // Finalised already (an earlier press whose email didn't go): its email is asked for again, and only an email
+          // that went counts as sent. A draft Stripe still has is a real refusal (break-it tester, follow-up 5).
+          const there = stripe.retrieve ? await stripe.retrieve('invoice', inv.stripe_invoice_id).catch(() => null) : null;
+          if (!there || !there.status || there.status === 'draft') throw e;
+          if (there.status !== 'open') { sent = there; } else {
+            try { sent = await stripe.email(inv.stripe_invoice_id); } catch {
+              const err = new Error('It’s ready in Stripe, but its email didn’t go. Press Send again.');
+              err.status = 502;
+              throw err;
+            }
+          }
+        }
+        const issued = today(inv.payer_zone);
+        await server.from('invoices').update({ status: 'sent', sent_at: now().toISOString(), issued_on: issued, due_on: addDays(issued, inv.terms_days),
+          hosted_url: sent.hosted_invoice_url || null, updated_at: now().toISOString() }).eq('id', inv.id).eq('status', 'draft');
+        return { status: 'sent', number: `CLARITY-${number}` };
+      } finally {
+        if (claims) await server.from('invoices').update({ send_claimed_at: null }).eq('id', inv.id).eq('send_claimed_at', claimedAt);
       }
-      const issued = today(inv.payer_zone);
-      await server.from('invoices').update({ status: 'sent', sent_at: now().toISOString(), issued_on: issued, due_on: addDays(issued, inv.terms_days),
-        hosted_url: sent.hosted_invoice_url || null, updated_at: now().toISOString() }).eq('id', inv.id).eq('status', 'draft');
-      return { status: 'sent', number: `CLARITY-${number}` };
     },
 
     /**
