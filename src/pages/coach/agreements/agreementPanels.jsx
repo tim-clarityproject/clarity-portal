@@ -189,8 +189,11 @@ function Cancel14({ a, v, t, name, signed, sessions, firstV, onClose }) {
     run(() => ask('agreements', 'cancel_14', { agreementId: a.id, ...(k === 'oneoff' && startNow && typed != null ? { deliveredMinor: typed } : {}) }),
       async (ans) => {
         // Coaching sessions still to come come off the calendar as its own Delete takes them; nothing is emailed about them.
+        // The server has removed them (sessionsOff, with the rows it removed): this device only forgets those rows. Only
+        // when it answered no count (a stand-in) does the device take them off itself.
         let off = 0;
-        if (ahead.count) { const fresh = futureSessionsPlan(a.profile_id, { data: cal.data, now: Date.now() }); if (await cal.run(fresh.plan, { quiet: true })) off = fresh.count; }
+        if (Number.isInteger(ans?.sessionsOff)) { cal.forgotten(ans.removed || [], ans.calls || []); off = ans.sessionsOff; }
+        else if (ahead.count) { const fresh = futureSessionsPlan(a.profile_id, { data: cal.data, now: Date.now() }); if (await cal.run(fresh.plan, { quiet: true })) off = fresh.count; }
         const tell = off ? ` ${off} coaching ${off === 1 ? 'session' : 'sessions'} to come ${off === 1 ? 'is' : 'are'} off your calendar, so let ${first} know.` : '';
         return Number(ans.refundMinor) > 0 ? `Cancelled. ${moneyText(Number(ans.refundMinor), ans.currency || c)} goes back to ${first}, with a credit note.${tell}` : `Cancelled. ${first} has an email.${tell}`;
       }, setProblem);

@@ -29,7 +29,7 @@ export const ASKS = Object.freeze({
     extend: { who: 'coach', body: 'agreementId, endsOn', answer: 'endsOn, emailed' },
     pause: { who: 'coach', body: 'agreementId, from, to', answer: 'endsOn, emailed' },
     end_early: { who: 'coach', body: 'agreementId, endsOn, by: client|coach', answer: 'endingOn, emailed' },
-    cancel_14: { who: 'coach', body: 'agreementId', answer: 'refundMinor, currency, creditNoteNumber, emailed' },
+    cancel_14: { who: 'coach', body: 'agreementId', answer: 'refundMinor, currency, creditNoteNumber, emailed, sessionsOff (null: the device removes them), removed [[table, id]], calls [{ id, google_event_id, meeting_id }]' },
     answer_change: { who: 'coach', body: 'requestIds, reply?', answer: 'emailed?' },
     sponsor_send: { who: 'coach', body: 'agreementId, versionId, sponsor { name, email, role }', answer: 'sentAt, expiresAt, emailed, link? (off the live site only)' },
     team_agreements: { who: 'coach', body: 'agreementId', answer: 'made' },

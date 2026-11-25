@@ -9,7 +9,7 @@ import { amountProblem, draftDue, financeModel, invoiceNo, invoiceTitle, invoice
 import { coachBilling, receiptProblem } from '../../lib/coach/financeActions';
 import { moneyWords } from '../../lib/billing/money';
 import { addMonths, DEFAULT_SECTORS, financialYear, monthKey } from '../../lib/finance/index.js';
-import { TextLink, useCoachPortal } from './parts';
+import { TextLink, useCoachPortal, useGreyLineNow } from './parts';
 
 // Finances' shared parts (Phase 6b run 2; M11 C4 to C9): the data every tab reads, the months chart, the cash flow's
 // line, a row with a figure at its right, who an invoice or payment is for, a receipt, and the invoice panels
@@ -187,11 +187,13 @@ export function FinPart({ title, aside, asideHide = true, children, className = 
 
 /** A row: its title, quiet facts under it, and a figure (or a link) at its right. `onClick` makes it a button. */
 export function FigRow({ title, facts = [], value, onClick, label, children }) {
+  const line = useRef(null);
+  useGreyLineNow(line); // trimmed as it is drawn, so the first screen shows the line the whole page keeps (coach rule 49)
   const inner = (
     <>
       <span className="fin-row-words">
         <b>{title}</b>
-        {facts.filter(Boolean).length > 0 && <small data-grey-line>{facts.filter(Boolean).map((f, i) => <span key={`${i}:${f}`} data-drop={i}>{f}</span>)}</small>}
+        {facts.filter(Boolean).length > 0 && <small ref={line} data-grey-line>{facts.filter(Boolean).map((f, i) => <span key={`${i}:${f}`} data-drop={i}>{f}</span>)}</small>}
       </span>
       {value != null && <span className="fin-row-value">{value}</span>}
       {children}

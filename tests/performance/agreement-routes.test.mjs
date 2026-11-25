@@ -191,6 +191,59 @@ test('cancel within 14 days: £4,600 deposit, start-now ticked, 1 coaching sessi
   assert.equal(refunds.length, 1, 'never refunded twice');
 });
 
+test('cancel within 14 days takes the coaching sessions still to come off the calendar on the server, with no email about them', async () => {
+  const w = world();
+  const v = w.db.tables.agreement_versions[0];
+  Object.assign(v, { status: 'signed', client_signed_at: '2026-11-20T10:00:00Z', start_now: true, settle_choice: 'plan' });
+  w.db.tables.agreements[0].status = 'signed';
+  w.db.tables.invoices = [];
+  const OTHER = U(12);
+  w.db.tables.coach_sessions = [
+    { id: U(50), coach_id: COACH.id, profile_id: U(10), kind: 'coaching', starts_at: '2026-11-23T10:00:00Z', minutes: 60, outcome: 'held' }, // had: stays
+    { id: U(51), coach_id: COACH.id, profile_id: U(10), kind: 'coaching', starts_at: '2026-11-30T10:00:00Z', minutes: 60, outcome: null }, // to come: goes
+    { id: U(52), coach_id: COACH.id, profile_id: U(10), starts_at: '2026-12-07T10:00:00Z', minutes: 60, outcome: null }, // kind left empty: coaching, goes
+    { id: U(53), coach_id: COACH.id, profile_id: U(10), kind: 'chemistry', starts_at: '2026-12-01T10:00:00Z', minutes: 30, outcome: null }, // not coaching: stays
+    { id: U(54), coach_id: COACH.id, profile_id: U(10), kind: 'coaching', starts_at: '2026-12-02T10:00:00Z', minutes: 60, outcome: null, recap_sent_at: '2026-11-24T10:00:00Z' }, // written up: stays
+    { id: U(55), coach_id: COACH.id, profile_id: OTHER, kind: 'coaching', starts_at: '2026-12-03T10:00:00Z', minutes: 60, outcome: null }, // another client: stays
+    { id: U(56), coach_id: U(3), profile_id: U(10), kind: 'coaching', starts_at: '2026-12-04T10:00:00Z', minutes: 60, outcome: null }, // another coach: stays
+  ];
+  w.db.tables.coach_cal_items = [
+    { id: U(80), coach_id: COACH.id, session_id: U(51), kind: 'client_call', google_event_id: 'g80', meeting_id: 'z80' },
+    { id: U(81), coach_id: COACH.id, travel_for: U(80), kind: 'travel' },
+    { id: U(82), coach_id: COACH.id, session_id: U(53), kind: 'client_call' },
+    { id: U(83), coach_id: COACH.id, session_id: U(55), kind: 'client_call' },
+  ];
+  w.db.tables.coach_cal_guests = [{ id: U(90), coach_id: COACH.id, item_id: U(80) }, { id: U(91), coach_id: COACH.id, item_id: U(83) }];
+  const before = w.mails.length;
+  const out = await w.api.cancel14({ agreementId: U(30) });
+  assert.equal(out.sessionsOff, 2);
+  assert.deepEqual(w.db.tables.coach_sessions.map((x) => x.id).sort(), [U(50), U(53), U(54), U(55), U(56)]);
+  assert.deepEqual(w.db.tables.coach_cal_items.map((x) => x.id).sort(), [U(82), U(83)], 'the call and its travel time go; the others stay');
+  assert.deepEqual(w.db.tables.coach_cal_guests.map((x) => x.id), [U(91)], 'the call’s guests go');
+  assert.deepEqual(out.removed, [['coach_cal_guests', U(90)], ['coach_cal_items', U(81)], ['coach_cal_items', U(80)], ['coach_sessions', U(51)], ['coach_sessions', U(52)]]);
+  assert.deepEqual(out.calls, [{ id: U(80), google_event_id: 'g80', meeting_id: 'z80' }], 'for the device’s Google and Zoom sync');
+  assert.equal(w.mails.length - before, 1, 'one email: the cancellation, nothing about the sessions');
+  assert.ok(!JSON.stringify(w.mails.at(-1)).includes('30 Nov'), 'the cancellation email names no session');
+  const again = await w.api.cancel14({ agreementId: U(30) });
+  assert.deepEqual([again.already, again.sessionsOff], [true, 0], 'pressed again: nothing more removed');
+});
+
+test('the device’s own list of sessions to take off is the server’s (futureSessionsPlan is futureSessionRows)', async () => {
+  const { futureSessionsPlan } = await import('../../src/lib/coach/calendar.js');
+  const { futureSessionRows } = await import('../../src/lib/agreements/coolingOff.js');
+  const data = {
+    sessions: [{ id: 's1', profile_id: 'p', kind: 'coaching', starts_at: '2026-12-01T10:00:00Z' }, { id: 's2', profile_id: 'p', kind: 'coaching', starts_at: '2026-11-01T10:00:00Z' }],
+    items: [{ id: 'i1', session_id: 's1' }, { id: 't1', travel_for: 'i1' }], guests: [{ id: 'g1', item_id: 'i1' }],
+  };
+  const now = Date.parse('2026-11-25T12:00:00Z');
+  const rows = futureSessionRows('p', { ...data, now });
+  const dev = futureSessionsPlan('p', { data, now });
+  assert.equal(dev.count, 1);
+  assert.deepEqual(dev.plan.remove, rows.remove);
+  assert.deepEqual(rows.remove, [['coach_cal_guests', 'g1'], ['coach_cal_items', 't1'], ['coach_cal_items', 'i1'], ['coach_sessions', 's1']]);
+  assert.deepEqual(futureSessionRows(null, { ...data, now }).remove, [], 'no client, nothing');
+});
+
 test('cancel within 14 days is never for a funded agreement, and not after day 14', async () => {
   const w = world();
   const v = w.db.tables.agreement_versions[0];

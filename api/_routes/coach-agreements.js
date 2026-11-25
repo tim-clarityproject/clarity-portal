@@ -21,7 +21,7 @@ import { asCallerClient, canSend, emailFrom, fromAddress, supabaseOf } from '../
 import { maySend, oneAddress } from '../_guestEmails.js';
 import { portalOrigin } from '../_portalOrigin.js';
 import { addDays, dayIn, dayKeyWords, isZone } from '../../src/lib/time/index.js';
-import { applies as coolingApplies, inWindow, refund14 } from '../../src/lib/agreements/coolingOff.js';
+import { applies as coolingApplies, futureSessionRows, inWindow, refund14 } from '../../src/lib/agreements/coolingOff.js';
 import { forStorage } from '../../src/lib/agreements/clauses.js';
 import { moneyText } from '../../src/lib/agreements/currency.js';
 import { pauseMove } from '../../src/lib/agreements/endDate.js';
@@ -600,7 +600,7 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
       const a = await mine('agreements', asked.agreementId);
       if (a.status === 'cancelled') {
         const { data: done } = await server.from('agreement_cancellations').select('*').eq('agreement_id', a.id).maybeSingle();
-        return { refundMinor: Number(done?.refund_minor) || 0, currency: 'GBP', creditNoteNumber: null, emailed: false, already: true };
+        return { refundMinor: Number(done?.refund_minor) || 0, currency: 'GBP', creditNoteNumber: null, emailed: false, already: true, sessionsOff: 0, removed: [], calls: [] };
       }
       const { v, profile, c } = await this._current(a);
       const terms = { ...(v.terms || {}), fundedBy: v.funded_by };
@@ -674,6 +674,9 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
         await server.from('invoices').update({ status: 'void', voided_at: iso() }).eq('id', inv.id);
       }
       await must(server.from('agreements').update({ status: 'cancelled' }).eq('id', a.id));
+      // Coaching sessions still to come come off the calendar here, as its own Delete takes them (agreements rule 12),
+      // so no reminder for one ever goes (051's reminders read the calls); nothing is emailed about them.
+      const off = await this._sessionsOff(a);
       let files = [];
       if (first && refund > 0) {
         try {
@@ -686,7 +689,49 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
       const outcome = profile?.email ? await mail(profile.email, cancelledEmail({ firstName: firstName(profile.name), coachFirst: c.display_first_name,
         refundWords: refund > 0 ? moneyText(refund, currency) : '', creditNoteNumber: first?.number || '', fileName: files[0]?.filename || '' }),
       { files, who: { ...c, full_name: coachName(c, v.terms) } }) : 'refused';
-      return { refundMinor: refund, currency, creditNoteNumber: first?.number || null, emailed: outcome === 'sent' };
+      return { refundMinor: refund, currency, creditNoteNumber: first?.number || null, emailed: outcome === 'sent', ...off };
+    },
+
+    /**
+     * The client's coaching sessions still to come, under this coach, removed with their calls, guests and travel time
+     * (coolingOff.js's futureSessionRows, the calendar's own Delete). Answers { sessionsOff, removed, calls }: the rows
+     * gone, for the device to forget, and the calls' Google event and Zoom meeting, for its sync to delete there too.
+     * When it can't be done, { sessionsOff: null } and the coach's device takes them off itself.
+     */
+    async _sessionsOff(a) {
+      if (!a.profile_id) return { sessionsOff: 0, removed: [], calls: [] };
+      try {
+        const at = now();
+        const { data: sessions, error } = await server.from('coach_sessions').select('id, profile_id, kind, starts_at, outcome, recap_sent_at')
+          .eq('coach_id', coach.id).eq('profile_id', a.profile_id).gt('starts_at', at.toISOString());
+        if (error) throw error;
+        const ids = (sessions || []).map((x) => x.id);
+        const calls = ids.length ? await must(server.from('coach_cal_items').select('id, session_id, travel_for, google_event_id, meeting_id').eq('coach_id', coach.id).in('session_id', ids)) : [];
+        const callIds = (calls || []).map((i) => i.id);
+        const travel = callIds.length ? await must(server.from('coach_cal_items').select('id, session_id, travel_for, google_event_id, meeting_id').eq('coach_id', coach.id).in('travel_for', callIds)) : [];
+        const guests = callIds.length ? await must(server.from('coach_cal_guests').select('id, item_id').in('item_id', callIds)) : [];
+        const items = [...(calls || []), ...(travel || [])];
+        const { sessions: ahead, remove } = futureSessionRows(a.profile_id, { sessions, items, guests, now: at.getTime() });
+        const of = (table) => remove.filter(([t]) => t === table).map(([, rowId]) => rowId);
+        const gone = new Set(of('coach_cal_items'));
+        if (of('coach_cal_guests').length) await must(server.from('coach_cal_guests').delete().in('id', of('coach_cal_guests')));
+        const travelIds = (travel || []).filter((i) => gone.has(i.id)).map((i) => i.id);
+        if (travelIds.length) await must(server.from('coach_cal_items').delete().eq('coach_id', coach.id).in('id', travelIds));
+        const callGone = (calls || []).filter((i) => gone.has(i.id)).map((i) => i.id);
+        if (callGone.length) await must(server.from('coach_cal_items').delete().eq('coach_id', coach.id).in('id', callGone));
+        // Checked again as it goes: a session written up meanwhile stays.
+        const sessionIds = ahead.map((x) => x.id);
+        const left = sessionIds.length ? await must(server.from('coach_sessions').delete().eq('coach_id', coach.id).in('id', sessionIds)
+          .is('outcome', null).is('recap_sent_at', null).select('id')) : [];
+        const leftIds = new Set((left || []).map((x) => x.id));
+        return {
+          sessionsOff: leftIds.size,
+          removed: remove.filter(([t, rowId]) => t !== 'coach_sessions' || leftIds.has(rowId)),
+          calls: items.filter((i) => gone.has(i.id) && (i.google_event_id || i.meeting_id)).map((i) => ({ id: i.id, google_event_id: i.google_event_id || null, meeting_id: i.meeting_id || null })),
+        };
+      } catch {
+        return { sessionsOff: null };
+      }
     },
 
     /** Changes asked for, answered (the coach's own); with a reply, it's emailed to the client. */

@@ -38,3 +38,25 @@ export function refund14({ paidMinor, sessionsHad = 0, perSessionMinor = 0, star
 
 /** The calm words when a session would fall inside the 14 days (as the database says it). */
 export const tooSoonLine = (firstName, signedDay) => `That’s inside ${firstName}’s 14 days to change their mind. Book it from ${dayKeyWords(bookableFrom(signedDay))}.`;
+
+/**
+ * Cancelling within 14 days takes the client's coaching sessions still to come off the calendar, as the calendar's own
+ * Delete takes one (calendar.js's deleteEntry): the session where nothing is written up, its call, the call's guests
+ * and its travel time. The server does it (coach-agreements.js's cancel_14) and the coach's device takes the same rows
+ * off its copy (calendar.js's futureSessionsPlan is this list). Nothing is emailed: the coach lets the client know.
+ * Tables as calendar.js's T names them. → { sessions, remove: [[table, id], …] } (guests, travel, calls, then sessions)
+ */
+export function futureSessionRows(profileId, { sessions = [], items = [], guests = [], now = Date.now() } = {}) {
+  const ahead = (sessions || []).filter((s) => profileId && s.profile_id === profileId && (s.kind || 'coaching') === 'coaching'
+    && Date.parse(s.starts_at) > now && !s.outcome && !s.recap_sent_at);
+  const remove = [];
+  for (const s of ahead) {
+    for (const i of (items || []).filter((x) => x.session_id === s.id)) {
+      remove.push(...(guests || []).filter((g) => g.item_id === i.id).map((g) => ['coach_cal_guests', g.id]));
+      remove.push(...(items || []).filter((x) => x.travel_for === i.id).map((x) => ['coach_cal_items', x.id]));
+      remove.push(['coach_cal_items', i.id]);
+    }
+    remove.push(['coach_sessions', s.id]);
+  }
+  return { sessions: ahead, remove };
+}

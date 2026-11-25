@@ -22,6 +22,7 @@ import {
 import { clean, cut, firstName, minutesWords, parsePeople } from './model.js';
 import { SENT_LINE, SESSION_KINDS, SESSION_LENGTHS, WEEK_KEYS, isLateCancellation, isLink, newSession, parseQuickAdd, workingDay } from './day.js';
 import { countFigure, countWords } from './numbers.js';
+import { futureSessionRows } from '../agreements/coolingOff.js';
 
 const MIN = 60000;
 const HOUR = 3600000;
@@ -1202,21 +1203,14 @@ export function deleteEntry(e, { data = {}, scope = 'one', newId, coachFirstName
 /**
  * Cancelling within 14 days (agreements rule 12): the client's coaching sessions still to come, each cancelled as the
  * calendar's own Delete cancels one (its call, guests and travel time, and the session where nothing is written up),
- * with no email sent by itself: the coach is told to let the client know. { count, plan }.
+ * with no email sent by itself: the coach is told to let the client know. { count, plan }. The server's cancel_14 removes
+ * the same rows (coolingOff.js's futureSessionRows) and answers which; the device then only forgets them (forgetRows)
+ * and hands the calls to the Google and Zoom sync. This plan runs on its own only when the server answered no list
+ * (a stand-in).
  */
 export function futureSessionsPlan(profileId, { data = {}, now = Date.now() } = {}) {
-  const ahead = (data.sessions || []).filter((s) => s.profile_id === profileId && (s.kind || 'coaching') === 'coaching'
-    && Date.parse(s.starts_at) > now && !s.outcome && !s.recap_sent_at);
-  const remove = [];
-  for (const s of ahead) {
-    for (const i of (data.items || []).filter((x) => x.session_id === s.id)) {
-      remove.push(...(data.guests || []).filter((g) => g.item_id === i.id).map((g) => [T.guests, g.id]));
-      remove.push(...(data.items || []).filter((x) => x.travel_for === i.id).map((x) => [T.items, x.id]));
-      remove.push([T.items, i.id]);
-    }
-    remove.push([T.sessions, s.id]);
-  }
-  return { count: ahead.length, plan: plan(data, { remove, words: DELETED }) };
+  const { sessions, remove } = futureSessionRows(profileId, { sessions: data.sessions, items: data.items, guests: data.guests, now });
+  return { count: sessions.length, plan: plan(data, { remove, words: DELETED }) };
 }
 
 // ---------------------------------------------------------------- to-dos on the calendar

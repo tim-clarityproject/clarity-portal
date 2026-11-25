@@ -131,7 +131,18 @@ export function useCalendar() {
     return true;
   }, [p.settings, userId, toast]);
 
-  return { ...p, coachZone, data, ctx, run, entriesFor, saveSettings, tell, clearTell: () => setTell(null) };
+  /**
+   * Rows a checked server step has already deleted in the database (cancelling within 14 days): taken off the device
+   * only, never sent again, and their calls handed to the Google and Zoom sync so they go from there too.
+   */
+  const forgotten = useCallback((removeList, calls = []) => {
+    if (!removeList?.length) return;
+    forgetRows(userId, removeList);
+    syncNow.current.sync.removed(removeList, calls);
+    syncNow.current.sync.after();
+  }, [userId]);
+
+  return { ...p, coachZone, data, ctx, run, forgotten, entriesFor, saveSettings, tell, clearTell: () => setTell(null) };
 }
 
 // ---------------------------------------------------------------- a tile

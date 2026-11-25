@@ -85,30 +85,10 @@ export function useGreyLines(rootRef, on) {
   useEffect(() => {
     const root = rootRef.current;
     if (!root || typeof window === 'undefined') return undefined;
-    const parts = (line) => [...line.children].filter((c) => c.tagName === 'SPAN');
-    const wraps = (el) => {
-      const cs = getComputedStyle(el);
-      const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.45;
-      return el.offsetHeight > lh * 1.5;
-    };
     let frame = 0;
     const trim = () => {
       frame = 0;
-      for (const line of root.querySelectorAll('[data-grey-line]')) {
-        const all = parts(line);
-        all.forEach((p) => { if (p.dataset.trimmed) { p.style.display = ''; delete p.dataset.trimmed; } });
-        if (!on) continue;
-        let guard = all.length;
-        while (guard-- > 0 && wraps(line)) {
-          const shown = all.filter((p) => !p.dataset.trimmed);
-          if (shown.length < 2) break;
-          const rank = (p) => (p.dataset.drop == null ? 0 : Number(p.dataset.drop) + 1);
-          const top = Math.max(...shown.map(rank));
-          const go = shown.filter((p) => rank(p) === top).pop();
-          go.dataset.trimmed = '1';
-          go.style.display = 'none';
-        }
-      }
+      for (const line of root.querySelectorAll('[data-grey-line]')) trimGreyLine(line, on);
     };
     const later = () => { if (!frame) frame = requestAnimationFrame(trim); };
     trim();
@@ -117,6 +97,39 @@ export function useGreyLines(rootRef, on) {
     window.addEventListener('resize', later);
     return () => { watch.disconnect(); window.removeEventListener('resize', later); if (frame) cancelAnimationFrame(frame); };
   }, [rootRef, on]);
+}
+
+/** One grey line, trimmed as useGreyLines trims it: every part back, then (on a phone) the highest data-drop first while it wraps. */
+export function trimGreyLine(line, on) {
+  if (!line) return;
+  const all = [...line.children].filter((c) => c.tagName === 'SPAN');
+  all.forEach((p) => { if (p.dataset.trimmed) { p.style.display = ''; delete p.dataset.trimmed; } });
+  if (!on) return;
+  const wraps = (el) => {
+    const cs = getComputedStyle(el);
+    const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.45;
+    return el.offsetHeight > lh * 1.5;
+  };
+  let guard = all.length;
+  while (guard-- > 0 && wraps(line)) {
+    const shown = all.filter((p) => !p.dataset.trimmed);
+    if (shown.length < 2) break;
+    const rank = (p) => (p.dataset.drop == null ? 0 : Number(p.dataset.drop) + 1);
+    const top = Math.max(...shown.map(rank));
+    const go = shown.filter((p) => rank(p) === top).pop();
+    go.dataset.trimmed = '1';
+    go.style.display = 'none';
+  }
+}
+
+/**
+ * A grey line trimmed as it is drawn, before anything is painted or read (coach rule 49: a first screen's line is the
+ * whole page's line). useGreyLines trims on the frame after a change, which is a moment too late for a line that
+ * arrives with the first screen ("£100 over, with 4 working days left" on a phone, shown and then left out).
+ */
+export function useGreyLineNow(lineRef) {
+  const on = useIsPhone();
+  useLayoutEffect(() => { trimGreyLine(lineRef.current, on); });
 }
 
 /**
