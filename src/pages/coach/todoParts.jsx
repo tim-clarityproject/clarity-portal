@@ -721,7 +721,7 @@ export function TodoPanel({ id, onClose }) {
       </div>
 
       <div className="cc-field cc-todo-est">
-        {/* Pills where the five fit on one line, answer rows where they don't (a phone): the estimates are full words now,
+        {/* Answer rows on every size: in full words ("30 minutes") the five never fit on one line, even in the laptop panel: the estimates are full words now,
             "30 minutes", never "30 min" (tidy follow-up 4, part 2, item 4), and a pill's words never wrap. */}
         <InlineChoice
           label="How long it takes"

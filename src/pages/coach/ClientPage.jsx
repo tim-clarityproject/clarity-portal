@@ -236,7 +236,10 @@ export default function ClientPage() {
       const kept = (readJson(shareKey) || {})[linked];
       setShare({ for: linked, shared: r.known ? r.shared : kept ?? null });
     }).catch(() => { if (live) setShare({ for: linked, shared: (readJson(shareKey) || {})[linked] ?? null }); });
-    return () => { live = false; };
+    // A slow answer holds the Overview for at most 2 seconds: then the page draws without the Mission and score,
+    // which join it when they come (UI tester, tidy follow-up 4: a 6-second read held every fold).
+    const late = setTimeout(() => { if (live) setShare((s) => (s.for === linked ? s : { for: linked, shared: (readJson(shareKey) || {})[linked] ?? null })); }, 2000);
+    return () => { live = false; clearTimeout(late); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linked, shareKey]);
 

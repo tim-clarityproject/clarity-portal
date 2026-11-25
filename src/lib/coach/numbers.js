@@ -1,7 +1,7 @@
 // Counts in words people read (tidy follow-up 4, part 2, item 4): "3,629 more", never "3629 more". The coach portal's
 // figures follow the portal's region, as its money already does ("£10,000"): British today (rule 29y: every page is
 // British until spelling follows the visitor), so a thousands comma and no decimals for a count.
-// Tests: tests/performance/coach-numbers.test.mjs.
+// Tests: tests/performance/coach-tidy4.test.mjs.
 
 const LOCALE = 'en-GB';
 

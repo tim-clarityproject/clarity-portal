@@ -6,7 +6,7 @@
 // client (the page's copy, cleared by Sign out with every clarity-cache key), so a return visit draws it at once and
 // refreshes it quietly. The function lists a coach's clients 200 at a time in name order, so in a practice of more
 // than 200 the client may not be on the first page: the client's own name is asked for first (one row, quick), then
-// every page in turn until the client is found. Tests: tests/performance/coach-client-share.test.mjs.
+// every page in turn until the client is found. Tests: tests/performance/coach-tidy4.test.mjs.
 
 const PAGE = 200;
 

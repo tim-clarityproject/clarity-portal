@@ -253,6 +253,8 @@ function Blank() {
 /** The coach's role couldn't be read (role.js's `failed`): the calm error, with Try again. */
 function RoleProblem({ onRetry }) {
   const online = useOnline();
+  // A way out as well as Try again: Sign out, as the menu offers (UI tester, tidy follow-up 4).
+  const signOut = useSignOut({ to: '/coach/sign-in' });
   useEffect(() => { document.title = 'Clarity Coach'; }, []);
   return (
     <div className="ui-root cc-app">
@@ -261,7 +263,9 @@ function RoleProblem({ onRetry }) {
           <div className="cc-col cc-role-problem">
             <ErrorMessage>{online ? ROLE_PROBLEM : ROLE_OFFLINE}</ErrorMessage>
             <Button variant="primary" onClick={onRetry}>Try again</Button>
+            <Button variant="text" onClick={signOut.start}>Sign out</Button>
           </div>
+          {signOut.choice}
         </div>
       </main>
     </div>
