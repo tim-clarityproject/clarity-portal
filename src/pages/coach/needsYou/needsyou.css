@@ -11,7 +11,7 @@
 .ui-root .ny-say { margin: 0; font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text); text-wrap: pretty; }
 .ui-root .ny-hint { margin: 0; font-size: var(--fs-secondary); line-height: var(--lh-text); color: var(--text-2); }
 .ui-root .ny-sec { margin: 0; padding-top: var(--space-3); border-top: var(--line-w) solid var(--line); font-family: var(--font-display); font-weight: var(--fw-regular); font-size: var(--fs-section-title); letter-spacing: var(--ls-section-title); line-height: var(--lh-text); text-transform: uppercase; color: var(--text); }
-.ui-root .ny-sec + .ag-points, .ui-root .ny-sec + .ny-list, .ui-root .ny-sec + .ag-sessions { border-top: 0; margin-top: var(--space-2); }
+.ui-root .ny-sec + .ag-points, .ui-root .ny-sec + .ny-list, .ui-root .ny-sec + .ag-sessions, .ui-root .ny-sec + .ag-view { border-top: 0; margin-top: var(--space-2); }
 .ui-root .ny-points { margin-top: var(--space-px22); }
 .ui-root .ny-two { align-items: end; }
 

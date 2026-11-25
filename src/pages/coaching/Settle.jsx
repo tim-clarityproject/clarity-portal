@@ -5,7 +5,7 @@ import DesignHeader from '../../components/DesignHeader';
 import { Button, ErrorMessage, InlineChoice, LoadError, Loading, PageHeader } from '../../components/design';
 import StepsMarker from '../../components/agreements/StepsMarker';
 import { isOnline } from '../../lib/connection';
-import { BACS, BACS_LINE, SETTLE_QUESTION, STAND_IN_APPLE, STAND_IN_BACS, STAND_IN_CARD, choiceFor, settleView, stepsFor } from '../../lib/coaching/clientMoney';
+import { BACS, BACS_LINE, ENDED_STATUSES, SETTLE_QUESTION, STAND_IN_APPLE, STAND_IN_BACS, STAND_IN_CARD, choiceFor, endedLine, settleView, stepsFor } from '../../lib/coaching/clientMoney';
 import { clientAsk, isLive } from '../../lib/coaching/clientAsk';
 import { useAgreements } from './agreementData';
 import { mountElement } from './stripeElement';
@@ -51,12 +51,17 @@ export default function Settle() {
   const rootRef = useRef(null);
   const asked = useRef(false);
 
+  // An agreement cancelled within 14 days, run out or ended: nothing to settle, said calmly (break-it tester, run 3,
+  // finding 1). The server refuses too, with `ended`.
+  const [endedAs, setEndedAs] = useState(null);
+  const ended = endedAs || (ENDED_STATUSES.includes(version?.agreementStatus) ? version.agreementStatus : null);
+
   // Ask the server once, once the version is known to be signed.
   useEffect(() => {
-    if (asked.current || !version?.signedAt) return;
+    if (asked.current || !version?.signedAt || ENDED_STATUSES.includes(version?.agreementStatus)) return;
     asked.current = true;
     clientAsk('settle', bacs ? 'bacs' : 'start', { versionId }).then((a) => {
-      if (!a.ok) { setProblem(a.message); return; }
+      if (!a.ok) { if (a.ended) setEndedAs(a.ended); else setProblem(a.message); return; }
       // An amendment, or settled already: nothing to settle here, so straight on to Welcome.
       if (a.amendment) { navigate(`/coaching/agreement/${versionId}/welcome`, { replace: true }); return; }
       setAnswer(a);
@@ -118,7 +123,12 @@ export default function Settle() {
       <DesignHeader />
       <div className="plan-page ipp-page coaching-page cl-page">
         <StepsMarker current={2} steps={steps} />
-        {!version.signedAt ? (
+        {ended ? (
+          <>
+            <p className="cl-say">{endedLine(ended, terms.coachFirst)}</p>
+            <div className="cl-acts"><Button variant="primary" onClick={() => navigate('/coaching')}>Open My coaching</Button></div>
+          </>
+        ) : !version.signedAt ? (
           <>
             <p className="cl-say">{NOT_SIGNED}</p>
             <div className="cl-acts"><Button variant="primary" onClick={() => navigate(`/coaching/agreement/${versionId}`)}>Read and sign</Button></div>

@@ -154,13 +154,13 @@ async function serverAnswer(path, body) {
 /**
  * Signs through the server (/api/agreement-sign), which signs as the person and then makes and
  * keeps the signed PDF. Resolves as supabase.rpc does ({ data } or { error: { code, message } }).
- * Where no server answers at all (a developer's machine), it signs with sign_agreement itself, and
- * the first download makes the PDF.
+ * Where no server answers at all (a developer's machine), it signs with 065's sign_agreement_v2 itself (never 061's
+ * sign_agreement, which skips 065's checks: the break-it tester, run 3, finding 3), and the first download makes the PDF.
  */
 async function signThroughServer({ versionId, name, signatureId, fingerprint }) {
   const answer = await serverAnswer('/api/agreement-sign', { versionId, name, signatureId, fingerprint });
   if (!answer) {
-    return supabase.rpc('sign_agreement', { p_version: versionId, p_name: name, p_signature: signatureId, p_fingerprint: fingerprint });
+    return supabase.rpc('sign_agreement_v2', { p_version: versionId, p_name: name, p_signature: signatureId, p_fingerprint: fingerprint, p_start_now: false, p_choice: null });
   }
   if (answer.body.ok) return { data: { signed_at: answer.body.signed_at, fingerprint: answer.body.fingerprint, version: answer.body.version } };
   return { error: { code: answer.body.code || (answer.status >= 500 ? '' : String(answer.status)), message: answer.body.message || '' } };

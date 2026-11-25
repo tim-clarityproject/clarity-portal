@@ -1,7 +1,6 @@
 import { dayKeyWords } from '../time/index.js';
 import { CURRENCY_LIST, moneyText } from '../agreements/currency.js';
 import { kindOf, selfFunded } from '../agreements/terms.js';
-import { canChoose } from '../agreements/upfront.js';
 import { firstPayment, hasRest, payTitle, restLine } from '../agreements/settling.js';
 import { applies as coolingApplies, bookableFrom, SETTLE_LINE } from '../agreements/coolingOff.js';
 import { balanceLine, entryLength, percentUsed } from '../agreements/hours.js';
@@ -94,16 +93,38 @@ export const signButton = (terms) => (selfFunded(terms) ? 'Sign and continue' : 
 /** The steps a reader has: a client funded by an organisation has no Settle (StepsMarker's steps). */
 export const stepsFor = (terms) => (selfFunded(terms) && kindOf(terms) !== 'team' ? ['Read', 'Sign', 'Settle'] : ['Read', 'Sign']);
 
-/** The choice a version is read with: the one signed, else up front where the client chooses (item 37), else none. */
+/**
+ * The choice a version is read with: the one signed, else the one accepted on its quote (terms.choice: the break-it
+ * tester, run 3, finding 7), else up front where the client chooses (item 37), else none.
+ */
 export function choiceFor(terms, settleChoice = null) {
   if (settleChoice === 'upfront' || settleChoice === 'plan') return settleChoice;
-  return canChoose(terms) ? 'upfront' : (terms?.choice ?? 'upfront');
+  if (terms?.choice === 'upfront' || terms?.choice === 'plan') return terms.choice;
+  return 'upfront';
 }
 
 /** Where signing leads: settling the first amount (self-funded with something to settle), else the welcome. */
 export function afterSigning(terms, choice, { amends = false } = {}) {
-  // An amendment (a later version of an agreement signed before) settles nothing at signing (agreements rule 12).
+  // An amendment (a later version of an agreement signed before) settles nothing new at signing (agreements rule 12);
+  // Welcome then asks whether the first signing's payment is settled (needsSettleCheck).
   return !amends && selfFunded(terms) && firstPayment(terms, choice) > 0 ? 'settle' : 'welcome';
+}
+
+/**
+ * Whether Welcome asks the server if the first payment is settled before showing every step done: a self-funded
+ * client's version with something to settle, and any amendment of one (its first payment is the first signing's, still
+ * due until settled: the break-it tester, run 3, finding 2).
+ */
+export const needsSettleCheck = (terms, choice, { amends = false } = {}) => selfFunded(terms) && (amends || firstPayment(terms, choice) > 0);
+
+/** An agreement that no longer runs (cancelled within 14 days, run out, ended): nothing to settle or welcome. */
+export const ENDED_STATUSES = Object.freeze(['cancelled', 'expired', 'ended', 'ended_not_renewed']);
+/** Its one calm line for Settle and Welcome (finding 1). */
+export function endedLine(status, coachFirst = '') {
+  const who = typeof coachFirst === 'string' && coachFirst.trim() ? coachFirst.trim() : 'your coach';
+  if (status === 'cancelled') return `This agreement was cancelled, so there’s nothing to settle. Talk to ${who} if you’d like to start again.`;
+  if (status === 'expired') return `This agreement ran out before it was signed, so there’s nothing to settle. Ask ${who} to open it again.`;
+  return 'This agreement has ended, so there’s nothing to settle.';
 }
 
 /**

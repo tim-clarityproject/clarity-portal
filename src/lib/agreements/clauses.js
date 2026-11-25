@@ -73,6 +73,14 @@ export function forStorage(t, opts = {}) {
 /** The clauses with the client's choice applied (what they signed). */
 export const resolveChoice = (clauses, choice) => (clauses || []).map((c) => (c.choices && c.choices[choice] ? { ...c, paragraphs: c.choices[choice] } : c));
 
+/**
+ * The stored clauses with the investment clause's paragraphs set to a choice made (a quote accepted with the plan: the
+ * break-it tester, run 3, finding 7), keeping both texts in `choices` for the signing block. No choice: as they are.
+ */
+export const withChoice = (clauses, choice) => (choice === 'upfront' || choice === 'plan'
+  ? (clauses || []).map((c) => (c.choices && c.choices[choice] ? { ...c, paragraphs: c.choices[choice] } : c))
+  : clauses);
+
 /** "9. Changing your mind in the first 14 days". */
 export const clauseTitle = (c) => `${c.number}. ${c.title}`;
 

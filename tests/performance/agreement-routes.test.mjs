@@ -15,10 +15,12 @@ import { ASKS } from '../../src/lib/agreements/asks.js';
 import { blankTerms } from '../../src/lib/agreements/terms.js';
 import { forStorage } from '../../src/lib/agreements/clauses.js';
 import { stripeStandIn } from '../../src/lib/billing/stripe.js';
+import { versionFields } from '../../src/lib/coach/agreementBuilder.js';
 import { fakeDb065, numberRpc } from './_fakeDb065.mjs';
 
 const U = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
-const COACH = { id: U(1), role: 'coach', active: true, user_id: U(2) };
+// The practice's owner (an associate's own sends wait for approval: the break-it tester's tests below).
+const COACH = { id: U(1), role: 'owner', active: true, user_id: U(2) };
 const LIVE = { VERCEL_ENV: 'production', RESEND_API_KEY: 're_stub_only', COACH_EMAIL_FROM: 'The Clarity Portal <portal@example.invalid>' };
 
 function terms(extra = {}) {
@@ -30,7 +32,7 @@ function world({ now = new Date('2026-11-25T12:00:00Z'), env = LIVE, outcome = '
   const t = terms();
   let quoteNo = 0;
   const db = fakeDb065({
-    coaches: [{ id: COACH.id, user_id: COACH.user_id, role: 'coach', display_first_name: 'Tim', email: 'tim@example.invalid', active: true }],
+    coaches: [{ id: COACH.id, user_id: COACH.user_id, role: 'owner', display_first_name: 'Tim', email: 'tim@example.invalid', active: true }],
     client_profiles: [{ id: U(10), coach_id: COACH.id, name: 'Sam Reid', email: 'sam@example.invalid', time_zone: 'Europe/London', user_id: U(11) }],
     signatures: [{ id: U(20), user_id: COACH.user_id, kind: 'typed', typed_name: 'Tim Dutton', created_at: '2026-11-01T00:00:00Z' }],
     agreements: [{ id: U(30), coach_id: COACH.id, kind: 'coaching', profile_id: U(10), status: 'draft', current_version: 1, agreement_kind: 'sessions' }],
@@ -44,6 +46,8 @@ function world({ now = new Date('2026-11-25T12:00:00Z'), env = LIVE, outcome = '
         return { data: q.number, error: null };
       },
       invoice_take_number: numberRpc(),
+      // 065's print of a version's content (md5 in the database; any stable text here).
+      _version_print: (args) => ({ data: JSON.stringify([args.p_terms, args.p_clauses, args.p_total, args.p_overrides, args.p_currency, args.p_funded_by]), error: null }),
     },
   });
   const mails = [];
@@ -271,4 +275,65 @@ test('Extend and Pause keep the moved end in ends_on (ending_on with no "by" bef
   w.db.from = real;
   const e = await w.api.endEarly({ agreementId: U(30), endsOn: '2027-04-30', by: 'client' });
   assert.deepEqual([e.endingOn, w.db.tables.agreements[0].ending_by], ['2027-04-30', 'client']);
+});
+
+// ---------------------------------------------------------------- the break-it tester's findings (run 3)
+
+const ASSOCIATE = { id: U(1), role: 'coach', active: true, user_id: U(2) };
+const printOf = (v) => JSON.stringify([v.terms, v.clauses, v.total_minor, v.overrides, v.currency, v.funded_by]);
+
+test('finding 6: an associate sends only the version the owner approved, exactly as approved', async () => {
+  const w = world();
+  const api = agreementsApi({ db: w.db, server: w.db, coach: ASSOCIATE, env: LIVE, send: async () => 'sent', now: () => new Date('2026-11-25T12:00:00Z') });
+  const ask = { agreementId: U(30), versionId: U(31), signatureId: U(20), personalNote: '', sendAs: 'agreement', validDays: 30 };
+  await assert.rejects(api.send(ask), /owner approves it/, 'left not needed');
+  await assert.rejects(api.send({ ...ask, sendAs: 'quote' }), /owner approves it/, 'a quote too');
+  const [a] = w.db.tables.agreements;
+  const [v] = w.db.tables.agreement_versions;
+  Object.assign(v, { clauses: versionFields(v.terms).clauses, total_minor: versionFields(v.terms).total_minor });
+  Object.assign(a, { approval: 'approved', approved_version: 1, approved_print: 'something else' });
+  await assert.rejects(api.send(ask), /owner approves it/, 'changed since it was approved');
+  a.approved_print = printOf(v);
+  const out = await api.send(ask);
+  assert.ok(out.sentAt);
+  assert.equal(w.db.tables.agreement_versions[0].status, 'sent');
+});
+
+test('finding 6: an associate’s price review waits for the owner, signed and asked, nothing emailed', async () => {
+  const w = world();
+  const v = w.db.tables.agreement_versions[0];
+  Object.assign(v, { status: 'signed', client_signed_at: '2026-01-04T10:00:00Z', terms: { ...blankTerms('retainer'), retainer: { ...blankTerms('retainer').retainer, feeMinor: 300000 } } });
+  w.db.tables.agreements[0].status = 'signed';
+  const mails = [];
+  const b = billing({ server: w.db, db: w.db, stripe: stripeStandIn(), coach: ASSOCIATE, env: LIVE, send: async (e, m) => { mails.push(m); return 'sent'; }, now: () => new Date('2026-11-25T12:00:00Z') });
+  const p = await b.updatedPrice({ agreementId: U(30), newFeeMinor: 330000, fromDay: '2027-01-04', note: 'From January.' });
+  assert.equal(p.waiting, true);
+  const nv = w.db.tables.agreement_versions.find((x) => x.id === p.versionId);
+  assert.deepEqual([nv.status, Boolean(nv.coach_signature_id)], ['draft', true]);
+  assert.deepEqual([w.db.tables.agreements[0].approval, w.db.tables.agreements[0].current_version], ['waiting', 2]);
+  assert.equal(mails.length, 0);
+});
+
+test('finding 5: Send keeps the wording its terms make; the owner never approves wording stored by hand', async () => {
+  const w = world();
+  const v = w.db.tables.agreement_versions[0];
+  const forged = () => forStorage(v.terms).map((c) => (c.key === 'rearranging' ? { ...c, paragraphs: [{ text: 'Any coaching session cancelled is charged at £5,000.', why: null }] } : c));
+  Object.assign(v, { clauses: forged(), total_minor: 1 });
+  await w.api.send({ agreementId: U(30), versionId: U(31), signatureId: U(20), personalNote: '', sendAs: 'agreement', validDays: 30 });
+  const sent = w.db.tables.agreement_versions[0];
+  assert.ok(!JSON.stringify(sent.clauses).includes('£5,000'));
+  assert.equal(sent.total_minor, versionFields(v.terms).total_minor);
+  // The owner's approval of an associate's draft with wording its terms don't make is refused.
+  const w2 = world();
+  w2.db.tables.coaches.push({ id: U(5), user_id: U(6), role: 'coach', display_first_name: 'Wren', active: true });
+  Object.assign(w2.db.tables.agreements[0], { coach_id: U(5), approval: 'waiting' });
+  Object.assign(w2.db.tables.agreement_versions[0], { coach_id: U(5), clauses: forged() });
+  await assert.rejects(w2.api.approve({ agreementId: U(30) }), /wording doesn’t match its terms/);
+});
+
+test('finding 8: a quote is never sent to someone their organisation funds', async () => {
+  const w = world();
+  Object.assign(w.db.tables.agreement_versions[0], { funded_by: 'Northfield', terms: terms({ funder: 'org', fundedBy: 'Northfield' }) });
+  await assert.rejects(w.api.send({ agreementId: U(30), versionId: U(31), signatureId: U(20), personalNote: '', sendAs: 'quote', validDays: 30 }), /only to clients who fund their own coaching/);
+  assert.equal(w.db.tables.agreement_quotes?.length || 0, 0);
 });

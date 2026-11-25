@@ -67,7 +67,8 @@ export default function QuotePage() {
   const number = Number.isInteger(quote.number) && quote.number > 0 ? quoteNumber(quote.number) : '';
   const rows = quoteRows(terms, chosen, choice);
   let points = [];
-  try { points = mainPoints(terms, { choice, seesMoney: true }); } catch { points = []; }
+  // Someone their organisation funds sees no money (quote_open keeps it from them: break-it tester, run 3, finding 8).
+  try { points = mainPoints(terms, { choice, seesMoney: !terms.fundedBy }); } catch { points = []; }
   const toggle = (key, on) => setChosen((list) => (on ? [...new Set([...list, key])] : list.filter((k) => k !== key)));
 
   const accept = async () => {

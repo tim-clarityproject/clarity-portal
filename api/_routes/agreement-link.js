@@ -18,7 +18,7 @@ import { createClient } from '@supabase/supabase-js';
 import { supabaseOf } from '../_coachEmails.js';
 import { maySend } from '../_guestEmails.js';
 import { portalOrigin } from '../_portalOrigin.js';
-import { forStorage } from '../../src/lib/agreements/clauses.js';
+import { forStorage, withChoice } from '../../src/lib/agreements/clauses.js';
 import { agreementTotal } from '../../src/lib/agreements/settling.js';
 import { quoteQuestionEmail, sponsorSignedCopyEmail } from '../../src/lib/email/agreementEmails.js';
 import { agreementsApi, sendAs, standardsFor } from './coach-agreements.js';
@@ -30,8 +30,6 @@ const TOKEN = /^[0-9a-f]{64}$/;
 const KEY = /^[a-z][a-z0-9_]{0,39}$/;
 const PNG = /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
 const calm = (status, message) => Object.assign(new Error(message), { status, calm: true });
-// The last question asked on each quote (in this instance): one a minute, so a link can't be used to flood the coach.
-const QUESTIONS = new Map();
 
 /** The ask, checked, or null. */
 export function askedFor(body) {
@@ -81,15 +79,19 @@ export function linkApi({ server, env = {}, origin = 'https://portal.theclarityp
       if (!q) throw calm(404, 'That link isn’t working. Ask your coach for a new one.');
       if (q.state === 'accepted') return { versionId: q.version_id, needsAccount: await this._needsAccount(q.version_id), already: true };
       if (q.state !== 'open') throw calm(409, 'This quote has run out. Ask your coach to open it again.');
-      const { data: quote } = await server.from('agreement_quotes').select('id, coach_id, version_id').eq('share_token', asked.token).maybeSingle();
-      const { data: v } = quote ? await server.from('agreement_versions').select('id, overrides, terms').eq('id', quote.version_id).maybeSingle() : { data: null };
+      const { data: quote } = await server.from('agreement_quotes').select('id, coach_id, version_id, sent_at').eq('share_token', asked.token).maybeSingle();
+      const { data: v } = quote ? await server.from('agreement_versions').select('id, overrides, terms, funded_by').eq('id', quote.version_id).maybeSingle() : { data: null };
       if (!v) throw calm(404, 'That link isn’t working. Ask your coach for a new one.');
-      const offered = new Set((q.terms?.extrasOffered || []).map((e) => e.key));
+      // The version's own terms (quote_open keeps the money from someone their organisation funds: break-it tester, run
+      // 3, finding 8), with the extras ticked and the choice made.
+      const offered = new Set((v.terms?.extrasOffered || []).map((e) => e.key));
       if (asked.extras.some((k) => !offered.has(k))) throw calm(400, 'Only the extras offered can be chosen.');
-      const terms = { ...q.terms, extrasChosen: asked.extras, choice: asked.choice };
+      const terms = { ...v.terms, extrasChosen: asked.extras, choice: asked.choice };
       const kind = terms.kind || 'sessions';
-      const standards = await standardsFor(server, quote.coach_id, kind);
-      const clauses = forStorage(terms, { standards, overrides: v.overrides || {} });
+      // The wording as the quote was sent, never a standard the coach made since (finding 9).
+      const standards = await standardsFor(server, quote.coach_id, kind, { asOf: quote.sent_at || null });
+      // The investment clause reads as the choice made (finding 7); both texts stay for the signing block.
+      const clauses = withChoice(forStorage(terms, { standards, overrides: v.overrides || {} }), asked.choice);
       // Every kind's total with the ticked extras (settling.js's agreementTotal), never the sessions' sum alone (finding 9).
       const total = agreementTotal(terms, asked.choice || 'upfront', asked.extras);
       const r = await server.rpc('quote_accept', { p_token: asked.token, p_extras: asked.extras, p_choice: asked.choice, p_clauses: clauses, p_total_minor: total });
@@ -120,8 +122,10 @@ export function linkApi({ server, env = {}, origin = 'https://portal.theclarityp
     },
 
     /**
-     * A question from the quote page, emailed to the coach (from The Clarity Portal). Once a minute a quote at most, and only
-     * while the quote is open; the client's own email isn't known here, so the coach replies through their usual way.
+     * A question from the quote page, emailed to the coach (from The Clarity Portal). Once a minute a quote at most, held
+     * in the database (065's agreement_quotes.last_question_at, claimed before sending) so every server instance keeps
+     * the same limit (break-it tester, run 3, finding 9), and only while the quote is open; the client's own email isn't
+     * known here, so the coach replies through their usual way.
      */
     async quoteQuestion(asked) {
       const open = await server.rpc('quote_open', { p_token: asked.token });
@@ -130,13 +134,15 @@ export function linkApi({ server, env = {}, origin = 'https://portal.theclarityp
       const { data: quote } = await server.from('agreement_quotes').select('id, coach_id, agreement_id, updated_at').eq('share_token', asked.token).maybeSingle();
       const { data: coach } = quote ? await server.from('coaches').select('display_first_name, email').eq('id', quote.coach_id).maybeSingle() : { data: null };
       if (!coach?.email) throw calm(409, 'Your question couldn’t be sent. Reply to your coach’s email instead.');
-      const key = quote.id;
-      const last = QUESTIONS.get(key) || 0;
-      if (now().getTime() - last < 60000) throw calm(429, 'Your question is on its way. Wait a minute before sending another.');
-      QUESTIONS.set(key, now().getTime());
+      const at = now().toISOString();
+      const claimed = await server.from('agreement_quotes').update({ last_question_at: at }).eq('id', quote.id)
+        .or(`last_question_at.is.null,last_question_at.lt.${new Date(now().getTime() - 60000).toISOString()}`).select('id');
+      if (claimed.error) throw new Error('db');
+      if (!claimed.data?.length) throw calm(429, 'Your question is on its way. Wait a minute before sending another.');
       const t = open.data.terms || {};
       const outcome = await send(env, { to: coach.email, doc: quoteQuestionEmail({ clientName: t.clientName || 'Your client', number: open.data.number,
         words: asked.text, link: `${origin}/coach/agreements/${quote.agreement_id}` }), fromName: 'The Clarity Portal', replyTo: null });
+      if (outcome === 'refused') await server.from('agreement_quotes').update({ last_question_at: null }).eq('id', quote.id).eq('last_question_at', at);
       if (outcome === 'refused' || outcome === 'unsure') throw calm(502, 'Your question didn’t send. Check your connection and try again.');
       return { emailed: outcome === 'sent' };
     },

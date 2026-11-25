@@ -49,7 +49,7 @@ import { planTotal } from '../../src/lib/agreements/pricing.js';
 import { counts, isOver } from '../../src/lib/agreements/sessionOutcome.js';
 import { agreementSchedule } from '../../src/lib/agreements/settling.js';
 import { onSchedule, scheduledProfiles } from '../../src/lib/agreements/duringAgreement.js';
-import { deliveredToInvoice, perSession } from '../../src/lib/agreements/delivered.js';
+import { deliveredToInvoice, perSession, prepaidSessions } from '../../src/lib/agreements/delivered.js';
 import { kindOf } from '../../src/lib/agreements/terms.js';
 import { noteBlocks, orgInvoiceEmail, updatedAgreementEmail } from '../../src/lib/email/agreementEmails.js';
 import { calm, sendAs, standardsFor } from './coach-agreements.js';
@@ -547,6 +547,17 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
       const { data: around } = await server.from('coach_sessions').select('*').eq('coach_id', coach.id).eq('profile_id', ctx.a.profile_id);
       const { data: srcs } = await server.from('invoice_sources').select('session_id, released_at').in('session_id', (around || []).map((x) => x.id).slice(0, 1000));
       const zone = ctx.payer.zone || 'Europe/London';
+      // The sessions settled at signing are recorded against the first payment (invoice_sources), so no other invoice,
+      // an organisation's included, takes them again (the break-it tester, run 3, finding 4).
+      const { data: firsts } = await server.from('invoices').select('id, kind, instalment_n, status').eq('agreement_id', ctx.a.id).eq('status', 'paid');
+      const firstPaid = (firsts || []).find((i) => FIRST_KINDS.includes(i.kind) && (i.instalment_n ?? 1) === 1);
+      if (firstPaid) {
+        const live = new Set((srcs || []).filter((x) => !x.released_at).map((x) => x.session_id));
+        for (const x of prepaidSessions({ terms, sessions: around || [], profileId: ctx.a.profile_id, zone, now: now().getTime() })) {
+          if (live.has(x.id)) continue;
+          await server.from('invoice_sources').insert({ coach_id: coach.id, invoice_id: firstPaid.id, session_id: x.id, minutes: Number(x.minutes) || 60 });
+        }
+      }
       const open = new Set(deliveredToInvoice({ terms, sessions: around || [], sources: srcs || [], profileId: ctx.a.profile_id, zone, now: now().getTime() }).map((x) => x.id));
       const settledLive = new Set((srcs || []).filter((x) => !x.released_at).map((x) => x.session_id));
       if (list.some((x) => settledLive.has(x.id))) throw calm(409, 'One of those coaching sessions is on an invoice already.');
@@ -588,13 +599,14 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
           rows.push({ key: x.id, sessionId: x.id, day: dayIn('Europe/London', new Date(x.starts_at)), what: `Coaching session with ${inOrg.get(x.profile_id).name}`, minutes: Number(x.minutes) || 60 });
         }
         if ((ss || []).length !== asked.sessionIds.length) throw notYours('coaching session');
-        // A client whose organisation already settles their coaching on an agreement's own schedule: never invoiced by
-        // the hour too (agreements rule 12).
+        // A client whose coaching is settled through an agreement of its own (the organisation's on its own schedule, or
+        // one the client funded themselves, whatever its status now): never invoiced to the organisation by the hour too
+        // (agreements rule 12; the break-it tester, run 3, finding 4).
         const who = [...new Set((ss || []).map((x) => x.profile_id))];
-        const { data: ags } = who.length ? await server.from('agreements').select('id, profile_id, status').in('profile_id', who).eq('coach_id', coach.id).eq('status', 'signed') : { data: [] };
+        const { data: ags } = who.length ? await server.from('agreements').select('id, profile_id, status, ends_on, ending_on, ending_by').in('profile_id', who).eq('coach_id', coach.id) : { data: [] };
         const { data: avs } = (ags || []).length ? await server.from('agreement_versions').select('agreement_id, version, status, terms, funded_by, client_signed_at, sponsor_signed_at').in('agreement_id', ags.map((x) => x.id)) : { data: [] };
         const covered = scheduledProfiles(ags || [], avs || []);
-        if ((ss || []).some((x) => onSchedule(covered, x.profile_id, dayIn('Europe/London', new Date(x.starts_at))))) throw calm(409, 'That coaching session is covered by its agreement, invoiced on its own schedule.');
+        if ((ss || []).some((x) => onSchedule(covered, x.profile_id, dayIn('Europe/London', new Date(x.starts_at))))) throw calm(409, 'That coaching session is covered by its own agreement, so it isn’t invoiced to the organisation.');
       }
       if (asked.entryIds.length) {
         const { data: es } = await server.from('time_entries').select('*').in('id', asked.entryIds);
@@ -607,6 +619,14 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
             minutes: Math.max(0, Math.round((Date.parse(e.ended_at) - Date.parse(e.started_at)) / 60000)) });
         }
         if ((es || []).length !== asked.entryIds.length) throw notYours('time entry');
+        // Time for a client whose own agreement settles it is never invoiced to the organisation too (finding 4).
+        const whoE = [...new Set((engs || []).map((e) => e.profile_id).filter(Boolean))];
+        const { data: agsE } = whoE.length ? await server.from('agreements').select('id, profile_id, status, ends_on, ending_on, ending_by').in('profile_id', whoE).eq('coach_id', coach.id) : { data: [] };
+        const { data: avsE } = (agsE || []).length ? await server.from('agreement_versions').select('agreement_id, version, status, terms, funded_by, client_signed_at, sponsor_signed_at').in('agreement_id', agsE.map((x) => x.id)) : { data: [] };
+        const coveredE = scheduledProfiles(agsE || [], avsE || []);
+        if ((es || []).some((e) => engProfile.get(e.engagement_id) && onSchedule(coveredE, engProfile.get(e.engagement_id), dayIn('Europe/London', new Date(e.started_at))))) {
+          throw calm(409, 'That time is covered by the client’s own agreement, so it isn’t invoiced to the organisation.');
+        }
       }
       rows.sort((x, y) => x.day.localeCompare(y.day));
       const { data: sponsor } = await server.from('agreements').select('id, current_version').eq('organisation_id', org.id).eq('coach_id', coach.id).eq('kind', 'sponsor').eq('status', 'signed').limit(1).maybeSingle();
@@ -818,6 +838,16 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
       const v = made.data[0];
       const { data: sig } = await db.from('signatures').select('id').eq('user_id', coach.user_id).order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (!sig) throw calm(409, 'Add your signature first, then send it.');
+      if (coach.role !== 'owner') {
+        // An associate's new version waits for the owner's approval like any other (the break-it tester, run 3, finding
+        // 6): signed by the coach, made the agreement's current version, and asked; the owner's Approve sends it.
+        const signedAt = now().toISOString();
+        const held = await db.from('agreement_versions').update({ coach_signed_at: signedAt, coach_signature_id: sig.id, send_as: 'agreement' }).eq('id', v.id).eq('status', 'draft').select('id');
+        if (held.error) throw calm(409, held.error.message || DIDNT_WORK);
+        const asked = await db.from('agreements').update({ current_version: version, approval: 'waiting' }).eq('id', a.id).select('id');
+        if (asked.error) throw calm(409, asked.error.message || DIDNT_WORK);
+        return { versionId: v.id, sentAt: null, emailed: false, waiting: true };
+      }
       const sentAt = now().toISOString();
       const sent = await db.from('agreement_versions').update({ status: 'sent', coach_signed_at: sentAt, coach_signature_id: sig.id, sent_at: sentAt, send_as: 'agreement',
         expires_on: addDays(today('Europe/London'), Number(t.expiryDays) || 30) }).eq('id', v.id).eq('status', 'draft').select('id');

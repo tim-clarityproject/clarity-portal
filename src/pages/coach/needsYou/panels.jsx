@@ -10,7 +10,8 @@ import { blockShort, balanceLine } from '../../../lib/agreements/hours';
 import { priceLine } from '../../../lib/agreements/renewals';
 import { fill } from '../../../lib/agreements/talkingPoints';
 import { sessionsToInvoice } from '../../../lib/agreements/delivered';
-import { mainPoints } from '../../../lib/agreements/clauses';
+import { mainPoints, resolveChoice } from '../../../lib/agreements/clauses';
+import AgreementView from '../../../components/agreements/AgreementView';
 import { calendarLink } from '../../../components/agreements/SessionCheckRow';
 import {
   dayOfStamp, hoursState, perSessionMinor, priceFromOptions, versionInForce, waitingReminder,
@@ -123,8 +124,9 @@ export function useNeedsYouActs() {
     try {
       const answer = await ask(route, kind, body);
       if (!answer.ok) { onProblem?.(answer.message); return false; }
-      if (item) await mark(item, { message, undo: false });
-      else if (message) toast.saved({ message });
+      const said = typeof message === 'function' ? message(answer) : message;
+      if (item) await mark(item, { message: said, undo: false });
+      else if (said) toast.saved({ message: said });
       loadCoach(userId, { again: true }).catch(() => {});
       return answer;
     } finally { busy.current = false; }
@@ -223,7 +225,9 @@ function FirstPaymentBody({ item, close }) {
   const v = p.agreementVersions.find((x) => x.id === item.data.versionId);
   const a = v && p.agreements.find((x) => x.id === v.agreement_id);
   const name = p.clients.find((c) => c.id === a?.profile_id)?.name || '';
-  const first = (p.invoices || []).find((i) => i.version_id === v?.id && (i.kind === 'first_payment' || i.kind === 'deposit'));
+  // The agreement's first payment, whichever version it was made from (an amendment's is the first signing's).
+  const first = (p.invoices || []).find((i) => i.agreement_id === v?.agreement_id && (i.instalment_n ?? 1) === 1 && i.status !== 'void'
+    && (i.kind === 'first_payment' || i.kind === 'deposit' || i.kind === 'instalment'));
   const amount = first ? moneyText(Math.max(0, Number(first.total_minor) - Number(first.paid_minor || 0)), first.currency || 'GBP') : '';
   const doc = useMemo(() => safeDoc(() => firstPaymentReminderEmail({ firstName: firstOf(name), coachFirst: p.coach.display_first_name || 'Tim', link: 'https://portal.theclarityproject.co.uk/coaching', amountWords: amount })), [name, p.coach.display_first_name, amount]);
   return MailBody({ item, close, doc, title: `Reminder for ${firstOf(name)}`, sentWords: `Reminder sent to ${firstOf(name)}`,
@@ -330,6 +334,13 @@ function ApprovalBody({ item, close }) {
           <ul className="ny-list">{rows.map((r) => <li key={r.label} className="ny-li"><span><span className="ny-li-t">{r.label}</span><span className="ny-li-m">{r.detail}</span></span></li>)}</ul>
         ) : <p className="ny-say">Nothing. It uses your standard wording and package.</p>}
         <Points label="The agreement" rows={[{ label: 'Coaching', value: t.coaching || '' }, ...points]} />
+        {/* The wording as it is stored and would be sent, every clause in full (break-it tester, run 3, finding 5). */}
+        {Array.isArray(info.clauses) && info.clauses.length > 0 && (
+          <>
+            <h3 className="ny-sec">The wording</h3>
+            <AgreementView clauses={resolveChoice(info.clauses, t.choice ?? 'upfront')} contents={false} idPrefix="ny-approve" />
+          </>
+        )}
         {asking && <div className="cc-field"><TextBox label={`What should ${coachFirst} change?`} value={note} onChange={(v) => { setNote(v); setProblem(null); }} maxLength={2000} /></div>}
         <Problem>{problem}</Problem>
       </>
@@ -430,7 +441,8 @@ function PriceBody({ item, close }) {
   const go = () => {
     if (!valid) { setProblem('Type the new monthly price, like 3,300.'); return; }
     send('billing', 'updated_price', { agreementId: a.id, newFeeMinor: pence, fromDay: from, note: 'As we discussed, here’s your updated agreement.' },
-      { item, message: `Sent to ${firstOf(name)}: the updated agreement to sign`, onProblem: setProblem }).then((ok) => ok && close());
+      // An associate's new version waits for the owner's approval (break-it tester, run 3, finding 6).
+      { item, message: (answer) => (answer.waiting ? `Signed. It goes to ${firstOf(name)} once your practice’s owner approves it.` : `Sent to ${firstOf(name)}: the updated agreement to sign`), onProblem: setProblem }).then((ok) => ok && close());
   };
   return {
     title: `${possessive(name)} price`,

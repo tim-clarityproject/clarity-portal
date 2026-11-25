@@ -25,7 +25,7 @@ import { asCallerClient, supabaseOf } from '../_coachEmails.js';
 import { dayIn, isZone, addDays } from '../../src/lib/time/index.js';
 import { keyAllowed, stripeApi } from '../../src/lib/billing/stripe.js';
 import { invoiceChange } from '../../src/lib/billing/stripeWebhook.js';
-import { firstPayment, hasRest, isAmendment, schedule, scheduleLine } from '../../src/lib/agreements/settling.js';
+import { firstPayment, firstSigning, hasRest, isAmendment, schedule, scheduleLine } from '../../src/lib/agreements/settling.js';
 import { selfFunded } from '../../src/lib/agreements/terms.js';
 
 export const config = { maxDuration: 30 };
@@ -33,6 +33,12 @@ const reply = (res, status, body) => { res.status(status).setHeader('Cache-Contr
 const DIDNT_WORK = 'That didn’t work. Try again in a moment.';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const FIRST_KINDS = ['first_payment', 'deposit', 'instalment'];
+/** An agreement that no longer runs: nothing is settled on it (the break-it tester, run 3, finding 1). */
+export const ENDED = Object.freeze(['cancelled', 'expired', 'ended', 'ended_not_renewed']);
+export const endedWords = (status) => (status === 'cancelled'
+  ? 'This agreement was cancelled, so there’s nothing to settle.'
+  : status === 'expired' ? 'This agreement ran out before it was signed, so there’s nothing to settle.'
+    : 'This agreement has ended, so there’s nothing to settle.');
 
 /** The ask: { kind, versionId } or null. */
 export function askedFor(body) {
@@ -92,7 +98,7 @@ export function clientMoneyApi({ server }) {
   };
 }
 
-const calm = (status, message) => Object.assign(new Error(message), { status, calm: true });
+const calm = (status, message, extra = {}) => Object.assign(new Error(message), { status, calm: true }, extra);
 
 /** The publishable key handed to the page: a test key only, or none (the page then uses its stand-in off live). */
 export const publishableKey = (env) => (/^pk_test_[A-Za-z0-9]{10,}$/.test(env.STRIPE_PUBLISHABLE_KEY || '') ? env.STRIPE_PUBLISHABLE_KEY : null);
@@ -110,15 +116,19 @@ export function settleApi({ server, stripe, now = () => new Date(), env = {} }) 
     const { data: v } = await server.from('agreement_versions').select('*').eq('id', mine.id).maybeSingle();
     const { data: a } = v ? await server.from('agreements').select('*').eq('id', v.agreement_id).maybeSingle() : { data: null };
     if (!v || !a) throw calm(403, 'That agreement isn’t yours.');
+    // Cancelled within 14 days, run out or ended: never charged again (the break-it tester, run 3, finding 1).
+    if (ENDED.includes(a.status)) throw calm(409, endedWords(a.status), { ended: a.status });
     const { data: p } = await server.from('client_profiles').select('id, name, email, time_zone').eq('id', a.profile_id).maybeSingle();
-    const terms = { ...(v.terms || {}), fundedBy: v.funded_by };
-    const choice = v.settle_choice || 'upfront';
     const zone = isZone(p?.time_zone) ? p.time_zone : 'Europe/London';
-    // A later signed version (a price review, an extension, a change) is an amendment: nothing is settled at its
-    // signing, and the agreement's first payment stays the first signing's (agreements rule 12).
-    const { data: all } = await server.from('agreement_versions').select('id, version, client_signed_at, sponsor_signed_at').eq('agreement_id', a.id);
+    // A later signed version (a price review, an extension, a change) is an amendment: nothing more is settled at its
+    // signing. Its first payment is still the FIRST signing's, by that signing's own terms and choice, until it is
+    // settled (agreements rule 12; the break-it tester, run 3, finding 2: signed, left before settling, then amended).
+    const { data: all } = await server.from('agreement_versions').select('*').eq('agreement_id', a.id);
     const amends = isAmendment(v, all || []);
-    return { v, a, p, terms, choice, zone, amends, currency: v.currency || terms.currency || 'GBP' };
+    const base = amends ? (firstSigning(all || [], zone)?.version || v) : v;
+    const terms = { ...(base.terms || {}), fundedBy: base.funded_by };
+    const choice = base.settle_choice || 'upfront';
+    return { v: base, signedNow: v, a, p, terms, choice, zone, amends, currency: base.currency || terms.currency || 'GBP' };
   }
 
   const firstOf = async (ctx) => {
@@ -148,11 +158,17 @@ export function settleApi({ server, stripe, now = () => new Date(), env = {} }) 
     /** The first invoice (made once) and its payment's secret for the Payment Element. */
     async start(mine) {
       const ctx = await context(mine);
-      if (ctx.amends) return { clientSecret: null, invoiceId: null, amountMinor: 0, currency: ctx.currency, settled: true, amendment: true };
-      const amount = firstPayment(ctx.terms, ctx.choice, ctx.terms.extrasChosen || []);
-      if (!(amount > 0)) throw calm(409, 'There’s nothing to settle now.');
       let row = await firstOf(ctx);
-      if (row?.status === 'paid') return { clientSecret: null, invoiceId: row.id, amountMinor: Number(row.total_minor), currency: row.currency, settled: true };
+      if (row?.status === 'paid') {
+        // An amendment whose first payment is settled asks for nothing now.
+        if (ctx.amends) return { clientSecret: null, invoiceId: null, amountMinor: 0, currency: ctx.currency, settled: true, amendment: true };
+        return { clientSecret: null, invoiceId: row.id, amountMinor: Number(row.total_minor), currency: row.currency, settled: true };
+      }
+      const amount = firstPayment(ctx.terms, ctx.choice, ctx.terms.extrasChosen || []);
+      if (!(amount > 0)) {
+        if (ctx.amends) return { clientSecret: null, invoiceId: null, amountMinor: 0, currency: ctx.currency, settled: true, amendment: true };
+        throw calm(409, 'There’s nothing to settle now.');
+      }
       if (!row) {
         const signedDay = dayIn(ctx.zone, new Date(ctx.v.client_signed_at));
         const plan = schedule(ctx.terms, { signedDay, choice: ctx.choice, chosen: ctx.terms.extrasChosen || [] })[0];
@@ -212,9 +228,13 @@ export function settleApi({ server, stripe, now = () => new Date(), env = {} }) 
     /** Whether the first payment is settled. */
     async state(mine) {
       const ctx = await context(mine);
-      if (ctx.amends) return { settled: true, amountMinor: 0, currency: ctx.currency, amendment: true };
       const row = await firstOf(ctx);
-      if (!row) return { settled: false, amountMinor: firstPayment(ctx.terms, ctx.choice, ctx.terms.extrasChosen || []), currency: ctx.currency };
+      if (!row) {
+        const amount = firstPayment(ctx.terms, ctx.choice, ctx.terms.extrasChosen || []);
+        // An amendment with nothing to settle at the first signing (an organisation's, or nothing due) is settled.
+        if (ctx.amends && !(amount > 0)) return { settled: true, amountMinor: 0, currency: ctx.currency, amendment: true };
+        return { settled: false, amountMinor: amount, currency: ctx.currency };
+      }
       let settled = row.status === 'paid';
       if (!settled && row.stripe_invoice_id && row.status === 'sent') {
         const inv = await stripe.retrieve('invoice', row.stripe_invoice_id).catch(() => null);
@@ -256,7 +276,7 @@ export default async function handler(req, res, env = process.env) {
     const out = await api[asked.kind](mine);
     return reply(res, 200, { ok: true, ...out });
   } catch (e) {
-    if (e?.calm) return reply(res, e.status || 409, { ok: false, calm: true, message: e.message });
+    if (e?.calm) return reply(res, e.status || 409, { ok: false, calm: true, message: e.message, ...(e.ended ? { ended: e.ended } : {}) });
     if (e?.code === 'PGRST301' || /jwt/i.test(String(e?.message || ''))) return reply(res, 401, { ok: false, message: 'Sign in again to carry on.' });
     return reply(res, 502, { ok: false, message: DIDNT_WORK });
   }

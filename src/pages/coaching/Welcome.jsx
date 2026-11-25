@@ -6,7 +6,7 @@ import { Button, Chevron, List, ListRow, LoadError, Loading, PageHeader, Section
 import StepsMarker from '../../components/agreements/StepsMarker';
 import { savePdf } from '../../components/design/pdfSave';
 import { getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
-import { BOOK_FIRST, WHAT_NEXT, afterSigning, stepsFor, welcomeLine, welcomeRows, welcomeTitle } from '../../lib/coaching/clientMoney';
+import { BOOK_FIRST, ENDED_STATUSES, WHAT_NEXT, endedLine, needsSettleCheck, stepsFor, welcomeLine, welcomeRows, welcomeTitle } from '../../lib/coaching/clientMoney';
 import { clientAsk } from '../../lib/coaching/clientAsk';
 import { agreementDocument, useAgreements } from './agreementData';
 import './coaching.css';
@@ -36,7 +36,10 @@ export default function Welcome() {
   // Opened by its address: every step shows done only once the server says the first payment is settled (or there is
   // nothing to settle at signing). Not signed: back to Read and sign; not settled: back to Settle (functionality
   // tester, run 3, finding 12). A stand-in answer (off the live site) never sends anyone back.
-  const needsSettling = Boolean(version?.signedAt) && afterSigning(terms, version?.settleChoice, { amends: version?.amends }) === 'settle';
+  // An amendment asks too: its first payment is the first signing's, still due until settled (break-it tester, run 3,
+  // finding 2). An agreement that no longer runs says so instead (finding 1).
+  const ended = ENDED_STATUSES.includes(version?.agreementStatus) ? version.agreementStatus : null;
+  const needsSettling = !ended && Boolean(version?.signedAt) && needsSettleCheck(terms, version?.settleChoice, { amends: version?.amends });
   const [checked, setChecked] = useState(() => !needsSettling || typeof state?.settled === 'string');
   useEffect(() => {
     if (!version) return undefined;
@@ -64,6 +67,17 @@ export default function Welcome() {
     );
   }
 
+  if (ended && version.signedAt) {
+    return (
+      <div className="ui-root">
+        <DesignHeader />
+        <div className="plan-page ipp-page coaching-page cl-page">
+          <p className="cl-say">{endedLine(ended, coachFirst)}</p>
+          <div className="cl-acts"><Button variant="primary" onClick={() => navigate('/coaching')}>Open My coaching</Button></div>
+        </div>
+      </div>
+    );
+  }
   if (!checked || !version.signedAt) return <div className="ui-root plan-builder-wait"><Loading label="Loading" /></div>;
   const signedDay = version.signedAt ? getLocalDateKey(parseDbTimestamp(version.signedAt)) : null;
   const rows = welcomeRows({ terms, signedDay, startNow: version.startNow, today: getLocalDateKey(new Date()) });

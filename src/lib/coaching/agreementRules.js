@@ -75,6 +75,8 @@ export function tidyVersion(raw) {
     startNow: raw.start_now === true,
     // An amendment of an agreement signed before (agreements rule 12): no start-now tick and nothing to settle at signing.
     amends: raw.amends === true,
+    // Whether the agreement still runs (065: cancelled within 14 days, run out, ended), for Settle and Welcome.
+    agreementStatus: text(raw.agreement_status) || null,
     settleChoice: raw.settle_choice === 'upfront' || raw.settle_choice === 'plan' ? raw.settle_choice : null,
   };
 }

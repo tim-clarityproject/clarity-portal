@@ -119,6 +119,12 @@ alter table public.agreements add column if not exists team_parent_id uuid refer
 -- The end a running agreement has now, moved by Extend or Pause without a new version (the server's alone; empty: the
 -- signed version's own terms.endsOn). An early end is ending_on with ending_by.
 alter table public.agreements add column if not exists ends_on date;
+-- The version the owner approved (agreement_approve; the break-it tester, run 3, finding 6): an associate's version is
+-- sent only once that very version is approved, so a later version (a price review, a change) is approved again.
+alter table public.agreements add column if not exists approved_version integer;
+-- And exactly what was approved (its terms, wording, total, edits, currency and funder, as _version_print() reads them),
+-- so a version changed after approval goes back to the owner.
+alter table public.agreements add column if not exists approved_print text;
 create index if not exists agreements_team_parent_idx on public.agreements (team_parent_id);
 create index if not exists agreements_package_idx on public.agreements (package_id);
 do $c$
@@ -329,6 +335,9 @@ create table if not exists public.agreement_quotes (
 comment on table public.agreement_quotes is
   'A quote (065): built from an agreement''s draft version, its Q- number taken at Send (quote_take_number, never reused), valid 14, 30 or 60 days, read by its private link only through quote_open(). Accepting it (quote_accept, the server''s) makes that version the agreement.';
 create index if not exists agreement_quotes_agreement_idx on public.agreement_quotes (agreement_id);
+-- When the quote page last asked the coach a question: one a minute per quote, held here so every server instance
+-- keeps the same limit (the break-it tester, run 3, finding 9). The server's alone.
+alter table public.agreement_quotes add column if not exists last_question_at timestamptz;
 
 create table if not exists public.quote_number_counter (
   id           boolean primary key default true check (id),
@@ -577,7 +586,7 @@ begin
   if tg_op = 'INSERT' then
     new.share_token := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
     new.number := null; new.sent_at := null; new.accepted_at := null; new.accepted_extras := null; new.accepted_choice := null;
-    new.reopened_at := null; new.valid_until := null;
+    new.reopened_at := null; new.valid_until := null; new.last_question_at := null;
     if new.status <> 'draft' then
       raise exception 'A quote is sent from the Send button.' using errcode = '42501';
     end if;
@@ -585,6 +594,7 @@ begin
   end if;
   new.share_token := old.share_token; new.number := old.number; new.sent_at := old.sent_at; new.accepted_at := old.accepted_at;
   new.accepted_extras := old.accepted_extras; new.accepted_choice := old.accepted_choice; new.reopened_at := old.reopened_at;
+  new.last_question_at := old.last_question_at;
   new.valid_until := old.valid_until; new.agreement_id := old.agreement_id; new.version_id := old.version_id; new.coach_id := old.coach_id;
   if new.status is distinct from old.status and not (new.status = 'withdrawn' and old.status in ('draft', 'sent', 'expired')) then
     raise exception 'A quote is sent and accepted through its own steps.' using errcode = '42501';
@@ -653,6 +663,41 @@ $t$;
 -- (061), only the server or a sponsor's link signs for a sponsor, and only the client's signing records start now and
 -- the way of settling. A draft that is out as a quote is held as sent, and an agreement waiting for the owner's
 -- approval is sent only once approved.
+-- What an approval binds: a version's terms, wording, total, own edits, currency and funder (the cover note and how it
+-- goes are the coach's to change).
+create or replace function public._version_print(p_terms jsonb, p_clauses jsonb, p_total bigint, p_overrides jsonb, p_currency text, p_funded_by text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select md5(concat_ws('|', coalesce(p_terms, '{}'::jsonb)::text, coalesce(p_clauses, '[]'::jsonb)::text, coalesce(p_total::text, ''),
+                       coalesce(p_overrides, '{}'::jsonb)::text, coalesce(p_currency, ''), coalesce(p_funded_by, '')));
+$$;
+grant execute on function public._version_print(jsonb, jsonb, bigint, jsonb, text, text) to public;
+
+-- Whether a version of an agreement may go out (be sent, or accepted from its quote): never while the owner's approval is
+-- waiting or changes are asked; and a builder version (065: terms.kind) of an agreement made by a coach who isn't the
+-- owner only once the owner approved this very version (the break-it tester, run 3, finding 6: an associate never sends
+-- past approval, a later version included). Run 1's versions (no terms.kind) keep 061's rule.
+-- As the caller (the coach's own agreement and coach row, through their rules), or as the definer when quote_accept asks.
+create or replace function public._agreement_send_ok(p_agreement uuid, p_version integer, p_builder boolean, p_print text)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select coalesce((
+    select a.approval not in ('waiting', 'changes_asked')
+       and (not coalesce(p_builder, true) or c.role = 'owner'
+            or (a.approval = 'approved' and a.approved_version = p_version and a.approved_print is not distinct from p_print))
+      from public.agreements a join public.coaches c on c.id = a.coach_id
+     where a.id = p_agreement), false);
+$$;
+revoke all on function public._agreement_send_ok(uuid, integer, boolean, text) from public, anon;
+-- The guards run as the coach, so the coach may ask it (a yes or no about an agreement, nothing more).
+grant execute on function public._agreement_send_ok(uuid, integer, boolean, text) to authenticated;
+
 create or replace function public.agreement_versions_guard()
 returns trigger
 language plpgsql
@@ -686,8 +731,8 @@ begin
          or new.sponsor_email is not null or new.sponsor_po is not null) then
       raise exception 'Only the person signing records that.' using errcode = '42501';
     end if;
-    if v_person and new.status = 'sent'
-       and exists (select 1 from public.agreements a where a.id = new.agreement_id and a.approval in ('waiting', 'changes_asked')) then
+    if v_person and new.status = 'sent' and not public._agreement_send_ok(new.agreement_id, new.version, coalesce(new.terms ? 'kind', false),
+                                   public._version_print(new.terms, new.clauses, new.total_minor, new.overrides, new.currency, new.funded_by)) then
       raise exception 'This agreement is sent once it is approved.' using errcode = '42501';
     end if;
   else
@@ -744,8 +789,8 @@ begin
              or new.personal_note is distinct from old.personal_note or new.send_as is distinct from old.send_as) then
           raise exception 'This version is out as a quote, so it can’t change. Withdraw the quote or make a new version.' using errcode = '23514';
         end if;
-        if new.status = 'sent'
-           and exists (select 1 from public.agreements a where a.id = new.agreement_id and a.approval in ('waiting', 'changes_asked')) then
+        if new.status = 'sent' and not public._agreement_send_ok(new.agreement_id, new.version, coalesce(new.terms ? 'kind', false),
+                                   public._version_print(new.terms, new.clauses, new.total_minor, new.overrides, new.currency, new.funded_by)) then
           raise exception 'This agreement is sent once it is approved.' using errcode = '42501';
         end if;
       end if;
@@ -786,7 +831,8 @@ begin
     if new.status not in ('draft', 'sent') then
       raise exception 'Only the client signs their agreement.' using errcode = '42501';
     end if;
-    if new.approval not in ('not_needed', 'waiting') or new.approved_by is not null or new.approved_at is not null or new.approval_note is not null then
+    if new.approval not in ('not_needed', 'waiting') or new.approved_by is not null or new.approved_at is not null or new.approval_note is not null
+       or new.approved_version is not null or new.approved_print is not null then
       raise exception 'The owner approves an agreement.' using errcode = '42501';
     end if;
     new.ends_on := null; -- a moved end is the server's (Extend, Pause)
@@ -795,7 +841,10 @@ begin
   if new.status = 'signed' and old.status <> 'signed' then
     raise exception 'Only the client signs their agreement.' using errcode = '42501';
   end if;
-  if new.status is distinct from old.status and (new.status in ('cancelled', 'expired') or old.status in ('cancelled', 'expired')) then
+  -- A coach moves an agreement from draft to sent (Send) and nothing else: signing is the client's, and cancelling,
+  -- running out, reopening and ending are their own steps on the server, so a coach can never switch off the 14-day
+  -- guard or the billing by changing a status (the break-it tester, run 3, finding 9).
+  if new.status is distinct from old.status and not (old.status = 'draft' and new.status = 'sent') then
     raise exception 'That happens through its own step.' using errcode = '42501';
   end if;
   -- A coach asks (again, for a new version after approval or after changes were asked for); only the owner answers, and
@@ -803,7 +852,8 @@ begin
   if new.approval is distinct from old.approval and new.approval <> 'waiting' then
     raise exception 'The owner approves an agreement.' using errcode = '42501';
   end if;
-  new.approved_by := old.approved_by; new.approved_at := old.approved_at;
+  new.approved_by := old.approved_by; new.approved_at := old.approved_at; new.approved_version := old.approved_version;
+  new.approved_print := old.approved_print;
   if new.approval_note is distinct from old.approval_note then
     new.approval_note := old.approval_note;
   end if;
@@ -853,6 +903,8 @@ as $$
       'client_signature_id', v.client_signature_id,
       -- 065
       'agreement_kind', a.agreement_kind, 'send_as', v.send_as, 'personal_note', v.personal_note, 'expires_on', v.expires_on,
+      -- Whether the agreement still runs (cancelled within 14 days, run out, ended): Settle and Welcome say so calmly.
+      'agreement_status', a.status,
       'start_now', v.start_now, 'start_now_at', v.start_now_at, 'settle_choice', case when v.funded_by is null then v.settle_choice end,
       -- An amendment: an earlier version of this agreement was signed, so nothing is settled at signing and the
       -- start-now tick isn't asked again (agreements rule 12).
@@ -1018,7 +1070,10 @@ begin
   v_offered := v_self and coalesce((v.terms ->> 'offerUpfront')::boolean, true)
     and (coalesce(v.terms ->> 'kind', v.a_agreement_kind) = 'retainer'
          or (coalesce(v.terms ->> 'kind', v.a_agreement_kind) = 'sessions' and coalesce(v.terms ->> 'settle', 'equal') <> 'full'));
-  v_choice := case when v_offered then coalesce(case when p_choice in ('upfront', 'plan') then p_choice end, 'upfront') end;
+  -- The choice made here, else the one accepted on the quote (terms.choice), else up front (the break-it tester, run 3,
+  -- finding 7: a quote accepted with the plan is signed with the plan unless the client chooses otherwise).
+  v_choice := case when v_offered then coalesce(case when p_choice in ('upfront', 'plan') then p_choice end,
+                                                case when v.terms ->> 'choice' in ('upfront', 'plan') then v.terms ->> 'choice' end, 'upfront') end;
   -- A later version of an agreement signed before (a price review, an extension, a change) is an amendment (agreements
   -- rule 12): the 14 days and the start-now tick stay the first signing's, so nothing is asked or recorded again, and
   -- the way of settling stays the one chosen first.
@@ -1049,6 +1104,79 @@ end;
 $$;
 revoke all on function public.sign_agreement_v2(uuid, text, uuid, text, boolean, text) from public, anon;
 grant execute on function public.sign_agreement_v2(uuid, text, uuid, text, boolean, text) to authenticated;
+
+-- 061's sign_agreement, made again (the break-it tester, run 3, finding 3): a builder version (065: terms.kind) is signed
+-- only through sign_agreement_v2, which waits for a change asked for, refuses a version past its day or an agreement
+-- cancelled or run out, and records the start-now tick and the way of settling. Run 1's versions sign here as before
+-- (a change asked for doesn't stop them, as in 061), refused only when cancelled or run out. Otherwise 061's function.
+create or replace function public.sign_agreement(p_version uuid, p_name text, p_signature uuid, p_fingerprint text)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_email text;
+  v_confirmed timestamptz;
+  v record;
+  v_sig record;
+  v_now timestamptz := now();
+  v_print text;
+  v_name text;
+begin
+  if v_user is null then raise exception 'Sign in to carry on.' using errcode = '42501'; end if;
+  select u.email, u.email_confirmed_at into v_email, v_confirmed from auth.users u where u.id = v_user;
+  if v_confirmed is null then raise exception 'Confirm your email address to sign.' using errcode = '42501'; end if;
+  select ver.*, a.current_version, a.profile_id as a_profile, a.kind as a_kind, a.status as a_status, p.user_id as client_user,
+         a.coach_id as a_coach, p.coach_id as p_coach, p.time_zone as p_zone
+    into v
+    from public.agreement_versions ver
+    join public.agreements a on a.id = ver.agreement_id
+    join public.client_profiles p on p.id = a.profile_id
+    where ver.id = p_version
+    for update of ver;
+  if not found or v.client_user is distinct from v_user or v.a_kind <> 'coaching' or v.a_coach is distinct from v.p_coach then
+    raise exception 'That agreement isn’t yours to sign.' using errcode = '42501';
+  end if;
+  if v.status = 'signed' then
+    raise exception 'This agreement is already signed.' using errcode = 'CC409';
+  end if;
+  if coalesce(v.terms ? 'kind', false) then
+    raise exception 'Open your agreement again to sign the newest version.' using errcode = 'CC409';
+  end if;
+  if v.status <> 'sent' or v.coach_signed_at is null or v.version <> v.current_version or v.a_status in ('cancelled', 'expired') then
+    raise exception 'This version can’t be signed. Open the newest one.' using errcode = 'CC409';
+  end if;
+  if v.expires_on is not null and v.expires_on < (v_now at time zone coalesce(nullif(v.p_zone, ''), 'Europe/London'))::date then
+    raise exception 'This agreement has run out. Ask your coach to open it again.' using errcode = 'CC409';
+  end if;
+  v_print := public.agreement_fingerprint(p_version);
+  if p_fingerprint is distinct from v_print then
+    raise exception 'This agreement changed since you opened it. Open it again to read the newest version.' using errcode = 'CC409';
+  end if;
+  -- A real name: invisible and direction marks taken out, at least one letter, no markup (break-it tester).
+  v_name := btrim(regexp_replace(coalesce(p_name, ''), '[' || U&'\200B-\200F\202A-\202E\2060-\2069\FEFF\00AD' || ']', '', 'g'));
+  if char_length(v_name) < 3 or char_length(v_name) > 160 or v_name !~ '[[:alpha:]]' or v_name ~ '[<>{}]' then
+    raise exception 'Type your full name to sign.' using errcode = '22023';
+  end if;
+  select * into v_sig from public.signatures s where s.id = p_signature and s.user_id = v_user;
+  if not found then raise exception 'Use your signature to sign.' using errcode = '22023'; end if;
+
+  update public.agreement_versions set status = 'signed', client_signed_at = v_now, client_signature_id = v_sig.id,
+    signed_name = v_name, signed_email = v_email, signed_user_id = v_user, fingerprint = v_print
+  where id = p_version;
+  update public.agreement_versions set status = 'superseded' where agreement_id = v.agreement_id and id <> p_version and status in ('sent', 'signed');
+  update public.agreements set status = 'signed', updated_at = v_now where id = v.agreement_id;
+  insert into public.coach_notifications (coach_id, kind, title, detail, item_kind, item_id)
+  select v.coach_id, 'agreement', p.name || ' signed their agreement', left(coalesce(v.terms->>'coaching', ''), 240), 'client', p.id
+  from public.client_profiles p where p.id = v.a_profile;
+  return jsonb_build_object('signed_at', v_now, 'fingerprint', v_print, 'version', v.version);
+end;
+$$;
+revoke all on function public.sign_agreement(uuid, text, uuid, text) from public, anon;
+grant execute on function public.sign_agreement(uuid, text, uuid, text) to authenticated;
 
 -- The client's agreement page records its first open (the coach's Sent, Opened, Signed, Settled). Their own sent
 -- version only; nothing comes back, and nothing at all for anyone else's.
@@ -1123,7 +1251,8 @@ begin
   if p_token is null or p_token !~ '^[0-9a-f]{64}$' then
     return null;
   end if;
-  select qq.*, v.terms, v.clauses, v.currency, v.fx_rate, v.total_minor, v.personal_note, v.version, c.display_first_name as coach_first
+  select qq.*, v.terms, v.clauses, v.currency, v.fx_rate, v.total_minor, v.personal_note, v.version, v.funded_by, c.display_first_name as coach_first,
+         c.user_id as coach_user
     into q
     from public.agreement_quotes qq
     join public.agreement_versions v on v.id = qq.version_id
@@ -1139,11 +1268,25 @@ begin
     return jsonb_build_object('state', 'accepted', 'coach_first', left(coalesce(q.coach_first, ''), 60), 'number', q.number,
                               'version_id', q.version_id);
   end if;
-  insert into public.agreement_link_opens (coach_id, quote_id, version_id, who) values (q.coach_id, q.id, q.version_id, 'quote')
-  on conflict do nothing;
+  -- Opened is the reader's: the quote's own coach opening their link (signed in) is never counted (the break-it tester,
+  -- run 3, finding 9).
+  if (select auth.uid()) is null or (select auth.uid()) is distinct from q.coach_user then
+    insert into public.agreement_link_opens (coach_id, quote_id, version_id, who) values (q.coach_id, q.id, q.version_id, 'quote')
+    on conflict do nothing;
+  end if;
+  -- A quote for someone their organisation funds shows no money, exactly as _agreement_client_view() keeps it from them
+  -- (finding 8): the non-money terms and the clauses without the money ones.
   return jsonb_build_object('state', 'open', 'number', q.number, 'valid_until', q.valid_until, 'sent_at', q.sent_at,
     'coach_first', left(coalesce(q.coach_first, ''), 60), 'personal_note', q.personal_note, 'version', q.version,
-    'terms', q.terms, 'clauses', q.clauses, 'currency', q.currency, 'fx_rate', q.fx_rate, 'total_minor', q.total_minor);
+    'terms', case when q.funded_by is null then q.terms
+             else (select coalesce(jsonb_object_agg(k, val), '{}'::jsonb) from jsonb_each(q.terms) as e(k, val)
+                   where k = any (array['coaching', 'sessions', 'minutes', 'place', 'rhythm', 'startsOn', 'endsOn', 'ongoing', 'goals',
+                                        'contactWays', 'clientName', 'coachName', 'coachFirst', 'fundedBy', 'expensesAllowed',
+                                        'kind', 'blocks', 'level', 'noticeHours', 'pausing', 'work'])) end,
+    'clauses', case when q.funded_by is null then q.clauses
+               else (select coalesce(jsonb_agg(c), '[]'::jsonb) from jsonb_array_elements(q.clauses) c where coalesce(c->>'money', 'false') <> 'true') end,
+    'currency', case when q.funded_by is null then q.currency end, 'fx_rate', case when q.funded_by is null then q.fx_rate end,
+    'total_minor', case when q.funded_by is null then q.total_minor end);
 end;
 $$;
 revoke all on function public.quote_open(text) from public;
@@ -1171,7 +1314,8 @@ begin
   if p_token is null or p_token !~ '^[0-9a-f]{64}$' then
     raise exception 'That quote isn''t there.' using errcode = 'P0002';
   end if;
-  select qq.*, v.terms, v.status as v_status, v.funded_by, a.status as a_status
+  select qq.*, v.terms, v.status as v_status, v.funded_by, v.version as v_version, v.clauses as v_clauses, v.total_minor as v_total,
+         v.overrides as v_overrides, v.currency as v_currency, a.status as a_status
     into q
     from public.agreement_quotes qq
     join public.agreement_versions v on v.id = qq.version_id
@@ -1194,6 +1338,12 @@ begin
   select coalesce(array_agg(e ->> 'key'), '{}') into v_offered from jsonb_array_elements(coalesce(q.terms -> 'extrasOffered', '[]'::jsonb)) e;
   if cardinality(v_extras) > 20 or exists (select 1 from unnest(v_extras) x where not x = any (v_offered)) then
     raise exception 'Only the extras offered can be chosen.' using errcode = '22023';
+  end if;
+  -- Never past the owner's approval (the break-it tester, run 3, finding 6): not while it waits or changes are asked,
+  -- and an associate's quote only once the owner approved this version.
+  if not public._agreement_send_ok(q.agreement_id, q.v_version, coalesce(q.terms ? 'kind', false),
+                                   public._version_print(q.terms, q.v_clauses, q.v_total, q.v_overrides, q.v_currency, q.funded_by)) then
+    raise exception 'This quote isn''t ready to accept yet. Ask your coach to send it again.' using errcode = 'CC409';
   end if;
   v_choice := case when q.funded_by is null and coalesce((q.terms ->> 'offerUpfront')::boolean, true) and p_choice in ('upfront', 'plan')
                    then p_choice end;
@@ -1482,7 +1632,12 @@ begin
   end if;
   update public.agreements set approval = case when coalesce(p_ok, false) then 'approved' else 'changes_asked' end,
     approval_note = left(v_note, 1000), approved_by = case when coalesce(p_ok, false) then v_me end,
-    approved_at = case when coalesce(p_ok, false) then now() end, updated_at = now()
+    approved_at = case when coalesce(p_ok, false) then now() end,
+    approved_version = case when coalesce(p_ok, false) then current_version end,
+    approved_print = case when coalesce(p_ok, false) then
+      (select public._version_print(v.terms, v.clauses, v.total_minor, v.overrides, v.currency, v.funded_by)
+         from public.agreement_versions v where v.agreement_id = p_agreement and v.version = agreements.current_version) end,
+    updated_at = now()
    where id = p_agreement;
   return jsonb_build_object('approval', case when coalesce(p_ok, false) then 'approved' else 'changes_asked' end);
 end;
@@ -1557,7 +1712,9 @@ begin
       new.outcome_source := old.outcome_source; new.outcome_at := old.outcome_at;
     end if;
   end if;
-  if new.profile_id is not null and new.kind not in ('chemistry', 'other')
+  -- Every kind of session with the client counts, apart from a chemistry call (allowed by design): an "other" session
+  -- with them is still coaching time (the break-it tester, run 3, finding 9).
+  if new.profile_id is not null and new.kind is distinct from 'chemistry'
      and (tg_op = 'INSERT' or new.starts_at is distinct from old.starts_at or new.kind is distinct from old.kind or new.profile_id is distinct from old.profile_id) then
     -- The agreement's FIRST signing decides (agreements rule 12): a later signed version is an amendment and never
     -- starts the 14 days again.
@@ -1570,7 +1727,8 @@ begin
                      where f.agreement_id = a.id and f.client_signed_at is not null
                      order by f.client_signed_at asc limit 1) v on true
      where a.profile_id = new.profile_id and a.kind = 'coaching' and a.status = 'signed'
-       and v.funded_by is null and v.start_now is false
+       -- Not ticked: false, or (a builder version, 065) not recorded at all, as 061's sign_agreement left it (finding 3).
+       and v.funded_by is null and (v.start_now is false or (v.start_now is null and v.terms ? 'kind'))
        and v.client_signed_at > now() - interval '16 days'
      order by v.client_signed_at desc
      limit 1;

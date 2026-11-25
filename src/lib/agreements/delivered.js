@@ -63,12 +63,21 @@ export function sessionsToInvoice({ sessions, sources = [], profileId, startsOn 
  */
 export function deliveredToInvoice({ terms, sessions, sources = [], profileId, zone = 'Europe/London', now = Date.now() }) {
   const startsOn = terms?.startsOn || null;
-  const counting = (sessions || [])
+  const settled = new Set(prepaidSessions({ terms, sessions, profileId, zone, now }).map((s) => s.id));
+  return sessionsToInvoice({ sessions, sources, profileId, startsOn, zone, now }).filter((s) => !settled.has(s.id) && (s.kind || 'coaching') === 'coaching');
+}
+
+/**
+ * The sessions settled at signing (the first coaching session, a retainer's first month's, and each extra ticked): the
+ * first ones that count and are over, from the agreement's start, oldest first.
+ */
+export function prepaidSessions({ terms, sessions, profileId, zone = 'Europe/London', now = Date.now() }) {
+  const startsOn = terms?.startsOn || null;
+  return (sessions || [])
     .filter((s) => s.profile_id === profileId && (s.kind || 'coaching') === 'coaching' && counts(s) && isOver(s, now)
       && (!startsOn || dayIn(zone, new Date(s.starts_at)) >= startsOn))
-    .sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at));
-  const settled = new Set(counting.slice(0, prepaid(terms)).map((s) => s.id));
-  return sessionsToInvoice({ sessions, sources, profileId, startsOn, zone, now }).filter((s) => !settled.has(s.id) && (s.kind || 'coaching') === 'coaching');
+    .sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at))
+    .slice(0, prepaid(terms));
 }
 
 /** One line a session: "Coaching session, Tue 3 Nov". */

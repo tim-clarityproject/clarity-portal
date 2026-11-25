@@ -53,8 +53,10 @@ export function useSend(d) {
     const note = personalNote ?? draft.personal_note ?? '';
     const sentAt = new Date().toISOString();
 
-    // An associate signs as coach; it waits for the owner (risk 23).
-    if (!portal.isOwner) {
+    // An associate signs as coach; it waits for the owner (risk 23). Once the owner approved this very version (a quote
+    // waits for its Send), it goes as the owner's would; the server and database check it is the version approved.
+    const approvedNow = agreement.approval === 'approved' && Number(agreement.approved_version) === Number(draft.version);
+    if (!portal.isOwner && !approvedNow) {
       const saved = await d.save(terms, { personalNote: note, fields: { send_as: sendAs, coach_signed_at: sentAt, coach_signature_id: sigId }, agreementChange: { approval: 'waiting' }, now: true });
       return saved === 'failed' ? { ok: false, message: 'That didn’t save. Check your connection and try again.' } : { ok: true, waiting: true };
     }

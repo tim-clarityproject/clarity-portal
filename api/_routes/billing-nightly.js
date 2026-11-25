@@ -98,9 +98,14 @@ export async function agreementsNightly({ server, now = () => new Date(), fetche
       // agreement only: never a cancelled or ended one.
       const { data: ag } = await server.from('agreements').select('status').eq('id', v.agreement_id).maybeSingle();
       if (ag?.status !== 'signed') continue;
-      const { data: earlier } = await server.from('agreement_versions').select('id').eq('agreement_id', v.agreement_id).lt('version', v.version).not('client_signed_at', 'is', null).limit(1);
-      if (earlier?.length) continue;
-      if (!(firstPayment({ ...v.terms, fundedBy: null }, v.settle_choice || 'upfront', v.terms.extrasChosen || []) > 0)) continue;
+      // An amendment (an earlier version was signed) makes no new first payment (agreements rule 12), but the first
+      // signing's is still due until it is settled (the break-it tester, run 3, finding 2): the reminder is drafted on
+      // the version signed now, with the first signing's amount, once that first signing is a day old.
+      const { data: earlier } = await server.from('agreement_versions').select('id, version, terms, funded_by, settle_choice, client_signed_at')
+        .eq('agreement_id', v.agreement_id).lt('version', v.version).not('client_signed_at', 'is', null).order('version', { ascending: true }).limit(1);
+      const first = earlier?.[0] || v;
+      if (first.funded_by || !first.terms?.kind || !(Date.parse(first.client_signed_at) <= Date.parse(before))) continue;
+      if (!(firstPayment({ ...first.terms, fundedBy: null }, first.settle_choice || 'upfront', first.terms.extrasChosen || []) > 0)) continue;
       const { data: invs } = await server.from('invoices').select('status, kind, instalment_n').eq('agreement_id', v.agreement_id);
       if ((invs || []).some((i) => FIRST_KINDS.includes(i.kind) && i.instalment_n === 1 && i.status === 'paid')) continue;
       if (await draft(v.coach_id, v.id, 'first_payment')) out.firstPayment += 1;

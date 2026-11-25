@@ -379,8 +379,11 @@ export function orgInvoiceRows({ organisationId, clients = [], sessions = [], en
     const who = clients.find((c) => c.id === s.profile_id)?.name || '';
     out.push({ key: `s:${s.id}`, kind: 'session', id: s.id, day: dayIn(zone, new Date(s.starts_at)), what: `Coaching session with ${who}`, minutes: Number(s.minutes) || 60, at: Date.parse(s.starts_at) });
   }
+  const engProfile = new Map((engagements || []).map((e) => [e.id, e.profile_id]));
   for (const e of entries || []) {
     if (!engs.has(e.engagement_id) || !e.ended_at || liveEntries.has(e.id)) continue;
+    // Time for a client whose own agreement settles it (finding 4) never goes on the organisation's invoice.
+    if (engProfile.get(e.engagement_id) && onSchedule(covered, engProfile.get(e.engagement_id), dayIn(zone, new Date(e.started_at)))) continue;
     const m = Math.round((Date.parse(e.ended_at) - Date.parse(e.started_at)) / 60000);
     if (!(m > 0)) continue;
     out.push({ key: `e:${e.id}`, kind: 'entry', id: e.id, day: dayIn(zone, new Date(e.started_at)), what: text(e.note) || 'Time logged', minutes: m, at: Date.parse(e.started_at) });
@@ -394,24 +397,39 @@ export function orgInvoiceRows({ organisationId, clients = [], sessions = [], en
   return out.filter((r) => r.at > after).sort((a, b) => a.at - b.at);
 }
 /**
- * The clients whose coaching sessions an organisation already settles through an agreement's own schedule (agreements
- * rule 12): a running 065 agreement it funds (priced, or a team member's under the team's). Their sessions never go on an
- * hourly organisation invoice too, so nothing is invoiced twice.
+ * The clients whose coaching sessions are settled through an agreement of their own, so they never go on an hourly
+ * organisation invoice too (nothing invoiced twice): a running 065 agreement an organisation funds (priced, or a team
+ * member's under the team's), from its start on (agreements rule 12); and ANY signed self-funded agreement, whatever its
+ * status now, from its start (or first signing, if earlier) to the end it has now (the break-it tester, run 3, finding
+ * 4: the client already settled those). Map: profile id → [{ from, to }] day keys, '' for open.
  */
 export function scheduledProfiles(agreements = [], versions = []) {
-  // { profile id → the day its agreement starts (sessions from then on are the agreement's), '' when it has none }
   const out = new Map();
+  const add = (profileId, from, to) => out.set(profileId, [...(out.get(profileId) || []), { from: from || '', to: to || '' }]);
   for (const a of agreements || []) {
-    if (a.status !== 'signed' || !a.profile_id) continue;
+    if (!a?.profile_id) continue;
     const v = versionInForce(versions, a.id);
-    if (!(v?.terms?.kind && isSigned(v) && !selfFunded({ ...v.terms, fundedBy: v.funded_by ?? v.terms.fundedBy }))) continue;
-    const from = v.terms.startsOn || signedDay(v) || '';
-    if (!out.has(a.profile_id) || from < out.get(a.profile_id)) out.set(a.profile_id, from);
+    if (!v || !isSigned(v)) continue;
+    const t = v.terms || {};
+    if (!selfFunded({ ...t, fundedBy: v.funded_by ?? t.fundedBy })) {
+      if (a.status !== 'signed' || !t.kind) continue;
+      add(a.profile_id, t.startsOn || signedDay(v) || '', '');
+      continue;
+    }
+    const first = firstSignedVersion(versions, a.id) || v;
+    const from = [t.startsOn, signedDay(first)].filter(Boolean).sort()[0] || '';
+    const to = earlyEnd(a) || currentEnd(a, t) || '';
+    // An end that isn't known is open only for a builder agreement that runs on (a retainer); run 1's are left as they were.
+    if (!to && !t.kind) continue;
+    add(a.profile_id, from, to);
   }
   return out;
 }
-/** Whether a session (its day) is one an organisation settles through its agreement's schedule (scheduledProfiles). */
-export const onSchedule = (covered, profileId, day) => Boolean(covered?.has?.(profileId)) && day >= (covered.get?.(profileId) ?? '');
+/** Whether a session (its day) is settled through an agreement of its own (scheduledProfiles). */
+export const onSchedule = (covered, profileId, day) => {
+  const ranges = covered?.get?.(profileId);
+  return Array.isArray(ranges) && ranges.some((r) => day >= (r.from || '') && (!r.to || day <= r.to));
+};
 
 /**
  * The invoice's period (UI finding 7: on a busy practice every row since the last invoice showed, all ticked): the

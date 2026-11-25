@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Dropdown, ErrorMessage, Loading, PageHeader, useToast } from '../../../components/design';
 import { mainPoints, hoursPoints, teamPoints } from '../../../lib/agreements/clauses';
 import { NOTHING_LINE, differences } from '../../../lib/agreements/differences';
-import { checkTerms, kindOf } from '../../../lib/agreements/terms';
+import { checkTerms, kindOf, selfFunded } from '../../../lib/agreements/terms';
 import { quoteNumber } from '../../../lib/agreements/quote';
 import { builderLines, readerView, sendWords } from '../../../lib/coach/agreementBuilder';
 import { Back, useCoachPortal } from '../parts';
@@ -38,7 +38,10 @@ export default function CheckSend() {
   const kind = kindOf(terms);
   const first = party.first || 'them';
   const overrides = draft.overrides || {};
-  const how = sendAs || draft.send_as || 'agreement';
+  // A quote shows the price, so a client funded by their organisation is sent the agreement to sign, never a quote
+  // (the break-it tester, run 3, finding 8; agreements rule 12).
+  const canQuote = selfFunded(terms);
+  const how = canQuote ? (sendAs || draft.send_as || 'agreement') : 'agreement';
   const meta = [party.name, `Version ${draft.version}`];
   const back = <Back to={draft.version > 1 ? `Version ${draft.version}` : 'New agreement'} onClick={() => navigate(`/coach/agreements/${id}/edit`)} />;
   const lines = builderLines(terms, { first, orgName: party.orgName });
@@ -99,7 +102,7 @@ export default function CheckSend() {
         <Sec id="ab-points">Main points</Sec>
         <PointsList points={points} />
         <Hint>{lines.firstPay}</Hint>
-        <Pick label="How should it go?" options={[{ value: 'agreement', label: 'An agreement to sign' }, { value: 'quote', label: 'A quote first' }]} value={how} onChange={(v) => { setSendAs(v); setProblem(null); }} />
+        {canQuote && <Pick label="How should it go?" options={[{ value: 'agreement', label: 'An agreement to sign' }, { value: 'quote', label: 'A quote first' }]} value={how} onChange={(v) => { setSendAs(v); setProblem(null); }} />}
         {how === 'agreement' && (
           <>
             {problem && <ErrorMessage>{problem}</ErrorMessage>}

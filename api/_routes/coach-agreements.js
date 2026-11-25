@@ -30,6 +30,7 @@ import { counts, isOver } from '../../src/lib/agreements/sessionOutcome.js';
 import { firstPayment, firstSigning } from '../../src/lib/agreements/settling.js';
 import { perSession } from '../../src/lib/agreements/delivered.js';
 import { blankTerms, kindOf, selfFunded } from '../../src/lib/agreements/terms.js';
+import { versionFields } from '../../src/lib/coach/agreementBuilder.js';
 import {
   readyToSignEmail, quoteEmail, signReminderEmail, firstPaymentReminderEmail, sponsorSignEmail, teamMemberAgreementEmail,
   extendedEmail, pausedEmail, endingEmail, cancelledEmail, changeReplyEmail,
@@ -160,11 +161,34 @@ export function standardsOf(rows, kind) {
 }
 
 /** The practice's standard wording for a kind, as a coach reads it: their own and the owner's versions (065's policy). */
-export async function standardsFor(server, coachId, kind) {
+export async function standardsFor(server, coachId, kind, { asOf = null } = {}) {
   const { data: owners } = await server.from('coaches').select('id').eq('role', 'owner');
   const ids = [...new Set([coachId, ...(owners || []).map((o) => o.id)])];
-  const { data: rows } = await server.from('agreement_clause_standards').select('*').eq('agreement_kind', kind).in('coach_id', ids);
+  let q = server.from('agreement_clause_standards').select('*').eq('agreement_kind', kind).in('coach_id', ids);
+  // The wording as it stood at a moment (a quote's as sent: the break-it tester, run 3, finding 9).
+  if (asOf) q = q.lte('created_at', asOf);
+  const { data: rows } = await q;
   return standardsOf(rows, kind);
+}
+
+/** JSON with its keys in order, so stored jsonb (which reorders keys) compares with what the code builds. */
+export function canonical(value) {
+  const walk = (x) => (Array.isArray(x) ? x.map(walk)
+    : x && typeof x === 'object' ? Object.fromEntries(Object.keys(x).sort().filter((k) => x[k] !== undefined).map((k) => [k, walk(x[k])])) : x);
+  return JSON.stringify(walk(JSON.parse(JSON.stringify(value ?? null))));
+}
+
+/**
+ * A builder version's wording and total as the server builds them from its terms, its own overrides and the practice's
+ * standards (the builder's own versionFields), or null for run 1's versions (no terms.kind), which are as written. The
+ * break-it tester, run 3, finding 5: nobody puts clause text or a total past Send or approval that the terms don't make.
+ */
+export async function rebuiltFields(server, coachId, v) {
+  const t = v?.terms || {};
+  if (!t.kind) return null;
+  const standards = await standardsFor(server, coachId, kindOf(t));
+  const f = versionFields(t, { standards, overrides: v.overrides || {} });
+  return { clauses: f.clauses, total_minor: f.total_minor, same: canonical(f.clauses) === canonical(v.clauses) && Number(f.total_minor) === Number(v.total_minor) };
 }
 
 // ---------------------------------------------------------------- sending email (Resend, the coach's name, Reply-To)
@@ -306,8 +330,33 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
     /** Send: the agreement (coach-signed, emailed Ready to sign) or a quote (its Q- number now, emailed with its link). */
     async send(asked) {
       const a = await mine('agreements', asked.agreementId);
-      const v = await mine('agreement_versions', asked.versionId);
+      let v = await mine('agreement_versions', asked.versionId);
       if (v.agreement_id !== a.id) throw notYours();
+      // A coach who isn't the owner sends only a version the owner approved (the break-it tester, run 3, finding 6);
+      // a quote included. The database holds the same line for agreements (065's _agreement_send_ok).
+      if (coach.role !== 'owner' && v.status === 'draft') {
+        // Approval is of this version exactly as it stands (065's approved_print).
+        const print = await db.rpc('_version_print', { p_terms: v.terms, p_clauses: v.clauses, p_total: v.total_minor, p_overrides: v.overrides,
+          p_currency: v.currency, p_funded_by: v.funded_by });
+        if (print.error || !(a.approval === 'approved' && Number(a.approved_version) === Number(v.version) && a.approved_print === print.data)) {
+          throw calm(403, 'This agreement goes once your practice’s owner approves it.');
+        }
+      }
+      // A quote shows the price, so it is never sent to someone their organisation funds (finding 8: agreements rule 12).
+      if (asked.sendAs === 'quote' && (v.funded_by || !selfFunded(v.terms || {}))) {
+        throw calm(409, 'A quote shows the price, so it goes only to clients who fund their own coaching. Send the agreement to sign instead.');
+      }
+      // The wording and total sent are the ones its terms make (finding 5): a draft's are rebuilt and kept before it goes.
+      if (v.status === 'draft') {
+        const r = await rebuiltFields(server, a.coach_id, v);
+        // An associate's was approved as it stands, so it is refused rather than changed after approval.
+        if (r && !r.same && coach.role !== 'owner') throw calm(409, 'This agreement’s wording doesn’t match its terms. Open it in the builder and sign it again.');
+        if (r && !r.same) {
+          const kept = await db.from('agreement_versions').update({ clauses: r.clauses, total_minor: r.total_minor }).eq('id', v.id).eq('status', 'draft').select('*');
+          if (kept.error) throw fromDb(kept.error);
+          if (kept.data?.[0]) v = kept.data[0];
+        }
+      }
       if (a.kind === 'sponsor') {
         // A team's sponsor agreement (Group B's builder): Send signs and sends the version; sponsor_send then makes the
         // sponsor's own link and emails it. Nothing is emailed here.
@@ -397,6 +446,20 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
     /** The owner approves an associate's agreement, and it goes to the client from the associate. */
     async approve(asked) {
       if (coach.role !== 'owner') throw calm(403, 'Only the owner can do that.');
+      // What is approved is what its terms make (the break-it tester, run 3, finding 5): wording or a total stored by hand
+      // that the terms don't make is never approved or sent; its total is the terms' own.
+      {
+        const { data: a0 } = await server.from('agreements').select('id, coach_id, current_version, approval').eq('id', asked.agreementId).maybeSingle();
+        const { data: v0 } = a0 ? await server.from('agreement_versions').select('*').eq('agreement_id', a0.id).eq('version', a0.current_version).maybeSingle() : { data: null };
+        if (a0 && v0 && v0.status === 'draft' && a0.approval === 'waiting') {
+          const r = await rebuiltFields(server, a0.coach_id, v0);
+          if (r && canonical(r.clauses) !== canonical(v0.clauses)) {
+            const { data: who } = await server.from('coaches').select('display_first_name').eq('id', a0.coach_id).maybeSingle();
+            throw calm(409, `This agreement’s wording doesn’t match its terms, so it can’t be approved. Ask ${who?.display_first_name || 'them'} to open it in the builder and sign it again.`);
+          }
+          if (r && Number(r.total_minor) !== Number(v0.total_minor)) await must(server.from('agreement_versions').update({ total_minor: r.total_minor }).eq('id', v0.id).eq('status', 'draft'));
+        }
+      }
       const ok = await db.rpc('agreement_approve', { p_agreement: asked.agreementId, p_ok: true, p_note: null });
       if (ok.error) throw fromDb(ok.error);
       const { data: a } = await server.from('agreements').select('*').eq('id', asked.agreementId).maybeSingle();
@@ -435,9 +498,15 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
       let amount = 0;
       if (asked.reminder === 'first_payment') {
         if (!v.client_signed_at || !selfFunded({ ...terms, fundedBy: v.funded_by })) throw calm(409, 'There’s no first payment to remind about.');
-        const { data: firsts } = await server.from('invoices').select('status, total_minor').eq('version_id', v.id).in('kind', ['first_payment', 'deposit', 'instalment']);
-        if ((firsts || []).some((i) => i.status === 'paid')) throw calm(409, 'The first payment is settled already.');
-        amount = firsts?.[0]?.total_minor ?? firstPayment({ ...terms, fundedBy: v.funded_by }, v.settle_choice || 'upfront');
+        if (['cancelled', 'expired', 'ended', 'ended_not_renewed'].includes(a.status)) throw calm(409, 'This agreement doesn’t run any more, so there’s no first payment to remind about.');
+        // The agreement's first payment, whichever version it was made from (an amendment's is the first signing's:
+        // the break-it tester, run 3, finding 2).
+        const { data: firsts } = await server.from('invoices').select('status, total_minor, instalment_n').eq('agreement_id', a.id).in('kind', ['first_payment', 'deposit', 'instalment']);
+        const live = (firsts || []).filter((i) => (i.instalment_n ?? 1) === 1 && i.status !== 'void');
+        if (live.some((i) => i.status === 'paid')) throw calm(409, 'The first payment is settled already.');
+        const { data: all } = await server.from('agreement_versions').select('*').eq('agreement_id', a.id);
+        const base = firstSigning(all || [])?.version || v;
+        amount = live[0]?.total_minor ?? firstPayment({ ...(base.terms || {}), fundedBy: base.funded_by }, base.settle_choice || 'upfront', base.terms?.extrasChosen || []);
       }
       if (!maySend(env) || !canSend(env)) return { sentAt: null, preview: true };
       const profile = await profileOf(a.profile_id);

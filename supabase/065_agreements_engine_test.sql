@@ -96,6 +96,17 @@ begin
 exception when others then
   return sqlerrm;
 end $f$;
+-- The owner's approval of one version, written straight in (the break-it tester, run 3, finding 6: an associate's
+-- builder version goes out only once that version is approved). Leaves the session as the admin.
+create or replace function pg_temp.r_approve(p_agreement uuid, p_version integer) returns void language plpgsql as $f$
+begin
+  perform set_config('role', 'none', true);
+  perform set_config('request.jwt.claims', '', true);
+  update public.agreements a set approval = 'approved', approved_version = p_version, approved_at = now(),
+    approved_print = (select public._version_print(v.terms, v.clauses, v.total_minor, v.overrides, v.currency, v.funded_by)
+                        from public.agreement_versions v where v.agreement_id = p_agreement and v.version = p_version)
+   where a.id = p_agreement;
+end $f$;
 create or replace function pg_temp.r_eq(p_name text, p_got text, p_want text) returns text[] language sql as $f$
   select case when p_got is distinct from p_want
               then array[format('%s: expected %s, got %s', p_name, p_want, coalesce(p_got, 'nothing'))]
@@ -246,6 +257,10 @@ begin
     perform pg_temp.r_admin();
     f := f || pg_temp.r_eq('4l the first open is recorded once', (select count(*)::text from public.agreement_link_opens where quote_id = q1), '1');
     perform pg_temp.r_server();
+    f := f || pg_temp.r_eq('4m2 an associate''s quote isn''t accepted before the owner approves it',
+      pg_temp.r_try(format('select public.quote_accept(%L, ''{visit}'', ''plan'', %L, 1780000)::text', tok, clauses_one)), 'error CC409');
+    perform pg_temp.r_approve(a_q, 1);
+    perform pg_temp.r_server();
     f := f || pg_temp.r_eq('4m only the extras offered', pg_temp.r_try(format('select public.quote_accept(%L, ''{workshop}'', ''plan'', %L, 1780000)::text', tok, clauses_one)), 'error 22023');
     r := public.quote_accept(tok, '{visit}', 'plan', clauses_one, 1780000);
     f := f || pg_temp.r_eq('4n accepting makes the quote''s version the agreement', (r = v_q)::text, 'true');
@@ -296,8 +311,11 @@ begin
     f := f || pg_temp.r_eq('5g the coach can''t change the tick', pg_temp.r_try(format('update public.agreement_versions set start_now = true where id = %L returning ''changed''', v_q)), 'error 23514');
     -- Una, funded by Northfield: no choice, no tick, no money.
     insert into public.agreements (coach_id, profile_id, agreement_kind) values (maya_c, p_una, 'sessions') returning id into a_una;
-    insert into public.agreement_versions (agreement_id, coach_id, version, status, terms, clauses, total_minor, funded_by, coach_signed_at, coach_signature_id, sent_at)
-    values (a_una, maya_c, 1, 'sent', terms_sessions || '{"blocks":[{"n":12,"minutes":60}],"priceMode":"total"}', clauses_one, 1800000, 'Northfield R065', now(), sig_maya, now()) returning id into v_una;
+    insert into public.agreement_versions (agreement_id, coach_id, version, status, terms, clauses, total_minor, funded_by, coach_signed_at, coach_signature_id)
+    values (a_una, maya_c, 1, 'draft', terms_sessions || '{"blocks":[{"n":12,"minutes":60}],"priceMode":"total"}', clauses_one, 1800000, 'Northfield R065', now(), sig_maya) returning id into v_una;
+    perform pg_temp.r_approve(a_una, 1);
+    perform pg_temp.r_as(maya_u, 'aal2');
+    update public.agreement_versions set status = 'sent', sent_at = now() where id = v_una;
     perform pg_temp.r_as(una_u, 'aal1');
     j := public.my_agreements() -> 0;
     f := f || pg_temp.r_eq('5h a funded client sees the non-money terms only',
@@ -464,6 +482,10 @@ begin
     insert into public.agreement_versions (agreement_id, coach_id, version, status, terms, clauses, total_minor)
       select agreement_id, coach_id, (select max(x.version) + 1 from public.agreement_versions x where x.agreement_id = a_q), 'draft', terms || '{"priceFrom":"2030-01-01"}'::jsonb, clauses, total_minor from public.agreement_versions where id = v_q
       returning id into v_amend;
+    f := f || pg_temp.r_eq('12a0 an associate''s later version isn''t sent before the owner approves that version',
+      pg_temp.r_try(format('update public.agreement_versions set status = ''sent'', coach_signed_at = now(), coach_signature_id = %L, sent_at = now() where id = %L returning ''sent''', sig_maya, v_amend)), 'error 42501');
+    perform pg_temp.r_approve(a_q, (select version from public.agreement_versions where id = v_amend));
+    perform pg_temp.r_as(maya_u, 'aal2');
     update public.agreement_versions set status = 'sent', coach_signed_at = now(), coach_signature_id = sig_maya, sent_at = now() where id = v_amend;
     update public.agreements set current_version = (select version from public.agreement_versions where id = v_amend) where id = a_q;
     perform pg_temp.r_as(sam_u, 'aal1');

@@ -105,6 +105,9 @@ declare
   stok text := repeat('6', 64);
   clauses_one jsonb := '[{"key":"coaching","number":1,"title":"The coaching","paragraphs":[{"text":"You have 6 coaching sessions.","why":null}]}]';
   terms_q jsonb := '{"kind":"sessions","settle":"equal","offerUpfront":true,"extrasOffered":[{"key":"visit","title":"Visit day","priceMinor":250000}]}';
+  -- run 3's break-it fixes (section 7)
+  rae_u uuid; ned_u uuid; p_rae uuid := gen_random_uuid(); p_ned uuid := gen_random_uuid(); sig_rae uuid;
+  a_r uuid; v_r uuid; a_n uuid; v_n uuid; a_f uuid; v_f uuid; q_f uuid; tok_f text := repeat('7', 64); a_w uuid; v_w uuid; v_w2 uuid; j jsonb;
 begin
   begin
     perform pg_temp.b_admin();
@@ -232,6 +235,10 @@ begin
     perform pg_temp.b_admin();
     f := f || pg_temp.b_eq('4h nothing signed by any of those', (select concat(status, '/', coalesce(sponsor_name, 'none')) from public.agreement_versions where id = v_spon), 'sent/none');
     update public.agreement_versions set funded_by = 'Kestrel B065' where agreement_id = a_zoe and version = 2;
+    -- Maya is an associate: her quote is accepted only once the owner approved that version (run 3, finding 6).
+    update public.agreements set approval = 'approved', approved_version = 2,
+      approved_print = (select public._version_print(v.terms, v.clauses, v.total_minor, v.overrides, v.currency, v.funded_by)
+                          from public.agreement_versions v where v.agreement_id = a_zoe and v.version = 2) where id = a_zoe;
     perform pg_temp.b_server();
     perform public.quote_accept(tok, '{}', 'plan', clauses_one, 0);
     perform pg_temp.b_admin();
@@ -252,6 +259,89 @@ begin
       pg_temp.b_try(format('update public.coach_sessions set kind = ''coaching'', starts_at = starts_at + interval ''1 hour'' where profile_id = %L and kind = ''chemistry'' returning ''moved''', p_zoe)), 'error 23514');
     insert into public.coach_groups (id, coach_id, name) values (grp, maya_c, 'Group B065');
     f := f || pg_temp.b_eq('5c a group session is unaffected', pg_temp.b_try(format('insert into public.coach_sessions (coach_id, group_id, starts_at, minutes) values (%L, %L, now() + interval ''1 day'', 60) returning ''added''', maya_c, grp)), 'added');
+
+    -- ---------------------------------------------------------------- 7. run 3's break-it findings
+    perform pg_temp.b_admin();
+    rae_u := pg_temp.b_user('rae'); ned_u := pg_temp.b_user('ned');
+    insert into public.client_profiles (id, coach_id, name, email, time_zone, user_id) values
+      (p_rae, tess_c, 'Rae B065', 'rae.b065@example.invalid', 'Europe/London', null),
+      (p_ned, tess_c, 'Ned B065', 'ned.b065@example.invalid', 'Europe/London', null);
+    perform set_config('clarity.linking', 'on', true);
+    update public.client_profiles set user_id = rae_u where id = p_rae;
+    update public.client_profiles set user_id = ned_u where id = p_ned;
+    perform set_config('clarity.linking', '', true);
+    insert into public.signatures (user_id, kind, typed_name) values (rae_u, 'typed', 'Rae B065') returning id into sig_rae;
+    insert into public.agreements (coach_id, profile_id, agreement_kind) values (tess_c, p_rae, 'sessions') returning id into a_r;
+    insert into public.agreement_versions (agreement_id, coach_id, version, status, terms, clauses, total_minor, coach_signed_at, sent_at)
+    values (a_r, tess_c, 1, 'sent', terms_q || '{"choice":"plan"}', clauses_one, 600000, now(), now()) returning id into v_r;
+    perform pg_temp.b_as(rae_u, 'aal1');
+    f := f || pg_temp.b_eq('7a 061''s sign_agreement refuses a builder version (finding 3)',
+      pg_temp.b_try(format('select public.sign_agreement(%L, ''Rae B065'', %L, public.agreement_fingerprint(%L))::text', v_r, sig_rae, v_r)), 'error CC409');
+    j := public.sign_agreement_v2(v_r, 'Rae B065', sig_rae, public.agreement_fingerprint(v_r), false, null);
+    f := f || pg_temp.b_eq('7b signed with no choice given: the quote''s accepted choice, not up front (finding 7)', j ->> 'settle_choice', 'plan');
+    f := f || pg_temp.b_eq('7c the client reads whether the agreement still runs (finding 1)',
+      (select x ->> 'agreement_status' from jsonb_array_elements(public.my_agreements()) x where x ->> 'id' = v_r::text), 'signed');
+    perform pg_temp.b_as(tess_u, 'aal2');
+    f := f || pg_temp.b_eq('7d the coach can''t move a signed agreement back to sent (finding 9)',
+      pg_temp.b_try(format('update public.agreements set status = ''sent'' where id = %L returning ''moved''', a_r)), 'error 42501');
+    f := f || pg_temp.b_eq('7e nor end it by hand', pg_temp.b_try(format('update public.agreements set status = ''ended'' where id = %L returning ''moved''', a_r)), 'error 42501');
+    f := f || pg_temp.b_eq('7f an "other" session inside the 14 days is refused too (finding 9)',
+      pg_temp.b_try(format('insert into public.coach_sessions (coach_id, profile_id, kind, starts_at, minutes) values (%L, %L, ''other'', now() + interval ''2 days'', 60) returning ''added''', tess_c, p_rae)), 'error 23514');
+    f := f || pg_temp.b_eq('7g a chemistry call inside them is allowed (by design)',
+      pg_temp.b_try(format('insert into public.coach_sessions (coach_id, profile_id, kind, starts_at, minutes) values (%L, %L, ''chemistry'', now() + interval ''2 days'', 30) returning ''added''', tess_c, p_rae)), 'added');
+    -- A builder version signed with no tick recorded at all (as 061's sign_agreement left it) counts as not ticked.
+    perform pg_temp.b_admin();
+    insert into public.agreements (coach_id, profile_id, agreement_kind, status) values (tess_c, p_ned, 'sessions', 'signed') returning id into a_n;
+    insert into public.agreement_versions (agreement_id, coach_id, version, status, terms, clauses, total_minor, coach_signed_at, sent_at,
+                                           client_signed_at, signed_name, signed_email, signed_user_id, fingerprint)
+    values (a_n, tess_c, 1, 'signed', terms_q, clauses_one, 600000, now(), now(), now(), 'Ned B065', 'ned.b065@example.invalid', ned_u, repeat('a', 64)) returning id into v_n;
+    perform pg_temp.b_as(tess_u, 'aal2');
+    f := f || pg_temp.b_eq('7h no tick recorded on a builder version: no coaching session inside the 14 days (finding 3)',
+      pg_temp.b_try(format('insert into public.coach_sessions (coach_id, profile_id, starts_at, minutes) values (%L, %L, now() + interval ''3 days'', 60) returning ''added''', tess_c, p_ned)), 'error 23514');
+    -- A quote for someone their organisation funds shows no money; the coach's own open isn't counted.
+    perform pg_temp.b_admin();
+    insert into public.agreements (coach_id, profile_id, agreement_kind) values (tess_c, p_ned, 'sessions') returning id into a_f;
+    insert into public.agreement_versions (agreement_id, coach_id, version, terms, clauses, total_minor, funded_by, send_as)
+    values (a_f, tess_c, 1, terms_q || '{"totalMinor":600000,"funder":"org","fundedBy":"Kestrel B065"}',
+            clauses_one || '[{"key":"investment","number":2,"title":"Your investment","money":true,"paragraphs":[{"text":"Your investment is £6,000.","why":null}]}]',
+            600000, 'Kestrel B065', 'quote') returning id into v_f;
+    insert into public.agreement_quotes (id, coach_id, agreement_id, version_id, status, share_token, sent_at, valid_until)
+    values (gen_random_uuid(), tess_c, a_f, v_f, 'sent', tok_f, now(), current_date + 30) returning id into q_f;
+    perform pg_temp.b_as(tess_u, 'aal2');
+    j := public.quote_open(tok_f);
+    perform pg_temp.b_admin();
+    f := f || pg_temp.b_eq('7i the quote''s own coach opening it isn''t counted as Opened (finding 9)',
+      (select count(*)::text from public.agreement_link_opens where quote_id = q_f), '0');
+    perform pg_temp.b_anon();
+    j := public.quote_open(tok_f);
+    f := f || pg_temp.b_eq('7j a funded quote shows no money (finding 8)',
+      concat(coalesce(j ->> 'total_minor', 'none'), '/', coalesce(j ->> 'currency', 'none'), '/', j -> 'terms' ? 'totalMinor', '/', j -> 'terms' ? 'extrasOffered', '/',
+             (select count(*) from jsonb_array_elements(j -> 'clauses') c where c ->> 'key' = 'investment')), 'none/none/f/f/0');
+    perform pg_temp.b_admin();
+    f := f || pg_temp.b_eq('7k a reader''s open is still counted', (select count(*)::text from public.agreement_link_opens where quote_id = q_f), '1');
+    perform pg_temp.b_as(tess_u, 'aal2');
+    perform pg_temp.b_try(format('update public.agreement_quotes set last_question_at = now() - interval ''1 hour'' where id = %L returning ''x''', q_f));
+    perform pg_temp.b_admin();
+    f := f || pg_temp.b_eq('7l the question limit is the server''s alone (finding 9)', (select coalesce(last_question_at::text, 'none') from public.agreement_quotes where id = q_f), 'none');
+    -- Approval is for one version: Maya's next version waits for its own approval (finding 6).
+    insert into public.agreements (coach_id, profile_id, agreement_kind, approval) values (maya_c, p_zoe, 'sessions', 'waiting') returning id into a_w;
+    insert into public.agreement_versions (agreement_id, coach_id, version, terms, clauses, total_minor, coach_signed_at, coach_signature_id)
+    values (a_w, maya_c, 1, terms_q, clauses_one, 600000, now(), sig_maya) returning id into v_w;
+    perform pg_temp.b_as(tess_u, 'aal2');
+    perform public.agreement_approve(a_w, true, null);
+    perform pg_temp.b_admin();
+    f := f || pg_temp.b_eq('7m the approval names the version approved', (select concat(approval, '/', approved_version) from public.agreements where id = a_w), 'approved/1');
+    perform pg_temp.b_as(maya_u, 'aal2');
+    update public.agreement_versions set total_minor = 1 where id = v_w;
+    f := f || pg_temp.b_eq('7n0 the approved version, changed after approval, isn''t sent',
+      pg_temp.b_try(format('update public.agreement_versions set status = ''sent'', sent_at = now() where id = %L returning ''sent''', v_w)), 'error 42501');
+    update public.agreement_versions set total_minor = 600000 where id = v_w;
+    f := f || pg_temp.b_eq('7n the approved version can be sent', pg_temp.b_try(format('update public.agreement_versions set status = ''sent'', sent_at = now() where id = %L returning ''sent''', v_w)), 'sent');
+    insert into public.agreement_versions (agreement_id, coach_id, version, terms, clauses, total_minor, coach_signed_at, coach_signature_id)
+    values (a_w, maya_c, 2, terms_q, clauses_one, 1, now(), sig_maya) returning id into v_w2;
+    f := f || pg_temp.b_eq('7o a later version isn''t sent on the first one''s approval',
+      pg_temp.b_try(format('update public.agreement_versions set status = ''sent'', sent_at = now() where id = %L returning ''sent''', v_w2)), 'error 42501');
+    f := f || pg_temp.b_eq('7p nor can Maya mark it approved herself', pg_temp.b_try(format('update public.agreements set approved_version = 2 where id = %L returning approved_version::text', a_w)), '1');
 
     raise exception 'undo the test rows' using errcode = 'P0065';
   exception when sqlstate 'P0065' then
