@@ -20,6 +20,7 @@ import { Part, Row, TextLink, useCoachPortal } from './parts';
 import { EmailRows } from './crmParts';
 import { useStartStages } from './leadParts';
 import { Problem, useNetworkActions, useNetworkAsk } from './networkParts';
+import { countWords } from '../../lib/coach/numbers';
 
 // Network's panels (M11 seq 77): Add someone, one person (Contact, How it
 // is, What you've given and What you've asked, each with its own Log,
@@ -481,7 +482,7 @@ export function ImportPanel({ open, onClose }) {
     let ids = [];
     const ok = await act({ run: async () => { const made = await importNetwork(userId, coach.id, adding.map((r) => ({ ...r, id: newId() }))); ids = made.ids; return 'saved'; }, message: importedToast(adding.length), undo: () => removeNetworkPeople(userId, ids) });
     busy.current = false;
-    if (ok) { logActivity(userId, coach, 'other', `imported ${adding.length} ${adding.length === 1 ? 'person' : 'people'} into Network.`); onClose(); }
+    if (ok) { logActivity(userId, coach, 'other', `imported ${countWords(adding.length, 'person', 'people')} into Network.`); onClose(); }
   };
   const fieldOptions = [{ value: NONE, label: 'Leave out' }, ...NETWORK_IMPORT_FIELDS.map((f) => ({ value: f.key, label: f.label }))];
   return (
@@ -567,7 +568,7 @@ export function ExportPanel({ open, onClose, state, counts }) {
       const name = exportName('Network', todayKey);
       if (format === 'csv') download(`${name}.csv`, `﻿${toCsv(rows)}`, 'text/csv;charset=utf-8');
       else download(`${name}.xlsx`, xlsxBytes(rows, 'Network'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      logActivity(userId, coach, 'export', `exported ${people.length} ${people.length === 1 ? 'person' : 'people'} from Network to a spreadsheet.`);
+      logActivity(userId, coach, 'export', `exported ${countWords(people.length, 'person', 'people')} from Network to a spreadsheet.`);
       toast.show('Downloaded');
       onClose();
     } catch (e) { setProblem(networkProblem(e)); } finally { busy.current = false; }

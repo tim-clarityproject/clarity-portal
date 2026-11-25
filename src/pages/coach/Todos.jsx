@@ -5,6 +5,7 @@ import { doneThisWeek, somedayTodos, todayTodos, upcomingGroups } from '../../li
 import { Eye, Fold, TextLink, useCoachPortal } from './parts';
 import { QuickAdd, QuickAddPanel, TodoBulkBar, TodoList, TodoPanel, UnderTabs, useTodoPicks } from './todoParts';
 import { TodosCalendar } from './calendarPanels';
+import { countFigure } from '../../lib/coach/numbers';
 
 // To-dos (M11): the coach's own, never a client's. Today (the working
 // day's, then After work), Upcoming (by day) and Someday behind underlined
@@ -108,12 +109,12 @@ export default function Todos() {
 
         {show === 'list' && (
           <div className="cc-folds">
-            <Fold title="Done" summary={`${week.length} done this week`} open={doneOpen} onToggle={() => setDoneOpen((v) => !v)}>
+            <Fold title="Done" summary={`${countFigure(week.length)} done this week`} open={doneOpen} onToggle={() => setDoneOpen((v) => !v)}>
               <SearchField label="Search what’s done" placeholder="Search what’s done" value={q} onChange={setQ} />
               {found && found.length === 0 && <p className="cc-quiet">Nothing done matches “{q.trim()}”.</p>}
               {!found && week.length === 0 && <p className="cc-quiet">Nothing is done yet this week.</p>}
               {doneRows.length > 0 && <TodoList todos={doneRows} label="Done" onOpen={setOpenId} done />}
-              {!found && !doneAll && week.length > DONE_FIRST && <div className="cc-acts"><TextLink onClick={() => setDoneAll(true)}>Show all {week.length}</TextLink></div>}
+              {!found && !doneAll && week.length > DONE_FIRST && <div className="cc-acts"><TextLink onClick={() => setDoneAll(true)}>Show all {countFigure(week.length)}</TextLink></div>}
             </Fold>
           </div>
         )}

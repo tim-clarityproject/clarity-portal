@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { idFromAddress } from '../../lib/coach/address';
 import {
   AddButton, BottomBar, Button, DatePicker, Dropdown, IconButton, InlineChoice, PageHeader, TextBox, TextField, useAutosave, useIsPhone, useToast,
 } from '../../components/design';
@@ -38,7 +39,7 @@ const Recognition = typeof window !== 'undefined' ? window.SpeechRecognition || 
 const paragraphs = (text) => String(text || '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
 
 export default function SessionPage() {
-  const { id } = useParams();
+  const id = idFromAddress(useParams().id); // any case in the address (tidy follow-up 4)
   const navigate = useNavigate();
   const { sessions } = useCoachPortal();
   const whoOf = useSessionWho();

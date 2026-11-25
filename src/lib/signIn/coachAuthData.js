@@ -120,6 +120,35 @@ async function ownCoachRow(supabase, userId) {
   }
 }
 
+// ---------------------------------------------------------------- the sign-in check, sent as the app opens
+
+// The coach portal's sign-in check (053's coach_auth_state and Supabase's own factor and level) went out only once the
+// coach portal's code had arrived (ProtectedLayout waits for it), about 1 s into a first visit on a slowed phone, and
+// the frame waited for its answer after that (tidy follow-up 4, part 1, item 2). Now the app's opening sends the same
+// two reads (earlyScreen.js, from main.jsx, for someone signed in opening a coach portal page), and the portal's first
+// check takes their answers. Nothing is decided here: loadCoachAuth and coachAuthStop read them exactly as before. Taken
+// once, only for the same account, only within EARLY_AUTH_MS of being sent, and only when both came back whole (053's
+// answer and the factor list): anything else (a refused or missed read, 053 not there, another account) is asked again.
+const EARLY_AUTH_MS = 10 * 1000;
+let earlyAuth = null;
+
+/** Sends the sign-in check now, for the account signed in on this device (earlyScreen.js). */
+export function sendCoachAuthEarly(supabase, userId, { storage = globalThis.localStorage } = {}) {
+  if (!userId) return;
+  const answer = Promise.all([loadCoachAuthState(supabase, { storage }), loadFactor(supabase)]).catch(() => null);
+  earlyAuth = { userId, at: Date.now(), answer };
+}
+
+/** The early answers, once, for this account: [state, factor] as loadCoachAuth reads them, or null. */
+export async function takeCoachAuthEarly(userId) {
+  const e = earlyAuth;
+  earlyAuth = null;
+  if (!e || e.userId !== userId || Date.now() - e.at > EARLY_AUTH_MS) return null;
+  const got = await e.answer;
+  if (!got || got[0]?.ready !== true || got[1]?.known !== true) return null;
+  return got;
+}
+
 /**
  * Everything the screens and the stop need, in one look:
  * { isCoach (true, false, or null when it can't be told), isOwner, ready
@@ -128,7 +157,10 @@ async function ownCoachRow(supabase, userId) {
  */
 export async function loadCoachAuth(supabase, user, opts = {}) {
   if (!user) return { isCoach: false };
-  const [{ ready, state }, { factor, level }] = await Promise.all([loadCoachAuthState(supabase, opts), loadFactor(supabase)]);
+  // The coach portal's first check takes the answers the app's opening already asked for (sendCoachAuthEarly), when they
+  // came back whole for this account; otherwise, and every time after, both are asked now.
+  const early = await takeCoachAuthEarly(user.id);
+  const [{ ready, state }, { factor, level }] = early || await Promise.all([loadCoachAuthState(supabase, opts), loadFactor(supabase)]);
   let isCoach = null;
   let isOwner = false;
   if (ready === true) {

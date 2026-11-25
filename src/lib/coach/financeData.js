@@ -6,6 +6,7 @@ import {
   addMonths, cashFlow, dayOnTimsClock, DEFAULT_YEAR_START_MONTH, financialYear, incomeLines, monthKey, overdueCount, perHourWords, poundsWords, todayFinanceLine,
 } from '../finance/index.js';
 import { leadValue } from './crm.js';
+import { countFigure, countWords } from './numbers.js';
 
 // Finances' screens, put together from the coach store's rows (Phase 6b run 2; M11 C1 to C9). Every sum is
 // src/lib/finance's: this file only gathers the rows each sum asks for and words the rows Finances lists (an
@@ -113,7 +114,7 @@ export function pipelineLine(leads = [], stages = []) {
     value += v;
     likely += Math.round((v * (Number(stage?.likelihood) || 0)) / 100);
   }
-  return { count, value, likely, facts: [count === 1 ? '1 open deal' : `${count} open deals`, likely ? `Likely ${poundsWords(likely)}` : null].filter(Boolean), figure: poundsWords(value) };
+  return { count, value, likely, facts: [countWords(count, 'open deal'), likely ? `Likely ${poundsWords(likely)}` : null].filter(Boolean), figure: poundsWords(value) };
 }
 
 /** Renewals in the next 90 days: engagements ending from today to 90 days on, with the signed agreement's price when known. */
@@ -128,7 +129,7 @@ export function renewalsSoon({ engagements = [], admin = [], versions = [], toda
     if (v) value += Number(v.total_minor ?? v.terms?.total_minor) || 0;
   }
   const n = ends.size;
-  return { count: n, value, facts: [n === 1 ? '1 engagement' : `${n} engagements`], figure: value ? poundsWords(value) : '' };
+  return { count: n, value, facts: [countWords(n, 'engagement')], figure: value ? poundsWords(value) : '' };
 }
 
 // ---------------------------------------------------------------- invoices
@@ -243,7 +244,7 @@ export function needsYouRows({ cash = null, invoices = [], deadlines = [], today
   // Each overdue invoice on its own line, the longest overdue first; past OVERDUE_LINES of them, one line for them all.
   const overdue = (invoices || []).filter((inv) => inv.status === 'sent' && !inv.waived_at && inv.due_on && inv.due_on < today && left(inv) > 0)
     .sort((a, b) => String(a.due_on).localeCompare(String(b.due_on)));
-  if (overdue.length > OVERDUE_LINES) rows.push({ key: 'od', title: `${overdue.length} invoices are overdue.`, link: 'View them', to: '/coach/finances/invoices' });
+  if (overdue.length > OVERDUE_LINES) rows.push({ key: 'od', title: `${countFigure(overdue.length)} invoices are overdue.`, link: 'View them', to: '/coach/finances/invoices' });
   else for (const inv of overdue) {
     const d = Math.max(1, daysBetween(inv.due_on, today));
     rows.push({ key: `od:${inv.id}`, title: `An invoice for ${moneyWords(left(inv), inv.currency || 'GBP')} is ${d === 1 ? '1 day' : `${d} days`} overdue.`, small: invoiceWho(inv, names), link: 'View the invoice', to: null, invoiceId: inv.id });

@@ -3,6 +3,7 @@
 // device or the clock by itself, so every rule is a unit test
 // (tests/performance/coach-model.test.mjs).
 import { addDays as addZoneDays, instantAt, isZone, wallClock, zonePlace } from '../time/index.js';
+import { countFigure, countWords } from './numbers.js';
 
 const UNSEEN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F­​-‏‪-‮⁠-⁤﻿]/g;
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -279,12 +280,14 @@ export function timeCredit(engagement, packs = [], entries = [], now = new Date(
 /** The coach's running clock, if any. */
 export const runningEntry = (entries) => (entries || []).find((e) => !e.ended_at) || null;
 
-/** "2 hours 10 minutes" (or "2 h 10 min" where space is tight). */
-export function minutesWords(minutes, short = false) {
+/**
+ * "2 hours 10 minutes", "30 minutes", "1 hour". Units are always full words (26 Oct design rule 8), never "h" or
+ * "min", even where space is tight (tidy follow-up 4, part 2, item 4).
+ */
+export function minutesWords(minutes) {
   const m = Math.max(0, Math.round(Number(minutes) || 0));
   const h = Math.floor(m / 60);
   const r = m % 60;
-  if (short) return h ? (r ? `${h} h ${r} min` : `${h} h`) : `${r} min`;
   const hours = h ? `${h} ${h === 1 ? 'hour' : 'hours'}` : '';
   const mins = r || !h ? `${r} ${r === 1 ? 'minute' : 'minutes'}` : '';
   return [hours, mins].filter(Boolean).join(' ');
@@ -297,13 +300,13 @@ export function clockWords(startedAt, now = new Date()) {
   return `${Math.floor(s / 3600)}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`;
 }
 
-/** The one line for a list, board card or table: "7 of 12", "2 h 10 min credit", or nothing. */
+/** The one line for a list, board card or table: "7 of 12", "2 hours 10 minutes credit", or nothing. */
 export function engagementLine(engagement, packs, entries, now, { toGo = false } = {}) {
   const credit = timeCredit(engagement, packs, entries, now);
-  if (credit && sessionsLeft(engagement, packs) == null) return `${minutesWords(credit.left, true)} credit`;
+  if (credit && sessionsLeft(engagement, packs) == null) return `${minutesWords(credit.left)} credit`;
   const s = sessionsLeft(engagement, packs);
   if (!s) return '';
-  return `${s.left} of ${s.total}${toGo ? ' to go' : ''}`;
+  return `${countFigure(s.left)} of ${countFigure(s.total)}${toGo ? ' to go' : ''}`;
 }
 
 // ---------------------------------------------------------------- cover
@@ -816,7 +819,7 @@ export function workshopEmailRows(workshop, sends = [], now = new Date(), reader
   const gone = (kind) => (sends || []).find((x) => x.workshop_id === workshop.id && x.kind === kind) || null;
   const went = (send) => {
     const n = Number(send.people) || 0;
-    return `It was sent on ${instantWords(send.sent_at, zone, now, readerZone)}, to ${n} ${n === 1 ? 'person' : 'people'}.`;
+    return `It was sent on ${instantWords(send.sent_at, zone, now, readerZone)}, to ${countWords(n, 'person', 'people')}.`;
   };
   const rows = [];
   if (workshop.remind_day_before === true) {

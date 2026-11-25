@@ -12,6 +12,7 @@ import {
 import { MenuItem, PopMenu, TICK, useCoachPortal } from './parts';
 import { useCalSync } from './calSync';
 import './calendar.css';
+import { countFigure } from '../../lib/coach/numbers';
 
 // The calendar's parts (Phase 6a run 3; M11, seq 77), used by the Calendar
 // page and by To-dos as a calendar, so neither draws its own:
@@ -442,7 +443,7 @@ export function CalGrid({
                     style={{ top: pct(m.startMin), height: high(m.startMin, m.endMin), left: `calc(${m.column * width}% + var(--cal-tile-gap))`, width: `calc(${width}% - 2 * var(--cal-tile-gap))` }}
                     aria-haspopup="menu"
                     aria-expanded={open}
-                    aria-label={`${m.entries.length} more at ${wallClock(m.entries[0].startsAt, coachZone).time}. Show them`}
+                    aria-label={`${countFigure(m.entries.length)} more at ${wallClock(m.entries[0].startsAt, coachZone).time}. Show them`}
                     onPointerDown={(ev) => ev.stopPropagation()}
                     onClick={(ev) => { moreBtn.current = ev.currentTarget; setMoreOpen(open ? null : { key: m.key, day, entries: m.entries }); }}
                   >
@@ -588,7 +589,7 @@ export function TodosToPlace({ cal, panelRef, over = false, onOpen, onDrag, firs
           </button>
         ))}
       </div>}
-      {!cal.partial && all.length > first && <div className="cc-acts"><button type="button" className="ds-link" aria-expanded={every} onClick={() => setEvery((v) => !v)}>{every ? 'Show fewer' : `Show all ${all.length}`}</button></div>}
+      {!cal.partial && all.length > first && <div className="cc-acts"><button type="button" className="ds-link" aria-expanded={every} onClick={() => setEvery((v) => !v)}>{every ? 'Show fewer' : `Show all ${countFigure(all.length)}`}</button></div>}
     </aside>
   );
 }

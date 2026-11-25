@@ -3,6 +3,10 @@ import { defineConfig, build } from 'vite'
 import react from '@vitejs/plugin-react'
 import { join, resolve } from 'node:path'
 import { trimStyles } from './scripts/build/trimStyles.mjs'
+import { designImports } from './scripts/build/designImports.mjs'
+import { fileURLToPath } from 'node:url'
+
+const ROOT = fileURLToPath(new URL('.', import.meta.url)).replace(/\/$/, '')
 
 // The design gallery (/design-reference) exists only in local development
 // and on Vercel preview deployments, never on the live site. Vercel sets
@@ -154,26 +158,54 @@ function healthCheckPage(buildId) {
 // a phone before the first screen. Anything the app's opening part already
 // holds stays there, so the opening download never grows.
 const CLIENT_CORE = /\/src\/(components\/(design|ownQuestions|ui)|lib\/(performance|scores|time|ownQuestions|peakMoments|travel))\//
+//
+// The coach portal's first screens use only a few of those shared parts (tidy follow-up 4, part 1, item 1): the ones
+// they reach by their own imports go in a part of their own, design-core, so a coach's first visit never downloads the
+// whole of client-core (about 520 kB of code, 145 kB sent). The coach portal's files take each design part from its own
+// file (scripts/build/designImports.mjs), so what they reach is what they use. Client pages load design-core beside
+// client-core, asked for at the same moment: the same code as before, in two files.
+const COACH_ROOTS = /\/src\/pages\/coach\/(CoachApp|Today|Clients|ClientPage|Calendar|Finances)\.jsx$/
 function clientCoreChunks() {
   let opening = null // every module the opening part reaches by static imports
+  let coach = null // every module the coach portal's first screens reach by static imports
+  const learn = (ctx, id) => {
+    if (opening) return true
+    const main = findMain(ctx, id)
+    if (!main) return false // a module the app's opening never reaches: asked again from the next one
+    opening = reach(ctx, [main])
+    // The coach portal's first-screen pages, found by following every import (dynamic ones too) from the app's opening.
+    const all = new Set()
+    const queue = main ? [main] : []
+    while (queue.length) {
+      const m = queue.pop()
+      if (all.has(m)) continue
+      all.add(m)
+      const info = ctx.getModuleInfo(m)
+      for (const next of [...(info?.importedIds || []), ...(info?.dynamicallyImportedIds || [])]) queue.push(next)
+    }
+    const roots = [...all].filter((m) => COACH_ROOTS.test(m))
+    coach = reach(ctx, roots)
+    return true
+  }
+  const reach = (ctx, roots) => {
+    const seen = new Set()
+    const queue = [...roots]
+    while (queue.length) {
+      const m = queue.pop()
+      if (seen.has(m)) continue
+      seen.add(m)
+      for (const next of ctx.getModuleInfo(m)?.importedIds || []) queue.push(next)
+    }
+    return seen
+  }
   return {
     // Only the modules named below: what they import stays where it was.
     includeDependenciesRecursively: false,
     groups: [{
       name(id, ctx) {
         if (!CLIENT_CORE.test(id)) return null
-        if (!opening) {
-          opening = new Set()
-          const main = findMain(ctx, id)
-          const queue = main ? [main] : []
-          while (queue.length) {
-            const m = queue.pop()
-            if (opening.has(m)) continue
-            opening.add(m)
-            for (const next of ctx.getModuleInfo(m)?.importedIds || []) queue.push(next)
-          }
-        }
-        return opening.has(id) ? null : 'client-core'
+        if (!learn(ctx, id) || opening.has(id)) return null
+        return coach.has(id) ? 'design-core' : 'client-core'
       },
     }],
   }
@@ -287,7 +319,7 @@ export default defineConfig(({ command }) => {
   const galleryEnabled = command === 'serve' || process.env.VERCEL_ENV === 'preview'
   const buildId = command === 'serve' ? 'dev' : (process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now()))
   return {
-    plugins: [react(), colourMode(), designGallery(galleryEnabled), buildVersion(buildId), serviceWorker(buildId, process.env.VERCEL_ENV === 'preview'), healthCheckPage(buildId), openingPreload()],
+    plugins: [designImports(ROOT), react(), colourMode(), designGallery(galleryEnabled), buildVersion(buildId), serviceWorker(buildId, process.env.VERCEL_ENV === 'preview'), healthCheckPage(buildId), openingPreload()],
     // __CLARITY_LIVE__: true only in the live site's build. The coach portal
     // shows pages still to come, and takes test calls for the next-call bar,
     // everywhere else (previews, local builds), never on the live site.

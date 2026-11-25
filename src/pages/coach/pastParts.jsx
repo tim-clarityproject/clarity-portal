@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react';
 import { SlidePanel, TextBox, useToast } from '../../components/design';
 import { saveRow } from '../../lib/coach/store';
 import { firstName } from '../../lib/coach/model';
-import { ASK_BUTTONS, checkInAsk, checkInLater, checkInMeta, checkInNote, checkInSend, PAST_WORDS, suggestedAsk } from '../../lib/coach/crm';
+import { ASK_BUTTONS, checkInAsk, checkInLater, checkInMeta, checkInNote, checkInSend, crmProblem as calm, PAST_WORDS, suggestedAsk } from '../../lib/coach/pastClients';
 import { TextLink, useCoachPortal } from './parts';
-import { calm } from './crmParts';
 import './crm.css';
 
 // A past client's check-in, opened from Past clients or from Today's Keep

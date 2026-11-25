@@ -21,6 +21,7 @@ import {
 } from '../time/index.js';
 import { clean, cut, firstName, minutesWords, parsePeople } from './model.js';
 import { SENT_LINE, SESSION_KINDS, SESSION_LENGTHS, WEEK_KEYS, isLateCancellation, isLink, newSession, parseQuickAdd, workingDay } from './day.js';
+import { countFigure, countWords } from './numbers.js';
 
 const MIN = 60000;
 const HOUR = 3600000;
@@ -198,7 +199,7 @@ export function calRepeatWords(rule, firstDay) {
     const on = rule.by === 'weekday' ? `the ${ORDINALS[dd > 28 ? 4 : Math.ceil(dd / 7) - 1]} ${LONG_DAYS[dow(firstDay)]}` : `day ${dd}`;
     words = `Every ${n > 1 ? `${n} months` : 'month'} on ${on}`;
   } else words = n > 1 ? `Every ${n} years` : 'Every year';
-  if (rule.count) return `${words}, ${rule.count} ${rule.count === 1 ? 'time' : 'times'}`;
+  if (rule.count) return `${words}, ${countWords(rule.count, 'time')}`;
   if (rule.until) return `${words}, until ${dayKeyWords(rule.until)}`;
   return words;
 }
@@ -702,7 +703,7 @@ export function crowdedTiles(tiles, max = Infinity) {
     tiles: shown,
     more: more.map((r) => ({
       key: `more:${r.pieces[0].entry.key}`, startMin: r.startMin, endMin: r.endMin, column: max - 1, columns: max,
-      entries: r.pieces.map((t) => t.entry), words: `+${r.pieces.length} more`,
+      entries: r.pieces.map((t) => t.entry), words: `+${countFigure(r.pieces.length)} more`,
     })),
   };
 }
@@ -737,7 +738,7 @@ export const entriesOn = (entries, day) => (entries || []).filter((e) => onDay(e
 export function monthCell(entries, day, max = 3) {
   const all = entriesOn(entries, day);
   const more = Math.max(0, all.length - max);
-  return { shown: all.slice(0, max), more, moreWords: more ? `${more} more` : '', label: `${dayKeyWords(day, { long: true })}, ${all.length === 1 ? '1 item' : `${all.length} items`}` };
+  return { shown: all.slice(0, max), more, moreWords: more ? `${countFigure(more)} more` : '', label: `${dayKeyWords(day, { long: true })}, ${countWords(all.length, 'item')}` };
 }
 
 /**
@@ -1343,7 +1344,7 @@ export function invited(text) {
   if (toCheck.length) lines.push(`Check ${toCheck.length === 1 ? 'this address' : 'these addresses'}: ${toCheck.join(', ')}.`);
   if (noEmail.length) lines.push(`${joinNames(noEmail)} ${noEmail.length === 1 ? 'has' : 'have'} no email yet. Add one to invite them.`);
   if (duplicates) lines.push(`${duplicates === 1 ? '1 duplicate was' : `${duplicates} duplicates were`} taken out.`);
-  return { people, count: people.length, countWords: people.length === 1 ? '1 person' : `${people.length} people`, toCheck, noEmail, duplicates, lines };
+  return { people, count: people.length, countWords: countWords(people.length, 'person', 'people'), toCheck, noEmail, duplicates, lines };
 }
 
 /** People already in the portal (clients, contacts, coaches) found by typing a name or an email: [{ name, email, profile_id?, contact_id?, guest_coach_id? }]. */
@@ -1625,14 +1626,14 @@ export function openLinksLine(links, todayKey) {
   const open = (links || []).filter((l) => linkState(l, todayKey) === 'open');
   if (!open.length) return 'None open';
   const names = open.map((l) => clean(l.for_name)).filter(Boolean);
-  return `${open.length} open${names.length ? `, for ${joinNames(names)}` : ''}`;
+  return `${countFigure(open.length)} open${names.length ? `, for ${joinNames(names)}` : ''}`;
 }
 
 // ---- Book a call
 
 export const HOW_OFTEN = [{ value: 0, label: 'Just this once' }, { value: 1, label: 'Every week' }, { value: 2, label: 'Every 2 weeks' }, { value: 4, label: 'Every 4 weeks' }];
 export const SERIES_MAX = 26;
-export const bookCallLabel = (n) => (n === 1 ? 'Book the call' : `Book ${n} calls`);
+export const bookCallLabel = (n) => (n === 1 ? 'Book the call' : `Book ${countFigure(n)} calls`);
 /** "60 minutes is suggested, from Jordan’s agreement." */
 export const suggestedLengthLine = (minutes, name) => `${minutes} minutes is suggested, from ${firstName(name)}’s agreement.`;
 
@@ -1730,7 +1731,7 @@ export function bookCallPlan({ starts, minutes, zone, title, client = null, grou
     for (const g of guestRows(people, { itemId, coachId, newId, clients: data.clients || [] })) save.push([T.guests, g]);
   }
   const n = starts.length;
-  const words = !invites ? (n === 1 ? 'Booked.' : `Booked ${n} calls.`) : placeKind === 'zoom' ? (n === 1 ? 'Booked. The call has its own Zoom link and invite.' : 'Booked. Each call has its own Zoom link and invite.') : 'Booked. The invite is on its way.';
+  const words = !invites ? (n === 1 ? 'Booked.' : `Booked ${countFigure(n)} calls.`) : placeKind === 'zoom' ? (n === 1 ? 'Booked. The call has its own Zoom link and invite.' : 'Booked. Each call has its own Zoom link and invite.') : 'Booked. The invite is on its way.';
   return plan(data, { save, words });
 }
 
@@ -1810,7 +1811,7 @@ export function copyLastWeek({ monday, data = {}, coachZone, coachId, newId, now
   const was = new Set((data.openBlocks || []).map((b) => b.id));
   return plan(data, {
     save: [...save.values()].map((r) => [T.open, r]), remove: [...remove].filter((id) => was.has(id)).map((id) => [T.open, id]),
-    words: left.length ? `Copied from last week. ${left.length === 1 ? '1 time was' : `${left.length} times were`} left out, because something is in the way.` : 'Copied from last week.',
+    words: left.length ? `Copied from last week. ${left.length === 1 ? '1 time was' : `${countFigure(left.length)} times were`} left out, because something is in the way.` : 'Copied from last week.',
   });
 }
 
@@ -1820,7 +1821,7 @@ export const POLL_MIN = 2;
 export const POLL_MAX = 5;
 export const POLL_HELD_LINE = 'The times stay held in your calendar until you confirm one.';
 /** The poll bar while picking: "Pick 2 to 5 times", then "3 picked". */
-export const pollPickWords = (n) => (n ? `${n} picked` : 'Pick 2 to 5 times');
+export const pollPickWords = (n) => (n ? `${countFigure(n)} picked` : 'Pick 2 to 5 times');
 /** Why a pick can't be added or the poll can't go yet; null when it can. */
 export function pollProblem(picked, { adding = false } = {}) {
   if (adding && picked.length >= POLL_MAX) return 'Up to 5 times in one poll.';
@@ -1923,7 +1924,7 @@ export function offerTimesText({ starts = [], minutes = 60, zone }) {
   const lines = [...starts].sort((a, b) => a - b).map((s) => `${zoneDayWords(s, zone)}, ${clockWords(s, zone)}`);
   return {
     text: [`Would any of these work for a ${minutes}-minute call? They are in ${zoneLabel(zone)}.`, ...lines].join('\n'),
-    words: `Copied ${starts.length} ${starts.length === 1 ? 'time' : 'times'} in ${zoneLabel(zone)}.`, problem: null,
+    words: `Copied ${countWords(starts.length, 'time')} in ${zoneLabel(zone)}.`, problem: null,
   };
 }
 
@@ -2465,7 +2466,7 @@ export function pickedEntries(starts, minutes, { coachZone, zone = null }) {
 }
 export const OFFER_MAX = 8;
 /** The bar while times to offer are picked: "Pick free times", then "2 picked". */
-export const offerPickWords = (n) => (n ? `${n} picked` : 'Pick free times');
+export const offerPickWords = (n) => (n ? `${countFigure(n)} picked` : 'Pick free times');
 /** The zones a reader can be in for Offer times by email: the coach's list, the coach's own first. */
 export const offerZoneChoices = (settings, coachZone) => [{ value: coachZone, label: zonePlace(coachZone) }, ...secondZoneChoices(settings, coachZone).filter((z) => !sameZone(z.value, coachZone))];
 

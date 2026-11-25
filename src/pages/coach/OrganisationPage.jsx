@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { idFromAddress } from '../../lib/coach/address';
 import { AddButton, Button, Chip, ChipRow, Dropdown, PageHeader, SlidePanel, Stat, StatGroup, SwitchRow, TextField, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { coachCrmReadyNow, coachReadyNow, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
@@ -16,6 +17,7 @@ import { useStartStages } from './leadParts';
 import './leads.css';
 import './crm.css';
 import './leftovers.css';
+import { countFigure } from '../../lib/coach/numbers';
 
 // An organisation (M11, with version 3.6's account map), the owner's: Who's
 // who (contacts with their roles and when you last spoke or emailed, the
@@ -34,7 +36,7 @@ const CODE_WORDS = {
 };
 
 export default function OrganisationPage() {
-  const { id } = useParams();
+  const id = idFromAddress(useParams().id); // any case in the address (tidy follow-up 4)
   const navigate = useNavigate();
   const toast = useToast();
   const { userId, coach, state, organisations, clients, groups, workshops, admin, todayKey, orgDeals, orgGrowth, leadStages, emails, emailLinks } = useCoachPortal();
@@ -81,7 +83,7 @@ export default function OrganisationPage() {
 
   // Room to grow: worked out from what is here, one calm line each.
   const grow = [];
-  if (seats > withAccount) grow.push({ key: 'seats', kind: 'seats', title: `${seats - withAccount} of ${seats} seats are free.`, small: 'People coached here could use them for their own sprints.' });
+  if (seats > withAccount) grow.push({ key: 'seats', kind: 'seats', title: `${countFigure(seats - withAccount)} of ${countFigure(seats)} seats are free.`, small: 'People coached here could use them for their own sprints.' });
   const soon = addDays(todayKey, 60);
   for (const p of mine) {
     const e = currentEngagement(engagements, { profileId: p.id });
@@ -183,8 +185,8 @@ export default function OrganisationPage() {
         <Back onClick={() => navigate('/coach/clients')} />
         <PageHeader title={org.name} meta={['Organisation', org.city]} />
         <StatGroup className="cc-stats">
-          <Stat label="People coached here" value={String(people)} />
-          {seats > 0 && <Stat label="Seats in use" value={`${withAccount} of ${seats}`} bar={seats ? withAccount / seats : 0} />}
+          <Stat label="People coached here" value={countFigure(people)} />
+          {seats > 0 && <Stat label="Seats in use" value={`${countFigure(withAccount)} of ${countFigure(seats)}`} bar={seats ? withAccount / seats : 0} />}
           {map.nextRenewal && <Stat label={ACCOUNT_WORDS.nextRenewal} value={map.nextRenewal} />}
         </StatGroup>
 

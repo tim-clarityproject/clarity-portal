@@ -9,6 +9,7 @@ import {
 } from '../../lib/coach/model';
 import { xlsxBytes } from '../../lib/coach/xlsx';
 import { TextLink, useCoachPortal } from './parts';
+import { countFigure, countWords } from '../../lib/coach/numbers';
 
 // The Clients page's panels (M11, version 3.6): Add client, Add team,
 // Filter with saved views, Export to a spreadsheet, Merge into one, a
@@ -230,8 +231,8 @@ export function ExportPanel({ open, onClose, shown, all, ctx }) {
   useEffect(() => { if (open) setWhat(shown.length === all.length ? 'all' : 'view'); }, [open, shown.length, all.length]);
   const own = (rows) => rows.filter((r) => !r.admin);
   const options = [
-    ...(shown.length !== all.length ? [{ value: 'view', label: `This view, ${own(shown).length} ${own(shown).length === 1 ? 'client' : 'clients'}` }] : []),
-    { value: 'all', label: `All your clients, ${own(all).length}` },
+    ...(shown.length !== all.length ? [{ value: 'view', label: `This view, ${countWords(own(shown).length, 'client')}` }] : []),
+    { value: 'all', label: `All your clients, ${countFigure(own(all).length)}` },
   ];
   const go = () => {
     const rows = exportRows(own(what === 'view' ? shown : all), ctx, todayKey);
@@ -239,7 +240,7 @@ export function ExportPanel({ open, onClose, shown, all, ctx }) {
     const name = `Clients, ${todayKey}`;
     if (format === 'csv') download(`${name}.csv`, `﻿${toCsv(rows)}`, 'text/csv;charset=utf-8');
     else download(`${name}.xlsx`, xlsxBytes(rows, 'Clients'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    logActivity(userId, coach, 'export', `exported ${n} ${n === 1 ? 'client' : 'clients'} to a spreadsheet.`);
+    logActivity(userId, coach, 'export', `exported ${countWords(n, 'client')} to a spreadsheet.`);
     toast.show('Downloaded');
     onClose();
   };

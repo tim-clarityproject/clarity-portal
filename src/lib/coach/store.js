@@ -1729,9 +1729,24 @@ function screenAnswer({ data, error }) {
     }
     throw error;
   }
-  const start = data?.start;
+  let start = data?.start;
   if (!isObject(data) || !isObject(data.tables) || !isObject(start) || !Array.isArray(start.sessions) || !Array.isArray(start.people) || !isObject(start.held)) return null;
   screenReadyNow = true;
+  // 063's lean answer: each session's coach_id, said once, is put back, and each session's person takes the profile and
+  // engagement it shares with its session (left out when the same). A sent recap and a person's created_at aren't here:
+  // nothing on a first screen reads them, and the load that follows reads every session whole (loadCoach: `lean`).
+  let lean = false;
+  if (start.lean === true) {
+    if (typeof start.coach_id !== 'string') return null;
+    lean = true;
+    const sessions = start.sessions.filter(isObject).map((r) => ({ ...r, coach_id: start.coach_id }));
+    const byId = new Map(sessions.map((r) => [r.id, r]));
+    const people = start.people.filter(isObject).map((p) => {
+      const s = byId.get(p.session_id) || {};
+      return { ...p, profile_id: 'profile_id' in p ? p.profile_id : (s.profile_id ?? null), engagement_id: 'engagement_id' in p ? p.engagement_id : (s.engagement_id ?? null) };
+    });
+    start = { ...start, sessions, people };
+  }
   const associates = Array.isArray(data.associates) ? data.associates.filter((r) => isObject(r) && r.id) : null;
   const tables = new Map();
   for (const [table, rows] of Object.entries(data.tables)) {
@@ -1739,7 +1754,7 @@ function screenAnswer({ data, error }) {
     if (!TABLES[table] || DEVICE_ONLY.has(table) || !Array.isArray(rows)) continue;
     tables.set(table, { rows: rows.filter(isObject), inScope: NOTHING_COVERED });
   }
-  return { tables, start, associates };
+  return { tables, start, associates, lean };
 }
 
 /**
@@ -1895,7 +1910,8 @@ export function loadCoach(userId, { again = false } = {}) {
         partial.set(userId, kind);
         setCopyMark(userId, 'screen');
         write(userId, next);
-        screenStart = got.start;
+        // A lean first screen's sessions are only what the first screens use: the load below reads them whole (057).
+        screenStart = got.lean ? null : got.start;
         await afterPaint();
         if (gen !== generation) return null;
       }

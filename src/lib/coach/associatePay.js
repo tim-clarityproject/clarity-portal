@@ -6,6 +6,7 @@ import { hoursWords, poundsWords } from '../finance/words.js';
 import { isOpenLead, isWonLead, leadValue, moneyWords, pipelineTotals, rateWords, stagesInOrder, stageTotals } from './crm.js';
 import { addDays, dayWords, firstName, possessive } from './model.js';
 import { dayIn } from '../time/index.js';
+import { countFigure, countWords } from './numbers.js';
 
 // The people side of the money (Phase 6b run 2, steps 3 and 5; M11 C10 to C13): an associate's hours and pay in
 // Settings, Coaches and on their own Today, the monthly statement (its panel and its PDF), Clients' Renewals tab and
@@ -251,7 +252,7 @@ const SOURCE_NAMES = {
 const dayOf = (at) => String(at || '').slice(0, 10);
 const utcDay = (key) => { const [y, m, d] = key.split('-').map(Number); return Date.UTC(y, m - 1, d); };
 const daysBetween = (a, b) => Math.round((utcDay(b) - utcDay(a)) / 86400000);
-const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const count = (n, one, many) => countWords(n, one, many);
 
 /**
  * Lead reports (M11 C10): the pipeline and what's likely (each open lead at its stage's chance), the win rate and the
@@ -280,7 +281,7 @@ export function leadReport({ leads = [], stages = [], today }) {
     const key = referred ? 'referral' : (SOURCE_NAMES[l.source] ? l.source : 'other');
     sourceCounts.set(key, (sourceCounts.get(key) || 0) + 1);
   }
-  const sources = [...sourceCounts.entries()].map(([key, n]) => ({ key, name: SOURCE_NAMES[key], won: n, words: `${n} won`, share: wonIn.length ? n / wonIn.length : 0 }))
+  const sources = [...sourceCounts.entries()].map(([key, n]) => ({ key, name: SOURCE_NAMES[key], won: n, words: `${countFigure(n)} won`, share: wonIn.length ? n / wonIn.length : 0 }))
     .sort((a, b) => b.won - a.won || a.name.localeCompare(b.name));
 
   const refs = new Map();
@@ -295,7 +296,7 @@ export function leadReport({ leads = [], stages = [], today }) {
   }
   const referrers = [...refs.values()].map((r) => ({
     ...r,
-    line: r.introductions === 1 ? (r.won ? '1 introduction, won' : '1 introduction') : `${count(r.introductions, 'introduction', 'introductions')}${r.won ? `, ${r.won} won` : ''}`,
+    line: r.introductions === 1 ? (r.won ? '1 introduction, won' : '1 introduction') : `${count(r.introductions, 'introduction', 'introductions')}${r.won ? `, ${countFigure(r.won)} won` : ''}`,
     right: r.won && r.value ? moneyWords(r.value) : (r.won ? '' : 'Thank them'),
   })).sort((a, b) => b.value - a.value || b.introductions - a.introductions || a.name.localeCompare(b.name));
 
@@ -303,7 +304,7 @@ export function leadReport({ leads = [], stages = [], today }) {
     pipeline: moneyWords(totals.value) || moneyWords(0),
     likely: moneyWords(totals.likely) || moneyWords(0),
     winRate: winRate == null ? null : `${winRate}%`,
-    timeToWin: timeToWin == null ? null : (timeToWin === 1 ? '1 day' : `${timeToWin} days`),
+    timeToWin: timeToWin == null ? null : (timeToWin === 1 ? '1 day' : `${countFigure(timeToWin)} days`),
     byStage,
     sources,
     referrers,

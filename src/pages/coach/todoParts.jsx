@@ -11,10 +11,11 @@ import {
   plannedWords, positionAt, quickAddChips, quickDays, repeatChoices, repeatValue, timeWords, todoFacts, whenWords,
 } from '../../lib/coach/day';
 import { deleteTodos, linksToAdd, removePairs, rowsForNew, saveTodos, tickRows, todoLinks } from '../../lib/coach/todoActions';
+import { todoEmailLine } from '../../lib/coach/todoEmail';
 import { MenuItem, MenuLabel, PopMenu, TextLink, useCoachPortal } from './parts';
 import { HelpLink } from './help';
-import { todoEmailLine } from '../../lib/coach/crm';
 import './todos.css';
+import { countFigure, countWords } from '../../lib/coach/numbers';
 
 // The email a forwarded to-do came from opens in Leads' own email panel (loaded only when one is opened).
 const EmailPanel = lazy(() => import('./LeadPanels').then((m) => ({ default: m.EmailPanel })));
@@ -44,7 +45,7 @@ const AFTER_WORK = '__after_work__';
 const OTHER = 'other';
 const TICK = <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
 const DOTS = <svg className="cc-todo-dots" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5.5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="18.5" cy="12" r="1.5" /></svg>;
-const count = (n) => `${n} ${n === 1 ? 'to-do' : 'to-dos'}`;
+const count = (n) => countWords(n, 'to-do');
 
 // ---------------------------------------------------------------- saving, with Undo
 
@@ -201,8 +202,8 @@ export function TodoBulkBar({ picks }) {
     <button type="button" className="cc-bulk-btn" ref={ref(key)} aria-haspopup={onClick ? undefined : 'menu'} aria-expanded={onClick ? undefined : menu === key} onClick={onClick || (() => setMenu(key))}>{label}</button>
   );
   return (
-    <div ref={barRef} className="cc-bulk cc-todo-bulk" role="toolbar" aria-label={`${chosen.length} chosen`}>
-      <span className="cc-bulk-n" aria-live="polite">{chosen.length} chosen</span>
+    <div ref={barRef} className="cc-bulk cc-todo-bulk" role="toolbar" aria-label={`${countFigure(chosen.length)} chosen`}>
+      <span className="cc-bulk-n" aria-live="polite">{countFigure(chosen.length)} chosen</span>
       <span className="cc-todo-bulk-acts">
         {button('date', 'Date')}
         {tags.length > 0 && button('tag', 'Tag')}
@@ -329,7 +330,7 @@ export function TodoList({ todos, view = 'today', label, picks = null, onOpen, r
     if (!target) { setSaid(`${todo.title} is already at the ${up ? 'top' : 'bottom'}${same.length < todos.length ? (todo.important ? ' of the important to-dos' : ' of the others') : ''}.`); return; }
     refocus.current = todo.id;
     actions.place(todo, todos, landAt(todo, target, !up));
-    setSaid(`${todo.title} moved ${up ? 'up' : 'down'}, ${up ? i : i + 2} of ${todos.length}.`);
+    setSaid(`${todo.title} moved ${up ? 'up' : 'down'}, ${countFigure(up ? i : i + 2)} of ${countFigure(todos.length)}.`);
   };
 
   const menuTodo = menu ? todos.find((t) => t.id === menu.id) : null;
@@ -720,9 +721,10 @@ export function TodoPanel({ id, onClose }) {
       </div>
 
       <div className="cc-field cc-todo-est">
+        {/* Pills where the five fit on one line, answer rows where they don't (a phone): the estimates are full words now,
+            "30 minutes", never "30 min" (tidy follow-up 4, part 2, item 4), and a pill's words never wrap. */}
         <InlineChoice
           label="How long it takes"
-          form="pills"
           options={[...ESTIMATES.map((m) => ({ value: String(m), label: estimateWords(m) })), { value: OTHER, label: 'Other' }]}
           value={estimate}
           onChange={(v) => {

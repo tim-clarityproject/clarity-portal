@@ -2,6 +2,7 @@ import { supabase } from '../supabase';
 import { apiFetch } from '../readShare';
 import { coachDayReady, coachReady, forgetRows, keyOf, loadCoach, newId, noteRows, removeRow, rowsOf, saveRow, saveRows } from './store';
 import { clean, mergedProfile } from './model';
+import { countWords } from './numbers.js';
 
 // What the coach portal does that is more than saving one row (Phase 6a
 // run 1). Each goes through the database's own checked function once 049
@@ -176,7 +177,7 @@ export async function inviteClient(userId, profile) {
 /** What the coach reads after pressing Send the follow-up. `sent`: whether to read what has gone again. */
 export function followUpWords(answer) {
   const n = answer?.people || 0;
-  if (answer?.sent) return `Follow-up sent to ${n} ${n === 1 ? 'person' : 'people'}.`;
+  if (answer?.sent) return `Follow-up sent to ${countWords(n, 'person', 'people')}.`;
   switch (answer?.reason) {
     case 'preview': return 'Nothing is sent from a preview.';
     case 'early': return 'The follow-up goes after the workshop has started.';

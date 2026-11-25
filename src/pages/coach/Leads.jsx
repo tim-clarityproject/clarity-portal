@@ -16,6 +16,7 @@ import { AddLeadPanel, ColdPanel, EditLeadPanel, ExportLeadsPanel, ImportLeadsPa
 import { FieldPanel } from './Settings';
 import './leftovers.css';
 import './leads.css';
+import { countFigure, countWords } from '../../lib/coach/numbers';
 
 // Leads (M11 seq 77: "Leads, the CRM", "Leads as a list", "Leads as a
 // table"): the owner's pipeline as a board, a list or a table behind the
@@ -126,7 +127,7 @@ export default function Leads() {
     const add = pickedLeads.filter((l) => !data.tagLinks.some((k) => k.tag_id === tag.id && k.item_id === l.id)).map((l) => ({ tag_id: tag.id, item_kind: 'lead', item_id: l.id, coach_id: coach.id }));
     try {
       await saveRows(userId, add.map((row) => ['coach_tag_links', row]));
-      toast.saved({ message: `${tag.name} added to ${pickedLeads.length} ${pickedLeads.length === 1 ? 'lead' : 'leads'}`, long: true, onUndo: async () => { for (const row of add) await removeRow(userId, 'coach_tag_links', keyOf('coach_tag_links', row)).catch(() => {}); } });
+      toast.saved({ message: `${tag.name} added to ${countWords(pickedLeads.length, 'lead')}`, long: true, onUndo: async () => { for (const row of add) await removeRow(userId, 'coach_tag_links', keyOf('coach_tag_links', row)).catch(() => {}); } });
       setPicked({});
     } catch (error) { toast.error(error?.message || SAVE_PROBLEM); }
   };
@@ -316,7 +317,7 @@ export default function Leads() {
               const cards = more[col.stage.id] ? col.cards : col.cards.slice(0, BOARD_FOLD);
               return (
                 <section key={col.stage.id} className={`cc-board-col${drag && drag.over === col.stage.id && drag.card.stageId !== col.stage.id ? ' cc-board-col--over' : ''}`} data-stage={col.stage.id} aria-label={`${col.stage.name}, ${col.count}`}>
-                  <div className="cc-board-head"><span>{col.stage.name}</span><span>{col.count}</span></div>
+                  <div className="cc-board-head"><span>{col.stage.name}</span><span>{countFigure(col.count)}</span></div>
                   <div className={`cc-lboard-sum${col.value ? '' : ' cc-lboard-sum--none'}`}><span>{col.valueWords}</span>{col.likelyWords && <small>{col.likelyWords}</small>}</div>
                   <div className="cc-board-cards">
                     {cards.map((c) => (
@@ -413,7 +414,7 @@ export default function Leads() {
                 })}
               </tbody>
             </table>
-            {!more.table && shown.length > TABLE_FOLD && <div className="cc-acts"><TextLink onClick={() => setMore({ ...more, table: true })}>Show all {shown.length}</TextLink></div>}
+            {!more.table && shown.length > TABLE_FOLD && <div className="cc-acts"><TextLink onClick={() => setMore({ ...more, table: true })}>Show all {countFigure(shown.length)}</TextLink></div>}
             <PopMenu open={menu === 'col:name'} onClose={() => setMenu(null)} anchorRef={anchor('col:name')} title="Name">
               <MenuLabel>Sort</MenuLabel>
               <MenuItem checked={list.sort === 'name'} onClick={() => sortBy('name')}>A to Z</MenuItem>
@@ -452,8 +453,8 @@ export default function Leads() {
         </div>
 
         {picking && (
-          <div ref={bulkRef} className="cc-bulk" role="toolbar" aria-label={`${pickedLeads.length} chosen`}>
-            <span className="cc-bulk-n" aria-live="polite">{pickedLeads.length} chosen</span>
+          <div ref={bulkRef} className="cc-bulk" role="toolbar" aria-label={`${countFigure(pickedLeads.length)} chosen`}>
+            <span className="cc-bulk-n" aria-live="polite">{countFigure(pickedLeads.length)} chosen</span>
             {tags.length > 0 && <button type="button" className="cc-bulk-btn" ref={ref('tag')} aria-haspopup="menu" aria-expanded={menu === 'tag'} onClick={() => setMenu('tag')}>Tag</button>}
             {pickedLeads.length === 2 && <button type="button" className="cc-bulk-btn" onClick={() => { setMergePair({ a: leadOf(pickedLeads[0].id), b: leadOf(pickedLeads[1].id) }); setPicked({}); }}>Merge</button>}
             <IconButton label="Stop choosing" onClick={() => setPicked({})} />

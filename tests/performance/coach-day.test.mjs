@@ -19,14 +19,14 @@ const TODAY = '2026-11-17'; // a Tuesday
 const at = (day, h = 9, m = 0) => new Date(2026, 10, day, h, m).toISOString();
 const todo = (id, extra = {}) => ({ id, title: id, planned_on: TODAY, position: Number(String(id).replace(/\D/g, '')) || 0, checklist: [], ...extra });
 
-test('how long a to-do takes: 15 min, 30 min, 1 h, 2 h, or Other from 45 minutes to 8 hours in 15-minute steps', () => {
+test('how long a to-do takes: 15 minutes, 30 minutes, 1 hour, 2 hours, or Other from 45 minutes to 8 hours in 15-minute steps', () => {
   assert.deepEqual(ESTIMATES, [15, 30, 60, 120]);
   assert.equal(OTHER_ESTIMATES[0], 45);
   assert.equal(OTHER_ESTIMATES.at(-1), 480);
   assert.ok(OTHER_ESTIMATES.every((m) => m % 15 === 0 && !ESTIMATES.includes(m)));
   assert.deepEqual([15, 45, 480, null].map(estimateOk), [true, true, true, true]);
   assert.deepEqual([10, 20, 495, 0, 15.5].map(estimateOk), [false, false, false, false, false]);
-  assert.deepEqual([15, 60, 90, 120, 480].map(estimateWords), ['15 min', '1 h', '1 h 30 min', '2 h', '8 h']);
+  assert.deepEqual([15, 60, 90, 120, 480].map(estimateWords), ['15 minutes', '1 hour', '1 hour 30 minutes', '2 hours', '8 hours']);
 });
 
 test('to-do dates: Today and Tomorrow stay single words, a planned day reads "Planned for Wed 18 Nov, 10:00", a deadline "Due Fri"', () => {
@@ -161,7 +161,7 @@ test('the quick add reads plain words', () => {
   const ctx = { todayKey: TODAY, lists: [{ id: 'L', name: 'Kestrel renewal' }], tags: [{ id: 'E', name: 'Email' }], clients: [{ id: 'C', name: 'Sam Okafor' }] };
   const p = parseQuickAdd('send the renewal pack to Dana tomorrow 10:00 30m #Kestrel renewal @Email !', ctx);
   assert.deepEqual([p.title, p.planned_on, p.planned_time, p.minutes, p.important, p.list_id, p.tag_ids], ['Send the renewal pack to Dana', '2026-11-18', '10:00', 30, true, 'L', ['E']]);
-  assert.deepEqual(quickAddChips(p, ctx), ['Tomorrow', 'at 10:00', 'Kestrel renewal', 'Email', 'Important', '30 min']);
+  assert.deepEqual(quickAddChips(p, ctx), ['Tomorrow', 'at 10:00', 'Kestrel renewal', 'Email', 'Important', '30 minutes']);
   assert.equal(addedWords(p, TODAY), 'Added to Tomorrow.');
   const weekly = parseQuickAdd('Write Leading Ideas every Thursday 1h', ctx);
   assert.deepEqual([weekly.title, weekly.planned_on, weekly.minutes, weekly.repeat_rule], ['Write Leading Ideas', '2026-11-19', 60, { every: 'week' }]);
@@ -233,8 +233,8 @@ test('Choose what to move suggests enough to fit, from the bottom up, never an I
   assert.deepEqual(suggestMoves([todo('a', { minutes: 60, important: true }), todo('b')], 30), [], 'Important and unestimated to-dos are never suggested');
   assert.deepEqual(suggestMoves(work, 1000), ['t2', 't3', 't4', 't5', 't6'], 'everything but the Important one, when even that won’t fit');
   assert.deepEqual(moveState(work, ['t5', 't6'], 45), { still: 0, line: 'That fits your day.', button: 'Move 2 to tomorrow', count: 2 });
-  assert.deepEqual(moveState(work, ['t6'], 45), { still: 30, line: 'Still 30 min over.', button: 'Move 1 to tomorrow', count: 1 });
-  assert.equal(moveState(work, [], 45).line, 'Still 45 min over.');
+  assert.deepEqual(moveState(work, ['t6'], 45), { still: 30, line: 'Still 30 minutes over.', button: 'Move 1 to tomorrow', count: 1 });
+  assert.equal(moveState(work, [], 45).line, 'Still 45 minutes over.');
 });
 
 test('capacity: coaching hours this week against the target, and a week over it', () => {

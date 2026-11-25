@@ -14,6 +14,7 @@ import {
 } from '../../lib/coach/crm';
 import { TextLink, useCoachPortal } from './parts';
 import { SAVE_PROBLEM, useLeadActions, useLeadData } from './leadParts';
+import { countWords } from '../../lib/coach/numbers';
 
 // The Leads pages' panels (M11 seq 77): Add lead, Edit details, Log a call
 // with what you learned, Add note, Where a lead is, Mark as cold, Edit
@@ -452,7 +453,7 @@ export function ExportLeadsPanel({ open, onClose, shown }) {
     const name = exportName('Leads', todayKey);
     if (format === 'csv') download(`${name}.csv`, `﻿${leadsCsv(list, ctx, todayKey)}`, 'text/csv;charset=utf-8');
     else download(`${name}.xlsx`, xlsxBytes(leadExportRows(list, ctx, todayKey), 'Leads'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    logActivity(userId, coach, 'export', `exported ${list.length} ${list.length === 1 ? 'lead' : 'leads'} to a spreadsheet.`);
+    logActivity(userId, coach, 'export', `exported ${countWords(list.length, 'lead')} to a spreadsheet.`);
     toast.show('Downloaded');
     onClose();
   };

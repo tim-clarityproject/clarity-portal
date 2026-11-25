@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { idFromAddress } from '../../lib/coach/address';
 import SuggestQuestionPanel from './SuggestQuestionPanel';
 import { AddButton, Button, Crosshair, Dropdown, InlineChoice, Loading, PageHeader, SearchField, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
@@ -21,6 +22,7 @@ import { Back, Detail, EditCell, Eye, Fold, InlineLink, Line, TextLink, Timeline
 import { AddSessionPanel, SessionRows } from './sessionParts';
 import { QuickAddPanel, TodoList, TodoPanel } from './todoParts';
 import { currentEngagement } from './clientData';
+import { findClientShare } from '../../lib/coach/clientShare';
 import { agreementFold, agreementSections, moneyTimeline } from '../../lib/coach/agreements';
 import { signingWords } from '../../lib/billing/agreementText';
 import { coachZoneOf } from '../../lib/coach/calendar';
@@ -28,6 +30,7 @@ import { deviceZone } from '../../lib/time';
 import { TagsPanel } from './ClientPanels';
 import { FieldPanel } from './Settings';
 import NameNote from './NameNote';
+import { countFigure, countWords } from '../../lib/coach/numbers';
 
 // A client's page (M11: Sam, Leo, Marcus, Priya and Jordan). Overview is
 // the Mission, the next session (run 3), sessions to go, then folding
@@ -145,7 +148,7 @@ function AboutPanel({ open, onClose, profile, about }) {
 
 // ---------------------------------------------------------------- the page
 export default function ClientPage() {
-  const { id } = useParams();
+  const id = idFromAddress(useParams().id); // any case in the address (tidy follow-up 4)
   const navigate = useNavigate();
   const toast = useToast();
   const done = useDone();
@@ -171,7 +174,7 @@ export default function ClientPage() {
   const [kind, setKind] = useState('all');
   const [q, setQ] = useState('');
   const [over, setOver] = useState(false);
-  const [shared, setShared] = useState(null);
+  const [share, setShare] = useState({ for: null, shared: null });
   const [openTodo, setOpenTodo] = useState(null);
   const [briefId, setBriefId] = useState(null);
   const [briefAsked, setBriefAsked] = useState(false);
@@ -213,16 +216,29 @@ export default function ClientPage() {
     };
   }, [state, profile, coach.id]);
 
-  // What the client shares (their Mission, their latest week score), through the checked function of 032.
+  // What the client shares (their Mission, their latest week score), through the checked function of 032. The
+  // Overview waits for it, so the Mission card and the score never push the page down once drawn (tidy follow-up 4,
+  // part 2, item 1); the device's copy draws it at once on a return visit and is refreshed quietly.
   const linked = profile?.user_id || null;
+  const shareKey = deviceKey('cache', userId, 'coach-client-shares');
+  const keptShares = useMemo(() => readJson(shareKey) || {}, [shareKey]);
+  const keptShare = linked && Object.prototype.hasOwnProperty.call(keptShares, linked) ? keptShares[linked] : undefined;
+  const shareKnown = !linked || share.for === linked || keptShare !== undefined;
+  const shared = !linked ? null : share.for === linked ? share.shared : keptShare ?? null;
+  const shareName = profile?.name || '';
   useEffect(() => {
-    if (!linked) { setShared(null); return undefined; }
+    if (!linked) return undefined;
     let live = true;
-    supabase.rpc('coach_client_list', { p_coach: null, p_search: null, p_organisation: null, p_limit: 200, p_offset: 0 }).then(({ data: rows }) => {
-      if (live) setShared((rows || []).find((r) => r.client_id === linked) || null);
-    });
+    findClientShare((name, args) => supabase.rpc(name, args), linked, shareName).then((r) => {
+      if (!live) return;
+      if (r.known) writeJson(shareKey, { ...(readJson(shareKey) || {}), [linked]: r.shared });
+      // Not reachable (offline): the copy stays, or nothing is shown, rather than holding the Overview.
+      const kept = (readJson(shareKey) || {})[linked];
+      setShare({ for: linked, shared: r.known ? r.shared : kept ?? null });
+    }).catch(() => { if (live) setShare({ for: linked, shared: (readJson(shareKey) || {})[linked] ?? null }); });
     return () => { live = false; };
-  }, [linked]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linked, shareKey]);
 
   const running = runningEntry(rowsOf(state, 'time_entries').filter((e) => e.coach_id === coach.id));
   const now = useEverySecond(Boolean(running));
@@ -435,7 +451,12 @@ export default function ClientPage() {
           </div>
         )}
 
-        {view === 'over' && (
+        {view === 'over' && !shareKnown && (
+          // Held until what the client shares is known, so nothing below the Mission moves once drawn (the first
+          // screen waits for it too: data-first-wait).
+          <div data-first-wait=""><Loading label={`Loading ${possessive(first)} overview`} /></div>
+        )}
+        {view === 'over' && shareKnown && (
           <div className="cc-fade" key="over">
             {shared?.mission && <div className="cc-soft"><span className="cc-soft-label">{possessive(first)} Mission</span><p>{shared.mission}</p></div>}
 
@@ -465,7 +486,7 @@ export default function ClientPage() {
 
             {(sessions || credit) && (
               <StatGroup className="cc-stats">
-                {sessions && <Stat label="Coaching sessions to go" value={`${sessions.left} of ${sessions.total}`} bar={sessions.total ? sessions.left / sessions.total : 0} />}
+                {sessions && <Stat label="Coaching sessions to go" value={`${countFigure(sessions.left)} of ${countFigure(sessions.total)}`} bar={sessions.total ? sessions.left / sessions.total : 0} />}
                 {credit && <Stat label="Time credit left" value={minutesWords(credit.left)} bar={credit.total ? credit.left / credit.total : 0} />}
               </StatGroup>
             )}
@@ -505,7 +526,7 @@ export default function ClientPage() {
                 )}
                 {!engagement && <p className="cc-quiet">Add an engagement to count sessions against it.</p>}
               </Fold>
-              <Fold title="Private notes" eye={<Eye sentence="Only you can see these." />} open={Boolean(folds.notes)} onToggle={() => toggle('notes')} summary={!notes.length && !loaded ? '' : `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}${pinned.length ? `, ${pinned.length} pinned` : ''}`}>
+              <Fold title="Private notes" eye={<Eye sentence="Only you can see these." />} open={Boolean(folds.notes)} onToggle={() => toggle('notes')} summary={!notes.length && !loaded ? '' : `${countWords(notes.length, 'note')}${pinned.length ? `, ${countFigure(pinned.length)} pinned` : ''}`}>
                 {notes.map((n) => (
                   <Line key={n.id} title={n.pinned ? 'Pinned' : dayWords(n.noted_on, todayKey)} small={n.body}>
                     <span className="cc-line-actions">
@@ -525,7 +546,7 @@ export default function ClientPage() {
                 {myTodos.length > 0 && <TodoList todos={myTodos} view="list" label={`Your to-dos for ${first}`} onOpen={setOpenTodo} />}
                 <div className="cc-add"><AddButton onClick={() => setPanel('todo')}>Add to-do</AddButton></div>
               </Fold>
-              <Fold title="Files" eye={<Eye sentence={`You and ${first} can see these.`} shared />} open={Boolean(folds.files)} onToggle={() => toggle('files')} summary={`${files.length} ${files.length === 1 ? 'file' : 'files'}`}>
+              <Fold title="Files" eye={<Eye sentence={`You and ${first} can see these.`} shared />} open={Boolean(folds.files)} onToggle={() => toggle('files')} summary={countWords(files.length, 'file')}>
                 {files.map((f) => (
                   <Line key={f.id} title={f.name} small={`Added by ${f.added_by === 'client' ? first : 'you'}, ${dayWords(String(f.created_at).slice(0, 10), todayKey)}`}>
                     <span className="cc-line-actions">
@@ -561,71 +582,77 @@ export default function ClientPage() {
                   )}
                 </Fold>
               )}
-              <Fold title="Engagement" open={Boolean(folds.eng)} onToggle={() => toggle('eng')} summary={engagementWords}>
-                {engagement ? (
-                  <>
-                    <Detail label="Kind">{ENGAGEMENT_KINDS.find((k) => k.value === engagement.kind)?.label}</Detail>
-                    {engagement.name && <Detail label="Name">{engagement.name}</Detail>}
-                    {sessions && <Detail label="Coaching sessions">{`${sessions.total} of ${engagement.default_minutes} minutes${engagement.every_weeks ? `, every ${engagement.every_weeks === 1 ? 'week' : `${engagement.every_weeks} weeks`}` : ''}`}</Detail>}
-                    {credit && <Detail label="Time credit">{`${minutesWords(credit.total)}, ${minutesWords(credit.left)} left`}</Detail>}
-                    {engagement.funded_by && <Detail label="Funded by">{engagement.funded_by}</Detail>}
-                    {engagement.starts_on && <Detail label="Starts">{dayWords(engagement.starts_on, todayKey)}</Detail>}
-                    {engagement.ends_on && <Detail label="Ends">{dayWords(engagement.ends_on, todayKey)}</Detail>}
-                    <div className="cc-acts">
-                      <TextLink onClick={() => setEngDraft(draftFrom(engagement))}>Edit</TextLink>
-                      <TextLink onClick={() => setPanel('pack')}>Add session pack</TextLink>
-                      <TextLink onClick={() => done(() => saveRow(userId, 'engagements', asKept({ ...engagement, status: 'ended' })), 'Engagement ended', () => saveRow(userId, 'engagements', asKept(engagement)))}>End this engagement</TextLink>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="cc-quiet">{first} has no engagement running.</p>
-                    <div className="cc-add"><AddButton onClick={() => setEngDraft(draftFrom(null))}>Add engagement</AddButton></div>
-                  </>
-                )}
-              </Fold>
-              <Fold title={`About ${first}`} eye={<Eye sentence="Only you can see this." />} open={Boolean(folds.about)} onToggle={() => toggle('about')} summary={about?.birthday_day ? `Birthday ${birthdayWords(about.birthday_month, about.birthday_day)}` : ''}>
-                {about?.birthday_day && <Detail label="Birthday">{birthdayWords(about.birthday_month, about.birthday_day)}</Detail>}
-                {about?.partner && <Detail label="Partner">{about.partner}</Detail>}
-                {about?.children && <Detail label="Children">{about.children}</Detail>}
-                {about?.other && <Detail label="Other">{about.other}</Detail>}
-                {!about && <p className="cc-quiet">A birthday, the people who matter to them, anything you want to remember.</p>}
-                <div className="cc-acts"><TextLink onClick={() => setPanel('about')}>Edit</TextLink></div>
-              </Fold>
-              <Fold title="Details" open={Boolean(folds.det)} onToggle={() => toggle('det')} summary={tagNames.join(', ')}>
-                <Detail label="Email" edit><EditCell label="Email" value={profile.email || ''} onSave={saveText('email', (v) => isEmail(v.toLowerCase()), 'That email doesn’t look right. Check it and try again.')} /></Detail>
-                <Detail label="Mobile" edit><EditCell label="Mobile" value={profile.mobile || ''} onSave={(typed) => { const v = clean(typed).replace(/[\s()-]/g, ''); if (v && !/^\+[0-9]{6,15}$/.test(v)) { toast.show('Type the number with its country code, such as +44 7700 900123.'); return false; } save({ mobile: v || null }); return true; }} /></Detail>
-                <Detail label="Role" edit><EditCell label="Role" value={profile.job_title || ''} onSave={saveText('job_title')} /></Detail>
-                <Detail label="City" edit><EditCell label="City" value={profile.city || ''} onSave={saveText('city')} /></Detail>
-                <Detail label="Referred by" edit><EditCell label="Referred by" value={profile.referred_by || ''} onSave={saveText('referred_by')} /></Detail>
-                {fields.map((f) => {
-                  const v = fieldValue(f, values, profile.id);
-                  return <Detail key={f.id} label={f.name} edit><EditCell label={f.name} value={v} words={fieldWords(f, v, todayKey)} kind={f.kind} options={f.options || []} onSave={(typed) => saveField(f, typed)} /></Detail>;
-                })}
-                <Detail label="Tags" edit><button type="button" className={`cc-cell${tagNames.length ? '' : ' cc-cell--empty'}`} aria-label={`Tags, ${tagNames.join(', ') || 'none'}. Edit`} onClick={() => setPanel('tags')}>{tagNames.join(', ') || 'Add'}</button></Detail>
-                <div className="cc-add"><AddButton onClick={() => setField({ id: newId(), name: '', kind: 'text', optionsText: '' })}>Add field</AddButton></div>
-                <div className="cc-field"><Dropdown label="Time zone" placeholder="Choose a time zone" options={zones} value={profile.time_zone || null} onChange={(v) => save({ time_zone: v })} /></div>
-                <div className="cc-field"><SwitchRow label="Frequent traveller" note={`Session emails say the calendar invite moves with ${first}.`} checked={profile.frequent_traveller === true} onChange={(on) => save({ frequent_traveller: on })} /></div>
-                {profile.status !== 'past' && <div className="cc-field"><SwitchRow label="Paused" note="A paused client stays in your list, in the board’s Paused column." checked={profile.status === 'paused'} onChange={(on) => save({ status: on ? 'paused' : 'active' })} /></div>}
-              </Fold>
-              <Fold title="More" open={Boolean(folds.more)} onToggle={() => toggle('more')} summary="Suggest a question, view as client, close, export or delete">
-                <div className="cc-links">
-                  {profile.user_id && profile.status !== 'past' && <TextLink onClick={() => setPanel('question')}>Suggest a question</TextLink>}
-                  {profile.user_id && (!viewAsk || viewAsk.state === 'no') && <TextLink onClick={askToView}>Ask to view {possessive(first)} portal</TextLink>}
-                  {profile.status === 'past'
-                    ? <TextLink onClick={() => save({ status: 'active', ended_on: null }, `${first} is back in your clients`).then(() => setEngDraft(draftFrom(null)))}>Start a new engagement</TextLink>
-                    : <TextLink onClick={() => navigate(`/coach/clients/${profile.id}/close`)}>Start the guided close</TextLink>}
-                  <TextLink onClick={exportData}>Export {possessive(first)} data</TextLink>
-                  <TextLink onClick={() => { setTypedName(''); setDeleteProblem(null); setPanel('delete'); }}>Delete {possessive(first)} data</TextLink>
-                </div>
-                {profile.user_id && viewAsk?.state === 'yes' && <p className="cc-quiet" role="status">{first} said yes. You can view what {first} shares until {formatClockTime(viewAsk.until)}.</p>}
-                {profile.user_id && viewAsk?.state === 'asked' && <p className="cc-note" role="status">{first} has been asked, and the answer will show here.</p>}
-                {profile.user_id && viewAsk?.state === 'no' && <p className="cc-note" role="status">{first} said no.</p>}
-                {profile.user_id && <p className="cc-note">{first} is asked first. A yes lets you view for 30 minutes.</p>}
-                {isOwner && others.length > 0 && (
-                  <div className="cc-field"><Dropdown label="Move to a coach" placeholder="Choose a coach" options={others.map((c) => ({ value: c.coach_id, label: c.full_name || c.first_name }))} value={null} onChange={move} /></div>
-                )}
-              </Fold>
+              {/* On a first visit the agreement is read with the rest: the folds after it wait with it, so its place
+                  going when there is none never moves a fold drawn under it (tidy follow-up 4, part 2, item 1). */}
+              {!agreementLoading && (
+                <>
+                <Fold title="Engagement" open={Boolean(folds.eng)} onToggle={() => toggle('eng')} summary={engagementWords}>
+                  {engagement ? (
+                    <>
+                      <Detail label="Kind">{ENGAGEMENT_KINDS.find((k) => k.value === engagement.kind)?.label}</Detail>
+                      {engagement.name && <Detail label="Name">{engagement.name}</Detail>}
+                      {sessions && <Detail label="Coaching sessions">{`${sessions.total} of ${engagement.default_minutes} minutes${engagement.every_weeks ? `, every ${engagement.every_weeks === 1 ? 'week' : `${engagement.every_weeks} weeks`}` : ''}`}</Detail>}
+                      {credit && <Detail label="Time credit">{`${minutesWords(credit.total)}, ${minutesWords(credit.left)} left`}</Detail>}
+                      {engagement.funded_by && <Detail label="Funded by">{engagement.funded_by}</Detail>}
+                      {engagement.starts_on && <Detail label="Starts">{dayWords(engagement.starts_on, todayKey)}</Detail>}
+                      {engagement.ends_on && <Detail label="Ends">{dayWords(engagement.ends_on, todayKey)}</Detail>}
+                      <div className="cc-acts">
+                        <TextLink onClick={() => setEngDraft(draftFrom(engagement))}>Edit</TextLink>
+                        <TextLink onClick={() => setPanel('pack')}>Add session pack</TextLink>
+                        <TextLink onClick={() => done(() => saveRow(userId, 'engagements', asKept({ ...engagement, status: 'ended' })), 'Engagement ended', () => saveRow(userId, 'engagements', asKept(engagement)))}>End this engagement</TextLink>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="cc-quiet">{first} has no engagement running.</p>
+                      <div className="cc-add"><AddButton onClick={() => setEngDraft(draftFrom(null))}>Add engagement</AddButton></div>
+                    </>
+                  )}
+                </Fold>
+                <Fold title={`About ${first}`} eye={<Eye sentence="Only you can see this." />} open={Boolean(folds.about)} onToggle={() => toggle('about')} summary={about?.birthday_day ? `Birthday ${birthdayWords(about.birthday_month, about.birthday_day)}` : ''}>
+                  {about?.birthday_day && <Detail label="Birthday">{birthdayWords(about.birthday_month, about.birthday_day)}</Detail>}
+                  {about?.partner && <Detail label="Partner">{about.partner}</Detail>}
+                  {about?.children && <Detail label="Children">{about.children}</Detail>}
+                  {about?.other && <Detail label="Other">{about.other}</Detail>}
+                  {!about && <p className="cc-quiet">A birthday, the people who matter to them, anything you want to remember.</p>}
+                  <div className="cc-acts"><TextLink onClick={() => setPanel('about')}>Edit</TextLink></div>
+                </Fold>
+                <Fold title="Details" open={Boolean(folds.det)} onToggle={() => toggle('det')} summary={tagNames.join(', ')}>
+                  <Detail label="Email" edit><EditCell label="Email" value={profile.email || ''} onSave={saveText('email', (v) => isEmail(v.toLowerCase()), 'That email doesn’t look right. Check it and try again.')} /></Detail>
+                  <Detail label="Mobile" edit><EditCell label="Mobile" value={profile.mobile || ''} onSave={(typed) => { const v = clean(typed).replace(/[\s()-]/g, ''); if (v && !/^\+[0-9]{6,15}$/.test(v)) { toast.show('Type the number with its country code, such as +44 7700 900123.'); return false; } save({ mobile: v || null }); return true; }} /></Detail>
+                  <Detail label="Role" edit><EditCell label="Role" value={profile.job_title || ''} onSave={saveText('job_title')} /></Detail>
+                  <Detail label="City" edit><EditCell label="City" value={profile.city || ''} onSave={saveText('city')} /></Detail>
+                  <Detail label="Referred by" edit><EditCell label="Referred by" value={profile.referred_by || ''} onSave={saveText('referred_by')} /></Detail>
+                  {fields.map((f) => {
+                    const v = fieldValue(f, values, profile.id);
+                    return <Detail key={f.id} label={f.name} edit><EditCell label={f.name} value={v} words={fieldWords(f, v, todayKey)} kind={f.kind} options={f.options || []} onSave={(typed) => saveField(f, typed)} /></Detail>;
+                  })}
+                  <Detail label="Tags" edit><button type="button" className={`cc-cell${tagNames.length ? '' : ' cc-cell--empty'}`} aria-label={`Tags, ${tagNames.join(', ') || 'none'}. Edit`} onClick={() => setPanel('tags')}>{tagNames.join(', ') || 'Add'}</button></Detail>
+                  <div className="cc-add"><AddButton onClick={() => setField({ id: newId(), name: '', kind: 'text', optionsText: '' })}>Add field</AddButton></div>
+                  <div className="cc-field"><Dropdown label="Time zone" placeholder="Choose a time zone" options={zones} value={profile.time_zone || null} onChange={(v) => save({ time_zone: v })} /></div>
+                  <div className="cc-field"><SwitchRow label="Frequent traveller" note={`Session emails say the calendar invite moves with ${first}.`} checked={profile.frequent_traveller === true} onChange={(on) => save({ frequent_traveller: on })} /></div>
+                  {profile.status !== 'past' && <div className="cc-field"><SwitchRow label="Paused" note="A paused client stays in your list, in the board’s Paused column." checked={profile.status === 'paused'} onChange={(on) => save({ status: on ? 'paused' : 'active' })} /></div>}
+                </Fold>
+                <Fold title="More" open={Boolean(folds.more)} onToggle={() => toggle('more')} summary="Suggest a question, view as client, close, export or delete">
+                  <div className="cc-links">
+                    {profile.user_id && profile.status !== 'past' && <TextLink onClick={() => setPanel('question')}>Suggest a question</TextLink>}
+                    {profile.user_id && (!viewAsk || viewAsk.state === 'no') && <TextLink onClick={askToView}>Ask to view {possessive(first)} portal</TextLink>}
+                    {profile.status === 'past'
+                      ? <TextLink onClick={() => save({ status: 'active', ended_on: null }, `${first} is back in your clients`).then(() => setEngDraft(draftFrom(null)))}>Start a new engagement</TextLink>
+                      : <TextLink onClick={() => navigate(`/coach/clients/${profile.id}/close`)}>Start the guided close</TextLink>}
+                    <TextLink onClick={exportData}>Export {possessive(first)} data</TextLink>
+                    <TextLink onClick={() => { setTypedName(''); setDeleteProblem(null); setPanel('delete'); }}>Delete {possessive(first)} data</TextLink>
+                  </div>
+                  {profile.user_id && viewAsk?.state === 'yes' && <p className="cc-quiet" role="status">{first} said yes. You can view what {first} shares until {formatClockTime(viewAsk.until)}.</p>}
+                  {profile.user_id && viewAsk?.state === 'asked' && <p className="cc-note" role="status">{first} has been asked, and the answer will show here.</p>}
+                  {profile.user_id && viewAsk?.state === 'no' && <p className="cc-note" role="status">{first} said no.</p>}
+                  {profile.user_id && <p className="cc-note">{first} is asked first. A yes lets you view for 30 minutes.</p>}
+                  {isOwner && others.length > 0 && (
+                    <div className="cc-field"><Dropdown label="Move to a coach" placeholder="Choose a coach" options={others.map((c) => ({ value: c.coach_id, label: c.full_name || c.first_name }))} value={null} onChange={move} /></div>
+                  )}
+                </Fold>
+                </>
+              )}
             </div>
           </div>
         )}

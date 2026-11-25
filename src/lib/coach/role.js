@@ -13,6 +13,8 @@ import { openingRole } from './earlyScreen';
 // signal; a fresh answer replaces it whenever the database gives one.
 
 const keyFor = (userId) => deviceKey('cache', userId, 'coach-role');
+/** How long before a role read that got no answer is asked once more. */
+export const ROLE_RETRY_MS = 1000;
 
 /** The signed-in person's coach row, or null when they aren't an active coach. */
 export async function loadCoachRole(userId) {
@@ -23,7 +25,8 @@ export async function loadCoachRole(userId) {
 }
 
 /**
- * @returns {{ loading: boolean, coach: object|null, isOwner: boolean, userId: string|null, reload: () => void }}
+ * @returns {{ loading: boolean, coach: object|null, failed: boolean, isOwner: boolean, userId: string|null, reload: () => void, retry: () => void }}
+ * `failed`: no answer twice and none kept on this device, so it isn't known whether this is a coach.
  */
 export function useCoachRole() {
   const { user } = useContext(AuthContext);
@@ -39,15 +42,22 @@ export function useCoachRole() {
   useEffect(() => {
     if (!userId) return undefined;
     let live = true;
-    loadCoachRole(userId).then((coach) => {
+    let timer = null;
+    // A read that gets no answer is asked once more a moment later (tidy follow-up 4, part 2, item 6).
+    const again = () => new Promise((resolve, reject) => {
+      timer = setTimeout(() => { if (live) loadCoachRole(userId).then(resolve, reject); else reject(new Error('gone')); }, ROLE_RETRY_MS);
+    });
+    loadCoachRole(userId).catch(again).then((coach) => {
       if (!live) return;
       writeJson(keyFor(userId), { coach });
       setState({ loading: false, coach });
     }).catch(() => {
-      // No answer (offline): the device's last answer stands; with none, not a coach.
-      if (live) setState((s) => (s.loading ? { loading: false, coach: null } : s));
+      // Still no answer (offline, or the database didn't answer): the device's last answer stands. With none, the coach
+      // portal says it didn't load, with Try again (`failed`): never "not a coach", which sent a coach to the clients'
+      // Home on a first visit (tidy follow-up 4, part 2, item 6).
+      if (live) setState((s) => (s.loading ? { loading: false, coach: null, failed: true } : s));
     });
-    return () => { live = false; };
+    return () => { live = false; clearTimeout(timer); };
   }, [userId, turn]);
   // Another tab's fresh answer (capacity edited there, say) shows here too, with nothing asked of the database.
   useEffect(() => {
@@ -60,5 +70,10 @@ export function useCoachRole() {
     window.addEventListener('storage', heard);
     return () => window.removeEventListener('storage', heard);
   }, [userId]);
-  return { ...state, isOwner: state.coach?.role === 'owner', userId, reload: () => setTurn((n) => n + 1) };
+  return {
+    ...state, failed: state.failed === true, isOwner: state.coach?.role === 'owner', userId,
+    reload: () => setTurn((n) => n + 1),
+    // Try again, from the coach portal's calm error: the turning crosshair while it asks again.
+    retry: () => { setState((s) => (s.failed ? { loading: true, coach: null } : s)); setTurn((n) => n + 1); },
+  };
 }

@@ -13,6 +13,7 @@ import {
 import { useFinance } from './financeParts';
 import { Eye, InlineLink, Line, TextLink, useCoachPortal } from './parts';
 import './today.css';
+import { countFigure } from '../../lib/coach/numbers';
 
 // Today's panels (Phase 6a run 2, step 3; M11): Plan my day, the over-full
 // day, Choose what to move, Close the day, the Weekly review and Rate my
@@ -123,7 +124,7 @@ export function CapacityFigures({ sessions, target, todayKey, hoursLabel = 'Coac
         <span className="ds-sr">{cap.spoken}.</span>
         <div aria-hidden="true"><Stat label={hoursLabel} value={cap.words} unit={cap.overWords || undefined} bar={cap.percent / 100} /></div>
       </div>
-      <Stat label={callsLabel} value={String(cap.calls)} />
+      <Stat label={callsLabel} value={countFigure(cap.calls)} />
     </Figures>
   );
 }
@@ -316,7 +317,7 @@ export function PlanPanel({ open, onClose }) {
               ))}
             </div>
           )}
-          {!all && upcoming.length > SHOW_FIRST && <div className="cc-acts"><TextLink onClick={() => setAll(true)}>Show all {upcoming.length}</TextLink></div>}
+          {!all && upcoming.length > SHOW_FIRST && <div className="cc-acts"><TextLink onClick={() => setAll(true)}>Show all {countFigure(upcoming.length)}</TextLink></div>}
           <OverLine over={load.over} />
         </>
       ),
@@ -478,8 +479,8 @@ export function ClosePanel({ open, onClose }) {
       nudge: done.line,
       body: (
         <Figures label="What got done">
-          <Stat label="Calls today" value={String(done.calls)} />
-          <Stat label="To-dos done" value={String(done.done)} />
+          <Stat label="Calls today" value={countFigure(done.calls)} />
+          <Stat label="To-dos done" value={countFigure(done.done)} />
         </Figures>
       ),
     },
@@ -623,15 +624,15 @@ export function ReviewPanel({ open, onClose }) {
       body: (
         <>
           <Figures label="What got done">
-            <Stat label="To-dos done" value={String(week.todosDone.length)} />
-            <Stat label="Recaps sent" value={String(week.recapsSent)} />
+            <Stat label="To-dos done" value={countFigure(week.todosDone.length)} />
+            <Stat label="Recaps sent" value={countFigure(week.recapsSent)} />
           </Figures>
           {week.todosDone.length > 0 && (
             <div className="cc-today-list cc-today-list--after" role="list" aria-label="To-dos done this week">
               {doneShown.map((t) => <StillRow key={t.id} title={t.title} facts={[doneWords(t, todayKey)]} />)}
             </div>
           )}
-          {!allDone && week.todosDone.length > DONE_FIRST && <div className="cc-acts"><TextLink onClick={() => setAllDone(true)}>Show all {week.todosDone.length}</TextLink></div>}
+          {!allDone && week.todosDone.length > DONE_FIRST && <div className="cc-acts"><TextLink onClick={() => setAllDone(true)}>Show all {countFigure(week.todosDone.length)}</TextLink></div>}
         </>
       ),
     },

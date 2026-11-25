@@ -1,31 +1,25 @@
-import { Fragment, lazy, Suspense, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { BoldCrosshair, Loading, PageHeader, SlidePanel, useBackCloses, useHidePhoneBar, useIsPhone, useToast } from '../../components/design';
-import { isPhoneWidth } from '../../components/design/pageLock';
+import { BoldCrosshair, Button, ErrorMessage, Loading, PageHeader, SlidePanel, useHidePhoneBar, useIsPhone, useToast } from '../../components/design';
+import { useOnline } from '../../lib/connection';
 import { useSignOut } from '../../components/SignOut';
 import { getLocalDateKey } from '../../lib/dateFormatter';
-import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { useCoachRole } from '../../lib/coach/role';
-import { findCalItems, fromTable, rowsOf, saveRows, screenKindOf, sessionsOlder, useCoachCopyShown, useCoachLoad, useCoachPartial, useCoachSomethingToShow, useCoachStore } from '../../lib/coach/store';
+import { fromTable, rowsOf, saveRows, screenKindOf, sessionsOlder, useCoachCopyShown, useCoachLoad, useCoachPartial, useCoachSomethingToShow, useCoachStore } from '../../lib/coach/store';
 import { loadAdminClients, loadCoaches } from '../../lib/coach/actions';
 import { takeFinanceOpening } from '../../lib/coach/earlyScreen';
 import { deviceCopyAvailable, readExtra, writeExtra } from '../../lib/coach/deviceCopy';
-import { callForBar, favouriteViews, nextCallBar, searchResults, withRecent } from '../../lib/coach/model';
-import { COACH_PAGES, coachTitle, menuFor, SETTINGS_SECTIONS } from '../../lib/coach/navigation';
+import { callForBar, nextCallBar } from '../../lib/coach/model';
+import { COACH_PAGES, coachTitle } from '../../lib/coach/navigation';
 import { testCalls } from '../../lib/coach/calls';
-import { todayTodos } from '../../lib/coach/day';
-import { barCalls, coachZoneOf, searchItems } from '../../lib/coach/calendar';
-import { boardSearchItems, boardsFor, LEAD_SEARCH_ACTIONS, leadSearchItems } from '../../lib/coach/crm';
+import { barCalls, coachZoneOf } from '../../lib/coach/calendar';
 // Network's people are moved across before anything that points at one (a lead's Referred by): the module says so to the
 // store as it loads, so it is loaded with the frame, whichever page opens first.
-import { networkPageOf } from '../../lib/coach/networkData';
-import { menuCount, NETWORK_SEARCH_ACTIONS, networkSearchItems, searchQuery } from '../../lib/coach/network';
-import { useNetworkCounts } from './networkParts';
+import '../../lib/coach/networkData';
 import { deviceZone } from '../../lib/time/index.js';
 import { CoachPortalContext, InlineLink, TextLink, useCoachPortal, useGreyLines } from './parts';
 import { CalSync } from './calSync';
-import { AutomationWatch, EmailSync } from './crmParts';
 import './coach.css';
 
 // Clarity Coach, the coach portal (Phase 6a runs 1 and 2; mock-up M11, seq
@@ -50,9 +44,17 @@ function part(load) {
   };
   const Lazy = lazy(get);
   function Page(props) {
-    // Decided once, when the page first shows, so it never swaps between the two (which would start it again).
-    const [Ready] = useState(() => Loaded);
-    return Ready ? <Ready {...props} /> : <Lazy {...props} />;
+    // A page whose part is still on its way draws nothing until it arrives, then itself, never through Suspense: the
+    // frame now often shows before the page's part is in, and Suspense held the page back a further 300 ms after it
+    // came (tidy follow-up 4, part 1). A part that won't load is handed to Suspense (Lazy), which reloads as before.
+    const [Ready, setReady] = useState(() => Loaded);
+    useEffect(() => {
+      if (Ready) return undefined;
+      let live = true;
+      get().then(() => { if (live) setReady(() => Loaded); }, () => { if (live) setReady(() => Lazy); });
+      return () => { live = false; };
+    }, [Ready]);
+    return Ready ? <Ready {...props} /> : null;
   }
   Page.preload = get;
   return Page;
@@ -83,6 +85,26 @@ const OpenForCalls = part(() => import('./OpenForCalls'));
 const PollPage = part(() => import('./PollPage'));
 const Finances = part(() => import('./Finances'));
 const BriefPanel = lazy(() => import('./Brief').then((m) => ({ default: m.BriefPanel || m.default })));
+// The menu and search (frameParts.jsx), and the automations and emails arriving (crmParts.jsx, the owner's): their own
+// parts, asked for once the frame has drawn, so a first visit never waits for search's index, the CRM's code or
+// Network's counts before the frame and its page show (tidy follow-up 4, part 1, item 1).
+const frameParts = () => import('./frameParts');
+const Menu = lazy(() => frameParts().then((m) => ({ default: m.Menu })));
+const Search = lazy(() => frameParts().then((m) => ({ default: m.Search })));
+const crmParts = () => import('./crmParts');
+const AutomationWatch = lazy(() => crmParts().then((m) => ({ default: m.AutomationWatch })));
+const EmailSync = lazy(() => crmParts().then((m) => ({ default: m.EmailSync })));
+
+/** True once the frame has drawn (a frame, then a turn), so what can wait is asked for only then. */
+function useAfterFrame() {
+  const [after, setAfter] = useState(false);
+  useEffect(() => {
+    let timer = null;
+    const frame = window.requestAnimationFrame(() => { timer = window.setTimeout(() => setAfter(true), 0); });
+    return () => { window.cancelAnimationFrame(frame); window.clearTimeout(timer); };
+  }, []);
+  return after;
+}
 
 // The first screen's page for the address the portal opens on (Today, Clients, a client's page, the calendar or Finances).
 if (typeof window !== 'undefined') {
@@ -150,272 +172,6 @@ export function CallBar({ calls, now }) {
         </div>
       </div>
       {brief}
-    </>
-  );
-}
-
-/**
- * The menu and search cover the page on a phone and sit over it on a laptop: once closed (Back, Escape, the close button or
- * the scrim), focus goes back to what opened them, as the shared panels do, unless it has moved to another page meanwhile or
- * something else already took it (run 6, the UI tester: focus was left on the page's body).
- */
-function useFocusBack(open) {
-  const { pathname } = useLocation();
-  const opener = useRef(null);
-  useLayoutEffect(() => {
-    if (!open) return undefined;
-    const from = document.activeElement;
-    const at = pathname;
-    opener.current = from && from !== document.body ? from : null;
-    return () => {
-      const el = opener.current;
-      setTimeout(() => {
-        const now = document.activeElement;
-        if (!el || !el.isConnected || window.location.pathname !== at) return;
-        if (!now || now === document.body || now === document.documentElement) el.focus({ preventScroll: true });
-      }, 0);
-    };
-    // Recorded once per opening: the address it opened on is read as it opens.
-  }, [open]);
-}
-
-function Menu({ open, onClose, onSignOut }) {
-  const { isOwner, views, todos, todoLists, todayKey, boards } = useCoachPortal();
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const navRef = useRef(null);
-  // Network shows how many people are due a catch-up (the owner's alone; asked only while the menu is open).
-  const due = menuCount(useNetworkCounts(open).data);
-  // On a phone the menu covers the page: Back closes it (run 6, item 4).
-  useBackCloses(open, onClose, isPhoneWidth());
-  useFocusBack(open);
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    navRef.current?.querySelector('[aria-current="page"], button')?.focus({ preventScroll: true });
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
-  // Worked out when the to-dos change, never as the menu opens (scale check, 22 Nov: opening took 0.3 s for the owner).
-  const todosToday = useMemo(() => todayTodos(todos, todayKey).work.length, [todos, todayKey]); // the working day only, as M11 counts it: After work sits apart
-  const lists = useMemo(() => todoLists.filter((l) => !l.finished_at), [todoLists]);
-  const menuBoards = useMemo(() => boardsFor(boards, { isOwner }), [boards, isOwner]);
-  const favourites = useMemo(() => favouriteViews(views).filter((v) => v.list !== 'leads' || isOwner), [views, isOwner]);
-  if (!open) return null;
-  const go = (to) => { onClose(); navigate(to); };
-  // Boards: the owner's own under it; an associate has the page only once a board is shared with them.
-  const items = menuFor({ isOwner, live: LIVE, hasShared: menuBoards.length > 0 });
-  const current = (to) => (to === '/coach' ? pathname === '/coach' : pathname === to || pathname.startsWith(`${to}/`));
-  // To-dos shows how many are for today, with the coach's own lists under it (M11's menu).
-  return (
-    <>
-      <div className="cc-scrim cc-scrim--menu" onClick={onClose} aria-hidden="true" />
-      <nav className="cc-menu" aria-label="Menu">
-        <div className="cc-menu-head">
-          <button type="button" className="cc-round cc-round--mark" aria-expanded="true" aria-label="Close the menu" onClick={onClose}>
-            <BoldCrosshair size={26} />
-          </button>
-        </div>
-        <div className="cc-menu-nav" ref={navRef}>
-          {items.filter((i) => i.key !== 'settings').map((i) => (i.key === 'boards' ? (
-            <Fragment key={i.key}>
-              <button type="button" className="cc-menu-item" aria-current={pathname === i.to ? 'page' : undefined} onClick={() => go(i.to)}>{i.label}</button>
-              {menuBoards.map((b) => (
-                <button key={b.id} type="button" className="cc-menu-item cc-menu-item--sub" aria-current={pathname === `/coach/boards/${b.id}` ? 'page' : undefined} onClick={() => go(`/coach/boards/${b.id}`)}>{b.name}</button>
-              ))}
-            </Fragment>
-          ) : i.key === 'network' ? (
-            <button key={i.key} type="button" className="cc-menu-item" aria-current={current(i.to) ? 'page' : undefined} aria-label={due.spoken ? `Network, ${due.spoken}` : undefined} onClick={() => go(i.to)}>
-              {i.label}{due.count && <span className="cc-menu-n" aria-hidden="true">{due.count}</span>}
-            </button>
-          ) : i.key !== 'todos' ? (
-            <button key={i.key} type="button" className="cc-menu-item" aria-current={current(i.to) ? 'page' : undefined} onClick={() => go(i.to)}>{i.label}</button>
-          ) : (
-            <Fragment key={i.key}>
-              <button type="button" className="cc-menu-item" aria-current={pathname === i.to ? 'page' : undefined} aria-label={todosToday ? `To-dos, ${todosToday} for today` : undefined} onClick={() => go(i.to)}>
-                {i.label}{todosToday > 0 && <span className="cc-menu-n" aria-hidden="true">{todosToday}</span>}
-              </button>
-              {lists.map((l) => (
-                <button key={l.id} type="button" className="cc-menu-item cc-menu-item--sub" aria-current={pathname === `/coach/todos/lists/${l.id}` ? 'page' : undefined} onClick={() => go(`/coach/todos/lists/${l.id}`)}>{l.name}</button>
-              ))}
-            </Fragment>
-          )))}
-          {favourites.length > 0 && <p className="cc-menu-label">Favourite views</p>}
-          {favourites.map((v) => (
-            <button key={v.id} type="button" className="cc-menu-item" onClick={() => go(`/coach/${v.list === 'leads' ? 'leads' : 'clients'}?view=${v.id}`)}>{v.name}</button>
-          ))}
-          <button type="button" className="cc-menu-item" aria-current={current('/coach/settings') ? 'page' : undefined} onClick={() => go('/coach/settings')}>Settings</button>
-        </div>
-        <div className="cc-menu-foot">
-          <button type="button" className="cc-menu-item cc-menu-item--out" onClick={() => { onClose(); onSignOut(); }}>Sign out</button>
-        </div>
-      </nav>
-    </>
-  );
-}
-
-/** One box finds people, pages and actions as it is typed, with recent items before anything is typed. */
-function Search({ open, onClose }) {
-  const { userId, isOwner, clients, groups, workshops, organisations, admin, adminReady, coaches, coach, calItems, calGuests, settings, todayKey, leads, leadStages, boards, partial } = useCoachPortal();
-  const navigate = useNavigate();
-  const toast = useToast();
-  const [q, setQ] = useState('');
-  const [at, setAt] = useState(0);
-  const inputRef = useRef(null);
-  const listRef = useRef(null);
-  const recentKey = deviceKey('cache', userId, 'coach-recent');
-  // On a phone search covers the page: Back closes it (run 6, item 4).
-  useBackCloses(open, onClose, isPhoneWidth());
-  useFocusBack(open);
-  // Read as the box opens, in the same render (a state set after opening drew it twice: scale check, 22 Nov).
-  const recent = useMemo(() => {
-    if (!open) return [];
-    const kept = readJson(recentKey);
-    return Array.isArray(kept) ? kept : [];
-  }, [open, recentKey]);
-  // Network's people are never loaded whole: search asks for the few that match, as it is typed (the owner's alone).
-  const [network, setNetwork] = useState([]);
-  useEffect(() => {
-    const typed = q.trim();
-    if (!open || !isOwner || typed.length < 2) { setNetwork([]); return undefined; }
-    let live = true;
-    const timer = setTimeout(() => {
-      Promise.all([networkPageOf(userId, searchQuery(typed, todayKey)), networkPageOf(userId, searchQuery(typed, todayKey, true))])
-        .then(([active, archived]) => { if (live) setNetwork(networkSearchItems([...active.rows, ...archived.rows])); }).catch(() => { if (live) setNetwork([]); });
-    }, 200);
-    return () => { live = false; clearTimeout(timer); };
-  }, [q, open, isOwner, userId, todayKey]);
-  // Each opening starts empty and takes the keyboard at once, before anything
-  // can be typed: the first letter is never lost, nor added to the last search.
-  // The box is emptied as it closes, so it opens already empty, in one render.
-  useLayoutEffect(() => {
-    if (!open) { setQ(''); setAt(0); return; }
-    inputRef.current?.focus();
-  }, [open]);
-
-  // The index is built once its data is there, quietly after the page has drawn, and again only when what it is
-  // built from changes: never as the box opens or as a letter is typed (scale check, 22 Nov: opening took 0.5 s on a
-  // laptop and 2.2 s on a phone for the owner, typing 0.7 s on a phone).
-  const [armed, setArmed] = useState(false);
-  useEffect(() => {
-    if (armed) return undefined;
-    if (open) { setArmed(true); return undefined; }
-    const idle = typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(() => setArmed(true), { timeout: 3000 }) : window.setTimeout(() => setArmed(true), 1500);
-    return () => (typeof window.cancelIdleCallback === 'function' ? window.cancelIdleCallback(idle) : window.clearTimeout(idle));
-  }, [open, armed]);
-  const people = useMemo(() => {
-    if (!armed) return [];
-    const orgNames = new Map(organisations.map((o) => [o.id, o.name]));
-    const orgName = (id) => orgNames.get(id) || '';
-    const mine = new Set(clients.map((c) => c.id));
-    return [
-      ...clients.map((p) => ({ key: `c:${p.id}`, title: p.name, kind: p.status === 'past' ? 'Past client' : 'Client', also: `${orgName(p.organisation_id)} ${p.email || ''}`, to: `/coach/clients/${p.id}` })),
-      // The owner finds associates' clients by name only, for admin.
-      ...(isOwner ? admin.filter((a) => !mine.has(a.profile_id) && a.coach_id !== coach.id).map((a) => ({ key: `a:${a.profile_id}`, title: a.name, kind: `${a.coach_first_name}’s client`, admin: a.coach_first_name })) : []),
-      ...groups.map((g) => ({ key: `g:${g.id}`, title: g.name, kind: 'Group', also: orgName(g.organisation_id), to: `/coach/groups/${g.id}` })),
-      ...workshops.map((w) => ({ key: `w:${w.id}`, title: w.title, kind: 'Workshop', also: orgName(w.organisation_id), to: `/coach/workshops/${w.id}` })),
-      ...(isOwner ? organisations.map((o) => ({ key: `o:${o.id}`, title: o.name, kind: 'Organisation', to: `/coach/organisations/${o.id}` })) : []),
-      // Leads are the owner's alone: an associate's search never finds one (run 4).
-      ...(isOwner ? leadSearchItems(leads, leadStages) : []),
-      // Boards: the owner's own; an associate finds only the ones shared with them.
-      ...boardSearchItems(boards, { isOwner }),
-    ];
-  }, [armed, clients, groups, workshops, organisations, admin, isOwner, coach, leads, leadStages, boards]);
-  const fixed = useMemo(() => ({
-    pages: [
-      ...menuFor({ isOwner, live: LIVE, hasShared: boardsFor(boards, { isOwner }).length > 0 }).map((i) => ({ key: `p:${i.key}`, title: i.label, kind: 'Page', to: i.to })),
-      ...(isOwner ? [{ key: 'p:automations', title: 'Automations', kind: 'Page', to: '/coach/leads/automations' }] : []),
-      ...SETTINGS_SECTIONS.filter((x) => !x.owner || isOwner).map((x) => ({ key: `s:${x.key}`, title: x.label, kind: 'Settings', also: 'settings', to: `/coach/settings/${x.key}` })),
-      { key: 'p:past', title: 'Past clients', kind: 'Page', to: '/coach/clients/past' },
-    ],
-    actions: [
-      { key: 'a:client', title: 'Add client', to: '/coach/clients', state: { open: 'add' } },
-      { key: 'a:team', title: 'Add team', to: '/coach/clients', state: { open: 'team' } },
-      { key: 'a:group', title: 'Add group', to: '/coach/clients?tab=groups', state: { open: 'group' } },
-      { key: 'a:workshop', title: 'Add workshop', to: '/coach/clients?tab=workshops', state: { open: 'workshop' } },
-      { key: 'a:export', title: 'Export clients to a spreadsheet', to: '/coach/clients', state: { open: 'export' } },
-      ...(isOwner ? [...LEAD_SEARCH_ACTIONS, ...NETWORK_SEARCH_ACTIONS, { key: 'a:board', title: 'New board', to: '/coach/boards', state: { open: 'board' } }, { key: 'a:automation', title: 'Add automation', to: '/coach/leads/automations', state: { open: 'add' } }] : []),
-      { key: 'a:book', title: 'Book a call', to: '/coach/calendar/book' },
-      { key: 'a:open', title: 'Set my open times', to: '/coach/calendar/open' },
-      { key: 'a:offer', title: 'Offer times by email', to: '/coach/calendar/offer' },
-      { key: 'a:poll', title: 'Start a poll', to: '/coach/calendar/polls/new' },
-      ...(coaches.length > 1 && isOwner ? [{ key: 'a:coach', title: 'Add coach', to: '/coach/settings/coaches', state: { open: 'coach' } }] : []),
-    ],
-  }), [isOwner, boards, coaches]);
-  // Calendar items, found by title, person or note; each opens its own day. The weeks on the device, and as it is
-  // typed the database's own matches from the rest of the calendar (it is never read whole).
-  const coachZone = coachZoneOf(settings, deviceZone());
-  const localItems = useMemo(() => (armed ? searchItems({ items: calItems, guests: calGuests, coachZone, todayKey }) : []), [armed, calItems, calGuests, coachZone, todayKey]);
-  const [farItems, setFarItems] = useState([]);
-  useEffect(() => {
-    const typed = q.trim();
-    if (!open || typed.length < 2) { setFarItems([]); return undefined; }
-    let live = true;
-    const timer = setTimeout(() => {
-      findCalItems(typed).then((rows) => {
-        if (!live) return;
-        const here = new Set(calItems.map((i) => i.id));
-        setFarItems(searchItems({ items: rows.filter((r) => !here.has(r.id) && r.coach_id === coach.id), guests: calGuests, coachZone, todayKey }));
-      }).catch(() => { if (live) setFarItems([]); });
-    }, 200);
-    return () => { live = false; clearTimeout(timer); };
-  }, [q, open, calItems, calGuests, coach, coachZone, todayKey]);
-  const all = useMemo(() => ({
-    people: isOwner && network.length ? [...people, ...network] : people,
-    pages: fixed.pages,
-    actions: fixed.actions,
-    recent,
-    items: farItems.length ? [...localItems, ...farItems] : localItems,
-  }), [people, network, isOwner, fixed, recent, localItems, farItems]);
-
-  const groupsShown = useMemo(() => searchResults(q, all), [q, all]);
-  const flat = groupsShown.flatMap((g) => g.items);
-  useEffect(() => { setAt(0); }, [q]);
-  useEffect(() => { listRef.current?.querySelector('.cc-jump-item--on')?.scrollIntoView({ block: 'nearest' }); }, [at]);
-  if (!open) return null;
-
-  const choose = (item) => {
-    if (!item) return;
-    onClose();
-    if (item.admin) {
-      toast.show(`${item.title} is ${item.admin}’s client, so only ${item.admin} opens their page.`);
-      return;
-    }
-    if (item.kind && item.kind !== 'Page' && item.kind !== 'Settings') writeJson(recentKey, withRecent(recent, item));
-    navigate(item.to, item.state ? { state: item.state } : undefined);
-  };
-  const onKey = (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); onClose(); }
-    if (e.key === 'ArrowDown') { e.preventDefault(); setAt((n) => Math.min(flat.length - 1, n + 1)); }
-    if (e.key === 'ArrowUp') { e.preventDefault(); setAt((n) => Math.max(0, n - 1)); }
-    if (e.key === 'Enter') { e.preventDefault(); choose(flat[at]); }
-  };
-  return (
-    <>
-      <div className="cc-scrim" onClick={onClose} aria-hidden="true" />
-      <div className="cc-jump" role="dialog" aria-modal="true" aria-label="Search">
-        <input ref={inputRef} className="cc-jump-input" type="search" aria-label="Search or type an action" placeholder="Search or type an action" autoComplete="off" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} role="combobox" aria-expanded="true" aria-controls="cc-jump-list" />
-        <div className="cc-jump-list" id="cc-jump-list" ref={listRef} role="listbox" aria-label="Results">
-          {/* Only a first screen is here yet (a first visit): what was typed is looked for once the rest is in, never
-              "Nothing matches" for someone whose row hasn't arrived (coach first screen run). */}
-          {(partial || !adminReady) && q.trim() && <Loading label="Loading your search" />}
-          {!((partial || !adminReady) && q.trim()) && groupsShown.length === 0 && <p className="cc-jump-none">Nothing matches “{q.trim()}”.</p>}
-          {!((partial || !adminReady) && q.trim()) && groupsShown.map((g) => (
-            <div key={g.label} role="group" aria-label={g.label}>
-              <p className="cc-jump-label">{g.label}</p>
-              {g.items.map((item) => {
-                const i = flat.indexOf(item);
-                return (
-                  <button key={item.key} type="button" role="option" aria-selected={i === at} className={`cc-jump-item${i === at ? ' cc-jump-item--on' : ''}`} onMouseMove={() => { if (at !== i) setAt(i); }} onClick={() => choose(item)}>
-                    <b>{item.title}</b>
-                    {item.kind && <small>{item.kind}</small>}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
     </>
   );
 }
@@ -494,6 +250,26 @@ function Blank() {
   return <div className="ui-root cc-app"><main className="cc-main cc-main--first" aria-busy="true"><Loading label="Loading Clarity Coach" className="ds-loading--page" /></main></div>;
 }
 
+/** The coach's role couldn't be read (role.js's `failed`): the calm error, with Try again. */
+function RoleProblem({ onRetry }) {
+  const online = useOnline();
+  useEffect(() => { document.title = 'Clarity Coach'; }, []);
+  return (
+    <div className="ui-root cc-app">
+      <main className="cc-main" id="cc-main">
+        <div className="cc-page">
+          <div className="cc-col cc-role-problem">
+            <ErrorMessage>{online ? ROLE_PROBLEM : ROLE_OFFLINE}</ErrorMessage>
+            <Button variant="primary" onClick={onRetry}>Try again</Button>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+const ROLE_PROBLEM = 'Clarity Coach didn’t load. Check your connection and try again.';
+const ROLE_OFFLINE = 'Clarity Coach needs a connection the first time it opens on this device, so try again when you’re back online.';
+
 /**
  * The frame round every page: the header, the call bar, the page, the phone bar, the menu, search and the bell. Its
  * own state (which of the three is open) lives here, so opening one draws only this, never the page under it nor the
@@ -506,6 +282,7 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
   const [search, setSearch] = useState(false);
   const [bell, setBell] = useState(false);
   const signOut = useSignOut({ to: '/coach/sign-in' });
+  const afterFrame = useAfterFrame();
   useEffect(() => { setMenu(false); setSearch(false); }, [pathname]);
   const closeMenu = useCallback(() => setMenu(false), []);
   const closeSearch = useCallback(() => setSearch(false), []);
@@ -540,8 +317,9 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
         <button type="button" className="cc-round cc-round--mark" aria-label={menu ? 'Close the menu' : 'Menu'} aria-expanded={menu} onClick={() => setMenu((v) => !v)}><BoldCrosshair size={32} /></button>
         <button type="button" className="cc-round" aria-label="Calendar" aria-current={pathname.startsWith('/coach/calendar') ? 'page' : undefined} onClick={() => { setMenu(false); navigate('/coach/calendar'); }}>{CALENDAR}</button>
       </nav>
-      <Menu open={menu} onClose={closeMenu} onSignOut={signOut.start} />
-      <Search open={search} onClose={closeSearch} />
+      {/* Asked for once the frame has drawn with its page, or the moment one is opened before that. */}
+      {((afterFrame && !firstLoad) || menu) && <Suspense fallback={null}><Menu open={menu} onClose={closeMenu} onSignOut={signOut.start} /></Suspense>}
+      {((afterFrame && !firstLoad) || search) && <Suspense fallback={null}><Search open={search} onClose={closeSearch} /></Suspense>}
       <Bell open={bell} onClose={closeBell} />
       {signOut.choice}
     </div>
@@ -795,6 +573,9 @@ export default function CoachApp() {
   ), [isOwner]);
 
   if (role.loading) return <Blank />;
+  // The role read got no answer, twice, and nothing is kept on this device: it isn't known whether this is a coach, so
+  // the coach portal says so calmly, with Try again, and never sends a coach to the clients' Home (tidy follow-up 4).
+  if (role.failed) return <RoleProblem onRetry={role.retry} />;
   if (!coach) return <Navigate to="/welcome" replace />;
 
   const unread = notificationsUnread;
@@ -804,8 +585,9 @@ export default function CoachApp() {
     <CoachPortalContext.Provider value={value}>
       <CalSync>
       {/* Run 4: the automations nobody presses a button for, and emails arriving (both the owner's; neither ever sends anything). */}
-      {!partial && <AutomationWatch />}
-      {!partial && <EmailSync />}
+      {/* Once everything is in (never asked for while the first screen's own read is on its way). */}
+      {value.whole && <Suspense fallback={null}><AutomationWatch /></Suspense>}
+      {value.whole && <Suspense fallback={null}><EmailSync /></Suspense>}
       {/* The device's copy first (IndexedDB, read in a moment): until it is in, the frame and the page are drawn
           unseen (their parts still load), never empty for an instant before it (UI tester, scale check). */}
       {/* While only one page's first screen is here, any other page shows the crosshair until the rest is in. */}

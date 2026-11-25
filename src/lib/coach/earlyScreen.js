@@ -1,6 +1,7 @@
 import { supabase } from '../supabase';
 import { getLocalDateKey } from '../dateFormatter';
 import { LOW_PRIORITY_HEADER } from '../connection';
+import { sendCoachAuthEarly } from '../signIn/coachAuthData';
 
 // The coach portal's opening reads, sent as the app starts (main.jsx), before the coach portal's own code has
 // arrived (coach first screen run, 24 Nov 2026). On a slowed phone that code, the sign-in check and the coach's role
@@ -8,25 +9,40 @@ import { LOW_PRIORITY_HEADER } from '../connection';
 //   - the coach's role and the five "is this migration there?" looks: plain reads that readShare.js hands to the
 //     portal's own identical reads a moment later;
 //   - a page's first screen (060's coach_first_screen), kept here for store.js's loadCoach, which takes it only for
-//     the same account, page and clients, and asks again otherwise.
+//     the same account, page and clients, and asks again otherwise;
+//   - the sign-in check itself (053's coach_auth_state and Supabase's factor list, which asks /auth/v1/user), first of
+//     all: the portal's frame waits for its answer, and it used to go out only once the portal's code had arrived
+//     (tidy follow-up 4, part 1, item 2). coachAuthData.js's loadCoachAuth takes the answers once, for this account,
+//     and reads them exactly as before; every later check asks again.
 // Nothing here is shown or kept on the device: the portal shows nothing until the sign-in check has answered (054's
 // 6-digit code rule is checked exactly as before), and every row comes under the database's own rules, which give a
-// coach without the code nothing at all. This file is small and part of the app's opening code, so it imports only the
-// client and the date key.
+// coach without the code nothing at all. This file is small and part of the app's opening code, so it imports only what
+// that code already holds: the client, the date key, the low-priority header and the sign-in check's reads.
 
 export { CAL_BACK_DAYS, DAY_MS, PROBE_TABLES, profilesOf, SCREEN_NOT_YET_KEY, screenKindOf, screenWindow, viewDays } from './screenPlan';
 import {
-  assocPieces, CAL_BACK_DAYS, DAY_MS, FINANCE_AHEAD_MS, FINANCE_BACK_MS, FINANCE_NOT_YET_KEY, FINANCE_SCREEN_TABLES, financeMinuteMonths, PROBE_TABLES,
-  profilesOf, SCREEN_NOT_YET_KEY, screenKindOf, screenWindow,
+  assocPieces, CAL_BACK_DAYS, DAY_MS, FINANCE_AHEAD_MS, FINANCE_BACK_MS, FINANCE_NOT_YET_KEY, FINANCE_SCREEN_TABLES, financeMinuteMonths, LEAN_NOT_YET_KEY,
+  PROBE_TABLES, profilesOf, SCREEN_NOT_YET_KEY, screenKindOf, screenWindow,
 } from './screenPlan';
 
 const NOT_YET_MS = 60 * 60 * 1000;
 
-/** The first screen's read, unsent: the same for the opening and for store.js. */
+/**
+ * The first screen's read: the same for the opening and for store.js. 063's coach_first_screen_lean (060's answer with
+ * its sessions trimmed to what the first screens use; store.js puts back what it left out), or, before Tim runs 063
+ * (remembered an hour), 060's coach_first_screen itself, as before.
+ */
 export function screenRead({ kind, from, to, todayKey, split, profiles }) {
-  return supabase.rpc('coach_first_screen', {
+  const args = {
     p_page: kind, p_from: new Date(from).toISOString(), p_to: new Date(to).toISOString(), p_today: todayKey,
     p_since: new Date(split).toISOString(), p_profiles: profiles,
+  };
+  if (recently(LEAN_NOT_YET_KEY)) return supabase.rpc('coach_first_screen', args);
+  return Promise.resolve(supabase.rpc('coach_first_screen_lean', args)).then((got) => {
+    const code = got?.error?.code;
+    if (!(code === 'PGRST202' || code === '42883' || got?.error?.status === 404)) return got;
+    try { window.localStorage.setItem(LEAN_NOT_YET_KEY, String(Date.now())); } catch { /* asked again next time */ }
+    return supabase.rpc('coach_first_screen', args);
   });
 }
 
@@ -66,6 +82,8 @@ export function startCoachOpening(pathname = window.location.pathname, search = 
     const userId = stored();
     if (!userId) return 0;
     const noop = () => {};
+    // The sign-in check first: the frame waits for it (ProtectedLayout's signInStop, through loadCoachAuth).
+    sendCoachAuthEarly(supabase, userId);
     // The role's answer is also kept here, so the portal's first render can use it (useCoachRole) rather than wait a
     // render for its own identical read (which readShare.js answers with this one).
     role = { userId, coach: undefined };

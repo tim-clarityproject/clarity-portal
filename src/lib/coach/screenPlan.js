@@ -10,6 +10,8 @@ export const CAL_BACK_DAYS = 42;
 /** The tables that say each coach migration is there (049, 050, 051, 052, 059, 061), in order. */
 export const PROBE_TABLES = ['client_profiles', 'coach_todos', 'coach_cal_items', 'coach_lead_stages', 'coach_google_calendars', 'agreements'];
 export const SCREEN_NOT_YET_KEY = 'clarity-coach-screen-not-yet';
+/** 063's lean first screen not there yet (remembered an hour): 060's is asked instead. */
+export const LEAN_NOT_YET_KEY = 'clarity-coach-screen-lean-not-yet';
 
 /**
  * Which page's first screen an address opens on: 'today', 'clients', 'client', 'calendar', 'finances' (the owner's

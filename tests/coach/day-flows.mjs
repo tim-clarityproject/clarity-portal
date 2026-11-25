@@ -54,7 +54,7 @@ const pick = async (page, label, option) => {
   await page.getByRole('option', { name: option, exact: true }).click(); await settle(page, 400);
 };
 const openFold = async (page, name) => { const b = page.locator('.cc-fold-btn', { hasText: name }).first(); if ((await b.getAttribute('aria-expanded')) !== 'true') { await b.click(); await settle(page, 300); } };
-/** "4 hours 30 minutes", "45 min", "1 h 15 min" as minutes. */
+/** "4 hours 30 minutes", "45 minutes", "1 hour 15 minutes" as minutes (and the older "45 min", "1 h 15 min"). */
 const minutesOf = (text) => { const h = /(\d+)\s*h(?:ours?)?\b/.exec(text); const m = /(\d+)\s*min(?:utes?)?\b/.exec(text); return (h ? Number(h[1]) * 60 : 0) + (m ? Number(m[1]) : 0); };
 const go = async (page, path) => { await page.goto(`${APP}${path}`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 1200); };
 
@@ -240,8 +240,8 @@ export async function runDay({ browser, report, parts }) {
     const byTitle = async (title) => (await t.rowsNow('coach_todos')).find((r) => r.title === title) || null;
     const links = async (todoId) => (await t.rowsNow('coach_tag_links')).filter((l) => l.item_kind === 'todo' && l.item_id === todoId);
 
-    await add('Call the venue about parking 30 min !', ['Today', 'Important', '30 min'], 'Added to Today.');
-    await add('Prepare the board pack 45 minutes ! #Kestrel renewal', ['Today', 'Kestrel renewal', 'Important', '45 min'], 'Added to Today.');
+    await add('Call the venue about parking 30 min !', ['Today', 'Important', '30 minutes'], 'Added to Today.');
+    await add('Prepare the board pack 45 minutes ! #Kestrel renewal', ['Today', 'Kestrel renewal', 'Important', '45 minutes'], 'Added to Today.');
     await add('Outline chapter 4 #The book', ['Today', 'The book'], 'Added to Today.');
     await add('Email Dana the agenda @Email', ['Today', 'Email'], 'Added to Today.');
     {
@@ -251,7 +251,7 @@ export async function runDay({ browser, report, parts }) {
       pass(`${tag}: Undo takes the new to-do away, and its tag with it`, !(await byTitle('Email Dana the agenda')) && (await links(row?.id)).length === 0);
     }
     await add('Email Dana the agenda @Email', ['Today', 'Email'], 'Added to Today.');
-    await add('Book the train to Leeds tomorrow 1h', ['Tomorrow', '1 h'], 'Added to Tomorrow.');
+    await add('Book the train to Leeds tomorrow 1h', ['Tomorrow', '1 hour'], 'Added to Tomorrow.');
     await add('Water the plants after work', ['After work, today'], 'Added to After work.');
     {
       const [a, b, c, d, e, f] = [await byTitle('Call the venue about parking'), await byTitle('Prepare the board pack'), await byTitle('Outline chapter 4'), await byTitle('Email Dana the agenda'), await byTitle('Book the train to Leeds'), await byTitle('Water the plants')];

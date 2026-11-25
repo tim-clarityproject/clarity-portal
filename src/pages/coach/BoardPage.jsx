@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { idFromAddress } from '../../lib/coach/address';
 import { AddButton, Button, Dropdown, IconButton, InlineChoice, PageHeader, SlidePanel, SwitchRow, TextBox, TextField, useIsPhone, useToast } from '../../components/design';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { newId, removeRow, saveRow, saveRows } from '../../lib/coach/store';
@@ -13,6 +14,7 @@ import { calm } from './crmParts';
 import './leftovers.css';
 import './leads.css';
 import './crm.css';
+import { countFigure } from '../../lib/coach/numbers';
 
 // One board (M11 seq 77: "A board: Speaking", "A board as a table"): its
 // cards as a board, a list or a table behind the gliding view switch (the
@@ -28,7 +30,7 @@ const DRAG_START = 6;
 const GRIP = <svg className="cc-brd-grip-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="5.5" cy="4" r="1.1" /><circle cx="10.5" cy="4" r="1.1" /><circle cx="5.5" cy="8" r="1.1" /><circle cx="10.5" cy="8" r="1.1" /><circle cx="5.5" cy="12" r="1.1" /><circle cx="10.5" cy="12" r="1.1" /></svg>;
 
 export default function BoardPage() {
-  const { id } = useParams();
+  const id = idFromAddress(useParams().id); // any case in the address (tidy follow-up 4)
   const navigate = useNavigate();
   const toast = useToast();
   const isPhone = useIsPhone();
@@ -234,7 +236,7 @@ export default function BoardPage() {
           <div className={`cc-lboard cc-brd cc-fade${drag ? ' cc-board--dragging' : ''}`} ref={boardRef} key="board">
             {view.map((col) => (
               <section key={col.stage.id} className={`cc-board-col${drag && drag.over === col.stage.id && drag.stageId !== col.stage.id ? ' cc-board-col--over' : ''}`} data-stage={col.stage.id} aria-label={`${col.stage.name}, ${col.count}`}>
-                <div className="cc-board-head"><span>{col.stage.name}</span><span>{col.count}</span></div>
+                <div className="cc-board-head"><span>{col.stage.name}</span><span>{countFigure(col.count)}</span></div>
                 <div className="cc-board-cards">
                   {col.cards.map((c) => (
                     <div key={c.id} className={`cc-card${drag?.card.id === c.id ? ' cc-card--lifted' : ''}`}>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { idFromAddress } from '../../lib/coach/address';
 import { AddButton, Button, PageHeader, TextBox, useIsPhone, useToast } from '../../components/design';
 import { removeRow, newId, saveRow, saveRows } from '../../lib/coach/store';
 import { clean, cut } from '../../lib/coach/model';
@@ -7,6 +8,7 @@ import { doneWords, openWords } from '../../lib/coach/day';
 import { listGroups } from '../../lib/coach/todoActions';
 import { Back, Eye, Fold, MenuItem, PopMenu, TextLink, useCoachPortal } from './parts';
 import { QuickAdd, QuickAddPanel, TodoBulkBar, TodoList, TodoPanel, useTodoPicks } from './todoParts';
+import { countFigure } from '../../lib/coach/numbers';
 
 // One of the coach's to-do lists (M11's "Kestrel renewal"): its name, its
 // client or organisation, how many are open, its to-dos under their
@@ -41,7 +43,7 @@ function HeadingBox({ start = '', button, onSave, onCancel }) {
 }
 
 export default function TodoListPage() {
-  const { id } = useParams();
+  const id = idFromAddress(useParams().id); // any case in the address (tidy follow-up 4)
   const { userId, coach, isOwner, todos, todoLists, todoHeadings, clients, organisations, todayKey } = useCoachPortal();
   const navigate = useNavigate();
   const toast = useToast();
@@ -156,7 +158,7 @@ export default function TodoListPage() {
 
         {finished.length > 0 && (
           <div className="cc-folds">
-            <Fold title="Done" summary={`${finished.length} done`} open={doneOpen} onToggle={() => setDoneOpen((v) => !v)}>
+            <Fold title="Done" summary={`${countFigure(finished.length)} done`} open={doneOpen} onToggle={() => setDoneOpen((v) => !v)}>
               <TodoList todos={finished.slice(0, 50)} label="Done" onOpen={setOpenId} done />
             </Fold>
           </div>

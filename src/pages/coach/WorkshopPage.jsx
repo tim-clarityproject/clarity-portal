@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { idFromAddress } from '../../lib/coach/address';
 import { AddButton, Button, Checkbox, InlineChoice, PageHeader, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { coachReadyNow, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
@@ -8,6 +9,7 @@ import { clean, parsePeople, workshopCounts, workshopEmailRows, workshopIsPast }
 import { Back, Line, SettingRow, TextLink, useCoachPortal, Part } from './parts';
 import { workshopWhen } from './workshopWords';
 import './leftovers.css';
+import { countFigure, countWords } from '../../lib/coach/numbers';
 
 // A workshop (M11): the page before and after the day. Registration with
 // its public page, questions, capacity and a waiting list; reminders;
@@ -19,7 +21,7 @@ const KINDS = [{ value: 'short', label: 'Short answer' }, { value: 'long', label
 const SAVE_PROBLEM = 'That didn’t save. Check your connection and try again.';
 
 export default function WorkshopPage() {
-  const { id } = useParams();
+  const id = idFromAddress(useParams().id); // any case in the address (tidy follow-up 4)
   const navigate = useNavigate();
   const toast = useToast();
   const { userId, state, workshops, organisations, settings, now } = useCoachPortal();
@@ -61,7 +63,7 @@ export default function WorkshopPage() {
       places -= 1;
       return { id: newId(), workshop_id: workshop.id, name: p.name || null, email: p.email, status, answers: {}, attended: false, source: 'pasted', survey_key: newId(), registered_at: new Date().toISOString() };
     });
-    if (await done(() => saveRows(userId, rows.map((r) => ['workshop_attendees', r])), `${rows.length} ${rows.length === 1 ? 'person' : 'people'} added`, async () => { for (const r of rows) await removeRow(userId, 'workshop_attendees', r.id).catch(() => {}); })) { setPanel(null); setPasted(''); setProblem(null); }
+    if (await done(() => saveRows(userId, rows.map((r) => ['workshop_attendees', r])), `${countWords(rows.length, 'person', 'people')} added`, async () => { for (const r of rows) await removeRow(userId, 'workshop_attendees', r.id).catch(() => {}); })) { setPanel(null); setPasted(''); setProblem(null); }
   };
   const saveQuestion = async () => {
     if (!clean(question.q)) { setProblem('Type the question to carry on.'); return; }
@@ -117,8 +119,8 @@ export default function WorkshopPage() {
           {past
             ? <Stat label="Came" value={`${counts.came} of ${counts.registered}`} bar={counts.registered ? counts.came / counts.registered : 0} />
             : <Stat label="Registered" value={`${counts.registered} of ${workshop.capacity}`} bar={workshop.capacity ? counts.registered / workshop.capacity : 0} />}
-          {!past && <Stat label="Waiting list" value={String(counts.waiting)} />}
-          {past && workshop.survey_on && <Stat label="Survey answers" value={`${answers.length} of ${counts.came}`} />}
+          {!past && <Stat label="Waiting list" value={countFigure(counts.waiting)} />}
+          {past && workshop.survey_on && <Stat label="Survey answers" value={`${countFigure(answers.length)} of ${countFigure(counts.came)}`} />}
           {past && average && <Stat label="Average rating" value={`${average} of 5`} />}
         </StatGroup>
 
@@ -177,7 +179,7 @@ export default function WorkshopPage() {
               </Checkbox>
             </div>
           ))}
-          {registered.length > 8 && !all && <div className="cc-acts"><TextLink aria-expanded="false" onClick={() => setAll(true)}>Show all {registered.length}</TextLink></div>}
+          {registered.length > 8 && !all && <div className="cc-acts"><TextLink aria-expanded="false" onClick={() => setAll(true)}>Show all {countFigure(registered.length)}</TextLink></div>}
           {waiting.length > 0 && <p className="cc-small-label">Waiting list</p>}
           {waiting.map((a) => (
             <Line key={a.id} title={a.name || a.email} small={a.name ? a.email : null}>
@@ -252,7 +254,7 @@ export default function WorkshopPage() {
         {problem && <p className="cc-problem" role="alert">{problem}</p>}
         {pasted.trim() && (
           <p className="cc-quiet" aria-live="polite">
-            {[`${fresh.length} to add.`, preview.people.length - fresh.length ? `${preview.people.length - fresh.length} already here.` : null, preview.duplicates ? `${preview.duplicates} twice in this list.` : null, preview.unread.length ? `${preview.unread.length} couldn’t be read.` : null, fresh.length > counts.left ? `${Math.max(0, fresh.length - counts.left)} will join the waiting list.` : null].filter(Boolean).join(' ')}
+            {[`${countFigure(fresh.length)} to add.`, preview.people.length - fresh.length ? `${countFigure(preview.people.length - fresh.length)} already here.` : null, preview.duplicates ? `${countFigure(preview.duplicates)} twice in this list.` : null, preview.unread.length ? `${countFigure(preview.unread.length)} couldn’t be read.` : null, fresh.length > counts.left ? `${countFigure(Math.max(0, fresh.length - counts.left))} will join the waiting list.` : null].filter(Boolean).join(' ')}
           </p>
         )}
       </SlidePanel>

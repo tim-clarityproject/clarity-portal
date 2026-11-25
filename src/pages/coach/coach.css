@@ -153,6 +153,8 @@ body:has(> #root .ui-root.cc-app) {
 @keyframes cc-fade { from { opacity: 0; } to { opacity: 1; } }
 
 .ui-root .cc-quiet { margin: var(--space-px14) 0 0; font-size: var(--fs-secondary); color: var(--text-2); }
+/* The coach's role couldn't be read (tidy follow-up 4, part 2, item 6): the calm error, then Try again under it. */
+.ui-root .cc-role-problem { display: grid; justify-items: start; gap: var(--space-3); padding-block: var(--space-5); }
 .ui-root .cc-note { margin: var(--space-2) 0 0; font-size: var(--fs-note); color: var(--text-2); }
 .ui-root .cc-small-label { margin: var(--space-px22) 0 var(--space-px2); font-size: var(--fs-note); color: var(--text-2); }
 .ui-root .cc-problem { margin: var(--space-2) 0 0; font-size: var(--fs-note); color: var(--coral-text); }
@@ -263,6 +265,10 @@ body:has(> #root .ui-root.cc-app) {
   color: var(--text);
 }
 .ui-root .cc-jump-input::placeholder { color: var(--placeholder); }
+/* The browser's own clear mark (Chrome's blue ×) is hidden (tidy follow-up 4, part 2, item 3): the box opens empty each time
+   and Escape or a tap outside closes it, so it needs no clear mark; the portal's own close is the 45° crosshair. */
+.ui-root .cc-jump-input::-webkit-search-cancel-button,
+.ui-root .cc-jump-input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
 .ui-root .cc-jump-list { padding: var(--space-px6) var(--space-px10) var(--space-px12); max-height: min(var(--cc-jump-max-h), 60dvh); overflow: auto; }
 .ui-root .cc-jump-label { margin: var(--space-px12) var(--space-px12) var(--space-1); font-size: var(--fs-small); color: var(--placeholder); }
 .ui-root .cc-jump-item {

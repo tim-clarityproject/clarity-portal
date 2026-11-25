@@ -93,7 +93,7 @@ test('time credit, to the minute', () => {
   assert.deepEqual(timeCredit(credit, [{ engagement_id: 'c1', minutes: 120 }], entries, now), { total: 720, used: 490, left: 230 });
   assert.equal(minutesClocked(entries, { engagementId: 'c1', projectId: 'p1' }, now), 400);
   assert.equal(minutesClocked(entries, { engagementId: 'c1', projectId: 'p2' }, now), 90, 'a running clock counts up to now');
-  assert.equal(engagementLine(credit, [], entries, now), '1 h 50 min credit');
+  assert.equal(engagementLine(credit, [], entries, now), '1 hour 50 minutes credit');
   assert.equal(timeCredit(eng), null);
 });
 
@@ -102,7 +102,7 @@ test('time in words', () => {
   assert.equal(minutesWords(60), '1 hour');
   assert.equal(minutesWords(1), '1 minute');
   assert.equal(minutesWords(0), '0 minutes');
-  assert.equal(minutesWords(130, true), '2 h 10 min');
+  assert.equal(minutesWords(130), '2 hours 10 minutes'); // full words everywhere (tidy follow-up 4)
   assert.equal(clockWords('2026-11-19T10:00:00Z', new Date('2026-11-19T11:07:42Z')), '1:07:42');
 });
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { idFromAddress } from '../../lib/coach/address';
 import { AddButton, Button, Dropdown, InlineChoice, PageHeader, SlidePanel, Stat, StatGroup, TextField, useToast } from '../../components/design';
 import { newId, removeRow, rowsOf, saveRow } from '../../lib/coach/store';
 import { clean, firstName, isEmail, possessive, sessionsLeft } from '../../lib/coach/model';
@@ -8,6 +9,7 @@ import { Back, Line, TextLink, useCoachPortal, Part } from './parts';
 import { AddSessionPanel, SessionRows } from './sessionParts';
 import { currentEngagement } from './clientData';
 import { draftFrom, EngagementPanel } from './ClientPage';
+import { countWords } from '../../lib/coach/numbers';
 
 // A group (M11): its members, each with what they count against (their own
 // engagement or the group's), the next group session, sessions left, and
@@ -16,7 +18,7 @@ const COUNTS = [{ value: 'group', label: 'The group’s engagement' }, { value: 
 const NONE = '__none__';
 
 export default function GroupPage() {
-  const { id } = useParams();
+  const id = idFromAddress(useParams().id); // any case in the address (tidy follow-up 4)
   const navigate = useNavigate();
   const toast = useToast();
   const { userId, state, groups, clients, organisations, sessions: allSessions, sessionPeople, sessionsOlder, todayKey, now } = useCoachPortal();
@@ -55,7 +57,7 @@ export default function GroupPage() {
     <div className="cc-page">
       <div className="cc-col">
         <Back onClick={() => navigate('/coach/clients?tab=groups')} />
-        <PageHeader title={group.name} meta={[org?.name, `${members.length} ${members.length === 1 ? 'person' : 'people'}`]} />
+        <PageHeader title={group.name} meta={[org?.name, countWords(members.length, 'person', 'people')]} />
         <Part title="Next group session">
           {next ? (
             <div className="cc-ses-next">

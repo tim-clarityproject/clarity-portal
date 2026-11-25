@@ -17,11 +17,12 @@ import {
 } from './todayParts';
 import NameNote from './NameNote';
 import { YourHoursAndPay } from './AssociatePay';
-import { checkInsDue, checkInsOn } from '../../lib/coach/crm';
+import { checkInsDue, checkInsOn } from '../../lib/coach/pastClients';
 import { networkPath, TODAY_KEEP_IN_TOUCH, todayKeepInTouch } from '../../lib/coach/network';
 import { useNetworkDue } from './networkParts';
 import { CheckInPanel } from './pastParts';
 import './today.css';
+import { countFigure } from '../../lib/coach/numbers';
 
 // Today (M11; Phase 6a run 2, step 3), top to bottom: the date and any
 // quiet lines (a birthday, a recap still unsent a day after its call), the
@@ -203,7 +204,7 @@ export default function Today() {
                 with the rest, so "Show all" would count up a moment later (first screen check, Phase 6b run 2). */}
             {attention.length > ATTENTION_FIRST && partial && <Loading label="Loading who needs attention" />}
             {attention.length > ATTENTION_FIRST && !partial && (
-              <div className="cc-acts cc-today-more"><TextLink aria-expanded={allAttention} onClick={() => setAllAttention((v) => !v)}>{allAttention ? 'Show fewer' : `Show all ${attention.length}`}</TextLink></div>
+              <div className="cc-acts cc-today-more"><TextLink aria-expanded={allAttention} onClick={() => setAllAttention((v) => !v)}>{allAttention ? 'Show fewer' : `Show all ${countFigure(attention.length)}`}</TextLink></div>
             )}
           </Section>
         )}
@@ -229,7 +230,7 @@ export default function Today() {
                 {keep.checkIns.map((c) => <Row key={c.id} title={c.name} facts={[c.sub]} when={c.when} label={`${c.line} Open the note`} onClick={() => setCheckInId(c.id)} />)}
               </div>
             )}
-            {dueCheckIns.length > keep.checkIns.length && <div className="cc-acts cc-today-more"><TextLink onClick={() => navigate('/coach/clients/past')}>Show all {dueCheckIns.length} check-ins</TextLink></div>}
+            {dueCheckIns.length > keep.checkIns.length && <div className="cc-acts cc-today-more"><TextLink onClick={() => navigate('/coach/clients/past')}>Show all {countFigure(dueCheckIns.length)} check-ins</TextLink></div>}
           </Section>
         )}
 

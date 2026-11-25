@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { idFromAddress } from '../../lib/coach/address';
 import { AddButton, Button, PageHeader } from '../../components/design';
 import { newId } from '../../lib/coach/store';
 import { clean, fieldValue, fieldWords, firstName, isEmail, quickContacts } from '../../lib/coach/model';
@@ -22,7 +23,7 @@ import './leads.css';
 // crm.js's.
 
 export default function LeadPage() {
-  const { id } = useParams();
+  const id = idFromAddress(useParams().id); // any case in the address (tidy follow-up 4)
   const navigate = useNavigate();
   const portal = useCoachPortal();
   const { isOwner, leads, leadEvents, leadFields, organisations, clients, emails, bookings, callTypes, todayKey } = portal;

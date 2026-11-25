@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { idFromAddress } from '../../lib/coach/address';
 import { Button, Dropdown, InlineChoice, PageHeader, SlidePanel, useToast } from '../../components/design';
 import { deviceZone, wallClock, zoneLabel } from '../../lib/time/index.js';
 import { coachState, rowsOf, saveRow } from '../../lib/coach/store';
@@ -19,7 +20,7 @@ import './booking.css';
 // drafted note in the coach's own email app. Nothing sends from here.
 
 export default function PollPage() {
-  const { id } = useParams();
+  const id = idFromAddress(useParams().id); // any case in the address (tidy follow-up 4)
   const cal = useCalendar();
   const navigate = useNavigate();
   const toast = useToast();

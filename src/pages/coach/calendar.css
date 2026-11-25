@@ -166,8 +166,10 @@
 .ui-root .cc-cal-todos--over { outline-color: var(--coral-text); }
 .ui-root .cc-cal-todos-title { margin: 0 0 var(--space-px10); font-family: var(--font-body); font-weight: var(--fw-regular); font-size: var(--fs-note); color: var(--text-2); min-height: var(--space-px22); }
 .ui-root .cc-cal-todos-list { display: grid; gap: var(--space-2); align-content: start; }
-.ui-root .cc-cal-todo { all: unset; cursor: grab; box-sizing: border-box; display: block; width: 100%; min-height: var(--tap-min); padding: var(--space-px10) var(--space-px12); border-radius: var(--cc-card-radius); border: var(--line-w) solid var(--field-line); font-family: var(--font-body); touch-action: pan-y; user-select: none; -webkit-user-select: none; transition: border-color var(--dur) var(--ease); }
+.ui-root .cc-cal-todo { all: unset; cursor: grab; box-sizing: border-box; display: block; width: 100%; min-height: var(--tap-min); padding: var(--space-px10) var(--space-px12); border-radius: var(--radius-btn); border: var(--line-w) solid var(--field-line); font-family: var(--font-body); touch-action: pan-y; user-select: none; -webkit-user-select: none; transition: border-color var(--dur) var(--ease); }
 /* The words' own size and line, so Important's small box centres on the title's first line. */
+/* A to-do to place has the controls family's 8px corners (docs/rules/controls.md), with or without a time estimate: a
+   one-line one is drawn like a button, so the controls check reads its corners (tidy follow-up 4, part 2, item 5). */
 .ui-root .cc-cal-todo-words { display: block; font-size: var(--fs-note); line-height: var(--lh-cal-tile); }
 .ui-root .cc-cal-todo-words.ds-mark-row { display: flex; }
 .ui-root .cc-cal-todo b { display: block; font-weight: var(--fw-regular); font-size: var(--fs-note); line-height: var(--lh-cal-tile); color: var(--text); overflow-wrap: anywhere; }

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { idFromAddress } from '../../lib/coach/address';
 import { BottomBar, Button, Dropdown, PageHeader, useToast } from '../../components/design';
 import { rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { dayWords, firstName, possessive, toDayKey } from '../../lib/coach/model';
@@ -25,7 +26,7 @@ const ASKS = [
 ];
 
 export default function ClosePage() {
-  const { id } = useParams();
+  const id = idFromAddress(useParams().id); // any case in the address (tidy follow-up 4)
   const navigate = useNavigate();
   const toast = useToast();
   const say = useSay();

@@ -6,6 +6,7 @@
 import { addDays, clean, coverState, cut, dayWords, firstName, fromDayKey, minutesWords, possessive, rangeWords, sessionsLeft, timeCredit, toDayKey } from './model.js';
 import { DEFAULT_STANDARD, m7IsValidStandard, m7WeekColour } from '../scores/m7.js';
 import { overdueRows } from './agreements.js';
+import { countFigure, countWords } from './numbers.js';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -23,8 +24,8 @@ export const ESTIMATES = [15, 30, 60, 120];
 export const OTHER_ESTIMATES = Array.from({ length: (480 - 45) / 15 + 1 }, (_, i) => 45 + i * 15).filter((m) => !ESTIMATES.includes(m));
 export const OTHER_SUGGESTED = 180;
 export const estimateOk = (m) => m == null || (Number.isInteger(m) && m >= 15 && m <= 480 && m % 15 === 0);
-/** "15 min", "1 h", "1 h 30 min". Empty for none. */
-export const estimateWords = (m) => (m ? minutesWords(m, true) : '');
+/** "15 minutes", "1 hour", "1 hour 30 minutes": full words, never "min" (tidy follow-up 4). Empty for none. */
+export const estimateWords = (m) => (m ? minutesWords(m) : '');
 
 // ---------------------------------------------------------------- where a to-do shows
 
@@ -64,7 +65,7 @@ export function dueWords(todo, todayKey) {
 /** "2 of 3" for a checklist with items; empty otherwise. */
 export function checklistWords(todo) {
   const list = Array.isArray(todo.checklist) ? todo.checklist : [];
-  return list.length ? `${list.filter((i) => i.done).length} of ${list.length}` : '';
+  return list.length ? `${countFigure(list.filter((i) => i.done).length)} of ${countFigure(list.length)}` : '';
 }
 
 /**
@@ -145,7 +146,7 @@ export const moveToSomeday = (todo) => ({ ...todo, planned_on: null, planned_tim
 export const doneWords = (todo, todayKey) => (todo.done_at ? dayWords(toDayKey(new Date(todo.done_at)), todayKey) : '');
 
 /** "3 open", "1 open": a list's to-dos still to do. */
-export const openWords = (todos) => `${(todos || []).filter((t) => !t.done_at).length} open`;
+export const openWords = (todos) => `${countFigure((todos || []).filter((t) => !t.done_at).length)} open`;
 
 /**
  * Where a to-do lands when it is put at `index` among a list's others: a
@@ -400,7 +401,7 @@ export function parseQuickAdd(text, { todayKey, lists = [], tags = [], clients =
   return out;
 }
 
-/** The chips under the quick add, saying how it was read: "Tomorrow", "at 10:00", the list, tags, "Important", "30 min". */
+/** The chips under the quick add, saying how it was read: "Tomorrow", "at 10:00", the list, tags, "Important", "30 minutes". */
 export function quickAddChips(parsed, { todayKey, lists = [], tags = [], clients = [] } = {}) {
   if (!parsed || !parsed.title) return [];
   const chips = [];
@@ -500,8 +501,8 @@ export function moveState(workTodos, tickedIds, over) {
   const still = Math.max(0, over - freed);
   return {
     still,
-    line: still > 0 ? `Still ${minutesWords(still, true)} over.` : 'That fits your day.',
-    button: `Move ${ids.size} to tomorrow`,
+    line: still > 0 ? `Still ${minutesWords(still)} over.` : 'That fits your day.',
+    button: `Move ${countFigure(ids.size)} to tomorrow`,
     count: ids.size,
   };
 }
@@ -515,7 +516,8 @@ export function weekStart(dayKey) {
   return addDays(dayKey, -((d.getDay() + 6) % 7));
 }
 
-const hoursWords = (minutes) => { const h = Math.round((minutes / 60) * 10) / 10; return Number.isInteger(h) ? String(h) : h.toFixed(1); };
+// "17", "16.5", "15,270": a thousands comma as every count (tidy follow-up 4).
+const hoursWords = (minutes) => (Math.round((minutes / 60) * 10) / 10).toLocaleString('en-GB', { maximumFractionDigits: 1 });
 
 /**
  * Capacity: this week's coaching hours (sessions that went ahead or are
@@ -701,7 +703,7 @@ export const withHeldTyped = (engagement, typed, recorded = 0) => ({ ...engageme
 export function leftWords(engagement, packs) {
   const s = sessionsLeft(engagement, packs);
   if (!s) return '';
-  return s.left === 0 ? 'No sessions left' : `${s.left} ${s.left === 1 ? 'session' : 'sessions'} left`;
+  return s.left === 0 ? 'No sessions left' : `${countWords(s.left, 'session')} left`;
 }
 
 const ended = (s) => new Date(s.starts_at).getTime() + (Number(s.minutes) || 0) * 60000;
@@ -856,7 +858,7 @@ export function dayDone({ sessions = [], todos = [], todayKey }) {
   const held = today.filter((s) => s.outcome === 'held').length;
   const sent = today.filter((s) => s.recap_sent_at).length;
   const done = todos.filter((t) => t.done_at && toDayKey(new Date(t.done_at)) === todayKey).length;
-  const n = (count, one, many) => `${count} ${count === 1 ? one : many}`;
+  const n = (count, one, many) => countWords(count, one, many);
   return { calls: today.filter((s) => !s.outcome || s.outcome === 'held').length, held, sent, done, line: `${n(held, 'call', 'calls')} held, ${n(sent, 'recap', 'recaps')} sent.` };
 }
 
@@ -872,7 +874,7 @@ export function weekDone({ sessions = [], todos = [], target, todayKey }) {
   const max = Math.max(0, ...shape.map((d) => d.calls));
   const busiest = shape.filter((d) => d.calls === max && max > 0).map((d) => DAY_NAMES[fromDayKey(d.day).getDay()]);
   const shapeLine = total === 0 ? 'No calls are booked next week yet.'
-    : `${total} ${total === 1 ? 'call' : 'calls'}, the busiest on ${busiest.length > 2 ? `${busiest.slice(0, -1).join(', ')} and ${busiest.at(-1)}` : busiest.join(' and ')}.`;
+    : `${countWords(total, 'call')}, the busiest on ${busiest.length > 2 ? `${busiest.slice(0, -1).join(', ')} and ${busiest.at(-1)}` : busiest.join(' and ')}.`;
   return {
     capacity: cap,
     todosDone: doneThisWeek(todos, todayKey),
@@ -899,7 +901,7 @@ export function recapNudgeLine({ sessions = [], clients = [], groups = [], older
   const name = nameOfSession(first, clients, groups);
   const whose = first.group_id ? `The recap for ${name || 'the group'}` : `${possessive(firstName(name) || 'A client')} recap`;
   const others = rest.length + (Number(older?.nudges) || 0);
-  const more = others ? `, and ${others} more ${others === 1 ? 'is' : 'are'} waiting` : '';
+  const more = others ? `, and ${countFigure(others)} more ${others === 1 ? 'is' : 'are'} waiting` : '';
   return { session: first, more: others, line: `${whose} from ${dayWords(toDayKey(new Date(first.starts_at)), todayKey)} hasn’t been sent yet${more}.` };
 }
 
@@ -989,7 +991,7 @@ export function pressureRows({ occurrences = [], clients = [], todayKey }) {
 }
 
 /** "6 moved to tomorrow", "1 moved to tomorrow". */
-export const movedWords = (n) => `${n} moved to tomorrow`;
+export const movedWords = (n) => `${countFigure(n)} moved to tomorrow`;
 
 /** A call's length on Today: "60 minutes", or "Done" once it has been written up. */
 export const callLength = (session) => (session.outcome === 'held' ? 'Done' : `${session.minutes} minutes`);

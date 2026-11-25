@@ -41,10 +41,11 @@ const NO_BODY = new Set([101, 204, 205, 304]);
 // coach_auth_state, 057's coach_sessions_start, 060's coach_first_screen) are STABLE too: sent as the portal opens, they
 // no longer make the role and migration reads sent beside them be forgotten (coach first screen run). Finances' own
 // (058's coach_associate_sessions and 062's associate_month_minutes, both STABLE) likewise: sent with Finances' first
-// screen, they no longer make its table reads be read twice (Phase 6b run 2).
+// screen, they no longer make its table reads be read twice (Phase 6b run 2). 063's coach_first_screen_lean (STABLE, it
+// only asks 060's) likewise (tidy follow-up 4).
 const READ_ONLY_RPCS = new Set(['my_coach', 'my_coach_invites', 'my_session_recaps', 'my_view_asks', 'my_cover_asks',
   'coach_list', 'coach_admin_clients', 'network_page', 'coach_auth_state', 'coach_sessions_start', 'coach_first_screen',
-  'coach_associate_sessions', 'associate_month_minutes']);
+  'coach_associate_sessions', 'associate_month_minutes', 'coach_first_screen_lean']);
 
 function readOnlyRpc(method, url) {
   if (method !== 'POST') return false;

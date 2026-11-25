@@ -16,6 +16,7 @@ import { FieldPanel } from './Settings';
 import { UnderTabs } from './todoParts';
 import RenewalsTab from './Renewals';
 import './leftovers.css';
+import { countFigure, countWords } from '../../lib/coach/numbers';
 
 // Clients (M11, version 3.6): people as a list, a board or a table (a
 // phone offers the list and the board), with groups and workshops beside
@@ -197,7 +198,7 @@ export default function Clients() {
       .map((r) => ({ tag_id: tag.id, item_kind: 'client', item_id: r.profile.id, coach_id: coach.id }));
     try {
       for (const row of add) await saveRow(userId, 'coach_tag_links', row);
-      toast.saved({ message: `${tag.name} added to ${own.length} ${own.length === 1 ? 'client' : 'clients'}`, long: true, onUndo: async () => { for (const row of add) await removeRow(userId, 'coach_tag_links', keyOf('coach_tag_links', row)).catch(() => {}); } });
+      toast.saved({ message: `${tag.name} added to ${countWords(own.length, 'client')}`, long: true, onUndo: async () => { for (const row of add) await removeRow(userId, 'coach_tag_links', keyOf('coach_tag_links', row)).catch(() => {}); } });
       setPicked({});
     } catch (error) { toast.error(error?.message || SAVE_PROBLEM); }
   };
@@ -209,7 +210,7 @@ export default function Clients() {
       const from = [];
       for (const r of moving) from.push([r.profile.id, await moveClient(userId, r.profile.id, to.coach_id)]);
       reloadCoaches();
-      toast.saved({ message: `${moving.length} ${moving.length === 1 ? 'client' : 'clients'} moved to ${to.coach_id === coach.id ? 'you' : to.first_name}`, long: true, onUndo: async () => { for (const [id, back] of from) await moveClient(userId, id, back).catch(() => {}); reloadCoaches(); } });
+      toast.saved({ message: `${countWords(moving.length, 'client')} moved to ${to.coach_id === coach.id ? 'you' : to.first_name}`, long: true, onUndo: async () => { for (const [id, back] of from) await moveClient(userId, id, back).catch(() => {}); reloadCoaches(); } });
       setPicked({});
     } catch (error) { toast.error(error?.message || SAVE_PROBLEM); }
   };
@@ -344,7 +345,7 @@ export default function Clients() {
       {isPhone && <div className="cc-search-field"><SearchField label="Search clients" placeholder="Search clients" value={q} onChange={setQ} /></div>}
       {(filtersOn > 0 || viewName) && (
         <p className="cc-quiet">
-          {shown.length} of {rows.length} {rows.length === 1 ? 'client' : 'clients'}. <TextLink onClick={() => setList({ ...list, filters: EMPTY_FILTERS, viewId: null })}>Clear</TextLink>
+          {countFigure(shown.length)} of {countWords(rows.length, 'client')}. <TextLink onClick={() => setList({ ...list, filters: EMPTY_FILTERS, viewId: null })}>Clear</TextLink>
         </p>
       )}
       {duplicates.length > 0 && (
@@ -386,7 +387,7 @@ export default function Clients() {
             const cards = drawn < shown.length ? shownNow.filter((r) => r.stage === s.value) : here;
             return (
               <section key={s.value} className={`cc-board-col${drag && drag.over === s.value && drag.row.stage !== s.value ? ' cc-board-col--over' : ''}`} data-stage={s.value} aria-label={`${s.label}, ${here.length}`}>
-                <div className="cc-board-head"><span>{s.label}</span><span>{here.length}</span></div>
+                <div className="cc-board-head"><span>{s.label}</span><span>{countFigure(here.length)}</span></div>
                 <div className="cc-board-cards">
                   {cards.map((r) => (
                     <div key={r.profile.id} className={`cc-card${drag?.row.profile.id === r.profile.id ? ' cc-card--lifted' : ''}${(isPhone || touchFirst) && !r.admin ? ' cc-card--more' : ''}`}>
@@ -487,8 +488,8 @@ export default function Clients() {
       </div>
 
       {picking && (
-        <div ref={bulkRef} className="cc-bulk" role="toolbar" aria-label={`${pickedRows.length} chosen`}>
-          <span className="cc-bulk-n" aria-live="polite">{pickedRows.length} chosen</span>
+        <div ref={bulkRef} className="cc-bulk" role="toolbar" aria-label={`${countFigure(pickedRows.length)} chosen`}>
+          <span className="cc-bulk-n" aria-live="polite">{countFigure(pickedRows.length)} chosen</span>
           {tags.length > 0 && pickedRows.some((r) => !r.admin) && <button type="button" className="cc-bulk-btn" ref={ref('tag')} aria-haspopup="menu" aria-expanded={menu === 'tag'} onClick={() => setMenu('tag')}>Tag</button>}
           {isOwner && coaches.filter((c) => c.active).length > 1 && <button type="button" className="cc-bulk-btn" ref={ref('move')} aria-haspopup="menu" aria-expanded={menu === 'move'} onClick={() => setMenu('move')}>Move</button>}
           {pickedRows.length === 2 && pickedRows.every((r) => !r.admin) && <button type="button" className="cc-bulk-btn" onClick={() => { setMergePair([pickedRows[0].profile, pickedRows[1].profile]); setPicked({}); }}>Merge</button>}

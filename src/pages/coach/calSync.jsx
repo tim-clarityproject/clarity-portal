@@ -6,9 +6,21 @@ import { coachPartialNow, coachState, newId, removeRow, rowsOf, saveRow, saveRow
 import {
   calendarOfEvent, coachZoneOf, conflictWords, CONNECT_WORDS, MOVED_IN_GOOGLE, removedForSync, restoredForSync, seenMoved, SYNC_AFTER_SAVE_MS, SYNC_EVERY_MS, syncRowOver, syncWait, T,
 } from '../../lib/coach/calendar';
-import { chooseAdapters, googleStandIn, serverStatus, syncOnce, zoomOnce, zoomStandIn } from '../../lib/coach/connect/index.js';
 import { busyOnce, TG } from '../../lib/coach/googleBusy';
-import { askServer } from '../../lib/coach/connect/server.js';
+
+// Google Calendar's and Zoom's own code (connect/index.js and server.js, with the stand-ins and the email adapters they
+// bring) is asked for only when a round or a status check needs it, never with the frame (tidy follow-up 4, part 1,
+// item 1): a first visit draws the frame and its page without it. Once here it is the same code, used the same way.
+let connectParts = null;
+let connectHere = null; // the same, once it has arrived (the suites' stand-in hooks read it straight away)
+const connect = () => {
+  if (!connectParts) {
+    connectParts = Promise.all([import('../../lib/coach/connect/index.js'), import('../../lib/coach/connect/server.js')])
+      .then(([index, server]) => { connectHere = { ...index, askServer: server.askServer }; return connectHere; });
+    connectParts.catch(() => { connectParts = null; });
+  }
+  return connectParts;
+};
 import { supabase } from '../../lib/supabase';
 import { TextLink, useCoachPortal } from './parts';
 import './calSync.css';
@@ -49,7 +61,7 @@ const keepAt = (key) => ({ read: () => readJson(key), write: (state) => { writeJ
 const readMeta = (userId) => { const m = readJson(metaKey(userId)); return m && typeof m === 'object' ? { token: m.token ?? null, removed: Array.isArray(m.removed) ? m.removed : [], gone: Array.isArray(m.gone) ? m.gone : [], zoomSent: m.zoomSent && typeof m.zoomSent === 'object' ? m.zoomSent : {} } : { token: null, removed: [], gone: [], zoomSent: {} }; };
 
 /** The stand-ins as this device keeps them now (made fresh each time, so every tab reads the same calendar). */
-function standInsNow(userId) {
+function standInsNow(userId, { googleStandIn, zoomStandIn }) {
   const google = googleStandIn({ keep: keepAt(standKey(userId, 'google')) });
   // A stand-in started again (another device, a cleared browser) has never heard of an older event: it makes it anew.
   const update = google.updateEvent;
@@ -95,10 +107,10 @@ export function CalSync({ children }) {
   const refresh = useCallback(() => {
     // Only the live site's server ever has a key, so nothing else is asked.
     if (!LIVE) return;
-    askServer({ kind: 'status' }).then(async (answer) => {
+    connect().then(({ askServer, serverStatus }) => askServer({ kind: 'status' }).then(async (answer) => {
       const s = await serverStatus(async () => answer);
       setStatus({ ...s, google_ready: answer?.ok === true && answer.google_ready === true });
-    }).catch(() => {});
+    })).catch(() => {});
   }, []);
   // Asked once the page has drawn with all its data (coach first screen run): never ahead of a first screen's own read.
   useEffect(() => { if (p.whole) refresh(); }, [refresh, userId, p.whole]);
@@ -118,6 +130,8 @@ export function CalSync({ children }) {
     if (running.current) { again.current = true; return; }
     running.current = true;
     const work = async () => {
+      const parts = await connect();
+      const { askServer, chooseAdapters, syncOnce, zoomOnce } = parts;
       const state = coachState(userId);
       const { coachId, coachZone: zone } = latest.current;
       const mine = (table) => rowsOf(state, table).filter((r) => r.coach_id === coachId);
@@ -125,7 +139,7 @@ export function CalSync({ children }) {
       const guests = mine(T.guests);
       const sessions = mine(T.sessions);
       const meta = readMeta(userId);
-      const stand = !LIVE && (standIns.google || standIns.zoom) ? standInsNow(userId) : { google: null, zoom: null };
+      const stand = !LIVE && (standIns.google || standIns.zoom) ? standInsNow(userId, parts) : { google: null, zoom: null };
       const chosen = chooseAdapters(w.status, { ask: askServer, standIns: { google: stand.google || { real: false }, zoom: stand.zoom || { real: false } } });
       const google = w.realGoogle ? chosen.google : (w.useGoogle ? stand.google : null);
       const zoom = w.realZoom ? chosen.zoom : (w.useZoom ? stand.zoom : null);
@@ -276,7 +290,8 @@ export function CalSync({ children }) {
   // For the browser suites and a tester's console, never on the live site: the stand-ins and a round on demand.
   useEffect(() => {
     if (LIVE) return undefined;
-    window.__clarityCalSync = { google: () => standInsNow(userId).google, zoom: () => standInsNow(userId).zoom, round: () => roundRef.current?.(), meta: () => readMeta(userId) };
+    connect().catch(() => {}); // here before a suite asks for a stand-in
+    window.__clarityCalSync = { google: () => standInsNow(userId, connectHere).google, zoom: () => standInsNow(userId, connectHere).zoom, round: () => roundRef.current?.(), meta: () => readMeta(userId) };
     return () => { delete window.__clarityCalSync; };
   }, [userId]);
 

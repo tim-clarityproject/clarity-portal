@@ -108,7 +108,8 @@ export default function Automations() {
       <div className="cc-col">
         <Back to="Leads" onClick={() => navigate('/coach/leads')} />
         <PageHeader title={AUTOMATION_WORDS.title} />
-        {automations.length === 0 && <p className="cc-quiet">{AUTOMATION_WORDS.none}</p>}
+        {/* The empty line only when nothing is listed: the keep-in-touch row is always listed, saved or not (tidy follow-up 4, part 2, item 2). */}
+        {listed.length === 0 && <p className="cc-quiet">{AUTOMATION_WORDS.none}</p>}
         <div className="cc-rows cc-auto-rows">
           {listed.map((a) => {
             const sentence = automationSentence(a, ctx);
