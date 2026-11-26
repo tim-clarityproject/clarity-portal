@@ -16,6 +16,11 @@
   display: inline-flex;
   vertical-align: middle;
   margin-left: var(--icon-title-gap);
+  /* Middle of the small letters, lifted to the middle of the capitals as every title's eye (.ds-page-aside's lift;
+     calm-rules' eye check, Polish 1 Stage C: it sat 2px low on the 20px question). */
+  position: relative;
+  top: calc(-1 * var(--aside-lift, 0.098em));
+  line-height: 1;
 }
 
 /* A field: its question (16px) over its control, 24px between fields (.field). */

@@ -51,7 +51,8 @@ export default function WheelStart() {
           <Card label="Your check-ins" link={count > 0 ? { children: 'See your wheel', onClick: () => navigate('/life-balance-review/results') } : undefined}>
             <Row name="Takes" value="~3 minutes" />
             <Row name="Last check-in" value={newest ? formatCheckinDate(newest.date) : 'None yet'} />
-            <Row name="Check-ins so far" value={String(count)} />
+            {/* Never a bare 0 (rule 16): with none yet, the row above already says so. */}
+            {count > 0 && <Row name="Check-ins so far" value={String(count)} />}
           </Card>
 
           <Card label="How it works">

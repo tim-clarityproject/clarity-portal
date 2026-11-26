@@ -99,7 +99,7 @@ import './performance.css';
 // The Hardware and Software check-in (mock-up M12 version 14, read in full
 // with its notes; Phase 5 step 1). Two flows on one guided tool, one
 // question per screen with the % complete bar:
-//   First review  coaching clients who have never finished one: "What
+//   First check-in  coaching clients who have never finished one: "What
 //                   would make coaching useful for you?", the five goal
 //                   questions, then the check-in; Do this later saves and
 //                   closes ("Home will ask you to finish before your
@@ -504,7 +504,7 @@ function CheckinFlow({ userId, today, month, loaded }) {
     name: 'Results',
     title: first || !results.compared ? 'Your starting point' : 'Your month',
     nudges: [first || !results.compared ? 'Next month’s review will show what’s changed.' : 'Here’s how this month compares with last month.'],
-    nextLabel: first ? 'Finish my first review' : 'Finish my monthly review',
+    nextLabel: first ? 'Finish my first check-in' : 'Finish my monthly review',
     // The eye beside the title, never on its own row (rule 29d, Tim, 5 Nov).
     eye,
     render: () => (
@@ -555,14 +555,14 @@ function CheckinFlow({ userId, today, month, loaded }) {
   return (
     <div className="ui-root plan-builder-wait">
       <GuidedTool
-        name={first ? 'First review' : 'Monthly review'}
+        name={first ? 'First check-in' : 'Monthly review'}
         steps={steps}
         progress="percent"
         role={role}
         skipLabel={first ? 'Do this later' : 'Skip'}
         skipMoves={!first}
         onSkip={first ? () => leave(LATER_TOAST) : undefined}
-        finishLabel={first ? 'Finish my first review' : 'Finish my monthly review'}
+        finishLabel={first ? 'Finish my first check-in' : 'Finish my monthly review'}
         saveState={save}
         draftKey={draftKey}
         initialStep={finishedBefore ? questionSteps[0]?.key : undefined}

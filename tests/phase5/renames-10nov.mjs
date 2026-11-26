@@ -160,12 +160,12 @@ try {
   if (/plan your day/i.test(morning.question)) {
     pass('Home 08:30: the card’s button is Start my daily plan', /^start my daily plan$/i.test(morning.button), morning.button);
     pass('Home 08:30: the card gives the tile’s time', morning.time === planTile, `${morning.time} vs ${planTile}`);
-  } else pass('Home 08:30: the card is the monthly review’s turn or the plan’s', /monthly review|first review/i.test(morning.question), morning.question);
+  } else pass('Home 08:30: the card is the monthly review’s turn or the plan’s', /monthly review|first check-in/i.test(morning.question), morning.question);
   const evening = await cardAt('17:30');
   if (/review your day/i.test(evening.question)) {
     pass('Home 17:30: the card’s button is Start my daily review', /^start my daily review$/i.test(evening.button), evening.button);
     pass('Home 17:30: the card gives the tile’s time', evening.time === reviewTile, `${evening.time} vs ${reviewTile}`);
-  } else pass('Home 17:30: the card is another tool’s turn (the monthly review or the debrief)', /monthly review|first review|this week/i.test(evening.question), evening.question);
+  } else pass('Home 17:30: the card is another tool’s turn (the monthly review or the debrief)', /monthly review|first check-in|this week/i.test(evening.question), evening.question);
   for (const [path, name] of [['/daily-plan', 'Daily plan'], ['/daily-review', 'Daily review'], ['/monthly-review', 'Monthly review'], ['/performance-sprint/debrief', 'Weekly performance debrief']]) {
     await page.goto(`${APP}${path}`);
     await settle();

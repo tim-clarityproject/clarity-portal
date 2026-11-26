@@ -149,8 +149,6 @@
 .ui-root .cc-todo-bar { margin: 0 0 var(--card-gap); }
 @media (max-width: 600px) {
   .ui-root .cc-todo-bar { margin: 0 0 var(--card-gap); }
-  /* The switch spans the column on a phone (rule 15), its two halves equal. */
-  .ui-root .cc-todo-bar > .cc-seg { flex: 1 1 100%; }
 }
 .ui-root .cc-todo-card .cc-todos { margin-top: 0; }
 .ui-root .cc-todo-card > .cc-quiet { margin: 0; }

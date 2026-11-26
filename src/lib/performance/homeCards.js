@@ -45,7 +45,7 @@ export function homeNeeds({ agreement = null, invoice = null, checkin = null, se
     out.push({ key: 'invoice', name: `Settle invoice ${invoice.number}`, value: due, to: '/my-account/invoices' });
   }
   if (checkin?.action?.to) {
-    out.push({ key: 'checkin', name: checkin.first ? 'Your first review' : 'Your monthly review', value: checkin.time || null, to: checkin.action.to });
+    out.push({ key: 'checkin', name: checkin.first ? 'Your first check-in' : 'Your monthly review', value: checkin.time || null, to: checkin.action.to });
   }
   const next = sessions[0];
   if (next && !prepWritten) {

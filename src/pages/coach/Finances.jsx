@@ -173,8 +173,10 @@ function Overview() {
   return (
     <>
       <FinFigures items={[
-        { label: `Income in ${monthName(todayKey)} so far`, value: poundsWords(month.paid), unit: ofWords(month.paid, month.target), bar: month.target ? Math.min(1, month.paid / month.target) : null, empty: 'Nothing settled yet this month.' },
-        { label: 'Income this year', value: poundsWords(year.paid), unit: ofWords(year.paid, year.target), bar: year.target ? Math.min(1, year.paid / year.target) : null, empty: 'Nothing settled yet this year.' },
+        // Each label stays on one line at every width (Tim's walk of Stage B, item 9): short words, the month and year
+        // being the page's own.
+        { label: 'This month so far', value: poundsWords(month.paid), unit: ofWords(month.paid, month.target), bar: month.target ? Math.min(1, month.paid / month.target) : null, empty: 'Nothing settled yet this month.' },
+        { label: 'This year so far', value: poundsWords(year.paid), unit: ofWords(year.paid, year.target), bar: year.target ? Math.min(1, year.paid / year.target) : null, empty: 'Nothing settled yet this year.' },
         { label: 'Cash in 6 months', value: poundsWords(model.cash6.end), empty: 'Nothing in hand by then on what’s known.' },
       ]} />
 
@@ -197,7 +199,8 @@ function Overview() {
 
       <FinPart title="Your targets" asideHide={false} aside={<TextLink onClick={() => setPanel({ kind: 'targets' })}>Edit targets</TextLink>}>
         {[month, rows.quarter, year].map((r) => (
-          <FigRow key={r.label} title={r.label} facts={[r.figure, r.detail, isPhone ? null : r.minimum]} value={r.percentWords} onClick={() => setPanel({ kind: 'targets' })} label={`${r.label}: ${r.figure}. Edit targets`} />
+          // Nothing in and no target: a sentence, never a bare £0 (rule 16; Tim's walk of Stage B, item 9).
+          <FigRow key={r.label} title={r.label} facts={[r.paid || r.target ? r.figure : TARGETS_NONE, r.detail, isPhone ? null : r.minimum]} value={r.percentWords} onClick={() => setPanel({ kind: 'targets' })} label={`${r.label}: ${r.paid || r.target ? `${r.figure}.` : TARGETS_NONE} Edit targets`} />
         ))}
       </FinPart>
 
@@ -217,7 +220,7 @@ function Overview() {
           <>
             <FigRow title="Pipeline" facts={pipe.facts} value={pipe.figure} onClick={() => navigate('/coach/leads/reports')} label={`Pipeline, ${pipe.figure}. Open lead reports`} />
             <FigRow title="Renewals in the next 90 days" facts={renew.facts} value={renew.figure} onClick={() => navigate('/coach/clients?tab=renewals')} label={`Renewals in the next 90 days, ${renew.facts[0]}, ${renew.figure}. Open renewals`} />
-            <FigRow title="Repeating income" facts={['Portal seats and memberships']} value={repeatingMonthly ? rateWords(repeatingMonthly, 'month') : '£0/month'} />
+            <FigRow title="Repeating income" facts={[repeatingMonthly ? 'Portal seats and memberships' : 'No portal seats or memberships yet.']} value={repeatingMonthly ? rateWords(repeatingMonthly, 'month') : null} />
           </>
         )}
       </FinPart>
@@ -354,6 +357,9 @@ function TargetsPanel({ open, onClose }) {
 }
 
 // ---------------------------------------------------------------- Money (M11 C5)
+
+/** A target row with nothing in and no target set. */
+const TARGETS_NONE = 'Nothing settled yet, and no target set.';
 
 const PERIODS = [{ value: 'month', label: 'This month' }, { value: 'quarter', label: 'This quarter' }, { value: 'year', label: 'This year' }];
 

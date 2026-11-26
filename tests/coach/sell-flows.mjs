@@ -77,7 +77,8 @@ const money = (s) => Number(String(s).replace(/[£,]/g, '')) || 0;
 // Rows only the database ever makes, and another coach's own, are never on a device before the tables are there.
 const forDevice = (rows) => { const { coach_notifications: _n, activity_log: _a, workshop_survey_answers: _w, coach_profiles: _p, coach_bookings: _b, coach_email_addresses: _e, coach_poll_votes: _v, coach_cal_reminder_sends: _r, network_people: _np, network_gives: _ng, network_ratings: _nr, network_merges: _nm, ...own } = rows; return own; };
 const NOT_YET = ['clarity-coach-not-yet', 'clarity-coach-day-not-yet', 'clarity-coach-cal-not-yet', 'clarity-coach-crm-not-yet'];
-const actionRows = (page, title) => page.locator('.cc-part', { has: page.locator('.ds-section-title', { hasText: title }) }).locator('.cc-row').evaluateAll((rows) => rows.map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
+// Polish 1 (Stage B): Network's Actions are cards with a label and the shared rows, as network-flows reads them.
+const actionRows = (page, title) => page.locator('.ds-card', { has: page.locator('.ds-label', { hasText: title }) }).locator('.ds-li').evaluateAll((rows) => rows.map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
 const cellText = async (page, name, index) => (await page.locator('.cc-net-table tbody tr', { has: page.getByRole('link', { name, exact: true }) }).locator('td, th').nth(index).innerText()).trim();
 const netCell = (page, column, name) => page.locator('.cc-net-table').getByRole('button', { name: new RegExp(`^${column} for ${name}`) }).first();
 const column = (page, name) => page.locator('.cc-lboard .cc-board-col', { has: page.locator('.cc-board-head', { hasText: name }) }).first();
@@ -203,6 +204,8 @@ async function run() {
         await g.open(`/book/${CAL.chemKey}`);
         if (a.there) {
           await g.page.locator('.cc-book-time').first().click(); await settle(g.page, 400);
+          // Polish 1 (Stage A, the example's two screens): Continue opens Your details.
+          await g.page.locator('.cc-book-go').first().click(); await settle(g.page, 500);
           await g.page.getByLabel('Your name').fill('Nell Okoye');
           await g.page.getByLabel('Your email').fill('nell.okoye@example.invalid');
           await g.page.getByLabel('What would you like from the call?').fill('To lead a bigger team without losing the plot.');
@@ -214,6 +217,8 @@ async function run() {
           const card = phone ? '' : await a.page.locator(`[data-card="${nell?.id}"]`).innerText().catch(() => '');
           pass(`${tag}: Nell is on Leads${phone ? ' (the list)' : ', in New'}`, phone ? (await words(a.page)).includes('Nell Okoye') : (await column(a.page, 'New').innerText()).includes('Nell Okoye') && card.includes('Nell Okoye'), card.replace(/\n/g, ' '));
           await go(a.page, `/coach/leads/${nell?.id}`);
+          // On a phone the timeline row keeps two lines; tapping it opens its lines in full (the booking's answers).
+          if (phone) await a.page.locator('button.cc-timeline-row', { hasText: 'Booked a Discovery call' }).first().click().catch(() => {});
           const text = await words(a.page);
           pass(`${tag}: her page has the booking on its timeline, where she came from, and what she answered`, has(text, ['Booked a Discovery call', 'First contact', 'Discovery call page', 'To lead a bigger team without losing the plot.']), missing(text, ['Booked a Discovery call', 'First contact', 'Discovery call page', 'To lead a bigger team without losing the plot.']) + ' :: ' + flat(text).slice(0, 700));
           const todos = (await a.rowsNow('coach_todos')).filter((t) => t.lead_id === nell?.id && t.automation_id === CRM.a4);
@@ -699,8 +704,9 @@ async function run() {
         const tag = `sell-today, ${mode}`;
         const a = await openAt({ db, tag, path: '/coach' });
         const { page } = a;
-        const section = page.locator('.cc-main section', { has: page.locator('h2', { hasText: /keep in touch/i }) });
-        const rows = await section.locator('.cc-row').evaluateAll((list) => list.map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
+        // Polish 1 (Stages A to C): Today's parts are cards and their lines the shared rows (.ds-li), as network-flows reads them.
+        const section = page.locator('.cc-today-keep');
+        const rows = await section.locator('.ds-li').evaluateAll((list) => list.map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
         pass(`${tag}: Keep in touch: the people due first, then past clients' check-ins, one quiet line each`, /^Sofia Marsh/.test(rows[0] || '') && rows.slice(3).some((r) => /check-in/.test(r)) && rows.every((r) => r.length < 80), rows.join(' | '));
         // The frame's menu (polish 1) is plain words with no counts; Today's Keep in touch carries the people due.
         const item = (await frameMenu(page)).filter({ hasText: /^Network/ }).first();

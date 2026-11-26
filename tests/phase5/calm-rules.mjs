@@ -10,7 +10,7 @@
 //     after its last letter;
 //   - no "Performance Sprint" followed by a number in client text;
 //   - no numbered ratings ("out of 10", "/10", "1 to 5");
-//   - no title in capitals over 3 words;
+//   - no section name in Nekst capitals over 3 words (page titles and DM Sans labels at any length: the 25 Nov reference);
 //   - the page's background and text match the person's light or dark
 //     setting, and the menu button never sits over a logo or content;
 //   - no old names (Plan my day, Review my day, the check-in, Performance
@@ -290,6 +290,8 @@ function measure({ phone }) {
     const tapH = Math.max(b.height, ra.h, rb.h);
     if (tapW >= 43.5 && tapH >= 43.5) continue;
     if (el.matches('.ds-seg-btn') && b.height >= 38) continue;
+    // My Mission is a 40px box on a laptop and a phone (the 25 Nov reference, Polish 1: "My Mission is a 40px box"); the reference wins over the 44px here.
+    if (el.matches('.hdr-mbox') && b.height >= 39.5) continue;
     // A link inside a sentence is as tall as its line (WCAG's inline exception).
     if (el.tagName === 'A' && getComputedStyle(el).display === 'inline' && el.parentElement && el.parentElement.innerText.trim().length > el.innerText.trim().length + 12) continue;
     // The play icon beside the eye (Tim, 14 Nov, 09:28): 44px tall and 32px wide, so the two icons are 16px apart and their tap areas never overlap.
@@ -351,7 +353,10 @@ function measure({ phone }) {
   for (const [group, n] of perGroup) if (n > 1) eyeNotes.push(`${label(group.querySelector('h1, h2, h3, .ds-guide-question') || group)}: ${n} eyes in one page or section`);
 
   // Titles in capitals: 3 words at most.
-  const longTitles = [...root.querySelectorAll('h1, h2, h3, .ds-page-title, .ds-section-title')].filter((h) => vis(h) && getComputedStyle(h).textTransform === 'uppercase')
+  // Polish 1 (25 Nov reference): a page title is Nekst capitals at any length ("Your block of hours"), and section
+  // labels are DM Sans 13px spaced capitals at any length (M28 v6's "Add if you'd like"); the reference sets no word
+  // limit on either, so only an older page's section name still in Nekst capitals is counted.
+  const longTitles = [...root.querySelectorAll('h2, h3, .ds-section-title')].filter((h) => vis(h) && !h.matches('h1, .ds-page-title') && getComputedStyle(h).textTransform === 'uppercase' && /Nekst/i.test(getComputedStyle(h).fontFamily))
     .map((h) => (h.childNodes.length ? [...h.childNodes].filter((n) => !(n.nodeType === 1 && n.matches('.ds-page-aside, .ds-sr'))).map((n) => n.textContent).join('') : h.textContent).replace(/\s+/g, ' ').trim())
     // One name is allowed its four words: "Questions to start with:" is a
     // results section's name in approved M10 (version 5.6, 13 Nov), drawn in
@@ -598,7 +603,7 @@ for (const width of PAGES.length ? WIDTHS : []) {
         // A pop-up holds one short line; longer explanations open in the side panel (Tim, 16 Nov, 23:31).
         const pops = await page.evaluate(checkPopups);
         pass(`${tag}: every pop-up is one short line, and no ⓘ sits in a list row (${pops.checked} read)`, pops.problems.length === 0, pops.problems.slice(0, 4).join('; '));
-        pass(`${tag}: no title in capitals over 3 words`, r.longTitles.length === 0, r.longTitles.join('; '));
+        pass(`${tag}: no section name in Nekst capitals over 3 words`, r.longTitles.length === 0, r.longTitles.join('; '));
         const old = /plan my day|review my day|hardware and software check-in|monthly check-in|first check-in|performance evidence/i.exec(r.text);
         pass(`${tag}: no old names`, !old, old?.[0]);
         pass(`${tag}: the background and text match the ${mode} setting`, r.theme === mode && r.background === BACKGROUND[mode] && (r.textColour == null || r.textColour === TEXT[mode]), `${r.theme} ${r.background} ${r.textColour}`);
@@ -695,6 +700,8 @@ function measureHealthCheck({ layer }) {
     // A pill in the segmented control reaches 44px high through its ::after, and is as wide as its word.
     const after = getComputedStyle(el, '::after');
     if (el.matches('.ds-seg-btn') && b.width >= 43.5 && (parseFloat(after.height) || 0) >= 43.5) continue;
+    // My Mission is a 40px box (the 25 Nov reference, Polish 1).
+    if (el.matches('.hdr-mbox') && b.height >= 39.5) continue;
     // A link inside a sentence is as tall as its line (WCAG's inline exception).
     if (el.tagName === 'A' && getComputedStyle(el).display === 'inline' && el.parentElement && el.parentElement.innerText.trim().length > el.innerText.trim().length + 12) continue;
     // The play icon beside the eye (Tim, 14 Nov, 09:28): 44px tall and 32px wide, so the two icons are 16px apart and their tap areas never overlap.
@@ -990,12 +997,13 @@ if (CHEVRONS) {
 const COACH_AUTH = !ONLY || ONLY.test('coach-auth');
 if (COACH_AUTH) {
   const { coachWorld } = await import('../signin/coachWorld.mjs');
-  const code = (page) => page.getByRole('textbox', { name: 'Code', exact: true });
+  // Polish 1 (Stage A, the example's code squares): one hidden-looking box behind six squares, sent on its sixth digit.
+  const code = (page) => page.locator('.si-code-input').first();
   const press = (page, name) => page.getByRole('button', { name, exact: true }).click();
   const SCREENS = [
-    ['coach-auth-code', { factor: 'verified' }, '/coach/sign-in/code', '.si-field'],
-    ['coach-auth-code-wait', { factor: 'verified' }, '/coach/sign-in/code', '.si-field', async (page) => {
-      for (let i = 1; i <= 5; i += 1) { await code(page).fill(`00000${i}`); await press(page, 'Sign in'); await sleep(350); }
+    ['coach-auth-code', { factor: 'verified' }, '/coach/sign-in/code', '.si-code'],
+    ['coach-auth-code-wait', { factor: 'verified' }, '/coach/sign-in/code', '.si-code', async (page) => {
+      for (let i = 1; i <= 5; i += 1) { await code(page).fill(`00000${i}`); await sleep(500); }
       await page.getByText('That was 5 wrong codes in a row.').waitFor({ timeout: 10000 });
     }, /status of 422/],
     ['coach-auth-setup', { factor: 'none', codesMade: false, codesSaved: false }, '/coach/sign-in/set-up', '.si-qr svg'],
@@ -1010,7 +1018,6 @@ if (COACH_AUTH) {
     ['coach-auth-low-codes', { factor: 'verified', codesLeft: 2 }, '/coach', null, async (page, world) => {
       await page.waitForURL(/\/coach\/sign-in\/code$/, { timeout: 15000 });
       await code(page).fill(world.goodCode);
-      await press(page, 'Sign in');
       await page.waitForURL(/\/coach\/sign-in\/in$/, { timeout: 15000 });
       await page.getByText('Make new codes in My Account').waitFor({ timeout: 10000 });
     }],
@@ -1106,7 +1113,7 @@ if (COACH_AUTH) {
           // them"), are the agreed exception, as the outside Health Check's full name is.
           const M26_TITLES = /^(Set up your authenticator|Save your recovery codes|Lost your authenticator app\?|Reset .+’s authenticator\?)$/i;
           const long = r.longTitles.filter((t) => !M26_TITLES.test(t.trim()));
-          pass(`${tag}: no title in capitals over 3 words (M26's own titles excepted)`, long.length === 0, long.join('; '));
+          pass(`${tag}: no section name in Nekst capitals over 3 words (M26's own titles excepted)`, long.length === 0, long.join('; '));
           // The chevrons beside words (Back, My Account, the menu's): centred on their text within 0.5px.
           if (SCALE === 1) {
             const chev = await measureChevrons(page);

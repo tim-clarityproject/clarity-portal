@@ -116,6 +116,13 @@
   height: var(--tap-min);
   transform: translateX(-50%);
 }
+/* "+ Add" the same over tapped rows (Home's Today: "+ Add" over the Daily plan row; calm-rules' tap-overlap check,
+   Polish 1 Stage C): its 44px box reaches up into the card's padding instead of down into the first row, its words
+   on the label's line as before. */
+.ui-root .ds-card-head:is(:has(~ .ds-li--go), :has(~ .ds-rows-list > .ds-li--go:first-child)) > .ds-addrow {
+  align-items: flex-end;
+  margin: calc(var(--space-px14) * -2) 0 0;
+}
 
 .ui-root .ds-card > :last-child {
   margin-bottom: 0;
@@ -235,6 +242,23 @@
 .ui-root .ds-card > .ds-li:last-child,
 .ui-root .ds-card > .ds-rows-list:last-child > .ds-li:last-child {
   padding-bottom: 0;
+}
+
+/* A card with no label (Settings' side list on a phone, Tim's walk of Stage B, item 11): its first row starts at the
+   card's padding, with no line above it, as the label would; its 44px tap area reaches up into the padding. */
+.ui-root .ds-card > .ds-li:first-child,
+.ui-root .ds-card > .ds-rows-list:first-child > .ds-li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.ui-root .ds-card > .ds-li--go:first-child:not(:last-child)::after,
+.ui-root .ds-card > .ds-rows-list:first-child > .ds-li--go:first-child:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: max(100%, var(--tap-min));
 }
 
 .ui-root .ds-li-name {
@@ -454,8 +478,6 @@
   color: var(--text);
 }
 
-.ui-root .ds-count { overflow: hidden; }
-
 .ui-root .ds-count > button {
   all: unset;
   cursor: pointer;
@@ -466,6 +488,22 @@
   height: 100%;
   font-size: var(--fs-text);
   color: var(--text);
+}
+
+/* The counter's buttons are 40px with an invisible 44 by 44 ::after (rule 4a's tap area; CLAUDE.md, Polish 1 Stage B),
+   so nothing clips them: each end button rounds its own corners for the hover fill instead (Polish 1, Stage C;
+   calm-rules' tap-area check on the Daily plan's sleep counter). */
+.ui-root .ds-count > button { position: relative; }
+.ui-root .ds-count > button:first-child { border-radius: calc(var(--radius-control) - var(--line-w)) 0 0 calc(var(--radius-control) - var(--line-w)); }
+.ui-root .ds-count > button:last-child { border-radius: 0 calc(var(--radius-control) - var(--line-w)) calc(var(--radius-control) - var(--line-w)) 0; }
+.ui-root .ds-count > button::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  transform: translate(-50%, -50%);
 }
 
 .ui-root .ds-count > button:disabled { cursor: default; color: var(--placeholder); }

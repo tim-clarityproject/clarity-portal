@@ -72,6 +72,8 @@ export async function checkReveals({ limit = 14 } = {}) {
     if (triggers.includes(el) || !shown(el) || el.disabled || el.getAttribute('aria-disabled') === 'true') continue;
     if (layer ? !layer.contains(el) : fixed(el)) continue;
     if (el.hasAttribute('aria-haspopup') || el.getAttribute('role') === 'combobox' || el.getAttribute('role') === 'tab') continue;
+    // A counter's minus and plus ("Half an hour more") change a value, they open nothing (Polish 1's .ds-count).
+    if (el.closest('.ds-count')) continue;
     const says = el.getAttribute('aria-expanded') === 'false' || el.tagName === 'SUMMARY';
     if (!says && !(el.tagName === 'BUTTON' && el.type !== 'submit' && WORDS.test(label(el)) && !/^(show|hide)$/i.test(label(el)))) continue;
     triggers.push(el);

@@ -112,7 +112,7 @@ export async function loadSharedReviews(clientUserId) {
 
 /**
  * The monthly reviews a client shares (029's checkins, read while the
- * "Monthly check-in" part is shared): the scores and the First review's goals.
+ * "Monthly check-in" part is shared): the scores and the First check-in's goals.
  * @returns {Promise<object[]>}
  */
 export async function loadReviews(clientUserId) {

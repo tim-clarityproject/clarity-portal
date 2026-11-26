@@ -112,7 +112,7 @@ export default function Todos() {
 
         {show === 'list' && (
           <div className="cc-folds">
-            <Fold title="Done" summary={`${countFigure(week.length)} done this week`} open={doneOpen} onToggle={() => setDoneOpen((v) => !v)}>
+            <Fold title="Done" summary={week.length ? `${countFigure(week.length)} done this week` : 'Nothing done yet this week.'} open={doneOpen} onToggle={() => setDoneOpen((v) => !v)}>
               <SearchField label="Search what’s done" placeholder="Search what’s done" value={q} onChange={setQ} />
               {found && found.length === 0 && <p className="cc-quiet">Nothing done matches “{q.trim()}”.</p>}
               {!found && week.length === 0 && <p className="cc-quiet">Nothing is done yet this week.</p>}

@@ -36,7 +36,7 @@ export function ListBar({ search, layouts, layout, onLayout, children, phone, cl
       {search && <div className="cc-pbar-search"><SearchField label={search.label} placeholder={search.label} value={search.value} onChange={search.onChange} /></div>}
       <div className="cc-pbar">
         {!isPhone && layouts && layouts.length > 1 && (
-          <div className="ds-seg ds-seg--placed cc-pbar-seg" role="group" aria-label="Show as">
+          <div className="ds-seg ds-seg--equal ds-seg--placed cc-pbar-seg" role="group" aria-label="Show as">
             {layouts.map((l) => (
               <button key={l.value} type="button" className="ds-seg-btn" aria-pressed={layout === l.value} onClick={() => onLayout?.(l.value)}>{l.label}</button>
             ))}

@@ -18,7 +18,7 @@
 // What it does not read: an edge drawn with `outline` or a shadow instead
 // of a border, an edge on some sides only (an underline is a line, not an
 // outline), a field's edge drawn more than two boxes out from it, and the
-// hover and focus states.
+// hover and focus states, and a joined switch (its track and options: the lead's calls, Polish 1, 25 Nov).
 //
 // outlinedEdges runs in the page (page.evaluate(outlinedEdges)) and gives
 // the ones under 3 to 1, each as `name "words" ratio`. With `all` it gives
@@ -78,10 +78,23 @@ export function outlinedEdges(all = false) {
       if (vis(p) && outline(p)) { parts.add(p); break; }
     }
   }
+  // The joined switch (Polish 1, the lead's calls, 25 Nov): buttons and joined switches take the reference's --line,
+  // as buttons' hairlines did (rule 4a); their words carry them. A track whose options sit side by side, and its options.
+  const joined = (el) => {
+    const track = el.closest('.ds-seg, [role=radiogroup], [role=group], [role=tablist]');
+    if (!track) return false;
+    const opts = [...track.querySelectorAll('button, [role=radio], [role=tab]')].filter(vis).map((o) => o.getBoundingClientRect());
+    // Only a track with a line round it is the joined switch; answer boxes in a row each have their own edge, and keep 3 to 1.
+    if (!outline(track)) return false;
+    return opts.length >= 2 && opts.some((b, i) => opts.some((c, j) => j !== i && Math.abs(b.top - c.top) < 2)) && !el.matches(TYPED);
+  };
   for (const el of parts) {
     const st = getComputedStyle(el);
     const edges = outline(el);
     if (!edges) continue;
+    if (joined(el)) continue;
+    // A card that is itself the link (a hub's tiles) is a card: the reference draws every card's edge in --line (Polish 1).
+    if (el.matches('.ds-card, .ds-hub-tile')) continue;
     const own = rgba(st.backgroundColor);
     const back = behind(el);
     // Filled: its own colour already stands out from what is behind it, or

@@ -28,6 +28,9 @@ export default function PhoneActionBar({ children }) {
 
     const measure = () => {
       document.documentElement.style.setProperty('--action-bar-height', `${el.getBoundingClientRect().height}px`);
+      // Breathe rises above the bar while it shows (Tim's walk of Stage B, item 2: never on a bottom button), as it
+      // does over BottomBar (design.css: .ds-orb--fixed reads --bottom-bar-h). Hidden (a laptop), it takes no room.
+      document.documentElement.style.setProperty('--bottom-bar-h', `${el.getBoundingClientRect().height}px`);
       // Toasts rise above the bar while it is showing (it may sit above
       // the phone tab bar, so clear from its top edge to the bottom).
       const box = el.getBoundingClientRect();
@@ -49,6 +52,8 @@ export default function PhoneActionBar({ children }) {
       window.removeEventListener('resize', measure);
       observer?.disconnect();
       document.documentElement.style.removeProperty('--ds-toast-offset');
+      document.documentElement.style.removeProperty('--action-bar-height');
+      document.documentElement.style.removeProperty('--bottom-bar-h');
     };
   }, []);
 

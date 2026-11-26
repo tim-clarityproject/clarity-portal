@@ -110,23 +110,24 @@ export const FINANCES = Object.freeze({
   statsLabel: 'At a glance',
 });
 
-export const TODOS_LINE = 'Everything you plan to do, by day. Only you can see it.';
-export const todoListLine = (finished) => (finished ? 'This list is finished. Its to-dos stay here.' : 'A list of your own to-dos. Only you can see it.');
+// Who can see a page is the eye beside its title, never words in its line (5e rule 10; Tim's walk of Stage B, item 5).
+export const TODOS_LINE = 'Everything you plan to do, by day.';
+export const todoListLine = (finished) => (finished ? 'This list is finished, and its to-dos stay here.' : 'A list of your own to-dos.');
 export const SETTINGS_LINE = 'How your practice runs: your details, booking, calendars and the rest.';
 export const settingsSectionLine = (label) => `Your ${label.charAt(0).toLowerCase()}${label.slice(1)} settings.`;
 export const BOARDS_LINE = 'Anything you track in stages, one card at a time.';
-export const boardPageLine = (shared) => (shared ? 'Shared with your associates, who can read it but not change it.' : 'Only you can see this board.');
-export const AUTOMATIONS_LINE = 'Small jobs done for you as leads move. Nothing is ever sent.';
+export const boardPageLine = (shared) => (shared ? 'Shared with your associates, who can read it but not change it.' : 'Your cards on this board, stage by stage.');
+export const AUTOMATIONS_LINE = 'Small jobs done for you as leads move, and nothing is ever sent.';
 export const OPEN_FOR_CALLS_LINE = 'Times people outside can book a call with you.';
 export const POLL_LINE = 'The times you offered, and who can make each one.';
 /** A poll's line: who it's with (when the title is its own words), then what the page shows. */
-export const pollLine = (names) => (names ? `With ${names}. The times you offered, and who can make each one.` : POLL_LINE);
+export const pollLine = (names) => (names ? `With ${names}: the times you offered, and who can make each one.` : POLL_LINE);
 
 /** A coaching session's line: who it's with, then where it stands. */
 export function sessionLine({ name, sent = false, happened = false, outcome = null }) {
-  if (sent) return `With ${name}. The recap has been sent, so this session stays as it is.`;
-  if (!happened && !outcome) return `With ${name}. It hasn’t happened yet.`;
-  return `With ${name}. Say what happened, then write and send the recap.`;
+  if (sent) return 'The recap has been sent, so this session stays as it is.';
+  if (!happened && !outcome) return `Your session with ${name} hasn’t happened yet.`;
+  return `Say what happened with ${name}, then write and send the recap.`;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -180,13 +181,13 @@ export function clientLine({ role = '', city = '' } = {}) {
 export function workshopLine({ organisation = null, place = null, past = false }) {
   const where = [organisation ? `For ${organisation}` : null, place ? `${organisation ? 'at' : 'At'} ${place}` : null].filter(Boolean).join(' ');
   const state = past ? 'Who came and what they said.' : 'Who has registered, and what goes to them.';
-  return where ? `${where}. ${state}` : state;
+  return where ? `${where}: ${state.charAt(0).toLowerCase()}${state.slice(1)}` : state;
 }
 
 /** A lead's page (B4): what the page is for, in a sentence. */
 export function leadLine({ first = '', won = false, cold = false } = {}) {
-  if (won) return `${first} is a client now. Their story so far is kept here.`;
-  if (cold) return `${first} went quiet. What happened, and when to check in again, are here.`;
+  if (won) return `${first} is a client now, and their story so far is kept here.`;
+  if (cold) return `Why ${first} went quiet, and when to check in again.`;
   return `Where things stand with ${first}, and the next step.`;
 }
 

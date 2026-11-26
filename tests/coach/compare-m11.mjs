@@ -97,7 +97,7 @@ const SCREENS = [
   ['A client, Everything (Sam)', 'everything', 'owner', [], 'client-sam-everything', 'owner', ['Search Sam’s history', 'Everything', 'Private note'], [['Invoice 1031 paid', LATER], ['Fathom summary', RUN2], ['Sam emailed', 'the test’s data: run 1’s seed logs no email on Sam (emails on Everything are built in run 4)']]],
   ['A new client (Leo)', 'client:leo', 'owner', [], 'client-leo', 'owner',
     ['Leo Grant', 'Northfield Logistics', 'Operations director', 'Leeds', 'Agreement', 'Getting started', 'First session', 'Welcome pack'],
-    [['Next coaching session', M28CARDS], ['First check-in', 'the portal’s name for it is the First review (rule 26a)'], ['Send the pack', 'the Library and its packs are Phase 6c']]],
+    [['Next coaching session', M28CARDS], ['Send the pack', 'the Library and its packs are Phase 6c']]],
   ['A client on time credit (Marcus)', 'client:marcus', 'owner', [], 'client-marcus', 'owner',
     ['Marcus Bell', 'Head of people', 'Time credit left', '2 hours 10 minutes', 'Projects', 'Leadership offsite design', '6 hours 40 minutes so far', 'Team performance check', 'One-to-one coaching', 'Clock in'], []],
   ['A head coach (Jordan)', 'client:jordan', 'owner', [], 'client-jordan', 'owner',

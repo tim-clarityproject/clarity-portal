@@ -140,7 +140,7 @@ export const EVERYWHERE = {
   ],
   added: [
     ...THEY_NAMES,
-    [/^((MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY) \d+ NOVEMBER|.+ coaching sessions? today, and .+\.|Nothing needs you right now\.|COACHING SESSIONS|THIS MONTH|THIS WEEK|Nothing settled yet this month\.|Finances|Everything you plan to do, by day\. Only you can see it\.|A list of your own to-dos\. Only you can see it\.|TODAY|Close my day|Plan my day|Start my weekly review|Rate my energy|Not now)$/, P1_OPEN, null, { quiet: true, say: 'the page’s opening and its cards’ labels' }],
+    [/^((MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY) \d+ NOVEMBER|.+ coaching sessions? today, and .+\.|Nothing needs you right now\.|COACHING SESSIONS|THIS MONTH|THIS WEEK|Nothing settled yet this month\.|Finances|Everything you plan to do, by day\.|A list of your own to-dos\.|TODAY|Close my day|Plan my day|Start my weekly review|Rate my energy|Not now)$/, P1_OPEN, null, { quiet: true, say: 'the page’s opening and its cards’ labels' }],
     [/^(Open .+’s session|\d\d:\d\d, .+)$/, P1_ROWS, null, { quiet: true, say: '12:30, Zoom; Open Sam’s session' }],
     [/^(Add a day or time, # a list or client, @ a tag, ! for important, 30m for how long\.|Add|Cancel|name: Add to-do|name: Add heading|name: View all to-dos|View all)$/, `${P1_QA}; its Cancel closes it`, null, { quiet: true, say: '+ Add, View all' }],
     [/^(\d+ (minutes|hours?)|How long will it take\?)$/, P1_UNITS, null, { quiet: true, say: '30 minutes, How long will it take?' }],
@@ -365,7 +365,6 @@ export const ROWS = [
       [/^name: “.+”: goes to (this week|the backlog)\. Switch it$/, 'the quiet link tells a screen reader what it switches', null, { say: 'Switch it' }]] },
   { name: 'The guided close', m11: 'close', built: 'close',
     changes: [['Clients', 'Priya Nair', BACK], seed('6-month coaching, Mon 4 May to Fri 4 Dec', '6-month coaching, Tue 8 Sep to Mon 7 Dec', 'the seed’s engagement has its own dates'),
-      ['FIRST CHECK-IN GOALS', 'FIRST REVIEW GOALS', 'the portal’s name is the First review (rule 26a)'],
       seed('In the last session, on Fri 4 Dec.', 'In the last session, on Tue 17 Nov.', 'Priya’s last session in the seed is today’s'),
       ['Send the request', 'Not asked yet', ASKED],
       [/( at the start, and .+ now\.|^Done in July\.)$/, null, T_GOALS, { say: 'each goal’s rating at the start and now' }]],

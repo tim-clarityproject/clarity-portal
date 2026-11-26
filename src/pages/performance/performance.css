@@ -1730,7 +1730,7 @@
 
 /* "Mark as done" is read and tapped like its neighbours' boxes: 16px in the text colour (rule 1). */
 .ui-root .deb-objectives .ds-status-action-link {
-  margin-top: var(--space-2);
+  margin-top: calc(var(--space-2) - var(--status-link-reach));
   font-size: var(--fs-text) !important;
   color: var(--text);
   text-decoration-color: currentColor;

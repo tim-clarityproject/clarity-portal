@@ -6,8 +6,7 @@ import { loadJournalByDate, deleteJournal, wordCount } from '../lib/dailyJournal
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import { Button, Loading, useToast, PageOpening } from '../components/design';
-import { B1_LINES } from '../content/pageLines/client';
+import { Button, Loading, useToast, PageOpening, WhoSees } from '../components/design';
 import '../pages/hubs/clientPage.css';
 
 export default function DailyJournalRead() {
@@ -78,9 +77,10 @@ export default function DailyJournalRead() {
 
         {/* Polish 1: the title is the page's name; the date is its small grey label. */}
         <PageOpening
-          label={`${formatPlainDayLabel(dateObj)} ${dateObj.getFullYear()}`}
+          label={dateObj.getFullYear() === new Date().getFullYear() ? formatPlainDayLabel(dateObj) : `${formatPlainDayLabel(dateObj)} ${dateObj.getFullYear()}`}
           title="Journal"
-          line={`${words} word${words === 1 ? '' : 's'}. ${B1_LINES.journalRead}`}
+          aside={<WhoSees audience="me" />}
+          line={`You wrote ${words} word${words === 1 ? '' : 's'} that day.`}
         />
 
         <div className="jrn-paper-wrap">

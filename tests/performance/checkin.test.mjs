@@ -127,7 +127,7 @@ test('one thing to work on: the lowest Hardware area, ties in M13 order, with a 
 test('a check-in is named in words and belongs to its month', () => {
   assert.equal(checkinMonth(TODAY), '2026-10-01');
   assert.equal(checkinTitle({ kind: 'monthly', month: '2026-10-01' }), 'October review');
-  assert.equal(checkinTitle({ kind: 'first', month: '2026-10-01' }), 'First review');
+  assert.equal(checkinTitle({ kind: 'first', month: '2026-10-01' }), 'First check-in');
   assert.equal(checkinPath('2026-10-01'), '/monthly-review/2026-10');
   assert.equal(monthFromParam('2026-10'), '2026-10-01');
   assert.equal(monthFromParam('2026-13'), null);
@@ -146,24 +146,24 @@ test('who does which check-in, when it is due and what last month is', () => {
   assert.equal(previousCheckin([{ month: '2026-09-01', status: 'draft' }], '2026-10-01'), null);
 });
 
-test('Home: the First review card for a new coaching client, then the monthly line while due', () => {
+test('Home: the First check-in card for a new coaching client, then the monthly line while due', () => {
   const draft = { month: '2026-10-01', kind: 'first', status: 'draft', answers: Object.fromEntries(Object.entries(M13_1).slice(0, 10)) };
   assert.ok(Math.abs(answeredShare(draft.answers) - 0.5) < 0.01);
   const first = checkinPrompt({ hasCoach: true, coachName: 'Tim', checkins: [draft], today: TODAY });
-  assert.equal(first.question, 'Ready to finish your first review?');
+  assert.equal(first.question, 'Ready to finish your first check-in?');
   assert.deepEqual(first.lines, ['You’re about halfway through.', 'It helps Tim get the most from your first session.']);
   assert.equal(first.time, '~3 minutes');
-  assert.equal(first.action.label, 'Finish my first review');
+  assert.equal(first.action.label, 'Finish my first check-in');
   const card = homeSuggestion({ today: TODAY, hour: 9, person: 'new', hasCoach: true, firstCheckin: first });
-  assert.equal(card.question, 'Ready to finish your first review?');
+  assert.equal(card.question, 'Ready to finish your first check-in?');
   assert.equal(card.action.to, '/monthly-review');
   // Not as a quiet line too while it's the card.
   assert.equal(quietLines({ person: 'new', hasCoach: true, checkin: first }).length, 0);
   // Someone already running a sprint gets it on the one card in its turn, never as a quiet line (Tim, 5 Nov).
   assert.equal(quietLines({ person: 'sprint', hasCoach: true, checkin: first }).length, 0);
-  assert.equal(homeSuggestion({ today: TODAY, hour: 13, person: 'sprint', sprintView: { state: 'running', current: 3, lengthWeeks: 8 }, checkin: first }).question, 'Ready to finish your first review?');
+  assert.equal(homeSuggestion({ today: TODAY, hour: 13, person: 'sprint', sprintView: { state: 'running', current: 3, lengthWeeks: 8 }, checkin: first }).question, 'Ready to finish your first check-in?');
   // Nothing started yet.
-  assert.equal(checkinPrompt({ hasCoach: true, coachName: 'Tim', checkins: [], today: TODAY }).action.label, 'Start my first review');
+  assert.equal(checkinPrompt({ hasCoach: true, coachName: 'Tim', checkins: [], today: TODAY }).action.label, 'Start my first check-in');
 
   const monthly = checkinPrompt({ hasCoach: false, coachName: null, checkins: [{ month: '2026-09-01', kind: 'monthly', status: 'finished' }], today: TODAY });
   assert.deepEqual([monthly.question, monthly.action.label, monthly.time], ['Your monthly review is ready.', 'Start my monthly review', '~3 minutes']);
@@ -214,7 +214,7 @@ test('My Reviews: finished check-ins named in words, and only this month’s dra
     ],
   }, TODAY);
   assert.deepEqual(rows.map((r) => [r.title, r.typeLabel, r.isDraft, r.to.path]), [
-    ['First review', 'Monthly Hardware and Software review', false, '/monthly-review/2026-09'],
+    ['First check-in', 'Monthly Hardware and Software review', false, '/monthly-review/2026-09'],
     ['October review', 'Monthly Hardware and Software review', true, '/monthly-review'],
   ]);
   assert.equal(rows[0].area, 'personal');

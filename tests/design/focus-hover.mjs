@@ -88,7 +88,9 @@ export function fhHoverable(i) {
  * Returns { checked, focus: [problems], hover: [problems] }. `maxTabs` bounds a long page; `hover` false skips it.
  */
 export async function focusHoverProblems(page, { maxTabs = 80, hover = true } = {}) {
-  await page.addStyleTag({ content: '*, *::before, *::after { transition: none !important; animation-duration: 0s !important; }' }).catch(() => {});
+  // Smooth scrolling (src/index.css) off too: a control scrolled into view is measured where it lands, not mid-scroll
+  // (Polish 1, Stage C: the invoice's "Preview and send" was pointed at before the page had finished moving).
+  await page.addStyleTag({ content: '*, *::before, *::after { transition: none !important; animation-duration: 0s !important; } html, body { scroll-behavior: auto !important; }' }).catch(() => {});
   await page.evaluate(fhInstall);
   await page.mouse.move(0, 0);
   await page.evaluate(() => { document.activeElement?.blur?.(); });

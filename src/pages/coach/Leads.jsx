@@ -483,7 +483,8 @@ export default function Leads() {
               Reports (Phase 6b run 2; M11 C10) with them. */}
           <TextLink onClick={() => setPanel('stages')}>Edit stages</TextLink>
           <MoreLink href="/coach/leads/automations" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); navigate('/coach/leads/automations'); }}>Automations</MoreLink>
-          <TextLink onClick={() => setPanel('import')}>Import from a spreadsheet</TextLink>
+          {/* Once only (Tim's walk of Stage B, item 10): with no leads the empty state offers it. */}
+          {!(loaded && open.length === 0) && <TextLink onClick={() => setPanel('import')}>Import from a spreadsheet</TextLink>}
           <TextLink onClick={() => setPanel('export')}>Export</TextLink>
           <MoreLink href="/coach/leads/cold" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); navigate('/coach/leads/cold'); }}>Cold leads</MoreLink>
           <MoreLink href="/coach/leads/reports" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); navigate('/coach/leads/reports'); }}>Reports</MoreLink>

@@ -700,7 +700,7 @@ export function gettingStarted(profile, { engagement = null, sessionsHeld = 0 } 
   const rows = [
     { key: 'engagement', label: 'Engagement', done: Boolean(engagement) || ticked.engagement === true, auto: Boolean(engagement) },
     { key: 'invited', label: 'Invite to the portal', done: Boolean(profile.user_id || profile.invited_at) || ticked.invited === true, auto: Boolean(profile.user_id || profile.invited_at) },
-    { key: 'first_review', label: 'First review', done: ticked.first_review === true, auto: false },
+    { key: 'first_review', label: 'First check-in', done: ticked.first_review === true, auto: false },
     { key: 'first_session', label: 'First session', done: sessionsHeld > 0 || ticked.first_session === true, auto: sessionsHeld > 0 },
     { key: 'welcome_pack', label: 'Welcome pack', done: ticked.welcome_pack === true, auto: false },
   ];

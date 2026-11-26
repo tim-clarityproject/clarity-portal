@@ -180,7 +180,7 @@ const ASKS = {
   'Start my wind down': 'Ready to wind down?',
   'Start my debrief': 'How did this week go?',
   'Start my monthly review': 'Your monthly review is ready.',
-  'Start my first review': 'Ready for your first review?',
+  'Start my first check-in': 'Ready for your first check-in?',
   'Plan what’s next': 'Ready for what comes next?',
   'Build my plan': 'Ready to build your plan?',
 };
@@ -222,7 +222,7 @@ if (part(1)) {
     // monthly review has its turn in place of "Ready to log today?".
     // A due review (the monthly one, or the First review on an account with none finished) has the turn.
     const turnAsk = await cardQuestion(page);
-    const checkinTurn = ['Your monthly review is ready.', 'Ready for your first review?'].includes(turnAsk);
+    const checkinTurn = ['Your monthly review is ready.', 'Ready for your first check-in?'].includes(turnAsk);
     if (checkinTurn) results.push('NOTE  midday: this month’s check-in is due, so it has the card’s turn (Tim, 5 Nov)');
     pass('midday: "Ready to log today?" or the due check-in', checkinTurn || (await cardQuestion(page)) === 'Ready to log today?', await cardQuestion(page));
     pass('midday: no line saying when the review is suggested (calm layout, 10 Nov)', !(await text(page, '.ds-open')).includes('suggested from'));
@@ -679,7 +679,7 @@ if (part(3)) {
     // so on the fixed October day it isn't a first review any more.
     const { data: hadCheckin } = await db.from('checkins').select('id').eq('user_id', me).eq('status', 'finished').limit(1);
     if (hadCheckin?.length) results.push('NOTE  coaching client: the account has a finished check-in, so no First review card');
-    else pass('coaching client: the card is the First review (Phase 5)', (await cardQuestion(nc.page)) === 'Ready for your first review?', await cardQuestion(nc.page));
+    else pass('coaching client: the card is the First check-in (Phase 5)', (await cardQuestion(nc.page)) === 'Ready for your first check-in?', await cardQuestion(nc.page));
     pass('coaching client: "You’ll build your plan with your coach in your first session."', (await text(nc.page, '.home-plan')).includes('You’ll build your plan with your coach in your first session.'));
     pass('coaching client: Start on my own', (await nc.page.locator('.home-links .ds-link', { hasText: 'Start on my own' }).count()) === 1);
     pass('coaching client: no mission quiet line', (await nc.page.locator('.ds-quiet', { hasText: /mission/i }).count()) === 0);

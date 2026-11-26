@@ -60,7 +60,7 @@ export function Fold({ title, summary, eye, open, onToggle, children }) {
   return (
     <section className="cc-fold">
       <div className="cc-fold-head">
-        <h2>
+        <h2 className="cc-fold-title">
           <button type="button" className="cc-fold-btn" aria-expanded={open} aria-controls={bodyId} onClick={onToggle}>{title}</button>
           {eye}
         </h2>
@@ -139,12 +139,20 @@ export function useGreyLineNow(lineRef) {
  */
 export function TimelineRow({ when, title, lines = [], onClick, className = '' }) {
   const isPhone = useIsPhone();
+  const [open, setOpen] = useState(false);
   const words = lines.filter(Boolean);
+  // On a phone the grey line is trimmed to fit; a row that opens nothing else opens its own lines in full, so what was
+  // left out (a booking's answers) can always be read (Polish 1, Stage C: sell-flows on a phone).
+  const unfolds = isPhone && !onClick && words.length > 0;
   const inner = isPhone
-    ? <div><b>{title}</b><small className="cc-timeline-line" data-grey-line>{when && <span>{when}</span>}{words.map((line, i) => <span key={`${i}:${line}`}>{line}</span>)}</small></div>
+    ? (open && unfolds
+      ? <div><b>{title}</b>{when && <small className="cc-timeline-line">{when}</small>}{words.map((line, i) => <p key={`${i}:${line}`}>{line}</p>)}</div>
+      : <div><b>{title}</b><small className="cc-timeline-line" data-grey-line>{when && <span>{when}</span>}{words.map((line, i) => <span key={`${i}:${line}`}>{line}</span>)}</small></div>)
     : <><span>{when}</span><div><b>{title}</b>{words.map((line, i) => <p key={`${i}:${line}`}>{line}</p>)}</div></>;
   const cls = `cc-timeline-row${className ? ` ${className}` : ''}`;
-  return onClick ? <button type="button" className={cls} onClick={onClick}>{inner}</button> : <div className={cls}>{inner}</div>;
+  if (onClick) return <button type="button" className={cls} onClick={onClick}>{inner}</button>;
+  if (unfolds) return <button type="button" className={cls} aria-expanded={open} onClick={() => setOpen((o) => !o)}>{inner}</button>;
+  return <div className={cls}>{inner}</div>;
 }
 
 /** A list row that opens something: a name, quiet facts under it, and when at the right. */

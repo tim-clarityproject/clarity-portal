@@ -66,7 +66,8 @@ export function buttonProblems({ phone, scale = 1 }) {
     if (el.scrollWidth > el.clientWidth + 1 || range.getBoundingClientRect().right > b.right + 1 || range.getBoundingClientRect().left < b.left - 1) bad.push('its words are cut off');
     if (scale === 1) {
       if (!near(fs, 16)) bad.push(`words ${cs.fontSize}`);
-      const want = phone ? 44 : 40;
+      // Sign-in buttons are 56px, 52 on a phone (the 25 Nov reference; My Account's Password and Email pages use them too).
+      const want = el.matches('.si-btn') ? (phone ? 52 : 56) : phone ? 44 : 40;
       if (lines <= 1 && !near(b.height, want, 0.6)) bad.push(`${Math.round(b.height * 10) / 10}px high, not ${want}`);
     }
     const filled = el.matches(PRIMARY);
@@ -336,7 +337,10 @@ export function controlsFamily({ phone, scale = 1 }) {
   const colour = (value) => { probe.style.color = ''; probe.style.color = value; return getComputedStyle(probe).color; };
   const token = (el, t) => colour(getComputedStyle(el).getPropertyValue(t).trim() || 'transparent');
   const root = document.querySelector('.ui-root') || document.body;
-  const corals = new Set([token(root, '--coral'), token(root, '--coral-hover'), 'rgb(255, 111, 92)'].filter((c) => !clear(c)));
+  // Polish 1 (25 Nov reference): --coral and --coral-hover now resolve to the text colour (coral is for mistakes only),
+  // and a joined switch's chosen option is filled in the text colour (.seg button.on), so only a real coral counts.
+  const textColour = getComputedStyle(root).color;
+  const corals = new Set([token(root, '--coral'), token(root, '--coral-hover'), 'rgb(255, 111, 92)'].filter((c) => !clear(c) && c !== textColour));
   const edged = (st) => ['Top', 'Right', 'Bottom', 'Left'].every((s) => parseFloat(st[`border${s}Width`]) > 0 && st[`border${s}Style`] !== 'none' && !clear(st[`border${s}Color`]));
   const hairline = (st) => /inset/.test(st.boxShadow) && /0px 0px 0px 1px/.test(st.boxShadow);
   const drawn = (st) => edged(st) || !clear(st.backgroundColor) || hairline(st);
@@ -488,7 +492,8 @@ export function controlsFamily({ phone, scale = 1 }) {
     const r = parseFloat(st.borderTopLeftRadius) || 0;
     const bad = [];
     if (!near(r, 12)) bad.push(`corners ${st.borderTopLeftRadius}, not 12px`);
-    if (!near(b.height, want, 0.6)) bad.push(`${Math.round(b.height * 10) / 10}px high, not ${want}`);
+    const wantHere = el.matches('.si-btn') ? (phone ? 52 : 56) : want;
+    if (!near(b.height, wantHere, 0.6)) bad.push(`${Math.round(b.height * 10) / 10}px high, not ${wantHere}`);
     if (bad.length) out.push(`button ${name(el)}: ${bad.join(', ')}`);
   }
   if (coral.length > 1) out.push(`${coral.length} coral buttons on one screen: ${coral.slice(0, 4).map(name).join(', ')}`);

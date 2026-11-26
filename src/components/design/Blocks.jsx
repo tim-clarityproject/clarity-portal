@@ -441,7 +441,7 @@ export function CalendarBar({ title, onPrev, onNext, onToday, view, onView, filt
         {onToday && <button type="button" className="ds-btn ds-btn--outline" onClick={onToday}>Today</button>}
       </div>
       {onView && (
-        <div className="ds-seg ds-seg--placed" role="group" aria-label="Show">
+        <div className="ds-seg ds-seg--equal ds-seg--placed" role="group" aria-label="Show">
           {['month', 'week'].map((v) => (
             <button key={v} type="button" className="ds-seg-btn" aria-pressed={view === v} onClick={() => onView(v)}>{v === 'month' ? 'Month' : 'Week'}</button>
           ))}

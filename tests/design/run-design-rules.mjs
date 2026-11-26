@@ -53,7 +53,7 @@ for (const route of routes) {
         await page.waitForTimeout(1500);
         await page.addStyleTag({ content: '* { transition: none !important; animation-duration: 0s !important; }' }).catch(() => {});
         const landed = new URL(page.url()).pathname;
-        const r = await page.evaluate(designProblems, { phone: width < 600, scale: 1 });
+        const r = await page.evaluate(designProblems, { phone: width < 600, scale: 1, route: landed });
         cell = { landed, problems: r.problems };
       } catch (e) {
         cell = { error: String(e.message || e).slice(0, 120), problems: [] };

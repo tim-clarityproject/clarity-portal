@@ -43,8 +43,9 @@ export default function useInlineForm(force, signature) {
       const room = box.clientWidth + 0.5;
       const evenly = Math.max(...widths) * widths.length + gaps + frame;
       const natural = widths.reduce((a, b) => a + b, 0) + gaps + frame;
-      setEqual(isPhone && evenly <= room);
-      setFits((isPhone && evenly <= room) || natural <= room);
+      // Equal parts wherever they fit at the widest one's width, laptop and phone (Tim's walk of Stage B, item 7).
+      setEqual(evenly <= room);
+      setFits(evenly <= room || natural <= room);
     };
 
     check();
@@ -60,5 +61,5 @@ export default function useInlineForm(force, signature) {
   }, [force, isPhone, signature]);
 
   const form = force || (fits ? 'pills' : 'rows');
-  return { form, isPhone, equal: isPhone && (Boolean(force) || equal), boxRef, measureRef };
+  return { form, isPhone, equal: Boolean(force) || equal, boxRef, measureRef };
 }

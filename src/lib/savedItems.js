@@ -13,7 +13,7 @@ import { CHECKIN_ROUTE, checkinMonth, checkinPath, checkinTitle } from './perfor
 // plan", then "Daily plan" (reviews the same, "Daily review"); debriefs "Sprint 4, week 3";
 // the Life balance review the area chosen ("Focus on sleep"), otherwise
 // "October review"; the Hardware and Software check-in "October check-in",
-// the first one "First review"; a journal "Journal entry", never its first words; the
+// the first one "First check-in"; a journal "Journal entry", never its first words; the
 // other tools what was typed first. Tool names follow CLAUDE.md rule 26.
 //
 // Each row: { id (unique in the list), dbId, source, area, title,

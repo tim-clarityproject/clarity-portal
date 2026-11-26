@@ -615,14 +615,14 @@ if (part('C') && !others?.length) {
     const homeText = await text(page, '.home-page');
     // Timed, so it waits its turn while another timed card (Daily review from 17:00, the debrief) holds Home's one card (Tim, 5 Nov).
     // Polish 1: Home's suggestion for now is the opening's one main button (its words, not M2's card question).
-    const held = async () => { const q = await text(page, '.home-page .ds-open-act .ds-btn--primary'); return q && !/first review/i.test(q) ? q : null; };
+    const held = async () => { const q = await text(page, '.home-page .ds-open-act .ds-btn--primary'); return q && !/first check-in/i.test(q) ? q : null; };
     const heldBy = await held();
     if (heldBy) results.push(`NOTE  Home: the card holds "${heldBy}", so the First review waits its turn`);
-    else pass('Home: the First review is offered (“Start my first review”)', /Start my first review/.test(await text(page, '.home-page .ds-open-act')));
+    else pass('Home: the First check-in is offered (“Start my first check-in”)', /Start my first check-in/.test(await text(page, '.home-page .ds-open-act')));
     await page.goto(`${APP}/monthly-review`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
     pass('first: "What would make coaching useful for you?"', (await heading(page)) === 'What would make coaching useful for you?');
-    pass('first: First review in the top bar', (await text(page, '.ds-guide-name')).toLowerCase() === 'first review');
+    pass('first: First check-in in the top bar', (await text(page, '.ds-guide-name')).toLowerCase() === 'first check-in');
     pass('first: the two nudges', (await page.locator('.ds-guide-nudge').allInnerTexts()).map((t) => t.trim()).join('|') === 'Let’s start with 5 questions about that.|Then your first Hardware and Software review.');
     // Two terms together, so the side panel (Tim, 16 Nov, 23:31).
     await checkExplainOpener(page, page.locator('.ds-guide-nudge .ds-guide-i'), {
@@ -657,9 +657,9 @@ if (part('C') && !others?.length) {
     await home(page);
     const heldBy2 = await held();
     if (heldBy2) results.push(`NOTE  Home: the card holds "${heldBy2}", so finishing the First review waits its turn`);
-    else pass('Home: “Finish my first review”', /Finish my first review/.test(await text(page, '.home-page .ds-open-act')));
+    else pass('Home: “Finish my first check-in”', /Finish my first check-in/.test(await text(page, '.home-page .ds-open-act')));
     if (heldBy2) await page.goto(`${APP}/monthly-review`);
-    else await page.locator('button', { hasText: 'Finish my first review' }).first().click();
+    else await page.locator('button', { hasText: 'Finish my first check-in' }).first().click();
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
     pass('carries on where it was left', (await heading(page)) === 'What has got in the way of progress before?', await heading(page));
     await page.locator('.ds-guide-body textarea').first().fill('I say yes to everything.');

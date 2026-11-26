@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { getLocalDateKey, formatPlainDayLabel } from '../lib/dateFormatter';
@@ -11,30 +11,36 @@ import { useDraft } from '../lib/drafts';
 import { isNetworkError, isOnline } from '../lib/connection';
 import { saveOrQueue, useQueuedSave } from '../lib/syncQueue';
 import { readCache, writeCache } from '../lib/pageCache';
-import DesignHeader from '../components/DesignHeader';
-import PhoneActionBar from '../components/ui/PhoneActionBar';
-import { B3_LINES } from '../content/pageLines/client';
+import FormTool from './toolFocus/FormTool';
+import { JOURNAL_QUESTION } from '../content/pageLines/client';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import {
-  Button, ChipRow, Chip, Crosshair, Loading, MoreLink, PageOpening, SaveStatus, TextBox, useToast,
+  ChipRow, Chip, Crosshair, Loading, SaveStatus, TextBox, useToast,
 } from '../components/design';
 
-// The writing boxes and prompt questions sit in one column with the
-// shared gap (each box has its own edge, so the old ruled lines above
-// and below are not needed). The last box stays a tall page to write
-// on, as before. On a phone the prompt chips are full-width rows, so
-// they never wrap.
+// The Journal runs in focus mode like every other tool (Polish 1, Tim's walk of Stage B, items 1 to 4): FormTool's
+// ToolFrame gives × ("Close and save my place"), the day as the small grey label (no year for a day this year,
+// writing rule 28), the question, Save journal at the foot and Save as draft and Discard as quiet links under it.
+// The menu, My Mission and Breathe step aside. The prompts wait behind a quiet "Need a prompt?" link and show only
+// when asked; the writing boxes sit in one column with the shared gap, the last one a tall page to write on.
 const JOURNAL_CSS = `
+.ui-root .jrn-ask { margin-top: var(--space-3); }
+/* A quiet underlined link, as Save as draft and Discard under the foot (formTool.css .ft-link). */
+.ui-root .jrn-ask .jrn-ask-link {
+  color: var(--text-2);
+  text-decoration: underline;
+  text-decoration-thickness: var(--line-w);
+  text-underline-offset: var(--space-1);
+}
 .ui-root .jrn-prompts {
-  margin-top: var(--space-4);
+  margin: var(--space-2) 0 0;
 }
 @media (max-width: 768px) {
   .ui-root .jrn-prompts {
     flex-direction: column;
     align-items: stretch;
   }
-  /* The pill rule on phones (Tim, 23 Oct): the prompts that don't fit on
-     one line become full-width rows, drawn like the answer lists. */
+  /* The pill rule on phones (Tim, 23 Oct): the prompts become full-width rows, drawn like the answer lists. */
   .ui-root .jrn-prompts .ds-chip {
     display: flex;
     width: 100%;
@@ -54,14 +60,12 @@ const JOURNAL_CSS = `
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  margin-top: 0;
+  padding-bottom: 0;
   border-top: 0;
   border-bottom: 0;
 }
-.ui-root .jrn-page { max-width: var(--tool-max); }
-.ui-root .jrn-actions { margin-top: var(--space-5); }
-.ui-root .jrn-links { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); }
-.ui-root .jrn-discard { color: var(--text-2); text-decoration: underline; text-decoration-thickness: var(--line-w); text-underline-offset: var(--space-1); }
-.ui-root .jrn-meta { font-size: var(--fs-meta); color: var(--text-2); }
+.ui-root .jrn-meta { display: flex; gap: var(--space-3); margin-top: var(--space-2); font-size: var(--fs-meta); color: var(--text-2); }
 .ui-root .jrn-box--last .ds-grow > .ds-text,
 .ui-root .jrn-box--last .ds-grow::after {
   min-height: 480px;
@@ -90,6 +94,8 @@ export default function DailyJournal() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
+  const [promptsOpen, setPromptsOpen] = useState(false);
+  const promptsId = useId();
   const [syncState, markQueued] = useQueuedSave();
   // Whether what is saved for this day is known (from the server or the
   // device's copy). If not, saving now could replace writing already
@@ -294,88 +300,87 @@ export default function DailyJournal() {
     navigate('/daily-journals', { state: { toast: 'Discarded.' } });
   };
 
-  if (isLoading) {
-    return (
-      <div className="ui-root">
-        <DesignHeader />
-        <Loading label="Loading your journal" className="ds-loading--page" />
-      </div>
-    );
-  }
-
-  const actionButtons = (
-    <>
-      <Button variant="primary" disabled={isSaving} onClick={handleSaveJournal}>Save journal</Button>
-      <Button variant="outline" disabled={isSaving} onClick={handleSaveDraft}>Save as draft</Button>
-    </>
-  );
+  // The day as the small grey label: no year for a day this year (writing rule 28).
+  const dayLabel = dateObj.getFullYear() === new Date().getFullYear()
+    ? formatPlainDayLabel(dateObj)
+    : `${formatPlainDayLabel(dateObj)} ${dateObj.getFullYear()}`;
 
   let lastTIndex = -1;
   blocks.forEach((b, i) => { if (b.t === 't') lastTIndex = i; });
 
+  const choosePrompt = (p) => {
+    handlePrompt(p);
+    setPromptsOpen(false);
+  };
+
   return (
     <div className="ui-root">
       <style>{JOURNAL_CSS}</style>
-      <DesignHeader />
+      <FormTool
+        name={dayLabel}
+        question={JOURNAL_QUESTION}
+        onNext={() => { if (!isLoading) handleSaveJournal(); }}
+        nextLabel="Save journal"
+        onSaveDraft={() => { if (!isLoading) handleSaveDraft(); }}
+        onDiscard={() => setDiscardOpen(true)}
+        closeTo="/daily-journals"
+        className="jrn-page"
+      >
+        {isLoading ? (
+          <Loading label="Loading your journal" />
+        ) : (
+          <>
+            {!serverKnown && (
+              <p className="jrn-unknown" role="status">This day hasn’t loaded, so you can write now and save once you’re back online.</p>
+            )}
 
-      <div className="plan-page plan-page--form jrn-page">
-        {/* The title is JOURNAL, the day its small grey label (Polish 1, B3). */}
-        <PageOpening
-          label={`${formatPlainDayLabel(dateObj)} ${dateObj.getFullYear()}`}
-          title="Journal"
-          line={B3_LINES.journal}
-        />
+            <div className="jrn-paper-wrap">
+              {blocks.map((b, i) => (
+                b.t === 'p' ? (
+                  <div className="jrn-qrow" key={i}>
+                    <span className="jrn-qdash" aria-hidden="true" />
+                    <span className="jrn-qtext">{b.v}</span>
+                    <button type="button" className="jrn-qremove" aria-label="Remove this question" onClick={() => handleRemoveBlock(i)}><Crosshair variant="close" size="sm" /></button>
+                  </div>
+                ) : (
+                  <TextBox
+                    key={i}
+                    ref={i === lastTIndex ? lastInputRef : undefined}
+                    className={i === lastTIndex ? 'jrn-box jrn-box--last' : 'jrn-box'}
+                    lines="many"
+                    focusMode
+                    who={i === 0 ? 'me' : undefined}
+                    placeholder={i === lastTIndex ? 'Start writing...' : undefined}
+                    ariaLabel={i === 0 ? 'Daily Journal' : 'Daily Journal, continued'}
+                    value={b.v}
+                    onChange={(v) => changeBlock(i, v)}
+                  />
+                )
+              ))}
+            </div>
 
-        {!serverKnown && (
-          <p className="jrn-unknown" role="status">This day hasn’t loaded, so you can write now and save once you’re back online.</p>
-        )}
+            <div className="jrn-meta">
+              <span>{words} word{words === 1 ? '' : 's'}</span>
+              <SaveStatus state={isSaving ? 'saving' : (syncState !== 'idle' ? syncState : (saveStatus ? 'saved' : 'idle'))} />
+            </div>
 
-        <ChipRow className="jrn-prompts" label="Need a way in?">
-          {PROMPTS.map((p) => (
-            // An action, not an on/off choice, so no aria-pressed.
-            <Chip key={p} aria-pressed={undefined} onClick={() => handlePrompt(p)}>{p}</Chip>
-          ))}
-        </ChipRow>
-
-        <div className="jrn-paper-wrap">
-          {blocks.map((b, i) => (
-            b.t === 'p' ? (
-              <div className="jrn-qrow" key={i}>
-                <span className="jrn-qdash" aria-hidden="true" />
-                <span className="jrn-qtext">{b.v}</span>
-                <button type="button" className="jrn-qremove" aria-label="Remove this question" onClick={() => handleRemoveBlock(i)}><Crosshair variant="close" size="sm" /></button>
+            {/* The prompts only when asked (the agreed design: a quiet link, never four boxes above the page). */}
+            <div className="jrn-ask">
+              <button type="button" className="ds-more ds-more--bare jrn-ask-link" aria-expanded={promptsOpen} aria-controls={promptsId} onClick={() => setPromptsOpen((v) => !v)}>Need a prompt?</button>
+              <div id={promptsId} hidden={!promptsOpen}>
+                {promptsOpen && (
+                  <ChipRow className="jrn-prompts" label="Prompts">
+                    {PROMPTS.map((p) => (
+                      // An action, not an on/off choice, so no aria-pressed.
+                      <Chip key={p} aria-pressed={undefined} onClick={() => choosePrompt(p)}>{p}</Chip>
+                    ))}
+                  </ChipRow>
+                )}
               </div>
-            ) : (
-              <TextBox
-                key={i}
-                ref={i === lastTIndex ? lastInputRef : undefined}
-                className={i === lastTIndex ? 'jrn-box jrn-box--last' : 'jrn-box'}
-                lines="many"
-                focusMode
-                who={i === 0 ? 'me' : undefined}
-                placeholder={i === lastTIndex ? 'Start writing...' : undefined}
-                ariaLabel={i === 0 ? 'Daily Journal' : 'Daily Journal, continued'}
-                value={b.v}
-                onChange={(v) => changeBlock(i, v)}
-              />
-            )
-          ))}
-        </div>
-
-        <div className="jrn-meta">
-          <span>{words} word{words === 1 ? '' : 's'}</span>
-          <SaveStatus state={isSaving ? 'saving' : (syncState !== 'idle' ? syncState : (saveStatus ? 'saved' : 'idle'))} />
-        </div>
-
-        <div className="plan-actions plan-actions--desktop jrn-actions">{actionButtons}</div>
-
-        <div className="jrn-links">
-          <MoreLink back onClick={() => navigate('/daily-journals')}>Back to My Journals</MoreLink>
-          <button type="button" className="ds-more ds-more--bare jrn-discard" onClick={() => setDiscardOpen(true)}>Discard</button>
-        </div>
-      </div>
-
-      <PhoneActionBar>{actionButtons}</PhoneActionBar>
+            </div>
+          </>
+        )}
+      </FormTool>
 
       <DiscardDialog
         isOpen={discardOpen}

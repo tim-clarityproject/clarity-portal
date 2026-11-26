@@ -76,7 +76,7 @@ export const EVERYWHERE = {
   ],
   added: [
     ...THEY_NAMES,
-    [/^(Your coaching sessions, calls and visits in one place\.|Add a session|Everything you plan to do, by day\. Only you can see it\.|Times people outside can book a call with you\.|How your practice runs: your details, booking, calendars and the rest\.|Your booking settings\.|With Mia Torres and Paul Garner\. The times you offered, and who can make each one\.)$/, P1_OPEN, null, { quiet: true, say: 'the page’s opening line and its main button' }],
+    [/^(Your coaching sessions, calls and visits in one place\.|Add a session|Everything you plan to do, by day\.|Times people outside can book a call with you\.|How your practice runs: your details, booking, calendars and the rest\.|Your booking settings\.|With Mia Torres and Paul Garner: the times you offered, and who can make each one\.)$/, P1_OPEN, null, { quiet: true, say: 'the page’s opening line and its main button' }],
     [/^(Show|All types|Month|Week)$/, P1_BAR, null, { quiet: true, say: 'Month, Week and Show' }],
     [/^name: (Previous|Next) (week|day|days|month)$/, `${P1_BAR}; the arrows are named for a screen reader`, null, { quiet: true, say: 'Previous and Next, named' }],
     [/^(Show weekends|Hide weekends|Calendar settings)$/, P1_FOOT, null, { quiet: true, say: 'Show weekends and Calendar settings' }],

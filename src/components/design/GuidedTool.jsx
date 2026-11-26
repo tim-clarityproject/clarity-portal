@@ -431,8 +431,13 @@ export default function GuidedTool({
     if (!foot || !button) return undefined;
     const html = document.documentElement;
     const before = html.style.getPropertyValue('--ds-toast-offset');
+    // Polish 1 (Stage B put the foot 32px under the step, not pinned to the screen's foot; Stage C, calm-rules' toast
+    // check on the Daily review): a toast at its usual place (32px up, 44px high) that would meet the foot rises to
+    // 16px above the foot's top wherever the foot is; a foot well above that place leaves the toast where it is.
     const place = () => {
-      if (toastReaches(foot)) html.style.setProperty('--ds-toast-offset', `${Math.max(0, Math.round(foot.getBoundingClientRect().height) - 16)}px`);
+      const r = foot.getBoundingClientRect();
+      const clear = window.innerHeight - r.bottom >= 32 + 44 + 8;
+      if (toastReaches(foot) && !clear) html.style.setProperty('--ds-toast-offset', `${Math.max(0, Math.round(window.innerHeight - r.top) - 16)}px`);
       else if (before) html.style.setProperty('--ds-toast-offset', before);
       else html.style.removeProperty('--ds-toast-offset');
     };

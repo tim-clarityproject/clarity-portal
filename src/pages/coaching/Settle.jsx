@@ -151,7 +151,8 @@ export default function Settle() {
           <div className="cl-stack">
             <p className="cl-say">{BACS.line}</p>
             {view.rest && <p className="cl-hint">{view.rest}</p>}
-            {real ? <div ref={nodeRef} className="cl-element" /> : <div className="cl-stripe">{answer ? STAND_IN_BACS : ' '}</div>}
+            {/* Until the server answers, the form's room is kept, quietly loading, never an empty outlined box (the design check's empty-box). */}
+            {real ? <div ref={nodeRef} className="cl-element" /> : answer ? <div className="cl-stripe">{STAND_IN_BACS}</div> : !problem && <div className="cl-element" role="status" aria-label="Loading the Direct Debit form" />}
             {problem && <ErrorMessage>{problem}</ErrorMessage>}
           </div>
         </ToolFrame>

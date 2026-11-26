@@ -2326,6 +2326,11 @@
   .ui-root .ds-toast-region {
     bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--space-3)) + var(--space-3) + max(var(--ds-toast-offset, 0px), var(--tabbar-height, 0px)));
   }
+  /* Polish 1 (Stage C): Breathe floats bottom right on phones too, and a toast never sits over it
+     (25 Nov reference: the toast at the foot, Breathe in the corner), so the toast rises above it. */
+  :root:has(.ds-orb--fixed) .ui-root .ds-toast-region {
+    bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--space-3)) + var(--space-3) + max(var(--ds-toast-offset, 0px), var(--tabbar-height, 0px), calc(var(--breathe-h) + var(--space-2))));
+  }
 }
 
 .ui-root .ds-toast {
@@ -4422,9 +4427,15 @@
   all: unset;
   cursor: pointer;
   position: relative;
-  display: inline-block;
-  margin-top: var(--space-1);
-  min-height: 0 !important;
+  /* Its own box is the 44px tap area (Tim's walk of Stage B, item 6: every link's tap area is 44px), centred on its
+     words; the negative margins keep the drawn rhythm as it was. */
+  --status-link-reach: calc((var(--tap-min) - 1lh) / 2);
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  margin-top: calc(var(--space-1) - var(--status-link-reach));
+  margin-bottom: calc(-1 * var(--status-link-reach));
+  min-height: var(--tap-min) !important;
   padding: 0 !important;
   font-family: var(--font-body);
   font-size: var(--fs-meta) !important;
@@ -4442,9 +4453,8 @@
   position: absolute;
   left: calc(-1 * var(--space-2));
   right: calc(-1 * var(--space-2));
-  /* Reaches down, not up, so it never covers the status line above. */
   top: 0;
-  height: var(--tap-min);
+  bottom: 0;
 }
 
 @media (hover: hover) {
@@ -5164,6 +5174,12 @@
   flex: none;
 }
 
+/* When the aside wraps under the title on a phone (the sprint's Log by switch), the eye's 44px tap area and the
+   switch's never share a pixel (calm-rules' tap-overlap check, Polish 1 Stage C). */
+@media (max-width: 600px) {
+  .ui-root .ds-section-head:has(.ds-section-aside) { row-gap: var(--space-3); }
+}
+
 /* A bar under the standard: grey, never coral (Tim, 22 Oct). */
 .ui-root .ds-bar.ds-bar--below > span {
   background: var(--below);
@@ -5289,15 +5305,10 @@
 }
 
 .ui-root .ds-objective-milestone .ds-status-action-link {
-  margin-top: var(--space-px10);
+  margin-top: calc(var(--space-px10) - var(--status-link-reach));
   /* "Edit this objective" follows: room for both 44px tap areas, with no
-     overlap (Tim, 10 Nov). */
-  margin-bottom: var(--space-px18);
-}
-
-/* Here the tap area is centred on the words, so it reaches 12px each way. */
-.ui-root .ds-objective-milestone .ds-status-action-link::after {
-  top: calc((1lh - var(--tap-min)) / 2);
+     overlap (Tim, 10 Nov). The link's own box is its tap area, centred on its words. */
+  margin-bottom: calc(var(--space-px18) - var(--status-link-reach));
 }
 
 .ui-root .ds-objective-foot {
@@ -9682,6 +9693,8 @@
   --aside-lift: 0.088em;
 }
 
+/* Polish 1 (Stage C): a card's label (13px spaced capitals, the plan's My Mission) as a section name (calm-rules' eye gap). */
+.ui-root .ds-label .ds-page-aside,
 .ui-root .ds-section-title .ds-page-aside,
 .ui-root .ds-mission-card-label .ds-page-aside,
 .ui-root .ds-dialog-title .ds-page-aside {

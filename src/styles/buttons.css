@@ -183,6 +183,17 @@
   padding: 0 var(--space-px6) !important;
 }
 
+/* Equal parts, sized to its words (Tim's walk of Stage B, item 7): each option as wide as the widest, and the switch
+   as wide as its parts, never stretched across the row it shares. (InlineChoice gives --equal whenever the parts fit
+   at the widest one's width; otherwise they keep their own widths, as one line always wins.) */
+.ui-root .ds-seg.ds-seg--equal:not(#_) {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  width: auto;
+  max-width: 100%;
+}
+
 .ui-root .ds-seg .ds-seg-btn {
   z-index: 1;
   background: transparent;

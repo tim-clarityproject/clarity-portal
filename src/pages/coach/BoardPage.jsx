@@ -9,7 +9,7 @@ import {
   BOARD_COLUMN_KINDS, BOARD_LAYOUTS, BOARD_NAME_MAX, BOARD_WORDS, boardCellChange, boardDeletePlan, boardDraft, boardFieldWords, boardItemDraft, boardItemFromTyped, boardItemsOf, boardSavePlan,
   boardStageBeside, boardStagesOf, boardTable, boardView, canEditBoard, moveBoardItem, newBoardItem, SHARE_HELP, sharedBy, sharedToast, shareLabel,
 } from '../../lib/coach/crm';
-import { Back, Detail, EditCell, MenuItem, MenuLabel, Part, PopMenu, Row, TextLink, useCoachPortal, useNarrowerThan } from './parts';
+import { Back, Detail, EditCell, Eye, MenuItem, MenuLabel, Part, PopMenu, Row, TextLink, useCoachPortal, useNarrowerThan } from './parts';
 import { useEvenCards } from './Clients';
 import { calm } from './crmParts';
 import './leftovers.css';
@@ -221,7 +221,7 @@ export default function BoardPage() {
     <div className="cc-page">
       <div className={`cc-col${layout === 'list' ? '' : ' cc-col--wide'}`}>
         <Back to={BOARD_WORDS.title} onClick={() => navigate('/coach/boards')} />
-        <PageOpening title={board.name} line={mayEdit ? boardPageLine(board.shared === true) : sharedBy(ownerName)} />
+        <PageOpening title={board.name} aside={mayEdit && board.shared !== true ? <Eye sentence="Only you can see this." /> : undefined} line={mayEdit ? boardPageLine(board.shared === true) : sharedBy(ownerName)} />
         <div className="cc-toolbar">
           {!isPhone && <div className="cc-seg"><InlineChoice ariaLabel="Layout" semantics="pressed" options={noTable ? LAYOUTS.slice(0, 2) : LAYOUTS} value={layout} onChange={setLayout} form="pills" /></div>}
           {isPhone && <TextLink ref={ref('view')} aria-haspopup="menu" aria-expanded={menu === 'view'} onClick={() => setMenu('view')}>View</TextLink>}

@@ -294,8 +294,8 @@ const SCREENS = [
   { id: 'My Plans, search found', coral: 'atMost', open: (p) => search(p, '/my-plans', firstWord) },
   { id: 'My Plans, search nothing found', coral: 'atMost', open: (p) => search(p, '/my-plans', 'zzqx') },
   { id: 'My Reviews, search found', coral: 'atMost', open: (p) => search(p, '/my-reviews', 'check-in') },
-  { id: 'First review, the opening', first: true, coral: 'one', open: async (p) => { await go(p, '/monthly-review', '.ds-guide-question, .ds-guide-title'); await until(async () => /first review/i.test(await heading(p))); } },
-  { id: 'First review, the goals', first: true, coral: 'atMost', open: async (p) => { await sleep(450); await p.locator('.ds-guide-next').click(); await until(async () => !/^Ready /.test(await heading(p)), 6000); await settle(p); } },
+  { id: 'First check-in, the opening', first: true, coral: 'one', open: async (p) => { await go(p, '/monthly-review', '.ds-guide-question, .ds-guide-title'); await until(async () => /first check-in/i.test(await heading(p))); } },
+  { id: 'First check-in, the goals', first: true, coral: 'atMost', open: async (p) => { await sleep(450); await p.locator('.ds-guide-next').click(); await until(async () => !/^Ready /.test(await heading(p)), 6000); await settle(p); } },
 ];
 const wanted = SCREENS.filter((s) => !ONLY || ONLY.test(s.id));
 // A screen's own exemption from "no line said twice" (each objective's status line is its own fact, as dashboard.mjs).

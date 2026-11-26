@@ -31,9 +31,24 @@
 //   mission       My Mission in the phone header not filling the row from the crosshair to the right margin at 40px
 //                 high, or on a laptop stretched past its words (walk item 33)
 //
+// Tim's walk of Stage B (26 Nov; WALK-B.md):
+//   who-line      a page's opening line saying who can see it in words (item 5: the eye alone, 5e rule 10)
+//   label-wrap    a section label (13px spaced capitals) on more than one line (item 9)
+//   switch        a joined switch with unequal parts where equal ones fit, or stretched past its parts while it shares
+//                 its row (item 7)
+//   tap           a link or fold whose tap area (its box, or its invisible ::after or ::before) is under 44px high
+//                 (items 6 and 8; rule 29g); a link inside a sentence is left out, as WCAG leaves it out
+//   bare-zero     also a row's value reading a bare 0, 0%, £0 or £0/month (item 9)
+//   breathe       Breathe drawn over something to press in a fixed bar at the foot (item 2)
+//   year          a date this year shown with its year (item 4; writing rule 28)
+//   focus         a tool's address (TOOL_ROUTES) showing the menu, the phone header, My Mission or Breathe: a tool runs
+//                 in focus mode (item 1; rule 21). Give `route` (the runner passes the address it landed on).
+//   duplicate     the same action (three words or more) offered twice on one screen, outside list rows (item 10)
+//   card          also a card with no label whose first row doesn't start at its padding (item 11)
+//
 // Starting points: client-audit-25nov.md's measuring script (Claude, 25 Nov) and the example pages' own checks.
 // Only the standard text size is held to the sizes (scale 1): larger device text grows them.
-export function designProblems({ phone = false, scale = 1 } = {}) {
+export function designProblems({ phone = false, scale = 1, route = null, tools = null } = {}) {
   const out = [];
   const say = (rule, msg) => out.push(`${rule}: ${msg}`);
   const W = window.innerWidth;
@@ -194,6 +209,16 @@ export function designProblems({ phone = false, scale = 1 } = {}) {
       const head = label.closest('.ds-card-head')?.getBoundingClientRect() || lb;
       if (!near(head.top - cb.top - bt, padT, 1)) say('card', `label ${name(label)} is ${Math.round(head.top - cb.top - bt)}px from the card's top, not ${padT}`);
       if (!near(lb.left - cb.left - bl, padL, 1)) say('card', `label ${name(label)} is ${Math.round(lb.left - cb.left - bl)}px from the card's left, not ${padL}`);
+    }
+    // No label: the first row's words start at the padding (item 11), as the label's would.
+    const firstKid = [...card.children].find(vis);
+    if (!label && firstKid && firstKid.matches('.ds-li, .ds-rows-list')) {
+      const row = firstKid.matches('.ds-rows-list') ? [...firstKid.children].find(vis) : firstKid;
+      if (row) {
+        const rs = getComputedStyle(row);
+        const wordsTop = row.getBoundingClientRect().top + (parseFloat(rs.paddingTop) || 0) + (parseFloat(rs.borderTopWidth) || 0) - cb.top - bt;
+        if (!near(wordsTop, padT, 1)) say('card', `the first row of a card with no label, ${name(row)}, starts ${Math.round(wordsTop)}px from the card's top, not ${padT}`);
+      }
     }
     const kids = [...card.children].filter(vis);
     const last = kids[kids.length - 1];
@@ -462,6 +487,135 @@ export function designProblems({ phone = false, scale = 1 } = {}) {
       if (b.width > natural + pad + 16 && mbox.scrollWidth <= mbox.clientWidth + 1) say('mission', `My Mission is ${Math.round(b.width)}px wide on a laptop, wider than its words (${Math.round(natural + pad)}px)`);
     }
   }
+
+
+  // ------------------------------------------------------------------ Tim's walk of Stage B (26 Nov)
+
+  // who-line: a page line saying who can see the page in words (the eye says it).
+  for (const el of top.querySelectorAll('.ds-open-line, .ds-page-line, .ds-tool-hint')) {
+    if (!vis(el)) continue;
+    if (/\b(only you|you and [A-Z][\w’']*|your (coach|team)) can (see|read)\b/i.test(words(el))) say('who-line', `${name(el)} says who can see it in words (the eye says it)`);
+  }
+
+  // label-wrap: a section label on one line.
+  if (scale === 1) {
+    for (const el of top.querySelectorAll('.ds-label, .ds-section-title, .ds-open-label, .cc-fold-title, .ds-card-head > h2, .ds-card-head > h3')) {
+      if (!vis(el) || el.closest('.ds-li, .ds-rows')) continue;
+      const fs = parseFloat(getComputedStyle(el).fontSize);
+      if (lines(el, fs) > 1) say('label-wrap', `the label ${name(el)} wraps onto ${lines(el, fs)} lines`);
+    }
+  }
+
+  // switch: equal parts where they fit; sized to its parts while it shares its row.
+  for (const seg of top.querySelectorAll('.ds-seg')) {
+    if (!vis(seg) || seg.matches('.ds-seg-measure')) continue;
+    const parts = [...seg.querySelectorAll(':scope > button, :scope > [role=radio]')].filter(vis);
+    if (parts.length < 2) continue;
+    const ws = parts.map((b) => b.getBoundingClientRect().width);
+    const natural = parts.map((b) => {
+      const st = getComputedStyle(b);
+      const r = document.createRange();
+      r.selectNodeContents(b);
+      return r.getBoundingClientRect().width + parseFloat(st.paddingLeft) + parseFloat(st.paddingRight);
+    });
+    const sb = seg.getBoundingClientRect();
+    const host = seg.parentElement.getBoundingClientRect();
+    const frame = sb.width - ws.reduce((a, b) => a + b, 0);
+    // Equal parts fit when the switch plus the room its line leaves free could hold the widest part each time; a row
+    // crowded below that keeps the parts' own widths (one line wins).
+    const even = Math.max(...natural) * parts.length + frame;
+    // Its holder: the switch with the wrappers it sits alone in (InlineChoice's .ds-choice and .ds-inline, a page's own).
+    let holder = seg;
+    while (holder.parentElement && holder.parentElement !== top && [...holder.parentElement.children].filter((k) => vis(k) && getComputedStyle(k).position !== 'absolute').length === 1) holder = holder.parentElement;
+    const row = holder.parentElement;
+    const hb = holder.getBoundingClientRect();
+    const sameLine = [...row.children].filter((k) => vis(k) && (() => { const b = k.getBoundingClientRect(); return b.top < hb.bottom - 1 && b.bottom > hb.top + 1; })());
+    const rs = getComputedStyle(row);
+    const gapX = parseFloat(rs.columnGap) || 0;
+    const used = sameLine.reduce((a, k) => a + k.getBoundingClientRect().width, 0) + gapX * Math.max(0, sameLine.length - 1);
+    const free = row.getBoundingClientRect().width - (parseFloat(rs.paddingLeft) || 0) - (parseFloat(rs.paddingRight) || 0) - used;
+    const fits = even <= sb.width + Math.max(0, free) + 1 && even <= host.width + 1;
+    if (fits && Math.max(...ws) - Math.min(...ws) > 1.5) say('switch', `the joined switch ${name(seg).slice(0, 28)} has unequal parts (${ws.map((w) => Math.round(w)).join(' and ')}px)`);
+    const own = Math.max(...natural) * parts.length + frame;
+    if (sb.width > own + 4) {
+      const mid = sb.top + sb.height / 2;
+      const sharing = [...top.querySelectorAll('a, button, [role=tab], input, select, .ds-dd')].some((el) => !seg.contains(el) && !el.contains(seg) && vis(el) && (() => { const b = el.getBoundingClientRect(); return b.top < mid && b.bottom > mid && b.width > 0; })());
+      if (sharing) say('switch', `the joined switch ${name(seg).slice(0, 28)} is ${Math.round(sb.width)}px wide, stretched past its parts (${Math.round(own)}px), in a row it shares`);
+    }
+  }
+
+  // tap: links and folds keep a 44px tap area (their box, or an invisible ::after or ::before laid over it).
+  if (scale === 1) {
+    const reach = (el) => {
+      let h = el.getBoundingClientRect().height;
+      for (const pseudo of ['::after', '::before']) {
+        const ps = getComputedStyle(el, pseudo);
+        if (ps.content && ps.content !== 'none' && ps.position === 'absolute' && ps.display !== 'none') h = Math.max(h, parseFloat(ps.height) || 0);
+      }
+      return h;
+    };
+    for (const el of top.querySelectorAll('a[href], button, [role=button], summary')) {
+      if (!vis(el) || el.matches(OWN) || el.closest(`${ROWS}, ${CAL_TILES}, .ds-seg, .ds-choices, .ds-rows, [role=tablist], [role=grid], .ds-cal, svg, .ds-chart`)) continue;
+      const st = getComputedStyle(el);
+      if (drawn(st) && el.matches(CTRL)) continue; // a boxed control: the short rule measures it
+      const host = el.parentElement;
+      if (host && /^(P|LI|SPAN|SMALL)$/.test(host.tagName) && (host.innerText || '').trim().length > (el.innerText || '').trim().length + 12) continue; // inside a sentence
+      const h = reach(el);
+      if (h < 44 - 0.5) say('tap', `the ${el.getAttribute('aria-expanded') != null ? 'fold' : 'link'} ${name(el)} has a ${Math.round(h)}px tap area (44px)`);
+    }
+  }
+
+  // bare-zero in a row: a row's value reading a bare 0, 0%, £0 or £0/month.
+  for (const el of top.querySelectorAll('.ds-li-value, .fin-row-value, .cc-row-value')) {
+    if (!vis(el)) continue;
+    const v = words(el);
+    if (/^[£$€]?\s*0+(?:[.,]0+)?\s*%?(?:\s*\/\s*\w+)?$/.test(v)) say('bare-zero', `a row's value reads a bare "${v}" (say it in words)`);
+  }
+
+  // breathe: Breathe never sits on something to press in a fixed bar at the foot.
+  const orb = [...document.querySelectorAll('.ds-orb--fixed .ds-breathe')].find(seen);
+  if (orb) {
+    const ob = orb.getBoundingClientRect();
+    const fixedAncestor = (el) => { for (let p = el; p && p !== document.body; p = p.parentElement) if (getComputedStyle(p).position === 'fixed') return p; return null; };
+    for (const el of document.body.querySelectorAll('button, a[href], input, textarea, select, [role=button]')) {
+      if (orb.contains(el) || el.closest('.ds-orb') || !seen(el)) continue;
+      const bar = fixedAncestor(el);
+      if (!bar) continue;
+      const b = el.getBoundingClientRect();
+      if (b.left < ob.right - 1 && b.right > ob.left + 1 && b.top < ob.bottom - 1 && b.bottom > ob.top + 1) say('breathe', `Breathe is drawn over ${name(el)} in a fixed bar`);
+    }
+  }
+
+  // year: a date this year never shows its year (writing rule 28).
+  const yearNow = new Date().getFullYear();
+  const MONTHS = '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)';
+  const dated = new RegExp(`\\b\\d{1,2}(?:st|nd|rd|th)? ${MONTHS},? ${yearNow}\\b|\\b${MONTHS} \\d{1,2},? ${yearNow}\\b`, 'i');
+  const seenYear = new Set();
+  for (const el of top.querySelectorAll('body *')) {
+    const own = textNodesOf(el).map((n) => n.textContent.trim()).join(' ');
+    if (!own || el.closest('svg, script, style, input, textarea, [contenteditable], .ds-legal, [data-year]') || !vis(el)) continue;
+    const m = own.match(dated);
+    if (m && !seenYear.has(m[0])) { seenYear.add(m[0]); say('year', `"${m[0]}" shows this year's date with its year`); }
+  }
+
+  // focus: a tool runs in focus mode, with no menu, header, My Mission or Breathe.
+  const path = (route || '').split(/[?#]/)[0].replace(/\/$/, '') || null;
+  // The tools' addresses (inside the function: the page receives it as text, so nothing outside travels with it).
+  const TOOL_ROUTES = tools || ['/daily-journal', '/daily-plan', '/plan-meeting', '/pressure-plan', '/time-audit', '/pre-mortem', '/pre-mortem/risks', '/pre-mortem/plan', '/give-difficult-feedback', '/give-difficult-feedback/questions'];
+  if (path && TOOL_ROUTES.includes(path)) {
+    const shown = ['.ds-frame-side .ds-mi', '.ds-mbtn', '.hdr-mbox', '.ds-orb--fixed .ds-breathe'].filter((sel) => [...document.querySelectorAll(sel)].some(seen));
+    if (shown.length) say('focus', `the tool at ${path} isn't in focus mode: ${shown.join(', ')} show${shown.length === 1 ? 's' : ''}`);
+  }
+
+  // duplicate: one action offered twice on one screen (outside list rows, where each row has its own).
+  const actions = new Map();
+  for (const el of top.querySelectorAll('a[href], button, [role=button]')) {
+    if (!vis(el) || el.closest(`${ROWS}, li, tr, [role=row], [role=listitem], .ds-rows-list, [role=menu]`)) continue;
+    const w = (el.innerText || '').replace(/\s+/g, ' ').trim();
+    if (w.split(' ').length < 3) continue;
+    actions.set(w, (actions.get(w) || 0) + 1);
+  }
+  for (const [w, n] of actions) if (n > 1) say('duplicate', `"${w.slice(0, 40)}" is offered ${n} times`);
 
   return { problems: [...new Set(out)], counts: { controls: controls.length, cards: top.querySelectorAll('.ds-card').length } };
 }

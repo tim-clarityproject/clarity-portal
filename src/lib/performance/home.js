@@ -187,7 +187,7 @@ export function homeSuggestion(input) {
   }
   // The check-in's turn: once the day is planned (or Daily plan's morning
   // has gone), in place of "How is today going?", or when nothing else is
-  // suggested. A new coaching client's First review is already the card.
+  // suggested. A new coaching client's First check-in is already the card.
   // Never in the night: the check-in waits for the day to start at 04:00 (REVIEW_EARLY_HOURS).
   if (c && input.hour >= REVIEW_EARLY_HOURS && card?.key !== 'first-checkin' && (!card || card.key === 'today')) {
     return { key: c.key, question: c.question, lines: c.lines || [], time: c.time, action: c.action };
@@ -222,7 +222,7 @@ function toCard(p) {
  *   yesterday              { planned, reviewed } (a review before 04:00 can be for the day before)
  *   windDown               { from, dismissed: [evening keys] }
  *   recovery               the open Recovery row, if any; recoveryNext: the next sprint's number
- *   firstCheckin           checkinPrompt() when it's the First review (Phase 5), else null
+ *   firstCheckin           checkinPrompt() when it's the First check-in (Phase 5), else null
  */
 function suggestionInTurn(input) {
   const { today, hour, minute = 0, person, sprintView: v, dayPlanned, reviewed, yesterday = {}, windDown = {}, recovery, nextSprint } = input;
@@ -243,7 +243,7 @@ function suggestionInTurn(input) {
 
   if (person === 'new') {
     if (input.hasCoach) {
-      // A new coaching client: the First review first (M2 sugCard newc),
+      // A new coaching client: the First check-in first (M2 sugCard newc),
       // until it's finished (checkinPrompt in checkin.js).
       const c = input.firstCheckin;
       return c ? { key: 'first-checkin', question: c.question, lines: c.lines, time: c.time, action: c.action } : null;

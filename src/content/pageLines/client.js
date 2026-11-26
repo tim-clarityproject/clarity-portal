@@ -77,7 +77,6 @@ export const B1_LINES = Object.freeze({
   myPlans: 'Every plan you’ve saved, newest first.',
   myReviews: 'Every review you’ve saved, newest first.',
   myJournals: 'Every journal entry you’ve written, newest first.',
-  journalRead: 'Only you can read your journal.',
   afterAction: 'Look back on one event while it’s fresh.',
   plan: 'What you’re aiming for, and the Strategies that get you there.',
   planEmpty: 'Your plan isn’t set up yet.',
@@ -91,7 +90,7 @@ export const B1_LINES = Object.freeze({
   pop: 'Your Personal Operating Plan, as you wrote it.',
   popEdit: 'Edit your Personal Operating Plan.',
   popHistory: 'Every version of your Personal Operating Plan.',
-  popArchived: 'Plans you’ve put away. You can still read them.',
+  popArchived: 'Plans you’ve put away, which you can still read.',
   about: 'Who is behind The Clarity Portal, and why it exists.',
   profile: 'The name your coach and the portal use for you.',
   coaching: 'Your coaching agreement, sessions and invoices.',
@@ -101,9 +100,13 @@ export const B1_LINES = Object.freeze({
 
 /* ------------------------------------------------------------------ B3 (Stage B): the tools */
 
-/** The opening line of each tool's own page (the tools themselves run in focus mode, rule 21). */
+/** The Journal's question, in its tool frame (Tim's walk of Stage B, item 1: the Journal runs in focus mode). */
+export const JOURNAL_QUESTION = 'What’s on your mind?';
+
+/** The opening line of each tool's own page (the tools themselves run in focus mode, rule 21). Who can see a page is
+ *  the eye alone, never words in its line (5e rule 10; Tim's walk of Stage B, item 5). */
 export const B3_LINES = Object.freeze({
-  journal: 'Write what’s on your mind, for as long as you like. Only you can see it.',
+  journal: 'Write what’s on your mind, for as long as you like.',
   breathe: 'A few slow minutes to settle your body before what comes next.',
   breathingSessions: 'Every breathing session you’ve finished, newest first.',
   peakMoments: 'The moments you need to be at your best, and how you’ll get there.',
@@ -131,8 +134,8 @@ export const B2_LINES = Object.freeze({
   sprintStart: 'Choose your habits and dates for the weeks ahead.',
   sprintReviewRead: 'How your sprint went, in your own words.',
   lifeBalance: 'How satisfied you are across your life, and how it changes over time.',
-  lifeBalanceAreas: 'Choose the areas on your wheel. Removed areas keep their past scores.',
-  lifeBalanceTargets: 'Choose the score you’d be happy with in each area. Not every area needs a 10.',
+  lifeBalanceAreas: 'Choose the areas on your wheel, and removed areas keep their past scores.',
+  lifeBalanceTargets: 'Choose the score you’d be happy with in each area, since not every area needs a 10.',
   dailyPlanSummary: 'The plan you made for this day.',
   reviewSummary: 'What you wrote when you looked back.',
   reviewPlanSummary: 'How the day went against your plan.',

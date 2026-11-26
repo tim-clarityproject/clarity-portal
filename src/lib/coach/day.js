@@ -1271,7 +1271,7 @@ export function closeScores(checkins) {
     });
 }
 
-/** The First review's goals a client wrote, as rows: what they most want (up to 3), in their own words. */
+/** The First check-in's goals a client wrote, as rows: what they most want (up to 3), in their own words. */
 export function closeGoals(checkins) {
   const first = (checkins || []).find((c) => c.kind === 'first' && c.goals && typeof c.goals === 'object');
   const three = Array.isArray(first?.goals?.G3) ? first.goals.G3 : [];

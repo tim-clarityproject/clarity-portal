@@ -15,7 +15,9 @@
 .ui-root .ag-contents ol { list-style: none; margin: var(--space-px6) 0 0; padding: 0; columns: 2; column-gap: var(--space-4); }
 .ui-root .ag-contents li { break-inside: avoid; }
 .ui-root .ag-contents-link { display: inline-flex; align-items: center; min-height: var(--tap-min); padding: 0; border: 0; background: none; font: inherit; font-size: var(--fs-secondary); color: var(--text); text-align: left; cursor: pointer; transition: color var(--dur-fast) var(--ease); }
-.ui-root .ag-contents-link:hover, .ui-root .ag-contents-link:focus-visible { color: var(--coral-text); }
+/* Polish 1 (Stage C): --coral-text is the text colour now (coral is for mistakes only), so hover shows as the reference's
+   links do, underlined (the focus and hover check). */
+.ui-root .ag-contents-link:hover, .ui-root .ag-contents-link:focus-visible { text-decoration: underline; text-underline-offset: var(--space-1); text-decoration-thickness: var(--line-w); }
 .ui-root .ag-contents-link:focus-visible { outline: var(--focus-w) solid var(--coral); outline-offset: var(--space-px2); }
 
 /* ---- Clauses (M28 .clause): each with its number, its paragraphs and their reasons */

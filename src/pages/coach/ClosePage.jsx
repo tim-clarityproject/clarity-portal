@@ -104,7 +104,7 @@ export default function ClosePage() {
         </Part>
 
         {goals.length > 0 && (
-          <Part title="First review goals">
+          <Part title="First check-in goals">
             <p className="cc-quiet cc-close-goalsline">What {first} most wanted from coaching, in their own words.</p>
             {goals.map((g) => <div key={g} className="cc-line cc-close-goal"><span><b>{g}</b></span></div>)}
           </Part>

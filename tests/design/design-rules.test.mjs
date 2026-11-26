@@ -21,19 +21,20 @@ before(async () => {
 });
 after(async () => { await browser?.close(); });
 
-async function check(body, { phone = false, theme = 'light', extra = '', width } = {}) {
+async function check(body, { phone = false, theme = 'light', extra = '', width, route = null } = {}) {
   await tab.setViewportSize(width ? { width, height: 800 } : phone ? { width: 390, height: 844 } : { width: 1280, height: 800 });
   await tab.setContent(`<!doctype html><html data-theme="${theme}"><head><style>${FONTS} body{margin:0}</style></head><body><div class="ui-root" style="padding:20px">${body}</div></body></html>`);
   for (const path of STYLES) await tab.addStyleTag({ path });
   await tab.addStyleTag({ content: `.ui-root * { transition: none !important; animation: none !important; } ${extra}` });
-  return tab.evaluate(designProblems, { phone, scale: 1 });
+  return tab.evaluate(designProblems, { phone, scale: 1, route });
 }
 const rules = (r) => r.problems.map((p) => p.split(':')[0]);
 
-// The reference's own parts, built as the shared components draw them.
+// The reference's own parts, built as the shared components draw them (the joined switch with equal parts, as
+// InlineChoice gives it since Tim's walk of Stage B, item 7).
 const OPENING = '<header class="ds-open"><div class="ds-open-label">Wednesday 25 November</div><h1 class="ds-page-title ds-open-title">Good morning, Sam</h1><p class="ds-open-line">Two things need you today.</p><div class="ds-open-act"><button class="ds-btn ds-btn--primary">Start my daily plan</button></div></header>';
 const CARD = '<section class="ds-card"><div class="ds-card-head"><h2 class="ds-label">What needs you</h2><a class="ds-more ds-more--small" href="#"><span>View all</span></a></div><div class="ds-li"><span class="ds-li-name">Sign your coaching agreement</span><span class="ds-li-value">Fri 27 Nov</span></div><div class="ds-li"><span class="ds-li-name">Prepare for tomorrow’s session</span><span class="ds-li-value">~2 minutes</span></div></section>';
-const CONTROLS = '<div style="display:flex;gap:12px;align-items:center"><button class="ds-btn ds-btn--outline">Today</button><div class="ds-count"><button aria-label="Less">−</button><span>7</span><button aria-label="More">+</button></div><div class="ds-seg" role="group" aria-label="Late"><button class="ds-seg-btn" aria-pressed="false">No</button><button class="ds-seg-btn" aria-pressed="true">Yes</button></div></div>';
+const CONTROLS = '<div style="display:flex;gap:12px;align-items:center"><button class="ds-btn ds-btn--outline">Today</button><div class="ds-count"><button aria-label="Less">−</button><span>7</span><button aria-label="More">+</button></div><div class="ds-seg ds-seg--equal" role="group" aria-label="Late"><button class="ds-seg-btn" aria-pressed="false">No</button><button class="ds-seg-btn" aria-pressed="true">Yes</button></div></div>';
 
 test('the reference’s page opening, card and controls pass, laptop and phone, light and dark', async () => {
   for (const phone of [false, true]) {
@@ -254,4 +255,102 @@ test('mission (item 33): in the phone header My Mission fills the row, 40px high
   assert.ok(!rules(r).includes('mission'), r.problems.join('; '));
   r = await check(PHEAD('Lead well'), { width: 1280, extra: '.ui-root .hdr-frame .hdr-mbox:not(#_):not(#_) { min-width: 400px; }' });
   assert.match(r.problems.join('; '), /mission: My Mission is 400px wide on a laptop/, r.problems.join('; '));
+});
+
+// ------------------------------------------------------------------ Tim's walk of Stage B (26 Nov; WALK-B.md)
+const has = (r, rule) => rules(r).includes(rule);
+const all = (r) => r.problems.join('; ');
+const year = new Date().getFullYear();
+
+test('who-line (walk B, item 5): a page line saying who can see it fails; the eye beside the title and a plain line pass', async () => {
+  let r = await check('<header class="ds-open"><h1 class="ds-page-title ds-open-title">To-dos</h1><p class="ds-open-line">Everything you plan to do, by day. Only you can see it.</p></header>');
+  assert.match(all(r), /who-line: "Everything you plan to do, by day\./);
+  r = await check('<header class="ds-open"><h1 class="ds-page-title ds-open-title">To-dos</h1><p class="ds-open-line">Everything you plan to do, by day.</p></header>');
+  assert.ok(!has(r, 'who-line'), all(r));
+});
+
+test('label-wrap (walk B, item 9): a card label on two lines fails; on one line it passes', async () => {
+  const card = (label, w) => `<section class="ds-card" style="width:${w}px"><div class="ds-card-head"><h2 class="ds-label">${label}</h2></div><div class="ds-fig">£5,605</div></section>`;
+  let r = await check(card('Income in November so far', 180));
+  assert.match(all(r), /label-wrap: the label "Income in November so far" wraps onto \d+ lines/i);
+  r = await check(card('This month so far', 260));
+  assert.ok(!has(r, 'label-wrap'), all(r));
+});
+
+const TABS = '<div role="tablist" aria-label="To-dos" style="display:flex;gap:16px"><button role="tab" class="ds-tab" aria-selected="true">Today</button><button role="tab" class="ds-tab" aria-selected="false">Upcoming</button></div>';
+const SEG = (cls = 'ds-seg ds-seg--equal', style = '') => `<div class="${cls}" role="group" aria-label="Show as" style="${style}"><button class="ds-seg-btn" aria-pressed="true">List</button><button class="ds-seg-btn" aria-pressed="false">Calendar</button></div>`;
+test('switch (walk B, item 7): unequal parts, or stretched across a row it shares, fail; equal parts sized to the words pass', async () => {
+  for (const phone of [false, true]) {
+    const bar = (seg) => `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px">${TABS}${seg}</div>`;
+    let r = await check(bar(SEG()), { phone });
+    assert.ok(!has(r, 'switch'), `equal ${phone}: ${all(r)}`);
+    r = await check(bar(SEG('ds-seg')), { phone });
+    assert.match(all(r), /switch: the joined switch "List Calendar" has unequal parts/, `${phone}`);
+    r = await check(bar(SEG('ds-seg ds-seg--equal', 'flex:1 1 auto')), { phone });
+    // On a phone the switch wraps under the tabs, the only control on its line, where it may span the column.
+    if (phone) assert.ok(!has(r, 'switch'), `alone on its line: ${all(r)}`);
+    else assert.match(all(r), /switch: the joined switch "List Calendar" is \d+px wide, stretched past its parts/);
+  }
+});
+
+test('tap (walk B, items 6 and 8): a link or a fold under 44px fails; a 44px ::after or a 44px box passes; a link in a sentence is left out', async () => {
+  const link = (style, after = '') => `<style>.t-link{all:unset;cursor:pointer;position:relative;font-size:13px;line-height:20px;text-decoration:underline;${style}} ${after}</style><div><button type="button" class="t-link">Mark as done</button></div>`;
+  let r = await check(link(''), { phone: true });
+  assert.match(all(r), /tap: the link "Mark as done" has a 20px tap area/);
+  r = await check(link('', '.t-link::after{content:"";position:absolute;left:0;right:0;top:-12px;height:44px}'), { phone: true });
+  assert.ok(!has(r, 'tap'), all(r));
+  r = await check(link('display:inline-flex;align-items:center;min-height:44px'), { phone: true });
+  assert.ok(!has(r, 'tap'), all(r));
+  r = await check('<section><h2 class="cc-fold-title"><button type="button" aria-expanded="false" aria-controls="x" style="all:unset">Done</button></h2><div id="x" hidden></div></section>', { phone: true });
+  assert.match(all(r), /tap: the fold "Done" has a \d+px tap area/);
+  r = await check('<p>Read <a href="#">the terms</a> before you sign, then come back here to carry on.</p>', { phone: true });
+  assert.ok(!has(r, 'tap'), all(r));
+});
+
+test('bare-zero in a row (walk B, item 9): a row’s value of £0 or £0/month fails; a sentence passes', async () => {
+  const row = (v) => `<section class="ds-card"><div class="ds-card-head"><h2 class="ds-label">Your targets</h2></div><div class="ds-li"><span class="ds-li-name">This year, from 1 May<small class="ds-li-sub">${v[1]}</small></span>${v[0] ? `<span class="ds-li-value">${v[0]}</span>` : ''}</div></section>`;
+  for (const v of ['£0', '£0/month', '0%']) assert.match(all(await check(row([v, 'So far']))), /bare-zero: a row's value reads a bare/, v);
+  assert.ok(!has(await check(row(['', 'Nothing settled yet, and no target set.'])), 'bare-zero'));
+});
+
+test('breathe (walk B, item 2): Breathe over a fixed bar’s button fails; lifted over the bar it passes', async () => {
+  const page = '<div style="position:fixed;left:0;right:0;bottom:0;display:flex;gap:12px;padding:12px 20px;background:var(--bg)"><button class="ds-btn ds-btn--primary" style="flex:1">Save journal</button><button class="ds-btn ds-btn--outline" style="flex:1">Save as draft</button></div><div class="ds-orb ds-orb--fixed"><button type="button" class="ds-breathe">Breathe</button></div>';
+  let r = await check(page, { phone: true });
+  assert.match(all(r), /breathe: Breathe is drawn over "Save as draft" in a fixed bar/);
+  r = await check(page, { phone: true, extra: '.ui-root .ds-orb--fixed { --bottom-bar-h: 72px; }' });
+  assert.ok(!has(r, 'breathe'), all(r));
+});
+
+test('year (walk B, item 4): a date this year with its year fails; without it, or last year’s, passes', async () => {
+  assert.match(all(await check(`<div class="ds-open-label">Thursday 26 November ${year}</div>`)), new RegExp(`year: "26 November ${year}"`));
+  assert.ok(!has(await check('<div class="ds-open-label">Thursday 26 November</div>'), 'year'));
+  assert.ok(!has(await check(`<div class="ds-open-label">Wednesday 26 November ${year - 1}</div>`), 'year'));
+});
+
+test('focus (walk B, item 1): a tool’s address with the menu’s crosshair, My Mission or Breathe showing fails; in focus mode it passes', async () => {
+  const header = '<div class="hdr-frame"><button type="button" class="ds-mbtn" aria-label="Menu"><svg class="ds-bold-cross" viewBox="0 0 10 10" width="20" height="20"><path d="M0 5h10M5 0v10" stroke="currentColor"/></svg></button></div>';
+  const tool = '<div class="ds-tool"><div class="ds-tool-bar"><button type="button" class="ds-tool-x" aria-label="Close and save my place"><span class="ds-x"></span></button></div></div>';
+  let r = await check(header + tool, { phone: true, route: '/daily-journal' });
+  assert.match(all(r), /focus: the tool at \/daily-journal isn't in focus mode: \.ds-mbtn shows/);
+  r = await check(tool, { phone: true, route: '/daily-journal' });
+  assert.ok(!has(r, 'focus'), all(r));
+  r = await check(header, { phone: true, route: '/daily-journals' });
+  assert.ok(!has(r, 'focus'), all(r));
+});
+
+test('duplicate (walk B, item 10): one action offered twice fails; each row’s own action passes', async () => {
+  let r = await check('<p>No leads yet.</p><button class="ds-more ds-more--bare">Import from a spreadsheet</button><div class="cc-pfoot"><button class="ds-more ds-more--bare">Import from a spreadsheet</button></div>');
+  assert.match(all(r), /duplicate: "Import from a spreadsheet" is offered 2 times/);
+  r = await check('<section class="ds-card"><div class="ds-card-head"><h2 class="ds-label">Needs you</h2></div><div class="ds-li"><span class="ds-li-name">Invoice 1031</span><button class="ds-more ds-more--bare">View the invoice</button></div><div class="ds-li"><span class="ds-li-name">Invoice 1032</span><button class="ds-more ds-more--bare">View the invoice</button></div></section>');
+  assert.ok(!has(r, 'duplicate'), all(r));
+});
+
+test('card with no label (walk B, item 11): its first row starts at the padding; pushed down it fails', async () => {
+  const card = (style = '') => `<section class="ds-card"><a class="ds-li ds-li--go" href="#a" style="${style}"><span class="ds-li-name">Your details</span></a><a class="ds-li ds-li--go" href="#b"><span class="ds-li-name">Booking</span></a></section>`;
+  for (const phone of [false, true]) {
+    let r = await check(card(), { phone });
+    assert.ok(!has(r, 'card'), `${phone}: ${all(r)}`);
+    r = await check(card('padding-top:16px'), { phone });
+    assert.match(all(r), /card: the first row of a card with no label, "Your details", starts \d+px from the card's top/, `${phone}`);
+  }
 });

@@ -425,7 +425,7 @@ async function flows() {
   text = await words(page);
   report.pass('flow: the close names the client and the engagement', /CLOSE THE ENGAGEMENT/i.test(text) && /Priya Nair/.test(text) && /6-month coaching, /.test(text));
   report.pass('flow: outcomes show the shared scores at the start and now', /Hardware score\s+52 at the start\s+(Now\s+)?71/.test(text) && /Software score\s+58 at the start\s+(Now\s+)?76/.test(text), (text.match(/OUTCOMES[\s\S]{0,120}/i) || [''])[0].replace(/\s+/g, ' '));
-  report.pass('flow: the goals are the First review’s, by the portal’s own name', /FIRST REVIEW GOALS/i.test(text) && /Sleep 7 hours on work nights/.test(text) && !/check-in/i.test(text));
+  report.pass('flow: the goals are the First check-in’s, by the portal’s own name', /FIRST CHECK-IN GOALS/i.test(text) && /Sleep 7 hours on work nights/.test(text) && !/first review/i.test(text));
   report.pass('flow: nothing offers to send a request', !/Send the request/.test(text));
   await page.getByRole('checkbox', { name: 'Testimonial: I’ve asked Priya' }).click(); await settle(page, 500);
   report.pass('flow: a request is ticked by the coach, with its date and Undo', (await toast(page)) === 'Ticked as asked' && /Asked Tue 17 Nov/.test(await words(page)));
