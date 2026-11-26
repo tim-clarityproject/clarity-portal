@@ -16,16 +16,19 @@ import './formTool.css';
 // onNext + nextLabel (never greyed out: pass `need`, a calm line saying what's
 // missing, and show it once Next was pressed), onBack, onSaveDraft, onDiscard,
 // saveError, closeTo (where × goes when there's no page to go back to), wide
-// (a step with a table: the whole 720px column).
+// (a step with a table: the whole 720px column), onClose (a tool that saves on ×
+// itself: it resolves to the toast's words, or null to stay; the Journal).
 export default function FormTool({
   name, step = 1, steps, question, eye, hint, onNext, nextLabel, onBack, need, saveError,
-  onSaveDraft, onDiscard, closeTo = '/welcome', wide = false, children, className = '',
+  onSaveDraft, onDiscard, closeTo = '/welcome', wide = false, children, className = '', onClose,
 }) {
   const navigate = useNavigate();
   const toast = useToast();
   // × keeps what's typed (it's on the device) and goes back where they came from.
-  const close = () => {
-    toast.show(TOOL_CLOSED);
+  const close = async () => {
+    const words = onClose ? await onClose() : TOOL_CLOSED;
+    if (!words) return;
+    toast.show(words);
     if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
     else navigate(closeTo);
   };

@@ -5,7 +5,7 @@ import {
   TextBox, TextField, ToolFrame, monthTitle, useIsPhone, useToast,
 } from '../../../components/design';
 import { ONE_TAP_MS } from '../../../components/design/GuidedTool';
-import { newId, rowsOf, saveRow } from '../../../lib/coach/store';
+import { newId, removeRow, rowsOf, saveRow } from '../../../lib/coach/store';
 import { checkTerms, kindOf, selfFunded } from '../../../lib/agreements/terms';
 import { CURRENCY, moneyText, rateText } from '../../../lib/agreements/currency';
 import { gbpValue, underWarning } from '../../../lib/agreements/fx';
@@ -21,11 +21,11 @@ import {
 import { afterRhythm, momentumWeeks } from '../../../lib/agreements/endDate';
 import {
   RETAINER_SESSIONS, TEAM_SESSIONS, addDiscount, firstOf, newDraft, nextVersionDraft, packageChange, packageTerms, possessive, rateOf, sendWords,
-  startPackages, termsFromPackage,
+  startPackages, termsFromPackage, isUntouched,
 } from '../../../lib/coach/agreementBuilder';
 import { builderClosed } from '../../../content/pageLines/coach';
 import { Back, useCoachPortal } from '../parts';
-import { Answer, FindBox, Hint, MoneyBox, SAVE_PROBLEM, useAgreementDraft } from './builderParts';
+import { Answer, FindBox, Hint, MoneyBox, SAVE_PROBLEM, useAgreementDraft, useRates } from './builderParts';
 import { useSavedSignature, useSend } from './useSend';
 import MistakeLine from '../../../components/agreements/MistakeLine';
 
@@ -146,7 +146,9 @@ function AgreementQuestions({ d }) {
   const [busy, setBusy] = useState(false);
   const rate = rateOf(d.rates, terms.currency || 'GBP').unitsPerGbp;
 
-  const save = useCallback((next, opts = {}) => {
+  // Any answer marks the draft as answered (P4): an untouched one is opened again by New agreement, and × removes it.
+  const save = useCallback((given, opts = {}) => {
+    const next = opts.quiet || given.answered ? given : { ...given, answered: true };
     termsRef.current = next;
     setTermsState(next);
     setProblem(null);
@@ -161,7 +163,7 @@ function AgreementQuestions({ d }) {
   useEffect(() => {
     if (!rate || (terms.currency || 'GBP') === 'GBP' || terms.localMode === 'own') return;
     const next = relocal(termsRef.current, rate);
-    if (mainPrice(next) !== mainPrice(termsRef.current)) save(next);
+    if (mainPrice(next) !== mainPrice(termsRef.current)) save(next, { quiet: true });
   }, [rate]);
 
   const ctx = { first, orgName: ownOrg?.name || null, rate, forOrg, coachFirst: firstOf(coach?.display_first_name || coach?.full_name) || 'you' };
@@ -190,6 +192,16 @@ function AgreementQuestions({ d }) {
 
   const close = async () => {
     await d.flush();
+    // A new draft nobody answered anything in isn't kept (P4): × leaves nothing behind.
+    if (isUntouched(agreement, d.versions) && !termsRef.current.answered) {
+      try {
+        await removeRow(d.userId, 'agreement_versions', draft.id);
+        await removeRow(d.userId, 'agreements', agreement.id);
+        navigate(agreement.profile_id ? `/coach/clients/${agreement.profile_id}` : agreement.organisation_id ? `/coach/organisations/${agreement.organisation_id}` : '/coach/clients');
+        toast.show('Closed. Nothing was answered, so no draft was kept.');
+        return;
+      } catch { /* kept as a draft, as before */ }
+    }
     navigate(agreement.profile_id ? `/coach/clients/${agreement.profile_id}` : agreement.organisation_id ? `/coach/organisations/${agreement.organisation_id}` : '/coach/clients');
     toast.show(builderClosed(party.name ? `${possessive(first)} page` : 'their page'));
   };
@@ -204,7 +216,7 @@ function AgreementQuestions({ d }) {
     const p = pkgs.find((x) => x.id === value);
     if (!p) return;
     const keep = ['clientName', 'clientFirst', 'coachName', 'coachFirst', 'funder', 'fundedBy', 'orgName', 'sponsor', 'needsPO', 'poNumber', 'poAnswer',
-      'organisationId', 'invoicesEmail', 'startsOn', 'clientZone', 'basedIn', 'currency', 'localMode'];
+      'organisationId', 'invoicesEmail', 'startsOn', 'clientZone', 'basedIn', 'currency', 'localMode', ...(t.funder === 'org' ? ['dueDays', 'offerUpfront'] : [])];
     const fresh = termsFromPackage(p, { funded: !selfFunded(t), orgName: t.orgName, clientFirst: first, startsOn: t.startsOn });
     const merged = { ...fresh, ...Object.fromEntries(keep.filter((k) => t[k] !== undefined).map((k) => [k, t[k]])) };
     if (kindOf(merged) === 'oneoff') merged.oneoff = { ...merged.oneoff, on: t.startsOn };
@@ -262,20 +274,25 @@ function AgreementQuestions({ d }) {
         closeLabel="Close and save the draft"
         onNext={last ? (busy ? () => {} : sendIt) : next}
         nextLabel={nextLabel}
-        onBack={index > 0 ? () => go(keys[index - 1]) : undefined}
+        onBack={index > 0 || fromCheck ? () => {
+          // Opened by Change on the check (P3): Back from the group's first question returns to the check, and within
+          // the group it stays in Change's path.
+          if (fromCheck) { const prev = keys[index - 1]; if (groupOf(prev) === groupOf(key)) go(prev, { check: true }); else go('check'); return; }
+          go(keys[index - 1]);
+        } : undefined}
         last={last}
         className="ab-q"
       >
         <Question
           qkey={key} t={terms} set={set} save={save} soon={soon} next={next} ctx={ctx} todayKey={todayKey} pkgs={pkgs} choosePackage={choosePackage}
-          agreement={agreement} organisations={organisations} ownOrg={ownOrg} portal={portal}
+          agreement={agreement} organisations={organisations} ownOrg={ownOrg} portal={portal} rates={d.rates}
         />
         {last && (
           <CheckScreen
             t={terms} keys={keys} ctx={ctx} go={go} agreement={agreement} standardsCount={clauseKeys(terms).length}
             wording={wordingLine(terms, { overrides, standards: d.standards, clientFirst: first })}
-            note={note} setNote={(v) => { setNote(v); d.save(termsRef.current, { overrides, personalNote: v }); }}
-            sendAs={sendAs} setSendAs={(v) => { setSendAs(v); d.save(termsRef.current, { overrides, fields: { send_as: v } }); }}
+            note={note} setNote={(v) => { setNote(v); save(termsRef.current, { personalNote: v }); }}
+            sendAs={sendAs} setSendAs={(v) => { setSendAs(v); save(termsRef.current, { fields: { send_as: v } }); }}
             saved={saved} isOwner={isOwner} onPreview={async () => { await d.flush(); navigate(`/coach/agreements/${agreement.id}/preview`); }}
             onClauses={async () => { await d.flush(); navigate(`/coach/agreements/${agreement.id}/clauses`); }}
           />
@@ -307,7 +324,7 @@ function Choose({ label, options, value, onPick, soon, still = false }) {
 }
 
 /** One question's answers, by its key. */
-function Question({ qkey, t, set, save, soon, next, ctx, todayKey, pkgs, choosePackage, agreement, organisations, ownOrg, portal }) {
+function Question({ qkey, t, set, save, soon, next, ctx, todayKey, pkgs, choosePackage, agreement, organisations, ownOrg, portal, rates }) {
   const k = kindOf(t);
   const c = t.currency || 'GBP';
   const first = ctx.first;
@@ -385,7 +402,7 @@ function Question({ qkey, t, set, save, soon, next, ctx, todayKey, pkgs, chooseP
       );
     }
     case 'rate': return <MoneyBox label={words} value={t.gbpRateMinor ?? t.hours?.rateMinor} currency="GBP" onChange={(v) => set('rate', v)} onEnter={next} />;
-    case 'cur': return <CurrencyQuestion t={t} set={set} />;
+    case 'cur': return <CurrencyQuestion t={t} save={save} ctx={ctx} rates={rates} />;
     case 'local': return <LocalQuestion t={t} set={set} save={save} soon={soon} rate={ctx.rate} label={words} />;
     case 'settle': return <Choose label={words} soon={soon} value={settleOf(t)} onPick={pick('settle')} options={settleChoices(t, { first, orgName: t.orgName })} />;
     case 'disc': return <DiscountQuestion t={t} set={set} save={save} soon={soon} label={words} />;
@@ -554,16 +571,30 @@ function PlaceQuestion({ t, set, first }) {
   );
 }
 
-function CurrencyQuestion({ t, set }) {
+function CurrencyQuestion({ t, save, ctx, rates }) {
   const c = t.currency || 'GBP';
+  const [problem, setProblem] = useState(null);
+  // A currency is chosen with its own rate (F4): one with no rate today says so and isn't chosen, so no figure or
+  // rate from the currency before is ever carried into it, and the saved rate always matches the currency.
+  const pick = (code) => {
+    const units = rateOf(rates, code).unitsPerGbp;
+    if (code !== 'GBP' && !(units > 0)) {
+      setProblem(rates ? `There’s no reference rate for ${currencyName(code).split(',')[0].replace(/^(Euros|Pounds)/, (w) => w.toLowerCase())} today, so it can’t be chosen yet. Choose another currency, or try again tomorrow.`
+        : 'Today’s rates haven’t loaded. Check your connection and try again.');
+      return;
+    }
+    setProblem(null);
+    save(answer(t, 'cur', code, { ...ctx, rate: units }));
+  };
   return (
     <>
       <FindBox
         label="Currency or country" placeholder="Currency or country" value={currencyName(c).split(',')[0]}
         find={(q) => findCurrencies(q).map((x) => ({ key: x.code, label: x.label, line: x.symbol, code: x.code }))}
-        onPick={(h) => set('cur', h.code)}
+        onPick={(h) => pick(h.code)}
         empty="No currency found. An agreement can be in pounds, euros, US, Canadian, Australian, New Zealand, Singapore or Hong Kong dollars, Swiss francs, UAE dirhams, Swedish, Norwegian or Danish kroner, South African rand or Japanese yen."
       />
+      {problem && <MistakeLine>{problem}</MistakeLine>}
       <div className="ab-answers"><Answer label="Currency" value={currencyName(c)} note={c === 'GBP' ? '' : 'You choose the figure they see next'} /></div>
     </>
   );
@@ -731,6 +762,7 @@ function PackageBuilder({ pkg }) {
   if (!isOwner) {
     return <div className="cc-page"><div className="cc-col"><Back to="Agreements" onClick={back} /><PageOpening title={pkg.name} line="Packages are set by the practice’s owner." /></div></div>;
   }
+  const pkgRates = useRates(true);
   const ctx = { first: 'your client', pkgMode: true, rate: null, coachFirst: '' };
   const words = questionWords(key, terms, ctx);
   const last = key === 'pnote';
@@ -753,7 +785,7 @@ function PackageBuilder({ pkg }) {
         {key === 'pnote' && <TextBox label="Your note" value={note} maxLength={1000} onChange={(v) => { setNote(v); latest.current = { ...latest.current, note: v }; later(); }} />}
         {!['pname', 'pnote'].includes(key) && (
           <Question qkey={key} t={terms} set={set} save={save} soon={soon} next={next} ctx={ctx} todayKey={portal.todayKey} pkgs={[]} choosePackage={() => {}}
-            agreement={{}} organisations={[]} ownOrg={null} portal={portal} />
+            agreement={{}} organisations={[]} ownOrg={null} portal={portal} rates={pkgRates} />
         )}
       </ToolFrame>
     </div>

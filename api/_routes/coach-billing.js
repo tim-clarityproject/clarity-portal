@@ -589,9 +589,14 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
       if (!saved) throw calm(409, `Set up ${org.name}’s billing first.`);
       // This invoice's own supplier number and reference, where the coach typed them (Group D), else the profile's.
       const profile = { ...saved, ...(asked.supplierNumber ? { supplier_number: asked.supplierNumber } : {}), ...(asked.reference ? { their_reference: asked.reference } : {}) };
-      const { data: people } = await server.from('client_profiles').select('id, name, organisation_id, coach_id').eq('organisation_id', org.id).eq('coach_id', coach.id);
+      const { data: people } = await server.from('client_profiles').select('id, name, email, organisation_id, coach_id').eq('organisation_id', org.id).eq('coach_id', coach.id);
       const inOrg = new Map((people || []).map((p) => [p.id, p]));
       const rows = [];
+      let teams = null;
+      const teamAgreements = async () => {
+        if (!teams) teams = (await server.from('agreements').select('id, profile_id, status, ends_on, ending_on, ending_by').eq('organisation_id', org.id).eq('coach_id', coach.id).eq('kind', 'sponsor')).data || [];
+        return teams.filter((x) => !x.profile_id);
+      };
       if (asked.sessionIds.length) {
         const { data: ss } = await server.from('coach_sessions').select('*').in('id', asked.sessionIds);
         for (const x of ss || []) {
@@ -603,9 +608,11 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
         // one the client funded themselves, whatever its status now): never invoiced to the organisation by the hour too
         // (agreements rule 12; the break-it tester, run 3, finding 4).
         const who = [...new Set((ss || []).map((x) => x.profile_id))];
-        const { data: ags } = who.length ? await server.from('agreements').select('id, profile_id, status, ends_on, ending_on, ending_by').in('profile_id', who).eq('coach_id', coach.id) : { data: [] };
-        const { data: avs } = (ags || []).length ? await server.from('agreement_versions').select('agreement_id, version, status, terms, funded_by, client_signed_at, sponsor_signed_at').in('agreement_id', ags.map((x) => x.id)) : { data: [] };
-        const covered = scheduledProfiles(ags || [], avs || []);
+        const { data: own } = who.length ? await server.from('agreements').select('id, profile_id, status, ends_on, ending_on, ending_by').in('profile_id', who).eq('coach_id', coach.id) : { data: [] };
+        // And the organisation's own team programmes: their people's sessions are settled through them (F3).
+        const ags = [...(own || []), ...(await teamAgreements())];
+        const { data: avs } = ags.length ? await server.from('agreement_versions').select('agreement_id, version, status, terms, funded_by, client_signed_at, sponsor_signed_at').in('agreement_id', ags.map((x) => x.id)) : { data: [] };
+        const covered = scheduledProfiles(ags, avs || [], people || []);
         if ((ss || []).some((x) => onSchedule(covered, x.profile_id, dayIn('Europe/London', new Date(x.starts_at))))) throw calm(409, 'That coaching session is covered by its own agreement, so it isn’t invoiced to the organisation.');
       }
       if (asked.entryIds.length) {
@@ -621,9 +628,10 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
         if ((es || []).length !== asked.entryIds.length) throw notYours('time entry');
         // Time for a client whose own agreement settles it is never invoiced to the organisation too (finding 4).
         const whoE = [...new Set((engs || []).map((e) => e.profile_id).filter(Boolean))];
-        const { data: agsE } = whoE.length ? await server.from('agreements').select('id, profile_id, status, ends_on, ending_on, ending_by').in('profile_id', whoE).eq('coach_id', coach.id) : { data: [] };
-        const { data: avsE } = (agsE || []).length ? await server.from('agreement_versions').select('agreement_id, version, status, terms, funded_by, client_signed_at, sponsor_signed_at').in('agreement_id', agsE.map((x) => x.id)) : { data: [] };
-        const coveredE = scheduledProfiles(agsE || [], avsE || []);
+        const { data: ownE } = whoE.length ? await server.from('agreements').select('id, profile_id, status, ends_on, ending_on, ending_by').in('profile_id', whoE).eq('coach_id', coach.id) : { data: [] };
+        const agsE = [...(ownE || []), ...(await teamAgreements())];
+        const { data: avsE } = agsE.length ? await server.from('agreement_versions').select('agreement_id, version, status, terms, funded_by, client_signed_at, sponsor_signed_at').in('agreement_id', agsE.map((x) => x.id)) : { data: [] };
+        const coveredE = scheduledProfiles(agsE, avsE || [], people || []);
         if ((es || []).some((e) => engProfile.get(e.engagement_id) && onSchedule(coveredE, engProfile.get(e.engagement_id), dayIn('Europe/London', new Date(e.started_at))))) {
           throw calm(409, 'That time is covered by the client’s own agreement, so it isn’t invoiced to the organisation.');
         }
@@ -940,6 +948,7 @@ export async function sendReminder(env, server, coach, { reminder, invoice, sett
     stage: reminder.stage, firstName: String(invoice.payer_name || '').split(/\s+/)[0] || '', number: `CLARITY-${invoice.number}`,
     amountWords: moneyWords(invoice.total_minor - invoice.paid_minor, invoice.currency), dueDayWords: dayKeyWords(invoice.due_on),
     settleByWords: by?.words || null, coachFirst: me?.display_first_name || '', settleLink: invoice.hosted_url, coachee, poNumber: invoice.po_number,
+    toOrganisation: invoice.settles_to === 'organisation',
   });
   // The coach's own words after Edit (Group D): they replace the drafted lines; the greeting, the button and the name stay.
   if (typeof reminder.text === 'string' && reminder.text.trim()) {

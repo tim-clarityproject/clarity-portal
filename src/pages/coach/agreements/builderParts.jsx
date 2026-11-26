@@ -57,7 +57,8 @@ export function useAgreementDraft(agreementId) {
   const kind = draft?.terms?.kind || agreement?.agreement_kind || 'sessions';
   const standards = useMemo(() => standardsFor(standardRows, kind), [standardRows, kind]);
   const pkg = agreement?.package_id ? rowsOf(state, 'pricing_packages').find((p) => p.id === agreement.package_id) || null : null;
-  const rates = useRates(Boolean(draft) && (draft?.terms?.currency || 'GBP') !== 'GBP');
+  // Today's rates are read with the draft, so choosing a currency knows its rate at once (F4).
+  const rates = useRates(Boolean(draft));
   const [status, setStatus] = useState('saved');
   const timer = useRef(null);
   const pending = useRef(null);

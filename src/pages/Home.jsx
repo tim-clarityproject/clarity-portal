@@ -1,4 +1,5 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { saveOrQueue } from '../lib/syncQueue';
 import { alreadyOn } from '../components/SiteMenu';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -174,7 +175,7 @@ export default function Home() {
     // Nothing on the device yet and no connection: the plain Home still helps.
     body = <TodayBody userId={userId} user={user} now={now} today={today} sprint={{ data: { recoveries: [] }, setData: () => {} }} view={null} day={{}} />;
   } else {
-    body = <TodayBody userId={userId} user={user} now={now} today={today} sprint={sprint} view={view} day={day.data} />;
+    body = <TodayBody userId={userId} user={user} now={now} today={today} sprint={sprint} view={view} day={day.data} setDay={day.setData} />;
   }
 
   return (
@@ -188,7 +189,7 @@ export default function Home() {
   );
 }
 
-function TodayBody({ userId, user, now, today, sprint, view, day }) {
+function TodayBody({ userId, user, now, today, sprint, view, day, setDay = () => {} }) {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
@@ -326,7 +327,8 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const choices = useMemo(() => readDayChoices(userId, today), [userId, today, fresh]);
   const { picks, top } = dayPicks(day.dayTodos || [], choices);
-  const items = running && dayPlanned ? todayItems({ picks, top, sprintView: view, todos: d.todos || [], strategies: d.strategies || [] }) : [];
+  // Shown once the day is planned, or as soon as a to-do joins today some other way (Quick Add under Today; Q5).
+  const items = running && (dayPlanned || (day.dayTodos || []).length > 0) ? todayItems({ picks, top, sprintView: view, todos: d.todos || [], strategies: d.strategies || [] }) : [];
   const { daily, weekly } = splitHabits(d, view);
 
   // Carry on: half-finished tools on this device, except the one suggested now.
@@ -354,11 +356,11 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
     ready: running,
     onRestore: (x) => { if (x?.text) { setTodoForm(x); setPanel('todo'); } },
   });
-  const addTodo = async (form) => {
+  const addTodo = async (form, opts) => {
     setPanel(null);
     setTodoForm(emptyTodo(view.current));
     clearTodoDraft();
-    if (!(await actions.addTodo(form))) {
+    if (!(await actions.addTodo(form, opts))) {
       setTodoForm(form);
       setPanel('todo');
     }
@@ -429,11 +431,23 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
 
   // Quick Add for Today (rule 10): the name first; the Strategy and the week once something is typed.
   const [quickNeeds, setQuickNeeds] = useState(false);
+  const todayPlan = useRef(null); // today's day_plans row, once a Quick Add has joined it
   const quickAdd = async () => {
     const form = { ...todoForm, week: todoForm.week ?? view.current };
     if (!form.text.trim() || !form.strategyId) { setQuickNeeds(true); return; }
     setQuickNeeds(false);
-    await addTodo(form);
+    // Under Today, this week's to-do joins today as well (the functionality tester, Q5), through the Daily plan's saves.
+    await addTodo(form, { onToday: {
+      date: today,
+      planId: day.dayPlan?.id || null,
+      dayTodos: day.dayTodos || [],
+      onDay: (planId, dayTodos) => { todayPlan.current = planId; setDay((x) => ({ ...(x || {}), dayPlan: x?.dayPlan?.id ? x.dayPlan : { ...(x?.dayPlan || {}), id: planId, local_date: today, status: x?.dayPlan?.status || 'draft' }, dayTodos })); },
+      undo: (id) => {
+        const planId = todayPlan.current;
+        setDay((x) => ({ ...(x || {}), dayTodos: (x?.dayTodos || []).filter((t) => t.todo_id !== id) }));
+        if (planId) saveOrQueue(userId, { table: 'day_plan_todos', kind: 'delete', match: { day_plan_id: planId, todo_id: id, user_id: userId } }).catch(() => {});
+      },
+    } });
   };
   const quickOpen = panel === 'todo';
   const openQuick = () => {

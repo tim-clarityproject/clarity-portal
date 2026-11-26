@@ -92,6 +92,7 @@ import {
   withMeasure,
 } from '../../lib/performance';
 import { exampleRole } from '../../content/planBuilder';
+import { PORTAL_NAME } from '../../lib/navigation';
 import { formatSavedDate, getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
 import { B2_LINES } from '../../content/pageLines/client';
 import './performance.css';
@@ -188,6 +189,19 @@ export default function CheckIn() {
   return <CheckinFlow key={asked} userId={userId} today={today} month={asked} loaded={loaded} />;
 }
 
+/**
+ * The browser tab names the first check-in by its own name (rule 26a; the functionality tester, Q7): its address is
+ * the Monthly review's, so tabTitle alone would name the Monthly review. Put back when the page goes.
+ */
+function useFirstCheckinTab(first) {
+  useEffect(() => {
+    if (!first) return undefined;
+    const was = document.title;
+    document.title = `First check-in, ${PORTAL_NAME}`;
+    return () => { document.title = was; };
+  }, [first]);
+}
+
 function Shell({ children }) {
   return (
     <div className="ui-root">
@@ -250,6 +264,7 @@ function CheckinFlow({ userId, today, month, loaded }) {
   const { coach, sharing, eye } = useCheckinEye(userId, loaded);
   const [kind] = useState(() => row?.kind || checkinKind({ hasCoach: Boolean(coach), checkins: data.checkins, month }));
   const first = kind === 'first';
+  useFirstCheckinTab(first);
   const role = exampleRole(data.describesYou);
 
   // The drinks counted and the kind of trip: with the month's row once
@@ -999,6 +1014,7 @@ function WorkOn({ userId, today, kind, coach, workOn, sprint, checkinId, ensureC
 // ------------------------------------------------------------------ a saved check-in
 
 function CheckinRead({ userId, today, loaded, row }) {
+  useFirstCheckinTab(row?.kind === 'first');
   const navigate = useNavigate();
   const sprint = useSprintPage(userId);
   const { data } = loaded;

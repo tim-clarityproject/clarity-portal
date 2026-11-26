@@ -686,6 +686,12 @@ const R3 = {
     raw: { start_now: true, start_now_at: '2026-12-02T18:40:00Z', settle_choice: 'upfront' },
     signature: { kind: 'drawn', image: signaturePng() }, coachSignature: { kind: 'drawn', image: signaturePng(220, 64) },
   }),
+  // A term across two years: the key facts' Term breaks after "to", never leaving the year alone on a line (P12).
+  'Coaching agreement, term across two years': agreementPdf({
+    version: agreementVersion({ clauses: clauses065.forStorage({ ...T065, startsOn: '2026-11-24', endsOn: '2027-05-01' }), currency: 'GBP', total_minor: 1453500 }, { ...T065, startsOn: '2026-11-24', endsOn: '2027-05-01', total_minor: 1453500 }),
+    raw: { settle_choice: 'upfront' },
+    signature: { kind: 'drawn', image: signaturePng() }, coachSignature: { kind: 'drawn', image: signaturePng(220, 64) },
+  }),
 };
 
 // ---- Polish 1, Stage C: the 25 Nov PDFs (pdfs-25nov) and their stress cases ------------------------------------

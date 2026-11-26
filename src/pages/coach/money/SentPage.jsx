@@ -93,6 +93,7 @@ export default function SentPage() {
             <Card label={quote ? 'The quote' : 'The agreement'}>
               {facts.price && <Figure value={facts.price} unit={facts.unit} />}
               <Rows>
+                {facts.gbp && <Row name="In pounds" value={facts.gbp} />}
                 {(facts.dates || facts.sessions) && <Row name={facts.dates || t.coaching || 'The coaching'} value={facts.sessions} />}
                 <Row name={`See it as ${first} sees it`} value={<Chevron direction="right" />} onClick={() => navigate(`/coach/agreements/${a.id}/preview`)} className="cc-money-go" />
                 {/* M28 v6 "sent": the PDF from the moment it goes (as sent, waiting for the client's signature), then as signed. */}

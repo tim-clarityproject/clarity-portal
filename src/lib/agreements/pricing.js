@@ -9,10 +9,24 @@ import { sessionCount } from './endDate.js';
 export const sessions = (t) => sessionCount(t?.blocks);
 export const minutes = (t) => (t?.blocks || []).reduce((a, b) => a + Math.max(0, Math.floor(Number(b?.n) || 0)) * (Number(b?.minutes) || 0), 0);
 
+/**
+ * A total kept exactly through the questionnaire (F5, Polish 1): a package priced as a total (£5,840 over 3 months)
+ * reads as a month's fee in whole units (£1,947), but its total stays £5,840, never £5,841. The snapshot holds while
+ * the fee, the months and the currency are the ones it was taken with; any change to them prices by the month again.
+ */
+export const keptTotal = (t) => {
+  const k = t?.termTotal;
+  if (!k || !(Number(k.minor) > 0)) return null;
+  const same = Number(k.monthlyMinor) === (Number(t.monthlyMinor) || 0) && Number(k.months) === (Number(t.months) || 0) && (k.currency || 'GBP') === (t.currency || 'GBP');
+  return same ? Number(k.minor) : null;
+};
+/** The snapshot for a total spread over its months (questions.js's asQuestionnaire). */
+export const keepTotal = (t, minor) => ({ ...t, termTotal: { minor: Math.round(Number(minor) || 0), monthlyMinor: Number(t.monthlyMinor) || 0, months: Number(t.months) || 0, currency: t.currency || 'GBP' } });
+
 /** The price before visit days and discounts. */
 export function base(t) {
   if (t?.priceMode === 'hourly') return Math.round((Number(t.rateMinor) || 0) * minutes(t) / 60);
-  if (t?.priceMode === 'monthly') return (Number(t.monthlyMinor) || 0) * (Number(t.months) || 0);
+  if (t?.priceMode === 'monthly') return keptTotal(t) ?? (Number(t.monthlyMinor) || 0) * (Number(t.months) || 0);
   return Number(t?.totalMinor) || 0;
 }
 

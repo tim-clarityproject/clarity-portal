@@ -119,7 +119,7 @@ export default function AgreementPage() {
     return (
       <div className="cc-page">
         <div className="cc-col ap-page">
-          <AgreementChange kind={change} onClose={closeChange} a={a} v={v} t={t} name={name} end={end} today={today} signed={signDay} sessions={sessions} firstV={firstV} />
+          <AgreementChange kind={change} onClose={closeChange} a={a} v={v} t={t} name={name} end={end} today={today} signed={signDay} sessions={sessions} firstV={firstV} zone={zone} />
         </div>
       </div>
     );

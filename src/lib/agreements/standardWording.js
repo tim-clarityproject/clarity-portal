@@ -22,8 +22,8 @@ const cur = (t) => t?.currency || 'GBP';
 const notice = (t) => Number(t?.noticeHours) || 24;
 const due = (t) => Number(t?.dueDays) || 14;
 const where = (t) => PLACES[t?.place] || PLACES.zoom;
-/** The term in months: set by the month (M28 version 6: 3, 6 or 12), else 6 as before. */
-const termMonths = (t) => (t?.priceMode === 'monthly' && Number(t?.months) > 0 ? Number(t.months) : 6);
+/** The term in months (M28 version 6: 3, 6 or 12; a package priced as a total keeps its own months too), else 6. */
+export const termMonths = (t) => (Number(t?.months) > 0 ? Number(t.months) : 6);
 const MONTH_WORDS = { 3: 'three', 6: 'six', 12: 'twelve' };
 
 /** "1 of 90 minutes, then 15 of 60 minutes, on Zoom or in person, weekly for 6 weeks, then every 2 weeks" (M28's sessText). */
@@ -32,14 +32,24 @@ export const sessionsText = (t) => `${blocksText(t.blocks)}, ${where(t)}, ${lowe
 // Each clause: its title and paragraphs for these terms. `ctx.choice` is the client's way of settling (the investment
 // clause differs between up front and the plan; clauses.js stores both where the client chooses).
 export const STANDARD = {
-  purpose: (t) => ({
-    title: 'Purpose',
-    paragraphs: [
-      P('The coaching is here to help you perform at your best in a demanding role, and to make real progress on the goals you set in your First check-in.'),
-      ...(t.goals ? [P(`Your goals: ${String(t.goals).replace(/\.$/, '')}.`)] : []),
-      P('You and your coach review these goals together as the coaching goes on, and you can change them at any time.'),
-    ],
-  }),
+  purpose: (t) => (kindOf(t) === 'team'
+    // The sponsor reads a team programme's agreement, so its people are named in the third person (Q9, Polish 1).
+    ? {
+      title: 'Purpose',
+      paragraphs: [
+        P('The coaching is here to help each person in the programme perform at their best in a demanding role, and to make real progress on the goals they set in their First check-in.'),
+        ...(t.goals ? [P(`The programme’s goals: ${String(t.goals).replace(/\.$/, '')}.`)] : []),
+        P('Each person and their coach review these goals together as the coaching goes on, and they can change them at any time.'),
+      ],
+    }
+    : {
+      title: 'Purpose',
+      paragraphs: [
+        P('The coaching is here to help you perform at your best in a demanding role, and to make real progress on the goals you set in your First check-in.'),
+        ...(t.goals ? [P(`Your goals: ${String(t.goals).replace(/\.$/, '')}.`)] : []),
+        P('You and your coach review these goals together as the coaching goes on, and you can change them at any time.'),
+      ],
+    }),
 
   coaching: (t) => {
     const k = kindOf(t);

@@ -8,6 +8,7 @@ import { newId, removeRow, rowsOf, saveRow, keyOf } from '../../lib/coach/store'
 import { addCoach, decideProfile, saveCapacity, saveCoachDetails, saveCoachFacts, switchCoach } from '../../lib/coach/actions';
 import { capacityFromTyped } from '../../lib/coach/day';
 import { clean, coverState, dayWords, hoursWords, isEmail, NOTIFICATION_KINDS, notificationOn, parseHours, rangeWords, START_ZONES } from '../../lib/coach/model';
+import { HOURS_NAMES, hoursProblem, isDayOff } from '../../lib/coach/calendar';
 import { SETTINGS_SECTIONS } from '../../lib/coach/navigation';
 import { SETTINGS_LINE, settingsSectionLine } from '../../content/pageLines/coach';
 import { Back, Line, MenuItem, PopMenu, SettingRow, TextLink, useCoachPortal } from './parts';
@@ -289,7 +290,10 @@ function WorkingHours() {
   const hoursAWeek = Number(coach.capacity_hours_week ?? 15);
   const saved = useSaved();
   const saveSettings = useSettingsSave();
-  const block = (key, title, start) => {
+  // One name for each thing, said the same in Booking (the functionality tester, P11): "Your working day" and
+  // "Clients' booking hours". An empty box is a mistake said under it, never a quiet day off: a day off is typed
+  // as its own words ("Not working", or "No bookings" for clients' hours).
+  const block = (key, title, start, off) => {
     const hours = settings[key] && Object.keys(settings[key]).length ? settings[key] : start;
     return (
       <>
@@ -298,21 +302,25 @@ function WorkingHours() {
           <SettingRow
             key={`${key}-${day}`}
             label={label}
-            value={hours[day] ? hoursWords(hours[day]) : ''}
-            words={hoursWords(hours[day])}
+            value={hours[day] ? hoursWords(hours[day]) : off}
+            words={hours[day] ? hoursWords(hours[day]) : off}
             editor={textEditor({ placeholder: '09:00 to 17:00' })}
-            check={(v) => (!clean(v) || parseHours(v) ? null : 'Type the hours like 09:00 to 17:00, or leave it empty for a day off.')}
-            onSave={(v) => saved(() => saveSettings({ [key]: { ...hours, [day]: clean(v) ? parseHours(v) : null } }), { onUndo: () => saveSettings({ [key]: hours }) })}
+            check={(v) => hoursProblem(v, off)}
+            onSave={(v) => saved(() => saveSettings({ [key]: { ...hours, [day]: isDayOff(v) ? null : parseHours(v) } }), { onUndo: () => saveSettings({ [key]: hours }) })}
           />
         ))}
       </>
     );
   };
   const week = Object.fromEntries(DAYS.slice(0, 5).map(([d]) => [d, { from: '09:00', to: '17:00' }]));
+  const workingDay = settings.working_hours && Object.keys(settings.working_hours).length ? settings.working_hours : week;
   return (
     <>
-      {block('working_hours', 'Your working day', week)}
-      {block('booking_hours', 'Open for bookings', {})}
+      {block('working_hours', HOURS_NAMES.working, week, 'Not working')}
+      <p className="cc-note">{HOURS_NAMES.workingLine}</p>
+      {/* Until clients' booking hours are set they follow the working day (bookingHoursOn), so that is what shows. */}
+      {block('booking_hours', HOURS_NAMES.booking, workingDay, 'No bookings')}
+      <p className="cc-note">{HOURS_NAMES.bookingLine}</p>
       <p className="cc-small-label">Capacity</p>
       <SettingRow
         label="Coaching hours each week"
@@ -322,7 +330,6 @@ function WorkingHours() {
         check={(v) => (capacityFromTyped(v) == null ? 'Type a number of hours from 1 to 80.' : null)}
         onSave={(v) => saved(async () => { await saveCapacity(coach, capacityFromTyped(v)); reloadRole(); }, { onUndo: () => saveCapacity(coach, hoursAWeek).then(reloadRole).catch(() => {}) })}
       />
-      <p className="cc-note">Each day has its own hours. Today’s over-full line and booking follow them, and they can be dragged on the calendar.</p>
     </>
   );
 }

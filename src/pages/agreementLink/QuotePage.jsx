@@ -6,7 +6,7 @@ import { isOnline } from '../../lib/connection';
 import { isAsk } from '../../lib/agreements/asks';
 import { quoteNumber, quoteRows, validLine } from '../../lib/agreements/quote';
 import { canChoose } from '../../lib/agreements/upfront';
-import { FLOW, LINK_WORDS, QUOTE_TITLE, askQuestionWords, noteText, quoteLabel, sendChangeWords } from '../../lib/coaching/clientMoney';
+import { FLOW, LINK_WORDS, QUOTE_TITLE, askQuestionWords, noteText, quoteLabel, sendChangeWords, settledAtSigning } from '../../lib/coaching/clientMoney';
 import { SettleSwitch } from '../coaching/AgreementParts';
 import { clientAsk, isLive, storedPdf } from '../../lib/coaching/clientAsk';
 import LinkFrame, { LinkLoading, LinkMessage } from './LinkFrame';
@@ -119,7 +119,8 @@ export default function QuotePage() {
       <Card label={FLOW.inAll} className="cl-inall">
         <Figure value={rows.inAll} />
         <SettleSwitch terms={terms} value={choice} onChange={setChoice} chosenExtras={chosen} label={FLOW.settleWhen} bare />
-        <p className="cl-hint">{rows.hint}</p>
+        {/* "The first …" only where more follows; the full amount where signing settles it all (the functionality tester, P7). */}
+        <p className="cl-hint">{`${rows.hint.replace(/\. The first .* is settled when you sign\.$/, '.')} ${settledAtSigning(terms, choice, chosen)}`}</p>
         {problem && <MistakeLine>{problem}</MistakeLine>}
         <div className="cl-accept"><Button variant="primary" className="cl-full" aria-busy={busy || undefined} onClick={accept}>{FLOW.accept}</Button></div>
       </Card>

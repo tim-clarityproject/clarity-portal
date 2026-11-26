@@ -597,7 +597,7 @@ export async function runDay({ browser, report, parts }) {
     await go(page, `/coach/clients/${ID.priya}/close`);
     {
       const text = await words(page);
-      pass(`${tag}: the close shows the shared scores, at the start and now`, /Hardware score\s+52 at the start\s+(Now\s+)?71/.test(text) && /FIRST REVIEW GOALS/i.test(text), flat((text.match(/OUTCOMES[\s\S]{0,140}/i) || [''])[0]));
+      pass(`${tag}: the close shows the shared scores, at the start and now`, /Hardware score\s+52 at the start\s+(Now\s+)?71/.test(text) && /FIRST CHECK-IN GOALS/i.test(text), flat((text.match(/OUTCOMES[\s\S]{0,140}/i) || [''])[0]));
     }
     await page.getByRole('checkbox', { name: 'Testimonial: I’ve asked Priya' }).click(); await settle(page, 600);
     pass(`${tag}: a request is ticked as asked, with today’s date`, (await toast(page)) === 'Ticked as asked' && /Asked Tue 17 Nov/.test(await words(page)), await toast(page));

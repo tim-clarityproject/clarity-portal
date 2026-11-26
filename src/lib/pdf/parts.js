@@ -69,6 +69,28 @@ export function drawCrosshair(doc, x, y, size, colour) {
 }
 
 /**
+ * A key fact's value in lines that never split a date or an amount: it breaks only after " to ", " · " or ", "
+ * ("24 Nov 2026 to" / "1 May 2027"), so a year never stands on a line of its own (the functionality tester, P12).
+ * A phrase too wide even alone falls back to the ordinary wrap.
+ */
+export function factLines(ts, text, style, maxW) {
+  const phrases = String(text).split(/(?<= to |, | · )/).map((p) => p.trim()).filter(Boolean);
+  const lines = [];
+  let line = '';
+  for (const phrase of phrases) {
+    const cand = line ? `${line} ${phrase}` : phrase;
+    if (ts.width(cand, style) <= maxW) { line = cand; continue; }
+    if (line) lines.push(line);
+    if (ts.width(phrase, style) <= maxW) { line = phrase; continue; }
+    const pieces = ts.wrap(phrase, style, maxW);
+    line = pieces.pop() || '';
+    lines.push(...pieces);
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/**
  * Page 1's top (the 25 Nov PDFs): the lockup bar (the crosshair and THE CLARITY PROJECT in Nekst, the document's
  * kind on the right, a rule in the text colour under it), then the title in Nekst capitals with its one line under
  * it, and the key facts (`spec.facts`: [label, value] pairs) in a block on the right.
@@ -89,7 +111,7 @@ export function titleUnits(L, spec, parent) {
   const details = (spec.details || []).filter((d) => !blank(d)).join(' · ');
   const subLines = details ? ts.wrap(details, S.details, leftW) : [];
   const keyW = 30 * MM;
-  const metaRows = facts.map(([k, v]) => ({ k: ts.wrap(String(k), S.meta, keyW - 4), v: ts.wrap(String(v), S.meta, factsW - keyW) }));
+  const metaRows = facts.map(([k, v]) => ({ k: ts.wrap(String(k), S.meta, keyW - 4), v: factLines(ts, String(v), S.meta, factsW - keyW) }));
   // rows sit 1.4mm apart, with none after the last (the approved .meta's row-gap)
   const metaH = Math.max(0, metaRows.reduce((sum, r) => sum + Math.max(r.k.length, r.v.length) * S.meta.lh, 0) - 1.4 * MM);
   const barH = LOCK_MARK + 5 * MM;

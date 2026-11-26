@@ -2,7 +2,7 @@ import { dayKeyWords } from '../time/index.js';
 import { andList, hoursWords, lowerFirst, moneyText, rateText, upperFirst } from './currency.js';
 import { blockMinutes } from './hours.js';
 import { investmentWords, teamOptions } from './settling.js';
-import { ALL_CLAUSE_KEYS, clauseKeys, PROVIDER, sessionsText, STANDARD } from './standardWording.js';
+import { ALL_CLAUSE_KEYS, clauseKeys, PROVIDER, sessionsText, STANDARD, termMonths } from './standardWording.js';
 import { kindOf, PLACES, selfFunded } from './terms.js';
 import { canChoose } from './upfront.js';
 
@@ -70,8 +70,33 @@ export function forStorage(t, opts = {}) {
   return up.map((c, i) => (c.key === 'investment' ? { ...c, choices: { upfront: c.paragraphs, plan: plan[i].paragraphs } } : c));
 }
 
-/** The clauses with the client's choice applied (what they signed). */
-export const resolveChoice = (clauses, choice) => (clauses || []).map((c) => (c.choices && c.choices[choice] ? { ...c, paragraphs: c.choices[choice] } : c));
+/**
+ * Both ways side by side, for a reader who hasn't chosen yet (Q1, Polish 1): where the client chooses how to settle
+ * when they sign, the Read, the preview and an unsigned PDF say both truthfully, never only up front's.
+ */
+const investmentOf = (text) => String(text || '').replace(/^Your investment is /, '').replace(/\.$/, '');
+const FIRST = /^The first (.+) is settled when you sign/;
+export function eitherParagraphs(choices) {
+  const up = choices?.upfront || [];
+  const plan = choices?.plan || [];
+  const out = up.map((p, i) => {
+    const q = plan[i];
+    if (!q || q.text === p.text) return p;
+    if (i === 0) return { text: `Your investment is ${investmentOf(p.text)}, or ${investmentOf(q.text)}. You choose which when you sign.`, why: p.why };
+    const a = FIRST.exec(p.text);
+    const b = FIRST.exec(q.text);
+    if (a && b) return { text: `When you sign, ${a[1]} is settled if you choose up front, or the first ${b[1]} if not, to confirm your place.`, why: p.why };
+    return { text: `${p.text} ${q.text}`, why: p.why };
+  });
+  return [...out, ...plan.slice(up.length)];
+}
+
+/** The clauses with the client's choice applied (what they signed); 'either' shows both ways before they choose. */
+export const resolveChoice = (clauses, choice) => (clauses || []).map((c) => {
+  if (!c.choices) return c;
+  if (choice === 'either' && c.choices.upfront && c.choices.plan) return { ...c, paragraphs: eitherParagraphs(c.choices) };
+  return c.choices[choice] ? { ...c, paragraphs: c.choices[choice] } : c;
+});
 
 /**
  * The stored clauses with the investment clause's paragraphs set to a choice made (a quote accepted with the plan: the
@@ -101,7 +126,7 @@ export const libraryKeys = () => ALL_CLAUSE_KEYS;
 const commitment = (t) => (kindOf(t) === 'retainer'
   ? { label: 'Commitment', value: '6-month terms, renewing unless either of us says otherwise' }
   : t.fullTerm
-    ? { label: 'Commitment', value: 'The full 6 months, unless something exceptional happens' }
+    ? { label: 'Commitment', value: `The full ${termMonths(t)} months, unless something exceptional happens` }
     : { label: 'Ending early', value: '30 days’ notice, in writing, from either of us' });
 
 /**
@@ -110,6 +135,10 @@ const commitment = (t) => (kindOf(t) === 'retainer'
  */
 export function mainPoints(t, { choice = t?.choice ?? 'upfront', seesMoney = selfFunded(t), clauses = null, paused = null, endingOn = null } = {}) {
   const k = kindOf(t);
+  // Before the client chooses (Q1): both ways, up front first.
+  const invest = () => (choice === 'either'
+    ? (canChoose(t) ? `${upperFirst(investmentWords(t, 'upfront'))}, or ${investmentWords(t, 'plan')}, as you choose when you sign` : upperFirst(investmentWords(t, 'plan')))
+    : upperFirst(investmentWords(t, choice)));
   const c = t.currency || 'GBP';
   const re = (() => {
     const cl = (clauses || []).find((x) => x.key === 'rearranging');
@@ -123,7 +152,7 @@ export function mainPoints(t, { choice = t?.choice ?? 'upfront', seesMoney = sel
       { label: 'Your coaching', value: t.coaching || 'Monthly coaching retainer' },
       { label: 'Coaching sessions', value: `${t.retainer?.sessions || ''}, ${PLACES[t.place] || PLACES.zoom}` },
       { label: 'Dates', value: t.startsOn ? `From ${dayKeyWords(t.startsOn, { year: true })}, ongoing, with a yearly price review` : 'Ongoing, with a yearly price review' },
-      seesMoney ? { label: 'Your investment', value: upperFirst(investmentWords(t, choice)) } : { label: 'Funded by', value: t.fundedBy || '' },
+      seesMoney ? { label: 'Your investment', value: invest() } : { label: 'Funded by', value: t.fundedBy || '' },
       re, commitment(t)].filter((r) => r.value);
   }
   if (k === 'oneoff') {
@@ -143,7 +172,7 @@ export function mainPoints(t, { choice = t?.choice ?? 'upfront', seesMoney = sel
     { label: 'Your coaching', value: t.coaching || '' },
     { label: 'Coaching sessions', value: sessionsText(t) },
     { label: 'Dates', value: t.startsOn && t.endsOn ? `${dayKeyWords(t.startsOn, { year: true })} to ${dayKeyWords(t.endsOn, { year: true })}` : '' },
-    seesMoney ? { label: 'Your investment', value: upperFirst(investmentWords(t, choice)) } : { label: 'Funded by', value: t.fundedBy || '' },
+    seesMoney ? { label: 'Your investment', value: invest() } : { label: 'Funded by', value: t.fundedBy || '' },
     ...(t.adhoc === true ? [{ label: 'Between sessions', value: 'Ad hoc support by email and WhatsApp' }] : []),
     { label: 'Also included', value: upperFirst(andList(inc)) },
     ...(paused?.from && paused?.to ? [{ label: 'Paused', value: `${dayKeyWords(paused.from, { year: true })} to ${dayKeyWords(paused.to, { year: true })}` }] : []),

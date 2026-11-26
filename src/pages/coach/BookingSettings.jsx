@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AddButton, Button, IconButton, SlidePanel, Stepper, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
 import { addDays, instantAt } from '../../lib/time/index.js';
 import { newId, saveRow } from '../../lib/coach/store';
 import {
-  BOOK_PATHS, BOOKING_LIMIT_ROWS, bookingLimits, bookingLimitWords, CALL_TYPE_ROWS, callTypeLine, callTypeProblem, dayBeforeWords, limitToSave, numberProblem, openLinksLine, publicLink,
+  BOOK_PATHS, BOOKING_LIMIT_ROWS, HOURS_NAMES, bookingLimits, bookingLimitWords, CALL_TYPE_ROWS, callTypeLine, callTypeProblem, dayBeforeWords, limitToSave, numberProblem, openLinksLine, publicLink,
   questionLabel, QUESTIONS_MAX, questionsToSave, REMINDER_SWITCHES,
 } from '../../lib/coach/calendar';
-import { SettingRow, TextLink } from './parts';
+import { InlineLink, SettingRow, TextLink } from './parts';
 import { useCalendar } from './calendarParts';
 import { copyWords, LinkPanel, useStartCallTypes } from './BookCall';
 import './booking.css';
@@ -83,6 +84,7 @@ function CallTypePanel({ cal, type, onClose }) {
 
 export default function BookingSettings() {
   const cal = useCalendar();
+  const navigate = useNavigate();
   const toast = useToast();
   useStartCallTypes(cal);
   const { settings, coachZone, todayKey } = cal;
@@ -139,7 +141,9 @@ export default function BookingSettings() {
         <span className="cc-setrow-value">{openLinksLine(cal.bookingLinks, todayKey)}</span>
         <Button variant="text" aria-label="Make a single-use link" onClick={() => setLinkOpen(true)}>Make one</Button>
       </div>
-      <p className="cc-note">Booking pages offer your Open for calls times. Your clients book inside your working hours.</p>
+      {HOURS_NAMES.bookingNote.map((line) => <p key={line} className="cc-note">{line}</p>)}
+      {/* No Open for calls block ahead: the pages have nothing to offer, so it says so here (P11). */}
+      {!(cal.openBlocks || []).some((b) => new Date(b.ends_at) > new Date()) && <p className="cc-note">{HOURS_NAMES.noOpenTimes} <InlineLink onClick={() => navigate('/coach/calendar/open')}>Open for calls</InlineLink></p>}
 
       <CallTypePanel cal={cal} type={type} onClose={() => setEditing(null)} />
       <LinkPanel cal={cal} open={linkOpen} start={null} onClose={() => setLinkOpen(false)} />

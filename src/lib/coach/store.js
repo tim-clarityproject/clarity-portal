@@ -1165,9 +1165,15 @@ const heldBack = (table, row) => (crmReadyNow !== true && Boolean(CRM_COLUMNS[ta
   && !(c === 'crm' && Object.keys(row[c] || {}).length === 0))))
   || (ready065Now !== true && Boolean(COLUMNS_065[table]?.some((c) => !isDefault065(c, row[c]))));
 
+// Rows whose own save is on its way: moveAcross leaves them alone, so a load straight after a new row never sends it a
+// second time while the first is in flight (a second upsert takes another agreement number; FX4, P4).
+const inFlight = new Set();
+
 async function send(userId, table, row, { basedOn = null, fresh = false } = {}) {
   const k = keyOf(table, row);
   if (await heldUntil059(table, row)) return 'device'; // kept here, unsent, until 059 is there
+  const flightKey = `${userId}|${table}|${k}`;
+  inFlight.add(flightKey);
   try {
     // basedOn: "only if the database's row is still at this version" (syncQueue's performBased); fresh: only if there
     // is no row yet, so a stale tab never writes over one another device made (saveChange below).
@@ -1197,6 +1203,8 @@ async function send(userId, table, row, { basedOn = null, fresh = false } = {}) 
   } catch (error) {
     if (NEVER.has(error?.code)) mark(userId, table, k, { refused: true });
     throw error;
+  } finally {
+    inFlight.delete(flightKey);
   }
 }
 
@@ -2109,6 +2117,7 @@ async function moveAcross(userId) {
       const m = state.marks[table]?.[k] || {};
       if (m.sent || m.refused) continue;
       if (m.gone) continue;
+      if (inFlight.has(`${userId}|${table}|${k}`)) continue; // its own save is on its way
       // Part sent, and 052 still isn't there: nothing new to send.
       if (m.part && crmReadyNow !== true) continue;
       try {

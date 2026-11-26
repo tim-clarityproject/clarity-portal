@@ -42,7 +42,8 @@ export default function Preview() {
 
 /** A version as it was sent: its stored clauses (the choice made, once signed), never worked out again. */
 function sentView(version) {
-  const choice = version.settle_choice || 'upfront';
+  // Before the client has chosen how to settle, both ways, as they read it (Q1).
+  const choice = version.settle_choice || 'either';
   const clauses = resolveChoice(version.clauses || [], choice);
   return { clauses, points: mainPoints(version.terms || {}, { choice, clauses }) };
 }

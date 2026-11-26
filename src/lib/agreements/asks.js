@@ -46,6 +46,9 @@ export const ASKS = Object.freeze({
     mark_uploaded: { who: 'coach', body: 'invoiceId', answer: 'uploadedAt' },
     funding_details: { who: 'coach', body: 'organisationId', answer: 'bankDetails { accountName, sortCode, accountNumber }' },
     updated_price: { who: 'coach', body: 'agreementId, newFeeMinor, fromDay, note', answer: 'versionId, sentAt, emailed' },
+    // 061's own refund and credit, asked through here too so a build that isn't the live site has their stand-in (P14).
+    refund: { who: 'coach', body: 'invoiceId, amount, reason?', answer: 'kind, number' },
+    credit: { who: 'coach', body: 'invoiceId, amount, reason?', answer: 'kind, number' },
   },
   settle: {
     start: { who: 'client', body: 'versionId', answer: 'clientSecret, invoiceId, amountMinor, currency, publishableKey?, settled?, standIn?' },
@@ -107,6 +110,8 @@ export const STAND_INS = Object.freeze({
     mark_uploaded: () => ({ uploadedAt: today() }),
     funding_details: () => ({ bankDetails: { accountName: 'The Clarity Project LTD', sortCode: '00-00-00', accountNumber: '00000000' } }),
     updated_price: () => ({ versionId: null, sentAt: today() }),
+    refund: () => ({ kind: 'refund', number: null }),
+    credit: () => ({ kind: 'credit', number: null }),
   },
   settle: {
     start: () => ({ clientSecret: 'stand_in_secret', invoiceId: null, amountMinor: 0, currency: 'GBP', standIn: true }),

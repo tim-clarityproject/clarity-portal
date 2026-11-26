@@ -21,7 +21,7 @@ import { asCallerClient, canSend, emailFrom, fromAddress, supabaseOf } from '../
 import { maySend, oneAddress } from '../_guestEmails.js';
 import { portalOrigin } from '../_portalOrigin.js';
 import { addDays, dayIn, dayKeyWords, isZone } from '../../src/lib/time/index.js';
-import { applies as coolingApplies, futureSessionRows, inWindow, refund14 } from '../../src/lib/agreements/coolingOff.js';
+import { applies as coolingApplies, futureSessionRows, inWindow, ownSessions, refund14, sessionRanges } from '../../src/lib/agreements/coolingOff.js';
 import { forStorage } from '../../src/lib/agreements/clauses.js';
 import { moneyText } from '../../src/lib/agreements/currency.js';
 import { pauseMove } from '../../src/lib/agreements/endDate.js';
@@ -626,7 +626,9 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
       const paid = paidInvs.reduce((s, i) => s + i.left, 0);
       const since = Date.parse(firstSigned.version.client_signed_at);
       const { data: sess } = a.profile_id ? await server.from('coach_sessions').select('*').eq('profile_id', a.profile_id).eq('coach_id', coach.id) : { data: [] };
-      const had = (sess || []).filter((s) => (s.kind || 'coaching') === 'coaching' && counts(s) && isOver(s, now().getTime()) && Date.parse(s.starts_at) >= since).length;
+      // Only this agreement's own sessions count, never another running agreement's (F1).
+      const ranges = await this._ranges(a, allVersions || []);
+      const had = ownSessions(sess || [], ranges, zone).filter((s) => (s.kind || 'coaching') === 'coaching' && counts(s) && isOver(s, now().getTime()) && Date.parse(s.starts_at) >= since).length;
       // What was delivered, at the one per-session price (delivered.js): set sessions and a retainer, each session had;
       // a block of hours, the hours logged at its rate; a one-off, the part the coach says was delivered (else nothing,
       // so a full refund).
@@ -677,7 +679,7 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
       await must(server.from('agreements').update({ status: 'cancelled' }).eq('id', a.id));
       // Coaching sessions still to come come off the calendar here, as its own Delete takes them (agreements rule 12),
       // so no reminder for one ever goes (051's reminders read the calls); nothing is emailed about them.
-      const off = await this._sessionsOff(a);
+      const off = await this._sessionsOff(a, ranges, zone);
       let files = [];
       if (first && refund > 0) {
         try {
@@ -694,13 +696,31 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
     },
 
     /**
+     * The cancelled agreement's own days and the client's other running agreements' (coolingOff.js's sessionRanges), so
+     * only its own sessions are counted and taken off (F1). Null when they can't be read.
+     */
+    async _ranges(a, ownVersions = []) {
+      if (!a.profile_id) return { own: { from: '', to: '' }, others: [] };
+      try {
+        const others = await must(server.from('agreements').select('*').eq('coach_id', coach.id).eq('profile_id', a.profile_id).neq('id', a.id));
+        const ids = (others || []).map((x) => x.id);
+        const theirs = ids.length ? await must(server.from('agreement_versions').select('*').in('agreement_id', ids)) : [];
+        return sessionRanges({ agreement: a, agreements: [a, ...(others || [])], versions: [...ownVersions, ...(theirs || [])] });
+      } catch {
+        return null;
+      }
+    },
+
+    /**
      * The client's coaching sessions still to come, under this coach, removed with their calls, guests and travel time
      * (coolingOff.js's futureSessionRows, the calendar's own Delete). Answers { sessionsOff, removed, calls }: the rows
      * gone, for the device to forget, and the calls' Google event and Zoom meeting, for its sync to delete there too.
      * When it can't be done, { sessionsOff: null } and the coach's device takes them off itself.
      */
-    async _sessionsOff(a) {
+    async _sessionsOff(a, ranges, zone = LONDON) {
       if (!a.profile_id) return { sessionsOff: 0, removed: [], calls: [] };
+      // Without the ranges nothing can be told apart, so nothing is taken off (never another agreement's sessions: F1).
+      if (!ranges) return { sessionsOff: 0, removed: [], calls: [] };
       try {
         const at = now();
         const { data: sessions, error } = await server.from('coach_sessions').select('id, profile_id, kind, starts_at, outcome, recap_sent_at')
@@ -712,7 +732,7 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
         const travel = callIds.length ? await must(server.from('coach_cal_items').select('id, session_id, travel_for, google_event_id, meeting_id').eq('coach_id', coach.id).in('travel_for', callIds)) : [];
         const guests = callIds.length ? await must(server.from('coach_cal_guests').select('id, item_id').in('item_id', callIds)) : [];
         const items = [...(calls || []), ...(travel || [])];
-        const { sessions: ahead, remove } = futureSessionRows(a.profile_id, { sessions, items, guests, now: at.getTime() });
+        const { sessions: ahead, remove } = futureSessionRows(a.profile_id, { sessions, items, guests, now: at.getTime(), ranges, zone });
         const of = (table) => remove.filter(([t]) => t === table).map(([, rowId]) => rowId);
         const gone = new Set(of('coach_cal_items'));
         if (of('coach_cal_guests').length) await must(server.from('coach_cal_guests').delete().in('id', of('coach_cal_guests')));

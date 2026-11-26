@@ -63,8 +63,9 @@ export function organisationLine(coachee, poNumber = null) {
  * @param {string} o.settleLink       Stripe's own page for this invoice (https only)
  * @param {string|null} [o.coachee]   for an organisation: whose coaching it is ("Sam Reid")
  * @param {string|null} [o.poNumber]  for an organisation: its purchase order, when there is one
+ * @param {boolean} [o.toOrganisation] to an organisation's finance contact (its own words: "Pay the invoice")
  */
-export function invoiceReminderEmail({ stage, firstName, number, amountWords, dueDayWords, settleByWords = null, coachFirst, settleLink, coachee = null, poNumber = null }) {
+export function invoiceReminderEmail({ stage, firstName, number, amountWords, dueDayWords, settleByWords = null, coachFirst, settleLink, coachee = null, poNumber = null, toOrganisation = false }) {
   if (!REMINDER_STAGES.includes(stage)) throw new Error('A reminder goes at 3, 7 or 14 days overdue.');
   const inv = oneLine(number);
   const amount = oneLine(amountWords);
@@ -73,7 +74,10 @@ export function invoiceReminderEmail({ stage, firstName, number, amountWords, du
   if (stage === 14 && !by) throw new Error('The 14-day reminder needs its settle-by day, worked out when it goes.');
   const coach = coachLine(coachFirst);
   const forWhom = organisationLine(coachee, poNumber);
-  const button = { type: 'button', label: 'Settle my invoice', href: httpsOnly(settleLink) };
+  // An organisation's finance contact gets the conventional words (Q10, Polish 1); a client settles their own.
+  const org2 = Boolean(forWhom) || toOrganisation === true;
+  const settle = org2 ? 'pay' : 'settle';
+  const button = { type: 'button', label: org2 ? 'Pay the invoice' : 'Settle my invoice', href: httpsOnly(settleLink) };
   const org = forWhom ? { type: 'text', text: forWhom } : null;
   const words = {
     3: {
@@ -82,7 +86,7 @@ export function invoiceReminderEmail({ stage, firstName, number, amountWords, du
         { type: 'text', text: 'I hope the coaching is going well.' },
         { type: 'text', text: `Invoice ${inv} for ${amount} was due on ${oneLine(dueDayWords)}.` },
         org,
-        { type: 'text', text: 'You can settle it here in a couple of minutes.' },
+        { type: 'text', text: `You can ${settle} it here in a couple of minutes.` },
         button,
         { type: 'text', text: 'If it’s already on its way, thank you, and you can ignore this.' },
       ],
@@ -92,7 +96,7 @@ export function invoiceReminderEmail({ stage, firstName, number, amountWords, du
       blocks: [
         { type: 'text', text: `Invoice ${inv} for ${amount} is now 7 days past its due date.` },
         org,
-        { type: 'text', text: 'Could you settle it this week?' },
+        { type: 'text', text: `Could you ${settle} it this week?` },
         button,
         { type: 'text', text: 'If something’s getting in the way, just reply and we’ll find what works.' },
       ],
@@ -102,7 +106,7 @@ export function invoiceReminderEmail({ stage, firstName, number, amountWords, du
       blocks: [
         { type: 'text', text: `Invoice ${inv} for ${amount} is now 14 days overdue.` },
         org,
-        { type: 'text', text: `I’d like to keep our coaching sessions going without a gap, so please settle it by ${by}.` },
+        { type: 'text', text: `I’d like to keep our coaching sessions going without a gap, so please ${settle} it by ${by}.` },
         button,
         { type: 'text', text: 'If there’s a problem, reply to this email and let’s talk it through.' },
       ],

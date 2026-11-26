@@ -45,7 +45,7 @@ export function agreementStatus({ version, opens = [], firstInvoice = null, orgN
   const rows = [
     { label: 'Sent', value: v.sent_at ? whenWords(v.sent_at, now) : NOT_YET },
     { label: 'Opened', value: firstOpen ? whenWords(firstOpen, now) : NOT_YET },
-    { label: 'Signed', value: signedAt ? dayOnlyWords(signedAt, now) : NOT_YET },
+    { label: 'Signed', value: signedAt ? whenWords(signedAt, now) : NOT_YET }, // with its time, as Sent and Opened (P10)
     { label: 'Settled', value: settled },
   ];
   return rows.map((r) => ({ ...r, done: r.value !== NOT_YET }));

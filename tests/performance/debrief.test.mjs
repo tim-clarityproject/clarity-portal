@@ -181,8 +181,11 @@ test('a limit with fewer than half its days logged shows its standing, never "No
   assert.equal(habitTotal({ ...coffees, values: { '2026-11-16': 1 } }, { score: 0, notLogged: true }, 85, { limitPer: 'day' }).label, '5, no more than 2 a day, 1 day logged');
   // Nothing logged at all still says so.
   assert.equal(habitTotal({ ...late, values: {} }, { score: 0, notLogged: true }, 85).value, 'Not logged');
-  // A rating keeps its rule.
-  assert.equal(habitTotal({ weekLine: 'x', measure: 'rating', values: { '2026-11-16': 4 } }, { score: 0, notLogged: true }, 85).value, 'Not logged');
+  // A rating under half its days rated is not scored, and never shows its average word beside it (Polish 1, P1).
+  const rated = { weekLine: 'Excellent on average this week, aim for Very good', measure: 'rating', target: 4, values: { '2026-11-16': 5 } };
+  assert.deepEqual(habitTotal(rated, { score: 0, notLogged: true }, 85), { label: 'Rated on 1 day', value: 'Not logged consistently', good: null });
+  assert.equal(habitTotal({ ...rated, direction: 'lower', values: { a: 2, b: 3 } }, { score: 0, notLogged: true }, 85).label, 'Rated on 2 days');
+  assert.equal(habitTotal({ ...rated, values: {} }, { score: 0, notLogged: true }, 85).value, 'Not logged');
 });
 
 test('objectives: "last week" is the figure before this debrief\'s own (M9, CHOICE D3)', () => {

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useToast } from '../../components/design';
-import { habitLogOp, saveHabitLog, saveTodo, saveTodoDone, setTodoDeleted } from '../../lib/performance/api';
+import { createDayPlan, habitLogOp, loadDayPlanRow, saveHabitLog, saveTodo, saveTodoDone, setTodoDeleted } from '../../lib/performance/api';
+import { dayTodoOps } from '../../lib/performance/dayPlan';
+import { dayTodoCap, fitDayTodos, readDayChoices, saveDayChoices } from '../../lib/performance/dayPlanHabits';
 import { BACKLOG_VALUE, doneToast, newTodoRow, sprintPageView } from '../../lib/performance';
 import { toStored } from '../../lib/units';
-import { keepForLater, newId, useQueueState } from '../../lib/syncQueue';
+import { keepForLater, newId, saveOrQueue, useQueueState } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
 
 // Logging and to-dos, one way for every page that has them (the
@@ -180,7 +182,7 @@ export function useSprintActions({ userId, data, setData, view, today }) {
    * to this week." and Undo, or for the Backlog (no week yet; Tim, 13 Nov,
    * 10:42). Resolves false when it didn't save (the page puts the form back).
    */
-  const addTodo = async (form) => {
+  const addTodo = async (form, { onToday = null } = {}) => {
     const id = newId();
     const backlog = form.week === BACKLOG_VALUE || form.week == null;
     const row = newTodoRow({ id, text: form.text, strategyId: form.strategyId, impact: form.impact, week: backlog ? null : form.week, sprintId: view.sprintId, today, source: form.source, sourceId: form.sourceId });
@@ -191,14 +193,51 @@ export function useSprintActions({ userId, data, setData, view, today }) {
       changeRows((d) => ({ [list]: (d[list] || []).filter((t) => t.id !== id) }));
       return false;
     }
+    // Added under Home's Today for this week: it joins today's plan too, through the Daily plan's own saves (Q5).
+    const toToday = Boolean(onToday) && !backlog && form.week === view.current;
+    const inDay = toToday ? await addToDay(id, onToday) : false;
     toast.saved({
-      message: backlog ? 'Added to your backlog.' : form.week === view.current ? 'Added to this week.' : `Added to week ${form.week}.`,
+      message: backlog ? 'Added to your backlog.' : inDay ? 'Added to today and this week.' : form.week === view.current ? 'Added to this week.' : `Added to week ${form.week}.`,
       onUndo: () => {
         changeRows((d) => ({ [list]: (d[list] || []).filter((t) => t.id !== id) }));
+        if (inDay) onToday.undo?.(id);
         sent(() => setTodoDeleted(userId, id, new Date().toISOString()));
       },
     });
     return true;
+  };
+
+  /**
+   * A to-do just saved joins today's plan, as the Daily plan adds one (Home's Quick Add under Today; the functionality
+   * tester, Q5): today's day_plans row made once if there isn't one (createDayPlan, as the Daily plan's ensurePlan),
+   * then its day_plan_todos row through the same queue (dayTodoOps); before 047, past three it waits on the device in
+   * the day's choices (fitDayTodos' `extra`), as the Daily plan keeps it. The day's order puts it last.
+   * day: { date, planId, dayTodos, onDay(planId, dayTodos) } from the page that holds the day.
+   */
+  const addToDay = async (id, day) => {
+    try {
+      let planId = day.planId || null;
+      if (!planId) {
+        const made = newId();
+        const r = await createDayPlan(userId, made, day.date);
+        planId = r?.status === 'saved' && !r.data?.length ? (await loadDayPlanRow(userId, day.date))?.id || made : made;
+      }
+      const choices = readDayChoices(userId, day.date);
+      const had = (day.dayTodos || []).map((t) => t.todo_id);
+      const top = (day.dayTodos || []).find((t) => t.is_top)?.todo_id || null;
+      const first = !had.length && !(choices.habits || []).length && !(choices.extra || []).length;
+      const after = { todos: [...had, id], top: top || (first ? id : null) };
+      const { sent: toSend, extra } = fitDayTodos(after.todos, after.top, dayTodoCap(userId));
+      const ok = await sent(() => Promise.all(dayTodoOps(userId, planId, { todos: had, top }, { todos: toSend, top: after.top }).map((op) => saveOrQueue(userId, op))).then((a) => a[a.length - 1] ?? null));
+      if (!ok) return false;
+      if ((choices.order || []).length || extra.length) {
+        saveDayChoices(userId, day.date, { ...choices, order: [...(choices.order || []), `todo:${id}`], ...(extra.length ? { extra: [...new Set([...(choices.extra || []), ...extra])] } : {}) });
+      }
+      day.onDay?.(planId, toSend.map((t) => ({ todo_id: t, is_top: t === after.top })));
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   return { save, setSave, sent, changeRows, typed, putLog, typeNumber, leaveNumber, tickWeekly, toggleTodo, addTodo };

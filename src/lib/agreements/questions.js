@@ -2,7 +2,7 @@ import { addDays, dayKeyWords } from '../time/index.js';
 import { andList, lowerFirst, moneyText, rateText, unitMinor } from './currency.js';
 import { afterRhythm, momentumWeeks, rhythmOf, sessionCount, sessionsInTerm, suggestEnd } from './endDate.js';
 import { localFor, localFigures } from './fx.js';
-import { base, discountLines, planTotal } from './pricing.js';
+import { base, discountLines, keepTotal, planTotal } from './pricing.js';
 import { equalCount, teamOptions } from './settling.js';
 import { blankTerms, kindOf, selfFunded, PLACES as PLACE_WORDS } from './terms.js';
 import { UPFRONT_PERCENT, upfrontTotal } from './upfront.js';
@@ -224,7 +224,10 @@ export function asQuestionnaire(t) {
     if (next.priceMode !== 'monthly') {
       const months = [3, 6, 12].includes(Number(next.months)) ? Number(next.months) : 6;
       // A month's fee in whole units of the currency (a total of £5,840 over 3 months reads £1,947 a month).
-      next = { ...next, priceMode: 'monthly', months, monthlyMinor: Math.round(base(t) / months / unitMinor(next.currency || 'GBP')) * unitMinor(next.currency || 'GBP') || 0 };
+      // Its total is kept exactly (F5): the month's fee is what the coach reads, the total what is invoiced.
+      const total = base(t);
+      next = { ...next, priceMode: 'monthly', months, monthlyMinor: Math.round(total / months / unitMinor(next.currency || 'GBP')) * unitMinor(next.currency || 'GBP') || 0 };
+      if (total > 0) next = keepTotal(next, total);
     }
     if (!next.after) next.after = 'offer';
     // M28 version 6 offers three ways: all up front, monthly and after each session (a deposit reads as monthly).
@@ -291,7 +294,17 @@ export function answer(t, key, value, ctx = {}) {
     case 'rsess': return { ...t, retainer: { ...(t.retainer || {}), sessions: value } };
     case 'fee': return relocal({ ...t, gbpMinor: Math.max(0, Math.round(Number(value) || 0)) }, ctx.rate);
     case 'rate': return relocal({ ...t, gbpRateMinor: Math.max(0, Math.round(Number(value) || 0)) }, ctx.rate);
-    case 'cur': return relocal({ ...t, currency: value, localMode: value === 'GBP' ? null : (t.currency === value ? t.localMode : 'up') }, ctx.rate);
+    case 'cur': {
+      // A new currency starts from the £ figure at ITS rate (ctx.rate is the new currency's: F4); its own figure and
+      // rate are never carried into another currency. Without a rate the figure is left empty until one is here.
+      if (value === t.currency) return relocal({ ...t }, ctx.rate);
+      const next = { ...t, currency: value, localMode: value === 'GBP' ? null : 'up', fxRate: null };
+      if (value !== 'GBP' && !(Number(ctx.rate) > 0)) {
+        const empty = withMain(next, 0);
+        return kindOf(t) === 'hours' ? { ...empty, hours: { ...empty.hours, rateMinor: 0 } } : empty;
+      }
+      return relocal(next, ctx.rate);
+    }
     case 'local': return value?.mode === 'own'
       ? { ...withMain(t, value.minor), localMode: 'own' }
       : relocal({ ...t, localMode: value?.mode || 'up' }, ctx.rate);
@@ -508,7 +521,7 @@ export function termRows(t) {
 export function feeRows(t) {
   const k = kindOf(t);
   const g = Number(t.gbpMinor) || 0;
-  if (k === 'sessions') return { total: moneyText(g * (Number(t.months) || 6), 'GBP'), note: `${Number(t.months) || 6} months at ${moneyText(g, 'GBP')}` };
+  if (k === 'sessions') return { total: moneyText((t.currency || 'GBP') === 'GBP' && t.priceMode === 'monthly' ? base(t) : g * (Number(t.months) || 6), 'GBP'), note: `${Number(t.months) || 6} months at ${moneyText(g, 'GBP')}` };
   if (k === 'retainer') return { total: moneyText(g * 6, 'GBP'), note: `The first 6-month term at ${moneyText(g, 'GBP')}` };
   return null;
 }

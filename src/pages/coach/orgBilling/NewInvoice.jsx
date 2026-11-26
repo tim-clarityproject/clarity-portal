@@ -38,7 +38,7 @@ export default function NewInvoice() {
   const po = openPo(p.purchaseOrders, id);
   const all = useMemo(() => orgInvoiceRows({
     organisationId: id, clients: p.clients, sessions: p.sessions, entries: rowsOf(p.state, 'time_entries'), engagements: rowsOf(p.state, 'engagements'),
-    sources: rowsOf(p.state, 'invoice_sources'), zone, now: p.now, covered: scheduledProfiles(p.agreements, rowsOf(p.state, 'agreement_versions')),
+    sources: rowsOf(p.state, 'invoice_sources'), zone, now: p.now, covered: scheduledProfiles(p.agreements, rowsOf(p.state, 'agreement_versions'), p.clients),
   }), [id, p.clients, p.sessions, p.state, p.agreements, zone, p.now]);
   const evidence = rowsOf(p.state, 'invoice_evidence').filter((e) => e.organisation_id === id && !e.invoice_id).sort((a, b) => (a.position || 0) - (b.position || 0));
   const sponsor = p.agreements.map((a) => (a.organisation_id === id ? rowsOf(p.state, 'agreement_versions').find((v) => v.agreement_id === a.id && v.status === 'signed') : null)).find(Boolean);

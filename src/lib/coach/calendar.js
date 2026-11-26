@@ -19,7 +19,7 @@ import {
   publicHolidayFor, sameZone, seriesCalls, seriesRule, sociable, wallClock, weekdayOf, zoneLabel, zonePlace, morningOf, inTheMorning,
   hourBeforeReminderAt, dayWords as zoneDayWords, timeWords, EARLY_AND_LATE_LABEL, GAP_MINUTES, zoneCountry,
 } from '../time/index.js';
-import { clean, cut, firstName, minutesWords, parsePeople } from './model.js';
+import { clean, cut, firstName, minutesWords, parseHours as parseHoursTyped, parsePeople } from './model.js';
 import { SENT_LINE, SESSION_KINDS, SESSION_LENGTHS, WEEK_KEYS, isLateCancellation, isLink, newSession, parseQuickAdd, workingDay } from './day.js';
 import { countFigure, countWords } from './numbers.js';
 import { futureSessionRows } from '../agreements/coolingOff.js';
@@ -1421,7 +1421,30 @@ export const callPlaceLine = (minutes, placeKind) => `${minutes} minutes, ${plac
 /** "Times from 24 hours ahead, up to 4 weeks.": the foot of a booking page. */
 export const bookingFootLine = (noticeHours, aheadWeeks) => `Times from ${noticeHours} ${noticeHours === 1 ? 'hour' : 'hours'} ahead, up to ${aheadWeeks} ${aheadWeeks === 1 ? 'week' : 'weeks'}.`;
 
-/** The hours a client books inside on a day: Settings' "Open for bookings" when it is filled in, otherwise the working day (as 051). */
+/**
+ * Settings › Working hours and Booking name each thing once and say what it sets (the functionality tester, P11):
+ * the working day (Today's over-full line, the calendar), clients' booking hours (coaching sessions clients book in the
+ * portal; empty, the working day) and Open for calls (the only times booking pages and single-use links offer).
+ */
+export const HOURS_NAMES = Object.freeze({
+  working: 'Your working day',
+  booking: 'Clients’ booking hours',
+  workingLine: 'Your working day sets Today’s over-full line and the hours the calendar shows.',
+  bookingLine: 'Clients book their coaching sessions inside these hours.',
+  bookingNote: ['Booking pages and single-use links offer only your Open for calls times.', 'Clients book their coaching sessions inside Clients’ booking hours, in Working hours.'],
+  noOpenTimes: 'You have no Open for calls times ahead, so your booking pages have no free times to offer.',
+});
+const DAY_OFF = /^(not working|no bookings|day off|off|none)$/i;
+/** A day off typed in words: "Not working", "No bookings", "Day off". */
+export const isDayOff = (typed) => DAY_OFF.test(String(typed ?? '').trim().replace(/\.$/, ''));
+/** What is wrong with typed hours, or null. An empty box is a mistake, never a quiet day off (P11). */
+export function hoursProblem(typed, off = 'Not working') {
+  const v = String(typed ?? '').trim();
+  if (isDayOff(v) || (v && parseHoursTyped(v))) return null;
+  return v ? `Type the hours like 09:00 to 17:00, or “${off}” for a day off.` : `Type the hours, like 09:00 to 17:00, or “${off}” for a day off.`;
+}
+
+/** The hours a client books inside on a day: Settings' "Clients' booking hours" when filled in, otherwise the working day (as 051). */
 export function bookingHoursOn(settings, day) {
   const own = settings?.booking_hours && typeof settings.booking_hours === 'object' && Object.keys(settings.booking_hours).length ? settings.booking_hours : null;
   if (!own) { const h = workingDay(settings, day); return h ? { from: h.from, to: h.to } : null; }
@@ -2527,6 +2550,14 @@ export function visitorZones(device, also = []) {
 
 /** "Wed 18 Nov, 11:30 am New York time": a booked call for the person who booked it. */
 export const bookedWhenWords = (start, zone) => `${zoneDayWords(start, zone)}, ${timeWords(start, zone)}`;
+/**
+ * "You're booked"'s second sentence: only what truly works later (the functionality tester, P8). A single-use link is
+ * used up once booked, so it never says to keep the link the visitor came by: the confirmation email carries the
+ * call's own link (/book/mine/…), and the page's address has already become that link, so bookmarking it works.
+ */
+export const bookedNextLine = (emailed) => (emailed
+  ? 'The details are on their way to your email, with a link to move or cancel.'
+  : 'Bookmark this page to move or cancel later.');
 
 /** What a guest is told before they move or cancel inside 24 hours: one calm line (nothing is charged to a guest). */
 export const guestLateLine = (startsAt, now) => (isLateCancellation(startsAt, now) ? 'This call is in under 24 hours.' : null);

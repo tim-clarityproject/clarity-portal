@@ -7,7 +7,7 @@ import { BOOKING, bookingLine } from '../../content/pageLines/coach';
 import { clockWords, deviceZone, zoneLabel } from '../../lib/time/index.js';
 import { clean, isEmail } from '../../lib/coach/model';
 import {
-  BOOK_PATHS, bookButtonWords, bookedWhenWords, bookingFootLine, bookingWords, BOOKING_WORDS, bothTimes, callPlaceLine, EARLY_AND_LATE_LABEL, freeDays, guestLateLine, holidayLineFor, icsFile, icsName,
+  BOOK_PATHS, bookButtonWords, bookedNextLine, bookedWhenWords, bookingFootLine, bookingWords, BOOKING_WORDS, bothTimes, callPlaceLine, EARLY_AND_LATE_LABEL, freeDays, guestLateLine, holidayLineFor, icsFile, icsName,
   pollOptionWords, questionLabel, sociableStarts, visitorDay, visitorZones,
 } from '../../lib/coach/calendar';
 import {
@@ -229,7 +229,7 @@ export function BookingPage() {
     // "You're booked": a centred short message (sign-in rule 49), its one button and one link.
     return (
       <Frame message>
-        <PageOpening title={BOOKING.bookedTitle} line={`${bookedWhenWords(booked.starts_at, booked.time_zone)}. ${emailed ? 'The details are on their way to your email.' : 'Keep this page’s link to move or cancel later.'}`} />
+        <PageOpening title={BOOKING.bookedTitle} line={`${bookedWhenWords(booked.starts_at, booked.time_zone)}. ${bookedNextLine(emailed)}`} />
         <span className="ds-sr" role="status">You’re booked for {bookedWhenWords(booked.starts_at, booked.time_zone)}.</span>
         <div className="cc-acts cc-book-after">
           <AddToCalendar uid={booked.guest_key} title={title} startsAt={booked.starts_at} endsAt={booked.ends_at} location={data.place_kind === 'zoom' ? 'Zoom' : ''} />

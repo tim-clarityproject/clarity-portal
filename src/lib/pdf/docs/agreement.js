@@ -92,7 +92,9 @@ export function agreementPdf({ version: v, signature = null, coachSignature = nu
 
   const newStyle = (v.clauses || []).some(isNewClause);
   const sees = !v.fundedBy;
-  const choice = raw?.settle_choice || t.choice || null;
+  // A signed version keeps what was signed; an unsigned one the client can still choose for reads both ways ('either';
+  // the functionality tester, Q1), never "in full, up front" by default.
+  const choice = raw?.settle_choice || t.choice || (!v.signedAt && canChoose(t) ? 'either' : null);
   let main;
   let sections;
   if (newStyle) {

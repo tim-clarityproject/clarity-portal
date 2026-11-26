@@ -1,5 +1,8 @@
 import { addDays, dayKeyWords, daysBetween } from '../time/index.js';
 import { moneyText } from '../agreements/currency.js';
+import { gbpValue } from '../agreements/fx.js';
+import { agreementTotal } from '../agreements/settling.js';
+import { canChoose, sixUpFront } from '../agreements/upfront.js';
 import { currentEnd, earlyEnd, isSigned, sessionsIn } from '../agreements/duringAgreement.js';
 import { quoteNumber } from '../agreements/quote.js';
 import { NOT_YET } from '../agreements/status.js';
@@ -118,25 +121,38 @@ export function moneySummary({ invoices = [], agreements = [], versions = [], pr
     && (i.profile_id === profileId || (i.agreement_id && theirs.has(i.agreement_id)))
     && (i.settles_to || 'client') !== 'organisation');
   const settled = sumBy(mine.filter((i) => i.status === 'paid'), (i) => Number(i.paid_minor || i.total_minor || 0));
+  // In another currency, the £ figure alongside (agreements rule 9; P6): each invoice at its agreement's own rate.
+  const rateOf = (i) => { const v = versions.filter((x) => x.agreement_id === i.agreement_id && Number(x.fx_rate) > 0).sort((a, b) => (b.version || 0) - (a.version || 0))[0]; return Number(v?.fx_rate) || null; };
+  const abroad = mine.filter((i) => i.status === 'paid' && (i.currency || 'GBP') !== 'GBP');
+  const gbpSum = abroad.reduce((sum, i) => (sum == null ? null : (() => { const g = gbpValue(Number(i.paid_minor || i.total_minor || 0), i.currency, rateOf(i)); return g == null ? null : sum + g; })()), 0);
+  const settledGbp = abroad.length && gbpSum != null ? `About ${moneyText(Math.round(gbpSum / 100) * 100, 'GBP')}` : '';
   const owed = mine.filter((i) => i.status === 'sent' && remaining(i) > 0)
     .sort((a, b) => String(a.due_on || '9999').localeCompare(String(b.due_on || '9999')))
     .map((i) => {
       const late = i.due_on && today && i.due_on < today ? daysBetween(i.due_on, today) : 0;
-      const amount = moneyText(remaining(i), i.currency || 'GBP');
+      const g = (i.currency || 'GBP') !== 'GBP' ? gbpValue(remaining(i), i.currency, rateOf(i)) : null;
+      const amount = `${moneyText(remaining(i), i.currency || 'GBP')}${g != null ? ` (about ${moneyText(Math.round(g / 100) * 100, 'GBP')})` : ''}`;
       const when = late ? `${late} ${late === 1 ? 'day' : 'days'} overdue` : i.due_on ? (i.due_on === today ? 'Due today' : `Due ${dayKeyWords(i.due_on)}`) : 'Sent';
       return { id: i.id, name: `${amount} owed`, sub: i.number != null ? `Invoice CLARITY-${i.number}` : 'Invoice', value: when, late: late > 0 };
     });
   const funder = versions.filter((v) => theirs.has(v.agreement_id) && isSigned(v) && v.funded_by)
     .sort((a, b) => String(b.client_signed_at || '').localeCompare(String(a.client_signed_at || '')))[0]?.funded_by || null;
-  return { settled, owed, funder };
+  return { settled, settledGbp, owed, funder };
 }
 
 /** M28 "sent": the agreement's key facts beside its four statuses ("£750 /month", the dates, "12 sessions"). */
 export function sentFacts(version, today = null) {
   const t = termsOf(version);
   const c = t.currency || 'GBP';
-  const money = (minor, unit) => (Number(minor) > 0 ? { price: moneyText(Number(minor), c), unit } : null);
-  const priced = (t.kind === 'retainer' && money(t.retainer?.feeMinor, '/month'))
+  // Another currency shows the coach's £ figure beside it (agreements rule 9; P6), at the version's own rate.
+  const rate = Number(version?.fx_rate) || Number(t.fxRate) || null;
+  const money = (minor, unit) => (Number(minor) > 0 ? { price: moneyText(Number(minor), c), unit, minor: Number(minor) } : null);
+  // Once signed, the amount the client chose (P10): up front is the total with 5% off, never the plan's.
+  const choice = version?.settle_choice;
+  const chosen = isSigned(version) && choice === 'upfront' && canChoose(t)
+    ? (t.kind === 'retainer' ? money(sixUpFront(Number(t.retainer?.feeMinor) || 0), 'for 6 months, up front') : money(agreementTotal(t, 'upfront', t.extrasChosen), 'in all, up front'))
+    : null;
+  const priced = chosen || (t.kind === 'retainer' && money(t.retainer?.feeMinor, '/month'))
     || (t.kind === 'team' && money(t.team?.totalMinor, 'in all'))
     || (t.kind === 'oneoff' && money(t.oneoff?.totalMinor, 'in all'))
     || (t.kind === 'hours' && money(t.hours?.blockMinor, `block at ${moneyText(Number(t.hours?.rateMinor) || 0, c)}/hour`))
@@ -148,7 +164,8 @@ export function sentFacts(version, today = null) {
   const yr = (key) => !today || String(today).slice(0, 4) !== String(key).slice(0, 4);
   const dates = t.startsOn && t.endsOn ? `${dayKeyWords(t.startsOn, { year: today ? yr(t.startsOn) && String(t.startsOn).slice(0, 4) !== String(t.endsOn).slice(0, 4) : false })} to ${dayKeyWords(t.endsOn, { year: yr(t.endsOn) })}` : t.startsOn ? `From ${dayKeyWords(t.startsOn, { year: yr(t.startsOn) })}` : '';
   const n = sessionsIn(t) || 0;
-  return { ...priced, dates, sessions: n > 0 ? `${n} ${n === 1 ? 'session' : 'sessions'}` : '' };
+  const g = c !== 'GBP' && priced.minor ? gbpValue(priced.minor, c, rate) : null;
+  return { ...priced, gbp: g != null ? `About ${moneyText(Math.round(g / 100) * 100, 'GBP')}` : '', dates, sessions: n > 0 ? `${n} ${n === 1 ? 'session' : 'sessions'}` : '' };
 }
 
 /** The line under the Sent page's title (M28 "sent"): when the coach signed, then what will show here. */

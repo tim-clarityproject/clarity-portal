@@ -248,7 +248,9 @@ function OverdueBody({ item, close }) {
   const doc = useMemo(() => (inv && r ? safeDoc(() => invoiceReminderEmail({
     stage: r.stage, firstName: first, number: `CLARITY-${inv.number}`, amountWords: moneyText(left, inv.currency || 'GBP'), dueDayWords: inv.due_on ? dayKeyWords(inv.due_on) : '',
     settleByWords: r.settle_by ? dayKeyWords(r.settle_by) : null, coachFirst: p.coach.display_first_name || 'Tim', settleLink: inv.hosted_url || 'https://invoice.stripe.com/',
-  })) : null), [inv, r, first, left, p.coach.display_first_name]);
+    coachee: org && inv.profile_id ? (p.clients || []).find((c) => c.id === inv.profile_id)?.name || null : null, poNumber: org ? inv.po_number || null : null,
+    toOrganisation: inv.settles_to === 'organisation' || Boolean(org),
+  })) : null), [inv, r, first, left, org, p.clients, p.coach.display_first_name]);
   const pause = (p.reminderPauses || []).find((x) => (org ? x.organisation_id === org.id : x.profile_id === inv?.profile_id)) || null;
   const togglePause = async () => {
     try {

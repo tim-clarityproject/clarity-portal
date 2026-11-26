@@ -4,7 +4,7 @@ import { buildClauses, forStorage, mainPoints, resolveChoice } from '../agreemen
 import { endHint, endOptions, sessionCount, suggestEnd } from '../agreements/endDate.js';
 import { fxLine, fxLineMonthly, matchMyPrice, perUnit, underBy, underLine } from '../agreements/fx.js';
 import { blockMinutes } from '../agreements/hours.js';
-import { finLine, hourlyLine, planTotal, sessionsSummary } from '../agreements/pricing.js';
+import { base, finLine, hourlyLine, planTotal, sessionsSummary } from '../agreements/pricing.js';
 import { agreementTotal, firstPayment, settleOptions, teamOptions } from '../agreements/settling.js';
 import { ALL_CLAUSE_KEYS, clauseKeys } from '../agreements/standardWording.js';
 import { agreementStatus, expiryLine, NOT_YET, sentLine, sentTitle } from '../agreements/status.js';
@@ -155,14 +155,16 @@ export function endDays(t) {
  * @param {{ pkg?: object, kind?: string, who: { profile?: object, organisation?: object }, coach: { id, full_name?, display_first_name? },
  *   isOwner: boolean, ids: { agreementId, versionId }, todayKey: string, renewFrom?: { agreement, version } }} a
  */
-export function newDraft({ pkg = null, kind = null, who = {}, coach = {}, isOwner = true, ids, todayKey, renewFrom = null }) {
+export function newDraft({ pkg = null, kind = null, who = {}, coach = {}, isOwner = true, ids, todayKey, renewFrom = null, billing = null }) {
   const profile = who.profile || null;
   const organisation = who.organisation || null;
   const forOrg = Boolean(organisation) && !profile;
+  // An organisation's client whose organisation has a billing profile starts paid by it (P5, Polish 1).
+  const orgPays = Boolean(profile && billing?.organisation && billing?.row);
   const coachName = text(coach.full_name) || text(coach.display_first_name) || '';
   const startsOn = startDays(todayKey)[0].value;
   const facts = {
-    funded: forOrg, orgName: organisation?.name || null, clientName: text(profile?.name) || (forOrg ? '' : ''),
+    funded: forOrg || orgPays, orgName: organisation?.name || null, clientName: text(profile?.name) || (forOrg ? '' : ''),
     clientFirst: firstOf(profile?.name), coachName, coachFirst: firstOf(coachName) || text(coach.display_first_name), startsOn,
   };
   let terms;
@@ -180,6 +182,7 @@ export function newDraft({ pkg = null, kind = null, who = {}, coach = {}, isOwne
     if (Array.isArray(terms.blocks)) terms.endsOn = suggestEnd(startsOn, terms.blocks, terms.rhythm);
   }
   if (kindOf(terms) === 'team' && organisation) terms.orgName = organisation.name;
+  if (orgPays && kindOf(terms) !== 'team') terms = withBilling(terms, billing);
   const k = kindOf(terms);
   const agreement = {
     id: ids.agreementId, coach_id: coach.id, kind: forOrg || k === 'team' ? 'sponsor' : 'coaching',
@@ -196,6 +199,23 @@ export function newDraft({ pkg = null, kind = null, who = {}, coach = {}, isOwne
     personal_note: terms.personalNote || null, send_as: 'agreement',
   };
   return { agreement, version, isOwner };
+}
+
+/**
+ * The organisation's billing profile as the terms' starting answers (P5): paid by the organisation, its invoices email,
+ * whether it needs a purchase order (with the open one's number), and its own days to settle. `billing`: { organisation,
+ * row (org_billing_profiles), po (the open purchase order, or null) }.
+ */
+export function withBilling(t, billing) {
+  const org = billing?.organisation;
+  const row = billing?.row;
+  if (!org || !row) return t;
+  const po = text(billing.po?.number);
+  return {
+    ...t, funder: 'org', fundedBy: org.name, orgName: org.name, organisationId: org.id, offerUpfront: false,
+    invoicesEmail: text(row.invoices_email) || t.invoicesEmail || '', dueDays: [14, 30, 60].includes(Number(row.terms_days)) ? Number(row.terms_days) : 30,
+    needsPO: Boolean(row.needs_po), poNumber: row.needs_po && po ? po : null, poAnswer: row.needs_po ? (po ? 'yes' : 'later') : 'no',
+  };
 }
 
 /** A package's terms for one client (Polish 1, Stage C: the questionnaire's "What are you offering?" fills from it). */
@@ -228,6 +248,22 @@ function fromPackageTerms(pkg, facts) {
   return t;
 }
 const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o[k]).map((k) => [k, o[k]]));
+
+/**
+ * A draft nobody has answered anything in yet (P4, Polish 1): an agreement still a draft, its one version a draft the
+ * coach hasn't signed, with no answer given in the questionnaire (`terms.answered`, set by the builder's first answer).
+ */
+export const isUntouched = (agreement, versions = []) => {
+  const mine = (versions || []).filter((v) => v.agreement_id === agreement?.id);
+  return Boolean(agreement) && agreement.status === 'draft' && !agreement.renews_id && mine.length === 1 && mine[0].status === 'draft'
+    && (mine[0].version || 1) === 1 && !mine[0].coach_signed_at && !mine[0].terms?.answered;
+};
+/** The newest untouched draft for this client (or this organisation, with no client), which New agreement opens again. */
+export function untouchedDraft({ agreements = [], versions = [], profileId = null, organisationId = null }) {
+  return (agreements || []).filter((a) => (profileId ? a.profile_id === profileId : !a.profile_id && organisationId && a.organisation_id === organisationId))
+    .filter((a) => isUntouched(a, versions))
+    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0] || null;
+}
 
 /** The next version's draft (a change made as a new version, M28's newVersion): the newest version's terms and edits. */
 export function nextVersionDraft({ agreement, versions = [], versionId, coachId }) {
@@ -514,9 +550,10 @@ export function versionFields(t, { standards = {}, overrides = {}, rate = null, 
   return out;
 }
 
-/** The agreement as its reader sees it (Preview, and the live view): Main points and the clauses, up front chosen. */
+/** The agreement as its reader sees it (Preview, and the live view): Main points and the clauses, both ways until a choice is made. */
 export function readerView(t, { standards = {}, overrides = {}, choice = null } = {}) {
-  const pick = choice ?? t.choice ?? 'upfront';
+  // Before the client has chosen how to settle, both ways (Q1): as they read it.
+  const pick = choice ?? 'either';
   const clauses = resolveChoice(forStorage(t, { standards, overrides }), pick);
   return { points: mainPoints(t, { choice: pick, clauses }), clauses };
 }
@@ -651,7 +688,7 @@ export function packageChange(pkg, t, note) {
   const row = { ...pkg, agreement_kind: kind, defaults: JSON.parse(JSON.stringify(defaults)), currency: t.currency || 'GBP', personal_note: text(note) || null };
   if (kind === 'oneoff' && text(t.work)) row.detail = text(t.work).slice(0, 120);
   // Set by the month (Polish 1, Stage C), the package's price is the term's total; the month's fee is in its defaults.
-  const monthly = kind === 'sessions' && t.priceMode === 'monthly' ? (Number(t.monthlyMinor) || 0) * (Number(t.months) || 6) : null;
+  const monthly = kind === 'sessions' && t.priceMode === 'monthly' ? base({ ...t, months: Number(t.months) || 6 }) : null;
   if (kind === 'team') row.org_price_minor = price ?? null; else row.personal_price_minor = monthly ?? price ?? null;
   return row;
 }

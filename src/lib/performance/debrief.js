@@ -359,6 +359,14 @@ export function habitTotal(row, scored, standard, { limitPer = null } = {}) {
     const days = `${logged.length} ${logged.length === 1 ? 'day' : 'days'} logged`;
     return { label: label ? `${label}, ${days}` : days, value: `${m0Round(standing)}%`, good: m0AtStandard(standing, standard) };
   }
+  // A rating with fewer than half its working days rated isn't scored (M1),
+  // so its average word ("Excellent on average") never stands beside
+  // "Not logged": it says how many days were rated and that the week
+  // wasn't logged consistently (Polish 1, Stage C, the functionality tester P1).
+  if (scored?.notLogged && row.measure === 'rating' && logged.length) {
+    // The aim is already under the habit's name ("Rated each day, aim for Very good"), so it isn't said twice.
+    return { label: `Rated on ${logged.length} ${logged.length === 1 ? 'day' : 'days'}`, value: 'Not logged consistently', good: null };
+  }
   if (!scored || scored.score == null || scored.notLogged) return { label, value: 'Not logged', good: null };
   return { label, value: `${m0Round(scored.score)}%`, good: m0AtStandard(scored.score, standard) };
 }

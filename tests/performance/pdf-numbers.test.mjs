@@ -46,3 +46,20 @@ test('screen dates this year leave the year out; another year keeps it', () => {
   assert.equal(sentFacts({ terms: { startsOn: '2026-11-30', endsOn: '2027-02-26' } }, '2026-11-26').dates, 'Mon 30 Nov to Fri 26 Feb 2027');
   assert.equal(sentFacts({ terms: { startsOn: '2026-11-30', endsOn: '2026-12-18' } }, '2026-11-26').dates, 'Mon 30 Nov to Fri 18 Dec');
 });
+
+test('a key fact never leaves a year on its own line: it breaks after " to " (the functionality tester, P12)', async () => {
+  const { factLines } = await import('../../src/lib/pdf/parts.js');
+  // A stand-in typesetter: one unit a character, the ordinary wrap by words.
+  const width = (t) => t.length;
+  const wrap = (t, s, w) => t.split(' ').reduce((lines, word) => {
+    const last = lines[lines.length - 1];
+    if (last != null && `${last} ${word}`.length <= w) lines[lines.length - 1] = `${last} ${word}`; else lines.push(word);
+    return lines;
+  }, []);
+  const ts = { width, wrap };
+  assert.deepEqual(factLines(ts, '24 Nov 2026 to 1 May 2027', {}, 20), ['24 Nov 2026 to', '1 May 2027']);
+  assert.deepEqual(factLines(ts, '4 Jan to 2 Jul 2027', {}, 20), ['4 Jan to 2 Jul 2027']);
+  assert.deepEqual(factLines(ts, '26 November 2026', {}, 20), ['26 November 2026']);
+  // A phrase too wide alone still wraps by words, never cut off.
+  assert.deepEqual(factLines(ts, 'A very long purchase order reference', {}, 12), ['A very long', 'purchase', 'order', 'reference']);
+});

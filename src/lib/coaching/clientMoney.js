@@ -5,7 +5,7 @@ import { firstPayment, hasRest, payTitle, restLine } from '../agreements/settlin
 import { applies as coolingApplies, bookableFrom, SETTLE_LINE } from '../agreements/coolingOff.js';
 import { balanceLine, entryLength, percentUsed } from '../agreements/hours.js';
 import { quoteNumber } from '../agreements/quote.js';
-import { UPFRONT_PERCENT, choiceOptions } from '../agreements/upfront.js';
+import { UPFRONT_PERCENT, canChoose, choiceOptions } from '../agreements/upfront.js';
 
 // The client's side of an agreement and their money (Phase 6b run 3, Group C; M28 version 4: s-q-client, s-c-sign,
 // s-c-change, s-c-asked, s-c-pay, s-c-signed, s-s-sign, s-s-signed, s-h-client, s-acct, s-payments), as plain rules with
@@ -104,6 +104,16 @@ export function choiceFor(terms, settleChoice = null) {
   return 'upfront';
 }
 
+/**
+ * The choice the agreement is read with on Read (Q1): 'either' (both ways) while the client hasn't chosen and can
+ * choose; otherwise the one shown (chosen on the switch, signed, or accepted on the quote).
+ */
+export function readingChoice({ step = 'read', choice = null, settleChoice = null, terms = {}, shownChoice = null }) {
+  const chosen = choice || settleChoice || terms?.choice === 'upfront' || terms?.choice === 'plan';
+  if (step === 'read' && !chosen && canChoose(terms)) return 'either';
+  return shownChoice || choiceFor(terms, settleChoice);
+}
+
 /** Where signing leads: settling the first amount (self-funded with something to settle), else the welcome. */
 export function afterSigning(terms, choice, { amends = false } = {}) {
   // An amendment (a later version of an agreement signed before) settles nothing new at signing (agreements rule 12);
@@ -142,12 +152,35 @@ export function settleView(terms, choice, amountMinor = null) {
     amount: moneyText(amount, c),
     amountMinor: amount,
     currency: c,
-    rest: restLine(terms, choice),
+    rest: settleRest(terms, choice, rest),
     bacs: rest && c === 'GBP',
     button: `Settle ${moneyText(amount, c)}`,
     cooling: coolingApplies(terms) ? SETTLE_LINE : '',
   };
 }
+
+/**
+ * The line under Settle's figure. Where this payment settles the whole agreement, it says so ("This settles your
+ * agreement in full."), never "Nothing more to settle." above a Settle button (the functionality tester, P7).
+ */
+function settleRest(terms, choice, rest) {
+  const line = restLine(terms, choice);
+  if (rest || !/^Nothing more to settle\./.test(line)) return line;
+  return line.replace(/^Nothing more to settle\./, 'This settles your agreement in full.').replace(/You saved /, 'You save ');
+}
+
+/**
+ * What is settled when the client signs, said truthfully (P7): "The first £2,550 is settled when you sign." only where
+ * more follows; "The full £9,956 is settled when you sign." where that payment is all of it.
+ */
+export function settledAtSigning(terms, choice, chosen) {
+  const c = cur(terms);
+  const amount = moneyText(firstPayment(terms, choice, chosen), c);
+  return hasRest(terms, choice, chosen) ? `The first ${amount} is settled when you sign.` : `The full ${amount} is settled when you sign.`;
+}
+
+/** Whether the payment at signing settles the whole agreement (nothing follows it), for Welcome's line (P7). */
+export const settledInFull = (terms, settleChoice = null) => !hasRest(terms, choiceFor(terms, settleChoice));
 
 /** The Direct Debit step for the rest (brief item 8; Claude's words, M28 draws only the line that offers it). */
 export const BACS = Object.freeze({
@@ -165,8 +198,9 @@ export const welcomeTitle = (first) => (text(first) ? `You’re in, ${text(first
  * M28's welcomeLine, without its "payment" (the brief: no pay word in client text): "Tim has your signed agreement, and
  * your first £1,484.70 is settled. Your receipt is in your email."
  */
-export function welcomeLine({ coachFirst, settled = null }) {
+export function welcomeLine({ coachFirst, settled = null, inFull = false }) {
   const who = text(coachFirst) || 'Your coach';
+  if (settled && inFull) return `${who} has your signed agreement, and it is settled in full. Your receipt is in your email.`;
   return settled ? `${who} has your signed agreement, and your first ${settled} is settled. Your receipt is in your email.` : `${who} has your signed agreement. Your receipt is in your email.`;
 }
 
@@ -336,8 +370,10 @@ export function preparedFor({ clientFirst, clientName, coachName }) {
 }
 
 /** The done screen's line (M28 v6: "Tim has your signed agreement. A copy is on its way to your email."), with what was settled. */
-export function doneLine({ coachFirst, settled = null }) {
+export function doneLine({ coachFirst, settled = null, inFull = false }) {
   const who = text(coachFirst) || 'Your coach';
+  // A single payment up front settles the whole agreement, so it is never "your first" (the functionality tester, P7).
+  if (settled && inFull) return `${who} has your signed agreement, and it is settled in full. A copy is on its way to your email.`;
   return settled ? `${who} has your signed agreement, and your first ${settled} is settled. A copy is on its way to your email.` : `${who} has your signed agreement. A copy is on its way to your email.`;
 }
 

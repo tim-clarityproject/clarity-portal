@@ -58,7 +58,9 @@ test('settling: up front £14,535 with nothing more; instalments with Direct Deb
   assert.equal(up.title, 'Your investment');
   assert.equal(up.amount, '£14,535');
   assert.equal(up.button, 'Settle £14,535');
-  assert.equal(up.rest, 'Nothing more to settle. You saved £765.');
+  // Never "Nothing more to settle." above the Settle button (the functionality tester, P7).
+  assert.equal(up.rest, 'This settles your agreement in full. You save £765.');
+  assert.match(m.settleView({ ...sam, settle: 'full' }, 'plan').rest, /^This settles your agreement in full\./);
   assert.equal(up.bacs, false);
   assert.equal(up.cooling, 'You can still change your mind within 14 days.');
   const plan = m.settleView(sam, 'plan');
@@ -76,6 +78,14 @@ test('the welcome: no pay word, and the first day a coaching session can be book
   assert.equal(m.welcomeTitle('Sam'), 'You’re in, Sam.');
   assert.equal(m.welcomeLine({ coachFirst: 'Tim', settled: '£14,535' }), 'Tim has your signed agreement, and your first £14,535 is settled. Your receipt is in your email.');
   assert.equal(m.welcomeLine({ coachFirst: 'Tim' }), 'Tim has your signed agreement. Your receipt is in your email.');
+  // A single payment up front is the whole agreement, never "your first" (P7).
+  assert.equal(m.welcomeLine({ coachFirst: 'Tim', settled: '£14,535', inFull: true }), 'Tim has your signed agreement, and it is settled in full. Your receipt is in your email.');
+  assert.equal(m.doneLine({ coachFirst: 'Tim', settled: '£14,535', inFull: true }), 'Tim has your signed agreement, and it is settled in full. A copy is on its way to your email.');
+  assert.equal(m.settledInFull(sam, 'upfront'), true);
+  assert.equal(m.settledInFull(sam, 'plan'), false);
+  // The quote says the full amount when signing settles it all, "the first" only for instalments (P7).
+  assert.equal(m.settledAtSigning(sam, 'upfront'), 'The full £14,535 is settled when you sign.');
+  assert.equal(m.settledAtSigning(sam, 'plan'), 'The first £2,550 is settled when you sign.');
   // Signed Wed 25 Nov 2026, starting Mon 4 Jan 2027: the start date, ticked or not.
   assert.equal(m.firstSessionLine({ terms: sam, signedDay: '2026-11-25', startNow: false }), 'From Mon 4 Jan 2027');
   // Starting sooner than the 14 days: without the tick, the day after them (Thu 10 Dec); with it, the start date.
@@ -99,7 +109,7 @@ test('the block of hours: meter, balance and entries, newest first (item 24; M28
   ] }, '2026-11-25');
   assert.equal(v.share, 0.8);
   assert.equal(v.line, '10 hours 40 minutes used of 13 hours 20 minutes, 2 hours 40 minutes left.');
-  assert.deepEqual(v.entries.map((e) => [e.title, e.meta, e.length]), [['Scoring for the team report', 'Mon 23 Nov', '2 h 00'], ['Outline agreed with Adie', 'Tue 10 Nov', '1 h 30']]);
+  assert.deepEqual(v.entries.map((e) => [e.title, e.meta, e.length]), [['Scoring for the team report', 'Mon 23 Nov', '2 hours'], ['Outline agreed with Adie', 'Tue 10 Nov', '1 hour 30 minutes']]);
   assert.equal(m.hoursMeta({ block_minutes: 800, used_minutes: 640 }), '80% used');
 });
 
@@ -176,4 +186,22 @@ test('Read, Sign and Settle in focus mode (Polish 1, Stage C, C3; M28 v6 "sign" 
   assert.match(opts[0].long, /^Up front, £[\d,]+, 5% off$/);
   assert.equal(opts[1].long, '6 monthly instalments of £2,550');
   assert.equal(m.settleSwitchOptions({ ...sam, settle: 'deposit' }, 'x', [])[1].short, 'Deposit, then monthly');
+});
+
+test('Read shows both ways to settle until the client chooses; signed and the PDF keep what was signed (Q1)', async () => {
+  // Sam's terms with the choice open (6 equal instalments, up front offered).
+  assert.equal(m.readingChoice({ step: 'read', terms: sam }), 'either');
+  assert.equal(m.readingChoice({ step: 'read', choice: 'plan', terms: sam, shownChoice: 'plan' }), 'plan', 'chosen on the switch');
+  assert.equal(m.readingChoice({ step: 'read', settleChoice: 'upfront', terms: sam }), 'upfront', 'signed');
+  assert.equal(m.readingChoice({ step: 'read', terms: { ...sam, choice: 'plan' } }), 'plan', 'accepted on the quote');
+  assert.equal(m.readingChoice({ step: 'sign', terms: sam, shownChoice: 'upfront' }), 'upfront', 'Sign shows the switch’s choice');
+  assert.equal(m.readingChoice({ step: 'read', terms: { ...sam, settle: 'full' } }), 'upfront', 'nothing to choose');
+  assert.equal(m.readingChoice({ step: 'read', terms: funded }), 'upfront', 'an organisation pays: nothing to choose');
+  const { agreementPdf } = await import('../../src/lib/pdf/docs/agreement.js');
+  const clauses = await import('../../src/lib/agreements/clauses.js');
+  const T = { ...sam, coaching: 'Leadership Accelerator, 6 months', discounts: [] };
+  const v = { id: 'x', reference: 'CLARITY-AG-0001', version: 1, terms: T, clauses: clauses.forStorage(T), currency: 'GBP', totalMinor: 1800000, sentAt: '2026-12-01T09:00:00Z' };
+  const invest = (d) => d.sections.find((s) => s.title === 'Key terms').blocks[0].rows.find((r) => /investment/i.test(r[0]))[1];
+  assert.match(invest(agreementPdf({ version: v, raw: { settle_choice: null } })), /up front.*, or .*monthly instalments/, 'unsigned: both ways');
+  assert.equal(invest(agreementPdf({ version: { ...v, signedAt: '2026-12-02T18:40:00Z' }, raw: { settle_choice: 'plan' } })), '£18,000, in 6 monthly instalments of £3,000', 'signed: what was signed');
 });

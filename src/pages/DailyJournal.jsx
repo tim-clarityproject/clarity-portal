@@ -12,7 +12,10 @@ import { isNetworkError, isOnline } from '../lib/connection';
 import { saveOrQueue, useQueuedSave } from '../lib/syncQueue';
 import { readCache, writeCache } from '../lib/pageCache';
 import FormTool from './toolFocus/FormTool';
-import { JOURNAL_QUESTION } from '../content/pageLines/client';
+import { JOURNAL_QUESTION, TOOL_CLOSED } from '../content/pageLines/client';
+
+// × with no connection: the edit waits in the offline queue, so it isn't "Saved." yet (Q4).
+const CLOSED_WILL_SYNC = 'Kept on this device. It saves when you’re back online.';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import {
   Crosshair, Loading, WhoSees, SaveStatus, TextBox, useToast,
@@ -102,12 +105,15 @@ export default function DailyJournal() {
   const savingRef = useRef(false);
   const toast = useToast();
   const lastInputRef = useRef(null);
+  // What the database holds for the day, so × knows whether a saved journal was edited.
+  const savedTextRef = useRef(null);
   const focusLastRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const show = (row) => {
+        savedTextRef.current = textOf(row.body || []);
         setExistingId(row.id);
         setExistingStatus(row.status === 'draft' ? 'draft' : 'final');
         setBlocks(row.body?.length ? row.body : [textBlock('')]);
@@ -234,9 +240,32 @@ export default function DailyJournal() {
     }
     setExistingId(saved.id);
     setExistingStatus(status);
+    savedTextRef.current = textOf(blocks);
     writeCache(user.id, `journal:${dateKey}`, saved);
     clearDraft();
     return saved;
+  };
+
+  // × on a journal already saved (a draft or finished) and edited since: the edit goes to the database as Save
+  // sends it (straight there, or through the offline queue), so My Journals' word count and other devices see it.
+  // "Saved." is said only when that is true; queued, it says it will sync (the functionality tester, Q4).
+  // Writing never saved stays on the device, as every tool's × keeps it.
+  const handleClose = async () => {
+    if (isLoading || savingRef.current) return null;
+    const text = textOf(blocks);
+    if (!existingId || !text || savedTextRef.current === text) return TOOL_CLOSED;
+    savingRef.current = true;
+    try {
+      const saved = await persist(existingStatus === 'draft');
+      if (!saved) return null;
+      return saved.queued ? CLOSED_WILL_SYNC : TOOL_CLOSED;
+    } catch (error) {
+      console.error('[DailyJournal] save on close failed:', error);
+      toast.error('That didn’t save. Check your connection and try again.');
+      return null;
+    } finally {
+      savingRef.current = false;
+    }
   };
 
   const handleSaveJournal = async () => {
@@ -323,6 +352,7 @@ export default function DailyJournal() {
         onSaveDraft={() => { if (!isLoading) handleSaveDraft(); }}
         onDiscard={() => setDiscardOpen(true)}
         closeTo="/daily-journals"
+        onClose={handleClose}
         className="jrn-page"
       >
         {isLoading ? (

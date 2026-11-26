@@ -241,7 +241,7 @@ export const ROWS = [
     added: [
       ['Each person reads the time in their own time zone.', 'the row’s one line of help (time zone rule 7)'],
       ['Copy link', 'each booking page’s own link can be copied from its row (the prompt: each with its own link)'],
-      ['Booking pages offer your Open for calls times. Your clients book inside your working hours.', 'the section’s one line of help (builder A’s report)'],
+      ['Booking pages and single-use links offer only your Open for calls times.', 'the section’s one line of help (builder A’s report)'],
       [/^name: (Copy the (Chemistry|Connection) Call page’s link|Edit (Chemistry|Connection) Call page|Make a single-use link)$/, 'each Edit and Copy says what it is for to a screen reader (5e rule 29am)', null, { say: 'Edit and Copy, named for a screen reader' }],
     ] },
   { name: 'Today, 5 minutes before a call: the next-call bar', m11: 'today:5', part: 'bar', built: 'bar-5', added: [BAR_NAME] },

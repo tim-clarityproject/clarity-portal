@@ -12,6 +12,7 @@ import { fileName as orgFileName } from './orgInvoice.js';
 import { priceReviewDue, priceReviewShows, renewalShows, termEnds, TERM_MONTHS } from './renewals.js';
 import { addMonths, signedVersionsOf } from './settling.js';
 import { kindOf, selfFunded } from './terms.js';
+import { termMonths } from './standardWording.js';
 
 // During an agreement (Phase 6b run 3, Group D; M28 s-today, the Needs you panels, s-agr, s-cal-session, s-h-log,
 // s-org-billing, s-inv-new, s-inv-sent): which facts the coach's rows hold, worked out once, so no page counts sessions,
@@ -130,7 +131,7 @@ export function endEarlyOptions(today, end = null) {
 /** The line under End early on the agreement's page, and the panel's own sentence. */
 export const endEarlyLine = (t) => (t?.fullTerm ? 'Only by agreement, when something exceptional happens' : '30 days’ notice in writing');
 export const endEarlySentence = (t) => (t?.fullTerm
-  ? 'A 6-month agreement ends early only by agreement, when something exceptional happens. Any refund is what you agree.'
+  ? `A ${termMonths(t)}-month agreement ends early only by agreement, when something exceptional happens. Any refund is what you agree.`
   : 'Either of you can end it with 30 days’ notice in writing. Any refund is what you agree.');
 
 /** From when? on a price review: the day it is due, then the first Monday of the next two months (M28). `today`: the
@@ -404,11 +405,25 @@ export function orgInvoiceRows({ organisationId, clients = [], sessions = [], en
  * status now, from its start (or first signing, if earlier) to the end it has now (the break-it tester, run 3, finding
  * 4: the client already settled those). Map: profile id → [{ from, to }] day keys, '' for open.
  */
-export function scheduledProfiles(agreements = [], versions = []) {
+export function scheduledProfiles(agreements = [], versions = [], clients = []) {
   const out = new Map();
   const add = (profileId, from, to) => out.set(profileId, [...(out.get(profileId) || []), { from: from || '', to: to || '' }]);
+  const byEmail = (email) => (clients || []).find((c) => text(c.email) && text(c.email).toLowerCase() === text(email).toLowerCase())?.id || null;
   for (const a of agreements || []) {
-    if (!a?.profile_id) continue;
+    // A team programme (a sponsor's agreement, no client of its own): each person it names is settled through it, from
+    // its start to the end it has now (F3, Polish 1), so their sessions never go on an hourly invoice as well.
+    if (!a?.profile_id) {
+      const tv = versionInForce(versions, a?.id);
+      const tt = tv?.terms || {};
+      if (!tv || !isSigned(tv) || a.status !== 'signed' || kindOf(tt) !== 'team') continue;
+      const from = tt.startsOn || signedDay(tv) || '';
+      const to = earlyEnd(a) || currentEnd(a, tt) || '';
+      for (const person of tt.team?.people || []) {
+        const id = person?.profileId || byEmail(person?.email);
+        if (id) add(id, from, to);
+      }
+      continue;
+    }
     const v = versionInForce(versions, a.id);
     if (!v || !isSigned(v)) continue;
     const t = v.terms || {};

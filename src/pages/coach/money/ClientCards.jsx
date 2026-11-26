@@ -74,6 +74,7 @@ export default function ClientCards({ profile, first, next, last, sessions, load
               <Figure value={amountsText(money.settled)} unit={money.settled.length ? 'settled in all' : undefined} empty={money.funder ? `${money.funder} is invoiced for the coaching.` : 'Nothing settled yet.'} />
               <Rows>
                 {money.owed.map((o) => <Row key={o.id} name={o.name} sub={o.sub} value={o.value} onClick={() => navigate(`/coach/invoices/${o.id}`)} label={`${o.name}, ${o.sub}, ${o.value}. Open it`} />)}
+                {money.settledGbp && <Row name="In pounds" value={money.settledGbp} />}
                 {money.owed.length === 0 && <Row name="Nothing owed" value="Up to date" />}
                 {money.funder && money.settled.length > 0 && <Row name="Invoiced to" value={money.funder} />}
               </Rows>

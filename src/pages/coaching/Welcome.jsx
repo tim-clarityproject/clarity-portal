@@ -4,7 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { BoldCrosshair, Card, LoadError, Loading, Row, ToolFrame, useCoach, useToast } from '../../components/design';
 import { savePdf } from '../../components/design/pdfSave';
 import { getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
-import { BOOK_FIRST, ENDED_STATUSES, FLOW, WHAT_NEXT, doneLine, endedLine, needsSettleCheck, stepsFor, welcomeRows } from '../../lib/coaching/clientMoney';
+import { BOOK_FIRST, ENDED_STATUSES, FLOW, WHAT_NEXT, doneLine, endedLine, needsSettleCheck, settledInFull, stepsFor, welcomeRows } from '../../lib/coaching/clientMoney';
 import { TOOL_CLOSED } from '../../content/pageLines/client';
 import { clientAsk } from '../../lib/coaching/clientAsk';
 import { agreementDocument, useAgreements } from './agreementData';
@@ -104,7 +104,7 @@ export default function Welcome() {
         <div className="ds-open cl-done">
           <BoldCrosshair size={40} className="cl-done-mark" />
           <h1 className="ds-open-title cl-done-title" tabIndex={-1}>{FLOW.doneTitle}</h1>
-          <p className="ds-open-line">{doneLine({ coachFirst, settled: typeof state?.settled === 'string' ? state.settled : null })}</p>
+          <p className="ds-open-line">{doneLine({ coachFirst, settled: typeof state?.settled === 'string' ? state.settled : null, inFull: settledInFull(terms, version.settleChoice) })}</p>
         </div>
         <Card label={WHAT_NEXT} className="cl-next">
           {rows.map((r) => <Row key={r.key} name={r.title} value={r.meta} onClick={() => open(r.key)} />)}

@@ -14,7 +14,7 @@ import {
 } from '../../lib/coaching/agreements';
 import {
   AGREEMENT_TITLE, AGREE_TICK, FLOW, FULL_NAME, SIGN_NEEDS,
-  afterSigning, choiceFor, noteText, pendingClause, pendingLine, preparedFor, signNeeds, stepsFor,
+  afterSigning, choiceFor, noteText, readingChoice, pendingClause, pendingLine, preparedFor, signNeeds, stepsFor,
 } from '../../lib/coaching/clientMoney';
 import { TOOL_CLOSED } from '../../content/pageLines/client';
 import { AGREEMENTS_CACHE, agreementDocument } from './agreementData';
@@ -80,8 +80,11 @@ export default function SignAgreement() {
   const [step, setStep] = useState('read');
   const [choice, setChoice] = useState(null);
   const shownChoice = choice || choiceFor(terms, version?.settleChoice);
-  const clauses = useMemo(() => readerClauses(version, shownChoice), [version, shownChoice]);
-  const points = useMemo(() => readerPoints(version, shownChoice, clauses), [version, shownChoice, clauses]);
+  // Read, before the client has chosen how to settle (agreements rules 3 and 4: they choose when they sign): both ways,
+  // truthfully ('either'; the functionality tester, Q1). Sign shows the one chosen on its switch; a signed version keeps its own.
+  const readChoice = readingChoice({ step, choice, settleChoice: version?.settleChoice, terms, shownChoice });
+  const clauses = useMemo(() => readerClauses(version, readChoice), [version, readChoice]);
+  const points = useMemo(() => readerPoints(version, readChoice, clauses), [version, readChoice, clauses]);
 
   const [agreed, setAgreed] = useState(false);
   const [startNow, setStartNow] = useState(false);

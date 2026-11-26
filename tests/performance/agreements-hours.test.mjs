@@ -17,7 +17,8 @@ test('120 + 190 + 240 + 90 = 640 minutes: the balance, and 80% means Needs you',
   assert.equal(h.at80(639, 800), false);
   assert.equal(h.percentUsed(640, 800), 80);
   assert.equal(h.balanceLine(830, 800), '13 hours 50 minutes used, 30 minutes over the block.');
-  assert.equal(h.entryLength(190), '3 h 10');
+  assert.equal(h.entryLength(190), '3 hours 10 minutes');
+  assert.equal(h.entryLength(240), '4 hours', 'never "h" (26 Oct rule 8)');
   assert.equal(h.used([{ started_at: '2026-11-23T09:00:00Z', ended_at: '2026-11-23T11:00:00Z' }]), 120, 'time_entries rows too');
 });
 

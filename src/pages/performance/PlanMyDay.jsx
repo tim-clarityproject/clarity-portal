@@ -793,7 +793,10 @@ function PlanFlow({ userId, date, today, loaded }) {
         </div>
       )),
     },
-    {
+    // With exactly one to-do or habit chosen, that one is the priority
+    // (applyPicks makes the first chosen the top), so the step isn't asked
+    // (Polish 1, Stage C, the functionality tester P2; rule 21).
+    ...(view.picks.length === 1 ? [] : [{
       key: 'priority',
       name: 'Priority',
       question: 'Which one is your highest priority?',
@@ -817,7 +820,7 @@ function PlanFlow({ userId, date, today, loaded }) {
           <Button variant="text" onClick={() => tool.go(stepIndex('do'))}>Choose my to-dos</Button>
         </div>
       )),
-    },
+    }]),
     {
       key: 'strategy',
       name: 'Strategy',

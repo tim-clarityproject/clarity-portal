@@ -18,10 +18,11 @@ export const DEPOSIT_SHARE = 0.3;
 export const DEPOSIT_THEN = 5;
 export const EQUAL_COUNT = 6;
 /**
- * How many equal monthly instalments: 6, or one for each month of the term when the fee is set by the month (M28
- * version 6: "Monthly, by Direct Debit" over 3, 6 or 12 months; Polish 1, Stage C).
+ * How many equal monthly instalments: one for each month of a set-sessions term (M28 version 6: "Monthly, by Direct
+ * Debit" over 3, 6 or 12 months; Polish 1, Stage C), a total price's term included (Q2: a 12-month Partnership is 12),
+ * else 6.
  */
-export const equalCount = (t) => (t?.priceMode === 'monthly' && Number(t?.months) >= 1 ? Math.min(60, Math.floor(Number(t.months))) : EQUAL_COUNT);
+export const equalCount = (t) => (kindOf(t) === 'sessions' && t?.priceMode !== 'hourly' && Number(t?.months) >= 1 ? Math.min(60, Math.floor(Number(t.months))) : EQUAL_COUNT);
 export const TEAM_THEN = 3;
 
 const cur = (t) => t?.currency || 'GBP';

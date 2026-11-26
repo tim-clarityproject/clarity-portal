@@ -206,6 +206,18 @@ test('a visitor’s zones are place names, their own device’s among them, each
 
 test('a booked call’s words, and the taken line, are the brief’s', () => {
   assert.equal(cal.bookedWhenWords(at('2026-11-18', '11:30', NY), NY), 'Wed 18 Nov, 11:30 am New York time');
+  // Never "keep this page's link": a single-use link is used up once booked (P8).
+  assert.equal(cal.bookedNextLine(true), 'The details are on their way to your email, with a link to move or cancel.');
+  assert.equal(cal.bookedNextLine(false), 'Bookmark this page to move or cancel later.');
+  // Working hours: an empty box is a mistake, a day off is typed in words (P11).
+  assert.match(cal.hoursProblem(''), /^Type the hours, like 09:00 to 17:00/);
+  assert.equal(cal.hoursProblem('  '), cal.hoursProblem(''));
+  assert.equal(cal.hoursProblem('Not working'), null);
+  assert.equal(cal.hoursProblem('No bookings', 'No bookings'), null);
+  assert.equal(cal.hoursProblem('09:00 to 17:00'), null);
+  assert.match(cal.hoursProblem('nine to five', 'No bookings'), /“No bookings” for a day off/);
+  assert.equal(cal.isDayOff('day off.'), true);
+  assert.equal(cal.isDayOff('09:00 to 17:00'), false);
   assert.equal(cal.bookButtonWords(at('2026-11-18', '11:30', NY), NY), 'Book Wed 18 Nov, 11:30 am');
   assert.equal(cal.bookingWords('taken'), 'That time has just been taken. Choose another.');
   assert.equal(cal.guestLateLine(at('2026-11-17', '15:00'), NOW), 'This call is in under 24 hours.');

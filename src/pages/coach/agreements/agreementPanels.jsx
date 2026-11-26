@@ -5,7 +5,7 @@ import { AGREEMENT_LINES } from '../../../content/pageLines/coach';
 import { ask } from '../../../lib/agreements/askClient';
 import { moneyText } from '../../../lib/agreements/currency';
 import { extendOptions, pauseMove } from '../../../lib/agreements/endDate';
-import { refund14, windowEnds } from '../../../lib/agreements/coolingOff';
+import { ownSessions, refund14, sessionRanges, windowEnds } from '../../../lib/agreements/coolingOff';
 import { usedCount } from '../../../lib/agreements/sessionOutcome';
 import {
   endEarlyOptions, endEarlySentence, hoursState, paidOn, pauseFromOptions, pauseToOptions, penceFrom, perSessionMinor, settledInvoices,
@@ -32,6 +32,8 @@ import './agreementPage.css';
 
 const firstOf = (name) => String(name || '').trim().split(/\s+/)[0] || '';
 const ONE_TAP_MS = 150;
+/** What the toast says about the client's email: only that it went when the server says it did (Q13). */
+const mailedWords = (ans, first) => (ans?.emailed ? `${first} has an email.` : `No email went, so let ${first} know.`);
 
 function useAsk(onDone) {
   const { userId } = useCoachPortal();
@@ -83,7 +85,7 @@ function useExtend({ a, name, end, today, done }) {
     }],
     say: `This only gives ${first} more time, so it applies straight away and ${first} gets an email. The price doesn’t change.`,
     finish: `Extend to ${label}`,
-    go: () => run(() => ask('agreements', 'extend', { agreementId: a.id, endsOn: to }), `Extended to ${label}. ${first} has an email.`, setProblem),
+    go: () => run(() => ask('agreements', 'extend', { agreementId: a.id, endsOn: to }), (ans) => `Extended to ${label}. ${mailedWords(ans, first)}`, setProblem),
   };
 }
 
@@ -132,7 +134,7 @@ function useEndEarly({ a, t, name, end, today, done }) {
     ],
     say: `${endEarlySentence(t)} ${first} gets an email.`,
     finish: `End on ${label}`,
-    go: () => run(() => ask('agreements', 'end_early', { agreementId: a.id, endsOn: on, by: who }), `It ends on ${label}. ${first} has an email.`, setProblem),
+    go: () => run(() => ask('agreements', 'end_early', { agreementId: a.id, endsOn: on, by: who }), (ans) => `It ends on ${label}. ${mailedWords(ans, first)}`, setProblem),
   };
 }
 
@@ -185,14 +187,21 @@ function useRefund({ a, name, done }) {
       if (!inv) return;
       if (!(pence > 0)) { setProblem('Type how much should go back to carry on.'); return; }
       if (pence > inv.left_minor) { setProblem(`That’s more than is left to give back on this invoice (${moneyText(inv.left_minor, c)}).`); return; }
-      const { coachBilling } = await import('../../../lib/coach/financeActions');
-      run(() => coachBilling(p.userId, { kind: type, invoiceId: inv.id, amount: pence, reason: why.trim() || undefined }),
-        type === 'refund' ? `Refunded ${money}. A credit note is made.` : `${money} kept as credit. A credit note is made.`, setProblem);
+      // Through asks.js, so a build that isn't the live site has its stand-in (P14): never "didn't reach the server".
+      run(() => ask('billing', type, { invoiceId: inv.id, amount: pence, ...(why.trim() ? { reason: why.trim() } : {}) }), (ans) => {
+        const note = ans?.number ? `Credit note ${ans.number} is made.` : 'A credit note is made.';
+        if (ans?.standIn) {
+          return ans.number
+            ? `${type === 'refund' ? `Refunded ${money}` : `${money} kept as credit`}, with credit note ${ans.number}. Off the live site nothing goes to Stripe.`
+            : 'Nothing goes back off the live site, so nothing has changed.';
+        }
+        return type === 'refund' ? `Refunded ${money}. ${note}` : `${money} kept as credit. ${note}`;
+      }, setProblem);
     },
   };
 }
 
-function useCancel14({ a, v, t, name, signed, sessions, firstV, today, done }) {
+function useCancel14({ a, v, t, name, signed, sessions, firstV, today, zone = 'Europe/London', done }) {
   const p = useCoachPortal();
   const cal = useCalendar();
   const [problem, setProblem] = useState(null);
@@ -205,7 +214,9 @@ function useCancel14({ a, v, t, name, signed, sessions, firstV, today, done }) {
   const per = k === 'sessions' || k === 'retainer' ? perSessionMinor(t, (firstV || v)?.settle_choice || 'plan') : 0;
   const paid = paidOn(p.invoices, a.id);
   const since = Date.parse((firstV || v)?.client_signed_at || 0);
-  const had = k === 'sessions' || k === 'retainer' ? usedCount((sessions || []).filter((s) => Date.parse(s.starts_at) >= since)) : 0;
+  // Only this agreement's own sessions, never another running agreement's of the same client (F1).
+  const ranges = sessionRanges({ agreement: a, agreements: rowsOf(p.state, 'agreements'), versions: rowsOf(p.state, 'agreement_versions') });
+  const had = k === 'sessions' || k === 'retainer' ? usedCount(ownSessions(sessions, ranges, zone).filter((s) => Date.parse(s.starts_at) >= since)) : 0;
   const hoursMinor = k === 'hours' ? (() => {
     const h = hoursState({ agreement: a, terms: t, entries: rowsOf(p.state, 'time_entries'), invoices: p.invoices });
     const mins = h.log.filter((e) => Date.parse(e.started_at) >= since).reduce((m, e) => m + Math.max(0, Math.round((Date.parse(e.ended_at) - Date.parse(e.started_at)) / 60000)), 0);
@@ -215,7 +226,8 @@ function useCancel14({ a, v, t, name, signed, sessions, firstV, today, done }) {
   const deliveredMinor = k === 'oneoff' ? (Number.isFinite(typed) ? typed : 0) : hoursMinor;
   const back = startNow ? Math.max(0, refund14({ paidMinor: paid, sessionsHad: had, perSessionMinor: per, startNow }) - deliveredMinor) : paid;
   const first = firstOf(name);
-  const ahead = futureSessionsPlan(a.profile_id, { data: cal.data, now: p.now });
+  const ownData = (data) => ({ ...data, sessions: ownSessions(data?.sessions, ranges, zone) });
+  const ahead = futureSessionsPlan(a.profile_id, { data: ownData(cal.data), now: p.now });
   const asksDelivered = k === 'oneoff' && startNow;
   const facts = [
     `${first} signed on ${dayKeyWords(signed, { year: true, today })}, so their 14 days to change their mind run to ${dayKeyWords(windowEnds(signed), { year: true, today })}.`,
@@ -245,9 +257,9 @@ function useCancel14({ a, v, t, name, signed, sessions, firstV, today, done }) {
           // rows. Only when it answered no count (a stand-in) does the device take them off itself.
           let off = 0;
           if (Number.isInteger(ans?.sessionsOff)) { cal.forgotten(ans.removed || [], ans.calls || []); off = ans.sessionsOff; }
-          else if (ahead.count) { const fresh = futureSessionsPlan(a.profile_id, { data: cal.data, now: Date.now() }); if (await cal.run(fresh.plan, { quiet: true })) off = fresh.count; }
+          else if (ahead.count) { const fresh = futureSessionsPlan(a.profile_id, { data: ownData(cal.data), now: Date.now() }); if (await cal.run(fresh.plan, { quiet: true })) off = fresh.count; }
           const tell = off ? ` ${off} coaching ${off === 1 ? 'session' : 'sessions'} to come ${off === 1 ? 'is' : 'are'} off your calendar, so let ${first} know.` : '';
-          return Number(ans.refundMinor) > 0 ? `Cancelled. ${moneyText(Number(ans.refundMinor), ans.currency || c)} goes back to ${first}, with a credit note.${tell}` : `Cancelled. ${first} has an email.${tell}`;
+          return Number(ans.refundMinor) > 0 ? `Cancelled. ${moneyText(Number(ans.refundMinor), ans.currency || c)} goes back to ${first}, with a credit note.${tell}` : `Cancelled. ${mailedWords(ans, first)}${tell}`;
         }, setProblem);
     },
   };

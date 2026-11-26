@@ -13,7 +13,8 @@
 //     refresh, user, logout): its tokens say aal2 for coaches with an
 //     authenticator turned on (053/054), aal1 for everyone else;
 //   - one router on --port: /rest/v1 to PostgREST, /auth/v1 to the stand-in,
-//     /functions/v1 and /storage/v1 answered here, never forwarded anywhere.
+//     /functions/v1 and /storage/v1 answered here, never forwarded anywhere,
+//     and /standin/v1 for two server steps the app's stand-ins can't write.
 //
 // Every request through the router is counted (GET /__stats?since=<n>):
 // path, status, milliseconds, bytes and rows returned. GET /__plan replays a
@@ -163,6 +164,58 @@ async function gotrue(req, res, path, url) {
   return send(res, 404, { code: 404, msg: `not in the local stand-in: ${path}` });
 }
 
+// ---- the stand-in's own answers for two server steps (Polish 1, FX4: P14, P15) ----
+// Off the live site the app answers its server's asks with stand-ins (src/lib/agreements/asks.js), which write nothing.
+// Two need the database to follow the flow locally: a quote sent (its Q- number and status in agreement_quotes, the
+// server's alone under 065's guard) and a refund or credit (its credit note). POST /standin/v1/quote-sent and
+// /standin/v1/credit-note, with the coach's own sign-in: the row is read as them first (their row rules), then written
+// as the server would, through PostgREST with a service role token. Only on this local stand-in.
+const SERVICE = signJwt({ role: 'service_role', iss: 'scale-local', iat: 1763000000, exp: 2079000000 });
+function rest(method, path, body, token) {
+  return new Promise((resolveP) => {
+    const data = body === undefined ? undefined : JSON.stringify(body);
+    const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json', Prefer: 'return=representation' };
+    const up = httpRequest({ host: '127.0.0.1', port: PGRST_PORT, method, path, headers }, (r) => {
+      const chunks = [];
+      r.on('data', (c) => chunks.push(c));
+      r.on('end', () => { let json = null; try { json = JSON.parse(String(Buffer.concat(chunks))); } catch { json = null; } resolveP({ status: r.statusCode, json }); });
+    });
+    up.on('error', () => resolveP({ status: 502, json: null }));
+    up.end(data);
+  });
+}
+const dayPlus = (days) => new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+async function standIn(req, res, path) {
+  const tok = (req.headers.authorization || '').replace(/^Bearer /, '');
+  const c = claimsOf(req);
+  if (!c?.sub || c.role !== 'authenticated') return send(res, 401, { ok: false, message: 'Sign in again to carry on.' });
+  const body = JSON.parse(String(await readBody(req)) || '{}');
+  const id = String(body.quoteId || body.invoiceId || '');
+  if (!/^[0-9a-f-]{36}$/.test(id)) return send(res, 400, { ok: false, message: 'That isn’t here.' });
+  if (path === '/quote-sent') {
+    const mine = await rest('GET', `/agreement_quotes?id=eq.${id}&select=id,status,valid_days`, undefined, tok);
+    const q = mine.json?.[0];
+    if (!q) return send(res, 403, { ok: false, message: 'That quote isn’t yours.' });
+    const n = await rest('POST', '/rpc/quote_take_number', { p_quote: id }, SERVICE);
+    const sentAt = new Date().toISOString();
+    const validUntil = dayPlus(Number(body.validDays) || Number(q.valid_days) || 30);
+    const up = await rest('PATCH', `/agreement_quotes?id=eq.${id}`, { status: 'sent', sent_at: sentAt, valid_until: validUntil }, SERVICE);
+    if (n.status >= 300 || up.status >= 300) return send(res, 409, { ok: false, message: 'The quote wasn’t numbered on the stand-in.' });
+    return send(res, 200, { ok: true, quoteNumber: Number(n.json) || null, sentAt, validUntil });
+  }
+  if (path === '/credit-note') {
+    const mine = await rest('GET', `/invoices?id=eq.${id}&select=id,coach_id,currency,status,paid_minor`, undefined, tok);
+    const inv = mine.json?.[0];
+    if (!inv) return send(res, 403, { ok: false, message: 'That invoice isn’t yours.' });
+    const kind = body.kind === 'credit' ? 'credit' : 'refund';
+    const made = await rest('POST', '/credit_notes', { invoice_id: inv.id, coach_id: inv.coach_id, kind, amount_minor: Math.round(Number(body.amount) || 0),
+      currency: inv.currency || 'GBP', reason: typeof body.reason === 'string' ? body.reason.slice(0, 500) : null }, SERVICE);
+    if (made.status >= 300) return send(res, 409, { ok: false, message: 'That’s more than was settled on this invoice.' });
+    return send(res, 200, { ok: true, kind, number: made.json?.[0]?.number || null });
+  }
+  return send(res, 404, { ok: false, message: 'not in the local stand-in' });
+}
+
 // ---- the router ----
 const stats = [];
 let seq = 0;
@@ -235,6 +288,9 @@ const router = createServer(async (req, res) => {
       Object.assign(entry, { status: r.status, bytes: r.body.length, wire: wire.length, rows: r.status < 300 ? rowsIn(r.body, r.headers) : 0, startMs: Math.round(started) });
     } else if (url.pathname.startsWith('/auth/v1/')) {
       entry.bytes = await gotrue(req, res, url.pathname.slice(8), url);
+      entry.status = res.statusCode;
+    } else if (url.pathname.startsWith('/standin/v1/') && req.method === 'POST') {
+      entry.bytes = await standIn(req, res, url.pathname.slice(11));
       entry.status = res.statusCode;
     } else if (url.pathname.startsWith('/functions/v1/') || url.pathname.startsWith('/storage/v1/')) {
       // Never forwarded: an edge function or a file is answered here as not available.

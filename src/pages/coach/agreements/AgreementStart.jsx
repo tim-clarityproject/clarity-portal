@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, Loading, PageOpening, useToast } from '../../../components/design';
 import { BUILDER_LINES } from '../../../content/pageLines/coach';
-import { newId, rowNow, rowsOf, saveRow } from '../../../lib/coach/store';
+import { newId, noteRows, rowNow, rowsOf, saveRow } from '../../../lib/coach/store';
 import { supabase } from '../../../lib/supabase';
-import { firstOf, newDraft, orgFold, startFor, startPackages } from '../../../lib/coach/agreementBuilder';
+import { firstOf, newDraft, orgFold, startFor, startPackages, untouchedDraft } from '../../../lib/coach/agreementBuilder';
+import { openPo } from '../../../lib/agreements/duringAgreement';
 import { Back, TextLink, useCoachPortal } from '../parts';
 import { useLeadActions } from '../leadParts';
 import { SAVE_PROBLEM } from './builderParts';
@@ -38,7 +39,7 @@ export default function AgreementStart() {
   const navigate = useNavigate();
   const toast = useToast();
   const portal = useCoachPortal();
-  const { userId, coach, isOwner, todayKey, clients = [], organisations = [], leads = [], partial } = portal;
+  const { userId, coach, isOwner, todayKey, clients = [], organisations = [], leads = [], agreements = [], agreementVersions = [], purchaseOrders = [], state, partial } = portal;
   const { list: packages, ready } = usePackages();
   const who = startFor(params.get('for'));
   const asQuote = params.get('as') === 'quote';
@@ -58,11 +59,39 @@ export default function AgreementStart() {
     busy.current = true;
     setProblem(null);
     const pkg = (organisation && !profile ? packages.find((p) => p.agreement_kind === 'team') : packages.find((p) => p.agreement_kind !== 'team')) || packages[0] || null;
-    const draft = newDraft({ pkg, kind: pkg ? null : (organisation && !profile ? 'team' : 'sessions'), who: { profile, organisation }, coach, isOwner, ids: { agreementId: newId(), versionId: newId() }, todayKey });
+    // An organisation's client starts from the organisation's billing profile, where it has one (P5).
+    const theirOrg = profile?.organisation_id ? organisations.find((o) => o.id === profile.organisation_id) || null : null;
+    const billingRow = theirOrg ? rowsOf(state, 'org_billing_profiles').find((r) => r.organisation_id === theirOrg.id && r.coach_id === coach.id) || null : null;
+    const billing = theirOrg && billingRow ? { organisation: theirOrg, row: billingRow, po: openPo(purchaseOrders, theirOrg.id) } : null;
+    const make = (ids) => newDraft({ pkg, kind: pkg ? null : (organisation && !profile ? 'team' : 'sessions'), who: { profile, organisation }, coach, isOwner, ids, todayKey, billing });
+    // An untouched draft for the same person opens again rather than another being made (P4), made afresh from today's
+    // package, start and billing profile: nothing in it was answered, so nothing is lost.
+    const again = untouchedDraft({ agreements, versions: agreementVersions, profileId: profile?.id || null, organisationId: organisation?.id || null });
+    if (again) {
+      const v = agreementVersions.find((x) => x.agreement_id === again.id);
+      try {
+        if (v) {
+          const fresh = make({ agreementId: again.id, versionId: v.id });
+          await saveRow(userId, 'agreement_versions', { ...v, ...fresh.version, version: v.version, created_at: v.created_at, send_as: asQuote ? 'quote' : 'agreement' });
+          const changed = ['kind', 'agreement_kind', 'package_id', 'organisation_id'].some((k) => (again[k] ?? null) !== (fresh.agreement[k] ?? null));
+          if (changed && again.reference) await saveRow(userId, 'agreements', { ...again, kind: fresh.agreement.kind, agreement_kind: fresh.agreement.agreement_kind, package_id: fresh.agreement.package_id, organisation_id: fresh.agreement.organisation_id });
+        }
+      } catch { /* opened as it was */ }
+      navigate(`/coach/agreements/${again.id}/edit`, { replace: true });
+      return;
+    }
+    const draft = make({ agreementId: newId(), versionId: newId() });
     if (asQuote) draft.version.send_as = 'quote';
     try {
       await saveRow(userId, 'agreements', draft.agreement);
       await saveRow(userId, 'agreement_versions', draft.version);
+      // The database gave the agreement its reference: the device keeps it, so a later save of the row never asks the
+      // database for another (each save without one takes the next number, so references skipped: P4).
+      try {
+        const { data } = await supabase.from('agreements').select('reference').eq('id', draft.agreement.id).maybeSingle();
+        const now = rowNow(userId, 'agreements', { id: draft.agreement.id });
+        if (data?.reference && now) noteRows(userId, [['agreements', { ...now, reference: data.reference }]]);
+      } catch { /* kept as it is: the next load brings the reference */ }
       navigate(`/coach/agreements/${draft.agreement.id}/edit`, { replace: true });
     } catch {
       busy.current = false;

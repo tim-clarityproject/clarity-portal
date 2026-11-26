@@ -34,8 +34,8 @@ export const at80 = (usedMinutes, block) => block > 0 && usedMinutes / block >= 
 /** The share used, as a whole percentage (M28's "Adie's block is 80% used"). */
 export const percentUsed = (usedMinutes, block) => (block > 0 ? Math.round((usedMinutes / block) * 100) : 0);
 
-/** "2 h 00": one log entry's length as M28's hours log shows it. */
-export const entryLength = (minutes) => `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`;
+/** "2 hours", "3 hours 10 minutes": a length in full words (26 Oct rule 8: never "h"; P9, Polish 1, over M28's "2 h 00"). */
+export const entryLength = (minutes) => hoursWords(minutes);
 
 /** "£2,000 at £150/hr" and "That's 13 hours 20 minutes, settled in full, up front." */
 export const blockShort = (h, c = 'GBP') => `${moneyText(Number(h?.blockMinor) || 0, c)} at ${rateText(Number(h?.rateMinor) || 0, 'hour', c)}`;
