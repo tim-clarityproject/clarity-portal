@@ -1,17 +1,19 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import DesignHeader from '../../components/DesignHeader';
-import { Button, ErrorMessage, InlineChoice, LoadError, Loading, PageHeader } from '../../components/design';
-import StepsMarker from '../../components/agreements/StepsMarker';
+import { ErrorMessage, Figure, InlineChoice, Loading, ToolFrame, useToast } from '../../components/design';
 import { isOnline } from '../../lib/connection';
-import { BACS, BACS_LINE, ENDED_STATUSES, SETTLE_QUESTION, STAND_IN_APPLE, STAND_IN_BACS, STAND_IN_CARD, choiceFor, endedLine, settleView, stepsFor } from '../../lib/coaching/clientMoney';
+import { BACS, BACS_LINE, ENDED_STATUSES, FLOW, SETTLE_QUESTION, STAND_IN_APPLE, STAND_IN_BACS, STAND_IN_CARD, choiceFor, endedLine, settleView, stepsFor } from '../../lib/coaching/clientMoney';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 import { clientAsk, isLive } from '../../lib/coaching/clientAsk';
 import { useAgreements } from './agreementData';
 import { mountElement } from './stripeElement';
 import './coaching.css';
 import './clientAgreement.css';
 
+// Settle (Polish 1, Stage C, C3: step 3 of Read, Sign and Settle in focus mode, M28 v6 "sign" step 3: Your coaching
+// agreement, the title as the question, the amount as a 24px figure with "today", what follows, How would you like to
+// settle?, the form's place, the 14-day line, and Settle £X at the foot; no Back, as signing is done). Before Polish 1:
 // Settle (Phase 6b run 3, Group C; M28 version 4 s-c-pay; brief items 8 and 14): /coaching/agreement/:versionId/settle,
 // straight after a self-funded client signs, one step with no "settle later": the steps (Read and Sign done, Settle
 // now), the title (Your investment, Your deposit, First instalment, First coaching session, Your first month, Six
@@ -104,70 +106,86 @@ export default function Settle() {
     done({ settled: bacs ? null : view.amount });
   };
 
+  const toast = useToast();
+  const close = () => {
+    toast.show(TOOL_CLOSED);
+    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+    else navigate('/welcome');
+  };
+
   if (!version) {
     if (loading) return <div className="ui-root plan-builder-wait"><Loading label="Loading" /></div>;
     return (
-      <div className="ui-root">
-        <DesignHeader />
-        <div className="plan-page ipp-page coaching-page cl-page">
-          <LoadError>{error ? LOAD_PROBLEM : 'This agreement isn’t here any more.'}</LoadError>
-          <div className="cl-acts"><Button variant="primary" onClick={() => navigate('/coaching')}>Open My coaching</Button></div>
-        </div>
+      <div className="cl-flow">
+        <ToolFrame step={1} steps={1} last stepWords=" " question={FLOW.agreementLabel} onClose={close} onNext={() => navigate('/coaching')} nextLabel="Open My coaching">
+          <p className="cl-say" role="status">{error ? LOAD_PROBLEM : 'This agreement isn’t here any more.'}</p>
+        </ToolFrame>
       </div>
     );
   }
 
-  const steps = stepsFor(terms);
-  return (
-    <div className="ui-root" ref={rootRef}>
-      <DesignHeader />
-      <div className="plan-page ipp-page coaching-page cl-page">
-        <StepsMarker current={2} steps={steps} />
-        {ended ? (
-          <>
-            <p className="cl-say">{endedLine(ended, terms.coachFirst)}</p>
-            <div className="cl-acts"><Button variant="primary" onClick={() => navigate('/coaching')}>Open My coaching</Button></div>
-          </>
-        ) : !version.signedAt ? (
-          <>
-            <p className="cl-say">{NOT_SIGNED}</p>
-            <div className="cl-acts"><Button variant="primary" onClick={() => navigate(`/coaching/agreement/${versionId}`)}>Read and sign</Button></div>
-          </>
-        ) : bacs ? (
-          <>
-            <PageHeader title={BACS.title} />
-            {view.rest && <p className="cl-hint">{view.rest}</p>}
-            <p className="cl-say">{BACS.line}</p>
-            {real ? <div ref={nodeRef} className="cl-element" /> : <div className="cl-stripe">{answer ? STAND_IN_BACS : ' '}</div>}
-            {problem && <ErrorMessage>{problem}</ErrorMessage>}
-            <div className="cl-acts">
-              <Button variant="primary" aria-busy={busy || undefined} onClick={settle}>{BACS.button}</Button>
-              <Button variant="text" onClick={() => navigate(welcome, { replace: true })}>{BACS.later}</Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <PageHeader title={view.title} />
-            <p className="cl-amount">{view.amount}</p>
-            {view.rest && <p className="cl-hint">{view.rest}</p>}
-            {real ? (
-              <div>
-                <span className="cl-field-label">{SETTLE_QUESTION}</span>
-                <div ref={nodeRef} className="cl-element" />
-              </div>
-            ) : (
-              <>
-                <InlineChoice label={SETTLE_QUESTION} options={[{ value: 'card', label: 'Card' }, { value: 'apple', label: 'Apple Pay' }]} value={method} onChange={setMethod} />
-                <div className="cl-stripe">{method === 'apple' ? STAND_IN_APPLE : STAND_IN_CARD}</div>
-              </>
-            )}
-            {view.bacs && <p className="cl-hint">{BACS_LINE}</p>}
-            {problem && <ErrorMessage>{problem}</ErrorMessage>}
-            <div className="cl-acts"><Button variant="primary" aria-busy={busy || !answer || undefined} onClick={settle}>{view.button}</Button></div>
-            {view.cooling && <p className="cl-hint">{view.cooling}</p>}
-          </>
-        )}
+  const steps = stepsFor(terms).length;
+  const frame = { step: steps, steps, name: FLOW.agreementLabel, onClose: close };
+  if (ended) {
+    return (
+      <div className="cl-flow">
+        <ToolFrame {...frame} question={view.title} onNext={() => navigate('/coaching')} nextLabel="Open My coaching">
+          <p className="cl-say" role="status">{endedLine(ended, terms.coachFirst)}</p>
+        </ToolFrame>
       </div>
+    );
+  }
+  if (!version.signedAt) {
+    return (
+      <div className="cl-flow">
+        <ToolFrame {...frame} question={view.title} onNext={() => navigate(`/coaching/agreement/${versionId}`)} nextLabel="Read and sign">
+          <p className="cl-say" role="status">{NOT_SIGNED}</p>
+        </ToolFrame>
+      </div>
+    );
+  }
+  if (bacs) {
+    return (
+      <div className="cl-flow" ref={rootRef}>
+        <ToolFrame {...frame} question={BACS.title} onNext={settle} nextLabel={BACS.button} onSkip={() => navigate(welcome, { replace: true })} skipLabel={BACS.later}>
+          <div className="cl-stack">
+            <p className="cl-say">{BACS.line}</p>
+            {view.rest && <p className="cl-hint">{view.rest}</p>}
+            {real ? <div ref={nodeRef} className="cl-element" /> : <div className="cl-stripe">{answer ? STAND_IN_BACS : ' '}</div>}
+            {problem && <ErrorMessage>{problem}</ErrorMessage>}
+          </div>
+        </ToolFrame>
+      </div>
+    );
+  }
+  return (
+    <div className="cl-flow" ref={rootRef}>
+      <ToolFrame {...frame} question={view.title} onNext={settle} nextLabel={view.button}>
+        <div className="cl-stack">
+          <div>
+            <Figure value={view.amount} unit="today" />
+            {view.rest && <p className="cl-hint">{view.rest}</p>}
+          </div>
+          {real ? (
+            <div>
+              <span className="cl-field-label">{SETTLE_QUESTION}</span>
+              <div ref={nodeRef} className="cl-element" />
+            </div>
+          ) : (
+            <>
+              <InlineChoice label={SETTLE_QUESTION} options={[{ value: 'card', label: 'Card' }, { value: 'apple', label: 'Apple Pay' }]} value={method} onChange={setMethod} form="pills" />
+              <div className="cl-stripe">{method === 'apple' ? STAND_IN_APPLE : STAND_IN_CARD}</div>
+            </>
+          )}
+          {(view.cooling || view.bacs) && (
+            <div>
+              {view.cooling && <p className="cl-hint">{view.cooling}</p>}
+              {view.bacs && <p className="cl-hint">{BACS_LINE}</p>}
+            </div>
+          )}
+          {problem && <ErrorMessage>{problem}</ErrorMessage>}
+        </div>
+      </ToolFrame>
     </div>
   );
 }

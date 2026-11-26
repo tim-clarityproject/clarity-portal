@@ -1,12 +1,15 @@
-import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Loading, PageHeader, useToast } from '../../../components/design';
-import SessionCheckRow from '../../../components/agreements/SessionCheckRow';
+import { useMemo } from 'react';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Chevron, Loading, useToast } from '../../../components/design';
+import { Card, Empty, Figure, PageOpening, Row } from '../../../components/design/Blocks';
+import { calendarLink } from '../../../components/agreements/SessionCheckRow';
+import { AGREEMENT_LINES, agreementLine } from '../../../content/pageLines/coach';
 import { hoursPoints, mainPoints, teamPoints } from '../../../lib/agreements/clauses';
 import { offered } from '../../../lib/agreements/coolingOff';
 import { pauseMove } from '../../../lib/agreements/endDate';
 import { balanceLine } from '../../../lib/agreements/hours';
-import { usedLine } from '../../../lib/agreements/sessionOutcome';
+import { hoursWords } from '../../../lib/agreements/currency';
+import { outcomeLabel, rowAction, usedLine } from '../../../lib/agreements/sessionOutcome';
 import { kindOf } from '../../../lib/agreements/terms';
 import {
   agreementSessions, agreementTitle, currentEnd, earlyEnd, endEarlyLine, firstSignedVersion, hoursState, isSigned, sessionsIn, settledInvoices, signedDay, statusLine, versionInForce,
@@ -14,25 +17,28 @@ import {
 import { coachZoneOf } from '../../../lib/coach/calendar';
 import { rowsOf } from '../../../lib/coach/store';
 import { dayIn, dayKeyWords, deviceZone } from '../../../lib/time/index.js';
-import { Back, TextLink, useCoachPortal } from '../parts';
-import { Meter, Points } from '../needsYou/panels';
-import { AgreementPanels } from './agreementPanels';
-import '../../../components/agreements/agreements.css';
-import '../needsYou/needsyou.css';
+import { Back, useCoachPortal } from '../parts';
+import { AgreementChange } from './agreementPanels';
+import './agreementPage.css';
 
-// An agreement's own page (Phase 6b run 3, Group D; M28 s-agr: /coach/agreements/:id). Everything that changes a
-// running agreement starts here: Extend the end date, Pause coaching, Make a change (a new version both sign, Group B's
-// builder), End early, Give money back, and Cancel within 14 days for a self-funded individual still inside them
-// (never an organisation's or a team's). Then its coaching sessions, each with what happened and "To confirm" for one
-// past and not said yet, opening its calendar pop-up in one click (SessionCheckRow); a block of hours shows its balance
-// and the hours log instead. Changes made in the panels show in the main points once the server has them.
+// An agreement's own page (Phase 6b run 3, Group D; Polish 1, Stage C, C4: M28 v6 draws no such page, so it follows
+// M28's "sent" page). The opening (its version, the agreement's name, where it stands in one sentence), then two
+// columns on a laptop: the main points and its coaching sessions (or a block of hours' balance) on the left; the
+// changes that can be made and the agreement itself on the right. Each change (Extend the end date, Pause coaching, End
+// early, Give money back, Cancel within 14 days for a self-funded individual still inside them, never an
+// organisation's or a team's) runs in focus mode as a few questions and a check (?change=<key>; agreementPanels.jsx);
+// Make a change opens the builder for a new version both sign. A coaching session opens its calendar pop-up.
+
+const firstOf = (name) => String(name || '').trim().split(/\s+/)[0] || '';
+const ENDED = ['cancelled', 'ended', 'ended_not_renewed', 'expired'];
 
 export default function AgreementPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
+  const [params, setParams] = useSearchParams();
   const p = useCoachPortal();
-  const [panel, setPanel] = useState(null);
   const zone = coachZoneOf(p.settings, deviceZone());
   const a = p.agreements.find((x) => x.id === id) || null;
   const v = a ? versionInForce(p.agreementVersions, a.id) : null;
@@ -41,14 +47,22 @@ export default function AgreementPage() {
 
   if (!a) {
     if (p.partial || !p.whole) return <div className="cc-page"><div className="cc-col"><Loading label="Loading the agreement" /></div></div>;
-    return <div className="cc-page"><div className="cc-col"><Back onClick={() => navigate('/coach/clients')} /><PageHeader title="The agreement" /><p className="cc-quiet">This agreement isn’t here any more.</p></div></div>;
+    return (
+      <div className="cc-page">
+        <div className="cc-col ap-page">
+          <Back onClick={() => navigate('/coach/clients')} />
+          <PageOpening title="The agreement" line="This agreement isn’t here any more." />
+        </div>
+      </div>
+    );
   }
   const client = p.clients.find((c) => c.id === a.profile_id) || null;
   const org = p.organisations.find((o) => o.id === a.organisation_id) || null;
   const name = client?.name || org?.name || t.clientName || '';
+  const first = client ? firstOf(name) : name;
   const k = kindOf(t);
   const signed = isSigned(v);
-  const live = signed && !['cancelled', 'ended', 'ended_not_renewed', 'expired'].includes(a.status);
+  const live = signed && !ENDED.includes(a.status);
   const paused = a.paused_from && a.paused_to ? { from: a.paused_from, to: a.paused_to } : null;
   // The end date now: as extended or paused (the server's own: ends_on, else ending_on with no ending_by), else moved on
   // by a pause, else as signed (duringAgreement.currentEnd).
@@ -66,6 +80,11 @@ export default function AgreementPage() {
   const total = sessionsIn(t);
   const hours = k === 'hours' ? hoursState({ agreement: a, terms: t, entries: rowsOf(p.state, 'time_entries'), invoices: p.invoices }) : null;
   const back = client ? () => navigate(`/coach/clients/${client.id}`) : org ? () => navigate(`/coach/organisations/${org.id}`) : () => navigate('/coach/clients');
+  const words = (day) => (day ? dayKeyWords(day, { year: true }) : '');
+  const line = agreementLine({
+    first, status: a.status, signedOn: signed ? words(signedDay(v) || signDay) : '', end: words(end),
+    pausedTo: paused && paused.to >= today ? words(paused.to) : '', endingOn: words(earlyEnd(a)),
+  });
 
   const actions = [
     live && end && k !== 'hours' && k !== 'oneoff' && { key: 'extend', title: 'Extend the end date', line: 'Move it on, with no change to the price' },
@@ -75,9 +94,17 @@ export default function AgreementPage() {
     canRefund && { key: 'refund', title: 'Give money back', line: 'A refund or credit, with a credit note' },
     canCancel14 && { key: 'cancel14', title: 'Cancel within 14 days', line: firstV?.start_now ? 'A refund, less what was delivered' : 'A full refund, with a credit note' },
   ].filter(Boolean);
+  const offeredKeys = actions.map((x) => x.key);
+  const asked = params.get('change');
+  const change = asked && asked !== 'change' && offeredKeys.includes(asked) ? asked : null;
   const act = (key) => {
     if (key === 'change') { navigate(`/coach/agreements/${a.id}/edit`, { state: { newVersion: true } }); return; }
-    setPanel(key);
+    setParams({ change: key }, { state: { fromPage: true } });
+  };
+  // × and a finished change both return to the page: back in history when the page opened the change, else in place.
+  const closeChange = () => {
+    if (location.state?.fromPage) navigate(-1);
+    else setParams({}, { replace: true });
   };
   const downloadPdf = async () => {
     try {
@@ -87,42 +114,67 @@ export default function AgreementPage() {
     } catch { toast.error('The signed PDF wasn’t made. Check your connection and try again.'); }
   };
 
+  if (change) {
+    return (
+      <div className="cc-page">
+        <div className="cc-col ap-page">
+          <AgreementChange kind={change} onClose={closeChange} a={a} v={v} t={t} name={name} end={end} today={today} signed={signDay} sessions={sessions} firstV={firstV} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="cc-page">
-      <div className="cc-col ny-page">
+      <div className="cc-col ap-page">
         <Back to={name || 'Back'} onClick={back} />
-        <PageHeader title={agreementTitle(name)} meta={[statusLine(a, v)]} />
-        <Points label="Main points" rows={points} />
-        {actions.length > 0 && (
-          <div className="ny-actions">
-            {actions.map((x) => (
-              <button key={x.key} type="button" className="ny-action" onClick={() => act(x.key)}>
-                <span><span className="ny-li-t">{x.title}</span><span className="ny-li-m">{x.line}</span></span>
-              </button>
-            ))}
-          </div>
-        )}
-        {k === 'hours' ? (
-          <section aria-labelledby="ny-hours-t">
-            <h2 className="ny-sec" id="ny-hours-t">Block of hours</h2>
-            <Meter used={hours.used} block={hours.block} label={balanceLine(hours.used, hours.block)} />
-            <p className="ny-say ny-gap">{balanceLine(hours.used, hours.block)}</p>
-            <div className="cc-acts"><TextLink onClick={() => navigate(`/coach/agreements/${a.id}/hours`)}>See the hours log</TextLink></div>
-          </section>
-        ) : (
-          <section aria-labelledby="ny-sessions-t">
-            <h2 className="ny-sec" id="ny-sessions-t">Coaching sessions</h2>
-            <p className="ny-say ny-gap">{total ? usedLine(sessions, total) : sessions.length ? `${sessions.length} coaching ${sessions.length === 1 ? 'session' : 'sessions'} so far.` : 'No coaching sessions are booked yet.'}</p>
-            {sessions.length > 0 && (
-              <ul className="ag-sessions ny-gap" aria-label="Coaching sessions">
-                {sessions.map((s) => <SessionCheckRow key={s.id} session={s} title={dayKeyWords(dayIn(zone, new Date(s.starts_at)))} now={p.now} />)}
-              </ul>
+        <PageOpening label={statusLine(a, v)} title={agreementTitle(name)} line={line} />
+        <div className="ds-cols ds-cols--needs-first">
+          <div>
+            <Card label="Main points">
+              {points.filter((r) => r.value).map((r) => <Row key={r.label} name={r.label} value={r.value} className="ap-point" />)}
+            </Card>
+            {k === 'hours' ? (
+              <Card label="Block of hours" link={{ children: 'Hours log', onClick: () => navigate(`/coach/agreements/${a.id}/hours`) }}>
+                <Figure value={hoursWords(Math.max(0, Math.round(hours.used)))} unit={`of ${hoursWords(hours.block)} used`} />
+                <div className="ap-meter" role="img" aria-label={balanceLine(hours.used, hours.block)}><i style={{ '--ap-fill': `${hours.block > 0 ? Math.min(100, Math.round((hours.used / hours.block) * 1000) / 10) : 0}%` }} /></div>
+                <p className="ap-note">{hours.used <= hours.block ? `${hoursWords(hours.block - Math.max(0, Math.round(hours.used)))} left.` : balanceLine(hours.used, hours.block)}</p>
+              </Card>
+            ) : (
+              <Card label="Coaching sessions" link={client ? { children: 'Calendar', onClick: () => navigate('/coach/calendar') } : undefined}>
+                {sessions.length === 0 ? <Empty>{AGREEMENT_LINES.sessionsEmpty}</Empty> : (
+                  <>
+                    <p className="ap-used">{total ? usedLine(sessions, total) : `${sessions.length} coaching ${sessions.length === 1 ? 'session' : 'sessions'} so far.`}</p>
+                    {sessions.map((s) => (
+                      <Row
+                        key={s.id}
+                        name={dayKeyWords(dayIn(zone, new Date(s.starts_at)))}
+                        sub={outcomeLabel(s, p.now)}
+                        value={rowAction(s, p.now) || undefined}
+                        label={`Open the coaching session on ${dayKeyWords(dayIn(zone, new Date(s.starts_at)))}`}
+                        onClick={() => navigate(calendarLink(s.id))}
+                      />
+                    ))}
+                  </>
+                )}
+              </Card>
             )}
-          </section>
-        )}
-        {signed && <div className="cc-acts"><TextLink onClick={downloadPdf}>Download the signed PDF</TextLink></div>}
+          </div>
+          <div>
+            {actions.length > 0 && (
+              <Card label="Changes">
+                {actions.map((x) => <Row key={x.key} name={x.title} sub={x.line} onClick={() => act(x.key)} label={x.title} />)}
+              </Card>
+            )}
+            {(v || signed) && (
+              <Card label="The agreement">
+                {v && <Row name={`See it as ${first || 'they'} ${client ? 'sees' : 'see'} it`} value={<Chevron direction="right" />} onClick={() => navigate(`/coach/agreements/${a.id}/preview`)} className="ap-go" />}
+                {signed && <Row name="Download the signed PDF" value={<Chevron direction="right" />} onClick={downloadPdf} className="ap-go" />}
+              </Card>
+            )}
+          </div>
+        </div>
       </div>
-      <AgreementPanels panel={panel} onClose={() => setPanel(null)} a={a} v={v} t={t} name={name} end={end} today={today} signed={signDay} sessions={sessions} firstV={firstV} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Checkbox, Dropdown, SlidePanel, TextBox, TextField, useToast } from '../../../components/design';
+import { Button, Checkbox, InlineChoice, SlidePanel, TextBox, TextField, useToast } from '../../../components/design';
+import { Card } from '../../../components/design/Blocks';
 import { supabase } from '../../../lib/supabase';
 import { ask } from '../../../lib/agreements/askClient';
 import { moneyText, rateText, hoursWords } from '../../../lib/agreements/currency';
@@ -450,10 +451,9 @@ function PriceBody({ item, close }) {
     body: (
       <>
         <p className="ny-meta">{`${t.coaching || 'Monthly retainer'}, ${rateText(fee, 'month', c)} since ${dayKeyWords(t.priceSince || t.startsOn || due, { year: true }).replace(/^[A-Z][a-z]{2} \d{1,2} /, '')}`}</p>
-        <div className="cc-field cc-two ny-two">
-          <MoneyField label="What’s the new price?" value={priceMinor} currency={c} onChange={(v) => { setPriceMinor(v); setProblem(null); }} />
-          <Dropdown label="From when?" options={options} value={from} onChange={setFrom} />
-        </div>
+        {/* Polish 1, Stage C (C2): the new price, then From when? as answer boxes (the reference's choices), not a drop-down. */}
+        <div className="cc-field"><MoneyField label="What’s the new price?" value={priceMinor} currency={c} onChange={(v) => { setPriceMinor(v); setProblem(null); }} /></div>
+        <div className="cc-field"><InlineChoice label="From when?" options={options} value={from} onChange={setFrom} /></div>
         {valid && fee > 0 && <p className="ny-hint">{priceLine(fee, pence, p.todayKey, from)}</p>}
         <TalkPanel points={points} />
         <Problem>{problem}</Problem>
@@ -488,6 +488,7 @@ function ChangeBody({ item, close }) {
         <p className="ny-meta"><span>{client?.name}</span><span>{`Version ${v?.version || 1}`}</span></p>
         <blockquote className="ny-quote">{`“${r?.words || ''}”`}</blockquote>
         <p className="ny-hint">{item.line}</p>
+        <p className="ny-hint">{`A new version keeps everything else as it is. ${firstOf(client?.name) || 'They'} signs it again, and nothing goes until you send it.`}</p>
       </>
     ),
   };
@@ -524,6 +525,35 @@ function PanelFrame({ open, item, Body, onClose }) {
     <SlidePanel open={open} onClose={onClose} title={made.title} footer={made.footer} draftKey={`needs-you:${item.key}`}>
       <div className="ny-panel">{made.body}</div>
     </SlidePanel>
+  );
+}
+/**
+ * The chosen item's detail on the Needs you page (Polish 1, Stage C, C2; M28 v6 "needs"): the same drafted next step as
+ * its side panel, drawn as the reference's card beside the list, its button first and the quiet way out after it.
+ * `onDone`: the item has gone (sent, Done or Not now), so the page shows the next one.
+ */
+export function NeedsYouDetail({ item, onDone }) {
+  const navigate = useNavigate();
+  if (!item) return null;
+  if (item.kind === 'portal') {
+    return (
+      <Card label={item.title} className="ny-detail">
+        <p className="ny-say">{item.line}</p>
+        <div className="ny-detail-acts"><Button variant="primary" onClick={() => navigate(`/coach/invoices/${item.data.invoiceId}`)}>Open the invoice</Button></div>
+      </Card>
+    );
+  }
+  const Body = BODIES[item.kind];
+  if (!Body) return null;
+  return <DetailFrame key={item.key} item={item} Body={Body} onDone={onDone} />;
+}
+function DetailFrame({ item, Body, onDone }) {
+  const made = Body({ item, close: onDone });
+  return (
+    <Card label={made.title} className="ny-detail">
+      <div className="ny-panel ny-detail-body">{made.body}</div>
+      {made.footer && <div className="ny-detail-acts">{made.footer}</div>}
+    </Card>
   );
 }
 export { dayOfStamp };

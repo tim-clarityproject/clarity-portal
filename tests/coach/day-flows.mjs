@@ -26,6 +26,18 @@ import { accountId, APP, clearDevice, coachContext, codesStandIn, frameMenu, fra
 import { DAY, ID, PRESSURE, seedClock, seedWithDay, SES, SHARED } from './seed.mjs';
 import { clearCoaching, clientContext, clientStandIn, fromCoach } from './client.mjs';
 
+// Sessions to go on a client's page (Polish 1, Stage C; M28 v6 "client"): the Coaching sessions card numbers the last
+// session held ("Last session … 4 of 12") and the next ("Next session … 5 of 12"); to go is the total less those held.
+const pageToGo = (page, total) => page.evaluate((total) => {
+  const rows = [...document.querySelectorAll('.cc-money-sessions .ds-li')].map((r) => r.innerText.replace(/\s+/g, ' '));
+  const n = (re) => { const r = rows.find((x) => re.test(x)); const m = r && new RegExp(`(\\d+) of ${total}\\b`).exec(r); return m ? Number(m[1]) : null; };
+  const last = n(/^Last session/);
+  if (last != null) return String(total - last);
+  const next = n(/^Next session/);
+  return next != null ? String(total - next + 1) : null;
+}, total);
+
+
 export const DAY_PARTS = ['day-plan', 'day-calls', 'day-week', 'day-left', 'day-finances', 'day-client', 'day-move'];
 
 const TUE = new Date(2026, 10, 17, 9, 0);
@@ -387,7 +399,7 @@ export async function runDay({ browser, report, parts }) {
     const { page, phone, there, store } = t;
     const session = (id) => t.one('coach_sessions', id);
     const engagement = (id) => t.one('engagements', id);
-    const toGo = async (total) => (new RegExp(`(\\d+) of ${total}`).exec(await words(page)) || [])[1] || null;
+    const toGo = async (total) => pageToGo(page, total);
 
     // ---- 4. The brief, from a call
     await page.locator('.cc-today-calls .ds-li').first().click(); await settle(page, 900); // a session's row opens its brief
@@ -819,7 +831,8 @@ export async function runDay({ browser, report, parts }) {
     const fin = await search('Finances');
     pass(`${tag}: search ${owner ? 'finds Finances' : 'finds no Finances for an associate'}`, owner ? fin.some((f) => /^Finances/.test(f)) : !fin.some((f) => /Finances/.test(f)), fin.join(' | '));
     const bus = await search('Business');
-    pass(`${tag}: nothing finds “Business”`, bus.length === 0, bus.join(' | '));
+    // Settings, Business (Polish 1, Stage C, 068) is the owner's: search finds it for the owner, nothing for an associate.
+    pass(`${tag}: ${owner ? 'search finds Settings, Business' : 'nothing finds “Business”'}`, owner ? bus.some((f) => /Business/.test(f)) : bus.length === 0, bus.join(' | '));
     const all = await search('f');
     pass(`${tag}: no search result says Business`, !all.some((f) => /business/i.test(f)), all.filter((f) => /business/i.test(f)).join(' | '));
     await t.done();
@@ -941,7 +954,7 @@ export async function runDay({ browser, report, parts }) {
     await page.getByLabel('Focus').fill('The launch.');
     await settle(page, 1800);
     await go(page, `/coach/clients/${SES.hannah}`);
-    const toGo = async () => (/(\d+) of 12/.exec(await words(page)) || [])[1] || null;
+    const toGo = async () => pageToGo(page, 12);
     const before = { hannah: await toGo() };
     // A count typed on the device before the tables are there (Sam's: one more held).
     await go(page, `/coach/clients/${ID.sam}`);

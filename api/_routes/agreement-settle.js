@@ -62,20 +62,23 @@ export function clientMoneyApi({ server }) {
   const { invoiceDoc, creditDoc } = {
     invoiceDoc: (i, p) => ({ number: i.number, issuedOn: i.issued_on || String(i.sent_at || i.created_at).slice(0, 10), dueOn: i.due_on || i.issued_on,
       termsDays: i.terms_days || 14, orgName: p?.name || i.payer_name || '', lines: (i.lines || []).map((l) => ({ description: l.description, amount: l.amount })),
-      currency: i.currency || 'GBP', bank: null, timesheet: null }),
+      currency: i.currency || 'GBP', bank: null, timesheet: null,
+      // Polish 1, Stage C (C5's request 2): Bill to's email and, while it is still to settle, the portal's card line.
+      email: p?.email || i.payer_email || '', inPortal: i.status === 'sent' }),
     creditDoc: (c, i, p) => ({ number: c.number, issuedOn: String(c.created_at).slice(0, 10), payerName: p?.name || i?.payer_name || '',
       invoiceNumber: i?.number ? `CLARITY-${i.number}` : null, amountMinor: Number(c.amount_minor), currency: c.currency || i?.currency || 'GBP', kind: c.kind, reason: c.reason }),
   };
-  const profileOf = async (id) => (id ? (await server.from('client_profiles').select('name, time_zone').eq('id', id).maybeSingle()).data : null);
+  const profileOf = async (id) => (id ? (await server.from('client_profiles').select('name, email, time_zone').eq('id', id).maybeSingle()).data : null);
   return {
     async invoicePdf(ids, invoiceId) {
       if (!ids.has(invoiceId)) throw calm(403, 'That invoice isn’t yours.');
       const { data: i } = await server.from('invoices').select('*').eq('id', invoiceId).maybeSingle();
       if (!i?.number) throw calm(409, 'That invoice isn’t ready yet.');
       const p = await profileOf(i.profile_id);
-      const { pdfFrom } = await import('../_agreementPdf.js');
+      const { pdfFrom, businessDetails } = await import('../_agreementPdf.js');
       const { invoicePdf } = await import('../../src/lib/pdf/docs/invoice.js');
-      const made = await pdfFrom(invoicePdf(invoiceDoc(i, p)), p?.time_zone || 'Europe/London');
+      // The business's details (068) give the invoice its From and Payment details (bank), not only the footer.
+      const made = await pdfFrom(invoicePdf({ ...invoiceDoc(i, p), business: await businessDetails() }), p?.time_zone || 'Europe/London');
       return { pdf: Buffer.from(made.bytes).toString('base64'), fileName: made.fileName };
     },
     async creditNotes(ids) {

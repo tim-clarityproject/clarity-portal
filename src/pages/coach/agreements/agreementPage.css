@@ -1,0 +1,48 @@
+/* An agreement's own page, its changes in focus mode, What to say and an organisation's billing (Polish 1, Stage C,
+   C4: the screens M28 v6 doesn't draw, built from the shared blocks, Blocks.jsx). Tokens only; nothing here redraws a
+   card, row, button, switch or chevron. */
+
+/* A main point's value may be a long sentence: it wraps on the right instead of pushing out of the card. */
+.ui-root .ap-point .ds-li-value { flex: 0 1 auto; max-width: 60%; text-wrap: pretty; }
+.ui-root .ap-point .ds-li-name { flex: none; }
+@media (max-width: 600px) { .ui-root .ap-point .ds-li-value { max-width: none; } }
+
+/* "17 of 18 coaching sessions used." under the card's label, as M28's .sm line. */
+.ui-root .ap-used { margin: var(--space-px6) 0 var(--space-1); font-size: var(--fs-meta); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .ap-used + .ds-li { border-top: 0; }
+
+
+/* A block of hours' meter (M28 .meter: 4px, the line colour, filled in the text colour). */
+.ui-root .ap-meter { height: var(--space-1); margin: var(--space-px12) 0; border-radius: var(--line-w); background: var(--line); overflow: hidden; }
+.ui-root .ap-meter > i { display: block; width: var(--ap-fill, 0%); height: 100%; background: var(--text); transition: width var(--dur-slow) var(--ease); }
+.ui-root .ap-note { margin: 0; font-size: var(--fs-meta); line-height: var(--lh-text); color: var(--text-2); }
+
+/* A change in focus mode: a step's own words and boxes. */
+.ui-root .ap-flow-say { margin: 0 0 var(--space-3); font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .ap-flow-say:last-child { margin-bottom: 0; }
+.ui-root .ap-flow .ds-card { margin-bottom: var(--space-3); }
+.ui-root .ap-flow .cc-problem { margin-top: var(--space-3); }
+.ui-root .ap-change .ds-li-value { align-self: center; }
+.ui-root .ap-change > .ds-li:first-child { border-top: 0; padding-top: 0; }
+
+/* What to say: each moment's points as rows, the tip under them in small grey. */
+.ui-root .ap-tip { margin: 0; padding-top: var(--space-px14); border-top: var(--line-w) solid var(--line-soft); font-size: var(--fs-meta); line-height: var(--lh-text); color: var(--text-2); }
+
+/* An organisation's billing: one question and its box per row inside a card. */
+.ui-root .ap-fields > * + * { margin-top: var(--space-3); }
+.ui-root .ap-fields > .ds-switchrow { margin-top: 0; padding: var(--space-px14) 0; border-top: 0; }
+.ui-root .ap-fields > :not(.ds-switchrow) + .ds-switchrow { margin-top: var(--space-px14); border-top: var(--line-w) solid var(--line-soft); }
+.ui-root .ap-fields > .ds-switchrow:first-child { padding-top: var(--space-px6); }
+.ui-root .ap-fields > .ds-switchrow:last-child { padding-bottom: 0; border-bottom: 0; }
+.ui-root .ap-fields > .ds-switchrow + :not(.ds-switchrow) { margin-top: var(--space-3); }
+/* The organisation page's Billing card sits under the agreement buttons with a card's gap. */
+.ui-root .ap-orgbill { margin-top: var(--card-gap); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ap-meter > i { transition: none; }
+}
+
+/* On a phone, Change stays at the right of its answer, on the answer's first line (M28's check). */
+@media (max-width: 600px) {
+  .ui-root .ap-change .ds-li { flex-direction: row; align-items: baseline; gap: var(--space-3); }
+}

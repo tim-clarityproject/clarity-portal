@@ -1,5 +1,5 @@
 import { isCurrency } from './currency.js';
-import { DEFAULT_RHYTHM, RHYTHMS, sessionCount, suggestEnd } from './endDate.js';
+import { DEFAULT_RHYTHM, isRhythm, sessionCount, suggestEnd } from './endDate.js';
 
 // What an agreement is written from: its terms (agreement_versions.terms), one shape for every kind (Phase 6b run 3;
 // brief items 1 to 7 and 37 to 39; M28's builders). Plain rules, checked by tests/performance/agreements-terms.test.mjs.
@@ -27,6 +27,15 @@ import { DEFAULT_RHYTHM, RHYTHMS, sessionCount, suggestEnd } from './endDate.js'
 //   oneoff        { on, place: 'zoom' | 'inperson', totalMinor, settle: 'before' | 'after' };  work: what it is
 //   hours         { work, rateMinor, blockMinor, owner: 'client' | 'coach', tellAt80 }
 //   goals, clientName, clientFirst, coachName, coachFirst, orgName, personalNote, needsPO (a sponsor's version)
+//   Polish 1, Stage C (M28 version 6's questionnaire; every key optional, so earlier versions read as before):
+//   gbpMinor      the coach's own £ figure for the main price (a month's fee, a total, a block), set first; the price
+//                 keys above hold the figure the client sees in `currency`
+//   localMode     'up' | 'down' | 'exact' | 'own': how the client's figure was chosen from the £ figure
+//   clientZone    the place-name zone the client is based in;  basedIn: "Toronto, Canada"
+//   adhoc         ad hoc support by email and WhatsApp between coaching sessions (true unless switched off)
+//   portal        The Clarity Portal included (true unless switched off), at `level`
+//   after         'offer' | 'renew' | 'end': what happens after the term (set sessions)
+//   poNumber      the purchase order's number when the coach has it;  organisationId: the funding organisation
 
 export const KINDS = Object.freeze(['sessions', 'retainer', 'team', 'oneoff', 'hours']);
 export const KIND_NAMES = Object.freeze({
@@ -117,7 +126,7 @@ export function checkTerms(t) {
   if (kind === 'sessions' || kind === 'team') {
     if (!Array.isArray(t.blocks) || !t.blocks.length || sessionCount(t.blocks) < 1) out.push('Add at least one coaching session.');
     if ((t.blocks || []).some((b) => !SESSION_LENGTHS.includes(Number(b?.minutes)))) out.push('Choose how long each coaching session is.');
-    if (!RHYTHMS.includes(t.rhythm)) out.push('Choose how often.');
+    if (!isRhythm(t.rhythm)) out.push('Choose how often.');
   }
   if (kind !== 'hours' && kind !== 'oneoff' && !t.startsOn) out.push('Choose a start date.');
   if (t.startsOn && t.endsOn && t.endsOn < t.startsOn) out.push('Choose an end date after the start date.');

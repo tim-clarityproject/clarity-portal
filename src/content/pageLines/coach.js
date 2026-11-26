@@ -189,3 +189,58 @@ export function leadLine({ first = '', won = false, cold = false } = {}) {
   if (cold) return `${first} went quiet. What happened, and when to check in again, are here.`;
   return `Where things stand with ${first}, and the next step.`;
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// C4, the agreement screens M28 v6 doesn't draw (Polish 1, Stage C): an agreement's own page, its changes in focus
+// mode (Extend, Pause, End early, Give money back, Cancel within 14 days), What to say and an organisation's billing.
+export const AGREEMENT_LINES = Object.freeze({
+  whatToSay: 'The words for the moments people go soft on. They’re for you to say, never sent.',
+  orgBilling: 'Set once, and every invoice to them follows it.',
+  billingEmpty: 'Their billing isn’t set up yet, so invoices go to their main contact with 30 days to settle.',
+  changeClosed: 'Nothing has changed.',
+  checkQuestion: 'Does this read right?',
+  sessionsEmpty: 'No coaching sessions are booked yet.',
+});
+
+/** An agreement's own page: where it stands, in one sentence. Days are already in words. */
+export function agreementLine({ first = '', status = '', signedOn = '', end = '', pausedTo = '', endingOn = '' } = {}) {
+  if (status === 'cancelled') return 'It was cancelled within the 14 days.';
+  if (status === 'ended' || status === 'ended_not_renewed' || status === 'expired') return end ? `It ended on ${end}.` : 'It has ended.';
+  if (!signedOn) return first ? `${first} hasn’t signed it yet.` : 'It hasn’t been signed yet.';
+  if (endingOn) return `It was signed on ${signedOn}, and it ends early, on ${endingOn}.`;
+  if (pausedTo) return `Coaching is paused until ${pausedTo}. It now runs until ${end}.`;
+  return end ? `It was signed on ${signedOn}, and it runs until ${end}.` : `It was signed on ${signedOn}.`;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// C2, the coach's money screens (Polish 1, Stage C; M28 v6 "needs", "sent", "invoice", "hours"): Needs you, Sent, a
+// new organisation invoice and a block of hours. Each page's one line, in the portal's voice.
+const C2_NUMBERS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+
+/** Needs you's line (M28: "Five things are drafted and waiting for you. Nothing goes until you send it."). */
+export function needsYouLine(count) {
+  if (!count) return 'Nothing is waiting for you. Drafted reminders and invoices will show here.';
+  const n = count <= 10 ? C2_NUMBERS[count] : String(count);
+  return `${n} ${count === 1 ? 'thing is' : 'things are'} drafted and waiting for you. Nothing goes until you send it.`;
+}
+
+export const MONEY_LINES = Object.freeze({
+  newInvoice: 'From the coaching sessions logged since the last invoice. Untick any to leave off.',
+  hours: (first) => `${first || 'They'} ${first ? 'sees' : 'see'} the same balance and every entry in their portal.`,
+  invoiceSent: 'Where it went, when it’s due and whether it’s settled.',
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// C1, the agreement builder, packages and standard terms (Polish 1, Stage C; M28 v6 "build" and "packages").
+export const BUILDER_LINES = Object.freeze({
+  packages: 'Set up once, then start any agreement from one and adjust it for the person.',
+  terms: 'Every clause in order. What you change here is the wording for every new agreement. Agreements already signed keep the wording they were signed with.',
+  termsAssociate: 'Every clause in order, as your practice’s owner has set it.',
+  solicitor: 'Have a solicitor check any change before you use it with a client.',
+  clauses: (first) => `Every clause in order. Edit any of them for ${first}, or for everyone.`,
+  check: (first) => `Every way this agreement differs from your standard, then what ${first} will see first.`,
+  sign: (first) => `You sign first, then ${first} gets an email from you to read and sign it in the portal.`,
+  start: (first) => `An agreement is with a client, so ${first} becomes your client first. You can undo it.`,
+});
+/** × on the builder: "Saved. Pick up where you left off from Sam’s page." */
+export const builderClosed = (where) => `Saved. Pick up where you left off from ${where}.`;

@@ -5,6 +5,8 @@
 -- The invoice and quote counters go back to the next number after what is left; the agreement reference sequence
 -- simply moves on. Local only: never run on a hosted database.
 begin;
+delete from public.sponsor_sign_links where id::text like '5eed0600-%' or agreement_id::text like '5eed0600-%';
+delete from public.agreement_change_requests where id::text like '5eed0600-%' or version_id::text like '5eed0600-%';
 delete from public.agreement_link_opens where id::text like '5eed0600-%' or version_id::text like '5eed0600-%';
 delete from public.agreement_quotes where id::text like '5eed0600-%' or agreement_id::text like '5eed0600-%';
 delete from public.sponsor_signatures where id::text like '5eed0600-%' or version_id::text like '5eed0600-%';

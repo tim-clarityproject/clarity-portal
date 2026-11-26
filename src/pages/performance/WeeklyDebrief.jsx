@@ -29,6 +29,7 @@ import {
   clearGuideDraft,
   useToast,
   LoadError,
+  PdfDownload,
 } from '../../components/design';
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
@@ -245,6 +246,7 @@ function DebriefPattern({ shown, names, onShown, onAct }) {
 }
 
 function DebriefFlow({ userId, today, loaded, view }) {
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
@@ -864,6 +866,19 @@ function DebriefFlow({ userId, today, loaded, view }) {
             />
           )}
           {own.summary}
+          {/* The week as a report (Polish 1, Stage C: the approved 25 Nov weekly debrief PDF), light or dark. */}
+          <div className="deb-pdf">
+            <PdfDownload
+              variant="text"
+              label="Download my PDF"
+              getDocument={async () => {
+                const { debriefFacts, weeklyDebriefPdf } = await import('../../lib/pdf/docs/weeklyDebrief');
+                const meta = user?.user_metadata || {};
+                const name = [meta.first_name, meta.last_name].filter(Boolean).join(' ').trim() || meta.full_name || view.firstName || 'You';
+                return weeklyDebriefPdf(debriefFacts(view, { name, coachName: view.coach || '', answers }));
+              }}
+            />
+          </div>
         </div>
       ),
     },

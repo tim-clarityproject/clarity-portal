@@ -44,18 +44,36 @@ export const DEFAULT_NOTE = 'Here is everything we agreed.';
 // ---------------------------------------------------------------- an agreement and a quote (M28 s-c-email)
 
 /**
- * Ready to sign (M28 s-c-email): the note first, how long it takes, one button.
- * @param {{ firstName: string, coachFirst: string, note?: string, link: string }} o  link: the client's signing page
+ * M28 v6 "email" (Polish 1, Stage C): the line saying what the agreement is, "Here’s the agreement for your six months
+ * of coaching, starting on Monday 4 January.", when the caller knows it (`what`: "six months of coaching", `startsWords`:
+ * "Monday 4 January"); null otherwise.
  */
-export function readyToSignEmail({ firstName, coachFirst, note = '', link: href }) {
+export function agreementForLine(what, startsWords) {
+  const w = oneLine(what).slice(0, 160);
+  const s = oneLine(startsWords).slice(0, 60);
+  if (!w) return null;
+  return `Here’s the agreement for your ${w}${s ? `, starting on ${s}` : ''}.`;
+}
+
+/**
+ * Ready to sign (M28 s-c-email; v6 "email"): the note first, then what the agreement is (when `what` is given), how
+ * long it takes, one button.
+ * @param {{ firstName: string, coachFirst: string, note?: string, link: string, what?: string, startsWords?: string }} o
+ *   link: the client's signing page
+ */
+export function readyToSignEmail({ firstName, coachFirst, note = '', link: href, what = '', startsWords = '' }) {
   const coach = coachLine(coachFirst);
   const blocks = noteBlocks(note);
+  const forLine = agreementForLine(what, startsWords);
   return {
     brand: 'portal',
     subject: 'Your coaching agreement is ready to sign',
     blocks: [
       { type: 'heading', text: greeting(firstName) },
-      ...(blocks.length ? blocks : [{ type: 'text', text: DEFAULT_NOTE }]),
+      // M28 v6: the note and what the agreement is read as one paragraph ("Thank you for this morning. Here’s …").
+      ...(blocks.length
+        ? (forLine ? [...blocks.slice(0, -1), { ...blocks[blocks.length - 1], text: `${blocks[blocks.length - 1].text} ${forLine}` }] : blocks)
+        : [{ type: 'text', text: forLine || DEFAULT_NOTE }]),
       { type: 'text', text: 'It takes ~5 minutes to read and sign.' },
       link('Read and sign', href),
       { type: 'text', text: coach },

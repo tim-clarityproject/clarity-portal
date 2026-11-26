@@ -38,9 +38,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import { accountId, APP, clearDevice, coachContext, frameMenu, makeReport, OTHER, seedDevice, seedNetworkDevice, settle, SIZES, standIn, toastText } from './shared.mjs';
+import { frameMenuWords } from './shared.mjs';
 import { CAL, CRM, manyNetwork, networkDeviceSeed, seedClock, seedWithCrm } from './seed.mjs';
 import { guestStandIn } from './book-standin.mjs';
 import { mapProblems, readMap } from './net-rules.mjs';
+
+// The coach's menu as the Polish 1 frame draws it (Stage A; shared.mjs frameMenuWords): the frame lists Boards itself,
+// not each board under it (Stage C: the boards are on Boards' page).
+const menuText = async (page) => (await frameMenuWords(page)).join('\n');
 
 // Polish 1 (B4): "+ Add" by the list's label opens Quick Add; "Add their details too" opens the whole Add lead form,
 // the name typed there carried over (cleared here, so the form starts as it always did).
@@ -479,9 +484,8 @@ async function run() {
         const b = await openAt({ role: 'associate', db, tag: `${tag}, the associate`, path: '/coach/boards', rows, network: false });
         let text = await words(b.page);
         pass(`${tag}: the associate sees Workshops 2027 and no other board`, text.includes('Workshops 2027') && !/Speaking|Partners/.test(text), text.slice(0, 160));
-        await b.page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(b.page, 600);
-        const menu = await b.page.locator('.cc-menu').innerText();
-        pass(`${tag}: her menu has Boards with only that board, and no Leads or Network`, /Boards\s+Workshops 2027/.test(menu) && !/Speaking|Partners|Leads|Network/.test(menu), flat(menu).slice(0, 200));
+        const menu = await menuText(b.page);
+        pass(`${tag}: her menu has Boards, and no Leads or Network`, /Boards/.test(menu) && !/Speaking|Partners|Leads|Network/.test(menu), flat(menu).slice(0, 200));
         await b.page.keyboard.press('Escape'); await settle(b.page, 300);
         await go(b.page, `/coach/boards/${board.id}`);
         text = await words(b.page);
@@ -497,8 +501,7 @@ async function run() {
           pass(`${tag}: unshared, it goes from her Boards`, !(await words(b.page)).includes('Workshops 2027') && (await words(b.page)).includes('No board is shared with you yet.'), (await words(b.page)).slice(0, 120));
           await go(b.page, `/coach/boards/${board.id}`);
           pass(`${tag}: and its own address shows nothing of it`, (await words(b.page)).includes('This board isn’t here any more.') && !(await words(b.page)).includes('Northfield team day'));
-          await b.page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(b.page, 600);
-          pass(`${tag}: and her menu has no Boards`, !/Boards|Workshops/.test(await b.page.locator('.cc-menu').innerText()));
+          pass(`${tag}: and her menu has no Boards`, !/Boards|Workshops/.test(await menuText(b.page)));
           await b.page.keyboard.press('Escape');
         }
         await b.close();
@@ -557,7 +560,7 @@ async function run() {
         const { page } = a;
         const three = [['Sofia', CRM.sofia, 'Sofia Marsh'], ['Dana', CRM.dana, 'Dana Whitfield'], ['Hannah', CRM.hannah, 'Hannah Wells']];
         for (const [first, id, name] of three) {
-          await page.locator('.cc-row', { hasText: name }).first().click(); await settle(page, 800);
+          await page.locator('.ds-li', { hasText: name }).first().click(); await settle(page, 800);
           await press(page, `I spoke to ${first} today`, dialog(page));
           const said = await toastText(page);
           pass(`${tag}: a catch-up with ${first} is logged, with when next`, /^Logged\. Next time is /.test(said) && (await panelWords(page)).includes('You last spoke today.'), said);

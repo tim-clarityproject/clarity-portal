@@ -98,7 +98,8 @@ test('Send: the coach signs, it goes once, and the email comes from the coach (R
   assert.equal(mails.length, 1, 'pressed twice: one email');
   assert.deepEqual([mails[0].to, mails[0].fromName, mails[0].replyTo], ['sam@example.invalid', 'Dr. Tim Dutton', 'tim@example.invalid']);
   const blocks = mails[0].doc.blocks.filter(Boolean);
-  assert.equal(blocks[1].text, 'Sam, it was great to talk.', 'the note opens the email');
+  // The note opens the email, and M28 version 6 reads what the agreement is for straight after it (Polish 1, Stage C).
+  assert.equal(blocks[1].text, 'Sam, it was great to talk. Here’s the agreement for your 6-month coaching, starting on Monday 4 January.', 'the note opens the email');
   assert.equal(blocks.find((b) => b.type === 'button').href, `https://portal.theclarityproject.co.uk/coaching/agreement/${U(31)}`);
 });
 

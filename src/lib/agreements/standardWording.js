@@ -22,6 +22,9 @@ const cur = (t) => t?.currency || 'GBP';
 const notice = (t) => Number(t?.noticeHours) || 24;
 const due = (t) => Number(t?.dueDays) || 14;
 const where = (t) => PLACES[t?.place] || PLACES.zoom;
+/** The term in months: set by the month (M28 version 6: 3, 6 or 12), else 6 as before. */
+const termMonths = (t) => (t?.priceMode === 'monthly' && Number(t?.months) > 0 ? Number(t.months) : 6);
+const MONTH_WORDS = { 3: 'three', 6: 'six', 12: 'twelve' };
 
 /** "1 of 90 minutes, then 15 of 60 minutes, on Zoom or in person, weekly for 6 weeks, then every 2 weeks" (M28's sessText). */
 export const sessionsText = (t) => `${blocksText(t.blocks)}, ${where(t)}, ${lowerFirst(t.rhythm || 'Every 2 weeks')}`;
@@ -65,8 +68,9 @@ export const STANDARD = {
       title: 'The coaching',
       paragraphs: [
         first,
-        P(`The Clarity Portal is included for the length of this agreement, at the ${t.level || 'Executive'} level.`),
-        P('Between coaching sessions you can reach your coach by WhatsApp or Chat in the portal, and they reply within 2 working days.'),
+        // Polish 1, Stage C (M28 version 6's "What's included alongside the coaching?"): each can be switched off.
+        ...(t.portal !== false ? [P(`The Clarity Portal is included for the length of this agreement, at the ${t.level || 'Executive'} level.`)] : []),
+        ...(t.adhoc !== false ? [P('Between coaching sessions you can reach your coach by WhatsApp or Chat in the portal, and they reply within 2 working days.')] : []),
         P('Your coaching sessions are recorded with Fathom to write your session summary, only with your agreement. You can say no at any time, for one coaching session or for all of them.'),
       ],
     };
@@ -155,14 +159,16 @@ export const STANDARD = {
     const first = k === 'retainer'
       ? P('This agreement runs in 6-month terms, and renews for another 6 months unless either of you says otherwise at least 30 days before a term ends.')
       : t.fullTerm
-        ? P('This agreement runs for its full 6 months. If something exceptional happens, talk to your coach and you’ll agree together what’s fair.',
-          'Real change takes steady work over months, so you both commit to the full six.')
+        ? P(`This agreement runs for its full ${termMonths(t)} months. If something exceptional happens, talk to your coach and you’ll agree together what’s fair.`,
+          `Real change takes steady work over months, so you both commit to the full ${MONTH_WORDS[termMonths(t)] || termMonths(t)}.`)
         : P('Either of you can end this agreement early with 30 days’ notice in writing.',
           'You’re never locked in, and you never invest in coaching you don’t get.');
     return {
       title: 'Ending and changes',
       paragraphs: [
         first,
+        // Polish 1, Stage C (M28 version 6's "What happens after the six months?"): only "It renews" changes the wording.
+        ...(k === 'sessions' && t.after === 'renew' ? [P(`It then renews for another ${termMonths(t)} months, unless either of you says otherwise at least 30 days before it ends.`)] : []),
         ...(k === 'sessions' ? [P('Coaching sessions not used by the end date expire, unless you agree an extension with your coach.',
           'It keeps momentum: coaching works best at a steady rhythm. Ask early and an extension is usually easy.')] : []),
         P('Any change to this agreement is made as a new version that you both sign. Every version is kept.'),

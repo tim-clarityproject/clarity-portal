@@ -27,7 +27,7 @@
 //   fold-in-fold  a fold (a heading that opens a section) inside another fold (walk item 15)
 //   card-gap      cards one above another not 20px apart, or the first card not 32px under the page opening (item 22)
 //   empty-box     an outlined box with no words, no picture and no role (walk item 31)
-//   overlap       anything drawn over the header's crosshair (walk item 32)
+//   overlap       anything drawn over the header's crosshair (walk item 32); what lies under it in the stack is not
 //   mission       My Mission in the phone header not filling the row from the crosshair to the right margin at 40px
 //                 high, or on a laptop stretched past its words (walk item 33)
 //
@@ -424,6 +424,18 @@ export function designProblems({ phone = false, scale = 1 } = {}) {
       if (b.left < bits.right - 1 && b.right > bits.left + 1 && b.top < bits.bottom - 1 && b.bottom > bits.top + 1) {
         const st = getComputedStyle(el);
         if (Number(st.opacity) < 0.05) continue;
+        // Stacking (Polish 1, Stage C): a row scrolled under the sticky header, or under a full-screen panel that also
+        // covers the crosshair, sits below the crosshair and its header's background, so it isn't drawn over it. At the
+        // middle of the two boxes' overlap: the crosshair nearer the eye, with an opaque part between them.
+        const x = (Math.max(b.left, bits.left) + Math.min(b.right, bits.right)) / 2;
+        const y = (Math.max(b.top, bits.top) + Math.min(b.bottom, bits.bottom)) / 2;
+        const stack = document.elementsFromPoint(x, y);
+        const at = (fn) => stack.findIndex(fn);
+        const crossAt = at((k) => k === cross || cross.contains(k));
+        const elAt = at((k) => k === el || el.contains(k));
+        // Underneath and hidden: something opaque lies between the two (the header's own background).
+        const opaque = (k) => { const m = getComputedStyle(k).backgroundColor.match(/[\d.]+/g); return m && (m.length < 4 || Number(m[3]) > 0.9); };
+        if (crossAt >= 0 && elAt >= 0 && crossAt < elAt && stack.slice(crossAt, elAt).some((k) => !k.contains(el) && opaque(k))) continue;
         say('overlap', `${el.tagName.toLowerCase()}.${String(el.className.baseVal ?? el.className).split(' ')[0]} ${name(el)} is drawn over the menu's crosshair`);
       }
     }

@@ -1290,6 +1290,27 @@ insert into public.coach_todos (id, coach_id, title, notes, important, planned_o
   ('5eed0600-0010-4000-8000-00000000001b', 'c03c9b0e-1bc2-85f3-31d7-9bf5f15f8829', 'Renew the insurance', null, false, polish_seed.d('2026-11-13'), polish_seed.d('2026-11-13'), null, 30, '5eed0600-0011-4000-8000-000000000001', null, null, false, 27, polish_seed.ts('2026-11-13 08:40'), polish_seed.ts('2026-11-07 18:00')),
   ('5eed0600-0010-4000-8000-00000000001c', 'c03c9b0e-1bc2-85f3-31d7-9bf5f15f8829', 'Send Rory his refund note', null, false, polish_seed.d('2026-11-12'), polish_seed.d('2026-11-12'), null, 15, null, '5eed0600-0002-4000-8000-00000000000e', null, false, 28, polish_seed.ts('2026-11-12 08:40'), polish_seed.ts('2026-11-06 18:00'));
 
+-- Polish 1, Stage C: one of each agreements screen (inside 14 days, a price review, a change asked for, hours past 80%, a sponsor link).
+insert into public.time_entries (id, engagement_id, coach_id, started_at, ended_at, note) values
+  ('5eed0600-001a-4000-8000-000000000005', '5eed0600-0004-4000-8000-00000000000f', 'c03c9b0e-1bc2-85f3-31d7-9bf5f15f8829', polish_seed.ts('2026-11-23 10:00'), polish_seed.ts('2026-11-23 14:00'), 'Workshop with the people team');
+
+set session_replication_role = replica;
+update public.agreement_versions set client_signed_at = now() - interval '3 days', start_now = true, start_now_at = now() - interval '3 days' where agreement_id = '5eed0600-0009-4000-8000-000000000003' and status = 'signed';
+update public.agreement_versions set terms = terms || jsonb_build_object('priceSince', to_char((now() at time zone 'Europe/London')::date - 365 + 21, 'YYYY-MM-DD')) where id = '5eed0600-000a-4000-8000-000000000008';
+set session_replication_role = origin;
+insert into public.agreement_change_requests (id, version_id, coach_id, clause_key, words, created_at)
+select '5eed0600-0027-4000-8000-000000000001', v.id, 'c03c9b0e-1bc2-85f3-31d7-9bf5f15f8829', coalesce((select c->>'key' from jsonb_array_elements(v.clauses) with ordinality x(c, i) order by i offset 2 limit 1), 'investment'),
+       'Could the notice to rearrange be 48 hours rather than 24?', now() - interval '1 day'
+  from public.agreement_versions v where v.id = '5eed0600-000a-4000-8000-00000000000c';
+insert into public.agreements (id, coach_id, kind, profile_id, organisation_id, status, current_version, agreement_kind, package_id, created_at)
+select '5eed0600-0027-4000-8000-000000000002', a.coach_id, 'sponsor', null, a.organisation_id, 'sent', 1, a.agreement_kind, a.package_id, now() - interval '2 days'
+  from public.agreements a where a.id = '5eed0600-0009-4000-8000-000000000016';
+insert into public.agreement_versions (id, agreement_id, coach_id, version, status, terms, clauses, currency, fx_rate, fx_at, total_minor, funded_by, coach_signed_at, coach_signature_id, sent_at, send_as, personal_note, expires_on, created_at)
+select '5eed0600-0027-4000-8000-000000000003', '5eed0600-0027-4000-8000-000000000002', v.coach_id, 1, 'sent', v.terms || '{"needsPO": true}'::jsonb, v.clauses, v.currency, v.fx_rate, v.fx_at, v.total_minor, v.funded_by, now() - interval '2 days', v.coach_signature_id, now() - interval '2 days', 'agreement', null, null, now() - interval '2 days'
+  from public.agreement_versions v where v.id = '5eed0600-000a-4000-8000-000000000016';
+-- The sponsor's link (a local token: 64 c's, invented).
+insert into public.sponsor_sign_links (id, coach_id, agreement_id, version_id, token_hash, sponsor_name, sponsor_email, sponsor_role, expires_at)
+values ('5eed0600-0027-4000-8000-000000000004', 'c03c9b0e-1bc2-85f3-31d7-9bf5f15f8829', '5eed0600-0027-4000-8000-000000000002', '5eed0600-0027-4000-8000-000000000003', encode(sha256(convert_to(repeat('c', 64), 'UTF8')), 'hex'), 'Margaret Hale', 'polish-contact-3@example.com', 'Chief nursing officer', now() + interval '60 days');
 select set_config('clarity.linking', '', false);
 drop schema polish_seed cascade;
 do $$ begin raise notice 'SEED part 6 (Alex Morgan''s practice): % clients, % organisations, % agreements, % sessions, % calendar items, % invoices, % payments, % leads, % Network people, % to-dos',

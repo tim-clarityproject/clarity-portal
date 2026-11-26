@@ -26,7 +26,7 @@ export function PageOpening({ label, title, line, action, aside, as: Heading = '
   return (
     <header className={`ds-open ${className}`.trim()}>
       {label && <div className="ds-open-label">{label}</div>}
-      <Heading className="ds-page-title ds-open-title">{title}{aside ? <span className="ds-open-aside">{aside}</span> : null}</Heading>
+      <Heading className="ds-page-title ds-open-title">{title}{aside ? <span className="ds-page-aside ds-open-aside">{aside}</span> : null}</Heading>
       {line && <p className="ds-open-line">{line}</p>}
       {action && <div className="ds-open-act">{action}</div>}
     </header>
@@ -431,9 +431,10 @@ export function MonthGrid({ month, today, selected, onSelect, hasItems, availabl
  * Month and Week as one joined switch (`view`, `onView`), and any filter in
  * one drop-down (`filter`, a node).
  */
-export function CalendarBar({ title, onPrev, onNext, onToday, view, onView, filter, prevLabel = 'Previous month', nextLabel = 'Next month' }) {
+export function CalendarBar({ title, onPrev, onNext, onToday, view, onView, filter, prevLabel = 'Previous month', nextLabel = 'Next month', compact = false }) {
+  // `compact`: a date picker's bar (M28 v6 "build"): the month on the left, previous and next on the right, one line.
   return (
-    <div className="ds-calbar">
+    <div className={`ds-calbar${compact ? ' ds-calbar--compact' : ''}`}>
       <div className="ds-calbar-nav">
         {onPrev && <button type="button" className="ds-btn ds-btn--outline ds-btn--square" aria-label={prevLabel} onClick={onPrev}><Chevron direction="left" /></button>}
         {onNext && <button type="button" className="ds-btn ds-btn--outline ds-btn--square" aria-label={nextLabel} onClick={onNext}><Chevron direction="right" /></button>}
@@ -470,7 +471,7 @@ export function CalendarBar({ title, onPrev, onNext, onToday, view, onView, filt
  * from Home."). `onNext`, `nextLabel` (Next; Finish on the last step),
  * `onBack`, `onSkip`, `nextDisabled`.
  */
-export function ToolFrame({ step, steps, name, question, hint, onClose, closeLabel = 'Close and save my place', onNext, nextLabel, onBack, onSkip, skipLabel = 'Skip this step', last = false, stepWords, children, className = '' }) {
+export function ToolFrame({ step, steps, name, sub, question, hint, onClose, closeLabel = 'Close and save my place', onNext, nextLabel, onBack, onSkip, skipLabel = 'Skip this step', last = false, stepWords, children, className = '' }) {
   useFocusMode(true);
   const pct = last ? 100 : Math.max(4, ((step - 1) / Math.max(1, steps)) * 100 + 100 / Math.max(1, steps) / 3);
   const headingRef = useRef(null);
@@ -484,6 +485,8 @@ export function ToolFrame({ step, steps, name, question, hint, onClose, closeLab
       <div className="ds-tool-prog" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>
       <div className="ds-tool-step-body" key={step}>
         {name && <div className="ds-open-label">{name}</div>}
+        {/* A line under the group's name (M28 v6 .sofar: "So far: …"), 13px grey, sentence case (Polish 1, Stage C). */}
+        {sub && <p className="ds-tool-sub">{sub}</p>}
         {question && <h1 className="ds-q ds-tool-q" ref={headingRef} tabIndex={-1}>{question}</h1>}
         {hint && <p className="ds-tool-hint">{hint}</p>}
         {children}

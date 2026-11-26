@@ -88,7 +88,8 @@ const BUILT_PARTS = {
   sheet: () => [...document.querySelectorAll('.ds-portal')], // the panel, and any menu it has open
   bar: () => [document.querySelector('.cc-callbar')],
   header: () => [document.querySelector('.cc-header')],
-  menu: () => [document.querySelector('.cc-menu')],
+  // Polish 1's frame menu: the laptop's menu column, or the phone's menu panel (CLAUDE.md, Polish 1 "Frame and menu").
+  menu: () => [[...document.querySelectorAll('.cc-menu, .ds-pmenu, .ds-frame-side .ds-menu')].find((m) => m.getBoundingClientRect().height > 0) || null],
   sections: (titles) => [...document.querySelectorAll('.cc-main section')].filter((s) => {
     const h = s.querySelector('h2'); const t = (h ? h.innerText : '').split('\n')[0].trim().toLowerCase();
     return titles.some((x) => t === x.toLowerCase());
@@ -303,7 +304,8 @@ export async function compareRun2(report, table, { file, rows, extraGroups, ever
     for (const [e, [kind, name, row]] of listed) {
       const o = { who: row.who, on: row.on, ...(e[3] || {}) };
       const read = (!o.who || roles.includes(o.who)) && (!o.on || sizes.includes(o.on === 'p' ? 400 : 1440));
-      if (read && !used.has(e)) report.pass(`${name}: the listed ${kind === 'change' ? 'difference' : kind === 'added' ? 'addition' : 'move'} “${e[0] instanceof RegExp ? e[0].source : e[0]}” was met (${e[2]})`, false, 'no screen read shows it, so it isn’t a difference any more');
+      // `maybe`: a difference that holds on some reads only (Polish 1 changed what the screen shows around it), never required.
+      if (read && !used.has(e) && !o.maybe) report.pass(`${name}: the listed ${kind === 'change' ? 'difference' : kind === 'added' ? 'addition' : 'move'} “${e[0] instanceof RegExp ? e[0].source : e[0]}” was met (${e[2]})`, false, 'no screen read shows it, so it isn’t a difference any more');
     }
   }
   if (everywhereMet.size) table.push(`| On many screens | Meant | ${[...everywhereMet].map((e) => `“${e[3]?.say || (e[0] instanceof RegExp ? e[0].source : e[0])}”${e[1] ? ` is “${e[1]}”` : ''}: ${e[2]}`).join('; ')} |`);

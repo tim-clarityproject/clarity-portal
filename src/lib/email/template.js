@@ -24,7 +24,7 @@
 //     blocks: [                      top to bottom
 //       { type: 'heading', text }
 //       { type: 'text', text, quiet? }         quiet: the secondary grey
-//       { type: 'button', label, href, time? } the one coral button; only a
+//       { type: 'button', label, href, time? } the one black button; only a
 //                                              time ever sits beside it
 //       { type: 'details', rows: [[label, value], …] }  the sign-in box
 //       { type: 'link', label, href }          a quiet underlined link
@@ -40,7 +40,7 @@
 //   }
 
 export const EMAIL_COLOURS = Object.freeze({
-  bg: '#F9F8F5', text: '#000000', quiet: '#4A4A49', line: '#DCDAD3', coral: '#FF6F5C', legal: '#7F7F7C',
+  bg: '#F9F8F5', text: '#000000', on: '#FFFFFF', quiet: '#4A4A49', line: '#DCDAD3', coral: '#FF6F5C', legal: '#7F7F7C',
 });
 
 /** The line every email signs off with, whoever the coach is (Tim, 10 Nov, 13:29). */
@@ -144,13 +144,15 @@ function blockHtml(b, first) {
     case 'text':
       return row(esc(b.text), `padding:${b.sectionText ? 10 : 14}px 0 0;${text(16, b.quiet ? C.quiet : C.text, 'text-wrap:pretty;')}`);
     case 'button':
-      // A table cell carries the colour and the shape, so Outlook shows a
-      // coral button too (with square corners); on a phone it runs full
+      // The main button of the 25 Nov reference (Polish 1, Stage C; M28 v6
+      // "email"): solid black with white words in DM Sans, 12px corners,
+      // never coral (coral is for mistakes only). A table cell carries the
+      // colour and the shape, so Outlook shows it too (with square corners); on a phone it runs full
       // width with the time under it. Outlook on Windows ignores padding
       // on a link, so the cell carries the same padding for Outlook alone
       // (mso-padding-alt), or its button would shrink to the words.
       return row(`<table role="presentation" cellspacing="0" cellpadding="0" border="0" class="cta"><tr>
-<td class="btn-cell" bgcolor="${C.coral}" style="background:${C.coral};border-radius:999px;text-align:center;mso-padding-alt:16px 24px;"><a class="btn" href="${esc(safeHref(b.href))}" style="display:inline-block;padding:16px 24px;font-family:${TITLE_FONT};font-size:12px;line-height:16px;letter-spacing:0.14em;text-transform:uppercase;font-weight:500;color:#000000;text-decoration:none;border-radius:999px;">${esc(b.label)}</a></td>
+<td class="btn-cell" bgcolor="${C.text}" style="background:${C.text};border-radius:12px;text-align:center;mso-padding-alt:12px 22px;"><a class="btn" href="${esc(safeHref(b.href))}" style="display:inline-block;padding:12px 22px;font-family:${BODY_FONT};font-size:16px;line-height:20px;font-weight:500;color:${C.on};text-decoration:none;border-radius:12px;">${esc(b.label)}</a></td>
 ${b.time ? `<td class="cta-time" style="padding:0 0 0 16px;vertical-align:middle;${text(14, C.quiet, '', 1.5)}">${esc(b.time)}</td>` : ''}
 </tr></table>`, 'padding:28px 0 0;');
     case 'details':

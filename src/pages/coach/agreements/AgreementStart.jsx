@@ -1,22 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { Button, ErrorMessage, Loading, PageHeader, useToast } from '../../../components/design';
+import { Button, ErrorMessage, Loading, PageOpening, useToast } from '../../../components/design';
+import { BUILDER_LINES } from '../../../content/pageLines/coach';
 import { newId, rowNow, rowsOf, saveRow } from '../../../lib/coach/store';
 import { supabase } from '../../../lib/supabase';
-import { KIND_NAMES } from '../../../lib/agreements/terms';
-import { KIND_SHORT, firstOf, newDraft, orgFold, packageRow, startFor, startPackages } from '../../../lib/coach/agreementBuilder';
+import { firstOf, newDraft, orgFold, startFor, startPackages } from '../../../lib/coach/agreementBuilder';
 import { Back, TextLink, useCoachPortal } from '../parts';
 import { useLeadActions } from '../leadParts';
-import { ListRow, SAVE_PROBLEM } from './builderParts';
+import { SAVE_PROBLEM } from './builderParts';
 import './builder.css';
 
-// Choose a starting point (Phase 6b run 3, Group B; M28 s-start; brief items 1 and 31): /coach/agreements/new?for=
-// client:<id> | org:<id> | lead:<id> (&as=quote: "Send Sam a quote"). The coach's saved packages come first; every
-// price can change for the client in the builder. A package makes the draft (the agreement and its first version, on
-// the device at once) and opens the builder. A lead becomes a client first (risk 12: Mark as won, with Undo).
+// New agreement (Phase 6b run 3, Group B; Polish 1, Stage C: M28 version 6 has no starting page): /coach/agreements/
+// new?for=client:<id> | org:<id> | lead:<id> (&as=quote: "Send Sam a quote"). The draft is made at once from the first
+// package (an organisation's from its first team package) and the builder opens at its first question; the package is
+// chosen there, at "What are you offering?". A lead becomes a client first (risk 12: Mark as won, with Undo).
 //
 // AgreementButtons: New agreement and Send [name] a quote on an organisation's and a lead's page (M28: "Leads and
-// organisations have the same button"); a client's page has its own in AgreementFold.
+// organisations have the same button"); a client's page has its own in its Agreements card (ClientPage.jsx).
 
 /** The owner's packages for an associate (065 lets every coach read them; an associate's store holds no Finances). */
 function usePackages() {
@@ -29,7 +29,7 @@ function usePackages() {
     supabase.from('pricing_packages').select('*').eq('archived', false).then(({ data }) => { if (live) setOwners(data || []); }, () => { if (live) setOwners([]); });
     return () => { live = false; };
   }, [isOwner, own.length]);
-  return startPackages(own.length ? own : owners || []);
+  return { list: startPackages(own.length ? own : owners || []), ready: isOwner || own.length > 0 || owners !== null };
 }
 
 export default function AgreementStart() {
@@ -38,7 +38,7 @@ export default function AgreementStart() {
   const toast = useToast();
   const portal = useCoachPortal();
   const { userId, coach, isOwner, todayKey, clients = [], organisations = [], leads = [], partial } = portal;
-  const packages = usePackages();
+  const { list: packages, ready } = usePackages();
   const who = startFor(params.get('for'));
   const asQuote = params.get('as') === 'quote';
   const busy = useRef(false);
@@ -47,10 +47,32 @@ export default function AgreementStart() {
   const profile = who?.kind === 'client' ? clients.find((c) => c.id === who.id) || null : null;
   const organisation = who?.kind === 'org' ? organisations.find((o) => o.id === who.id) || null : null;
   const lead = who?.kind === 'lead' ? leads.find((l) => l.id === who.id) || null : null;
-  if (lead?.won_profile_id) return <Navigate to={`/coach/agreements/new?for=client:${lead.won_profile_id}${asQuote ? '&as=quote' : ''}`} replace />;
-
   const name = profile?.name || organisation?.name || lead?.name || '';
   const first = firstOf(name) || name;
+
+  // M28 version 6: "New agreement" opens the questionnaire at its first question, its answers filled in from the first
+  // package (the coach changes it at "What are you offering?"). The draft is made at once and kept on the device.
+  const start = async () => {
+    if (busy.current) return;
+    busy.current = true;
+    setProblem(null);
+    const pkg = (organisation && !profile ? packages.find((p) => p.agreement_kind === 'team') : packages.find((p) => p.agreement_kind !== 'team')) || packages[0] || null;
+    const draft = newDraft({ pkg, kind: pkg ? null : (organisation && !profile ? 'team' : 'sessions'), who: { profile, organisation }, coach, isOwner, ids: { agreementId: newId(), versionId: newId() }, todayKey });
+    if (asQuote) draft.version.send_as = 'quote';
+    try {
+      await saveRow(userId, 'agreements', draft.agreement);
+      await saveRow(userId, 'agreement_versions', draft.version);
+      navigate(`/coach/agreements/${draft.agreement.id}/edit`, { replace: true });
+    } catch {
+      busy.current = false;
+      setProblem(SAVE_PROBLEM);
+      toast.error(SAVE_PROBLEM);
+    }
+  };
+  const go = (profile || organisation) && ready && !partial && !problem;
+  useEffect(() => { if (go) start(); });
+
+  if (lead?.won_profile_id) return <Navigate to={`/coach/agreements/new?for=client:${lead.won_profile_id}${asQuote ? '&as=quote' : ''}`} replace />;
   const back = () => navigate(profile ? `/coach/clients/${profile.id}` : organisation ? `/coach/organisations/${organisation.id}` : lead ? `/coach/leads/${lead.id}` : '/coach/clients');
 
   if (!profile && !organisation && !lead) {
@@ -58,49 +80,30 @@ export default function AgreementStart() {
     return (
       <div className="cc-page"><div className="cc-col">
         <Back to="Clients" onClick={() => navigate('/coach/clients')} />
-        <PageHeader title="New agreement" />
-        <p className="cc-quiet">Start an agreement from a client’s or an organisation’s page.</p>
+        <PageOpening title="New agreement" line="Start an agreement from a client’s or an organisation’s page." />
       </div></div>
     );
   }
-
-  const start = async ({ pkg = null, kind = null }) => {
-    if (busy.current) return;
-    busy.current = true;
-    setProblem(null);
-    const draft = newDraft({ pkg, kind, who: { profile, organisation }, coach, isOwner, ids: { agreementId: newId(), versionId: newId() }, todayKey });
-    if (asQuote) draft.version.send_as = 'quote';
-    try {
-      await saveRow(userId, 'agreements', draft.agreement);
-      await saveRow(userId, 'agreement_versions', draft.version);
-      navigate(`/coach/agreements/${draft.agreement.id}/edit`);
-    } catch {
-      setProblem(SAVE_PROBLEM);
-      toast.error(SAVE_PROBLEM);
-    } finally { busy.current = false; }
-  };
-
+  if (lead) {
+    return (
+      <div className="cc-page">
+        <div className="cc-col ab-page">
+          <Back to={name} onClick={back} />
+          <LeadFirst lead={lead} first={first} asQuote={asQuote} />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="cc-page">
       <div className="cc-col ab-page">
-        <Back to={name} onClick={back} />
-        <PageHeader title="New agreement" meta={[name]} />
-        {lead ? <LeadFirst lead={lead} first={first} asQuote={asQuote} /> : (
+        {problem ? (
           <>
-            <p className="ab-say ab-start-say">Start from one of your packages. You can change anything for {first}.</p>
-            <div className="ab-rows">
-              {packages.map((p) => {
-                const row = packageRow(p, { funded: Boolean(organisation) });
-                return <ListRow key={p.id} title={row.title} line={row.meta} aside={row.short} onClick={() => start({ pkg: p })} label={`${row.title}, ${row.short}`} />;
-              })}
-              {packages.length === 0 && Object.entries(KIND_NAMES).map(([k, label]) => (
-                <ListRow key={k} title={label} line="Start with nothing filled in." aside={KIND_SHORT[k]} onClick={() => start({ kind: k })} />
-              ))}
-            </div>
-            {problem && <ErrorMessage>{problem}</ErrorMessage>}
-            {isOwner && <TextLink onClick={() => navigate('/coach/settings/agreements')}>Manage my packages</TextLink>}
+            <Back to={name} onClick={back} />
+            <PageOpening label={name} title="New agreement" line="The draft didn’t save, so nothing has changed." action={<Button variant="primary" onClick={() => { setProblem(null); start(); }}>Try again</Button>} />
+            <ErrorMessage>{problem}</ErrorMessage>
           </>
-        )}
+        ) : <Loading label="Starting the agreement" />}
       </div>
     </div>
   );
@@ -116,12 +119,7 @@ function LeadFirst({ lead, first, asQuote }) {
     const now = rowNow(userId, 'coach_leads', { id: lead.id });
     if (ok && now?.won_profile_id) navigate(`/coach/agreements/new?for=client:${now.won_profile_id}${asQuote ? '&as=quote' : ''}`, { replace: true });
   };
-  return (
-    <>
-      <p className="ab-say ab-start-say">An agreement is with a client, so {first} becomes your client first. You can undo it.</p>
-      <div className="ab-acts"><Button variant="primary" onClick={make}>Make {first} a client</Button></div>
-    </>
-  );
+  return <PageOpening label={lead.name} title="New agreement" line={BUILDER_LINES.start(first)} action={<Button variant="primary" onClick={make}>Make {first} a client</Button>} />;
 }
 
 /**

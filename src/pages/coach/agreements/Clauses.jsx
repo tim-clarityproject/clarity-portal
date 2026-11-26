@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, ErrorMessage, Loading, PageHeader, TextBox, useToast } from '../../../components/design';
+import { Button, Card, ErrorMessage, Loading, PageOpening, Row, Rows, SectionTabs, TextBox, useToast } from '../../../components/design';
+import { parseDbTimestamp, getLocalDateKey } from '../../../lib/dateFormatter';
+import { dayKeyWords } from '../../../lib/time';
+import { BUILDER_LINES } from '../../../content/pageLines/coach';
 import { newId, rowsOf, saveRow } from '../../../lib/coach/store';
 import { buildClauses, overrideFor, standardClause } from '../../../lib/agreements/clauses';
 import { KINDS } from '../../../lib/agreements/terms';
-import { WORDING_NAMES, differsFrom, libraryRows, newStandardRow, sampleTerms, standardsFor } from '../../../lib/coach/agreementBuilder';
+import { WORDING_NAMES, clauseVersions, differsFrom, libraryRows, newStandardRow, sampleTerms, standardsChangedAt, standardsFor } from '../../../lib/coach/agreementBuilder';
 import { Back, TextLink, useCoachPortal } from '../parts';
-import { Hint, ListRow, SAVE_PROBLEM, Saved, useAgreementDraft } from './builderParts';
+import { Hint, SAVE_PROBLEM, Saved, useAgreementDraft } from './builderParts';
 import './builder.css';
 
 // The clause library and Edit a clause (Phase 6b run 3, Group B; M28 s-library and s-clause; brief items 15 to 17).
@@ -35,7 +38,7 @@ function AgreementClauses() {
   const d = useAgreementDraft(id);
   const { draft, party, standards, isOwner = d.portal.isOwner, todayKey = d.portal.todayKey } = d;
   if (!draft) {
-    return <div className="cc-page"><div className="cc-col"><Back to="New agreement" onClick={() => navigate(`/coach/agreements/${id}/edit`)} />{d.loading ? <Loading label="Loading the agreement" /> : <p className="cc-quiet">That agreement isn’t here.</p>}</div></div>;
+    return <div className="cc-page"><div className="cc-col"><Back to="Does this read right?" onClick={() => navigate(`/coach/agreements/${id}/edit?q=check`)} />{d.loading ? <Loading label="Loading the agreement" /> : <PageOpening title="The clauses" line="That agreement isn’t here." />}</div></div>;
   }
   const terms = draft.terms || {};
   const overrides = draft.overrides || {};
@@ -44,7 +47,7 @@ function AgreementClauses() {
 
   if (key) {
     const clause = buildClauses(terms, { standards, overrides }).find((c) => c.key === key);
-    if (!clause) return <div className="cc-page"><div className="cc-col"><Back to="All clauses" onClick={() => navigate(`/coach/agreements/${id}/clauses`)} /><p className="cc-quiet">That clause isn’t in this agreement.</p></div></div>;
+    if (!clause) return <div className="cc-page"><div className="cc-col"><Back to="All clauses" onClick={() => navigate(`/coach/agreements/${id}/clauses`)} /><PageOpening title="The clause" line="That clause isn’t in this agreement." /></div></div>;
     const std = standardClause(key, terms, { standards });
     const keep = async (paragraphs) => {
       const next = { ...overrides };
@@ -56,7 +59,7 @@ function AgreementClauses() {
     };
     return (
       <ClauseEditor
-        key={key} heading={`${clause.number}. ${clause.title}`} who={party.name} label={`What should it say for ${first}?`}
+        key={key} heading={clause.title} who={`Clause ${clause.number}, for ${party.name}`} label={`What should it say for ${first}?`}
         start={clause.paragraphs} standardParagraphs={std.paragraphs} status={d.status}
         editedLine={`Edited for ${first}. Your standard wording stays as it is unless you choose otherwise.`}
         onlyEdited
@@ -106,16 +109,20 @@ function AgreementClauses() {
   return (
     <div className="cc-page">
       <div className="cc-col ab-page">
-        <Back to={draft.version > 1 ? `Version ${draft.version}` : 'New agreement'} onClick={() => navigate(`/coach/agreements/${id}/edit`)} />
-        <PageHeader title={`Your ${WORDING_NAMES[kind].toLowerCase()}`} meta={[party.name]} />
-        <p className="ab-say ab-start-say">Every clause in order. Edit any of them for {first}{isOwner ? ', or for everyone' : ''}.</p>
-        <div className="ab-rows">
-          {rows.map((r) => <ListRow key={r.key} title={r.label} line={r.line} aside="Edit" label={`Edit ${r.label}`} onClick={() => navigate(`/coach/agreements/${id}/clauses/${r.key}`)} />)}
-        </div>
+        <Back to="Does this read right?" onClick={() => navigate(`/coach/agreements/${id}/edit?q=check`)} />
+        <PageOpening label={party.name} title="Your standard terms" line={isOwner ? BUILDER_LINES.clauses(first) : `Every clause in order. Edit any of them for ${first}.`} />
+        <Card label={`${rows.length} clauses`}>
+          <Rows>
+            {rows.map((r) => <Row key={r.key} name={r.label} sub={r.line} value="Edit" label={`Edit ${r.label}`} onClick={() => navigate(`/coach/agreements/${id}/clauses/${r.key}`)} />)}
+          </Rows>
+        </Card>
       </div>
     </div>
   );
 }
+
+/** A stored time as the day it was on this device: "Thu 12 Nov 2026" (rule 19). */
+const dayOf = (stamp) => (stamp ? dayKeyWords(getLocalDateKey(parseDbTimestamp(stamp)), { year: true }) : '');
 
 function StandardWording() {
   const { kind: kindParam, key } = useParams();
@@ -126,7 +133,7 @@ function StandardWording() {
   const rows = rowsOf(state, 'agreement_clause_standards');
   const standards = useMemo(() => standardsFor(rows, kind), [rows, kind]);
   const terms = useMemo(() => sampleTerms(kind || 'sessions', coach), [kind, coach]);
-  if (!kind) return <div className="cc-page"><div className="cc-col"><Back to="Agreements" onClick={() => navigate('/coach/settings/agreements')} /><p className="cc-quiet">That wording isn’t here.</p></div></div>;
+  if (!kind) return <div className="cc-page"><div className="cc-col"><Back to="Agreements" onClick={() => navigate('/coach/settings/agreements')} /><PageOpening title="Your standard terms" line="That wording isn’t here." /></div></div>;
   const list = `/coach/settings/agreements/wording/${kind}`;
   const addVersion = async (k, title, paragraphs, message, undoTo) => {
     const row = newStandardRow({ id: newId(), coachId: coach.id, kind, key: k, title, paragraphs: toPlaceholders(paragraphs, terms), standards });
@@ -137,18 +144,21 @@ function StandardWording() {
 
   if (key) {
     const clause = buildClauses(terms, { standards }).find((c) => c.key === key);
-    if (!clause) return <div className="cc-page"><div className="cc-col"><Back to="All clauses" onClick={() => navigate(list)} /><p className="cc-quiet">That clause isn’t in this wording.</p></div></div>;
+    if (!clause) return <div className="cc-page"><div className="cc-col"><Back to="All clauses" onClick={() => navigate(list)} /><PageOpening title="The clause" line="That clause isn’t in this wording." /></div></div>;
     const code = standardClause(key, terms, {});
     const own = standards[key];
+    const versions = clauseVersions(rows, kind, key);
     return (
       <ClauseEditor
-        key={key} heading={`${clause.number}. ${clause.title}`} who={WORDING_NAMES[kind]} label="What should it say for everyone?"
+        key={key} heading={clause.title} who={`Clause ${clause.number}, ${WORDING_NAMES[kind].toLowerCase()}`} label="What should it say for everyone?"
         start={clause.paragraphs} standardParagraphs={clause.paragraphs} readOnly={!isOwner}
-        editedLine="Agreements already sent keep their own wording."
+        editedLine="Saving makes a new dated version, used for new agreements only. Agreements already signed keep the version they were signed with."
+        note={isOwner ? BUILDER_LINES.solicitor : null}
+        versions={versions.map((v) => `Version ${v.version}, ${dayOf(v.created_at)}`).concat(['The first wording'])}
         back={() => navigate(list)}
         primary={isOwner ? {
-          words: 'Save for everyone',
-          run: async (paragraphs) => { if (await addVersion(key, clause.title, paragraphs, 'Your standard wording now says this.', own?.paragraphs || code.paragraphs)) navigate(list); },
+          words: 'Save for new agreements',
+          run: async (paragraphs) => { if (await addVersion(key, clause.title, paragraphs, 'Saved as a new version. New agreements use it.', own?.paragraphs || code.paragraphs)) navigate(list); },
         } : null}
         reset={isOwner && own ? {
           words: 'Go back to the first wording',
@@ -158,15 +168,22 @@ function StandardWording() {
     );
   }
   const lib = libraryRows(terms, { standards, todayKey, standard: true });
+  const changed = standardsChangedAt(rows, kind);
   return (
     <div className="cc-page">
       <div className="cc-col ab-page">
         <Back to="Agreements" onClick={() => navigate('/coach/settings/agreements')} />
-        <PageHeader title={`Your ${WORDING_NAMES[kind].toLowerCase()}`} meta={[`${lib.length} clauses`]} />
-        <p className="ab-say ab-start-say">{isOwner ? 'Every clause in order. What you change here is the wording for every new agreement.' : 'Every clause in order, as your practice’s owner has set it.'}</p>
-        <div className="ab-rows">
-          {lib.map((r) => <ListRow key={r.key} title={r.label} line={r.line} aside={isOwner ? 'Edit' : 'Read'} label={`${isOwner ? 'Edit' : 'Read'} ${r.label}`} onClick={() => navigate(`${list}/${r.key}`)} />)}
-        </div>
+        <PageOpening label={changed ? `Updated ${dayOf(changed)}` : 'Your first wording'} title="Your standard terms" line={isOwner ? BUILDER_LINES.terms : BUILDER_LINES.termsAssociate} />
+        <SectionTabs label="Which agreement" tabs={KINDS.map((k) => ({ key: k, label: WORDING_NAMES[k].replace(/ agreement$/, '') }))} value={kind} onChange={(k) => navigate(`/coach/settings/agreements/wording/${k}`)} />
+        <Card label={`${lib.length} clauses`}>
+          <Rows>
+            {lib.map((r) => {
+              const own = standards[r.key];
+              return <Row key={r.key} name={r.label} sub={own ? `Version ${own.version}, ${dayOf(own.created_at)}` : 'The first wording'} value={isOwner ? 'Edit' : 'Read'} label={`${isOwner ? 'Edit' : 'Read'} ${r.label}`} onClick={() => navigate(`${list}/${r.key}`)} />;
+            })}
+          </Rows>
+        </Card>
+        {isOwner && <Hint>{BUILDER_LINES.solicitor}</Hint>}
       </div>
     </div>
   );
@@ -176,7 +193,7 @@ function StandardWording() {
  * Edit a clause (M28 s-clause): a box for each paragraph with its reason under it, the line saying it is edited, the
  * choice "Use this wording for everyone from now on?" and Go back to the standard wording.
  */
-function ClauseEditor({ heading, who, label, start, standardParagraphs, editedLine, back, primary, everyone = null, reset = null, readOnly = false, status = 'idle', onlyEdited = false }) {
+function ClauseEditor({ heading, who, label, start, standardParagraphs, editedLine, back, primary, everyone = null, reset = null, readOnly = false, status = 'idle', onlyEdited = false, note = null, versions = null }) {
   const [paragraphs, setParagraphs] = useState(() => start.map((p) => ({ text: p.text, why: p.why || null })));
   const [problem, setProblem] = useState(null);
   useEffect(() => { setProblem(null); }, [paragraphs]);
@@ -192,7 +209,7 @@ function ClauseEditor({ heading, who, label, start, standardParagraphs, editedLi
     <div className="cc-page">
       <div className="cc-col ab-page">
         <Back to="All clauses" onClick={back} />
-        <PageHeader title={heading} meta={[who, <Saved key="s" status={status} />]} />
+        <PageOpening label={who} title={heading} line={readOnly ? 'Your practice’s owner sets the standard wording.' : null} aside={status !== 'idle' ? <Saved status={status} /> : null} />
         {paragraphs.map((p, i) => (
           <div key={`p${i + 1}`}>
             {readOnly ? <p className="ab-say">{p.text}</p> : (
@@ -215,7 +232,12 @@ function ClauseEditor({ heading, who, label, start, standardParagraphs, editedLi
         )}
         {offer && primary && !everyone && <div className="ab-acts"><Button variant="primary" onClick={run(primary)}>{primary.words}</Button></div>}
         {offer && reset && <TextLink onClick={async () => { const back2 = await reset.run(); if (back2) setParagraphs(back2.map((p) => ({ text: p.text, why: p.why || null }))); }}>{reset.words}</TextLink>}
-        {readOnly && <Hint>Your practice’s owner sets the standard wording.</Hint>}
+        {note && <Hint>{note}</Hint>}
+        {versions && versions.length > 1 && (
+          <Card label="Its versions">
+            <Rows>{versions.map((v, i) => <Row key={v} name={v} value={i === 0 ? 'Used for new agreements' : undefined} />)}</Rows>
+          </Card>
+        )}
       </div>
     </div>
   );

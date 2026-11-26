@@ -3,8 +3,7 @@ import { createTypesetter, seenSpec, seenText, STYLES } from './text.js';
 import { flatten, tagNode } from './parts.js';
 import { layoutPages } from './layout.js';
 import { PAPER } from './paper.js';
-import { BOLD_CROSS_PATHS, BOLD_CROSS_STROKE, BOLD_CROSS_VIEWBOX } from '../boldCrosshair.js';
-import { PDF_THEMES, PDF_AUTHOR, PORTAL_ADDRESS, PORTAL_URL } from './theme.js';
+import { PDF_THEMES, PDF_AUTHOR, businessOf } from './theme.js';
 import { formatFileDate, formatUpdatedAt } from '../dateFormatter.js';
 
 // The shared PDF template. One document description in, a finished PDF out, in
@@ -34,9 +33,13 @@ import { formatFileDate, formatUpdatedAt } from '../dateFormatter.js';
 
 const MM = 72 / 25.4;
 const MARGIN = 19 * MM;
-const HEADER_GAP = 16; // under the running header
-const FOOTER_GAP = 16; // above the footer
-const LOGO = 16; // the bold crosshair's square in the footer
+// The 25 Nov PDFs (Polish 1; pdfs-25nov/pdf-examples-25nov.html): the running header sits 12mm from the top with
+// 10mm under it; the footer's hairline and line sit 12mm from the foot, with room above it.
+const HEADER_TOP = 12 * MM;
+const HEADER_GAP = 10 * MM; // under the running header
+const FOOT_BOTTOM = 12 * MM;
+const FOOT_PAD = 3.5 * MM; // the footer's hairline to its words
+const FOOTER_GAP = 3 * MM; // the content's last line to the footer's hairline (as the approved pages: the remittance line sits just above it)
 
 const clean = (s) => String(s ?? '').normalize('NFC')
   .replace(/[\\/:*?"<>|]/g, ' ')
@@ -54,7 +57,7 @@ const shorten = (s, n = 60) => {
  * and the file name, with "(dark)" at the end of the dark one.
  */
 export function pdfName(spec, variant) {
-  const title = [spec.docName, spec.who, formatFileDate(spec.date || new Date())]
+  const title = [spec.docName, spec.who, spec.fileLabel || formatFileDate(spec.date || new Date())]
     .map((p) => shorten(clean(typeof p === 'string' ? seenText(p) : p)))
     .filter(Boolean)
     .join(', ');
@@ -70,7 +73,7 @@ function registerFonts(doc, fonts) {
       names.push(name);
     }
   };
-  ['Nekst', 'NekstLight', 'DMSans', 'DMSansExt', 'DMSansMedium', 'DMSansMediumExt'].forEach((n) => add(n, fonts[n]));
+  ['Nekst', 'NekstLight', 'DMSans', 'DMSansExt', 'DMSansMedium', 'DMSansMediumExt', 'DMSansLight', 'DMSansLightItalic'].forEach((n) => add(n, fonts[n]));
   const emoji = (fonts.emoji || []).map((bytes, i) => {
     add(`Emoji${i}`, bytes);
     return `Emoji${i}`;
@@ -86,6 +89,9 @@ function registerFonts(doc, fonts) {
     light: keep(['NekstLight', 'Nekst', 'DMSans', 'DMSansExt', ...emoji, ...cjk]),
     body: keep(['DMSans', 'DMSansExt', ...emoji, ...cjk]),
     medium: keep(['DMSansMedium', 'DMSansMediumExt', 'DMSans', 'DMSansExt', ...emoji, ...cjk]),
+    // Figures in DM Sans Light, and a signature written as a name in its light italic (the 25 Nov PDFs).
+    figure: keep(['DMSansLight', 'DMSans', 'DMSansExt', ...emoji, ...cjk]),
+    hand: keep(['DMSansLightItalic', 'DMSansLight', 'DMSans', 'DMSansExt', ...emoji, ...cjk]),
   };
 }
 
@@ -151,24 +157,34 @@ export async function renderPdf(given, { variant = 'light', paper = PAPER.A4, as
   // 26 Oct, 16:12): a long name wraps onto more lines, and the header and
   // footer bands grow to hold them, inside the margins.
   const who = spec.who ? String(spec.who).trim() : '';
-  const s = STYLES.small;
-  const docName = spec.docName || spec.title || '';
+  const s = STYLES.foot;
+  const docName = spec.running || spec.docName || spec.title || '';
   const leftW = who ? Math.min(ts.width(docName, s), contentW * 0.5) : contentW;
   const headLeft = ts.wrap(docName, s, Math.max(leftW, 1));
   const headRight = who ? ts.wrap(who, s, contentW - leftW - 24) : [];
-  const headerBand = Math.max(headLeft.length, headRight.length, 1) * s.lh + HEADER_GAP;
-  const aw = ts.width(PORTAL_ADDRESS, s);
-  const footLeft = LOGO + 8 + aw + 16; // the mark and the address
-  const numRoom = ts.width('Page 99 of 99', { ...s, features: ['tnum'] }) + 16;
+  const headerBand = HEADER_TOP + Math.max(headLeft.length, headRight.length, 1) * s.lh + HEADER_GAP;
+
+  // The footer (the 25 Nov PDFs): a hairline, then the company's name and number, its website (a working link),
+  // "Confidential: for [name]" where the document holds their answers or terms, and "Page 1 of 2" on documents of
+  // more than one page, each apart with a quiet dot. Nothing is hard-coded: the business's own details
+  // (theme.js businessOf, from the coach's Settings, Business) or the company's name alone.
+  const biz = businessOf(spec.business);
+  const company = biz.number ? `${biz.name} · Company no. ${biz.number}` : biz.name;
+  const site = biz.website;
+  const dotW = ts.width('·', s) + 6 * MM; // 3mm either side of the quiet dot
+  const numRoom = ts.width('Page 99 of 99', s) + 16;
+  const companyW = ts.width(company, s);
+  const siteW = ts.width(site, s);
   const confText = spec.confidential ? (who ? `Confidential: for ${who}` : 'Confidential') : '';
-  const confLines = confText ? ts.wrap(confText, s, contentW - footLeft - numRoom) : [];
-  const footH = Math.max(LOGO, confLines.length * s.lh);
+  const confX = companyW + dotW + siteW + dotW;
+  const confLines = confText ? ts.wrap(confText, s, Math.max(contentW - confX - numRoom, contentW * 0.3)) : [];
+  const footLines = Math.max(1, confLines.length);
+  const footTop = (pageH) => pageH - FOOT_BOTTOM - footLines * s.lh - FOOT_PAD;
   const geom = {
-    top: (i) => MARGIN + (i > 0 ? headerBand : 0),
-    bottom: () => H - MARGIN - footH - FOOTER_GAP,
+    top: (i) => (i > 0 ? headerBand : MARGIN),
+    bottom: () => footTop(H) - FOOTER_GAP,
   };
-  const sample = 'Most of the team agreed the new routing plan should start soon.';
-  const measure = Math.min(contentW, (ts.width(sample, STYLES.body) / sample.length) * 62);
+  const measure = Math.min(contentW, 150 * MM); // a paragraph's measure (the 25 Nov PDFs' 150mm)
   const L = { ts, contentW, measure, pageH: geom.bottom(1) - geom.top(1) };
 
   const details = [...(spec.details || [])];
@@ -231,62 +247,48 @@ export async function renderPdf(given, { variant = 'light', paper = PAPER.A4, as
     },
   };
 
-  // The footer mark: the bold crosshair (Tim, 26 Oct, 16:13), from the same
-  // drawing as the website's menu button and Home Screen icon, black on
-  // light pages and white on dark pages.
-  const drawMark = (x, y) => {
-    const [vx, vy, vw] = BOLD_CROSS_VIEWBOX;
-    const k = LOGO / vw;
-    BOLD_CROSS_PATHS.forEach((p) => {
-      doc.save();
-      doc.translate(x, y).scale(k).translate(-vx + p.dx, -vy + p.dy);
-      doc.path(p.d).lineWidth(BOLD_CROSS_STROKE).lineJoin('round').lineCap('butt').stroke(t.mark);
-      doc.restore();
-    });
-  };
-
   pages.forEach((page, pi) => {
     doc.addPage({ size: [W, H], margin: 0 });
     if (variant === 'dark') ctx.artifact(() => doc.rect(0, 0, W, H).fill(t.page), 'Background');
     page.items.forEach(({ u, y }, k) => u.draw(ctx, MARGIN, y, { first: k === 0 || page.items[k - 1].u.kind === 'thead' }));
 
-    // running header, from page 2: the document name and who it is for,
+    // running header, from page 2: the document's name and who it is for,
     // each wrapping onto more lines rather than being cut off
     if (pi > 0) {
       ctx.artifact(() => {
-        const by = MARGIN + ts.baseline(s);
+        const by = HEADER_TOP + ts.baseline(s);
         headLeft.forEach((ln, i) => ts.draw(ln, MARGIN, by + i * s.lh, s, t.detail));
         headRight.forEach((ln, i) => ts.draw(ln, MARGIN + contentW, by + i * s.lh, s, t.detail, 'right'));
       }, 'Pagination');
     }
 
-    // footer: the bold crosshair, the portal address (a working link), who
-    // it is confidential for (wrapping upwards when long, so the full name
+    // footer: the hairline, the company, the website (a working link), who it
+    // is confidential for (wrapping upwards when long, so the full name
     // always shows), and the page number (none on a one-page PDF)
-    const fy = H - MARGIN - LOGO;
-    const by = fy + LOGO / 2 + s.size * 0.35;
-    ctx.artifact(() => drawMark(MARGIN, fy), 'Pagination');
-    const ax = MARGIN + LOGO + 8;
+    const top = footTop(H);
+    const by = H - FOOT_BOTTOM - s.lh + ts.baseline(s);
+    ctx.artifact(() => {
+      doc.moveTo(MARGIN, top + 0.375).lineTo(MARGIN + contentW, top + 0.375).lineWidth(0.75).stroke(t.line);
+      ts.draw(company, MARGIN, by, s, t.detail);
+      ts.draw('·', MARGIN + companyW + dotW / 2 - ts.width('·', s) / 2, by, s, t.detail);
+    }, 'Pagination');
+    const ax = MARGIN + companyW + dotW;
     const link = doc.struct('Link');
     root.el.add(link);
     const content = doc.markStructureContent('Link');
     link.add(content);
-    ts.draw(PORTAL_ADDRESS, ax, by, s, t.detail);
+    ts.draw(site, ax, by, s, t.detail);
     doc.endMarkedContent();
-    doc.link(ax, fy, aw, LOGO, PORTAL_URL, { structParent: link, Contents: new String(`The Clarity Portal, ${PORTAL_ADDRESS}`) });
+    doc.link(ax, by - s.size, siteW, s.lh, biz.url, { structParent: link, Contents: new String(`${biz.name}, ${site}`) });
     link.end();
     ctx.artifact(() => {
-      let right = MARGIN + contentW;
       // Pages added after the render (an invoice's evidence, appended with pdf-lib) count in the total.
       const total = pages.length + Math.max(0, Number(spec.extraPages) || 0);
-      if (total > 1) {
-        const num = `Page ${pi + 1} of ${total}`;
-        ts.draw(num, right, by, { ...s, features: ['tnum'] }, t.detail, 'right');
-        right -= ts.width(num, s) + 16;
+      if (total > 1) ts.draw(`Page ${pi + 1} of ${total}`, MARGIN + contentW, by, s, t.detail, 'right');
+      if (confLines.length) {
+        ts.draw('·', ax + siteW + dotW / 2 - ts.width('·', s) / 2, by, s, t.detail);
+        confLines.forEach((ln, i) => ts.draw(ln, MARGIN + confX, by - (confLines.length - 1 - i) * s.lh, s, t.detail));
       }
-      confLines.forEach((ln, i) => {
-        ts.draw(ln, right, by - (confLines.length - 1 - i) * s.lh, s, t.detail, 'right');
-      });
     }, 'Pagination');
   });
 
@@ -312,6 +314,7 @@ export async function renderPdf(given, { variant = 'light', paper = PAPER.A4, as
     at += c.length;
   });
   // `layout` lists what sits on each page, for the page-break checks
-  const layout = pages.map((p) => p.items.map(({ u, cont }) => ({ kind: u.kind, lines: u.lines, h: Math.round(u.h), group: u.group ?? null, keep: !!u.keep, cont: !!cont, ...(u.dots ? { dots: u.dots } : {}) })));
+  // `y` and `limit` let the pack check nothing crosses into the footer (the 25 Nov PDFs' stress pack).
+  const layout = pages.map((p, pi) => p.items.map(({ u, y, cont }) => ({ kind: u.kind, lines: u.lines, h: Math.round(u.h), y: Math.round(y * 10) / 10, limit: Math.round(geom.bottom(pi) * 10) / 10, footerTop: Math.round(footTop(H) * 10) / 10, group: u.group ?? null, keep: !!u.keep, cont: !!cont, ...(u.dots ? { dots: u.dots } : {}) })));
   return { bytes, pages: pages.length, fileName, title, layout };
 }

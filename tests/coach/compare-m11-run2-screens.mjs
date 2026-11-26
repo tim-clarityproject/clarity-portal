@@ -21,14 +21,22 @@
 // Anything that differs and is not listed FAILS: it is a fault, not a meant
 // difference, until a rule explains it. The differences no rule explains
 // that were kept as built are listed with "left for Tim to decide".
-import { frameMenu, settle } from './shared.mjs';
+import { frameMenu, openTodoAdd, settle } from './shared.mjs';
 import { THEY, THEY_NAMES } from './compare-m11-they.mjs';
 import { DAY, ID, SES } from './seed.mjs';
 import { TUE } from './screens.mjs';
 
 // ---------------------------------------------------------------- the built screens M11 draws that screens.mjs doesn't open
 const press = async (page, name) => { await page.getByRole('button', { name, exact: true }).first().click(); await settle(page, 450); };
-const take = async (page) => { await page.locator('.ds-offer-take').click(); await settle(page, 500); };
+// Polish 1 (Stage A, coach Today): the offer for now is the opening's main button, or a quiet link beside it when a
+// session leads; an offer row (.ds-offer-take) where a page still has one.
+const take = async (page) => {
+  for (const sel of ['.ds-offer-take', '.cc-today-offerlink', '.ds-open-act .ds-btn--primary']) {
+    const el = page.locator(sel).first();
+    if (await el.count()) { await el.click(); break; }
+  }
+  await settle(page, 500);
+};
 const openFold = async (page, name) => { const b = page.locator('.cc-fold-btn', { hasText: name }).first(); if (await b.count() && (await b.getAttribute('aria-expanded')) !== 'true') { await b.click(); await settle(page, 300); } };
 const bar = (minutes) => async (page) => {
   await page.evaluate((m) => sessionStorage.setItem('clarity-coach-test-calls', JSON.stringify([{ name: 'Sam Okafor', startsAt: new Date(Date.now() + m * 60000).toISOString(), zoom: 'https://zoom.example/j/1', briefTo: '/coach/clients' }])), minutes);
@@ -46,11 +54,12 @@ export const EXTRA_GROUPS = [
       ['m11-menu', '/coach', async (page) => { await frameMenu(page); await settle(page, 600); }],
       ['m11-today-note', '/coach', async (page) => { await page.locator('.cc-inline-link', { hasText: 'Priya Nair' }).first().click(); await settle(page, 600); }],
       ['m11-plan-3', '/coach', async (page) => { await take(page); await press(page, 'Next'); await press(page, 'Next'); }],
-      ['m11-today-add', '/coach', async (page) => { await press(page, 'Add to-do'); await page.locator('.ds-dialog textarea, .ds-dialog input[type=text]').first().fill(M11_WORDS); await settle(page, 300); }],
+      // Polish 1 ("Adding"): "+ Add" at the To-dos card's label opens Quick Add (openTodoAdd).
+      ['m11-today-add', '/coach', async (page) => { const qa = await openTodoAdd(page); await qa.getByLabel('What needs doing?').fill(M11_WORDS); await settle(page, 300); }],
       ['m11-today-more', '/coach', async (page, size) => { if (size === 400) return 'skip'; const row = page.locator(`.cc-todo-row:has([data-todo="${DAY.t9}"])`).first(); await row.hover(); await row.locator('.cc-todo-more').click(); await settle(page, 400); return null; }],
       ['m11-todo-when', '/coach/todos', async (page) => { await openTodo(page, DAY.t3); await openBox(page, 'When I’ll do it'); }],
       ['m11-todo-repeats', '/coach/todos', async (page) => { await openTodo(page, DAY.t3); await openBox(page, 'Repeats'); }],
-      ['m11-quick-add', '/coach/todos', async (page, size) => { if (size === 400) { await page.locator('.ds-addrow', { hasText: 'Add to-do' }).first().click(); await settle(page, 600); } await page.getByLabel('What needs doing?').first().fill(M11_WORDS); await settle(page, 300); }],
+      ['m11-quick-add', '/coach/todos', async (page) => { const qa = await openTodoAdd(page); await qa.getByLabel('What needs doing?').fill(M11_WORDS); await settle(page, 300); }],
     ],
   },
   { name: 'm11-bar', at: TUE, screens: [['m11-bar-8', '/coach', bar(7.6)], ['m11-bar-5', '/coach', bar(4.6)], ['m11-bar-now', '/coach', bar(-0.2)]] },
@@ -102,12 +111,28 @@ const T_SELECT = TIM('Done rows and a client page’s to-dos have no select or M
 const T_TIME = TIM('under a day’s heading only the time shows (rule 29ap: no repeated line)');
 
 /** Differences that hold on every screen: met where M11 shows them, never required. */
+
+// Polish 1 (Stages A to C; the 25 Nov design reference and example pages): the meant differences it brought to run 2's
+// screens. Listed once here, met where M11 shows them, never required.
+const P1_OPEN = 'Polish 1: every page opens the same way (PageOpening: the day as a small grey label, the title, one grey line, the offer for now as its one main button), and every card has a 13px label (CLAUDE.md, Polish 1 “Layout”; coach Today, the example “Coach: Today”)';
+const P1_ROWS = 'Polish 1’s list rows (Row): a name and one value, so a coaching session reads its time and place (“12:30, Zoom”) and opens with “Open Sam’s session”';
+const P1_QA = 'Polish 1 “Adding”: “+ Add” at a list’s label opens Quick Add, a small box under the label on a laptop and a panel from the bottom on a phone, so the always-open quick-add box, its example and its own heading are gone';
+const P1_UNITS = 'units are full words (26 Oct design rule 8): an estimate reads “30 minutes” and “2 hours”, and its question is a full sentence, “How long will it take?”';
+const P1_WEEK = 'Polish 1 (coach Today): capacity is the “This week” card (Coaching hours and Calls, with Edit), beside the owner’s “This month” card from Finances';
+const P1_MENU = 'Polish 1’s frame menu (CLAUDE.md, Polish 1 “Frame and menu”): plain words in groups by gaps, no counts or headings, Privacy in the foot, and Needs you in the Finances group (M28 v6)';
 export const EVERYWHERE = {
   changes: [
     ...THEY,
+    [/^(Add to-do|View all to-dos|name: View all to-dos|name: Add to-do|ADD TO-DO|What needs doing\?|e\.g\. Call Sam Fri 10:00 #Kestrel @phone ! 30m|# a list or client, @ a tag, ! important|Send the renewal pack to Dana( tomorrow #Kestrel @email ! 30m)?|Tomorrow|Kestrel renewal|Email|Important|30 min|Add heading|name: Close)$/, null, P1_QA, { quiet: true, say: 'the quick-add box and its parts' }],
+    [/^((Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d+ Nov|~\d+ minutes)$/, null, `${P1_OPEN}; the offer for now is the main button, with no time beside it`, { quiet: true, say: 'the day and the offer’s time' }],
+    ['Close the day', 'Close my day', `${P1_OPEN}: the offer’s button says what it does in the coach’s own voice`, { quiet: true }],
+    [/^(60 minutes|90 minutes|Harbour City FC|Self-funded)$/, null, P1_ROWS, { quiet: true, say: 'a session row’s length and who funds it' }],
+    [/^(How long it takes|\d+ min|\d+ h|Other)$/, null, P1_UNITS, { quiet: true, say: 'How long it takes, 15 min' }],
+    [/^(CAPACITY|Coaching hours this week|Calls this week|\d+ of \d+ over|Edit|\d+)$/, null, P1_WEEK, { quiet: true, say: 'the Capacity card' }],
+    [/^(FAVOURITE VIEWS|name: Close the menu|name: To-dos, \d+ for today)$/, null, P1_MENU, { quiet: true, say: 'the old menu’s heading and names' }],
     [/^(Elena Ruiz|Tom Hale|Ruth Adams)$/, null, 'a to-do names its client; a lead’s or contact’s name on its row wasn’t added in run 4 (left for Tim to decide), and one from an email says “From email” with the sender in its panel', { quiet: true, say: 'a lead’s or contact’s name on a to-do’s row' }],
     ['09:45 Chicago', '9:45 am Chicago', 'a US or Canadian client’s own time is 12-hour (time zone rule 5), as on the calendar’s tiles; M11 writes it 24-hour', { quiet: true, say: '09:45 Chicago' }],
-    seed(/^Group of 6$/, 'Group of 3', 'the Kestrel group has 3 members, where M11’s has 6', { quiet: true, say: 'Group of 6' }),
+    seed(/^Group of 6$/, null, `the Kestrel group has 3 members, where M11’s has 6; ${P1_ROWS}`, { quiet: true, say: 'Group of 6' }),
     // An associate: M11 gives Maya her own invented people; the test's associate keeps the owner's seed on the device.
     seed(/^(Nina Shah|Nina Shah in \d minutes|Nina Shah Starting now|Lakeside Rowing Club|Ross Kemp|Ella Fraser|13:00|16:30|Prepare for supervision with Tim|Send Nina the pressure plan worksheet|No next session is booked, and one is due by Fri \d+ Nov\.|Nothing here yet\.|Book a call|Season review with the board, 10:00|Season review with the board|6 of 12|5|Today|Self-funded|Wed 18 Nov|Zoom|60 minutes|Done)$/, null, 'M11 gives Maya her own invented clients and to-dos; the test’s associate keeps the owner’s seed on the device', { who: 'associate', quiet: true, say: 'Maya’s own clients and to-dos' }),
     [/^name: (Select|More for|Mark) .*(Prepare for supervision with Tim|Send Nina the pressure plan worksheet)/, null, 'the test’s data: Maya’s own to-dos', { who: 'associate', data: true, quiet: true, say: 'Maya’s own to-dos’ controls' }],
@@ -115,6 +140,13 @@ export const EVERYWHERE = {
   ],
   added: [
     ...THEY_NAMES,
+    [/^((MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY) \d+ NOVEMBER|.+ coaching sessions? today, and .+\.|Nothing needs you right now\.|COACHING SESSIONS|THIS MONTH|THIS WEEK|Nothing settled yet this month\.|Finances|Everything you plan to do, by day\. Only you can see it\.|A list of your own to-dos\. Only you can see it\.|TODAY|Close my day|Plan my day|Start my weekly review|Rate my energy|Not now)$/, P1_OPEN, null, { quiet: true, say: 'the page’s opening and its cards’ labels' }],
+    [/^(Open .+’s session|\d\d:\d\d, .+)$/, P1_ROWS, null, { quiet: true, say: '12:30, Zoom; Open Sam’s session' }],
+    [/^(Add a day or time, # a list or client, @ a tag, ! for important, 30m for how long\.|Add|Cancel|name: Add to-do|name: Add heading|name: View all to-dos|View all)$/, `${P1_QA}; its Cancel closes it`, null, { quiet: true, say: '+ Add, View all' }],
+    [/^(\d+ (minutes|hours?)|How long will it take\?)$/, P1_UNITS, null, { quiet: true, say: '30 minutes, How long will it take?' }],
+    [/^(Coaching hours|Calls|Edit|\d+( of \d+)?|\d+ of \d+, \d+ over|Group of \d+)$/, P1_WEEK, null, { quiet: true, say: 'This week’s rows' }],
+    [/^(NEEDS YOU|\d+(\.\d+)?|£[\d,]+)$/, 'an associate’s Today now has Needs you (their agreements waiting for the owner) and Your hours and pay (Phase 6b run 3; coach rule 26)', null, { who: 'associate', quiet: true, say: 'Needs you, and Your hours and pay' }],
+    [/^(Needs you|Privacy|Search or do anything|name: Close the menu|name: Search, or do anything|name: Notifications, \d+ new)$/, `${P1_MENU}; on a phone the menu holds Search and Notifications at its top (Tim’s walk, item 21)`, null, { quiet: true, say: 'Needs you, Privacy, Search' }],
     [/^name: Who can see this: /, 'the eye says “Who can see this:” before its words to a screen reader (rule 24)', null, { quiet: true, say: 'Who can see this:' }],
     [/^name: \d\d:\d\d, .+\. Open the (brief|group)$/, 'a call’s row tells a screen reader what it opens; its words are M11’s', null, { quiet: true, say: 'a call’s spoken name' }],
     [/^name: [^“”]+, (Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d+ (Nov|Dec)$/, 'a forecast row is read out as one sentence; its words are the row’s', null, { quiet: true, say: 'a forecast row’s spoken name' }],
@@ -125,7 +157,10 @@ export const EVERYWHERE = {
     [/^Sam Okafor (in \d minutes|is starting now)$/, 'the test’s data: the test’s call is Sam’s for both roles, where M11 gives Maya one of her own', null, { who: 'associate', data: true, quiet: true, say: 'Sam’s call on the associate’s bar' }],
     [/^name: Close$/, 'on a phone a menu is the shared panel from the foot, with its own Close (the built design reference)', null, { on: 'p', quiet: true, say: 'Close, on a phone’s menu' }],
   ],
-  moved: [[/^today$/, 'the test’s data: Maya’s own to-do says Today under it', null, { who: 'associate', data: true, quiet: true, say: 'Today, on Maya’s own to-do' }]],
+  moved: [[/^today$/, 'the test’s data: Maya’s own to-do says Today under it', null, { who: 'associate', data: true, quiet: true, say: 'Today, on Maya’s own to-do' }],
+    [/^(finances|calendar)$/, `${P1_MENU}: Today, Calendar and To-dos are the first group, Finances the third`, null, { quiet: true, say: 'Finances and Calendar in the menu' }],
+    [/^(it’s priya nair’s birthday today\.|calls|edit|11 of 15|pressure forecast|sat 14 nov|wed 18 nov|upcoming|someday)$/, `${P1_OPEN}: Today is two columns (sessions and to-dos on the left, what needs you and this week on the right), so the lines of each card fall in another order`, null, { quiet: true, say: 'Today’s cards in two columns' }],
+    [/^(email|coaching session|add to-do|tomorrow|kestrel renewal|important)$/, `${P1_OPEN}: a page’s kind is its small grey label over the title (“Coaching session”); ${P1_QA}, and Quick Add shows what it read (Tomorrow, Kestrel renewal, Important) under the box`, null, { quiet: true, say: 'Coaching session, Email' }]],
 };
 // What the test's associate shows is the owner's seed, so each of its lines is held against the owner's M11 screen too.
 // M11's Maya has a quieter day: nothing over, two rows in Who needs attention, nothing done. Those states are the owner's only.
@@ -168,7 +203,7 @@ const today = (more = {}) => ({ changes: [...TODAY.changes, ...(more.changes || 
 const TYPED = { after: 'What needs doing?', before: 'Add to-do', boxes: ['Send the renewal pack to Dana tomorrow #Kestrel @email ! 30m'] };
 const QUICK = {
   changes: [['View', 'List', 'the List and Calendar switch is the same on a phone as on a laptop (Tim’s design rules for this run, 18 and 19 Nov)', { on: 'p' }]],
-  added: [['# a list or client, @ a tag, ! important', `the quick add is one part, on the page and in its panel, with its one line of help: ${HELP1}`, null, { on: 'd' }], ['More it understands', HELP1, null, { on: 'd' }], ['Add to-do', ADDROW, null, { on: 'd' }],
+  added: [['# a list or client, @ a tag, ! important', `the quick add is one part, on the page and in its panel, with its one line of help: ${HELP1}`, null, { on: 'd', maybe: true }], ['More it understands', HELP1, null, { on: 'd', maybe: true }], ['Add to-do', ADDROW, null, { on: 'd', maybe: true }],
     [/^(List|Calendar)$/, 'the List and Calendar switch is the same on a phone as on a laptop (Tim’s design rules for this run, 18 and 19 Nov)', null, { on: 'p', say: 'List, Calendar' }]],
 };
 const SESSIONS = {
@@ -221,16 +256,16 @@ export const ROWS = [
     added: [seeded(/^(4 hours 30 minutes|09:30 to 16:45|7 hours 15 minutes)$/, 'the figures that do come to 45 minutes over')] },
   { name: 'Choose what to move', m11: 'today:tue', clicks: ['sheet:overday', 'sheet:trim'], part: 'sheet', built: 'today-move', ...OWNER },
   { name: 'Add to-do, from Today', m11: 'today:tue', clicks: ['sheet:qadd'], part: 'sheet', built: 'm11-today-add',
-    changes: [['Repeats, times and estimates work in plain words, such as every Monday, 10:00 or 30m.', 'More it understands', HELP1, { on: 'd' }]],
-    added: [['e.g. Call Sam Fri 10:00 #Kestrel @phone ! 30m', 'the quick add is one part, so its box says the same when empty in the panel as on the page, where M11 has it'],
-      [/^(# a list or client, @ a tag, ! important|More it understands)$/, `the quick add is one part on a phone and on a laptop, with its one line of help (coach rule 23); M11’s phone panel has none`, null, { on: 'p', say: 'the one line of help, on a phone' }]] },
+    changes: [['Repeats, times and estimates work in plain words, such as every Monday, 10:00 or 30m.', null, `${HELP1}; ${P1_QA}: Quick Add’s one line of help says what it understands`, { on: 'd' }]],
+    added: [['e.g. Call Sam Fri 10:00 #Kestrel @phone ! 30m', 'the quick add is one part, so its box says the same when empty in the panel as on the page, where M11 has it', null, { maybe: true }],
+      [/^(# a list or client, @ a tag, ! important|More it understands)$/, `the quick add is one part on a phone and on a laptop, with its one line of help (coach rule 23); M11’s phone panel has none`, null, { maybe: true, on: 'p', say: 'the one line of help, on a phone' }]] },
   { name: 'Plan my day, step 1', m11: 'plan', part: 'sheet', built: 'today-plan-1' },
   { name: 'Plan my day, step 2', m11: 'plan', clicks: steps(1), part: 'sheet', built: 'today-plan-2',
     changes: [['Planned for Wed 18 Nov, 10:00', 'Tomorrow', DATES],
       seed(/^(1 h|30 min|15 min)$/, null, 'five of these to-dos have no estimate in the seed, and M11 gives each one', { say: 'an estimate on every to-do' }),
       seed(/^Planned for (Mon 23 Nov|Tue 1 Dec)$/, null, 'the seed counts its days on from the pinned day, so they are Sat 21 Nov and Sun 29 Nov', { say: 'Planned for Mon 23 Nov, Planned for Tue 1 Dec' })],
     added: [seeded(/^Planned for (Sat 21 Nov|Sun 29 Nov)$/, 'the seed’s own days')],
-    moved: [seeded(/^(30 min(utes)?|15 min(utes)?)$/, 'the estimates the seed has')] },
+    moved: [seeded(/^(30 min(utes)?|15 min(utes)?)$/, 'the estimates the seed has', { maybe: true })] },
   { name: 'Plan my day, step 3', m11: 'plan3', part: 'sheet', built: 'm11-plan-3',
     changes: [['Drag each one into a gap.', 'Give each one a time, or leave it without one.', STEP3],
       [/^(CHI|UK|Tue|17|\d\d:00)$/, null, STEP3, { say: 'the day column with its two time zones' }],
@@ -242,7 +277,7 @@ export const ROWS = [
       [/^(Kestrel Group|60 minutes|90 minutes|Harbour City FC|Self-funded|Group of 3|Zoom|9:45 am Chicago)$/, `${STEP3}; the calls are a plain list in time order, as Today’s Calls`, null, { say: 'the calls as Today’s rows' }]],
     moved: [[/^(15 min(utes)?|30 min(utes)?|\d\d:\d\d|sam okafor|kestrel leadership team|jordan reyes|priya nair)$/, STEP3, null, { say: 'the calls and estimates' }]] },
   { name: 'Today, a Friday afternoon', m11: 'today:fri', built: 'today-fri', shiftDays: -7, ...today({
-    changes: [['Weekly review', 'Rate my energy', 'on a Friday afternoon the one offer is Rate my energy, then the Weekly review (coach rule 17)'], ['~3 minutes', '~30 seconds', 'Rate my energy’s own time (coach rule 17)'],
+    changes: [['Weekly review', 'Rate my energy', 'on a Friday afternoon the one offer is Rate my energy, then the Weekly review (coach rule 17)'], ['~3 minutes', null, 'Rate my energy’s own time (coach rule 17); Polish 1: the offer is the opening’s main button, with no time beside it'],
       seed(/^(Quillmark|Zoom|Due Fri|From Fri 6 Nov|Pricing launch, 09:00|v Bay City, home, Chicago, 19:30 there, 01:30 for you|v Bay City, 01:30 for you|Wed 18 Nov|Tue 17 Nov)$/, null, 'the seed’s Friday: Mia at 14:00 in New York’s time where M11 has Hannah, and every day counted from the pinned Friday', { say: 'M11’s own Friday' })],
     added: [seeded(/^(It’s Priya Nair’s birthday today\.|Mia Torres|Brightline Media|9:00 am New York|Due Mon|From Mon 9 Nov|Board meeting|Keynote at the Leeds Leaders Forum|Sat 14 Nov|Sun 15 Nov|Tue 17 Nov)$/, 'the seed’s Friday: Priya’s birthday is always the pinned day, and the forecast is the same three moments', { say: 'the seed’s own Friday' })],
     moved: [seeded(/^(zoom|northfield logistics|tue 17 nov|60 minutes)$/, 'the seed’s Friday')],
@@ -257,7 +292,7 @@ export const ROWS = [
   { name: 'Weekly review, step 4', m11: 'review', clicks: ['energy3:Good', ...steps(3)], part: 'sheet', built: 'today-review-4', shiftDays: -7 },
   { name: 'Weekly review, step 5', m11: 'review', clicks: ['energy3:Good', ...steps(4)], part: 'sheet', built: 'today-review-5', shiftDays: -7,
     added: [seeded('Leave Thursday afternoon clear for writing.', 'what the test types in the box')] },
-  { name: 'A week over capacity', m11: 'capover', sections: ['Capacity'], built: 'today-cap', ...OWNER },
+  { name: 'A week over capacity', m11: 'capover', sections: ['Capacity'], builtSections: ['This week'], built: 'today-cap', ...OWNER },
   { name: 'Capacity’s Edit, in Settings', m11: 'capover', clicks: ['caps'], from: 'Capacity', built: 'settings-hours-capacity',
     added: [['Each day has its own hours. Today’s over-full line and booking follow them, and they can be dragged on the calendar.', 'the page’s one line of help: the working day decides Today’s over-full line and booking, and is set on the calendar (coach rules 17 and 23; run 3)']] },
   { name: 'Today, the evening', m11: 'today:eve', built: 'today-eve', ...today({

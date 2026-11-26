@@ -74,7 +74,7 @@
 .ui-root .ab-warn { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-px6) var(--space-px10); padding: var(--space-px12) var(--space-3); border-radius: var(--radius-btn); background: var(--soft-tint, var(--raised)); color: var(--text); font-size: var(--fs-secondary); line-height: var(--lh-text); }
 
 /* ---- A clause's reason (M28 .cl-why) without its side line, and the clause editor */
-.ui-root .ab-why { margin: var(--space-2) 0 0; padding-left: var(--space-px12); font-size: var(--fs-note); line-height: var(--lh-text); color: var(--placeholder); }
+.ui-root .ab-why { margin: var(--space-2) 0 0; padding-left: var(--space-px12); font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); }
 .ui-root .ab-panel { border: var(--line-w) solid var(--line); border-radius: var(--radius-card); background: var(--bg); padding: var(--space-4); }
 .ui-root .ab-panel > * + * { margin-top: var(--space-px18); }
 
@@ -135,3 +135,66 @@
 .ui-root .ab-toc + .ab-split #ab-coaching { border-top: 0; padding-top: 0; }
 /* A row's Edit link (Check before sending) ends on the row's right edge; its 44px tap area reaches left. */
 .ui-root .ab-row-aside .ds-link { justify-content: flex-end; }
+
+/* ==== The questionnaire (Polish 1, Stage C; M28 version 6, "build"): one question per screen in focus mode ==== */
+/* M28's .qblock: the bar, the progress line, the question and its foot keep to one 560px column (7 × 80px). */
+.ui-root .ab-q { max-width: var(--tool-max); }
+/* 16px between the answers' parts; the question and its hint keep the tool frame's own spacing. */
+.ui-root .ab-q .ds-tool-step-body > :not(.ds-open-label, .ds-tool-sub, .ds-q, .ds-tool-hint) + * { margin-top: var(--space-3); }
+/* M28's stacked answers span the question's column, the price or detail at the right (.pick small). */
+.ui-root .ab-q .ds-rows { max-width: none; }
+.ui-root .ab-q .ds-answer .ds-answer-note { margin-left: auto; padding-left: var(--space-3); flex: none; }
+.ui-root .ab-more > * + * { margin-top: var(--space-3); }
+.ui-root .ab-more { margin-top: var(--space-4); }
+
+/* A money box (M28 .box.money): the currency's symbol in grey, then the figure, in the field's own box. */
+.ui-root .ds-field.ab-money { display: flex; align-items: center; gap: var(--space-px6); cursor: text; }
+.ui-root .ds-field.ab-money:focus-within { border-color: var(--text-2); }
+.ui-root .ab-money-cur { color: var(--text-2); flex: none; }
+.ui-root .ab-money input { all: unset; flex: 1 1 auto; min-width: 0; font: inherit; color: var(--text); caret-color: var(--text); }
+
+/* The answer under a question (M28 .answer): a hairline above and below, the answer itself 20px. */
+.ui-root .ab-answers { border-top: var(--line-w) solid var(--line); }
+.ui-root .ab-answer { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-px10); margin: 0; padding: var(--space-3) 0; border-bottom: var(--line-w) solid var(--line); }
+.ui-root .ab-answer-l, .ui-root .ab-answer-n { font-size: var(--fs-meta); line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .ab-answer-v { font-size: var(--fs-question); line-height: var(--lh-title); color: var(--text); }
+
+/* What matches a typed place or currency (M28 .tzres): rows to choose, the time there now or the symbol in grey. */
+.ui-root .ab-find-field .ds-label-row { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.ui-root .ab-find-list { margin-top: var(--space-2); border-top: var(--line-w) solid var(--line); }
+.ui-root .ab-find-row { all: unset; box-sizing: border-box; display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); width: 100%; min-height: var(--tap-min); padding: var(--space-px14) 0; border-bottom: var(--line-w) solid var(--line); cursor: pointer; color: var(--text); font-size: var(--fs-text); }
+.ui-root .ab-find-row small { font-size: var(--fs-meta); color: var(--text-2); flex: none; }
+.ui-root .ab-find-row:hover > span, .ui-root .ab-find-row:focus-visible > span { text-decoration: underline; text-decoration-thickness: var(--line-w); text-underline-offset: var(--space-1); }
+.ui-root .ab-find-row:focus-visible { outline: var(--focus-w) solid var(--text); outline-offset: var(--space-px2); }
+@media (max-width: 600px) {
+  .ui-root .ab-find-row { flex-direction: column; gap: var(--space-px2); }
+}
+.ui-root .ab-find + .ab-answers, .ui-root .ab-find + .ab-hint { margin-top: var(--space-3); }
+
+/* The start date (M28 .datepick): the month grid in a card. */
+.ui-root .ab-datepick { padding: var(--space-3); border: var(--line-w) solid var(--line); border-radius: var(--radius-control); background: var(--card); }
+
+/* The check (M28 "Does this read right?"): Change at the right of each sentence, the standard terms a row that opens. */
+.ui-root .ab-check .ds-li-value { flex: none; }
+.ui-root .ab-change { font-size: var(--fs-meta); color: var(--text-2); }
+.ui-root .ab-check-more { display: flex; }
+.ui-root .ab-check .ds-li-value .ds-chevron { color: var(--text-2); }
+.ui-root .ab-q .ab-warn { margin-top: var(--space-3); }
+
+/* Under 1024px the frame gives no padding: the questionnaire gives 20px (as FormTool's .ft-page). */
+@media (max-width: 1023px) {
+  .ui-root .ab-q-page { padding: var(--space-px20) var(--page-x-phone) var(--space-px64); }
+}
+/* On a phone a package's price goes under its words (M28's .phone .pick small). */
+@media (max-width: 600px) {
+  .ui-root .ab-q .ds-answer:has(.ds-answer-note) { flex-wrap: wrap; row-gap: var(--space-px2); }
+  .ui-root .ab-q .ds-answer .ds-answer-note { margin-left: 0; padding-left: 0; flex-basis: 100%; }
+}
+
+/* Settings, Agreements as cards (M28 version 6's Packages): the line, then the cards 20px apart. */
+.ui-root .ab-settings > .ds-card + .ds-card { margin-top: var(--space-px20); }
+.ui-root .ab-settings-line { margin: 0 0 var(--space-4); color: var(--text-2); }
+.ui-root .ab-card-note { margin: var(--space-3) 0 0; font-size: var(--fs-meta); }
+.ui-root .ab-settings .ab-line-end { gap: var(--space-3); }
+/* M28 version 6's stacked choice with its grey line is 67px (10px above and below, .choices.stack button). */
+.ui-root .ab-q .ds-answer:has(.ds-answer-hint):not(#_) { padding-block: var(--space-px10) !important; }

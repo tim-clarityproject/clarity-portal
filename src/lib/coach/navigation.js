@@ -9,6 +9,8 @@
 export const COACH_MENU = [
   { key: 'today', label: 'Today', to: '/coach' },
   { key: 'finances', label: 'Finances', to: '/coach/finances', owner: true },
+  // Polish 1, Stage C (M28 v6 "needs"): every drafted next step as its own page, in the Finances group.
+  { key: 'needs-you', label: 'Needs you', to: '/coach/needs-you' },
   { key: 'todos', label: 'To-dos', to: '/coach/todos' },
   { key: 'clients', label: 'Clients', to: '/coach/clients' },
   { key: 'leads', label: 'Leads', to: '/coach/leads', owner: true },
@@ -35,6 +37,8 @@ export const SETTINGS_SECTIONS = [
   { key: 'calendars', label: 'My calendars' },
   // Phase 6b run 3 (M28 s-packages): packages, standard wording, extras, your signature and talking points.
   { key: 'agreements', label: 'Agreements' },
+  // Polish 1, Stage C (C5, migration 068): company name and number, website, email and bank details for the PDFs.
+  { key: 'business', label: 'Business', owner: true },
   { key: 'email', label: 'Email', owner: true, wired: false },
   { key: 'tags', label: 'Tags and fields' },
   { key: 'layouts', label: 'Note layouts', owner: true, wired: false },
@@ -56,6 +60,7 @@ const ENDINGS = [
   [/^\/coach\/agreements\/[^/]+\/preview$/, 'Preview the agreement'],
   [/^\/coach\/agreements\/[^/]+\/sign$/, 'Sign and send'],
   [/^\/coach\/agreements\/[^/]+\/hours$/, 'Hours log'],
+  [/^\/coach\/agreements\/[^/]+\/sent$/, 'Sent'],
   [/^\/coach\/settings\/agreements\/wording(\/.*)?$/, 'Standard wording'],
 ];
 
@@ -82,6 +87,7 @@ const TITLES = [
   ['/coach/calendar/polls', 'Poll'],
   ['/coach/calendar', 'Calendar'],
   ['/coach/finances', 'Finances'],
+  ['/coach/needs-you', 'Needs you'],
   ...COACH_MENU.filter((i) => i.later).map((i) => [i.to, i.label]),
 ];
 
@@ -104,7 +110,7 @@ export const menuFor = ({ isOwner, live = false, hasShared = false } = {}) => CO
  * still to come), the coach's own to-do lists under To-dos and favourite views as a last group; Settings in the foot.
  * `pathname` marks the page the coach is on.
  */
-export const COACH_MENU_GROUPS = [['today', 'calendar', 'todos'], ['clients', 'leads', 'network', 'boards'], ['finances', 'leading-ideas', 'library']];
+export const COACH_MENU_GROUPS = [['today', 'calendar', 'todos'], ['clients', 'leads', 'network', 'boards'], ['finances', 'needs-you', 'leading-ideas', 'library']];
 
 export function coachFrameMenu({ isOwner, live = false, hasShared = false, pathname = '', lists = [], favourites = [] }) {
   const items = menuFor({ isOwner, live, hasShared });

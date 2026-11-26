@@ -154,3 +154,26 @@ test('no client-facing string in Group C’s files says pay, paid or payment (Ap
     }
   }
 });
+
+test('Read, Sign and Settle in focus mode (Polish 1, Stage C, C3; M28 v6 "sign" and "quote")', () => {
+  assert.equal(m.FLOW.readNext, 'I’ve read it');
+  assert.equal(m.FLOW.signNext, 'Sign');
+  assert.equal(m.FLOW.doneTitle, 'You’re all set');
+  assert.equal(m.clauseCount(16), '16 clauses');
+  assert.equal(m.clauseCount(1), '1 clause');
+  assert.equal(m.preparedFor({ clientFirst: 'Sam', clientName: 'Sam Carter', coachName: 'Dr. Tim Dutton' }), 'Prepared for Sam by Dr. Tim Dutton');
+  assert.equal(m.preparedFor({ clientName: 'Sam Carter', coachName: 'Alex Morgan' }), 'Prepared for Sam by Alex Morgan');
+  assert.equal(m.preparedFor({}), 'Your coaching agreement');
+  assert.equal(m.doneLine({ coachFirst: 'Tim' }), 'Tim has your signed agreement. A copy is on its way to your email.');
+  assert.equal(m.doneLine({ coachFirst: 'Tim', settled: '£750' }), 'Tim has your signed agreement, and your first £750 is settled. A copy is on its way to your email.');
+  assert.equal(m.quoteLabel({ number: 42, validUntil: '2026-12-25' }), 'Quotation Q-0042 · Valid until Fri 25 Dec');
+  assert.equal(m.quoteLabel({}), 'Quotation');
+  assert.equal(m.FLOW.askSent('Tim'), 'Sent to Tim. You can sign once they reply with a new version.');
+  // The switch: short words in it, the full words of the one chosen under it (nothing wraps inside a control).
+  const opts = m.settleSwitchOptions(sam, '6 monthly instalments of £2,550', []);
+  assert.deepEqual(opts.map((o) => o.short), ['Up front, 5% off', 'Monthly']);
+  assert.ok(opts.every((o) => o.short.length <= 18));
+  assert.match(opts[0].long, /^Up front, £[\d,]+, 5% off$/);
+  assert.equal(opts[1].long, '6 monthly instalments of £2,550');
+  assert.equal(m.settleSwitchOptions({ ...sam, settle: 'deposit' }, 'x', [])[1].short, 'Deposit, then monthly');
+});

@@ -596,7 +596,7 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
         const { data: ss } = await server.from('coach_sessions').select('*').in('id', asked.sessionIds);
         for (const x of ss || []) {
           if (x.coach_id !== coach.id || !inOrg.has(x.profile_id)) throw notYours('coaching session');
-          rows.push({ key: x.id, sessionId: x.id, day: dayIn('Europe/London', new Date(x.starts_at)), what: `Coaching session with ${inOrg.get(x.profile_id).name}`, minutes: Number(x.minutes) || 60 });
+          rows.push({ key: x.id, sessionId: x.id, day: dayIn('Europe/London', new Date(x.starts_at)), what: `Coaching session with ${inOrg.get(x.profile_id).name}`, who: inOrg.get(x.profile_id).name, minutes: Number(x.minutes) || 60 });
         }
         if ((ss || []).length !== asked.sessionIds.length) throw notYours('coaching session');
         // A client whose coaching is settled through an agreement of its own (the organisation's on its own schedule, or
@@ -616,7 +616,7 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
         for (const e of es || []) {
           if (e.coach_id !== coach.id || !e.ended_at || !inOrg.has(engProfile.get(e.engagement_id))) throw notYours('time entry');
           rows.push({ key: e.id, entryId: e.id, day: dayIn('Europe/London', new Date(e.started_at)), what: e.note || `Work for ${inOrg.get(engProfile.get(e.engagement_id)).name}`,
-            minutes: Math.max(0, Math.round((Date.parse(e.ended_at) - Date.parse(e.started_at)) / 60000)) });
+            who: inOrg.get(engProfile.get(e.engagement_id)).name, minutes: Math.max(0, Math.round((Date.parse(e.ended_at) - Date.parse(e.started_at)) / 60000)) });
         }
         if ((es || []).length !== asked.entryIds.length) throw notYours('time entry');
         // Time for a client whose own agreement settles it is never invoiced to the organisation too (finding 4).
@@ -665,11 +665,21 @@ export function billing({ server, stripe, coach, now = () => new Date(), db = se
 
     async _orgPdf(o, { number = null, issuedOn, bank = null }) {
       const { invoiceFile } = await import('../_agreementPdf.js');
+      // Polish 1, Stage C (C2, with C5's rebuilt invoice): Bill to's contact (their finance or invoices contact) and email,
+      // who it's from (the coach's full name) and each timesheet row's participant (the line's own detail would only repeat
+      // its rate and count, so it is left out). The
+      // business's own details (068) are read by invoiceFile itself, never written here.
+      const { data: people } = await server.from('organisation_contacts').select('name, role, roles').eq('organisation_id', o.org.id);
+      const finance = (people || []).find((c) => /finance|invoice|accounts/i.test(`${c.role || ''} ${c.roles || ''}`));
+      const { data: me } = await server.from('coaches').select('full_name, display_first_name').eq('id', coach.id).maybeSingle();
       return invoiceFile({
         number, issuedOn, dueOn: orgDueOn(issuedOn, o.profile.terms_days), termsDays: o.profile.terms_days, orgName: o.org.name,
-        legalName: o.profile.legal_name, address: o.profile.billing_address, poNumber: o.poNumber || null, supplierNumber: o.profile.supplier_number,
-        theirReference: o.profile.their_reference, lines: o.lines, currency: o.currency, bank: bank || o.profile.bank_details || null,
-        timesheet: o.profile.timesheet ? o.rows.map((r) => ({ day: r.day, what: r.what, minutes: r.minutes })) : null,
+        legalName: o.profile.legal_name, contact: finance?.name || '', email: o.profile.invoices_email || '', address: o.profile.billing_address,
+        poNumber: o.poNumber || null, supplierNumber: o.profile.supplier_number, theirReference: o.profile.their_reference,
+        coachName: me?.full_name || me?.display_first_name || '',
+        lines: o.lines,
+        currency: o.currency, bank: bank || o.profile.bank_details || null,
+        timesheet: o.profile.timesheet ? o.rows.map((r) => ({ day: r.day, what: r.what, who: r.who || '', minutes: r.minutes })) : null,
       }, await this._evidenceBytes(o.evidence));
     },
 

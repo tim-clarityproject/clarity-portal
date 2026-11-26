@@ -129,7 +129,7 @@
 }
 
 /* One left edge (sign-in rule 49; M28 .tick's -13px): a tick box's square, not its 44px tap area, sits on the edge */
-.ui-root .cl-page .ds-check > .ds-check-box { margin-left: calc((var(--tap-min) - var(--checkbox-box)) / -2); }
+.ui-root :is(.cl-page, .cl-flow, .cl-link) .ds-check > .ds-check-box { margin-left: calc((var(--tap-min) - var(--checkbox-box)) / -2); }
 
 /* Lines start with no space above; the column's and a panel's rhythm (above) adds it between parts */
 .ui-root :where(.cl-say, .cl-hint, .cl-amount, .cl-cap, .cl-note, .cl-cover-title, .cl-bsent) { margin-top: 0; }
@@ -144,4 +144,89 @@
    (design.css's note). */
 @media (max-width: 768px) {
   .ui-root button.cl-tile:not(#_) { padding: var(--space-px18) var(--space-px20) !important; font-size: inherit !important; }
+}
+
+/* ======================================================================================================================
+   Polish 1, Stage C (C3): Read, Sign and Settle in focus mode, the quotation and the sponsor's page (M28 v6 "sign" and
+   "quote", on the 25 Nov reference). The frame, the card, the rows, the switch and the tick box are the shared parts';
+   only the flow's own pieces are here. Every value is a token.
+   ==================================================================================================================== */
+
+/* Parts of a step one above another: M28's .field (24px) rhythm. */
+.ui-root .cl-stack { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-3); }
+.ui-root .cl-stack > * { margin: 0; }
+.ui-root .cl-stack .ds-pdfmenu { align-self: flex-start; }
+
+/* The coach's own note (M28 .quote): 16px grey, a hairline on its left, 24px above the cards. */
+.ui-root .cl-quote { margin: 0 0 var(--space-3); padding-left: var(--space-3); border-left: var(--line-w) solid var(--line); font-size: var(--fs-body); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .cl-blocked { margin: 0 0 var(--space-3); }
+
+/* The agreement's clause count, on the label's line at the right (M28 .chead .sm). */
+.ui-root .cl-count { font-size: var(--fs-note); color: var(--text-2); }
+
+/* A clause opening in place (M28 details.cl): the row is the shared list row; its words, then Ask for a change. */
+.ui-root .cl-fold { width: 100%; border-left: 0; border-right: 0; border-bottom: 0; background: none; font: inherit; color: inherit; text-align: left; }
+.ui-root .cl-clause:first-child > .cl-fold { border-top: 0; }
+.ui-root .cl-clause-body { padding: 0 0 var(--space-px10); }
+.ui-root .cl-para { margin: 0 0 var(--space-px10); font-size: var(--fs-body); line-height: var(--lh-text); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .cl-why { margin: calc(-1 * var(--space-1)) 0 var(--space-px10); font-size: var(--fs-note); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
+.ui-root .cl-asklink { all: unset; cursor: pointer; display: inline-flex; align-items: center; min-height: var(--tap-min); font-size: var(--fs-note); color: var(--text-2); text-decoration: underline; text-decoration-thickness: var(--line-w); text-underline-offset: var(--space-1); }
+.ui-root .cl-asklink:hover { color: var(--text); }
+.ui-root .cl-asklink:focus-visible { outline: var(--focus-w) solid var(--text); outline-offset: var(--space-px2); border-radius: var(--radius-control); }
+.ui-root .cl-clause-body .ds-qa { margin-top: var(--space-2); }
+.ui-root .cl-clauses .cl-clause:last-child .cl-clause-body { padding-bottom: 0; }
+.ui-root .cl-clauses .cl-clause:last-child .cl-asklink { margin-bottom: calc(-1 * var(--space-px10)); }
+
+/* The typed signature (M28 .sigprev): the name on a line, light and italic, at the figures' 24px. */
+.ui-root .cl-sigprev { min-height: var(--field-h); display: flex; align-items: flex-end; padding: var(--space-2) 0; border-bottom: var(--line-w) solid var(--text); font-size: var(--fs-amount); font-weight: var(--fw-light); font-style: italic; line-height: var(--lh-title); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .cl-sign-box > * + * { margin-top: var(--space-1); }
+.ui-root .cl-sig-links { display: flex; flex-wrap: wrap; gap: 0 var(--space-px20); }
+
+/* The two ticks one under another (M28 .tick: 56px rows). */
+.ui-root .cl-ticks { display: flex; flex-direction: column; gap: var(--space-1); }
+
+/* Up front or over time: the joined switch, its full words under it. */
+.ui-root .cl-switch .cl-hint { margin-top: var(--space-2); }
+
+/* The done screen (M28 .sstep.done): the crosshair, the title in Nekst, the line, centred; the card under it as ever. */
+.ui-root .cl-done { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.ui-root .cl-done-mark { margin-bottom: var(--space-px28); }
+.ui-root .cl-done-title:focus { outline: none; }
+
+/* Settle's amount sits on the 24px figure; its line straight under it. */
+.ui-root .cl-flow .ds-fig + .cl-hint { margin-top: var(--space-1); }
+/* A point's name never gives way to a long value (the value wraps instead: rule 20, brokenWords). */
+.ui-root .cl-points .ds-li-name { flex: 0 0 auto; max-width: 45%; }
+.ui-root .cl-points .ds-li-value { display: block; flex: 1 1 auto; min-width: 0; }
+@media (max-width: 600px) { .ui-root .cl-points .ds-li-name { max-width: none; } }
+
+/* The quotation (M28 v6 "quote"): one 560px column; an extra's amount at the row's right; Accept and sign the card's
+   width; Download PDF and Ask a question under the cards. */
+.ui-root .cc-col.cl-link { max-width: var(--tool-max); }
+.ui-root .cl-extra-amount { margin-left: auto; padding-left: var(--space-3); font-size: var(--fs-note); color: var(--text-2); white-space: nowrap; }
+.ui-root .cl-extras .ds-check { display: flex; align-items: center; }
+.ui-root .cl-inall .cl-switch { margin-top: var(--space-2); }
+.ui-root .cl-inall .cl-switch .ds-seg { display: flex; }
+.ui-root .cl-inall .cl-switch .ds-seg-btn { flex: 1 1 0; }
+.ui-root .cl-inall > .cl-hint { margin: var(--space-2) 0 0; }
+.ui-root .cl-inall .cl-accept { margin-top: var(--space-3); }
+.ui-root .cl-inall .ds-btn.cl-full { display: flex; width: 100%; }
+.ui-root .cl-quote-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+@media (max-width: 600px) {
+  .ui-root .cc-col.cl-link { padding-inline: var(--space-px20); }
+}
+/* A clause's row keeps its chevron on the name's line on a phone too (M28 details.cl summary). */
+@media (max-width: 600px) {
+  .ui-root .cl-fold.ds-li { flex-direction: row; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+  .ui-root .cl-fold > .ds-li-value { flex: none; margin: 0; }
+}
+/* On the link pages the cards keep the approved 20px between them (run 3's 22px rhythm stays for the other parts). */
+.ui-root .cc-col.cl-link > :is(.ds-card, .ds-open) + * { margin-top: 0; }
+/* The flow's own page sides on a phone, as every focus-mode tool's (toolFocus/formTool.css: .ft-page). */
+@media (max-width: 1023px) {
+  .ui-root .cl-flow { padding: var(--space-px20) var(--page-x-phone) var(--space-px64); }
+}
+/* mobile.css forces padding and size on every button under 768px; Ask for a change keeps its own (design.css's note). */
+@media (max-width: 768px) {
+  .ui-root button.cl-asklink:not(#_) { padding: 0 !important; font-size: var(--fs-note) !important; }
 }

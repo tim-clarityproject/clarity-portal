@@ -45,6 +45,28 @@ export function asServer(env) {
   return url && service ? createClient(url, service, CLIENT_OPTIONS) : null;
 }
 
+// The business's own details (068, finance_settings: the company's name and number, website, email and bank), read
+// with the server's key for the PDFs the server makes (the 25 Nov PDFs' footer, From and Payment details). Kept for a
+// minute per instance. Null where this deployment has no server key, or before 068 has run: a PDF then prints the
+// company's name alone, never a number or bank details written into the code.
+let businessKept = null;
+const BUSINESS_COLUMNS = 'company_name, company_number, website, invoice_email, vat_registered, vat_number, bank_name, bank_account_name, bank_sort_code, bank_account_number';
+export async function businessDetails(env = process.env, now = Date.now()) {
+  if (businessKept && now - businessKept.at < 60000) return businessKept.row;
+  const server = asServer(env);
+  if (!server) return null;
+  let row = null;
+  try {
+    const { data: owner } = await server.from('coaches').select('id').eq('role', 'owner').order('created_at').limit(1).maybeSingle();
+    if (owner?.id) {
+      const { data, error } = await server.from('finance_settings').select(BUSINESS_COLUMNS).eq('coach_id', owner.id).maybeSingle();
+      row = error ? null : data || null;
+    }
+  } catch { row = null; }
+  businessKept = { at: now, row };
+  return row;
+}
+
 /** The answer's status for a database refusal: the database's own words go back, never anything technical. */
 export function refusal(error) {
   const code = String(error?.code || '');
@@ -101,6 +123,7 @@ export async function signedDocument(source) {
       coachSignature: safeSignature(source.coach_signature, version.coachName || ''),
       clientName: typeof source.client_name === 'string' ? source.client_name : '',
       timeZone: zone,
+      business: source.business ?? await businessDetails(),
     }),
     // PDF rule 3, from what the server knows of the client: their saved zone (paperFor's own order).
     paper: paperFor({ country: null, region: null, timeZone: zone }),
@@ -152,7 +175,10 @@ export async function paperForZone(zone) {
 /** A light PDF from a document description: { bytes, fileName }. */
 export async function pdfFrom(spec, zone = 'Europe/London') {
   const { makeServerPdf } = await docCode();
-  return makeServerPdf(spec, { paper: await paperForZone(zone) });
+  // Every PDF the server makes carries the business's own details in its footer (068); a builder given them already
+  // (an invoice's From and Payment details) keeps its own.
+  const business = spec.business ?? await businessDetails();
+  return makeServerPdf(business ? { ...spec, business } : spec, { paper: await paperForZone(zone) });
 }
 
 /** The quote's PDF from what quote_open gave its link (state 'open'), with the coach's signature (read by the server). */
@@ -160,7 +186,7 @@ export async function quoteFile(open, { coachSignature = null, zone = 'Europe/Lo
   const { quotePdf } = await docCode();
   const sentDay = String(open.sent_at || '').slice(0, 10) || String(open.valid_until || '');
   const spec = quotePdf({ number: open.number, terms: { ...(open.terms || {}), currency: open.currency || open.terms?.currency }, clauses: open.clauses || [],
-    sentDay, validUntil: open.valid_until, note: open.personal_note || '', coachSignature: safeSignature(coachSignature, open.terms?.coachName) });
+    sentDay, validUntil: open.valid_until, note: open.personal_note || '', coachSignature: safeSignature(coachSignature, open.terms?.coachName), business: await businessDetails() });
   return pdfFrom(spec, zone);
 }
 
@@ -187,6 +213,7 @@ export async function sponsorFile(server, versionId) {
     clientName: org?.name || version.terms?.orgName || '',
     raw: v,
     sponsorSignature: safeSignature(sponsorSignature, v.sponsor_name),
+    business: await businessDetails(),
   });
   return pdfFrom({ ...spec, who: org?.name || spec.who }, 'Europe/London');
 }
@@ -253,7 +280,7 @@ export async function withEvidence(bytes, evidence = []) {
 export async function invoiceFile(input, evidence = [], zone = 'Europe/London') {
   const { invoicePdf } = await docCode();
   const extraPages = await evidencePages(evidence);
-  const made = await pdfFrom(invoicePdf({ ...input, extraPages }), zone);
+  const made = await pdfFrom(invoicePdf({ ...input, extraPages, business: input.business ?? await businessDetails() }), zone);
   const bytes = await withEvidence(made.bytes, evidence);
   const { PDFDocument } = await import('pdf-lib');
   const pages = (await PDFDocument.load(bytes)).getPageCount();
@@ -263,5 +290,5 @@ export async function invoiceFile(input, evidence = [], zone = 'Europe/London') 
 /** A credit note's PDF. */
 export async function creditNoteFile(input, zone = 'Europe/London') {
   const { creditNotePdf } = await docCode();
-  return pdfFrom(creditNotePdf(input), zone);
+  return pdfFrom(creditNotePdf({ ...input, business: input.business ?? await businessDetails() }), zone);
 }

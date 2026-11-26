@@ -1,4 +1,5 @@
 import { STYLES } from './text.js';
+import { BOLD_CROSS_PATHS, BOLD_CROSS_STROKE, BOLD_CROSS_VIEWBOX } from '../boldCrosshair.js';
 
 // The shared parts of every PDF (PDF rule 20): title block, At a glance panel,
 // contents list, section heading, text, question and answer, table, bar chart,
@@ -10,7 +11,7 @@ import { STYLES } from './text.js';
 // next unit (`keep`), how many lines of text it holds (`lines`, for the
 // three-line rules) and how to draw itself.
 
-export const SPACE = { block: 16, section: 24, para: 6 };
+export const SPACE = { block: 16, section: 9 * (72 / 25.4), para: 6 };
 const COL_GAP = 16;
 const ATOMIC = 99; // `lines` of a unit that never splits: counts as plenty
 
@@ -20,8 +21,8 @@ export const tagNode = (type, parent, opts) => ({ type, parent, opts, el: null }
 const blank = (v) => v == null || String(v).trim() === '';
 const paragraphs = (text) => String(text).replace(/\r\n?/g, '\n').split(/\n[ \t]*\n+/).map((p) => p.trim()).filter(Boolean);
 
-function textUnits(L, text, style, width, node, x0 = 0) {
-  return paragraphs(text).map((p, i) => paraUnit(L, L.ts.wrap(p, style, width), style, node, x0, i === 0 ? 0 : SPACE.para));
+function textUnits(L, text, style, width, node, x0 = 0, between = SPACE.para) {
+  return paragraphs(text).map((p, i) => paraUnit(L, L.ts.wrap(p, style, width), style, node, x0, i === 0 ? 0 : between));
 }
 
 /** One paragraph. Splits between lines only when it is taller than a whole page. */
@@ -49,21 +50,56 @@ function paraUnit(L, lines, style, parent, x0, gap, extra) {
 
 // ---- title block (page 1) --------------------------------------------------
 
+export const MM = 72 / 25.4;
+const LOCK_MARK = 6 * MM; // the crosshair in the lockup bar
+
+/**
+ * The brand's crosshair (the reference's two paths, src/lib/boldCrosshair.js: the same drawing as the screen's), in
+ * a square of `size` at x, y, in the given colour.
+ */
+export function drawCrosshair(doc, x, y, size, colour) {
+  const [vx, vy, vw] = BOLD_CROSS_VIEWBOX;
+  const k = size / vw;
+  BOLD_CROSS_PATHS.forEach((p) => {
+    doc.save();
+    doc.translate(x, y).scale(k).translate(-vx + p.dx, -vy + p.dy);
+    doc.path(p.d).lineWidth(BOLD_CROSS_STROKE).lineJoin('round').lineCap('butt').stroke(colour);
+    doc.restore();
+  });
+}
+
+/**
+ * Page 1's top (the 25 Nov PDFs): the lockup bar (the crosshair and THE CLARITY PROJECT in Nekst, the document's
+ * kind on the right, a rule in the text colour under it), then the title in Nekst capitals with its one line under
+ * it, and the key facts (`spec.facts`: [label, value] pairs) in a block on the right.
+ */
 export function titleUnits(L, spec, parent) {
   const { ts } = L;
-  let style = STYLES.title;
+  const S = STYLES;
+  const facts = (spec.facts || []).filter((f) => f && !blank(f[1]));
+  const factsW = facts.length ? 66 * MM : 0;
+  const leftW = facts.length ? L.contentW - factsW - 10 * MM : L.contentW;
+  let style = S.title;
   let lines = [];
-  for (let size = 20; size >= 14; size -= 1) {
-    style = { ...STYLES.title, size, lh: size * 1.2, tracking: size * 0.08 };
-    lines = ts.wrap(spec.title, style, L.contentW);
+  for (let size = 18; size >= 13; size -= 1) {
+    style = { ...S.title, size, lh: size * 1.25, tracking: size * 0.14 };
+    lines = ts.wrap(spec.title, style, leftW);
     if (lines.length <= 2) break;
   }
-  const details = spec.details.filter((d) => !blank(d)).join(' · ');
-  const detailLines = details ? ts.wrap(details, STYLES.details, L.contentW) : [];
-  const ruleY = lines.length * style.lh + 10;
-  const h = ruleY + 1.5 + (detailLines.length ? 10 + detailLines.length * STYLES.details.lh : 0);
+  const details = (spec.details || []).filter((d) => !blank(d)).join(' · ');
+  const subLines = details ? ts.wrap(details, S.details, leftW) : [];
+  const keyW = 30 * MM;
+  const metaRows = facts.map(([k, v]) => ({ k: ts.wrap(String(k), S.meta, keyW - 4), v: ts.wrap(String(v), S.meta, factsW - keyW) }));
+  // rows sit 1.4mm apart, with none after the last (the approved .meta's row-gap)
+  const metaH = Math.max(0, metaRows.reduce((sum, r) => sum + Math.max(r.k.length, r.v.length) * S.meta.lh, 0) - 1.4 * MM);
+  const barH = LOCK_MARK + 5 * MM;
+  const headTop = barH + 0.75 + 8 * MM;
+  const leftH = lines.length * style.lh + (subLines.length ? 2 * MM + subLines.length * S.details.lh : 0);
+  const h = headTop + Math.max(leftH, metaH);
+  const kind = String(spec.kind || 'Report');
   const h1 = tagNode('H1', parent, { actual: spec.title, title: spec.title });
   const p = tagNode('P', parent);
+  const factsNode = tagNode('Div', parent);
   return [{
     kind: 'title',
     h,
@@ -71,13 +107,33 @@ export function titleUnits(L, spec, parent) {
     keep: true,
     lines: ATOMIC,
     draw(ctx, x, y) {
+      const { doc, t } = ctx;
+      ctx.artifact(() => {
+        drawCrosshair(doc, x, y, LOCK_MARK, t.text);
+        const by = y + LOCK_MARK / 2 + S.lockup.size * 0.35;
+        ts.draw('The Clarity Project', x + LOCK_MARK + 3 * MM, by, S.lockup, t.text);
+        ts.draw(kind, x + L.contentW, by, S.docType, t.detail, 'right');
+        doc.moveTo(x, y + barH + 0.375).lineTo(x + L.contentW, y + barH + 0.375).lineWidth(0.75).stroke(t.text);
+      });
+      const ty = y + headTop;
+      // Nekst's capitals sit 1.7pt higher in its line than the shared baseline puts them (measured against the approved pages)
+      const tty = ty - 1.7;
       const words = ts.writtenLines(spec.title, lines);
-      ctx.mark(h1, () => lines.forEach((line, i) => ts.draw(line, x, y + i * style.lh + ts.baseline(style), style, ctx.t.text, 'left', words[i])));
-      ctx.artifact(() => ctx.doc.rect(x, y + ruleY, 56, 1.5).fill(ctx.t.coral));
-      if (detailLines.length) {
-        ctx.mark(p, () => detailLines.forEach((line, i) => (
-          ts.draw(line, x, y + ruleY + 11.5 + i * STYLES.details.lh + ts.baseline(STYLES.details), STYLES.details, ctx.t.detail)
-        )));
+      ctx.mark(h1, () => lines.forEach((line, i) => ts.draw(line, x, tty + i * style.lh + ts.baseline(style), style, t.text, 'left', words[i])));
+      if (subLines.length) {
+        const sy = ty + lines.length * style.lh + 2 * MM;
+        ctx.mark(p, () => subLines.forEach((line, i) => ts.draw(line, x, sy + i * S.details.lh + ts.baseline(S.details), S.details, t.detail)));
+      }
+      if (metaRows.length) {
+        const fx = x + L.contentW - factsW;
+        let fy = ty;
+        metaRows.forEach((r) => {
+          ctx.mark(tagNode('P', factsNode), () => {
+            r.k.forEach((line, i) => ts.draw(line, fx, fy + i * S.meta.lh + ts.baseline(S.meta), S.meta, t.detail));
+            r.v.forEach((line, i) => ts.draw(line, fx + factsW, fy + i * S.meta.lh + ts.baseline(S.meta), S.meta, t.text, 'right'));
+          });
+          fy += Math.max(r.k.length, r.v.length) * S.meta.lh;
+        });
       }
     },
   }];
@@ -85,66 +141,73 @@ export function titleUnits(L, spec, parent) {
 
 // ---- panel (At a glance, contents) ------------------------------------------
 
-function panel(ctx, x, y, w, h) {
+function panel(ctx, x, y, w, h, r = 4) {
   ctx.artifact(() => {
-    const d = ctx.doc.roundedRect(x, y, w, h, 4);
+    const d = ctx.doc.roundedRect(x, y, w, h, r);
     if (ctx.t.panelEdge) d.lineWidth(0.5).fillAndStroke(ctx.t.panel, ctx.t.panelEdge);
     else d.fill(ctx.t.panel);
   });
 }
 const PAD = 16;
+const hair = (ctx, x1, y, x2, colour) => ctx.artifact(() => ctx.doc.moveTo(x1, y).lineTo(x2, y).lineWidth(0.75).stroke(colour || ctx.t.line));
 
 /**
- * At a glance: two to four items, each laid out the same way: a label, the
- * value (a big number when `big`), and an optional note. A summary's PDF
- * holds its headline alone (PDF rule 12): one item with no label.
+ * At a glance: a row of two to four figures between two hairlines, divided by hairlines (the 25 Nov PDFs): a small
+ * grey capital label, the figure in DM Sans Light (its unit, `unit`, small and grey beside it) when `big`, and a
+ * small grey note. A summary's PDF holds its headline alone (PDF rule 12): one item with no label, as text.
  */
 export function glanceUnits(L, items, parent) {
   const { ts } = L;
+  const S = STYLES;
   const list = items.filter((it) => !blank(it.value)).slice(0, 4);
   if (!list.length) return [];
-  const innerW = L.contentW - PAD * 2;
   const n = list.length;
-  const colW = (innerW - COL_GAP * (n - 1)) / n;
-  const cells = list.map((it) => {
+  const padX = 4 * MM;
+  const colW = L.contentW / n;
+  const innerW = (i) => colW - (i === 0 ? padX : padX * 2);
+  const cells = list.map((it, i) => {
     const value = String(it.value);
-    const big = it.big && ts.width(value, STYLES.big) <= colW;
-    const vStyle = big ? STYLES.big : STYLES.glanceText;
+    const unit = blank(it.unit) ? '' : String(it.unit);
+    const fits = ts.width(value, S.big) + (unit ? 5 + ts.width(unit, S.unit) : 0) <= innerW(i);
+    const big = it.big !== false && fits && (it.big || /^[\d£$€¥.,%½¼¾+\-−\s]+$/.test(value));
+    const vStyle = big ? S.big : S.glanceText;
     return {
-      // A summary's headline stands alone, with no label (PDF rule 12).
-      label: blank(it.label) ? [] : ts.wrap(it.label, STYLES.smallMedium, colW),
-      value: ts.wrap(value, vStyle, colW),
+      label: blank(it.label) ? [] : ts.wrap(it.label, S.lab, innerW(i)),
+      value: big ? [value] : ts.wrap(unit ? `${value} ${unit}` : value, vStyle, innerW(i)),
+      unit: big ? unit : '',
       vStyle,
-      note: blank(it.note) ? [] : ts.wrap(it.note, STYLES.small, colW),
+      note: blank(it.note) ? [] : ts.wrap(it.note, S.small, innerW(i)),
     };
   });
-  const labelH = Math.max(...cells.map((c) => c.label.length)) * STYLES.smallMedium.lh;
+  const labelH = Math.max(...cells.map((c) => c.label.length)) * S.lab.lh;
   const valueH = Math.max(...cells.map((c) => c.value.length * c.vStyle.lh));
-  const noteH = Math.max(...cells.map((c) => c.note.length)) * STYLES.small.lh;
-  const headH = STYLES.panelHeading.lh;
-  const h = PAD + headH + 10 + (labelH ? labelH + 4 : 0) + valueH + (noteH ? 4 + noteH : 0) + PAD;
+  const noteH = Math.max(...cells.map((c) => c.note.length)) * S.small.lh;
+  const padY = 4 * MM;
+  const h = padY + (labelH ? labelH + 2.5 * MM : 0) + valueH + (noteH ? noteH : 0) + padY;
   const sect = tagNode('Sect', parent);
-  const head = tagNode('H2', sect, { actual: 'At a glance', title: 'At a glance' });
   return [{
     kind: 'glance',
     h,
-    gap: SPACE.section,
+    gap: 0,
     keep: false,
     lines: ATOMIC,
     draw(ctx, x, y) {
-      panel(ctx, x, y, L.contentW, h);
-      const hs = STYLES.panelHeading;
-      ctx.mark(head, () => ts.draw('At a glance', x + PAD, y + PAD + ts.baseline(hs), hs, ctx.t.text));
-      const top = y + PAD + headH + 10;
+      const { t } = ctx;
+      hair(ctx, x, y + 0.375, x + L.contentW);
+      hair(ctx, x, y + h - 0.375, x + L.contentW);
       cells.forEach((c, i) => {
-        const cx = x + PAD + i * (colW + COL_GAP);
+        const cx = x + i * colW + (i === 0 ? 0 : padX);
+        if (i > 0) ctx.artifact(() => ctx.doc.moveTo(x + i * colW, y).lineTo(x + i * colW, y + h).lineWidth(0.75).stroke(t.line));
+        const top = y + padY;
         const p = tagNode('P', sect);
         ctx.mark(p, () => {
-          c.label.forEach((line, k) => ts.draw(line, cx, top + k * STYLES.smallMedium.lh + ts.baseline(STYLES.smallMedium), STYLES.smallMedium, ctx.t.detail));
-          const vy = top + (labelH ? labelH + 4 : 0);
-          c.value.forEach((line, k) => ts.draw(line, cx, vy + k * c.vStyle.lh + ts.baseline(c.vStyle), c.vStyle, ctx.t.text));
-          const ny = vy + valueH + 4;
-          c.note.forEach((line, k) => ts.draw(line, cx, ny + k * STYLES.small.lh + ts.baseline(STYLES.small), STYLES.small, ctx.t.detail));
+          c.label.forEach((line, k) => ts.draw(line, cx, top + k * STYLES.lab.lh + ts.baseline(STYLES.lab), STYLES.lab, t.detail));
+          const vy = top + (labelH ? labelH + 2.5 * MM : 0);
+          c.value.forEach((line, k) => ts.draw(line, cx, vy + k * c.vStyle.lh + ts.baseline(c.vStyle), c.vStyle, t.text));
+          // "72%" sits close; "7½ hours" and "3 of 4" keep a space (the 25 Nov PDFs)
+          if (c.unit) ts.draw(c.unit, cx + ts.width(c.value[0], c.vStyle) + (/^%/.test(c.unit) ? 0.5 : ts.width(' ', c.vStyle)), vy + ts.baseline(c.vStyle), STYLES.unit, t.detail);
+          const ny = vy + valueH;
+          c.note.forEach((line, k) => ts.draw(line, cx, ny + k * STYLES.small.lh + ts.baseline(STYLES.small), STYLES.small, t.detail));
         });
       });
     },
@@ -185,19 +248,32 @@ export function contentsUnits(L, entries, parent) {
 
 // ---- section heading ---------------------------------------------------------
 
-export function headingUnit(L, title, node, { artifact = false } = {}) {
+export function headingUnit(L, title, node, { artifact = false, look = 'heading', above = null } = {}) {
   const { ts } = L;
-  const s = STYLES.heading;
+  // A section's heading (the 25 Nov PDFs): 13pt DM Sans ("Timesheet"); a small label in spaced grey capitals ("KEY
+  // TERMS", "YOUR STRATEGIES"); or a clause's heading, 10pt medium ("1. Services"). `above` is a label drawn before
+  // the heading (the agreement's TERMS before its first clause).
+  const s = look === 'label' ? STYLES.lab : look === 'clause' ? STYLES.clauseHead : STYLES.heading;
+  const under = look === 'label' ? 2.5 * MM : look === 'clause' ? 1.5 * MM : 3 * MM;
   const lines = ts.wrap(title, s, L.contentW);
+  const aboveLines = above ? ts.wrap(above, STYLES.lab, L.contentW) : [];
+  const aboveH = aboveLines.length ? aboveLines.length * STYLES.lab.lh + 2.5 * MM : 0;
   return {
     kind: 'heading',
-    h: lines.length * s.lh + 8,
+    h: aboveH + lines.length * s.lh + under,
     gap: SPACE.section,
     keep: true,
     lines: 0,
     draw(ctx, x, y) {
+      if (aboveLines.length) {
+        const fnA = () => aboveLines.forEach((line, i) => ts.draw(line, x, y + i * STYLES.lab.lh + ts.baseline(STYLES.lab), STYLES.lab, ctx.t.detail));
+        if (artifact || !node) ctx.artifact(fnA);
+        else ctx.mark(tagNode('P', node.parent), fnA);
+      }
+      const top = y + aboveH;
       const words = ts.writtenLines(title, lines);
-      const fn = () => lines.forEach((line, i) => ts.draw(line, x, y + i * s.lh + ts.baseline(s), s, ctx.t.text, 'left', words[i]));
+      const colour = look === 'label' ? ctx.t.detail : ctx.t.text;
+      const fn = () => lines.forEach((line, i) => ts.draw(line, x, top + i * s.lh + ts.baseline(s), s, colour, 'left', words[i]));
       if (artifact) ctx.artifact(fn);
       else ctx.mark(node, fn);
     },
@@ -208,8 +284,13 @@ export function headingUnit(L, title, node, { artifact = false } = {}) {
 
 /** Plain text, paragraph by paragraph, no wider than about 62 characters. */
 function textBlock(L, b, parent) {
-  const style = b.tone === 'detail' ? STYLES.detail : STYLES.body;
-  return textUnits(L, b.text, style, L.measure, parent);
+  // tone: 'detail' (grey 9pt), 'lead' (grey 10pt: a page's line under its heading, the timesheet's "Services
+  // delivered in November 2026"), 'note' (small grey, the full width: the lines under an invoice's payment details),
+  // 'compact' (9.5pt, a clause's words), or the 10pt text.
+  const style = b.tone === 'detail' ? { ...STYLES.detail, grey: true } : b.tone === 'note' ? { ...STYLES.note, grey: true }
+    : b.tone === 'lead' ? { ...STYLES.details, lh: 15, grey: true }
+    : b.tone === 'compact' ? STYLES.compact : STYLES.body;
+  return textUnits(L, b.text, style, b.tone === 'note' ? L.contentW : L.measure, parent, 0, b.tone === 'note' ? 1.5 * MM : SPACE.para);
 }
 
 /**
@@ -219,8 +300,9 @@ function textBlock(L, b, parent) {
  */
 function fieldBlock(L, b, parent) {
   const { ts } = L;
-  const valueW = L.measure; // answers keep to about 62 characters a line
-  const labelW = L.contentW - COL_GAP - valueW;
+  // the question keeps at least 44mm, so its words never break one to a line; the answer takes the rest
+  const labelW = Math.max(44 * MM, L.contentW - COL_GAP - L.measure);
+  const valueW = L.contentW - COL_GAP - labelW;
   const labelLines = ts.wrap(b.label, STYLES.label, labelW);
   const h3 = tagNode('H3', parent);
   const label = {
@@ -272,13 +354,19 @@ function tableBlock(L, b, parent, title) {
   const { ts } = L;
   const rows = b.rows.filter((r) => r.some((c) => !blank(c)));
   if (!rows.length) return [];
-  const total = b.columns.reduce((s, c) => s + (c.width || 1), 0);
-  const widths = b.columns.map((c) => ((c.width || 1) / total) * L.contentW);
+  // Widths: a column's `mm` is fixed; the rest share what is left by `width` (the 25 Nov PDFs' line items keep
+  // Qty, Unit price and Amount at their own widths so a figure never runs into the next one).
+  const fixed = b.columns.reduce((s, c) => s + (c.mm ? c.mm * MM : 0), 0);
+  const total = b.columns.reduce((s, c) => s + (c.mm ? 0 : (c.width || 1)), 0);
+  const widths = b.columns.map((c) => (c.mm ? c.mm * MM : ((c.width || 1) / (total || 1)) * (L.contentW - fixed)));
   const padR = 8;
   const cellW = (i) => widths[i] - (i < widths.length - 1 ? padR : 0);
   const xs = widths.map((_, i) => widths.slice(0, i).reduce((s, w) => s + w, 0));
-  const headLines = b.columns.map((c, i) => ts.wrap(c.label, STYLES.th, cellW(i)));
-  const headH = Math.max(...headLines.map((l) => l.length)) * STYLES.th.lh + 6;
+  const headLines = b.columns.map((c, i) => (blank(c.label) ? [] : ts.wrap(c.label, STYLES.th, cellW(i))));
+  const headN = Math.max(...headLines.map((l) => l.length));
+  const headH = headN ? headN * STYLES.th.lh + 2.5 * MM : 0;
+  const padY = 2.6 * MM;
+  const ruled = b.ruled === true; // a line under every row, the last too (the 25 Nov PDFs' line items and schedules)
   const table = tagNode('Table', parent);
   const state = { id: {}, continued: null };
 
@@ -290,10 +378,11 @@ function tableBlock(L, b, parent, title) {
   const headUnit = (artifact) => ({
     kind: 'thead',
     h: headH,
-    gap: artifact ? 0 : 0,
+    gap: 0,
     keep: true,
     lines: 0,
     draw(ctx, x, y) {
+      if (!headH) return;
       const paint = (cellNodes) => headLines.forEach((lines, i) => {
         const fn = () => drawCell(ctx, lines, STYLES.th, i, x, y, ctx.t.detail);
         if (cellNodes) ctx.mark(cellNodes[i], fn);
@@ -310,31 +399,37 @@ function tableBlock(L, b, parent, title) {
 
   const units = [headUnit(false)];
   rows.forEach((r, ri) => {
-    // A cell is text, or { text, detail }: the detail goes underneath, small and grey.
+    // A cell is text, or { text, detail }: the detail goes underneath, small and grey. A `grey` column is drawn in the
+    // detail colour (a schedule's names).
     const cells = b.columns.map((c, i) => {
       const style = c.align === 'right' ? STYLES.cellNum : STYLES.cell;
       const v = r[i];
       const main = v && typeof v === 'object' ? v.text : v;
       const detail = v && typeof v === 'object' && !blank(v.detail) ? ts.wrap(String(v.detail), STYLES.small, cellW(i)) : [];
-      return { style, lines: blank(main) ? [] : ts.wrap(String(main), style, cellW(i)), detail };
+      return { style, grey: !!c.grey, lines: blank(main) ? [] : ts.wrap(String(main), style, cellW(i)), detail };
     });
     const cellH = (c) => c.lines.length * c.style.lh + c.detail.length * STYLES.small.lh;
     const n = Math.max(1, ...cells.map((c) => c.lines.length + c.detail.length));
+    const rowH = Math.max(STYLES.cell.lh, ...cells.map(cellH)) + padY * 2;
     units.push({
       kind: 'row',
       table: state,
       row: ri,
-      h: Math.max(STYLES.cell.lh, ...cells.map(cellH)) + 12,
+      h: rowH,
       gap: 0,
       lines: n,
       draw(ctx, x, y, { first }) {
-        if (!first) {
+        if (!ruled && !first) {
           ctx.artifact(() => ctx.doc.moveTo(x, y + 0.25).lineTo(x + L.contentW, y + 0.25).lineWidth(0.5).stroke(ctx.t.line));
+        }
+        if (ruled) {
+          const bottom = y + rowH - 0.375;
+          ctx.artifact(() => ctx.doc.moveTo(x, bottom).lineTo(x + L.contentW, bottom).lineWidth(0.75).stroke(ctx.t.line));
         }
         const tr = tagNode('TR', table);
         cells.forEach((c, i) => ctx.mark(tagNode('TD', tr), () => {
-          drawCell(ctx, c.lines, c.style, i, x, y + 6, ctx.t.text);
-          if (c.detail.length) drawCell(ctx, c.detail, STYLES.small, i, x, y + 6 + c.lines.length * c.style.lh, ctx.t.detail);
+          drawCell(ctx, c.lines, c.style, i, x, y + padY, c.grey ? ctx.t.detail : ctx.t.text);
+          if (c.detail.length) drawCell(ctx, c.detail, STYLES.small, i, x, y + padY + c.lines.length * c.style.lh, ctx.t.detail);
         }));
       },
     });
@@ -848,68 +943,270 @@ function dotsBlock(L, b, parent, maxH) {
  *   signature: false leaves the signature line out (a signer whose signature isn't readable here)
  * Each column stands on its own, so two parties may differ in height.
  */
-const SIG_SPACE = 44; // room for a drawn signature above its line
+const SIG_SPACE = 14 * MM; // the signature line's height (the 25 Nov PDFs' .ln)
 function signatureBlock(L, b, parent) {
   const { ts } = L;
+  const S = STYLES;
   const parties = b.parties.slice(0, 4);
-  const colW = (L.contentW - COL_GAP * 2) / 2;
+  const gap = 12 * MM;
+  const colW = (L.contentW - gap) / 2;
+  // the captions' column: 20mm (the approved Name, For, Date), wider for a longer caption so its words never break
+  const keyW = Math.min(34 * MM, Math.max(20 * MM, ...parties.flatMap((pt) => (pt.rows || []).map(([c]) => ts.width(String(c), S.small) + 3 * MM))));
   const shown = (pt) => pt.signature !== false;
-  const sigH = (pt) => (pt.image || pt.typed ? SIG_SPACE : 32);
   const plans = parties.map((pt) => {
-    const rows = (pt.rows || [['Name', pt.name || ''], ['Date', pt.date || '']]).map(([caption, value]) => ({
-      caption,
-      lines: blank(value) ? [] : ts.wrap(String(value), STYLES.body, colW),
+    const rows = (pt.rows || [['Name', pt.name || ''], ['Date', pt.date || '']]).filter(([, v]) => !blank(v)).map(([caption, value]) => ({
+      caption: ts.wrap(String(caption), S.small, keyW - 4),
+      lines: ts.wrap(String(value), S.sigText, colW - keyW),
     }));
-    const rowH = (r) => Math.max(32, r.lines.length * STYLES.body.lh + 10);
-    const h = STYLES.label.lh + (shown(pt) ? sigH(pt) + STYLES.small.lh : 0) + rows.reduce((s, r) => s + rowH(r) + STYLES.small.lh, 0);
+    const rowH = (r) => Math.max(r.caption.length * S.small.lh, r.lines.length * S.sigText.lh) + 1.6 * MM;
+    const h = (shown(pt) ? SIG_SPACE + 2.5 * MM : 0) + rows.reduce((sum, r) => sum + rowH(r), 0);
     return { pt, rows, rowH, h };
   });
   const rowsN = Math.ceil(parties.length / 2);
   const gridH = Array.from({ length: rowsN }, (_, r) => Math.max(...plans.slice(r * 2, r * 2 + 2).map((p) => p.h)));
-  const h = gridH.reduce((s, x) => s + x, 0) + (rowsN - 1) * SPACE.block;
+  const h = gridH.reduce((sum, x) => sum + x, 0) + (rowsN - 1) * SPACE.block * 1.5;
   const sect = tagNode('Div', parent);
-  const lineAt = (ctx, px, py) => ctx.artifact(() => ctx.doc.moveTo(px, py).lineTo(px + colW, py).lineWidth(0.75).stroke(ctx.t.detail));
-  const caption = (ctx, words, px, py) => ctx.mark(tagNode('P', sect), () => ts.draw(words, px, py + 3 + ts.baseline(STYLES.small), STYLES.small, ctx.t.detail));
   return [{
     kind: 'signature',
     h,
-    gap: 0,
+    gap: 4 * MM,
     lines: ATOMIC,
     draw(ctx, x, y) {
       plans.forEach(({ pt, rows, rowH }, i) => {
         const r = Math.floor(i / 2);
-        const px = x + (i % 2) * (colW + COL_GAP * 2);
-        let py = y + gridH.slice(0, r).reduce((s, v) => s + v, 0) + r * SPACE.block;
-        ctx.mark(tagNode('P', sect), () => ts.draw(pt.role, px, py + ts.baseline(STYLES.label), STYLES.label, ctx.t.text));
-        py += STYLES.label.lh;
+        const px = x + (i % 2) * (colW + gap);
+        let py = y + gridH.slice(0, r).reduce((sum, v) => sum + v, 0) + r * SPACE.block * 1.5;
         if (shown(pt)) {
-          py += sigH(pt);
+          const line = py + SIG_SPACE;
           if (pt.image) {
-            const fig = tagNode('Figure', sect, { alt: pt.imageAlt || `Signature of ${pt.name || pt.role}` });
+            const fig = tagNode('Figure', sect, { alt: pt.imageAlt || `Signature of ${pt.name || pt.role || 'the signer'}` });
             // Drawn as signed: dark ink on no background, fitted to the space above the line.
-            ctx.mark(fig, () => ctx.doc.image(pt.image, px, py - SIG_SPACE + 2, { fit: [Math.min(colW, 200), SIG_SPACE - 6], align: 'left', valign: 'bottom' }));
+            ctx.mark(fig, () => ctx.doc.image(pt.image, px, py + 1, { fit: [Math.min(colW, 180), SIG_SPACE - 1.5 * MM - 1], align: 'left', valign: 'bottom' }));
           } else if (pt.typed) {
-            ctx.mark(tagNode('P', sect), () => ts.draw(String(pt.typed), px, py - 6, STYLES.glanceText, ctx.t.text));
+            ctx.mark(tagNode('P', sect), () => ts.draw(String(pt.typed), px, line - 1.5 * MM - 2, S.hand, ctx.t.text));
           }
-          lineAt(ctx, px, py);
-          caption(ctx, 'Signature', px, py);
-          py += STYLES.small.lh;
+          ctx.artifact(() => ctx.doc.moveTo(px, line - 0.375).lineTo(px + colW, line - 0.375).lineWidth(0.75).stroke(ctx.t.text));
+          py = line + 2.5 * MM;
         }
         rows.forEach((row) => {
+          ctx.mark(tagNode('P', sect), () => {
+            row.caption.forEach((ln, k) => ts.draw(ln, px, py + k * S.small.lh + ts.baseline(S.small) + 0.4, S.small, ctx.t.detail));
+            row.lines.forEach((ln, k) => ts.draw(ln, px + keyW, py + k * S.sigText.lh + ts.baseline(S.sigText), S.sigText, ctx.t.text));
+          });
           py += rowH(row);
-          const n = row.lines.length;
-          if (n) {
-            ctx.mark(tagNode('P', sect), () => row.lines.forEach((line, k) => (
-              ts.draw(line, px, py - 6 - (n - 1 - k) * STYLES.body.lh, STYLES.body, ctx.t.text)
-            )));
-          }
-          lineAt(ctx, px, py);
-          caption(ctx, row.caption, px, py);
-          py += STYLES.small.lh;
         });
       });
     },
   }];
+}
+
+// ---- the 25 Nov business parts: parties, amount due, totals, payment details, schedule, bars -------------------------
+
+/**
+ * Who it's from and who it's for (From and Bill to; Prepared for; The coach and The client): two columns, each a small
+ * grey capital label, the name in medium, then its lines. b.columns: [{ label, name, lines: [] }].
+ */
+function partiesBlock(L, b, parent) {
+  const { ts } = L;
+  const S = STYLES;
+  const gap = 10 * MM;
+  const colW = (L.contentW - gap) / 2;
+  const cols = b.columns.slice(0, 2).map((c) => ({
+    label: blank(c.label) ? [] : ts.wrap(c.label, S.lab, colW),
+    name: blank(c.name) ? [] : ts.wrap(String(c.name), S.partyName, colW),
+    lines: (c.lines || []).filter((l) => !blank(l)).flatMap((l) => ts.wrap(String(l), S.party, colW)),
+  }));
+  const colH = (c) => (c.label.length ? c.label.length * S.lab.lh + 2.5 * MM : 0) + c.name.length * S.partyName.lh + c.lines.length * S.party.lh;
+  const h = Math.max(...cols.map(colH));
+  const div = tagNode('Div', parent);
+  return [{
+    kind: 'parties',
+    h,
+    gap: 0,
+    lines: ATOMIC,
+    draw(ctx, x, y) {
+      cols.forEach((c, i) => {
+        const px = x + i * (colW + gap);
+        let py = y;
+        if (c.label.length) {
+          ctx.mark(tagNode('P', div), () => c.label.forEach((ln, k) => ts.draw(ln, px, py + k * S.lab.lh + ts.baseline(S.lab), S.lab, ctx.t.detail)));
+          py += c.label.length * S.lab.lh + 2.5 * MM;
+        }
+        ctx.mark(tagNode('P', div), () => {
+          c.name.forEach((ln, k) => ts.draw(ln, px, py + k * S.partyName.lh + ts.baseline(S.partyName), S.partyName, ctx.t.text));
+          const ly = py + c.name.length * S.partyName.lh;
+          c.lines.forEach((ln, k) => ts.draw(ln, px, ly + k * S.party.lh + ts.baseline(S.party), S.party, ctx.t.text));
+        });
+      });
+    },
+  }];
+}
+
+/** The amount due in a light panel: its label and the figure on the left, when it's due on the right. */
+function dueBlock(L, b, parent) {
+  const { ts } = L;
+  const S = STYLES;
+  const padX = 6 * MM;
+  const padY = 4 * MM;
+  const noteS = { ...S.small, size: 9 };
+  const noteW = (L.contentW - padX * 2) * 0.55;
+  const note = blank(b.note) ? [] : ts.wrap(String(b.note), noteS, noteW);
+  const h = padY * 2 + S.lab.lh + S.big.lh;
+  const p = tagNode('P', parent);
+  return [{
+    kind: 'due',
+    h,
+    gap: 0,
+    keep: false,
+    lines: ATOMIC,
+    draw(ctx, x, y) {
+      panel(ctx, x, y, L.contentW, h, 1.5 * MM);
+      ctx.mark(p, () => {
+        ts.draw(b.label || 'Amount due', x + padX, y + padY + ts.baseline(S.lab), S.lab, ctx.t.detail);
+        ts.draw(String(b.value), x + padX, y + padY + S.lab.lh + ts.baseline(S.big), S.big, ctx.t.text);
+        note.forEach((ln, k) => ts.draw(ln, x + L.contentW - padX, y + padY + ts.baseline(S.lab) + k * noteS.lh, noteS, ctx.t.detail, 'right'));
+      });
+    },
+  }];
+}
+
+/**
+ * Subtotal, any discount, VAT, then the total under a rule in the text colour, in a 78mm block on the right; small
+ * grey lines may follow ("Or monthly"). b: { rows: [[label, value]], grand: [label, value], after: [[label, value]] }.
+ */
+function totalsBlock(L, b, parent) {
+  const { ts } = L;
+  const S = STYLES;
+  const w = Math.min(78 * MM, L.contentW);
+  const rowPad = 1.6 * MM;
+  const rows = (b.rows || []).filter((r) => r && !blank(r[1]));
+  const after = (b.after || []).filter((r) => r && !blank(r[1]));
+  const rowH = S.total.lh + rowPad * 2;
+  const grandH = b.grand ? 1.5 * MM + 3.3 * MM + S.grand.lh + rowPad : 0;
+  const afterS = { ...S.small, lh: S.small.lh };
+  const h = rows.length * rowH + grandH + after.length * (afterS.lh + rowPad * 2);
+  const div = tagNode('Div', parent);
+  return [{
+    kind: 'totals',
+    h,
+    gap: 4 * MM,
+    lines: ATOMIC,
+    draw(ctx, x0, y) {
+      const x = x0 + L.contentW - w;
+      let py = y;
+      rows.forEach(([k, v]) => {
+        ctx.mark(tagNode('P', div), () => {
+          ts.draw(String(k), x, py + rowPad + ts.baseline(S.total), S.total, ctx.t.text);
+          ts.draw(String(v), x + w, py + rowPad + ts.baseline(S.total), S.total, ctx.t.text, 'right');
+        });
+        py += rowH;
+      });
+      if (b.grand) {
+        py += 1.5 * MM;
+        ctx.artifact(() => ctx.doc.moveTo(x, py + 0.5).lineTo(x + w, py + 0.5).lineWidth(1).stroke(ctx.t.text));
+        py += 3.3 * MM;
+        ctx.mark(tagNode('P', div), () => {
+          ts.draw(String(b.grand[0]), x, py + ts.baseline(S.grand), S.grand, ctx.t.text);
+          ts.draw(String(b.grand[1]), x + w, py + ts.baseline(S.grand), S.grand, ctx.t.text, 'right');
+        });
+        py += S.grand.lh + rowPad;
+      }
+      after.forEach(([k, v]) => {
+        ctx.mark(tagNode('P', div), () => {
+          ts.draw(String(k), x, py + rowPad + ts.baseline(afterS), afterS, ctx.t.detail);
+          ts.draw(String(v), x + w, py + rowPad + ts.baseline(afterS), afterS, ctx.t.detail, 'right');
+        });
+        py += afterS.lh + rowPad * 2;
+      });
+    },
+  }];
+}
+
+/**
+ * Pairs in two columns (a key in grey, its value): the payment details in a box with a fine edge (`boxed`, with its
+ * label), or bare. b: { label?, rows: [[key, value]], keyMm?, boxed? }.
+ */
+function pairsBlock(L, b, parent) {
+  const { ts } = L;
+  const S = STYLES;
+  const boxed = b.boxed !== false;
+  const padX = boxed ? 6 * MM : 0;
+  const padY = boxed ? 4.5 * MM : 0;
+  const keyW = (b.keyMm || 42) * MM;
+  const valW = L.contentW - padX * 2 - keyW;
+  const st = { ...S.party, lh: S.party.size * 1.33 };
+  const gapY = 1.6 * MM;
+  const rows = (b.rows || []).filter((r) => r && !blank(r[1])).map(([k, v]) => ({ k: ts.wrap(String(k), st, keyW - 6), v: ts.wrap(String(v), st, valW) }));
+  if (!rows.length) return [];
+  const label = blank(b.label) ? [] : ts.wrap(b.label, S.lab, L.contentW - padX * 2);
+  const labelH = label.length ? label.length * S.lab.lh + 2.5 * MM : 0;
+  const rowsH = rows.reduce((sum, r) => sum + Math.max(r.k.length, r.v.length) * st.lh, 0) + gapY * (rows.length - 1);
+  const h = padY * 2 + labelH + rowsH;
+  const div = tagNode('Div', parent);
+  return [{
+    kind: 'pairs',
+    h,
+    gap: 0,
+    lines: ATOMIC,
+    draw(ctx, x, y) {
+      if (boxed) {
+        ctx.artifact(() => ctx.doc.roundedRect(x + 0.375, y + 0.375, L.contentW - 0.75, h - 0.75, 1.5 * MM).lineWidth(0.75).stroke(ctx.t.line));
+      }
+      let py = y + padY;
+      if (label.length) {
+        ctx.mark(tagNode('P', div), () => label.forEach((ln, k) => ts.draw(ln, x + padX, py + k * S.lab.lh + ts.baseline(S.lab), S.lab, ctx.t.detail)));
+        py += labelH;
+      }
+      rows.forEach((r) => {
+        ctx.mark(tagNode('P', div), () => {
+          r.k.forEach((ln, k) => ts.draw(ln, x + padX, py + k * st.lh + ts.baseline(st), st, ctx.t.detail));
+          r.v.forEach((ln, k) => ts.draw(ln, x + padX + keyW, py + k * st.lh + ts.baseline(st), st, ctx.t.text));
+        });
+        py += Math.max(r.k.length, r.v.length) * st.lh + gapY;
+      });
+    },
+  }];
+}
+
+/**
+ * A report's bars (the 25 Nov weekly debrief): the name, a thin track with the share filled in the text colour, and
+ * the figure on the right. Black and grey only; the figure beside every bar, so a print still reads.
+ * b: { rows: [{ label, value (0 to 100), text? }], alt }.
+ */
+function meterBlock(L, b, parent) {
+  const { ts } = L;
+  const S = STYLES;
+  const labelW = 44 * MM;
+  const valueW = 14 * MM;
+  const gap = 4 * MM;
+  const barW = L.contentW - labelW - valueW - gap * 2;
+  const st = { ...S.body, lh: 10 * 1.3 };
+  const rows = b.rows.filter((r) => !blank(r.label)).map((r) => ({ ...r, lines: ts.wrap(String(r.label), st, labelW + gap - MM) }));
+  const rowGap = 2.2 * MM;
+  return rows.map((r, i) => {
+    const h = r.lines.length * st.lh;
+    const node = tagNode('P', parent);
+    return {
+      kind: 'item',
+      h,
+      gap: i === 0 ? 0 : rowGap,
+      lines: r.lines.length,
+      keep: i < rows.length - 1 && rows.length <= 6,
+      draw(ctx, x, y) {
+        const v = Math.max(0, Math.min(100, Number(r.value) || 0));
+        const bx = x + labelW + gap;
+        const by = y + st.lh / 2 - 1 * MM;
+        ctx.artifact(() => {
+          ctx.doc.roundedRect(bx, by, barW, 2 * MM, 1 * MM).fill(ctx.t.panel);
+          if (v > 0) ctx.doc.roundedRect(bx, by, Math.max(2 * MM, (barW * v) / 100), 2 * MM, 1 * MM).fill(ctx.t.text);
+        });
+        ctx.mark(node, () => {
+          r.lines.forEach((ln, k) => ts.draw(ln, x, y + k * st.lh + ts.baseline(st), st, ctx.t.text));
+          ts.draw(r.text || `${Math.round(v)}%`, x + L.contentW, y + ts.baseline(st), { ...st, features: ['tnum'] }, ctx.t.text, 'right');
+        });
+      },
+    };
+  });
 }
 
 // ---- keep rules ----------------------------------------------------------------
@@ -937,9 +1234,13 @@ function threeLines(units) {
  * @param {Object} root the tag tree's Document node
  */
 export function flatten(L, spec, contents, root) {
-  const units = [...titleUnits(L, spec, root), ...glanceUnits(L, spec.glance || [], root)];
+  const units = [...titleUnits(L, spec, root)];
+  const glance = glanceUnits(L, spec.glance || [], root);
+  if (glance.length) glance[0].gap = 8 * MM;
+  units.push(...glance);
   if (contents) units.push(...contentsUnits(L, contents, root));
   const sections = [];
+  let first = true;
   (spec.sections || []).forEach((sec) => {
     const sect = tagNode('Sect', root);
     const blocks = [];
@@ -952,16 +1253,38 @@ export function flatten(L, spec, contents, root) {
       if (b.type === 'bars' && b.rows?.length) us = barsBlock(L, b, sect, L.pageH - 60);
       if (b.type === 'dots' && b.points?.some((pt) => pt.x != null)) us = dotsBlock(L, b, sect, L.pageH - 60);
       if (b.type === 'signature' && b.parties?.length) us = signatureBlock(L, b, sect);
+      if (b.type === 'parties' && b.columns?.length) us = partiesBlock(L, b, sect);
+      if (b.type === 'due' && !blank(b.value)) us = dueBlock(L, b, sect);
+      if (b.type === 'totals' && (b.rows?.length || b.grand)) us = totalsBlock(L, b, sect);
+      if (b.type === 'pairs' && b.rows?.length) us = pairsBlock(L, b, sect);
+      if (b.type === 'meter' && b.rows?.length) us = meterBlock(L, b, sect);
       if (!us.length) return;
       L.block = (L.block || 0) + 1;
       us.forEach((u) => { u.group = L.block; });
       if (['field', 'text', 'list'].includes(b.type)) threeLines(us);
       if (b.type === 'table') threeLines(us.slice(1));
-      us[0].gap = blocks.length ? SPACE.block : 0;
+      // the space before a block: its own (`gapMm`, the 25 Nov PDFs' margins), else the shared one
+      us[0].gap = b.gapMm != null ? b.gapMm * MM : (blocks.length ? (us[0].gap || SPACE.block) : 0);
+      if (!blocks.length && b.gapMm == null) us[0].gap = 0;
       blocks.push(us);
     });
     if (!blocks.length) return; // a section with nothing in it is left out with its heading
-    const heading = headingUnit(L, sec.title, tagNode('H2', sect, { actual: sec.title, title: sec.title }));
+    const look = sec.look || 'heading';
+    const gap = sec.gapMm != null ? sec.gapMm * MM : (first ? 8 * MM : SPACE.section);
+    first = false;
+    // A section drawn with no heading (`look: 'none'`: who it's from, the amount due, the line items) has no bookmark;
+    // its blocks follow on, kept as the blocks themselves say.
+    if (look === 'none') {
+      const su = blocks.flat();
+      su[0].gap = gap + (blocks[0][0].gap || 0);
+      const total = su.reduce((sum, u, i) => sum + u.h + (i ? u.gap : 0), 0);
+      if (total < L.pageH / 3) su.forEach((u) => { u.keep = true; });
+      su[su.length - 1].keep = false;
+      units.push(...su);
+      return;
+    }
+    const heading = headingUnit(L, sec.title, tagNode('H2', sect, { actual: sec.title, title: sec.title }), { look, above: sec.above || null });
+    heading.gap = gap;
     heading.section = sections.length;
     if (sec.newPage) heading.breakBefore = true; // a section that always starts its own page (an invoice's timesheet)
     const su = [heading, ...blocks.flat()];
@@ -975,7 +1298,7 @@ export function flatten(L, spec, contents, root) {
     blocks.forEach((us, bi) => {
       if (us[0].kind === 'thead' && blocks[bi + 1]) us[us.length - 1].keep = blocks[bi + 1].length === 1 && blocks[bi + 1][0].lines <= 3;
     });
-    const total = su.reduce((s, u, i) => s + u.h + (i ? u.gap : 0), 0);
+    const total = su.reduce((sum, u, i) => sum + u.h + (i ? u.gap : 0), 0);
     if (total < L.pageH / 3) su.forEach((u) => { u.keep = true; }); // short sections move whole
     su[su.length - 1].keep = false;
     sections.push({ title: sec.title });

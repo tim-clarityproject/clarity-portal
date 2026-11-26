@@ -62,3 +62,63 @@ export const fallSince = (rateAtSigning, rateToday) => (Number(rateAtSigning) > 
 export const movedDown = (rateAtSigning, rateToday) => fallSince(rateAtSigning, rateToday) > MOVED_DOWN;
 
 export { exponent };
+
+// ---------------------------------------------------------------- the figure the client sees (M28 version 6)
+
+/**
+ * The step a clean figure rounds to, in whole units of the currency (M28 version 6's nice()): 100 from 5,000, 50 from
+ * 1,000, 10 from 200, else 5.
+ */
+export const cleanStep = (units) => (units >= 5000 ? 100 : units >= 1000 ? 50 : units >= 200 ? 10 : 5);
+
+/** Under the £ price by at least a whole pound (a penny's rounding is never a warning). */
+const wholeUnder = (g, price) => Math.round(g / 100) < Math.round(price / 100);
+
+/** The client's figure for a £ figure at today's rate, in minor units of `c` (the exact one, unrounded to the unit). */
+export function exactLocal(gbpMinor, c, unitsPerGbp) {
+  if (c === 'GBP') return Math.round(Number(gbpMinor) || 0);
+  if (!(Number(unitsPerGbp) > 0)) return 0;
+  const units = ((Number(gbpMinor) || 0) / 100) * Number(unitsPerGbp);
+  return Math.round(units * unitMinor(c));
+}
+
+/**
+ * The figure the client sees, from the coach's £ figure (Tim, 25 Nov 18:10; M28 version 6's "What should Sam see?"):
+ * rounded up, rounded down, exactly today's rate, each with its £ value and whether it falls under the £ price.
+ * `unitsPerGbp` is the database's way round (065). [{ mode, minor, gbpMinor, under }] — empty while the rate is unknown.
+ */
+export function localFigures(gbpMinor, c, unitsPerGbp) {
+  const g = Math.round(Number(gbpMinor) || 0);
+  if (c === 'GBP' || !(Number(unitsPerGbp) > 0) || !(g > 0)) return [];
+  // Exactly today's rate, to the whole unit (M28 version 6: "CA$1,316").
+  const exact = Math.round(exactLocal(g, c, unitsPerGbp) / unitMinor(c)) * unitMinor(c);
+  const units = exact / unitMinor(c);
+  const step = cleanStep(units);
+  const up = Math.ceil(units / step) * step * unitMinor(c);
+  const down = Math.max(step, Math.floor(units / step) * step) * unitMinor(c);
+  const back = (minor) => Math.round(((minor / unitMinor(c)) / Number(unitsPerGbp)) * 100);
+  return [
+    { mode: 'up', minor: up, gbpMinor: back(up) },
+    { mode: 'down', minor: down, gbpMinor: back(down) },
+    { mode: 'exact', minor: exact, gbpMinor: g },
+  ].map((o) => ({ ...o, under: wholeUnder(o.gbpMinor, g) }));
+}
+
+/** The client's figure for a way of choosing it ('up', 'down', 'exact'); `own` keeps the coach's own figure. */
+export function localFor(mode, gbpMinor, c, unitsPerGbp, own = null) {
+  if (c === 'GBP') return Math.round(Number(gbpMinor) || 0);
+  if (mode === 'own') return Math.round(Number(own) || 0);
+  const o = localFigures(gbpMinor, c, unitsPerGbp).find((x) => x.mode === mode);
+  return o ? o.minor : Math.round(Number(own) || 0);
+}
+
+/** The £ value of a client's figure at today's rate (units per £1), rounded to the penny. */
+export const gbpValue = (minor, c, unitsPerGbp) => (c === 'GBP' ? Math.round(Number(minor) || 0)
+  : Number(unitsPerGbp) > 0 ? Math.round(((Number(minor) || 0) / unitMinor(c) / Number(unitsPerGbp)) * 100) : null);
+
+/** The calm warning under the figures (M28 version 6): "That's about £731, under your £750." — or '' when it isn't under. */
+export function underWarning(minor, c, unitsPerGbp, gbpMinor) {
+  const g = gbpValue(minor, c, unitsPerGbp);
+  if (g == null || !(Number(gbpMinor) > 0) || !wholeUnder(g, Number(gbpMinor))) return '';
+  return `That’s about ${pounds(g)}, under your ${pounds(Number(gbpMinor))}.`;
+}

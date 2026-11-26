@@ -19,7 +19,9 @@ export function pdfFontSources() {
   const out = [
     [join(ROOT, 'public/fonts/Nekst-Regular.ttf'), 'Nekst-Regular.ttf'],
     [join(ROOT, 'public/fonts/Nekst-Light.ttf'), 'Nekst-Light.ttf'],
-    ...['latin-400', 'latin-ext-400', 'latin-500', 'latin-ext-500'].map((p) => [join(FS, `dm-sans/files/dm-sans-${p}-normal.woff`), `dm-sans-${p}-normal.woff`]),
+    ...['latin-400', 'latin-ext-400', 'latin-500', 'latin-ext-500', 'latin-300'].map((p) => [join(FS, `dm-sans/files/dm-sans-${p}-normal.woff`), `dm-sans-${p}-normal.woff`]),
+    // DM Sans Light for figures and Light Italic for a signature written as a name (the 25 Nov PDFs, Polish 1).
+    [join(FS, 'dm-sans/files/dm-sans-latin-300-italic.woff'), 'dm-sans-latin-300-italic.woff'],
     [join(FS, 'noto-emoji/unicode.json'), 'noto-emoji-unicode.json'],
     [join(FS, 'noto-sans-sc/unicode.json'), 'noto-sans-sc-unicode.json'],
   ];

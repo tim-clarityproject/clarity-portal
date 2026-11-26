@@ -209,19 +209,20 @@ const PAGES_ALL = [
   ['peak-add', '/peak-moments/add', 'travel'],
   ['peak-edit', `/peak-moments/edit/${TRAVEL.moments[0].id}`, 'travel'],
   ['peak-sprint', '/performance-sprint', 'travel'],
-  // Agreements and money (M28 version 4; Phase 6b run 3, Group C): the client's agreement (to sign, to settle, the
-  // welcome), My Account's invoices, block of hours, plan and Cancel my plan, and the outside quote and sponsor pages,
-  // on the local stand-in's seeded copy (scale-065-seeded: Dev Ashdown's sent version, Cara Ashdown's quote Q-0001).
-  // An address whose link isn't there shows its own calm line, which is checked too.
-  ['client-agreement', '/coaching/agreement/06500021-0000-4000-8000-000000000021'],
-  ['client-agreement-settle', '/coaching/agreement/06500021-0000-4000-8000-000000000021/settle'],
-  ['client-agreement-welcome', '/coaching/agreement/06500021-0000-4000-8000-000000000021/welcome'],
+  // Agreements and money (M28 version 4; Phase 6b run 3, Group C; Polish 1, Stage C: M28 v6): the client's agreement
+  // (Sam's signed version, its Settle and Welcome), My Account's invoices, block of hours, plan and Cancel my plan, and
+  // the outside quote and sponsor pages, on the local stand-in's Polish 1 seed (polish-seeded.tar: part 6's Stage C
+  // block gives a sponsor link waiting, token 64 c's). A quote's link is made afresh by each seed (065's trigger), so
+  // QUOTE_TOKEN names Nathan Cole's when known; without it the quote page's calm "link isn't there" line is checked.
+  ['client-agreement', '/coaching/agreement/5eed0600-000a-4000-8000-000000000001'],
+  ['client-agreement-settle', '/coaching/agreement/5eed0600-000a-4000-8000-000000000001/settle'],
+  ['client-agreement-welcome', '/coaching/agreement/5eed0600-000a-4000-8000-000000000001/welcome'],
   ['my-account-invoices', '/my-account/invoices'],
   ['my-account-hours', '/my-account/hours'],
   ['my-account-plan', '/my-account/plan'],
   ['my-account-plan-cancel', '/my-account/plan/cancel'],
-  ['quote', `/quote/${'a065'.repeat(16)}`],
-  ['sponsor-sign', `/sign/${'b065'.repeat(16)}`],
+  ['quote', `/quote/${process.env.QUOTE_TOKEN || '0'.repeat(64)}`],
+  ['sponsor-sign', `/sign/${'c'.repeat(64)}`],
 ];
 // M10's own invented team, as the tool keeps a check while it is open.
 const TEAM_CHECK = {

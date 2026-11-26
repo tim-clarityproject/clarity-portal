@@ -128,6 +128,12 @@ async function layoutChecks(page, tag, mode) {
       const after = getComputedStyle(el, '::after');
       const stretched = after.content !== 'none' && after.position === 'absolute' && (parseFloat(after.height) || 0) >= 44;
       if ((b.height >= 43.5 && b.width >= 43.5) || stretched) continue;
+      // Polish 1 (Stage C carry-over): a week view's number box is drawn 40px on a laptop (the reference's controls in a
+      // row; 44 on a phone), inside its <label> with the day's letters above it: the label is its tap area (a tap
+      // anywhere on it puts the cursor in the box), so the label's own size counts.
+      const lab = el.matches('input') ? el.closest('label') : null;
+      const lb = lab?.getBoundingClientRect();
+      if (lb && lb.height >= 43.5 && lb.width >= 43.5) continue;
       // Day boxes in the week view may be 40px wide on a 360px phone with 7 days; 5 here.
       small.push(`${String(el.className || el.tagName).slice(0, 40)} "${(el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 20)}" ${Math.round(b.width)}x${Math.round(b.height)}`);
     }

@@ -28,6 +28,8 @@ export const FONT_FILES = Object.freeze({
   DMSansExt: `${DIR}dm-sans-latin-ext-400-normal.woff`,
   DMSansMedium: `${DIR}dm-sans-latin-500-normal.woff`,
   DMSansMediumExt: `${DIR}dm-sans-latin-ext-500-normal.woff`,
+  DMSansLight: `${DIR}dm-sans-latin-300-normal.woff`,
+  DMSansLightItalic: `${DIR}dm-sans-latin-300-italic.woff`,
 });
 const emojiFile = (key) => `${DIR}noto-emoji-${key.replace(/\D/g, '')}-400-normal.woff`;
 const cjkFile = (key) => `${DIR}noto-sans-sc-${key.replace(/\D/g, '')}-400-normal.woff`;

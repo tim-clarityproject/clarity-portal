@@ -2,6 +2,8 @@ import dm400 from '@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff?url';
 import dm400x from '@fontsource/dm-sans/files/dm-sans-latin-ext-400-normal.woff?url';
 import dm500 from '@fontsource/dm-sans/files/dm-sans-latin-500-normal.woff?url';
 import dm500x from '@fontsource/dm-sans/files/dm-sans-latin-ext-500-normal.woff?url';
+import dm300 from '@fontsource/dm-sans/files/dm-sans-latin-300-normal.woff?url';
+import dm300i from '@fontsource/dm-sans/files/dm-sans-latin-300-italic.woff?url';
 import emojiRanges from '@fontsource/noto-emoji/unicode.json';
 import e0 from '@fontsource/noto-emoji/files/noto-emoji-0-400-normal.woff?url';
 import e1 from '@fontsource/noto-emoji/files/noto-emoji-1-400-normal.woff?url';
@@ -35,6 +37,8 @@ const FILES = {
   DMSansExt: dm400x,
   DMSansMedium: dm500,
   DMSansMediumExt: dm500x,
+  DMSansLight: dm300,
+  DMSansLightItalic: dm300i,
 };
 
 const cache = new Map();
@@ -55,7 +59,7 @@ export async function loadPdfAssets(spec) {
   const strings = textOf(spec);
   const parts = emojiPartsFor(strings, emojiRanges);
   const cjkParts = cjkPartsFor(strings, cjkRanges).filter((k) => CJK[k]);
-  const names = ['Nekst', 'NekstLight', 'DMSans', 'DMSansExt', 'DMSansMedium', 'DMSansMediumExt'];
+  const names = ['Nekst', 'NekstLight', 'DMSans', 'DMSansExt', 'DMSansMedium', 'DMSansMediumExt', 'DMSansLight', 'DMSansLightItalic'];
   const [fontBytes, emoji, cjk] = await Promise.all([
     Promise.all(names.map((n) => bytes(FILES[n]))),
     Promise.all(parts.map((k) => bytes(EMOJI[k]))),

@@ -1,10 +1,10 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Button } from '../../components/design';
+import { MoreLink } from '../../components/design';
 import { signatureImage } from '../../components/design/SignaturePad';
 import { DRAW } from '../../lib/coaching/clientMoney';
 import './clientAgreement.css';
 
-// The signing block's signature box (M28 version 4, .sigbox: the client's s-c-sign and the sponsor's s-s-sign): draw
+// The signing block's signature box (Polish 1, Stage C: M28 v6 .sigprev, the typed name first; M28 version 4, .sigbox: the client's s-c-sign and the sponsor's s-s-sign): draw
 // in the box, with "Draw your signature" under the drawing, then Clear and Type instead (Draw instead once typing)
 // as quiet outlined buttons under it. There is no "Use this signature" step: what is in the box when Sign is pressed
 // is what signs. Typing shows the full name as the signature (a keyboard user's way to sign). On screen the ink is the
@@ -41,11 +41,11 @@ function paintStrokes(c, strokes) {
   });
 }
 
-const SignBox = forwardRef(function SignBox({ name = '', onChange }, ref) {
+const SignBox = forwardRef(function SignBox({ name = '', onChange, startTyped = true }, ref) {
   const canvasRef = useRef(null);
   const strokes = useRef([]);
   const drawing = useRef(null);
-  const [typed, setTyped] = useState(false);
+  const [typed, setTyped] = useState(startTyped);
   const [ink, setInk] = useState(false);
   const changed = useRef(onChange);
   changed.current = onChange;
@@ -115,12 +115,14 @@ const SignBox = forwardRef(function SignBox({ name = '', onChange }, ref) {
     changed.current?.();
   };
 
+  // M28 v6's .sigprev: the typed name is the signature to start with, on a line, with "Draw instead" beside; drawing
+  // opens the box, with Clear and Type instead. Quiet links, never buttons (rule 6: one main button per screen).
   return (
     <div className="cl-sign-box">
-      <div className="cl-sigbox">
-        {typed ? (
-          <span className="cl-sig-typed" aria-label="Your typed signature">{String(name).trim() || ' '}</span>
-        ) : (
+      {typed ? (
+        <div className="cl-sigprev" aria-label="Your typed signature">{String(name).trim() || ' '}</div>
+      ) : (
+        <div className="cl-sigbox">
           <canvas
             ref={canvasRef}
             className="cl-sig-canvas"
@@ -132,12 +134,12 @@ const SignBox = forwardRef(function SignBox({ name = '', onChange }, ref) {
             onPointerCancel={up}
             onLostPointerCapture={up}
           />
-        )}
-        <span className="cl-sig-cap">{typed ? 'Your full name is your signature' : DRAW}</span>
-      </div>
-      <div className="cl-acts">
-        <Button variant="outline" onClick={clear}>Clear</Button>
-        <Button variant="outline" onClick={toggleTyped}>{typed ? 'Draw instead' : 'Type instead'}</Button>
+          <span className="cl-sig-cap">{DRAW}</span>
+        </div>
+      )}
+      <div className="cl-sig-links">
+        {!typed && <MoreLink bare small onClick={clear}>Clear</MoreLink>}
+        <MoreLink bare small onClick={toggleTyped}>{typed ? 'Draw my signature instead' : 'Type it instead'}</MoreLink>
       </div>
     </div>
   );

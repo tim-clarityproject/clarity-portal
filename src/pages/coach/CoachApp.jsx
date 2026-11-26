@@ -99,6 +99,9 @@ const WhatToSay = part(() => import('./agreements/WhatToSay'));
 const OrgBilling = part(() => import('./orgBilling/OrgBilling'));
 const NewInvoice = part(() => import('./orgBilling/NewInvoice'));
 const InvoiceSent = part(() => import('./orgBilling/InvoiceSent'));
+// Polish 1, Stage C (M28 v6 "needs" and "sent"): Needs you as its own page, and Sent after an agreement goes.
+const NeedsYouPage = part(() => import('./money/NeedsYouPage'));
+const SentPage = part(() => import('./money/SentPage'));
 const BriefPanel = lazy(() => import('./Brief').then((m) => ({ default: m.BriefPanel || m.default })));
 // The menu and search (frameParts.jsx), and the automations and emails arriving (crmParts.jsx, the owner's): their own
 // parts, asked for once the frame has drawn, so a first visit never waits for search's index, the CRM's code or
@@ -630,6 +633,8 @@ export default function CoachApp() {
         <Route path="agreements/:id/preview" element={<AgreementPreview />} />
         <Route path="agreements/:id/sign" element={<AgreementSign />} />
         <Route path="agreements/:id/hours" element={<HoursLog />} />
+        <Route path="agreements/:id/sent" element={<SentPage />} />
+        <Route path="needs-you" element={<NeedsYouPage />} />
         <Route path="what-to-say" element={<WhatToSay />} />
         <Route path="settings/agreements/wording/:kind" element={<AgreementClauses standard />} />
         <Route path="settings/agreements/wording/:kind/:key" element={<AgreementClauses standard />} />

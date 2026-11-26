@@ -1,0 +1,43 @@
+/* The coach's money screens (Polish 1, Stage C, C2; M28 version 6: client, sent, needs, invoice, hours). Built from the
+   shared blocks (blocks.css): only what they don't already draw is here, every value a token (CLAUDE.md design rule 2),
+   inside .ui-root (rule 17). */
+
+/* The client's page: the two columns sit where the Next coaching session card was, 20px from what's above. */
+.ui-root .cc-money-cols { margin-top: var(--space-px20); }
+.ui-root .cc-fade > .cc-money-cols:first-child { margin-top: 0; }
+
+/* Sent (M28 "sent"): the reminder line under Where it is, 13px grey (M28's p.sm after the card). */
+.ui-root .ds-cols > div > .ds-card:has(+ .cc-money-notes) { margin-bottom: var(--space-px12); }
+.ui-root .cc-money-note { margin: 0 0 var(--space-1); font-size: var(--fs-meta); line-height: 1.5; color: var(--text-2); }
+@media (max-width: 1023px) {
+  .ui-root .ds-cols > div > .cc-money-notes { margin-bottom: var(--card-gap); }
+}
+
+/* Needs you (M28 "needs"): the list card has no label, so its first row has no line above it (M28's
+   .card .li:first-of-type); the chosen item's name is the row name's 500. */
+.ui-root .cc-money-needs-list > .ds-rows-list > .ds-li:first-child { border-top: 0; }
+.ui-root .cc-money-chosen .ds-li-name { font-weight: var(--fw-medium); }
+
+/* New invoice (M28 "invoice"): each coaching session a tick row 56px high with no line between (M28 .tick), the tick
+   box's square on the card's left edge (its 44px tap area reaching out to the left), its hours at the right; then the
+   total under a full line, its words at 500 (M28 .li.tot). */
+.ui-root .cc-money-ticks .cc-money-tick:not(#_) { min-height: var(--field-h); border-bottom: 0; }
+.ui-root .cc-money-ticks .cc-money-tick .ds-check { gap: calc(var(--space-px12) - (var(--tap-min) - var(--checkbox-box)) / 2); }
+.ui-root .cc-money-ticks .cc-money-tick .ds-check-box { margin-left: calc((var(--checkbox-box) - var(--tap-min)) / 2); }
+.ui-root .cc-money-ticks .cc-money-tick .ny-qrow-h { font-size: var(--fs-meta); color: var(--text-2); }
+.ui-root .cc-money-ticks .cc-money-total:not(#_) { border-top: var(--line-w) solid var(--line); font-weight: var(--fw-medium); padding-bottom: 0; }
+.ui-root .cc-money-ticks .cc-money-total .ds-li-value { font-size: var(--fs-text); color: var(--text); }
+.ui-root .cc-money-older { margin: 0; }
+.ui-root .cc-money-quiet { margin: 0; font-size: var(--fs-meta); line-height: 1.5; color: var(--text-2); }
+.ui-root .cc-money-field { margin: var(--space-px6) 0 var(--space-3); }
+.ui-root .cc-money-field--row { margin: var(--space-px14) 0; }
+.ui-root .cc-money-note--after { margin-top: var(--space-px12); }
+.ui-root .ds-cols > div > .ds-card:has(+ .cc-money-note--after) { margin-bottom: 0; }
+@media (max-width: 1023px) {
+  .ui-root .ds-cols > div > .cc-money-note--after { margin-bottom: var(--card-gap); }
+}
+
+/* A block of hours (M28 "hours"): Quick Add's When? and How long? side by side; See their view under the balance. */
+.ui-root .cc-money-qa-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-px12); }
+@media (max-width: 600px) { .ui-root .cc-money-qa-two { grid-template-columns: minmax(0, 1fr); } }
+.ui-root .cc-money-view { margin-top: var(--space-1); }

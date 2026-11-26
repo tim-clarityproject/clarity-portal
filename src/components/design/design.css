@@ -9755,6 +9755,10 @@
   text-wrap: pretty;
 }
 
+/* On a chosen answer the grey line takes the chosen words' colour (M28 v6 .on em), so it keeps 4.5 to 1 on the fill
+   (Polish 1, Stage C; C1's request 2). */
+.ui-root .ds-answer:is([aria-checked='true'], [aria-pressed='true']) .ds-answer-hint { color: var(--main-fg); }
+
 /* One answer of several, with the drop-down's tick at the right once it is
    chosen. Its place is kept on every row, so choosing never moves the words (M10 .tk). */
 .ui-root .ds-answer--tick {

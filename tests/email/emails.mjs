@@ -9,7 +9,7 @@
 //   - it is always light, and says so to the email app;
 //   - no sideways scroll, nothing wider than its column, and at 375px the
 //     button runs the full width with any time under it;
-//   - exactly one coral button at most, with black words;
+//   - one button at most, black with white words (the 25 Nov reference's main button);
 //   - every link and button has a real address (https, or Kit's own
 //     placeholder on the public Leading Ideas), never "#" or empty;
 //   - the image has its words as alt text or beside it, so the email reads
@@ -94,7 +94,7 @@ for (const example of EMAIL_EXAMPLES) {
     await page.waitForTimeout(300);
     const m = await page.evaluate(() => {
       const coral = (c) => /255,\s*111,\s*92/.test(c);
-      const buttons = [...document.querySelectorAll('td')].filter((td) => coral(getComputedStyle(td).backgroundColor));
+      const buttons = [...document.querySelectorAll('td.btn-cell')];
       const column = document.querySelector('table table');
       const b = buttons[0]?.getBoundingClientRect();
       const time = document.querySelector('.cta-time')?.getBoundingClientRect();
@@ -105,6 +105,7 @@ for (const example of EMAIL_EXAMPLES) {
         bg: getComputedStyle(document.body).backgroundColor,
         buttons: buttons.length,
         buttonText: buttons[0] ? getComputedStyle(buttons[0].querySelector('a')).color : null,
+        buttonBg: buttons[0] ? getComputedStyle(buttons[0]).backgroundColor : null,
         buttonH: b ? Math.round(b.height) : null,
         buttonFull: b && column ? Math.abs(b.width - column.getBoundingClientRect().width) < 2 : null,
         timeUnder: b && time ? time.top >= b.bottom - 1 : null,
@@ -119,7 +120,8 @@ for (const example of EMAIL_EXAMPLES) {
     pass(`${t}: no sideways scroll`, m.sideways <= 0 && m.wide.length === 0, `${m.sideways}px ${m.wide.join()}`);
     pass(`${t}: light, even on a device set to dark`, m.bg === 'rgb(249, 248, 245)', m.bg);
     pass(`${t}: the column is at most 520px`, m.columnW <= 520 && m.columnW >= Math.min(520, width - 64) - 1, `${m.columnW}`);
-    pass(`${t}: at most one coral button, with black words, 44px or taller`, m.buttons <= 1 && (m.buttons === 0 || (m.buttonText === 'rgb(0, 0, 0)' && m.buttonH >= 44)), JSON.stringify([m.buttons, m.buttonText, m.buttonH]));
+    // Polish 1, Stage C (25 Nov reference; M28 v6 "email"): the one main button is black with white words, never coral.
+    pass(`${t}: at most one button, black with white words, 44px or taller`, m.buttons <= 1 && (m.buttons === 0 || (m.buttonBg === 'rgb(0, 0, 0)' && m.buttonText === 'rgb(255, 255, 255)' && m.buttonH >= 44)), JSON.stringify([m.buttons, m.buttonBg, m.buttonText, m.buttonH]));
     pass(`${t}: no coral words`, m.coralText === 0, `${m.coralText}`);
     pass(`${t}: one heading`, m.h1 === 1, `${m.h1}`);
     if (m.buttons === 1 && width === 375) pass(`${t}: the button runs full width${m.timeUnder === null ? '' : ', with the time under it'}`, m.buttonFull === true && m.timeUnder !== false, JSON.stringify([m.buttonFull, m.timeUnder]));

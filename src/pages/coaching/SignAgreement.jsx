@@ -1,13 +1,7 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import DesignHeader from '../../components/DesignHeader';
-import {
-  Button, Checkbox, ErrorMessage, LoadError, Loading, PdfDownload, Section, TextBox, TextField, useCoach, useToast,
-} from '../../components/design';
-import AgreementView from '../../components/agreements/AgreementView';
-import StepsMarker from '../../components/agreements/StepsMarker';
-import SettleChoice from '../../components/agreements/SettleChoice';
+import { Checkbox, ErrorMessage, Loading, PdfDownload, TextField, ToolFrame, useCoach, useToast } from '../../components/design';
 import { useCachedLoad, readCache, writeCache } from '../../lib/pageCache';
 import { useDraft } from '../../lib/drafts';
 import { getLocalDateKey } from '../../lib/dateFormatter';
@@ -19,29 +13,31 @@ import {
   ALREADY_SIGNED, agreementSections, askForChange, glanceRows, loadSigning, markOpened, readyToSign, signAgreementV2, signedLabel, tidyAgreements,
 } from '../../lib/coaching/agreements';
 import {
-  AGREEMENT_TITLE, AGREE_TICK, ASK_CHANGE, ASK_LABEL, BACK_TO_AGREEMENT, FULL_NAME, READ_TIME, SIGN_HEADING, SIGN_NEEDS,
-  afterSigning, askedLine, choiceFor, noteText, pendingClause, pendingLine, preparedLine, sendChangeWords, signButton, signNeeds, stepsFor,
+  AGREEMENT_TITLE, AGREE_TICK, FLOW, FULL_NAME, SIGN_NEEDS,
+  afterSigning, choiceFor, noteText, pendingClause, pendingLine, preparedFor, signNeeds, stepsFor,
 } from '../../lib/coaching/clientMoney';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 import { AGREEMENTS_CACHE, agreementDocument } from './agreementData';
+import { ClausesCard, PointsCard, SettleSwitch } from './AgreementParts';
 import SignBox from './SignBox';
 import './coaching.css';
 import './clientAgreement.css';
 
-// Read and sign (Phase 6b run 3, Group C; M28 version 4 s-c-sign, s-c-change, s-c-asked; brief items 11, 12, 36, 37):
-// /coaching/agreement/:versionId, one calm page, a welcome rather than a form:
-//   the cover (who it's prepared for and by, the version, the coach's own note), the steps (Read, Sign, Settle; a
-//   client funded by an organisation has no Settle), "It takes ~5 minutes to read.", Main points, the contents, every
-//   clause with its reasons and "Ask for a change" (its box opens under the clause; what is typed reaches the coach's
-//   Needs you), then one signing block: the tick, "Start my coaching straight away…" (self-funded individuals only,
-//   unticked to start with), "How would you like to settle?" where the client chooses (up front first and chosen),
-//   the full name, the signature box, and Sign and continue (self-funded) or Sign my agreement.
-// While a change is unanswered the signing block is replaced by "You asked for a change to [clause]. [Coach] will look
-// at it and send you a new version to sign." (item 36). Sending a change shows M28's centred message, with Back to your
-// agreement. Signing leads straight into settling the first amount (self-funded), else to the welcome. The first open
-// is recorded for the coach (065's agreement_mark_opened) and never shown here. The Sign button is never greyed out:
-// pressed too early it says what's missing in M28's one line above it.
-// Differences from M28, on purpose: "Send to Tim" is an outlined button, as one coral button per screen (CLAUDE.md
-// rule 4a) leaves the coral for Sign; the reason line has no side line (risk 3).
+// Read and sign (Phase 6b run 3, Group C; Polish 1, Stage C, C3: M28 v6 "sign"): /coaching/agreement/:versionId, steps
+// 1 and 2 of the client's Read, Sign and Settle, in focus mode (ToolFrame: × "Close and save my place", "Step 1 of 3",
+// the progress line; a client an organisation funds has two steps).
+//   Read: "Prepared for Sam by Alex Morgan", Your coaching agreement, the coach's own note, The main points, and The
+//   agreement with its clauses opening one at a time (the first open), each with Ask for a change as Quick Add (what is
+//   typed reaches the coach's Needs you), then I've read it.
+//   Sign: Your full name, the signature (the typed name to start with, or drawn), the tick, the start-now tick (self-funded
+//   individuals only, unticked to start with), Up front or over time where the client chooses, then Sign, never greyed
+//   out: pressed too early it says what's missing in one line above the foot.
+// Signing leads straight on to Settle (step 3, a self-funded client with something to settle) or the done screen. While
+// a change is unanswered, or the version has run out or isn't the newest, Read shows that one line and no Next. A signed
+// version opens to read, with its PDF. The first open is recorded for the coach (065's agreement_mark_opened) and never
+// shown here. × keeps the place (the draft holds the step, the name and the ticks) and goes back where they came from.
+// Differences from M28 v6, on purpose: the start-now tick keeps run 3's legal wording (coolingOff's START_NOW_LINE); the
+// signature can still be drawn (run 3's SignBox) as well as typed.
 
 const NOT_HERE = 'This agreement isn’t here any more.';
 const RUN_OUT = (coach) => `This agreement has run out. Ask ${coach || 'your coach'} to open it again.`;
@@ -80,6 +76,7 @@ export default function SignAgreement() {
   const coachFirst = (typeof terms.coachFirst === 'string' ? terms.coachFirst : '') || myCoach?.firstName || '';
   const words = signingWords(coachFirst || 'Your coach');
 
+  const [step, setStep] = useState('read');
   const [choice, setChoice] = useState(null);
   const shownChoice = choice || choiceFor(terms, version?.settleChoice);
   const clauses = useMemo(() => readerClauses(version, shownChoice), [version, shownChoice]);
@@ -91,25 +88,20 @@ export default function SignAgreement() {
   const [nameFrom, setNameFrom] = useState('');
   const [need, setNeed] = useState(null);
   const [failure, setFailure] = useState(null);
-  const [sending, setSending] = useState(false);
   const busy = useRef(false);
   const sigRef = useRef(null);
-
-  // Ask for a change: one box at a time, under its own clause.
-  const [askKey, setAskKey] = useState(null);
-  const [askWords, setAskWords] = useState('');
-  const [askNeed, setAskNeed] = useState(null);
-  const [asked, setAsked] = useState(null); // { clauseKey } once sent here
-  const askBusy = useRef(false);
+  const [asked, setAsked] = useState(null); // { clauseKey } once a change is sent here
+  const [askProblem, setAskProblem] = useState(null);
 
   const { clear: clearDraft } = useDraft({
     userId, name: `agreement-sign:${versionId}`, ready: Boolean(version),
-    value: { name, agreed, startNow, choice },
+    value: { name, agreed, startNow, choice, step },
     onRestore: (d) => {
       if (typeof d?.name === 'string') setName(d.name);
       if (d?.agreed === true) setAgreed(true);
       if (d?.startNow === true) setStartNow(true);
       if (d?.choice === 'upfront' || d?.choice === 'plan') setChoice(d.choice);
+      if (d?.step === 'sign') setStep('sign');
     },
   });
 
@@ -124,78 +116,82 @@ export default function SignAgreement() {
     markOpened(versionId);
   }, [version, versionId]);
 
-  const openCoaching = () => navigate('/coaching', { replace: true });
+  // × keeps the place (the draft is on the device) and goes back where they came from (rule 21).
+  const close = () => {
+    toast.show(TOOL_CLOSED);
+    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+    else navigate('/welcome');
+  };
 
   if (!version) {
     if (loading) return <div className="ui-root plan-builder-wait"><Loading label="Loading your agreement" /></div>;
     return (
-      <div className="ui-root">
-        <DesignHeader />
-        <div className="plan-page ipp-page coaching-page cl-page">
-          {error ? <LoadError>The page didn’t load. Check your connection and try again.</LoadError> : <p className="cl-say">{NOT_HERE}</p>}
-          <div className="cl-acts"><Button variant="primary" onClick={openCoaching}>Open My coaching</Button></div>
-        </div>
+      <div className="cl-flow">
+        <ToolFrame step={1} steps={1} last stepWords=" " question={AGREEMENT_TITLE} onClose={close} onNext={() => navigate('/coaching', { replace: true })} nextLabel="Open My coaching">
+          <p className="cl-say" role="status">{error ? 'The page didn’t load. Check your connection and try again.' : NOT_HERE}</p>
+        </ToolFrame>
       </div>
     );
   }
 
-  const self = selfFunded({ ...terms, fundedBy: version.fundedBy || terms.fundedBy || null });
+  const fullTerms = { ...terms, fundedBy: version.fundedBy || terms.fundedBy || null };
+  const self = selfFunded(fullTerms);
   const pending = asked ? { clauseKey: asked.clauseKey } : version.changePending;
   const pendingWords = pending ? pendingLine(pendingClause({ clause_key: pending.clauseKey, title: pending.title }, clauses), coachFirst) : '';
   const runOut = !version.signedAt && version.expiresOn && version.expiresOn < today;
   const waiting = readyToSign(data.agreements);
   const notNewest = !version.signedAt && waiting?.id !== versionId;
+  const steps = stepsFor(fullTerms).length;
+  const eyebrow = preparedFor({ clientFirst: terms.clientFirst, clientName: terms.clientName, coachName: terms.coachName });
+  const note = <p className="cl-quote">{`“${noteText(version.personalNote || terms.personalNote)}”`}</p>;
 
-  // ---- Ask for a change (s-c-change), sent: M28's centred message (s-c-asked)
-  if (asked && asked.message) {
+  const sendAsk = async (clause, typed) => {
+    setAskProblem(null);
+    const res = await askForChange({ versionId, clauseKey: clause.key, words: typed });
+    if (!res.ok) { setAskProblem(res.message || SIGN_NEEDS.change); return; }
+    setAsked({ clauseKey: clause.key });
+    toast.show(FLOW.askSent(coachFirst));
+    reload();
+  };
+
+  // ---- A signed version: to read, with its PDF (from My Account, Coaching).
+  if (version.signedAt) {
     return (
-      <div className="ui-root">
-        <DesignHeader />
-        <div className="plan-page ipp-page coaching-page cl-page" data-align="centre">
-          <div className="cl-msg" role="status">
-            <p className="cl-say">{askedLine(coachFirst)}</p>
-            <Button variant="text" onClick={() => setAsked({ clauseKey: asked.clauseKey })}>{BACK_TO_AGREEMENT}</Button>
+      <div className="cl-flow">
+        <ToolFrame step={steps} steps={steps} last stepWords={FLOW.signedSteps} name={eyebrow} question={AGREEMENT_TITLE} onClose={close}>
+          <div className="cl-stack" role="status">
+            <p className="cl-say">{signedLabel(version.signedAt, today)}</p>
+            <p className="cl-hint">{words.signed}</p>
+            <PdfDownload lightOnly variant="text" getDocument={() => agreementDocument({ userId, version })} />
           </div>
-        </div>
+          <PointsCard points={points} />
+          <ClausesCard clauses={clauses} />
+        </ToolFrame>
       </div>
     );
   }
 
-  const openAsk = (key) => { setAskKey((k) => (k === key ? null : key)); setAskWords(''); setAskNeed(null); };
-  const sendAsk = async (clause) => {
-    if (askBusy.current) return;
-    if (!askWords.trim()) { setAskNeed(SIGN_NEEDS.change); return; }
-    askBusy.current = true;
-    const res = await askForChange({ versionId, clauseKey: clause.key, words: askWords });
-    askBusy.current = false;
-    if (!res.ok) { setAskNeed(res.message); return; }
-    setAskKey(null);
-    setAskWords('');
-    setAsked({ clauseKey: clause.key, message: true });
-    window.scrollTo?.(0, 0);
-    reload();
-  };
-
-  const askBox = (clause) => {
-    if (version.signedAt || pending || runOut || notNewest) return null;
-    const open = askKey === clause.key;
-    const boxId = `cl-ask-${clause.key}`;
+  const blocked = pending || runOut || notNewest;
+  if (step === 'read' || blocked) {
     return (
-      <div className="cl-ask">
-        <Button variant="text" aria-expanded={open} aria-controls={boxId} onClick={() => openAsk(clause.key)}>{ASK_CHANGE}</Button>
-        {open && (
-          <div id={boxId} className="cl-ask-box">
-            <TextBox label={ASK_LABEL} value={askWords} onChange={(e) => { setAskWords(typeof e === 'string' ? e : e.target.value); setAskNeed(null); }} />
-            {askNeed && <ErrorMessage>{askNeed}</ErrorMessage>}
-            <div className="cl-acts">
-              <Button variant="outline" onClick={() => sendAsk(clause)}>{sendChangeWords(coachFirst)}</Button>
-              <Button variant="text" onClick={() => openAsk(clause.key)}>Cancel</Button>
-            </div>
-          </div>
-        )}
+      <div className="cl-flow">
+        <ToolFrame
+          step={1}
+          steps={steps}
+          name={eyebrow}
+          question={AGREEMENT_TITLE}
+          onClose={close}
+          onNext={blocked ? undefined : () => { setStep('sign'); setNeed(null); }}
+          nextLabel={FLOW.readNext}
+        >
+          {blocked ? <p className="cl-say cl-blocked" role="status">{pending ? pendingWords : runOut ? RUN_OUT(coachFirst) : NOT_NEWEST}</p> : note}
+          {askProblem && <ErrorMessage>{askProblem}</ErrorMessage>}
+          <PointsCard points={points} />
+          <ClausesCard clauses={clauses} ask={blocked ? null : { coachFirst, onSend: sendAsk }} />
+        </ToolFrame>
       </div>
     );
-  };
+  }
 
   const sign = async () => {
     const missing = signNeeds({ agreed, name, hasSignature: Boolean(sigRef.current?.has()) });
@@ -205,7 +201,6 @@ export default function SignAgreement() {
     if (!typed && !image) { setNeed(SIGN_NEEDS.signature); return; }
     if (busy.current) return;
     busy.current = true;
-    setSending(true);
     setFailure(null);
     setNeed(null);
     const res = await signAgreementV2({
@@ -213,7 +208,6 @@ export default function SignAgreement() {
       choice: shownChoice, signature: typed ? { kind: 'typed' } : { kind: 'drawn', image },
     });
     busy.current = false;
-    setSending(false);
     if (res.ok || res.kind === 'signed') {
       if (res.kind === 'signed') toast.show(ALREADY_SIGNED); else toast.show('Signed');
       clearDraft();
@@ -226,7 +220,7 @@ export default function SignAgreement() {
           if (raw?.tidied) writeCache(userId, `coaching-agreement:${versionId}`, { ...raw, agreements: patch(raw.agreements) });
         } catch { /* the next load brings it */ }
       }
-      const next = afterSigning({ ...terms, fundedBy: version.fundedBy || terms.fundedBy || null }, res.settleChoice || shownChoice, { amends: version.amends || res.amends });
+      const next = afterSigning(fullTerms, res.settleChoice || shownChoice, { amends: version.amends || res.amends });
       navigate(`/coaching/agreement/${versionId}/${next}`, { replace: true });
       return;
     }
@@ -234,54 +228,30 @@ export default function SignAgreement() {
     if (res.kind === 'refused') reload();
   };
 
-  const signedAt = version.signedAt;
-  const steps = stepsFor({ ...terms, fundedBy: version.fundedBy || terms.fundedBy || null });
-
-  let block;
-  if (signedAt) {
-    block = (
-      <div className="cl-panel" role="status">
-        <p className="cl-say">{signedLabel(signedAt, today)}</p>
-        <p className="cl-hint">{words.signed}</p>
-        <PdfDownload lightOnly getDocument={() => agreementDocument({ userId, version })} />
-      </div>
-    );
-  } else if (pending) {
-    block = <div className="cl-panel"><p className="cl-say">{pendingWords}</p></div>;
-  } else if (runOut || notNewest) {
-    block = <div className="cl-panel"><p className="cl-say">{runOut ? RUN_OUT(coachFirst) : NOT_NEWEST}</p></div>;
-  } else {
-    block = (
-      <div className="cl-signblock" id="sign-here">
-        <Section title={SIGN_HEADING} className="cl-sec" />
-        <Checkbox checked={agreed} onChange={(v) => { setAgreed(v); setNeed(null); }}>{AGREE_TICK}</Checkbox>
-        {self && coolingApplies(terms) && !version.amends && <Checkbox checked={startNow} onChange={setStartNow}>{START_NOW_LINE}</Checkbox>}
-        <SettleChoice terms={{ ...terms, fundedBy: version.fundedBy || terms.fundedBy || null }} value={shownChoice} onChange={setChoice} chosenExtras={terms.extrasChosen} />
-        <TextField label={FULL_NAME} autoComplete="name" value={name} maxLength={160} onChange={(e) => { setName(e.target.value); setNeed(null); }} />
-        <SignBox ref={sigRef} name={name} onChange={() => setNeed(null)} />
-        {need && <ErrorMessage>{need}</ErrorMessage>}
-        {failure && <ErrorMessage>{failure.lines.map((l) => <span key={l} className="ds-line">{l}</span>)}</ErrorMessage>}
-        <div className="cl-acts">
-          <Button variant="primary" aria-busy={sending || undefined} onClick={sign}>{signButton({ ...terms, fundedBy: version.fundedBy || terms.fundedBy || null })}</Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="ui-root">
-      <DesignHeader />
-      <div className="plan-page ipp-page coaching-page cl-page">
-        <div className="cl-cover">
-          <p className="cl-cap">{preparedLine({ clientName: terms.clientName, coachName: terms.coachName, version: version.version })}</p>
-          <h1 className="cl-cover-title">{AGREEMENT_TITLE}</h1>
-          <p className="cl-note">{noteText(version.personalNote || terms.personalNote)}</p>
+    <div className="cl-flow">
+      <ToolFrame
+        step={2}
+        steps={steps}
+        name={FLOW.agreementLabel}
+        question={FLOW.signQuestion}
+        onClose={close}
+        onNext={sign}
+        nextLabel={FLOW.signNext}
+        onBack={() => { setStep('read'); setNeed(null); }}
+      >
+        <div className="cl-stack cl-signstep">
+          <TextField label={FULL_NAME} autoComplete="name" value={name} maxLength={160} onChange={(e) => { setName(e.target.value); setNeed(null); }} />
+          <SignBox ref={sigRef} name={name} onChange={() => setNeed(null)} />
+          <div className="cl-ticks">
+            <Checkbox checked={agreed} onChange={(v) => { setAgreed(v); setNeed(null); }}>{AGREE_TICK}</Checkbox>
+            {self && coolingApplies(terms) && !version.amends && <Checkbox checked={startNow} onChange={setStartNow}>{START_NOW_LINE}</Checkbox>}
+          </div>
+          <SettleSwitch terms={fullTerms} value={shownChoice} onChange={setChoice} chosenExtras={terms.extrasChosen} />
+          {need && <ErrorMessage>{need}</ErrorMessage>}
+          {failure && <ErrorMessage>{failure.lines.map((l) => <span key={l} className="ds-line">{l}</span>)}</ErrorMessage>}
         </div>
-        <StepsMarker current={signedAt ? 2 : 0} steps={steps} />
-        <p className="cl-bsent">{READ_TIME}</p>
-        <AgreementView points={points} clauses={clauses} after={askBox} idPrefix="cl" />
-        {block}
-      </div>
+      </ToolFrame>
     </div>
   );
 }

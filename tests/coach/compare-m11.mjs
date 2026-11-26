@@ -54,6 +54,7 @@ const KEYS = 'no keyboard shortcut is shown anywhere (Tim, 18 Nov)';
 // Polish 1 (Stage B, 26 Nov): the meant differences the 25 Nov design reference brought.
 const ADD = '“+ Add” by a list’s label shows the word Add, its spoken name saying what it adds (CLAUDE.md, Polish 1 “Adding”; coach-portal.md rule 16’s Polish 1 note)';
 const DISCOVERY = 'Discovery call (Tim, 25 Nov; coach-portal.md rule 31’s Polish 1 note)';
+const M28CARDS = 'Polish 1, Stage C (M28 v6 “client”): a client’s page has the cards Agreements, Coaching sessions (Next session and Last session as rows, with their count), Money and Contact (the email as a row with the address, WhatsApp and iMessage as rows); with nothing booked the card offers “Book a coaching session”';
 const MENU = 'Polish 1’s frame menu (CLAUDE.md, Polish 1 “Frame and menu”): groups by gaps, so favourite views are the last group with no heading';
 
 // [title, M11 screen, who, clicks in M11 (data-a), built screen, built role, same words, differences]
@@ -88,20 +89,20 @@ const SCREENS = [
   ['Workshops', 'clients', 'owner', ['set:tab:workshops'], 'clients-workshops', 'owner', ['Leading under pressure', 'Northfield Logistics', '18 of 20 places', '3 waiting', 'Decide who decides'], [['Follow-up to send', 'workshop emails send in a later run'], ['Add workshop', ADD]]],
   // Agreement is built since Phase 6b run 3 (the agreements fold), so it is no longer a difference for Sam or Leo.
   ['A client, mid-engagement (Sam)', 'client:sam', 'owner', [], 'client-sam', 'owner',
-    ['Clients', 'Sam Okafor', 'Kestrel Group', 'Chief executive', 'Agreement', 'London', 'Prefers early calls when travelling.', 'Let Sam raise the CFO first.', 'Email', 'WhatsApp', 'Overview', 'Everything', 'Next coaching session', 'Coaching sessions to go', '7 of 12', 'Progress', 'Sessions and recaps', 'Private notes', 'To-dos', 'Files', 'About Sam', 'Details', 'More', 'Book a call'],
-    [['iMessage', 'iMessage shows only for +1 numbers (the prompt), and Sam’s is +44'], ['Open the brief', 'the test’s data: run 1’s seed has no session booked for Sam, so there is no brief to open (the brief is run 2’s)'], ['Sam’s Mission', 'the Mission shows once Sam has a portal account and shares it']]],
+    ['Clients', 'Sam Okafor', 'Kestrel Group', 'Chief executive', 'Agreement', 'London', 'Prefers early calls when travelling.', 'Let Sam raise the CFO first.', 'WhatsApp', 'Overview', 'Everything', 'Progress', 'Sessions and recaps', 'Private notes', 'To-dos', 'Files', 'About Sam', 'Details', 'More'],
+    [['Email', M28CARDS], ['Next coaching session', M28CARDS], ['Coaching sessions to go', M28CARDS], ['7 of 12', M28CARDS], ['Book a call', M28CARDS], ['iMessage', 'iMessage shows only for +1 numbers (the prompt), and Sam’s is +44'], ['Open the brief', 'the test’s data: run 1’s seed has no session booked for Sam, so there is no brief to open (the brief is run 2’s)'], ['Sam’s Mission', 'the Mission shows once Sam has a portal account and shares it']]],
   ['A client, the sections open (Sam)', 'client:sam', 'owner', ['fold:prog', 'fold:ses', 'fold:notes', 'fold:agr', 'fold:about', 'fold:det', 'fold:more'], 'client-sam-open', 'owner',
     ['Pin to the top', 'Unpin', 'Birthday', '12 Mar', 'Partner', 'Ama', 'Children', 'Kofi and Esi', 'Referred by', 'Dana Whitfield', 'Sector', 'Finance', 'Tags', 'Executive, Finance sector, Kestrel', 'Frequent traveller', 'Start the guided close', 'Export Sam’s data', 'Delete Sam’s data'],
     [['Ask to view Sam’s portal', 'it shows once Sam has a portal account to view'], ['Sponsor', LATER], ['Expenses allowed', LATER], ['Add field', ADD]]],
   ['A client, Everything (Sam)', 'everything', 'owner', [], 'client-sam-everything', 'owner', ['Search Sam’s history', 'Everything', 'Private note'], [['Invoice 1031 paid', LATER], ['Fathom summary', RUN2], ['Sam emailed', 'the test’s data: run 1’s seed logs no email on Sam (emails on Everything are built in run 4)']]],
   ['A new client (Leo)', 'client:leo', 'owner', [], 'client-leo', 'owner',
-    ['Leo Grant', 'Northfield Logistics', 'Operations director', 'Leeds', 'Agreement', 'Getting started', 'First session', 'Welcome pack', 'Next coaching session'],
-    [['First check-in', 'the portal’s name for it is the First review (rule 26a)'], ['Send the pack', 'the Library and its packs are Phase 6c']]],
+    ['Leo Grant', 'Northfield Logistics', 'Operations director', 'Leeds', 'Agreement', 'Getting started', 'First session', 'Welcome pack'],
+    [['Next coaching session', M28CARDS], ['First check-in', 'the portal’s name for it is the First review (rule 26a)'], ['Send the pack', 'the Library and its packs are Phase 6c']]],
   ['A client on time credit (Marcus)', 'client:marcus', 'owner', [], 'client-marcus', 'owner',
     ['Marcus Bell', 'Head of people', 'Time credit left', '2 hours 10 minutes', 'Projects', 'Leadership offsite design', '6 hours 40 minutes so far', 'Team performance check', 'One-to-one coaching', 'Clock in'], []],
   ['A head coach (Jordan)', 'client:jordan', 'owner', [], 'client-jordan', 'owner',
-    ['Jordan Reyes', 'Harbour City FC', 'Head coach', 'Chicago', 'Coaching sessions to go', '9 of 20', 'iMessage'],
-    [['Fixtures', 'not built: a head coach’s fixtures aren’t in run 3’s prompt or the calendar’s parity list; a match is added as a calendar item or a shared peak moment (left for Tim to decide)']]],
+    ['Jordan Reyes', 'Harbour City FC', 'Head coach', 'Chicago', 'iMessage'],
+    [['Coaching sessions to go', M28CARDS], ['9 of 20', M28CARDS], ['Fixtures', 'not built: a head coach’s fixtures aren’t in run 3’s prompt or the calendar’s parity list; a match is added as a calendar item or a shared peak moment (left for Tim to decide)']]],
   ['A group', 'group', 'owner', [], 'group', 'owner',
     ['Kestrel leadership team', 'Kestrel Group', 'Next group session', 'Group sessions left', '4 of 6', 'Members', 'Sam Okafor', 'Counts against Sam’s own', 'Dana Whitfield', 'Counts against the group’s', 'Sessions and recaps'],
     [['One recap to all 6', RUN2], ['Add member', ADD]]],

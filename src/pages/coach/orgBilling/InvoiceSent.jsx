@@ -1,11 +1,15 @@
 import { useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Loading, PageHeader, useToast } from '../../../components/design';
+import { Button, Chevron, Loading, PageHeader, useToast } from '../../../components/design';
+import { Card, PageOpening, Row, Rows } from '../../../components/design/Blocks';
+import { MONEY_LINES } from '../../../content/pageLines/coach';
+import FactRow from '../money/FactRow';
 import { ask } from '../../../lib/agreements/askClient';
 import { sentRows } from '../../../lib/agreements/duringAgreement';
 import { loadCoach, rowsOf, saveChange } from '../../../lib/coach/store';
-import { Back, TextLink, useCoachPortal } from '../parts';
+import { Back, useCoachPortal } from '../parts';
 import '../needsYou/needsyou.css';
+import '../money/money.css';
 
 // Invoice sent (Phase 6b run 3, Group D; M28 s-inv-sent: /coach/invoices/:id; brief items 28 and 30): an organisation's
 // invoice once it has gone with its one PDF attached. Where it went, the file, their supplier portal (with a reminder
@@ -53,32 +57,35 @@ export default function InvoiceSent() {
     loadCoach(p.userId, { again: true }).catch(() => {});
   });
 
+  // Polish 1, Stage C (C2): the page opening (its one button, Mark as settled, while it isn't), then where it is as the
+  // reference's card, with Send again and their supplier portal as rows that open.
+  const who = org?.name || client?.name || inv.payer_name || '';
   return (
     <div className="cc-page">
-      <div className="cc-col ny-page">
-        <Back to="Today" onClick={() => navigate('/coach')} />
-        <PageHeader title={inv.number != null ? `CLARITY-${inv.number}` : 'Invoice'} meta={[org?.name || client?.name || inv.payer_name]} />
-        <ul className="ny-list" aria-label="Where it stands">
-          {rows.map((r) => (
-            <li key={r.label} className="ny-li">
-              <span className="ny-li-t">{r.label}</span>
-              <span className={`ny-li-d${r.done ? ' ny-li-d--done' : ''}`}>{r.value}</span>
-            </li>
-          ))}
-        </ul>
-        {!settled && (
-          <div className="cc-acts">
-            <Button variant="primary" onClick={markSettled}>Mark as settled</Button>
-            <Button variant="outline" onClick={sendAgain}>Send again</Button>
+      <div className="cc-col cc-money-page">
+        <Back to={org ? org.name : 'Today'} onClick={() => (org ? navigate(`/coach/organisations/${org.id}/billing`) : navigate('/coach'))} />
+        <PageOpening label={[inv.number != null ? `CLARITY-${inv.number}` : null, who].filter(Boolean).join(', ') || null} title={settled ? 'Invoice settled' : 'Invoice sent'} line={MONEY_LINES.invoiceSent}
+          action={settled ? null : <Button variant="primary" onClick={markSettled}>Mark as settled</Button>} />
+        <div className="ds-cols ds-cols--needs-first">
+          <div>
+            <Card label="Where it is">
+              <Rows label="Where it stands">
+                {rows.map((r) => <FactRow key={r.label} name={r.label} value={r.value} />)}
+              </Rows>
+            </Card>
+            <p className="cc-money-note cc-money-note--after">Their bank transfer is matched to this invoice by Stripe.</p>
           </div>
-        )}
-        {profile?.supplier_portal && !inv.portal_uploaded_at && (
-          <div className="cc-acts">
-            {profile.portal_url && <a className="ds-link" href={profile.portal_url} target="_blank" rel="noreferrer">Open their supplier portal</a>}
-            <TextLink onClick={markUploaded}>Mark as uploaded to their portal</TextLink>
+          <div>
+            <Card label="What you can do">
+              <Rows>
+                {!settled && <Row name="Send it again" sub="With the same PDF" value={<Chevron direction="right" />} onClick={sendAgain} />}
+                {profile?.supplier_portal && !inv.portal_uploaded_at && profile.portal_url && <Row name="Open their supplier portal" value={<Chevron direction="right" />} href={profile.portal_url} />}
+                {profile?.supplier_portal && !inv.portal_uploaded_at && <Row name="Mark as uploaded to their portal" value={<Chevron direction="right" />} onClick={markUploaded} />}
+                {settled && <Row name="Settled" value="Nothing more to do" />}
+              </Rows>
+            </Card>
           </div>
-        )}
-        <p className="ny-hint">Their bank transfer is matched to this invoice by Stripe.</p>
+        </div>
       </div>
     </div>
   );

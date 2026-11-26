@@ -279,8 +279,9 @@
 }
 
 .ui-root.ds-frame-root--focus .ds-frame-side,
-.ui-root.ds-frame-root--focus .ds-frame-phead,
-.ui-root.ds-frame-root--focus .hdr-frame {
+.ui-root.ds-frame-root--focus .ds-frame .ds-frame-phead,
+.ui-root.ds-frame-root--focus .hdr-frame,
+.ui-root.ds-frame-root--focus .cc-header--frame {
   display: none;
 }
 
@@ -501,6 +502,12 @@
   .ui-root.ds-frame-root--ptop .ds-frame .ds-frame-phead {
     display: flex;
   }
+}
+
+/* Focus mode hides the phone header too, after the --ptop rule above that would otherwise win (requests-c4 1). */
+.ui-root.ds-frame-root--focus .ds-frame .ds-frame-phead,
+.ui-root.ds-frame-root--focus .ds-frame .cc-header--frame {
+  display: none;
 }
 
 /* ---------- An older page's .plan-page inside the frame (Polish 1 Stage B, requests-b1 4) ----------

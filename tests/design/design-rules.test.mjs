@@ -222,9 +222,22 @@ test('overlap (item 32): a button over the header’s crosshair fails at 600, 76
   for (const width of [600, 768, 960, 1023]) {
     let r = await check(PHEAD('Lead well'), { width, extra: '.ui-root { padding: 0 !important; }' });
     assert.ok(!rules(r).includes('overlap'), `${width}: ${r.problems.join('; ')}`);
-    r = await check(`${PHEAD('Lead well')}<button class="ds-btn ds-btn--outline" style="position:fixed;left:16px;top:16px" aria-label="Menu">≡</button>`, { width, extra: '.ui-root { padding: 0 !important; }' });
+    r = await check(`${PHEAD('Lead well')}<button class="ds-btn ds-btn--outline" style="position:fixed;left:16px;top:16px;z-index:10" aria-label="Menu">≡</button>`, { width, extra: '.ui-root { padding: 0 !important; }' });
     assert.match(r.problems.join('; '), /overlap: button.ds-btn .* is drawn over the menu's crosshair/, `${width}`);
   }
+});
+
+test('overlap (Stage C): a row scrolled under the header, with a full-screen panel over both, is not drawn over the crosshair', async () => {
+  const ROW = '<button class="ds-li" style="position:fixed;left:8px;top:12px;width:300px;height:56px;z-index:1">Sign your coaching agreement</button>';
+  const PANEL = '<div style="position:fixed;inset:0;z-index:20;background:var(--bg)"><button class="ds-btn ds-btn--outline" style="margin:200px 20px">Send it</button></div>';
+  const lift = '.ui-root { padding: 0 !important; } .ui-root .hdr-frame { position: relative; z-index: 5; background: var(--bg); }';
+  let r = await check(`${PHEAD('Lead well')}${ROW}`, { width: 390, extra: lift });
+  assert.ok(!rules(r).includes('overlap'), `under the header: ${r.problems.join('; ')}`);
+  r = await check(`${PHEAD('Lead well')}${ROW}${PANEL}`, { width: 390, extra: lift });
+  assert.ok(!rules(r).includes('overlap'), `under a panel: ${r.problems.join('; ')}`);
+  // The same row lifted above the header is drawn over the crosshair and still fails.
+  r = await check(`${PHEAD('Lead well')}${ROW.replace('z-index:1', 'z-index:9')}`, { width: 390, extra: lift });
+  assert.match(r.problems.join('; '), /overlap: button.ds-li .* is drawn over the menu's crosshair/);
 });
 
 test('mission (item 33): in the phone header My Mission fills the row, 40px high; sized to its words there fails', async () => {

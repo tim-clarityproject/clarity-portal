@@ -31,6 +31,7 @@ import { firstPayment, firstSigning } from '../../src/lib/agreements/settling.js
 import { perSession } from '../../src/lib/agreements/delivered.js';
 import { blankTerms, kindOf, selfFunded } from '../../src/lib/agreements/terms.js';
 import { versionFields } from '../../src/lib/coach/agreementBuilder.js';
+import { emailWords } from '../../src/lib/agreements/questions.js';
 import {
   readyToSignEmail, quoteEmail, signReminderEmail, firstPaymentReminderEmail, sponsorSignEmail, teamMemberAgreementEmail,
   extendedEmail, pausedEmail, endingEmail, cancelledEmail, changeReplyEmail,
@@ -414,7 +415,7 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
       const sent = await sendVersion(a, v, signatureId, asked.personalNote, terms.expiryDays);
       if (!sent) return { sentAt: v.sent_at, expiresOn: v.expires_on, emailed: false, already: true };
       const outcome = to ? await mail(to, readyToSignEmail({ firstName: first, coachFirst: c.display_first_name, note: asked.personalNote,
-        link: linkTo(`/coaching/agreement/${v.id}`) }), { who: { ...c, full_name: coachName(c, terms) } }) : 'refused';
+        link: linkTo(`/coaching/agreement/${v.id}`), ...emailWords(terms) }), { who: { ...c, full_name: coachName(c, terms) } }) : 'refused';
       return { ...sent, emailed: outcome === 'sent' };
     },
 
@@ -474,7 +475,7 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
       const { data: assoc } = await server.from('coaches').select('id, display_first_name, email').eq('id', a.coach_id).maybeSingle();
       const { data: p } = a.profile_id ? await server.from('client_profiles').select('name, email').eq('id', a.profile_id).maybeSingle() : { data: null };
       const outcome = p?.email && assoc ? await send(env, { to: p.email, doc: readyToSignEmail({ firstName: firstName(p.name), coachFirst: assoc.display_first_name,
-        note: v.personal_note || '', link: linkTo(`/coaching/agreement/${v.id}`) }), fromName: v.terms?.coachName || assoc.display_first_name, replyTo: assoc.email }) : 'refused';
+        note: v.personal_note || '', link: linkTo(`/coaching/agreement/${v.id}`), ...emailWords(v.terms || {}) }), fromName: v.terms?.coachName || assoc.display_first_name, replyTo: assoc.email }) : 'refused';
       return { sentAt, emailed: outcome === 'sent' };
     },
 

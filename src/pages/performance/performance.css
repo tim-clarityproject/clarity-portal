@@ -1204,6 +1204,8 @@
   margin-top: var(--space-4);
 }
 .ui-root .deb-share { margin-top: var(--space-px22); }
+/* The debrief's Download my PDF, under its summary (Polish 1, Stage C). */
+.ui-root .deb-pdf { margin-top: var(--space-3); }
 .ui-root .deb-pattern { margin-top: var(--space-5); }
 
 .ui-root .deb-closed p {

@@ -1,17 +1,19 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import DesignHeader from '../../components/DesignHeader';
-import { Button, Chevron, List, ListRow, LoadError, Loading, PageHeader, Section, useCoach } from '../../components/design';
-import StepsMarker from '../../components/agreements/StepsMarker';
+import { BoldCrosshair, Card, LoadError, Loading, Row, ToolFrame, useCoach, useToast } from '../../components/design';
 import { savePdf } from '../../components/design/pdfSave';
 import { getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
-import { BOOK_FIRST, ENDED_STATUSES, WHAT_NEXT, endedLine, needsSettleCheck, stepsFor, welcomeLine, welcomeRows, welcomeTitle } from '../../lib/coaching/clientMoney';
+import { BOOK_FIRST, ENDED_STATUSES, FLOW, WHAT_NEXT, doneLine, endedLine, needsSettleCheck, stepsFor, welcomeRows } from '../../lib/coaching/clientMoney';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 import { clientAsk } from '../../lib/coaching/clientAsk';
 import { agreementDocument, useAgreements } from './agreementData';
 import './coaching.css';
 import './clientAgreement.css';
 
+// Welcome (Polish 1, Stage C, C3: the done screen of Read, Sign and Settle, M28 v6 "sign" step 4: "Done" in the tool
+// frame's bar, the full progress line, the crosshair, YOU'RE ALL SET, who has the signed agreement and what was settled,
+// What happens next as a card of rows, and Book my first coaching session at the foot). Before Polish 1:
 // Welcome (Phase 6b run 3, Group C; M28 version 4 s-c-signed): /coaching/agreement/:versionId/welcome. It ends as a
 // beginning: every step done, "You’re in, Sam.", who has the signed agreement (and the first amount settled, when it
 // was), then What happens next: Book your first coaching session (from the first day it can be booked: the start date,
@@ -54,27 +56,31 @@ export default function Welcome() {
     return () => { live = false; };
   }, [version, versionId, checked, navigate]);
 
+  const toast = useToast();
+  const close = () => {
+    toast.show(TOOL_CLOSED);
+    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+    else navigate('/welcome');
+  };
+  const done = { step: 1, steps: 1, last: true, stepWords: FLOW.doneSteps, onClose: close };
+
   if (!version) {
     if (loading) return <div className="ui-root plan-builder-wait"><Loading label="Loading" /></div>;
     return (
-      <div className="ui-root">
-        <DesignHeader />
-        <div className="plan-page ipp-page coaching-page cl-page">
+      <div className="cl-flow">
+        <ToolFrame {...done} stepWords=" " question={FLOW.agreementLabel} onNext={() => navigate('/coaching')} nextLabel="Open My coaching">
           <LoadError>{error ? 'This page didn’t load. Check your connection and try again.' : 'This agreement isn’t here any more.'}</LoadError>
-          <div className="cl-acts"><Button variant="primary" onClick={() => navigate('/coaching')}>Open My coaching</Button></div>
-        </div>
+        </ToolFrame>
       </div>
     );
   }
 
   if (ended && version.signedAt) {
     return (
-      <div className="ui-root">
-        <DesignHeader />
-        <div className="plan-page ipp-page coaching-page cl-page">
-          <p className="cl-say">{endedLine(ended, coachFirst)}</p>
-          <div className="cl-acts"><Button variant="primary" onClick={() => navigate('/coaching')}>Open My coaching</Button></div>
-        </div>
+      <div className="cl-flow">
+        <ToolFrame {...done} stepWords=" " question={FLOW.agreementLabel} onNext={() => navigate('/coaching')} nextLabel="Open My coaching">
+          <p className="cl-say" role="status">{endedLine(ended, coachFirst)}</p>
+        </ToolFrame>
       </div>
     );
   }
@@ -93,20 +99,18 @@ export default function Welcome() {
   };
 
   return (
-    <div className="ui-root">
-      <DesignHeader />
-      <div className="plan-page ipp-page coaching-page cl-page">
-        <StepsMarker current={steps.length} steps={steps} />
-        <PageHeader title={welcomeTitle(terms.clientFirst)} />
-        <p className="cl-say">{welcomeLine({ coachFirst, settled: typeof state?.settled === 'string' ? state.settled : null })}</p>
-        <Section title={WHAT_NEXT} className="cl-sec">
-          <List label={WHAT_NEXT} className="cl-rows">
-            {rows.map((r) => <ListRow key={r.key} title={r.title} type={r.meta} date={<Chevron direction="right" size="sm" />} onClick={() => open(r.key)} />)}
-          </List>
-          {pdfProblem && <LoadError>{pdfProblem}</LoadError>}
-        </Section>
-        <div className="cl-acts"><Button variant="primary" onClick={book}>{BOOK_FIRST}</Button></div>
-      </div>
+    <div className="cl-flow">
+      <ToolFrame {...done} step={steps.length} steps={steps.length} onNext={book} nextLabel={BOOK_FIRST}>
+        <div className="ds-open cl-done">
+          <BoldCrosshair size={40} className="cl-done-mark" />
+          <h1 className="ds-open-title cl-done-title" tabIndex={-1}>{FLOW.doneTitle}</h1>
+          <p className="ds-open-line">{doneLine({ coachFirst, settled: typeof state?.settled === 'string' ? state.settled : null })}</p>
+        </div>
+        <Card label={WHAT_NEXT} className="cl-next">
+          {rows.map((r) => <Row key={r.key} name={r.title} value={r.meta} onClick={() => open(r.key)} />)}
+        </Card>
+        {pdfProblem && <LoadError>{pdfProblem}</LoadError>}
+      </ToolFrame>
     </div>
   );
 }

@@ -41,6 +41,8 @@ const baseFonts = {
   DMSansExt: file(`${fs}dm-sans/files/dm-sans-latin-ext-400-normal.woff`),
   DMSansMedium: file(`${fs}dm-sans/files/dm-sans-latin-500-normal.woff`),
   DMSansMediumExt: file(`${fs}dm-sans/files/dm-sans-latin-ext-500-normal.woff`),
+  DMSansLight: file(`${fs}dm-sans/files/dm-sans-latin-300-normal.woff`),
+  DMSansLightItalic: file(`${fs}dm-sans/files/dm-sans-latin-300-italic.woff`),
 };
 const ranges = JSON.parse(readFileSync(join(root, `${fs}noto-emoji/unicode.json`), 'utf8'));
 const cjkRanges = JSON.parse(readFileSync(join(root, `${fs}noto-sans-sc/unicode.json`), 'utf8'));
@@ -686,7 +688,51 @@ const R3 = {
   }),
 };
 
-const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU, ...TC, ...EW, ...AG, ...ST, ...R3 };
+// ---- Polish 1, Stage C: the 25 Nov PDFs (pdfs-25nov) and their stress cases ------------------------------------
+// The business's details as Settings, Business holds them (068); invented. Every invoice, quotation, credit note and
+// agreement here takes them, so the footer, From and Payment details are always from the settings, never the code.
+const BUSINESS = { company_name: 'The Clarity Project LTD', company_number: '12817337', website: 'theclarityproject.co.uk', invoice_email: 'accounts@example.invalid',
+  bank_name: 'Example Bank plc', bank_account_name: 'The Clarity Project LTD', bank_sort_code: '00-00-00', bank_account_number: '00000000' };
+for (const spec of Object.values(R3)) spec.business = BUSINESS;
+const { weeklyDebriefPdf } = await load('/src/lib/pdf/docs/weeklyDebrief.js');
+const DEBRIEF = { name: 'Sam Carter', coachName: 'Dr. Tim Dutton', week: 8, weeks: 26, period: '16 to 22 Nov 2026', lastDay: '2026-11-22', score: 72,
+  usualLine: 'Your usual range is 61 to 78%.', streak: 6,
+  strategies: [{ name: 'Delegate the weekly report', value: 100, onTrack: true }, { name: 'Protect Friday mornings', value: 80, onTrack: true },
+    { name: 'Walk at lunch', value: 60, onTrack: true }, { name: 'Quarterly board rhythm', value: 0, onTrack: false }],
+  wentWell: 'Handed the weekly report to Priya, and it came back better than I’d have done it. Two full Friday mornings for the hiring plan.',
+  inTheWay: 'The board pack took most of Wednesday.', adjust: 'Put the board rhythm in the diary on Monday, before the week fills up.',
+  nextWeek: ['Book the restructure conversation with the leadership team', 'Walk at lunch on Tuesday and Thursday'] };
+const TEN_CLAUSES = clauses065.forStorage(T065).slice(0, 10);
+const P1 = {
+  'Invoice to a person (25 Nov)': invoicePdf({ number: 151, issuedOn: '2026-11-25', dueOn: '2026-12-01', termsWords: 'Due on receipt', orgName: 'Sam Carter', email: 'sam@example.invalid',
+    about: 'Coaching services, December 2026', business: BUSINESS, coachName: 'Dr. Tim Dutton', inPortal: true,
+    lines: [{ description: 'Executive coaching, December 2026', detail: 'Six-month one-to-one programme, month 1 of 6', quantity: 1, amount: 75000 }] }),
+  'Invoice to an organisation with its timesheet (25 Nov)': invoicePdf({ ...INVOICE_BASE, contact: 'Accounts Payable', email: 'invoices@example.invalid', about: 'Leadership programme 2026, November',
+    business: BUSINESS, coachName: 'Dr. Tim Dutton', bank: null,
+    lines: [{ description: 'Executive coaching, senior leadership team', detail: '8 one-to-one sessions, November 2026 (timesheet attached, page 2)', minutes: 480, rateMinor: 30000, amount: 240000 },
+      { description: 'Leadership team workshop', detail: '19 November 2026, in person, Cardiff', minutes: 120, rateMinor: 30000, amount: 60000 }],
+    timesheet: [['2026-11-02', 'Rhian Morgan', 60], ['2026-11-02', 'Owen Price', 60], ['2026-11-05', 'Ffion Davies', 60], ['2026-11-09', 'Gareth Lloyd', 60],
+      ['2026-11-16', 'Rhian Morgan', 60], ['2026-11-16', 'Owen Price', 60], ['2026-11-19', 'Leadership team', 120], ['2026-11-23', 'Ffion Davies', 60], ['2026-11-23', 'Gareth Lloyd', 60]]
+      .map(([day, who, minutes]) => ({ day, who, what: minutes > 60 ? 'Workshop, in person, Cardiff' : 'One-to-one coaching, Zoom', minutes })) }),
+  'Invoice, long timesheet with names (stress)': invoicePdf({ ...INVOICE_BASE, orgName: `${LONG_NAME} Group 🚀`, business: BUSINESS, coachName: 'Dr. Tim Dutton', poNumber: 'PO-4500918823-AMENDED-2',
+    timesheet: TIMESHEET_80.map((r, i) => ({ ...r, who: i % 7 ? ['Dan Hughes', 'Jo Bell', 'Ali Khan'][i % 3] : LONG_NAME })), extraPages: 3,
+    lines: Array.from({ length: 12 }, (_, i) => ({ description: `Coaching for ${LONG_NAME} Group, month ${i + 1}`, detail: i % 4 ? '' : para(1), minutes: 600, rateMinor: 30000, amount: 300000 })) }),
+  'Quotation (25 Nov)': quotePdf({ number: 42, terms: { ...T065, clientName: 'Alex Morgan', clientEmail: 'alex@example.invalid', discounts: [] }, sentDay: '2026-11-25', validUntil: '2026-12-25', business: BUSINESS }),
+  'Quotation, long note and names (stress)': quotePdf({ number: 9998, terms: { ...T065, clientName: `${LONG_NAME} 🚀`, coaching: `${LONG_NAME}'s leadership programme, with a momentum phase and visit days` },
+    sentDay: '2026-11-25', validUntil: '2027-01-24', note: `${para(5)}\n\n${para(3)}`, business: BUSINESS }),
+  'Coaching agreement, 10 clauses (stress)': agreementPdf({
+    version: agreementVersion({ clauses: TEN_CLAUSES, currency: 'GBP', total_minor: 1453500 }, { ...T065, total_minor: 1453500 }),
+    raw: { start_now: true, start_now_at: '2026-12-02T18:40:00Z', settle_choice: 'upfront' }, business: BUSINESS,
+    signature: { kind: 'drawn', image: signaturePng() }, coachSignature: { kind: 'typed', typed_name: 'Dr. Tim Dutton' },
+  }),
+  'Weekly debrief (25 Nov)': { ...weeklyDebriefPdf(DEBRIEF), business: BUSINESS },
+  'Weekly debrief, long answers and names (stress)': { ...weeklyDebriefPdf({ ...DEBRIEF, name: `${LONG_NAME} 🚀`,
+    strategies: Array.from({ length: 9 }, (_, i) => ({ name: i % 3 ? `Strategy ${i + 1}` : `${para(1)}`, value: (i * 13) % 101, onTrack: i % 2 === 0 })),
+    wentWell: `${para(6)}\n\n${para(5)}`, inTheWay: para(7), adjust: `${para(4)} 🚀`, nextWeek: Array.from({ length: 8 }, () => sentence(14)) }), business: BUSINESS },
+  'Weekly debrief, nothing written yet': { ...weeklyDebriefPdf({ ...DEBRIEF, score: null, strategies: [], wentWell: '', inTheWay: '', adjust: '', nextWeek: [] }), business: BUSINESS },
+};
+
+const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU, ...TC, ...EW, ...AG, ...ST, ...R3, ...P1 };
 
 // ---- dot charts: dots stay in their own area, and how many touch ----------------------
 // A dot is in its own area when it is on the same side of both centre lines
@@ -742,6 +788,10 @@ function check(layout) {
       }
     }
   });
+  // Nothing crosses into the footer (the 25 Nov PDFs' stress pack): every part ends above the footer's hairline.
+  layout.forEach((page, pi) => page.forEach((it) => {
+    if (it.y != null && it.footerTop != null && it.y + it.h > it.footerTop - 0.5) problems.push(`page ${pi + 1}: a ${it.kind} crosses into the footer (${Math.round(it.y + it.h)} > ${Math.round(it.footerTop)})`);
+  }));
   const lastLines = content(layout[layout.length - 1]).reduce((s, x) => s + x.lines, 0);
   if (layout.length > 1 && lastLines <= 2) problems.push(`last page holds only ${lastLines} line(s)`);
   return problems;

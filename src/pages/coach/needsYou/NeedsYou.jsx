@@ -23,11 +23,12 @@ import './needsyou.css';
 
 const NyTitle = (props) => <h2 {...props} id="ny-title" />;
 
-// Polish 1 (25 Nov): drawn as the reference's card with its rows; `onCount` tells Today's opening line how many there are.
-export default function NeedsYou({ todayKey, partial, onCount }) {
+/**
+ * Every Needs you item for the coach, in M28's order, less those Done or put off (needs_you_done): Today's card and the
+ * Needs you page (money/NeedsYouPage.jsx) read the same list. Empty while only the first screen is here.
+ */
+export function useNeedsYouItems(todayKey, partial) {
   const p = useCoachPortal();
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(null);
   const [waiting, setWaiting] = useState([]);
   const [fxToday, setFxToday] = useState(null);
   const zone = coachZoneOf(p.settings, deviceZone());
@@ -70,14 +71,23 @@ export default function NeedsYou({ todayKey, partial, onCount }) {
     });
     return visible(named, rowsOf(p.state, 'needs_you_done').filter((r) => r.coach_id === p.coach.id), todayKey);
   }, [partial, p.coach.id, p.isOwner, todayKey, p.now, zone, agreementsAll, versionsAll, p.sessions, p.state, p.invoices, p.invoiceReminders, p.reminderPauses, p.clients, p.organisations, p.coaches, p.admin, waiting, fxToday]);
+  return items;
+}
 
+// Polish 1 (25 Nov): drawn as the reference's card with its rows; `onCount` tells Today's opening line how many there are.
+// Stage C (C2; M28 v6 "needs"): View all opens the Needs you page, a list with the chosen item's detail beside it.
+export default function NeedsYou({ todayKey, partial, onCount }) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(null);
+  const items = useNeedsYouItems(todayKey, partial);
   useEffect(() => { onCount?.(partial ? null : items.length); }, [onCount, partial, items.length]);
   const openItem = (i) => {
     if (i.kind === 'portal') { navigate(`/coach/invoices/${i.data.invoiceId}`); return; }
     setOpen(i);
   };
   return (
-    <Card label="Needs you" className="cc-part ny-section" aria-labelledby="ny-title" labelAs={NyTitle}>
+    <Card label="Needs you" className="cc-part ny-section" aria-labelledby="ny-title" labelAs={NyTitle}
+      link={!partial && items.length > 0 ? { children: 'View all', href: '/coach/needs-you', onClick: (e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate('/coach/needs-you'); } } : undefined}>
       {partial ? <Loading label="Loading what needs you" /> : items.length === 0 ? <p className="cc-quiet">{EMPTY_LINE}</p> : (
         <Rows className="ny-rows">
           {items.map((i) => <Row key={i.key} name={i.title} sub={i.line} value={i.when} onClick={() => openItem(i)} />)}

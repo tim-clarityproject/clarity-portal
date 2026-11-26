@@ -35,7 +35,8 @@ import { deviceZone } from '../../lib/time';
 import { TagsPanel } from './ClientPanels';
 import { FieldPanel } from './Settings';
 import NameNote from './NameNote';
-import AgreementFold from './agreements/AgreementFold';
+import ClientCards from './money/ClientCards';
+import { agreementRows, somethingWaiting } from '../../lib/coach/money';
 import { countFigure, countWords } from '../../lib/coach/numbers';
 
 // A client's page (M11: Sam, Leo, Marcus, Priya and Jordan). Overview is
@@ -287,6 +288,9 @@ export default function ClientPage() {
   const counted = withSessions(engagement, allSessions, sessionPeople, sessionsOlder);
   const sessions = sessionsLeft(counted, packs);
   const next = nextSession(mySessions, () => true, portal.now);
+  // The last coaching session that happened (M28 "client": Last session), and whether a new agreement can start now.
+  const last = mySessions.filter((x) => (x.kind || 'coaching') === 'coaching' && Date.parse(x.starts_at) < new Date(portal.now).getTime() && !['cancelled', 'rearranged'].includes(x.outcome))
+    .sort((x, y) => Date.parse(y.starts_at) - Date.parse(x.starts_at))[0] || null;
   const myTodos = sortTodos(todos.filter((t) => t.profile_id === profile.id && !t.done_at));
   // Saved for any reason but a typed count, the engagement carries the count as it stands now (never the one it was loaded with).
   const asKept = (e) => engagementToSave(e, allSessions, sessionPeople, sessionsOlder);
@@ -430,6 +434,7 @@ export default function ClientPage() {
   const money = moneyTimeline({ invoices, payments, agreements, versions: agreementVersions, profileId: profile.id, zone: coachZone });
   const fold = agreementFold({ agreements, versions: agreementVersions, profileId: profile.id, engagement, contacts: rowsOf(state, 'organisation_contacts'), organisation: org, credit, zone: coachZone, todayKey });
   const agreementLoading = Boolean(partial) && coach061ReadyNow() !== false;
+  const newAgreement = !agreementLoading && !somethingWaiting(agreementRows({ agreements, versions: agreementVersions, quotes: rowsOf(state, 'agreement_quotes'), profileId: profile.id, today: todayKey }));
   const everything = timeline({ notes, files, entries: entries.filter((t) => data.engagements.some((e) => e.id === t.engagement_id)), engagements: data.engagements, projects: rowsOf(state, 'engagement_projects'), more: money }, { kind, q }, now);
   // A client who was a lead keeps the lead's timeline (Won carries it over without copying: crm.js's carriedTimeline). It
   // is older than anything on the client's own, so it follows it.
@@ -448,17 +453,13 @@ export default function ClientPage() {
           label={[!isOwner && org ? org.name : null, profile.status === 'paused' ? 'Paused' : null, profile.status === 'past' ? 'Past client' : null].filter(Boolean).join(', ') || null}
           title={profile.name}
           line={clientLine({ role: profile.job_title, city: profile.city })}
+          action={newAgreement ? <Button variant="primary" onClick={() => navigate(`/coach/agreements/new?for=client:${profile.id}`)}>New agreement</Button> : null}
         />
         {isOwner && org && <div className="cc-links"><TextLink onClick={() => navigate(`/coach/organisations/${org.id}`)}>{org.name}</TextLink></div>}
         {birthday && <p className="cc-quiet">It’s <InlineLink onClick={() => setPanel('note')}>{possessive(first)}</InlineLink> birthday today.</p>}
         {pinned.length > 0 && (
           <div className="cc-pins" aria-label="Pinned notes">
             {pinned.map((n) => <p key={n.id}>{PIN}<span>{n.body}</span></p>)}
-          </div>
-        )}
-        {contacts.length > 0 && (
-          <div className="cc-links">
-            {contacts.map((c) => <a key={c.key} className="ds-link" href={c.href} target={c.key === 'whatsapp' ? '_blank' : undefined} rel={c.key === 'whatsapp' ? 'noreferrer' : undefined}>{c.label}</a>)}
           </div>
         )}
         <div className="cc-tabs"><InlineChoice ariaLabel="Show" semantics="pressed" options={VIEWS} value={view} onChange={setView} form="pills" /></div>
@@ -505,21 +506,20 @@ export default function ClientPage() {
               </Card>
             )}
 
-            <Card label="Next coaching session">
-              {next ? (
-                <div className="cc-ses-next">
-                  <span><b>{whenWords(next.starts_at, todayKey)}</b><small>{lengthPlace(next)}</small></span>
-                  <TextLink onClick={() => { setBriefAsked(true); setBriefId(next.id); }}>Open the brief</TextLink>
-                </div>
-              ) : (
-                <p className="cc-quiet cc-ses-none"><span>No session is booked.</span>{profile.status !== 'past' && <TextLink onClick={() => navigate('/coach/calendar/book', { state: { clientId: profile.id } })}>Book a call</TextLink>}{profile.status !== 'past' && <TextLink onClick={() => setPanel('session')}>Add session</TextLink>}</p>
-              )}
-            </Card>
+            {/* Polish 1, Stage C (C2; M28 v6 "client"): Agreements and Coaching sessions, Money and Contact. */}
+            <ClientCards
+              profile={profile} first={first} next={next} last={last} sessions={sessions} loading={agreementLoading}
+              onBrief={(sid) => { setBriefAsked(true); setBriefId(sid); }}
+              onBook={() => navigate('/coach/calendar/book', { state: { clientId: profile.id } })}
+              onRun1={(version) => (version?.status === 'signed' || version?.client_signed_at ? openSignedAgreement(version, toast, () => setPanel('agreement')) : setPanel('agreement'))}
+              onDetails={() => { if (!folds.det) toggle('det'); }}
+              whatsapp={contacts.find((c) => c.key === 'whatsapp') || null}
+              imessage={contacts.find((c) => c.key === 'imessage') || null}
+            />
 
-            {(sessions || credit) && (
+            {credit && (
               <StatGroup className="cc-stats">
-                {sessions && <Stat label="Coaching sessions to go" value={`${countFigure(sessions.left)} of ${countFigure(sessions.total)}`} bar={sessions.total ? sessions.left / sessions.total : 0} />}
-                {credit && <Stat label="Time credit left" value={minutesWords(credit.left)} bar={credit.total ? credit.left / credit.total : 0} />}
+                <Stat label="Time credit left" value={minutesWords(credit.left)} bar={credit.total ? credit.left / credit.total : 0} />
               </StatGroup>
             )}
 
@@ -597,27 +597,6 @@ export default function ClientPage() {
                 <div className="cc-acts"><TextLink onClick={() => fileRef.current?.click()}>Add file</TextLink></div>
                 <input ref={fileRef} className="cc-hidden-file" type="file" multiple tabIndex={-1} aria-hidden="true" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
               </Fold>
-              {/* Phase 6b run 3: Group B's fold (New agreement, Send a quote, Sent, Opened, Signed, Settled) around run 1's. */}
-              <AgreementFold profileId={id} name={profile?.name} first={first} fold={fold} loading={agreementLoading}
-                openAgreement={() => (fold?.signed ? openSignedAgreement(fold.version, toast, () => setPanel('agreement')) : setPanel('agreement'))}>
-              {(fold || agreementLoading) && (
-                <Fold
-                  title="Agreement"
-                  open={Boolean(folds.agr)}
-                  onToggle={() => toggle('agr')}
-                  summary={fold && !agreementLoading ? fold.summary : <span className="cc-fold-loading" role="status" aria-label="Loading the agreement"><Crosshair size="sm" tone="grey" spin /></span>}
-                >
-                  {agreementLoading && <Loading label="Loading the agreement" />}
-                  {!agreementLoading && fold && (
-                    <>
-                      {fold.rows.map((r) => <Detail key={r.label} label={r.label}>{r.value}</Detail>)}
-                      {/* Signed: the PDF kept at signing, both signatures on it (064); waiting: its text in the panel. */}
-                      <div className="cc-acts"><TextLink onClick={() => (fold.signed ? openSignedAgreement(fold.version, toast, () => setPanel('agreement')) : setPanel('agreement'))}>Open the agreement</TextLink></div>
-                    </>
-                  )}
-                </Fold>
-              )}
-              </AgreementFold>
               {/* On a first visit the agreement is read with the rest: the folds after it wait with it, so its place
                   going when there is none never moves a fold drawn under it (tidy follow-up 4, part 2, item 1). */}
               {!agreementLoading && (

@@ -30,14 +30,18 @@ const TODOS14 = 'the seed has 14 to-dos to place, where M11 has 8, so the panel 
 const TYPED = { after: 'What needs doing?', before: 'Add to-do', boxes: ['Send the renewal pack to Dana tomorrow #Kestrel @email ! 30m'] }; // the example M11 always shows typed
 const PLACE = [
   [/^name: .+\. Drag onto the calendar$/, null, 'a to-do to place is read out as its words and its estimate; it is dragged on, or opened and given a time', { say: 'a to-do to place, “… Drag onto the calendar”' }],
-  seed('15 min', null, 'two of M11’s 15-minute to-dos aren’t among the seed’s first eight'),
 ];
 const PLACED = [
   seeded(/^(Write issue 149 of Leading Ideas|Show all 14)$/, TODOS14, { say: 'Show all 14' }),
-  [/^name: .+, important, \d+ (min|h)$/, 'Important is said to a screen reader wherever its box shows (rule 4a)', null, { say: '…, important' }],
 ];
 const OWNTIME = ['Your own time', null, 'Writing and Admin are kinds of their own (the colours of 19 Nov: Admin, Writing and Other), so their row has no second line repeating their name (5e rule 29ap); Training, plain own time, keeps “Your own time”'];
-const NETWORK = ['Networking call', 'Chemistry Call', 'the prompt names the two call types Chemistry Call and Connection Call, and a row says which; coffee in person says “In person”'];
+const NETWORK = ['Networking call', 'Discovery call', 'the prompt names the two call types, and a row says which; coffee in person says “In person”; the first is now the Discovery call (Tim, 25 Nov; coach-portal.md rule 31’s Polish 1 note)'];
+// Polish 1 (Stage A and B; the 25 Nov design reference and Tim's walk item 26): the meant differences the calendar's new
+// opening and bar brought. Listed once here, met where M11 shows them, never required.
+const P1_OPEN = 'Polish 1: every page opens the same way (PageOpening: its one grey line and its one main button, “Add a session”) (CLAUDE.md, Polish 1 “Layout”; coach-portal.md rule 49’s Polish 1 note)';
+const P1_BAR = 'Polish 1: the calendar’s bar is the month or week, previous and next, Month and Week as one joined switch, and one “Show” drop-down for the kinds (CalendarBar; rule 17)';
+const P1_FOOT = 'Polish 1 (Tim’s walk, item 26): under the calendar its own switches, then one quiet “Calendar settings” link that opens Add to calendar, Working hours, Set my open times, Offer times by email and My calendars in place';
+const P1_BOOK = 'Polish 1 (Stage A, the booking page): the coach’s full name and the call’s name over one sentence, the one month grid (MonthGrid, rule 17) and the chosen day’s times under it, “Times are in … time.” with Change the time zone, and Continue (coach-portal.md rule 31’s Polish 1 note; migration 066)';
 const TIM = (why) => `left for Tim to decide: ${why}`;
 /** The built grid's tiles come in time order, day by day (how a keyboard and a screen reader meet them); M11's markup lists a day's calls, then own items, then family and held times. */
 const GRID_ORDER = [/./, 'the built grid lists each day’s tiles in time order, as a keyboard and a screen reader meet them; M11’s markup lists a day’s calls first, then the rest', null, { quiet: true, say: 'the order of a day’s tiles' }];
@@ -51,6 +55,14 @@ export const EXTRA_GROUPS = [];
 export const EVERYWHERE = {
   changes: [
     ...THEY,
+    ['Book a call', 'Add a session', P1_OPEN, { quiet: true, say: 'Book a call' }],
+    [/^(Schedule|Day|View)$/, null, P1_BAR, { quiet: true, say: 'Schedule, Day and View in the bar' }],
+    ['Weekends', null, `${P1_FOOT}; the link reads “Show weekends” (hidden while the working hours are edited)`, { quiet: true, say: 'the Weekends switch' }],
+    ['Chemistry Call page', 'Discovery call page', 'Discovery call (Tim, 25 Nov; coach-portal.md rule 31’s Polish 1 note)', { quiet: true }],
+    [/^(What needs doing\?|e\.g\. Call Sam Fri 10:00 #Kestrel @phone ! 30m|Add to-do)$/, null, 'Polish 1 “Adding”: “+ Add” by the list’s label opens Quick Add, so the always-open quick-add box is gone (CLAUDE.md, Polish 1 “Adding”)', { quiet: true, say: 'the quick-add box' }],
+    [/^(Add to calendar|Working hours|Set my open times|Offer times by email|My calendars)$/, null, P1_FOOT, { quiet: true, say: 'Add to calendar, Working hours and the rest' }],
+    [/^(Travel|Nadia Osei|Ruth Adeyemi)\d\d:\d\d$/, null, 'a narrow tile’s name and time are read as two lines in the built grid, where M11’s markup runs them together', { quiet: true, say: 'a narrow tile’s name and time' }],
+    seed('15 min', null, 'two of M11’s 15-minute to-dos aren’t among the seed’s first eight', { quiet: true }),
     [new RegExp(`^(\\d\\d:\\d\\d, )?\\d\\d:\\d\\d (${US.slice(1, -1)}|LA)$`), null, TZ12, { quiet: true, say: 'a US client’s own time, “09:45 Chicago”' }],
     [/^(CHI|NY|LA|LON)$/, null, TZ12, { quiet: true, say: 'a time column headed by letters, “CHI”' }],
     [/^name: .+ time\. Choose the second time zone$/, null, 'its spoken name is “Second time column, Chicago. Edit”: “Edit”, never “Choose” (5e rule 29am)', { quiet: true, say: 'the second column’s spoken name' }],
@@ -64,6 +76,16 @@ export const EVERYWHERE = {
   ],
   added: [
     ...THEY_NAMES,
+    [/^(Your coaching sessions, calls and visits in one place\.|Add a session|Everything you plan to do, by day\. Only you can see it\.|Times people outside can book a call with you\.|How your practice runs: your details, booking, calendars and the rest\.|Your booking settings\.|With Mia Torres and Paul Garner\. The times you offered, and who can make each one\.)$/, P1_OPEN, null, { quiet: true, say: 'the page’s opening line and its main button' }],
+    [/^(Show|All types|Month|Week)$/, P1_BAR, null, { quiet: true, say: 'Month, Week and Show' }],
+    [/^name: (Previous|Next) (week|day|days|month)$/, `${P1_BAR}; the arrows are named for a screen reader`, null, { quiet: true, say: 'Previous and Next, named' }],
+    [/^(Show weekends|Hide weekends|Calendar settings)$/, P1_FOOT, null, { quiet: true, say: 'Show weekends and Calendar settings' }],
+    [/^(Discovery call|Discovery call page|name: Copy the Discovery call page’s link|name: Edit Discovery call page)$/, 'Discovery call (Tim, 25 Nov; coach-portal.md rule 31’s Polish 1 note)', null, { quiet: true, say: 'Discovery call' }],
+    [/^(Agreements|Business)$/, 'Settings’ sections gained Agreements (Phase 6b run 3) and Business (Polish 1, Stage C, migration 068)', null, { quiet: true, say: 'Agreements and Business in Settings' }],
+    [/^(\d+ (minutes|hours?)|name: .+, \d+ (minutes|hours?))$/, 'units are full words (26 Oct design rule 8): a to-do’s estimate reads “2 hours”, and a to-do to place is named with it', null, { quiet: true, say: '2 hours; a to-do named with its estimate' }],
+    [/^(ALEX MORGAN|DISCOVERY CALL|A 30-minute call on Zoom\. Choose a day, then a time\.|November 2026|\d{1,2}|(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY) \d+ NOVEMBER|Times are in .+ time\.|Continue|name: (Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday) \d+ November)$/, P1_BOOK, null, { quiet: true, say: 'the booking page’s month grid and its parts' }],
+    [/^(# a list or client, @ a tag, ! important|More it understands)$/, `the quick add’s one line of help: ${HELP1}`, null, { quiet: true, say: 'the quick add’s line of help' }],
+    seeded('Fri 27', OPENONLY.replace('the test’s data: ', ''), { quiet: true }),
     [new RegExp(`^(\\d\\d:\\d\\d, )?\\d{1,2}:\\d\\d (am|pm) ${US}$`), TZ12, null, { quiet: true, say: '“9:45 am Chicago”' }],
     [/^(Chicago|New York|Los Angeles)$/, TZ12, null, { quiet: true, say: 'a column headed “Chicago”' }],
     [/^In person, \d\d:\d\d to \d\d:\d\d$/, TIM('an item with a place says where it is, where M11 names its kind (“Event”)'), null, { quiet: true, say: 'In person, 18:30 to 20:30' }],
@@ -104,7 +126,6 @@ export const ROWS = [
     added: [
       [new RegExp(`^${D.toUpperCase()} \\d+ (NOV|DEC)$`), TIM(SCHED), null, { say: 'the days after Friday' }],
       seeded(/^(\d\d:\d\d|All day|Leading Teams conference|In person|Chemistry Call|Connection Call)$/, 'the rows of the days M11 doesn’t list, the seed’s two-day conference among them', { say: 'later days’ rows' }),
-      ['Weekends', 'the Weekends switch stays in the bar in every view: it decides which days the Schedule lists too (the prompt: Weekends is a switch)', null, { on: 'd' }],
     ],
     moved: [[/./, 'with Monday left out and later weeks added, the lines both show fall in other places', null, { quiet: true, say: 'the order of the Schedule’s rows' }]] },
   { name: 'Calendar, one day', m11: 'calday', built: 'cal-day', moved: [GRID_ORDER] },
@@ -143,6 +164,7 @@ export const ROWS = [
       [/^name: Confirm .+ UK time$/, 'each Confirm is named for its time to a screen reader', null, { say: 'Confirm, named for its time' }],
       ['Cancel the poll', 'a poll can be cancelled, which frees its held times (builder D’s report)'],
     ],
+    moved: [['three-way meeting', 'the poll’s name is the page’s title, with who it is with in the opening line under it (Polish 1, PageOpening)']],
  },
   { name: 'Book a call', m11: 'book', part: 'sheet', built: 'book-call',
     changes: [
@@ -167,25 +189,26 @@ export const ROWS = [
     ] },
   { name: 'A booking page, as the guest sees it', m11: 'bpage', built: 'bpage', as: 'signed-out', who: 'owner', ...{
     changes: [
-      seed('With Tim', 'With Alex', 'the stand-in’s coach is called Alex'),
-      seed(/^(Wed 18|Thu 19|Fri 20)$/, null, OPENONLY.replace('the test’s data: ', ''), { say: 'Wed 18, Thu 19, Fri 20' }),
-      [/^1[12]:[03]0$/, '9:00 am', `${TZ12}; ${QUARTER}`, { say: '11:00, 11:30' }],
+      seed('With Tim', null, 'the stand-in’s coach is called Alex, and the page names the coach once, in full, at its top (Polish 1)'),
+      seed(/^(Wed 18|Thu 19|Fri 20|Mon 23)$/, null, `${OPENONLY.replace('the test’s data: ', '')}; ${P1_BOOK}`, { say: 'Wed 18, Thu 19, Fri 20, Mon 23' }),
+      [/^1[12]:[03]0$/, null, `${TZ12}; ${QUARTER}`, { say: '11:00, 11:30' }],
+      [/^(THE CLARITY PROJECT|CHEMISTRY CALL|30 minutes, Zoom|Your time zone|New York)$/, null, P1_BOOK, { say: 'the page’s old heading and its time zone box' }],
     ],
     added: [
-      seeded('Fri 27', OPENONLY.replace('the test’s data: ', '')),
-      [/^\d{1,2}:\d\d am$/, `${TZ12}; ${QUARTER}`, null, { say: 'a time every quarter hour, 12-hour in New York' }],
-    ] } },
+      [/^\d{1,2}:\d\d am$/, `${TZ12}; ${QUARTER}; the chosen day’s times under the month`, null, { say: 'the chosen day’s times, 12-hour in New York' }],
+    ],
+    moved: [[/^(show my calendar|your time zone|new york)$/, P1_BOOK, null, { say: 'Show my calendar and the time zone, under the times' }]] } },
   { name: 'A booking page, with Show my calendar', m11: 'bpage2', built: 'bpage2', as: 'signed-out', who: 'owner',
     changes: [
-      seed('With Tim', 'With Alex', 'the stand-in’s coach is called Alex'),
-      seed(/^(Wed 18|Thu 19|Fri 20)$/, null, OPENONLY.replace('the test’s data: ', ''), { say: 'Wed 18, Thu 19, Fri 20' }),
+      seed('With Tim', null, 'the stand-in’s coach is called Alex, and the page names the coach once, in full, at its top (Polish 1)'),
+      seed(/^(Wed 18|Thu 19|Fri 20|Mon 23)$/, null, `${OPENONLY.replace('the test’s data: ', '')}; ${P1_BOOK}`, { say: 'Wed 18, Thu 19, Fri 20, Mon 23' }),
       [/^1[12]:[03]0$/, null, `${QUARTER}; the hours beside “Your calendar” are the hours of the day shown`, { say: '11:00, 11:30, 12:00' }],
+      [/^(THE CLARITY PROJECT|CHEMISTRY CALL|30 minutes, Zoom|Your time zone|New York)$/, null, P1_BOOK, { say: 'the page’s old heading and its time zone box' }],
     ],
     added: [
-      seeded('Fri 27', OPENONLY.replace('the test’s data: ', '')),
-      [/^\d{1,2}:\d\d am$/, `${TZ12}; ${QUARTER}`, null, { say: 'a time every quarter hour, 12-hour in New York' }],
+      [/^\d{1,2}:\d\d am$/, `${TZ12}; ${QUARTER}; the chosen day’s times under the month`, null, { say: 'the chosen day’s times, 12-hour in New York' }],
     ],
-    moved: [[/^\d\d:\d\d$/, 'the hour labels follow the day shown']] },
+    moved: [[/^(\d\d:\d\d|show my calendar|your time zone|new york)$/, `the hour labels follow the day shown; ${P1_BOOK}`, null, { say: 'the hours, Show my calendar and the time zone' }]] },
   { name: 'Open for calls', m11: 'open', built: 'book-open', who: 'owner',
     changes: [
       seed(/^(Writing|Supervision with Maya)$/, null, 'next week in the seed holds the day seed’s sessions and Training, not M11’s Writing and Supervision', { on: 'd' }),
@@ -206,7 +229,6 @@ export const ROWS = [
     ],
     added: [...PLACED,
       [/^(List|Calendar)$/, 'the List and Calendar switch is the same on a phone as on a laptop (Tim’s design rules of 18 and 19 Nov)', null, { on: 'p', say: 'List, Calendar' }],
-      [/^(# a list or client, @ a tag, ! important|More it understands)$/, `the quick add’s one line of help: ${HELP1}`, null, { on: 'd', say: 'the quick add’s line of help' }],
       seeded(/^(Sam Okafor|Priya Nair|Jordan Reyes|Mia Torres|Marcus Bell|In person)$/, 'the day seed’s extra calls are on the week too', { on: 'd', say: 'the day seed’s extra calls' })] },
   { name: 'Settings, Booking', m11: 'setph', built: 'book-settings',
     changes: [

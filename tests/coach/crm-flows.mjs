@@ -30,9 +30,14 @@
 //   PARTS=crm-auto,…   DB=none,there
 import { chromium } from 'playwright';
 import { accountId, APP, clearDevice, coachContext, makeReport, openSearch, seedDevice, settle, standIn, toastText } from './shared.mjs';
+import { frameMenuWords } from './shared.mjs';
 import { CAL, CRM, ID, seedClock, seedWithCrm } from './seed.mjs';
 import { withSharedBoard } from './screens.mjs';
 import { addDays } from '../../src/lib/time/index.js';
+
+// The coach's menu as the Polish 1 frame draws it (Stage A; shared.mjs frameMenuWords): the frame lists Boards itself,
+// not each board under it (Stage C: the boards are on Boards' page).
+const menuText = async (page) => (await frameMenuWords(page)).join('\n');
 
 export const CRM_PARTS = ['crm-auto', 'crm-watch', 'crm-keep', 'crm-ended', 'crm-board', 'crm-shared', 'crm-email', 'crm-past', 'crm-map'];
 const TUE = new Date(2026, 10, 17, 9, 0);
@@ -343,9 +348,8 @@ async function run() {
         const { page } = a;
         let text = await words(page);
         pass(`${tag}: Boards lists Speaking (4 stages, 5 cards) and Partners (3 stages, 2 cards)`, has(text, ['Speaking', '4 stages', '5 cards', 'Partners', '3 stages', '2 cards']), text.slice(0, 200));
-        await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600);
-        const menu = await page.locator('.cc-menu').innerText();
-        pass(`${tag}: the menu has Boards with each board under it`, /Boards\s+Speaking\s+Partners/.test(menu), menu.replace(/\n/g, ' ').slice(0, 200));
+        const menu = await menuText(page);
+        pass(`${tag}: the menu has Boards`, /Boards/.test(menu), menu.replace(/\n/g, ' ').slice(0, 200));
         await page.keyboard.press('Escape'); await settle(page, 400);
 
         // New board, from a template.
@@ -437,9 +441,8 @@ async function run() {
         let text = await words(page);
         pass(`${tag}: an associate's Boards has the shared board and not the unshared one, and no New board`, text.includes('Speaking') && !text.includes('Partners') && !text.includes('New board'), text.slice(0, 160));
         if (db === 'there') pass(`${tag}: the database handed over only the shared board, its stages and its cards`, JSON.stringify((await a.deviceRows('coach_boards')).map((b) => b.name)) === JSON.stringify(['Speaking']) && (await a.deviceRows('coach_board_stages')).every((s) => s.board_id === CRM.speaking) && (await a.deviceRows('coach_board_items')).every((i) => i.board_id === CRM.speaking), (await a.deviceRows('coach_boards')).map((b) => b.name).join(', '));
-        await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600);
-        const menu = await page.locator('.cc-menu').innerText();
-        pass(`${tag}: the menu has Boards with Speaking under it, and no Partners, Leads or Network`, /Boards\s+Speaking/.test(menu) && !/Partners|Leads|Network/.test(menu), menu.replace(/\n/g, ' ').slice(0, 200));
+        const menu = await menuText(page);
+        pass(`${tag}: the menu has Boards, and no Leads or Network`, /Boards/.test(menu) && !/Partners|Leads|Network/.test(menu), menu.replace(/\n/g, ' ').slice(0, 200));
         await page.keyboard.press('Escape'); await settle(page, 400);
         await go(page, `/coach/boards/${CRM.speaking}`);
         text = await words(page);
@@ -468,8 +471,7 @@ async function run() {
         await a.close();
         // With nothing shared, an associate has no Boards in the menu at all.
         const b = await openAt({ role: 'associate', db, tag: `${tag}, nothing shared`, path: '/coach', rows: (() => { const r = withSharedBoard(); r.coach_boards = r.coach_boards.map((x) => ({ ...x, shared: false })); return r; })() });
-        await b.page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(b.page, 600);
-        pass(`${tag}: with nothing shared, the menu has no Boards`, !/Boards|Speaking/.test(await b.page.locator('.cc-menu').innerText()));
+        pass(`${tag}: with nothing shared, the menu has no Boards`, !/Boards|Speaking/.test(await menuText(b.page)));
         await b.page.keyboard.press('Escape');
         await go(b.page, '/coach/boards');
         pass(`${tag}: and Boards' own address says calmly that nothing is shared`, (await words(b.page)).includes('No board is shared with you yet.'));

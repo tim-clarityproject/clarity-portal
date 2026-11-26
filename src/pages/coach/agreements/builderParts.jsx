@@ -245,4 +245,85 @@ export function useWide(px = 1100) {
   return wide;
 }
 
+
+// ---------------------------------------------------------------- the questionnaire's parts (Polish 1, Stage C)
+
+/**
+ * A money box in one currency (M28 version 6's .box.money): the symbol, then the figure. `value` and `onChange` are
+ * minor units; the figure shows without its symbol while typed.
+ */
+export function MoneyBox({ label, value, currency = 'GBP', onChange, onEnter, autoFocus = false }) {
+  const [typing, setTyping] = useState(null);
+  const shown = typing ?? (value != null && Number(value) > 0 ? String(toMajor(Number(value), currency)) : '');
+  const symbol = CURRENCY[currency]?.symbol?.trim() || currency;
+  return (
+    <div className="ds-field ab-money">
+      <span className="ab-money-cur" aria-hidden="true">{symbol}</span>
+      <input
+        aria-label={label}
+        inputMode="decimal"
+        autoComplete="off"
+        autoFocus={autoFocus}
+        value={shown}
+        onFocus={() => setTyping(shown)}
+        onBlur={() => setTyping(null)}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onEnter?.(); } }}
+        onChange={(e) => {
+          const raw = e.target.value.replace(/[^\d.,]/g, '');
+          setTyping(raw);
+          const n = parseFloat(raw.replace(/,/g, ''));
+          onChange(Number.isFinite(n) ? toMinor(n, currency) : 0);
+        }}
+      />
+    </div>
+  );
+}
+
+/** M28 version 6's answer line under a question ("Starting  Mon 4 Jan 2027"): a small label, the answer, a note. */
+export function Answer({ label, value, note }) {
+  return (
+    <p className="ab-answer">
+      <span className="ab-answer-l">{label}</span>
+      <span className="ab-answer-v">{value}</span>
+      {note && <span className="ab-answer-n">{note}</span>}
+    </p>
+  );
+}
+
+/**
+ * A box to type a place or a currency, with what matches under it as rows to choose (M28 version 6's .tzres). Enter
+ * takes the first. `find(q)` → [{ key, label, line }]; `onPick(item)`.
+ */
+export function FindBox({ label, placeholder, value, find, onPick, empty }) {
+  const [q, setQ] = useState(value || '');
+  const [open, setOpen] = useState(false);
+  useEffect(() => { if (!open) setQ(value || ''); }, [value, open]);
+  const hits = open && q.trim() && q.trim() !== value ? find(q) : [];
+  const pick = (h) => { onPick(h); setQ(h.label); setOpen(false); };
+  return (
+    <div className="ab-find">
+      <TextField
+        label={label}
+        className="ab-find-field"
+        placeholder={placeholder}
+        autoComplete="off"
+        value={q}
+        onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+        onKeyDown={(e) => { if (e.key === 'Enter' && hits[0]) { e.preventDefault(); pick(hits[0]); } }}
+      />
+      {open && q.trim() && q.trim() !== value && (
+        hits.length ? (
+          <div className="ab-find-list" role="listbox" aria-label={label}>
+            {hits.map((h) => (
+              <button key={h.key} type="button" role="option" aria-selected="false" className="ab-find-row" onClick={() => pick(h)}>
+                <span>{h.label}</span>{h.line && <small>{h.line}</small>}
+              </button>
+            ))}
+          </div>
+        ) : <p className="ab-hint">{empty}</p>
+      )}
+    </div>
+  );
+}
+
 export { newId };

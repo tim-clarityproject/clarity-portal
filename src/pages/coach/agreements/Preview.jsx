@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { Loading } from '../../../components/design';
+import { Loading, PageOpening } from '../../../components/design';
 import AgreementView from '../../../components/agreements/AgreementView';
 import { readerView } from '../../../lib/coach/agreementBuilder';
 import { mainPoints, resolveChoice } from '../../../lib/agreements/clauses';
@@ -17,8 +17,8 @@ export default function Preview() {
   const navigate = useNavigate();
   const d = useAgreementDraft(id);
   const version = d.draft || d.versions[0] || null;
-  const back = <Back to={d.draft ? 'Check before sending' : d.party.name || 'Back'} onClick={() => (d.draft ? navigate(`/coach/agreements/${id}/check`) : navigate(-1))} />;
-  if (!version) return <div className="cc-page"><div className="cc-col">{back}{d.loading ? <Loading label="Loading the agreement" /> : <p className="cc-quiet">That agreement isn’t here.</p>}</div></div>;
+  const back = <Back to={d.draft ? 'Does this read right?' : d.party.name || 'Back'} onClick={() => (d.draft ? navigate(`/coach/agreements/${id}/edit?q=check`) : navigate(-1))} />;
+  if (!version) return <div className="cc-page"><div className="cc-col">{back}{d.loading ? <Loading label="Loading the agreement" /> : <PageOpening title="The agreement" line="That agreement isn’t here." />}</div></div>;
   const view = d.draft
     ? readerView(version.terms || {}, { standards: d.standards, overrides: version.overrides || {} })
     : sentView(version);
@@ -26,7 +26,7 @@ export default function Preview() {
     <div className="cc-page">
       <div className="cc-col ab-page">
         {back}
-        <p className="ab-bsent">As {d.party.first || 'they'} will see it.</p>
+        <PageOpening label={`${d.party.name || ''}${d.party.name ? ', ' : ''}version ${version.version}`} title="The agreement" line={`As ${d.party.first || 'they'} will see it${d.draft ? ', with up front chosen to start with' : ''}.`} />
         {/* "Ask for a change" under each clause as the client sees it while it waits to be signed; here it does nothing (UI finding 7). */}
         <AgreementView points={view.points} clauses={view.clauses} idPrefix="pv" after={d.draft ? askShown : undefined} />
       </div>

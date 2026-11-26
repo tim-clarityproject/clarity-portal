@@ -86,7 +86,7 @@ const DOYLES = seeded(/^(Chris Doyle|Christopher Doyle|Doyle Capital|Doyle Capit
 const PHONE_CARDS = TIM('on a phone a lead keeps the lines it has on a laptop (organisation, value, the next step’s words, opened, quiet, how ready), the duplicates line and Search leads; M11’s phone shows a card’s name and next step only, and no search (26 Oct rule 10: phones show less)');
 const MORE_TOUCH = 'on a touch screen a card can’t be dragged, so each has More, with Edit stage (builder C’s report)';
 const LEADS_PAGE = {
-  changes: [['Reports', null, REPORTS], ['You emailed Sarah Kent at Arden Vale, who isn’t in the portal yet.', 'You emailed Sarah Kent, who isn’t in the portal yet.', WAIT_ORG], ...LEAD_DATES],
+  changes: [['Reports', null, REPORTS, { maybe: true }], ['You emailed Sarah Kent at Arden Vale, who isn’t in the portal yet.', 'You emailed Sarah Kent, who isn’t in the portal yet.', WAIT_ORG], ...LEAD_DATES],
   added: [DOYLES, ...LEAD_DATES_ADDED,
     [/^(Chris Doyle may be in here twice\.|Review|Head coach, rugby|Opened (3 times|once)|Still to find out: when|£18,000|Brightwater Capital|Quiet for 19 days|Ready to decide|Search leads|Book a Chemistry Call|Chemistry Call|Follow up on the proposal|Send workshop dates|Check in on the decision)$/, PHONE_CARDS, null, { on: 'p', say: 'a card’s other lines on a phone' }],
     [/^name: More for .+$/, MORE_TOUCH, null, { on: 'p', say: 'More for Amy Cole, on a phone' }]],
@@ -95,7 +95,7 @@ const LEADS_PAGE = {
 };
 
 /** An associate's row: M11 draws Maya the owner's screen; the built portal gives her her own page instead. */
-const CLOSED_MOVED = [/./, ASSOC, null, { quiet: true, say: 'the order' }];
+const CLOSED_MOVED = [/./, ASSOC, null, { quiet: true, maybe: true, say: 'the order' }];
 const closed = (name, m11, built) => ({ name: `${name}, as an associate`, m11, built, who: 'associate',
   changes: [[/./, null, ASSOC, { say: `M11’s ${name}` }]], added: [[/./, `${ASSOC}: what shows is her own page`, null, { say: 'her own page' }]], moved: [CLOSED_MOVED] });
 
@@ -109,7 +109,7 @@ const ORGPAGE = {
     seeded(r(`^(Renews |Ends |Expires on )?${DAY}\\.?$|^(Spoke|Emailed) ${DAY}$`), `the seed’s days; ${YEAR}`, { say: 'Sat 6 Mar 2027' }),
     [/^(HR|Invoices)$/, 'a contact’s role is one of the account map’s roles (crm-additions 9; builder A)', null, { say: 'HR, Invoices' }], seeded(/^(Chief executive|Group of 3|Seats|20|City|London|Edit)$/, 'the seed’s Sam, group and the organisation’s own details (run 1)', { say: 'Chief executive, Group of 3' }),
     [/^(Active|6-month coaching for Sam|7 of 12 sessions to go)$/, TIM('Agreements and proposals lists the engagements as well as the deals (run 1 listed the engagements there; builder D added the deals)'), null, { say: '6-month coaching for Sam, under Agreements and proposals' }],
-    ['Add agreement or proposal', 'the add row at the end of the list (rule 29)'], ['Asked about team workshops', TIM('on a phone Who’s who keeps each contact’s note; M11’s phone leaves it out'), null, { on: 'p' }], ['Owen’s coaching ends soon.', 'the seed holds no end day for Owen’s coaching on the device, so the line says “soon”'],
+    ['Add agreement or proposal', 'the add row at the end of the list (rule 29)'], ['Asked about team workshops', TIM('on a phone Who’s who keeps each contact’s note; M11’s phone leaves it out'), null, { on: 'p', maybe: true }], ['Owen’s coaching ends soon.', 'the seed holds no end day for Owen’s coaching on the device, so the line says “soon”'],
     [/^(No access code is set\.|Make an access code)$/, HASHED], ['Prices and invoices arrive with Finances.', FINANCES], ['Delete', 'a document can be deleted, with Undo (run 1)'],
     [/^name: (Edit .+|Delete .+|Offer the seats: .+|Plan a renewal: .+|Add to the pipeline: .+)$/, 'each Edit, Delete and Room to grow action is named for what it is about (5e rule 29am)', null, { say: 'Edit Dana Whitfield, Offer the seeds: …' }]],
   moved: [seeded(/./, 'the seed’s organisation has its rows in another order where M11’s next sessions and Owen aren’t there', { say: 'the order of the rows' })],
@@ -120,14 +120,40 @@ import { THEY, THEY_NAMES } from './compare-m11-they.mjs';
 export const EXTRA_GROUPS = [];
 
 /** Differences that hold on every screen of this run: met where M11 shows them, never required. */
+
+// Polish 1 (Stages A to C; the 25 Nov design reference): the meant differences it brought to run 4's screens. Listed once
+// here, met where M11 shows them, never required.
+const P1_OPEN = 'Polish 1: every page opens the same way (PageOpening: a small grey label, the title, one grey line, its one main button), and every card has a 13px label (CLAUDE.md, Polish 1 “Layout”)';
+const P1_ADD = '“+ Add” by a list’s label shows the word Add, its spoken name saying what it adds (CLAUDE.md, Polish 1 “Adding”; coach-portal.md rule 16’s Polish 1 note)';
+const P1_DISCOVERY = 'the Chemistry Call is now the Discovery call (Tim, 25 Nov; coach-portal.md rule 31’s Polish 1 note)';
+const P1_ROWS = 'Polish 1’s list rows: a name and one grey line, the value under the name on a phone (CLAUDE.md, Polish 1 “Layout”)';
+const P1_AGREE = 'agreements and money on a lead’s and an organisation’s page: New agreement, Send a quote, and the organisation’s Agreement and Billing cards (Phase 6b run 3; agreements.md; Polish 1 Stage C)';
+const P1_MENU = 'Polish 1’s frame menu (CLAUDE.md, Polish 1 “Frame and menu”): plain words in groups by gaps, the page you’re on in black, no counts or to-do lists’ headings, Settings in the foot, Sign out a button there, and Needs you in the Finances group (M28 v6)';
 export const EVERYWHERE = {
-  changes: [...THEY],
+  changes: [...THEY,
+    [/^(name: )?Add (someone|lead|field|document|automation|client)$/, null, P1_ADD, { quiet: true, say: 'Add someone, Add lead and the like' }],
+    [/(Chemistry Call|CHEMISTRY CALL)/, null, P1_DISCOVERY, { quiet: true, say: 'Chemistry Call' }],
+    ['2 h 10 min credit', '2 hours 10 minutes credit', 'units are full words (26 Oct design rule 8)', { quiet: true }],
+    [/^(All leads|Connection Call|Brightwater Capital|Leadership Accelerator\. Opened 3 times\.|Leadership Accelerator, £13,500 \+ VAT\.|20 seats)$/, null, P1_ROWS, { quiet: true, say: 'a row’s third fact on a phone' }],
+    [/^(Today|Finances|To-dos|Clients|Leads|Network|Boards|Calendar|Leading Ideas|Library|Settings|Sign out|FAVOURITE VIEWS|Executives|Speaking|Partners|Kestrel renewal|Northfield workshop|The book|\d+|name: Close the menu|name: To-dos, \d+ for today)$/, null, P1_MENU, { quiet: true, say: 'the old menu’s lines' }],
+  ],
   added: [
     ...THEY_NAMES,
+    [/^(Add|name: Add (someone|lead|field|document|automation|client|a team from a spreadsheet)|Add a team from a spreadsheet)$/, P1_ADD, null, { quiet: true, say: '+ Add' }],
+    [/(Discovery call|DISCOVERY CALL)/, P1_DISCOVERY, null, { quiet: true, say: 'Discovery call' }],
+    [/^(The people you keep in touch with, and who is due a catch-up\.|The people who might become clients, and the next step with each of them\.|The people you coach there, and what you know about the organisation\.|Where things stand with .+, and the next step\.|Small jobs done for you as leads move\. Nothing is ever sent\.|Anything you track in stages, one card at a time\.|The people you’ve coached, and when to check in with each of them\.|The people you coach, and when you see each of them next\.|How your practice runs: your details, booking, calendars and the rest\.|Your email settings\.|Only you can see this board\.|EVERYONE|YOUR AUTOMATIONS|ORGANISATION, .+|[A-Z ,]+, (NEW|CALL BOOKED|PROPOSAL SENT|DECIDING|WON)|\d+ stages, \d+ cards?|name: Sort: .+)$/, P1_OPEN, null, { quiet: true, say: 'the page’s opening, its line and its cards’ labels' }],
+    [/^(New agreement|Send .+ a quote|AGREEMENT|BILLING|Billing and invoices|name: Billing and invoices for .+|Their billing isn’t set up yet, so invoices go to their main contact with 30 days to settle\.|(£[\d,]+(\/month)?)?, Renews .+)$/, P1_AGREE, null, { quiet: true, say: 'New agreement, Send a quote, Agreement and Billing' }],
+    [/^(Agreements|Business)$/, 'Settings’ sections gained Agreements (Phase 6b run 3) and Business (Polish 1, Stage C, migration 068)', null, { quiet: true, say: 'Agreements and Business in Settings' }],
+    [/^(\d+ days ago|2 hours 10 minutes credit)$/, 'a table’s cells are read one by one; units are full words (26 Oct design rule 8)', null, { quiet: true, say: '12 days ago, in its own cell' }],
+    [/^(Needs you|Leading Ideas|Library|Admin|Business|Privacy|Search or do anything|name: Close the menu|name: Search, or do anything|name: Notifications, \d+ new)$/, `${P1_MENU}; on a phone the menu holds Search and Notifications at its top (Tim’s walk, item 21)`, null, { quiet: true, say: 'the frame menu’s lines' }],
     [/^name: Who can see this: /, 'the eye says “Who can see this:” before its words to a screen reader (rule 24)', null, { quiet: true, say: 'Who can see this:' }],
     [/^name: Close$/, 'a panel and, on a phone, a menu has the shared Close (the built design reference)', null, { quiet: true, say: 'Close' }],
   ],
-  moved: [],
+  moved: [
+    [/^(reports|all leads|new board|founder|head coach, rugby|northfield logistics|kestrel group|harbour city fc|head coaches|sport leaders)$/, `${P1_OPEN}; ${P1_ROWS}`, null, { quiet: true, say: 'the opening’s links and a row’s lines' }],
+    [/^(finances|calendar)$/, `${P1_MENU}: Today, Calendar and To-dos are the first group, Finances the third`, null, { quiet: true, say: 'Finances and Calendar in the menu' }],
+    [/^(proposal sent|next step|follow up on the proposal|thu 19 nov|log a call|email|add note|opened your proposal|today, 09:12)$/, `${P1_OPEN}: a lead’s stage is in the label over the name, then Where things stand and its next step; the timeline follows`, null, { quiet: true, say: 'a lead’s stage and next step' }],
+  ],
 };
 
 export const ROWS = [
@@ -141,17 +167,17 @@ export const ROWS = [
     changes: [...LEADS_PAGE.changes, ['name: More for Leo Grant', null, 'a won lead has become a client: its row opens the client and has no More (builder C’s report: More is Edit details, Edit stage, Log a call, Select, Mark as cold, none of which apply)', { on: 'd', say: 'More for Leo Grant, on a laptop (a phone’s list shows no More on its rows)' }]] },
   { name: 'Leads as a table', m11: 'leadst', built: 'leads-table', ...OWNER, on: 'd', ...LEADS_PAGE,
     changes: [...LEADS_PAGE.changes, [/^name: Stage, .+\. Change$/, null, EDIT, { say: 'Stage, Proposal sent. Change' }], ['name: Next step, none. Edit', 'Next step, empty. Edit', 'an empty cell is read out as “empty”, as in every built table']],
-    added: [...LEADS_PAGE.added, [/^(.* Add( Add)*|New Add \d+ days ago Add Add Add|Won Fri 13 Nov Logistics £13,500 Add)$/, 'a row’s empty cells read “Add” on the row’s own line', null, { say: 'a row with its empty cells' }], ['Add lead', 'the add row under the table, as under the board and the list (rule 29)'],
+    added: [...LEADS_PAGE.added, [/^(.* Add( Add)*|New Add \d+ days ago Add Add Add|Won Fri 13 Nov Logistics £13,500 Add)$/, 'a row’s empty cells read “Add” on the row’s own line', null, { maybe: true, say: 'a row with its empty cells' }], ['Add lead', 'the add row under the table, as under the board and the list (rule 29)'],
       [/^name: Stage, .+\. Edit$/, EDIT, null, { say: 'Stage, Proposal sent. Edit' }], [/^name: (Next step|Sector|Value|Renewal date), .+\. Edit$/, 'each cell is named with its value', null, { say: 'a cell’s spoken name' }]],
     moved: [...LEADS_PAGE.moved, [/./, TIM('the table opens soonest next step first (Tom’s overdue one at the top); M11 lists them in the order they were added'), null, { say: 'the table’s order' }]] },
   { name: 'A lead', m11: 'lead', built: 'lead-amy', ...OWNER,
     changes: [['iMessage', null, IMSG], seed('amy.cole@northfield.co', 'amy.cole@example.invalid', 'invented addresses in the tests are example.invalid'), [/^(Value|£13,500)$/, null, ONEVALUE, { say: 'the second Value' }]],
     added: [[/^name: (Edit where Amy is|Email, .+\. Edit|Phone, .+\. Edit|Tags, .+\. Edit)$/, EDIT, null, { say: 'Edit where Amy is, Email … Edit' }]],  // On a phone the timeline is a line and one grey line, as M11 has it (tidy follow-up 3, run 6's 33): the notes and their order match now.
-    moved: [[/^(mark as won|booking link)$/, 'Mark as won and Booking link stay in the row on a phone (builder C’s decision 8)', null, { on: 'p', say: 'Mark as won, Booking link' }], [/^(today, 07:55|amy replied: our ceo is in on thursday|email)$/, NEWEST, null, { say: 'Amy’s reply above the proposal opened' }], ['northfield logistics', 'the organisation is its own link line under the title, as on a client’s page (builder C’s decision 8)'], [/^(value|£13,500)$/, ONEVALUE, null, { say: 'Value' }]] },
+    moved: [[/^(mark as won|booking link)$/, 'Mark as won and Booking link stay in the row on a phone (builder C’s decision 8)', null, { on: 'p', say: 'Mark as won, Booking link' }], [/^(today, 07:55|amy replied: our ceo is in on thursday|email)$/, NEWEST, null, { say: 'Amy’s reply above the proposal opened' }], ['northfield logistics', 'the organisation is its own link line under the title, as on a client’s page (builder C’s decision 8)', null, { maybe: true }], [/^(value|£13,500)$/, ONEVALUE, null, { say: 'Value' }]] },
   { name: 'A lead with emails', m11: 'lead2', built: 'lead-ruth', ...OWNER,
     changes: [['iMessage', null, IMSG], ['Send a proposal', null, PROPOSAL], ...LEAD_DATES, seed('ruth.adeyemi@harbourcityfc.co.uk', 'ruth@example.invalid', 'invented addresses'), [/^(Value|Add)$/, null, ONEVALUE, { say: 'the second Value' }]],
     added: [...LEAD_DATES_ADDED, [/^name: (Edit where Ruth is|Email, .+\. Edit|Phone, .+\. Edit|Tags, .+\. Edit)$/, EDIT, null, { say: 'Edit where Ruth is' }]],
-    moved: [['harbour city fc', 'the organisation is its own link line under the title (builder C’s decision 8)'], ['value', ONEVALUE], [/^(mark as won|booking link)$/, 'Mark as won and Booking link stay in the row on a phone (builder C’s decision 8)', null, { on: 'p', say: 'Mark as won, Booking link' }], seeded(r(`^${DAY.toLowerCase()}$`), 'the timeline’s days are the seed’s')] },
+    moved: [['harbour city fc', 'the organisation is its own link line under the title (builder C’s decision 8)', null, { maybe: true }], ['value', ONEVALUE], [/^(mark as won|booking link)$/, 'Mark as won and Booking link stay in the row on a phone (builder C’s decision 8)', null, { on: 'p', say: 'Mark as won, Booking link' }], seeded(r(`^${DAY.toLowerCase()}$`), 'the timeline’s days are the seed’s')] },
   { name: 'An email on a timeline', m11: 'email', part: 'sheet', built: 'lead-email', ...OWNER,
     changes: [seed('Thanks for the details, Tim. Before Wednesday, can we start in January? Our season review lands in December and I want the staff free for it.', 'Thanks for the details. Before Wednesday, can we start in January? Our season review lands in December and I want the staff free for it.', 'the seed’s email doesn’t name the coach (the test’s coach is Alex)'),
       ['Open in Gmail', null, 'Gmail’s connection isn’t set up (it needs Google’s review), so there is no link to it; the copy-in address logs the email (builder B’s and D’s “not built”)']] },
@@ -184,7 +210,7 @@ export const ROWS = [
     moved: [['edit this board', TIM('on a phone Edit this board sits with the view links under the title; M11’s phone puts it after the columns'), null, { on: 'p' }]] },
   { name: 'A board as a table', m11: 'boardt', built: 'board-table', ...OWNER, on: 'd',
     changes: [seed(/^(CIPD|Northfield leadership|Leaders in Sport|Henley|League Managers|Add$|Head coaches$|Sport leaders$)/, null, 'the seed’s dates, a row a line', { say: 'the rows' })],
-    added: [seeded(/^(CIPD|Northfield leadership|Leaders in Sport|Henley|League Managers)/, `the seed’s rows, each on one line; ${YEAR}`, { say: 'the rows' }), [/^name: (Stage|Date|Fee|Audience), .+\. Edit$/, `${EDIT}; each cell is named with its value`, null, { say: 'Stage, Pitched. Edit' }]] },
+    added: [seeded(/^(CIPD|Northfield leadership|Leaders in Sport|Henley|League Managers)/, `the seed’s rows, each on one line; ${YEAR}`, { maybe: true, say: 'the rows' }), seeded(r(`^${DAY}$`), `the seed’s dates, each in its own cell; ${YEAR}`, { say: 'a row’s date' }), [/^name: (Stage|Date|Fee|Audience), .+\. Edit$/, `${EDIT}; each cell is named with its value`, null, { say: 'Stage, Pitched. Edit' }]] },
   { name: 'Boards: a new board', m11: 'bnew', part: 'sheet', built: 'boards-new', ...OWNER,
     changes: [['You can change the stages and fields at any time.', 'You can edit the stages and fields at any time.', '“Edit”, never “Change” (5e rule 29am)']] },
   // ---- emails, past clients, organisations, clients
@@ -208,16 +234,16 @@ export const ROWS = [
     changes: [[/^(Renewals|Testimonials)$/, null, 'renewals and testimonials are Clients views of Finances, Phase 6b (crm-additions 10; M11 lists clren and cltest under Finances)', { say: 'Renewals, Testimonials' }], ['Message clients', null, 'there are no messages in the portal (coach rule 11)'],
       seed(/^(\d+|.+ to go|Today, \d\d:\d\d|Thu 19 Nov|Mon 23 Nov|Wed 25 Nov|Wed 18 Nov|Fri 20 Nov|Aldermoor performance unit|Session pack, no account yet|Nora Ellis|Pacific Arc|Hannah Wells|Quillmark|Caleb Hunt|Ridgeway Foods|Self-funded|Not booked)$/, null, 'run 1’s seed: its own clients, none with a session booked', { say: 'M11’s clients and their next sessions' }),
       [/^name: .+, .+$/, null, SPOKEN, { say: 'a card’s spoken name' }]],
-    added: [[/^(Everyone|More|Export|Search clients|name: More for .+)$/, TIM('on a phone run 1’s Clients keeps Everyone, Export, More on each card and Search; M11’s phone shows fewer (26 Oct rule 10)'), null, { on: 'p', say: 'Everyone, Export, More, Search on a phone' }], seeded(/^(\d+|Not booked|No engagement yet|.+ to go|Maya’s client)$/, 'run 1’s seed: its own clients, none with a session booked', { say: 'Not booked' }), ['Add team', 'M11 draws no link for adding a team; run 1’s link, worded “Add team” by rule 29 (no “a” or “an” in an Add)']],
+    added: [[/^(Everyone|More|Export|Search clients|name: More for .+)$/, TIM('on a phone run 1’s Clients keeps Everyone, Export, More on each card and Search; M11’s phone shows fewer (26 Oct rule 10)'), null, { on: 'p', say: 'Everyone, Export, More, Search on a phone' }], seeded(/^(\d+|Not booked|No engagement yet|.+ to go|Maya’s client)$/, 'run 1’s seed: its own clients, none with a session booked', { say: 'Not booked' }), ['Add team', 'M11 draws no link for adding a team; run 1’s link, worded “Add team” by rule 29 (no “a” or “an” in an Add)', null, { maybe: true }]],
     moved: [seeded(/./, 'run 1’s seed has its own clients, in its own order', { say: 'the order of the cards' })] },
   { name: 'Today, with Keep in touch', m11: 'todaykit', sections: ['Keep in touch'], built: 'today-keep-network', ...OWNER,
     changes: [...PEOPLE],
-    added: [...PEOPLE_ADDED, [/^name: .+: (.+ since you spoke\. Open|\d+-month check-in, due .+\. Open the note)$/, 'each row is read out as one sentence (crm-additions 7: “Dan Reid: 3 months since you spoke.”)', null, { say: 'Dan Reid: 3 months since you spoke. Open' }],
+    added: [...PEOPLE_ADDED, [/^name: .+: (.+ since you spoke|\d+-month check-in, due .+)\.( Open| Open the note)?$/, 'each row is read out as one sentence (crm-additions 7: “Dan Reid: 3 months since you spoke.”)', null, { say: 'Dan Reid: 3 months since you spoke.' }],
       seeded(/^(Leah Moran|12-month check-in|Grace Liu|6-month check-in|Ben Ortiz|3-month check-in)$/, 'the seed has three check-ins due within 30 days; up to three show (builder B’s report)')],
     moved: [[/./, `${MOST}; ${SOONEST}`, null, { say: 'the order of the rows' }]] },
   { name: 'The menu, with Network’s count and the boards', m11: 'menu', part: 'menu', built: 'net-menu', ...OWNER,
     changes: [seed(/^(27|name: Network, 27 due a catch-up)$/, null, 'nine of the seed’s people are due a catch-up', { say: 'Network, 27' }), seed(/^(Renewals due|Quiet leads|Phone to-dos)$/, null, 'the favourite views are the seed’s own', { say: 'M11’s favourite views' })],
-    added: [seeded(/^(9|name: Network, 9 due a catch-up)$/, 'nine of the seed’s people are due a catch-up', { say: 'Network, 9' }), seeded(/^(Admin|Business)$/, 'the seed’s to-do lists')] },
+    added: [seeded(/^(9|name: Network, 9 due a catch-up)$/, 'nine of the seed’s people are due a catch-up', { maybe: true, say: 'Network, 9' }), seeded(/^(Admin|Business)$/, 'the seed’s to-do lists', { maybe: true })] },
   // ---- Network
   net({ name: 'Network: Actions', m11: 'kit', built: 'net-actions', }),
   net({ name: 'Network: Table', m11: 'ntable', built: 'net-table' }),

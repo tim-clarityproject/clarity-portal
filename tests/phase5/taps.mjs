@@ -59,7 +59,11 @@ export function overlappingTaps() {
         if (ps.content === 'none' || ps.position !== 'absolute' || ps.pointerEvents === 'none' || ps.display === 'none') continue;
         const [t, r, b, l] = [ps.top, ps.right, ps.bottom, ps.left].map(parseFloat);
         if ([t, r, b, l].some((v) => !Number.isFinite(v))) continue;
-        out.push({ l: own.left + l, t: own.top + t, r: own.right - r, b: own.bottom - b });
+        // A part centred with a translate (the shared links' 44 by 44 area: left 50%, translate(-50%, -50%)) sits
+        // where the translate moves it, not where left and top alone would put it (Polish 1, Stage C).
+        const m = /^matrix\(([^)]+)\)$/.exec(ps.transform || '');
+        const [dx, dy] = m ? m[1].split(',').map(parseFloat).slice(4, 6) : [0, 0];
+        out.push({ l: own.left + l + dx, t: own.top + t + dy, r: own.right - r + dx, b: own.bottom - b + dy });
       }
     }
     return out;

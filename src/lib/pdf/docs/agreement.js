@@ -1,5 +1,7 @@
-import { formatDocDate, parseDbTimestamp } from '../../dateFormatter.js';
-import { pdfDetails, signingWords, PROVIDER, isNewClause } from '../../billing/agreementText.js';
+import { parseDbTimestamp } from '../../dateFormatter.js';
+import { businessOf } from '../theme.js';
+import { longDay, shortRange } from './money.js';
+import { signingWords, isNewClause } from '../../billing/agreementText.js';
 import { mainPoints as newMainPoints, resolveChoice } from '../../agreements/clauses.js';
 import { canChoose } from '../../agreements/upfront.js';
 import { agreementSections, glanceRows, termsFor } from '../../coaching/agreementRules.js';
@@ -59,15 +61,17 @@ const drawn = (sig, name) => ({
 // signing record says whether "Start my coaching straight away" was ticked (with its time) and how it is settled. A
 // sponsor's agreement (signed by link) carries the sponsor's signature, role and purchase order.
 const reasonBlocks = (c) => (c.paragraphs || []).flatMap((p) => (typeof p === 'string'
-  ? [{ type: 'text', text: p }]
-  : [{ type: 'text', text: p?.text || '' }, p?.why ? { type: 'text', tone: 'detail', text: p.why } : null])).filter(Boolean);
+  ? [{ type: 'text', tone: 'compact', text: p }]
+  : [{ type: 'text', tone: 'compact', text: p?.text || '' }, p?.why ? { type: 'text', tone: 'detail', text: p.why, gapMm: 1 } : null])).filter(Boolean)
+  .map((b, i) => (i === 0 ? b : { ...b, gapMm: b.gapMm ?? 1.5 }));
 
 /**
  * @param {Object} [input.raw] the version as stored or as my_agreements() gives it (065's start_now, start_now_at,
  *   settle_choice, sponsor_*), for the new parts of the signing record
  * @param {{ kind: 'drawn'|'typed', image?: string, typed_name?: string }|null} [input.sponsorSignature]
  */
-export function agreementPdf({ version: v, signature = null, coachSignature = null, clientName = '', timeZone = ZONE, raw = null, sponsorSignature = null }) {
+export function agreementPdf({ version: v, signature = null, coachSignature = null, clientName = '', timeZone = ZONE, raw = null, sponsorSignature = null, business = null }) {
+  const biz = businessOf(business);
   const words = signingWords(oneLine(v?.terms?.coachFirst) || 'your coach');
   const t = termsFor(v);
   const client = oneLine(v.signedName) || oneLine(t.clientName) || oneLine(clientName);
@@ -92,7 +96,7 @@ export function agreementPdf({ version: v, signature = null, coachSignature = nu
     main = glanceRows(v);
     sections = agreementSections(v).map((c) => ({
       title: c.title ? `${c.number}. ${c.title}` : 'The coaching agreement',
-      blocks: c.paragraphs.map((p) => ({ type: 'text', text: p })),
+      blocks: c.paragraphs.map((p, i) => ({ type: 'text', tone: 'compact', text: p, ...(i ? { gapMm: 1.5 } : {}) })),
     }));
   }
   // The signing record's new rows (065): the start-now tick for a self-funded client, and the way of settling chosen.
@@ -114,57 +118,78 @@ export function agreementPdf({ version: v, signature = null, coachSignature = nu
     ].filter(([, value]) => value),
   } : null;
 
+  // Signed (the 25 Nov PDFs): the client's signature on the left and the coach's on the right, each on its line, with
+  // its name, who it's for and when under it; the fingerprint once, under both. A sponsor signs in the client's place.
+  const clientParty = sponsorParty || {
+    role: 'Client',
+    ...drawn(signature, client),
+    imageAlt: `Signature of ${client}`,
+    signature: v.signedAt ? undefined : false,
+    rows: [
+      ['Name', client],
+      ['Email', oneLine(v.signedEmail)],
+      ['Date', whenWords(v.signedAt, zone)],
+      startRow,
+      settleRow,
+    ].filter((r) => r && r[1]),
+  };
+  const coachParty = {
+    role: `For ${biz.name}`,
+    ...(coachSignature ? { ...drawn(coachSignature, coach), imageAlt: `Signature of ${coach}` } : { signature: false }),
+    rows: [
+      ['Name', coach],
+      ['For', biz.name],
+      ['Email', oneLine(t.coachEmail)],
+      ['Date', whenWords(v.coachSignedAt, zone)],
+    ].filter(([, value]) => value),
+  };
   const record = (v.signedAt || sponsorParty) ? [{
-    title: words.pdfRecord,
-    blocks: [{
-      type: 'signature',
-      parties: [
-        {
-          role: `For ${PROVIDER.name}`,
-          ...(coachSignature ? { ...drawn(coachSignature, coach), imageAlt: `Signature of ${coach}` } : { signature: false }),
-          rows: [
-            ['Name', coach],
-            ['Verified email', oneLine(t.coachEmail)],
-            ['Date and time', whenWords(v.coachSignedAt, zone)],
-            ['Fingerprint', fingerprint],
-          ].filter(([, value]) => value),
-        },
-        sponsorParty || {
-          role: 'Client',
-          ...drawn(signature, client),
-          imageAlt: `Signature of ${client}`,
-          rows: [
-            ['Name', client],
-            ['Verified email', oneLine(v.signedEmail)],
-            ['Date and time', whenWords(v.signedAt, zone)],
-            startRow,
-            settleRow,
-            ['Fingerprint', fingerprint],
-          ].filter((r) => r && r[1]),
-        },
-      ],
-    }],
+    title: 'Signed',
+    look: 'label',
+    gapMm: 10,
+    blocks: [
+      { type: 'signature', parties: [clientParty, coachParty] },
+      fingerprint ? { type: 'text', tone: 'note', gapMm: 5, text: `Fingerprint of the signed version: ${fingerprint}` } : null,
+    ].filter(Boolean),
   }] : [];
 
+  const facts = [
+    ['Reference', oneLine(v.reference)],
+    ['Version', v.version != null ? String(v.version) : ''],
+    ['Date', longDay(date)],
+    ['Term', t.startsOn && t.endsOn ? shortRange(t.startsOn, t.endsOn) : (t.ongoing ? 'Ongoing' : '')],
+  ];
+  const partyName = sponsorParty ? oneLine(raw?.sponsor_org) || client : client;
   return {
+    kind: 'Agreement',
     docName: words.pdfTitle,
+    running: [words.pdfTitle, [oneLine(v.reference), v.version != null ? `version ${v.version}` : ''].filter(Boolean).join(', ')].filter(Boolean).join(' · '),
     title: words.pdfTitle,
     who: client || null,
     confidential: true,
-    details: [pdfDetails({ clientName: client, dayWords: formatDocDate(date), reference: v.reference, version: v.version })],
+    business,
+    details: [`Between ${biz.name} and ${partyName || 'the client'}`],
+    facts,
     date,
     subject: `${words.pdfTitle}, version ${v.version}`,
     glance: [],
     sections: [
+      { title: 'The coach and the client', look: 'none', blocks: [{ type: 'parties', columns: [
+        { label: 'The coach', name: biz.name, lines: [coach ? `represented by ${coach}` : ''] },
+        { label: sponsorParty ? 'The sponsor' : 'The client', name: partyName, lines: [sponsorParty ? '' : oneLine(t.clientEmail || v.signedEmail)] },
+      ] }] },
       {
-        title: 'Main points',
+        title: 'Key terms',
+        look: 'label',
+        gapMm: 7,
         blocks: main.length ? [{
           type: 'table',
-          columns: [{ label: 'Point', width: 2 }, { label: 'What it says', width: 4 }],
-          rows: main.map((r) => [r.label, r.value]),
+          ruled: true,
+          columns: [{ label: '', mm: 48, grey: true }, { label: '', width: 1 }],
+          rows: main.filter((r) => !/^(Coaching provider|Your coach)$/.test(r.label)).map((r) => [r.label, r.value]),
         }] : [],
       },
-      ...sections,
+      ...sections.map((c, i) => ({ ...c, look: 'clause', above: i === 0 ? 'Terms' : null, gapMm: i === 0 ? 9 : 4.5 })),
       ...record,
     ],
   };

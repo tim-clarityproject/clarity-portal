@@ -309,6 +309,13 @@ export const EMAIL_EXAMPLES = [
     doc: () => readyToSignEmail({ firstName: 'Sam', coachFirst: 'Tim', note: 'Sam, it was great to talk on Thursday. Here is everything we agreed, so we can start in January.', link: `${PORTAL}/coaching/agreement/invented-version` }),
   },
   {
+    key: 'agreement-ready-m28',
+    name: 'Ready to sign, as M28 v6 draws it',
+    from: 'From Tim (The Clarity Portal, Reply-To Tim), to Sam',
+    sends: 'Sent only when the coach presses Send, signed by the coach first: the note, then what the agreement is and when it starts (M28 v6 "email").',
+    doc: () => readyToSignEmail({ firstName: 'Sam', coachFirst: 'Tim', note: 'Thank you for this morning.', what: 'six months of coaching', startsWords: 'Monday 4 January', link: `${PORTAL}/coaching/agreement/invented-version` }),
+  },
+  {
     key: 'agreement-quote',
     name: 'Your coaching quote',
     from: 'From Tim (The Clarity Portal, Reply-To Tim), to Sam',

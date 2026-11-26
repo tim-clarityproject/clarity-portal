@@ -138,12 +138,13 @@ export function mainPoints(t, { choice = t?.choice ?? 'upfront', seesMoney = sel
   if (t.healthCheck) inc.push('a Health Check with a debrief');
   if (t.visitDays?.n) inc.push(`${t.visitDays.n} visit days`);
   for (const e of (t.extrasOffered || []).filter((x) => (t.extrasChosen || []).includes(x.key))) inc.push(lowerFirst(e.title));
-  inc.push(`the ${t.level || 'Executive'} level of the portal`);
+  if (t.portal !== false) inc.push(`the ${t.level || 'Executive'} level of the portal`);
   return [...head,
     { label: 'Your coaching', value: t.coaching || '' },
     { label: 'Coaching sessions', value: sessionsText(t) },
     { label: 'Dates', value: t.startsOn && t.endsOn ? `${dayKeyWords(t.startsOn, { year: true })} to ${dayKeyWords(t.endsOn, { year: true })}` : '' },
     seesMoney ? { label: 'Your investment', value: upperFirst(investmentWords(t, choice)) } : { label: 'Funded by', value: t.fundedBy || '' },
+    ...(t.adhoc === true ? [{ label: 'Between sessions', value: 'Ad hoc support by email and WhatsApp' }] : []),
     { label: 'Also included', value: upperFirst(andList(inc)) },
     ...(paused?.from && paused?.to ? [{ label: 'Paused', value: `${dayKeyWords(paused.from, { year: true })} to ${dayKeyWords(paused.to, { year: true })}` }] : []),
     ...(endingOn ? [{ label: 'Ending', value: dayKeyWords(endingOn, { year: true }) }] : []),

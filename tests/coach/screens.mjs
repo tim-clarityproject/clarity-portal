@@ -124,8 +124,18 @@ export const EVE = new Date(2026, 10, 17, 18, 45);
 export const FRI = new Date(2026, 10, 13, 13, 30);
 
 const press = async (page, name) => { await page.getByRole('button', { name, exact: true }).first().click(); await settle(page, 450); };
-const take = async (page) => { await page.locator('.ds-offer-take').click(); await settle(page, 500); };
+// Polish 1 (Stage A, coach Today): the offer for now is the opening's main button, or a quiet link beside it when a
+// session leads; an offer row (.ds-offer-take) where a page still has one.
+const take = async (page) => {
+  for (const sel of ['.ds-offer-take', '.cc-today-offerlink', '.ds-open-act .ds-btn--primary']) {
+    const el = page.locator(sel).first();
+    if (await el.count()) { await el.click(); break; }
+  }
+  await settle(page, 500);
+};
 const openFold = async (page, name) => { const b = page.locator('.cc-fold-btn', { hasText: name }).first(); if ((await b.getAttribute('aria-expanded')) !== 'true') { await b.click(); await settle(page, 300); } };
+// Polish 1 (Stage B, Tim's walk item 26): Working hours, open times and the rest sit behind "Calendar settings" under the calendar.
+const calSettings = async (page) => { const b = page.locator('.cc-cal-settings-link[aria-expanded="false"]'); if (await b.count()) { await b.first().scrollIntoViewIfNeeded(); await b.first().click(); await settle(page, 300); } };
 const pick = async (page, label, option) => {
   await page.getByRole('combobox', { name: new RegExp(`^${label}`) }).first().click(); await settle(page, 300);
   await page.getByRole('option', { name: option, exact: true }).click(); await settle(page, 400);
@@ -371,7 +381,7 @@ export const GROUPS = [
       ['today-review-5', '/coach', async (page) => { await openReview(page); await next(page, 4); await page.locator('.ds-dialog textarea').fill('Leave Thursday afternoon clear for writing.'); await settle(page, 200); }, { expects: ['panel'] }],
     ],
   },
-  { name: 'cap', at: TUE, seed: { over: true }, screens: [['today-cap', '/coach', async (page) => { await page.locator('.cc-today-figures').scrollIntoViewIfNeeded(); await settle(page, 200); }, { full: true, expects: ['capacity', 'figures'] }]] },
+  { name: 'cap', at: TUE, seed: { over: true }, screens: [['today-cap', '/coach', async (page) => { await page.locator('.cc-today-week, .cc-today-figures').first().scrollIntoViewIfNeeded(); await settle(page, 200); }, { full: true, expects: ['capacity', 'figures'] }]] },
   {
     name: 'fin', at: TUE, roles: ['owner'],
     init: () => { try { sessionStorage.setItem('clarity-coach-test-finances', '1'); } catch { /* blocked */ } },
@@ -438,7 +448,7 @@ export const GROUPS = [
   {
     name: 'sessions', at: TUE, seed: { sessions: true }, shares: 'sessions',
     screens: [
-      ['brief', '/coach', async (page) => { await page.locator('.cc-today-call--open').first().click(); await settle(page, 900); }, { expects: ['panel'] }],
+      ['brief', '/coach', async (page) => { await page.locator('.cc-today-sessions .ds-li--go, .cc-today-call--open').first().click(); await settle(page, 900); }, { expects: ['panel'] }],
       ['brief-foot', '/coach', async (page) => { await page.locator('.cc-today-call--open').first().click(); await settle(page, 900); await page.locator('.ds-dialog-body').evaluate((b) => { b.scrollTop = b.scrollHeight; }); await settle(page, 300); }, { expects: ['panel'] }],
       ['session', `/coach/sessions/${SES.write}`, null, { full: true, expects: ['level'] }],
       ['session-unwritten', `/coach/sessions/${SES.blank}`, null, { full: true, expects: ['level'] }],
@@ -496,7 +506,7 @@ export const GROUPS = [
       ['cal-month', '/coach/calendar?view=month', null, { full: true, expects: ['month'] }],
       ['cal-schedule', '/coach/calendar?view=schedule', null, { expects: ['squares', 'client-time', 'phone-cal'] }],
       ['cal-todos', '/coach/calendar?view=week', async (page, size) => { if (size === 400) return 'skip'; await press(page, 'Show to-dos'); await page.evaluate(() => window.scrollTo(0, 0)); return null; }, { full: true, expects: ['todo-tile', 'todos-panel'] }],
-      ['cal-hours', '/coach/calendar?view=week', async (page, size) => { if (size === 400) await page.getByRole('button', { name: 'Working hours' }).scrollIntoViewIfNeeded(); await press(page, 'Working hours'); await page.evaluate(() => window.scrollTo(0, 0)); }, { full: true, expects: ['hours-edit'] }],
+      ['cal-hours', '/coach/calendar?view=week', async (page, size) => { await calSettings(page); if (size === 400) await page.getByRole('button', { name: 'Working hours' }).scrollIntoViewIfNeeded(); await press(page, 'Working hours'); await page.evaluate(() => window.scrollTo(0, 0)); }, { full: true, expects: ['hours-edit'] }],
       ['cal-quick', '/coach/calendar?view=week', async (page) => { await press(page, 'Add to calendar'); await page.locator('.ds-dialog').getByLabel('Title').fill('Coffee with Dan Thu 10:00'); await settle(page, 300); }, { expects: ['panel'] }],
       ['cal-quick-beside', '/coach/calendar?view=week', async (page, size) => { if (size === 400) return 'skip'; const b = await page.locator('[data-cal-day="2026-11-19"]').boundingBox(); await page.mouse.click(b.x + b.width / 2, b.y + 44 * 2.3); await settle(page, 600); return null; }],
       // cal-quick types a title and closes without saving, so it comes back as the panel's draft (tidy follow-up 3: Add to
@@ -520,7 +530,7 @@ export const GROUPS = [
       ['cal-set-hours', '/coach/settings/hours', null, { full: true }],
       ['cal-set-zones', '/coach/settings/zones', null, { full: true }],
       // Nearly last: the switch is kept in Settings, so every screen after it shows seven days.
-      ['cal-weekends', '/coach/calendar?view=week', async (page, size) => { if (size === 400) return 'skip'; await page.getByRole('switch', { name: 'Weekends' }).click(); await settle(page, 700); return null; }, { full: true, expects: ['tiles', 'weekends'] }],
+      ['cal-weekends', '/coach/calendar?view=week', async (page, size) => { if (size === 400) return 'skip'; await page.getByRole('button', { name: 'Show weekends' }).click(); await settle(page, 700); return null; }, { full: true, expects: ['tiles', 'weekends'] }],
       // The two time columns with another place chosen (kept in Settings, so these come last), on an ordinary week and on the two
       // days the clocks went back in autumn 2026: Sun 25 Oct in the UK and Sun 1 Nov in the US, each with the whole day showing.
       ['cal-zone-other', '/coach/calendar?view=week', async (page, size) => { if (size === 400) { await page.goto(`${APP}/coach/calendar?view=day`); await page.waitForSelector('.cc-cal', { timeout: 20000 }); await settle(page, 900); } await chooseZone(page, 'New York', settle); await page.evaluate(() => window.scrollTo(0, 0)); }, { full: true, expects: ['zones', 'client-time', 'tiles'] }],
@@ -716,7 +726,9 @@ export const GROUPS = [
 
 // The booking pages outside the portal (run 3, step 4), signed out: 051's functions are answered by book-standin.mjs from M11's
 // seeded week, on M11's own Tuesday. Nothing reaches the test project, and no email is asked for that would send.
-const bookAt = async (page) => { await pick(page, 'Your time zone', 'New York'); await settle(page, 300); };
+// Polish 1 (Stage A): the time zone is one line with "Change the time zone", which opens the drop-down.
+const zoneOpen = async (page) => { const l = page.getByRole('button', { name: 'Change the time zone' }); if (await l.count()) { await l.first().click(); await settle(page, 300); } };
+const bookAt = async (page) => { await zoneOpen(page); await pick(page, 'Your time zone', 'New York'); await settle(page, 300); };
 GROUPS.push({
   name: 'public', roles: ['signed-out'], root: '.ui-root', at: TUE,
   screens: [
@@ -726,7 +738,7 @@ GROUPS.push({
     ['bpage2', `/book/${CAL.chemKey}`, async (page) => { await bookAt(page); await press(page, 'Show my calendar'); await settle(page, 500); }, { full: true }],
     ['bpage-booked', `/book/${CAL.chemKey}`, async (page) => { await bookAt(page); await page.locator('.cc-book-time').first().click(); await settle(page, 300); await page.getByLabel('Your name').fill('Grace Liu'); await page.getByLabel('Your email').fill('grace@example.invalid'); await page.getByLabel('What would you like from the call?').fill('To think through a new role.'); await page.locator('.cc-book-form .ds-btn--primary').click(); await settle(page, 900); }, { full: true }],
     // Somewhere the coach's open times are early: only 07:00 to 20:00 the visitor's time shows until they ask for the rest.
-    ['bpage-early', `/book/${CAL.chemKey}`, async (page) => { await pick(page, 'Your time zone', 'Los Angeles'); await settle(page, 400); }, { expects: ['early'] }],
+    ['bpage-early', `/book/${CAL.chemKey}`, async (page) => { await zoneOpen(page); await pick(page, 'Your time zone', 'Los Angeles'); await settle(page, 400); }, { expects: ['early'] }],
     ['bpage-connection', `/book/${CAL.connKey}`, null],
     ['bpage-link', `/book/link/${CAL.linkDanaKey}`, null],
     ['bpage-nobody', '/book/00000000-0000-4000-8000-00000000dead', null],

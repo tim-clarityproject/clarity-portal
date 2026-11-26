@@ -24,28 +24,28 @@
 .ui-root .ny-mail p { margin: 0 0 var(--space-px10); overflow-wrap: anywhere; }
 .ui-root .ny-mail p:last-child { margin: 0; }
 .ui-root .ny-mail .ds-textbox-field { margin: 0 0 var(--space-px10); }
-.ui-root .ny-mail-subject { font-size: var(--fs-small); color: var(--placeholder); }
+.ui-root .ny-mail-subject { font-size: var(--fs-small); color: var(--text-2); }
 .ui-root .ny-mail-button { display: inline-flex; align-items: center; min-height: var(--btn-h); padding: 0 var(--space-3); border-radius: var(--radius-btn); background: var(--raised); color: var(--text); font-size: var(--fs-secondary); }
 
 /* ---- talking points (M28 .panel.talk): for the coach to say, never sent */
 .ui-root .ny-talk { padding: var(--space-px18) var(--space-px20); border-radius: var(--radius-card); background: var(--raised); }
 .ui-root .ny-talk > * + * { margin-top: var(--space-px10); }
-.ui-root .ny-talk-label { margin: 0; font-size: var(--fs-small); color: var(--placeholder); }
+.ui-root .ny-talk-label { margin: 0; font-size: var(--fs-small); color: var(--text-2); }
 .ui-root .ny-talk-line { margin: 0; font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text); }
 .ui-root .ny-talk-tip { margin: 0; padding-top: var(--space-2); border-top: var(--line-w) solid var(--line-soft); font-size: var(--fs-note); color: var(--text-2); }
 
 /* ---- what the client typed (M28 .quote) */
 .ui-root .ny-quote { margin: 0; padding: var(--space-px18) var(--space-px20); border-radius: var(--radius-card); background: var(--raised); font-size: var(--fs-question-calm); line-height: var(--lh-text); color: var(--text); overflow-wrap: anywhere; }
 
-/* ---- a block's balance (M28 .meter) */
-.ui-root .ny-meter { height: var(--space-2); border-radius: var(--radius-pill); background: var(--raised); overflow: hidden; }
-.ui-root .ny-meter > i { display: block; width: var(--ny-fill, 0%); height: 100%; border-radius: var(--radius-pill); background: var(--good); transition: width var(--dur-slow) var(--ease); }
+/* ---- a block's balance (M28 v6 .meter: 4px, the line colour, filled in the text colour; Polish 1, Stage C) */
+.ui-root .ny-meter { height: var(--space-1); margin: var(--space-px12) 0; border-radius: var(--space-px2); background: var(--line); overflow: hidden; }
+.ui-root .ny-meter > i { display: block; width: var(--ny-fill, 0%); height: 100%; border-radius: var(--space-px2); background: var(--text); transition: width var(--dur-slow) var(--ease); }
 
 /* ---- a still list of label and line (M28 .lr.st2) and its quiet right-hand word (.ld) */
 .ui-root .ny-list { list-style: none; margin: 0; padding: 0; border-top: var(--line-w) solid var(--line); }
 .ui-root .ny-li { display: grid; grid-template-columns: minmax(min-content, 1fr) minmax(0, max-content); gap: var(--space-1) var(--space-3); align-items: center; padding: var(--space-px14) 0; border-bottom: var(--line-w) solid var(--line); }
 .ui-root .ny-li-t { display: block; font-size: var(--fs-text); line-height: var(--lh-row); color: var(--text); overflow-wrap: break-word; }
-.ui-root .ny-li-m { display: block; font-size: var(--fs-small); line-height: var(--lh-text); color: var(--placeholder); overflow-wrap: anywhere; }
+.ui-root .ny-li-m { display: block; font-size: var(--fs-small); line-height: var(--lh-text); color: var(--text-2); overflow-wrap: anywhere; }
 .ui-root .ny-li-d { font-size: var(--fs-note); color: var(--text-2); text-align: right; overflow-wrap: anywhere; }
 .ui-root .ny-li-t--file { overflow-wrap: anywhere; }
 .ui-root .ny-li-d--done { color: var(--mint-text); }
@@ -104,3 +104,13 @@
   .ui-root .ny-foot > span:empty { display: none; }
   .ui-root .cc-acts:has(> .ds-btn ~ .ds-btn) { row-gap: var(--space-px12); }
 }
+
+/* ---- the Needs you page's detail card (Polish 1, Stage C, C2; M28 v6 "needs"): 24px under what's drafted, its one
+   button across the card's column with the quiet way out centred under it, words only (rule 11), since the column
+   (340px) can't hold a long button and its link side by side. */
+.ui-root .ny-detail-body > :first-child { margin-top: 0; }
+.ui-root .ny-detail-acts { margin-top: var(--space-3); }
+.ui-root .ny-detail-acts > .cc-panel-foot:not(#_) { flex-direction: column-reverse; flex-wrap: nowrap; align-items: stretch; gap: var(--space-1); }
+.ui-root .ny-detail-acts > .cc-panel-foot > .ds-btn { width: 100%; }
+.ui-root .ny-detail-acts > .cc-panel-foot > :is(.ds-link, span) { justify-content: center; align-self: center; }
+.ui-root .ny-detail-acts > .cc-panel-foot > span:empty { display: none; }

@@ -24,7 +24,7 @@ const JORDAN_USER = md5uuid('standing-org-client');
 const id = (kind, n) => `5eed0600-${kind.toString(16).padStart(4, '0')}-4000-8000-${n.toString(16).padStart(12, '0')}`;
 const K = { user: 1, profile: 2, org: 3, eng: 4, sess: 5, cal: 6, inv: 7, pay: 8, ag: 9, ver: 10, sig: 11, lead: 12, lev: 13, stage: 14,
   net: 15, todo: 16, list: 17, obp: 18, po: 19, contact: 20, pkg: 21, out: 22, dead: 23, cn: 24, quote: 25, time: 26, note: 27, target: 28,
-  disc: 29, cc: 30, give: 31, ssig: 32, ct: 33, away: 34, bank: 35, fin: 36, extra: 37, guest: 38 };
+  disc: 29, cc: 30, give: 31, ssig: 32, ct: 33, away: 34, bank: 35, fin: 36, extra: 37, guest: 38, stagec: 39 };
 
 // ------------------------------------------------------------------ small helpers
 const q = (v) => (v == null ? 'null' : typeof v === 'number' || typeof v === 'boolean' ? String(v) : `'${String(v).replace(/'/g, "''")}'`);
@@ -609,6 +609,35 @@ out.push(ins('coach_todos', ['id', 'coach_id', 'title', 'notes', 'important', 'p
     return [q(next('todo')), q(ALEX), q(title), q(notes), String(important), D(day), D(day), due == null ? 'null' : D(addDays(BASE, due)), minutes == null ? 'null' : String(Math.max(15, Math.round(minutes / 15) * 15)), q(list), q(client ? byN[client].pid : null),
       lead ? leadIdOf(lead) : 'null', String(planned === 'someday'), String(i + 1), done == null ? 'null' : TS(addDays(BASE, done), '08:40'), TS(addDays(BASE, (typeof planned === 'number' ? Math.min(planned, 0) : 0) - 6), '18:00')];
   })));
+
+// ------------------------------------------------------------------ Polish 1, Stage C: one of each agreements screen
+// So every Stage C screen can be reached from data (INTEGRATE-C step 4; removed with the rest, every id 5eed0600-):
+// an agreement inside its 14 days, a retainer's yearly price review due, a change asked for on the sent agreement,
+// Imogen's block of hours past 80% (its top-up invoice drafted), and a sponsor's signing link waiting.
+{
+  const sent = C.find((c) => c.kind === 'sent');
+  const [crId, spAg, spVer] = [next('stagec'), next('stagec'), next('stagec')];
+  out.push('-- Polish 1, Stage C: one of each agreements screen (inside 14 days, a price review, a change asked for, hours past 80%, a sponsor link).');
+  out.push(ins('time_entries', ['id', 'engagement_id', 'coach_id', 'started_at', 'ended_at', 'note'],
+    [[q(next('time')), q(byN[17].eid), q(ALEX), TS(addDays(BASE, -2), '10:00'), TS(addDays(BASE, -2), '14:00'), q('Workshop with the people team')]]));
+  out.push(`set session_replication_role = replica;
+update public.agreement_versions set client_signed_at = now() - interval '3 days', start_now = true, start_now_at = now() - interval '3 days' where agreement_id = '${byN[3].agId}' and status = 'signed';
+update public.agreement_versions set terms = terms || jsonb_build_object('priceSince', to_char((now() at time zone 'Europe/London')::date - 365 + 21, 'YYYY-MM-DD')) where id = '${byN[11].verId}';
+set session_replication_role = origin;
+insert into public.agreement_change_requests (id, version_id, coach_id, clause_key, words, created_at)
+select '${crId}', v.id, '${ALEX}', coalesce((select c->>'key' from jsonb_array_elements(v.clauses) with ordinality x(c, i) order by i offset 2 limit 1), 'investment'),
+       'Could the notice to rearrange be 48 hours rather than 24?', now() - interval '1 day'
+  from public.agreement_versions v where v.id = '${sent.verId}';
+insert into public.agreements (id, coach_id, kind, profile_id, organisation_id, status, current_version, agreement_kind, package_id, created_at)
+select '${spAg}', a.coach_id, 'sponsor', null, a.organisation_id, 'sent', 1, a.agreement_kind, a.package_id, now() - interval '2 days'
+  from public.agreements a where a.id = '${ORGS.bright.agId}';
+insert into public.agreement_versions (id, agreement_id, coach_id, version, status, terms, clauses, currency, fx_rate, fx_at, total_minor, funded_by, coach_signed_at, coach_signature_id, sent_at, send_as, personal_note, expires_on, created_at)
+select '${spVer}', '${spAg}', v.coach_id, 1, 'sent', v.terms || '{"needsPO": true}'::jsonb, v.clauses, v.currency, v.fx_rate, v.fx_at, v.total_minor, v.funded_by, now() - interval '2 days', v.coach_signature_id, now() - interval '2 days', 'agreement', null, null, now() - interval '2 days'
+  from public.agreement_versions v where v.id = '${ORGS.bright.verId}';
+-- The sponsor's link (a local token: 64 c's, invented).
+insert into public.sponsor_sign_links (id, coach_id, agreement_id, version_id, token_hash, sponsor_name, sponsor_email, sponsor_role, expires_at)
+values ('${next('stagec')}', '${ALEX}', '${spAg}', '${spVer}', encode(sha256(convert_to(repeat('c', 64), 'UTF8')), 'hex'), 'Margaret Hale', 'polish-contact-3@example.com', 'Chief nursing officer', now() + interval '60 days');`);
+}
 
 // ------------------------------------------------------------------ the end
 out.push(`select set_config('clarity.linking', '', false);

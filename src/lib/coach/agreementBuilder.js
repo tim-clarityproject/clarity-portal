@@ -105,7 +105,9 @@ export function packageRow(pkg, { funded = false, where = 'start' } = {}) {
     const n = sessionCount(d.blocks);
     if (where === 'start' && n) parts.push(`${n} coaching ${n === 1 ? 'session' : 'sessions'}`);
     if (where === 'settings' && n) parts.push(`${n} coaching ${n === 1 ? 'session' : 'sessions'}`);
-    if (money) parts.push(money);
+    // A package set by the month (Polish 1, Stage C) reads "£750/month".
+    if (d.priceMode === 'monthly' && Number(d.monthlyMinor) > 0) parts.push(rateText(Number(d.monthlyMinor), 'month', c));
+    else if (money) parts.push(money);
   } else if (kind === 'retainer') {
     const m = /^Up to (\d+) a month/i.exec(text(d.retainer?.sessions));
     if (where === 'start' && m) parts.push(`Up to ${m[1]} coaching ${m[1] === '1' ? 'session' : 'sessions'} a month`);
@@ -196,6 +198,9 @@ export function newDraft({ pkg = null, kind = null, who = {}, coach = {}, isOwne
   return { agreement, version, isOwner };
 }
 
+/** A package's terms for one client (Polish 1, Stage C: the questionnaire's "What are you offering?" fills from it). */
+export const termsFromPackage = (pkg, facts = {}) => fromPackageTerms(pkg, { funded: false, startsOn: null, ...facts });
+
 function fromPackageTerms(pkg, facts) {
   const kind = pkgKind(pkg);
   const d = isObj(pkg.defaults) ? copy(pkg.defaults) : {};
@@ -218,7 +223,7 @@ function fromPackageTerms(pkg, facts) {
   for (const k of ['clientName', 'clientFirst', 'coachName', 'coachFirst', 'orgName']) if (facts[k]) t[k] = facts[k];
   t.startsOn = facts.startsOn;
   if (kind === 'oneoff') t.oneoff = { ...t.oneoff, on: t.oneoff?.on || facts.startsOn };
-  if (Array.isArray(t.blocks) && t.blocks.length) { t.endsOn = suggestEnd(t.startsOn, t.blocks, t.rhythm); t.endsPicked = false; }
+  if (t.startsOn && Array.isArray(t.blocks) && t.blocks.length) { t.endsOn = suggestEnd(t.startsOn, t.blocks, t.rhythm); t.endsPicked = false; }
   t.personalNote = personalNoteFor(pkg.personal_note, facts.clientFirst);
   return t;
 }
@@ -460,6 +465,19 @@ export function libraryRows(t, { standards = {}, overrides = {}, first = 'them',
     return { key: c.key, number: c.number, title: c.title, label: `${c.number}. ${c.title}`, line, edited: !standard && c.edited };
   });
 }
+/**
+ * When a kind's standard wording last changed (Polish 1, Stage C: the card's "Updated 12 Nov"): the newest of its
+ * versions' created_at, as stored (the page reads it through parseDbTimestamp), or null while it's the first wording.
+ */
+export function standardsChangedAt(rows = [], kind = 'sessions') {
+  return (rows || []).filter((r) => r.agreement_kind === kind && r.created_at).map((r) => String(r.created_at)).sort().pop() || null;
+}
+/** The standard's own versions of one clause, newest first: [{ version, created_at, title, paragraphs }] (each dated). */
+export function clauseVersions(rows = [], kind, key) {
+  return (rows || []).filter((r) => r.agreement_kind === kind && r.clause_key === key).sort((a, b) => Number(b.version) - Number(a.version))
+    .map((r) => ({ version: Number(r.version), created_at: r.created_at || null, title: r.title, paragraphs: r.paragraphs }));
+}
+
 /** "11 clauses" or "11 clauses, changed today" (M28's stdLine). */
 export function standardLine(kind, rows = [], todayKey = null) {
   const n = clauseKeys(blankTerms(kind)).length;
@@ -617,7 +635,7 @@ export function packageTerms(pkg) {
   return fromPackageTerms(pkg, { funded: kind === 'team', startsOn: null });
 }
 const NOT_DEFAULTS = ['clientName', 'clientFirst', 'coachName', 'coachFirst', 'orgName', 'personalNote', 'startsOn', 'endsOn', 'endsPicked', 'fundedBy',
-  'funder', 'choice', 'extrasChosen', 'fxRate', 'coaching', 'kind', 'totalMinor', 'work'];
+  'funder', 'choice', 'extrasChosen', 'fxRate', 'coaching', 'kind', 'totalMinor', 'work', 'clientZone', 'basedIn', 'organisationId', 'poNumber', 'poAnswer', 'localMode'];
 /**
  * The package's row with these terms as its defaults (065's pricing_packages.defaults), the price in the column it
  * belongs to (an organisation's for a team, a person's otherwise) and the note with [name] kept for each client.
@@ -632,6 +650,8 @@ export function packageChange(pkg, t, note) {
   if (defaults.hours) defaults.hours = { ...defaults.hours, blockMinor: undefined };
   const row = { ...pkg, agreement_kind: kind, defaults: JSON.parse(JSON.stringify(defaults)), currency: t.currency || 'GBP', personal_note: text(note) || null };
   if (kind === 'oneoff' && text(t.work)) row.detail = text(t.work).slice(0, 120);
-  if (kind === 'team') row.org_price_minor = price ?? null; else row.personal_price_minor = price ?? null;
+  // Set by the month (Polish 1, Stage C), the package's price is the term's total; the month's fee is in its defaults.
+  const monthly = kind === 'sessions' && t.priceMode === 'monthly' ? (Number(t.monthlyMinor) || 0) * (Number(t.months) || 6) : null;
+  if (kind === 'team') row.org_price_minor = price ?? null; else row.personal_price_minor = monthly ?? price ?? null;
   return row;
 }

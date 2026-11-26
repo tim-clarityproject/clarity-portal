@@ -38,22 +38,41 @@ export function seenSpec(value) {
 }
 
 /** Text styles, in points. `font` names a chain in FONT_CHAINS. */
+// The 25 Nov PDFs (Polish 1, approved by Tim, 16:54; pdfs-25nov/pdf-examples-25nov.html holds their CSS): black and
+// grey only; Nekst only for the title and the lockup; the title 18pt, headings 13pt, text 9.5 to 10pt, small 8.5pt;
+// figures in DM Sans Light; small labels in spaced grey capitals. 1mm = 2.835pt.
+const MMP = 72 / 25.4;
 export const STYLES = {
-  title: { font: 'nekst', size: 20, lh: 24, tracking: 1.6, upper: true },
-  heading: { font: 'nekst', size: 11, lh: 15, tracking: 1.1, upper: true },
-  panelHeading: { font: 'nekst', size: 9, lh: 12, tracking: 1, upper: true },
-  details: { font: 'body', size: 9, lh: 13.5 },
-  body: { font: 'body', size: 10, lh: 15 },
+  title: { font: 'nekst', size: 18, lh: 22.5, tracking: 18 * 0.14, upper: true },
+  lockup: { font: 'nekst', size: 8.5, lh: 10, tracking: 8.5 * 0.22, upper: true },
+  docType: { font: 'body', size: 8.5, lh: 10, tracking: 8.5 * 0.14, upper: true },
+  heading: { font: 'body', size: 13, lh: 16 },
+  lab: { font: 'body', size: 8.5, lh: 11, tracking: 8.5 * 0.14, upper: true },
+  th: { font: 'body', size: 8.5, lh: 12, tracking: 8.5 * 0.1, upper: true },
+  panelHeading: { font: 'body', size: 8.5, lh: 11, tracking: 8.5 * 0.14, upper: true },
+  details: { font: 'body', size: 10, lh: 13 },
+  meta: { font: 'body', size: 9, lh: 11.7 + 1.4 * MMP, features: ['tnum'] },
+  party: { font: 'body', size: 9.5, lh: 9.5 * 1.55 },
+  partyName: { font: 'medium', size: 9.5, lh: 9.5 * 1.55 },
+  body: { font: 'body', size: 10, lh: 16 },
+  compact: { font: 'body', size: 9.5, lh: 9.5 * 1.6 },
+  clauseHead: { font: 'medium', size: 10, lh: 13 },
   label: { font: 'medium', size: 9.5, lh: 14 },
   detail: { font: 'body', size: 9, lh: 13.5 },
-  cell: { font: 'body', size: 9.5, lh: 13.5 },
+  cell: { font: 'body', size: 9.5, lh: 13.5, features: ['tnum'] },
   cellNum: { font: 'body', size: 9.5, lh: 13.5, features: ['tnum'] },
-  th: { font: 'medium', size: 8.5, lh: 12 },
-  small: { font: 'body', size: 8.5, lh: 12 },
-  smallMedium: { font: 'medium', size: 8.5, lh: 12 },
-  big: { font: 'light', size: 24, lh: 28, features: ['tnum'] },
-  glanceText: { font: 'medium', size: 12, lh: 16 },
-  barValue: { font: 'medium', size: 9, lh: 12, features: ['tnum'] },
+  small: { font: 'body', size: 8.5, lh: 12.75, features: ['tnum'] },
+  smallMedium: { font: 'body', size: 8.5, lh: 11, tracking: 8.5 * 0.14, upper: true },
+  note: { font: 'body', size: 8.5, lh: 8.5 * 1.6 },
+  foot: { font: 'body', size: 8.5, lh: 11, features: ['tnum'] },
+  total: { font: 'body', size: 9.5, lh: 12.5, features: ['tnum'] },
+  grand: { font: 'medium', size: 11, lh: 14, features: ['tnum'] },
+  big: { font: 'figure', size: 18, lh: 21.6, features: ['tnum'] },
+  unit: { font: 'body', size: 10, lh: 12 },
+  glanceText: { font: 'body', size: 11, lh: 15 },
+  hand: { font: 'hand', size: 15, lh: 18 },
+  sigText: { font: 'body', size: 9, lh: 9 * 1.45 },
+  barValue: { font: 'body', size: 9, lh: 12, features: ['tnum'] },
 };
 
 /**

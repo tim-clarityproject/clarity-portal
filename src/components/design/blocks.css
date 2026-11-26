@@ -54,12 +54,10 @@
   color: var(--text);
 }
 
-.ui-root .ds-open-aside {
-  display: inline-flex;
-  vertical-align: middle;
-  margin-left: var(--icon-title-gap-caps);
-  letter-spacing: normal;
-}
+/* The title's icons (the eye, the play icon) are the page title's own aside (.ds-page-aside in design.css): 10px from the
+   last capital's ink, the title's letter-spacing taken back, level with the middle of the capitals (rule 29d;
+   Polish 1, Stage C: the Health Check's inside-flow suite measured 15.5px and 2px low). */
+.ui-root .ds-open-aside { white-space: nowrap; }
 
 .ui-root .ds-open-line {
   margin: 0;
@@ -103,6 +101,20 @@
 .ui-root .ds-card-head > :is(.ds-more, .ds-addrow) {
   margin: calc(var(--space-px14) * -1) 0;
   min-height: var(--tap-min) !important;
+}
+
+/* Over rows that are themselves tapped (Needs you's View all), the link's 44 by 44 area reaches up into the card's
+   padding instead of down into the first row, so the two never share a pixel (Polish 1, Stage C; the coach suite's
+   tap-overlap check). The words stay where they were. */
+.ui-root .ds-card-head:is(:has(+ .ds-li--go), :has(+ .ds-rows-list > .ds-li--go:first-child)) > .ds-more {
+  margin: 0;
+  min-height: 0 !important;
+}
+.ui-root .ds-card-head:is(:has(+ .ds-li--go), :has(+ .ds-rows-list > .ds-li--go:first-child)) > .ds-more::after {
+  top: auto;
+  bottom: calc(var(--space-2) * -1);
+  height: var(--tap-min);
+  transform: translateX(-50%);
 }
 
 .ui-root .ds-card > :last-child {
@@ -180,6 +192,8 @@
 @media (hover: hover) {
   .ui-root .ds-more:hover { color: var(--text); }
   .ui-root .ds-more:hover .ds-chevron--right { transform: translateX(2px); }
+  /* Back's chevron moves 2px back on hover, as the forward one moves on (ToolFrame's Back; focus-hover check). */
+  .ui-root .ds-more:hover .ds-chevron--left { transform: rotate(180deg) translateX(2px); }
 }
 
 .ui-root .ds-more:focus-visible {
@@ -618,6 +632,10 @@
   gap: var(--space-px12);
 }
 
+/* A date picker's bar (CalendarBar compact; M28 v6 "build"): the month on the left, previous and next on the right. */
+.ui-root .ds-calbar--compact { flex-direction: row-reverse; flex-wrap: nowrap; margin-bottom: var(--space-2); }
+.ui-root .ds-calbar--compact .ds-calbar-title { flex-basis: auto; }
+
 .ui-root .ds-btn.ds-btn--square {
   width: var(--btn-h);
   padding: 0 !important;
@@ -764,6 +782,15 @@
 }
 
 .ui-root .ds-tool-q { margin-bottom: var(--space-px28); }
+
+/* A line under the group's name (M28 v6 .sofar, "So far: …"): 13px grey in sentence case, 8px under the name, 24px over
+   the question (Polish 1, Stage C; measured against M28 by C1). */
+.ui-root .ds-tool-sub {
+  margin: 0 0 var(--space-4);
+  font-size: var(--fs-meta);
+  line-height: 1.55;
+  color: var(--text-2);
+}
 
 .ui-root .ds-tool-hint {
   /* 8px under the question (whose own 28px it takes back), 20px over the step. */

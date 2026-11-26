@@ -119,7 +119,7 @@ body:has(> #root .ui-root.cc-app) {
   .ui-root .cc-search { min-height: var(--btn-h-phone); }
 }
 @media (hover: hover) {
-  .ui-root .cc-search:hover { color: var(--text-2); }
+  .ui-root .cc-search:hover { color: var(--text); }
 }
 .ui-root .cc-search:focus-visible { color: var(--text-2); outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); }
 
@@ -396,7 +396,9 @@ body:has(> #root .ui-root.cc-app) {
 @media (hover: hover) {
   .ui-root .cc-fold-head:hover .cc-fold-btn { color: var(--coral-text); }
 }
-.ui-root .cc-fold-head:has(.cc-fold-btn:focus-visible) { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--space-1); }
+/* Keyboard focus rings the whole heading row, drawn by the button's own tap area so the button itself shows it
+   (Polish 1, Stage C: the focus check found nothing on the button). */
+.ui-root .cc-fold-btn:focus-visible::after { outline: var(--focus-w) solid var(--coral-text); outline-offset: var(--space-px2); border-radius: var(--space-1); }
 .ui-root .cc-fold-body { padding: var(--space-2) 0 var(--space-px28); }
 .ui-root .cc-fold-body[hidden] { display: none; }
 

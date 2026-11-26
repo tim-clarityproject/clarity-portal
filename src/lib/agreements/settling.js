@@ -17,6 +17,11 @@ import { perSession, withoutExtras } from './delivered.js';
 export const DEPOSIT_SHARE = 0.3;
 export const DEPOSIT_THEN = 5;
 export const EQUAL_COUNT = 6;
+/**
+ * How many equal monthly instalments: 6, or one for each month of the term when the fee is set by the month (M28
+ * version 6: "Monthly, by Direct Debit" over 3, 6 or 12 months; Polish 1, Stage C).
+ */
+export const equalCount = (t) => (t?.priceMode === 'monthly' && Number(t?.months) >= 1 ? Math.min(60, Math.floor(Number(t.months))) : EQUAL_COUNT);
 export const TEAM_THEN = 3;
 
 const cur = (t) => t?.currency || 'GBP';
@@ -39,7 +44,7 @@ export function settleOptions(t, chosen) {
   return [
     { value: 'full', label: `In full, up front, ${moneyText(offer ? Math.round(f * (100 - UPFRONT_PERCENT) / 100) : f, c)}${offer ? `, ${UPFRONT_PERCENT}% off` : ''}` },
     { value: 'deposit', label: `A deposit of ${moneyText(dep, c)}, then ${DEPOSIT_THEN} monthly instalments of ${moneyText(split(f - dep, DEPOSIT_THEN)[DEPOSIT_THEN - 1], c)}` },
-    { value: 'equal', label: `${EQUAL_COUNT} monthly instalments of ${moneyText(split(f, EQUAL_COUNT)[EQUAL_COUNT - 1], c)}` },
+    { value: 'equal', label: `${equalCount(t)} monthly instalments of ${moneyText(split(f, equalCount(t))[equalCount(t) - 1], c)}` },
     { value: 'delivered', label: `As delivered, ${moneyText(perSession(t), c)} a coaching session` },
   ];
 }
@@ -85,7 +90,7 @@ export function firstAmount(t, choice = t?.choice ?? 'upfront', chosen) {
   if (t.settle === 'full') return pf;
   if (t.settle === 'deposit') return deposit(t, chosen);
   if (t.settle === 'delivered') return split(withoutExtras(t), sessions(t) || 1)[0] + ex;
-  return split(pf, EQUAL_COUNT)[0];
+  return split(pf, equalCount(t))[0];
 }
 
 /** What is settled at signing (M28's firstPay), in minor units. A client funded by an organisation settles nothing. */
@@ -137,7 +142,7 @@ export function restLine(t, choice = t?.choice ?? 'upfront', chosen) {
   if (upfrontActive(t, choice)) return `Nothing more to settle. You saved ${moneyText(saving(pf), c)}.`;
   if (t.settle === 'full') return 'Nothing more to settle.';
   if (t.settle === 'deposit') return `Then ${DEPOSIT_THEN} monthly instalments of ${moneyText(split(pf - deposit(t, chosen), DEPOSIT_THEN)[DEPOSIT_THEN - 1], c)}, collected the same way.`;
-  if (t.settle === 'equal') return `Then ${EQUAL_COUNT - 1} more monthly instalments of ${moneyText(split(pf, EQUAL_COUNT)[EQUAL_COUNT - 1], c)}, collected the same way.`;
+  if (t.settle === 'equal') return `Then ${equalCount(t) - 1} more monthly instalments of ${moneyText(split(pf, equalCount(t))[equalCount(t) - 1], c)}, collected the same way.`;
   return 'Then each coaching session is invoiced after it happens.';
 }
 
@@ -232,7 +237,7 @@ export function schedule(t, { signedDay, choice = t?.choice ?? 'upfront', chosen
     return [{ n: 1, of: 1 + DEPOSIT_THEN, day: signedDay, amount: dep, kind: 'deposit' }, ...monthly(pf - dep, DEPOSIT_THEN, nextMonth, 2, 1 + DEPOSIT_THEN, 'instalment')];
   }
   if (t.settle === 'delivered') return [{ n: 1, of: sessions(t) || 1, day: signedDay, amount: first, kind: 'first_payment' }];
-  return monthly(pf, EQUAL_COUNT, signedDay, 1, EQUAL_COUNT, 'instalment');
+  return monthly(pf, equalCount(t), signedDay, 1, equalCount(t), 'instalment');
 }
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];

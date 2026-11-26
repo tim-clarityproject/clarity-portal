@@ -1,9 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AddButton, Button, Checkbox, Loading, PageHeader, TextField, useToast } from '../../../components/design';
+import { Button, Checkbox, Loading, PageHeader, TextField, useToast } from '../../../components/design';
+import { AddLink, Card, Empty, PageOpening, Row, Rows } from '../../../components/design/Blocks';
+import { MONEY_LINES } from '../../../content/pageLines/coach';
 import { ask } from '../../../lib/agreements/askClient';
 import { moneyText } from '../../../lib/agreements/currency';
-import { evidenceHint, introLine, pageCount, pageWords, problems, rate as rateFor, totalLine } from '../../../lib/agreements/orgInvoice';
+import { descriptionLine, dueOn, evidenceHint, pageCount, pageWords, problems, rate as rateFor } from '../../../lib/agreements/orgInvoice';
 import { scheduledProfiles, billTo, invoicePeriod, olderWords, openPo, orgInvoiceRows, penceFrom, rowDay, rowHours } from '../../../lib/agreements/duringAgreement';
 import { uploadReceipt } from '../../../lib/coach/financeActions';
 import { coachZoneOf } from '../../../lib/coach/calendar';
@@ -13,6 +15,7 @@ import { Back, TextLink, useCoachPortal } from '../parts';
 import { Problem } from '../needsYou/panels';
 import InvoicePreview from './InvoicePreview';
 import '../needsYou/needsyou.css';
+import '../money/money.css';
 
 // New invoice for an organisation (Phase 6b run 3, Group D; M28 s-inv-new: /coach/organisations/:id/invoices/new;
 // brief items 26 to 28 and 34), the owner's: addressed from its billing profile, quoting the PO, the supplier number and
@@ -51,6 +54,7 @@ export default function NewInvoice() {
   const [typedRate, setTypedRate] = useState(null);
   const [problem, setProblem] = useState(null);
   const [preview, setPreview] = useState(false);
+  const [editing, setEditing] = useState(null);
   const fileRef = useRef(null);
   const busy = useRef(false);
 
@@ -106,69 +110,96 @@ export default function NewInvoice() {
     } catch { toast.error('That didn’t save. Check your connection and try again.'); }
   };
   const pageOf = (i) => 2 + (profile?.timesheet ? 1 : 0) + i;
+  // What the preview makes on this device off the live site (InvoicePreview's localInvoice), as the server would.
+  const localInput = () => {
+    const sorted = [...rows].sort((x, y) => x.day.localeCompare(y.day));
+    const contact = rowsOf(p.state, 'organisation_contacts').find((x) => x.organisation_id === id && /finance|invoice|accounts/i.test(`${x.role || ''} ${x.roles || ''}`));
+    return {
+      number: null, issuedOn: p.todayKey, dueOn: dueOn(p.todayKey, profile?.terms_days || 30), termsDays: profile?.terms_days || 30, orgName: org.name,
+      legalName: profile?.legal_name || '', contact: contact?.name || '', email: profile?.invoices_email || '', address: profile?.billing_address || '',
+      poNumber: pon.trim() || null, supplierNumber: sup.trim() || null, theirReference: ref.trim() || null, coachName: p.coach.full_name || p.coach.display_first_name || '',
+      lines: sorted.length ? [{ description: descriptionLine({ orgName: org.name, count: sorted.length, firstDay: sorted[0].day, lastDay: sorted.at(-1).day, timesheet: Boolean(profile?.timesheet) }), minutes: sorted.reduce((a, r) => a + r.minutes, 0), rateMinor, amount: Math.round(sorted.reduce((a, r) => a + r.minutes, 0) * rateMinor / 60) }] : [],
+      currency: c, timesheet: profile?.timesheet ? sorted.map((r) => ({ day: r.day, what: r.what, who: r.who || (r.kind === 'session' ? String(r.what).replace(/^Coaching session with /, '') : ''), minutes: r.minutes })) : null,
+    };
+  };
   const line = (r) => (
-    <div key={r.key} className="ny-qrow">
+    <div key={r.key} className="ny-qrow cc-money-tick">
       <Checkbox checked={isTicked(r.key)} onChange={(on) => { setTicked((was) => ({ ...was, [r.key]: on })); setProblem(null); }}>{`${rowDay(r.day, p.todayKey)}, ${r.what}`}</Checkbox>
       <span className="ny-qrow-h">{rowHours(r.minutes)}</span>
     </div>
   );
+  const minutes = rows.reduce((a, r) => a + r.minutes, 0);
+  const totalMinor = Math.round(minutes * rateMinor / 60);
+  // A value that may run long (their reference, the address, the email) sits under its name, so the name never squashes.
+  const long = (v) => String(v || '').length > 20;
+  const editRow = (key, label, value, field) => (editing === key ? field : (
+    <Row key={key} name={label} value={long(value) ? undefined : value || 'None'} sub={long(value) ? value : undefined} onClick={() => setEditing(key)} label={`${label}, ${value || 'none'}. Edit`} />
+  ));
 
+  // Polish 1, Stage C (C2; M28 v6 "invoice"): the page opening with its one button (Preview and send), then the coaching
+  // sessions to tick with their total and the attached pages on the left, what goes on the invoice on the right.
   return (
     <div className="cc-page">
-      <div className="cc-col ny-page">
+      <div className="cc-col cc-money-page">
         <Back to={org.name} onClick={() => navigate(`/coach/organisations/${org.id}/billing`)} />
-        <PageHeader title="New invoice" meta={[org.name]} />
-        <h2 className="ny-sec">Addressed to</h2>
-        {profile ? <p className="ny-billto">{billTo(profile, org.name).map((l) => <span key={l}>{l}</span>)}</p> : <p className="ny-hint">{`${org.name} has no billing details yet.`}</p>}
-        <div className="cc-acts"><TextLink onClick={() => navigate(`/coach/organisations/${org.id}/billing`)}>{profile ? 'Change their billing details' : 'Add their billing details'}</TextLink></div>
-        <div className="cc-two ny-two">
-          <TextField label="What’s the purchase order?" value={pon} maxLength={80} autoComplete="off" onChange={(e) => { setPoNumber(e.target.value); setProblem(null); }} />
-          <TextField label="What’s your supplier number?" value={sup} maxLength={80} autoComplete="off" onChange={(e) => setSupplier(e.target.value)} />
-        </div>
-        <TextField label="Do they have a reference?" value={ref} maxLength={160} autoComplete="off" onChange={(e) => setReference(e.target.value)} />
-        <h2 className="ny-sec">What it’s for</h2>
-        <p className="ny-hint">{introLine(rateMinor, c)}</p>
-        {all.length === 0 ? <p className="ny-say">Nothing is logged since the last invoice.</p> : (
-          <div role="group" aria-label="What it’s for">
-            {period.recent.map(line)}
-            {period.older.length > 0 && (
-              <>
-                <div className="cc-acts"><TextLink aria-expanded={showOlder} aria-controls="ny-older" onClick={() => setShowOlder((v) => !v)}>{showOlder ? 'Hide older' : olderWords(period.older.length)}</TextLink></div>
-                <div id="ny-older" hidden={!showOlder}>{showOlder && period.older.map(line)}</div>
-              </>
-            )}
-          </div>
-        )}
-        {rows.length > 0 && <p className="ny-hint">{totalLine(rows, rateMinor, profile?.terms_days || 30, c)}</p>}
-        <TextField label="What’s your hourly rate for this invoice?" inputMode="decimal" value={typedRate ?? (rateMinor ? moneyText(rateMinor, c) : '')} placeholder="e.g. £300" autoComplete="off" onChange={(e) => setTypedRate(e.target.value)} />
-        {profile?.timesheet && (
-          <>
-            <h2 className="ny-sec">Timesheet page</h2>
-            <p className="ny-hint">Built from the coaching sessions ticked above, as page 2.</p>
-          </>
-        )}
-        <h2 className="ny-sec">Attached pages</h2>
-        {evidence.length === 0 ? <p className="ny-say">Nothing attached.</p> : (
-          <ul className="ny-list" aria-label="Attached pages">
-            {evidence.map((e, i) => (
-              <li key={e.id} className="ny-li">
-                <span><span className="ny-li-t ny-li-t--file">{e.file_name}</span><span className="ny-li-m">{`Added as page ${pageOf(i)}`}</span></span>
-                <TextLink onClick={() => removeFile(e)} aria-label={`Remove ${e.file_name}`}>Remove</TextLink>
-              </li>
-            ))}
-          </ul>
-        )}
-        <input ref={fileRef} type="file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf" hidden onChange={(e) => { addFile(e.target.files?.[0]); e.target.value = ''; }} />
-        <AddButton onClick={() => fileRef.current?.click()}>Add screenshot or PDF</AddButton>
-        {profile?.evidence_required && <p className="ny-hint">{evidenceHint(org.name)}</p>}
+        <PageOpening label={`For ${org.name}`} title="New invoice" line={MONEY_LINES.newInvoice}
+          action={<Button variant="primary" onClick={() => setPreview(true)}>Preview and send</Button>} />
         <Problem>{problem}</Problem>
-        <div className="cc-acts">
-          <Button variant="primary" onClick={send}>Send to their finance team</Button>
-          <Button variant="outline" onClick={() => setPreview(true)}>Preview the PDF</Button>
+        <div className="ds-cols ds-cols--needs-first">
+          <div>
+            <Card label="Coaching sessions" className="cc-money-ticks">
+              {all.length === 0 ? <Empty action={{ children: 'Open your calendar', onClick: () => navigate('/coach/calendar') }}>Nothing is logged since the last invoice.</Empty> : (
+                <div role="group" aria-label="Coaching sessions">
+                  {period.recent.map(line)}
+                  {period.older.length > 0 && (
+                    <>
+                      <div className="cc-acts cc-money-older"><TextLink aria-expanded={showOlder} aria-controls="ny-older" onClick={() => setShowOlder((v) => !v)}>{showOlder ? 'Hide older' : olderWords(period.older.length)}</TextLink></div>
+                      <div id="ny-older" hidden={!showOlder}>{showOlder && period.older.map(line)}</div>
+                    </>
+                  )}
+                  <Row name="Total" value={rows.length ? `${rowHours(minutes)}, ${moneyText(totalMinor, c)}` : 'Nothing ticked'} className="cc-money-total" />
+                </div>
+              )}
+            </Card>
+            <Card label="Attached pages" add={<AddLink label="Add screenshot or PDF" onClick={() => fileRef.current?.click()} />}>
+              {evidence.length === 0 ? (
+                <p className="cc-money-quiet">{profile?.evidence_required ? evidenceHint(org.name) : `Nothing attached. ${org.name} doesn’t need evidence.`}</p>
+              ) : (
+                <Rows label="Attached pages">
+                  {evidence.map((e, i) => (
+                    <Row key={e.id} name={e.file_name} sub={`Added as page ${pageOf(i)}`} value={<TextLink onClick={() => removeFile(e)} aria-label={`Remove ${e.file_name}`}>Remove</TextLink>} />
+                  ))}
+                </Rows>
+              )}
+              <input ref={fileRef} type="file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf" hidden onChange={(e) => { addFile(e.target.files?.[0]); e.target.value = ''; }} />
+            </Card>
+          </div>
+          <div>
+            <Card label="On the invoice" className="cc-money-oninv">
+              <div className="cc-money-field">
+                <TextField label="What’s the purchase order?" value={pon} maxLength={80} autoComplete="off" onChange={(e) => { setPoNumber(e.target.value); setProblem(null); }} />
+              </div>
+              <Rows>
+                {editRow('supplier', 'Supplier number', sup, (
+                  <div key="supplier" className="cc-money-field cc-money-field--row"><TextField label="What’s your supplier number?" value={sup} maxLength={80} autoComplete="off" autoFocus onChange={(e) => setSupplier(e.target.value)} onBlur={() => setEditing(null)} /></div>
+                ))}
+                {editRow('reference', 'Their reference', ref, (
+                  <div key="reference" className="cc-money-field cc-money-field--row"><TextField label="Do they have a reference?" value={ref} maxLength={160} autoComplete="off" autoFocus onChange={(e) => setReference(e.target.value)} onBlur={() => setEditing(null)} /></div>
+                ))}
+                {editRow('rate', 'Hourly rate', rateMinor ? `${moneyText(rateMinor, c)}/hour` : '', (
+                  <div key="rate" className="cc-money-field cc-money-field--row"><TextField label="What’s your hourly rate for this invoice?" inputMode="decimal" value={typedRate ?? (rateMinor ? moneyText(rateMinor, c) : '')} placeholder="e.g. £300" autoComplete="off" autoFocus onChange={(e) => setTypedRate(e.target.value)} onBlur={() => setEditing(null)} /></div>
+                ))}
+                <Row name="Payment terms" value={`${profile?.terms_days || 30} days`} />
+                <Row name="Timesheet page" value={profile?.timesheet ? 'Included' : 'Not included'} />
+                <Row name="Addressed to" sub={profile ? billTo(profile, org.name).join(', ') : 'No billing details yet'} onClick={() => navigate(`/coach/organisations/${org.id}/billing`)} label={profile ? 'Edit their billing details' : 'Add their billing details'} />
+                <Row name="Sent to" sub={profile?.invoices_email || 'Not set yet'} />
+                <Row name="The PDF" value={`One file, ${pageWords(pages)}`} />
+              </Rows>
+            </Card>
+          </div>
         </div>
-        <p className="ny-hint">{`One PDF, ${pageWords(pages)}. ${rows.length ? `${moneyText(Math.round(rows.reduce((a, r) => a + r.minutes, 0) * rateMinor / 60), c)} in all.` : ''}`.trim()}</p>
       </div>
-      <InvoicePreview open={preview} onClose={() => setPreview(false)} body={body} onSend={send} />
+      <InvoicePreview open={preview} onClose={() => setPreview(false)} body={body} onSend={send} sendLabel={`Send to ${org.name}`} local={localInput()} />
     </div>
   );
 }

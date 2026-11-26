@@ -5,6 +5,7 @@ import { firstPayment, hasRest, payTitle, restLine } from '../agreements/settlin
 import { applies as coolingApplies, bookableFrom, SETTLE_LINE } from '../agreements/coolingOff.js';
 import { balanceLine, entryLength, percentUsed } from '../agreements/hours.js';
 import { quoteNumber } from '../agreements/quote.js';
+import { UPFRONT_PERCENT, choiceOptions } from '../agreements/upfront.js';
 
 // The client's side of an agreement and their money (Phase 6b run 3, Group C; M28 version 4: s-q-client, s-c-sign,
 // s-c-change, s-c-asked, s-c-pay, s-c-signed, s-s-sign, s-s-signed, s-h-client, s-acct, s-payments), as plain rules with
@@ -294,3 +295,68 @@ export const HOURS = Object.freeze({
   title: 'Your block of hours',
   none: 'No block of hours yet.',
 });
+
+/* ------------------------------------------------------------------ Polish 1, Stage C (C3): Read, Sign and Settle in focus mode */
+// M28 v6 "sign" and "quote": the three steps as one flow in the tool frame, the clauses opening one at a time, Ask for a
+// change as Quick Add, the quotation's Included, Add if you'd like and In all. Run 3's words above stay where they are
+// tested and still read right; these are the flow's own.
+
+export const FLOW = Object.freeze({
+  points: 'The main points',
+  agreement: 'The agreement',
+  ask: 'Ask for a change',
+  askLabel: 'What would you like changed?',
+  askPlaceholder: 'Could the notice be 48 hours?',
+  askSend: (coachFirst) => `Send to ${text(coachFirst) || 'your coach'}`,
+  askSent: (coachFirst) => `Sent to ${text(coachFirst) || 'your coach'}. You can sign once ${text(coachFirst) ? 'they reply' : 'your coach replies'} with a new version.`,
+  readNext: 'I’ve read it',
+  signQuestion: 'Sign',
+  signNext: 'Sign',
+  agreementLabel: 'Your coaching agreement',
+  settleWhen: 'Up front or over time?',
+  settleHow: 'How would you like to settle?',
+  doneTitle: 'You’re all set',
+  doneSteps: 'Done',
+  signedSteps: 'Signed',
+  quoteTitle: 'Your quotation',
+  included: 'Included',
+  addIf: 'Add if you’d like',
+  inAll: 'In all',
+  accept: 'Accept and sign',
+});
+
+/** "16 clauses". */
+export const clauseCount = (n) => `${n} ${n === 1 ? 'clause' : 'clauses'}`;
+
+/** The Read step's eyebrow (M28: "Prepared for Sam by Dr. Tim Dutton"), first name where there is one. */
+export function preparedFor({ clientFirst, clientName, coachName }) {
+  const who = text(clientFirst) || text(clientName).split(/\s+/)[0] || '';
+  return [who && `Prepared for ${who}`, text(coachName) && `by ${text(coachName)}`].filter(Boolean).join(' ') || FLOW.agreementLabel;
+}
+
+/** The done screen's line (M28 v6: "Tim has your signed agreement. A copy is on its way to your email."), with what was settled. */
+export function doneLine({ coachFirst, settled = null }) {
+  const who = text(coachFirst) || 'Your coach';
+  return settled ? `${who} has your signed agreement, and your first ${settled} is settled. A copy is on its way to your email.` : `${who} has your signed agreement. A copy is on its way to your email.`;
+}
+
+/** The quotation's label (M28: "Quotation Q-0042 · Valid until Fri 25 Dec"). */
+export function quoteLabel({ number = null, validUntil = null }) {
+  const n = Number.isInteger(number) && number > 0 ? `Quotation ${quoteNumber(number)}` : 'Quotation';
+  return DAY.test(validUntil || '') ? `${n} · Valid until ${dayKeyWords(validUntil)}` : n;
+}
+
+/**
+ * The Up front or the plan switch's words (M28 quote: "Up front, 5% off" and "Monthly"): short words in the switch, the
+ * full words of the one chosen under it. `planLabel` is settleOptions' label for the coach's way of settling.
+ */
+export function settleSwitchOptions(terms, planLabel, chosen) {
+  const retainer = kindOf(terms) === 'retainer';
+  const way = terms?.settle;
+  const long = choiceOptions(terms, planLabel, chosen);
+  const plan = retainer || way === 'equal' ? 'Monthly' : way === 'deposit' ? 'Deposit, then monthly' : way === 'delivered' ? 'As delivered' : 'Over time';
+  return [
+    { value: 'upfront', short: retainer ? `6 months, ${UPFRONT_PERCENT}% off` : `Up front, ${UPFRONT_PERCENT}% off`, long: long[0]?.label || '' },
+    { value: 'plan', short: plan, long: long[1]?.label || text(planLabel) },
+  ];
+}

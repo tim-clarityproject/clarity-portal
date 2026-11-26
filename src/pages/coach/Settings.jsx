@@ -27,6 +27,7 @@ import { EMAIL_SETTINGS, GMAIL_WORDS } from '../../lib/coach/crm';
 import { setEmailStandIn, useEmailAddresses } from './crmParts';
 import './crm.css';
 import AgreementSettings from './agreements/AgreementSettings';
+import BusinessSettings from './BusinessSettings';
 
 // Settings, two panes (M11, version 3.4): on a laptop the list of sections
 // on the left and the chosen one on the right; on a phone the list, and
@@ -839,14 +840,18 @@ function Look() {
   );
 }
 
-const PANES = { you: YourDetails, away: AwayAndCover, notifications: Notifications, booking: BookingSettings, hours: WorkingHours, zones: TimeZones, calendars: Calendars, agreements: AgreementSettings, email: Email, tags: TagsAndFields, layouts: NoteLayouts, coaches: Coaches, log: ActivityLog, look: Look };
+// Business (Polish 1, Stage C, the PDFs): the company's name and number, website, email and bank details every PDF
+// prints (068). The owner's alone, after Agreements (SETTINGS_SECTIONS in src/lib/coach/navigation.js).
+const SECTIONS = SETTINGS_SECTIONS;
+
+const PANES = { business: BusinessSettings, you: YourDetails, away: AwayAndCover, notifications: Notifications, booking: BookingSettings, hours: WorkingHours, zones: TimeZones, calendars: Calendars, agreements: AgreementSettings, email: Email, tags: TagsAndFields, layouts: NoteLayouts, coaches: Coaches, log: ActivityLog, look: Look };
 
 export default function Settings() {
   const { isOwner } = useCoachPortal();
   const { section } = useParams();
   const navigate = useNavigate();
   const isPhone = useIsPhone();
-  const sections = SETTINGS_SECTIONS.filter((s) => !s.owner || isOwner);
+  const sections = SECTIONS.filter((s) => !s.owner || isOwner);
   const known = sections.find((s) => s.key === section);
   // An address for a section this coach doesn't have goes back to the list.
   useEffect(() => { if (section && !known) navigate('/coach/settings', { replace: true }); }, [section, known, navigate]);

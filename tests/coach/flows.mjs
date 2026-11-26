@@ -93,7 +93,7 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     // The menu (polish 1, rule 19): groups by gaps, Settings and Sign out at the foot; pages of later runs show on a
     // build that isn't live.
     const items = await frameMenuWords(page);
-    pass('shell: the owner’s menu, in the frame’s order', /^Today, Calendar, To-dos, .*Clients, Leads, Network, Boards, Finances, Leading Ideas, Library, .*Settings, Sign out$/.test(items.join(', ')), items.join(', '));
+    pass('shell: the owner’s menu, in the frame’s order', /^Today, Calendar, To-dos, .*Clients, Leads, Network, Boards, Finances, Needs you, Leading Ideas, Library, .*Settings, Sign out$/.test(items.join(', ')), items.join(', '));
     pass('shell: menu items are links, Sign out a button', (await page.locator('.ds-frame-side a.ds-mi').count()) === items.length - 1 && (await page.locator('.ds-frame-side button.ds-mi--out').count()) === 1);
     // The Calendar is built (run 3): Library is still a later run's page.
     await openFromMenu(page, 'Library');
@@ -444,14 +444,16 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     pass('everything: one timeline, searchable', all >= 4 && (await page.locator('.cc-timeline-row').count()) === 1, `${all}`);
     await button(page, 'Overview').click();
 
-    // Quick buttons.
-    const links = await page.locator('.cc-links a').evaluateAll((a) => a.map((x) => [x.textContent, x.getAttribute('href')]));
-    pass('quick buttons: Email opens the coach’s own email app; WhatsApp only with a mobile', links.some(([t, h]) => t === 'Email' && h === 'mailto:sam@example.invalid') && links.some(([t, h]) => t === 'WhatsApp' && h === 'https://wa.me/447700900123') && !links.some(([t]) => t === 'iMessage'), JSON.stringify(links));
+    // Quick buttons: the Contact card's rows (Polish 1, Stage C; M28 v6 "client"): the email, the mobile, WhatsApp and,
+    // for a +1 number, iMessage, each a row that opens the coach's own app.
+    const contactLinks = (p) => p.locator('.cc-money-contact a').evaluateAll((a) => a.map((x) => [x.getAttribute('aria-label') || x.textContent, x.getAttribute('href')]));
+    const links = await contactLinks(page);
+    pass('quick buttons: Email opens the coach’s own email app; WhatsApp only with a mobile', links.some(([, h]) => h === 'mailto:sam@example.invalid') && links.some(([, h]) => h === 'https://wa.me/447700900123') && !links.some(([, h]) => /^sms:/.test(h || '')), JSON.stringify(links));
     await open(page, `/coach/clients/${ID.jordan}`);
-    const us = await page.locator('.cc-links a').evaluateAll((a) => a.map((x) => x.textContent));
-    pass('quick buttons: iMessage shows for a +1 number', us.includes('iMessage'), us.join(', '));
+    const us = await contactLinks(page);
+    pass('quick buttons: iMessage shows for a +1 number', us.some(([t, h]) => /iMessage/.test(t) && /^sms:\+1/.test(h || '')), JSON.stringify(us));
     await open(page, `/coach/clients/${ID.leo}`);
-    pass('quick buttons: with no email or mobile, none show', (await page.locator('.cc-links a').count()) === 0);
+    pass('quick buttons: with no email or mobile, none show', (await page.locator('.cc-money-contact a').count()) === 0);
 
     // Time credit: Clock in and Clock out, to the minute.
     await open(page, `/coach/clients/${ID.marcus}`);
@@ -577,7 +579,7 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
   if (has('settings')) {
     await open(page, '/coach/settings');
     const sections = await page.locator('.cc-setnav-item').allInnerTexts();
-    pass('settings: two panes, with the owner’s sections', sections.join(', ') === 'Your details, Away and cover, Notifications, Booking, Working hours, Time zones, My calendars, Agreements, Email, Tags and fields, Note layouts, Coaches, Activity log, Look', sections.join(', '));
+    pass('settings: two panes, with the owner’s sections', sections.join(', ') === 'Your details, Away and cover, Notifications, Booking, Working hours, Time zones, My calendars, Agreements, Business, Email, Tags and fields, Note layouts, Coaches, Activity log, Look', sections.join(', '));
     const panes = await page.evaluate(() => { const n = document.querySelector('.cc-setnav').getBoundingClientRect(); const p = document.querySelector('.cc-setpane').getBoundingClientRect(); return n.right <= p.left && Math.abs(n.top - p.top) < 80; });
     pass('settings: the list is on the left and the chosen section on the right', panes);
     pass('settings: no box shows until Edit is pressed', (await page.locator('.cc-setpane input').count()) === 0);
