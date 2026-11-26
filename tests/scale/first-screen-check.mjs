@@ -54,7 +54,10 @@ const FAST_4G = { offline: false, latency: 60, downloadThroughput: (9 * 1024 * 1
 // crosshairs say "Loading …" to screen readers only; those labels are left out. Lines that move with the clock
 // ("in 12 minutes", "3 minutes ago") are left out too, since the visits are moments apart.
 const WORDS = () => {
-  const pick = [document.querySelector('.cc-callbar, .cc-bar'), document.querySelector('.cc-header'), document.querySelector('#cc-main')].filter(Boolean);
+  // Only what is drawn: on a phone the coach header is hidden under the frame's own (Polish 1 Stage B, Search and the
+  // bell in the phone menu), and a hidden element's innerText is its raw text, unread count and all.
+  const pick = [document.querySelector('.cc-callbar, .cc-bar'), document.querySelector('.cc-header'), document.querySelector('#cc-main')]
+    .filter((el) => el && (typeof el.checkVisibility !== 'function' || el.checkVisibility()));
   const loading = new Set([...document.querySelectorAll('[role="status"][aria-label^="Loading"]')].flatMap((n) => [n.getAttribute('aria-label'), (n.innerText || '').trim()]).filter(Boolean));
   const out = [];
   for (const el of pick) {

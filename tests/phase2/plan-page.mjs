@@ -112,7 +112,7 @@ async function layoutChecks(page, tag) {
       primaries,
       small,
       coralBars,
-      mission: document.querySelector('.ds-mission-card-text')?.textContent || '',
+      mission: document.querySelector('.ipp-mission-text')?.textContent || '',
       cards: document.querySelectorAll('.ds-objective').length,
       tiles: document.querySelectorAll('.ds-stile').length,
       theme: document.documentElement.getAttribute('data-theme'),
@@ -192,7 +192,8 @@ for (const mode of ['dark', 'light']) {
       }
 
       // The header pill opens the My Mission panel.
-      await page.locator(phone ? '.hdr-phone .hdr-mis' : '.hdr-desktop .hdr-mis').click();
+      // Polish 1: the frame's My Mission box (.hdr-mbox) on a phone and a laptop alike.
+      await page.locator('.hdr-frame .hdr-mbox').first().click();
       await page.waitForSelector('.ds-drop', { timeout: 10000 });
       // Its rise has finished: on a phone it has reached the bottom edge,
       // and nothing in it is still moving.

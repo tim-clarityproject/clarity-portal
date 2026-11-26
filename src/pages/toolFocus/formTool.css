@@ -1,0 +1,160 @@
+/* The older form tools in focus mode (FormTool.jsx; B3, Polish 1). The frame,
+   bar, progress line, question and foot are ToolFrame's (blocks.css); this
+   file places the fields and the quiet links under the foot. Every value is a token. */
+
+/* Under 1024px the frame gives no padding: the tool gives 20px. */
+@media (max-width: 1023px) {
+  .ui-root .ft-page {
+    padding: var(--space-px20) var(--page-x-phone) var(--space-px64);
+  }
+}
+
+.ui-root .ft-page .ds-tool .ds-rows { max-width: none; }
+
+.ui-root .ft-field { margin-bottom: var(--space-4); }
+.ui-root .ft-field:last-child { margin-bottom: 0; }
+
+.ui-root .ft-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-text);
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.ui-root .ft-help {
+  margin: calc(-1 * var(--space-1)) 0 var(--space-2);
+  font-size: var(--fs-meta);
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.ui-root .ft-need { margin-top: var(--space-px12); }
+
+/* Save as draft and Discard: quiet underlined words under the foot. */
+.ui-root .ft-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-px20);
+  max-width: var(--tool-max);
+  margin-top: var(--space-2);
+}
+
+.ui-root .ft-more .ft-link {
+  color: var(--text-2);
+  text-decoration: underline;
+  text-decoration-thickness: var(--line-w);
+  text-underline-offset: var(--space-1);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ft-more {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
+  }
+  .ui-root .ft-more .ds-more { justify-content: center; }
+}
+
+/* A list row inside a step: the box and its remove button on one line. */
+.ui-root .ft-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.ui-root .ft-row > .ds-textbox-field,
+.ui-root .ft-row > .ft-grow { flex: 1 1 auto; min-width: 0; }
+
+.ui-root .ft-row .ds-text { min-width: 0; width: 100%; box-sizing: border-box; }
+
+/* What was answered before, with Edit at the label's right (a step that shows earlier answers). */
+.ui-root .ft-recap { margin-bottom: var(--space-4); }
+
+.ui-root .ft-recap-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: var(--tap-min);
+}
+
+.ui-root .ft-recap-head .ft-link { font-size: var(--fs-meta); }
+
+.ui-root .ft-recap-text {
+  margin: 0;
+  font-size: var(--fs-text);
+  line-height: 1.55;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Give difficult feedback's live script (components.css .tc-*): 16px words, the
+   filled parts in the text colour (no coral), 13px grey notes. */
+.ui-root .tc-script-sent:not(#_) {
+  font-size: var(--fs-text);
+  line-height: 1.65;
+  padding: var(--space-1) 0 var(--space-3);
+}
+
+.ui-root :is(.tc-filled, span.tc-editable):not(#_) { color: var(--text); }
+.ui-root :is(.tc-blank, span.tc-editable.tc-blank):not(#_) { color: var(--text-2); }
+.ui-root span.tc-editable:is(:hover, :focus-visible):not(#_) { border-bottom-color: var(--text); }
+.ui-root span.tc-editable:focus-visible:not(#_) { outline-color: var(--text); }
+.ui-root :is(.tc-ck-count, .tc-ck-help):not(#_) { font-size: var(--fs-meta); }
+
+.ui-root .ds-tool.ft-tool--wide,
+.ui-root .ft-tool--wide ~ .ft-more { max-width: none; }
+
+/* Meeting planner (PlanMeeting.jsx): its older field parts in the 25 Nov type. */
+.ui-root .pm-tool .plan-field label,
+.ui-root .pm-tool .plan-ag-head {
+  font-family: var(--font-body);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.ui-root .pm-tool .plan-field label { font-size: var(--fs-text); color: var(--text); }
+.ui-root .pm-tool .plan-ag-head,
+.ui-root .pm-tool .plan-ag-field label,
+.ui-root .pm-tool .pm-total,
+.ui-root .pm-tool .plan-endline,
+.ui-root .pm-tool .plan-endline span { font-size: var(--fs-meta); color: var(--text-2); }
+.ui-root .pm-tool .plan-endline b { font-weight: var(--fw-regular); color: var(--text); }
+.ui-root .pm-tool .plan-obj-num { font-family: var(--font-body); font-size: var(--fs-text); color: var(--text-2); }
+.ui-root .pm-tool .plan-obj-row { grid-template-columns: var(--space-px28) minmax(0, 1fr) var(--tap-min); }
+.ui-root .pm-tool .plan-label-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-top: var(--space-4); }
+.ui-root .pm-tool .pm-bin-space { display: block; width: var(--tap-min); }
+
+/* Time audit (StopDoingAudit.jsx): each activity, then its hours a week on the counter. */
+.ui-root .ta-item { margin-bottom: var(--space-3); }
+.ui-root .ta-item .ft-row { margin-bottom: var(--space-2); }
+.ui-root .ta-hours { display: flex; align-items: center; gap: var(--space-3); }
+.ui-root .ta-unit { font-size: var(--fs-meta); color: var(--text-2); }
+.ui-root .ta-total { margin: var(--space-4) 0; }
+.ui-root .ta-label { margin-top: var(--space-4); }
+.ui-root .ta-tool .tsa-activity-name { margin: var(--space-3) 0 var(--space-2); font-size: var(--fs-text); color: var(--text); }
+.ui-root .ta-tool .plan-field { margin-top: var(--space-4); }
+.ui-root .ta-tool .plan-field label { font-family: var(--font-body); font-size: var(--fs-text); text-transform: none; letter-spacing: normal; color: var(--text); }
+
+/* Pressure plan (IfThenPlanning.jsx): each "if" and "then" pair with its ×. */
+.ui-root .pp-tool .plan-sc-row { display: grid; grid-template-columns: minmax(0, 1fr) var(--tap-min); gap: var(--space-2); align-items: end; margin-bottom: var(--space-3); }
+.ui-root .pp-tool .plan-sc-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.ui-root .pp-tool .pm-bin-space { display: block; width: var(--tap-min); }
+.ui-root .pp-tool .plan-sc-pair label { font-family: var(--font-body); font-size: var(--fs-meta); text-transform: none; letter-spacing: normal; color: var(--text-2); }
+@media (max-width: 600px) {
+  .ui-root .pp-tool .plan-sc-pair { grid-template-columns: 1fr; }
+}
+
+/* The tools' saved summaries (…Summary.jsx; components.css .plan-sum*, .inv-sum*,
+   .tsa-total): 16px values, 13px grey labels in DM Sans (Polish 1, rules 1 to 3). */
+.ui-root .plan-sum-value:not(#_) { font-size: var(--fs-text); line-height: 1.55; }
+.ui-root :is(.plan-sum-label, .plan-table-total, .plan-none):not(#_) { font-family: var(--font-body); font-size: var(--fs-meta); color: var(--text-2); }
+.ui-root .inv-sum-risk-label:not(#_) {
+  font-family: var(--font-body);
+  font-size: var(--fs-meta);
+  letter-spacing: var(--ls-section-title);
+  color: var(--text-2);
+}
+.ui-root .tsa-total:not(#_),
+.ui-root .tsa-total b:not(#_) { font-family: var(--font-body); font-size: var(--fs-text); font-weight: var(--fw-regular); }

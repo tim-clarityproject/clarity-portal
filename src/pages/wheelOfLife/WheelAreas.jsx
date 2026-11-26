@@ -1,11 +1,11 @@
-import { useContext, useState } from 'react';
+import { useCallback, useContext, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { useDraft } from '../../lib/drafts';
 import DesignHeader from '../../components/DesignHeader';
-import pageText from '../../content/pageText';
+import { B2_LINES } from '../../content/pageLines/client';
 import {
-  Button, PageHeader, TextBox, useToast,
+  AddLink, Button, Card, MoreLink, PageOpening, QuickAdd, Row, TextBox, useToast,
 } from '../../components/design';
 import {
   OWN_NAME_MAX, areaName, differsFromStandard, isDuplicateName, questionFor, sortAreas,
@@ -13,9 +13,7 @@ import {
 import { addOwnArea, resetToStandard, setAreaActive } from '../../lib/wheelOfLifeApi';
 import useWheelData from './useWheelData';
 import useArrivalToast, { returnPath } from './useArrivalToast';
-import WheelFooter from './WheelFooter';
 import WheelLoadState from './WheelLoadState';
-import { BinIcon } from './icons';
 import '../../styles/wheelOfLife.css';
 
 const SAVE_ERROR = 'That change hasn’t saved. Check your connection and try again.';
@@ -40,6 +38,8 @@ export default function WheelAreas() {
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
+  const [adding, setAdding] = useState(() => false);
+  const closeAdd = useCallback(() => setAdding(false), []);
   const { user } = useContext(AuthContext);
 
   // Typing survives a refresh or a closed tab (Tim, 26 Oct). Once an area
@@ -51,7 +51,7 @@ export default function WheelAreas() {
     value: { name: draft },
     ready: !data.loading && !data.error,
     onRestore: (saved) => {
-      if (typeof saved?.name === 'string') setDraft(saved.name);
+      if (typeof saved?.name === 'string') { setDraft(saved.name); if (saved.name.trim()) setAdding(true); }
     },
   });
 
@@ -112,92 +112,82 @@ export default function WheelAreas() {
     }
     const optimistic = dup.restore ? all.map((a) => (a.key === dup.restore.key ? { ...a, active: true } : a)) : null;
     const saved = await save(optimistic, () => addOwnArea(name), null);
-    if (saved) setDraft('');
+    if (saved) {
+      setDraft('');
+      setAdding(false);
+    }
   };
 
   const goBack = () => navigate(back);
   const saveAreas = () => navigate(back, { state: { toast: 'Areas saved. Your wheel and next check-in use them.' } });
 
+  // Polish 1 (rules 10 and 12 to 16): the page opening with its one main button, the areas as a
+  // card of hairline rows with "+ Add" (Quick Add) at the right of its label, and no Nekst on the
+  // areas' numbers. Every add, remove and restore still saves at once.
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page plan-page--form wol-page wol-page--footer wol-enter">
-        <div className="wol-head">
-          <PageHeader title="Your areas" info={pageText.wheelOfLifeAreas} />
-        </div>
+      <main className="plan-page wol-page wol-page--open wol-enter">
+        <div className="wol-back"><MoreLink back onClick={goBack}>Back</MoreLink></div>
+        <PageOpening
+          title="Your areas"
+          line={B2_LINES.lifeBalanceAreas}
+          action={<Button variant="primary" onClick={saveAreas}>Save areas</Button>}
+        />
 
-        <span className="wol-lab">{`On your wheel · ${n}`}</span>
-        <div className="wol-arl">
-          {active.map((a, j) => (
-            <div className="wol-ar" key={a.key}>
-              <b>{String(j + 1).padStart(2, '0')}</b>
-              <div className="wol-arin">
-                <span className="wol-an">
-                  {areaName(a)}
-                  {a.kind === 'own' ? <span className="wol-tg wol-tg--c">Your own</span> : null}
-                </span>
-                <small>{questionFor(a)}</small>
-              </div>
-              <button
-                type="button"
-                className="wol-ib"
-                aria-label={`Remove ${areaName(a)}`}
-                disabled={n <= 1 || pending}
-                onClick={() => toggle(a.key, false)}
+        <div className="wol-cards">
+          <Card
+            label={`On your wheel, ${n}`}
+            add={<AddLink label="Add your own area" expanded={adding} controls="wol-add-area" onClick={() => setAdding(true)} />}
+            quickAdd={(
+              <QuickAdd id="wol-add-area" open={adding} onClose={closeAdd} onAdd={add} label="Add your own area" addLabel="Add area">
+                <TextBox
+                  id="wol-add"
+                  label="Name your area"
+                  lines="one"
+                  maxLength={OWN_NAME_MAX}
+                  autoComplete="off"
+                  placeholder="e.g. Travel"
+                  value={draft}
+                  onChange={setDraft}
+                  onKeyDown={(e) => { if (e.key === 'Enter') add(); if (e.key === 'Escape') closeAdd(); }}
+                />
+                <p className="wol-note-line">New areas start with no history.</p>
+              </QuickAdd>
+            )}
+          >
+            {active.map((a, j) => (
+              <Row
+                key={a.key}
+                className="wol-area-row"
+                name={<><span className="wol-area-n">{j + 1}</span>{areaName(a)}</>}
+                sub={a.kind === 'own' ? `Your own. ${questionFor(a)}` : questionFor(a)}
               >
-                <BinIcon />
-              </button>
-            </div>
-          ))}
-        </div>
-        {n <= 1 ? <p className="wol-hint3">Keep at least one area on your wheel.</p> : null}
-        {n > 1 && n < 3 ? <p className="wol-hint3">With fewer than three areas, your wheel shows as Sectional.</p> : null}
-        {error ? <p className="plan-save-error" role="alert">{error}</p> : null}
+                <MoreLink small bare className="wol-row-act" aria-label={`Remove ${areaName(a)}`} disabled={n <= 1 || pending} onClick={() => toggle(a.key, false)}>Remove</MoreLink>
+              </Row>
+            ))}
+            {n <= 1 ? <p className="wol-note-line">Keep at least one area on your wheel.</p> : null}
+            {n > 1 && n < 3 ? <p className="wol-note-line">With fewer than three areas, your wheel shows as Sectional.</p> : null}
+            {error ? <p className="plan-save-error" role="alert">{error}</p> : null}
+          </Card>
 
-        <div className="wol-addw">
-          <div className="wol-addr">
-            <TextBox
-              id="wol-add"
-              label="Add your own area"
-              lines="one"
-              maxLength={OWN_NAME_MAX}
-              autoComplete="off"
-              placeholder="e.g. Travel"
-              value={draft}
-              onChange={setDraft}
-              onKeyDown={(e) => { if (e.key === 'Enter') add(); }}
-            />
-            <Button className="wol-add-btn" disabled={!draft.trim() || pending} onClick={add}>
-              Add area
-            </Button>
-          </div>
-          <small>New areas start with no history. Their question will read “…how satisfied are you with travel in your life right now?”</small>
-        </div>
-
-        {removed.length ? (
-          <>
-            <span className="wol-lab">{`Removed · ${removed.length}`}</span>
-            <div className="wol-arl">
+          {removed.length ? (
+            <Card label={`Removed, ${removed.length}`}>
               {removed.map((a) => (
-                <div className="wol-ar wol-ar--off" key={a.key}>
-                  <b aria-hidden="true" />
-                  <div className="wol-arin">
-                    <span>{areaName(a)}</span>
-                    <small>Past scores kept</small>
-                  </div>
-                  <button type="button" className="ds-btn ds-btn--outline wol-rest" disabled={pending} onClick={() => toggle(a.key, true)}>Restore</button>
-                </div>
+                <Row key={a.key} className="wol-area-row" name={areaName(a)} sub="Past scores kept">
+                  <MoreLink small bare className="wol-row-act" aria-label={`Restore ${areaName(a)}`} disabled={pending} onClick={() => toggle(a.key, true)}>Restore</MoreLink>
+                </Row>
               ))}
-            </div>
-          </>
-        ) : null}
+            </Card>
+          ) : null}
+        </div>
 
         {differsFromStandard(all) ? (
-          <Button variant="text" className="wol-qlink wol-reset" disabled={pending} onClick={reset}>Go back to the ten standard areas</Button>
+          <div className="wol-foot-links">
+            <MoreLink bare onClick={reset} disabled={pending}>Go back to the ten standard areas</MoreLink>
+          </div>
         ) : null}
-      </div>
-
-      <WheelFooter onBack={goBack} primary={{ label: 'Save areas', onClick: saveAreas }} />
+      </main>
     </div>
   );
 }

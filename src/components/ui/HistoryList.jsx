@@ -1,8 +1,8 @@
 import { Fragment, useState } from 'react';
 import { parseDbTimestamp, formatDayMonthTime } from '../../lib/dateFormatter';
-import pageText from '../../content/pageText';
 import { noMatchLine, searchRows } from '../../lib/savedItems';
-import { Button, Chevron, Dropdown, EmptyState, FilterButton, PageHeader, SearchField, keepsHappeningLine, useCoach } from '../design';
+import { Button, Card, Chevron, Dropdown, EmptyState, FilterButton, PageOpening, SearchField, keepsHappeningLine, useCoach } from '../design';
+import { rowName } from '../design/ListRow';
 
 // LIST ROW GUIDELINES (CLAUDE.md "List row guidelines"; a mock-up or a
 // newer decision wins where it shows a detail). Every row of every list:
@@ -85,6 +85,7 @@ function countForFilter(rows, filterDef) {
 export default function HistoryList({
   title,
   pageKey,
+  line,
   rows = [],
   filters = [],
   subFilters = {},
@@ -118,11 +119,7 @@ export default function HistoryList({
     return (
       <div className="ui-root hlist-wrap">
         <HistoryListStyles />
-        <div className="hlist-head">
-          <div>
-            {title && <PageHeader title={title} info={pageText[pageKey]} />}
-          </div>
-        </div>
+        {title && <PageOpening title={title} line={line} />}
         <div className="hlist-error" role="alert">
           <p>{error.message || 'That didn’t load. Check your connection and try again.'}</p>
           <p>{keepsHappeningLine(coach)}</p>
@@ -151,20 +148,12 @@ export default function HistoryList({
     activeSubFilter !== 'all' ? activeSubFilterDef?.label : null,
   ].filter(Boolean).join(', ');
 
-  let lastMonth = '';
-
   return (
-    <div className="ui-root hlist-wrap">
+    <div className={`ui-root hlist-wrap${rows.some((r) => (onReview && r.canReview) || (onEdit && r.isDraft && r.canEdit !== false)) ? '' : ' hlist-wrap--noactions'}`}>
       <HistoryListStyles />
 
-      <div className="hlist-head">
-        <div>
-          {title && <PageHeader title={title} info={pageText[pageKey]} />}
-        </div>
-        {newButton && (
-          <NewButton newButton={newButton} className="hlist-new-desktop" />
-        )}
-      </div>
+      {/* Polish 1 (rule 12): the page opening, its one main button the list's "New plan". */}
+      {title && <PageOpening title={title} line={line} action={newButton ? <NewButton newButton={newButton} /> : null} />}
 
       {search && rows.length > 0 && (
         <SearchField
@@ -207,7 +196,7 @@ export default function HistoryList({
       {filtered.length > 0 && (
       <div className="hlist-tools">
         <span>{filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}</span>
-        <button type="button" className="hlist-sort-link" onClick={() => setSortOrder((o) => (o === 'new' ? 'old' : 'new'))}>
+        <button type="button" className="hlist-sort-link ds-hlist-btn" onClick={() => setSortOrder((o) => (o === 'new' ? 'old' : 'new'))}>
           {sortOrder === 'new' ? 'Newest first' : 'Oldest first'}
           {/* The one chevron (Tim, 26 Oct): down for newest first, up for oldest first. */}
           <Chevron direction={sortOrder === 'new' ? 'down' : 'up'} size="sm" beside="words" />
@@ -221,57 +210,56 @@ export default function HistoryList({
         </div>
       ) : (
         <>
-          {visible.map((row) => {
-            const mm = formatMonthHeading(rowTime(row));
-            const showMonth = mm !== lastMonth;
-            lastMonth = mm;
-            const canReview = Boolean(onReview && row.canReview);
-            const canContinue = Boolean(onEdit && row.isDraft && row.canEdit !== false);
-            // No icons in rows (Tim, 5 Nov): every row is the same height;
-            // editing and deleting sit inside the item once opened.
-            return (
-              <Fragment key={row.id}>
-                {showMonth && <div className="hlist-month">{mm}</div>}
-                <div className="hlist-row">
-                  <button type="button" className="hlist-row-main" onClick={() => onOpen?.(row)}>
-                    <span className="hlist-row-title">{row.title}</span>
-                    <span className="hlist-row-date">{row.dateLabel ?? formatDayMonthTime(row.date)}</span>
-                    <span className="hlist-row-sub">
-                      <span className="hlist-row-tags">
-                        <b>{row.typeLabel}</b>
-                        {row.isDraft && <span className="hlist-draft-tag">Draft</span>}
-                        {row.reviewed && <span className="hlist-reviewed-tag">Reviewed</span>}
-                        {row.version && <span className="hlist-version">{row.version}</span>}
+          {/* One card a month (Polish 1, rule 13): the month as its label, the rows as hairline rows. */}
+          {monthGroups(visible).map(({ month, rows: monthRows }) => (
+            <Card key={month || 'none'} label={month} className="hlist-card">
+              {monthRows.map((row) => {
+                const canReview = Boolean(onReview && row.canReview);
+                const canContinue = Boolean(onEdit && row.isDraft && row.canEdit !== false);
+                // No icons in rows (Tim, 5 Nov): every row is the same height;
+                // editing and deleting sit inside the item once opened.
+                return (
+                  <div className="hlist-row" key={row.id}>
+                    <button type="button" className="hlist-row-main ds-li ds-hlist-btn" onClick={() => onOpen?.(row)}>
+                      <span className="hlist-row-title">{rowName(row.title, row.typeLabel, typeof row.date === 'string' ? row.date : null)}</span>
+                      <span className="hlist-row-date">{row.dateLabel ?? formatDayMonthTime(row.date)}</span>
+                      <span className="hlist-row-sub">
+                        <span className="hlist-row-tags">
+                          <b>{row.typeLabel}</b>
+                          {row.isDraft && <span className="hlist-draft-tag">Draft</span>}
+                          {row.reviewed && <span className="hlist-reviewed-tag">Reviewed</span>}
+                          {row.version && <span className="hlist-version">{row.version}</span>}
+                        </span>
+                        {row.meta && <span className="hlist-row-meta"><span>{row.meta}</span></span>}
                       </span>
-                      {row.meta && <span className="hlist-row-meta"><span>{row.meta}</span></span>}
-                    </span>
-                  </button>
-                  {/* Always there on a laptop, empty or not, so every row's
-                      date lines up; a phone shows no empty action row. */}
-                  <div className={`hlist-row-controls${canReview || canContinue ? '' : ' hlist-row-controls--empty'}`}>
-                    {canReview && (
-                      <button
-                        type="button"
-                        className="hlist-review-btn"
-                        onClick={(e) => { e.stopPropagation(); onReview(row); }}
-                      >
-                        {row.reviewed ? 'View review' : 'Review'}
-                      </button>
-                    )}
-                    {canContinue && (
-                      <button
-                        type="button"
-                        className="hlist-continue-btn"
-                        onClick={(e) => { e.stopPropagation(); onEdit(row); }}
-                      >
-                        Continue
-                      </button>
-                    )}
+                    </button>
+                    {/* Always there on a laptop, empty or not, so every row's
+                        date lines up; a phone shows no empty action row. */}
+                    <div className={`hlist-row-controls${canReview || canContinue ? '' : ' hlist-row-controls--empty'}`}>
+                      {canReview && (
+                        <button
+                          type="button"
+                          className="hlist-review-btn ds-hlist-btn"
+                          onClick={(e) => { e.stopPropagation(); onReview(row); }}
+                        >
+                          {row.reviewed ? 'View review' : 'Review'}
+                        </button>
+                      )}
+                      {canContinue && (
+                        <button
+                          type="button"
+                          className="hlist-continue-btn ds-hlist-btn"
+                          onClick={(e) => { e.stopPropagation(); onEdit(row); }}
+                        >
+                          Continue
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Fragment>
-            );
-          })}
+                );
+              })}
+            </Card>
+          ))}
 
           {hasMore && (
             <div className="hlist-show-more-wrap">
@@ -283,13 +271,20 @@ export default function HistoryList({
         </>
       )}
 
-      {newButton && (
-        <div className="hlist-new-phone-wrap">
-          <NewButton newButton={newButton} />
-        </div>
-      )}
     </div>
   );
+}
+
+/** The visible rows in their months, in order ("November 2026"). */
+function monthGroups(rows) {
+  const groups = [];
+  rows.forEach((row) => {
+    const month = formatMonthHeading(rowTime(row));
+    const last = groups[groups.length - 1];
+    if (last && last.month === month) last.rows.push(row);
+    else groups.push({ month, rows: [row] });
+  });
+  return groups;
 }
 
 function HistoryListStyles() {
@@ -300,42 +295,24 @@ function HistoryListStyles() {
 // used by BreathingOrb.jsx/Toast.jsx elsewhere in this codebase. Values
 // with no matching token are called out in the task summary.
 const HLIST_CSS = `
+/* Polish 1, Stage B (B1): the lists to the 25 Nov reference. The opening is PageOpening; each month is
+   one card (rule 13) with the month as its 13px grey label; the rows are hairline rows (rule 14): the
+   name 16px at 500 on the left, the date 13px grey on the right on a laptop and under the name on a
+   phone, the tool and its tags 13px grey under the name. No coloured side line, no sliding, no coral.
+   The row's button carries the shared row's class (.ds-li) so it is read as the list row it is; the
+   rules here (the same weight, later in the page) shape it. */
 .hlist-wrap { width: 100%; box-sizing: border-box; }
 
-.hlist-head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
-}
-.hlist-head > div { min-width: 0; max-width: 100%; }
-
-.hlist-new-phone-wrap {
-  display: none;
-  margin-top: var(--space-4);
-  justify-content: center;
-}
-
-@media (max-width: 768px) {
-  .ui-root .hlist-head .hlist-new-desktop { display: none !important; }
-  .hlist-new-phone-wrap { display: flex; }
-}
-
-/* The search box, with the Filter button under it (Phase 5 step 4). */
-.ui-root .hlist-search {
-  margin-bottom: var(--space-3);
-}
+.ui-root .hlist-search { margin-bottom: var(--space-3); }
 
 .hlist-tools {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-3);
-  margin: 22px 0 4px;
-  font-size: calc(13 * var(--u, 1px));
-  color: var(--placeholder);
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: var(--fs-meta);
+  color: var(--text-2);
 }
 
 .ui-root .hlist-sort-link {
@@ -346,105 +323,50 @@ const HLIST_CSS = `
   padding: 0 !important;
   background: transparent;
   border: none;
-  font-size: calc(13 * var(--u, 1px)) !important;
+  font-size: var(--fs-meta) !important;
   color: var(--text-2);
   cursor: pointer;
   transition: color var(--dur) var(--ease);
 }
 
-/* The sort link's chevron is centred on its words (Tim, 11 Nov): measured here, it sat a little high. */
 .ui-root .hlist-sort-link .ds-chevron-line { --chev-nudge: 0.2px; }
 
 .ui-root .hlist-sort-link:hover,
-.ui-root .hlist-sort-link:focus-visible {
-  color: var(--text);
-}
+.ui-root .hlist-sort-link:focus-visible { color: var(--text); }
 
 .ui-root .hlist-sort-link:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px2);
 }
 
-.hlist-month {
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: var(--ls-section-title);
-  font-size: var(--fs-section-title);
-  color: var(--text);
-  margin: var(--space-5) 0 6px;
-}
-
-.hlist-month:first-of-type { margin-top: var(--space-3); }
-
-.hlist-empty {
-  padding: 40px 0;
-  color: var(--text-2);
-  font-size: var(--fs-body-sub);
-  text-align: center;
-}
-
+.hlist-empty,
 .hlist-error {
-  padding: 40px 0;
+  padding: var(--space-4) 0;
   color: var(--text-2);
-  font-size: var(--fs-body-sub);
-  text-align: center;
+  font-size: var(--fs-text);
 }
 
 .hlist-error p { margin: 0 0 var(--space-3); }
 
 /* Row */
-.hlist-row {
-  position: relative;
+.ui-root .hlist-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  border-bottom: 1px solid var(--line);
+  border-top: var(--line-w) solid var(--line-soft);
 }
 
-.hlist-row::before {
-  content: '';
-  position: absolute;
-  left: -14px;
-  top: 14px;
-  bottom: 14px;
-  width: 2px;
-  background: var(--coral);
-  transform: scaleY(0);
-  transition: transform var(--dur) var(--ease);
-}
-
-@media (min-width: 769px) {
-  .hlist-row:hover::before,
-  .hlist-row:focus-within::before {
-    transform: scaleY(1);
-  }
-  .hlist-row:hover .hlist-row-title,
-  .hlist-row:hover .hlist-row-date,
-  .hlist-row:hover .hlist-row-tags,
-  .hlist-row:hover .hlist-row-meta,
-  .hlist-row:focus-within .hlist-row-title,
-  .hlist-row:focus-within .hlist-row-tags,
-  .hlist-row:focus-within .hlist-row-meta {
-    transform: translateX(6px);
-  }
-  .hlist-row-main:hover .hlist-row-title {
-    color: var(--coral-soft);
-  }
-}
+.ui-root .ds-card-head + .hlist-row { border-top: 0; }
 
 .ui-root .hlist-row-main {
   all: unset;
   box-sizing: border-box;
   cursor: pointer;
+  border-top: 0;
   flex: 1;
   min-width: 0;
-  padding: 18px 8px 18px 24px !important;
-  /* A grid, not display:block: Safari lays a <button>'s block children
-     out in a shrink-to-fit box and centres it. The name and the date
-     share the first line (writing rule 60); the tool line and any count
-     sit under the name, every line on the same left edge. */
+  padding: var(--card-row-y) 0 !important;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: var(--space-3);
@@ -454,82 +376,59 @@ const HLIST_CSS = `
   min-height: var(--tap-min);
 }
 
+.ui-root .ds-card-head + .hlist-row .hlist-row-main { padding-top: var(--space-px6) !important; }
+.ui-root .hlist-card > .hlist-row:last-child .hlist-row-main { padding-bottom: 0 !important; }
+
 .ui-root .hlist-row-main:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: -2px;
-  border-radius: 4px;
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px2);
+  border-radius: var(--radius-control);
 }
 
-.hlist-row-title {
+.ui-root .hlist-row-title {
   display: block;
-  font-size: calc(17 * var(--u, 1px));
+  font-size: var(--fs-text);
+  font-weight: var(--fw-medium);
+  line-height: 1.4;
   color: var(--text);
-  line-height: 1.3;
-  /* Wraps between words only - a date title never breaks mid-word.
-     (overflow-wrap: break-word only splits a single word that is
-     longer than the whole line.) */
   max-width: 100%;
   white-space: normal;
   overflow-wrap: break-word;
   word-break: normal;
   hyphens: none;
-  transition: transform var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
-.hlist-row-date {
+.ui-root .hlist-row-main:hover .hlist-row-title { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+
+.ui-root .hlist-row-date {
   grid-column: 2;
   grid-row: 1;
   font-size: var(--fs-meta);
-  line-height: 1.3;
+  line-height: 1.4;
   color: var(--text-2);
   white-space: nowrap;
-  transition: transform var(--dur) var(--ease);
 }
 
-.ui-root .hlist-row-main .hlist-row-sub {
-  grid-column: 1;
-}
+.ui-root .hlist-row-main .hlist-row-sub { grid-column: 1; }
 
-.hlist-version {
+.ui-root :is(.hlist-version, .hlist-draft-tag, .hlist-reviewed-tag) {
   display: inline-block;
-  padding: 1px 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  font-family: var(--font-body); /* no Nekst inside a row people tap (Tim, 18 Nov, follow-up 1) */
-  font-weight: var(--fw-medium);
+  padding: 0 var(--space-2);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-control);
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
   letter-spacing: normal;
   font-size: var(--fs-meta);
+  line-height: 1.5;
   color: var(--text-2);
-  line-height: 1.4;
 }
 
-.hlist-draft-tag {
-  display: inline-block;
-  padding: 1px 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  font-family: var(--font-body); /* no Nekst inside a row people tap (Tim, 18 Nov, follow-up 1) */
-  font-weight: var(--fw-medium);
-  letter-spacing: normal;
-  font-size: var(--fs-meta);
-  color: var(--text-2);
-  line-height: 1.4;
-}
+.ui-root .hlist-reviewed-tag { color: var(--mint-text); border-color: var(--good); }
 
-.hlist-reviewed-tag {
-  display: inline-block;
-  padding: 1px 8px;
-  border: 1px solid var(--good);
-  border-radius: var(--radius-pill);
-  font-family: var(--font-body); /* no Nekst inside a row people tap (Tim, 18 Nov, follow-up 1) */
-  font-weight: var(--fw-medium);
-  letter-spacing: normal;
-  font-size: var(--fs-meta);
-  color: var(--mint-text);
-  line-height: 1.4;
-}
+.ui-root .hlist-wrap--noactions .hlist-row-controls { display: none; }
 
-.hlist-row-controls {
+.ui-root .hlist-row-controls {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -538,228 +437,88 @@ const HLIST_CSS = `
   min-width: var(--hlist-actions-w);
 }
 
-/* Phone row anatomy (<= 768px), the same for every row of every list:
-     line 1  name, wraps between words only, and the date on the right
-     line 2  tool, status tag (Draft / Reviewed), version chip
-     line 3  any count
-     actions one right-aligned row beneath, small even gap above (none
-             when the row has nothing to do)
-   Everything starts at the same left edge: nothing is indented or
-   centred. Selectors carry .ui-root so they always out-rank the base
-   rules declared further down this sheet (the earlier version of this
-   block lost that fight - the stack stayed centre-aligned - and
-   mobile.css's 14px button font beat the action text). On a laptop the
-   actions sit at the right of the row: see the base rules. */
-@media (max-width: 768px) {
-  .ui-root .hlist-row {
-    flex-wrap: wrap;
-    align-items: flex-start;
-    /* The 16px gap is for the laptop's side-by-side layout: stacked, it
-       left about 40px above the action's words (Tim, 10 Nov). */
-    row-gap: 0;
-  }
-  .ui-root .hlist-row-main {
-    flex: 1 1 100%;
-    text-align: left;
-    /* No side padding on a phone, so the words start on the list's left
-       edge and the date ends on its right, as every other list's rows
-       (.ds-row) do (tidy pass item 10). */
-    padding: var(--space-3) 0 var(--space-1) 0 !important;
-  }
-  .ui-root .hlist-row-controls--empty {
-    display: none;
-  }
-  .ui-root .hlist-row-main:has(+ .hlist-row-controls--empty) {
-    padding-bottom: var(--space-3) !important;
-  }
-  .ui-root .hlist-row-sub {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    row-gap: var(--space-1);
-    margin-top: var(--space-1);
-    width: 100%;
-  }
-  .ui-root .hlist-row-tags,
-  .ui-root .hlist-row-meta {
-    justify-content: flex-start;
-    align-items: center;
-    margin: 0;
-    text-align: left;
-  }
-  .ui-root .hlist-row-tags {
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    /* One line height whether or not a tag is present, so the date
-       line sits at the same distance below the title in every row. */
-    min-height: calc(var(--space-3) + var(--space-1));
-  }
-  .ui-root .hlist-row-controls {
-    min-width: 0;
-    flex: 1 1 100%;
-    justify-content: flex-end;
-    gap: var(--space-1);
-    padding: 0 0 var(--space-1) 0;
-  }
-}
-
-.ui-root .hlist-continue-btn {
+.ui-root :is(.hlist-continue-btn, .hlist-review-btn) {
   all: unset;
   cursor: pointer;
   box-sizing: border-box;
-  min-height: var(--tap-min);
-  padding: 0 var(--space-2) !important;
-  color: var(--coral-text);
-  /* No Nekst inside a control (Tim, 18 Nov, follow-up 1). */
-  font-family: var(--font-body);
-  font-weight: var(--fw-medium);
-  letter-spacing: normal;
-  font-size: var(--fs-meta) !important;
-  white-space: nowrap;
-  transition: color var(--dur-fast) var(--ease);
-}
-
-.ui-root .hlist-continue-btn:hover,
-.ui-root .hlist-continue-btn:focus-visible {
-  color: var(--coral-soft);
-}
-
-.ui-root .hlist-continue-btn:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-.ui-root .hlist-review-btn {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  min-height: var(--tap-min);
-  padding: 0 var(--space-2) !important;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: var(--text-2);
-  font-family: var(--font-body); /* no Nekst inside a row people tap (Tim, 18 Nov, follow-up 1) */
-  font-weight: var(--fw-medium);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2) !important;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
   letter-spacing: normal;
   font-size: var(--fs-meta) !important;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
   white-space: nowrap;
   transition: color var(--dur-fast) var(--ease);
 }
 
-.ui-root .hlist-review-btn:hover,
-.ui-root .hlist-review-btn:focus-visible {
-  color: var(--text);
+.ui-root .hlist-continue-btn { color: var(--text); }
+
+.ui-root :is(.hlist-continue-btn, .hlist-review-btn):hover,
+.ui-root :is(.hlist-continue-btn, .hlist-review-btn):focus-visible { color: var(--text); }
+
+.ui-root :is(.hlist-continue-btn, .hlist-review-btn):focus-visible {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px2);
+  border-radius: var(--radius-control);
 }
 
-.ui-root .hlist-review-btn:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-.hlist-row-sub {
+.ui-root .hlist-row-sub {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   column-gap: var(--space-3);
   row-gap: var(--space-1);
-  margin-top: 5px;
+  margin-top: var(--space-1);
 }
 
-.hlist-row-tags {
+.ui-root .hlist-row-tags {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  transition: transform var(--dur) var(--ease);
 }
 
-.hlist-row-meta {
-  font-size: calc(13 * var(--u, 1px));
+.ui-root .hlist-row-meta {
+  font-size: var(--fs-meta);
   color: var(--text-2);
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
-  transition: transform var(--dur) var(--ease);
 }
 
-.hlist-row-tags b {
-  /* No Nekst inside a row people tap (Tim, 18 Nov, follow-up 1). */
+.ui-root .hlist-row-tags b {
   font-family: var(--font-body);
-  font-weight: var(--fw-medium);
+  font-weight: var(--fw-regular);
   letter-spacing: normal;
   font-size: var(--fs-meta);
   color: var(--text-2);
 }
 
-.ui-root .hlist-icon-btn {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--placeholder);
-  flex-shrink: 0;
-  transition: color var(--dur-fast) var(--ease);
-}
-
-.ui-root .hlist-icon-btn:hover,
-.ui-root .hlist-icon-btn:focus-visible {
-  color: var(--text);
-}
-
-.ui-root .hlist-icon-btn--del:hover,
-.ui-root .hlist-icon-btn--del:focus-visible {
-  color: var(--coral);
-}
-
-.ui-root .hlist-icon-btn:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: -4px;
-  border-radius: 8px;
-}
-
-.hlist-icon {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.15;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* Phone (<= 768px): one structure for every list - see the single
-   phone block above (title, tags, date, then one right-aligned action
-   row). The older side-by-side phone rule that lived here fought with
-   it (overflow-wrap: anywhere split dates mid-word, and a 14px offset
-   on the controls left a gap), so it was removed. */
+/* A phone: the date goes under the name (rule 14), every line on one left edge; any action sits
+   on its own line under the row, at its right. */
 @media (max-width: 768px) {
-  .hlist-row::before { display: none; }
+  .ui-root .hlist-row { flex-wrap: wrap; align-items: flex-start; row-gap: 0; }
+  .ui-root .hlist-row-main { flex: 1 1 100%; grid-template-columns: minmax(0, 1fr); }
+  .ui-root .hlist-row-date { grid-column: 1; grid-row: auto; order: 3; margin-top: var(--space-1); }
+  .ui-root .hlist-row-controls--empty { display: none; }
+  .ui-root .hlist-row-controls { min-width: 0; flex: 1 1 100%; padding: 0 0 var(--space-1) 0; }
 }
 
 .hlist-show-more-wrap {
   display: flex;
-  justify-content: center;
-  margin-top: var(--space-4);
+  justify-content: flex-start;
+  margin-top: var(--space-3);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hlist-row,
-  .hlist-row::before,
-  .hlist-row-title,
-  .hlist-row-meta,
-  .hlist-sort-link,
-  .hlist-icon-btn {
-    transition: none !important;
-  }
+  .ui-root .hlist-sort-link, .ui-root .hlist-continue-btn, .ui-root .hlist-review-btn { transition: none !important; }
 }
 `;
 
@@ -767,5 +526,5 @@ const HLIST_CSS = `
 // button. It opens a tool rather than adding a row to the list under it,
 // so it is never the add row (Tim, 18 Nov).
 function NewButton({ newButton, className = '' }) {
-  return <Button className={className} onClick={newButton.onClick}>{newButton.label}</Button>;
+  return <Button variant="primary" className={className} onClick={newButton.onClick}>{newButton.label}</Button>;
 }

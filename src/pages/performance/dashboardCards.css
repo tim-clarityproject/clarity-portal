@@ -47,8 +47,9 @@
   color: var(--text-2);
 }
 
-.ui-root .dash-page .dash-colb:hover,
-.ui-root .dash-page .dash-colb:focus-visible { color: var(--text); }
+/* :not(#_) as the rule above, or the grey wins and hover shows nothing (the focus and hover check). */
+.ui-root .dash-page .dash-colb:not(#_):hover,
+.ui-root .dash-page .dash-colb:not(#_):focus-visible { color: var(--text); }
 
 /* Every figure in a row is DM Sans 24px light (rule 1). */
 .ui-root .dash-page .dash-fv b,
@@ -84,3 +85,91 @@
 
 /* The time switch: four answer boxes (rule 7) in the tool column's width, so "Current sprint" never cuts off. */
 .ui-root .dash-page .dash-span { max-width: var(--tool-max); }
+
+/* A folded row on a phone (B1, rule 14): the figure goes under the name in its own line, so the name
+   never squeezes onto two lines beside a 24px figure ("Streaks and / habits"); the chevron stays on
+   the right, centred on the row. */
+@media (max-width: 600px) {
+  .ui-root .dash-page .dash-fold-h {
+    grid-template-columns: minmax(0, 1fr) var(--tap-min);
+    grid-template-areas: "w m" "v m";
+    row-gap: var(--space-1);
+  }
+  .ui-root .dash-page .dash-fold-words { grid-area: w; }
+  .ui-root .dash-page .dash-fv { grid-area: v; justify-self: start; }
+  .ui-root .dash-page .dash-fv b { white-space: nowrap; text-align: left; }
+  .ui-root .dash-page .dash-fold-mark { grid-area: m; grid-column: auto; }
+}
+
+/* Tim's walk of Stage A (B1), items 13, 14 and 17:
+   13. A row's value is the row style, never the 24px figure: 16px like its name (regular), the text
+       colour, mint where good; units and "of 40" 13px grey. 24px light is only "Your weeks"' headline.
+   14. The debrief line is the one card: 24px all round (20 on a phone), a 1px line, no fill.
+   17. The chart's "Best" label in the secondary grey (4.5:1 and more in both modes). */
+.ui-root .dash-page .dash-fv b,
+.ui-root .dash-page .dash-crow-v strong,
+.ui-root .dash-page .dash-crow-v .dash-crow-lng,
+.ui-root .dash-page .dash-big {
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-text);
+  line-height: 1.4;
+  letter-spacing: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--text);
+}
+
+.ui-root .dash-page .dash-fv b.dash-fv-good,
+.ui-root .dash-page .dash-big.dash-big--good { color: var(--mint-text); }
+
+.ui-root .dash-page .dash-fv .ds-unit,
+.ui-root .dash-page .dash-big .ds-unit,
+.ui-root .dash-page .dash-crow-of,
+.ui-root .dash-page .dash-crow-dl,
+.ui-root .dash-page .dash-crow-cvl {
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-regular);
+  color: var(--text-2);
+}
+
+.ui-root .dash-page .dash-debrief {
+  padding: var(--card-pad);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  font-size: var(--fs-text);
+}
+
+.ui-root .dash-page .dash-hchart-tag { color: var(--text-2); }
+
+/* 15. Outcome Objectives and Strategies are plain labels inside their section (no fold inside a fold). */
+.ui-root .dash-page .dash-grph-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 var(--space-1);
+}
+
+.ui-root .dash-page .dash-grph-label h3 {
+  margin: 0 !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-meta) !important;
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--ls-section-title);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.ui-root .dash-page .dash-grph-label .dash-grph-rt {
+  font-size: var(--fs-meta);
+  color: var(--text-2);
+}
+
+/* A folded row's chevron (walk item 8, `chevron-line`; Polish 1 Stage B): at the row's right end, on the name's
+   line, at every width: beside the name's words, not centred on the name and its grey line together. */
+.ui-root .dash-page .dash-fold-mark { justify-content: flex-end; }
+.ui-root .dash-page .dash-fold-h:has(.dash-fold-l) .dash-fold-mark { align-self: start; }
+@media (max-width: 600px) {
+  .ui-root .dash-page .dash-fold-mark { align-self: start; }
+}

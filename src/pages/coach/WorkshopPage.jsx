@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { idFromAddress } from '../../lib/coach/address';
-import { AddButton, Button, Checkbox, InlineChoice, PageHeader, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
+import { AddButton, Button, Checkbox, InlineChoice, PageOpening, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
+import { workshopLine } from '../../content/pageLines/coach';
 import { supabase } from '../../lib/supabase';
 import { coachReadyNow, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { followUpWords, NEEDS_049, sendWorkshopFollowUp } from '../../lib/coach/actions';
@@ -35,7 +36,7 @@ export default function WorkshopPage() {
   const fileRef = useRef(null);
   const sending = useRef(false);
   if (!workshop) {
-    return <div className="cc-page"><div className="cc-col"><Back onClick={() => navigate('/coach/clients?tab=workshops')} /><PageHeader title="Workshop" /><p className="cc-quiet">This workshop isn’t here any more.</p></div></div>;
+    return <div className="cc-page"><div className="cc-col"><Back onClick={() => navigate('/coach/clients?tab=workshops')} /><PageOpening title="Workshop" line="This workshop isn’t here any more." /></div></div>;
   }
   const attendees = rowsOf(state, 'workshop_attendees').filter((a) => a.workshop_id === workshop.id && a.status !== 'cancelled').sort((a, b) => (a.name || a.email).localeCompare(b.name || b.email));
   const materials = rowsOf(state, 'workshop_materials').filter((m) => m.workshop_id === workshop.id);
@@ -114,7 +115,7 @@ export default function WorkshopPage() {
     <div className="cc-page">
       <div className="cc-col">
         <Back onClick={() => navigate('/coach/clients?tab=workshops')} />
-        <PageHeader title={workshop.title} meta={[org?.name, workshopWhen(workshop, { readerZone: settings.time_zone }), workshop.place]} />
+        <PageOpening label={workshopWhen(workshop, { readerZone: settings.time_zone })} title={workshop.title} line={workshopLine({ organisation: org?.name, place: workshop.place, past })} />
         <StatGroup className="cc-stats">
           {past
             ? <Stat label="Came" value={`${counts.came} of ${counts.registered}`} bar={counts.registered ? counts.came / counts.registered : 0} />

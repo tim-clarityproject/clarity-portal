@@ -43,7 +43,7 @@
 // Every date is FIXED (tests/phase2/fixed-day.mjs): the seed is built
 // around one day and every browser's clock starts on it, so nothing depends
 // on the day or time the test runs (TEST_TODAY and TEST_TIME pick another).
-import { accountsText, TEST_HOST as TARGET_HOST } from '../target.mjs';
+import { accountsText, HOSTED, TEST_HOST as TARGET_HOST } from '../target.mjs';
 import { chromium } from 'playwright';
 import { FIXED_TODAY, seedFixed, seedForReal, fixClock, fixedLabel } from './fixed-day.mjs';
 import { execFileSync } from 'node:child_process';
@@ -282,6 +282,9 @@ const COACH_TABLES = ['performance_plans', 'outcome_objectives', 'objective_figu
   'sprints', 'week_scores', 'sprint_habits', 'habit_logs', 'todos', 'wins', 'win_strategies', 'performance_evidence',
   'recovery_periods', 'recovery_recharge_answers'];
 function coachRead() {
+  // The dry run reaches the hosted test project (scripts/dry-run-on-test.sh), and the local stand-in
+  // has one connection, PostgREST's: on the stand-in (the default since 25 Nov) it isn't run.
+  if (!HOSTED) return { skipped: true, owner: null, second: null, rolledBack: false, text: '' };
   const dir = mkdtempSync(join(tmpdir(), 'clarity-journeys-'));
   const file = join(dir, 'coach-view.sql');
   const counts = COACH_TABLES.map((t) => `'${t}', (select count(*) from public.${t} where user_id = cl)`).join(', ');
@@ -447,7 +450,7 @@ try {
   // Working days (Monday to Friday), a 3-week sprint from today, 85%.
   pass('build: working days step', (await heading(page)) === 'Which days do you work?', await heading(page));
   await next(page);
-  await page.getByRole('radio', { name: /Another length/ }).click();
+  await page.getByRole('radio', { name: 'Other', exact: true }).click(); // Polish 1: answer boxes, one line each
   await page.getByLabel('How many weeks?').fill('3');
   await next(page);
   await page.getByRole('radio', { name: /^Today/ }).click();
@@ -482,7 +485,7 @@ try {
   await savedShown(page);
   at = 'edit close';
   const closedAt = await page.evaluate(() => Date.now());
-  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByRole('button', { name: /^Close( and save my place)?$/ }).click();
   await page.waitForURL(/\/performance-plan$/, { timeout: 20000 });
   await fresh(page, 'performance-plan', closedAt);
   await page.waitForFunction(() => document.body.innerText.includes('Your plan is now Version 1.1.'), null, { timeout: 15000 }).catch(() => null);
@@ -498,7 +501,7 @@ try {
   pass('history: 1.1 then 1.0', rows.length === 2 && /1\.1/.test(rows[0]) && /1\.0/.test(rows[1]), rows.join(' | '));
   await page.locator('.ds-row').nth(1).click();
   await page.waitForURL(/history\/1\.0/, { timeout: 15000 });
-  await page.locator('.plan-page .ds-mission-card-text').waitFor({ timeout: 15000 });
+  await page.locator('.plan-page .ds-mission-card-text, .plan-page .ipp-mission-text').first().waitFor({ timeout: 15000 });
   await calm(page);
   const old = await bodyText(page);
   pass('version 1.0 still shows the old target and the mission', old.includes('Help leaders stay calm') && /\b20\b/.test(old) && !/of 22/.test(old), old.slice(0, 300));
@@ -700,7 +703,7 @@ try {
     && !/rolled over/i.test(await todoRow(TD).textContent()) && !/rolled over/i.test(await todoRow(TC).textContent()));
   pass('roll-over: last week’s wins aren’t listed this week', (await todoRow(W1).count()) === 0);
   const v3 = await libraryView();
-  pass('week 3: the score so far matches src/lib/scores', (await centreScore()) === (v3.soFar ? `${v3.soFar.value}%` : ''), `${await centreScore()} vs ${v3.soFar?.value}`);
+  pass('week 3: the score so far matches src/lib/scores', (await centreScore()) === (v3.soFar?.value ? `${v3.soFar.value}%` : '') /* never a bare 0% (Stage B, Tim's walk item 9) */, `${await centreScore()} vs ${v3.soFar?.value}`);
   await visit(page, '/performance-plan', 'performance-plan');
   await page.waitForSelector('.ds-stile', { timeout: 30000 });
   await page.locator('.ds-stile').filter({ hasText: S2 }).locator('.ds-stile-btn').first().click();
@@ -836,6 +839,9 @@ try {
   await page.locator('.sprint-start-new textarea').first().fill('Workshop invitations');
   await page.locator('.sprint-start-new').getByLabel('What’s the target?').fill('5');
   await next(page);
+  // The sprint's peak moments (M18) come before Ready: none added here.
+  at = 'start peak moments';
+  if (await until(async () => /When do you need to be at your best/.test(await heading(page)), 4000)) await next(page);
   const ready = await bodyText(page);
   pass('start: Ready sums it up', ready.includes('4 weeks') && ready.includes('Workshop month') && ready.includes('80%'), ready.slice(0, 300));
   await shot(page, '6-start-ready');
@@ -906,7 +912,8 @@ try {
   await page.keyboard.press('Escape');
 
   const on = coachRead();
-  pass('coach view (shared): the dry run ran and rolled back', on.rolledBack && on.owner && on.second, on.text.slice(-400));
+  if (on.skipped) results.push('NOTE  coach view: the rolled-back dry run reads the hosted project, so it is not run on the local stand-in (HOSTED=1 runs it)');
+  else pass('coach view (shared): the dry run ran and rolled back', on.rolledBack && on.owner && on.second, on.text.slice(-400));
   if (on.owner) {
     const o = on.owner;
     pass('owner coach, shared: sees the plan, objectives, figures, Strategies and links', o.performance_plans === 1 && o.outcome_objectives >= 2 && o.objective_figures >= 0 && o.plan_strategies === 2 && o.strategy_objectives >= 2, JSON.stringify(o));
@@ -925,7 +932,7 @@ try {
     const o = off.owner;
     pass('owner coach, not shared: no plan, objectives, Strategies, sprints or weeks', o.performance_plans === 0 && o.outcome_objectives === 0 && o.objective_figures === 0 && o.plan_strategies === 0 && o.strategy_objectives === 0 && o.sprints === 0 && o.week_scores === 0, JSON.stringify(o));
     pass('owner coach, not shared: still told of the Recovery, with only its dates', o.recovery_periods === 1 && (o.recovery_rows || []).every((r) => !('answer' in r)), JSON.stringify(o.recovery_rows));
-  } else pass('coach view (not shared): the dry run ran', false, off.text.slice(-400));
+  } else if (!off.skipped) pass('coach view (not shared): the dry run ran', false, off.text.slice(-400));
   if (off.second) pass('second coach, not shared: sees nothing at all', Object.entries(off.second).every(([, n]) => n === 0), JSON.stringify(off.second));
 } catch (e) {
   pass('journey 7 ran to the end', false, e.message.split('\n')[0]);

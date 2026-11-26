@@ -1,0 +1,74 @@
+/* The plan's cards to the 25 Nov reference (Polish 1, Stage B, B1): an Outcome Objective and a
+   Strategy are each the one card (rule 13: 12px corners, a 1px line, no fill, no shadow, 24px
+   padding, 20 on a phone); labels 13px grey, the name 16px at 500, the figure DM Sans 24px light
+   with lining, tabular figures and its unit 16px grey (rules 1 and 2). These come after
+   design.css's older blocks and win over them. */
+
+.ui-root .ds-objectives.ds-objectives,
+.ui-root .ds-stiles.ds-stiles {
+  gap: var(--card-gap);
+}
+
+.ui-root .ds-objective.ds-objective,
+.ui-root .ds-stile.ds-stile {
+  padding: var(--card-pad);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  box-shadow: none;
+  outline: 0;
+}
+
+.ui-root .ds-stile.ds-stile--open { border-color: var(--text); }
+.ui-root .ds-objective.ds-objective--flagged,
+.ui-root .ds-stile.ds-stile--flagged { border-color: var(--field-line); }
+
+.ui-root .ds-objective .ds-objective-labels { color: var(--text-2); }
+
+.ui-root .ds-objective .ds-objective-name.ds-objective-name,
+.ui-root .ds-stile .ds-stile-name {
+  font-size: var(--fs-text) !important;
+  font-weight: var(--fw-medium);
+  line-height: 1.4;
+}
+
+.ui-root .ds-objective .ds-objective-figure,
+.ui-root .ds-stile .ds-stile-figure {
+  font-family: var(--font-body);
+  font-size: var(--fs-number);
+  font-weight: var(--fw-fig);
+  line-height: 1.25;
+  letter-spacing: 0;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.ui-root .ds-objective .ds-objective-target {
+  font-size: var(--fs-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-objective .ds-objective-milestone .ds-status-action-state,
+.ui-root .ds-objective .ds-objective-status {
+  font-family: var(--font-body);
+  font-size: var(--fs-text);
+}
+
+.ui-root .ds-objective .ds-objective-foot,
+.ui-root .ds-stile .ds-stile-score-label,
+.ui-root .ds-stile .ds-stile-note,
+.ui-root .ds-stile .ds-stile-flag {
+  font-size: var(--fs-meta);
+  color: var(--text-2);
+}
+
+/* The circled Outcome Objective number (Tim's walk of Stage A, 25 Nov): its digit in the small
+   step, DM Sans 13px with lining, tabular figures, and the circle sized to fit it (24px, the
+   tick box's size, so a row of them still sits in the label's line). Its tap area stays 44px. */
+.ui-root .ds-onum.ds-onum {
+  width: var(--checkbox-box);
+  height: var(--checkbox-box);
+  font-family: var(--font-body);
+  font-size: var(--fs-meta);
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1;
+}

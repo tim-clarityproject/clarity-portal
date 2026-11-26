@@ -978,7 +978,7 @@ html:has(.ui-root) {
 }
 
 .ui-root .ui-discard-link {
-  color: var(--placeholder);
+  color: var(--text-2); /* 4.5 to 1 (walk item 4; was --placeholder) */
 }
 
 .ui-root .ui-back-link {
@@ -1226,7 +1226,7 @@ html:has(.ui-root) {
   font-weight: 400;
   font-size: var(--fs-label);
   letter-spacing: var(--ls-overline);
-  color: var(--placeholder);
+  color: var(--text-2); /* small grey text (walk item 4) */
   padding-top: 9px;
   display: flex;
   gap: var(--space-2);

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Button, Chip, ChipRow, PageHeader, SlidePanel, TextField, useToast } from '../../components/design';
+import { Button, Card, Chip, ChipRow, PageOpening, Row as ListRow, SlidePanel, TextField, useToast } from '../../components/design';
+import { BOARDS_LINE } from '../../content/pageLines/coach';
 import { newId, removeRow, saveRows } from '../../lib/coach/store';
 import { BOARD_HELP, BOARD_NAME_MAX, BOARD_TEMPLATES, BOARD_WORDS, boardLine, boardProblem, boardsFor, newBoard, templateWords } from '../../lib/coach/crm';
-import { Row, useCoachPortal } from './parts';
+import { useCoachPortal } from './parts';
 import { calm } from './crmParts';
 import './crm.css';
 
@@ -50,12 +51,17 @@ export default function Boards() {
   return (
     <div className="cc-page">
       <div className="cc-col">
-        <PageHeader title={BOARD_WORDS.title} />
-        {shown.length === 0 && <p className="cc-quiet">{isOwner ? BOARD_WORDS.none : BOARD_WORDS.noneShared}</p>}
-        <div className="cc-rows">
-          {shown.map((b) => <Row key={b.id} title={b.name} facts={boardLine(b, boardStages, boardItems)} when="" onClick={() => navigate(`/coach/boards/${b.id}`)} />)}
-        </div>
-        {isOwner && <div className="cc-acts cc-board-new"><Button variant="outline" onClick={() => { setProblem(null); setDraft({ name: '', template: 'blank' }); }}>{BOARD_WORDS.add}</Button></div>}
+        <PageOpening
+          title={BOARD_WORDS.title}
+          line={BOARDS_LINE}
+          action={isOwner ? <Button variant="primary" onClick={() => { setProblem(null); setDraft({ name: '', template: 'blank' }); }}>{BOARD_WORDS.add}</Button> : null}
+        />
+        <Card className="cc-part">
+          {shown.length === 0 && <p className="cc-quiet cc-card-none">{isOwner ? BOARD_WORDS.none : BOARD_WORDS.noneShared}</p>}
+          {shown.map((b) => (
+            <ListRow key={b.id} name={b.name} sub={boardLine(b, boardStages, boardItems).filter(Boolean).join(', ')} href={`/coach/boards/${b.id}`} onClick={(e) => { if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) { e.preventDefault(); navigate(`/coach/boards/${b.id}`); } }} />
+          ))}
+        </Card>
       </div>
 
       <SlidePanel draftKey="board:new" open={Boolean(draft)} onClose={() => setDraft(null)} title={BOARD_WORDS.add} footer={<div className="cc-panel-foot cc-panel-foot--end"><Button variant="primary" onClick={make}>{BOARD_WORDS.make}</Button></div>}>

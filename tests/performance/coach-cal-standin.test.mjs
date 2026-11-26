@@ -24,7 +24,7 @@ function world() {
   const store = { rows, coaches: [{ id: ME, display_first_name: 'Maya', active: true }, { id: OTHER, display_first_name: 'Tess', active: true }] };
   rows.coach_settings.push({ coach_id: ME, time_zone: 'Europe/London', working_hours: { tue: { from: '09:00', to: '17:00' }, wed: { from: '09:00', to: '17:00' } }, booking: {} });
   rows.coach_call_types.push(
-    { id: 'chem', coach_id: ME, key: 'chemistry', name: 'Chemistry Call', minutes: 30, gap_before: 15, gap_after: 15, notice_hours: 24, ahead_weeks: 4, day_limit: 5, questions: [{ id: 'q1', label: 'What would you like from the call?' }], place_kind: 'zoom', page_key: 'chem-key', active: true, makes_lead: true },
+    { id: 'chem', coach_id: ME, key: 'chemistry', name: 'Discovery call', minutes: 30, gap_before: 15, gap_after: 15, notice_hours: 24, ahead_weeks: 4, day_limit: 5, questions: [{ id: 'q1', label: 'What would you like from the call?' }], place_kind: 'zoom', page_key: 'chem-key', active: true, makes_lead: true },
     { id: 'conn', coach_id: ME, key: 'connection', name: 'Connection Call', minutes: 30, gap_before: 15, gap_after: 15, notice_hours: 48, ahead_weeks: 3, day_limit: 5, questions: [], place_kind: 'zoom', page_key: 'conn-key', active: true, makes_lead: true },
   );
   rows.coach_open_blocks.push(
@@ -98,7 +98,7 @@ test('free times: quarter hours in the open block, a personal item only as busy,
 test('a booking page shows its own call only, and nothing of the calendar (7a to 7c)', () => {
   const { sim } = world();
   const page = sim.fn.booking_page(null, 'chem-key');
-  assert.deepEqual([page.state, page.kind, page.name, page.coach_first_name, page.minutes, page.notice_hours, page.ahead_weeks, page.questions.length], ['open', 'page', 'Chemistry Call', 'Maya', 30, 24, 4, 1]);
+  assert.deepEqual([page.state, page.kind, page.name, page.coach_first_name, page.minutes, page.notice_hours, page.ahead_weeks, page.questions.length], ['open', 'page', 'Discovery call', 'Maya', 30, 24, 4, 1]);
   const text = JSON.stringify(page);
   assert.equal(/Connection|Swimming|conn-key|coach-me/.test(text), false);
   assert.equal(sim.fn.booking_page(null, 'nobody'), null);
@@ -125,14 +125,14 @@ test('a guest books: what a booking needs, the guest\'s own night, and two guest
   assert.equal(free('chem-key', D0, D1), '');
   assert.deepEqual(rows.coach_cal_items.filter((i) => i.kind === 'chemistry').map((i) => `${i.title} ${i.time_zone}`), ['Aroha Ngata Pacific/Auckland', 'Nadia Osei Europe/London']);
   assert.deepEqual(rows.coach_leads.map((l) => `${l.name} ${l.source} ${l.email}`).sort(), ['Aroha Ngata chemistry_page aroha@example.invalid', 'Nadia Osei chemistry_page nadia@example.invalid']);
-  assert.equal(rows.coach_notifications.filter((n) => / booked Chemistry Call$/.test(n.title)).length, 2);
+  assert.equal(rows.coach_notifications.filter((n) => / booked Discovery call$/.test(n.title)).length, 2);
 });
 
 test('the guest moves and cancels by their own key; the coach\'s own move and delete follow through (7l to 7y)', () => {
   const { rows, sim, free } = world();
   const nadia = sim.fn.booking_make(null, 'chem-key', lon(D0, '10:00'), 'Nadia Osei', 'nadia@example.invalid', 'Europe/London');
   const mine = sim.fn.booking_mine(null, nadia.guest_key);
-  assert.deepEqual([mine.status, mine.call_name, mine.coach_first_name, mine.minutes, mine.late], ['booked', 'Chemistry Call', 'Maya', 30, false]);
+  assert.deepEqual([mine.status, mine.call_name, mine.coach_first_name, mine.minutes, mine.late], ['booked', 'Discovery call', 'Maya', 30, false]);
   assert.equal(sim.fn.booking_mine(null, 'nobody'), null);
   assert.equal(sim.fn.booking_move_times(null, nadia.guest_key, lon(D1, '00:00'), lon('2026-12-03', '00:00')).length, 23);
   assert.equal(sim.fn.booking_move(null, nadia.guest_key, lon(D1, '10:05')).status, 'quarter');

@@ -121,10 +121,18 @@ function addDays(dayKey, n) {
   return getLocalDateKey(new Date(y, m - 1, d + n, 12));
 }
 
-/** "Today’s plan", "Yesterday’s plan", then "Daily plan" or "Daily review" (kind 'plan' or 'review'). */
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** "Today’s plan", "Yesterday’s plan", then the day's own name, "Monday’s plan" or "Monday’s review"
+ *  (kind 'plan' or 'review'), so a saved row never repeats its tool (Polish 1, Stage B; requests-b1 8).
+ *  Without a day, "Daily plan" or "Daily review". */
 export function dayName(dayKey, today, kind) {
   if (dayKey === today) return `Today’s ${kind}`;
   if (dayKey && dayKey === addDays(today, -1)) return `Yesterday’s ${kind}`;
+  if (typeof dayKey === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dayKey)) {
+    const [y, m, d] = dayKey.slice(0, 10).split('-').map(Number);
+    return `${WEEKDAYS[new Date(y, m - 1, d, 12).getDay()]}’s ${kind}`;
+  }
   return kind === 'plan' ? 'Daily plan' : 'Daily review';
 }
 

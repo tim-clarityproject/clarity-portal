@@ -6,11 +6,12 @@ import { formatDateAndTime } from '../lib/dateFormatter';
 import { useDraft } from '../lib/drafts';
 import { LIMITS, loadLatestVersion, loadDraftReview, loadReview, saveReview, deleteReview } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
-import pageText from '../content/pageText';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { BackLink, DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import { DisclosureArrow, Loading, PageHeader, TextBox, Button, Checkbox, useToast } from '../components/design';
+import { DisclosureArrow, Loading, TextBox, Button, Checkbox, useToast, PageOpening } from '../components/design';
+import { B1_LINES } from '../content/pageLines/client';
+import '../pages/hubs/clientPage.css';
 
 function NoteIcon() {
   return (
@@ -257,7 +258,7 @@ export default function PersonalOperatingPlanReview() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><Loading label="Loading your review" className="ds-loading--page" /></div>
+        <div className="plan-page cp-page cp-page"><Loading label="Loading your review" className="ds-loading--page" /></div>
       </div>
     );
   }
@@ -266,9 +267,9 @@ export default function PersonalOperatingPlanReview() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page">
+        <div className="plan-page cp-page cp-page">
           <div className="plan-header">
-            <PageHeader title="Review your plan" info={pageText.personalOperatingPlanReviewEmpty} />
+            <PageOpening title="Review your plan" line={B1_LINES.pop} />
           </div>
           <div className="plan-actions">
             <Button type="button" variant="primary" onClick={() => navigate('/personal-operating-plan-edit', { state: { isNew: true } })}>
@@ -301,9 +302,9 @@ export default function PersonalOperatingPlanReview() {
       `}</style>
       <DesignHeader />
 
-      <div className="plan-page plan-page--form">
+      <div className="plan-page cp-page plan-page--form">
         <div className="pop-review-heading">
-          <PageHeader title="Review your plan" info={pageText.personalOperatingPlanReview} />
+          <PageOpening title="Review your plan" line={B1_LINES.pop} />
         </div>
 
         {continuingDraftDate && (

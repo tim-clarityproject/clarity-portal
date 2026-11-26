@@ -2,13 +2,12 @@ import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import { Button, PageHeader, useToast } from '../../components/design';
-import pageText from '../../content/pageText';
+import { Button, Card, MoreLink, PageOpening, Row, useToast } from '../../components/design';
+import { B2_LINES } from '../../content/pageLines/client';
 import { activeAreas, areaName, formatCheckinDate, newestCheckin } from '../../lib/wheelOfLife';
 import { readInProgress } from '../../lib/wheelOfLifeApi';
 import useWheelData from './useWheelData';
 import useArrivalToast from './useArrivalToast';
-import { PenIcon, TargetIcon } from './icons';
 import WheelLoadState from './WheelLoadState';
 import '../../styles/wheelOfLife.css';
 
@@ -35,53 +34,50 @@ export default function WheelStart() {
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page wol-page wol-enter">
-        <div className="wol-head">
-          <PageHeader title="Life balance review" info={pageText.wheelOfLife} />
-        </div>
-
-        <div className="wol-facts wol-rv" style={{ '--i': 3 }}>
-          <div><b>Takes</b><span>~3 minutes</span></div>
-          <div><b>Last check-in</b><span>{newest ? formatCheckinDate(newest.date) : 'None yet'}</span></div>
-          <div><b>Check-ins so far</b><span>{count}</span></div>
-        </div>
-
-        <ol className="wol-how wol-rv" style={{ '--i': 4 }}>
-          <li><b>01</b><span>Rate each area from 0, not at all satisfied, to 10, completely satisfied.</span></li>
-          <li><b>02</b><span>Go with your first answer. Rate how it is right now, not how you think it should be.</span></li>
-          <li><b>03</b><span>Your last score shows as a small dot under the scale, so you can see what has moved.</span></li>
-        </ol>
-
-        <span className="wol-lab wol-rv" style={{ '--i': 5 }}>{`Your ${areas.length} ${areas.length === 1 ? 'area' : 'areas'}`}</span>
-        <div className="wol-areas wol-rv" style={{ '--i': 5 }}>
-          {areas.map((a) => (
-            <span key={a.key}>
-              {areaName(a)}
-              {a.target != null ? <b>{`Target ${a.target}`}</b> : null}
-            </span>
-          ))}
-        </div>
-
-        <div className="wol-qrow wol-rv" style={{ '--i': 5 }}>
-          <Button variant="text" className="wol-qlink" onClick={() => navigate('/life-balance-review/areas', { state: { from: here } })}>
-            <PenIcon />Edit your areas
-          </Button>
-          {count > 0 ? (
-            <Button variant="text" className="wol-qlink" onClick={() => navigate('/life-balance-review/targets', { state: { from: here } })}>
-              <TargetIcon />Set targets
+      {/* Polish 1 (rules 1 to 16): the page opening with its one main button, then cards of
+          hairline rows. No Nekst on the step numbers, the areas' label or their targets. */}
+      <main className="plan-page wol-page wol-page--open wol-enter">
+        <PageOpening
+          title="Life balance review"
+          line={B2_LINES.lifeBalance}
+          action={(
+            <Button variant="primary" onClick={() => navigate('/life-balance-review/check-in')}>
+              {inProgress ? 'Continue check-in' : 'Start check-in'}
             </Button>
-          ) : null}
+          )}
+        />
+
+        <div className="wol-cards">
+          <Card label="Your check-ins" link={count > 0 ? { children: 'See your wheel', onClick: () => navigate('/life-balance-review/results') } : undefined}>
+            <Row name="Takes" value="~3 minutes" />
+            <Row name="Last check-in" value={newest ? formatCheckinDate(newest.date) : 'None yet'} />
+            <Row name="Check-ins so far" value={String(count)} />
+          </Card>
+
+          <Card label="How it works">
+            <ol className="wol-how">
+              <li><span className="wol-how-n">1</span><span>Rate each area from 0, not at all satisfied, to 10, completely satisfied.</span></li>
+              <li><span className="wol-how-n">2</span><span>Go with your first answer. Rate how it is right now, not how you think it should be.</span></li>
+              <li><span className="wol-how-n">3</span><span>Your last score shows as a small dot under the scale, so you can see what has moved.</span></li>
+            </ol>
+          </Card>
+
+          <Card
+            label={`Your ${areas.length} ${areas.length === 1 ? 'area' : 'areas'}`}
+            link={{ children: 'Edit your areas', onClick: () => navigate('/life-balance-review/areas', { state: { from: here } }) }}
+          >
+            {areas.map((a) => (
+              <Row key={a.key} name={areaName(a)} value={a.target != null ? `Target ${a.target}` : null} />
+            ))}
+          </Card>
         </div>
 
-        <div className="wol-acts wol-rv" style={{ '--i': 6 }}>
-          <Button variant="primary" onClick={() => navigate('/life-balance-review/check-in')}>
-            {inProgress ? 'Continue check-in' : 'Start check-in'}
-          </Button>
-          {count > 0 ? (
-            <Button variant="outline" onClick={() => navigate('/life-balance-review/results')}>See your wheel</Button>
-          ) : null}
-        </div>
-      </div>
+        {count > 0 ? (
+          <div className="wol-foot-links">
+            <MoreLink onClick={() => navigate('/life-balance-review/targets', { state: { from: here } })}>Set targets</MoreLink>
+          </div>
+        ) : null}
+      </main>
     </div>
   );
 }

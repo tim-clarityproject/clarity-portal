@@ -1,4 +1,6 @@
+import './toolFocus/formTool.css';
 import { useContext, useEffect, useState } from 'react';
+import { B3_LINES } from '../content/pageLines/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -6,8 +8,7 @@ import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import { deleteSavedItemWithUndo } from '../lib/savedItemDelete';
 import { savedItemsChanged } from '../lib/savedItemsChanged';
-import pageText from '../content/pageText';
-import { Loading, PageHeader, Button, useToast } from '../components/design';
+import { Loading, PageOpening, Button, useToast } from '../components/design';
 
 export default function StopDoingAuditSummary() {
   const navigate = useNavigate();
@@ -114,7 +115,7 @@ export default function StopDoingAuditSummary() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="Back to My Plans" /></div>
 
         <div className="plan-summary-head">
-          <PageHeader title={audit.title} info={pageText.stopDoingAuditSummary} meta={[`${totalHours} hours a week to reclaim`]} />
+          <PageOpening label={`Time audit, ${totalHours} ${totalHours === 1 ? 'hour' : 'hours'} a week to reclaim`} title={audit.title} line={B3_LINES.timeAuditSummary} />
         </div>
 
         <div className="plan-sum">

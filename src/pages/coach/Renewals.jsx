@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Loading, useIsPhone, useToast } from '../../components/design';
 import { renewals, RENEWALS_NOTE } from '../../lib/coach/associatePay';
 import { rowsOf } from '../../lib/coach/store';
-import { Row, TextLink, useCoachPortal } from './parts';
+import { TextLink, useCoachPortal } from './parts';
+import { Card, Empty } from '../../components/design/Blocks';
+import { PersonRow } from './peopleParts';
 import './pay.css';
 
 // Clients, Renewals (Phase 6b run 2, step 3; M11 C11), the owner's alone: the engagements and organisations' agreements
@@ -13,13 +15,9 @@ import './pay.css';
 // The first renewals, soonest first; the rest behind Show all (a business with many ending at once).
 const FIRST = 10;
 
+/** One card (rule 13): its label, with the total at its right on a laptop. */
 function Section({ title, aside, children }) {
-  return (
-    <section className="ds-section cc-part cc-pay-part">
-      <div className="ds-section-head cc-pay-head"><h2 className="ds-section-title">{title}</h2>{aside}</div>
-      {children}
-    </section>
-  );
+  return <Card label={title} add={aside} className="cc-renew-card">{children}</Card>;
 }
 
 export default function RenewalsTab() {
@@ -41,17 +39,18 @@ export default function RenewalsTab() {
   return (
     <>
       <Section title="Renewals in the next 90 days" aside={data.totalWords && !isPhone ? <span className="cc-pay-aside">{data.totalWords}</span> : null}>
-        {data.rows.length === 0 && <p className="cc-quiet">Nothing ends in the next 90 days.</p>}
+        {data.rows.length === 0 && <Empty>Nothing ends in the next 90 days.</Empty>}
         {data.rows.length > 0 && (
           <>
-            <div className="cc-rows cc-pay-rows">
+            <div className="ds-rows-list">
               {(all ? data.rows : data.rows.slice(0, FIRST)).map((r) => (
-                <Row
+                <PersonRow
                   key={r.key}
-                  title={r.title}
+                  name={r.title}
                   facts={isPhone ? r.facts : [...r.facts, r.ends]}
                   when={r.value}
                   label={[r.title, ...r.facts, r.ends, r.value].filter(Boolean).join(', ')}
+                  href={r.kind === 'organisation' ? `/coach/organisations/${r.id}` : r.mine ? `/coach/clients/${r.id}` : undefined}
                   onClick={() => open(r)}
                 />
               ))}
@@ -63,9 +62,9 @@ export default function RenewalsTab() {
       </Section>
       {data.repeating.length > 0 && (
         <Section title="Repeating income">
-          <div className="cc-rows cc-pay-rows">
+          <div className="ds-rows-list">
             {data.repeating.map((r) => (
-              <Row key={r.key} title={r.title} facts={r.facts} when={r.value} label={[r.title, ...r.facts, r.value].filter(Boolean).join(', ')} onClick={() => navigate(`/coach/organisations/${r.id}`)} />
+              <PersonRow key={r.key} name={r.title} facts={r.facts} when={r.value} label={[r.title, ...r.facts, r.value].filter(Boolean).join(', ')} href={`/coach/organisations/${r.id}`} onClick={() => navigate(`/coach/organisations/${r.id}`)} />
             ))}
           </div>
         </Section>

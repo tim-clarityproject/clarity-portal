@@ -7,7 +7,7 @@
 
 .ui-root .ds-timer {
   --ds-timer-ring: var(--timer-ring);
-  --ds-timer-fs: calc(15 * var(--u-big));
+  --ds-timer-fs: var(--fs-text); /* 16px, DM Sans (Polish 1, rule 1; B3) */
   display: flex;
   align-items: center;
   gap: var(--space-px20);

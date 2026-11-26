@@ -55,7 +55,8 @@ const MOMENTS = [
 
 const toastText = (page) => page.locator('.ds-toast').last().innerText().then((t) => t.replace(/\s+/g, ' ').trim()).catch(() => '');
 const sawToast = (page, words, ms = 8000) => until(async () => (await page.locator('.ds-toast', { hasText: words }).count()) > 0 || (await toastText(page)).includes(words), ms);
-const qText = (page) => page.locator('.ds-guide-question, .ds-guide-title').first().innerText().then((t) => t.replace(/\s+/g, ' ').trim()).catch(() => '');
+// .ds-tool-q: the Daily plan runs on StepFrame/ToolFrame since Polish 1.
+const qText = (page) => page.locator('.ds-guide-question, .ds-guide-title, .ds-tool-q').first().innerText().then((t) => t.replace(/\s+/g, ' ').trim()).catch(() => '');
 const onQ = (page, starts, ms = 10000) => until(async () => (await qText(page)).startsWith(starts), ms);
 const answer = (page, words) => page.locator('.ds-guide-body .ds-answer', { hasText: words }).first().click();
 const device = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) || 'null'), DEVICE);
@@ -142,7 +143,7 @@ async function signedIn(browser, width) {
 // Since 048 ran on the test project (18 Nov) the moments this test adds reach
 // the database: only those (by their names), their reviews first.
 async function cleanMoments() {
-  const names = MOMENTS.map((x) => x.name);
+  const names = [...MOMENTS.map((x) => x.name), 'Cup final replay']; // the edited one too
   const { data, error } = await db.from('peak_moments').select('id').eq('user_id', me).in('name', names);
   if (error) { if (/402|read.?only/i.test(`${error.code} ${error.message}`)) throw new Error('The test project answered 402 or read-only: stopped.'); return; }
   const ids = (data || []).map((r) => r.id);
@@ -197,7 +198,7 @@ try {
       await addMoment(page, tag, x, { checks: i === 0 || x.city });
       if (x.city) {
         const rows = (await page.locator('.ds-guide-plan-row').allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').trim());
-        pass(`${tag}: the summary has one line per answer`, rows.length === 6 && rows.some((r) => r.includes('Where') && r.includes('New York')) && rows.some((r) => r.includes('It’s for my personal life')), rows.join(' | '));
+        pass(`${tag}: the summary has one line per answer`, rows.length === 6 && rows.some((r) => /where/i.test(r) && r.includes('New York')) && rows.some((r) => r.includes('It’s for my personal life')), rows.join(' | '));
         // Edit one answer from the summary: just that question, then back.
         await page.locator('.ds-guide-plan-row', { hasText: 'When' }).click();
         await onQ(page, 'When is it?');
@@ -291,20 +292,22 @@ try {
     await db.from('day_plans').delete().eq('user_id', me).eq('local_date', today);
     await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (/day-plan/.test(k)) localStorage.removeItem(k); });
     await page.goto(`${APP}/daily-plan`);
+    // Polish 1: the Daily plan is StepFrame/ToolFrame (.ds-tool-q, the foot's main button, × .ds-tool-x, the eyebrow .ds-open-label).
+    const toolNext = async () => { await sleep(450); await page.locator('.ds-tool-foot .ds-btn--primary').click(); };
     await onQ(page, 'How did you sleep last night?', 20000);
-    await pressNext(page);
+    await toolNext();
     const asked = await onQ(page, 'What will you do today to protect your energy for “Board away-day”?');
     pass(`${tag}: Daily plan asks about the nearer moment straight after Sleep (two on one day: one question)`, Boolean(asked), await qText(page));
-    pass(`${tag}: the small line counts down in days to go`, (await page.locator('.ds-guide-label').innerText()).includes('Board away-day, 2 days to go'));
+    pass(`${tag}: the small line counts down in days to go`, (await page.locator('.ds-tool .ds-open-label').textContent()).includes('Board away-day, 2 days to go'));
     pass(`${tag}: full-sentence suggestions`, (await page.locator('.peak-chips .ds-chip').allInnerTexts()).includes('I’ll be in bed by 22:30'));
     await page.locator('.peak-chips .ds-chip', { hasText: 'I’ll be in bed by 22:30' }).click();
-    await pressNext(page);
+    await toolNext();
     await onQ(page, 'What’s one thing you’re grateful for today?');
     pass(`${tag}: only one lead-up question that day`, (await qText(page)).startsWith('What’s one thing'));
     const todo = await until(async () => (await db.from('todos').select('id, text, source, source_id').eq('user_id', me).eq('text', 'I’ll be in bed by 22:30').is('deleted_at', null)).data?.[0], 10000);
     if (todo) madeTodos.add(todo.id);
     pass(`${tag}: the answer becomes one of today’s to-dos (peak_moment now 048 is there, with the moment as its source)`, todo?.source === 'peak_moment' && Boolean(todo?.source_id), JSON.stringify(todo));
-    await page.locator('.ds-guide-close').click();
+    await page.locator('.ds-tool-x').click();
     await sleep(800);
 
     // ---- Daily review: "Did you do it?" in one tap
@@ -325,7 +328,7 @@ try {
     // ---- The review after, the day after (yesterday's Investor call)
     await page.goto(`${APP}/welcome`);
     await page.waitForSelector('.home-page', { timeout: 20000 });
-    const card = await until(async () => (await page.locator('.ds-suggest').innerText().catch(() => '')).replace(/\s+/g, ' '), 6000);
+    const card = await until(async () => (await page.locator('.home-page .ds-open').innerText().catch(() => '')).replace(/\s+/g, ' '), 6000);
     const onHome = /Investor call was yesterday/.test(card || '');
     pass(`${tag}: Home offers the review after, or another card has its turn`, onHome || /debrief|Daily|log today|wind down/i.test(card || ''), card);
     if (onHome) await page.getByRole('button', { name: 'Review it' }).click();
@@ -334,7 +337,7 @@ try {
       await page.goto(`${APP}/peak-moments/review/${inv.id}/${dayKey(-1)}`);
     }
     await onQ(page, 'How did “Investor call” go?', 20000);
-    pass(`${tag}: the review says when it was`, (await page.locator('.ds-guide-label').innerText()).includes('Investor call was yesterday'));
+    pass(`${tag}: the review says when it was`, (await page.locator('.ds-guide-label').textContent()).includes('Investor call was yesterday'));
     pass(`${tag}: step 1 is one tap, with no Next`, (await page.locator('.ds-guide-next').count()) === 0);
     await sleep(450);
     await answer(page, 'It went better than I hoped');
@@ -381,6 +384,8 @@ try {
     await page.evaluate((k) => localStorage.removeItem(k), DEVICE).catch(() => {});
     await ctx.close();
     await cleanDay();
+    // The moments reach the database since 048, so each width starts empty again.
+    await cleanMoments().catch(() => null);
   }
 } finally {
   // Only what this test made: the lead-up to-dos and today's day rows, then the seed back on the real today.

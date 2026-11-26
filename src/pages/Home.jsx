@@ -167,7 +167,7 @@ export default function Home() {
 
   let body;
   if (prep.preparing) {
-    body = <Preparing firstName={sprint.data?.firstName || ''} coachName={prep.coachName} />;
+    body = <Preparing firstName={sprint.data?.firstName || prep.firstName || ''} coachName={prep.coachName} />;
   } else if ((!sprint.data && sprint.loading) || (!day.data && day.loading)) {
     body = <Loading label="Loading your day" className="ds-loading--page" />;
   } else if (!sprint.data || !day.data) {
@@ -576,7 +576,8 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
       )}
       {!view.habits.length && <Empty>This sprint has no habits to log.</Empty>}
       {view.soFar && (
-        <Row name="Performance score this week" value={`${view.soFar.value}%${view.usualLine.ready ? `, usually ${view.usualLine.figure}` : ''}`} onClick={() => go('/performance-sprint')} className="home-score" />
+        // Never a bare 0% (rule 16; Tim's walk, item 9): before anything counts this week, the sentence.
+        <Row name="Performance score this week" value={view.soFar.value ? `${view.soFar.value}%${view.usualLine.ready ? `, usually ${view.usualLine.figure}` : ''}` : 'Your score starts with your first log.'} onClick={() => go('/performance-sprint')} className="home-score" />
       )}
     </section>
   ) : null;

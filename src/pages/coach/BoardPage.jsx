@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { idFromAddress } from '../../lib/coach/address';
-import { AddButton, Button, Dropdown, IconButton, InlineChoice, PageHeader, SlidePanel, SwitchRow, TextBox, TextField, useIsPhone, useToast } from '../../components/design';
+import { AddButton, Button, Dropdown, IconButton, InlineChoice, PageOpening, SlidePanel, SwitchRow, TextBox, TextField, useIsPhone, useToast } from '../../components/design';
+import { boardPageLine } from '../../content/pageLines/coach';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { newId, removeRow, saveRow, saveRows } from '../../lib/coach/store';
 import {
@@ -209,7 +210,7 @@ export default function BoardPage() {
   };
 
   if (!board) {
-    return <div className="cc-page"><div className="cc-col"><Back to={BOARD_WORDS.title} onClick={() => navigate('/coach/boards')} /><PageHeader title="Board" /><p className="cc-quiet">{BOARD_WORDS.gone}</p></div></div>;
+    return <div className="cc-page"><div className="cc-col"><Back to={BOARD_WORDS.title} onClick={() => navigate('/coach/boards')} /><PageOpening title="Board" line={BOARD_WORDS.gone} /></div></div>;
   }
 
   const table = layout === 'table' ? boardTable(board, boardStages, boardItems, todayKey) : null;
@@ -220,8 +221,7 @@ export default function BoardPage() {
     <div className="cc-page">
       <div className={`cc-col${layout === 'list' ? '' : ' cc-col--wide'}`}>
         <Back to={BOARD_WORDS.title} onClick={() => navigate('/coach/boards')} />
-        <PageHeader title={board.name} />
-        {!mayEdit && <p className="cc-quiet">{sharedBy(ownerName)}</p>}
+        <PageOpening title={board.name} line={mayEdit ? boardPageLine(board.shared === true) : sharedBy(ownerName)} />
         <div className="cc-toolbar">
           {!isPhone && <div className="cc-seg"><InlineChoice ariaLabel="Layout" semantics="pressed" options={noTable ? LAYOUTS.slice(0, 2) : LAYOUTS} value={layout} onChange={setLayout} form="pills" /></div>}
           {isPhone && <TextLink ref={ref('view')} aria-haspopup="menu" aria-expanded={menu === 'view'} onClick={() => setMenu('view')}>View</TextLink>}

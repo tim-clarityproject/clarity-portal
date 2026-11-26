@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import BoldCrosshair from './BoldCrosshair';
 import { pushLayer } from './layers';
+import { useBackCloses } from './panelHistory';
+import './blocks.css';
 import './frame.css';
 
 // The frame and the menu (25 Nov design reference, "Frame and menu";
@@ -99,7 +101,11 @@ export function FrameMenu({ groups = [], foot = [], onGo, onSignOut, signOutBusy
   );
 }
 
-/** The crosshair button that opens (and closes) the phone menu. */
+/**
+ * The crosshair button that opens the phone menu; while it's open the
+ * button is the thin × of two crossed lines, as focus mode's close (walk
+ * item 6), never the crosshair turned.
+ */
 export function MenuButton({ className = '' }) {
   const { menuOpen, openMenu, closeMenu } = useFrame();
   return (
@@ -111,7 +117,7 @@ export function MenuButton({ className = '' }) {
       aria-controls="ds-phone-menu"
       onClick={menuOpen ? closeMenu : openMenu}
     >
-      <BoldCrosshair />
+      {menuOpen ? <span className="ds-x" aria-hidden="true" /> : <BoldCrosshair />}
     </button>
   );
 }
@@ -128,6 +134,8 @@ export default function PortalFrame({ menu, children, className = '', rootProps 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const ctx = useMemo(() => ({ inFrame: true, menuOpen, openMenu, closeMenu }), [menuOpen, openMenu, closeMenu]);
   const sheetRef = useRef(null);
+  // The phone's Back closes the open menu and stays on the page, as every full-screen panel does (run 6 item 4).
+  useBackCloses(menuOpen, closeMenu);
   // The phone menu: Escape closes it (the top layer), the page behind doesn't scroll, and it closes at laptop width.
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -142,13 +150,16 @@ export default function PortalFrame({ menu, children, className = '', rootProps 
     return () => { remove(); html.style.overflow = before; wide.removeEventListener?.('change', onWide); };
   }, [menuOpen]);
   const go = (item) => { setMenuOpen(false); menu?.onGo?.(item); };
+  // The phone menu's own top row (walk item 21: the coach's Search and the bell), shown first in the phone menu only;
+  // on a laptop they stay at the panel's top right. Its parts close the menu themselves (useFrame().closeMenu).
+  const { phoneTop, ...menuProps } = menu || {};
   const signOut = menu?.onSignOut ? () => { setMenuOpen(false); menu.onSignOut(); } : undefined;
   return (
     <FrameContext.Provider value={ctx}>
-      <div {...rootProps} className={`ui-root ds-frame-root${focus ? ' ds-frame-root--focus' : ''} ${className}`.trim()}>
+      <div {...rootProps} className={`ui-root ds-frame-root${focus ? ' ds-frame-root--focus' : ''}${phoneTop ? ' ds-frame-root--ptop' : ''} ${className}`.trim()}>
         <div className="ds-frame">
           <aside className="ds-frame-side" aria-label="Menu column">
-            <FrameMenu {...menu} />
+            <FrameMenu {...menuProps} />
           </aside>
           <div className="ds-frame-main">
             <header className="ds-frame-phead">
@@ -162,7 +173,8 @@ export default function PortalFrame({ menu, children, className = '', rootProps 
             <div className="ds-pmenu-head">
               <MenuButton />
             </div>
-            <FrameMenu {...menu} mark={false} onGo={go} onSignOut={signOut} label="Menu" />
+            {phoneTop && <div className="ds-pmenu-top">{phoneTop}</div>}
+            <FrameMenu {...menuProps} mark={false} onGo={go} onSignOut={signOut} label="Menu" />
           </div>
         )}
       </div>

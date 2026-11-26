@@ -19,7 +19,7 @@ import './booking.css';
 
 // The booking pages outside the portal (Phase 6a run 3; M11's two booking
 // page screens), for people with no account:
-//   /book/<a call type's page key>     the Chemistry Call or the Connection Call (each its own link; neither shows the other)
+//   /book/<a call type's page key>     the Discovery call or the Connection Call (each its own link; neither shows the other)
 //   /book/link/<a single-use link>     the same page for one person, once
 //   /book/mine/<the guest's own key>   their booking: Add to calendar, move it or cancel it
 //   /poll/<a person's own key>         a poll's times, to tick the ones they can make
@@ -96,18 +96,13 @@ function TimePicker({ starts, zone, minutes, chosen, onChoose, earlyLate, setEar
   const toggle = (
     <button type="button" className="ds-link" aria-pressed={earlyLate} onClick={() => setEarlyLate(!earlyLate)}>{earlyLate ? 'Hide early and late times' : EARLY_AND_LATE_LABEL}</button>
   );
-  if (!day) {
-    return (
-      <>
-        <p className="cc-quiet">{kept.hidden > 0 ? 'The free times are early or late where you are.' : 'There are no free times at the moment. Try again in a few days.'}</p>
-        {(kept.hidden > 0 || earlyLate) && <div className="cc-acts">{toggle}</div>}
-      </>
-    );
-  }
+  // No free time at all (or only early and late ones): the month still shows as a grid with no day open, and the line
+  // under it says why (Tim's walk of Stage A: the grid used to disappear).
+  const noneLine = kept.hidden > 0 ? 'The free times are early or late where you are.' : 'There are no free times at the moment. Try again in a few days.';
   const time = (s) => (
     <button key={s.getTime()} type="button" role="radio" aria-checked={chosen?.getTime() === s.getTime()} className="ds-answer ds-answer--box cc-book-time" onClick={() => onChoose(s)}>{clockWords(s, zone)}</button>
   );
-  const lay = mine && visitor ? visitorDay({ starts: day.starts, events, zone, minutes }) : null;
+  const lay = mine && visitor && day ? visitorDay({ starts: day.starts, events, zone, minutes }) : null;
   const pct = (m) => `${((m - lay.fromMin) / (lay.toMin - lay.fromMin)) * 100}%`;
   const goMonth = (by) => {
     const next = stepMonth(shownMonth, by);
@@ -127,13 +122,14 @@ function TimePicker({ starts, zone, minutes, chosen, onChoose, earlyLate, setEar
       <MonthGrid
         month={shownMonth}
         today={getLocalDateKey()}
-        selected={day.day}
+        selected={day ? day.day : null}
         available={(k) => free.has(k)}
         onSelect={(k) => { if (free.has(k)) { setDayKey(k); onChoose(null); } }}
         label={`${monthTitle(shownMonth)}. ${BOOKING.dayLabel}`}
       />
-      <div className="ds-open-label cc-book-dayname">{dayTitle(day.day)}</div>
-      {!lay && <div className="ds-choices cc-book-times" role="radiogroup" aria-label={`Times on ${day.title}, ${zoneLabel(zone)}`}>{day.starts.map(time)}</div>}
+      {!day && <p className="cc-quiet cc-book-none" role="status">{noneLine}</p>}
+      {day && <div className="ds-open-label cc-book-dayname">{dayTitle(day.day)}</div>}
+      {day && !lay && <div className="ds-choices cc-book-times" role="radiogroup" aria-label={`Times on ${day.title}, ${zoneLabel(zone)}`}>{day.starts.map(time)}</div>}
       {lay && (
         <div className="cc-book-both" style={{ '--book-hours': lay.hours.length }}>
           <div className="cc-book-both-head"><span /><span>Free times</span><span>{visitor.label}</span></div>
@@ -149,7 +145,7 @@ function TimePicker({ starts, zone, minutes, chosen, onChoose, earlyLate, setEar
         </div>
       )}
       <div className="cc-acts cc-book-toggles">
-        {visitor && <button type="button" className="ds-link" aria-pressed={mine} onClick={() => setMine(!mine)}>{mine ? 'Hide my calendar' : 'Show my calendar'}</button>}
+        {visitor && day && <button type="button" className="ds-link" aria-pressed={mine} onClick={() => setMine(!mine)}>{mine ? 'Hide my calendar' : 'Show my calendar'}</button>}
         {(kept.hidden > 0 || earlyLate) && toggle}
       </div>
     </>
@@ -273,7 +269,9 @@ export function BookingPage() {
       setProblem({ at: 'form', line: failed() });
     } finally { busy.current = false; }
   };
-  const label = data.coach_first_name ? `With ${data.coach_first_name}` : null;
+  // The coach's full name with any title, as they typed it in Settings ("Dr Tim Dutton"; Tim's walk, item 28): 066 gives it.
+  // Not set (or before 066): nothing there.
+  const label = data.coach_full_name || null;
 
   if (step === 'details' && chosen) {
     return (

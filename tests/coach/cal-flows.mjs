@@ -16,7 +16,7 @@
 //   PARTS=cal-view,cal-colours,cal-create,cal-quick,cal-move,cal-repeat,cal-todo,cal-hours,cal-item,cal-month,cal-phone
 //   ROLES=owner,associate   DB=none,there
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, makeReport, OTHER, seedDevice, settle, standIn } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, makeReport, openCalSettings, openSearch, OTHER, seedDevice, settle, standIn } from './shared.mjs';
 import { CAL, DAY, ID, seedClock, seedWithCal } from './seed.mjs';
 import { instantAt } from '../../src/lib/time/index.js';
 
@@ -32,7 +32,7 @@ const toast = async (page) => (await page.locator('.ds-toast-text').last().textC
 const undo = async (page) => { await page.locator('.ds-toast').getByRole('button', { name: 'Undo' }).click(); await settle(page, 900); };
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
 const closePanel = async (page) => { await page.keyboard.press('Escape'); await settle(page, 500); };
-const press = async (page, name) => { await page.getByRole('button', { name, exact: true }).first().click(); await settle(page, 500); };
+const press = async (page, name) => { await openCalSettings(page, name); await page.getByRole('button', { name, exact: true }).first().click(); await settle(page, 500); };
 const go = async (page, path) => { await page.goto(`${APP}${path}`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 1300); };
 const pick = async (scope, page, label, option) => {
   await scope.getByRole('combobox', { name: new RegExp(`^${label}`) }).first().click(); await settle(page, 300);
@@ -189,7 +189,7 @@ async function run() {
       pass(`${tag}: every line of every tile is 4.5 to 1 or more, 12px or more, on 4px corners`, bad.length === 0, [...new Set(bad)].slice(0, 6).join('; '));
       const colour = (loc) => loc.evaluate((el) => getComputedStyle(el).backgroundColor);
       pass(`${tag}: a client call is peach`, (await colour(tile(page, D.tue, 'Sam Okafor'))) === 'rgb(255, 189, 158)');
-      pass(`${tag}: a Chemistry Call is mint`, (await colour(tile(page, D.wed, 'Ruth Adeyemi'))) === 'rgb(95, 239, 187)');
+      pass(`${tag}: a Discovery call is mint`, (await colour(tile(page, D.wed, 'Ruth Adeyemi'))) === 'rgb(95, 239, 187)');
       pass(`${tag}: a held time and a family item are dashed outlines`, (await tile(page, D.mon, 'Mia and Paul').evaluate((el) => getComputedStyle(el).borderTopStyle)) === 'dashed' && (await tile(page, D.mon, 'Swimming').evaluate((el) => getComputedStyle(el).borderTopStyle)) === 'dashed');
       // A cut-off title shows in full after 0.3 seconds (the shared pop-up), and not before.
       const cut = page.locator(`[data-cal-key="todo:${DAY.t12}"]`);
@@ -438,7 +438,7 @@ async function run() {
       const first = await page.locator('.cc-sched-day').first().textContent();
       pass(`${tag}: the Schedule (its own address) lists what's next from today, each with a square of its colour`, rows > 10 && first === 'Today, Tue 17 Nov' && (await page.locator('.cc-sched-square').count()) === rows, `${rows} ${first}`);
       await go(page, '/coach/calendar?view=week');
-      await page.getByRole('button', { name: 'Search, or do anything' }).click();
+      await openSearch(page);
       await page.keyboard.type('Lighthouse'); await settle(page, 500);
       const found = await page.locator('.cc-jump-list').textContent();
       pass(`${tag}: search finds a calendar item by its place or note`, found.includes('Coffee with Dan Reid'), found.slice(0, 80));
@@ -461,7 +461,7 @@ async function run() {
     await page.goto(page.url().replace(/\/coach\/calendar.*$/, '/coach/calendar?view=schedule')); await page.waitForSelector('.cc-app'); await settle(page, 1000);
     const square = page.locator('.cc-sched-row', { hasText: 'Parents’ evening' }).first().locator('.cc-sched-square');
     pass(`${tag}: a 10px square of each tile's colour sits before the time, dashed for a family item`, (await square.evaluate((el) => { const b = el.getBoundingClientRect(); return Math.round(b.width) === 10 && Math.round(b.height) === 10 && getComputedStyle(el).borderTopStyle === 'dashed'; })));
-    pass(`${tag}: no header menu button's hamburger, and Book a call is the one coral button`, (await page.locator('.cc-cal-page .ds-btn--primary').count()) === 1);
+    pass(`${tag}: no header menu button's hamburger, and Add a session is the one main button`, (await page.locator('.cc-cal-page .ds-btn--primary').count()) === 1);
     await page.goto(page.url().replace(/\/coach\/calendar.*$/, '/coach/calendar?view=day')); await page.waitForSelector('.cc-app'); await settle(page, 1000);
     pass(`${tag}: the day (its own address) has both time columns, with both time columns`, (await page.locator('.cc-cal-day').count()) === 1 && (await page.locator('.cc-cal-zone').count()) === 2);
     pass(`${tag}: nothing scrolls sideways`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));

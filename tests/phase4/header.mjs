@@ -24,7 +24,8 @@
 //    display-mode, so for the Home Screen app the app's own code is served
 //    with "(display-mode: standalone)" read as always true.
 // 4. The floating Breathe button: desktop only, 60px with the 44px orb
-//    (breathe-orb.html), opens Breathe; none on a phone, upright or turned.
+//    (breathe-orb.html), opens Breathe; on a phone too since Polish 1 Stage B,
+//    at the bottom right, upright or turned.
 // 5. The orb choice: Rings to start with, Level when chosen, still at half
 //    a breath with reduced motion.
 // 6. Chat to [coach]: with one way (opens it), two ways (a small list),
@@ -182,7 +183,8 @@ function readPill(page, sel) {
       ellipsisWhenCut: words ? cs.textOverflow === 'ellipsis' : false,
       text: words ? words.textContent : '',
       colour: cs ? cs.color : '',
-      grey: getComputedStyle(pill.closest('.ui-root')).getPropertyValue('--placeholder').trim(),
+      // Polish 1 Stage B: small grey words are the secondary grey (--text-2), not the placeholder grey.
+      grey: getComputedStyle(pill.closest('.ui-root')).getPropertyValue('--text-2').trim(),
       pageSideways: document.documentElement.scrollWidth > window.innerWidth,
       pillHeight: pr.height,
       inside: hdr ? pr.bottom <= hdr.getBoundingClientRect().bottom + 0.5 || (frameMain && pr.bottom <= frameMain.getBoundingClientRect().bottom) : false,
@@ -219,7 +221,7 @@ if (part(1)) {
         pass(`My Mission ${at}: "My Mission" first`, p.labelShown);
         if (mission === null) {
           pass(`My Mission ${at}: "${NO_MISSION}" shows`, p.wordsShown && p.text === NO_MISSION, JSON.stringify(p));
-          pass(`My Mission ${at}: in grey (--placeholder)`, p.colour === hexToRgb(p.grey), `${p.colour} vs ${p.grey}`);
+          pass(`My Mission ${at}: in grey (--text-2)`, p.colour === hexToRgb(p.grey), `${p.colour} vs ${p.grey}`);
         } else if (mission === LONG) {
           pass(`My Mission ${at}: the long Mission is cut with "…"`, p.cut && p.ellipsisWhenCut, JSON.stringify(p));
         } else {
@@ -380,7 +382,9 @@ if (part(4)) {
     const { context, page } = await newContext({ width: w, height: h, touch: true });
     try {
       await open(page);
-      pass(`Breathe button: none on a ${label}`, (await page.locator('.ds-breathe:visible').count()) === 0);
+      // Polish 1 Stage B (walk item 5): Breathe shows on a phone too, at the bottom right, on the screen.
+      const br = await page.evaluate(() => { const els = [...document.querySelectorAll('.ds-breathe')].filter((e) => e.getBoundingClientRect().width > 0 && getComputedStyle(e).visibility !== 'hidden'); const r = els[0]?.getBoundingClientRect(); return { n: els.length, r: r && { left: r.left, right: r.right, bottom: r.bottom }, w: innerWidth, h: innerHeight }; });
+      pass(`Breathe button: one on a ${label}, at the bottom right and on the screen`, br.n === 1 && br.r.right <= br.w && br.r.left > br.w / 2 && br.r.bottom <= br.h && br.r.bottom > br.h * 0.75, JSON.stringify(br));
     } finally {
       await context.close();
     }

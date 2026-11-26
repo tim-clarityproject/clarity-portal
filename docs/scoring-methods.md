@@ -104,7 +104,9 @@ Each habit has one measure, chosen by the person. Nothing is tracked by default.
 
 **Days not logged (Claude):**
 - Counts, amounts and yes-or-no targets: an unlogged day adds nothing, so the score reflects what was recorded.
-- Limits and ratings: worked out from the days logged, but only if at least half the working days in the week were logged. Otherwise the habit scores 0% for that week and shows "Not logged". This stops a limit scoring 100% simply because nothing was entered. Filling in the days later updates the score.
+- Limits and ratings: worked out from the days logged, but only if at least half the working days in the week were logged. Otherwise the habit scores 0% for that week. This stops a limit scoring 100% simply because nothing was entered. Filling in the days later updates the score.
+- **What the debrief shows for a limit with some days logged (Polish 1, Stage B, 26 Nov; Tim's brief: "Not logged" beside logged entries was a fault):** a limit with fewer than half its working days logged, but at least one, shows its standing from the days logged, with how many days that is, as every other measure shows its week; its score for the week stays 0% until enough days are filled in, so nothing above changes. "Not logged" is shown only when no day at all was logged, and a rating below half its days still reads "Not logged" (`habitTotal` in `src/lib/performance/debrief.js`).
+- **Worked example M1-L2 (test `tests/performance/debrief.test.mjs`, "a limit with fewer than half its days logged"):** Late finishes, no more than 2 days a week, 5 working days, 2 logged (one yes): the row reads "1, no more than 2, 2 days logged" and **100%** (1 is under the limit of 2), while the week's score for the habit stays 0%. Coffees, no more than 2 a day, 2 days logged with 3 and 2: 5 against a limit of 2 × 2 days = 4, so 1 − (5 − 4) ÷ 4 = **75%**, shown with "2 days logged".
 - Every count has a sensible top number (3 times the daily target, or 20 if there is none; training sessions 3 a day, reflective notes 10), so nobody can log 20 late finishes in a day (experience rule 49).
 
 **Changes mid-sprint:** a new target, measure or impact applies from the next sprint week; past weeks keep what they had (decided 21 Oct).
@@ -738,7 +740,7 @@ Run by `npm run sim:patterns -- --seed 1` and `--seed 2` (files `tests/patterns/
 5. Frozen summaries keep the figures as sent; later edits change only the person's own view (M0.6).
 6. A limit of 0: one over scores 0% (M1).
 7. Ratings scored on the part of the scale above the floor (M1).
-8. Limits and ratings need half the working days logged, otherwise "Not logged" (M1).
+8. Limits and ratings need half the working days logged to score; below that a limit with some days logged shows its standing from those days, and only a habit with nothing logged reads "Not logged" (M1, M1-L2).
 9. A to-do done early counts in the week it was done (M2).
 10. A Strategy with nothing in it that week is left out, not 0% (M4); a Strategy always counts at least once (M5).
 11. "So far" scoring during the week (M5).

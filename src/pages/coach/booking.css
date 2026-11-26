@@ -119,3 +119,5 @@
   .ui-root .ds-choices.cc-book-times .ds-answer.ds-answer--box { justify-content: center; min-height: var(--btn-h-phone) !important; height: var(--btn-h-phone); padding: 0 var(--space-1) !important; text-align: center; }
 }
 .ui-root .ds-open-label .cc-book-when { font-size: inherit; color: inherit; }
+/* No free times (B5, Tim's Stage A walk): the grid stays, the line sits under it where the day's name would. */
+.ui-root .cc-book-none { margin-top: var(--space-4); }

@@ -1,8 +1,10 @@
 import { useLocation, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { legalDocuments } from '../../content/legal';
 import LegalDocBody from '../../components/legal/LegalDocBody';
-import { PageHeader } from '../../components/design';
+import { PageOpening } from '../../components/design';
 import { BackLink } from '../../components/ui/DiscardLink';
+import { B1_LINES } from '../../content/pageLines/client';
+import '../../pages/hubs/clientPage.css';
 
 // Standalone, publicly reachable pages for the same three documents the
 // sign-up reading pop-up shows (src/components/auth/ReadingPopup.jsx),
@@ -124,7 +126,7 @@ export default function LegalDocumentPage() {
           <div className="legal-page-topbar">
             {cameFromPortal ? <BackLink onClick={() => navigate(-1)} /> : <BackLink to="/auth/login" />}
           </div>
-          <PageHeader title={doc.title} meta={[doc.lastUpdated]} />
+          <PageOpening title={doc.title} label={doc.lastUpdated} line={B1_LINES.legal} />
           <LegalDocBody blocks={doc.blocks} classNames={PAGE_CLASS_NAMES} />
         </div>
       </div>

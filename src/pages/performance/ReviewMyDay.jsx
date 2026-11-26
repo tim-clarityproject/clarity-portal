@@ -3,7 +3,9 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import {
-  AddButton,
+  AddLink,
+  CardHead,
+  PageOpening,
   AddWinPanel,
   Button,
   EndScreen,
@@ -14,7 +16,6 @@ import {
   ListRow,
   Loading,
   LoggingRow,
-  PageHeader,
   PriorityRows,
   Choice,
   Stat,
@@ -83,7 +84,9 @@ import {
 } from '../../lib/performance';
 import { leadUpByDay, noteLeadUp, usePeakMoments } from '../../lib/peakMoments/store';
 import { useOwnToolSteps } from '../../components/ownQuestions/ownSteps';
+import { B2_LINES } from '../../content/pageLines/client';
 import './performance.css';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 
 // Daily review (mock-up M5, version 19, approved by Tim on 23 Oct; read
 // in full with its notes). One guided tool, one question per screen on
@@ -195,7 +198,7 @@ function Shell({ children }) {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page">
-        <PageHeader title="Daily review" />
+        <PageOpening title="Daily review" line={B2_LINES.dailyReview} />
         {children}
         <div className="ds-actions ipp-actions">
           <Button onClick={() => navigate('/performance-sprint')}>Open my sprint</Button>
@@ -733,15 +736,19 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
           <TextBox ariaLabel="What went well today?" maxLength={REVIEW_TEXT_MAX} value={answers.wentWell} onChange={(wentWell) => change({ wentWell })} />
           {view.strategies.length > 0 && (
             <div className="rev-wins">
-              <p>Did something outside your plan move the needle?</p>
-              {view.wins.length > 0 && (
+              {/* "+ Add" at the right of the list's label (Polish 1, rule 10): it opens the win panel. */}
+              <CardHead
+                label="Unplanned wins"
+                as="h3"
+                add={<AddLink label="Add unplanned win" expanded={panel} onClick={() => { setWinForm((f) => (f.text ? f : emptyWin(date))); setPanel(true); }} />}
+              />
+              {view.wins.length > 0 ? (
                 <TodoList label="Unplanned wins" className="rev-list">
                   {view.wins.map((w) => (
                     <TodoRow key={w.id} win text={w.text} strategyName={w.strategyName} winTag={`Unplanned win, ${w.day}`} />
                   ))}
                 </TodoList>
-              )}
-              <AddButton className="day-add" onClick={() => { setWinForm((f) => (f.text ? f : emptyWin(date))); setPanel(true); }}>Add unplanned win</AddButton>
+              ) : <p className="day-quiet-line">Did something outside your plan move the needle?</p>}
             </div>
           )}
         </div>
@@ -884,7 +891,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
 
   const close = () => {
     if (waiting.current) sendAnswers();
-    if (!view.finished) toast.show('Saved as a draft, so you can continue from Home for 24 hours.');
+    if (!view.finished) toast.show(TOOL_CLOSED);
     else {
       // Looking at a finished one never makes it part-way again (Tim, 5
       // Nov): any change is already sent, so the device forgets the step

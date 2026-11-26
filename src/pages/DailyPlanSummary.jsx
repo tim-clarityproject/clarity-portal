@@ -6,8 +6,9 @@ import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
 import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import pageText from '../content/pageText';
-import { Loading, PageHeader, Button, useToast } from '../components/design';
+import { Loading, PageOpening, Button, useToast } from '../components/design';
+import { B2_LINES } from '../content/pageLines/client';
+
 import SavedItemActions from '../components/SavedItemActions';
 
 // Headings repeat the four questions word for word - see
@@ -142,7 +143,7 @@ export default function DailyPlanSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageHeader title={formatPlanDate(plan.created_at)} info={pageText.dailyPlanSummary} />
+          <PageOpening title={formatPlanDate(plan.created_at)} line={B2_LINES.dailyPlanSummary} />
         </div>
 
         {answered.length > 0 && (

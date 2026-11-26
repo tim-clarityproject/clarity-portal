@@ -28,9 +28,9 @@ const calm = (error) => crmProblem(error);
 const Problem = ({ line }) => (line ? <p className="cc-problem" role="alert">{line}</p> : null);
 
 // ---------------------------------------------------------------- Add lead
-export function AddLeadPanel({ open, onClose, onAdded }) {
+export function AddLeadPanel({ open, onClose, onAdded, initialName = '' }) {
   const actions = useLeadActions();
-  const start = { name: '', email: '', organisation: '', source: 'referral', referredBy: '' };
+  const start = { name: initialName, email: '', organisation: '', source: 'referral', referredBy: '' };
   const [f, setF] = useState(start);
   const [problem, setProblem] = useState(null);
   useEffect(() => { if (open) { setF(start); setProblem(null); } /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [open]);

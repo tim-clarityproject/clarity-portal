@@ -3,6 +3,7 @@ import keepWords from './keepWords';
 import StatusAction from './StatusAction';
 import { Button } from './Button';
 import './design.css';
+import './planCards.css';
 
 // An Outcome Objective's card (M1 .ob; three ways to track, Tim 22 Oct).
 // The label line (which objective, its kind, its date and the time left),

@@ -1,17 +1,19 @@
 import { Checkbox } from './Controls';
 import { Button } from './Button';
-import Chevron from './Chevron';
-import { List, ListRow } from './ListRow';
+import { rowName } from './ListRow';
 import { SlidePanel } from './Dialogs';
+import { Card, Label, Row, Rows } from './Blocks';
 import './design.css';
+import './hubTiles.css';
 
 // The hub pages' parts (mock-up M3; Phase 4 step 1).
 //
 // HubTile: a type-only tile, no icons: the tool's name, one line on how it
 // helps, and how long it takes ("~8 minutes"), with an optional quiet live
 // line on the right ("Draft saved"; "Done today" in mint with its dot,
-// `good`). `big` is an area tile on Personal: the name in Nekst capitals
-// and how many tools it holds. A real link: onClick handles a plain tap.
+// `good`). `big` is an area tile on Personal: the name as a 20px question
+// and how many tools it holds (Polish 1: Nekst only for page titles). A
+// real link: onClick handles a plain tap. Drawn as the one card (rule 13).
 export function HubTile({ name, line, time, live, good = false, big = false, href, onClick, className = '' }) {
   return (
     <a href={href} className={`ds-hub-tile${big ? ' ds-hub-tile--big' : ''} ${className}`.trim()} onClick={onClick}>
@@ -41,9 +43,10 @@ export function HubGrid({ children, className = '' }) {
 
 /** A named group of tiles ("Decide"), or an unnamed one. */
 export function HubGroup({ title, children }) {
+  // Polish 1 (rule 3): a group's name is the 13px spaced grey label, never Nekst.
   return (
     <section className={`ds-hub-group${title ? ' ds-hub-group--named' : ''}`}>
-      {title && <h2 className="ds-hub-group-title">{title}</h2>}
+      {title && <Label className="ds-hub-group-title">{title}</Label>}
       <HubGrid>{children}</HubGrid>
     </section>
   );
@@ -59,53 +62,45 @@ export function HubAnchor({ children }) {
 }
 
 /**
- * A hub's recent saved items (M3 .recent; writing rule 60): a heading, the
- * last few items, each a row with its name in words, the tool under it and
- * the date on the right, then a text link to the whole list ("Open My
- * Plans"). Nothing shows when there is nothing saved.
+ * A hub's recent saved items (M3 .recent; writing rule 60; Polish 1 rules 13
+ * and 14): one card, its label ("My Plans") with View all on the right, then
+ * the last few items as hairline rows, each the item's own name with the tool
+ * under it and the date on the right. Nothing shows when there is nothing saved.
  *
- * items: [{ key, title, type, date, onClick }]
+ * items: [{ key, title, type, date, dateKey, onClick }]
  */
-export function HubRecent({ title, items = [], linkLabel, onOpenAll }) {
+export function HubRecent({ title, items = [], linkLabel = 'View all', onOpenAll }) {
   if (!items.length) return null;
   return (
-    <section className="ds-hub-recent" aria-label={title}>
-      <h2 className="ds-hub-group-title">{title}</h2>
-      <List label={title} className="ds-hub-recent-list">
-        {items.map((x) => <ListRow key={x.key} title={x.title} type={x.type} date={x.date} onClick={x.onClick} />)}
-      </List>
-      {linkLabel && (
-        <div className="ds-hub-recent-link">
-          <Button variant="text" onClick={onOpenAll}>{linkLabel}</Button>
-        </div>
-      )}
-    </section>
+    <Card label={title} link={onOpenAll ? { children: linkLabel, onClick: onOpenAll } : undefined} className="ds-hub-recent">
+      <Rows label={title}>
+        {items.map((x) => (
+          <Row key={x.key} name={rowName(x.title, x.type, x.dateKey)} sub={x.type} value={x.date} onClick={x.onClick} strong />
+        ))}
+      </Rows>
+    </Card>
   );
 }
 
 /**
- * The Health Check's saved teams, inside its anchor card (M3 .teams): the
- * team's name and "3 versions, latest Mon 12 Oct", with the chevron. Each
- * opens that team's versions.
+ * The Health Check's saved teams (M3 .teams; Polish 1): one card of hairline
+ * rows, each the team's name with "3 versions, latest Mon 12 Oct" under it,
+ * opening its newest version. `add`: the card's "+ Add" (Start a new Health Check).
  *
  * teams: [{ key, team, line, onClick }]
  */
-export function HubTeams({ teams = [] }) {
-  if (!teams.length) return null;
+export function HubTeams({ teams = [], label = 'Your teams', add, empty = 'Each team’s Health Checks show here once you start one.' }) {
+  if (!teams.length && !add) return null;
   return (
-    <ul className="ds-hub-teams" aria-label="Your teams">
-      {teams.map((t) => (
-        <li key={t.key}>
-          <button type="button" className="ds-hub-team" onClick={t.onClick}>
-            <span className="ds-hub-team-text">
-              <span className="ds-hub-team-name">{t.team}</span>
-              <span className="ds-hub-team-line">{t.line}</span>
-            </span>
-            <Chevron direction="right" size="sm" />
-          </button>
-        </li>
-      ))}
-    </ul>
+    <Card label={label} add={add} className="ds-hub-teams-card">
+      {teams.length > 0 ? (
+        <Rows label={label}>
+          {teams.map((t) => <Row key={t.key} name={t.team} sub={t.line} onClick={t.onClick} strong />)}
+        </Rows>
+      ) : (
+        <p className="ds-hub-teams-empty">{empty}</p>
+      )}
+    </Card>
   );
 }
 

@@ -1559,7 +1559,7 @@
 }
 
 .ui-root .ds-textbox::placeholder {
-  color: var(--label);
+  color: var(--placeholder);
 }
 
 .ui-root .ds-textbox:focus {
@@ -2640,7 +2640,7 @@
   align-items: center;
 }
 
-/* ---------- Floating breathing orb (desktop only) ---------- */
+/* ---------- Floating breathing orb ---------- */
 
 .ui-root .ds-orb {
   position: relative;
@@ -2650,23 +2650,15 @@
 
 .ui-root .ds-orb--fixed {
   position: fixed;
-  right: var(--space-4);
-  bottom: var(--space-4);
+  right: max(var(--space-4), env(safe-area-inset-right, 0px));
+  bottom: max(var(--space-4), env(safe-area-inset-bottom, 0px));
   z-index: var(--z-orb);
 }
 
-/* Never on phone (Tim, 21 Oct): it only exists where there is a mouse,
-   and never at phone width, where the tab bar sits at the bottom. It
-   never sits over content either (Tim, 5 Nov: it covered "Show as a
-   table" and the check-in's figures): it shows only where the margin
-   beside the page's column (--content-max, 760px) is wider than the
-   pill and its gap (196px each side), and narrower than that Breathe is in the
-   menu, as on a phone. */
-@media not ((hover: hover) and (pointer: fine)), (max-width: 1151px) {
-  .ui-root .ds-orb {
-    display: none;
-  }
-}
+/* On every screen, phones included (Tim's walk of Stage A, item 5, 25 Nov:
+   the phone bar that held Breathe is gone): bottom right, above the page.
+   The frame keeps the page's foot clear of it (frame.css, --breathe-room),
+   so nothing it covers is left out of reach. Its look is unchanged. */
 
 /* The Breathe pill (breathe-orb.html, 29 Oct): a 60px pill with the
    small orb (the person's choice, BreathOrb) and the word in Nekst
@@ -2866,7 +2858,7 @@
 
 .ui-root .ds-bwords-count span {
   font-size: var(--fs-note);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 /* ---------- Small win and calm error (v3 Messages) ---------- */
@@ -3266,7 +3258,7 @@
 }
 
 .ui-root .ds-grow > .ds-text::placeholder {
-  color: var(--label);
+  color: var(--placeholder);
   opacity: 1;
 }
 
@@ -3409,12 +3401,18 @@
   }
 }
 
-/* ---------- Guided tools (M6 set-up flows, version 21) ---------- */
+/* ---------- Guided tools in focus mode (Polish 1, rule 21) ----------
+   B3 (Polish 1, Stage B) owns the .ds-guide* rules in this file.
+   GuidedTool runs in ToolFrame's focus mode (example-pages-25nov.html
+   "Tool: Plan my day"; blocks.css .ds-tool*): on a laptop the portal's
+   rounded panel with the page background round it and no menu, the tool's
+   560px column in the panel's middle 720px, 40px from the top; on a phone
+   edge to edge, 20px in. The bar holds × ("Close and save my place") at the
+   left and "Step 2 of 3" at the right, the 2px progress line sits 40px over
+   the question's block, the question is 20px DM Sans, and Next, Back and
+   Skip this step sit at the foot: one row on a laptop, stacked and centred
+   on a phone. The whole layer scrolls as one page. */
 
-/* The tool: full screen on real pages (sized to the visible space, so
-   on phone the footer rides above the keyboard), or filling its box in
-   the gallery. It lays itself out for phone or desktop by its own width,
-   so it is right in both places. */
 .ui-root .ds-guide {
   container: guide / inline-size;
   box-sizing: border-box;
@@ -3440,8 +3438,7 @@
   top: var(--vv-top, 0px);
   height: var(--vv-height, 100dvh);
   z-index: var(--z-dialog);
-  /* A phone turned on its side: the bar, the steps and the foot stay clear
-     of the notch and the Dynamic Island (the notch rule). */
+  /* A phone turned on its side: the tool stays clear of the notch. */
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
 }
@@ -3452,154 +3449,81 @@
   overflow: hidden;
 }
 
-.ui-root .ds-guide-frame {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-/* Top bar: the tool's name, Saving and Saved, the close crosshair. */
-.ui-root .ds-guide-bar {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: var(--space-px14);
-  box-sizing: border-box;
-  min-height: calc(var(--guide-bar-h) + env(safe-area-inset-top, 0px));
-  padding: env(safe-area-inset-top, 0px) var(--space-px20) 0 var(--space-px28);
-  border-bottom: var(--line-w) solid var(--line);
-  background: var(--bg);
-}
-
-.ui-root .ds-guide-name {
-  flex: 1;
-  min-width: 0;
-  font-family: var(--font-display);
-  font-weight: var(--fw-regular);
-  font-size: var(--fs-tool-name);
-  letter-spacing: var(--ls-tool-name);
-  text-transform: uppercase;
-  color: var(--text-2);
-  /* Never cut short with "…": at a large text size the name wraps and
-     the bar grows to hold it. */
-  overflow-wrap: break-word;
-}
-
-.ui-root .ds-guide-close .ds-cross--close {
-  width: var(--cross-tool);
-  height: var(--cross-tool);
-}
-
+/* The scroller: the whole layer, so the tool scrolls as one page. */
 .ui-root .ds-guide-scroll {
-  flex: 1 1 auto;
-  min-height: 0;
+  box-sizing: border-box;
+  height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: var(--space-5) var(--space-5) var(--space-7);
   scrollbar-width: thin;
   scrollbar-color: var(--line) transparent;
 }
 
-.ui-root .ds-guide-page {
-  max-width: var(--guide-page-max);
-  margin-inline: auto;
+/* The panel (frame.css's .ds-frame in focus mode). */
+.ui-root .ds-guide-frame {
+  box-sizing: border-box;
+  min-height: 100%;
+  background: var(--bg);
 }
 
-/* Steps slide across: Next from the right, Back from the left. */
-.ui-root .ds-guide-page--next {
-  animation: ds-from-right var(--dur-slow) var(--ease) both;
+/* The tool's page column: the panel's middle 720px, 40px from the top. */
+.ui-root .ds-guide-col {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--tool-frame-max);
+  margin: 0 auto;
+  padding: var(--space-px40) var(--frame-main-x) var(--frame-main-bottom, var(--space-7));
 }
 
-.ui-root .ds-guide-page--back {
-  animation: ds-from-left var(--dur-slow) var(--ease) both;
-}
+/* A results or summary page with its own chart may use the whole column. */
+.ui-root .ds-tool.ds-guide-tool--wide { max-width: none; }
 
-@keyframes ds-from-right {
-  from { opacity: 0; transform: translateX(var(--slide-dist)); }
-}
-
-@keyframes ds-from-left {
-  from { opacity: 0; transform: translateX(calc(-1 * var(--slide-dist))); }
-}
-
-@keyframes ds-fade {
-  from { opacity: 0; }
-}
-
-/* With reduced motion they fade instead (tokens.css makes the durations
-   0 under reduced motion, so the fade has its own fixed length). */
-@media (prefers-reduced-motion: reduce) {
-  .ui-root .ds-guide-page--next,
-  .ui-root .ds-guide-page--back {
-    animation: ds-fade var(--dur-fade-still) linear both;
+@media (min-width: 1024px) {
+  .ui-root .ds-guide--fullscreen {
+    background: var(--raised);
+  }
+  .ui-root .ds-guide--fullscreen .ds-guide-frame {
+    min-height: calc(100% - 2 * var(--frame-margin));
+    margin: var(--frame-margin);
+    border: var(--line-w) solid var(--line);
+    border-radius: var(--radius-frame);
   }
 }
 
-/* Where you are: the step list (desktop). */
-.ui-root .ds-guide-steps ol {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-px6);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+/* Phone (by the tool's own width): edge to edge, 20px in. */
+@container guide (max-width: 1023px) {
+  .ui-root .ds-guide-col {
+    max-width: none;
+    padding: calc(var(--space-px20) + env(safe-area-inset-top, 0px)) var(--page-x-phone) calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+  }
 }
 
-.ui-root .ds-guide-steps li {
-  margin: 0;
-  padding: 0;
-}
-
-.ui-root .ds-guide-steps button {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
+/* The bar keeps Saving and Saved beside "Step 2 of 3". */
+.ui-root .ds-guide-where {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-px6);
-  min-height: var(--steps-h) !important;
-  padding: 0 var(--space-px12) !important;
-  border: var(--line-w) solid transparent;
-  border-radius: var(--radius-pill);
-  font-family: var(--font-body);
-  font-size: var(--fs-meta) !important;
-  line-height: var(--lh-text);
-  letter-spacing: normal;
-  color: var(--label);
-  -webkit-tap-highlight-color: transparent;
+  gap: var(--space-3);
+  min-height: var(--tap-min);
+  text-align: right;
 }
 
-.ui-root .ds-guide-steps button b {
-  font-family: var(--font-display);
-  font-weight: var(--fw-regular);
-  font-size: var(--fs-step-num);
-}
-
-.ui-root .ds-guide-steps button[aria-current='step'] {
-  color: var(--text);
-  /* An outlined edge, so the edges colour (3 to 1; Tim, 12 Nov). */
-  border-color: var(--field-line);
-}
-
-.ui-root .ds-guide-steps button.ds-guide-done {
-  color: var(--text-2);
-}
-
-.ui-root .ds-guide-steps button:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
-}
-
-/* The % complete bar (question tools, phone and desktop). */
-.ui-root .ds-guide-pct {
+/* The tool's own top on a step (M7b's results: the crosshair alone). */
+.ui-root .ds-guide-top {
   display: flex;
   align-items: center;
-  gap: var(--space-px12);
+  min-height: var(--tap-min);
+  margin: calc(-1 * var(--space-2)) 0 var(--space-2);
+}
+
+/* The progress line (.prog): 2px, 40px over the step. */
+.ui-root .ds-guide-pct {
+  margin: 0 0 var(--space-px40);
 }
 
 .ui-root .ds-guide-pct-track {
-  flex: 1;
-  height: var(--steps-line);
-  border-radius: var(--radius-bar);
+  display: block;
+  height: var(--prog-h);
+  border-radius: var(--prog-h);
   background: var(--line);
   overflow: hidden;
 }
@@ -3607,27 +3531,38 @@
 .ui-root .ds-guide-pct-track > span {
   display: block;
   height: 100%;
+  border-radius: var(--prog-h);
   background: var(--text);
-  transition: width var(--dur-slow) var(--ease);
+  transition: width var(--dur-prog) var(--ease);
 }
 
-.ui-root .ds-guide-pct-text {
-  min-width: var(--pct-text-w);
-  font-size: var(--fs-meta);
-  text-align: right;
-  color: var(--label);
-  font-variant-numeric: tabular-nums;
+/* A step settles in: a fade and an 8px rise, forward or back alike. */
+.ui-root .ds-guide-page--next {
+  animation: ds-settle var(--dur-slow) var(--ease-settle) both;
 }
 
-/* The step's head. */
+@keyframes ds-fade {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-guide-page--next { animation: none; }
+  .ui-root .ds-guide-pct-track > span { transition: none; }
+}
+
+/* The step's head: the small grey eyebrow (.eyebrow), the 20px question
+   (.q.tq, 28px under it), its grey lines 8px under the question and 20px
+   over the step. */
 .ui-root .ds-guide-label {
   display: flex;
   align-items: center;
   gap: var(--info-gap);
-  min-height: var(--space-px20);
-  margin-top: var(--space-px28);
+  margin: 0 0 var(--space-2);
   font-size: var(--fs-meta);
-  color: var(--label);
+  line-height: 1.55;
+  letter-spacing: var(--ls-section-title);
+  text-transform: uppercase;
+  color: var(--text-2);
 }
 
 /* The one "i", 16px, in a 44px button whose padding gives the tap area.
@@ -3645,28 +3580,29 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   color: var(--text-2);
+  letter-spacing: normal;
+  text-transform: none;
   transition: color var(--dur-fast) var(--ease);
 }
 
-/* Coral on hover or keyboard focus, like every tappable icon (Tim, 26 Oct). */
 .ui-root .ds-guide-i:hover,
 .ui-root .ds-guide-i:focus-visible {
-  color: var(--coral-text);
+  color: var(--text);
 }
 
 .ui-root .ds-guide-i:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
+  outline: var(--focus-w) solid var(--text);
   outline-offset: var(--space-px2);
 }
 
 .ui-root .ds-guide .ds-guide-question {
-  margin: var(--space-2) 0 0 !important;
+  margin: 0 0 var(--space-px28);
   font-family: var(--font-body);
-  font-size: var(--fs-question) !important;
+  font-size: var(--fs-question);
   font-weight: var(--fw-regular);
-  line-height: var(--lh-question);
+  line-height: 1.35;
   letter-spacing: normal;
   text-transform: none;
   text-wrap: balance;
@@ -3674,42 +3610,15 @@
   outline: none;
 }
 
-.ui-root .ds-guide .ds-guide-title {
-  margin: var(--space-2) 0 0 !important;
-  font-family: var(--font-display);
-  font-size: var(--fs-question) !important;
-  font-weight: var(--fw-regular);
-  line-height: var(--lh-title);
-  letter-spacing: var(--ls-page-title);
-  text-transform: uppercase;
-  text-wrap: balance;
-  color: var(--text);
-  outline: none;
-}
-
-.ui-root .ds-guide-label + .ds-guide-question,
-.ui-root .ds-guide-label + .ds-guide-title {
-  margin-top: var(--space-2) !important;
-}
-
-/* With no small label, the question keeps the label's space above it. */
-.ui-root .ds-guide-steps + .ds-sr + .ds-guide-question,
-.ui-root .ds-guide-steps + .ds-sr + .ds-guide-title,
-.ui-root .ds-guide-pct + .ds-sr + .ds-guide-question,
-.ui-root .ds-guide-pct + .ds-sr + .ds-guide-title {
-  margin-top: calc(var(--space-px28) + var(--space-px20) + var(--space-2)) !important;
-}
-
 .ui-root .ds-guide-nudge {
-  max-width: var(--nudge-max);
-  margin: var(--space-px10) 0 0;
-  font-size: var(--fs-nudge);
-  line-height: var(--lh-text);
+  margin: calc(var(--space-2) - var(--space-px28)) 0 var(--space-px20);
+  font-size: var(--fs-meta);
+  line-height: 1.55;
   color: var(--text-2);
 }
 
 .ui-root .ds-guide-nudge + .ds-guide-nudge {
-  margin-top: var(--space-1);
+  margin-top: calc(var(--space-1) - var(--space-px20));
 }
 
 .ui-root .ds-guide-example-link {
@@ -3719,45 +3628,37 @@
   align-items: center;
   min-height: var(--tap-min) !important;
   padding: 0 !important;
-  margin-top: var(--space-1);
+  margin: calc(-1 * var(--space-3)) 0 var(--space-1);
   font-family: var(--font-body);
-  font-size: var(--fs-note) !important;
-  color: var(--text-2);
+  font-size: var(--fs-text) !important;
+  color: var(--text);
   text-decoration: underline;
+  text-decoration-thickness: var(--line-w);
   text-underline-offset: var(--space-1);
-  text-decoration-color: var(--quiet-line);
-}
-
-.ui-root .ds-guide-example-link:hover {
-  color: var(--coral-text);
 }
 
 .ui-root .ds-guide-example-link:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
+  outline: var(--focus-w) solid var(--text);
   border-radius: var(--space-1);
 }
 
 .ui-root .ds-guide-example {
-  max-width: var(--example-max);
-  margin-top: var(--space-1);
-  padding: var(--space-px14) var(--space-3);
-  border-radius: var(--radius-example);
-  background: var(--raised);
-  font-size: var(--fs-secondary);
+  margin: 0 0 var(--space-px20);
+  font-size: var(--fs-text);
   color: var(--text-2);
 }
 
-/* The one-off tip, with the crosshair to close. */
+/* The one-off tip, with the × to close. */
 .ui-root .ds-guide-tip {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-px10);
-  margin-top: var(--space-px20);
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-px18);
+  margin: 0 0 var(--space-px20);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
   border: var(--line-w) solid var(--line);
-  border-radius: var(--radius-field);
-  font-size: var(--fs-secondary);
+  border-radius: var(--radius-control);
+  font-size: var(--fs-text);
   color: var(--text-2);
 }
 
@@ -3773,128 +3674,59 @@
 }
 
 .ui-root .ds-guide-body {
-  margin-top: var(--space-4);
+  margin-top: 0;
 }
 
-/* The head arrives a moment before the content, as in M6. */
-.ui-root .ds-guide-page--next .ds-guide-rv,
-.ui-root .ds-guide-page--back .ds-guide-rv {
-  animation: ds-fade var(--dur-slow) var(--ease) both;
+.ui-root .ds-guide-body .ds-rows {
+  max-width: none;
 }
 
-/* Footer, only when the screen has a button: Skip and the coral button (Back is at the top). */
-.ui-root .ds-guide-foot {
-  flex: none;
+.ui-root .ds-guide-problem {
+  max-width: var(--guide-problem-max);
+  margin-top: var(--space-px12);
+}
+
+/* The foot (.stepfoot): Next, Back and Skip this step, 32px under the step. */
+.ui-root .ds-guide-foot .ds-guide-skip {
+  text-decoration: underline;
+  text-decoration-thickness: var(--line-w);
+  text-underline-offset: var(--space-1);
+}
+
+.ui-root .ds-guide-foot-own {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-px10);
-  padding: var(--space-px14) var(--space-px28) max(var(--space-px18), env(safe-area-inset-bottom, 0px));
-  border-top: var(--line-w) solid var(--line);
-  background: var(--bg);
+  gap: var(--space-px20);
 }
 
-.ui-root .ds-guide-foot-right {
+.ui-root .ds-guide-foot-aside {
   display: flex;
   align-items: center;
-  gap: var(--space-px6);
-}
-
-/* Back (rules 29o and 29t, Tim, 5 Nov): the chevron alone at the top left,
-   beside the tool's name. Its 44px tap area is invisible: the negative
-   margins put the chevron's visible edge on the bar's content edge,
-   --back-gap (10px; Tim, 18 Nov, follow-up 1) before the name. On hover only the chevron turns coral,
-   with nothing filled behind it. */
-.ui-root .ds-guide-back {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--tap-min);
-  height: var(--tap-min);
-  min-height: 0 !important;
-  padding: 0 !important;
-  /* The name --back-gap from the chevron's ink, inside the bar's 14px gap (follow-up 1). */
-  margin: 0 calc((var(--arrow-size) - var(--tap-min)) / 2 - var(--chev-right-inset) + var(--back-gap) - var(--space-px14)) 0 calc((var(--arrow-size) - var(--tap-min)) / 2 - var(--chev-left-inset));
-  color: var(--text-2);
-  transition: color var(--dur-fast) var(--ease);
-  -webkit-tap-highlight-color: transparent;
-  /* Above the name, so the whole 44px tap area is Back's. */
-  position: relative;
-  z-index: 1;
-}
-
-.ui-root .ds-guide-back .ds-chevron {
-  width: var(--arrow-size);
-  height: var(--arrow-size);
-}
-
-/* Centred on the capitals of the tool's name beside it: the chevron's line
-   takes the name's font, so both stand on one baseline (Tim, 11 Nov). */
-.ui-root .ds-guide-back .ds-chevron-line {
-  font-family: var(--font-display);
-  font-size: var(--fs-tool-name);
-  line-height: var(--lh-text);
-}
-
-.ui-root .ds-guide-back:hover,
-.ui-root .ds-guide-back:focus-visible {
-  color: var(--coral-text);
-}
-
-.ui-root .ds-guide-back:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
-  outline-offset: calc((var(--who-icon) - var(--tap-min)) / 2);
-}
-
-/* Skip on a screen that moves straight on: quietly under the answers, its
-   words on the content's left edge in every guided tool (tidy follow-up 3,
-   run 7's 1). Doubled class so it wins over the later .ds-guide-skip rule,
-   whose 10px side padding used to push it in. */
-.ui-root .ds-guide-skip.ds-guide-skip--body {
-  margin-top: var(--space-3);
-  padding: 0 !important;
-  /* With no side padding the word alone is narrower than a tap: the button
-     keeps 44px across, its word still on the left edge (UI tester, tidy
-     follow-up 3). */
-  min-width: var(--tap-min);
-}
-
-.ui-root .ds-guide-skip {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap-min) !important;
-  padding: 0 var(--space-px10) !important;
-  font-family: var(--font-body);
-  font-size: var(--fs-secondary) !important;
-  color: var(--label);
-  -webkit-tap-highlight-color: transparent;
-}
-
-.ui-root .ds-guide-skip:hover {
-  color: var(--text);
-}
-
-.ui-root .ds-guide-skip:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
-  border-radius: var(--space-1);
 }
 
 .ui-root .ds-btn.ds-guide-next {
-  min-height: var(--btn-h-tool) !important;
-  padding: 0 var(--space-px28) !important;
+  white-space: nowrap;
+}
+
+@container guide (max-width: 600px) {
+  .ui-root .ds-guide-foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
+  }
+  .ui-root .ds-guide-foot .ds-btn { width: 100%; }
+  .ui-root .ds-guide-foot .ds-more { justify-content: center; }
+  /* Words stacked under each other share one centre (rule 11). */
+  .ui-root .ds-guide-foot .ds-chevron { display: none; }
+  .ui-root .ds-guide-foot-own { flex-direction: column; align-items: stretch; gap: var(--space-1); }
+  .ui-root .ds-guide-foot-aside { justify-content: center; }
 }
 
 /* The editable summary. */
 .ui-root .ds-guide-summary {
-  margin-top: var(--space-4);
-  border-top: var(--line-w) solid var(--line-soft);
+  margin-top: 0;
+  border-top: var(--line-w) solid var(--line);
 }
 
 .ui-root .ds-guide-summary-row {
@@ -3903,23 +3735,23 @@
   gap: var(--space-1) var(--space-3);
   align-items: start;
   padding: var(--space-px14) 0;
-  border-bottom: var(--line-w) solid var(--line-soft);
+  border-bottom: var(--line-w) solid var(--line);
 }
 
 .ui-root .ds-guide-summary-label {
-  font-size: var(--fs-note);
-  color: var(--label);
+  font-size: var(--fs-meta);
+  color: var(--text-2);
 }
 
 .ui-root .ds-guide-summary-value {
-  font-size: var(--fs-option);
+  font-size: var(--fs-text);
   color: var(--text);
   overflow-wrap: break-word;
   white-space: pre-wrap;
 }
 
 .ui-root .ds-guide-summary-value--empty {
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .ds-guide-summary-change {
@@ -3928,321 +3760,34 @@
   display: inline-flex;
   align-items: flex-start;
   justify-content: flex-end;
-  /* A short word (Add) still gets the full 44px tap area; the word stays
-     at the right-hand edge. */
   min-width: var(--tap-min);
   min-height: var(--tap-min) !important;
   padding: 0 !important;
   font-family: var(--font-body);
-  font-size: var(--fs-note) !important;
-  color: var(--text-2);
+  font-size: var(--fs-text) !important;
+  color: var(--text);
   text-decoration: underline;
+  text-decoration-thickness: var(--line-w);
   text-underline-offset: var(--space-1);
-  text-decoration-color: var(--quiet-line);
 }
 
 .ui-root .ds-guide-summary-change:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
+  outline: var(--focus-w) solid var(--text);
 }
 
-/* Phone (by the tool's own width). */
 @container guide (max-width: 600px) {
-  .ui-root .ds-guide-bar {
-    height: auto;
-    min-height: var(--guide-bar-h-phone);
-    padding: max(var(--space-3), env(safe-area-inset-top, 0px)) var(--space-px12) 0 var(--space-px22);
-    border-bottom: 0;
-  }
-
-  .ui-root .ds-guide-scroll {
-    padding: var(--space-2) var(--space-px20) var(--space-6);
-  }
-
-  /* The step list becomes the slim segmented line. */
-  .ui-root .ds-guide-steps ol {
-    flex-wrap: nowrap;
-    gap: var(--space-1);
-  }
-
-  .ui-root .ds-guide-steps li {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .ui-root .ds-guide-steps button {
-    position: relative;
-    width: 100%;
-    min-height: var(--steps-h-phone) !important;
-    padding: 0 !important;
-    border: 0;
-    border-radius: 0;
-  }
-
-  .ui-root .ds-guide-steps button b,
-  .ui-root .ds-guide-steps button span {
-    display: none;
-  }
-
-  /* The slim segment is 28px; its tap area reaches 44px. */
-  .ui-root .ds-guide-steps button::before {
-    content: '';
-    position: absolute;
-    inset: calc((var(--steps-h-phone) - var(--tap-min)) / 2) 0;
-  }
-
-  .ui-root .ds-guide-steps button::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    height: var(--steps-line);
-    margin-top: calc(var(--steps-line) / -2);
-    border-radius: var(--radius-bar);
-    background: var(--line);
-  }
-
-  .ui-root .ds-guide-steps button.ds-guide-done::after {
-    background: var(--label);
-  }
-
-  .ui-root .ds-guide-steps button[aria-current='step']::after {
-    background: var(--text);
-  }
-
-  .ui-root .ds-guide-label {
-    margin-top: var(--space-px18);
-  }
-
-  .ui-root .ds-guide-steps + .ds-sr + .ds-guide-question,
-  .ui-root .ds-guide-steps + .ds-sr + .ds-guide-title,
-  .ui-root .ds-guide-pct + .ds-sr + .ds-guide-question,
-  .ui-root .ds-guide-pct + .ds-sr + .ds-guide-title {
-    margin-top: calc(var(--space-px18) + var(--space-px20) + var(--space-2)) !important;
-  }
-
-  .ui-root .ds-guide .ds-guide-question {
-    font-size: var(--fs-question-phone) !important;
-  }
-
-  .ui-root .ds-guide .ds-guide-title {
-    font-size: var(--fs-title-guide-phone) !important;
-  }
-
-  /* Footer: the arrow alone, then Skip and a wide button under the thumb. */
-  .ui-root .ds-guide-foot {
-    gap: var(--space-px6);
-    padding: var(--space-px12) var(--space-px20) max(var(--space-px26), env(safe-area-inset-bottom, 0px));
-  }
-
-  .ui-root .ds-guide-foot-right {
-    flex: 1;
-    justify-content: flex-end;
-    min-width: 0;
-  }
-
-  .ui-root .ds-btn.ds-guide-next {
-    flex: 1;
-    min-width: 0;
-    padding: 0 var(--space-px14) !important;
-    letter-spacing: var(--ls-btn-phone);
-  }
-
   .ui-root .ds-guide-summary-row {
     grid-template-columns: minmax(0, 1fr) auto;
   }
-
   .ui-root .ds-guide-summary-value {
     grid-column: 1 / -1;
     grid-row: 2;
   }
 }
 
-/* ---------- The calm stepped frame (M9, M10 and M7b; Tim, 13 Nov) ----------
-   GuidedTool with `calm`: the top bar and the bottom bar line up with the
-   page's own column, the % bar has no figure, the stage name is the small
-   grey line above the question, and Skip is a quiet link at the left. */
-
-.ui-root .ds-guide--calm .ds-guide-bar {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto var(--tap-min);
-  gap: 0;
-  padding: env(safe-area-inset-top, 0px) max(var(--guide-calm-pad), calc((100% - var(--guide-calm-max)) / 2 + var(--guide-calm-pad))) 0;
-}
-
-.ui-root .ds-guide--calm .ds-guide-name {
-  grid-column: 2;
-  position: relative;
-  top: 0.1em;
-  font-size: var(--fs-tool-name-calm);
-  letter-spacing: var(--ls-tool-name-calm);
-  /* Back's whole tap area is Back's own (M9). */
-  pointer-events: none;
-}
-
-.ui-root .ds-guide--calm .ds-guide-back {
-  grid-column: 1;
-  /* The chevron's visible edge on the content's left edge, and the name
-     --back-gap (10px; Tim, 18 Nov, follow-up 1) after the chevron's
-     visible right edge (M9; rule 29t). The 14px chevron stands at the
-     left of its 16px line, centred in the 44px button, and its strokes
-     sit the insets times 14/16 inside its square. */
-  margin: 0 calc(var(--back-gap) - (var(--tap-min) + var(--who-icon)) / 2 + var(--guide-chev) - var(--chev-right-inset) * 0.875) 0 calc((var(--guide-chev) - var(--tap-min)) / 2 - var(--chev-left-inset) * 0.875);
-}
-
-.ui-root .ds-guide--calm .ds-guide-back .ds-chevron {
-  width: var(--guide-chev);
-  height: var(--guide-chev);
-}
-
-.ui-root .ds-guide--calm .ds-guide-back .ds-chevron-line {
-  /* The name is nudged down 0.1em (M9), and the chevron stays on the middle of its capitals. */
-  position: relative;
-  top: 0.1em;
-  font-size: var(--fs-tool-name-calm);
-}
-
-.ui-root .ds-guide--calm .ds-guide-close {
-  grid-column: 4;
-}
-
-.ui-root .ds-guide--calm .ds-guide-close .ds-cross--close {
-  width: var(--cross-close);
-  height: var(--cross-close);
-}
-
-.ui-root .ds-guide--calm .ds-guide-scroll {
-  padding: var(--guide-calm-top) 0 var(--space-px64);
-}
-
-.ui-root .ds-guide--calm .ds-guide-page {
-  box-sizing: border-box;
-  max-width: var(--guide-calm-max);
-  padding-inline: var(--guide-calm-pad);
-}
-
-.ui-root .ds-guide--calm .ds-guide-pct-text {
-  display: none;
-}
-
-.ui-root .ds-guide--calm .ds-guide-label {
-  display: block;
-  min-height: 0;
-  margin: var(--space-px28) 0 0;
-  line-height: var(--lh-text);
-}
-
-.ui-root .ds-guide--calm .ds-guide-question,
-.ui-root .ds-guide--calm .ds-guide-label + .ds-guide-question {
-  margin-top: var(--space-px6) !important;
-  font-size: var(--fs-question-calm) !important;
-}
-
-.ui-root .ds-guide--calm .ds-guide-pct + .ds-sr + .ds-guide-question,
-.ui-root .ds-guide--calm .ds-guide-pct + .ds-guide-question {
-  margin-top: var(--space-px28) !important;
-}
-
-.ui-root .ds-guide--calm .ds-guide-nudge {
-  max-width: none;
-  margin-top: var(--space-2);
-}
-
-.ui-root .ds-guide--calm .ds-guide-example-link {
-  margin-top: 0;
-  font-size: var(--fs-secondary) !important;
-}
-
-.ui-root .ds-guide--calm .ds-guide-example {
-  max-width: none;
-  margin-top: 0;
-  padding: 0;
-  border-radius: 0;
-  background: none;
-}
-
-.ui-root .ds-guide-problem {
-  max-width: var(--guide-problem-max);
-  margin-top: var(--space-px12);
-}
-
-.ui-root .ds-guide--calm .ds-guide-foot {
-  padding: var(--space-px14) max(var(--guide-calm-pad), calc((100% - var(--guide-calm-max)) / 2 + var(--guide-calm-pad))) max(var(--space-px18), env(safe-area-inset-bottom, 0px));
-}
-
-/* The quiet link and the button sit side by side; where they can't (a
-   large text size on a phone), the button takes a row of its own, whole:
-   its words never wrap inside its pill or run outside it. */
-.ui-root .ds-guide--calm .ds-guide-foot-right {
-  flex: 1;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--space-px12);
-}
-
-.ui-root .ds-guide--calm .ds-btn.ds-guide-next {
-  min-width: max-content;
-  white-space: nowrap;
-}
-
-.ui-root .ds-guide--calm .ds-guide-foot .ds-guide-skip {
-  min-width: var(--tap-min);
-  min-height: var(--tap-min) !important;
-  padding: 0 !important;
-  color: var(--text-2);
-  text-decoration: underline;
-  text-underline-offset: var(--space-1);
-  text-decoration-color: var(--quiet-line);
-}
-
-.ui-root .ds-guide--calm .ds-guide-foot .ds-guide-skip:hover,
-.ui-root .ds-guide--calm .ds-guide-foot .ds-guide-skip:focus-visible {
-  color: var(--coral-text);
-}
-
-.ui-root .ds-guide--calm .ds-btn.ds-guide-next {
-  min-height: var(--btn-h) !important;
-  margin-left: auto;
-  padding: 0 var(--space-4) !important;
-}
-
-/* Inside the calm frame and on a guest page the parts take M9's own
-   values where the portal's older shared values differ: button words at
-   12px, answer rows at 15px and the page's full width, list rows 6px from
-   their crosshair. */
-.ui-root .ds-guide--calm .ds-btn,
-.ui-root .ds-guest .ds-btn,
-.ui-root .ds-bottombar .ds-btn {
-  font-size: var(--fs-si-btn) !important;
-  letter-spacing: var(--ls-si-btn);
-}
-
-.ui-root .ds-guide--calm .ds-guide-body .ds-rows {
-  max-width: none;
-}
-
-.ui-root .ds-guide--calm .ds-guide-body > .ds-choice:first-child {
-  margin-top: calc(var(--space-px2) * -1);
-}
-
-.ui-root .ds-guide--calm .ds-guide-body .ds-answer {
-  min-height: var(--answer-h-calm) !important;
-  padding-inline: var(--space-3) !important;
-  font-size: var(--fs-secondary) !important;
-  line-height: 1.4;
-  color: var(--text);
-}
-
 /* The tick's place is kept on every row, so choosing one never moves its words (M9 .tk). */
-.ui-root .ds-guide--calm .ds-guide-body .ds-answer--multi {
+.ui-root .ds-guide-body .ds-answer--multi {
   gap: var(--space-3);
-}
-
-.ui-root .ds-guide--calm .ds-guide-body .ds-answer--multi::after {
-  content: '';
-  flex: none;
-  width: var(--tick-option);
-  height: var(--tick-option);
 }
 
 .ui-root .ds-guide--calm .ds-rowlist-row {
@@ -4259,32 +3804,29 @@
   margin-top: var(--space-px12);
 }
 
-/* Your plan (M9): every answer on one page, each row one button. */
+/* Your plan (M9): every answer on one page. Each row is a row (its label over
+   its answer, hairlines between, rule 14), the whole row opening its question;
+   "Edit" at its right is the button (B3, Polish 1). */
 .ui-root .ds-guide-plan {
-  margin-top: var(--space-px28);
-  border-top: var(--line-w) solid var(--line);
-}
-
-.ui-root .ds-guide--calm .ds-guide-body:has(> .ds-guide-plan:first-child) {
   margin-top: 0;
 }
 
 .ui-root .ds-guide-plan-row {
-  all: unset;
   cursor: pointer;
   box-sizing: border-box;
   width: 100%;
-  min-height: 0 !important;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--space-1) var(--space-3);
   align-items: start;
-  padding: var(--space-px14) 0 !important;
+  padding: var(--space-px14) 0;
   border-bottom: var(--line-w) solid var(--line);
   font-family: var(--font-body);
   letter-spacing: normal;
   -webkit-tap-highlight-color: transparent;
 }
+
+.ui-root .ds-guide-plan-row:first-child { padding-top: 0; }
 
 .ui-root .ds-guide-plan-value {
   display: block;
@@ -4296,14 +3838,16 @@
   display: block;
   margin-bottom: var(--space-1);
   font-size: var(--fs-meta);
-  line-height: var(--lh-text);
-  color: var(--label);
+  line-height: 1.55;
+  letter-spacing: var(--ls-section-title);
+  text-transform: uppercase;
+  color: var(--text-2);
 }
 
 .ui-root .ds-guide-plan-line {
   display: block;
   font-size: var(--fs-text);
-  line-height: var(--lh-text);
+  line-height: 1.55;
   color: var(--text);
 }
 
@@ -4313,7 +3857,7 @@
 
 .ui-root .ds-guide-plan-line small {
   display: block;
-  font-size: var(--fs-note);
+  font-size: var(--fs-meta);
   color: var(--text-2);
 }
 
@@ -4322,58 +3866,30 @@
 }
 
 .ui-root .ds-guide-plan-edit {
+  all: unset;
+  cursor: pointer;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: flex-end;
+  min-width: var(--tap-min);
   min-height: var(--tap-min);
-  font-size: var(--fs-secondary);
+  font-family: var(--font-body);
+  font-size: var(--fs-meta);
+  line-height: 1.55;
   color: var(--text-2);
   text-decoration: underline;
+  text-decoration-thickness: var(--line-w);
   text-underline-offset: var(--space-1);
-  text-decoration-color: var(--quiet-line);
 }
 
 .ui-root .ds-guide-plan-row:hover .ds-guide-plan-edit,
-.ui-root .ds-guide-plan-row:focus-visible .ds-guide-plan-edit {
-  color: var(--coral-text);
+.ui-root .ds-guide-plan-edit:focus-visible {
+  color: var(--text);
 }
 
-.ui-root .ds-guide-plan-row:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
+.ui-root .ds-guide-plan-edit:focus-visible {
+  outline: var(--focus-w) solid var(--text);
   outline-offset: var(--space-px2);
-}
-
-@container guide (max-width: 600px) {
-  .ui-root .ds-guide--calm .ds-guide-bar {
-    grid-template-columns: auto minmax(0, 1fr) auto var(--tap-min);
-    min-height: 0;
-    padding: max(var(--space-3), env(safe-area-inset-top, 0px)) var(--space-px6) 0 var(--space-3);
-  }
-
-  .ui-root .ds-guide--calm .ds-guide-scroll {
-    padding: var(--space-px22) 0 var(--space-px40);
-  }
-
-  .ui-root .ds-guide--calm .ds-guide-page {
-    padding-inline: var(--space-3);
-  }
-
-  .ui-root .ds-guide--calm .ds-guide-label {
-    margin-top: var(--space-px28);
-  }
-
-  .ui-root .ds-guide--calm .ds-guide-pct + .ds-sr + .ds-guide-question,
-  .ui-root .ds-guide--calm .ds-guide-pct + .ds-guide-question {
-    margin-top: var(--space-px28) !important;
-  }
-
-  .ui-root .ds-guide--calm .ds-guide-foot {
-    padding: var(--space-px12) var(--space-3) max(var(--space-px30), env(safe-area-inset-bottom, 0px));
-  }
-
-  .ui-root .ds-guide--calm .ds-btn.ds-guide-next {
-    flex: 1;
-    padding: 0 var(--space-px14) !important;
-  }
 }
 
 /* ---------- Next steps: every row alike (M9 .ns, .nsm) ---------- */
@@ -4489,7 +4005,7 @@
 
 .ui-root .ds-guest .ds-guest-title {
   margin-block: 0 !important;
-  font-family: var(--font-display);
+  font-family: var(--font-brand); /* page titles are Nekst (Polish 1 Type: --font-display is DM Sans now) */;
   font-weight: var(--fw-regular);
   font-size: var(--fs-si-title) !important;
   line-height: var(--lh-title);
@@ -4848,7 +4364,7 @@
 }
 
 .ui-root .ds-field::placeholder {
-  color: var(--label);
+  color: var(--placeholder);
   opacity: 1;
 }
 
@@ -6441,6 +5957,12 @@
   margin: 0;
 }
 
+/* A rated objective's start and target are each a line of five answer boxes (rule 7), never two
+   narrow columns, at every width (Polish 1, Stage B; requests-b2 5); the date keeps its own line. */
+.ui-root .ds-objed-grid:has(.ds-choice) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 @media (max-width: 600px) {
   .ui-root .ds-objed-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7950,7 +7472,7 @@
   margin: 0 0 var(--space-1);
   font-size: var(--fs-meta);
   line-height: var(--lh-text);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .ds-menu-pins a {
@@ -7968,7 +7490,7 @@
 }
 
 .ui-root .ds-menu-pins a .ds-chevron {
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .ds-menu-pins a:focus-visible,
@@ -8062,7 +7584,7 @@
   line-height: var(--lh-text);
   letter-spacing: var(--ls-menu-label);
   text-transform: uppercase;
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .ds-dmenu-nav > .ds-dmenu-lab:first-child {
@@ -8190,7 +7712,7 @@
   min-width: var(--bar-btn-w);
   min-height: var(--bar-btn-h);
   border-radius: var(--radius-input);
-  color: var(--placeholder);
+  color: var(--text-2);
   -webkit-tap-highlight-color: transparent;
   transition: color var(--dur-fast) var(--ease);
 }
@@ -8332,7 +7854,7 @@
   margin-top: var(--space-px6);
   font-size: var(--fs-meta);
   line-height: var(--lh-tile);
-  color: var(--placeholder);
+  color: var(--text-2);
   overflow-wrap: break-word;
 }
 
@@ -8497,7 +8019,7 @@
   gap: var(--space-px6) var(--space-px10);
   font-size: var(--fs-meta);
   line-height: var(--lh-tile);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .ds-hub-tile-live {
@@ -8633,7 +8155,7 @@
   font-weight: var(--fw-regular);
   letter-spacing: normal;
   text-transform: none;
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .ds-pin-group ul {
@@ -8695,7 +8217,7 @@
   margin: 0;
   font-size: var(--fs-meta);
   line-height: var(--lh-tile);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 /* !important: src/styles/mobile.css sizes every h2 on phones. */
@@ -8727,7 +8249,7 @@
   margin: var(--space-2) 0 0;
   font-size: var(--fs-note);
   line-height: var(--lh-text);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .ds-suggest-actions {
@@ -8826,7 +8348,7 @@
 .ui-root .ds-quiet-time {
   margin: 0;
   font-size: var(--fs-meta);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .ds-quiet-x {
@@ -8884,7 +8406,7 @@
   display: block;
   font-size: var(--fs-note);
   line-height: var(--lh-tile);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 @media (hover: hover) {
@@ -8953,7 +8475,7 @@
   display: block;
   font-size: var(--fs-meta);
   line-height: var(--lh-tile);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .ds-dayfocus-text {
@@ -8991,7 +8513,7 @@
   display: block;
   font-size: var(--fs-meta);
   line-height: var(--lh-tile);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .ds-weekline-figure {
@@ -9013,7 +8535,7 @@
   text-align: right;
   font-size: var(--fs-note);
   line-height: var(--lh-text);
-  color: var(--placeholder);
+  color: var(--text-2);
   transition: color var(--dur) var(--ease);
 }
 
@@ -9107,7 +8629,7 @@
 
 .ui-root .ds-planstep-state {
   font-size: var(--fs-meta);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .ds-planstep--next .ds-planstep-state {
@@ -9152,7 +8674,7 @@
   display: block;
   font-size: var(--fs-meta);
   line-height: var(--lh-tile);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 @media (hover: hover) {
@@ -9297,10 +8819,6 @@
   color: var(--text);
 }
 
-.ui-root .ds-night .ds-guide-bar {
-  border-bottom-color: transparent;
-}
-
 /* A plain step (GuidedTool): the top bar, then the step's own content,
    filling the space so it can sit in the middle. */
 .ui-root .ds-guide--plain .ds-guide-page {
@@ -9336,7 +8854,8 @@
    h3 with !important on phones (as the other design headings counter it). */
 .ui-root .ds-end-title {
   margin: 0 !important;
-  font-family: var(--font-display);
+  /* The screen's own title (Polish 1, rule 2: Nekst for page titles only; 24px, 22px on a phone). B3. */
+  font-family: var(--font-brand);
   font-weight: var(--fw-regular);
   text-transform: uppercase;
   font-size: var(--fs-end-done) !important;
@@ -9415,7 +8934,7 @@
   padding-top: var(--rowlist-n-top);
   font-size: var(--fs-note);
   line-height: var(--lh-text);
-  color: var(--placeholder);
+  color: var(--text-2);
   text-align: right;
 }
 
@@ -9899,7 +9418,7 @@
 
 .ui-root .ds-pattern-kind {
   font-size: var(--fs-meta);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .ds-pattern-strength {
@@ -10630,13 +10149,7 @@
    place its one line 1.4px higher than M9's and off the middle of Back's
    chevron: the name keeps M9's place, so the chevron stays centred on its
    capitals, rule 29ao.) */
-.ui-root .ds-guide--calm .ds-guide-title {
-  font-size: var(--fs-si-title) !important;
-}
-
-.ui-root .ds-guide--long-name .ds-guide-name {
-  text-wrap: balance;
-}
+/* B3, Polish 1: a step's heading is one 20px question in focus mode (rule 1). */
 
 /* "Show as a table" as a quiet link under its chart (M10 .change, .tblw). */
 .ui-root .ds-ctable-fold--link {
@@ -10647,13 +10160,7 @@
   margin-top: var(--space-px12);
 }
 
-/* A guided step's Nekst title with its eye (M10 "Your team"): spaced
-   capitals, as a page title's (rule 29d). */
-.ui-root .ds-guide-title .ds-page-aside {
-  --aside-ls: var(--ls-page-title);
-  --aside-gap: var(--icon-title-gap-caps);
-  --aside-lift: 0.088em;
-}
+/* A guided step's heading with its eye: a 20px question now (B3, Polish 1). */
 
 /* ---------------------------------------------------------------- M10's Emotional wash (version 5.6; 14 Nov)
    Parts it brought, shared: short answers side by side, an answer whose
@@ -11016,39 +10523,13 @@
   margin-bottom: var(--space-1);
   font-size: var(--fs-meta);
   line-height: var(--lh-text);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .ds-startq--parts .ds-startq-reason {
   margin-top: var(--space-1);
   font-size: var(--fs-secondary);
   color: var(--text-2);
-}
-
-/* A guided step with its own top in place of the bar (M7b's results: the
-   bold crosshair alone, centred, as on a guest page). */
-/* The results' bar (the outside Health Check): its crosshair on the left edge
-   of the page's column, as the calm bar's parts are (one left edge, sign-in
-   rule 49). */
-.ui-root .ds-guide-top {
-  flex: none;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  box-sizing: content-box;
-  height: var(--guide-bar-h);
-  padding: env(safe-area-inset-top, 0px) max(var(--guide-calm-pad), calc((100% - var(--guide-calm-max)) / 2 + var(--guide-calm-pad))) 0;
-  border-bottom: var(--line-w) solid var(--line);
-}
-
-@container guide (max-width: 600px) {
-  .ui-root .ds-guide-top {
-    height: auto;
-    padding-top: max(var(--space-3), env(safe-area-inset-top, 0px));
-    padding-bottom: var(--space-px6);
-    padding-inline: var(--space-3);
-    border-bottom: 0;
-  }
 }
 
 /* The crosshair as a link (M7b .mk): a 44px round tap area. */
@@ -11169,7 +10650,7 @@
 
 /* The Breathe pill rises above a page's bottom bar (M7 .gft~.fabp). */
 .ui-root .ds-orb--fixed {
-  bottom: calc(var(--space-4) + var(--bottom-bar-h, 0px));
+  bottom: calc(max(var(--space-4), env(safe-area-inset-bottom, 0px)) + var(--bottom-bar-h, 0px));
 }
 
 /* ---------- A one-off tip (OneOffTip; M7's team list) ---------- */
@@ -11233,7 +10714,7 @@
 
 .ui-root .ds-version-date {
   font-size: var(--fs-note);
-  color: var(--placeholder);
+  color: var(--text-2);
   white-space: nowrap;
 }
 
@@ -11510,20 +10991,203 @@
   margin-top: var(--space-px14);
 }
 
-/* A step's own bottom bar (GuidedTool's `foot`; M21's day: "Previous day"
-   at the left, "Next day" at the right; on a phone they share the row). */
-.ui-root .ds-guide-foot-right.ds-guide-foot-own {
-  flex: 1;
-  justify-content: space-between;
-  gap: var(--space-px12);
+/* A step's own foot (GuidedTool's `foot`; M21's day): design.css's guided-tool block (B3). */
+
+/* ==========================================================================
+   Polish 1, Stage B: the shared parts as the page helpers asked
+   (requests-b1.md to requests-b5.md; BS, 25 Nov). Each names its request.
+   ========================================================================== */
+
+/* TodoRow (B1 5): the tick box centred on the first line of the to-do, not between two lines. */
+.ui-root .ds-todo {
+  align-items: start;
+}
+
+.ui-root .ds-todo > .ds-check-box {
+  margin-top: calc((var(--fs-text) * 1.55 - var(--tap-min)) / 2);
+}
+
+/* TodoRow's done mark (B2 1): filled with the text colour like every ticked box (the reference's .tick). */
+.ui-root .ds-todo-mark > span {
+  background: var(--main-bg);
+  border-color: var(--main-bg);
+}
+
+/* LoggingRow, Poor to Excellent (B1 6): five answer boxes on one row when the row is wide enough for all
+   five, each at least its own words; else one per line. Never four and one alone (walk item 11). */
+.ui-root .ds-log-entry:has(> .ds-log-rate) {
+  container-type: inline-size;
+}
+
+.ui-root .ds-choices.ds-log-rate {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: none;
+}
+
+@container (min-width: 420px) {
+  .ui-root .ds-choices.ds-log-rate {
+    grid-template-columns: repeat(5, minmax(max-content, 1fr));
+  }
+}
+
+/* LoggingRow (B1 13; walk items 10 and 12): on a phone a row keeps its name and grey line on the left and
+   its control on the right; only a row of answers takes its own line. The week's day boxes are a row's
+   control height; a habit's progress is the reference's thin 2px line. */
+@media (max-width: 600px) {
+  .ui-root .ds-log.ds-log--more:not(:has(.ds-log-rate)) {
+    grid-template-columns: minmax(0, 1fr) auto var(--tap-min);
+    grid-template-areas: "n c m" "b b b";
+  }
+  .ui-root .ds-log.ds-log--more:not(:has(.ds-log-rate)) .ds-log-entry > .ds-check-box {
+    margin-left: 0;
+  }
+}
+
+.ui-root .ds-logweek-box input {
+  min-height: var(--btn-h) !important;
+  height: var(--btn-h);
 }
 
 @media (max-width: 600px) {
-  .ui-root .ds-guide-foot-own > * {
-    flex: 1;
+  .ui-root .ds-logweek-box input {
+    min-height: var(--btn-h-phone) !important;
+    height: var(--btn-h-phone);
   }
+}
 
-  .ui-root .ds-guide-foot-own > .ds-link {
-    justify-content: flex-start;
+.ui-root .ds-log .ds-bar {
+  height: calc(var(--line-w) * 2);
+}
+
+/* "+ Add" (B2 7, B1): its tap area is 44px each way, however short its word: an invisible ::after centred
+   on it, as buttons have. Answer boxes and the counter's buttons (B1 11, B2 7) the same: drawn 40px, tapped 44. */
+.ui-root .ds-addrow,
+.ui-root .ds-answer.ds-answer--box {
+  position: relative;
+}
+
+.ui-root .ds-addrow::after,
+.ui-root .ds-answer.ds-answer--box::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, var(--tap-min));
+  height: max(100%, var(--tap-min));
+  transform: translate(-50%, -50%);
+}
+
+/* The counter keeps its one box (its corners clip the buttons' fill), so its buttons' 44px reaches out
+   past the box's edge from a clip of their own: the box no longer hides what's outside it. */
+.ui-root .ds-stepper {
+  overflow: visible;
+}
+
+.ui-root .ds-stepper-btn {
+  position: relative;
+}
+
+.ui-root .ds-stepper-btn::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, var(--tap-min));
+  height: max(100%, var(--tap-min));
+  transform: translate(-50%, -50%);
+}
+
+/* A drop-down in a row of controls (B4 1): the row's 40px height (44 on a phone), not a form box's 56. */
+.ui-root .ds-dd.ds-dd--row:not(#_) {
+  min-height: var(--btn-h) !important;
+  height: var(--btn-h);
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-dd.ds-dd--row:not(#_) {
+    min-height: var(--btn-h-phone) !important;
+    height: var(--btn-h-phone);
   }
+}
+
+/* The joined switch's options keep the reference's 16px sides when the switch is shared out evenly (B5 3). */
+.ui-root .ds-seg--equal .ds-seg-btn:not(#_):not(#_) {
+  padding: 0 var(--space-4) !important;
+}
+
+/* CardHead's `aside` (B4 3): the eye beside a card's label, out of the heading. */
+.ui-root .ds-card-head-l {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--icon-title-gap);
+  min-width: 0;
+}
+
+/* LoggingWeekRow's yes/no days (requests-b2 2): the day above its box, outside the button, as the number
+   boxes have it; the button a row control's height holding one word. */
+.ui-root .ds-logweek-ynday {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  font-size: var(--fs-chart);
+  color: var(--text-2);
+  text-align: center;
+}
+
+.ui-root .ds-logweek-ynday.ds-logweek--today { color: var(--text); }
+
+.ui-root .ds-logweek-ynday > .ds-logweek-yn {
+  min-height: var(--btn-h) !important;
+  height: var(--btn-h);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-logweek-ynday > .ds-logweek-yn {
+    min-height: var(--btn-h-phone) !important;
+    height: var(--btn-h-phone);
+  }
+}
+
+/* A fold's heading shows hover and focus (the focus and hover check, Polish 1 Stage B): its chevron rests in the
+   secondary grey, as the Dashboard's folds do, and turns the text colour under the pointer or keyboard focus. */
+.ui-root .ds-collapse-head .ds-collapse-mark { color: var(--text-2); }
+@media (hover: hover) {
+  .ui-root .ds-collapse-head:hover .ds-collapse-mark { color: var(--text); }
+}
+.ui-root .ds-collapse-head:focus-visible .ds-collapse-mark { color: var(--text); }
+
+/* A drop-down's edge is a step stronger under the pointer (rule 8a: hover --text-2; the focus and hover check). */
+@media (hover: hover) {
+  .ui-root .ds-dd:not([aria-expanded='true']):hover { border-color: var(--text-2); }
+}
+
+/* Hover on the shared controls that showed nothing under the pointer (the focus and hover check, Polish 1 Stage B;
+   rule 4a: hover turns a control's edge or words a step stronger, never coral). */
+@media (hover: hover) {
+  .ui-root .ds-check-box:not([aria-checked='true']):hover > span { border-color: var(--text); }
+  .ui-root .ds-tool-x:hover { background: var(--raised); border-radius: var(--radius-control); }
+  .ui-root .ds-chip:hover { border-color: var(--text-2); }
+  .ui-root .ds-todo-open:hover {
+    text-decoration: underline;
+    text-decoration-thickness: var(--line-w);
+    text-underline-offset: var(--space-1);
+  }
+  .ui-root .ds-stepper-btn:not([aria-disabled='true']):not(#_):hover,
+  .ui-root .ds-daycount-btn:not([aria-disabled='true']):not(#_):hover { color: var(--text); background: var(--raised); }
+  .ui-root .ds-switch:hover { box-shadow: 0 0 0 var(--line-w) var(--text-2); }
+}
+
+/* The yes/no week buttons are drawn 40px; their tap area stays 44 by 44 (rule 4a; BI-K's debrief run). */
+.ui-root .ds-logweek-ynday > .ds-logweek-yn { position: relative; }
+.ui-root .ds-logweek-ynday > .ds-logweek-yn::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, var(--tap-min));
+  height: max(100%, var(--tap-min));
+  transform: translate(-50%, -50%);
 }

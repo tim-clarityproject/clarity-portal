@@ -4,7 +4,8 @@ import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
 import {
-  AddButton,
+  AddLink,
+  CardHead,
   Button,
   Dropdown,
   PeakMomentList,
@@ -15,7 +16,7 @@ import {
   HabitEditor,
   KeepChangeRow,
   Loading,
-  PageHeader,
+  PageOpening,
   SprintDial,
   SprintLengthChoice,
   SprintStartChoice,
@@ -74,7 +75,9 @@ import { usePeakMoments } from '../../lib/peakMoments/store';
 import { metaItems, sprintMoments, whenWords } from '../../lib/peakMoments/model';
 import { addDays as addDayKey } from '../../lib/scores/dates.js';
 import '../peakMoments/peakMoments.css';
+import { B2_LINES } from '../../content/pageLines/client';
 import './performance.css';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 
 // Start a sprint (mock-up M6, "Start a sprint"; read in full with its
 // notes). One guided tool, one question per screen, with the % complete
@@ -154,7 +157,7 @@ function Shell({ children, title = 'Start a sprint' }) {
       <DesignHeader />
       <div className="plan-page ipp-page">
         <div className="plan-back-row"><BackLink onClick={() => navigate('/performance-plan')} label="Individual Performance Plan" /></div>
-        <PageHeader title={title} />
+        <PageOpening title={title} line={B2_LINES.sprintStart} />
         {children}
       </div>
     </div>
@@ -501,6 +504,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
               <p className="plan-muted">You can add one for this sprint here.</p>
             </div>
           )}
+          {addTo && <CardHead label="New habits for this sprint" as="h3" add={<AddLink label="Add habit" onClick={addHabit} />} />}
           {draft.added.length > 0 && (
             <div className="plan-habits sprint-start-added">
               {draft.added.map((h) => (
@@ -521,11 +525,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
               ))}
             </div>
           )}
-          {addTo ? (
-            <AddButton className="plan-add" onClick={addHabit}>Add habit</AddButton>
-          ) : (
-            <p className="plan-muted sprint-start-gap">Add a Strategy to your plan first, then its habits.</p>
-          )}
+          {!addTo && <p className="plan-muted sprint-start-gap">Add a Strategy to your plan first, then its habits.</p>}
         </div>
       ),
     },
@@ -540,6 +540,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
       nudges: ['Add the moments in this sprint that need more of your energy, attention and focus.'],
       render: () => (
         <div>
+          <CardHead label="Peak moments in this sprint" as="h3" add={<AddLink label="Add peak moment" onClick={() => navigate('/peak-moments/add', { state: { from: '/performance-sprint/start' } })} />} />
           {peakInSprint.length > 0 && (
             <PeakMomentList label="Peak moments in this sprint">
               {peakInSprint.map((o) => (
@@ -547,7 +548,6 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
               ))}
             </PeakMomentList>
           )}
-          <AddButton className="plan-add" onClick={() => navigate('/peak-moments/add', { state: { from: '/performance-sprint/start' } })}>Add peak moment</AddButton>
         </div>
       ),
     },
@@ -606,7 +606,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
 
   const leaving = useRef(false);
   const close = () => {
-    navigate('/performance-plan', { replace: true, state: { toast: 'Saved. Carry on from Home whenever you like.' } });
+    navigate('/performance-plan', { replace: true, state: { toast: TOOL_CLOSED } });
   };
 
   const finish = () => {

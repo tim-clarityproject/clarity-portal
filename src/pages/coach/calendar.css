@@ -299,3 +299,15 @@
 /* The second time column's place name stays on one line ("New York", polish 1's fault list), with no padding beside it so it fits the column; the day columns keep their width (crowded days). */
 .ui-root .cc-cal-zone-btn { white-space: nowrap; padding-inline: 0; }
 .ui-root .cc-cal-daylist > .ds-li--go { min-height: var(--tap-min); }
+
+/* ---------------------------------------------------------------- polish 1, stage B (B5; Tim's Stage A walk, item 27)
+   On a phone the controls keep the example's layout and widths; the one drop-down is the phone's 44px, like the buttons
+   and the switch beside it. */
+@media (max-width: 600px) {
+  .ui-root .cc-cal-pagewrap .cc-cal-filter .ds-dd:not(#_):not(#_) { min-height: var(--btn-h-phone) !important; height: var(--btn-h-phone); box-sizing: border-box; }
+}
+/* Under the calendar (Tim's walk, item 26): the view's switches and one "Calendar settings" link; its five links open
+   in place under it. */
+.ui-root .cc-cal-foot-views { align-items: center; }
+.ui-root .cc-cal-settings-link { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--tap-min); }
+.ui-root .cc-cal-settings { margin-top: 0; }

@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { toastReaches } from './toastAbove';
 import { createPortal } from 'react-dom';
 import { IconButton } from './Button';
+import { MoreLink } from './Blocks';
 import InfoIcon from './InfoIcon';
 import { ExplainInfo } from './Explain';
 import InfoPop from './InfoPop';
@@ -13,36 +14,31 @@ import { STEP_PREFIX, openStepIndex } from './guideDraft';
 import useKeepScroll from './useKeepScroll';
 import useViewportFit from './useViewportFit';
 import { useHidePhoneBar } from './phoneBar';
-import Chevron from './Chevron';
-import keepWords, { endWithIcon, titleWithAside } from './keepWords';
+import { useFocusMode } from './Frame';
+import { endWithIcon, titleWithAside } from './keepWords';
 import useInfoToggle from './useInfoToggle';
 import { inSentence } from '../../lib/performance/words.js';
 import './design.css';
 
 // The guided-step component: every tool people work through in order,
-// one question per screen, built as M6's set-up flows in both modes
-// (decisions: "Guided tools", "Stepped tools, details", "Guided tools on
-// desktop open focused, full screen", "No needless words").
+// one question per screen.
 //
-// - Opens focused, full screen: the header and menu step back. A top bar
-//   with the tool's name, Saving and Saved, and the rotated crosshair to
-//   close, which returns people to where they came from.
-// - Where you are: the step list (numbered, current outlined, done grey,
-//   tap any step to jump), which becomes the slim segmented line on
-//   phone; question tools use the % complete bar instead. Never a
-//   "Step 1 of 3" line.
-// - Each step: a small label with an optional "i" (one line of why); the
-//   question in sentence case; one or two nudges; an optional "See an
-//   example" (the tool supplies one per role); an optional one-off tip,
-//   never shown again once closed; then the step's content.
-// - Footer: Back (the arrow alone on phone), a quiet Skip (or the tool's
-//   own word) and the coral button. Required steps show no Skip. A bare
-//   step has no step list or footer.
-// - Steps slide across: Next from the right, Back from the left; with
-//   reduced motion they fade instead.
-// - Keyboard and screen readers: focus moves to the new question on each
-//   step, which also says where you are; Enter in a text box never moves
-//   on; Escape closes open help, panels and drop-downs before the tool.
+// Polish 1 (25 Nov design reference, rule 21; B3, Stage B): it runs in
+// ToolFrame's focus mode, as Plan my day does (example-pages-25nov.html
+// "Tool: Plan my day"). Still a full-screen layer over the page, it draws
+// the frame itself: on a laptop the portal's rounded panel with no menu and
+// the tool's 560px column in its middle 720px, 40px from the top; on a
+// phone edge to edge, 20px in. The bar holds × ("Close and save my place",
+// onClose saves and goes back) at the left and "Step n of m" with Saving
+// and Saved at the right; the 2px progress line; a small grey eyebrow (the
+// step's stage name, or the tool's name); the question in DM Sans 20px
+// (a step's `title` too: no Nekst inside a tool); its grey lines; then the
+// step. Next, Back and Skip this step at the foot: one row on a laptop,
+// stacked and centred on a phone. Steps settle in (a fade and an 8px rise).
+// Keyboard and screen readers: focus moves to the new question on each
+// step, which also says where you are; Enter in a text box never moves on;
+// Escape closes open help, panels and drop-downs before the tool.
+// $SP/polish/b3/NOTES.md lists what changed for the tools.
 //
 // The tool owns its answers and saves them (useAutosave). This component
 // owns where people are, and with `draftKey` remembers the step and the
@@ -70,6 +66,8 @@ import './design.css';
 //              shows as selected for a moment (ONE_TAP_MS), then the step
 //              moves itself on with tool.next(); no Next button. Back keeps
 //              the answer. Several-answer, typed and slider steps keep Next.
+//   wide:      the step uses the whole 720px column (a results page with a
+//              chart); a step with `top` or `noProgress` is wide anyway.
 //   plain:     only the top bar (name, Saving and Saved, close) and the
 //              step's own content: no % bar, question or footer (M19's
 //              breathing, Sleep well and Work's done screens). Its
@@ -171,10 +169,6 @@ function exampleFor(example, role) {
   return example[key] ?? example.leader;
 }
 
-// Back: the one chevron, turned to point left (Tim, 26 Oct).
-// It sits beside the tool's name, in capitals, and is centred on those capitals (Tim, 11 Nov).
-const ARROW = <Chevron direction="left" size="sm" beside="capitals" />;
-
 function Tip({ tip, onClosed }) {
   const [shown, setShown] = useState(() => !readJson(TIP_PREFIX + tip.key, false));
   if (!shown) return null;
@@ -194,7 +188,7 @@ function Tip({ tip, onClosed }) {
   );
 }
 
-function StepHead({ step, headingRef, positionId, role }) {
+function StepHead({ step, headingRef, positionId, role, name }) {
   // The "i" opens as every "i" does (useInfoToggle), and Escape closes open help first.
   const { open: infoOpen, buttonRef: infoButtonRef, panelRef: infoPanelRef, buttonProps: infoProps } = useInfoToggle();
   const { open: nudgeOpen, buttonRef: nudgeButtonRef, panelRef: nudgePanelRef, buttonProps: nudgeProps } = useInfoToggle();
@@ -205,12 +199,15 @@ function StepHead({ step, headingRef, positionId, role }) {
   useEscapeLayer(exampleOpen, () => setExampleOpen(false));
   const example = exampleFor(step.example, role);
   const Heading = 'h2';
+  // The small grey line over the question (the example's eyebrow, Polish 1):
+  // the step's own stage name where it has one ("Goal"), else the tool's name.
+  const eyebrow = step.label || name;
 
   return (
     <>
-      {(step.label || step.info) && (
-        <div className="ds-guide-label ds-guide-rv">
-          {step.label && <span>{step.label}</span>}
+      {(eyebrow || step.info) && (
+        <div className={`ds-guide-label${step.label ? '' : ' ds-guide-name'}`}>
+          {eyebrow && <span>{eyebrow}</span>}
           {step.info?.explain && <ExplainInfo explain={step.info.explain} helpKey={step.info.helpKey} label="Why we ask" className="ds-guide-i" />}
           {step.info && !step.info.explain && (
             <button
@@ -231,7 +228,9 @@ function StepHead({ step, headingRef, positionId, role }) {
       <Heading
         ref={headingRef}
         tabIndex={-1}
-        className={`${step.title ? 'ds-guide-title' : 'ds-guide-question'} ds-guide-rv ds-guide-rv--1`}
+        // One kind of heading in focus mode: a 20px DM Sans question (Polish 1,
+        // rules 1 and 2). A step that had a short Nekst title keeps its class.
+        className={`ds-q ds-guide-question${step.title ? ' ds-guide-title' : ''}`}
         aria-describedby={positionId}
       >
         {/* The eye beside the question it belongs to, wrapped with its last
@@ -239,7 +238,7 @@ function StepHead({ step, headingRef, positionId, role }) {
         {titleWithAside(step.title || step.question, step.eye)}
       </Heading>
       {step.nudges?.map((line, n) => (
-        <p key={line} className="ds-guide-nudge ds-guide-rv ds-guide-rv--2">
+        <p key={line} className="ds-guide-nudge">
           {/* The ⓘ wrapped with the nudge's last word, never on a line of its own (tidy pass item 1). */}
           {endWithIcon(line, step.nudgeInfo && n === step.nudges.length - 1 && (step.nudgeInfo.explain ? (
             <ExplainInfo explain={step.nudgeInfo.explain} helpKey={step.nudgeInfo.helpKey} label={step.nudgeInfo.label} className="ds-guide-i ds-guide-i--end" />
@@ -294,7 +293,7 @@ export default function GuidedTool({
   name,
   steps,
   progress = 'steps',
-  skipLabel = 'Skip',
+  skipLabel = 'Skip this step',
   finishLabel = 'Finish',
   saveState,
   role,
@@ -412,6 +411,8 @@ export default function GuidedTool({
   // tool's last answer (the UI tester, 22 Nov: "Draft restored" sat over
   // the Team performance check's "Committed" at 390px).
   useHidePhoneBar(fullscreen && open);
+  // Inside a tool the menu goes (rule 21): the frame behind hides its menu and phone header too.
+  useFocusMode(fullscreen && open);
   useKeepScroll(scrollRef, shown);
 
   // A toast never covers the bottom bar's button (the functionality
@@ -564,9 +565,9 @@ export default function GuidedTool({
   const changing = returnTo != null && returnTo !== i;
   // Back shows on a change from a summary too, even on the first question:
   // it goes back to the summary.
-  // In the calm frame Back shows on the first step too, where it leaves the
-  // tool, so the tool's name never moves (M9).
-  const showBack = changing || (i > 0 && !previous?.bare) || (calm && i === 0);
+  // On the first step Back shows only where it isn't the same as × (onBack:
+  // M7b's email and code screen; Polish 1, rule 21).
+  const showBack = changing || (i > 0 && !previous?.bare) || (i === 0 && Boolean(onBack));
   const problem = asked === step.key ? step.check?.() || null : null;
   // A one-answer screen moves on by itself, so it has no Next (rule 21).
   const ownFoot = Object.prototype.hasOwnProperty.call(step, 'foot');
@@ -613,38 +614,23 @@ export default function GuidedTool({
     headingRef,
   };
 
-  const progressBar = progress === 'percent' ? (
+  // Where you are (Polish 1, rule 21): "Step 2 of 3" at the bar's right and
+  // the 2px progress line under it. A tool with uneven parts (progress
+  // 'percent') fills the line by the step's own percent.
+  const lineWidth = progress === 'percent' ? percent : (last ? 100 : Math.max(4, stepPercent));
+  const stepWords = step.noProgress ? '' : `Step ${position + 1} of ${listed.length}`;
+  const progressLine = (
     <div
-      id={positionId}
+      id={progress === 'percent' ? positionId : undefined}
       className="ds-guide-pct"
       role="progressbar"
-      aria-valuenow={percent}
+      aria-valuenow={Math.round(lineWidth)}
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-label={`${percent}% complete`}
+      aria-label={progress === 'percent' ? `${percent}% complete` : positionText}
     >
-      <span className="ds-guide-pct-track"><span style={{ width: `${percent}%` }} /></span>
-      <span className="ds-guide-pct-text" aria-hidden="true">{`${percent}%`}</span>
+      <span className="ds-guide-pct-track"><span style={{ width: `${lineWidth}%` }} /></span>
     </div>
-  ) : (
-    <nav className="ds-guide-steps" aria-label="Steps">
-      <ol>
-        {listed.map(({ s, j }, n) => (
-          <li key={s.key}>
-            <button
-              type="button"
-              className={j < i && !skipped.has(s.key) ? 'ds-guide-done' : undefined}
-              aria-current={j === i ? 'step' : undefined}
-              aria-label={`${n + 1}. ${s.name}${j < i && !skipped.has(s.key) ? ', done' : ''}${skipped.has(s.key) ? ', skipped' : ''}`}
-              onClick={() => go(j, 'jump')}
-            >
-              <b aria-hidden="true">{n + 1}</b>
-              <span aria-hidden="true">{s.name}</span>
-            </button>
-          </li>
-        ))}
-      </ol>
-    </nav>
   );
 
   // Back: the step's own place when it names one, the summary an edit came
@@ -666,78 +652,92 @@ export default function GuidedTool({
   const editHasMore = changing && step.editNext && step.thenEdit
     && steps.some((s, j) => s.key === step.thenEdit && j !== i && j !== returnTo);
 
-  const motion = direction === 'forward' ? ' ds-guide-page--next' : direction === 'back' ? ' ds-guide-page--back' : '';
+  // In focus mode Back is at the foot (rule 21).
+  const backShown = !step.plain && showBack;
+  const nextWords = editHasMore ? step.editNext : changing ? 'Save my edit' : (step.nextLabel || (last ? finishLabel : 'Next'));
+  // "Skip this step" (rule 21): a tool's older plain "Skip" reads the same.
+  const skipWords = ((w) => (w === 'Skip' ? 'Skip this step' : w))(step.skipLabel || skipLabel);
+  const footShown = !step.bare && !step.plain && (ownFoot ? Boolean(step.foot) || backShown : (hasNext || backShown || showSkip || step.footAside));
+
+  // Steps settle in (a fade and an 8px rise, rule 21), forward or back alike.
+  const motion = direction === 'none' ? '' : ' ds-guide-page--next';
 
   const tree = (
     <div
       ref={rootRef}
-      className={`ds-guide ds-guide--${layout}${calm ? ' ds-guide--calm' : ''}${longName ? ' ds-guide--long-name' : ''}${step.bare ? ' ds-guide--bare' : ''}${step.plain ? ' ds-guide--plain' : ''}${step.className ? ` ${step.className}` : ''}`}
+      className={`ds-guide ds-guide--${layout} ds-guide--focus${calm ? ' ds-guide--calm' : ''}${longName ? ' ds-guide--long-name' : ''}${step.bare ? ' ds-guide--bare' : ''}${step.plain ? ' ds-guide--plain' : ''}${step.className ? ` ${step.className}` : ''}`}
       role={fullscreen ? 'dialog' : 'region'}
       aria-modal={fullscreen ? 'true' : undefined}
       aria-label={name}
       tabIndex={fullscreen ? -1 : undefined}
       onKeyDown={fullscreen ? (e) => trapTab(e, rootRef.current) : undefined}
     >
-      <div className="ds-guide-frame">
-        {step.top && <div className="ds-guide-top">{step.top}</div>}
-        {!step.bare && !step.top && (
-          <div className="ds-guide-bar">
-            {/* Back at the top left, beside the tool's name (rules 29o and 29t,
-                Tim, 5 Nov): the chevron alone, its 44px tap area invisible. */}
-            {showBack && !step.plain && (
-              <button type="button" className="ds-guide-back" aria-label="Back" onClick={goBack}>
-                {ARROW}
-              </button>
-            )}
-            {/* "CHECK-IN" never splits at its hyphen, even at twice the text size (rule 29x). */}
-            <b className="ds-guide-name">{keepWords(name)}</b>
-            {!step.plain && <SaveStatus state={saveState} />}
-            <IconButton label="Close" className="ds-guide-close" onClick={() => onCloseRef.current?.()} />
-          </div>
-        )}
-        <div ref={scrollRef} className="ds-guide-scroll">
-          <div key={step.key} className={`ds-guide-page${motion}`}>
-            {!step.bare && !step.plain && !step.noProgress && progressBar}
-            {/* The % shows once and is said once (29n): the bar itself names it. */}
-            {!step.plain && (progress !== 'percent' || step.noProgress) && <span id={positionId} className="ds-sr">{step.noProgress ? name : positionText}</span>}
-            {step.bare || step.plain ? (
-              step.render(tool)
-            ) : (
-              <>
-                <StepHead step={step} headingRef={headingRef} positionId={positionId} role={role} />
-                <div className="ds-guide-body ds-guide-rv ds-guide-rv--3">{step.render(tool)}</div>
-                {/* Never a greyed-out button: a calm line says what is needed (M9). */}
-                {problem && (
-                  <div className="ds-error ds-guide-problem" role="alert">
-                    <span className="ds-error-mark" aria-hidden="true">!</span>
-                    <span>{problem}</span>
-                  </div>
+      {/* Focus mode (Polish 1, rule 21; example-pages-25nov.html "Tool: Plan my
+          day"): on a laptop the portal's panel with the menu gone and the
+          tool in its middle column; on a phone edge to edge. The whole layer
+          scrolls as one page. */}
+      <div ref={scrollRef} className="ds-guide-scroll">
+        <div className="ds-guide-frame">
+          <div className="ds-guide-col">
+            <div className={`ds-tool ds-guide-tool${step.wide || step.top || step.noProgress ? ' ds-guide-tool--wide' : ''}`}>
+              {step.top && <div className="ds-guide-top">{step.top}</div>}
+              {!step.bare && !step.top && (
+                <div className="ds-tool-bar ds-guide-bar">
+                  {/* × saves where they are and goes back (rule 21): the tool's onClose does both. */}
+                  <button type="button" className="ds-tool-x ds-guide-close" aria-label="Close and save my place" title="Close" onClick={() => onCloseRef.current?.()}>
+                    <span className="ds-x" aria-hidden="true" />
+                  </button>
+                  <span className="ds-tool-step ds-guide-where">
+                    {!step.plain && <SaveStatus state={saveState} />}
+                    {!step.plain && stepWords && <span aria-hidden="true">{stepWords}</span>}
+                  </span>
+                </div>
+              )}
+              {!step.bare && !step.plain && !step.noProgress && !step.top && progressLine}
+              {/* Said once for screen readers; the line itself names a percent. */}
+              {!step.plain && progress !== 'percent' && <span id={positionId} className="ds-sr">{step.noProgress ? name : positionText}</span>}
+              {!step.plain && progress === 'percent' && (step.noProgress || step.top) && <span id={positionId} className="ds-sr">{name}</span>}
+              <div key={step.key} className={`ds-guide-page${motion}`}>
+                {step.bare || step.plain ? (
+                  step.render(tool)
+                ) : (
+                  <>
+                    <StepHead step={step} headingRef={headingRef} positionId={positionId} role={role} name={name} />
+                    <div className="ds-guide-body">{step.render(tool)}</div>
+                    {/* Never a greyed-out button: a calm line says what is needed (M9). */}
+                    {problem && (
+                      <div className="ds-error ds-guide-problem" role="alert">
+                        <span className="ds-error-mark" aria-hidden="true">!</span>
+                        <span>{problem}</span>
+                      </div>
+                    )}
+                  </>
                 )}
-                {!hasNext && showSkip && (
-                  <button type="button" className="ds-guide-skip ds-guide-skip--body" onClick={skip}>{step.skipLabel || skipLabel}</button>
-                )}
-              </>
-            )}
+              </div>
+              {/* The foot (rule 21): Next, Back and Skip this step in one row on a
+                  laptop, stacked and centred on a phone (rule 11). A screen that
+                  moves straight on has no Next; its Back and Skip stay here. */}
+              {footShown && (
+                <div className={`ds-tool-foot ds-guide-foot${hasNext ? '' : ' ds-guide-foot--quiet'}`}>
+                  {ownFoot ? (step.foot && <div className="ds-guide-foot-own">{step.foot}</div>) : (
+                    hasNext && (
+                      <button type="button" className="ds-btn ds-btn--primary ds-guide-next" onClick={next}>
+                        {nextWords}
+                      </button>
+                    )
+                  )}
+                  {backShown && (
+                    <MoreLink back onClick={goBack} className="ds-tool-back ds-guide-back">Back</MoreLink>
+                  )}
+                  {!ownFoot && showSkip && !step.footAside && (
+                    <button type="button" className="ds-more ds-more--bare ds-tool-skip ds-guide-skip" onClick={skip}>{skipWords}</button>
+                  )}
+                  {!ownFoot && step.footAside && <div className="ds-guide-foot-aside">{step.footAside}</div>}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        {/* The bottom bar only when the screen has a button (rule 29o): a
-            screen that moves straight on has none, and its Skip sits
-            quietly under the answers instead. */}
-        {!step.bare && !step.plain && hasNext && (
-          <div className="ds-guide-foot">
-            {ownFoot ? <div className="ds-guide-foot-right ds-guide-foot-own">{step.foot}</div> : (
-            <div className="ds-guide-foot-right">
-              {showSkip && !step.footAside && (
-                <button type="button" className="ds-guide-skip" onClick={skip}>{skipLabel}</button>
-              )}
-              {step.footAside && <div className="ds-guide-foot-aside">{step.footAside}</div>}
-              <button type="button" className="ds-btn ds-btn--primary ds-guide-next" onClick={next}>
-                {editHasMore ? step.editNext : changing ? 'Save my edit' : (step.nextLabel || (last ? finishLabel : 'Next'))}
-              </button>
-            </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -769,28 +769,35 @@ export function GuidedSummary({ rows, onChange, emptyWord = 'Not yet', addWhenEm
   if (stacked) {
     return (
       <div className="ds-guide-plan">
-        {rows.map((row) => (
-          <button
-            key={row.key || row.label}
-            type="button"
-            className="ds-guide-plan-row"
-            aria-label={`Edit ${(typeof row.editName === 'string' && row.editName.trim()) || inSentence(row.label)}`}
-            onClick={() => onChange(row.step, { fromSummary: true })}
-          >
-            <span className="ds-guide-plan-value">
-              <span className="ds-guide-plan-label">{row.label}</span>
-              {(row.lines || []).map((line, j) => (
-                // The lines have no ids of their own; their order is their identity.
-                // eslint-disable-next-line react/no-array-index-key
-                <span key={j} className="ds-guide-plan-line">
-                  {line.text}
-                  {line.sub && <small className={line.good ? 'ds-guide-plan-good' : undefined}>{line.sub}</small>}
-                </span>
-              ))}
-            </span>
-            <span className="ds-guide-plan-edit" aria-hidden="true">Edit</span>
-          </button>
-        ))}
+        {rows.map((row) => {
+          const open = () => onChange(row.step, { fromSummary: true });
+          return (
+            // A row, not a control (Polish 1: its two lines are a name and its value):
+            // tapping anywhere on it opens that question, and its "Edit" is the button.
+            // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+            <div key={row.key || row.label} className="ds-guide-plan-row" onClick={open}>
+              <span className="ds-guide-plan-value">
+                <span className="ds-guide-plan-label">{row.label}</span>
+                {(row.lines || []).map((line, j) => (
+                  // The lines have no ids of their own; their order is their identity.
+                  // eslint-disable-next-line react/no-array-index-key
+                  <span key={j} className="ds-guide-plan-line">
+                    {line.text}
+                    {line.sub && <small className={line.good ? 'ds-guide-plan-good' : undefined}>{line.sub}</small>}
+                  </span>
+                ))}
+              </span>
+              <button
+                type="button"
+                className="ds-guide-plan-edit"
+                aria-label={`Edit ${(typeof row.editName === 'string' && row.editName.trim()) || inSentence(row.label)}`}
+                onClick={(e) => { e.stopPropagation(); open(); }}
+              >
+                Edit
+              </button>
+            </div>
+          );
+        })}
       </div>
     );
   }

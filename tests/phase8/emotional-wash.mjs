@@ -61,7 +61,7 @@ const kept = (page) => page.evaluate(() => {
 const answers = (page) => page.locator('.ds-guide-body .ds-answer');
 const answerWords = async (page) => (await answers(page).allInnerTexts()).map((t) => t.split('\n')[0].trim());
 const problem = (page, words) => until(async () => (await page.locator('.ds-guide-problem').innerText().catch(() => '')).includes(words), 5000);
-const label = async (page) => (await page.locator('.ds-guide-label').innerText().catch(() => '')).trim();
+const label = async (page) => (await page.locator('.ds-guide-label').textContent().catch(() => '')).trim();
 const percent = (page) => page.locator('.ds-guide-pct').getAttribute('aria-valuenow').then(Number);
 const card = (page, name) => page.locator('.ds-follow-card').filter({ has: page.getByRole('button', { name: new RegExp(`^${name}`) }) });
 const planRows = async (page) => page.locator('.ds-guide-plan-row').evaluateAll((rows) => rows.map((r) => ({
@@ -69,7 +69,8 @@ const planRows = async (page) => page.locator('.ds-guide-plan-row').evaluateAll(
   lines: [...r.querySelectorAll('.ds-guide-plan-line')].map((l) => [...l.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim()),
   sub: [...r.querySelectorAll('.ds-guide-plan-line small')].map((s) => s.textContent.trim()),
   good: [...r.querySelectorAll('.ds-guide-plan-line small')].map((s) => s.classList.contains('ds-guide-plan-good')),
-  aria: r.getAttribute('aria-label'),
+  // Polish 1: the row's "Edit" button carries the name now.
+  aria: r.getAttribute('aria-label') || r.querySelector('.ds-guide-plan-edit')?.getAttribute('aria-label') || null,
 })));
 const row = (page, name) => page.getByRole('button', { name, exact: true });
 // One tap on a check's answer, then the next screen by itself.
@@ -131,7 +132,7 @@ async function run(browser, width) {
   pass(`${tag}: the line under the question`, (await page.locator('.ds-guide-nudge').innerText()).trim() === 'Write it as it happened, in a sentence or two.');
   pass(`${tag}: the eye is on the first screen`, (await page.locator('.ds-guide-question .ds-who').count()) === 1);
   pass(`${tag}: the % bar starts at 0`, (await percent(page)) === 0);
-  pass(`${tag}: Finish later is a quiet link at the left of a typing step`, (await page.locator('.ds-guide-foot .ds-guide-skip').innerText()).trim() === 'Finish later' && await page.evaluate(() => document.querySelector('.ds-guide-foot .ds-guide-skip').getBoundingClientRect().left < document.querySelector('.ds-guide-next').getBoundingClientRect().left));
+  pass(`${tag}: Finish later is a quiet link in the foot, after Next (focus mode, Polish 1)`, (await page.locator('.ds-guide-foot .ds-guide-skip').innerText()).trim() === 'Finish later' && await page.evaluate(() => (() => { const k = document.querySelector('.ds-guide-foot .ds-guide-skip').getBoundingClientRect(); const n = document.querySelector('.ds-guide-next').getBoundingClientRect(); return k.left > n.left || k.top >= n.bottom - 1; })()) /* after Next: beside it on a laptop, under it on a phone (stacked foot) */);
   await checkScreen(page, `${tag}, what happened`, { heading: '.ds-guide-question' });
   await shot('what-happened-empty');
   pass(`${tag}: Next is never greyed out`, !(await page.locator('.ds-guide-next').isDisabled()));
@@ -162,7 +163,7 @@ async function run(browser, width) {
   await onQuestion(page, 'What kind of feeling are you left with?');
   pass(`${tag}: three kinds of feeling, each with its line`, JSON.stringify(await answerWords(page)) === JSON.stringify(['Future concern', 'Present angst', 'Past regret']) && (await page.locator('.ds-answer-hint').count()) === 3);
   pass(`${tag}: the % bar reads 9`, (await percent(page)) === 9);
-  pass(`${tag}: a one-answer question has no bottom bar, no Finish later and no eye`, (await page.locator('.ds-guide-foot').count()) === 0 && (await page.locator('.ds-guide-skip').count()) === 0 && (await page.locator('.ds-guide-question .ds-who').count()) === 0);
+  pass(`${tag}: a one-answer question has no Next and no eye (focus mode: Back and Finish later in the foot)`, (await page.locator('.ds-guide-next').count()) === 0 && (await page.locator('.ds-guide-question .ds-who').count()) === 0);
   await checkScreen(page, `${tag}, the kind of feeling`, { coral: 0 });
   await shot('kind');
   await tap(page, 1);
@@ -262,7 +263,7 @@ async function run(browser, width) {
   pass(`${tag}: “Thought 1 of 3” above the question`, (await label(page)) === 'Thought 1 of 3');
   pass(`${tag}: “Think about what you know for certain.”`, (await page.locator('.ds-guide-nudge').innerText()).trim() === 'Think about what you know for certain.');
   pass(`${tag}: the answers are Yes, Not sure and No`, JSON.stringify(await answerWords(page)) === JSON.stringify(['Yes', 'Not sure', 'No']));
-  pass(`${tag}: a check has no bottom bar, no Finish later and no eye`, (await page.locator('.ds-guide-foot').count()) === 0 && (await page.locator('.ds-guide-skip').count()) === 0 && (await page.locator('.ds-guide-question .ds-who').count()) === 0);
+  pass(`${tag}: a check has no Next and no eye (focus mode: Back and Finish later in the foot)`, (await page.locator('.ds-guide-next').count()) === 0 && (await page.locator('.ds-guide-question .ds-who').count()) === 0);
   const at1 = await percent(page);
   pass(`${tag}: the % bar has moved on from 36`, at1 > 36, `${at1}`);
   await checkScreen(page, `${tag}, is it true`, { coral: 0 });
@@ -524,7 +525,7 @@ async function run(browser, width) {
   rows = await planRows(page);
   pass(`${tag}: … with what was saved, and where its step is`, rows[1].lines[0] === 'Past regret' && rows[4].lines[0] === stepText && rows[4].sub[0] === 'It’s in this week’s to-dos.', JSON.stringify(rows.map((r) => [r.lines[0], r.sub[0]])));
   await sleep(600);
-  await page.getByRole('button', { name: 'Close', exact: true }).first().click();
+  await page.getByRole('button', { name: /^Close( and save my place)?$/ }).first().click();
   await page.waitForURL(/\/my-plans/, { timeout: 15000 });
   records = await kept(page);
   pass(`${tag}: closing it leaves it finished`, records.length === 1 && records[0].status === 'completed');
@@ -534,7 +535,7 @@ async function run(browser, width) {
   await onQuestion(page, 'What happened?');
   pass(`${tag}: the next wash starts empty`, (await page.locator('.ds-guide-body textarea').first().inputValue()) === '');
   await sleep(600);
-  await page.getByRole('button', { name: 'Close', exact: true }).first().click();
+  await page.getByRole('button', { name: /^Close( and save my place)?$/ }).first().click();
   await page.waitForURL(/\/personal\/reset$/, { timeout: 15000 });
   pass(`${tag}: closing an untouched wash saves nothing`, (await kept(page)).length === 1);
 

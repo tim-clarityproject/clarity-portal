@@ -3,7 +3,8 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { MissionContext } from '../../context/MissionContext';
 import {
-  AddButton,
+  AddLink,
+  CardHead,
   AlignmentCheck,
   Button,
   Dropdown,
@@ -72,6 +73,7 @@ import { keepSprintSetup } from '../../lib/performance/sprintSetup';
 import usePlanSaves from './usePlanSaves';
 import { MISSION_EXAMPLE, MISSION_PLACEHOLDER, STRATEGY_IDEAS, exampleRole } from '../../content/planBuilder';
 import './performance.css';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 
 // Build your plan, and editing it afterwards (mock-up M6, "Build your
 // plan"; read in full with its notes). One guided tool, one question per
@@ -205,7 +207,7 @@ function PlanTool({ userId, data, mode }) {
     leaving.current = true;
     try {
       if (draftRef.current !== initial) await sync();
-      let message = 'Saved. Carry on from Home whenever you like.';
+      let message = TOOL_CLOSED;
       if (!building) {
         const v = await keepVersion(false);
         message = v ? `Saved. Your plan is now ${versionLabel(v)}.` : 'Saved';
@@ -364,6 +366,8 @@ function PlanTool({ userId, data, mode }) {
     eye: <WhoSees {...progressWho} />,
     render: () => (
       <div>
+        {/* "+ Add" at the right of the list's label (Polish 1, rule 10). */}
+        <CardHead label="Your objectives" as="h3" add={draft.objectives.length < MAX_OBJECTIVES ? <AddLink label="Add objective" onClick={addObjective} /> : null} />
         {draft.objectives.map((o, i) => (
           <ObjectiveEditor
             key={o.id}
@@ -384,9 +388,6 @@ function PlanTool({ userId, data, mode }) {
             }}
           />
         ))}
-        {draft.objectives.length < MAX_OBJECTIVES && (
-          <AddButton className="plan-add" onClick={addObjective}>Add objective</AddButton>
-        )}
       </div>
     ),
   };
@@ -445,8 +446,8 @@ function PlanTool({ userId, data, mode }) {
               />
             </div>
           )}
+          <CardHead label={o ? 'Strategies for this objective' : 'Your Strategies'} as="h3" add={<AddLink label="Add Strategy" onClick={() => addStrategy(o?.id || null)} />} />
           {strategyRows(mine, o?.id || null)}
-          <AddButton className="plan-add" onClick={() => addStrategy(o?.id || null)}>Add Strategy</AddButton>
           {others.length > 0 && (
             <div className="plan-picks">
               <FieldLabel label="Do any of your other Strategies help this too?" />
@@ -492,6 +493,7 @@ function PlanTool({ userId, data, mode }) {
             value={habitStrategyId}
             onChange={(habitStrategy) => set({ habitStrategy })}
           />
+          <CardHead label="Your habits" as="h3" add={<AddLink label="Add habit" onClick={addHabit} />} />
           <div className="plan-habits">
             {list.map((h) => (
               <HabitEditor
@@ -509,7 +511,6 @@ function PlanTool({ userId, data, mode }) {
               />
             ))}
           </div>
-          <AddButton className="plan-add" onClick={addHabit}>Add habit</AddButton>
         </div>
       );
     },

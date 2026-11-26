@@ -9,7 +9,9 @@ import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import { DisclosureArrow, Loading, PageHeader, TextBox, Button, useToast } from '../components/design';
+import { DisclosureArrow, Loading, PageOpening, TextBox, Button, useToast } from '../components/design';
+import { B2_LINES } from '../content/pageLines/client';
+
 
 const RQ = [
   { key: 'a', label: 'What went well?' },
@@ -281,7 +283,7 @@ export default function ReviewPlan() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <PageHeader title={t.h} info={t.sub} meta={[formatReviewDayLabel(reviewDate)]} />
+          <PageOpening label={formatReviewDayLabel(reviewDate)} title={t.h} line={t.sub || B2_LINES.reviewPlan} />
         </div>
 
         {isLoading ? (

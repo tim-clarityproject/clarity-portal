@@ -189,7 +189,8 @@ async function layoutChecks(page, tag, mode, dial = false) {
     return {
       sideways: document.documentElement.scrollWidth - window.innerWidth,
       primaries: primaries.length,
-      primaryCoral: primaries.every((b) => coral.includes(getComputedStyle(b).backgroundColor)),
+      // Polish 1 (25 Nov reference): the one main button is solid in the text colour (--main-bg), never coral.
+      primaryCoral: primaries.every((b) => { const pr = document.createElement('span'); pr.style.background = 'var(--main-bg)'; b.parentElement.appendChild(pr); const main = getComputedStyle(pr).backgroundColor; pr.remove(); return getComputedStyle(b).backgroundColor === main; }),
       small,
       good: fills('.ds-sdial--finished .ds-sdial-seg--good'),
       below: fills('.ds-sdial--finished .ds-sdial-seg--below'),
@@ -381,7 +382,7 @@ seed('--reset');
   await page.getByRole('button', { name: 'Review it now' }).click();
   await page.waitForSelector('.ds-guide', { timeout: 10000 });
   pass('Review it now opens the review', (await heading(page)).length > 0);
-  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByRole('button', { name: /^Close( and save my place)?$/ }).click();
   pass('closing goes back to the sprint, still running', Boolean(await until(async () => page.url().endsWith('/performance-sprint'), 10000)));
   const s = (await db.from('sprints').select('status').eq('user_id', me).eq('status', 'running')).data;
   pass('closing finishes nothing', s.length === 1);

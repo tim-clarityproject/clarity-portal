@@ -290,7 +290,7 @@ const WEEK = () => ({
   todos: [{ id: 't1', coach_id: ME, title: 'Send the Kestrel proposal', planned_on: '2026-11-20', planned_time: '09:15:00', minutes: 30 }, { id: 't2', title: 'No time yet', planned_on: '2026-11-20', planned_time: null }],
   clients: [{ id: 'p-sam', name: 'Sam Okafor', time_zone: LON }, { id: 'p-priya', name: 'Priya Nair', time_zone: LON }, { id: 'p-jordan', name: 'Jordan Reyes', time_zone: 'America/Chicago' }],
   bookings: [{ id: 'b1', item_id: 'ruth', call_type_id: 'ct1', status: 'booked' }],
-  callTypes: [{ id: 'ct1', name: 'Chemistry Call' }],
+  callTypes: [{ id: 'ct1', name: 'Discovery call' }],
   openBlocks: [{ id: 'ob1', coach_id: ME, starts_at: at('2026-11-23', '14:00'), ends_at: at('2026-11-23', '16:00'), time_zone: LON, call_type_id: null }],
 });
 
@@ -310,7 +310,7 @@ test('what to draw for a week: each kind, its colour, the client’s own time, a
   assert.equal(cal.entryLines(by['training:2026-11-16'], { coachZone: LON }).line, '09:45 to 12:00');
   assert.equal(cal.entryLines(by.parents, { coachZone: LON }).line, 'Family');
   assert.equal(cal.entryLines(by.hold, { coachZone: LON }).line, 'Held for a poll');
-  assert.equal(by.ruth.sub, 'Chemistry Call');
+  assert.equal(by.ruth.sub, 'Discovery call');
   // Under 45 minutes: one line, the title then the start time.
   assert.ok(by.coffee.oneLine && by.ruth.oneLine && by['todo:t1'].oneLine && !by.sam.oneLine);
   assert.deepEqual(cal.entryLines(by.coffee, { coachZone: LON }), { title: 'Coffee with Dan Reid', line: '', time: '12:30', oneLine: true });
@@ -789,7 +789,7 @@ test('free times are the ones migration 051 would give (the stand-in’s twin of
   const data = WEEK();
   const items = data.items.map((i) => ({ ...i, coach_id: ME }));
   const openBlocks = [{ id: 'o1', coach_id: ME, starts_at: at('2026-11-17', '08:00'), ends_at: at('2026-11-17', '18:00'), time_zone: LON, call_type_id: null }, { id: 'o2', coach_id: ME, starts_at: at('2026-11-18', '09:00'), ends_at: at('2026-11-18', '17:00'), time_zone: LON, call_type_id: null }];
-  const type = { id: 'ct1', coach_id: ME, key: 'chemistry', name: 'Chemistry Call', minutes: 30, gap_before: 15, gap_after: 15, notice_hours: 24, ahead_weeks: 4, day_limit: 5, page_key: 'page-1', active: true, questions: [], place_kind: 'zoom' };
+  const type = { id: 'ct1', coach_id: ME, key: 'chemistry', name: 'Discovery call', minutes: 30, gap_before: 15, gap_after: 15, notice_hours: 24, ahead_weeks: 4, day_limit: 5, page_key: 'page-1', active: true, questions: [], place_kind: 'zoom' };
   const store = { rows: { coach_cal_items: items, coach_open_blocks: openBlocks, coach_call_types: [type], coach_booking_links: [], coach_settings: [{ coach_id: ME, time_zone: LON }], coach_away: [], coach_bookings: [], coach_sessions: [], coach_notifications: [] }, coaches: [{ id: ME, display_first_name: 'Tim', active: true }] };
   const now = new Date(at('2026-11-12', '09:00'));
   const sql = calStandIn({ store, ME, me: {}, clock: () => now, no: () => { throw new Error('refused'); } });

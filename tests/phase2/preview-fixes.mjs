@@ -26,10 +26,10 @@
 //              "Saved" (no Save button), and leave with the same version as
 //              Edit my plan (minor for a name, major for the mission).
 // 6. pill:     in Safari's engine (WebKit) at iPhone 16 size, portrait and
-//              landscape, and at 360 and 430 wide: the mission reads from
-//              the left after its label, at most two lines, never "…",
-//              never broken at a hyphen; no desktop menu button on a phone
-//              (the phone bar shows instead, upright and turned).
+//              landscape, and at 360 and 430 wide: My Mission is the frame's
+//              40px box (Polish 1): the label, then the mission from the left
+//              on one line ("…" when long), on the screen; the header's
+//              crosshair opens the menu; no phone bar.
 // 7. dial:     Home's dial line reads "Sprint N, week X of Y" with the
 //              portal's chevron, one button with one name ("Open Sprint N,
 //              week X of Y") and at least 44px tall; on a laptop it
@@ -193,6 +193,9 @@ if (part('info')) {
       if (!count) { note(`${w} ${name}: no ⓘ on screen`); continue; }
       for (let i = 0; i < Math.min(count, 3); i += 1) {
         const icon = icons.nth(i);
+        // An ⓘ that opens the side panel (aria-haspopup=dialog; Explanations, 16 Nov) isn't a pop-up:
+        // tests/explain-panel.mjs checks those.
+        if ((await icon.getAttribute('aria-haspopup')) === 'dialog') { note(`${w} ${name} ⓘ ${i + 1}: opens the side panel (checked by tests/explain-panel.mjs)`); continue; }
         await icon.scrollIntoViewIfNeeded();
         await icon.evaluate((el, gallery) => {
           document.querySelectorAll('[data-pf-scope]').forEach((e) => e.removeAttribute('data-pf-scope'));
@@ -382,7 +385,7 @@ if (part('part')) {
     await page.goto(`${APP}/performance-plan/history`);
     await page.waitForFunction(() => /Version \d+\.\d+/.test(document.body.innerText), null, { timeout: 30000 });
     const version = (await page.locator('body').innerText()).match(/Version (\d+)\.(\d+)/);
-    await go(page, '/performance-plan', '.ds-mission-card');
+    await go(page, '/performance-plan', '.ipp-mission');
     const [major, minor] = version ? [Number(version[1]), Number(version[2])] : [0, 0];
     const panel = page.locator('.ds-panel:has(.plan-part)');
     const editAndLeave = async (label, typeInto, words, how) => {
@@ -421,16 +424,16 @@ if (part('part')) {
     pass(`part ${w} Strategy: sends the Strategy and a minor version ${major}.${minor + 1}`, r.writes.some((x) => x.table === 'plan_strategies' && x.body.includes(tag)) && row1?.kind === 'minor' && row1?.major === major && row1?.minor === minor + 1, `${r.writes.map((x) => x.table).join(', ')} ${row1 ? `${row1.kind} ${row1.major}.${row1.minor}` : 'no version'}`);
     pass(`part ${w} Strategy: says "Saved. Your plan is now Version ${major}.${minor + 1}."`, r.toast.includes(`Saved. Your plan is now Version ${major}.${minor + 1}.`), r.toast);
     if (phone) { await page.keyboard.press('Escape'); await still(page); }
-    await go(page, '/performance-plan', '.ds-mission-card');
+    await go(page, '/performance-plan', '.ipp-mission');
     // An objective's name, closed with Escape: a minor version.
     r = await editAndLeave('Edit this objective', 'input, textarea', ` ${tag}`, 'escape');
     pass(`part ${w} objective: Escape saves and leaves the same way, with a minor version`, r.writes.some((x) => x.table === 'outcome_objectives' && x.body.includes(tag)) && /"kind":"minor"/.test(r.versionWrite?.body || ''), r.writes.map((x) => x.table).join(', '));
-    await go(page, '/performance-plan', '.ds-mission-card');
+    await go(page, '/performance-plan', '.ipp-mission');
     // The mission: a major version, as Edit my plan.
     r = await editAndLeave('Edit my Mission', 'textarea, input', ` ${tag}`, 'done');
     pass(`part ${w} mission: saves the mission with a major version, as Edit my plan`, r.writes.some((x) => x.table === 'performance_plans' && x.body.includes(tag)) && /"kind":"major"/.test(r.versionWrite?.body || ''), r.writes.map((x) => x.table).join(', '));
     // A habit, from the Strategy's detail.
-    await go(page, '/performance-plan', '.ds-mission-card');
+    await go(page, '/performance-plan', '.ipp-mission');
     await page.locator('.ds-stile-btn').first().click();
     await still(page);
     if (await page.getByRole('button', { name: /^Edit this habit/ }).count()) {
@@ -438,7 +441,7 @@ if (part('part')) {
       pass(`part ${w} habit: saves the habit with a minor version`, r.writes.some((x) => x.table === 'habits' && x.body.includes(tag)) && /"kind":"minor"/.test(r.versionWrite?.body || ''), r.writes.map((x) => x.table).join(', '));
     } else note(`part ${w}: the first Strategy has no habit`);
     // Clearing a name to retype it never removes the part.
-    await go(page, '/performance-plan', '.ds-mission-card');
+    await go(page, '/performance-plan', '.ipp-mission');
     writes.length = 0;
     await page.getByRole('button', { name: 'Edit this objective' }).first().click();
     await page.waitForSelector('.ds-panel .plan-part');
@@ -451,7 +454,7 @@ if (part('part')) {
     await page.keyboard.press('Escape');
     await still(page);
     // Opened and closed with no change: no version, nothing said.
-    await go(page, '/performance-plan', '.ds-mission-card');
+    await go(page, '/performance-plan', '.ipp-mission');
     writes.length = 0;
     await page.getByRole('button', { name: 'Edit my Mission' }).click();
     await page.waitForSelector('.ds-panel .plan-part');
@@ -475,7 +478,7 @@ if (part('part')) {
     // the change is sent and its version kept.
     await go(page, '/performance-sprint', '.ds-sdial');
     await page.getByRole('button', { name: 'Open my plan' }).last().click();
-    await page.waitForSelector('.ds-mission-card');
+    await page.waitForSelector('.ipp-mission');
     await still(page);
     writes.length = 0;
     await page.getByRole('button', { name: 'Edit this objective' }).first().click();
@@ -488,7 +491,7 @@ if (part('part')) {
     pass(`part ${w}: Back with a panel open still keeps the version`, writes.some((x) => x.table === 'plan_versions'), writes.map((x) => x.table).join(', '));
 
     // Offline: two changes, then back online: versions go up, never back.
-    await go(page, '/performance-plan', '.ds-mission-card');
+    await go(page, '/performance-plan', '.ipp-mission');
     writes.length = 0;
     await ctx.setOffline(true);
     const toasts = [];
@@ -513,7 +516,7 @@ if (part('part')) {
     const versions = writes.filter((x) => x.table === 'plan_versions').map((x) => { const b = JSON.parse(x.body); const r = Array.isArray(b) ? b[0] : b; return `${r.major}.${r.minor}`; });
     const plans = writes.filter((x) => x.table === 'performance_plans' && /"minor"/.test(x.body)).map((x) => { const r = JSON.parse(x.body); return `${r.major}.${r.minor}`; });
     pass(`part ${w}: back online, each version is sent once, in order, and the plan ends on the last`, versions.length === 2 && versions[0] !== versions[1] && plans[plans.length - 1] === versions[1], `versions ${versions.join(', ')}; plan ${plans.join(', ')}`);
-    await go(page, '/performance-plan', '.ds-mission-card');
+    await go(page, '/performance-plan', '.ipp-mission');
     pass(`part ${w}: "Edit my plan" (the full flow) is still there`, (await page.getByRole('button', { name: 'Edit my plan' }).count()) === 1);
     if (shots) await page.screenshot({ path: `${shots}/part-${w}.png`, fullPage: true });
     await ctx.close();
@@ -537,58 +540,40 @@ if (part('pill')) {
           return route.fulfill({ response: res, body: JSON.stringify(body) });
         });
       }
-      await go(page, '/welcome', '.hdr-mis');
+      // Polish 1 (25 Nov reference, rule 18 to 20): on a phone My Mission is the frame's 40px box
+      // (.hdr-mbox): "My Mission" then the words on one line, reading from the left, cut with "…"
+      // when long; the crosshair in the header opens the menu; there is no phone bar.
+      await go(page, '/welcome', '.hdr-frame .hdr-mbox');
       const r = await page.evaluate(() => {
-        const pill = [...document.querySelectorAll('.hdr-mis')].find((p) => p.getBoundingClientRect().width > 0);
-        const label = pill.querySelector('.hdr-mis-label').getBoundingClientRect();
-        const text = pill.querySelector('.hdr-mis-text');
-        const shown = getComputedStyle(text).display !== 'none';
-        const t = text.getBoundingClientRect();
-        const lh = parseFloat(getComputedStyle(text).lineHeight);
-        const pad = parseFloat(getComputedStyle(text).paddingTop) + parseFloat(getComputedStyle(text).paddingBottom);
-        // Each hyphen: the letters either side on the same line.
-        const broken = [];
-        const walker = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
-        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-          for (let i = 1; i < n.textContent.length - 1; i += 1) {
-            if (n.textContent[i] !== '-') continue;
-            const a = document.createRange(); a.setStart(n, i - 1); a.setEnd(n, i);
-            const c = document.createRange(); c.setStart(n, i + 1); c.setEnd(n, i + 2);
-            if (Math.abs(a.getBoundingClientRect().top - c.getBoundingClientRect().top) > 2) broken.push(n.textContent.slice(Math.max(0, i - 8), i + 8));
-          }
-        }
-        // The first line's first letter: where the words start.
-        const first = document.createRange();
-        const tn = document.createTreeWalker(text, NodeFilter.SHOW_TEXT).nextNode();
-        first.setStart(tn, 0); first.setEnd(tn, 1);
-        const menu = document.querySelector('.hdr-menu');
+        const box = [...document.querySelectorAll('.hdr-frame .hdr-mbox')].find((p) => p.getBoundingClientRect().width > 0);
+        const words = box.querySelector('b');
+        const br = box.getBoundingClientRect();
+        const wr = words.getBoundingClientRect();
+        const lh = parseFloat(getComputedStyle(words).lineHeight) || parseFloat(getComputedStyle(words).fontSize) * 1.3;
+        const label = document.createRange();
+        label.setStart(box.firstChild, 0); label.setEnd(box.firstChild, box.firstChild.textContent.length);
+        const menu = document.querySelector('.hdr-frame-menu');
         const mr = menu?.getBoundingClientRect();
         const bar = document.querySelector('.ds-phone-bar');
         return {
-          shown,
-          align: getComputedStyle(text).textAlign,
-          lines: shown ? Math.round((t.height - pad) / lh) : 0,
-          startGap: shown ? first.getBoundingClientRect().left - label.right : null,
-          ellipsis: /…/.test(pill.textContent) || getComputedStyle(text).textOverflow === 'ellipsis',
-          broken,
-          menuShown: Boolean(mr && mr.width && getComputedStyle(menu).visibility !== 'hidden' && menu.closest('.hdr-desktop') && getComputedStyle(menu.closest('.hdr-desktop')).display !== 'none'),
+          labelFirst: box.firstChild.nodeType === 3 && box.firstChild.textContent.trim() === 'My Mission',
+          align: getComputedStyle(words).textAlign,
+          startGap: wr.left - label.getBoundingClientRect().right,
+          lines: Math.round(wr.height / lh),
+          inView: br.left >= 0 && br.right <= innerWidth + 0.5,
+          menuShown: Boolean(mr && mr.width && getComputedStyle(menu).visibility !== 'hidden'),
           bar: Boolean(bar && bar.getBoundingClientRect().height > 0 && getComputedStyle(bar).display !== 'none'),
           wide: document.documentElement.scrollWidth - innerWidth,
-          padTop: getComputedStyle(document.querySelector('.hdr')).paddingTop,
         };
       });
       const label = `pill ${name}${mission ? ' (long mission)' : ''}`;
-      if (r.shown) {
-        pass(`${label}: reads from the left`, r.align === 'left' || r.align === 'start', r.align);
-        pass(`${label}: starts just after its label`, r.startGap >= 8 && r.startGap <= 40, `${r.startGap?.toFixed(1)}px`);
-        pass(`${label}: at most two lines`, r.lines <= 2, `${r.lines} lines`);
-        pass(`${label}: never broken at a hyphen`, !r.broken.length, r.broken.join(' | '));
-      } else {
-        note(`${label}: the pill shows "My Mission" alone (too long for two lines, or under 360px)`);
-      }
-      pass(`${label}: never "…"`, !r.ellipsis);
-      pass(`${label}: no desktop menu button`, !r.menuShown);
-      pass(`${label}: the phone bar is there`, r.bar);
+      pass(`${label}: "My Mission" first, then the words`, r.labelFirst);
+      pass(`${label}: reads from the left`, r.align === 'left' || r.align === 'start', r.align);
+      pass(`${label}: starts just after its label`, r.startGap >= 4 && r.startGap <= 16, `${r.startGap?.toFixed(1)}px`);
+      pass(`${label}: one line (a long Mission ends in "…")`, r.lines <= 1, `${r.lines} lines`);
+      pass(`${label}: the box stays on the screen`, r.inView);
+      pass(`${label}: the crosshair in the header opens the menu`, r.menuShown);
+      pass(`${label}: no phone bar`, !r.bar);
       pass(`${label}: no sideways scroll`, r.wide <= 0, `${r.wide}px`);
       if (shots) await page.screenshot({ path: `${shots}/pill-${w}x${h}${mission ? '-long' : ''}.png`, clip: { x: 0, y: 0, width: w, height: Math.min(h, 240) } });
       await ctx.close();
@@ -603,7 +588,7 @@ if (part('dial')) {
     const b = await launch(engineName);
     const { ctx, page } = await open(b, { width: w, phone: w < 769 });
     await go(page, '/welcome', '.ds-mdial');
-    if (!(await page.locator('.ds-mdial').count())) { note(`dial ${w}: no sprint running, so no dial`); await ctx.close(); continue; }
+    if (!(await page.locator('.ds-mdial').count())) { note(`dial ${w}: no dial on Home (Polish 1: Home opens with PageOpening, 25 Nov example), or no sprint running`); await ctx.close(); continue; }
     const r = await page.evaluate(() => {
       const d = document.querySelector('.ds-mdial');
       const line = d.querySelector('.ds-mdial-line');

@@ -1,0 +1,80 @@
+/* The coach's people pages (Polish 1, Stage B, B4): the list bar and the list rows, on the 25 Nov reference's blocks.
+   Clients, Leads, Network, an organisation, a group, Past clients and Renewals share these. Tokens only. */
+
+/* ---------- the list bar: the search box on its own line, then one row of controls at one height ---------- */
+.ui-root .cc-pbar-wrap { margin-bottom: var(--space-4); }
+.ui-root .cc-pbar-search { margin-bottom: var(--space-px12); }
+.ui-root .cc-pbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-px12);
+}
+.ui-root .cc-pbar:empty { display: none; }
+.ui-root .cc-pbar-seg { flex: none; }
+/* A drop-down at the row's height (the reference's calendar bar: a 40px .box.dd) is the shared .ds-dd--row. */
+.ui-root .cc-pbar .cc-pbar-dd { width: auto; min-width: calc(var(--space-7) * 1.5); max-width: 100%; gap: var(--space-px12); }
+@media (max-width: 600px) {
+  /* On a phone the two drop-downs share the column, side by side (rule 15: one width). */
+  .ui-root .cc-pbar > .cc-pbar-dd { flex: 1 1 0; min-width: 0; }
+}
+
+/* ---------- list rows ---------- */
+.ui-root .cc-li-facts { display: flex; flex-wrap: wrap; gap: 0 var(--space-px14); }
+.ui-root .cc-li-facts > span { min-width: 0; }
+/* Inside a card the rows of a list that chooses several sit in the pick wrapper: the first has no line above it and
+   the last ends the card's padding, as a card's own rows do (rule 13). */
+.ui-root .ds-card-head + .cc-plist > :first-child .ds-li,
+.ui-root .ds-card-head + .ds-qa + .cc-plist > :first-child .ds-li { border-top: 0; padding-top: var(--space-px6); }
+.ui-root .ds-card > .cc-plist:last-child > :last-child .ds-li { padding-bottom: 0; }
+.ui-root .cc-plist .cc-pick-row--on { border-radius: 0; }
+
+/* The quiet links at a list's foot (Past clients, Add a team, Export): words with the chevron where they open more. */
+.ui-root .cc-pfoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-4);
+  margin-top: var(--space-4);
+}
+.ui-root .cc-pnote { margin: 0 0 var(--space-3); font-size: var(--fs-meta); color: var(--text-2); }
+.ui-root .cc-pnote .ds-link, .ui-root .cc-pnote .ds-btn--text { font-size: var(--fs-meta); }
+
+/* The Clients table's fields edited in place: one line with an ellipsis, as the leads table's next step (rule 7). */
+.ui-root .cc-table.cc-client-table .cc-cell { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: var(--tap-min); }
+
+/* Rows with an action at their right (Line), a setting row and a switch row inside a card on these pages: hairlines
+   between rows, none under the label, and the last row ending the card's padding (rule 13). */
+.ui-root .cc-people .ds-card .cc-line,
+.ui-root .cc-people .ds-card .cc-setrow { border-bottom: 0; border-top: var(--line-w) solid var(--line-soft); }
+.ui-root .cc-people .ds-card-head + .cc-line,
+.ui-root .cc-people .ds-card-head + .cc-setrow,
+.ui-root .cc-people .ds-card-head + .ds-rows-list > .cc-line:first-child { border-top: 0; padding-top: var(--space-px6); }
+.ui-root .cc-people .ds-card > .cc-line:last-child,
+.ui-root .cc-people .ds-card > .ds-rows-list:last-child > .cc-line:last-child { padding-bottom: 0; }
+
+/* A past client's name opens their page: the row's name at 500, underlined on hover as a list row's is. */
+.ui-root .cc-past-name { color: var(--text); font-weight: var(--fw-medium); text-decoration: none; display: inline-flex; align-items: center; min-height: var(--tap-min); }
+@media (hover: hover) {
+  .ui-root .cc-past-name:hover { text-decoration: underline; text-decoration-thickness: var(--line-w); text-underline-offset: var(--space-1); }
+}
+.ui-root .cc-past-name:focus-visible { outline: var(--focus-w) solid var(--text); outline-offset: var(--space-px2); border-radius: var(--space-1); }
+.ui-root .cc-past-switch { margin-bottom: var(--space-4); }
+
+/* "+ Add" inside a fold (a client's page): at the right, at the top of what the fold opens (rule 10's place for a list
+   whose label is the fold's own heading, which is itself the button that opens it). */
+.ui-root .cc-fold-add { display: flex; justify-content: flex-end; margin-bottom: var(--space-1); }
+
+/* A client's page: the Overview and Everything switch, then the cards and figures 24px apart (the card gap). */
+.ui-root .cc-people > .cc-tabs { margin-bottom: var(--card-gap); }
+.ui-root .cc-people .cc-stats { margin-bottom: var(--card-gap); }
+.ui-root .cc-people .cc-pins { margin-bottom: var(--space-3); }
+.ui-root .cc-people .ds-card .cc-ses-next { padding-top: var(--space-px6); }
+.ui-root .cc-people .cc-lead-acts { margin-bottom: var(--card-gap); }
+.ui-root .cc-people .ds-card .cc-lead-sum { margin-top: var(--space-px6); }
+/* On a phone a row's actions go under its words, so the grey line keeps the column's width. */
+@media (max-width: 600px) {
+  .ui-root .cc-people .ds-card .cc-line { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .cc-people .ds-card .cc-line > :last-child:not(:first-child) { justify-self: start; }
+}
+.ui-root .cc-map-deal .ds-li-value b { font-weight: inherit; }

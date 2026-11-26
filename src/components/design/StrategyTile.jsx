@@ -2,6 +2,7 @@ import { Bar } from './Stat';
 import keepWords from './keepWords';
 import { ObjectiveNumbers } from './ObjectiveNumber';
 import './design.css';
+import './planCards.css';
 
 // A Strategy's tile on the Individual Performance Plan (M1 .tile): "Serves"
 // with the objectives' circled numbers (each opens "Outcome Objective 2",
@@ -42,7 +43,10 @@ export default function StrategyTile({ strategy: s, onOpen, open = false, scoreL
       >
         <span className="ds-stile-name">{keepWords(s.name)}</span>
       </button>
-      {s.score ? (
+      {/* Never a bare 0% as its figure (rule 16; walk item 9): a sentence until something counts. */}
+      {s.score && Number(s.score.value) === 0 ? (
+        <p className="ds-stile-note">Its score starts with its first log.</p>
+      ) : s.score ? (
         <div className="ds-stile-score">
           <span className="ds-stile-score-label">{scoreLabel}</span>
           <strong className={`ds-stile-figure${s.score.good ? ' ds-stile-figure--good' : ''}`}>{s.score.value}%</strong>

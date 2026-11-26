@@ -170,6 +170,21 @@ test('a habit not logged says so, with no colour', () => {
   assert.deepEqual(habitTotal({ weekLine: '3 of 3 this week' }, { score: 84.5, notLogged: false }, 85), { label: '3 of 3', value: '85%', good: true }, 'the shown figure decides (M0.1)');
 });
 
+test('a limit with fewer than half its days logged shows its standing, never "Not logged" beside logged days (Polish 1)', () => {
+  // Late finishes: no more than 2 days a week; 2 of 5 working days logged, one of them a yes.
+  const late = { weekLine: '1 this week, no more than 2', measure: 'yes_no_days_limit', limit: 2, values: { '2026-11-16': 1, '2026-11-17': 0 } };
+  assert.deepEqual(habitTotal(late, { score: 0, notLogged: true }, 85), { label: '1, no more than 2, 2 days logged', value: '100%', good: true });
+  // Coffees: no more than 2 a day; 2 days logged with 3 and 2 (5 against 4).
+  const coffees = { weekLine: '5 this week, no more than 2 a day', measure: 'count_limit', limit: 2, values: { '2026-11-16': 3, '2026-11-17': 2 } };
+  assert.deepEqual(habitTotal(coffees, { score: 0, notLogged: true }, 85, { limitPer: 'day' }), { label: '5, no more than 2 a day, 2 days logged', value: '75%', good: false });
+  // One day only says "day".
+  assert.equal(habitTotal({ ...coffees, values: { '2026-11-16': 1 } }, { score: 0, notLogged: true }, 85, { limitPer: 'day' }).label, '5, no more than 2 a day, 1 day logged');
+  // Nothing logged at all still says so.
+  assert.equal(habitTotal({ ...late, values: {} }, { score: 0, notLogged: true }, 85).value, 'Not logged');
+  // A rating keeps its rule.
+  assert.equal(habitTotal({ weekLine: 'x', measure: 'rating', values: { '2026-11-16': 4 } }, { score: 0, notLogged: true }, 85).value, 'Not logged');
+});
+
 test('objectives: "last week" is the figure before this debrief\'s own (M9, CHOICE D3)', () => {
   const v = debriefView(m51(), { today: '2026-10-12' });
   const [clients, rating, book] = v.objectives;

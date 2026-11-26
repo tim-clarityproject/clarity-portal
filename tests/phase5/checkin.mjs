@@ -214,12 +214,23 @@ function measure({ CORAL, MINT, BANNED }) {
   const lines = root.innerText.split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
   style.remove();
   const buttons = [...root.querySelectorAll('button, a, [role=button]')].filter(vis);
-  const coralButtons = buttons.filter((el) => CORAL.includes(getComputedStyle(el).backgroundColor)).map(label);
+  // The one main button (Polish 1, 25 Nov reference): solid in the text colour (--main-bg), never coral.
+  // Chosen answers and pressed days take the same fill by the reference's own rule, so they are left out.
+  const mainProbe = document.createElement('span');
+  mainProbe.style.background = 'var(--main-bg)';
+  (root.closest('.ui-root') || document.querySelector('.ui-root') || document.body).appendChild(mainProbe);
+  const mainBg = getComputedStyle(mainProbe).backgroundColor;
+  mainProbe.remove();
+  const coralButtons = buttons.filter((el) => !el.matches('[aria-pressed], [aria-checked], [role=radio], [role=checkbox]') && (CORAL.includes(getComputedStyle(el).backgroundColor) || getComputedStyle(el).backgroundColor === mainBg)).map(label);
   const small = [];
   for (const el of root.querySelectorAll('button, a, input, textarea, [role=radio], [role=switch]')) {
     if (!vis(el) || el.disabled) continue;
     const b = el.getBoundingClientRect();
-    if (b.height >= 43.5 && b.width >= 43.5) continue;
+    // A tap area made bigger than the look by an absolute ::before or ::after (rule 4a: 40px buttons keep a 44px tap area).
+    const extra = ['::before', '::after'].map((p) => getComputedStyle(el, p)).filter((a) => a.content !== 'none' && a.position === 'absolute');
+    const tapH = Math.max(b.height, ...extra.map((a) => parseFloat(a.height) || 0));
+    const tapW = Math.max(b.width, ...extra.map((a) => parseFloat(a.width) || 0));
+    if (tapH >= 43.5 && tapW >= 43.5) continue;
     if (el.closest('label') && el.tagName !== 'INPUT') continue;
     small.push(`${label(el)} ${Math.round(b.width)}x${Math.round(b.height)}`);
   }
@@ -318,7 +329,8 @@ if (part('A')) {
     }
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
     pass('opening: "Ready to look back on your month?"', (await heading(page)) === 'Ready to look back on your month?', await heading(page));
-    pass('opening: no time on the first screen (10 Nov)', (await text(page, '.ds-guide-label')) === '', await text(page, '.ds-guide-label'));
+    // Polish 1: the small grey line over the question names the tool (GuidedTool in focus mode); never a time.
+    pass('opening: no time on the first screen (10 Nov)', !/~\d+ minutes?/.test(await text(page, '.ds-guide-page')), await text(page, '.ds-guide-label'));
     pass('opening: "Answer for the past month, on average."', (await text(page, '.ds-guide-nudge')) === 'Answer for the past month, on average.');
     pass('opening: no Skip', (await page.locator('.ds-guide-skip').count()) === 0);
     pass('opening: never last month’s scores before answering (rule 50)', !/\/100|last month/i.test(await text(page, '.ds-guide-page')));
@@ -415,7 +427,7 @@ if (part('A')) {
     pass('results: Hardware areas fold, no "Lowest" line, one lowest bar', (await page.locator('.ck-fold-line').count()) === 0 && (await page.locator('.ck-area').count()) >= 6 && (await page.locator('.ck-fold').first().locator('.ds-bar--lowest').count()) === 1);
     pass('results: no Support, any time, and no note (rule 51)', !/support|samaritans|nhs/i.test(await text(page, '.ds-guide-page')));
     await page.locator('.ds-cchart-dot').last().hover();
-    pass('results: a dot’s pop-up shows the score first', (await until(async () => /score \d+\/100/.test(await text(page, '.ds-tip:not([hidden])')), 3000)) || false);
+    pass('results: a dot’s pop-up shows the score first', (await until(async () => /score[\s\S]*?\d+\/100/i.test(await text(page, '.ds-tip:not([hidden])')), 3000)) || false);
     await page.mouse.move(5, 5);
     await checkScreen(page, 'A results 1280 dark');
 
@@ -520,9 +532,12 @@ if (part('D')) {
       const q = await checkScreen(page, `D H1 ${width} ${mode}`, { coral: 0 });
       await sleep(300);
       pass(`D ${width} ${mode}: the page follows the mode`, q.theme === mode, q.theme);
-      pass(`D ${width} ${mode}: question ${m12.question}px as M12`, Math.abs(q.sizes.question - m12.question) <= 1, q.sizes.question);
-      pass(`D ${width} ${mode}: answer rows at least M12's ${m12.answer}px`, q.sizes.answer >= m12.answer, q.sizes.answer);
-      pass(`D ${width} ${mode}: % bar ${m12.bar}px as M12`, q.sizes.bar === m12.bar, q.sizes.bar);
+      // Polish 1 (25 Nov reference, rule 1): a tool's question is 20px at every width, over M12's 24px.
+      pass(`D ${width} ${mode}: question 20px (25 Nov reference)`, Math.abs(q.sizes.question - 20) <= 0.5, q.sizes.question);
+      // Polish 1 (rule 5): answer rows are 52px on a phone and 56px on a laptop, over M12's 54px.
+      pass(`D ${width} ${mode}: answer rows at least ${phone ? 52 : m12.answer}px`, q.sizes.answer >= (phone ? 52 : m12.answer), q.sizes.answer);
+      // Polish 1 (rule 21): the progress line is 2px, over M12's 3px bar.
+      pass(`D ${width} ${mode}: progress line 2px (25 Nov reference)`, q.sizes.bar === 2, q.sizes.bar);
       await page.locator('.ds-guide-back').click();
       await until(async () => (await heading(page)) === 'Ready to look back on your month?');
       await checkScreen(page, `D opening ${width} ${mode}`);
@@ -534,7 +549,8 @@ if (part('D')) {
       }
       const s = await checkScreen(page, `D S1 ${width} ${mode}`, { coral: 0 });
       const ms = phone ? mockS.phone : mockS.desktop;
-      pass(`D ${width} ${mode}: statement ${ms.statement}px as M12`, Math.abs(s.sizes.statement - ms.statement) <= 1, s.sizes.statement);
+      // Polish 1 (rule 1): the statement reads as the step's question, 20px, over M12's 17 and 18px.
+      pass(`D ${width} ${mode}: statement 20px (25 Nov reference)`, Math.abs(s.sizes.statement - 20) <= 0.5, s.sizes.statement);
       for (let i = 0; i < 8; i += 1) {
         const cq = await currentQuestion(page);
         if (!cq) break;
@@ -598,10 +614,11 @@ if (part('C') && !others?.length) {
     await home(page);
     const homeText = await text(page, '.home-page');
     // Timed, so it waits its turn while another timed card (Daily review from 17:00, the debrief) holds Home's one card (Tim, 5 Nov).
-    const held = async () => { const q = await text(page, '.ds-suggest-question'); return q && !/first review/i.test(q) ? q : null; };
+    // Polish 1: Home's suggestion for now is the opening's one main button (its words, not M2's card question).
+    const held = async () => { const q = await text(page, '.home-page .ds-open-act .ds-btn--primary'); return q && !/first review/i.test(q) ? q : null; };
     const heldBy = await held();
     if (heldBy) results.push(`NOTE  Home: the card holds "${heldBy}", so the First review waits its turn`);
-    else pass('Home: the First review is offered', /Ready for your first review\?/.test(homeText));
+    else pass('Home: the First review is offered (“Start my first review”)', /Start my first review/.test(await text(page, '.home-page .ds-open-act')));
     await page.goto(`${APP}/monthly-review`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
     pass('first: "What would make coaching useful for you?"', (await heading(page)) === 'What would make coaching useful for you?');
@@ -618,7 +635,7 @@ if (part('C') && !others?.length) {
     pass('first: Start with my goals', (await text(page, '.ds-guide-next')).toLowerCase() === 'start with my goals');
     await nextStep(page);
     await until(async () => (await heading(page)).startsWith('In 12 months’ time'));
-    pass('G1: Your goals, the question, the nudge', (await text(page, '.ds-guide-label')) === 'Your goals' && (await text(page, '.ds-guide-nudge')) === 'Describe what you’d be doing and what others would notice.');
+    pass('G1: Your goals, the question, the nudge', (await text(page, '.ds-guide-label')).toLowerCase() === 'your goals' /* spaced capitals since Polish 1 */ && (await text(page, '.ds-guide-nudge')) === 'Describe what you’d be doing and what others would notice.', `${await text(page, '.ds-guide-label')} / ${await text(page, '.ds-guide-nudge')}`);
     await page.locator('.ds-guide-example-link').click();
     pass('G1: See an example', (await text(page, '.ds-guide-example')).startsWith('For example: '));
     pass('G1: the eye says You and Tim can see this', /you and tim can see this/i.test((await page.locator('.ds-guide-page .ds-page-aside [aria-label]').first().getAttribute('aria-label').catch(() => '')) || ''));
@@ -640,7 +657,7 @@ if (part('C') && !others?.length) {
     await home(page);
     const heldBy2 = await held();
     if (heldBy2) results.push(`NOTE  Home: the card holds "${heldBy2}", so finishing the First review waits its turn`);
-    else pass('Home: "Ready to finish your first review?"', /Ready to finish your first review\?/.test(await text(page, '.home-page')));
+    else pass('Home: “Finish my first review”', /Finish my first review/.test(await text(page, '.home-page .ds-open-act')));
     if (heldBy2) await page.goto(`${APP}/monthly-review`);
     else await page.locator('button', { hasText: 'Finish my first review' }).first().click();
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });

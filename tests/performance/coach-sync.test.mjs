@@ -180,7 +180,7 @@ test('the next-call bar from the coach’s own calls: 8 minutes before, coral fr
   assert.deepEqual([barAt('12:30').words, barAt('12:30').coral], ['is starting now', true]);
   assert.equal(barAt('12:39').words, 'started 9 minutes ago');
   assert.equal(barAt('12:41'), null, '11 minutes in: gone');
-  // Only calls: the Admin block at 12:25 never shows. A Chemistry Call has no session and no brief.
+  // Only calls: the Admin block at 12:25 never shows. A Discovery call has no session and no brief.
   const chemBar = barAt('14:55');
   assert.deepEqual([chemBar.name, chemBar.sessionId, chemBar.zoom], ['Grace Liu', null, null]);
   // A session with no calendar item (added from a client's page) shows too, with its own link.
@@ -244,8 +244,8 @@ test('the reminders server function: one send a call and a kind, the right email
   // Someone who booked on a booking page: their own words, and their own link to move or cancel.
   const key = UID(77);
   const guest = cal.remindersToSend([coming({ guest_key: key, person_name: 'Grace Liu' })], now)[0];
-  const booked = reminderEmail(guest, { origin, callName: 'Chemistry Call', now: new Date(now) });
-  assert.match(booked.subject, /^Your Chemistry Call with Tim is tomorrow at 9:00 am New York time$/);
+  const booked = reminderEmail(guest, { origin, callName: 'Discovery call', now: new Date(now) });
+  assert.match(booked.subject, /^Your Discovery call with Tim is tomorrow at 9:00 am New York time$/);
   assert.match(booked.text, new RegExp(`${origin}/book/mine/${key}`));
   assert.doesNotMatch(booked.text, /coaching session|prep/);
   const bookedHour = reminderEmail({ ...guest, kind: 'hour_before' }, { origin });

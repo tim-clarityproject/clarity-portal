@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { idFromAddress } from '../../lib/coach/address';
-import { AddButton, Button, Dropdown, InlineChoice, PageHeader, SlidePanel, Stat, StatGroup, TextField, useToast } from '../../components/design';
+import { Button, Dropdown, InlineChoice, PageHeader, SlidePanel, Stat, StatGroup, TextField, useToast } from '../../components/design';
+import { AddLink, Card, Empty, PageOpening } from '../../components/design/Blocks';
+import { PEOPLE } from '../../content/pageLines/coach';
+import './people.css';
 import { newId, removeRow, rowsOf, saveRow } from '../../lib/coach/store';
 import { clean, firstName, isEmail, possessive, sessionsLeft } from '../../lib/coach/model';
 import { lengthPlace, nextSession, whenWords, withSessions } from '../../lib/coach/day';
-import { Back, Line, TextLink, useCoachPortal, Part } from './parts';
+import { Back, Line, TextLink, useCoachPortal } from './parts';
 import { AddSessionPanel, SessionRows } from './sessionParts';
 import { currentEngagement } from './clientData';
 import { draftFrom, EngagementPanel } from './ClientPage';
@@ -55,10 +58,10 @@ export default function GroupPage() {
   };
   return (
     <div className="cc-page">
-      <div className="cc-col">
+      <div className="cc-col cc-people">
         <Back onClick={() => navigate('/coach/clients?tab=groups')} />
-        <PageHeader title={group.name} meta={[org?.name, countWords(members.length, 'person', 'people')]} />
-        <Part title="Next group session">
+        <PageOpening label={[org?.name, countWords(members.length, 'person', 'people')].filter(Boolean).join(', ')} title={group.name} line={PEOPLE.groupLine} />
+        <Card label="Next group session">
           {next ? (
             <div className="cc-ses-next">
               <span><b>{whenWords(next.starts_at, todayKey)}</b><small>{lengthPlace(next)}</small></span>
@@ -67,20 +70,21 @@ export default function GroupPage() {
           ) : (
             <p className="cc-quiet cc-ses-none"><span>No session is booked.</span><TextLink onClick={() => navigate('/coach/calendar/book', { state: { groupId: group.id } })}>Book a call</TextLink><TextLink onClick={() => setAddingSession(true)}>Add session</TextLink></p>
           )}
-        </Part>
+        </Card>
         {sessions && <StatGroup className="cc-stats"><Stat label="Group sessions left" value={`${sessions.left} of ${sessions.total}`} bar={sessions.total ? sessions.left / sessions.total : 0} /></StatGroup>}
         <div className="cc-acts">
           <TextLink onClick={() => setEngDraft(draftFrom(engagement))}>{engagement ? 'Edit the group’s engagement' : 'Add the group’s engagement'}</TextLink>
         </div>
-        <Part title="Members">
-          {members.length === 0 && <p className="cc-quiet">Nobody is in this group yet.</p>}
+        <Card label="Members" add={<AddLink label="Add member" onClick={() => setAdding(true)} />}>
+          {members.length === 0 && <Empty>The people in this group will appear here once you add them.</Empty>}
+          <div className="ds-rows-list">
           {members.map((m) => {
             const own = m.counts_against === 'own';
             const first = firstName(m.name);
             return (
               <Line
                 key={m.id}
-                title={m.profile_id ? <button type="button" className="cc-table-name" onClick={() => navigate(`/coach/clients/${m.profile_id}`)}>{m.name}</button> : m.name}
+                title={m.profile_id ? <a href={`/coach/clients/${m.profile_id}`} className="cc-past-name" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); navigate(`/coach/clients/${m.profile_id}`); }}>{m.name}</a> : m.name}
                 small={own ? `Counts against ${possessive(first)} own engagement` : 'Counts against the group’s engagement'}
               >
                 <span className="cc-line-actions">
@@ -90,12 +94,12 @@ export default function GroupPage() {
               </Line>
             );
           })}
-          <div className="cc-add"><AddButton onClick={() => setAdding(true)}>Add member</AddButton></div>
-        </Part>
-        <Part title="Sessions and recaps">
-          <div className="cc-add"><AddButton onClick={() => setAddingSession(true)}>Add session</AddButton></div>
+          </div>
+        </Card>
+        <Card label="Sessions and recaps" add={<AddLink label="Add session" onClick={() => setAddingSession(true)} />}>
+          {mySessions.length === 0 && <Empty>The group’s coaching sessions and their recaps will appear here.</Empty>}
           <SessionRows sessions={mySessions} people={members.length} label="Group sessions" />
-        </Part>
+        </Card>
         <div className="cc-acts">
           <TextLink onClick={() => done(async () => { for (const m of members) await removeRow(userId, 'coach_group_members', m.id); await removeRow(userId, 'coach_groups', group.id); return 'saved'; }, 'Deleted', async () => { await saveRow(userId, 'coach_groups', group); for (const m of members) await saveRow(userId, 'coach_group_members', m); }).then((ok) => { if (ok) navigate('/coach/clients?tab=groups'); })}>Delete this group</TextLink>
         </div>

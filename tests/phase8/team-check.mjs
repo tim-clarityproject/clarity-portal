@@ -178,10 +178,10 @@ async function run(browser, width) {
   pass(`${tag}: the tool carries on with the same five people`, await until(async () => (await rowWords()).length === 5, 8000));
   await pressNext(page);
   await onQuestion(page, 'How much does “Priya Shah” trust you as their leader?');
-  pass(`${tag}: “Person 1 of 5” above the question`, (await page.locator('.ds-guide-label').innerText()).trim() === 'Person 1 of 5');
+  pass(`${tag}: “Person 1 of 5” above the question`, (await page.locator('.ds-guide-label').textContent()).trim() === 'Person 1 of 5');
   pass(`${tag}: the % bar reads 7`, (await page.locator('.ds-guide-pct').getAttribute('aria-valuenow')) === '7');
   pass(`${tag}: trust is five levels, lowest first, each with its line`, JSON.stringify((await page.locator('.ds-guide-body .ds-answer').allInnerTexts()).map((t) => t.split('\n')[0].trim())) === JSON.stringify(['Silent resistance', 'Open resistance', 'Uncommitted', 'Token cheerleader', 'Committed']) && (await page.locator('.ds-answer-hint').count()) === 5);
-  pass(`${tag}: a one-answer question has no bottom bar, no Skip and no eye`, (await page.locator('.ds-guide-foot').count()) === 0 && (await page.locator('.ds-guide-skip').count()) === 0 && (await page.locator('.ds-guide-question .ds-who').count()) === 0);
+  pass(`${tag}: a one-answer question has no Next and no eye (focus mode: Back and Finish later in the foot)`, (await page.locator('.ds-guide-next').count()) === 0 && (await page.locator('.ds-guide-question .ds-who').count()) === 0);
   await checkScreen(page, `${tag}, trust`, { coral: 0 });
   await shot('trust');
   // One tap: shown as chosen at once, then on by itself.
@@ -206,7 +206,7 @@ async function run(browser, width) {
   await shot('autonomy');
   await sleep(450);
   await page.locator('.ds-guide-body .ds-answer').nth(3).click();
-  pass(`${tag}: then the next person`, await onQuestion(page, 'How much does “Tom Ellis” trust', 5000) && (await page.locator('.ds-guide-label').innerText()).trim() === 'Person 2 of 5');
+  pass(`${tag}: then the next person`, await onQuestion(page, 'How much does “Tom Ellis” trust', 5000) && (await page.locator('.ds-guide-label').textContent()).trim() === 'Person 2 of 5');
 
   // A refresh part-way: the same question, with the answers so far ("Draft restored").
   await page.reload();
@@ -272,14 +272,18 @@ async function run(browser, width) {
       colours: [...tr.querySelectorAll('.ds-stepbars')].map((b) => getComputedStyle(b.querySelector('.ds-stepbars-on')).backgroundColor.replace(/\s+/g, '')),
     })),
     wide: t.scrollWidth - t.parentElement.clientWidth,
+    // Polish 1 (25 Nov): coral is for mistakes only, so --coral-text draws the
+    // "needs you" mark in the text colour; read the token's own colour here.
+    lowColour: (() => { const p = document.createElement('i'); p.style.background = 'var(--coral-text)'; t.appendChild(p); const c = getComputedStyle(p).backgroundColor.replace(/\s+/g, ''); p.remove(); return c; })(),
   }));
   pass(`${tag}: the table’s columns are Person, Alignment and Autonomy`, JSON.stringify(table.heads) === JSON.stringify(['Person', 'Alignment', 'Autonomy']));
   pass(`${tag}: one row per person with thin five-step bars, and the words for screen readers`, JSON.stringify(table.rows.map((r) => [r.name, ...r.bars, ...r.words])) === JSON.stringify([
     ['Priya Shah', '4good', '4good', 'Very well', 'A lot'], ['Tom Ellis', '4good', '3', 'Very well', 'A moderate amount'], ['Grace Okafor', '5good', '2', 'Extremely well', 'A little'],
     ['Daniel Reyes', '2low', '4', 'Slightly well', 'A lot'], ['Leila Haddad', '2', '2', 'Slightly well', 'A little'],
   ]), JSON.stringify(table.rows.map((r) => [r.name, ...r.bars])));
-  const coralBar = phone ? 'rgb(194,65,46)' : 'rgb(255,111,92)';
-  pass(`${tag}: coral marks the Alignment of the person in Chaotic only`, table.rows[3].colours[0] === coralBar && table.rows.every((r, i) => i === 3 || r.colours[0] !== coralBar), JSON.stringify(table.rows.map((r) => r.colours)));
+  // Polish 1 (25 Nov): the mark is --coral-text, which is now the text colour (coral is for mistakes only).
+  const coralBar = table.lowColour;
+  pass(`${tag}: the “needs you” colour marks the Alignment of the person in Chaotic only`, table.rows[3].colours[0] === coralBar && table.rows.every((r, i) => i === 3 || r.colours[0] !== coralBar), JSON.stringify(table.rows.map((r) => r.colours)));
   pass(`${tag}: Autonomy is never coral, and a Chaotic person’s is grey`, table.rows.every((r) => r.colours[1] !== coralBar) && table.rows[3].colours[1] === table.rows[1].colours[1], JSON.stringify(table.rows.map((r) => r.colours[1])));
   pass(`${tag}: the table never runs off the side`, table.wide <= 0, `${table.wide}px`);
   await checkScreen(page, `${tag}, your team with the table`, { back: false });
@@ -380,7 +384,7 @@ async function run(browser, width) {
   pass(`${tag}: the list opens from the results with “Save my edit”`, (await page.locator('.ds-guide-next').innerText()).trim().toUpperCase() === 'SAVE MY EDIT');
   await addPerson(page, 'Sam Carter', 'Head of Marketing');
   await pressNext(page);
-  pass(`${tag}: the new person’s three questions come next`, await onQuestion(page, 'How much does “Sam Carter” trust', 8000) && (await page.locator('.ds-guide-label').innerText()).trim() === 'Person 6 of 6');
+  pass(`${tag}: the new person’s three questions come next`, await onQuestion(page, 'How much does “Sam Carter” trust', 8000) && (await page.locator('.ds-guide-label').textContent()).trim() === 'Person 6 of 6');
   await rateTeam(page, { people: [{ name: 'Sam Carter', t: [3], a: [5], u: [5] }] });
   pass(`${tag}: then the results, with six dots`, (await dots(page)) === 6);
   pass(`${tag}: the headline counts the new person`, (await page.locator('.ds-headline').innerText()).replace(/\s+/g, ' ').trim() === '2 of your 6 people are in the high-performance area right now.');
@@ -395,7 +399,7 @@ async function run(browser, width) {
 
   // ---- close: saved as finished, listed, and opens on its results
   await sleep(600);
-  await page.getByRole('button', { name: 'Close', exact: true }).first().click();
+  await page.getByRole('button', { name: /^Close( and save my place)?$/ }).first().click();
   pass(`${tag}: closing says “Saved”`, await sawToast(page, 'Saved'));
   await page.waitForURL(/\/interpersonal$/, { timeout: 15000 });
   records = await kept(page);
@@ -426,7 +430,7 @@ async function run(browser, width) {
   await page.getByText(`${MONTH} team check`).first().click();
   await until(async () => (await dots(page)) === 5, 15000);
   await sleep(600);
-  await page.getByRole('button', { name: 'Close', exact: true }).first().click();
+  await page.getByRole('button', { name: /^Close( and save my place)?$/ }).first().click();
   await page.waitForURL(/\/my-plans/, { timeout: 15000 });
 
   // ---- the next check: the same people, nothing answered, and "your last check, in October"
@@ -465,7 +469,7 @@ async function run(browser, width) {
   await sleep(300);
   await shot('your-team-questions');
   await sleep(300);
-  await page.getByRole('button', { name: 'Close', exact: true }).first().click();
+  await page.getByRole('button', { name: /^Close( and save my place)?$/ }).first().click();
   await sawToast(page, 'Saved');
   await page.waitForURL(/\/interpersonal$/, { timeout: 15000 });
 
@@ -499,7 +503,7 @@ async function run(browser, width) {
   await onQuestion(other, 'Who reports to you?');
   await addPerson(other, 'Tab Two Person', 'Head of nothing');
   await sleep(1800); // its draft is kept on the device
-  await page.locator('.account-signout .ds-signout').first().click();
+  await page.locator('.acct-foot button').filter({ hasText: /^Sign out$/ }).first().click(); // Polish 1: My Account's Profile tab (was .account-signout)
   const signedOut = await until(async () => /\/auth\/|\/sign-in|\/login/.test(new URL(page.url()).pathname), 30000);
   pass(`${tag}: Sign out signs out`, Boolean(signedOut), page.url());
   await until(async () => /\/auth\/|\/sign-in|\/login/.test(new URL(other.url()).pathname), 15000);

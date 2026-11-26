@@ -4,10 +4,11 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useDraft } from '../lib/drafts';
 import DesignHeader from '../components/DesignHeader';
-import pageText from '../content/pageText';
-import { Loading, PageHeader, TextField, Button, useToast } from '../components/design';
+import { Loading, TextField, Button, useToast, PageOpening } from '../components/design';
 import { BackLink } from '../components/ui/DiscardLink';
 import { limitName, NAME_MAX, NAME_TOO_LONG } from '../lib/nameLimit';
+import { B1_LINES } from '../content/pageLines/client';
+import '../pages/hubs/clientPage.css';
 
 export default function EditPersonalDetails() {
   const navigate = useNavigate();
@@ -234,33 +235,36 @@ export default function EditPersonalDetails() {
 
         .edit-profile-note {
           font-family: var(--font-body);
-          font-size: calc(12 * var(--u, 1px));
+          font-size: var(--fs-meta);
           color: var(--label);
           margin-top: 6px;
         }
 
         .ui-root .edit-profile-save {
-          width: 100%;
-          margin-top: 26px;
+          margin-top: var(--space-4);
+        }
+
+        @media (max-width: 1023px) {
+          .ui-root .edit-profile-save { width: 100%; }
         }
       `}</style>
 
       <DesignHeader />
 
       <div className="edit-profile-content">
-        <div className="edit-profile-column">
+        <div className="edit-profile-column cp-page">
           {/* The shared Back: chevron on the column's edge, 10px before its word (tidy pass item 17). */}
           <div className="edit-profile-back">
             <BackLink onClick={goBack} />
           </div>
 
-          <PageHeader title="Edit Profile" info={pageText.editPersonalDetails} />
+          <PageOpening title="Edit Profile" line={B1_LINES.profile} />
 
           {isLoading ? (
             <div className="edit-profile-loading"><Loading label="Loading your profile" /></div>
           ) : (
             <>
-              <div className="edit-profile-field" style={{ marginTop: '32px' }}>
+              <div className="edit-profile-field">
                 <TextField
                   id="edit-first-name"
                   label="First name"

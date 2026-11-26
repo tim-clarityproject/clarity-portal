@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AddButton, Button, Chevron, Chip, ChipRow, DatePicker, Dropdown, PageHeader, SlidePanel, TextField, useIsPhone } from '../../components/design';
+import { AddButton, Button, Chevron, Chip, ChipRow, DatePicker, Dropdown, PageOpening, SlidePanel, TextField, useIsPhone } from '../../components/design';
+import { OPEN_FOR_CALLS_LINE } from '../../content/pageLines/coach';
 import { addDays, dayKeyWords, wallClock } from '../../lib/time/index.js';
 import {
   COPY_LAST_WEEK, copyLastWeek, daysTitle, dragOpen, hoursWindow, OPEN_TITLE, openLine, openPageEntries, openTyped, openWeeks, placeOpen, removeOpenPlan, timesAt, viewRange,
@@ -78,7 +79,7 @@ export default function OpenForCalls() {
     <div className="cc-page">
       <div className="cc-col cc-cal-page cc-cal-page--wide cc-open-page">
         <Back to="Calendar" onClick={() => navigate('/coach/calendar')} />
-        <PageHeader title={OPEN_TITLE} />
+        <PageOpening title={OPEN_TITLE} line={OPEN_FOR_CALLS_LINE} />
         <div className="cc-cal-bar cc-open-bar">
           <div className="cc-cal-nav">
             <span className="cc-cal-stepper">

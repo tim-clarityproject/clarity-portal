@@ -434,9 +434,10 @@ function objectiveRows(d, today, sprint, weeks) {
       improving: Boolean(result.improving && better),
       change: better ? delta : 0,
       notMoving: Boolean(result.notMoving),
+      // Each figure once (walk item 16): the figure itself shows on its row under Objectives and Strategies.
       stillWords: objective.kind === 'rating'
-        ? `Your rating is still “${objectiveFigure(objective, result.current)}” this sprint, while the work behind it is on track.`
-        : `The number is still ${objectiveFigure(objective, result.current)} this sprint, while the work behind it is on track.`,
+        ? 'Your rating hasn’t moved this sprint, while the work behind it is on track.'
+        : 'The number hasn’t moved this sprint, while the work behind it is on track.',
     };
   });
 }
@@ -615,7 +616,7 @@ function winsRow(d, sprint, here) {
     key: 'wins',
     title: 'Unplanned wins',
     // The figure is the count; the line says only what it can't (5e rule 9).
-    line: n ? `Your latest was “${wins[0].what}”.` : null,
+    line: n ? `Your latest was “${String(wins[0].what).trim().replace(/[.!?]+$/, '')}”.` : null,
     figure: n ? { text: String(n) } : null,
     mini: weeklyMini(here, (w) => wins.filter((x) => w.days?.includes(x.local_date)).length, (v) => v >= 1, 3),
     items: wins.map((w) => ({ key: w.id, text: w.what, served: served(w.id), date: w.local_date })),

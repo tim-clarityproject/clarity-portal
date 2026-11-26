@@ -1,8 +1,9 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { B3_LINES } from '../../content/pageLines/client';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import {
+import { PageOpening,
   AddButton, BottomBar, Button, CalmCard, LoadError, Loading, OfferRow, OneOffTip, PageHeader, PdfPanel, PlayButton, ResultsSection,
   TitleIcons, VersionList, VersionRow, WhoSees, useCoachName, useOffer, useToast,
 } from '../../components/design';
@@ -24,6 +25,7 @@ import {
 import { BackLink, ExampleReport, GuidePanel, HealthCheckCompare, HealthCheckResults, HealthCheckTool } from '../healthCheck';
 import TextField from '../../components/design/TextField';
 import './inside.css';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 
 // The Strategic Alignment Health Check inside the portal (mock-up M7
 // version 8.2, read in full with its notes): Your teams, each with its dated
@@ -346,7 +348,7 @@ function TeamsPage({ store }) {
 
   return (
     <Frame>
-      <PageHeader title={TITLE} aside={icons} />
+      <PageOpening title={TITLE} aside={icons} line={B3_LINES.strategicAlignment} />
       {offer}
       {tip && <OneOffTip onClose={closeTip}>{tip.text}</OneOffTip>}
       {teams.map((t) => (
@@ -517,13 +519,13 @@ function Version({ store, start, team }) {
     });
   }, []);
 
-  const keep = async (status, { quiet = false } = {}) => {
+  const keep = async (status, { quiet = false, words = 'Saved' } = {}) => {
     const now = itemRef.current;
     try {
       const result = await save(now, status, stepRef.current || stepToJson(at('objective')));
       const createdAt = now.createdAt || result.row.created_at;
       setItem((s) => ({ ...s, status, createdAt, row: result.row }));
-      if (!quiet) toast.show(result.status === 'queued' ? 'Will sync' : 'Saved');
+      if (!quiet) toast.show(result.status === 'queued' ? 'Will sync' : words);
       return true;
     } catch (error) {
       if (error?.superseded) return false; // said by the page's own message
@@ -577,7 +579,7 @@ function Version({ store, start, team }) {
         navigate(BASE, { replace: true });
         return;
       }
-      if (await keep('draft')) {
+      if (await keep('draft', { words: TOOL_CLOSED })) {
         forget({ done: false });
         navigate(BASE, { replace: true });
       }

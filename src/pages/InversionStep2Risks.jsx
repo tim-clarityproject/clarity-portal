@@ -5,13 +5,10 @@ import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
 import { clearDraft as forgetDraft, useDraft } from '../lib/drafts';
-import DesignHeader from '../components/DesignHeader';
-import PhoneActionBar from '../components/ui/PhoneActionBar';
-import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
+import FormTool from './toolFocus/FormTool';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import pageText from '../content/pageText';
-import { PageHeader, TextBox, AddButton, Button, useToast } from '../components/design';
+import { TextBox, AddButton, IconButton, useToast } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -20,14 +17,6 @@ const MAX_NAME_LENGTH = 60;
 // the saved decision, or "new" for one not saved yet.
 function forgetInversionDrafts(userId, recordKey) {
   [1, 2, 3].forEach((step) => forgetDraft(userId, `inversion-${step}:${recordKey}`));
-}
-
-function BinIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.6 8h6.8l.6-8M6.8 7v3.5M9.2 7v3.5" />
-    </svg>
-  );
 }
 
 function suggestNameFrom(goal) {
@@ -163,48 +152,28 @@ export default function InversionStep2Risks() {
     });
   };
 
-  const actionButtons = (
-    <>
-      <Button variant="primary" disabled={!canContinue || isSaving} onClick={goContinue}>
-        Continue
-      </Button>
-      <Button variant="outline" disabled={isSaving} onClick={() => setNameDialog('draft')}>
-        Save as draft
-      </Button>
-    </>
-  );
+  const [asked, setAsked] = useState(false);
 
   return (
     <div className="ui-root">
-      <DesignHeader />
-      <style>{`
-        .ui-root .inv-risk-row { display: flex; align-items: flex-start; gap: var(--space-2); }
-        .ui-root .inv-risk-row .plan-obj-num { flex: 0 0 28px; padding-top: 19px; }
-        .ui-root .inv-risk-row > .ds-textbox-field { flex: 1 1 auto; min-width: 0; }
-        .ui-root .inv-risk-row .ds-text { min-width: 0; width: 100%; box-sizing: border-box; }
-        .ui-root .inv-risk-row .plan-bin-btn { flex: 0 0 44px; margin-top: 7px; }
-      `}</style>
-
-      <div className="plan-page plan-page--form">
-        <div className="plan-back-row">
-          <BackLink onClick={handleBack} />
-        </div>
-
-        <div className="plan-header">
-          <PageHeader title="Pre-mortem" info={pageText.inversionStep2Risks} meta={['Step 2 of 3']} />
-          <div className="inv-stepper">
-            <div className="inv-stepper-lines" aria-hidden="true">
-              <i className="on" />
-              <i className="on" />
-              <i />
-            </div>
-          </div>
-          <h2 className="ds-question">List all the ways you could mess this up</h2>
-        </div>
-
+      <FormTool
+        name="Pre-mortem"
+        step={2}
+        steps={3}
+        question="How could this go wrong?"
+        hint="List all the ways you could mess this up."
+        onNext={() => { if (!canContinue) { setAsked(true); return; } if (!isSaving) goContinue(); }}
+        need={asked && !canContinue ? 'Type at least one risk to carry on.' : ''}
+        onBack={handleBack}
+        saveError={saveError}
+        onSaveDraft={() => { if (!isSaving) setNameDialog('draft'); }}
+        onDiscard={() => setDiscardOpen(true)}
+        closeTo="/personal/plan"
+      >
         {risks.map((risk, index) => (
-          <div className="plan-obj-row inv-risk-row" key={index}>
-            <span className="plan-obj-num">{index + 1}.</span>
+          // The rows have no ids of their own; their order is their identity.
+          // eslint-disable-next-line react/no-array-index-key
+          <div className="ft-row" key={index}>
             <TextBox
               lines="one"
               placeholder="Type here"
@@ -212,31 +181,13 @@ export default function InversionStep2Risks() {
               value={risk}
               onChange={(v) => changeRisk(index, v)}
             />
-            <button
-              type="button"
-              className="plan-bin-btn"
-              aria-label={`Remove risk ${index + 1}`}
-              disabled={risks.length <= 2}
-              onClick={() => removeRisk(index)}
-            >
-              <BinIcon />
-            </button>
+            {risks.length > 2 && <IconButton label={`Remove risk ${index + 1}`} onClick={() => removeRisk(index)} />}
           </div>
         ))}
         <AddButton onClick={addRisk}>
           Add risk
         </AddButton>
-
-        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
-
-        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
-
-        <div className="plan-discard-row">
-          <DiscardLink onClick={() => setDiscardOpen(true)} />
-        </div>
-      </div>
-
-      <PhoneActionBar>{actionButtons}</PhoneActionBar>
+      </FormTool>
 
       <NameDialog
         open={nameDialog === 'draft'}

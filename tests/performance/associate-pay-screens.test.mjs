@@ -138,7 +138,7 @@ test('Lead reports: pipeline, likely by stage, win rate, time to win, sources an
   assert.equal(r.winRate, '67%'); // 2 won, 1 gone cold, in the last 12 months
   assert.equal(r.timeToWin, '25 days'); // 20 and 30 days
   assert.deepEqual(r.byStage.map((x) => [x.name, x.valueWords, x.count]), [['New', '£8,400', 1], ['Call booked', '£6,200', 1], ['Proposal sent', '£18,960', 1]]);
-  assert.deepEqual(r.sources.map((x) => [x.name, x.words]), [['Chemistry Calls', '1 won'], ['Referrals', '1 won']]);
+  assert.deepEqual(r.sources.map((x) => [x.name, x.words]), [['Discovery calls', '1 won'], ['Referrals', '1 won']]);
   assert.deepEqual(r.referrers.map((x) => [x.name, x.line, x.right]), [['Ruth Adeyemi', '1 introduction, won', '£10,480'], ['David Stark', '1 introduction', 'Thank them']]);
   const empty = p.leadReport({ leads: [], stages, today: '2026-11-17' });
   assert.deepEqual([empty.pipeline, empty.winRate, empty.timeToWin, empty.sources, empty.referrers], ['£0', null, null, [], []]);

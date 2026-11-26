@@ -202,3 +202,20 @@
 .ui-root .cc-today-week .ds-card-head > .ds-more, .ui-root .cc-today-heads > .ds-addrow { min-width: var(--tap-min); justify-content: flex-end; }
 /* A card's last row ends the card's padding (no space under it), so one that opens something keeps a 44px tap area. */
 .ui-root .cc-today-col .ds-card > .ds-rows-list:last-child > .ds-li--go:last-child { min-height: var(--tap-min); }
+/* This month with nothing settled yet (B5; Tim's walk, item 9): a sentence in the row size, never a bare £0. */
+.ui-root .cc-today-month-none { margin: var(--space-1) 0 var(--space-3); font-size: var(--fs-text); line-height: 1.55; color: var(--text); }
+/* Today's one main action (Tim's walk, item 23): the button, then quiet links beside it ("Close my day", "Not now"); on a
+   phone the button spans the column and the links sit centred under it, words only (rule 11). */
+.ui-root .cc-today-act { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.ui-root .cc-today-act > .ds-more { min-height: var(--tap-min); }
+@media (max-width: 600px) {
+  .ui-root .cc-today-act { flex-direction: column; align-items: stretch; gap: 0; }
+  .ui-root .cc-today-act > .ds-btn { width: 100%; }
+  .ui-root .cc-today-act > .ds-more { justify-content: center; }
+}
+/* The quiet lines belong to the opening: the first card sits 32px under them, as under the opening (Tim's walk, item 22). */
+.ui-root .cc-today-quiet { margin: calc(-1 * var(--space-3)) 0 var(--space-5); }
+/* View all and + Add at a card's label (B5): their 44px tap areas reach up into the card's padding, never down into the
+   first row (which has its own), with the words on the label's line. */
+.ui-root .cc-today-heads, .ui-root .cc-list-adds { margin: calc(var(--fs-meta) * 1.3 - var(--tap-min)) 0 0; align-items: flex-end; }
+.ui-root .cc-today-heads > :is(.ds-more, .ds-addrow), .ui-root .cc-list-adds > .ds-addrow { align-items: flex-end; }

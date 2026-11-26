@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { AddButton, Button, Dropdown, ErrorMessage, InlineChoice, PageHeader, SearchField, SlidePanel, SwitchRow, TextField, useColourMode, useIsPhone, useToast } from '../../components/design';
+import { AddButton, Button, Card, Dropdown, ErrorMessage, InlineChoice, PageOpening, Row, SearchField, SlidePanel, SwitchRow, TextField, useColourMode, useIsPhone, useToast } from '../../components/design';
 import { zonePlace, isZone } from '../../lib/time';
 import { parseDbTimestamp, getLocalDateKey } from '../../lib/dateFormatter';
 import { newId, removeRow, rowsOf, saveRow, keyOf } from '../../lib/coach/store';
@@ -9,6 +9,7 @@ import { addCoach, decideProfile, saveCapacity, saveCoachDetails, saveCoachFacts
 import { capacityFromTyped } from '../../lib/coach/day';
 import { clean, coverState, dayWords, hoursWords, isEmail, NOTIFICATION_KINDS, notificationOn, parseHours, rangeWords, START_ZONES } from '../../lib/coach/model';
 import { SETTINGS_SECTIONS } from '../../lib/coach/navigation';
+import { SETTINGS_LINE, settingsSectionLine } from '../../content/pageLines/coach';
 import { Back, Line, MenuItem, PopMenu, SettingRow, TextLink, useCoachPortal } from './parts';
 import { supabase } from '../../lib/supabase';
 import { needsConnection, isOffline } from '../../lib/friendlyError';
@@ -852,16 +853,20 @@ export default function Settings() {
   const chosen = known || (isPhone ? null : sections[0]);
   const Pane = chosen ? PANES[chosen.key] : null;
 
+  // Each section is a real link (rule 19): a plain click opens it here, a modified or middle click in a new tab.
+  const go = (e, key) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    navigate(`/coach/settings/${key}`);
+  };
   if (isPhone && !chosen) {
     return (
       <div className="cc-page">
         <div className="cc-col">
-          <PageHeader title="Settings" />
-          <div className="cc-rows">
-            {sections.map((s) => (
-              <button key={s.key} type="button" className="cc-row" onClick={() => navigate(`/coach/settings/${s.key}`)}><span><b>{s.label}</b></span><span /></button>
-            ))}
-          </div>
+          <PageOpening title="Settings" line={SETTINGS_LINE} />
+          <Card className="cc-part cc-set-list" aria-label="Settings sections">
+            {sections.map((s) => <Row key={s.key} name={s.label} href={`/coach/settings/${s.key}`} onClick={(e) => go(e, s.key)} />)}
+          </Card>
         </div>
       </div>
     );
@@ -871,7 +876,7 @@ export default function Settings() {
       <div className="cc-page">
         <div className="cc-col">
           <Back to="Settings" onClick={() => navigate('/coach/settings')} />
-          <PageHeader title={chosen.label} />
+          <PageOpening title={chosen.label} line={settingsSectionLine(chosen.label)} />
           <div className="cc-settings"><section className="cc-setpane" aria-label={chosen.label}><Pane /></section></div>
         </div>
       </div>
@@ -880,11 +885,11 @@ export default function Settings() {
   return (
     <div className="cc-page">
       <div className="cc-col cc-col--wide">
-        <PageHeader title="Settings" />
+        <PageOpening title="Settings" line={SETTINGS_LINE} />
         <div className="cc-settings">
           <nav className="cc-setnav" aria-label="Settings sections">
             {sections.map((s) => (
-              <button key={s.key} type="button" className="cc-setnav-item" aria-current={s.key === chosen.key ? 'true' : undefined} onClick={() => navigate(`/coach/settings/${s.key}`)}>{s.label}</button>
+              <a key={s.key} href={`/coach/settings/${s.key}`} className="cc-setnav-item" aria-current={s.key === chosen.key ? 'page' : undefined} onClick={(e) => go(e, s.key)}>{s.label}</a>
             ))}
           </nav>
           <section className="cc-setpane ds-section" aria-labelledby="cc-set-h">

@@ -1,6 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { AddButton, Button, IconButton, InlineChoice, Loading, PageHeader, SearchField, useIsPhone, useToast } from '../../components/design';
+import { IconButton, Loading, useIsPhone, useToast } from '../../components/design';
+import { AddLink, Card, CardHead, Empty, MoreLink, PageOpening, QuickAdd, SectionTabs } from '../../components/design/Blocks';
+import { PEOPLE } from '../../content/pageLines/coach';
+import { whenWords } from '../../lib/coach/day';
 import { useToastAbove } from '../../components/design/toastAbove';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { keyOf, newId, removeRow, rowsOf, saveRow } from '../../lib/coach/store';
@@ -9,11 +12,11 @@ import {
   dayWords, engagementLine, fieldFromTyped, fieldValue, fieldWords, filterClients, filterCount, likelyDuplicates,
   listFromView, sortClients, sortOptions, stageBeside, stageLabel, stageMove, STAGES, workshopCounts,
 } from '../../lib/coach/model';
-import { EditCell, MenuItem, MenuLabel, PopMenu, Row, TextLink, useCoachPortal, useNarrowerThan } from './parts';
+import { EditCell, MenuItem, MenuLabel, PopMenu, TextLink, useCoachPortal, useNarrowerThan } from './parts';
+import { BarDrop, ListBar, PersonRow } from './peopleParts';
 import { useClientRows } from './clientData';
-import { AddClientPanel, AddGroupPanel, AddTeamPanel, AddWorkshopPanel, ExportPanel, FilterPanel, MergePanel } from './ClientPanels';
+import { AddClientPanel, AddGroupPanel, AddTeamPanel, AddWorkshopPanel, ExportPanel, FilterPanel, MergePanel, useQuickAddClient } from './ClientPanels';
 import { FieldPanel } from './Settings';
-import { UnderTabs } from './todoParts';
 import RenewalsTab from './Renewals';
 import './leftovers.css';
 import { countFigure, countWords } from '../../lib/coach/numbers';
@@ -153,6 +156,11 @@ export default function Clients() {
   }, [location.state?.open]);
   const [field, setField] = useState(null);
   const [mergePair, setMergePair] = useState(null);
+  // "+ Add" by the list's label opens Quick Add (polish 1, rule 10): a name and Enter; "Add their details too" opens
+  // the whole Add client form with the name carried over.
+  const [adding, setAdding] = useState(false);
+  const [addName, setAddName] = useState('');
+  const quickAddClient = useQuickAddClient();
 
   const { rows, packs, entries, values } = useClientRows();
   const ctx = useMemo(() => ({ fields, values, packs, entries, tags, organisations, now: new Date() }), [fields, values, packs, entries, tags, organisations]);
@@ -328,28 +336,50 @@ export default function Clients() {
   );
   const menuRow = menu?.startsWith('card:') ? shown.find((r) => r.profile.id === menu.slice(5)) || null : null;
 
-  const when = (r) => (r.nextAt ? dayWords(r.nextAt.slice(0, 10), todayKey) : 'Not booked');
+  // Each client's next coaching session (Polish 1: clientData.js now works it out); an associate's client before the
+  // device has their sessions says nothing rather than something that may be wrong (coach rule 49).
+  const when = (r) => (r.nextAt ? whenWords(r.nextAt, todayKey) : r.admin && !r.nextKnown ? '' : PEOPLE.notBooked);
   const facts = (r) => [orgName(r.profile.organisation_id) || (r.admin ? null : 'Self-funded'), r.profile.city, r.admin ? `${r.coachName}’s client` : null, !r.admin && !r.profile.user_id && !r.profile.invited_at ? 'No account yet' : null];
 
+  const who = viewName || (isOwner && coaches.length > 1 ? PEOPLE.everyone : PEOPLE.yourClients);
+  const filterWords = filtersOn ? `Filter, ${filtersOn} on` : 'Filter';
+  const addLink = <AddLink label="Add client" expanded={adding} controls="cc-add-client" onClick={() => setAdding((v) => !v)} />;
+  const quick = (
+    <QuickAdd
+      id="cc-add-client"
+      open={adding}
+      onClose={() => setAdding(false)}
+      placeholder={PEOPLE.quickName}
+      label="Add client: their name"
+      addLabel="Add client"
+      onAdd={async (name) => { await quickAddClient(name); }}
+      more={(name) => <TextLink onClick={() => { setAddName(name); setAdding(false); setPanel('add'); }}>{PEOPLE.quickMore}</TextLink>}
+    />
+  );
   const people = (
     <>
-      {!isPhone && <div className="cc-search-field"><SearchField label="Search clients" placeholder="Search clients" value={q} onChange={setQ} /></div>}
-      <div className="cc-toolbar">
-        {!isPhone && <div className="cc-seg"><InlineChoice ariaLabel="Layout" semantics="pressed" options={noTable ? LAYOUTS.slice(0, 2) : LAYOUTS} value={layout} onChange={(v) => setList({ ...list, layout: v })} form="pills" /></div>}
-        {isPhone && <TextLink ref={ref('view')} aria-haspopup="menu" aria-expanded={menu === 'view'} onClick={() => setMenu('view')}>View</TextLink>}
-        {isPhone ? <TextLink onClick={() => setPanel('filter')}>{filtersOn ? `Filter, ${filtersOn} on` : 'Filter'}</TextLink> : <Button variant="outline" onClick={() => setPanel('filter')}>{filtersOn ? `Filter, ${filtersOn} on` : 'Filter'}</Button>}
-        {!isPhone && <TextLink onClick={() => setPanel('export')}>Export</TextLink>}
-        {!isPhone && <TextLink ref={ref('sort')} aria-haspopup="menu" aria-expanded={menu === 'sort'} onClick={() => setMenu('sort')}>{sortLabel}</TextLink>}
-        <span className="cc-toolbar-who">{viewName || (isOwner && coaches.length > 1 ? 'Everyone' : 'Your clients')}</span>
-      </div>
-      {isPhone && <div className="cc-search-field"><SearchField label="Search clients" placeholder="Search clients" value={q} onChange={setQ} /></div>}
+      <ListBar
+        search={{ label: 'Search clients', value: q, onChange: setQ }}
+        layouts={noTable ? LAYOUTS.slice(0, 2) : LAYOUTS}
+        layout={layout}
+        onLayout={(v) => setList({ ...list, layout: v })}
+        phone={(
+          <>
+            <BarDrop ref={ref('view')} words="View" aria-haspopup="menu" open={menu === 'view'} onClick={() => setMenu('view')} />
+            <BarDrop words={filterWords} aria-haspopup="dialog" open={panel === 'filter'} onClick={() => setPanel('filter')} />
+          </>
+        )}
+      >
+        <BarDrop words={filterWords} aria-haspopup="dialog" open={panel === 'filter'} onClick={() => setPanel('filter')} />
+        <BarDrop ref={ref('sort')} words={sortLabel} label={`Sort: ${sortLabel}`} aria-haspopup="menu" open={menu === 'sort'} onClick={() => setMenu('sort')} />
+      </ListBar>
       {(filtersOn > 0 || viewName) && (
-        <p className="cc-quiet">
+        <p className="cc-pnote">
           {countFigure(shown.length)} of {countWords(rows.length, 'client')}. <TextLink onClick={() => setList({ ...list, filters: EMPTY_FILTERS, viewId: null })}>Clear</TextLink>
         </p>
       )}
       {duplicates.length > 0 && (
-        <p className="cc-quiet">
+        <p className="cc-pnote">
           {duplicates[0][0].name} and {duplicates[0][1].name} look like the same person. <TextLink onClick={() => setMergePair(duplicates[0])}>Merge them</TextLink>
         </p>
       )}
@@ -364,19 +394,26 @@ export default function Clients() {
         {sorts.map((s) => <MenuItem key={s.value} checked={list.sort === s.value} onClick={() => { setList({ ...list, sort: s.value, viewId: null }); setMenu(null); }}>{s.label}</MenuItem>)}
       </PopMenu>
 
-      {rows.length === 0 && (
-        <p className="cc-quiet">You have no clients here yet. Add one, or a whole team from a spreadsheet.</p>
-      )}
-      {rows.length > 0 && shown.length === 0 && <p className="cc-quiet">Nobody matches. Clear the search or the filters to see everyone.</p>}
-
-      {layout === 'list' && shown.length > 0 && (
-        <div className={`cc-rows cc-fade${picking ? ' cc-picking' : ''}`} key="list">
-          {shownNow.map((r) => (
-            <div key={r.profile.id} className={`cc-pick-row${picked[r.profile.id] ? ' cc-pick-row--on' : ''}`} onPointerDown={() => holdStart(r.profile.id)} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd}>
-              <PickTick on={Boolean(picked[r.profile.id])} name={r.profile.name} onChange={(on) => pick(r.profile.id, on)} />
-              <Row title={r.profile.name} facts={facts(r)} when={when(r)} onClick={() => open(r)} />
+      {(layout === 'list' || shown.length === 0) && (
+        <Card label={who} add={addLink} quickAdd={quick} className="cc-plist-card">
+          {rows.length === 0 && <Empty action={{ children: PEOPLE.noClientsAct, onClick: () => setPanel('team') }}>{PEOPLE.noClients}</Empty>}
+          {rows.length > 0 && shown.length === 0 && <Empty>{PEOPLE.noMatch}</Empty>}
+          {shown.length > 0 && (
+            <div className={`cc-plist cc-fade${picking ? ' cc-picking' : ''}`} key="list">
+              {shownNow.map((r) => (
+                <div key={r.profile.id} className={`cc-pick-row${picked[r.profile.id] ? ' cc-pick-row--on' : ''}`} onPointerDown={() => holdStart(r.profile.id)} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd}>
+                  <PickTick on={Boolean(picked[r.profile.id])} name={r.profile.name} onChange={(on) => pick(r.profile.id, on)} />
+                  <PersonRow name={r.profile.name} facts={facts(r)} when={when(r)} href={`/coach/clients/${r.profile.id}`} onClick={() => open(r)} />
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+        </Card>
+      )}
+      {layout !== 'list' && shown.length > 0 && (
+        <div className="cc-plist-head">
+          <CardHead label={who} add={addLink} />
+          {quick}
         </div>
       )}
 
@@ -391,12 +428,15 @@ export default function Clients() {
                 <div className="cc-board-cards">
                   {cards.map((r) => (
                     <div key={r.profile.id} className={`cc-card${drag?.row.profile.id === r.profile.id ? ' cc-card--lifted' : ''}${(isPhone || touchFirst) && !r.admin ? ' cc-card--more' : ''}`}>
-                      <button
-                        type="button"
+                      {/* The card is a link to the client's page (a new tab with a modifier key); a plain click opens it here. */}
+                      <a
+                        href={`/coach/clients/${r.profile.id}`}
+                        draggable={false}
+                        onDragStart={(e) => e.preventDefault()}
                         className="cc-card-open"
                         data-card={r.profile.id}
                         aria-roledescription={r.admin ? undefined : 'Card that can be moved to another column'}
-                        onClick={() => { if (!dragged.current) open(r); }}
+                        onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); if (!dragged.current) open(r); }}
                         onKeyDown={(e) => cardKey(e, r)}
                         onPointerDown={(e) => cardDown(e, r)}
                         onPointerMove={cardMove}
@@ -404,7 +444,7 @@ export default function Clients() {
                         onPointerCancel={cardUp}
                       >
                         {cardWords(r)}
-                      </button>
+                      </a>
                       {(isPhone || touchFirst) && !r.admin && (
                         <TextLink className="cc-card-move" ref={ref(`card:${r.profile.id}`)} aria-haspopup="menu" aria-expanded={menu === `card:${r.profile.id}`} aria-label={`More for ${r.profile.name}`} onClick={() => setMenu(`card:${r.profile.id}`)}>More</TextLink>
                       )}
@@ -429,7 +469,7 @@ export default function Clients() {
 
       {layout === 'table' && shown.length > 0 && (
         <div className={`cc-table-wrap cc-fade${picking ? ' cc-picking' : ''}`} key="table">
-          <table className="cc-table">
+          <table className="cc-table cc-client-table">
             <thead>
               <tr>
                 <th scope="col"><button type="button" className={`cc-th${list.sort.startsWith('name') ? ' cc-th--on' : ''}`} ref={ref('col:name')} aria-haspopup="menu" aria-expanded={menu === 'col:name'} onClick={() => setMenu('col:name')}>Name</button></th>
@@ -444,7 +484,7 @@ export default function Clients() {
                 <tr key={r.profile.id} className={`cc-pick-row${picked[r.profile.id] ? ' cc-pick-row--on' : ''}`}>
                   <td>
                     <PickTick on={Boolean(picked[r.profile.id])} name={r.profile.name} onChange={(on) => pick(r.profile.id, on)} />
-                    <button type="button" className="cc-table-name" onClick={() => open(r)}>{r.profile.name}</button>
+                    <a href={`/coach/clients/${r.profile.id}`} className="cc-table-name" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); open(r); }}>{r.profile.name}</a>
                     <small>{orgName(r.profile.organisation_id) || (r.admin ? `${r.coachName}’s client` : 'Self-funded')}</small>
                   </td>
                   {visible.map((c) => {
@@ -480,11 +520,12 @@ export default function Clients() {
         </div>
       )}
 
-      <div className="cc-add"><AddButton onClick={() => setPanel('add')}>Add client</AddButton></div>
-      <div className="cc-acts">
-        <TextLink onClick={() => setPanel('team')}>Add team</TextLink>
-        {isPhone && <TextLink onClick={() => setPanel('export')}>Export</TextLink>}
-        <TextLink onClick={() => navigate('/coach/clients/past')}>Past clients</TextLink>
+      {/* The quiet links at the foot (the reference: one main action, everything else a quiet link, with the chevron
+          when it opens more): Past clients, then adding a whole team and Export. */}
+      <div className="cc-pfoot">
+        <MoreLink href="/coach/clients/past" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); navigate('/coach/clients/past'); }}>{PEOPLE.pastClients}</MoreLink>
+        <TextLink onClick={() => setPanel('team')}>{PEOPLE.addTeam}</TextLink>
+        <TextLink onClick={() => setPanel('export')}>{PEOPLE.export}</TextLink>
       </div>
 
       {picking && (
@@ -508,42 +549,45 @@ export default function Clients() {
   const wide = tab === 'people' && layout !== 'list';
   return (
     <div className="cc-page">
-      <div className={`cc-col${wide ? ' cc-col--wide' : ''}`}>
-        <PageHeader title="Clients" />
-        {/* Underlined tabs move between parts of a page; the gliding switch only changes how the same thing is shown (Tim, 18 Nov). */}
-        <div className="cc-tabs"><UnderTabs label="Clients" tabs={tabs} value={tab} onChange={(v) => setParams(v === 'people' ? {} : { tab: v }, { replace: true })} /></div>
+      <div className={`cc-col cc-people${wide ? ' cc-col--wide' : ''}`}>
+        <PageOpening title={PEOPLE.clientsTitle} line={PEOPLE.clientsLine} />
+        {/* Underlined tabs move between parts of a page (the reference's section tabs); the joined switch only changes
+            how the same thing is shown. */}
+        <SectionTabs label="Clients" tabs={tabs.map((t) => ({ key: t.value, label: t.label }))} value={tab} onChange={(v) => setParams(v === 'people' ? {} : { tab: v }, { replace: true })} className="cc-ptabs" />
         {/* The owner's list holds every coach's clients: until that list is here (a first visit) it says it's loading,
             never the owner's own clients alone with their count (coach first screen run). */}
         {tab === 'people' && (adminReady ? people : <Loading label="Loading your clients" />)}
         {tab === 'groups' && (
-          <>
-            {groups.length === 0 && <p className="cc-quiet">You have no groups yet. A group is a team you coach together.</p>}
-            <div className="cc-rows cc-fade">
-              {[...groups].sort((a, b) => a.name.localeCompare(b.name)).map((g) => {
-                const n = rowsOf(state, 'coach_group_members').filter((m) => m.group_id === g.id).length;
-                return <Row key={g.id} title={g.name} facts={[orgName(g.organisation_id), `${n} ${n === 1 ? 'person' : 'people'}`]} when="" onClick={() => navigate(`/coach/groups/${g.id}`)} />;
-              })}
-            </div>
-            <div className="cc-add"><AddButton onClick={() => setPanel('group')}>Add group</AddButton></div>
-          </>
+          <Card label={PEOPLE.groupsLabel} add={<AddLink label="Add group" onClick={() => setPanel('group')} />}>
+            {groups.length === 0 && <Empty>{PEOPLE.noGroups}</Empty>}
+            {groups.length > 0 && (
+              <div className="ds-rows-list cc-fade">
+                {[...groups].sort((a, b) => a.name.localeCompare(b.name)).map((g) => {
+                  const n = rowsOf(state, 'coach_group_members').filter((m) => m.group_id === g.id).length;
+                  return <PersonRow key={g.id} name={g.name} facts={[orgName(g.organisation_id), `${n} ${n === 1 ? 'person' : 'people'}`]} href={`/coach/groups/${g.id}`} onClick={() => navigate(`/coach/groups/${g.id}`)} />;
+                })}
+              </div>
+            )}
+          </Card>
         )}
         {/* A first visit's first screen has no workshops: the tab waits for the rest. */}
         {tab === 'renewals' && <RenewalsTab />}
         {tab === 'workshops' && partial && <Loading label="Loading your workshops" />}
         {tab === 'workshops' && !partial && (
-          <>
-            {workshops.length === 0 && <p className="cc-quiet">You have no workshops yet.</p>}
-            <div className="cc-rows cc-fade">
-              {[...workshops].sort((a, b) => String(b.starts_at || '').localeCompare(String(a.starts_at || ''))).map((w) => {
-                const c = workshopCounts(rowsOf(state, 'workshop_attendees').filter((a) => a.workshop_id === w.id), w.capacity);
-                return <Row key={w.id} title={w.title} facts={[orgName(w.organisation_id), `${c.registered} of ${w.capacity} places`, c.waiting ? `${c.waiting} waiting` : null]} when={w.starts_at ? dayWords(w.starts_at.slice(0, 10), todayKey) : ''} onClick={() => navigate(`/coach/workshops/${w.id}`)} />;
-              })}
-            </div>
-            <div className="cc-add"><AddButton onClick={() => setPanel('workshop')}>Add workshop</AddButton></div>
-          </>
+          <Card label={PEOPLE.workshopsLabel} add={<AddLink label="Add workshop" onClick={() => setPanel('workshop')} />}>
+            {workshops.length === 0 && <Empty>{PEOPLE.noWorkshops}</Empty>}
+            {workshops.length > 0 && (
+              <div className="ds-rows-list cc-fade">
+                {[...workshops].sort((a, b) => String(b.starts_at || '').localeCompare(String(a.starts_at || ''))).map((w) => {
+                  const c = workshopCounts(rowsOf(state, 'workshop_attendees').filter((a) => a.workshop_id === w.id), w.capacity);
+                  return <PersonRow key={w.id} name={w.title} facts={[orgName(w.organisation_id), `${c.registered} of ${w.capacity} places`, c.waiting ? `${c.waiting} waiting` : null]} when={w.starts_at ? whenWords(w.starts_at, todayKey).replace(/, \d\d:\d\d$/, '') : ''} href={`/coach/workshops/${w.id}`} onClick={() => navigate(`/coach/workshops/${w.id}`)} />;
+                })}
+              </div>
+            )}
+          </Card>
         )}
       </div>
-      <AddClientPanel open={panel === 'add'} onClose={() => setPanel(null)} onAdded={(id, mine) => { if (mine) navigate(`/coach/clients/${id}`); else reloadCoaches(); }} />
+      <AddClientPanel open={panel === 'add'} initialName={addName} onClose={() => { setPanel(null); setAddName(''); }} onAdded={(id, mine) => { if (mine) navigate(`/coach/clients/${id}`); else reloadCoaches(); }} />
       <AddTeamPanel open={panel === 'team'} onClose={() => setPanel(null)} />
       <ExportPanel open={panel === 'export'} onClose={() => setPanel(null)} shown={shown} all={rows} ctx={ctx} />
       <FilterPanel open={panel === 'filter'} onClose={() => setPanel(null)} list={list} setList={setList} count={shown.length} />

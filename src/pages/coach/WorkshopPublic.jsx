@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { BoldCrosshair, Button, InlineChoice, PageHeader, TextBox, TextField } from '../../components/design';
+import { BoldCrosshair, Button, InlineChoice, PageOpening, TextBox, TextField } from '../../components/design';
 import { answerWorkshopSurvey, loadWorkshopPage, loadWorkshopSurvey, registerForWorkshop } from '../../lib/coach/actions';
 import { clean, isEmail } from '../../lib/coach/model';
 import { workshopWhen } from './workshopWords';
@@ -47,7 +47,7 @@ export function WorkshopRegister() {
   useEffect(() => { document.title = page?.title ? `${page.title}, The Clarity Project` : 'The Clarity Project'; }, [page]);
 
   if (page === undefined) return <Frame message><div role="status" aria-label="Loading" /></Frame>;
-  if (!page) return <Frame message><PageHeader title="Workshop" /><p className="cc-quiet">{NOT_OPEN}</p></Frame>;
+  if (!page) return <Frame message><PageOpening title="Workshop" /><p className="cc-quiet">{NOT_OPEN}</p></Frame>;
   const meta = [workshopWhen(page), [page.organisation, page.place].filter(Boolean).join(', ')];
   if (result) {
     const line = {
@@ -56,9 +56,9 @@ export function WorkshopRegister() {
       already_registered: 'You already have a place with that email.',
       already_waiting: 'You’re already on the waiting list with that email.',
     }[result];
-    return <Frame message><PageHeader title={page.title} meta={meta} /><p className="cc-quiet" role="status">{line}</p></Frame>;
+    return <Frame message><PageOpening label={meta.filter(Boolean).join(', ')} title={page.title} /><p className="cc-quiet" role="status">{line}</p></Frame>;
   }
-  if (!page.open) return <Frame message><PageHeader title={page.title} meta={meta} /><p className="cc-quiet">Registration isn’t open at the moment.</p></Frame>;
+  if (!page.open) return <Frame message><PageOpening label={meta.filter(Boolean).join(', ')} title={page.title} /><p className="cc-quiet">Registration isn’t open at the moment.</p></Frame>;
 
   const questions = Array.isArray(page.questions) ? page.questions : [];
   const register = async (e) => {
@@ -85,7 +85,7 @@ export function WorkshopRegister() {
   const taken = Math.min(Number(page.taken) || 0, page.capacity);
   return (
     <Frame>
-      <PageHeader title={page.title} meta={meta} />
+      <PageOpening label={meta.filter(Boolean).join(', ')} title={page.title} />
       <p className="cc-quiet">{taken >= page.capacity ? 'Every place is taken. Register to join the waiting list.' : `${taken} of ${page.capacity} places are taken.`}</p>
       <form onSubmit={register} noValidate>
         <div className="cc-field"><TextField label="Your name" value={name} autoComplete="name" maxLength={120} onChange={(e) => { setName(e.target.value); setProblem(null); }} />{at('name')}</div>
@@ -121,8 +121,8 @@ export function WorkshopSurvey() {
     return () => { live = false; };
   }, [key]);
   if (survey === undefined) return <Frame message><div role="status" aria-label="Loading" /></Frame>;
-  if (!survey) return <Frame message><PageHeader title="Survey" /><p className="cc-quiet">{NOT_OPEN}</p></Frame>;
-  if (sent || survey.done) return <Frame message><PageHeader title={survey.title} /><p className="cc-quiet" role="status">Thank you. Your answers are in.</p></Frame>;
+  if (!survey) return <Frame message><PageOpening title="Survey" /><p className="cc-quiet">{NOT_OPEN}</p></Frame>;
+  if (sent || survey.done) return <Frame message><PageOpening title={survey.title} /><p className="cc-quiet" role="status">Thank you. Your answers are in.</p></Frame>;
   const questions = Array.isArray(survey.questions) ? survey.questions : [];
   const send = async (e) => {
     e.preventDefault();
@@ -139,7 +139,7 @@ export function WorkshopSurvey() {
   };
   return (
     <Frame>
-      <PageHeader title={survey.title} meta={['~1 minute']} />
+      <PageOpening label="~1 minute" title={survey.title} />
       <form onSubmit={send} noValidate>
         {questions.map((x) => (
           <div key={x.id} className="cc-field">

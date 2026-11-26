@@ -68,11 +68,28 @@ async function organisationFor(userId, value, newName, organisations) {
 }
 
 // ---------------------------------------------------------------- Add client
-export function AddClientPanel({ open, onClose, onAdded }) {
+/**
+ * Quick Add's client (Polish 1, rule 10): a name typed under the list's label and Enter, saved as the coach's own client
+ * with nothing else, exactly as Add client saves one (Undo removes it). Returns the new id, or null when it didn't save.
+ */
+export function useQuickAddClient() {
+  const { userId, coach } = useCoachPortal();
+  const done = useDone();
+  return async (typed) => {
+    const name = clean(typed);
+    if (!name) return null;
+    const id = newId();
+    const profile = { id, coach_id: coach.id, user_id: null, name, email: null, organisation_id: null, time_zone: null, frequent_traveller: false, referred_by: null, status: 'active', getting_started: {}, created_by: userId };
+    const ok = await done(() => saveRows(userId, [['client_profiles', profile]]), `${name} is in your clients`, () => removeRow(userId, 'client_profiles', id).catch(() => {}));
+    return ok ? id : null;
+  };
+}
+
+export function AddClientPanel({ open, onClose, onAdded, initialName = '' }) {
   const { userId, coach, isOwner, coaches, tags, organisations, clients } = useCoachPortal();
   const done = useDone();
   const zones = useZoneOptions();
-  const start = { name: '', email: '', org: null, orgName: '', coachId: coach.id, tagIds: [], zone: null, traveller: false, referred: '' };
+  const start = { name: initialName, email: '', org: null, orgName: '', coachId: coach.id, tagIds: [], zone: null, traveller: false, referred: '' };
   const [f, setF] = useState(start);
   const [problem, setProblem] = useState(null);
   const busy = useRef(false);

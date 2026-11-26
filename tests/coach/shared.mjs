@@ -1039,3 +1039,65 @@ export async function codesStandIn(page) {
   });
   return codes;
 }
+
+// ---------------------------------------------------------------- the frame's menu (Polish 1, Stage A and B)
+// The coach portal's menu is the frame's (src/components/design/Frame.jsx): on a laptop the menu column, always there;
+// on a phone the crosshair in the header ("Menu") opens it as a panel. Its items are real links (.ds-mi), Sign out a
+// button (.ds-mi--out). The older overlay menu (.cc-menu-item) and the coach phone bar are gone.
+
+/** Opens the menu where it needs opening (a phone), and gives its items' locator. */
+export async function frameMenu(page) {
+  const side = page.locator('.ds-frame-side .ds-menu');
+  if (await side.isVisible().catch(() => false)) return page.locator('.ds-frame-side .ds-mi');
+  const panel = page.locator('.ds-pmenu .ds-mi');
+  if (!(await panel.first().isVisible().catch(() => false))) {
+    await page.locator('.ds-mbtn').first().click();
+    await page.waitForTimeout(500);
+  }
+  return panel;
+}
+
+/** The menu's words, in order (each item's own name, counts left out). */
+export async function frameMenuWords(page) {
+  const items = await frameMenu(page);
+  return (await items.allInnerTexts()).map((t) => t.split('\n')[0].trim());
+}
+
+/** Opens one page from the menu by its name. */
+export async function openFromMenu(page, name) {
+  const items = await frameMenu(page);
+  await items.filter({ hasText: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) }).first().click();
+}
+
+/**
+ * Opens the coach's to-do Quick Add (polish 1, rule 10; Tim's walk, item 24): "+ Add" at the To-dos card's label opens
+ * the shared Quick Add, a small box under the label on a laptop and the panel from the bottom on a phone. Gives its
+ * scope: the box "What needs doing?", the words as read (.cc-qadd-chips) once typing has begun, and Add to-do.
+ */
+export async function openTodoAdd(page) {
+  const scope = page.locator('.ds-qa').first();
+  if (!(await scope.isVisible().catch(() => false))) {
+    await page.locator('.ds-addlink[aria-label="Add to-do"]').first().click();
+    await page.waitForTimeout(400);
+  }
+  return scope;
+}
+
+/** The calendar's settings links (Tim's walk, item 26) sit behind "Calendar settings": opens it when one of them is wanted. */
+export const CAL_SETTING_LINKS = ['Add to calendar', 'Working hours', 'Set my open times', 'Offer times by email', 'My calendars'];
+export async function openCalSettings(page, name = null) {
+  if (name && !CAL_SETTING_LINKS.includes(name)) return;
+  const link = page.locator('.cc-cal-settings-link').first();
+  if ((await link.count()) && (await link.getAttribute('aria-expanded')) !== 'true') { await link.click(); await page.waitForTimeout(200); }
+}
+
+/**
+ * Opens Search (Tim's walk, item 21): on a laptop the box at the panel's top right; on a phone it sits at the top of the
+ * menu (the crosshair), so the menu is opened first.
+ */
+export async function openSearch(page) {
+  const inHeader = page.locator('.cc-header .cc-search');
+  if (await inHeader.isVisible().catch(() => false)) { await inHeader.click(); return; }
+  if (!(await page.locator('.ds-pmenu-top .cc-search').isVisible().catch(() => false))) { await page.locator('.ds-mbtn').first().click(); await page.waitForTimeout(400); }
+  await page.locator('.ds-pmenu-top .cc-search').click();
+}

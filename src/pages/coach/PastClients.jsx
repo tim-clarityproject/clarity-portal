@@ -1,10 +1,13 @@
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, SearchField, SwitchRow, useToast } from '../../components/design';
+import { SearchField, SwitchRow, useToast } from '../../components/design';
+import { Card, Empty, PageOpening } from '../../components/design/Blocks';
+import { PEOPLE } from '../../content/pageLines/coach';
+import { PersonRow } from './peopleParts';
 import { useState } from 'react';
 import { newId, removeRow, saveRow, saveRows } from '../../lib/coach/store';
 import { clean, dayWords } from '../../lib/coach/model';
 import { CHECK_INS_SWITCH, checkInsDue, checkInsOn, checkInsToSuggest, PAST_WORDS } from '../../lib/coach/crm';
-import { Back, Line, Part, Row, TextLink, useCoachPortal } from './parts';
+import { Back, Line, TextLink, useCoachPortal } from './parts';
 import { CheckInPanel } from './pastParts';
 import { calm } from './crmParts';
 import './crm.css';
@@ -46,30 +49,32 @@ export default function PastClients() {
   };
   return (
     <div className="cc-page">
-      <div className="cc-col">
+      <div className="cc-col cc-people">
         <Back onClick={() => navigate('/coach/clients')} />
-        <PageHeader title="Past clients" />
-        {past.length === 0 && <p className="cc-quiet">Nobody is here yet. A client moves here when their coaching ends.</p>}
+        <PageOpening title={PEOPLE.pastTitle} line={PEOPLE.pastLine} />
+        {past.length === 0 && <Card label={PEOPLE.pastLabel}><Empty action={{ children: 'Your clients', href: '/coach/clients', onClick: (e) => { e.preventDefault(); navigate('/coach/clients'); } }}>A client moves here when their coaching ends.</Empty></Card>}
         {past.length > 0 && <div className="cc-past-switch"><SwitchRow label={CHECK_INS_SWITCH} checked={on} onChange={flip} /></div>}
         {due.length > 0 && (
-          <Part title={PAST_WORDS.due}>
-            <div className="cc-rows">
-              {due.map((d) => <Row key={d.id} title={d.name} facts={[d.what, d.sub]} when={d.when} label={`${d.name}, ${d.what}, ${d.when}. Open the note`} onClick={() => setOpenId(d.id)} />)}
+          <Card label={PAST_WORDS.due}>
+            <div className="ds-rows-list">
+              {due.map((d) => <PersonRow key={d.id} name={d.name} facts={[d.what, d.sub]} when={d.when} label={`${d.name}, ${d.what}, ${d.when}. Open the note`} onClick={() => setOpenId(d.id)} />)}
             </div>
-          </Part>
+          </Card>
         )}
         {past.length > 0 && (
-          <Part title={PAST_WORDS.everyone}>
-            <div className="cc-search-field"><SearchField label="Search past clients" placeholder="Search past clients" value={q} onChange={setQ} /></div>
-            {shown.length === 0 && <p className="cc-quiet">Nobody matches.</p>}
-            <div className="cc-rows">
-              {shown.map((p) => (
-                <Line key={p.id} title={<button type="button" className="cc-table-name" onClick={() => navigate(`/coach/clients/${p.id}`)}>{p.name}</button>} small={[orgName(p.organisation_id) || 'Self-funded', p.ended_on ? `Ended ${dayWords(p.ended_on, todayKey)}` : null].filter(Boolean).join(', ')}>
-                  <TextLink aria-label={`Start a new engagement with ${p.name}`} onClick={() => restart(p)}>Start a new engagement</TextLink>
-                </Line>
-              ))}
-            </div>
-          </Part>
+          <>
+            <div className="cc-pbar-wrap"><div className="cc-pbar-search"><SearchField label="Search past clients" placeholder="Search past clients" value={q} onChange={setQ} /></div></div>
+            <Card label={PAST_WORDS.everyone}>
+              {shown.length === 0 && <Empty>Nobody matches. Clear the search to see everyone.</Empty>}
+              <div className="ds-rows-list cc-past-rows">
+                {shown.map((p) => (
+                  <Line key={p.id} title={<a href={`/coach/clients/${p.id}`} className="cc-past-name" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); navigate(`/coach/clients/${p.id}`); }}>{p.name}</a>} small={[orgName(p.organisation_id) || 'Self-funded', p.ended_on ? `Ended ${dayWords(p.ended_on, todayKey)}` : null].filter(Boolean).join(', ')}>
+                    <TextLink aria-label={`Start a new engagement with ${p.name}`} onClick={() => restart(p)}>Start a new engagement</TextLink>
+                  </Line>
+                ))}
+              </div>
+            </Card>
+          </>
         )}
       </div>
       <CheckInPanel checkInId={openId} onClose={() => setOpenId(null)} />

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AddButton, SearchField, useToast } from '../../components/design';
+import { SearchField, useToast } from '../../components/design';
+import { AddLink, CardHead } from '../../components/design/Blocks';
 import { networkPageOf, saveNetworkPerson, useNetworkVersion } from '../../lib/coach/networkData';
 import {
   archivedLink, cellChange, cellLabel, cellTyped, cellWords, cleared, headingLabel, networkProblem, NETWORK_LOAD_PROBLEM, onlyChoices, RATING_CHOICES, rhythmChoices, rowAfter, TABLE_START, TABLE_WORDS, tableColumns,
-  tableCount, tableFoot, tableQuery, withOnly, withSort,
+  networkPath, tableCount, tableFoot, tableQuery, withOnly, withSort,
 } from '../../lib/coach/network';
 import { Back, EditCell, MenuItem, MenuLabel, PopMenu, TextLink, TICK, useCoachPortal } from './parts';
 
@@ -116,6 +117,8 @@ export default function NetworkTable({ archived, onArchive, onOpen, onPanel, cou
         <span className="cc-net-count" aria-live="polite">{page.loaded ? count.words : ''}</span>
         {count.clear && <TextLink onClick={() => { setTyped(''); setState((s) => cleared(s)); }}>{TABLE_WORDS.clear}</TextLink>}
       </div>
+      {/* The list's label with "+ Add" at its right (rule 10): adding someone needs their ratings, so it opens its panel. */}
+      <CardHead label={archived ? 'Archived' : 'Everyone'} add={archived ? undefined : <AddLink label={TABLE_WORDS.add} onClick={() => onPanel('add')} />} />
       {problem && <p className="cc-problem" role="alert">{problem}</p>}
       {page.loaded && !problem && page.rows.length === 0 && <p className="cc-quiet">{count.clear ? TABLE_WORDS.noneFound : archived ? 'Nobody is archived.' : 'Nobody is in your Network yet. Add someone, or import a spreadsheet.'}</p>}
       {page.rows.length > 0 && (
@@ -138,7 +141,7 @@ export default function NetworkTable({ archived, onArchive, onOpen, onPanel, cou
               {page.rows.map((p) => (
                 <tr key={p.id}>
                   {columns.map((c) => {
-                    if (c.fixed) return <th key={c.key} scope="row" className="cc-net-name"><button type="button" className="cc-table-name" onClick={() => onOpen(p.id)}>{p.name}</button></th>;
+                    if (c.fixed) return <th key={c.key} scope="row" className="cc-net-name"><a href={networkPath({ tab: 'table', archived, person: p.id })} className="cc-table-name" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); onOpen(p.id); }}>{p.name}</a></th>;
                     const words = cellWords(p, c, todayKey);
                     if (c.edit === 'rating' || c.edit === 'rhythm') {
                       const k = `cell|${p.id}|${c.key}`;
@@ -191,8 +194,7 @@ export default function NetworkTable({ archived, onArchive, onOpen, onPanel, cou
       )}
       {!archived && (
         <>
-          <div className="cc-add"><AddButton onClick={() => onPanel('add')}>{TABLE_WORDS.add}</AddButton></div>
-          <div className="cc-acts">
+          <div className="cc-pfoot">
             <TextLink onClick={() => onPanel('import')}>{TABLE_WORDS.importSheet}</TextLink>
             <TextLink onClick={() => onPanel('export')}>{TABLE_WORDS.export}</TextLink>
             <TextLink onClick={() => onPanel('columns')}>{TABLE_WORDS.columns}</TextLink>

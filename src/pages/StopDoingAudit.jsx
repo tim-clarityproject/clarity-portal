@@ -5,13 +5,10 @@ import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
 import { useDraft } from '../lib/drafts';
-import DesignHeader from '../components/DesignHeader';
-import PhoneActionBar from '../components/ui/PhoneActionBar';
-import { DiscardLink } from '../components/ui/DiscardLink';
+import FormTool from './toolFocus/FormTool';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import pageText from '../content/pageText';
-import { StepIcon, Loading, PageHeader, TextBox, AddButton, Button, Choice, useToast } from '../components/design';
+import { Loading, TextBox, AddButton, IconButton, Choice, Counter, Row, Rows, useToast } from '../components/design';
 
 // The saved values stay as they were; the answers people tap are full
 // sentences in their own voice (rule 29aa, Tim, 9 Nov).
@@ -21,13 +18,6 @@ const ACTION_WORDS = { Stop: 'Stop it', Automate: 'Automate it', Delegate: 'Dele
 const MAX_ACTIVITY = 80;
 const MAX_LONG = 2000;
 
-function BinIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.6 8h6.8l.6-8M6.8 7v3.5M9.2 7v3.5" />
-    </svg>
-  );
-}
 
 let tempIdCounter = 0;
 function tempId() {
@@ -241,69 +231,50 @@ export default function StopDoingAudit() {
   if (isLoading) {
     return (
       <div className="ui-root">
-        <DesignHeader />
-        <div className="plan-page"><Loading label="Loading your audit" className="ds-loading--page" /></div>
+        <Loading label="Loading your audit" className="ds-loading--page" />
       </div>
     );
   }
 
-  const actionButtons = (
-    <>
-      <Button type="button" variant="primary" disabled={isSaving} onClick={handleFinish}>Finish</Button>
-      <Button type="button" variant="outline" disabled={isSaving} onClick={handleSaveDraft}>Save as draft</Button>
-    </>
-  );
-
   return (
     <div className="ui-root">
-      <style>{`
-        .ui-root .plan-field label {
-          font-family: var(--font-body);
-          text-transform: none;
-          letter-spacing: normal;
-          font-size: var(--fs-label-row);
-          color: var(--text-2);
-        }
-      `}</style>
-      <DesignHeader />
-
-      <div className="plan-page plan-page--form">
-        <div className="plan-header">
-          <PageHeader title="Time audit" info={pageText.stopDoingAudit} />
-        </div>
-
-        <div className="plan-label-row">
-          <span className="ui-section-heading">Which tasks and activities are stealing your time?</span>
-        </div>
-
+      <FormTool
+        name="Time audit"
+        question="Which tasks and activities are stealing your time?"
+        hint="Name up to five, with roughly how many hours each takes a week."
+        onNext={() => { if (!isSaving) handleFinish(); }}
+        nextLabel="Finish"
+        saveError={saveError}
+        onSaveDraft={() => { if (!isSaving) handleSaveDraft(); }}
+        onDiscard={() => setDiscardOpen(true)}
+        closeTo="/personal/plan"
+        className="ta-tool"
+      >
         {items.map((item, index) => (
-          <div className="tsa-row" key={item.id}>
-            <span className="tsa-num">{index + 1}.</span>
-            <TextBox
-              lines="one"
-              placeholder="Type here"
-              ariaLabel={`Activity ${index + 1}`}
-              value={item.activity}
-              onChange={(v) => updateItem(item.id, 'activity', v)}
-              maxLength={MAX_ACTIVITY}
-            />
-            <div className="tsa-stepper">
-              <button type="button" className="tsa-stepper-btn" aria-label="Fewer hours" onClick={() => updateItem(item.id, 'timePerWeek', String(Math.max(0, (parseInt(item.timePerWeek, 10) || 0) - 1)))}><StepIcon /></button>
-              <input
-                type="number"
-                min="0"
-                max="999"
-                inputMode="numeric"
-                placeholder="0"
-                value={item.timePerWeek}
-                onChange={(e) => updateItem(item.id, 'timePerWeek', e.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
+          <div className="ta-item" key={item.id}>
+            <div className="ft-row">
+              <TextBox
+                lines="one"
+                placeholder="Type here"
+                ariaLabel={`Activity ${index + 1}`}
+                value={item.activity}
+                onChange={(v) => updateItem(item.id, 'activity', v)}
+                maxLength={MAX_ACTIVITY}
               />
-              <button type="button" className="tsa-stepper-btn" aria-label="More hours" onClick={() => updateItem(item.id, 'timePerWeek', String(Math.min(999, (parseInt(item.timePerWeek, 10) || 0) + 1)))}><StepIcon plus /></button>
-              <span className="tsa-hrs-label">hrs/wk</span>
+              {items.length > 1 && <IconButton label={`Remove activity ${index + 1}`} onClick={() => removeItem(item.id)} />}
             </div>
-            <button type="button" className="plan-bin-btn" aria-label={`Remove activity ${index + 1}`} disabled={items.length <= 1} onClick={() => removeItem(item.id)}>
-              <BinIcon />
-            </button>
+            <div className="ta-hours">
+              <Counter
+                value={parseInt(item.timePerWeek, 10) || 0}
+                min={0}
+                max={999}
+                label={`Hours a week for activity ${index + 1}`}
+                lessLabel="Fewer hours"
+                moreLabel="More hours"
+                onChange={(v) => updateItem(item.id, 'timePerWeek', String(v))}
+              />
+              <span className="ta-unit">hours a week</span>
+            </div>
           </div>
         ))}
         {items.length < 5 && (
@@ -312,16 +283,13 @@ export default function StopDoingAudit() {
           </AddButton>
         )}
 
-        <div className="tsa-total">
-          <span>Total time to reclaim</span>
-          <b>{totalHours} hours/week</b>
-        </div>
+        <Rows className="ta-total">
+          <Row name="Total time to reclaim" value={`${totalHours} ${totalHours === 1 ? 'hour' : 'hours'} a week`} />
+        </Rows>
 
         {namedItems.length > 0 && (
           <>
-            <div className="plan-label-row">
-              <span className="ui-section-heading">What will you do for each activity?</span>
-            </div>
+            <div className="ft-label ta-label">What will you do about each one?</div>
             {namedItems.map((item) => (
               <div className="tsa-activity-block" key={item.id}>
                 <p className="tsa-activity-name">{item.activity}</p>
@@ -343,7 +311,7 @@ export default function StopDoingAudit() {
                 value={firstAction === '' ? null : String(firstAction)}
                 onChange={(value) => { setFirstAction(namedItems.find((item) => String(item.id) === value)?.id ?? ''); setFirstActionError(''); }}
               />
-              {firstActionItem && <p className="tsa-saves">Saves {parseInt(firstActionItem.timePerWeek, 10) || 0} hrs/wk</p>}
+              {firstActionItem && <p className="ft-help ta-saves">{`Saves ${parseInt(firstActionItem.timePerWeek, 10) || 0} hours a week`}</p>}
               {firstActionError && <p className="plan-save-error" role="alert">{firstActionError}</p>}
             </div>
 
@@ -357,16 +325,7 @@ export default function StopDoingAudit() {
           </>
         )}
 
-        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
-
-        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
-
-        <div className="plan-discard-row">
-          <DiscardLink onClick={() => setDiscardOpen(true)} />
-        </div>
-      </div>
-
-      <PhoneActionBar>{actionButtons}</PhoneActionBar>
+      </FormTool>
 
       <NameDialog
         open={nameDialogOpen}

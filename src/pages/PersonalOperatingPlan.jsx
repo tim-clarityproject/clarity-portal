@@ -5,10 +5,11 @@ import { supabase } from '../lib/supabase';
 import { formatUkDate } from '../lib/dateFormatter';
 import { archivePlan, countArchivedMissions, formatVersion, loadLatestVersion } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
-import pageText from '../content/pageText';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import { DisclosureArrow, Loading, PageHeader, Button, EmptyState, useToast, LoadError } from '../components/design';
+import { DisclosureArrow, Loading, Button, EmptyState, useToast, LoadError, PageOpening } from '../components/design';
 import { useCachedLoad } from '../lib/pageCache';
+import { B1_LINES } from '../content/pageLines/client';
+import '../pages/hubs/clientPage.css';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -163,7 +164,7 @@ export default function PersonalOperatingPlan() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><Loading label="Loading your plan" className="ds-loading--page" /></div>
+        <div className="plan-page cp-page cp-page"><Loading label="Loading your plan" className="ds-loading--page" /></div>
       </div>
     );
   }
@@ -172,8 +173,8 @@ export default function PersonalOperatingPlan() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page">
-          <PageHeader title="Personal operating plan" info={pageText.personalOperatingPlan} />
+        <div className="plan-page cp-page cp-page">
+          <PageOpening title="Personal operating plan" line={B1_LINES.pop} />
           <LoadError>Your plan didn’t load. Check your connection and try again.</LoadError>
           <div className="pop-links-row">
             <Button type="button" variant="outline" onClick={loaded.reload}>Try again</Button>
@@ -187,8 +188,8 @@ export default function PersonalOperatingPlan() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page">
-          <PageHeader title="Personal operating plan" info={pageText.personalOperatingPlan} />
+        <div className="plan-page cp-page cp-page">
+          <PageOpening title="Personal operating plan" line={B1_LINES.pop} />
           <EmptyState
             question="You don't have a plan yet. Start with your Mission, add the strategies that bring it to life, then the tactics you will do every day."
             action={{ label: 'Create your plan', onClick: () => navigate('/personal-operating-plan-edit', { state: { isNew: true } }) }}
@@ -212,14 +213,11 @@ export default function PersonalOperatingPlan() {
       `}</style>
       <DesignHeader />
 
-      <div className="plan-page">
-        <PageHeader
+      <div className="plan-page cp-page cp-page">
+        <PageOpening
           title="Personal operating plan"
-          info={pageText.personalOperatingPlan}
-          meta={[
-            version ? formatVersion(version.major, version.minor) : null,
-            lastReviewedAt ? `Last reviewed ${formatUkDate(lastReviewedAt)}` : null,
-          ]}
+          label={version ? formatVersion(version.major, version.minor) : undefined}
+          line={lastReviewedAt ? `You last reviewed it on ${formatUkDate(lastReviewedAt)}.` : B1_LINES.pop}
         />
 
         <div className="plan-actions">

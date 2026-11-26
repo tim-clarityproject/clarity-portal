@@ -173,7 +173,7 @@
   font-family: var(--font-body);
   font-weight: 400;
   font-size: var(--fs-meta);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .wol-facts span {
@@ -327,7 +327,7 @@
   font-family: var(--font-display);
   font-weight: 400;
   font-size: calc(12 * var(--u, 1px));
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-ar:focus-within > b {
@@ -353,7 +353,7 @@
   margin-top: var(--space-2);
   font-size: var(--fs-small);
   line-height: 1.45;
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-ar--off {
@@ -402,7 +402,7 @@
   border: 0;
   border-radius: 8px;
   cursor: pointer;
-  color: var(--placeholder);
+  color: var(--text-2);
   transition: color var(--dur-fast) var(--ease);
 }
 
@@ -471,7 +471,7 @@
   margin-top: var(--space-2);
   font-size: var(--fs-small);
   line-height: 1.45;
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-reset {
@@ -590,7 +590,7 @@
   justify-content: space-between;
   margin-top: 10px;
   font-size: var(--fs-small);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-lastt {
@@ -612,7 +612,7 @@
 
 .ui-root .wol-sep {
   margin: 0 6px;
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-note {
@@ -624,7 +624,7 @@
   display: block;
   margin-top: var(--space-2);
   font-size: var(--fs-small);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 /* the small live wheel beside the rating screens (desktop only) */
@@ -643,7 +643,7 @@
   font-family: var(--font-body);
   font-weight: 400;
   font-size: var(--fs-meta);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .wol-mini svg {
@@ -705,7 +705,7 @@
   display: block;
   margin-top: 3px;
   font-size: var(--fs-small);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-tgn em {
@@ -770,7 +770,7 @@
 }
 
 .ui-root .wol-stp b.wol-none {
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-clr {
@@ -807,7 +807,7 @@
   margin: 18px 0 0;
   font-size: var(--fs-small);
   line-height: 1.6;
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 @media (max-width: 768px) {
@@ -991,7 +991,7 @@
   margin: calc(-1 * var(--space-2)) 0 var(--space-3);
   font-size: var(--fs-meta);
   line-height: var(--lh-text);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 /* Every area of the full wheel has its own pop-up. */
@@ -1019,7 +1019,7 @@
   font-family: var(--font-body);
   font-weight: 400;
   font-size: var(--fs-meta);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .wol-stats strong {
@@ -1138,7 +1138,7 @@
   font-family: var(--font-body);
   font-size: var(--fs-meta);
   white-space: nowrap;
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .wol-th span:nth-child(n+2):nth-child(-n+5) {
@@ -1165,14 +1165,14 @@
   display: block;
   margin-top: 2px;
   font-size: calc(12 * var(--u, 1px));
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-tgm {
   display: none;
   margin-top: 3px;
   font-size: calc(12 * var(--u, 1px));
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-ch {
@@ -1198,7 +1198,7 @@
 
 .ui-root .wol-dl.wol-up { color: var(--good); } /* rises in green (Tim, 26 Oct) */
 .ui-root .wol-dl.wol-dn { color: var(--below); }
-.ui-root .wol-dl.wol-eq { color: var(--placeholder); }
+.ui-root .wol-dl.wol-eq { color: var(--text-2); }
 
 .ui-root .wol-dl.wol-nw {
   font-size: var(--fs-tab);
@@ -1237,7 +1237,7 @@
 .ui-root .wol-tgc .wol-nt {
   font-family: var(--font-display);
   font-size: var(--fs-small);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-sp {
@@ -1255,7 +1255,7 @@
   margin: 14px 0 0;
   font-size: var(--fs-small);
   line-height: 1.6;
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-qlink.wol-qlink--in {
@@ -1340,7 +1340,7 @@
   font-size: var(--fs-tab);
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-dsc span:first-child { text-align: left; }
@@ -1426,7 +1426,7 @@
 
 .ui-root .wol-dv.wol-up { color: var(--good); }
 .ui-root .wol-dv.wol-dn { color: var(--below); }
-.ui-root .wol-dv.wol-eq { color: var(--placeholder); }
+.ui-root .wol-dv.wol-eq { color: var(--text-2); }
 
 .ui-root .wol-dv.wol-nw {
   font-size: var(--fs-tab);
@@ -1440,7 +1440,7 @@
   font-size: var(--fs-min);
   letter-spacing: 0;
   text-transform: none;
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-dnote {
@@ -1467,7 +1467,7 @@
   font-size: var(--fs-tab);
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .wol-dpr {
@@ -1500,7 +1500,7 @@
 
 .ui-root .wol-dpt b.wol-up { color: var(--good); }
 .ui-root .wol-dpt b.wol-dn { color: var(--below); }
-.ui-root .wol-dpt b.wol-eq { color: var(--placeholder); }
+.ui-root .wol-dpt b.wol-eq { color: var(--text-2); }
 
 .ui-root .wol-dpt b.wol-nw {
   font-size: var(--fs-tab);
@@ -1544,7 +1544,7 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   text-align: right;
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 @media (max-width: 768px) {
@@ -1594,13 +1594,13 @@
   .ui-root .wol-tr .wol-v--s::before {
     content: "from ";
     font-family: var(--font-body);
-    color: var(--placeholder);
+    color: var(--text-2);
   }
 
   .ui-root .wol-tr .wol-v--s::after {
     content: " to";
     font-family: var(--font-body);
-    color: var(--placeholder);
+    color: var(--text-2);
   }
 
   .ui-root .wol-tr .wol-v--s:empty::before,
@@ -1707,3 +1707,181 @@
     transition: none !important;
   }
 }
+
+/* ------------------------------------------------------------------ Polish 1, Stage B (B2)
+   The Life balance review's own pages: the page opening, cards of hairline rows (rules 12 to 16).
+   The frame gives the laptop's padding; under 1024px the page gives the example's 24px top and
+   20px sides. No Nekst on figures, labels or step numbers (rule 2). */
+.ui-root .plan-page.wol-page--open {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: var(--dash-max);
+  margin: 0;
+  padding: 0;
+}
+@media (max-width: 1023px) {
+  .ui-root .plan-page.wol-page--open {
+    max-width: none;
+    padding: var(--space-4) var(--page-x-phone) var(--space-px64);
+  }
+}
+.ui-root .wol-page--open .wol-cards > .ds-card:last-child { margin-bottom: 0; }
+.ui-root .wol-page--open .wol-how {
+  display: grid;
+  gap: var(--space-px14);
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ui-root .wol-page--open .wol-how li {
+  display: grid;
+  grid-template-columns: var(--space-5) 1fr;
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+.ui-root .wol-page--open .wol-how-n {
+  font-family: var(--font-body);
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--text-2);
+}
+.ui-root .wol-page--open .wol-foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-5);
+}
+/* A Back link above the opening: its chevron on the content's edge, 16px above the title. */
+.ui-root .wol-page--open .wol-back { margin: 0 0 var(--space-3); }
+/* An area's row: its number in DM Sans grey, then the name; Remove or Restore at the right,
+   its 44px tap area reaching over the row's padding without moving it. */
+.ui-root .wol-page--open .wol-area-row { align-items: center; }
+.ui-root .wol-page--open .wol-area-n {
+  display: inline-block;
+  min-width: var(--space-5);
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--text-2);
+}
+.ui-root .wol-page--open .wol-area-row .ds-li-sub { padding-left: var(--space-5); }
+.ui-root .wol-page--open .wol-row-act {
+  flex: none;
+  margin: calc(var(--space-px14) * -1) 0;
+}
+.ui-root .wol-page--open .wol-row-act:disabled { opacity: 0.4; cursor: default; }
+.ui-root .wol-note-line {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+.ui-root .wol-page--open .wol-target-ctl {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.ui-root .wol-page--open .wol-target-ctl .ds-count > span { min-width: var(--space-6); }
+.ui-root .wol-page--open .wol-target-row .wol-row-act { margin: 0; }
+.ui-root .wol-page--open .wol-target-row em { font-style: normal; }
+.ui-root .wol-page--open .wol-target-row .ds-li-sub { padding-left: 0; }
+.ui-root .wol-page--open .wol-error { margin: 0 0 var(--space-4); }
+@media (max-width: 600px) {
+  .ui-root .wol-page--open .wol-target-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    text-align: left;
+  }
+}
+.ui-root .wol-page--open .wol-target-row em.wol-ok { color: var(--mint-text); }
+
+/* The check-in in focus mode (ToolFrame, rule 21). The scale is the reference's joined switch:
+   one box with the control radius and a 1px line, the scores divided by 1px lines, the chosen
+   one filled in the text colour (rules 4, 6 and 7). */
+.ui-root .wol-tool .wol-scale,
+.ui-root .wol-tool .wol-scale.ds-seg:not(#_) {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: var(--line-w) solid var(--btn-line);
+  border-radius: var(--radius-control);
+  background: transparent;
+}
+.ui-root .wol-tool .wol-scale button {
+  min-height: calc(var(--btn-h) - 2 * var(--line-w)) !important;
+  border-radius: 0;
+  border-left: var(--line-w) solid var(--btn-line);
+  font-family: var(--font-body);
+  font-size: var(--fs-text) !important;
+  font-weight: var(--fw-regular);
+  color: var(--text);
+  box-shadow: none;
+}
+.ui-root .wol-tool .wol-scale button:first-child { border-left: 0; }
+.ui-root .wol-tool .wol-scale button[aria-checked="true"] {
+  background: var(--main-bg);
+  color: var(--main-fg);
+  box-shadow: none;
+}
+.ui-root .wol-tool .wol-scale button.wol-prev::after { bottom: var(--space-1); }
+.ui-root .wol-tool .wol-scale button.wol-prev[aria-checked="true"]::after { background: var(--main-fg); }
+.ui-root .wol-tool .wol-ends {
+  margin-top: var(--space-2);
+  font-size: var(--fs-meta);
+  color: var(--text-2);
+}
+.ui-root .wol-tool .wol-note { margin-top: var(--space-5); }
+.ui-root .wol-tool .wol-need { margin: var(--space-3) 0 0; }
+.ui-root .wol-tool .wol-mini.wol-mini--tool {
+  position: static;
+  max-width: calc(var(--space-7) * 3);
+  margin-top: var(--space-5);
+  padding: var(--card-pad);
+  background: transparent;
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-control);
+}
+.ui-root .wol-tool .wol-discard { margin-top: var(--space-4); }
+@media (max-width: 600px) {
+  /* Eleven scores don't fit one 44px row on a 360px phone: two rows of the same boxes. */
+  .ui-root .wol-tool .wol-scale { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .ui-root .wol-tool .wol-scale button { min-height: calc(var(--btn-h-phone) - var(--line-w)) !important; border-top: var(--line-w) solid var(--btn-line); }
+  .ui-root .wol-tool .wol-scale button:nth-child(-n + 6) { border-top: 0; }
+  .ui-root .wol-tool .wol-scale button:nth-child(6n + 1) { border-left: 0; }
+}
+
+/* The one-pager (results), Polish 1: its panels drawn as the one card (rule 13). The wheel's
+   own chart panel keeps its dark ground: the chart's colours are drawn for it. */
+.ui-root .wol-page--open .wol-panel {
+  background: var(--card);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-control);
+}
+.ui-root .wol-page--open .wol-rsum { font-size: var(--fs-meta); }
+.ui-root .wol-page--open .wol-rsum b { font-weight: var(--fw-regular); }
+.ui-root .wol-page--open .wol-tgcard-b2 { margin: var(--space-4) 0 0; }
+/* How the wheel is drawn: the reference's joined switch (.ds-seg, rule 7), without its icons. */
+.ui-root .wol-page--open .wol-seg i,
+.ui-root .wol-page--open .wol-seg button svg { display: none; }
+.ui-root .wol-page--open .wol-seg .ds-seg-btn + i + .ds-seg-btn:not(#_) { border-left: var(--line-w) solid var(--btn-line) !important; }
+.ui-root .wol-page--open .wol-seg button:disabled { color: var(--text-2); opacity: 0.5; }
+
+
+.ui-root .wol-page--open .wol-whd .wol-lab { white-space: nowrap; }
+@media (max-width: 600px) {
+  /* One width (rule 15): on a phone the range's answer boxes span the content column. */
+  .ui-root .wol-page--open .wol-range {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  .ui-root .wol-page--open .wol-rtop { flex-direction: column; align-items: stretch; }
+  .ui-root .wol-page--open .wol-rtop > * { width: 100%; }
+}
+/* The words under the wheel sit on its dark chart panel in both modes: they take the panel's own
+   label colour, so they read at 4.5 to 1 (the grey of light mode was 2.95 to 1 on it). */
+.ui-root .wol-page--open .wol-wheel .wol-words { color: var(--wol-label); }

@@ -45,23 +45,29 @@ export function PageOpening({ label, title, line, action, aside, as: Heading = '
  * `link`: { children, href?, onClick } a quiet link with the chevron.
  * `add`: an <AddLink /> (or its props), opening Quick Add.
  * `quickAdd`: a <QuickAdd /> placed under the label on a laptop.
+ * `aside`: something small beside the label, outside its heading (the eye).
  */
-export function Card({ label, link, add, quickAdd, children, className = '', as: Tag = 'section', labelAs: Label = 'h2', ...rest }) {
+export function Card({ label, link, add, aside, quickAdd, children, className = '', as: Tag = 'section', labelAs: Label = 'h2', ...rest }) {
   return (
     <Tag className={`ds-card ${className}`.trim()} {...rest}>
-      {(label || link || add) && <CardHead label={label} link={link} add={add} as={Label} />}
+      {(label || link || add) && <CardHead label={label} link={link} add={add} aside={aside} as={Label} />}
       {quickAdd}
       {children}
     </Tag>
   );
 }
 
-/** The card's label row: the label on the left, View all or + Add on the right. */
-export function CardHead({ label, link, add, as: Label = 'h2' }) {
+/**
+ * The card's label row: the label on the left, View all or + Add on the
+ * right. `aside`: a small thing beside the label, outside its heading (the
+ * eye on an organisation's Documents), so no button sits inside the h2.
+ */
+export function CardHead({ label, link, add, aside, as: Label = 'h2' }) {
   const addNode = add && !add.$$typeof && typeof add === 'object' ? <AddLink {...add} /> : add;
+  const labelNode = label ? <Label className="ds-label">{label}</Label> : <span />;
   return (
     <div className="ds-card-head">
-      {label ? <Label className="ds-label">{label}</Label> : <span />}
+      {aside ? <span className="ds-card-head-l">{labelNode}{aside}</span> : labelNode}
       {link && <MoreLink {...link} small />}
       {addNode}
     </div>
@@ -109,10 +115,11 @@ export function MoreLink({ children, href, onClick, small = false, bare = false,
  * words; at most a small dot (`dot`). `onClick` or `href` makes the whole row
  * open its item. `strong`: the name at 500 (a row's name, rule 1).
  */
-export function Row({ name, value, sub, dot = false, onClick, href, strong = false, className = '', children }) {
+export function Row({ name, value, sub, dot = false, onClick, href, strong = false, className = '', label, children }) {
   const Tag = href ? 'a' : onClick ? 'button' : 'div';
+  // `label`: what a screen reader hears for a row that opens something ("Edit Portal seats"; requests-b4 7).
   return (
-    <Tag className={`ds-li${onClick || href ? ' ds-li--go' : ''} ${className}`.trim()} href={href} onClick={onClick} type={Tag === 'button' ? 'button' : undefined}>
+    <Tag className={`ds-li${onClick || href ? ' ds-li--go' : ''} ${className}`.trim()} href={href} onClick={onClick} type={Tag === 'button' ? 'button' : undefined} aria-label={label}>
       <span className={`ds-li-name${strong ? ' ds-li-name--strong' : ''}`}>
         {name}
         {sub && <small className="ds-li-sub">{sub}</small>}
@@ -135,8 +142,20 @@ export function Rows({ children, className = '', label }) {
 
 /* ------------------------------------------------------------------ figures and empty states (rules 1, 16) */
 
-/** A headline figure: DM Sans 24px light, the unit 16px grey ("£172k of £250k", "72%"). */
-export function Figure({ value, unit, className = '' }) {
+/** A figure that says nothing yet: empty, or a bare 0, 0% or £0 (rule 16). */
+export function bareFigure(value) {
+  if (value == null) return true;
+  return /^[£$€]?\s*0+(?:[.,]0+)?\s*%?$/.test(String(value).trim()) || String(value).trim() === '';
+}
+
+/**
+ * A headline figure: DM Sans 24px light, the unit 16px grey ("£172k of
+ * £250k", "72%"). `empty`: the sentence shown instead while there is
+ * nothing to count, never a bare 0, 0% or £0 (rule 16; walk item 9):
+ * "Nothing settled yet this month.", "Your score starts with your first log."
+ */
+export function Figure({ value, unit, empty, className = '' }) {
+  if (empty && bareFigure(value)) return <p className={`ds-fig-empty ${className}`.trim()}>{empty}</p>;
   return (
     <div className={`ds-fig ${className}`.trim()}>
       {value}
@@ -191,6 +210,8 @@ export function AddLink({ children = 'Add', label, onClick, expanded, controls, 
  * `onAdd(name)` may return a promise; the box empties and closes once it's
  * done (keep it open for another with `stayOpen`). Where adding needs a
  * longer form, pass it as `children`: it shows in place of the name box.
+ * `more` may be a function of what's typed, `(name) => node`, to carry the
+ * name on (B4: "Add their details too").
  */
 export function QuickAdd({ open, onClose, onAdd, placeholder = 'What do you need to do?', label, more, addLabel = 'Add', stayOpen = false, children, id }) {
   const phone = useIsPhone();
@@ -239,7 +260,7 @@ export function QuickAdd({ open, onClose, onAdd, placeholder = 'What do you need
           }}
         />
       )}
-      {more && (children || name.trim()) && <div className="ds-qa-more">{more}</div>}
+      {more && (children || name.trim()) && <div className="ds-qa-more">{typeof more === 'function' ? more(name.trim()) : more}</div>}
       <div className="ds-qa-acts">
         <button type="button" className="ds-btn ds-btn--primary" onClick={add} disabled={busy}>{addLabel}</button>
         <button type="button" className="ds-more ds-more--bare" onClick={onClose}>Cancel</button>

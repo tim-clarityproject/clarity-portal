@@ -14,9 +14,20 @@
 //   odd      awkward names, an address made to look like someone else's,
 //            a cover whose dates have passed, merging a client with themselves
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, makeReport, ME, OTHER, seedDevice, settle, standIn, toastText } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, makeReport, ME, openSearch, OTHER, seedDevice, settle, standIn, toastText } from './shared.mjs';
 import { ADMIN_ROWS, ID, seedRows } from './seed.mjs';
 import { BREAK_PARTS, runDayBreak } from './day-breakit.mjs';
+
+// Polish 1 (B4): "+ Add" by the list's label opens Quick Add; "Add their details too" opens the whole Add client form,
+// the name typed there carried over (cleared here, so the form starts as it always did).
+async function openAddClient(page) {
+  await page.locator('.ds-addlink[aria-label="Add client"]').first().click();
+  await page.locator('#cc-add-client .ds-qa-box').fill('x');
+  await page.getByRole('button', { name: 'Add their details too', exact: true }).click();
+  await page.waitForTimeout(500);
+  await page.locator('.ds-modal--shown .ds-dialog').last().getByLabel('Name', { exact: true }).fill('');
+}
+
 
 const report = makeReport('Coach portal, the break-it tester');
 const { pass } = report;
@@ -60,7 +71,7 @@ if (has('reach')) {
   pass('reach: a row that isn’t theirs never shows in their list', !/Owner’s Client/.test(await text(page)));
   await open(page, `/coach/clients/${ownersClient.id}`);
   pass('reach: nor on a page of its own', /isn’t in your list any more/.test(await text(page)));
-  await button(page, 'Search, or do anything').click();
+  await openSearch(page);
   await page.keyboard.type('Owner');
   await settle(page, 300);
   pass('reach: nor in their search', /Nothing matches/.test(await page.locator('.cc-jump-list').innerText()));
@@ -104,7 +115,7 @@ if (has('reach')) {
 if (has('taps')) {
   const { ctx, page, store, me, errors } = await session();
   await open(page, '/coach/clients');
-  await button(page, 'Add client').first().click();
+  await openAddClient(page);
   await settle(page, 500);
   await panel(page).getByLabel('Name', { exact: true }).fill('Dee Twice');
   await panel(page).getByRole('button', { name: 'Add client', exact: true }).dblclick();
@@ -112,7 +123,7 @@ if (has('taps')) {
   pass('double tap: Add client makes one client', store.rows.client_profiles.filter((p) => p.name === 'Dee Twice').length === 1);
 
   await open(page, '/coach/clients');
-  await button(page, 'Add team').click();
+  await button(page, 'Add a team from a spreadsheet').click();
   await settle(page, 400);
   await page.locator('#cc-team-paste').fill('Una One <una@example.invalid>\nDuo Two <duo@example.invalid>');
   await settle(page, 300);
@@ -187,7 +198,7 @@ if (has('paste')) {
   const { ctx, page, store, me, errors } = await session();
   const five = Array.from({ length: 500 }, (_, i) => `Person Number${i} <bulk${i}@example.invalid>`).join('\n');
   await open(page, '/coach/clients');
-  await button(page, 'Add team').click();
+  await button(page, 'Add a team from a spreadsheet').click();
   await settle(page, 400);
   const t0 = Date.now();
   await page.locator('#cc-team-paste').fill(`${five}\n${five}`);
@@ -203,7 +214,7 @@ if (has('paste')) {
   const t1 = Date.now();
   await page.getByLabel('Search clients').fill('Number499');
   await settle(page, 500);
-  pass('500 names: the list still searches at once', (await page.locator('.cc-row').count()) === 1 && Date.now() - t1 < 4000);
+  pass('500 names: the list still searches at once', (await page.locator('.cc-plist .ds-li').count()) === 1 && Date.now() - t1 < 4000);
   const sideways = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   pass('500 names: no sideways scroll', sideways <= 0);
 
@@ -231,7 +242,7 @@ if (has('tabs')) {
     await standIn(b, { role: 'owner', db: 'none' });
     await open(b, '/coach/clients');
     await open(a, '/coach/clients');
-    await button(a, 'Add client').first().click();
+    await openAddClient(a);
     await settle(a, 400);
     await panel(a).getByLabel('Name', { exact: true }).fill('Tab One');
     await panel(a).getByRole('button', { name: 'Add client', exact: true }).click();

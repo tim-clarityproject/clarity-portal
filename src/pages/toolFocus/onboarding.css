@@ -1,0 +1,38 @@
+/* The first Mission (OnboardingMission.jsx) in the 25 Nov type (B3, Polish 1). */
+.ui-root.obm-page {
+  min-height: 70dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5) var(--page-x-phone);
+  background: var(--bg);
+}
+.ui-root .obm-col { width: 100%; max-width: var(--tool-max); text-align: center; }
+.ui-root .obm-greet { display: flex; align-items: center; justify-content: center; min-height: var(--space-7); margin-bottom: var(--space-7); }
+.ui-root .obm-title {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-page-title);
+  line-height: 1.2;
+  letter-spacing: var(--ls-page-title);
+  text-transform: uppercase;
+  color: var(--text);
+}
+.ui-root .obm-caret { margin-left: var(--space-2); font-family: var(--font-body); animation: obm-blink 1s steps(1) infinite; }
+.ui-root .obm-ask { animation: ds-fade var(--dur-slow) var(--ease); }
+.ui-root .obm-q { margin: 0 0 var(--space-4); min-height: var(--space-6); display: flex; align-items: center; justify-content: center; }
+.ui-root .obm-input { text-align: left; animation: ds-fade var(--dur-slow) var(--ease); }
+.ui-root .obm-count { margin: var(--space-2) 0 var(--space-5); font-size: var(--fs-meta); color: var(--text-2); text-align: center; }
+.ui-root .obm-count--over { color: var(--error-text); }
+.ui-root .obm-actions { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
+.ui-root .obm-later { text-decoration: underline; text-decoration-thickness: var(--line-w); text-underline-offset: var(--space-1); color: var(--text-2); }
+@keyframes obm-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .obm-caret, .ui-root .obm-ask, .ui-root .obm-input { animation: none; }
+}
+@media (max-width: 600px) {
+  .ui-root .obm-actions { align-items: stretch; }
+  .ui-root .obm-actions .ds-btn, .ui-root .obm-actions .ui-btn-primary { width: 100%; }
+  .ui-root .obm-later { justify-content: center; }
+}

@@ -1,22 +1,21 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bar, PageHeader, Stat, useIsPhone } from '../../components/design';
+import { Bar, Stat, useIsPhone } from '../../components/design';
+import { Card, PageOpening } from '../../components/design/Blocks';
+import { PEOPLE } from '../../content/pageLines/coach';
+import { PersonRow } from './peopleParts';
 import { leadReport, REPORT_LIKELY_NOTE, REPORT_PERIOD } from '../../lib/coach/associatePay';
 import { networkPath } from '../../lib/coach/network';
-import { Back, Row, useCoachPortal } from './parts';
+import { Back, useCoachPortal } from './parts';
 import './pay.css';
 
 // Lead reports (Phase 6b run 2; M11 C10), the owner's alone, from the quiet Reports link under the Leads title, at
 // /coach/leads/reports: the pipeline, what's likely by stage, the win rate and the time to win, each stage's value,
 // where won work came from and who referred it. Sales figures live here, never on Finances (M11's note).
 
+/** One card (rule 13): its label, with the period at its right on a laptop. */
 function Section({ title, aside, children }) {
-  return (
-    <section className="ds-section cc-part cc-pay-part">
-      <div className="ds-section-head cc-pay-head"><h2 className="ds-section-title">{title}</h2>{aside}</div>
-      {children}
-    </section>
-  );
+  return <Card label={title} add={aside}>{children}</Card>;
 }
 
 /** A slim bar with its name and its value (M11 .bzh): the bar is decoration, the words say the figures. */
@@ -37,9 +36,9 @@ export default function LeadReports() {
   const r = useMemo(() => leadReport({ leads, stages: leadStages, today: todayKey }), [leads, leadStages, todayKey]);
   return (
     <div className="cc-page">
-      <div className="cc-col">
+      <div className="cc-col cc-people">
         <Back to="Leads" onClick={() => navigate('/coach/leads')} />
-        <PageHeader title="Lead reports" meta={[REPORT_PERIOD]} />
+        <PageOpening label={REPORT_PERIOD} title={PEOPLE.reportsTitle} line={PEOPLE.reportsLine} />
         <div className="cc-pay-figures cc-rep-figures" role="group" aria-label="Lead figures">
           <Stat label="Pipeline" value={r.pipeline} />
           <Stat label="Likely, by stage" value={r.likely} />
@@ -68,14 +67,15 @@ export default function LeadReports() {
 
         {r.referrers.length > 0 && (
           <Section title="Referrers">
-            <div className="cc-rows cc-pay-rows">
+            <div className="ds-rows-list">
               {r.referrers.map((p) => (
-                <Row
+                <PersonRow
                   key={p.key}
-                  title={p.name}
+                  name={p.name}
                   facts={[p.line]}
                   when={p.right}
                   label={[p.name, p.line, p.right].filter(Boolean).join(', ')}
+                  href={p.personId ? networkPath({ person: p.personId }) : undefined}
                   onClick={p.personId ? () => navigate(networkPath({ person: p.personId })) : undefined}
                 />
               ))}

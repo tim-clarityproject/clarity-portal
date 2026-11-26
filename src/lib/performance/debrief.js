@@ -17,6 +17,7 @@ import {
   m0SprintCalendar,
   m0WeekIsEligible,
   m0WeekOfDay,
+  m1LimitScore,
   m8UsualRange,
   m9FigureOn,
   m11DebriefStreak,
@@ -254,7 +255,7 @@ export function debriefView(d, { today }) {
       week: wk, workingDays: r.workingDays, today: upTo, logs: d.logs || [], score: hs?.score ?? null, notLogged: hs?.notLogged,
       strategyName: strategyName.get(sh.strategy_id) || '', units,
     });
-    habits.push({ ...row, total: habitTotal(row, hs, sprint.standard) });
+    habits.push({ ...row, total: habitTotal(row, hs, sprint.standard, { limitPer: setting.limit_per }) });
   }
   const groups = (d.strategies || [])
     .map((s) => ({ id: s.id, name: s.name, habits: habits.filter((h) => h.strategyId === s.id) }))
@@ -337,10 +338,27 @@ export function debriefView(d, { today }) {
  * The habit's total and score column (M1 .tot): what was logged against
  * the target, then the habit's M1 score. Mint at or above the standard,
  * grey below, never coral (Tim, 30 Oct; 26 Oct rule 1). "Not logged"
- * when nothing was logged.
+ * only when nothing was logged.
+ *
+ * A limit (Late finishes, Coffees) with fewer than half its working days
+ * logged scores 0% for the week until more are filled in (M1), but it
+ * still shows its standing from the days logged, as every other measure
+ * does, with how many days that is (Polish 1, 25 Nov: "Not logged" beside
+ * logged entries was a fault). The week's score is unchanged.
  */
-export function habitTotal(row, scored, standard) {
+export function habitTotal(row, scored, standard, { limitPer = null } = {}) {
   const label = (row.weekLine || '').replace(/ this week/, '');
+  const logged = Object.values(row.values || {}).filter((v) => v != null && Number.isFinite(Number(v)) && Number(v) >= 0);
+  const isLimit = row.measure === 'yes_no_days_limit' || row.measure === 'count_limit';
+  if (scored?.notLogged && isLimit && logged.length && row.limit != null) {
+    const limit = Number(row.limit);
+    const got = row.measure === 'yes_no_days_limit'
+      ? logged.filter((v) => Number(v) > 0).length
+      : logged.reduce((t, v) => t + Number(v), 0);
+    const standing = m1LimitScore(got, limitPer === 'day' && row.measure === 'count_limit' ? limit * logged.length : limit);
+    const days = `${logged.length} ${logged.length === 1 ? 'day' : 'days'} logged`;
+    return { label: label ? `${label}, ${days}` : days, value: `${m0Round(standing)}%`, good: m0AtStandard(standing, standard) };
+  }
   if (!scored || scored.score == null || scored.notLogged) return { label, value: 'Not logged', good: null };
   return { label, value: `${m0Round(scored.score)}%`, good: m0AtStandard(scored.score, standard) };
 }

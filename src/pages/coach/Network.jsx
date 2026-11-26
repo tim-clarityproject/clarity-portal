@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { AddButton, PageHeader, useToast } from '../../components/design';
+import { useToast } from '../../components/design';
+import { AddLink, Card, Empty, PageOpening, SectionTabs } from '../../components/design/Blocks';
+import { PEOPLE } from '../../content/pageLines/coach';
 import { saveRow } from '../../lib/coach/store';
 import { networkPageOf } from '../../lib/coach/networkData';
 import {
   ACTIONS_WORDS, actionRow, COMING_FOLD, comingUpQuery, DUE_FOLD, dueNowQuery, folded, moreWords, NETWORK_LOAD_PROBLEM, NETWORK_TABS, networkPath, networkProblem, READY_BUTTONS, READY_NOT_NOW, readyCardLine,
   showReadyCard, TABLE_START, withArchiveNotNow,
 } from '../../lib/coach/network';
-import { Part, Row, TextLink, useCoachPortal } from './parts';
-import { UnderTabs } from './todoParts';
+import { TextLink, useCoachPortal } from './parts';
+import { PersonRow } from './peopleParts';
 import { useNetworkAsk, useNetworkCounts } from './networkParts';
 import { AddPersonPanel, ColumnsPanel, ExportPanel, ImportPanel, PersonPanel, ReadyPanel } from './NetworkPanels';
 import NetworkTable from './NetworkTable';
@@ -28,14 +30,14 @@ import './network.css';
 // word is network.js's.
 
 /** One folded list of Actions: its first few, "Show all 27", then on in pages. */
-function ActionList({ title, query, fold, empty, onOpen }) {
+function ActionList({ title, query, fold, empty, onOpen, add }) {
   const { userId, todayKey } = useCoachPortal();
   const [all, setAll] = useState(false);
   const [extra, setExtra] = useState([]); // the pages after the first, once Show all has more than one
   const first = useNetworkAsk(() => networkPageOf(userId, query(todayKey, { all })), [userId, todayKey, all]);
   useEffect(() => { setExtra([]); }, [first.data]);
   const busy = useRef(false);
-  if (!first.data) return first.error ? <Part title={title}><p className="cc-problem" role="alert">{first.error.code === 'OFFLINE' || first.error.code === 'NO_ROOM' ? networkProblem(first.error) : NETWORK_LOAD_PROBLEM}</p></Part> : null;
+  if (!first.data) return first.error ? <Card label={title} add={add}><p className="cc-problem" role="alert">{first.error.code === 'OFFLINE' || first.error.code === 'NO_ROOM' ? networkProblem(first.error) : NETWORK_LOAD_PROBLEM}</p></Card> : null;
   const rows = [...first.data.rows, ...extra];
   const list = folded(rows, first.data.total, fold, all);
   const more = all ? moreWords(rows.length, first.data.total) : '';
@@ -45,16 +47,16 @@ function ActionList({ title, query, fold, empty, onOpen }) {
     try { const page = await networkPageOf(userId, query(todayKey, { all: true, offset: rows.length })); setExtra((e) => [...e, ...page.rows]); } catch { /* the link stays, to try again */ } finally { busy.current = false; }
   };
   return (
-    <Part title={title}>
-      {rows.length === 0 && <p className="cc-quiet">{empty}</p>}
+    <Card label={title} add={add}>
+      {rows.length === 0 && <Empty>{empty}</Empty>}
       {rows.length > 0 && (
-        <div className="cc-rows">
-          {list.rows.map((p) => { const r = actionRow(p, todayKey); return <Row key={r.id} title={r.name} facts={[r.role, r.rhythm]} when={r.when} onClick={() => onOpen(r.id)} />; })}
+        <div className="ds-rows-list">
+          {list.rows.map((p) => { const r = actionRow(p, todayKey); return <PersonRow key={r.id} name={r.name} facts={[r.role, r.rhythm]} when={r.when} href={networkPath({ tab: 'actions', person: r.id })} onClick={() => onOpen(r.id)} />; })}
         </div>
       )}
       {list.more && <div className="cc-acts"><TextLink aria-expanded="false" onClick={() => setAll(true)}>{list.more}</TextLink></div>}
       {more && <div className="cc-acts"><TextLink onClick={next}>{more}</TextLink></div>}
-    </Part>
+    </Card>
   );
 }
 
@@ -88,31 +90,32 @@ export default function Network() {
     toast.saved({ message: READY_NOT_NOW, long: true, onUndo: () => save(before) });
   };
   const empty = counts && counts.active === 0;
+  const addLink = <AddLink label={ACTIONS_WORDS.add} expanded={panel === 'add'} onClick={() => setPanel('add')} />;
 
   return (
     <div className="cc-page">
-      <div className="cc-col cc-net">
-        <PageHeader title="Network" />
-        <UnderTabs label="Network" tabs={NETWORK_TABS.map(([value, label]) => ({ value, label }))} value={tab} onChange={(v) => go({ tab: v, archived: false, person: null })} panelId="cc-net-panel" />
-        <div id="cc-net-panel" role="tabpanel" aria-labelledby={`cc-net-panel-${tab}`}>
+      <div className="cc-col cc-net cc-people">
+        <PageOpening title={PEOPLE.networkTitle} line={PEOPLE.networkLine} />
+        <SectionTabs label="Network" tabs={NETWORK_TABS.map(([key, label]) => ({ key, label }))} value={tab} onChange={(v) => go({ tab: v, archived: false, person: null })} className="cc-ptabs" />
+        <div id="cc-net-panel" role="tabpanel" aria-label={NETWORK_TABS.find(([k]) => k === tab)?.[1]}>
           {tab === 'actions' && (
             <div className="cc-fade">
               {showReadyCard(counts, settings.crm, todayKey) && (
-                <div className="cc-net-card">
+                <Card className="cc-net-card">
                   <p>{readyCardLine(counts.ready)}</p>
                   <div className="cc-acts">
                     <TextLink onClick={() => setPanel('ready')}>{READY_BUTTONS.review}</TextLink>
                     <TextLink onClick={notNow}>{READY_BUTTONS.notNow}</TextLink>
                   </div>
-                </div>
+                </Card>
               )}
-              {empty ? <p className="cc-quiet">{ACTIONS_WORDS.empty}</p> : (
+              {empty ? <Card label={ACTIONS_WORDS.dueNow} add={addLink}><Empty>{ACTIONS_WORDS.empty}</Empty></Card> : (
                 <>
-                  <ActionList title={ACTIONS_WORDS.dueNow} query={dueNowQuery} fold={DUE_FOLD} empty={ACTIONS_WORDS.upToDate} onOpen={openPerson} />
+                  {/* "+ Add" by the first list's label (rule 10); adding someone needs their ratings, so it opens its panel. */}
+                  <ActionList title={ACTIONS_WORDS.dueNow} query={dueNowQuery} fold={DUE_FOLD} empty={ACTIONS_WORDS.upToDate} onOpen={openPerson} add={addLink} />
                   <ActionList title={ACTIONS_WORDS.comingUp} query={comingUpQuery} fold={COMING_FOLD} empty={ACTIONS_WORDS.nothingComing} onOpen={openPerson} />
                 </>
               )}
-              <div className="cc-add"><AddButton onClick={() => setPanel('add')}>{ACTIONS_WORDS.add}</AddButton></div>
             </div>
           )}
           {tab === 'table' && <NetworkTable archived={archived} onArchive={(on) => go({ archived: on, person: null })} onOpen={openPerson} onPanel={setPanel} counts={counts} onState={onState} />}

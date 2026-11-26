@@ -65,8 +65,9 @@ async function signedIn(browser, width) {
 
   // ---- Goal: the frame, the eye, the required message, the example
   pass(`${tag}: opens on the goal`, (await questionText(page)).startsWith('What do you want to achieve?'));
-  pass(`${tag}: the stage name is above the question`, (await page.locator('.ds-guide-label').innerText()).trim() === 'Goal');
-  pass(`${tag}: Back and the tool’s name at the top left, close at the top right`, (await page.locator('.ds-guide-back').count()) === 1 && /get unstuck/i.test(await page.locator('.ds-guide-name').innerText()) && (await page.locator('.ds-guide-close').count()) === 1);
+  pass(`${tag}: the stage name is above the question`, (await page.locator('.ds-guide-label').textContent()).trim() === 'Goal');
+  // Focus mode (Polish 1, rule 21; B3): × at the top left saves and closes, "Step 1 of 7" at the right, the tool's name over the question as its eyebrow when it has no stage name; no Back on the first step.
+  pass(`${tag}: × at the top left, “Step 1 of 7” at the right, no Back on the first step`, (await page.locator('.ds-guide-close[aria-label="Close and save my place"]').count()) === 1 && /^Step 1 of \d+$/.test((await page.locator('.ds-guide-where').innerText()).trim()) && (await page.locator('.ds-guide-back').count()) === 0);
   pass(`${tag}: the % bar starts at 0`, (await page.locator('.ds-guide-pct').getAttribute('aria-valuenow')) === '0');
   const eyeLabel = await page.locator('.ds-guide-question .ds-who').getAttribute('aria-label');
   pass(`${tag}: the eye is on the first step, and its label ends “Edit who can see this.”`, (await eyes(page)) === 1 && /Edit who can see this\.$/.test(eyeLabel || ''), eyeLabel);
@@ -221,7 +222,8 @@ async function signedIn(browser, width) {
   await onQuestion(page, 'Here’s your plan');
   pass(`${tag}: Your plan has the eye again`, (await eyes(page)) === 1 && /Edit who can see this\.$/.test(await page.locator('.ds-guide-question .ds-who').getAttribute('aria-label')));
   const labels = (await page.locator('.ds-guide-plan-label').allInnerTexts()).map((t) => t.trim());
-  pass(`${tag}: every answer is on one page`, JSON.stringify(labels) === JSON.stringify(['Your goal', 'What’s in the way', 'What’s already working', 'Your options', 'Your next steps']), labels.join('|'));
+  // Polish 1: the labels are spaced capitals, so innerText reads them upper case.
+  pass(`${tag}: every answer is on one page`, JSON.stringify(labels.map((l) => l.toLowerCase())) === JSON.stringify(['Your goal', 'What’s in the way', 'What’s already working', 'Your options', 'Your next steps'].map((l) => l.toLowerCase())), labels.join('|'));
   pass(`${tag}: the next steps say where they are`, (await page.locator('.ds-guide-plan-row').nth(4).innerText()).includes('It’s in this week’s sprint.') && (await page.locator('.ds-guide-plan-row').nth(4).innerText()).includes('It’s in your backlog.'));
   await page.getByRole('button', { name: 'Edit your goal' }).click();
   await onQuestion(page, 'What do you want to achieve?');

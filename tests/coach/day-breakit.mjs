@@ -19,7 +19,7 @@
 // `blocked` and fails the part). The page's clock is pinned to a day at or
 // before the real one (never ahead: sign-in rule 46). Every /api/ call is
 // answered by a stand-in: nothing is ever sent.
-import { accountId, APP, clearDevice, coachContext, codesStandIn, ME, OTHER, readEnv, seedDevice, settle, standIn } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, codesStandIn, frameMenu, frameMenuWords, ME, openFromMenu, openSearch, openTodoAdd, OTHER, readEnv, seedDevice, settle, standIn } from './shared.mjs';
 import { ADMIN_ROWS, DAY, ID, PRESSURE, seedClock, seedWithDay, SES } from './seed.mjs';
 import { clearCoaching, clientContext, clientStandIn, fromCoach } from './client.mjs';
 import { CAL_TABLES } from './cal-standin.mjs';
@@ -206,7 +206,7 @@ export async function runDayBreak({ browser, report, parts }) {
       await settle(page, 400);
       pass(`reach, ${who}${phase}: the menu lists only their own to-do lists`, !SECRET.test(await page.locator('.cc-menu').innerText().catch(() => '')) && /Kestrel renewal/.test(await page.locator('.cc-menu').innerText().catch(() => '')));
       await page.keyboard.press('Escape'); await settle(page, 300);
-      await button(page, 'Search, or do anything').click(); await settle(page, 300);
+      await openSearch(page); await settle(page, 300);
       await page.keyboard.type('secret'); await settle(page, 400);
       pass(`reach, ${who}${phase}: search finds nothing of it`, /Nothing matches/.test(await page.locator('.cc-jump-list').innerText().catch(() => '')));
       await page.keyboard.press('Escape'); await settle(page, 300);
@@ -337,12 +337,12 @@ export async function runDayBreak({ browser, report, parts }) {
 
       // Add to-do: the button twice, then Enter with a click.
       await go(page, '/coach/todos');
-      const quick = page.locator('.cc-col > .cc-qadd');
-      await quick.getByLabel('What needs doing?').fill('Pressed twice at once');
+      const quick = await openTodoAdd(page);
+      await (await openTodoAdd(page)).getByLabel('What needs doing?').fill('Pressed twice at once');
       await twice(quick.getByRole('button', { name: 'Add to-do', exact: true }));
       await settle(page, 1000);
       pass(`${tag}: Add to-do, two clicks: one to-do`, store.rows.coach_todos.filter((r) => r.title === 'Pressed twice at once').length === 1, `${store.rows.coach_todos.filter((r) => r.title === 'Pressed twice at once').length}`);
-      await quick.getByLabel('What needs doing?').fill('Enter and the button together');
+      await (await openTodoAdd(page)).getByLabel('What needs doing?').fill('Enter and the button together');
       await page.keyboard.down('Enter');
       await quick.getByRole('button', { name: 'Add to-do', exact: true }).evaluate((el) => el.click());
       await page.keyboard.up('Enter');
@@ -489,14 +489,14 @@ export async function runDayBreak({ browser, report, parts }) {
       pass(`${tag}: Today lists today’s 120, the Important ones first`, todayRows === 120 && (await page.locator('#cc-todo-tab [role=list]').first().locator('.cc-todo-row').nth(19).locator('.ds-todo--important').count()) === 1 && (await page.locator('#cc-todo-tab [role=list]').first().locator('.cc-todo-row').nth(20).locator('.ds-todo--important').count()) === 0, `${todayRows} rows`);
 
       // A typed character.
-      const box = page.locator('.cc-col > .cc-qadd').getByLabel('What needs doing?');
+      const box = (await openTodoAdd(page)).getByLabel('What needs doing?');
       await box.click();
       const text = 'Ring the venue about parking';
       const times = [];
       for (let i = 0; i < text.length; i += 1) {
         const s0 = Date.now();
         await page.keyboard.type(text[i]);
-        await page.waitForFunction((want) => document.querySelector('.cc-qadd-title')?.textContent === want, text.slice(0, i + 1).trim(), { timeout: 5000 }).catch(() => null);
+        await page.waitForFunction((want) => document.querySelector('.ds-qa .ds-qa-box')?.value.trim() === want, text.slice(0, i + 1).trim(), { timeout: 5000 }).catch(() => null);
         times.push(Date.now() - s0);
       }
       const worst = Math.max(...times);
@@ -585,7 +585,7 @@ export async function runDayBreak({ browser, report, parts }) {
       const t = await openAt(TUE, { tag, db: 'none', seed: many, path: '/coach/todos' });
       const { page, me } = t;
       pass(`${tag}: To-dos opens with all of today’s`, (await page.locator('#cc-todo-tab .cc-todo-row').count()) === 120);
-      const box = page.locator('.cc-col > .cc-qadd').getByLabel('What needs doing?');
+      const box = (await openTodoAdd(page)).getByLabel('What needs doing?');
       await box.fill('One more, on the device');
       await box.press('Enter'); await settle(page, 800);
       pass(`${tag}: one more is added and kept`, (await toast(page)) === 'Added to Today.' && (await t.rowsNow('coach_todos')).length === 501, `${await toast(page)}; ${(await t.rowsNow('coach_todos')).length}`);
@@ -713,8 +713,7 @@ export async function runDayBreak({ browser, report, parts }) {
     const t = await openAt(TUE, { tag, seedOptions: { sessions: true }, path: '/coach/todos' });
     const { page, store, ctx, me } = t;
     const nav = async (label, to) => {
-      await button(page, 'Open the menu').click(); await settle(page, 300);
-      await page.locator('.cc-menu-item', { hasText: new RegExp(`^${label}`) }).first().click(); await settle(page, 900);
+      await openFromMenu(page, label); await settle(page, 900);
       pass(`${tag}: with no signal the menu still opens ${label}`, new URL(page.url()).pathname === to && (await page.locator('.cc-app h1').count()) > 0, `${page.url()}: ${flat(await words(page)).slice(0, 200)}`);
     };
     // Each page is visited once with a signal, without a reload between them, so its code is in the tab (the Home Screen
@@ -725,7 +724,7 @@ export async function runDayBreak({ browser, report, parts }) {
       if ((await fold.getAttribute('aria-expanded')) !== 'true') { await fold.click(); await settle(page, 300); }
       await page.locator('.cc-ses-rows .cc-row').nth(1).click(); await settle(page, 900); // newest first: next week's, then yesterday's
     };
-    const visit = async (label) => { await button(page, 'Open the menu').click(); await settle(page, 300); await page.locator('.cc-menu-item', { hasText: new RegExp(`^${label}`) }).first().click(); await settle(page, 900); };
+    const visit = async (label) => { await openFromMenu(page, label); await settle(page, 900); };
     await go(page, '/coach');
     await visit('To-dos'); await visit('Clients'); await toSession(); await visit('Today');
     const local = () => page.evaluate((id) => localStorage.getItem(`clarity-coach-local:${id}`) || '', me);
@@ -735,10 +734,10 @@ export async function runDayBreak({ browser, report, parts }) {
 
     // To-dos: two added, one ticked.
     await nav('To-dos', '/coach/todos');
-    const quick = page.locator('.cc-col > .cc-qadd');
+    const quick = await openTodoAdd(page);
     const said = [];
     for (const title of ['Offline one', 'Offline two']) {
-      await quick.getByLabel('What needs doing?').fill(title);
+      await (await openTodoAdd(page)).getByLabel('What needs doing?').fill(title);
       await quick.getByRole('button', { name: 'Add to-do', exact: true }).click(); await settle(page, 900);
       said.push(await toast(page));
     }
@@ -898,11 +897,12 @@ export async function runDayBreak({ browser, report, parts }) {
       const tag = 'odd, typed';
       const t = await openAt(TUE, { tag, seedOptions: { sessions: true }, seed: extras, path: '/coach/todos' });
       const { page, store } = t;
-      const quick = page.locator('.cc-col > .cc-qadd');
+      const quick = await openTodoAdd(page);
       const box = quick.getByLabel('What needs doing?');
       const titled = (re) => store.rows.coach_todos.filter((r) => re.test(r.title));
       const add = async (text) => {
         const n = store.rows.coach_todos.length;
+        await openTodoAdd(page);
         await box.fill(text); await settle(page, 250);
         const chips = await quick.locator('.cc-qadd-chips li').allInnerTexts();
         await quick.getByRole('button', { name: 'Add to-do', exact: true }).click(); await settle(page, 900);
@@ -1226,11 +1226,8 @@ export async function runDayBreak({ browser, report, parts }) {
         const before = JSON.stringify(store.rows.coach_todos);
         // The pages are reached inside the portal, as a person does, so Back has somewhere of the portal's to go.
         const menuTo = async (label) => {
-          // On a phone the bar's own first button is Today; everything else is in the menu, as on a laptop.
-          if (size === 400 && label === 'Today') { await page.locator('.cc-phonebar button').first().click(); await settle(page, 900); return; }
-          if (size === 400) await page.locator('.cc-phonebar button').nth(1).click(); else await button(page, 'Open the menu').click();
-          await settle(page, 400);
-          await page.locator('.cc-menu-item', { hasText: new RegExp(`^${label}`) }).first().click(); await settle(page, 900);
+          // Every page is in the frame's menu (polish 1): the column on a laptop, the crosshair's panel on a phone.
+          await openFromMenu(page, label); await settle(page, 900);
         };
         const panels = [
           ['a to-do', '/coach/todos', async () => { await page.locator('.cc-todo-open').first().click(); await settle(page, 600); }],

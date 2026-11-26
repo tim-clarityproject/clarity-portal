@@ -53,7 +53,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, makeReport, OTHER, seedDevice, seedNetworkDevice, settle, SIZES, standIn, toastText } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, makeReport, openSearch, OTHER, seedDevice, seedNetworkDevice, settle, SIZES, standIn, toastText } from './shared.mjs';
 import { CRM, ID, manyNetwork, networkDeviceSeed, seedClock, seedWithCrm } from './seed.mjs';
 
 const ID_TAGS = { exec: ID.tagExec, finance: ID.tagFinance };
@@ -66,11 +66,23 @@ import { toCsv } from '../../src/lib/coach/model.js';
 import { coachRowsWaiting } from '../../src/lib/coach/copyWaiting.js';
 import { xlsxBytes, xlsxTable } from '../../src/lib/coach/xlsx.js';
 
+// Polish 1 (B4): "+ Add" by the list's label opens Quick Add; "Add their details too" opens the whole Add lead form,
+// the name typed there carried over (cleared here, so the form starts as it always did).
+async function openAddLead(page) {
+  await page.locator('.ds-addlink[aria-label="Add lead"]').first().click();
+  await page.locator('#cc-add-lead .ds-qa-box').fill('x');
+  await page.getByRole('button', { name: 'Add their details too', exact: true }).click();
+  await page.waitForTimeout(500);
+  await page.locator('.ds-modal--shown .ds-dialog').last().getByLabel('Who is it?').fill('');
+}
+
+
 export const CRM_BREAK_PARTS = ['r-reach', 'r-many', 'r-tabs', 'r-offline', 'r-merge', 'r-sheet', 'r-loop', 'r-odd'];
 const TUE = new Date(2026, 10, 17, 9, 0);
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
-const press = async (page, name, scope = page) => { await scope.getByRole('button', { name, exact: true }).first().click(); await settle(page, 600); };
+// A name in a list or table, a board card and the pages that open more are real links since Polish 1 (B4): press either.
+const press = async (page, name, scope = page) => { await scope.getByRole('button', { name, exact: true }).or(scope.getByRole('link', { name, exact: true })).first().click(); await settle(page, 600); };
 const go = async (page, path, wait = 1300) => { await page.goto(`${APP}${path}`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, wait); };
 const words = (page) => page.evaluate(() => (document.querySelector('.cc-main')?.innerText || '').replace(/ /g, ' '));
 const allWords = (page) => page.evaluate(() => (document.querySelector('.cc-app')?.innerText || document.body.innerText).replace(/ /g, ' '));
@@ -83,11 +95,11 @@ const forDevice = (rows) => { const { coach_notifications: _n, activity_log: _a,
 const NOT_YET = ['clarity-coach-not-yet', 'clarity-coach-day-not-yet', 'clarity-coach-cal-not-yet', 'clarity-coach-crm-not-yet'];
 const rowNames = (page) => page.locator('.cc-net-table tbody .cc-table-name').allInnerTexts();
 const netCell = (page, column, name) => page.locator('.cc-net-table').getByRole('button', { name: new RegExp(`^${column} for ${name}`) }).first();
-const cellText = async (page, name, index) => (await page.locator('.cc-net-table tbody tr', { has: page.getByRole('button', { name, exact: true }) }).locator('td, th').nth(index).innerText()).trim();
+const cellText = async (page, name, index) => (await page.locator('.cc-net-table tbody tr', { has: page.getByRole('link', { name, exact: true }) }).locator('td, th').nth(index).innerText()).trim();
 const actionRows = (page, title) => page.locator('.cc-part', { has: page.locator('.ds-section-title', { hasText: title }) }).locator('.cc-row').evaluateAll((rows) => rows.map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
 /** Search: what the one box finds for some words. */
 const search = async (page, typed) => {
-  await page.getByRole('button', { name: 'Search, or do anything' }).click(); await settle(page, 300);
+  await openSearch(page); await settle(page, 300);
   await page.keyboard.type(typed); await settle(page, 600);
   const found = await page.locator('.cc-jump').innerText().catch(() => '');
   await page.keyboard.press('Escape'); await settle(page, 300);
@@ -531,7 +543,7 @@ PARTS['r-offline'] = async () => {
   } else archiveSaid = `(Actions: ${flat(await words(page)).slice(0, 160)})`;
   said.push(['an archive review', archiveSaid]);
   // Leads, in the other tab: a lead added, a move that sets an automation off, a stage renamed, then a board card.
-  await B.locator('.cc-lboard .ds-addrow', { hasText: 'Add lead' }).click(); await settle(B, 600);
+  await openAddLead(B); await settle(B, 600);
   await dialog(B).getByLabel('Who is it?').fill('Hana Okafor');
   await press(B, 'Add lead', dialog(B)); await settle(B, 900);
   said.push(['a lead added', flat(await toastText(B))]);
@@ -939,7 +951,7 @@ PARTS['r-odd'] = async () => {
     } });
     const { page, store } = a;
     // Names.
-    const addLead = async (name) => { await page.locator('.cc-lboard .ds-addrow', { hasText: 'Add lead' }).click(); await settle(page, 500); await dialog(page).getByLabel('Who is it?').fill(name); await press(page, 'Add lead', dialog(page)); await settle(page, 700); const t = flat(await panelWords(page)); if (await dialog(page).count()) { await page.keyboard.press('Escape'); await settle(page, 400); } return t; };
+    const addLead = async (name) => { await openAddLead(page); await settle(page, 500); await dialog(page).getByLabel('Who is it?').fill(name); await press(page, 'Add lead', dialog(page)); await settle(page, 700); const t = flat(await panelWords(page)); if (await dialog(page).count()) { await page.keyboard.press('Escape'); await settle(page, 400); } return t; };
     let said = await addLead('L'.repeat(300));
     const long = store.rows.coach_leads.find((l) => /^L{20,}$/.test(l.name));
     pass(`${tag}: a 300-character name is kept to the 120 the database holds, never refused by it`, long?.name.length === 120 && !store.calls.some((c) => c.startsWith('refused')), String(long?.name.length));
@@ -1013,7 +1025,7 @@ PARTS['r-odd'] = async () => {
     }
     // Back out of every panel.
     await go(page, '/coach/leads');
-    const panels = [['Add lead', async () => { await page.locator('.cc-lboard .ds-addrow', { hasText: 'Add lead' }).click(); }], ['Edit stages', () => press(page, 'Edit stages')], ['Import from a spreadsheet', () => page.getByRole('button', { name: 'Import from a spreadsheet', exact: true }).click()], ['Export', () => page.locator('.cc-acts').getByRole('button', { name: /^Export/ }).first().click()], ['Review', () => press(page, 'Review')]];
+    const panels = [['Add lead', async () => { await openAddLead(page); }], ['Edit stages', () => press(page, 'Edit stages')], ['Import from a spreadsheet', () => page.getByRole('button', { name: 'Import from a spreadsheet', exact: true }).click()], ['Export', () => page.locator('.cc-acts').getByRole('button', { name: /^Export/ }).first().click()], ['Review', () => press(page, 'Review')]];
     const stuck = [];
     for (const [name, open] of panels) {
       await open(); await settle(page, 600);
@@ -1163,7 +1175,7 @@ PARTS['r-odd'] = async () => {
         pass(`${tag}: ${path.replace(/[0-9a-f-]{36}/, '<id>')} has no sideways scroll and nothing off the side`, f.wide <= 1 && f.cut.length === 0, JSON.stringify(f));
       }
       for (const [name, path, open] of [
-        ['Add lead', '/coach/leads', async () => { const add = page.locator('.ds-addrow', { hasText: 'Add lead' }).first(); if (await add.count()) await add.click(); else await page.getByRole('button', { name: /Add lead/ }).first().click(); }],
+        ['Add lead', '/coach/leads', async () => { await openAddLead(page); }],
         ['Log a call', `/coach/leads/${CRM.amy}`, () => page.getByRole('button', { name: 'Log a call', exact: true }).first().click()],
         ['a person', `/coach/network?person=${CRM.david}`, async () => {}],
         ['Edit ratings', `/coach/network?person=${CRM.dana}`, () => dialog(page).getByRole('button', { name: 'Edit ratings', exact: true }).click()],

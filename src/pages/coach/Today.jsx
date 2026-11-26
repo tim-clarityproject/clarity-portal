@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AddLink, Button, Card, Loading, MoreLink, OfferRow, PageOpening, Row, Rows, useIsPhone, useToast } from '../../components/design';
+import { AddLink, Button, Card, Loading, MoreLink, PageOpening, Row, Rows, useIsPhone, useToast } from '../../components/design';
 import { dayTitle } from '../../components/design/Blocks';
 import { COACH_TODAY, coachTodayLine, openSessionWords } from '../../content/pageLines/coach';
 import { birthdaysOn, firstName, possessive } from '../../lib/coach/model';
@@ -12,7 +12,7 @@ import { usePressure } from '../../lib/coach/dayData';
 import { clockChangeLines, coachZoneOf } from '../../lib/coach/calendar';
 import { deviceZone } from '../../lib/time/index.js';
 import { InlineLink, TextLink, useCoachPortal } from './parts';
-import { QuickAddPanel, TodoBulkBar, TodoList, TodoPanel, useTodoPicks } from './todoParts';
+import { TodoBulkBar, TodoQuickAdd, TodoList, TodoPanel, useTodoPicks } from './todoParts';
 import {
   ThisMonthCard, ThisWeekRows, ClosePanel, EnergyPanel, MovePanel, OverLine, OverPanel, PlanPanel,
   ReviewPanel, useCallWords, useDayRows,
@@ -161,10 +161,24 @@ export default function Today() {
   }, [calls, sessions, nowMs]);
   const nextWords = nextCall ? callWords(nextCall) : null;
   const line = partial || needsCount === null ? null : coachTodayLine({ sessions: calls.length, needs: needsCount });
+  // The page's one main action (Tim's walk, item 23): the next session's, as the example; with no session today, the
+  // offer for now (Plan my day, Close my day, Rate my energy, the Weekly review) as the button, "Not now" a quiet link
+  // beside it. With a session, the offer is a quiet link beside the button.
+  const offerWords = offer ? COACH_TODAY.offerButtons[offer] || OFFERS[offer].title : null;
+  const notNow = offer ? <MoreLink bare className="cc-today-notnow" onClick={() => putOff(offer)}>{COACH_TODAY.offerNotNow}</MoreLink> : null;
   const action = nextCall && nextWords ? (
-    <Button variant="primary" onClick={() => openCall(nextCall, nextWords)}>
-      {openSessionWords({ first: firstName(nextWords.name), group: nextWords.group ? nextWords.name : null })}
-    </Button>
+    <span className="cc-today-act">
+      <Button variant="primary" onClick={() => openCall(nextCall, nextWords)}>
+        {openSessionWords({ first: firstName(nextWords.name), group: nextWords.group ? nextWords.name : null })}
+      </Button>
+      {offer && <MoreLink className="cc-today-offerlink" onClick={() => setPanel(offer)}>{offerWords}</MoreLink>}
+      {notNow}
+    </span>
+  ) : offer ? (
+    <span className="cc-today-act">
+      <Button variant="primary" onClick={() => setPanel(offer)}>{offerWords}</Button>
+      {notNow}
+    </span>
   ) : null;
 
   const needsCard = <NeedsYou todayKey={todayKey} partial={partial} onCount={setNeedsCount} />;
@@ -184,6 +198,7 @@ export default function Today() {
     <Card
       label={COACH_TODAY.todosLabel}
       className="cc-part cc-today-todos"
+      quickAdd={<TodoQuickAdd open={panel === 'add'} onClose={close} defaultDay={todayKey} />}
       add={(
         <span className="cc-today-heads">
           <MoreLink small onClick={() => navigate('/coach/todos')} aria-label="View all to-dos">{COACH_TODAY.todosAll}</MoreLink>
@@ -245,7 +260,6 @@ export default function Today() {
           </div>
         )}
 
-        {offer && <OfferRow className="cc-today-offer" action={OFFERS[offer].title} detail={OFFERS[offer].time} onTake={() => setPanel(offer)} onNotNow={() => putOff(offer)} />}
 
         {/* Two columns on a laptop (the example's .cols): what needs the coach and today's work on the left, the month,
             the week and the quieter lists on the right. On a phone the right column comes first, as the example draws. */}
@@ -279,13 +293,13 @@ export default function Today() {
               <Card label={keep.title} className="cc-part cc-today-keep">
                 {keep.people.length > 0 && (
                   <Rows>
-                    {keep.people.map((p) => <Row key={p.id} name={p.name} sub={p.sub} onClick={() => navigate(networkPath({ person: p.id }))} />)}
+                    {keep.people.map((p) => <Row key={p.id} name={p.name} sub={p.sub} label={p.line} onClick={() => navigate(networkPath({ person: p.id }))} />)}
                   </Rows>
                 )}
                 {keep.more && <div className="cc-acts cc-today-more"><TextLink onClick={() => navigate(networkPath())}>{keep.more}</TextLink></div>}
                 {keep.checkIns.length > 0 && (
                   <Rows>
-                    {keep.checkIns.map((c) => <Row key={c.id} name={c.name} sub={c.sub} value={c.when} onClick={() => setCheckInId(c.id)} />)}
+                    {keep.checkIns.map((c) => <Row key={c.id} name={c.name} sub={c.sub} value={c.when} label={c.line} onClick={() => setCheckInId(c.id)} />)}
                   </Rows>
                 )}
                 {dueCheckIns.length > keep.checkIns.length && <div className="cc-acts cc-today-more"><TextLink onClick={() => navigate('/coach/clients/past')}>Show all {countFigure(dueCheckIns.length)} check-ins</TextLink></div>}
@@ -307,7 +321,6 @@ export default function Today() {
       <CheckInPanel checkInId={checkInId} onClose={() => setCheckInId(null)} />
       <TodoBulkBar picks={picks} />
       <TodoPanel id={openId} onClose={() => setOpenId(null)} />
-      <QuickAddPanel open={panel === 'add'} onClose={close} defaultDay={todayKey} />
       <PlanPanel open={panel === 'plan'} onClose={close} />
       <ClosePanel open={panel === 'close'} onClose={close} />
       <ReviewPanel open={panel === 'review'} onClose={close} />

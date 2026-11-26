@@ -8,7 +8,8 @@ import './design.css';
 // Sleep wind down and Work's done for today (mock-up M19, approved by Tim
 // on 29 Oct; Phase 4 step 6).
 //
-// EndScreen: the centred last screen of a tool. A title in Nekst capitals,
+// EndScreen: the centred last screen of a tool. A title in Nekst capitals (the
+// screen's own h1, 24px, 22px on a phone: Polish 1, B3),
 // a line or two in the secondary grey, one sentence each, then one button.
 // Everything is centred, as on M19's breathing screen. `kind`:
 //   'night' Sleep well (M19 .gn): 30px title, 24px on a phone; the page
@@ -20,7 +21,7 @@ import './design.css';
 export function EndScreen({ kind = 'done', title, lines = [], action, headingRef }) {
   return (
     <div className={`ds-end ds-end--${kind}`}>
-      <h2 ref={headingRef} tabIndex={-1} className="ds-end-title">{title}</h2>
+      <h1 ref={headingRef} tabIndex={-1} className="ds-end-title">{title}</h1>
       {lines.filter(Boolean).map((line) => <p key={line} className="ds-end-line">{line}</p>)}
       {action && <div className="ds-end-action">{action}</div>}
     </div>

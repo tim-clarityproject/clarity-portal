@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Button, CalendarBar, Dropdown, Loading, MonthGrid, PageOpening, Row, Rows, useIsPhone } from '../../components/design';
+import { Button, CalendarBar, DisclosureArrow, Dropdown, Loading, MonthGrid, PageOpening, Row, Rows, useIsPhone } from '../../components/design';
 import { dayTitle, monthTitle } from '../../components/design/Blocks';
-import { CALENDAR_LINE, CALENDAR_TYPES } from '../../content/pageLines/coach';
+import { CALENDAR_ADD, CALENDAR_LINE, CALENDAR_TYPES, CALENDAR_SETTINGS } from '../../content/pageLines/coach';
 import {
   associateEntries, CAL_VIEWS, gridColumnsMax, HIDE_TODOS, HOURS_HELP, HOURS_SAVED, hoursToSave, hoursWindow, OFFER_TIMES, scheduleDays, scheduleTitle, SHOW_TODOS, stepView, viewRange, workingHours,
 } from '../../lib/coach/calendar';
@@ -122,6 +122,7 @@ export default function Calendar({ side = null }) {
   const board = pick ? { ...panels, slot: null, create: pick.create, open: pick.open, move: NOTHING, resize: NOTHING, nudge: NOTHING, unplace: NOTHING, tick: NOTHING } : panels;
   const shown = useMemo(() => (pick ? [...entries, ...pick.entries] : entries), [entries, pick]);
 
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const startHours = () => { setHours(workingHours(cal.settings)); if (!grid) go({ view: isPhone ? 'day' : 'week' }); };
   const doneHours = async () => {
     const next = hoursToSave(hours);
@@ -131,7 +132,8 @@ export default function Calendar({ side = null }) {
   // The Schedule lists from its first day, so it is headed "From today" (tidy follow-up 3, run 6's 20).
   const title = view === 'schedule' ? scheduleTitle(day, cal.todayKey) : view === 'month' ? monthTitle(day) : range.title;
 
-  const book = <Button variant="primary" onClick={() => to(CAL_HOOKS.book)}>Book a call</Button>;
+  // The page's one main action (the example; Tim's walk, item 25): Add a session. Booking a call is its one step.
+  const book = <Button variant="primary" onClick={() => to(CAL_HOOKS.book)}>{CALENDAR_ADD}</Button>;
   const stepLabel = view === 'month' ? 'month' : view === 'day' ? 'day' : view === 'schedule' ? 'days' : 'week';
 
   return (
@@ -182,15 +184,26 @@ export default function Calendar({ side = null }) {
         </div>
 
         {!hours && (
-          <div className="cc-acts cc-cal-foot">
-            {!pick && <TextLink onClick={panels.add}>Add to calendar</TextLink>}
-            <TextLink onClick={startHours}>Working hours</TextLink>
-            {view !== 'month' && view !== 'day' && <TextLink aria-pressed={weekends} onClick={() => setWeekends(!weekends)}>{weekends ? 'Hide weekends' : 'Show weekends'}</TextLink>}
-            <TextLink onClick={() => navigate(CAL_HOOKS.open)}>Set my open times</TextLink>
-            {grid && !isPhone && !pick && <TextLink aria-expanded={todosOpen} onClick={() => setTodosOpen((v) => !v)}>{todosOpen ? HIDE_TODOS : SHOW_TODOS}</TextLink>}
-            {!pick && <TextLink onClick={() => to(CAL_HOOKS.offer)}>{OFFER_TIMES}</TextLink>}
-            <TextLink onClick={() => setCalsOpen(true)}>My calendars</TextLink>
-            {grid && <TextLink onClick={() => setWhole((v) => !v)}>{whole ? 'Show the working day' : 'Show the whole day'}</TextLink>}
+          // Under the calendar (Tim's walk, item 26): the view's own switches, then one quiet "Calendar settings" link that
+          // opens the rest in place (Add to calendar, Working hours, open times, Offer times by email, My calendars).
+          <div className="cc-cal-foot">
+            <div className="cc-acts cc-cal-foot-views">
+              {view !== 'month' && view !== 'day' && <TextLink aria-pressed={weekends} onClick={() => setWeekends(!weekends)}>{weekends ? 'Hide weekends' : 'Show weekends'}</TextLink>}
+              {grid && !isPhone && !pick && <TextLink aria-expanded={todosOpen} onClick={() => setTodosOpen((v) => !v)}>{todosOpen ? HIDE_TODOS : SHOW_TODOS}</TextLink>}
+              {grid && <TextLink onClick={() => setWhole((v) => !v)}>{whole ? 'Show the working day' : 'Show the whole day'}</TextLink>}
+              <button type="button" className="ds-more cc-cal-settings-link" aria-expanded={settingsOpen} aria-controls="cc-cal-settings" onClick={() => setSettingsOpen((v) => !v)}>
+                <span>{CALENDAR_SETTINGS}</span><DisclosureArrow open={settingsOpen} />
+              </button>
+            </div>
+            {settingsOpen && (
+              <div className="cc-acts cc-cal-settings" id="cc-cal-settings">
+                {!pick && <TextLink onClick={panels.add}>Add to calendar</TextLink>}
+                <TextLink onClick={startHours}>Working hours</TextLink>
+                <TextLink onClick={() => navigate(CAL_HOOKS.open)}>Set my open times</TextLink>
+                {!pick && <TextLink onClick={() => to(CAL_HOOKS.offer)}>{OFFER_TIMES}</TextLink>}
+                <TextLink onClick={() => setCalsOpen(true)}>My calendars</TextLink>
+              </div>
+            )}
           </div>
         )}
       </div>

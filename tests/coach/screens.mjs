@@ -16,7 +16,7 @@
 // answered by stand-ins. The client's page is opened as the test client
 // with every function it calls stood in (client.mjs).
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, OTHER, seedDevice, seedNetworkDevice, settle, SIZES, standIn } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, frameMenu, openSearch, OTHER, seedDevice, seedNetworkDevice, settle, SIZES, standIn } from './shared.mjs';
 import { ADMIN_ROWS, CAL, CRM, DAY, ID, manyLeads, manyNetwork, networkDeviceSeed, networkSeed, PRESSURE, seedClock, seedRows, seedWithCal, seedWithCrm, seedWithDay, SES, SHARED } from './seed.mjs';
 import { bookStore, guestStandIn } from './book-standin.mjs';
 import { clearCoaching, clientContext, clientStandIn, fromCoach } from './client.mjs';
@@ -25,7 +25,7 @@ import { addDays, instantAt } from '../../src/lib/time/index.js';
 
 /**
  * Marks three calls on the device as a round of the sync marks one moved in Google Calendar (Sam's, with its session; Ruth's
- * Chemistry Call; Priya's), the way another tab's change arrives. Resolves Sam's session id.
+ * Discovery call; Priya's), the way another tab's change arrives. Resolves Sam's session id.
  */
 const movedInGoogle = async (page) => {
   const session = await page.evaluate((ids) => {
@@ -81,9 +81,10 @@ const click = (name, role = 'button') => async (page) => { await page.getByRole(
 export const SCREENS = [
   ['today', '/coach'],
   ['today-note', '/coach', async (page) => { await page.locator('.cc-main .cc-inline-link').first().click(); await settle(page, 600); }],
-  ['menu', '/coach', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600); }],
-  ['search', '/coach', async (page) => { await page.getByRole('button', { name: 'Search, or do anything' }).click(); await settle(page, 400); }],
-  ['search-typed', '/coach', async (page) => { await page.getByRole('button', { name: 'Search, or do anything' }).click(); await page.keyboard.type('sam'); await settle(page, 400); }],
+  // Polish 1's frame menu (CLAUDE.md, Polish 1 "Frame and menu"): in view on a laptop, behind the header's crosshair on a phone.
+  ['menu', '/coach', async (page) => { await frameMenu(page); await settle(page, 600); }],
+  ['search', '/coach', async (page) => { await openSearch(page); await settle(page, 400); }],
+  ['search-typed', '/coach', async (page) => { await openSearch(page); await page.keyboard.type('sam'); await settle(page, 400); }],
   ['bell', '/coach', async (page) => { await page.getByRole('button', { name: /^Notifications/ }).click(); await settle(page, 600); }],
   ['clients', '/coach/clients', null, { expects: ['tabs'] }],
   ['clients-board', '/coach/clients', async (page, size) => { if (size === 400) { await click('View')(page); await page.getByRole('menuitemcheckbox', { name: 'Board' }).click(); } else await page.getByRole('button', { name: 'Board', exact: true }).click(); await settle(page, 600); }],
@@ -198,7 +199,7 @@ const leadsAs = async (page, size, layout) => {
   if (size === 400) { await press(page, 'View'); await page.getByRole('menuitemcheckbox', { name: layout }).click(); } else await page.getByRole('button', { name: layout, exact: true }).click();
   await settle(page, 600);
 };
-const LEADS_SHEET = 'Name,Email,Company,Deal size,Lead source\nDana Whitfield,dana@example.invalid,Kestrel Group,"£12,000",Referral\nAmy Cole,amy.cole@example.invalid,Northfield Logistics,,\nElena Ruiz,,,,\nGrace Liu,grace.liu@example.invalid,Quillmark,4.5k,Chemistry Call\nGrace Again,grace.liu@example.invalid,,,\n,nobody@example.invalid,,,';
+const LEADS_SHEET = 'Name,Email,Company,Deal size,Lead source\nDana Whitfield,dana@example.invalid,Kestrel Group,"£12,000",Referral\nAmy Cole,amy.cole@example.invalid,Northfield Logistics,,\nElena Ruiz,,,,\nGrace Liu,grace.liu@example.invalid,Quillmark,4.5k,Discovery call\nGrace Again,grace.liu@example.invalid,,,\n,nobody@example.invalid,,,';
 /** Opens More on a client's page, then Suggest a question (run 7). */
 async function suggestPanel(page) {
   // The fold remembers it was open on the screen before.
@@ -224,7 +225,7 @@ const LEAD_SCREENS = [
   ['leads-import', '/coach/leads', async (page) => { await click('Import from a spreadsheet')(page); await page.locator('#cc-lead-paste').fill(LEADS_SHEET); await settle(page, 500); }, { expects: ['panel'] }],
   ['leads-export', '/coach/leads', click('Export'), { expects: ['panel'] }],
   ['leads-merge', '/coach/leads', click('Review'), { expects: ['panel'] }],
-  ['leads-search', '/coach/leads', async (page) => { await page.getByRole('button', { name: 'Search, or do anything' }).click(); await page.keyboard.type('lead'); await settle(page, 400); }],
+  ['leads-search', '/coach/leads', async (page) => { await openSearch(page); await page.keyboard.type('lead'); await settle(page, 400); }],
   ['leads-cold', '/coach/leads/cold'],
   ['lead-amy', `/coach/leads/${CRM.amy}`, null, { full: true, expects: ['lead-page'] }],
   ['lead-ruth', `/coach/leads/${CAL.leadRuth}`, null, { full: true }],
@@ -253,7 +254,7 @@ const CRM_SCREENS = [
   ['automations-stage', '/coach/leads/automations', async (page) => { await click('Add automation')(page); await pick(page, 'Then', 'Move the lead to a stage'); await settle(page, 300); }, { expects: ['panel'] }],
   ['boards', '/coach/boards', null, { expects: ['boards'] }],
   ['boards-new', '/coach/boards', async (page) => { await click('New board')(page); await page.getByRole('button', { name: 'Speaking', exact: true }).last().click(); await settle(page, 300); }, { expects: ['panel'] }],
-  ['boards-menu', '/coach/boards', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600); }],
+  ['boards-menu', '/coach/boards', async (page) => { await frameMenu(page); await settle(page, 600); }],
   ['board', `/coach/boards/${CRM.speaking}`, null, { full: true, expects: ['board'] }],
   ['board-list', `/coach/boards/${CRM.speaking}`, (page, size) => boardAs(page, size, 'List'), { full: true }],
   ['board-table', `/coach/boards/${CRM.speaking}`, async (page, size) => { if (size < 1100) return 'skip'; await boardAs(page, size, 'Table'); return null; }],
@@ -329,8 +330,8 @@ const NETWORK_SCREENS = [
   ...[['maintain', 'Maintain'], ['invest', 'Invest'], ['rebalance', 'Rebalance?'], ['none', 'No list']].map(([key, label]) => [`net-map-show-${key}`, '/coach/network?tab=map', async (page) => { await page.locator('.cc-net-show').getByRole('combobox').first().click(); await settle(page, 300); await page.getByRole('option', { name: label, exact: true }).click(); await settle(page, 700); }, { expects: ['net-only'] }]),
   ['net-map-found', '/coach/network?tab=map', async (page) => { await page.getByRole('searchbox', { name: 'Find someone' }).fill('David'); await settle(page, 900); await page.getByRole('option', { name: /David Stark/ }).click(); await settle(page, 700); }, { full: true, expects: ['net-found'] }],
   ['today-keep-network', '/coach', null, { full: true, expects: ['net-today'] }],
-  ['net-menu', '/coach/network', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 800); }, { expects: ['net-menu'] }],
-  ['net-search', '/coach', async (page) => { await page.getByRole('button', { name: 'Search, or do anything' }).click(); await page.keyboard.type('sofia'); await settle(page, 900); }, { expects: ['net-search'] }],
+  ['net-menu', '/coach/network', async (page) => { await frameMenu(page); await settle(page, 800); }, { expects: ['net-menu'] }],
+  ['net-search', '/coach', async (page) => { await openSearch(page); await page.keyboard.type('sofia'); await settle(page, 900); }, { expects: ['net-search'] }],
 ];
 const withNetworkColumns = () => { const rows = seedWithCrm({ accounts: true, network: false }); rows.network_columns = networkSeed().network_columns || []; return rows; };
 
@@ -548,7 +549,7 @@ export const GROUPS = [
       ['book-open-add', '/coach/calendar/open', async (page) => { await press(page, 'Add open time'); await settle(page, 300); }, { expects: ['panel'] }],
       ['book-settings', '/coach/settings/booking', null, { full: true }],
       ['book-settings-limit', '/coach/settings/booking', async (page) => { await press(page, 'Edit Gap between calls'); }],
-      ['book-settings-type', '/coach/settings/booking', async (page) => { await press(page, 'Edit Chemistry Call page'); await settle(page, 400); }, { expects: ['panel'] }],
+      ['book-settings-type', '/coach/settings/booking', async (page) => { await press(page, 'Edit Discovery call page'); await settle(page, 400); }, { expects: ['panel'] }],
       // Last: the link it makes stays on the device, so Settings' Booking would count three open links on every screen after it.
       ['book-link-made', '/coach/settings/booking', async (page) => { await press(page, 'Make a single-use link'); await page.locator('.ds-dialog').getByLabel('Who is it for?').fill('Dana Whitfield'); await press(page, 'Create the link'); await settle(page, 600); }, { expects: ['panel'] }],
     ],
@@ -641,8 +642,8 @@ export const GROUPS = [
     screens: [
       ['leads-closed', '/coach/leads', null, { expects: ['not-leads'] }],
       ['leads-closed-lead', `/coach/leads/${CRM.amy}`, null, { expects: ['not-leads'] }],
-      ['leads-closed-menu', '/coach/leads/cold', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600); }, { expects: ['not-leads'] }],
-      ['leads-closed-search', '/coach', async (page) => { await page.getByRole('button', { name: 'Search, or do anything' }).click(); await page.keyboard.type('amy'); await settle(page, 400); }, { expects: ['not-leads'] }],
+      ['leads-closed-menu', '/coach/leads/cold', async (page) => { await frameMenu(page); await settle(page, 600); }, { expects: ['not-leads'] }],
+      ['leads-closed-search', '/coach', async (page) => { await openSearch(page); await page.keyboard.type('amy'); await settle(page, 400); }, { expects: ['not-leads'] }],
     ],
   },
   // Run 4, step 3: Automations, Boards, Settings' Email, Past clients' check-ins, Today's Keep in touch and an organisation's
@@ -666,7 +667,7 @@ export const GROUPS = [
       ['board-shared', `/coach/boards/${CRM.speaking}`, null, { full: true, expects: ['read-only'] }],
       ['board-shared-card', `/coach/boards/${CRM.speaking}`, async (page) => { await page.getByRole('button', { name: /CIPD Festival of Work/ }).first().click(); await settle(page, 600); }, { expects: ['panel'] }],
       ['board-not-shared', `/coach/boards/${CRM.partners}`, null, { expects: ['board-gone'] }],
-      ['boards-shared-menu', '/coach', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600); }, { expects: ['shared-board'] }],
+      ['boards-shared-menu', '/coach', async (page) => { await frameMenu(page); await settle(page, 600); }, { expects: ['shared-board'] }],
       ['automations-closed', '/coach/leads/automations', null, { expects: ['not-leads'] }],
     ],
   },
@@ -691,8 +692,8 @@ export const GROUPS = [
     screens: [
       ['net-closed', '/coach/network', null, { expects: ['not-network'] }],
       ['net-closed-person', `/coach/network?tab=table&person=${CRM.david}`, null, { expects: ['not-network'] }],
-      ['net-closed-menu', '/coach/network?tab=map', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600); }, { expects: ['not-network'] }],
-      ['net-closed-search', '/coach', async (page) => { await page.getByRole('button', { name: 'Search, or do anything' }).click(); await page.keyboard.type('sofia'); await settle(page, 900); }, { expects: ['not-network'] }],
+      ['net-closed-menu', '/coach/network?tab=map', async (page) => { await frameMenu(page); await settle(page, 600); }, { expects: ['not-network'] }],
+      ['net-closed-search', '/coach', async (page) => { await openSearch(page); await page.keyboard.type('sofia'); await settle(page, 900); }, { expects: ['not-network'] }],
     ],
   },
   { name: 'help', at: TUE, screens: [['help-hidden', '/coach/todos', null, { expects: ['help-flow'] }]] },

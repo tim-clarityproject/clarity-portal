@@ -54,12 +54,12 @@
 
 .ui-root .tpc-chart-end {
   font-size: var(--fs-min);
-  fill: var(--label);
+  fill: var(--text-2);
 }
 
 .ui-root .tpc-chart-area {
   font-size: var(--fs-meta);
-  fill: var(--label);
+  fill: var(--text-2);
 }
 
 .ui-root .tpc-chart-area--phone {

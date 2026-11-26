@@ -25,7 +25,7 @@
 //
 //   PARTS=coach,guest,client   ROLES=owner,associate   DB=none,there
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, makeReport, seedDevice, settle, standIn } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, makeReport, openCalSettings, seedDevice, settle, standIn } from './shared.mjs';
 import { CAL, ID, seedClock, seedWithCal } from './seed.mjs';
 import { guestStandIn } from './book-standin.mjs';
 import { clearCoaching, clientContext, clientStandIn, fromCoach } from './client.mjs';
@@ -38,7 +38,7 @@ const at = (day, time, zone = LON) => instantAt(day, time, zone).toISOString();
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const toast = async (page) => (await page.locator('.ds-toast-text').last().textContent({ timeout: 6000 }).catch(() => '')) || '';
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
-const press = async (scope, page, name) => { await scope.getByRole('button', { name, exact: true }).first().click(); await settle(page, 500); };
+const press = async (scope, page, name) => { if (scope === page) await openCalSettings(page, name); await scope.getByRole('button', { name, exact: true }).first().click(); await settle(page, 500); };
 const pick = async (scope, page, label, option) => {
   await scope.getByRole('combobox', { name: new RegExp(`^${label}`) }).first().click(); await settle(page, 300);
   await page.getByRole('option', { name: option, exact: true }).click(); await settle(page, 400);
@@ -315,7 +315,7 @@ async function run() {
     await press(page.locator('.cc-setrow--edit'), page, 'Save');
     const settings = (await rowsNow('coach_settings'))[0];
     pass(`${tag}: a limit is saved as a number`, settings?.booking?.gap === 20 && /20 minutes/.test(await page.locator('.cc-setrow', { hasText: 'Gap between calls' }).textContent()), JSON.stringify(settings?.booking?.gap));
-    pass(`${tag}: each call type has its own page and link`, (await page.locator('.cc-setrow', { hasText: 'Chemistry Call page' }).count()) === 1 && (await page.locator('.cc-setrow', { hasText: 'Connection Call page' }).count()) === 1 && /open/.test(await page.locator('.cc-setrow', { hasText: 'Single-use links' }).textContent()));
+    pass(`${tag}: each call type has its own page and link`, (await page.locator('.cc-setrow', { hasText: 'Discovery call page' }).count()) === 1 && (await page.locator('.cc-setrow', { hasText: 'Connection Call page' }).count()) === 1 && /open/.test(await page.locator('.cc-setrow', { hasText: 'Single-use links' }).textContent()));
     await t.done();
   }
 
@@ -346,11 +346,11 @@ async function run() {
     const store = t.store;
     const before = { items: store.rows.coach_cal_items.length, bookings: store.rows.coach_bookings.length, leads: store.rows.coach_leads.length };
 
-    // ---- a Chemistry Call, end to end
+    // ---- a Discovery call, end to end
     const a = await guestPage(store);
     await a.open(`/book/${CAL.chemKey}`);
     const start = await a.words();
-    pass(`${tag}: the Chemistry Call page shows its own call only`, /Chemistry Call/.test(start) && !/Connection Call/.test(start) && /30-minute call on Zoom/.test(start) && /With Alex|With Maya/.test(start));
+    pass(`${tag}: the Discovery call page shows its own call only, with the coach's full name above the title only when it's set (never "With …")`, /Discovery call/.test(start) && !/Connection Call/.test(start) && /30-minute call on Zoom/.test(start) && !/With Alex|With Maya/.test(start) && /Alex Morgan|Maya Collins/i.test(start));
     pass(`${tag}: it never shows the calendar`, !/Training|Sam Okafor|Dentist|Swimming/.test(start));
     await zoneTo(a.page, 'New York');
     const firstTime = a.page.locator('.cc-book-time').first();
@@ -377,7 +377,7 @@ async function run() {
     const stream = await download.createReadStream();
     let ics = ''; for await (const chunk of stream) ics += chunk;
     const stamp = new Date(booking.starts_at).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-    pass(`${tag}: Add to calendar is an .ics file made in the page, at the booked moment`, download.suggestedFilename().endsWith('.ics') && ics.includes(`DTSTART:${stamp}`) && ics.includes('SUMMARY:Chemistry Call with'), download.suggestedFilename());
+    pass(`${tag}: Add to calendar is an .ics file made in the page, at the booked moment`, download.suggestedFilename().endsWith('.ics') && ics.includes(`DTSTART:${stamp}`) && ics.includes('SUMMARY:Discovery call with'), download.suggestedFilename());
 
     // ---- two guests racing for one time
     const b = await guestPage(store);
@@ -406,7 +406,7 @@ async function run() {
 
     // ---- early and late times, and a public holiday said first
     await a.open(`/book/${CAL.connKey}`);
-    pass(`${tag}: the Connection Call page never shows the Chemistry Call`, /Connection Call/.test(await a.words()) && !/Chemistry Call/.test(await a.words()));
+    pass(`${tag}: the Connection Call page never shows the Discovery call`, /Connection Call/.test(await a.words()) && !/Discovery call/.test(await a.words()));
     await zoneTo(a.page, 'Sydney');
     const hiddenFirst = await a.page.locator('.cc-book-time').allTextContents();
     await a.page.getByRole('button', { name: 'Show early and late times', exact: true }).click(); await settle(a.page, 400);

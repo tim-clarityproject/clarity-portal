@@ -6,7 +6,9 @@ import { loadJournalByDate, deleteJournal, wordCount } from '../lib/dailyJournal
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import { Button, Loading, PageHeader, useToast } from '../components/design';
+import { Button, Loading, useToast, PageOpening } from '../components/design';
+import { B1_LINES } from '../content/pageLines/client';
+import '../pages/hubs/clientPage.css';
 
 export default function DailyJournalRead() {
   const navigate = useNavigate();
@@ -56,8 +58,8 @@ export default function DailyJournalRead() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page">
-          <div className="plan-back-row"><BackLink onClick={() => navigate('/daily-journals')} label="Back to My Journals" /></div>
+        <div className="plan-page cp-page cp-page">
+          <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/daily-journals')} label="Back to My Journals" /></div>
           <p className="ui-subtitle">Journal not found.</p>
         </div>
       </div>
@@ -71,12 +73,14 @@ export default function DailyJournalRead() {
     <div className="ui-root">
       <DesignHeader />
 
-      <div className="plan-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/daily-journals')} label="Back to My Journals" /></div>
+      <div className="plan-page cp-page cp-page">
+        <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/daily-journals')} label="Back to My Journals" /></div>
 
-        <PageHeader
-          title={`${formatPlainDayLabel(dateObj)} ${dateObj.getFullYear()}`}
-          meta={[`${words} word${words === 1 ? '' : 's'}`]}
+        {/* Polish 1: the title is the page's name; the date is its small grey label. */}
+        <PageOpening
+          label={`${formatPlainDayLabel(dateObj)} ${dateObj.getFullYear()}`}
+          title="Journal"
+          line={`${words} word${words === 1 ? '' : 's'}. ${B1_LINES.journalRead}`}
         />
 
         <div className="jrn-paper-wrap">

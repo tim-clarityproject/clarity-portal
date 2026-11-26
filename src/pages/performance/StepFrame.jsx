@@ -142,7 +142,9 @@ export default function StepFrame({ name, steps, draftKey, initialStep, saveStat
     <ToolFrame
       step={i + 1}
       steps={steps.length}
-      name={name}
+      // A step's own small line (the peak moment's "Board away-day, 2 days to go") takes the
+      // eyebrow's place, as GuidedTool's step.label did.
+      name={step.label || name}
       question={step.question ? <>{step.question}{step.eye ? <span className="sf-eye">{step.eye}</span> : null}</> : null}
       hint={nudges.length ? nudges.join(' ') : null}
       onClose={onClose}

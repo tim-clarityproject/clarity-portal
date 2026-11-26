@@ -2,14 +2,21 @@
    tokens.css's --fin-* and the shared ones; colours are the shared colour tokens. Phone is 600px and under.
    Panels are drawn outside the page (their own .ui-root), so nothing a panel shows leans on .fin-page. */
 
-.ui-root .fin-tabs { margin-top: var(--space-px18); }
+.ui-root .fin-tabs { margin-top: 0; }
 .ui-root .fin-tabs .cc-utabs { width: 100%; }
+/* Polish 1 (B5): under the tabs, the tab's own cards (FinPart is the shared Card), 24px apart; a tab's first card 24px
+   under the tabs. */
+.ui-root #fin-panel { padding-top: var(--space-4); }
 
 /* A section heading with something quiet at its right; the line under it (M11 draws one, then rows with their own). */
-.ui-root .fin-part { margin-top: var(--space-6); }
-.ui-root .fin-head { justify-content: space-between; flex-wrap: nowrap; gap: var(--space-3); min-height: var(--tap-min); }
-.ui-root .fin-head-aside { font-size: var(--fs-note); color: var(--text-2); text-align: right; min-width: 0; }
-.ui-root .fin-head-aside .ds-link, .ui-root .fin-head-aside .ds-explain-link { font-size: var(--fs-secondary); }
+.ui-root .fin-part { margin-top: 0; }
+/* What sits at a card's label's right (rule 10 and 13): 13px grey, like View all, its 44px tap area reaching above and
+   below without moving the label. */
+.ui-root .fin-head-right { display: inline-flex; align-items: center; gap: var(--space-4); min-width: 0; margin: calc(var(--space-px14) * -1) 0; }
+.ui-root .fin-head-aside { display: inline-flex; align-items: center; min-height: var(--tap-min); font-size: var(--fs-meta); color: var(--text-2); text-align: right; min-width: 0; }
+.ui-root .fin-head-aside :is(.ds-link, .ds-explain-link) { font-size: var(--fs-meta) !important; color: var(--text-2); min-height: var(--tap-min); white-space: nowrap; }
+@media (hover: hover) { .ui-root .fin-head-aside :is(.ds-link, .ds-explain-link):hover { color: var(--text); } }
+.ui-root .fin-head-right > .ds-addrow { min-height: var(--tap-min) !important; }
 
 /* The figures: three on Overview, four on Money and Cash flow, one beside VAT (M11 .bzs4: equal columns). Each figure is
    kept whole ("£52,578" never breaks, at any text size): a figure is never narrower than its number, so where the
@@ -23,10 +30,11 @@
 /* The bar under a figure takes no width of its own, so it never holds a figure's column open. */
 .ui-root .fin-stats .ds-bar { width: 100%; max-width: var(--bar-w); }
 
-/* A row with a figure at its right. */
+/* A row with a figure at its right (the shared .ds-li): the facts side by side under the title, 14px apart. */
 .ui-root .fin-row-words { min-width: 0; }
-.ui-root .fin-row-value { font-size: var(--fs-note); color: var(--text-2); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.ui-root .fin-row .ds-link { justify-self: end; }
+.ui-root .fin-row-facts { display: flex; flex-wrap: wrap; gap: 0 var(--space-px14); }
+.ui-root .fin-row-value { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ui-root .fin-row > .ds-link { flex: none; }
 /* A pounds figure with what was paid in another currency small and grey under it (M11 C5: "with the dollar amount small
    and grey underneath"). */
 .ui-root .fin-fig-stack { display: inline-flex; flex-direction: column; align-items: flex-end; }
@@ -143,7 +151,7 @@
 /* ---------------------------------------------------------------- Pricing's two lined-up columns (M11 .bzpr) */
 .ui-root .fin-price-head { display: grid; grid-template-columns: minmax(0, 1fr) var(--fin-price-col) var(--fin-price-col); gap: var(--space-3); margin-top: var(--space-3); font-size: var(--fs-note); color: var(--text-2); }
 .ui-root .fin-price-head span { text-align: right; }
-.ui-root .fin-price-row { grid-template-columns: minmax(0, 1fr) var(--fin-price-col) var(--fin-price-col); }
+.ui-root .fin-price-row.ds-li { display: grid; grid-template-columns: minmax(0, 1fr) var(--fin-price-col) var(--fin-price-col); gap: var(--space-3); }
 .ui-root .fin-price { text-align: right; font-size: var(--fs-text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .ui-root .fin-price--quiet { color: var(--text-2); }
 
@@ -185,7 +193,7 @@
   .ui-root .fin-sector { grid-template-columns: minmax(0, 1fr) auto auto; row-gap: var(--space-2); }
   .ui-root .fin-sector .fin-track { grid-column: 1 / -1; order: 3; }
   .ui-root .fin-trow { grid-template-columns: minmax(0, 1fr) repeat(3, auto); gap: var(--space-3); }
-  .ui-root .fin-price-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .ui-root .fin-price-row.ds-li { grid-template-columns: minmax(0, 1fr) auto; }
   .ui-root .fin-price-row .fin-price { grid-column: 2; }
   .ui-root .fin-months { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   /* On a phone every other month is labelled, counting back from the last (M11's phone: Today, Nov, Jan, Mar, May), and
@@ -202,3 +210,34 @@
   .ui-root .fin-bar-paid, .ui-root .fin-track-paid { forced-color-adjust: none; background: CanvasText; }
   .ui-root .fin-bar--low .fin-bar-paid { background: Canvas; box-shadow: inset 0 0 0 var(--fin-below-edge) CanvasText; }
 }
+
+/* ---------------------------------------------------------------- polish 1, stage B (B5): Finances in cards */
+.ui-root .fin-part > .cc-quiet, .ui-root .fin-part > .fin-none { margin: 0; }
+.ui-root .fin-part > .ds-card-head + .fin-ctl { margin-top: var(--space-px6); }
+.ui-root .fin-part > .ds-card-head + .fin-stats.cc-stats { margin-top: var(--space-px6); }
+.ui-root .fin-part .fin-chart-wrap { margin-top: var(--space-5); }
+.ui-root .fin-part > .fin-sector-head:first-of-type { margin-top: 0; }
+.ui-root .fin-part > .fin-table { margin-top: var(--space-3); }
+.ui-root .fin-part > .fin-sector:last-child, .ui-root .fin-part > .fin-table .fin-trow:last-child { border-bottom: 0; }
+.ui-root .fin-part > .cc-acts { margin-top: var(--space-2); }
+.ui-root .fin-part > .ds-li + .cc-note, .ui-root .fin-part > .cc-note { margin-top: var(--space-3); }
+/* The period switch above Money's cards. */
+.ui-root .fin-ctl--top { margin: 0 0 var(--space-4); }
+/* Needs you: the link at the row's right keeps a 44px tap area without making the row taller. */
+.ui-root .fin-needs-row .ds-li-value .ds-link { min-height: var(--tap-min); margin-block: calc(-1 * var(--space-px12)); font-size: var(--fs-text); color: var(--text); }
+@media (max-width: 600px) {
+  .ui-root .fin-needs-row .ds-li-value .ds-link { margin-block: 0; justify-content: flex-start; }
+}
+/* One headline figure to a card (Tim's walk, item 13 and BS's check): side by side on a laptop, one per line on a phone,
+   one gap between them as between every card. */
+.ui-root .fin-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--fin-stat-min), 1fr)); gap: var(--card-gap); margin-bottom: var(--card-gap); }
+.ui-root .fin-figs > .ds-card { margin: 0; }
+.ui-root .fin-fig-card .ds-fig { margin: var(--space-1) 0 0; white-space: nowrap; }
+.ui-root .fin-fig-card .ds-bar { margin-top: var(--space-2); }
+@media (max-width: 600px) {
+  .ui-root .fin-figs { grid-template-columns: minmax(0, 1fr); }
+}
+.ui-root .fin-part > .fin-sector:last-child { padding-bottom: 0; }
+.ui-root .fin-fig-card > .ds-bar:last-child { margin-bottom: 0; }
+/* Phones show less (26 Oct rule 10): the figure's "of £18,000" already says how far it is, so its bar stays on the laptop. */
+@media (max-width: 600px) { .ui-root .fin-fig-card > .ds-bar { display: none; } }

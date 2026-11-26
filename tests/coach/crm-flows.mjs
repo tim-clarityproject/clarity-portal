@@ -29,7 +29,7 @@
 //
 //   PARTS=crm-auto,…   DB=none,there
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, makeReport, seedDevice, settle, standIn, toastText } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, makeReport, openSearch, seedDevice, settle, standIn, toastText } from './shared.mjs';
 import { CAL, CRM, ID, seedClock, seedWithCrm } from './seed.mjs';
 import { withSharedBoard } from './screens.mjs';
 import { addDays } from '../../src/lib/time/index.js';
@@ -38,7 +38,8 @@ export const CRM_PARTS = ['crm-auto', 'crm-watch', 'crm-keep', 'crm-ended', 'crm
 const TUE = new Date(2026, 10, 17, 9, 0);
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
-const press = async (page, name, scope = page) => { await scope.getByRole('button', { name, exact: true }).first().click(); await settle(page, 600); };
+// A name in a list or table, a board card and the pages that open more are real links since Polish 1 (B4): press either.
+const press = async (page, name, scope = page) => { await scope.getByRole('button', { name, exact: true }).or(scope.getByRole('link', { name, exact: true })).first().click(); await settle(page, 600); };
 const go = async (page, path) => { await page.goto(`${APP}${path}`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 1300); };
 const words = (page) => page.evaluate(() => (document.querySelector('.cc-main')?.innerText || '').replace(/ /g, ' '));
 const undo = async (page) => { await page.locator('.ds-toast').getByRole('button', { name: 'Undo' }).click(); await settle(page, 900); };
@@ -123,7 +124,7 @@ async function run() {
         const { page } = a;
         let text = await words(page);
         const SENTENCES = ['When a lead moves to Proposal sent, add the to-do “Follow up on the proposal”, 3 days later.', 'When a proposal is opened 3 times, add the to-do “Call while the proposal is fresh”, the same day.',
-          'When a lead has been quiet for 14 days, add the to-do “Check in”, the same day.', 'When a Chemistry Call is booked, add the to-do “Read their booking answers”, the day before.', 'When coaching ends, add the to-do “Ask for a testimonial”, 2 weeks later.'];
+          'When a lead has been quiet for 14 days, add the to-do “Check in”, the same day.', 'When a Discovery call is booked, add the to-do “Read their booking answers”, the day before.', 'When coaching ends, add the to-do “Ask for a testimonial”, 2 weeks later.'];
         pass(`${tag}: each automation reads as one sentence, with how often it ran this month`, has(text, [...SENTENCES, 'Ran 4 times in November', 'Ran 2 times in November', 'Ran 3 times in November', 'Ran 5 times in November', 'Off']), missing(text, [...SENTENCES, 'Ran 4 times in November', 'Ran 2 times in November', 'Ran 3 times in November', 'Ran 5 times in November']));
         pass(`${tag}: the help says they add to-dos and move stages and never send (never tags or keep in touch)`, text.includes('Automations add to-dos and move stages. They never send anything.') && !/add tags|keep people in touch|keep in touch every/.test(text));
 
@@ -308,7 +309,7 @@ async function run() {
         const dayBefore = [addDays(callDay, -1), '2026-11-17'].sort().pop(); // never before today
         const want = [['Call while the proposal is fresh', CRM.amy, '2026-11-17'], ['Check in', CRM.tom, '2026-11-17'], ['Read their booking answers', CAL.leadRuth, dayBefore]];
         let got = await made();
-        pass(`${tag}: with the portal open, a quiet lead, a proposal opened three times and a Chemistry Call booked each add their to-do (the call's the day before it)`, JSON.stringify(got) === JSON.stringify(want), JSON.stringify(got));
+        pass(`${tag}: with the portal open, a quiet lead, a proposal opened three times and a Discovery call booked each add their to-do (the call's the day before it)`, JSON.stringify(got) === JSON.stringify(want), JSON.stringify(got));
         await go(page, '/coach/todos'); await settle(page, 4500);
         got = await made();
         pass(`${tag}: opened again, each is still there once`, JSON.stringify(got) === JSON.stringify(want), JSON.stringify(got));
@@ -455,7 +456,7 @@ async function run() {
         pass(`${tag}: the unshared board's own address shows nothing of it`, (await words(page)).includes('This board isn’t here any more.') && !(await words(page)).includes('Quillmark'));
         await go(page, '/coach/leads/automations');
         pass(`${tag}: Automations sends an associate to their own Today`, new URL(page.url()).pathname === '/coach');
-        await page.getByRole('button', { name: 'Search, or do anything' }).click(); await page.keyboard.type('board'); await settle(page, 500);
+        await openSearch(page); await page.keyboard.type('board'); await settle(page, 500);
         let found = await page.locator('.cc-jump').innerText();
         pass(`${tag}: search offers an associate no New board and no Automations`, !/New board|Automation/.test(found), found.replace(/\n/g, ' ').slice(0, 160));
         await page.keyboard.press('ControlOrMeta+a'); await page.keyboard.type('speaking'); await settle(page, 500);
@@ -573,10 +574,10 @@ async function run() {
         const { page } = a;
         let text = await words(page);
         pass(`${tag}: Past clients has the switch, Check-ins due and Everyone`, has(text, ['Suggest check-ins at 3, 6 and 12 months', 'Check-ins due', 'Everyone', 'Omar Haddad']), missing(text, ['Suggest check-ins at 3, 6 and 12 months', 'Check-ins due', 'Everyone', 'Omar Haddad']));
-        const dueRows = async () => (await page.locator('.cc-part', { hasText: /check-ins due/i }).locator('.cc-row').allInnerTexts()).map((r) => r.replace(/\s*\n\s*/g, ' | '));
+        const dueRows = async () => (await page.locator('.ds-card', { hasText: /check-ins due/i }).locator('.ds-li').allInnerTexts()).map((r) => r.replace(/\s*\n\s*/g, ' | '));
         let due = await dueRows();
         pass(`${tag}: three are due, the soonest first, each with which check-in and when`, due.length === 3 && /^Ben Ortiz \| 3-month check-in.*Due Wed 18 Nov$/.test(due[0]) && /^Leah Moran \| 12-month check-in.*Harbour City FC.*Due Mon 23 Nov$/.test(due[1]) && /^Grace Liu \| 6-month check-in.*Due Thu 10 Dec$/.test(due[2]), due.join(' || '));
-        await page.getByRole('button', { name: /^Grace Liu, 6-month check-in/ }).click(); await settle(page, 700);
+        await page.locator('.ds-li', { hasText: 'Grace Liu' }).filter({ hasText: '6-month check-in' }).click(); await settle(page, 700);
         let d = dialog(page);
         const note = () => d.getByLabel('A note to Grace').inputValue();
         pass(`${tag}: a check-in opens a drafted note`, has(await d.innerText(), ['6-month check-in, due Thu 10 Dec', 'A note to Grace', 'Nothing is sent until you send it from your own email.']) && (await note()).includes('It’s been 6 months since we finished working together'), (await note()).slice(0, 80));
@@ -589,7 +590,7 @@ async function run() {
         pass(`${tag}: the check-in is then done, with its note kept, and leaves the list`, Boolean((await grace())?.done_at) && ((await grace())?.note || '').includes('glad to be introduced') && (await dueRows()).length === 2, `${(await dueRows()).length} due`);
         await undo(page);
         pass(`${tag}: Undo brings it back`, !(await grace())?.done_at && (await dueRows()).length === 3);
-        await page.getByRole('button', { name: /^Ben Ortiz, 3-month check-in/ }).click(); await settle(page, 700);
+        await page.locator('.ds-li', { hasText: 'Ben Ortiz' }).filter({ hasText: '3-month check-in' }).click(); await settle(page, 700);
         d = dialog(page);
         pass(`${tag}: at 3 months the ask offered is a testimonial`, await d.getByRole('button', { name: 'Add testimonial ask' }).count() === 1);
         await press(page, 'Not now', d);
@@ -599,7 +600,7 @@ async function run() {
         // Today's Keep in touch: one quiet line each.
         await go(page, '/coach');
         text = await words(page);
-        const keep = (await page.locator('.cc-today-part', { hasText: /keep in touch/i }).locator('.cc-row').allInnerTexts()).map((r) => r.replace(/\s*\n\s*/g, ' | '));
+        const keep = (await page.locator('.cc-today-keep').locator('.ds-li').allInnerTexts()).map((r) => r.replace(/\s*\n\s*/g, ' | '));
         pass(`${tag}: Today's Keep in touch has one quiet line for each check-in due, the soonest first`, keep.length === 3 && /^Leah Moran \| 12-month check-in \| Due Mon 23 Nov$/.test(keep[0]) && /^Ben Ortiz/.test(keep[1]) && /^Grace Liu/.test(keep[2]), keep.join(' || '));
         await page.getByRole('button', { name: /^Leah Moran: 12-month check-in/ }).click(); await settle(page, 700);
         pass(`${tag}: a line opens the same note`, has(await dialog(page).innerText(), ['12-month check-in', 'A note to Leah']) && (await dialog(page).getByLabel('A note to Leah').inputValue()).includes('It’s been a year since we finished working together'), (await dialog(page).getByLabel('A note to Leah').inputValue()).slice(0, 80));
@@ -674,4 +675,4 @@ async function run() {
   report.done();
 }
 
-run().catch((e) => { console.error(`STOPPED: ${String(e).split('\n')[0].slice(0, 300)}`); process.exit(1); });
+run().catch((e) => { console.error(`STOPPED: ${String(e).split("\n")[0].slice(0, 300)}`, e.stack?.split("\n").slice(0, 4).join(" | ")); process.exit(1); });

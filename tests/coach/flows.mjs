@@ -20,9 +20,20 @@
 // their menu, their Settings on a phone, the list and the board only,
 // press and hold to choose, and the pages they must never reach.
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, makeReport, OTHER, seedDevice, settle, standIn, toastText } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, frameMenu, frameMenuWords, makeReport, openFromMenu, openSearch, OTHER, seedDevice, settle, standIn, toastText } from './shared.mjs';
 import { ADMIN_ROWS, ID, seedRows } from './seed.mjs';
 import { DAY_PARTS, runDay } from './day-flows.mjs';
+
+// Polish 1 (B4): "+ Add" by the list's label opens Quick Add; "Add their details too" opens the whole Add client form,
+// the name typed there carried over (cleared here, so the form starts as it always did).
+async function openAddClient(page) {
+  await page.locator('.ds-addlink[aria-label="Add client"]').first().click();
+  await page.locator('#cc-add-client .ds-qa-box').fill('x');
+  await page.getByRole('button', { name: 'Add their details too', exact: true }).click();
+  await page.waitForTimeout(500);
+  await page.locator('.ds-modal--shown .ds-dialog').last().getByLabel('Name', { exact: true }).fill('');
+}
+
 
 const report = makeReport('Coach portal, the functionality tester');
 const { pass } = report;
@@ -34,9 +45,11 @@ const text = (page, sel = '.cc-main') => page.locator(sel).innerText();
 const button = (page, name, exact = true) => page.getByRole('button', { name, exact });
 const panel = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
 const closePanel = async (page) => { await page.keyboard.press('Escape'); await settle(page, 500); };
+// Polish 1 (B4): the Clients list is the shared list rows; a row's name is the first words of its name.
+const clientNames = (page) => page.locator('.cc-plist .ds-li-name').evaluateAll((list) => list.map((n) => (n.firstChild?.textContent || '').trim()));
 async function open(page, path) { await page.goto(`${APP}${path}`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 900); }
 async function addClient(page, { name, email, tag, referred }) {
-  await button(page, 'Add client').first().click();
+  await openAddClient(page);
   await settle(page, 500);
   const p = panel(page);
   await p.getByLabel('Name', { exact: true }).fill(name);
@@ -71,28 +84,21 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     for (const f of ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png']) {
       pass(`shell: the icon ${f} is served`, (await page.request.get(`${APP}/coach-app/${f}`)).status() === 200);
     }
-    // The header: the menu button, one search box, the bell with its count.
-    const header = await page.locator('.cc-header').evaluate((h) => [...h.querySelectorAll('button')].map((b) => b.getAttribute('aria-label')));
-    pass('shell: the header is the menu button, one search box and the bell', header.length === 3 && header[0] === 'Open the menu' && header[1].startsWith('Search') && header[2].startsWith('Notifications'), header.join(' | '));
+    // The header (polish 1): one search box and the bell with its count, at the top right; the menu is the frame's
+    // column on a laptop (its items real links, Sign out a button).
+    const header = await page.locator('.cc-header').evaluate((h) => [...h.querySelectorAll('button')].filter((b) => b.offsetParent).map((b) => b.getAttribute('aria-label')));
+    pass('shell: the header is one search box and the bell', header.length === 2 && header[0].startsWith('Search') && header[1].startsWith('Notifications'), header.join(' | '));
     pass('shell: the bell shows its small count', (await page.locator('.cc-count').innerText()) === '2');
 
-    // The menu, exactly as M11's for the owner (pages of later runs show on a build that isn't live).
-    await button(page, 'Open the menu').click();
-    await settle(page, 500);
-    const items = await page.locator('.cc-menu-item').allInnerTexts();
-    pass('shell: the owner’s menu, in M11’s order', items.join(', ') === 'Today, Finances, To-dos, Clients, Leads, Network, Boards, Calendar, Leading Ideas, Library, Executives, Settings, Sign out', items.join(', '));
-    pass('shell: favourite views sit under their own label', (await page.locator('.cc-menu-label').innerText()).toLowerCase() === 'favourite views');
-    const above = await page.evaluate(() => { const z = (s) => Number(getComputedStyle(document.querySelector(s)).zIndex) || 0; return z('.cc-menu') > z('.cc-header'); });
-    pass('shell: the menu sits above everything', above);
+    // The menu (polish 1, rule 19): groups by gaps, Settings and Sign out at the foot; pages of later runs show on a
+    // build that isn't live.
+    const items = await frameMenuWords(page);
+    pass('shell: the owner’s menu, in the frame’s order', /^Today, Calendar, To-dos, .*Clients, Leads, Network, Boards, Finances, Leading Ideas, Library, .*Settings, Sign out$/.test(items.join(', ')), items.join(', '));
+    pass('shell: menu items are links, Sign out a button', (await page.locator('.ds-frame-side a.ds-mi').count()) === items.length - 1 && (await page.locator('.ds-frame-side button.ds-mi--out').count()) === 1);
     // The Calendar is built (run 3): Library is still a later run's page.
-    await page.locator('.cc-menu-item', { hasText: 'Library' }).click();
+    await openFromMenu(page, 'Library');
     await settle(page, 600);
     pass('shell: a page of a later run opens the calm “Coming in this build” page', /Coming in this build/.test(await text(page)) && new URL(page.url()).pathname === '/coach/library');
-    await button(page, 'Open the menu').click();
-    await settle(page, 400);
-    await page.keyboard.press('Escape');
-    await settle(page, 400);
-    pass('shell: Escape closes the menu', (await page.locator('.cc-menu').count()) === 0);
 
     // The next-call bar, with test calls (it fills in run 3).
     const call = (minutes) => page.evaluate((m) => sessionStorage.setItem('clarity-coach-test-calls', JSON.stringify([{ name: 'Sam Okafor', startsAt: new Date(Date.now() + m * 60000).toISOString(), zoom: 'https://zoom.example/j/1', briefTo: '/coach/clients' }])), minutes);
@@ -116,7 +122,7 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     // Search: one box, recent items before anything is typed, people, pages and actions as you type.
     await open(page, `/coach/clients/${ID.sam}`);
     await open(page, '/coach');
-    await button(page, 'Search, or do anything').click();
+    await openSearch(page);
     await settle(page, 400);
     const before = await page.locator('.cc-jump-label').allInnerTexts();
     pass('search: before typing it offers actions (and recent items once there are some)', before.includes('Actions'), before.join(', '));
@@ -127,13 +133,13 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     await page.keyboard.press('Enter');
     await settle(page, 500);
     pass('search: and is told only Maya opens their page', /only Maya opens their page/.test(await toastText(page)) && new URL(page.url()).pathname === '/coach');
-    await button(page, 'Search, or do anything').click();
+    await openSearch(page);
     await page.keyboard.type('sam');
     await settle(page, 300);
     await page.keyboard.press('Enter');
     await settle(page, 700);
     pass('search: a person opens their page', new URL(page.url()).pathname === `/coach/clients/${ID.sam}`);
-    await button(page, 'Search, or do anything').click();
+    await openSearch(page);
     await settle(page, 300);
     pass('search: recent items come first next time', (await page.locator('.cc-jump-label').first().innerText()) === 'Recent' && /Sam Okafor/.test(await page.locator('.cc-jump-item').first().innerText()));
     await page.keyboard.type('settings tags');
@@ -164,7 +170,7 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
   if (has('clients')) {
     await open(page, '/coach/clients');
     // Add client: never a greyed-out button; it says what's missing.
-    await button(page, 'Add client').first().click();
+    await openAddClient(page);
     await settle(page, 500);
     const add = panel(page).getByRole('button', { name: 'Add client', exact: true });
     pass('add client: the button is never greyed out', !(await add.isDisabled()));
@@ -193,7 +199,7 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
 
     // Add a team of five, from a pasted list with a duplicate and someone already here.
     await open(page, '/coach/clients');
-    await button(page, 'Add team').click();
+    await button(page, 'Add a team from a spreadsheet').click();
     await settle(page, 500);
     await panel(page).getByRole('button', { name: /^Add/ }).last().click();
     pass('add a team: pressed with nothing pasted, it says what’s missing', /Paste a list or choose a spreadsheet to carry on\./.test(await panel(page).innerText()));
@@ -253,16 +259,14 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     await panel(page).getByRole('button', { name: 'Add Board members to the menu' }).click();
     await settle(page, 700);
     await closePanel(page);
-    const shownNames = await page.locator('.cc-row b').allInnerTexts();
+    const shownNames = await clientNames(page);
     pass('filter: only tagged clients show', shownNames.includes('Sam Okafor') && shownNames.includes('Nora Ellis') && !shownNames.includes('Jordan Reyes'), shownNames.join(', '));
     await button(page, 'Clear').click();
     await settle(page, 400);
-    await button(page, 'Open the menu').click();
-    await settle(page, 400);
-    await page.locator('.cc-menu-item', { hasText: 'Board members' }).click();
+    await openFromMenu(page, 'Board members');
     await settle(page, 900);
-    const fromMenu = await page.locator('.cc-row b').allInnerTexts();
-    pass('saved view: a favourite opens from the menu with its filters on', fromMenu.includes('Nora Ellis') && !fromMenu.includes('Jordan Reyes') && /Board members/.test(await page.locator('.cc-toolbar-who').innerText()), fromMenu.join(', '));
+    const fromMenu = await clientNames(page);
+    pass('saved view: a favourite opens from the menu with its filters on', fromMenu.includes('Nora Ellis') && !fromMenu.includes('Jordan Reyes') && /Board members/i.test(await page.locator('.cc-people .ds-card-head .ds-label').first().innerText()), fromMenu.join(', '));
     await button(page, 'Clear').click();
 
     // Merge two duplicates, choosing which value to keep, with Undo.
@@ -311,14 +315,10 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
 
   if (has('table')) {
     await open(page, '/coach/clients');
-    // The gliding view switch.
-    const tile = () => page.locator('.cc-toolbar .ds-seg-tile').evaluate((t) => t.style.transform);
-    const atList = await tile();
+    // The view switch: one joined switch since Polish 1 (the 25 Nov reference; the gliding tile is retired), the chosen option filled.
     await button(page, 'Board').click();
     await settle(page, 700);
-    pass('view switch: a raised tile glides to the chosen option', (await tile()) !== atList && (await button(page, 'Board').getAttribute('aria-pressed')) === 'true');
-    const glide = await page.locator('.cc-toolbar .ds-seg-tile').evaluate((t) => getComputedStyle(t).transitionDuration);
-    pass('view switch: it glides in 220ms', /0\.22s/.test(glide), glide);
+    pass('view switch: the chosen option is pressed', (await button(page, 'Board').getAttribute('aria-pressed')) === 'true' && (await button(page, 'List').getAttribute('aria-pressed')) === 'false');
     const cards = await page.locator('.cc-card').evaluateAll((c) => [...new Set(c.map((x) => Math.round(x.getBoundingClientRect().height)))]);
     pass('board: every card is one height', cards.length === 1, cards.join(', '));
     const cols = await page.locator('.cc-board-head').allInnerTexts();
@@ -480,7 +480,8 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     await link.hover();
     await settle(page, 400);
     const hover = await link.evaluate((el) => { const cs = getComputedStyle(el); return { colour: cs.color, under: cs.textDecorationColor }; });
-    pass('name note: on hover the words turn coral and the underline stays grey', /194, 65, 46|255, 111, 92/.test(hover.colour) && hover.under !== hover.colour, JSON.stringify(hover));
+    // Polish 1 (rule 6): coral is for mistakes only, so on hover the words take the text colour; the underline stays grey.
+    pass('name note: on hover the words take the text colour and the underline stays grey', !/194, 65, 46|255, 111, 92/.test(hover.colour) && hover.under !== hover.colour, JSON.stringify(hover));
     await link.click();
     await settle(page, 600);
     const note = panel(page);
@@ -566,7 +567,7 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     // "Invoices", not "Invoices contact": run 4 (39e1044a) named the roles Sponsor, Buyer, HR, Participant and Invoices
     // (CONTACT_ROLES in src/lib/coach/crm.js), and its own flows check that list; this line had kept the old word (fixer D, 22 Nov).
     pass('organisation: contacts with their roles, the people coached there and its group', /Dana Whitfield\s+Sponsor/.test(org) && /Lee Hart\s+Invoices(?! contact)/.test(org) && /Owen Price\s+Maya’s client/.test(org) && /Kestrel leadership team\s+Group of 3/.test(org), org.slice(0, 300));
-    pass('organisation: documents with their expiry, for the owner only', /Non-disclosure agreement\s+Expires on/.test(org) && /Master services agreement\s+No expiry date\./.test(org) && /Only you can see these\./.test(await page.locator('.cc-part', { hasText: 'Documents' }).locator('.ds-who').getAttribute('aria-label')));
+    pass('organisation: documents with their expiry, for the owner only', /Non-disclosure agreement\s+Expires on/.test(org) && /Master services agreement\s+No expiry date\./.test(org) && /Only you can see these\./.test(await page.locator('.ds-card', { has: page.locator('.ds-card-head', { hasText: 'Documents' }) }).locator('.ds-who').getAttribute('aria-label')));
     pass('organisation: Room to grow is worked out', /Room to grow/i.test(org) && /seats are free\./.test(org));
     await open(page, `/coach/groups/${ID.group}`);
     const group = (await text(page)).replace(/\n+/g, ' ');
@@ -576,7 +577,7 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
   if (has('settings')) {
     await open(page, '/coach/settings');
     const sections = await page.locator('.cc-setnav-item').allInnerTexts();
-    pass('settings: two panes, with the owner’s sections', sections.join(', ') === 'Your details, Away and cover, Notifications, Booking, Working hours, Time zones, My calendars, Email, Tags and fields, Note layouts, Coaches, Activity log, Look', sections.join(', '));
+    pass('settings: two panes, with the owner’s sections', sections.join(', ') === 'Your details, Away and cover, Notifications, Booking, Working hours, Time zones, My calendars, Agreements, Email, Tags and fields, Note layouts, Coaches, Activity log, Look', sections.join(', '));
     const panes = await page.evaluate(() => { const n = document.querySelector('.cc-setnav').getBoundingClientRect(); const p = document.querySelector('.cc-setpane').getBoundingClientRect(); return n.right <= p.left && Math.abs(n.top - p.top) < 80; });
     pass('settings: the list is on the left and the chosen section on the right', panes);
     pass('settings: no box shows until Edit is pressed', (await page.locator('.cc-setpane input').count()) === 0);
@@ -598,7 +599,7 @@ if (parts.some((p) => p !== 'associate' && !DAY_PARTS.includes(p))) {
     await sw.click();
     await settle(page, 800);
     const look = await sw.evaluate((el) => { const b = el.getBoundingClientRect(); return { w: Math.round(b.width), h: Math.round(b.height), on: el.getAttribute('aria-checked'), colour: getComputedStyle(el).backgroundColor }; });
-    pass('settings: a switch is 40 by 24, mint when on', look.w === 40 && look.h === 24 && look.on === 'true' && /11, 122, 82|95, 239, 187/.test(look.colour), JSON.stringify(look));
+    pass('settings: a switch is 52 by 32 (the 25 Nov reference), mint when on', look.w === 52 && look.h === 32 && look.on === 'true' && /11, 122, 82|95, 239, 187/.test(look.colour), JSON.stringify(look));
 
     await open(page, '/coach/settings/away');
     await button(page, 'Add time away').click();
@@ -715,25 +716,22 @@ if (has('associate')) {
   await seedDevice(page, me, seedRows());
   await open(page, '/coach');
 
-  pass('associate, phone: no menu button in the header; the phone bar is Today, the menu and Calendar', (await page.locator('.cc-header .cc-round--mark').isHidden()) && (await page.locator('.cc-phonebar button').evaluateAll((b) => b.map((x) => x.getAttribute('aria-label')))).join(', ') === 'Today, Menu, Calendar');
-  await page.locator('.cc-phonebar').getByRole('button', { name: 'Menu' }).click();
-  await settle(page, 500);
-  const items = await page.locator('.cc-menu-item').allInnerTexts();
-  pass('associate: their menu, as M11’s Associate switch', items.join(', ') === 'Today, To-dos, Clients, Calendar, Leading Ideas, Library, Executives, Settings, Sign out', items.join(', '));
-  const bar = await page.evaluate(() => document.querySelector('.cc-menu').getBoundingClientRect().bottom <= document.querySelector('.cc-phonebar').getBoundingClientRect().top + 1);
-  pass('associate, phone: the menu opens above the phone bar, which stays', bar);
-  await page.locator('.cc-menu-item', { hasText: 'Settings' }).click();
+  pass('associate, phone: no phone bar; the crosshair in the header opens the menu', (await page.locator('.cc-phonebar').count()) === 0 && (await page.locator('.ds-mbtn').first().isVisible()));
+  const items = await frameMenuWords(page);
+  pass('associate: their menu, with no Leads, Network or Finances', /^Today, Calendar, To-dos, Clients, .*Settings, Sign out$/.test(items.join(', ')) && !items.some((i) => /^(Leads|Network|Finances)$/.test(i)), items.join(', '));
+  await openFromMenu(page, 'Settings');
   await settle(page, 700);
-  const list = await page.locator('.cc-row b').allInnerTexts();
-  pass('associate, phone: Settings is a list of their sections', list.join(', ') === 'Your details, Away and cover, Notifications, Booking, Working hours, Time zones, My calendars, Tags and fields, Look', list.join(', '));
+  // Polish 1: the phone's list of sections is one card of rows (.ds-li), each a real link.
+  const list = await page.locator('.cc-set-list .ds-li-name').allInnerTexts();
+  pass('associate, phone: Settings is a list of their sections', list.join(', ') === 'Your details, Away and cover, Notifications, Booking, Working hours, Time zones, My calendars, Agreements, Tags and fields, Look', list.join(', '));
   pass('associate: never Coaches, the Activity log, Email or Note layouts', !list.some((s) => /Coaches|Activity log|Email|Note layouts/.test(s)));
-  await page.locator('.cc-row', { hasText: 'Away and cover' }).click();
+  await page.locator('.cc-set-list .ds-li', { hasText: 'Away and cover' }).click();
   await settle(page, 600);
   pass('associate, phone: a section opens full screen, with Back', /Away and cover/i.test(await page.locator('h1').innerText()) && (await page.locator('.ui-back-link').innerText()).trim() === 'Settings' && (await page.locator('.cc-setnav').count()) === 0);
   pass('associate: Away has no cover', !/Cover/.test(await text(page)));
   await page.locator('.ui-back-link').click();
   await settle(page, 500);
-  pass('associate, phone: Back returns to the list', new URL(page.url()).pathname === '/coach/settings' && (await page.locator('.cc-row').count()) === 9);
+  pass('associate, phone: Back returns to the list', new URL(page.url()).pathname === '/coach/settings' && (await page.locator('.cc-set-list .ds-li').count()) === 10);
   for (const [path, why] of [['/coach/settings/coaches', 'Coaches'], ['/coach/settings/log', 'the Activity log']]) {
     await open(page, path);
     pass(`associate: the address for ${why} goes back to their Settings`, new URL(page.url()).pathname === '/coach/settings', new URL(page.url()).pathname);
@@ -747,21 +745,23 @@ if (has('associate')) {
 
   // Clients on a phone: the list and the board only; press and hold to choose.
   await open(page, '/coach/clients');
-  pass('associate: the list says “Your clients”, and shows only theirs', /Your clients/.test(await page.locator('.cc-toolbar-who').innerText()) && !/Maya’s client/.test(await text(page)));
+  // Polish 1 (Stage B): the list's name is its card's label (the old toolbar's .cc-toolbar-who is gone), drawn in capitals.
+  pass('associate: the list says “Your clients”, and shows only theirs', /Your clients/.test(await page.locator('.cc-plist-card .ds-card-head .ds-label, .cc-plist-head .ds-card-head .ds-label').first().textContent()) && !/Maya’s client/.test(await text(page)));
 
   // Run 6 (item 4): on a phone, Back closes a full-screen panel and stays on the page; a panel closed any other way
   // leaves no step behind, so the next Back goes to the page before. The menu closes the same way.
   {
     const here = () => new URL(page.url()).pathname;
-    await button(page, 'Add client').first().click(); await settle(page, 600);
+    await openAddClient(page); await settle(page, 600);
     const opened = await panel(page).count();
     await page.goBack(); await settle(page, 700);
     pass('associate, phone: Back closes the full-screen Add client and stays on Clients', opened === 1 && (await page.locator('.ds-modal--shown').count()) === 0 && here() === '/coach/clients', `${opened} ${here()}`);
-    await page.locator('.cc-phonebar').getByRole('button', { name: 'Menu' }).click(); await settle(page, 500);
-    const menuOpen = await page.locator('.cc-menu').isVisible().catch(() => false);
+    await frameMenu(page); await settle(page, 500);
+    const menuOpen = await page.locator('.ds-pmenu .ds-mi').first().isVisible().catch(() => false);
     await page.goBack(); await settle(page, 700);
-    pass('associate, phone: Back closes the menu and stays on Clients', menuOpen && !(await page.locator('.cc-menu').isVisible().catch(() => false)) && here() === '/coach/clients', `${menuOpen} ${here()}`);
-    await button(page, 'Add client').first().click(); await settle(page, 600);
+    pass('associate, phone: Back closes the menu and stays on Clients', menuOpen && !(await page.locator('.ds-pmenu .ds-mi').first().isVisible().catch(() => false)) && here() === '/coach/clients', `${menuOpen} ${here()}`);
+    if (here() !== '/coach/clients') await open(page, '/coach/clients'); // so one fault doesn't stop the rest
+    await openAddClient(page); await settle(page, 600);
     await closePanel(page); await settle(page, 300);
     await page.goBack(); await settle(page, 900);
     pass('associate, phone: a panel closed with Escape leaves no step: Back goes to the page before', here() !== '/coach/clients', here());
@@ -782,7 +782,7 @@ if (has('associate')) {
   await settle(page, 500);
   pass('phone: press and hold chooses a row', /1 chosen/.test(await page.locator('.cc-bulk').innerText().catch(() => '')) && new URL(page.url()).pathname === '/coach/clients');
   pass('associate: the bar offers Tag, never Move', /Tag/.test(await page.locator('.cc-bulk').innerText()) && !/Move/.test(await page.locator('.cc-bulk').innerText()));
-  await page.locator('.cc-pick-row', { hasText: 'Mia Torres' }).locator('.cc-row').click();
+  await page.locator('.cc-pick-row', { hasText: 'Mia Torres' }).locator('.ds-li').click();
   await settle(page, 400);
   pass('phone: once choosing has begun, a tap chooses', /2 chosen/.test(await page.locator('.cc-bulk').innerText()));
   await button(page, 'Stop choosing').click();

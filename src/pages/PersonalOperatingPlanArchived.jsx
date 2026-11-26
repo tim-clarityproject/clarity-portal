@@ -4,10 +4,11 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatPlanCounts, formatVersion, loadArchivedMissions, restoreArchivedPlan } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
-import pageText from '../content/pageText';
 import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import { Loading, PageHeader, Button, EmptyState, useToast } from '../components/design';
+import { Loading, Button, EmptyState, useToast, PageOpening } from '../components/design';
+import { B1_LINES } from '../content/pageLines/client';
+import '../pages/hubs/clientPage.css';
 
 export default function PersonalOperatingPlanArchived() {
   const navigate = useNavigate();
@@ -68,10 +69,10 @@ export default function PersonalOperatingPlanArchived() {
       `}</style>
       <DesignHeader />
 
-      <div className="plan-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan')} label="Back to your plan" /></div>
+      <div className="plan-page cp-page cp-page">
+        <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/personal-operating-plan')} label="Back to your plan" /></div>
 
-        <PageHeader title="Archived plans" info={pageText.personalOperatingPlanArchived} />
+        <PageOpening title="Archived plans" line={B1_LINES.popArchived} />
 
         {isLoading ? (
           <Loading label="Loading your archived plans" className="ds-loading--page" />

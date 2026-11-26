@@ -1,0 +1,58 @@
+/* Breathe (BreathingPage.jsx; components.css .breathe-*) in the 25 Nov type (B3, Polish 1):
+   no Nekst on the count, the phase, the guidance or the meta line; the count is a 24px
+   light figure, the labels 13px grey spaced capitals, the guidance 16px. */
+.ui-root .breathe-count:not(#_) {
+  font-family: var(--font-body);
+  font-weight: var(--fw-light, 300);
+  font-size: var(--fs-number);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.ui-root :is(.breathe-phase, .breathe-guidance-label, .breathe-meta-item):not(#_) {
+  font-family: var(--font-body);
+  font-size: var(--fs-meta);
+  letter-spacing: var(--ls-section-title);
+}
+.ui-root .breathe-guidance-text:not(#_) { font-size: var(--fs-text); }
+.ui-root .breathe-timer:not(#_) { font-size: var(--fs-meta); }
+.ui-root .breathe-page .ds-open { text-align: left; }
+
+/* Start breathing: under the page's content inside the laptop panel (the old bar ran
+   the window's width, over the panel's edge); on a phone at the screen's foot, where
+   the retired phone bar no longer sits under it. */
+@media (min-width: 1024px) {
+  .ui-root .breathe-start-bar:not(#_) {
+    position: static;
+    padding: 0;
+    margin-top: var(--space-5);
+    border: 0;
+    background: none;
+    justify-content: flex-start;
+  }
+  .ui-root .breathe-start-bar .ui-btn-primary:not(#_) { width: auto; }
+}
+@media (max-width: 1023px) {
+  .ui-root .breathe-start-bar:not(#_) {
+    bottom: 0;
+    padding: var(--space-3) var(--page-x-phone) max(var(--space-3), env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* On a phone the three techniques don't fit one joined switch (rule 7): they become
+   answer boxes, one per line at the column's width, and the page stays inside its column. */
+@media (max-width: 600px) {
+  .ui-root .breathe-page:not(#_) { align-items: stretch; }
+  .ui-root .breathe-resting:not(#_) { min-width: 0; width: 100%; }
+  .ui-root .breathe-resting .ds-seg:not(#_) {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: var(--space-2);
+    border: 0;
+  }
+  .ui-root .breathe-resting .ds-seg .ds-seg-btn:not(#_) {
+    width: 100%;
+    min-height: var(--field-h);
+    border: var(--line-w) solid var(--field-line);
+    border-radius: var(--radius-control);
+  }
+}

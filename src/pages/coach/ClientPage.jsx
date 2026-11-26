@@ -3,7 +3,10 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { idFromAddress } from '../../lib/coach/address';
 import SuggestQuestionPanel from './SuggestQuestionPanel';
 import AdminClient from './AdminClient';
-import { AddButton, Button, Crosshair, ErrorMessage, Dropdown, InlineChoice, Loading, PageHeader, SearchField, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
+import { Button, Crosshair, ErrorMessage, Dropdown, InlineChoice, Loading, PageHeader, SearchField, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
+import { AddLink, Card, PageOpening, QuickAdd } from '../../components/design/Blocks';
+import { clientLine } from '../../content/pageLines/coach';
+import './people.css';
 import { supabase } from '../../lib/supabase';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { zonePlace } from '../../lib/time';
@@ -20,7 +23,7 @@ import { carriedTimeline, emailsOn, leadTimeline } from '../../lib/coach/crm';
 import { EmailRows } from './crmParts';
 import './leads.css';
 import { engagementToSave, heldWords, lengthPlace, nextSession, openWords, sortTodos, whenWords, withHeldTyped, withSessions } from '../../lib/coach/day';
-import { Back, Detail, EditCell, Eye, Fold, InlineLink, Line, TextLink, TimelineRow, useCoachPortal, useEverySecond, Part } from './parts';
+import { Back, Detail, EditCell, Eye, Fold, InlineLink, Line, TextLink, TimelineRow, useCoachPortal, useEverySecond } from './parts';
 import { AddSessionPanel, SessionRows } from './sessionParts';
 import { QuickAddPanel, TodoList, TodoPanel } from './todoParts';
 import { currentEngagement } from './clientData';
@@ -168,6 +171,7 @@ export default function ClientPage() {
   const toggle = (key) => setFolds((f) => { const next = { ...f, [key]: !f[key] }; writeJson(foldsKey, next); return next; });
   const [view, setView] = useState('over');
   const [panel, setPanel] = useState(null);
+  const [addingProject, setAddingProject] = useState(false);
   const [engDraft, setEngDraft] = useState(null);
   const [field, setField] = useState(null);
   const [note, setNote] = useState('');
@@ -438,9 +442,13 @@ export default function ClientPage() {
 
   return (
     <div className="cc-page">
-      <div className="cc-col">
+      <div className="cc-col cc-people">
         <Back onClick={() => navigate(profile.status === 'past' ? '/coach/clients/past' : '/coach/clients')} to={profile.status === 'past' ? 'Past clients' : 'Clients'} />
-        <PageHeader title={profile.name} meta={[!isOwner && org ? org.name : null, profile.job_title, profile.city, profile.status === 'paused' ? 'Paused' : null, profile.status === 'past' ? 'Past client' : null]} />
+        <PageOpening
+          label={[!isOwner && org ? org.name : null, profile.status === 'paused' ? 'Paused' : null, profile.status === 'past' ? 'Past client' : null].filter(Boolean).join(', ') || null}
+          title={profile.name}
+          line={clientLine({ role: profile.job_title, city: profile.city })}
+        />
         {isOwner && org && <div className="cc-links"><TextLink onClick={() => navigate(`/coach/organisations/${org.id}`)}>{org.name}</TextLink></div>}
         {birthday && <p className="cc-quiet">It’s <InlineLink onClick={() => setPanel('note')}>{possessive(first)}</InlineLink> birthday today.</p>}
         {pinned.length > 0 && (
@@ -484,7 +492,7 @@ export default function ClientPage() {
             {shared?.mission && <div className="cc-soft"><span className="cc-soft-label">{possessive(first)} Mission</span><p>{shared.mission}</p></div>}
 
             {(!started.complete || (profile.invited_at && !profile.user_id && profile.email)) && profile.status !== 'past' && (
-              <Part title="Getting started">
+              <Card label="Getting started">
                 {started.rows.map((r) => (
                   <Line key={r.key} title={r.label} small={r.key === 'invited' && !profile.email && !r.done ? `Add ${possessive(first)} email first.` : r.key === 'invited' ? inviteLinkWords(profile, { zone: coachZone }) : null}>
                     {r.key === 'invited' && r.done && profile.invited_at && !profile.user_id && profile.email ? <TextLink onClick={() => setPanel('invite')}>Send it again</TextLink>
@@ -494,10 +502,10 @@ export default function ClientPage() {
                           : <TextLink aria-label={`Tick ${r.label}`} onClick={() => save({ getting_started: { ...(profile.getting_started || {}), [r.key]: true } })}>Tick as done</TextLink>}
                   </Line>
                 ))}
-              </Part>
+              </Card>
             )}
 
-            <Part title="Next coaching session">
+            <Card label="Next coaching session">
               {next ? (
                 <div className="cc-ses-next">
                   <span><b>{whenWords(next.starts_at, todayKey)}</b><small>{lengthPlace(next)}</small></span>
@@ -506,7 +514,7 @@ export default function ClientPage() {
               ) : (
                 <p className="cc-quiet cc-ses-none"><span>No session is booked.</span>{profile.status !== 'past' && <TextLink onClick={() => navigate('/coach/calendar/book', { state: { clientId: profile.id } })}>Book a call</TextLink>}{profile.status !== 'past' && <TextLink onClick={() => setPanel('session')}>Add session</TextLink>}</p>
               )}
-            </Part>
+            </Card>
 
             {(sessions || credit) && (
               <StatGroup className="cc-stats">
@@ -516,7 +524,7 @@ export default function ClientPage() {
             )}
 
             {credit && (
-              <Part title="Projects">
+              <Card label="Projects" add={<AddLink label="Add project" expanded={addingProject} controls="cc-add-project" onClick={() => setAddingProject((v) => !v)} />} quickAdd={<QuickAdd id="cc-add-project" open={addingProject} onClose={() => setAddingProject(false)} placeholder="The project’s name" label="Add project: its name" addLabel="Add project" onAdd={(name) => addProject(name)} />}>
                 {[...projects, ...(projects.length ? [] : [{ id: null, name: 'Coaching' }])].map((p) => {
                   const on = running && running.engagement_id === engagement.id && (running.project_id || null) === p.id;
                   const total = minutesClocked(entries, { engagementId: engagement.id, projectId: p.id }, now);
@@ -526,8 +534,7 @@ export default function ClientPage() {
                     </Line>
                   );
                 })}
-                <ProjectAdd onAdd={addProject} />
-              </Part>
+              </Card>
             )}
 
             <div className="cc-folds">
@@ -537,7 +544,7 @@ export default function ClientPage() {
                   : <p className="cc-quiet">{profile.user_id ? `${first} isn’t sharing a score with you yet.` : `${first} has no portal account yet, so there is nothing to show.`}</p>}
               </Fold>
               <Fold title="Sessions and recaps" open={Boolean(folds.ses)} onToggle={() => toggle('ses')} summary={heldWords(counted)}>
-                {profile.status !== 'past' && <div className="cc-add"><AddButton onClick={() => setPanel('session')}>Add session</AddButton></div>}
+                {profile.status !== 'past' && <div className="cc-fold-add"><AddLink label="Add session" onClick={() => setPanel('session')} /></div>}
                 <SessionRows sessions={mySessions} label="Sessions" />
                 {engagement && (
                   <Line title="Sessions held" small={counted.sessions_recorded > 0 ? `${counted.sessions_recorded} recorded here, counted with the ones from before.` : 'Each session you write up is counted here.'}>
@@ -568,7 +575,7 @@ export default function ClientPage() {
               <Fold title="To-dos" open={Boolean(folds.todo)} onToggle={() => toggle('todo')} summary={myTodos.length ? openWords(myTodos) : ''}>
                 {myTodos.length === 0 && <p className="cc-quiet">Your own to-dos for {first} show here.</p>}
                 {myTodos.length > 0 && <TodoList todos={myTodos} view="list" label={`Your to-dos for ${first}`} onOpen={setOpenTodo} />}
-                <div className="cc-add"><AddButton onClick={() => setPanel('todo')}>Add to-do</AddButton></div>
+                <div className="cc-fold-add"><AddLink label="Add to-do" onClick={() => setPanel('todo')} /></div>
               </Fold>
               <Fold title="Files" eye={<Eye sentence={`You and ${first} can see these.`} shared />} open={Boolean(folds.files)} onToggle={() => toggle('files')} summary={countWords(files.length, 'file')}>
                 {files.map((f) => (
@@ -634,7 +641,7 @@ export default function ClientPage() {
                   ) : (
                     <>
                       <p className="cc-quiet">{first} has no engagement running.</p>
-                      <div className="cc-add"><AddButton onClick={() => setEngDraft(draftFrom(null))}>Add engagement</AddButton></div>
+                      <div className="cc-fold-add"><AddLink label="Add engagement" onClick={() => setEngDraft(draftFrom(null))} /></div>
                     </>
                   )}
                 </Fold>
@@ -657,7 +664,7 @@ export default function ClientPage() {
                     return <Detail key={f.id} label={f.name} edit><EditCell label={f.name} value={v} words={fieldWords(f, v, todayKey)} kind={f.kind} options={f.options || []} onSave={(typed) => saveField(f, typed)} /></Detail>;
                   })}
                   <Detail label="Tags" edit><button type="button" className={`cc-cell${tagNames.length ? '' : ' cc-cell--empty'}`} aria-label={`Tags, ${tagNames.join(', ') || 'none'}. Edit`} onClick={() => setPanel('tags')}>{tagNames.join(', ') || 'Add'}</button></Detail>
-                  <div className="cc-add"><AddButton onClick={() => setField({ id: newId(), name: '', kind: 'text', optionsText: '' })}>Add field</AddButton></div>
+                  <div className="cc-fold-add"><AddLink label="Add field" onClick={() => setField({ id: newId(), name: '', kind: 'text', optionsText: '' })} /></div>
                   <div className="cc-field"><Dropdown label="Time zone" placeholder="Choose a time zone" options={zones} value={profile.time_zone || null} onChange={(v) => save({ time_zone: v })} /></div>
                   <div className="cc-field"><SwitchRow label="Frequent traveller" note={`Session emails say the calendar invite moves with ${first}.`} checked={profile.frequent_traveller === true} onChange={(on) => save({ frequent_traveller: on })} /></div>
                   {profile.status !== 'past' && <div className="cc-field"><SwitchRow label="Paused" note="A paused client stays in your list, in the board’s Paused column." checked={profile.status === 'paused'} onChange={(on) => save({ status: on ? 'paused' : 'active' })} /></div>}
@@ -765,20 +772,6 @@ function AgreementPanel({ open, onClose, version, profile, coach }) {
         ))}
       </div>
     </SlidePanel>
-  );
-}
-
-function ProjectAdd({ onAdd }) {
-  const [adding, setAdding] = useState(false);
-  const [name, setName] = useState('');
-  const [problem, setProblem] = useState(null);
-  if (!adding) return <div className="cc-add"><AddButton onClick={() => setAdding(true)}>Add project</AddButton></div>;
-  return (
-    <form noValidate className="cc-field" onSubmit={(e) => { e.preventDefault(); if (!clean(name)) { setProblem('Type the project’s name to carry on.'); return; } onAdd(name); setName(''); setAdding(false); }}>
-      <TextField label="Project" value={name} maxLength={120} autoFocus onChange={(e) => { setName(e.target.value); setProblem(null); }} />
-      {problem && <p className="cc-problem" role="alert">{problem}</p>}
-      <div className="cc-acts"><Button variant="outline" type="submit">Add project</Button><TextLink onClick={() => setAdding(false)}>Cancel</TextLink></div>
-    </form>
   );
 }
 

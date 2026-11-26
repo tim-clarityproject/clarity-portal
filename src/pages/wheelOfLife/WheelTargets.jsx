@@ -1,16 +1,15 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import DesignHeader from '../../components/DesignHeader';
-import pageText from '../../content/pageText';
+import { B2_LINES } from '../../content/pageLines/client';
 import DiscardDialog from '../../components/ui/DiscardDialog';
-import { StepIcon, PageHeader, useToast } from '../../components/design';
+import { Button, Card, MoreLink, PageOpening, Row, useToast } from '../../components/design';
 import {
   activeAreas, areaName, newestCheckin, scoreOf, stepTarget, targetStatus,
 } from '../../lib/wheelOfLife';
 import { setTargets } from '../../lib/wheelOfLifeApi';
 import useWheelData from './useWheelData';
 import useArrivalToast, { returnPath } from './useArrivalToast';
-import WheelFooter from './WheelFooter';
 import WheelLoadState from './WheelLoadState';
 import '../../styles/wheelOfLife.css';
 
@@ -70,47 +69,49 @@ function Targets({ areas, latest }) {
     navigate(back, { state: { toast: 'Targets saved.' } });
   };
 
+  // Polish 1 (rules 5, 12 to 16): the page opening with its one main button, the targets as a
+  // card of hairline rows, each with the reference's counter; no Nekst on a target or a score.
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page plan-page--form wol-page wol-page--footer wol-enter">
-        <div className="wol-head">
-          <PageHeader title="Your targets" info={pageText.wheelOfLifeTargets} />
-        </div>
+      <main className="plan-page wol-page wol-page--open wol-enter">
+        <div className="wol-back"><MoreLink back onClick={goBack}>Back</MoreLink></div>
+        <PageOpening
+          title="Your targets"
+          line={B2_LINES.lifeBalanceTargets}
+          action={<Button variant="primary" onClick={save} disabled={busy}>{busy ? 'Saving' : 'Save targets'}</Button>}
+        />
+        {error ? <p className="plan-save-error wol-error" role="alert">{error}</p> : null}
 
-        <span className="wol-lab">{`Targets · ${setCount} of ${areas.length} set`}</span>
-        <div className="wol-tgl">
-          {areas.map((a) => {
-            const t = draft[a.key];
-            const l = scoreOf(latest, a.key);
-            const status = targetStatus(l, t);
-            const name = areaName(a);
-            return (
-              <div className="wol-tgr" key={a.key}>
-                <div className="wol-tgn">
-                  <span>{name}</span>
-                  <small>
-                    {l == null ? 'No score yet' : `Latest ${l}`}
-                    {status ? <>{' · '}<em className={status.met ? 'wol-ok' : undefined}>{status.text}</em></> : null}
-                  </small>
-                </div>
-                <div className="wol-stp" role="group" aria-label={`Target for ${name}`}>
-                  <button type="button" aria-label="Lower target" disabled={t === 0} onClick={() => step(a, -1)}><StepIcon /></button>
-                  <b className={t == null ? 'wol-none' : undefined}>{t == null ? 'None' : t}</b>
-                  <button type="button" aria-label="Raise target" disabled={t === 10} onClick={() => step(a, 1)}><StepIcon plus /></button>
-                </div>
-                <button type="button" className="wol-clr" disabled={t == null} onClick={() => clear(a)}>Clear</button>
-              </div>
-            );
-          })}
+        <div className="wol-cards">
+          <Card label={`Targets, ${setCount} of ${areas.length} set`}>
+            {areas.map((a) => {
+              const t = draft[a.key];
+              const l = scoreOf(latest, a.key);
+              const status = targetStatus(l, t);
+              const name = areaName(a);
+              return (
+                <Row
+                  key={a.key}
+                  className="wol-area-row wol-target-row"
+                  name={name}
+                  sub={<>{l == null ? 'No score yet' : `Latest ${l}`}{status ? <>{', '}<em className={status.met ? 'wol-ok' : undefined}>{status.text}</em></> : null}</>}
+                >
+                  <span className="wol-target-ctl">
+                    <span className="ds-count" role="group" aria-label={`Target for ${name}`}>
+                      <button type="button" aria-label="Lower target" disabled={t === 0} onClick={() => step(a, -1)}>−</button>
+                      <span aria-live="polite">{t == null ? 'None' : t}</span>
+                      <button type="button" aria-label="Raise target" disabled={t === 10} onClick={() => step(a, 1)}>+</button>
+                    </span>
+                    <MoreLink small bare className="wol-row-act" aria-label={`Clear the target for ${name}`} disabled={t == null} onClick={() => clear(a)}>Clear</MoreLink>
+                  </span>
+                </Row>
+              );
+            })}
+            <p className="wol-note-line">Leave an area without a target if you don’t want one. Targets show on your wheel as a dashed line, and turn mint when you reach them.</p>
+          </Card>
         </div>
-        <p className="wol-tnote">Leave an area without a target if you don’t want one. Targets show on your wheel as a dashed line, and turn mint when you reach them.</p>
-      </div>
-
-      <WheelFooter
-        onBack={goBack}
-        primary={{ label: 'Save targets', busyLabel: 'Saving', onClick: save, busy, error }}
-      />
+      </main>
       <DiscardDialog
         isOpen={discardOpen}
         title="Discard your changes?"

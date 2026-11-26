@@ -1,0 +1,151 @@
+/* The hub pages, drawn to the 25 Nov design reference (Polish 1, Stage B, B1).
+   These rules come after design.css's older "Hub pages (M3)" block and win
+   over it; the lead can fold them in and delete the older block.
+   The page: left-aligned in the frame like Home and the Dashboard, its own
+   24px top and 20px sides on a phone (the frame gives none there).
+   A tile is the one card (rule 13): 12px corners, a 1px line, no fill, no
+   shadow, 24px padding (20 on a phone); the name 16px at 500, the line 16px
+   grey, the time 13px grey. Every tile in a row is the same height. */
+
+.ui-root .ds-hub-page.ds-hub-page {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 1023px) {
+  .ui-root .ds-hub-page.ds-hub-page {
+    padding: var(--space-4) var(--page-x-phone) var(--space-px64);
+  }
+}
+
+.ui-root .ds-hub-page .ds-hub-back {
+  margin-bottom: var(--space-3);
+}
+
+.ui-root .ds-hub-page .ds-hub-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: var(--card-gap);
+  margin-top: 0;
+}
+
+.ui-root .ds-hub-page .ds-hub-tile {
+  min-height: 0;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--card-pad);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  box-shadow: none;
+  transition: border-color var(--dur) var(--ease);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-hub-page .ds-hub-tile:hover {
+    border-color: var(--text);
+    background: var(--card);
+  }
+}
+
+.ui-root .ds-hub-page .ds-hub-tile-name {
+  font-family: var(--font-body);
+  font-size: var(--fs-text);
+  font-weight: var(--fw-medium);
+  line-height: 1.4;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.ui-root .ds-hub-page .ds-hub-tile-line {
+  max-width: none;
+  margin-top: var(--space-1);
+  font-size: var(--fs-text);
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.ui-root .ds-hub-page .ds-hub-tile-foot {
+  font-size: var(--fs-meta);
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+/* Personal's area tiles: the name as a card's question (20px), never Nekst. */
+.ui-root .ds-hub-page .ds-hub-tile--big {
+  min-height: 0;
+}
+
+.ui-root .ds-hub-page .ds-hub-tile--big .ds-hub-tile-name {
+  font-family: var(--font-body);
+  font-size: var(--fs-question);
+  font-weight: var(--fw-regular);
+  line-height: 1.3;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Groups: 32px apart, the label 16px above its tiles (the reference's .t2 rhythm). */
+.ui-root .ds-hub-page .ds-hub-group {
+  margin-top: 0;
+}
+
+.ui-root .ds-hub-page .ds-hub-group + .ds-hub-group,
+.ui-root .ds-hub-page .ds-hub-grid + .ds-hub-group,
+.ui-root .ds-hub-page .ds-hub-group + .ds-card,
+.ui-root .ds-hub-page .ds-hub-grid + .ds-card {
+  margin-top: var(--space-5);
+}
+
+.ui-root .ds-hub-page .ds-hub-group-title.ds-hub-group-title {
+  margin: 0 0 var(--space-3) !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-meta) !important;
+  color: var(--text-2);
+}
+
+.ui-root .ds-hub-page .ds-hub-group--named .ds-hub-grid {
+  margin-top: 0;
+}
+
+/* The foot: one quiet link, the page's own 32px under the last card. */
+.ui-root .ds-hub-page .ds-hub-pin-link {
+  margin-top: var(--space-5);
+}
+
+.ui-root .ds-hub-page .ds-card:last-of-type {
+  margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-hub-page .ds-hub-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: auto;
+    gap: var(--card-gap);
+  }
+  .ui-root .ds-hub-page .ds-hub-tile {
+    gap: var(--space-px12);
+    padding: var(--card-pad);
+  }
+  .ui-root .ds-hub-page .ds-hub-tile-name {
+    font-size: var(--fs-text);
+  }
+  .ui-root .ds-hub-page .ds-hub-tile--big .ds-hub-tile-name {
+    font-size: var(--fs-question);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-hub-page .ds-hub-tile {
+    transition: none;
+  }
+}
+
+/* Strategic's teams card with no team yet: one sentence; its "+ Add" starts the first. */
+.ui-root .ds-hub-page .ds-hub-teams-empty {
+  margin: 0;
+  font-size: var(--fs-text);
+  line-height: 1.55;
+  color: var(--text-2);
+}

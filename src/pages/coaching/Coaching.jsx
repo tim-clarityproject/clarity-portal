@@ -2,7 +2,7 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import { Button, Checkbox, Chevron, List, ListRow, LoadError, PageHeader, Section, TextBox, ToolTodoPanel, useCoach, useToast } from '../../components/design';
+import { Button, Checkbox, Chevron, LoadError, Row, Rows, Section, TextBox, ToolTodoPanel, useCoach, useToast, PageOpening } from '../../components/design';
 import { savePdf, PDF_ERROR } from '../../components/design/pdfSave';
 import { useCachedLoad } from '../../lib/pageCache';
 import { useDraft } from '../../lib/drafts';
@@ -22,6 +22,8 @@ import CoachingSessions from './CoachingSessions';
 import MySignature from './MySignature';
 import { agreementDocument, useAgreements } from './agreementData';
 import './coaching.css';
+import { B1_LINES } from '../../content/pageLines/client';
+import '../../pages/hubs/clientPage.css';
 
 // Coaching (Phase 6a run 2): the client's side of working with a coach, on
 // one calm page built from the shared parts. No mock-up draws it. Each
@@ -253,18 +255,18 @@ export default function Coaching() {
               </div>
             )}
             {signedRows.length > 0 && (
-              <List label="Signed agreements" className="agree-rows">
+              <Rows label="Signed agreements" className="agree-rows">
                 {signedRows.map((v) => (
-                  <ListRow
+                  <Row
                     key={v.id}
-                    title={versionTitle(v.version)}
-                    type={SIGNED_PDF}
-                    date={rowDay(v.signedAt, today)}
-                    aria-label={`${versionTitle(v.version)}, signed PDF, ${rowDay(v.signedAt, today)}. Download it.`}
+                    name={versionTitle(v.version)}
+                    sub={SIGNED_PDF}
+                    value={rowDay(v.signedAt, today)}
+                    strong
                     onClick={() => downloadSigned(v)}
                   />
                 ))}
-              </List>
+              </Rows>
             )}
           </Section>
         )}
@@ -317,12 +319,12 @@ export default function Coaching() {
 
         {hasAgreements && (
           <Section title="More" className="ipp-section coaching-section agree-more">
-            <List label="More">
-              <ListRow title="My signature" date={<Chevron direction="right" size="sm" />} aria-haspopup="dialog" onClick={() => setSignatureOpen(true)} />
+            <Rows label="More">
+              <Row name="My signature" value={<Chevron direction="right" size="sm" />} onClick={() => setSignatureOpen(true)} strong />
               {billing && (
-                <ListRow title="Billing" type={billingLine(deals.invoices, today) || undefined} date={<Chevron direction="right" size="sm" />} onClick={() => navigate('/coaching/billing')} />
+                <Row name="Billing" sub={billingLine(deals.invoices, today) || undefined} value={<Chevron direction="right" size="sm" />} onClick={() => navigate('/coaching/billing')} strong />
               )}
-            </List>
+            </Rows>
           </Section>
         )}
       </>
@@ -332,8 +334,8 @@ export default function Coaching() {
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page ipp-page coaching-page">
-        <PageHeader title="My coaching" />
+      <div className="plan-page cp-page ipp-page coaching-page">
+        <PageOpening title="My coaching" line={B1_LINES.coaching} />
         {body}
       </div>
       <MySignature open={signatureOpen} onClose={() => setSignatureOpen(false)} userId={userId} />

@@ -31,7 +31,7 @@ const CHRIS = lead('chris', 'Chris Lowe', 's-prop', { organisation: 'Kestrel Gro
 const TOM = lead('tom', 'Tom Hale', 's-dec', { organisation: 'Brightwater Capital', value: 7500, next_step: 'Check in on the decision', next_step_on: '2026-11-13', last_contact_on: '2026-10-29',
   want_outcome: 'x', want_pain: 'x', who_decides: 'x', who_funds: 'x', decide_when: 'January.' });
 const ELENA = lead('elena', 'Elena Ruiz', 's-new', { job_title: 'Founder', next_step: 'Reply to Elena’s email', next_step_on: TODAY, last_contact_on: '2026-11-16' });
-const RUTH = lead('ruth', 'Ruth Adeyemi', 's-call', { email: 'ruth@example.invalid', organisation: 'Harbour City FC', next_step: 'Chemistry Call', next_step_on: '2026-11-18', next_step_time: '13:00:00', last_contact_on: '2026-11-15' });
+const RUTH = lead('ruth', 'Ruth Adeyemi', 's-call', { email: 'ruth@example.invalid', organisation: 'Harbour City FC', next_step: 'Discovery call', next_step_on: '2026-11-18', next_step_time: '13:00:00', last_contact_on: '2026-11-15' });
 const LEO = lead('leo', 'Leo Grant', 's-won', { organisation: 'Northfield Logistics', value: 13500, won_at: '2026-11-13T12:00:00.000Z', won_profile_id: 'p-leo', last_contact_on: '2026-11-13' });
 const COLD = lead('cold', 'Priya Menon', 's-prop', { value: 9000, cold_at: '2026-10-18T09:00:00.000Z', cold_reason: 'No budget this year.', cold_check_on: '2027-01-16' });
 const LEADS = [AMY, CHRIS, TOM, ELENA, RUTH, LEO, COLD];
@@ -132,7 +132,7 @@ test('Quiet shows from 14 days with no contact, never on a won or cold lead', ()
 
 test('the next step says when: Today, the day, the day and time, or Overdue since', () => {
   assert.deepEqual(crm.nextStepWords(ELENA, TODAY), { step: 'Reply to Elena’s email', when: 'Today', overdue: false, line: 'Reply to Elena’s email, Today' });
-  assert.equal(crm.nextStepWords(RUTH, TODAY).line, 'Chemistry Call, Wed 18 Nov, 13:00');
+  assert.equal(crm.nextStepWords(RUTH, TODAY).line, 'Discovery call, Wed 18 Nov, 13:00');
   assert.equal(crm.nextStepWords(AMY, TODAY).when, 'Thu 19 Nov');
   assert.deepEqual([crm.nextStepWords(TOM, TODAY).when, crm.nextStepWords(TOM, TODAY).overdue], ['Overdue since Fri 13 Nov', true]);
   assert.equal(crm.nextStepWords(LEO, TODAY).line, '');
@@ -207,7 +207,7 @@ test('a new lead starts in the first stage; an email that isn’t one is refused
   assert.equal(crm.newLead({ id: 'n3', coachId: ME, stages: STAGES, name: 'A', email: 'not an email' }).error, 'That email doesn’t look right. Check it and try again.');
   assert.equal(crm.LEAD_ADDED(STAGES[0]), 'Added to New.');
   assert.deepEqual(crm.cameFromRow(AMY), { label: 'Referred by', value: 'Hannah Wells', personId: 'np-hannah' });
-  assert.deepEqual(crm.cameFromRow({ source: 'chemistry_page' }), { label: 'Where they came from', value: 'Chemistry Call page', personId: null });
+  assert.deepEqual(crm.cameFromRow({ source: 'chemistry_page' }), { label: 'Where they came from', value: 'Discovery call page', personId: null });
 });
 
 test('Referred by: each referrer’s introductions, how many were won and their value', () => {
@@ -236,7 +236,7 @@ test('the timeline is newest first, with one line for a proposal opened several 
   const emails = [{ id: 'e4', direction: 'in', from_name: 'Amy Cole', subject: 'Re: Leadership Accelerator proposal', hidden: false }, { id: 'e3', direction: 'out', subject: 'Leadership Accelerator proposal', hidden: false }, { id: 'e9', direction: 'in', subject: 'Hidden', hidden: true }];
   const events = [
     ev('1', 'referred', local('2026-11-06', '09:00'), 'Referred by Hannah Wells', 'Hannah introduced you by email.'),
-    ev('3', 'call', local('2026-11-10', '09:00'), 'Chemistry Call, 30 minutes', 'Wants the team pulling the same way.\nDecides with the CEO.'),
+    ev('3', 'call', local('2026-11-10', '09:00'), 'Discovery call, 30 minutes', 'Wants the team pulling the same way.\nDecides with the CEO.'),
     ev('4', 'proposal', local('2026-11-12', '09:00'), 'Proposal sent', 'Leadership Accelerator, £13,500 + VAT.'),
     ev('5', 'email', local('2026-11-12', '09:40'), 'Leadership Accelerator proposal', null, { email_id: 'e3' }),
     ev('6', 'proposal_opened', local('2026-11-13', '09:00'), 'Opened your proposal', null, { name: 'Leadership Accelerator' }),
@@ -248,7 +248,7 @@ test('the timeline is newest first, with one line for a proposal opened several 
   const rows = crm.leadTimeline(events, { emails, lead: AMY, todayKey: TODAY });
   assert.deepEqual(rows.map((r) => [r.when, r.title, r.tag]), [
     ['Today, 09:12', 'Opened your proposal', ''], ['Today, 07:55', 'Amy replied: Leadership Accelerator proposal', 'Email'], ['Thu 12 Nov', 'You emailed: Leadership Accelerator proposal', 'Email'],
-    ['Thu 12 Nov', 'Proposal sent', ''], ['Tue 10 Nov', 'Chemistry Call, 30 minutes', ''], ['Fri 6 Nov', 'Referred by Hannah Wells', ''],
+    ['Thu 12 Nov', 'Proposal sent', ''], ['Tue 10 Nov', 'Discovery call, 30 minutes', ''], ['Fri 6 Nov', 'Referred by Hannah Wells', ''],
   ]);
   assert.deepEqual(rows[0].lines, ['Leadership Accelerator. Opened 3 times.']);
   assert.deepEqual(rows[4].lines, ['Wants the team pulling the same way.', 'Decides with the CEO.']);
@@ -257,7 +257,7 @@ test('the timeline is newest first, with one line for a proposal opened several 
   assert.equal(crm.leadTimeline([ev('x', 'email', local(TODAY, '08:00'), 'Amy replied: Our CEO is in on Thursday', null, { email_id: 'e4' })], { emails, lead: AMY, todayKey: TODAY })[0].title, 'Amy replied: Our CEO is in on Thursday');
   assert.equal(crm.callTitle('', 45), 'Call, 45 minutes');
   assert.equal(crm.proposalDetail('Leadership Accelerator', 13500), 'Leadership Accelerator, £13,500 + VAT.');
-  assert.deepEqual(crm.BOOKING_LINES('Chemistry Call').booked, { title: 'Booked a Chemistry Call', detail: 'From your Chemistry Call page.' });
+  assert.deepEqual(crm.BOOKING_LINES('Discovery call').booked, { title: 'Booked a Discovery call', detail: 'From your Discovery call page.' });
 });
 
 test('contact moves a lead’s last contact forward and never back; a note or a stage move doesn’t', () => {
@@ -268,10 +268,10 @@ test('contact moves a lead’s last contact forward and never back; a note or a 
 });
 
 test('Log a call writes the line, what was learned, the next step and its to-do, and the stage', () => {
-  const out = crm.logCall(RUTH, { how: 'Keen to start in January.', next: 'Call with the CEO', nextOn: '2026-11-20', stageId: 's-prop', learned: { want_outcome: 'A calmer season.', decide_when: 'January.' }, callName: 'Chemistry Call', minutes: 30 },
+  const out = crm.logCall(RUTH, { how: 'Keen to start in January.', next: 'Call with the CEO', nextOn: '2026-11-20', stageId: 's-prop', learned: { want_outcome: 'A calmer season.', decide_when: 'January.' }, callName: 'Discovery call', minutes: 30 },
     { id: 'c1', todoId: 't1', moveId: 'm1', nowIso: NOW, todayKey: TODAY, stages: STAGES });
   assert.deepEqual([out.lead.last_contact_on, out.lead.next_step, out.lead.next_step_on, out.lead.stage_id, out.lead.want_outcome, out.lead.decide_when], [TODAY, 'Call with the CEO', '2026-11-20', 's-prop', 'A calmer season.', 'January.']);
-  assert.deepEqual(out.events.map((e) => [e.kind, e.title]), [['call', 'Chemistry Call, 30 minutes'], ['stage', 'Moved to Proposal sent']]);
+  assert.deepEqual(out.events.map((e) => [e.kind, e.title]), [['call', 'Discovery call, 30 minutes'], ['stage', 'Moved to Proposal sent']]);
   assert.deepEqual([out.todo.title, out.todo.planned_on, out.todo.lead_id, out.todo.someday], ['Call with the CEO', '2026-11-20', 'ruth', false]);
   assert.equal(out.toast, 'Logged. The follow-up is on your to-dos for Fri 20 Nov.');
   assert.equal(crm.logCall(RUTH, { how: ' ' }, { id: 'c2', todoId: 't2', moveId: 'm2', nowIso: NOW, todayKey: TODAY }).error, 'Type how it went, or what happens next, to carry on.');
@@ -357,7 +357,7 @@ test('import shows duplicates first: the same email, the same name, or twice in 
 // ---------------------------------------------------------------- merge and Undo
 
 const DOYLE = lead('d1', 'Chris Doyle', 's-new', { email: 'chris@example.invalid', organisation: 'Doyle Capital', notes: 'Referrer, 3 people sent', last_contact_on: '2026-11-05' });
-const DOYLE2 = lead('d2', 'Christopher Doyle', 's-new', { phone: '07700 900542', organisation: 'Doyle Capital Partners', notes: 'Added from the Chemistry Call page', last_contact_on: '2026-11-09', next_step: 'Call Chris', next_step_on: '2026-11-20', want_outcome: 'More referrals' });
+const DOYLE2 = lead('d2', 'Christopher Doyle', 's-new', { phone: '07700 900542', organisation: 'Doyle Capital Partners', notes: 'Added from the Discovery call page', last_contact_on: '2026-11-09', next_step: 'Call Chris', next_step_on: '2026-11-20', want_outcome: 'More referrals' });
 
 test('likely duplicates are found by email, by name and by a first name that starts the other, until the coach says they differ', () => {
   const pairs = crm.leadDuplicates([...LEADS, DOYLE, DOYLE2]);
@@ -432,11 +432,11 @@ test('an automation can only add a to-do or move a stage, and its help says so',
 });
 
 test('each automation reads as one sentence, as M11 writes them', () => {
-  const c = { stages: STAGES, callTypes: [{ key: 'chemistry', name: 'Chemistry Call' }] };
+  const c = { stages: STAGES, callTypes: [{ key: 'chemistry', name: 'Discovery call' }] };
   assert.equal(crm.automationSentence(A1, c), 'When a lead moves to Proposal sent, add the to-do “Follow up on the proposal”, 3 days later.');
   assert.equal(crm.automationSentence(A2, c), 'When a proposal is opened 3 times, add the to-do “Call while the proposal is fresh”, the same day.');
   assert.equal(crm.automationSentence(A3, c), 'When a lead has been quiet for 14 days, add the to-do “Check in”, the same day.');
-  assert.equal(crm.automationSentence(A4, c), 'When a Chemistry Call is booked, add the to-do “Read their booking answers”, the day before.');
+  assert.equal(crm.automationSentence(A4, c), 'When a Discovery call is booked, add the to-do “Read their booking answers”, the day before.');
   assert.equal(crm.automationSentence(A6, c), 'When coaching ends, add the to-do “Ask for a testimonial”, 2 weeks later.');
   assert.equal(crm.automationSentence(auto('m', 'lead_stage', { trigger_stage_id: 's-call', action: 'stage', to_stage_id: 's-prop' }), c), 'When a lead moves to Call booked, move the lead to Proposal sent.');
   assert.deepEqual([crm.daysLaterWords(1), crm.daysLaterWords(7), crm.daysLaterWords(-2), crm.daysLaterWords(10)], ['1 day later', '1 week later', '2 days before', '10 days later']);
@@ -673,10 +673,10 @@ test('someone waiting can be added as a lead, with the email on their timeline, 
 });
 
 test('an email opens with who and when, a hidden thread leaves every timeline, and nothing offers to send', () => {
-  const emails = [{ id: 'e1', direction: 'in', from_name: 'Ruth Adeyemi', subject: 'Re: Chemistry Call', sent_at: local(TODAY, '08:40'), snippet: 'Can we start in January?', thread_key: 't1', source: 'gmail', link: 'https://mail.example.invalid/1', hidden: false },
-    { id: 'e2', direction: 'out', subject: 'Chemistry Call', to_people: [{ name: 'Ruth Adeyemi', email: 'r@example.invalid' }], sent_at: local('2026-11-16', '09:00'), thread_key: 't1', source: 'copy_in', link: 'javascript:alert(1)', hidden: false }, { id: 'e3', thread_key: 't2', hidden: false }];
+  const emails = [{ id: 'e1', direction: 'in', from_name: 'Ruth Adeyemi', subject: 'Re: Discovery call', sent_at: local(TODAY, '08:40'), snippet: 'Can we start in January?', thread_key: 't1', source: 'gmail', link: 'https://mail.example.invalid/1', hidden: false },
+    { id: 'e2', direction: 'out', subject: 'Discovery call', to_people: [{ name: 'Ruth Adeyemi', email: 'r@example.invalid' }], sent_at: local('2026-11-16', '09:00'), thread_key: 't1', source: 'copy_in', link: 'javascript:alert(1)', hidden: false }, { id: 'e3', thread_key: 't2', hidden: false }];
   const panel = crm.emailPanel(emails[0], TODAY);
-  assert.deepEqual([panel.title, panel.from, panel.when, panel.hide, panel.open], ['Re: Chemistry Call', 'Ruth Adeyemi', 'Today, 08:40', 'Hide this thread', { label: 'Open in Gmail', href: 'https://mail.example.invalid/1' }]);
+  assert.deepEqual([panel.title, panel.from, panel.when, panel.hide, panel.open], ['Re: Discovery call', 'Ruth Adeyemi', 'Today, 08:40', 'Hide this thread', { label: 'Open in Gmail', href: 'https://mail.example.invalid/1' }]);
   assert.deepEqual([crm.emailPanel(emails[1], TODAY).from, crm.emailPanel(emails[1], TODAY).to, crm.emailPanel(emails[1], TODAY).when, crm.emailPanel(emails[1], TODAY).open], ['You', 'Ruth Adeyemi', 'Mon 16 Nov, 09:00', null]);
   assert.doesNotMatch(JSON.stringify(panel), /reply|send/i);
   const hidden = crm.hideThread(emails, emails[0]);
@@ -807,9 +807,9 @@ test('the table has one Value column: the lead’s own, where a field of that na
 
 test('a lead a booking made before 052 still shows its booking on the timeline, and never twice', () => {
   const booked = lead('b1', 'Ruth Adeyemi', null, { booking_id: 'bk-1', call_type_key: 'chemistry', created_at: '2026-11-15T10:00:00.000Z' });
-  const lines = crm.bookingLines(booked, { events: [], booking: { id: 'bk-1', created_at: '2026-11-15T10:00:00.000Z' }, callName: 'Chemistry Call' });
-  assert.deepEqual(lines.map((e) => [e.kind, e.title, e.detail]), [['first_contact', 'First contact', 'From the Chemistry Call page.'], ['booking', 'Booked a Chemistry Call', 'From your Chemistry Call page.']]);
-  assert.deepEqual(crm.leadTimeline(lines, { todayKey: TODAY }).map((r) => r.title), ['Booked a Chemistry Call', 'First contact']);
+  const lines = crm.bookingLines(booked, { events: [], booking: { id: 'bk-1', created_at: '2026-11-15T10:00:00.000Z' }, callName: 'Discovery call' });
+  assert.deepEqual(lines.map((e) => [e.kind, e.title, e.detail]), [['first_contact', 'First contact', 'From the Discovery call page.'], ['booking', 'Booked a Discovery call', 'From your Discovery call page.']]);
+  assert.deepEqual(crm.leadTimeline(lines, { todayKey: TODAY }).map((r) => r.title), ['Booked a Discovery call', 'First contact']);
   assert.deepEqual(crm.bookingLines(booked, { events: [{ lead_id: 'b1', kind: 'booking' }] }), []);
   assert.deepEqual(crm.bookingLines(AMY, { events: [] }), []);
 });
@@ -833,16 +833,16 @@ test('the two lines the database writes for a booking (052, no title of their ow
     { id: 'x1', lead_id: 'b2', kind: 'first_contact', happened_at: '2026-11-17T08:59:59.000Z', happened_on: TODAY, title: null, detail: null, data: { source: 'chemistry_page' } },
     { id: 'x2', lead_id: 'b2', kind: 'booking', happened_at: '2026-11-17T09:00:00.000Z', happened_on: TODAY, title: null, detail: null, data: { booking_id: 'bk-2', call_type_key: 'chemistry' } },
   ];
-  const rows = crm.leadTimeline(db, { lead: booked, todayKey: TODAY, callNames: { chemistry: 'Chemistry Call' } });
-  assert.deepEqual(rows.map((r) => [r.title, r.lines]), [['Booked a Chemistry Call', ['From your Chemistry Call page.']], ['First contact', ['From the Chemistry Call page.']]]);
+  const rows = crm.leadTimeline(db, { lead: booked, todayKey: TODAY, callNames: { chemistry: 'Discovery call' } });
+  assert.deepEqual(rows.map((r) => [r.title, r.lines]), [['Booked a Discovery call', ['From your Discovery call page.']], ['First contact', ['From the Discovery call page.']]]);
   // A client's page (no lead handed in) still words them, from the booking line's own call type.
-  assert.deepEqual(crm.leadTimeline(db, { todayKey: TODAY, callNames: { chemistry: 'Chemistry Call' } }).map((r) => r.title), ['Booked a Chemistry Call', 'First contact']);
+  assert.deepEqual(crm.leadTimeline(db, { todayKey: TODAY, callNames: { chemistry: 'Discovery call' } }).map((r) => r.title), ['Booked a Discovery call', 'First contact']);
   assert.ok(crm.leadTimeline(db, { todayKey: TODAY }).every((r) => r.title));
   // What they answered when they booked shows under the newest booking line only.
   const answered = { ...booked, answers: { 'What would you like from the call?': 'To think through a new role.', 'Anything else?': '  ' } };
-  const withAnswers = crm.leadTimeline([...db, { ...db[1], id: 'x0', happened_at: '2026-11-10T09:00:00.000Z', happened_on: '2026-11-10' }], { lead: answered, todayKey: TODAY, callNames: { chemistry: 'Chemistry Call' } });
-  assert.deepEqual(withAnswers[0].lines, ['From your Chemistry Call page.', 'What would you like from the call? To think through a new role.']);
-  assert.deepEqual(withAnswers[2].lines, ['From your Chemistry Call page.']);
+  const withAnswers = crm.leadTimeline([...db, { ...db[1], id: 'x0', happened_at: '2026-11-10T09:00:00.000Z', happened_on: '2026-11-10' }], { lead: answered, todayKey: TODAY, callNames: { chemistry: 'Discovery call' } });
+  assert.deepEqual(withAnswers[0].lines, ['From your Discovery call page.', 'What would you like from the call? To think through a new role.']);
+  assert.deepEqual(withAnswers[2].lines, ['From your Discovery call page.']);
   assert.deepEqual(crm.bookingAnswers({ answers: null }), []);
   assert.deepEqual(crm.bookingAnswers({ answers: ['x'] }), []);
   // A line with its own title keeps it.

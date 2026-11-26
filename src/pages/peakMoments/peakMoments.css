@@ -39,7 +39,7 @@
   font-size: var(--fs-note);
   letter-spacing: normal;
   text-transform: none;
-  color: var(--label);
+  color: var(--text-2);
 }
 .ui-root .peak-leadup-line {
   margin: 0;

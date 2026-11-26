@@ -7,7 +7,8 @@ import { formatVersion, loadVersions, restorePlanFromVersion } from '../lib/miss
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import { Loading, PageHeader, Button, useToast } from '../components/design';
+import { Loading, Button, useToast, PageOpening } from '../components/design';
+import '../pages/hubs/clientPage.css';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -96,7 +97,7 @@ export default function PersonalOperatingPlanHistoryVersion() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><Loading label="Loading this version" className="ds-loading--page" /></div>
+        <div className="plan-page cp-page cp-page"><Loading label="Loading this version" className="ds-loading--page" /></div>
       </div>
     );
   }
@@ -105,8 +106,8 @@ export default function PersonalOperatingPlanHistoryVersion() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page">
-          <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan-history', { state: { missionId } })} label="Back to version history" /></div>
+        <div className="plan-page cp-page cp-page">
+          <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/personal-operating-plan-history', { state: { missionId } })} label="Back to version history" /></div>
           <p className="ui-subtitle">Version not found.</p>
         </div>
       </div>
@@ -119,14 +120,14 @@ export default function PersonalOperatingPlanHistoryVersion() {
     <div className="ui-root">
       <DesignHeader />
 
-      <div className="plan-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan-history', { state: { missionId } })} label="Back to version history" /></div>
+      <div className="plan-page cp-page cp-page">
+        <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/personal-operating-plan-history', { state: { missionId } })} label="Back to version history" /></div>
 
         <div className="plan-summary-head">
-          <PageHeader
+          <PageOpening
             title={formatVersion(version.major, version.minor)}
-            info={isCurrent ? 'This is your current plan.' : 'This is an older Version. You can read it but not change it.'}
-            meta={[formatShortDate(version.created_at), version.change_note]}
+            label={[formatShortDate(version.created_at), version.change_note].filter(Boolean).join(', ')}
+            line={isCurrent ? 'This is your current plan.' : 'This is an older Version. You can read it but not change it.'}
           />
         </div>
 

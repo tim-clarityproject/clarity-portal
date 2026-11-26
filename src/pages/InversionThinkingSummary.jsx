@@ -1,12 +1,13 @@
+import './toolFocus/formTool.css';
 import { useState, useContext, useEffect } from 'react';
+import { B3_LINES } from '../content/pageLines/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatUkDate } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import pageText from '../content/pageText';
-import { Loading, PageHeader, Button, useToast } from '../components/design';
+import { Loading, PageOpening, Button, useToast } from '../components/design';
 import SavedItemActions from '../components/SavedItemActions';
 
 export default function InversionThinkingSummary() {
@@ -84,7 +85,7 @@ export default function InversionThinkingSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageHeader title={thinking.title || 'Pre-mortem'} info={pageText.inversionThinkingSummary} meta={[`Created ${formatUkDate(thinking.created_at)}`]} />
+          <PageOpening label={`Pre-mortem, ${formatUkDate(thinking.created_at)}`} title={thinking.title || 'Pre-mortem'} line={B3_LINES.preMortemSummary} />
         </div>
 
         <div className="plan-sum">

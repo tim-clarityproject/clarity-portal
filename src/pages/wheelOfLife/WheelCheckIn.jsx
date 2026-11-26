@@ -1,9 +1,8 @@
 import { useContext, useLayoutEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import DesignHeader from '../../components/DesignHeader';
-import { Choice, PageHeader, TextBox } from '../../components/design';
-import pageText from '../../content/pageText';
+import { Choice, MoreLink, TextBox, ToolFrame } from '../../components/design';
+import { LIFE_BALANCE_TOOL } from '../../content/pageLines/client';
 import DiscardDialog from '../../components/ui/DiscardDialog';
 import WheelSectional from '../../components/wheelOfLife/WheelSectional';
 import WheelRadar from '../../components/wheelOfLife/WheelRadar';
@@ -16,9 +15,9 @@ import {
   clearInProgress, createCheckin, readInProgress, writeInProgress,
 } from '../../lib/wheelOfLifeApi';
 import useWheelData from './useWheelData';
-import WheelFooter from './WheelFooter';
 import WheelLoadState from './WheelLoadState';
 import '../../styles/wheelOfLife.css';
+import '../performance/stepFrame.css';
 
 const SCORES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const SAVE_FAILED = 'Your check-in hasn’t saved yet. Check your connection and try again.';
@@ -68,6 +67,7 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
   const [discardOpen, setDiscardOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [need, setNeed] = useState(false);
 
   const N = areas.length;
   const i = st.screenIndex;
@@ -135,91 +135,93 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
     navigate('/life-balance-review/results', { state: { toast: 'Check-in saved. Here is your wheel.', savedId: res.data.id } });
   };
 
+  const close = () => {
+    // Every tap is already kept on this device: × only goes back (rule 21).
+    navigate('/life-balance-review', { state: { toast: LIFE_BALANCE_TOOL.closed } });
+  };
+  const next = () => {
+    if (onReflect) { finish(); return; }
+    if (score == null) { setNeed(true); return; }
+    setNeed(false);
+    goNext();
+  };
+  const discardLink = (
+    <div className="wol-discard">
+      <MoreLink small bare onClick={() => setDiscardOpen(true)}>Discard this check-in</MoreLink>
+    </div>
+  );
+
   let body;
-  let primary;
+  let question;
+  let eyebrow;
   if (!onReflect) {
     const name = areaName(area);
     const last = lastScoreFor(checkins, area.key);
     const MiniWheel = miniWheelStyle(chartStyle, N) === 'radar' ? WheelRadar : WheelSectional;
     const sig = areas.map((a) => (st.scores[a.key] ?? '-')).join('');
+    eyebrow = name;
+    question = questionFor(area);
     body = (
-      <div className="wol-rate">
-        <div>
-          <div className="wol-steps" aria-hidden="true">
-            {areas.map((a, k) => <i key={a.key} className={k < i ? 'f' : (k === i ? 'n' : '')} />)}
-          </div>
-          <div className="wol-rate-title wol-rv">
-            <PageHeader title={name} info={pageText.wheelOfLifeCheckIn} meta={[`Area ${i + 1} of ${N}`, 'Life balance review']} />
-          </div>
-          <p className="wol-qq wol-rv" style={{ '--i': 1 }}>{questionFor(area)}</p>
-          <div className="wol-scale wol-rv" style={{ '--i': 2 }} role="radiogroup" aria-label={name}>
-            {SCORES.map((v) => (
-              <button
-                key={v}
-                type="button"
-                role="radio"
-                aria-checked={score === v}
-                aria-label={`${v} out of 10`}
-                className={last && last.score === v ? 'wol-prev' : undefined}
-                onClick={() => setScore(v)}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-          <div className="wol-ends"><span>0 · Not at all</span><span>10 · Completely</span></div>
-          {last ? (
-            <div className="wol-lastt">
-              <i />
-              {`Last check-in, ${formatCheckinDate(last.date)}: ${last.score}`}
-              {area.target != null ? <><span className="wol-sep">·</span>{`Your target: ${area.target}`}</> : null}
-            </div>
-          ) : null}
-          <div className="wol-note wol-rv" style={{ '--i': 3 }}>
-            <TextBox
-              id={`wol-note-${area.key}`}
-              label="A note to yourself"
-              lines="many"
-              focusMode
-              who="me"
-              maxLength={NOTE_MAX}
-              placeholder="What’s behind this score?"
-              value={st.notes[area.key] || ''}
-              onChange={setNote}
-            />
-            <small className="wol-opt">Optional</small>
-          </div>
+      <div className="wol-tool-step">
+        {/* The scale: 0 to 10 as one joined row (rule 7's joined switch), the last check-in's score marked with a dot. */}
+        <div className="ds-seg wol-scale" role="radiogroup" aria-label={name}>
+          {SCORES.map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={score === v}
+              aria-label={`${v} out of 10`}
+              className={last && last.score === v ? 'wol-prev' : undefined}
+              onClick={() => { setScore(v); setNeed(false); }}
+            >
+              {v}
+            </button>
+          ))}
         </div>
-        <aside className="wol-mini">
-          <small>This check-in</small>
+        <div className="wol-ends"><span>0, not at all</span><span>10, completely</span></div>
+        {last ? (
+          <p className="wol-note-line">
+            {`Last check-in, ${formatCheckinDate(last.date)}: ${last.score}.`}
+            {area.target != null ? ` Your target is ${area.target}.` : null}
+          </p>
+        ) : null}
+        {need ? <p className="ds-error wol-need" role="alert">Choose a score to carry on.</p> : null}
+        <div className="wol-note">
+          <TextBox
+            id={`wol-note-${area.key}`}
+            label="Is there anything behind this score?"
+            lines="many"
+            focusMode
+            who="me"
+            maxLength={NOTE_MAX}
+            placeholder="What’s behind this score?"
+            value={st.notes[area.key] || ''}
+            onChange={setNote}
+          />
+          <p className="wol-note-line">Optional</p>
+        </div>
+        <div className="wol-mini wol-mini--tool">
+          <span className="ds-label">This check-in</span>
           <MiniWheel key={sig} areas={areas} series={[{ cls: 'now', scores: st.scores }]} highlightKey={area.key} size="mini" />
-        </aside>
+        </div>
+        {discardLink}
       </div>
     );
-    primary = { label: i === N - 1 ? 'Continue' : 'Next area', onClick: goNext, disabled: score == null };
   } else {
+    eyebrow = 'Life balance review';
+    question = 'If one area moved up by a single point, which would make the biggest difference to everything else?';
     body = (
-      <>
-        <div className="wol-steps" aria-hidden="true">
-          {areas.map((a) => <i key={a.key} className="f" />)}
-        </div>
-        <div className="wol-rate-title wol-rv">
-          <PageHeader title="Choose one area" info={pageText.wheelOfLifeCheckIn} meta={['Last step', 'Life balance review']} />
-        </div>
-        <p className="wol-qq wol-rv" style={{ '--i': 1 }}>If one area moved up by a single point, which would make the biggest difference to everything else?</p>
-        <div className="wol-chips wol-rv" style={{ '--i': 2 }}>
-          {/* Each area with its score from this check-in. Choosing the
-              chosen area again clears it, as before. More than five areas
-              are always rows (Choice would otherwise make a drop-down). */}
-          <Choice
-            ariaLabel="Area to focus on"
-            form={areas.length > 5 ? 'rows' : 'auto'}
-            options={areas.map((a) => ({ value: a.key, label: areaName(a), note: String(st.scores[a.key] ?? 'None') }))}
-            value={st.focusAreaKey}
-            onChange={(key) => update({ focusAreaKey: st.focusAreaKey === key ? null : key })}
-          />
-        </div>
-        <div className="wol-note wol-rv" style={{ '--i': 3 }}>
+      <div className="wol-tool-step">
+        {/* Each area with its score from this check-in. Choosing the chosen area again clears it. */}
+        <Choice
+          ariaLabel="Area to focus on"
+          form={areas.length > 5 ? 'rows' : 'auto'}
+          options={areas.map((a) => ({ value: a.key, label: areaName(a), note: String(st.scores[a.key] ?? 'None') }))}
+          value={st.focusAreaKey}
+          onChange={(key) => update({ focusAreaKey: st.focusAreaKey === key ? null : key })}
+        />
+        <div className="wol-note">
           <TextBox
             id="wol-focus-note"
             label="What is one small thing you could do about it?"
@@ -231,20 +233,32 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
             value={st.focusNote}
             onChange={(v) => update({ focusNote: v })}
           />
-          <small className="wol-opt">Optional</small>
+          <p className="wol-note-line">Optional</p>
         </div>
-      </>
+        {error ? <p className="ds-error wol-need" role="alert">{error}</p> : null}
+        {discardLink}
+      </div>
     );
-    primary = { label: 'Finish check-in', busyLabel: 'Saving', onClick: finish, busy, error };
   }
 
+  // Focus mode (Polish 1, rule 21): × at the top left, "Step n of m", the progress line, the
+  // question at 20px, Next and Back at the foot, the last step Finish check-in.
   return (
-    <div className="ui-root">
-      <DesignHeader />
-      <div key={i} className="plan-page plan-page--form wol-page wol-page--footer wol-enter">
+    <div className="ui-root plan-builder-wait sf-page">
+      <ToolFrame
+        step={i + 1}
+        steps={N + 1}
+        name={eyebrow}
+        question={question}
+        onClose={close}
+        onNext={next}
+        nextLabel={onReflect ? (busy ? 'Saving' : 'Finish check-in') : (i === N - 1 ? 'Continue' : 'Next area')}
+        onBack={i > 0 ? goBack : undefined}
+        last={onReflect}
+        className="sf-tool wol-tool"
+      >
         {body}
-      </div>
-      <WheelFooter onBack={goBack} onDiscard={() => setDiscardOpen(true)} primary={primary} />
+      </ToolFrame>
       <DiscardDialog
         isOpen={discardOpen}
         title="Discard this check-in?"

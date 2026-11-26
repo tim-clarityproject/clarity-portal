@@ -124,6 +124,8 @@ export function calStandIn({ store, ME, me, clock, no }) {
   const bad = (table, what) => no('23514', `new row for relation "${table}" violates check constraint "${what}"`);
   const denied = (table) => no('42501', `new row violates row-level security policy for table "${table}"`, 403);
   const firstNameOf = (coachId) => store.coaches.find((c) => c.id === coachId)?.display_first_name ?? null;
+  // 066: the coach's full name with any title, as typed in Settings, or null.
+  const fullNameOf = (coachId) => String(store.coaches.find((c) => c.id === coachId)?.full_name ?? '').trim() || null;
   const notify = (coachId, title, detail, itemKind, itemId) => rows.coach_notifications.push({ id: randomUUID(), coach_id: coachId, kind: 'booking', title: title.slice(0, 160), detail, item_kind: itemKind, item_id: itemId, created_at: stamp(), read_at: null });
   const settingsOf = (coachId) => rows.coach_settings.find((s) => s.coach_id === coachId) || {};
   const zoneOf = (coachId) => (zoneIsReal(settingsOf(coachId).time_zone) ? settingsOf(coachId).time_zone : 'Europe/London');
@@ -228,7 +230,7 @@ export function calStandIn({ store, ME, me, clock, no }) {
     booking_page(uid, key) {
       const t = target(key);
       if (!t) return null;
-      return { state: t.state, kind: t.target, name: t.name, description: t.description ?? null, coach_first_name: firstNameOf(t.coach), coach_time_zone: zoneOf(t.coach), minutes: t.minutes, place_kind: t.place,
+      return { state: t.state, kind: t.target, name: t.name, description: t.description ?? null, coach_first_name: firstNameOf(t.coach), coach_full_name: fullNameOf(t.coach), coach_time_zone: zoneOf(t.coach), minutes: t.minutes, place_kind: t.place,
         questions: t.questions, notice_hours: t.notice, ahead_weeks: t.ahead, for_name: t.forName ?? null };
     },
     /** booking_free_times(p_key, p_from, p_to): the free starts, one row each. */
@@ -453,7 +455,7 @@ export function calStandIn({ store, ME, me, clock, no }) {
     coach_call_types_start() {
       const type = (key, name, notice, ahead, position) => ({ id: randomUUID(), coach_id: ME, key, name, description: null, minutes: 30, gap_before: 15, gap_after: 15, notice_hours: notice, ahead_weeks: ahead, day_limit: 5,
         questions: [], place_kind: 'zoom', page_key: randomUUID(), active: true, makes_lead: true, position, created_at: stamp(), updated_at: stamp() });
-      for (const t of [type('chemistry', 'Chemistry Call', 24, 4, 0), type('connection', 'Connection Call', 48, 2, 1)]) if (!rows.coach_call_types.some((x) => x.coach_id === ME && x.key === t.key)) rows.coach_call_types.push(t);
+      for (const t of [type('chemistry', 'Discovery call', 24, 4, 0), type('connection', 'Connection Call', 48, 2, 1)]) if (!rows.coach_call_types.some((x) => x.coach_id === ME && x.key === t.key)) rows.coach_call_types.push(t);
       return rows.coach_call_types.filter((x) => x.coach_id === ME).sort((a, b) => (a.position - b.position) || String(a.created_at).localeCompare(String(b.created_at)));
     },
     /**

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AddButton, Button, ChartTips, Dropdown, InlineChoice, SlidePanel, SwitchRow, TextField, tipProps, useIsPhone, useToast } from '../../components/design';
+import { AddButton, Bar, Button, Card, ChartTips, Figure, Dropdown, InlineChoice, SlidePanel, SwitchRow, TextField, tipProps, useIsPhone, useToast } from '../../components/design';
 import { newId, removeRow, rowNow, saveChange, saveRow } from '../../lib/coach/store';
 import { SUPERSEDED_MESSAGE } from '../../lib/friendlyError';
 import { supabase } from '../../lib/supabase';
@@ -173,34 +173,62 @@ export function useSaveSettings() {
 }
 
 /** A section heading with something quiet at its right (M11's "Share of income, November", "£1,810/month"). */
-export function FinPart({ title, aside, asideHide = true, children, className = '' }) {
+export function FinPart({ title, aside, asideHide = true, add, children, className = '' }) {
+  // A card (polish 1, rule 13): the label at its padding, anything quiet (a figure, Edit, How to read the chart) and
+  // "+ Add" (rule 10) at the label's right without moving it, rows under it with hairlines.
+  const right = (aside || add) ? (
+    <span className="fin-head-right">
+      {aside && <span className={`fin-head-aside${asideHide ? ' fin-hide-phone' : ''}`}>{aside}</span>}
+      {add}
+    </span>
+  ) : null;
   return (
-    <section className={`ds-section cc-part fin-part ${className}`.trim()}>
-      <div className="ds-section-head fin-head">
-        <h2 className="ds-section-title">{title}</h2>
-        {aside && <span className={`fin-head-aside${asideHide ? ' fin-hide-phone' : ''}`}>{aside}</span>}
-      </div>
+    <Card label={title} add={right} className={`cc-part fin-part ${className}`.trim()}>
       {children}
-    </section>
+    </Card>
   );
 }
 
-/** A row: its title, quiet facts under it, and a figure (or a link) at its right. `onClick` makes it a button. */
-export function FigRow({ title, facts = [], value, onClick, label, children }) {
+/**
+ * Finances' headline figures (rule 13 and Tim's walk: one 24px figure to a card): each figure its own card, its name as
+ * the card's label, the figure 24px light with its unit 16px grey, and its bar under it. Side by side on a laptop, one
+ * per line on a phone. `items`: [{ label, value, unit?, bar?, empty? }]; a bare £0 reads as the item's `empty`
+ * sentence (rule 16)
+ */
+export function FinFigures({ items }) {
+  return (
+    <div className={`fin-figs fin-figs--${items.length}`}>
+      {items.map((i) => (
+        <Card key={i.label} label={i.label} className="fin-fig-card">
+          <Figure value={i.value} unit={i.unit || undefined} empty={i.empty} />
+          {i.bar != null && <Bar value={i.bar} />}
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * A row (rule 14): its title, quiet facts under it, and a figure (or a link) at its right in grey; on a phone the figure
+ * goes under the title. `onClick` makes the whole row open its item.
+ */
+export function FigRow({ title, facts = [], value, onClick, label, children, className = '' }) {
   const line = useRef(null);
   useGreyLineNow(line); // trimmed as it is drawn, so the first screen shows the line the whole page keeps (coach rule 49)
+  // A fact that only repeats the title (a group called Marketing holding one outgoing called Marketing) is left out.
+  const shown = facts.filter(Boolean).filter((f) => typeof f !== 'string' || typeof title !== 'string' || f.trim().toLowerCase() !== title.trim().toLowerCase());
   const inner = (
     <>
-      <span className="fin-row-words">
-        <b>{title}</b>
-        {facts.filter(Boolean).length > 0 && <small ref={line} data-grey-line>{facts.filter(Boolean).map((f, i) => <span key={`${i}:${f}`} data-drop={i}>{f}</span>)}</small>}
+      <span className="ds-li-name fin-row-words">
+        {title}
+        {shown.length > 0 && <small ref={line} className="ds-li-sub fin-row-facts" data-grey-line>{shown.map((f, i) => <span key={`${i}:${f}`} data-drop={i}>{f}</span>)}</small>}
       </span>
-      {value != null && <span className="fin-row-value">{value}</span>}
+      {value != null && value !== '' && <span className="ds-li-value fin-row-value">{value}</span>}
       {children}
     </>
   );
-  if (!onClick) return <div className="cc-row cc-row--still fin-row">{inner}</div>;
-  return <button type="button" className="cc-row fin-row" onClick={onClick} aria-label={label}>{inner}</button>;
+  if (!onClick) return <div className={`ds-li fin-row ${className}`.trim()}>{inner}</div>;
+  return <button type="button" className={`ds-li ds-li--go fin-row ${className}`.trim()} onClick={onClick} aria-label={label}>{inner}</button>;
 }
 
 /** The readout's words in the shared pop-up: the figure first and larger, then when, then the rest. */

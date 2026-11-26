@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { idFromAddress } from '../../lib/coach/address';
-import { AddButton, Button, Chip, ChipRow, Dropdown, PageHeader, SlidePanel, Stat, StatGroup, SwitchRow, TextField, useToast } from '../../components/design';
+import { Button, Chip, ChipRow, Dropdown, PageHeader, SlidePanel, Stat, StatGroup, SwitchRow, TextField, useToast } from '../../components/design';
+import { AddLink, Card, Empty, PageOpening } from '../../components/design/Blocks';
+import { PEOPLE } from '../../content/pageLines/coach';
+import { PersonRow } from './peopleParts';
 import { supabase } from '../../lib/supabase';
 import { coachCrmReadyNow, coachReadyNow, newId, removeRow, rowsOf, saveRow, saveRows } from '../../lib/coach/store';
 import { NEEDS_049 } from '../../lib/coach/actions';
 import { accessCodeHash, codeGroups, makeAccessCode } from '../../lib/coach/accessCode';
 import { addDays, clean, dayWords, ENGAGEMENT_KINDS, firstName, isEmail, possessive, sessionsLeft } from '../../lib/coach/model';
-import { Back, Eye, Line, Row, SettingRow, TextLink, useCoachPortal, Part } from './parts';
+import { Back, Eye, Line, SettingRow, TextLink, useCoachPortal } from './parts';
 import { currentEngagement } from './clientData';
 import {
   ACCOUNT_WORDS, accountMap, CONTACT_ROLES, contactLast, DEAL_KINDS, DEAL_PER, DEAL_STATUSES, dealFromTyped, emailsOn, growthAction, growthLines, growthToLead,
@@ -183,11 +186,11 @@ export default function OrganisationPage() {
 
   return (
     <div className="cc-page">
-      <div className="cc-col">
+      <div className="cc-col cc-people">
         <Back onClick={() => navigate('/coach/clients')} />
-        <PageHeader title={org.name} meta={['Organisation', org.city]} />
+        <PageOpening label={['Organisation', org.city].filter(Boolean).join(', ')} title={org.name} line={PEOPLE.orgLine} />
         <StatGroup className="cc-stats">
-          <Stat label="People coached here" value={countFigure(people)} />
+          {people > 0 ? <Stat label="People coached here" value={countFigure(people)} /> : <p className="cc-pnote">Nobody is coached here yet.</p>}
           {seats > 0 && <Stat label="Seats in use" value={`${countFigure(withAccount)} of ${countFigure(seats)}`} bar={seats ? withAccount / seats : 0} />}
           {map.nextRenewal && <Stat label={ACCOUNT_WORDS.nextRenewal} value={map.nextRenewal} />}
         </StatGroup>
@@ -195,25 +198,27 @@ export default function OrganisationPage() {
         <AgreementButtons kind="organisation" id={org.id} name={org.name} />
         <OrgBillingLink organisationId={org.id} name={org.name} />
 
-        <Part title="Who’s who">
-          {map.whosWho.filter((w) => w.kind === 'contact').map((w) => {
-            const c = contacts.find((x) => x.id === w.id);
-            return <Row key={c.id} title={c.name} facts={[w.role, w.note]} when={contactLast(c, emails, emailLinks, todayKey)} onClick={() => { setProblem(null); setContact({ id: c.id, name: c.name, email: c.email || '', job_title: c.job_title || '', roles: c.roles || [], note: c.note || '' }); }} label={`Edit ${c.name}`} />;
-          })}
-          {mine.map((p) => <Row key={p.id} title={p.name} facts={['Client', p.job_title]} when="" onClick={() => navigate(`/coach/clients/${p.id}`)} />)}
-          {theirs.map((a) => <Row key={a.profile_id} title={a.name} facts={[`${a.coach_first_name}’s client`]} when="" />)}
-          {here.map((g) => {
-            const n = rowsOf(state, 'coach_group_members').filter((m) => m.group_id === g.id).length;
-            return <Row key={g.id} title={g.name} facts={[`Group of ${n}`]} when="" onClick={() => navigate(`/coach/groups/${g.id}`)} />;
-          })}
-          <div className="cc-add"><AddButton onClick={() => { setProblem(null); setContact({ id: newId(), name: '', email: '', job_title: '', roles: [], note: '' }); }}>Add someone</AddButton></div>
-        </Part>
+        {/* "+ Add" by each list's label (rule 10): a person or a deal needs a small form, so each opens its panel. */}
+        <Card label="Who’s who" add={<AddLink label="Add someone" onClick={() => { setProblem(null); setContact({ id: newId(), name: '', email: '', job_title: '', roles: [], note: '' }); }} />}>
+          <div className="ds-rows-list">
+            {map.whosWho.filter((w) => w.kind === 'contact').map((w) => {
+              const c = contacts.find((x) => x.id === w.id);
+              return <PersonRow key={c.id} name={c.name} facts={[w.role, w.note]} when={contactLast(c, emails, emailLinks, todayKey)} label={`Edit ${c.name}`} onClick={() => { setProblem(null); setContact({ id: c.id, name: c.name, email: c.email || '', job_title: c.job_title || '', roles: c.roles || [], note: c.note || '' }); }} />;
+            })}
+            {mine.map((p) => <PersonRow key={p.id} name={p.name} facts={['Client', p.job_title]} href={`/coach/clients/${p.id}`} onClick={() => navigate(`/coach/clients/${p.id}`)} />)}
+            {theirs.map((a) => <PersonRow key={a.profile_id} name={a.name} facts={[`${a.coach_first_name}’s client`]} />)}
+            {here.map((g) => {
+              const n = rowsOf(state, 'coach_group_members').filter((m) => m.group_id === g.id).length;
+              return <PersonRow key={g.id} name={g.name} facts={[`Group of ${n}`]} href={`/coach/groups/${g.id}`} onClick={() => navigate(`/coach/groups/${g.id}`)} />;
+            })}
+          </div>
+          {map.whosWho.filter((w) => w.kind === 'contact').length + mine.length + theirs.length + here.length === 0 && <Empty>The people you work with there will appear here.</Empty>}
+        </Card>
 
-        <Part title="Agreements and proposals">
+        <Card label="Agreements and proposals" add={<AddLink label={ACCOUNT_WORDS.addDeal} onClick={() => { setDealProblem(null); setDeal({ id: newId(), name: '', kind: 'agreement', status: 'active', value: '', per: 'once', renews: '', detail: '' }); }} />}>
+          <div className="ds-rows-list">
           {map.deals.map((d) => (
-            <div key={d.id} className="cc-map-deal">
-              <Row title={d.name} facts={[d.status, d.detail, d.opened]} when={<>{d.value && <b aria-label={d.valueSpoken}>{d.value}</b>}{d.renews && <span>{d.renews}</span>}</>} label={`Edit ${d.name}`} onClick={() => openDeal(d)} />
-            </div>
+            <PersonRow key={d.id} name={d.name} facts={[d.status, d.detail, d.opened]} when={(d.value || d.renews) ? <>{d.value && <b aria-label={d.valueSpoken}>{d.value}</b>}{d.value && d.renews ? ', ' : ''}{d.renews}</> : null} label={`Edit ${d.name}`} className="cc-map-deal" onClick={() => openDeal(d)} />
           ))}
           {mine.map((p) => {
             const e = currentEngagement(engagements, { profileId: p.id });
@@ -221,17 +226,17 @@ export default function OrganisationPage() {
             const s = sessionsLeft(e, packs);
             const title = `${e.name || ENGAGEMENT_KINDS.find((k) => k.value === e.kind)?.label} for ${firstName(p.name)}`;
             if (dealNames.has(title.toLowerCase())) return null; // its agreement is already listed above
-            return <Row key={p.id} title={title} facts={['Active', s ? `${s.left} of ${s.total} sessions to go` : null]} when={e.ends_on ? `Ends ${dayWords(e.ends_on, todayKey)}` : ''} onClick={() => navigate(`/coach/clients/${p.id}`)} />;
+            return <PersonRow key={p.id} name={title} facts={['Active', s ? `${s.left} of ${s.total} sessions to go` : null]} when={e.ends_on ? `Ends ${dayWords(e.ends_on, todayKey)}` : ''} href={`/coach/clients/${p.id}`} onClick={() => navigate(`/coach/clients/${p.id}`)} />;
           })}
           {theirs.filter((a) => a.engagement_kind).map((a) => (
-            <Row key={a.profile_id} title={`${ENGAGEMENT_KINDS.find((k) => k.value === a.engagement_kind)?.label} for ${firstName(a.name)}`} facts={[`${a.coach_first_name}’s client`, a.sessions_total ? `${Math.max(0, a.sessions_total - a.sessions_held)} of ${a.sessions_total} sessions to go` : null]} when={a.ends_on ? `Ends ${dayWords(a.ends_on, todayKey)}` : ''} />
+            <PersonRow key={a.profile_id} name={`${ENGAGEMENT_KINDS.find((k) => k.value === a.engagement_kind)?.label} for ${firstName(a.name)}`} facts={[`${a.coach_first_name}’s client`, a.sessions_total ? `${Math.max(0, a.sessions_total - a.sessions_held)} of ${a.sessions_total} sessions to go` : null]} when={a.ends_on ? `Ends ${dayWords(a.ends_on, todayKey)}` : ''} />
           ))}
-          {map.deals.length === 0 && !mine.some((p) => currentEngagement(engagements, { profileId: p.id })) && !theirs.some((a) => a.engagement_kind) && <p className="cc-quiet">{ACCOUNT_WORDS.noDeals}</p>}
-          <div className="cc-add"><AddButton onClick={() => { setDealProblem(null); setDeal({ id: newId(), name: '', kind: 'agreement', status: 'active', value: '', per: 'once', renews: '', detail: '' }); }}>{ACCOUNT_WORDS.addDeal}</AddButton></div>
-        </Part>
+          </div>
+          {map.deals.length === 0 && !mine.some((p) => currentEngagement(engagements, { profileId: p.id })) && !theirs.some((a) => a.engagement_kind) && <Empty>{ACCOUNT_WORDS.noDeals}</Empty>}
+        </Card>
 
         {growRows.length > 0 && (
-          <Part title="Room to grow">
+          <Card label="Room to grow">
             {growRows.slice(0, 6).map((g) => (
               <Line key={g.id || g.key} title={g.title} small={g.note || g.small}>
                 {g.leadId ? <TextLink aria-label={`Open the lead for: ${g.title}`} onClick={() => navigate(`/coach/leads/${g.leadId}`)}>Open the lead</TextLink>
@@ -239,13 +244,14 @@ export default function OrganisationPage() {
                     : g.raised ? <span /> : <TextLink aria-label={`${g.action || growthAction(g.kind)}: ${g.title}`} onClick={() => toPipeline(g)}>{g.action || growthAction(g.kind)}</TextLink>}
               </Line>
             ))}
-          </Part>
+          </Card>
         )}
 
-        <Part title="Seats">
+        <Card label="Seats">
           <SettingRow
             label="Seats"
             value={String(seats)}
+            words={seats > 0 ? countFigure(seats) : 'None yet'}
             editor={({ value, setValue, label }) => <TextField label={label} inputMode="numeric" value={value ?? ''} onChange={(e) => setValue(e.target.value)} autoFocus />}
             check={(v) => (Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 100000 ? null : 'Type a whole number of seats.')}
             onSave={(v) => save({ seat_count: Number(v) })}
@@ -265,10 +271,10 @@ export default function OrganisationPage() {
             {code.state === 'loading' && <span />}
           </Line>
           <p className="cc-note">Prices and invoices arrive with Finances.</p>
-        </Part>
+        </Card>
 
-        <Part title="Documents" aside={<Eye sentence="Only you can see these." />}>
-          {docs.length === 0 && <p className="cc-quiet">No documents yet. A services agreement or a non-disclosure agreement would sit here.</p>}
+        <Card label="Documents" aside={<Eye sentence="Only you can see these." />} add={<AddLink label="Add document" onClick={() => { setProblem(null); setDoc({ id: newId(), name: '', expires: '', file: null }); }} />}>
+          {docs.length === 0 && <Empty>A services agreement or a non-disclosure agreement would sit here once you add it.</Empty>}
           {docs.map((d) => (
             <Line key={d.id} title={d.name} small={d.expires_on ? `${d.expires_on < todayKey ? 'Expired' : 'Expires'} on ${dayWords(d.expires_on, todayKey)}.` : 'No expiry date.'}>
               <span className="cc-line-actions">
@@ -277,8 +283,7 @@ export default function OrganisationPage() {
               </span>
             </Line>
           ))}
-          <div className="cc-add"><AddButton onClick={() => { setProblem(null); setDoc({ id: newId(), name: '', expires: '', file: null }); }}>Add document</AddButton></div>
-        </Part>
+        </Card>
       </div>
 
       <SlidePanel draftKey={`org-contact:${id}:${contact && contacts.some((c) => c.id === contact.id) ? contact.id : 'new'}`}

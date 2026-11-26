@@ -1,0 +1,108 @@
+/* The client's plan, list and reading pages inside the frame (Polish 1, Stage B, B1).
+   `.cp-page` sits on the page's own column (usually with the older `.plan-page`, whose centred
+   max-width and paddings were for the page before the frame): on a laptop the frame gives the
+   48/56px padding, so the page starts on the frame's left edge like Home and the Dashboard, at
+   most the Dashboard's 760px wide (a reading width); on a phone the frame gives none, so the
+   page gives the example's 24px top and 20px sides. */
+
+.ui-root .cp-page,
+.ui-root .plan-page.cp-page {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: var(--dash-max);
+  margin: 0;
+  padding: 0;
+}
+
+.ui-root .cp-page--wide,
+.ui-root .plan-page.cp-page--wide {
+  max-width: none;
+}
+
+@media (max-width: 1023px) {
+  .ui-root .cp-page,
+  .ui-root .plan-page.cp-page {
+    max-width: none;
+    padding: var(--space-4) var(--page-x-phone) var(--space-px64);
+  }
+}
+
+/* A Back link above the opening: its chevron on the content's edge, 16px above the title. */
+.ui-root .cp-page > .cp-back {
+  margin: 0 0 var(--space-3);
+}
+
+/* A row of quiet actions at a page's foot ("See version history"), 32px under the last card. */
+.ui-root .cp-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.ui-root .cp-page .ds-card:last-child {
+  margin-bottom: 0;
+}
+
+/* The Individual Performance Plan: the Mission as a card's question (20px), the sections 32px apart. */
+.ui-root .ipp-page .ipp-mission-text {
+  margin: 0;
+  font-size: var(--fs-question);
+  line-height: 1.35;
+  color: var(--text);
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+.ui-root .ipp-page .ipp-mission { margin: 0; }
+.ui-root .ipp-page .ipp-section { margin-top: var(--space-5); padding-top: 0; border-top: 0; }
+
+/* The Performance Sprint: "+ Add" and "+ Add win" beside the to-dos' label (rule 10); the quiet
+   links under the dial; the tick box centred on a to-do's first line, whatever the row's height. */
+.ui-root .sprint-page .sprint-adds {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.ui-root .sprint-page .sprint-hero-actions {
+  margin-top: var(--space-3);
+}
+
+/* About: a card's paragraphs at 16px, 8px apart, the link 16px under them. */
+.ui-root .about-page .about-card p {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-text);
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.ui-root .about-page .about-card .ds-more { margin-top: var(--space-2); }
+
+/* Edit Profile: a form, so the boxes keep a form's width (the reference's 560px tool column). */
+.ui-root .edit-profile-column.cp-page { max-width: var(--tool-max); }
+@media (max-width: 1023px) { .ui-root .edit-profile-column.cp-page { max-width: none; } }
+
+/* Recovery: "While you're in recovery" is the one card (rule 13), not a grey fill; its title the
+   card's 13px grey label. */
+.ui-root .rec-page .rec-box {
+  padding: var(--card-pad);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--card);
+}
+
+.ui-root .rec-page .rec-box-title {
+  font-size: var(--fs-meta);
+  letter-spacing: var(--ls-section-title);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.ui-root .about-page .about-card > p:last-child { margin-bottom: 0; }
+
+/* "+ Add" beside the to-dos' label keeps a 44px tap area across, though its word is short. */
+.ui-root .sprint-page .sprint-adds .ds-addlink { min-width: var(--tap-min); justify-content: flex-end; }
+
+/* The sprint page's habit rows: the same thin 2px progress line as Home's Log today (Tim's walk, item 12). */
+.ui-root .sprint-page .ds-log .ds-bar { height: calc(var(--line-w) * 2); }

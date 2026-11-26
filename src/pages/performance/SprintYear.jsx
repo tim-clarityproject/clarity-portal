@@ -10,23 +10,25 @@ import {
   PeakYearList,
   EmptyState,
   Loading,
-  PageHeader,
   PerformanceSystem,
   RecoveryNotice,
   Section,
   YearChart,
   LoadError,
+  PageOpening,
+  MoreLink,
 } from '../../components/design';
 import { useYearPage } from '../../lib/performance/hooks';
 import { freezeWeek } from '../../lib/performance/api';
 import { localToday, openRecovery, recoveryLead, selectedWeek, yearView } from '../../lib/performance';
 import { useQueueState } from '../../lib/syncQueue';
 import { isOnline } from '../../lib/connection';
-import pageText from '../../content/pageText';
 import { heldWeeks } from '../../lib/performance/year';
 import { usePeakMoments } from '../../lib/peakMoments/store';
 import { yearMonths } from '../../lib/peakMoments/model';
 import './performance.css';
+import { B1_LINES } from '../../content/pageLines/client';
+import '../../pages/hubs/clientPage.css';
 
 // View your year (mock-up M1, R.year): every week of the year as a slim
 // bar, the sprints named above them and Recovery hatched, the standard as
@@ -210,9 +212,9 @@ export default function SprintYear() {
           )}
         </Section>
 
-        <div className="ds-actions ipp-actions">
-          <Button onClick={() => navigate('/performance-sprint')}>Open my sprint</Button>
-          <Button onClick={() => navigate('/performance-plan')}>Open my plan</Button>
+        <div className="cp-foot ipp-actions">
+          <MoreLink onClick={() => navigate('/performance-sprint')}>Open my sprint</MoreLink>
+          <MoreLink onClick={() => navigate('/performance-plan')}>Open my plan</MoreLink>
         </div>
       </>
     );
@@ -221,13 +223,11 @@ export default function SprintYear() {
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page ipp-page year-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/performance-sprint')} label="Performance Sprint" /></div>
-        <PageHeader
+      <div className="plan-page cp-page ipp-page year-page">
+        <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/performance-sprint')} label="Performance Sprint" /></div>
+        <PageOpening
           title="View your year"
-          meta={view ? [`${view.year}, week by week`] : []}
-          info={pageText.performanceYear}
-          onSystemLink={() => setSystem(true)}
+          line={view ? `Your sprints in ${view.year}, week by week.` : B1_LINES.sprintYear}
         />
         {body}
       </div>

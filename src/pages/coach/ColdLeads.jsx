@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { PageHeader } from '../../components/design';
+import { Card, Empty, PageOpening } from '../../components/design/Blocks';
+import { PEOPLE } from '../../content/pageLines/coach';
+import './people.css';
 import { coldRows, NO_COLD_LEADS } from '../../lib/coach/crm';
 import { Back, TextLink, useCoachPortal } from './parts';
 import { useLeadActions, useLeadData } from './leadParts';
@@ -19,15 +21,16 @@ export default function ColdLeads() {
   const rows = coldRows(all, todayKey);
   return (
     <div className="cc-page">
-      <div className="cc-col">
+      <div className="cc-col cc-people">
         <Back to="Leads" onClick={() => navigate('/coach/leads')} />
-        <PageHeader title="Cold leads" />
-        {rows.length === 0 && <p className="cc-quiet">{NO_COLD_LEADS}</p>}
-        <div className="cc-rows">
+        <PageOpening title={PEOPLE.coldTitle} line={PEOPLE.coldLine} />
+        <Card label={PEOPLE.coldTitle}>
+        {rows.length === 0 && <Empty>{NO_COLD_LEADS}</Empty>}
+        <div className="ds-rows-list">
           {rows.map((r) => (
             <div key={r.id} className="cc-line cc-lead-cold">
               <span>
-                <button type="button" className="cc-table-name" onClick={() => navigate(`/coach/leads/${r.id}`)}>{r.name}</button>
+                <a href={`/coach/leads/${r.id}`} className="cc-past-name" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); navigate(`/coach/leads/${r.id}`); }}>{r.name}</a>
                 <small>{[r.sub, r.happened].filter(Boolean).join(', ')}</small>
                 <small>{r.since}. {r.check}.</small>
               </span>
@@ -35,6 +38,7 @@ export default function ColdLeads() {
             </div>
           ))}
         </div>
+        </Card>
       </div>
     </div>
   );

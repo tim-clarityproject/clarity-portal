@@ -425,7 +425,7 @@ export const CAL = {
  *     personal items (Swimming with Esme, Parents' evening, Dentist, Dinner
  *     with Sarah), three times held for a poll, and next week an all-day
  *     conference over two days (not in M11: an example of one);
- *   - the Chemistry Call and Connection Call types with their pages, two
+ *   - the Discovery call and Connection Call types with their pages, two
  *     open single-use links (for Dana Whitfield and Paul Garner), next week's
  *     Open for calls blocks (M11's "Open for calls"), the poll "Three-way
  *     meeting" with Mia's and Paul's answers, the two bookings and the leads
@@ -479,7 +479,7 @@ export function calSeed() {
   const block = (id, d, from, to) => ({ id, coach_id: ME, starts_at: when(d, from), ends_at: when(d, to), time_zone: LON, call_type_id: null, created_at: made });
   return {
     coach_call_types: [
-      type(CAL.chem, 'chemistry', 'Chemistry Call', CAL.chemKey, 24, 4, 0, [{ id: 'q1', label: 'What would you like from the call?', kind: 'long', required: true }]),
+      type(CAL.chem, 'chemistry', 'Discovery call', CAL.chemKey, 24, 4, 0, [{ id: 'q1', label: 'What would you like from the call?', kind: 'long', required: true }]),
       type(CAL.conn, 'connection', 'Connection Call', CAL.connKey, 48, 2, 1, [{ id: 'q1', label: 'What would you like to talk about?', kind: 'long', required: false }]),
     ],
     coach_polls: [{ id: CAL.poll, coach_id: ME, title: 'Three-way meeting', minutes: 60, place_kind: 'zoom', time_zone: LON, status: 'open', confirmed_option_id: null, confirmed_item_id: null, notes: null, created_at: when(-3, '11:00') }],
@@ -692,7 +692,7 @@ export function crmSeed() {
   const amy = { name: 'Amy Cole', email: 'amy.cole@example.invalid' };
   const ruth = { name: 'Ruth Adeyemi', email: 'ruth@example.invalid' };
   // Three of the runs carry the key of what really set them off in this seed (Amy's proposal opened three times, Tom quiet for
-  // 19 days, Ruth's Chemistry Call booked), so the watch that asks about those when the portal opens finds each already ran.
+  // 19 days, Ruth's Discovery call booked), so the watch that asks about those when the portal opens finds each already ran.
   const RAN = { 5: `opened:${CRM.amy}:leadership accelerator`, 7: `quiet:${CRM.tom}:${day(-19)}`, 10: `booking:${CAL.bookRuth}` };
   const run = (n, automationId, leadId, offset) => ({ id: u(9500 + n), automation_id: automationId, coach_id: ME, event_key: RAN[n] || `seed:${n}`, lead_id: leadId, profile_id: null, todo_id: null, ran_at: at(offset), created_at: at(offset), updated_at: at(offset) });
   const card = (n, boardId, stageId, title, values, position) => ({ id: u(9600 + n), board_id: boardId, coach_id: ME, stage_id: stageId, title, field_values: values, notes: null, position, created_at: at(-30), updated_at: at(-30) });
@@ -703,10 +703,10 @@ export function crmSeed() {
     coach_lead_stages: [stage(CRM.stNew, 'New', 10, 0), stage(CRM.stCall, 'Call booked', 25, 1), stage(CRM.stProp, 'Proposal sent', 50, 2), stage(CRM.stDeciding, 'Deciding', 70, 3), stage(CRM.stWon, 'Won', 100, 1000000, true)],
     coach_leads: [
       lead(CRM.elena, 'Elena Ruiz', CRM.stNew, { job_title: 'Founder', next_step: 'Reply to Elena’s email', next_step_on: day(0), last_contact_on: day(-1), source: 'email' }),
-      lead(CRM.jack, 'Jack Moran', CRM.stNew, { job_title: 'Head coach, rugby', next_step: 'Book a Chemistry Call', next_step_on: day(1), last_contact_on: day(-3), source: 'referral' }),
+      lead(CRM.jack, 'Jack Moran', CRM.stNew, { job_title: 'Head coach, rugby', next_step: 'Book a Discovery call', next_step_on: day(1), last_contact_on: day(-3), source: 'referral' }),
       // The calendar seed's two booking-made leads, now in the pipeline (the same ids: these rows take their place).
       lead(CAL.leadRuth, 'Ruth Adeyemi', CRM.stCall, { email: ruth.email, source: 'chemistry_page', call_type_key: 'chemistry', booking_id: CAL.bookRuth, organisation: 'Harbour City FC', organisation_id: ID.harbour,
-        job_title: 'Head of performance', phone: '07700 900213', next_step: 'Chemistry Call', next_step_on: day(2), next_step_time: '13:00', last_contact_on: day(-2) }),
+        job_title: 'Head of performance', phone: '07700 900213', next_step: 'Discovery call', next_step_on: day(2), next_step_time: '13:00', last_contact_on: day(-2) }),
       lead(CAL.leadNadia, 'Nadia Osei', CRM.stCall, { email: 'nadia@example.invalid', source: 'connection_page', call_type_key: 'connection', booking_id: CAL.bookNadia, organisation: 'Vale Health',
         next_step: 'Connection Call', next_step_on: day(4), next_step_time: '12:30', last_contact_on: day(-5) }),
       lead(CRM.amy, 'Amy Cole', CRM.stProp, { email: amy.email, organisation: 'Northfield Logistics', organisation_id: ID.northfield, job_title: 'Chief operating officer', phone: '07700 900461', value: 13500,
@@ -718,15 +718,15 @@ export function crmSeed() {
       lead(CRM.leoWon, 'Leo Grant', CRM.stWon, { email: null, organisation: 'Northfield Logistics', organisation_id: ID.northfield, value: 13500, last_contact_on: day(-4), won_at: at(-4), won_profile_id: ID.leo }),
       // May be the same person twice ("Chris Doyle may be in here twice.").
       lead(CRM.chrisDoyle, 'Chris Doyle', CRM.stNew, { email: 'chris@example.invalid', organisation: 'Doyle Capital', notes: 'Referrer, 3 people sent', last_contact_on: day(-12) }),
-      lead(CRM.christopherDoyle, 'Christopher Doyle', CRM.stNew, { email: null, phone: '07700 900542', organisation: 'Doyle Capital Partners', notes: 'Added from the Chemistry Call page', source: 'chemistry_page', last_contact_on: day(-8) }),
+      lead(CRM.christopherDoyle, 'Christopher Doyle', CRM.stNew, { email: null, phone: '07700 900542', organisation: 'Doyle Capital Partners', notes: 'Added from the Discovery call page', source: 'chemistry_page', last_contact_on: day(-8) }),
       // A cold lead, with what happened and when to check in again.
       lead(CRM.coldLead, 'Priya Menon', CRM.stProp, { organisation: 'Marlow Analytics', value: 9000, last_contact_on: day(-50), cold_at: at(-30), cold_reason: 'Budget frozen until the new financial year.', cold_check_on: day(60) }),
     ],
     coach_lead_events: [
       // Amy's timeline, as M11 draws it (newest first on the page).
       event(1, CRM.amy, 'referred', -11, 'Referred by Hannah Wells', 'Hannah introduced you by email.', { by: 'Hannah Wells' }),
-      event(2, CRM.amy, 'booking', -8, 'Booked a Chemistry Call', 'From your Chemistry Call page.', { call_type_key: 'chemistry' }),
-      event(3, CRM.amy, 'call', -7, 'Chemistry Call, 30 minutes', 'Wants the senior team pulling the same way before the Q1 restructure.\nDecides with the CEO by the end of November.', { minutes: 30 }),
+      event(2, CRM.amy, 'booking', -8, 'Booked a Discovery call', 'From your Discovery call page.', { call_type_key: 'chemistry' }),
+      event(3, CRM.amy, 'call', -7, 'Discovery call, 30 minutes', 'Wants the senior team pulling the same way before the Q1 restructure.\nDecides with the CEO by the end of November.', { minutes: 30 }),
       event(4, CRM.amy, 'proposal', -5, 'Proposal sent', 'Leadership Accelerator, £13,500 + VAT.', { name: 'Leadership Accelerator', amount: 13500 }),
       event(5, CRM.amy, 'email', -5, 'You sent the proposal', null, { email_id: CRM.e3, direction: 'out' }, 9, 40),
       event(6, CRM.amy, 'proposal_opened', -4, 'Opened your proposal', 'Leadership Accelerator.', { name: 'Leadership Accelerator' }),
@@ -734,12 +734,12 @@ export function crmSeed() {
       event(8, CRM.amy, 'email', 0, 'Amy replied: Our CEO is in on Thursday', null, { email_id: CRM.e4, direction: 'in' }, 7, 55),
       event(9, CRM.amy, 'proposal_opened', 0, 'Opened your proposal', 'Leadership Accelerator.', { name: 'Leadership Accelerator' }, 9, 12),
       // Ruth's.
-      event(11, CAL.leadRuth, 'first_contact', -5, 'First contact', 'From the Chemistry Call page.', { source: 'chemistry_page' }),
-      event(12, CAL.leadRuth, 'booking', -4, 'Booked a Chemistry Call', 'From your Chemistry Call page.', { booking_id: CAL.bookRuth, call_type_key: 'chemistry' }),
-      event(13, CAL.leadRuth, 'email', -3, 'You sent the Chemistry Call details', null, { email_id: CRM.e2, direction: 'out' }),
+      event(11, CAL.leadRuth, 'first_contact', -5, 'First contact', 'From the Discovery call page.', { source: 'chemistry_page' }),
+      event(12, CAL.leadRuth, 'booking', -4, 'Booked a Discovery call', 'From your Discovery call page.', { booking_id: CAL.bookRuth, call_type_key: 'chemistry' }),
+      event(13, CAL.leadRuth, 'email', -3, 'You sent the Discovery call details', null, { email_id: CRM.e2, direction: 'out' }),
       event(14, CAL.leadRuth, 'email', 0, 'Ruth replied: Can we start in January?', null, { email_id: CRM.e1, direction: 'in' }, 8, 40),
       // Tom's: a proposal opened once, then quiet.
-      event(21, CRM.tom, 'call', -30, 'Chemistry Call, 30 minutes', 'Ready to decide once the partners have met.', { minutes: 30 }),
+      event(21, CRM.tom, 'call', -30, 'Discovery call, 30 minutes', 'Ready to decide once the partners have met.', { minutes: 30 }),
       event(22, CRM.tom, 'proposal', -21, 'Proposal sent', 'Executive coaching, £7,500 + VAT.', { name: 'Executive coaching', amount: 7500 }),
       event(23, CRM.tom, 'proposal_opened', -19, 'Opened your proposal', 'Executive coaching.', { name: 'Executive coaching' }),
       event(31, CRM.leoWon, 'won', -4, 'Won', 'Leadership Accelerator, £13,500 + VAT.', { profile_id: ID.leo }),
@@ -780,8 +780,8 @@ export function crmSeed() {
       card(7, CRM.partners, CRM.ptActive, 'Fenwick Rowing', { contact: 'Isla Hale' }, 0),
     ],
     coach_emails: [
-      email(CRM.e1, 'in', ruth, 'Re: Chemistry Call', 'Thanks for the details. Before Wednesday, can we start in January? Our season review lands in December and I want the staff free for it.', 0, 8),
-      email(CRM.e2, 'out', ruth, 'Chemistry Call', 'Here are the details for Wednesday, and the three questions I’ll ask.', -3, 9),
+      email(CRM.e1, 'in', ruth, 'Re: Discovery call', 'Thanks for the details. Before Wednesday, can we start in January? Our season review lands in December and I want the staff free for it.', 0, 8),
+      email(CRM.e2, 'out', ruth, 'Discovery call', 'Here are the details for Wednesday, and the three questions I’ll ask.', -3, 9),
       email(CRM.e3, 'out', amy, 'Leadership Accelerator proposal', 'The proposal is attached. It covers the six months we talked about.', -5, 9),
       email(CRM.e4, 'in', amy, 'Re: Leadership Accelerator proposal', 'Our CEO is in on Thursday, so I’ll take them through it then.', 0, 7),
       email(CRM.eSarah, 'out', { name: 'Sarah Kent', email: 'sarah.kent@example.invalid' }, 'Good to meet you at the summit', 'It was good to meet you on Tuesday. Here is the article I mentioned.', -1, 16),
@@ -891,7 +891,7 @@ export function manyLeads(n = 300, stageIds = [CRM.stNew, CRM.stCall, CRM.stProp
       id: u(700000 + i), coach_id: ME, name: `${first} ${last}`, email: `${first}.${last}.${i}@example.invalid`.toLowerCase(), source: ['manual', 'import', 'chemistry_page', 'referral'][next(4)],
       call_type_key: null, booking_id: null, time_zone: 'Europe/London', answers: {}, status: 'new', notes: null, stage_id: stageIds[next(stageIds.length)], organisation: ORGS[next(ORGS.length)],
       organisation_id: null, job_title: null, phone: `07700 9${String(20000 + i).slice(-5)}`, value: next(3) === 0 ? 2500 * (1 + next(12)) : null, currency: 'GBP',
-      next_step: cold ? null : ['Send the proposal', 'Book a Chemistry Call', 'Follow up', 'Check in on the decision'][next(4)], next_step_on: cold ? null : day(next(21) - 5), next_step_time: null,
+      next_step: cold ? null : ['Send the proposal', 'Book a Discovery call', 'Follow up', 'Check in on the decision'][next(4)], next_step_on: cold ? null : day(next(21) - 5), next_step_time: null,
       referred_by: null, referred_by_person: null, network_person_id: null, last_contact_on: day(quiet ? -15 - next(40) : -next(14)), want_outcome: null, want_pain: null, who_decides: null, who_funds: null,
       decide_when: null, won_at: null, won_profile_id: null, cold_at: cold ? at(-10 - next(60)) : null, cold_reason: cold ? 'No budget this year.' : null, cold_check_on: cold ? day(30 + next(120)) : null,
       merged_into: null, created_at: at(-60 - next(200)), updated_at: at(-next(14)),

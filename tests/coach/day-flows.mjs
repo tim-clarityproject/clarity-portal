@@ -22,7 +22,7 @@
 //
 //   PARTS=day-plan,day-calls,day-week,day-left,day-finances,day-client,day-move
 //   ROLES=owner,associate   DB=none,there
-import { accountId, APP, clearDevice, coachContext, codesStandIn, ME, OTHER, seedDevice, settle, standIn } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, codesStandIn, frameMenu, frameMenuWords, ME, openFromMenu, openSearch, openTodoAdd, OTHER, seedDevice, settle, standIn } from './shared.mjs';
 import { DAY, ID, PRESSURE, seedClock, seedWithDay, SES, SHARED } from './seed.mjs';
 import { clearCoaching, clientContext, clientStandIn, fromCoach } from './client.mjs';
 
@@ -42,7 +42,18 @@ const SAM_SPRINT = u(6970); // Sam's sprint (run 6, item 5): its own standard is
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const button = (page, name) => page.getByRole('button', { name, exact: true }).first();
 const press = async (page, name) => { await button(page, name).click(); await settle(page, 450); };
-const take = async (page) => { await page.locator('.ds-offer-take').click(); await settle(page, 500); };
+// The offer for now (Tim's walk, item 23): Today's main button when no session is today, otherwise a quiet link beside
+// the session's button. `offer(page)` gives its words ('' when nothing is offered).
+const take = async (page) => {
+  const link = page.locator('.cc-today-offerlink');
+  if (await link.count()) await link.first().click(); else await page.locator('.cc-today-act .ds-btn--primary').first().click();
+  await settle(page, 500);
+};
+const offer = async (page) => {
+  if (!(await page.locator('.cc-today-notnow').count())) return '';
+  const link = page.locator('.cc-today-offerlink');
+  return (await link.count()) ? link.first().innerText() : page.locator('.cc-today-act .ds-btn--primary').first().innerText();
+};
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
 const closePanel = async (page) => { await page.keyboard.press('Escape'); await settle(page, 450); };
 const toast = async (page) => (await page.locator('.ds-toast-text').last().textContent({ timeout: 6000 }).catch(() => '')) || '';
@@ -220,15 +231,14 @@ export async function runDay({ browser, report, parts }) {
     await go(page, '/coach/todos');
     let first = true;
     const add = async (text, chips, said) => {
-      if (phone) {
-        await page.locator('.ds-addrow', { hasText: 'Add to-do' }).first().click(); await settle(page, 600);
-        if (first) {
-          const box = await dialog(page).boundingBox();
-          pass(`${tag}: on a phone the quick add opens full screen`, Boolean(box) && Math.round(box.width) === 400 && Math.round(box.height) >= 850 && Math.round(box.x) === 0 && Math.round(box.y) === 0, JSON.stringify(box));
-        }
-      } else if (first) pass(`${tag}: on a laptop the quick add is on the page`, (await page.locator('.cc-col > .cc-qadd').count()) === 1);
+      // "+ Add" opens Quick Add (polish 1): a small box under the label on a laptop, the panel from the bottom on a phone.
+      const scope = await openTodoAdd(page);
+      if (first) {
+        const box = await scope.boundingBox();
+        if (phone) pass(`${tag}: on a phone Quick Add rises from the bottom, the column's width`, Boolean(box) && Math.round(box.x) === 0 && Math.round(box.width) === 400 && Math.round(box.y + box.height) >= 840, JSON.stringify(box));
+        else pass(`${tag}: on a laptop Quick Add is a small box under the To-dos label`, Boolean(box) && (await page.locator('.cc-todo-card .ds-qa').count()) === 1, JSON.stringify(box));
+      }
       first = false;
-      const scope = phone ? dialog(page) : page.locator('.cc-col > .cc-qadd');
       await scope.getByLabel('What needs doing?').fill(text);
       await settle(page, 300);
       const read = await scope.locator('.cc-qadd-chips li').allInnerTexts();
@@ -380,7 +390,7 @@ export async function runDay({ browser, report, parts }) {
     const toGo = async (total) => (new RegExp(`(\\d+) of ${total}`).exec(await words(page)) || [])[1] || null;
 
     // ---- 4. The brief, from a call
-    await page.locator('.cc-today-call--open').first().click(); await settle(page, 900);
+    await page.locator('.cc-today-calls .ds-li').first().click(); await settle(page, 900); // a session's row opens its brief
     {
       const text = await dialog(page).innerText();
       pass(`${tag}: the brief opens from the call, every section in order`, /Sam Okafor[\s\S]*Today, 12:30[\s\S]*60 minutes, Zoom[\s\S]*Prefers early calls[\s\S]*FOR THIS CALL[\s\S]*FROM LAST TIME[\s\S]*SINCE LAST TIME[\s\S]*COMING UP[\s\S]*YOUR NOTE FROM LAST TIME/i.test(text), flat(text).slice(0, 160));
@@ -608,15 +618,15 @@ export async function runDay({ browser, report, parts }) {
     let t = await openAt(FRI, { ...o, tag: `${tag}, Friday` });
     let { page } = t;
     const week = async () => (await t.rowsNow('coach_weeks')).find((w) => w.week_start === '2026-11-09') || null;
-    pass(`${tag}: on a Friday afternoon the one offer is Rate my energy`, (await page.locator('.ds-offer').count()) === 1 && /Rate my energy/.test(await page.locator('.ds-offer').innerText()), await page.locator('.ds-offer').innerText().catch(() => 'none'));
+    pass(`${tag}: on a Friday afternoon the one offer is Rate my energy`, /Rate my energy/.test(await offer(page)), await offer(page) || 'none');
     await take(page);
     await page.getByRole('radio', { name: 'Very good', exact: true }).click(); await settle(page, 900);
     pass(`${tag}: one tap rates the week, says “Saved” and closes`, (await toast(page)) === 'Saved' && (await page.locator('.ds-modal--shown').count()) === 0 && (await week())?.energy === 'very_good' && Boolean((await week())?.energy_at), `${await toast(page)} ${(await week())?.energy}`);
     await undo(page);
-    pass(`${tag}: Undo takes the rating away, and the offer asks again`, !(await week())?.energy && /Rate my energy/.test(await page.locator('.ds-offer').innerText().catch(() => '')), JSON.stringify(await week()).slice(0, 80));
+    pass(`${tag}: Undo takes the rating away, and the offer asks again`, !(await week())?.energy && /Rate my energy/.test(await offer(page)), JSON.stringify(await week()).slice(0, 80));
     await take(page);
     await page.getByRole('radio', { name: 'Good', exact: true }).click(); await settle(page, 900);
-    pass(`${tag}: rated again, the offer becomes the Weekly review`, (await week())?.energy === 'good' && /Weekly review/.test(await page.locator('.ds-offer').innerText().catch(() => '')), await page.locator('.ds-offer').innerText().catch(() => 'none'));
+    pass(`${tag}: rated again, the offer becomes the Weekly review`, (await week())?.energy === 'good' && /weekly review/i.test(await offer(page)), await offer(page) || 'none');
     await take(page);
     const steps = ['How was your energy this week?', 'Your hours', 'What got done', 'Next week’s shape', 'What would you change?'];
     const seen = [];
@@ -630,7 +640,7 @@ export async function runDay({ browser, report, parts }) {
     await settle(page, 600);
     pass(`${tag}: Finish the review says “Review saved”, and the week keeps the rating and what was typed`, (await toast(page)) === 'Review saved' && (await week())?.review?.change === 'Leave Thursday afternoon clear for writing.' && Boolean((await week())?.reviewed_at) && (await week())?.energy === 'good', `${await toast(page)} ${JSON.stringify((await week())?.review)}`);
     // (Friday afternoon: Plan my day isn't offered after 12:00, so with both done no offer is left.)
-    pass(`${tag}: a reviewed week isn’t offered its review or its rating again, and never two offers at once`, (await page.locator('.ds-offer').count()) <= 1 && !/Weekly review|Rate my energy/.test(await page.locator('.ds-offer').innerText().catch(() => '')), await page.locator('.ds-offer').innerText().catch(() => 'none'));
+    pass(`${tag}: a reviewed week isn’t offered its review or its rating again, and never two offers at once`, (await page.locator('.cc-today-notnow').count()) <= 1 && !/weekly review|Rate my energy/i.test(await offer(page)), await offer(page) || 'none');
     pass(`${tag}: the week is the coach’s own row`, (await week())?.coach_id === ME);
     await t.done();
 
@@ -638,7 +648,7 @@ export async function runDay({ browser, report, parts }) {
     t = await openAt(EVE, { ...o, tag: `${tag}, the evening` });
     page = t.page;
     const dayRow = async () => (await t.rowsNow('coach_days')).find((d) => d.day === TODAY) || null;
-    pass(`${tag}: in the evening the one offer is Close the day`, /Close the day/.test(await page.locator('.ds-offer').innerText().catch(() => '')));
+    pass(`${tag}: in the evening the one offer is Close my day`, /Close my day/.test(await offer(page)));
     await take(page);
     pass(`${tag}: Close the day starts with what got done`, /Step 1 of 3/.test(await dialog(page).innerText()) && /What got done/i.test(await dialog(page).innerText()));
     await press(page, 'Next');
@@ -651,7 +661,7 @@ export async function runDay({ browser, report, parts }) {
     pass(`${tag}: it ends with tomorrow at a glance`, /Step 3 of 3/.test(await dialog(page).innerText()) && /Tomorrow at a glance/i.test(await dialog(page).innerText()));
     await dialog(page).locator('.ds-btn--primary').click(); await settle(page, 800);
     pass(`${tag}: Close the day says “Day closed”, and the day is kept as closed with what was moved`, (await toast(page)) === 'Day closed' && Boolean((await dayRow())?.closed_at) && (await dayRow())?.shutdown?.moved === 6, `${await toast(page)} ${JSON.stringify(await dayRow()).slice(0, 120)}`);
-    pass(`${tag}: a closed day offers nothing more`, (await page.locator('.ds-offer').count()) === 0);
+    pass(`${tag}: a closed day offers nothing more`, (await offer(page)) === '');
     await t.done();
 
     // ---- 11. Capacity
@@ -663,7 +673,7 @@ export async function runDay({ browser, report, parts }) {
       await page.locator('.cc-setrow--edit input').fill(v);
       await page.locator('.cc-setrow--edit').getByRole('button', { name: 'Save' }).click(); await settle(page, 900);
     };
-    pass(`${tag}: capacity starts at 11 of 15`, /11 of 15/.test(await page.locator('.cc-today-figures').innerText()), flat(await page.locator('.cc-today-figures').innerText()));
+    pass(`${tag}: capacity starts at 11 of 15`, /11 of 15/.test(await page.locator('.cc-today-week').innerText()), flat(await page.locator('.cc-today-week').innerText()));
     await page.getByRole('button', { name: 'Edit capacity' }).click(); await settle(page, 900);
     pass(`${tag}: Edit beside Capacity opens Settings, Working hours`, new URL(page.url()).pathname === '/coach/settings/hours' && /Coaching hours each week\s+15 hours/.test(await page.locator('.cc-app').innerText()));
     await typeHours('0');
@@ -675,14 +685,14 @@ export async function runDay({ browser, report, parts }) {
       // Before 050 only the owner may change a coach's row (026): an associate is told it waits, and nothing changes.
       pass(`${tag}: before 050 an associate is told calmly that it waits`, (await toast(page)) === 'This will work once the coaching day’s tables are in place.', await toast(page));
       await go(page, '/coach');
-      pass(`${tag}: and Today still reads 11 of 15`, /11 of 15/.test(await page.locator('.cc-today-figures').innerText()));
+      pass(`${tag}: and Today still reads 11 of 15`, /11 of 15/.test(await page.locator('.cc-today-week').innerText()));
     } else {
       pass(`${tag}: 12 hours saves, with Undo`, /Saved/.test(await toast(page)) && /12 hours/.test(await hours().innerText()) && t.store.coaches[0].capacity_hours_week === 12, `${await toast(page)} ${t.store.coaches[0].capacity_hours_week}`);
       await undo(page);
       pass(`${tag}: Undo puts 15 back`, /15 hours/.test(await hours().innerText()) && t.store.coaches[0].capacity_hours_week === 15, `${await hours().innerText()} ${t.store.coaches[0].capacity_hours_week}`);
       await typeHours('12');
       await go(page, '/coach');
-      pass(`${tag}: Today reads 11 of 12`, /11 of 12/.test(await page.locator('.cc-today-figures').innerText()), flat(await page.locator('.cc-today-figures').innerText()));
+      pass(`${tag}: Today reads 11 of 12`, /11 of 12/.test(await page.locator('.cc-today-week').innerText()), flat(await page.locator('.cc-today-week').innerText()));
       if (t.there) pass(`${tag}: each coach sets their own through the database’s checked function`, t.store.calls.filter((c) => c === 'rpc coach_save_capacity').length === 3 && !t.store.calls.includes('PATCH coaches'), t.store.calls.filter((c) => /capacity|coaches/.test(c)).join(', '));
     }
     await t.done({ refusals: 0 });
@@ -706,6 +716,8 @@ export async function runDay({ browser, report, parts }) {
     const columnOf = () => page.evaluate((id) => document.querySelector(`[data-card="${id}"]`)?.closest('[data-stage]')?.dataset.stage || null, ID.sam);
     const was = await columnOf();
     const to = was === 'renewal_due' ? 'closing' : 'renewal_due';
+    // Polish 1: the page opening and the list's card put the board lower, so the card may start under the fold.
+    await page.locator(`[data-card="${ID.sam}"]`).scrollIntoViewIfNeeded(); await settle(page, 300);
     const cardBox = await page.locator(`[data-card="${ID.sam}"]`).boundingBox();
     const col = await page.locator(`[data-stage="${to}"]`).boundingBox();
     await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + cardBox.height / 2);
@@ -786,13 +798,11 @@ export async function runDay({ browser, report, parts }) {
     const t = await openAt(TUE, { ...o, tag, seed });
     const { page, phone } = t;
     const owner = o.role === 'owner';
-    if (phone) await page.locator('.cc-phonebar').getByRole('button', { name: 'Menu' }).click(); else await button(page, 'Open the menu').click();
-    await settle(page, 500);
-    // (To-dos carries its small count of today's, and the coach's own lists sit under it.)
-    const items = (await page.locator('.cc-menu-item').allInnerTexts()).map((i) => i.split('\n')[0]);
-    pass(`${tag}: the menu reads ${owner ? 'Today, Finances, To-dos, …' : 'Today, To-dos, … with no Finances'}`, owner ? items.slice(0, 3).join(', ') === 'Today, Finances, To-dos' : items.slice(0, 2).join(', ') === 'Today, To-dos' && !items.includes('Finances'), items.join(', '));
-    pass(`${tag}: nothing in the menu says Business`, !items.some((i) => /business/i.test(i)));
-    await page.locator('.cc-menu-item', { hasText: 'To-dos' }).click(); await settle(page, 800);
+    // The frame's menu (polish 1): Today, Calendar, To-dos (the coach's own lists under it) first; Finances the owner's.
+    const items = await frameMenuWords(page);
+    pass(`${tag}: the menu reads ${owner ? 'Today, Calendar, To-dos, … Finances' : 'Today, Calendar, To-dos, … with no Finances'}`, items.slice(0, 3).join(', ') === 'Today, Calendar, To-dos' && (owner ? items.includes('Finances') : !items.includes('Finances')), items.join(', '));
+    pass(`${tag}: nothing in the menu says Business`, !items.some((i) => /^business$/i.test(i)));
+    await openFromMenu(page, 'To-dos'); await settle(page, 800);
     pass(`${tag}: To-dos opens the to-dos, no longer “Coming in this build”`, new URL(page.url()).pathname === '/coach/todos' && !/Coming in this build/.test(await words(page)) && /^to-dos$/i.test((await page.locator('h1').innerText()).trim()) && (await page.title()) === 'To-dos, Clarity Coach', `${await page.title()}`);
     await go(page, '/coach/business');
     pass(`${tag}: /coach/business lands on ${owner ? '/coach/finances' : 'Today (Finances is the owner’s)'}`, new URL(page.url()).pathname === (owner ? '/coach/finances' : '/coach'), new URL(page.url()).pathname);
@@ -800,7 +810,7 @@ export async function runDay({ browser, report, parts }) {
     await go(page, '/coach/business/anything?x=1');
     pass(`${tag}: an older address under it lands in the same place`, new URL(page.url()).pathname === (owner ? '/coach/finances' : '/coach'), new URL(page.url()).pathname);
     const search = async (typed) => {
-      await page.getByRole('button', { name: /^Search/ }).first().click(); await settle(page, 400);
+      await openSearch(page); await settle(page, 400);
       await page.locator('.cc-jump-input').fill(typed); await settle(page, 400);
       const found = await page.locator('.cc-jump-item').allInnerTexts();
       await page.keyboard.press('Escape'); await settle(page, 300);
@@ -918,10 +928,9 @@ export async function runDay({ browser, report, parts }) {
     const onDevice = (rows) => { const { coach_notifications: _n, activity_log: _a, workshop_survey_answers: _w, coach_profiles: _p, ...own } = callsSeed()(rows); return own; };
     const a = await openAt(TUE, { ...o, db: 'none', tag: `${tag}, on the device`, seedOptions: { sessions: true }, seed: onDevice, shares: true, path: '/coach/todos' });
     let { page } = a;
-    const scope = a.phone ? null : page.locator('.cc-col > .cc-qadd');
-    if (a.phone) { await page.locator('.ds-addrow', { hasText: 'Add to-do' }).first().click(); await settle(page, 600); }
-    await (scope || dialog(page)).getByLabel('What needs doing?').fill('Draft the offsite agenda 30 min #Offsite @Deep');
-    await (scope || dialog(page)).getByRole('button', { name: 'Add to-do', exact: true }).click(); await settle(page, 800);
+    const scope = await openTodoAdd(page);
+    await scope.getByLabel('What needs doing?').fill('Draft the offsite agenda 30 min #Offsite @Deep');
+    await scope.getByRole('button', { name: 'Add to-do', exact: true }).click(); await settle(page, 800);
     await go(page, `/coach/sessions/${SES.blank}`);
     await pick(page, 'What happened', 'Cancelled with under 24 hours’ notice');
     await press(page, 'Save');

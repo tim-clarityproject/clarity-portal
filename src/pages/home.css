@@ -142,3 +142,6 @@
   .ui-root .home-log .ds-num { height: var(--btn-h-phone); }
 }
 
+
+/* Log today's Poor to Excellent, the phone rows, the week's day boxes and the 2px bar are LoggingRow's own
+   rules now (design.css, Polish 1 Stage B block; requests-b1 6 and 13). */

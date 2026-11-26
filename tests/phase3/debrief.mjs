@@ -220,7 +220,8 @@ async function checkScreen(page, tag, { eye = 'Only you' } = {}) {
     Promise.all(document.getAnimations().map((a) => a.finished.catch(() => null))),
     new Promise((r) => { setTimeout(r, 3000); }),
   ]));
-  await until(() => page.evaluate((list) => [...document.querySelectorAll('.ds-guide-next')].some((b) => list.includes(getComputedStyle(b).backgroundColor)), CORAL), 3000);
+  // Polish 1 (25 Nov reference): the one main button is solid in the text colour (--main-bg), never coral.
+  await until(() => page.evaluate(() => [...document.querySelectorAll('.ds-guide-next')].some((b) => getComputedStyle(b).backgroundColor !== 'rgba(0, 0, 0, 0)')), 3000);
   const facts = await page.evaluate((coralList) => {
     const root = document.querySelector('.ds-guide');
     const shown = (el) => {
@@ -231,7 +232,14 @@ async function checkScreen(page, tag, { eye = 'Only you' } = {}) {
       return s.visibility !== 'hidden' && s.display !== 'none';
     };
     const all = [...root.querySelectorAll('*')].filter(shown);
-    const coral = all.filter((el) => coralList.includes(getComputedStyle(el).backgroundColor)).length;
+    // The main button's fill (Polish 1: --main-bg, the text colour): buttons filled with it, leaving out
+    // chosen answers and pressed days, which take the same fill by the reference's own rule.
+    const probe = document.createElement('span');
+    probe.style.background = 'var(--main-bg)';
+    root.appendChild(probe);
+    const mainBg = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    const coral = all.filter((el) => el.matches('button, a') && !el.matches('[aria-pressed], [aria-checked], [role=radio], [role=checkbox]') && getComputedStyle(el).backgroundColor === mainBg).length;
     const coralText = all.filter((el) => el.matches('.ds-guide-page *') && !el.closest('button') && coralList.slice(0, 2).includes(getComputedStyle(el).color) && el.textContent.trim()).map((el) => el.textContent.trim().slice(0, 30));
     const small = [...root.querySelectorAll('button, [role=radio], [role=checkbox], [role=switch], input, textarea')]
       .filter(shown)

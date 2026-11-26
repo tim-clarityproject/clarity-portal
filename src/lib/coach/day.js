@@ -630,7 +630,7 @@ export const OUTCOMES = [
   { value: 'moved', label: 'Moved' },
 ];
 export const SESSION_LENGTHS = [30, 60, 90];
-export const SESSION_KINDS = { coaching: 'Coaching session', group: 'Group session', three_way: 'Three-way meeting', review: 'Review', chemistry: 'Chemistry Call', other: 'Session' };
+export const SESSION_KINDS = { coaching: 'Coaching session', group: 'Group session', three_way: 'Three-way meeting', review: 'Review', chemistry: 'Discovery call', other: 'Session' };
 
 /** Does a session count as one of the engagement's? (The database decides the same way: 050's session_counts.) */
 export const sessionCounts = (s) => Boolean(s) && (s.outcome === 'held' || s.outcome === 'no_show' || (s.outcome === 'late_cancel' && !s.waived));

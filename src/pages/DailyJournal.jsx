@@ -1,4 +1,3 @@
-import pageText from '../content/pageText';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -14,10 +13,10 @@ import { saveOrQueue, useQueuedSave } from '../lib/syncQueue';
 import { readCache, writeCache } from '../lib/pageCache';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
-import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
+import { B3_LINES } from '../content/pageLines/client';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import {
-  Button, ChipRow, Chip, Crosshair, Loading, PageHeader, SaveStatus, TextBox, useToast,
+  Button, ChipRow, Chip, Crosshair, Loading, MoreLink, PageOpening, SaveStatus, TextBox, useToast,
 } from '../components/design';
 
 // The writing boxes and prompt questions sit in one column with the
@@ -58,6 +57,11 @@ const JOURNAL_CSS = `
   border-top: 0;
   border-bottom: 0;
 }
+.ui-root .jrn-page { max-width: var(--tool-max); }
+.ui-root .jrn-actions { margin-top: var(--space-5); }
+.ui-root .jrn-links { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); }
+.ui-root .jrn-discard { color: var(--text-2); text-decoration: underline; text-decoration-thickness: var(--line-w); text-underline-offset: var(--space-1); }
+.ui-root .jrn-meta { font-size: var(--fs-meta); color: var(--text-2); }
 .ui-root .jrn-box--last .ds-grow > .ds-text,
 .ui-root .jrn-box--last .ds-grow::after {
   min-height: 480px;
@@ -314,10 +318,12 @@ export default function DailyJournal() {
       <style>{JOURNAL_CSS}</style>
       <DesignHeader />
 
-      <div className="plan-page plan-page--form">
-        <PageHeader
-          title={`${formatPlainDayLabel(dateObj)} ${dateObj.getFullYear()}`}
-          info={pageText.dailyJournal}
+      <div className="plan-page plan-page--form jrn-page">
+        {/* The title is JOURNAL, the day its small grey label (Polish 1, B3). */}
+        <PageOpening
+          label={`${formatPlainDayLabel(dateObj)} ${dateObj.getFullYear()}`}
+          title="Journal"
+          line={B3_LINES.journal}
         />
 
         {!serverKnown && (
@@ -361,11 +367,11 @@ export default function DailyJournal() {
           <SaveStatus state={isSaving ? 'saving' : (syncState !== 'idle' ? syncState : (saveStatus ? 'saved' : 'idle'))} />
         </div>
 
-        <div className="plan-actions plan-actions--desktop" style={{ marginTop: 'var(--space-6)' }}>{actionButtons}</div>
+        <div className="plan-actions plan-actions--desktop jrn-actions">{actionButtons}</div>
 
-        <div className="plan-discard-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <BackLink onClick={() => navigate('/daily-journals')} label="Back to My Journals" />
-          <DiscardLink onClick={() => setDiscardOpen(true)} />
+        <div className="jrn-links">
+          <MoreLink back onClick={() => navigate('/daily-journals')}>Back to My Journals</MoreLink>
+          <button type="button" className="ds-more ds-more--bare jrn-discard" onClick={() => setDiscardOpen(true)}>Discard</button>
         </div>
       </div>
 

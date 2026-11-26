@@ -1,3 +1,4 @@
+import './toolFocus/onboarding.css';
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -147,97 +148,28 @@ export default function OnboardingMission() {
   };
 
   return (
-    <div className="ui-root" style={{
-      minHeight: '100vh',
-      backgroundColor: 'var(--bg)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '32px',
-    }}>
-      <style>{`
-        @keyframes blink {
-          0%, 49% { opacity: 1; }
-          50%, 100% { opacity: 0; }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideUp {
-          from {
-            transform: translateY(0);
-          }
-          to {
-            transform: translateY(-100px);
-          }
-        }
-      `}</style>
-
-      <div style={{
-        maxWidth: '600px',
-        width: '100%',
-      }}>
-        {/* Welcome Greeting - Types in and disappears */}
+    <div className="ui-root obm-page">
+      <div className="obm-col">
+        {/* The greeting types in and goes: the page's title, Nekst capitals (Polish 1, rules 1 and 2). */}
         {greeting && (
-          <div style={{
-            textAlign: 'center',
-            marginBottom: '80px',
-            minHeight: '80px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <h1 style={{
-              fontSize: 'calc(56 * var(--u-big, 1px))',
-              fontWeight: 'bold',
-              color: 'var(--text)',
-              margin: 0,
-              lineHeight: '1.2',
-            }}>
+          <div className="obm-greet">
+            <h1 className="obm-title">
               Welcome, {firstName || 'there'}
-              <span style={{
-                animation: 'blink 1s infinite',
-                marginLeft: '8px',
-              }}>
-                |
-              </span>
+              <span className="obm-caret" aria-hidden="true">|</span>
             </h1>
           </div>
         )}
 
-        {/* Question - Types in after greeting disappears */}
+        {/* The question types in after the greeting: a 20px question. */}
         {!greeting && (
-          <div style={{
-            animation: 'fadeIn 0.6s ease-in',
-            textAlign: 'center',
-          }}>
-            <h2 style={{
-              fontSize: 'calc(48 * var(--u-big, 1px))',
-              fontWeight: 'bold',
-              color: 'var(--text)',
-              margin: '0 0 24px 0',
-              lineHeight: '1.3',
-              minHeight: '100px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              animation: showInput ? 'slideUp 0.6s ease-out forwards' : 'none',
-            }}>
+          <div className="obm-ask">
+            <h2 className={`ds-q obm-q${showInput ? ' obm-q--up' : ''}`}>
               {question}
-              {question.length < "What's your big Mission?".length && (
-                <span style={{
-                  animation: 'blink 1s infinite',
-                  marginLeft: '8px',
-                }}>
-                  |
-                </span>
-              )}
+              {question.length < "What's your big Mission?".length && <span className="obm-caret" aria-hidden="true">|</span>}
             </h2>
 
-            {/* Input Section - Shows after question types in */}
             {showInput && (
-              <div style={{ animation: 'fadeIn 0.6s ease-in' }}>
+              <div className="obm-input">
                 <TextBox
                   className="onboarding-mission-box"
                   ariaLabel="Your Mission"
@@ -249,43 +181,21 @@ export default function OnboardingMission() {
                   placeholder="Type here"
                   autoFocus
                 />
-                <style>{`
-                  .ui-root .onboarding-mission-box {
-                    margin-bottom: 24px;
-                    text-align: left;
-                  }
-                `}</style>
-
-                {/* Character Counter - Centered */}
-                <div style={{
-                  textAlign: 'center',
-                  marginBottom: '32px',
-                  fontSize: 'calc(12 * var(--u, 1px))',
-                  color: isOverLimit ? 'var(--coral-soft-text)' : 'var(--label)',
-                }}>
+                <div className={`obm-count${isOverLimit ? ' obm-count--over' : ''}`}>
                   {charCount}/{MAX_GOAL_LENGTH} characters
-                  {isOverLimit && (
-                    <div style={{ marginTop: '4px' }}>Limit exceeded</div>
-                  )}
+                  {isOverLimit && <div>That’s over the limit, so shorten it a little.</div>}
                 </div>
-
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '12px',
-                }}>
+                <div className="obm-actions">
                   <Button
                     variant="primary"
                     onClick={handleSaveMission}
                     disabled={!mission.trim() || isSaving || isOverLimit}
                   >
-                    {isSaving ? 'Saving' : 'Get Started'}
+                    {isSaving ? 'Saving' : 'Get started'}
                   </Button>
-
-                  <Button variant="text" onClick={() => { clearDraft(); navigate('/welcome'); }}>
-                    I'll do this later in settings
-                  </Button>
+                  <button type="button" className="ds-more ds-more--bare obm-later" onClick={() => { clearDraft(); navigate('/welcome'); }}>
+                    Do this later
+                  </button>
                 </div>
               </div>
             )}

@@ -35,7 +35,8 @@ export async function titleIcons(page, sel) {
     // The baseline: a mark of no size standing on it, beside the last letter.
     const mark = document.createElement('span');
     mark.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
-    last.parentNode.insertBefore(mark, last);
+    // After the text, so it stands on the last line's baseline when the title wraps.
+    last.parentNode.insertBefore(mark, last.nextSibling);
     const baseline = mark.getBoundingClientRect().bottom;
     mark.remove();
     const cs = getComputedStyle(h);

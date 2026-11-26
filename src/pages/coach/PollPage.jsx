@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { idFromAddress } from '../../lib/coach/address';
-import { Button, Dropdown, InlineChoice, PageHeader, SlidePanel, useToast } from '../../components/design';
+import { Button, Dropdown, InlineChoice, PageOpening, SlidePanel, useToast } from '../../components/design';
+import { pollLine } from '../../content/pageLines/coach';
 import { deviceZone, wallClock, zoneLabel } from '../../lib/time/index.js';
 import { coachState, rowsOf, saveRow } from '../../lib/coach/store';
 import { firstName } from '../../lib/coach/model';
@@ -30,7 +31,7 @@ export default function PollPage() {
   const poll = cal.polls.find((p) => p.id === id) || null;
   const back = <Back to="Calendar" onClick={() => navigate('/coach/calendar')} />;
   if (!poll) {
-    return <div className="cc-page"><div className="cc-col">{back}<PageHeader title="Poll" /><p className="cc-quiet">This poll isn’t here any more.</p></div></div>;
+    return <div className="cc-page"><div className="cc-col">{back}<PageOpening title="Poll" line="This poll isn’t here any more." /></div></div>;
   }
   const people = cal.pollPeople.filter((p) => p.poll_id === poll.id);
   const options = cal.pollOptions.filter((o) => o.poll_id === poll.id);
@@ -58,7 +59,7 @@ export default function PollPage() {
     <div className="cc-page">
       <div className="cc-col cc-poll-page">
         {back}
-        <PageHeader title={poll.title || joinNames(people.map((p) => p.name))} meta={[poll.title ? joinNames(people.map((p) => p.name)) : null, callPlaceLine(poll.minutes || 60, poll.place_kind)].filter(Boolean)} />
+        <PageOpening label={callPlaceLine(poll.minutes || 60, poll.place_kind)} title={poll.title || joinNames(people.map((p) => p.name))} line={pollLine(poll.title ? joinNames(people.map((p) => p.name)) : null)} />
         {!isOpen && (
           <p className="cc-quiet" role="status">
             {poll.status === 'confirmed' && confirmed ? `It’s confirmed for ${bookedWhenWords(confirmed.starts_at, cal.coachZone)}.` : poll.status === 'confirmed' ? 'It’s confirmed.' : 'This poll was cancelled, and its times are free again.'}

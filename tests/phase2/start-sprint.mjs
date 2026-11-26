@@ -121,7 +121,8 @@ async function stepChecks(page, tag) {
     return {
       sideways: Math.max(document.documentElement.scrollWidth - window.innerWidth, scroller.scrollWidth - scroller.clientWidth),
       primaries: primaries.length,
-      primaryCoral: primaries.every((b) => coral.includes(getComputedStyle(b).backgroundColor)),
+      // Polish 1 (25 Nov reference): the one main button is solid in the text colour (--main-bg), never coral.
+      primaryCoral: primaries.every((b) => { const pr = document.createElement('span'); pr.style.background = 'var(--main-bg)'; b.parentElement.appendChild(pr); const main = getComputedStyle(pr).backgroundColor; pr.remove(); return getComputedStyle(b).backgroundColor === main; }),
       small,
       coralFills,
       percent: Boolean(root.querySelector('.ds-guide-pct')),
@@ -142,6 +143,11 @@ async function stepChecks(page, tag) {
 const next = async (page) => {
   await page.locator('.ds-guide-next').click();
   await page.waitForTimeout(650);
+  // Peak moments (M18, Phase 8b, 17 Nov) came after this suite: its step, with nothing to add here, is passed by.
+  if (/When do you need to be at your best\?/.test(await page.locator('.ds-guide-question, .ds-guide-title').first().textContent().catch(() => ''))) {
+    await page.locator('.ds-guide-next').click();
+    await page.waitForTimeout(650);
+  }
 };
 const heading = (page) => page.locator('.ds-guide-question, .ds-guide-title').first().textContent();
 
@@ -157,12 +163,16 @@ async function pageChecks(page, tag) {
     const primaries = [...document.querySelectorAll('.ds-btn--primary, .ui-btn-primary')].filter(vis);
     const small = [...main.querySelectorAll('button, a')].filter(vis).filter((el) => {
       const b = el.getBoundingClientRect();
+      // A 40px button keeps a 44px tap area with an absolute ::after (rule 4a).
+      const after = getComputedStyle(el, '::after');
+      if (after.content !== 'none' && after.position === 'absolute' && (parseFloat(after.height) || 0) >= 44) return false;
       return b.height < 43.5 || b.width < 43.5;
     }).map((el) => `"${el.textContent.trim().slice(0, 20)}"`);
     return {
       sideways: document.documentElement.scrollWidth - window.innerWidth,
       primaries: primaries.length,
-      primaryCoral: primaries.every((b) => coral.includes(getComputedStyle(b).backgroundColor)),
+      // Polish 1 (25 Nov reference): the one main button is solid in the text colour (--main-bg), never coral.
+      primaryCoral: primaries.every((b) => { const pr = document.createElement('span'); pr.style.background = 'var(--main-bg)'; b.parentElement.appendChild(pr); const main = getComputedStyle(pr).backgroundColor; pr.remove(); return getComputedStyle(b).backgroundColor === main; }),
       small,
       text: main.textContent,
     };

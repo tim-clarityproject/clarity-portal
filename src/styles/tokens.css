@@ -130,6 +130,7 @@
   --tool-frame-max: 720px;
   --phead-mark: 24px;        /* the crosshair in the phone header */
   --mission-box-h: 40px;     /* My Mission in the phone header: a 40px box, not a pill */
+  --mission-box-max: 320px;  /* My Mission at the panel's top right on a laptop: at most this wide, ending in "…" */
   --qa-sheet-pad: 20px;
   --fs-fig-unit: calc(16 * var(--u));
   --fw-fig: 300;             /* a headline figure: DM Sans 24px light */
@@ -171,7 +172,7 @@
      --mint-soft are defined above with the brand values. */
 
   /* Interface greys approved for readability on black */
-  --label: #8A8A86;          /* labels and placeholders (same as --placeholder) */
+  --label: #A3A3A0;          /* labels: small grey text is --text-2 (Tim, walk item 4); placeholders are --placeholder */
   --card: #0B0B0B;           /* inputs, toasts (same as --surface) */
   --line-soft: #1A1A1A;      /* the mock-up's quieter divider between logging rows */
   --field-line: #636362;     /* edges of fields you type into or choose from: brand grey,
@@ -637,6 +638,8 @@
   --guest-mark: 28px;
   --cc-brand-mark: 22px;     /* the crosshair in the coach portal's public pages' brand row */        /* the outside pages' crosshair in the bar above the column (M7b, M9) */
   --breathe-h: 60px;         /* the floating Breathe button (breathe-orb.html, 29 Oct: 60px pill, 44px orb) */
+  --breathe-room: calc(var(--breathe-h) + 2 * var(--space-4)); /* the page's foot kept clear of the floating Breathe button (walk item 5) */
+  --tabbar-height: 0px;      /* the phone bar is gone (Polish 1): pages that sat above it sit on the screen's foot */
   --breathe-orb: 44px;
   --breathe-pad-l: 7px;      /* breathe-orb.html .fab: 0 22px 0 7px, so the orb sits evenly inside the pill */
   /* The ONE exception to the 14px crosshair minimum (Claude's call on the
@@ -834,7 +837,7 @@
   --text: #000000;
   --text-2: #5A5A58;         /* 25 Nov reference --t2 */
   --placeholder: #76766F;    /* 25 Nov reference --ph */
-  --label: #76766F;
+  --label: #5A5A58;          /* as --text-2 (walk item 4) */
   --on-text: #FFFFFF;
   /* --coral (#FF6F5C, buttons and ticks) and --on-coral (black) are the
      same in both modes. Coral and mint are too pale to read as text on
@@ -1008,7 +1011,7 @@
 /* ---------------------------------------------------------------- the coach's calendar (Phase 6a run 3; Tim, 19 Nov)
    Tile colours, each with its own text colours so every line of a tile is
    at least 4.5 to 1: client calls peach with black text and a hairline
-   edge; Chemistry Calls mint with black text; Connections soft mint;
+   edge; Discovery calls mint with black text; Connections soft mint;
    Admin, Writing and Other the brand greys; life, personal and held items
    a dashed outline; Open times outlined in mint, never coral. */
 .ui-root {

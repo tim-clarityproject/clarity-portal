@@ -8,7 +8,8 @@ import { tableReady } from '../../lib/performance/tableReady';
 import { ANSWERS_ON_DEVICE } from '../../lib/performance/sprintReviewAnswers';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
-import { EmptyState, Loading, PageHeader, LoadError } from '../../components/design';
+import { EmptyState, Loading, PageOpening, LoadError } from '../../components/design';
+import { B2_LINES } from '../../content/pageLines/client';
 import './performance.css';
 
 // A finished end-of-sprint review, read only (Phase 4 step 4; not mocked):
@@ -88,7 +89,7 @@ export default function SprintReviewRead() {
       <DesignHeader />
       <div className="plan-page ipp-page">
         <div className="plan-back-row"><BackLink onClick={back} label="My Reviews" /></div>
-        <PageHeader title="End-of-sprint review" meta={meta} />
+        <PageOpening label={meta.join(', ') || undefined} title="End-of-sprint review" line={B2_LINES.sprintReviewRead} />
         {body}
       </div>
     </div>

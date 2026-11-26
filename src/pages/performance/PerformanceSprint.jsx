@@ -4,7 +4,6 @@ import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
 import {
-  AddButton,
   AddTodoPanel,
   AddWinPanel,
   Button,
@@ -14,7 +13,9 @@ import {
   IMPACT_OPTIONS,
   Loading,
   MoveTodoPanel,
-  PageHeader,
+  AddLink,
+  MoreLink,
+  PageOpening,
   PerformanceSystem,
   RecoveryLinks,
   RecoveryNotice,
@@ -49,6 +50,10 @@ import { prefersReducedMotion } from '../../components/design/timing';
 import { usePeakMoments } from '../../lib/peakMoments/store';
 import { PeakDetails, PeakSprintSection } from '../peakMoments/PeakSprint';
 import './performance.css';
+import { useClientPreparing } from '../../lib/clientPreparing';
+import Preparing from '../Preparing';
+import { B1_LINES } from '../../content/pageLines/client';
+import '../hubs/clientPage.css';
 
 // The Performance Sprint page (mock-up M1, R.sprint): the dial and this
 // week's score so far, Log today (day and week views, one habit per
@@ -82,6 +87,8 @@ export default function PerformanceSprint() {
   const toast = useToast();
   const { user } = useContext(AuthContext);
   const userId = user?.id;
+  // A brand-new client whose coach hasn't set anything up yet sees the one welcome (Polish 1; src/lib/clientPreparing.js).
+  const prep = useClientPreparing(userId);
   const { data, loading, error, setData } = useSprintPage(userId);
   const recovery = useRecoveryActions({ setData });
   const today = localToday();
@@ -403,18 +410,21 @@ export default function PerformanceSprint() {
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page ipp-page sprint-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/plan-section')} label="Plan" /></div>
-        <PageHeader
+      {prep.preparing ? (
+        <div className="cp-page"><Preparing firstName={data?.firstName || prep.firstName || user?.user_metadata?.first_name || ''} coachName={prep.coachName} /></div>
+      ) : (
+      <div className="plan-page cp-page ipp-page sprint-page">
+        <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/personal/plan')} label="Plan" /></div>
+        {/* Polish 1 (rule 12): the week as the label, the title, one line, Log today as the one main button. */}
+        <PageOpening
+          label={welcome ? undefined : meta[0] && view?.state === 'running' ? meta[0] : undefined}
           title={welcome ? `Welcome back${data.firstName ? `, ${data.firstName}` : ''}` : view?.name || 'Performance Sprint'}
-          meta={meta}
-          // A greeting has nothing to explain (Tim, 3 Nov), so no ⓘ.
-          info={welcome ? undefined : pageText.performanceSprint}
-          onSystemLink={() => setSystem(true)}
+          line={welcome ? 'Let’s start with this week.' : view?.dates?.text ? `This sprint runs from ${view.dates.text}.` : view ? B1_LINES.sprintNone : B1_LINES.sprint}
+          action={running && !welcome ? <Button variant="primary" onClick={() => jump(logRef)}>Log today</Button> : null}
         />
-        {welcome && <p className="rec-welcome">Let’s start with this week.</p>}
         {body}
       </div>
+      )}
 
       {running && (
         <>
@@ -476,8 +486,11 @@ function SprintBody({
   view, mode, setMode, save, typed, logRef, todoRef, onJump, onLog, onType, onLeave, onTick, onHabit,
   onToggleTodo, onMove, onAddTodo, onAddWin, navigate, welcome, peak, today,
 }) {
-  const centre = view.soFar
+  // Never a bare 0% (rule 16; Tim's walk, item 9).
+  const centre = view.soFar && view.soFar.value
     ? { small: 'Performance score this week so far', big: `${view.soFar.value}%`, good: view.soFar.good }
+    : view.soFar
+    ? { small: 'Your score starts with your first log.', big: null }
     : { small: 'Nothing is scored yet this week.', big: null };
   const day = mode === 'day';
   const t = view.todos;
@@ -526,9 +539,8 @@ function SprintBody({
               You’re at your standard so far this week.
             </p>
           )}
-          <div className="ds-actions sprint-hero-actions">
-            <Button variant="primary" onClick={() => onJump(logRef)}>Log today</Button>
-            <Button onClick={() => onJump(todoRef)}>See to-dos</Button>
+          <div className="sprint-hero-actions">
+            <MoreLink onClick={() => onJump(todoRef)}>See to-dos</MoreLink>
           </div>
           <div className="sprint-details">
             <Collapsible summary="Sprint details">
@@ -603,6 +615,12 @@ function SprintBody({
           helpKey="sprint-todos-roll"
           className="ipp-section sprint-section"
           eye={<WhoSees audience="me" />}
+          aside={(
+            <span className="sprint-adds">
+              <AddLink label="Add to-do" onClick={onAddTodo}>Add</AddLink>
+              <AddLink label="Add unplanned win" onClick={onAddWin}>Add win</AddLink>
+            </span>
+          )}
         >
           {t.thisWeek.length || t.wins.length ? (
             <TodoList label="To-dos this week" className="sprint-gap">
@@ -628,10 +646,6 @@ function SprintBody({
           ) : (
             <p className="ipp-muted sprint-gap">Nothing is planned for this week yet.</p>
           )}
-          <div className="ds-actions sprint-add">
-            <AddButton onClick={onAddTodo}>Add to-do</AddButton>
-            <AddButton onClick={onAddWin}>Add unplanned win</AddButton>
-          </div>
           <div className="sprint-later">
             <Collapsible
               capitals
@@ -674,10 +688,10 @@ function SprintBody({
         </Section>
       </div>
 
-      <div className="ds-actions ipp-actions">
-        {view.debrief && <Button onClick={() => navigate('/performance-sprint/debrief')}>Start my debrief</Button>}
-        <Button onClick={() => navigate('/performance-sprint/year')}>View your year</Button>
-        <Button onClick={() => navigate('/performance-plan')}>Open my plan</Button>
+      <div className="cp-foot ipp-actions">
+        {view.debrief && <MoreLink onClick={() => navigate('/performance-sprint/debrief')}>Start my debrief</MoreLink>}
+        <MoreLink onClick={() => navigate('/performance-sprint/year')}>View your year</MoreLink>
+        <MoreLink onClick={() => navigate('/performance-plan')}>Open my plan</MoreLink>
       </div>
     </>
   );

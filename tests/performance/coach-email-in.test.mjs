@@ -36,7 +36,7 @@ test('an inbound email is read: which address it was copied to, who it names, an
 test('the usual spellings of the common services are read, and the copy-in address is never one of the people', () => {
   const read = readInbound({
     FromFull: { Email: 'ruth@example.invalid', Name: 'Ruth Adeyemi' }, ToFull: [{ Email: 'alex@example.invalid', Name: 'Alex Morgan' }, { Email: `${LOG}@${DOMAIN}`, Name: '' }], CcFull: [],
-    OriginalRecipient: `${LOG}@${DOMAIN}`, Subject: 'Re: Chemistry Call', HtmlBody: '<p>Thanks, Alex.</p><p>Can we start in <b>January</b>?</p><style>p{color:red}</style>', MessageID: 'm-2',
+    OriginalRecipient: `${LOG}@${DOMAIN}`, Subject: 'Re: Discovery call', HtmlBody: '<p>Thanks, Alex.</p><p>Can we start in <b>January</b>?</p><style>p{color:red}</style>', MessageID: 'm-2',
     Headers: [{ Name: 'In-Reply-To', Value: '<m-1@mail.example.invalid>' }, { Name: 'Date', Value: '2026-11-17T08:40:00Z' }],
   }, { domain: DOMAIN });
   assert.deepEqual([read.key, read.email.from.name, read.email.to.map((p) => p.email), read.email.snippet, read.email.thread_key, read.email.sent_at, read.email.external_id],

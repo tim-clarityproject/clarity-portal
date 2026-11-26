@@ -164,7 +164,7 @@ export default function Dashboard() {
     <div className="ui-root">
       <DesignHeader />
       <main className="dash-page">
-        {prep.preparing ? <Preparing firstName={prepName} coachName={prep.coachName} /> : (
+        {prep.preparing ? <Preparing firstName={prepName || prep.firstName || ''} coachName={prep.coachName} /> : (
           <>
             {/* The page opening (Polish 1, rule 12): the sprint's week, the title with the page's eye
                 once beside it (Tim, 5 Nov, 11:09), and its one line. */}
@@ -351,23 +351,16 @@ function SectionHead({ id, title, closed, toggle, as: H = 'h2' }) {
   );
 }
 
-function GroupHead({ id, title, right, summary, closed, toggle, first = false }) {
-  const open = !closed[id];
+/**
+ * A group's name inside a section (Tim's walk, item 15: no fold inside a fold): a plain 13px grey
+ * label, with its quiet right-hand words ("Weekly performance score").
+ */
+function GroupLabel({ title, right }) {
   return (
-    <>
-      <div className={`dash-grph${first ? ' dash-grph--first' : ''}`}>
-        <h3 className="dash-grph-h">
-          <button type="button" className="dash-colb dash-colb--group" aria-expanded={open} onClick={() => toggle(id)}>
-            <span>{title}</span>
-            <span className="dash-colb-rt">
-              {right && open && <span className="dash-colb-rtl">{right}</span>}
-              <DisclosureArrow open={open} />
-            </span>
-          </button>
-        </h3>
-      </div>
-      {!open && <p className="dash-csum">{summary}</p>}
-    </>
+    <div className="dash-grph-label">
+      <h3>{title}</h3>
+      {right && <span className="dash-grph-rt">{right}</span>}
+    </div>
   );
 }
 
@@ -480,7 +473,8 @@ function ObjectiveRow({ row, phone }) {
     <div className="dash-crow">
       <div className="dash-crow-n">
         <b className="dash-crow-nb"><span className="ds-onum" aria-hidden="true">{row.number}</span><span>{row.name}</span></b>
-        {row.line && <small className="dash-crow-ind">{row.line}</small>}
+        {/* Each words once (Tim's walk, item 16): a line that repeats the name is left out. */}
+        {row.line && row.line !== row.name && <small className="dash-crow-ind">{row.line}</small>}
         {(!phone || open) && row.effortLine && <span className="dash-crow-ind">{extra}</span>}
       </div>
       <div className="dash-crow-c">
@@ -525,12 +519,12 @@ function ChainSection({ view, closed, toggle, span, setSpan, phone }) {
       ) : (
         <>
           <SpanSwitch span={span} setSpan={setSpan} phone={phone} />
-          <GroupHead id="obj" title="Outcome Objectives" summary={chain.objectives.summary} closed={closed} toggle={toggle} first />
-          {!closed.obj && (chain.objectives.rows.length
+          <GroupLabel title="Outcome Objectives" />
+          {(chain.objectives.rows.length
             ? chain.objectives.rows.map((r) => <ObjectiveRow key={r.id} row={r} phone={phone} />)
             : <p className="dash-semp">{chain.objectives.summary}</p>)}
-          <GroupHead id="strat" title="Strategies" right={chain.strategies.heading} summary={chain.strategies.summary} closed={closed} toggle={toggle} />
-          {!closed.strat && (
+          <GroupLabel title="Strategies" right={chain.strategies.heading} />
+          {(
             <>
               {chain.strategies.rows.length
                 ? chain.strategies.rows.map((r) => <StrategyRow key={r.id} row={r} phone={phone} />)
@@ -572,7 +566,7 @@ function Fold({ row, phone, children }) {
             {!phone && <Mini bars={row.mini} />}
           </span>
         )}
-        <span className="dash-fold-mark"><DisclosureArrow open={open} beside={row.line ? 'block' : 'words'} /></span>
+        <span className="dash-fold-mark"><DisclosureArrow open={open} beside="words" /></span>
       </button>
       {open && <div id={id} className="dash-fold-b">{children}</div>}
     </div>

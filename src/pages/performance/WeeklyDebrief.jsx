@@ -3,8 +3,10 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import {
-  AddButton,
+  AddLink,
   AddTodoPanel,
+  CardHead,
+  PageOpening,
   AddWinPanel,
   Button,
   Choice,
@@ -14,7 +16,6 @@ import {
   Loading,
   LoggingWeekRow,
   ObjectiveFigureRow,
-  PageHeader,
   PatternCard,
   Section,
   Stat,
@@ -71,7 +72,9 @@ import {
 import { debriefPattern, patternCardWords } from '../../lib/performance/patterns';
 import { usePatterns } from './usePatterns';
 import { useOwnToolSteps } from '../../components/ownQuestions/ownSteps';
+import { B2_LINES } from '../../content/pageLines/client';
 import './performance.css';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 
 // The Weekly performance debrief (mock-up M1, R.debrief, read in full with
 // its notes; decisions "Weekly performance debrief"). One guided tool,
@@ -168,7 +171,7 @@ function Shell({ children }) {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page">
-        <PageHeader title="Weekly performance debrief" />
+        <PageOpening title="Weekly performance debrief" line={B2_LINES.debrief} />
         {children}
         <div className="ds-actions ipp-actions">
           <Button onClick={() => navigate('/performance-sprint')}>Open my sprint</Button>
@@ -672,14 +675,19 @@ function DebriefFlow({ userId, today, loaded, view }) {
               <div className="deb-habits">{g.habits.map(habitRow)}</div>
             </div>
           )) : <p className="day-quiet-line">This sprint has no habits to log.</p>}
-          <Section title="Unplanned wins" as="h3" className="deb-wins">
-            {view.wins.length > 0 && (
+          {/* "+ Add" at the right of the list's label (Polish 1, rule 10): it opens the win panel. */}
+          <section className="deb-wins">
+            <CardHead
+              label="Unplanned wins"
+              as="h3"
+              add={<AddLink label="Add unplanned win" expanded={panel === 'win'} onClick={() => { setWinForm((f) => (f.text ? f : emptyWin(view.winDays[view.winDays.length - 1]?.value))); setPanel('win'); }} />}
+            />
+            {view.wins.length > 0 ? (
               <TodoList label="Unplanned wins" className="rev-list">
                 {view.wins.map((w) => <TodoRow key={w.id} win text={w.text} strategyName={w.strategyName} winTag={`Unplanned win, ${w.day}`} />)}
               </TodoList>
-            )}
-            <AddButton className="day-add" onClick={() => { setWinForm((f) => (f.text ? f : emptyWin(view.winDays[view.winDays.length - 1]?.value))); setPanel('win'); }}>Add unplanned win</AddButton>
-          </Section>
+            ) : <p className="day-quiet-line">No unplanned wins this week yet.</p>}
+          </section>
         </div>
       ),
     },
@@ -703,7 +711,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
       nudges: ['Update any that have moved since last week.'],
       eye: eye(),
       render: () => (
-        <div className="day-narrow">
+        <div className="day-narrow deb-objectives">
           {view.objectives.length ? view.objectives.map((o) => (o.kind === 'milestone' ? (
             <div key={o.id} className="ds-objfig">
               <div className="ds-objfig-name">{o.name}</div>
@@ -804,6 +812,11 @@ function DebriefFlow({ userId, today, loaded, view }) {
           <div className="deb-subrow">
             <span>{view.nextWeek.range}</span>
           </div>
+          <CardHead
+            label="Next week’s to-dos"
+            as="h3"
+            add={<AddLink label="Add to-do" expanded={panel === 'todo'} onClick={() => { setTodoForm((f) => (f.text ? f : emptyTodo(view.nextWeek.number))); setPanel('todo'); }} />}
+          />
           {view.nextWeek.todos.length ? (
             <TodoList label="Next week’s to-dos" className="rev-list">
               {view.nextWeek.todos.map((t) => <TodoRow key={t.id} plain text={t.text} strategyName={t.strategyName} done={t.done} tags={t.tags} />)}
@@ -813,7 +826,6 @@ function DebriefFlow({ userId, today, loaded, view }) {
             <p>Habits carry on with the same targets.</p>
             <p>You can change them in the sprint.</p>
           </div>
-          <AddButton className="day-add" onClick={() => { setTodoForm((f) => (f.text ? f : emptyTodo(view.nextWeek.number))); setPanel('todo'); }}>Add to-do</AddButton>
         </div>
       )),
     },
@@ -887,7 +899,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
 
   const close = () => {
     if (waiting.current) sendAnswers();
-    if (!view.finished) toast.show(`Saved as a draft, so you can finish it by ${view.window.closesOnText}.`);
+    if (!view.finished) toast.show(TOOL_CLOSED);
     else {
       // A finished debrief looked at again never becomes part-way (Tim, 5 Nov).
       clearAnswersDraft();

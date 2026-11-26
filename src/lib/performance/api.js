@@ -71,7 +71,7 @@ async function ownSettingsRow(userId) {
 }
 
 /** The person's own profiles row, read with the one shared column list, or null. */
-async function ownProfileRow(userId) {
+export async function ownProfileRow(userId) {
   const { data, error } = await ownProfileQuery(userId);
   if (error) throw error;
   return data?.[0] || null;

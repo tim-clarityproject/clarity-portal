@@ -91,7 +91,8 @@ async function tidySettings() {
 
 const toastText = (page) => page.locator('.ds-toast').last().innerText().then((t) => t.replace(/\s+/g, ' ').trim()).catch(() => '');
 const sawToast = (page, words, ms = 8000) => until(async () => (await toastText(page)).includes(words), ms);
-const qText = (page) => page.locator('.ds-guide-question, .ds-guide-title').first().innerText().then((t) => t.replace(/\s+/g, ' ').trim()).catch(() => '');
+// .ds-tool-q: the Daily plan runs on StepFrame/ToolFrame since Polish 1.
+const qText = (page) => page.locator('.ds-guide-question, .ds-guide-title, .ds-tool-q').first().innerText().then((t) => t.replace(/\s+/g, ' ').trim()).catch(() => '');
 const onQ = (page, starts, ms = 15000) => until(async () => (await qText(page)).startsWith(starts), ms);
 const device = (page, key) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) || 'null'), key);
 const noSideScroll = (page) => page.evaluate(() => document.scrollingElement.scrollWidth <= window.innerWidth + 1);
@@ -150,14 +151,12 @@ async function run(browser, width, mode) {
   await page.goto(`${APP}/welcome`);
   const offer = page.locator('.ds-offer', { hasText: 'Plan my Dubai trip' });
   pass(`${tag}: Home offers “Plan my Dubai trip” 4 days before its peak moment in another time zone`, await until(async () => (await offer.count()) === 1, 20000));
-  const icon = await page.evaluate(() => {
-    const svg = document.querySelector('.ds-offer .ds-offer-icon--plane');
-    if (!svg) return null;
-    const r = svg.getBoundingClientRect();
-    const grey = getComputedStyle(document.querySelector('.ds-offer-words small')).color;
-    return { w: Math.round(parseFloat(getComputedStyle(svg).width)), h: Math.round(parseFloat(getComputedStyle(svg).height)), rotated: r.width > 22, fill: getComputedStyle(svg).fill, grey, circle: Math.round(svg.parentElement.getBoundingClientRect().width), coral: [...document.querySelectorAll('.ds-offer *')].some((e) => getComputedStyle(e).color === 'rgb(255, 111, 92)') };
-  });
-  pass(`${tag}: the offer's icon is the solid plane, 22px in the 44px circle, in the secondary grey; no coral`, icon && icon.w === 22 && icon.h === 22 && icon.circle === 44 && icon.fill === icon.grey && !icon.coral, JSON.stringify(icon));
+  // OfferRow has no circle and no icon since 18 Nov (rule 8b, follow-up 1), and coral is for mistakes only (Polish 1).
+  const icon = await page.evaluate(() => ({
+    icons: document.querySelectorAll('.ds-offer [class*="ds-offer-icon"], .ds-offer-take svg').length,
+    coral: [...document.querySelectorAll('.ds-offer *')].some((e) => ['rgb(255, 111, 92)', 'rgb(194, 65, 46)'].includes(getComputedStyle(e).color)),
+  }));
+  pass(`${tag}: the offer has no icon; no coral`, icon.icons === 0 && !icon.coral, JSON.stringify(icon));
   pass(`${tag}: the offer says its time and has Not now`, (await offer.innerText()).includes('~3 minutes') && (await offer.getByRole('button', { name: 'Not now' }).count()) === 1);
   pass(`${tag}: one offer at a time (the Tokyo trip waits)`, (await page.locator('.ds-offer', { hasText: 'Tokyo' }).count()) === 0);
   await shot('offer');
@@ -198,18 +197,18 @@ async function run(browser, width, mode) {
 
   // ---------------------------------------------------------------- the Daily plan, without tick boxes
   await page.goto(`${APP}/daily-plan`);
-  await page.waitForSelector('.ds-guide-question, .ds-guide-title', { timeout: 20000 });
+  await page.waitForSelector('.ds-guide-question, .ds-guide-title, .ds-tool-q', { timeout: 20000 });
   for (let i = 0; i < 8 && !(await qText(page)).startsWith('What will you do today?'); i += 1) {
     await page.evaluate(({ uid, d, n }) => localStorage.setItem(`ds-guide:day-plan-${uid}-${d}`, JSON.stringify({ index: n, skipped: [] })), { uid: me, d: today, n: i + 1 });
     await page.reload();
-    await page.waitForSelector('.ds-guide-question, .ds-guide-title', { timeout: 20000 });
+    await page.waitForSelector('.ds-guide-question, .ds-guide-title, .ds-tool-q', { timeout: 20000 });
   }
   const tp = page.locator('.ds-tpanel');
   pass(`${tag}: the Daily plan's “What will you do today?” shows today's travel steps above the list`, (await qText(page)).startsWith('What will you do today?') && await until(async () => (await tp.count()) === 1, 8000));
   pass(`${tag}: three rows with their times, and no tick boxes`, (await tp.locator('.ds-tpanel-row').count()) === 3 && (await tp.locator('[role=checkbox], input, .ds-check-box').count()) === 0);
   const order = await page.evaluate(() => {
     const p = document.querySelector('.ds-tpanel');
-    const list = document.querySelector('.ds-guide-body .ds-rows, .ds-guide-body .ds-pick-groups, .ds-guide-body .day-quiet-line');
+    const list = document.querySelector('.ds-tool-step-body .ds-rows, .ds-tool-step-body .ds-pick-groups, .ds-tool-step-body .day-quiet-line, .ds-guide-body .ds-rows, .ds-guide-body .ds-pick-groups, .ds-guide-body .day-quiet-line');
     return p && list ? Boolean(p.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING) : null;
   });
   pass(`${tag}: the travel steps sit above the day's list`, order !== false, String(order));
@@ -256,7 +255,7 @@ async function run(browser, width, mode) {
   await pressNext(page);
   pass(`${tag}: the check asks what to change`, await onQ(page, 'What would you change'));
   const rows = await dates(page, '.ds-guide-plan-row');
-  pass(`${tag}: the check shows the flights, the key moments and usual sleep, each with Edit`, rows.length === 4 && rows[0].startsWith('Flight out London to New York') && rows[2].includes('Harbour board meeting') && rows[2].includes('Investor dinner') && rows[3].startsWith('Usual sleep') && rows.every((r) => r.endsWith('Edit')), rows.join(' | '));
+  pass(`${tag}: the check shows the flights, the key moments and usual sleep, each with Edit`, rows.length === 4 && /^flight out london to new york/i.test(rows[0]) && rows[2].includes('Harbour board meeting') && rows[2].includes('Investor dinner') && /^usual sleep/i.test(rows[3]) /* Polish 1: the labels are spaced capitals, so innerText reads them upper case */ && rows.every((r) => r.endsWith('Edit')), rows.join(' | '));
   await page.locator('.ds-guide-plan-row', { hasText: 'Usual sleep' }).click();
   pass(`${tag}: Edit on usual sleep opens its panel`, await until(async () => (await page.locator('.travel-sleep-panel .ds-dialog-title').innerText().catch(() => '')) === 'Usual sleep', 4000));
   await shot('setup-sleep');

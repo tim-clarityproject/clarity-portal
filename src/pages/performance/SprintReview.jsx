@@ -4,7 +4,8 @@ import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
 import {
-  AddButton,
+  AddLink,
+  CardHead,
   Button,
   Choice,
   ErrorMessage,
@@ -13,7 +14,7 @@ import {
   KeepChangeRow,
   Loading,
   ObjectiveEditor,
-  PageHeader,
+  PageOpening,
   SprintDial,
   Stat,
   StatGroup,
@@ -50,7 +51,9 @@ import {
   unfinishedNotes,
 } from '../../lib/performance';
 import { REVIEW_NEXT_EXAMPLE, REVIEW_WORKED_EXAMPLE, exampleRole } from '../../content/planBuilder';
+import { B2_LINES } from '../../content/pageLines/client';
 import './performance.css';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 
 // The end-of-sprint review (mock-up M6, "End-of-sprint review"; read in
 // full with its notes). One guided tool, one question per screen, with
@@ -138,7 +141,7 @@ function Shell({ children, title = 'End-of-sprint review' }) {
       <DesignHeader />
       <div className="plan-page ipp-page">
         <div className="plan-back-row"><BackLink onClick={() => navigate('/performance-sprint')} label="Performance Sprint" /></div>
-        <PageHeader title={title} />
+        <PageOpening title={title} line={B2_LINES.sprintReview} />
         {children}
       </div>
     </div>
@@ -455,6 +458,7 @@ function ReviewFlow({ userId, data, view, today, onFinish }) {
           ) : (
             <p className="plan-muted">Your plan has no Outcome Objectives yet.</p>
           )}
+          {liveCount < MAX_OBJECTIVES && <CardHead label="New objectives" as="h3" add={<AddLink label="Add objective" onClick={addObjective} />} />}
           {draft.added.length > 0 && (
             <div className="review-added">
               {draft.added.map((o) => (
@@ -469,7 +473,6 @@ function ReviewFlow({ userId, data, view, today, onFinish }) {
               <p className="plan-muted">You can link a new objective to a Strategy when you edit your plan.</p>
             </div>
           )}
-          {liveCount < MAX_OBJECTIVES && <AddButton className="plan-add" onClick={addObjective}>Add objective</AddButton>}
         </div>
       ),
     },
@@ -537,7 +540,7 @@ function ReviewFlow({ userId, data, view, today, onFinish }) {
   ];
 
   const close = () => {
-    navigate('/performance-sprint', { replace: true, state: { toast: 'Saved. Carry on from Home whenever you like.' } });
+    navigate('/performance-sprint', { replace: true, state: { toast: TOOL_CLOSED } });
   };
 
   return (

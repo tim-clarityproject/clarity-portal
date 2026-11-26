@@ -704,7 +704,7 @@ export function inviteEmail({ link }) {
 
 // ---------------------------------------------------------------- a call booked through a booking page (Phase 6a run 3)
 // To the person who booked: draft-2's "Booked" and "Moved" words, with the
-// call's own name ("Your Chemistry Call with Tim is booked for …"; a
+// call's own name ("Your Discovery call with Tim is booked for …"; a
 // coaching session reads exactly as draft-2), the time in THEIR own zone
 // with its city's name (12-hour for the US and Canada), the day in words,
 // Join on Zoom when the call has a link, and Rearrange and Cancel on their

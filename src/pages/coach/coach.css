@@ -111,7 +111,7 @@ body:has(> #root .ui-root.cc-app) {
   display: flex;
   align-items: center;
   font-size: var(--fs-secondary);
-  color: var(--placeholder);
+  color: var(--text-2);
   transition: color var(--dur) var(--ease);
 }
 .ui-root .cc-search::after { content: ''; position: absolute; left: 0; right: 0; top: calc(50% - var(--tap-min) / 2); height: var(--tap-min); }
@@ -210,7 +210,7 @@ body:has(> #root .ui-root.cc-app) {
 @keyframes cc-rise { from { transform: translateY(var(--space-4)); opacity: 0; } to { transform: none; opacity: 1; } }
 .ui-root .cc-menu-head { flex: none; height: var(--cc-header-h); display: flex; align-items: center; padding: 0 var(--space-px20); border-bottom: var(--line-w) solid var(--line); }
 .ui-root .cc-menu-nav { flex: 1; overflow-y: auto; padding: var(--space-px20) var(--space-3) var(--space-px12); }
-.ui-root .cc-menu-label { font-family: var(--font-display); text-transform: uppercase; letter-spacing: var(--ls-menu-label); font-size: var(--fs-label); color: var(--placeholder); margin: var(--space-px20) var(--space-px12) var(--space-px6); }
+.ui-root .cc-menu-label { font-family: var(--font-display); text-transform: uppercase; letter-spacing: var(--ls-menu-label); font-size: var(--fs-label); color: var(--text-2); margin: var(--space-px20) var(--space-px12) var(--space-px6); }
 .ui-root .cc-menu-item {
   all: unset;
   cursor: pointer;
@@ -227,7 +227,7 @@ body:has(> #root .ui-root.cc-app) {
 }
 .ui-root .cc-menu-item--sub { padding-left: var(--space-px28); color: var(--text-2); font-size: var(--fs-note); }
 .ui-root .cc-menu-item[aria-current='page'] { background: var(--raised); font-weight: var(--fw-medium); color: var(--text); }
-.ui-root .cc-menu-item .cc-menu-n { margin-left: auto; font-size: var(--fs-small); color: var(--placeholder); font-weight: var(--fw-regular); }
+.ui-root .cc-menu-item .cc-menu-n { margin-left: auto; font-size: var(--fs-small); color: var(--text-2); font-weight: var(--fw-regular); }
 @media (hover: hover) {
   .ui-root .cc-menu-item:hover { background: var(--raised); }
   .ui-root .cc-menu-item--out:hover { background: none; color: var(--coral-text); }
@@ -270,7 +270,7 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-jump-input::-webkit-search-cancel-button,
 .ui-root .cc-jump-input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
 .ui-root .cc-jump-list { padding: var(--space-px6) var(--space-px10) var(--space-px12); max-height: min(var(--cc-jump-max-h), 60dvh); overflow: auto; }
-.ui-root .cc-jump-label { margin: var(--space-px12) var(--space-px12) var(--space-1); font-size: var(--fs-small); color: var(--placeholder); }
+.ui-root .cc-jump-label { margin: var(--space-px12) var(--space-px12) var(--space-1); font-size: var(--fs-small); color: var(--text-2); }
 .ui-root .cc-jump-item {
   all: unset;
   cursor: pointer;
@@ -345,7 +345,7 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-setpane > .ds-section-head { margin-bottom: var(--space-px12); }
 
 .ui-root .cc-soft { background: var(--raised); border-radius: var(--radius-card); padding: var(--space-px18) var(--space-px22); margin-top: var(--space-px20); }
-.ui-root .cc-soft-label { display: block; font-size: var(--fs-small); color: var(--placeholder); margin-bottom: var(--space-1); }
+.ui-root .cc-soft-label { display: block; font-size: var(--fs-small); color: var(--text-2); margin-bottom: var(--space-1); }
 .ui-root .cc-soft p { margin: 0; font-size: var(--fs-text); line-height: var(--lh-box); overflow-wrap: anywhere; }
 
 /* Figures in a row sit on an equal grid (Tim, 19 Nov): equal columns, two by two on a phone; one figure alone keeps the row. */
@@ -464,7 +464,7 @@ body:has(> #root .ui-root.cc-app) {
 
 /* A small menu that floats above everything (never cut off by a table). */
 .ui-root .cc-pop { display: grid; min-width: var(--cc-pop-min); padding: var(--space-px6); max-height: var(--cc-pop-max-h); overflow: auto; box-sizing: border-box; background: var(--card); border: var(--line-w) solid var(--line); border-radius: var(--cc-pop-radius); box-shadow: var(--cc-pop-shadow); font-family: var(--font-body); letter-spacing: normal; color: var(--text); }
-.ui-root .cc-pop-label { margin: var(--space-px10) var(--space-px12) var(--space-1); font-size: var(--fs-small); color: var(--placeholder); }
+.ui-root .cc-pop-label { margin: var(--space-px10) var(--space-px12) var(--space-1); font-size: var(--fs-small); color: var(--text-2); }
 .ui-root .cc-pop-item {
   all: unset;
   cursor: pointer;
@@ -542,7 +542,7 @@ body:has(> #root .ui-root.cc-app) {
 /* A value edited in place: it reads as text until chosen, then a box with
    the quiet grey edge (the coral ring only for keyboard focus). */
 .ui-root .cc-cell { all: unset; cursor: text; box-sizing: border-box; min-height: var(--tap-min); min-width: var(--tap-min); max-width: 100%; display: inline-flex; align-items: center; padding: 0 var(--space-px6); margin-left: calc(-1 * var(--space-px6)); border-radius: var(--radius-btn); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ui-root .cc-cell--empty { color: var(--placeholder); }
+.ui-root .cc-cell--empty { color: var(--text-2); }
 /* A detail typed over (a lead's or a client's email) wraps rather than being cut off when the text is large (twice the text size). */
 .ui-root .cc-detail--edit .cc-cell { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
 /* Rule 20: a table's cell text wraps and the row grows; nothing is cut short (run 6, item 2). Network's table sizes its columns to their words instead. */
@@ -559,7 +559,7 @@ body:has(> #root .ui-root.cc-app) {
 .ui-root .cc-settings { display: grid; grid-template-columns: var(--cc-setnav-w) minmax(0, 1fr); gap: var(--cc-setnav-gap); margin-top: var(--space-px28); align-items: start; }
 .ui-root .cc-setnav { display: grid; gap: var(--space-px2); position: sticky; top: calc(var(--cc-header-h) + var(--space-4)); }
 .ui-root .cc-setnav-item { all: unset; cursor: pointer; box-sizing: border-box; display: flex; align-items: center; min-height: var(--tap-min); padding: 0 var(--space-px12); border-radius: var(--radius-btn); font-size: var(--fs-secondary); color: var(--text-2); }
-.ui-root .cc-setnav-item[aria-current='true'] { color: var(--text); background: var(--raised); font-weight: var(--fw-medium); }
+.ui-root .cc-setnav-item[aria-current] { color: var(--text); background: var(--raised); font-weight: var(--fw-medium); }
 @media (hover: hover) {
   .ui-root .cc-setnav-item:hover { color: var(--text); background: var(--raised); }
 }
@@ -790,3 +790,64 @@ body:has(> #root .ui-root.cc-app) {
 
 /* The owner's admin view of a client (follow-up 5): a line's quiet facts side by side, 20px apart, wrapping. */
 .ui-root .cc-facts { display: flex; flex-wrap: wrap; column-gap: var(--icon-item-gap); }
+
+/* ---------------------------------------------------------------- polish 1, stage B (B5, 25 Nov): every coach page in the frame
+   The frame gives every page its padding on a laptop (48/56px, frame.css), so a page's own older column (centred, 28px sides,
+   40px top) goes, as Today's did in Stage A: every coach page starts on the same left edge, under the same top, the content
+   spanning the panel. Under 1024px the frame is edge to edge, so the page keeps the example's 20px sides. Not outside the frame
+   (the public workshop and booking pages keep their own column). */
+.ui-root .ds-frame-main .cc-page { padding-block: 0; }
+.ui-root .ds-frame-main .cc-page > .cc-col { max-width: none; margin: 0; padding-inline: 0; }
+@media (max-width: 1023px) {
+  .ui-root .ds-frame-main .cc-page > .cc-col { padding-inline: var(--space-px20); }
+  .ui-root .ds-frame-main .cc-page { padding-block: var(--space-4) var(--space-6); }
+}
+/* Settings' side list is the menu's twin (rule 19): plain grey words, the section you're on in the text colour at 500, no shading,
+   the control radius for the keyboard's ring. */
+.ui-root .cc-setnav-item { border-radius: var(--radius-control); }
+.ui-root .cc-setnav-item[aria-current] { background: none; }
+@media (hover: hover) {
+  .ui-root .cc-setnav-item:hover { background: none; color: var(--text); }
+}
+.ui-root .cc-settings { margin-top: 0; }
+.ui-root .cc-setnav .cc-setnav-item { padding: 0 !important; }
+/* A fold's heading is a section label (rule 3): DM Sans 13px spaced capitals in grey. */
+.ui-root .cc-fold-head h2 { font-family: var(--font-body); font-size: var(--fs-meta); color: var(--text-2); }
+.ui-root .ds-card > .cc-card-none { margin: 0; }
+/* Rows inside a card (rule 13): no line between the label and the first row, none under the last. */
+.ui-root .ds-card > .ds-card-head + .cc-rows { margin-top: 0; }
+.ui-root .ds-card .cc-rows > :last-child { border-bottom: 0; }
+/* A card is its own rhythm (rule 13): one gap between cards (--card-gap, under each), never the older part's 32px above too. */
+.ui-root .ds-card.cc-part { margin-top: 0; }
+/* Search and the bell at the top of the phone menu (Tim's walk, item 21): once the frame draws them there (it marks its
+   root .ds-frame-root--ptop when given a phoneTop; requests-b5.md), the phone header keeps only the crosshair (and My
+   Mission). On a laptop they stay at the panel's top right. */
+.ui-root .cc-pmenu-top { display: grid; grid-template-columns: minmax(0, 1fr) var(--tap-min); gap: var(--space-2); align-items: center; padding: 0 var(--space-px20) var(--space-3); }
+.ui-root .cc-pmenu-top .cc-search { max-width: none; }
+@media (max-width: 1023px) {
+  .ui-root.ds-frame-root--ptop .cc-header--frame .cc-search,
+  .ui-root.ds-frame-root--ptop .cc-header--frame .cc-round { display: none; }
+}
+/* The next-call bar inside the frame (B5): on a laptop it sits under the panel's top-right search and bell (never under
+   them), its words on the page's left edge; the page's opening follows 24px under it. On a phone it runs edge to edge
+   under the frame's header, as before. */
+@media (min-width: 1024px) {
+  .ui-root .ds-frame-main > .cc-callbar { margin: calc(var(--btn-h) + var(--space-3)) 0 var(--space-4); }
+  .ui-root .ds-frame-main > .cc-callbar .cc-callbar-in { padding: 0; max-width: none; }
+}
+/* "+ Add" at a card's label is drawn 44px high already (and its words make it 44px wide): the shared centred ::after
+   (design.css) adds nothing there, and the tap checks read it as reaching below the label, so it is left out. */
+.ui-root :is(.cc-today-heads, .cc-list-adds, .fin-head-right) > .ds-addrow::after { content: none; }
+/* A panel's foot on a phone (rule 11; B5): its one button spans the column, and a quiet link (Cancel, "Make a single-use
+   link instead") sits centred under it, words only, so the button's words never wrap beside a long link. */
+@media (max-width: 600px) {
+  .ui-root .cc-panel-foot:has(> .ds-btn) { flex-direction: column-reverse; align-items: stretch; gap: var(--space-1); }
+  .ui-root .cc-panel-foot:has(> .ds-btn) > .ds-btn { width: 100%; }
+  .ui-root .cc-panel-foot:has(> .ds-btn) > :is(.ds-link, span) { justify-content: center; align-self: center; }
+}
+
+/* The search box and a board card show the pointer (the focus and hover check, Polish 1 Stage B). */
+@media (hover: hover) {
+  .ui-root .cc-search:not(#_):hover { color: var(--text); border-color: var(--text-2); }
+  .ui-root .cc-card-open:hover { background: var(--raised); }
+}

@@ -10,7 +10,9 @@ import {
   Loading,
   ObjectiveCard,
   ObjectiveGrid,
-  PageHeader,
+  Card,
+  MoreLink,
+  PageOpening,
   PerformanceSystem,
   RecoveryNotice,
   Section,
@@ -34,8 +36,11 @@ import { notifyPlanChanged } from '../../lib/performance/planChanged';
 import PlanPartPanel, { partSavedMessage } from './PlanPartPanel';
 import { recoveryLead } from '../../lib/performance';
 import { friendlyError } from '../../lib/friendlyError';
-import pageText from '../../content/pageText';
 import './performance.css';
+import { useClientPreparing } from '../../lib/clientPreparing';
+import Preparing from '../Preparing';
+import { B1_LINES } from '../../content/pageLines/client';
+import '../hubs/clientPage.css';
 
 // The Individual Performance Plan (mock-up M1, R.ipp): My Mission, the
 // alignment check, the Outcome Objectives, the Strategies with their
@@ -57,6 +62,8 @@ export default function PerformancePlan() {
   const isPhone = useIsPhone();
   const { user } = useContext(AuthContext);
   const userId = user?.id;
+  // A brand-new client whose coach hasn't set anything up yet sees the one welcome (Polish 1; src/lib/clientPreparing.js).
+  const prep = useClientPreparing(userId);
   // "Show my results" in Recovery: this visit only, never stored (M15).
   const [showResults, setShowResults] = useState(false);
   const { view, loading, error, setData, reload } = usePlanPage(userId, { showResults });
@@ -201,18 +208,20 @@ export default function PerformancePlan() {
 
   // No version or "Changed" line under the title (Tim, 10 Nov): the version
   // history is one tap away, at the foot of the page.
-  const meta = [];
 
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page ipp-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/plan-section')} label="Plan" /></div>
-        <PageHeader
+      {prep.preparing ? (
+        <div className="cp-page"><Preparing firstName={prep.firstName || user?.user_metadata?.first_name || ''} coachName={prep.coachName} /></div>
+      ) : (
+      <div className="plan-page cp-page ipp-page">
+        <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/personal/plan')} label="Plan" /></div>
+        {/* Polish 1 (rule 12): the opening, with Edit my plan as its one main button. */}
+        <PageOpening
           title="Individual Performance Plan"
-          meta={meta}
-          info={pageText.performancePlan}
-          onSystemLink={() => setSystem(true)}
+          line={view ? B1_LINES.plan : B1_LINES.planEmpty}
+          action={view && !loading && !error ? <Button variant="primary" onClick={() => navigate('/performance-plan/edit')}>Edit my plan</Button> : null}
         />
 
         {loading ? (
@@ -238,16 +247,17 @@ export default function PerformancePlan() {
                 action={showResults ? null : { label: 'Show my results', onClick: () => setShowResults(true) }}
               />
             )}
-            <section className="ds-mission-card" aria-labelledby="ipp-mission">
-              <div className="ds-mission-card-head">
-                {/* The eye beside the title it belongs to (5e rules 10 and 29d). */}
-                <h2 id="ipp-mission" className="ds-mission-card-label">{titleWithAside('My Mission', <WhoSees {...who('mission', 'Your Mission')} />)}</h2>
-              </div>
+            {/* The one card (Polish 1, rule 13); the eye beside the label it belongs to (5e rules 10 and 29d). */}
+            <Card
+              label={titleWithAside('My Mission', <WhoSees {...who('mission', 'Your Mission')} />)}
+              className="ipp-mission"
+              aria-label="My Mission"
+              link={{ children: 'Edit', onClick: () => openPart({ kind: 'mission', id: null }), 'aria-label': 'Edit my Mission' }}
+            >
               {view.mission
-                ? <p className="ds-mission-card-text">{keepWords(view.mission)}</p>
-                : <p className="ds-mission-card-text ipp-muted">Your Mission isn’t written yet.</p>}
-              <Button variant="text" className="ds-part-edit" onClick={() => openPart({ kind: 'mission', id: null })}>Edit my Mission</Button>
-            </section>
+                ? <p className="ipp-mission-text">{keepWords(view.mission)}</p>
+                : <p className="ipp-mission-text ipp-muted">Your Mission isn’t written yet.</p>}
+            </Card>
 
             <AlignmentCheck lines={view.alignment} className="ipp-align" />
 
@@ -310,13 +320,13 @@ export default function PerformancePlan() {
             </Section>
             )}
 
-            <div className="ds-actions ipp-actions">
-              <Button onClick={() => navigate('/performance-plan/edit')}>Edit my plan</Button>
-              <Button onClick={() => navigate('/performance-plan/history')}>See version history</Button>
+            <div className="cp-foot ipp-actions">
+              <MoreLink onClick={() => navigate('/performance-plan/history')}>See version history</MoreLink>
             </div>
           </>
         )}
       </div>
+      )}
 
       <SlidePanel
         open={Boolean(open && isPhone)}

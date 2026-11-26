@@ -35,8 +35,8 @@ export function buttonProblems({ phone, scale = 1 }) {
   const name = (el) => `"${(el.textContent || el.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim().slice(0, 32)}"`;
   const near = (a, b, tol = 0.6) => Math.abs(a - b) <= tol;
   const out = [];
-  // The screen's top layer: an open panel, dialog or the phone's menu (over its scrim), else the page.
-  const top = [...document.querySelectorAll('[role=dialog], [aria-modal=true], .ds-guide--fullscreen, .ds-tmenu')].filter(vis).pop() || document.body;
+  // The screen's top layer: an open panel, dialog, the phone's menu (over its scrim) or an open Quick Add, else the page.
+  const top = [...document.querySelectorAll('[role=dialog], [aria-modal=true], .ds-guide--fullscreen, .ds-tmenu, .ds-qa')].filter(vis).pop() || document.body;
   const buttons = [...top.querySelectorAll(FAMILIES)].filter(vis);
   for (const el of buttons) {
     const cs = getComputedStyle(el);
@@ -348,8 +348,8 @@ export function controlsFamily({ phone, scale = 1 }) {
     return mids.reduce((n, t, i) => (i && t - mids[i - 1] > fs * 0.6 ? n + 1 : n), mids.length ? 1 : 0);
   };
   const want = phone ? 44 : 40;
-  // The top layer: an open panel, dialog or the phone's menu, else the page.
-  const top = [...document.querySelectorAll('[role=dialog], [aria-modal=true], .ds-guide--fullscreen, .ds-tmenu')].filter(vis).pop() || document.body;
+  // The top layer: an open panel, dialog, the phone's menu or an open Quick Add, else the page.
+  const top = [...document.querySelectorAll('[role=dialog], [aria-modal=true], .ds-guide--fullscreen, .ds-tmenu, .ds-qa')].filter(vis).pop() || document.body;
   // Parts with their own rules (each kept by its own check): the floating Breathe pill holds the orb (rule 4a); a
   // chart's marks; calendar days and week boxes; tick boxes; the phone bar and the menu's crosshair; the My Mission
   // pill (its own part in the design reference's colours, "Surface: Tiles, Mission pill", which expands smoothly, rule 10);

@@ -169,7 +169,7 @@
   min-width: 0;
   font-size: var(--fs-chart);
   line-height: 1.3;
-  color: var(--label);
+  color: var(--text-2);
   white-space: nowrap;
   overflow: visible;
 }
@@ -183,7 +183,7 @@
   margin: var(--space-px14) 0 0;
   font-size: var(--fs-meta);
   line-height: var(--lh-text);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .dash-debrief {
@@ -461,12 +461,12 @@
   margin-top: var(--space-px2);
   font-size: var(--fs-meta);
   line-height: var(--lh-text);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .dash-crow-sub {
   font-size: var(--fs-chart);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .dash-serves { margin-top: var(--space-px2); }
@@ -476,7 +476,7 @@
 .ui-root .dash-crow-v {
   text-align: right;
   font-size: var(--fs-meta);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .dash-crow-v strong {
@@ -499,7 +499,7 @@
   display: block;
   margin-top: var(--space-px2);
   font-size: var(--fs-chart);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .dash-crow-cvl { margin: 0 0 var(--space-px2); }
@@ -722,7 +722,7 @@
   min-width: 0;
   text-align: center;
   font-size: var(--fs-chart);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 /* Stress, week by week (M4): the five answers down the side. */
@@ -741,7 +741,7 @@
   justify-content: space-between;
   font-size: var(--fs-chart);
   line-height: 1.2;
-  color: var(--label);
+  color: var(--text-2);
   text-align: right;
 }
 

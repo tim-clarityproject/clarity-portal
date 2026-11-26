@@ -1,3 +1,4 @@
+import './toolFocus/formTool.css';
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -5,8 +6,7 @@ import { supabase } from '../lib/supabase';
 import { formatUkDate } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import pageText from '../content/pageText';
-import { Loading, PageHeader, Button } from '../components/design';
+import { Loading, PageOpening, Button } from '../components/design';
 import SavedItemActions from '../components/SavedItemActions';
 
 // Types with their own dedicated, design-system summary page now - an
@@ -106,7 +106,7 @@ export default function DecisionSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageHeader title={decision.title || 'Untitled decision'} info={pageText.decisionSummary} meta={[TYPE_LABEL[toolType] || toolType, `Created ${formatUkDate(decision.created_at)}`]} />
+          <PageOpening label={`${TYPE_LABEL[toolType] || toolType}, ${formatUkDate(decision.created_at)}`} title={decision.title || 'Untitled decision'} />
         </div>
 
         {toolType === 'grow' && (

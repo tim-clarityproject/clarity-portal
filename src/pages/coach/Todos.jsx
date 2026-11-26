@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AddButton, InlineChoice, PageHeader, SearchField, useIsPhone } from '../../components/design';
+import { AddLink, Card, InlineChoice, PageOpening, SearchField } from '../../components/design';
+import { TODOS_LINE } from '../../content/pageLines/coach';
 import { doneThisWeek, somedayTodos, todayTodos, upcomingGroups } from '../../lib/coach/day';
 import { Eye, Fold, TextLink, useCoachPortal } from './parts';
-import { QuickAdd, QuickAddPanel, TodoBulkBar, TodoList, TodoPanel, UnderTabs, useTodoPicks } from './todoParts';
+import { TodoBulkBar, TodoQuickAdd, TodoList, TodoPanel, UnderTabs, useTodoPicks } from './todoParts';
 import { TodosCalendar } from './calendarPanels';
 import { countFigure } from '../../lib/coach/numbers';
 
@@ -23,7 +24,6 @@ const PANEL = 'cc-todo-tab';
 
 export default function Todos() {
   const { todos, todayKey } = useCoachPortal();
-  const isPhone = useIsPhone();
   const [params, setParams] = useSearchParams();
   const tab = TABS.some((t) => t.value === params.get('tab')) ? params.get('tab') : 'today';
   const [show, setShow] = useState('list');
@@ -57,8 +57,7 @@ export default function Todos() {
   return (
     <div className="cc-page">
       <div className={`cc-col${show === 'calendar' ? ' cc-cal-page cc-cal-page--wide' : ''}`}>
-        <PageHeader title="To-dos" aside={<Eye sentence="Only you can see this." />} />
-        {!isPhone && <QuickAdd defaultDay={tab === 'today' ? todayKey : null} />}
+        <PageOpening title="To-dos" aside={<Eye sentence="Only you can see this." />} line={TODOS_LINE} />
 
         <div className="cc-todo-bar">
           <UnderTabs label="To-dos" tabs={TABS} value={tab} panelId={PANEL} onChange={(v) => setParams(v === 'today' ? {} : { tab: v }, { replace: true })} />
@@ -68,7 +67,10 @@ export default function Todos() {
         <div role="tabpanel" id={PANEL} aria-labelledby={`${PANEL}-${tab}`} className="cc-fade" key={`${tab}:${show}`}>
           {show === 'calendar' && <TodosCalendar />}
 
-          {show === 'list' && tab === 'today' && (
+          {show === 'list' && (
+            // The tab's list is one card (rule 13), "+ Add" at its label's right opening Quick Add (rule 10).
+            <Card label={TABS.find((t) => t.value === tab).label} className="cc-part cc-todo-card" quickAdd={<TodoQuickAdd open={adding} onClose={() => setAdding(false)} defaultDay={tab === 'today' ? todayKey : null} />} add={<AddLink label="Add to-do" expanded={adding} onClick={() => setAdding(true)} />}>
+          {tab === 'today' && (
             <>
               {today.work.length === 0 && today.afterWork.length === 0 && <p className="cc-quiet">Nothing is planned for today.</p>}
               {today.work.length > 0 && <TodoList todos={today.work} view="today" label="Today" picks={picks} onOpen={setOpenId} reorder dropPatch={{ after_work: false }} />}
@@ -81,7 +83,7 @@ export default function Todos() {
             </>
           )}
 
-          {show === 'list' && tab === 'upcoming' && (
+          {tab === 'upcoming' && (
             <>
               {upcomingCount === 0 && <p className="cc-quiet">Nothing is planned for the days ahead.</p>}
               {upcomingShown.map((g) => (
@@ -94,17 +96,18 @@ export default function Todos() {
             </>
           )}
 
-          {show === 'list' && tab === 'someday' && (
+          {tab === 'someday' && (
             <>
               {someday.length === 0 && <p className="cc-quiet">Nothing is waiting for a day.</p>}
               {someday.length > 0 && <TodoList todos={someday.slice(0, limit)} view="someday" label="Someday" picks={picks} onOpen={setOpenId} />}
             </>
           )}
 
-          {show === 'list' && total > limit && (
+          {total > limit && (
             <div className="cc-acts"><TextLink onClick={() => setLimit((n) => n + PAGE)}>Show {Math.min(PAGE, total - limit)} more</TextLink></div>
           )}
-          {show === 'list' && <div className="cc-add"><AddButton onClick={() => setAdding(true)}>Add to-do</AddButton></div>}
+            </Card>
+          )}
         </div>
 
         {show === 'list' && (
@@ -122,7 +125,6 @@ export default function Todos() {
 
       <TodoBulkBar picks={picks} />
       <TodoPanel id={openId} onClose={() => setOpenId(null)} />
-      <QuickAddPanel open={adding} onClose={() => setAdding(false)} defaultDay={tab === 'today' ? todayKey : null} />
     </div>
   );
 }

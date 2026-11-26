@@ -26,7 +26,7 @@ import { chromium } from 'playwright';
 import { backGaps, importantMarks, sideLines } from './buttons-check.mjs';
 
 const css = (p) => fileURLToPath(new URL(`../../src/${p}`, import.meta.url));
-const STYLES = ['styles/tokens.css', 'components/design/design.css', 'styles/components.css'].map(css);
+const STYLES = ['styles/tokens.css', 'components/design/design.css', 'components/design/blocks.css', 'styles/components.css'].map(css);
 
 let browser;
 let tab;
@@ -47,8 +47,8 @@ async function load(body, extra = '') {
 // The shared BackLink's markup (src/components/ui/DiscardLink.jsx), with the real Chevron's.
 const CHEVRON = '<span class="ds-chevron-line ds-chevron-line--sm" aria-hidden="true"><span class="ds-chevron-base"><span class="ds-chevron ds-chevron--left ds-chevron--sm ui-back-link-icon" aria-hidden="true"></span></span></span>';
 const BACKLINK = `<button type="button" class="ui-back-link">${CHEVRON}<span>Back to Home</span></button>`;
-// A guided tool's Back: the chevron alone, the tool's name after it on its row.
-const GUIDE = '<div class="ds-guide-bar"><button type="button" class="ds-guide-back" aria-label="Back"><span class="ds-chevron-line ds-chevron-line--sm ds-chevron-line--caps" aria-hidden="true"><span class="ds-chevron-base"><span class="ds-chevron ds-chevron--left ds-chevron--sm" aria-hidden="true"></span></span></span></button><span class="ds-guide-name">Daily plan</span></div>';
+// A guided tool's Back (Polish 1, Stage B: focus mode): the foot's MoreLink, the chevron then the word "Back".
+const GUIDE = '<div class="ds-tool-foot ds-guide-foot"><button type="button" class="ds-more ds-tool-back ds-guide-back"><span class="ds-chevron ds-chevron--left ds-more-back" aria-hidden="true"></span><span>Back</span></button></div>';
 
 test('Back: the shared BackLink and a guided tool\'s Back are 10px from their words', async () => {
   await load(BACKLINK + GUIDE);
@@ -62,10 +62,10 @@ test('Back: the old 14px gap fails, and so does 6px', async () => {
   let r = await tab.evaluate(backGaps);
   assert.equal(r.problems.length, 1);
   assert.match(r.problems[0], /"Back to Home": its label is 14\.0[01]px from the chevron, not 10px/);
-  await load(GUIDE, '.ui-root .ds-guide-back { margin-right: -27.5px; }');
+  await load(GUIDE, '.ui-root .ds-guide-back .ds-more-back { margin-right: -4px !important; }');
   r = await tab.evaluate(backGaps);
   assert.equal(r.problems.length, 1);
-  assert.match(r.problems[0], /ds-guide-back "Back": its label is [56]\.\d\dpx from the chevron, not 10px/);
+  assert.match(r.problems[0], /ds-more "Back": its label is [56]\.\d\dpx from the chevron, not 10px/);
 });
 
 test('Back: a calendar\'s Previous arrow is not a Back and is left alone', async () => {

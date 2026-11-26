@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { idFromAddress } from '../../lib/coach/address';
-import { AddButton, Button, PageHeader, TextBox, useIsPhone, useToast } from '../../components/design';
+import { AddLink, Button, Card, PageOpening, TextBox, useToast } from '../../components/design';
+import { todoListLine } from '../../content/pageLines/coach';
 import { removeRow, newId, saveRow, saveRows } from '../../lib/coach/store';
 import { clean, cut } from '../../lib/coach/model';
 import { doneWords, openWords } from '../../lib/coach/day';
 import { listGroups } from '../../lib/coach/todoActions';
 import { Back, Eye, Fold, MenuItem, PopMenu, TextLink, useCoachPortal } from './parts';
-import { QuickAdd, QuickAddPanel, TodoBulkBar, TodoList, TodoPanel, useTodoPicks } from './todoParts';
+import { TodoBulkBar, TodoQuickAdd, TodoList, TodoPanel, useTodoPicks } from './todoParts';
 import { countFigure } from '../../lib/coach/numbers';
 
 // One of the coach's to-do lists (M11's "Kestrel renewal"): its name, its
@@ -47,7 +48,6 @@ export default function TodoListPage() {
   const { userId, coach, isOwner, todos, todoLists, todoHeadings, clients, organisations, todayKey } = useCoachPortal();
   const navigate = useNavigate();
   const toast = useToast();
-  const isPhone = useIsPhone();
   const picks = useTodoPicks();
   const [openId, setOpenId] = useState(null);
   const [adding, setAdding] = useState(false);
@@ -63,7 +63,7 @@ export default function TodoListPage() {
       <div className="cc-page">
         <div className="cc-col">
           <Back to="To-dos" onClick={back} />
-          <PageHeader title="To-do list" />
+          <PageOpening title="To-do list" />
           <p className="cc-quiet">This list isn’t here any more.</p>
         </div>
       </div>
@@ -114,7 +114,7 @@ export default function TodoListPage() {
     <div className="cc-page">
       <div className="cc-col">
         <Back to="To-dos" onClick={back} />
-        <PageHeader title={list.name} aside={<Eye sentence="Only you can see this." />} />
+        <PageOpening title={list.name} aside={<Eye sentence="Only you can see this." />} line={todoListLine(Boolean(list.finished_at))} />
         <div className="cc-list-meta">
           {org && (isOwner ? <TextLink onClick={() => navigate(`/coach/organisations/${org.id}`)}>{org.name}</TextLink> : <span>{org.name}</span>)}
           {client && <TextLink onClick={() => navigate(`/coach/clients/${client.id}`)}>{client.name}</TextLink>}
@@ -123,8 +123,20 @@ export default function TodoListPage() {
         </div>
 
         {list.finished_at && <div className="cc-acts"><TextLink onClick={reopen}>Open this list again</TextLink></div>}
-        {!list.finished_at && !isPhone && <QuickAdd defaults={{ list_id: list.id }} />}
 
+        {/* The list is one card (rule 13): "+ Add" and "+ Heading" at its label's right (rule 10). */}
+        <Card
+          label="To-dos"
+          className="cc-part cc-todo-card"
+          quickAdd={<TodoQuickAdd open={adding} onClose={() => setAdding(false)} defaults={{ list_id: list.id }} />}
+          add={list.finished_at ? null : (
+            <span className="cc-list-adds">
+              <AddLink label="Add heading" expanded={heading === 'new'} onClick={() => setHeading('new')}>Heading</AddLink>
+              <AddLink label="Add to-do" expanded={adding} onClick={() => setAdding(true)} />
+            </span>
+          )}
+        >
+        {heading === 'new' && <HeadingBox button="Add heading" onSave={addHeading} onCancel={() => setHeading(null)} />}
         {groups.map(({ heading: h, items }) => {
           if (!h) return items.length > 0 ? <TodoList key="none" todos={items} view="list" label={list.name} picks={picks} onOpen={setOpenId} reorder dropPatch={{ list_id: list.id, heading_id: null }} /> : null;
           return (
@@ -140,6 +152,7 @@ export default function TodoListPage() {
           );
         })}
         {mine.length === 0 && headings.length === 0 && <p className="cc-quiet">This list has no to-dos yet.</p>}
+        </Card>
 
         <PopMenu open={Boolean(menuHeading)} onClose={() => setMenu(null)} anchorRef={{ current: menu ? dots.current[menu] || null : null }} title="Heading">
           {menuHeading && <MenuItem onClick={() => { setMenu(null); setHeading(menuHeading.id); }}>Edit</MenuItem>}
@@ -148,10 +161,6 @@ export default function TodoListPage() {
 
         {!list.finished_at && (
           <>
-            <div className="cc-add">
-              <AddButton onClick={() => setAdding(true)}>Add to-do</AddButton>
-              {heading === 'new' ? <HeadingBox button="Add heading" onSave={addHeading} onCancel={() => setHeading(null)} /> : <AddButton onClick={() => setHeading('new')}>Add heading</AddButton>}
-            </div>
             <div className="cc-acts"><TextLink onClick={finish}>Mark as finished</TextLink></div>
           </>
         )}
@@ -167,7 +176,6 @@ export default function TodoListPage() {
 
       <TodoBulkBar picks={picks} />
       <TodoPanel id={openId} onClose={() => setOpenId(null)} />
-      <QuickAddPanel open={adding} onClose={() => setAdding(false)} defaults={{ list_id: list.id }} />
     </div>
   );
 }

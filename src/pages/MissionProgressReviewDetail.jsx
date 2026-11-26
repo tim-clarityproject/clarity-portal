@@ -1,4 +1,6 @@
+import './toolFocus/formTool.css';
 import { useContext, useEffect, useState } from 'react';
+import { B3_LINES } from '../content/pageLines/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -7,8 +9,7 @@ import { formatVersion, deleteReview } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import pageText from '../content/pageText';
-import { Loading, PageHeader, Button, useToast } from '../components/design';
+import { Loading, PageOpening, Button, useToast } from '../components/design';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -116,7 +117,7 @@ export default function MissionProgressReviewDetail() {
           {/* "POP review" (Personal Operating Plan review), Tim's
               explicit wording (patch 2d) - matches My Reviews' filter/row
               label for this same review type. */}
-          <PageHeader title={`POP review, ${formatShortDate(review.created_at)}`} info={pageText.missionProgressReviewDetail} />
+          <PageOpening label={formatShortDate(review.created_at)} title="POP review" line={B3_LINES.missionReview} />
         </div>
 
         {/* The POP review is retired (Phase 3, step 4): saved ones are

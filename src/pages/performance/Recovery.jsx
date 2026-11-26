@@ -10,7 +10,6 @@ import {
   Collapsible,
   DayCounter,
   Loading,
-  PageHeader,
   RecoveryBanner,
   RecoveryLinks,
   Section,
@@ -26,6 +25,7 @@ import {
   useSleepTarget,
   useToast,
   LoadError,
+  PageOpening,
 } from '../../components/design';
 import { useRecoveryPage } from '../../lib/performance/hooks';
 import { loadSleep, saveRechargeAnswer, saveSleep } from '../../lib/performance/api';
@@ -52,6 +52,8 @@ import { useDraft } from '../../lib/drafts';
 import { friendlyError } from '../../lib/friendlyError';
 import { useRecoveryActions } from './recoveryActions';
 import './performance.css';
+import { B1_LINES } from '../../content/pageLines/client';
+import '../../pages/hubs/clientPage.css';
 
 // Recovery, started any time (mock-up M15; Tim, 26 Oct, 12:03 to 16:30),
 // for when someone is overwhelmed, overworked or close to burnout, even
@@ -79,8 +81,8 @@ function Shell({ back, children }) {
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page ipp-page rec-page">
-        {back && <div className="plan-back-row"><BackLink onClick={back.onClick} label={back.label} /></div>}
+      <div className="plan-page cp-page ipp-page rec-page">
+        {back && <div className="plan-back-row cp-back"><BackLink onClick={back.onClick} label={back.label} /></div>}
         {children}
       </div>
     </div>
@@ -210,7 +212,7 @@ export function RecoveryToday() {
   const name = view.firstName ? `${greeting(localHour())}, ${view.firstName}` : greeting(localHour());
   return (
     <Shell back={{ label: 'Performance Sprint', onClick: () => navigate('/performance-sprint') }}>
-      <PageHeader title={name} />
+      <PageOpening title={name} line={B1_LINES.recovery} />
       <RecoveryDay recovery={recovery} />
     </Shell>
   );

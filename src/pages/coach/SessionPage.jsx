@@ -2,12 +2,13 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { idFromAddress } from '../../lib/coach/address';
 import {
-  AddButton, BottomBar, Button, DatePicker, Dropdown, ErrorMessage, IconButton, InlineChoice, Loading, PageHeader, TextBox, TextField, useAutosave, useIsPhone, useToast,
+  AddButton, BottomBar, Button, DatePicker, Dropdown, ErrorMessage, IconButton, InlineChoice, Loading, PageOpening, TextBox, TextField, useAutosave, useIsPhone, useToast,
 } from '../../components/design';
+import { sessionLine } from '../../content/pageLines/coach';
 import { loadCoach, coachDayReadyNow, ensureCalRange, newId, useCoachLoadState } from '../../lib/coach/store';
 import { addDays, clean, cut, dayWords } from '../../lib/coach/model';
 import {
-  ACTIONS_MAX, actionsOf, goesWords, instantFrom, NEEDS_NEW_TIME, NEEDS_RECAP, outcomeChoices, OUTCOMES, recapSentWords, SENT_LINE, sentWords,
+  ACTIONS_MAX, actionsOf, goesWords, instantFrom, NEEDS_NEW_TIME, NEEDS_RECAP, outcomeChoices, OUTCOMES, recapSentWords, sentWords,
   SESSION_KINDS, sessionOutcomeLine, sessionSent, sessionStarted, whenWords,
 } from '../../lib/coach/day';
 import {
@@ -53,7 +54,7 @@ export default function SessionPage() {
     return (
       <div className="cc-page"><div className="cc-col">
         <Back onClick={() => navigate('/coach/clients')} />
-        <PageHeader title="Session" />
+        <PageOpening title="Session" />
         {loadState === 'whole' && <p className="cc-quiet">This session isn’t here any more.</p>}
         {loadState === 'loading' && <Loading label="Loading the session" />}
         {loadState === 'failed' && (trying ? <Loading label="Loading the session" /> : (
@@ -346,14 +347,13 @@ function SessionBody({ session, who }) {
     <div className={`cc-page cc-ses${bar ? ' cc-ses-page--bar' : ''}`}>
       <div className="cc-col">
         <Back to={who.name} onClick={() => navigate(who.to)} />
-        <PageHeader title={title} meta={[who.name, whenWords(session.starts_at, todayKey)]} />
+        <PageOpening label={whenWords(session.starts_at, todayKey)} title={title} line={sessionLine({ name: who.name, sent, happened: started, outcome: session.outcome })} />
         {/* The call's own calendar item (run 3): moved in Google Calendar, and its Zoom link until it has been written up. */}
         <MovedInGoogle item={calItem} />
         {joinHref && !session.outcome && <div className="cc-acts"><a className="ds-link" href={joinHref} target="_blank" rel="noreferrer">Join on Zoom</a></div>}
 
         {sent ? (
           <>
-            <p className="cc-quiet cc-ses-sent">{SENT_LINE}</p>
             <div className="cc-ses-facts">
               <Detail label="What happened?">{OUTCOMES.find((o) => o.value === session.outcome)?.label}</Detail>
               <Detail label="How long was it?">{`${session.minutes} minutes`}</Detail>
@@ -379,7 +379,6 @@ function SessionBody({ session, who }) {
           </>
         ) : (
           <>
-            {!started && !session.outcome && <p className="cc-quiet">This session hasn’t happened yet.</p>}
             <div className="cc-ses-top">
               {choices.length > 0 && <Dropdown className="cc-ses-what" label="What happened?" placeholder="It hasn’t happened yet" options={choices} value={choice} onChange={choose} />}
               <InlineChoice className="cc-ses-long" label={started ? 'How long was it?' : 'How long is it?'} form="pills" options={LENGTHS} value={String(session.minutes)} onChange={setLength} />

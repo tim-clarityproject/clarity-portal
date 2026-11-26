@@ -216,10 +216,12 @@ async function seed() {
 
   const planDay = await freeDay('day_plans', 'local_date', '2026-08-04');
   await insert('day_plans', { user_id: me, local_date: planDay, status: 'finished', finished_at: `${planDay}T08:00:00Z`, way_of_being: 'Calm and clear' }, 'dayPlans');
-  expectPlans.push({ title: 'Daily plan', tool: 'Daily plan', date: dayLabel(planDay), path: `/daily-plan/${planDay}`, area: 'personal' });
+  // Polish 1 (B1): a row never repeats its tool, so an older Daily plan is named by its day (ListRow's rowName).
+  const weekday = (key) => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(`${key}T12:00:00`).getDay()];
+  expectPlans.push({ title: `${weekday(planDay)}’s plan`, tool: 'Daily plan', date: dayLabel(planDay), path: `/daily-plan/${planDay}`, area: 'personal' });
   const reviewDay = await freeDay('day_reviews', 'local_date', '2026-08-04');
   await insert('day_reviews', { user_id: me, local_date: reviewDay, status: 'finished', finished_at: `${reviewDay}T19:00:00Z`, went_well: `${STAMP}: a good day.` }, 'dayReviews');
-  expectReviews.push({ title: 'Daily review', tool: 'Daily review', date: dayLabel(reviewDay), path: `/daily-review/${reviewDay}`, area: 'personal' });
+  expectReviews.push({ title: `${weekday(reviewDay)}’s review`, tool: 'Daily review', date: dayLabel(reviewDay), path: `/daily-review/${reviewDay}`, area: 'personal' });
 
   const { data: debriefs } = await db.from('weekly_debriefs').select('sprint_week').eq('sprint_id', sprint.id);
   const taken = new Set((debriefs || []).map((d) => d.sprint_week));
@@ -314,13 +316,15 @@ async function checkList(page, tag, to, expected) {
   const dated = rows.filter((r) => DATE_AS_NAME.test(r.title || ''));
   pass(`${tag}: no row is named by a date (${rows.length} rows)`, dated.length === 0, JSON.stringify(dated.slice(0, 5)));
   pass(`${tag}: every row has its tool and its date`, rows.every((r) => r.title && r.tool && r.date), JSON.stringify(rows.filter((r) => !r.tool || !r.date).slice(0, 5)));
-  // The date sits on the right of the name, on its first line.
+  // The date sits on the right of the name, on its first line; on a phone under it (Polish 1, rule 14).
+  const phone = (page.viewportSize()?.width || 1280) < 600;
   const placed = await page.locator('.hlist-row').first().evaluate((e) => {
     const t = e.querySelector('.hlist-row-title').getBoundingClientRect();
     const d = e.querySelector('.hlist-row-date').getBoundingClientRect();
-    return { right: d.left >= t.left + 40, top: Math.abs(d.top - t.top) < 12 };
+    return { right: d.left >= t.left + 40, top: Math.abs(d.top - t.top) < 12, under: d.top >= t.bottom - 1 && Math.abs(d.left - t.left) < 1 };
   });
-  pass(`${tag}: the date is on the right of the name`, placed.right && placed.top, JSON.stringify(placed));
+  if (phone) pass(`${tag}: the date is under the name`, placed.under, JSON.stringify(placed));
+  else pass(`${tag}: the date is on the right of the name`, placed.right && placed.top, JSON.stringify(placed));
 }
 
 async function chooseFilter(page, label, option) {
@@ -371,28 +375,29 @@ const smallTaps = (page, sel) => page.locator(sel).evaluateAll((els) => els
   .filter((e) => e.offsetParent !== null)
   .map((e) => { const r = e.getBoundingClientRect(); return { cls: e.className, text: e.textContent.trim().slice(0, 30), w: Math.round(r.width), h: Math.round(r.height) }; })
   .filter((r) => r.w < 44 || r.h < 44));
-const TAPS = '.hlist-row-main, .hlist-icon-btn, .hlist-continue-btn, .hlist-review-btn, .hlist-sort-link, .ds-filter > button, .ds-filter-line .ds-link, .ds-row, .ds-hub-team, .ds-hub-recent-link button';
+const TAPS = '.hlist-row-main, .hlist-icon-btn, .hlist-continue-btn, .hlist-review-btn, .hlist-sort-link, .ds-filter > button, .ds-filter-line .ds-link, .ds-row, .ds-hub-teams-card .ds-li, .ds-hub-recent .ds-more';
 
 async function checkHubs(page, tag) {
   for (const [hub, title, link, linkTo] of [
-    ['/personal/plan', 'My Plans', 'Open My Plans', '/my-plans?area=personal'],
-    ['/personal/review', 'My Reviews', 'Open My Reviews', '/my-reviews?area=personal'],
-    ['/interpersonal', 'My Plans', 'Open My Plans', '/my-plans?area=interpersonal'],
+    // Polish 1 (B1): the recent items are one card, its "View all" beside the label.
+    ['/personal/plan', 'My Plans', 'View all', '/my-plans?area=personal'],
+    ['/personal/review', 'My Reviews', 'View all', '/my-reviews?area=personal'],
+    ['/interpersonal', 'My Plans', 'View all', '/my-plans?area=interpersonal'],
   ]) {
     await page.goto(`${APP}${hub}`);
-    const ok = await until(async () => (await page.locator('.ds-hub-recent .ds-row').count()) > 0, 20000);
+    const ok = await until(async () => (await page.locator('.ds-hub-recent .ds-li').count()) > 0, 20000);
     pass(`${tag}: ${hub} ends with ${title}`, Boolean(ok) && (await page.locator('.ds-hub-recent h2').innerText()).toLowerCase() === title.toLowerCase());
-    const items = await page.locator('.ds-hub-recent .ds-row').evaluateAll((els) => els.map((e) => ({
-      title: e.querySelector('.ds-row-title')?.textContent.trim(),
-      tool: e.querySelector('.ds-row-type')?.textContent.trim(),
-      date: e.querySelector('.ds-row-date')?.textContent.trim(),
+    const items = await page.locator('.ds-hub-recent .ds-li').evaluateAll((els) => els.map((e) => ({
+      title: e.querySelector('.ds-li-name')?.firstChild?.textContent.trim(),
+      tool: e.querySelector('.ds-li-sub')?.textContent.trim(),
+      date: e.querySelector('.ds-li-value')?.textContent.trim(),
     })));
     pass(`${tag}: ${hub} shows at most three, each with a name, tool and date`, items.length >= 1 && items.length <= 3 && items.every((i) => i.title && i.tool && i.date && !DATE_AS_NAME.test(i.title)), JSON.stringify(items));
     pass(`${tag}: ${hub} shows no journal entry`, !items.some((i) => i.tool === 'Journal'));
     if (hub === '/interpersonal') pass(`${tag}: Interpersonal shows the invented meeting plan`, items.some((i) => i.title === `${STAMP}: Harbour introduction call` && i.tool === 'Meeting planner'), JSON.stringify(items));
     pass(`${tag}: ${hub} has no sideways scroll`, await noSideways(page));
     await shot(page, `${tag}-${hub.replace(/\//g, '-').slice(1)}`);
-    await page.getByRole('button', { name: link }).click();
+    await page.locator('.ds-hub-recent').getByRole('button', { name: link }).click();
     const want = new URL(linkTo, APP);
     pass(`${tag}: "${link}" opens ${linkTo}`, Boolean(await until(async () => {
       const u = new URL(page.url());
@@ -404,16 +409,16 @@ async function checkHubs(page, tag) {
   }
   // An item on a hub opens it.
   await page.goto(`${APP}/personal/plan`);
-  await until(async () => (await page.locator('.ds-hub-recent .ds-row').count()) > 0, 20000);
-  await page.locator('.ds-hub-recent .ds-row').first().click();
+  await until(async () => (await page.locator('.ds-hub-recent .ds-li').count()) > 0, 20000);
+  await page.locator('.ds-hub-recent .ds-li').first().click();
   pass(`${tag}: a recent item opens its page`, Boolean(await landsOn(page, /^\/(daily-plan\/|daily-plan-summary|decision-summary|strategic-alignment\/version\/|get-unstuck|pre-mortem\/summary|time-audit\/summary|pressure-plan\/summary|give-difficult-feedback\/summary)/)), path(page));
 
   // Strategic: the Health Check's teams.
   await page.goto(`${APP}/strategic`);
-  const team = page.locator('.ds-hub-team', { hasText: TEAM });
+  const team = page.locator('.ds-hub-teams-card .ds-li', { hasText: TEAM });
   await until(async () => (await team.count()) > 0, 20000);
   pass(`${tag}: Strategic lists the team`, (await team.count()) === 1);
-  pass(`${tag}: …with "2 versions, latest Mon 12 Oct"`, (await team.locator('.ds-hub-team-line').innerText()) === '2 versions, latest Mon 12 Oct', await team.innerText());
+  pass(`${tag}: …with "2 versions, latest Mon 12 Oct"`, (await team.locator('.ds-li-sub').innerText()) === '2 versions, latest Mon 12 Oct', await team.innerText());
   await shot(page, `${tag}-strategic`);
   await team.click();
   // The team opens its newest version in the Health Check itself (M7); My Plans still filters by team.
@@ -510,7 +515,7 @@ try {
       pass('360 light: the open filter\'s taps are 44px or more', smallOpen.length === 0, JSON.stringify(smallOpen.slice(0, 4)));
       for (const hub of ['/personal/plan', '/personal/review', '/interpersonal', '/strategic']) {
         await page.goto(`${APP}${hub}`);
-        await until(async () => (await page.locator('.ds-hub-recent .ds-row, .ds-hub-team').count()) > 0, 20000);
+        await until(async () => (await page.locator('.ds-hub-recent .ds-li, .ds-hub-teams-card .ds-li').count()) > 0, 20000);
         pass(`360 light: ${hub} has no sideways scroll`, await noSideways(page));
         const small = await smallTaps(page, TAPS);
         pass(`360 light: ${hub} taps are 44px or more`, small.length === 0, JSON.stringify(small.slice(0, 4)));

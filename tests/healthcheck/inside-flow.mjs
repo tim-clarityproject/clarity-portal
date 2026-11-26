@@ -117,7 +117,10 @@ async function checkScreen(b, tag, { layer = 'page', coral = 1, back = null } = 
   }
 }
 const PAGE_BACK = { button: '.hc-back', label: '.hc-back', content: '.ds-page-title' };
-const GUIDE_BACK = { button: '.ds-guide-back', label: '.ds-guide-name', content: '.ds-guide-pct-track' };
+// Polish 1 (Stage B): inside a guided tool Back is the foot's "Back" link after Next, no longer a chevron
+// at the top on the content's edge (5e rule 29t's tool case), so it isn't measured there; its 44px tap
+// area is in "every tap area is 44px".
+const GUIDE_BACK = null;
 const noProblems = (b, tag) => {
   pass(`${tag}: no console, page or HTTP errors`, b.problems.length === 0, [...new Set(b.problems)].join(' | '));
   pass(`${tag}: no email or /api/ call`, b.sent.length === 0, b.sent.join(' | '));
@@ -304,8 +307,8 @@ part('teams', async ({ browser, w, mode, tag, phone }) => {
   pass(`${tag}: the tip closes`, await until(async () => (await page.locator('.ds-oneoff-tip').count()) === 0));
   await open(page);
   pass(`${tag}: the tip stays closed on the next visit`, await page.locator('.ds-oneoff-tip').count() === 0);
-  // The phone bar shows here (no bottom button).
-  if (phone) pass(`${tag}: the phone bar shows on Your teams`, await page.locator('.ds-bar-btn').first().isVisible());
+  // Polish 1: no phone bar; the header's crosshair opens the menu.
+  if (phone) pass(`${tag}: no phone bar on Your teams, and the header's crosshair is there`, (await page.locator('.ds-phone-bar:visible').count()) === 0 && await page.locator('.hdr-frame-menu').first().isVisible());
   // A version opens.
   await page.locator('.ds-version-row').first().click();
   pass(`${tag}: a version opens at its own address`, await onPage(page, new RegExp(`/version/${IDS.lt3}$`)));
@@ -353,8 +356,10 @@ part('results', async ({ browser, w, mode, tag, phone }) => {
   await page.getByRole('button', { name: 'Light, for printing' }).click();
   const file = await dl;
   pass(`${tag}: the PDF downloads, named for the team`, Boolean(file) && /Health Check, Leadership team/.test(file.suggestedFilename()), file ? file.suggestedFilename() : 'no download');
-  // The Product team has one version: no Compare.
-  await open(page, `${BASE}/version/${IDS.pt1}`);
+  // The Product team has one version: no Compare. (A phone's download can still be settling: let it, so the
+  // next address isn't aborted.)
+  await sleep(1500);
+  await open(page, `${BASE}/version/${IDS.pt1}`).catch(async () => { await sleep(1500); await open(page, `${BASE}/version/${IDS.pt1}`); });
   await resultsShown(page);
   pass(`${tag}: a team with one version has no Compare`, await page.getByRole('button', { name: 'Compare two versions' }).count() === 0);
   await page.locator('.hc-back').click();
@@ -583,10 +588,10 @@ part('addresses', async ({ browser, w, mode, tag }) => {
   }
   // The Strategic hub: its tile and its teams.
   await page.goto(`${APP}/strategic`);
-  await page.locator('.ds-hub-team').first().waitFor({ timeout: 15000 });
+  await page.locator('.ds-hub-teams-card .ds-li').first().waitFor({ timeout: 15000 });
   const href = await page.locator('a[href="/strategic-alignment"]').count();
   pass(`${tag}: the hub’s tile points at the Health Check`, href >= 1);
-  await page.locator('.ds-hub-team').first().click();
+  await page.locator('.ds-hub-teams-card .ds-li').first().click();
   pass(`${tag}: a hub team opens its newest version`, await onPage(page, new RegExp(`/version/${IDS.lt3}$`)));
   noProblems(b, `${tag}, addresses`);
   await b.ctx.close();

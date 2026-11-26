@@ -5,13 +5,10 @@ import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
 import { clearDraft as forgetDraft, useDraft } from '../lib/drafts';
-import DesignHeader from '../components/DesignHeader';
-import PhoneActionBar from '../components/ui/PhoneActionBar';
-import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
+import FormTool, { FormField } from './toolFocus/FormTool';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import { PageHeader, TextBox, Button, useToast } from '../components/design';
-import pageText from '../content/pageText';
+import { TextBox, useToast } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -22,13 +19,6 @@ function forgetInversionDrafts(userId, recordKey) {
   [1, 2, 3].forEach((step) => forgetDraft(userId, `inversion-${step}:${recordKey}`));
 }
 
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m5 12.5 4.5 4.5L19 7.5" />
-    </svg>
-  );
-}
 
 function suggestNameFrom(goal) {
   const trimmed = (goal || '').trim();
@@ -61,7 +51,6 @@ export default function InversionStep3Plan() {
   // focus, not to "first unanswered" - that data-derived version jumped
   // the coral outline to the NEXT card the instant this one gained any
   // text, while the user was still typing in it.
-  const [focusedIndex, setFocusedIndex] = useState(null);
   const toast = useToast();
 
   // Typing survives a refresh or a closed tab (Tim, 26 Oct). A draft
@@ -167,89 +156,51 @@ export default function InversionStep3Plan() {
     navigate(path, { state: { decisionId, goal, risks, riskAnswers, problemTitle: currentTitle } });
   };
 
-  const actionButtons = (
-    <>
-      <Button variant="primary" disabled={!allAnswered || isSaving} onClick={() => setNameDialog('finish')}>
-        Finish
-      </Button>
-      <Button variant="outline" disabled={isSaving} onClick={() => setNameDialog('draft')}>
-        Save as draft
-      </Button>
-    </>
-  );
+  const [asked, setAsked] = useState(false);
 
   return (
     <div className="ui-root">
-      <DesignHeader />
-
-      <div className="plan-page plan-page--form">
-        <div className="plan-back-row">
-          <BackLink onClick={() => goToStep('/pre-mortem/risks')} />
-        </div>
-
-        <div className="plan-header">
-          <PageHeader title="Pre-mortem" info={pageText.inversionStep3Plan} meta={['Step 3 of 3']} />
-          <div className="inv-stepper">
-            <div className="inv-stepper-lines" aria-hidden="true">
-              <i className="on" />
-              <i className="on" />
-              <i className="on" />
-            </div>
+      <FormTool
+        name="Pre-mortem"
+        step={3}
+        steps={3}
+        question="So what will you do?"
+        hint="For each risk, write what you’ll do to stop it happening."
+        onNext={() => { if (!allAnswered) { setAsked(true); return; } if (!isSaving) setNameDialog('finish'); }}
+        nextLabel="Finish"
+        need={asked && !allAnswered ? 'Write what you’ll do about each risk to carry on.' : ''}
+        onBack={() => goToStep('/pre-mortem/risks')}
+        saveError={saveError}
+        onSaveDraft={() => { if (!isSaving) setNameDialog('draft'); }}
+        onDiscard={() => setDiscardOpen(true)}
+        closeTo="/personal/plan"
+      >
+        <div className="ft-recap">
+          <div className="ft-recap-head">
+            <span className="ds-label">Your goal</span>
+            <button type="button" className="ds-more ds-more--bare ft-link" onClick={() => goToStep('/pre-mortem')}>Edit</button>
           </div>
-          <h2 className="ds-question">So what will you do?</h2>
+          <p className="ft-recap-text">{goal}</p>
         </div>
-
-        <div className="inv-recap">
-          <p>{goal}</p>
-          <Button variant="text" onClick={() => goToStep('/pre-mortem')}>
-            Edit
-          </Button>
+        <div className="ft-recap-head">
+          <span className="ds-label">Your risks</span>
+          <button type="button" className="ds-more ds-more--bare ft-link" aria-label="Edit risks" onClick={() => goToStep('/pre-mortem/risks')}>Edit</button>
         </div>
-
-        <div className="plan-section-top" style={{ marginBottom: 'var(--space-2)' }}>
-          <span className="ui-section-heading">Risks</span>
-          <Button variant="text" onClick={() => goToStep('/pre-mortem/risks')}>
-            Edit risks
-          </Button>
-        </div>
-
-        <div className="inv-cards">
-          {risks.map((risk, index) => {
-            const answer = riskAnswers[index] || '';
-            const isAnswered = answer.trim().length > 0;
-            const isNow = index === focusedIndex;
-            return (
-              <div className={`inv-card${isNow ? ' now' : ''}${isAnswered ? ' ok' : ''}`} key={index}>
-                <div className="inv-card-row">
-                  <span className="inv-card-num">{String(index + 1).padStart(2, '0')}</span>
-                  <p>{risk}</p>
-                  <span className="inv-card-check" aria-hidden="true"><CheckIcon /></span>
-                </div>
-                <TextBox
-                  lines="many"
-                  focusMode
-                  placeholder="Type here"
-                  ariaLabel={`What will you do about risk ${index + 1}?`}
-                  value={answer}
-                  onChange={(v) => changeAnswer(index, v)}
-                  onFocus={() => setFocusedIndex(index)}
-                  onBlur={() => setFocusedIndex((prev) => (prev === index ? null : prev))}
-                />
-              </div>
-            );
-          })}
-        </div>
-
-        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
-
-        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
-
-        <div className="plan-discard-row">
-          <DiscardLink onClick={() => setDiscardOpen(true)} />
-        </div>
-      </div>
-
-      <PhoneActionBar>{actionButtons}</PhoneActionBar>
+        {risks.map((risk, index) => (
+          // The risks have no ids of their own; their order is their identity.
+          // eslint-disable-next-line react/no-array-index-key
+          <FormField key={index} label={risk}>
+            <TextBox
+              lines="many"
+              focusMode
+              placeholder="What will you do about it?"
+              ariaLabel={`What will you do about risk ${index + 1}?`}
+              value={riskAnswers[index] || ''}
+              onChange={(v) => changeAnswer(index, v)}
+            />
+          </FormField>
+        ))}
+      </FormTool>
 
       <NameDialog
         open={nameDialog !== null}

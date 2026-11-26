@@ -1,8 +1,9 @@
 import { useContext, useMemo, useRef, useState } from 'react';
+import { B3_LINES } from '../../content/pageLines/client';
 import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import {
+import { PageOpening,
   AddButton,
   Button,
   ButtonNote,
@@ -75,6 +76,7 @@ import { sameZone } from '../../lib/time/index.js';
 import { deleteMoment, leadUpsOf, saveMoment, saveReview, setShareWork, usePeakMoments } from '../../lib/peakMoments/store';
 import '../performance/performance.css';
 import './peakMoments.css';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 
 // Peak moments (mock-up M18, version 28, approved 11 Nov; Phase 8b part A,
 // with the brief's changes, which win over M18 where they differ):
@@ -138,7 +140,7 @@ function PeakList() {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page peak-page">
-        <PageHeader title={TOOL_NAME} aside={eye} />
+        <PageOpening title={TOOL_NAME} aside={eye} line={B3_LINES.peakMoments} />
         <ExplainLink explain={EXPLAIN} helpKey="peak-moment" className="peak-explain">What’s a peak moment?</ExplainLink>
         {view.empty ? (
           <div className="ds-empty peak-calm">
@@ -260,6 +262,11 @@ function PeakEdit() {
   };
 
   const leave = () => navigate(backTo, { replace: true });
+  // The × part-way: what's typed waits on this device (rule 21's words, as every tool).
+  const closeTool = () => {
+    if (!editing && String(m.name || '').trim()) toast.show(TOOL_CLOSED);
+    leave();
+  };
 
   const finish = async () => {
     if (busy.current) return false;
@@ -510,7 +517,7 @@ function PeakEdit() {
         draftKey={editing ? undefined : STEP_KEY(userId)}
         initialStep={editing ? 'sum' : undefined}
         finishLabel={editing ? 'Save my changes' : 'Add my peak moment'}
-        onClose={leave}
+        onClose={closeTool}
         onFinish={finish}
         // Saved there and then only when it can be kept as it stands (a stop day before the start never is).
         onEdited={() => { if (editing && isComplete(m)) persist({ ...m, name: cleanMomentName(m.name) }, 'Saved'); }}

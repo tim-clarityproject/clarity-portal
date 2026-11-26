@@ -14,8 +14,9 @@ import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import { Button, DatePicker, Loading, PageHeader, PillChoice, TextBox, useToast } from '../components/design';
-import pageText from '../content/pageText';
+import { Button, DatePicker, Loading, PillChoice, TextBox, useToast, PageOpening } from '../components/design';
+import { B1_LINES } from '../content/pageLines/client';
+import '../pages/hubs/clientPage.css';
 
 const RATING_OPTIONS = [1, 2, 3, 4, 5].map((n) => ({ value: n, label: String(n) }));
 
@@ -222,9 +223,9 @@ export default function MyJournal() {
     <div className="ui-root">
       <DesignHeader />
 
-      <div className="plan-page plan-page--form">
+      <div className="plan-page cp-page plan-page--form">
         <div className="plan-header">
-          <PageHeader title={pageTitle} info={pageText.myJournal} />
+          <PageOpening title={pageTitle} line={B1_LINES.afterAction} />
         </div>
 
         {continuingDraftDate && (

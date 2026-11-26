@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
-import { EmptyState, List, ListRow, Loading, PageHeader, LoadError } from '../../components/design';
+import { EmptyState, List, ListRow, Loading, LoadError, PageOpening } from '../../components/design';
 import { usePlanVersions } from '../../lib/performance/hooks';
 import { VERSION_KIND_LABEL, versionLabel } from '../../lib/performance';
-import pageText from '../../content/pageText';
 import { dayAndTime } from './planDates';
 import './performance.css';
+import { B1_LINES } from '../../content/pageLines/client';
+import '../../pages/hubs/clientPage.css';
 
 // Version history of the Individual Performance Plan (not mocked; M1 only
 // has "See version history"). Built from the shared list row: the version,
@@ -24,9 +25,9 @@ export default function PlanHistory() {
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page ipp-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/performance-plan')} label="Individual Performance Plan" /></div>
-        <PageHeader title="Version history" info={pageText.performancePlanHistory} />
+      <div className="plan-page cp-page ipp-page">
+        <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/performance-plan')} label="Individual Performance Plan" /></div>
+        <PageOpening title="Version history" line={B1_LINES.planHistory} />
         {loading ? (
           <Loading label="Loading your version history" className="ds-loading--page" />
         ) : error ? (

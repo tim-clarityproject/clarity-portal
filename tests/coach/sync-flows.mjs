@@ -16,7 +16,7 @@
 //
 //   PARTS=sync-settings,sync-push,sync-moved,sync-edit,sync-delete,sync-bar   ROLES=owner,associate   DB=none,there
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, makeReport, seedDevice, settle, standIn } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, makeReport, openCalSettings, seedDevice, settle, standIn } from './shared.mjs';
 import { CAL, ID, seedClock, seedWithCal } from './seed.mjs';
 import { instantAt } from '../../src/lib/time/index.js';
 
@@ -30,7 +30,7 @@ const same = (a, b) => new Date(a).getTime() === new Date(b).getTime();
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
 const closePanel = async (page) => { await page.keyboard.press('Escape'); await settle(page, 500); };
-const press = async (page, name) => { await page.getByRole('button', { name, exact: true }).first().click(); await settle(page, 500); };
+const press = async (page, name) => { await openCalSettings(page, name); await page.getByRole('button', { name, exact: true }).first().click(); await settle(page, 500); };
 const go = async (page, path) => { await page.goto(`${APP}${path}`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 1300); };
 const tile = (page, day, text) => page.locator(`[data-cal-day="${day}"] [data-cal-key]`, { hasText: text }).first();
 /** One round of the sync, now, and what follows it. */

@@ -154,6 +154,18 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* A short link ("Edit") still has a 44 by 44 tap area (rule 4a; plan-page's tap-area check). */
+.ui-root .ds-more { position: relative; }
+.ui-root .ds-more::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, var(--tap-min));
+  height: max(100%, var(--tap-min));
+  transform: translate(-50%, -50%);
+}
+
 .ui-root .ds-more > span {
   text-decoration: underline;
   text-decoration-thickness: var(--line-w);
@@ -176,7 +188,8 @@
   border-radius: var(--space-1);
 }
 
-.ui-root .ds-more .ds-more-back { margin-right: var(--space-px2); }
+/* Back's chevron ink --back-gap (10px) from its word (rule 29t; backGaps): the link's 6px gap less the chevron's own inset. */
+.ui-root .ds-more .ds-more-back { margin-right: calc(var(--back-gap) - var(--space-px6) - var(--chev-right-inset)); }
 
 /* ---------- List rows (.li, rule 14) ---------- */
 .ui-root .ds-li {
@@ -277,6 +290,24 @@
     gap: var(--space-px2);
   }
   .ui-root .ds-li-value { text-align: left; }
+  /* A row that opens something keeps its chevron at the right end, on the
+     name's line, at every width (walk item 8): it never drops under the name. */
+  .ui-root .ds-li:has(> .ds-li-value > .ds-chevron) {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+  .ui-root .ds-li:has(> .ds-li-value > .ds-chevron) > .ds-li-value {
+    min-height: calc(var(--fs-text) * 1.55);
+    align-items: center;
+    text-align: right;
+  }
+}
+
+/* Lists one after another read as one list: every row after the first has
+   the same divider (walk item 8; My Account's Settings). */
+.ui-root .ds-rows-list + .ds-rows-list > .ds-li:first-child {
+  border-top: var(--line-w) solid var(--line-soft);
 }
 
 /* ---------- Figures and empty states ---------- */
@@ -295,6 +326,14 @@
   font-size: var(--fs-fig-unit);
   font-weight: var(--fw-regular);
   color: var(--text-2);
+}
+
+/* A figure with nothing to count yet: its sentence, 16px, where the figure would be (Figure's `empty`). */
+.ui-root .ds-fig-empty {
+  margin: var(--space-1) 0;
+  font-size: var(--fs-text);
+  line-height: 1.55;
+  color: var(--text);
 }
 
 .ui-root .ds-empty-note p {
@@ -416,6 +455,10 @@
 }
 
 .ui-root .ds-count > button:disabled { cursor: default; color: var(--placeholder); }
+/* Under the pointer the button's half of the counter takes the soft surface (the focus and hover check). */
+@media (hover: hover) {
+  .ui-root .ds-count > button:not(:disabled):hover { background: var(--raised); }
+}
 .ui-root .ds-count > button:focus-visible { outline: var(--focus-w) solid var(--text); outline-offset: calc(-1 * var(--focus-w)); }
 
 .ui-root .ds-count > span {
@@ -546,6 +589,10 @@
 }
 
 .ui-root .ds-tab:focus-visible { outline: var(--focus-w) solid var(--text); outline-offset: calc(-1 * var(--focus-w)); }
+/* Hover turns a tab's words the text colour, as the menu's do (rule 4a; the focus and hover check). */
+@media (hover: hover) {
+  .ui-root .ds-tab:hover { color: var(--text); }
+}
 
 /* ---------- The calendar (.cal, .calbar, rule 17) ---------- */
 .ui-root .ds-calbar {

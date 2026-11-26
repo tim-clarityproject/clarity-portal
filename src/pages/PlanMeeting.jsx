@@ -3,12 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
-import DesignHeader from '../components/DesignHeader';
-import PhoneActionBar from '../components/ui/PhoneActionBar';
-import { DiscardLink } from '../components/ui/DiscardLink';
+import FormTool from './toolFocus/FormTool';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import pageText from '../content/pageText';
-import { DatePicker, DisclosureArrow, PageHeader, SaveStatus, TextBox, AddButton, Button, useToast } from '../components/design';
+import { DatePicker, DisclosureArrow, IconButton, SaveStatus, TextBox, AddButton, Button, useToast } from '../components/design';
 import { clearDraft as forgetDraft, useDraft } from '../lib/drafts';
 import { saveDecisionOrQueue } from '../lib/decisionSave';
 import { useQueuedSave } from '../lib/syncQueue';
@@ -19,13 +16,6 @@ const SECTION_OPTIONS = [
   { id: 'pre-reads', label: 'Attendee preparation' },
 ];
 
-function BinIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.6 8h6.8l.6-8M6.8 7v3.5M9.2 7v3.5" />
-    </svg>
-  );
-}
 
 function calcEndTime(time, totalMinutes) {
   if (!time) return 'Not set';
@@ -273,51 +263,25 @@ export default function PlanMeeting() {
 
   const bothAdded = sections.includes('context') && sections.includes('pre-reads');
 
-  const actionButtons = (
-    <>
-      <Button type="button" variant="primary" disabled={isSaving} onClick={handleFinish}>Finish</Button>
-      <Button type="button" variant="outline" disabled={isSaving} onClick={handleSaveDraft}>Save as draft</Button>
-    </>
-  );
-
   return (
     <div className="ui-root">
-      <style>{`
-        .ui-root .plan-field label {
-          font-family: var(--font-body);
-          text-transform: none;
-          letter-spacing: normal;
-          font-size: var(--fs-label-row);
-          color: var(--text-2);
-        }
-        .ui-root .plan-ag-head {
-          font-family: var(--font-body);
-          text-transform: none;
-          letter-spacing: normal;
-          font-size: var(--fs-meta);
-          color: var(--label);
-        }
-        .ui-root .plan-obj-row {
-          grid-template-columns: 28px minmax(0, 1fr) 44px;
-        }
-        .ui-root .plan-obj-row .plan-bin-btn,
-        .ui-root .plan-ag-row .plan-bin-btn {
-          box-sizing: border-box;
-          width: 44px;
-          padding: 0 !important;
-        }
-      `}</style>
-      <DesignHeader />
-
-      <div className="plan-page plan-page--form">
-        <div className="plan-header">
-          <PageHeader title="Meeting planner" info={pageText.planMeeting} />
-        </div>
-
+      <FormTool
+        name="Meeting planner"
+        question="What’s the meeting?"
+        hint="Plan it in a few minutes: who, when, what it must achieve and the agenda."
+        onNext={() => { if (!isSaving) handleFinish(); }}
+        nextLabel="Finish"
+        saveError={saveError}
+        onSaveDraft={() => { if (!isSaving) handleSaveDraft(); }}
+        onDiscard={() => setDiscardOpen(true)}
+        closeTo="/strategic"
+        wide
+        className="pm-tool"
+      >
         <div className="plan-field">
           <TextBox
             id="meeting-title"
-            label="Meeting title"
+            label="What’s it called?"
             lines="one"
             placeholder="Type here"
             value={title}
@@ -332,15 +296,15 @@ export default function PlanMeeting() {
         </div>
 
         <div className="plan-field">
-          <TextBox id="meeting-chair" label="Chair" lines="one" placeholder="Type here" value={chair} onChange={setChair} />
+          <TextBox id="meeting-chair" label="Who’s chairing it?" lines="one" placeholder="Type here" value={chair} onChange={setChair} />
         </div>
 
         <div className="plan-field-row">
           <div className="plan-field">
-            <DatePicker label="Date" value={date} onChange={(key) => setDate(key)} min="1900-01-01" />
+            <DatePicker label="What day is it?" value={date} onChange={(key) => setDate(key)} min="1900-01-01" />
           </div>
           <div className="plan-field">
-            <label htmlFor="meeting-time">Start time</label>
+            <label htmlFor="meeting-time">What time does it start?</label>
             <input id="meeting-time" type="time" className="plan-input" value={time} onChange={(e) => setTime(e.target.value)} />
           </div>
         </div>
@@ -415,7 +379,7 @@ export default function PlanMeeting() {
         )}
 
         <div className="plan-label-row">
-          <span className="ui-section-heading">Objectives in priority order</span>
+          <span className="ft-label">What must it achieve, most important first?</span>
         </div>
         {objectives.map((obj, index) => (
           <div className="plan-obj-row" key={obj.id}>
@@ -427,15 +391,7 @@ export default function PlanMeeting() {
               value={obj.text}
               onChange={(v) => changeObjective(obj.id, v)}
             />
-            <button
-              type="button"
-              className="plan-bin-btn"
-              aria-label={`Remove objective ${index + 1}`}
-              disabled={objectives.length === 1}
-              onClick={() => removeObjective(obj.id)}
-            >
-              <BinIcon />
-            </button>
+            {!(objectives.length === 1) ? <IconButton label={`Remove objective ${index + 1}`} onClick={() => removeObjective(obj.id)} /> : <span className="pm-bin-space" />}
           </div>
         ))}
         <AddButton onClick={addObjective}>
@@ -443,8 +399,8 @@ export default function PlanMeeting() {
         </AddButton>
 
         <div className="plan-label-row">
-          <span className="ui-section-heading">Meeting agenda</span>
-          <span className="plan-total-badge">Total: {totalLength} min</span>
+          <span className="ft-label">What’s on the agenda?</span>
+          <span className="pm-total">{`Total: ${totalLength} minutes`}</span>
         </div>
 
         <div className="plan-ag-head">
@@ -480,32 +436,15 @@ export default function PlanMeeting() {
                 onChange={(e) => changeAgendaItem(item.id, 'length', e.target.value)}
               />
             </div>
-            <button
-              type="button"
-              className="plan-bin-btn"
-              aria-label={`Remove agenda item ${index + 1}`}
-              disabled={flowItems.length === 1}
-              onClick={() => removeAgendaItem(item.id)}
-            >
-              <BinIcon />
-            </button>
+            {!(flowItems.length === 1) ? <IconButton label={`Remove agenda item ${index + 1}`} onClick={() => removeAgendaItem(item.id)} /> : <span className="pm-bin-space" />}
           </div>
         ))}
         <AddButton onClick={addAgendaItem}>
           Add agenda item
         </AddButton>
 
-        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
         <SaveStatus state={syncState} />
-
-        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
-
-        <div className="plan-discard-row">
-          <DiscardLink onClick={() => setDiscardOpen(true)} />
-        </div>
-      </div>
-
-      <PhoneActionBar>{actionButtons}</PhoneActionBar>
+      </FormTool>
 
       <DiscardDialog
         isOpen={discardOpen}

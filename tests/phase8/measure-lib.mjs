@@ -58,9 +58,9 @@ export function measure({ layer, heading }) {
     if (stretch(getComputedStyle(el, '::after')) || stretch(getComputedStyle(el, '::before'))) continue;
     if (box.width < 43.5 || box.height < 43.5) out.taps.push(`${(el.getAttribute('aria-label') || el.textContent || el.className).trim().slice(0, 40)} ${box.width.toFixed(1)}x${box.height.toFixed(1)}`);
   }
-  // One coral button: anything filled with the coral of the main button.
-  for (const el of root.querySelectorAll('button, a')) {
-    if (visible(el) && getComputedStyle(el).backgroundColor.replace(/\s+/g, '') === 'rgb(255,111,92)') out.coral += 1;
+  // One main button (Polish 1, rule 6: solid black in light, white in dark; was the coral button).
+  for (const el of root.querySelectorAll('.ds-btn--primary, .ui-btn-primary')) {
+    if (visible(el)) out.coral += 1;
   }
   // No sideways scroll, on the page or inside the tool.
   const scroller = root.querySelector('.ds-guide-scroll') || root;
@@ -69,7 +69,10 @@ export function measure({ layer, heading }) {
   const back = root.querySelector('.ds-guide-back .ds-chevron');
   const content = root.querySelector('.ds-guide-pct-track, .ds-guide-title, .ds-guide-question');
   const name = root.querySelector('.ds-guide-name');
-  if (back && content && name) {
+  // Focus mode (Polish 1, rule 21; B3): × at the tool's top left, Back (when shown) in the foot.
+  const x = root.querySelector('.ds-guide-close');
+  if (x && content) out.close = { left: x.getBoundingClientRect().left, content: content.getBoundingClientRect().left, inFoot: !root.querySelector('.ds-guide-back') || Boolean(root.querySelector('.ds-guide-foot .ds-guide-back')) };
+  if (false && back && content && name) {
     const range = document.createRange();
     range.selectNodeContents(name);
     const button = back.closest('button').getBoundingClientRect();
@@ -120,14 +123,13 @@ export const makeCheckScreen = (pass) => async function checkScreen(page, tag, {
   await sleep(700); // the step has finished sliding in
   const m = await page.evaluate(measure, { layer, heading });
   pass(`${tag}: every tap area is 44px`, m.taps.length === 0, m.taps.join(' | '));
-  pass(`${tag}: ${coral === 1 ? 'one coral button' : `${coral} coral buttons`}`, m.coral === coral, `found ${m.coral}`);
+  pass(`${tag}: ${coral === 1 ? 'one main button' : `${coral} main buttons`}`, m.coral === coral, `found ${m.coral}`);
   pass(`${tag}: no sideways scroll`, m.sideways <= 0, `${m.sideways}px`);
   if (back && layer === '.ds-guide') {
-    // The chevron as drawn (it is a mask, so its box says nothing): read from the screen's own pixels.
-    const chev = m.back ? await ink(page, { x: m.back.button.x - 2, y: m.back.button.y, width: m.back.nameLeft - m.back.button.x + 1, height: m.back.button.height }) : null;
-    pass(`${tag}: Back’s chevron has its visible edge on the content’s edge`, chev && Math.abs(chev.left - m.back.content) <= 0.5, chev ? `${chev.left.toFixed(2)} (content edge ${m.back.content.toFixed(2)})` : 'no chevron found');
-    // 10px from Back's chevron to its words on every page (Tim, 18 Nov, follow-up 1; was 14px).
-    pass(`${tag}: the tool’s name is 10px from that edge`, m.back && Math.abs(m.back.name - 10) <= 0.5, JSON.stringify(m.back));
+    // Focus mode (Polish 1, rule 21; B3): × at the top left (its 44px tap area reaching
+    // just past the column's edge, the example's .xclose), and Back, when shown, in the foot.
+    pass(`${tag}: × at the top left of the tool's column`, m.close && Math.abs(m.close.left - m.close.content) <= 16, JSON.stringify(m.close));
+    pass(`${tag}: Back, when shown, sits in the foot`, m.close && m.close.inFoot, JSON.stringify(m.close));
   }
   if (heading) {
     // 12px from the letter's ink to the eye's visible edge (tokens.css --icon-title-gap; read from the

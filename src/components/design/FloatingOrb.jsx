@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { BreathOrb } from './BreathOrb';
 import { useOrbStyle } from './useOrbStyle';
+import { useFocusModeOn } from './Frame';
 import './design.css';
 
 // The one floating button (Tim, 23 Oct: Breathe only; breathe-orb.html,
-// 29 Oct). On desktop only, bottom right: a 60px pill with the small
+// 29 Oct). On every screen, phones too since Polish 1 (walk item 5), bottom right, stepping aside in a tool's focus mode: a 60px pill with the small
 // breathing orb in the person's chosen style (Rings, the starting choice,
 // or Level) and the word "Breathe"; one click opens Breathe. At rest the
 // orb breathes slowly, 4 seconds in and 4 out; the 8px crosshair inside
@@ -24,6 +25,8 @@ import './design.css';
 const ARRIVE_GUARD_MS = 400;
 export default function FloatingOrb({ onBreathe, placement = 'fixed', style, pageKey }) {
   const [chosen] = useOrbStyle();
+  // Inside a tool (focus mode, rule 21) it steps aside with the menu, so it never sits over a tool's foot.
+  const focus = useFocusModeOn();
   const arrivedAt = useRef(0);
   const buttonRef = useRef(null);
   useEffect(() => {
@@ -40,6 +43,7 @@ export default function FloatingOrb({ onBreathe, placement = 'fixed', style, pag
     if (Date.now() - arrivedAt.current < ARRIVE_GUARD_MS) return;
     onBreathe?.(e);
   };
+  if (focus && placement === 'fixed') return null;
   return (
     <div className={`ds-orb${placement === 'fixed' ? ' ds-orb--fixed' : ''}`}>
       <button ref={buttonRef} type="button" className="ds-breathe" onClick={breathe}>

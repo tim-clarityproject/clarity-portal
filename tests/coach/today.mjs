@@ -35,7 +35,14 @@ const FRI = new Date(2026, 10, 13, 13, 30);
 
 const button = (page, name) => page.getByRole('button', { name, exact: true }).first();
 const press = async (page, name) => { await button(page, name).click(); await settle(page, 450); };
-const take = async (page) => { await page.locator('.ds-offer-take').click(); await settle(page, 450); };
+// The offer for now (Tim's walk, item 23): the page's main button when no session is today, otherwise a quiet link beside
+// the session's button; "Not now" beside either.
+const take = async (page) => {
+  const link = page.locator('.cc-today-offerlink');
+  if (await link.count()) await link.first().click(); else await page.locator('.cc-today-act .ds-btn--primary').first().click();
+  await settle(page, 450);
+};
+const offered = (page) => page.locator('.cc-today-notnow').count();
 const closePanel = async (page) => { await page.keyboard.press('Escape'); await settle(page, 450); };
 
 /** Each state: when it is, who looks, the seed's options, and its screens in order (each a name and what to do first). */
@@ -256,9 +263,9 @@ async function flows() {
   await press(page, 'Next');
   await page.locator('.ds-dialog .ds-btn--primary').click(); await settle(page, 600);
   report.pass('flow: Close the day says so, with Undo', (await toast(page)) === 'Day closed', await toast(page));
-  report.pass('flow: a closed day offers nothing more', await page.locator('.ds-offer').count() === 0);
+  report.pass('flow: a closed day offers nothing more', (await offered(page)) === 0);
   await undo(page);
-  report.pass('flow: Undo opens the day again', await page.locator('.ds-offer').count() === 1);
+  report.pass('flow: Undo opens the day again', (await offered(page)) === 1);
   await t.done('flow, the evening');
 
   // Friday afternoon: Rate my energy, then the Weekly review, whose typing is kept for the visit.
@@ -359,7 +366,8 @@ has('tue page', 'Kestrel leadership team', 'Tuesday: a group’s call is on Toda
 has('tue page', 'hasn’t been sent yet.', 'Tuesday: the recap nudge shows');
 // The test's finance switch went when Finances became real (59a002bf): the stand-in holds no invoices or targets, so the
 // card shows the month's figure from the real model ("£0", "Settled so far."); its shape is what's checked here.
-if (said['tue page'] != null) report.pass('Tuesday: the owner’s This month card shows the month’s figure and the Finances link (polish 1)', /THIS MONTH\s*(\n|.)*?£[\d,]+/i.test(said['tue page']) && /Settled so far\.|overdue|Cash dips/i.test(said['tue page']), (said['tue page'].match(/THIS MONTH[\s\S]{0,80}/i) || [''])[0]);
+// Never a bare £0 (Tim's walk, item 9): a month with nothing settled yet says so in words.
+if (said['tue page'] != null) report.pass('Tuesday: the owner’s This month card shows the month’s figure (or "Nothing settled yet this month.") and the Finances link (polish 1)', (/THIS MONTH\s*(\n|.)*?£[1-9][\d,]*/i.test(said['tue page']) && /Settled so far\.|overdue|Cash dips/i.test(said['tue page'])) || /THIS MONTH\s*Nothing settled yet this month\./i.test(said['tue page']), (said['tue page'].match(/THIS MONTH[\s\S]{0,80}/i) || [''])[0]);
 has('tue page', 'Plan my day', 'Tuesday morning offers Plan my day');
 has('tue page', '11 of 15', 'Tuesday: capacity reads 11 of 15');
 has('tue page', 'Board meeting', 'Tuesday: the pressure forecast shows a shared work moment');
@@ -368,7 +376,7 @@ has('tue move', 'That fits your day.', 'Choose what to move starts with enough t
 has('tue move-none', 'Tick what to move to carry on.', 'Choose what to move is never greyed out');
 has('tue plan-1', 'Step 1 of 3', 'Plan my day counts its steps');
 has('tue plan-3', 'To-dos to place', 'Plan my day’s last step lists what to place');
-has('eve page', 'Close the day', 'the evening offers Close the day');
+has('eve page', 'Close my day', 'the evening offers Close my day (the main button, Tim’s walk, item 23)');
 has('eve close-3', 'Tomorrow at a glance', 'Close the day ends with tomorrow');
 has('fri page', 'Rate my energy', 'Friday afternoon offers Rate my energy');
 has('fri review-1', 'Step 1 of 5', 'the Weekly review counts its steps');

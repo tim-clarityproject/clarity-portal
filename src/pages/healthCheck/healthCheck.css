@@ -173,7 +173,7 @@
   margin-bottom: var(--space-px2);
   font-size: var(--fs-meta);
   line-height: var(--lh-text);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .hc-factor p {
@@ -272,11 +272,11 @@
   justify-content: center;
   width: var(--hc-num);
   height: var(--hc-num);
-  border: var(--line-w) solid var(--placeholder);
+  border: var(--line-w) solid var(--text-2);
   border-radius: 50%;
   font-size: var(--fs-min);
   line-height: 1;
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .hc-pn--mi {
@@ -562,6 +562,13 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* mobile.css's older phone rule for bare buttons (button:not([class*="ds-"])…, 12px 16px and 16px words,
+   !important) outranks the rule above on a phone and moved Back 16px in: keep Back's own. */
+.ui-root .hc-back:not(#_) {
+  padding: 0 !important;
+  font-size: var(--fs-secondary) !important;
+}
+
 .ui-root .hc-back .ds-chevron {
   color: var(--text-2);
   transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
@@ -793,7 +800,7 @@
   font-size: var(--fs-meta);
   font-variant-numeric: tabular-nums;
   text-align: right;
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 /* The solid card before and after it plays (Tim, 28 Oct, 15:27). */
@@ -1003,7 +1010,7 @@
 .ui-root .hc-read-meta {
   margin: 0 0 var(--space-px6);
   font-size: var(--fs-note);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .hc-read-h {

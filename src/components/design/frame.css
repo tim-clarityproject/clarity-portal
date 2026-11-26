@@ -33,7 +33,8 @@
 .ui-root .ds-frame-main {
   position: relative;
   min-width: 0;
-  padding: var(--frame-main-y) var(--frame-main-x) var(--frame-main-bottom);
+  /* The foot stays clear of the floating Breathe button (walk item 5). */
+  padding: var(--frame-main-y) var(--frame-main-x) max(var(--frame-main-bottom), var(--breathe-room));
 }
 
 /* Pages drawn inside the frame keep their own .ui-root, which paints the
@@ -189,9 +190,7 @@
   transition: transform var(--dur) var(--ease);
 }
 
-.ui-root .ds-mbtn[aria-expanded='true'] .ds-bold-cross {
-  transform: rotate(45deg);
-}
+/* Open, it is the bare × (walk item 6; blocks.css .ds-x). */
 
 .ui-root .ds-mbtn:focus-visible {
   outline: var(--focus-w) solid var(--text);
@@ -217,6 +216,10 @@
   margin: 0 calc(-1 * var(--space-px20)) var(--space-px12);
   padding: 0 var(--space-px20);
   border-bottom: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-pmenu-top {
+  margin: 0 0 var(--space-px20);
 }
 
 .ui-root .ds-pmenu .ds-menu {
@@ -247,8 +250,10 @@
   .ui-root .ds-frame-side {
     display: none;
   }
+  /* Edge to edge; the foot stays clear of the floating Breathe button,
+     which sits bottom right on a phone too (walk item 5). */
   .ui-root .ds-frame-main {
-    padding: 0;
+    padding: 0 0 calc(var(--breathe-room) + env(safe-area-inset-bottom, 0px));
   }
   /* The frame's own header, for a page without DesignHeader (which draws the crosshair beside My Mission). */
   .ui-root .ds-frame-phead {
@@ -351,23 +356,34 @@
 }
 
 .ui-root .hdr-mbox--none b {
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .hdr-mbox .hdr-mbox-pending {
   visibility: hidden;
 }
 
+/* :not(#_) as the box's own rule has, or its `all: unset` wins and hover and focus show nothing (the focus and hover
+   check, Polish 1 Stage B). */
 @media (hover: hover) {
-  .ui-root .hdr-mbox:hover { border-color: var(--text); }
+  .ui-root .hdr-mbox:not(#_):hover { border-color: var(--text); }
 }
 
-.ui-root .hdr-mbox:focus-visible {
+.ui-root .hdr-mbox:not(#_):focus-visible {
   outline: var(--focus-w) solid var(--text);
   outline-offset: var(--space-px2);
 }
 
 @media (min-width: 1024px) {
+  /* A long page title never runs under My Mission at the panel's top right
+     (B1 7): the opening's first line keeps the box's room clear, the box
+     being at most --mission-box-max wide. */
+  .ui-root .ds-frame-main:has(.hdr-frame .hdr-mbox) .ds-open > :first-child {
+    padding-right: calc(var(--mission-box-max) + var(--space-4));
+  }
+  .ui-root .hdr-frame .hdr-mbox:not(#_) {
+    max-width: var(--mission-box-max);
+  }
   .ui-root .hdr-frame {
     position: absolute;
     top: var(--space-4);
@@ -394,6 +410,13 @@
   }
   .ui-root .hdr-frame-chat {
     display: none;
+  }
+  /* My Mission fills the row from the crosshair to the right margin, its
+     words on the left and a long Mission ending in "…"; never sized to its
+     words here (walk item 33). */
+  .ui-root .hdr-frame .hdr-mbox:not(#_) {
+    flex: 1 1 0;
+    justify-content: flex-start;
   }
 }
 
@@ -464,5 +487,30 @@
   }
   .ui-root .ds-frame:has(.cc-header--frame) .ds-frame-phead {
     display: none;
+  }
+  /* The crosshair at the left of the header row at every width under the
+     laptop (walk item 32), whatever sits beside it. */
+  .ui-root .ds-frame .cc-header--frame .cc-frame-menu {
+    margin-right: auto;
+  }
+  /* With Search and Notifications in the phone menu (walk item 21, the
+     frame's `top`), the header holds the crosshair alone. */
+  .ui-root.ds-frame-root--ptop .ds-frame .cc-header--frame {
+    display: none;
+  }
+  .ui-root.ds-frame-root--ptop .ds-frame .ds-frame-phead {
+    display: flex;
+  }
+}
+
+/* ---------- An older page's .plan-page inside the frame (Polish 1 Stage B, requests-b1 4) ----------
+   .plan-page's centred column and 48px paddings were for the page before the frame. On a laptop,
+   outside focus mode, the frame gives the 48/56px, so the page starts on the frame's left edge like
+   Home and the Dashboard, at most the reading width. B1's .cp-page pages keep their own rules. */
+@media (min-width: 1024px) {
+  .ui-root:not(.ds-frame-root--focus) .ds-frame-main .plan-page:not(.cp-page) {
+    max-width: var(--dash-max);
+    margin: 0;
+    padding: 0;
   }
 }

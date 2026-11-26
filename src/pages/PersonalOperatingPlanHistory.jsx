@@ -5,9 +5,10 @@ import { supabase } from '../lib/supabase';
 import { formatShortDate } from '../lib/dateFormatter';
 import { CHANGE_KIND_LABEL, formatPlanCounts, formatVersion, loadReviewedVersionDates, loadVersions } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
-import pageText from '../content/pageText';
 import { BackLink } from '../components/ui/DiscardLink';
-import { Loading, PageHeader, Button, EmptyState } from '../components/design';
+import { Loading, Button, EmptyState, PageOpening } from '../components/design';
+import { B1_LINES } from '../content/pageLines/client';
+import '../pages/hubs/clientPage.css';
 
 export default function PersonalOperatingPlanHistory() {
   const navigate = useNavigate();
@@ -76,10 +77,10 @@ export default function PersonalOperatingPlanHistory() {
       `}</style>
       <DesignHeader />
 
-      <div className="plan-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan')} label="Back to your plan" /></div>
+      <div className="plan-page cp-page cp-page">
+        <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/personal-operating-plan')} label="Back to your plan" /></div>
 
-        <PageHeader title="Version history" info={pageText.personalOperatingPlanHistory} />
+        <PageOpening title="Version history" line={B1_LINES.popHistory} />
 
         {isLoading ? (
           <Loading label="Loading your version history" className="ds-loading--page" />

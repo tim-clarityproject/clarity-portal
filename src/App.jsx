@@ -19,6 +19,8 @@ import { startWarming } from './lib/warmDevice';
 import { CoachChatProvider } from './components/coach/CoachChat';
 import ProtectedLayout from './components/ProtectedLayout';
 import ScrollToTop from './components/ScrollToTop';
+import { Loading } from './components/design/Status';
+import { knownNotCoach, loadCoachRole, refreshCoachRole, roleKnown } from './lib/coach/role';
 import { claimOutsideWork } from './lib/guest/claim';
 import { HEALTH_CHECKS_MOVED } from './lib/guest/claimRules';
 import { GET_UNSTUCK_STEPS, MOVED, MOVED_UNDER, tabTitle } from './lib/navigation';
@@ -336,6 +338,68 @@ function TabTitle() {
   return null;
 }
 
+// A client opening a coach portal address (polish 1, "Menu and routing"): never a blank page. When this device already
+// knows they aren't a coach, ProtectedLayout sends them Home at once. On a device with no answer yet (a first visit on a
+// new device), the turning crosshair shows from the first frame, and they go Home the moment the role's answer says they
+// aren't a coach (the same read the app's opening already sent: earlyScreen.js, shared by readShare.js), without waiting
+// for the coach checks. A coach's portal draws as it did: the crosshair goes as soon as the answer says coach.
+const COACH_PAGE = /^\/coach(\/|$)/;
+const COACH_SIGN_IN = /^\/coach\/sign-in(\/|$)/;
+function ClientOffCoach() {
+  const { pathname } = useLocation();
+  const { user, isLoading } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const userId = user?.id || null;
+  const coachPage = COACH_PAGE.test(pathname) && !COACH_SIGN_IN.test(pathname);
+  const notCoach = coachPage && Boolean(userId) && knownNotCoach(userId);
+  // While the sign-in is still being read the crosshair shows too (it goes as soon as the coach portal, Home or the
+  // sign-in page draws), so a coach portal address never opens on a blank page.
+  const asking = coachPage && (isLoading || (Boolean(userId) && !roleKnown(userId) && !notCoach));
+  const [answered, setAnswered] = useState(null);
+  // On the way Home the crosshair stays until Home's frame has drawn, so the step between the two is never blank.
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => { if (notCoach) setLeaving(true); }, [notCoach]);
+  useEffect(() => {
+    if (!leaving) return undefined;
+    let frame = 0;
+    const started = Date.now();
+    const until = () => {
+      if (!COACH_PAGE.test(window.location.pathname) && (document.querySelector('.ds-frame-root') || Date.now() - started > 10000)) setLeaving(false);
+      else frame = requestAnimationFrame(until);
+    };
+    until();
+    return () => cancelAnimationFrame(frame);
+  }, [leaving]);
+  useEffect(() => {
+    if (!asking || isLoading) return undefined;
+    let live = true;
+    let frame = 0;
+    // The crosshair stays until the coach portal draws anything of its own (its own crosshair, its calm error or its
+    // frame), so nothing blank shows between the two while the coach checks finish, and nothing of the portal's is
+    // ever covered.
+    const whenDrawn = () => {
+      if (!live) return;
+      if (document.querySelector('.cc-app')) setAnswered(userId);
+      else frame = requestAnimationFrame(whenDrawn);
+    };
+    whenDrawn();
+    loadCoachRole(userId).then((coach) => {
+      if (!live || coach !== null) return;
+      refreshCoachRole(userId); // kept on the device, so the next visit goes Home before anything is asked
+      setLeaving(true);
+      navigate('/welcome', { replace: true });
+    }, () => {});
+    return () => { live = false; cancelAnimationFrame(frame); };
+  }, [asking, isLoading, userId, navigate]);
+  const show = leaving || notCoach || (asking && (isLoading || answered !== userId));
+  if (!show) return null;
+  return (
+    <div className="ui-root ds-portal cc-client-wait" style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-bar)', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
+      <Loading label="Loading" delay={0} className="ds-loading--page" />
+    </div>
+  );
+}
+
 // An old address moved to a new one (Phase 4): the query, the hash and
 // any state go with it, so nothing that relied on them is lost.
 function MovedTo({ to }) {
@@ -389,10 +453,14 @@ function AppContent() {
     return () => window.clearTimeout(timer);
   }, [openingReady]);
 
+  // The coach portal and the public booking, poll and workshop pages load only their own code (Tim's walk, item 30: a
+  // coach's first visit fetched every client page's part, ~117 files): the client pages' parts and their data are kept
+  // on the device only once someone opens a client page.
+  const ownPart = /^\/(coach|book|poll|workshop)(\/|$)/.test(location.pathname);
   // The key pages' data kept on the device, once per visit (warmDevice.js).
-  useEffect(() => { startWarming(user?.id ?? null); }, [user?.id]);
+  useEffect(() => { if (!ownPart) startWarming(user?.id ?? null); }, [user?.id, ownPart]);
   // Every page's part of the app, once the first screen is up (page() above).
-  useEffect(() => { if (!isLoading) preloadAllPagesWhenIdle(); }, [isLoading]);
+  useEffect(() => { if (!isLoading && !ownPart) preloadAllPagesWhenIdle(); }, [isLoading, ownPart]);
 
   // Boot diagnostics
   useEffect(() => {
@@ -531,6 +599,7 @@ function AppContent() {
   return (
     <>
       <TabTitle />
+      <ClientOffCoach />
       <ScrollToTop />
       <ErrorBoundary>
         <Routes>
@@ -674,6 +743,8 @@ function AppContent() {
           <Route path="/monthly-review/:month/answers" element={<CheckIn />} />
           <Route path="/personal-operating-plan-archived/:missionId" element={<PersonalOperatingPlanArchivedOne />} />
           <Route path="/mission-progress-review" element={<MissionProgressReviewDetail />} />
+          {/* /account is My Account (Tim, Stage A walk): its query and hash go with it. */}
+          <Route path="/account" element={<MovedTo to="/my-account" />} />
           <Route path="/my-account" element={<MyAccount />} />
           <Route path="/my-account/password" element={<AccountPassword />} />
           <Route path="/my-account/email" element={<AccountEmail />} />

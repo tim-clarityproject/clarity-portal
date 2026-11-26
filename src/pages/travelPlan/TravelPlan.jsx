@@ -1,8 +1,9 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { B3_LINES } from '../../content/pageLines/client';
 import { Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import {
+import { PageOpening,
   AddButton,
   BodyClockChart,
   Button,
@@ -86,6 +87,7 @@ import { saveMoment, usePeakMoments } from '../../lib/peakMoments/store';
 import '../performance/performance.css';
 import '../peakMoments/peakMoments.css';
 import './travelPlan.css';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 
 // The Travel plan (mock-up M21, version 7.2, approved 17 Nov; Phase 8b part
 // B). The brief wins over M21, and the rules in CLAUDE.md win over both:
@@ -168,7 +170,7 @@ function TravelStart() {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page travel-page">
-        <PageHeader title={TOOL_NAME} />
+        <PageOpening title={TOOL_NAME} line={B3_LINES.travelPlan} />
         <div className="ds-empty travel-calm">
           <h2 className="ds-empty-title">{named('Where are you flying next', first)}?</h2>
           <div className="ds-actions">
@@ -335,7 +337,7 @@ function TravelSetup() {
   };
 
   const close = () => {
-    if (!editing) toast.show('Saved');
+    if (!editing) toast.show(TOOL_CLOSED);
     navigate(editing ? `${PATH}/${editing.id}` : (location.state?.from || PATH), { replace: true });
   };
 

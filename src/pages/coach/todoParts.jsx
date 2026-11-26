@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
+  QuickAdd as SharedQuickAdd,
   AddButton, Button, Chip, ChipRow, DatePicker, Dropdown, IconButton, SlidePanel, SwitchRow, TextBox, TextField, useIsPhone, useToast,
 } from '../../components/design';
 import keepWords from '../../components/design/keepWords';
@@ -515,6 +516,68 @@ export function QuickAdd({ defaults, defaultDay = null, onAdded, boxRef }) {
     </form>
   );
 }
+
+/**
+ * Quick Add for the coach's to-dos (polish 1, rule 10; Tim's walk, item 24): the shared QuickAdd, a small box under the
+ * card's label on a laptop and the panel from the bottom on a phone. The words are read as the side panel's quick add
+ * reads them (day.js's parseQuickAdd: "Call Sam Fri 10:00 #Kestrel @phone ! 30m"); how is said in one line, only once
+ * typing has begun. Pass it as a Card's `quickAdd`, with an AddLink as its `add`.
+ */
+export function TodoQuickAdd({ open, onClose, defaults, defaultDay = null }) {
+  const { todoLists, tags, clients, todayKey } = useCoachPortal();
+  const actions = useTodoActions();
+  const [text, setText] = useState('');
+  const [problem, setProblem] = useState(null);
+  const busy = useRef(false);
+  const box = useRef(null);
+  const ctx = useMemo(() => ({ todayKey, lists: todoLists.filter((l) => !l.finished_at), tags, clients, defaultDay }), [todayKey, todoLists, tags, clients, defaultDay]);
+  const parsed = useMemo(() => parseQuickAdd(text, ctx), [text, ctx]);
+  // One close for the box's life, so a page drawing again never re-opens its layer or moves the cursor.
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const close = useCallback(() => { setText(''); setProblem(null); closeRef.current?.(); }, []);
+  useEffect(() => {
+    if (!open) return undefined;
+    const t = setTimeout(() => box.current?.focus(), 60);
+    return () => clearTimeout(t);
+  }, [open]);
+  const add = async () => {
+    if (busy.current) return;
+    if (!parsed.title) { setProblem(NEEDS_WORDS); box.current?.focus(); return; }
+    busy.current = true;
+    try {
+      const todo = await actions.add(parsed, defaults);
+      if (todo) close();
+    } finally { busy.current = false; }
+  };
+  return (
+    <SharedQuickAdd open={open} onClose={close} onAdd={add} label="Add to-do" addLabel="Add to-do">
+      <input
+        ref={box}
+        className="ds-qa-box"
+        value={text}
+        maxLength={400}
+        placeholder="What needs doing?"
+        aria-label="What needs doing?"
+        autoComplete="off"
+        enterKeyHint="done"
+        onChange={(e) => { setText(e.target.value); setProblem(null); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); add(); }
+          if (e.key === 'Escape') { e.preventDefault(); close(); }
+        }}
+      />
+      {problem && <p className="cc-problem" role="alert">{problem}</p>}
+      {parsed.title && (
+        <div className="cc-qadd-read cc-qa-read" aria-live="polite">
+          <ul className="cc-qadd-chips" aria-label="How it was read">{quickAddChips(parsed, ctx).map((c) => <li key={c}>{c}</li>)}</ul>
+          <p className="cc-qa-help">{QUICK_LINE}</p>
+        </div>
+      )}
+    </SharedQuickAdd>
+  );
+}
+const QUICK_LINE = 'Add a day or time, # a list or client, @ a tag, ! for important, 30m for how long.';
 
 /**
  * The quick add in the side panel (full screen on a phone); it closes once the to-do is added.

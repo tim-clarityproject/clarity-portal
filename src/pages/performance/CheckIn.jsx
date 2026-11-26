@@ -14,7 +14,7 @@ import {
   LoadError,
   Loading,
   NotePanel,
-  PageHeader,
+  PageOpening,
   Section,
   SlidePanel,
   Stat,
@@ -93,6 +93,7 @@ import {
 } from '../../lib/performance';
 import { exampleRole } from '../../content/planBuilder';
 import { formatSavedDate, getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
+import { B2_LINES } from '../../content/pageLines/client';
 import './performance.css';
 
 // The Hardware and Software check-in (mock-up M12 version 14, read in full
@@ -192,7 +193,7 @@ function Shell({ children }) {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page">
-        <PageHeader title="Monthly review" />
+        <PageOpening title="Monthly review" line={B2_LINES.monthlyReview} />
         {children}
       </div>
     </div>
@@ -1011,7 +1012,7 @@ function CheckinRead({ userId, today, loaded, row }) {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page ck-page">
-        <PageHeader title={checkinTitle(row)} meta={['Monthly Hardware and Software review', when]} aside={eye} />
+        <PageOpening label={`Monthly Hardware and Software review, ${when}`} title={checkinTitle(row)} line={B2_LINES.monthlyReview} aside={eye} />
         <Results
           userId={userId}
           today={today}

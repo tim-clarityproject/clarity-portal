@@ -471,11 +471,11 @@ export function withNextStep(lead, typed) {
 
 /** "Where did they come from?" in Add lead, in order. */
 export const LEAD_SOURCES = [
-  ['referral', 'Referred by someone'], ['chemistry_page', 'Chemistry Call page'], ['connection_page', 'Connection Call page'],
+  ['referral', 'Referred by someone'], ['chemistry_page', 'Discovery call page'], ['connection_page', 'Connection Call page'],
   ['other', 'Somewhere else'],
 ];
 const SOURCE_WORDS = {
-  referral: 'A referral', chemistry_page: 'Chemistry Call page', connection_page: 'Connection Call page', booking_page: 'A booking page', single_use_link: 'A booking link',
+  referral: 'A referral', chemistry_page: 'Discovery call page', connection_page: 'Connection Call page', booking_page: 'A booking page', single_use_link: 'A booking link',
   manual: 'Added by you', import: 'A spreadsheet', email: 'Your email', network: 'Your Network', other: 'Somewhere else',
 };
 /** Where a lead came from, in words. */
@@ -572,7 +572,7 @@ export function leadEvent({ id, lead, kind, nowIso, todayKey, title, detail = nu
 /** A lead after a line of a contact kind: its last contact moved forward, never back (device first; the database does this itself). */
 export const withContact = (lead, event) => (CONTACT_KINDS.includes(event?.kind) && event.happened_on && (!lead.last_contact_on || lead.last_contact_on < event.happened_on) ? { ...lead, last_contact_on: event.happened_on } : lead);
 
-/** "Chemistry Call, 30 minutes", or "Call, 30 minutes" when it isn't one of the call types. */
+/** "Discovery call, 30 minutes", or "Call, 30 minutes" when it isn't one of the call types. */
 export const callTitle = (callName, minutes) => `${clean(callName) || 'Call'}${minutes ? `, ${minutes} minutes` : ''}`;
 /** "Leadership Accelerator, £13,500 + VAT." */
 export const proposalDetail = (name, amount, currency = 'GBP') => `${[clean(name), amount ? `${moneyWords(amount, currency)} + VAT` : ''].filter(Boolean).join(', ')}.`;
@@ -640,7 +640,7 @@ export const bookingAnswers = (lead) => (lead?.answers && typeof lead.answers ==
  * Email, and an email whose thread is hidden isn't shown.
  * @param {object[]} events the lead's coach_lead_events (a won client's page passes the events of the lead whose won_profile_id it is)
  * The two lines a booking writes in the database have no title of their own
- * (052's trigger): they read "First contact" and "Booked a Chemistry Call",
+ * (052's trigger): they read "First contact" and "Booked a Discovery call",
  * as bookingLines words them before 052 (`callNames`: call type key to name).
  * @param {{ emails?: object[], lead?: object, todayKey: string, callNames?: Record<string, string> }} ctx
  * @returns {{ id: string, kind: string, when: string, title: string, lines: string[], tag: string, emailId: string|null, at: string }[]}
@@ -884,7 +884,7 @@ export function sheetRows(table, columns) {
   return { rows, skipped };
 }
 
-const SOURCE_FROM_TYPED = [[/referr|introduc|word of mouth/i, 'referral'], [/chemistry/i, 'chemistry_page'], [/connection/i, 'connection_page'], [/e-?mail/i, 'email'], [/network/i, 'network']];
+const SOURCE_FROM_TYPED = [[/referr|introduc|word of mouth/i, 'referral'], [/chemistry|discovery/i, 'chemistry_page'], [/connection/i, 'connection_page'], [/e-?mail/i, 'email'], [/network/i, 'network']];
 
 /**
  * Import, with duplicates shown first: every row that may already be a

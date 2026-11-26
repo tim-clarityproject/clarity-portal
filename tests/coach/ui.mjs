@@ -162,7 +162,7 @@ const MUST = {
   'lead-waiting': (r) => r.text.includes('You emailed Sarah Kent, who isn’t in the portal yet.') && r.text.includes('Chris Doyle may be in here twice.'),
   'lead-page': (r) => ['Nearly there. Still to find out: when.', 'Referred by', 'Hannah Wells', 'Leadership Accelerator. Opened 3 times.', 'Not known yet'].every((w) => r.text.includes(w)),
   // Run 4, step 3: Automations, Boards, emails logged, past clients' check-ins, the account map.
-  automations: (r) => ['When a lead moves to Proposal sent, add the to-do “Follow up on the proposal”, 3 days later.', 'Ran 4 times in November', 'When a Chemistry Call is booked, add the to-do “Read their booking answers”, the day before.', 'Off', 'Automations add to-dos and move stages. They never send anything.'].every((w) => r.text.includes(w)) && !/add tags|keep people in touch/.test(r.text),
+  automations: (r) => ['When a lead moves to Proposal sent, add the to-do “Follow up on the proposal”, 3 days later.', 'Ran 4 times in November', 'When a Discovery call is booked, add the to-do “Read their booking answers”, the day before.', 'Off', 'Automations add to-dos and move stages. They never send anything.'].every((w) => r.text.includes(w)) && !/add tags|keep people in touch/.test(r.text),
   'automations-link': (r) => r.text.includes('Automations') && r.text.includes('Cold leads'),
   boards: (r) => ['Speaking', '4 stages', '5 cards', 'Partners', '3 stages', '2 cards', 'New board'].every((w) => r.text.includes(w)),
   board: (r) => ['Ideas', 'Pitched', 'Confirmed', 'Done', 'CIPD Festival of Work', '£4,500', '800 HR leaders', 'League Managers Association', 'Head coaches', 'Edit this board'].every((w) => r.text.includes(w)),

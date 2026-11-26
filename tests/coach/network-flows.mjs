@@ -33,7 +33,7 @@ import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, makeReport, seedDevice, seedNetworkDevice, settle, SIZES, standIn, toastText } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, frameMenu, makeReport, openSearch, seedDevice, seedNetworkDevice, settle, SIZES, standIn, toastText } from './shared.mjs';
 import { CRM, manyNetwork, networkDeviceSeed, networkSeed, seedClock, seedWithCrm } from './seed.mjs';
 import { mapProblems, readMap, tableFrozen } from './net-rules.mjs';
 import { xlsxBytes, xlsxTable } from '../../src/lib/coach/xlsx.js';
@@ -42,8 +42,10 @@ export const NETWORK_PARTS = ['net-actions', 'net-archive', 'net-table', 'net-ma
 const TUE = new Date(2026, 10, 17, 9, 0);
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
-const press = async (page, name, scope = page) => { await scope.getByRole('button', { name, exact: true }).first().click(); await settle(page, 600); };
+// A name in a list or table, a board card and the pages that open more are real links since Polish 1 (B4): press either.
+const press = async (page, name, scope = page) => { await scope.getByRole('button', { name, exact: true }).or(scope.getByRole('link', { name, exact: true })).first().click(); await settle(page, 600); };
 const go = async (page, path) => { await page.goto(`${APP}${path}`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 1300); };
+const flat = (t) => String(t || '').replace(/\s+/g, ' ').trim();
 const words = (page) => page.evaluate(() => (document.querySelector('.cc-main')?.innerText || '').replace(/ /g, ' '));
 const panelWords = (page) => dialog(page).innerText().then((t) => t.replace(/ /g, ' ')).catch(() => '');
 const undo = async (page) => { await page.locator('.ds-toast').getByRole('button', { name: 'Undo' }).click(); await settle(page, 900); };
@@ -52,9 +54,10 @@ const has = (text, list) => list.every((w) => text.toLowerCase().includes(w.toLo
 const missing = (text, list) => list.filter((w) => !text.toLowerCase().includes(w.toLowerCase())).join(' | ');
 const forDevice = (rows) => { const { coach_notifications: _n, activity_log: _a, workshop_survey_answers: _w, coach_profiles: _p, coach_bookings: _b, coach_email_addresses: _e, coach_poll_votes: _v, coach_cal_reminder_sends: _r, network_people: _np, network_gives: _ng, network_ratings: _nr, network_merges: _nm, ...own } = rows; return own; };
 const rowNames = (page) => page.locator('.cc-net-table tbody .cc-table-name').allInnerTexts();
-const actionRows = (page, title) => page.locator('.cc-part', { has: page.locator('.ds-section-title', { hasText: title }) }).locator('.cc-row').evaluateAll((rows) => rows.map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
+// Polish 1 (B4): each list of Actions is a card with its label and the shared list rows.
+const actionRows = (page, title) => page.locator('.ds-card', { has: page.locator('.ds-label', { hasText: title }) }).locator('.ds-li').evaluateAll((rows) => rows.map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
 const cell = (page, column, name) => page.locator('.cc-net-table').getByRole('button', { name: new RegExp(`^${column} for ${name}`) }).first();
-const cellText = async (page, name, index) => (await page.locator('.cc-net-table tbody tr', { has: page.getByRole('button', { name, exact: true }) }).locator('td, th').nth(index).innerText()).trim();
+const cellText = async (page, name, index) => (await page.locator('.cc-net-table tbody tr', { has: page.getByRole('link', { name, exact: true }) }).locator('td, th').nth(index).innerText()).trim();
 
 async function run() {
   const report = makeReport('Network, the flows');
@@ -158,7 +161,7 @@ async function run() {
         pass(`${tag}: its Show all opens all six`, coming.length === 6 && /^David Stark .* Due Fri 15 Jan 2027$/.test(coming[5]), coming[5]);
 
         // A catch-up logged.
-        await page.locator('.cc-row', { hasText: 'Sofia Marsh' }).first().click(); await settle(page, 800);
+        await page.locator('.ds-li', { hasText: 'Sofia Marsh' }).first().click(); await settle(page, 800);
         pass(`${tag}: a row opens the person in the side panel`, has(await panelWords(page), ['Sofia Marsh', 'Key contact, Citadel', 'You last spoke on Sat 8 Aug.', 'I spoke to Sofia today']), (await panelWords(page)).slice(0, 120));
         await press(page, 'I spoke to Sofia today', dialog(page));
         pass(`${tag}: “I spoke to Sofia today” says when next`, (await toastText(page)) === 'Logged. Next time is Wed 17 Feb 2027.', await toastText(page));
@@ -172,7 +175,7 @@ async function run() {
         pass(`${tag}: Undo puts her back at the top, 9 days overdue`, /^Sofia Marsh .* 9 days overdue$/.test(due[0]) && (await a.peopleNow()).find((p) => p.id === CRM.sofia)?.last_spoke_on === '2026-08-08', due[0]);
 
         // Not now, in 2 weeks.
-        await page.locator('.cc-row', { hasText: 'Dana Whitfield' }).first().click(); await settle(page, 800);
+        await page.locator('.ds-li', { hasText: 'Dana Whitfield' }).first().click(); await settle(page, 800);
         await press(page, 'Not now, in 2 weeks', dialog(page));
         pass(`${tag}: “Not now, in 2 weeks” moves the catch-up`, (await toastText(page)) === 'Moved to Tue 1 Dec.', await toastText(page));
         await page.keyboard.press('Escape'); await settle(page, 700);
@@ -181,7 +184,7 @@ async function run() {
         await undo(page);
 
         // Add someone.
-        await page.locator('.cc-main .ds-addrow', { hasText: 'Add someone' }).click(); await settle(page, 700);
+        await page.getByRole('button', { name: 'Add someone', exact: true }).first().click(); await settle(page, 700);
         pass(`${tag}: Add someone asks who, who they are to you and how often`, has(await panelWords(page), ['Add to your Network', 'Who?', 'Who are they to you?', 'Referrer', 'How often?', 'Every 3 months']), (await panelWords(page)).slice(0, 160));
         const addButton = dialog(page).getByRole('button', { name: 'Add', exact: true });
         pass(`${tag}: its button is never greyed out`, !(await addButton.isDisabled()) && (await addButton.getAttribute('aria-disabled')) !== 'true');
@@ -675,28 +678,28 @@ async function run() {
         const tag = `net-today, ${mode}`;
         const a = await openAt({ db, tag, path: '/coach' });
         const { page } = a;
-        const section = page.locator('.cc-main section', { has: page.locator('h2', { hasText: /keep in touch/i }) });
-        const rows = await section.locator('.cc-row').evaluateAll((list) => list.map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
+        // Polish 1 (Stage A/B): Today's parts are cards and their lines the shared rows (.ds-li).
+        const section = page.locator('.cc-today-keep');
+        const rows = await section.locator('.ds-li').evaluateAll((list) => list.map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
         pass(`${tag}: Today’s Keep in touch shows the three most overdue, one quiet line each, then “Show all 9”, then past clients’ check-ins`, /^Sofia Marsh Key contact$/.test(rows[0]) && /^Dana Whitfield Sponsor$/.test(rows[1]) && /^Hannah Wells Client$/.test(rows[2]) && (await section.getByRole('button', { name: 'Show all 9', exact: true }).count()) === 1 && rows.slice(3).some((r) => /check-in/.test(r)), rows.join(' | '));
-        pass(`${tag}: a screen reader hears the quiet line (“Sofia Marsh: 3 months since you spoke.”)`, (await section.locator('.cc-row').first().getAttribute('aria-label')) === 'Sofia Marsh: 3 months since you spoke. Open', await section.locator('.cc-row').first().getAttribute('aria-label'));
-        await section.locator('.cc-row').first().click(); await settle(page, 1200);
+        pass(`${tag}: a screen reader hears the quiet line (“Sofia Marsh: 3 months since you spoke.”)`, (await section.locator('.ds-li').first().getAttribute('aria-label')) === 'Sofia Marsh: 3 months since you spoke.', await section.locator('.ds-li').first().getAttribute('aria-label'));
+        await section.locator('.ds-li').first().click(); await settle(page, 1200);
         pass(`${tag}: a line opens that person in Network`, /\/coach\/network\?person=/.test(page.url()) && (await panelWords(page)).includes('I spoke to Sofia today'));
         await press(page, 'I spoke to Sofia today', dialog(page));
         await go(page, '/coach');
-        const after = await section.locator('.cc-row').evaluateAll((list) => list.map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
+        const after = await section.locator('.ds-li').evaluateAll((list) => list.map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
         pass(`${tag}: once spoken to, she leaves Today’s lines and the next most overdue shows`, /^Dana Whitfield/.test(after[0]) && !after.some((r) => r.startsWith('Sofia')) && (await section.getByRole('button', { name: 'Show all 8', exact: true }).count()) === 1, after.join(' | '));
         await section.getByRole('button', { name: 'Show all 8', exact: true }).click(); await settle(page, 1000);
         pass(`${tag}: “Show all” opens Network’s Actions`, page.url().endsWith('/coach/network') && (await words(page)).toLowerCase().includes('due now'));
 
         // The menu's count.
-        await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 900);
-        const item = page.locator('.cc-menu .cc-menu-item', { hasText: 'Network' });
-        pass(`${tag}: the menu shows how many are due a catch-up beside Network, said in words to a screen reader`, (await item.innerText()).replace(/\s+/g, ' ').trim() === 'Network 8' && (await item.getAttribute('aria-label')) === 'Network, 8 due a catch-up', `${(await item.innerText()).replace(/\s+/g, ' ')} / ${await item.getAttribute('aria-label')}`);
-        pass(`${tag}: no keyboard shortcut is shown in the menu or the search box`, !/[⌘⌥⇧]|\bCtrl\b/.test(await page.locator('.cc-app').innerText()));
+        // The frame's menu (polish 1) is plain words with no counts; Today's Keep in touch carries the people due.
+        const item = (await frameMenu(page)).filter({ hasText: /^Network/ }).first();
+        pass(`${tag}: Network is in the menu, a link with its plain name`, flat(await item.innerText()) === 'Network' && (await item.getAttribute('href')) === '/coach/network', flat(await item.innerText()));
         await page.keyboard.press('Escape'); await settle(page, 500);
 
         // Search.
-        await page.getByRole('button', { name: 'Search, or do anything' }).click();
+        await openSearch(page);
         await page.keyboard.type('priyesh'); await settle(page, 1000);
         const hits = await page.locator('.cc-jump-item').evaluateAll((list) => list.map((b) => b.innerText.replace(/\s+/g, ' ').trim()));
         pass(`${tag}: search finds Network’s people, archived ones marked`, hits.some((h) => h === 'Priyesh Young Network, archived'), hits.join(' | '));
@@ -707,7 +710,7 @@ async function run() {
         await page.locator('.cc-jump-item', { hasText: /Network$/ }).first().click(); await settle(page, 1200);
         pass(`${tag}: choosing one opens their panel`, /person=/.test(page.url()) && (await panelWords(page)).includes('I spoke to Hannah today'), page.url().slice(-60));
         await page.keyboard.press('Escape'); await settle(page, 500);
-        await page.getByRole('button', { name: 'Search, or do anything' }).click();
+        await openSearch(page);
         await page.keyboard.type('add someone'); await settle(page, 600);
         await page.locator('.cc-jump-item', { hasText: 'Add someone to your Network' }).click(); await settle(page, 1000);
         pass(`${tag}: “Add someone to your Network” in search opens its panel`, (await panelWords(page)).toLowerCase().includes('add to your network'));
@@ -731,7 +734,7 @@ async function run() {
           await page.waitForSelector('.cc-app', { timeout: 20000 });
           const drawn = Date.now();
           let shown = null;
-          try { await page.locator('.cc-main').getByText(name, { exact: true }).first().waitFor({ timeout: 10000 }); shown = Date.now() - drawn; } catch { /* checked below */ }
+          try { await page.locator('.cc-main').getByText(name).first().waitFor({ timeout: 10000 }); shown = Date.now() - drawn; } catch { /* checked below */ }
           const offline = await words(page);
           pass(`${tag}, ${tab}: after a reload with no connection the device copy shows as soon as the portal does (within 1.5 s), never an empty Network`, shown !== null && shown <= 1500, shown === null ? `never: ${offline.slice(0, 160)}` : `${shown} ms`);
           pass(`${tag}, ${tab}: it never says it needs a connection the first time`, !/needs a connection the first time/.test(offline) && online.includes(name));
@@ -755,10 +758,9 @@ async function run() {
         await go(page, `/coach/network?person=${CRM.david}`);
         pass(`${tag}: and so does one who opens a person’s address`, new URL(page.url()).pathname === '/coach' && (await dialog(page).count()) === 0);
         pass(`${tag}: Today has no Network people in Keep in touch`, !(await words(page)).includes('Sofia Marsh') && !(await words(page)).includes('Dana Whitfield'));
-        await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 800);
-        pass(`${tag}: the menu has no Network`, !(await page.locator('.cc-menu').innerText()).includes('Network'));
-        await page.keyboard.press('Escape'); await settle(page, 400);
-        await page.getByRole('button', { name: 'Search, or do anything' }).click();
+        // Polish 1: the menu is the frame's column, always in view on a laptop (no menu button to open).
+        pass(`${tag}: the menu has no Network`, !(await page.locator('.ds-frame-side .ds-menu').innerText()).includes('Network'));
+        await openSearch(page);
         await page.keyboard.type('sofia'); await settle(page, 1000);
         const hits = await page.locator('.cc-jump-item').allInnerTexts();
         pass(`${tag}: search finds nobody of the owner’s Network, and offers no Network page or action`, !hits.some((h) => /Sofia|Network/.test(h)), hits.join(' | '));
@@ -778,7 +780,7 @@ async function run() {
       await dialog(page).getByRole('radio', { name: 'Advice' }).click();
       await press(page, 'Save', dialog(page));
       await page.keyboard.press('Escape'); await settle(page, 500);
-      await page.locator('.cc-main .ds-addrow', { hasText: 'Add someone' }).click(); await settle(page, 600);
+      await page.getByRole('button', { name: 'Add someone', exact: true }).first().click(); await settle(page, 600);
       await dialog(page).getByLabel('Who?').fill('Nell Okoye');
       await press(page, 'Add', dialog(page));
       const before = { people: (await a.peopleNow()).length, gives: (await a.givesNow()).length };

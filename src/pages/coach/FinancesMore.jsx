@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  AddButton, Button, Chip, ChipRow, DatePicker, Dropdown, ExplainLink, FilterButton, InlineChoice, SearchField, SlidePanel, Stat, StatGroup, TextField, useToast,
+  AddButton, AddLink, Button, Chip, ChipRow, DatePicker, Dropdown, ExplainLink, FilterButton, InlineChoice, SearchField, SlidePanel, Stat, StatGroup, TextField, useToast,
 } from '../../components/design';
 import { newId, removeRow, saveRow, saveRows } from '../../lib/coach/store';
 import { dayKeyWords } from '../../lib/time/index.js';
@@ -54,7 +54,6 @@ export function InvoicesTab() {
   };
   return (
     <>
-      <div className="fin-ctl"><Button variant="primary" onClick={() => setPanel({ kind: 'new' })}>New invoice</Button></div>
       <div className={`fin-search${applied ? ' fin-search--applied' : ''}`}>
         <SearchField label="Search invoices" placeholder="Search invoices" value={q} onChange={setQ} />
         <FilterButton applied={applied} onClear={() => { setWho(''); setStatus(''); setYear(''); }}>
@@ -86,24 +85,24 @@ export function PricingTab() {
   const sections = pricingSections(packages, financeSectors);
   return (
     <>
-      <div className="fin-ctl"><Button variant="primary" onClick={() => setPanel({ kind: 'sweep' })}>Update all prices</Button></div>
+      <div className="fin-ctl"><Button variant="outline" onClick={() => setPanel({ kind: 'sweep' })}>Update all prices</Button></div>
       {sections.length === 0 && <p className="cc-quiet">No packages yet.</p>}
       {sections.map((s) => (
         <FinPart key={s.name} title={s.name} aside={vatOn ? 'Organisations + VAT, personally including VAT' : null}>
           <div className="fin-price-head fin-hide-phone" aria-hidden="true"><span /><span>Organisations</span><span>Personally</span></div>
           {s.packages.map((p) => (
-            <button key={p.id} type="button" className="cc-row fin-row fin-price-row" onClick={() => setPanel({ kind: 'package', id: p.id })}
+            <button key={p.id} type="button" className="ds-li ds-li--go fin-row fin-price-row" onClick={() => setPanel({ kind: 'package', id: p.id })}
               aria-label={`${p.name}: organisations ${priceWords(p.org_price_minor, p.per) || 'none'}, personally ${priceWords(p.personal_price_minor, p.per) || 'none'}. Edit`}>
-              <span className="fin-row-words"><b>{p.name}</b><small><span>{packageDetail(p, { vatOn })}</span></small></span>
+              <span className="ds-li-name fin-row-words">{p.name}<small className="ds-li-sub">{packageDetail(p, { vatOn })}</small></span>
               <span className="fin-price">{priceWords(p.org_price_minor, p.per)}</span>
               <span className="fin-price fin-price--quiet">{priceWords(p.personal_price_minor, p.per)}</span>
             </button>
           ))}
         </FinPart>
       ))}
-      <FinPart title="Discounts">
+      <FinPart title="Discounts" add={<AddLink label="Add discount" expanded={panel?.kind === 'discount' && !panel.id} onClick={() => setPanel({ kind: 'discount' })} />}>
+        {(discounts || []).length === 0 && <p className="cc-quiet fin-none">No discounts yet.</p>}
         {(discounts || []).map((d) => <FigRow key={d.id} title={d.name} facts={[discountFor(d, packages)]} value={discountWords(d)} onClick={() => setPanel({ kind: 'discount', id: d.id })} label={`Edit ${d.name}`} />)}
-        <div className="cc-add"><AddButton onClick={() => setPanel({ kind: 'discount' })}>Add discount</AddButton></div>
       </FinPart>
       {(priceChanges || []).length > 0 && (
         <FinPart title="Changes">
@@ -270,9 +269,9 @@ export function OtherTab() {
         <FigRow title="Where each client lives" facts={['Kept for every client outside the UK, as evidence']} value={abroad === 1 ? '1 client' : `${abroad} clients`} />
       </FinPart>
 
-      <FinPart title="Company deadlines">
+      <FinPart title="Company deadlines" add={<AddLink label="Add deadline" expanded={panel?.kind === 'deadline' && !panel.id} onClick={() => setPanel({ kind: 'deadline' })} />}>
+        {upcoming.length === 0 && <p className="cc-quiet fin-none">No deadlines yet.</p>}
         {upcoming.map((d) => <FigRow key={d.id} title={d.name} facts={[[KIND_WHO[d.kind], (EVERY_WORDS[d.every] || '').toLowerCase()].filter(Boolean).join(', ')]} value={dayWordsFrom(d.day, todayKey)} onClick={() => setPanel({ kind: 'deadline', id: d.id })} label={`Edit ${d.name}`} />)}
-        <div className="cc-add"><AddButton onClick={() => setPanel({ kind: 'deadline' })}>Add deadline</AddButton></div>
       </FinPart>
 
       <FinPart title="Year end">

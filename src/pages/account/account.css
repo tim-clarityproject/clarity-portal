@@ -20,8 +20,10 @@
 .ui-root .acct-pane { max-width: var(--tool-max); }
 .ui-root .acct-pane--questions { max-width: none; }
 
-.ui-root .acct-pane > .ds-rows-list + .ds-rows-list { margin-top: var(--space-4); }
-.ui-root .acct-pane > .ds-rows-list > .ds-li:first-child { border-top: 0; padding-top: 0; }
+.ui-root .acct-pane > .ds-rows-list + .ds-rows-list { margin-top: 0; }
+/* Lists one after another read as one list: only the first list's first row has no line above it
+   (walk item 8; the design check's divider). */
+.ui-root .acct-pane > .ds-rows-list:first-child > .ds-li:first-child { border-top: 0; padding-top: 0; }
 
 .ui-root .acct-line {
   margin: var(--space-3) 0 0;

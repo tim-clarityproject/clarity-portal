@@ -1,5 +1,6 @@
 import ChartTips, { tipProps } from './ChartTips';
 import './design.css';
+import './planCards.css';
 
 // The circled Outcome Objective number (Tim, 26 Oct, 10:48 and 11:48):
 // Outcome Objectives are numbered 1 to 4 wherever they are listed with

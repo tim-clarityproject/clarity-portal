@@ -1,4 +1,6 @@
+import './toolFocus/formTool.css';
 import { useContext, useEffect, useState } from 'react';
+import { B3_LINES } from '../content/pageLines/client';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { parseDbTimestamp, formatDayMonthTime } from '../lib/dateFormatter';
@@ -6,8 +8,7 @@ import { TECHNIQUES, loadBreathingSessions, loadBreathingTotals, deleteBreathing
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import { EmptyState, Loading, PageHeader, useToast } from '../components/design';
-import pageText from '../content/pageText';
+import { EmptyState, Loading, PageOpening, useToast } from '../components/design';
 
 function formatMonthHeading(value) {
   const date = parseDbTimestamp(value);
@@ -79,7 +80,7 @@ export default function BreathingSessionsSummary() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/breathe')} label="Back to Breathe" /></div>
 
         <div className="plan-summary-head">
-          <PageHeader title="Breathing Sessions" info={pageText.breathingSessionsSummary} />
+          <PageOpening title="Breathing sessions" line={B3_LINES.breathingSessions} />
         </div>
 
         {sessions.length === 0 ? (

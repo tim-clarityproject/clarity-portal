@@ -335,19 +335,22 @@ export function LoggingWeekRow({
         {days.map((d) => {
           const v = values[d.key];
           const words = v === 1 ? 'Yes' : v === 0 ? 'No' : '';
+          // The day above its box, outside the button, as the number and rating boxes have it, so the
+          // button holds one word (requests-b2 2: words never wrap inside a control).
           return (
-            <button
-              key={d.key}
-              type="button"
-              className={`ds-logweek-yn${d.today ? ' ds-logweek--today' : ''}${dashEmpty && v == null && !d.later ? ' ds-logweek-yn--empty' : ''}`}
-              aria-pressed={v === 1}
-              disabled={d.later}
-              aria-label={`${name}, ${d.full}: ${d.later ? 'still to come' : v === 1 ? 'yes' : v === 0 ? 'no' : 'not logged'}`}
-              onClick={() => onChange(d.key, v === 1 ? 0 : v === 0 ? null : 1)}
-            >
-              <span>{d.box}</span>
-              <b>{d.later ? '' : words}</b>
-            </button>
+            <div key={d.key} className={`ds-logweek-ynday${d.today ? ' ds-logweek--today' : ''}`}>
+              <span aria-hidden="true">{d.box}</span>
+              <button
+                type="button"
+                className={`ds-logweek-yn${d.today ? ' ds-logweek--today' : ''}${dashEmpty && v == null && !d.later ? ' ds-logweek-yn--empty' : ''}`}
+                aria-pressed={v === 1}
+                disabled={d.later}
+                aria-label={`${name}, ${d.full}: ${d.later ? 'still to come' : v === 1 ? 'yes' : v === 0 ? 'no' : 'not logged'}`}
+                onClick={() => onChange(d.key, v === 1 ? 0 : v === 0 ? null : 1)}
+              >
+                <b>{d.later ? '' : words}</b>
+              </button>
+            </div>
           );
         })}
       </div>

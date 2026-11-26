@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from 'react';
 import { CalendarPopover } from './Calendar';
 import { Choice } from './Choice';
+import InlineChoice from './InlineChoice';
 import FieldLabel from './FieldLabel';
 import HelpPanel from './HelpPanel';
 import { NumberField } from './LoggingRow';
@@ -23,43 +24,17 @@ import './design.css';
  */
 export function SprintLengthChoice({ sprint, onChange, label = 'How long is this sprint?' }) {
   const id = useId();
-  const refs = useRef([]);
-  const options = [...SPRINT_LENGTHS.map((n) => ({ value: n, big: String(n), small: n === SUGGESTED_LENGTH ? 'suggested' : 'weeks' })),
-    { value: 'other', big: 'Other', small: `${MIN_LENGTH} to ${MAX_LENGTH}` }];
+  // Answer boxes with one line of words each (Polish 1, Stage B, requests-b2 6: rule 7, words never
+  // wrap inside a control); the suggested length is the hint line under them, as the standard's is.
+  const options = [...SPRINT_LENGTHS.map((n) => ({ value: n, label: `${n} weeks` })), { value: 'other', label: 'Other' }];
   const current = sprint.tpl ? null : sprint.other ? 'other' : sprint.len;
   const pick = (value) => onChange(value === 'other' ? { other: true, tpl: false } : { len: value, other: false, tpl: false });
-  const at = Math.max(0, options.findIndex((o) => o.value === current));
-  const onKey = (e, i) => {
-    const moves = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
-    if (!(e.key in moves)) return;
-    e.preventDefault();
-    const next = (i + moves[e.key] + options.length) % options.length;
-    pick(options[next].value);
-    refs.current[next]?.focus();
-  };
   const n = typedNumber(sprint.otherLen);
   const otherBad = sprint.other && String(sprint.otherLen || '').trim() && !(Number.isInteger(n) && n >= MIN_LENGTH && n <= MAX_LENGTH);
   return (
     <div className="ds-sprintset">
-      <div className="ds-lens" role="radiogroup" aria-label={label}>
-        {options.map((o, i) => (
-          <button
-            key={o.value}
-            ref={(el) => { refs.current[i] = el; }}
-            type="button"
-            role="radio"
-            aria-checked={current === o.value}
-            aria-label={o.value === 'other' ? `Another length, ${MIN_LENGTH} to ${MAX_LENGTH} weeks` : `${o.value} weeks${o.value === SUGGESTED_LENGTH ? ', suggested' : ''}`}
-            tabIndex={i === at ? 0 : -1}
-            className="ds-lens-tile"
-            onClick={() => pick(o.value)}
-            onKeyDown={(e) => onKey(e, i)}
-          >
-            <span className={`ds-lens-big${o.value === 'other' ? ' ds-lens-big--word' : ''}`} aria-hidden="true">{o.big}</span>
-            <small aria-hidden="true">{o.small}</small>
-          </button>
-        ))}
-      </div>
+      <InlineChoice ariaLabel={label} form="boxes" options={options} value={current} onChange={pick} />
+      {!sprint.other && <p className="ds-hint">{`${SUGGESTED_LENGTH} weeks is suggested.`}</p>}
       {sprint.other && (
         <div className="ds-sprintset-other">
           <FieldLabel label="How many weeks?" htmlFor={`${id}-weeks`} />

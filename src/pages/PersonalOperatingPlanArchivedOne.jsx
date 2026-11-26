@@ -6,7 +6,8 @@ import { loadLatestVersion, restoreArchivedPlan } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import { Loading, PageHeader, Button, EmptyState, useToast } from '../components/design';
+import { Loading, Button, EmptyState, useToast, PageOpening } from '../components/design';
+import '../pages/hubs/clientPage.css';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -106,7 +107,7 @@ export default function PersonalOperatingPlanArchivedOne() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><Loading label="Loading your archived plan" className="ds-loading--page" /></div>
+        <div className="plan-page cp-page cp-page"><Loading label="Loading your archived plan" className="ds-loading--page" /></div>
       </div>
     );
   }
@@ -115,8 +116,8 @@ export default function PersonalOperatingPlanArchivedOne() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page">
-          <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan-archived')} label="Back to archived plans" /></div>
+        <div className="plan-page cp-page cp-page">
+          <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/personal-operating-plan-archived')} label="Back to archived plans" /></div>
           <p className="ui-subtitle">Plan not found.</p>
         </div>
       </div>
@@ -127,17 +128,14 @@ export default function PersonalOperatingPlanArchivedOne() {
     <div className="ui-root">
       <DesignHeader />
 
-      <div className="plan-page">
-        <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan-archived')} label="Back to archived plans" /></div>
+      <div className="plan-page cp-page cp-page">
+        <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/personal-operating-plan-archived')} label="Back to archived plans" /></div>
 
         <div className="plan-summary-head">
-          <PageHeader
+          <PageOpening
             title={mission.title}
-            info="You can read this plan but not change it."
-            meta={[
-              `Archived ${new Date(mission.archived_at).toLocaleDateString('en-GB')}`,
-              version ? `Last Version ${version.major}.${version.minor}` : null,
-            ]}
+            label={[`Archived ${new Date(mission.archived_at).toLocaleDateString('en-GB')}`, version ? `Last Version ${version.major}.${version.minor}` : null].filter(Boolean).join(', ')}
+            line="You can read this plan but not change it."
           />
         </div>
 

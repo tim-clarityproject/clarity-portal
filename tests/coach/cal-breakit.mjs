@@ -44,7 +44,7 @@
 //   SHOTS=<folder> keeps pictures of the crowded day and the big text.
 import { chromium } from 'playwright';
 import { coachRowsWaiting } from '../../src/lib/coach/copyWaiting.js';
-import { accountId, APP, clearDevice, coachContext, makeReport, ME, OTHER, readEnv, seedDevice, settle, standIn, TABLES_059 } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, frameMenu, frameMenuWords, makeReport, ME, openCalSettings, openFromMenu, openSearch, OTHER, readEnv, seedDevice, settle, standIn, TABLES_059 } from './shared.mjs';
 import { CAL, DAY, ID, seedClock, seedWithCal } from './seed.mjs';
 import { bookStore, guestStandIn } from './book-standin.mjs';
 import { addDays, instantAt, wallClock } from '../../src/lib/time/index.js';
@@ -64,7 +64,7 @@ const toast = async (page) => (await page.locator('.ds-toast-text').last().textC
 const undo = async (page) => { await page.locator('.ds-toast').getByRole('button', { name: 'Undo' }).click(); await settle(page, 900); };
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
 const closePanel = async (page) => { await page.keyboard.press('Escape'); await settle(page, 500); };
-const press = async (scope, page, name) => { await scope.getByRole('button', { name, exact: true }).first().click(); await settle(page, 500); };
+const press = async (scope, page, name) => { if (scope === page) await openCalSettings(page, name); await scope.getByRole('button', { name, exact: true }).first().click(); await settle(page, 500); };
 const pick = async (scope, page, label, option) => {
   await scope.getByRole('combobox', { name: new RegExp(`^${label}`) }).first().click(); await settle(page, 300);
   await page.getByRole('option', { name: option, exact: true }).click(); await settle(page, 400);
@@ -768,10 +768,10 @@ PARTS['b-odd'] = async (role) => {
         pass(`${tag}: ${path}: no row's time runs under its words`, under === 0, `${under} rows`);
       }
       for (const [name, path, open] of [
-        ['the quick add', '/coach/calendar?view=day', async () => { if (size === 400) await page.locator('.cc-cal-foot').getByRole('button', { name: 'Add to calendar' }).click(); else await press(page, page, 'Add to calendar'); await settle(page, 600); }],
+        ['the quick add', '/coach/calendar?view=day', async () => { if (size === 400) { await openCalSettings(page, 'Add to calendar'); await page.locator('.cc-cal-foot').getByRole('button', { name: 'Add to calendar' }).click(); } else await press(page, page, 'Add to calendar'); await settle(page, 600); }],
         ['an item', '/coach/calendar?view=schedule', async () => { await page.locator('.cc-sched-row', { hasText: 'Leaders’ dinner' }).first().click(); await settle(page, 700); await press(dialog(page), page, 'More options'); }],
         ['Book a call', '/coach/calendar/book', async () => { await pick(dialog(page), page, 'Who is it with', 'Jordan Reyes'); }],
-        ['My calendars', '/coach/calendar?view=schedule', async () => { await page.locator('.cc-cal-foot').getByRole('button', { name: 'My calendars' }).click(); await settle(page, 600); }],
+        ['My calendars', '/coach/calendar?view=schedule', async () => { await openCalSettings(page, 'My calendars'); await page.locator('.cc-cal-foot').getByRole('button', { name: 'My calendars' }).click(); await settle(page, 600); }],
       ]) {
         await t.go(path, 900); await big(); await open();
         const d = await page.evaluate(() => { const el = [...document.querySelectorAll('.ds-modal--shown .ds-dialog')].pop(); if (!el) return null; const r = el.getBoundingClientRect(); const cut = [...el.querySelectorAll('button, a, input, [role=combobox]')].filter((x) => { const b = x.getBoundingClientRect(); return b.width > 0 && (b.right > r.right + 1 || b.left < r.left - 1); }).length; return { wide: el.scrollWidth - el.clientWidth, off: Math.round(Math.max(0, r.right - window.innerWidth, -r.left)), cut }; });
@@ -805,22 +805,22 @@ PARTS['b-odd'] = async (role) => {
       const t = await openAt({ role, tag, size, path: '/coach' });
       const { page, store } = t;
       const before = JSON.stringify([store.rows.coach_cal_items, store.rows.coach_open_blocks, store.rows.coach_polls, store.rows.coach_booking_links]);
-      const foot = (name) => page.locator('.cc-cal-foot').getByRole('button', { name, exact: true });
+      const footLink = async (name) => { await openCalSettings(page, name); return page.locator('.cc-cal-foot').getByRole('button', { name, exact: true }); };
       const toCalendar = async (view) => {
         // Reached inside the portal, as a person does, so Back has somewhere of the portal's to go.
-        if (size === 400) await page.locator('.cc-phonebar button').nth(2).click(); else { await page.getByRole('button', { name: 'Open the menu', exact: true }).click(); await settle(page, 400); await page.locator('.cc-menu-item', { hasText: /^Calendar/ }).first().click(); }
+        await openFromMenu(page, 'Calendar');
         await settle(page, 1000);
         // Polish 1: the calendar opens on the month; a phone's day grid is its own address (?view=day).
         if (view === 'grid') { await page.goto(page.url().replace(/\/coach\/calendar.*$/, `/coach/calendar?view=${size === 400 ? 'day' : 'week'}`)); await page.waitForSelector('.cc-app'); await settle(page, 800); }
       };
       const panels = [
-        ['the quick add', 'grid', async () => { if (size === 400) await foot('Add to calendar').click(); else await press(page, page, 'Add to calendar'); await settle(page, 600); }],
+        ['the quick add', 'grid', async () => { if (size === 400) await (await footLink('Add to calendar')).click(); else await press(page, page, 'Add to calendar'); await settle(page, 600); }],
         ['an item', 'grid', async () => { await page.locator('[data-cal-key]', { hasText: /Parents’ evening|Swimming/ }).first().focus(); await page.keyboard.press('Enter'); await settle(page, 700); }],
         ['a call’s brief', 'grid', async () => { await page.locator('[data-cal-key]', { hasText: 'Priya Nair' }).first().focus(); await page.keyboard.press('Enter'); await settle(page, 1200); }],
-        ['My calendars', 'grid', async () => { await foot('My calendars').click(); await settle(page, 600); }],
-        ['Book a call', 'any', async () => { await page.getByRole('button', { name: 'Book a call', exact: true }).first().click(); await settle(page, 900); }],
-        ['Open for calls’ Add open time', 'any', async () => { await foot('Set my open times').click(); await settle(page, 1000); await press(page, page, 'Add open time'); }],
-        ['Offer times by email', 'any', async () => { await foot('Offer times by email').click(); await settle(page, 1000); }],
+        ['My calendars', 'grid', async () => { await (await footLink('My calendars')).click(); await settle(page, 600); }],
+        ['Book a call', 'any', async () => { await page.getByRole('button', { name: 'Add a session', exact: true }).first().click(); await settle(page, 900); }],
+        ['Open for calls’ Add open time', 'any', async () => { await (await footLink('Set my open times')).click(); await settle(page, 1000); await press(page, page, 'Add open time'); }],
+        ['Offer times by email', 'any', async () => { await (await footLink('Offer times by email')).click(); await settle(page, 1000); }],
       ];
       for (const [name, view, open] of panels) {
         await t.go('/coach', 700);
@@ -1142,7 +1142,7 @@ PARTS['b-reach'] = async () => {
       if (await page.locator('.ds-modal--shown').count()) await closePanel(page);
     }
     await t.go('/coach/calendar?view=week');
-    await page.getByRole('button', { name: 'Search, or do anything' }).click(); await settle(page, 300);
+    await openSearch(page); await settle(page, 300);
     await page.keyboard.type('secret'); await settle(page, 500);
     pass(`${tag}: search finds nothing of it`, /Nothing matches/.test(await page.locator('.cc-jump-list').innerText().catch(() => '')), await page.locator('.cc-jump-list').innerText().catch(() => ''));
     await page.keyboard.press('Escape'); await settle(page, 300);
@@ -1185,7 +1185,7 @@ PARTS['b-reach'] = async () => {
     await g.page.goto(`${APP}${path}`); await g.page.waitForSelector('.cc-public, .ui-root', { timeout: 20000 }).catch(() => {}); await settle(g.page, 900);
     const text = flat(await g.page.evaluate(() => document.body.innerText));
     const out = !/^\/(book|poll)/.test(new URL(g.page.url()).pathname);
-    pass(`reach, signed out: ${what} opens nothing`, (NOT.test(text) || out) && !/Chemistry Call|Three-way meeting|Ruth|Sponsor call|Training/.test(text) && (await g.page.locator('.cc-book-time, [role=checkbox]').count()) === 0, `${path}: ${text.slice(0, 120)}`);
+    pass(`reach, signed out: ${what} opens nothing`, (NOT.test(text) || out) && !/Discovery call|Three-way meeting|Ruth|Sponsor call|Training/.test(text) && (await g.page.locator('.cc-book-time, [role=checkbox]').count()) === 0, `${path}: ${text.slice(0, 120)}`);
     if (!/[0-9a-f]{12}$/i.test(path)) pass(`reach, signed out: (${what}: the database isn't even asked)`, store.calls.length === asked, store.calls.slice(asked).join(', '));
   }
   // What the real pages are given: their own call, free starts, their own booking, their own answers. Never the calendar.
@@ -1560,7 +1560,7 @@ PARTS['b-google'] = async (role) => {
   const ruth = await eventOf(CAL.ruth);
   await tile(page, D.wed, 'Ruth Adeyemi').click(); await settle(page, 800);
   const isPanel = (await dialog(page).getByLabel('Starts').count()) === 1;
-  pass(`${tag}: a Chemistry Call opens its own panel`, isPanel && Boolean(ruth));
+  pass(`${tag}: a Discovery call opens its own panel`, isPanel && Boolean(ruth));
   await dialog(page).getByLabel('Starts').fill('13:10'); await dialog(page).getByLabel('Title').fill('Ruth Adeyemi, typed'); await settle(page, 300);
   await google('move', ruth.id, { dateTime: '2026-11-19T10:00:00', timeZone: LON }, { dateTime: '2026-11-19T10:30:00', timeZone: LON });
   await t.round();

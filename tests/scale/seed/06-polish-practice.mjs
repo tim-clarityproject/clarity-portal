@@ -370,10 +370,10 @@ for (let off = -14; off <= 21; off += 1) {
   if (wd === 2) calItem('own_time', 'Run by the river', day, '07:00', '07:45', { calendar: 'personal', place: 'in_person' });
   if (wd === 5 && off % 14 !== 0) calItem('own_time', 'Supervision with Kate', day, '12:30', '13:30', { place: 'zoom' });
 }
-calItem('chemistry', 'Chemistry call: Lucy Fairbairn', addDays(BASE, 1), '16:00', '16:30');
-calItem('chemistry', 'Chemistry call: Joel Mensah', addDays(BASE, 2), '15:00', '15:30');
-calItem('chemistry', 'Chemistry call: Ethan Brooks', addDays(BASE, -9), '15:00', '15:30');
-calItem('chemistry', 'Chemistry call: Martha Ingram', addDays(BASE, -6), '13:30', '14:00');
+calItem('chemistry', 'Discovery call: Lucy Fairbairn', addDays(BASE, 1), '16:00', '16:30');
+calItem('chemistry', 'Discovery call: Joel Mensah', addDays(BASE, 2), '15:00', '15:30');
+calItem('chemistry', 'Discovery call: Ethan Brooks', addDays(BASE, -9), '15:00', '15:30');
+calItem('chemistry', 'Discovery call: Martha Ingram', addDays(BASE, -6), '13:30', '14:00');
 calItem('connection', 'Coffee with Harriet Moss', addDays(BASE, 6), '12:00', '13:00', { place: 'in_person', location: 'The Wren café, St Paul’s' });
 calItem('connection', 'Catch-up with Owen Pryce', addDays(BASE, 8), '12:30', '13:00');
 calItem('connection', 'Call with Isaac Bramwell', addDays(BASE, -4), '17:30', '18:00', { place: 'phone' });
@@ -395,7 +395,7 @@ out.push(ins('coach_cal_items', CAL_COLS, other.filter((r) => r[2] !== q('travel
 out.push(ins('coach_cal_items', CAL_COLS, other.filter((r) => r[2] === q('travel'))));
 out.push(ins('coach_away', ['id', 'coach_id', 'starts_on', 'ends_on'], [[q(next('away')), q(ALEX), D('2026-12-23'), D('2027-01-03')]]));
 out.push(ins('coach_call_types', ['id', 'coach_id', 'key', 'name', 'description', 'minutes', 'notice_hours', 'ahead_weeks', 'place_kind', 'active', 'makes_lead', 'position'], [
-  [q(next('ct')), q(ALEX), q('chemistry'), q('Chemistry call'), q('Thirty minutes to see whether coaching together is right for you.'), '30', '24', '4', q('zoom'), 'true', 'true', '1'],
+  [q(next('ct')), q(ALEX), q('chemistry'), q('Discovery call'), q('Thirty minutes to see whether coaching together is right for you.'), '30', '24', '4', q('zoom'), 'true', 'true', '1'],
   [q(next('ct')), q(ALEX), q('coaching'), q('Coaching session'), null, '60', '24', '6', q('zoom'), 'true', 'false', '2'],
 ]));
 // Imogen's block of hours: the time logged against it.
@@ -514,8 +514,8 @@ const LEADS = [
   ['Amelia Hart', 'New', 'referral', 'Fenwick Ashby LLP', 'Partner', 1048000, 'Reply to her email', 0, -2, 'Referred by Ben Ashby. Wants help stepping into the managing partner role.'],
   ['Callum Reid', 'New', 'chemistry_page', 'Reid & Daughters', 'Managing director', 584000, 'Book a first call', 2, -1, null],
   ['Zara Quinlan', 'New', 'network', 'Orchard Lane Schools', 'Executive head', 1048000, 'Send the overview', 5, -8, 'Met at the Leeds breakfast.'],
-  ['Joel Mensah', 'Call booked', 'booking_page', 'Kitebridge', 'Chief product officer', 1346000, 'Chemistry call', 2, -4, null],
-  ['Lucy Fairbairn', 'Call booked', 'chemistry_page', 'Fairbairn Interiors', 'Founder', 584000, 'Chemistry call', 1, -6, null],
+  ['Joel Mensah', 'Call booked', 'booking_page', 'Kitebridge', 'Chief product officer', 1346000, 'Discovery call', 2, -4, null],
+  ['Lucy Fairbairn', 'Call booked', 'chemistry_page', 'Fairbairn Interiors', 'Founder', 584000, 'Discovery call', 1, -6, null],
   ['Ethan Brooks', 'Proposal sent', 'referral', 'Stoneway Capital', 'Investment director', 1048000, 'Follow up on the proposal', 3, -9, 'Asked for a 6-month option.'],
   ['Nathan Cole', 'Proposal sent', 'network', 'Cambridge Fluidics', 'Chief technology officer', 1748000, 'Check he has read the quote', 4, -5, 'Quote sent; opened the next evening.'],
   ['Martha Ingram', 'Deciding', 'referral', 'Northcote Energy', 'Chief people officer', 2246000, 'Call her back about the cohort', 1, -6, 'A cohort of 4 directors from April.'],
@@ -536,7 +536,7 @@ LEADS.forEach(([name, stage, source, org, job, value, nextStep, nextIn, lastDays
     won ? TS(addDays(BASE, lastDays), '16:00') : 'null', q(wonProfile), cold ? TS(addDays(BASE, -20), '10:00') : 'null', q(cold ? 'Budget moved to next year.' : null), cold ? D(addDays(BASE, 60)) : 'null',
     q(source === 'referral' ? (name === 'Amelia Hart' ? 'Ben Ashby' : 'Priyanka Shah') : null), TS(created, '09:00')]);
   levRows.push([q(next('lev')), q(ALEX), q(lid), q('first_contact'), TS(created, '09:00'), D(created), q('First contact'), q(source === 'referral' ? 'Introduced by email.' : 'Came in through the website.')]);
-  if (['Call booked', 'Proposal sent', 'Deciding', 'Won'].includes(stage) || cold) levRows.push([q(next('lev')), q(ALEX), q(lid), q('call'), TS(addDays(created, 5), '15:00'), D(addDays(created, 5)), q('Chemistry call'), q('Good fit. Agreed to send a proposal.')]);
+  if (['Call booked', 'Proposal sent', 'Deciding', 'Won'].includes(stage) || cold) levRows.push([q(next('lev')), q(ALEX), q(lid), q('call'), TS(addDays(created, 5), '15:00'), D(addDays(created, 5)), q('Discovery call'), q('Good fit. Agreed to send a proposal.')]);
   if (['Proposal sent', 'Deciding', 'Won'].includes(stage)) levRows.push([q(next('lev')), q(ALEX), q(lid), q('proposal'), TS(addDays(created, 7), '10:00'), D(addDays(created, 7)), q('Proposal sent'), null]);
   if (won) levRows.push([q(next('lev')), q(ALEX), q(lid), q('won'), TS(addDays(BASE, lastDays), '16:00'), D(addDays(BASE, lastDays)), q('Won'), null]);
   if (cold) levRows.push([q(next('lev')), q(ALEX), q(lid), q('cold'), TS(addDays(BASE, -20), '10:00'), D(addDays(BASE, -20)), q('Gone cold'), q('Budget moved to next year.')]);

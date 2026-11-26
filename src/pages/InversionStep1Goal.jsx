@@ -5,13 +5,10 @@ import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
 import { clearDraft as forgetDraft, useDraft } from '../lib/drafts';
-import DesignHeader from '../components/DesignHeader';
-import PhoneActionBar from '../components/ui/PhoneActionBar';
-import { DiscardLink } from '../components/ui/DiscardLink';
+import FormTool from './toolFocus/FormTool';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import pageText from '../content/pageText';
-import { Loading, PageHeader, TextBox, Button, useToast } from '../components/design';
+import { Loading, TextBox, useToast } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -174,62 +171,34 @@ export default function InversionStep1Goal() {
   const canContinue = goal.trim().length > 0;
   const suggestedName = currentTitle || suggestNameFrom(goal);
 
-  const actionButtons = (
-    <>
-      <Button
-        variant="primary"
-        disabled={!canContinue || isSaving}
-        onClick={() => navigate('/pre-mortem/risks', { state: buildState() })}
-      >
-        Continue
-      </Button>
-      <Button variant="outline" disabled={isSaving} onClick={() => setNameDialog('draft')}>
-        Save as draft
-      </Button>
-    </>
-  );
+  const [asked, setAsked] = useState(false);
 
   return (
     <div className="ui-root">
-      <DesignHeader />
-
-      <div className="plan-page plan-page--form">
-        <div className="plan-header">
-          <PageHeader title="Pre-mortem" info={pageText.inversionStep1Goal} meta={['Step 1 of 3']} />
-          <div className="inv-stepper">
-            <div className="inv-stepper-lines" aria-hidden="true">
-              <i className="on" />
-              <i />
-              <i />
-            </div>
-          </div>
-          <h2 className="ds-question">What are you trying to achieve?</h2>
-        </div>
-
+      <FormTool
+        name="Pre-mortem"
+        step={1}
+        steps={3}
+        question="What are you trying to achieve?"
+        onNext={() => { if (!canContinue) { setAsked(true); return; } if (!isSaving) navigate('/pre-mortem/risks', { state: buildState() }); }}
+        need={asked && !canContinue ? 'Type what you’re trying to achieve to carry on.' : ''}
+        saveError={saveError}
+        onSaveDraft={() => { if (!isSaving) setNameDialog('draft'); }}
+        onDiscard={() => setDiscardOpen(true)}
+        closeTo="/personal/plan"
+      >
         {isLoading ? (
           <Loading label="Loading your pre-mortem" />
         ) : (
-          <div className="plan-field">
-            <TextBox
-              lines="many"
-              placeholder="Type here"
-              ariaLabel="What are you trying to achieve?"
-              value={goal}
-              onChange={setGoal}
-            />
-          </div>
+          <TextBox
+            lines="many"
+            placeholder="Type here"
+            ariaLabel="What are you trying to achieve?"
+            value={goal}
+            onChange={setGoal}
+          />
         )}
-
-        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
-
-        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
-
-        <div className="plan-discard-row">
-          <DiscardLink onClick={() => setDiscardOpen(true)} />
-        </div>
-      </div>
-
-      <PhoneActionBar>{actionButtons}</PhoneActionBar>
+      </FormTool>
 
       <NameDialog
         open={nameDialog === 'draft'}

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { Button, ErrorMessage, Loading, PageHeader, SlidePanel, useHidePhoneBar, useIsPhone, useToast } from '../../components/design';
+import { Button, ErrorMessage, Loading, PageOpening, SlidePanel, useHidePhoneBar, useIsPhone, useToast } from '../../components/design';
 import { useOnline } from '../../lib/connection';
 import { useSignOut } from '../../components/SignOut';
 import { getLocalDateKey } from '../../lib/dateFormatter';
@@ -12,7 +12,7 @@ import { takeFinanceOpening } from '../../lib/coach/earlyScreen';
 import { deviceCopyAvailable, readExtra, writeExtra } from '../../lib/coach/deviceCopy';
 import { callForBar, favouriteViews, nextCallBar } from '../../lib/coach/model';
 import { COACH_PAGES, coachFrameMenu, coachTitle } from '../../lib/coach/navigation';
-import PortalFrame, { MenuButton } from '../../components/design/Frame';
+import PortalFrame, { MenuButton, useFrame } from '../../components/design/Frame';
 import { testCalls } from '../../lib/coach/calls';
 import { barCalls, coachZoneOf } from '../../lib/coach/calendar';
 // Network's people are moved across before anything that points at one (a lead's Referred by): the module says so to the
@@ -272,8 +272,7 @@ function ComingSoon({ title }) {
   return (
     <div className="cc-page">
       <div className="cc-col">
-        <PageHeader title={title} />
-        <p className="cc-quiet">Coming in this build. It isn’t ready to use yet.</p>
+        <PageOpening title={title} line="Coming in this build. It isn’t ready to use yet." />
       </div>
     </div>
   );
@@ -324,6 +323,7 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
   const frameMod = useLaterPart('frame', frameParts, (afterFrame && !firstLoad) || search);
   useEffect(() => { setSearch(false); }, [pathname]);
   const closeSearch = useCallback(() => setSearch(false), []);
+  const openSearch = () => { if (!frameMod && laterPartFailed('frame') && navigator.onLine) window.location.reload(); else setSearch(true); };
   const closeBell = useCallback(() => setBell(false), []);
   // On a phone every grey line under a row stays one line (tidy follow-up 3, run 6's 33).
   const mainRef = useRef(null);
@@ -342,12 +342,12 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
     <PortalFrame
       className={`cc-app${hold ? ' cc-hold' : ''}`}
       rootProps={{ inert: hold || undefined, 'aria-busy': hold || undefined }}
-      menu={{ ...menu, onGo, onSignOut: signOut.start, signOutBusy: signOut.busy, privacyHref: '/legal/privacy' }}
+      menu={{ ...menu, onGo, onSignOut: signOut.start, signOutBusy: signOut.busy, privacyHref: '/legal/privacy', phoneTop: <PhoneMenuTop unread={unread} onSearch={openSearch} onBell={() => setBell(true)} /> }}
     >
       <header className="cc-header cc-header--frame">
         <div className="cc-header-in">
           <MenuButton className="cc-frame-menu" />
-          <button type="button" className="cc-search" aria-label="Search, or do anything" aria-haspopup="dialog" onClick={() => { if (!frameMod && laterPartFailed('frame') && navigator.onLine) window.location.reload(); else setSearch(true); }}>
+          <button type="button" className="cc-search" aria-label="Search, or do anything" aria-haspopup="dialog" onClick={openSearch}>
             <span>Search or do anything</span>
           </button>
           <button type="button" className="cc-round" aria-label={unread ? `Notifications, ${unread} new` : 'Notifications'} aria-haspopup="dialog" onClick={() => setBell(true)}>
@@ -367,6 +367,25 @@ function Frame({ pages, calls, now, unread, hold = false, firstLoad = false }) {
       <Bell open={bell} onClose={closeBell} />
       {signOut.choice}
     </PortalFrame>
+  );
+}
+
+/**
+ * The top of the phone menu (Tim's walk, item 21): Search and the bell, so the phone header holds only the crosshair (and
+ * My Mission). On a laptop they stay at the panel's top right. Choosing either closes the menu first.
+ */
+function PhoneMenuTop({ unread, onSearch, onBell }) {
+  const { closeMenu } = useFrame();
+  return (
+    <div className="cc-pmenu-top">
+      <button type="button" className="cc-search" aria-label="Search, or do anything" aria-haspopup="dialog" onClick={() => { closeMenu(); onSearch(); }}>
+        <span>Search or do anything</span>
+      </button>
+      <button type="button" className="cc-round" aria-label={unread ? `Notifications, ${unread} new` : 'Notifications'} aria-haspopup="dialog" onClick={() => { closeMenu(); onBell(); }}>
+        {BELL}
+        {unread > 0 && <span className="cc-count" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
+      </button>
+    </div>
   );
 }
 

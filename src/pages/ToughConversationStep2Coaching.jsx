@@ -6,13 +6,10 @@ import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
 import { useDraft } from '../lib/drafts';
 import { COACHING_QUESTIONS } from '../content/coachingQuestions';
-import DesignHeader from '../components/DesignHeader';
-import PhoneActionBar from '../components/ui/PhoneActionBar';
-import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
+import FormTool from './toolFocus/FormTool';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import { PageHeader, TextBox, Button, useToast, Checkbox } from '../components/design';
-import pageText from '../content/pageText';
+import { TextBox, Button, useToast, Checkbox } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -192,33 +189,25 @@ export default function ToughConversationStep2Coaching() {
     navigate('/my-plans', { state: { toast: 'Discarded.' } });
   };
 
-  const actionButtons = (
-    <>
-      <Button variant="primary" disabled={isSaving} onClick={() => setNameDialog('finish')}>
-        Finish
-      </Button>
-      <Button variant="outline" disabled={isSaving} onClick={() => setNameDialog('draft')}>
-        Save as draft
-      </Button>
-    </>
-  );
-
   return (
     <div className="ui-root">
-      <DesignHeader />
-
-      <div className="plan-page plan-page--form">
-        <div className="plan-back-row">
-          <BackLink onClick={handleBack} />
-        </div>
-
-        <div className="plan-header">
-          <PageHeader title="Give difficult feedback" info={pageText.toughConversationStep2Coaching} />
-        </div>
-
+      <FormTool
+        name="Give difficult feedback"
+        step={2}
+        steps={2}
+        question="Which questions will you ask?"
+        hint="Now you’ve given your feedback, coach them to find their own solutions."
+        onNext={() => { if (!isSaving) setNameDialog('finish'); }}
+        nextLabel="Finish"
+        onBack={handleBack}
+        saveError={saveError}
+        onSaveDraft={() => { if (!isSaving) setNameDialog('draft'); }}
+        onDiscard={() => setDiscardOpen(true)}
+        closeTo="/interpersonal"
+      >
         <div className="tc-script">
           <div className="tc-script-head">
-            <span className="plan-overline" style={{ marginBottom: 0 }}>Your conversation script</span>
+            <span className="ds-label">Your conversation script</span>
             <Button variant="outline" onClick={copyScriptToClipboard}>
               {copied ? 'Copied' : 'Copy'}
             </Button>
@@ -276,12 +265,9 @@ export default function ToughConversationStep2Coaching() {
           </p>
         </div>
 
-        <p className="ui-subtitle">
-          Now you have delivered your feedback, it's time to coach your staff member to find their own solutions. Choose the coaching questions that are most relevant to this conversation.
-        </p>
 
         <div className="tc-ck-head">
-          <span className="ui-section-heading">Coaching questions</span>
+          <span className="ds-label">Coaching questions</span>
           <span className="tc-ck-count">{selectedQuestions.length} chosen</span>
         </div>
         <p className="tc-ck-help">Asking questions is an art. Select a few from below that might work for you, or type your own below.</p>
@@ -307,17 +293,7 @@ export default function ToughConversationStep2Coaching() {
             onChange={setCustomQuestion}
           />
         </div>
-
-        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
-
-        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
-
-        <div className="plan-discard-row">
-          <DiscardLink onClick={() => setDiscardOpen(true)} />
-        </div>
-      </div>
-
-      <PhoneActionBar>{actionButtons}</PhoneActionBar>
+      </FormTool>
 
       <NameDialog
         open={nameDialog !== null}

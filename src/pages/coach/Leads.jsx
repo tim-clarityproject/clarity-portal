@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { AddButton, Button, IconButton, InlineChoice, Loading, PageHeader, SearchField, useIsPhone, useToast } from '../../components/design';
+import { IconButton, Loading, useIsPhone, useToast } from '../../components/design';
+import { AddLink, Card, CardHead, Empty, MoreLink, PageOpening, QuickAdd } from '../../components/design/Blocks';
+import { PEOPLE } from '../../content/pageLines/coach';
 import { useToastAbove } from '../../components/design/toastAbove';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { keyOf, newId, removeRow, saveRow, saveRows, useCoachFirstLoaded } from '../../lib/coach/store';
@@ -9,7 +11,8 @@ import {
   BOARD_FOLD, dismissWaiting, EMPTY_LEAD_FILTERS, headingWords, LEAD_LAYOUTS, LEAD_ROW_MENU, leadBoard, leadCard, leadCountWords, leadDuplicates, leadFilterCount, leadFromWaiting,
   leadListFromView, LEADS_EMPTY, LEADS_NO_MATCH, leadTableColumns, filterLeads, sortLeads, stageBesideLead, stageOf, WAITING_BUTTONS, WAITING_DISMISSED, waitingLine, waitingRows,
 } from '../../lib/coach/crm';
-import { EditCell, MenuItem, MenuLabel, Part, PopMenu, Row, TextLink, useCoachPortal, useNarrowerThan } from './parts';
+import { EditCell, MenuItem, MenuLabel, PopMenu, TextLink, useCoachPortal, useNarrowerThan } from './parts';
+import { BarDrop, ListBar, PersonRow } from './peopleParts';
 import { PickTick, useEvenCards, useTouchFirst } from './Clients';
 import { MORE, SAVE_PROBLEM, useLeadActions, useLeadData, useStartStages } from './leadParts';
 import { AddLeadPanel, ColdPanel, EditLeadPanel, ExportLeadsPanel, ImportLeadsPanel, LeadFilterPanel, LogCallPanel, MergeLeadsPanel, StagesPanel } from './LeadPanels';
@@ -272,44 +275,75 @@ export default function Leads() {
     else setEditing({ kind: key, id: lead.id });
   };
 
+  // "+ Add" by the list's label opens Quick Add (polish 1, rule 10): a name and Enter adds the lead; "Add their details
+  // too" opens the whole Add lead form with the name carried over.
+  const [adding, setAdding] = useState(false);
+  const [addName, setAddName] = useState('');
+  const filterWords = filtersOn ? `Filter, ${filtersOn} on` : 'Filter';
+  const listLabel = viewName || (narrowed ? leadCountWords(filtered.length, open.length) : PEOPLE.leadsAll);
+  const addLink = <AddLink label="Add lead" expanded={adding} controls="cc-add-lead" onClick={() => setAdding((v) => !v)} />;
+  const quick = (
+    <QuickAdd
+      id="cc-add-lead"
+      open={adding}
+      onClose={() => setAdding(false)}
+      placeholder={PEOPLE.leadName}
+      label="Add lead: their name"
+      addLabel="Add lead"
+      onAdd={async (name) => { await actions.add({ name, email: '', organisation: '', source: 'other', referredBy: '' }); }}
+      more={(name) => <TextLink onClick={() => { setAddName(name); setAdding(false); setPanel('add'); }}>{PEOPLE.quickMore}</TextLink>}
+    />
+  );
+
   const toolbar = (
     <>
-      {!isPhone && <div className="cc-search-field"><SearchField label="Search leads" placeholder="Search leads" value={q} onChange={setQ} /></div>}
-      <div className="cc-toolbar">
-        {!isPhone && <div className="cc-seg"><InlineChoice ariaLabel="Layout" semantics="pressed" options={noTable ? LEAD_LAYOUTS.slice(0, 2) : LEAD_LAYOUTS} value={layout} onChange={(v) => setList({ ...list, layout: v })} form="pills" /></div>}
-        {isPhone && <TextLink ref={ref('view')} aria-haspopup="menu" aria-expanded={menu === 'view'} onClick={() => setMenu('view')}>View</TextLink>}
-        {isPhone ? <TextLink onClick={() => setPanel('filter')}>{filtersOn ? `Filter, ${filtersOn} on` : 'Filter'}</TextLink> : <Button variant="outline" onClick={() => setPanel('filter')}>{filtersOn ? `Filter, ${filtersOn} on` : 'Filter'}</Button>}
-        <span className="cc-toolbar-who">{viewName || (narrowed ? leadCountWords(filtered.length, open.length) : 'All leads')}</span>
-      </div>
-      {isPhone && <div className="cc-search-field"><SearchField label="Search leads" placeholder="Search leads" value={q} onChange={setQ} /></div>}
+      <ListBar
+        search={{ label: 'Search leads', value: q, onChange: setQ }}
+        layouts={noTable ? LEAD_LAYOUTS.slice(0, 2) : LEAD_LAYOUTS}
+        layout={layout}
+        onLayout={(v) => setList({ ...list, layout: v })}
+        phone={(
+          <>
+            <BarDrop ref={ref('view')} words="View" aria-haspopup="menu" open={menu === 'view'} onClick={() => setMenu('view')} />
+            <BarDrop words={filterWords} aria-haspopup="dialog" open={panel === 'filter'} onClick={() => setPanel('filter')} />
+          </>
+        )}
+      >
+        <BarDrop words={filterWords} aria-haspopup="dialog" open={panel === 'filter'} onClick={() => setPanel('filter')} />
+      </ListBar>
       <PopMenu open={menu === 'view'} onClose={() => setMenu(null)} anchorRef={anchor('view')} title="View">
         <MenuLabel>Show as</MenuLabel>
         {LEAD_LAYOUTS.slice(0, 2).map((l) => <MenuItem key={l.value} checked={layout === l.value} onClick={() => { setList({ ...list, layout: l.value }); setMenu(null); }}>{l.label}</MenuItem>)}
       </PopMenu>
       {(filtersOn > 0 || viewName) && (
-        <p className="cc-quiet cc-lead-line"><span>{leadCountWords(filtered.length, open.length)}.</span><TextLink onClick={() => setList({ ...list, filters: EMPTY_LEAD_FILTERS, viewId: null })}>Clear</TextLink></p>
+        <p className="cc-pnote cc-lead-line"><span>{leadCountWords(filtered.length, open.length)}.</span><TextLink onClick={() => setList({ ...list, filters: EMPTY_LEAD_FILTERS, viewId: null })}>Clear</TextLink></p>
       )}
       {waiting && (
-        <p className="cc-quiet cc-lead-line">
+        <p className="cc-pnote cc-lead-line">
           <span>{waitingLine(waiting, waitingEmail)}</span>
           <TextLink onClick={addWaiting}>{WAITING_BUTTONS.add}</TextLink>
           <TextLink onClick={notNow}>{WAITING_BUTTONS.dismiss}</TextLink>
         </p>
       )}
-      {duplicate && <p className="cc-quiet cc-lead-line"><span>{duplicate.line}</span><TextLink onClick={() => setMergePair(duplicate)}>Review</TextLink></p>}
+      {duplicate && <p className="cc-pnote cc-lead-line"><span>{duplicate.line}</span><TextLink onClick={() => setMergePair(duplicate)}>Review</TextLink></p>}
     </>
   );
 
   const wide = layout !== 'list';
   return (
     <div className="cc-page">
-      <div className={`cc-col${wide ? ' cc-col--wide' : ''}`}>
-        <PageHeader title="Leads" />
-        {/* The quiet Reports link under the title (Phase 6b run 2; M11 C10's note): Leads is the owner's alone. */}
-        <p className="cc-quiet cc-rep-link"><TextLink onClick={() => navigate('/coach/leads/reports')}>Reports</TextLink></p>
+      <div className={`cc-col cc-people${wide ? ' cc-col--wide' : ''}`}>
+        <PageOpening title={PEOPLE.leadsTitle} line={PEOPLE.leadsLine} />
         {toolbar}
-        {open.length === 0 && (loaded ? <p className="cc-quiet">{LEADS_EMPTY}</p> : <Loading label="Loading your leads" />)}
-        {open.length > 0 && filtered.length === 0 && <p className="cc-quiet">{LEADS_NO_MATCH}</p>}
+        {/* The list's label with "+ Add" at its right (rule 10): over the board and the table; the list's cards carry their own. */}
+        {(layout !== 'list' || filtered.length === 0) && (
+          <div className="cc-plist-head">
+            <CardHead label={listLabel} add={addLink} />
+            {quick}
+          </div>
+        )}
+        {open.length === 0 && (loaded ? <Empty action={{ children: 'Import from a spreadsheet', onClick: () => setPanel('import') }}>{LEADS_EMPTY}</Empty> : <Loading label="Loading your leads" />)}
+        {open.length > 0 && filtered.length === 0 && <Empty>{LEADS_NO_MATCH}</Empty>}
 
         {layout === 'board' && stages.length > 0 && (open.length === 0 || filtered.length > 0) && (
           <div className={`cc-lboard cc-fade${drag ? ' cc-board--dragging' : ''}`} ref={boardRef} key="board">
@@ -322,12 +356,15 @@ export default function Leads() {
                   <div className="cc-board-cards">
                     {cards.map((c) => (
                       <div key={c.id} className={`cc-card cc-lead-card${drag?.card.id === c.id ? ' cc-card--lifted' : ''}${touchMenus && !c.won ? ' cc-card--more' : ''}`}>
-                        <button
-                          type="button"
+                        {/* The card is a link to the lead's page (a new tab with a modifier key); a plain click opens it here. */}
+                        <a
+                          href={`/coach/leads/${c.id}`}
+                          draggable={false}
+                          onDragStart={(e) => e.preventDefault()}
                           className="cc-card-open"
                           data-card={c.id}
                           aria-roledescription={c.won ? undefined : 'Card that can be moved to another stage'}
-                          onClick={() => { if (!dragged.current) openLead(c.id); }}
+                          onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); if (!dragged.current) openLead(c.id); }}
                           onKeyDown={(e) => cardKey(e, c)}
                           onPointerDown={(e) => { cardDown(e, c); holdStart(c.id); }}
                           onPointerMove={cardMove}
@@ -335,13 +372,12 @@ export default function Leads() {
                           onPointerCancel={(e) => { cardUp(e); holdEnd(); }}
                         >
                           {cardWords(c)}
-                        </button>
+                        </a>
                         {touchMenus && !c.won && moreButton(c, ' cc-lead-more--card')}
                       </div>
                     ))}
                   </div>
                   {col.cards.length > cards.length && <div className="cc-acts"><TextLink aria-label={`Show all ${col.cards.length} in ${col.stage.name}`} onClick={() => setMore({ ...more, [col.stage.id]: true })}>Show all {col.cards.length}</TextLink></div>}
-                  {at === 0 && <div className="cc-lboard-add"><AddButton onClick={() => setPanel('add')}>Add lead</AddButton></div>}
                 </section>
               );
             })}
@@ -356,23 +392,23 @@ export default function Leads() {
 
         {layout === 'list' && filtered.length > 0 && (
           <div className={`cc-fade${picking ? ' cc-picking' : ''}`} key="list">
-            {board.filter((col) => col.cards.length > 0).map((col) => {
+            {board.filter((col) => col.cards.length > 0).map((col, at) => {
               const cards = more[col.stage.id] ? col.cards : col.cards.slice(0, BOARD_FOLD);
               return (
-                <Part key={col.stage.id} title={col.stage.name}>
-                  <div className="cc-rows cc-lead-rows">
+                <Card key={col.stage.id} label={col.stage.name} add={at === 0 ? addLink : undefined} quickAdd={at === 0 ? quick : undefined}>
+                  <div className="cc-plist cc-lead-rows">
                     {cards.map((c) => (
                       <div key={c.id} className={`cc-pick-row${picked[c.id] ? ' cc-pick-row--on' : ''}`} onPointerDown={() => holdStart(c.id)} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd}>
                         <PickTick on={Boolean(picked[c.id])} name={c.name} onChange={(on) => pick(c.id, on)} />
                         <div className="cc-lead-rw">
-                          <Row title={c.name} facts={[c.sub, c.next.step]} when={<>{c.quiet && <small>{c.quiet}</small>}{c.won ? c.wonOn : c.next.when}</>} onClick={() => openLead(c.id)} />
+                          <PersonRow name={c.name} facts={[c.sub, c.next.step, c.quiet]} when={c.won ? c.wonOn : c.next.when} href={`/coach/leads/${c.id}`} onClick={() => openLead(c.id)} />
                           {!c.won ? moreButton(c) : <span />}
                         </div>
                       </div>
                     ))}
                   </div>
                   {col.cards.length > cards.length && <div className="cc-acts"><TextLink aria-label={`Show all ${col.cards.length} in ${col.stage.name}`} onClick={() => setMore({ ...more, [col.stage.id]: true })}>Show all {col.cards.length}</TextLink></div>}
-                </Part>
+                </Card>
               );
             })}
           </div>
@@ -397,7 +433,7 @@ export default function Leads() {
                     <tr key={l.id} className={`cc-pick-row${picked[l.id] ? ' cc-pick-row--on' : ''}`}>
                       <td>
                         <PickTick on={Boolean(picked[l.id])} name={l.name} onChange={(on) => pick(l.id, on)} />
-                        <button type="button" className="cc-table-name" onClick={() => openLead(l.id)}>{l.name}</button>
+                        <a href={`/coach/leads/${l.id}`} className="cc-table-name" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); openLead(l.id); }}>{l.name}</a>
                         {c.sub && <small>{c.sub}</small>}
                       </td>
                       {visible.map((col) => {
@@ -442,14 +478,15 @@ export default function Leads() {
           {menuLead && stages.map((s) => <MenuItem key={s.id} checked={menuLead.stage_id === s.id} onClick={() => { setMenu(null); moveTo(menuLead.id, s.id); }}>{s.name}</MenuItem>)}
         </PopMenu>
 
-        {layout !== 'board' && <div className="cc-add"><AddButton onClick={() => setPanel('add')}>Add lead</AddButton></div>}
-        <div className="cc-acts">
-          {/* M11's order: Automations second (tidy follow-up 3, run 6's 31). */}
+        <div className="cc-pfoot">
+          {/* M11's order: Automations second (tidy follow-up 3, run 6's 31); the pages that open more carry the chevron,
+              Reports (Phase 6b run 2; M11 C10) with them. */}
           <TextLink onClick={() => setPanel('stages')}>Edit stages</TextLink>
-          <TextLink onClick={() => navigate('/coach/leads/automations')}>Automations</TextLink>
+          <MoreLink href="/coach/leads/automations" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); navigate('/coach/leads/automations'); }}>Automations</MoreLink>
           <TextLink onClick={() => setPanel('import')}>Import from a spreadsheet</TextLink>
           <TextLink onClick={() => setPanel('export')}>Export</TextLink>
-          <TextLink onClick={() => navigate('/coach/leads/cold')}>Cold leads</TextLink>
+          <MoreLink href="/coach/leads/cold" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); navigate('/coach/leads/cold'); }}>Cold leads</MoreLink>
+          <MoreLink href="/coach/leads/reports" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); navigate('/coach/leads/reports'); }}>Reports</MoreLink>
         </div>
 
         {picking && (
@@ -464,7 +501,7 @@ export default function Leads() {
           </div>
         )}
       </div>
-      <AddLeadPanel open={panel === 'add'} onClose={() => setPanel(null)} />
+      <AddLeadPanel open={panel === 'add'} initialName={addName} onClose={() => { setPanel(null); setAddName(''); }} />
       <StagesPanel open={panel === 'stages'} onClose={() => setPanel(null)} />
       <ImportLeadsPanel open={panel === 'import'} onClose={() => setPanel(null)} />
       <ExportLeadsPanel open={panel === 'export'} onClose={() => setPanel(null)} shown={layout === 'table' ? shown : board.flatMap((col) => col.cards.map((c) => leadOf(c.id))).filter(Boolean)} />

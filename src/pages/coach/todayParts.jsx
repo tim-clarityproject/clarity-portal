@@ -84,11 +84,14 @@ export function ThisMonthCard() {
   const navigate = useNavigate();
   const { model } = useFinance();
   const line = model.line;
+  const nothingYet = /^£0(\.00)?$/.test(String(line.paid || '').trim());
   return (
     <Card label={COACH_TODAY.monthLabel} className="cc-part cc-today-month">
-      <span className="ds-sr">{line.aria}</span>
-      <div aria-hidden="true"><Figure value={line.paid} unit={line.target ? `of ${line.target}` : undefined} /></div>
-      <p className="cc-today-month-note">{monthNote(line.urgent)}</p>
+      {!nothingYet && <span className="ds-sr">{line.aria}</span>}
+      {/* Never a bare £0 (rule 16; Tim's walk, item 9): the month with nothing settled yet says so in words. */}
+      {nothingYet ? <p className="cc-today-month-none">{COACH_TODAY.monthNone}</p>
+        : <div aria-hidden="true"><Figure value={line.paid} unit={line.target ? `of ${line.target}` : undefined} /></div>}
+      {(!nothingYet || line.urgent) && <p className="cc-today-month-note">{nothingYet ? monthNote(line.urgent).replace(/^Settled so far\. /, '') : monthNote(line.urgent)}</p>}
       <MoreLink onClick={() => navigate('/coach/finances/cash-flow')}>{COACH_TODAY.monthLink}</MoreLink>
     </Card>
   );
@@ -100,7 +103,8 @@ export function ThisWeekRows({ sessions, target, todayKey }) {
   return (
     <Rows>
       <Row name={COACH_TODAY.weekHours} value={<><span className="ds-sr">{cap.spoken}.</span><span aria-hidden="true">{cap.overWords ? `${cap.words}, ${cap.overWords}` : cap.words}</span></>} />
-      <Row name={COACH_TODAY.weekCalls} value={countFigure(cap.calls)} />
+      {/* Never a bare 0 (Tim's walk, item 9). */}
+      <Row name={COACH_TODAY.weekCalls} value={cap.calls ? countFigure(cap.calls) : COACH_TODAY.weekCallsNone} />
     </Rows>
   );
 }

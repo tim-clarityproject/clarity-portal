@@ -636,8 +636,11 @@ function PlanFlow({ userId, date, today, loaded }) {
   const stepIndex = (key) => steps.findIndex((s) => s.key === key);
 
   // The day's own list, and the Backlog's to-dos in their fold (no sprint running).
-  const dayOptions = (view?.options || []).filter((o) => o.group !== 'backlog');
-  const backlogOptions = (view?.options || []).filter((o) => o.group === 'backlog');
+  // Each pick row is two lines (Tim's walk, item 19): the name, then the Strategy in grey. A carried-over
+  // row keeps its one line of where it came from instead ("From Daily review").
+  const twoLines = (o) => (o.onlyTags || o.group === 'carried' || !o.detail ? o : { ...o, tags: [] });
+  const dayOptions = (view?.options || []).filter((o) => o.group !== 'backlog').map(twoLines);
+  const backlogOptions = (view?.options || []).filter((o) => o.group === 'backlog').map(twoLines);
   // A person's own questions come last, just before the summary (run 7).
   const own = useOwnToolSteps(userId, 'daily_plan', { date });
   // The sleep target (My Account, Settings): an empty counter shows its middle, in half hours.
@@ -760,7 +763,8 @@ function PlanFlow({ userId, date, today, loaded }) {
               options={dayOptions}
               values={view.picks}
               onChange={choosePicks}
-              groups={[{ key: 'carried', title: 'Carried over' }, { key: 'week', title: 'This week' }]}
+              // The group names only when something is carried over (no stray "This week" under the label).
+              groups={dayOptions.some((o) => o.group === 'carried') ? [{ key: 'carried', title: 'Carried over' }, { key: 'week', title: 'This week' }] : undefined}
             />
           ) : (
             <>

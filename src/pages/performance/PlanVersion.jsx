@@ -3,11 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
-import { EmptyState, Loading, ObjectiveNumbers, PageHeader, Section, LoadError } from '../../components/design';
+import { EmptyState, Loading, ObjectiveNumbers, Section, LoadError, PageOpening } from '../../components/design';
 import { usePlanVersions } from '../../lib/performance/hooks';
 import { VERSION_KIND_LABEL, parseVersion, versionLabel, versionView } from '../../lib/performance';
 import { dayAndTime } from './planDates';
 import './performance.css';
+import { B1_LINES } from '../../content/pageLines/client';
+import '../../pages/hubs/clientPage.css';
 
 // One version of the Individual Performance Plan, read only (not mocked):
 // what the plan said then, in the plan page's order and words. A version
@@ -25,11 +27,11 @@ export default function PlanVersion() {
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page ipp-page">
-        <div className="plan-back-row"><BackLink onClick={back} label="Version history" /></div>
-        <PageHeader
+      <div className="plan-page cp-page ipp-page">
+        <div className="plan-back-row cp-back"><BackLink onClick={back} label="Version history" /></div>
+        <PageOpening
           title={row ? versionLabel(row) : 'Plan version'}
-          meta={row ? [VERSION_KIND_LABEL[row.kind], dayAndTime(row.created_at)] : []}
+          line={row ? `${VERSION_KIND_LABEL[row.kind]}, saved ${dayAndTime(row.created_at)}.` : B1_LINES.planVersion}
         />
         {loading ? (
           <Loading label="Loading this version" className="ds-loading--page" />

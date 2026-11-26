@@ -1,3 +1,4 @@
+import './toolFocus/breathe.css';
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -8,9 +9,9 @@ import {
   loadLatestBreathingSession, formatSessionLength,
 } from '../lib/breathing';
 import DesignHeader from '../components/DesignHeader';
-import { Loading, PageHeader, Button, PillChoice, useToast } from '../components/design';
+import { Loading, PageOpening, Button, PillChoice, useToast } from '../components/design';
+import { B3_LINES } from '../content/pageLines/client';
 import BreathingVisual, { useBreathingPhase, useDialSize } from '../components/ui/BreathingVisual';
-import pageText from '../content/pageText';
 
 function pad2(n) {
   return n < 10 ? `0${n}` : `${n}`;
@@ -174,10 +175,10 @@ export default function BreathingPage() {
       <div className="plan-page breathe-page">
         <div className={`breathe-resting${sessionActive ? ' hidden' : ''}`} aria-hidden={sessionActive}>
           <div className="plan-header">
-            <PageHeader
+            <PageOpening
+              label={lastSession ? `Last session: ${TECHNIQUES[lastSession.breathing_mode]?.label || lastSession.breathing_mode}, ${formatSessionLength(lastSession.duration) || 'length not recorded'}` : 'No sessions yet'}
               title="Breathe"
-              info={pageText.breathingPage}
-              meta={[lastSession ? `Last session: ${TECHNIQUES[lastSession.breathing_mode]?.label || lastSession.breathing_mode}, ${formatSessionLength(lastSession.duration) || 'length not recorded'}` : 'No sessions yet']}
+              line={B3_LINES.breathe}
             />
           </div>
 

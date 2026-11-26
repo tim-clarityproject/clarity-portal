@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
-  AddButton, Button, DatePicker, Dropdown, ExplainLink, InlineChoice, Loading, PageHeader, SegmentedControl, SlidePanel, Stat, StatGroup, TextField, useIsPhone, useToast,
+  AddButton, AddLink, Button, Card, dayTitle, DatePicker, Dropdown, Empty, ExplainLink, InlineChoice, Loading, PageOpening, SegmentedControl, SlidePanel, TextField, useIsPhone, useToast,
 } from '../../components/design';
+import { FINANCES, financesLine } from '../../content/pageLines/coach';
 import { coach062ReadyNow, newId, removeRow, rowNow, rowsOf, saveChange, saveChanges, saveRow, saveRows } from '../../lib/coach/store';
 import { SUPERSEDED_MESSAGE } from '../../lib/friendlyError';
 import { refreshPins, updatePreference, usePreferences } from '../../lib/menuPins';
@@ -21,9 +22,9 @@ import {
 import { renewals, renewalsLine } from '../../lib/coach/associatePay';
 import { coachBilling, uploadReceipt } from '../../lib/coach/financeActions';
 import { UnderTabs } from './todoParts';
-import { Line, TextLink, useCoachPortal } from './parts';
+import { TextLink, useCoachPortal } from './parts';
 import {
-  CashChart, download, FigRow, FinPart, IncomeChart, InvoicePanels, ReceiptField, settingsOf, useDone, useFinance, useSaveSettings, WhoPicker,
+  CashChart, download, FigRow, FinFigures, FinPart, IncomeChart, InvoicePanels, ReceiptField, settingsOf, useDone, useFinance, useSaveSettings, WhoPicker,
 } from './financeParts';
 import { InvoicesTab, OtherTab, PricingTab } from './FinancesMore';
 import './todos.css';
@@ -56,11 +57,18 @@ export default function Finances() {
   const tab = FINANCE_TABS.some((t) => t.value === raw) ? raw : 'overview';
   const { todayKey, financeSettings } = useCoachPortal();
   const startMonth = Number(financeSettings?.year_start_month) || 5;
+  // The page's one main button (polish 1, rule 12): New invoice, on every tab, opening the same panel the Invoices tab did.
+  const [invoicePanel, setInvoicePanel] = useState(null);
   useEffect(() => { if (raw && !FINANCE_TABS.some((t) => t.value === raw)) navigate('/coach/finances', { replace: true }); }, [raw, navigate]);
   return (
     <div className="cc-page">
       <div className="cc-col cc-col--wide fin-page">
-        <PageHeader title="Finances" meta={[dayKeyWords(todayKey, { long: true }), yearStartWords(startMonth)]} />
+        <PageOpening
+          label={dayTitle(todayKey)}
+          title="Finances"
+          line={financesLine(monthName(`2000-${String(startMonth).padStart(2, '0')}-01`))}
+          action={<Button variant="primary" onClick={() => setInvoicePanel({ kind: 'new' })}>{FINANCES.newInvoice}</Button>}
+        />
         <div className="fin-tabs">
           <UnderTabs label="Finances" tabs={FINANCE_TABS} value={tab} panelId="fin-panel" onChange={(v) => navigate(v === 'overview' ? '/coach/finances' : `/coach/finances/${v}`)} />
         </div>
@@ -73,6 +81,7 @@ export default function Finances() {
           {tab === 'other' && <OtherTab />}
         </div>
       </div>
+      {invoicePanel && <InvoicePanels panel={invoicePanel} onClose={() => setInvoicePanel(null)} />}
     </div>
   );
 }
@@ -155,27 +164,36 @@ function Overview() {
   const sectorOptions = [{ value: 'all', label: 'All income' }, ...sectors.map((s) => ({ value: s, label: s }))];
   const month = rows.month;
   const year = rows.year;
+  // The whole year with nothing paid and nothing projected, for all income: the calm empty state replaces the chart.
+  const chartEmpty = sector === 'all' && chart.bars.every((b) => !Number(b.paid) && !Number(b.projected));
   if (fin.waiting) return <FirstWait />;
   // While only Finances' first screen is here (store.js's partial), the parts drawn from the rest (names, leads,
   // renewals) show the quiet crosshair in their own spot.
   const partial = Boolean(fin.partial);
   return (
     <>
-      <StatGroup className="cc-stats fin-stats fin-stats--3">
-        <Stat label={`Income in ${monthName(todayKey)} so far`} value={poundsWords(month.paid)} unit={ofWords(month.paid, month.target) || undefined} bar={month.target ? Math.min(1, month.paid / month.target) : undefined} />
-        <Stat label="Income this year" value={poundsWords(year.paid)} unit={ofWords(year.paid, year.target) || undefined} bar={year.target ? Math.min(1, year.paid / year.target) : undefined} />
-        <Stat label="Cash in 6 months" value={poundsWords(model.cash6.end)} />
-      </StatGroup>
+      <FinFigures items={[
+        { label: `Income in ${monthName(todayKey)} so far`, value: poundsWords(month.paid), unit: ofWords(month.paid, month.target), bar: month.target ? Math.min(1, month.paid / month.target) : null, empty: 'Nothing settled yet this month.' },
+        { label: 'Income this year', value: poundsWords(year.paid), unit: ofWords(year.paid, year.target), bar: year.target ? Math.min(1, year.paid / year.target) : null, empty: 'Nothing settled yet this year.' },
+        { label: 'Cash in 6 months', value: poundsWords(model.cash6.end), empty: 'Nothing in hand by then on what’s known.' },
+      ]} />
 
-      <FinPart title={chart.title} asideHide={false} aside={<ExplainLink explain={chartHelp(mode, Number(settings.minimum_minor) || 0)} helpKey={mode === 'running' ? 'finance-chart-total' : 'finance-chart'}>How to read the chart</ExplainLink>}>
-        <div className="fin-ctl">
-          <SegmentedControl label="Show" options={[{ value: 'month', label: 'Each month' }, { value: 'running', label: 'Running total' }]} value={mode} onChange={setMode} />
-          <div className="fin-ctl-dd"><Dropdown label="Which income" options={sectorOptions} value={sector} onChange={setSector} /></div>
-          <TextLink aria-pressed={!showProjected} onClick={() => setShowProjected((v) => !v)}>{chart.toggle}</TextLink>
-        </div>
-        <IncomeChart chart={chart} mode={mode} />
-        <p className="cc-note fin-chart-note">{chart.note}</p>
-      </FinPart>
+      {/* Nothing in or due this year yet: a sentence and one next step (rule 16), never an empty chart with its lines. */}
+      {chartEmpty ? (
+        <FinPart title={chart.title}>
+          <Empty action={{ children: FINANCES.chartEmptyAction, onClick: () => navigate('/coach/finances/money?add=payment') }}>{FINANCES.chartEmpty}</Empty>
+        </FinPart>
+      ) : (
+        <FinPart title={chart.title} asideHide={false} aside={<ExplainLink explain={chartHelp(mode, Number(settings.minimum_minor) || 0)} helpKey={mode === 'running' ? 'finance-chart-total' : 'finance-chart'}>How to read the chart</ExplainLink>}>
+          <div className="fin-ctl">
+            <SegmentedControl label="Show" options={[{ value: 'month', label: 'Each month' }, { value: 'running', label: 'Running total' }]} value={mode} onChange={setMode} />
+            <div className="fin-ctl-dd"><Dropdown label="Which income" options={sectorOptions} value={sector} onChange={setSector} /></div>
+            <TextLink aria-pressed={!showProjected} onClick={() => setShowProjected((v) => !v)}>{chart.toggle}</TextLink>
+          </div>
+          <IncomeChart chart={chart} mode={mode} />
+          <p className="cc-note fin-chart-note">{chart.note}</p>
+        </FinPart>
+      )}
 
       <FinPart title="Your targets" asideHide={false} aside={<TextLink onClick={() => setPanel({ kind: 'targets' })}>Edit targets</TextLink>}>
         {[month, rows.quarter, year].map((r) => (
@@ -187,9 +205,9 @@ function Overview() {
       {!partial && needs.length > 0 && (
         <FinPart title="Needs you">
           {needs.map((n) => (
-            <Line key={n.key} title={n.title} small={n.small}>
+            <FigRow key={n.key} title={n.title} facts={[n.small]} className="fin-needs-row" value={(
               <TextLink aria-label={`${n.link}: ${n.title}`} onClick={() => (n.reminderId ? sendAgain(n.reminderId) : n.invoiceId ? setPanel({ kind: 'overdue', id: n.invoiceId }) : n.open ? setPanel({ kind: n.open }) : navigate(n.to))}>{n.link}</TextLink>
-            </Line>
+            )} />
           ))}
         </FinPart>
       )}
@@ -203,8 +221,6 @@ function Overview() {
           </>
         )}
       </FinPart>
-
-      {isPhone && <div className="fin-foot-btn"><Button variant="primary" onClick={() => setPanel({ kind: 'new' })}>New invoice</Button></div>}
 
       <TargetsPanel open={panel?.kind === 'targets'} onClose={() => setPanel(null)} />
       {panel && panel.kind !== 'targets' && <InvoicePanels panel={panel} onClose={() => setPanel(null)} />}
@@ -345,7 +361,10 @@ function Money() {
   const fin = useFinance();
   const { model, todayKey, names, sectors, packages } = fin;
   const [period, setPeriod] = useState('month');
-  const [panel, setPanel] = useState(null); // 'bank' | 'export'
+  // ?add=payment (Overview's empty chart, "Add a payment") opens Add bank payment straight away, once.
+  const [params, setParams] = useSearchParams();
+  const [panel, setPanel] = useState(() => (params.get('add') === 'payment' ? 'bank' : null)); // 'bank' | 'export'
+  useEffect(() => { if (params.get('add')) setParams({}, { replace: true }); }, [params, setParams]);
   const figures = useMemo(() => moneyFigures({ period, today: todayKey, lines: model.lines, invoices: fin.invoices || [], versions: model.versions, agreements: model.agreements, startMonth: model.startMonth }), [period, todayKey, model, fin.invoices]);
   const bySector = sectorsFor({ figures, lines: model.lines, sectors });
   const sectorMax = Math.max(1, ...bySector.map((s) => s.paid + s.toCome));
@@ -374,13 +393,13 @@ function Money() {
   const partial = Boolean(fin.partial);
   return (
     <>
-      <div className="fin-ctl"><SegmentedControl label="Period" options={PERIODS} value={period} onChange={setPeriod} /></div>
-      <StatGroup className="cc-stats fin-stats fin-stats--4">
-        <Stat label="Paid" value={poundsWords(figures.paid)} />
-        <Stat label="Due" value={poundsWords(figures.due)} />
-        <Stat label="Overdue" value={poundsWords(figures.overdue)} />
-        <Stat label="Not invoiced yet" value={poundsWords(figures.notInvoiced)} />
-      </StatGroup>
+      <div className="fin-ctl fin-ctl--top"><SegmentedControl label="Period" options={PERIODS} value={period} onChange={setPeriod} /></div>
+      <FinFigures items={[
+        { label: 'Paid', value: poundsWords(figures.paid), empty: 'Nothing paid yet.' },
+        { label: 'Due', value: poundsWords(figures.due), empty: 'Nothing due.' },
+        { label: 'Overdue', value: poundsWords(figures.overdue), empty: 'Nothing overdue.' },
+        { label: 'Not invoiced yet', value: poundsWords(figures.notInvoiced), empty: 'Everything is invoiced.' },
+      ]} />
 
       <FinPart title="By sector" aside={shareWords(period, todayKey, model.startMonth)}>
         <div className="fin-sector-head fin-hide-phone" aria-hidden="true"><span /><span /><span>Paid</span><span>To come</span></div>
@@ -397,18 +416,19 @@ function Money() {
         ))}
       </FinPart>
 
-      <FinPart title="By client">
+      <FinPart title="By client" add={<AddLink label="Add bank payment" expanded={panel === 'bank'} onClick={() => setPanel('bank')} />}>
         {partial && <Loading label="Loading your clients" />}
         {!partial && clients.length === 0 && <p className="cc-quiet">Nothing has come in yet in this period.</p>}
         {!partial && clients.slice(0, 30).map((c) => (
           <FigRow key={c.key} title={(c.organisation_id && names.org[c.organisation_id]) || (c.profile_id && names.person[c.profile_id]) || c.payer_name || 'Paid to your bank'} facts={forWhat(c)} value={<PoundsWithOriginal pounds={c.pounds} originals={c.originals} />} />
         ))}
-        <div className="cc-add"><AddButton onClick={() => setPanel('bank')}>Add bank payment</AddButton></div>
         <div className="cc-acts"><TextLink onClick={() => setPanel('export')}>Export to a spreadsheet</TextLink></div>
       </FinPart>
 
-      {partial ? <Loading label="Loading your pro bono hours" />
-        : <FigRow title="Pro bono this year" facts={[`${hoursWords(pro.minutes)}, never counted towards targets`]} value={`Worth ${poundsWords(pro.worth)}`} />}
+      <FinPart title="Pro bono">
+        {partial ? <Loading label="Loading your pro bono hours" />
+          : <FigRow title="Pro bono this year" facts={[`${hoursWords(pro.minutes)}, never counted towards targets`]} value={`Worth ${poundsWords(pro.worth)}`} />}
+      </FinPart>
       {fees > 0 && <p className="cc-note">{`Stripe took ${moneyWords(fees)} in fees this month.`}</p>}
       <p className="cc-note fin-footnote">Payments in other currencies show in pounds at the rate they landed, with the amount paid underneath.</p>
       {waiting.count > 0 && <p className="cc-note">{waiting.words}</p>}
@@ -542,12 +562,12 @@ function CashFlow() {
   if (fin.waiting) return <FirstWait />;
   return (
     <>
-      <StatGroup className="cc-stats fin-stats fin-stats--4">
-        <Stat label="Cash now" value={poundsWords(cash.cashNow)} />
-        <Stat label={cash.endLabel} value={poundsWords(cash.end)} />
-        <Stat label="Going out each month" value={poundsWords(cash.goingOut)} />
-        <Stat label="Lowest point" value={poundsWords(cash.lowest.cash)} unit={cash.lowest.words} />
-      </StatGroup>
+      <FinFigures items={[
+        { label: 'Cash now', value: poundsWords(cash.cashNow), empty: 'No cash in hand yet.' },
+        { label: cash.endLabel, value: poundsWords(cash.end), empty: 'Nothing in hand by then on what’s known.' },
+        { label: 'Going out each month', value: poundsWords(cash.goingOut), empty: 'Nothing going out each month.' },
+        { label: 'Lowest point', value: poundsWords(cash.lowest.cash), unit: cash.lowest.words },
+      ]} />
 
       <FinPart title="Cash at the end of each month">
         <div className="fin-ctl">
@@ -569,14 +589,13 @@ function CashFlow() {
         {cash.notInPounds > 0 && <p className="cc-note">Money in other currencies is left out until it lands in pounds.</p>}
       </FinPart>
 
-      <FinPart title="Recurring outgoings" aside={monthlyWords(list.total)}>
+      <FinPart title="Recurring outgoings" aside={monthlyWords(list.total)} add={<AddLink label="Add recurring outgoing" expanded={panel?.kind === 'outgoing'} onClick={() => setPanel({ kind: 'outgoing' })} />}>
         {list.rows.map((r) => <FigRow key={r.group} title={r.group} facts={[r.names]} value={monthlyWords(r.monthly)} onClick={() => setPanel({ kind: 'group', group: r.group })} label={`${r.group}, ${monthlyWords(r.monthly)}`} />)}
-        <div className="cc-add"><AddButton onClick={() => setPanel({ kind: 'outgoing' })}>Add recurring outgoing</AddButton></div>
       </FinPart>
 
-      <FinPart title="One-off costs">
+      <FinPart title="One-off costs" add={<AddLink label="Add one-off cost" expanded={panel?.kind === 'oneoff' && !panel.id} onClick={() => setPanel({ kind: 'oneoff' })} />}>
+        {oneOffs.length === 0 && <p className="cc-quiet fin-none">No one-off costs this year.</p>}
         {oneOffs.map((o) => <FigRow key={o.id} title={o.name} facts={[dayWordsFrom(o.starts_on, todayKey), o.group_name]} value={poundsWords(o.amount_minor)} onClick={() => setPanel({ kind: 'oneoff', id: o.id })} label={`Edit ${o.name}`} />)}
-        <div className="cc-add"><AddButton onClick={() => setPanel({ kind: 'oneoff' })}>Add one-off cost</AddButton></div>
       </FinPart>
 
       <FinPart title="Settings">

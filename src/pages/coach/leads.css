@@ -13,7 +13,7 @@
 .ui-root .cc-lboard .cc-board-col { min-height: var(--cc-board-col-min); box-sizing: border-box; }
 .ui-root .cc-lboard-sum { display: flex; justify-content: space-between; gap: var(--space-2); padding: 0 var(--space-1) var(--space-px10); margin-top: calc(-1 * var(--space-px6)); font-size: var(--fs-small); color: var(--text); font-variant-numeric: tabular-nums; }
 .ui-root .cc-lboard-sum small { font-size: var(--fs-small); color: var(--text-2); text-align: right; }
-.ui-root .cc-lboard-sum--none { color: var(--placeholder); }
+.ui-root .cc-lboard-sum--none { color: var(--text-2); }
 .ui-root .cc-lboard-add { margin-top: var(--space-2); }
 .ui-root .cc-lboard .cc-acts { margin-top: var(--space-1); padding-left: var(--space-1); }
 
@@ -47,8 +47,10 @@
 .ui-root .cc-lead-table td small { margin-top: var(--space-px2); }
 /* A heading wraps between its words when the device's text is large, never cut off (rule 20; twice the text size). */
 .ui-root .cc-lead-table .cc-th { white-space: normal; overflow: visible; text-overflow: clip; }
-/* A next step is read whole: it wraps onto more lines and its row grows (tables never squash their text). */
-.ui-root .cc-lead-table .cc-cell { white-space: normal; overflow-wrap: anywhere; text-align: left; line-height: var(--lh-row); }
+/* A next step is one line in its cell, ending with an ellipsis when it's longer (Polish 1, rule 7: words never wrap inside
+   a control, and the cell is a button that edits it in place); the whole step shows as it's edited and is read whole by a
+   screen reader (EditCell's label). */
+.ui-root .cc-table.cc-lead-table .cc-cell { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: var(--tap-min); }
 .ui-root .cc-lead-table td .cc-cell + small { margin-top: calc(-1 * var(--space-px6)); padding-bottom: var(--space-px6); }
 
 /* ---------------------------------------------------------------- a lead's page */
@@ -59,7 +61,7 @@
 .ui-root .cc-lead-q { display: grid; grid-template-columns: var(--cc-lead-q-w) minmax(0, 1fr); gap: var(--space-3); padding: var(--space-px12) 0; border-bottom: var(--line-w) solid var(--line-soft); }
 .ui-root .cc-lead-q > span:first-child { font-size: var(--fs-secondary); color: var(--text-2); }
 .ui-root .cc-lead-q > span:last-child { font-size: var(--fs-body); overflow-wrap: anywhere; }
-.ui-root .cc-lead-q .cc-lead-q--no { color: var(--placeholder); }
+.ui-root .cc-lead-q .cc-lead-q--no { color: var(--text-2); }
 /* An email on the timeline opens: the whole row is its button. */
 .ui-root .cc-lead-mail { all: unset; cursor: pointer; box-sizing: border-box; width: 100%; display: grid; grid-template-columns: var(--cc-when-w) minmax(0, 1fr); gap: var(--space-3); padding: var(--space-px14) 0 !important; font-size: inherit !important; min-height: 0 !important; border-bottom: var(--line-w) solid var(--line-soft); text-align: left; }
 .ui-root .cc-lead-mail > span { font-size: var(--fs-note); color: var(--text-2); }

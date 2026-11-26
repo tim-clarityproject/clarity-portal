@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useCachedLoad } from './pageCache';
 import { setPortalPreparing, usePortalPreparing } from './portalPreparing';
-import { loadActivePlan } from './performance/api';
+import { loadActivePlan, ownProfileRow } from './performance/api';
 import { loadMyCoach } from './performance/myCoach';
 import { loadAgreements } from './coaching/agreements';
 import { loadMySessions } from './coach/bookingActions';
@@ -24,11 +24,12 @@ export const PREPARING_CACHE = 'portal-preparing';
 
 async function readFacts(userId) {
   const known = (p) => p.then((v) => v, () => undefined);
-  const [coach, plan, agreements, sessions] = await Promise.all([
+  const [coach, plan, agreements, sessions, profile] = await Promise.all([
     known(loadMyCoach()),
     known(loadActivePlan(userId)),
     known(loadAgreements(userId)),
     known(loadMySessions()),
+    known(ownProfileRow(userId)),
   ]);
   return {
     hasCoach: coach === undefined ? null : Boolean(coach),
@@ -37,12 +38,14 @@ async function readFacts(userId) {
     hasAgreement: agreements === undefined || !agreements.ready ? null : agreements.agreements.length > 0,
     hasSessions: sessions === undefined || !sessions.there ? null : sessions.data.length > 0,
     coachName: coach?.firstName || null,
+    // The client's own first name, so every page's welcome reads "Welcome, Robin" (requests-b1 15).
+    firstName: profile?.first_name || null,
   };
 }
 
 /**
  * Works the rule out for the signed-in client (the device's copy first, then fresh), tells the
- * frame (menu: Home and My Account only) and returns { preparing, known, coachName }.
+ * frame (menu: Home and My Account only) and returns { preparing, known, coachName, firstName }.
  */
 export function useClientPreparing(userId) {
   const facts = useCachedLoad({ userId, name: PREPARING_CACHE, load: () => readFacts(userId) });
@@ -51,7 +54,7 @@ export function useClientPreparing(userId) {
     if (!facts.data) return;
     setPortalPreparing(preparing);
   }, [facts.data, preparing]);
-  return { preparing, known: Boolean(facts.data), coachName: facts.data?.coachName || null };
+  return { preparing, known: Boolean(facts.data), coachName: facts.data?.coachName || null, firstName: facts.data?.firstName || null };
 }
 
 export { usePortalPreparing };

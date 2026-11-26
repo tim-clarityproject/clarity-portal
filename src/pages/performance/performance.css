@@ -27,7 +27,7 @@
   margin: 0;
   font-size: var(--fs-note);
   line-height: var(--lh-text);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .ds-mission-card-text.ipp-muted {
@@ -45,7 +45,7 @@
   margin: 0;
   font-size: var(--fs-note);
   line-height: var(--lh-text);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 /* Changing one part of the plan (PlanPartPanel; Tim, 3 Nov): the editor,
@@ -83,7 +83,7 @@
   margin: var(--space-1) 0 0;
   font-size: var(--fs-note);
   line-height: var(--lh-text);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .ipp-version-list {
@@ -121,7 +121,7 @@
 .ui-root .ipp-version-rows .ipp-version-line {
   display: block;
   font-size: var(--fs-meta);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .ipp-version-habits {
@@ -207,7 +207,7 @@
 .ui-root .plan-srow-n {
   font-family: var(--font-display);
   font-size: var(--fs-meta);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .plan-picks {
@@ -256,7 +256,7 @@
 .ui-root .plan-sum-item small,
 .ui-root .plan-sum-note {
   font-size: var(--fs-meta);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .plan-ready-align {
@@ -353,7 +353,7 @@
 .ui-root .sprint-dd-note {
   display: block;
   font-size: var(--fs-meta);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .sprint-anchor {
@@ -372,7 +372,7 @@
   gap: var(--space-2) var(--space-3);
   margin-top: var(--space-3);
   font-size: var(--fs-note);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .sprint-subrow-left {
@@ -448,7 +448,7 @@
 
 .ui-root .sprint-habit-facts dt {
   font-size: var(--fs-note);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .sprint-habit-facts dd {
@@ -550,7 +550,7 @@
 .ui-root .year-sel-line {
   font-size: var(--fs-note);
   line-height: var(--lh-text);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .year-sel-score {
@@ -588,7 +588,7 @@
   padding: var(--space-1) var(--space-2) var(--space-1) 0;
   text-align: left;
   font-weight: var(--fw-regular);
-  color: var(--label);
+  color: var(--text-2);
   white-space: nowrap;
 }
 
@@ -666,7 +666,7 @@
 .ui-root .year-sprint-line {
   font-size: var(--fs-note);
   line-height: var(--lh-text);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .year-sprint-figure {
@@ -732,7 +732,7 @@
 .ui-root .rec-label {
   margin: var(--space-px18) 0 0;
   font-size: var(--fs-meta);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .rec-page .rec-question {
@@ -861,7 +861,7 @@
   margin: 0;
   font-size: var(--fs-note);
   line-height: var(--lh-text);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .rec-tiles {
@@ -941,7 +941,7 @@
 @media (max-width: 600px) {
   .ui-root .rec-sleep-table .year-tbl td:not(:first-child)::before {
     content: attr(data-label) ": ";
-    color: var(--label);
+    color: var(--text-2);
   }
 }
 
@@ -1151,7 +1151,7 @@
   align-items: center;
   gap: var(--space-2) var(--space-3);
   font-size: var(--fs-note);
-  color: var(--label);
+  color: var(--text-2);
 }
 .ui-root .deb-subrow--end { justify-content: flex-end; margin-top: var(--space-3); }
 
@@ -1161,7 +1161,7 @@
   margin: 0;
   font-size: var(--fs-note);
   line-height: var(--lh-text);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .deb-wins {
@@ -1184,7 +1184,7 @@
 }
 .ui-root .deb-day p > span:first-child {
   font-size: var(--fs-note);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .deb-carry { margin-top: var(--space-px18); }
@@ -1322,7 +1322,7 @@
 .ui-root .ck-three-n {
   font-family: var(--font-display);
   font-size: var(--fs-min);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 /* Results (M12 kresults, mresults). */
@@ -1353,7 +1353,7 @@
 .ui-root .ck-hint {
   margin: var(--space-px14) 0 0;
   font-size: var(--fs-meta);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .ck-hint p {
@@ -1406,7 +1406,7 @@
 
 .ui-root .ck-one-area {
   font-size: var(--fs-meta);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .ck-one-tip {
@@ -1596,7 +1596,7 @@
 
 .ui-root .ck-goal-label {
   font-size: var(--fs-meta);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 .ui-root .ck-goal-text {
@@ -1699,3 +1699,42 @@
 .ui-root .day-backlog {
   margin-top: var(--space-4);
 }
+
+/* ------------------------------------------------------------------ Polish 1, Stage B (B2): the reviews
+   The Daily review, the weekly debrief, the Monthly review and the sprint's own tools run in
+   GuidedTool's focus mode (B3); these rules only place each step's own content (rules 1 to 26). */
+
+/* One width (rule 15): inside a tool every step uses the tool's whole column. */
+.ui-root .ds-guide-body .day-narrow { max-width: none; }
+
+/* The unplanned wins: "+ Add" at the right of the list's label (rule 10), no line above. */
+.ui-root .rev-wins {
+  margin-top: var(--space-5);
+  padding-top: 0;
+  border-top: 0;
+}
+.ui-root .rev-wins .day-quiet-line,
+.ui-root .deb-wins .day-quiet-line { margin: 0; }
+.ui-root .deb-wins {
+  margin-top: var(--space-5);
+  padding-top: 0;
+  border-top: 0;
+}
+.ui-root .rev-wins .rev-list,
+.ui-root .deb-wins .rev-list { margin-bottom: 0; }
+
+/* Next week's to-dos: the label under the week's dates. */
+.ui-root .deb-subrow + .ds-card-head { margin-top: var(--space-3); }
+
+/* "Mark as done" is read and tapped like its neighbours' boxes: 16px in the text colour (rule 1). */
+.ui-root .deb-objectives .ds-status-action-link {
+  margin-top: var(--space-2);
+  font-size: var(--fs-text) !important;
+  color: var(--text);
+  text-decoration-color: currentColor;
+  text-underline-offset: var(--space-1);
+}
+
+/* A list's label with its "+ Add" (rule 10) under the content before it in a step. */
+.ui-root .ds-guide-body > div > .ds-card-head:not(:first-child) { margin-top: var(--space-5); }
+

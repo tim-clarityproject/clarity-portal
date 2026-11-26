@@ -156,7 +156,7 @@ export const EMAIL_EXAMPLES = [
     name: 'A call booked through a booking page',
     from: 'From The Clarity Project, to the person who booked',
     sends: 'Sent only from the live site, once for each time booked (api/_routes/booking-email.js claims the send in the database first; after migration 051). The time is in the reader’s own zone: 12-hour for the US and Canada.',
-    doc: () => bookingConfirmedEmail({ name: 'Grace Liu', callName: 'Chemistry Call', coach: 'Tim', at: instantAt('2026-11-18', '11:30', 'America/New_York'), zone: 'America/New_York', minutes: 30, zoomLink: ZOOM, mineLink: `${PORTAL}/book/mine/3f1c0a52-7b1e-4c0a-9a57-2d0f6b1c8e11`, now: NOW }),
+    doc: () => bookingConfirmedEmail({ name: 'Grace Liu', callName: 'Discovery call', coach: 'Tim', at: instantAt('2026-11-18', '11:30', 'America/New_York'), zone: 'America/New_York', minutes: 30, zoomLink: ZOOM, mineLink: `${PORTAL}/book/mine/3f1c0a52-7b1e-4c0a-9a57-2d0f6b1c8e11`, now: NOW }),
   },
   {
     key: 'booking-moved',
@@ -170,14 +170,14 @@ export const EMAIL_EXAMPLES = [
     name: 'A booked call tomorrow',
     from: 'From The Clarity Project, to the person who booked',
     sends: 'Sent only from the live site, once, by the scheduled job (api/_routes/coach-reminders.js) from 18:00 the day before in the reader’s own time, when its switch is on (after migration 051).',
-    doc: () => callTomorrowEmail({ name: 'Grace Liu', callName: 'Chemistry Call', coach: 'Tim', at: instantAt('2026-11-11', '11:30', 'America/New_York'), zone: 'America/New_York', zoomLink: ZOOM, mineLink: `${PORTAL}/book/mine/3f1c0a52-7b1e-4c0a-9a57-2d0f6b1c8e11`, now: NOW }),
+    doc: () => callTomorrowEmail({ name: 'Grace Liu', callName: 'Discovery call', coach: 'Tim', at: instantAt('2026-11-11', '11:30', 'America/New_York'), zone: 'America/New_York', zoomLink: ZOOM, mineLink: `${PORTAL}/book/mine/3f1c0a52-7b1e-4c0a-9a57-2d0f6b1c8e11`, now: NOW }),
   },
   {
     key: 'call-one-hour',
     name: 'A booked call in 1 hour',
     from: 'From The Clarity Project, to the person who booked',
     sends: 'Sent only from the live site, once, by the scheduled job (api/_routes/coach-reminders.js) 1 hour before, when its switch is on. Its clock time is in the reader’s own zone.',
-    doc: () => callInOneHourEmail({ callName: 'Chemistry Call', coach: 'Tim', at: instantAt('2026-11-11', '11:30', 'America/New_York'), zone: 'America/New_York', zoomLink: ZOOM }),
+    doc: () => callInOneHourEmail({ callName: 'Discovery call', coach: 'Tim', at: instantAt('2026-11-11', '11:30', 'America/New_York'), zone: 'America/New_York', zoomLink: ZOOM }),
   },
   {
     key: 'workshop-tomorrow',

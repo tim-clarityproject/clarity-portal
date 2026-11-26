@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
-import { Button, HubAnchor, HubGroup, HubGrid, HubRecent, HubTeams, HubTile, PageHeader, PinPanel, useToast } from '../../components/design';
+import { Button, HubGroup, HubGrid, HubRecent, HubTeams, HubTile, PageOpening, PinPanel, useToast } from '../../components/design';
+import { HUB_FIRST_GROUP, HUB_LINES, HUB_TIMES } from '../../content/pageLines/client';
 import { HUBS, PIN_GROUPS, TOOLS, isNewTool, toolCount, MAX_PINS } from '../../lib/navigation';
 import { usePins } from '../../lib/menuPins';
 import { getLocalDateKey } from '../../lib/dateFormatter';
@@ -46,6 +47,7 @@ export default function HubPage({ hub: hubKey }) {
       title: r.title,
       type: r.typeLabel,
       date: r.dateLabel,
+      dateKey: typeof r.date === 'string' ? r.date : null,
       onClick: () => navigate(r.to.path, r.to.state ? { state: r.to.state } : undefined),
     }))
     : [];
@@ -66,7 +68,7 @@ export default function HubPage({ hub: hubKey }) {
 
   const tile = (key) => {
     const t = TOOLS[key];
-    return <HubTile key={key} name={t.name} line={t.line} time={t.time} live={isNewTool(key, today) ? 'New' : undefined} href={t.to} onClick={open(t.to, t.state)} />;
+    return <HubTile key={key} name={t.name} line={t.line} time={t.time || HUB_TIMES[key]} live={isNewTool(key, today) ? 'New' : undefined} href={t.to} onClick={open(t.to, t.state)} />;
   };
 
   const onPin = async (key, on) => {
@@ -87,6 +89,11 @@ export default function HubPage({ hub: hubKey }) {
 
   const anchor = hub.anchor ? TOOLS[hub.anchor] : null;
 
+  // Polish 1 (rules 12 to 14): the page opening, the tiles as the one card in
+  // two columns (Strategic's Health Check too, the card itself the link), each
+  // group under its grey label, then the recent items as one card of rows.
+  const groups = (hub.groups || []).map((g, i) => ({ ...g, title: g.title || (i === 0 ? HUB_FIRST_GROUP[hubKey] : undefined) }));
+
   return (
     <div className="ui-root">
       <DesignHeader />
@@ -96,7 +103,7 @@ export default function HubPage({ hub: hubKey }) {
             <BackLink label={HUBS[hub.up].title} onClick={() => navigate(HUBS[hub.up].path)} />
           </div>
         )}
-        <PageHeader title={hub.title} info={hub.info} />
+        <PageOpening title={hub.title} line={HUB_LINES[hubKey] || hub.line} />
 
         {hub.areas && (
           <HubGrid>
@@ -108,21 +115,25 @@ export default function HubPage({ hub: hubKey }) {
         )}
 
         {anchor && (
-          <HubAnchor>
+          <HubGrid>
             <HubTile name={anchor.name} line={anchor.line} time={anchor.time} href={anchor.to} onClick={open(anchor.to)} />
-            <HubTeams teams={teams} />
-            <Button className="ds-hub-new" onClick={() => navigate(`${anchor.to}/new-team`)}>Start a new Health Check</Button>
-          </HubAnchor>
+          </HubGrid>
+        )}
+        {anchor && (
+          <HubTeams
+            teams={teams}
+            add={{ label: 'Start a new Health Check', children: 'Add', onClick: () => navigate(`${anchor.to}/new-team`) }}
+          />
         )}
 
-        {(hub.groups || []).map((g) => (
+        {groups.map((g) => (
           <HubGroup key={g.title || 'tools'} title={g.title}>
             {g.tools.map(tile)}
           </HubGroup>
         ))}
 
         {recent && (
-          <HubRecent title={recent.title} items={recentItems} linkLabel={`Open ${recent.title}`} onOpenAll={() => navigate(recent.to)} />
+          <HubRecent title={recent.title} items={recentItems} linkLabel="View all" onOpenAll={() => navigate(recent.to)} />
         )}
 
         {!hub.areas && (

@@ -12,6 +12,8 @@ import { listFilters, reviewRows } from '../lib/savedItems';
 import { loadSavedReviews, SAVED_REVIEWS_CACHE } from '../lib/savedItemsApi';
 import DesignHeader from '../components/DesignHeader';
 import HistoryList from '../components/ui/HistoryList';
+import { B1_LINES } from '../content/pageLines/client';
+import './hubs/clientPage.css';
 import { Loading, useToast } from '../components/design';
 
 // My Reviews (Phase 4 step 4; decisions part 1 "My Plans and My
@@ -105,7 +107,7 @@ export default function MyReviews() {
     <div className="ui-root">
       <DesignHeader />
 
-      <div className="plan-page">
+      <div className="plan-page cp-page">
         <HistoryList
           title="My Reviews"
           pageKey="myReviews"

@@ -1,10 +1,11 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { B3_LINES } from '../../content/pageLines/client';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
 import SavedItemActions from '../../components/SavedItemActions';
-import { LoadError, Loading, PageHeader, PdfDownload, clearGuideDraft, useToast } from '../../components/design';
+import { PageOpening, LoadError, Loading, PdfDownload, clearGuideDraft, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { readCache, writeCache } from '../../lib/pageCache';
 import { clearDraft, readDraft, useDraft } from '../../lib/drafts';
@@ -28,6 +29,7 @@ import {
 } from '../../lib/emotionalWash/model';
 import EmotionalWashTool from './EmotionalWashTool';
 import '../performance/performance.css';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 
 // Emotional wash, signed in (mock-up M10, version 5.6): the guided tool at
 // /emotional-wash.
@@ -122,7 +124,7 @@ function Shell({ children }) {
       <DesignHeader />
       <div className="plan-page ipp-page">
         <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="My Plans" /></div>
-        <PageHeader title={TOOL_NAME} />
+        <PageOpening title={TOOL_NAME} line={B3_LINES.emotionalWash} />
         {children}
       </div>
     </div>
@@ -283,7 +285,7 @@ function Flow({ userId, user, asked, start }) {
       const leaves = Boolean(asked) || status === 'completed';
       const result = await save(own, wash, status, { stays: !leaves });
       if (leaves) forget();
-      toast.show(result === 'queued' ? 'Will sync' : 'Saved');
+      toast.show(result === 'queued' ? 'Will sync' : status === 'completed' ? 'Saved' : TOOL_CLOSED);
       leave();
     } catch (error) {
       toast.error(friendlyError(error, SAVE_ERROR));

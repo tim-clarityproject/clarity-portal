@@ -1,4 +1,6 @@
+import './toolFocus/formTool.css';
 import { useState, useContext, useEffect } from 'react';
+import { B3_LINES } from '../content/pageLines/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -6,8 +8,7 @@ import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
 import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import pageText from '../content/pageText';
-import { Loading, PageHeader, Button, useToast } from '../components/design';
+import { Loading, PageOpening, Button, useToast } from '../components/design';
 import SavedItemActions from '../components/SavedItemActions';
 
 export default function IfThenPlanningSummary() {
@@ -107,7 +108,7 @@ export default function IfThenPlanningSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageHeader title={planning.title || 'Pressure plan'} info={pageText.ifThenPlanningSummary} />
+          <PageOpening label="Pressure plan" title={planning.title || 'Pressure plan'} line={B3_LINES.pressurePlanSummary} />
         </div>
 
         <div className="plan-sum">

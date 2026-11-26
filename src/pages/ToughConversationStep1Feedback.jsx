@@ -5,13 +5,10 @@ import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
 import { useDraft } from '../lib/drafts';
-import DesignHeader from '../components/DesignHeader';
-import PhoneActionBar from '../components/ui/PhoneActionBar';
-import { DiscardLink } from '../components/ui/DiscardLink';
+import FormTool, { FormField } from './toolFocus/FormTool';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import { PageHeader, TextBox, Button, useToast } from '../components/design';
-import pageText from '../content/pageText';
+import { TextBox, useToast } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -151,62 +148,29 @@ export default function ToughConversationStep1Feedback() {
     });
   };
 
-  const actionButtons = (
-    <>
-      <Button variant="primary" disabled={isSaving} onClick={goContinue}>
-        Continue
-      </Button>
-      <Button variant="outline" disabled={isSaving} onClick={() => setNameDialog('draft')}>
-        Save as draft
-      </Button>
-    </>
-  );
-
   return (
     <div className="ui-root">
-      <DesignHeader />
-
-      <div className="plan-page plan-page--form">
-        <div className="plan-header">
-          <PageHeader title="Give difficult feedback" info={pageText.toughConversationStep1Feedback} />
-        </div>
-
-        <div className={`plan-dq${observation.trim() ? ' on' : ''}`}>
-          <div className="plan-dq-num">
-            01
-            <svg className="plan-dq-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
-          </div>
-          <div>
-            <label className="plan-dq-label" htmlFor="tc-observation">I've noticed...</label>
-            <p className="plan-dq-help">Name the thing you've observed. This can either be one big thing, or a pattern of 3+ smaller things.</p>
-            <TextBox id="tc-observation" lines="many" focusMode ariaLabel="I've noticed..." placeholder="Type here" value={observation} onChange={setObservation} />
-          </div>
-        </div>
-
-        <div className={`plan-dq${impact.trim() ? ' on' : ''}`}>
-          <div className="plan-dq-num">
-            02
-            <svg className="plan-dq-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
-          </div>
-          <div>
-            <label className="plan-dq-label" htmlFor="tc-impact">The impact of that is...</label>
-            <p className="plan-dq-help">Describe in a non-emotional manner the tangible impact of their actions.</p>
-            <TextBox id="tc-impact" lines="many" focusMode ariaLabel="The impact of that is..." placeholder="Type here" value={impact} onChange={setImpact} />
-          </div>
-        </div>
-
-        <div className={`plan-dq${need.trim() ? ' on' : ''}`}>
-          <div className="plan-dq-num">
-            03
-            <svg className="plan-dq-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
-          </div>
-          <div>
-            <label className="plan-dq-label" htmlFor="tc-need">So, what I need from you is...</label>
-            <p className="plan-dq-help">Name the change or outcome that is required.</p>
-            <TextBox id="tc-need" lines="many" focusMode ariaLabel="So, what I need from you is..." placeholder="Type here" value={need} onChange={setNeed} />
-          </div>
-        </div>
-
+      <FormTool
+        name="Give difficult feedback"
+        step={1}
+        steps={2}
+        question="What do you need to say?"
+        hint="Three short parts make your script."
+        onNext={() => { if (!isSaving) goContinue(); }}
+        saveError={saveError}
+        onSaveDraft={() => { if (!isSaving) setNameDialog('draft'); }}
+        onDiscard={() => setDiscardOpen(true)}
+        closeTo="/interpersonal"
+      >
+        <FormField label="What have you noticed?" htmlFor="tc-observation" help="Name the thing you’ve observed. This can either be one big thing, or a pattern of 3+ smaller things.">
+          <TextBox id="tc-observation" lines="many" focusMode ariaLabel="What have you noticed?" placeholder="I’ve noticed…" value={observation} onChange={setObservation} />
+        </FormField>
+        <FormField label="What is the impact of that?" htmlFor="tc-impact" help="Describe in a non-emotional manner the tangible impact of their actions.">
+          <TextBox id="tc-impact" lines="many" focusMode ariaLabel="What is the impact of that?" placeholder="The impact of that is…" value={impact} onChange={setImpact} />
+        </FormField>
+        <FormField label="What do you need from them?" htmlFor="tc-need" help="Name the change or outcome that is required.">
+          <TextBox id="tc-need" lines="many" focusMode ariaLabel="What do you need from them?" placeholder="So, what I need from you is…" value={need} onChange={setNeed} />
+        </FormField>
         <div className="tc-script">
           <p className="tc-script-sent">
             I've noticed{' '}
@@ -218,17 +182,7 @@ export default function ToughConversationStep1Feedback() {
             .
           </p>
         </div>
-
-        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
-
-        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
-
-        <div className="plan-discard-row">
-          <DiscardLink onClick={() => setDiscardOpen(true)} />
-        </div>
-      </div>
-
-      <PhoneActionBar>{actionButtons}</PhoneActionBar>
+      </FormTool>
 
       <NameDialog
         open={nameDialog === 'draft'}

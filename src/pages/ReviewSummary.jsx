@@ -7,8 +7,9 @@ import { questionsFor, RATINGS, deleteReview } from '../lib/reviewTool';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import { Button, Loading, PageHeader, useToast } from '../components/design';
-import pageText from '../content/pageText';
+import { Button, Loading, PageOpening, useToast } from '../components/design';
+import { B2_LINES } from '../content/pageLines/client';
+
 
 const TAG = {
   'after-action': 'After-Action Review',
@@ -133,7 +134,7 @@ export default function ReviewSummary() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/my-reviews')} label="Back to Reviews" /></div>
 
         <div className="plan-summary-head">
-          <PageHeader title={review.title || TAG[reviewType]} info={pageText.reviewSummary} meta={[formatUkDate(review.entry_date)]} />
+          <PageOpening label={formatUkDate(review.entry_date)} title={review.title || TAG[reviewType]} line={B2_LINES.reviewSummary} />
         </div>
 
         <div className="plan-sum">

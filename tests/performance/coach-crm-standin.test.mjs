@@ -114,7 +114,7 @@ test('the timeline: a call moves last contact forward, a note doesn’t, an olde
   const w = world();
   w.save('coach_leads', { id: 'amy', coach_id: ME, name: 'Amy Cole', source: 'manual' });
   w.rows.coach_leads.push({ id: 'theirs', coach_id: OTHER, name: 'Someone else’s', source: 'manual' });
-  w.save('coach_lead_events', { id: 'e1', coach_id: ME, lead_id: 'amy', kind: 'call', happened_on: '2026-11-10', title: 'Chemistry Call, 30 minutes', data: { minutes: 30 } });
+  w.save('coach_lead_events', { id: 'e1', coach_id: ME, lead_id: 'amy', kind: 'call', happened_on: '2026-11-10', title: 'Discovery call, 30 minutes', data: { minutes: 30 } });
   assert.equal(w.rows.coach_leads[0].last_contact_on, '2026-11-10');
   w.save('coach_lead_events', { id: 'e2', coach_id: ME, lead_id: 'amy', kind: 'note', happened_on: TODAY, title: 'A thought' });
   w.save('coach_lead_events', { id: 'e3', coach_id: ME, lead_id: 'amy', kind: 'call', happened_on: '2026-10-20', title: 'An earlier call' });
@@ -126,7 +126,7 @@ test('the timeline: a call moves last contact forward, a note doesn’t, an olde
 test('two leads merge into one, and Undo puts both back as they were, once (5a to 5d)', () => {
   const w = world();
   w.sim.fn.coach_lead_stages_start();
-  w.save('coach_leads', { id: 'ruth', coach_id: ME, name: 'Ruth Adeyemi', source: 'referral', phone: '07700 900213', notes: 'From the Chemistry Call page' });
+  w.save('coach_leads', { id: 'ruth', coach_id: ME, name: 'Ruth Adeyemi', source: 'referral', phone: '07700 900213', notes: 'From the Discovery call page' });
   w.save('coach_leads', { id: 'dup', coach_id: ME, name: 'Ruth A. Adeyemi', source: 'import', organisation: 'Harbour City FC' });
   w.rows.coach_leads.push({ id: 'theirs', coach_id: OTHER, name: 'Someone else’s', source: 'manual' });
   w.save('coach_lead_events', { id: 'n1', coach_id: ME, lead_id: 'dup', kind: 'note', happened_on: '2026-11-17', title: 'Met at the conference' });

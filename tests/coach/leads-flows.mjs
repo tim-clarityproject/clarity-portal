@@ -20,15 +20,27 @@
 //
 //   PARTS=lead-pipeline,…   DB=none,there
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, makeReport, seedDevice, seedNetworkDevice, settle, standIn, toastText } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, makeReport, openSearch, seedDevice, seedNetworkDevice, settle, standIn, toastText } from './shared.mjs';
 import { CAL, CRM, ID, manyLeads, networkDeviceSeed, seedClock, seedWithCrm } from './seed.mjs';
 import { xlsxBytes } from '../../src/lib/coach/xlsx.js';
+
+// Polish 1 (B4): "+ Add" by the list's label opens Quick Add; "Add their details too" opens the whole Add lead form,
+// the name typed there carried over (cleared here, so the form starts as it always did).
+async function openAddLead(page) {
+  await page.locator('.ds-addlink[aria-label="Add lead"]').first().click();
+  await page.locator('#cc-add-lead .ds-qa-box').fill('x');
+  await page.getByRole('button', { name: 'Add their details too', exact: true }).click();
+  await page.waitForTimeout(500);
+  await page.locator('.ds-modal--shown .ds-dialog').last().getByLabel('Who is it?').fill('');
+}
+
 
 export const LEAD_PARTS = ['lead-pipeline', 'lead-page', 'lead-won', 'lead-cold', 'lead-merge', 'lead-waiting', 'lead-import', 'lead-export', 'lead-stages', 'lead-many', 'lead-associate', 'lead-arrives'];
 const TUE = new Date(2026, 10, 17, 9, 0);
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
-const press = async (page, name, scope = page) => { await scope.getByRole('button', { name, exact: true }).first().click(); await settle(page, 600); };
+// A name in a list or table, a board card and the pages that open more are real links since Polish 1 (B4): press either.
+const press = async (page, name, scope = page) => { await scope.getByRole('button', { name, exact: true }).or(scope.getByRole('link', { name, exact: true })).first().click(); await settle(page, 600); };
 const go = async (page, path) => { await page.goto(`${APP}${path}`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 1300); };
 const words = (page) => page.evaluate(() => (document.querySelector('.cc-main')?.innerText || '').replace(/ /g, ' '));
 const undo = async (page) => { await page.locator('.ds-toast').getByRole('button', { name: 'Undo' }).click(); await settle(page, 900); };
@@ -111,7 +123,7 @@ async function run() {
         pass(`${tag}: no score is shown as a number anywhere on the board`, !/\b\d{1,3}\s?%|\b\d\/\d\b|score/i.test(text), (/\b\d{1,3}\s?%|\b\d\/\d\b|score/i.exec(text) || [''])[0]);
         pass(`${tag}: the two quiet lines are there (someone waiting, a possible duplicate)`, text.includes('You emailed Sarah Kent, who isn’t in the portal yet.') && text.includes('Chris Doyle may be in here twice.'));
         // Add lead.
-        await page.locator('.cc-lboard .ds-addrow', { hasText: 'Add lead' }).click(); await settle(page, 600);
+        await openAddLead(page); await settle(page, 600);
         await press(page, 'Add lead', dialog(page));
         pass(`${tag}: Add lead pressed with nothing typed says what's missing (the button is never greyed out)`, (await dialog(page).innerText()).includes('Type their name to carry on.'));
         await dialog(page).getByLabel('Who is it?').fill('Hana Okafor');
@@ -159,8 +171,10 @@ async function run() {
         const a = await openAt({ db, tag, path: `/coach/leads/${CAL.leadRuth}` });
         const { page } = a;
         let text = await words(page);
-        pass(`${tag}: Ruth's page: early days in words, her booking and her emails on one timeline`, ['Early days. Still to find out: the outcome, what’s in the way, who decides, who funds it and when.', 'Booked a Chemistry Call', 'First contact', 'Ruth replied: Can we start in January?', 'Where they came from', 'Chemistry Call page'].every((w) => text.includes(w)));
-        pass(`${tag}: Email and WhatsApp open the coach's own apps, and nothing offers to send`, (await page.locator('.cc-links a[href^="mailto:"]').count()) === 1 && (await page.locator('.cc-links a[href^="https://wa.me/447700900213"]').count()) === 1 && !/\bSend\b/.test(text));
+        pass(`${tag}: Ruth's page: early days in words, her booking and her emails on one timeline`, ['Early days. Still to find out: the outcome, what’s in the way, who decides, who funds it and when.', 'Booked a Discovery call', 'First contact', 'Ruth replied: Can we start in January?', 'Where they came from', 'Discovery call page'].every((w) => text.includes(w)));
+        // Phase 6b run 3 (agreements rule 12: "quotes for clients and organisations, a lead made a client first") added "Send Ruth a quote",
+        // which makes the lead a client before anything is drafted; nothing else on the page offers to send.
+        pass(`${tag}: Email and WhatsApp open the coach's own apps, and nothing but Send Ruth a quote offers to send`, (await page.locator('.cc-links a[href^="mailto:"]').count()) === 1 && (await page.locator('.cc-links a[href^="https://wa.me/447700900213"]').count()) === 1 && !/\bSend\b/.test(text.replaceAll('Send Ruth a quote', '')), `${await page.locator('.cc-links a[href^="mailto:"]').count()} ${await page.locator('.cc-links a[href^="https://wa.me/447700900213"]').count()} ${(text.replaceAll('Send Ruth a quote', '').match(/.{0,30}\bSend\b.{0,30}/g) || []).join(' | ')}`);
         await press(page, 'Log a call');
         await press(page, 'Save the call', dialog(page));
         pass(`${tag}: Save the call with nothing typed says what's missing`, (await dialog(page).innerText()).includes('Type how it went, or what happens next, to carry on.'));
@@ -171,7 +185,7 @@ async function run() {
         await press(page, 'Save the call', dialog(page));
         pass(`${tag}: the call is logged with its follow-up on the coach's to-dos for Fri 20 Nov`, (await toastText(page)).includes('Logged. The follow-up is on your to-dos for Fri 20 Nov.'), await toastText(page));
         text = await words(page);
-        pass(`${tag}: the page shows the call, the new next step, and what is now known`, ['Chemistry Call', 'Wants her staff aligned before the season review.', 'Send the proposal', 'A staff team that plans together.', 'Early days. Still to find out: what’s in the way, who funds it and when.'].every((w) => text.includes(w)));
+        pass(`${tag}: the page shows the call, the new next step, and what is now known`, ['Discovery call', 'Wants her staff aligned before the season review.', 'Send the proposal', 'A staff team that plans together.', 'Early days. Still to find out: what’s in the way, who funds it and when.'].every((w) => text.includes(w)));
         const ruth = (await a.rowsNow('coach_leads')).find((l) => l.id === CAL.leadRuth);
         pass(`${tag}: the lead keeps the next step, its day, and today as the last contact`, ruth?.next_step === 'Send the proposal' && ruth.next_step_on === '2026-11-20' && ruth.last_contact_on === '2026-11-17', JSON.stringify([ruth?.next_step, ruth?.next_step_on, ruth?.last_contact_on]));
         pass(`${tag}: the follow-up is one of the coach's own to-dos, pointing at the lead`, (await a.rowsNow('coach_todos')).filter((t) => t.lead_id === CAL.leadRuth && t.title === 'Send the proposal' && t.planned_on === '2026-11-20').length === 1);
@@ -209,7 +223,7 @@ async function run() {
         await press(page, 'Open the client’s page'); await settle(page, 900);
         await press(page, 'Everything');
         const all = await words(page);
-        pass(`${tag}: the client's page carries the lead's timeline over`, ['Won', 'Chemistry Call, 30 minutes', 'Referred by Hannah Wells', 'Leadership Accelerator. Opened 3 times.'].every((w) => all.includes(w)), all.slice(0, 200));
+        pass(`${tag}: the client's page carries the lead's timeline over`, ['Won', 'Discovery call, 30 minutes', 'Referred by Hannah Wells', 'Leadership Accelerator. Opened 3 times.'].every((w) => all.includes(w)), all.slice(0, 200));
         // Undo, on another lead.
         await go(page, `/coach/leads/${CRM.tom}`);
         await press(page, 'Mark as won'); await settle(page, 500);
@@ -230,7 +244,7 @@ async function run() {
         pass(`${tag}: marked as cold, with a reminder to check in on the coach's to-dos`, (await toastText(page)).includes('Chris is in Cold leads. A reminder to check in is on your to-dos.'), await toastText(page));
         await go(page, '/coach/leads');
         pass(`${tag}: a cold lead leaves the board, and its stage's totals`, !(await column(page, 'Proposal sent').innerText()).includes('Chris Lowe') && (await column(page, 'Proposal sent').innerText()).includes('£13,500'));
-        await press(page, 'Cold leads');
+        await page.getByRole('link', { name: 'Cold leads', exact: true }).first().click(); await settle(page, 600); // a real link since Polish 1 (B4)
         const cold = await words(page);
         pass(`${tag}: Cold leads lists it with what happened and when to check in again`, cold.includes('Chris Lowe') && cold.includes('No budget this year.') && cold.includes('Check in again on Wed 17 Feb 2027') && cold.includes('Priya Menon'), cold.slice(0, 300));
         await page.getByRole('button', { name: 'Bring Chris Lowe back' }).click(); await settle(page, 900);
@@ -292,7 +306,7 @@ async function run() {
         const fromExcel = await dialog(page).innerText();
         pass(`${tag}: an Excel file is read: its columns matched and its duplicate listed first`, ['Nell Okoye', 'Amy Cole is already a lead, with the same email.', '1 to add.', 'Add 1 lead'].every((w) => fromExcel.includes(w)) && !fromExcel.includes('can’t be read'), fromExcel.slice(0, 300));
         // Odd columns: other names for the headings, one nobody knows, a row with no name, the same person twice, someone already here.
-        const sheet = 'Full Name;E-mail;Company;Deal_Size;Lead Source;Shoe size\nDana Whitfield;dana@example.invalid;Kestrel Group;"£12,000";Referral;7\nAmy Cole;amy.cole@example.invalid;Northfield Logistics;;;\nelena ruiz;;;;;\nGrace Liu;grace.liu@example.invalid;Quillmark;4.5k;Chemistry Call;\nGrace Again;grace.liu@example.invalid;;;;\n;nobody@example.invalid;;;;';
+        const sheet = 'Full Name;E-mail;Company;Deal_Size;Lead Source;Shoe size\nDana Whitfield;dana@example.invalid;Kestrel Group;"£12,000";Referral;7\nAmy Cole;amy.cole@example.invalid;Northfield Logistics;;;\nelena ruiz;;;;;\nGrace Liu;grace.liu@example.invalid;Quillmark;4.5k;Discovery call;\nGrace Again;grace.liu@example.invalid;;;;\n;nobody@example.invalid;;;;';
         await dialog(page).locator('input[type=file]').setInputFiles({ name: 'leads.csv', mimeType: 'text/csv', buffer: Buffer.from(sheet) });
         await settle(page, 600);
         const panel = await dialog(page).innerText();
@@ -375,7 +389,7 @@ async function run() {
         t = Date.now();
         await page.getByLabel('Search leads').fill('grant'); await settle(page, 500);
         const found = await page.locator('.cc-lead-table tbody tr').count();
-        pass(`${tag}: search narrows by name, with the count (${Date.now() - t} ms)`, found > 0 && found < 40 && /\d+ of 2\d\d leads/.test(await words(page)), `${found} rows`);
+        pass(`${tag}: search narrows by name, with the count (${Date.now() - t} ms)`, found > 0 && found < 40 && /\d+ of 2\d\d leads/i.test(await words(page)), `${found} rows`);
         await a.close();
       }
     }
@@ -390,10 +404,9 @@ async function run() {
         pass(`${tag}: and so is one who opens a lead's own address, or Cold leads`, new URL(page.url()).pathname === '/coach');
         await go(page, '/coach/leads/cold');
         pass(`${tag}: Cold leads too`, new URL(page.url()).pathname === '/coach');
-        await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600);
-        pass(`${tag}: the menu has no Leads`, !/\bLeads\b/.test(await page.locator('.cc-menu').innerText()));
-        await page.keyboard.press('Escape'); await settle(page, 300);
-        await page.getByRole('button', { name: 'Search, or do anything' }).click(); await page.keyboard.type('lead'); await settle(page, 500);
+        // Polish 1: the menu is the frame's column, always in view on a laptop (no menu button to open).
+        pass(`${tag}: the menu has no Leads`, !/\bLeads\b/.test(await page.locator('.ds-frame-side .ds-menu').innerText()));
+        await openSearch(page); await page.keyboard.type('lead'); await settle(page, 500);
         const results = await page.locator('.cc-jump').innerText();
         pass(`${tag}: search finds no Leads page, no lead and no lead action`, !/\bLeads?\b/.test(results.replace(/“lead”/, '')), results.slice(0, 120));
         await page.keyboard.press('ControlOrMeta+a'); await page.keyboard.type('amy cole'); await settle(page, 500);
@@ -409,7 +422,7 @@ async function run() {
       const tag = 'lead-arrives';
       const a = await openAt({ db: 'none', tag: `${tag}, on the device`, network: true });
       let { page } = a;
-      await page.locator('.cc-lboard .ds-addrow', { hasText: 'Add lead' }).click(); await settle(page, 600);
+      await openAddLead(page); await settle(page, 600);
       await dialog(page).getByLabel('Who is it?').fill('Hana Okafor');
       await dialog(page).getByLabel('Which organisation?').fill('Kestrel Group');
       await press(page, 'Add lead', dialog(page));

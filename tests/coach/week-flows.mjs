@@ -17,7 +17,7 @@
 //                and the rest are released
 //   week-open    Open for calls (two touching blocks join, never over something
 //                busy, Copy last week), then a signed-out guest in another zone
-//                books a Chemistry Call end to end, moves it, and Tim sees the
+//                books a Discovery call end to end, moves it, and Tim sees the
 //                item, the booking and the lead; 5 calls a day and a 15-minute gap
 //   week-link    a single-use link used once then refused; Offer times by email
 //                drafted in the reader's zone, nothing sent
@@ -48,7 +48,7 @@
 //   SHOTS=<folder> keeps a picture of the Sydney client's brief.
 //   PEEK=1 lists the calls just before a write that was stopped on its way out, when there is one.
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, makeReport, seedDevice, settle, standIn } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, makeReport, openCalSettings, seedDevice, settle, standIn } from './shared.mjs';
 import { CAL, ID, seedClock, seedWithCal } from './seed.mjs';
 import { guestStandIn } from './book-standin.mjs';
 import { dayKeyWords, instantAt, onQuarterHour, seriesCalls, seriesRule, wallClock } from '../../src/lib/time/index.js';
@@ -71,7 +71,7 @@ const toast = async (page) => (await page.locator('.ds-toast-text').last().textC
 const undo = async (page) => { await page.locator('.ds-toast').getByRole('button', { name: 'Undo' }).click(); await settle(page, 900); };
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
 const closePanel = async (page) => { await page.keyboard.press('Escape'); await settle(page, 500); };
-const press = async (scope, page, name) => { await scope.getByRole('button', { name, exact: true }).first().click(); await settle(page, 500); };
+const press = async (scope, page, name) => { if (scope === page) await openCalSettings(page, name); await scope.getByRole('button', { name, exact: true }).first().click(); await settle(page, 500); };
 const pick = async (scope, page, label, option) => {
   await scope.getByRole('combobox', { name: new RegExp(`^${label}`) }).first().click(); await settle(page, 300);
   await page.getByRole('option', { name: option, exact: true }).click(); await settle(page, 400);
@@ -514,7 +514,7 @@ async function run() {
     await t.done();
   }
 
-  // ================================================================ Open for calls, a guest's Chemistry Call, the limits
+  // ================================================================ Open for calls, a guest's Discovery call, the limits
   async function open(role, db) {
     const tag = `${role}, ${db === 'there' ? '051 there' : 'device only'}, Open for calls`;
     const when = new Date(2026, 10, 17, 9, 0);
@@ -574,7 +574,7 @@ async function run() {
       const g = await guestPage(store, when);
       await g.open(`/book/${CAL.chemKey}`);
       const start = await g.words();
-      pass(`${tag}: a guest's Chemistry Call page shows its own call only, and nothing of the calendar`, /Chemistry Call/i.test(start) && !/Connection Call/i.test(start) && !/Training|Sam Okafor|Client 1|Dentist|Swimming/.test(start));
+      pass(`${tag}: a guest's Discovery call page shows its own call only, and nothing of the calendar`, /Discovery call/i.test(start) && !/Connection Call/i.test(start) && !/Training|Sam Okafor|Client 1|Dentist|Swimming/.test(start));
       await zoneTo(g.page, 'Los Angeles');
       const days = async () => freeDays(g.page);
       const first = await days();
@@ -613,7 +613,7 @@ async function run() {
       const near = (await h.page.locator('.cc-book-time').allTextContents()).map((x) => x.trim());
       pass(`${tag}: another visitor is never offered her time, nor one within 15 minutes of it`, near.length > 0 && near.every((x) => /^\d\d:\d\d$/.test(x)) && !near.some((x) => x >= '14:30' && x < '15:45') && near.includes('14:00'), near.join(','));
       await h.open(`/book/${CAL.connKey}`);
-      pass(`${tag}: the Connection Call page never shows the Chemistry Call`, /Connection Call/i.test(await h.words()) && !/Chemistry Call/i.test(await h.words()));
+      pass(`${tag}: the Connection Call page never shows the Discovery call`, /Connection Call/i.test(await h.words()) && !/Discovery call/i.test(await h.words()));
       await h.ctx.close();
       // She moves it, from her own link.
       const first0 = booking.starts_at;

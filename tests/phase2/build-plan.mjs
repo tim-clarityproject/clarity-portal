@@ -135,7 +135,8 @@ async function stepChecks(page, tag) {
     return {
       sideways: Math.max(document.documentElement.scrollWidth - window.innerWidth, scroller.scrollWidth - scroller.clientWidth),
       primaries: primaries.length,
-      primaryCoral: primaries.every((b) => coral.includes(getComputedStyle(b).backgroundColor)),
+      // Polish 1 (25 Nov reference): the one main button is solid in the text colour (--main-bg), never coral.
+      primaryCoral: primaries.every((b) => { const pr = document.createElement('span'); pr.style.background = 'var(--main-bg)'; b.parentElement.appendChild(pr); const main = getComputedStyle(pr).backgroundColor; pr.remove(); return getComputedStyle(b).backgroundColor === main; }),
       small,
       coralFills,
       percent: Boolean(root.querySelector('.ds-guide-pct')),
@@ -351,7 +352,7 @@ try {
   pass('edit: an objective in the plan asks where it started', (await card(0).textContent()).includes('Where did you start?'));
   await page.waitForTimeout(1200);
   await savedShown(page);
-  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByRole('button', { name: /^Close( and save my place)?$/ }).click();
   await page.waitForURL(/\/performance-plan$/, { timeout: 20000 });
   await page.waitForTimeout(500);
   pass('edit: closing says the new version', (await page.locator('body').textContent()).includes('Your plan is now Version 1.1.'));

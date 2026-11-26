@@ -143,3 +143,27 @@
 @media (prefers-reduced-motion: reduce) {
   .ui-root .cc-utab, .ui-root .cc-todo-more { transition: none; }
 }
+
+/* ---------------------------------------------------------------- polish 1, stage B (B5)
+   Under the page's opening: the tabs and the List or Calendar switch in one row, then the tab's one card, 24px under it. */
+.ui-root .cc-todo-bar { margin: 0 0 var(--card-gap); }
+@media (max-width: 600px) {
+  .ui-root .cc-todo-bar { margin: 0 0 var(--card-gap); }
+  /* The switch spans the column on a phone (rule 15), its two halves equal. */
+  .ui-root .cc-todo-bar > .cc-seg { flex: 1 1 100%; }
+}
+.ui-root .cc-todo-card .cc-todos { margin-top: 0; }
+.ui-root .cc-todo-card > .cc-quiet { margin: 0; }
+.ui-root .cc-todo-card > .cc-acts { margin-top: var(--space-2); }
+/* A list's "+ Heading" and "+ Add" together at its label's right, their 44px tap areas reaching out without moving it. */
+.ui-root .cc-list-adds { display: inline-flex; gap: var(--space-4); margin: calc(var(--fs-meta) * 1.3 - var(--tap-min)) 0 0; align-items: flex-end; }
+.ui-root .cc-list-adds > .ds-addrow { min-height: var(--tap-min) !important; }
+.ui-root .cc-todo-card > .cc-list-head:first-child, .ui-root .cc-todo-card > section:first-of-type .cc-todo-group { margin-top: 0; }
+/* Quick Add's one line on how it reads words, shown once typing has begun (Tim's walk, item 24). */
+.ui-root .cc-qa-help { margin: 0; font-size: var(--fs-meta); color: var(--text-2); }
+/* Quick Add under a card's label: 16px clear of the label row's 44px tap areas. */
+.ui-root .ds-card > .ds-qa:not(.ds-qa--sheet) { margin-top: var(--space-3); }
+.ui-root .cc-list-adds > .ds-addrow { align-items: flex-end; }
+/* A to-do list's first row (its own 44px tap area reaching above it) and an open Quick Add keep clear of the label row's
+   View all and + Add: 16px under the label here, not 8. */
+.ui-root :is(.cc-today-todos, .cc-todo-card) > .ds-card-head { margin-bottom: var(--space-3); }

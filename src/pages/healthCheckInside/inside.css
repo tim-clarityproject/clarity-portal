@@ -46,7 +46,7 @@
 /* New version: the team and the version copied, in the soft panel (M7 .exb) */
 .ui-root .hc-in-copied .hc-in-k2 {
   font-size: var(--fs-meta);
-  color: var(--placeholder);
+  color: var(--text-2);
 }
 
 .ui-root .hc-in-lead2 {

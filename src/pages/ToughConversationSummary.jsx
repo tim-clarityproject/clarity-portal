@@ -1,4 +1,6 @@
+import './toolFocus/formTool.css';
 import { useState, useContext, useEffect } from 'react';
+import { B3_LINES } from '../content/pageLines/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -6,8 +8,7 @@ import { formatUkDate } from '../lib/dateFormatter';
 import { COACHING_QUESTIONS } from '../content/coachingQuestions';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import pageText from '../content/pageText';
-import { Loading, PageHeader, Button, useToast } from '../components/design';
+import { Loading, PageOpening, Button, useToast } from '../components/design';
 import SavedItemActions from '../components/SavedItemActions';
 
 export default function ToughConversationSummary() {
@@ -92,7 +93,7 @@ export default function ToughConversationSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageHeader title={conversation.title || 'Give difficult feedback'} info={pageText.toughConversationSummary} meta={[`Created ${formatUkDate(conversation.created_at)}`]} />
+          <PageOpening label={`Give difficult feedback, ${formatUkDate(conversation.created_at)}`} title={conversation.title || 'Give difficult feedback'} line={B3_LINES.feedbackSummary} />
         </div>
 
         <div className="tc-script">

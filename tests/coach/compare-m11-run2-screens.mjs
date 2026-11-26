@@ -21,7 +21,7 @@
 // Anything that differs and is not listed FAILS: it is a fault, not a meant
 // difference, until a rule explains it. The differences no rule explains
 // that were kept as built are listed with "left for Tim to decide".
-import { settle } from './shared.mjs';
+import { frameMenu, settle } from './shared.mjs';
 import { THEY, THEY_NAMES } from './compare-m11-they.mjs';
 import { DAY, ID, SES } from './seed.mjs';
 import { TUE } from './screens.mjs';
@@ -43,7 +43,7 @@ export const EXTRA_GROUPS = [
   {
     name: 'm11-tue', at: TUE,
     screens: [
-      ['m11-menu', '/coach', async (page) => { await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 600); }],
+      ['m11-menu', '/coach', async (page) => { await frameMenu(page); await settle(page, 600); }],
       ['m11-today-note', '/coach', async (page) => { await page.locator('.cc-inline-link', { hasText: 'Priya Nair' }).first().click(); await settle(page, 600); }],
       ['m11-plan-3', '/coach', async (page) => { await take(page); await press(page, 'Next'); await press(page, 'Next'); }],
       ['m11-today-add', '/coach', async (page) => { await press(page, 'Add to-do'); await page.locator('.ds-dialog textarea, .ds-dialog input[type=text]').first().fill(M11_WORDS); await settle(page, 300); }],

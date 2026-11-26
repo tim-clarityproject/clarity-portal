@@ -1,4 +1,6 @@
+import './toolFocus/formTool.css';
 import { useContext, useEffect, useState } from 'react';
+import { B3_LINES } from '../content/pageLines/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -6,8 +8,7 @@ import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
 import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import pageText from '../content/pageText';
-import { Loading, PageHeader, Button, PdfDownload, useToast } from '../components/design';
+import { Loading, PageOpening, Button, PdfDownload, useToast } from '../components/design';
 import { meetingPlanPdf, meetingEndTime } from '../lib/pdf/docs/meetingPlan';
 import SavedItemActions from '../components/SavedItemActions';
 
@@ -131,7 +132,7 @@ export default function MeetingSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageHeader title={data.title || 'Meeting plan'} info={pageText.meetingSummary} />
+          <PageOpening label="Meeting planner" title={data.title || 'Meeting plan'} line={B3_LINES.meetingSummary} />
         </div>
 
         <div className="plan-facts">

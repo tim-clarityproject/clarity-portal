@@ -7,7 +7,7 @@
 // the stand-in's, or is stopped and listed; every /api/ call is answered "not
 // sent" and counted; a mailto, a WhatsApp link or a window opened is counted.
 //
-//   sell-book     a guest books a Chemistry Call on the public page: a lead appears on Leads with the booking on its
+//   sell-book     a guest books a Discovery call on the public page: a lead appears on Leads with the booking on its
 //                 timeline (and its automation's to-do, once); before 051 the page says one calm line and no lead appears
 //   sell-work     a lead worked: two calls logged with what was learned, then Where Ruth is: the card's readiness words
 //                 change as the notes fill; the next step typed over; the stage chosen in place; the weighted value and the
@@ -37,17 +37,29 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
-import { accountId, APP, clearDevice, coachContext, makeReport, OTHER, seedDevice, seedNetworkDevice, settle, SIZES, standIn, toastText } from './shared.mjs';
+import { accountId, APP, clearDevice, coachContext, frameMenu, makeReport, OTHER, seedDevice, seedNetworkDevice, settle, SIZES, standIn, toastText } from './shared.mjs';
 import { CAL, CRM, manyNetwork, networkDeviceSeed, seedClock, seedWithCrm } from './seed.mjs';
 import { guestStandIn } from './book-standin.mjs';
 import { mapProblems, readMap } from './net-rules.mjs';
+
+// Polish 1 (B4): "+ Add" by the list's label opens Quick Add; "Add their details too" opens the whole Add lead form,
+// the name typed there carried over (cleared here, so the form starts as it always did).
+async function openAddLead(page) {
+  await page.locator('.ds-addlink[aria-label="Add lead"]').first().click();
+  await page.locator('#cc-add-lead .ds-qa-box').fill('x');
+  await page.getByRole('button', { name: 'Add their details too', exact: true }).click();
+  await page.waitForTimeout(500);
+  await page.locator('.ds-modal--shown .ds-dialog').last().getByLabel('Who is it?').fill('');
+}
+
 
 export const SELL_PARTS = ['sell-book', 'sell-work', 'sell-quiet', 'sell-auto', 'sell-won', 'sell-board', 'sell-email', 'sell-net', 'sell-archive', 'sell-map', 'sell-today', 'sell-import', 'sell-arrive'];
 const PHONE_PARTS = ['sell-book', 'sell-work', 'sell-won', 'sell-net', 'sell-today'];
 const TUE = new Date(2026, 10, 17, 9, 0);
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const dialog = (page) => page.locator('.ds-modal--shown .ds-dialog').last();
-const press = async (page, name, scope = page) => { await scope.getByRole('button', { name, exact: true }).first().click(); await settle(page, 600); };
+// A name in a list or table, a board card and the pages that open more are real links since Polish 1 (B4): press either.
+const press = async (page, name, scope = page) => { await scope.getByRole('button', { name, exact: true }).or(scope.getByRole('link', { name, exact: true })).first().click(); await settle(page, 600); };
 const go = async (page, path) => { await page.goto(`${APP}${path}`); await page.waitForSelector('.cc-app', { timeout: 20000 }); await settle(page, 1300); };
 const words = (page) => page.evaluate(() => (document.querySelector('.cc-main')?.innerText || '').replace(/ /g, ' '));
 const panelWords = (page) => dialog(page).innerText().then((t) => t.replace(/ /g, ' ')).catch(() => '');
@@ -61,7 +73,7 @@ const money = (s) => Number(String(s).replace(/[£,]/g, '')) || 0;
 const forDevice = (rows) => { const { coach_notifications: _n, activity_log: _a, workshop_survey_answers: _w, coach_profiles: _p, coach_bookings: _b, coach_email_addresses: _e, coach_poll_votes: _v, coach_cal_reminder_sends: _r, network_people: _np, network_gives: _ng, network_ratings: _nr, network_merges: _nm, ...own } = rows; return own; };
 const NOT_YET = ['clarity-coach-not-yet', 'clarity-coach-day-not-yet', 'clarity-coach-cal-not-yet', 'clarity-coach-crm-not-yet'];
 const actionRows = (page, title) => page.locator('.cc-part', { has: page.locator('.ds-section-title', { hasText: title }) }).locator('.cc-row').evaluateAll((rows) => rows.map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
-const cellText = async (page, name, index) => (await page.locator('.cc-net-table tbody tr', { has: page.getByRole('button', { name, exact: true }) }).locator('td, th').nth(index).innerText()).trim();
+const cellText = async (page, name, index) => (await page.locator('.cc-net-table tbody tr', { has: page.getByRole('link', { name, exact: true }) }).locator('td, th').nth(index).innerText()).trim();
 const netCell = (page, column, name) => page.locator('.cc-net-table').getByRole('button', { name: new RegExp(`^${column} for ${name}`) }).first();
 const column = (page, name) => page.locator('.cc-lboard .cc-board-col', { has: page.locator('.cc-board-head', { hasText: name }) }).first();
 /** A board column's head: "£31,500" and "£15,750 likely", read as numbers. */
@@ -177,7 +189,7 @@ async function run() {
     for (const db of dbs) {
       const mode = `${db === 'there' ? '049 to 052 there' : 'on the device'}${at}`;
 
-      // ---------------------------------------------------------------- 1. a guest books a Chemistry Call
+      // ---------------------------------------------------------------- 1. a guest books a Discovery call
       if (on('sell-book')) {
         const tag = `sell-book, ${mode}`;
         const a = await openAt({ db, tag, path: '/coach/leads' });
@@ -193,12 +205,12 @@ async function run() {
           pass(`${tag}: the guest is booked on the public page`, /You’re booked for/.test(await g.words()), (await g.words()).slice(0, 120));
           await go(a.page, '/coach/leads'); await settle(a.page, 3500); // the watch asks a moment after the portal opens
           const nell = (await a.rowsNow('coach_leads')).find((l) => l.name === 'Nell Okoye');
-          pass(`${tag}: a lead is made by the booking, once, in the first stage, from the Chemistry Call page`, (await a.rowsNow('coach_leads')).length === leadsBefore + 1 && nell?.stage_id === CRM.stNew && nell.source === 'chemistry_page' && Boolean(nell.booking_id), JSON.stringify(nell && [nell.stage_id === CRM.stNew, nell.source]));
+          pass(`${tag}: a lead is made by the booking, once, in the first stage, from the Discovery call page`, (await a.rowsNow('coach_leads')).length === leadsBefore + 1 && nell?.stage_id === CRM.stNew && nell.source === 'chemistry_page' && Boolean(nell.booking_id), JSON.stringify(nell && [nell.stage_id === CRM.stNew, nell.source]));
           const card = phone ? '' : await a.page.locator(`[data-card="${nell?.id}"]`).innerText().catch(() => '');
           pass(`${tag}: Nell is on Leads${phone ? ' (the list)' : ', in New'}`, phone ? (await words(a.page)).includes('Nell Okoye') : (await column(a.page, 'New').innerText()).includes('Nell Okoye') && card.includes('Nell Okoye'), card.replace(/\n/g, ' '));
           await go(a.page, `/coach/leads/${nell?.id}`);
           const text = await words(a.page);
-          pass(`${tag}: her page has the booking on its timeline, where she came from, and what she answered`, has(text, ['Booked a Chemistry Call', 'First contact', 'Chemistry Call page', 'To lead a bigger team without losing the plot.']), missing(text, ['Booked a Chemistry Call', 'First contact', 'Chemistry Call page', 'To lead a bigger team without losing the plot.']) + ' :: ' + flat(text).slice(0, 700));
+          pass(`${tag}: her page has the booking on its timeline, where she came from, and what she answered`, has(text, ['Booked a Discovery call', 'First contact', 'Discovery call page', 'To lead a bigger team without losing the plot.']), missing(text, ['Booked a Discovery call', 'First contact', 'Discovery call page', 'To lead a bigger team without losing the plot.']) + ' :: ' + flat(text).slice(0, 700));
           const todos = (await a.rowsNow('coach_todos')).filter((t) => t.lead_id === nell?.id && t.automation_id === CRM.a4);
           pass(`${tag}: the “call is booked” automation adds “Read their booking answers” once`, todos.length === 1 && todos[0].title === 'Read their booking answers', JSON.stringify(todos.map((t) => [t.title, t.planned_on])));
           await go(a.page, '/coach/leads'); await settle(a.page, 3000);
@@ -313,7 +325,7 @@ async function run() {
         const START = new Date(2026, 10, 3, 9, 0); // Tue 3 Nov: two weeks before M11's Tuesday, never past the real day
         const a = await openAt({ db, tag, path: '/coach/leads', clock: START });
         const { page } = a;
-        await page.locator('.cc-lboard .ds-addrow', { hasText: 'Add lead' }).click(); await settle(page, 600);
+        await openAddLead(page); await settle(page, 600);
         await dialog(page).getByLabel('Who is it?').fill('Hana Okafor');
         await choose(page, 'Where did they come from?', 'Somewhere else', dialog(page));
         await press(page, 'Add lead', dialog(page));
@@ -687,9 +699,9 @@ async function run() {
         const section = page.locator('.cc-main section', { has: page.locator('h2', { hasText: /keep in touch/i }) });
         const rows = await section.locator('.cc-row').evaluateAll((list) => list.map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
         pass(`${tag}: Keep in touch: the people due first, then past clients' check-ins, one quiet line each`, /^Sofia Marsh/.test(rows[0] || '') && rows.slice(3).some((r) => /check-in/.test(r)) && rows.every((r) => r.length < 80), rows.join(' | '));
-        await page.getByRole('button', { name: /^(Open the menu|Menu)$/ }).first().click(); await settle(page, 900);
-        const item = page.locator('.cc-menu .cc-menu-item', { hasText: 'Network' });
-        pass(`${tag}: the menu counts 9 due a catch-up beside Network`, flat(await item.innerText()) === 'Network 9' && (await item.getAttribute('aria-label')) === 'Network, 9 due a catch-up', flat(await item.innerText()));
+        // The frame's menu (polish 1) is plain words with no counts; Today's Keep in touch carries the people due.
+        const item = (await frameMenu(page)).filter({ hasText: /^Network/ }).first();
+        pass(`${tag}: Network is in the menu, a link with its plain name`, flat(await item.innerText()) === 'Network' && (await item.getAttribute('href')) === '/coach/network', flat(await item.innerText()));
         await page.keyboard.press('Escape'); await settle(page, 500);
         await section.getByRole('button', { name: /^Leah Moran: 12-month check-in/ }).click(); await settle(page, 800);
         const d = dialog(page);
@@ -754,7 +766,7 @@ async function run() {
       const tag = 'sell-arrive';
       const a = await openAt({ db: 'none', tag: `${tag}, on the device`, path: '/coach/leads' });
       let { page } = a;
-      await page.locator('.cc-lboard .ds-addrow', { hasText: 'Add lead' }).click(); await settle(page, 600);
+      await openAddLead(page); await settle(page, 600);
       await dialog(page).getByLabel('Who is it?').fill('Paula Grey');
       await press(page, 'Add lead', dialog(page));
       await go(page, '/coach/leads/automations');
@@ -776,7 +788,7 @@ async function run() {
       await dialog(page).getByRole('radio', { name: 'Advice' }).click();
       await press(page, 'Save', dialog(page));
       await page.keyboard.press('Escape'); await settle(page, 500);
-      await page.locator('.cc-main .ds-addrow', { hasText: 'Add someone' }).click(); await settle(page, 600);
+      await page.getByRole('button', { name: 'Add someone', exact: true }).first().click(); await settle(page, 600);
       await dialog(page).getByLabel('Who?').fill('Nell Okoye');
       await press(page, 'Add', dialog(page));
       const TABLES = ['coach_lead_stages', 'coach_leads', 'coach_lead_events', 'coach_automations', 'coach_automation_runs', 'coach_boards', 'coach_board_stages', 'coach_board_items'];

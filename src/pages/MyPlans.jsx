@@ -10,9 +10,10 @@ import { FIRST_OPEN_OFFLINE } from '../lib/friendlyError';
 import { listFilters, planRows } from '../lib/savedItems';
 import { loadSavedPlans, SAVED_PLANS_CACHE } from '../lib/savedItemsApi';
 import DesignHeader from '../components/DesignHeader';
-import pageText from '../content/pageText';
 import HistoryList from '../components/ui/HistoryList';
-import { Loading, PageHeader, useToast } from '../components/design';
+import { B1_LINES } from '../content/pageLines/client';
+import './hubs/clientPage.css';
+import { Loading, PageOpening, useToast } from '../components/design';
 
 // My Plans (Phase 4 step 4; decisions part 1 "My Plans and My Reviews"):
 // one list of every saved plan across the three areas, old and new, named
@@ -76,15 +77,16 @@ export default function MyPlans() {
     <div className="ui-root">
       <DesignHeader />
 
-      <div className="plan-page">
+      <div className="plan-page cp-page">
         {isLoading ? (
           <>
-            <PageHeader title="My Plans" info={pageText.myPlans} />
+            <PageOpening title="My Plans" line={B1_LINES.myPlans} />
             <Loading label="Loading your plans" className="ds-loading--page" />
           </>
         ) : (
           <HistoryList
             title="My Plans"
+            line={B1_LINES.myPlans}
             pageKey="myPlans"
             rows={rows}
             filters={filters}

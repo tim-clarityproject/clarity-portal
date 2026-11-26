@@ -4,7 +4,7 @@
 set session_replication_role = replica;
 
 insert into public.coach_call_types (id, coach_id, key, name, minutes, notice_hours, ahead_weeks, place_kind, active, makes_lead, position)
-select md5('ct' || k || '-' || t)::uuid, md5('coachrow' || k)::uuid, (array['chemistry','coaching'])[t], (array['Chemistry call','Coaching call'])[t],
+select md5('ct' || k || '-' || t)::uuid, md5('coachrow' || k)::uuid, (array['chemistry','coaching'])[t], (array['Discovery call','Coaching call'])[t],
        (array[30, 60])[t], 24, 4, 'zoom', true, t = 1, t
 from generate_series(1, 15) k, generate_series(1, 2) t;
 
@@ -48,7 +48,7 @@ select md5('coachrow' || k)::uuid, md5('ct' || k || '-1')::uuid, n.first_name ||
 from generate_series(2, 15) k, generate_series(1, 40) b, scale_seed.dates d join scale_seed.names n on true
 where n.i = 1100 + k * 40 + b - 40;
 insert into public.coach_booking_links (coach_id, purpose, for_name, for_email, call_name, minutes, expires_on, created_at)
-select md5('coachrow' || k)::uuid, 'A first call', 'Guest ' || l, 'scale-link-' || k || '-' || l || '@example.com', 'Chemistry call', 30, d.today + 30 - l, now() - make_interval(days => l * 7)
+select md5('coachrow' || k)::uuid, 'A first call', 'Guest ' || l, 'scale-link-' || k || '-' || l || '@example.com', 'Discovery call', 30, d.today + 30 - l, now() - make_interval(days => l * 7)
 from generate_series(1, 15) k, generate_series(1, 20) l, scale_seed.dates d;
 
 -- 6,000 coach to-dos: the owner 1,500, the others the rest; 5 lists each.

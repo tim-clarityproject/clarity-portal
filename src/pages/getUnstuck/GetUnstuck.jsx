@@ -1,10 +1,11 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { B3_LINES } from '../../content/pageLines/client';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
 import SavedItemActions from '../../components/SavedItemActions';
-import { ErrorMessage, LoadError, Loading, PageHeader, PdfDownload, clearGuideDraft, useToast } from '../../components/design';
+import { PageOpening, ErrorMessage, LoadError, Loading, PdfDownload, clearGuideDraft, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { readCache, writeCache } from '../../lib/pageCache';
 import { clearDraft, readDraft, useDraft } from '../../lib/drafts';
@@ -27,6 +28,7 @@ import {
 } from '../../lib/getUnstuck/model';
 import GetUnstuckTool from './GetUnstuckTool';
 import '../performance/performance.css';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 
 // Get unstuck, signed in (mock-up M9, version 12): the guided tool at
 // /get-unstuck. It replaces the five old pages (the goal, reality,
@@ -141,7 +143,7 @@ function Shell({ children }) {
       <DesignHeader />
       <div className="plan-page ipp-page">
         <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="My Plans" /></div>
-        <PageHeader title={TOOL_NAME} />
+        <PageOpening title={TOOL_NAME} line={B3_LINES.getUnstuck} />
         {children}
       </div>
     </div>
@@ -300,7 +302,7 @@ function Flow({ userId, user, asked, start }) {
       // carries on from here.
       if (asked || status === 'completed') forget();
       else setItem((s) => ({ ...s, status, saved: true }));
-      toast.show(result?.status === 'queued' ? 'Will sync' : 'Saved');
+      toast.show(result?.status === 'queued' ? 'Will sync' : status === 'completed' ? 'Saved' : TOOL_CLOSED);
       leave();
     } catch (error) {
       toast.error(goneElsewhere(error) ? DELETED_ELSEWHERE : friendlyError(error, SAVE_ERROR));

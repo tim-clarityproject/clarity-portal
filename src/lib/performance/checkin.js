@@ -684,7 +684,7 @@ export function finishToastWords({ kind, coachName, sharing }) {
   return 'Saved. Your next monthly review is in a month.';
 }
 
-export const CLOSE_TOAST = 'Saved. Carry on from Home whenever you like.';
+export const CLOSE_TOAST = 'Saved. Pick up where you left off from Home.'; // rule 21, as every tool's ×
 export const LATER_TOAST = 'Saved. Home will ask you to finish before your first session.';
 
 /** The Who sees my answers? fold (M12 whoSees). */

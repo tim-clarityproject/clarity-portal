@@ -9,6 +9,8 @@ import { useOnline } from '../lib/connection';
 import { FIRST_OPEN_OFFLINE } from '../lib/friendlyError';
 import DesignHeader from '../components/DesignHeader';
 import HistoryList from '../components/ui/HistoryList';
+import { B1_LINES } from '../content/pageLines/client';
+import './hubs/clientPage.css';
 import { Loading, useToast } from '../components/design';
 
 const FILTERS = [
@@ -81,7 +83,7 @@ export default function DailyJournals() {
     <div className="ui-root">
       <DesignHeader />
 
-      <div className="plan-page">
+      <div className="plan-page cp-page">
         <HistoryList
           title="My Journals"
           pageKey="dailyJournals"

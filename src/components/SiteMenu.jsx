@@ -9,7 +9,7 @@ import { useClientPreparing } from '../lib/clientPreparing';
 import { useCoachName } from './design/coachContext';
 import { usePhoneBarHidden } from './design/phoneBar';
 import { isNavPhone } from './design/pageLock';
-import { areaOf, DESKTOP_MENU, FRAME_MENU, menuAreas, menuCurrent, PREPARING_MENU, PRIVACY_PATH, TOOLS } from '../lib/navigation';
+import { areaOf, DESKTOP_MENU, FRAME_MENU, menuAreas, menuCurrent, menuName, PREPARING_MENU, PRIVACY_PATH, TOOLS } from '../lib/navigation';
 import { usePins } from '../lib/menuPins';
 import { SignOutLink, useSignOut } from './SignOut';
 
@@ -173,8 +173,9 @@ export function SitePhoneNav() {
 /**
  * The client portal's frame (25 Nov reference; polish 1, rules 18 to 21):
  * the menu column on a laptop and the crosshair's menu on a phone, round
- * every signed-in client page (ProtectedLayout). Pinned tools, when there
- * are any, are the menu's first group. A client whose portal is still being
+ * every signed-in client page (ProtectedLayout). Home comes first, as the
+ * example draws it; pinned tools, when there are any, are their own group
+ * after Home, by their short names (walk item 7). A client whose portal is still being
  * prepared sees Home and My Account only (usePortalPreparing).
  */
 // "A brand-new client" (polish 1): the menu shows Home and My Account only while the coach hasn't
@@ -196,9 +197,10 @@ export function ClientFrame({ children }) {
   const menu = useMemo(() => {
     const source = preparing ? PREPARING_MENU : FRAME_MENU;
     const mark = (items) => items.map((it) => ({ ...it, current: it.key === row }));
-    const pins = preparing ? [] : pinKeys.map((k) => ({ key: `pin-${k}`, name: TOOLS[k]?.name, to: TOOLS[k]?.to })).filter((p) => p.name && p.to);
+    const pins = preparing ? [] : pinKeys.map((k) => ({ key: `pin-${k}`, name: menuName(k), to: TOOLS[k]?.to })).filter((p) => p.name && p.to);
+    const [home, ...rest] = source.groups.map(mark);
     return {
-      groups: [...(pins.length ? [pins] : []), ...source.groups.map(mark)],
+      groups: [home, ...(pins.length ? [pins] : []), ...rest],
       foot: mark(source.foot),
       privacyHref: PRIVACY_PATH,
     };

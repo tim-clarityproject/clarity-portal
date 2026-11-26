@@ -37,9 +37,9 @@ test('a key is only ever a uuid, so the database is never asked about anything e
   for (const bad of ['', 'chemistry', '../x', '3f1c0a52', null]) assert.equal(cal.isBookingKey(bad), false);
 });
 
-test('a coach starts with a Chemistry Call and a Connection Call, each with its own page, and never a second of either', () => {
+test('a coach starts with a Discovery call and a Connection Call, each with its own page, and never a second of either', () => {
   const made = cal.startingCallTypes({ coachId: ME, newId });
-  assert.deepEqual(made.map((t) => [t.key, t.name, t.minutes, t.notice_hours, t.ahead_weeks]), [['chemistry', 'Chemistry Call', 30, 24, 4], ['connection', 'Connection Call', 30, 48, 2]]);
+  assert.deepEqual(made.map((t) => [t.key, t.name, t.minutes, t.notice_hours, t.ahead_weeks]), [['chemistry', 'Discovery call', 30, 24, 4], ['connection', 'Connection Call', 30, 48, 2]]);
   assert.notEqual(made[0].page_key, made[1].page_key);
   assert.deepEqual(cal.startingCallTypes({ coachId: ME, newId, have: [made[0]] }).map((t) => t.key), ['connection']);
   assert.deepEqual(cal.startingCallTypes({ coachId: ME, newId, have: made }), []);
@@ -213,16 +213,16 @@ test('a booked call’s words, and the taken line, are the brief’s', () => {
 });
 
 test('Add to calendar is an .ics file with UTC instants, escaped words and lines folded at 75', () => {
-  const ics = cal.icsFile({ uid: '3f1c0a52-7b1e', title: 'Chemistry Call, with Tim; and a very long title that goes on past the seventy-five characters a line may hold', startsAt: '2026-11-18T16:30:00Z', endsAt: '2026-11-18T17:00:00Z', location: 'Zoom', now: NOW });
+  const ics = cal.icsFile({ uid: '3f1c0a52-7b1e', title: 'Discovery call, with Tim; and a very long title that goes on past the seventy-five characters a line may hold', startsAt: '2026-11-18T16:30:00Z', endsAt: '2026-11-18T17:00:00Z', location: 'Zoom', now: NOW });
   const lines = ics.split('\r\n');
   assert.equal(lines[0], 'BEGIN:VCALENDAR');
   assert.ok(lines.includes('DTSTART:20261118T163000Z'));
   assert.ok(lines.includes('DTEND:20261118T170000Z'));
   assert.ok(lines.includes('UID:3f1c0a52-7b1e@theclarityportal'));
-  assert.ok(ics.includes('SUMMARY:Chemistry Call\\, with Tim\\; and'));
+  assert.ok(ics.includes('SUMMARY:Discovery call\\, with Tim\\; and'));
   assert.ok(lines.every((l) => l.length <= 75));
   assert.ok(ics.endsWith('END:VCALENDAR\r\n'));
-  assert.equal(cal.icsName('Chemistry Call with Tim'), 'Chemistry Call with Tim.ics');
+  assert.equal(cal.icsName('Discovery call with Tim'), 'Discovery call with Tim.ics');
   assert.equal(cal.icsName('A/B: call?'), 'A B call.ics');
 });
 
@@ -246,9 +246,9 @@ test('a client’s own session is said in their own time, and moving one inside 
 });
 
 test('the confirmation email gives the time in the reader’s own zone (12-hour for the US, 24-hour elsewhere), in draft-2’s words, with their own link to rearrange or cancel', () => {
-  const us = renderEmail(bookingConfirmedEmail({ name: 'Grace Liu', callName: 'Chemistry Call', coach: 'Tim', at: at('2026-11-18', '11:30', NY), zone: NY, minutes: 30, mineLink: 'https://portal.theclarityproject.co.uk/book/mine/k', now: NOW }));
-  assert.equal(us.subject, 'Your Chemistry Call with Tim is booked for Wed 18 Nov');
-  assert.ok(us.text.includes('Your Chemistry Call with Tim is booked for Wed 18 Nov at 11:30 am New York time, for 30 minutes on Zoom.'));
+  const us = renderEmail(bookingConfirmedEmail({ name: 'Grace Liu', callName: 'Discovery call', coach: 'Tim', at: at('2026-11-18', '11:30', NY), zone: NY, minutes: 30, mineLink: 'https://portal.theclarityproject.co.uk/book/mine/k', now: NOW }));
+  assert.equal(us.subject, 'Your Discovery call with Tim is booked for Wed 18 Nov');
+  assert.ok(us.text.includes('Your Discovery call with Tim is booked for Wed 18 Nov at 11:30 am New York time, for 30 minutes on Zoom.'));
   assert.ok(us.text.includes('Rearrange:') && us.text.includes('Cancel:'));
   assert.doesNotMatch(us.text, /prep/, 'no prep is offered to someone who booked on a booking page');
   const coaching = renderEmail(bookingConfirmedEmail({ callName: 'Coaching session', coach: 'Tim', at: at('2026-11-26', '15:00'), zone: LON, minutes: 60, zoomLink: 'https://zoom.us/j/1', mineLink: 'https://portal.theclarityproject.co.uk/book/mine/k' }));
@@ -270,10 +270,10 @@ test('the email server takes only a guest’s own key, claims one send for each 
   assert.equal(claimMoment(booking, 'moved'), '2026-11-17T10:00:00.000Z');
   assert.equal(claimMoment({ ...booking, moved_at: null }, 'moved'), null);
   assert.equal(claimMoment({ ...booking, status: 'cancelled' }, 'booked'), null);
-  const email = emailFor({ booking, callName: 'Chemistry Call', coach: 'Tim', zoomLink: 'javascript:alert(1)', origin: 'https://portal.theclarityproject.co.uk', kind: 'booked', now: NOW });
+  const email = emailFor({ booking, callName: 'Discovery call', coach: 'Tim', zoomLink: 'javascript:alert(1)', origin: 'https://portal.theclarityproject.co.uk', kind: 'booked', now: NOW });
   assert.match(email.text, /9:15 am New York time/);
   assert.equal(minutesOf('2026-11-23T14:15:00Z', '2026-11-23T15:15:00Z'), 60);
   assert.equal(minutesOf('2026-11-23T14:15:00Z', null), null);
-  assert.match(emailFor({ booking: { ...booking, ends_at: '2026-11-23T14:45:00Z' }, callName: 'Chemistry Call', coach: 'Tim', origin: 'https://portal.theclarityproject.co.uk', kind: 'booked', now: NOW }).text, /for 30 minutes on Zoom\./);
+  assert.match(emailFor({ booking: { ...booking, ends_at: '2026-11-23T14:45:00Z' }, callName: 'Discovery call', coach: 'Tim', origin: 'https://portal.theclarityproject.co.uk', kind: 'booked', now: NOW }).text, /for 30 minutes on Zoom\./);
   assert.doesNotMatch(email.html, /javascript:/);
 });

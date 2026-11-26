@@ -5,13 +5,14 @@ import { announceMissionChange } from '../lib/missionEvents';
 import { supabase } from '../lib/supabase';
 import { LIMITS, formatVersion, loadLatestVersion, previewNextVersion, recordVersionAfterSave, validatePlan } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
-import pageText from '../content/pageText';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import SavingOverlay from '../components/ui/SavingOverlay';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import { StepIcon, Loading, PageHeader, TextBox, TextField, AddButton, Button, SegmentedControl, ExplainPanel } from '../components/design';
+import { StepIcon, Loading, TextBox, TextField, AddButton, Button, SegmentedControl, ExplainPanel, PageOpening } from '../components/design';
+import { B1_LINES } from '../content/pageLines/client';
+import '../pages/hubs/clientPage.css';
 
 // Longer explanations open in the side panel, one sentence per line (Tim, 16 Nov, 23:31).
 const STRATEGY_INFO = {
@@ -387,7 +388,7 @@ export default function PersonalOperatingPlanEdit() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><Loading label="Loading your plan" className="ds-loading--page" /></div>
+        <div className="plan-page cp-page cp-page"><Loading label="Loading your plan" className="ds-loading--page" /></div>
       </div>
     );
   }
@@ -416,8 +417,8 @@ export default function PersonalOperatingPlanEdit() {
       `}</style>
       <DesignHeader />
 
-      <div className="plan-page plan-page--form">
-        <PageHeader title="Shape your personal operating plan" info={pageText.personalOperatingPlanEdit} />
+      <div className="plan-page cp-page plan-page--form">
+        <PageOpening title="Shape your personal operating plan" line={B1_LINES.popEdit} />
 
         {pendingDraft && !draftDismissed && (
           <div className="pop-draft-banner">

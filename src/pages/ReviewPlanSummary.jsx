@@ -4,8 +4,9 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { BackLink } from '../components/ui/DiscardLink';
 import DesignHeader from '../components/DesignHeader';
-import pageText from '../content/pageText';
-import { Loading, PageHeader, Button, useToast } from '../components/design';
+import { Loading, PageOpening, Button, useToast } from '../components/design';
+import { B2_LINES } from '../content/pageLines/client';
+
 import SavedItemActions from '../components/SavedItemActions';
 
 const RQ = [
@@ -123,7 +124,7 @@ export default function ReviewPlanSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageHeader title={entry.title} info={pageText.reviewPlanSummary} />
+          <PageOpening title={entry.title} line={B2_LINES.reviewPlanSummary} />
         </div>
 
         <div className="plan-sum">

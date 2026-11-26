@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import DesignHeader from '../../components/DesignHeader';
-import pageText from '../../content/pageText';
+import { B2_LINES } from '../../content/pageLines/client';
 import DeleteDialog from '../../components/ui/DeleteDialog';
 import {
-  Button, ChartTips, Choice, DatePicker, EmptyState, PageHeader, useToast,
+  Button, Card, ChartTips, Choice, DatePicker, Empty, EmptyState, MoreLink, PageOpening, useToast,
 } from '../../components/design';
 import WheelSectional from '../../components/wheelOfLife/WheelSectional';
 import WheelRadar from '../../components/wheelOfLife/WheelRadar';
@@ -22,7 +22,7 @@ import useArrivalToast from './useArrivalToast';
 import useIsPhone from './useIsPhone';
 import WheelLoadState from './WheelLoadState';
 import {
-  BinIcon, DeltaIcon, PenIcon, RadarIcon, SectionalIcon, TargetIcon,
+  BinIcon, DeltaIcon, RadarIcon, SectionalIcon,
 } from './icons';
 import '../../styles/wheelOfLife.css';
 
@@ -99,11 +99,12 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
 
   const areas = activeAreas(all);
   const today = getLocalDateKey();
+  // The page's one main button sits in its opening (rule 12); the quiet links at its foot.
+  const newCheckin = <Button variant="primary" onClick={() => navigate('/life-balance-review/check-in')}>New check-in</Button>;
   const acts = (
-    <div className="wol-acts">
-      <Button variant="primary" onClick={() => navigate('/life-balance-review/check-in')}>New check-in</Button>
-      <Button variant="text" className="wol-qlink" onClick={() => navigate('/life-balance-review/targets', { state: { from: here } })}><TargetIcon />Set targets</Button>
-      <Button variant="text" className="wol-qlink" onClick={() => navigate('/life-balance-review/areas', { state: { from: here } })}><PenIcon />Edit your areas</Button>
+    <div className="wol-foot-links">
+      <MoreLink onClick={() => navigate('/life-balance-review/targets', { state: { from: here } })}>Set targets</MoreLink>
+      <MoreLink onClick={() => navigate('/life-balance-review/areas', { state: { from: here } })}>Edit your areas</MoreLink>
     </div>
   );
 
@@ -133,15 +134,16 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page wol-page wol-enter">
-          <div className="wol-head"><PageHeader title="Life balance review" info={pageText.wheelOfLifeResults} /></div>
-          <div className="wol-rv" style={{ '--i': 3 }}>
-            <EmptyState
-              question="No check-ins yet. Start your first check-in to see your wheel."
-              action={{ label: 'Start check-in', onClick: () => navigate('/life-balance-review/check-in') }}
-            />
-          </div>
-        </div>
+        <main className="plan-page wol-page wol-page--open wol-enter">
+          <PageOpening
+            title="Life balance review"
+            line={B2_LINES.lifeBalance}
+            action={<Button variant="primary" onClick={() => navigate('/life-balance-review/check-in')}>Start check-in</Button>}
+          />
+          <Card label="Your wheel">
+            <Empty>No check-ins yet. Your wheel shows after your first check-in.</Empty>
+          </Card>
+        </main>
         {deleteDialog}
       </div>
     );
@@ -164,9 +166,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
 
   const header = (
     <>
-      <div className="wol-head">
-        <PageHeader title="Life balance review" info={pageText.wheelOfLifeResults} meta={[`Latest check-in ${fd(newest.date)}`]} />
-      </div>
+      <PageOpening label={`Latest check-in ${fd(newest.date)}`} title="Life balance review" line={B2_LINES.lifeBalance} action={newCheckin} />
       <div className="wol-range wol-rv" style={{ '--i': 3 }}>
         <div className="wol-rtop">
           <small>Date range</small>
@@ -195,7 +195,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page wol-page wol-enter">
+        <div className="plan-page wol-page wol-page--open wol-enter">
           {header}
           <EmptyState question="No check-ins between these dates. Choose a wider range, or start a new check-in." />
           {acts}
@@ -263,17 +263,17 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page wol-page wol-enter">
+      <div className="plan-page wol-page wol-page--open wol-enter">
         {header}
 
         <div className="wol-whd">
           <span className="wol-lab">Your wheel</span>
-          <div className="wol-seg" role="group" aria-label="Chart style">
-            <button type="button" aria-pressed={view.style === 'sectional'} onClick={() => chooseStyle('sectional')}><SectionalIcon />Sectional</button>
+          <div className="ds-seg wol-seg" role="group" aria-label="Chart style">
+            <button type="button" className="ds-seg-btn" aria-pressed={view.style === 'sectional'} onClick={() => chooseStyle('sectional')}><SectionalIcon />Sectional</button>
             <i aria-hidden="true" />
-            <button type="button" aria-pressed={view.style === 'radar'} disabled={!view.radarAllowed} aria-describedby={view.radarAllowed ? undefined : 'wol-why-radar'} onClick={() => chooseStyle('radar')}><RadarIcon />Radar</button>
+            <button type="button" className="ds-seg-btn" aria-pressed={view.style === 'radar'} disabled={!view.radarAllowed} aria-describedby={view.radarAllowed ? undefined : 'wol-why-radar'} onClick={() => chooseStyle('radar')}><RadarIcon />Radar</button>
             <i aria-hidden="true" />
-            <button type="button" aria-pressed={view.style === 'delta'} disabled={!view.deltaAllowed} aria-describedby={view.deltaAllowed ? undefined : 'wol-why-delta'} onClick={() => chooseStyle('delta')}><DeltaIcon />Delta</button>
+            <button type="button" className="ds-seg-btn" aria-pressed={view.style === 'delta'} disabled={!view.deltaAllowed} aria-describedby={view.deltaAllowed ? undefined : 'wol-why-delta'} onClick={() => chooseStyle('delta')}><DeltaIcon />Delta</button>
           </div>
         </div>
         {/* Why a chart style can't be chosen, in words rather than the
@@ -312,13 +312,11 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
         <div className="wol-panel wol-stats">{stats}</div>
 
         {s.showTargetsCard ? (
-          <div className="wol-tgcard">
-            <div>
-              <b>Set your targets</b>
-              <p>Not every area needs to be a 10. Choose the score you’d be happy with in each area, and your wheel will show how close you are.</p>
-            </div>
-            <Button variant="outline" onClick={() => navigate('/life-balance-review/targets', { state: { from: here } })}><TargetIcon />Set targets</Button>
-          </div>
+          <Card label="Set your targets" className="wol-tgcard-b2">
+            <Empty action={{ children: 'Set targets', onClick: () => navigate('/life-balance-review/targets', { state: { from: here } }) }}>
+              Not every area needs to be a 10. Choose the score you’d be happy with in each area, and your wheel will show how close you are.
+            </Empty>
+          </Card>
         ) : null}
 
         {focus ? (
@@ -357,7 +355,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
         {gone.length ? (
           <p className="wol-gone">
             {`Not on your wheel: ${gone.join(', ')}. Past scores are kept. `}
-            <Button variant="text" className="wol-qlink wol-qlink--in" onClick={() => navigate('/life-balance-review/areas', { state: { from: here } })}>Edit your areas</Button>
+            <MoreLink bare onClick={() => navigate('/life-balance-review/areas', { state: { from: here } })}>Edit your areas</MoreLink>
           </p>
         ) : null}
 

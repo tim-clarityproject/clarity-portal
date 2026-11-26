@@ -147,7 +147,8 @@ async function layoutChecks(page, tag, mode) {
     };
   }, { coral: CORAL, mint: MINT[mode] });
   pass(`${tag}: no sideways scroll`, r.sideways <= 0, `${r.sideways}px`);
-  pass(`${tag}: one coral button`, r.primaries === 1 && r.primaryCoral, `${r.primaries}`);
+  // Polish 1 (25 Nov reference, rule 6): the one main button is black (white in dark), never coral.
+  pass(`${tag}: one main button`, r.primaries === 1 && !r.primaryCoral, `${r.primaries}`);
   pass(`${tag}: 44px tap areas`, r.small.length === 0, r.small.slice(0, 5).join('; '));
   pass(`${tag}: weeks at the standard are mint`, r.good.length > 0 && r.good.every((f) => f === MINT[mode]), r.good.join(','));
   pass(`${tag}: weeks below are grey, not coral or mint`, r.below.every((f) => !CORAL.includes(f) && f !== MINT[mode]), r.below.join(','));

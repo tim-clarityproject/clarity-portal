@@ -42,13 +42,16 @@ export const TOOLS = {
   },
   ipp: {
     name: 'Individual Performance Plan',
+    menu: 'Performance Plan',
     line: 'Say what you’re aiming for and how you’ll get there.',
+    time: 'Set up once, ~20 minutes',
     to: '/performance-plan',
     routes: ['/performance-plan', '/personal-operating-plan', '/onboarding-mission', '/mission-progress-review'],
   },
   sprint: {
     name: 'Performance Sprint',
     line: 'Do the work, week by week.',
+    time: 'Every week',
     to: '/performance-sprint',
     // Peak moments (M18, Phase 8b) belong with the sprint: no tile of their
     // own (M3 has none), reached from the sprint page, Start a sprint, View
@@ -142,6 +145,7 @@ export const TOOLS = {
   },
   debrief: {
     name: 'Weekly performance debrief',
+    menu: 'Debrief',
     line: 'Close the week and set up the next one.',
     time: '~5 minutes',
     to: '/performance-sprint/debrief',
@@ -179,6 +183,7 @@ export const TOOLS = {
   },
   fb: {
     name: 'Give difficult feedback',
+    menu: 'Difficult feedback',
     line: 'Give hard feedback clearly and fairly.',
     time: '~8 minutes',
     to: '/give-difficult-feedback',
@@ -189,6 +194,7 @@ export const TOOLS = {
   // one-tap questions a person, so ~5 minutes for a team of five (Claude's call).
   team: {
     name: 'Team performance check',
+    menu: 'Team check',
     line: 'See where each of your people stands and what to ask next.',
     time: '~5 minutes',
     to: '/team-performance-check',
@@ -199,6 +205,7 @@ export const TOOLS = {
   // (RENAMED below).
   hc: {
     name: 'Strategic Alignment Health Check',
+    menu: 'Health Check',
     line: 'See whether your team’s work matches its strategy.',
     time: '~15 minutes',
     to: '/strategic-alignment',
@@ -233,7 +240,7 @@ export const HUBS = {
     line: 'Set your direction and decide well.',
     info: pageText.hubPlan,
     groups: [
-      { tools: ['ipp', 'sprint', 'pmd', 'travel'] },
+      { title: 'Plan ahead', tools: ['ipp', 'sprint', 'pmd', 'travel'] },
       { title: 'Decide', tools: ['grow', 'inv', 'time'] },
     ],
     recent: { list: 'plans', area: 'personal', title: 'My Plans', to: '/my-plans?area=personal' },
@@ -254,7 +261,7 @@ export const HUBS = {
     up: 'personal',
     line: 'Turn what happened into better performance.',
     info: pageText.hubReview,
-    groups: [{ tools: ['rmd', 'debrief', 'aar', 'lbr', 'check'] }],
+    groups: [{ title: 'Reflect', tools: ['rmd', 'debrief', 'aar', 'lbr', 'check'] }],
     recent: { list: 'reviews', area: 'personal', title: 'My Reviews', to: '/my-reviews?area=personal' },
   },
   interpersonal: {
@@ -277,6 +284,16 @@ export const HUBS = {
     groups: [],
   },
 };
+
+/**
+ * A tool's name in the menu's 248px column, where a long name would wrap:
+ * the short form (writing rule 38: "Debrief", never "Weekly performance
+ * debrief"; walk item 7). Its tile and page keep the full name.
+ */
+export function menuName(key) {
+  const t = TOOLS[key];
+  return t ? t.menu || t.short || t.name : undefined;
+}
 
 /** "New" on a tool's tile while it is new (M19: in the text colour, never coral or mint). */
 export function isNewTool(key, today) {

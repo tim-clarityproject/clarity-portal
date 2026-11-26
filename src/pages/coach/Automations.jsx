@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AddButton, Button, Dropdown, PageHeader, SlidePanel, TextField, useToast } from '../../components/design';
+import { AddLink, Button, Card, Dropdown, PageOpening, SlidePanel, TextField, useToast } from '../../components/design';
+import { AUTOMATIONS_LINE } from '../../content/pageLines/coach';
 import { newId, removeRow, saveRow } from '../../lib/coach/store';
 import {
   ACTIONS, AUTOMATION_HELP, AUTOMATION_WORDS, automationSavePlan, automationSentence, automationSwitch, blankAutomation, CATCH_UP, CATCH_UP_HELP, countChoices,
@@ -107,9 +108,11 @@ export default function Automations() {
     <div className="cc-page">
       <div className="cc-col">
         <Back to="Leads" onClick={() => navigate('/coach/leads')} />
-        <PageHeader title={AUTOMATION_WORDS.title} />
+        <PageOpening title={AUTOMATION_WORDS.title} line={AUTOMATIONS_LINE} />
+        {/* One card (rule 13), "+ Add" at its label's right (rule 10). */}
+        <Card label="Your automations" className="cc-part" add={<AddLink label={AUTOMATION_WORDS.add} expanded={Boolean(draft) && isNew && !isKeep} onClick={() => setDraft(blankAutomation({ id: newId(), coachId: coach.id, stages, position: automations.length }))} />}>
         {/* The empty line only when nothing is listed: the keep-in-touch row is always listed, saved or not (tidy follow-up 4, part 2, item 2). */}
-        {listed.length === 0 && <p className="cc-quiet">{AUTOMATION_WORDS.none}</p>}
+        {listed.length === 0 && <p className="cc-quiet cc-card-none">{AUTOMATION_WORDS.none}</p>}
         <div className="cc-rows cc-auto-rows">
           {listed.map((a) => {
             const sentence = automationSentence(a, ctx);
@@ -125,7 +128,7 @@ export default function Automations() {
             );
           })}
         </div>
-        <div className="cc-add"><AddButton onClick={() => setDraft(blankAutomation({ id: newId(), coachId: coach.id, stages, position: automations.length }))}>{AUTOMATION_WORDS.add}</AddButton></div>
+        </Card>
         <p className="cc-note cc-auto-help">{AUTOMATION_HELP}</p>
       </div>
 

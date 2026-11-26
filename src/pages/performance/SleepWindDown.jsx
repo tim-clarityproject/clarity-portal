@@ -18,6 +18,7 @@ import { friendlyError } from '../../lib/friendlyError';
 import { WIND_DOWN_BREATHE_SECONDS, WIND_DOWN_THOUGHT_MAX, localToday, windDownNight } from '../../lib/performance';
 import { finishWindDown, readWindDown, refreshWindDown, saveWindDownThoughts } from '../../lib/performance/windDownStore';
 import './performance.css';
+import { TOOL_CLOSED } from '../../content/pageLines/client';
 
 // Sleep wind down (mock-up M19, approved by Tim on 29 Oct; read in full
 // with its notes, and breathe-orb.html). A tool in Reset, offered on Home
@@ -133,6 +134,7 @@ export default function SleepWindDown() {
   const backTo = location.state?.from || '/welcome';
   const close = () => {
     sendNow();
+    if (typed.current) toast.show(TOOL_CLOSED);
     navigate(backTo, { replace: true });
   };
 

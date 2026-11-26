@@ -181,7 +181,8 @@ async function signedIn({ width, mode, clock, withPlanLocal = true }) {
   return { context, page };
 }
 
-const heading = async (page) => (await page.locator('.ds-guide-question, .ds-guide-title').first().textContent()).trim();
+// The Daily plan runs on ToolFrame since Polish 1 (.ds-tool-q, its foot's main button); the review on GuidedTool.
+const heading = async (page) => (await page.locator('.ds-guide-question, .ds-guide-title, .ds-tool-q').first().textContent()).trim();
 const body = (page) => page.locator('.ds-guide-body');
 
 // Next: tapped until the question changes (a tap in the first moment
@@ -189,7 +190,7 @@ const body = (page) => page.locator('.ds-guide-body');
 async function next(page) {
   const before = await heading(page);
   for (let i = 0; i < 6; i += 1) {
-    await page.locator('.ds-guide-next').click();
+    await page.locator('.ds-guide-next, .ds-tool-foot .ds-btn--primary').first().click();
     const moved = await until(async () => (await heading(page)) !== before, 1200);
     if (moved) return;
   }
@@ -198,7 +199,7 @@ async function next(page) {
 
 async function open(page, path) {
   await page.goto(`${APP}${path}`);
-  await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+  await page.waitForSelector('.ds-guide-question, .ds-tool-q', { timeout: 30000 });
 }
 
 // One screen: one coral button, 44px tap areas, no sideways scroll, the writing rules, the eye.
@@ -208,7 +209,8 @@ async function checkScreen(page, tag, { eye = true, oneTap = false } = {}) {
     Promise.all(document.getAnimations().map((a) => a.finished.catch(() => null))),
     new Promise((r) => { setTimeout(r, 3000); }),
   ]));
-  await until(() => page.evaluate((list) => [...document.querySelectorAll('.ds-guide-next')].some((b) => list.includes(getComputedStyle(b).backgroundColor)), CORAL), 3000);
+  // Polish 1 (25 Nov reference): the one main button is solid in the text colour (--main-bg), never coral.
+  await until(() => page.evaluate(() => [...document.querySelectorAll('.ds-guide-next')].some((b) => getComputedStyle(b).backgroundColor !== 'rgba(0, 0, 0, 0)')), 3000);
   const facts = await page.evaluate((coralList) => {
     const root = document.querySelector('.ds-guide');
     const shown = (el) => {
@@ -219,7 +221,14 @@ async function checkScreen(page, tag, { eye = true, oneTap = false } = {}) {
       return s.visibility !== 'hidden' && s.display !== 'none';
     };
     const all = [...root.querySelectorAll('*')].filter(shown);
-    const coral = all.filter((el) => coralList.includes(getComputedStyle(el).backgroundColor)).length;
+    // The main button's fill (Polish 1: --main-bg, the text colour): buttons filled with it, leaving out
+    // chosen answers and pressed days, which take the same fill by the reference's own rule.
+    const probe = document.createElement('span');
+    probe.style.background = 'var(--main-bg)';
+    root.appendChild(probe);
+    const mainBg = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    const coral = all.filter((el) => el.matches('button, a') && !el.matches('[aria-pressed], [aria-checked], [role=radio], [role=checkbox]') && getComputedStyle(el).backgroundColor === mainBg).length;
     const coralText = all.filter((el) => el.matches('.ds-guide-page *') && !el.closest('button') && coralList.slice(0, 2).includes(getComputedStyle(el).color) && el.textContent.trim()).map((el) => el.textContent.trim().slice(0, 30));
     const small = [...root.querySelectorAll('button, [role=radio], [role=checkbox], [role=switch], input, textarea')]
       .filter(shown)
@@ -234,7 +243,7 @@ async function checkScreen(page, tag, { eye = true, oneTap = false } = {}) {
       .filter((b) => b.w < 44 || b.h < 44);
     const page = root.querySelector('.ds-guide-page');
     // Sentences only: labels without a full stop are allowed (26 Oct rule 9).
-    const lines = [...page.querySelectorAll('.ds-guide-question, .ds-guide-nudge, .day-quiet p, .day-quiet-line, .rev-more p, .rev-week p, .rev-wins > p, .ds-note p, .ds-panel-note')]
+    const lines = [...page.querySelectorAll('.ds-guide-question:not(.ds-guide-title), .ds-guide-nudge, .day-quiet p, .day-quiet-line, .rev-more p, .rev-week p, .rev-wins > p, .ds-note p, .ds-panel-note')]
       .filter(shown).map((el) => el.textContent.trim());
     // What a person sees (screen-reader words and what people typed left out).
     const copy = page.cloneNode(true);
@@ -272,7 +281,8 @@ async function checkScreen(page, tag, { eye = true, oneTap = false } = {}) {
 }
 
 const shot = async (page, name) => { if (out) await page.screenshot({ path: `${out}/${name}.png`, fullPage: false }); };
-const checkbox = (page, name) => page.getByRole('checkbox', { name, exact: true }).first();
+// The highest priority's box is named with ", highest priority" after it (TodoRow, follow-up 1, 18 Nov).
+const checkbox = (page, name) => page.getByRole('checkbox', { name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(, highest priority)?(\\b|$)`) }).first();
 async function tickAndWait(page, name) {
   await checkbox(page, name).click();
   await until(async () => (await checkbox(page, name).getAttribute('aria-checked')) === 'true', 5000);
@@ -286,7 +296,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
   pass(`${tag}: the % complete bar, never a step count`, await page.locator('.ds-guide-pct').isVisible());
   pass(`${tag}: the top bar has the tool's name only for today`, (await page.locator('.ds-guide-name').textContent()).trim() === 'Daily review');
   const first = (await page.locator('.ds-todo').first().innerText()).replace(/\s+/g, ' ');
-  pass(`${tag}: the highest priority comes first, tagged`, first.includes(DRAFT) && first.includes('Highest priority'), first);
+  pass(`${tag}: the highest priority comes first, tagged`, first.includes(DRAFT) && /highest priority/i.test(first), first);
   pass(`${tag}: the habit chosen in the morning is on today's list`, (await page.locator('.ds-todo', { hasText: 'Training sessions' }).count()) === 1);
   await checkScreen(page, `${tag} do`);
   await tickAndWait(page, DRAFT);
@@ -346,7 +356,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
   if (deep) {
     // A refresh mid-step: the step and the typing come back.
     await page.reload();
-    await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
+    await page.waitForSelector('.ds-guide-question, .ds-tool-q', { timeout: 30000 });
     pass(`${tag}: a refresh mid-step stays on the step`, (await heading(page)) === 'What would you do differently next time?', await heading(page));
     const kept = await until(async () => (await body(page).locator('textarea').first().inputValue()) === 'Leave ten minutes between calls.', 8000);
     pass(`${tag}: a refresh mid-step restores the draft`, Boolean(kept), await body(page).locator('textarea').first().inputValue());

@@ -4,26 +4,16 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
-import DesignHeader from '../components/DesignHeader';
-import PhoneActionBar from '../components/ui/PhoneActionBar';
-import { DiscardLink } from '../components/ui/DiscardLink';
+import FormTool from './toolFocus/FormTool';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import pageText from '../content/pageText';
-import { PageHeader, SaveStatus, TextBox, AddButton, Button, useToast } from '../components/design';
+import { IconButton, SaveStatus, TextBox, AddButton, useToast } from '../components/design';
 import { clearDraft as forgetDraft, useDraft } from '../lib/drafts';
 import { saveDecisionOrQueue } from '../lib/decisionSave';
 import { useQueuedSave } from '../lib/syncQueue';
 
 const MAX_NAME_LENGTH = 60;
 
-function BinIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.6 8h6.8l.6-8M6.8 7v3.5M9.2 7v3.5" />
-    </svg>
-  );
-}
 
 // Smallest sensible suggestion: the start of the situation text, cut to
 // 60 characters (the old Save-as-draft named everything "If-Then
@@ -196,26 +186,24 @@ export default function IfThenPlanning() {
 
   const suggestedName = currentTitle || suggestNameFrom(situation);
 
-  const actionButtons = (
-    <>
-      <Button variant="primary" disabled={isSaving} onClick={() => setNameDialog('finish')}>Finish</Button>
-      <Button variant="outline" disabled={isSaving} onClick={() => setNameDialog('draft')}>Save as draft</Button>
-    </>
-  );
-
   return (
     <div className="ui-root">
-      <DesignHeader />
-
-      <div className="plan-page plan-page--form">
-        <div className="plan-header">
-          <PageHeader title="Pressure plan" info={pageText.ifThenPlanning} />
-        </div>
-
-        <div className="plan-field">
+      <FormTool
+        name="Pressure plan"
+        question="Which situation are you concerned about?"
+        hint="Then plan what you’ll do if each thing you fear happens."
+        onNext={() => { if (!isSaving) setNameDialog('finish'); }}
+        nextLabel="Finish"
+        saveError={saveError}
+        onSaveDraft={() => { if (!isSaving) setNameDialog('draft'); }}
+        onDiscard={() => setDiscardOpen(true)}
+        closeTo="/personal/reset"
+        className="pp-tool"
+      >
+        <div className="ft-field">
           <TextBox
             id="ift-situation"
-            label="Which situation are you concerned about?"
+            ariaLabel="Which situation are you concerned about?"
             lines="many"
             focusMode
             who="me"
@@ -225,6 +213,7 @@ export default function IfThenPlanning() {
           />
         </div>
 
+        <div className="ft-label">What will you do if it happens?</div>
         {items.map((item, index) => {
           return (
             <div className="plan-sc-row" key={item.id}>
@@ -232,7 +221,7 @@ export default function IfThenPlanning() {
                 <div>
                   <TextBox
                     id={`ift-if-${item.id}`}
-                    label="If..."
+                    label="If this happens…"
                     lines="one"
                     placeholder="Type here"
                     value={item.ifCondition}
@@ -242,7 +231,7 @@ export default function IfThenPlanning() {
                 <div>
                   <TextBox
                     id={`ift-then-${item.id}`}
-                    label="Then I will"
+                    label="Then I will…"
                     lines="one"
                     placeholder="Type here"
                     value={item.thenAction}
@@ -250,15 +239,7 @@ export default function IfThenPlanning() {
                   />
                 </div>
               </div>
-              <button
-                type="button"
-                className="plan-bin-btn"
-                aria-label={`Remove scenario ${index + 1}`}
-                disabled={items.length === 1}
-                onClick={() => removeItem(item.id)}
-              >
-                <BinIcon />
-              </button>
+              {items.length > 1 ? <IconButton label={`Remove scenario ${index + 1}`} onClick={() => removeItem(item.id)} /> : <span className="pm-bin-space" />}
             </div>
           );
         })}
@@ -266,17 +247,8 @@ export default function IfThenPlanning() {
           Add scenario
         </AddButton>
 
-        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
         <SaveStatus state={syncState} />
-
-        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
-
-        <div className="plan-discard-row">
-          <DiscardLink onClick={() => setDiscardOpen(true)} />
-        </div>
-      </div>
-
-      <PhoneActionBar>{actionButtons}</PhoneActionBar>
+      </FormTool>
 
       <NameDialog
         open={nameDialog !== null}

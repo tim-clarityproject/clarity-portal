@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { idFromAddress } from '../../lib/coach/address';
-import { AddButton, Button, PageHeader } from '../../components/design';
+import { Button, PageHeader } from '../../components/design';
+import { AddLink, Card, Empty, PageOpening, Row } from '../../components/design/Blocks';
+import { leadLine } from '../../content/pageLines/coach';
+import './people.css';
 import { newId } from '../../lib/coach/store';
 import { clean, fieldValue, fieldWords, firstName, isEmail, quickContacts } from '../../lib/coach/model';
 import { mobileForLinks } from '../../lib/coach/network';
 import { bookingLines, cameFromRow, coldRows, discoveryRows, isWonLead, LEAD_GONE, leadCard, leadOwnFields, leadTimeline, readiness, whereTitle } from '../../lib/coach/crm';
-import { Back, Detail, EditCell, InlineLink, Part, TextLink, TimelineRow, useCoachPortal } from './parts';
+import { Back, Detail, EditCell, InlineLink, TextLink, TimelineRow, useCoachPortal } from './parts';
 import { useLeadActions, useLeadData, useStartStages } from './leadParts';
 import { ColdPanel, EditLeadPanel, EmailPanel, LeadNotePanel, LogCallPanel, WherePanel } from './LeadPanels';
 import { TagsPanel } from './ClientPanels';
@@ -75,9 +78,14 @@ export default function LeadPage() {
 
   return (
     <div className="cc-page">
-      <div className="cc-col">
+      <div className="cc-col cc-people">
         <Back to={cold ? 'Cold leads' : 'Leads'} onClick={() => navigate(cold ? '/coach/leads/cold' : '/coach/leads')} />
-        <PageHeader title={lead.name} meta={[org ? null : lead.organisation, lead.job_title, cold ? 'Cold' : card.stage]} />
+        <PageOpening
+          label={[org ? null : lead.organisation, lead.job_title, cold ? 'Cold' : card.stage].filter(Boolean).join(', ')}
+          title={lead.name}
+          line={leadLine({ first, won, cold })}
+          action={<Button variant="primary" onClick={() => setPanel('call')}>Log a call</Button>}
+        />
         {org && <div className="cc-links"><TextLink onClick={() => navigate(`/coach/organisations/${org.id}`)}>{org.name}</TextLink></div>}
         {contacts.length > 0 && (
           <div className="cc-links">
@@ -90,44 +98,39 @@ export default function LeadPage() {
         {won && (
           <p className="cc-quiet cc-lead-line"><span>{first} is a client now{card.wonOn ? `, won on ${card.wonOn}` : ''}.</span>{client && <TextLink onClick={() => navigate(`/coach/clients/${client.id}`)}>Open the client’s page</TextLink>}</p>
         )}
-        {!won && !cold && (
-          <div className="cc-soft cc-lead-nextbox">
-            <span className="cc-soft-label">Next step</span>
-            <p>{card.next.step || 'None yet'}</p>
-            {card.next.when && <small>{card.next.when}</small>}
-            {card.quiet && <small>{card.quiet}</small>}
-          </div>
-        )}
         <div className="cc-lead-acts">
-          <Button variant="primary" onClick={() => setPanel('call')}>Log a call</Button>
-          <Button variant="outline" onClick={() => setPanel('note')}>Add note</Button>
+          <TextLink onClick={() => setPanel('note')}>Add note</TextLink>
           {!won && !cold && <TextLink onClick={() => actions.won(lead)}>Mark as won</TextLink>}
           {!won && <TextLink onClick={() => navigate('/coach/calendar/book', { state: { title: lead.name } })}>Booking link</TextLink>}
         </div>
+        {!won && !cold && (
+          <Card label="Next step" className="cc-lead-nextbox">
+            <Row name={card.next.step || 'None yet'} sub={[card.next.when, card.quiet].filter(Boolean).join('. ') || null} />
+          </Card>
+        )}
         {/* Phase 6b run 3: Group B's Send a quote (a lead becomes a client first, risk 12). */}
         <AgreementButtons kind="lead" id={lead.id} name={lead.name} />
 
         {!won && (
-          <section className="ds-section cc-part">
-            <div className="ds-section-head cc-lead-head"><h2 className="ds-section-title">{whereTitle(lead)}</h2><TextLink aria-label={`Edit where ${first} is`} onClick={() => setPanel('where')}>Edit</TextLink></div>
+          <Card label={whereTitle(lead)} link={{ children: 'Edit', onClick: () => setPanel('where'), 'aria-label': `Edit where ${first} is` }}>
             <p className="cc-lead-sum">{ready.line}</p>
-            {discoveryRows(lead).map((r) => (
-              <div key={r.key} className="cc-lead-q"><span>{r.label}</span><span className={r.known ? undefined : 'cc-lead-q--no'}>{r.words}</span></div>
-            ))}
-          </section>
+            <div className="ds-rows-list">
+              {discoveryRows(lead).map((r) => <Row key={r.key} name={r.label} value={r.words} className={r.known ? undefined : 'cc-lead-q--no'} />)}
+            </div>
+          </Card>
         )}
 
-        <Part title="Timeline">
-          {timeline.length === 0 && <p className="cc-quiet">Nothing is on {first}’s timeline yet. A call, a note or an email shows here.</p>}
+        <Card label="Timeline">
+          {timeline.length === 0 && <Empty>A call, a note or an email with {first} will show here.</Empty>}
           <div className="cc-lead-tl">
             {timeline.map((row) => {
               const email = row.emailId ? emails.find((e) => e.id === row.emailId) || null : null;
               return <TimelineRow key={row.id} when={row.when} title={row.title} lines={[row.tag, ...row.lines]} className={email ? 'cc-lead-mail' : ''} onClick={email ? () => setMail(email) : undefined} />;
             })}
           </div>
-        </Part>
+        </Card>
 
-        <Part title="Details">
+        <Card label="Details" add={<AddLink label="Add field" onClick={() => setField({ id: newId(), name: '', kind: 'text', optionsText: '' })} />}>
           <Detail label="Email" edit><EditCell label="Email" value={lead.email || ''} onSave={saveText('email', (v) => isEmail(v.toLowerCase()), 'That email doesn’t look right. Check it and try again.')} /></Detail>
           <Detail label="Phone" edit><EditCell label="Phone" value={lead.phone || ''} onSave={saveText('phone')} /></Detail>
           <Detail label={from.label}>{from.personId && isOwner ? <InlineLink onClick={() => navigate(`/coach/network?person=${from.personId}`)}>{from.value}</InlineLink> : from.value}</Detail>
@@ -138,12 +141,11 @@ export default function LeadPage() {
           })}
           <Detail label="Tags" edit><button type="button" className={`cc-cell${names.length ? '' : ' cc-cell--empty'}`} aria-label={`Tags, ${names.join(', ') || 'none'}. Edit`} onClick={() => setPanel('tags')}>{names.join(', ') || 'Add'}</button></Detail>
           {lead.notes && <Detail label="Notes">{lead.notes}</Detail>}
-          <div className="cc-add"><AddButton onClick={() => setField({ id: newId(), name: '', kind: 'text', optionsText: '' })}>Add field</AddButton></div>
           <div className="cc-acts">
             <TextLink onClick={() => setPanel('edit')}>Edit details</TextLink>
             {!won && !cold && <TextLink onClick={() => setPanel('cold')}>Mark as cold</TextLink>}
           </div>
-        </Part>
+        </Card>
       </div>
       <EditLeadPanel lead={panel === 'edit' ? lead : null} onClose={() => setPanel(null)} />
       <LogCallPanel lead={panel === 'call' ? lead : null} onClose={() => setPanel(null)} />

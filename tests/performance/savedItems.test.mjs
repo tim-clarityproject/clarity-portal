@@ -17,11 +17,12 @@ test('dates on the right: Today, Yesterday, then the day, with the year only whe
   assert.equal(formatSavedDate('2026-11-01', '2026-11-02'), 'Yesterday'); // across a month
 });
 
-test('day plans and reviews: Today’s, Yesterday’s, then Day plan or Day review', () => {
+test('day plans and reviews: Today’s, Yesterday’s, then the day’s own name', () => {
   assert.equal(dayName(TODAY, TODAY, 'plan'), 'Today’s plan');
   assert.equal(dayName('2026-10-20', TODAY, 'review'), 'Yesterday’s review');
-  assert.equal(dayName('2026-10-12', TODAY, 'plan'), 'Daily plan');
-  assert.equal(dayName('2026-10-12', TODAY, 'review'), 'Daily review');
+  assert.equal(dayName('2026-10-12', TODAY, 'plan'), 'Monday’s plan');
+  assert.equal(dayName('2026-10-12', TODAY, 'review'), 'Monday’s review');
+  assert.equal(dayName(null, TODAY, 'plan'), 'Daily plan');
 });
 
 const at = (day, time = '09:00:00') => `${day}T${time}`;
@@ -70,7 +71,7 @@ test('My Plans: every type, named in words, with its tool, area and date', () =>
   assert.equal(by('day-plan:dp3'), undefined);
   assert.equal(by('pop:m1').to.path, '/personal-operating-plan-archived/m1');
   for (const r of rows) {
-    assert.ok(r.title && !/^\d|^(mon|tue|wed|thu|fri|sat|sun)/i.test(r.title), `${r.id} is named in words: ${r.title}`);
+    assert.ok(r.title && !/^\d|^(mon|tue|wed|thu|fri|sat|sun)(?![a-z]*day’s )/i.test(r.title), `${r.id} is named in words: ${r.title}`);
     assert.ok(r.typeLabel && r.dateLabel, `${r.id} has its tool and date`);
   }
 });

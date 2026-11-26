@@ -89,7 +89,7 @@ export const CALL_KINDS = ['client_call', 'chemistry', 'connection'];
 /** A calendar item's kinds as people read them, with the colour each is drawn in. */
 export const ITEM_KINDS = Object.freeze({
   client_call: { label: 'Client call', colour: 'client' },
-  chemistry: { label: 'Chemistry Call', colour: 'chemistry' },
+  chemistry: { label: 'Discovery call', colour: 'chemistry' },
   connection: { label: 'Networking call', colour: 'connection' },
   own_time: { label: 'Your own time', colour: 'other' },
   admin: { label: 'Admin', colour: 'admin' },
@@ -2324,7 +2324,7 @@ export function startingCallTypes({ coachId, newId, have = [] }) {
     id: newId(), coach_id: coachId, key, name, description: null, minutes: 30, gap_before: 15, gap_after: 15, notice_hours: notice, ahead_weeks: ahead, day_limit: MAX_CALLS_A_DAY,
     questions: [], place_kind: 'zoom', page_key: newId(), active: true, makes_lead: true, position,
   });
-  return [type('chemistry', 'Chemistry Call', 24, 4, 0), type('connection', 'Connection Call', 48, 2, 1)].filter((t) => !have.some((x) => x.key === t.key));
+  return [type('chemistry', 'Discovery call', 24, 4, 0), type('connection', 'Connection Call', 48, 2, 1)].filter((t) => !have.some((x) => x.key === t.key));
 }
 
 /** What a call type's Edit asks, each with its bounds (as 051 checks them). */
@@ -2547,7 +2547,7 @@ export function icsFile({ uid, title, startsAt, endsAt, description = '', locati
     location ? `LOCATION:${esc(location)}` : null, description ? `DESCRIPTION:${esc(description)}` : null, 'END:VEVENT', 'END:VCALENDAR',
   ].filter(Boolean).map(fold).join('\r\n')}\r\n`;
 }
-/** The file's name: "Chemistry Call with Tim.ics". */
+/** The file's name: "Discovery call with Tim.ics". */
 export const icsName = (title) => `${clean(String(title || 'Call').replace(/[\\/:*?"<>|]/g, ' ')) || 'Call'}.ics`;
 
 /** A poll page's time for the person asked, in their own zone: "Thu 19 Nov, 12:00 pm New York time". */
