@@ -696,7 +696,7 @@ const BUSINESS = { company_name: 'The Clarity Project LTD', company_number: '128
 for (const spec of Object.values(R3)) spec.business = BUSINESS;
 const { weeklyDebriefPdf } = await load('/src/lib/pdf/docs/weeklyDebrief.js');
 const DEBRIEF = { name: 'Sam Carter', coachName: 'Dr. Tim Dutton', week: 8, weeks: 26, period: '16 to 22 Nov 2026', lastDay: '2026-11-22', score: 72,
-  usualLine: 'Your usual range is 61 to 78%.', streak: 6,
+  usualLine: 'Your usual range is 61 to 78%.', streak: 6, sleep: { hours: '7½', word: 'Good' },
   strategies: [{ name: 'Delegate the weekly report', value: 100, onTrack: true }, { name: 'Protect Friday mornings', value: 80, onTrack: true },
     { name: 'Walk at lunch', value: 60, onTrack: true }, { name: 'Quarterly board rhythm', value: 0, onTrack: false }],
   wentWell: 'Handed the weekly report to Priya, and it came back better than I’d have done it. Two full Friday mornings for the hiring plan.',
@@ -729,7 +729,7 @@ const P1 = {
   'Weekly debrief, long answers and names (stress)': { ...weeklyDebriefPdf({ ...DEBRIEF, name: `${LONG_NAME} 🚀`,
     strategies: Array.from({ length: 9 }, (_, i) => ({ name: i % 3 ? `Strategy ${i + 1}` : `${para(1)}`, value: (i * 13) % 101, onTrack: i % 2 === 0 })),
     wentWell: `${para(6)}\n\n${para(5)}`, inTheWay: para(7), adjust: `${para(4)} 🚀`, nextWeek: Array.from({ length: 8 }, () => sentence(14)) }), business: BUSINESS },
-  'Weekly debrief, nothing written yet': { ...weeklyDebriefPdf({ ...DEBRIEF, score: null, strategies: [], wentWell: '', inTheWay: '', adjust: '', nextWeek: [] }), business: BUSINESS },
+  'Weekly debrief, nothing written yet': { ...weeklyDebriefPdf({ ...DEBRIEF, score: null, sleep: null, strategies: [], wentWell: '', inTheWay: '', adjust: '', nextWeek: [] }), business: BUSINESS },
 };
 
 const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP, ...GU, ...TC, ...EW, ...AG, ...ST, ...R3, ...P1 };

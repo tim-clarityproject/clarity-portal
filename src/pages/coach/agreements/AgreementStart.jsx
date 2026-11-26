@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { Button, ErrorMessage, Loading, PageOpening, useToast } from '../../../components/design';
+import { Button, Loading, PageOpening, useToast } from '../../../components/design';
 import { BUILDER_LINES } from '../../../content/pageLines/coach';
 import { newId, rowNow, rowsOf, saveRow } from '../../../lib/coach/store';
 import { supabase } from '../../../lib/supabase';
@@ -9,6 +9,7 @@ import { Back, TextLink, useCoachPortal } from '../parts';
 import { useLeadActions } from '../leadParts';
 import { SAVE_PROBLEM } from './builderParts';
 import './builder.css';
+import MistakeLine from '../../../components/agreements/MistakeLine';
 
 // New agreement (Phase 6b run 3, Group B; Polish 1, Stage C: M28 version 6 has no starting page): /coach/agreements/
 // new?for=client:<id> | org:<id> | lead:<id> (&as=quote: "Send Sam a quote"). The draft is made at once from the first
@@ -101,7 +102,7 @@ export default function AgreementStart() {
           <>
             <Back to={name} onClick={back} />
             <PageOpening label={name} title="New agreement" line="The draft didn’t save, so nothing has changed." action={<Button variant="primary" onClick={() => { setProblem(null); start(); }}>Try again</Button>} />
-            <ErrorMessage>{problem}</ErrorMessage>
+            <MistakeLine>{problem}</MistakeLine>
           </>
         ) : <Loading label="Starting the agreement" />}
       </div>

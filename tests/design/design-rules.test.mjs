@@ -286,8 +286,9 @@ test('switch (walk B, item 7): unequal parts, or stretched across a row it share
     assert.ok(!has(r, 'switch'), `equal ${phone}: ${all(r)}`);
     r = await check(bar(SEG('ds-seg')), { phone });
     assert.match(all(r), /switch: the joined switch "List Calendar" has unequal parts/, `${phone}`);
-    r = await check(bar(SEG('ds-seg ds-seg--equal', 'flex:1 1 auto')), { phone });
-    // On a phone the switch wraps under the tabs, the only control on its line, where it may span the column.
+    // On a phone the switch wraps under the tabs (its basis the whole line, now that its parts keep the reference's
+    // 16px sides and would otherwise fit beside them), the only control on its line, where it may span the column.
+    r = await check(bar(SEG('ds-seg ds-seg--equal', phone ? 'flex:1 1 100%' : 'flex:1 1 auto')), { phone });
     if (phone) assert.ok(!has(r, 'switch'), `alone on its line: ${all(r)}`);
     else assert.match(all(r), /switch: the joined switch "List Calendar" is \d+px wide, stretched past its parts/);
   }
@@ -352,5 +353,66 @@ test('card with no label (walk B, item 11): its first row starts at the padding;
     assert.ok(!has(r, 'card'), `${phone}: ${all(r)}`);
     r = await check(card('padding-top:16px'), { phone });
     assert.match(all(r), /card: the first row of a card with no label, "Your details", starts \d+px from the card's top/, `${phone}`);
+  }
+});
+
+// The UI tester's findings (FX2, 26 Nov).
+test('focus (F1): in focus mode the next-session strip or the coach’s Search showing fails, on any address; hidden it passes', async () => {
+  const frame = (inner) => `<div class="ui-root ds-frame-root ds-frame-root--focus"><div class="ds-frame"><div class="ds-frame-main">${inner}<div class="ds-tool"><h1 class="ds-q ds-tool-q">Who is paying?</h1></div></div></div></div>`;
+  const strip = '<div class="cc-callbar" style="display:block"><span>Elena Vasquez is starting now</span></div>';
+  let r = await check(frame(strip), { route: '/coach/agreements/x/edit' });
+  assert.ok(rules(r).includes('focus'), r.problems.join('; '));
+  r = await check(frame(strip.replace('display:block', 'display:none')), { route: '/coach/agreements/x/edit' });
+  assert.ok(!rules(r).includes('focus'), r.problems.join('; '));
+});
+
+test('title-wrap (F12): a title kept off half its column wraps and fails; with its whole column, one line, it passes', async () => {
+  const title = (pad) => `<header class="ds-open" style="width:760px"><h1 class="ds-page-title ds-open-title" style="padding-right:${pad}px">Strategic alignment health check</h1></header>`;
+  let r = await check(title(344));
+  assert.ok(rules(r).includes('title-wrap'), r.problems.join('; '));
+  r = await check(title(0));
+  assert.ok(!rules(r).includes('title-wrap'), r.problems.join('; '));
+});
+
+test('edge (F15): at 768px an opening 20px in passes; centred in the window it fails', async () => {
+  const page = (style) => `<div class="ds-frame-root"><div class="ds-frame"><div class="ds-frame-main" style="padding:0"><div style="${style}"><header class="ds-open"><h1 class="ds-page-title ds-open-title">Peak moments</h1></header></div></div></div></div>`;
+  const extra = '.ui-root[style]{padding:0!important}';
+  let r = await check(page('padding:0 20px'), { width: 768, extra });
+  assert.ok(!rules(r).includes('edge'), r.problems.join('; '));
+  r = await check(page('max-width:696px;margin:0 auto;padding:0 32px'), { width: 768, extra });
+  assert.ok(rules(r).includes('edge'), r.problems.join('; '));
+});
+
+test('progress (P15): a progress line empty at step 1 fails; a short filled start passes', async () => {
+  const line = (pct) => `<div class="ds-tool" style="width:560px"><div class="ds-tool-prog"><i style="width:${pct}%"></i></div></div>`;
+  let r = await check(line(0));
+  assert.ok(rules(r).includes('progress'), r.problems.join('; '));
+  r = await check(line(11));
+  assert.ok(!rules(r).includes('progress'), r.problems.join('; '));
+});
+
+test('bare-zero (F8): "0 minutes" as a headline figure fails; a sentence instead passes', async () => {
+  let r = await check('<section class="ds-card"><div class="ds-card-head"><h2 class="ds-label">Time credit left</h2></div><div class="ds-fig">0 minutes</div></section>');
+  assert.ok(rules(r).includes('bare-zero'), r.problems.join('; '));
+  r = await check('<section class="ds-card"><div class="ds-card-head"><h2 class="ds-label">Time credit left</h2></div><p class="ds-fig-empty">No time credit is set for this engagement yet.</p></section>');
+  assert.ok(!rules(r).includes('bare-zero'), r.problems.join('; '));
+});
+
+test('duplicate: each card’s own action ("Show as a table" under two charts) passes; twice in one card fails', async () => {
+  const card = (n) => `<section class="ds-card"><div class="ds-card-head"><h2 class="ds-label">Chart ${n}</h2></div><button class="ds-more ds-more--bare">Show as a table</button></section>`;
+  let r = await check(card(1) + card(2));
+  assert.ok(!rules(r).includes('duplicate'), r.problems.join('; '));
+  r = await check('<section class="ds-card"><div class="ds-card-head"><h2 class="ds-label">Chart</h2></div><button class="ds-more ds-more--bare">Show as a table</button><button class="ds-more ds-more--bare">Show as a table</button></section>');
+  assert.ok(rules(r).includes('duplicate'), r.problems.join('; '));
+});
+
+test('coral-fill (Tim, 26 Nov): a mistake in a coral or soft coral box fails, light and dark; ErrorMessage’s coral line passes', async () => {
+  for (const theme of ['light', 'dark']) {
+    let r = await check('<div class="ds-error" role="alert" style="background:var(--error);padding:12px">That didn’t save.</div>', { theme });
+    assert.ok(rules(r).includes('coral-fill'), `${theme}: ${r.problems.join('; ')}`);
+    r = await check('<div class="ds-error" role="alert" style="background:var(--coral-soft-tint);padding:12px">That didn’t save.</div>', { theme });
+    assert.ok(rules(r).includes('coral-fill'), `${theme} tint: ${r.problems.join('; ')}`);
+    r = await check('<div class="ds-error" role="alert"><span class="ds-error-mark" aria-hidden="true">!</span><span>That didn’t save. Check your connection and try again.</span></div>', { theme });
+    assert.ok(!rules(r).includes('coral-fill') && !rules(r).includes('coral'), `${theme} line: ${r.problems.join('; ')}`);
   }
 });

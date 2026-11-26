@@ -5,6 +5,7 @@ import { fromKey, toKey, MONTH_NAMES } from './dates';
 import { useFocusMode } from './Frame';
 import { pushLayer } from './layers';
 import useIsPhone from './useIsPhone';
+import { titleWithAside } from './keepWords';
 import './blocks.css';
 
 // The 25 Nov design reference's blocks (design-reference-25nov.html "Blocks",
@@ -145,7 +146,8 @@ export function Rows({ children, className = '', label }) {
 /** A figure that says nothing yet: empty, or a bare 0, 0% or £0 (rule 16). */
 export function bareFigure(value) {
   if (value == null) return true;
-  return /^[£$€]?\s*0+(?:[.,]0+)?\s*%?$/.test(String(value).trim()) || String(value).trim() === '';
+  // "0 minutes", "0 sessions": a nought with its unit in words is as bare (UI tester F8).
+  return /^[£$€]?\s*0+(?:[.,]0+)?\s*%?$/.test(String(value).trim()) || /^0+\s+[a-z]+$/i.test(String(value).trim()) || String(value).trim() === '';
 }
 
 /**
@@ -384,11 +386,14 @@ export function dayTitle(key) {
  * something on (`hasItems(key)`); unavailable days faded (`available(key)`
  * false, the booking page). `onSelect(key)`.
  */
-export function MonthGrid({ month, today, selected, onSelect, hasItems, available, label }) {
+// `picker`: a date picker, not a calendar (M28 v6 .datepick): the chosen day filled, today a ring, the days of the months
+// either side left blank (their cells kept), rows 48px with the day centred. Calendars (the coach's, the booking page)
+// keep the reference's .cal: today filled, the chosen day outlined, outside days grey.
+export function MonthGrid({ month, today, selected, onSelect, hasItems, available, label, picker = false }) {
   const days = monthDays(month);
   const inMonth = month.slice(0, 7);
   return (
-    <div className="ds-cal" role="grid" aria-label={label || monthTitle(month)}>
+    <div className={`ds-cal${picker ? ' ds-cal--picker' : ''}`} role="grid" aria-label={label || monthTitle(month)}>
       <div className="ds-cal-row" role="row">
         {WEEKDAY_LETTERS.map((d, i) => <span key={WEEKDAY_NAMES[i]} className="ds-cal-h" role="columnheader" aria-label={WEEKDAY_NAMES[i]}>{d}</span>)}
       </div>
@@ -471,9 +476,9 @@ export function CalendarBar({ title, onPrev, onNext, onToday, view, onView, filt
  * from Home."). `onNext`, `nextLabel` (Next; Finish on the last step),
  * `onBack`, `onSkip`, `nextDisabled`.
  */
-export function ToolFrame({ step, steps, name, sub, question, hint, onClose, closeLabel = 'Close and save my place', onNext, nextLabel, onBack, onSkip, skipLabel = 'Skip this step', last = false, stepWords, children, className = '' }) {
+export function ToolFrame({ step, steps, name, sub, question, eye, hint, onClose, closeLabel = 'Close and save my place', onNext, nextLabel, onBack, onSkip, skipLabel = 'Skip this step', last = false, stepWords, children, className = '' }) {
   useFocusMode(true);
-  const pct = last ? 100 : Math.max(4, ((step - 1) / Math.max(1, steps)) * 100 + 100 / Math.max(1, steps) / 3);
+  const pct = last ? 100 : Math.min(100, ((step - 1) / Math.max(1, steps)) * 100 + Math.max(8, 100 / Math.max(1, steps) / 3));
   const headingRef = useRef(null);
   useEffect(() => { headingRef.current?.focus({ preventScroll: true }); window.scrollTo?.(0, 0); }, [step]);
   return (
@@ -482,12 +487,14 @@ export function ToolFrame({ step, steps, name, sub, question, hint, onClose, clo
         <button type="button" className="ds-tool-x" aria-label={closeLabel} title="Close" onClick={onClose}><span className="ds-x" aria-hidden="true" /></button>
         <span className="ds-tool-step">{stepWords || (last ? 'Done' : `Step ${step} of ${steps}`)}</span>
       </div>
-      <div className="ds-tool-prog" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>
+      {/* A one-screen tool (the Journal) has no progress line: there is nothing to go through (UI tester P17). */}
+      {(steps > 1 || last) && <div className="ds-tool-prog" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>}
       <div className="ds-tool-step-body" key={step}>
         {name && <div className="ds-open-label">{name}</div>}
         {/* A line under the group's name (M28 v6 .sofar: "So far: …"), 13px grey, sentence case (Polish 1, Stage C). */}
         {sub && <p className="ds-tool-sub">{sub}</p>}
-        {question && <h1 className="ds-q ds-tool-q" ref={headingRef} tabIndex={-1}>{question}</h1>}
+        {/* `eye`: who can see this, 12px after the question's last word on its line (rule 29d; UI tester P17). */}
+        {question && <h1 className="ds-q ds-tool-q" ref={headingRef} tabIndex={-1}>{eye ? titleWithAside(question, eye) : question}</h1>}
         {hint && <p className="ds-tool-hint">{hint}</p>}
         {children}
       </div>

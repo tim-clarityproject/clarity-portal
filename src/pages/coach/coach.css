@@ -859,3 +859,22 @@ body:has(> #root .ui-root.cc-app) {
   .ui-root .cc-search:not(#_):hover { color: var(--text); border-color: var(--text-2); }
   .ui-root .cc-card-open:hover { background: var(--raised); }
 }
+
+/* A client's page (UI tester F8): the Mission as a card of words, like every other card (no grey filled box); the
+   pinned notes and the Overview/Everything switch 20px apart under the opening's 32px. */
+.ui-root .cc-card-words { margin: 0; font-size: var(--fs-text); line-height: var(--lh-box); overflow-wrap: anywhere; }
+.ui-root .cc-people > .ds-open + .cc-pins { margin-top: 0; }
+.ui-root .cc-people > .cc-pins + .cc-tabs { margin-top: var(--space-px20); }
+.ui-root .cc-people .cc-fade > .ds-card:first-child { margin-top: 0; }
+.ui-root .cc-people .cc-fade > * + .ds-card { margin-top: var(--card-gap); }
+
+/* Settings: each section's settings in one card (UI tester P12). The card's label has no line under it and its last
+   row ends at the padding, with no divider under it. */
+.ui-root .cc-setpane.ds-card > :last-child:not(#_) { margin-bottom: 0; padding-bottom: 0; border-bottom: 0; min-height: 0; }
+.ui-root .cc-setpane.ds-card > .ds-card-head + * { border-top: 0; }
+/* One divider between two rows, never two stacked into a darker one (a row's line under it, a switch row's over it),
+   and every row's second line 13px grey: the calm "not set up yet" line included (UI tester P12). */
+.ui-root .cc-setpane :is(.cc-line, .cc-addr, .cc-setrow, .ds-switchrow) + .ds-switchrow { border-top: 0; }
+.ui-root .cc-setpane .cc-addr small { font-size: var(--fs-note); }
+/* The side list's first item level with the card's label, at its padding (Tim's walk of Stage B). */
+.ui-root .cc-settings:has(> .cc-setpane.ds-card) > .cc-setnav { padding-top: var(--space-px10); }

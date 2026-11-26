@@ -113,3 +113,8 @@
 .ui-root .cc-lead-card .cc-lead-line1 { min-width: 0; display: flex; flex-wrap: wrap; gap: 0 var(--space-px14); margin-top: var(--space-px2); font-size: var(--fs-small); color: var(--text-2); line-height: var(--lh-row); }
 .ui-root .cc-lead-card .cc-lead-line1 .cc-lead-quiet { margin: 0; padding: 0; border: 0; border-radius: 0; font-size: inherit; color: var(--text); }
 .ui-root .cc-lead-card .cc-lead-line1 .cc-lead-ready { margin: 0; font-size: inherit; }
+
+/* On a phone the stages stack and their cards read as the page's cards: 20px apart (UI tester P11). */
+@media (max-width: 600px) {
+  .ui-root .cc-lboard .cc-board-cards { gap: var(--card-gap); }
+}

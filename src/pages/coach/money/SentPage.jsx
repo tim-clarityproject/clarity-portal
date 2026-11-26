@@ -57,18 +57,18 @@ export default function SentPage() {
   const rows = quote
     ? agreementStatus({ version: { ...version, sent_at: quote.sent_at }, opens: versionOpens, now: new Date(p.now) }).slice(0, 2)
     : agreementStatus({ version, opens: versionOpens, firstInvoice, orgName: version.funded_by, now: new Date(p.now) });
-  const facts = sentFacts(version);
+  const facts = sentFacts(version, p.todayKey);
   const title = signed ? `Signed by ${first}` : quote ? `Quote sent to ${first}` : `Sent to ${first}`;
   const back = client ? () => navigate(`/coach/clients/${client.id}`) : org ? () => navigate(`/coach/organisations/${org.id}`) : () => navigate('/coach/clients');
   const downloadPdf = async () => {
     try {
       const [{ loadSignedPdf }, { savePdfFile }] = await Promise.all([import('../../../lib/coaching/agreements'), import('../../../lib/pdf/saveFile')]);
-      const { bytes, fileName } = await loadSignedPdf(version);
+      const { bytes, fileName } = signed ? await loadSignedPdf(version) : await sentPdf({ version, agreement: a, clientName: name, clientEmail: client?.email || '' });
       savePdfFile(bytes, fileName);
-    } catch { toast.error('The signed PDF wasn’t made. Check your connection and try again.'); }
+    } catch { toast.error(signed ? 'The signed PDF wasn’t made. Check your connection and try again.' : 'The PDF wasn’t made. Check your connection and try again.'); }
   };
   const note = quote ? '' : reminderLine(first, signed);
-  const expiry = quote || signed ? '' : expiryLine({ version, firstName: first });
+  const expiry = quote || signed ? '' : expiryLine({ version, firstName: first, today: p.todayKey });
 
   return (
     <div className="cc-page">
@@ -95,7 +95,8 @@ export default function SentPage() {
               <Rows>
                 {(facts.dates || facts.sessions) && <Row name={facts.dates || t.coaching || 'The coaching'} value={facts.sessions} />}
                 <Row name={`See it as ${first} sees it`} value={<Chevron direction="right" />} onClick={() => navigate(`/coach/agreements/${a.id}/preview`)} className="cc-money-go" />
-                {signed && <Row name="Download the PDF" value={<Chevron direction="right" />} onClick={downloadPdf} className="cc-money-go" />}
+                {/* M28 v6 "sent": the PDF from the moment it goes (as sent, waiting for the client's signature), then as signed. */}
+                {!quote && <Row name="Download the PDF" value={<Chevron direction="right" />} onClick={downloadPdf} className="cc-money-go" />}
                 {signed && <Row name="Open the agreement’s page" value={<Chevron direction="right" />} onClick={() => navigate(`/coach/agreements/${a.id}`)} className="cc-money-go" />}
               </Rows>
             </Card>
@@ -104,4 +105,24 @@ export default function SentPage() {
       </div>
     </div>
   );
+}
+
+/**
+ * The agreement as it was sent, before the client signs (M28 v6 "sent": Download the PDF): the one agreement PDF
+ * (src/lib/pdf/docs/agreement.js) from the version's stored clauses, with the business's own details (068), its
+ * signing block still open. Light only (PDF rule 1). Once signed, the kept signed PDF is given instead.
+ */
+async function sentPdf({ version, agreement, clientName, clientEmail }) {
+  const [{ agreementPdf }, { tidyVersion }, { renderPdf }, { loadPdfAssets }, { paperFor }, { businessFacts }] = await Promise.all([
+    import('../../../lib/pdf/docs/agreement.js'), import('../../../lib/coaching/agreementRules.js'), import('../../../lib/pdf/render'),
+    import('../../../lib/pdf/assets'), import('../../../lib/pdf/paper'), import('../../../lib/pdf/business'),
+  ]);
+  // The client's email in the parties block, as the approved agreement has it (the UI tester's Q6).
+  const terms = { ...(version.terms || {}), clientEmail: version.terms?.clientEmail || clientEmail || '' };
+  const tidy = tidyVersion({ ...version, terms, reference: version.reference || agreement?.reference });
+  if (!tidy) throw new Error('No version to print.');
+  const facts = await businessFacts().catch(() => null);
+  const spec = agreementPdf({ version: tidy, clientName, raw: version, business: facts || null });
+  const assets = await loadPdfAssets(spec);
+  return renderPdf(spec, { variant: 'light', paper: paperFor({ country: null }), assets });
 }

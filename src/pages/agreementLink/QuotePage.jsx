@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, Checkbox, ErrorMessage, Figure, MoreLink, PageOpening, PdfDownload, QuickAdd, Row, useToast } from '../../components/design';
+import { Button, Card, Checkbox, Figure, MoreLink, PageOpening, PdfDownload, QuickAdd, Row, useIsPhone, useToast } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { isOnline } from '../../lib/connection';
 import { isAsk } from '../../lib/agreements/asks';
@@ -10,6 +10,7 @@ import { FLOW, LINK_WORDS, QUOTE_TITLE, askQuestionWords, noteText, quoteLabel, 
 import { SettleSwitch } from '../coaching/AgreementParts';
 import { clientAsk, isLive, storedPdf } from '../../lib/coaching/clientAsk';
 import LinkFrame, { LinkLoading, LinkMessage } from './LinkFrame';
+import MistakeLine from '../../components/agreements/MistakeLine';
 
 // A quote's page (Polish 1, Stage C, C3: M28 v6 "quote": the opening (Quotation Q-0042 · Valid until, YOUR QUOTATION,
 // the coach's own note), Included, Add if you'd like (the extras to tick, nothing ticked to start with), In all with Up
@@ -28,6 +29,7 @@ export default function QuotePage() {
   const { token } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const isPhone = useIsPhone();
   const [quote, setQuote] = useState(undefined); // undefined while loading, null for a link that doesn't work
   const [loadProblem, setLoadProblem] = useState(null);
   const [chosen, setChosen] = useState([]);
@@ -101,7 +103,8 @@ export default function QuotePage() {
 
   return (
     <LinkFrame>
-      <PageOpening label={quoteLabel({ number: quote.number, validUntil: quote.valid_until })} title={FLOW.quoteTitle} line={noteText(quote.personal_note || terms.personalNote)} />
+      {/* On a phone the label drops "Quotation" (the title says it), so it stays on one line (Tim's walk of Stage B, item 9). */}
+      <PageOpening label={isPhone ? quoteLabel({ number: quote.number, validUntil: quote.valid_until }).replace(/^Quotation (?=Q-)/, '') : quoteLabel({ number: quote.number, validUntil: quote.valid_until })} title={FLOW.quoteTitle} line={noteText(quote.personal_note || terms.personalNote)} />
       <Card label={FLOW.included}>
         {rows.lines.map((l) => <Row key={l.label} name={l.label} value={l.amount} />)}
         {rows.upfront && <Row name={rows.upfront.label} value={rows.upfront.amount} />}
@@ -117,7 +120,7 @@ export default function QuotePage() {
         <Figure value={rows.inAll} />
         <SettleSwitch terms={terms} value={choice} onChange={setChoice} chosenExtras={chosen} label={FLOW.settleWhen} bare />
         <p className="cl-hint">{rows.hint}</p>
-        {problem && <ErrorMessage>{problem}</ErrorMessage>}
+        {problem && <MistakeLine>{problem}</MistakeLine>}
         <div className="cl-accept"><Button variant="primary" className="cl-full" aria-busy={busy || undefined} onClick={accept}>{FLOW.accept}</Button></div>
       </Card>
       <div className="cl-quote-foot">
@@ -129,7 +132,7 @@ export default function QuotePage() {
         )}
       </div>
       <QuickAdd id="cl-quote-ask" open={asking && !askSent} onClose={() => setAsking(false)} onAdd={sendQuestion} placeholder={LINK_WORDS.questionLabel} label={LINK_WORDS.questionLabel} addLabel={sendChangeWords(coachFirst)} />
-      {askNeed && <ErrorMessage>{askNeed}</ErrorMessage>}
+      {askNeed && <MistakeLine>{askNeed}</MistakeLine>}
     </LinkFrame>
   );
 }

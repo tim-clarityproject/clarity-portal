@@ -843,6 +843,8 @@ function Look() {
 // Business (Polish 1, Stage C, the PDFs): the company's name and number, website, email and bank details every PDF
 // prints (068). The owner's alone, after Agreements (SETTINGS_SECTIONS in src/lib/coach/navigation.js).
 const SECTIONS = SETTINGS_SECTIONS;
+// Sections drawn as their own cards already (Agreements: the terms, packages and What to say), never a card in a card.
+const OWN_CARDS = new Set(['agreements']);
 
 const PANES = { business: BusinessSettings, you: YourDetails, away: AwayAndCover, notifications: Notifications, booking: BookingSettings, hours: WorkingHours, zones: TimeZones, calendars: Calendars, agreements: AgreementSettings, email: Email, tags: TagsAndFields, layouts: NoteLayouts, coaches: Coaches, log: ActivityLog, look: Look };
 
@@ -882,7 +884,8 @@ export default function Settings() {
         <div className="cc-col">
           <Back to="Settings" onClick={() => navigate('/coach/settings')} />
           <PageOpening title={chosen.label} line={settingsSectionLine(chosen.label)} />
-          <div className="cc-settings"><section className="cc-setpane" aria-label={chosen.label}><Pane /></section></div>
+          {/* Each section's settings in one card (UI tester P12), as every other page's. */}
+          <div className="cc-settings">{OWN_CARDS.has(chosen.key) ? <section className="cc-setpane" aria-label={chosen.label}><Pane /></section> : <Card className="cc-setpane" aria-label={chosen.label}><Pane /></Card>}</div>
         </div>
       </div>
     );
@@ -897,10 +900,16 @@ export default function Settings() {
               <a key={s.key} href={`/coach/settings/${s.key}`} className="cc-setnav-item" aria-current={s.key === chosen.key ? 'page' : undefined} onClick={(e) => go(e, s.key)}>{s.label}</a>
             ))}
           </nav>
-          <section className="cc-setpane ds-section" aria-labelledby="cc-set-h">
-            <div className="ds-section-head"><h2 id="cc-set-h" className="ds-section-title">{chosen.label}</h2></div>
-            <Pane key={chosen.key} />
-          </section>
+          {OWN_CARDS.has(chosen.key) ? (
+            <section className="cc-setpane ds-section" aria-labelledby="cc-set-h">
+              <div className="ds-section-head"><h2 id="cc-set-h" className="ds-section-title">{chosen.label}</h2></div>
+              <Pane key={chosen.key} />
+            </section>
+          ) : (
+            <Card className="cc-setpane" label={chosen.label} aria-label={chosen.label}>
+              <Pane key={chosen.key} />
+            </Card>
+          )}
         </div>
       </div>
     </div>

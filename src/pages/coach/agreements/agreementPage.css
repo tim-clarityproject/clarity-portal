@@ -21,6 +21,9 @@
 .ui-root .ap-flow-say { margin: 0 0 var(--space-3); font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text-2); }
 .ui-root .ap-flow-say:last-child { margin-bottom: 0; }
 .ui-root .ap-flow .ds-card { margin-bottom: var(--space-3); }
+/* A question's answers span the question's 560px column (M28 v6 .qblock .choices.stack, as the builder's): the UI tester's
+   P14 ("Which invoice?" stopped at the shared rows' 440px). */
+.ui-root .ap-flow .ds-rows { max-width: none; }
 .ui-root .ap-flow .cc-problem { margin-top: var(--space-3); }
 .ui-root .ap-change .ds-li-value { align-self: center; }
 .ui-root .ap-change > .ds-li:first-child { border-top: 0; padding-top: 0; }

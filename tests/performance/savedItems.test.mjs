@@ -4,7 +4,7 @@
 // Health Check's teams. Fixed days only. Run with npm run test:performance.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dayName, healthCheckTeams, listFilters, planRows, recentRows, reviewRows } from '../../src/lib/savedItems.js';
+import { dayName, healthCheckTeams, listFilters, planRows, recentRows, reviewRows, shownTitle } from '../../src/lib/savedItems.js';
 import { formatSavedDate } from '../../src/lib/dateFormatter.js';
 
 const TODAY = '2026-10-21'; // a Wednesday
@@ -133,4 +133,16 @@ test('My Reviews: every type, named in words, with its tool, area and date', () 
   assert.equal(by('sprint-review:s0').title, 'Sprint 4');
   assert.equal(by('sprint-review:s0').to.path, '/performance-sprint/review/s0');
   assert.ok(!recentRows(rows, 'personal', 10).some((r) => r.source === 'journal'), 'journal entries never show on a hub');
+});
+
+test('an old saved row labelled "First review" reads "First check-in" (display only; Tim, 26 Nov)', () => {
+  assert.equal(shownTitle('First review'), 'First check-in');
+  assert.equal(shownTitle(' first review '), 'First check-in');
+  assert.equal(shownTitle('First review of the plan'), 'First review of the plan', 'only the whole old label');
+  assert.equal(shownTitle('October review'), 'October review');
+  const raw = { id: 'e9', review_type: 'after-action', title: 'First review', status: 'final', created_at: at('2026-10-15') };
+  const rows = reviewRows({ ...REVIEWS, entries: [raw] }, TODAY);
+  const row = rows.find((r) => r.id === 'entry:e9');
+  assert.equal(row.title, 'First check-in');
+  assert.equal(raw.title, 'First review', 'the saved value is never changed');
 });

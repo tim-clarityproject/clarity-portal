@@ -69,3 +69,7 @@
   .ui-root button.ag-contents-link:not(#_) { padding: 0 !important; font-size: var(--fs-secondary) !important; }
   .ui-root button.ag-session:not(#_) { padding: var(--space-px14) 0 !important; font-size: inherit !important; }
 }
+
+/* A mistake (MistakeLine; M28 v6 #s-err): coral words on the page, 8px under what it is about, no fill, no box. */
+.ui-root .ag-mistake { margin: var(--space-2) 0 0; padding: 0; background: none; font-size: var(--fs-meta); line-height: var(--lh-text); color: var(--error-text); }
+.ui-root .ag-mistake .ds-line { display: block; }

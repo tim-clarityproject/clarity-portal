@@ -77,6 +77,9 @@ export default function HoursLog() {
   };
   const first = firstOf(name);
   const left = Math.max(0, h.block - h.used);
+  // The block's own name as the title (M28 v6 "hours": "Assessment build", the label "Block of hours, £2,000 at
+  // £150/hr"; the UI tester's P4): the agreement's name, else the work it is for, else the kind's name.
+  const title = agreementName(t, a) !== 'Block of hours' ? agreementName(t, a) : (workTitle(t.hours?.work) || (first ? `${first}’s hours` : 'Block of hours'));
 
   // Polish 1, Stage C (C2; M28 v6 "hours"): the page opening (the block and its rate as the label, the work as the
   // title), then Time logged with + Add (Quick Add: what it was for, then when and how long) and the balance beside it.
@@ -84,10 +87,11 @@ export default function HoursLog() {
     <div className="cc-page">
       <div className="cc-col cc-money-page">
         <Back to={client ? name : `${first}’s agreement`} onClick={() => navigate(client ? `/coach/clients/${client.id}` : `/coach/agreements/${a.id}`)} />
-        <PageOpening label={agreementName(t, a) === 'Block of hours' ? blockShort(t.hours, c) : `Block of hours, ${blockShort(t.hours, c)}`} title={agreementName(t, a)} line={MONEY_LINES.hours(first)} />
+        <PageOpening label={title === 'Block of hours' ? blockShort(t.hours, c) : `Block of hours, ${blockShort(t.hours, c)}`} title={title} line={MONEY_LINES.hours(first)} />
         <div className="ds-cols ds-cols--needs-first">
           <div>
             <Card
+              className="ab-hours-log"
               label="Time logged"
               add={<AddLink label="Log time" expanded={adding} controls="cc-money-log" onClick={() => setAdding((v) => !v)} />}
               quickAdd={(
@@ -124,4 +128,13 @@ export default function HoursLog() {
       </SlidePanel>
     </div>
   );
+}
+
+/**
+ * The work a block of hours is for, as a short title (M28's "Assessment build"): up to its first comma or full stop, when
+ * that is 48 characters or fewer; a longer description isn't a name, and the title is then the client's hours.
+ */
+function workTitle(work) {
+  const first = String(work || '').split(/[\n,.;:!?]/)[0].replace(/\s+/g, ' ').trim();
+  return first && first.length <= 48 ? first : '';
 }

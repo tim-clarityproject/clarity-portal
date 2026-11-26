@@ -47,7 +47,8 @@ export function GlancePanel({ version }) {
 export function PointsCard({ points = [], label = FLOW.points }) {
   if (!points.length) return null;
   return (
-    <Card label={label} className="cl-points">
+    // The agreement's terms are a document: their dates keep the year, as signed and printed (data-year).
+    <Card label={label} className="cl-points" data-year="">
       {points.map((r) => <Row key={r.label} name={r.label} value={r.value} />)}
     </Card>
   );
@@ -65,7 +66,7 @@ export function ClausesCard({ clauses = [], ask = null, idPrefix = 'cl' }) {
   const baseId = useId();
   if (!clauses.length) return null;
   return (
-    <section className="ds-card cl-clauses" aria-labelledby={`${baseId}-l`}>
+    <section className="ds-card cl-clauses" aria-labelledby={`${baseId}-l`} data-year="">
       <div className="ds-card-head">
         <h2 className="ds-label" id={`${baseId}-l`}>{FLOW.agreement}</h2>
         <span className="cl-count">{clauseCount(clauses.length)}</span>

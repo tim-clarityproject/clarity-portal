@@ -12,13 +12,13 @@ import './formTool.css';
 // own data, saving and steps are unchanged: each step is still its own
 // address, and what's typed is kept on the device as before (useDraft).
 //
-// name, step, steps (leave steps out for a one-screen tool), question, hint,
+// name, step, steps (leave steps out for a one-screen tool), question, eye (who can see it, beside the question), hint,
 // onNext + nextLabel (never greyed out: pass `need`, a calm line saying what's
 // missing, and show it once Next was pressed), onBack, onSaveDraft, onDiscard,
 // saveError, closeTo (where × goes when there's no page to go back to), wide
 // (a step with a table: the whole 720px column).
 export default function FormTool({
-  name, step = 1, steps, question, hint, onNext, nextLabel, onBack, need, saveError,
+  name, step = 1, steps, question, eye, hint, onNext, nextLabel, onBack, need, saveError,
   onSaveDraft, onDiscard, closeTo = '/welcome', wide = false, children, className = '',
 }) {
   const navigate = useNavigate();
@@ -36,6 +36,7 @@ export default function FormTool({
         steps={steps || 1}
         name={name}
         question={question}
+        eye={eye}
         hint={hint}
         onClose={close}
         onNext={onNext}

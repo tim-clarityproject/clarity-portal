@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, ErrorMessage, Loading, PageOpening, Row, Rows, SectionTabs, TextBox, useToast } from '../../../components/design';
+import { Button, Card, Loading, PageOpening, Row, Rows, SectionTabs, TextBox, useToast } from '../../../components/design';
 import { parseDbTimestamp, getLocalDateKey } from '../../../lib/dateFormatter';
 import { dayKeyWords } from '../../../lib/time';
 import { BUILDER_LINES } from '../../../content/pageLines/coach';
@@ -11,6 +11,7 @@ import { WORDING_NAMES, clauseVersions, differsFrom, libraryRows, newStandardRow
 import { Back, TextLink, useCoachPortal } from '../parts';
 import { Hint, SAVE_PROBLEM, Saved, useAgreementDraft } from './builderParts';
 import './builder.css';
+import MistakeLine from '../../../components/agreements/MistakeLine';
 
 // The clause library and Edit a clause (Phase 6b run 3, Group B; M28 s-library and s-clause; brief items 15 to 17).
 //   /coach/agreements/:id/clauses[/:key]                        an agreement's clauses: edit any just for the client,
@@ -220,7 +221,7 @@ function ClauseEditor({ heading, who, label, start, standardParagraphs, editedLi
           </div>
         ))}
         {!readOnly && differs && <Hint>{editedLine}</Hint>}
-        {problem && <ErrorMessage>{problem}</ErrorMessage>}
+        {problem && <MistakeLine>{problem}</MistakeLine>}
         {offer && primary && everyone && (
           <div className="ab-panel">
             <p className="ab-say">Use this wording for everyone from now on?</p>

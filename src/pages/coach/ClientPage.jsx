@@ -4,14 +4,14 @@ import { idFromAddress } from '../../lib/coach/address';
 import SuggestQuestionPanel from './SuggestQuestionPanel';
 import AdminClient from './AdminClient';
 import { Button, Crosshair, ErrorMessage, Dropdown, InlineChoice, Loading, PageHeader, SearchField, SlidePanel, Stat, StatGroup, SwitchRow, TextBox, TextField, useToast } from '../../components/design';
-import { AddLink, Card, PageOpening, QuickAdd } from '../../components/design/Blocks';
+import { AddLink, Card, Figure, PageOpening, QuickAdd, Row } from '../../components/design/Blocks';
 import { clientLine } from '../../content/pageLines/coach';
 import './people.css';
 import { supabase } from '../../lib/supabase';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { zonePlace } from '../../lib/time';
 import { inviteLinkWords } from '../../lib/coach/inviteLink';
-import { formatClockTime } from '../../lib/dateFormatter';
+import { formatClockTime, getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
 import { coach061ReadyNow, coachReadyNow, ensureClientSessions, keyOf, newId, removeRow, rowsOf, saveRow, saveRows, useCoachFirstLoaded } from '../../lib/coach/store';
 import { deleteClient, inviteClient, inviteWords, moveClient, NEEDS_049 } from '../../lib/coach/actions';
 import {
@@ -434,7 +434,12 @@ export default function ClientPage() {
   const money = moneyTimeline({ invoices, payments, agreements, versions: agreementVersions, profileId: profile.id, zone: coachZone });
   const fold = agreementFold({ agreements, versions: agreementVersions, profileId: profile.id, engagement, contacts: rowsOf(state, 'organisation_contacts'), organisation: org, credit, zone: coachZone, todayKey });
   const agreementLoading = Boolean(partial) && coach061ReadyNow() !== false;
-  const newAgreement = !agreementLoading && !somethingWaiting(agreementRows({ agreements, versions: agreementVersions, quotes: rowsOf(state, 'agreement_quotes'), profileId: profile.id, today: todayKey }));
+  const agreementList = agreementRows({ agreements, versions: agreementVersions, quotes: rowsOf(state, 'agreement_quotes'), profileId: profile.id, today: todayKey });
+  const newAgreement = !agreementLoading && !somethingWaiting(agreementList);
+  // The opening's one main button (M28 v6 "client"; UI tester F8): New agreement, or, while one is already on its way
+  // (nothing new starts then: money.js's somethingWaiting), the way to that one.
+  const waitingRow = agreementLoading || newAgreement ? null : agreementList.find((r) => ['draft', 'sent', 'quote'].includes(r.state)) || null;
+  const since = clientSince(data.engagements, profile);
   const everything = timeline({ notes, files, entries: entries.filter((t) => data.engagements.some((e) => e.id === t.engagement_id)), engagements: data.engagements, projects: rowsOf(state, 'engagement_projects'), more: money }, { kind, q }, now);
   // A client who was a lead keeps the lead's timeline (Won carries it over without copying: crm.js's carriedTimeline). It
   // is older than anything on the client's own, so it follows it.
@@ -450,10 +455,11 @@ export default function ClientPage() {
       <div className="cc-col cc-people">
         <Back onClick={() => navigate(profile.status === 'past' ? '/coach/clients/past' : '/coach/clients')} to={profile.status === 'past' ? 'Past clients' : 'Clients'} />
         <PageOpening
-          label={[!isOwner && org ? org.name : null, profile.status === 'paused' ? 'Paused' : null, profile.status === 'past' ? 'Past client' : null].filter(Boolean).join(', ') || null}
+          label={[profile.status === 'past' ? 'Past client' : since ? `Client since ${since}` : null, !isOwner && org ? org.name : null, profile.status === 'paused' ? 'Paused' : null].filter(Boolean).join(', ') || null}
           title={profile.name}
           line={clientLine({ role: profile.job_title, city: profile.city })}
-          action={newAgreement ? <Button variant="primary" onClick={() => navigate(`/coach/agreements/new?for=client:${profile.id}`)}>New agreement</Button> : null}
+          action={newAgreement ? <Button variant="primary" onClick={() => navigate(`/coach/agreements/new?for=client:${profile.id}`)}>New agreement</Button>
+            : waitingRow ? <Button variant="primary" onClick={() => navigate(waitingRow.to)}>{waitingRow.state === 'draft' ? 'Carry on the draft agreement' : waitingRow.state === 'quote' ? 'Open the quote sent' : 'Open the agreement sent'}</Button> : null}
         />
         {isOwner && org && <div className="cc-links"><TextLink onClick={() => navigate(`/coach/organisations/${org.id}`)}>{org.name}</TextLink></div>}
         {birthday && <p className="cc-quiet">It’s <InlineLink onClick={() => setPanel('note')}>{possessive(first)}</InlineLink> birthday today.</p>}
@@ -490,7 +496,7 @@ export default function ClientPage() {
         )}
         {view === 'over' && shareKnown && (
           <div className="cc-fade" key="over">
-            {shared?.mission && <div className="cc-soft"><span className="cc-soft-label">{possessive(first)} Mission</span><p>{shared.mission}</p></div>}
+            {shared?.mission && <Card label={`${possessive(first)} Mission`} className="cc-mission-card"><p className="cc-card-words">{shared.mission}</p></Card>}
 
             {(!started.complete || (profile.invited_at && !profile.user_id && profile.email)) && profile.status !== 'past' && (
               <Card label="Getting started">
@@ -518,9 +524,11 @@ export default function ClientPage() {
             />
 
             {credit && (
-              <StatGroup className="cc-stats">
-                <Stat label="Time credit left" value={minutesWords(credit.left)} bar={credit.total ? credit.left / credit.total : 0} />
-              </StatGroup>
+              // A card with one figure, and a sentence rather than a bare "0 minutes" (UI tester F8; Figure's `empty`).
+              <Card label="Time credit left">
+                <Figure value={minutesWords(credit.left)} empty={credit.total ? 'All the time credit has been used.' : 'No time credit is set for this engagement yet.'} />
+                {credit.total > 0 && <Row name="Used so far" value={`${minutesWords(credit.used)} of ${minutesWords(credit.total)}`} />}
+              </Card>
             )}
 
             {credit && (
@@ -779,4 +787,17 @@ function PackPanel({ open, onClose, engagement }) {
       <p className="cc-note">A pack adds to what’s left on this engagement.</p>
     </SlidePanel>
   );
+}
+
+/** "September 2025": the month the client's first engagement started, or the month they were added. */
+function clientSince(engagements, profile) {
+  const starts = (engagements || []).map((e) => e.starts_on).filter((d) => /^\d{4}-\d{2}-\d{2}/.test(String(d || ''))).sort();
+  let key = starts[0] || null;
+  if (!key && profile?.created_at) {
+    const at = parseDbTimestamp(profile.created_at);
+    if (at && !Number.isNaN(at.getTime())) key = getLocalDateKey(at);
+  }
+  if (!key) return null;
+  const [y, m] = String(key).split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 }

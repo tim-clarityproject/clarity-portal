@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Button, Checkbox, ErrorMessage, Label, PageOpening, PdfDownload, TextField } from '../../components/design';
+import { Button, Checkbox, Label, PageOpening, PdfDownload, TextField } from '../../components/design';
 import { supabase } from '../../lib/supabase';
 import { isOnline } from '../../lib/connection';
 import { teamPoints } from '../../lib/agreements/clauses';
@@ -12,6 +12,7 @@ import { clientAsk, storedPdf } from '../../lib/coaching/clientAsk';
 import SignBox from '../coaching/SignBox';
 import { ClausesCard, PointsCard } from '../coaching/AgreementParts';
 import LinkFrame, { LinkLoading, LinkMessage } from './LinkFrame';
+import MistakeLine from '../../components/agreements/MistakeLine';
 
 // The sponsor signs (Polish 1, Stage C, C3: not drawn in M28 v6, so built from its "sign" patterns: the page opening
 // with the organisation and version, The main points and The agreement as cards (the clauses opening one at a time),
@@ -108,8 +109,8 @@ export default function SponsorSign() {
         </div>
         <SignBox ref={sigRef} name={name} onChange={() => setNeed(null)} />
         <Checkbox checked={agreed} onChange={(v) => { setAgreed(v); setNeed(null); }}>{sponsorTick(org)}</Checkbox>
-        {need && <ErrorMessage>{need}</ErrorMessage>}
-        {problem && <ErrorMessage>{problem}</ErrorMessage>}
+        {need && <MistakeLine>{need}</MistakeLine>}
+        {problem && <MistakeLine>{problem}</MistakeLine>}
         <div className="cl-acts"><Button variant="primary" aria-busy={busy || undefined} onClick={sign}>{sponsorButton(org)}</Button></div>
         <PdfDownload lightOnly variant="text" label={PAPER} getDocument={pdf} />
       </section>

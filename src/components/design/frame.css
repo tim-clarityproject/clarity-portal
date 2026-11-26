@@ -379,8 +379,11 @@
   /* A long page title never runs under My Mission at the panel's top right
      (B1 7): the opening's first line keeps the box's room clear, the box
      being at most --mission-box-max wide. */
-  .ui-root .ds-frame-main:has(.hdr-frame .hdr-mbox) .ds-open > :first-child {
-    padding-right: calc(var(--mission-box-max) + var(--space-4));
+  /* Only as wide as the box and Chat are, and only where they meet the line (Frame.jsx's useMissionRoom sets
+     --mission-room on each opening; UI tester F12), so a title that fits beside them stays on one line. */
+  .ui-root .ds-frame-main .ds-open > :first-child {
+    padding-top: var(--mission-drop, 0px);
+    padding-right: var(--mission-room, 0px);
   }
   .ui-root .hdr-frame .hdr-mbox:not(#_) {
     max-width: var(--mission-box-max);
@@ -504,9 +507,11 @@
   }
 }
 
-/* Focus mode hides the phone header too, after the --ptop rule above that would otherwise win (requests-c4 1). */
+/* Focus mode hides the phone header too, after the --ptop rule above that would otherwise win (requests-c4 1), and
+   the coach's next-session strip: focus mode shows nothing but the tool, which opens straight on × (UI tester F1). */
 .ui-root.ds-frame-root--focus .ds-frame .ds-frame-phead,
-.ui-root.ds-frame-root--focus .ds-frame .cc-header--frame {
+.ui-root.ds-frame-root--focus .ds-frame .cc-header--frame,
+.ui-root.ds-frame-root--focus .ds-frame .cc-callbar {
   display: none;
 }
 
@@ -515,9 +520,24 @@
    outside focus mode, the frame gives the 48/56px, so the page starts on the frame's left edge like
    Home and the Dashboard, at most the reading width. B1's .cp-page pages keep their own rules. */
 @media (min-width: 1024px) {
-  .ui-root:not(.ds-frame-root--focus) .ds-frame-main .plan-page:not(.cp-page) {
+  .ui-root:not(.ds-frame-root--focus) .ds-frame-main .plan-page:not(.cp-page),
+  .ui-root:not(.ds-frame-root--focus) .ds-frame-main .hc-in-page {
     max-width: var(--dash-max);
     margin: 0;
     padding: 0;
+  }
+}
+
+/* Under 1024px the frame gives no padding: an older page gives Home's 24px top and 20px sides and starts on the
+   same left edge as Home at every width, never centred in a wider window (UI tester F15: 600, 768 and 960px). Its
+   own bottom padding (a form's room for its action bar) stays. */
+@media (max-width: 1023px) {
+  .ui-root:not(.ds-frame-root--focus) .ds-frame-main .plan-page:not(.cp-page),
+  .ui-root:not(.ds-frame-root--focus) .ds-frame-main .hc-in-page {
+    max-width: none;
+    margin: 0;
+    padding-top: var(--space-4);
+    padding-right: var(--page-x-phone);
+    padding-left: var(--page-x-phone);
   }
 }

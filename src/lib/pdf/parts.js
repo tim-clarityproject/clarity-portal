@@ -126,7 +126,9 @@ export function titleUnits(L, spec, parent) {
       }
       if (metaRows.length) {
         const fx = x + L.contentW - factsW;
-        let fy = ty;
+        // The key facts' first row stands 2.2pt higher than the title's line box (measured on the approved 25 Nov
+        // invoice, quotation and agreement: "Invoice number" at 108.3pt; the UI tester's P19).
+        let fy = ty - 2.2;
         metaRows.forEach((r) => {
           ctx.mark(tagNode('P', factsNode), () => {
             r.k.forEach((line, i) => ts.draw(line, fx, fy + i * S.meta.lh + ts.baseline(S.meta), S.meta, t.detail));
@@ -1266,6 +1268,7 @@ export function flatten(L, spec, contents, root) {
       // the space before a block: its own (`gapMm`, the 25 Nov PDFs' margins), else the shared one
       us[0].gap = b.gapMm != null ? b.gapMm * MM : (blocks.length ? (us[0].gap || SPACE.block) : 0);
       if (!blocks.length && b.gapMm == null) us[0].gap = 0;
+      us.tone = b.tone || null;
       blocks.push(us);
     });
     if (!blocks.length) return; // a section with nothing in it is left out with its heading
@@ -1298,8 +1301,13 @@ export function flatten(L, spec, contents, root) {
     blocks.forEach((us, bi) => {
       if (us[0].kind === 'thead' && blocks[bi + 1]) us[us.length - 1].keep = blocks[bi + 1].length === 1 && blocks[bi + 1][0].lines <= 3;
     });
+    // A numbered clause (an agreement's terms) may break between its paragraphs, as the approved 25 Nov agreement does,
+    // so page 1 is never left half empty (the UI tester's Q6); a paragraph's grey reason stays with its last lines.
+    if (look === 'clause') {
+      blocks.forEach((us, bi) => { if (blocks[bi + 1]?.tone === 'detail') us[us.length - 1].keep = true; });
+    }
     const total = su.reduce((sum, u, i) => sum + u.h + (i ? u.gap : 0), 0);
-    if (total < L.pageH / 3) su.forEach((u) => { u.keep = true; }); // short sections move whole
+    if (look !== 'clause' && total < L.pageH / 3) su.forEach((u) => { u.keep = true; }); // short sections move whole
     su[su.length - 1].keep = false;
     sections.push({ title: sec.title });
     units.push(...su);

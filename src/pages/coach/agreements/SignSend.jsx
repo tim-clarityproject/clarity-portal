@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ErrorMessage, Loading, PageOpening, SavedSignature, SignaturePad, TextBox, TextField, ToolFrame, useToast } from '../../../components/design';
+import { Loading, PageOpening, SavedSignature, SignaturePad, TextBox, TextField, ToolFrame, useToast } from '../../../components/design';
 import { BUILDER_LINES, builderClosed } from '../../../content/pageLines/coach';
 import { kindOf } from '../../../lib/agreements/terms';
 import { quoteNumber } from '../../../lib/agreements/quote';
@@ -8,6 +8,7 @@ import { possessive, sendWords } from '../../../lib/coach/agreementBuilder';
 import { Back, TextLink, useCoachPortal } from '../parts';
 import { Hint, useAgreementDraft } from './builderParts';
 import { useSavedSignature, useSend } from './useSend';
+import MistakeLine from '../../../components/agreements/MistakeLine';
 
 // Sign and send (Phase 6b run 3, Group B; M28 s-sign; Polish 1, Stage C: the questionnaire's last step, in focus mode
 // when there's no saved signature or the coach draws a new one; brief items 19, 22 and 31): /coach/agreements/:id/sign
@@ -106,7 +107,7 @@ export default function SignSend() {
         )}
         <TextBox label={`A note to ${kind === 'team' ? 'the sponsor' : first}`} value={note ?? ''} maxLength={1000} onChange={setNote} />
         <Hint>It opens the email and the agreement.</Hint>
-        {problem && <ErrorMessage>{problem}</ErrorMessage>}
+        {problem && <MistakeLine>{problem}</MistakeLine>}
         {!isOwner && <Hint>It goes once your practice’s owner approves it.</Hint>}
       </ToolFrame>
     </div>

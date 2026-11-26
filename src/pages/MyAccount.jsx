@@ -293,7 +293,7 @@ export default function MyAccount() {
       </div>
     ),
     look: (
-      <div className="acct-pane">
+      <div className="acct-pane acct-pane--look">
         <ColourModeChoice />
       </div>
     ),

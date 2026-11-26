@@ -74,8 +74,8 @@
 .ui-root .cc-ses-top { margin-top: var(--space-px20); }
 /* Side by side, the choice of length is as tall as the drop-down beside it (rule 4a). */
 .ui-root .cc-ses-long .ds-inline { display: flex; min-width: 0; }
-.ui-root .cc-ses-long .ds-seg:not(#_) { display: flex; flex: 1 1 auto; min-height: var(--field-h); }
-.ui-root .cc-ses-long .ds-seg-btn:not(#_) { flex: 1 1 0; }
+/* Sized to its parts, the three equal (Tim's walk of Stage B, item 7), never stretched across the row it shares. */
+.ui-root .cc-ses-long .ds-seg:not(#_) { min-height: var(--field-h); }
 
 .ui-root .cc-ses-outcome { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-top: var(--space-px14); }
 .ui-root .cc-ses-outcome .cc-quiet { margin: 0; }

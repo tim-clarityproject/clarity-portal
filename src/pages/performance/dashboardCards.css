@@ -173,3 +173,10 @@
 @media (max-width: 600px) {
   .ui-root .dash-page .dash-fold-mark { align-self: start; }
 }
+
+/* Inside a card the label has no line under it and the last row ends at the padding (UI tester P9): What's behind
+   your performance's first fold has no line above it and its last none below; "Show as a table" at a card's foot
+   has no hairline under it. */
+.ui-root .dash-page .dash-folds > .dash-fold:first-child { border-top: 0; }
+.ui-root .dash-page .dash-folds > .dash-fold:last-child { border-bottom: 0; }
+.ui-root .dash-page .ds-ctable-fold > .ds-collapse { border-bottom: 0; }

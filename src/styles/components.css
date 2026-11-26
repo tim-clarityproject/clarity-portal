@@ -1113,7 +1113,7 @@ html:has(.ui-root) {
 .ui-root .dng:focus-visible {
   /* Never fainter than the edge at rest (see .ui-btn-ghost). */
   border-color: var(--text);
-  background: var(--coral-soft-tint);
+  background: none;
 }
 
 .ui-root .dng:focus-visible {

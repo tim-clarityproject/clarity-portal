@@ -986,3 +986,16 @@
 @media (min-width: 601px) {
   .ui-root .si-col > .si-ttl { margin-inline: calc(-1 * var(--space-6)) !important; }
 }
+
+/* A mistake is the coral line everywhere (Tim, 26 Nov, 15:55; replaces sign-in rule 13's boxed message): its words in
+   the mistake colour straight under the box they are about, no edge, no fill and no "!". Both lines stay. */
+.ui-root .si-err:not(#_) {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-size: var(--fs-meta);
+  color: var(--error-text);
+}
+.ui-root .si-err:not(#_) > b { display: none; }

@@ -165,6 +165,12 @@
   white-space: nowrap !important;
 }
 
+/* Every part carries the divider's 1px (the first a clear one), so parts sized to the same words are the same width
+   (the design check's switch rule: 115 and 117px apart on a phone, FX2). */
+.ui-root .ds-seg-btn:not(#_) {
+  border-left: var(--line-w) solid transparent !important;
+}
+
 .ui-root .ds-seg-btn + .ds-seg-btn:not(#_) {
   border-left: var(--line-w) solid var(--btn-line) !important;
 }

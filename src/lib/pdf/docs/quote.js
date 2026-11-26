@@ -1,7 +1,8 @@
 import { mainPoints } from '../../agreements/clauses.js';
 import { quoteNumber, quoteRows } from '../../agreements/quote.js';
 import { discountLines, extras, subtotal } from '../../agreements/pricing.js';
-import { selfFunded } from '../../agreements/terms.js';
+import { kindOf, selfFunded } from '../../agreements/terms.js';
+import { equalCount } from '../../agreements/settling.js';
 import { finalTotal, saving, upfrontActive } from '../../agreements/upfront.js';
 import { fromColumn, longDay, money, one, vatRow } from './money.js';
 
@@ -79,7 +80,7 @@ export function quotePdf({ number, terms: t, sentDay, validUntil, note = '', bus
           { label: 'Unit price', mm: 26, align: 'right' }, { label: 'Amount', mm: 26, align: 'right' }], rows },
         { type: 'totals', rows: [['Subtotal', money(sub, c)], discountMinor ? ['Discount', money(discountMinor, c)] : null, vatRow(business)].filter(Boolean),
           grand: [up ? `Total, paid in advance (${c})` : `Total (${c})`, money(total, c)],
-          after: up && planTotal !== total ? [['Or as planned', money(planTotal, c)]] : [] },
+          after: up && planTotal !== total ? [orMonthly(t, planTotal, c)] : [] },
       ] : [] },
       { title: 'Optional additions', look: 'label', gapMm: 7, blocks: sees && offered.length ? [{
         type: 'table', title: 'Optional additions', ruled: true, columns: [{ label: '', width: 1 }, { label: '', mm: 30, align: 'right' }],
@@ -91,4 +92,16 @@ export function quotePdf({ number, terms: t, sentDay, validUntil, note = '', bus
       ].filter(Boolean) },
     ],
   };
+}
+
+/**
+ * The line under a paid-in-advance total (the approved 25 Nov quotation): "Or monthly, £750.00 × 6" when the plan is
+ * settled in equal monthly instalments (set sessions, `settle` equal: settling.js's equalCount) that divide the plan's
+ * total exactly; any other plan keeps "Or as planned" with its total (the UI tester's Q7).
+ */
+export function orMonthly(t, planTotal, c) {
+  const monthly = kindOf(t) === 'sessions' && (t.settle || 'equal') === 'equal';
+  const n = equalCount(t);
+  if (monthly && n > 1 && planTotal > 0 && planTotal % n === 0) return ['Or monthly', `${money(planTotal / n, c)} × ${n}`];
+  return ['Or as planned', money(planTotal, c)];
 }

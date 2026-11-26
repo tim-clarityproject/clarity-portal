@@ -748,6 +748,14 @@
 
 .ui-root .ds-cal-day:focus-visible > span { outline: var(--focus-w) solid var(--text); outline-offset: var(--space-px2); }
 
+/* A date picker (MonthGrid `picker`; M28 v6 .datepick): rows 48px with the day centred, a 34px circle, the chosen day
+   filled, today a 1px ring, and the months either side left blank (their cells kept, so the weeks stay in line). */
+.ui-root .ds-cal--picker .ds-cal-day { height: var(--cal-picker-h); padding-bottom: 0; }
+.ui-root .ds-cal--picker .ds-cal-day > span { width: var(--cal-picker-circle); height: var(--cal-picker-circle); }
+.ui-root .ds-cal--picker .ds-cal-day--out > span { visibility: hidden; }
+.ui-root .ds-cal--picker .ds-cal-day--today:not(.ds-cal-day--sel) > span { background: none; color: inherit; box-shadow: inset 0 0 0 var(--line-w) var(--text); }
+.ui-root .ds-cal--picker .ds-cal-day--sel > span { background: var(--main-bg); color: var(--main-fg); box-shadow: none; }
+
 /* ---------- The tool frame: focus mode (.tbar, .prog, .tstep, .stepfoot, rule 21) ---------- */
 .ui-root .ds-tool {
   max-width: var(--tool-max);
@@ -806,6 +814,9 @@
   border-radius: var(--prog-h);
   background: var(--line);
 }
+
+/* No progress line on a one-screen tool: the question keeps the line's place, 40px under the bar's line. */
+.ui-root .ds-tool-bar + .ds-tool-step-body { margin-top: calc(var(--prog-h) + var(--space-px40)); }
 
 .ui-root .ds-tool-prog > i {
   display: block;

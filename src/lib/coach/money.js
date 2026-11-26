@@ -132,7 +132,7 @@ export function moneySummary({ invoices = [], agreements = [], versions = [], pr
 }
 
 /** M28 "sent": the agreement's key facts beside its four statuses ("£750 /month", the dates, "12 sessions"). */
-export function sentFacts(version) {
+export function sentFacts(version, today = null) {
   const t = termsOf(version);
   const c = t.currency || 'GBP';
   const money = (minor, unit) => (Number(minor) > 0 ? { price: moneyText(Number(minor), c), unit } : null);
@@ -144,7 +144,9 @@ export function sentFacts(version) {
     || (t.priceMode === 'hourly' && money(t.rateMinor, '/hour'))
     || money(t.totalMinor, 'in all')
     || { price: null, unit: '' };
-  const dates = t.startsOn && t.endsOn ? `${dayKeyWords(t.startsOn)} to ${dayKeyWords(t.endsOn, { year: true })}` : t.startsOn ? `From ${dayKeyWords(t.startsOn, { year: true })}` : '';
+  // The year only where it isn't this one (writing rule 28), given today's day key; without one the year shows.
+  const yr = (key) => !today || String(today).slice(0, 4) !== String(key).slice(0, 4);
+  const dates = t.startsOn && t.endsOn ? `${dayKeyWords(t.startsOn, { year: today ? yr(t.startsOn) && String(t.startsOn).slice(0, 4) !== String(t.endsOn).slice(0, 4) : false })} to ${dayKeyWords(t.endsOn, { year: yr(t.endsOn) })}` : t.startsOn ? `From ${dayKeyWords(t.startsOn, { year: yr(t.startsOn) })}` : '';
   const n = sessionsIn(t) || 0;
   return { ...priced, dates, sessions: n > 0 ? `${n} ${n === 1 ? 'session' : 'sessions'}` : '' };
 }

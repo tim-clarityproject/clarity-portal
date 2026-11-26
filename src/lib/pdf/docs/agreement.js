@@ -11,7 +11,7 @@ import { zoneLabel } from '../../time/zones.js';
 // A coaching agreement as a document for the shared PDF template (Phase 6b run 1; M13 A5 and A6;
 // the wording file's "Signing screens and the PDF"). Light only (PDF rule 1: agreements are
 // printed, signed and filed). Page 1 opens with the title "Coaching agreement", the details line
-// "[Client name], [date], reference [CLARITY-AG-0001], version [1]", then the Main points rows,
+// "[Client name], [date], reference [AGR-0001] (stored as CLARITY-AG-0001), version [1]", then the Main points rows,
 // then the agreement's numbered sections, and last the Signing record: for the coach and for the
 // client their name, verified email (where the client can read it), date and time, and the
 // document's fingerprint, each with their signature drawn (a PNG drawing) or written (a typed name).
@@ -40,6 +40,15 @@ function whenWords(at, zone) {
 }
 // 64 hexadecimal characters, in groups of 8 so the line wraps inside its column.
 const printWords = (fp) => (fp ? fp.match(/.{1,8}/g).join(' ') : '');
+/**
+ * The agreement's reference as the approved 25 Nov PDF prints it, "AGR-0151" (the UI tester's F14). The stored value
+ * keeps 061's "CLARITY-AG-0001" (agreements.reference, never changed): only how it is shown changes.
+ */
+export function agreementRef(reference) {
+  const r = oneLine(reference);
+  const m = /^CLARITY-AG-(\d+)$/.exec(r);
+  return m ? `AGR-${m[1].padStart(4, '0')}` : r;
+}
 /** A signature as the signing record draws it: a PNG drawing, or a typed name written on the line. */
 const drawn = (sig, name) => ({
   image: sig?.kind === 'drawn' && typeof sig.image === 'string' ? sig.image : null,
@@ -154,7 +163,7 @@ export function agreementPdf({ version: v, signature = null, coachSignature = nu
   }] : [];
 
   const facts = [
-    ['Reference', oneLine(v.reference)],
+    ['Reference', agreementRef(v.reference)],
     ['Version', v.version != null ? String(v.version) : ''],
     ['Date', longDay(date)],
     ['Term', t.startsOn && t.endsOn ? shortRange(t.startsOn, t.endsOn) : (t.ongoing ? 'Ongoing' : '')],
@@ -163,7 +172,7 @@ export function agreementPdf({ version: v, signature = null, coachSignature = nu
   return {
     kind: 'Agreement',
     docName: words.pdfTitle,
-    running: [words.pdfTitle, [oneLine(v.reference), v.version != null ? `version ${v.version}` : ''].filter(Boolean).join(', ')].filter(Boolean).join(' · '),
+    running: [words.pdfTitle, [agreementRef(v.reference), v.version != null ? `version ${v.version}` : ''].filter(Boolean).join(', ')].filter(Boolean).join(' · '),
     title: words.pdfTitle,
     who: client || null,
     confidential: true,

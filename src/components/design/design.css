@@ -2902,23 +2902,25 @@
   stroke-linejoin: round;
 }
 
+/* A mistake (Tim, 26 Nov, 15:55; M28 v6): one short line of coral words straight under the box or choice it belongs
+   to, 13px, never a filled or tinted box, and no "!" mark. Coral is for mistakes only. */
 .ui-root .ds-error {
-  display: flex;
-  gap: var(--space-px10);
-  align-items: flex-start;
+  display: block;
   max-width: var(--row-max-w);
-  padding: var(--space-px12) var(--space-3);
-  border-radius: var(--radius-input);
-  background: var(--coral-soft-tint);
-  font-size: var(--fs-secondary);
+  margin-top: var(--space-2);
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: var(--fs-meta);
   line-height: var(--lh-text);
   letter-spacing: normal;
-  color: var(--text);
+  color: var(--error-text);
 }
 
+.ui-root .ds-error .ds-line { display: block; color: var(--error-text); }
+
 .ui-root .ds-error-mark {
-  font-weight: var(--fw-medium);
-  color: var(--error-text);
+  display: none;
 }
 
 /* ---------- Logo mark and Continue with Google ---------- */
@@ -11129,9 +11131,11 @@
   }
 }
 
-/* The joined switch's options keep the reference's 16px sides when the switch is shared out evenly (B5 3). */
+/* The joined switch's options keep the reference's 16px sides when the switch is shared out evenly (B5 3): --btn-pad-x
+   (16px), the width InlineChoice measures them at; --space-4 is 24px, which pushed three "30 minutes" options past a
+   phone's column (the booking panel's How long?, FX2). */
 .ui-root .ds-seg--equal .ds-seg-btn:not(#_):not(#_) {
-  padding: 0 var(--space-4) !important;
+  padding: 0 var(--btn-pad-x) !important;
 }
 
 /* CardHead's `aside` (B4 3): the eye beside a card's label, out of the heading. */
@@ -11208,3 +11212,8 @@
   height: max(100%, var(--tap-min));
   transform: translate(-50%, -50%);
 }
+
+/* A list opening a guided step sits straight under the question and its hint, with no line above its first row
+   (rule 4a: no line directly under a heading when rows with their own dividers follow; UI tester P16). */
+.ui-root .ds-guide-body > .ds-todos:first-child,
+.ui-root .ds-guide-body > :first-child > .ds-todos:first-child { border-top: 0; }

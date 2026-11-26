@@ -131,6 +131,7 @@
   --phead-mark: 24px;        /* the crosshair in the phone header */
   --mission-box-h: 40px;     /* My Mission in the phone header: a 40px box, not a pill */
   --mission-box-max: 320px;  /* My Mission at the panel's top right on a laptop: at most this wide, ending in "…" */
+  --mission-gap: 24px;       /* an opening's first line stops this far short of My Mission (and Chat) on a laptop */
   --qa-sheet-pad: 20px;
   --fs-fig-unit: calc(16 * var(--u));
   --fw-fig: 300;             /* a headline figure: DM Sans 24px light */
@@ -138,6 +139,8 @@
   --choice-min: 96px;        /* an answer box's least width in a row (.choices) */
   --cal-cell-h: 58px;        /* a day in the month grid (.cal button) */
   --cal-day-circle: 36px;    /* its number's circle: today filled, the chosen day outlined */
+  --cal-picker-h: 48px;      /* a day in a date picker (MonthGrid picker; M28 v6 .datepick .cal button) */
+  --cal-picker-circle: 34px; /* its number's circle: the chosen day filled, today a ring */
   --prog-h: 2px;             /* a tool's progress line */
   --dur-prog: 350ms;
   --settle-rise: 8px;        /* a step settles in: a fade and an 8px rise */
@@ -191,6 +194,7 @@
   --fs-minus: calc(20 * var(--u));          /* the stepper's minus sign */
   --fs-number: calc(24 * var(--u-big));         /* big numbers, Nekst Light (v3 stats) */
   --fs-amount: calc(24 * var(--u-big));         /* an amount to settle, Nekst Light (M28 .amount; Phase 6b run 3) */
+  --fs-signature: calc(28 * var(--u-big));      /* a typed signature, light italic (M28 v6 .sigprev): a hand's mark, not text on the scale */
   --fs-number-sm: calc(16 * var(--u));      /* a tile's score */
   --fs-btn: calc(16 * var(--u));            /* every button, segmented switch and choice: DM Sans, sentence case, growing up to twice with the device's text size (Tim, 18 Nov, follow-up 1; src/styles/buttons.css) */
   --fw-btn: 400;

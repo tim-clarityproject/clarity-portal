@@ -622,7 +622,10 @@ export default function GuidedTool({
   // Where you are (Polish 1, rule 21): "Step 2 of 3" at the bar's right and
   // the 2px progress line under it. A tool with uneven parts (progress
   // 'percent') fills the line by the step's own percent.
-  const lineWidth = progress === 'percent' ? percent : (last ? 100 : Math.max(4, stepPercent));
+  // Step 1 already shows a short filled start (the example's Plan my day: a third of a step's share; UI tester P15),
+  // as ToolFrame's line does (at least 8%, the example's first step); each later step adds its share, and the last fills it.
+  const firstShare = Math.max(8, 100 / Math.max(1, steps.length) / 3);
+  const lineWidth = last ? 100 : progress === 'percent' ? Math.max(firstShare, percent) : Math.min(100, (i / Math.max(1, steps.length)) * 100 + firstShare);
   const stepWords = step.noProgress ? '' : `Step ${position + 1} of ${listed.length}`;
   const progressLine = (
     <div

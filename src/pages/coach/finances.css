@@ -232,6 +232,10 @@
    one gap between them as between every card. */
 .ui-root .fin-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--fin-stat-min), 1fr)); gap: var(--card-gap); margin-bottom: var(--card-gap); }
 .ui-root .fin-figs > .ds-card { margin: 0; }
+/* Four figures sit two by two: four across leaves a label like "Going out each month" on two lines (label-wrap). */
+@media (min-width: 601px) {
+  .ui-root .fin-figs.fin-figs--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 .ui-root .fin-fig-card .ds-fig { margin: var(--space-1) 0 0; white-space: nowrap; }
 .ui-root .fin-fig-card .ds-bar { margin-top: var(--space-2); }
 @media (max-width: 600px) {
@@ -241,3 +245,13 @@
 .ui-root .fin-fig-card > .ds-bar:last-child { margin-bottom: 0; }
 /* Phones show less (26 Oct rule 10): the figure's "of £18,000" already says how far it is, so its bar stays on the laptop. */
 @media (max-width: 600px) { .ui-root .fin-fig-card > .ds-bar { display: none; } }
+
+/* UI tester P10: a row's grey line never runs into the card's padding (a long part ends in "…", as the grey lines
+   kept to one line do), and on a phone, where the value sits under the name, the pounds and the amount paid line up
+   on the left. */
+.ui-root .fin-row-words { max-width: 100%; }
+.ui-root .fin-row-facts { min-width: 0; max-width: 100%; }
+.ui-root .fin-row-facts > span { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 600px) {
+  .ui-root .fin-fig-stack { align-items: flex-start; }
+}

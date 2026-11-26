@@ -1,9 +1,9 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loading, PageOpening } from '../../../components/design';
-import AgreementView from '../../../components/agreements/AgreementView';
+import { ClausesCard, PointsCard } from '../../coaching/AgreementParts';
 import { readerView } from '../../../lib/coach/agreementBuilder';
 import { mainPoints, resolveChoice } from '../../../lib/agreements/clauses';
-import { ASK_CHANGE } from '../../../lib/coaching/clientMoney';
+import '../../coaching/clientAgreement.css';
 import { Back } from '../parts';
 import { useAgreementDraft } from './builderParts';
 
@@ -27,15 +27,18 @@ export default function Preview() {
       <div className="cc-col ab-page">
         {back}
         <PageOpening label={`${d.party.name || ''}${d.party.name ? ', ' : ''}version ${version.version}`} title="The agreement" line={`As ${d.party.first || 'they'} will see it${d.draft ? ', with up front chosen to start with' : ''}.`} />
-        {/* "Ask for a change" under each clause as the client sees it while it waits to be signed; here it does nothing (UI finding 7). */}
-        <AgreementView points={view.points} clauses={view.clauses} idPrefix="pv" after={d.draft ? askShown : undefined} />
+        {/* The same cards the client reads from (the UI tester's P13; M28 v6 "sign"): The main points, then The agreement
+            with its clauses opening one at a time, each paragraph's reason in a quieter line under it. */}
+        <div className="ab-preview-cards">
+          <PointsCard points={view.points} />
+          <ClausesCard clauses={view.clauses} idPrefix="pv" />
+        </div>
+        {d.draft && <p className="ab-ask-shown">{`${d.party.first || 'They'} can ask for a change to any clause before signing.`}</p>}
       </div>
     </div>
   );
 }
 
-/** The client's "Ask for a change", drawn as their quiet link and doing nothing in the coach's preview. */
-const askShown = () => <p className="ab-ask-shown"><span className="ds-link">{ASK_CHANGE}</span></p>;
 
 /** A version as it was sent: its stored clauses (the choice made, once signed), never worked out again. */
 function sentView(version) {

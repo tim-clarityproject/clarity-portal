@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { ErrorMessage, Figure, InlineChoice, Loading, ToolFrame, useToast } from '../../components/design';
+import { Figure, InlineChoice, Loading, ToolFrame, useToast } from '../../components/design';
 import { isOnline } from '../../lib/connection';
 import { BACS, BACS_LINE, ENDED_STATUSES, FLOW, SETTLE_QUESTION, STAND_IN_APPLE, STAND_IN_BACS, STAND_IN_CARD, choiceFor, endedLine, settleView, stepsFor } from '../../lib/coaching/clientMoney';
 import { TOOL_CLOSED } from '../../content/pageLines/client';
@@ -10,6 +10,7 @@ import { useAgreements } from './agreementData';
 import { mountElement } from './stripeElement';
 import './coaching.css';
 import './clientAgreement.css';
+import MistakeLine from '../../components/agreements/MistakeLine';
 
 // Settle (Polish 1, Stage C, C3: step 3 of Read, Sign and Settle in focus mode, M28 v6 "sign" step 3: Your coaching
 // agreement, the title as the question, the amount as a 24px figure with "today", what follows, How would you like to
@@ -153,7 +154,7 @@ export default function Settle() {
             {view.rest && <p className="cl-hint">{view.rest}</p>}
             {/* Until the server answers, the form's room is kept, quietly loading, never an empty outlined box (the design check's empty-box). */}
             {real ? <div ref={nodeRef} className="cl-element" /> : answer ? <div className="cl-stripe">{STAND_IN_BACS}</div> : !problem && <div className="cl-element" role="status" aria-label="Loading the Direct Debit form" />}
-            {problem && <ErrorMessage>{problem}</ErrorMessage>}
+            {problem && <MistakeLine>{problem}</MistakeLine>}
           </div>
         </ToolFrame>
       </div>
@@ -161,7 +162,8 @@ export default function Settle() {
   }
   return (
     <div className="cl-flow" ref={rootRef}>
-      <ToolFrame {...frame} question={view.title} onNext={settle} nextLabel={view.button}>
+      {/* Back beside "Settle £…" (M28 v6 "sign", step 3): to the signed agreement, nothing undone. */}
+      <ToolFrame {...frame} question={view.title} onNext={settle} nextLabel={view.button} onBack={() => navigate(`/coaching/agreement/${versionId}`)}>
         <div className="cl-stack">
           <div>
             <Figure value={view.amount} unit="today" />
@@ -184,7 +186,7 @@ export default function Settle() {
               {view.bacs && <p className="cl-hint">{BACS_LINE}</p>}
             </div>
           )}
-          {problem && <ErrorMessage>{problem}</ErrorMessage>}
+          {problem && <MistakeLine>{problem}</MistakeLine>}
         </div>
       </ToolFrame>
     </div>

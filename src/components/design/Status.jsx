@@ -74,10 +74,12 @@ export function SmallWin({ children }) {
 // "If it keeps happening, let your coach know." for someone with a
 // coach, and "If it keeps happening, use Something not working? in My
 // Account." for someone without.
-export function ErrorMessage({ children, keepsHappening = false }) {
+// It is the portal's one mistake: a coral line of 13px words straight under what it is about (Tim, 26 Nov, 15:55;
+// design.css .ds-error). `className` places it on a page; the agreements' MistakeLine is this part.
+export function ErrorMessage({ children, keepsHappening = false, className = '' }) {
   const coach = useCoach();
   return (
-    <div className="ds-error" role="alert">
+    <div className={`ds-error ${className}`.trim()} role="alert">
       <span className="ds-error-mark" aria-hidden="true">!</span>
       <span>
         {children}

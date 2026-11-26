@@ -52,7 +52,8 @@ export function invoicePdf({
   business = null, coachName = '', inPortal = false, termsWords = '',
 }) {
   const biz = businessOf(business);
-  const ref = number ? `CLARITY-${number}` : null;
+  // Four figures at least, as the approved 25 Nov PDF prints it (CLARITY-0151; the stored number is unchanged).
+  const ref = number ? `CLARITY-${String(number).padStart(4, '0')}` : null;
   const who = one(orgName);
   const po = one(poNumber);
   const items = (lines || []).filter((l) => one(l.description) || Number(l.amount));
@@ -155,7 +156,8 @@ export function invoicePdf({
               ? [dayShort(r.day), one(r.who), one(r.what) || 'Coaching session', hours(r.minutes)]
               : [dayShort(r.day), one(r.what) || 'Coaching session', hours(r.minutes)])),
           },
-          { type: 'totals', grand: ['Total hours', hours(sheetMinutes)] },
+          // 2.5mm under the last row, not the totals' usual 4mm: the approved timesheet's rule (the UI tester's P19).
+          { type: 'totals', gapMm: 2.5, grand: ['Total hours', hours(sheetMinutes)] },
         ].filter(Boolean),
       }] : []),
     ],

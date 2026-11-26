@@ -28,7 +28,7 @@ export function sessionsWords(blocks) {
  * The card's parts, or null with no agreement. version: a tidied version (agreementRules.tidyVersion).
  * Returns { title, figure: { value, unit } | null, rows: [{ key, name, value }], to }.
  */
-export function coachingCard(version) {
+export function coachingCard(version, thisYear = new Date().getFullYear()) {
   if (!version) return null;
   const t = version.terms || {};
   const title = text(t.coaching) || 'Your coaching agreement';
@@ -40,8 +40,9 @@ export function coachingCard(version) {
   }
   const rows = [];
   if (DAY.test(t.startsOn || '') && DAY.test(t.endsOn || '')) {
-    const sameYear = t.startsOn.slice(0, 4) === t.endsOn.slice(0, 4);
-    rows.push({ key: 'dates', name: `${dayKeyWords(t.startsOn, { year: !sameYear })} to ${dayKeyWords(t.endsOn, { year: true })}`, value: Number(t.months) > 0 ? plural(Number(t.months), 'month', 'months') : null });
+    // A date this year never shows its year (writing rule 28): "Tue 24 Nov to Sat 1 May 2027" (requests-fx1 item 5).
+    const other = (key) => Number(key.slice(0, 4)) !== Number(thisYear);
+    rows.push({ key: 'dates', name: `${dayKeyWords(t.startsOn, { year: other(t.startsOn) })} to ${dayKeyWords(t.endsOn, { year: other(t.endsOn) })}`, value: Number(t.months) > 0 ? plural(Number(t.months), 'month', 'months') : null });
   }
   const sessions = sessionsWords(t.blocks);
   if (sessions) rows.push({ key: 'sessions', name: sessions, value: text(t.rhythm) || null });

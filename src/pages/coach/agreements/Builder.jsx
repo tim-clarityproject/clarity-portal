@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
-  AddLink, Button, Card, CalendarBar, Chevron, ControlRow, ErrorMessage, InlineChoice, Loading, MonthGrid, MoreLink, PageOpening, QuickAdd, Row, Rows,
-  TextBox, TextField, ToolFrame, monthTitle, useToast,
+  AddLink, Button, Card, CalendarBar, Chevron, ControlRow, InlineChoice, Loading, MonthGrid, MoreLink, PageOpening, QuickAdd, Row, Rows,
+  TextBox, TextField, ToolFrame, monthTitle, useIsPhone, useToast,
 } from '../../../components/design';
 import { ONE_TAP_MS } from '../../../components/design/GuidedTool';
 import { newId, rowsOf, saveRow } from '../../../lib/coach/store';
@@ -27,6 +27,7 @@ import { builderClosed } from '../../../content/pageLines/coach';
 import { Back, useCoachPortal } from '../parts';
 import { Answer, FindBox, Hint, MoneyBox, SAVE_PROBLEM, useAgreementDraft } from './builderParts';
 import { useSavedSignature, useSend } from './useSend';
+import MistakeLine from '../../../components/agreements/MistakeLine';
 
 // The agreement builder as a questionnaire (Polish 1, Stage C; M28 version 6, "build"; Tim, 25 Nov 18:10):
 // /coach/agreements/:id/edit, one question per screen in focus mode (ToolFrame: × "Close and save the draft", "Question
@@ -130,6 +131,7 @@ function AgreementQuestions({ d }) {
   const saved = useSavedSignature(d.userId);
   const send = useSend(d);
   const first = party.first || 'them';
+  const isPhone = useIsPhone();
   const forOrg = !agreement.profile_id;
   const profile = (portal.clients || []).find((c) => c.id === agreement.profile_id) || null;
   const ownOrg = profile?.organisation_id ? organisations.find((o) => o.id === profile.organisation_id) || null : null;
@@ -237,7 +239,11 @@ function AgreementQuestions({ d }) {
 
   const words = questionWords(key, terms, ctx);
   const group = groupOf(key);
-  const eyebrow = `${draft.version > 1 ? `Version ${draft.version}` : 'New agreement'} for ${party.name || first}${group && !last ? ` · ${group}` : ''}`;
+  // On a phone the label is the person and the group only ("Sam Carter · Included"), so it stays on one line (Tim's
+  // walk of Stage B, item 9: a section label never wraps; M28 v6 lets it wrap at 390).
+  const eyebrow = isPhone && group && !last
+    ? `${party.name || first} · ${group}`
+    : `${draft.version > 1 ? `Version ${draft.version}` : 'New agreement'} for ${party.name || first}${group && !last ? ` · ${group}` : ''}`;
   const line = soFar(terms, key, keys, ctx);
   const nextLabel = last ? (sendAs === 'quote' ? 'Sign and send the quote' : sendWords({ kind: kindOf(terms), first }))
     : fromCheck ? (keys[index + 1] && keys[index + 1] !== 'check' && groupOf(keys[index + 1]) === group ? 'Next' : 'Back to the check') : 'Next';
@@ -249,7 +255,7 @@ function AgreementQuestions({ d }) {
         steps={keys.length - 1}
         stepWords={last ? 'Check' : `Question ${index + 1} of ${keys.length - 1}`}
         name={eyebrow}
-        sub={line || undefined}
+        sub={line || '\u00a0'}
         question={words.question}
         hint={words.hint}
         onClose={close}
@@ -274,7 +280,7 @@ function AgreementQuestions({ d }) {
             onClauses={async () => { await d.flush(); navigate(`/coach/agreements/${agreement.id}/clauses`); }}
           />
         )}
-        {problem && <ErrorMessage>{problem}</ErrorMessage>}
+        {problem && <MistakeLine>{problem}</MistakeLine>}
       </ToolFrame>
     </div>
   );
@@ -518,17 +524,18 @@ function DateQuestion({ day, todayKey, onPick, label }) {
     <>
       <div className="ab-datepick">
         <CalendarBar compact title={monthTitle(`${month}-01`)} onPrev={() => shift(-1)} onNext={() => shift(1)} />
-        <MonthGrid month={`${month}-01`} today={todayKey} selected={day} onSelect={onPick} available={(k) => k >= todayKey} label={monthTitle(`${month}-01`)} />
+        <MonthGrid picker month={`${month}-01`} today={todayKey} selected={day} onSelect={onPick} available={(k) => k >= todayKey} label={monthTitle(`${month}-01`)} />
       </div>
-      {day && <div className="ab-answers"><Answer label={label} value={longDay(day)} /></div>}
+      {day && <div className="ab-answers"><Answer label={label} value={longDay(day, todayKey)} /></div>}
     </>
   );
 }
-const longDay = (key) => {
+const longDay = (key, todayKey = null) => {
   const [y, m, d] = key.split('-').map(Number);
   const w = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   const mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1];
-  return `${w} ${d} ${mon} ${y}`;
+  // This year's day without its year (writing rule 28; M28's "Mon 4 Jan 2027" is next year's).
+  return todayKey && String(todayKey).slice(0, 4) === String(y) ? `${w} ${d} ${mon}` : `${w} ${d} ${mon} ${y}`;
 };
 
 function PlaceQuestion({ t, set, first }) {
@@ -617,7 +624,7 @@ function DiscountQuestion({ t, set, save, soon, label }) {
           <InlineChoice label="What kind?" options={[{ value: 'reduced', label: `${c === 'GBP' ? '£' : CURRENCY[c]?.symbol.trim()} off` }, { value: 'returning', label: '% off' }]} value={form.type} onChange={(v) => setForm({ ...form, type: v })} form="pills" />
           <TextField label={form.type === 'reduced' ? `How much off, in ${c === 'GBP' ? 'pounds' : c}?` : 'How much off, as a %?'} inputMode="decimal" value={form.amount}
             onChange={(e) => { setForm({ ...form, amount: e.target.value }); setProblem(null); }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }} />
-          {problem && <ErrorMessage>{problem}</ErrorMessage>}
+          {problem && <MistakeLine>{problem}</MistakeLine>}
           <div className="ab-acts"><Button variant="outline" onClick={add}>Use this discount</Button></div>
           {value === 'other' && <Hint>{`Now: ${(t.discounts || []).map((x) => (x.type === 'returning' ? `${x.percent}% off` : `${moneyText(x.amountMinor, c)} off`)).join(', ')}.`}</Hint>}
         </div>
@@ -641,7 +648,7 @@ function ExtrasQuestion({ t, save, first }) {
       <SwitchLine name="Ad hoc support between sessions" sub="By email and WhatsApp, whenever something comes up" checked={t.adhoc !== false} onChange={(v) => save({ ...t, adhoc: v })} />
       <SwitchLine name="The Clarity Portal" sub={`${possessive(first)} personal performance platform, for the length of the coaching`} checked={t.portal !== false} onChange={(v) => save({ ...t, portal: v })} />
       {t.portal !== false && (
-        <ControlRow name="Level of access">
+        <ControlRow name="Level of access" className="ab-lvl">
           <InlineChoice ariaLabel="Level of access" form="pills" options={[{ value: 'Individual', label: 'Individual' }, { value: 'Executive', label: 'Executive' }]} value={t.level || 'Executive'} onChange={(v) => save({ ...t, level: v })} />
         </ControlRow>
       )}
@@ -668,7 +675,7 @@ function CheckScreen({ t, keys, ctx, go, standardsCount, wording, note, setNote,
           <Row name={`Your standard terms, ${standardsCount} clauses`} sub={wording && wording !== 'No changes' ? wording : undefined} onClick={onClauses} value={<Chevron direction="right" />} label={`Your standard terms, ${standardsCount} clauses. Edit any one for ${ctx.first}.`} />
         </Rows>
       </Card>
-      <TextBox label={`A note to ${kindOf(t) === 'team' ? 'the sponsor' : ctx.first}`} value={note} maxLength={1000} onChange={setNote} />
+      <div className="ab-check-note"><TextBox label={`A note to ${kindOf(t) === 'team' ? 'the sponsor' : ctx.first}`} value={note} maxLength={1000} onChange={setNote} /></div>
       {canQuote && (
         <InlineChoice label="Send it as" options={[{ value: 'agreement', label: 'An agreement to sign' }, { value: 'quote', label: 'A quote first' }]} value={sendAs} onChange={setSendAs} form="pills" />
       )}

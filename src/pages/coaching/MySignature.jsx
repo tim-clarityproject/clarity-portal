@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ErrorMessage, SavedSignature, SignaturePad, SlidePanel, useToast } from '../../components/design';
+import { SavedSignature, SignaturePad, SlidePanel, useToast } from '../../components/design';
 import { NEEDS, loadSavedSignature, saveDrawnSignature } from '../../lib/coaching/agreements';
 import { signingWords } from '../../lib/billing/agreementText';
 import { needsConnection } from '../../lib/friendlyError';
+import MistakeLine from '../../components/agreements/MistakeLine';
 
 // My signature (Phase 6b run 1; mock-up M13 A7): the saved signature, in the side panel from the
 // right (full screen on a phone). "It’s used when you sign an agreement." With one saved, its box
@@ -50,7 +51,7 @@ export default function MySignature({ open, onClose, userId }) {
         ) : (
           <SignaturePad words={WORDS} onUse={keep} onEmpty={() => setProblem(NEEDS.draw)} problem={problem === NEEDS.draw ? problem : null} />
         )}
-        {problem && problem !== NEEDS.draw && <div className="ds-panel-needs"><ErrorMessage>{problem}</ErrorMessage></div>}
+        {problem && problem !== NEEDS.draw && <div className="ds-panel-needs"><MistakeLine>{problem}</MistakeLine></div>}
       </div>
     </SlidePanel>
   );

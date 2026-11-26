@@ -15,7 +15,7 @@ import FormTool from './toolFocus/FormTool';
 import { JOURNAL_QUESTION } from '../content/pageLines/client';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import {
-  ChipRow, Chip, Crosshair, Loading, SaveStatus, TextBox, useToast,
+  Crosshair, Loading, WhoSees, SaveStatus, TextBox, useToast,
 } from '../components/design';
 
 // The Journal runs in focus mode like every other tool (Polish 1, Tim's walk of Stage B, items 1 to 4): FormTool's
@@ -32,23 +32,21 @@ const JOURNAL_CSS = `
   text-decoration-thickness: var(--line-w);
   text-underline-offset: var(--space-1);
 }
-.ui-root .jrn-prompts {
+/* The prompts are the reference's answer boxes (UI tester F13): 16px words in the text colour, 40px high on a laptop,
+   each sized to its words (a whole question never wraps inside its box); one per line at 52px on a phone (blocks.css). */
+.ui-root .jrn-prompts.ds-choices {
+  display: flex;
+  flex-wrap: wrap;
   margin: var(--space-2) 0 0;
 }
-@media (max-width: 768px) {
-  .ui-root .jrn-prompts {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  /* The pill rule on phones (Tim, 23 Oct): the prompts become full-width rows, drawn like the answer lists. */
-  .ui-root .jrn-prompts .ds-chip {
-    display: flex;
-    width: 100%;
-    min-height: var(--row-min-h) !important;
-    padding: var(--space-px12) var(--row-pad-x) !important;
-    border-radius: var(--radius-field);
-    font-size: var(--fs-option) !important;
-  }
+.ui-root .jrn-prompts.ds-choices .ds-answer.ds-answer--box {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 0 var(--space-3) !important;
+}
+@media (max-width: 600px) {
+  .ui-root .jrn-prompts.ds-choices { flex-direction: column; align-items: stretch; }
+  .ui-root .jrn-prompts.ds-choices .ds-answer.ds-answer--box { width: 100%; }
 }
 .ui-root .jrn-unknown {
   margin: 0 0 var(--space-3);
@@ -319,6 +317,7 @@ export default function DailyJournal() {
       <FormTool
         name={dayLabel}
         question={JOURNAL_QUESTION}
+        eye={<WhoSees audience="me" />}
         onNext={() => { if (!isLoading) handleSaveJournal(); }}
         nextLabel="Save journal"
         onSaveDraft={() => { if (!isLoading) handleSaveDraft(); }}
@@ -349,7 +348,6 @@ export default function DailyJournal() {
                     className={i === lastTIndex ? 'jrn-box jrn-box--last' : 'jrn-box'}
                     lines="many"
                     focusMode
-                    who={i === 0 ? 'me' : undefined}
                     placeholder={i === lastTIndex ? 'Start writing...' : undefined}
                     ariaLabel={i === 0 ? 'Daily Journal' : 'Daily Journal, continued'}
                     value={b.v}
@@ -369,12 +367,12 @@ export default function DailyJournal() {
               <button type="button" className="ds-more ds-more--bare jrn-ask-link" aria-expanded={promptsOpen} aria-controls={promptsId} onClick={() => setPromptsOpen((v) => !v)}>Need a prompt?</button>
               <div id={promptsId} hidden={!promptsOpen}>
                 {promptsOpen && (
-                  <ChipRow className="jrn-prompts" label="Prompts">
+                  <div className="ds-choices jrn-prompts" role="group" aria-label="Prompts">
                     {PROMPTS.map((p) => (
                       // An action, not an on/off choice, so no aria-pressed.
-                      <Chip key={p} aria-pressed={undefined} onClick={() => choosePrompt(p)}>{p}</Chip>
+                      <button key={p} type="button" className="ds-answer ds-answer--box" onClick={() => choosePrompt(p)}>{p}</button>
                     ))}
-                  </ChipRow>
+                  </div>
                 )}
               </div>
             </div>

@@ -51,3 +51,15 @@
 .ui-root .acct-fig { margin-bottom: var(--space-3); }
 .ui-root .acct-card-link { margin-top: var(--space-1); }
 
+
+/* Look: the joined switch fills the column, three equal parts (.seg.wide; UI tester P6). */
+.ui-root .acct-pane--look .ds-seg { display: flex; width: 100%; }
+.ui-root .acct-pane--look .ds-seg .ds-seg-btn { flex: 1 1 0; min-width: 0; }
+
+/* Delete my account in the secondary grey, as the example's .danger (UI tester P8); never coral. */
+.ui-root .acct-foot .acct-delete:not(#_) { color: var(--text-2); }
+@media (hover: hover) { .ui-root .acct-foot .acct-delete:not(#_):hover { color: var(--text); } }
+.ui-root .acct-foot .acct-delete:not(#_):focus-visible { color: var(--text); }
+
+/* Questions: the section opens straight under the tabs, with no second line under the tabs' own (UI tester P7). */
+.ui-root .acct-pane--questions .oq-section.ds-section:not(#_) { margin-top: 0; padding-top: 0; border-top: 0; }

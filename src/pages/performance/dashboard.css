@@ -290,6 +290,12 @@
   margin-top: var(--space-px22);
 }
 
+.ui-root .dash-sumg--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  column-gap: var(--space-6);
+}
+
 .ui-root .dash-sh {
   margin: 0;
   padding-bottom: var(--space-px12);
@@ -869,3 +875,5 @@
 
 /* An Outcome Objective's bar stays full width when it is the tap on a phone. */
 .ui-root .dash-crow-c .dash-tapvis { display: block; width: 100%; }
+/* Each list's last row ends the card: no hairline under it (the card's own rule). */
+.ui-root .dash-sumg--two > div > :last-child { border-bottom: 0; }

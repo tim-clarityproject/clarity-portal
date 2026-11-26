@@ -51,7 +51,7 @@
 
 /* ---- Settle (M28 s-c-pay): the amount, the form's place */
 .ui-root .cl-amount { margin-block-end: 0; margin-inline: 0; font-family: var(--font-display); font-weight: var(--fw-light); font-size: var(--fs-amount); line-height: var(--lh-cal-one); color: var(--text); }
-.ui-root .cl-stripe { display: flex; align-items: center; min-height: var(--offer-h); border: var(--line-w) dashed var(--field-line); border-radius: var(--radius-field); padding: var(--space-px22) var(--space-px20); font-size: var(--fs-secondary); color: var(--text-2); }
+.ui-root .cl-stripe { display: flex; align-items: center; min-height: var(--offer-h); border: var(--line-w) dashed var(--field-line); border-radius: var(--radius-field); padding: var(--space-px22) var(--space-px20); font-size: var(--fs-meta); color: var(--text-2); }
 .ui-root .cl-element { min-height: var(--offer-h); }
 .ui-root .cl-field-label { display: block; margin: 0 0 var(--space-2); font-size: var(--fs-note); color: var(--text-2); }
 
@@ -178,7 +178,10 @@
 .ui-root .cl-clauses .cl-clause:last-child .cl-asklink { margin-bottom: calc(-1 * var(--space-px10)); }
 
 /* The typed signature (M28 .sigprev): the name on a line, light and italic, at the figures' 24px. */
-.ui-root .cl-sigprev { min-height: var(--field-h); display: flex; align-items: flex-end; padding: var(--space-2) 0; border-bottom: var(--line-w) solid var(--text); font-size: var(--fs-amount); font-weight: var(--fw-light); font-style: italic; line-height: var(--lh-title); color: var(--text); overflow-wrap: anywhere; }
+.ui-root .cl-sigprev { min-height: var(--field-h); display: flex; align-items: flex-end; padding: var(--space-2) 0; border-bottom: var(--line-w) solid var(--text); font-size: var(--fs-signature, var(--fs-amount)); font-weight: var(--fw-light); font-style: italic; line-height: var(--lh-title); color: var(--text); overflow-wrap: anywhere; }
+/* DM Sans is loaded upright only and the portal turns off made-up styles (index.css), so the signature (M28 .sigprev,
+   28px light italic; --fs-signature requested of the lead) and the typed one in the box ask for a slanted one here. */
+.ui-root :is(.cl-sigprev, .cl-sig-typed) { font-synthesis: style; }
 .ui-root .cl-sign-box > * + * { margin-top: var(--space-1); }
 .ui-root .cl-sig-links { display: flex; flex-wrap: wrap; gap: 0 var(--space-px20); }
 
@@ -206,10 +209,14 @@
 .ui-root .cl-extra-amount { margin-left: auto; padding-left: var(--space-3); font-size: var(--fs-note); color: var(--text-2); white-space: nowrap; }
 .ui-root .cl-extras .ds-check { display: flex; align-items: center; }
 .ui-root .cl-inall .cl-switch { margin-top: var(--space-2); }
-.ui-root .cl-inall .cl-switch .ds-seg { display: flex; }
+/* M28 v6 .seg.wide: the switch fills the card's width in equal parts (the UI tester's F9), over the shared switch's
+   own sized-to-its-words grid. */
+.ui-root .cl-inall .cl-switch .ds-seg:not(#_) { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: 100%; }
 .ui-root .cl-inall .cl-switch .ds-seg-btn { flex: 1 1 0; }
-.ui-root .cl-inall > .cl-hint { margin: var(--space-2) 0 0; }
-.ui-root .cl-inall .cl-accept { margin-top: var(--space-3); }
+.ui-root .cl-inall > .cl-hint { margin: var(--space-2) 0 0; font-size: var(--fs-meta); }
+.ui-root .cl-inall .cl-accept { margin-top: var(--space-4); }
+/* Each add-on a 56px row (M28 .tick), its price grey at the right. */
+.ui-root .cl-extras .ds-check:not(#_) { min-height: calc(var(--space-6) + var(--space-2)); }
 .ui-root .cl-inall .ds-btn.cl-full { display: flex; width: 100%; }
 .ui-root .cl-quote-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
 @media (max-width: 600px) {

@@ -875,7 +875,10 @@ function DebriefFlow({ userId, today, loaded, view }) {
                 const { debriefFacts, weeklyDebriefPdf } = await import('../../lib/pdf/docs/weeklyDebrief');
                 const meta = user?.user_metadata || {};
                 const name = [meta.first_name, meta.last_name].filter(Boolean).join(' ').trim() || meta.full_name || view.firstName || 'You';
-                return weeklyDebriefPdf(debriefFacts(view, { name, coachName: view.coach || '', answers }));
+                // The week's sleep for the report's Sleep tile (the nights' hours and quality from its day plans; M12).
+                // Without a connection the report keeps the debrief streak in that place.
+                const sleep = await weekSleep(userId, (view.days || []).map((d) => d.key));
+                return weeklyDebriefPdf(debriefFacts(view, { name, coachName: view.coach || '', answers, sleep }));
               }}
             />
           </div>
@@ -962,4 +965,21 @@ function DebriefFlow({ userId, today, loaded, view }) {
       )}
     </div>
   );
+}
+
+/** The week's sleep as logged in its day plans, for the debrief report's Sleep tile; null when it can't be read. */
+async function weekSleep(userId, keys) {
+  if (!userId || !keys.length) return null;
+  try {
+    const { supabase } = await import('../../lib/supabase');
+    const { data, error } = await supabase.from('day_plans').select('local_date, sleep_hours, sleep_quality, sleep_to_confirm')
+      .eq('user_id', userId).in('local_date', keys);
+    if (error || !data) return null;
+    return {
+      hours: data.filter((r) => r.sleep_hours != null).map((r) => ({ value: Number(r.sleep_hours), toConfirm: Boolean(r.sleep_to_confirm) })),
+      quality: data.filter((r) => r.sleep_quality).map((r) => ({ value: r.sleep_quality })),
+    };
+  } catch {
+    return null;
+  }
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AddLink, Button, Card, Empty, ErrorMessage, QuickAdd, Row, Rows, SlidePanel, TextBox, TextField, useToast } from '../../../components/design';
+import { AddLink, Button, Card, Empty, QuickAdd, Row, Rows, SlidePanel, TextBox, TextField, useToast } from '../../../components/design';
 import { BUILDER_LINES } from '../../../content/pageLines/coach';
 import { getLocalDateKey, parseDbTimestamp } from '../../../lib/dateFormatter';
 import { dayKeyWords } from '../../../lib/time';
@@ -13,6 +13,7 @@ import { extrasList, packageRow, standardsChangedAt, startPackages } from '../..
 import { useCoachPortal } from '../parts';
 import { MoneyField, SAVE_PROBLEM } from './builderParts';
 import './builder.css';
+import MistakeLine from '../../../components/agreements/MistakeLine';
 
 // Settings, Agreements (Phase 6b run 3, Group B; Polish 1, Stage C: M28 version 6's Packages, as cards; brief items 17,
 // 20 and 41): the coach's packages with + Add (a name, then its own questions in focus mode)
@@ -121,7 +122,7 @@ function Extras() {
             <TextField label="What is it?" value={edit.title} maxLength={120} onChange={(e) => setEdit({ ...edit, title: e.target.value })} />
             <MoneyField label="What’s its price?" value={edit.priceMinor} currency="GBP" onChange={(v) => setEdit({ ...edit, priceMinor: v })} />
             <TextField label="Anything to say about it?" value={edit.hint || ''} maxLength={120} onChange={(e) => setEdit({ ...edit, hint: e.target.value })} />
-            {problem && <ErrorMessage>{problem}</ErrorMessage>}
+            {problem && <MistakeLine>{problem}</MistakeLine>}
           </div>
         )}
       </SlidePanel>
@@ -165,7 +166,7 @@ function TalkingPoints() {
             ))}
             <p className="ab-hint">{'{price}, {month}, {rate} and {focus} are filled in on each Needs you item.'}</p>
             <TextBox label="What helps you say it?" value={edit.tip} maxLength={300} onChange={(v) => setEdit({ ...edit, tip: v })} />
-            {problem && <ErrorMessage>{problem}</ErrorMessage>}
+            {problem && <MistakeLine>{problem}</MistakeLine>}
           </div>
         )}
       </SlidePanel>

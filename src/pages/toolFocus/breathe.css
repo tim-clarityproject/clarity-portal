@@ -15,6 +15,13 @@
 .ui-root .breathe-guidance-text:not(#_) { font-size: var(--fs-text); }
 .ui-root .breathe-timer:not(#_) { font-size: var(--fs-meta); }
 .ui-root .breathe-page .ds-open { text-align: left; }
+/* The resting page starts on the frame's left edge at every width, as Home does, never centred in a
+   960px window (UI tester F15); the session view keeps its own centring. */
+.ui-root .breathe-page > .breathe-resting:not(#_) {
+  align-self: stretch;
+  min-width: 0;
+  max-width: var(--dash-max);
+}
 
 /* Start breathing: under the page's content inside the laptop panel (the old bar ran
    the window's width, over the panel's edge); on a phone at the screen's foot, where

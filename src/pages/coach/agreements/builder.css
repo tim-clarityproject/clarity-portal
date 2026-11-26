@@ -127,6 +127,10 @@
 
 /* The preview's "Ask for a change" under each clause, as the client sees it; nothing to press here. */
 .ui-root .ab-ask-shown { margin: 0; }
+/* The coach's preview as the client reads it (P13): the client's two cards, 20px apart and 32px under the opening. */
+.ui-root .ab-preview-cards { margin-top: var(--space-5); }
+.ui-root .ab-preview-cards > * + * { margin-top: var(--space-px20); }
+.ui-root .ab-preview-cards + .ab-ask-shown { margin-top: var(--space-3); font-size: var(--fs-meta); color: var(--text-2); }
 .ui-root .ab-ask-shown .ds-link, .ui-root .ab-ask-shown .ds-link:hover { cursor: default; color: var(--text-2); }
 
 /* Under the tabs row the form and "As [name] sees it" start 22px below its full-width line (M28's .xr-tabs margin and
@@ -152,6 +156,10 @@
 .ui-root .ds-field.ab-money:focus-within { border-color: var(--text-2); }
 .ui-root .ab-money-cur { color: var(--text-2); flex: none; }
 .ui-root .ab-money input { all: unset; flex: 1 1 auto; min-width: 0; font: inherit; color: var(--text); caret-color: var(--text); }
+/* The box is the field's own height (56px, 52 on a phone; M28 .box.money): the figure inside takes no height or padding
+   of its own, so a phone's input rule never makes the box taller. */
+.ui-root .ab-money input:not(#_) { min-height: 0 !important; height: auto; padding: 0 !important; border: 0 !important; background: none; }
+.ui-root .ds-field.ab-money:not(#_) { padding-block: 0 !important; }
 
 /* The answer under a question (M28 .answer): a hairline above and below, the answer itself 20px. */
 .ui-root .ab-answers { border-top: var(--line-w) solid var(--line); }
@@ -173,11 +181,18 @@
 
 /* The start date (M28 .datepick): the month grid in a card. */
 .ui-root .ab-datepick { padding: var(--space-3); border: var(--line-w) solid var(--line); border-radius: var(--radius-control); background: var(--card); }
+/* The grid is MonthGrid's `picker` form (FX2): the chosen day filled, today a ring, blank days either side (F5). */
 
 /* The check (M28 "Does this read right?"): Change at the right of each sentence, the standard terms a row that opens. */
 .ui-root .ab-check .ds-li-value { flex: none; }
-.ui-root .ab-change { font-size: var(--fs-meta); color: var(--text-2); }
+/* Change (M28 v6 .bstep .li .lk.sm): 13px grey, underlined, the row as tall as its sentence (54px for one line); the
+   44px tap area is an invisible ::after centred on it (rule 4a), so the row never grows for it. */
+.ui-root .ab-check .ab-change:not(#_) { position: relative; min-height: 0 !important; font-size: var(--fs-meta) !important; line-height: var(--lh-text); color: var(--text-2); }
+.ui-root .ab-check .ab-change::after { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, var(--tap-min)); height: var(--tap-min); transform: translate(-50%, -50%); }
+@media (hover: hover) { .ui-root .ab-check .ab-change:hover { color: var(--text); } }
 .ui-root .ab-check-more { display: flex; }
+/* A note to Sam (M28 v6 .box.ta): three lines high, 96px, before anything is typed; it still grows with the words. */
+.ui-root .ab-check-note .ds-grow > .ds-text:not(#_), .ui-root .ab-check-note .ds-grow:not(#_)::after { min-height: calc(var(--space-6) * 2) !important; }
 .ui-root .ab-check .ds-li-value .ds-chevron { color: var(--text-2); }
 .ui-root .ab-q .ab-warn { margin-top: var(--space-3); }
 
@@ -198,3 +213,28 @@
 .ui-root .ab-settings .ab-line-end { gap: var(--space-3); }
 /* M28 version 6's stacked choice with its grey line is 67px (10px above and below, .choices.stack button). */
 .ui-root .ab-q .ds-answer:has(.ds-answer-hint):not(#_) { padding-block: var(--space-px10) !important; }
+
+/* M28 v6's stacked answers (.choices.stack button, .pick): the words in the text colour, 12px above and below, 16px at
+   the sides; the grey line under them 13px (FX1, the UI tester's F4). The chosen one keeps the main button's colours. */
+.ui-root .ab-q .ds-answer:not(#_) { padding: var(--space-px12) var(--space-3) !important; }
+.ui-root .ab-q .ds-answer:not([aria-checked='true'], [aria-pressed='true']) { color: var(--text); }
+.ui-root .ab-q .ds-answer:has(.ds-answer-hint):not(#_) { padding-block: var(--space-px12) !important; }
+
+/* "So far:" (M28 v6 .sofar): its line is kept on the first question too, empty, so no question jumps; 28px over the
+   question (M28's margin), 4px nearer the group's name. */
+.ui-root .ab-q .ds-tool-sub { min-height: calc(var(--fs-meta) * 1.55); margin: calc(-1 * var(--space-1)) 0 var(--space-px28); }
+
+/* A long name never takes the label onto a second line: it ends in "…" (the label-wrap check). */
+.ui-root .ab-q .ds-open-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* What's included: on a phone Level of access goes over its switch, which fills the row in equal parts (M28 v6's
+   .phone .ctlrow.lvl), so the label never breaks letter by letter beside it (the UI tester's F2). */
+@media (max-width: 600px) {
+  .ui-root .ab-extras .ab-lvl { flex-direction: column; align-items: stretch; gap: var(--space-2); }
+  .ui-root .ab-extras .ab-lvl .ds-choice, .ui-root .ab-extras .ab-lvl .ds-inline { width: 100%; }
+  .ui-root .ab-extras .ab-lvl .ds-seg:not(#_) { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: 100%; }
+}
+
+/* The block of hours' Time logged (M28 v6 "hours" .li: the day under the name sits in the name's 16px line box): each
+   row 96px on a phone, as M28's, where the shared row's 13px line box gave 92 (Tim, 26 Nov 15:55). */
+.ui-root .ab-hours-log .ds-li-sub:not(#_) { line-height: calc(var(--fs-text) * var(--lh-text)); }

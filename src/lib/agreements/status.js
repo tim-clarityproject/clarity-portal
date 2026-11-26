@@ -68,9 +68,11 @@ export function sentLine({ version, quote = null, now = new Date() }) {
   return `Sent ${dayOnlyWords(version?.sent_at, now).toLowerCase()}. A reminder is drafted for you at 3 and 7 days.`;
 }
 /** "If Sam hasn't signed, it runs out on Fri 25 Dec 2026. You can reopen it in one step." */
-export function expiryLine({ version, firstName }) {
+export function expiryLine({ version, firstName, today = null }) {
   if (version?.client_signed_at || version?.sponsor_signed_at) return `${firstName} has signed, so nothing runs out.`;
   if (!version?.expires_on) return '';
-  return `If ${firstName} hasn’t signed, it runs out on ${dayKeyWords(version.expires_on, { year: true })}. You can reopen it in one step.`;
+  // A day this year without its year (writing rule 28), given today's day key; without one the year shows.
+  const year = !today || String(today).slice(0, 4) !== String(version.expires_on).slice(0, 4);
+  return `If ${firstName} hasn’t signed, it runs out on ${dayKeyWords(version.expires_on, { year })}. You can reopen it in one step.`;
 }
 export { dayOf };

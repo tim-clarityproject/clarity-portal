@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { Checkbox, ErrorMessage, Loading, PdfDownload, TextField, ToolFrame, useCoach, useToast } from '../../components/design';
+import { Checkbox, Loading, PdfDownload, TextField, ToolFrame, useCoach, useToast } from '../../components/design';
 import { useCachedLoad, readCache, writeCache } from '../../lib/pageCache';
 import { useDraft } from '../../lib/drafts';
 import { getLocalDateKey } from '../../lib/dateFormatter';
@@ -22,6 +22,7 @@ import { ClausesCard, PointsCard, SettleSwitch } from './AgreementParts';
 import SignBox from './SignBox';
 import './coaching.css';
 import './clientAgreement.css';
+import MistakeLine from '../../components/agreements/MistakeLine';
 
 // Read and sign (Phase 6b run 3, Group C; Polish 1, Stage C, C3: M28 v6 "sign"): /coaching/agreement/:versionId, steps
 // 1 and 2 of the client's Read, Sign and Settle, in focus mode (ToolFrame: × "Close and save my place", "Step 1 of 3",
@@ -185,7 +186,7 @@ export default function SignAgreement() {
           nextLabel={FLOW.readNext}
         >
           {blocked ? <p className="cl-say cl-blocked" role="status">{pending ? pendingWords : runOut ? RUN_OUT(coachFirst) : NOT_NEWEST}</p> : note}
-          {askProblem && <ErrorMessage>{askProblem}</ErrorMessage>}
+          {askProblem && <MistakeLine>{askProblem}</MistakeLine>}
           <PointsCard points={points} />
           <ClausesCard clauses={clauses} ask={blocked ? null : { coachFirst, onSend: sendAsk }} />
         </ToolFrame>
@@ -241,15 +242,23 @@ export default function SignAgreement() {
         onBack={() => { setStep('read'); setNeed(null); }}
       >
         <div className="cl-stack cl-signstep">
-          <TextField label={FULL_NAME} autoComplete="name" value={name} maxLength={160} onChange={(e) => { setName(e.target.value); setNeed(null); }} />
-          <SignBox ref={sigRef} name={name} onChange={() => setNeed(null)} />
+          {/* Each mistake straight under what it is about (Tim, 26 Nov 15:55; M28 v6's coral line). */}
+          <div>
+            <TextField label={FULL_NAME} autoComplete="name" value={name} maxLength={160} onChange={(e) => { setName(e.target.value); setNeed(null); }} />
+            {need === SIGN_NEEDS.name && <MistakeLine>{need}</MistakeLine>}
+          </div>
+          <div>
+            <SignBox ref={sigRef} name={name} onChange={() => setNeed(null)} />
+            {need === SIGN_NEEDS.signature && <MistakeLine>{need}</MistakeLine>}
+          </div>
           <div className="cl-ticks">
             <Checkbox checked={agreed} onChange={(v) => { setAgreed(v); setNeed(null); }}>{AGREE_TICK}</Checkbox>
+            {need === SIGN_NEEDS.tick && <MistakeLine>{need}</MistakeLine>}
             {self && coolingApplies(terms) && !version.amends && <Checkbox checked={startNow} onChange={setStartNow}>{START_NOW_LINE}</Checkbox>}
           </div>
           <SettleSwitch terms={fullTerms} value={shownChoice} onChange={setChoice} chosenExtras={terms.extrasChosen} />
-          {need && <ErrorMessage>{need}</ErrorMessage>}
-          {failure && <ErrorMessage>{failure.lines.map((l) => <span key={l} className="ds-line">{l}</span>)}</ErrorMessage>}
+          {need && ![SIGN_NEEDS.name, SIGN_NEEDS.signature, SIGN_NEEDS.tick].includes(need) && <MistakeLine>{need}</MistakeLine>}
+          {failure && <MistakeLine>{failure.lines.map((l) => <span key={l} className="ds-line">{l}</span>)}</MistakeLine>}
         </div>
       </ToolFrame>
     </div>

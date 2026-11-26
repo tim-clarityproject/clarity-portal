@@ -83,7 +83,7 @@ test('the welcome: no pay word, and the first day a coaching session can be book
   assert.equal(m.firstSessionLine({ terms: soon, signedDay: '2026-11-25', startNow: false }), 'From Thu 10 Dec 2026');
   assert.equal(m.firstSessionLine({ terms: soon, signedDay: '2026-11-25', startNow: true }), 'From Mon 30 Nov 2026');
   // Never a day already passed (UI finding 7).
-  assert.equal(m.firstSessionLine({ terms: { ...soon, startsOn: '2026-11-16' }, signedDay: '2026-11-20', startNow: true, today: '2026-11-25' }), 'From Wed 25 Nov 2026');
+  assert.equal(m.firstSessionLine({ terms: { ...soon, startsOn: '2026-11-16' }, signedDay: '2026-11-20', startNow: true, today: '2026-11-25' }), 'From Wed 25 Nov');
   assert.equal(m.welcomeRows({ terms: sam }).map((r) => r.title).join(' | '), 'Book your first coaching session | Your welcome pack | Your signed agreement and receipt');
 });
 

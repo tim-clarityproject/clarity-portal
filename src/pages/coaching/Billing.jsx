@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
-import { Bar, Button, ErrorMessage, List, ListRow, LoadError, PageHeader, Section, Stat, StatGroup } from '../../components/design';
+import { Bar, Button, List, ListRow, LoadError, PageHeader, Section, Stat, StatGroup } from '../../components/design';
 import { isOnline } from '../../lib/connection';
 import { getLocalDateKey } from '../../lib/dateFormatter';
 import { BILLING, billingView, fundsLine } from '../../lib/coaching/agreements';
 import { useAgreements } from './agreementData';
 import '../performance/performance.css';
 import './coaching.css';
+import MistakeLine from '../../components/agreements/MistakeLine';
 
 // Billing (Phase 6b run 1; mock-up M13 A8), reached from My coaching, More. For a self-funded
 // client: who the invoices are from, the next invoice and when it's due, Invested so far with a
@@ -88,7 +89,7 @@ export default function Billing() {
           )}
           {offline && (
             <div className="billing-offline">
-              <ErrorMessage>{BILLING.offline.map((line) => <span key={line} className="ds-line">{line}</span>)}</ErrorMessage>
+              <MistakeLine>{BILLING.offline.map((line) => <span key={line} className="ds-line">{line}</span>)}</MistakeLine>
             </div>
           )}
           {next?.invoice.hostedUrl && (

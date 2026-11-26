@@ -10,7 +10,11 @@
 .ui-root .ny-meta > span { white-space: nowrap; }
 .ui-root .ny-say { margin: 0; font-size: var(--fs-text); line-height: var(--lh-text); color: var(--text); text-wrap: pretty; }
 .ui-root .ny-hint { margin: 0; font-size: var(--fs-secondary); line-height: var(--lh-text); color: var(--text-2); }
-.ui-root .ny-sec { margin: 0; padding-top: var(--space-3); border-top: var(--line-w) solid var(--line); font-family: var(--font-display); font-weight: var(--fw-regular); font-size: var(--fs-section-title); letter-spacing: var(--ls-section-title); line-height: var(--lh-text); text-transform: uppercase; color: var(--text); }
+/* A part inside a panel is a section label (the 25 Nov reference: DM Sans 13px spaced grey capitals; the UI tester's
+   F11), never a 16px heading in the text colour. */
+.ui-root .ny-sec:not(#_) { margin: 0; padding-top: var(--space-3); border-top: var(--line-w) solid var(--line); font-family: var(--font-body); font-weight: var(--fw-regular); font-size: var(--fs-meta) !important; letter-spacing: var(--ls-section-title); line-height: 1.55; text-transform: uppercase; color: var(--text-2); }
+/* A phone's h3 rule (mobile.css) gives 8px with !important: the panel's own 22px between its parts holds. */
+.ui-root :is(.ny-panel, .ny-page) > * + .ny-sec:not(#_) { margin-top: var(--space-px22) !important; }
 .ui-root .ny-sec + .ag-points, .ui-root .ny-sec + .ny-list, .ui-root .ny-sec + .ag-sessions, .ui-root .ny-sec + .ag-view { border-top: 0; margin-top: var(--space-2); }
 .ui-root .ny-points { margin-top: var(--space-px22); }
 .ui-root .ny-two { align-items: end; }
@@ -110,7 +114,12 @@
    (340px) can't hold a long button and its link side by side. */
 .ui-root .ny-detail-body > :first-child { margin-top: 0; }
 .ui-root .ny-detail-acts { margin-top: var(--space-3); }
-.ui-root .ny-detail-acts > .cc-panel-foot:not(#_) { flex-direction: column-reverse; flex-wrap: nowrap; align-items: stretch; gap: var(--space-1); }
-.ui-root .ny-detail-acts > .cc-panel-foot > .ds-btn { width: 100%; }
-.ui-root .ny-detail-acts > .cc-panel-foot > :is(.ds-link, span) { justify-content: center; align-self: center; }
+/* The button with its quiet way out beside it (M28 v6 .row.gap: "Send invoice  Edit"), at every width (the UI tester's
+   P2); a long button wraps its link onto the next line, never its own words. */
+.ui-root .ny-detail-acts > .cc-panel-foot:not(#_) { flex-direction: row-reverse; flex-wrap: wrap-reverse; justify-content: flex-end; align-items: center; gap: var(--space-px12) var(--space-px20); }
+.ui-root .ny-detail-acts > .cc-panel-foot > .ds-btn:not(#_) { width: auto; flex: none; }
 .ui-root .ny-detail-acts > .cc-panel-foot > span:empty { display: none; }
+/* Amount, For and the like (M28's .li): the label at the left, the value at the right on the same line, never squeezed
+   into a narrow second column. */
+.ui-root .ny-points .ag-point:not(#_) { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
+.ui-root .ny-points .ag-point dd { text-align: right; }

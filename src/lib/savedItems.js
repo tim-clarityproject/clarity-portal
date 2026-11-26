@@ -146,6 +146,15 @@ function parseJson(text) {
 
 const filled = (...values) => values.some((v) => (Array.isArray(v) ? v.length > 0 : v != null && `${v}`.trim() !== ''));
 
+/**
+ * A saved name as people read it now. Old rows whose saved label says "First review" read "First check-in" (Tim,
+ * 26 Nov, 15:55; rule 26a's note): display only, the saved value is never changed.
+ */
+export function shownTitle(title) {
+  if (typeof title !== 'string') return title;
+  return /^\s*first review\s*$/i.test(title) ? 'First check-in' : title;
+}
+
 function base(today, { at, day, ...rest }) {
   const when = day || at;
   return {
@@ -153,6 +162,8 @@ function base(today, { at, day, ...rest }) {
     canDelete: false,
     isDraft: false,
     ...rest,
+    title: shownTitle(rest.title),
+    typeLabel: shownTitle(rest.typeLabel),
     sortAt: sortTime(when),
     dateLabel: formatSavedDate(when, today),
     date: when,

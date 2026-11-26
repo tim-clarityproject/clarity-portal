@@ -46,6 +46,16 @@
 //   duplicate     the same action (three words or more) offered twice on one screen, outside list rows (item 10)
 //   card          also a card with no label whose first row doesn't start at its padding (item 11)
 //
+// The UI tester's findings (FX2, 26 Nov):
+//   focus         also anything but the tool drawn while the frame is in focus mode, on any address: the menu, the
+//                 phone header, My Mission, the coach's Search and bell, the next-session strip (F1)
+//   title-wrap    a page title on two lines that fits its column on one (F12: room kept for a My Mission box that
+//                 isn't there, or wider than the box)
+//   edge          a page opening not on the frame's left edge: the frame's padding on a laptop, 20px under 1024px (F15)
+//   progress      a tool's progress line with less than 8% filled: step 1 shows a short filled start (P15)
+//   bare-zero     also a nought with its unit in words ("0 minutes") as a headline figure (F8)
+//   coral-fill    any coral background, a mistake's included: a mistake is one coral line of words (Tim, 26 Nov, 15:55)
+//
 // Starting points: client-audit-25nov.md's measuring script (Claude, 25 Nov) and the example pages' own checks.
 // Only the standard text size is held to the sizes (scale 1): larger device text grows them.
 export function designProblems({ phone = false, scale = 1, route = null, tools = null } = {}) {
@@ -111,7 +121,8 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
     }
     if (scale === 1) {
       const fs = Math.round(parseFloat(cs.fontSize) * 10) / 10;
-      const ok = ALLOWED.some((a) => near(fs, a, 0.3));
+      // A typed signature is drawn at 28px (M28 v6 .sigprev; --fs-signature): a hand's mark, not words on the scale.
+      const ok = ALLOWED.some((a) => near(fs, a, 0.3)) || Boolean(el.closest('[data-signature], .cl-sigprev, .cl-sig-typed'));
       if (!ok && !seenSize.has(`${fs}|${own.slice(0, 20)}`)) {
         seenSize.add(`${fs}|${own.slice(0, 20)}`);
         say('size', `${fs}px text: "${own.slice(0, 36)}"`);
@@ -191,6 +202,22 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
     if (fill || ink || edge) corals.add(`${fill ? 'filled' : ink ? 'words' : 'edge'} ${name(el)}`);
   }
   if (corals.size) say('coral', `coral that isn't a mistake: ${[...corals].slice(0, 5).join(', ')}`);
+
+  // coral-fill: nothing has a coral background, a mistake included (Tim, 26 Nov, 15:55): a mistake is one short line of
+  // coral words under what it is about, as M28 v6 draws it, never a filled or tinted box. Soft coral tints count too.
+  const coralFill = (c) => {
+    if (clear(c)) return false;
+    const [r, g, b, a = 1] = rgb(c);
+    if (a < 0.04) return false;
+    return (r > 180 && g > 50 && g < 145 && b > 35 && b < 125 && r - g > 80) || (r > 240 && g > 170 && g < 200 && b > 140 && b < 175)
+      || (r > 245 && g > 215 && g < 240 && b > 195 && b < 230 && r - b > 20);
+  };
+  const filled = new Set();
+  for (const el of top.querySelectorAll('*')) {
+    if (el.closest(`${BREATHE}, ${CAL_TILES}, svg`) || !vis(el)) continue;
+    if (coralFill(getComputedStyle(el).backgroundColor)) filled.add(name(el));
+  }
+  if (filled.size) say('coral-fill', `a coral background (a mistake is a coral line of words, never a box): ${[...filled].slice(0, 5).join(', ')}`);
 
   // card: the label at the padding from the top and left, the last row ending the padding from the bottom.
   for (const card of top.querySelectorAll('.ds-card')) {
@@ -388,7 +415,7 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
     if (!own || el.closest(`${TITLE}, svg, input, .ds-code, [class*="code-sq"]`) || !vis(el)) continue;
     const fs = parseFloat(getComputedStyle(el).fontSize);
     if (fs < 23.5 || fs > 25.5 * scale) continue;
-    if (/^[£$€]?\s*0+(?:[.,]0+)?\s*%?$/.test(own)) say('bare-zero', `a bare "${own}" as a headline figure (say it in words: Figure's \`empty\`)`);
+    if (/^[£$€]?\s*0+(?:[.,]0+)?\s*%?$/.test(own) || /^0+\s+[a-z]+$/i.test(own)) say('bare-zero', `a bare "${own}" as a headline figure (say it in words: Figure's \`empty\`)`);
     const card = el.closest('.ds-card');
     if (card && /\d/.test(own)) { if (!perCard.has(card)) perCard.set(card, []); perCard.get(card).push(own); }
   }
@@ -607,15 +634,62 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
     if (shown.length) say('focus', `the tool at ${path} isn't in focus mode: ${shown.join(', ')} show${shown.length === 1 ? 's' : ''}`);
   }
 
+  // focus, on any address: while the frame is in focus mode nothing but the tool shows (F1).
+  if (document.querySelector('.ds-frame-root--focus')) {
+    const extra = ['.ds-frame-side .ds-mi', '.ds-frame-phead .ds-mbtn', '.hdr-mbox', '.cc-header--frame .cc-search', '.cc-callbar'].filter((sel) => [...document.querySelectorAll(sel)].some(seen));
+    if (extra.length) say('focus', `focus mode shows more than the tool: ${extra.join(', ')}`);
+  }
+
+  // title-wrap: a page title on two lines that would fit its column on one (F12).
+  for (const t of top.querySelectorAll('.ds-open-title, .ds-page-title')) {
+    if (!vis(t) || t.closest('[role=dialog]')) continue;
+    const st = getComputedStyle(t);
+    const lh = parseFloat(st.lineHeight) || parseFloat(st.fontSize) * 1.2;
+    const textH = t.getBoundingClientRect().height - parseFloat(st.paddingTop) - parseFloat(st.paddingBottom);
+    if (textH < lh * 1.5) continue;
+    // The title as drawn on one line, its eye or ⓘ beside it included: a copy beside it with nothing to wrap.
+    const probe = t.cloneNode(true);
+    probe.removeAttribute('id');
+    Object.assign(probe.style, { position: 'absolute', visibility: 'hidden', whiteSpace: 'nowrap', width: 'max-content', maxWidth: 'none', paddingLeft: '0px', paddingRight: '0px', left: '0px', top: '0px' });
+    t.parentElement.appendChild(probe);
+    const one = probe.getBoundingClientRect().width;
+    probe.remove();
+    const column = t.getBoundingClientRect().width - parseFloat(st.paddingLeft);
+    if (one <= column - 1) say('title-wrap', `the title ${name(t)} wraps onto two lines though it fits its ${Math.round(column)}px column on one (${Math.round(one)}px)`);
+  }
+
+  // edge: the page opening starts on the frame's left edge (F15).
+  const frameMain = document.querySelector('.ds-frame-main');
+  if (frameMain && !document.querySelector('.ds-frame-root--focus')) {
+    const fm = frameMain.getBoundingClientRect();
+    const want = W < 1024 ? fm.left + 20 : fm.left + parseFloat(getComputedStyle(frameMain).paddingLeft);
+    const open = [...frameMain.querySelectorAll('.ds-open')].find((o) => vis(o) && !o.closest('[role=dialog], .ds-card'));
+    if (open && Math.abs(open.getBoundingClientRect().left - want) > 1) say('edge', `the page opening starts at ${Math.round(open.getBoundingClientRect().left)}px, not on the frame's edge at ${Math.round(want)}px`);
+  }
+
+  // progress: a tool's progress line shows a short filled start from step 1 (P15).
+  for (const fill of document.querySelectorAll('.ds-tool-prog > i, .ds-guide-pct-track > span')) {
+    const track = fill.parentElement;
+    if (!seen(track)) continue;
+    const tw = track.getBoundingClientRect().width;
+    if (tw > 0 && fill.getBoundingClientRect().width < tw * 0.08 - 0.5) say('progress', `the progress line is ${Math.round(fill.getBoundingClientRect().width)}px of ${Math.round(tw)}px filled (step 1 shows a short filled start)`);
+  }
+
   // duplicate: one action offered twice on one screen (outside list rows, where each row has its own).
+  // Each card's own action, like each row's, belongs to that card ("Show as a table" under each of two charts, "Edit
+  // this objective" on each objective's card): counted within its card, or across the page outside cards.
   const actions = new Map();
+  const scopes = new Map();
   for (const el of top.querySelectorAll('a[href], button, [role=button]')) {
     if (!vis(el) || el.closest(`${ROWS}, li, tr, [role=row], [role=listitem], .ds-rows-list, [role=menu]`)) continue;
     const w = (el.innerText || '').replace(/\s+/g, ' ').trim();
     if (w.split(' ').length < 3) continue;
-    actions.set(w, (actions.get(w) || 0) + 1);
+    const scope = el.closest('.ds-card, .ds-objective, section[class*="card"]');
+    if (!scopes.has(scope)) scopes.set(scope, scopes.size);
+    const key = `${scopes.get(scope)}|${w}`;
+    actions.set(key, (actions.get(key) || 0) + 1);
   }
-  for (const [w, n] of actions) if (n > 1) say('duplicate', `"${w.slice(0, 40)}" is offered ${n} times`);
+  for (const [key, n] of actions) if (n > 1) say('duplicate', `"${key.slice(key.indexOf('|') + 1).slice(0, 40)}" is offered ${n} times`);
 
   return { problems: [...new Set(out)], counts: { controls: controls.length, cards: top.querySelectorAll('.ds-card').length } };
 }

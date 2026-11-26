@@ -179,7 +179,8 @@ export function firstSessionLine({ terms, signedDay = null, startNow = false, to
   const starts = DAY.test(terms?.startsOn || '') ? terms.startsOn : null;
   const guard = signedDay && DAY.test(signedDay) && coolingApplies(terms) ? bookableFrom(signedDay, Boolean(startNow)) : null;
   const from = [starts, guard, DAY.test(today || '') && (starts || guard) ? today : null].filter(Boolean).sort().pop();
-  return from ? `From ${dayKeyWords(from, { year: true })}` : 'Whenever suits you both';
+  // This year's day without its year (writing rule 28), once today is known; without it the year shows.
+  return from ? `From ${dayKeyWords(from, { year: !DAY.test(today || '') || today.slice(0, 4) !== from.slice(0, 4) })}` : 'Whenever suits you both';
 }
 
 /** The welcome's list (M28's three rows), with where each goes. */

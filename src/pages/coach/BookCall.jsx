@@ -146,7 +146,7 @@ export function BookCallPanel({ cal, open, onClose, start = null, onLink, onPoll
         </>
       )}
       <div className="cc-field">
-        <InlineChoice label="How long?" form="pills" options={LENGTHS} value={String(minutes)} onChange={(v) => set({ minutes: Number(v), at: d.own ? d.at : null, moved: {}, fixing: null })} />
+        <InlineChoice label="How long?" options={LENGTHS} value={String(minutes)} onChange={(v) => set({ minutes: Number(v), at: d.own ? d.at : null, moved: {}, fixing: null })} />
         {suggested && client && <p className="cc-note">{suggestedLengthLine(suggested, client.name)}</p>}
       </div>
 
@@ -274,7 +274,7 @@ export function LinkPanel({ cal, open, onClose, start = null }) {
           <div className="cc-field"><Dropdown label="What’s it for?" options={LINK_PURPOSES.map((p) => ({ value: p.value, label: p.label }))} value={d.purpose} onChange={(v) => set({ purpose: v, minutes: LINK_PURPOSES.find((p) => p.value === v).minutes })} /></div>
           <div className="cc-field"><TextBox lines="one" label="Who is it for?" value={d.forName} maxLength={120} onChange={(v) => set({ forName: v, profileId: null })} /></div>
           <div className="cc-field"><TextBox lines="one" label="Call name" placeholder={purpose.callName} value={d.callName} maxLength={80} onChange={(v) => set({ callName: v })} /></div>
-          <div className="cc-field"><InlineChoice label="How long?" form="pills" options={LENGTHS} value={String(d.minutes)} onChange={(v) => set({ minutes: Number(v) })} /></div>
+          <div className="cc-field"><InlineChoice label="How long?" options={LENGTHS} value={String(d.minutes)} onChange={(v) => set({ minutes: Number(v) })} /></div>
           <div className="cc-field"><Dropdown label="Ends" options={ENDS} value={d.ends} onChange={(v) => set({ ends: v })} /></div>
           <div className="cc-field cc-book-count"><span className="cc-field-label">Notice needed</span><Stepper label="Notice needed" value={d.notice} min={0} max={168} step={12} unit="hours" onChange={(n) => set({ notice: n })} lessLabel="Fewer hours of notice" moreLabel="More hours of notice" /></div>
           <div className="cc-field cc-book-count"><span className="cc-field-label">Open this far ahead</span><Stepper label="Open this far ahead" value={d.ahead} min={1} max={12} unit="weeks" onChange={(n) => set({ ahead: n })} lessLabel="Fewer weeks ahead" moreLabel="More weeks ahead" /></div>

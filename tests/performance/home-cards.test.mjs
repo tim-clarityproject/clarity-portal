@@ -99,7 +99,10 @@ test('Your coaching: the agreement’s name, its price, then rows only', () => {
     fundedBy: null,
     terms: { coaching: 'Leadership Partnership, 12 months', startsOn: '2026-10-19', endsOn: '2027-10-19', months: 12, blocks: [{ n: 1, minutes: 90 }, { n: 17, minutes: 60 }], rhythm: 'Every 2 weeks', level: 'Executive', healthCheck: true, visitDays: 2 },
   };
-  const c = coachingCard(v);
+  const c = coachingCard(v, 2025);
+  // A date this year has no year (writing rule 28): in 2026 the start reads without one, the end in 2027 with it.
+  assert.equal(coachingCard(v, 2026).rows[0].name, 'Mon 19 Oct to Tue 19 Oct 2027');
+  assert.equal(coachingCard({ ...v, terms: { ...v.terms, endsOn: '2026-12-18' } }, 2026).rows[0].name, 'Mon 19 Oct to Fri 18 Dec');
   assert.equal(c.title, 'Leadership Partnership, 12 months');
   assert.deepEqual(c.figure, { value: '£17,480', unit: 'in total' });
   assert.deepEqual(c.rows.map((r) => r.name), ['Mon 19 Oct 2026 to Tue 19 Oct 2027', '18 coaching sessions, the first 90 minutes, then 60', 'The Clarity Portal, Executive level', 'Strategic Alignment Health Check', '2 visit days']);

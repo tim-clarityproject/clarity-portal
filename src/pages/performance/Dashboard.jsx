@@ -400,16 +400,18 @@ function CurrentSprint({ current, closed, toggle, phone, go }) {
       <SectionHead id="sum" title="Current sprint" closed={closed} toggle={toggle} />
       {/* Declutter (Tim, 5 Nov): no line saying what the section shows; closed, its one-line summary. */}
       {shut && <p className="dash-lead"><span className="dash-ls">{current.closedLine}</span></p>}
+      {/* Two lists side by side on a laptop, each as tall as its own rows: a short row is never stretched to the row
+          beside it (UI tester P9). */}
       {!shut && !phone && (
-        <div className="dash-sgrid">
-          <h3 className="dash-sh">What’s improving</h3>
-          <h3 className="dash-sh">What’s holding you back</h3>
-          {Array.from({ length: n }, (_, i) => (
-            <div className="dash-spair" key={i}>
-              {i === 0 && !a.length ? <p className="dash-semp"><Lines text={current.improvingEmpty} /></p> : a[i] ? <SumItem item={a[i]} phone={phone} go={go} /> : <div />}
-              {i === 0 && !b.length ? <p className="dash-semp">{current.holdingBackEmpty}</p> : b[i] ? <SumItem item={b[i]} holding phone={phone} go={go} /> : <div />}
-            </div>
-          ))}
+        <div className="dash-sumg dash-sumg--two">
+          <div>
+            <h3 className="dash-sh">What’s improving</h3>
+            {a.length ? a.slice(0, n).map((x) => <SumItem key={x.key} item={x} phone={phone} go={go} />) : <p className="dash-semp"><Lines text={current.improvingEmpty} /></p>}
+          </div>
+          <div>
+            <h3 className="dash-sh">What’s holding you back</h3>
+            {b.length ? b.slice(0, n).map((x) => <SumItem key={x.key} item={x} holding phone={phone} go={go} />) : <p className="dash-semp">{current.holdingBackEmpty}</p>}
+          </div>
         </div>
       )}
       {!shut && phone && (
