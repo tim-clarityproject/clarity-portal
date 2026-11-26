@@ -12,7 +12,8 @@ import { hoursWords } from '../../../lib/agreements/currency';
 import { outcomeLabel, rowAction, usedLine } from '../../../lib/agreements/sessionOutcome';
 import { kindOf } from '../../../lib/agreements/terms';
 import {
-  agreementSessions, agreementTitle, currentEnd, earlyEnd, endEarlyLine, firstSignedVersion, hoursState, isSigned, sessionsIn, settledInvoices, signedDay, statusLine, versionInForce,
+  agreementSessions, agreementTitle, currentEnd, earlyEnd, endEarlyLine, endEarlyOptions, firstSignedVersion, hoursState, isSigned, pauseFromOptions, sessionsIn, settledInvoices, signedDay, statusLine,
+  versionInForce,
 } from '../../../lib/agreements/duringAgreement';
 import { coachZoneOf } from '../../../lib/coach/calendar';
 import { rowsOf } from '../../../lib/coach/store';
@@ -92,9 +93,10 @@ export default function AgreementPage() {
 
   const actions = [
     live && end && k !== 'hours' && k !== 'oneoff' && { key: 'extend', title: 'Extend the end date', line: 'Move it on, with no change to the price' },
-    live && t.pausing !== false && k !== 'hours' && k !== 'oneoff' && { key: 'pause', title: 'Pause coaching', line: k === 'retainer' ? 'Dates and invoices move on by the pause' : 'Dates move on by the pause' },
+    // Pause only where the server would take it (F6): one pause per agreement, a day to start it before the end.
+    live && t.pausing !== false && k !== 'hours' && k !== 'oneoff' && end && !a.paused_from && pauseFromOptions(today, end).length > 0 && { key: 'pause', title: 'Pause coaching', line: k === 'retainer' ? 'Dates and invoices move on by the pause' : 'Dates move on by the pause' },
     a.status !== 'cancelled' && { key: 'change', title: 'Make a change', line: 'A new version you both sign' },
-    live && !earlyEnd(a) && { key: 'end', title: 'End early', line: endEarlyLine(t) },
+    live && !earlyEnd(a) && (!end || endEarlyOptions(today, end).length > 0) && { key: 'end', title: 'End early', line: endEarlyLine(t) },
     canRefund && { key: 'refund', title: 'Give money back', line: 'A refund or credit, with a credit note' },
     canCancel14 && { key: 'cancel14', title: 'Cancel within 14 days', line: firstV?.start_now ? 'A refund, less what was delivered' : 'A full refund, with a credit note' },
   ].filter(Boolean);
@@ -153,10 +155,10 @@ export default function AgreementPage() {
                     {sessions.map((s) => (
                       <Row
                         key={s.id}
-                        name={dayKeyWords(dayIn(zone, new Date(s.starts_at)))}
+                        name={words(dayIn(zone, new Date(s.starts_at)))}
                         sub={outcomeLabel(s, p.now)}
                         value={rowAction(s, p.now) || undefined}
-                        label={`Open the coaching session on ${dayKeyWords(dayIn(zone, new Date(s.starts_at)))}`}
+                        label={`Open the coaching session on ${words(dayIn(zone, new Date(s.starts_at)))}`}
                         onClick={() => navigate(calendarLink(s.id))}
                       />
                     ))}

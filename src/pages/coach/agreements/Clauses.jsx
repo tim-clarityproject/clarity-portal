@@ -111,7 +111,7 @@ function AgreementClauses() {
     <div className="cc-page">
       <div className="cc-col ab-page">
         <Back to="Does this read right?" onClick={() => navigate(`/coach/agreements/${id}/edit?q=check`)} />
-        <PageOpening label={party.name} title="Your standard terms" line={isOwner ? BUILDER_LINES.clauses(first) : `Every clause in order. Edit any of them for ${first}.`} />
+        <PageOpening label={party.name} title="Your standard terms" line={isOwner ? BUILDER_LINES.clauses(first) : BUILDER_LINES.clausesAssociate(first)} />
         <Card label={`${rows.length} clauses`}>
           <Rows>
             {rows.map((r) => <Row key={r.key} name={r.label} sub={r.line} value="Edit" label={`Edit ${r.label}`} onClick={() => navigate(`/coach/agreements/${id}/clauses/${r.key}`)} />)}

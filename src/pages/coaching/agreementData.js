@@ -60,3 +60,16 @@ export async function agreementDocument({ userId, version, signature = null }) {
   ]);
   return agreementPdf({ version, signature: sig });
 }
+
+/**
+ * × from Read, Sign, Settle or the done screen: back to where the person came from, past every step of the
+ * tool (each step is its own history entry, Q1), else Home. `depth` is how many entries the tool holds now.
+ */
+export function leaveTool(navigate, depth = 1) {
+  const d = Math.max(1, Number(depth) || 1);
+  if ((window.history.state?.idx ?? 0) >= d) navigate(-d);
+  else navigate('/welcome');
+}
+
+/** How many history entries Read, Sign and Settle hold at this point (the state each step passes on). */
+export const toolDepth = (location) => Math.max(1, Number(location?.state?.toolDepth) || 1);

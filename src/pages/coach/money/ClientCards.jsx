@@ -36,7 +36,7 @@ export default function ClientCards({ profile, first, next, last, sessions, load
   const past = profile.status === 'past';
   const held = sessions ? sessions.total - sessions.left : null;
   const countOf = (n) => (sessions && sessions.total > 0 && n > 0 && n <= sessions.total ? `${n} of ${sessions.total}` : null);
-  const lastDay = last ? dayKeyWords(dayIn(zone, new Date(last.starts_at))) : '';
+  const lastDay = last ? dayKeyWords(dayIn(zone, new Date(last.starts_at)), { year: true, today: todayKey }) : '';
   const open = (r) => (r.run1 ? onRun1?.(r.version) : navigate(r.to));
 
   return (

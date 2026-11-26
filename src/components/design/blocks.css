@@ -91,9 +91,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-3);
+  /* At large text (200%) on a phone a label and its link that no longer fit side by side wrap: the link goes under the
+     label, never off the card (the break-it tester, F8). At the standard size they always share one line. */
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
   min-height: calc(var(--fs-meta) * 1.3);
   margin: 0 0 var(--space-2);
+}
+
+.ui-root .ds-card-head > :is(h2, h3, .ds-label) {
+  min-width: 0;
 }
 
 /* View all and + Add beside the label: 13px grey, their 44px tap area
@@ -802,6 +809,26 @@
 }
 
 .ui-root .ds-x::after { transform: rotate(-45deg); }
+
+/* Windows high-contrast mode (rule 8b; the break-it tester, F4): the × is two lines drawn as backgrounds, which that
+   mode takes away, so they keep the system's text colour. The date picker's chosen day takes the system's highlight
+   and today's ring an outline (that mode drops shadows). */
+@media (forced-colors: active) {
+  .ui-root .ds-x::before,
+  .ui-root .ds-x::after {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+  .ui-root .ds-cal--picker .ds-cal-day--sel > span {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+  .ui-root .ds-cal--picker .ds-cal-day--today:not(.ds-cal-day--sel) > span {
+    outline: var(--line-w) solid CanvasText;
+    outline-offset: calc(-1 * var(--line-w));
+  }
+}
 
 .ui-root .ds-tool-step {
   font-size: var(--fs-meta);

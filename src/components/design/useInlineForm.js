@@ -6,13 +6,10 @@ import useIsPhone from './useIsPhone';
 // resize, rotation, font load or text-size change, so a row of pills
 // never wraps.
 //
-// Phone: pills sit on one line with equal-width buttons when every pill
-//        can be as wide as the widest one, with its normal padding;
-//        otherwise at their natural widths if those fit (follow-up 1,
-//        18 Nov: the 16px words keep three levels as one control).
-//        Otherwise, rows.
-// Laptop: pills at their natural widths if they fit on one line;
-//        otherwise, rows.
+// Laptop and phone: pills on one line with equal-width parts when every
+//        part can be as wide as the widest one, with its normal padding;
+//        otherwise, rows (Tim's walk of Stage B: a joined switch's parts
+//        are always equal).
 //
 // The component renders a hidden measuring copy of the pill labels
 // (each with the pill's own font and padding) into `measureRef`, inside
@@ -42,10 +39,11 @@ export default function useInlineForm(force, signature) {
       const gaps = gap * (widths.length - 1);
       const room = box.clientWidth + 0.5;
       const evenly = Math.max(...widths) * widths.length + gaps + frame;
-      const natural = widths.reduce((a, b) => a + b, 0) + gaps + frame;
       // Equal parts wherever they fit at the widest one's width, laptop and phone (Tim's walk of Stage B, item 7).
       setEqual(evenly <= room);
-      setFits(evenly <= room || natural <= room);
+      // A joined switch's parts are always equal (Tim's walk of Stage B): one that fits only at natural widths becomes rows
+      // (the break-it tester, 26 Nov: 190px and 124px parts at 390).
+      setFits(evenly <= room);
     };
 
     check();

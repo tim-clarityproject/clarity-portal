@@ -258,6 +258,17 @@ export const isUntouched = (agreement, versions = []) => {
   return Boolean(agreement) && agreement.status === 'draft' && !agreement.renews_id && mine.length === 1 && mine[0].status === 'draft'
     && (mine[0].version || 1) === 1 && !mine[0].coach_signed_at && !mine[0].terms?.answered;
 };
+/**
+ * A next version made by opening a sent or signed agreement's builder (/edit; Q5) that nobody has answered anything in:
+ * the newest version, a draft past version 1, not signed by the coach, its terms not answered. × removes it, so an
+ * agreement is never left with a silent copy of what went before.
+ */
+export const isUntouchedNext = (agreement, versions = []) => {
+  const mine = (versions || []).filter((v) => v.agreement_id === agreement?.id).sort((a, b) => b.version - a.version);
+  const top = mine[0];
+  return Boolean(agreement && top) && top.status === 'draft' && (top.version || 1) > 1 && !top.coach_signed_at && top.terms?.answered === false
+    && mine.slice(1).every((v) => v.status !== 'draft');
+};
 /** The newest untouched draft for this client (or this organisation, with no client), which New agreement opens again. */
 export function untouchedDraft({ agreements = [], versions = [], profileId = null, organisationId = null }) {
   return (agreements || []).filter((a) => (profileId ? a.profile_id === profileId : !a.profile_id && organisationId && a.organisation_id === organisationId))
@@ -271,9 +282,32 @@ export function nextVersionDraft({ agreement, versions = [], versionId, coachId 
   const last = mine[0] || null;
   return {
     id: versionId, agreement_id: agreement.id, coach_id: coachId || agreement.coach_id, version: (last?.version || 0) + 1, status: 'draft',
-    terms: copy(last?.terms || {}), clauses: [], overrides: copy(last?.overrides || {}), currency: last?.currency || 'GBP', fx_rate: last?.fx_rate ?? null,
+    terms: { ...copy(last?.terms || {}), answered: false }, clauses: [], overrides: copy(last?.overrides || {}), currency: last?.currency || 'GBP', fx_rate: last?.fx_rate ?? null,
     fx_at: last?.fx_at ?? null, total_minor: last?.total_minor ?? null, funded_by: last?.funded_by ?? null, personal_note: last?.personal_note || null, send_as: 'agreement',
   };
+}
+
+/** JSON with every object's keys in order, so the database's copy (jsonb keeps its own order) reads the same as the page's. */
+export function stableText(v) {
+  if (Array.isArray(v)) return `[${v.map((x) => (x === undefined ? 'null' : stableText(x))).join(',')}]`;
+  if (v && typeof v === 'object') return `{${Object.keys(v).filter((k) => v[k] !== undefined).sort().map((k) => `${JSON.stringify(k)}:${stableText(v[k])}`).join(',')}}`;
+  return JSON.stringify(v ?? null);
+}
+/**
+ * What a draft says, as one text (F3): its terms, the note, how it goes and its own edits. Two copies with the same print
+ * are the same draft, whatever their updated_at; a copy with another print came from another tab or device.
+ */
+export const draftPrint = (v) => stableText({ terms: v?.terms || {}, note: v?.personal_note || '', sendAs: v?.send_as || 'agreement', overrides: v?.overrides || {} });
+
+/**
+ * What the builder does with a copy of its draft as the device now holds it (F3): 'mine' (this page's own, or the echo
+ * of its save: note the database's version and carry on), 'wait' (another tab's copy not yet in the database), or
+ * 'newer' (another tab's or device's copy the database has: take it, drop what waits here, and say so). `mine`: the
+ * prints this page holds or sent; `pending`: the print of what waits to go; `sent`: the device's copy is the database's.
+ */
+export function draftCopy({ print, mine = new Set(), pending = null, sent = false }) {
+  if (!mine.size || mine.has(print) || pending === print) return 'mine';
+  return sent ? 'newer' : 'wait';
 }
 
 /** The version being built: the agreement's newest draft, or null when every version has gone out. */

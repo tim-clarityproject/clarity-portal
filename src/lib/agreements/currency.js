@@ -106,3 +106,33 @@ export const andList = (items) => {
 export const lowerFirst = (s) => (s ? s.charAt(0).toLowerCase() + s.slice(1) : '');
 /** First letter capital. */
 export const upperFirst = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
+
+/** The most one agreement version, invoice or price can hold, in its currency's minor units (061's checks). */
+export const MAX_MINOR = 100000000;
+
+/**
+ * An amount as typed into a money box (Polish 1, the break-it tester's F2 and P1): { minor }, { empty: true } or
+ * { problem } in calm words (rule 28). Takes "2500", "2,500", "2,500.50", "£2,500", "GBP 2500", spaces, and Arabic-Indic
+ * digits (٢٥٠٠, ۲۵۰۰, with ٫ for the point), read as the same figures. Refuses a minus, "1e5", a decimal comma ("2,50"),
+ * letters or symbols left over, and more figures after the point than the currency has. `words`: the currency in a
+ * sentence ("pounds").
+ */
+export function parseMoney(raw, c = 'GBP', words = 'pounds') {
+  const ex = isCurrency(c) ? exponent(c) : 2;
+  const like = ex === 0 ? '250,000' : '2,500 or 2,500.50';
+  let s = String(raw ?? '')
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+    .replace(/٫/g, '.').replace(/٬/g, ',')
+    .replace(/[\s  ]/g, '');
+  s = s.replace(/^(?:[A-Za-z]{3})(?=[\d£$€¥-])/, '').replace(/(?<=\d)[A-Za-z]{3}$/, '');
+  s = s.replace(/^(-?)(?:[A-Za-z]{0,3}[£$€¥]|CHF|AED|kr|R)/i, '$1');
+  if (!s) return { empty: true };
+  if (/^[-−]/.test(s)) return { problem: `A price can’t be less than nothing. Type it in ${words}, like ${like}.` };
+  if (!/^(\d{1,3}(,\d{3})+|\d+)(\.\d+)?$/.test(s)) return { problem: `That isn’t an amount. Type it in ${words}, like ${like}.` };
+  const [, frac = ''] = s.split('.');
+  if (frac.length > ex) return { problem: ex === 0 ? `${upperFirst(words)} have no smaller units. Type a whole amount, like ${like}.` : `That has more than two figures after the point. Type it like ${like}.` };
+  const n = Number(s.replace(/,/g, ''));
+  if (!Number.isFinite(n)) return { problem: `That isn’t an amount. Type it in ${words}, like ${like}.` };
+  return { minor: toMinor(n, c) };
+}

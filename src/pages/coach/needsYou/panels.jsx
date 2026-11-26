@@ -170,7 +170,7 @@ function DeliveredBody({ item, close }) {
         <div className="ny-ticks">
           {list.map((s) => (
             <Checkbox key={s.id} checked={ticked[s.id] !== false} onChange={(on) => { setTicked((was) => ({ ...was, [s.id]: on })); setProblem(null); }}>
-              {`${dayKeyWords(dayIn(p.settings?.time_zone || 'Europe/London', new Date(s.starts_at)))}, ${s.minutes || 60} minutes`}
+              {`${dayKeyWords(dayIn(p.settings?.time_zone || 'Europe/London', new Date(s.starts_at)), { year: true, today: p.todayKey })}, ${s.minutes || 60} minutes`}
             </Checkbox>
           ))}
         </div>
@@ -246,8 +246,8 @@ function OverdueBody({ item, close }) {
   const first = firstOf(org ? (inv?.payer_name || org.name) : client?.name || inv?.payer_name);
   const left = inv ? Math.max(0, Number(inv.total_minor) - Number(inv.paid_minor || 0)) : 0;
   const doc = useMemo(() => (inv && r ? safeDoc(() => invoiceReminderEmail({
-    stage: r.stage, firstName: first, number: `CLARITY-${inv.number}`, amountWords: moneyText(left, inv.currency || 'GBP'), dueDayWords: inv.due_on ? dayKeyWords(inv.due_on) : '',
-    settleByWords: r.settle_by ? dayKeyWords(r.settle_by) : null, coachFirst: p.coach.display_first_name || 'Tim', settleLink: inv.hosted_url || 'https://invoice.stripe.com/',
+    stage: r.stage, firstName: first, number: `CLARITY-${inv.number}`, amountWords: moneyText(left, inv.currency || 'GBP'), dueDayWords: inv.due_on ? dayKeyWords(inv.due_on, { year: true, today: p.todayKey }) : '',
+    settleByWords: r.settle_by ? dayKeyWords(r.settle_by, { year: true, today: p.todayKey }) : null, coachFirst: p.coach.display_first_name || 'Tim', settleLink: inv.hosted_url || 'https://invoice.stripe.com/',
     coachee: org && inv.profile_id ? (p.clients || []).find((c) => c.id === inv.profile_id)?.name || null : null, poNumber: org ? inv.po_number || null : null,
     toOrganisation: inv.settles_to === 'organisation' || Boolean(org),
   })) : null), [inv, r, first, left, org, p.clients, p.coach.display_first_name]);

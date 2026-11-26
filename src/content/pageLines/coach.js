@@ -100,28 +100,28 @@ export const BOOKING = Object.freeze({
 // and pay. One line each, what the page is for, in the portal's voice.
 
 /** Finances (every tab): what the page is for, with the financial year's first month ("April"). */
-export const financesLine = (startMonth) => `What’s come in, what’s due and what’s ahead, for the year from 1 ${startMonth}.`;
+export const financesLine = (startMonth) => `Here is what’s come in, what’s due and what’s ahead, for the year from 1 ${startMonth}.`;
 
 export const FINANCES = Object.freeze({
   newInvoice: 'New invoice',
   // The income chart with nothing in it yet (rule 16: a sentence and one next step, never a blank chart).
-  chartEmpty: 'Nothing has come in this year yet. Each month’s income shows here once a payment is in.',
+  chartEmpty: 'Nothing has come in this year yet, and each month’s income will show here as it does.',
   chartEmptyAction: 'Add a payment',
   statsLabel: 'At a glance',
 });
 
 // Who can see a page is the eye beside its title, never words in its line (5e rule 10; Tim's walk of Stage B, item 5).
-export const TODOS_LINE = 'Everything you plan to do, by day.';
-export const todoListLine = (finished) => (finished ? 'This list is finished, and its to-dos stay here.' : 'A list of your own to-dos.');
-export const SETTINGS_LINE = 'How your practice runs: your details, booking, calendars and the rest.';
-export const settingsSectionLine = (label) => `Your ${label.charAt(0).toLowerCase()}${label.slice(1)} settings.`;
-export const BOARDS_LINE = 'Anything you track in stages, one card at a time.';
-export const boardPageLine = (shared) => (shared ? 'Shared with your associates, who can read it but not change it.' : 'Your cards on this board, stage by stage.');
-export const AUTOMATIONS_LINE = 'Small jobs done for you as leads move, and nothing is ever sent.';
-export const OPEN_FOR_CALLS_LINE = 'Times people outside can book a call with you.';
-export const POLL_LINE = 'The times you offered, and who can make each one.';
+export const TODOS_LINE = 'Everything you plan to do is here, day by day.';
+export const todoListLine = (finished) => (finished ? 'This list is finished, and its to-dos stay here.' : 'This list holds your own to-dos.');
+export const SETTINGS_LINE = 'Set how your practice runs here: your details, booking, calendars and the rest.';
+export const settingsSectionLine = (label) => `Your ${label.charAt(0).toLowerCase()}${label.slice(1)} settings are here.`;
+export const BOARDS_LINE = 'Track anything that moves in stages, one card at a time.';
+export const boardPageLine = (shared) => (shared ? 'The cards on this board move through it stage by stage.' : 'Your cards move across this board stage by stage.');
+export const AUTOMATIONS_LINE = 'Small jobs are done for you as leads move, and nothing is ever sent.';
+export const OPEN_FOR_CALLS_LINE = 'These are the times people outside can book a call with you.';
+export const POLL_LINE = 'Here are the times you offered, and who can make each one.';
 /** A poll's line: who it's with (when the title is its own words), then what the page shows. */
-export const pollLine = (names) => (names ? `With ${names}: the times you offered, and who can make each one.` : POLL_LINE);
+export const pollLine = (names) => (names ? `Here are the times you offered ${names}, and who can make each one.` : POLL_LINE);
 
 /** A coaching session's line: who it's with, then where it stands. */
 export function sessionLine({ name, sent = false, happened = false, outcome = null }) {
@@ -136,7 +136,7 @@ export function sessionLine({ name, sent = false, happened = false, outcome = nu
 
 export const PEOPLE = Object.freeze({
   clientsTitle: 'Clients',
-  clientsLine: 'The people you coach, and when you see each of them next.',
+  clientsLine: 'Here are the people you coach, and when you see each of them next.',
   everyone: 'Everyone',
   yourClients: 'Your clients',
   groupsLabel: 'Groups',
@@ -153,50 +153,51 @@ export const PEOPLE = Object.freeze({
   quickMore: 'Add their details too',
   notBooked: 'Not booked',
   pastTitle: 'Past clients',
-  pastLine: 'The people you’ve coached, and when to check in with each of them.',
+  pastLine: 'Here are the people you’ve coached, and when to check in with each of them.',
   pastLabel: 'Past clients',
   leadsTitle: 'Leads',
-  leadsLine: 'The people who might become clients, and the next step with each of them.',
+  leadsLine: 'Here are the people who might become clients, and the next step with each of them.',
   leadsAll: 'All leads',
   leadName: 'Their name',
   coldTitle: 'Cold leads',
-  coldLine: 'Leads that went quiet, with what happened and when to check in again.',
+  coldLine: 'These leads went quiet, and each shows what happened and when to check in again.',
   reportsTitle: 'Lead reports',
-  reportsLine: 'Where your clients come from, and how many of your leads become clients.',
+  reportsLine: 'See where your clients come from, and how many of your leads become clients.',
   networkTitle: 'Network',
-  networkLine: 'The people you keep in touch with, and who is due a catch-up.',
-  orgLine: 'The people you coach there, and what you know about the organisation.',
-  groupLine: 'The people in this group and its coaching sessions.',
+  networkLine: 'Here are the people you keep in touch with, and who is due a catch-up.',
+  orgLine: 'Here are the people you coach there, and what you know about the organisation.',
+  groupLine: 'Here are the people in this group and its coaching sessions.',
 });
 
 /** A client's page: their role and city when known, else what the page is for. */
 export function clientLine({ role = '', city = '' } = {}) {
   const facts = [role, city].filter(Boolean);
-  if (facts.length === 2) return `${facts[0]}, ${facts[1]}.`;
-  if (facts.length === 1) return `${facts[0]}.`;
-  return 'Their coaching, notes and what comes next, in one place.';
+  if (role && city) return `Their role is ${role}, and they’re based in ${city}.`;
+  if (role) return `Their role is ${role}.`;
+  if (city) return `They’re based in ${city}.`;
+  return 'Their coaching, notes and what comes next are all in one place.';
 }
 
 /** A workshop's line: who it's for and where, then where it stands. */
 export function workshopLine({ organisation = null, place = null, past = false }) {
   const where = [organisation ? `For ${organisation}` : null, place ? `${organisation ? 'at' : 'At'} ${place}` : null].filter(Boolean).join(' ');
-  const state = past ? 'Who came and what they said.' : 'Who has registered, and what goes to them.';
-  return where ? `${where}: ${state.charAt(0).toLowerCase()}${state.slice(1)}` : state;
+  const state = past ? 'See who came and what they said.' : 'See who has registered, and what goes to them.';
+  return where ? `${where}, ${state.charAt(0).toLowerCase()}${state.slice(1)}` : state;
 }
 
 /** A lead's page (B4): what the page is for, in a sentence. */
 export function leadLine({ first = '', won = false, cold = false } = {}) {
   if (won) return `${first} is a client now, and their story so far is kept here.`;
-  if (cold) return `Why ${first} went quiet, and when to check in again.`;
-  return `Where things stand with ${first}, and the next step.`;
+  if (cold) return `See why ${first} went quiet, and when to check in again.`;
+  return `See where things stand with ${first}, and the next step.`;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
 // C4, the agreement screens M28 v6 doesn't draw (Polish 1, Stage C): an agreement's own page, its changes in focus
 // mode (Extend, Pause, End early, Give money back, Cancel within 14 days), What to say and an organisation's billing.
 export const AGREEMENT_LINES = Object.freeze({
-  whatToSay: 'The words for the moments people go soft on. They’re for you to say, never sent.',
-  orgBilling: 'Set once, and every invoice to them follows it.',
+  whatToSay: 'Here are words for the moments people go soft on, for you to say and never to send.',
+  orgBilling: 'Set it once, and every invoice to them follows it.',
   billingEmpty: 'Their billing isn’t set up yet, so invoices go to their main contact with 30 days to settle.',
   changeClosed: 'Nothing has changed.',
   checkQuestion: 'Does this read right?',
@@ -209,7 +210,7 @@ export function agreementLine({ first = '', status = '', signedOn = '', end = ''
   if (status === 'ended' || status === 'ended_not_renewed' || status === 'expired') return end ? `It ended on ${end}.` : 'It has ended.';
   if (!signedOn) return first ? `${first} hasn’t signed it yet.` : 'It hasn’t been signed yet.';
   if (endingOn) return `It was signed on ${signedOn}, and it ends early, on ${endingOn}.`;
-  if (pausedTo) return `Coaching is paused until ${pausedTo}. It now runs until ${end}.`;
+  if (pausedTo) return `Coaching is paused until ${pausedTo}, and it now runs until ${end}.`;
   return end ? `It was signed on ${signedOn}, and it runs until ${end}.` : `It was signed on ${signedOn}.`;
 }
 
@@ -227,21 +228,23 @@ export function needsYouLine(count) {
 
 export const MONEY_LINES = Object.freeze({
   newInvoice: 'From the coaching sessions logged since the last invoice. Untick any to leave off.',
-  hours: (first) => `${first || 'They'} ${first ? 'sees' : 'see'} the same balance and every entry in their portal.`,
-  invoiceSent: 'Where it went, when it’s due and whether it’s settled.',
+  // Who sees the balance is the eye's to say, never the line's (5e rule 10; FX7): the line says what the page is for.
+  hours: () => 'Each entry here comes off the block, and the balance shows what’s left.',
+  invoiceSent: 'Here is where it went, when it’s due and whether it’s settled.',
 });
 
 // ---------------------------------------------------------------------------------------------------------------
 // C1, the agreement builder, packages and standard terms (Polish 1, Stage C; M28 v6 "build" and "packages").
 export const BUILDER_LINES = Object.freeze({
   packages: 'Set up once, then start any agreement from one and adjust it for the person.',
-  terms: 'Every clause in order. What you change here is the wording for every new agreement. Agreements already signed keep the wording they were signed with.',
-  termsAssociate: 'Every clause in order, as your practice’s owner has set it.',
+  terms: 'Every clause is here in order, and what you change becomes the wording for new agreements, while signed ones keep theirs.',
+  termsAssociate: 'Every clause is here in order, as your practice’s owner has set it.',
   solicitor: 'Have a solicitor check any change before you use it with a client.',
-  clauses: (first) => `Every clause in order. Edit any of them for ${first}, or for everyone.`,
-  check: (first) => `Every way this agreement differs from your standard, then what ${first} will see first.`,
+  clauses: (first) => `Every clause is here in order, and you can edit any of them for ${first} or for everyone.`,
+  clausesAssociate: (first) => `Every clause is here in order, and you can edit any of them for ${first}.`,
+  check: (first) => `Here is every way this agreement differs from your standard, then what ${first} will see first.`,
   sign: (first) => `You sign first, then ${first} gets an email from you to read and sign it in the portal.`,
-  start: (first) => `An agreement is with a client, so ${first} becomes your client first. You can undo it.`,
+  start: (first) => `An agreement is with a client, so ${first} becomes your client first, and you can undo it.`,
 });
 /** × on the builder: "Saved. Pick up where you left off from Sam’s page." */
 export const builderClosed = (where) => `Saved. Pick up where you left off from ${where}.`;

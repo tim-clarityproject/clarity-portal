@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AddButton, Button, Dropdown, InlineChoice, SaveStatus, SwitchRow, TextField } from '../../../components/design';
-import { newId, rowsOf, saveRow } from '../../../lib/coach/store';
+import { newId, rowSent, rowsOf, saveRow } from '../../../lib/coach/store';
+import { guardRows, noteVersions, unguardRows } from '../../../lib/syncQueue';
 import { supabase } from '../../../lib/supabase';
-import { CURRENCY, CURRENCY_LIST, moneyText, toMajor, toMinor } from '../../../lib/agreements/currency';
+import { CURRENCY, CURRENCY_LIST, moneyText, parseMoney, toMajor, toMinor } from '../../../lib/agreements/currency';
+import MistakeLine from '../../../components/agreements/MistakeLine';
 import { SESSION_LENGTHS } from '../../../lib/agreements/terms';
-import { packageRow, partyOf, rateOf, standardsFor, versionFields } from '../../../lib/coach/agreementBuilder';
+import { draftCopy, draftPrint, packageRow, partyOf, rateOf, standardsFor, versionFields } from '../../../lib/coach/agreementBuilder';
 import { useCoachPortal } from '../parts';
 import './builder.css';
 
@@ -62,11 +64,48 @@ export function useAgreementDraft(agreementId) {
   const [status, setStatus] = useState('saved');
   const timer = useRef(null);
   const pending = useRef(null);
+  const chain = useRef(Promise.resolve('saved'));
+  const lastError = useRef(null);
+  // What this page holds or has sent (draftPrint), so a copy of the draft from elsewhere is told apart from the echo of
+  // its own saves (F3: two tabs or two devices).
+  const mine = useRef(new Set());
+  const [elsewhere, setElsewhere] = useState(0);
 
   const rate = rateOf(rates, draft?.terms?.currency || 'GBP');
   const packageGbpMinor = pkg && (pkg.currency || 'GBP') === 'GBP' ? (party.funded || draft?.terms?.funder === 'org' ? pkg.org_price_minor : pkg.personal_price_minor) ?? null : null;
 
-  const flush = useCallback(async () => {
+  // F3: while it is open, the draft's saves go "only if unchanged" since the version this page last saw in the database
+  // (syncQueue's guarded rows and version book, as the inside Health Check's): a stale tab's or device's save is refused
+  // and the device takes the database's copy, never the other way round.
+  const draftId = draft?.id || null;
+  useEffect(() => {
+    if (!draftId) return undefined;
+    const rows = [{ id: draftId }];
+    guardRows('agreement_versions', rows);
+    return () => unguardRows('agreement_versions', rows);
+  }, [draftId]);
+  useEffect(() => {
+    if (!draft) return;
+    const sent = rowSent(userId, 'agreement_versions', { id: draft.id });
+    const print = draftPrint(draft);
+    const note = () => { if (sent && draft.updated_at) noteVersions('agreement_versions', [{ id: draft.id, updated_at: draft.updated_at }]); };
+    const what = draftCopy({ print, mine: mine.current, pending: pending.current ? draftPrint(pending.current.version) : null, sent });
+    if (what === 'mine') {
+      mine.current.add(print);
+      note();
+      return;
+    }
+    // Another tab's unsent copy waits until the database has it; then it is the newer one, and this page takes it.
+    if (what === 'wait') return;
+    clearTimeout(timer.current);
+    pending.current = null;
+    mine.current = new Set([print]);
+    note();
+    setStatus('saved');
+    setElsewhere((n) => n + 1);
+  }, [draft, userId]);
+
+  const flushNow = useCallback(async () => {
     const next = pending.current;
     if (!next) return 'saved';
     pending.current = null;
@@ -74,14 +113,22 @@ export function useAgreementDraft(agreementId) {
     setStatus('saving');
     try {
       const answer = await saveRow(userId, 'agreement_versions', next.version);
+      if (answer === 'superseded') { setStatus('saved'); return 'superseded'; }
       if (next.agreement) await saveRow(userId, 'agreements', next.agreement);
+      lastError.current = null;
       setStatus(answer === 'queued' ? 'offline' : 'saved');
       return answer;
-    } catch {
+    } catch (error) {
+      lastError.current = error;
       setStatus('failed');
       return 'failed';
     }
   }, [userId]);
+  // One save at a time, in order, so each is based on the one before it.
+  const flush = useCallback(() => {
+    chain.current = chain.current.then(flushNow, flushNow);
+    return chain.current;
+  }, [flushNow]);
   useEffect(() => () => { flush(); }, [flush]);
 
   /** Saves the version with these terms (and edits), a moment after the last change. */
@@ -92,6 +139,7 @@ export function useAgreementDraft(agreementId) {
     const version = { ...base, ...fields, ...(personalNote !== undefined ? { personal_note: personalNote } : {}), ...(more || {}) };
     const agr = agreementChange || terms.kind !== agreement?.agreement_kind ? { ...(pending.current?.agreement || agreement), agreement_kind: terms.kind, ...(agreementChange || {}) } : pending.current?.agreement || null;
     pending.current = { version, agreement: agr };
+    mine.current.add(draftPrint(version));
     setStatus('saving');
     clearTimeout(timer.current);
     if (now) return flush();
@@ -101,7 +149,7 @@ export function useAgreementDraft(agreementId) {
 
   return {
     portal, userId, coach, agreement, versions, draft, party, standards, standardRows, pkg, rates, rate, packageGbpMinor,
-    status, save, flush, loading: Boolean(partial) && !agreement, newId,
+    status, save, flush, loading: Boolean(partial) && !agreement, newId, elsewhere, lastError: () => lastError.current,
     packageLine: pkg ? packageRow(pkg, { funded: party.funded }) : null,
   };
 }
@@ -251,32 +299,47 @@ export function useWide(px = 1100) {
 
 /**
  * A money box in one currency (M28 version 6's .box.money): the symbol, then the figure. `value` and `onChange` are
- * minor units; the figure shows without its symbol while typed.
+ * minor units; the figure shows without its symbol while typed. What's typed is read by `parseMoney` (F2, P1): a figure
+ * it can't read ("1e5", "-500", "2,50") is never kept as another figure; `onChange` isn't called and `onProblem` gets the
+ * calm line (null once it reads again), for the page to show under the box when it is asked to move on. An empty box is
+ * 0. Arabic-Indic digits read as the same figures. `problem`: the line shown under the box now (MistakeLine).
  */
-export function MoneyBox({ label, value, currency = 'GBP', onChange, onEnter, autoFocus = false }) {
+export function MoneyBox({ label, value, currency = 'GBP', onChange, onProblem, onEnter, autoFocus = false, problem = null, words = 'pounds' }) {
   const [typing, setTyping] = useState(null);
   const shown = typing ?? (value != null && Number(value) > 0 ? String(toMajor(Number(value), currency)) : '');
   const symbol = CURRENCY[currency]?.symbol?.trim() || currency;
+  const errId = useId();
   return (
-    <div className="ds-field ab-money">
-      <span className="ab-money-cur" aria-hidden="true">{symbol}</span>
-      <input
-        aria-label={label}
-        inputMode="decimal"
-        autoComplete="off"
-        autoFocus={autoFocus}
-        value={shown}
-        onFocus={() => setTyping(shown)}
-        onBlur={() => setTyping(null)}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onEnter?.(); } }}
-        onChange={(e) => {
-          const raw = e.target.value.replace(/[^\d.,]/g, '');
-          setTyping(raw);
-          const n = parseFloat(raw.replace(/,/g, ''));
-          onChange(Number.isFinite(n) ? toMinor(n, currency) : 0);
-        }}
-      />
-    </div>
+    <>
+      <div className="ds-field ab-money">
+        <span className="ab-money-cur" aria-hidden="true">{symbol}</span>
+        <input
+          aria-label={label}
+          inputMode="decimal"
+          autoComplete="off"
+          autoFocus={autoFocus}
+          value={shown}
+          aria-invalid={problem ? 'true' : undefined}
+          aria-describedby={problem ? errId : undefined}
+          onFocus={() => setTyping(shown)}
+          onBlur={() => {
+            // A figure that was kept shows as kept; one that was refused stays as typed, so the line under it makes sense.
+            const read = parseMoney(typing, currency, words);
+            if (read.empty ? !(Number(value) > 0) : read.minor === Number(value)) setTyping(null);
+          }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onEnter?.(); } }}
+          onChange={(e) => {
+            const raw = e.target.value.slice(0, 40);
+            setTyping(raw);
+            const read = parseMoney(raw, currency, words);
+            if (read.problem) { onProblem?.(read.problem); return; }
+            onProblem?.(null);
+            onChange(read.empty ? 0 : read.minor);
+          }}
+        />
+      </div>
+      {problem && <div id={errId}><MistakeLine>{problem}</MistakeLine></div>}
+    </>
   );
 }
 

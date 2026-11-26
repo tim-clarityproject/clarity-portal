@@ -145,3 +145,33 @@ export function pauseMove(end, from, to, today = null) {
     line: `Coaching pauses for ${weeks} ${weeks === 1 ? 'week' : 'weeks'}, so the end date moves to ${dayKeyWords(newEnd, { year: true, today })}.`,
   };
 }
+
+/**
+ * Why a pause can't be made, in calm words, or null (the break-it tester's F6; agreements rules 12 and 25). An
+ * agreement keeps one pause (`paused_from` to `paused_to`, which moves its invoices on by its length), so a second is
+ * refused rather than written over the first, whether the first is still to come, running or over; a pause starts today
+ * or later and ends after it starts, and starts before the agreement's end. `paused`: { from, to } already kept, or null.
+ * The device (before Pause is offered) and the server (before anything is written) ask the same.
+ */
+export function pauseProblem({ from, to, today, end = null, paused = null }) {
+  if (paused?.from) {
+    const when = paused.to ? `from ${dayKeyWords(paused.from, { year: true, today })} to ${dayKeyWords(paused.to, { year: true, today })}` : `from ${dayKeyWords(paused.from, { year: true, today })}`;
+    return `This agreement was paused ${when}, and it can be paused once. To give more time, extend the end date instead.`;
+  }
+  if (!from || !to || to <= from) return 'Choose an Until date after From.';
+  if (today && from < today) return 'A pause starts today or later. Choose a later From date.';
+  if (end && from > end) return `A pause starts before the agreement ends on ${dayKeyWords(end, { year: true, today })}. Choose an earlier From date.`;
+  return null;
+}
+
+/**
+ * Why an early end can't be set, or null (F6): the last day is today or later and before the end the agreement has now
+ * (`end`; an early end already set counts when it is sooner).
+ */
+export function endEarlyProblem({ on, today, end = null, earlyEnd = null }) {
+  if (!on) return 'Choose the last day.';
+  if (today && on < today) return 'Choose today or a later day.';
+  const until = [end, earlyEnd].filter(Boolean).sort()[0] || null;
+  if (until && on >= until) return `It already ends on ${dayKeyWords(until, { year: true, today })}. Choose a last day before then.`;
+  return null;
+}

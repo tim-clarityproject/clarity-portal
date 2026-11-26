@@ -104,7 +104,7 @@ export function logDays(today) {
   const out = [today];
   let d = today;
   while (out.length < 4) { d = addDays(d, -1); if (weekdayOf(d) <= 5) out.push(d); }
-  return out.map((v) => ({ value: v, label: dayKeyWords(v) }));
+  return out.map((v) => ({ value: v, label: dayKeyWords(v, { year: true, today }) }));
 }
 /** How long? 15 minutes to 8 hours in quarter hours (M28's minsOpts). */
 export const LOG_MINUTES = Object.freeze(Array.from({ length: 32 }, (_, i) => (i + 1) * 15));
@@ -113,9 +113,10 @@ export const SAY_WHAT = 'Say what the time was for.';
 // ---------------------------------------------------------------- the panels on an agreement's page
 
 /** Pause from when? The next three Mondays (M28: Mon 1 Mar, 8 Mar, 15 Mar); the year only when it isn't this one. */
-export function pauseFromOptions(today) {
+export function pauseFromOptions(today, end = null) {
   const first = addDays(today, ((8 - weekdayOf(today)) % 7) || 7);
-  return [0, 7, 14].map((n) => addDays(first, n)).map((v) => ({ value: v, label: dayKeyWords(v, { year: true, today }) }));
+  // Never a pause that would start after the agreement has ended (F6).
+  return [0, 7, 14].map((n) => addDays(first, n)).filter((v) => !end || v < end).map((v) => ({ value: v, label: dayKeyWords(v, { year: true, today }) }));
 }
 /** Until when? Fridays 4, 6 and 9 weeks after it starts (M28: Fri 26 Mar, 9 Apr, 30 Apr from Mon 1 Mar). `today`: as above. */
 export function pauseToOptions(from, today = null) {
@@ -125,8 +126,11 @@ export function pauseToOptions(from, today = null) {
 /** What's the last day? Fridays from 30 days' notice, then 4 and 8 weeks later; never after the end already set. */
 export function endEarlyOptions(today, end = null) {
   const first = fridayOnOrAfter(addDays(today, 30));
-  const days = [first, addDays(first, 28), addDays(first, 56)].filter((d) => !end || d < end);
-  return (days.length ? days : [end].filter(Boolean)).map((v) => ({ value: v, label: dayKeyWords(v, { year: true, today }) }));
+  let days = [first, addDays(first, 28), addDays(first, 56)].filter((d) => !end || d < end);
+  // Less than 30 days left: the Fridays before the end, from next week's (F6: never the end itself or after it, which the
+  // server refuses). None at all: End early isn't offered.
+  if (!days.length && end) days = [7, 14, 21].map((n) => fridayOnOrAfter(addDays(today, n))).filter((d) => d < end);
+  return days.map((v) => ({ value: v, label: dayKeyWords(v, { year: true, today }) }));
 }
 /** The line under End early on the agreement's page, and the panel's own sentence. */
 export const endEarlyLine = (t) => (t?.fullTerm ? 'Only by agreement, when something exceptional happens' : '30 days’ notice in writing');
@@ -314,7 +318,7 @@ export function needsYouItems(f) {
       const orgName = organisations.find((o) => o.id === inv.organisation_id)?.name || '';
       const sentDay = dayOfStamp(inv.emailed_at || inv.sent_at);
       const it = portalItem({ invoiceId: inv.id, number: inv.number, orgName, day: sentDay, today });
-      out.push(sentDay === today ? it : { ...it, line: `Sent by email ${dayKeyWords(sentDay)}; they also want it on their portal` });
+      out.push(sentDay === today ? it : { ...it, line: `Sent by email ${dayKeyWords(sentDay, { year: true, today })}; they also want it on their portal` });
     }
   }
   for (const [orgId, inv] of heldByOrg) {
@@ -514,8 +518,8 @@ export function sentRows({ invoice, profile, orgName = '', pages = null, today }
   const rows = [
     { label: 'Sent to', value: invoice.payer_email || profile?.invoices_email || '' },
     { label: 'Attached', value: `${file}, one file${pages ? `, ${pages} ${pages === 1 ? 'page' : 'pages'}` : ''}` },
-    { label: 'Due', value: invoice.due_on ? `${dayKeyWords(invoice.due_on)}, by bank transfer` : '' },
-    { label: 'Settled', value: invoice.status === 'paid' ? `${invoice.paid_at && dayOfStamp(invoice.paid_at) === today ? 'Today' : invoice.paid_at ? dayKeyWords(dayOfStamp(invoice.paid_at)) : 'Settled'}, by bank transfer` : 'Not yet', done: invoice.status === 'paid' },
+    { label: 'Due', value: invoice.due_on ? `${dayKeyWords(invoice.due_on, { year: true, today })}, by bank transfer` : '' },
+    { label: 'Settled', value: invoice.status === 'paid' ? `${invoice.paid_at && dayOfStamp(invoice.paid_at) === today ? 'Today' : invoice.paid_at ? dayKeyWords(dayOfStamp(invoice.paid_at), { year: true, today }) : 'Settled'}, by bank transfer` : 'Not yet', done: invoice.status === 'paid' },
   ];
   if (profile?.supplier_portal) rows.splice(2, 0, { label: 'Their supplier portal', value: invoice.portal_uploaded_at ? 'Uploaded' : 'Upload it there too, reminder in Needs you', done: Boolean(invoice.portal_uploaded_at) });
   return rows.filter((r) => r.value).map((r) => ({ ...r, done: r.done ?? (r.label === 'Sent to' || r.label === 'Attached' || r.label === 'Due') }));

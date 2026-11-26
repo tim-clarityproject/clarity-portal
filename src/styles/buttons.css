@@ -277,3 +277,18 @@
   text-transform: none !important;
   letter-spacing: normal !important;
 }
+
+/* ---------- Windows high-contrast mode (rule 8b; the break-it tester, F4) ----------
+   That mode drops background colours, so a joined switch's chosen part looked like the others and the main button
+   lost its shape: the chosen part takes the system's highlight, and the main button an edge in the button text
+   colour. */
+@media (forced-colors: active) {
+  .ui-root .ds-seg .ds-seg-btn:is([aria-pressed='true'], [aria-checked='true']):not(#_) {
+    forced-color-adjust: none;
+    background: Highlight !important;
+    color: HighlightText !important;
+  }
+  .ui-root :is(.ds-btn--primary, .ui-btn-primary, .auth-btn-primary, .si-btn):is(button, a, label, span):not(#_) {
+    border: var(--line-w) solid ButtonText !important;
+  }
+}

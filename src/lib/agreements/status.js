@@ -18,7 +18,7 @@ export function whenWords(value, now = new Date()) {
   if (!d || Number.isNaN(d.getTime())) return '';
   const day = getLocalDateKey(d);
   const today = getLocalDateKey(now);
-  const lead = day === today ? 'Today' : day === addDays(today, -1) ? 'Yesterday' : dayKeyWords(day);
+  const lead = day === today ? 'Today' : day === addDays(today, -1) ? 'Yesterday' : dayKeyWords(day, { year: true, today });
   return `${lead}, ${formatClockTime(d)}`;
 }
 /** "Today", "Yesterday" or "Tue 24 Nov". */
@@ -27,7 +27,7 @@ export function dayOnlyWords(value, now = new Date()) {
   if (!d || Number.isNaN(d.getTime())) return '';
   const day = getLocalDateKey(d);
   const today = getLocalDateKey(now);
-  return day === today ? 'Today' : day === addDays(today, -1) ? 'Yesterday' : dayKeyWords(day);
+  return day === today ? 'Today' : day === addDays(today, -1) ? 'Yesterday' : dayKeyWords(day, { year: true, today });
 }
 
 /**

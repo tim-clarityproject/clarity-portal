@@ -17,7 +17,7 @@ export function whenWords(day, today) {
   if (d <= 0) return 'Today';
   if (d === 1) return 'Yesterday';
   if (d < 7) return dayKeyWords(day).slice(0, 3);
-  return dayKeyWords(day);
+  return dayKeyWords(day, { year: true, today });
 }
 const item = (kind, id, title, line, day, today, go, data = {}) => ({ key: `${kind}:${id}`, kind, title, line, when: whenWords(day, today), day, go, data });
 const s = (n, one, many) => `${n} ${n === 1 ? one : many}`;

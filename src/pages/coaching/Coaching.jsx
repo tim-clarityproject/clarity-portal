@@ -15,7 +15,7 @@ import {
 } from '../../lib/coaching';
 import '../performance/performance.css';
 import {
-  SIGNED_PDF, billingLine, readyLine, readyToSign, rowDay, showsBilling, signedVersions, versionTitle,
+  SIGNED_PDF, agreementTitle, billingLine, readyLine, readyRowLine, rowDay, showsBilling, signedVersions, versionTitle, waitingToSign,
 } from '../../lib/coaching/agreements';
 import { isOffline, needsConnection } from '../../lib/friendlyError';
 import CoachingSessions from './CoachingSessions';
@@ -73,7 +73,9 @@ export default function Coaching() {
   const busy = useRef(false); // one request per press
   // Agreements and invoices (061), from the device first.
   const { data: deals } = useAgreements(userId);
-  const ready = readyToSign(deals.agreements);
+  // Every agreement waiting to be signed, each by its own name (F1, P9); the newest one is the main button.
+  const waitingAll = waitingToSign(deals.agreements);
+  const ready = waitingAll[0] || null;
   const signedRows = signedVersions(deals.agreements);
   const billing = showsBilling(deals);
   const [signatureOpen, setSignatureOpen] = useState(false);
@@ -248,17 +250,31 @@ export default function Coaching() {
 
         {(ready || signedRows.length > 0) && (
           <Card label="Agreement" className="coaching-section agree-section">
-            {ready && (
+            {waitingAll.length === 1 && (
               <div className="agree-ready">
-                <p className="coaching-ask-line agree-ready-line">{readyLine(ready.version)}</p>
+                <p className="coaching-ask-line agree-ready-line">{readyLine(ready)}</p>
               </div>
+            )}
+            {waitingAll.length > 1 && (
+              <Rows label="Ready to sign" className="agree-rows agree-waiting">
+                {waitingAll.map((v) => (
+                  <Row
+                    key={v.id}
+                    name={agreementTitle(v)}
+                    sub={readyRowLine(v)}
+                    value={<Chevron direction="right" size="sm" />}
+                    strong
+                    onClick={() => navigate(`/coaching/agreement/${v.id}`)}
+                  />
+                ))}
+              </Rows>
             )}
             {signedRows.length > 0 && (
               <Rows label="Signed agreements" className="agree-rows">
                 {signedRows.map((v) => (
                   <Row
                     key={v.id}
-                    name={versionTitle(v.version)}
+                    name={versionTitle(v)}
                     sub={SIGNED_PDF}
                     value={rowDay(v.signedAt, today)}
                     strong

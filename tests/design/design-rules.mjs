@@ -521,7 +521,12 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
   // who-line: a page line saying who can see the page in words (the eye says it).
   for (const el of top.querySelectorAll('.ds-open-line, .ds-page-line, .ds-tool-hint')) {
     if (!vis(el)) continue;
-    if (/\b(only you|you and [A-Z][\w’']*|your (coach|team)) can (see|read)\b/i.test(words(el))) say('who-line', `${name(el)} says who can see it in words (the eye says it)`);
+    // Widened (FX7, 26 Nov): "who can read it", "sees the same …" and "shared with …" say it too.
+    const w = words(el);
+    if (/\b(only you|you and [A-Z][\w’']*|your (coach|team)) can (see|read)\b/i.test(w)
+      || /\bwho can (see|read)\b/i.test(w)
+      || /\b(sees?|see) the same\b/i.test(w)
+      || /\bshared with\b/i.test(w)) say('who-line', `${name(el)} says who can see it in words (the eye says it)`);
   }
 
   // label-wrap: a section label on one line.

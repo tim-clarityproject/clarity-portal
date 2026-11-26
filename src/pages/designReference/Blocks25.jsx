@@ -86,7 +86,7 @@ export default function Blocks25() {
           <Label>Blocks</Label>
           <p className="b25-lead">The page opening, card, list row, empty state and figures.</p>
           <div className="b25-demo">
-            <PageOpening label="Page opening" title="My sessions" line="Your coaching sessions, past and coming." action={<Button variant="primary">Book a session</Button>} as="h3" />
+            <PageOpening label="Page opening" title="My sessions" line="Your coaching sessions, past and coming, are all here." action={<Button variant="primary">Book a session</Button>} as="h3" />
           </div>
           <div className="ds-grid2">
             <Card label="What needs you" link={{ children: 'View all', href: '#blocks' }} data-m="card">

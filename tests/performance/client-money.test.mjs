@@ -33,7 +33,8 @@ test('signing waits while a change is unanswered, naming the clause by its numbe
 
 test('what is missing before signing, one line at a time in M28’s order', () => {
   assert.equal(m.signNeeds({}), 'Tick the box to say you agree.');
-  assert.equal(m.signNeeds({ agreed: true, name: ' ' }), 'Add your full name.');
+  assert.equal(m.signNeeds({ agreed: true, name: ' ' }), 'Type your full name to sign.');
+  for (const blank of ['\u200B\u200B\u200B', '.', 'x', '  x  ', '...']) assert.equal(m.signNeeds({ agreed: true, name: blank }), 'Type your full name to sign.', JSON.stringify(blank));
   assert.equal(m.signNeeds({ agreed: true, name: 'Sam Reid' }), 'Draw or type your signature.');
   assert.equal(m.signNeeds({ agreed: true, name: 'Sam Reid', hasSignature: true }), null);
 });

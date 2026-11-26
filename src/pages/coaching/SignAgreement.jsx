@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { Checkbox, Loading, PdfDownload, TextField, ToolFrame, useCoach, useToast } from '../../components/design';
 import { useCachedLoad, readCache, writeCache } from '../../lib/pageCache';
@@ -10,14 +10,14 @@ import { mainPoints, resolveChoice } from '../../lib/agreements/clauses';
 import { applies as coolingApplies, START_NOW_LINE } from '../../lib/agreements/coolingOff';
 import { selfFunded } from '../../lib/agreements/terms';
 import {
-  ALREADY_SIGNED, agreementSections, askForChange, glanceRows, loadSigning, markOpened, readyToSign, signAgreementV2, signedLabel, tidyAgreements,
+  ALREADY_SIGNED, agreementSections, askForChange, glanceRows, loadSigning, markOpened, canSignVersion, signAgreementV2, signedLabel, tidyAgreements,
 } from '../../lib/coaching/agreements';
 import {
   AGREEMENT_TITLE, AGREE_TICK, FLOW, FULL_NAME, SIGN_NEEDS,
   afterSigning, choiceFor, noteText, readingChoice, pendingClause, pendingLine, preparedFor, signNeeds, stepsFor,
 } from '../../lib/coaching/clientMoney';
 import { TOOL_CLOSED } from '../../content/pageLines/client';
-import { AGREEMENTS_CACHE, agreementDocument } from './agreementData';
+import { AGREEMENTS_CACHE, agreementDocument, leaveTool } from './agreementData';
 import { ClausesCard, PointsCard, SettleSwitch } from './AgreementParts';
 import SignBox from './SignBox';
 import './coaching.css';
@@ -36,13 +36,13 @@ import MistakeLine from '../../components/agreements/MistakeLine';
 // Signing leads straight on to Settle (step 3, a self-funded client with something to settle) or the done screen. While
 // a change is unanswered, or the version has run out or isn't the newest, Read shows that one line and no Next. A signed
 // version opens to read, with its PDF. The first open is recorded for the coach (065's agreement_mark_opened) and never
-// shown here. × keeps the place (the draft holds the step, the name and the ticks) and goes back where they came from.
+// shown here. × keeps the place (the address holds the step, the draft the name and the ticks) and goes back where they came from.
 // Differences from M28 v6, on purpose: the start-now tick keeps run 3's legal wording (coolingOff's START_NOW_LINE); the
 // signature can still be drawn (run 3's SignBox) as well as typed.
 
 const NOT_HERE = 'This agreement isn’t here any more.';
 const RUN_OUT = (coach) => `This agreement has run out. Ask ${coach || 'your coach'} to open it again.`;
-const NOT_NEWEST = 'This version can’t be signed. Open the newest one.';
+const NOT_NEWEST = 'A newer version of this agreement has been sent, so open that one to sign.';
 
 /** The clauses as the reader sees them: 065's stored clauses with the choice applied, else run 1's sections. */
 function readerClauses(version, choice) {
@@ -77,7 +77,17 @@ export default function SignAgreement() {
   const coachFirst = (typeof terms.coachFirst === 'string' ? terms.coachFirst : '') || myCoach?.firstName || '';
   const words = signingWords(coachFirst || 'Your coach');
 
-  const [step, setStep] = useState('read');
+  // Read and Sign are each their own place in the browser's history (the lead's call on Q1, as coach rule 45 does for
+  // panels): Next pushes ?step=sign, so the browser's or phone's Back steps back to Read and leaves only from Read;
+  // Forward comes back to Sign, and a reload keeps the place.
+  const location = useLocation();
+  const [search] = useSearchParams();
+  const step = search.get('step') === 'sign' ? 'sign' : 'read';
+  const toSign = () => navigate({ search: '?step=sign' }, { state: { fromRead: true } });
+  const toRead = () => {
+    if (location.state?.fromRead) navigate(-1);
+    else navigate({ search: '' }, { replace: true });
+  };
   const [choice, setChoice] = useState(null);
   const shownChoice = choice || choiceFor(terms, version?.settleChoice);
   // Read, before the client has chosen how to settle (agreements rules 3 and 4: they choose when they sign): both ways,
@@ -99,13 +109,12 @@ export default function SignAgreement() {
 
   const { clear: clearDraft } = useDraft({
     userId, name: `agreement-sign:${versionId}`, ready: Boolean(version),
-    value: { name, agreed, startNow, choice, step },
+    value: { name, agreed, startNow, choice },
     onRestore: (d) => {
       if (typeof d?.name === 'string') setName(d.name);
       if (d?.agreed === true) setAgreed(true);
       if (d?.startNow === true) setStartNow(true);
       if (d?.choice === 'upfront' || d?.choice === 'plan') setChoice(d.choice);
-      if (d?.step === 'sign') setStep('sign');
     },
   });
 
@@ -123,8 +132,7 @@ export default function SignAgreement() {
   // × keeps the place (the draft is on the device) and goes back where they came from (rule 21).
   const close = () => {
     toast.show(TOOL_CLOSED);
-    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
-    else navigate('/welcome');
+    leaveTool(navigate, step === 'sign' && location.state?.fromRead ? 2 : 1);
   };
 
   if (!version) {
@@ -143,8 +151,8 @@ export default function SignAgreement() {
   const pending = asked ? { clauseKey: asked.clauseKey } : version.changePending;
   const pendingWords = pending ? pendingLine(pendingClause({ clause_key: pending.clauseKey, title: pending.title }, clauses), coachFirst) : '';
   const runOut = !version.signedAt && version.expiresOn && version.expiresOn < today;
-  const waiting = readyToSign(data.agreements);
-  const notNewest = !version.signedAt && waiting?.id !== versionId;
+  // Only a newer version of this same agreement stops it; another agreement waiting never does (F1).
+  const notNewest = !version.signedAt && !canSignVersion(data.agreements, versionId);
   const steps = stepsFor(fullTerms).length;
   const eyebrow = preparedFor({ clientFirst: terms.clientFirst, clientName: terms.clientName, coachName: terms.coachName });
   const note = <p className="cl-quote">{`“${noteText(version.personalNote || terms.personalNote)}”`}</p>;
@@ -185,7 +193,7 @@ export default function SignAgreement() {
           name={eyebrow}
           question={AGREEMENT_TITLE}
           onClose={close}
-          onNext={blocked ? undefined : () => { setStep('sign'); setNeed(null); }}
+          onNext={blocked ? undefined : () => { toSign(); setNeed(null); }}
           nextLabel={FLOW.readNext}
         >
           {blocked ? <p className="cl-say cl-blocked" role="status">{pending ? pendingWords : runOut ? RUN_OUT(coachFirst) : NOT_NEWEST}</p> : note}
@@ -225,7 +233,7 @@ export default function SignAgreement() {
         } catch { /* the next load brings it */ }
       }
       const next = afterSigning(fullTerms, res.settleChoice || shownChoice, { amends: version.amends || res.amends });
-      navigate(`/coaching/agreement/${versionId}/${next}`, { replace: true });
+      navigate(`/coaching/agreement/${versionId}/${next}`, { replace: true, state: { toolDepth: location.state?.fromRead ? 2 : 1 } });
       return;
     }
     setFailure(res);
@@ -242,7 +250,7 @@ export default function SignAgreement() {
         onClose={close}
         onNext={sign}
         nextLabel={FLOW.signNext}
-        onBack={() => { setStep('read'); setNeed(null); }}
+        onBack={() => { toRead(); setNeed(null); }}
       >
         <div className="cl-stack cl-signstep">
           {/* Each mistake straight under what it is about (Tim, 26 Nov 15:55; M28 v6's coral line). */}

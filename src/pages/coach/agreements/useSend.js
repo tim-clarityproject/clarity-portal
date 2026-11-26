@@ -6,6 +6,23 @@ import { checkTerms, kindOf } from '../../../lib/agreements/terms';
 import { validUntil } from '../../../lib/agreements/quote';
 import { loadSavedSignature, saveDrawnSignature } from '../../../lib/coaching/agreements';
 import { sendBody, sendProblems, sentRows } from '../../../lib/coach/agreementBuilder';
+import { isOnline } from '../../../lib/connection';
+import { isOffline, needsConnection, SUPERSEDED_MESSAGE } from '../../../lib/friendlyError';
+
+/** Sending needs a connection (P8): said in the one shape for that (friendlyError's needsConnection). */
+export const SEND_OFFLINE = needsConnection('Sending an agreement');
+/**
+ * Why the draft didn't save before sending, in calm words (F2, P8): a refusal that isn't about the connection never says
+ * "Check your connection". `answer`: the draft's save ('failed', 'queued', 'superseded'); `error`: what it threw.
+ */
+export function saveWords(answer, error) {
+  if (answer === 'superseded') return `${SUPERSEDED_MESSAGE} Check it, then send it again.`;
+  if (answer === 'queued' || isOffline(error)) return SEND_OFFLINE;
+  if (['23514', '22003', '22P02', 'PGRST102'].includes(String(error?.code || '')) || error?.status === 400) {
+    return 'That didn’t save, because something in it is more than an agreement can hold. Check the fee, then try again.';
+  }
+  return 'That didn’t save. Try again in a moment.';
+}
 
 // Sending an agreement or a quote (Phase 6b run 3, Group B; M28 s-check, s-sign, s-t-check, s-h-check; brief items 19,
 // 21, 22 and 31; risk 23). The coach signs first (their saved signature, or one drawn or typed now, kept as their own
@@ -30,7 +47,7 @@ async function signatureId(userId, { saved, drawn, typed }) {
   if (drawn) return (await saveDrawnSignature(userId, drawn)).id;
   if (typed) {
     const { data, error } = await supabase.from('signatures').insert({ user_id: userId, kind: 'typed', typed_name: String(typed).trim() }).select('id').single();
-    if (error) throw new Error('That didn’t save. Check your connection and try again.');
+    if (error) throw new Error(isOffline(error) ? SEND_OFFLINE : 'Your signature didn’t save. Try again in a moment.');
     return data.id;
   }
   return saved?.id || null;
@@ -44,11 +61,12 @@ export function useSend(d) {
   return useCallback(async ({ sendAs = 'agreement', validDays = 30, personalNote, signature = {} }) => {
     const { agreement, draft, userId, portal } = d;
     if (!agreement || !draft) return { ok: false, message: 'That agreement isn’t here.' };
+    if (!isOnline()) return { ok: false, message: SEND_OFFLINE };
     const terms = draft.terms || {};
     const problems = [...checkTerms(terms), ...sendProblems(terms, { rate: d.rate })];
     if (problems.length) return { ok: false, message: problems[0] };
     let sigId;
-    try { sigId = await signatureId(userId, signature); } catch (e) { return { ok: false, message: e?.message || 'That didn’t save. Check your connection and try again.' }; }
+    try { sigId = await signatureId(userId, signature); } catch (e) { return { ok: false, message: isOffline(e) ? SEND_OFFLINE : e?.message || 'Your signature didn’t save. Try again in a moment.' }; }
     if (!sigId) return { ok: false, message: 'Draw or type your signature first.' };
     const note = personalNote ?? draft.personal_note ?? '';
     const sentAt = new Date().toISOString();
@@ -58,11 +76,11 @@ export function useSend(d) {
     const approvedNow = agreement.approval === 'approved' && Number(agreement.approved_version) === Number(draft.version);
     if (!portal.isOwner && !approvedNow) {
       const saved = await d.save(terms, { personalNote: note, fields: { send_as: sendAs, coach_signed_at: sentAt, coach_signature_id: sigId }, agreementChange: { approval: 'waiting' }, now: true });
-      return saved === 'failed' ? { ok: false, message: 'That didn’t save. Check your connection and try again.' } : { ok: true, waiting: true };
+      return ['failed', 'queued', 'superseded'].includes(saved) ? { ok: false, message: saveWords(saved, d.lastError?.()) } : { ok: true, waiting: true };
     }
 
     const saved = await d.save(terms, { personalNote: note, fields: { send_as: sendAs }, now: true });
-    if (saved === 'failed') return { ok: false, message: 'That didn’t save. Check your connection and try again.' };
+    if (['failed', 'queued', 'superseded'].includes(saved)) return { ok: false, message: saveWords(saved, d.lastError?.()) };
     // The version and agreement as just saved (their clauses, rate and note), not the page's older copies.
     const version = rowNow(userId, 'agreement_versions', { id: draft.id }) || draft;
     const agreementNow = rowNow(userId, 'agreements', { id: agreement.id }) || agreement;
@@ -70,10 +88,10 @@ export function useSend(d) {
     if (sendAs === 'quote') {
       const had = rowsOf(portal.state, 'agreement_quotes').find((q) => q.version_id === draft.id && (q.status === 'draft' || q.status === 'withdrawn' || q.status === 'expired')) || null;
       quote = { ...(had || { id: newId(), coach_id: portal.coach.id, agreement_id: agreement.id, version_id: draft.id }), valid_days: Number(validDays) || 30, status: 'draft', coach_signature_id: sigId };
-      try { await saveRow(userId, 'agreement_quotes', quote); } catch { return { ok: false, message: 'That didn’t save. Check your connection and try again.' }; }
+      try { await saveRow(userId, 'agreement_quotes', quote); } catch (e) { return { ok: false, message: saveWords('failed', e) }; }
     }
     const answer = await ask('agreements', 'send', sendBody({ agreement: agreementNow, version, signatureId: sigId, personalNote: note, sendAs, validDays, quoteId: quote?.id || null }));
-    if (!answer.ok) return { ok: false, message: answer.message };
+    if (!answer.ok) return { ok: false, message: isOnline() ? answer.message : SEND_OFFLINE };
 
     if (answer.standIn) {
       // Off the live site only: the stand-in sends nothing, so the page writes what the server would have.

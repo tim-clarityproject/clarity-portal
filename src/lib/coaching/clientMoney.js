@@ -5,6 +5,7 @@ import { firstPayment, hasRest, payTitle, restLine } from '../agreements/settlin
 import { applies as coolingApplies, bookableFrom, SETTLE_LINE } from '../agreements/coolingOff.js';
 import { balanceLine, entryLength, percentUsed } from '../agreements/hours.js';
 import { quoteNumber } from '../agreements/quote.js';
+import { nameOk } from './agreementRules.js';
 import { UPFRONT_PERCENT, canChoose, choiceOptions } from '../agreements/upfront.js';
 
 // The client's side of an agreement and their money (Phase 6b run 3, Group C; M28 version 4: s-q-client, s-c-sign,
@@ -44,7 +45,8 @@ export const PAPER = 'Rather sign on paper? Download the PDF';
 /** What is missing before signing, in M28's words (one line, in the alert above the button). */
 export const SIGN_NEEDS = Object.freeze({
   tick: 'Tick the box to say you agree.',
-  name: 'Add your full name.',
+  // One message for every blank or too-short name: spaces, invisible marks, "." or "x" (the break-it tester, P3).
+  name: 'Type your full name to sign.',
   signature: 'Draw or type your signature.',
   change: 'Say what you’d like changed.',
 });
@@ -52,7 +54,7 @@ export const SIGN_NEEDS = Object.freeze({
 /** The first thing missing, or null when ready (M28's signClient and signSponsor, in that order). */
 export function signNeeds({ agreed = false, name = '', hasSignature = false } = {}) {
   if (!agreed) return SIGN_NEEDS.tick;
-  if (!text(name)) return SIGN_NEEDS.name;
+  if (!nameOk(name)) return SIGN_NEEDS.name;
   if (!hasSignature) return SIGN_NEEDS.signature;
   return null;
 }

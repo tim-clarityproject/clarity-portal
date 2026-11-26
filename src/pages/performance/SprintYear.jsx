@@ -227,7 +227,7 @@ export default function SprintYear() {
         <div className="plan-back-row cp-back"><BackLink onClick={() => navigate('/performance-sprint')} label="Performance Sprint" /></div>
         <PageOpening
           title="View your year"
-          line={view ? `Your sprints in ${view.year}, week by week.` : B1_LINES.sprintYear}
+          line={view ? `Here are your sprints in ${view.year}, week by week.` : B1_LINES.sprintYear}
         />
         {body}
       </div>

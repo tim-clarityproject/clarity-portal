@@ -26,6 +26,8 @@ export const equalCount = (t) => (kindOf(t) === 'sessions' && t?.priceMode !== '
 export const TEAM_THEN = 3;
 
 const cur = (t) => t?.currency || 'GBP';
+/** A total in `count` equal parts of whole minor units, the first carrying what doesn't divide (£17,480 over 12: £1,456.74, then £1,456.66). */
+export const splitEqual = (total, count) => split(total, count);
 const split = (total, count) => {
   if (!(total > 0)) return Array.from({ length: count }, () => 0);
   const each = Math.floor(total / count);

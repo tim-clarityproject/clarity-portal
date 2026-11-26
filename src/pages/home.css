@@ -37,6 +37,16 @@
   margin: calc(var(--space-px14) * -1) 0;
 }
 
+/* The save state's live region while it says nothing: kept for screen readers, out of the row, so its gap never
+   pushes "View your week" in (12px at 200% text, where the link wraps under the label). */
+.ui-root .home-log-right > [role='status']:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
 .ui-root .home-log .ds-card-head > .ds-label:focus { outline: none; }
 
 /* Log today's habit rows sit as the card's control rows: hairlines between, none above the first. */
@@ -96,9 +106,12 @@
 .ui-root .home-fold-head {
   display: flex;
   flex: 1 1 auto;
+  /* At large text on a phone the line drops under "This week" and may wrap, never running under the chevron or off
+     the card (the lead, after FX7's report). At the standard size they share one line. */
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: var(--space-3);
+  gap: 0 var(--space-3);
   min-width: 0;
 }
 
@@ -114,7 +127,8 @@
 
 .ui-root .home-fold-line {
   display: inline;
-  white-space: nowrap;
+  min-width: 0;
+  white-space: normal;
   font-size: var(--fs-meta);
   line-height: 1.55;
   color: var(--text-2);

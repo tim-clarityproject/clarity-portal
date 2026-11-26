@@ -269,6 +269,20 @@ test('who-line (walk B, item 5): a page line saying who can see it fails; the ey
   assert.ok(!has(r, 'who-line'), all(r));
 });
 
+test('who-line, widened (FX7): "who can read", "sees the same" and "shared with" fail; a line about the page passes', async () => {
+  const open = (line) => `<header class="ds-open"><h1 class="ds-page-title ds-open-title">Board</h1><p class="ds-open-line">${line}</p></header>`;
+  for (const line of [
+    'Shared with your associates, who can read it but not change it.',
+    'Imogen sees the same balance and every entry in their portal.',
+    'They see the same balance in their portal.',
+    'Your team’s plan, shared with everyone in it.',
+    'Notes who can see them is up to you.',
+  ]) assert.ok(has(await check(open(line)), 'who-line'), line);
+  for (const line of ['The cards on this board move through it stage by stage.', 'Each entry here comes off the block, and the balance shows what’s left.', 'Here is what you shared last week.']) {
+    assert.ok(!has(await check(open(line)), 'who-line'), line);
+  }
+});
+
 test('label-wrap (walk B, item 9): a card label on two lines fails; on one line it passes', async () => {
   const card = (label, w) => `<section class="ds-card" style="width:${w}px"><div class="ds-card-head"><h2 class="ds-label">${label}</h2></div><div class="ds-fig">£5,605</div></section>`;
   let r = await check(card('Income in November so far', 180));

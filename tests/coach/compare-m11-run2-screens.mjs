@@ -140,7 +140,7 @@ export const EVERYWHERE = {
   ],
   added: [
     ...THEY_NAMES,
-    [/^((MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY) \d+ NOVEMBER|.+ coaching sessions? today, and .+\.|Nothing needs you right now\.|COACHING SESSIONS|THIS MONTH|THIS WEEK|Nothing settled yet this month\.|Finances|Everything you plan to do, by day\.|A list of your own to-dos\.|TODAY|Close my day|Plan my day|Start my weekly review|Rate my energy|Not now)$/, P1_OPEN, null, { quiet: true, say: 'the page’s opening and its cards’ labels' }],
+    [/^((MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY) \d+ NOVEMBER|.+ coaching sessions? today, and .+\.|Nothing needs you right now\.|COACHING SESSIONS|THIS MONTH|THIS WEEK|Nothing settled yet this month\.|Finances|Everything you plan to do is here, day by day\.|This list holds your own to-dos\.|TODAY|Close my day|Plan my day|Start my weekly review|Rate my energy|Not now)$/, P1_OPEN, null, { quiet: true, say: 'the page’s opening and its cards’ labels' }],
     [/^(Open .+’s session|\d\d:\d\d, .+)$/, P1_ROWS, null, { quiet: true, say: '12:30, Zoom; Open Sam’s session' }],
     [/^(Add a day or time, # a list or client, @ a tag, ! for important, 30m for how long\.|Add|Cancel|name: Add to-do|name: Add heading|name: View all to-dos|View all)$/, `${P1_QA}; its Cancel closes it`, null, { quiet: true, say: '+ Add, View all' }],
     [/^(\d+ (minutes|hours?)|How long will it take\?)$/, P1_UNITS, null, { quiet: true, say: '30 minutes, How long will it take?' }],

@@ -128,6 +128,16 @@ export default function NewInvoice() {
       <span className="ny-qrow-h">{rowHours(r.minutes)}</span>
     </div>
   );
+  // Nothing to invoice: refused at Preview (F7), with no PDF made and no Send offered.
+  const openPreview = () => {
+    if (!rows.length) {
+      setProblem(all.length ? 'Nothing is ticked, so there’s nothing to invoice yet. Tick the coaching sessions to invoice, then preview it.'
+        : 'There’s nothing to invoice yet: no coaching sessions or time logged with them since their last invoice.');
+      return;
+    }
+    setProblem(null);
+    setPreview(true);
+  };
   const minutes = rows.reduce((a, r) => a + r.minutes, 0);
   const totalMinor = Math.round(minutes * rateMinor / 60);
   // A value that may run long (their reference, the address, the email) sits under its name, so the name never squashes.
@@ -143,7 +153,7 @@ export default function NewInvoice() {
       <div className="cc-col cc-money-page">
         <Back to={org.name} onClick={() => navigate(`/coach/organisations/${org.id}/billing`)} />
         <PageOpening label={`For ${org.name}`} title="New invoice" line={MONEY_LINES.newInvoice}
-          action={<Button variant="primary" onClick={() => setPreview(true)}>Preview and send</Button>} />
+          action={<Button variant="primary" onClick={openPreview}>Preview and send</Button>} />
         <Problem>{problem}</Problem>
         <div className="ds-cols ds-cols--needs-first">
           <div>

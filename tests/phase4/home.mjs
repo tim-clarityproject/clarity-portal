@@ -345,7 +345,7 @@ if (part(3)) {
 
     await homeAt(c.page, '2026-10-30', '10:00');
     pass('coming back after a gap: "Good to see you"', (await title(c.page)).startsWith('good to see you'), await title(c.page));
-    pass('coming back after a gap: "Let’s start with this week."', (await text(c.page, '.ds-open-line')).endsWith('Let’s start with this week.'), await text(c.page, '.ds-open-line'));
+    pass('coming back after a gap: "…, so let’s start with this week."', (await text(c.page, '.ds-open-line')).endsWith(', so let’s start with this week.'), await text(c.page, '.ds-open-line'));
     await homeAt(c.page, '2026-10-23', '10:00');
     pass('no gap two days on: the usual greeting', (await title(c.page)).startsWith('good morning'), await title(c.page));
 

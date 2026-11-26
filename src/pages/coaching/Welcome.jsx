@@ -7,7 +7,7 @@ import { getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
 import { BOOK_FIRST, ENDED_STATUSES, FLOW, WHAT_NEXT, doneLine, endedLine, needsSettleCheck, settledInFull, stepsFor, welcomeRows } from '../../lib/coaching/clientMoney';
 import { TOOL_CLOSED } from '../../content/pageLines/client';
 import { clientAsk } from '../../lib/coaching/clientAsk';
-import { agreementDocument, useAgreements } from './agreementData';
+import { agreementDocument, useAgreements, leaveTool, toolDepth } from './agreementData';
 import './coaching.css';
 import './clientAgreement.css';
 
@@ -59,8 +59,7 @@ export default function Welcome() {
   const toast = useToast();
   const close = () => {
     toast.show(TOOL_CLOSED);
-    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
-    else navigate('/welcome');
+    leaveTool(navigate, toolDepth({ state }));
   };
   const done = { step: 1, steps: 1, last: true, stepWords: FLOW.doneSteps, onClose: close };
 

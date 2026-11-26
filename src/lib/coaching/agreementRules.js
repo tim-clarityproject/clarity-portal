@@ -86,9 +86,32 @@ export function agreementRows(list) {
   return (Array.isArray(list) ? list : []).map(tidyVersion).filter(Boolean);
 }
 
-/** The version waiting to be signed: sent, the agreement's current one, not signed yet. Null for none. */
+/**
+ * Every version waiting to be signed, one per agreement: sent, its agreement's current one, not signed yet,
+ * newest first. A client with two separate agreements waiting can sign either (the break-it tester, 26 Nov, F1).
+ */
+export function waitingToSign(rows) {
+  const seen = new Set();
+  return (rows || []).filter((v) => {
+    if (!(v.status === 'sent' && v.current && !v.signedAt)) return false;
+    const key = v.agreementId || v.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** The version waiting to be signed first (the newest agreement's): the page's one main button. Null for none. */
 export function readyToSign(rows) {
-  return (rows || []).find((v) => v.status === 'sent' && v.current && !v.signedAt) || null;
+  return waitingToSign(rows)[0] || null;
+}
+
+/**
+ * Whether this version can be signed now: it is waiting, and no newer version of the SAME agreement has been
+ * sent since. Another agreement waiting never blocks it.
+ */
+export function canSignVersion(rows, versionId) {
+  return waitingToSign(rows).some((v) => v.id === versionId);
 }
 
 /** Signed versions, the newest signing first (a later one supersedes the one before, which stays signed). */
@@ -156,8 +179,36 @@ export function agreementSections(v) {
 
 // ---------------------------------------------------------------- the lines the screens say
 
-export const versionTitle = (n) => `Coaching agreement, version ${n}`;
-export const readyLine = (n) => `Version ${n} of your coaching agreement is ready to sign.`;
+const KIND_WORDS = Object.freeze({ hours: 'Block of hours', retainer: 'Monthly retainer', oneoff: 'One-off piece of work', team: 'Team coaching' });
+
+/**
+ * An agreement's own name, as the client knows it: its coaching ("6-month coaching"), else the work it covers,
+ * else its kind's words, else "Coaching agreement". So /coaching names each agreement, never only "version 2" (P9).
+ */
+export function agreementTitle(v) {
+  const t = v && typeof v === 'object' ? (v.terms || {}) : {};
+  const named = text(t.coaching) || text(t.work) || text(t.hours?.work);
+  if (named) return named.charAt(0).toUpperCase() + named.slice(1);
+  return KIND_WORDS[t.kind] || KIND_WORDS[v?.agreementKind] || 'Coaching agreement';
+}
+
+/** A signed row's name: "6-month coaching, version 2" (a version number alone: "Coaching agreement, version 3"). */
+export const versionTitle = (v) => (typeof v === 'number' ? `Coaching agreement, version ${v}` : `${agreementTitle(v)}, version ${v?.version ?? ''}`);
+
+/**
+ * "Your agreement for Leadership Accelerator, 6 months is ready to sign." (a package's name keeps its capitals; a kind's
+ * own words read in lower case: "your agreement for a block of hours"); a later version names its number.
+ */
+export function readyLine(v) {
+  if (typeof v === 'number') return `Version ${v} of your coaching agreement is ready to sign.`;
+  const title = agreementTitle(v);
+  const kindWords = { 'Block of hours': 'a block of hours', 'Monthly retainer': 'a monthly retainer', 'One-off piece of work': 'a one-off piece of work', 'Team coaching': 'team coaching' }[title];
+  const what = title === 'Coaching agreement' ? 'your coaching agreement' : `your agreement for ${kindWords || title}`;
+  return v?.version > 1 ? `Version ${v.version} of ${what} is ready to sign.` : `${what.charAt(0).toUpperCase()}${what.slice(1)} is ready to sign.`;
+}
+
+/** A waiting row's quiet line under the agreement's name, where several wait: "Ready to sign", "Version 2, ready to sign". */
+export const readyRowLine = (v) => (v?.version > 1 ? `Version ${v.version}, ready to sign` : 'Ready to sign');
 export const SIGNED_PDF = 'Signed PDF';
 
 /** "Version 3, sent by Tim yesterday" (M13 A3): today, yesterday, or "on Mon 19 Oct". */

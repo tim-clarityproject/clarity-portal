@@ -5,7 +5,7 @@ import { AddLink, Card, Figure, MoreLink, PageOpening, QuickAdd, Row, Rows } fro
 import { MONEY_LINES } from '../../../content/pageLines/coach';
 import { agreementName } from '../../../lib/coach/money';
 import { hoursWords } from '../../../lib/agreements/currency';
-import { at80, balanceLine, blockShort, entryLength, entryMinutes } from '../../../lib/agreements/hours';
+import { balanceLine, balanceNote, blockShort, entryLength, entryMinutes } from '../../../lib/agreements/hours';
 import { hoursState, LOG_MINUTES, logDays, SAY_WHAT, versionInForce } from '../../../lib/agreements/duringAgreement';
 import { coachZoneOf } from '../../../lib/coach/calendar';
 import { newId, removeRow, rowsOf, saveRow } from '../../../lib/coach/store';
@@ -23,11 +23,11 @@ import '../money/money.css';
 
 const firstOf = (name) => String(name || '').trim().split(/\s+/)[0] || '';
 
-function LogList({ log, zone }) {
+function LogList({ log, zone, today }) {
   if (!log.length) return <p className="cc-money-quiet">No time logged yet.</p>;
   return (
     <Rows label="Time logged">
-      {log.map((e) => <Row key={e.id} name={e.note || 'Time logged'} sub={dayKeyWords(dayIn(zone, new Date(e.started_at)))} value={entryLength(entryMinutes(e))} />)}
+      {log.map((e) => <Row key={e.id} name={e.note || 'Time logged'} sub={dayKeyWords(dayIn(zone, new Date(e.started_at)), { year: true, today })} value={entryLength(entryMinutes(e))} />)}
     </Rows>
   );
 }
@@ -76,7 +76,6 @@ export default function HoursLog() {
     } catch { toast.error('That didn’t save. Check your connection and try again.'); } finally { busy.current = false; }
   };
   const first = firstOf(name);
-  const left = Math.max(0, h.block - h.used);
   // The block's own name as the title (M28 v6 "hours": "Assessment build", the label "Block of hours, £2,000 at
   // £150/hr"; the UI tester's P4): the agreement's name, else the work it is for, else the kind's name.
   const title = agreementName(t, a) !== 'Block of hours' ? agreementName(t, a) : (workTitle(t.hours?.work) || (first ? `${first}’s hours` : 'Block of hours'));
@@ -93,7 +92,7 @@ export default function HoursLog() {
             <Card
               className="ab-hours-log"
               label="Time logged"
-              add={<AddLink label="Log time" expanded={adding} controls="cc-money-log" onClick={() => setAdding((v) => !v)} />}
+              add={<AddLink label="Add time" expanded={adding} controls="cc-money-log" onClick={() => setAdding((v) => !v)} />}
               quickAdd={(
                 <QuickAdd id="cc-money-log" open={adding} onClose={() => { setAdding(false); setProblem(null); }} onAdd={log} placeholder="What was it for?" label="What was it for?" addLabel="Log time" stayOpen
                   more={(
@@ -105,14 +104,14 @@ export default function HoursLog() {
               )}
             >
               <Problem>{problem}</Problem>
-              <LogList log={h.log} zone={zone} />
+              <LogList log={h.log} zone={zone} today={p.todayKey} />
             </Card>
           </div>
           <div>
             <Card label="Balance">
               <Figure value={entryLength(h.used)} unit={`of ${entryLength(h.block)} used`} />
               <Meter used={h.used} block={h.block} label={balanceLine(h.used, h.block)} />
-              <p className="cc-money-quiet">{at80(h.used, h.block) ? `At 80% a top-up invoice was drafted in Needs you. Nothing goes to ${first || 'them'} by itself.` : `${entryLength(left)} left. At 80% a top-up invoice is drafted in Needs you.`}</p>
+              <p className="cc-money-quiet">{balanceNote(h.used, h.block, first)}</p>
               <MoreLink className="cc-money-view" onClick={() => setView(true)}>{`See ${first ? `${first}’s` : 'their'} view`}</MoreLink>
             </Card>
           </div>
@@ -123,7 +122,7 @@ export default function HoursLog() {
           <p className="ny-hint">{`As ${first} sees it in My Account, Block of hours.`}</p>
           <Meter used={h.used} block={h.block} label={balanceLine(h.used, h.block)} />
           <p className="ny-say">{balanceLine(h.used, h.block)}</p>
-          <LogList log={h.log} zone={zone} />
+          <LogList log={h.log} zone={zone} today={p.todayKey} />
         </div>
       </SlidePanel>
     </div>

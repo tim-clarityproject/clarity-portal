@@ -4,7 +4,7 @@ import { Card, Row } from '../../../components/design/Blocks';
 import { AGREEMENT_LINES } from '../../../content/pageLines/coach';
 import { ask } from '../../../lib/agreements/askClient';
 import { moneyText } from '../../../lib/agreements/currency';
-import { extendOptions, pauseMove } from '../../../lib/agreements/endDate';
+import { endEarlyProblem, extendOptions, pauseMove, pauseProblem } from '../../../lib/agreements/endDate';
 import { ownSessions, refund14, sessionRanges, windowEnds } from '../../../lib/agreements/coolingOff';
 import { usedCount } from '../../../lib/agreements/sessionOutcome';
 import {
@@ -45,7 +45,10 @@ function useAsk(onDone) {
     try {
       const answer = await fn();
       if (!answer?.ok) { setProblem(answer?.message || 'That didn’t work. Try again in a moment.'); return; }
-      toast.saved({ message: typeof message === 'function' ? await message(answer) : message });
+      const said = typeof message === 'function' ? await message(answer) : message;
+      // Nothing changed after all (a stand-in that refused: P4): a mistake line in the flow, never a "done" toast.
+      if (said && typeof said === 'object' && said.problem) { setProblem(said.problem); return; }
+      toast.saved({ message: said });
       loadCoach(userId, { again: true }).catch(() => {});
       onDone();
     } finally { busy.current = false; }
@@ -90,7 +93,7 @@ function useExtend({ a, name, end, today, done }) {
 }
 
 function usePause({ a, t, end, today, done }) {
-  const froms = pauseFromOptions(today);
+  const froms = pauseFromOptions(today, end);
   const [from, setFrom] = useState(froms[0]?.value);
   const tos = pauseToOptions(from, today);
   const [to, setTo] = useState(tos[0]?.value);
@@ -110,7 +113,9 @@ function usePause({ a, t, end, today, done }) {
     say: [moved.line, t?.kind === 'retainer' ? 'Its monthly invoices pause too.' : ''].filter(Boolean).join(' '),
     finish: 'Pause coaching',
     go: () => {
-      if (!moved.ok) { setProblem('Choose an Until date after From.'); return; }
+      // The server's own refusals, asked here first (F6).
+      const stop = pauseProblem({ from, to, today, end, paused: a.paused_from ? { from: a.paused_from, to: a.paused_to || null } : null });
+      if (stop || !moved.ok) { setProblem(stop || 'Choose an Until date after From.'); return; }
       run(() => ask('agreements', 'pause', { agreementId: a.id, from, to }), (ans) => (ans.endsOn || moved.end ? `Paused. It now ends on ${words(ans.endsOn || moved.end)}.` : 'Paused.'), setProblem);
     },
   };
@@ -134,7 +139,11 @@ function useEndEarly({ a, t, name, end, today, done }) {
     ],
     say: `${endEarlySentence(t)} ${first} gets an email.`,
     finish: `End on ${label}`,
-    go: () => run(() => ask('agreements', 'end_early', { agreementId: a.id, endsOn: on, by: who }), (ans) => `It ends on ${label}. ${mailedWords(ans, first)}`, setProblem),
+    go: () => {
+      const stop = endEarlyProblem({ on, today, end });
+      if (stop) { setProblem(stop); return; }
+      run(() => ask('agreements', 'end_early', { agreementId: a.id, endsOn: on, by: who }), (ans) => `It ends on ${label}. ${mailedWords(ans, first)}`, setProblem);
+    },
   };
 }
 
@@ -193,7 +202,7 @@ function useRefund({ a, name, done }) {
         if (ans?.standIn) {
           return ans.number
             ? `${type === 'refund' ? `Refunded ${money}` : `${money} kept as credit`}, with credit note ${ans.number}. Off the live site nothing goes to Stripe.`
-            : 'Nothing goes back off the live site, so nothing has changed.';
+            : { problem: 'Nothing went back, so nothing has changed. Check how much is left to give back, then try again.' };
         }
         return type === 'refund' ? `Refunded ${money}. ${note}` : `${money} kept as credit. ${note}`;
       }, setProblem);

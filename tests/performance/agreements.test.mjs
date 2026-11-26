@@ -5,8 +5,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   ALREADY_SIGNED, BILLING, NEEDS, OFFLINE_SIGN, agreementRows, agreementSections, billingLine, billingView, currentAgreement, fundsLine,
-  glanceRows, investedSoFar, isSignatureImage, nameOk, nextInvoice, readyLine, readyToSign, sentLabel, showsBilling, signError, signProblems,
-  signatureFor, signedLabel, signedVersions, termsFor, thankYou, tidyAgreements, tidyInvoice, versionTitle,
+  agreementTitle, canSignVersion, glanceRows, investedSoFar, isSignatureImage, nameOk, nextInvoice, readyLine, readyToSign, sentLabel, showsBilling, signError, signProblems,
+  signatureFor, signedLabel, signedVersions, termsFor, thankYou, tidyAgreements, tidyInvoice, versionTitle, waitingToSign,
 } from '../../src/lib/coaching/agreementRules.js';
 import { clauses, mainPoints } from '../../src/lib/billing/agreementText.js';
 
@@ -58,6 +58,26 @@ test('the version ready to sign is the sent, current, unsigned one; signed ones 
   const after = agreementRows([version(3, { version: 3, status: 'signed', client_signed_at: '2026-10-28T18:40:00Z' })]);
   assert.equal(readyToSign(after), null);
   assert.equal(currentAgreement(after).version, 3);
+});
+
+test('two separate agreements waiting: either can be signed, each by its own name; a newer version of the same one blocks the older (F1, P9)', () => {
+  const rows = agreementRows([
+    version(5, { version: 1, agreement_id: id(200), terms: { ...BEN_TERMS, coaching: '', kind: 'hours', hours: { work: 'leadership offsite support' } } }),
+    version(3, { version: 2 }),
+    version(2, { version: 1, status: 'superseded', current: false }),
+  ]);
+  assert.deepEqual(waitingToSign(rows).map((v) => v.id), [id(5), id(3)]);
+  assert.equal(canSignVersion(rows, id(5)), true);
+  assert.equal(canSignVersion(rows, id(3)), true);
+  assert.equal(canSignVersion(rows, id(2)), false, 'the older version of the same agreement waits behind its newer one');
+  assert.equal(agreementTitle(rows[0]), 'Leadership offsite support');
+  assert.equal(agreementTitle({ terms: { kind: 'hours' } }), 'Block of hours');
+  assert.equal(agreementTitle({ terms: {} }), 'Coaching agreement');
+  assert.equal(readyLine(rows[0]), 'Your agreement for Leadership offsite support is ready to sign.');
+  assert.equal(readyLine({ version: 2, terms: { coaching: '6-month coaching' } }), 'Version 2 of your agreement for 6-month coaching is ready to sign.');
+  assert.equal(readyLine({ version: 1, terms: { coaching: 'Leadership Accelerator, 6 months' } }), 'Your agreement for Leadership Accelerator, 6 months is ready to sign.');
+  assert.equal(readyLine({ version: 1, terms: { kind: 'hours' } }), 'Your agreement for a block of hours is ready to sign.');
+  assert.equal(versionTitle({ version: 2, terms: { coaching: '6-month coaching' } }), '6-month coaching, version 2');
 });
 
 test('At a glance is the wording’s Main points, with the investment for a self-funded client', () => {

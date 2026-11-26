@@ -6,7 +6,7 @@
 //   read    Step 1 of 3 in focus mode (no menu column), "Prepared for Sam by …", the coach's note, The main points, The
 //           agreement with its clause count, the first clause open and the clauses opening one at a time, I've read it.
 //   check   the sign step: Your full name filled from the agreement, the typed name as the signature to start with,
-//           Sign pressed too early says "Tick the box to say you agree.", then "Add your full name.", Draw instead
+//           Sign pressed too early says "Tick the box to say you agree.", then "Type your full name to sign.", Draw instead
 //           opens the box, Type it instead closes it, the start-now tick (self-funded), Back goes to Read.
 // Once (the first size and mode), as it writes:
 //   sign    5eed0c40-…02 signed with a drawn signature → Settle (Step 3 of 3, the amount "today", Card / Apple Pay, the
@@ -125,7 +125,7 @@ async function readAndCheck(width, mode) {
   await page.getByText('I’ve read this agreement and I agree to it.').click();
   await name.fill('');
   await next(page).click();
-  pass(`sign step ${tag}: no name asks for it`, /Add your full name\./.test(await need(page)), await need(page));
+  pass(`sign step ${tag}: no name asks for it`, /Type your full name to sign\./.test(await need(page)), await need(page));
   await name.fill('Sam Carter');
   await page.getByText('Draw my signature instead').click();
   pass(`sign step ${tag}: Draw instead opens the box`, await page.locator('canvas.cl-sig-canvas').isVisible());

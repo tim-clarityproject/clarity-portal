@@ -1242,6 +1242,11 @@ export function rowNow(userId, table, keyRow) {
   return read(userId).rows[table]?.[keyOf(table, keyRow)] || null;
 }
 
+/** Whether the device's copy of this row is the database's own (sent, not changed here since): its updated_at is the database's. */
+export function rowSent(userId, table, keyRow) {
+  return read(userId).marks[table]?.[keyOf(table, keyRow)]?.sent === true;
+}
+
 /**
  * Saves only the columns a panel changed (`change`), put onto the row as this device holds it NOW, never the panel's
  * older copy, so another tab's edit to other columns is kept (break-it tester, 6b run 2: Finances' settings and

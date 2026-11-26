@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   AddLink, Button, Card, CalendarBar, Chevron, ControlRow, InlineChoice, Loading, MonthGrid, MoreLink, PageOpening, QuickAdd, Row, Rows,
   TextBox, TextField, ToolFrame, monthTitle, useIsPhone, useToast,
@@ -16,13 +16,14 @@ import { wordingLine } from '../../../lib/agreements/differences';
 import {
   LENGTH_CHOICES, MOMENTUM_CHOICES, NOTICE_CHOICES, OFTEN_CHOICES, TERM_CHOICES, WHERE_CHOICES,
   answer, asQuestionnaire, blankFrom, checkLines, discountOf, feeRows, firstOfGroup, groupOf, lengthOf, localChoices, mainPrice, offerLine, perWords,
-  poOf, questionKeys, questionWords, relocal, settleChoices, settleOf, soFar, termRows, termWords,
+  currencyWords, poOf, questionKeys, questionWords, relocal, settleChoices, settleOf, soFar, stepProblem, termRows, termWords, totalFits,
 } from '../../../lib/agreements/questions';
 import { afterRhythm, momentumWeeks } from '../../../lib/agreements/endDate';
 import {
   RETAINER_SESSIONS, TEAM_SESSIONS, addDiscount, firstOf, newDraft, nextVersionDraft, packageChange, packageTerms, possessive, rateOf, sendWords,
-  startPackages, termsFromPackage, isUntouched,
+  startPackages, termsFromPackage, isUntouched, isUntouchedNext, stableText,
 } from '../../../lib/coach/agreementBuilder';
+import { SUPERSEDED_MESSAGE } from '../../../lib/friendlyError';
 import { builderClosed } from '../../../content/pageLines/coach';
 import { Back, useCoachPortal } from '../parts';
 import { Answer, FindBox, Hint, MoneyBox, SAVE_PROBLEM, useAgreementDraft, useRates } from './builderParts';
@@ -74,19 +75,31 @@ function useMakeDraft({ renew, d }) {
   }, [renew, d.loading, d.agreement, d.draft, d.versions, agreements, agreementVersions, clients, organisations, coach, isOwner, todayKey, userId, navigate]);
 }
 
-/** The question in the address (?q=), and whether Change opened it from the check (?from=check). */
+/**
+ * The question in the address (?q=), and whether Change opened it from the check (?from=check). Each question is its own
+ * history entry (Q1, the lead's call; coach rule 45 for panels): the browser's or the phone's Back steps back through the
+ * questions and leaves the builder only from the first, Forward steps on again, and a reload keeps the place. `back()`
+ * is the tool's own Back: one step back in history when the step before was this builder's, else the question before.
+ */
 function useStep(keys) {
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const asked = params.get('q');
   const key = keys.includes(asked) ? asked : keys[0];
   const fromCheck = params.get('from') === 'check';
-  const go = useCallback((next, { check = false } = {}) => {
+  const depth = Number(location.state?.abStep) || 0;
+  const go = useCallback((next, { check = false, replace = false } = {}) => {
     const p = new URLSearchParams(params);
     p.set('q', next);
     if (check) p.set('from', 'check'); else p.delete('from');
-    setParams(p, { replace: true });
-  }, [params, setParams]);
-  return { key, fromCheck, go };
+    navigate({ search: `?${p}` }, replace ? { replace: true, state: location.state } : { state: { ...(location.state || {}), abStep: depth + 1 } });
+  }, [params, navigate, location.state, depth]);
+  const back = useCallback((prev, opts) => {
+    if (depth > 0) navigate(-1);
+    else go(prev, { ...opts, replace: true });
+  }, [depth, navigate, go]);
+  return { key, fromCheck, go, back };
 }
 
 function AgreementBuilder({ id, renew }) {
@@ -102,7 +115,7 @@ function AgreementBuilder({ id, renew }) {
     return (
       <div className="cc-page"><div className="cc-col">
         <Back to="Clients" onClick={() => navigate('/coach/clients')} />
-        <PageOpening title="Agreement" line="That agreement isn’t here. It may have been deleted on another device." />
+        <PageOpening title="Agreement" line="That agreement isn’t here, as it may have been deleted on another device." />
       </div></div>
     );
   }
@@ -143,6 +156,11 @@ function AgreementQuestions({ d }) {
   const [note, setNote] = useState(draft.personal_note || '');
   const [sendAs, setSendAs] = useState(draft.send_as === 'quote' ? 'quote' : 'agreement');
   const [problem, setProblem] = useState(null);
+  // A figure typed that can't be kept (F2, P1): it stays in the box, the draft keeps its last good figure, and moving on
+  // shows this line under the box.
+  const [entry, setEntry] = useState(null);
+  // A newer copy of the draft taken from another tab or device (F3): the line saying so, until the next answer.
+  const [notice, setNotice] = useState(null);
   const [busy, setBusy] = useState(false);
   const rate = rateOf(d.rates, terms.currency || 'GBP').unitsPerGbp;
 
@@ -152,13 +170,29 @@ function AgreementQuestions({ d }) {
     termsRef.current = next;
     setTermsState(next);
     setProblem(null);
+    if (!opts.quiet) setNotice(null);
     return d.save(next, { overrides, ...opts });
   }, [d, overrides]);
-  // Kept once in its new shape, so the client page, the check and the PDF read the same terms.
+  // Kept once in its new shape, so the client page, the check and the PDF read the same terms (compared key by key: the
+  // database keeps its own order of keys, which is no change).
   useEffect(() => {
-    if (JSON.stringify(terms) !== JSON.stringify(draft.terms || {})) d.save(terms, { overrides });
+    if (stableText(terms) !== stableText(draft.terms || {})) d.save(terms, { overrides });
   // Only on the first draw: later changes save as they're made.
   }, []);
+  // F3: a newer copy of the draft from another tab or device (or this tab's save refused as older than it) is taken as
+  // it is, and the page says so; nothing older is ever sent over it.
+  useEffect(() => {
+    if (!d.elsewhere) return;
+    const fresh = asQuestionnaire(draft.terms || {});
+    termsRef.current = fresh;
+    setTermsState(fresh);
+    setNote(draft.personal_note || '');
+    setSendAs(draft.send_as === 'quote' ? 'quote' : 'agreement');
+    setEntry(null);
+    setProblem(null);
+    setNotice(SUPERSEDED_MESSAGE);
+  // Only when the hook takes a newer copy.
+  }, [d.elsewhere]);
   // Today's rate arrives after the page: the client's figure follows it (their own figure stays).
   useEffect(() => {
     if (!rate || (terms.currency || 'GBP') === 'GBP' || terms.localMode === 'own') return;
@@ -166,14 +200,22 @@ function AgreementQuestions({ d }) {
     if (mainPrice(next) !== mainPrice(termsRef.current)) save(next, { quiet: true });
   }, [rate]);
 
-  const ctx = { first, orgName: ownOrg?.name || null, rate, forOrg, coachFirst: firstOf(coach?.display_first_name || coach?.full_name) || 'you' };
+  const ctx = { first, orgName: ownOrg?.name || null, rate, forOrg, coachFirst: firstOf(coach?.display_first_name || coach?.full_name) || 'you', today: todayKey };
+  const ctxRef = useRef(ctx);
+  ctxRef.current = ctx;
   const keysOf = (t) => questionKeys(t, { forOrg });
   const keys = keysOf(terms);
-  const { key, fromCheck, go } = useStep(keys);
+  const { key, fromCheck, go, back } = useStep(keys);
   const index = keys.indexOf(key);
   const last = key === 'check';
+  // A figure typed for another question isn't carried to this one.
+  useEffect(() => { setEntry(null); setProblem(null); }, [key]);
 
   const next = useCallback(() => {
+    // What can't be kept stops here, said under the box (rule 28; F2, P1): a figure that isn't one, nothing, or more than
+    // one agreement can hold.
+    const stop = entry || stepProblem(key, termsRef.current, ctxRef.current);
+    if (stop) { setProblem(stop); return; }
     const ks = keysOf(termsRef.current);
     const i = ks.indexOf(key);
     if (fromCheck) {
@@ -183,8 +225,8 @@ function AgreementQuestions({ d }) {
       return;
     }
     if (i < ks.length - 1) go(ks[i + 1]);
-  // keysOf reads only forOrg.
-  }, [key, fromCheck, go, forOrg]);
+  // keysOf reads only forOrg; ctx is read through its ref.
+  }, [key, fromCheck, go, forOrg, entry]);
   const nextRef = useRef(next);
   nextRef.current = next;
   const soon = () => setTimeout(() => nextRef.current(), ONE_TAP_MS);
@@ -201,6 +243,16 @@ function AgreementQuestions({ d }) {
         toast.show('Closed. Nothing was answered, so no draft was kept.');
         return;
       } catch { /* kept as a draft, as before */ }
+    }
+    // A next version opened from a sent or signed agreement (/edit) and left unanswered isn't kept either (Q5).
+    if (isUntouchedNext(agreement, d.versions) && !termsRef.current.answered) {
+      // Away first, so the builder doesn't make the next version again as this one goes.
+      navigate(`/coach/agreements/${agreement.id}`);
+      try {
+        await removeRow(d.userId, 'agreement_versions', draft.id);
+        toast.show('Closed. Nothing was changed, so no new version was kept.');
+      } catch { toast.show(builderClosed(party.name ? `${possessive(first)} page` : 'their page')); }
+      return;
     }
     navigate(agreement.profile_id ? `/coach/clients/${agreement.profile_id}` : agreement.organisation_id ? `/coach/organisations/${agreement.organisation_id}` : '/coach/clients');
     toast.show(builderClosed(party.name ? `${possessive(first)} page` : 'their page'));
@@ -233,7 +285,10 @@ function AgreementQuestions({ d }) {
     const t = termsRef.current;
     const lines = checkTerms(t);
     if (lines.length) { setProblem(lines[0]); return; }
-    await d.save(t, { overrides, personalNote: note, fields: { send_as: sendAs }, now: true });
+    const over = stepProblem('check', t, ctx);
+    if (over) { setProblem(over); return; }
+    const kept = await d.save(t, { overrides, personalNote: note, fields: { send_as: sendAs }, now: true });
+    if (kept === 'superseded') { setProblem(SUPERSEDED_MESSAGE); return; }
     const valid = Number(t.expiryDays) || 30;
     if (!saved) { navigate(`/coach/agreements/${agreement.id}/sign${sendAs === 'quote' ? `?as=quote&valid=${valid}` : ''}`); return; }
     setBusy(true);
@@ -257,7 +312,9 @@ function AgreementQuestions({ d }) {
     ? `${party.name || first} · ${group}`
     : `${draft.version > 1 ? `Version ${draft.version}` : 'New agreement'} for ${party.name || first}${group && !last ? ` · ${group}` : ''}`;
   const line = soFar(terms, key, keys, ctx);
-  const nextLabel = last ? (sendAs === 'quote' ? 'Sign and send the quote' : sendWords({ kind: kindOf(terms), first }))
+  // A long first name would wrap the button's words (words never wrap inside a control): then it's "Sign and send".
+  const sendLabel = sendAs === 'quote' ? 'Sign and send the quote' : sendWords({ kind: kindOf(terms), first });
+  const nextLabel = last ? (sendLabel.length > 28 ? 'Sign and send' : sendLabel)
     : fromCheck ? (keys[index + 1] && keys[index + 1] !== 'check' && groupOf(keys[index + 1]) === group ? 'Next' : 'Back to the check') : 'Next';
 
   return (
@@ -276,16 +333,18 @@ function AgreementQuestions({ d }) {
         nextLabel={nextLabel}
         onBack={index > 0 || fromCheck ? () => {
           // Opened by Change on the check (P3): Back from the group's first question returns to the check, and within
-          // the group it stays in Change's path.
-          if (fromCheck) { const prev = keys[index - 1]; if (groupOf(prev) === groupOf(key)) go(prev, { check: true }); else go('check'); return; }
-          go(keys[index - 1]);
+          // the group it stays in Change's path. One step back in history where the step before was the builder's (Q1).
+          if (fromCheck) { const prev = keys[index - 1]; if (groupOf(prev) === groupOf(key)) back(prev, { check: true }); else back('check'); return; }
+          back(keys[index - 1]);
         } : undefined}
         last={last}
         className="ab-q"
       >
+        {notice && <p className="ab-hint ab-notice" role="status">{notice}</p>}
         <Question
           qkey={key} t={terms} set={set} save={save} soon={soon} next={next} ctx={ctx} todayKey={todayKey} pkgs={pkgs} choosePackage={choosePackage}
           agreement={agreement} organisations={organisations} ownOrg={ownOrg} portal={portal} rates={d.rates}
+          problem={MONEY_KEYS.includes(key) ? problem : null} entry={entry} setEntry={(p) => { setEntry(p); setProblem(null); }}
         />
         {last && (
           <CheckScreen
@@ -297,11 +356,13 @@ function AgreementQuestions({ d }) {
             onClauses={async () => { await d.flush(); navigate(`/coach/agreements/${agreement.id}/clauses`); }}
           />
         )}
-        {problem && <MistakeLine>{problem}</MistakeLine>}
+        {problem && !MONEY_KEYS.includes(key) && <MistakeLine>{problem}</MistakeLine>}
       </ToolFrame>
     </div>
   );
 }
+/** The questions answered in a money box: their mistake line sits straight under the box. */
+const MONEY_KEYS = ['fee', 'rate', 'local'];
 
 /** The practice's packages to start from (an associate reads the owner's; 065). */
 function useStartPackages() {
@@ -324,7 +385,7 @@ function Choose({ label, options, value, onPick, soon, still = false }) {
 }
 
 /** One question's answers, by its key. */
-function Question({ qkey, t, set, save, soon, next, ctx, todayKey, pkgs, choosePackage, agreement, organisations, ownOrg, portal, rates }) {
+function Question({ qkey, t, set, save, soon, next, ctx, todayKey, pkgs, choosePackage, agreement, organisations, ownOrg, portal, rates, problem = null, entry = null, setEntry = () => {} }) {
   const k = kindOf(t);
   const c = t.currency || 'GBP';
   const first = ctx.first;
@@ -374,7 +435,7 @@ function Question({ qkey, t, set, save, soon, next, ctx, todayKey, pkgs, chooseP
     );
     case 'often': return <Choose label={words} soon={soon} value={afterRhythm(t.rhythm)} onPick={pick('often')} options={OFTEN_CHOICES} />;
     case 'term': {
-      const rows = termRows(t);
+      const rows = termRows(t, todayKey);
       return (
         <>
           <Choose label={words} soon={soon} value={String(t.months || 6)} onPick={(v) => set('term', Number(v))}
@@ -396,14 +457,21 @@ function Question({ qkey, t, set, save, soon, next, ctx, todayKey, pkgs, chooseP
       const rows = feeRows(t);
       return (
         <>
-          <MoneyBox label={words} value={t.gbpMinor} currency="GBP" onChange={(v) => set('fee', v)} onEnter={next} />
-          {rows && Number(t.gbpMinor) > 0 && <div className="ab-answers"><Answer label="In all" value={rows.total} note={rows.note} /></div>}
+          <MoneyBox label={words} value={t.gbpMinor} currency="GBP" onEnter={next} problem={problem} onProblem={setEntry}
+            onChange={(v) => {
+              // More than one agreement can hold is never kept (061's limit): the line says the most, on Next.
+              const over = v > 0 && !totalFits(answer(t, 'fee', v, ctx)) ? stepProblem('fee', answer(t, 'fee', v, ctx), ctx) : null;
+              if (over) { setEntry(over); return; }
+              setEntry(null);
+              set('fee', v);
+            }} />
+          {rows && Number(t.gbpMinor) > 0 && !entry && <div className="ab-answers"><Answer label="In all" value={rows.total} note={rows.note} /></div>}
         </>
       );
     }
-    case 'rate': return <MoneyBox label={words} value={t.gbpRateMinor ?? t.hours?.rateMinor} currency="GBP" onChange={(v) => set('rate', v)} onEnter={next} />;
+    case 'rate': return <MoneyBox label={words} value={t.gbpRateMinor ?? t.hours?.rateMinor} currency="GBP" onChange={(v) => set('rate', v)} onEnter={next} problem={problem} onProblem={setEntry} />;
     case 'cur': return <CurrencyQuestion t={t} save={save} ctx={ctx} rates={rates} />;
-    case 'local': return <LocalQuestion t={t} set={set} save={save} soon={soon} rate={ctx.rate} label={words} />;
+    case 'local': return <LocalQuestion t={t} set={set} save={save} soon={soon} rate={ctx.rate} label={words} problem={problem} setEntry={setEntry} ctx={ctx} />;
     case 'settle': return <Choose label={words} soon={soon} value={settleOf(t)} onPick={pick('settle')} options={settleChoices(t, { first, orgName: t.orgName })} />;
     case 'disc': return <DiscountQuestion t={t} set={set} save={save} soon={soon} label={words} />;
     case 'extras': return <ExtrasQuestion t={t} save={save} first={first} />;
@@ -600,7 +668,7 @@ function CurrencyQuestion({ t, save, ctx, rates }) {
   );
 }
 
-function LocalQuestion({ t, set, save, soon, rate, label }) {
+function LocalQuestion({ t, set, save, soon, rate, label, problem = null, setEntry = () => {}, ctx = {} }) {
   const c = t.currency || 'GBP';
   const options = localChoices(t, rate, { per: perWords(t) });
   const [own, setOwn] = useState(t.localMode === 'own');
@@ -617,7 +685,13 @@ function LocalQuestion({ t, set, save, soon, rate, label }) {
         }} />
       {own && (
         <div className="ab-more">
-          <MoneyBox label="Your own figure" value={mainPrice(t)} currency={c} autoFocus onChange={(v) => set('local', { mode: 'own', minor: v })} />
+          <MoneyBox label="Your own figure" value={mainPrice(t)} currency={c} autoFocus problem={problem} onProblem={setEntry} words={currencyWords(c)}
+            onChange={(v) => {
+              const next = answer(t, 'local', { mode: 'own', minor: v }, ctx);
+              if (v > 0 && !totalFits(next)) { setEntry(stepProblem('local', next, ctx)); return; }
+              setEntry(null);
+              set('local', { mode: 'own', minor: v });
+            }} />
           {rate > 0 && mainPrice(t) > 0 && <Hint>{`About ${moneyText(gbpValue(mainPrice(t), c, rate), 'GBP')} at today’s rate.`}</Hint>}
         </div>
       )}
@@ -690,9 +764,11 @@ function ExtrasQuestion({ t, save, first }) {
   );
 }
 
+const NOTE_MAX = 1000;
+
 /** "Does this read right?": the plain sentences with Change, the standard terms, the note, and how it goes. */
 function CheckScreen({ t, keys, ctx, go, standardsCount, wording, note, setNote, sendAs, setSendAs, isOwner, onPreview, onClauses }) {
-  const lines = checkLines(t, { first: ctx.first, coachFirst: ctx.coachFirst === 'you' ? 'you' : ctx.coachFirst, keys });
+  const lines = checkLines(t, { first: ctx.first, coachFirst: ctx.coachFirst === 'you' ? 'you' : ctx.coachFirst, keys, today: ctx.today });
   const canQuote = selfFunded(t) && kindOf(t) !== 'team';
   return (
     <>
@@ -706,9 +782,19 @@ function CheckScreen({ t, keys, ctx, go, standardsCount, wording, note, setNote,
           <Row name={`Your standard terms, ${standardsCount} clauses`} sub={wording && wording !== 'No changes' ? wording : undefined} onClick={onClauses} value={<Chevron direction="right" />} label={`Your standard terms, ${standardsCount} clauses. Edit any one for ${ctx.first}.`} />
         </Rows>
       </Card>
-      <div className="ab-check-note"><TextBox label={`A note to ${kindOf(t) === 'team' ? 'the sponsor' : ctx.first}`} value={note} maxLength={1000} onChange={setNote} /></div>
+      <div className="ab-check-note">
+        <TextBox label={`A note to ${kindOf(t) === 'team' ? 'the sponsor' : ctx.first}`} value={note} maxLength={NOTE_MAX} onChange={setNote} />
+        {/* The note's limit shows before it is reached (P2), never a silent cut. */}
+        {note.length >= NOTE_MAX - 200 && (
+          <p className="ab-hint ab-note-count" role="status" aria-live="polite">
+            {note.length >= NOTE_MAX ? `That’s the most a note can hold, ${NOTE_MAX.toLocaleString('en-GB')} characters.` : `${(NOTE_MAX - note.length).toLocaleString('en-GB')} characters left.`}
+          </p>
+        )}
+      </div>
+      {/* Two answers that don't fit a 360px phone side by side as a switch (F5): answer boxes, a row on a laptop and one
+          per line on a phone or at large text, so neither is ever cut. */}
       {canQuote && (
-        <InlineChoice label="Send it as" options={[{ value: 'agreement', label: 'An agreement to sign' }, { value: 'quote', label: 'A quote first' }]} value={sendAs} onChange={setSendAs} form="pills" />
+        <InlineChoice label="Send it as" options={[{ value: 'agreement', label: 'An agreement to sign' }, { value: 'quote', label: 'A quote first' }]} value={sendAs} onChange={setSendAs} form="boxes" />
       )}
       <div className="ab-check-more">
         <MoreLink small onClick={onPreview}>See the whole agreement</MoreLink>
@@ -752,10 +838,17 @@ function PackageBuilder({ pkg }) {
   const save = (next) => { latest.current = { ...latest.current, terms: next }; setTerms(next); later(); };
   const set = (k, v) => save(answer(latest.current.terms, k, v, {}));
   const keys = questionKeys(terms, { pkgMode: true });
-  const { key, go } = useStep(keys);
+  const { key, go, back: stepBack } = useStep(keys);
   const index = keys.indexOf(key);
   const nextRef = useRef(null);
-  const next = () => { const ks = questionKeys(latest.current.terms, { pkgMode: true }); const i = ks.indexOf(key); if (i < ks.length - 1) go(ks[i + 1]); };
+  const [entry, setEntry] = useState(null);
+  const [problem, setProblem] = useState(null);
+  useEffect(() => { setEntry(null); setProblem(null); }, [key]);
+  const next = () => {
+    const stop = entry || stepProblem(key, latest.current.terms, {});
+    if (stop) { setProblem(stop); return; }
+    const ks = questionKeys(latest.current.terms, { pkgMode: true }); const i = ks.indexOf(key); if (i < ks.length - 1) go(ks[i + 1]);
+  };
   nextRef.current = next;
   const soon = () => setTimeout(() => nextRef.current(), ONE_TAP_MS);
   const back = () => navigate('/coach/settings/agreements');
@@ -777,16 +870,18 @@ function PackageBuilder({ pkg }) {
         closeLabel="Close and save the package"
         onNext={last ? async () => { const ok = await sendNow(); if (!ok) { toast.error(SAVE_PROBLEM); return; } back(); toast.show('Saved. New agreements start from it.'); } : next}
         nextLabel={last ? 'Done' : 'Next'}
-        onBack={index > 0 ? () => go(keys[index - 1]) : undefined}
+        onBack={index > 0 ? () => stepBack(keys[index - 1]) : undefined}
         last={last}
         className="ab-q"
       >
         {key === 'pname' && <TextField label="Its name" value={name} maxLength={120} onChange={(e) => { setName(e.target.value); latest.current = { ...latest.current, name: e.target.value }; later(); }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); next(); } }} />}
-        {key === 'pnote' && <TextBox label="Your note" value={note} maxLength={1000} onChange={(v) => { setNote(v); latest.current = { ...latest.current, note: v }; later(); }} />}
+        {key === 'pnote' && <TextBox label="Your note" value={note} maxLength={NOTE_MAX} onChange={(v) => { setNote(v); latest.current = { ...latest.current, note: v }; later(); }} />}
         {!['pname', 'pnote'].includes(key) && (
           <Question qkey={key} t={terms} set={set} save={save} soon={soon} next={next} ctx={ctx} todayKey={portal.todayKey} pkgs={[]} choosePackage={() => {}}
-            agreement={{}} organisations={[]} ownOrg={null} portal={portal} rates={pkgRates} />
+            agreement={{}} organisations={[]} ownOrg={null} portal={portal} rates={pkgRates}
+            problem={MONEY_KEYS.includes(key) ? problem : null} entry={entry} setEntry={(p) => { setEntry(p); setProblem(null); }} />
         )}
+        {problem && !MONEY_KEYS.includes(key) && <MistakeLine>{problem}</MistakeLine>}
       </ToolFrame>
     </div>
   );

@@ -31,7 +31,7 @@ export default function PlanVersion() {
         <div className="plan-back-row cp-back"><BackLink onClick={back} label="Version history" /></div>
         <PageOpening
           title={row ? versionLabel(row) : 'Plan version'}
-          line={row ? `${VERSION_KIND_LABEL[row.kind]}, saved ${dayAndTime(row.created_at)}.` : B1_LINES.planVersion}
+          line={row ? `This ${String(VERSION_KIND_LABEL[row.kind] || 'version').toLowerCase()} was saved ${dayAndTime(row.created_at)}.` : B1_LINES.planVersion}
         />
         {loading ? (
           <Loading label="Loading this version" className="ds-loading--page" />

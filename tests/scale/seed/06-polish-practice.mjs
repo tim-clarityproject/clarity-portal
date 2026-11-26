@@ -13,6 +13,7 @@ import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { newDraft, versionFields } from '../../../src/lib/coach/agreementBuilder.js';
+import { splitEqual } from '../../../src/lib/agreements/settling.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BASE = '2026-11-25'; // a Wednesday
@@ -432,7 +433,8 @@ for (const c of C) {
     continue;
   }
   const months = c.kind === 'retainer' ? 24 : PKGS[c.pkg].defaults.months;
-  const monthly = c.kind === 'retainer' ? (c.usd ? 250000 : 194000) : Math.round(c.total / months);
+  // Equal instalments as the app splits them (settling.js): the first carries the pennies that don't divide.
+  const parts = c.kind === 'retainer' ? null : splitEqual(c.total, months);
   const stop = c.stopped || '2099-01-01';
   for (let i = 0; i < months; i += 1) {
     const issued = addMonths(c.start, i) > c.start ? addMonths(c.start, i) : addDays(c.start, -7);
@@ -443,6 +445,7 @@ for (const c of C) {
     if (c.overdue && age < 40 && age >= 12) status = 'sent';
     const paidOn = addDays(issued, 3 + ((c.n + i) % 6));
     const desc = c.kind === 'retainer' ? `${PKGS[c.pkg].name}, ${new Date(`${issued}T12:00:00Z`).toLocaleString('en-GB', { month: 'long', timeZone: 'UTC' })}` : `${PKGS[c.pkg].name}, payment ${i + 1} of ${months}`;
+    const monthly = parts ? parts[i] : (c.usd ? 250000 : 194000);
     const iid = invoice(c, { kind: 'instalment', issued, total: monthly, lines: lineFor(c.name, desc, monthly), status, paidOn: paidOn > BASE ? addDays(BASE, -1) : paidOn, sector: c.sector, n: i + 1,
       currency: c.usd ? 'USD' : 'GBP', landed: c.usd ? Math.round(monthly / 1.2658) : null });
     if (c.refund && i === 1) refundInvoice = iid;
@@ -470,7 +473,7 @@ invoice(null, { kind: 'deposit', issued: '2026-09-08', total: 900000, lines: [{ 
 invoice(null, { kind: 'one_off', issued: '2026-04-01', total: 293000, lines: [{ description: 'Full-Season Coaching for Oliver Grant, first half', amount: 293000 }], status: 'paid', paidOn: '2026-04-09', org: ORGS.tamsin, sector: 'Sport' });
 invoice(null, { kind: 'one_off', issued: '2026-10-01', total: 293000, lines: [{ description: 'Full-Season Coaching for Oliver Grant, second half', amount: 293000 }], status: 'paid', paidOn: '2026-10-06', org: ORGS.tamsin, sector: 'Sport' });
 // Next month's drafts.
-invoice(byN[1], { kind: 'instalment', issued: '2026-12-19', total: Math.round(byN[1].total / 12), lines: lineFor('Sam Carter', 'Leadership Partnership, 12 months, payment 3 of 12', Math.round(byN[1].total / 12)), status: 'draft', sector: 'Business', n: 3 });
+invoice(byN[1], { kind: 'instalment', issued: '2026-12-19', total: splitEqual(byN[1].total, 12)[2], lines: lineFor('Sam Carter', 'Leadership Partnership, 12 months, payment 3 of 12', splitEqual(byN[1].total, 12)[2]), status: 'draft', sector: 'Business', n: 3 });
 const INV_COLS = ['id', 'coach_id', 'agreement_id', 'profile_id', 'organisation_id', 'number', 'stripe_invoice_id', 'kind', 'status', 'currency', 'lines', 'total_minor', 'paid_minor', 'terms_days', 'issued_on', 'due_on', 'po_number', 'purchase_order_id',
   'settles_to', 'payer_name', 'payer_email', 'payer_zone', 'hosted_url', 'instalment_n', 'sent_at', 'paid_at', 'sector', 'supplier_number', 'their_reference', 'timesheet', 'version_id'];
 // Drafts are issued only when sent: keep their dates empty.

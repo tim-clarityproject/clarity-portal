@@ -29,6 +29,20 @@ export function balanceLine(usedMinutes, block) {
   return `${hoursWords(u)} used, ${hoursWords(u - block)} over the block.`;
 }
 
+/**
+ * The quiet line under the balance (P5): what's left, or, once the block is overdrawn, by how much and what happens
+ * next, so an overdrawn block is never read as still running down. `first`: the client's first name.
+ */
+export function balanceNote(usedMinutes, block, first = '') {
+  const u = Math.max(0, Math.round(usedMinutes));
+  const who = first || 'them';
+  if (block > 0 && u > block) {
+    return `${hoursWords(u - block)} over the block. The top-up invoice in Needs you adds another block, and the time over comes out of it. Nothing goes to ${who} by itself.`;
+  }
+  if (at80(u, block)) return `${hoursWords(block - u)} left. At 80% a top-up invoice was drafted in Needs you. Nothing goes to ${who} by itself.`;
+  return `${hoursWords(Math.max(0, block - u))} left. At 80% a top-up invoice is drafted in Needs you.`;
+}
+
 /** Whether the block is 80% used or more (the Needs you line). */
 export const at80 = (usedMinutes, block) => block > 0 && usedMinutes / block >= TELL_AT;
 /** The share used, as a whole percentage (M28's "Adie's block is 80% used"). */

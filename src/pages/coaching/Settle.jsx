@@ -1,12 +1,12 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { Figure, InlineChoice, Loading, ToolFrame, useToast } from '../../components/design';
 import { isOnline } from '../../lib/connection';
 import { BACS, BACS_LINE, ENDED_STATUSES, FLOW, SETTLE_QUESTION, STAND_IN_APPLE, STAND_IN_BACS, STAND_IN_CARD, choiceFor, endedLine, settleView, stepsFor } from '../../lib/coaching/clientMoney';
 import { TOOL_CLOSED } from '../../content/pageLines/client';
 import { clientAsk, isLive } from '../../lib/coaching/clientAsk';
-import { useAgreements } from './agreementData';
+import { useAgreements, leaveTool, toolDepth } from './agreementData';
 import { mountElement } from './stripeElement';
 import './coaching.css';
 import './clientAgreement.css';
@@ -40,6 +40,7 @@ export default function Settle() {
   const { user } = useContext(AuthContext);
   const userId = user?.id;
   const navigate = useNavigate();
+  const location = useLocation();
   const { data, loading, error } = useAgreements(userId);
   const version = data.agreements.find((v) => v.id === versionId) || null;
   const terms = useMemo(() => ({ ...(version?.terms || {}), fundedBy: version?.fundedBy || version?.terms?.fundedBy || null }), [version]);
@@ -66,7 +67,7 @@ export default function Settle() {
     clientAsk('settle', bacs ? 'bacs' : 'start', { versionId }).then((a) => {
       if (!a.ok) { if (a.ended) setEndedAs(a.ended); else setProblem(a.message); return; }
       // An amendment, or settled already: nothing to settle here, so straight on to Welcome.
-      if (a.amendment) { navigate(`/coaching/agreement/${versionId}/welcome`, { replace: true }); return; }
+      if (a.amendment) { navigate(`/coaching/agreement/${versionId}/welcome`, { replace: true, state: { toolDepth: toolDepth(location) } }); return; }
       setAnswer(a);
     });
   }, [version, versionId, bacs, navigate]);
@@ -83,9 +84,11 @@ export default function Settle() {
 
   const view = settleView(terms, choice, answer?.amountMinor);
   const welcome = `/coaching/agreement/${versionId}/welcome`;
+  // Each step after settling replaces this one (nothing is settled twice), keeping how many entries the tool holds.
+  const depth = toolDepth(location);
   const done = (state) => {
-    if (!bacs && view.bacs) navigate(`/coaching/agreement/${versionId}/settle?rest=bacs`, { replace: true, state });
-    else navigate(welcome, { replace: true, state });
+    if (!bacs && view.bacs) navigate(`/coaching/agreement/${versionId}/settle?rest=bacs`, { replace: true, state: { ...state, toolDepth: depth } });
+    else navigate(welcome, { replace: true, state: { ...state, toolDepth: depth } });
   };
 
   const settle = async () => {
@@ -110,8 +113,7 @@ export default function Settle() {
   const toast = useToast();
   const close = () => {
     toast.show(TOOL_CLOSED);
-    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
-    else navigate('/welcome');
+    leaveTool(navigate, depth);
   };
 
   if (!version) {
@@ -148,7 +150,7 @@ export default function Settle() {
   if (bacs) {
     return (
       <div className="cl-flow" ref={rootRef}>
-        <ToolFrame {...frame} question={BACS.title} onNext={settle} nextLabel={BACS.button} onSkip={() => navigate(welcome, { replace: true })} skipLabel={BACS.later}>
+        <ToolFrame {...frame} question={BACS.title} onNext={settle} nextLabel={BACS.button} onSkip={() => navigate(welcome, { replace: true, state: { toolDepth: depth } })} skipLabel={BACS.later}>
           <div className="cl-stack">
             <p className="cl-say">{BACS.line}</p>
             {view.rest && <p className="cl-hint">{view.rest}</p>}
@@ -163,7 +165,7 @@ export default function Settle() {
   return (
     <div className="cl-flow" ref={rootRef}>
       {/* Back beside "Settle £…" (M28 v6 "sign", step 3): to the signed agreement, nothing undone. */}
-      <ToolFrame {...frame} question={view.title} onNext={settle} nextLabel={view.button} onBack={() => navigate(`/coaching/agreement/${versionId}`)}>
+      <ToolFrame {...frame} question={view.title} onNext={settle} nextLabel={view.button} onBack={() => (depth >= 2 ? navigate(-1) : navigate(`/coaching/agreement/${versionId}`, { replace: true }))}>
         <div className="cl-stack">
           <div>
             <Figure value={view.amount} unit="today" />

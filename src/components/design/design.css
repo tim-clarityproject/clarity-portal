@@ -11017,13 +11017,18 @@
    (requests-b1.md to requests-b5.md; BS, 25 Nov). Each names its request.
    ========================================================================== */
 
-/* TodoRow (B1 5): the tick box centred on the first line of the to-do, not between two lines. */
+/* TodoRow (B1 5): the tick box centred on the first line of the to-do, not between two lines. Its column is the
+   box's width and half the tap area's spare (P7), so the words keep their 18px from the box. */
 .ui-root .ds-todo {
   align-items: start;
+  grid-template-columns: calc((var(--tap-min) + var(--checkbox-box)) / 2) minmax(0, 1fr);
 }
 
 .ui-root .ds-todo > .ds-check-box {
   margin-top: calc((var(--fs-text) * 1.55 - var(--tap-min)) / 2);
+  /* The visible box on the rows' left edge, as every row's name is (the break-it tester, P7: it sat 10px in); its 44px
+     tap area reaches into the card's padding instead. */
+  margin-left: calc((var(--checkbox-box) - var(--tap-min)) / 2);
 }
 
 /* TodoRow's done mark (B2 1): filled with the text colour like every ticked box (the reference's .tick). */

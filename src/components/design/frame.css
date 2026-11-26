@@ -154,6 +154,19 @@
   padding-top: var(--space-4);
 }
 
+/* On a laptop the foot (My Account or Settings, Sign out, Privacy) stays in view at the column's foot whatever the
+   window's height: a long menu (the coach's) scrolls under it, so Privacy is never cut off at 1280 by 768 or 900. */
+@media (min-width: 1024px) {
+  .ui-root .ds-frame-side .ds-mfoot {
+    position: sticky;
+    bottom: calc(-1 * var(--space-px18));
+    z-index: 1;
+    margin-bottom: calc(-1 * var(--space-px18));
+    padding-bottom: var(--space-px18);
+    background: var(--bg);
+  }
+}
+
 .ui-root .ds-mlegal {
   align-self: flex-start;
   display: inline-flex;
@@ -296,9 +309,10 @@
   padding-top: var(--space-px40);
 }
 
+/* Under 1024px the column stays the panel's middle 720px, so a landscape phone (844 by 390) or a tablet centres the
+   tool as a laptop does, never at the left (the break-it tester, Q4; rule 29o); narrower, it is the screen's width. */
 @media (max-width: 1023px) {
   .ui-root.ds-frame-root--focus .ds-frame-main {
-    max-width: none;
     padding-top: 0;
   }
 }

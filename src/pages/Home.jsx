@@ -462,7 +462,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day, setDay = () =>
     <PageOpening
       label={dayTitle(today)}
       title={title}
-      line={(welcomeBack || comingBack) ? `${line} Let’s start with this week.` : line}
+      line={(welcomeBack || comingBack) ? `${line.replace(/\.$/, '')}, so let’s start with this week.` : line}
       action={(cardAction || (cardLink && card?.action)) ? (
         <div className="home-act">
           {cardAction && <Button variant="primary" onClick={cardAction.onClick}>{cardAction.label}</Button>}

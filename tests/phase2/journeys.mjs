@@ -765,7 +765,7 @@ try {
   await page.waitForURL(/\/performance-sprint$/, { timeout: 15000 }).catch(() => null);
   await openSprint(page);
   const back = await bodyText(page);
-  pass('welcome back: "Let’s start with this week."', back.includes('Let’s start with this week.') && /Welcome back/i.test(back), back.slice(0, 300));
+  pass('welcome back: "…, so let’s start with this week."', back.includes('so let’s start with this week.') && /Welcome back/i.test(back), back.slice(0, 300));
   const v = await libraryView();
   pass('welcome back: the sprint now ends 2 days later', addDays(plannedEnd, 2) === v.calendar?.end || back.includes(`It ends on`), `${plannedEnd} → ${v.calendar?.end}`);
   // The welcome-back dial shows words, not the score; the week's pop-up has it.

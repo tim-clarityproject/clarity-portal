@@ -24,7 +24,7 @@ import { addDays, dayIn, dayKeyWords, isZone } from '../../src/lib/time/index.js
 import { applies as coolingApplies, futureSessionRows, inWindow, ownSessions, refund14, sessionRanges } from '../../src/lib/agreements/coolingOff.js';
 import { forStorage } from '../../src/lib/agreements/clauses.js';
 import { moneyText } from '../../src/lib/agreements/currency.js';
-import { pauseMove } from '../../src/lib/agreements/endDate.js';
+import { endEarlyProblem, pauseMove, pauseProblem } from '../../src/lib/agreements/endDate.js';
 import { quoteNumber, validUntil, VALID_DAYS } from '../../src/lib/agreements/quote.js';
 import { counts, isOver } from '../../src/lib/agreements/sessionOutcome.js';
 import { firstPayment, firstSigning } from '../../src/lib/agreements/settling.js';
@@ -563,6 +563,11 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
       if (v.terms?.pausing === false) throw calm(409, 'This agreement doesn’t allow pausing.');
       const end = currentEnd(a, v);
       if (!end) throw calm(409, 'This agreement has no end date to move.');
+      // One pause per agreement, from today on, before its end (F6): a second would write over the first's dates and
+      // move the invoices twice.
+      const paused = a.paused_from ? { from: a.paused_from, to: a.paused_to || null } : null;
+      const stop = pauseProblem({ from: asked.from, to: asked.to, today: today(), end, paused });
+      if (stop) throw calm(409, stop);
       const moved = pauseMove(end, asked.from, asked.to);
       if (!moved.ok) throw calm(400, moved.line);
       await must(db.from('agreements').update({ paused_from: asked.from, paused_to: asked.to }).eq('id', a.id));
@@ -577,7 +582,9 @@ export function agreementsApi({ db, server, coach, env = {}, origin = 'https://p
     async endEarly(asked) {
       const a = await mine('agreements', asked.agreementId);
       const { v, profile, c } = await this._current(a);
-      if (asked.endsOn < today()) throw calm(409, 'Choose today or a later day.');
+      // Today or later, and before the end it has now (F6): an "early" end after it would lengthen the agreement.
+      const stop = endEarlyProblem({ on: asked.endsOn, today: today(), end: currentEnd(a, v), earlyEnd: a.ending_by ? a.ending_on : null });
+      if (stop) throw calm(409, stop);
       await must(db.from('agreements').update({ ending_on: asked.endsOn, ending_by: asked.by }).eq('id', a.id));
       const outcome = profile?.email ? await mail(profile.email, endingEmail({ firstName: firstName(profile.name), coachFirst: c.display_first_name,
         endWords: dayKeyWords(asked.endsOn, { year: true }), by: asked.by }), { who: { ...c, full_name: coachName(c, v.terms) } }) : 'refused';

@@ -110,6 +110,7 @@ export default function MyReviews() {
       <div className="plan-page cp-page">
         <HistoryList
           title="My Reviews"
+          line={B1_LINES.myReviews}
           pageKey="myReviews"
           rows={rows}
           filters={filters}

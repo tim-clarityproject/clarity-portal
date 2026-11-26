@@ -1,9 +1,9 @@
 import { addDays, dayKeyWords } from '../time/index.js';
-import { andList, lowerFirst, moneyText, rateText, unitMinor } from './currency.js';
+import { MAX_MINOR, andList, lowerFirst, moneyText, rateText, unitMinor } from './currency.js';
 import { afterRhythm, momentumWeeks, rhythmOf, sessionCount, sessionsInTerm, suggestEnd } from './endDate.js';
 import { localFor, localFigures } from './fx.js';
 import { base, discountLines, keepTotal, planTotal } from './pricing.js';
-import { equalCount, teamOptions } from './settling.js';
+import { agreementTotal, equalCount, teamOptions } from './settling.js';
 import { blankTerms, kindOf, selfFunded, PLACES as PLACE_WORDS } from './terms.js';
 import { UPFRONT_PERCENT, upfrontTotal } from './upfront.js';
 import { placeLabel } from './places.js';
@@ -148,7 +148,7 @@ export function questionWords(key, t, ctx = {}) {
     default: return { question: '' };
   }
 }
-const currencyWords = (c) => ({ GBP: 'pounds', EUR: 'euros', USD: 'US dollars', CAD: 'Canadian dollars', AUD: 'Australian dollars', NZD: 'New Zealand dollars',
+export const currencyWords = (c) => ({ GBP: 'pounds', EUR: 'euros', USD: 'US dollars', CAD: 'Canadian dollars', AUD: 'Australian dollars', NZD: 'New Zealand dollars',
   CHF: 'Swiss francs', AED: 'UAE dirhams', SGD: 'Singapore dollars', HKD: 'Hong Kong dollars', SEK: 'Swedish kronor', NOK: 'Norwegian kroner',
   DKK: 'Danish kroner', ZAR: 'South African rand', JPY: 'Japanese yen' })[c] || c;
 
@@ -389,13 +389,16 @@ export { perWords };
 
 /** The words for who pays: "paid by Sam" or "paid by Morrow Cycles". */
 const paidBy = (t, first) => (selfFunded(t) && kindOf(t) !== 'team' ? `paid by ${first}` : `paid by ${text(t.orgName) || text(t.fundedBy) || 'the organisation'}`);
-const startWords = (day) => (day ? dayKeyWords(day) : '');
+// A day in the lines: with `today` known, the year shows only when it isn't today's (writing rule 28); without it, as before
+// (the start without its year, the end with it).
+const startWords = (day, today = null) => (day ? dayKeyWords(day, today ? { year: true, today } : {}) : '');
+const endWords = (day, today = null) => (day ? dayKeyWords(day, { year: true, today }) : '');
 
 /**
  * The "So far:" line above a question (M28 version 6): what's been answered before it, joined with " · ". Nothing on
  * the first question or the check. `ctx`: { first, coachFirst }.
  */
-export function soFar(t, key, keys, { first = 'your client', coachFirst = '' } = {}) {
+export function soFar(t, key, keys, { first = 'your client', coachFirst = '', today = null } = {}) {
   if (key === 'check' || key === 'pnote') return '';
   const here = keys.indexOf(key);
   const past = (k) => keys.indexOf(k) >= 0 && keys.indexOf(k) < here;
@@ -403,8 +406,8 @@ export function soFar(t, key, keys, { first = 'your client', coachFirst = '' } =
   if (coachFirst && here > 0) out.push(coachFirst);
   if (past('payer') || (kindOf(t) === 'team' && past('offer'))) out.push(paidBy(t, first));
   if (past('offer') || past('pname')) out.push(text(t.coaching) || 'Coaching');
-  if (past('start') && t.startsOn) out.push(`from ${startWords(t.startsOn)}`);
-  if (past('on') && t.oneoff?.on) out.push(`on ${startWords(t.oneoff.on)}`);
+  if (past('start') && t.startsOn) out.push(`from ${startWords(t.startsOn, today)}`);
+  if (past('on') && t.oneoff?.on) out.push(`on ${startWords(t.oneoff.on, today)}`);
   if (past('term')) out.push(`${sessionCount(t.blocks)} sessions over ${Number(t.months) || 6} months`);
   if (past('fee') && Number(t.gbpMinor) > 0) {
     const c = t.currency || 'GBP';
@@ -424,7 +427,7 @@ const sessionsLine = (t) => {
  * "Does this read right?" (M28 version 6): the plain sentences the client sees first, each with the question its Change
  * opens: [{ key, text, edit }]. `ctx`: { first, coachFirst, keys }.
  */
-export function checkLines(t, { first = 'your client', coachFirst = 'you', keys = questionKeys(t) } = {}) {
+export function checkLines(t, { first = 'your client', coachFirst = 'you', keys = questionKeys(t), today = null } = {}) {
   const k = kindOf(t);
   const c = t.currency || 'GBP';
   const at = (group) => firstOfGroup(keys, group);
@@ -442,13 +445,13 @@ export function checkLines(t, { first = 'your client', coachFirst = 'you', keys 
   const place = t.basedIn ? `, ${String(t.basedIn).split(',')[0]} time` : '';
   const where = PLACE_WORDS[t.place] || PLACE_WORDS.zoom;
   if (k === 'sessions') {
-    out.push({ key: 'when', text: `${sessionsLine(t)}, ${where}, from ${startWords(t.startsOn)} to ${t.endsOn ? dayKeyWords(t.endsOn, { year: true }) : ''}${place}`, edit: at('When') });
+    out.push({ key: 'when', text: `${sessionsLine(t)}, ${where}, from ${startWords(t.startsOn, today)} to ${endWords(t.endsOn, today)}${place}`, edit: at('When') });
   } else if (k === 'retainer') {
-    out.push({ key: 'when', text: `${t.retainer?.sessions || ''}, ${where}, from ${startWords(t.startsOn)}, in 6-month terms${place}`, edit: at('When') });
+    out.push({ key: 'when', text: `${t.retainer?.sessions || ''}, ${where}, from ${startWords(t.startsOn, today)}, in 6-month terms${place}`, edit: at('When') });
   } else if (k === 'oneoff') {
-    out.push({ key: 'when', text: `${t.oneoff?.on ? `On ${dayKeyWords(t.oneoff.on, { year: true })}` : 'On a day you agree'}, ${t.oneoff?.place === 'inperson' ? 'in person' : 'on Zoom'}${place}`, edit: at('When') });
+    out.push({ key: 'when', text: `${t.oneoff?.on ? `On ${endWords(t.oneoff.on, today)}` : 'On a day you agree'}, ${t.oneoff?.place === 'inperson' ? 'in person' : 'on Zoom'}${place}`, edit: at('When') });
   } else if (k === 'team') {
-    out.push({ key: 'when', text: `${t.team?.sessions || ''}, ${lowerFirst(t.rhythm || 'Every 2 weeks')}, from ${startWords(t.startsOn)}${t.endsOn ? ` to ${dayKeyWords(t.endsOn, { year: true })}` : ''}${place}`, edit: at('When') });
+    out.push({ key: 'when', text: `${t.team?.sessions || ''}, ${lowerFirst(t.rhythm || 'Every 2 weeks')}, from ${startWords(t.startsOn, today)}${t.endsOn ? ` to ${endWords(t.endsOn, today)}` : ''}${place}`, edit: at('When') });
   }
   out.push({ key: 'fee', text: feeLine(t, first), edit: at('Money') });
   if (k !== 'hours' && k !== 'oneoff') {
@@ -506,14 +509,14 @@ export function feeLine(t, first = 'your client') {
 }
 
 /** The term's answer rows under "How long will the coaching run?": { count, countNote, end }. */
-export function termRows(t) {
+export function termRows(t, today = null) {
   const n = sessionCount(t.blocks);
   const w = momentumWeeks(t.rhythm);
   const often = (OFTEN_CHOICES.find((o) => o.value === afterRhythm(t.rhythm))?.label || 'Every 2 weeks').toLowerCase();
   return {
     count: `${n} ${n === 1 ? 'session' : 'sessions'}`,
     countNote: w ? `${Math.min(w, n)} weekly, then ${Math.max(0, n - w)} ${often}` : often,
-    end: t.endsOn ? dayKeyWords(t.endsOn, { year: true }) : '',
+    end: t.endsOn ? dayKeyWords(t.endsOn, { year: true, today }) : '',
   };
 }
 
@@ -564,4 +567,75 @@ export function emailWords(t = {}) {
     startsWords = `${weekday} ${d} ${FULL_MONTHS[Number(day.slice(5, 7)) - 1]}`;
   }
   return { what, startsWords };
+}
+
+// ---------------------------------------------------------------- what one agreement can hold (F2, P1)
+
+/** The terms in pounds (the £ figures as the main price), for the £ side of the limit. */
+const inPounds = (t) => relocal({ ...t, currency: 'GBP', localMode: null }, null);
+/** Whether the version's total fits the database (061: total_minor at most MAX_MINOR), in its currency and in pounds. */
+export function totalFits(t) {
+  if (!(agreementTotal(t, 'plan') <= MAX_MINOR)) return false;
+  return (t.currency || 'GBP') === 'GBP' || agreementTotal(inPounds(t), 'plan') <= MAX_MINOR;
+}
+/** The largest whole amount `make(n)` still fits for (n from 0 to MAX_MINOR, in steps of `step`). */
+function largest(make, step) {
+  if (totalFits(make(Math.floor(MAX_MINOR / step) * step))) return Math.floor(MAX_MINOR / step) * step;
+  let lo = 0;
+  let hi = Math.floor(MAX_MINOR / step);
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    if (totalFits(make(mid * step))) lo = mid; else hi = mid - 1;
+  }
+  return lo * step;
+}
+/** The highest £ fee these terms can take. */
+export function maxFee(t, ctx = {}) {
+  return largest((n) => answer(t, 'fee', n, ctx), unitMinor('GBP'));
+}
+const perMonth = (t) => (kindOf(t) === 'retainer' || (kindOf(t) === 'sessions' && t.priceMode === 'monthly') ? ' a month' : '');
+const overWords = (t, max, c = 'GBP') => {
+  const k = kindOf(t);
+  const span = k === 'sessions' && t.priceMode === 'monthly' ? `Over ${Number(t.months) || 6} months the most is`
+    : k === 'retainer' ? 'Over its 6-month term the most is' : 'The most is';
+  return `${span} ${moneyText(max, c)}${perMonth(t)}`;
+};
+
+/**
+ * Why the builder can't move on from this question, in calm words (rule 28), or null. `t`: the terms as they stand
+ * (the answer kept); `ctx.rate`: the client's currency in units per £1. The fee, the hourly rate, the term and the
+ * client's own figure are each refused when empty, nothing, or more than one agreement can hold (061's limit on the
+ * version's total, worked out for the term chosen).
+ */
+export function stepProblem(key, t, ctx = {}) {
+  const k = kindOf(t);
+  if (key === 'fee') {
+    if (!(Number(t.gbpMinor) > 0)) return k === 'hours' ? 'Type how big the block is, in pounds, to carry on.' : k === 'oneoff' || k === 'team' ? 'Type the fee, in pounds, to carry on.' : 'Type your fee each month, in pounds, to carry on.';
+    if (!totalFits(t)) {
+      const max = maxFee(t, ctx);
+      return `That’s more than one agreement can hold. ${overWords(t, max ?? 0)}, so type that or less.`;
+    }
+  }
+  if (key === 'rate') {
+    if (!(Number(t.gbpRateMinor ?? t.hours?.rateMinor) > 0)) return 'Type your hourly rate, in pounds, to carry on.';
+    if (Number(t.gbpRateMinor ?? t.hours?.rateMinor) > MAX_MINOR) return `That’s more than one agreement can hold. The most is ${moneyText(MAX_MINOR, 'GBP')} an hour, so type that or less.`;
+  }
+  if (key === 'term' && !totalFits(t)) {
+    const max = maxFee(t, ctx);
+    return `That’s more than one agreement can hold over ${Number(t.months) || 6} months. Choose a shorter term, or make the fee ${moneyText(max ?? 0, 'GBP')} a month or less.`;
+  }
+  if (key === 'local' && t.localMode === 'own') {
+    const c = t.currency || 'GBP';
+    if (!(mainPrice(t) > 0)) return `Type the figure ${ctx.first || 'they'} see${ctx.first ? 's' : ''} to carry on.`;
+    if (!totalFits(t)) {
+      const max = largest((n) => answer(t, 'local', { mode: 'own', minor: n }, ctx), unitMinor(c));
+      return `That’s more than one agreement can hold. ${overWords(t, max ?? 0, c)}, so type that or less.`;
+    }
+  }
+  if (key === 'local' && t.localMode !== 'own' && !totalFits(t)) {
+    const max = maxFee(t, ctx);
+    return `In ${currencyWords(t.currency || 'GBP')} that’s more than one agreement can hold. Go back and make the fee ${moneyText(max ?? 0, 'GBP')}${perMonth(t)} or less.`;
+  }
+  if (key === 'check' && !totalFits(t)) return 'The total is more than one agreement can hold. Change the fee to a smaller one to carry on.';
+  return null;
 }
