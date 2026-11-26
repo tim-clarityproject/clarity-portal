@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { InlineChoice, TextField, ToolFrame, useToast } from '../../../components/design';
-import { Card, Row } from '../../../components/design/Blocks';
+import { Card, Row, Rows } from '../../../components/design/Blocks';
 import { AGREEMENT_LINES } from '../../../content/pageLines/coach';
 import { ask } from '../../../lib/agreements/askClient';
 import { moneyText } from '../../../lib/agreements/currency';
@@ -18,6 +18,8 @@ import { loadCoach, rowsOf } from '../../../lib/coach/store';
 import { useCoachPortal } from '../parts';
 import { Problem } from '../needsYou/panels';
 import './agreementPage.css';
+// The builder's check rows (.ab-check, .ab-change), so a change's "Does this read right?" reads as the builder's.
+import './builder.css';
 
 // The changes to a running agreement (Phase 6b run 3, Group D: M28 version 4's s-extend, s-pause, s-endearly,
 // s-refund, and Cancel within 14 days from the brief, items 13 and 18; Polish 1, Stage C, C4: M28 v6 draws none of
@@ -336,15 +338,17 @@ function Flow({ useFlow, facts, onClose }) {
       {last && (
         <>
           {(steps.some((s) => s.check) || flow.facts) && (
-            <Card className="ap-change">
-              {steps.filter((s) => s.check).map((s) => (
-                <Row
-                  key={s.key}
-                  name={s.check}
-                  value={<button type="button" className="ds-more ds-more--small ds-more--bare" aria-label={`Change: ${s.question}`} onClick={() => { setToCheck(true); setNeed(null); setAt(steps.indexOf(s)); }}>Change</button>}
-                />
-              ))}
-              {(flow.facts || []).map((f) => <Row key={f} name={f} />)}
+            <Card className="ap-change ab-check">
+              <Rows>
+                {steps.filter((s) => s.check).map((s) => (
+                  <Row
+                    key={s.key}
+                    name={s.check}
+                    value={<button type="button" className="ds-link ab-change" aria-label={`Change: ${s.question}`} onClick={() => { setToCheck(true); setNeed(null); setAt(steps.indexOf(s)); }}>Change</button>}
+                  />
+                ))}
+                {(flow.facts || []).map((f) => <Row key={f} name={f} />)}
+              </Rows>
             </Card>
           )}
           {flow.say && <p className="ap-flow-say">{flow.say}</p>}

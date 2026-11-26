@@ -120,7 +120,7 @@ export default function QuotePage() {
         <Figure value={rows.inAll} />
         <SettleSwitch terms={terms} value={choice} onChange={setChoice} chosenExtras={chosen} label={FLOW.settleWhen} bare />
         {/* "The first …" only where more follows; the full amount where signing settles it all (the functionality tester, P7). */}
-        <p className="cl-hint">{`${rows.hint.replace(/\. The first .* is settled when you sign\.$/, '.')} ${settledAtSigning(terms, choice, chosen)}`}</p>
+        <p className="cl-hint">{`${rows.hint.replace(/\. The (first|full) .* is settled when you sign\.$/, '.')} ${settledAtSigning(terms, choice, chosen)}`}</p>
         {problem && <MistakeLine>{problem}</MistakeLine>}
         <div className="cl-accept"><Button variant="primary" className="cl-full" aria-busy={busy || undefined} onClick={accept}>{FLOW.accept}</Button></div>
       </Card>

@@ -757,7 +757,11 @@
 
 /* A date picker (MonthGrid `picker`; M28 v6 .datepick): rows 48px with the day centred, a 34px circle, the chosen day
    filled, today a 1px ring, and the months either side left blank (their cells kept, so the weeks stay in line). */
+/* The older Calendar's day rule (design.css) sets padding 0 !important on every .ds-cal-day: MonthGrid's own rows keep
+   their room for the dot, 6px under the number (the final checker, 26 Nov). */
+.ui-root .ds-cal-row .ds-cal-day { padding-bottom: var(--space-px10) !important; }
 .ui-root .ds-cal--picker .ds-cal-day { height: var(--cal-picker-h); padding-bottom: 0; }
+.ui-root .ds-cal--picker .ds-cal-row .ds-cal-day { padding-bottom: 0 !important; }
 .ui-root .ds-cal--picker .ds-cal-day > span { width: var(--cal-picker-circle); height: var(--cal-picker-circle); }
 .ui-root .ds-cal--picker .ds-cal-day--out > span { visibility: hidden; }
 .ui-root .ds-cal--picker .ds-cal-day--today:not(.ds-cal-day--sel) > span { background: none; color: inherit; box-shadow: inset 0 0 0 var(--line-w) var(--text); }

@@ -45,7 +45,4 @@
   .ui-root .ap-meter > i { transition: none; }
 }
 
-/* On a phone, Change stays at the right of its answer, on the answer's first line (M28's check). */
-@media (max-width: 600px) {
-  .ui-root .ap-change .ds-li { flex-direction: row; align-items: baseline; gap: var(--space-3); }
-}
+/* On a phone, Change sits under its sentence, on the left, as M28 v6's check (body.phone .li) and the builder's. */
