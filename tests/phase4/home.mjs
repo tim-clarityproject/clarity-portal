@@ -407,7 +407,8 @@ if (part(4) || part(5)) {
       await page.locator('.ds-qa').getByText('Choose a Strategy').click();
       await page.getByRole('option', { name: 'Grow through referrals' }).click();
       await page.locator('.ds-qa .ds-btn--primary').click();
-      pass('Home: Add a to-do says it was added', Boolean(await until(async () => (await page.locator('text=Added to this week.').count()) > 0, 10000)));
+      // Home's Quick Add joins today too (71f316c7, the functionality tester's finding): "Added to today and this week."
+      pass('Home: Add a to-do says it was added', Boolean(await until(async () => (await page.getByText(/^Added to (today and )?this week\.$/).count()) > 0, 10000)));
       const saved = await until(async () => {
         const { data } = await db.from('todos').select('id, planned_week, deleted_at').eq('user_id', me).eq('text', TODO_TEXT);
         return data?.length ? data[0] : null;

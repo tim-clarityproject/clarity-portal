@@ -539,7 +539,9 @@ export function NeedsYouDetail({ item, onDone }) {
   if (!item) return null;
   if (item.kind === 'portal') {
     return (
-      <Card label={item.title} className="ny-detail">
+      // A short label, so it stays on one line (design check `label-wrap`); the item's own words follow it.
+      <Card label="Their supplier portal" className="ny-detail">
+        <p className="ny-say">{`${item.title}.`}</p>
         <p className="ny-say">{item.line}</p>
         <div className="ny-detail-acts"><Button variant="primary" onClick={() => navigate(`/coach/invoices/${item.data.invoiceId}`)}>Open the invoice</Button></div>
       </Card>

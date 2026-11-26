@@ -181,8 +181,11 @@ function AgreementQuestions({ d }) {
   }, []);
   // F3: a newer copy of the draft from another tab or device (or this tab's save refused as older than it) is taken as
   // it is, and the page says so; nothing older is ever sent over it.
+  // Only a newer copy taken after these questions opened (never a count from before they did).
+  const elsewhereSeen = useRef(d.elsewhere);
   useEffect(() => {
-    if (!d.elsewhere) return;
+    if (d.elsewhere === elsewhereSeen.current) return;
+    elsewhereSeen.current = d.elsewhere;
     const fresh = asQuestionnaire(draft.terms || {});
     termsRef.current = fresh;
     setTermsState(fresh);

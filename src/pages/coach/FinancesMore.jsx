@@ -274,9 +274,10 @@ export function OtherTab() {
         {upcoming.map((d) => <FigRow key={d.id} title={d.name} facts={[[KIND_WHO[d.kind], (EVERY_WORDS[d.every] || '').toLowerCase()].filter(Boolean).join(', ')]} value={dayWordsFrom(d.day, todayKey)} onClick={() => setPanel({ kind: 'deadline', id: d.id })} label={`Edit ${d.name}`} />)}
       </FinPart>
 
+      {/* A financial year runs across two calendar years, so its dates keep their years (data-year). */}
       <FinPart title="Year end">
-        <FigRow title="Export the financial year" facts={[fy.words, 'Every invoice and payment, for your accountant']} value="Download" onClick={() => setPanel({ kind: 'export', label: fy.label })} label={`Export the financial year, ${fy.words}. Download`} />
-        <FigRow title="Last year" facts={[last.words]} value="Download" onClick={() => setPanel({ kind: 'export', label: last.label })} label={`Last year, ${last.words}. Download`} />
+        <FigRow title="Export the financial year" facts={[<span data-year="">{fy.words}</span>, 'Every invoice and payment, for your accountant']} value="Download" onClick={() => setPanel({ kind: 'export', label: fy.label })} label={`Export the financial year, ${fy.words}. Download`} />
+        <FigRow title="Last year" facts={[<span data-year="">{last.words}</span>]} value="Download" onClick={() => setPanel({ kind: 'export', label: last.label })} label={`Last year, ${last.words}. Download`} />
       </FinPart>
 
       <DeadlinePanel panel={panel?.kind === 'deadline' ? panel : null} onClose={() => setPanel(null)} />

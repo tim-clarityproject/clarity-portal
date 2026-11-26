@@ -13,7 +13,7 @@
 //   - no section name in Nekst capitals over 3 words (page titles and DM Sans labels at any length: the 25 Nov reference);
 //   - the page's background and text match the person's light or dark
 //     setting, and the menu button never sits over a logo or content;
-//   - no old names (Plan my day, Review my day, the check-in, Performance
+//   - no old names (Plan my day, Review my day, the monthly check-in, Performance
 //     Evidence), no crosshair used as a plus;
 //   - no answer with a grey second line that repeats or rewords it (Tim,
 //     11 Nov, 12:51);
@@ -604,7 +604,8 @@ for (const width of PAGES.length ? WIDTHS : []) {
         const pops = await page.evaluate(checkPopups);
         pass(`${tag}: every pop-up is one short line, and no ⓘ sits in a list row (${pops.checked} read)`, pops.problems.length === 0, pops.problems.slice(0, 4).join('; '));
         pass(`${tag}: no section name in Nekst capitals over 3 words`, r.longTitles.length === 0, r.longTitles.join('; '));
-        const old = /plan my day|review my day|hardware and software check-in|monthly check-in|first check-in|performance evidence/i.exec(r.text);
+        // "First check-in" keeps its name (rule 26a; Tim's walk of Stage B, 26 Nov), so it is no longer an old name.
+        const old = /plan my day|review my day|hardware and software check-in|monthly check-in|performance evidence/i.exec(r.text);
         pass(`${tag}: no old names`, !old, old?.[0]);
         pass(`${tag}: the background and text match the ${mode} setting`, r.theme === mode && r.background === BACKGROUND[mode] && (r.textColour == null || r.textColour === TEXT[mode]), `${r.theme} ${r.background} ${r.textColour}`);
         pass(`${tag}: the menu button sits over nothing`, r.over.length === 0, r.over.slice(0, 3).join('; '));

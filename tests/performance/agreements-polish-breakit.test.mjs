@@ -19,7 +19,7 @@ register(`data:text/javascript,${encodeURIComponent(`export async function resol
 const { MAX_MINOR, parseMoney } = await import('../../src/lib/agreements/currency.js');
 const q = await import('../../src/lib/agreements/questions.js');
 const { blankTerms } = await import('../../src/lib/agreements/terms.js');
-const { draftCopy, draftPrint, isUntouchedNext, nextVersionDraft, stableText } = await import('../../src/lib/coach/agreementBuilder.js');
+const { draftCopy, draftPrint, draftTracker, isUntouchedNext, nextVersionDraft, stableText } = await import('../../src/lib/coach/agreementBuilder.js');
 const { endEarlyProblem, pauseProblem } = await import('../../src/lib/agreements/endDate.js');
 const { endEarlyOptions, logDays, pauseFromOptions, sentRows } = await import('../../src/lib/agreements/duringAgreement.js');
 const { balanceNote } = await import('../../src/lib/agreements/hours.js');
@@ -172,6 +172,47 @@ test('F3: a stale tab’s save of the draft is refused and the device takes the 
   assert.equal(await store.saveRow(USER, 'agreement_versions', { ...now, terms: { ...now.terms, noticeHours: 72 } }), 'saved');
   assert.deepEqual([db.rows.agreement_versions[0].terms.gbpMinor, db.rows.agreement_versions[0].terms.noticeHours], [330000, 72]);
   queue.unguardRows('agreement_versions', [{ id: 'v-2' }]);
+});
+
+// The final checker's fault at 56a962f2: one tab opening a new version and answering showed "changed in another window",
+// because the database's answer to the save that made the draft arrived after the questions' first (reshaped) save.
+test('F3: one tab opening a draft and answering never takes its own copies as another window’s; two tabs still do', () => {
+  const a = { id: 'a-1', status: 'signed', coach_id: 'c-1' };
+  const v1 = { id: 'v-1', agreement_id: 'a-1', version: 1, status: 'signed', terms: { kind: 'sessions', answered: true, months: 6, gbpMinor: 250000 } };
+  const raw = { ...nextVersionDraft({ agreement: a, versions: [v1], versionId: 'v-2', coachId: 'c-1' }), updated_at: 'local-1' };
+  const reshaped = { ...raw, terms: q.asQuestionnaire(raw.terms), personal_note: '' };
+  const answered = { ...reshaped, terms: { ...reshaped.terms, answered: true, noticeHours: 48 } };
+  // The database keeps jsonb in its own order of keys and stamps its own updated_at.
+  const fromDb = (v, at) => ({ ...JSON.parse(JSON.stringify(v)), terms: Object.fromEntries(Object.entries(v.terms).reverse()), updated_at: at });
+  const seen = [];
+  const t = draftTracker();
+  // The draft is made on this device (unsent) and drawn: the page registers it before its children's first save.
+  t.first(raw);
+  seen.push(t.see(raw, { sent: false }));
+  // The questions' first draw keeps the terms in their new shape (waiting to go).
+  t.sending(reshaped);
+  seen.push(t.see(raw, { sent: false, pending: reshaped }));
+  // The database answers the save that made the draft, while the reshaped one still waits.
+  seen.push(t.see(fromDb(raw, 'db-1'), { sent: true, pending: reshaped }));
+  // The reshaped save lands, then an answer, each answered by the database (its guard may tidy the terms).
+  seen.push(t.see(reshaped, { sent: false }));
+  const tidied = fromDb({ ...reshaped, terms: { ...reshaped.terms, fxRate: null } }, 'db-2');
+  t.saved(tidied);
+  seen.push(t.see(tidied, { sent: true }));
+  t.sending(answered);
+  seen.push(t.see(answered, { sent: false }));
+  t.saved(fromDb(answered, 'db-3'));
+  seen.push(t.see(fromDb(answered, 'db-3'), { sent: true }));
+  // Reopened: a new page, the device holding the database's copy.
+  const again = draftTracker();
+  again.first(fromDb(answered, 'db-3'));
+  seen.push(again.see(fromDb(answered, 'db-3'), { sent: true }));
+  assert.ok(seen.every((x) => x === 'mine'), `one tab only ever sees its own copies: ${seen.join(', ')}`);
+  // Another tab saves the fee: first unsent on this device, then the database's copy.
+  const other = { ...answered, terms: { ...answered.terms, gbpMinor: 330000 } };
+  assert.equal(t.see(other, { sent: false }), 'wait');
+  assert.equal(t.see(fromDb(other, 'db-4'), { sent: true }), 'newer');
+  assert.equal(t.see(fromDb(other, 'db-4'), { sent: true }), 'mine', 'taken once, then it is this page’s');
 });
 
 // ---------------------------------------------------------------- Q5: an untouched next version

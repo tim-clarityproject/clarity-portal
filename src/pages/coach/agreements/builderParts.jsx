@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AddButton, Button, Dropdown, InlineChoice, SaveStatus, SwitchRow, TextField } from '../../../components/design';
-import { newId, rowSent, rowsOf, saveRow } from '../../../lib/coach/store';
+import { newId, rowNow, rowSent, rowsOf, saveRow } from '../../../lib/coach/store';
 import { guardRows, noteVersions, unguardRows } from '../../../lib/syncQueue';
 import { supabase } from '../../../lib/supabase';
 import { CURRENCY, CURRENCY_LIST, moneyText, parseMoney, toMajor, toMinor } from '../../../lib/agreements/currency';
 import MistakeLine from '../../../components/agreements/MistakeLine';
 import { SESSION_LENGTHS } from '../../../lib/agreements/terms';
-import { draftCopy, draftPrint, packageRow, partyOf, rateOf, standardsFor, versionFields } from '../../../lib/coach/agreementBuilder';
+import { draftTracker, packageRow, partyOf, rateOf, standardsFor, versionFields } from '../../../lib/coach/agreementBuilder';
 import { useCoachPortal } from '../parts';
 import './builder.css';
 
@@ -68,7 +68,11 @@ export function useAgreementDraft(agreementId) {
   const lastError = useRef(null);
   // What this page holds or has sent (draftPrint), so a copy of the draft from elsewhere is told apart from the echo of
   // its own saves (F3: two tabs or two devices).
-  const mine = useRef(new Set());
+  const tracker = useRef(null);
+  if (!tracker.current) tracker.current = draftTracker();
+  // The first copy seen is this page's own, registered as it draws: before the questions' first save, and before the
+  // database answers the save that made the draft (that answer is this page's too, never another window's).
+  tracker.current.first(draft);
   const [elsewhere, setElsewhere] = useState(0);
 
   const rate = rateOf(rates, draft?.terms?.currency || 'GBP');
@@ -87,11 +91,9 @@ export function useAgreementDraft(agreementId) {
   useEffect(() => {
     if (!draft) return;
     const sent = rowSent(userId, 'agreement_versions', { id: draft.id });
-    const print = draftPrint(draft);
     const note = () => { if (sent && draft.updated_at) noteVersions('agreement_versions', [{ id: draft.id, updated_at: draft.updated_at }]); };
-    const what = draftCopy({ print, mine: mine.current, pending: pending.current ? draftPrint(pending.current.version) : null, sent });
+    const what = tracker.current.see(draft, { sent, pending: pending.current?.version || null });
     if (what === 'mine') {
-      mine.current.add(print);
       note();
       return;
     }
@@ -99,7 +101,6 @@ export function useAgreementDraft(agreementId) {
     if (what === 'wait') return;
     clearTimeout(timer.current);
     pending.current = null;
-    mine.current = new Set([print]);
     note();
     setStatus('saved');
     setElsewhere((n) => n + 1);
@@ -114,6 +115,8 @@ export function useAgreementDraft(agreementId) {
     try {
       const answer = await saveRow(userId, 'agreement_versions', next.version);
       if (answer === 'superseded') { setStatus('saved'); return 'superseded'; }
+      // The database's own copy of this save (as its guards stored it) is this page's too.
+      if (answer === 'saved' && rowSent(userId, 'agreement_versions', { id: next.version.id })) tracker.current.saved(rowNow(userId, 'agreement_versions', { id: next.version.id }));
       if (next.agreement) await saveRow(userId, 'agreements', next.agreement);
       lastError.current = null;
       setStatus(answer === 'queued' ? 'offline' : 'saved');
@@ -139,7 +142,7 @@ export function useAgreementDraft(agreementId) {
     const version = { ...base, ...fields, ...(personalNote !== undefined ? { personal_note: personalNote } : {}), ...(more || {}) };
     const agr = agreementChange || terms.kind !== agreement?.agreement_kind ? { ...(pending.current?.agreement || agreement), agreement_kind: terms.kind, ...(agreementChange || {}) } : pending.current?.agreement || null;
     pending.current = { version, agreement: agr };
-    mine.current.add(draftPrint(version));
+    tracker.current.sending(version);
     setStatus('saving');
     clearTimeout(timer.current);
     if (now) return flush();

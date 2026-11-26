@@ -122,7 +122,8 @@ export default function LegalDocumentPage() {
       `}</style>
 
       <div className="legal-page-content">
-        <div className="legal-page-column">
+        {/* ds-legal: a legal document's dates keep their year (the design check's `year` leaves it out). */}
+        <div className="legal-page-column ds-legal">
           <div className="legal-page-topbar">
             {cameFromPortal ? <BackLink onClick={() => navigate(-1)} /> : <BackLink to="/auth/login" />}
           </div>

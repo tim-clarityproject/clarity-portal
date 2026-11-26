@@ -310,6 +310,29 @@ export function draftCopy({ print, mine = new Set(), pending = null, sent = fals
   return sent ? 'newer' : 'wait';
 }
 
+/**
+ * The builder's own record of which copies of its draft are its own (F3; the final checker's fault at 56a962f2): the copy
+ * it first saw (registered as the page draws, before any child's first save, so the database's answer to the save that
+ * made the draft is known as this page's), each version it sends, and the database's own copy of each save that landed
+ * (its guards may change the stored terms). `see(row, { sent, pending })` answers 'mine', 'wait' or 'newer' (draftCopy);
+ * only 'newer' means another tab or device changed the draft.
+ */
+export function draftTracker() {
+  const mine = new Set();
+  return {
+    first(row) { if (row && !mine.size) mine.add(draftPrint(row)); },
+    sending(version) { if (version) mine.add(draftPrint(version)); },
+    saved(row) { if (row) mine.add(draftPrint(row)); },
+    see(row, { sent = false, pending = null } = {}) {
+      const print = draftPrint(row);
+      const what = draftCopy({ print, mine, pending: pending ? draftPrint(pending) : null, sent });
+      if (what === 'mine') mine.add(print);
+      if (what === 'newer') { mine.clear(); mine.add(print); }
+      return what;
+    },
+  };
+}
+
 /** The version being built: the agreement's newest draft, or null when every version has gone out. */
 export function draftVersion(agreementId, versions = []) {
   return versions.filter((v) => v.agreement_id === agreementId && v.status === 'draft').sort((a, b) => b.version - a.version)[0] || null;
