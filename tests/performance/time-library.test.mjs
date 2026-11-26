@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import {
   isZone, mustBeZone, zoneLabel, zonePlace, zoneCountry, usesTwelveHour, mainCityZone, NAMED_ZONES,
   wallClock, offsetMinutes, instantAt, dayIn, addDays, savedTime, savedTimeAt, readSavedTime,
-  clockWords, timeWords, dayWords, whenWords, bothWords, sessionWhenWords,
+  clockWords, timeWords, dayWords, dayKeyWords, whenWords, bothWords, sessionWhenWords,
   seriesRule, seriesCalls, nextCall,
   onQuarterHour, nextQuarterHour, clearOfOthers, sociable, bookingProblem, offeredStarts,
   clockChanges, callsThatMove, clockChangeLine,
@@ -209,6 +209,13 @@ test('dates are written in words, never numbers', () => {
   const at = instantAt('2026-11-03', '10:00', UK);
   assert.equal(dayWords(at, UK), 'Tue 3 Nov');
   assert.equal(dayWords(at, UK, { year: true }), 'Tue 3 Nov 2026');
+  // A day key: the year with { year: true }, and with today's key only when it isn't today's year (writing rule 28).
+  assert.equal(dayKeyWords('2026-11-03'), 'Tue 3 Nov');
+  assert.equal(dayKeyWords('2026-11-03', { year: true }), 'Tue 3 Nov 2026');
+  assert.equal(dayKeyWords('2026-11-03', { year: true, today: '2026-11-26' }), 'Tue 3 Nov');
+  assert.equal(dayKeyWords('2027-01-05', { year: true, today: '2026-11-26' }), 'Tue 5 Jan 2027');
+  assert.equal(dayKeyWords('2026-11-03', { today: '2025-12-31' }), 'Tue 3 Nov');
+  assert.equal(dayKeyWords('2026-11-03', { year: true, long: true, today: '2026-01-01' }), 'Tuesday 3 Nov');
   assert.equal(whenWords(at, NY), 'Tue 3 Nov, 5:00 am New York time');
   assert.doesNotMatch(whenWords(at, UK), /\d+\/\d+/);
   const now = new Date('2026-11-10T15:00:00Z');

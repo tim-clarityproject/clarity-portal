@@ -173,7 +173,7 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
   // wrap: words on more than one line inside a control (at the standard size).
   if (scale === 1) {
     for (const el of controls) {
-      if (el.matches('textarea, input, select, .ds-answer:not(.ds-answer--box), [role=radio].ds-answer') || el.closest(`.ds-rows, ${ROWS}, ${CAL_TILES}`)) continue;
+      if (el.matches('textarea, input, select, .ds-answer:not(.ds-answer--box), [role=radio].ds-answer') || el.closest(`.ds-rows, .ds-row, ${ROWS}, ${CAL_TILES}`)) continue; // a saved-items row (ListRow, .ds-row) is a row: its type line may wrap
       const w = words(el);
       if (!w || w.length > 60) continue;
       const fs = parseFloat(getComputedStyle(el).fontSize);

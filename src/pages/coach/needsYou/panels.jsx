@@ -430,7 +430,7 @@ function PriceBody({ item, close }) {
   const c = t.currency || 'GBP';
   const fee = Number(t.retainer?.feeMinor) || 0;
   const due = item.key.split(':')[2] || p.todayKey;
-  const options = priceFromOptions(due);
+  const options = priceFromOptions(due, p.todayKey);
   // The new price as money (£3,300, as every money box shows it: builderParts' MoneyField), in minor units.
   const [priceMinor, setPriceMinor] = useState(() => Math.round(fee * 1.1 / 10000) * 10000);
   const [from, setFrom] = useState(options[0]?.value);

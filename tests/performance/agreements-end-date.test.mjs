@@ -26,6 +26,9 @@ test('the builder’s choices and its line', () => {
   assert.equal(e.endHint({ start: '2027-01-04', count: 16, rhythm: 'Weekly for 6 weeks, then every 2 weeks', end: '2027-07-30', picked: true }),
     'You chose this. Suggested: Fri 2 Jul 2027.');
   assert.deepEqual(e.extendOptions('2027-07-02').map((x) => x.value), ['2027-07-16', '2027-07-30', '2027-08-27', '2027-09-24']);
+  assert.deepEqual(e.extendOptions('2027-07-02').map((x) => x.label), ['Fri 16 Jul 2027', 'Fri 30 Jul 2027', 'Fri 27 Aug 2027', 'Fri 24 Sep 2027']);
+  // On screen, this year's dates leave their year out (writing rule 28).
+  assert.deepEqual(e.extendOptions('2026-11-20', '2026-11-26').map((x) => x.label), ['Fri 4 Dec', 'Fri 18 Dec', 'Fri 15 Jan 2027', 'Fri 12 Feb 2027']);
 });
 
 test('pausing Mon 1 Mar to Fri 26 Mar moves the end by 4 weeks, to Fri 30 Jul 2027', () => {
@@ -33,4 +36,5 @@ test('pausing Mon 1 Mar to Fri 26 Mar moves the end by 4 weeks, to Fri 30 Jul 20
   assert.equal(p.end, '2027-07-30');
   assert.equal(p.line, 'Coaching pauses for 4 weeks, so the end date moves to Fri 30 Jul 2027.');
   assert.equal(e.pauseMove('2027-07-02', '2027-03-26', '2027-03-01').line, 'Choose an Until date after From.');
+  assert.equal(e.pauseMove('2027-07-02', '2027-03-01', '2027-03-26', '2027-02-24').line, 'Coaching pauses for 4 weeks, so the end date moves to Fri 30 Jul.');
 });

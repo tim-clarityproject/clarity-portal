@@ -80,7 +80,8 @@ export default function AgreementPage() {
   const total = sessionsIn(t);
   const hours = k === 'hours' ? hoursState({ agreement: a, terms: t, entries: rowsOf(p.state, 'time_entries'), invoices: p.invoices }) : null;
   const back = client ? () => navigate(`/coach/clients/${client.id}`) : org ? () => navigate(`/coach/organisations/${org.id}`) : () => navigate('/coach/clients');
-  const words = (day) => (day ? dayKeyWords(day, { year: true }) : '');
+  // This year's dates without their year (writing rule 28); the Main points are the agreement's terms and keep theirs.
+  const words = (day) => (day ? dayKeyWords(day, { year: true, today: p.todayKey }) : '');
   const line = agreementLine({
     first, status: a.status, signedOn: signed ? words(signedDay(v) || signDay) : '', end: words(end),
     pausedTo: paused && paused.to >= today ? words(paused.to) : '', endingOn: words(earlyEnd(a)),
@@ -131,7 +132,7 @@ export default function AgreementPage() {
         <PageOpening label={statusLine(a, v)} title={agreementTitle(name)} line={line} />
         <div className="ds-cols ds-cols--needs-first">
           <div>
-            <Card label="Main points">
+            <Card label="Main points" data-year="">
               {points.filter((r) => r.value).map((r) => <Row key={r.label} name={r.label} value={r.value} className="ap-point" />)}
             </Card>
             {k === 'hours' ? (

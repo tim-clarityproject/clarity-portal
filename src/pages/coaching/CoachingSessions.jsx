@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, InlineChoice, Section, useToast } from '../../components/design';
+import { Button, Card, Empty, InlineChoice, useToast } from '../../components/design';
 import { clockWords, deviceZone, zoneLabel } from '../../lib/time/index.js';
 import { BOOKING_WORDS, bookButtonWords, bookingWords, freeDays, lateLine, MY_BOOKING_DAYS, mySessionWords, sociableStarts, EARLY_AND_LATE_LABEL } from '../../lib/coach/calendar';
 import { bookMySession, cancelMySession, loadMySessions, loadMyTimes, moveMySession } from '../../lib/coach/bookingActions';
@@ -102,7 +102,7 @@ export default function CoachingSessions({ coachName = null, ready = true }) {
     const late = mode?.session ? lateLine(mode.session.starts_at, new Date(), mode.kind === 'cancel' ? 'cancel' : 'move') : null;
     body = (
       <>
-        {state.data.length === 0 && !mode && <p className="ipp-muted">No sessions are booked with {who} yet.</p>}
+        {state.data.length === 0 && !mode && <Empty>No sessions are booked with {who} yet.</Empty>}
         {state.data.length > 0 && (
           <ul className="coaching-sessions" aria-label="Sessions to come">
             {state.data.map((s) => (
@@ -149,5 +149,5 @@ export default function CoachingSessions({ coachName = null, ready = true }) {
       </>
     );
   }
-  return <Section title="Your sessions" className="ipp-section coaching-section">{body}</Section>;
+  return <Card label="Your sessions" className="coaching-section">{body}</Card>;
 }

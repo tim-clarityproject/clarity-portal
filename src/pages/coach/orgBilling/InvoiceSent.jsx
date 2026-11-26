@@ -70,7 +70,7 @@ export default function InvoiceSent() {
           <div>
             <Card label="Where it is">
               <Rows label="Where it stands">
-                {rows.map((r) => <FactRow key={r.label} name={r.label} value={r.value} />)}
+                {rows.map((r) => <FactRow key={r.label} name={r.label} value={r.value} keepYear={r.label === 'Attached'} />)}
               </Rows>
             </Card>
             <p className="cc-money-note cc-money-note--after">Their bank transfer is matched to this invoice by Stripe.</p>

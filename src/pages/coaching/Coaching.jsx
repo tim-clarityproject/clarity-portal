@@ -2,7 +2,7 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import { Button, Checkbox, Chevron, LoadError, Row, Rows, Section, TextBox, ToolTodoPanel, useCoach, useToast, PageOpening } from '../../components/design';
+import { Button, Card, Checkbox, Chevron, Empty, LoadError, Row, Rows, TextBox, ToolTodoPanel, useCoach, useToast, PageOpening } from '../../components/design';
 import { savePdf, PDF_ERROR } from '../../components/design/pdfSave';
 import { useCachedLoad } from '../../lib/pageCache';
 import { useDraft } from '../../lib/drafts';
@@ -47,6 +47,8 @@ import '../../pages/hubs/clientPage.css';
 //   More          My signature (M13 A7's side panel), and Billing for a
 //                 self-funded client, with the next invoice that's due
 // With nothing from a coach nothing links here, and the page says one line.
+// Polish 1 (FX3, 26 Nov): built as the other client pages are, the shared PageOpening (Sign my agreement as its one
+// main button while a version waits), then each section as a Card with its label, its rows with hairlines.
 // It reads and answers only through the database's own checked functions
 // (src/lib/coaching.js), and is quiet until migrations 049 and 050 have run.
 
@@ -187,12 +189,12 @@ export default function Coaching() {
   let body;
   if (loading) body = null;
   else if (error) body = <LoadError>The page didn’t load. Check your connection and try again.</LoadError>;
-  else if (empty) body = <p className="ipp-muted coaching-empty">{EMPTY_LINE}</p>;
+  else if (empty) body = <Empty className="coaching-empty">{EMPTY_LINE}</Empty>;
   else {
     body = (
       <>
         {hasAsks && (
-          <Section title="From your coach" className="ipp-section coaching-section">
+          <Card label="From your coach" className="coaching-section">
             <div className="coaching-asks">
               {asks.invites.map((i) => {
                 const who = i.coach_first_name || NO_COACH_NAME;
@@ -241,17 +243,14 @@ export default function Coaching() {
                 );
               })}
             </div>
-          </Section>
+          </Card>
         )}
 
         {(ready || signedRows.length > 0) && (
-          <Section title="Agreement" className="ipp-section coaching-section agree-section">
+          <Card label="Agreement" className="coaching-section agree-section">
             {ready && (
               <div className="agree-ready">
                 <p className="coaching-ask-line agree-ready-line">{readyLine(ready.version)}</p>
-                <div className="coaching-acts agree-ready-acts">
-                  <Button variant="primary" onClick={() => navigate(`/coaching/agreement/${ready.id}`)}>Sign my agreement</Button>
-                </div>
               </div>
             )}
             {signedRows.length > 0 && (
@@ -268,23 +267,23 @@ export default function Coaching() {
                 ))}
               </Rows>
             )}
-          </Section>
+          </Card>
         )}
 
         {showPrep && (
-          <Section title="For next time" className="ipp-section coaching-section">
+          <Card label="For next time" className="coaching-section">
             <form noValidate onSubmit={(e) => { e.preventDefault(); keepPrep(); }}>
               <TextBox label="What do you want to talk about next time?" who="coach" coachName={coachName || undefined} value={prep} onChange={setPrep} maxLength={PREP_MAX} focusMode />
               <p className="coaching-note">{coachName || NO_COACH_NAME} sees this before your next session.</p>
               <div className="coaching-acts"><Button variant="outline" type="submit">Save</Button></div>
             </form>
-          </Section>
+          </Card>
         )}
 
         {showSessions && <CoachingSessions coachName={coachName} ready={data.day} />}
 
         {data.recaps.length > 0 && (
-          <Section title="Session recaps" className="ipp-section coaching-section">
+          <Card label="Session recaps" className="coaching-section">
             <div className="coaching-recaps">
               {data.recaps.map((r) => (
                 <article key={r.session_id} className="coaching-recap">
@@ -314,18 +313,18 @@ export default function Coaching() {
                 </article>
               ))}
             </div>
-          </Section>
+          </Card>
         )}
 
         {hasAgreements && (
-          <Section title="More" className="ipp-section coaching-section agree-more">
+          <Card label="More" className="coaching-section agree-more">
             <Rows label="More">
               <Row name="My signature" value={<Chevron direction="right" size="sm" />} onClick={() => setSignatureOpen(true)} strong />
               {billing && (
                 <Row name="Billing" sub={billingLine(deals.invoices, today) || undefined} value={<Chevron direction="right" size="sm" />} onClick={() => navigate('/coaching/billing')} strong />
               )}
             </Rows>
-          </Section>
+          </Card>
         )}
       </>
     );
@@ -335,7 +334,11 @@ export default function Coaching() {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page cp-page ipp-page coaching-page">
-        <PageOpening title="My coaching" line={B1_LINES.coaching} />
+        <PageOpening
+          title="My coaching"
+          line={B1_LINES.coaching}
+          action={!loading && !error && ready ? <Button variant="primary" onClick={() => navigate(`/coaching/agreement/${ready.id}`)}>Sign my agreement</Button> : null}
+        />
         {body}
       </div>
       <MySignature open={signatureOpen} onClose={() => setSignatureOpen(false)} userId={userId} />

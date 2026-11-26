@@ -33,11 +33,16 @@ export function dayWords(instant, zone, { year = false, long = false } = {}) {
   return `${name} ${w.day} ${MONTHS[w.month - 1]}${year ? ` ${w.year}` : ''}`;
 }
 
-/** A day key in words: "Sun 1 Nov". No clock is read. */
-export function dayKeyWords(date, { year = false, long = false } = {}) {
+/**
+ * A day key in words: "Sun 1 Nov". No clock is read. With { year: true }, "Sun 1 Nov 2026"; with { year: true, today }
+ * (today's day key), the year only when the day isn't in today's year: a date this year never shows its year on screen
+ * (writing rule 28; the design check's `year`).
+ */
+export function dayKeyWords(date, { year = false, long = false, today = null } = {}) {
   const [y, m, d] = mustBeDay(date).split('-').map(Number);
   const weekday = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
-  return `${(long ? LONG_DAY_NAMES : DAY_NAMES)[weekday]} ${d} ${MONTHS[m - 1]}${year ? ` ${y}` : ''}`;
+  const withYear = year && !(today && String(today).slice(0, 4) === String(y));
+  return `${(long ? LONG_DAY_NAMES : DAY_NAMES)[weekday]} ${d} ${MONTHS[m - 1]}${withYear ? ` ${y}` : ''}`;
 }
 
 /** "Mon 16 Nov, 08:00 Sydney time". */

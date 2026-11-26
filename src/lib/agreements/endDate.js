@@ -122,25 +122,26 @@ export function endHint({ start, count, rhythm, end, picked }) {
   return `You chose this. Suggested: ${dayKeyWords(suggested, { year: true })}.`;
 }
 
-/** Extend the end date: the Friday after 2, 4, 8 or 12 more weeks (M28's extOpts). */
-export function extendOptions(end) {
+/** Extend the end date: the Friday after 2, 4, 8 or 12 more weeks (M28's extOpts). `today`: the year only when it isn't today's. */
+export function extendOptions(end, today = null) {
   return [2, 4, 8, 12].map((w) => {
     const v = fridayOnOrAfter(addDays(end, w * 7));
-    return { value: v, label: dayKeyWords(v, { year: true }) };
+    return { value: v, label: dayKeyWords(v, { year: true, today }) };
   });
 }
 
 /**
  * Pausing from one day to another moves the end date on by the days paused plus 3 (a Monday to a Friday is 4 whole
  * weeks), to the Friday on or after it (M28's pause). Returns { ok, days, weeks, end, line } or { ok: false, line }.
+ * `today` (on screen): the line's date shows its year only when it isn't today's; the server leaves it out (the year kept).
  */
-export function pauseMove(end, from, to) {
+export function pauseMove(end, from, to, today = null) {
   if (!from || !to || to <= from) return { ok: false, line: 'Choose an Until date after From.' };
   const days = daysBetween(from, to) + 3;
   const weeks = Math.round(days / 7);
   const newEnd = fridayOnOrAfter(addDays(end, days));
   return {
     ok: true, days, weeks, end: newEnd,
-    line: `Coaching pauses for ${weeks} ${weeks === 1 ? 'week' : 'weeks'}, so the end date moves to ${dayKeyWords(newEnd, { year: true })}.`,
+    line: `Coaching pauses for ${weeks} ${weeks === 1 ? 'week' : 'weeks'}, so the end date moves to ${dayKeyWords(newEnd, { year: true, today })}.`,
   };
 }

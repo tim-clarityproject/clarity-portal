@@ -111,21 +111,21 @@ export const SAY_WHAT = 'Say what the time was for.';
 
 // ---------------------------------------------------------------- the panels on an agreement's page
 
-/** Pause from when? The next three Mondays (M28: Mon 1 Mar, 8 Mar, 15 Mar). */
+/** Pause from when? The next three Mondays (M28: Mon 1 Mar, 8 Mar, 15 Mar); the year only when it isn't this one. */
 export function pauseFromOptions(today) {
   const first = addDays(today, ((8 - weekdayOf(today)) % 7) || 7);
-  return [0, 7, 14].map((n) => addDays(first, n)).map((v) => ({ value: v, label: dayKeyWords(v, { year: true }) }));
+  return [0, 7, 14].map((n) => addDays(first, n)).map((v) => ({ value: v, label: dayKeyWords(v, { year: true, today }) }));
 }
-/** Until when? Fridays 4, 6 and 9 weeks after it starts (M28: Fri 26 Mar, 9 Apr, 30 Apr from Mon 1 Mar). */
-export function pauseToOptions(from) {
+/** Until when? Fridays 4, 6 and 9 weeks after it starts (M28: Fri 26 Mar, 9 Apr, 30 Apr from Mon 1 Mar). `today`: as above. */
+export function pauseToOptions(from, today = null) {
   if (!from) return [];
-  return [25, 39, 60].map((n) => fridayOnOrAfter(addDays(from, n))).map((v) => ({ value: v, label: dayKeyWords(v, { year: true }) }));
+  return [25, 39, 60].map((n) => fridayOnOrAfter(addDays(from, n))).map((v) => ({ value: v, label: dayKeyWords(v, { year: true, today }) }));
 }
 /** What's the last day? Fridays from 30 days' notice, then 4 and 8 weeks later; never after the end already set. */
 export function endEarlyOptions(today, end = null) {
   const first = fridayOnOrAfter(addDays(today, 30));
   const days = [first, addDays(first, 28), addDays(first, 56)].filter((d) => !end || d < end);
-  return (days.length ? days : [end].filter(Boolean)).map((v) => ({ value: v, label: dayKeyWords(v, { year: true }) }));
+  return (days.length ? days : [end].filter(Boolean)).map((v) => ({ value: v, label: dayKeyWords(v, { year: true, today }) }));
 }
 /** The line under End early on the agreement's page, and the panel's own sentence. */
 export const endEarlyLine = (t) => (t?.fullTerm ? 'Only by agreement, when something exceptional happens' : '30 days’ notice in writing');
@@ -133,11 +133,12 @@ export const endEarlySentence = (t) => (t?.fullTerm
   ? 'A 6-month agreement ends early only by agreement, when something exceptional happens. Any refund is what you agree.'
   : 'Either of you can end it with 30 days’ notice in writing. Any refund is what you agree.');
 
-/** From when? on a price review: the day it is due, then the first Monday of the next two months (M28). */
-export function priceFromOptions(due) {
+/** From when? on a price review: the day it is due, then the first Monday of the next two months (M28). `today`: the
+ * year shows only when it isn't today's. */
+export function priceFromOptions(due, today = null) {
   if (!due) return [];
   const firstMonday = (day) => { const first = `${day.slice(0, 8)}01`; return addDays(first, (8 - weekdayOf(first)) % 7); };
-  return [due, firstMonday(addMonths(due, 1)), firstMonday(addMonths(due, 2))].map((v) => ({ value: v, label: dayKeyWords(v, { year: true }) }));
+  return [due, firstMonday(addMonths(due, 1)), firstMonday(addMonths(due, 2))].map((v) => ({ value: v, label: dayKeyWords(v, { year: true, today }) }));
 }
 
 /** Give money back: the agreement's settled invoices, newest first, each with what can still go back. */

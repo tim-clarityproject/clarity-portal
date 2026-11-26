@@ -150,9 +150,14 @@ test('the agreement page: sessions counted, its panels’ dates, and Cancel with
   const list = d.agreementSessions({ agreement: a, terms: t, sessions });
   assert.deepEqual(list.map((s) => s.id), ['x1', 'x2', 'x3']);
   assert.equal(d.sessionsIn(t), 16);
-  assert.deepEqual(d.pauseFromOptions('2027-02-24').map((o) => o.label), ['Mon 1 Mar 2027', 'Mon 8 Mar 2027', 'Mon 15 Mar 2027']);
+  // This year's days without their year (writing rule 28); another year's with it.
+  assert.deepEqual(d.pauseFromOptions('2027-02-24').map((o) => o.label), ['Mon 1 Mar', 'Mon 8 Mar', 'Mon 15 Mar']);
+  assert.deepEqual(d.pauseFromOptions('2026-12-20').map((o) => o.label), ['Mon 21 Dec', 'Mon 28 Dec', 'Mon 4 Jan 2027']);
   assert.deepEqual(d.pauseToOptions('2027-03-01').map((o) => o.label), ['Fri 26 Mar 2027', 'Fri 9 Apr 2027', 'Fri 30 Apr 2027']);
+  assert.deepEqual(d.pauseToOptions('2027-03-01', '2027-02-24').map((o) => o.label), ['Fri 26 Mar', 'Fri 9 Apr', 'Fri 30 Apr']);
   assert.deepEqual(d.priceFromOptions('2027-01-04').map((o) => o.label), ['Mon 4 Jan 2027', 'Mon 1 Feb 2027', 'Mon 1 Mar 2027']);
+  assert.deepEqual(d.priceFromOptions('2026-12-14', '2026-11-25').map((o) => o.label), ['Mon 14 Dec', 'Mon 4 Jan 2027', 'Mon 1 Feb 2027']);
+  assert.deepEqual(d.endEarlyOptions('2026-11-25', '2027-07-02').map((o) => o.label), ['Fri 25 Dec', 'Fri 22 Jan 2027', 'Fri 19 Feb 2027']);
   assert.deepEqual(d.logDays('2026-11-25').map((o) => o.label), ['Wed 25 Nov', 'Tue 24 Nov', 'Mon 23 Nov', 'Fri 20 Nov']);
   assert.equal(d.endEarlyLine(t), 'Only by agreement, when something exceptional happens');
   assert.equal(d.endEarlyLine({ fullTerm: false }), '30 days’ notice in writing');

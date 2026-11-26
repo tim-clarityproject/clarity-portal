@@ -66,8 +66,8 @@ function Pick({ question, options, value, onChange, onNext }) {
 
 // ---------------------------------------------------------------- each change: its questions, its check and its button
 
-function useExtend({ a, name, end, done }) {
-  const options = end ? extendOptions(end) : [];
+function useExtend({ a, name, end, today, done }) {
+  const options = end ? extendOptions(end, today) : [];
   const [to, setTo] = useState(options[0]?.value);
   const [problem, setProblem] = useState(null);
   const run = useAsk(done);
@@ -77,9 +77,9 @@ function useExtend({ a, name, end, done }) {
     name: 'Extend the end date',
     problem,
     steps: [{
-      key: 'to', question: 'When should it end now?', hint: end ? `It ends on ${dayKeyWords(end, { year: true })} now.` : null,
+      key: 'to', question: 'When should it end now?', hint: end ? `It ends on ${dayKeyWords(end, { year: true, today })} now.` : null,
       body: (next) => <Pick question="When should it end now?" options={options} value={to} onChange={(x) => { setTo(x); setProblem(null); }} onNext={next} />,
-      check: `It ends on ${label} instead${end ? ` of ${dayKeyWords(end, { year: true })}` : ''}.`,
+      check: `It ends on ${label} instead${end ? ` of ${dayKeyWords(end, { year: true, today })}` : ''}.`,
     }],
     say: `This only gives ${first} more time, so it applies straight away and ${first} gets an email. The price doesn’t change.`,
     finish: `Extend to ${label}`,
@@ -90,13 +90,14 @@ function useExtend({ a, name, end, done }) {
 function usePause({ a, t, end, today, done }) {
   const froms = pauseFromOptions(today);
   const [from, setFrom] = useState(froms[0]?.value);
-  const tos = pauseToOptions(from);
+  const tos = pauseToOptions(from, today);
   const [to, setTo] = useState(tos[0]?.value);
   useEffect(() => { if (!pauseToOptions(from).some((o) => o.value === to)) setTo(pauseToOptions(from)[0]?.value); }, [from, to]);
   const [problem, setProblem] = useState(null);
   const run = useAsk(done);
-  const moved = end ? pauseMove(end, from, to) : { ok: Boolean(to > from), line: '' };
-  const words = (d) => (d ? dayKeyWords(d, { year: true }) : '');
+  const moved = end ? pauseMove(end, from, to, today) : { ok: Boolean(to > from), line: '' };
+  // This year's dates without their year (writing rule 28).
+  const words = (d) => (d ? dayKeyWords(d, { year: true, today }) : '');
   return {
     name: 'Pause coaching',
     problem,
@@ -191,7 +192,7 @@ function useRefund({ a, name, done }) {
   };
 }
 
-function useCancel14({ a, v, t, name, signed, sessions, firstV, done }) {
+function useCancel14({ a, v, t, name, signed, sessions, firstV, today, done }) {
   const p = useCoachPortal();
   const cal = useCalendar();
   const [problem, setProblem] = useState(null);
@@ -217,7 +218,7 @@ function useCancel14({ a, v, t, name, signed, sessions, firstV, done }) {
   const ahead = futureSessionsPlan(a.profile_id, { data: cal.data, now: p.now });
   const asksDelivered = k === 'oneoff' && startNow;
   const facts = [
-    `${first} signed on ${dayKeyWords(signed, { year: true })}, so their 14 days to change their mind run to ${dayKeyWords(windowEnds(signed), { year: true })}.`,
+    `${first} signed on ${dayKeyWords(signed, { year: true, today })}, so their 14 days to change their mind run to ${dayKeyWords(windowEnds(signed), { year: true, today })}.`,
     `${moneyText(paid, c)} is settled so far.`,
     ...(startNow && per ? [had ? `${had} coaching ${had === 1 ? 'session was' : 'sessions were'} had, at ${moneyText(per, c)} each.` : 'No coaching sessions have been had yet.'] : []),
     ...(startNow && k === 'hours' ? [`${moneyText(hoursMinor, c)} of hours are logged.`] : []),
