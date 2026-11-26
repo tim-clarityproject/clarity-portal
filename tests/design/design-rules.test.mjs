@@ -336,6 +336,15 @@ test('breathe (walk B, item 2): Breathe over a fixed bar’s button fails; lifte
   assert.ok(!has(r, 'breathe'), all(r));
 });
 
+test('breathe (FX8): a side panel drawn over Breathe hides it, so its foot’s button passes; Breathe over the panel fails', async () => {
+  const panel = (z) => `<div role="dialog" aria-modal="true" style="position:fixed;top:0;right:0;bottom:0;width:390px;background:var(--bg);z-index:${z};display:flex;flex-direction:column;justify-content:flex-end"><div style="display:flex;padding:12px 20px"><button class="ds-btn ds-btn--primary" style="flex:1">Done</button></div></div>`;
+  const orb = '<div class="ds-orb ds-orb--fixed" style="z-index:100"><button type="button" class="ds-breathe">Breathe</button></div>';
+  let r = await check(panel(5200) + orb, { phone: true });
+  assert.ok(!has(r, 'breathe'), all(r));
+  r = await check(panel(10) + orb, { phone: true });
+  assert.match(all(r), /breathe: Breathe is drawn over "Done" in a fixed bar/);
+});
+
 test('year (walk B, item 4): a date this year with its year fails; without it, or last year’s, passes', async () => {
   assert.match(all(await check(`<div class="ds-open-label">Thursday 26 November ${year}</div>`)), new RegExp(`year: "26 November ${year}"`));
   assert.ok(!has(await check('<div class="ds-open-label">Thursday 26 November</div>'), 'year'));
@@ -418,6 +427,18 @@ test('duplicate: each card’s own action ("Show as a table" under two charts) p
   assert.ok(!rules(r).includes('duplicate'), r.problems.join('; '));
   r = await check('<section class="ds-card"><div class="ds-card-head"><h2 class="ds-label">Chart</h2></div><button class="ds-more ds-more--bare">Show as a table</button><button class="ds-more ds-more--bare">Show as a table</button></section>');
   assert.ok(rules(r).includes('duplicate'), r.problems.join('; '));
+});
+
+test('duplicate (FX8): each objective’s own answers and date, and each carried row’s answers, pass; an action twice still fails', async () => {
+  const answers = (n) => `<div class="ds-rows" role="radiogroup" aria-label="How will you track it?"><button role="radio" aria-checked="${n === 1}" class="ds-row">I’ll track a number</button><button role="radio" aria-checked="${n !== 1}" class="ds-row">I’ll track a milestone</button></div>`;
+  const objed = (n) => `<div class="ds-objed">${answers(n)}<div class="ds-objed-date"><button type="button" class="ds-dd">14 Jun 2027</button></div></div>`;
+  let r = await check(objed(1) + objed(2) + objed(3));
+  assert.ok(!has(r, 'duplicate'), all(r));
+  const carry = (name) => `<div class="ds-carry-row"><span class="ds-carry-name">${name}</span><div class="ds-seg" role="radiogroup" aria-label="What happens to ${name}?"><button role="radio" aria-checked="true" class="ds-seg-btn">Keep it as it is</button><button role="radio" aria-checked="false" class="ds-seg-btn">Change it</button></div></div>`;
+  r = await check(carry('Sleep 7 hours') + carry('Run three times a week'));
+  assert.ok(!has(r, 'duplicate'), all(r));
+  r = await check(`${objed(1)}<button class="ds-more ds-more--bare">Add another objective</button><button class="ds-more ds-more--bare">Add another objective</button>`);
+  assert.match(all(r), /duplicate: "Add another objective" is offered 2 times/);
 });
 
 test('coral-fill (Tim, 26 Nov): a mistake in a coral or soft coral box fails, light and dark; ErrorMessage’s coral line passes', async () => {

@@ -1,6 +1,7 @@
-import { forwardRef } from 'react';
+import { forwardRef, useRef } from 'react';
 import { DisclosureArrow, SearchField, useIsPhone } from '../../components/design';
 import { Row } from '../../components/design/Blocks';
+import { useGreyLineNow } from './parts';
 import './people.css';
 
 // The coach's people pages' shared parts (Polish 1, Stage B, B4: Clients, Leads, Network, an organisation, a group,
@@ -56,8 +57,12 @@ export function PersonRow({ name, facts = [], when, href, onClick, strong = true
   const isPhone = useIsPhone();
   const shown = facts.filter(Boolean);
   const parts = isPhone && when ? [when, ...shown] : shown;
+  // Trimmed as it is drawn (coach rule 49): CoachApp's useGreyLines trims a frame later, so an associate's first screen
+  // on a phone showed "Northfield Logistics 11, Glasgow" and the whole page "Northfield Logistics 11" (FX8, 26 Nov).
+  const lineRef = useRef(null);
+  useGreyLineNow(lineRef);
   const sub = parts.length > 0 ? (
-    <span className="cc-li-facts" data-grey-line>
+    <span ref={lineRef} className="cc-li-facts" data-grey-line>
       {parts.map((f, i) => <span key={typeof f === 'string' ? `${f}-${i}` : i} data-drop={isPhone && when && i === 0 ? undefined : String(i)}>{f}</span>)}
     </span>
   ) : null;

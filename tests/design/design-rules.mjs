@@ -39,11 +39,13 @@
 //   tap           a link or fold whose tap area (its box, or its invisible ::after or ::before) is under 44px high
 //                 (items 6 and 8; rule 29g); a link inside a sentence is left out, as WCAG leaves it out
 //   bare-zero     also a row's value reading a bare 0, 0%, £0 or £0/month (item 9)
-//   breathe       Breathe drawn over something to press in a fixed bar at the foot (item 2)
+//   breathe       Breathe drawn over something to press in a fixed bar at the foot (item 2); a panel drawn over
+//                 Breathe hides it, so it isn't drawn over that panel's foot (read from the stacking, as overlap)
 //   year          a date this year shown with its year (item 4; writing rule 28)
 //   focus         a tool's address (TOOL_ROUTES) showing the menu, the phone header, My Mission or Breathe: a tool runs
 //                 in focus mode (item 1; rule 21). Give `route` (the runner passes the address it landed on).
-//   duplicate     the same action (three words or more) offered twice on one screen, outside list rows (item 10)
+//   duplicate     the same action (three words or more) offered twice on one screen, outside list rows (item 10);
+//                 answers (radios, toggles, options) are not actions, and an objective's editor is its own card
 //   card          also a card with no label whose first row doesn't start at its padding (item 11)
 //
 // The UI tester's findings (FX2, 26 Nov):
@@ -614,7 +616,17 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
       const bar = fixedAncestor(el);
       if (!bar) continue;
       const b = el.getBoundingClientRect();
-      if (b.left < ob.right - 1 && b.right > ob.left + 1 && b.top < ob.bottom - 1 && b.bottom > ob.top + 1) say('breathe', `Breathe is drawn over ${name(el)} in a fixed bar`);
+      if (!(b.left < ob.right - 1 && b.right > ob.left + 1 && b.top < ob.bottom - 1 && b.bottom > ob.top + 1)) continue;
+      // Stacking (FX8, 26 Nov), as `overlap` reads it: at the middle of the two boxes' overlap, Breathe is drawn over the
+      // control only when it is nearer the eye. A side panel or dialog drawn over Breathe (its own foot's "Done"
+      // included) hides Breathe there, so Breathe isn't drawn over anything of it.
+      const x = (Math.max(b.left, ob.left) + Math.min(b.right, ob.right)) / 2;
+      const y = (Math.max(b.top, ob.top) + Math.min(b.bottom, ob.bottom)) / 2;
+      const stack = document.elementsFromPoint(x, y);
+      const orbAt = stack.findIndex((k) => k === orb || orb.contains(k) || Boolean(k.closest?.('.ds-orb')));
+      const elAt = stack.findIndex((k) => k === el || el.contains(k));
+      if (orbAt < 0 || (elAt >= 0 && elAt < orbAt)) continue;
+      say('breathe', `Breathe is drawn over ${name(el)} in a fixed bar`);
     }
   }
 
@@ -682,14 +694,19 @@ export function designProblems({ phone = false, scale = 1, route = null, tools =
 
   // duplicate: one action offered twice on one screen (outside list rows, where each row has its own).
   // Each card's own action, like each row's, belongs to that card ("Show as a table" under each of two charts, "Edit
-  // this objective" on each objective's card): counted within its card, or across the page outside cards.
+  // this objective" on each objective's card): counted within its card, or across the page outside cards. An objective's
+  // own editor (.ds-objed, its own box in Build your plan) and a carried row (.ds-carry-row, KeepChangeRow in the sprint
+  // review) are each their own card. An answer is not an action (FX8, 26 Nov): a choice (role radio, option, checkbox
+  // or switch, a pressed or unpressed toggle, anything in a radio group) is what one thing is, so each objective's "I’ll
+  // track a number" or each row's "Keep it as it is" is that row's own answer, never one action offered again.
+  const ANSWER = '[role=radio], [role=option], [role=checkbox], [role=switch], [role=menuitemradio], [role=menuitemcheckbox], [aria-pressed], [role=radiogroup] *';
   const actions = new Map();
   const scopes = new Map();
   for (const el of top.querySelectorAll('a[href], button, [role=button]')) {
-    if (!vis(el) || el.closest(`${ROWS}, li, tr, [role=row], [role=listitem], .ds-rows-list, [role=menu]`)) continue;
+    if (!vis(el) || el.closest(`${ROWS}, li, tr, [role=row], [role=listitem], .ds-rows-list, [role=menu]`) || el.matches(ANSWER)) continue;
     const w = (el.innerText || '').replace(/\s+/g, ' ').trim();
     if (w.split(' ').length < 3) continue;
-    const scope = el.closest('.ds-card, .ds-objective, section[class*="card"]');
+    const scope = el.closest('.ds-card, .ds-objective, .ds-objed, .ds-carry-row, section[class*="card"]');
     if (!scopes.has(scope)) scopes.set(scope, scopes.size);
     const key = `${scopes.get(scope)}|${w}`;
     actions.set(key, (actions.get(key) || 0) + 1);
