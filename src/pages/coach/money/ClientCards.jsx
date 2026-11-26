@@ -7,6 +7,7 @@ import { agreementRows, amountsText, moneySummary } from '../../../lib/coach/mon
 import { dayIn, dayKeyWords } from '../../../lib/time/index.js';
 import { lengthPlace, whenWords } from '../../../lib/coach/day';
 import { useCoachPortal } from '../parts';
+import MistakeLine from '../../../components/agreements/MistakeLine';
 import './money.css';
 
 // A client's Agreements, Coaching sessions, Money and Contact cards (Polish 1, Stage C, C2; M28 version 6, "client"):
@@ -21,7 +22,7 @@ import './money.css';
 
 const FIRST_AGREEMENTS = 3;
 
-export default function ClientCards({ profile, first, next, last, sessions, loading, onBrief, onBook, onRun1, onDetails, whatsapp = null, imessage = null }) {
+export default function ClientCards({ profile, first, next, last, sessions, loading, onBrief, onBook, onRun1, onDetails, whatsapp = null, imessage = null, pdfProblem = null }) {
   const navigate = useNavigate();
   const p = useCoachPortal();
   const { state, agreements = [], agreementVersions = [], invoices = [], todayKey, settings } = p;
@@ -54,6 +55,8 @@ export default function ClientCards({ profile, first, next, last, sessions, load
               {shownAgreements.map((r) => <Row key={r.id} name={r.name} sub={r.sub} value={r.value} onClick={() => open(r)} label={`${r.name}, ${r.sub}, ${r.value}. Open it`} />)}
             </Rows>
           )}
+          {/* A signed PDF that couldn't be had: one mistake line under the agreements it came from (P13). */}
+          {!loading && rows.length > 0 && pdfProblem && <MistakeLine>{pdfProblem}</MistakeLine>}
         </Card>
         <Card label="Coaching sessions" className="cc-money-sessions" link={{ children: 'Calendar', onClick: () => navigate('/coach/calendar') }}>
           {!next && !last ? (

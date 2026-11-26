@@ -183,7 +183,7 @@ test('Q1: before the client chooses, the Read states both ways truthfully; once 
   const { forStorage, resolveChoice, mainPoints } = await import('../../src/lib/agreements/clauses.js');
   const t = terms({ totalMinor: 1048000, settle: 'equal', months: 6, startsOn: '2027-01-04', endsOn: '2027-06-25', offerUpfront: true });
   const both = resolveChoice(forStorage(t), 'either').find((c) => c.key === 'investment').paragraphs[0].text;
-  assert.equal(both, 'Your investment is £9,956, in full, up front, with 5% off, or £10,480, in 6 monthly instalments of £1,746.66. You choose which when you sign.');
+  assert.equal(both, 'Your investment is £9,956, in full, up front, with 5% off, or £10,480, in 6 monthly instalments, the first £1,746.70 and then £1,746.66. You choose which when you sign.');
   assert.match(mainPoints(t, { choice: 'either' }).find((r) => r.label === 'Your investment').value, /up front, with 5% off, or £10,480, in 6 monthly instalments/);
   assert.match(resolveChoice(forStorage(t), 'plan').find((c) => c.key === 'investment').paragraphs[0].text, /^Your investment is £10,480, in 6 monthly/);
   const noChoice = { ...t, offerUpfront: false };
@@ -267,4 +267,28 @@ test('P14: a refund or credit off the live site takes its stand-in, never a conn
   assert.deepEqual([r.ok, r.standIn], [true, true]);
   const live = await askWith({ route: 'billing', kind: 'refund', body: { invoiceId: 'i', amount: 100 }, token: 't', send, live: true });
   assert.equal(live.ok, false, 'the live site never takes a stand-in');
+});
+
+// ---------------------------------------------------------------- lead's follow-up: P7 and the monthly line
+
+test('P7: "The full £X" for one payment that settles it all, "The first £X" only where more follows; never "Nothing more to settle."', async () => {
+  const { buildClauses } = await import('../../src/lib/agreements/clauses.js');
+  const { quoteRows } = await import('../../src/lib/agreements/quote.js');
+  const { restLine } = await import('../../src/lib/agreements/settling.js');
+  const t = terms({ totalMinor: 1048000, settle: 'equal', months: 6, offerUpfront: true, startsOn: '2027-01-04', endsOn: '2027-06-25' });
+  const para = (choice) => buildClauses(t, { choice }).find((c) => c.key === 'investment').paragraphs.map((p) => p.text).find((x) => /settled when you sign/.test(x));
+  assert.equal(para('upfront'), 'The full £9,956 is settled when you sign, to confirm your place.');
+  assert.equal(para('plan'), 'The first £1,746.70 is settled when you sign, to confirm your place.');
+  assert.match(quoteRows(t, [], 'upfront').hint, /The full £9,956 is settled when you sign\.$/);
+  assert.match(quoteRows(t, [], 'plan').hint, /The first £1,746\.70 is settled when you sign\.$/);
+  assert.equal(restLine({ ...t, settle: 'full', offerUpfront: false }, 'plan'), 'This settles your agreement in full.');
+  assert.ok(!/Nothing more to settle/.test(restLine(t, 'upfront')));
+});
+
+test('the monthly line names the first instalment where they don’t divide evenly, so the figures agree', async () => {
+  const { equalLabel, settleOptions } = await import('../../src/lib/agreements/settling.js');
+  assert.equal(equalLabel(1748000, 12), '12 monthly instalments, the first £1,456.74 and then £1,456.66');
+  assert.equal(equalLabel(1530000, 6), '6 monthly instalments of £2,550');
+  const t = terms({ totalMinor: 1748000, settle: 'equal', months: 12, offerUpfront: false });
+  assert.equal(settleOptions(t).find((o) => o.value === 'equal').label, '12 monthly instalments, the first £1,456.74 and then £1,456.66');
 });

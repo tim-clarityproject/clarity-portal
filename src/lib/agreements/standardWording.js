@@ -1,7 +1,7 @@
 import { dayKeyWords } from '../time/index.js';
 import { andList, hoursWords, lowerFirst, moneyText, rateText } from './currency.js';
 import { blocksText } from './pricing.js';
-import { firstPayment, investmentWords } from './settling.js';
+import { firstPayment, hasRest, investmentWords } from './settling.js';
 import { kindOf, PLACES, selfFunded } from './terms.js';
 import { blockMinutes } from './hours.js';
 
@@ -110,7 +110,8 @@ export const STANDARD = {
       paragraphs: [
         P(`Your investment is ${investmentWords(t, choice)}.`),
         P(`Invoices come from Stripe and are due within ${due(t)} days. You can settle each one by card, Apple Pay or bank transfer, and instalments can be by Direct Debit.`),
-        P(`The first ${moneyText(firstPayment(t, choice), c)} is settled when you sign, to confirm your place.`),
+        // "The full" where this one payment is all of it; "The first" only where more follows (P7).
+        P(`The ${hasRest(t, choice) ? 'first' : 'full'} ${moneyText(firstPayment(t, choice), c)} is settled when you sign, to confirm your place.`),
         ...(k === 'hours' ? [P(`That is ${hoursWords(blockMinutes(t.hours?.blockMinor, t.hours?.rateMinor))} at ${rateText(Number(t.hours?.rateMinor) || 0, 'hour', c)}.`)] : []),
         ...(t.expenses !== false ? [P('Travel and other agreed expenses, if any, are invoiced at cost.')] : []),
         P('If an invoice is unsettled 14 days after it’s due, your coach may pause new coaching sessions until it’s settled, always after talking to you first.',

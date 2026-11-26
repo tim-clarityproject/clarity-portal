@@ -37,6 +37,7 @@ import { FieldPanel } from './Settings';
 import NameNote from './NameNote';
 import ClientCards from './money/ClientCards';
 import { agreementRows, somethingWaiting } from '../../lib/coach/money';
+import { signedPdfProblem } from '../../lib/agreements/askClient';
 import { countFigure, countWords } from '../../lib/coach/numbers';
 
 // A client's page (M11: Sam, Leo, Marcus, Priya and Jordan). Overview is
@@ -172,6 +173,7 @@ export default function ClientPage() {
   const toggle = (key) => setFolds((f) => { const next = { ...f, [key]: !f[key] }; writeJson(foldsKey, next); return next; });
   const [view, setView] = useState('over');
   const [panel, setPanel] = useState(null);
+  const [pdfProblem, setPdfProblem] = useState(null);
   const [addingProject, setAddingProject] = useState(false);
   const [engDraft, setEngDraft] = useState(null);
   const [field, setField] = useState(null);
@@ -517,7 +519,8 @@ export default function ClientPage() {
               profile={profile} first={first} next={next} last={last} sessions={sessions} loading={agreementLoading}
               onBrief={(sid) => { setBriefAsked(true); setBriefId(sid); }}
               onBook={() => navigate('/coach/calendar/book', { state: { clientId: profile.id } })}
-              onRun1={(version) => (version?.status === 'signed' || version?.client_signed_at ? openSignedAgreement(version, toast, () => setPanel('agreement')) : setPanel('agreement'))}
+              onRun1={(version) => { setPdfProblem(null); return version?.status === 'signed' || version?.client_signed_at ? openSignedAgreement(version, setPdfProblem, () => setPanel('agreement')) : setPanel('agreement'); }}
+              pdfProblem={pdfProblem}
               onDetails={() => { if (!folds.det) toggle('det'); }}
               whatsapp={contacts.find((c) => c.key === 'whatsapp') || null}
               imessage={contacts.find((c) => c.key === 'imessage') || null}
@@ -722,7 +725,7 @@ let openingAgreement = false; // one PDF at a time
  * the coach's and the client's signatures (follow-up 5, 064: agreement_signed_pdf, with the 6-digit code; made and
  * kept by the server first if it wasn't). The code loads only when it is asked for.
  */
-async function openSignedAgreement(version, toast, beforeMigration) {
+async function openSignedAgreement(version, setProblem, beforeMigration) {
   if (openingAgreement || !version?.id) return;
   openingAgreement = true;
   const words = import('../../lib/friendlyError');
@@ -734,8 +737,8 @@ async function openSignedAgreement(version, toast, beforeMigration) {
     // Only until 064 has run on the database: its text in the panel, as before.
     if (e?.code === 'PGRST202' || e?.code === '42883') { beforeMigration(); return; }
     const { isOffline, needsConnection } = await words.catch(() => ({ isOffline: () => false, needsConnection: null }));
-    // As the client's download says it (My coaching).
-    toast.error(needsConnection && (e?.offline || isOffline(e)) ? needsConnection('This PDF') : 'Your PDF wasn’t made. Check your connection and try again.');
+    // One mistake line under the agreements (P13): offline in the client's words, off the live site that it's made there.
+    setProblem(needsConnection && (e?.offline || isOffline(e)) ? needsConnection('This PDF') : signedPdfProblem());
   } finally {
     openingAgreement = false;
   }

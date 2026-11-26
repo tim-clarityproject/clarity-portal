@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Chevron, Loading, useToast } from '../../../components/design';
 import { Card, Empty, Figure, PageOpening, Row } from '../../../components/design/Blocks';
@@ -19,6 +19,8 @@ import { rowsOf } from '../../../lib/coach/store';
 import { dayIn, dayKeyWords, deviceZone } from '../../../lib/time/index.js';
 import { Back, useCoachPortal } from '../parts';
 import { AgreementChange } from './agreementPanels';
+import MistakeLine from '../../../components/agreements/MistakeLine';
+import { signedPdfProblem } from '../../../lib/agreements/askClient';
 import './agreementPage.css';
 
 // An agreement's own page (Phase 6b run 3, Group D; Polish 1, Stage C, C4: M28 v6 draws no such page, so it follows
@@ -38,6 +40,7 @@ export default function AgreementPage() {
   const location = useLocation();
   const toast = useToast();
   const [params, setParams] = useSearchParams();
+  const [pdfProblem, setPdfProblem] = useState(null);
   const p = useCoachPortal();
   const zone = coachZoneOf(p.settings, deviceZone());
   const a = p.agreements.find((x) => x.id === id) || null;
@@ -108,11 +111,12 @@ export default function AgreementPage() {
     else setParams({}, { replace: true });
   };
   const downloadPdf = async () => {
+    setPdfProblem(null);
     try {
       const [{ loadSignedPdf }, { savePdfFile }] = await Promise.all([import('../../../lib/coaching/agreements'), import('../../../lib/pdf/saveFile')]);
       const { bytes, fileName } = await loadSignedPdf(v);
       savePdfFile(bytes, fileName);
-    } catch { toast.error('The signed PDF wasn’t made. Check your connection and try again.'); }
+    } catch { setPdfProblem(signedPdfProblem()); }
   };
 
   if (change) {
@@ -171,6 +175,7 @@ export default function AgreementPage() {
               <Card label="The agreement">
                 {v && <Row name={`See it as ${first || 'they'} ${client ? 'sees' : 'see'} it`} value={<Chevron direction="right" />} onClick={() => navigate(`/coach/agreements/${a.id}/preview`)} className="ap-go" />}
                 {signed && <Row name="Download the signed PDF" value={<Chevron direction="right" />} onClick={downloadPdf} className="ap-go" />}
+                {signed && pdfProblem && <MistakeLine>{pdfProblem}</MistakeLine>}
               </Card>
             )}
           </div>

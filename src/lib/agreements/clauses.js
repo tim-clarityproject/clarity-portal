@@ -75,7 +75,7 @@ export function forStorage(t, opts = {}) {
  * when they sign, the Read, the preview and an unsigned PDF say both truthfully, never only up front's.
  */
 const investmentOf = (text) => String(text || '').replace(/^Your investment is /, '').replace(/\.$/, '');
-const FIRST = /^The first (.+) is settled when you sign/;
+const FIRST = /^The (first|full) (.+) is settled when you sign/;
 export function eitherParagraphs(choices) {
   const up = choices?.upfront || [];
   const plan = choices?.plan || [];
@@ -85,7 +85,7 @@ export function eitherParagraphs(choices) {
     if (i === 0) return { text: `Your investment is ${investmentOf(p.text)}, or ${investmentOf(q.text)}. You choose which when you sign.`, why: p.why };
     const a = FIRST.exec(p.text);
     const b = FIRST.exec(q.text);
-    if (a && b) return { text: `When you sign, ${a[1]} is settled if you choose up front, or the first ${b[1]} if not, to confirm your place.`, why: p.why };
+    if (a && b) return { text: `When you sign, ${a[2]} is settled if you choose up front, or ${b[1] === 'first' ? 'the first ' : ''}${b[2]} if not, to confirm your place.`, why: p.why };
     return { text: `${p.text} ${q.text}`, why: p.why };
   });
   return [...out, ...plan.slice(up.length)];

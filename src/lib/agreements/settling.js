@@ -45,9 +45,19 @@ export function settleOptions(t, chosen) {
   return [
     { value: 'full', label: `In full, up front, ${moneyText(offer ? Math.round(f * (100 - UPFRONT_PERCENT) / 100) : f, c)}${offer ? `, ${UPFRONT_PERCENT}% off` : ''}` },
     { value: 'deposit', label: `A deposit of ${moneyText(dep, c)}, then ${DEPOSIT_THEN} monthly instalments of ${moneyText(split(f - dep, DEPOSIT_THEN)[DEPOSIT_THEN - 1], c)}` },
-    { value: 'equal', label: `${equalCount(t)} monthly instalments of ${moneyText(split(f, equalCount(t))[equalCount(t) - 1], c)}` },
+    { value: 'equal', label: equalLabel(f, equalCount(t), c) },
     { value: 'delivered', label: `As delivered, ${moneyText(perSession(t), c)} a coaching session` },
   ];
+}
+
+/**
+ * "6 monthly instalments of £2,550", or where they don't divide evenly (the leftover pennies go on the first) "12
+ * monthly instalments, the first £1,456.74 and then £1,456.66", so the figures never seem to disagree.
+ */
+export function equalLabel(total, count, c = 'GBP') {
+  const parts = split(total, count);
+  if (count <= 1 || parts[0] === parts[count - 1]) return `${count} monthly ${count === 1 ? 'instalment' : 'instalments'} of ${moneyText(parts[count - 1], c)}`;
+  return `${count} monthly instalments, the first ${moneyText(parts[0], c)} and then ${moneyText(parts[count - 1], c)}`;
 }
 
 /** A team programme's three ways (M28's tsettleOpts): a deposit of a third, then 3 instalments; 3 equal; in full. */
@@ -140,10 +150,11 @@ export function restLine(t, choice = t?.choice ?? 'upfront', chosen) {
   if (k === 'hours') return '';
   if (k === 'team') return 'The rest is invoiced as agreed.';
   const pf = planTotal(t, chosen);
-  if (upfrontActive(t, choice)) return `Nothing more to settle. You saved ${moneyText(saving(pf), c)}.`;
-  if (t.settle === 'full') return 'Nothing more to settle.';
+  // Read above a Settle button as well as after it (P7): what this payment does, never "Nothing more to settle."
+  if (upfrontActive(t, choice)) return `This settles your agreement in full. You save ${moneyText(saving(pf), c)}.`;
+  if (t.settle === 'full') return 'This settles your agreement in full.';
   if (t.settle === 'deposit') return `Then ${DEPOSIT_THEN} monthly instalments of ${moneyText(split(pf - deposit(t, chosen), DEPOSIT_THEN)[DEPOSIT_THEN - 1], c)}, collected the same way.`;
-  if (t.settle === 'equal') return `Then ${equalCount(t) - 1} more monthly instalments of ${moneyText(split(pf, equalCount(t))[equalCount(t) - 1], c)}, collected the same way.`;
+  if (t.settle === 'equal') return `Then ${equalCount(t) - 1} more monthly ${equalCount(t) - 1 === 1 ? 'instalment' : 'instalments'} of ${moneyText(split(pf, equalCount(t))[equalCount(t) - 1], c)}, collected the same way.`;
   return 'Then each coaching session is invoiced after it happens.';
 }
 

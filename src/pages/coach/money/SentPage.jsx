@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Chevron, Loading, useToast } from '../../../components/design';
 import { Card, Empty, Figure, PageOpening, Row, Rows } from '../../../components/design/Blocks';
@@ -9,6 +9,8 @@ import { rowsOf } from '../../../lib/coach/store';
 import { formatClockTime } from '../../../lib/dateFormatter';
 import { Back, useCoachPortal } from '../parts';
 import FactRow from './FactRow';
+import MistakeLine from '../../../components/agreements/MistakeLine';
+import { signedPdfProblem } from '../../../lib/agreements/askClient';
 import './money.css';
 
 // Sent (Polish 1, Stage C, C2; M28 version 6, "sent": /coach/agreements/:id/sent). Where an agreement or a quote is once
@@ -23,6 +25,7 @@ export default function SentPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const p = useCoachPortal();
+  const [pdfProblem, setPdfProblem] = useState(null);
   const a = p.agreements.find((x) => x.id === id) || null;
   const versions = useMemo(() => (p.agreementVersions || []).filter((v) => v.agreement_id === id).sort((x, y) => (y.version || 0) - (x.version || 0)), [p.agreementVersions, id]);
   const quotes = rowsOf(p.state, 'agreement_quotes');
@@ -61,11 +64,12 @@ export default function SentPage() {
   const title = signed ? `Signed by ${first}` : quote ? `Quote sent to ${first}` : `Sent to ${first}`;
   const back = client ? () => navigate(`/coach/clients/${client.id}`) : org ? () => navigate(`/coach/organisations/${org.id}`) : () => navigate('/coach/clients');
   const downloadPdf = async () => {
+    setPdfProblem(null);
     try {
       const [{ loadSignedPdf }, { savePdfFile }] = await Promise.all([import('../../../lib/coaching/agreements'), import('../../../lib/pdf/saveFile')]);
       const { bytes, fileName } = signed ? await loadSignedPdf(version) : await sentPdf({ version, agreement: a, clientName: name, clientEmail: client?.email || '' });
       savePdfFile(bytes, fileName);
-    } catch { toast.error(signed ? 'The signed PDF wasn’t made. Check your connection and try again.' : 'The PDF wasn’t made. Check your connection and try again.'); }
+    } catch { setPdfProblem(signed ? signedPdfProblem() : 'The PDF wasn’t made. Check your connection and try again.'); }
   };
   const note = quote ? '' : reminderLine(first, signed);
   const expiry = quote || signed ? '' : expiryLine({ version, firstName: first, today: p.todayKey });
@@ -98,6 +102,7 @@ export default function SentPage() {
                 <Row name={`See it as ${first} sees it`} value={<Chevron direction="right" />} onClick={() => navigate(`/coach/agreements/${a.id}/preview`)} className="cc-money-go" />
                 {/* M28 v6 "sent": the PDF from the moment it goes (as sent, waiting for the client's signature), then as signed. */}
                 {!quote && <Row name="Download the PDF" value={<Chevron direction="right" />} onClick={downloadPdf} className="cc-money-go" />}
+                {!quote && pdfProblem && <MistakeLine>{pdfProblem}</MistakeLine>}
                 {signed && <Row name="Open the agreement’s page" value={<Chevron direction="right" />} onClick={() => navigate(`/coach/agreements/${a.id}`)} className="cc-money-go" />}
               </Rows>
             </Card>

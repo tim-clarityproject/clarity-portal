@@ -50,3 +50,10 @@ export async function ask(route, kind, body = {}) {
   const more = await localWrite(route, kind, body, token);
   return more ? { ...answer, ...more, ok: true, standIn: true, written: true } : answer;
 }
+
+/**
+ * When a signed agreement's PDF can't be had (P13): off the live site there is no PDF server, so it says so rather than
+ * blaming the connection. Shown as one mistake line under the row that asked for it, never a toast that goes.
+ */
+export const signedPdfProblem = () => (LIVE ? 'The signed PDF wasn’t made. Check your connection and try again.'
+  : 'The signed PDF is made on the live site only, so it can’t be downloaded here.');
